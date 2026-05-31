@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Suds Jack — Vector Arcade Shooter</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="hud">
+    <div class="hud-score">SCORE: <span id="scoreDisplay">0</span></div>
+    <div class="hud-level">LEVEL <span id="levelDisplay">1</span></div>
+    <div class="hud-lives">LIVES: <span id="livesDisplay">❤ ❤ ❤</span></div>
+  </div>
+
+  <div id="overlay">
+    <h1 id="overlayTitle" style="color:#0ff; text-shadow: 0 0 20px #0ff, 0 0 40px #0ff;">SUDS JACK</h1>
+    <p id="overlaySubtitle" style="color:#f0f; text-shadow: 0 0 10px #f0f;">VECTOR TUBE SHOOTER</p>
+    <p id="overlayInstructions" style="color:#ff0; text-shadow: 0 0 10px #ff0; margin-top:30px;">← → or A/D : MOVE &nbsp;&nbsp; SPACE : SHOOT</p>
+    <p style="color:#0ff; text-shadow: 0 0 10px #0ff; margin-top:8px;">Z : SUPERZAPPER &nbsp;&nbsp; ENTER : START</p>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
