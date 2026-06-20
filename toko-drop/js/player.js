@@ -124,11 +124,17 @@ export class Player {
 
       if (this._dashTime <= 0) {
         this._dashCD = DASH_CD;
-        this.mat.transparent = false;
+        this.mat.transparent = this._mercyT > 0; // stay transparent if still in mercy
         this.mat.opacity = 1;
       }
-    } else if (this._mercyT > 0) {
-      // Mercy i-frame flicker (different from dash — slower, more chaotic)
+    } else {
+      // Normal movement always applies — even during mercy i-frames
+      this.mesh.position.x += moveDir.x * SPEED * dt;
+      this.mesh.position.z += moveDir.z * SPEED * dt;
+    }
+
+    // Mercy i-frame flicker — independent of movement
+    if (this._mercyT > 0) {
       this._mercyT -= dt;
       this.mat.transparent = true;
       this.mat.opacity = 0.3 + 0.7 * Math.abs(Math.sin(this._mercyT * 12));
@@ -137,9 +143,6 @@ export class Player {
         this.mat.opacity = 1;
         this.mat.emissive.setHex(0x222222);
       }
-    } else {
-      this.mesh.position.x += moveDir.x * SPEED * dt;
-      this.mesh.position.z += moveDir.z * SPEED * dt;
     }
 
     // Ghost fade

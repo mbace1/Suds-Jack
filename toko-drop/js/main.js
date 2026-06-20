@@ -32,7 +32,7 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
-resize();
+renderer.setSize(innerWidth, innerHeight);
 
 // ── Scene ─────────────────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
@@ -283,8 +283,8 @@ input.onPause = () => {
   else if (gameState === 'title')   startGame();
 };
 
-// Space also starts from title on desktop
-window.addEventListener('keydown', e => {
+// Space also starts from title on desktop (keyup so the same keyup doesn't also trigger dash)
+window.addEventListener('keyup', e => {
   if (e.code === 'Space' && gameState === 'title') startGame();
 });
 // Tap anywhere (outside stick zones) starts from title on mobile
@@ -383,7 +383,7 @@ function loop() {
   }
 
   // All enemies dead (including death animations) → next wave
-  if (enemies.length && enemies.every(e => !e.alive && !e._dying)) {
+  if (gameState === 'playing' && enemies.length && enemies.every(e => !e.alive && !e._dying)) {
     bullets.clear();
     audio.waveClear();
     addShake(0.22);
@@ -402,5 +402,5 @@ function resize() {
   uiCanvas.width = innerWidth; uiCanvas.height = innerHeight;
 }
 window.addEventListener('resize', resize);
-
+resize();
 loop();
