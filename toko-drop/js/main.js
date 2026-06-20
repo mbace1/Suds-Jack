@@ -3,20 +3,26 @@ import { InputManager } from './input.js';
 import { BulletPool } from './bullet.js';
 import { Player, PLAYER_RADIUS } from './player.js';
 import { Enemy, Pattern, ENEMY_RADIUS } from './enemy.js';
+import { audio } from './audio.js';
 
 const HALF     = 18;
 const BULLET_R = 0.15;
 
 // ── Wave scaling (Nex Machina pacing) ─────────────────────────────────────────
-// speedMult:    +12% per wave, cap 2.8×
-// intervalMult: intervals shrink 9% per wave, floor 0.35× (brutal bullet density)
-// Spiral rotation gets faster automatically via intervalMult in enemy.js
 function getWaveScale(wave) {
   const w = wave - 1;
   return {
     speedMult:    Math.min(1 + w * 0.12, 2.8),
     intervalMult: Math.max(1 - w * 0.09, 0.35),
   };
+}
+
+// Wave 1-2: 4 enemies, wave 3-5: 5, wave 6+: 6
+function getEnemyPatterns(wave) {
+  const base = [Pattern.RING, Pattern.SPIRAL, Pattern.SPREAD, Pattern.ALTERNATING];
+  if (wave >= 3) base.push(base[Math.floor(Math.random() * 4)]);
+  if (wave >= 6) base.push(base[Math.floor(Math.random() * 4)]);
+  return base;
 }
 
 // ── Renderer ──────────────────────────────────────────────────────────────────
@@ -34,9 +40,31 @@ scene.background = new THREE.Color(0x0d0d1a);
 scene.fog = new THREE.Fog(0x0d0d1a, 42, 80);
 
 // ── Camera ────────────────────────────────────────────────────────────────────
-const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 120);
-camera.position.set(0, 26, 19);
-camera.lookAt(0, 0, -2);
+const CAM_REST = new THREE.Vector3(0, 26, 19);
+const CAM_LOOK = new THREE.Vector3(0, 0, -2);
+const camera   = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 120);
+camera.position.copy(CAM_REST);
+camera.lookAt(CAM_LOOK);
+
+// ── Screen shake ─────────────────────────────────────────────────────────────
+let shakeTrauma = 0;
+function addShake(trauma) { shakeTrauma = Math.min(shakeTrauma + trauma, 1); }
+function updateShake(dt) {
+  if (shakeTrauma <= 0) {
+    camera.position.copy(CAM_REST);
+    camera.lookAt(CAM_LOOK);
+    return;
+  }
+  shakeTrauma = Math.max(0, shakeTrauma - dt * 2.8);
+  const mag = shakeTrauma * shakeTrauma;
+  const t   = performance.now() / 1000;
+  camera.position.set(
+    CAM_REST.x + Math.sin(t * 41) * mag * 1.8,
+    CAM_REST.y + Math.sin(t * 37) * mag * 1.2,
+    CAM_REST.z + Math.sin(t * 43) * mag * 1.2,
+  );
+  camera.lookAt(CAM_LOOK);
+}
 
 // ── Lights ────────────────────────────────────────────────────────────────────
 scene.add(new THREE.AmbientLight(0xffffff, 0.45));
@@ -54,9 +82,7 @@ const floor = new THREE.Mesh(
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
-
 scene.add(new THREE.GridHelper(HALF * 2, 28, 0x22224a, 0x22224a));
-
 const border = new THREE.LineSegments(
   new THREE.EdgesGeometry(new THREE.BoxGeometry(HALF * 2, 0.05, HALF * 2)),
   new THREE.LineBasicMaterial({ color: 0x5555cc }),
@@ -71,57 +97,40 @@ const player  = new Player(scene);
 let enemies   = [];
 let wave      = 0;
 
-function spawnWave() {
-  for (const e of enemies) e.removeFrom(scene);
-  enemies = [];
-  wave++;
-  const { speedMult, intervalMult } = getWaveScale(wave);
-  const patterns = [Pattern.RING, Pattern.SPIRAL, Pattern.SPREAD, Pattern.ALTERNATING];
-  patterns.forEach((p, i) => {
-    const angle = (i / patterns.length) * Math.PI * 2;
-    const r = HALF * 0.6;
-    enemies.push(new Enemy(scene, p, Math.cos(angle) * r, Math.sin(angle) * r, speedMult, intervalMult));
-  });
+// ── Score ─────────────────────────────────────────────────────────────────────
+let score   = 0;
+let streak  = 0;
+let hiScore = parseInt(localStorage.getItem('tokoDropHi') || '0');
+
+function onKill() {
+  streak++;
+  score += 100 * streak;
+  addShake(0.13);
+  audio.enemyDie();
+}
+function onPlayerHit() {
+  streak = 0;
+  addShake(0.38);
+  audio.playerHit();
 }
 
-player.reset();
-spawnWave();
-
-input.onDash = () => player.dash(input.getAimDir());
-
-// ── Mouse aim via raycasting ──────────────────────────────────────────────────
-const raycaster   = new THREE.Raycaster();
-const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-const _hit        = new THREE.Vector3();
-const _ndc        = new THREE.Vector2();
-const _projected  = new THREE.Vector3();
-
-function mouseAimDir() {
-  _ndc.set(
-    (input.mouse.x / innerWidth)  *  2 - 1,
-    (input.mouse.y / innerHeight) * -2 + 1,
-  );
-  raycaster.setFromCamera(_ndc, camera);
-  if (!raycaster.ray.intersectPlane(groundPlane, _hit)) return { x: 0, z: 0, valid: false };
-  const dx = _hit.x - player.position.x;
-  const dz = _hit.z - player.position.z;
-  const len = Math.hypot(dx, dz);
-  if (len < 0.5) return { x: 0, z: 0, valid: false };
-  return { x: dx / len, z: dz / len, valid: input.mouse.down };
-}
+// ── Game state ────────────────────────────────────────────────────────────────
+// 'title' | 'playing' | 'paused' | 'gameover'
+let gameState    = 'title';
+let restartTimer = 0;
 
 // ── UI canvas ─────────────────────────────────────────────────────────────────
 const uiCanvas = document.getElementById('canvas-ui');
 const ctx      = uiCanvas.getContext('2d');
 const overlay  = document.getElementById('overlay');
+const _proj    = new THREE.Vector3();
 
 function toScreen(worldPos) {
-  _projected.copy(worldPos).project(camera);
-  return {
-    x: (_projected.x + 1) / 2 * uiCanvas.width,
-    y: (-_projected.y + 1) / 2 * uiCanvas.height,
-  };
+  _proj.copy(worldPos).project(camera);
+  return { x: (_proj.x + 1) / 2 * uiCanvas.width, y: (-_proj.y + 1) / 2 * uiCanvas.height };
 }
+
+function hexToCSS(hex) { return '#' + hex.toString(16).padStart(6, '0'); }
 
 function drawStick(stick, defaultX, defaultY) {
   const bx = stick.active ? stick.ox : defaultX;
@@ -136,21 +145,34 @@ function drawStick(stick, defaultX, defaultY) {
   ctx.fill();
 }
 
-function hexToCSS(hex) {
-  return '#' + hex.toString(16).padStart(6, '0');
-}
-
-function drawUI() {
+function drawHUD() {
   ctx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
 
-  // Virtual sticks
+  if (gameState !== 'playing' && gameState !== 'paused') return;
+
+  // Sticks
   drawStick(input.left,  uiCanvas.width * 0.22, uiCanvas.height * 0.78);
   drawStick(input.right, uiCanvas.width * 0.78, uiCanvas.height * 0.78);
 
-  // Wave counter
+  // Pause button (top centre)
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.font = '18px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('❙❙', uiCanvas.width / 2, 36);
+  ctx.textAlign = 'left';
+
+  // Wave + score (top row)
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
   ctx.font = 'bold 14px monospace';
   ctx.fillText(`WAVE ${wave}`, 16, 24);
+
+  ctx.textAlign = 'right';
+  ctx.fillText(`${score}`, uiCanvas.width - 16, 24);
+  if (streak > 1) {
+    ctx.fillStyle = '#ffdd44';
+    ctx.fillText(`×${streak} STREAK`, uiCanvas.width - 16, 44);
+  }
+  ctx.textAlign = 'left';
 
   // Player HP dots
   const dotR = 9, dotGap = 24, dotY = 48;
@@ -161,25 +183,137 @@ function drawUI() {
     ctx.fill();
   }
 
-  // Enemy HP bars (projected to screen)
+  // Enemy HP bars (world→screen projection)
   for (const e of enemies) {
     if (!e.alive && !e._dying) continue;
     const s = toScreen(e.position);
     const barW = 36, barH = 5;
-    const frac = e.hpFrac;
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(s.x - barW / 2, s.y - 42, barW, barH);
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.fillRect(s.x - barW / 2, s.y - 44, barW, barH);
     ctx.fillStyle = hexToCSS(e.color);
-    ctx.fillRect(s.x - barW / 2, s.y - 42, barW * frac, barH);
+    ctx.fillRect(s.x - barW / 2, s.y - 44, barW * e.hpFrac, barH);
+  }
+
+  // Hi-score
+  if (hiScore > 0) {
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`HI ${hiScore}`, uiCanvas.width - 16, 60);
+    ctx.textAlign = 'left';
   }
 }
 
-// ── Game state ────────────────────────────────────────────────────────────────
-let gameOver     = false;
-let restartTimer = 0;
+// ── Overlay helpers ───────────────────────────────────────────────────────────
+function showTitle() {
+  overlay.style.display = 'block';
+  overlay.innerHTML =
+    `<div style="font-size:58px;font-weight:bold;letter-spacing:4px">TOKO DROP</div>` +
+    `<div style="font-size:14px;opacity:0.5;margin:10px 0 28px">TWIN-STICK BULLET-HELL</div>` +
+    `<div style="font-size:16px;opacity:0.8">SPACE / TAP TO START</div>` +
+    `<div style="font-size:12px;opacity:0.4;margin-top:12px">` +
+    `WASD + hold LMB to aim/fire · SPACE to dash<br>` +
+    `Right stick to aim/fire · release to dash · ESC pause</div>`;
+}
+
+function showPause() {
+  overlay.style.display = 'block';
+  overlay.innerHTML =
+    `<div style="font-size:52px;font-weight:bold">PAUSED</div>` +
+    `<div style="font-size:14px;opacity:0.5;margin-top:12px">ESC / ❙❙ TO RESUME</div>`;
+}
+
+function showGameOver() {
+  overlay.style.display = 'block';
+  const newHi = score >= hiScore && score > 0;
+  overlay.innerHTML =
+    `<div style="font-size:52px;font-weight:bold">YOU DIED</div>` +
+    `<div style="font-size:22px;margin-top:8px;color:#ff6644">SCORE ${score}</div>` +
+    (newHi ? `<div style="font-size:16px;color:#ffdd44;margin-top:6px">NEW BEST!</div>` : ``) +
+    `<div style="font-size:13px;opacity:0.4;margin-top:16px">Restarting…</div>`;
+}
+
+function announceWave() {
+  overlay.style.display = 'block';
+  overlay.innerHTML = `<div style="font-size:48px;font-weight:bold">WAVE ${wave}</div>`;
+  setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 1100);
+}
+
+// ── Wave / restart helpers ────────────────────────────────────────────────────
+function spawnWave() {
+  for (const e of enemies) e.removeFrom(scene);
+  enemies = [];
+  wave++;
+  const { speedMult, intervalMult } = getWaveScale(wave);
+  const patterns = getEnemyPatterns(wave);
+  patterns.forEach((p, i) => {
+    const angle = (i / patterns.length) * Math.PI * 2;
+    const r     = HALF * 0.6;
+    enemies.push(new Enemy(scene, p, Math.cos(angle) * r, Math.sin(angle) * r, speedMult, intervalMult));
+  });
+  announceWave();
+}
+
+function startGame() {
+  overlay.style.display = 'none';
+  score  = 0; streak = 0; wave = 0;
+  player.reset();
+  bullets.clear();
+  spawnWave();
+  gameState = 'playing';
+}
+
+function triggerGameOver() {
+  gameState = 'gameover';
+  restartTimer = 3.2;
+  if (score > hiScore) {
+    hiScore = score;
+    localStorage.setItem('tokoDropHi', hiScore);
+  }
+  addShake(0.9);
+  audio.playerDie();
+  showGameOver();
+}
+
+// ── Input wiring ──────────────────────────────────────────────────────────────
+input.onDash  = () => { if (gameState === 'playing') player.dash(input.getAimDir()); };
+input.onPause = () => {
+  if (gameState === 'playing') { gameState = 'paused';  showPause(); }
+  else if (gameState === 'paused')  { gameState = 'playing'; overlay.style.display = 'none'; }
+  else if (gameState === 'title')   startGame();
+};
+
+// Space also starts from title on desktop
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space' && gameState === 'title') startGame();
+});
+// Tap anywhere (outside stick zones) starts from title on mobile
+window.addEventListener('touchend', () => {
+  if (gameState === 'title') startGame();
+}, { once: false });
+
+player.onShoot = () => audio.shoot();
+
+// ── Mouse aim ─────────────────────────────────────────────────────────────────
+const raycaster   = new THREE.Raycaster();
+const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const _hit        = new THREE.Vector3();
+const _ndc        = new THREE.Vector2();
+
+function mouseAimDir() {
+  _ndc.set((input.mouse.x / innerWidth) * 2 - 1, -(input.mouse.y / innerHeight) * 2 + 1);
+  raycaster.setFromCamera(_ndc, camera);
+  if (!raycaster.ray.intersectPlane(groundPlane, _hit)) return { x: 0, z: 0, valid: false };
+  const dx = _hit.x - player.position.x;
+  const dz = _hit.z - player.position.z;
+  const len = Math.hypot(dx, dz);
+  if (len < 0.5) return { x: 0, z: 0, valid: false };
+  return { x: dx / len, z: dz / len, valid: input.mouse.down };
+}
 
 // ── Main loop ─────────────────────────────────────────────────────────────────
 let prev = performance.now();
+showTitle();
 
 function loop() {
   requestAnimationFrame(loop);
@@ -187,34 +321,31 @@ function loop() {
   const dt  = Math.min((now - prev) / 1000, 0.05);
   prev = now;
 
-  if (gameOver) {
-    restartTimer -= dt;
-    // Still animate dying enemies during game-over pause
-    for (const e of enemies) e.updateDeath(dt);
-    if (restartTimer <= 0) {
-      gameOver = false;
-      overlay.style.display = 'none';
-      player.reset();
-      bullets.clear();
-      wave = 0;
-      spawnWave();
-    }
+  updateShake(dt);
+
+  // Title / paused — just render the scene, no game logic
+  if (gameState === 'title' || gameState === 'paused') {
     renderer.render(scene, camera);
-    drawUI();
+    drawHUD();
     return;
   }
 
-  // Input
+  if (gameState === 'gameover') {
+    restartTimer -= dt;
+    for (const e of enemies) e.updateDeath(dt);
+    if (restartTimer <= 0) startGame();
+    renderer.render(scene, camera);
+    drawHUD();
+    return;
+  }
+
+  // ── Playing ────────────────────────────────────────────────────────────────
   const moveDir = input.getMoveDir();
   let aimDir    = input.getAimDir();
   if (aimDir.useMouse) aimDir = mouseAimDir();
 
-  // Update
   player.update(dt, moveDir, aimDir, bullets, HALF);
-  for (const e of enemies) {
-    e.update(dt, player.position, bullets);
-    e.updateDeath(dt);
-  }
+  for (const e of enemies) { e.update(dt, player.position, bullets); e.updateDeath(dt); }
   bullets.update(dt, HALF);
 
   // Collision: player bullets → enemies
@@ -226,8 +357,9 @@ function loop() {
       const dx = b.mesh.position.x - e.position.x;
       const dz = b.mesh.position.z - e.position.z;
       if (Math.hypot(dx, dz) < BULLET_R + ENEMY_RADIUS) {
-        e.hit();
+        const died = e.hit();
         bullets.recycleAt(i);
+        if (died) onKill(); else audio.enemyHit();
         break;
       }
     }
@@ -243,38 +375,31 @@ function loop() {
       if (Math.hypot(dx, dz) < BULLET_R + PLAYER_RADIUS) {
         player.hit();
         bullets.recycleAt(i);
-        if (!player.alive) { triggerGameOver(); return; }
+        onPlayerHit();
+        if (!player.alive) { triggerGameOver(); break; }
         break;
       }
     }
   }
 
-  // All enemies dead → next wave
-  if (enemies.length && enemies.every(e => !e.alive)) {
+  // All enemies dead (including death animations) → next wave
+  if (enemies.length && enemies.every(e => !e.alive && !e._dying)) {
     bullets.clear();
+    audio.waveClear();
+    addShake(0.22);
+    score += wave * 500;
     spawnWave();
   }
 
   renderer.render(scene, camera);
-  drawUI();
-}
-
-function triggerGameOver() {
-  gameOver = true;
-  restartTimer = 2.8;
-  overlay.style.display = 'block';
-  overlay.textContent   = 'YOU DIED';
+  drawHUD();
 }
 
 // ── Resize ────────────────────────────────────────────────────────────────────
 function resize() {
   renderer.setSize(innerWidth, innerHeight);
-  if (camera) {
-    camera.aspect = innerWidth / innerHeight;
-    camera.updateProjectionMatrix();
-  }
-  uiCanvas.width  = innerWidth;
-  uiCanvas.height = innerHeight;
+  if (camera) { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
+  uiCanvas.width = innerWidth; uiCanvas.height = innerHeight;
 }
 window.addEventListener('resize', resize);
 

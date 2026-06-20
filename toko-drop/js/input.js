@@ -8,7 +8,8 @@ export class InputManager {
     this._touchMap = new Map(); // touch id → 'left' | 'right'
     this.keys = {};
     this.mouse = { x: 0, y: 0, down: false };
-    this.onDash = null;
+    this.onDash  = null;
+    this.onPause = null;
     this._init();
   }
 
@@ -16,7 +17,8 @@ export class InputManager {
     window.addEventListener('keydown', e => { this.keys[e.code] = true; });
     window.addEventListener('keyup', e => {
       this.keys[e.code] = false;
-      if (e.code === 'Space') this.onDash?.();
+      if (e.code === 'Space')  this.onDash?.();
+      if (e.code === 'Escape') this.onPause?.();
     });
     window.addEventListener('mousemove', e => { this.mouse.x = e.clientX; this.mouse.y = e.clientY; });
     window.addEventListener('mousedown', () => { this.mouse.down = true; });
@@ -31,6 +33,12 @@ export class InputManager {
 
   _touchStart(e) {
     for (const t of e.changedTouches) {
+      // Pause zone: top-centre strip (80 px wide, 56 px tall)
+      if (t.clientY < 56 && Math.abs(t.clientX - window.innerWidth / 2) < 40) {
+        this._touchMap.set(t.identifier, 'pause');
+        this.onPause?.();
+        continue;
+      }
       const side = t.clientX < window.innerWidth / 2 ? 'left' : 'right';
       const stick = side === 'left' ? this.left : this.right;
       if (!stick.active) {

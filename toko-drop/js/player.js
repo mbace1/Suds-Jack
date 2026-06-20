@@ -28,6 +28,7 @@ export class Player {
     this._fireT    = 0;
     this._lastAim  = { x: 1, z: 0 };
     this._ghostT   = 0;
+    this.onShoot   = null;
 
     const geo = new THREE.SphereGeometry(PLAYER_RADIUS, 14, 10);
     this.mat = new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x222222 });
@@ -165,6 +166,7 @@ export class Player {
       const oz = this.mesh.position.z + aimDir.z * (PLAYER_RADIUS + 0.3);
       bullets.spawnDir(ox, oz, aimDir.x, aimDir.z, true);
       this._fireT = FIRE_RATE;
+      this.onShoot?.();
     }
   }
 
