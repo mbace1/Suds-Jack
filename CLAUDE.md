@@ -4,13 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Suds-Jack** is described as "Bomb Jack x Suds 51 x Tempest 2000" — a project combining concepts from the classic arcade games Bomb Jack, Suds 51, and Tempest 2000.
+This repository contains two HTML5 demo projects built with **Three.js / WebGL**:
 
-## Current State
+- **Suds Jack** — "Bomb Jack x Suds 51 x Tempest 2000": an arcade game blending the floating bomb-collection gameplay of Bomb Jack, the soap/bubble aesthetic of Suds 51, and the psychedelic tube-shooter energy of Tempest 2000.
+- **Toko Drop** — a second HTML5 demo living alongside Suds Jack in this repo.
 
-This repository is in early initialization. As of now it contains only a README. No source code, build system, dependencies, or tests exist yet.
+## Tech Stack
 
-When development begins, update this file with:
-- Build, lint, and test commands
-- Tech stack and architecture decisions
-- Directory structure conventions
+- **Renderer:** Three.js (WebGL)
+- **Language:** JavaScript (HTML5)
+- **Build tooling:** TBD — update this file once a build tool is chosen (e.g. Vite, plain files, etc.) and add the dev server, build, and any lint/test commands here.
+
+## Repository Structure
+
+Both demos share this repository. When directories are created, document the layout here (e.g. `suds-jack/`, `toko-drop/`, shared utilities, assets).
