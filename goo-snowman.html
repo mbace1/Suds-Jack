@@ -2,333 +2,282 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <title>Goo Snowman</title>
 <style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #050810; width: 100vw; height: 100vh; overflow: hidden; }
-#scene {
-  position: relative; width: 100%; height: 100%;
-  cursor: crosshair; isolation: isolate;
-}
-canvas, #goo-wrap { position: absolute; inset: 0; width: 100%; height: 100%; }
-#goo-wrap { filter: url(#goo-filter); }
-#lt { mix-blend-mode: screen; pointer-events: none; }
-#hint {
-  position: absolute; bottom: 28px; width: 100%; text-align: center;
-  color: rgba(55, 195, 95, 0.35); font: 11px/1 system-ui, sans-serif;
-  letter-spacing: .15em; text-transform: uppercase;
-  pointer-events: none; transition: opacity 2.5s ease;
-}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; background:#000; overflow:hidden; }
+canvas { display:block; width:100%; height:100%; touch-action:none; }
 </style>
 </head>
 <body>
-
-<!--
-  SVG goo filter:
-  • feGaussianBlur softens blob edges so neighbouring blobs bleed together
-  • feColorMatrix targets ONLY the alpha channel (RGB row pass-throughs = identity),
-    so interior gradient colours survive intact.
-    "0 0 0 20 -8" → new_alpha = old_alpha × 20 − 8
-    Threshold ≈ 0.4: pixels above merge into crisp opaque goo; below → transparent.
--->
-<svg style="display:none" aria-hidden="true">
-  <defs>
-    <filter id="goo-filter" color-interpolation-filters="sRGB"
-            x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="14" result="blur"/>
-      <feColorMatrix in="blur" mode="matrix"
-        values="1 0 0 0 0
-                0 1 0 0 0
-                0 0 1 0 0
-                0 0 0 20 -8"/>
-    </filter>
-  </defs>
-</svg>
-
-<div id="scene">
-  <canvas id="bg"></canvas>
-  <div id="goo-wrap"><canvas id="sh"></canvas></div>
-  <canvas id="lt"></canvas>
-  <p id="hint">Touch to wobble</p>
-</div>
-
+<canvas id="c"></canvas>
 <script>
-(function () {
-'use strict';
+const canvas = document.getElementById('c');
+const gl = canvas.getContext('webgl', {antialias:true, alpha:false})
+        || canvas.getContext('experimental-webgl', {antialias:true, alpha:false});
 
-const scene = document.getElementById('scene');
-const hint  = document.getElementById('hint');
-const bgC   = document.getElementById('bg');
-const shC   = document.getElementById('sh');
-const ltC   = document.getElementById('lt');
-const bg    = bgC.getContext('2d');
-const sh    = shC.getContext('2d');
-const lt    = ltC.getContext('2d');
-
-let W = 0, H = 0;
-function resize() {
-  W = window.innerWidth; H = window.innerHeight;
-  [bgC, shC, ltC].forEach(c => { c.width = W; c.height = H; });
+if (!gl) {
+  document.body.innerHTML = '<p style="color:#fff;padding:2em">WebGL not supported</p>';
+  throw new Error('no webgl');
 }
 
-/* ── Pre-computed trig for 24 radial springs ──────────────────────────── */
-const NP   = 24;
-const COS  = new Float32Array(NP);
-const SIN  = new Float32Array(NP);
+// ── Shaders ───────────────────────────────────────────────────────────────────
+
+const VS = `
+attribute vec2 a_pos;
+void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
+`;
+
+const FS = `
+precision highp float;
+
+uniform vec2  u_res;
+uniform vec2  u_c0, u_c1, u_c2;
+uniform float u_r0, u_r1, u_r2;
+uniform vec2  u_sh;
+uniform float u_shR;
+
+float field(vec2 p) {
+  vec2 d0 = p - u_c0; float f0 = u_r0*u_r0 / (dot(d0,d0) + 0.5);
+  vec2 d1 = p - u_c1; float f1 = u_r1*u_r1 / (dot(d1,d1) + 0.5);
+  vec2 d2 = p - u_c2; float f2 = u_r2*u_r2 / (dot(d2,d2) + 0.5);
+  return f0 + f1 + f2;
+}
+
+vec3 surfaceNormal(vec2 p) {
+  vec3 n = vec3(0.0);
+
+  vec2 d0 = p - u_c0; float dsq0 = dot(d0,d0); float rsq0 = u_r0*u_r0;
+  if (dsq0 < rsq0) {
+    float zn = sqrt(rsq0 - dsq0);
+    float w = rsq0 / (dsq0 + 0.5);
+    n += vec3(d0, zn) * (w / u_r0);
+  }
+
+  vec2 d1 = p - u_c1; float dsq1 = dot(d1,d1); float rsq1 = u_r1*u_r1;
+  if (dsq1 < rsq1) {
+    float zn = sqrt(rsq1 - dsq1);
+    float w = rsq1 / (dsq1 + 0.5);
+    n += vec3(d1, zn) * (w / u_r1);
+  }
+
+  vec2 d2 = p - u_c2; float dsq2 = dot(d2,d2); float rsq2 = u_r2*u_r2;
+  if (dsq2 < rsq2) {
+    float zn = sqrt(rsq2 - dsq2);
+    float w = rsq2 / (dsq2 + 0.5);
+    n += vec3(d2, zn) * (w / u_r2);
+  }
+
+  return (dot(n,n) > 0.0001) ? normalize(n) : vec3(0.0, 0.0, 1.0);
+}
+
+void main() {
+  vec2 p = gl_FragCoord.xy;
+  float f = field(p);
+
+  // Background
+  if (f < 1.0) {
+    vec3 bg = vec3(0.016, 0.026, 0.052);
+
+    // Nearfield glow
+    bg += vec3(0.0, 0.055, 0.018) * (f * f * 0.65);
+
+    // Ground shadow ellipse
+    vec2 sd = (p - u_sh) / vec2(u_shR * 6.5, u_shR * 0.85);
+    float sdist = dot(sd, sd);
+    bg *= 1.0 - (1.0 - smoothstep(0.0, 1.2, sdist)) * 0.58;
+
+    gl_FragColor = vec4(bg, 1.0);
+    return;
+  }
+
+  // Surface
+  vec3 N = surfaceNormal(p);
+  vec3 L = normalize(vec3(-0.56, 0.83, 0.80));
+  vec3 V = vec3(0.0, 0.0, 1.0);
+  vec3 H = normalize(L + V);
+
+  float NdL = dot(N, L);
+  float NdV = dot(N, V);
+  float NdH = dot(N, H);
+
+  float diff    = max(NdL, 0.0);
+  float specA   = pow(max(NdH, 0.0), 96.0);
+  float specB   = pow(max(NdH, 0.0), 12.0) * 0.30;
+  float fresnel = pow(1.0 - max(NdV, 0.0), 3.2);
+  float sss     = pow(max(-NdL * 0.5 + 0.5, 0.0), 2.2) * 0.40;
+
+  // AO darkens at neck junctions where field density is highest
+  float ao = 1.0 - clamp((f - 1.0) * 0.013, 0.0, 0.40);
+
+  vec3 baseCol = vec3(0.012, 0.055, 0.018);
+  vec3 diffCol = vec3(0.10,  0.56,  0.18) * diff;
+  vec3 specCol = vec3(0.72,  1.00,  0.82) * (specA * 3.0 + specB);
+  vec3 rimCol  = vec3(0.00,  0.78,  0.36) * fresnel * 0.52;
+  vec3 sssCol  = vec3(0.04,  0.92,  0.26) * sss;
+
+  vec3 col = (baseCol + diffCol + sssCol) * ao + specCol + rimCol;
+
+  // Reinhard tonemap + gamma
+  col = col / (col + vec3(0.75));
+  col = pow(col, vec3(1.0 / 2.2));
+
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+
+// ── Compile & link ────────────────────────────────────────────────────────────
+
+function compile(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+    throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+
+const prog = gl.createProgram();
+gl.attachShader(prog, compile(gl.VERTEX_SHADER, VS));
+gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FS));
+gl.linkProgram(prog);
+if (!gl.getProgramParameter(prog, gl.LINK_STATUS))
+  throw new Error(gl.getProgramInfoLog(prog));
+gl.useProgram(prog);
+
+// Full-screen quad
+const buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+const aPos = gl.getAttribLocation(prog, 'a_pos');
+gl.enableVertexAttribArray(aPos);
+gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+const U = {};
+['u_res','u_c0','u_c1','u_c2','u_r0','u_r1','u_r2','u_sh','u_shR']
+  .forEach(n => { U[n] = gl.getUniformLocation(prog, n); });
+
+// ── Spring physics ────────────────────────────────────────────────────────────
+
+const NP = 24;
+const COS = new Float32Array(NP);
+const SIN = new Float32Array(NP);
 for (let i = 0; i < NP; i++) {
   const a = (i / NP) * Math.PI * 2;
-  COS[i] = Math.cos(a); SIN[i] = Math.sin(a);
+  COS[i] = Math.cos(a);
+  SIN[i] = Math.sin(a);
 }
-
-/* ── Spring constants ─────────────────────────────────────────────────── */
-const KR = 0.055, DR = 0.88; // radial
-const KC = 0.035, DC = 0.84; // centre
 
 class GooBall {
   constructor(bx, by, r) {
     this.bx = bx; this.by = by; this.r = r;
-    this.x  = bx; this.y  = by; this.vx = 0; this.vy = 0;
+    this.x  = bx; this.y  = by;
+    this.vx = 0;  this.vy = 0;
     this.off = new Float32Array(NP);
     this.vel = new Float32Array(NP);
-    this._px = new Float32Array(NP); // reused point buffer
-    this._py = new Float32Array(NP);
   }
 
   tick() {
-    this.vx = (this.vx - KC * (this.x - this.bx)) * DC; this.x += this.vx;
-    this.vy = (this.vy - KC * (this.y - this.by)) * DC; this.y += this.vy;
+    const dx = this.bx - this.x, dy = this.by - this.y;
+    this.vx = (this.vx + dx * 0.018) * 0.91;
+    this.vy = (this.vy + dy * 0.018) * 0.91;
+    this.x += this.vx;
+    this.y += this.vy;
     for (let i = 0; i < NP; i++) {
-      this.vel[i] = (this.vel[i] - KR * this.off[i]) * DR;
+      this.vel[i] = (this.vel[i] - this.off[i] * 0.22) * 0.88;
       this.off[i] += this.vel[i];
     }
   }
 
   hit(tx, ty, str) {
     const dx = tx - this.x, dy = ty - this.y;
-    const d  = Math.sqrt(dx * dx + dy * dy);
-    const fo = Math.exp(-d / (this.r * 4.5));
-    const dn = Math.max(d, 1);
+    const d  = Math.sqrt(dx*dx + dy*dy) || 1;
     for (let i = 0; i < NP; i++) {
-      this.vel[i] += (dx * COS[i] + dy * SIN[i]) / dn * str * 9 * fo;
+      const px = this.x + COS[i] * this.r;
+      const py = this.y + SIN[i] * this.r;
+      const ex = px - tx, ey = py - ty;
+      const ed = Math.sqrt(ex*ex + ey*ey) || 1;
+      this.vel[i] += str * Math.exp(-ed / (this.r * 4.5));
     }
-    this.vx += dx / dn * str * 4 * fo;
-    this.vy += dy / dn * str * 4 * fo;
+    const body = str * 0.28 * Math.exp(-d / (this.r * 3));
+    this.vx += (dx / d) * body;
+    this.vy += (dy / d) * body;
   }
 
-  /* Build point cache then emit a smooth quadratic-Bézier path */
-  path(ctx) {
-    for (let i = 0; i < NP; i++) {
-      const r = this.r + this.off[i];
-      this._px[i] = this.x + r * COS[i];
-      this._py[i] = this.y + r * SIN[i];
-    }
-    const px = this._px, py = this._py, N = NP;
-    ctx.beginPath();
-    ctx.moveTo((px[0] + px[N-1]) * .5, (py[0] + py[N-1]) * .5);
-    for (let i = 0; i < N; i++) {
-      const j = (i + 1) % N;
-      ctx.quadraticCurveTo(px[i], py[i], (px[i]+px[j])*.5, (py[i]+py[j])*.5);
-    }
-    ctx.closePath();
+  // Effective radius = base + mean radial deformation (used for shader radius uniform)
+  er() {
+    let s = 0;
+    for (let i = 0; i < NP; i++) s += this.off[i];
+    return this.r + s / NP;
   }
 }
 
-/* ── Snowman layout ───────────────────────────────────────────────────── */
-let balls = [];
-function mkSnowman() {
-  const cx = W * .5;
-  const r0  = Math.min(W, H) * .19;
-  const r1  = r0 * .74;
-  const r2  = r0 * .535;
-  const y0  = H * .74;
-  // 0.82 overlap → balls nearly 18% into each other → goo filter merges cleanly
+// ── Layout ────────────────────────────────────────────────────────────────────
+
+let W, H, balls;
+
+function layout() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+  gl.viewport(0, 0, W, H);
+
+  const cx = W * 0.5;
+  const r0 = Math.min(W, H) * 0.22;
+  const r1 = r0 * 0.72;
+  const r2 = r0 * 0.52;
+  const y0 = H * 0.80 - r0 * 0.1;
+
   balls = [
-    new GooBall(cx, y0,                           r0),
-    new GooBall(cx, y0 - (r0 + r1) * .82,         r1),
-    new GooBall(cx, y0 - (r0+r1)*.82 - (r1+r2)*.81, r2),
+    new GooBall(cx, y0,                                        r0),
+    new GooBall(cx, y0 - (r0 + r1) * 0.82,                    r1),
+    new GooBall(cx, y0 - (r0 + r1) * 0.82 - (r1 + r2) * 0.81, r2),
   ];
 }
 
-/* ── Light direction (upper-left key light) ───────────────────────────── */
-const LX = -0.56, LY = -0.83;
+layout();
+window.addEventListener('resize', layout);
 
-/* ── Shape canvas (lives inside the SVG-filtered div) ────────────────────
-   All drawing here goes through the goo filter.
-   The SVG feColorMatrix preserves RGB while thresholding alpha, so
-   gradient colours inside the blobs survive intact.
-   ────────────────────────────────────────────────────────────────────── */
-function drawShape(b) {
-  const { x, y, r } = b;
-  const L = x - r * 1.8, T = y - r * 1.8, S = r * 3.6;
+// ── Input ─────────────────────────────────────────────────────────────────────
 
-  sh.save();
-  b.path(sh);
-  sh.clip();
-
-  /* 1. Deep shadow base */
-  sh.fillStyle = '#081c0d';
-  sh.fillRect(L, T, S, S);
-
-  /* 2. Lambert diffuse – key light from upper-left */
-  const lx = x + LX * r * .55, ly = y + LY * r * .55;
-  const diff = sh.createRadialGradient(lx, ly, r * .03, x, y, r * 1.5);
-  diff.addColorStop(0,   'rgba(50,162,74,0.93)');
-  diff.addColorStop(.40, 'rgba(18, 85,38,0.50)');
-  diff.addColorStop(.82, 'rgba( 5, 22,10,0.14)');
-  diff.addColorStop(1,   'rgba( 0,  0, 0,0)');
-  sh.fillStyle = diff; sh.fillRect(L, T, S, S);
-
-  /* 3. Subsurface scattering base – warm translucent glow from interior */
-  const sss = sh.createRadialGradient(x, y, 0, x, y, r * 1.05);
-  sss.addColorStop(0,   'rgba(30,205,75,0.34)');
-  sss.addColorStop(.50, 'rgba(10,100,38,0.09)');
-  sss.addColorStop(1,   'rgba( 0,  0, 0,0)');
-  sh.fillStyle = sss; sh.fillRect(L, T, S, S);
-
-  /* 4. Limb darkening – sphere edges appear darker (key 3-D depth cue).
-        The gradient centre is offset toward the light so the dark wrap
-        starts on the shadow side and tapers around all edges. */
-  const limb = sh.createRadialGradient(
-    x + LX * r * .18, y + LY * r * .18, r * .32,
-    x, y, r * 1.18
-  );
-  limb.addColorStop(0, 'rgba(0,0,0,0)');
-  limb.addColorStop(1, 'rgba(0,0,0,0.60)');
-  sh.fillStyle = limb; sh.fillRect(L, T, S, S);
-
-  sh.restore();
+function applyHit(px, py) {
+  balls.forEach(b => b.hit(px, py, 14.0));
 }
 
-/* Ambient occlusion shadows at the neck joints between balls.
-   Drawn WITHOUT a clip so it spans the merged area naturally.
-   Semi-transparent dark paint composites over the already-drawn
-   ball colours; the SVG filter preserves these darker pixels. */
-function drawJointAO() {
-  for (let i = 0; i < balls.length - 1; i++) {
-    const a = balls[i], b = balls[i + 1];
-    const mx = (a.x + b.x) * .5, my = (a.y + b.y) * .5;
-    const aoR = Math.min(a.r, b.r) * .52;
-    const ao = sh.createRadialGradient(mx, my, 0, mx, my, aoR * 1.9);
-    ao.addColorStop(0,   'rgba(0,0,0,0.48)');
-    ao.addColorStop(.55, 'rgba(0,0,0,0.16)');
-    ao.addColorStop(1,   'rgba(0,0,0,0)');
-    sh.fillStyle = ao;
-    sh.fillRect(mx - aoR * 2.2, my - aoR * 2.2, aoR * 4.4, aoR * 4.4);
-  }
-}
+canvas.addEventListener('pointerdown', e => applyHit(e.clientX, e.clientY));
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  for (const t of e.changedTouches) applyHit(t.clientX, t.clientY);
+}, { passive: false });
 
-/* ── Light canvas (screen-blended, clipped per-ball) ─────────────────────
-   Clipping here is CRITICAL – without it, radial gradients bleed into
-   visible rectangles on the dark background when screen-composited.
-   ────────────────────────────────────────────────────────────────────── */
-function drawLight(b) {
-  const { x, y, r } = b;
-  const L = x - r * 1.8, T = y - r * 1.8, S = r * 3.6;
+// ── Render loop ───────────────────────────────────────────────────────────────
 
-  lt.save();
-  b.path(lt);
-  lt.clip(); // bounds all lighting strictly to this ball's silhouette
+function frame() {
+  requestAnimationFrame(frame);
 
-  /* 5. Specular highlight (Phong) */
-  const spX = x + LX * r * .40, spY = y + LY * r * .50;
-  const spec = lt.createRadialGradient(spX, spY, 0, spX, spY, r * .42);
-  spec.addColorStop(0,   'rgba(188,255,208,0.92)');
-  spec.addColorStop(.22, 'rgba( 95,220,138,0.55)');
-  spec.addColorStop(.54, 'rgba( 28,138, 60,0.11)');
-  spec.addColorStop(1,   'rgba(  0,  0,  0,0)');
-  lt.fillStyle = spec; lt.fillRect(L, T, S, S);
-
-  /* 6. Gloss – tiny pure-white micro-reflection (wet/shiny surface) */
-  const glX = x + LX * r * .32, glY = y + LY * r * .42;
-  const gl = lt.createRadialGradient(glX, glY, 0, glX, glY, r * .10);
-  gl.addColorStop(0,   'rgba(255,255,255,0.96)');
-  gl.addColorStop(.45, 'rgba(225,255,232,0.38)');
-  gl.addColorStop(1,   'rgba(  0,  0,  0,0)');
-  lt.fillStyle = gl; lt.fillRect(L, T, S, S);
-
-  /* 7. SSS screen bloom – soft additive green luminescence */
-  const bloom = lt.createRadialGradient(x, y, 0, x, y, r * 1.3);
-  bloom.addColorStop(0,   'rgba(0,225,70,0.10)');
-  bloom.addColorStop(.55, 'rgba(0,130,42,0.03)');
-  bloom.addColorStop(1,   'rgba(0,  0, 0,0)');
-  lt.fillStyle = bloom; lt.fillRect(L, T, S, S);
-
-  /* 8. Rim light – environment bounce from opposite side of key light */
-  const rimX = x - LX * r * .58, rimY = y - LY * r * .58;
-  const rim = lt.createRadialGradient(rimX, rimY, r * .55, rimX, rimY, r * 1.05);
-  rim.addColorStop(0,    'rgba(0,  0, 0,0)');
-  rim.addColorStop(.65,  'rgba(0,  0, 0,0)');
-  rim.addColorStop(1,    'rgba(0,205,90,0.25)');
-  lt.fillStyle = rim; lt.fillRect(L, T, S, S);
-
-  lt.restore();
-}
-
-/* ── Full frame render ───────────────────────────────────────────────── */
-function render() {
-  bg.clearRect(0, 0, W, H);
-  sh.clearRect(0, 0, W, H);
-  lt.clearRect(0, 0, W, H);
-
-  /* Ground shadow beneath snowman */
-  const b0   = balls[0];
-  const gsx  = b0.x + 10, gsy = b0.y + b0.r * .90;
-  const gsrx = b0.r * 1.5,  gsry = b0.r * .20;
-  const shad = bg.createRadialGradient(gsx, gsy, 0, gsx, gsy, gsrx);
-  shad.addColorStop(0,   'rgba(0,20,8,.60)');
-  shad.addColorStop(.50, 'rgba(0,10,4,.22)');
-  shad.addColorStop(1,   'rgba(0, 0,0,0)');
-  bg.fillStyle = shad;
-  bg.beginPath(); bg.ellipse(gsx, gsy, gsrx, gsry, 0, 0, Math.PI * 2); bg.fill();
-
-  /* Shape layer (SVG goo filter merges close blobs) */
-  balls.forEach(drawShape);
-  drawJointAO();
-
-  /* Lighting layer (screen blend, clipped per ball) */
-  balls.forEach(drawLight);
-
-  /* Ambient halo around whole snowman */
-  const tb = balls[2], bb = balls[0];
-  const mcy = (tb.y + bb.y) * .5;
-  const tr  = (bb.y - tb.y) * .5 + bb.r;
-  const hl  = lt.createRadialGradient(W*.5, mcy, tr*.2, W*.5, mcy, tr*1.85);
-  hl.addColorStop(0,   'rgba(0,0,0,0)');
-  hl.addColorStop(.72, 'rgba(0,0,0,0)');
-  hl.addColorStop(1,   'rgba(0,65,26,.06)');
-  lt.fillStyle = hl; lt.fillRect(0, 0, W, H);
-}
-
-/* ── Animation loop ──────────────────────────────────────────────────── */
-function loop() {
   balls.forEach(b => b.tick());
-  render();
-  requestAnimationFrame(loop);
+
+  const [b0, b1, b2] = balls;
+
+  gl.uniform2f(U.u_res, W, H);
+
+  // Y-flip: screen Y is down, WebGL Y is up
+  gl.uniform2f(U.u_c0, b0.x, H - b0.y);
+  gl.uniform2f(U.u_c1, b1.x, H - b1.y);
+  gl.uniform2f(U.u_c2, b2.x, H - b2.y);
+
+  gl.uniform1f(U.u_r0, b0.er());
+  gl.uniform1f(U.u_r1, b1.er());
+  gl.uniform1f(U.u_r2, b2.er());
+
+  // Shadow below bottom ball
+  gl.uniform2f(U.u_sh, b0.x, H - (b0.y + b0.r * 0.62));
+  gl.uniform1f(U.u_shR, b0.r * 0.55);
+
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
 
-/* ── Idle micro-pulse (keeps the goo alive between touches) ─────────── */
-function pulse() {
-  const b = balls[Math.floor(Math.random() * balls.length)];
-  const a = Math.random() * Math.PI * 2;
-  b.hit(b.x + Math.cos(a) * b.r * .7, b.y + Math.sin(a) * b.r * .7, .12);
-  setTimeout(pulse, 2200 + Math.random() * 2800);
-}
-
-/* ── Input ───────────────────────────────────────────────────────────── */
-let hintVisible = true;
-function onTouch(cx, cy) {
-  if (hintVisible) { hint.style.opacity = '0'; hintVisible = false; }
-  balls.forEach((b, i) => setTimeout(() => b.hit(cx, cy, 1), i * 80));
-}
-scene.addEventListener('pointerdown', e => { e.preventDefault(); onTouch(e.clientX, e.clientY); });
-scene.addEventListener('pointermove', e => { if (e.buttons) { e.preventDefault(); onTouch(e.clientX, e.clientY); } });
-scene.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
-window.addEventListener('resize', () => { resize(); mkSnowman(); });
-
-/* ── Boot ────────────────────────────────────────────────────────────── */
-resize(); mkSnowman(); loop(); setTimeout(pulse, 1800);
-}());
+frame();
 </script>
 </body>
 </html>
