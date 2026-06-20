@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Goo Snowman – HTML5 Lighting Demo</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #050810;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#scene {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  isolation: isolate;
+}
+
+canvas, #goo-wrap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#goo-wrap {
+  filter: url(#goo-filter);
+}
+
+#light-canvas {
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+#hint {
+  position: absolute;
+  bottom: 28px;
+  width: 100%;
+  text-align: center;
+  color: rgba(60, 200, 100, 0.38);
+  font: 12px/1 -apple-system, system-ui, sans-serif;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  pointer-events: none;
+  transition: opacity 2.5s ease;
+}
+</style>
+</head>
+<body>
+
+<svg aria-hidden="true" style="display:none">
+  <defs>
+    <filter id="goo-filter" color-interpolation-filters="sRGB"
+            x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="11" result="blur"/>
+      <feColorMatrix in="blur" mode="matrix"
+        values="1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0
+                0 0 0 24 -10"/>
+    </filter>
+  </defs>
+</svg>
+
+<div id="scene">
+  <canvas id="bg-canvas"></canvas>
+  <div id="goo-wrap">
+    <canvas id="shape-canvas"></canvas>
+  </div>
+  <canvas id="light-canvas"></canvas>
+  <p id="hint">Touch or click to wobble</p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const scene   = document.getElementById('scene');
+  const bgCvs   = document.getElementById('bg-canvas');
+  const shapeCvs= document.getElementById('shape-canvas');
+  const lightCvs= document.getElementById('light-canvas');
+  const hint    = document.getElementById('hint');
+
+  const bgCtx   = bgCvs.getContext('2d');
+  const shCtx   = shapeCvs.getContext('2d');
+  const ltCtx   = lightCvs.getContext('2d');
+
+  let W = 0, H = 0;
+
+  function setSize() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    [bgCvs, shapeCvs, lightCvs].forEach(c => {
+      c.width  = W;
+      c.height = H;
+    });
+  }
+
+  const NP = 24;
+  const KR = 0.055;
+  const DR = 0.88;
+  const KC = 0.035;
+  const DC = 0.84;
+
+  class GooBall {
+    constructor(baseX, baseY, r) {
+      this.baseX = baseX;
+      this.baseY = baseY;
+      this.r     = r;
+      this.x  = baseX; this.y  = baseY;
+      this.vx = 0;     this.vy = 0;
+      this.off = new Float32Array(NP);
+      this.vel = new Float32Array(NP);
+    }
+
+    tick() {
+      this.vx = (this.vx - KC * (this.x - this.baseX)) * DC;
+      this.vy = (this.vy - KC * (this.y - this.baseY)) * DC;
+      this.x += this.vx;
+      this.y += this.vy;
+      for (let i = 0; i < NP; i++) {
+        this.vel[i] = (this.vel[i] - KR * this.off[i]) * DR;
+        this.off[i] += this.vel[i];
+      }
+    }
+
+    hit(tx, ty, strength) {
+      const dx = tx - this.x, dy = ty - this.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const falloff = Math.exp(-dist / (this.r * 4.5));
+      const dn = Math.max(dist, 1);
+      for (let i = 0; i < NP; i++) {
+        const a   = (i / NP) * Math.PI * 2;
+        const dot = (dx * Math.cos(a) + dy * Math.sin(a)) / dn;
+        this.vel[i] += dot * strength * 9 * falloff;
+      }
+      this.vx += (dx / dn) * strength * 4 * falloff;
+      this.vy += (dy / dn) * strength * 4 * falloff;
+    }
+
+    buildPath(ctx) {
+      const pts = new Array(NP);
+      for (let i = 0; i < NP; i++) {
+        const a = (i / NP) * Math.PI * 2;
+        pts[i] = [
+          this.x + (this.r + this.off[i]) * Math.cos(a),
+          this.y + (this.r + this.off[i]) * Math.sin(a)
+        ];
+      }
+      ctx.beginPath();
+      const last = pts[NP - 1], first = pts[0];
+      ctx.moveTo((last[0] + first[0]) * 0.5, (last[1] + first[1]) * 0.5);
+      for (let i = 0; i < NP; i++) {
+        const p  = pts[i];
+        const np = pts[(i + 1) % NP];
+        ctx.quadraticCurveTo(p[0], p[1], (p[0] + np[0]) * 0.5, (p[1] + np[1]) * 0.5);
+      }
+      ctx.closePath();
+    }
+  }
+
+  let balls = [];
+
+  function mkSnowman() {
+    const cx = W * 0.5;
+    const r0 = Math.min(W, H) * 0.185;
+    const r1 = r0 * 0.74;
+    const r2 = r0 * 0.535;
+    const y0 = H * 0.73;
+    const y1 = y0 - (r0 + r1) * 0.89;
+    const y2 = y1 - (r1 + r2) * 0.88;
+    balls = [
+      new GooBall(cx, y0, r0),
+      new GooBall(cx, y1, r1),
+      new GooBall(cx, y2, r2),
+    ];
+  }
+
+  const LX = -0.56, LY = -0.83;
+
+  function drawShape(b) {
+    const { x, y, r } = b;
+    const L = x - r * 1.7, T = y - r * 1.7, S = r * 3.4;
+    shCtx.save();
+    b.buildPath(shCtx);
+    shCtx.clip();
+    shCtx.fillStyle = '#071d0c';
+    shCtx.fillRect(L, T, S, S);
+    const litX = x + LX * r * 0.55, litY = y + LY * r * 0.55;
+    const diff = shCtx.createRadialGradient(litX, litY, r * 0.04, x, y, r * 1.55);
+    diff.addColorStop(0,    'rgba(50, 165, 74, 0.94)');
+    diff.addColorStop(0.38, 'rgba(20,  92, 42, 0.52)');
+    diff.addColorStop(0.78, 'rgba( 6,  28, 12, 0.15)');
+    diff.addColorStop(1,    'rgba( 0,   0,  0, 0)');
+    shCtx.fillStyle = diff;
+    shCtx.fillRect(L, T, S, S);
+    const sss = shCtx.createRadialGradient(x, y, 0, x, y, r * 1.08);
+    sss.addColorStop(0,    'rgba(32, 210, 78, 0.38)');
+    sss.addColorStop(0.50, 'rgba(12, 102, 40, 0.10)');
+    sss.addColorStop(1,    'rgba( 0,   0,  0, 0)');
+    shCtx.fillStyle = sss;
+    shCtx.fillRect(L, T, S, S);
+    shCtx.restore();
+  }
+
+  function drawLight(b) {
+    const { x, y, r } = b;
+    const L = x - r * 1.7, T = y - r * 1.7, S = r * 3.4;
+    const spX = x + LX * r * 0.40, spY = y + LY * r * 0.50;
+    const spec = ltCtx.createRadialGradient(spX, spY, 0, spX, spY, r * 0.44);
+    spec.addColorStop(0,    'rgba(185, 255, 205, 0.90)');
+    spec.addColorStop(0.20, 'rgba(100, 220, 140, 0.55)');
+    spec.addColorStop(0.48, 'rgba( 35, 140,  65, 0.15)');
+    spec.addColorStop(1,    'rgba(  0,   0,   0, 0)');
+    ltCtx.fillStyle = spec;
+    ltCtx.fillRect(L, T, S, S);
+    const glX = x + LX * r * 0.31, glY = y + LY * r * 0.40;
+    const gloss = ltCtx.createRadialGradient(glX, glY, 0, glX, glY, r * 0.13);
+    gloss.addColorStop(0,    'rgba(255, 255, 255, 0.94)');
+    gloss.addColorStop(0.50, 'rgba(215, 255, 228, 0.38)');
+    gloss.addColorStop(1,    'rgba(  0,   0,   0, 0)');
+    ltCtx.fillStyle = gloss;
+    ltCtx.fillRect(L, T, S, S);
+    const bloom = ltCtx.createRadialGradient(x, y, 0, x, y, r * 1.40);
+    bloom.addColorStop(0,    'rgba( 0, 228, 72, 0.11)');
+    bloom.addColorStop(0.55, 'rgba( 0, 130, 42, 0.04)');
+    bloom.addColorStop(1,    'rgba( 0,   0,  0, 0)');
+    ltCtx.fillStyle = bloom;
+    ltCtx.fillRect(L, T, S, S);
+    const rimX = x - LX * r * 0.58, rimY = y - LY * r * 0.58;
+    const rim = ltCtx.createRadialGradient(rimX, rimY, r * 0.54, rimX, rimY, r * 1.08);
+    rim.addColorStop(0,    'rgba(0,   0,  0, 0)');
+    rim.addColorStop(0.65, 'rgba(0,   0,  0, 0)');
+    rim.addColorStop(1,    'rgba(0, 205, 90, 0.22)');
+    ltCtx.fillStyle = rim;
+    ltCtx.fillRect(L, T, S, S);
+  }
+
+  function render() {
+    bgCtx.clearRect(0, 0, W, H);
+    shCtx.clearRect(0, 0, W, H);
+    ltCtx.clearRect(0, 0, W, H);
+    const b0 = balls[0];
+    const shX  = b0.x + 10, shY = b0.y + b0.r * 0.90;
+    const shRX = b0.r * 1.50, shRY = b0.r * 0.22;
+    const shadow = bgCtx.createRadialGradient(shX, shY, 0, shX, shY, shRX);
+    shadow.addColorStop(0,    'rgba(0, 22,  8, 0.60)');
+    shadow.addColorStop(0.50, 'rgba(0, 12,  4, 0.24)');
+    shadow.addColorStop(1,    'rgba(0,  0,  0, 0)');
+    bgCtx.fillStyle = shadow;
+    bgCtx.beginPath();
+    bgCtx.ellipse(shX, shY, shRX, shRY, 0, 0, Math.PI * 2);
+    bgCtx.fill();
+    balls.forEach(drawShape);
+    balls.forEach(drawLight);
+    const topB = balls[2], botB = balls[0];
+    const midY = (topB.y + botB.y) * 0.5;
+    const totR = (botB.y - topB.y) * 0.5 + botB.r;
+    const halo = ltCtx.createRadialGradient(W * 0.5, midY, totR * 0.25, W * 0.5, midY, totR * 1.8);
+    halo.addColorStop(0,    'rgba(0, 0, 0, 0)');
+    halo.addColorStop(0.70, 'rgba(0, 0, 0, 0)');
+    halo.addColorStop(1,    'rgba(0, 70, 28, 0.07)');
+    ltCtx.fillStyle = halo;
+    ltCtx.fillRect(0, 0, W, H);
+  }
+
+  function loop() {
+    balls.forEach(b => b.tick());
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  function idlePulse() {
+    const b = balls[Math.floor(Math.random() * balls.length)];
+    const a = Math.random() * Math.PI * 2;
+    b.hit(
+      b.x + Math.cos(a) * b.r * 0.7,
+      b.y + Math.sin(a) * b.r * 0.7,
+      0.12
+    );
+    setTimeout(idlePulse, 2200 + Math.random() * 2800);
+  }
+
+  let hinted = true;
+
+  function onTouch(cx, cy) {
+    if (hinted) { hint.style.opacity = '0'; hinted = false; }
+    balls.forEach((b, i) => setTimeout(() => b.hit(cx, cy, 1), i * 80));
+  }
+
+  scene.addEventListener('pointerdown', e => { e.preventDefault(); onTouch(e.clientX, e.clientY); });
+  scene.addEventListener('pointermove', e => { if (e.buttons) { e.preventDefault(); onTouch(e.clientX, e.clientY); } });
+  scene.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+  window.addEventListener('resize', () => { setSize(); mkSnowman(); });
+
+  setSize();
+  mkSnowman();
+  loop();
+  setTimeout(idlePulse, 1800);
+}());
+</script>
+</body>
+</html>
