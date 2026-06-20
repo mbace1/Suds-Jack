@@ -4,7 +4,7 @@ import { BulletPool } from './bullet.js';
 import { Player, PLAYER_RADIUS } from './player.js';
 import { Enemy, Pattern, ENEMY_RADIUS } from './enemy.js';
 
-const HALF = 15; // arena half-size
+const HALF = 18; // arena half-size
 const BULLET_R = 0.15;
 
 // ── Renderer ──────────────────────────────────────────────────────────────────
@@ -19,12 +19,12 @@ resize();
 // ── Scene ─────────────────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0d0d1a);
-scene.fog = new THREE.Fog(0x0d0d1a, 35, 65);
+scene.fog = new THREE.Fog(0x0d0d1a, 42, 80);
 
 // ── Camera: angled perspective (isometric-ish) ────────────────────────────────
-const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 100);
-camera.position.set(0, 22, 16);
-camera.lookAt(0, 0, -1);
+const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 120);
+camera.position.set(0, 26, 19);
+camera.lookAt(0, 0, -2);
 
 // ── Lights ────────────────────────────────────────────────────────────────────
 scene.add(new THREE.AmbientLight(0xffffff, 0.45));
@@ -43,7 +43,7 @@ floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-scene.add(new THREE.GridHelper(HALF * 2, 24, 0x22224a, 0x22224a));
+scene.add(new THREE.GridHelper(HALF * 2, 28, 0x22224a, 0x22224a));
 
 // Subtle border ring
 const border = new THREE.LineSegments(

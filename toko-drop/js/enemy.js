@@ -3,13 +3,15 @@ import * as THREE from 'three';
 export const Pattern = { RING: 0, SPIRAL: 1, SPREAD: 2, ALTERNATING: 3 };
 
 const CFG = {
-  [Pattern.RING]:        { color: 0xff6600, interval: 2.0, bulletColor: 0xff8833 },
-  [Pattern.SPIRAL]:      { color: 0xaa00ff, interval: 0.08, bulletColor: 0xcc44ff },
-  [Pattern.SPREAD]:      { color: 0x0088ff, interval: 1.5, bulletColor: 0x44aaff },
-  [Pattern.ALTERNATING]: { color: 0x00cc44, interval: 1.1, bulletColor: 0x00ff66 },
+  // Ring: pulses hard, moves faster — offset by slow fire rate
+  [Pattern.RING]:        { color: 0xff6600, interval: 1.8, bulletColor: 0xff8833, speed: 2.4 },
+  // Spiral: anchor enemy — slowest mover, continuous stream
+  [Pattern.SPIRAL]:      { color: 0xaa00ff, interval: 0.08, bulletColor: 0xcc44ff, speed: 1.0 },
+  // Spread: medium speed, aimed bursts every 1.3 s
+  [Pattern.SPREAD]:      { color: 0x0088ff, interval: 1.3, bulletColor: 0x44aaff, speed: 2.0 },
+  // Alternating: aggressive mix, medium speed
+  [Pattern.ALTERNATING]: { color: 0x00cc44, interval: 1.0, bulletColor: 0x00ff66, speed: 2.2 },
 };
-
-const ENEMY_SPEED  = 1.8;
 export const ENEMY_RADIUS = 0.8;
 
 export class Enemy {
@@ -32,13 +34,13 @@ export class Enemy {
   get position() { return this.mesh.position; }
 
   update(dt, playerPos, bullets) {
-    // Slow deliberate movement toward player
+    const speed = CFG[this.pattern].speed;
     const dx = playerPos.x - this.mesh.position.x;
     const dz = playerPos.z - this.mesh.position.z;
     const dist = Math.hypot(dx, dz);
     if (dist > 1.5) {
-      this.mesh.position.x += (dx / dist) * ENEMY_SPEED * dt;
-      this.mesh.position.z += (dz / dist) * ENEMY_SPEED * dt;
+      this.mesh.position.x += (dx / dist) * speed * dt;
+      this.mesh.position.z += (dz / dist) * speed * dt;
     }
 
     this._t += dt;
