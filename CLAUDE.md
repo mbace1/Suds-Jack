@@ -30,4 +30,32 @@ Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4
 
 ## Repository Structure
 
-Both projects share this repository. Add directory layout here once scaffolded (e.g. `suds-jack/`, `toko-drop/`).
+```
+suds-jack/      # (not yet scaffolded)
+toko-drop/
+  index.html
+  js/
+    main.js     # Three.js scene, game loop, collision, wave management
+    input.js    # Virtual joystick (touch) + WASD/mouse fallback
+    player.js   # Player movement, dash mechanic, firing
+    enemy.js    # Enemy class — 4 bullet-hell patterns, each with distinct color
+    bullet.js   # Object-pooled bullets (300 cap, shared pool for all bullets)
+```
+
+## Toko Drop — Architecture Notes
+
+**Entry point:** `toko-drop/js/main.js` sets up the Three.js scene, wires input/player/enemy/bullets together, and runs the game loop.
+
+**Controls:** Virtual twin-sticks (left half / right half of screen). Right stick release triggers a **dash** with i-frames. Desktop fallback: WASD move, hold LMB + mouse to aim and fire, Space to dash.
+
+**Enemy patterns** (all four spawn simultaneously per wave, each with a unique color):
+- `Pattern.RING` — orange, radial burst of 10 bullets every 2 s
+- `Pattern.SPIRAL` — purple, rotating single shot every 80 ms
+- `Pattern.SPREAD` — blue, 5-bullet aimed cone every 1.5 s
+- `Pattern.ALTERNATING` — green, alternates ring burst and direct aimed shot every 1.1 s
+
+**Bullet pool:** `BulletPool` pre-allocates 300 `THREE.Mesh` instances. `spawnDir(x, z, dx, dz, isPlayer, color)` pops from pool; `recycleAt(i)` splices active array at index `i` (always iterate backwards when recycling mid-loop).
+
+**Dash:** 0.18 s at 26 units/s, 0.9 s cooldown, invincible during dash. Direction uses last aim direction if stick was released before movement.
+
+**Wave progression:** when all 4 enemies are dead, `spawnWave()` removes old meshes from scene and spawns fresh enemies at `0.6 × HALF` radius in a cross pattern. Wave counter displayed in UI.

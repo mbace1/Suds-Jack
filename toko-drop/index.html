@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Toko Drop</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; touch-action: none; }
+    #canvas-game { display: block; }
+    #canvas-ui {
+      position: fixed;
+      top: 0; left: 0;
+      pointer-events: none;
+    }
+    #overlay {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: #fff;
+      font: bold 48px/1 monospace;
+      text-align: center;
+      pointer-events: none;
+      text-shadow: 0 0 20px #ff4422;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas-game"></canvas>
+  <canvas id="canvas-ui"></canvas>
+  <div id="overlay"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js"
+    }
+  }
+  </script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
