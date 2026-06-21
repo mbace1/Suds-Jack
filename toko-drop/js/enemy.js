@@ -85,6 +85,8 @@ export class Enemy {
     this._cardTimer    = 0;
     this._poisonReady  = false;
     this._poisonTimer  = 0;
+    this._aimArrow     = null;
+    this._totalShots   = 6;
 
     // Build geometry based on type family
     let geo;
@@ -179,6 +181,15 @@ export class Enemy {
       this._shotsFired = 0;
       this._fireDir = { x: 1, z: 0 };
       this._state = 'moving';
+      const tier = Math.floor(intervalMult > 0 ? (1 - intervalMult) / 0.09 : 0);
+      this._totalShots = Math.min(12, 6 + tier * 2);
+      const arrowGeo = new THREE.PlaneGeometry(0.3, 3);
+      this._aimArrow = new THREE.Mesh(arrowGeo, new THREE.MeshBasicMaterial({
+        color: 0xff8800, transparent: true, opacity: 0.7, depthWrite: false,
+      }));
+      this._aimArrow.rotation.x = -Math.PI / 2;
+      this._aimArrow.visible = false;
+      scene.add(this._aimArrow);
     }
   }
 
@@ -358,6 +369,11 @@ export class Enemy {
                 {x:0.707,z:0.707},{x:-0.707,z:0.707},{x:0.707,z:-0.707},{x:-0.707,z:-0.707},
               ];
               this._fireDir = dirs8[Math.floor(Math.random() * dirs8.length)];
+              if (this._aimArrow) {
+                this._aimArrow.position.set(ex + this._fireDir.x * 2.5, 0.02, ez + this._fireDir.z * 2.5);
+                this._aimArrow.rotation.y = Math.atan2(this._fireDir.x, this._fireDir.z);
+                this._aimArrow.visible = true;
+              }
             } else {
               this.mesh.position.x += (tdx/td) * spd * dt;
               this.mesh.position.z += (tdz/td) * spd * dt;
@@ -370,21 +386,22 @@ export class Enemy {
               this._state = 'shooting';
               this._shotsFired = 0;
               this._stateT = 0;
+              if (this._aimArrow) this._aimArrow.visible = false;
             }
             break;
           case 'shooting':
             this._stateT -= dt;
-            if (this._stateT <= 0 && this._shotsFired < 6) {
+            if (this._stateT <= 0 && this._shotsFired < this._totalShots) {
               const perpX = -this._fireDir.z, perpZ = this._fireDir.x;
-              const t = (this._shotsFired / 5 - 0.5) * 4.0;
+              const t = (this._shotsFired / (this._totalShots - 1) - 0.5) * 4.0;
               bullets.spawnDir(
                 ex + perpX * t, ez + perpZ * t,
                 this._fireDir.x, this._fireDir.z,
                 false, cfg.bulletColor, true
               );
               this._shotsFired++;
-              this._stateT = 0.75; // ~0.75s between each shot
-              if (this._shotsFired >= 6) {
+              this._stateT = 0.75;
+              if (this._shotsFired >= this._totalShots) {
                 this._state = 'cooldown';
                 this._stateT = 1.2;
               }
@@ -673,6 +690,7 @@ export class Enemy {
     if (this.type === EnemyType.TORO && this._indicator) {
       this._indicator.visible = false;
     }
+    if (this._aimArrow) this._aimArrow.visible = false;
   }
 
   removeFrom(scene) {
@@ -683,5 +701,6 @@ export class Enemy {
     } else {
       scene.remove(this.mesh);
     }
+    if (this._aimArrow) scene.remove(this._aimArrow);
   }
 }
