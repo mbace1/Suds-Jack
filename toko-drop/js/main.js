@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { InputManager } from './input.js';
 import { BulletPool } from './bullet.js';
 import { Player, PLAYER_RADIUS } from './player.js';
-import { Enemy, Pattern, ENEMY_RADIUS } from './enemy.js';
+import { Enemy, EnemyType, ENEMY_RADIUS } from './enemy.js';
 import { audio } from './audio.js';
 
 const HALF     = 18;
@@ -17,12 +17,12 @@ function getWaveScale(wave) {
   };
 }
 
-// Wave 1-2: 4 enemies, wave 3-5: 5, wave 6+: 6
-function getEnemyPatterns(wave) {
-  const base = [Pattern.RING, Pattern.SPIRAL, Pattern.SPREAD, Pattern.ALTERNATING];
-  if (wave >= 3) base.push(base[Math.floor(Math.random() * 4)]);
-  if (wave >= 6) base.push(base[Math.floor(Math.random() * 4)]);
-  return base;
+function getEnemyComposition(wave) {
+  const { BLOB, SPITTER, FANNER, WEAVER, SPLITTER } = EnemyType;
+  if (wave === 1) return [BLOB, SPITTER, FANNER, WEAVER];
+  if (wave === 2) return [BLOB, BLOB, SPITTER, FANNER, WEAVER];
+  if (wave < 6)  return [BLOB, BLOB, SPITTER, FANNER, WEAVER, SPLITTER];
+  return                 [BLOB, BLOB, SPLITTER, SPITTER, FANNER, WEAVER, SPLITTER];
 }
 
 // ── Renderer ──────────────────────────────────────────────────────────────────
@@ -90,11 +90,56 @@ const border = new THREE.LineSegments(
 border.position.y = 0.02;
 scene.add(border);
 
+// ── Death FX: chunks + puddles ────────────────────────────────────────────────
+class Chunk {
+  constructor(sc, x, y, z, vx, vy, vz, color) {
+    this.vx = vx; this.vy = vy; this.vz = vz;
+    this._life = 1.4;
+    this.mat  = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1 });
+    this.mesh = new THREE.Mesh(new THREE.SphereGeometry(0.18, 5, 3), this.mat);
+    this.mesh.position.set(x, y, z);
+    sc.add(this.mesh);
+  }
+  update(dt) {
+    this._life -= dt;
+    this.vy    -= 14 * dt;
+    this.mesh.position.x += this.vx * dt;
+    this.mesh.position.y += this.vy * dt;
+    this.mesh.position.z += this.vz * dt;
+    if (this.mesh.position.y < 0) {
+      this.mesh.position.y = 0;
+      this.vy = 0; this.vx *= 0.35; this.vz *= 0.35;
+    }
+    this.mat.opacity = Math.min(1, this._life / 0.3);
+    return this._life > 0;
+  }
+  remove(sc) { sc.remove(this.mesh); }
+}
+
+class Puddle {
+  constructor(sc, x, z, color, radius) {
+    this._life = 5;
+    this.mat  = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.55, depthWrite: false });
+    this.mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, 14), this.mat);
+    this.mesh.rotation.x = -Math.PI / 2;
+    this.mesh.position.set(x, 0.01, z);
+    sc.add(this.mesh);
+  }
+  update(dt) {
+    this._life -= dt;
+    this.mat.opacity = 0.55 * Math.max(0, this._life / 5);
+    return this._life > 0;
+  }
+  remove(sc) { sc.remove(this.mesh); }
+}
+
 // ── Game objects ──────────────────────────────────────────────────────────────
 const input   = new InputManager();
 const bullets = new BulletPool(scene);
 const player  = new Player(scene);
 let enemies   = [];
+let chunks    = [];
+let puddles   = [];
 let wave      = 0;
 
 // ── Score ─────────────────────────────────────────────────────────────────────
@@ -102,12 +147,18 @@ let score   = 0;
 let streak  = 0;
 let hiScore = parseInt(localStorage.getItem('tokoDropHi') || '0');
 
-function onKill() {
+function onKill(e) {
   streak++;
   score += 100 * streak;
   addShake(0.13);
   audio.enemyDie();
+  // Spawn death FX from chunk data populated by e.destroy()
+  for (const cd of e.chunks) {
+    chunks.push(new Chunk(scene, cd.x, cd.y, cd.z, cd.vx, cd.vy, cd.vz, e.color));
+  }
+  puddles.push(new Puddle(scene, e.position.x, e.position.z, e.color, e.radius * 1.5));
 }
+
 function onPlayerHit() {
   streak = 0;
   addShake(0.38);
@@ -240,16 +291,21 @@ function announceWave() {
 }
 
 // ── Wave / restart helpers ────────────────────────────────────────────────────
+function clearFX() {
+  for (const c of chunks)  c.remove(scene);  chunks  = [];
+  for (const p of puddles) p.remove(scene);  puddles = [];
+}
+
 function spawnWave() {
   for (const e of enemies) e.removeFrom(scene);
   enemies = [];
   wave++;
   const { speedMult, intervalMult } = getWaveScale(wave);
-  const patterns = getEnemyPatterns(wave);
-  patterns.forEach((p, i) => {
-    const angle = (i / patterns.length) * Math.PI * 2;
+  const types = getEnemyComposition(wave);
+  types.forEach((type, i) => {
+    const angle = (i / types.length) * Math.PI * 2;
     const r     = HALF * 0.6;
-    enemies.push(new Enemy(scene, p, Math.cos(angle) * r, Math.sin(angle) * r, speedMult, intervalMult));
+    enemies.push(new Enemy(scene, type, Math.cos(angle) * r, Math.sin(angle) * r, speedMult, intervalMult));
   });
   announceWave();
 }
@@ -259,6 +315,7 @@ function startGame() {
   score  = 0; streak = 0; wave = 0;
   player.reset();
   bullets.clear();
+  clearFX();
   spawnWave();
   gameState = 'playing';
 }
@@ -339,6 +396,9 @@ function loop() {
   if (gameState === 'gameover') {
     restartTimer -= dt;
     for (const e of enemies) e.updateDeath(dt);
+    for (let i = chunks.length - 1; i >= 0; i--) {
+      if (!chunks[i].update(dt)) { chunks[i].remove(scene); chunks.splice(i, 1); }
+    }
     if (restartTimer <= 0) startGame();
     renderer.render(scene, camera);
     drawHUD();
@@ -354,6 +414,31 @@ function loop() {
   for (const e of enemies) { e.update(dt, player.position, bullets); e.updateDeath(dt); }
   bullets.update(dt, HALF);
 
+  // Update / cull death FX
+  for (let i = chunks.length - 1; i >= 0; i--) {
+    if (!chunks[i].update(dt)) { chunks[i].remove(scene); chunks.splice(i, 1); }
+  }
+  for (let i = puddles.length - 1; i >= 0; i--) {
+    if (!puddles[i].update(dt)) { puddles[i].remove(scene); puddles.splice(i, 1); }
+  }
+
+  // Check for SPLITTER children to spawn (after death animation completes)
+  const toSpawn = [];
+  for (const e of enemies) {
+    if (!e._childrenReady) continue;
+    e._childrenReady = false;
+    const count = 2 + Math.floor(Math.random() * 2);
+    for (let j = 0; j < count; j++) {
+      const a = (j / count) * Math.PI * 2 + Math.random() * 0.5;
+      const r = 1.5 + Math.random() * 1.5;
+      toSpawn.push({ x: e.position.x + Math.cos(a) * r, z: e.position.z + Math.sin(a) * r,
+                     sm: e._speedMult, im: e._intervalMult });
+    }
+  }
+  for (const s of toSpawn) {
+    enemies.push(new Enemy(scene, EnemyType.BLOB, s.x, s.z, s.sm, s.im));
+  }
+
   // Collision: player bullets → enemies
   for (let i = bullets.active.length - 1; i >= 0; i--) {
     const b = bullets.active[i];
@@ -362,10 +447,21 @@ function loop() {
       if (!e.alive) continue;
       const dx = b.mesh.position.x - e.position.x;
       const dz = b.mesh.position.z - e.position.z;
-      if (Math.hypot(dx, dz) < BULLET_R + ENEMY_RADIUS) {
+      if (Math.hypot(dx, dz) < BULLET_R + e.radius) {
         const died = e.hit();
         bullets.recycleAt(i);
-        if (died) onKill(); else audio.enemyHit();
+        if (died) {
+          onKill(e);
+          // SPLITTER fires a death-burst ring
+          if (e.type === EnemyType.SPLITTER) {
+            for (let j = 0; j < 12; j++) {
+              const a = (j / 12) * Math.PI * 2;
+              bullets.spawnDir(e.position.x, e.position.z, Math.cos(a), Math.sin(a), false, 0xaaff44);
+            }
+          }
+        } else {
+          audio.enemyHit();
+        }
         break;
       }
     }
@@ -388,9 +484,26 @@ function loop() {
     }
   }
 
+  // Contact damage: BLOB and SPLITTER bodies
+  if (!player.invincible) {
+    for (const e of enemies) {
+      if (e.type !== EnemyType.BLOB && e.type !== EnemyType.SPLITTER) continue;
+      if (!e.alive) continue;
+      const dx = player.position.x - e.position.x;
+      const dz = player.position.z - e.position.z;
+      if (Math.hypot(dx, dz) < e.radius + PLAYER_RADIUS) {
+        player.hit();
+        onPlayerHit();
+        if (!player.alive) { triggerGameOver(); break; }
+        break;
+      }
+    }
+  }
+
   // All enemies dead (including death animations) → next wave
   if (gameState === 'playing' && enemies.length && enemies.every(e => !e.alive && !e._dying)) {
     bullets.clear();
+    for (const c of chunks) c.remove(scene); chunks = [];
     audio.waveClear();
     addShake(0.22);
     score += wave * 500;
