@@ -18,45 +18,56 @@ const gl = canvas.getContext('webgl',{antialias:true,alpha:false})
         || canvas.getContext('experimental-webgl',{antialias:true,alpha:false});
 if (!gl) { document.body.innerHTML='<p style="color:#fff;padding:2em">WebGL not supported</p>'; throw 0; }
 
+// Camera constants — must match the shader's hard-coded values exactly
+const CAM = [1.20, 5.50, 10.50];
+const TAR = [0.00, 1.00,  0.00];
+const FOCAL = 1.85;
+
 const VS = `attribute vec2 a_pos; void main(){gl_Position=vec4(a_pos,0,1);}`;
 
 const FS = `
 precision highp float;
 
 uniform vec2  u_res;
+// Cube centres, squish magnitudes, and deformation axes
 uniform vec3  u_c0, u_c1, u_c2, u_c3;
 uniform float u_sq0, u_sq1, u_sq2, u_sq3;
+uniform vec3  u_da0, u_da1, u_da2, u_da3;   // normalised deformation axis per cube
 
 const vec3  HALF_BOX = vec3(0.525, 0.525, 0.525);
 const float ROUND_R  = 0.200;
 const float BLEND_K  = 0.340;
-const vec3  LIGHT    = normalize(vec3(-0.65, 2.30, 1.70));
+const vec3  KEY_L    = normalize(vec3(-0.65, 2.30, 1.70));
+const vec3  FILL_L   = normalize(vec3( 1.20, 0.80, 1.00));
+const float GEL_IOR  = 1.33;
+
+// ── SDF ───────────────────────────────────────────────────────────────────────
 
 float sdRoundBox(vec3 p, vec3 b, float r) {
   vec3 q = abs(p) - b;
-  return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0) - r;
+  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0) - r;
 }
 
 float smin(float a, float b, float k) {
   float h = clamp(0.5 + 0.5*(b-a)/k, 0.0, 1.0);
-  return mix(b, a, h) - k*h*(1.0-h);
+  return mix(b,a,h) - k*h*(1.0-h);
 }
 
-float gooCube(vec3 p, vec3 cen, float sq) {
-  float sqC = clamp(sq, 0.55, 1.55);
-  vec3  lp  = p - cen;
-  lp.y  *= sqC;
-  lp.xz /= sqrt(sqC);
-  float d = sdRoundBox(lp, HALF_BOX, ROUND_R);
-  return d * min(sqrt(sqC), 1.0 / sqC);
+// Directional squish: compress along 'axis', expand perpendicularly
+float gooCube(vec3 p, vec3 cen, float sq, vec3 axis) {
+  float sqC    = clamp(sq, 0.55, 1.55);
+  vec3  lp     = p - cen;
+  float proj   = dot(lp, axis);
+  lp           = axis * (proj * sqC) + (lp - axis*proj) / sqrt(sqC);
+  return sdRoundBox(lp, HALF_BOX, ROUND_R) * min(sqrt(sqC), 1.0/sqC);
 }
 
 float scene(vec3 p) {
-  float d0 = gooCube(p, u_c0, u_sq0);
-  float d1 = gooCube(p, u_c1, u_sq1);
-  float d2 = gooCube(p, u_c2, u_sq2);
-  float d3 = gooCube(p, u_c3, u_sq3);
-  return smin(smin(d0, d1, BLEND_K), smin(d2, d3, BLEND_K), BLEND_K);
+  float d0 = gooCube(p, u_c0, u_sq0, u_da0);
+  float d1 = gooCube(p, u_c1, u_sq1, u_da1);
+  float d2 = gooCube(p, u_c2, u_sq2, u_da2);
+  float d3 = gooCube(p, u_c3, u_sq3, u_da3);
+  return smin(smin(d0,d1,BLEND_K), smin(d2,d3,BLEND_K), BLEND_K);
 }
 
 vec3 calcNormal(vec3 p) {
@@ -68,97 +79,119 @@ vec3 calcNormal(vec3 p) {
   ));
 }
 
+// ── Lighting helpers ──────────────────────────────────────────────────────────
+
 float softShadow(vec3 ro, vec3 rd, float mint, float maxt) {
-  float res = 1.0, t = mint;
-  for (int i = 0; i < 20; i++) {
-    if (t > maxt) break;
-    float h = scene(ro + rd*t);
-    if (h < 0.0004) return 0.0;
-    res = min(res, 7.0*h/t);
-    t  += clamp(h, 0.008, 0.25);
+  float res=1.0, t=mint;
+  for (int i=0;i<20;i++) {
+    if(t>maxt) break;
+    float h=scene(ro+rd*t);
+    if(h<0.0004) return 0.0;
+    res=min(res, 7.0*h/t);
+    t+=clamp(h,0.008,0.25);
   }
-  return clamp(res, 0.0, 1.0);
+  return clamp(res,0.0,1.0);
 }
 
 float calcAO(vec3 p, vec3 n) {
-  float occ = 0.0, sca = 1.0;
-  for (int i = 0; i < 5; i++) {
-    float h = 0.010 + 0.170 * float(i) / 4.0;
-    float d = scene(p + h*n);
-    occ += (h - d) * sca;
-    sca *= 0.80;
+  float occ=0.0, sca=1.0;
+  for(int i=0;i<5;i++){
+    float h=0.010+0.170*float(i)/4.0;
+    occ+=(h-scene(p+h*n))*sca;
+    sca*=0.80;
   }
-  return clamp(1.0 - 3.0*occ, 0.0, 1.0);
+  return clamp(1.0-3.0*occ, 0.0, 1.0);
 }
 
-mat3 camMatrix(vec3 ro, vec3 ta) {
-  vec3 ww = normalize(ta - ro);
-  vec3 uu = normalize(cross(ww, vec3(0,1,0)));
-  vec3 vv = normalize(cross(uu, ww));
-  return mat3(uu, vv, ww);
+// Simple procedural sky for environment reflections
+vec3 envSky(vec3 dir) {
+  float h = clamp(dir.y*0.5+0.5, 0.0, 1.0);
+  return mix(vec3(0.05,0.07,0.11), vec3(0.10,0.14,0.22), h*h);
 }
+
+// ── Surface material ──────────────────────────────────────────────────────────
 
 vec3 goopShade(vec3 p, vec3 N, vec3 V, float sh, float ao) {
-  vec3 L = LIGHT;
-  vec3 H = normalize(L + V);
+  vec3 H1  = normalize(KEY_L  + V);
+  vec3 H2  = normalize(FILL_L + V);
 
-  float NdL   = max(dot(N, L), 0.0);
-  float NdH   = max(dot(N, H), 0.0);
-  float NdV   = max(dot(N, V), 0.0);
+  float NdL1  = max(dot(N,KEY_L ), 0.0);
+  float NdL2  = max(dot(N,FILL_L), 0.0);
+  float NdH1  = max(dot(N,H1),     0.0);
+  float NdH2  = max(dot(N,H2),     0.0);
+  float NdV   = max(dot(N,V),      0.0);
 
-  float specA   = pow(NdH, 88.0) * 2.60;
-  float specB   = pow(NdH, 11.0) * 0.32;
-  float fresnel = pow(1.0 - NdV, 3.80) * 0.62;
-  float sss     = pow(max(0.0, -dot(N,L)*0.42+0.58), 2.2) * 0.42;
+  float specKey  = pow(NdH1, 92.0) * 2.80;      // sharp key specular
+  float specFill = pow(NdH2, 28.0) * 0.38;      // softer fill specular
+  float gloss    = pow(NdH1, 10.0) * 0.26;      // broad gloss layer
+  float fresnel  = pow(1.0-NdV,    3.80);
+  float sss      = pow(max(0.0, -dot(N,KEY_L)*0.42+0.58), 2.2) * 0.44;
+
+  // Environment reflection via reflected ray colour
+  vec3 reflDir = reflect(-V, N);
+  vec3 envRef  = envSky(reflDir) * (0.55 + 0.45*max(reflDir.y,0.0));
+  // Tint reflection slightly green (gel tints what it reflects)
+  envRef *= vec3(0.70, 1.00, 0.75);
 
   vec3 col =
-      vec3(0.012, 0.105, 0.045)
-    + vec3(0.090, 0.460, 0.200) * NdL
-    + vec3(0.850, 1.000, 0.920) * (specA + specB)
-    + vec3(0.050, 0.650, 0.280) * fresnel
-    + vec3(0.038, 0.680, 0.240) * sss;
+      vec3(0.010, 0.085, 0.035)                                // dark ambient
+    + vec3(0.080, 0.420, 0.175) * NdL1 * (sh*0.72+0.28)       // key diffuse
+    + vec3(0.022, 0.095, 0.048) * NdL2 * 0.38                 // fill diffuse
+    + vec3(0.900, 1.000, 0.930) * (specKey+specFill+gloss)     // specular
+    + vec3(0.050, 0.680, 0.290) * fresnel * 0.55               // Fresnel rim
+    + vec3(0.030, 0.620, 0.220) * sss                          // sub-surface
+    + envRef * fresnel * 0.52;                                  // env reflection
 
-  col *= (sh * 0.70 + 0.30);
-  col *= (ao * 0.65 + 0.35);
+  col *= (ao*0.60 + 0.40);
   return col;
 }
 
-// Background colour for a ray (ro,rd) — floor grid or sky, ignoring goop
+// ── Background (floor + sky) ──────────────────────────────────────────────────
+
+mat3 camMatrix(vec3 ro, vec3 ta) {
+  vec3 ww=normalize(ta-ro);
+  vec3 uu=normalize(cross(ww,vec3(0,1,0)));
+  vec3 vv=normalize(cross(uu,ww));
+  return mat3(uu,vv,ww);
+}
+
 vec3 getBg(vec3 ro, vec3 rd, vec2 uv) {
   if (rd.y < -0.0005) {
     float tF = -ro.y / rd.y;
-    if (tF > 0.0 && tF < 22.0) {
+    if (tF > 0.0 && tF < 28.0) {
       vec3  fp   = ro + rd*tF;
-      float chk  = mod(floor(fp.x) + floor(fp.z), 2.0);
-      vec3  base = mix(vec3(0.055,0.062,0.072), vec3(0.068,0.076,0.088), chk*0.45);
-      vec2  gf   = abs(fract(fp.xz) - 0.5);
-      float grid = max(0.0, 1.0 - min(gf.x, gf.y)*95.0);
-      base = mix(base, vec3(0.18,0.20,0.24), grid*0.55);
-      float sh  = softShadow(fp + vec3(0,0.003,0), LIGHT, 0.05, 7.0);
-      base *= (sh * 0.72 + 0.28);
-      float fog = 1.0 - exp(-max(tF-4.0,0.0)*0.045);
-      return mix(base, vec3(0.055,0.065,0.080), fog);
+      float chk  = mod(floor(fp.x)+floor(fp.z), 2.0);
+      vec3  base = mix(vec3(0.050,0.058,0.068), vec3(0.065,0.072,0.084), chk*0.45);
+      vec2  gf   = abs(fract(fp.xz)-0.5);
+      float grid = max(0.0, 1.0-min(gf.x,gf.y)*95.0);
+      base = mix(base, vec3(0.17,0.19,0.23), grid*0.55);
+      float sh  = softShadow(fp+vec3(0,0.003,0), KEY_L, 0.05, 9.0);
+      base *= (sh*0.70+0.30);
+      float fog = 1.0-exp(-max(tF-5.0,0.0)*0.035);
+      return mix(base, envSky(rd), fog);
     }
   }
-  return vec3(0.055,0.065,0.080) + vec3(0.010,0.012,0.018)*clamp(uv.y,0.0,1.0);
+  return envSky(rd);
 }
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 
 void main() {
   vec2 uv = (gl_FragCoord.xy - u_res*0.5) / u_res.y;
 
-  // Zoomed-out camera — same angle, pulled back ~35%
-  vec3 ro  = vec3(0.95, 3.80, 7.40);
-  vec3 ta  = vec3(0.05, 0.82, 0.0);
+  vec3 ro  = vec3(1.20, 5.50, 10.50);
+  vec3 ta  = vec3(0.00, 1.00,  0.00);
   mat3 cam = camMatrix(ro, ta);
   vec3 rd  = cam * normalize(vec3(uv, 1.85));
 
+  // ── Ray march ──
   float t   = 0.10;
   bool  hit = false;
-  for (int i = 0; i < 88; i++) {
-    float d = scene(ro + rd*t);
-    if (d < 0.0005) { hit = true; break; }
-    if (t > 22.0) break;
-    t += max(d, 0.004);
+  for (int i=0;i<88;i++) {
+    float d=scene(ro+rd*t);
+    if(d<0.0005){ hit=true; break; }
+    if(t>28.0) break;
+    t+=max(d,0.004);
   }
 
   vec3 col;
@@ -167,24 +200,36 @@ void main() {
     vec3  p  = ro + rd*t;
     vec3  N  = calcNormal(p);
     vec3  V  = -rd;
-    float sh = softShadow(p + N*0.008, LIGHT, 0.02, 7.0);
+    float sh = softShadow(p+N*0.008, KEY_L, 0.02, 9.0);
     float ao = calcAO(p, N);
-    vec3 surfCol = goopShade(p, N, V, sh, ao);
+    vec3  surfCol = goopShade(p, N, V, sh, ao);
 
-    // ── Translucency: Beer-Lambert absorption through gel thickness ──
-    // March forward from entry point until we exit the blob
-    float tX = t + 0.003;
-    for (int j = 0; j < 28; j++) {
-      float d = scene(ro + rd*tX);
-      if (d > 0.0005) break;
-      tX += max(abs(d) + 0.005, 0.005);
+    // ── Refraction + Beer-Lambert translucency ──
+    // Entry: air → gel (IOR 1.33)
+    vec3 refRd = refract(rd, N, 1.0/GEL_IOR);
+    if (dot(refRd,refRd) < 0.001) refRd = rd;
+
+    // March refracted ray through gel interior to find exit
+    vec3  rIn = p + refRd*0.003;
+    float tX  = 0.003;
+    for (int j=0;j<32;j++) {
+      float d = scene(rIn + refRd*tX);
+      if(d > 0.0005) break;
+      tX += max(abs(d)+0.004, 0.004);
     }
-    float thickness = tX - t;                          // ray path length inside gel
-    float alpha     = 1.0 - exp(-thickness * 0.42);   // absorption (lower k = more transparent)
+    vec3 exitP = rIn + refRd*tX;
 
-    // Background seen behind the gel, tinted green by the gel colour
-    vec3 bgCol = getBg(ro, rd, uv);
-    bgCol = mix(bgCol, vec3(0.03, 0.32, 0.12), (1.0 - alpha) * 0.55);
+    // Exit: gel → air
+    vec3 exitN  = -calcNormal(exitP);
+    vec3 exitRd = refract(refRd, exitN, GEL_IOR);
+    if (dot(exitRd,exitRd) < 0.001) exitRd = reflect(refRd, exitN);
+
+    // Beer-Lambert: thin edges near-transparent, thick centres semi-opaque
+    float alpha = 1.0 - exp(-tX * 0.22);
+
+    // Background through refracted exit ray, tinted by gel colour
+    vec3 bgCol = getBg(exitP, exitRd, uv);
+    bgCol = mix(bgCol, vec3(0.02, 0.28, 0.09), (1.0-alpha)*0.44);
 
     col = mix(bgCol, surfCol, alpha);
 
@@ -202,27 +247,58 @@ void main() {
 
 function compile(type, src) {
   const s = gl.createShader(type);
-  gl.shaderSource(s, src); gl.compileShader(s);
-  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  gl.shaderSource(s,src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
   return s;
 }
 const prog = gl.createProgram();
 gl.attachShader(prog, compile(gl.VERTEX_SHADER, VS));
 gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FS));
 gl.linkProgram(prog);
-if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+if (!gl.getProgramParameter(prog,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
 gl.useProgram(prog);
 
 const vbuf = gl.createBuffer();
 gl.bindBuffer(gl.ARRAY_BUFFER, vbuf);
 gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
-const aPos = gl.getAttribLocation(prog, 'a_pos');
+const aPos = gl.getAttribLocation(prog,'a_pos');
 gl.enableVertexAttribArray(aPos);
-gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+gl.vertexAttribPointer(aPos,2,gl.FLOAT,false,0,0);
 
 const U = {};
-['u_res','u_c0','u_c1','u_c2','u_c3','u_sq0','u_sq1','u_sq2','u_sq3']
-  .forEach(n => U[n] = gl.getUniformLocation(prog, n));
+['u_res',
+ 'u_c0','u_c1','u_c2','u_c3',
+ 'u_sq0','u_sq1','u_sq2','u_sq3',
+ 'u_da0','u_da1','u_da2','u_da3']
+  .forEach(n => U[n] = gl.getUniformLocation(prog,n));
+
+// ── 3-D vector helpers (for JS ray casting) ───────────────────────────────────
+
+const v3 = {
+  sub:   (a,b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]],
+  add:   (a,b) => [a[0]+b[0], a[1]+b[1], a[2]+b[2]],
+  scale: (a,s) => [a[0]*s,    a[1]*s,    a[2]*s   ],
+  dot:   (a,b) => a[0]*b[0]+a[1]*b[1]+a[2]*b[2],
+  cross: (a,b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]],
+  len:   (a)   => Math.sqrt(a[0]**2+a[1]**2+a[2]**2),
+  norm:  (a)   => { const l=Math.sqrt(a[0]**2+a[1]**2+a[2]**2)||1; return [a[0]/l,a[1]/l,a[2]/l]; },
+};
+
+// Convert screen pixel (px, py) → normalised 3-D ray direction
+// Must exactly mirror the shader's camera setup.
+function screenToRay(px, py) {
+  const W = window.innerWidth, H = window.innerHeight;
+  const uvx = (px - W/2) / H;
+  const uvy = -(py - H/2) / H;  // flip Y (screen top = GL bottom)
+  const ww = v3.norm(v3.sub(TAR, CAM));
+  const uu = v3.norm(v3.cross(ww, [0,1,0]));
+  const vv = v3.norm(v3.cross(uu, ww));
+  return v3.norm([
+    uu[0]*uvx + vv[0]*uvy + ww[0]*FOCAL,
+    uu[1]*uvx + vv[1]*uvy + ww[1]*FOCAL,
+    uu[2]*uvx + vv[2]*uvy + ww[2]*FOCAL,
+  ]);
+}
 
 // ── Physics ───────────────────────────────────────────────────────────────────
 
@@ -231,50 +307,83 @@ class GooCube {
     this.bx=bx; this.by=by; this.bz=bz;
     this.x=bx;  this.y=by;  this.z=bz;
     this.vx=0;  this.vy=0;  this.vz=0;
-    this.sq=1.0; this.sqV=0.0;
+    this.sq=1.0;  this.sqV=0.0;
+    // Deformation axis (default = Y-up; decays back to this after a hit)
+    this.dax=0.0; this.day=1.0; this.daz=0.0;
   }
+
   tick() {
+    // Position spring
     this.vx=(this.vx+(this.bx-this.x)*0.022)*0.89;
     this.vy=(this.vy+(this.by-this.y)*0.022)*0.89;
     this.vz=(this.vz+(this.bz-this.z)*0.022)*0.89;
     this.x+=this.vx; this.y+=this.vy; this.z+=this.vz;
+    // Squish oscillator
     this.sqV=(this.sqV-(this.sq-1.0)*0.24)*0.86;
     this.sq=Math.max(0.55, Math.min(1.60, this.sq+this.sqV));
+    // Deformation axis slowly returns toward Y-up
+    const t=0.030;
+    this.dax*=(1-t);
+    this.day=this.day*(1-t)+t;
+    this.daz*=(1-t);
+    const l=Math.sqrt(this.dax**2+this.day**2+this.daz**2)||1;
+    this.dax/=l; this.day/=l; this.daz/=l;
   }
-  hit(str) {
+
+  // Hit from direction (dx,dy,dz) — ray direction in world space
+  hitDir(dx, dy, dz, str) {
+    const l=Math.sqrt(dx*dx+dy*dy+dz*dz)||1;
+    // Deformation axis = hit direction (cube compresses along this axis)
+    this.dax=dx/l; this.day=dy/l; this.daz=dz/l;
     this.sqV -= str * 0.85;
-    this.vy  -= str * 0.10;
+    // Body nudge in push direction
+    this.vx += dx/l * str * 0.14;
+    this.vy += dy/l * str * 0.10;
+    this.vz += dz/l * str * 0.10;
   }
 }
 
-// Trefoil base + 1 top, matching reference arrangement
+// Trefoil base + 1 top
 const BY=0.525, TY=1.500, SP=0.640;
 const cubes = [
-  new GooCube(-SP,  BY,  0.310),   // front-left
-  new GooCube( SP,  BY,  0.310),   // front-right
-  new GooCube( 0.0, BY, -0.490),   // back-centre
-  new GooCube( 0.0, TY,  0.050),   // top
+  new GooCube(-SP,  BY,  0.310),
+  new GooCube( SP,  BY,  0.310),
+  new GooCube( 0.0, BY, -0.490),
+  new GooCube( 0.0, TY,  0.050),
 ];
 
 // ── Input ─────────────────────────────────────────────────────────────────────
 
-function applyHit() {
-  const base = 0.20 + Math.random()*0.12;
-  cubes[0].hit(base);
-  cubes[1].hit(base*0.92);
-  cubes[2].hit(base*0.88);
-  cubes[3].hit(base*0.60);
+function applyHit(px, py) {
+  const rd = screenToRay(px, py);        // ray from camera through tap point
+  const base = 0.22 + Math.random()*0.10;
+
+  cubes.forEach(c => {
+    // Distance from cube centre to the ray
+    const toCube = v3.sub([c.x,c.y,c.z], CAM);
+    const proj   = Math.max(0, v3.dot(toCube, rd));
+    const closest= v3.add(CAM, v3.scale(rd, proj));
+    const dist   = v3.len(v3.sub(closest, [c.x,c.y,c.z]));
+
+    // Strength falls off with distance from ray axis
+    const str = base * Math.exp(-dist * 0.65);
+    if (str > 0.01) c.hitDir(rd[0], rd[1], rd[2], str);
+  });
 }
-canvas.addEventListener('pointerdown', applyHit);
-canvas.addEventListener('touchstart', e=>{e.preventDefault();applyHit();},{passive:false});
+
+canvas.addEventListener('pointerdown', e => applyHit(e.clientX, e.clientY));
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  for (const t of e.changedTouches) applyHit(t.clientX, t.clientY);
+}, {passive:false});
 
 // ── Resize ────────────────────────────────────────────────────────────────────
 
 let W, H;
 function resize() {
-  const dpr = Math.min(window.devicePixelRatio||1, 1.5);
-  W=canvas.width  = Math.round(window.innerWidth *dpr);
-  H=canvas.height = Math.round(window.innerHeight*dpr);
+  const dpr=Math.min(window.devicePixelRatio||1, 1.5);
+  W=canvas.width =Math.round(window.innerWidth *dpr);
+  H=canvas.height=Math.round(window.innerHeight*dpr);
   gl.viewport(0,0,W,H);
 }
 resize();
@@ -285,15 +394,24 @@ window.addEventListener('resize', resize);
 function frame() {
   requestAnimationFrame(frame);
   cubes.forEach(c=>c.tick());
+
   gl.uniform2f(U.u_res, W, H);
+
   gl.uniform3f(U.u_c0, cubes[0].x, cubes[0].y, cubes[0].z);
   gl.uniform3f(U.u_c1, cubes[1].x, cubes[1].y, cubes[1].z);
   gl.uniform3f(U.u_c2, cubes[2].x, cubes[2].y, cubes[2].z);
   gl.uniform3f(U.u_c3, cubes[3].x, cubes[3].y, cubes[3].z);
+
   gl.uniform1f(U.u_sq0, cubes[0].sq);
   gl.uniform1f(U.u_sq1, cubes[1].sq);
   gl.uniform1f(U.u_sq2, cubes[2].sq);
   gl.uniform1f(U.u_sq3, cubes[3].sq);
+
+  gl.uniform3f(U.u_da0, cubes[0].dax, cubes[0].day, cubes[0].daz);
+  gl.uniform3f(U.u_da1, cubes[1].dax, cubes[1].day, cubes[1].daz);
+  gl.uniform3f(U.u_da2, cubes[2].dax, cubes[2].day, cubes[2].daz);
+  gl.uniform3f(U.u_da3, cubes[3].dax, cubes[3].day, cubes[3].daz);
+
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
 frame();
