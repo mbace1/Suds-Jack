@@ -22,7 +22,6 @@ if (!gl) {
   throw new Error('no webgl');
 }
 
-// Enable derivative extension for pixel-width-aware grid lines (optional)
 gl.getExtension('OES_standard_derivatives');
 
 // ── Shaders ───────────────────────────────────────────────────────────────────
@@ -44,58 +43,80 @@ uniform float u_shR;
 
 const float PI = 3.14159265358979;
 
+// Globe tilt: north pole is tilted 32° toward the viewer so latitude
+// rings project as ellipses (not flat lines) and the 3D is obvious.
+const float TC = 0.8480; // cos(32°)
+const float TS = 0.5299; // sin(32°)
+
 float field(vec2 p) {
-  vec2 d0 = p - u_c0; float f0 = u_r0*u_r0 / (dot(d0,d0) + 0.5);
-  vec2 d1 = p - u_c1; float f1 = u_r1*u_r1 / (dot(d1,d1) + 0.5);
-  vec2 d2 = p - u_c2; float f2 = u_r2*u_r2 / (dot(d2,d2) + 0.5);
-  return f0 + f1 + f2;
+  vec2 d0=p-u_c0; float f0=u_r0*u_r0/(dot(d0,d0)+0.5);
+  vec2 d1=p-u_c1; float f1=u_r1*u_r1/(dot(d1,d1)+0.5);
+  vec2 d2=p-u_c2; float f2=u_r2*u_r2/(dot(d2,d2)+0.5);
+  return f0+f1+f2;
 }
 
 vec3 surfaceNormal(vec2 p) {
   vec3 n = vec3(0.0);
-  vec2 d0 = p - u_c0; float dsq0 = dot(d0,d0); float rsq0 = u_r0*u_r0;
-  if (dsq0 < rsq0) { float w = rsq0/(dsq0+0.5); n += vec3(d0, sqrt(rsq0-dsq0))*(w/u_r0); }
-  vec2 d1 = p - u_c1; float dsq1 = dot(d1,d1); float rsq1 = u_r1*u_r1;
-  if (dsq1 < rsq1) { float w = rsq1/(dsq1+0.5); n += vec3(d1, sqrt(rsq1-dsq1))*(w/u_r1); }
-  vec2 d2 = p - u_c2; float dsq2 = dot(d2,d2); float rsq2 = u_r2*u_r2;
-  if (dsq2 < rsq2) { float w = rsq2/(dsq2+0.5); n += vec3(d2, sqrt(rsq2-dsq2))*(w/u_r2); }
-  return (dot(n,n) > 0.0001) ? normalize(n) : vec3(0.0, 0.0, 1.0);
+  vec2 d0=p-u_c0; float dsq0=dot(d0,d0); float rsq0=u_r0*u_r0;
+  if(dsq0<rsq0){float w=rsq0/(dsq0+0.5);n+=vec3(d0,sqrt(rsq0-dsq0))*(w/u_r0);}
+  vec2 d1=p-u_c1; float dsq1=dot(d1,d1); float rsq1=u_r1*u_r1;
+  if(dsq1<rsq1){float w=rsq1/(dsq1+0.5);n+=vec3(d1,sqrt(rsq1-dsq1))*(w/u_r1);}
+  vec2 d2=p-u_c2; float dsq2=dot(d2,d2); float rsq2=u_r2*u_r2;
+  if(dsq2<rsq2){float w=rsq2/(dsq2+0.5);n+=vec3(d2,sqrt(rsq2-dsq2))*(w/u_r2);}
+  return(dot(n,n)>0.0001)?normalize(n):vec3(0.0,0.0,1.0);
 }
 
-// Returns 1.0 on a grid line, 0.0 elsewhere.
-// Uses screen-space derivatives when available for pixel-perfect width.
+// Pixel-width-aware grid line detector. Returns 1 on line, 0 off.
 float gridLine(float v, float period) {
-  float f = mod(v, period) / period; // 0..1 within one period
+  float f = mod(v, period) / period;
   float nearest = min(f, 1.0 - f) * 2.0; // 0 at line centre, 1 at midpoint
   #ifdef GL_OES_standard_derivatives
-    float fw = max(fwidth(v), period * 0.004) * 1.6 / period;
+    float fw = max(fwidth(v), period * 0.004) * 1.8 / period;
     return 1.0 - smoothstep(0.0, fw, nearest);
   #else
-    return 1.0 - smoothstep(0.0, 0.10, nearest);
+    return 1.0 - smoothstep(0.0, 0.08, nearest);
   #endif
 }
 
-// Latitude/longitude grid for one sphere, weighted by its field contribution.
-// phi  = colatitude from front (0 = centre of disc, PI/2 = silhouette edge)
-// theta = longitude around Z axis (-PI .. PI)
-float sphereGrid(vec2 d, float r, float dsq) {
-  float z   = sqrt(max(r*r - dsq, 0.0));
-  float phi  = acos(clamp(z / r, 0.0, 1.0));
-  float theta = atan(d.y, d.x);
-  float lat  = gridLine(phi,  PI / 6.0);  // ring every 30°
-  float lon  = gridLine(theta, PI / 6.0); // meridian every 30°
-  return max(lat, lon);
+// Globe-oriented wireframe for one sphere.
+// The globe axis is tilted 32° forward (toward viewer) so that:
+//   - Latitude rings project as ellipses with visible height → clear 3D cue
+//   - Meridian arcs curve top-to-bottom across the visible face
+// Also shows back-hemisphere grid at 20% to reveal topology around the back.
+float sphereWire(vec2 d, float r, float dsq) {
+  float z = sqrt(max(r*r - dsq, 0.0));
+
+  // Front hemisphere 3D point: (d.x, d.y, +z)
+  // Rotate around screen-X by tilt angle:
+  //   yr = d.y*cos(t) - z*sin(t)     (tilted globe-Y = latitude axis)
+  //   zr = d.y*sin(t) + z*cos(t)     (used as globe-Z for longitude)
+  float yr_f =  d.y*TC - z*TS;
+  float zr_f =  d.y*TS + z*TC;
+
+  // Back hemisphere 3D point: (d.x, d.y, -z)
+  float yr_b =  d.y*TC + z*TS;
+  float zr_b =  d.y*TS - z*TC;
+
+  float lat_f = asin(clamp(yr_f / r, -1.0, 1.0));
+  float lat_b = asin(clamp(yr_b / r, -1.0, 1.0));
+  float lon_f = atan(d.x, zr_f);
+  float lon_b = atan(d.x, zr_b);
+
+  float front = max(gridLine(lat_f, PI/6.0), gridLine(lon_f, PI/6.0));
+  float back  = max(gridLine(lat_b, PI/6.0), gridLine(lon_b, PI/6.0)) * 0.20;
+
+  return max(front, back);
 }
 
 float wireframe(vec2 p) {
-  float wf = 0.0, tw = 0.0;
-  vec2 d0 = p - u_c0; float dsq0 = dot(d0,d0);
-  if (dsq0 < u_r0*u_r0) { float w = u_r0*u_r0/(dsq0+0.5); wf += sphereGrid(d0,u_r0,dsq0)*w; tw += w; }
-  vec2 d1 = p - u_c1; float dsq1 = dot(d1,d1);
-  if (dsq1 < u_r1*u_r1) { float w = u_r1*u_r1/(dsq1+0.5); wf += sphereGrid(d1,u_r1,dsq1)*w; tw += w; }
-  vec2 d2 = p - u_c2; float dsq2 = dot(d2,d2);
-  if (dsq2 < u_r2*u_r2) { float w = u_r2*u_r2/(dsq2+0.5); wf += sphereGrid(d2,u_r2,dsq2)*w; tw += w; }
-  return tw > 0.0 ? wf / tw : 0.0;
+  float wf=0.0, tw=0.0;
+  vec2 d0=p-u_c0; float dsq0=dot(d0,d0);
+  if(dsq0<u_r0*u_r0){float w=u_r0*u_r0/(dsq0+0.5);wf+=sphereWire(d0,u_r0,dsq0)*w;tw+=w;}
+  vec2 d1=p-u_c1; float dsq1=dot(d1,d1);
+  if(dsq1<u_r1*u_r1){float w=u_r1*u_r1/(dsq1+0.5);wf+=sphereWire(d1,u_r1,dsq1)*w;tw+=w;}
+  vec2 d2=p-u_c2; float dsq2=dot(d2,d2);
+  if(dsq2<u_r2*u_r2){float w=u_r2*u_r2/(dsq2+0.5);wf+=sphereWire(d2,u_r2,dsq2)*w;tw+=w;}
+  return tw>0.0 ? wf/tw : 0.0;
 }
 
 void main() {
@@ -105,8 +126,8 @@ void main() {
   // Background
   if (f < 1.0) {
     vec3 bg = vec3(0.016, 0.026, 0.052);
-    bg += vec3(0.0, 0.055, 0.018) * (f * f * 0.65);
-    vec2 sd = (p - u_sh) / vec2(u_shR * 6.5, u_shR * 0.85);
+    bg += vec3(0.0, 0.055, 0.018) * (f*f*0.65);
+    vec2 sd = (p-u_sh) / vec2(u_shR*6.5, u_shR*0.85);
     bg *= 1.0 - (1.0 - smoothstep(0.0, 1.2, dot(sd,sd))) * 0.58;
     gl_FragColor = vec4(bg, 1.0);
     return;
@@ -116,28 +137,29 @@ void main() {
   vec3 N = surfaceNormal(p);
   vec3 L = normalize(vec3(-0.56, 0.83, 0.80));
   vec3 V = vec3(0.0, 0.0, 1.0);
-  vec3 H = normalize(L + V);
+  vec3 H = normalize(L+V);
 
   float diff    = max(dot(N,L), 0.0);
   float specA   = pow(max(dot(N,H), 0.0), 96.0);
   float specB   = pow(max(dot(N,H), 0.0), 12.0) * 0.30;
   float fresnel = pow(1.0 - max(dot(N,V), 0.0), 3.2);
   float sss     = pow(max(-dot(N,L)*0.5+0.5, 0.0), 2.2) * 0.40;
-  float ao      = 1.0 - clamp((f - 1.0) * 0.013, 0.0, 0.40);
+  float ao      = 1.0 - clamp((f-1.0)*0.013, 0.0, 0.40);
 
   vec3 col = (vec3(0.012,0.055,0.018)
-            + vec3(0.10,0.56,0.18)*diff
-            + vec3(0.04,0.92,0.26)*sss) * ao
-           + vec3(0.72,1.00,0.82)*(specA*3.0+specB)
-           + vec3(0.00,0.78,0.36)*fresnel*0.52;
+            + vec3(0.10, 0.56, 0.18)*diff
+            + vec3(0.04, 0.92, 0.26)*sss) * ao
+           + vec3(0.72, 1.00, 0.82)*(specA*3.0+specB)
+           + vec3(0.00, 0.78, 0.36)*fresnel*0.52;
 
-  // Tonemap + gamma before wireframe so lines stay bright
+  // Dim the surface so wireframe pops
+  col *= 0.55;
   col = col / (col + vec3(0.75));
-  col = pow(col, vec3(1.0 / 2.2));
+  col = pow(col, vec3(1.0/2.2));
 
-  // Wireframe overlay — bright cyan-green lines
+  // Wireframe overlay
   float wf = wireframe(p);
-  col = mix(col, vec3(0.30, 1.00, 0.58), wf * 0.82);
+  col = mix(col, vec3(0.28, 1.00, 0.55), wf * 0.88);
 
   gl_FragColor = vec4(col, 1.0);
 }
@@ -185,37 +207,35 @@ for (let i = 0; i < NP; i++) {
 
 class GooBall {
   constructor(bx, by, r) {
-    this.bx = bx; this.by = by; this.r = r;
-    this.x  = bx; this.y  = by;
-    this.vx = 0;  this.vy = 0;
-    this.off = new Float32Array(NP);
-    this.vel = new Float32Array(NP);
+    this.bx=bx; this.by=by; this.r=r;
+    this.x=bx;  this.y=by;
+    this.vx=0;  this.vy=0;
+    this.off=new Float32Array(NP);
+    this.vel=new Float32Array(NP);
   }
   tick() {
-    const dx = this.bx - this.x, dy = this.by - this.y;
-    this.vx = (this.vx + dx * 0.018) * 0.91;
-    this.vy = (this.vy + dy * 0.018) * 0.91;
-    this.x += this.vx; this.y += this.vy;
-    for (let i = 0; i < NP; i++) {
-      this.vel[i] = (this.vel[i] - this.off[i] * 0.22) * 0.88;
-      this.off[i] += this.vel[i];
+    const dx=this.bx-this.x, dy=this.by-this.y;
+    this.vx=(this.vx+dx*0.018)*0.91;
+    this.vy=(this.vy+dy*0.018)*0.91;
+    this.x+=this.vx; this.y+=this.vy;
+    for(let i=0;i<NP;i++){
+      this.vel[i]=(this.vel[i]-this.off[i]*0.22)*0.88;
+      this.off[i]+=this.vel[i];
     }
   }
   hit(tx, ty, str) {
-    const dx = tx - this.x, dy = ty - this.y;
-    const d  = Math.sqrt(dx*dx + dy*dy) || 1;
-    for (let i = 0; i < NP; i++) {
-      const ex = this.x + COS[i]*this.r - tx;
-      const ey = this.y + SIN[i]*this.r - ty;
-      this.vel[i] += str * Math.exp(-Math.sqrt(ex*ex+ey*ey) / (this.r*4.5));
+    const dx=tx-this.x, dy=ty-this.y;
+    const d=Math.sqrt(dx*dx+dy*dy)||1;
+    for(let i=0;i<NP;i++){
+      const ex=this.x+COS[i]*this.r-tx;
+      const ey=this.y+SIN[i]*this.r-ty;
+      this.vel[i]+=str*Math.exp(-Math.sqrt(ex*ex+ey*ey)/(this.r*4.5));
     }
-    const body = str * 0.28 * Math.exp(-d / (this.r*3));
-    this.vx += (dx/d)*body; this.vy += (dy/d)*body;
+    const body=str*0.28*Math.exp(-d/(this.r*3));
+    this.vx+=(dx/d)*body; this.vy+=(dy/d)*body;
   }
   er() {
-    let s = 0;
-    for (let i = 0; i < NP; i++) s += this.off[i];
-    return this.r + s / NP;
+    let s=0; for(let i=0;i<NP;i++) s+=this.off[i]; return this.r+s/NP;
   }
 }
 
@@ -224,20 +244,19 @@ class GooBall {
 let W, H, balls;
 
 function layout() {
-  W = canvas.width  = window.innerWidth;
-  H = canvas.height = window.innerHeight;
-  gl.viewport(0, 0, W, H);
-  const cx = W * 0.5;
-  const r0 = Math.min(W, H) * 0.22;
-  const r1 = r0 * 0.72, r2 = r0 * 0.52;
-  const y0 = H * 0.80 - r0 * 0.1;
-  balls = [
-    new GooBall(cx, y0,                                         r0),
-    new GooBall(cx, y0 - (r0+r1)*0.82,                         r1),
-    new GooBall(cx, y0 - (r0+r1)*0.82 - (r1+r2)*0.81,         r2),
+  W=canvas.width=window.innerWidth;
+  H=canvas.height=window.innerHeight;
+  gl.viewport(0,0,W,H);
+  const cx=W*0.5;
+  const r0=Math.min(W,H)*0.22;
+  const r1=r0*0.72, r2=r0*0.52;
+  const y0=H*0.80-r0*0.1;
+  balls=[
+    new GooBall(cx, y0,                                        r0),
+    new GooBall(cx, y0-(r0+r1)*0.82,                          r1),
+    new GooBall(cx, y0-(r0+r1)*0.82-(r1+r2)*0.81,             r2),
   ];
 }
-
 layout();
 window.addEventListener('resize', layout);
 
@@ -247,15 +266,15 @@ function applyHit(px, py) { balls.forEach(b => b.hit(px, py, 14.0)); }
 canvas.addEventListener('pointerdown', e => applyHit(e.clientX, e.clientY));
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
-  for (const t of e.changedTouches) applyHit(t.clientX, t.clientY);
-}, { passive: false });
+  for(const t of e.changedTouches) applyHit(t.clientX, t.clientY);
+},{passive:false});
 
 // ── Render loop ───────────────────────────────────────────────────────────────
 
 function frame() {
   requestAnimationFrame(frame);
   balls.forEach(b => b.tick());
-  const [b0,b1,b2] = balls;
+  const [b0,b1,b2]=balls;
   gl.uniform2f(U.u_res, W, H);
   gl.uniform2f(U.u_c0, b0.x, H-b0.y);
   gl.uniform2f(U.u_c1, b1.x, H-b1.y);
@@ -267,7 +286,6 @@ function frame() {
   gl.uniform1f(U.u_shR, b0.r*0.55);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
-
 frame();
 </script>
 </body>
