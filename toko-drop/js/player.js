@@ -45,6 +45,24 @@ export class Player {
       scene.add(m);
       return { mesh: m, life: 0 };
     });
+
+    // Eyes — Kirby-style black ovals with white reflections
+    const eyeGeo = new THREE.SphereGeometry(0.13, 8, 6);
+    this._eyeL = new THREE.Mesh(eyeGeo, new THREE.MeshBasicMaterial({ color: 0x111111 }));
+    this._eyeR = new THREE.Mesh(eyeGeo, new THREE.MeshBasicMaterial({ color: 0x111111 }));
+    this._eyeL.scale.set(0.55, 1.15, 0.4);
+    this._eyeR.scale.set(0.55, 1.15, 0.4);
+    // White reflection dots as children
+    const reflGeo = new THREE.SphereGeometry(0.042, 5, 4);
+    const reflMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    [this._eyeL, this._eyeR].forEach(e => {
+      const r = new THREE.Mesh(reflGeo, reflMat);
+      r.position.set(0.04, 0.05, -0.025);
+      e.add(r);
+    });
+    scene.add(this._eyeL);
+    scene.add(this._eyeR);
+    this._eyesOn = true;
   }
 
   // Invincible during dash OR mercy frames after a hit
@@ -67,6 +85,8 @@ export class Player {
     this.mesh.visible = true;
     this.mesh.position.set(0, PLAYER_RADIUS, 0);
     for (const g of this._ghosts) { g.life = 0; g.mesh.visible = false; }
+    this._eyeL.visible = true;
+    this._eyeR.visible = true;
   }
 
   hit() {
@@ -171,11 +191,38 @@ export class Player {
       this._fireT = FIRE_RATE;
       this.onShoot?.();
     }
+
+    // ── Eyes ──────────────────────────────────────────────────────────────────
+    if (this._eyesOn) {
+      const ax = this._lastAim.x, az = this._lastAim.z;
+      const px = -az, pz = ax; // perpendicular
+      const ed = 0.4, es = 0.14; // eye distance from center, lateral separation
+      const ey = this.mesh.position.y + 0.16;
+      this._eyeL.position.set(
+        this.mesh.position.x + ax * ed + px * es, ey,
+        this.mesh.position.z + az * ed + pz * es);
+      this._eyeR.position.set(
+        this.mesh.position.x + ax * ed - px * es, ey,
+        this.mesh.position.z + az * ed - pz * es);
+      const ang = Math.atan2(ax, az);
+      this._eyeL.rotation.y = ang;
+      this._eyeR.rotation.y = ang;
+      this._eyeL.visible = this.alive;
+      this._eyeR.visible = this.alive;
+    }
   }
 
   die() {
     this.alive = false;
     this.mesh.visible = false;
     for (const g of this._ghosts) { g.life = 0; g.mesh.visible = false; }
+    this._eyeL.visible = false;
+    this._eyeR.visible = false;
+  }
+
+  toggleEyes() {
+    this._eyesOn = !this._eyesOn;
+    this._eyeL.visible = this._eyesOn && this.alive;
+    this._eyeR.visible = this._eyesOn && this.alive;
   }
 }

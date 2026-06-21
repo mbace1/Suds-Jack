@@ -1,30 +1,68 @@
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
-export const EnemyType = { BLOB: 0, SPITTER: 1, FANNER: 2, WEAVER: 3, SPLITTER: 4 };
-
-const CFG = {
-  [EnemyType.BLOB]:     { color: 0x00ccaa, radius: 0.55, speed: 2.8, hp: 1, bulletColor: null,     fireInterval: null },
-  [EnemyType.SPITTER]:  { color: 0xffaa00, radius: 0.9,  speed: 1.6, hp: 3, bulletColor: 0xffcc44, fireInterval: 2.2  },
-  [EnemyType.FANNER]:   { color: 0xff00aa, radius: 0.75, speed: 1.4, hp: 3, bulletColor: 0xff66cc, fireInterval: 1.5  },
-  [EnemyType.WEAVER]:   { color: 0xaa44ff, radius: 0.8,  speed: 0.6, hp: 3, bulletColor: 0xcc88ff, fireInterval: 0.08 },
-  [EnemyType.SPLITTER]: { color: 0x88ff22, radius: 1.1,  speed: 1.0, hp: 5, bulletColor: 0xaaff44, fireInterval: null },
+export const EnemyType = {
+  // Blob family (spheres)
+  GLOBBO:      0,
+  SPITTOR:     1,
+  FANNER:      2,
+  WEEVA:       3,
+  SPLITTA:     4,
+  // Cube family
+  YELA_CUBE:   5,
+  ORANGE_CUBE: 6,
+  SLUDGE_CUBE: 7,
+  REDD_CUBE:   8,
+  PURP_CUBE:   9,
+  // Cube minis (spawned on death)
+  REDD_MINI:   10,
+  PURP_MINI:   11,
+  // Unique
+  TORO:        12,
 };
 
-export const ENEMY_RADIUS = 0.9; // conservative max; per-type radius exposed via e.radius
+const CFG = {
+  [EnemyType.GLOBBO]:      { color: 0x00ccaa, radius: 0.55, speed: 2.8, hp: 1, bulletColor: null,     fireInterval: null },
+  [EnemyType.SPITTOR]:     { color: 0xff5533, radius: 0.9,  speed: 1.6, hp: 3, bulletColor: 0xff7755, fireInterval: 2.2  },
+  [EnemyType.FANNER]:      { color: 0xff00aa, radius: 0.75, speed: 1.4, hp: 3, bulletColor: 0xff66cc, fireInterval: 1.5  },
+  [EnemyType.WEEVA]:       { color: 0x4422ee, radius: 0.8,  speed: 0.6, hp: 3, bulletColor: 0x6644ff, fireInterval: 0.08 },
+  [EnemyType.SPLITTA]:     { color: 0x88ff22, radius: 1.1,  speed: 1.0, hp: 5, bulletColor: 0xaaff44, fireInterval: null },
+  [EnemyType.YELA_CUBE]:   { color: 0xffdd00, radius: 0.7,  speed: 2.2, hp: 2, bulletColor: null,     fireInterval: null },
+  [EnemyType.ORANGE_CUBE]: { color: 0xff8800, radius: 0.75, speed: 1.4, hp: 4, bulletColor: 0xff6600, fireInterval: 3.2  },
+  [EnemyType.SLUDGE_CUBE]: { color: 0xaaee00, radius: 0.65, speed: 0.75,hp: 2, bulletColor: null,     fireInterval: null },
+  [EnemyType.REDD_CUBE]:   { color: 0xff2211, radius: 0.75, speed: 1.9, hp: 3, bulletColor: null,     fireInterval: null },
+  [EnemyType.PURP_CUBE]:   { color: 0xcc44ff, radius: 0.75, speed: 1.6, hp: 3, bulletColor: null,     fireInterval: null },
+  [EnemyType.REDD_MINI]:   { color: 0xff4433, radius: 0.32, speed: 3.2, hp: 1, bulletColor: null,     fireInterval: null },
+  [EnemyType.PURP_MINI]:   { color: 0xdd66ff, radius: 0.26, speed: 3.8, hp: 1, bulletColor: null,     fireInterval: null },
+  [EnemyType.TORO]:        { color: 0x4488cc, radius: 1.0,  speed: 5.0, hp: 6, bulletColor: null,     fireInterval: null },
+};
+
+const BLOB_TYPES = new Set([
+  EnemyType.GLOBBO, EnemyType.SPITTOR, EnemyType.FANNER,
+  EnemyType.WEEVA, EnemyType.SPLITTA,
+]);
+
+const CUBE_TYPES = new Set([
+  EnemyType.YELA_CUBE, EnemyType.ORANGE_CUBE, EnemyType.SLUDGE_CUBE,
+  EnemyType.REDD_CUBE, EnemyType.PURP_CUBE, EnemyType.REDD_MINI, EnemyType.PURP_MINI,
+]);
+
+export const ENEMY_RADIUS = 1.0; // updated conservative max
 
 export class Enemy {
   constructor(scene, type, x, z, speedMult = 1, intervalMult = 1) {
     this.type          = type;
     this.alive         = true;
-    this.hp            = CFG[type].hp;
+    const cfg          = CFG[type];
+    this.hp            = cfg.hp;
     this._dying        = false;
     this._deathT       = 0;
     this._flashT       = 0;
     this._hitWobble    = 0;
-    this._wobbleT      = Math.random() * Math.PI * 2; // random phase so enemies don't pulse in sync
+    this._wobbleT      = Math.random() * Math.PI * 2;
     this._speedMult    = speedMult;
     this._intervalMult = intervalMult;
-    this._t            = Math.random() * 0.5;         // stagger initial fire
+    this._t            = Math.random() * 0.5;
     this._isTelegraphing = false;
     this._telegraphT   = 0;
     this._telegraphMax = 0;
@@ -33,27 +71,120 @@ export class Enemy {
     this._strafeDir    = 1;
     this._strafeTimer  = 1.5 + Math.random();
     this._childrenReady = false;
-    this.chunks        = []; // populated on death for main.js to consume
+    this._childType    = null;
+    this._childCount   = 0;
+    this._childFreeform = false;
+    this.chunks        = [];
 
-    const cfg = CFG[type];
-    const geo = new THREE.SphereGeometry(cfg.radius, 14, 10);
-    this.mat  = new THREE.MeshPhongMaterial({
+    // State machine fields
+    this._state        = 'idle';
+    this._stateT       = 0;
+    this._cardDir      = { x: 1, z: 0 };
+    this._cardTimer    = 0;
+    this._poisonReady  = false;
+    this._poisonTimer  = 0;
+
+    // Build geometry based on type family
+    let geo;
+    if (BLOB_TYPES.has(type)) {
+      geo = new THREE.SphereGeometry(cfg.radius, 14, 10);
+    } else if (CUBE_TYPES.has(type)) {
+      geo = new RoundedBoxGeometry(cfg.radius * 1.8, cfg.radius * 1.8, cfg.radius * 1.8, 4, 0.18);
+    } else if (type === EnemyType.TORO) {
+      geo = new THREE.TorusGeometry(cfg.radius * 0.68, cfg.radius * 0.32, 8, 18);
+    }
+
+    const isCube = CUBE_TYPES.has(type);
+    const isToro = type === EnemyType.TORO;
+    const matOpacity = isCube ? 0.88 : 0.82;
+    const matShininess = isToro ? 140 : 100;
+
+    this.mat = new THREE.MeshPhongMaterial({
       color:       cfg.color,
       emissive:    0x000000,
       transparent: true,
-      opacity:     0.82,
-      shininess:   80,
+      opacity:     matOpacity,
+      shininess:   matShininess,
     });
+
     this.mesh = new THREE.Mesh(geo, this.mat);
-    this.mesh.position.set(x, cfg.radius, z);
     this.mesh.castShadow = true;
-    scene.add(this.mesh);
+
+    if (type === EnemyType.TORO) {
+      // Toro uses a group for position management
+      this.mesh.rotation.x = Math.PI / 2;
+
+      // Add 6 spike meshes around the torus
+      this.group = new THREE.Group();
+      this.group.add(this.mesh);
+      const spikeGeo = new THREE.ConeGeometry(0.12, 0.3, 4);
+      const spikeMat = new THREE.MeshPhongMaterial({ color: cfg.color, shininess: 100 });
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        const spike = new THREE.Mesh(spikeGeo, spikeMat);
+        spike.position.set(Math.cos(a) * cfg.radius * 0.68, 0, Math.sin(a) * cfg.radius * 0.68);
+        spike.rotation.z = -Math.PI / 2;
+        spike.rotation.y = a;
+        this.group.add(spike);
+      }
+      this.group.position.set(x, cfg.radius, z);
+      scene.add(this.group);
+
+      // Indicator line for telegraph
+      const indGeo = new THREE.BoxGeometry(0.08, 0.05, 36);
+      this._indicator = new THREE.Mesh(indGeo, new THREE.MeshBasicMaterial({
+        color: 0xff2200, transparent: true, opacity: 0.55,
+      }));
+      this._indicator.visible = false;
+      scene.add(this._indicator);
+
+      // TORO-specific state
+      this._dashDir   = { x: 1, z: 0 };
+      this._dashSpeed = 0;
+      this._spinAngle = 0;
+      this._idleTimer = 1.5 + Math.random() * 2;
+      this._state     = 'idle';
+
+    } else {
+      this.mesh.position.set(x, cfg.radius, z);
+      scene.add(this.mesh);
+    }
+
+    // Cardinal mover initial direction
+    if (type === EnemyType.YELA_CUBE || type === EnemyType.REDD_CUBE) {
+      const dirs = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1}];
+      this._cardDir = dirs[Math.floor(Math.random() * 4)];
+      this._cardTimer = 1.8 + Math.random() * 2.0;
+    } else if (type === EnemyType.REDD_MINI) {
+      const dirs = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1}];
+      this._cardDir = dirs[Math.floor(Math.random() * 4)];
+      this._cardTimer = 0.4 + Math.random() * 0.8;
+    } else if (type === EnemyType.SLUDGE_CUBE) {
+      const dirs = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1},{x:0.7,z:0.7},{x:-0.7,z:0.7}];
+      const d = dirs[Math.floor(Math.random() * dirs.length)];
+      const len = Math.hypot(d.x, d.z);
+      this._cardDir = { x: d.x/len, z: d.z/len };
+      this._cardTimer = 3.0 + Math.random() * 2.0;
+      this._poisonTimer = 0.5;
+    } else if (type === EnemyType.PURP_MINI) {
+      const angle = Math.random() * Math.PI * 2;
+      this._cardDir = { x: Math.cos(angle), z: Math.sin(angle) };
+    } else if (type === EnemyType.ORANGE_CUBE) {
+      this._target = { x: (Math.random()-0.5)*24, z: (Math.random()-0.5)*24 };
+      this._target.x = Math.max(-16, Math.min(16, this._target.x));
+      this._target.z = Math.max(-16, Math.min(16, this._target.z));
+      this._shotsFired = 0;
+      this._fireDir = { x: 1, z: 0 };
+      this._state = 'moving';
+    }
   }
 
-  get position() { return this.mesh.position; }
-  get color()    { return CFG[this.type].color; }
-  get radius()   { return CFG[this.type].radius; }
-  get hpFrac()   { return this.hp / CFG[this.type].hp; }
+  get position() {
+    return this.type === EnemyType.TORO ? this.group.position : this.mesh.position;
+  }
+  get color()  { return CFG[this.type].color; }
+  get radius() { return CFG[this.type].radius; }
+  get hpFrac() { return this.hp / CFG[this.type].hp; }
 
   hit() {
     if (!this.alive) return false;
@@ -68,22 +199,24 @@ export class Enemy {
     if (!this.alive) return;
 
     const cfg  = CFG[this.type];
-    const ex   = this.mesh.position.x, ez = this.mesh.position.z;
+    const pos  = this.position;
+    const ex   = pos.x, ez = pos.z;
     const ddx  = playerPos.x - ex, ddz = playerPos.z - ez;
     const dist = Math.hypot(ddx, ddz) || 0.001;
     const spd  = cfg.speed * this._speedMult;
+    const H    = 17.5;
 
     // ── Movement ──────────────────────────────────────────────────────────────
     switch (this.type) {
-      case EnemyType.BLOB:
-      case EnemyType.SPLITTER:
+      case EnemyType.GLOBBO:
+      case EnemyType.SPLITTA:
         if (dist > 1.2) {
           this.mesh.position.x += (ddx / dist) * spd * dt;
           this.mesh.position.z += (ddz / dist) * spd * dt;
         }
         break;
 
-      case EnemyType.SPITTER: {
+      case EnemyType.SPITTOR: {
         const want = 10;
         if (dist > want + 1) {
           this.mesh.position.x += (ddx / dist) * spd * dt;
@@ -109,35 +242,262 @@ export class Enemy {
         break;
       }
 
-      case EnemyType.WEAVER:
-        // Lissajous drift — no direct pursuit
+      case EnemyType.WEEVA:
         this.mesh.position.x += Math.sin(this._wobbleT * 0.7) * spd * 0.5 * dt;
         this.mesh.position.z += Math.cos(this._wobbleT * 0.5) * spd * 0.5 * dt;
         break;
+
+      case EnemyType.YELA_CUBE:
+      case EnemyType.REDD_CUBE: {
+        this._cardTimer -= dt;
+        if (this._cardTimer <= 0) {
+          const dirs = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1}];
+          this._cardDir = dirs[Math.floor(Math.random() * 4)];
+          this._cardTimer = 1.8 + Math.random() * 2.0;
+        }
+        this.mesh.position.x += this._cardDir.x * spd * dt;
+        this.mesh.position.z += this._cardDir.z * spd * dt;
+        if (Math.abs(this.mesh.position.x) > H) {
+          this._cardDir.x = -Math.sign(this.mesh.position.x);
+          this.mesh.position.x = Math.sign(this.mesh.position.x) * H;
+          this._cardTimer = 0.5 + Math.random();
+        }
+        if (Math.abs(this.mesh.position.z) > H) {
+          this._cardDir.z = -Math.sign(this.mesh.position.z);
+          this.mesh.position.z = Math.sign(this.mesh.position.z) * H;
+          this._cardTimer = 0.5 + Math.random();
+        }
+        break;
+      }
+
+      case EnemyType.REDD_MINI: {
+        this._cardTimer -= dt;
+        if (this._cardTimer <= 0) {
+          const dirs = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1}];
+          this._cardDir = dirs[Math.floor(Math.random() * 4)];
+          this._cardTimer = 0.4 + Math.random() * 0.8;
+        }
+        this.mesh.position.x += this._cardDir.x * spd * dt;
+        this.mesh.position.z += this._cardDir.z * spd * dt;
+        if (Math.abs(this.mesh.position.x) > H) {
+          this._cardDir.x = -Math.sign(this.mesh.position.x);
+          this.mesh.position.x = Math.sign(this.mesh.position.x) * H;
+          this._cardTimer = 0.2 + Math.random() * 0.4;
+        }
+        if (Math.abs(this.mesh.position.z) > H) {
+          this._cardDir.z = -Math.sign(this.mesh.position.z);
+          this.mesh.position.z = Math.sign(this.mesh.position.z) * H;
+          this._cardTimer = 0.2 + Math.random() * 0.4;
+        }
+        break;
+      }
+
+      case EnemyType.SLUDGE_CUBE: {
+        this._cardTimer -= dt;
+        if (this._cardTimer <= 0) {
+          const dirs = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1},{x:0.7,z:0.7},{x:-0.7,z:0.7}];
+          const d = dirs[Math.floor(Math.random() * dirs.length)];
+          const len = Math.hypot(d.x, d.z);
+          this._cardDir = { x: d.x/len, z: d.z/len };
+          this._cardTimer = 3.0 + Math.random() * 2.0;
+        }
+        this.mesh.position.x += this._cardDir.x * spd * dt;
+        this.mesh.position.z += this._cardDir.z * spd * dt;
+        if (Math.abs(this.mesh.position.x) > H) {
+          this._cardDir.x = -Math.sign(this.mesh.position.x);
+          this.mesh.position.x = Math.sign(this.mesh.position.x) * H;
+          this._cardTimer = 1.0 + Math.random();
+        }
+        if (Math.abs(this.mesh.position.z) > H) {
+          this._cardDir.z = -Math.sign(this.mesh.position.z);
+          this.mesh.position.z = Math.sign(this.mesh.position.z) * H;
+          this._cardTimer = 1.0 + Math.random();
+        }
+        // Poison emission every 0.5s
+        this._poisonTimer -= dt;
+        if (this._poisonTimer <= 0) {
+          this._poisonTimer = 0.5;
+          this._poisonReady = true;
+        }
+        break;
+      }
+
+      case EnemyType.PURP_MINI: {
+        this.mesh.position.x += this._cardDir.x * spd * dt;
+        this.mesh.position.z += this._cardDir.z * spd * dt;
+        if (Math.abs(this.mesh.position.x) > H) {
+          this._cardDir.x *= -1;
+          this.mesh.position.x = Math.sign(this.mesh.position.x) * H;
+        }
+        if (Math.abs(this.mesh.position.z) > H) {
+          this._cardDir.z *= -1;
+          this.mesh.position.z = Math.sign(this.mesh.position.z) * H;
+        }
+        break;
+      }
+
+      case EnemyType.ORANGE_CUBE: {
+        switch (this._state) {
+          case 'moving': {
+            const tdx = this._target.x - ex, tdz = this._target.z - ez;
+            const td = Math.hypot(tdx, tdz);
+            if (td < 1.0) {
+              this._state = 'aiming';
+              this._stateT = 0.9;
+              const dirs8 = [
+                {x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1},
+                {x:0.707,z:0.707},{x:-0.707,z:0.707},{x:0.707,z:-0.707},{x:-0.707,z:-0.707},
+              ];
+              this._fireDir = dirs8[Math.floor(Math.random() * dirs8.length)];
+            } else {
+              this.mesh.position.x += (tdx/td) * spd * dt;
+              this.mesh.position.z += (tdz/td) * spd * dt;
+            }
+            break;
+          }
+          case 'aiming':
+            this._stateT -= dt;
+            if (this._stateT <= 0) {
+              this._state = 'shooting';
+              this._shotsFired = 0;
+              this._stateT = 0;
+            }
+            break;
+          case 'shooting':
+            this._stateT -= dt;
+            if (this._stateT <= 0 && this._shotsFired < 6) {
+              const perpX = -this._fireDir.z, perpZ = this._fireDir.x;
+              const t = (this._shotsFired / 5 - 0.5) * 4.0;
+              bullets.spawnDir(
+                ex + perpX * t, ez + perpZ * t,
+                this._fireDir.x, this._fireDir.z,
+                false, cfg.bulletColor, true
+              );
+              this._shotsFired++;
+              this._stateT = 0.75; // ~0.75s between each shot
+              if (this._shotsFired >= 6) {
+                this._state = 'cooldown';
+                this._stateT = 1.2;
+              }
+            }
+            break;
+          case 'cooldown':
+            this._stateT -= dt;
+            if (this._stateT <= 0) {
+              this._state = 'moving';
+              this._target = { x: (Math.random()-0.5)*26, z: (Math.random()-0.5)*26 };
+              this._target.x = Math.max(-16, Math.min(16, this._target.x));
+              this._target.z = Math.max(-16, Math.min(16, this._target.z));
+            }
+            break;
+        }
+        break;
+      }
+
+      case EnemyType.TORO: {
+        switch (this._state) {
+          case 'idle':
+            if (dist > 2) {
+              this.group.position.x += (ddx/dist) * 0.8 * dt;
+              this.group.position.z += (ddz/dist) * 0.8 * dt;
+            }
+            this._idleTimer -= dt;
+            if (this._idleTimer <= 0) {
+              this._state = 'revving';
+              this._stateT = 1.6;
+              const dl = Math.hypot(ddx, ddz) || 1;
+              this._dashDir = { x: ddx/dl, z: ddz/dl };
+              const ang = Math.round(Math.atan2(this._dashDir.z, this._dashDir.x) / (Math.PI/4)) * (Math.PI/4);
+              this._dashDir = { x: Math.cos(ang), z: Math.sin(ang) };
+            }
+            break;
+          case 'revving':
+            this._stateT -= dt;
+            this._spinAngle += (3 + (1.6 - Math.max(this._stateT, 0)) * 8) * dt;
+            this.group.rotation.y = this._spinAngle;
+            if (this._stateT <= 0) {
+              this._state = 'telegraphing';
+              this._stateT = 0.5;
+              const midX = this.group.position.x + this._dashDir.x * 18;
+              const midZ = this.group.position.z + this._dashDir.z * 18;
+              this._indicator.position.set(midX, 0.03, midZ);
+              const ang2 = Math.atan2(this._dashDir.x, this._dashDir.z);
+              this._indicator.rotation.y = ang2;
+              this._indicator.visible = true;
+            }
+            break;
+          case 'telegraphing':
+            this._stateT -= dt;
+            this._indicator.material.opacity = (Math.sin(this._stateT * 25) > 0) ? 0.7 : 0.15;
+            if (this._stateT <= 0) {
+              this._indicator.visible = false;
+              this._state = 'dashing';
+              this._dashSpeed = 22;
+            }
+            break;
+          case 'dashing':
+            this._dashSpeed = Math.max(this._dashSpeed - 8 * dt, 14);
+            this.group.position.x += this._dashDir.x * this._dashSpeed * dt;
+            this.group.position.z += this._dashDir.z * this._dashSpeed * dt;
+            this._spinAngle += 12 * dt;
+            this.group.rotation.y = this._spinAngle;
+            if (Math.abs(this.group.position.x) > 17 || Math.abs(this.group.position.z) > 17) {
+              this.group.position.x = Math.max(-17, Math.min(17, this.group.position.x));
+              this.group.position.z = Math.max(-17, Math.min(17, this.group.position.z));
+              this._state = 'recovering';
+              this._stateT = 0.8;
+              this._hitWobble = 0.5;
+            }
+            break;
+          case 'recovering':
+            this._stateT -= dt;
+            if (this._stateT <= 0) {
+              this._state = 'idle';
+              this._idleTimer = 1.0 + Math.random() * 1.5;
+            }
+            break;
+        }
+        break;
+      }
     }
 
     // ── Flash / emissive ──────────────────────────────────────────────────────
     if (this._flashT > 0) {
       this._flashT -= dt;
       this.mat.emissive.setHex(0xffffff);
+    } else if (this.type === EnemyType.ORANGE_CUBE && this._state === 'aiming') {
+      this.mat.emissive.setHex(Math.sin(performance.now() * 0.015) > 0 ? 0x442200 : 0x000000);
+    } else if (this.type === EnemyType.TORO && this._state === 'revving') {
+      const ramp = Math.max(0, 1.6 - Math.max(this._stateT, 0)) / 1.6;
+      const v = Math.floor(ramp * 0x33);
+      this.mat.emissive.setHex((v << 8) | (v * 0.5));
     } else if (this._isTelegraphing) {
-      this.mat.emissive.setHex(this.type === EnemyType.SPITTER ? 0x442200 : 0x440022);
+      this.mat.emissive.setHex(this.type === EnemyType.SPITTOR ? 0x442200 : 0x440022);
     } else {
       this.mat.emissive.setHex(0x000000);
     }
 
-    // ── Wobble / scale (gelatin idle breathe + hit squash) ───────────────────
+    // ── Wobble / scale ────────────────────────────────────────────────────────
     this._wobbleT += dt;
     if (this._hitWobble > 0) this._hitWobble = Math.max(0, this._hitWobble - dt * 2.0);
-    const isSplitter = this.type === EnemyType.SPLITTER;
-    const amp     = isSplitter ? 0.10 : 0.04;
-    const freq    = isSplitter ? 4.0  : 2.8;
-    const breathe = amp * Math.sin(this._wobbleT * freq);
-    // SPITTER telegraph overrides scale in _tick(); skip wobble while telegraphing
-    if (!this._isTelegraphing || this.type !== EnemyType.SPITTER) {
-      const sy  = Math.max(0.1, 1 + breathe - this._hitWobble);
-      const sxz = Math.max(0.1, 1 - breathe * 0.5 + this._hitWobble * 0.5);
-      this.mesh.scale.set(sxz, sy, sxz);
+
+    if (this.type !== EnemyType.TORO) {
+      const isSplitOrBig = this.type === EnemyType.SPLITTA;
+      const amp  = isSplitOrBig ? 0.10 : (CUBE_TYPES.has(this.type) ? 0.035 : 0.04);
+      const freq = isSplitOrBig ? 4.0  : (CUBE_TYPES.has(this.type) ? 2.2   : 2.8);
+      const breathe = amp * Math.sin(this._wobbleT * freq);
+      if (!this._isTelegraphing || this.type !== EnemyType.SPITTOR) {
+        const sy  = Math.max(0.1, 1 + breathe - this._hitWobble);
+        const sxz = Math.max(0.1, 1 - breathe * 0.5 + this._hitWobble * 0.5);
+        this.mesh.scale.set(sxz, sy, sxz);
+      }
+    } else {
+      // TORO: hit squash only
+      if (this._hitWobble > 0) {
+        this.mesh.scale.setScalar(Math.max(0.1, 1 + this._hitWobble * 0.3));
+      } else {
+        this.mesh.scale.setScalar(1);
+      }
     }
 
     // ── Fire ──────────────────────────────────────────────────────────────────
@@ -149,14 +509,14 @@ export class Enemy {
     const cfg = CFG[this.type];
     if (!cfg.fireInterval) return;
 
-    const interval = this.type === EnemyType.WEAVER
+    const interval = this.type === EnemyType.WEEVA
       ? cfg.fireInterval
       : cfg.fireInterval * this._intervalMult;
 
-    const ex = this.mesh.position.x, ez = this.mesh.position.z;
+    const ex = this.position.x, ez = this.position.z;
 
     switch (this.type) {
-      case EnemyType.SPITTER:
+      case EnemyType.SPITTOR:
         if (!this._isTelegraphing && this._t >= interval) {
           this._t              = 0;
           this._telegraphT     = 0.6;
@@ -190,7 +550,7 @@ export class Enemy {
             if (len > 0) {
               const base  = Math.atan2(adz, adx);
               const count = 6;
-              const span  = Math.PI * 0.6; // 108° total spread
+              const span  = Math.PI * 0.6;
               for (let j = 0; j < count; j++) {
                 const a = base - span / 2 + j * (span / (count - 1));
                 bullets.spawnDir(ex, ez, Math.cos(a), Math.sin(a), false, cfg.bulletColor);
@@ -200,7 +560,7 @@ export class Enemy {
         }
         break;
 
-      case EnemyType.WEAVER: {
+      case EnemyType.WEEVA: {
         const rotSpeed = (0.38 + this._spiralAccel) / this._intervalMult;
         if (this._t >= cfg.fireInterval) {
           this._t = 0;
@@ -224,12 +584,23 @@ export class Enemy {
     if (!this._dying) return;
     this._deathT -= dt;
     const t = 1 - Math.max(this._deathT, 0) / 0.28;
-    this.mesh.scale.setScalar(1 + t * 2.2);
-    this.mat.opacity = (1 - t) * 0.82;
+
+    if (this.type === EnemyType.TORO) {
+      this.group.scale.setScalar(1 + t * 2.2);
+    } else {
+      this.mesh.scale.setScalar(1 + t * 2.2);
+    }
+    this.mat.opacity = (1 - t) * (CUBE_TYPES.has(this.type) ? 0.88 : 0.82);
+
     if (this._deathT <= 0) {
       this._dying = false;
       this.mesh.visible = false;
-      if (this.type === EnemyType.SPLITTER) this._childrenReady = true;
+      // Signal children ready
+      if (this.type === EnemyType.SPLITTA ||
+          this.type === EnemyType.REDD_CUBE ||
+          this.type === EnemyType.PURP_CUBE) {
+        this._childrenReady = true;
+      }
     }
   }
 
@@ -240,27 +611,68 @@ export class Enemy {
     this.mat.emissive.setHex(0xffffff);
     this.mat.transparent = true;
     this.mat.depthWrite  = false;
-    this.mesh.scale.setScalar(1);
+    if (this.type === EnemyType.TORO) {
+      this.group.scale.setScalar(1);
+    } else {
+      this.mesh.scale.setScalar(1);
+    }
     this.mesh.visible = true;
 
-    // Chunk spawn data for main.js
-    const count = 5 + Math.floor(Math.random() * 2);
+    // Chunk spawn data
+    let count, chunkSize;
+    switch (this.type) {
+      case EnemyType.TORO:
+        count = 8; chunkSize = 0.25; break;
+      case EnemyType.REDD_MINI:
+      case EnemyType.PURP_MINI:
+        count = 2 + Math.floor(Math.random() * 2); chunkSize = 0.12; break;
+      default:
+        count = 5 + Math.floor(Math.random() * 2); chunkSize = 0.18; break;
+    }
+
+    const pos = this.position;
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
       const hspd  = 3 + Math.random() * 4;
       this.chunks.push({
-        x:  this.mesh.position.x,
-        y:  this.mesh.position.y,
-        z:  this.mesh.position.z,
+        x:  pos.x,
+        y:  pos.y,
+        z:  pos.z,
         vx: Math.cos(angle) * hspd,
         vy: 3 + Math.random() * 5,
         vz: Math.sin(angle) * hspd,
+        size: chunkSize,
       });
+    }
+
+    // Set child spawn info for SPLITTA, REDD_CUBE, PURP_CUBE
+    if (this.type === EnemyType.SPLITTA) {
+      this._childType    = EnemyType.GLOBBO;
+      this._childCount   = 2 + Math.floor(Math.random() * 2);
+      this._childFreeform = false;
+    } else if (this.type === EnemyType.REDD_CUBE) {
+      this._childType    = EnemyType.REDD_MINI;
+      this._childCount   = 4;
+      this._childFreeform = false;
+    } else if (this.type === EnemyType.PURP_CUBE) {
+      this._childType    = EnemyType.PURP_MINI;
+      this._childCount   = 5 + Math.floor(Math.random() * 3);
+      this._childFreeform = true;
+    }
+
+    // Hide indicator for TORO
+    if (this.type === EnemyType.TORO && this._indicator) {
+      this._indicator.visible = false;
     }
   }
 
   removeFrom(scene) {
     this.mesh.visible = false;
-    scene.remove(this.mesh);
+    if (this.type === EnemyType.TORO) {
+      scene.remove(this.group);
+      if (this._indicator) scene.remove(this._indicator);
+    } else {
+      scene.remove(this.mesh);
+    }
   }
 }

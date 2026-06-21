@@ -1,12 +1,11 @@
 import * as THREE from 'three';
 import { InputManager } from './input.js';
-import { BulletPool } from './bullet.js';
+import { BulletPool, BULLET_R, FAT_BULLET_R } from './bullet.js';
 import { Player, PLAYER_RADIUS } from './player.js';
 import { Enemy, EnemyType, ENEMY_RADIUS } from './enemy.js';
 import { audio } from './audio.js';
 
-const HALF     = 18;
-const BULLET_R = 0.15;
+const HALF = 18;
 
 // ── Wave scaling (Nex Machina pacing) ─────────────────────────────────────────
 function getWaveScale(wave) {
@@ -18,11 +17,15 @@ function getWaveScale(wave) {
 }
 
 function getEnemyComposition(wave) {
-  const { BLOB, SPITTER, FANNER, WEAVER, SPLITTER } = EnemyType;
-  if (wave === 1) return [BLOB, SPITTER, FANNER, WEAVER];
-  if (wave === 2) return [BLOB, BLOB, SPITTER, FANNER, WEAVER];
-  if (wave < 6)  return [BLOB, BLOB, SPITTER, FANNER, WEAVER, SPLITTER];
-  return                 [BLOB, BLOB, SPLITTER, SPITTER, FANNER, WEAVER, SPLITTER];
+  const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
+          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO } = EnemyType;
+  if (wave === 1) return [GLOBBO, SPITTOR, FANNER, WEEVA];
+  if (wave === 2) return [GLOBBO, YELA_CUBE, SPITTOR, FANNER, WEEVA];
+  if (wave === 3) return [GLOBBO, YELA_CUBE, ORANGE_CUBE, SPITTOR, FANNER, WEEVA];
+  if (wave === 4) return [GLOBBO, YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, FANNER, WEEVA, SPLITTA];
+  if (wave === 5) return [GLOBBO, REDD_CUBE, ORANGE_CUBE, SLUDGE_CUBE, SPITTOR, WEEVA, SPLITTA];
+  if (wave === 6) return [YELA_CUBE, REDD_CUBE, PURP_CUBE, ORANGE_CUBE, SPITTOR, FANNER, TORO];
+  return [GLOBBO, REDD_CUBE, PURP_CUBE, ORANGE_CUBE, SLUDGE_CUBE, SPLITTA, TORO];
 }
 
 // ── Renderer ──────────────────────────────────────────────────────────────────
@@ -92,11 +95,11 @@ scene.add(border);
 
 // ── Death FX: chunks + puddles ────────────────────────────────────────────────
 class Chunk {
-  constructor(sc, x, y, z, vx, vy, vz, color) {
+  constructor(sc, x, y, z, vx, vy, vz, color, size = 0.18) {
     this.vx = vx; this.vy = vy; this.vz = vz;
     this._life = 1.4;
     this.mat  = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1 });
-    this.mesh = new THREE.Mesh(new THREE.SphereGeometry(0.18, 5, 3), this.mat);
+    this.mesh = new THREE.Mesh(new THREE.SphereGeometry(size, 5, 3), this.mat);
     this.mesh.position.set(x, y, z);
     sc.add(this.mesh);
   }
@@ -133,14 +136,47 @@ class Puddle {
   remove(sc) { sc.remove(this.mesh); }
 }
 
+class PoisonZone {
+  constructor(sc, x, z, radius) {
+    this._life = 3.5;
+    this.radius = radius;
+    this.mat = new THREE.MeshBasicMaterial({
+      color: 0x88cc00,
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false,
+    });
+    this.mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, 10), this.mat);
+    this.mesh.rotation.x = -Math.PI / 2;
+    this.mesh.position.set(x, 0.015, z);
+    sc.add(this.mesh);
+  }
+  get isDangerous() { return this._life > 1.0; }
+  update(dt) {
+    this._life -= dt;
+    this.mat.opacity = this._life > 1.0 ? 0.55 : 0.28 * (this._life / 1.0);
+    return this._life > 0;
+  }
+  remove(sc) { sc.remove(this.mesh); }
+}
+
+// ── Melee types ───────────────────────────────────────────────────────────────
+const MELEE_TYPES = new Set([
+  EnemyType.GLOBBO, EnemyType.SPLITTA,
+  EnemyType.YELA_CUBE, EnemyType.SLUDGE_CUBE, EnemyType.REDD_CUBE, EnemyType.PURP_CUBE,
+  EnemyType.REDD_MINI, EnemyType.PURP_MINI,
+  EnemyType.TORO,
+]);
+
 // ── Game objects ──────────────────────────────────────────────────────────────
 const input   = new InputManager();
 const bullets = new BulletPool(scene);
 const player  = new Player(scene);
-let enemies   = [];
-let chunks    = [];
-let puddles   = [];
-let wave      = 0;
+let enemies     = [];
+let chunks      = [];
+let puddles     = [];
+let poisonZones = [];
+let wave        = 0;
 
 // ── Score ─────────────────────────────────────────────────────────────────────
 let score   = 0;
@@ -154,7 +190,7 @@ function onKill(e) {
   audio.enemyDie();
   // Spawn death FX from chunk data populated by e.destroy()
   for (const cd of e.chunks) {
-    chunks.push(new Chunk(scene, cd.x, cd.y, cd.z, cd.vx, cd.vy, cd.vz, e.color));
+    chunks.push(new Chunk(scene, cd.x, cd.y, cd.z, cd.vx, cd.vy, cd.vz, e.color, cd.size));
   }
   puddles.push(new Puddle(scene, e.position.x, e.position.z, e.color, e.radius * 1.5));
 }
@@ -264,7 +300,8 @@ function showTitle() {
     `<div style="font-size:16px;opacity:0.8">SPACE / TAP TO START</div>` +
     `<div style="font-size:12px;opacity:0.4;margin-top:12px">` +
     `WASD + hold LMB to aim/fire · SPACE to dash<br>` +
-    `Right stick to aim/fire · release to dash · ESC pause</div>`;
+    `Right stick to aim/fire · release to dash · ESC pause<br>` +
+    `E to toggle eyes</div>`;
 }
 
 function showPause() {
@@ -292,8 +329,9 @@ function announceWave() {
 
 // ── Wave / restart helpers ────────────────────────────────────────────────────
 function clearFX() {
-  for (const c of chunks)  c.remove(scene);  chunks  = [];
-  for (const p of puddles) p.remove(scene);  puddles = [];
+  for (const c of chunks)      c.remove(scene); chunks      = [];
+  for (const p of puddles)     p.remove(scene); puddles     = [];
+  for (const z of poisonZones) z.remove(scene); poisonZones = [];
 }
 
 function spawnWave() {
@@ -349,6 +387,7 @@ input.onPause = () => {
 // Space also starts from title on desktop (keyup so the same keyup doesn't also trigger dash)
 window.addEventListener('keyup', e => {
   if (e.code === 'Space' && gameState === 'title') startGame();
+  if (e.code === 'KeyE') player.toggleEyes();
 });
 // Tap anywhere (outside stick zones) starts from title on mobile
 window.addEventListener('touchend', () => {
@@ -421,22 +460,40 @@ function loop() {
   for (let i = puddles.length - 1; i >= 0; i--) {
     if (!puddles[i].update(dt)) { puddles[i].remove(scene); puddles.splice(i, 1); }
   }
+  for (let i = poisonZones.length - 1; i >= 0; i--) {
+    if (!poisonZones[i].update(dt)) { poisonZones[i].remove(scene); poisonZones.splice(i, 1); }
+  }
 
-  // Check for SPLITTER children to spawn (after death animation completes)
+  // Sludge poison emission
+  for (const e of enemies) {
+    if (!e._poisonReady) continue;
+    e._poisonReady = false;
+    poisonZones.push(new PoisonZone(scene, e.position.x, e.position.z, e.radius * 1.8));
+  }
+
+  // Check for children to spawn (SPLITTA, REDD_CUBE, PURP_CUBE)
   const toSpawn = [];
   for (const e of enemies) {
     if (!e._childrenReady) continue;
     e._childrenReady = false;
-    const count = 2 + Math.floor(Math.random() * 2);
+    const count     = e._childCount || (2 + Math.floor(Math.random() * 2));
+    const childType = e._childType  || EnemyType.GLOBBO;
+    const freeform  = e._childFreeform || false;
     for (let j = 0; j < count; j++) {
-      const a = (j / count) * Math.PI * 2 + Math.random() * 0.5;
-      const r = 1.5 + Math.random() * 1.5;
-      toSpawn.push({ x: e.position.x + Math.cos(a) * r, z: e.position.z + Math.sin(a) * r,
-                     sm: e._speedMult, im: e._intervalMult });
+      const a = freeform
+        ? Math.random() * Math.PI * 2
+        : (j / count) * Math.PI * 2 + Math.random() * 0.3;
+      const r = 1.2 + Math.random() * 1.5;
+      toSpawn.push({
+        type: childType,
+        x: e.position.x + Math.cos(a) * r,
+        z: e.position.z + Math.sin(a) * r,
+        sm: e._speedMult, im: e._intervalMult,
+      });
     }
   }
   for (const s of toSpawn) {
-    enemies.push(new Enemy(scene, EnemyType.BLOB, s.x, s.z, s.sm, s.im));
+    enemies.push(new Enemy(scene, s.type, s.x, s.z, s.sm, s.im));
   }
 
   // Collision: player bullets → enemies
@@ -452,8 +509,8 @@ function loop() {
         bullets.recycleAt(i);
         if (died) {
           onKill(e);
-          // SPLITTER fires a death-burst ring
-          if (e.type === EnemyType.SPLITTER) {
+          // SPLITTA fires a death-burst ring
+          if (e.type === EnemyType.SPLITTA) {
             for (let j = 0; j < 12; j++) {
               const a = (j / 12) * Math.PI * 2;
               bullets.spawnDir(e.position.x, e.position.z, Math.cos(a), Math.sin(a), false, 0xaaff44);
@@ -474,7 +531,8 @@ function loop() {
       if (b.isPlayer) continue;
       const dx = b.mesh.position.x - player.position.x;
       const dz = b.mesh.position.z - player.position.z;
-      if (Math.hypot(dx, dz) < BULLET_R + PLAYER_RADIUS) {
+      const br = b.fat ? FAT_BULLET_R : BULLET_R;
+      if (Math.hypot(dx, dz) < br + PLAYER_RADIUS) {
         player.hit();
         bullets.recycleAt(i);
         onPlayerHit();
@@ -484,16 +542,28 @@ function loop() {
     }
   }
 
-  // Contact damage: BLOB and SPLITTER bodies
+  // Contact damage: melee-type enemies
   if (!player.invincible) {
     for (const e of enemies) {
-      if (e.type !== EnemyType.BLOB && e.type !== EnemyType.SPLITTER) continue;
-      if (!e.alive) continue;
+      if (!MELEE_TYPES.has(e.type) || !e.alive) continue;
       const dx = player.position.x - e.position.x;
       const dz = player.position.z - e.position.z;
       if (Math.hypot(dx, dz) < e.radius + PLAYER_RADIUS) {
-        player.hit();
-        onPlayerHit();
+        player.hit(); onPlayerHit();
+        if (!player.alive) { triggerGameOver(); break; }
+        break;
+      }
+    }
+  }
+
+  // Poison zone player collision
+  if (!player.invincible) {
+    for (const z of poisonZones) {
+      if (!z.isDangerous) continue;
+      const dx = player.position.x - z.mesh.position.x;
+      const dz = player.position.z - z.mesh.position.z;
+      if (Math.hypot(dx, dz) < z.radius + PLAYER_RADIUS) {
+        player.hit(); onPlayerHit();
         if (!player.alive) { triggerGameOver(); break; }
         break;
       }
