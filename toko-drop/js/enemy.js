@@ -19,6 +19,7 @@ export const EnemyType = {
   PURP_MINI:   11,
   // Unique
   TORO:        12,
+  BAMBU:       13,
 };
 
 const CFG = {
@@ -35,6 +36,7 @@ const CFG = {
   [EnemyType.REDD_MINI]:   { color: 0xff4433, radius: 0.32, speed: 3.2, hp: 1, bulletColor: null,     fireInterval: null },
   [EnemyType.PURP_MINI]:   { color: 0xdd66ff, radius: 0.26, speed: 3.8, hp: 1, bulletColor: null,     fireInterval: null },
   [EnemyType.TORO]:        { color: 0x4488cc, radius: 1.0,  speed: 5.0, hp: 6, bulletColor: null,     fireInterval: null },
+  [EnemyType.BAMBU]:       { color: 0xaa8844, radius: 0.7,  speed: 0,   hp: 1, bulletColor: 0xddbb44, fireInterval: 4.0  },
 };
 
 const BLOB_TYPES = new Set([
@@ -87,6 +89,9 @@ export class Enemy {
     this._poisonTimer  = 0;
     this._aimArrow     = null;
     this._totalShots   = 6;
+    this._hitChunks    = [];
+    this._aoeReady     = false;
+    this._lobReady     = null;
 
     // Build geometry based on type family
     let geo;
@@ -149,6 +154,39 @@ export class Enemy {
       this._idleTimer = 1.5 + Math.random() * 2;
       this._state     = 'idle';
 
+    } else if (type === EnemyType.BAMBU) {
+      // BAMBU: stationary cross-stalk enemy
+      this._bambuMat = new THREE.MeshPhongMaterial({
+        color: cfg.color, transparent: true, opacity: 0.88, shininess: 80,
+      });
+      this.mat = this._bambuMat;
+      this.group = new THREE.Group();
+      this.group.position.set(x, 0, z);
+      scene.add(this.group);
+
+      const tier = Math.floor(intervalMult > 0 ? (1 - intervalMult) / 0.09 : 0);
+      this._maxSegs = tier < 2 ? 1 : tier < 4 ? 2 : 3;
+      this._segs = [];
+      this._segs.push(this._makeBambuSeg(0));
+      this.hp = 1;
+
+      // Emerge from floor
+      this.group.scale.y = 0.01;
+      this._emergeT = 0.6;
+
+      // Lob fire state
+      this._bambuFireTimer = cfg.fireInterval * intervalMult;
+      this._bambuState = 'waiting';
+      this._growTimer  = 8.0;
+      this._lobTargetX = 0;
+      this._lobTargetZ = 0;
+
+      // Dummy mesh for code paths that reference this.mesh
+      this.mesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.01),
+        new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }),
+      );
+
     } else {
       this.mesh.position.set(x, cfg.radius, z);
       scene.add(this.mesh);
@@ -196,17 +234,54 @@ export class Enemy {
   }
 
   get position() {
-    return this.type === EnemyType.TORO ? this.group.position : this.mesh.position;
+    return (this.type === EnemyType.TORO || this.type === EnemyType.BAMBU)
+      ? this.group.position : this.mesh.position;
   }
   get color()  { return CFG[this.type].color; }
-  get radius() { return CFG[this.type].radius; }
-  get hpFrac() { return this.hp / CFG[this.type].hp; }
+  get radius() {
+    if (this.type === EnemyType.BAMBU) return Math.max(0.6, (this._segs ? this._segs.length : 1) * 0.6);
+    return CFG[this.type].radius;
+  }
+  get hpFrac() {
+    if (this.type === EnemyType.BAMBU) return this.hp / Math.max(1, this._maxSegs);
+    return this.hp / CFG[this.type].hp;
+  }
+
+  _makeBambuSeg(segIndex) {
+    const geo = new RoundedBoxGeometry(0.9, 0.9, 0.9, 4, 0.18);
+    const segGroup = new THREE.Group();
+    segGroup.position.y = segIndex * 1.0;
+    const offsets = [{x:0.9,z:0},{x:-0.9,z:0},{x:0,z:0.9},{x:0,z:-0.9}];
+    for (const off of offsets) {
+      const box = new THREE.Mesh(geo, this._bambuMat);
+      box.position.set(off.x, 0, off.z);
+      box.castShadow = true;
+      segGroup.add(box);
+    }
+    this.group.add(segGroup);
+    return segGroup;
+  }
 
   hit() {
     if (!this.alive) return false;
-    this.hp--;
     this._flashT    = 0.12;
     this._hitWobble = 0.35;
+
+    if (this.type === EnemyType.BAMBU && this._segs && this._segs.length > 0) {
+      const topSeg = this._segs.pop();
+      this.group.remove(topSeg);
+      const segY = this._segs.length * 1.0 + 0.45;
+      for (let k = 0; k < 3; k++) {
+        const a = Math.random() * Math.PI * 2;
+        this._hitChunks.push({
+          x: this.group.position.x, y: segY, z: this.group.position.z,
+          vx: Math.cos(a) * 3, vy: 2 + Math.random() * 3, vz: Math.sin(a) * 3,
+          color: 0xaa8844, size: 0.14,
+        });
+      }
+    }
+
+    this.hp--;
     if (this.hp <= 0) { this.destroy(); return true; }
     return false;
   }
@@ -429,6 +504,23 @@ export class Enemy {
         break;
       }
 
+      case EnemyType.BAMBU: {
+        if (this._emergeT > 0) {
+          this._emergeT -= dt;
+          this.group.scale.y = Math.min(1, 1 - this._emergeT / 0.6);
+        }
+        if (this._emergeT <= 0) {
+          this.group.scale.y = 1;
+          this._growTimer -= dt;
+          if (this._growTimer <= 0 && this._segs.length < this._maxSegs) {
+            this._growTimer = 8.0;
+            this._segs.push(this._makeBambuSeg(this._segs.length));
+            this.hp++;
+          }
+        }
+        break;
+      }
+
       case EnemyType.TORO: {
         switch (this._state) {
           case 'idle':
@@ -516,7 +608,7 @@ export class Enemy {
     this._wobbleT += dt;
     if (this._hitWobble > 0) this._hitWobble = Math.max(0, this._hitWobble - dt * 2.0);
 
-    if (this.type !== EnemyType.TORO) {
+    if (this.type !== EnemyType.TORO && this.type !== EnemyType.BAMBU) {
       const isSplitOrBig = this.type === EnemyType.SPLITTA;
       const amp  = isSplitOrBig ? 0.10 : (CUBE_TYPES.has(this.type) ? 0.035 : 0.04);
       const freq = isSplitOrBig ? 4.0  : (CUBE_TYPES.has(this.type) ? 2.2   : 2.8);
@@ -543,6 +635,27 @@ export class Enemy {
   _tick(playerPos, bullets, dt) {
     const cfg = CFG[this.type];
     if (!cfg.fireInterval) return;
+
+    if (this.type === EnemyType.BAMBU) {
+      if (this._bambuState === 'waiting') {
+        this._bambuFireTimer -= dt;
+        if (this._bambuFireTimer <= 0) {
+          this._bambuState   = 'telegraphing';
+          this._bambuTimer   = 1.0;
+          this._lobTargetX   = playerPos.x;
+          this._lobTargetZ   = playerPos.z;
+          this._aoeReady     = true;
+        }
+      } else if (this._bambuState === 'telegraphing') {
+        this._bambuTimer -= dt;
+        if (this._bambuTimer <= 0) {
+          this._bambuState     = 'waiting';
+          this._bambuFireTimer = cfg.fireInterval * this._intervalMult;
+          this._lobReady = { x: this._lobTargetX, z: this._lobTargetZ };
+        }
+      }
+      return;
+    }
 
     const interval = this.type === EnemyType.WEEVA
       ? cfg.fireInterval
@@ -620,12 +733,13 @@ export class Enemy {
     this._deathT -= dt;
     const t = 1 - Math.max(this._deathT, 0) / 0.28;
 
-    if (this.type === EnemyType.TORO) {
+    if (this.type === EnemyType.TORO || this.type === EnemyType.BAMBU) {
       this.group.scale.setScalar(1 + t * 2.2);
     } else {
       this.mesh.scale.setScalar(1 + t * 2.2);
     }
-    this.mat.opacity = (1 - t) * (CUBE_TYPES.has(this.type) ? 0.88 : 0.82);
+    const baseOpacity = (CUBE_TYPES.has(this.type) || this.type === EnemyType.BAMBU) ? 0.88 : 0.82;
+    this.mat.opacity = (1 - t) * baseOpacity;
 
     if (this._deathT <= 0) {
       this._dying = false;
@@ -646,12 +760,12 @@ export class Enemy {
     this.mat.emissive.setHex(0xffffff);
     this.mat.transparent = true;
     this.mat.depthWrite  = false;
-    if (this.type === EnemyType.TORO) {
+    if (this.type === EnemyType.TORO || this.type === EnemyType.BAMBU) {
       this.group.scale.setScalar(1);
     } else {
       this.mesh.scale.setScalar(1);
     }
-    this.mesh.visible = true;
+    if (this.type !== EnemyType.BAMBU) this.mesh.visible = true;
 
     // Chunk spawn data
     let count, chunkSize;
@@ -709,6 +823,8 @@ export class Enemy {
     if (this.type === EnemyType.TORO) {
       scene.remove(this.group);
       if (this._indicator) scene.remove(this._indicator);
+    } else if (this.type === EnemyType.BAMBU) {
+      scene.remove(this.group);
     } else {
       scene.remove(this.mesh);
     }

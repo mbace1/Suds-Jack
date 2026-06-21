@@ -19,7 +19,7 @@ function getWaveScale(wave) {
 // Returns { dur, list: [{type, t: spawnDelaySecs}] }
 function getEnemySchedule(wave) {
   const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
-          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO } = EnemyType;
+          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU } = EnemyType;
   if (wave === 1) return { dur: 60, list: [
     { type: GLOBBO,      t: 0  },
     { type: YELA_CUBE,   t: 10 },
@@ -41,7 +41,8 @@ function getEnemySchedule(wave) {
     { type: ORANGE_CUBE, t: 10 },
     { type: SLUDGE_CUBE, t: 20 },
     { type: SPITTOR,     t: 30 },
-    { type: WEEVA,       t: 40 },
+    { type: BAMBU,       t: 40 },
+    { type: WEEVA,       t: 45 },
     { type: SPLITTA,     t: 55 },
   ]};
   if (wave === 4) return { dur: 65, list: [
@@ -49,8 +50,9 @@ function getEnemySchedule(wave) {
     { type: REDD_CUBE,   t: 0  },
     { type: ORANGE_CUBE, t: 10 },
     { type: SLUDGE_CUBE, t: 20 },
-    { type: FANNER,      t: 30 },
-    { type: WEEVA,       t: 40 },
+    { type: BAMBU,       t: 30 },
+    { type: FANNER,      t: 35 },
+    { type: WEEVA,       t: 45 },
     { type: SPLITTA,     t: 55 },
   ]};
   if (wave === 5) return { dur: 70, list: [
@@ -67,12 +69,14 @@ function getEnemySchedule(wave) {
     { type: REDD_CUBE,   t: 0  },
     { type: PURP_CUBE,   t: 10 },
     { type: ORANGE_CUBE, t: 20 },
-    { type: SPITTOR,     t: 30 },
+    { type: BAMBU,       t: 25 },
+    { type: SPITTOR,     t: 35 },
     { type: FANNER,      t: 45 },
     { type: TORO,        t: 60 },
   ]};
   return { dur: 75, list: [
     { type: GLOBBO,      t: 0,  count: 3 },
+    { type: BAMBU,       t: 5  },
     { type: REDD_CUBE,   t: 10 },
     { type: PURP_CUBE,   t: 20 },
     { type: ORANGE_CUBE, t: 30 },
@@ -294,6 +298,28 @@ class SludgeRibbon {
   remove(sc) { sc.remove(this.mesh); this._geo.dispose(); }
 }
 
+class BambuAoE {
+  constructor(sc, x, z, radius, duration) {
+    this._life = duration;
+    this._dur  = duration;
+    this.x = x; this.z = z;
+    this.mat = new THREE.MeshBasicMaterial({
+      color: 0xff8800, transparent: true, opacity: 0.6, depthWrite: false,
+    });
+    this.mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, 12), this.mat);
+    this.mesh.rotation.x = -Math.PI / 2;
+    this.mesh.position.set(x, 0.016, z);
+    sc.add(this.mesh);
+  }
+  update(dt) {
+    this._life -= dt;
+    const frac = Math.max(0, this._life / this._dur);
+    this.mat.opacity = 0.6 * frac * (0.5 + 0.5 * Math.sin(this._life * Math.PI * 6));
+    return this._life > 0;
+  }
+  remove(sc) { sc.remove(this.mesh); }
+}
+
 // ── Melee types ───────────────────────────────────────────────────────────────
 const MELEE_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPLITTA,
@@ -312,6 +338,7 @@ let puddles      = [];
 let poisonZones  = [];
 let slimeTrails  = [];
 let sludgeRibbons = [];
+let bambuAoes     = [];
 let wave         = 0;
 let waveTimer    = 0;
 let waveDuration = 60;
@@ -480,6 +507,7 @@ function clearFX() {
   for (const z of poisonZones)   z.remove(scene); poisonZones   = [];
   for (const s of slimeTrails)   s.remove(scene); slimeTrails   = [];
   for (const r of sludgeRibbons) r.remove(scene); sludgeRibbons = [];
+  for (const a of bambuAoes)     a.remove(scene); bambuAoes     = [];
 }
 
 function spawnWave() {
@@ -650,6 +678,31 @@ function loop() {
     if (!e._trailReady) continue;
     e._trailReady = false;
     slimeTrails.push(new SlimeTrail(scene, e.position.x, e.position.z, 0.5));
+  }
+
+  // BAMBU AoE telegraphs and lob bullets
+  for (const e of enemies) {
+    if (e.type !== EnemyType.BAMBU) continue;
+    if (e._aoeReady) {
+      e._aoeReady = false;
+      bambuAoes.push(new BambuAoE(scene, e._lobTargetX, e._lobTargetZ, 2.2, 1.0));
+    }
+    if (e._lobReady) {
+      const tgt = e._lobReady; e._lobReady = null;
+      const ex = e.position.x, ez = e.position.z;
+      const dx = tgt.x - ex, dz = tgt.z - ez;
+      const dl = Math.hypot(dx, dz) || 1;
+      bullets.spawnDir(ex, ez, dx/dl, dz/dl, false, 0xddbb44, true);
+    }
+    if (e._hitChunks && e._hitChunks.length > 0) {
+      for (const cd of e._hitChunks) {
+        chunks.push(new Chunk(scene, cd.x, cd.y, cd.z, cd.vx, cd.vy, cd.vz, cd.color, cd.size));
+      }
+      e._hitChunks.length = 0;
+    }
+  }
+  for (let i = bambuAoes.length - 1; i >= 0; i--) {
+    if (!bambuAoes[i].update(dt)) { bambuAoes[i].remove(scene); bambuAoes.splice(i, 1); }
   }
 
   // SLUDGE_CUBE ribbon: create on first sight, update every frame
