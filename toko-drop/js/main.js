@@ -300,6 +300,81 @@ class SludgeRibbon {
   remove(sc) { sc.remove(this.mesh); this._geo.dispose(); }
 }
 
+class Gate {
+  constructor(sc) {
+    const x = (Math.random() - 0.5) * 22;
+    const z = (Math.random() - 0.5) * 22;
+    const angle = Math.random() * Math.PI;
+    this._x = x; this._z = z; this._angle = angle;
+    this.alive = true;
+    this._dmgCooldown = 0;
+
+    const postMat = new THREE.MeshPhongMaterial({ color: 0x888899, shininess: 60 });
+    const postGeo = new THREE.CylinderGeometry(0.25, 0.25, 1.8, 8);
+    const halfSep = 2;
+    const dx = Math.cos(angle + Math.PI/2) * halfSep;
+    const dz = Math.sin(angle + Math.PI/2) * halfSep;
+    this._p1 = new THREE.Mesh(postGeo, postMat);
+    this._p1.position.set(x + dx, 0.9, z + dz);
+    this._p2 = new THREE.Mesh(postGeo, postMat);
+    this._p2.position.set(x - dx, 0.9, z - dz);
+    sc.add(this._p1); sc.add(this._p2);
+
+    this._laserMat = new THREE.MeshBasicMaterial({
+      color: 0x44ff88, transparent: true, opacity: 0.7, depthWrite: false,
+    });
+    this._laser = new THREE.Mesh(new THREE.BoxGeometry(4, 0.12, 0.12), this._laserMat);
+    this._laser.position.set(x, 0.9, z);
+    this._laser.rotation.y = angle;
+    sc.add(this._laser);
+  }
+  update(dt, t) {
+    if (!this.alive) return;
+    this._laserMat.opacity = 0.5 + 0.4 * Math.sin(t * 8);
+    if (this._dmgCooldown > 0) this._dmgCooldown -= dt;
+  }
+  deactivate(sc) {
+    this.alive = false;
+    sc.remove(this._laser);
+  }
+  remove(sc) {
+    sc.remove(this._p1); sc.remove(this._p2); sc.remove(this._laser);
+  }
+  // Returns true if point (px, pz) intersects the laser beam (approximate capsule check)
+  hitsPoint(px, pz, radius) {
+    if (!this.alive) return false;
+    const dx = px - this._x, dz = pz - this._z;
+    // Project onto laser axis
+    const ax = Math.cos(this._angle), az = Math.sin(this._angle);
+    const para  = dx * ax + dz * az;
+    const perpX = dx - para * ax, perpZ = dz - para * az;
+    const perpDist = Math.hypot(perpX, perpZ);
+    return Math.abs(para) < 2.0 && perpDist < 0.2 + radius;
+  }
+}
+
+class Powerup {
+  constructor(sc, x, z) {
+    this._life = 8.0;
+    this.x = x; this.z = z;
+    this.collected = false;
+    this.mat = new THREE.MeshBasicMaterial({
+      color: 0xffffff, transparent: true, opacity: 0.9,
+    });
+    this.mesh = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 6), this.mat);
+    this.mesh.position.set(x, 0.6, z);
+    sc.add(this.mesh);
+    this._type = Math.random() < 0.5 ? 'invincible' : 'firerate';
+  }
+  update(dt, t) {
+    this._life -= dt;
+    this.mesh.position.y = 0.6 + Math.sin(t * 3) * 0.15;
+    this.mat.opacity = 0.5 + 0.4 * Math.sin(t * 5);
+    return this._life > 0 && !this.collected;
+  }
+  remove(sc) { sc.remove(this.mesh); }
+}
+
 class BambuAoE {
   constructor(sc, x, z, radius, duration) {
     this._life = duration;
@@ -341,6 +416,8 @@ let poisonZones  = [];
 let slimeTrails  = [];
 let sludgeRibbons = [];
 let bambuAoes     = [];
+let gates         = [];
+let powerups      = [];
 let wave         = 0;
 let waveTimer    = 0;
 let waveDuration = 60;
@@ -510,11 +587,15 @@ function clearFX() {
   for (const s of slimeTrails)   s.remove(scene); slimeTrails   = [];
   for (const r of sludgeRibbons) r.remove(scene); sludgeRibbons = [];
   for (const a of bambuAoes)     a.remove(scene); bambuAoes     = [];
+  for (const g of gates)        g.remove(scene); gates         = [];
+  for (const p of powerups)     p.remove(scene); powerups      = [];
 }
 
 function spawnWave() {
   for (const e of enemies) e.removeFrom(scene);
   enemies = [];
+  for (const g of gates)    g.remove(scene); gates    = [];
+  for (const p of powerups) p.remove(scene); powerups = [];
   wave++;
   const { speedMult, intervalMult } = getWaveScale(wave);
   const { dur, list } = getEnemySchedule(wave);
@@ -535,6 +616,7 @@ function spawnWave() {
       });
     }
   });
+  if (wave >= 3) gates.push(new Gate(scene));
   announceWave();
 }
 
@@ -805,6 +887,55 @@ function loop() {
         if (!player.alive) { triggerGameOver(); break; }
         break;
       }
+    }
+  }
+
+  // Gate + powerup updates
+  const _t = performance.now() / 1000;
+  for (const g of gates) g.update(dt, _t);
+  for (let i = powerups.length - 1; i >= 0; i--) {
+    if (!powerups[i].update(dt, _t)) { powerups[i].remove(scene); powerups.splice(i, 1); }
+  }
+
+  // Gate interactions
+  if (gates.length > 0) {
+    const px = player.position.x, pz = player.position.z;
+    for (const g of gates) {
+      if (!g.alive) continue;
+      if (g.hitsPoint(px, pz, PLAYER_RADIUS)) {
+        if (player.dashing) {
+          g.deactivate(scene);
+          powerups.push(new Powerup(scene, g._x, g._z));
+        }
+      }
+      // Enemies hitting laser take damage (once per 0.5s)
+      if (g._dmgCooldown <= 0) {
+        for (const e of enemies) {
+          if (!e.alive) continue;
+          if (g.hitsPoint(e.position.x, e.position.z, e.radius * 0.5)) {
+            const died = e.hit();
+            if (died) onKill(e);
+            else audio.enemyHit();
+            g._dmgCooldown = 0.5;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // Powerup collection
+  for (const pu of powerups) {
+    if (pu.collected) continue;
+    const dx = player.position.x - pu.x, dz = player.position.z - pu.z;
+    if (Math.hypot(dx, dz) < 0.8 + PLAYER_RADIUS) {
+      pu.collected = true;
+      if (pu._type === 'invincible') {
+        player.grantInvincibility(3.0);
+      } else {
+        player.grantFireRateBoost(5.0);
+      }
+      audio.waveClear();
     }
   }
 
