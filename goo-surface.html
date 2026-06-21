@@ -36,10 +36,13 @@ uniform vec3  u_c0, u_c1, u_c2, u_c3;
 uniform float u_sq0, u_sq1, u_sq2, u_sq3;
 uniform vec3  u_da0, u_da1, u_da2, u_da3;
 
-// Mini-blobs: xyz=centre, w=radius (w<0 → inactive slot)
-// Squish along Y: sq<1 flat, sq>1 tall
+// Damage 0=healthy, 1=dying — drives darkening
+uniform float u_dmg0, u_dmg1, u_dmg2, u_dmg3;
+
+// Mini-blobs: xyz=centre, w=radius (w<0 → inactive)
 uniform vec4  u_mb[12];
-uniform float u_msq[12];
+uniform float u_msq[12];   // squish amount
+uniform vec3  u_mda[12];   // deformation axis (random per blob)
 
 const vec3  HALF_BOX = vec3(0.525, 0.525, 0.525);
 const float ROUND_R  = 0.200;
@@ -51,200 +54,167 @@ const float GEL_IOR  = 1.33;
 // ── SDF ──────────────────────────────────────────────────────────────────────
 
 float sdRoundBox(vec3 p, vec3 b, float r) {
-  vec3 q = abs(p)-b;
-  return length(max(q,0.0))+min(max(q.x,max(q.y,q.z)),0.0)-r;
+  vec3 q=abs(p)-b; return length(max(q,0.0))+min(max(q.x,max(q.y,q.z)),0.0)-r;
 }
 float smin(float a, float b, float k) {
-  float h=clamp(0.5+0.5*(b-a)/k,0.0,1.0);
-  return mix(b,a,h)-k*h*(1.0-h);
+  float h=clamp(0.5+0.5*(b-a)/k,0.0,1.0); return mix(b,a,h)-k*h*(1.0-h);
 }
 float gooCube(vec3 p, vec3 cen, float sq, vec3 axis) {
-  float sqC=clamp(sq,0.55,1.55);
-  vec3  lp=p-cen;
+  float sqC=clamp(sq,0.55,1.55); vec3 lp=p-cen;
   float proj=dot(lp,axis);
   lp=axis*(proj*sqC)+(lp-axis*proj)/sqrt(sqC);
   return sdRoundBox(lp,HALF_BOX,ROUND_R)*min(sqrt(sqC),1.0/sqC);
 }
 
-// Squished sphere: sq<1 → flat pancake, sq=1 → sphere, sq>1 → upright oval
-float mbSDF(vec3 p, vec3 cen, float r, float sq) {
-  float sqC = clamp(sq, 0.30, 1.55);
-  vec3  lp  = p - cen;
-  // Scale space: Y by 1/sqC (large Y → flat in world), XZ by sqrt(sqC)
-  vec3  lpt = vec3(lp.x*sqrt(sqC), lp.y/sqC, lp.z*sqrt(sqC));
-  return (length(lpt) - r) * min(sqrt(sqC), 1.0/sqC);
+// Squished sphere with arbitrary deformation axis
+float mbSDF(vec3 p, vec3 cen, float r, float sq, vec3 axis) {
+  float sqC=clamp(sq,0.26,1.60); vec3 lp=p-cen;
+  float proj=dot(lp,axis);
+  lp=axis*(proj*sqC)+(lp-axis*proj)/sqrt(sqC);
+  return (length(lp)-r)*min(sqrt(sqC),1.0/sqC);
 }
 
-// Fast scene: cubes only — used for shadows and AO
 float sceneMain(vec3 p) {
-  return smin(smin(gooCube(p,u_c0,u_sq0,u_da0),
-                   gooCube(p,u_c1,u_sq1,u_da1),BLEND_K),
-              smin(gooCube(p,u_c2,u_sq2,u_da2),
-                   gooCube(p,u_c3,u_sq3,u_da3),BLEND_K),BLEND_K);
+  return smin(smin(gooCube(p,u_c0,u_sq0,u_da0),gooCube(p,u_c1,u_sq1,u_da1),BLEND_K),
+              smin(gooCube(p,u_c2,u_sq2,u_da2),gooCube(p,u_c3,u_sq3,u_da3),BLEND_K),BLEND_K);
 }
-
-// Full scene: cubes + mini-blobs
 float scene(vec3 p) {
-  float dm = sceneMain(p);
-  for (int i=0; i<12; i++) {
-    if (u_mb[i].w > 0.0)
-      dm = min(dm, mbSDF(p, u_mb[i].xyz, u_mb[i].w, u_msq[i]));
-  }
+  float dm=sceneMain(p);
+  for(int i=0;i<12;i++)
+    if(u_mb[i].w>0.0) dm=min(dm,mbSDF(p,u_mb[i].xyz,u_mb[i].w,u_msq[i],normalize(u_mda[i])));
   return dm;
 }
-
 vec3 calcNormal(vec3 p) {
   const float E=0.0007;
-  return normalize(vec3(
-    scene(p+vec3(E,0,0))-scene(p-vec3(E,0,0)),
-    scene(p+vec3(0,E,0))-scene(p-vec3(0,E,0)),
-    scene(p+vec3(0,0,E))-scene(p-vec3(0,0,E))));
+  return normalize(vec3(scene(p+vec3(E,0,0))-scene(p-vec3(E,0,0)),
+                        scene(p+vec3(0,E,0))-scene(p-vec3(0,E,0)),
+                        scene(p+vec3(0,0,E))-scene(p-vec3(0,0,E))));
 }
-
-// Shadow and AO use sceneMain only (mini-blobs get cheap analytic shadows below)
 float softShadow(vec3 ro, vec3 rd, float mint, float maxt) {
-  float res=1.0, t=mint;
-  for (int i=0;i<20;i++) {
-    if(t>maxt) break;
-    float h=sceneMain(ro+rd*t);
-    if(h<0.0004) return 0.0;
-    res=min(res,7.0*h/t);
-    t+=clamp(h,0.008,0.25);
-  }
+  float res=1.0,t=mint;
+  for(int i=0;i<20;i++){if(t>maxt)break;float h=sceneMain(ro+rd*t);
+    if(h<0.0004)return 0.0;res=min(res,7.0*h/t);t+=clamp(h,0.008,0.25);}
   return clamp(res,0.0,1.0);
 }
 float calcAO(vec3 p, vec3 n) {
   float occ=0.0,sca=1.0;
-  for(int i=0;i<5;i++){
-    float h=0.010+0.170*float(i)/4.0;
-    occ+=(h-sceneMain(p+h*n))*sca; sca*=0.80;
-  }
+  for(int i=0;i<5;i++){float h=0.010+0.170*float(i)/4.0;
+    occ+=(h-sceneMain(p+h*n))*sca;sca*=0.80;}
   return clamp(1.0-3.0*occ,0.0,1.0);
+}
+
+// ── Damage ───────────────────────────────────────────────────────────────────
+
+// Proximity-weighted damage blend — darker near more-damaged cubes
+float damageFactor(vec3 p) {
+  float d0=max(gooCube(p,u_c0,u_sq0,u_da0)+0.5,0.01);
+  float d1=max(gooCube(p,u_c1,u_sq1,u_da1)+0.5,0.01);
+  float d2=max(gooCube(p,u_c2,u_sq2,u_da2)+0.5,0.01);
+  float d3=max(gooCube(p,u_c3,u_sq3,u_da3)+0.5,0.01);
+  float w0=1.0/d0,w1=1.0/d1,w2=1.0/d2,w3=1.0/d3,tw=w0+w1+w2+w3;
+  return (u_dmg0*w0+u_dmg1*w1+u_dmg2*w2+u_dmg3*w3)/tw;
 }
 
 // ── Lighting ─────────────────────────────────────────────────────────────────
 
-vec3 envSky(vec3 dir) {
-  float h=clamp(dir.y*0.5+0.5,0.0,1.0);
-  return mix(vec3(0.05,0.07,0.11),vec3(0.10,0.14,0.22),h*h);
-}
+vec3 envSky(vec3 dir){float h=clamp(dir.y*0.5+0.5,0.0,1.0);return mix(vec3(0.05,0.07,0.11),vec3(0.10,0.14,0.22),h*h);}
 
-vec3 goopShade(vec3 p, vec3 N, vec3 V, float sh, float ao) {
-  vec3  H1=normalize(KEY_L+V), H2=normalize(FILL_L+V);
-  float NdL1=max(dot(N,KEY_L),0.0), NdL2=max(dot(N,FILL_L),0.0);
-  float NdH1=max(dot(N,H1),0.0),    NdH2=max(dot(N,H2),0.0);
-  float NdV=max(dot(N,V),0.0);
-  float specKey=pow(NdH1,92.0)*2.80, specFill=pow(NdH2,28.0)*0.38;
-  float gloss=pow(NdH1,10.0)*0.26;
+vec3 goopShade(vec3 p, vec3 N, vec3 V, float sh, float ao, float dmg) {
+  vec3  H1=normalize(KEY_L+V),H2=normalize(FILL_L+V);
+  float NdL1=max(dot(N,KEY_L),0.0),NdL2=max(dot(N,FILL_L),0.0);
+  float NdH1=max(dot(N,H1),0.0),NdH2=max(dot(N,H2),0.0),NdV=max(dot(N,V),0.0);
+  float specKey=pow(NdH1,92.0)*2.80,specFill=pow(NdH2,28.0)*0.38,gloss=pow(NdH1,10.0)*0.26;
   float fresnel=pow(1.0-NdV,3.80);
   float sss=pow(max(0.0,-dot(N,KEY_L)*0.42+0.58),2.2)*0.44;
   vec3 reflDir=reflect(-V,N);
   vec3 envRef=envSky(reflDir)*(0.55+0.45*max(reflDir.y,0.0))*vec3(0.70,1.00,0.75);
-  vec3 col=
-      vec3(0.010,0.085,0.035)
-    + vec3(0.080,0.420,0.175)*NdL1*(sh*0.72+0.28)
-    + vec3(0.022,0.095,0.048)*NdL2*0.38
-    + vec3(0.900,1.000,0.930)*(specKey+specFill+gloss)
+
+  // Damage darkens diffuse and SSS, keeps specular (still wet)
+  // Healthy green → bruised dark olive
+  vec3 diffColor = mix(vec3(0.080,0.420,0.175), vec3(0.040,0.105,0.025), dmg*dmg);
+  vec3 ambColor  = mix(vec3(0.010,0.085,0.035), vec3(0.018,0.042,0.010), dmg);
+  vec3 sssColor  = mix(vec3(0.030,0.620,0.220), vec3(0.015,0.120,0.030), dmg);
+  float brightness = 1.0 - dmg*0.65;  // overall dimming
+
+  vec3 col =
+      ambColor
+    + diffColor*NdL1*(sh*0.72+0.28)
+    + diffColor*0.28*NdL2*0.38
+    + vec3(0.900,1.000,0.930)*(specKey+specFill+gloss)   // specular unchanged
     + vec3(0.050,0.680,0.290)*fresnel*0.55
-    + vec3(0.030,0.620,0.220)*sss
+    + sssColor*sss
     + envRef*fresnel*0.52;
-  return col*(ao*0.60+0.40);
+  return col*(ao*0.60+0.40)*brightness;
 }
 
 // ── Caustics & floor ─────────────────────────────────────────────────────────
 
-float caustics(vec3 fp) {
+float caustics(vec3 fp){
   float t=u_time*0.55;
   float c=sin(fp.x*4.10+t*1.10)*cos(fp.z*3.70+t*0.85)
          +sin(fp.x*2.30-t*0.60+fp.z*3.10)*0.55
          +cos(fp.x*5.20+fp.z*2.80-t*1.30)*0.35
          +sin((fp.x+fp.z)*3.60+t*0.75)*0.25;
-  return pow(clamp(c*0.25+0.5,0.0,1.0), 2.8)*1.4;
+  return pow(clamp(c*0.25+0.5,0.0,1.0),2.8)*1.4;
 }
-
-mat3 camMatrix(vec3 ro, vec3 ta) {
+mat3 camMatrix(vec3 ro,vec3 ta){
   vec3 ww=normalize(ta-ro),uu=normalize(cross(ww,vec3(0,1,0))),vv=normalize(cross(uu,ww));
   return mat3(uu,vv,ww);
 }
-
-vec3 getBg(vec3 ro, vec3 rd, vec2 uv) {
-  if (rd.y < -0.0005) {
-    float tF=-ro.y/rd.y;
-    if (tF>0.0 && tF<28.0) {
-      vec3  fp  =ro+rd*tF;
-      float chk =mod(floor(fp.x)+floor(fp.z),2.0);
-      vec3  base=mix(vec3(0.050,0.058,0.068),vec3(0.065,0.072,0.084),chk*0.45);
-      vec2  gf  =abs(fract(fp.xz)-0.5);
+vec3 getBg(vec3 ro,vec3 rd,vec2 uv){
+  if(rd.y<-0.0005){float tF=-ro.y/rd.y;
+    if(tF>0.0&&tF<28.0){
+      vec3 fp=ro+rd*tF;
+      float chk=mod(floor(fp.x)+floor(fp.z),2.0);
+      vec3 base=mix(vec3(0.050,0.058,0.068),vec3(0.065,0.072,0.084),chk*0.45);
+      vec2 gf=abs(fract(fp.xz)-0.5);
       base=mix(base,vec3(0.17,0.19,0.23),max(0.0,1.0-min(gf.x,gf.y)*95.0)*0.55);
       float sh=softShadow(fp+vec3(0,0.003,0),KEY_L,0.05,9.0);
       base*=(sh*0.70+0.30);
-      // Caustics (brighter outside main shadow)
       base+=vec3(0.05,0.22,0.09)*caustics(fp)*(0.28+0.72*(1.0-sh));
       // Analytic contact shadows from mini-blobs
-      for (int i=0;i<12;i++) {
-        float r=u_mb[i].w;
-        if (r>0.0) {
-          vec2  d=fp.xz-u_mb[i].xz;
-          float groundDist=length(d);
-          float softR=r*2.2;
-          float cs=1.0-smoothstep(0.0,softR,groundDist);
-          // Shadow fades as blob rises off floor
-          cs*=smoothstep(r*3.5,0.0,u_mb[i].y-r);
-          base*=1.0-cs*0.55;
-        }
-      }
+      for(int i=0;i<12;i++){float r=u_mb[i].w;
+        if(r>0.0){vec2 d=fp.xz-u_mb[i].xz;
+          float cs=(1.0-smoothstep(0.0,r*2.2,length(d)))*smoothstep(r*3.5,0.0,u_mb[i].y-r);
+          base*=1.0-cs*0.52;}}
       float fog=1.0-exp(-max(tF-5.0,0.0)*0.035);
-      return mix(base,envSky(rd),fog);
-    }
-  }
+      return mix(base,envSky(rd),fog);}}
   return envSky(rd);
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
-void main() {
+void main(){
   vec2 uv=(gl_FragCoord.xy-u_res*0.5)/u_res.y;
-  vec3 ro=vec3(1.20,5.50,10.50), ta=vec3(0.00,1.00,0.00);
-  mat3 cam=camMatrix(ro,ta);
-  vec3 rd=cam*normalize(vec3(uv,1.85));
+  vec3 ro=vec3(1.20,5.50,10.50),ta=vec3(0.00,1.00,0.00);
+  mat3 cam=camMatrix(ro,ta); vec3 rd=cam*normalize(vec3(uv,1.85));
 
   float t=0.10; bool hit=false;
-  for (int i=0;i<88;i++) {
-    float d=scene(ro+rd*t);
-    if(d<0.0005){hit=true;break;}
-    if(t>28.0) break;
-    t+=max(d,0.004);
-  }
+  for(int i=0;i<88;i++){float d=scene(ro+rd*t);
+    if(d<0.0005){hit=true;break;}if(t>28.0)break;t+=max(d,0.004);}
 
   vec3 col;
-  if (hit) {
-    vec3  p =ro+rd*t, N=calcNormal(p), V=-rd;
+  if(hit){
+    vec3 p=ro+rd*t,N=calcNormal(p),V=-rd;
     float sh=softShadow(p+N*0.008,KEY_L,0.02,9.0);
     float ao=calcAO(p,N);
-    vec3  surfCol=goopShade(p,N,V,sh,ao);
+    float dmg=damageFactor(p);
+    vec3 surfCol=goopShade(p,N,V,sh,ao,dmg);
 
     vec3 refRd=refract(rd,N,1.0/GEL_IOR);
-    if(dot(refRd,refRd)<0.001) refRd=rd;
-    vec3 rIn=p+refRd*0.003; float tX=0.003;
-    for(int j=0;j<32;j++){
-      float d=scene(rIn+refRd*tX);
-      if(d>0.0005) break;
-      tX+=max(abs(d)+0.004,0.004);
-    }
-    vec3 exitP=rIn+refRd*tX, exitN=-calcNormal(exitP);
+    if(dot(refRd,refRd)<0.001)refRd=rd;
+    vec3 rIn=p+refRd*0.003;float tX=0.003;
+    for(int j=0;j<32;j++){float d=scene(rIn+refRd*tX);if(d>0.0005)break;tX+=max(abs(d)+0.004,0.004);}
+    vec3 exitP=rIn+refRd*tX,exitN=-calcNormal(exitP);
     vec3 exitRd=refract(refRd,exitN,GEL_IOR);
-    if(dot(exitRd,exitRd)<0.001) exitRd=reflect(refRd,exitN);
-
+    if(dot(exitRd,exitRd)<0.001)exitRd=reflect(refRd,exitN);
     float alpha=1.0-exp(-tX*0.22);
     vec3 bgCol=getBg(exitP,exitRd,uv);
     bgCol=mix(bgCol,vec3(0.02,0.28,0.09),(1.0-alpha)*0.44);
     col=mix(bgCol,surfCol,alpha);
-  } else {
-    col=getBg(ro,rd,uv);
-  }
+  } else { col=getBg(ro,rd,uv); }
 
-  col=col/(col+vec3(0.72));
-  col=pow(col,vec3(0.4545));
+  col=col/(col+vec3(0.72)); col=pow(col,vec3(0.4545));
   gl_FragColor=vec4(col,1.0);
 }
 `;
@@ -253,47 +223,24 @@ void main() {
 
 const BLOOM_FS = `
 precision mediump float;
-uniform sampler2D u_scene;
-uniform vec2      u_step;
-
-vec3 extractBright(vec2 uv) {
-  vec3  c  =texture2D(u_scene,uv).rgb;
-  float lum=dot(c,vec3(0.299,0.587,0.114));
-  return c*max(0.0,lum-0.56)*2.8;
-}
-
-void main() {
-  vec2 uv=gl_FragCoord.xy*u_step;
-  vec3 col=texture2D(u_scene,uv).rgb;
-  vec3 b=vec3(0.0); float tw=0.0;
-  for (int s=1;s<=4;s++) {
-    float sc=float(s)*2.8; vec2 d=u_step*sc; float w=1.0/float(s);
-    b+=(extractBright(uv+vec2( d.x, 0.0))+extractBright(uv+vec2(-d.x, 0.0))+
-        extractBright(uv+vec2( 0.0, d.y))+extractBright(uv+vec2( 0.0,-d.y))+
-        extractBright(uv+vec2( d.x, d.y))+extractBright(uv+vec2(-d.x,-d.y))+
-        extractBright(uv+vec2( d.x,-d.y))+extractBright(uv+vec2(-d.x, d.y)))*w;
-    tw+=8.0*w;
-  }
+uniform sampler2D u_scene; uniform vec2 u_step;
+vec3 extractBright(vec2 uv){vec3 c=texture2D(u_scene,uv).rgb;float lum=dot(c,vec3(0.299,0.587,0.114));return c*max(0.0,lum-0.56)*2.8;}
+void main(){
+  vec2 uv=gl_FragCoord.xy*u_step; vec3 col=texture2D(u_scene,uv).rgb;
+  vec3 b=vec3(0.0);float tw=0.0;
+  for(int s=1;s<=4;s++){float sc=float(s)*2.8;vec2 d=u_step*sc;float w=1.0/float(s);
+    b+=(extractBright(uv+vec2(d.x,0.0))+extractBright(uv-vec2(d.x,0.0))+
+        extractBright(uv+vec2(0.0,d.y))+extractBright(uv-vec2(0.0,d.y))+
+        extractBright(uv+vec2(d.x,d.y))+extractBright(uv-vec2(d.x,d.y))+
+        extractBright(uv+vec2(d.x,-d.y))+extractBright(uv-vec2(d.x,-d.y)))*w;tw+=8.0*w;}
   gl_FragColor=vec4(col+(b/tw)*1.65,1.0);
 }
 `;
 
 // ── Compile & link ────────────────────────────────────────────────────────────
 
-function compile(type, src) {
-  const s=gl.createShader(type);
-  gl.shaderSource(s,src); gl.compileShader(s);
-  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
-  return s;
-}
-function makeProgram(fs) {
-  const p=gl.createProgram();
-  gl.attachShader(p,compile(gl.VERTEX_SHADER,QUAD_VS));
-  gl.attachShader(p,compile(gl.FRAGMENT_SHADER,fs));
-  gl.linkProgram(p);
-  if(!gl.getProgramParameter(p,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
-  return p;
-}
+function compile(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s;}
+function makeProgram(fs){const p=gl.createProgram();gl.attachShader(p,compile(gl.VERTEX_SHADER,QUAD_VS));gl.attachShader(p,compile(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));return p;}
 
 const sceneProg=makeProgram(SCENE_FS);
 const bloomProg=makeProgram(BLOOM_FS);
@@ -310,32 +257,27 @@ const U={};
 ['u_res','u_time',
  'u_c0','u_c1','u_c2','u_c3',
  'u_sq0','u_sq1','u_sq2','u_sq3',
- 'u_da0','u_da1','u_da2','u_da3']
+ 'u_da0','u_da1','u_da2','u_da3',
+ 'u_dmg0','u_dmg1','u_dmg2','u_dmg3']
   .forEach(n=>U[n]=gl.getUniformLocation(sceneProg,n));
-// Array uniforms — set via uniform4fv/uniform1fv on first-element location
 U.u_mb  =gl.getUniformLocation(sceneProg,'u_mb[0]');
 U.u_msq =gl.getUniformLocation(sceneProg,'u_msq[0]');
+U.u_mda =gl.getUniformLocation(sceneProg,'u_mda[0]');
 
 gl.useProgram(bloomProg);
-const BU={
-  u_scene:gl.getUniformLocation(bloomProg,'u_scene'),
-  u_step: gl.getUniformLocation(bloomProg,'u_step'),
-};
+const BU={u_scene:gl.getUniformLocation(bloomProg,'u_scene'),u_step:gl.getUniformLocation(bloomProg,'u_step')};
 
 // ── Scene FBO ─────────────────────────────────────────────────────────────────
 
-let sceneFBO=null, sceneTex=null;
-function buildFBO(w,h) {
-  if(sceneTex) gl.deleteTexture(sceneTex);
-  if(sceneFBO) gl.deleteFramebuffer(sceneFBO);
-  sceneTex=gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D,sceneTex);
+let sceneFBO=null,sceneTex=null;
+function buildFBO(w,h){
+  if(sceneTex)gl.deleteTexture(sceneTex);if(sceneFBO)gl.deleteFramebuffer(sceneFBO);
+  sceneTex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,sceneTex);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-  sceneFBO=gl.createFramebuffer();
-  gl.bindFramebuffer(gl.FRAMEBUFFER,sceneFBO);
+  sceneFBO=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,sceneFBO);
   gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,sceneTex,0);
   gl.bindFramebuffer(gl.FRAMEBUFFER,null);
 }
@@ -351,16 +293,11 @@ const v3={
   len:  (a)=>Math.sqrt(a[0]**2+a[1]**2+a[2]**2),
   norm: (a)=>{const l=Math.sqrt(a[0]**2+a[1]**2+a[2]**2)||1;return[a[0]/l,a[1]/l,a[2]/l];},
 };
-
-function screenToRay(px,py) {
-  const W=window.innerWidth, H=window.innerHeight;
-  const uvx=(px-W/2)/H, uvy=-(py-H/2)/H;
-  const ww=v3.norm(v3.sub(TAR,CAM));
-  const uu=v3.norm(v3.cross(ww,[0,1,0]));
-  const vv=v3.norm(v3.cross(uu,ww));
-  return v3.norm([uu[0]*uvx+vv[0]*uvy+ww[0]*FOCAL,
-                  uu[1]*uvx+vv[1]*uvy+ww[1]*FOCAL,
-                  uu[2]*uvx+vv[2]*uvy+ww[2]*FOCAL]);
+function screenToRay(px,py){
+  const W=window.innerWidth,H=window.innerHeight;
+  const uvx=(px-W/2)/H,uvy=-(py-H/2)/H;
+  const ww=v3.norm(v3.sub(TAR,CAM)),uu=v3.norm(v3.cross(ww,[0,1,0])),vv=v3.norm(v3.cross(uu,ww));
+  return v3.norm([uu[0]*uvx+vv[0]*uvy+ww[0]*FOCAL,uu[1]*uvx+vv[1]*uvy+ww[1]*FOCAL,uu[2]*uvx+vv[2]*uvy+ww[2]*FOCAL]);
 }
 
 // ── Physics ───────────────────────────────────────────────────────────────────
@@ -368,108 +305,179 @@ function screenToRay(px,py) {
 const MAX_HITS=5;
 
 class GooCube {
-  constructor(bx,by,bz) {
-    this.bx=bx; this.by=by; this.bz=bz;
-    this.x=bx; this.y=by; this.z=bz;
-    this.vx=0; this.vy=0; this.vz=0;
-    this.sq=1.0; this.sqV=0.0;
-    this.dax=0.0; this.day=1.0; this.daz=0.0;
-    this.hits=0; this.dead=false; this.respawnAt=0;
+  constructor(bx,by,bz){
+    this.bx=bx;this.by=by;this.bz=bz;
+    this.x=bx;this.y=by;this.z=bz;
+    this.vx=0;this.vy=0;this.vz=0;
+    this.sq=1.0;this.sqV=0.0;
+    this.dax=0.0;this.day=1.0;this.daz=0.0;
+    this.hits=0;this.dead=false;this.respawnAt=0;
+    // Walk state
+    this.walking=false;this.walkOriginX=bx;this.walkOriginZ=bz;
+    this.walkRadius=0;this.walkTimer=0;this.walkPeriod=120;
   }
-  tick() {
-    if(this.dead) return;
+
+  enableWalk(radius,phaseOffset){
+    this.walking=true;this.walkRadius=radius;
+    this.walkOriginX=this.bx;this.walkOriginZ=this.bz;
+    this.walkTimer=-(phaseOffset||0);  // stagger initial hops
+    this.walkPeriod=80+Math.floor(Math.random()*60);
+  }
+
+  tick(){
+    if(this.dead)return;
+    // Position spring
     this.vx=(this.vx+(this.bx-this.x)*0.022)*0.89;
     this.vy=(this.vy+(this.by-this.y)*0.022)*0.89;
     this.vz=(this.vz+(this.bz-this.z)*0.022)*0.89;
-    this.x+=this.vx; this.y+=this.vy; this.z+=this.vz;
+    this.x+=this.vx;this.y+=this.vy;this.z+=this.vz;
+    // Squish oscillator
     this.sqV=(this.sqV-(this.sq-1.0)*0.24)*0.86;
     this.sq=Math.max(0.55,Math.min(1.60,this.sq+this.sqV));
+    // Deform axis decays toward Y-up
     const t=0.030;
-    this.dax*=(1-t); this.day=this.day*(1-t)+t; this.daz*=(1-t);
+    this.dax*=(1-t);this.day=this.day*(1-t)+t;this.daz*=(1-t);
     const l=Math.sqrt(this.dax**2+this.day**2+this.daz**2)||1;
-    this.dax/=l; this.day/=l; this.daz/=l;
+    this.dax/=l;this.day/=l;this.daz/=l;
+    // Flopping locomotion
+    if(this.walking){
+      this.walkTimer++;
+      // Wait until settled (low speed) and timer elapsed before next hop
+      const spd=Math.sqrt(this.vx**2+this.vz**2);
+      if(this.walkTimer>this.walkPeriod&&spd<0.012){
+        this.walkTimer=0;
+        this.walkPeriod=80+Math.floor(Math.random()*70);
+        // Pick new rest position within wander circle
+        const ang=Math.random()*Math.PI*2;
+        const dist=this.walkRadius*(0.4+Math.random()*0.6);
+        this.bx=this.walkOriginX+Math.cos(ang)*dist;
+        this.bz=this.walkOriginZ+Math.sin(ang)*dist;
+        // Lean deform axis forward in direction of hop
+        const dx=this.bx-this.x,dz=this.bz-this.z;
+        const dl=Math.sqrt(dx*dx+dz*dz)||1;
+        this.dax=dx/dl*0.65;this.day=0.76;this.daz=dz/dl*0.65;
+        const al=Math.sqrt(this.dax**2+this.day**2+this.daz**2)||1;
+        this.dax/=al;this.day/=al;this.daz/=al;
+        // Squish impulse — the "wind-up" before the hop
+        this.sqV-=0.32;
+      }
+    }
   }
-  hitDir(dx,dy,dz,str) {
-    if(this.dead) return;
+
+  hitDir(dx,dy,dz,str){
+    if(this.dead)return;
     const l=Math.sqrt(dx*dx+dy*dy+dz*dz)||1;
-    this.dax=dx/l; this.day=dy/l; this.daz=dz/l;
+    this.dax=dx/l;this.day=dy/l;this.daz=dz/l;
     this.sqV-=str*0.85;
-    this.vx+=dx/l*str*0.14; this.vy+=dy/l*str*0.10; this.vz+=dz/l*str*0.10;
+    this.vx+=dx/l*str*0.14;this.vy+=dy/l*str*0.10;this.vz+=dz/l*str*0.10;
+    // Stun locomotion briefly so the hit squish is visible
+    if(this.walking)this.walkTimer=-(this.walkPeriod*0.4|0);
   }
-  registerHit(dx,dy,dz,str) {
-    if(this.dead) return;
+
+  registerHit(dx,dy,dz,str){
+    if(this.dead)return;
     this.hitDir(dx,dy,dz,str);
-    if(++this.hits>=MAX_HITS) this.explode();
+    if(++this.hits>=MAX_HITS)this.explode();
   }
-  explode() {
+
+  get damage(){ return Math.min(this.hits/(MAX_HITS-1), 1.0); }
+
+  explode(){
     this.dead=true;
-    const n=10+Math.floor(Math.random()*5);  // 10–14 blobs
-    for(let i=0;i<n;i++) {
-      const ang  = (i/n)*Math.PI*2 + Math.random()*1.1;
-      const elev = Math.random()*0.75 + 0.08;
-      // Mix of large blobs (slow, heavy) and small ones (fast, zippy)
-      const r    = Math.random()<0.3
-                   ? 0.22+Math.random()*0.20   // big: 0.22–0.42
-                   : 0.06+Math.random()*0.12;  // small: 0.06–0.18
-      const spd  = (0.05+Math.random()*0.11) / (r*2.5+0.3);  // bigger = slower
+    const n=10+Math.floor(Math.random()*5);
+    for(let i=0;i<n;i++){
+      const ang=  (i/n)*Math.PI*2+Math.random()*1.1;
+      const elev= Math.random()*0.75+0.08;
+      const big=  Math.random()<0.30;
+      const r=    big ? 0.22+Math.random()*0.20 : 0.06+Math.random()*0.12;
+      const spd=  (0.05+Math.random()*0.11)/(r*2.5+0.3);
       miniBlobs.push(new MiniBlob(
-        this.x, this.y+0.25, this.z,
+        this.x,this.y+0.25,this.z,
         Math.cos(ang)*spd*Math.cos(elev),
-        Math.sin(elev)*spd + 0.05 + Math.random()*0.05,
+        Math.sin(elev)*spd+0.05+Math.random()*0.05,
         Math.sin(ang)*spd*Math.cos(elev),
         r
       ));
     }
-    this.x=this.bx; this.y=-14; this.z=this.bz;
-    this.vx=0; this.vy=0; this.vz=0;
+    this.x=this.bx;this.y=-14;this.z=this.bz;
+    this.vx=0;this.vy=0;this.vz=0;
     this.respawnAt=performance.now()+4500;
   }
-  checkRespawn(now) {
+
+  checkRespawn(now){
     if(this.dead&&now>=this.respawnAt){
-      this.dead=false; this.hits=0; this.sq=1.3; this.sqV=0.06;
+      this.dead=false;this.hits=0;this.sq=1.3;this.sqV=0.06;
     }
   }
 }
 
 class MiniBlob {
-  constructor(x,y,z,vx,vy,vz,r) {
-    this.x=x; this.y=y; this.z=z;
-    this.vx=vx; this.vy=vy; this.vz=vz;
+  constructor(x,y,z,vx,vy,vz,r){
+    this.x=x;this.y=y;this.z=z;
+    this.vx=vx;this.vy=vy;this.vz=vz;
     this.r=r||0.10;
-    this.sq=1.0; this.sqV=0.0;   // squish state
-    this.life=1.0; this.dead=false;
-  }
-  tick() {
-    this.vy-=0.016;   // gravity
-    this.x+=this.vx; this.y+=this.vy; this.z+=this.vz;
 
-    if(this.y-this.r < 0) {
+    // Small blobs are naturally more deformed; large blobs are rounder
+    const small=this.r<0.15;
+    this.sqRest=small ? 0.52+Math.random()*0.28 : 0.86+Math.random()*0.14;
+    this.sq    =this.sqRest*(0.85+Math.random()*0.30);  // start near rest shape
+    this.sqV   =0.0;
+
+    // Random deformation axis — small blobs tilt more off-vertical
+    const tiltStrength=small ? 0.9+Math.random()*0.8 : 0.2+Math.random()*0.4;
+    const az=Math.random()*Math.PI*2;
+    this.dax=Math.cos(az)*tiltStrength;
+    this.day=1.0;
+    this.daz=Math.sin(az)*tiltStrength;
+    const dl=Math.sqrt(this.dax**2+this.day**2+this.daz**2)||1;
+    this.dax/=dl;this.day/=dl;this.daz/=dl;
+
+    this.life=1.0;this.dead=false;
+  }
+
+  tick(){
+    this.vy-=0.016;
+    this.x+=this.vx;this.y+=this.vy;this.z+=this.vz;
+
+    if(this.y-this.r<0){
       this.y=this.r;
       const impact=Math.abs(this.vy);
-      this.vy=impact*0.28;              // bounce
-      this.vx*=0.72; this.vz*=0.72;
-      this.sqV-=impact*1.4;            // squish on impact (faster = flatter)
+      this.vy=impact*0.28;
+      this.vx*=0.72;this.vz*=0.72;
+      // Squish impulse on landing; blend axis toward Y so the squish looks like flattening
+      this.sqV-=impact*1.5;
+      const blend=0.45;
+      this.dax*=(1-blend);this.day=this.day*(1-blend)+blend;this.daz*=(1-blend);
+      const l=Math.sqrt(this.dax**2+this.day**2+this.daz**2)||1;
+      this.dax/=l;this.day/=l;this.daz/=l;
     }
-    this.vx*=0.97; this.vy*=0.995; this.vz*=0.97;
+    this.vx*=0.97;this.vy*=0.995;this.vz*=0.97;
 
-    // Squish oscillator: springs back to round
-    this.sqV=(this.sqV-(this.sq-1.0)*0.28)*0.82;
-    this.sq=Math.max(0.30,Math.min(1.55,this.sq+this.sqV));
+    // Squish spring toward sqRest (not 1.0) — blobs keep their irregular shape
+    this.sqV=(this.sqV-(this.sq-this.sqRest)*0.26)*0.83;
+    this.sq=Math.max(0.26,Math.min(1.58,this.sq+this.sqV));
 
-    // Slow fade
+    // Very slow axis drift (blobs stay shaped between bounces)
+    const t=0.003;
+    this.dax*=(1-t);this.day=this.day*(1-t)+t;this.daz*=(1-t);
+    const l=Math.sqrt(this.dax**2+this.day**2+this.daz**2)||1;
+    this.dax/=l;this.day/=l;this.daz/=l;
+
     this.life-=0.005;
-    if(this.life<=0||this.r<0.015) this.dead=true;
+    if(this.life<=0||this.r<0.015)this.dead=true;
   }
-  // Poke impulse (from hit or tap)
-  poke(dx,dy,dz,str) {
+
+  poke(dx,dy,dz,str){
     const l=Math.sqrt(dx*dx+dy*dy+dz*dz)||1;
-    this.vx+=dx/l*str*0.22; this.vy+=dy/l*str*0.22; this.vz+=dz/l*str*0.22;
-    this.sqV-=str*0.55;                // squish on poke
-    this.life=Math.min(this.life+0.18,1.0);  // refresh life
+    this.vx+=dx/l*str*0.22;this.vy+=dy/l*str*0.22;this.vz+=dz/l*str*0.22;
+    this.sqV-=str*0.55;
+    this.life=Math.min(this.life+0.18,1.0);
   }
 }
 
-const BY=0.525, TY=1.500, SP=0.640;
+// ── Scene objects ─────────────────────────────────────────────────────────────
+
+const BY=0.525,TY=1.500,SP=0.640;
 const cubes=[
   new GooCube(-SP,BY, 0.310),
   new GooCube( SP,BY, 0.310),
@@ -478,87 +486,69 @@ const cubes=[
 ];
 const miniBlobs=[];
 
+// Enable flopping locomotion on the three base cubes (staggered start)
+cubes[0].enableWalk(0.62,  0);
+cubes[1].enableWalk(0.62, 40);
+cubes[2].enableWalk(0.62, 80);
+
 // ── Input ─────────────────────────────────────────────────────────────────────
 
 const activePointers=new Map();
 
-function applyHit(px,py) {
+function applyHit(px,py){
   const rd=screenToRay(px,py);
   const base=0.22+Math.random()*0.10;
-
-  // Hit cubes
   cubes.forEach(c=>{
     const toCube=v3.sub([c.x,c.y,c.z],CAM);
     const proj=Math.max(0,v3.dot(toCube,rd));
     const closest=v3.add(CAM,v3.scale(rd,proj));
     const dist=v3.len(v3.sub(closest,[c.x,c.y,c.z]));
     const str=base*Math.exp(-dist*0.65);
-    if(str>0.01) c.registerHit(rd[0],rd[1],rd[2],str);
+    if(str>0.01)c.registerHit(rd[0],rd[1],rd[2],str);
   });
-
-  // Also poke any nearby mini-blobs
   miniBlobs.forEach(mb=>{
     const toCube=v3.sub([mb.x,mb.y,mb.z],CAM);
     const proj=Math.max(0,v3.dot(toCube,rd));
     const closest=v3.add(CAM,v3.scale(rd,proj));
     const dist=v3.len(v3.sub(closest,[mb.x,mb.y,mb.z]));
     const str=base*Math.exp(-dist*0.55);
-    if(str>0.02) mb.poke(rd[0],rd[1],rd[2],str);
+    if(str>0.02)mb.poke(rd[0],rd[1],rd[2],str);
   });
 }
 
-function applyDrag() {
-  if(!activePointers.size) return;
+function applyDrag(){
+  if(!activePointers.size)return;
   activePointers.forEach(({px,py})=>{
     const rd=screenToRay(px,py);
-
-    // Drag cubes
     cubes.forEach(c=>{
-      if(c.dead) return;
+      if(c.dead)return;
       const toCube=v3.sub([c.x,c.y,c.z],CAM);
       const proj=Math.max(0,v3.dot(toCube,rd));
       const closest=v3.add(CAM,v3.scale(rd,proj));
       const toRay=v3.sub(closest,[c.x,c.y,c.z]);
-      const dist=v3.len(toRay);
-      const wt=Math.exp(-dist*0.48);
-      if(wt<0.008) return;
+      const dist=v3.len(toRay);const wt=Math.exp(-dist*0.48);if(wt<0.008)return;
       const dir=dist>0.001?v3.scale(toRay,1/dist):[rd[0],rd[1],rd[2]];
-      c.vx+=dir[0]*0.011*wt; c.vy+=dir[1]*0.011*wt*0.65; c.vz+=dir[2]*0.011*wt;
+      c.vx+=dir[0]*0.011*wt;c.vy+=dir[1]*0.011*wt*0.65;c.vz+=dir[2]*0.011*wt;
       const bl=0.055;
-      c.dax=c.dax*(1-bl)+dir[0]*bl;
-      c.day=c.day*(1-bl)+dir[1]*bl;
-      c.daz=c.daz*(1-bl)+dir[2]*bl;
-      const al=Math.sqrt(c.dax**2+c.day**2+c.daz**2)||1;
-      c.dax/=al; c.day/=al; c.daz/=al;
-      if(c.sq>0.90) c.sqV-=0.0009*wt;
+      c.dax=c.dax*(1-bl)+dir[0]*bl;c.day=c.day*(1-bl)+dir[1]*bl;c.daz=c.daz*(1-bl)+dir[2]*bl;
+      const al=Math.sqrt(c.dax**2+c.day**2+c.daz**2)||1;c.dax/=al;c.day/=al;c.daz/=al;
+      if(c.sq>0.90)c.sqV-=0.0009*wt;
     });
-
-    // Drag mini-blobs — no spring, just push toward ray
     miniBlobs.forEach(mb=>{
       const toCube=v3.sub([mb.x,mb.y,mb.z],CAM);
       const proj=Math.max(0,v3.dot(toCube,rd));
       const closest=v3.add(CAM,v3.scale(rd,proj));
       const toRay=v3.sub(closest,[mb.x,mb.y,mb.z]);
-      const dist=v3.len(toRay);
-      const wt=Math.exp(-dist*0.45);
-      if(wt<0.01) return;
+      const dist=v3.len(toRay);const wt=Math.exp(-dist*0.45);if(wt<0.01)return;
       const dir=dist>0.001?v3.scale(toRay,1/dist):[rd[0],rd[1],rd[2]];
-      mb.vx+=dir[0]*0.016*wt; mb.vy+=dir[1]*0.016*wt; mb.vz+=dir[2]*0.016*wt;
-      mb.sqV-=0.0006*wt;          // slight squish while being dragged
-      mb.life=Math.min(mb.life+0.0006,1.0);  // touching extends life slightly
+      mb.vx+=dir[0]*0.016*wt;mb.vy+=dir[1]*0.016*wt;mb.vz+=dir[2]*0.016*wt;
+      mb.sqV-=0.0006*wt;mb.life=Math.min(mb.life+0.0006,1.0);
     });
   });
 }
 
-canvas.addEventListener('pointerdown',e=>{
-  canvas.setPointerCapture(e.pointerId);
-  activePointers.set(e.pointerId,{px:e.clientX,py:e.clientY});
-  applyHit(e.clientX,e.clientY);
-});
-canvas.addEventListener('pointermove',e=>{
-  if(activePointers.has(e.pointerId))
-    activePointers.set(e.pointerId,{px:e.clientX,py:e.clientY});
-});
+canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);activePointers.set(e.pointerId,{px:e.clientX,py:e.clientY});applyHit(e.clientX,e.clientY);});
+canvas.addEventListener('pointermove',e=>{if(activePointers.has(e.pointerId))activePointers.set(e.pointerId,{px:e.clientX,py:e.clientY});});
 canvas.addEventListener('pointerup',    e=>activePointers.delete(e.pointerId));
 canvas.addEventListener('pointercancel',e=>activePointers.delete(e.pointerId));
 
@@ -569,40 +559,35 @@ function resize(){
   const dpr=Math.min(window.devicePixelRatio||1,1.5);
   W=canvas.width =Math.round(window.innerWidth *dpr);
   H=canvas.height=Math.round(window.innerHeight*dpr);
-  gl.viewport(0,0,W,H);
-  buildFBO(W,H);
+  gl.viewport(0,0,W,H);buildFBO(W,H);
 }
-resize();
-window.addEventListener('resize',resize);
+resize();window.addEventListener('resize',resize);
+
+// Preallocated typed arrays for GPU upload
+const mbData  = new Float32Array(12*4);
+const msqData = new Float32Array(12);
+const mdaData = new Float32Array(12*3);
 
 // ── Render loop ───────────────────────────────────────────────────────────────
 
-// Preallocate typed arrays for mini-blob GPU upload (12 slots)
-const mbData  = new Float32Array(12*4);  // vec4 per blob
-const msqData = new Float32Array(12);
-
-function frame() {
+function frame(){
   requestAnimationFrame(frame);
   const now=performance.now();
 
   applyDrag();
   cubes.forEach(c=>{c.tick();c.checkRespawn(now);});
-  for(let i=miniBlobs.length-1;i>=0;i--){
-    miniBlobs[i].tick();
-    if(miniBlobs[i].dead) miniBlobs.splice(i,1);
-  }
+  for(let i=miniBlobs.length-1;i>=0;i--){miniBlobs[i].tick();if(miniBlobs[i].dead)miniBlobs.splice(i,1);}
 
-  // Pack mini-blobs into GPU arrays (active first, inactive slots = r=-1)
+  // Pack mini-blob data (active first; inactive slots: w=-1)
   for(let i=0;i<12;i++){
     const mb=miniBlobs[i];
     if(mb){
-      mbData[i*4+0]=mb.x; mbData[i*4+1]=mb.y;
-      mbData[i*4+2]=mb.z; mbData[i*4+3]=mb.r;
+      mbData[i*4]=mb.x;mbData[i*4+1]=mb.y;mbData[i*4+2]=mb.z;mbData[i*4+3]=mb.r;
       msqData[i]=mb.sq;
+      mdaData[i*3]=mb.dax;mdaData[i*3+1]=mb.day;mdaData[i*3+2]=mb.daz;
     } else {
-      mbData[i*4+0]=0; mbData[i*4+1]=-500;
-      mbData[i*4+2]=0; mbData[i*4+3]=-1;
-      msqData[i]=1.0;
+      mbData[i*4]=0;mbData[i*4+1]=-500;mbData[i*4+2]=0;mbData[i*4+3]=-1;
+      msqData[i]=1.0;mdaData[i*3]=0;mdaData[i*3+1]=1;mdaData[i*3+2]=0;
     }
   }
 
@@ -613,20 +598,22 @@ function frame() {
   gl.enableVertexAttribArray(scenePosLoc);
   gl.vertexAttribPointer(scenePosLoc,2,gl.FLOAT,false,0,0);
 
-  gl.uniform2f(U.u_res,W,H);
-  gl.uniform1f(U.u_time,now*0.001);
+  gl.uniform2f(U.u_res,W,H);gl.uniform1f(U.u_time,now*0.001);
   gl.uniform3f(U.u_c0,cubes[0].x,cubes[0].y,cubes[0].z);
   gl.uniform3f(U.u_c1,cubes[1].x,cubes[1].y,cubes[1].z);
   gl.uniform3f(U.u_c2,cubes[2].x,cubes[2].y,cubes[2].z);
   gl.uniform3f(U.u_c3,cubes[3].x,cubes[3].y,cubes[3].z);
-  gl.uniform1f(U.u_sq0,cubes[0].sq); gl.uniform1f(U.u_sq1,cubes[1].sq);
-  gl.uniform1f(U.u_sq2,cubes[2].sq); gl.uniform1f(U.u_sq3,cubes[3].sq);
+  gl.uniform1f(U.u_sq0,cubes[0].sq);gl.uniform1f(U.u_sq1,cubes[1].sq);
+  gl.uniform1f(U.u_sq2,cubes[2].sq);gl.uniform1f(U.u_sq3,cubes[3].sq);
   gl.uniform3f(U.u_da0,cubes[0].dax,cubes[0].day,cubes[0].daz);
   gl.uniform3f(U.u_da1,cubes[1].dax,cubes[1].day,cubes[1].daz);
   gl.uniform3f(U.u_da2,cubes[2].dax,cubes[2].day,cubes[2].daz);
   gl.uniform3f(U.u_da3,cubes[3].dax,cubes[3].day,cubes[3].daz);
-  gl.uniform4fv(U.u_mb,  mbData);
-  gl.uniform1fv(U.u_msq, msqData);
+  gl.uniform1f(U.u_dmg0,cubes[0].damage);gl.uniform1f(U.u_dmg1,cubes[1].damage);
+  gl.uniform1f(U.u_dmg2,cubes[2].damage);gl.uniform1f(U.u_dmg3,cubes[3].damage);
+  gl.uniform4fv(U.u_mb, mbData);
+  gl.uniform1fv(U.u_msq,msqData);
+  gl.uniform3fv(U.u_mda,mdaData);
 
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
 
@@ -636,10 +623,8 @@ function frame() {
   gl.bindBuffer(gl.ARRAY_BUFFER,vbuf);
   gl.enableVertexAttribArray(bloomPosLoc);
   gl.vertexAttribPointer(bloomPosLoc,2,gl.FLOAT,false,0,0);
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D,sceneTex);
-  gl.uniform1i(BU.u_scene,0);
-  gl.uniform2f(BU.u_step,1/W,1/H);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,sceneTex);
+  gl.uniform1i(BU.u_scene,0);gl.uniform2f(BU.u_step,1/W,1/H);
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
 }
 frame();
