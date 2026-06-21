@@ -16,16 +16,71 @@ function getWaveScale(wave) {
   };
 }
 
-function getEnemyComposition(wave) {
+// Returns { dur, list: [{type, t: spawnDelaySecs}] }
+function getEnemySchedule(wave) {
   const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
           YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO } = EnemyType;
-  if (wave === 1) return [GLOBBO, SPITTOR, FANNER, WEEVA];
-  if (wave === 2) return [GLOBBO, YELA_CUBE, SPITTOR, FANNER, WEEVA];
-  if (wave === 3) return [GLOBBO, YELA_CUBE, ORANGE_CUBE, SPITTOR, FANNER, WEEVA];
-  if (wave === 4) return [GLOBBO, YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, FANNER, WEEVA, SPLITTA];
-  if (wave === 5) return [GLOBBO, REDD_CUBE, ORANGE_CUBE, SLUDGE_CUBE, SPITTOR, WEEVA, SPLITTA];
-  if (wave === 6) return [YELA_CUBE, REDD_CUBE, PURP_CUBE, ORANGE_CUBE, SPITTOR, FANNER, TORO];
-  return [GLOBBO, REDD_CUBE, PURP_CUBE, ORANGE_CUBE, SLUDGE_CUBE, SPLITTA, TORO];
+  if (wave === 1) return { dur: 60, list: [
+    { type: GLOBBO,      t: 0  },
+    { type: YELA_CUBE,   t: 10 },
+    { type: SPITTOR,     t: 20 },
+    { type: FANNER,      t: 30 },
+    { type: WEEVA,       t: 45 },
+  ]};
+  if (wave === 2) return { dur: 60, list: [
+    { type: GLOBBO,      t: 0  },
+    { type: YELA_CUBE,   t: 0  },
+    { type: ORANGE_CUBE, t: 15 },
+    { type: SPITTOR,     t: 25 },
+    { type: FANNER,      t: 35 },
+    { type: WEEVA,       t: 50 },
+  ]};
+  if (wave === 3) return { dur: 65, list: [
+    { type: GLOBBO,      t: 0  },
+    { type: YELA_CUBE,   t: 0  },
+    { type: ORANGE_CUBE, t: 10 },
+    { type: SLUDGE_CUBE, t: 20 },
+    { type: SPITTOR,     t: 30 },
+    { type: WEEVA,       t: 40 },
+    { type: SPLITTA,     t: 55 },
+  ]};
+  if (wave === 4) return { dur: 65, list: [
+    { type: GLOBBO,      t: 0  },
+    { type: REDD_CUBE,   t: 0  },
+    { type: ORANGE_CUBE, t: 10 },
+    { type: SLUDGE_CUBE, t: 20 },
+    { type: FANNER,      t: 30 },
+    { type: WEEVA,       t: 40 },
+    { type: SPLITTA,     t: 55 },
+  ]};
+  if (wave === 5) return { dur: 70, list: [
+    { type: GLOBBO,      t: 0  },
+    { type: REDD_CUBE,   t: 0  },
+    { type: PURP_CUBE,   t: 10 },
+    { type: ORANGE_CUBE, t: 20 },
+    { type: SLUDGE_CUBE, t: 30 },
+    { type: FANNER,      t: 45 },
+    { type: SPLITTA,     t: 60 },
+  ]};
+  if (wave === 6) return { dur: 70, list: [
+    { type: YELA_CUBE,   t: 0  },
+    { type: REDD_CUBE,   t: 0  },
+    { type: PURP_CUBE,   t: 10 },
+    { type: ORANGE_CUBE, t: 20 },
+    { type: SPITTOR,     t: 30 },
+    { type: FANNER,      t: 45 },
+    { type: TORO,        t: 60 },
+  ]};
+  return { dur: 75, list: [
+    { type: GLOBBO,      t: 0  },
+    { type: GLOBBO,      t: 5  },
+    { type: REDD_CUBE,   t: 10 },
+    { type: PURP_CUBE,   t: 20 },
+    { type: ORANGE_CUBE, t: 30 },
+    { type: SLUDGE_CUBE, t: 40 },
+    { type: SPLITTA,     t: 55 },
+    { type: TORO,        t: 65 },
+  ]};
 }
 
 // ── Renderer ──────────────────────────────────────────────────────────────────
@@ -160,6 +215,28 @@ class PoisonZone {
   remove(sc) { sc.remove(this.mesh); }
 }
 
+class SlimeTrail {
+  constructor(sc, x, z, radius) {
+    this._life = 2.0;
+    this.mat = new THREE.MeshBasicMaterial({
+      color: 0xddee00,
+      transparent: true,
+      opacity: 0.45,
+      depthWrite: false,
+    });
+    this.mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, 8), this.mat);
+    this.mesh.rotation.x = -Math.PI / 2;
+    this.mesh.position.set(x, 0.013, z);
+    sc.add(this.mesh);
+  }
+  update(dt) {
+    this._life -= dt;
+    this.mat.opacity = 0.45 * Math.max(0, this._life / 2.0);
+    return this._life > 0;
+  }
+  remove(sc) { sc.remove(this.mesh); }
+}
+
 // ── Melee types ───────────────────────────────────────────────────────────────
 const MELEE_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPLITTA,
@@ -172,11 +249,15 @@ const MELEE_TYPES = new Set([
 const input   = new InputManager();
 const bullets = new BulletPool(scene);
 const player  = new Player(scene);
-let enemies     = [];
-let chunks      = [];
-let puddles     = [];
-let poisonZones = [];
-let wave        = 0;
+let enemies      = [];
+let chunks       = [];
+let puddles      = [];
+let poisonZones  = [];
+let slimeTrails  = [];
+let wave         = 0;
+let waveTimer    = 0;
+let waveDuration = 60;
+let pendingSpawns = [];
 
 // ── Score ─────────────────────────────────────────────────────────────────────
 let score   = 0;
@@ -252,6 +333,13 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
   ctx.font = 'bold 14px monospace';
   ctx.fillText(`WAVE ${wave}`, 16, 24);
+
+  // Wave progress bar
+  const _prog = Math.min(1, waveTimer / waveDuration);
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillRect(16, 30, 100, 3);
+  ctx.fillStyle = _prog >= 1 ? '#44ff88' : '#ffaa22';
+  ctx.fillRect(16, 30, 100 * _prog, 3);
 
   ctx.textAlign = 'right';
   ctx.fillText(`${score}`, uiCanvas.width - 16, 24);
@@ -332,6 +420,7 @@ function clearFX() {
   for (const c of chunks)      c.remove(scene); chunks      = [];
   for (const p of puddles)     p.remove(scene); puddles     = [];
   for (const z of poisonZones) z.remove(scene); poisonZones = [];
+  for (const s of slimeTrails) s.remove(scene); slimeTrails = [];
 }
 
 function spawnWave() {
@@ -339,12 +428,17 @@ function spawnWave() {
   enemies = [];
   wave++;
   const { speedMult, intervalMult } = getWaveScale(wave);
-  const types = getEnemyComposition(wave);
-  types.forEach((type, i) => {
-    const angle = (i / types.length) * Math.PI * 2;
-    const r     = HALF * 0.6;
-    enemies.push(new Enemy(scene, type, Math.cos(angle) * r, Math.sin(angle) * r, speedMult, intervalMult));
-  });
+  const { dur, list } = getEnemySchedule(wave);
+  waveDuration = dur;
+  waveTimer    = 0;
+  const total  = list.length;
+  pendingSpawns = list.map((entry, i) => ({
+    type: entry.type,
+    delay: entry.t,
+    angle: (i / total) * Math.PI * 2,
+    speedMult,
+    intervalMult,
+  }));
   announceWave();
 }
 
@@ -449,6 +543,14 @@ function loop() {
   let aimDir    = input.getAimDir();
   if (aimDir.useMouse) aimDir = mouseAimDir();
 
+  // Trickle spawn pending enemies
+  waveTimer += dt;
+  while (pendingSpawns.length > 0 && waveTimer >= pendingSpawns[0].delay) {
+    const s = pendingSpawns.shift();
+    const r = HALF * 0.6;
+    enemies.push(new Enemy(scene, s.type, Math.cos(s.angle) * r, Math.sin(s.angle) * r, s.speedMult, s.intervalMult));
+  }
+
   player.update(dt, moveDir, aimDir, bullets, HALF);
   for (const e of enemies) { e.update(dt, player.position, bullets); e.updateDeath(dt); }
   bullets.update(dt, HALF);
@@ -463,12 +565,22 @@ function loop() {
   for (let i = poisonZones.length - 1; i >= 0; i--) {
     if (!poisonZones[i].update(dt)) { poisonZones[i].remove(scene); poisonZones.splice(i, 1); }
   }
+  for (let i = slimeTrails.length - 1; i >= 0; i--) {
+    if (!slimeTrails[i].update(dt)) { slimeTrails[i].remove(scene); slimeTrails.splice(i, 1); }
+  }
 
   // Sludge poison emission
   for (const e of enemies) {
     if (!e._poisonReady) continue;
     e._poisonReady = false;
     poisonZones.push(new PoisonZone(scene, e.position.x, e.position.z, e.radius * 1.8));
+  }
+
+  // YELA_CUBE slime trail emission
+  for (const e of enemies) {
+    if (!e._trailReady) continue;
+    e._trailReady = false;
+    slimeTrails.push(new SlimeTrail(scene, e.position.x, e.position.z, 0.5));
   }
 
   // Check for children to spawn (SPLITTA, REDD_CUBE, PURP_CUBE)
@@ -570,8 +682,12 @@ function loop() {
     }
   }
 
-  // All enemies dead (including death animations) → next wave
-  if (gameState === 'playing' && enemies.length && enemies.every(e => !e.alive && !e._dying)) {
+  // All enemies dead + wave duration elapsed → next wave
+  if (gameState === 'playing' &&
+      pendingSpawns.length === 0 &&
+      waveTimer >= waveDuration &&
+      enemies.length > 0 &&
+      enemies.every(e => !e.alive && !e._dying)) {
     bullets.clear();
     for (const c of chunks) c.remove(scene); chunks = [];
     audio.waveClear();

@@ -74,6 +74,8 @@ export class Enemy {
     this._childType    = null;
     this._childCount   = 0;
     this._childFreeform = false;
+    this._trailReady   = false;
+    this._trailTimer   = 0;
     this.chunks        = [];
 
     // State machine fields
@@ -155,6 +157,7 @@ export class Enemy {
       const dirs = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1}];
       this._cardDir = dirs[Math.floor(Math.random() * 4)];
       this._cardTimer = 1.8 + Math.random() * 2.0;
+      if (type === EnemyType.YELA_CUBE) this._trailTimer = 0.3;
     } else if (type === EnemyType.REDD_MINI) {
       const dirs = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1}];
       this._cardDir = dirs[Math.floor(Math.random() * 4)];
@@ -251,8 +254,10 @@ export class Enemy {
       case EnemyType.REDD_CUBE: {
         this._cardTimer -= dt;
         if (this._cardTimer <= 0) {
-          const dirs = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1}];
-          this._cardDir = dirs[Math.floor(Math.random() * 4)];
+          const cardinals = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1}];
+          const diagonals = [{x:0.707,z:0.707},{x:-0.707,z:0.707},{x:0.707,z:-0.707},{x:-0.707,z:-0.707}];
+          const dirs = (this.type === EnemyType.YELA_CUBE && Math.random() < 0.5) ? diagonals : cardinals;
+          this._cardDir = dirs[Math.floor(Math.random() * dirs.length)];
           this._cardTimer = 1.8 + Math.random() * 2.0;
         }
         this.mesh.position.x += this._cardDir.x * spd * dt;
@@ -266,6 +271,10 @@ export class Enemy {
           this._cardDir.z = -Math.sign(this.mesh.position.z);
           this.mesh.position.z = Math.sign(this.mesh.position.z) * H;
           this._cardTimer = 0.5 + Math.random();
+        }
+        if (this.type === EnemyType.YELA_CUBE) {
+          this._trailTimer -= dt;
+          if (this._trailTimer <= 0) { this._trailTimer = 0.3; this._trailReady = true; }
         }
         break;
       }
