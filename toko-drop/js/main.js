@@ -276,7 +276,13 @@ function triggerGameOver() {
 }
 
 // ── Input wiring ──────────────────────────────────────────────────────────────
-input.onDash  = () => { if (gameState === 'playing') player.dash(input.getAimDir()); };
+input.onDash  = () => {
+  if (gameState === 'playing') {
+    const move = input.getMoveDir();
+    const dir = { x: move.x, z: move.z, valid: move.x !== 0 || move.z !== 0 };
+    player.dash(dir);
+  }
+};
 input.onPause = () => {
   if (gameState === 'playing') { gameState = 'paused';  showPause(); }
   else if (gameState === 'paused')  { gameState = 'playing'; overlay.style.display = 'none'; }
