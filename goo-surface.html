@@ -13,386 +13,268 @@ canvas { display:block; width:100%; height:100%; touch-action:none; }
 <body>
 <canvas id="c"></canvas>
 <script>
-// ── Art-style tuning knobs ─────────────────────────────────────────────────────
-// These map directly to Godot _physics_process or Unreal Niagara module params.
-const N_PARTICLES = 48;    // 6 col × 8 row hex grid
-const GRAVITY     = 130;   // px/s² downward; lower = more volumetric/less flat
-const STIFFNESS   = 320;   // repulsion strength (higher = bouncier, less squishy)
-const COHESION    = 115;   // surface tension (higher = more balled-up, less splashy)
-const VISCOSITY   = 15;    // velocity damping per pair (higher = slower/treacly)
-const MAX_VEL     = 380;   // px/s hard velocity cap
-const DRAG_FORCE  = 700;   // attraction strength when dragging
-
-// ── WebGL setup ───────────────────────────────────────────────────────────────
 const canvas = document.getElementById('c');
-const gl = canvas.getContext('webgl', {antialias:true, alpha:false})
-        || canvas.getContext('experimental-webgl', {antialias:true, alpha:false});
+const gl = canvas.getContext('webgl',{antialias:true,alpha:false})
+        || canvas.getContext('experimental-webgl',{antialias:true,alpha:false});
+if (!gl) { document.body.innerHTML='<p style="color:#fff;padding:2em">WebGL not supported</p>'; throw 0; }
 
-if (!gl) {
-  document.body.innerHTML = '<p style="color:#fff;padding:2em">WebGL not supported</p>';
-  throw 0;
-}
-gl.getExtension('OES_standard_derivatives');
+const VS = `attribute vec2 a_pos; void main(){gl_Position=vec4(a_pos,0,1);}`;
 
-// ── Shaders ───────────────────────────────────────────────────────────────────
-const VS = `
-attribute vec2 a_pos;
-void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
-`;
-
-// N_MAX must match N_PARTICLES above.
-// Each particle contributes r²/(d²+ε) to the scalar field.
-// Blob surface is where field ≥ 1.0 (soft edge via smoothstep).
-// 3D sphere normals are blended by field weight — identical approach to goo-snowman.html.
 const FS = `
-#extension GL_OES_standard_derivatives : enable
 precision highp float;
 
-#define N_MAX 48
+uniform vec2  u_res;
+uniform vec3  u_c0, u_c1, u_c2, u_c3;
+uniform float u_sq0, u_sq1, u_sq2, u_sq3;
 
-uniform vec2  u_pos[N_MAX];   // particle centres (WebGL y-up coords)
-uniform float u_r;             // particle smoothing/render radius
-uniform float u_floor;         // floor y in WebGL space (y-up)
-uniform vec2  u_res;           // canvas resolution
+const vec3  HALF_BOX = vec3(0.525, 0.525, 0.525);
+const float ROUND_R  = 0.200;
+const float BLEND_K  = 0.340;
+const vec3  LIGHT    = normalize(vec3(-0.65, 2.30, 1.70));
 
-// ── Metaball field + 3D sphere normals in one pass ───────────────────────────
-void fieldNorm(vec2 p, out float f, out vec3 n) {
-  f = 0.0;
-  n = vec3(0.0);
-  float rsq = u_r * u_r;
-  for (int i = 0; i < N_MAX; i++) {
-    vec2 d = p - u_pos[i];
-    float dsq = dot(d, d);
-    float w = rsq / (dsq + 0.5);
-    f += w;
-    // Analytical sphere normal: only contributes inside sphere's 2D silhouette
-    if (dsq < rsq) {
-      n += vec3(d, sqrt(rsq - dsq)) * (w / u_r);
-    }
-  }
-  n = (dot(n, n) > 0.0001) ? normalize(n) : vec3(0.0, 0.0, 1.0);
+float sdRoundBox(vec3 p, vec3 b, float r) {
+  vec3 q = abs(p) - b;
+  return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0) - r;
 }
 
-// Scalar field only (used for floor reflection without needing a normal).
-float fieldOnly(vec2 p) {
-  float f = 0.0, rsq = u_r * u_r;
-  for (int i = 0; i < N_MAX; i++) {
-    vec2 d = p - u_pos[i];
-    f += rsq / (dot(d, d) + 0.5);
+float smin(float a, float b, float k) {
+  float h = clamp(0.5 + 0.5*(b-a)/k, 0.0, 1.0);
+  return mix(b, a, h) - k*h*(1.0-h);
+}
+
+float gooCube(vec3 p, vec3 cen, float sq) {
+  float sqC = clamp(sq, 0.55, 1.55);
+  vec3  lp  = p - cen;
+  lp.y  *= sqC;
+  lp.xz /= sqrt(sqC);
+  float d = sdRoundBox(lp, HALF_BOX, ROUND_R);
+  return d * min(sqrt(sqC), 1.0 / sqC);
+}
+
+float scene(vec3 p) {
+  float d0 = gooCube(p, u_c0, u_sq0);
+  float d1 = gooCube(p, u_c1, u_sq1);
+  float d2 = gooCube(p, u_c2, u_sq2);
+  float d3 = gooCube(p, u_c3, u_sq3);
+  return smin(smin(d0, d1, BLEND_K), smin(d2, d3, BLEND_K), BLEND_K);
+}
+
+vec3 calcNormal(vec3 p) {
+  const float E = 0.0007;
+  return normalize(vec3(
+    scene(p+vec3(E,0,0))-scene(p-vec3(E,0,0)),
+    scene(p+vec3(0,E,0))-scene(p-vec3(0,E,0)),
+    scene(p+vec3(0,0,E))-scene(p-vec3(0,0,E))
+  ));
+}
+
+float softShadow(vec3 ro, vec3 rd, float mint, float maxt) {
+  float res = 1.0, t = mint;
+  for (int i = 0; i < 20; i++) {
+    if (t > maxt) break;
+    float h = scene(ro + rd*t);
+    if (h < 0.0004) return 0.0;
+    res = min(res, 7.0*h/t);
+    t  += clamp(h, 0.008, 0.25);
   }
-  return f;
+  return clamp(res, 0.0, 1.0);
+}
+
+float calcAO(vec3 p, vec3 n) {
+  float occ = 0.0, sca = 1.0;
+  for (int i = 0; i < 5; i++) {
+    float h = 0.010 + 0.170 * float(i) / 4.0;
+    float d = scene(p + h*n);
+    occ += (h - d) * sca;
+    sca *= 0.80;
+  }
+  return clamp(1.0 - 3.0*occ, 0.0, 1.0);
+}
+
+mat3 camMatrix(vec3 ro, vec3 ta) {
+  vec3 ww = normalize(ta - ro);
+  vec3 uu = normalize(cross(ww, vec3(0,1,0)));
+  vec3 vv = normalize(cross(uu, ww));
+  return mat3(uu, vv, ww);
+}
+
+vec3 goopShade(vec3 p, vec3 N, vec3 V, float sh, float ao) {
+  vec3 L = LIGHT;
+  vec3 H = normalize(L + V);
+
+  float NdL   = max(dot(N, L), 0.0);
+  float NdH   = max(dot(N, H), 0.0);
+  float NdV   = max(dot(N, V), 0.0);
+
+  float specA   = pow(NdH, 88.0) * 2.60;
+  float specB   = pow(NdH, 11.0) * 0.32;
+  float fresnel = pow(1.0 - NdV, 3.80) * 0.62;
+  float sss     = pow(max(0.0, -dot(N,L)*0.42+0.58), 2.2) * 0.42;
+
+  vec3 col =
+      vec3(0.012, 0.105, 0.045)
+    + vec3(0.090, 0.460, 0.200) * NdL
+    + vec3(0.850, 1.000, 0.920) * (specA + specB)
+    + vec3(0.050, 0.650, 0.280) * fresnel
+    + vec3(0.038, 0.680, 0.240) * sss;
+
+  col *= (sh * 0.70 + 0.30);
+  col *= (ao * 0.65 + 0.35);
+  return col;
 }
 
 void main() {
-  vec2 p = gl_FragCoord.xy;
+  vec2 uv = (gl_FragCoord.xy - u_res*0.5) / u_res.y;
 
-  float f; vec3 n;
-  fieldNorm(p, f, n);
+  vec3 ro  = vec3(0.70, 2.90, 5.50);
+  vec3 ta  = vec3(0.05, 0.82, 0.0);
+  mat3 cam = camMatrix(ro, ta);
+  vec3 rd  = cam * normalize(vec3(uv, 1.85));
 
-  // Soft blob edge: translucent fringe instead of hard cutoff
-  float alpha = smoothstep(0.78, 1.06, f);
-
-  // ── Background ──────────────────────────────────────────────────────────────
-  vec3 bg;
-
-  if (p.y < u_floor) {
-    // Floor region (below the goop, where the reflection appears)
-    float fy = clamp((u_floor - p.y) / (u_floor * 0.25), 0.0, 1.0);
-    bg = mix(vec3(0.038, 0.050, 0.072), vec3(0.008, 0.010, 0.015), fy);
-
-    // Goop reflection: evaluate field at the mirror position about the floor
-    vec2 pMirror = vec2(p.x, 2.0 * u_floor - p.y);
-    float fRefl  = fieldOnly(pMirror);
-    float aRefl  = smoothstep(0.78, 1.06, fRefl);
-    if (aRefl > 0.0) {
-      // Reflection fades out with distance below the floor
-      float fall = 1.0 - clamp((u_floor - p.y) / (u_r * 2.2), 0.0, 1.0);
-      bg = mix(bg, vec3(0.02, 0.22, 0.14), aRefl * fall * 0.48);
-    }
-
-    // Subtle specular line right at the floor surface
-    float atFloor = smoothstep(4.0, 0.0, abs(p.y - u_floor));
-    bg = mix(bg, vec3(0.08, 0.18, 0.14), atFloor * 0.55);
-
-  } else {
-    // Above floor: atmospheric gradient
-    float gy = clamp((p.y - u_floor) / (u_res.y - u_floor), 0.0, 1.0);
-    bg = mix(vec3(0.048, 0.060, 0.092), vec3(0.008, 0.010, 0.018), gy);
-
-    // Contact darkening: area just under the blob is slightly shadowed
-    bg *= 1.0 - clamp(f * 0.11, 0.0, 0.32);
+  float t   = 0.10;
+  bool  hit = false;
+  for (int i = 0; i < 88; i++) {
+    float d = scene(ro + rd*t);
+    if (d < 0.0005) { hit = true; break; }
+    if (t > 22.0) break;
+    t += max(d, 0.004);
   }
 
-  if (alpha < 0.001) { gl_FragColor = vec4(bg, 1.0); return; }
+  vec3 col;
 
-  // ── Gel surface lighting (Blinn-Phong + Fresnel + SSS + AO) ─────────────────
-  vec3 L = normalize(vec3(-0.50, 0.80, 0.85));
-  vec3 V = vec3(0.0, 0.0, 1.0);
-  vec3 H = normalize(L + V);
+  if (hit) {
+    vec3  p  = ro + rd*t;
+    vec3  N  = calcNormal(p);
+    vec3  V  = -rd;
+    float sh = softShadow(p + N*0.008, LIGHT, 0.02, 7.0);
+    float ao = calcAO(p, N);
+    col = goopShade(p, N, V, sh, ao);
 
-  float diff    = max(dot(n, L), 0.0);
-  float specA   = pow(max(dot(n, H), 0.0), 88.0);
-  float specB   = pow(max(dot(n, H), 0.0), 10.0) * 0.28;
-  float fresnel = pow(1.0 - max(dot(n, V), 0.0), 3.0);
-  float sss     = pow(max(-dot(n, L) * 0.5 + 0.5, 0.0), 2.0) * 0.45;
-  // AO darkens where field density is highest (junction/cavity areas)
-  float ao      = 1.0 - clamp((f - 1.0) * 0.010, 0.0, 0.38);
+  } else if (rd.y < -0.0005) {
+    float tF = -ro.y / rd.y;
+    if (tF > 0.0 && tF < 22.0) {
+      vec3 fp = ro + rd*tF;
+      float chk  = mod(floor(fp.x) + floor(fp.z), 2.0);
+      vec3 base  = mix(vec3(0.055,0.062,0.072), vec3(0.068,0.076,0.088), chk*0.45);
+      vec2 gf    = abs(fract(fp.xz) - 0.5);
+      float grid = max(0.0, 1.0 - min(gf.x, gf.y)*95.0);
+      base = mix(base, vec3(0.18,0.20,0.24), grid*0.55);
+      float sh   = softShadow(fp + vec3(0,0.003,0), LIGHT, 0.05, 7.0);
+      base *= (sh * 0.72 + 0.28);
+      float fog  = 1.0 - exp(-max(tF-4.0,0.0)*0.045);
+      col = mix(base, vec3(0.055,0.065,0.080), fog);
+    } else {
+      col = vec3(0.055,0.065,0.080);
+    }
+  } else {
+    col = vec3(0.055,0.065,0.080) + vec3(0.010,0.012,0.018)*clamp(uv.y,0.0,1.0);
+  }
 
-  // Teal / dark-green gel palette (matches art reference)
-  // Swap these vec3 values to change material colour.
-  vec3 col = (vec3(0.008, 0.060, 0.038)           // dark teal base
-            + vec3(0.04,  0.52,  0.26 ) * diff     // emerald diffuse
-            + vec3(0.02,  0.18,  0.10 ) * sss) * ao
-           + vec3(0.88,  1.00,  0.92 ) * (specA * 3.0 + specB)  // near-white highlight
-           + vec3(0.02,  0.72,  0.44 ) * fresnel * 0.52;         // teal rim
-
-  // Reinhard tonemap + gamma
   col = col / (col + vec3(0.72));
-  col = pow(col, vec3(1.0 / 2.2));
-
-  // Composite gel over background using soft alpha
-  gl_FragColor = vec4(mix(bg, col, alpha), 1.0);
+  col = pow(col, vec3(0.4545));
+  gl_FragColor = vec4(col, 1.0);
 }
 `;
 
 // ── Compile & link ────────────────────────────────────────────────────────────
+
 function compile(type, src) {
   const s = gl.createShader(type);
-  gl.shaderSource(s, src);
-  gl.compileShader(s);
-  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
-    throw new Error(gl.getShaderInfoLog(s));
+  gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
   return s;
 }
 const prog = gl.createProgram();
 gl.attachShader(prog, compile(gl.VERTEX_SHADER, VS));
 gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FS));
 gl.linkProgram(prog);
-if (!gl.getProgramParameter(prog, gl.LINK_STATUS))
-  throw new Error(gl.getProgramInfoLog(prog));
+if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
 gl.useProgram(prog);
 
 const vbuf = gl.createBuffer();
 gl.bindBuffer(gl.ARRAY_BUFFER, vbuf);
-gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), gl.STATIC_DRAW);
 const aPos = gl.getAttribLocation(prog, 'a_pos');
 gl.enableVertexAttribArray(aPos);
 gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
-// 'u_pos[0]' is the explicit base-element form — most portable across WebGL 1 drivers
-const U = {
-  pos:   gl.getUniformLocation(prog, 'u_pos[0]'),
-  r:     gl.getUniformLocation(prog, 'u_r'),
-  floor: gl.getUniformLocation(prog, 'u_floor'),
-  res:   gl.getUniformLocation(prog, 'u_res'),
-};
+const U = {};
+['u_res','u_c0','u_c1','u_c2','u_c3','u_sq0','u_sq1','u_sq2','u_sq3']
+  .forEach(n => U[n] = gl.getUniformLocation(prog, n));
 
-// ── Particle state ────────────────────────────────────────────────────────────
-// These Float32Arrays map cleanly to Godot PackedVector2Array or Unreal FVector2D[].
-const px     = new Float32Array(N_PARTICLES);   // x position (screen space)
-const py     = new Float32Array(N_PARTICLES);   // y position (screen space, y-down)
-const vx     = new Float32Array(N_PARTICLES);   // x velocity (px/s)
-const vy     = new Float32Array(N_PARTICLES);   // y velocity (px/s)
-const fx_buf = new Float32Array(N_PARTICLES);   // accumulated x force
-const fy_buf = new Float32Array(N_PARTICLES);   // accumulated y force
-const posGPU = new Float32Array(N_PARTICLES * 2); // flattened for GPU upload
+// ── Physics ───────────────────────────────────────────────────────────────────
 
-let W, H, floorY, particleR;
-
-// ── Layout & initialisation ───────────────────────────────────────────────────
-function layout() {
-  W = canvas.width  = window.innerWidth;
-  H = canvas.height = window.innerHeight;
-  gl.viewport(0, 0, W, H);
-
-  floorY    = H * 0.80;
-  particleR = Math.min(W, H) * 0.058;   // h in SPH terms
-
-  // Hex grid: 6 columns × 8 rows = 48 particles
-  // Spacing s = 0.82h — particles start slightly compressed so they push to rest distance
-  const COLS = 6, ROWS = 8;
-  const s = particleR * 0.82;
-  const gridW  = (COLS - 0.5) * s;
-  const startX = W / 2 - gridW / 2;
-  const startY = floorY - particleR * 1.5; // bottom row starts just above floor
-
-  let k = 0;
-  for (let row = 0; row < ROWS && k < N_PARTICLES; row++) {
-    for (let col = 0; col < COLS && k < N_PARTICLES; col++) {
-      px[k] = startX + col * s + (row % 2) * s * 0.5; // hex column offset
-      py[k] = startY - row * s * 0.866;                 // rows stack upward (−y)
-      vx[k] = (Math.random() - 0.5) * 3;
-      vy[k] = (Math.random() - 0.5) * 3;
-      k++;
-    }
+class GooCube {
+  constructor(bx, by, bz) {
+    this.bx=bx; this.by=by; this.bz=bz;
+    this.x=bx;  this.y=by;  this.z=bz;
+    this.vx=0;  this.vy=0;  this.vz=0;
+    this.sq=1.0; this.sqV=0.0;
+  }
+  tick() {
+    this.vx=(this.vx+(this.bx-this.x)*0.022)*0.89;
+    this.vy=(this.vy+(this.by-this.y)*0.022)*0.89;
+    this.vz=(this.vz+(this.bz-this.z)*0.022)*0.89;
+    this.x+=this.vx; this.y+=this.vy; this.z+=this.vz;
+    this.sqV=(this.sqV-(this.sq-1.0)*0.24)*0.86;
+    this.sq=Math.max(0.55, Math.min(1.60, this.sq+this.sqV));
+  }
+  hit(str) {
+    this.sqV -= str * 0.85;
+    this.vy  -= str * 0.10;
   }
 }
+
+// Trefoil base + 1 top, matching reference arrangement
+const BY=0.525, TY=1.500, SP=0.640;
+const cubes = [
+  new GooCube(-SP,  BY,  0.310),   // front-left
+  new GooCube( SP,  BY,  0.310),   // front-right
+  new GooCube( 0.0, BY, -0.490),   // back-centre
+  new GooCube( 0.0, TY,  0.050),   // top
+];
 
 // ── Input ─────────────────────────────────────────────────────────────────────
-let isDragging = false;
-let dragX = 0, dragY = 0;
 
-function poke(cx, cy) {
-  // Outward impulse centred on touch point — gel springs back due to cohesion
-  for (let i = 0; i < N_PARTICLES; i++) {
-    const dx = px[i] - cx, dy = py[i] - cy;
-    const d  = Math.sqrt(dx*dx + dy*dy) || 1;
-    const str = 240 * Math.exp(-d / (particleR * 2.2));
-    vx[i] += str * dx / d;
-    vy[i] += str * dy / d;
-  }
+function applyHit() {
+  const base = 0.20 + Math.random()*0.12;
+  cubes[0].hit(base);
+  cubes[1].hit(base*0.92);
+  cubes[2].hit(base*0.88);
+  cubes[3].hit(base*0.60);
 }
+canvas.addEventListener('pointerdown', applyHit);
+canvas.addEventListener('touchstart', e=>{e.preventDefault();applyHit();},{passive:false});
 
-canvas.addEventListener('pointerdown', e => {
-  isDragging = true;
-  dragX = e.clientX; dragY = e.clientY;
-  poke(e.clientX, e.clientY);
-  canvas.setPointerCapture(e.pointerId);
-});
-canvas.addEventListener('pointermove', e => {
-  if (!isDragging) return;
-  dragX = e.clientX; dragY = e.clientY;
-});
-canvas.addEventListener('pointerup',    () => { isDragging = false; });
-canvas.addEventListener('pointerleave', () => { isDragging = false; });
+// ── Resize ────────────────────────────────────────────────────────────────────
 
-canvas.addEventListener('touchstart', e => {
-  e.preventDefault();
-  for (const t of e.changedTouches) poke(t.clientX, t.clientY);
-}, { passive: false });
-canvas.addEventListener('touchmove', e => {
-  e.preventDefault();
-  const t = e.touches[0];
-  dragX = t.clientX; dragY = t.clientY;
-  isDragging = true;
-}, { passive: false });
-canvas.addEventListener('touchend', () => { isDragging = false; });
-
-window.addEventListener('resize', layout);
-
-// ── Physics step ──────────────────────────────────────────────────────────────
-// SPH-lite: pressure repulsion + cohesion + viscosity.
-// This force structure ports directly to Godot _physics_process or Unreal Niagara.
-function step(dt) {
-  dt = Math.min(dt, 1 / 30); // clamp for tab-switch recovery
-
-  // Reset forces to gravity (downward = +y in screen coords)
-  for (let i = 0; i < N_PARTICLES; i++) {
-    fx_buf[i] = 0;
-    fy_buf[i] = GRAVITY;
-  }
-
-  // Drag: attract particles toward the cursor/finger when held down
-  if (isDragging) {
-    for (let i = 0; i < N_PARTICLES; i++) {
-      const dx = dragX - px[i], dy = dragY - py[i];
-      const d  = Math.sqrt(dx*dx + dy*dy) || 1;
-      const reach = particleR * 4.5;
-      if (d < reach) {
-        const str = DRAG_FORCE * (1 - d / reach);
-        fx_buf[i] += str * dx / d;
-        fy_buf[i] += str * dy / d;
-      }
-    }
-  }
-
-  // Pairwise SPH-lite forces (O(N²), symmetric — add to both i and j)
-  const cutoff = particleR * 2.4;
-  const cutoff2 = cutoff * cutoff;
-
-  for (let i = 0; i < N_PARTICLES; i++) {
-    for (let j = i + 1; j < N_PARTICLES; j++) {
-      const dx = px[j] - px[i], dy = py[j] - py[i];
-      const r2 = dx*dx + dy*dy;
-      if (r2 >= cutoff2) continue;
-
-      const r    = Math.sqrt(r2) || 0.0001;
-      const dirx = dx / r, diry = dy / r;
-      const q    = r / particleR;   // normalised separation
-
-      // Pressure: soft repulsion when particles overlap (q < 1)
-      // W_spiky gradient: -(1-q)²
-      let force = 0;
-      if (q < 1.0) {
-        force -= STIFFNESS * (1 - q) * (1 - q);
-      }
-
-      // Cohesion: parabolic attraction at medium range (1 < q < 2.4)
-      // Keeps the blob together — this is the "gel" vs "water" distinction
-      if (q >= 1.0 && q < 2.4) {
-        const t = (q - 1.0) / 1.4;          // 0 at q=1, 1 at q=2.4
-        force += COHESION * 4.0 * t * (1.0 - t);  // peak at t=0.5 (q=1.7)
-      }
-
-      fx_buf[i] += force * dirx;  fy_buf[i] += force * diry;
-      fx_buf[j] -= force * dirx;  fy_buf[j] -= force * diry;
-
-      // Viscosity: equalise relative velocity within interaction radius
-      // This gives the treacly slow-flow quality of a gel
-      if (q < 2.0) {
-        const w    = 1.0 - q / 2.0;
-        const dvx  = vx[j] - vx[i], dvy = vy[j] - vy[i];
-        const visc = VISCOSITY * w;
-        fx_buf[i] += visc * dvx;  fy_buf[i] += visc * dvy;
-        fx_buf[j] -= visc * dvx;  fy_buf[j] -= visc * dvy;
-      }
-    }
-  }
-
-  // Integrate + constraints
-  for (let i = 0; i < N_PARTICLES; i++) {
-    vx[i] += fx_buf[i] * dt;
-    vy[i] += fy_buf[i] * dt;
-
-    // Velocity cap (prevents numerical explosion on large dt)
-    const vmag = Math.sqrt(vx[i]*vx[i] + vy[i]*vy[i]);
-    if (vmag > MAX_VEL) { const s = MAX_VEL / vmag; vx[i] *= s; vy[i] *= s; }
-
-    px[i] += vx[i] * dt;
-    py[i] += vy[i] * dt;
-
-    // Floor: inelastic bounce + friction
-    if (py[i] > floorY) {
-      py[i] = floorY;
-      if (vy[i] > 0) vy[i] *= -0.18;  // low restitution = gel sticks to floor
-      vx[i] *= 0.86;                    // floor friction
-    }
-
-    // Soft walls (particles push back gently — not rigid walls)
-    const m = particleR * 0.4;
-    if (px[i] < m)     { px[i] = m;     if (vx[i] < 0) vx[i] *= -0.25; }
-    if (px[i] > W - m) { px[i] = W - m; if (vx[i] > 0) vx[i] *= -0.25; }
-  }
+let W, H;
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio||1, 1.5);
+  W=canvas.width  = Math.round(window.innerWidth *dpr);
+  H=canvas.height = Math.round(window.innerHeight*dpr);
+  gl.viewport(0,0,W,H);
 }
+resize();
+window.addEventListener('resize', resize);
 
-// ── Render ────────────────────────────────────────────────────────────────────
-function render() {
-  gl.uniform2f(U.res, W, H);
-  gl.uniform1f(U.r, particleR);
-  gl.uniform1f(U.floor, H - floorY);  // Y-flip: screen y-down → WebGL y-up
+// ── Render loop ───────────────────────────────────────────────────────────────
 
-  for (let i = 0; i < N_PARTICLES; i++) {
-    posGPU[i*2]   = px[i];
-    posGPU[i*2+1] = H - py[i];  // Y-flip
-  }
-  gl.uniform2fv(U.pos, posGPU);
-
+function frame() {
+  requestAnimationFrame(frame);
+  cubes.forEach(c=>c.tick());
+  gl.uniform2f(U.u_res, W, H);
+  gl.uniform3f(U.u_c0, cubes[0].x, cubes[0].y, cubes[0].z);
+  gl.uniform3f(U.u_c1, cubes[1].x, cubes[1].y, cubes[1].z);
+  gl.uniform3f(U.u_c2, cubes[2].x, cubes[2].y, cubes[2].z);
+  gl.uniform3f(U.u_c3, cubes[3].x, cubes[3].y, cubes[3].z);
+  gl.uniform1f(U.u_sq0, cubes[0].sq);
+  gl.uniform1f(U.u_sq1, cubes[1].sq);
+  gl.uniform1f(U.u_sq2, cubes[2].sq);
+  gl.uniform1f(U.u_sq3, cubes[3].sq);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
-
-// ── Main loop ─────────────────────────────────────────────────────────────────
-let lastT = 0;
-
-function frame(t) {
-  requestAnimationFrame(frame);
-  const dt = (t - lastT) / 1000;
-  lastT = t;
-  if (dt > 0 && dt < 0.5) step(dt);
-  render();
-}
-
-layout();
-requestAnimationFrame(t => { lastT = t; requestAnimationFrame(frame); });
+frame();
 </script>
 </body>
 </html>
