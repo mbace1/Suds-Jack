@@ -171,6 +171,8 @@ export class Enemy {
       this._cardDir = { x: d.x/len, z: d.z/len };
       this._cardTimer = 3.0 + Math.random() * 2.0;
       this._poisonTimer = 0.5;
+      this._trailPositions = [];
+      this._trailPushTimer = 0;
     } else if (type === EnemyType.PURP_MINI) {
       const angle = Math.random() * Math.PI * 2;
       this._cardDir = { x: Math.cos(angle), z: Math.sin(angle) };
@@ -332,6 +334,13 @@ export class Enemy {
           this._cardDir.z = -Math.sign(this.mesh.position.z);
           this.mesh.position.z = Math.sign(this.mesh.position.z) * H;
           this._cardTimer = 1.0 + Math.random();
+        }
+        // Trail position ring buffer for ribbon
+        this._trailPushTimer -= dt;
+        if (this._trailPushTimer <= 0) {
+          this._trailPushTimer = 0.15;
+          this._trailPositions.push({ x: this.mesh.position.x, z: this.mesh.position.z });
+          if (this._trailPositions.length > 12) this._trailPositions.shift();
         }
         // Poison emission every 0.5s
         this._poisonTimer -= dt;

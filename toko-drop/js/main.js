@@ -237,6 +237,64 @@ class SlimeTrail {
   remove(sc) { sc.remove(this.mesh); }
 }
 
+class SludgeRibbon {
+  constructor(sc, enemy) {
+    this._enemy     = enemy;
+    this._fading    = false;
+    this._fadeLife  = 2.0;
+    const maxPts    = 12;
+    this._geo       = new THREE.BufferGeometry();
+    this._posArr    = new Float32Array(maxPts * 2 * 3);
+    this._geo.setAttribute('position', new THREE.BufferAttribute(this._posArr, 3));
+    const idx = [];
+    for (let i = 0; i < maxPts - 1; i++) {
+      const a = i*2, b = i*2+1, c = (i+1)*2, d = (i+1)*2+1;
+      idx.push(a, b, c,  b, d, c);
+    }
+    this._geo.setIndex(idx);
+    this.mat = new THREE.MeshBasicMaterial({
+      color: 0x88cc00, transparent: true, opacity: 0.4,
+      depthWrite: false, side: THREE.DoubleSide,
+    });
+    this.mesh = new THREE.Mesh(this._geo, this.mat);
+    this.mesh.position.y = 0.015;
+    sc.add(this.mesh);
+  }
+  update(dt) {
+    if (!this._enemy.alive && !this._fading) this._fading = true;
+    if (this._fading) {
+      this._fadeLife -= dt;
+      this.mat.opacity = 0.4 * Math.max(0, this._fadeLife / 2.0);
+      if (this._fadeLife <= 0) return false;
+    }
+    const pts = this._enemy._trailPositions;
+    const n   = pts ? pts.length : 0;
+    if (n >= 2) {
+      const hw = 0.4;
+      for (let i = 0; i < n; i++) {
+        let tx, tz;
+        if (i < n - 1) { tx = pts[i+1].x - pts[i].x; tz = pts[i+1].z - pts[i].z; }
+        else            { tx = pts[i].x - pts[i-1].x; tz = pts[i].z - pts[i-1].z; }
+        const tl = Math.hypot(tx, tz) || 1;
+        const px = -tz / tl * hw, pz = tx / tl * hw;
+        const b = i * 6;
+        this._posArr[b]   = pts[i].x + px; this._posArr[b+1] = 0; this._posArr[b+2] = pts[i].z + pz;
+        this._posArr[b+3] = pts[i].x - px; this._posArr[b+4] = 0; this._posArr[b+5] = pts[i].z - pz;
+      }
+      for (let i = n; i < 12; i++) {
+        const b = i * 6;
+        this._posArr[b]   = pts[n-1].x; this._posArr[b+1] = 0; this._posArr[b+2] = pts[n-1].z;
+        this._posArr[b+3] = pts[n-1].x; this._posArr[b+4] = 0; this._posArr[b+5] = pts[n-1].z;
+      }
+    } else {
+      this._posArr.fill(0);
+    }
+    this._geo.attributes.position.needsUpdate = true;
+    return true;
+  }
+  remove(sc) { sc.remove(this.mesh); this._geo.dispose(); }
+}
+
 // ── Melee types ───────────────────────────────────────────────────────────────
 const MELEE_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPLITTA,
@@ -254,6 +312,7 @@ let chunks       = [];
 let puddles      = [];
 let poisonZones  = [];
 let slimeTrails  = [];
+let sludgeRibbons = [];
 let wave         = 0;
 let waveTimer    = 0;
 let waveDuration = 60;
@@ -417,10 +476,11 @@ function announceWave() {
 
 // ── Wave / restart helpers ────────────────────────────────────────────────────
 function clearFX() {
-  for (const c of chunks)      c.remove(scene); chunks      = [];
-  for (const p of puddles)     p.remove(scene); puddles     = [];
-  for (const z of poisonZones) z.remove(scene); poisonZones = [];
-  for (const s of slimeTrails) s.remove(scene); slimeTrails = [];
+  for (const c of chunks)        c.remove(scene); chunks        = [];
+  for (const p of puddles)       p.remove(scene); puddles       = [];
+  for (const z of poisonZones)   z.remove(scene); poisonZones   = [];
+  for (const s of slimeTrails)   s.remove(scene); slimeTrails   = [];
+  for (const r of sludgeRibbons) r.remove(scene); sludgeRibbons = [];
 }
 
 function spawnWave() {
@@ -581,6 +641,20 @@ function loop() {
     if (!e._trailReady) continue;
     e._trailReady = false;
     slimeTrails.push(new SlimeTrail(scene, e.position.x, e.position.z, 0.5));
+  }
+
+  // SLUDGE_CUBE ribbon: create on first sight, update every frame
+  for (const e of enemies) {
+    if (e.type === EnemyType.SLUDGE_CUBE && !e._ribbon) {
+      e._ribbon = new SludgeRibbon(scene, e);
+      sludgeRibbons.push(e._ribbon);
+    }
+  }
+  for (let i = sludgeRibbons.length - 1; i >= 0; i--) {
+    if (!sludgeRibbons[i].update(dt)) {
+      sludgeRibbons[i].remove(scene);
+      sludgeRibbons.splice(i, 1);
+    }
   }
 
   // Check for children to spawn (SPLITTA, REDD_CUBE, PURP_CUBE)
