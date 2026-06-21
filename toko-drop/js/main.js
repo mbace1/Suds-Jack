@@ -54,7 +54,7 @@ function getEnemySchedule(wave) {
     { type: SPLITTA,     t: 55 },
   ]};
   if (wave === 5) return { dur: 70, list: [
-    { type: GLOBBO,      t: 0  },
+    { type: GLOBBO,      t: 0,  count: 3 },
     { type: REDD_CUBE,   t: 0  },
     { type: PURP_CUBE,   t: 10 },
     { type: ORANGE_CUBE, t: 20 },
@@ -72,8 +72,7 @@ function getEnemySchedule(wave) {
     { type: TORO,        t: 60 },
   ]};
   return { dur: 75, list: [
-    { type: GLOBBO,      t: 0  },
-    { type: GLOBBO,      t: 5  },
+    { type: GLOBBO,      t: 0,  count: 3 },
     { type: REDD_CUBE,   t: 10 },
     { type: PURP_CUBE,   t: 20 },
     { type: ORANGE_CUBE, t: 30 },
@@ -492,13 +491,20 @@ function spawnWave() {
   waveDuration = dur;
   waveTimer    = 0;
   const total  = list.length;
-  pendingSpawns = list.map((entry, i) => ({
-    type: entry.type,
-    delay: entry.t,
-    angle: (i / total) * Math.PI * 2,
-    speedMult,
-    intervalMult,
-  }));
+  pendingSpawns = [];
+  list.forEach((entry, i) => {
+    const cnt = entry.count || 1;
+    for (let k = 0; k < cnt; k++) {
+      pendingSpawns.push({
+        type: entry.type,
+        delay: entry.t,
+        angle: (i / total) * Math.PI * 2,
+        clusterOffset: k > 0 ? { x: (Math.random()-0.5)*3, z: (Math.random()-0.5)*3 } : null,
+        speedMult,
+        intervalMult,
+      });
+    }
+  });
   announceWave();
 }
 
@@ -608,7 +614,10 @@ function loop() {
   while (pendingSpawns.length > 0 && waveTimer >= pendingSpawns[0].delay) {
     const s = pendingSpawns.shift();
     const r = HALF * 0.6;
-    enemies.push(new Enemy(scene, s.type, Math.cos(s.angle) * r, Math.sin(s.angle) * r, s.speedMult, s.intervalMult));
+    const bx = Math.cos(s.angle) * r, bz = Math.sin(s.angle) * r;
+    const ox = s.clusterOffset ? s.clusterOffset.x : 0;
+    const oz = s.clusterOffset ? s.clusterOffset.z : 0;
+    enemies.push(new Enemy(scene, s.type, bx + ox, bz + oz, s.speedMult, s.intervalMult));
   }
 
   player.update(dt, moveDir, aimDir, bullets, HALF);
@@ -736,6 +745,7 @@ function loop() {
       const dz = player.position.z - e.position.z;
       if (Math.hypot(dx, dz) < e.radius + PLAYER_RADIUS) {
         player.hit(); onPlayerHit();
+        if (e.type === EnemyType.TORO && e._state === 'dashing') addShake(0.27);
         if (!player.alive) { triggerGameOver(); break; }
         break;
       }
@@ -764,6 +774,12 @@ function loop() {
       enemies.every(e => !e.alive && !e._dying)) {
     bullets.clear();
     for (const c of chunks) c.remove(scene); chunks = [];
+    // Wave-clear burst: 16 white/gold particles from center (after old chunks cleared)
+    for (let i = 0; i < 16; i++) {
+      const a   = (i / 16) * Math.PI * 2;
+      const col = (i % 2 === 0) ? 0xffffff : 0xffdd44;
+      chunks.push(new Chunk(scene, 0, 0.3, 0, Math.cos(a) * 8, 1.5, Math.sin(a) * 8, col, 0.12));
+    }
     audio.waveClear();
     addShake(0.22);
     score += wave * 500;
