@@ -687,11 +687,13 @@ export class Enemy {
       this._childFreeform = false;
     } else if (this.type === EnemyType.REDD_CUBE) {
       this._childType    = EnemyType.REDD_MINI;
-      this._childCount   = 4;
+      const rTier        = Math.round((1 / Math.max(this._intervalMult, 0.1) - 1) / 0.09);
+      this._childCount   = Math.min(8, 4 + rTier * 2);
       this._childFreeform = false;
     } else if (this.type === EnemyType.PURP_CUBE) {
       this._childType    = EnemyType.PURP_MINI;
-      this._childCount   = 5 + Math.floor(Math.random() * 3);
+      const pTier        = Math.floor((1 / Math.max(this._intervalMult, 0.1) - 1) / 0.09);
+      this._childCount   = 5 + pTier * 2;
       this._childFreeform = true;
     }
 
