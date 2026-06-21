@@ -123,10 +123,31 @@ vec3 goopShade(vec3 p, vec3 N, vec3 V, float sh, float ao) {
   return col;
 }
 
+// Background colour for a ray (ro,rd) — floor grid or sky, ignoring goop
+vec3 getBg(vec3 ro, vec3 rd, vec2 uv) {
+  if (rd.y < -0.0005) {
+    float tF = -ro.y / rd.y;
+    if (tF > 0.0 && tF < 22.0) {
+      vec3  fp   = ro + rd*tF;
+      float chk  = mod(floor(fp.x) + floor(fp.z), 2.0);
+      vec3  base = mix(vec3(0.055,0.062,0.072), vec3(0.068,0.076,0.088), chk*0.45);
+      vec2  gf   = abs(fract(fp.xz) - 0.5);
+      float grid = max(0.0, 1.0 - min(gf.x, gf.y)*95.0);
+      base = mix(base, vec3(0.18,0.20,0.24), grid*0.55);
+      float sh  = softShadow(fp + vec3(0,0.003,0), LIGHT, 0.05, 7.0);
+      base *= (sh * 0.72 + 0.28);
+      float fog = 1.0 - exp(-max(tF-4.0,0.0)*0.045);
+      return mix(base, vec3(0.055,0.065,0.080), fog);
+    }
+  }
+  return vec3(0.055,0.065,0.080) + vec3(0.010,0.012,0.018)*clamp(uv.y,0.0,1.0);
+}
+
 void main() {
   vec2 uv = (gl_FragCoord.xy - u_res*0.5) / u_res.y;
 
-  vec3 ro  = vec3(0.70, 2.90, 5.50);
+  // Zoomed-out camera — same angle, pulled back ~35%
+  vec3 ro  = vec3(0.95, 3.80, 7.40);
   vec3 ta  = vec3(0.05, 0.82, 0.0);
   mat3 cam = camMatrix(ro, ta);
   vec3 rd  = cam * normalize(vec3(uv, 1.85));
@@ -148,26 +169,27 @@ void main() {
     vec3  V  = -rd;
     float sh = softShadow(p + N*0.008, LIGHT, 0.02, 7.0);
     float ao = calcAO(p, N);
-    col = goopShade(p, N, V, sh, ao);
+    vec3 surfCol = goopShade(p, N, V, sh, ao);
 
-  } else if (rd.y < -0.0005) {
-    float tF = -ro.y / rd.y;
-    if (tF > 0.0 && tF < 22.0) {
-      vec3 fp = ro + rd*tF;
-      float chk  = mod(floor(fp.x) + floor(fp.z), 2.0);
-      vec3 base  = mix(vec3(0.055,0.062,0.072), vec3(0.068,0.076,0.088), chk*0.45);
-      vec2 gf    = abs(fract(fp.xz) - 0.5);
-      float grid = max(0.0, 1.0 - min(gf.x, gf.y)*95.0);
-      base = mix(base, vec3(0.18,0.20,0.24), grid*0.55);
-      float sh   = softShadow(fp + vec3(0,0.003,0), LIGHT, 0.05, 7.0);
-      base *= (sh * 0.72 + 0.28);
-      float fog  = 1.0 - exp(-max(tF-4.0,0.0)*0.045);
-      col = mix(base, vec3(0.055,0.065,0.080), fog);
-    } else {
-      col = vec3(0.055,0.065,0.080);
+    // ── Translucency: Beer-Lambert absorption through gel thickness ──
+    // March forward from entry point until we exit the blob
+    float tX = t + 0.003;
+    for (int j = 0; j < 28; j++) {
+      float d = scene(ro + rd*tX);
+      if (d > 0.0005) break;
+      tX += max(abs(d) + 0.005, 0.005);
     }
+    float thickness = tX - t;                          // ray path length inside gel
+    float alpha     = 1.0 - exp(-thickness * 0.42);   // absorption (lower k = more transparent)
+
+    // Background seen behind the gel, tinted green by the gel colour
+    vec3 bgCol = getBg(ro, rd, uv);
+    bgCol = mix(bgCol, vec3(0.03, 0.32, 0.12), (1.0 - alpha) * 0.55);
+
+    col = mix(bgCol, surfCol, alpha);
+
   } else {
-    col = vec3(0.055,0.065,0.080) + vec3(0.010,0.012,0.018)*clamp(uv.y,0.0,1.0);
+    col = getBg(ro, rd, uv);
   }
 
   col = col / (col + vec3(0.72));
