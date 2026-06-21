@@ -20,6 +20,7 @@ export const EnemyType = {
   // Unique
   TORO:        12,
   BAMBU:       13,
+  PYRA:        14,
 };
 
 const CFG = {
@@ -37,6 +38,7 @@ const CFG = {
   [EnemyType.PURP_MINI]:   { color: 0xdd66ff, radius: 0.26, speed: 3.8, hp: 1, bulletColor: null,     fireInterval: null },
   [EnemyType.TORO]:        { color: 0x4488cc, radius: 1.0,  speed: 5.0, hp: 6, bulletColor: null,     fireInterval: null },
   [EnemyType.BAMBU]:       { color: 0xaa8844, radius: 0.7,  speed: 0,   hp: 1, bulletColor: 0xddbb44, fireInterval: 4.0  },
+  [EnemyType.PYRA]:        { color: 0xff9900, radius: 1.0,  speed: 0,   hp: 4, bulletColor: 0xffcc44, fireInterval: 2.5  },
 };
 
 const BLOB_TYPES = new Set([
@@ -187,6 +189,45 @@ export class Enemy {
         new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }),
       );
 
+    } else if (type === EnemyType.PYRA) {
+      // PYRA: spinning ring with destroyable holes
+      this.mat = new THREE.MeshPhongMaterial({
+        color: cfg.color, transparent: true, opacity: 0.85, shininess: 120,
+      });
+      this.group = new THREE.Group();
+      this.group.position.set(x, cfg.radius, z);
+      scene.add(this.group);
+
+      // Torus ring
+      const ringMesh = new THREE.Mesh(
+        new THREE.TorusGeometry(cfg.radius * 0.9, 0.15, 8, 20),
+        this.mat,
+      );
+      ringMesh.castShadow = true;
+      this.group.add(ringMesh);
+      this.mesh = ringMesh;
+
+      // Destroyable holes (cones at 90° intervals)
+      const tier = Math.floor(intervalMult > 0 ? (1 - intervalMult) / 0.09 : 0);
+      const holeCount = tier < 3 ? 4 : tier < 5 ? 6 : 8;
+      this._holes = [];
+      const holeMat = new THREE.MeshPhongMaterial({ color: 0xffcc44, shininess: 80 });
+      for (let i = 0; i < holeCount; i++) {
+        const a = (i / holeCount) * Math.PI * 2;
+        const holeMesh = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.4, 5), holeMat);
+        holeMesh.position.set(Math.cos(a) * cfg.radius * 0.9, 0, Math.sin(a) * cfg.radius * 0.9);
+        holeMesh.rotation.z = Math.PI / 2;
+        holeMesh.rotation.y = a;
+        holeMesh.castShadow = true;
+        this.group.add(holeMesh);
+        this._holes.push({ mesh: holeMesh, alive: true, angle: a });
+      }
+      this.hp = holeCount;
+
+      // Spin state
+      this._spinSpeed = 1.8;
+      this._pyraFireTimer = cfg.fireInterval * intervalMult;
+
     } else {
       this.mesh.position.set(x, cfg.radius, z);
       scene.add(this.mesh);
@@ -234,7 +275,7 @@ export class Enemy {
   }
 
   get position() {
-    return (this.type === EnemyType.TORO || this.type === EnemyType.BAMBU)
+    return (this.type === EnemyType.TORO || this.type === EnemyType.BAMBU || this.type === EnemyType.PYRA)
       ? this.group.position : this.mesh.position;
   }
   get color()  { return CFG[this.type].color; }
@@ -244,6 +285,7 @@ export class Enemy {
   }
   get hpFrac() {
     if (this.type === EnemyType.BAMBU) return this.hp / Math.max(1, this._maxSegs);
+    if (this.type === EnemyType.PYRA)  return this.hp / Math.max(1, this._holes ? this._holes.length : CFG[EnemyType.PYRA].hp);
     return this.hp / CFG[this.type].hp;
   }
 
@@ -278,6 +320,29 @@ export class Enemy {
           vx: Math.cos(a) * 3, vy: 2 + Math.random() * 3, vz: Math.sin(a) * 3,
           color: 0xaa8844, size: 0.14,
         });
+      }
+    }
+
+    if (this.type === EnemyType.PYRA && this._holes) {
+      // Find the closest live hole to the bullet impact (approximate: random alive hole)
+      const alive = this._holes.filter(h => h.alive);
+      if (alive.length > 0) {
+        const hole = alive[Math.floor(Math.random() * alive.length)];
+        hole.alive = false;
+        hole.mesh.visible = false;
+        this._spinSpeed += 0.6;
+        // Chunk FX from hole position (world space approximation)
+        const gp = this.group.position;
+        for (let k = 0; k < 3; k++) {
+          const ra = Math.random() * Math.PI * 2;
+          this._hitChunks.push({
+            x: gp.x + Math.cos(hole.angle) * CFG[EnemyType.PYRA].radius * 0.9,
+            y: gp.y,
+            z: gp.z + Math.sin(hole.angle) * CFG[EnemyType.PYRA].radius * 0.9,
+            vx: Math.cos(ra) * 3, vy: 2 + Math.random() * 3, vz: Math.sin(ra) * 3,
+            color: 0xffcc44, size: 0.12,
+          });
+        }
       }
     }
 
@@ -504,6 +569,10 @@ export class Enemy {
         break;
       }
 
+      case EnemyType.PYRA:
+        this.group.rotation.y += this._spinSpeed * dt;
+        break;
+
       case EnemyType.BAMBU: {
         if (this._emergeT > 0) {
           this._emergeT -= dt;
@@ -608,7 +677,7 @@ export class Enemy {
     this._wobbleT += dt;
     if (this._hitWobble > 0) this._hitWobble = Math.max(0, this._hitWobble - dt * 2.0);
 
-    if (this.type !== EnemyType.TORO && this.type !== EnemyType.BAMBU) {
+    if (this.type !== EnemyType.TORO && this.type !== EnemyType.BAMBU && this.type !== EnemyType.PYRA) {
       const isSplitOrBig = this.type === EnemyType.SPLITTA;
       const amp  = isSplitOrBig ? 0.10 : (CUBE_TYPES.has(this.type) ? 0.035 : 0.04);
       const freq = isSplitOrBig ? 4.0  : (CUBE_TYPES.has(this.type) ? 2.2   : 2.8);
@@ -635,6 +704,27 @@ export class Enemy {
   _tick(playerPos, bullets, dt) {
     const cfg = CFG[this.type];
     if (!cfg.fireInterval) return;
+
+    if (this.type === EnemyType.PYRA) {
+      this._pyraFireTimer -= dt;
+      if (this._pyraFireTimer <= 0) {
+        this._pyraFireTimer = cfg.fireInterval * this._intervalMult;
+        const ex = this.position.x, ez = this.position.z;
+        const adx = playerPos.x - ex, adz = playerPos.z - ez;
+        const al  = Math.hypot(adx, adz) || 1;
+        const liveHoles = this._holes ? this._holes.filter(h => h.alive) : [];
+        for (const hole of liveHoles) {
+          const ha = this.group.rotation.y + hole.angle;
+          const forwardX = Math.cos(ha), forwardZ = Math.sin(ha);
+          const spread = Math.PI / 6;
+          for (let j = 0; j < 6; j++) {
+            const fa = Math.atan2(forwardZ, forwardX) - spread / 2 + j * (spread / 5);
+            bullets.spawnDir(ex, ez, Math.cos(fa), Math.sin(fa), false, cfg.bulletColor);
+          }
+        }
+      }
+      return;
+    }
 
     if (this.type === EnemyType.BAMBU) {
       if (this._bambuState === 'waiting') {
@@ -733,7 +823,7 @@ export class Enemy {
     this._deathT -= dt;
     const t = 1 - Math.max(this._deathT, 0) / 0.28;
 
-    if (this.type === EnemyType.TORO || this.type === EnemyType.BAMBU) {
+    if (this.type === EnemyType.TORO || this.type === EnemyType.BAMBU || this.type === EnemyType.PYRA) {
       this.group.scale.setScalar(1 + t * 2.2);
     } else {
       this.mesh.scale.setScalar(1 + t * 2.2);
@@ -760,7 +850,7 @@ export class Enemy {
     this.mat.emissive.setHex(0xffffff);
     this.mat.transparent = true;
     this.mat.depthWrite  = false;
-    if (this.type === EnemyType.TORO || this.type === EnemyType.BAMBU) {
+    if (this.type === EnemyType.TORO || this.type === EnemyType.BAMBU || this.type === EnemyType.PYRA) {
       this.group.scale.setScalar(1);
     } else {
       this.mesh.scale.setScalar(1);
@@ -823,7 +913,7 @@ export class Enemy {
     if (this.type === EnemyType.TORO) {
       scene.remove(this.group);
       if (this._indicator) scene.remove(this._indicator);
-    } else if (this.type === EnemyType.BAMBU) {
+    } else if (this.type === EnemyType.BAMBU || this.type === EnemyType.PYRA) {
       scene.remove(this.group);
     } else {
       scene.remove(this.mesh);

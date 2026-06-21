@@ -19,7 +19,7 @@ function getWaveScale(wave) {
 // Returns { dur, list: [{type, t: spawnDelaySecs}] }
 function getEnemySchedule(wave) {
   const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
-          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU } = EnemyType;
+          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA } = EnemyType;
   if (wave === 1) return { dur: 60, list: [
     { type: GLOBBO,      t: 0  },
     { type: YELA_CUBE,   t: 10 },
@@ -60,19 +60,21 @@ function getEnemySchedule(wave) {
     { type: REDD_CUBE,   t: 0  },
     { type: PURP_CUBE,   t: 10 },
     { type: ORANGE_CUBE, t: 20 },
-    { type: SLUDGE_CUBE, t: 30 },
-    { type: FANNER,      t: 45 },
+    { type: PYRA,        t: 25 },
+    { type: SLUDGE_CUBE, t: 35 },
+    { type: FANNER,      t: 50 },
     { type: SPLITTA,     t: 60 },
   ]};
   if (wave === 6) return { dur: 70, list: [
     { type: YELA_CUBE,   t: 0  },
     { type: REDD_CUBE,   t: 0  },
     { type: PURP_CUBE,   t: 10 },
-    { type: ORANGE_CUBE, t: 20 },
-    { type: BAMBU,       t: 25 },
-    { type: SPITTOR,     t: 35 },
-    { type: FANNER,      t: 45 },
-    { type: TORO,        t: 60 },
+    { type: PYRA,        t: 15 },
+    { type: ORANGE_CUBE, t: 25 },
+    { type: BAMBU,       t: 30 },
+    { type: SPITTOR,     t: 40 },
+    { type: FANNER,      t: 50 },
+    { type: TORO,        t: 62 },
   ]};
   return { dur: 75, list: [
     { type: GLOBBO,      t: 0,  count: 3 },
@@ -680,19 +682,20 @@ function loop() {
     slimeTrails.push(new SlimeTrail(scene, e.position.x, e.position.z, 0.5));
   }
 
-  // BAMBU AoE telegraphs and lob bullets
+  // BAMBU AoE telegraphs and lob bullets; drain hitChunks for all enemies
   for (const e of enemies) {
-    if (e.type !== EnemyType.BAMBU) continue;
-    if (e._aoeReady) {
-      e._aoeReady = false;
-      bambuAoes.push(new BambuAoE(scene, e._lobTargetX, e._lobTargetZ, 2.2, 1.0));
-    }
-    if (e._lobReady) {
-      const tgt = e._lobReady; e._lobReady = null;
-      const ex = e.position.x, ez = e.position.z;
-      const dx = tgt.x - ex, dz = tgt.z - ez;
-      const dl = Math.hypot(dx, dz) || 1;
-      bullets.spawnDir(ex, ez, dx/dl, dz/dl, false, 0xddbb44, true);
+    if (e.type === EnemyType.BAMBU) {
+      if (e._aoeReady) {
+        e._aoeReady = false;
+        bambuAoes.push(new BambuAoE(scene, e._lobTargetX, e._lobTargetZ, 2.2, 1.0));
+      }
+      if (e._lobReady) {
+        const tgt = e._lobReady; e._lobReady = null;
+        const ex = e.position.x, ez = e.position.z;
+        const dx = tgt.x - ex, dz = tgt.z - ez;
+        const dl = Math.hypot(dx, dz) || 1;
+        bullets.spawnDir(ex, ez, dx/dl, dz/dl, false, 0xddbb44, true);
+      }
     }
     if (e._hitChunks && e._hitChunks.length > 0) {
       for (const cd of e._hitChunks) {
