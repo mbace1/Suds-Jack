@@ -354,28 +354,68 @@ const cubes = [
 
 // ── Input ─────────────────────────────────────────────────────────────────────
 
-function applyHit(px, py) {
-  const rd = screenToRay(px, py);        // ray from camera through tap point
-  const base = 0.22 + Math.random()*0.10;
+// Active pointers — updated each pointermove, applied every frame as drag force
+const activePointers = new Map();  // pointerId → {px, py}
 
+// One-shot poke impulse on tap/press
+function applyHit(px, py) {
+  const rd   = screenToRay(px, py);
+  const base = 0.22 + Math.random()*0.10;
   cubes.forEach(c => {
-    // Distance from cube centre to the ray
     const toCube = v3.sub([c.x,c.y,c.z], CAM);
     const proj   = Math.max(0, v3.dot(toCube, rd));
     const closest= v3.add(CAM, v3.scale(rd, proj));
     const dist   = v3.len(v3.sub(closest, [c.x,c.y,c.z]));
-
-    // Strength falls off with distance from ray axis
-    const str = base * Math.exp(-dist * 0.65);
+    const str    = base * Math.exp(-dist * 0.65);
     if (str > 0.01) c.hitDir(rd[0], rd[1], rd[2], str);
   });
 }
 
-canvas.addEventListener('pointerdown', e => applyHit(e.clientX, e.clientY));
-canvas.addEventListener('touchstart', e => {
-  e.preventDefault();
-  for (const t of e.changedTouches) applyHit(t.clientX, t.clientY);
-}, {passive:false});
+// Continuous pull force applied every frame while any pointer is held.
+// Each cube is attracted toward the closest point on the finger ray,
+// falling off exponentially with lateral distance from that ray.
+function applyDrag() {
+  if (activePointers.size === 0) return;
+  activePointers.forEach(({px, py}) => {
+    const rd = screenToRay(px, py);
+    cubes.forEach(c => {
+      const toCube  = v3.sub([c.x,c.y,c.z], CAM);
+      const proj    = Math.max(0, v3.dot(toCube, rd));
+      const closest = v3.add(CAM, v3.scale(rd, proj));
+      const toRay   = v3.sub(closest, [c.x,c.y,c.z]);  // vector: cube → ray
+      const dist    = v3.len(toRay);
+      const weight  = Math.exp(-dist * 0.48);           // lateral falloff
+      if (weight < 0.008) return;
+      // Normalised direction toward ray; fall back to ray dir when cube is on it
+      const dir = dist > 0.001 ? v3.scale(toRay, 1/dist) : [rd[0],rd[1],rd[2]];
+      // Gentle per-frame velocity nudge (spring will fight this and snap back on release)
+      c.vx += dir[0] * 0.011 * weight;
+      c.vy += dir[1] * 0.011 * weight * 0.65;  // resist vertical pull slightly
+      c.vz += dir[2] * 0.011 * weight;
+      // Blend deformation axis toward pull direction so the cube squishes visibly
+      const blend = 0.055;
+      c.dax = c.dax*(1-blend) + dir[0]*blend;
+      c.day = c.day*(1-blend) + dir[1]*blend;
+      c.daz = c.daz*(1-blend) + dir[2]*blend;
+      const al = Math.sqrt(c.dax**2+c.day**2+c.daz**2)||1;
+      c.dax/=al; c.day/=al; c.daz/=al;
+      // Mild sustained squish while being stretched
+      if (c.sq > 0.90) c.sqV -= 0.0009 * weight;
+    });
+  });
+}
+
+canvas.addEventListener('pointerdown', e => {
+  canvas.setPointerCapture(e.pointerId);           // keep events even if cursor leaves
+  activePointers.set(e.pointerId, {px: e.clientX, py: e.clientY});
+  applyHit(e.clientX, e.clientY);
+});
+canvas.addEventListener('pointermove', e => {
+  if (activePointers.has(e.pointerId))
+    activePointers.set(e.pointerId, {px: e.clientX, py: e.clientY});
+});
+canvas.addEventListener('pointerup',     e => activePointers.delete(e.pointerId));
+canvas.addEventListener('pointercancel', e => activePointers.delete(e.pointerId));
 
 // ── Resize ────────────────────────────────────────────────────────────────────
 
@@ -393,6 +433,7 @@ window.addEventListener('resize', resize);
 
 function frame() {
   requestAnimationFrame(frame);
+  applyDrag();
   cubes.forEach(c=>c.tick());
 
   gl.uniform2f(U.u_res, W, H);
