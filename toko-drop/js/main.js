@@ -16,16 +16,76 @@ function getWaveScale(wave) {
   };
 }
 
-function getEnemyComposition(wave) {
+// Returns { dur, list: [{type, t: spawnDelaySecs}] }
+function getEnemySchedule(wave) {
   const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
-          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO } = EnemyType;
-  if (wave === 1) return [GLOBBO, SPITTOR, FANNER, WEEVA];
-  if (wave === 2) return [GLOBBO, YELA_CUBE, SPITTOR, FANNER, WEEVA];
-  if (wave === 3) return [GLOBBO, YELA_CUBE, ORANGE_CUBE, SPITTOR, FANNER, WEEVA];
-  if (wave === 4) return [GLOBBO, YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, FANNER, WEEVA, SPLITTA];
-  if (wave === 5) return [GLOBBO, REDD_CUBE, ORANGE_CUBE, SLUDGE_CUBE, SPITTOR, WEEVA, SPLITTA];
-  if (wave === 6) return [YELA_CUBE, REDD_CUBE, PURP_CUBE, ORANGE_CUBE, SPITTOR, FANNER, TORO];
-  return [GLOBBO, REDD_CUBE, PURP_CUBE, ORANGE_CUBE, SLUDGE_CUBE, SPLITTA, TORO];
+          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA } = EnemyType;
+  if (wave === 1) return { dur: 60, list: [
+    { type: GLOBBO,      t: 0  },
+    { type: YELA_CUBE,   t: 10 },
+    { type: SPITTOR,     t: 20 },
+    { type: FANNER,      t: 30 },
+    { type: WEEVA,       t: 45 },
+  ]};
+  if (wave === 2) return { dur: 60, list: [
+    { type: GLOBBO,      t: 0  },
+    { type: YELA_CUBE,   t: 0  },
+    { type: ORANGE_CUBE, t: 15 },
+    { type: SPITTOR,     t: 25 },
+    { type: FANNER,      t: 35 },
+    { type: WEEVA,       t: 50 },
+  ]};
+  if (wave === 3) return { dur: 65, list: [
+    { type: GLOBBO,      t: 0  },
+    { type: YELA_CUBE,   t: 0  },
+    { type: ORANGE_CUBE, t: 10 },
+    { type: SLUDGE_CUBE, t: 20 },
+    { type: SPITTOR,     t: 30 },
+    { type: BAMBU,       t: 40 },
+    { type: WEEVA,       t: 45 },
+    { type: SPLITTA,     t: 55 },
+  ]};
+  if (wave === 4) return { dur: 65, list: [
+    { type: GLOBBO,      t: 0  },
+    { type: REDD_CUBE,   t: 0  },
+    { type: ORANGE_CUBE, t: 10 },
+    { type: SLUDGE_CUBE, t: 20 },
+    { type: BAMBU,       t: 30 },
+    { type: FANNER,      t: 35 },
+    { type: WEEVA,       t: 45 },
+    { type: SPLITTA,     t: 55 },
+  ]};
+  if (wave === 5) return { dur: 70, list: [
+    { type: GLOBBO,      t: 0,  count: 3 },
+    { type: REDD_CUBE,   t: 0  },
+    { type: PURP_CUBE,   t: 10 },
+    { type: ORANGE_CUBE, t: 20 },
+    { type: PYRA,        t: 25 },
+    { type: SLUDGE_CUBE, t: 35 },
+    { type: FANNER,      t: 50 },
+    { type: SPLITTA,     t: 60 },
+  ]};
+  if (wave === 6) return { dur: 70, list: [
+    { type: YELA_CUBE,   t: 0  },
+    { type: REDD_CUBE,   t: 0  },
+    { type: PURP_CUBE,   t: 10 },
+    { type: PYRA,        t: 15 },
+    { type: ORANGE_CUBE, t: 25 },
+    { type: BAMBU,       t: 30 },
+    { type: SPITTOR,     t: 40 },
+    { type: FANNER,      t: 50 },
+    { type: TORO,        t: 62 },
+  ]};
+  return { dur: 75, list: [
+    { type: GLOBBO,      t: 0,  count: 3 },
+    { type: BAMBU,       t: 5  },
+    { type: REDD_CUBE,   t: 10 },
+    { type: PURP_CUBE,   t: 20 },
+    { type: ORANGE_CUBE, t: 30 },
+    { type: SLUDGE_CUBE, t: 40 },
+    { type: SPLITTA,     t: 55 },
+    { type: TORO,        t: 65 },
+  ]};
 }
 
 // ── Renderer ──────────────────────────────────────────────────────────────────
@@ -160,6 +220,183 @@ class PoisonZone {
   remove(sc) { sc.remove(this.mesh); }
 }
 
+class SlimeTrail {
+  constructor(sc, x, z, radius) {
+    this._life = 2.0;
+    this.mat = new THREE.MeshBasicMaterial({
+      color: 0xddee00,
+      transparent: true,
+      opacity: 0.45,
+      depthWrite: false,
+    });
+    this.mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, 8), this.mat);
+    this.mesh.rotation.x = -Math.PI / 2;
+    this.mesh.position.set(x, 0.013, z);
+    sc.add(this.mesh);
+  }
+  update(dt) {
+    this._life -= dt;
+    this.mat.opacity = 0.45 * Math.max(0, this._life / 2.0);
+    return this._life > 0;
+  }
+  remove(sc) { sc.remove(this.mesh); }
+}
+
+class SludgeRibbon {
+  constructor(sc, enemy) {
+    this._enemy     = enemy;
+    this._fading    = false;
+    this._fadeLife  = 2.0;
+    const maxPts    = 12;
+    this._geo       = new THREE.BufferGeometry();
+    this._posArr    = new Float32Array(maxPts * 2 * 3);
+    this._geo.setAttribute('position', new THREE.BufferAttribute(this._posArr, 3));
+    const idx = [];
+    for (let i = 0; i < maxPts - 1; i++) {
+      const a = i*2, b = i*2+1, c = (i+1)*2, d = (i+1)*2+1;
+      idx.push(a, b, c,  b, d, c);
+    }
+    this._geo.setIndex(idx);
+    this.mat = new THREE.MeshBasicMaterial({
+      color: 0x88cc00, transparent: true, opacity: 0.4,
+      depthWrite: false, side: THREE.DoubleSide,
+    });
+    this.mesh = new THREE.Mesh(this._geo, this.mat);
+    this.mesh.position.y = 0.015;
+    sc.add(this.mesh);
+  }
+  update(dt) {
+    if (!this._enemy.alive && !this._fading) this._fading = true;
+    if (this._fading) {
+      this._fadeLife -= dt;
+      this.mat.opacity = 0.4 * Math.max(0, this._fadeLife / 2.0);
+      if (this._fadeLife <= 0) return false;
+    }
+    const pts = this._enemy._trailPositions;
+    const n   = pts ? pts.length : 0;
+    if (n >= 2) {
+      const hw = 0.4;
+      for (let i = 0; i < n; i++) {
+        let tx, tz;
+        if (i < n - 1) { tx = pts[i+1].x - pts[i].x; tz = pts[i+1].z - pts[i].z; }
+        else            { tx = pts[i].x - pts[i-1].x; tz = pts[i].z - pts[i-1].z; }
+        const tl = Math.hypot(tx, tz) || 1;
+        const px = -tz / tl * hw, pz = tx / tl * hw;
+        const b = i * 6;
+        this._posArr[b]   = pts[i].x + px; this._posArr[b+1] = 0; this._posArr[b+2] = pts[i].z + pz;
+        this._posArr[b+3] = pts[i].x - px; this._posArr[b+4] = 0; this._posArr[b+5] = pts[i].z - pz;
+      }
+      for (let i = n; i < 12; i++) {
+        const b = i * 6;
+        this._posArr[b]   = pts[n-1].x; this._posArr[b+1] = 0; this._posArr[b+2] = pts[n-1].z;
+        this._posArr[b+3] = pts[n-1].x; this._posArr[b+4] = 0; this._posArr[b+5] = pts[n-1].z;
+      }
+    } else {
+      this._posArr.fill(0);
+    }
+    this._geo.attributes.position.needsUpdate = true;
+    return true;
+  }
+  remove(sc) { sc.remove(this.mesh); this._geo.dispose(); }
+}
+
+class Gate {
+  constructor(sc) {
+    const x = (Math.random() - 0.5) * 22;
+    const z = (Math.random() - 0.5) * 22;
+    const angle = Math.random() * Math.PI;
+    this._x = x; this._z = z; this._angle = angle;
+    this.alive = true;
+    this._dmgCooldown = 0;
+
+    const postMat = new THREE.MeshPhongMaterial({ color: 0x888899, shininess: 60 });
+    const postGeo = new THREE.CylinderGeometry(0.25, 0.25, 1.8, 8);
+    const halfSep = 2;
+    const dx = Math.cos(angle + Math.PI/2) * halfSep;
+    const dz = Math.sin(angle + Math.PI/2) * halfSep;
+    this._p1 = new THREE.Mesh(postGeo, postMat);
+    this._p1.position.set(x + dx, 0.9, z + dz);
+    this._p2 = new THREE.Mesh(postGeo, postMat);
+    this._p2.position.set(x - dx, 0.9, z - dz);
+    sc.add(this._p1); sc.add(this._p2);
+
+    this._laserMat = new THREE.MeshBasicMaterial({
+      color: 0x44ff88, transparent: true, opacity: 0.7, depthWrite: false,
+    });
+    this._laser = new THREE.Mesh(new THREE.BoxGeometry(4, 0.12, 0.12), this._laserMat);
+    this._laser.position.set(x, 0.9, z);
+    this._laser.rotation.y = angle + Math.PI / 2;
+    sc.add(this._laser);
+  }
+  update(dt, t) {
+    if (!this.alive) return;
+    this._laserMat.opacity = 0.5 + 0.4 * Math.sin(t * 8);
+    if (this._dmgCooldown > 0) this._dmgCooldown -= dt;
+  }
+  deactivate(sc) {
+    this.alive = false;
+    sc.remove(this._laser);
+  }
+  remove(sc) {
+    sc.remove(this._p1); sc.remove(this._p2); sc.remove(this._laser);
+  }
+  // Returns true if point (px, pz) intersects the laser beam (approximate capsule check)
+  hitsPoint(px, pz, radius) {
+    if (!this.alive) return false;
+    const dx = px - this._x, dz = pz - this._z;
+    // Project onto laser axis (laser runs along post-to-post direction: -sin, cos)
+    const ax = -Math.sin(this._angle), az = Math.cos(this._angle);
+    const para  = dx * ax + dz * az;
+    const perpX = dx - para * ax, perpZ = dz - para * az;
+    const perpDist = Math.hypot(perpX, perpZ);
+    return Math.abs(para) < 2.0 && perpDist < 0.2 + radius;
+  }
+}
+
+class Powerup {
+  constructor(sc, x, z) {
+    this._life = 8.0;
+    this.x = x; this.z = z;
+    this.collected = false;
+    this.mat = new THREE.MeshBasicMaterial({
+      color: 0xffffff, transparent: true, opacity: 0.9,
+    });
+    this.mesh = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 6), this.mat);
+    this.mesh.position.set(x, 0.6, z);
+    sc.add(this.mesh);
+    this._type = Math.random() < 0.5 ? 'invincible' : 'firerate';
+  }
+  update(dt, t) {
+    this._life -= dt;
+    this.mesh.position.y = 0.6 + Math.sin(t * 3) * 0.15;
+    this.mat.opacity = 0.5 + 0.4 * Math.sin(t * 5);
+    return this._life > 0 && !this.collected;
+  }
+  remove(sc) { sc.remove(this.mesh); }
+}
+
+class BambuAoE {
+  constructor(sc, x, z, radius, duration) {
+    this._life = duration;
+    this._dur  = duration;
+    this.x = x; this.z = z;
+    this.mat = new THREE.MeshBasicMaterial({
+      color: 0xff8800, transparent: true, opacity: 0.6, depthWrite: false,
+    });
+    this.mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, 12), this.mat);
+    this.mesh.rotation.x = -Math.PI / 2;
+    this.mesh.position.set(x, 0.016, z);
+    sc.add(this.mesh);
+  }
+  update(dt) {
+    this._life -= dt;
+    const frac = Math.max(0, this._life / this._dur);
+    this.mat.opacity = 0.6 * frac * (0.5 + 0.5 * Math.sin(this._life * Math.PI * 6));
+    return this._life > 0;
+  }
+  remove(sc) { sc.remove(this.mesh); }
+}
+
 // ── Melee types ───────────────────────────────────────────────────────────────
 const MELEE_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPLITTA,
@@ -172,11 +409,19 @@ const MELEE_TYPES = new Set([
 const input   = new InputManager();
 const bullets = new BulletPool(scene);
 const player  = new Player(scene);
-let enemies     = [];
-let chunks      = [];
-let puddles     = [];
-let poisonZones = [];
-let wave        = 0;
+let enemies      = [];
+let chunks       = [];
+let puddles      = [];
+let poisonZones  = [];
+let slimeTrails  = [];
+let sludgeRibbons = [];
+let bambuAoes     = [];
+let gates         = [];
+let powerups      = [];
+let wave         = 0;
+let waveTimer    = 0;
+let waveDuration = 60;
+let pendingSpawns = [];
 
 // ── Score ─────────────────────────────────────────────────────────────────────
 let score   = 0;
@@ -252,6 +497,13 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
   ctx.font = 'bold 14px monospace';
   ctx.fillText(`WAVE ${wave}`, 16, 24);
+
+  // Wave progress bar
+  const _prog = Math.min(1, waveTimer / waveDuration);
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillRect(16, 30, 100, 3);
+  ctx.fillStyle = _prog >= 1 ? '#44ff88' : '#ffaa22';
+  ctx.fillRect(16, 30, 100 * _prog, 3);
 
   ctx.textAlign = 'right';
   ctx.fillText(`${score}`, uiCanvas.width - 16, 24);
@@ -329,22 +581,42 @@ function announceWave() {
 
 // ── Wave / restart helpers ────────────────────────────────────────────────────
 function clearFX() {
-  for (const c of chunks)      c.remove(scene); chunks      = [];
-  for (const p of puddles)     p.remove(scene); puddles     = [];
-  for (const z of poisonZones) z.remove(scene); poisonZones = [];
+  for (const c of chunks)        c.remove(scene); chunks        = [];
+  for (const p of puddles)       p.remove(scene); puddles       = [];
+  for (const z of poisonZones)   z.remove(scene); poisonZones   = [];
+  for (const s of slimeTrails)   s.remove(scene); slimeTrails   = [];
+  for (const r of sludgeRibbons) r.remove(scene); sludgeRibbons = [];
+  for (const a of bambuAoes)     a.remove(scene); bambuAoes     = [];
+  for (const g of gates)        g.remove(scene); gates         = [];
+  for (const p of powerups)     p.remove(scene); powerups      = [];
 }
 
 function spawnWave() {
   for (const e of enemies) e.removeFrom(scene);
   enemies = [];
+  for (const g of gates)    g.remove(scene); gates    = [];
+  for (const p of powerups) p.remove(scene); powerups = [];
   wave++;
   const { speedMult, intervalMult } = getWaveScale(wave);
-  const types = getEnemyComposition(wave);
-  types.forEach((type, i) => {
-    const angle = (i / types.length) * Math.PI * 2;
-    const r     = HALF * 0.6;
-    enemies.push(new Enemy(scene, type, Math.cos(angle) * r, Math.sin(angle) * r, speedMult, intervalMult));
+  const { dur, list } = getEnemySchedule(wave);
+  waveDuration = dur;
+  waveTimer    = 0;
+  const total  = list.length;
+  pendingSpawns = [];
+  list.forEach((entry, i) => {
+    const cnt = entry.count || 1;
+    for (let k = 0; k < cnt; k++) {
+      pendingSpawns.push({
+        type: entry.type,
+        delay: entry.t,
+        angle: (i / total) * Math.PI * 2,
+        clusterOffset: k > 0 ? { x: (Math.random()-0.5)*3, z: (Math.random()-0.5)*3 } : null,
+        speedMult,
+        intervalMult,
+      });
+    }
   });
+  if (wave >= 3) gates.push(new Gate(scene));
   announceWave();
 }
 
@@ -449,6 +721,17 @@ function loop() {
   let aimDir    = input.getAimDir();
   if (aimDir.useMouse) aimDir = mouseAimDir();
 
+  // Trickle spawn pending enemies
+  waveTimer += dt;
+  while (pendingSpawns.length > 0 && waveTimer >= pendingSpawns[0].delay) {
+    const s = pendingSpawns.shift();
+    const r = HALF * 0.6;
+    const bx = Math.cos(s.angle) * r, bz = Math.sin(s.angle) * r;
+    const ox = s.clusterOffset ? s.clusterOffset.x : 0;
+    const oz = s.clusterOffset ? s.clusterOffset.z : 0;
+    enemies.push(new Enemy(scene, s.type, bx + ox, bz + oz, s.speedMult, s.intervalMult));
+  }
+
   player.update(dt, moveDir, aimDir, bullets, HALF);
   for (const e of enemies) { e.update(dt, player.position, bullets); e.updateDeath(dt); }
   bullets.update(dt, HALF);
@@ -463,12 +746,62 @@ function loop() {
   for (let i = poisonZones.length - 1; i >= 0; i--) {
     if (!poisonZones[i].update(dt)) { poisonZones[i].remove(scene); poisonZones.splice(i, 1); }
   }
+  for (let i = slimeTrails.length - 1; i >= 0; i--) {
+    if (!slimeTrails[i].update(dt)) { slimeTrails[i].remove(scene); slimeTrails.splice(i, 1); }
+  }
 
   // Sludge poison emission
   for (const e of enemies) {
     if (!e._poisonReady) continue;
     e._poisonReady = false;
     poisonZones.push(new PoisonZone(scene, e.position.x, e.position.z, e.radius * 1.8));
+  }
+
+  // YELA_CUBE slime trail emission
+  for (const e of enemies) {
+    if (!e._trailReady) continue;
+    e._trailReady = false;
+    slimeTrails.push(new SlimeTrail(scene, e.position.x, e.position.z, 0.5));
+  }
+
+  // BAMBU AoE telegraphs and lob bullets; drain hitChunks for all enemies
+  for (const e of enemies) {
+    if (e.type === EnemyType.BAMBU) {
+      if (e._aoeReady) {
+        e._aoeReady = false;
+        bambuAoes.push(new BambuAoE(scene, e._lobTargetX, e._lobTargetZ, 2.2, 1.0));
+      }
+      if (e._lobReady && e.alive) {
+        const tgt = e._lobReady; e._lobReady = null;
+        const ex = e.position.x, ez = e.position.z;
+        const dx = tgt.x - ex, dz = tgt.z - ez;
+        const dl = Math.hypot(dx, dz) || 1;
+        bullets.spawnDir(ex, ez, dx/dl, dz/dl, false, 0xddbb44, true);
+      }
+    }
+    if (e._hitChunks && e._hitChunks.length > 0) {
+      for (const cd of e._hitChunks) {
+        chunks.push(new Chunk(scene, cd.x, cd.y, cd.z, cd.vx, cd.vy, cd.vz, cd.color, cd.size));
+      }
+      e._hitChunks.length = 0;
+    }
+  }
+  for (let i = bambuAoes.length - 1; i >= 0; i--) {
+    if (!bambuAoes[i].update(dt)) { bambuAoes[i].remove(scene); bambuAoes.splice(i, 1); }
+  }
+
+  // SLUDGE_CUBE ribbon: create on first sight, update every frame
+  for (const e of enemies) {
+    if (e.type === EnemyType.SLUDGE_CUBE && !e._ribbon) {
+      e._ribbon = new SludgeRibbon(scene, e);
+      sludgeRibbons.push(e._ribbon);
+    }
+  }
+  for (let i = sludgeRibbons.length - 1; i >= 0; i--) {
+    if (!sludgeRibbons[i].update(dt)) {
+      sludgeRibbons[i].remove(scene);
+      sludgeRibbons.splice(i, 1);
+    }
   }
 
   // Check for children to spawn (SPLITTA, REDD_CUBE, PURP_CUBE)
@@ -550,9 +883,59 @@ function loop() {
       const dz = player.position.z - e.position.z;
       if (Math.hypot(dx, dz) < e.radius + PLAYER_RADIUS) {
         player.hit(); onPlayerHit();
+        if (e.type === EnemyType.TORO && e._state === 'dashing') addShake(0.27);
         if (!player.alive) { triggerGameOver(); break; }
         break;
       }
+    }
+  }
+
+  // Gate + powerup updates
+  const _t = performance.now() / 1000;
+  for (const g of gates) g.update(dt, _t);
+  for (let i = powerups.length - 1; i >= 0; i--) {
+    if (!powerups[i].update(dt, _t)) { powerups[i].remove(scene); powerups.splice(i, 1); }
+  }
+
+  // Gate interactions
+  if (gates.length > 0) {
+    const px = player.position.x, pz = player.position.z;
+    for (const g of gates) {
+      if (!g.alive) continue;
+      if (g.hitsPoint(px, pz, PLAYER_RADIUS)) {
+        if (player.dashing) {
+          g.deactivate(scene);
+          powerups.push(new Powerup(scene, g._x, g._z));
+        }
+      }
+      // Enemies hitting laser take damage (once per 0.5s)
+      if (g._dmgCooldown <= 0) {
+        for (const e of enemies) {
+          if (!e.alive) continue;
+          if (g.hitsPoint(e.position.x, e.position.z, e.radius * 0.5)) {
+            const died = e.hit();
+            if (died) onKill(e);
+            else audio.enemyHit();
+            g._dmgCooldown = 0.5;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // Powerup collection
+  for (const pu of powerups) {
+    if (pu.collected) continue;
+    const dx = player.position.x - pu.x, dz = player.position.z - pu.z;
+    if (Math.hypot(dx, dz) < 0.8 + PLAYER_RADIUS) {
+      pu.collected = true;
+      if (pu._type === 'invincible') {
+        player.grantInvincibility(3.0);
+      } else {
+        player.grantFireRateBoost(5.0);
+      }
+      audio.waveClear();
     }
   }
 
@@ -570,10 +953,20 @@ function loop() {
     }
   }
 
-  // All enemies dead (including death animations) → next wave
-  if (gameState === 'playing' && enemies.length && enemies.every(e => !e.alive && !e._dying)) {
+  // All enemies dead + wave duration elapsed → next wave
+  if (gameState === 'playing' &&
+      pendingSpawns.length === 0 &&
+      waveTimer >= waveDuration &&
+      enemies.length > 0 &&
+      enemies.every(e => !e.alive && !e._dying)) {
     bullets.clear();
     for (const c of chunks) c.remove(scene); chunks = [];
+    // Wave-clear burst: 16 white/gold particles from center (after old chunks cleared)
+    for (let i = 0; i < 16; i++) {
+      const a   = (i / 16) * Math.PI * 2;
+      const col = (i % 2 === 0) ? 0xffffff : 0xffdd44;
+      chunks.push(new Chunk(scene, 0, 0.3, 0, Math.cos(a) * 8, 1.5, Math.sin(a) * 8, col, 0.12));
+    }
     audio.waveClear();
     addShake(0.22);
     score += wave * 500;
