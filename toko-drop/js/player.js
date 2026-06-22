@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { makeGooMat } from './enemy.js';
 
 const SPEED          = 6;
 const DASH_SPEED     = 26;
@@ -29,14 +28,10 @@ export class Player {
     this._fireT    = 0;
     this._lastAim  = { x: 1, z: 0 };
     this._ghostT   = 0;
-    this._invincBoost   = 0;
-    this._fireRateBoost = 0;
-    this._sq  = 1.0;
-    this._sqV = 0.0;
     this.onShoot   = null;
 
     const geo = new THREE.SphereGeometry(PLAYER_RADIUS, 14, 10);
-    this.mat = makeGooMat(0xffffff, 0.98); // white goo, Fresnel rim glow
+    this.mat = new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x222222 });
     this.mesh = new THREE.Mesh(geo, this.mat);
     this.mesh.castShadow = true;
     scene.add(this.mesh);
@@ -51,13 +46,11 @@ export class Player {
       return { mesh: m, life: 0 };
     });
 
-    // Eyes — Kirby-style black ovals with white reflections
     const eyeGeo = new THREE.SphereGeometry(0.13, 8, 6);
     this._eyeL = new THREE.Mesh(eyeGeo, new THREE.MeshBasicMaterial({ color: 0x111111 }));
     this._eyeR = new THREE.Mesh(eyeGeo, new THREE.MeshBasicMaterial({ color: 0x111111 }));
     this._eyeL.scale.set(0.55, 1.15, 0.4);
     this._eyeR.scale.set(0.55, 1.15, 0.4);
-    // White reflection dots as children
     const reflGeo = new THREE.SphereGeometry(0.042, 5, 4);
     const reflMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
     [this._eyeL, this._eyeR].forEach(e => {
@@ -70,12 +63,12 @@ export class Player {
     this._eyesOn = true;
   }
 
-  get invincible() { return this._dashTime > 0 || this._mercyT > 0 || this._invincBoost > 0; }
-  get dashing()   { return this._dashTime > 0; }
-  get position()  { return this.mesh.position; }
+  get invincible() { return this._dashTime > 0 || this._mercyT > 0; }
+  get dashing()    { return this._dashTime > 0; }
+  get position()   { return this.mesh.position; }
 
-  grantInvincibility(t)  { this._invincBoost   = Math.max(this._invincBoost, t); }
-  grantFireRateBoost(t)  { this._fireRateBoost = Math.max(this._fireRateBoost, t); }
+  grantInvincibility(dur) { this._mercyT = Math.max(this._mercyT, dur); }
+  grantFireRateBoost(dur) { this._fireRateBoost = dur; }
 
   reset() {
     this.alive    = true;
@@ -85,14 +78,11 @@ export class Player {
     this._dashTime = 0;
     this._dashCD   = 0;
     this._fireT    = 0;
-    this._ghostT        = 0;
-    this._invincBoost   = 0;
+    this._ghostT   = 0;
     this._fireRateBoost = 0;
-    this._sq  = 1.0;
-    this._sqV = 0.0;
-    this.mat.uniforms.uEmissive.value.setHex(0x000000);
-    this.mat.uniforms.uOpacity.value = 0.98;
-    this.mesh.scale.setScalar(1);
+    this.mat.emissive.setHex(0x222222);
+    this.mat.transparent = false;
+    this.mat.opacity = 1;
     this.mesh.visible = true;
     this.mesh.position.set(0, PLAYER_RADIUS, 0);
     for (const g of this._ghosts) { g.life = 0; g.mesh.visible = false; }
@@ -106,8 +96,7 @@ export class Player {
     if (this.hp <= 0) { this.die(); return; }
     this._flashT = 0.25;
     this._mercyT = MERCY_DURATION;
-    this._dashTime = 0; // cancel dash on hit
-    this._sqV -= 0.9;   // squash on impact
+    this._dashTime = 0;
   }
 
   dash(aimDir) {
@@ -117,32 +106,28 @@ export class Player {
       : { x: this._lastAim.x, z: this._lastAim.z };
     this._dashTime = DASH_DUR;
     this._ghostT   = 0;
-    this._sqV += 0.6; // elongate at dash start
   }
 
   update(dt, moveDir, aimDir, bullets, halfSize) {
     if (!this.alive) return;
 
-    if (this._dashCD        > 0) this._dashCD        -= dt;
-    if (this._fireT         > 0) this._fireT         -= dt;
-    if (this._invincBoost   > 0) this._invincBoost   -= dt;
+    if (this._dashCD > 0) this._dashCD -= dt;
+    if (this._fireT  > 0) this._fireT  -= dt;
     if (this._fireRateBoost > 0) this._fireRateBoost -= dt;
 
-    // Hit flash (red emissive)
     if (this._flashT > 0) {
       this._flashT -= dt;
-      this.mat.uniforms.uEmissive.value.setHex(0xff1100);
+      this.mat.emissive.setHex(0xff1100);
     } else if (this._mercyT <= 0) {
-      this.mat.uniforms.uEmissive.value.setHex(0x000000);
+      this.mat.emissive.setHex(0x222222);
     }
 
     if (this._dashTime > 0) {
       this._dashTime -= dt;
       this.mesh.position.x += this._dashDir.x * DASH_SPEED * dt;
       this.mesh.position.z += this._dashDir.z * DASH_SPEED * dt;
-
-      this.mat.uniforms.uOpacity.value = 0.35 + 0.65 * Math.abs(Math.sin(this._dashTime * 55));
-
+      this.mat.transparent = true;
+      this.mat.opacity = 0.35 + 0.65 * Math.abs(Math.sin(this._dashTime * 55));
       this._ghostT -= dt;
       if (this._ghostT <= 0) {
         this._ghostT = GHOST_INTERVAL;
@@ -154,28 +139,27 @@ export class Player {
           g.mesh.visible = true;
         }
       }
-
       if (this._dashTime <= 0) {
         this._dashCD = DASH_CD;
-        if (this._mercyT <= 0) this.mat.uniforms.uOpacity.value = 0.98;
+        this.mat.transparent = this._mercyT > 0;
+        this.mat.opacity = 1;
       }
     } else {
-      // Normal movement always applies — even during mercy i-frames
       this.mesh.position.x += moveDir.x * SPEED * dt;
       this.mesh.position.z += moveDir.z * SPEED * dt;
     }
 
-    // Mercy i-frame flicker — independent of movement
     if (this._mercyT > 0) {
       this._mercyT -= dt;
-      this.mat.uniforms.uOpacity.value = 0.3 + 0.7 * Math.abs(Math.sin(this._mercyT * 12));
+      this.mat.transparent = true;
+      this.mat.opacity = 0.3 + 0.7 * Math.abs(Math.sin(this._mercyT * 12));
       if (this._mercyT <= 0) {
-        this.mat.uniforms.uOpacity.value = 0.98;
-        this.mat.uniforms.uEmissive.value.setHex(0x000000);
+        this.mat.transparent = false;
+        this.mat.opacity = 1;
+        this.mat.emissive.setHex(0x222222);
       }
     }
 
-    // Ghost fade
     for (const g of this._ghosts) {
       if (g.life > 0) {
         g.life -= dt;
@@ -189,30 +173,24 @@ export class Player {
       }
     }
 
-    // Spring squash
-    this._sqV = (this._sqV - (this._sq - 1.0) * 0.28) * 0.84;
-    this._sq  = Math.max(0.55, Math.min(1.55, this._sq + this._sqV));
-    const _psx = 1 / Math.sqrt(Math.max(this._sq, 0.1));
-    this.mesh.scale.set(_psx, this._sq, _psx);
-
     const h = halfSize - PLAYER_RADIUS;
     this.mesh.position.x = Math.max(-h, Math.min(h, this.mesh.position.x));
     this.mesh.position.z = Math.max(-h, Math.min(h, this.mesh.position.z));
 
+    const effectiveFireRate = this._fireRateBoost > 0 ? FIRE_RATE * 0.4 : FIRE_RATE;
     if (aimDir.valid && this._fireT <= 0) {
       this._lastAim = { x: aimDir.x, z: aimDir.z };
       const ox = this.mesh.position.x + aimDir.x * (PLAYER_RADIUS + 0.3);
       const oz = this.mesh.position.z + aimDir.z * (PLAYER_RADIUS + 0.3);
       bullets.spawnDir(ox, oz, aimDir.x, aimDir.z, true);
-      this._fireT = this._fireRateBoost > 0 ? FIRE_RATE * 0.4 : FIRE_RATE;
+      this._fireT = effectiveFireRate;
       this.onShoot?.();
     }
 
-    // ── Eyes ──────────────────────────────────────────────────────────────────
     if (this._eyesOn) {
       const ax = this._lastAim.x, az = this._lastAim.z;
-      const px = -az, pz = ax; // perpendicular
-      const ed = 0.4, es = 0.14; // eye distance from center, lateral separation
+      const px = -az, pz = ax;
+      const ed = 0.4, es = 0.14;
       const ey = this.mesh.position.y + 0.16;
       this._eyeL.position.set(
         this.mesh.position.x + ax * ed + px * es, ey,

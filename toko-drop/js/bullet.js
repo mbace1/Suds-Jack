@@ -15,7 +15,6 @@ class Bullet {
     this.mesh.visible = false;
     scene.add(this.mesh);
 
-    // Drop shadow
     const shadowGeo = new THREE.CircleGeometry(1, 8);
     const shadowMat = new THREE.MeshBasicMaterial({
       color: 0x000000,
@@ -27,19 +26,6 @@ class Bullet {
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadow.visible = false;
     scene.add(this.shadow);
-
-    // Glow trail for enemy bullets
-    const trailGeo = new THREE.BufferGeometry();
-    trailGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(9), 3));
-    this._trailMat = new THREE.LineBasicMaterial({
-      color: 0xff4422,
-      transparent: true,
-      opacity: 0.55,
-      depthWrite: false,
-    });
-    this._trail = new THREE.Line(trailGeo, this._trailMat);
-    this._trail.visible = false;
-    scene.add(this._trail);
 
     this.vx = 0; this.vz = 0;
     this.alive = false;
@@ -63,14 +49,11 @@ export class BulletPool {
     b.speed = speed;
     b.fat = fat;
     b.mesh.position.set(x, 0.3, z);
-    const resolvedColor = color ?? (isPlayer ? 0x44ff88 : 0xff4422);
-    b.mat.color.set(resolvedColor);
-    b._trailMat.color.set(resolvedColor);
+    b.mat.color.set(color ?? (isPlayer ? 0x44ff88 : 0xff4422));
     b.vx = dx * speed; b.vz = dz * speed;
     b.alive = true; b.isPlayer = isPlayer;
     b.lifetime = 4;
     b.mesh.visible = true;
-    b._trail.visible = false;
     if (fat) {
       b.mesh.scale.setScalar(3);
     } else {
@@ -89,28 +72,10 @@ export class BulletPool {
       if (b.lifetime <= 0 || Math.abs(p.x) > halfSize + 2 || Math.abs(p.z) > halfSize + 2) {
         this.recycleAt(i);
       } else {
-        // Update shadow
         const shadowR = b.fat ? 0.5 : 0.18;
         b.shadow.position.set(p.x, 0.02, p.z);
         b.shadow.scale.setScalar(shadowR);
         b.shadow.visible = true;
-
-        // Glow trail for enemy bullets only
-        if (!b.isPlayer) {
-          const len = Math.hypot(b.vx, b.vz);
-          if (len > 0) {
-            const nx = b.vx / len, nz = b.vz / len;
-            const arr = b._trail.geometry.attributes.position.array;
-            const step = b.fat ? 0.55 : 0.28;
-            for (let j = 0; j < 3; j++) {
-              arr[j * 3]     = p.x - nx * step * j;
-              arr[j * 3 + 1] = 0.3;
-              arr[j * 3 + 2] = p.z - nz * step * j;
-            }
-            b._trail.geometry.attributes.position.needsUpdate = true;
-            b._trail.visible = true;
-          }
-        }
       }
     }
   }
@@ -121,7 +86,6 @@ export class BulletPool {
     b.mesh.visible = false;
     b.mesh.scale.setScalar(1);
     b.shadow.visible = false;
-    b._trail.visible = false;
     b.fat = false;
     this.active.splice(i, 1);
     this._pool.push(b);
