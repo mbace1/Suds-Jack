@@ -33,7 +33,6 @@ uniform vec3  u_c0;
 uniform float u_sq0;
 uniform float u_tilt0;
 uniform vec3  u_tax0;   // tilt axis
-uniform vec2  u_target;
 
 const vec3  HALF_BOX = vec3(0.525, 0.525, 0.525);
 const float ROUND_R  = 0.200;
@@ -44,24 +43,18 @@ const float GEL_IOR  = 1.33;
 float sdRoundBox(vec3 p, vec3 b, float r){
   vec3 q=abs(p)-b; return length(max(q,0.0))+min(max(q.x,max(q.y,q.z)),0.0)-r;
 }
-
-// Rodrigues rotation
 vec3 rotV(vec3 v, vec3 ax, float a){
   float c=cos(a),s=sin(a);
   return v*c+cross(ax,v)*s+ax*dot(ax,v)*(1.0-c);
 }
-
 float gooCube(vec3 p, vec3 cen, float sq, float tilt, vec3 tax){
   float sqC=clamp(sq,0.38,1.72);
   vec3 lp=p-cen;
-  // Apply tilt rotation first (actual cube lean)
   if(abs(tilt)>0.001) lp=rotV(lp,tax,tilt);
-  // Squish along cube's (rotated) local Y
   float proj=dot(lp,vec3(0,1,0));
   lp=vec3(0,1,0)*(proj*sqC)+(lp-vec3(0,1,0)*proj)/sqrt(sqC);
   return sdRoundBox(lp,HALF_BOX,ROUND_R)*min(sqrt(sqC),1.0/sqC);
 }
-
 float scene(vec3 p){ return gooCube(p,u_c0,u_sq0,u_tilt0,u_tax0); }
 
 vec3 calcNormal(vec3 p){
@@ -104,7 +97,6 @@ vec3 goopShade(vec3 p, vec3 N, vec3 V, float sh, float ao){
     + envRef*fresnel*0.52;
   return col*(ao*0.60+0.40);
 }
-
 float caustics(vec3 fp){
   float t=u_time*0.55;
   float c=sin(fp.x*4.10+t*1.10)*cos(fp.z*3.70+t*0.85)
@@ -113,12 +105,10 @@ float caustics(vec3 fp){
          +sin((fp.x+fp.z)*3.60+t*0.75)*0.25;
   return pow(clamp(c*0.25+0.5,0.0,1.0),2.8)*1.4;
 }
-
 mat3 camMatrix(vec3 ro,vec3 ta){
   vec3 ww=normalize(ta-ro),uu=normalize(cross(ww,vec3(0,1,0))),vv=normalize(cross(uu,ww));
   return mat3(uu,vv,ww);
 }
-
 vec3 getBg(vec3 ro, vec3 rd){
   if(rd.y<-0.0005){float tF=-ro.y/rd.y;
     if(tF>0.0&&tF<28.0){
@@ -130,23 +120,17 @@ vec3 getBg(vec3 ro, vec3 rd){
       float sh=softShadow(fp+vec3(0,0.003,0),KEY_L,0.05,9.0);
       base*=(sh*0.70+0.30);
       base+=vec3(0.05,0.22,0.09)*caustics(fp)*(0.28+0.72*(1.0-sh));
-      vec2 toT=fp.xz-u_target;
-      float ring=smoothstep(0.28,0.22,length(toT))-smoothstep(0.22,0.16,length(toT));
-      base+=vec3(0.04,0.24,0.10)*ring*0.55;
       float fog=1.0-exp(-max(tF-5.0,0.0)*0.035);
       return mix(base,envSky(rd),fog);}}
   return envSky(rd);
 }
-
 void main(){
   vec2 uv=(gl_FragCoord.xy-u_res*0.5)/u_res.y;
   vec3 ro=vec3(0.80,4.20,8.50), ta=vec3(0.00,0.60,0.00);
   mat3 cam=camMatrix(ro,ta); vec3 rd=cam*normalize(vec3(uv,1.85));
-
   float t=0.10; bool hit=false;
   for(int i=0;i<88;i++){float d=scene(ro+rd*t);
     if(d<0.0005){hit=true;break;}if(t>28.0)break;t+=max(d,0.004);}
-
   vec3 col;
   if(hit){
     vec3 p=ro+rd*t, N=calcNormal(p), V=-rd;
@@ -164,9 +148,7 @@ void main(){
     vec3 bgCol=getBg(exitP,exitRd);
     bgCol=mix(bgCol,vec3(0.02,0.28,0.09),(1.0-alpha)*0.44);
     col=mix(bgCol,surfCol,alpha);
-  } else {
-    col=getBg(ro,rd);
-  }
+  } else { col=getBg(ro,rd); }
   col=col/(col+vec3(0.72)); col=pow(col,vec3(0.4545));
   gl_FragColor=vec4(col,1.0);
 }
@@ -202,7 +184,7 @@ const bPL=gl.getAttribLocation(bloomProg,'a_pos');
 
 gl.useProgram(sceneProg);
 const U={};
-['u_res','u_time','u_c0','u_sq0','u_tilt0','u_tax0','u_target']
+['u_res','u_time','u_c0','u_sq0','u_tilt0','u_tax0']
   .forEach(n=>U[n]=gl.getUniformLocation(sceneProg,n));
 
 gl.useProgram(bloomProg);
@@ -221,168 +203,73 @@ function buildFBO(w,h){
   gl.bindFramebuffer(gl.FRAMEBUFFER,null);
 }
 
-// ── helpers ───────────────────────────────────────────────────────────────────
-
-const v3={
-  sub:  (a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],
-  add:  (a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],
-  scale:(a,s)=>[a[0]*s,a[1]*s,a[2]*s],
-  dot:  (a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],
-  cross:(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],
-  len:  a=>Math.sqrt(a[0]**2+a[1]**2+a[2]**2),
-  norm: a=>{const l=Math.sqrt(a[0]**2+a[1]**2+a[2]**2)||1;return[a[0]/l,a[1]/l,a[2]/l];},
-};
-function screenToRay(px,py){
-  const W=window.innerWidth,H=window.innerHeight;
-  const uvx=(px-W/2)/H, uvy=-(py-H/2)/H;
-  const ww=v3.norm(v3.sub(TAR,CAM)),uu=v3.norm(v3.cross(ww,[0,1,0])),vv=v3.norm(v3.cross(uu,ww));
-  return v3.norm([uu[0]*uvx+vv[0]*uvy+ww[0]*FOCAL,
-                  uu[1]*uvx+vv[1]*uvy+ww[1]*FOCAL,
-                  uu[2]*uvx+vv[2]*uvy+ww[2]*FOCAL]);
-}
-
 // ── physics ───────────────────────────────────────────────────────────────────
 
-// Tuning knobs
-const GRAVITY     = 0.016;   // downward accel per frame
-const FLOOR_Y     = 0.525;   // cube centre Y when resting on floor
-const WALK_RADIUS = 1.40;
-const WALK_JUMP   = 0.14;    // upward vel impulse per hop
-const WALK_TILT   = 0.26;    // angular vel impulse (forward lean)
-const WALK_SQUISH = 0.28;    // sq impulse on launch
-const WALK_MIN    = 60;
-const WALK_MAX    = 105;
+// Swipe at least this many screen pixels horizontally to trigger a flop
+const DRAG_THRESH = 42;
+
+// Tilt axis for screen-left/right flop: camera-forward projected to XZ.
+// Camera at (0.8,4.2,8.5) → fwd ≈ (-0.09,−0.39,−0.92) → XZ part normalized ≈ (−0.09,0,−0.92).
+// Tilt around this axis tips the cube left/right from the viewer's perspective.
+const FLOP_AXIS = (()=>{
+  const fwd = [-0.80,-3.60,-8.50]; // TAR - CAM
+  const len  = Math.sqrt(fwd[0]**2+fwd[2]**2)||1;
+  return [fwd[0]/len, 0, fwd[2]/len]; // XZ component, normalised
+})();
 
 const cube = {
-  bx:0, bz:0,               // XZ rest (spring target)
-  x:0, y:FLOOR_Y, z:0,
-  vx:0, vy:0, vz:0,
+  x:0, y:0.525, z:0,
+  vx:0, vz:0,
   sq:1.0, sqV:0.0,
   tilt:0.0, tiltV:0.0,
-  tax:[0.0, 0.0, 1.0],      // tilt axis (unit vec, perpendicular to hop dir)
-  walkTimer:0, walkPeriod:90,
-  targetX:0, targetZ:0,
-  grabbed:false,
-  onFloor:true,
 };
 
-function hop(){
-  const ang  = Math.random()*Math.PI*2;
-  const dist = WALK_RADIUS*(0.45+Math.random()*0.55);
-  cube.bx = Math.cos(ang)*dist;
-  cube.bz = Math.sin(ang)*dist;
-  cube.targetX = cube.bx;
-  cube.targetZ = cube.bz;
-
-  // Tilt axis = perpendicular to hop direction in XZ plane
-  // (so negative tilt angle = lean forward toward target)
-  const dx=cube.bx-cube.x, dz=cube.bz-cube.z, dl=Math.sqrt(dx*dx+dz*dz)||1;
-  cube.tax = [-dz/dl, 0.0, dx/dl];
-
-  cube.tiltV -= WALK_TILT;
-  cube.vy    += WALK_JUMP;
-  cube.sqV   -= WALK_SQUISH;
-
-  cube.walkTimer  = 0;
-  cube.walkPeriod = WALK_MIN + Math.floor(Math.random()*(WALK_MAX-WALK_MIN));
+// dir: +1 = screen-right, -1 = screen-left
+function flop(dir){
+  cube.tiltV += dir * 0.32;   // angular impulse — positive tips right on screen
+  cube.sqV   -= 0.22;         // wind-up squish
 }
 
-function tickCube(){
-  // Tilt spring (rotational oscillator)
-  cube.tiltV = (cube.tiltV - cube.tilt * 0.13) * 0.87;
+function tick(){
+  // Tilt spring — loosely damped so it wobbles a few times before settling
+  cube.tiltV = (cube.tiltV - cube.tilt * 0.07) * 0.91;
   cube.tilt += cube.tiltV;
 
   // Squish oscillator
-  cube.sqV = (cube.sqV - (cube.sq-1.0)*0.24)*0.86;
-  cube.sq  = Math.max(0.38, Math.min(1.72, cube.sq+cube.sqV));
+  cube.sqV = (cube.sqV-(cube.sq-1.0)*0.24)*0.86;
+  cube.sq  = Math.max(0.38,Math.min(1.72,cube.sq+cube.sqV));
 
-  // XZ spring toward walk target
-  cube.vx = (cube.vx + (cube.bx-cube.x)*0.032)*0.88;
-  cube.vz = (cube.vz + (cube.bz-cube.z)*0.032)*0.88;
+  // Gently spring back to centre (in case of any accumulated drift)
+  cube.vx = (cube.vx - cube.x*0.04)*0.85;
+  cube.vz = (cube.vz - cube.z*0.04)*0.85;
   cube.x += cube.vx;
   cube.z += cube.vz;
-
-  // Y: gravity + floor
-  cube.vy -= GRAVITY;
-  cube.y  += cube.vy;
-  if(cube.y <= FLOOR_Y){
-    const impact = -cube.vy;
-    cube.y = FLOOR_Y;
-    cube.vy = 0;
-    cube.onFloor = true;
-    if(impact > 0.02) cube.sqV -= Math.min(impact*1.6, 0.44); // landing squish
-  } else {
-    cube.onFloor = false;
-  }
-
-  // Trigger next hop once settled on floor
-  if(!cube.grabbed && cube.onFloor){
-    cube.walkTimer++;
-    const spd = Math.sqrt(cube.vx**2+cube.vz**2);
-    if(cube.walkTimer > cube.walkPeriod && spd < 0.015) hop();
-  }
 }
 
-// ── input ─────────────────────────────────────────────────────────────────────
+// ── input — swipe detection ───────────────────────────────────────────────────
 
-const activePointers = new Map();
+// Each active pointer tracked independently; first threshold crossed wins.
+const drags = new Map(); // pointerId → { startX, startY, fired }
 
-function applyHit(px,py){
-  const rd = screenToRay(px,py);
-  const toCube = v3.sub([cube.x,cube.y,cube.z], CAM);
-  const proj   = Math.max(0, v3.dot(toCube,rd));
-  const closest= v3.add(CAM, v3.scale(rd,proj));
-  const dist   = v3.len(v3.sub(closest,[cube.x,cube.y,cube.z]));
-  const str    = (0.30+Math.random()*0.12)*Math.exp(-dist*0.60);
-  if(str > 0.015){
-    const l = v3.len(rd)||1;
-    // Tilt axis perpendicular to ray (so cube tips away from hit)
-    const raw = v3.cross(rd,[0,1,0]);
-    const rlen = v3.len(raw);
-    cube.tax = rlen>0.001 ? v3.norm(raw) : [1,0,0];
-    cube.tiltV -= str*1.1;
-    cube.sqV   -= str*0.95;
-    cube.vx += rd[0]/l*str*0.18;
-    cube.vz += rd[2]/l*str*0.18;
-    cube.vy += 0.07;
-    cube.walkTimer = -(cube.walkPeriod*0.5|0);
-  }
-}
-
-function applyDrag(){
-  if(!activePointers.size){ cube.grabbed=false; return; }
-  cube.grabbed = true;
-  activePointers.forEach(({px,py})=>{
-    const rd     = screenToRay(px,py);
-    const toCube = v3.sub([cube.x,cube.y,cube.z],CAM);
-    const proj   = Math.max(0,v3.dot(toCube,rd));
-    const closest= v3.add(CAM,v3.scale(rd,proj));
-    const toRay  = v3.sub(closest,[cube.x,cube.y,cube.z]);
-    const dist   = v3.len(toRay);
-    const wt     = Math.exp(-dist*0.48);
-    if(wt<0.01) return;
-    const dir = dist>0.001 ? v3.scale(toRay,1/dist) : rd;
-    cube.vx += dir[0]*0.014*wt;
-    cube.vz += dir[2]*0.014*wt;
-    // Tilt toward drag direction
-    const raw = v3.cross(dir,[0,1,0]);
-    const rlen = v3.len(raw);
-    if(rlen>0.001){ cube.tax = v3.norm(raw); cube.tiltV -= 0.009*wt; }
-    if(cube.sq>0.92) cube.sqV -= 0.001*wt;
-  });
-}
-
-canvas.addEventListener('pointerdown',e=>{
+canvas.addEventListener('pointerdown', e => {
   canvas.setPointerCapture(e.pointerId);
-  activePointers.set(e.pointerId,{px:e.clientX,py:e.clientY});
-  applyHit(e.clientX,e.clientY);
+  drags.set(e.pointerId, { startX: e.clientX, startY: e.clientY, fired: false });
 });
-canvas.addEventListener('pointermove',e=>{
-  if(activePointers.has(e.pointerId))
-    activePointers.set(e.pointerId,{px:e.clientX,py:e.clientY});
+
+canvas.addEventListener('pointermove', e => {
+  const d = drags.get(e.pointerId);
+  if(!d || d.fired) return;
+  const dx = e.clientX - d.startX;
+  const dy = e.clientY - d.startY;
+  // Require mostly horizontal motion (not a scroll/diagonal)
+  if(Math.abs(dx) > DRAG_THRESH && Math.abs(dx) > Math.abs(dy) * 1.4){
+    flop(dx > 0 ? 1 : -1);
+    d.fired = true;
+  }
 });
-canvas.addEventListener('pointerup',    e=>{activePointers.delete(e.pointerId);if(!activePointers.size)cube.grabbed=false;});
-canvas.addEventListener('pointercancel',e=>{activePointers.delete(e.pointerId);if(!activePointers.size)cube.grabbed=false;});
+
+canvas.addEventListener('pointerup',    e => drags.delete(e.pointerId));
+canvas.addEventListener('pointercancel',e => drags.delete(e.pointerId));
 
 // ── resize ────────────────────────────────────────────────────────────────────
 
@@ -395,14 +282,11 @@ function resize(){
 }
 resize(); window.addEventListener('resize',resize);
 
-hop(); // launch immediately
-
 // ── render loop ───────────────────────────────────────────────────────────────
 
 function frame(){
   requestAnimationFrame(frame);
-  applyDrag();
-  tickCube();
+  tick();
 
   gl.bindFramebuffer(gl.FRAMEBUFFER,sceneFBO);
   gl.useProgram(sceneProg);
@@ -414,8 +298,7 @@ function frame(){
   gl.uniform3f(U.u_c0,cube.x,cube.y,cube.z);
   gl.uniform1f(U.u_sq0,cube.sq);
   gl.uniform1f(U.u_tilt0,cube.tilt);
-  gl.uniform3f(U.u_tax0,cube.tax[0],cube.tax[1],cube.tax[2]);
-  gl.uniform2f(U.u_target,cube.targetX,cube.targetZ);
+  gl.uniform3f(U.u_tax0,FLOP_AXIS[0],FLOP_AXIS[1],FLOP_AXIS[2]);
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
 
   gl.bindFramebuffer(gl.FRAMEBUFFER,null);
