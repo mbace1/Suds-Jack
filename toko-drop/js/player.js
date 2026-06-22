@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { makeGooMat } from './enemy.js';
 
 const SPEED          = 6;
 const DASH_SPEED     = 26;
@@ -30,10 +31,12 @@ export class Player {
     this._ghostT   = 0;
     this._invincBoost   = 0;
     this._fireRateBoost = 0;
+    this._sq  = 1.0;
+    this._sqV = 0.0;
     this.onShoot   = null;
 
     const geo = new THREE.SphereGeometry(PLAYER_RADIUS, 14, 10);
-    this.mat = new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x222222 });
+    this.mat = makeGooMat(0xffffff, 0.98); // white goo, Fresnel rim glow
     this.mesh = new THREE.Mesh(geo, this.mat);
     this.mesh.castShadow = true;
     scene.add(this.mesh);
@@ -85,9 +88,11 @@ export class Player {
     this._ghostT        = 0;
     this._invincBoost   = 0;
     this._fireRateBoost = 0;
-    this.mat.emissive.setHex(0x222222);
-    this.mat.transparent = false;
-    this.mat.opacity = 1;
+    this._sq  = 1.0;
+    this._sqV = 0.0;
+    this.mat.uniforms.uEmissive.value.setHex(0x000000);
+    this.mat.uniforms.uOpacity.value = 0.98;
+    this.mesh.scale.setScalar(1);
     this.mesh.visible = true;
     this.mesh.position.set(0, PLAYER_RADIUS, 0);
     for (const g of this._ghosts) { g.life = 0; g.mesh.visible = false; }
@@ -102,6 +107,7 @@ export class Player {
     this._flashT = 0.25;
     this._mercyT = MERCY_DURATION;
     this._dashTime = 0; // cancel dash on hit
+    this._sqV -= 0.9;   // squash on impact
   }
 
   dash(aimDir) {
@@ -111,7 +117,7 @@ export class Player {
       : { x: this._lastAim.x, z: this._lastAim.z };
     this._dashTime = DASH_DUR;
     this._ghostT   = 0;
-    // dash doesn't set invincible directly; the getter handles it via _dashTime
+    this._sqV += 0.6; // elongate at dash start
   }
 
   update(dt, moveDir, aimDir, bullets, halfSize) {
@@ -125,9 +131,9 @@ export class Player {
     // Hit flash (red emissive)
     if (this._flashT > 0) {
       this._flashT -= dt;
-      this.mat.emissive.setHex(0xff1100);
+      this.mat.uniforms.uEmissive.value.setHex(0xff1100);
     } else if (this._mercyT <= 0) {
-      this.mat.emissive.setHex(0x222222);
+      this.mat.uniforms.uEmissive.value.setHex(0x000000);
     }
 
     if (this._dashTime > 0) {
@@ -135,8 +141,7 @@ export class Player {
       this.mesh.position.x += this._dashDir.x * DASH_SPEED * dt;
       this.mesh.position.z += this._dashDir.z * DASH_SPEED * dt;
 
-      this.mat.transparent = true;
-      this.mat.opacity = 0.35 + 0.65 * Math.abs(Math.sin(this._dashTime * 55));
+      this.mat.uniforms.uOpacity.value = 0.35 + 0.65 * Math.abs(Math.sin(this._dashTime * 55));
 
       this._ghostT -= dt;
       if (this._ghostT <= 0) {
@@ -152,8 +157,7 @@ export class Player {
 
       if (this._dashTime <= 0) {
         this._dashCD = DASH_CD;
-        this.mat.transparent = this._mercyT > 0; // stay transparent if still in mercy
-        this.mat.opacity = 1;
+        if (this._mercyT <= 0) this.mat.uniforms.uOpacity.value = 0.98;
       }
     } else {
       // Normal movement always applies — even during mercy i-frames
@@ -164,12 +168,10 @@ export class Player {
     // Mercy i-frame flicker — independent of movement
     if (this._mercyT > 0) {
       this._mercyT -= dt;
-      this.mat.transparent = true;
-      this.mat.opacity = 0.3 + 0.7 * Math.abs(Math.sin(this._mercyT * 12));
+      this.mat.uniforms.uOpacity.value = 0.3 + 0.7 * Math.abs(Math.sin(this._mercyT * 12));
       if (this._mercyT <= 0) {
-        this.mat.transparent = false;
-        this.mat.opacity = 1;
-        this.mat.emissive.setHex(0x222222);
+        this.mat.uniforms.uOpacity.value = 0.98;
+        this.mat.uniforms.uEmissive.value.setHex(0x000000);
       }
     }
 
@@ -186,6 +188,12 @@ export class Player {
         }
       }
     }
+
+    // Spring squash
+    this._sqV = (this._sqV - (this._sq - 1.0) * 0.28) * 0.84;
+    this._sq  = Math.max(0.55, Math.min(1.55, this._sq + this._sqV));
+    const _psx = 1 / Math.sqrt(Math.max(this._sq, 0.1));
+    this.mesh.scale.set(_psx, this._sq, _psx);
 
     const h = halfSize - PLAYER_RADIUS;
     this.mesh.position.x = Math.max(-h, Math.min(h, this.mesh.position.x));
