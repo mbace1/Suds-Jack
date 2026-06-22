@@ -5,7 +5,7 @@ export class InputManager {
   constructor() {
     this.left  = { active: false, ox: 0, oy: 0, dx: 0, dy: 0 };
     this.right = { active: false, ox: 0, oy: 0, dx: 0, dy: 0 };
-    this._touchMap = new Map(); // touch id → 'left' | 'right'
+    this._touchMap = new Map();
     this.keys = {};
     this.mouse = { x: 0, y: 0, down: false };
     this.onDash  = null;
@@ -33,7 +33,6 @@ export class InputManager {
 
   _touchStart(e) {
     for (const t of e.changedTouches) {
-      // Pause zone: top-centre strip (80 px wide, 56 px tall)
       if (t.clientY < 56 && Math.abs(t.clientX - window.innerWidth / 2) < 40) {
         this._touchMap.set(t.identifier, 'pause');
         this.onPause?.();
@@ -72,7 +71,6 @@ export class InputManager {
     }
   }
 
-  /** Returns {x, z} normalized world-space move direction. */
   getMoveDir() {
     if (this.left.active) {
       let x = this.left.dx / STICK_RADIUS;
@@ -90,10 +88,6 @@ export class InputManager {
     return len > 0 ? { x: x / len, z: z / len } : { x: 0, z: 0 };
   }
 
-  /**
-   * Returns {x, z, valid} normalized world-space aim direction.
-   * Sets useMouse:true when no touch stick is active (caller should use raycasting).
-   */
   getAimDir() {
     if (this.right.active) {
       const len = Math.hypot(this.right.dx, this.right.dy);
