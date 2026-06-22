@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toko Drop — Enemy Designer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0d0d1a;
+      color: #ddd;
+      font-family: monospace;
+      font-size: 13px;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Left panel ── */
+    #panel {
+      width: 300px;
+      min-width: 300px;
+      background: #13131f;
+      border-right: 1px solid #222244;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #panel-header {
+      padding: 12px 14px 10px;
+      background: #0d0d1a;
+      border-bottom: 1px solid #222244;
+    }
+    #panel-header h1 { font-size: 14px; color: #aaa; letter-spacing: 0.08em; }
+    #panel-header a {
+      font-size: 11px;
+      color: #446688;
+      text-decoration: none;
+    }
+    #panel-header a:hover { color: #88aacc; }
+
+    #enemy-list {
+      list-style: none;
+      overflow-y: auto;
+      max-height: 210px;
+      border-bottom: 1px solid #222244;
+    }
+    #enemy-list li {
+      padding: 6px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #999;
+      transition: background 0.1s;
+    }
+    #enemy-list li:hover { background: #1c1c30; color: #ccc; }
+    #enemy-list li.active { background: #1e1e38; color: #fff; }
+    #enemy-list .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    #enemy-list .tag {
+      font-size: 10px;
+      color: #555;
+      margin-left: auto;
+    }
+
+    #controls {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 14px;
+    }
+
+    .ctrl-group { margin-bottom: 14px; }
+    .ctrl-group label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      color: #888;
+    }
+    .ctrl-group label span { color: #ccc; font-size: 12px; }
+
+    input[type=range] {
+      width: 100%;
+      accent-color: #4466cc;
+      cursor: pointer;
+    }
+    input[type=color] {
+      width: 100%;
+      height: 28px;
+      border: 1px solid #333;
+      border-radius: 3px;
+      background: none;
+      cursor: pointer;
+      padding: 2px;
+    }
+
+    .section-title {
+      font-size: 10px;
+      color: #445;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin: 12px 0 8px;
+      border-top: 1px solid #1c1c2e;
+      padding-top: 10px;
+    }
+
+    #btn-squash {
+      width: 100%;
+      padding: 7px;
+      background: #1a1a30;
+      border: 1px solid #334;
+      color: #99aacc;
+      font-family: monospace;
+      font-size: 12px;
+      cursor: pointer;
+      border-radius: 3px;
+      margin-bottom: 8px;
+    }
+    #btn-squash:hover { background: #222240; color: #fff; }
+
+    #btn-export {
+      width: 100%;
+      padding: 8px;
+      background: #223;
+      border: 1px solid #446;
+      color: #88aadd;
+      font-family: monospace;
+      font-size: 12px;
+      cursor: pointer;
+      border-radius: 3px;
+      letter-spacing: 0.04em;
+    }
+    #btn-export:hover { background: #2a2a4a; color: #aaccff; }
+
+    #export-area {
+      margin-top: 10px;
+      display: none;
+    }
+    #export-ta {
+      width: 100%;
+      height: 120px;
+      background: #0a0a14;
+      border: 1px solid #223;
+      color: #88cc88;
+      font-family: monospace;
+      font-size: 11px;
+      padding: 6px;
+      resize: vertical;
+    }
+
+    /* ── Right canvas area ── */
+    #canvas-wrap {
+      flex: 1;
+      position: relative;
+      background: #0a0a16;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #canvas-wrap canvas {
+      display: block;
+    }
+    #canvas-hint {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      color: #333;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    #enemy-label {
+      position: absolute;
+      top: 16px;
+      left: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 0 0 20px currentColor;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<div id="panel">
+  <div id="panel-header">
+    <h1>ENEMY DESIGNER</h1>
+    <a href="index.html">← Back to game</a>
+  </div>
+
+  <ul id="enemy-list"></ul>
+
+  <div id="controls">
+    <div class="section-title">Appearance</div>
+
+    <div class="ctrl-group">
+      <label>Body color</label>
+      <input type="color" id="ctrl-color">
+    </div>
+    <div class="ctrl-group">
+      <label>Bullet color <span id="val-bulletColor" style="color:#555">n/a</span></label>
+      <input type="color" id="ctrl-bulletColor">
+    </div>
+    <div class="ctrl-group">
+      <label>Radius <span id="val-radius">0.55</span></label>
+      <input type="range" id="ctrl-radius" min="0.1" max="2.0" step="0.01">
+    </div>
+    <div class="ctrl-group">
+      <label>Opacity <span id="val-opacity">0.82</span></label>
+      <input type="range" id="ctrl-opacity" min="0.0" max="1.0" step="0.01">
+    </div>
+
+    <div class="section-title" id="goo-section">Goo Shader</div>
+    <div id="goo-controls">
+      <div class="ctrl-group">
+        <label>Fresnel <span id="val-fresnel">0.62</span></label>
+        <input type="range" id="ctrl-fresnel" min="0.0" max="2.0" step="0.01">
+      </div>
+      <div class="ctrl-group">
+        <label>Spec-A power <span id="val-specAP">88</span></label>
+        <input type="range" id="ctrl-specAP" min="4" max="256" step="1">
+      </div>
+      <div class="ctrl-group">
+        <label>Spec-B power <span id="val-specBP">11</span></label>
+        <input type="range" id="ctrl-specBP" min="1" max="40" step="0.5">
+      </div>
+      <div class="ctrl-group">
+        <label>SSS <span id="val-sss">0.42</span></label>
+        <input type="range" id="ctrl-sss" min="0.0" max="2.0" step="0.01">
+      </div>
+    </div>
+
+    <div class="section-title" id="phong-section" style="display:none">Phong Shader</div>
+    <div id="phong-controls" style="display:none">
+      <div class="ctrl-group">
+        <label>Shininess <span id="val-shininess">100</span></label>
+        <input type="range" id="ctrl-shininess" min="10" max="300" step="1">
+      </div>
+    </div>
+
+    <div class="section-title">Spring Physics</div>
+    <div class="ctrl-group">
+      <label>Spring k <span id="val-springK">0.24</span></label>
+      <input type="range" id="ctrl-springK" min="0.02" max="0.6" step="0.01">
+    </div>
+    <div class="ctrl-group">
+      <label>Damping <span id="val-damp">0.86</span></label>
+      <input type="range" id="ctrl-damp" min="0.5" max="0.99" step="0.01">
+    </div>
+    <div class="ctrl-group">
+      <label>Hit impulse <span id="val-hitImpulse">0.75</span></label>
+      <input type="range" id="ctrl-hitImpulse" min="0.1" max="2.0" step="0.05">
+    </div>
+
+    <div class="section-title">Actions</div>
+    <button id="btn-squash">Click to squash</button>
+    <button id="btn-export">Export CFG →</button>
+    <div id="export-area">
+      <textarea id="export-ta" readonly spellcheck="false"></textarea>
+    </div>
+  </div>
+</div>
+
+<div id="canvas-wrap">
+  <div id="enemy-label">GLOBBO</div>
+  <canvas id="preview-canvas"></canvas>
+  <div id="canvas-hint">click canvas to squash · drag to orbit</div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { CFG, EnemyType, BLOB_TYPES } from './js/enemy.js';
+
+// ── Designer-local GooMat with extra uniforms ─────────────────────────────────────────────
+const D_GOO_VERT = `
+  varying vec3 vNormal;
+  varying vec3 vViewPos;
+  void main() {
+    vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+    vNormal  = normalMatrix * normal;
+    vViewPos = -mvPos.xyz;
+    gl_Position = projectionMatrix * mvPos;
+  }
+`;
+const D_GOO_FRAG = `
+  precision highp float;
+  uniform vec3  uColor;
+  uniform float uOpacity;
+  uniform float uFresnel;
+  uniform float uSpecAP;
+  uniform float uSpecBP;
+  uniform float uSSS;
+  varying vec3 vNormal;
+  varying vec3 vViewPos;
+  void main() {
+    vec3 LIGHT = normalize(vec3(-0.65, 2.30, 1.70));
+    vec3 N = normalize(vNormal);
+    vec3 V = normalize(vViewPos);
+    vec3 H = normalize(LIGHT + V);
+    float NdL = max(dot(N, LIGHT), 0.0);
+    float NdH = max(dot(N, H),     0.0);
+    float NdV = max(dot(N, V),     0.0);
+    float specA   = pow(NdH, uSpecAP) * 2.60;
+    float specB   = pow(NdH, uSpecBP) * 0.32;
+    float fresnel = pow(1.0 - NdV, 3.80) * uFresnel;
+    float sss     = pow(max(0.0, -dot(N, LIGHT) * 0.42 + 0.58), 2.2) * uSSS;
+    vec3 col = uColor * 0.08
+             + uColor * NdL * 0.8
+             + vec3(1.0) * (specA + specB) * 0.5
+             + uColor * fresnel * 1.2
+             + uColor * sss;
+    gl_FragColor = vec4(col, uOpacity);
+  }
+`;
+
+function makeDesignerGooMat(color, opacity, fresnel, specAP, specBP, sss) {
+  return new THREE.ShaderMaterial({
+    vertexShader:   D_GOO_VERT,
+    fragmentShader: D_GOO_FRAG,
+    uniforms: {
+      uColor:   { value: new THREE.Color(color) },
+      uOpacity: { value: opacity },
+      uFresnel: { value: fresnel },
+      uSpecAP:  { value: specAP },
+      uSpecBP:  { value: specBP },
+      uSSS:     { value: sss },
+    },
+    transparent: opacity < 1,
+    depthWrite:  opacity >= 0.9,
+  });
+}
+
+// ── Enemy type metadata ──────────────────────────────────────────────────────────────────────────────────
+const TYPE_NAMES = {
+  [EnemyType.GLOBBO]:      'GLOBBO',
+  [EnemyType.SPITTOR]:     'SPITTOR',
+  [EnemyType.FANNER]:      'FANNER',
+  [EnemyType.WEEVA]:       'WEEVA',
+  [EnemyType.SPLITTA]:     'SPLITTA',
+  [EnemyType.YELA_CUBE]:   'YELA CUBE',
+  [EnemyType.ORANGE_CUBE]: 'ORANGE CUBE',
+  [EnemyType.SLUDGE_CUBE]: 'SLUDGE CUBE',
+  [EnemyType.REDD_CUBE]:   'REDD CUBE',
+  [EnemyType.PURP_CUBE]:   'PURP CUBE',
+  [EnemyType.REDD_MINI]:   'REDD MINI',
+  [EnemyType.PURP_MINI]:   'PURP MINI',
+  [EnemyType.TORO]:        'TORO',
+  [EnemyType.BAMBU]:       'BAMBU',
+  [EnemyType.PYRA]:        'PYRA',
+};
+
+const CUBE_TYPES = new Set([
+  EnemyType.YELA_CUBE, EnemyType.ORANGE_CUBE, EnemyType.SLUDGE_CUBE,
+  EnemyType.REDD_CUBE, EnemyType.PURP_CUBE, EnemyType.REDD_MINI, EnemyType.PURP_MINI,
+]);
+
+// ── Per-enemy designer state (overrides on top of CFG) ────────────────────────────────────────────────
+const overrides = {};
+for (const [k, v] of Object.entries(CFG)) {
+  overrides[k] = {
+    color:       v.color,
+    bulletColor: v.bulletColor ?? 0xffffff,
+    radius:      v.radius,
+    opacity:     CUBE_TYPES.has(+k) ? 0.88 : 0.82,
+    fresnel:     0.62,
+    specAP:      88,
+    specBP:      11,
+    sss:         0.42,
+    shininess:   100,
+    springK:     0.24,
+    damp:        0.86,
+    hitImpulse:  0.75,
+  };
+}
+
+// ── Scene setup ────────────────────────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('preview-canvas');
+const wrap   = document.getElementById('canvas-wrap');
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+camera.position.set(0, 2, 5.5);
+camera.lookAt(0, 0, 0);
+
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.4);
+dirLight.position.set(-0.65, 2.3, 1.7).normalize().multiplyScalar(6);
+dirLight.castShadow = true;
+scene.add(dirLight);
+scene.add(new THREE.AmbientLight(0x334466, 0.8));
+
+// Floor grid
+const floorGeo = new THREE.PlaneGeometry(20, 20);
+const floorMat = new THREE.MeshStandardMaterial({ color: 0x0a0a18, roughness: 0.9 });
+const floor = new THREE.Mesh(floorGeo, floorMat);
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = -1.6;
+floor.receiveShadow = true;
+scene.add(floor);
+
+// ── Spring state ──────────────────────────────────────────────────────────────────────────────────────
+let sq = 1.0, sqV = 0.0;
+
+// ── Current preview mesh ──────────────────────────────────────────────────────────────────────────────────
+let previewMesh = null;
+let previewGroup = null;
+let selectedType = EnemyType.GLOBBO;
+let orbitAngle = 0;
+
+function toHex(n) {
+  return '#' + n.toString(16).padStart(6, '0');
+}
+function fromHex(s) {
+  return parseInt(s.replace('#', ''), 16);
+}
+
+function buildMesh(type) {
+  const st  = overrides[type];
+  const cfg = CFG[type];
+  const isBlob = BLOB_TYPES.has(type);
+  const isCube = CUBE_TYPES.has(type);
+  const isToro = type === EnemyType.TORO;
+  const isBambu = type === EnemyType.BAMBU;
+  const isPyra = type === EnemyType.PYRA;
+
+  let geo, mat;
+
+  if (isBlob) {
+    geo = new THREE.SphereGeometry(st.radius, 20, 14);
+    mat = makeDesignerGooMat(st.color, st.opacity, st.fresnel, st.specAP, st.specBP, st.sss);
+  } else if (isCube) {
+    const s = st.radius * 1.8;
+    geo = new RoundedBoxGeometry(s, s, s, 4, 0.18);
+    mat = new THREE.MeshPhongMaterial({
+      color: st.color, transparent: true, opacity: st.opacity, shininess: st.shininess
+    });
+  } else if (isToro) {
+    geo = new THREE.TorusGeometry(st.radius * 0.68, st.radius * 0.32, 12, 24);
+    mat = new THREE.MeshPhongMaterial({ color: st.color, transparent: true, opacity: st.opacity, shininess: 140 });
+  } else if (isBambu) {
+    // Bambu: tall cylinder + 4 arms
+    geo = new THREE.CylinderGeometry(st.radius * 0.35, st.radius * 0.35, st.radius * 2.5, 10);
+    mat = new THREE.MeshPhongMaterial({ color: st.color, transparent: true, opacity: st.opacity, shininess: 80 });
+  } else if (isPyra) {
+    geo = new THREE.ConeGeometry(st.radius * 0.9, st.radius * 1.8, 4);
+    mat = new THREE.MeshPhongMaterial({ color: st.color, transparent: true, opacity: st.opacity, shininess: 80 });
+  } else {
+    geo = new THREE.SphereGeometry(st.radius, 16, 12);
+    mat = new THREE.MeshPhongMaterial({ color: st.color, transparent: true, opacity: st.opacity, shininess: 60 });
+  }
+
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.castShadow = true;
+  return mesh;
+}
+
+function rebuildPreview() {
+  if (previewGroup) { scene.remove(previewGroup); }
+
+  sq = 1.0; sqV = 0.0;
+
+  previewGroup = new THREE.Group();
+  previewMesh  = buildMesh(selectedType);
+  previewGroup.add(previewMesh);
+
+  // TORO spikes
+  if (selectedType === EnemyType.TORO) {
+    previewMesh.rotation.x = Math.PI / 2;
+    const st = overrides[selectedType];
+    const spikeGeo = new THREE.ConeGeometry(0.12, 0.3, 4);
+    const spikeMat = new THREE.MeshPhongMaterial({ color: st.color });
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const spike = new THREE.Mesh(spikeGeo, spikeMat);
+      spike.position.set(Math.cos(a) * st.radius * 0.68, 0, Math.sin(a) * st.radius * 0.68);
+      spike.rotation.z = -Math.PI / 2;
+      spike.rotation.y = a;
+      previewGroup.add(spike);
+    }
+  }
+
+  // BAMBU arms
+  if (selectedType === EnemyType.BAMBU) {
+    const st  = overrides[selectedType];
+    const armGeo = new THREE.CylinderGeometry(0.09, 0.09, st.radius * 1.8, 6);
+    const armMat = new THREE.MeshPhongMaterial({ color: st.color });
+    const angles = [0, Math.PI / 2, Math.PI, Math.PI * 1.5];
+    angles.forEach(a => {
+      const arm = new THREE.Mesh(armGeo, armMat);
+      arm.rotation.z = Math.PI / 2;
+      arm.position.set(Math.cos(a) * st.radius * 0.7, 0, Math.sin(a) * st.radius * 0.7);
+      arm.rotation.y = a;
+      previewGroup.add(arm);
+    });
+  }
+
+  previewGroup.position.y = 0;
+  scene.add(previewGroup);
+}
+
+function updateMaterial() {
+  if (!previewMesh) return;
+  const st   = overrides[selectedType];
+  const mat  = previewMesh.material;
+  const isBlob = BLOB_TYPES.has(selectedType);
+
+  if (isBlob && mat.uniforms) {
+    mat.uniforms.uColor.value.set(st.color);
+    mat.uniforms.uOpacity.value = st.opacity;
+    mat.uniforms.uFresnel.value = st.fresnel;
+    mat.uniforms.uSpecAP.value  = st.specAP;
+    mat.uniforms.uSpecBP.value  = st.specBP;
+    mat.uniforms.uSSS.value     = st.sss;
+    mat.transparent = st.opacity < 1;
+    mat.needsUpdate = true;
+  } else if (mat.color) {
+    mat.color.set(st.color);
+    mat.opacity    = st.opacity;
+    mat.shininess  = st.shininess;
+    mat.transparent = st.opacity < 1;
+    mat.needsUpdate = true;
+  }
+}
+
+function updateScale() {
+  if (!previewGroup) return;
+  const r0 = CFG[selectedType].radius;
+  const r1 = overrides[selectedType].radius;
+  const scale = r1 / r0;
+  const sx = (1 / Math.sqrt(Math.max(sq, 0.1))) * scale;
+  const sy = sq * scale;
+  previewGroup.scale.set(sx, sy, sx);
+}
+
+// ── Controls ────────────────────────────────────────────────────────────────────────────────────────
+function $ (id) { return document.getElementById(id); }
+
+function loadControls() {
+  const st   = overrides[selectedType];
+  const isBlob = BLOB_TYPES.has(selectedType);
+  const isCube = CUBE_TYPES.has(selectedType);
+  const cfg  = CFG[selectedType];
+
+  $('ctrl-color').value       = toHex(st.color);
+  $('ctrl-bulletColor').value = toHex(st.bulletColor);
+  $('ctrl-radius').value      = st.radius;
+  $('ctrl-opacity').value     = st.opacity;
+  $('ctrl-fresnel').value     = st.fresnel;
+  $('ctrl-specAP').value      = st.specAP;
+  $('ctrl-specBP').value      = st.specBP;
+  $('ctrl-sss').value         = st.sss;
+  $('ctrl-shininess').value   = st.shininess;
+  $('ctrl-springK').value     = st.springK;
+  $('ctrl-damp').value        = st.damp;
+  $('ctrl-hitImpulse').value  = st.hitImpulse;
+
+  $('val-radius').textContent    = st.radius.toFixed(2);
+  $('val-opacity').textContent   = st.opacity.toFixed(2);
+  $('val-fresnel').textContent   = st.fresnel.toFixed(2);
+  $('val-specAP').textContent    = st.specAP;
+  $('val-specBP').textContent    = st.specBP.toFixed(1);
+  $('val-sss').textContent       = st.sss.toFixed(2);
+  $('val-shininess').textContent = st.shininess;
+  $('val-springK').textContent   = st.springK.toFixed(2);
+  $('val-damp').textContent      = st.damp.toFixed(2);
+  $('val-hitImpulse').textContent = st.hitImpulse.toFixed(2);
+
+  if (cfg.bulletColor === null) {
+    $('val-bulletColor').textContent = 'n/a';
+    $('ctrl-bulletColor').style.opacity = '0.3';
+    $('ctrl-bulletColor').disabled = true;
+  } else {
+    $('val-bulletColor').textContent = '';
+    $('ctrl-bulletColor').style.opacity = '1';
+    $('ctrl-bulletColor').disabled = false;
+  }
+
+  $('goo-section').style.display   = isBlob ? '' : 'none';
+  $('goo-controls').style.display  = isBlob ? '' : 'none';
+  $('phong-section').style.display = (!isBlob) ? '' : 'none';
+  $('phong-controls').style.display = (!isBlob) ? '' : 'none';
+
+  $('enemy-label').textContent = TYPE_NAMES[selectedType];
+  $('enemy-label').style.color = toHex(st.color);
+  $('enemy-label').style.textShadow = `0 0 20px ${toHex(st.color)}`;
+}
+
+// Color pickers
+$('ctrl-color').addEventListener('input', e => {
+  overrides[selectedType].color = fromHex(e.target.value);
+  updateMaterial();
+  document.querySelector(`#enemy-list li[data-type="${selectedType}"] .dot`).style.background = e.target.value;
+  $('enemy-label').style.color = e.target.value;
+  $('enemy-label').style.textShadow = `0 0 20px ${e.target.value}`;
+});
+$('ctrl-bulletColor').addEventListener('input', e => {
+  overrides[selectedType].bulletColor = fromHex(e.target.value);
+});
+$('ctrl-opacity').addEventListener('input', e => {
+  overrides[selectedType].opacity = +e.target.value;
+  $('val-opacity').textContent = (+e.target.value).toFixed(2);
+  updateMaterial();
+});
+$('ctrl-fresnel').addEventListener('input', e => {
+  overrides[selectedType].fresnel = +e.target.value;
+  $('val-fresnel').textContent = (+e.target.value).toFixed(2);
+  updateMaterial();
+});
+$('ctrl-specAP').addEventListener('input', e => {
+  overrides[selectedType].specAP = +e.target.value;
+  $('val-specAP').textContent = e.target.value;
+  updateMaterial();
+});
+$('ctrl-specBP').addEventListener('input', e => {
+  overrides[selectedType].specBP = +e.target.value;
+  $('val-specBP').textContent = (+e.target.value).toFixed(1);
+  updateMaterial();
+});
+$('ctrl-sss').addEventListener('input', e => {
+  overrides[selectedType].sss = +e.target.value;
+  $('val-sss').textContent = (+e.target.value).toFixed(2);
+  updateMaterial();
+});
+$('ctrl-shininess').addEventListener('input', e => {
+  overrides[selectedType].shininess = +e.target.value;
+  $('val-shininess').textContent = e.target.value;
+  updateMaterial();
+});
+$('ctrl-radius').addEventListener('input', e => {
+  overrides[selectedType].radius = +e.target.value;
+  $('val-radius').textContent = (+e.target.value).toFixed(2);
+  rebuildPreview();
+});
+$('ctrl-springK').addEventListener('input', e => {
+  overrides[selectedType].springK = +e.target.value;
+  $('val-springK').textContent = (+e.target.value).toFixed(2);
+});
+$('ctrl-damp').addEventListener('input', e => {
+  overrides[selectedType].damp = +e.target.value;
+  $('val-damp').textContent = (+e.target.value).toFixed(2);
+});
+$('ctrl-hitImpulse').addEventListener('input', e => {
+  overrides[selectedType].hitImpulse = +e.target.value;
+  $('val-hitImpulse').textContent = (+e.target.value).toFixed(2);
+});
+
+// Squash button
+$('btn-squash').addEventListener('click', () => {
+  sqV -= overrides[selectedType].hitImpulse;
+});
+canvas.addEventListener('click', () => {
+  sqV -= overrides[selectedType].hitImpulse;
+});
+
+// Export
+$('btn-export').addEventListener('click', () => {
+  const lines = ['const CFG = {'];
+  for (const [k, name] of Object.entries(TYPE_NAMES)) {
+    const st  = overrides[+k];
+    const cfg = CFG[+k];
+    const padName = `[EnemyType.${name.replace(' ', '_')}]`.padEnd(22);
+    const bcStr = st.bulletColor !== 0xffffff || cfg.bulletColor !== null
+      ? `0x${st.bulletColor.toString(16).padStart(6,'0')}`
+      : 'null';
+    const fiStr = cfg.fireInterval !== null ? `${cfg.fireInterval}` : 'null';
+    lines.push(`  ${padName}: { color: 0x${st.color.toString(16).padStart(6,'0')}, radius: ${st.radius.toFixed(2)}, speed: ${cfg.speed}, hp: ${cfg.hp}, bulletColor: ${bcStr}, fireInterval: ${fiStr} },`);
+  }
+  lines.push('};');
+  const text = lines.join('\n');
+  $('export-area').style.display = 'block';
+  $('export-ta').value = text;
+  console.log(text);
+});
+
+// ── Enemy list ────────────────────────────────────────────────────────────────────────────────────────
+const list = $('enemy-list');
+for (const [k, name] of Object.entries(TYPE_NAMES)) {
+  const type = +k;
+  const li   = document.createElement('li');
+  li.dataset.type = type;
+
+  const dot = document.createElement('span');
+  dot.className = 'dot';
+  dot.style.background = toHex(CFG[type].color);
+
+  const label = document.createElement('span');
+  label.textContent = name;
+
+  const tag = document.createElement('span');
+  tag.className = 'tag';
+  tag.textContent = BLOB_TYPES.has(type) ? 'goo' : CUBE_TYPES.has(type) ? 'cube' : 'unique';
+
+  li.append(dot, label, tag);
+  li.addEventListener('click', () => {
+    document.querySelectorAll('#enemy-list li').forEach(el => el.classList.remove('active'));
+    li.classList.add('active');
+    selectedType = type;
+    rebuildPreview();
+    loadControls();
+  });
+  list.appendChild(li);
+}
+list.querySelector('li').classList.add('active');
+
+// ── Orbit drag ─────────────────────────────────────────────────────────────────────────────────────────
+let isDragging = false, lastMX = 0, orbitY = 0;
+canvas.addEventListener('mousedown', e => { isDragging = true; lastMX = e.clientX; });
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  orbitY += (e.clientX - lastMX) * 0.01;
+  lastMX = e.clientX;
+});
+window.addEventListener('mouseup', () => { isDragging = false; });
+
+// ── Resize ──────────────────────────────────────────────────────────────────────────────────────────
+function resize() {
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ── Render loop ──────────────────────────────────────────────────────────────────────────────────────
+let last = performance.now();
+function animate(now) {
+  requestAnimationFrame(animate);
+  const dt = Math.min((now - last) / 1000, 0.05);
+  last = now;
+
+  if (previewGroup) {
+    const st = overrides[selectedType];
+
+    // Spring squash
+    sqV = (sqV - (sq - 1.0) * st.springK) * st.damp;
+    sq  = Math.max(0.3, Math.min(1.8, sq + sqV));
+    updateScale();
+
+    // Auto-orbit
+    if (!isDragging) orbitY += dt * 0.4;
+    previewGroup.rotation.y = orbitY;
+  }
+
+  renderer.render(scene, camera);
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────────────────────────────
+rebuildPreview();
+loadControls();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
