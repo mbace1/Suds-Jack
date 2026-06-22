@@ -325,7 +325,7 @@ class Gate {
     });
     this._laser = new THREE.Mesh(new THREE.BoxGeometry(4, 0.12, 0.12), this._laserMat);
     this._laser.position.set(x, 0.9, z);
-    this._laser.rotation.y = angle;
+    this._laser.rotation.y = angle + Math.PI / 2;
     sc.add(this._laser);
   }
   update(dt, t) {
@@ -344,8 +344,8 @@ class Gate {
   hitsPoint(px, pz, radius) {
     if (!this.alive) return false;
     const dx = px - this._x, dz = pz - this._z;
-    // Project onto laser axis
-    const ax = Math.cos(this._angle), az = Math.sin(this._angle);
+    // Project onto laser axis (laser runs along post-to-post direction: -sin, cos)
+    const ax = -Math.sin(this._angle), az = Math.cos(this._angle);
     const para  = dx * ax + dz * az;
     const perpX = dx - para * ax, perpZ = dz - para * az;
     const perpDist = Math.hypot(perpX, perpZ);
@@ -771,7 +771,7 @@ function loop() {
         e._aoeReady = false;
         bambuAoes.push(new BambuAoE(scene, e._lobTargetX, e._lobTargetZ, 2.2, 1.0));
       }
-      if (e._lobReady) {
+      if (e._lobReady && e.alive) {
         const tgt = e._lobReady; e._lobReady = null;
         const ex = e.position.x, ez = e.position.z;
         const dx = tgt.x - ex, dz = tgt.z - ez;

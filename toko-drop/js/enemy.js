@@ -203,6 +203,7 @@ export class Enemy {
         new THREE.TorusGeometry(cfg.radius * 0.9, 0.15, 8, 20),
         this.mat,
       );
+      ringMesh.rotation.x = Math.PI / 2; // lay flat for top-down view
       ringMesh.castShadow = true;
       this.group.add(ringMesh);
       this.mesh = ringMesh;
@@ -717,8 +718,8 @@ export class Enemy {
           const ha = this.group.rotation.y + hole.angle;
           const forwardX = Math.cos(ha), forwardZ = Math.sin(ha);
           const spread = Math.PI / 6;
-          for (let j = 0; j < 6; j++) {
-            const fa = Math.atan2(forwardZ, forwardX) - spread / 2 + j * (spread / 5);
+          for (let j = 0; j < 3; j++) {
+            const fa = Math.atan2(forwardZ, forwardX) - spread / 2 + j * (spread / 2);
             bullets.spawnDir(ex, ez, Math.cos(fa), Math.sin(fa), false, cfg.bulletColor);
           }
         }
