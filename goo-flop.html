@@ -16,303 +16,253 @@ canvas { display:block; width:100%; height:100%; touch-action:none; }
 const canvas = document.getElementById('c');
 const gl = canvas.getContext('webgl',{antialias:true,alpha:false})
         || canvas.getContext('experimental-webgl',{antialias:true,alpha:false});
-if (!gl) { document.body.innerHTML='<p style="color:#fff;padding:2em">WebGL not supported</p>'; throw 0; }
+if(!gl){document.body.innerHTML='<p style="color:#fff;padding:2em">WebGL not supported</p>';throw 0;}
 
-const CAM   = [0.80, 4.20, 8.50];
-const TAR   = [0.00, 0.60, 0.00];
-const FOCAL = 1.85;
-
-const QUAD_VS = `attribute vec2 a_pos; void main(){gl_Position=vec4(a_pos,0,1);}`;
+const QUAD_VS = `attribute vec2 a_pos;void main(){gl_Position=vec4(a_pos,0,1);}`;
 
 const SCENE_FS = `
 precision highp float;
-
 uniform vec2  u_res;
 uniform float u_time;
 uniform vec3  u_c0;
 uniform float u_sq0;
 uniform float u_tilt0;
-uniform vec3  u_tax0;   // tilt axis
-
-const vec3  HALF_BOX = vec3(0.525, 0.525, 0.525);
-const float ROUND_R  = 0.200;
-const vec3  KEY_L    = normalize(vec3(-0.65, 2.30, 1.70));
-const vec3  FILL_L   = normalize(vec3( 1.20, 0.80, 1.00));
-const float GEL_IOR  = 1.33;
-
-float sdRoundBox(vec3 p, vec3 b, float r){
-  vec3 q=abs(p)-b; return length(max(q,0.0))+min(max(q.x,max(q.y,q.z)),0.0)-r;
-}
-vec3 rotV(vec3 v, vec3 ax, float a){
-  float c=cos(a),s=sin(a);
-  return v*c+cross(ax,v)*s+ax*dot(ax,v)*(1.0-c);
-}
-float gooCube(vec3 p, vec3 cen, float sq, float tilt, vec3 tax){
-  float sqC=clamp(sq,0.38,1.72);
-  vec3 lp=p-cen;
-  if(abs(tilt)>0.001) lp=rotV(lp,tax,tilt);
+const vec3  HALF = vec3(0.525,0.525,0.525);
+const float RR   = 0.200;
+const vec3  KL   = normalize(vec3(-0.65,2.30,1.70));
+const vec3  FL   = normalize(vec3( 1.20,0.80,1.00));
+const float IOR  = 1.33;
+float sdRB(vec3 p,vec3 b,float r){vec3 q=abs(p)-b;return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.)-r;}
+// Rotate around world Z axis (tilt left/right)
+vec3 rotZ(vec3 v,float a){float c=cos(a),s=sin(a);return vec3(v.x*c-v.y*s,v.x*s+v.y*c,v.z);}
+float cube(vec3 p){
+  float sqC=clamp(u_sq0,0.38,1.72);
+  vec3 lp=p-u_c0;
+  if(abs(u_tilt0)>0.001) lp=rotZ(lp,u_tilt0);
   float proj=dot(lp,vec3(0,1,0));
   lp=vec3(0,1,0)*(proj*sqC)+(lp-vec3(0,1,0)*proj)/sqrt(sqC);
-  return sdRoundBox(lp,HALF_BOX,ROUND_R)*min(sqrt(sqC),1.0/sqC);
+  return sdRB(lp,HALF,RR)*min(sqrt(sqC),1./sqC);
 }
-float scene(vec3 p){ return gooCube(p,u_c0,u_sq0,u_tilt0,u_tax0); }
-
-vec3 calcNormal(vec3 p){
-  const float E=0.0007;
-  return normalize(vec3(scene(p+vec3(E,0,0))-scene(p-vec3(E,0,0)),
-                        scene(p+vec3(0,E,0))-scene(p-vec3(0,E,0)),
-                        scene(p+vec3(0,0,E))-scene(p-vec3(0,0,E))));
+float scene(vec3 p){return cube(p);}
+vec3 norm(vec3 p){const float E=0.0007;return normalize(vec3(scene(p+vec3(E,0,0))-scene(p-vec3(E,0,0)),scene(p+vec3(0,E,0))-scene(p-vec3(0,E,0)),scene(p+vec3(0,0,E))-scene(p-vec3(0,0,E))));}
+float shadow(vec3 ro,vec3 rd,float mn,float mx){float r=1.,t=mn;for(int i=0;i<24;i++){if(t>mx)break;float h=scene(ro+rd*t);if(h<.0004)return 0.;r=min(r,8.*h/t);t+=clamp(h,.006,.22);}return clamp(r,0.,1.);}
+float ao(vec3 p,vec3 n){float o=0.,s=1.;for(int i=0;i<5;i++){float h=.01+.18*float(i)/4.;o+=(h-scene(p+h*n))*s;s*=.8;}return clamp(1.-3.2*o,0.,1.);}
+vec3 sky(vec3 d){float h=clamp(d.y*.5+.5,0.,1.);return mix(vec3(.05,.07,.11),vec3(.10,.14,.22),h*h);}
+vec3 shade(vec3 p,vec3 N,vec3 V,float sh,float oa){
+  vec3 H1=normalize(KL+V),H2=normalize(FL+V);
+  float d1=max(dot(N,KL),0.),d2=max(dot(N,FL),0.);
+  float h1=max(dot(N,H1),0.),h2=max(dot(N,H2),0.),nv=max(dot(N,V),0.);
+  float sp=pow(h1,92.)*2.8+pow(h2,28.)*.38+pow(h1,10.)*.26;
+  float fr=pow(1.-nv,3.8);
+  float ss=pow(max(0.,-dot(N,KL)*.42+.58),2.2)*.44;
+  vec3 ref=sky(reflect(-V,N))*(0.55+0.45*max(reflect(-V,N).y,0.))*vec3(.7,1.,.75);
+  return (vec3(.01,.085,.035)+vec3(.08,.42,.175)*d1*(sh*.72+.28)+vec3(.022,.095,.048)*d2*.38
+    +vec3(.9,1.,.93)*(sp)+vec3(.05,.68,.29)*fr*.55+vec3(.03,.62,.22)*ss+ref*fr*.52)*(oa*.6+.4);
 }
-float softShadow(vec3 ro, vec3 rd, float mint, float maxt){
-  float res=1.0,t=mint;
-  for(int i=0;i<24;i++){if(t>maxt)break;
-    float h=scene(ro+rd*t);if(h<0.0004)return 0.0;
-    res=min(res,8.0*h/t);t+=clamp(h,0.006,0.22);}
-  return clamp(res,0.0,1.0);
-}
-float calcAO(vec3 p, vec3 n){
-  float occ=0.0,sca=1.0;
-  for(int i=0;i<5;i++){float h=0.01+0.18*float(i)/4.0;
-    occ+=(h-scene(p+h*n))*sca;sca*=0.80;}
-  return clamp(1.0-3.2*occ,0.0,1.0);
-}
-vec3 envSky(vec3 d){float h=clamp(d.y*0.5+0.5,0.0,1.0);return mix(vec3(0.05,0.07,0.11),vec3(0.10,0.14,0.22),h*h);}
-
-vec3 goopShade(vec3 p, vec3 N, vec3 V, float sh, float ao){
-  vec3  H1=normalize(KEY_L+V), H2=normalize(FILL_L+V);
-  float NdL1=max(dot(N,KEY_L),0.0), NdL2=max(dot(N,FILL_L),0.0);
-  float NdH1=max(dot(N,H1),0.0),    NdH2=max(dot(N,H2),0.0), NdV=max(dot(N,V),0.0);
-  float specKey=pow(NdH1,92.0)*2.80, specFill=pow(NdH2,28.0)*0.38, gloss=pow(NdH1,10.0)*0.26;
-  float fresnel=pow(1.0-NdV,3.80);
-  float sss=pow(max(0.0,-dot(N,KEY_L)*0.42+0.58),2.2)*0.44;
-  vec3 reflDir=reflect(-V,N);
-  vec3 envRef=envSky(reflDir)*(0.55+0.45*max(reflDir.y,0.0))*vec3(0.70,1.00,0.75);
-  vec3 col=
-      vec3(0.010,0.085,0.035)
-    + vec3(0.080,0.420,0.175)*NdL1*(sh*0.72+0.28)
-    + vec3(0.022,0.095,0.048)*NdL2*0.38
-    + vec3(0.900,1.000,0.930)*(specKey+specFill+gloss)
-    + vec3(0.050,0.680,0.290)*fresnel*0.55
-    + vec3(0.030,0.620,0.220)*sss
-    + envRef*fresnel*0.52;
-  return col*(ao*0.60+0.40);
-}
-float caustics(vec3 fp){
-  float t=u_time*0.55;
-  float c=sin(fp.x*4.10+t*1.10)*cos(fp.z*3.70+t*0.85)
-         +sin(fp.x*2.30-t*0.60+fp.z*3.10)*0.55
-         +cos(fp.x*5.20+fp.z*2.80-t*1.30)*0.35
-         +sin((fp.x+fp.z)*3.60+t*0.75)*0.25;
-  return pow(clamp(c*0.25+0.5,0.0,1.0),2.8)*1.4;
-}
-mat3 camMatrix(vec3 ro,vec3 ta){
-  vec3 ww=normalize(ta-ro),uu=normalize(cross(ww,vec3(0,1,0))),vv=normalize(cross(uu,ww));
-  return mat3(uu,vv,ww);
-}
-vec3 getBg(vec3 ro, vec3 rd){
-  if(rd.y<-0.0005){float tF=-ro.y/rd.y;
-    if(tF>0.0&&tF<28.0){
-      vec3 fp=ro+rd*tF;
-      float chk=mod(floor(fp.x)+floor(fp.z),2.0);
-      vec3 base=mix(vec3(0.050,0.058,0.068),vec3(0.065,0.072,0.084),chk*0.45);
-      vec2 gf=abs(fract(fp.xz)-0.5);
-      base=mix(base,vec3(0.17,0.19,0.23),max(0.0,1.0-min(gf.x,gf.y)*95.0)*0.55);
-      float sh=softShadow(fp+vec3(0,0.003,0),KEY_L,0.05,9.0);
-      base*=(sh*0.70+0.30);
-      base+=vec3(0.05,0.22,0.09)*caustics(fp)*(0.28+0.72*(1.0-sh));
-      float fog=1.0-exp(-max(tF-5.0,0.0)*0.035);
-      return mix(base,envSky(rd),fog);}}
-  return envSky(rd);
-}
+float caust(vec3 fp){float t=u_time*.55;
+  float c=sin(fp.x*4.1+t*1.1)*cos(fp.z*3.7+t*.85)+sin(fp.x*2.3-t*.6+fp.z*3.1)*.55
+         +cos(fp.x*5.2+fp.z*2.8-t*1.3)*.35+sin((fp.x+fp.z)*3.6+t*.75)*.25;
+  return pow(clamp(c*.25+.5,0.,1.),2.8)*1.4;}
+mat3 cam(vec3 ro,vec3 ta){vec3 ww=normalize(ta-ro),uu=normalize(cross(ww,vec3(0,1,0))),vv=normalize(cross(uu,ww));return mat3(uu,vv,ww);}
+vec3 bg(vec3 ro,vec3 rd){
+  if(rd.y<-.0005){float tF=-ro.y/rd.y;
+    if(tF>0.&&tF<28.){vec3 fp=ro+rd*tF;
+      float chk=mod(floor(fp.x)+floor(fp.z),2.);
+      vec3 base=mix(vec3(.05,.058,.068),vec3(.065,.072,.084),chk*.45);
+      vec2 gf=abs(fract(fp.xz)-.5);
+      base=mix(base,vec3(.17,.19,.23),max(0.,1.-min(gf.x,gf.y)*95.)*.55);
+      float sh=shadow(fp+vec3(0,.003,0),KL,.05,9.);
+      base*=(sh*.7+.3);
+      base+=vec3(.05,.22,.09)*caust(fp)*(.28+.72*(1.-sh));
+      return mix(base,sky(rd),1.-exp(-max(tF-5.,0.)*.035));}}
+  return sky(rd);}
 void main(){
-  vec2 uv=(gl_FragCoord.xy-u_res*0.5)/u_res.y;
-  vec3 ro=vec3(0.80,4.20,8.50), ta=vec3(0.00,0.60,0.00);
-  mat3 cam=camMatrix(ro,ta); vec3 rd=cam*normalize(vec3(uv,1.85));
-  float t=0.10; bool hit=false;
-  for(int i=0;i<88;i++){float d=scene(ro+rd*t);
-    if(d<0.0005){hit=true;break;}if(t>28.0)break;t+=max(d,0.004);}
+  vec2 uv=(gl_FragCoord.xy-u_res*.5)/u_res.y;
+  vec3 ro=vec3(.8,4.2,8.5),ta=vec3(0.,.6,0.);
+  vec3 rd=cam(ro,ta)*normalize(vec3(uv,1.85));
+  float t=.1;bool hit=false;
+  for(int i=0;i<88;i++){float d=scene(ro+rd*t);if(d<.0005){hit=true;break;}if(t>28.)break;t+=max(d,.004);}
   vec3 col;
   if(hit){
-    vec3 p=ro+rd*t, N=calcNormal(p), V=-rd;
-    float sh=softShadow(p+N*0.008,KEY_L,0.02,9.0);
-    float ao=calcAO(p,N);
-    vec3 surfCol=goopShade(p,N,V,sh,ao);
-    vec3 refRd=refract(rd,N,1.0/GEL_IOR);
-    if(dot(refRd,refRd)<0.001) refRd=rd;
-    vec3 rIn=p+refRd*0.003; float tX=0.003;
-    for(int j=0;j<32;j++){float d=scene(rIn+refRd*tX);if(d>0.0005)break;tX+=max(abs(d)+0.004,0.004);}
-    vec3 exitP=rIn+refRd*tX, exitN=-calcNormal(exitP);
-    vec3 exitRd=refract(refRd,exitN,GEL_IOR);
-    if(dot(exitRd,exitRd)<0.001) exitRd=reflect(refRd,exitN);
-    float alpha=1.0-exp(-tX*0.22);
-    vec3 bgCol=getBg(exitP,exitRd);
-    bgCol=mix(bgCol,vec3(0.02,0.28,0.09),(1.0-alpha)*0.44);
-    col=mix(bgCol,surfCol,alpha);
-  } else { col=getBg(ro,rd); }
-  col=col/(col+vec3(0.72)); col=pow(col,vec3(0.4545));
-  gl_FragColor=vec4(col,1.0);
-}
-`;
+    vec3 p=ro+rd*t,N=norm(p),V=-rd;
+    float sh=shadow(p+N*.008,KL,.02,9.),oa=ao(p,N);
+    vec3 sc=shade(p,N,V,sh,oa);
+    vec3 rr=refract(rd,N,1./IOR);if(dot(rr,rr)<.001)rr=rd;
+    vec3 ri=p+rr*.003;float tX=.003;
+    for(int j=0;j<32;j++){float d=scene(ri+rr*tX);if(d>.0005)break;tX+=max(abs(d)+.004,.004);}
+    vec3 eP=ri+rr*tX,eN=-norm(eP),eR=refract(rr,eN,IOR);
+    if(dot(eR,eR)<.001)eR=reflect(rr,eN);
+    float al=1.-exp(-tX*.22);
+    vec3 bc=bg(eP,eR);bc=mix(bc,vec3(.02,.28,.09),(1.-al)*.44);
+    col=mix(bc,sc,al);
+  }else col=bg(ro,rd);
+  col=col/(col+vec3(.72));col=pow(col,vec3(.4545));
+  gl_FragColor=vec4(col,1.);
+}`;
 
 const BLOOM_FS = `
 precision mediump float;
-uniform sampler2D u_scene; uniform vec2 u_step;
-vec3 xb(vec2 uv){vec3 c=texture2D(u_scene,uv).rgb;float l=dot(c,vec3(0.299,0.587,0.114));return c*max(0.0,l-0.56)*2.8;}
+uniform sampler2D u_scene;uniform vec2 u_step;
+vec3 xb(vec2 uv){vec3 c=texture2D(u_scene,uv).rgb;float l=dot(c,vec3(.299,.587,.114));return c*max(0.,l-.56)*2.8;}
 void main(){
-  vec2 uv=gl_FragCoord.xy*u_step; vec3 col=texture2D(u_scene,uv).rgb;
-  vec3 b=vec3(0.0);float tw=0.0;
-  for(int s=1;s<=4;s++){float sc=float(s)*2.8;vec2 d=u_step*sc;float w=1.0/float(s);
-    b+=(xb(uv+vec2(d.x,0.0))+xb(uv-vec2(d.x,0.0))+xb(uv+vec2(0.0,d.y))+xb(uv-vec2(0.0,d.y))+
+  vec2 uv=gl_FragCoord.xy*u_step;vec3 col=texture2D(u_scene,uv).rgb;
+  vec3 b=vec3(0.);float tw=0.;
+  for(int s=1;s<=4;s++){float sc=float(s)*2.8;vec2 d=u_step*sc;float w=1./float(s);
+    b+=(xb(uv+vec2(d.x,0.))+xb(uv-vec2(d.x,0.))+xb(uv+vec2(0.,d.y))+xb(uv-vec2(0.,d.y))+
         xb(uv+vec2(d.x,d.y))+xb(uv-vec2(d.x,d.y))+xb(uv+vec2(d.x,-d.y))+xb(uv-vec2(d.x,-d.y)))*w;
-    tw+=8.0*w;}
-  gl_FragColor=vec4(col+(b/tw)*1.65,1.0);
-}
-`;
+    tw+=8.*w;}
+  gl_FragColor=vec4(col+(b/tw)*1.65,1.);}`;
 
-function compile(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s;}
-function makeProgram(fs){const p=gl.createProgram();gl.attachShader(p,compile(gl.VERTEX_SHADER,QUAD_VS));gl.attachShader(p,compile(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));return p;}
-
-const sceneProg=makeProgram(SCENE_FS);
-const bloomProg=makeProgram(BLOOM_FS);
-
-const vbuf=gl.createBuffer();
-gl.bindBuffer(gl.ARRAY_BUFFER,vbuf);
+function compile(t,s){const r=gl.createShader(t);gl.shaderSource(r,s);gl.compileShader(r);if(!gl.getShaderParameter(r,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(r));return r;}
+function prog(fs){const p=gl.createProgram();gl.attachShader(p,compile(gl.VERTEX_SHADER,QUAD_VS));gl.attachShader(p,compile(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));return p;}
+const SP=prog(SCENE_FS), BP=prog(BLOOM_FS);
+const vb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,vb);
 gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
-
-const sPL=gl.getAttribLocation(sceneProg,'a_pos');
-const bPL=gl.getAttribLocation(bloomProg,'a_pos');
-
-gl.useProgram(sceneProg);
-const U={};
-['u_res','u_time','u_c0','u_sq0','u_tilt0','u_tax0']
-  .forEach(n=>U[n]=gl.getUniformLocation(sceneProg,n));
-
-gl.useProgram(bloomProg);
-const BU={u_scene:gl.getUniformLocation(bloomProg,'u_scene'),u_step:gl.getUniformLocation(bloomProg,'u_step')};
-
-let sceneFBO=null,sceneTex=null;
-function buildFBO(w,h){
-  if(sceneTex)gl.deleteTexture(sceneTex);if(sceneFBO)gl.deleteFramebuffer(sceneFBO);
-  sceneTex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,sceneTex);
+const sA=gl.getAttribLocation(SP,'a_pos'), bA=gl.getAttribLocation(BP,'a_pos');
+gl.useProgram(SP);
+const U={};['u_res','u_time','u_c0','u_sq0','u_tilt0'].forEach(n=>U[n]=gl.getUniformLocation(SP,n));
+gl.useProgram(BP);
+const BU={s:gl.getUniformLocation(BP,'u_scene'),d:gl.getUniformLocation(BP,'u_step')};
+let fbo=null,tex=null;
+function mkFBO(w,h){
+  if(tex)gl.deleteTexture(tex);if(fbo)gl.deleteFramebuffer(fbo);
+  tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);
   gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
-  sceneFBO=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,sceneFBO);
-  gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,sceneTex,0);
-  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-}
+  fbo=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,tex,0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);}
 
 // ── physics ───────────────────────────────────────────────────────────────────
+// Cube half-size L=0.525, distance from bottom corner to centre D=L*√2≈0.742.
+// Positive tilt → cube tips RIGHT (shader: sample-space CCW around Z = cube CW = right side down).
+// Centre follows arc around the pivot corner on the floor.
 
-// Swipe at least this many screen pixels horizontally to trigger a flop
-const DRAG_THRESH = 42;
+const L = 0.525, D = L * Math.SQRT2;
+const GRAV = 0.0055;   // gravity torque strength — tune for desired fall speed
+const DAMP = 0.975;    // per-frame angular damping
 
-// Tilt axis for screen-left/right flop: camera-forward projected to XZ.
-// Camera at (0.8,4.2,8.5) → fwd ≈ (-0.09,−0.39,−0.92) → XZ part normalized ≈ (−0.09,0,−0.92).
-// Tilt around this axis tips the cube left/right from the viewer's perspective.
-const FLOP_AXIS = (()=>{
-  const fwd = [-0.80,-3.60,-8.50]; // TAR - CAM
-  const len  = Math.sqrt(fwd[0]**2+fwd[2]**2)||1;
-  return [fwd[0]/len, 0, fwd[2]/len]; // XZ component, normalised
-})();
+const cube = { tilt:0, tiltV:0, sq:1.0, sqV:0.0 };
 
-const cube = {
-  x:0, y:0.525, z:0,
-  vx:0, vz:0,
-  sq:1.0, sqV:0.0,
-  tilt:0.0, tiltV:0.0,
-};
-
-// dir: +1 = screen-right, -1 = screen-left
-function flop(dir){
-  cube.tiltV += dir * 0.32;   // angular impulse — positive tips right on screen
-  cube.sqV   -= 0.22;         // wind-up squish
+// Returns world-space [cx, cy] following the pivot arc.
+// Pivot is at (sign(tilt)*L, 0). Centre traces a quarter-circle arc.
+function centerXY(){
+  const a = Math.abs(cube.tilt);
+  if(a < 0.001) return [0, L];
+  const s   = Math.sign(cube.tilt);
+  const ang = Math.PI * 0.75 - a;          // 135° → 45° as a goes 0 → π/2
+  return [ s * (L + D * Math.cos(ang)),     // moves toward tipping side
+           D * Math.sin(ang) ];             // arcs upward mid-flop, back to L at π/2
 }
 
 function tick(){
-  // Tilt spring — loosely damped so it wobbles a few times before settling
-  cube.tiltV = (cube.tiltV - cube.tilt * 0.07) * 0.91;
-  cube.tilt += cube.tiltV;
+  const a = Math.abs(cube.tilt);
+  // Gravity torque: proportional to horizontal offset of centre from pivot.
+  // D·cos(135°−a) is negative when a<45° (restores upright) and positive when a>45° (tips flat).
+  const gt = Math.sign(cube.tilt) * GRAV * D * Math.cos(Math.PI * 0.75 - a);
+  cube.tiltV = (cube.tiltV + gt) * DAMP;
+
+  const prev = cube.tilt;
+  cube.tilt  += cube.tiltV;
+
+  // Landed on side — fire squish and freeze
+  if(Math.abs(cube.tilt) >= Math.PI * 0.4999){
+    if(Math.abs(cube.tiltV) > 0.01)
+      cube.sqV -= Math.min(Math.abs(cube.tiltV) * 3.5, 0.55);
+    cube.tilt  = Math.sign(cube.tilt) * (Math.PI * 0.5);
+    cube.tiltV = 0;
+  }
+
+  // Crossed back through upright — settle (prevents drifting to wrong side)
+  if(prev * cube.tilt < 0 && Math.abs(cube.tiltV) < 0.10){
+    cube.tilt  = 0;
+    cube.tiltV = 0;
+  }
 
   // Squish oscillator
-  cube.sqV = (cube.sqV-(cube.sq-1.0)*0.24)*0.86;
-  cube.sq  = Math.max(0.38,Math.min(1.72,cube.sq+cube.sqV));
-
-  // Gently spring back to centre (in case of any accumulated drift)
-  cube.vx = (cube.vx - cube.x*0.04)*0.85;
-  cube.vz = (cube.vz - cube.z*0.04)*0.85;
-  cube.x += cube.vx;
-  cube.z += cube.vz;
+  cube.sqV = (cube.sqV - (cube.sq-1.0)*0.24)*0.86;
+  cube.sq  = Math.max(0.38, Math.min(1.72, cube.sq+cube.sqV));
 }
 
-// ── input — swipe detection ───────────────────────────────────────────────────
+// dir: +1=right, −1=left
+function flop(dir){
+  const a = Math.abs(cube.tilt);
+  const atRest = Math.abs(cube.tilt) >= Math.PI*0.49;  // already lying on side
+  const sameDir = Math.sign(cube.tilt) === dir;
 
-// Each active pointer tracked independently; first threshold crossed wins.
-const drags = new Map(); // pointerId → { startX, startY, fired }
+  if(a < 0.20){
+    // Near upright — start a fresh flop
+    cube.tiltV += dir * 0.055;
+    cube.sqV   -= 0.20;
+  } else if(atRest && !sameDir){
+    // Lying on one side, swipe opposite → stand back up
+    cube.tiltV += dir * 0.13;
+    cube.sqV   -= 0.12;
+  } else if(atRest && sameDir){
+    // Already lying on that side — just squish as acknowledgment
+    cube.sqV -= 0.18;
+  }
+}
 
-canvas.addEventListener('pointerdown', e => {
+// ── swipe detection ───────────────────────────────────────────────────────────
+
+const drags = new Map();
+const DRAG_THRESH = 44; // pixels horizontal before flop fires
+
+canvas.addEventListener('pointerdown', e=>{
   canvas.setPointerCapture(e.pointerId);
-  drags.set(e.pointerId, { startX: e.clientX, startY: e.clientY, fired: false });
+  drags.set(e.pointerId,{sx:e.clientX, sy:e.clientY, fired:false});
 });
-
-canvas.addEventListener('pointermove', e => {
-  const d = drags.get(e.pointerId);
-  if(!d || d.fired) return;
-  const dx = e.clientX - d.startX;
-  const dy = e.clientY - d.startY;
-  // Require mostly horizontal motion (not a scroll/diagonal)
-  if(Math.abs(dx) > DRAG_THRESH && Math.abs(dx) > Math.abs(dy) * 1.4){
-    flop(dx > 0 ? 1 : -1);
-    d.fired = true;
+canvas.addEventListener('pointermove', e=>{
+  const d=drags.get(e.pointerId);
+  if(!d||d.fired) return;
+  const dx=e.clientX-d.sx, dy=e.clientY-d.sy;
+  if(Math.abs(dx)>DRAG_THRESH && Math.abs(dx)>Math.abs(dy)*1.4){
+    flop(dx>0?1:-1);
+    d.fired=true;
   }
 });
+canvas.addEventListener('pointerup',    e=>drags.delete(e.pointerId));
+canvas.addEventListener('pointercancel',e=>drags.delete(e.pointerId));
 
-canvas.addEventListener('pointerup',    e => drags.delete(e.pointerId));
-canvas.addEventListener('pointercancel',e => drags.delete(e.pointerId));
-
-// ── resize ────────────────────────────────────────────────────────────────────
+// ── resize + render ───────────────────────────────────────────────────────────
 
 let W,H;
 function resize(){
   const dpr=Math.min(window.devicePixelRatio||1,1.5);
-  W=canvas.width =Math.round(window.innerWidth *dpr);
+  W=canvas.width =Math.round(window.innerWidth*dpr);
   H=canvas.height=Math.round(window.innerHeight*dpr);
-  gl.viewport(0,0,W,H); buildFBO(W,H);
+  gl.viewport(0,0,W,H); mkFBO(W,H);
 }
 resize(); window.addEventListener('resize',resize);
 
-// ── render loop ───────────────────────────────────────────────────────────────
-
-function frame(){
-  requestAnimationFrame(frame);
+function draw(){
+  requestAnimationFrame(draw);
   tick();
+  const [cx,cy]=centerXY();
 
-  gl.bindFramebuffer(gl.FRAMEBUFFER,sceneFBO);
-  gl.useProgram(sceneProg);
-  gl.bindBuffer(gl.ARRAY_BUFFER,vbuf);
-  gl.enableVertexAttribArray(sPL);
-  gl.vertexAttribPointer(sPL,2,gl.FLOAT,false,0,0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
+  gl.useProgram(SP);
+  gl.bindBuffer(gl.ARRAY_BUFFER,vb);
+  gl.enableVertexAttribArray(sA);gl.vertexAttribPointer(sA,2,gl.FLOAT,false,0,0);
   gl.uniform2f(U.u_res,W,H);
-  gl.uniform1f(U.u_time,performance.now()*0.001);
-  gl.uniform3f(U.u_c0,cube.x,cube.y,cube.z);
+  gl.uniform1f(U.u_time,performance.now()*.001);
+  gl.uniform3f(U.u_c0,cx,cy,0);
   gl.uniform1f(U.u_sq0,cube.sq);
   gl.uniform1f(U.u_tilt0,cube.tilt);
-  gl.uniform3f(U.u_tax0,FLOP_AXIS[0],FLOP_AXIS[1],FLOP_AXIS[2]);
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
 
   gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-  gl.useProgram(bloomProg);
-  gl.bindBuffer(gl.ARRAY_BUFFER,vbuf);
-  gl.enableVertexAttribArray(bPL);
-  gl.vertexAttribPointer(bPL,2,gl.FLOAT,false,0,0);
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D,sceneTex);
-  gl.uniform1i(BU.u_scene,0);
-  gl.uniform2f(BU.u_step,1/W,1/H);
+  gl.useProgram(BP);
+  gl.bindBuffer(gl.ARRAY_BUFFER,vb);
+  gl.enableVertexAttribArray(bA);gl.vertexAttribPointer(bA,2,gl.FLOAT,false,0,0);
+  gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,tex);
+  gl.uniform1i(BU.s,0);gl.uniform2f(BU.d,1/W,1/H);
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
 }
-frame();
+draw();
 </script>
 </body>
 </html>
