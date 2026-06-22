@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
-// ── Goo shader ────────────────────────────────────────────────────────────────────────────
+// ── Goo shader ────────────────────────────────────────────────────────────────
 const GOO_VERT = `
   varying vec3 vNormal;
   varying vec3 vViewPos;
@@ -104,8 +104,6 @@ const CUBE_TYPES = new Set([
   EnemyType.REDD_CUBE, EnemyType.PURP_CUBE, EnemyType.REDD_MINI, EnemyType.PURP_MINI,
 ]);
 
-export const ENEMY_RADIUS = 1.0; // updated conservative max
-
 export class Enemy {
   constructor(scene, type, x, z, speedMult = 1, intervalMult = 1) {
     this.type          = type;
@@ -115,7 +113,6 @@ export class Enemy {
     this._dying        = false;
     this._deathT       = 0;
     this._flashT       = 0;
-    this._hitWobble    = 0;
     this._wobbleT      = Math.random() * Math.PI * 2;
     this._sq           = 1.0;
     this._sqV          = 0.0;
@@ -437,7 +434,7 @@ export class Enemy {
     const spd  = cfg.speed * this._speedMult;
     const H    = 17.5;
 
-    // ── Movement ──────────────────────────────────────────────────────────────────────────
+    // ── Movement ──────────────────────────────────────────────────────────────
     switch (this.type) {
       case EnemyType.GLOBBO:
       case EnemyType.SPLITTA:
@@ -732,7 +729,7 @@ export class Enemy {
       }
     }
 
-    // ── Flash / emissive ────────────────────────────────────────────────────────────────────
+    // ── Flash / emissive ──────────────────────────────────────────────────────
     if (this._flashT > 0) {
       this._flashT -= dt;
       this._setEmissive(0xffffff);
@@ -748,7 +745,7 @@ export class Enemy {
       this._setEmissive(0x000000);
     }
 
-    // ── Spring squash / scale ─────────────────────────────────────────────────────────────────
+    // ── Spring squash / scale ─────────────────────────────────────────────────
     this._wobbleT += dt; // keep for WEEVA movement
 
     if (this.type !== EnemyType.BAMBU && this.type !== EnemyType.PYRA) {
@@ -764,7 +761,7 @@ export class Enemy {
       }
     }
 
-    // ── Fire ──────────────────────────────────────────────────────────────────────────────
+    // ── Fire ──────────────────────────────────────────────────────────────────
     this._t += dt;
     this._tick(playerPos, bullets, dt);
   }
@@ -778,8 +775,6 @@ export class Enemy {
       if (this._pyraFireTimer <= 0) {
         this._pyraFireTimer = cfg.fireInterval * this._intervalMult;
         const ex = this.position.x, ez = this.position.z;
-        const adx = playerPos.x - ex, adz = playerPos.z - ez;
-        const al  = Math.hypot(adx, adz) || 1;
         const liveHoles = this._holes ? this._holes.filter(h => h.alive) : [];
         for (const hole of liveHoles) {
           const ha = this.group.rotation.y + hole.angle;

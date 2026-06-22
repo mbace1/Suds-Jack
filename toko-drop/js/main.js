@@ -2,12 +2,13 @@ import * as THREE from 'three';
 import { InputManager } from './input.js';
 import { BulletPool, BULLET_R, FAT_BULLET_R } from './bullet.js';
 import { Player, PLAYER_RADIUS } from './player.js';
-import { Enemy, EnemyType, ENEMY_RADIUS } from './enemy.js';
+import { Enemy, EnemyType } from './enemy.js';
 import { audio } from './audio.js';
 
-const HALF = 18;
+const HALF      = 18;
+const ROUND_DUR = 30; // seconds per wave
 
-// ── Wave scaling (Nex Machina pacing) ─────────────────────────────────────────────────────
+// ── Wave scaling (Nex Machina pacing) ─────────────────────────────────────────────
 function getWaveScale(wave) {
   const w = wave - 1;
   return {
@@ -16,79 +17,80 @@ function getWaveScale(wave) {
   };
 }
 
-// Returns { dur, list: [{type, t: spawnDelaySecs}] }
+// Returns the spawn list [{type, t: spawnDelaySecs, count?}] for a wave.
+// Delays are front-loaded to fit fast 30 s rounds.
 function getEnemySchedule(wave) {
   const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
           YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA } = EnemyType;
-  if (wave === 1) return { dur: 60, list: [
+  if (wave === 1) return [
     { type: GLOBBO,      t: 0  },
-    { type: YELA_CUBE,   t: 10 },
-    { type: SPITTOR,     t: 20 },
-    { type: FANNER,      t: 30 },
-    { type: WEEVA,       t: 45 },
-  ]};
-  if (wave === 2) return { dur: 60, list: [
-    { type: GLOBBO,      t: 0  },
-    { type: YELA_CUBE,   t: 0  },
-    { type: ORANGE_CUBE, t: 15 },
-    { type: SPITTOR,     t: 25 },
-    { type: FANNER,      t: 35 },
-    { type: WEEVA,       t: 50 },
-  ]};
-  if (wave === 3) return { dur: 65, list: [
+    { type: YELA_CUBE,   t: 4  },
+    { type: SPITTOR,     t: 8  },
+    { type: FANNER,      t: 13 },
+    { type: WEEVA,       t: 19 },
+  ];
+  if (wave === 2) return [
     { type: GLOBBO,      t: 0  },
     { type: YELA_CUBE,   t: 0  },
-    { type: ORANGE_CUBE, t: 10 },
-    { type: SLUDGE_CUBE, t: 20 },
-    { type: SPITTOR,     t: 30 },
-    { type: BAMBU,       t: 40 },
-    { type: WEEVA,       t: 45 },
-    { type: SPLITTA,     t: 55 },
-  ]};
-  if (wave === 4) return { dur: 65, list: [
+    { type: ORANGE_CUBE, t: 6  },
+    { type: SPITTOR,     t: 11 },
+    { type: FANNER,      t: 16 },
+    { type: WEEVA,       t: 22 },
+  ];
+  if (wave === 3) return [
+    { type: GLOBBO,      t: 0  },
+    { type: YELA_CUBE,   t: 0  },
+    { type: ORANGE_CUBE, t: 4  },
+    { type: SLUDGE_CUBE, t: 9  },
+    { type: SPITTOR,     t: 13 },
+    { type: BAMBU,       t: 17 },
+    { type: WEEVA,       t: 19 },
+    { type: SPLITTA,     t: 23 },
+  ];
+  if (wave === 4) return [
     { type: GLOBBO,      t: 0  },
     { type: REDD_CUBE,   t: 0  },
-    { type: ORANGE_CUBE, t: 10 },
-    { type: SLUDGE_CUBE, t: 20 },
-    { type: BAMBU,       t: 30 },
-    { type: FANNER,      t: 35 },
-    { type: WEEVA,       t: 45 },
-    { type: SPLITTA,     t: 55 },
-  ]};
-  if (wave === 5) return { dur: 70, list: [
+    { type: ORANGE_CUBE, t: 4  },
+    { type: SLUDGE_CUBE, t: 9  },
+    { type: BAMBU,       t: 13 },
+    { type: FANNER,      t: 16 },
+    { type: WEEVA,       t: 19 },
+    { type: SPLITTA,     t: 23 },
+  ];
+  if (wave === 5) return [
     { type: GLOBBO,      t: 0,  count: 3 },
     { type: REDD_CUBE,   t: 0  },
-    { type: PURP_CUBE,   t: 10 },
-    { type: ORANGE_CUBE, t: 20 },
-    { type: PYRA,        t: 25 },
-    { type: SLUDGE_CUBE, t: 35 },
-    { type: FANNER,      t: 50 },
-    { type: SPLITTA,     t: 60 },
-  ]};
-  if (wave === 6) return { dur: 70, list: [
+    { type: PURP_CUBE,   t: 4  },
+    { type: ORANGE_CUBE, t: 8  },
+    { type: PYRA,        t: 11 },
+    { type: SLUDGE_CUBE, t: 15 },
+    { type: FANNER,      t: 20 },
+    { type: SPLITTA,     t: 24 },
+  ];
+  if (wave === 6) return [
     { type: YELA_CUBE,   t: 0  },
     { type: REDD_CUBE,   t: 0  },
-    { type: PURP_CUBE,   t: 10 },
-    { type: PYRA,        t: 15 },
-    { type: ORANGE_CUBE, t: 25 },
-    { type: BAMBU,       t: 30 },
-    { type: SPITTOR,     t: 40 },
-    { type: FANNER,      t: 50 },
-    { type: TORO,        t: 62 },
-  ]};
-  return { dur: 75, list: [
+    { type: PURP_CUBE,   t: 4  },
+    { type: PYRA,        t: 7  },
+    { type: ORANGE_CUBE, t: 11 },
+    { type: BAMBU,       t: 13 },
+    { type: SPITTOR,     t: 17 },
+    { type: FANNER,      t: 21 },
+    { type: TORO,        t: 25 },
+  ];
+  return [
     { type: GLOBBO,      t: 0,  count: 3 },
-    { type: BAMBU,       t: 5  },
-    { type: REDD_CUBE,   t: 10 },
-    { type: PURP_CUBE,   t: 20 },
-    { type: ORANGE_CUBE, t: 30 },
-    { type: SLUDGE_CUBE, t: 40 },
-    { type: SPLITTA,     t: 55 },
-    { type: TORO,        t: 65 },
-  ]};
+    { type: BAMBU,       t: 3  },
+    { type: REDD_CUBE,   t: 5  },
+    { type: PURP_CUBE,   t: 9  },
+    { type: ORANGE_CUBE, t: 13 },
+    { type: SLUDGE_CUBE, t: 17 },
+    { type: SPLITTA,     t: 21 },
+    { type: TORO,        t: 25 },
+  ];
 }
 
-// ── Renderer ─────────────────────────────────────────────────────────────────────────────
+// ── Renderer ────────────────────────────────────────────────────────────────
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById('canvas-game'),
   antialias: true,
@@ -97,19 +99,19 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.setSize(innerWidth, innerHeight);
 
-// ── Scene ───────────────────────────────────────────────────────────────────────────────
+// ── Scene ───────────────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0d0d1a);
 scene.fog = new THREE.Fog(0x0d0d1a, 42, 80);
 
-// ── Camera ─────────────────────────────────────────────────────────────────────────────
+// ── Camera ────────────────────────────────────────────────────────────────
 const CAM_REST = new THREE.Vector3(0, 26, 19);
 const CAM_LOOK = new THREE.Vector3(0, 0, -2);
 const camera   = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 120);
 camera.position.copy(CAM_REST);
 camera.lookAt(CAM_LOOK);
 
-// ── Screen shake ───────────────────────────────────────────────────────────────────
+// ── Screen shake ───────────────────────────────────────────────────────────
 let shakeTrauma = 0;
 function addShake(trauma) { shakeTrauma = Math.min(shakeTrauma + trauma, 1); }
 function updateShake(dt) {
@@ -129,7 +131,7 @@ function updateShake(dt) {
   camera.lookAt(CAM_LOOK);
 }
 
-// ── Lights ─────────────────────────────────────────────────────────────────────────────
+// ── Lights ──────────────────────────────────────────────────────────────────
 scene.add(new THREE.AmbientLight(0xffffff, 0.45));
 const sun = new THREE.DirectionalLight(0xffffff, 1.3);
 sun.position.set(8, 20, 10);
@@ -137,7 +139,7 @@ sun.castShadow = true;
 sun.shadow.mapSize.set(1024, 1024);
 scene.add(sun);
 
-// ── Arena ──────────────────────────────────────────────────────────────────────────────
+// ── Arena ───────────────────────────────────────────────────────────────────
 const FLOOR_VERT = `
   varying vec2 vUv;
   void main() {
@@ -175,7 +177,7 @@ const border = new THREE.LineSegments(
 border.position.y = 0.02;
 scene.add(border);
 
-// ── Death FX: chunks + puddles ────────────────────────────────────────────────────────
+// ── Death FX: chunks + puddles ────────────────────────────────────────────────
 class Chunk {
   constructor(sc, x, y, z, vx, vy, vz, color, size = 0.18) {
     this.vx = vx; this.vy = vy; this.vz = vz;
@@ -434,7 +436,7 @@ class BambuAoE {
   remove(sc) { sc.remove(this.mesh); }
 }
 
-// ── Melee types ────────────────────────────────────────────────────────────────────────
+// ── Melee types ───────────────────────────────────────────────────────────────
 const MELEE_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPLITTA,
   EnemyType.YELA_CUBE, EnemyType.SLUDGE_CUBE, EnemyType.REDD_CUBE, EnemyType.PURP_CUBE,
@@ -442,7 +444,7 @@ const MELEE_TYPES = new Set([
   EnemyType.TORO,
 ]);
 
-// ── Game objects ────────────────────────────────────────────────────────────────────────
+// ── Game objects ──────────────────────────────────────────────────────────────
 const input   = new InputManager();
 const bullets = new BulletPool(scene);
 const player  = new Player(scene);
@@ -457,10 +459,10 @@ let gates         = [];
 let powerups      = [];
 let wave         = 0;
 let waveTimer    = 0;
-let waveDuration = 60;
+let waveDuration = ROUND_DUR;
 let pendingSpawns = [];
 
-// ── Score ─────────────────────────────────────────────────────────────────────────────
+// ── Score ─────────────────────────────────────────────────────────────────────
 let score   = 0;
 let streak  = 0;
 let hiScore = parseInt(localStorage.getItem('tokoDropHi') || '0');
@@ -483,12 +485,12 @@ function onPlayerHit() {
   audio.playerHit();
 }
 
-// ── Game state ──────────────────────────────────────────────────────────────────────────
+// ── Game state ───────────────────────────────────────────────────────────────
 // 'title' | 'playing' | 'paused' | 'gameover'
 let gameState    = 'title';
 let restartTimer = 0;
 
-// ── UI canvas ───────────────────────────────────────────────────────────────────────────
+// ── UI canvas ─────────────────────────────────────────────────────────────────
 const uiCanvas = document.getElementById('canvas-ui');
 const ctx      = uiCanvas.getContext('2d');
 const overlay  = document.getElementById('overlay');
@@ -527,7 +529,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.25)';
   ctx.font = '18px monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('❙❙', uiCanvas.width / 2, 36);
+  ctx.fillText('❝❝', uiCanvas.width / 2, 36);
   ctx.textAlign = 'left';
 
   // Wave + score (top row)
@@ -580,7 +582,7 @@ function drawHUD() {
   }
 }
 
-// ── Overlay helpers ───────────────────────────────────────────────────────────────────────
+// ── Overlay helpers ────────────────────────────────────────────────────────────────
 function showTitle() {
   overlay.style.display = 'block';
   overlay.innerHTML =
@@ -597,7 +599,7 @@ function showPause() {
   overlay.style.display = 'block';
   overlay.innerHTML =
     `<div style="font-size:52px;font-weight:bold">PAUSED</div>` +
-    `<div style="font-size:14px;opacity:0.5;margin-top:12px">ESC / ❙❙ TO RESUME</div>`;
+    `<div style="font-size:14px;opacity:0.5;margin-top:12px">ESC / ❝❝ TO RESUME</div>`;
 }
 
 function showGameOver() {
@@ -616,7 +618,7 @@ function announceWave() {
   setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 1100);
 }
 
-// ── Wave / restart helpers ───────────────────────────────────────────────────────────────────
+// ── Wave / restart helpers ──────────────────────────────────────────────────────────
 function clearFX() {
   for (const c of chunks)        c.remove(scene); chunks        = [];
   for (const p of puddles)       p.remove(scene); puddles       = [];
@@ -635,8 +637,8 @@ function spawnWave() {
   for (const p of powerups) p.remove(scene); powerups = [];
   wave++;
   const { speedMult, intervalMult } = getWaveScale(wave);
-  const { dur, list } = getEnemySchedule(wave);
-  waveDuration = dur;
+  const list   = getEnemySchedule(wave);
+  waveDuration = ROUND_DUR;
   waveTimer    = 0;
   const total  = list.length;
   pendingSpawns = [];
@@ -679,7 +681,7 @@ function triggerGameOver() {
   showGameOver();
 }
 
-// ── Input wiring ──────────────────────────────────────────────────────────────────────────
+// ── Input wiring ────────────────────────────────────────────────────────────────
 input.onDash  = () => {
   if (gameState === 'playing') {
     const move = input.getMoveDir();
@@ -705,7 +707,7 @@ window.addEventListener('touchend', () => {
 
 player.onShoot = () => audio.shoot();
 
-// ── Mouse aim ─────────────────────────────────────────────────────────────────────────────
+// ── Mouse aim ───────────────────────────────────────────────────────────────────
 const raycaster   = new THREE.Raycaster();
 const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const _hit        = new THREE.Vector3();
@@ -722,7 +724,7 @@ function mouseAimDir() {
   return { x: dx / len, z: dz / len, valid: input.mouse.down };
 }
 
-// ── Main loop ────────────────────────────────────────────────────────────────────────────────
+// ── Main loop ───────────────────────────────────────────────────────────────────
 let prev = performance.now();
 showTitle();
 
@@ -753,7 +755,7 @@ function loop() {
     return;
   }
 
-  // ── Playing ──────────────────────────────────────────────────────────────────────────
+  // ── Playing ──────────────────────────────────────────────────────────────────
   const moveDir = input.getMoveDir();
   let aimDir    = input.getAimDir();
   if (aimDir.useMouse) aimDir = mouseAimDir();
@@ -1015,7 +1017,7 @@ function loop() {
   drawHUD();
 }
 
-// ── Resize ───────────────────────────────────────────────────────────────────────────────
+// ── Resize ───────────────────────────────────────────────────────────────────
 function resize() {
   renderer.setSize(innerWidth, innerHeight);
   if (camera) { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
