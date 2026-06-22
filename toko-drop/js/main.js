@@ -7,7 +7,7 @@ import { audio } from './audio.js';
 
 const HALF = 18;
 
-// ── Wave scaling (Nex Machina pacing) ─────────────────────────────────────────
+// ── Wave scaling (Nex Machina pacing) ─────────────────────────────────────────────────────
 function getWaveScale(wave) {
   const w = wave - 1;
   return {
@@ -88,7 +88,7 @@ function getEnemySchedule(wave) {
   ]};
 }
 
-// ── Renderer ──────────────────────────────────────────────────────────────────
+// ── Renderer ─────────────────────────────────────────────────────────────────────────────
 const renderer = new THREE.WebGLRenderer({
   canvas: document.getElementById('canvas-game'),
   antialias: true,
@@ -97,19 +97,19 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.setSize(innerWidth, innerHeight);
 
-// ── Scene ─────────────────────────────────────────────────────────────────────
+// ── Scene ───────────────────────────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0d0d1a);
 scene.fog = new THREE.Fog(0x0d0d1a, 42, 80);
 
-// ── Camera ────────────────────────────────────────────────────────────────────
+// ── Camera ─────────────────────────────────────────────────────────────────────────────
 const CAM_REST = new THREE.Vector3(0, 26, 19);
 const CAM_LOOK = new THREE.Vector3(0, 0, -2);
 const camera   = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 120);
 camera.position.copy(CAM_REST);
 camera.lookAt(CAM_LOOK);
 
-// ── Screen shake ─────────────────────────────────────────────────────────────
+// ── Screen shake ───────────────────────────────────────────────────────────────────
 let shakeTrauma = 0;
 function addShake(trauma) { shakeTrauma = Math.min(shakeTrauma + trauma, 1); }
 function updateShake(dt) {
@@ -129,7 +129,7 @@ function updateShake(dt) {
   camera.lookAt(CAM_LOOK);
 }
 
-// ── Lights ────────────────────────────────────────────────────────────────────
+// ── Lights ─────────────────────────────────────────────────────────────────────────────
 scene.add(new THREE.AmbientLight(0xffffff, 0.45));
 const sun = new THREE.DirectionalLight(0xffffff, 1.3);
 sun.position.set(8, 20, 10);
@@ -137,15 +137,37 @@ sun.castShadow = true;
 sun.shadow.mapSize.set(1024, 1024);
 scene.add(sun);
 
-// ── Arena ─────────────────────────────────────────────────────────────────────
+// ── Arena ──────────────────────────────────────────────────────────────────────────────
+const FLOOR_VERT = `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+const FLOOR_FRAG = `
+  precision highp float;
+  uniform float uTime;
+  varying vec2 vUv;
+  void main() {
+    vec3 base = vec3(0.079, 0.079, 0.169);
+    float gx = abs(fract(vUv.x * 28.0) - 0.5);
+    float gz = abs(fract(vUv.y * 28.0) - 0.5);
+    float grid = max(0.0, 1.0 - min(gx, gz) * 50.0);
+    float pulse = 0.7 + 0.3 * sin(uTime * 1.2);
+    vec3 gridColor = mix(vec3(0.13, 0.07, 0.38), vec3(0.0, 0.55, 0.50), grid);
+    vec3 col = mix(base, gridColor, grid * pulse * 0.7);
+    gl_FragColor = vec4(col, 1.0);
+  }
+`;
+const floorUniforms = { uTime: { value: 0 } };
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(HALF * 2, HALF * 2),
-  new THREE.MeshPhongMaterial({ color: 0x14142b }),
+  new THREE.ShaderMaterial({ vertexShader: FLOOR_VERT, fragmentShader: FLOOR_FRAG, uniforms: floorUniforms }),
 );
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
-scene.add(new THREE.GridHelper(HALF * 2, 28, 0x22224a, 0x22224a));
 const border = new THREE.LineSegments(
   new THREE.EdgesGeometry(new THREE.BoxGeometry(HALF * 2, 0.05, HALF * 2)),
   new THREE.LineBasicMaterial({ color: 0x5555cc }),
@@ -153,11 +175,13 @@ const border = new THREE.LineSegments(
 border.position.y = 0.02;
 scene.add(border);
 
-// ── Death FX: chunks + puddles ────────────────────────────────────────────────
+// ── Death FX: chunks + puddles ────────────────────────────────────────────────────────
 class Chunk {
   constructor(sc, x, y, z, vx, vy, vz, color, size = 0.18) {
     this.vx = vx; this.vy = vy; this.vz = vz;
     this._life = 1.4;
+    this._sq   = 1.0;
+    this._sqV  = 0.0;
     this.mat  = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1 });
     this.mesh = new THREE.Mesh(new THREE.SphereGeometry(size, 5, 3), this.mat);
     this.mesh.position.set(x, y, z);
@@ -169,10 +193,16 @@ class Chunk {
     this.mesh.position.x += this.vx * dt;
     this.mesh.position.y += this.vy * dt;
     this.mesh.position.z += this.vz * dt;
-    if (this.mesh.position.y < 0) {
+    if (this.mesh.position.y <= 0.01 && this.vy < 0) {
       this.mesh.position.y = 0;
+      this._sqV -= Math.abs(this.vy) * 0.4; // squash on landing
       this.vy = 0; this.vx *= 0.35; this.vz *= 0.35;
     }
+    // Spring squash per frame
+    this._sqV = (this._sqV - (this._sq - 1.0) * 0.32) * 0.80;
+    this._sq  = Math.max(0.55, Math.min(1.4, this._sq + this._sqV));
+    const sx = 1 / Math.sqrt(Math.max(this._sq, 0.1));
+    this.mesh.scale.set(sx, this._sq, sx);
     this.mat.opacity = Math.min(1, this._life / 0.3);
     return this._life > 0;
   }
@@ -182,14 +212,21 @@ class Chunk {
 class Puddle {
   constructor(sc, x, z, color, radius) {
     this._life = 5;
+    this._sq   = 0.0;
+    this._sqV  = 0.0;
     this.mat  = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.55, depthWrite: false });
     this.mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, 14), this.mat);
     this.mesh.rotation.x = -Math.PI / 2;
     this.mesh.position.set(x, 0.01, z);
+    this.mesh.scale.setScalar(0); // splat in from 0
     sc.add(this.mesh);
   }
   update(dt) {
     this._life -= dt;
+    // Spring splat from 0 to 1 with overshoot
+    this._sqV = (this._sqV - (this._sq - 1.0) * 0.55) * 0.74;
+    this._sq  = Math.max(0, this._sq + this._sqV);
+    this.mesh.scale.setScalar(Math.max(0, Math.min(1.5, this._sq)));
     this.mat.opacity = 0.55 * Math.max(0, this._life / 5);
     return this._life > 0;
   }
@@ -397,7 +434,7 @@ class BambuAoE {
   remove(sc) { sc.remove(this.mesh); }
 }
 
-// ── Melee types ───────────────────────────────────────────────────────────────
+// ── Melee types ────────────────────────────────────────────────────────────────────────
 const MELEE_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPLITTA,
   EnemyType.YELA_CUBE, EnemyType.SLUDGE_CUBE, EnemyType.REDD_CUBE, EnemyType.PURP_CUBE,
@@ -405,7 +442,7 @@ const MELEE_TYPES = new Set([
   EnemyType.TORO,
 ]);
 
-// ── Game objects ──────────────────────────────────────────────────────────────
+// ── Game objects ────────────────────────────────────────────────────────────────────────
 const input   = new InputManager();
 const bullets = new BulletPool(scene);
 const player  = new Player(scene);
@@ -423,7 +460,7 @@ let waveTimer    = 0;
 let waveDuration = 60;
 let pendingSpawns = [];
 
-// ── Score ─────────────────────────────────────────────────────────────────────
+// ── Score ─────────────────────────────────────────────────────────────────────────────
 let score   = 0;
 let streak  = 0;
 let hiScore = parseInt(localStorage.getItem('tokoDropHi') || '0');
@@ -446,12 +483,12 @@ function onPlayerHit() {
   audio.playerHit();
 }
 
-// ── Game state ────────────────────────────────────────────────────────────────
+// ── Game state ──────────────────────────────────────────────────────────────────────────
 // 'title' | 'playing' | 'paused' | 'gameover'
 let gameState    = 'title';
 let restartTimer = 0;
 
-// ── UI canvas ─────────────────────────────────────────────────────────────────
+// ── UI canvas ───────────────────────────────────────────────────────────────────────────
 const uiCanvas = document.getElementById('canvas-ui');
 const ctx      = uiCanvas.getContext('2d');
 const overlay  = document.getElementById('overlay');
@@ -543,7 +580,7 @@ function drawHUD() {
   }
 }
 
-// ── Overlay helpers ───────────────────────────────────────────────────────────
+// ── Overlay helpers ───────────────────────────────────────────────────────────────────────
 function showTitle() {
   overlay.style.display = 'block';
   overlay.innerHTML =
@@ -579,7 +616,7 @@ function announceWave() {
   setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 1100);
 }
 
-// ── Wave / restart helpers ────────────────────────────────────────────────────
+// ── Wave / restart helpers ───────────────────────────────────────────────────────────────────
 function clearFX() {
   for (const c of chunks)        c.remove(scene); chunks        = [];
   for (const p of puddles)       p.remove(scene); puddles       = [];
@@ -642,7 +679,7 @@ function triggerGameOver() {
   showGameOver();
 }
 
-// ── Input wiring ──────────────────────────────────────────────────────────────
+// ── Input wiring ──────────────────────────────────────────────────────────────────────────
 input.onDash  = () => {
   if (gameState === 'playing') {
     const move = input.getMoveDir();
@@ -668,7 +705,7 @@ window.addEventListener('touchend', () => {
 
 player.onShoot = () => audio.shoot();
 
-// ── Mouse aim ─────────────────────────────────────────────────────────────────
+// ── Mouse aim ─────────────────────────────────────────────────────────────────────────────
 const raycaster   = new THREE.Raycaster();
 const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const _hit        = new THREE.Vector3();
@@ -685,7 +722,7 @@ function mouseAimDir() {
   return { x: dx / len, z: dz / len, valid: input.mouse.down };
 }
 
-// ── Main loop ─────────────────────────────────────────────────────────────────
+// ── Main loop ────────────────────────────────────────────────────────────────────────────────
 let prev = performance.now();
 showTitle();
 
@@ -716,7 +753,7 @@ function loop() {
     return;
   }
 
-  // ── Playing ────────────────────────────────────────────────────────────────
+  // ── Playing ──────────────────────────────────────────────────────────────────────────
   const moveDir = input.getMoveDir();
   let aimDir    = input.getAimDir();
   if (aimDir.useMouse) aimDir = mouseAimDir();
@@ -973,11 +1010,12 @@ function loop() {
     spawnWave();
   }
 
+  floorUniforms.uTime.value = performance.now() / 1000;
   renderer.render(scene, camera);
   drawHUD();
 }
 
-// ── Resize ────────────────────────────────────────────────────────────────────
+// ── Resize ───────────────────────────────────────────────────────────────────────────────
 function resize() {
   renderer.setSize(innerWidth, innerHeight);
   if (camera) { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
