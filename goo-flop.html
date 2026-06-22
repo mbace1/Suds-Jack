@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Goo Flop</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; background:#000; overflow:hidden; }
+canvas { display:block; width:100%; height:100%; touch-action:none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const gl = canvas.getContext('webgl',{antialias:true,alpha:false})
+        || canvas.getContext('experimental-webgl',{antialias:true,alpha:false});
+if (!gl) { document.body.innerHTML='<p style="color:#fff;padding:2em">WebGL not supported</p>'; throw 0; }
+
+const CAM   = [0.80, 4.20, 8.50];
+const TAR   = [0.00, 0.60, 0.00];
+const FOCAL = 1.85;
+
+const QUAD_VS = `attribute vec2 a_pos; void main(){gl_Position=vec4(a_pos,0,1);}`;
+
+// ── Scene shader ──────────────────────────────────────────────────────────────
+
+const SCENE_FS = `
+precision highp float;
+
+uniform vec2  u_res;
+uniform float u_time;
+uniform vec3  u_c0;         // cube centre
+uniform float u_sq0;        // squish amount
+uniform vec3  u_da0;        // deformation axis
+uniform vec2  u_target;     // current walk target (XZ) — for floor indicator
+
+const vec3  HALF_BOX = vec3(0.525, 0.525, 0.525);
+const float ROUND_R  = 0.200;
+const vec3  KEY_L    = normalize(vec3(-0.65, 2.30, 1.70));
+const vec3  FILL_L   = normalize(vec3( 1.20, 0.80, 1.00));
+const float GEL_IOR  = 1.33;
+
+float sdRoundBox(vec3 p, vec3 b, float r){
+  vec3 q=abs(p)-b; return length(max(q,0.0))+min(max(q.x,max(q.y,q.z)),0.0)-r;
+}
+float gooCube(vec3 p, vec3 cen, float sq, vec3 axis){
+  float sqC=clamp(sq,0.45,1.65); vec3 lp=p-cen;
+  float proj=dot(lp,axis);
+  lp=axis*(proj*sqC)+(lp-axis*proj)/sqrt(sqC);
+  return sdRoundBox(lp,HALF_BOX,ROUND_R)*min(sqrt(sqC),1.0/sqC);
+}
+float scene(vec3 p){ return gooCube(p,u_c0,u_sq0,u_da0); }
+
+vec3 calcNormal(vec3 p){
+  const float E=0.0007;
+  return normalize(vec3(scene(p+vec3(E,0,0))-scene(p-vec3(E,0,0)),
+                        scene(p+vec3(0,E,0))-scene(p-vec3(0,E,0)),
+                        scene(p+vec3(0,0,E))-scene(p-vec3(0,0,E))));
+}
+float softShadow(vec3 ro, vec3 rd, float mint, float maxt){
+  float res=1.0,t=mint;
+  for(int i=0;i<24;i++){if(t>maxt)break;
+    float h=scene(ro+rd*t);if(h<0.0004)return 0.0;
+    res=min(res,8.0*h/t);t+=clamp(h,0.006,0.22);}
+  return clamp(res,0.0,1.0);
+}
+float calcAO(vec3 p, vec3 n){
+  float occ=0.0,sca=1.0;
+  for(int i=0;i<5;i++){float h=0.01+0.18*float(i)/4.0;
+    occ+=(h-scene(p+h*n))*sca;sca*=0.80;}
+  return clamp(1.0-3.2*occ,0.0,1.0);
+}
+
+vec3 envSky(vec3 d){float h=clamp(d.y*0.5+0.5,0.0,1.0);return mix(vec3(0.05,0.07,0.11),vec3(0.10,0.14,0.22),h*h);}
+
+vec3 goopShade(vec3 p, vec3 N, vec3 V, float sh, float ao){
+  vec3  H1=normalize(KEY_L+V), H2=normalize(FILL_L+V);
+  float NdL1=max(dot(N,KEY_L),0.0), NdL2=max(dot(N,FILL_L),0.0);
+  float NdH1=max(dot(N,H1),0.0),    NdH2=max(dot(N,H2),0.0), NdV=max(dot(N,V),0.0);
+  float specKey=pow(NdH1,92.0)*2.80, specFill=pow(NdH2,28.0)*0.38, gloss=pow(NdH1,10.0)*0.26;
+  float fresnel=pow(1.0-NdV,3.80);
+  float sss=pow(max(0.0,-dot(N,KEY_L)*0.42+0.58),2.2)*0.44;
+  vec3 reflDir=reflect(-V,N);
+  vec3 envRef=envSky(reflDir)*(0.55+0.45*max(reflDir.y,0.0))*vec3(0.70,1.00,0.75);
+  vec3 col=
+      vec3(0.010,0.085,0.035)
+    + vec3(0.080,0.420,0.175)*NdL1*(sh*0.72+0.28)
+    + vec3(0.022,0.095,0.048)*NdL2*0.38
+    + vec3(0.900,1.000,0.930)*(specKey+specFill+gloss)
+    + vec3(0.050,0.680,0.290)*fresnel*0.55
+    + vec3(0.030,0.620,0.220)*sss
+    + envRef*fresnel*0.52;
+  return col*(ao*0.60+0.40);
+}
+
+float caustics(vec3 fp){
+  float t=u_time*0.55;
+  float c=sin(fp.x*4.10+t*1.10)*cos(fp.z*3.70+t*0.85)
+         +sin(fp.x*2.30-t*0.60+fp.z*3.10)*0.55
+         +cos(fp.x*5.20+fp.z*2.80-t*1.30)*0.35
+         +sin((fp.x+fp.z)*3.60+t*0.75)*0.25;
+  return pow(clamp(c*0.25+0.5,0.0,1.0),2.8)*1.4;
+}
+
+mat3 camMatrix(vec3 ro,vec3 ta){
+  vec3 ww=normalize(ta-ro),uu=normalize(cross(ww,vec3(0,1,0))),vv=normalize(cross(uu,ww));
+  return mat3(uu,vv,ww);
+}
+
+vec3 getBg(vec3 ro, vec3 rd){
+  if(rd.y<-0.0005){float tF=-ro.y/rd.y;
+    if(tF>0.0&&tF<28.0){
+      vec3 fp=ro+rd*tF;
+      float chk=mod(floor(fp.x)+floor(fp.z),2.0);
+      vec3 base=mix(vec3(0.050,0.058,0.068),vec3(0.065,0.072,0.084),chk*0.45);
+      vec2 gf=abs(fract(fp.xz)-0.5);
+      base=mix(base,vec3(0.17,0.19,0.23),max(0.0,1.0-min(gf.x,gf.y)*95.0)*0.55);
+      float sh=softShadow(fp+vec3(0,0.003,0),KEY_L,0.05,9.0);
+      base*=(sh*0.70+0.30);
+      base+=vec3(0.05,0.22,0.09)*caustics(fp)*(0.28+0.72*(1.0-sh));
+
+      // Subtle target marker on the floor — shows where the cube is heading
+      vec2 toTarget=fp.xz-u_target;
+      float tDist=length(toTarget);
+      float ring=smoothstep(0.28,0.22,tDist)-smoothstep(0.22,0.16,tDist);
+      base+=vec3(0.04,0.24,0.10)*ring*0.55;
+
+      float fog=1.0-exp(-max(tF-5.0,0.0)*0.035);
+      return mix(base,envSky(rd),fog);}}
+  return envSky(rd);
+}
+
+void main(){
+  vec2 uv=(gl_FragCoord.xy-u_res*0.5)/u_res.y;
+  vec3 ro=vec3(0.80,4.20,8.50), ta=vec3(0.00,0.60,0.00);
+  mat3 cam=camMatrix(ro,ta); vec3 rd=cam*normalize(vec3(uv,1.85));
+
+  float t=0.10; bool hit=false;
+  for(int i=0;i<88;i++){float d=scene(ro+rd*t);
+    if(d<0.0005){hit=true;break;}if(t>28.0)break;t+=max(d,0.004);}
+
+  vec3 col;
+  if(hit){
+    vec3 p=ro+rd*t, N=calcNormal(p), V=-rd;
+    float sh=softShadow(p+N*0.008,KEY_L,0.02,9.0);
+    float ao=calcAO(p,N);
+    vec3 surfCol=goopShade(p,N,V,sh,ao);
+
+    vec3 refRd=refract(rd,N,1.0/GEL_IOR);
+    if(dot(refRd,refRd)<0.001) refRd=rd;
+    vec3 rIn=p+refRd*0.003; float tX=0.003;
+    for(int j=0;j<32;j++){float d=scene(rIn+refRd*tX);if(d>0.0005)break;tX+=max(abs(d)+0.004,0.004);}
+    vec3 exitP=rIn+refRd*tX, exitN=-calcNormal(exitP);
+    vec3 exitRd=refract(refRd,exitN,GEL_IOR);
+    if(dot(exitRd,exitRd)<0.001) exitRd=reflect(refRd,exitN);
+    float alpha=1.0-exp(-tX*0.22);
+    vec3 bgCol=getBg(exitP,exitRd);
+    bgCol=mix(bgCol,vec3(0.02,0.28,0.09),(1.0-alpha)*0.44);
+    col=mix(bgCol,surfCol,alpha);
+  } else {
+    col=getBg(ro,rd);
+  }
+
+  col=col/(col+vec3(0.72)); col=pow(col,vec3(0.4545));
+  gl_FragColor=vec4(col,1.0);
+}
+`;
+
+// ── Bloom shader ──────────────────────────────────────────────────────────────
+
+const BLOOM_FS = `
+precision mediump float;
+uniform sampler2D u_scene; uniform vec2 u_step;
+vec3 xb(vec2 uv){vec3 c=texture2D(u_scene,uv).rgb;float l=dot(c,vec3(0.299,0.587,0.114));return c*max(0.0,l-0.56)*2.8;}
+void main(){
+  vec2 uv=gl_FragCoord.xy*u_step; vec3 col=texture2D(u_scene,uv).rgb;
+  vec3 b=vec3(0.0);float tw=0.0;
+  for(int s=1;s<=4;s++){float sc=float(s)*2.8;vec2 d=u_step*sc;float w=1.0/float(s);
+    b+=(xb(uv+vec2(d.x,0.0))+xb(uv-vec2(d.x,0.0))+xb(uv+vec2(0.0,d.y))+xb(uv-vec2(0.0,d.y))+
+        xb(uv+vec2(d.x,d.y))+xb(uv-vec2(d.x,d.y))+xb(uv+vec2(d.x,-d.y))+xb(uv-vec2(d.x,-d.y)))*w;
+    tw+=8.0*w;}
+  gl_FragColor=vec4(col+(b/tw)*1.65,1.0);
+}
+`;
+
+// ── Compile & link ────────────────────────────────────────────────────────────
+
+function compile(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s;}
+function makeProgram(fs){const p=gl.createProgram();gl.attachShader(p,compile(gl.VERTEX_SHADER,QUAD_VS));gl.attachShader(p,compile(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));return p;}
+
+const sceneProg=makeProgram(SCENE_FS);
+const bloomProg=makeProgram(BLOOM_FS);
+
+const vbuf=gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER,vbuf);
+gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+
+const sPL=gl.getAttribLocation(sceneProg,'a_pos');
+const bPL=gl.getAttribLocation(bloomProg,'a_pos');
+
+gl.useProgram(sceneProg);
+const U={};
+['u_res','u_time','u_c0','u_sq0','u_da0','u_target']
+  .forEach(n=>U[n]=gl.getUniformLocation(sceneProg,n));
+
+gl.useProgram(bloomProg);
+const BU={u_scene:gl.getUniformLocation(bloomProg,'u_scene'),u_step:gl.getUniformLocation(bloomProg,'u_step')};
+
+// ── FBO ───────────────────────────────────────────────────────────────────────
+
+let sceneFBO=null,sceneTex=null;
+function buildFBO(w,h){
+  if(sceneTex)gl.deleteTexture(sceneTex);if(sceneFBO)gl.deleteFramebuffer(sceneFBO);
+  sceneTex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,sceneTex);
+  gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+  sceneFBO=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,sceneFBO);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,sceneTex,0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+}
+
+// ── v3 helpers ────────────────────────────────────────────────────────────────
+
+const v3={
+  sub:  (a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],
+  add:  (a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],
+  scale:(a,s)=>[a[0]*s,a[1]*s,a[2]*s],
+  dot:  (a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],
+  cross:(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],
+  len:  (a)=>Math.sqrt(a[0]**2+a[1]**2+a[2]**2),
+  norm: (a)=>{const l=Math.sqrt(a[0]**2+a[1]**2+a[2]**2)||1;return[a[0]/l,a[1]/l,a[2]/l];},
+};
+function screenToRay(px,py){
+  const W=window.innerWidth,H=window.innerHeight;
+  const uvx=(px-W/2)/H,uvy=-(py-H/2)/H;
+  const ww=v3.norm(v3.sub(TAR,CAM)),uu=v3.norm(v3.cross(ww,[0,1,0])),vv=v3.norm(v3.cross(uu,ww));
+  return v3.norm([uu[0]*uvx+vv[0]*uvy+ww[0]*FOCAL,uu[1]*uvx+vv[1]*uvy+ww[1]*FOCAL,uu[2]*uvx+vv[2]*uvy+ww[2]*FOCAL]);
+}
+
+// ── Single cube physics ───────────────────────────────────────────────────────
+
+// Walk state — cube wanders autonomously in a circle around origin
+const WALK_RADIUS = 1.40;   // how far it roams
+const WALK_SQUISH = 0.42;   // sqV impulse on each hop (bigger = more dramatic flop)
+const WALK_MIN    = 70;     // min frames between hops
+const WALK_MAX    = 120;    // max frames between hops
+
+const cube = {
+  // Rest position (walk target)
+  bx:0, by:0.525, bz:0,
+  // Current position + velocity
+  x:0, y:0.525, z:0,  vx:0, vy:0, vz:0,
+  // Squish oscillator
+  sq:1.0, sqV:0.0,
+  // Deformation axis (normalised)
+  dax:0.0, day:1.0, daz:0.0,
+  // Walk state
+  walkTimer:0, walkPeriod:90,
+  // Current walk target (for floor ring indicator)
+  targetX:0, targetZ:0,
+  // True while player is dragging (pauses locomotion)
+  grabbed:false,
+};
+
+function hop(){
+  // Pick a new rest position on a circle around origin
+  const ang  = Math.random()*Math.PI*2;
+  const dist = WALK_RADIUS*(0.45+Math.random()*0.55);
+  cube.bx = Math.cos(ang)*dist;
+  cube.bz = Math.sin(ang)*dist;
+  cube.targetX = cube.bx;
+  cube.targetZ = cube.bz;
+
+  // Lean deformation axis in direction of hop
+  const dx=cube.bx-cube.x, dz=cube.bz-cube.z;
+  const dl=Math.sqrt(dx*dx+dz*dz)||1;
+  // Strong forward lean: horizontal component ~0.80
+  cube.dax=dx/dl*0.80; cube.day=0.60; cube.daz=dz/dl*0.80;
+  const al=Math.sqrt(cube.dax**2+cube.day**2+cube.daz**2)||1;
+  cube.dax/=al; cube.day/=al; cube.daz/=al;
+
+  // Squish impulse — the "wind-up"
+  cube.sqV -= WALK_SQUISH;
+
+  cube.walkTimer  = 0;
+  cube.walkPeriod = WALK_MIN+Math.floor(Math.random()*(WALK_MAX-WALK_MIN));
+}
+
+function tickCube(){
+  // Position spring
+  cube.vx=(cube.vx+(cube.bx-cube.x)*0.022)*0.89;
+  cube.vy=(cube.vy+(cube.by-cube.y)*0.022)*0.89;
+  cube.vz=(cube.vz+(cube.bz-cube.z)*0.022)*0.89;
+  cube.x+=cube.vx; cube.y+=cube.vy; cube.z+=cube.vz;
+
+  // Squish oscillator
+  cube.sqV=(cube.sqV-(cube.sq-1.0)*0.24)*0.86;
+  cube.sq=Math.max(0.45,Math.min(1.65,cube.sq+cube.sqV));
+
+  // Deformation axis decays toward Y-up when not mid-hop
+  const t=0.028;
+  cube.dax*=(1-t); cube.day=cube.day*(1-t)+t; cube.daz*=(1-t);
+  const l=Math.sqrt(cube.dax**2+cube.day**2+cube.daz**2)||1;
+  cube.dax/=l; cube.day/=l; cube.daz/=l;
+
+  // Locomotion: wait until settled, then hop
+  if(!cube.grabbed){
+    cube.walkTimer++;
+    const spd=Math.sqrt(cube.vx**2+cube.vz**2);
+    if(cube.walkTimer>cube.walkPeriod && spd<0.010) hop();
+  }
+}
+
+// ── Input ─────────────────────────────────────────────────────────────────────
+
+const activePointers=new Map();
+
+function applyHit(px,py){
+  const rd=screenToRay(px,py);
+  const toCube=v3.sub([cube.x,cube.y,cube.z],CAM);
+  const proj=Math.max(0,v3.dot(toCube,rd));
+  const closest=v3.add(CAM,v3.scale(rd,proj));
+  const dist=v3.len(v3.sub(closest,[cube.x,cube.y,cube.z]));
+  const str=(0.30+Math.random()*0.12)*Math.exp(-dist*0.60);
+  if(str>0.015){
+    const l=Math.sqrt(rd[0]**2+rd[1]**2+rd[2]**2)||1;
+    cube.dax=rd[0]/l; cube.day=rd[1]/l; cube.daz=rd[2]/l;
+    cube.sqV-=str*0.95;
+    cube.vx+=rd[0]/l*str*0.16; cube.vy+=rd[1]/l*str*0.10; cube.vz+=rd[2]/l*str*0.16;
+    // Interrupt locomotion so hit squish is readable
+    cube.walkTimer=-(cube.walkPeriod*0.5|0);
+  }
+}
+
+function applyDrag(){
+  if(!activePointers.size){ cube.grabbed=false; return; }
+  cube.grabbed=true;
+  activePointers.forEach(({px,py})=>{
+    const rd=screenToRay(px,py);
+    const toCube=v3.sub([cube.x,cube.y,cube.z],CAM);
+    const proj=Math.max(0,v3.dot(toCube,rd));
+    const closest=v3.add(CAM,v3.scale(rd,proj));
+    const toRay=v3.sub(closest,[cube.x,cube.y,cube.z]);
+    const dist=v3.len(toRay); const wt=Math.exp(-dist*0.48);
+    if(wt<0.01) return;
+    const dir=dist>0.001?v3.scale(toRay,1/dist):[rd[0],rd[1],rd[2]];
+    cube.vx+=dir[0]*0.013*wt; cube.vy+=dir[1]*0.013*wt*0.65; cube.vz+=dir[2]*0.013*wt;
+    const bl=0.06;
+    cube.dax=cube.dax*(1-bl)+dir[0]*bl;
+    cube.day=cube.day*(1-bl)+dir[1]*bl;
+    cube.daz=cube.daz*(1-bl)+dir[2]*bl;
+    const al=Math.sqrt(cube.dax**2+cube.day**2+cube.daz**2)||1;
+    cube.dax/=al; cube.day/=al; cube.daz/=al;
+    if(cube.sq>0.90) cube.sqV-=0.001*wt;
+  });
+}
+
+canvas.addEventListener('pointerdown',e=>{
+  canvas.setPointerCapture(e.pointerId);
+  activePointers.set(e.pointerId,{px:e.clientX,py:e.clientY});
+  applyHit(e.clientX,e.clientY);
+});
+canvas.addEventListener('pointermove',e=>{
+  if(activePointers.has(e.pointerId))
+    activePointers.set(e.pointerId,{px:e.clientX,py:e.clientY});
+});
+canvas.addEventListener('pointerup',    e=>{activePointers.delete(e.pointerId);if(!activePointers.size)cube.grabbed=false;});
+canvas.addEventListener('pointercancel',e=>{activePointers.delete(e.pointerId);if(!activePointers.size)cube.grabbed=false;});
+
+// ── Resize ────────────────────────────────────────────────────────────────────
+
+let W,H;
+function resize(){
+  const dpr=Math.min(window.devicePixelRatio||1,1.5);
+  W=canvas.width =Math.round(window.innerWidth *dpr);
+  H=canvas.height=Math.round(window.innerHeight*dpr);
+  gl.viewport(0,0,W,H); buildFBO(W,H);
+}
+resize(); window.addEventListener('resize',resize);
+
+// Kick off with an immediate first hop so it's not just sitting there
+hop();
+
+// ── Render loop ───────────────────────────────────────────────────────────────
+
+function frame(){
+  requestAnimationFrame(frame);
+  applyDrag();
+  tickCube();
+
+  // ── Pass 1: scene → FBO ──
+  gl.bindFramebuffer(gl.FRAMEBUFFER,sceneFBO);
+  gl.useProgram(sceneProg);
+  gl.bindBuffer(gl.ARRAY_BUFFER,vbuf);
+  gl.enableVertexAttribArray(sPL);
+  gl.vertexAttribPointer(sPL,2,gl.FLOAT,false,0,0);
+
+  gl.uniform2f(U.u_res,W,H);
+  gl.uniform1f(U.u_time,performance.now()*0.001);
+  gl.uniform3f(U.u_c0,cube.x,cube.y,cube.z);
+  gl.uniform1f(U.u_sq0,cube.sq);
+  gl.uniform3f(U.u_da0,cube.dax,cube.day,cube.daz);
+  gl.uniform2f(U.u_target,cube.targetX,cube.targetZ);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+
+  // ── Pass 2: bloom → screen ──
+  gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+  gl.useProgram(bloomProg);
+  gl.bindBuffer(gl.ARRAY_BUFFER,vbuf);
+  gl.enableVertexAttribArray(bPL);
+  gl.vertexAttribPointer(bPL,2,gl.FLOAT,false,0,0);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D,sceneTex);
+  gl.uniform1i(BU.u_scene,0);
+  gl.uniform2f(BU.u_step,1/W,1/H);
+  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
+}
+frame();
+</script>
+</body>
+</html>
