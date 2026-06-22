@@ -24,17 +24,16 @@ const FOCAL = 1.85;
 
 const QUAD_VS = `attribute vec2 a_pos; void main(){gl_Position=vec4(a_pos,0,1);}`;
 
-// ── Scene shader ──────────────────────────────────────────────────────────────
-
 const SCENE_FS = `
 precision highp float;
 
 uniform vec2  u_res;
 uniform float u_time;
-uniform vec3  u_c0;         // cube centre
-uniform float u_sq0;        // squish amount
-uniform vec3  u_da0;        // deformation axis
-uniform vec2  u_target;     // current walk target (XZ) — for floor indicator
+uniform vec3  u_c0;
+uniform float u_sq0;
+uniform float u_tilt0;
+uniform vec3  u_tax0;   // tilt axis
+uniform vec2  u_target;
 
 const vec3  HALF_BOX = vec3(0.525, 0.525, 0.525);
 const float ROUND_R  = 0.200;
@@ -45,13 +44,25 @@ const float GEL_IOR  = 1.33;
 float sdRoundBox(vec3 p, vec3 b, float r){
   vec3 q=abs(p)-b; return length(max(q,0.0))+min(max(q.x,max(q.y,q.z)),0.0)-r;
 }
-float gooCube(vec3 p, vec3 cen, float sq, vec3 axis){
-  float sqC=clamp(sq,0.45,1.65); vec3 lp=p-cen;
-  float proj=dot(lp,axis);
-  lp=axis*(proj*sqC)+(lp-axis*proj)/sqrt(sqC);
+
+// Rodrigues rotation
+vec3 rotV(vec3 v, vec3 ax, float a){
+  float c=cos(a),s=sin(a);
+  return v*c+cross(ax,v)*s+ax*dot(ax,v)*(1.0-c);
+}
+
+float gooCube(vec3 p, vec3 cen, float sq, float tilt, vec3 tax){
+  float sqC=clamp(sq,0.38,1.72);
+  vec3 lp=p-cen;
+  // Apply tilt rotation first (actual cube lean)
+  if(abs(tilt)>0.001) lp=rotV(lp,tax,tilt);
+  // Squish along cube's (rotated) local Y
+  float proj=dot(lp,vec3(0,1,0));
+  lp=vec3(0,1,0)*(proj*sqC)+(lp-vec3(0,1,0)*proj)/sqrt(sqC);
   return sdRoundBox(lp,HALF_BOX,ROUND_R)*min(sqrt(sqC),1.0/sqC);
 }
-float scene(vec3 p){ return gooCube(p,u_c0,u_sq0,u_da0); }
+
+float scene(vec3 p){ return gooCube(p,u_c0,u_sq0,u_tilt0,u_tax0); }
 
 vec3 calcNormal(vec3 p){
   const float E=0.0007;
@@ -72,7 +83,6 @@ float calcAO(vec3 p, vec3 n){
     occ+=(h-scene(p+h*n))*sca;sca*=0.80;}
   return clamp(1.0-3.2*occ,0.0,1.0);
 }
-
 vec3 envSky(vec3 d){float h=clamp(d.y*0.5+0.5,0.0,1.0);return mix(vec3(0.05,0.07,0.11),vec3(0.10,0.14,0.22),h*h);}
 
 vec3 goopShade(vec3 p, vec3 N, vec3 V, float sh, float ao){
@@ -120,13 +130,9 @@ vec3 getBg(vec3 ro, vec3 rd){
       float sh=softShadow(fp+vec3(0,0.003,0),KEY_L,0.05,9.0);
       base*=(sh*0.70+0.30);
       base+=vec3(0.05,0.22,0.09)*caustics(fp)*(0.28+0.72*(1.0-sh));
-
-      // Subtle target marker on the floor — shows where the cube is heading
-      vec2 toTarget=fp.xz-u_target;
-      float tDist=length(toTarget);
-      float ring=smoothstep(0.28,0.22,tDist)-smoothstep(0.22,0.16,tDist);
+      vec2 toT=fp.xz-u_target;
+      float ring=smoothstep(0.28,0.22,length(toT))-smoothstep(0.22,0.16,length(toT));
       base+=vec3(0.04,0.24,0.10)*ring*0.55;
-
       float fog=1.0-exp(-max(tF-5.0,0.0)*0.035);
       return mix(base,envSky(rd),fog);}}
   return envSky(rd);
@@ -147,7 +153,6 @@ void main(){
     float sh=softShadow(p+N*0.008,KEY_L,0.02,9.0);
     float ao=calcAO(p,N);
     vec3 surfCol=goopShade(p,N,V,sh,ao);
-
     vec3 refRd=refract(rd,N,1.0/GEL_IOR);
     if(dot(refRd,refRd)<0.001) refRd=rd;
     vec3 rIn=p+refRd*0.003; float tX=0.003;
@@ -162,13 +167,10 @@ void main(){
   } else {
     col=getBg(ro,rd);
   }
-
   col=col/(col+vec3(0.72)); col=pow(col,vec3(0.4545));
   gl_FragColor=vec4(col,1.0);
 }
 `;
-
-// ── Bloom shader ──────────────────────────────────────────────────────────────
 
 const BLOOM_FS = `
 precision mediump float;
@@ -185,8 +187,6 @@ void main(){
 }
 `;
 
-// ── Compile & link ────────────────────────────────────────────────────────────
-
 function compile(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));return s;}
 function makeProgram(fs){const p=gl.createProgram();gl.attachShader(p,compile(gl.VERTEX_SHADER,QUAD_VS));gl.attachShader(p,compile(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));return p;}
 
@@ -202,13 +202,11 @@ const bPL=gl.getAttribLocation(bloomProg,'a_pos');
 
 gl.useProgram(sceneProg);
 const U={};
-['u_res','u_time','u_c0','u_sq0','u_da0','u_target']
+['u_res','u_time','u_c0','u_sq0','u_tilt0','u_tax0','u_target']
   .forEach(n=>U[n]=gl.getUniformLocation(sceneProg,n));
 
 gl.useProgram(bloomProg);
 const BU={u_scene:gl.getUniformLocation(bloomProg,'u_scene'),u_step:gl.getUniformLocation(bloomProg,'u_step')};
-
-// ── FBO ───────────────────────────────────────────────────────────────────────
 
 let sceneFBO=null,sceneTex=null;
 function buildFBO(w,h){
@@ -223,7 +221,7 @@ function buildFBO(w,h){
   gl.bindFramebuffer(gl.FRAMEBUFFER,null);
 }
 
-// ── v3 helpers ────────────────────────────────────────────────────────────────
+// ── helpers ───────────────────────────────────────────────────────────────────
 
 const v3={
   sub:  (a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],
@@ -231,43 +229,44 @@ const v3={
   scale:(a,s)=>[a[0]*s,a[1]*s,a[2]*s],
   dot:  (a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],
   cross:(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],
-  len:  (a)=>Math.sqrt(a[0]**2+a[1]**2+a[2]**2),
-  norm: (a)=>{const l=Math.sqrt(a[0]**2+a[1]**2+a[2]**2)||1;return[a[0]/l,a[1]/l,a[2]/l];},
+  len:  a=>Math.sqrt(a[0]**2+a[1]**2+a[2]**2),
+  norm: a=>{const l=Math.sqrt(a[0]**2+a[1]**2+a[2]**2)||1;return[a[0]/l,a[1]/l,a[2]/l];},
 };
 function screenToRay(px,py){
   const W=window.innerWidth,H=window.innerHeight;
-  const uvx=(px-W/2)/H,uvy=-(py-H/2)/H;
+  const uvx=(px-W/2)/H, uvy=-(py-H/2)/H;
   const ww=v3.norm(v3.sub(TAR,CAM)),uu=v3.norm(v3.cross(ww,[0,1,0])),vv=v3.norm(v3.cross(uu,ww));
-  return v3.norm([uu[0]*uvx+vv[0]*uvy+ww[0]*FOCAL,uu[1]*uvx+vv[1]*uvy+ww[1]*FOCAL,uu[2]*uvx+vv[2]*uvy+ww[2]*FOCAL]);
+  return v3.norm([uu[0]*uvx+vv[0]*uvy+ww[0]*FOCAL,
+                  uu[1]*uvx+vv[1]*uvy+ww[1]*FOCAL,
+                  uu[2]*uvx+vv[2]*uvy+ww[2]*FOCAL]);
 }
 
-// ── Single cube physics ───────────────────────────────────────────────────────
+// ── physics ───────────────────────────────────────────────────────────────────
 
-// Walk state — cube wanders autonomously in a circle around origin
-const WALK_RADIUS = 1.40;   // how far it roams
-const WALK_SQUISH = 0.42;   // sqV impulse on each hop (bigger = more dramatic flop)
-const WALK_MIN    = 70;     // min frames between hops
-const WALK_MAX    = 120;    // max frames between hops
+// Tuning knobs
+const GRAVITY     = 0.016;   // downward accel per frame
+const FLOOR_Y     = 0.525;   // cube centre Y when resting on floor
+const WALK_RADIUS = 1.40;
+const WALK_JUMP   = 0.14;    // upward vel impulse per hop
+const WALK_TILT   = 0.26;    // angular vel impulse (forward lean)
+const WALK_SQUISH = 0.28;    // sq impulse on launch
+const WALK_MIN    = 60;
+const WALK_MAX    = 105;
 
 const cube = {
-  // Rest position (walk target)
-  bx:0, by:0.525, bz:0,
-  // Current position + velocity
-  x:0, y:0.525, z:0,  vx:0, vy:0, vz:0,
-  // Squish oscillator
+  bx:0, bz:0,               // XZ rest (spring target)
+  x:0, y:FLOOR_Y, z:0,
+  vx:0, vy:0, vz:0,
   sq:1.0, sqV:0.0,
-  // Deformation axis (normalised)
-  dax:0.0, day:1.0, daz:0.0,
-  // Walk state
+  tilt:0.0, tiltV:0.0,
+  tax:[0.0, 0.0, 1.0],      // tilt axis (unit vec, perpendicular to hop dir)
   walkTimer:0, walkPeriod:90,
-  // Current walk target (for floor ring indicator)
   targetX:0, targetZ:0,
-  // True while player is dragging (pauses locomotion)
   grabbed:false,
+  onFloor:true,
 };
 
 function hop(){
-  // Pick a new rest position on a circle around origin
   const ang  = Math.random()*Math.PI*2;
   const dist = WALK_RADIUS*(0.45+Math.random()*0.55);
   cube.bx = Math.cos(ang)*dist;
@@ -275,87 +274,101 @@ function hop(){
   cube.targetX = cube.bx;
   cube.targetZ = cube.bz;
 
-  // Lean deformation axis in direction of hop
-  const dx=cube.bx-cube.x, dz=cube.bz-cube.z;
-  const dl=Math.sqrt(dx*dx+dz*dz)||1;
-  // Strong forward lean: horizontal component ~0.80
-  cube.dax=dx/dl*0.80; cube.day=0.60; cube.daz=dz/dl*0.80;
-  const al=Math.sqrt(cube.dax**2+cube.day**2+cube.daz**2)||1;
-  cube.dax/=al; cube.day/=al; cube.daz/=al;
+  // Tilt axis = perpendicular to hop direction in XZ plane
+  // (so negative tilt angle = lean forward toward target)
+  const dx=cube.bx-cube.x, dz=cube.bz-cube.z, dl=Math.sqrt(dx*dx+dz*dz)||1;
+  cube.tax = [-dz/dl, 0.0, dx/dl];
 
-  // Squish impulse — the "wind-up"
-  cube.sqV -= WALK_SQUISH;
+  cube.tiltV -= WALK_TILT;
+  cube.vy    += WALK_JUMP;
+  cube.sqV   -= WALK_SQUISH;
 
   cube.walkTimer  = 0;
-  cube.walkPeriod = WALK_MIN+Math.floor(Math.random()*(WALK_MAX-WALK_MIN));
+  cube.walkPeriod = WALK_MIN + Math.floor(Math.random()*(WALK_MAX-WALK_MIN));
 }
 
 function tickCube(){
-  // Position spring
-  cube.vx=(cube.vx+(cube.bx-cube.x)*0.022)*0.89;
-  cube.vy=(cube.vy+(cube.by-cube.y)*0.022)*0.89;
-  cube.vz=(cube.vz+(cube.bz-cube.z)*0.022)*0.89;
-  cube.x+=cube.vx; cube.y+=cube.vy; cube.z+=cube.vz;
+  // Tilt spring (rotational oscillator)
+  cube.tiltV = (cube.tiltV - cube.tilt * 0.13) * 0.87;
+  cube.tilt += cube.tiltV;
 
   // Squish oscillator
-  cube.sqV=(cube.sqV-(cube.sq-1.0)*0.24)*0.86;
-  cube.sq=Math.max(0.45,Math.min(1.65,cube.sq+cube.sqV));
+  cube.sqV = (cube.sqV - (cube.sq-1.0)*0.24)*0.86;
+  cube.sq  = Math.max(0.38, Math.min(1.72, cube.sq+cube.sqV));
 
-  // Deformation axis decays toward Y-up when not mid-hop
-  const t=0.028;
-  cube.dax*=(1-t); cube.day=cube.day*(1-t)+t; cube.daz*=(1-t);
-  const l=Math.sqrt(cube.dax**2+cube.day**2+cube.daz**2)||1;
-  cube.dax/=l; cube.day/=l; cube.daz/=l;
+  // XZ spring toward walk target
+  cube.vx = (cube.vx + (cube.bx-cube.x)*0.032)*0.88;
+  cube.vz = (cube.vz + (cube.bz-cube.z)*0.032)*0.88;
+  cube.x += cube.vx;
+  cube.z += cube.vz;
 
-  // Locomotion: wait until settled, then hop
-  if(!cube.grabbed){
+  // Y: gravity + floor
+  cube.vy -= GRAVITY;
+  cube.y  += cube.vy;
+  if(cube.y <= FLOOR_Y){
+    const impact = -cube.vy;
+    cube.y = FLOOR_Y;
+    cube.vy = 0;
+    cube.onFloor = true;
+    if(impact > 0.02) cube.sqV -= Math.min(impact*1.6, 0.44); // landing squish
+  } else {
+    cube.onFloor = false;
+  }
+
+  // Trigger next hop once settled on floor
+  if(!cube.grabbed && cube.onFloor){
     cube.walkTimer++;
-    const spd=Math.sqrt(cube.vx**2+cube.vz**2);
-    if(cube.walkTimer>cube.walkPeriod && spd<0.010) hop();
+    const spd = Math.sqrt(cube.vx**2+cube.vz**2);
+    if(cube.walkTimer > cube.walkPeriod && spd < 0.015) hop();
   }
 }
 
-// ── Input ─────────────────────────────────────────────────────────────────────
+// ── input ─────────────────────────────────────────────────────────────────────
 
-const activePointers=new Map();
+const activePointers = new Map();
 
 function applyHit(px,py){
-  const rd=screenToRay(px,py);
-  const toCube=v3.sub([cube.x,cube.y,cube.z],CAM);
-  const proj=Math.max(0,v3.dot(toCube,rd));
-  const closest=v3.add(CAM,v3.scale(rd,proj));
-  const dist=v3.len(v3.sub(closest,[cube.x,cube.y,cube.z]));
-  const str=(0.30+Math.random()*0.12)*Math.exp(-dist*0.60);
-  if(str>0.015){
-    const l=Math.sqrt(rd[0]**2+rd[1]**2+rd[2]**2)||1;
-    cube.dax=rd[0]/l; cube.day=rd[1]/l; cube.daz=rd[2]/l;
-    cube.sqV-=str*0.95;
-    cube.vx+=rd[0]/l*str*0.16; cube.vy+=rd[1]/l*str*0.10; cube.vz+=rd[2]/l*str*0.16;
-    // Interrupt locomotion so hit squish is readable
-    cube.walkTimer=-(cube.walkPeriod*0.5|0);
+  const rd = screenToRay(px,py);
+  const toCube = v3.sub([cube.x,cube.y,cube.z], CAM);
+  const proj   = Math.max(0, v3.dot(toCube,rd));
+  const closest= v3.add(CAM, v3.scale(rd,proj));
+  const dist   = v3.len(v3.sub(closest,[cube.x,cube.y,cube.z]));
+  const str    = (0.30+Math.random()*0.12)*Math.exp(-dist*0.60);
+  if(str > 0.015){
+    const l = v3.len(rd)||1;
+    // Tilt axis perpendicular to ray (so cube tips away from hit)
+    const raw = v3.cross(rd,[0,1,0]);
+    const rlen = v3.len(raw);
+    cube.tax = rlen>0.001 ? v3.norm(raw) : [1,0,0];
+    cube.tiltV -= str*1.1;
+    cube.sqV   -= str*0.95;
+    cube.vx += rd[0]/l*str*0.18;
+    cube.vz += rd[2]/l*str*0.18;
+    cube.vy += 0.07;
+    cube.walkTimer = -(cube.walkPeriod*0.5|0);
   }
 }
 
 function applyDrag(){
   if(!activePointers.size){ cube.grabbed=false; return; }
-  cube.grabbed=true;
+  cube.grabbed = true;
   activePointers.forEach(({px,py})=>{
-    const rd=screenToRay(px,py);
-    const toCube=v3.sub([cube.x,cube.y,cube.z],CAM);
-    const proj=Math.max(0,v3.dot(toCube,rd));
-    const closest=v3.add(CAM,v3.scale(rd,proj));
-    const toRay=v3.sub(closest,[cube.x,cube.y,cube.z]);
-    const dist=v3.len(toRay); const wt=Math.exp(-dist*0.48);
+    const rd     = screenToRay(px,py);
+    const toCube = v3.sub([cube.x,cube.y,cube.z],CAM);
+    const proj   = Math.max(0,v3.dot(toCube,rd));
+    const closest= v3.add(CAM,v3.scale(rd,proj));
+    const toRay  = v3.sub(closest,[cube.x,cube.y,cube.z]);
+    const dist   = v3.len(toRay);
+    const wt     = Math.exp(-dist*0.48);
     if(wt<0.01) return;
-    const dir=dist>0.001?v3.scale(toRay,1/dist):[rd[0],rd[1],rd[2]];
-    cube.vx+=dir[0]*0.013*wt; cube.vy+=dir[1]*0.013*wt*0.65; cube.vz+=dir[2]*0.013*wt;
-    const bl=0.06;
-    cube.dax=cube.dax*(1-bl)+dir[0]*bl;
-    cube.day=cube.day*(1-bl)+dir[1]*bl;
-    cube.daz=cube.daz*(1-bl)+dir[2]*bl;
-    const al=Math.sqrt(cube.dax**2+cube.day**2+cube.daz**2)||1;
-    cube.dax/=al; cube.day/=al; cube.daz/=al;
-    if(cube.sq>0.90) cube.sqV-=0.001*wt;
+    const dir = dist>0.001 ? v3.scale(toRay,1/dist) : rd;
+    cube.vx += dir[0]*0.014*wt;
+    cube.vz += dir[2]*0.014*wt;
+    // Tilt toward drag direction
+    const raw = v3.cross(dir,[0,1,0]);
+    const rlen = v3.len(raw);
+    if(rlen>0.001){ cube.tax = v3.norm(raw); cube.tiltV -= 0.009*wt; }
+    if(cube.sq>0.92) cube.sqV -= 0.001*wt;
   });
 }
 
@@ -371,7 +384,7 @@ canvas.addEventListener('pointermove',e=>{
 canvas.addEventListener('pointerup',    e=>{activePointers.delete(e.pointerId);if(!activePointers.size)cube.grabbed=false;});
 canvas.addEventListener('pointercancel',e=>{activePointers.delete(e.pointerId);if(!activePointers.size)cube.grabbed=false;});
 
-// ── Resize ────────────────────────────────────────────────────────────────────
+// ── resize ────────────────────────────────────────────────────────────────────
 
 let W,H;
 function resize(){
@@ -382,32 +395,29 @@ function resize(){
 }
 resize(); window.addEventListener('resize',resize);
 
-// Kick off with an immediate first hop so it's not just sitting there
-hop();
+hop(); // launch immediately
 
-// ── Render loop ───────────────────────────────────────────────────────────────
+// ── render loop ───────────────────────────────────────────────────────────────
 
 function frame(){
   requestAnimationFrame(frame);
   applyDrag();
   tickCube();
 
-  // ── Pass 1: scene → FBO ──
   gl.bindFramebuffer(gl.FRAMEBUFFER,sceneFBO);
   gl.useProgram(sceneProg);
   gl.bindBuffer(gl.ARRAY_BUFFER,vbuf);
   gl.enableVertexAttribArray(sPL);
   gl.vertexAttribPointer(sPL,2,gl.FLOAT,false,0,0);
-
   gl.uniform2f(U.u_res,W,H);
   gl.uniform1f(U.u_time,performance.now()*0.001);
   gl.uniform3f(U.u_c0,cube.x,cube.y,cube.z);
   gl.uniform1f(U.u_sq0,cube.sq);
-  gl.uniform3f(U.u_da0,cube.dax,cube.day,cube.daz);
+  gl.uniform1f(U.u_tilt0,cube.tilt);
+  gl.uniform3f(U.u_tax0,cube.tax[0],cube.tax[1],cube.tax[2]);
   gl.uniform2f(U.u_target,cube.targetX,cube.targetZ);
   gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
 
-  // ── Pass 2: bloom → screen ──
   gl.bindFramebuffer(gl.FRAMEBUFFER,null);
   gl.useProgram(bloomProg);
   gl.bindBuffer(gl.ARRAY_BUFFER,vbuf);
