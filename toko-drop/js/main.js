@@ -601,13 +601,6 @@ function showTitle() {
     `E to toggle eyes</div>`;
 }
 
-function showPause() {
-  overlay.style.display = 'block';
-  overlay.innerHTML =
-    `<div style="font-size:52px;font-weight:bold">PAUSED</div>` +
-    `<div style="font-size:14px;opacity:0.5;margin-top:12px">ESC / ❝❝ TO RESUME</div>`;
-}
-
 function showGameOver() {
   overlay.style.display = 'block';
   const newHi = score >= hiScore && score > 0;

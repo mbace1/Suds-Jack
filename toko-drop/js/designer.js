@@ -182,10 +182,22 @@ export function initDesigner({ getEnemies, onResume }) {
     el.appendChild(slider('HP', 1, 20, 1, cfg.hp, v => {
       CFG[selectedType].hp = v;
     }));
-    el.appendChild(slider('Hitbox Radius', 0.15, 2.5, 0.05, cfg.radius, v => {
-      CFG[selectedType].radius = v;
-    }));
-    el.appendChild(note('(live — affects collision; visual size changes on next spawn)'));
+    if (selectedType === EnemyType.BAMBU || selectedType === EnemyType.PYRA) {
+      const row = document.createElement('div');
+      row.className = 'drow';
+      const lbl = document.createElement('span');
+      lbl.className = 'dlbl'; lbl.textContent = 'Hitbox Radius';
+      const val = document.createElement('span');
+      val.style.flex = '1'; val.style.fontSize = '11px'; val.style.color = '#444';
+      val.textContent = 'computed from geometry';
+      row.appendChild(lbl); row.appendChild(val);
+      el.appendChild(row);
+    } else {
+      el.appendChild(slider('Hitbox Radius', 0.15, 2.5, 0.05, cfg.radius, v => {
+        CFG[selectedType].radius = v;
+      }));
+      el.appendChild(note('(live — affects collision; visual size changes on next spawn)'));
+    }
 
     if (cfg.fireInterval !== null) {
       el.appendChild(sec('FIRING'));
