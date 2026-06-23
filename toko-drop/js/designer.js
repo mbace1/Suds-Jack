@@ -25,6 +25,32 @@ function toHex(n) { return '#' + (n ?? 0).toString(16).padStart(6, '0'); }
 function fromHex(s) { return parseInt(s.slice(1), 16); }
 function fmt(v, step) { return step < 1 ? v.toFixed(2) : Math.round(v).toString(); }
 
+function saveCFG() {
+  const data = {};
+  for (const [k, v] of Object.entries(CFG)) {
+    data[k] = { color: v.color, radius: v.radius, speed: v.speed, hp: v.hp,
+                bulletColor: v.bulletColor, fireInterval: v.fireInterval };
+  }
+  data._bulletSpeed = BULLET_CONFIG.enemySpeed;
+  localStorage.setItem('tokoCFG', JSON.stringify(data));
+}
+
+function loadCFG() {
+  const raw = localStorage.getItem('tokoCFG');
+  if (!raw) return;
+  try {
+    const saved = JSON.parse(raw);
+    for (const [k, v] of Object.entries(saved)) {
+      if (k === '_bulletSpeed') { BULLET_CONFIG.enemySpeed = v; continue; }
+      const type = +k;
+      if (!CFG[type]) continue;
+      for (const field of ['color', 'radius', 'speed', 'hp', 'bulletColor', 'fireInterval']) {
+        if (v[field] !== undefined) CFG[type][field] = v[field];
+      }
+    }
+  } catch (_) { /* ignore corrupt data */ }
+}
+
 const CSS = `
   #dsgn {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -92,6 +118,7 @@ const CSS = `
 `;
 
 export function initDesigner({ getEnemies, onResume }) {
+  loadCFG();
   let selectedType = EnemyType.GLOBBO;
   let activeTab    = 'gameplay';
 
@@ -110,6 +137,7 @@ export function initDesigner({ getEnemies, onResume }) {
         <button class="dtab on" data-t="gameplay">GAMEPLAY</button>
         <button class="dtab"    data-t="visual">VISUAL</button>
       </div>
+      <button class="dbtn" id="d-reset">↺  RESET</button>
       <button class="dbtn" id="d-resume">✕  RESUME</button>
     </div>
     <div class="dbody">
@@ -125,6 +153,11 @@ export function initDesigner({ getEnemies, onResume }) {
       panel.querySelectorAll('.dtab').forEach(b => b.classList.toggle('on', b === btn));
       renderControls();
     });
+  });
+
+  panel.querySelector('#d-reset').addEventListener('click', () => {
+    localStorage.removeItem('tokoCFG');
+    location.reload();
   });
 
   panel.querySelector('#d-resume').addEventListener('click', () => {
@@ -175,12 +208,12 @@ export function initDesigner({ getEnemies, onResume }) {
 
     el.appendChild(sec('MOVEMENT'));
     el.appendChild(slider('Move Speed', 0, 12, 0.1, cfg.speed, v => {
-      CFG[selectedType].speed = v;
+      CFG[selectedType].speed = v; saveCFG();
     }));
 
     el.appendChild(sec('COMBAT'));
     el.appendChild(slider('HP', 1, 20, 1, cfg.hp, v => {
-      CFG[selectedType].hp = v;
+      CFG[selectedType].hp = v; saveCFG();
     }));
     if (selectedType === EnemyType.BAMBU || selectedType === EnemyType.PYRA) {
       const row = document.createElement('div');
@@ -194,7 +227,7 @@ export function initDesigner({ getEnemies, onResume }) {
       el.appendChild(row);
     } else {
       el.appendChild(slider('Hitbox Radius', 0.15, 2.5, 0.05, cfg.radius, v => {
-        CFG[selectedType].radius = v;
+        CFG[selectedType].radius = v; saveCFG();
       }));
       el.appendChild(note('(live — affects collision; visual size changes on next spawn)'));
     }
@@ -202,13 +235,13 @@ export function initDesigner({ getEnemies, onResume }) {
     if (cfg.fireInterval !== null) {
       el.appendChild(sec('FIRING'));
       el.appendChild(slider('Fire Interval (s)', 0.05, 10, 0.05, cfg.fireInterval, v => {
-        CFG[selectedType].fireInterval = v;
+        CFG[selectedType].fireInterval = v; saveCFG();
       }));
     }
 
     el.appendChild(sec('GLOBAL — ALL ENEMIES'));
     el.appendChild(slider('Bullet Speed', 1, 20, 0.5, BULLET_CONFIG.enemySpeed, v => {
-      BULLET_CONFIG.enemySpeed = v;
+      BULLET_CONFIG.enemySpeed = v; saveCFG();
     }));
 
     el.appendChild(mkExport());
@@ -240,11 +273,12 @@ export function initDesigner({ getEnemies, onResume }) {
       const dots = panel.querySelectorAll('.ddot');
       const idx  = ALL_TYPES.indexOf(selectedType);
       if (dots[idx]) dots[idx].style.background = toHex(v);
+      saveCFG();
     }));
 
     if (cfg.bulletColor != null) {
       el.appendChild(colorRow('Bullet Color', cfg.bulletColor, v => {
-        CFG[selectedType].bulletColor = v;
+        CFG[selectedType].bulletColor = v; saveCFG();
       }));
     }
 
@@ -359,7 +393,8 @@ export function initDesigner({ getEnemies, onResume }) {
         const col = '0x' + c.color.toString(16).padStart(6, '0');
         const bc  = c.bulletColor != null
           ? '0x' + c.bulletColor.toString(16).padStart(6, '0') : 'null';
-        return `  [EnemyType.${name}]: { color: ${col}, radius: ${c.radius}, speed: ${c.speed}, hp: ${c.hp}, bulletColor: ${bc}, fireInterval: ${c.fireInterval} },`;
+        const fi = c.fireInterval !== null ? c.fireInterval.toFixed(2) : 'null';
+        return `  [EnemyType.${name}]: { color: ${col}, radius: ${c.radius.toFixed(2)}, speed: ${c.speed.toFixed(1)}, hp: ${c.hp}, bulletColor: ${bc}, fireInterval: ${fi} },`;
       });
       out.value = `export const CFG = {\n${lines.join('\n')}\n};\n\n// BULLET_CONFIG.enemySpeed: ${BULLET_CONFIG.enemySpeed}`;
       out.style.display = 'block';
