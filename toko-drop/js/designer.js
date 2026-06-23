@@ -206,15 +206,15 @@ export function initDesigner({ getEnemies, onResume }) {
   function renderGameplay(el) {
     const cfg = CFG[selectedType];
 
+    function cfgSlider(label, min, max, step, key) {
+      return slider(label, min, max, step, cfg[key], v => { CFG[selectedType][key] = v; saveCFG(); });
+    }
+
     el.appendChild(sec('MOVEMENT'));
-    el.appendChild(slider('Move Speed', 0, 12, 0.1, cfg.speed, v => {
-      CFG[selectedType].speed = v; saveCFG();
-    }));
+    el.appendChild(cfgSlider('Move Speed', 0, 12, 0.1, 'speed'));
 
     el.appendChild(sec('COMBAT'));
-    el.appendChild(slider('HP', 1, 20, 1, cfg.hp, v => {
-      CFG[selectedType].hp = v; saveCFG();
-    }));
+    el.appendChild(cfgSlider('HP', 1, 20, 1, 'hp'));
     if (selectedType === EnemyType.BAMBU || selectedType === EnemyType.PYRA) {
       const row = document.createElement('div');
       row.className = 'drow';
@@ -226,17 +226,13 @@ export function initDesigner({ getEnemies, onResume }) {
       row.appendChild(lbl); row.appendChild(val);
       el.appendChild(row);
     } else {
-      el.appendChild(slider('Hitbox Radius', 0.15, 2.5, 0.05, cfg.radius, v => {
-        CFG[selectedType].radius = v; saveCFG();
-      }));
+      el.appendChild(cfgSlider('Hitbox Radius', 0.15, 2.5, 0.05, 'radius'));
       el.appendChild(note('(live — affects collision; visual size changes on next spawn)'));
     }
 
     if (cfg.fireInterval !== null) {
       el.appendChild(sec('FIRING'));
-      el.appendChild(slider('Fire Interval (s)', 0.05, 10, 0.05, cfg.fireInterval, v => {
-        CFG[selectedType].fireInterval = v; saveCFG();
-      }));
+      el.appendChild(cfgSlider('Fire Interval (s)', 0.05, 10, 0.05, 'fireInterval'));
     }
 
     el.appendChild(sec('GLOBAL — ALL ENEMIES'));
@@ -253,11 +249,11 @@ export function initDesigner({ getEnemies, onResume }) {
     const isBlob = BLOB_TYPES.has(selectedType);
     const live   = getEnemies();
 
-    function liveU(key, def) {
-      const e = live.find(e => e.type === selectedType && e.alive && e.mat?.uniforms?.[key]);
-      return e ? e.mat.uniforms[key].value : def;
-    }
-    function liveP(key, def) {
+    function liveGet(key, def, uniform = true) {
+      if (uniform) {
+        const e = live.find(e => e.type === selectedType && e.alive && e.mat?.uniforms?.[key]);
+        return e ? e.mat.uniforms[key].value : def;
+      }
       const e = live.find(e => e.type === selectedType && e.alive && !e.mat?.uniforms);
       return e ? e.mat[key] : def;
     }
@@ -283,8 +279,16 @@ export function initDesigner({ getEnemies, onResume }) {
     }
 
     el.appendChild(sec('MATERIAL'));
+    function blobSlider(label, min, max, step, key, def) {
+      return slider(label, min, max, step, liveGet(key, def), v => {
+        for (const e of live)
+          if (e.type === selectedType && e.alive && e.mat?.uniforms?.[key])
+            e.mat.uniforms[key].value = v;
+      });
+    }
+
     const defOpacity = isBlob ? 0.82 : 0.88;
-    const curOpacity = isBlob ? liveU('uOpacity', defOpacity) : liveP('opacity', defOpacity);
+    const curOpacity = liveGet(isBlob ? 'uOpacity' : 'opacity', defOpacity, isBlob);
     el.appendChild(slider('Opacity', 0.05, 1.0, 0.01, curOpacity, v => {
       for (const e of live) {
         if (e.type !== selectedType || !e.alive) continue;
@@ -295,28 +299,12 @@ export function initDesigner({ getEnemies, onResume }) {
 
     if (isBlob) {
       el.appendChild(sec('GOO SHADER'));
-      el.appendChild(slider('Fresnel', 0, 2.0, 0.01, liveU('uFresnel', 0.62), v => {
-        for (const e of live)
-          if (e.type === selectedType && e.alive && e.mat?.uniforms?.uFresnel)
-            e.mat.uniforms.uFresnel.value = v;
-      }));
-      el.appendChild(slider('Specular Sharp', 10, 200, 1, liveU('uSpecAPow', 88), v => {
-        for (const e of live)
-          if (e.type === selectedType && e.alive && e.mat?.uniforms?.uSpecAPow)
-            e.mat.uniforms.uSpecAPow.value = v;
-      }));
-      el.appendChild(slider('Specular Soft', 1, 30, 0.5, liveU('uSpecBPow', 11), v => {
-        for (const e of live)
-          if (e.type === selectedType && e.alive && e.mat?.uniforms?.uSpecBPow)
-            e.mat.uniforms.uSpecBPow.value = v;
-      }));
-      el.appendChild(slider('SSS Amount', 0, 1.5, 0.01, liveU('uSSS', 0.42), v => {
-        for (const e of live)
-          if (e.type === selectedType && e.alive && e.mat?.uniforms?.uSSS)
-            e.mat.uniforms.uSSS.value = v;
-      }));
+      el.appendChild(blobSlider('Fresnel',        0,  2.0, 0.01, 'uFresnel',  0.62));
+      el.appendChild(blobSlider('Specular Sharp', 10, 200, 1,    'uSpecAPow', 88));
+      el.appendChild(blobSlider('Specular Soft',  1,  30,  0.5,  'uSpecBPow', 11));
+      el.appendChild(blobSlider('SSS Amount',     0,  1.5, 0.01, 'uSSS',      0.42));
     } else {
-      el.appendChild(slider('Shininess', 10, 300, 5, liveP('shininess', 100), v => {
+      el.appendChild(slider('Shininess', 10, 300, 5, liveGet('shininess', 100, false), v => {
         for (const e of live)
           if (e.type === selectedType && e.alive && !e.mat?.uniforms)
             e.mat.shininess = v;

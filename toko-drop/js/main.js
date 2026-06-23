@@ -393,6 +393,8 @@ class Gate {
   }
 }
 
+const POWERUP_COLORS = { weapon_burst: 0x44ffcc, weapon_spread: 0xffcc44, invincible: 0xffffff, firerate: 0xff88aa };
+
 class Powerup {
   constructor(sc, x, z) {
     this._life = 8.0;
@@ -406,8 +408,7 @@ class Powerup {
     sc.add(this.mesh);
     const r = Math.random();
     this._type = r < 0.25 ? 'weapon_burst' : r < 0.5 ? 'weapon_spread' : r < 0.75 ? 'invincible' : 'firerate';
-    const TYPE_COLORS = { weapon_burst: 0x44ffcc, weapon_spread: 0xffcc44, invincible: 0xffffff, firerate: 0xff88aa };
-    this.mat.color.set(TYPE_COLORS[this._type]);
+    this.mat.color.set(POWERUP_COLORS[this._type]);
   }
   update(dt, t) {
     this._life -= dt;
@@ -442,10 +443,10 @@ class BambuAoE {
 
 class DamageNumber {
   constructor(worldX, worldY, worldZ) {
-    this.wx = worldX; this.wy = worldY; this.wz = worldZ;
+    this.pos   = new THREE.Vector3(worldX, worldY, worldZ);
     this._life = 0.6;
   }
-  update(dt) { this._life -= dt; this.wy += 2.5 * dt; return this._life > 0; }
+  update(dt) { this._life -= dt; this.pos.y += 2.5 * dt; return this._life > 0; }
 }
 
 // ── Melee types ───────────────────────────────────────────────────────────────
@@ -478,13 +479,14 @@ let pendingSpawns = [];
 // ── Score ─────────────────────────────────────────────────────────────────────
 let score        = 0;
 let streak       = 0;
+const STREAK_FLASH_DUR = 0.4;
 let streakFlashT = 0;
 let hiScore = parseInt(localStorage.getItem('tokoDropHi') || '0');
 
 function onKill(e) {
   streak++;
   score += 100 * streak;
-  streakFlashT = 0.4;
+  streakFlashT = STREAK_FLASH_DUR;
   addShake(0.13);
   audio.enemyDie();
   // Spawn death FX from chunk data populated by e.destroy()
@@ -537,6 +539,8 @@ function drawStick(stick, defaultX, defaultY) {
   ctx.fill();
 }
 
+const HUD_FONT = 'bold 14px monospace';
+
 function drawHUD() {
   ctx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
 
@@ -555,7 +559,7 @@ function drawHUD() {
 
   // Wave + score (top row)
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.font = 'bold 14px monospace';
+  ctx.font = HUD_FONT;
   ctx.fillText(`WAVE ${wave}`, 16, 24);
 
   // Wave progress bar
@@ -568,11 +572,11 @@ function drawHUD() {
   ctx.textAlign = 'right';
   ctx.fillText(`${score}`, uiCanvas.width - 16, 24);
   if (streak > 1) {
-    const flashScale = 1 + Math.max(0, streakFlashT / 0.4) * 0.4;
+    const flashScale = 1 + Math.max(0, streakFlashT / STREAK_FLASH_DUR) * 0.4;
     ctx.font = `bold ${Math.round(14 * flashScale)}px monospace`;
     ctx.fillStyle = '#ffdd44';
     ctx.fillText(`×${streak} STREAK`, uiCanvas.width - 16, 44);
-    ctx.font = 'bold 14px monospace';
+    ctx.font = HUD_FONT;
   }
   ctx.textAlign = 'left';
 
@@ -586,18 +590,18 @@ function drawHUD() {
   }
 
   // Weapon mode indicator
-  if (player._weaponMode && player._weaponMode !== 'SINGLE') {
+  if (player._weaponMode !== 'SINGLE') {
     const dotAreaW = player.maxHp * dotGap;
     ctx.font = 'bold 12px monospace';
     ctx.fillStyle = '#00ccaa';
     ctx.fillText(`[${player._weaponMode}]`, 16 + dotAreaW + 8, dotY + 5);
-    ctx.font = 'bold 14px monospace';
+    ctx.font = HUD_FONT;
   }
 
   // Damage numbers
   ctx.textAlign = 'center';
   for (const dn of damageNumbers) {
-    const s = toScreen({ x: dn.wx, y: dn.wy, z: dn.wz });
+    const s = toScreen(dn.pos);
     const alpha = Math.max(0, dn._life / 0.6);
     ctx.fillStyle = `rgba(255,255,100,${alpha.toFixed(2)})`;
     ctx.font = 'bold 13px monospace';
