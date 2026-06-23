@@ -1,6 +1,67 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
+// ── Goo shader ────────────────────────────────────────────────────────────────
+const GOO_VERT = `
+  varying vec3 vNormal;
+  varying vec3 vViewPos;
+  void main() {
+    vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+    vNormal  = normalMatrix * normal;
+    vViewPos = -mvPos.xyz;
+    gl_Position = projectionMatrix * mvPos;
+  }
+`;
+const GOO_FRAG = `
+  precision highp float;
+  uniform vec3  uColor;
+  uniform vec3  uEmissive;
+  uniform float uOpacity;
+  uniform float uFresnel;
+  uniform float uSpecAPow;
+  uniform float uSpecBPow;
+  uniform float uSSS;
+  varying vec3 vNormal;
+  varying vec3 vViewPos;
+  void main() {
+    vec3 LIGHT = normalize(vec3(-0.65, 2.30, 1.70));
+    vec3 N = normalize(vNormal);
+    vec3 V = normalize(vViewPos);
+    vec3 H = normalize(LIGHT + V);
+    float NdL = max(dot(N, LIGHT), 0.0);
+    float NdH = max(dot(N, H),     0.0);
+    float NdV = max(dot(N, V),     0.0);
+    float specA   = pow(NdH, uSpecAPow) * 2.60;
+    float specB   = pow(NdH, uSpecBPow) * 0.32;
+    float fresnel = pow(1.0 - NdV, 3.80) * uFresnel;
+    float sss     = pow(max(0.0, -dot(N, LIGHT) * 0.42 + 0.58), 2.2) * uSSS;
+    vec3 col = uColor * 0.08
+             + uColor * NdL * 0.8
+             + vec3(1.0) * (specA + specB) * 0.5
+             + uColor * fresnel * 1.2
+             + uColor * sss
+             + uEmissive;
+    gl_FragColor = vec4(col, uOpacity);
+  }
+`;
+export function makeGooMat(color, opacity) {
+  return new THREE.ShaderMaterial({
+    vertexShader:   GOO_VERT,
+    fragmentShader: GOO_FRAG,
+    uniforms: {
+      uColor:    { value: new THREE.Color(color) },
+      uEmissive: { value: new THREE.Color(0) },
+      uOpacity:  { value: opacity },
+      uFresnel:  { value: 0.62 },
+      uSpecAPow: { value: 88.0 },
+      uSpecBPow: { value: 11.0 },
+      uSSS:      { value: 0.42 },
+    },
+    transparent: opacity < 1,
+    depthWrite:  opacity >= 0.9,
+  });
+}
+
 export const EnemyType = {
   // Blob family (spheres)
   GLOBBO:      0,
@@ -23,7 +84,7 @@ export const EnemyType = {
   PYRA:        14,
 };
 
-const CFG = {
+export const CFG = {
   [EnemyType.GLOBBO]:      { color: 0x00ccaa, radius: 0.55, speed: 2.8, hp: 1, bulletColor: null,     fireInterval: null },
   [EnemyType.SPITTOR]:     { color: 0xff5533, radius: 0.9,  speed: 1.6, hp: 3, bulletColor: 0xff7755, fireInterval: 2.2  },
   [EnemyType.FANNER]:      { color: 0xff00aa, radius: 0.75, speed: 1.4, hp: 3, bulletColor: 0xff66cc, fireInterval: 1.5  },
@@ -41,7 +102,7 @@ const CFG = {
   [EnemyType.PYRA]:        { color: 0xff9900, radius: 1.0,  speed: 0,   hp: 4, bulletColor: 0xffcc44, fireInterval: 2.5  },
 };
 
-const BLOB_TYPES = new Set([
+export const BLOB_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPITTOR, EnemyType.FANNER,
   EnemyType.WEEVA, EnemyType.SPLITTA,
 ]);
@@ -50,8 +111,6 @@ const CUBE_TYPES = new Set([
   EnemyType.YELA_CUBE, EnemyType.ORANGE_CUBE, EnemyType.SLUDGE_CUBE,
   EnemyType.REDD_CUBE, EnemyType.PURP_CUBE, EnemyType.REDD_MINI, EnemyType.PURP_MINI,
 ]);
-
-export const ENEMY_RADIUS = 1.0; // updated conservative max
 
 export class Enemy {
   constructor(scene, type, x, z, speedMult = 1, intervalMult = 1) {
@@ -62,8 +121,9 @@ export class Enemy {
     this._dying        = false;
     this._deathT       = 0;
     this._flashT       = 0;
-    this._hitWobble    = 0;
     this._wobbleT      = Math.random() * Math.PI * 2;
+    this._sq           = 1.0;
+    this._sqV          = 0.0;
     this._speedMult    = speedMult;
     this._intervalMult = intervalMult;
     this._t            = Math.random() * 0.5;
@@ -105,18 +165,22 @@ export class Enemy {
       geo = new THREE.TorusGeometry(cfg.radius * 0.68, cfg.radius * 0.32, 8, 18);
     }
 
+    const isBlob = BLOB_TYPES.has(type);
     const isCube = CUBE_TYPES.has(type);
     const isToro = type === EnemyType.TORO;
     const matOpacity = isCube ? 0.88 : 0.82;
-    const matShininess = isToro ? 140 : 100;
 
-    this.mat = new THREE.MeshPhongMaterial({
-      color:       cfg.color,
-      emissive:    0x000000,
-      transparent: true,
-      opacity:     matOpacity,
-      shininess:   matShininess,
-    });
+    if (isBlob) {
+      this.mat = makeGooMat(cfg.color, matOpacity);
+    } else {
+      this.mat = new THREE.MeshPhongMaterial({
+        color:       cfg.color,
+        emissive:    0x000000,
+        transparent: true,
+        opacity:     matOpacity,
+        shininess:   isToro ? 140 : 100,
+      });
+    }
 
     this.mesh = new THREE.Mesh(geo, this.mat);
     this.mesh.castShadow = true;
@@ -275,6 +339,21 @@ export class Enemy {
     }
   }
 
+  _setEmissive(hex) {
+    if (this.mat.uniforms) {
+      this.mat.uniforms.uEmissive.value.setHex(hex);
+    } else {
+      this.mat.emissive.setHex(hex);
+    }
+  }
+  _setOpacity(val) {
+    if (this.mat.uniforms) {
+      this.mat.uniforms.uOpacity.value = val;
+    } else {
+      this.mat.opacity = val;
+    }
+  }
+
   get position() {
     return (this.type === EnemyType.TORO || this.type === EnemyType.BAMBU || this.type === EnemyType.PYRA)
       ? this.group.position : this.mesh.position;
@@ -308,7 +387,7 @@ export class Enemy {
   hit() {
     if (!this.alive) return false;
     this._flashT    = 0.12;
-    this._hitWobble = 0.35;
+    this._sqV      -= 0.75;
 
     if (this.type === EnemyType.BAMBU && this._segs && this._segs.length > 0) {
       const topSeg = this._segs.pop();
@@ -643,7 +722,7 @@ export class Enemy {
               this.group.position.z = Math.max(-17, Math.min(17, this.group.position.z));
               this._state = 'recovering';
               this._stateT = 0.8;
-              this._hitWobble = 0.5;
+              this._sqV -= 0.5;
             }
             break;
           case 'recovering':
@@ -661,39 +740,32 @@ export class Enemy {
     // ── Flash / emissive ──────────────────────────────────────────────────────
     if (this._flashT > 0) {
       this._flashT -= dt;
-      this.mat.emissive.setHex(0xffffff);
+      this._setEmissive(0xffffff);
     } else if (this.type === EnemyType.ORANGE_CUBE && this._state === 'aiming') {
-      this.mat.emissive.setHex(Math.sin(performance.now() * 0.015) > 0 ? 0x442200 : 0x000000);
+      this._setEmissive(Math.sin(performance.now() * 0.015) > 0 ? 0x442200 : 0x000000);
     } else if (this.type === EnemyType.TORO && this._state === 'revving') {
       const ramp = Math.max(0, 1.6 - Math.max(this._stateT, 0)) / 1.6;
       const v = Math.floor(ramp * 0x33);
-      this.mat.emissive.setHex((v << 8) | (v * 0.5));
+      this._setEmissive((v << 8) | (v * 0.5));
     } else if (this._isTelegraphing) {
-      this.mat.emissive.setHex(this.type === EnemyType.SPITTOR ? 0x442200 : 0x440022);
+      this._setEmissive(this.type === EnemyType.SPITTOR ? 0x442200 : 0x440022);
     } else {
-      this.mat.emissive.setHex(0x000000);
+      this._setEmissive(0x000000);
     }
 
-    // ── Wobble / scale ────────────────────────────────────────────────────────
-    this._wobbleT += dt;
-    if (this._hitWobble > 0) this._hitWobble = Math.max(0, this._hitWobble - dt * 2.0);
+    // ── Spring squash / scale ─────────────────────────────────────────────────
+    this._wobbleT += dt; // keep for WEEVA movement
 
-    if (this.type !== EnemyType.TORO && this.type !== EnemyType.BAMBU && this.type !== EnemyType.PYRA) {
-      const isSplitOrBig = this.type === EnemyType.SPLITTA;
-      const amp  = isSplitOrBig ? 0.10 : (CUBE_TYPES.has(this.type) ? 0.035 : 0.04);
-      const freq = isSplitOrBig ? 4.0  : (CUBE_TYPES.has(this.type) ? 2.2   : 2.8);
-      const breathe = amp * Math.sin(this._wobbleT * freq);
-      if (!this._isTelegraphing || this.type !== EnemyType.SPITTOR) {
-        const sy  = Math.max(0.1, 1 + breathe - this._hitWobble);
-        const sxz = Math.max(0.1, 1 - breathe * 0.5 + this._hitWobble * 0.5);
-        this.mesh.scale.set(sxz, sy, sxz);
-      }
-    } else {
-      // TORO: hit squash only
-      if (this._hitWobble > 0) {
-        this.mesh.scale.setScalar(Math.max(0.1, 1 + this._hitWobble * 0.3));
-      } else {
-        this.mesh.scale.setScalar(1);
+    if (this.type !== EnemyType.BAMBU && this.type !== EnemyType.PYRA) {
+      const spring = BLOB_TYPES.has(this.type) ? 0.24 : 0.18;
+      const damp   = BLOB_TYPES.has(this.type) ? 0.86 : 0.90;
+      this._sqV = (this._sqV - (this._sq - 1.0) * spring) * damp;
+      this._sq  = Math.max(0.55, Math.min(1.55, this._sq + this._sqV));
+      const sx = 1 / Math.sqrt(Math.max(this._sq, 0.1));
+      if (this.type === EnemyType.TORO) {
+        this.group.scale.set(sx, this._sq, sx);
+      } else if (!this._isTelegraphing || this.type !== EnemyType.SPITTOR) {
+        this.mesh.scale.set(sx, this._sq, sx);
       }
     }
 
@@ -711,8 +783,6 @@ export class Enemy {
       if (this._pyraFireTimer <= 0) {
         this._pyraFireTimer = cfg.fireInterval * this._intervalMult;
         const ex = this.position.x, ez = this.position.z;
-        const adx = playerPos.x - ex, adz = playerPos.z - ez;
-        const al  = Math.hypot(adx, adz) || 1;
         const liveHoles = this._holes ? this._holes.filter(h => h.alive) : [];
         for (const hole of liveHoles) {
           const ha = this.group.rotation.y + hole.angle;
@@ -768,6 +838,7 @@ export class Enemy {
           this.mesh.scale.setScalar(1 + 0.35 * (1 - frac));
           if (this._telegraphT <= 0) {
             this._isTelegraphing = false;
+            this._sqV -= 1.0; // squash on fire
             this._ring(ex, ez, 8, cfg.bulletColor, bullets);
           }
         }
@@ -784,6 +855,7 @@ export class Enemy {
           this._telegraphT -= dt;
           if (this._telegraphT <= 0) {
             this._isTelegraphing = false;
+            this._sqV -= 0.8; // squash on fire
             const adx = playerPos.x - ex, adz = playerPos.z - ez;
             const len = Math.hypot(adx, adz);
             if (len > 0) {
@@ -830,7 +902,7 @@ export class Enemy {
       this.mesh.scale.setScalar(1 + t * 2.2);
     }
     const baseOpacity = (CUBE_TYPES.has(this.type) || this.type === EnemyType.BAMBU) ? 0.88 : 0.82;
-    this.mat.opacity = (1 - t) * baseOpacity;
+    this._setOpacity((1 - t) * baseOpacity);
 
     if (this._deathT <= 0) {
       this._dying = false;
@@ -848,7 +920,9 @@ export class Enemy {
     this.alive   = false;
     this._dying  = true;
     this._deathT = 0.28;
-    this.mat.emissive.setHex(0xffffff);
+    this._sq     = 1.0;
+    this._sqV    = 0.0;
+    this._setEmissive(0xffffff);
     this.mat.transparent = true;
     this.mat.depthWrite  = false;
     if (this.type === EnemyType.TORO || this.type === EnemyType.BAMBU || this.type === EnemyType.PYRA) {
