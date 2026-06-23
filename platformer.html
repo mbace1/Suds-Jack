@@ -267,8 +267,10 @@ function buildEnemies() {
 }
 
 // ── Physics constants ─────────────────────────────────────────────────────────
-const GRAVITY    = 900;
-const JUMP_VEL   = -340;
+const GRAVITY         = 900;
+const JUMP_VEL        = -280;
+const JUMP_HOLD_ACCEL = 1100; // net upward boost while button held
+const JUMP_HOLD_MAX   = 0.22; // seconds of hold boost available
 const WALK_SPEED = 110;
 const RUN_SPEED  = 190;
 const FRICTION   = 0.7;
@@ -295,6 +297,7 @@ function initGame() {
     facingRight: true,
     jumpBuffer: 0,
     coyoteTime: 0,
+    jumpHoldTime: 0,
     walkFrame: 0, walkTimer: 0,
     invincible: 0,
     dead: false, deadTimer: 0,
@@ -360,11 +363,24 @@ function hitBlockFromBelow(c, r) {
     map[r][c] = 2; // used up
     score += 100;
     updateHUD();
-    // Spawn coin above
     coins.push({ cx: c*TILE+16, cy: r*TILE-10, collected: false, pop: 1, popVy: -120 });
   } else if (t === 2) {
-    score += 10;
+    map[r][c] = 0; // break it
+    score += 50;
     updateHUD();
+    // Brick debris: 4 chunks fly outward
+    const bx = c*TILE+TILE/2, by = r*TILE+TILE/2;
+    const colors = ['#b05a28','#c87030','#8a3a10','#d48040'];
+    for (let i = 0; i < 4; i++) {
+      const side = i < 2 ? -1 : 1;
+      particles.push({
+        x: bx + side*6, y: by,
+        vx: side*(60 + Math.random()*80),
+        vy: -260 - Math.random()*120,
+        life: 0.7, maxLife: 0.7,
+        color: colors[i], size: 6,
+      });
+    }
   }
 }
 
@@ -452,9 +468,17 @@ function update(dt) {
     player.vy = JUMP_VEL;
     player.jumpBuffer = 0;
     player.coyoteTime = 0;
+    player.jumpHoldTime = JUMP_HOLD_MAX;
   }
-  // Variable jump height
-  if (!input.jump && player.vy < -100) player.vy += 1200 * dt;
+  // Hold to jump higher: extra upward force while button held
+  if (input.jump && player.jumpHoldTime > 0 && player.vy < 0) {
+    player.vy -= JUMP_HOLD_ACCEL * dt;
+    player.jumpHoldTime -= dt;
+  } else if (!input.jump) {
+    player.jumpHoldTime = 0;
+    // Cut the jump short on early release
+    if (player.vy < -80) player.vy += 1600 * dt;
+  }
 
   player.vy += GRAVITY * dt;
   if (player.vy > MAX_FALL) player.vy = MAX_FALL;
@@ -759,7 +783,7 @@ function draw() {
     ctx.save();
     ctx.globalAlpha = p.life / p.maxLife;
     ctx.fillStyle = p.color;
-    const s = 4 * (p.life / p.maxLife);
+    const s = (p.size || 4) * (p.life / p.maxLife);
     ctx.fillRect(p.x - camera.x - s/2, p.y - s/2, s, s);
     ctx.restore();
   }
