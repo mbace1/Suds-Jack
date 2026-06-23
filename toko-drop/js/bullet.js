@@ -3,7 +3,7 @@ import * as THREE from 'three';
 const POOL_SIZE           = 300;
 const ENEMY_BULLET_SPEED  = 7;
 const PLAYER_BULLET_SPEED = 24;
-export const BULLET_CONFIG = { enemySpeed: ENEMY_BULLET_SPEED };
+export const BULLET_CONFIG = { enemySpeed: ENEMY_BULLET_SPEED, playerBulletScale: 1.0 };
 
 export const BULLET_R     = 0.15;
 export const FAT_BULLET_R = 0.45;
@@ -75,7 +75,7 @@ export class BulletPool {
     if (fat) {
       b.mesh.scale.setScalar(3);
     } else {
-      b.mesh.scale.setScalar(1);
+      b.mesh.scale.setScalar(isPlayer ? BULLET_CONFIG.playerBulletScale : 1);
     }
     this.active.push(b);
   }
