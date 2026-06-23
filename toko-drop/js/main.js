@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { InputManager } from './input.js';
-import { BulletPool, BULLET_R, FAT_BULLET_R } from './bullet.js';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js';
 import { Player, PLAYER_RADIUS } from './player.js';
 import { Enemy, EnemyType } from './enemy.js';
 import { audio } from './audio.js';
@@ -404,7 +404,10 @@ class Powerup {
     this.mesh = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 6), this.mat);
     this.mesh.position.set(x, 0.6, z);
     sc.add(this.mesh);
-    this._type = Math.random() < 0.5 ? 'invincible' : 'firerate';
+    const r = Math.random();
+    this._type = r < 0.25 ? 'weapon_burst' : r < 0.5 ? 'weapon_spread' : r < 0.75 ? 'invincible' : 'firerate';
+    const TYPE_COLORS = { weapon_burst: 0x44ffcc, weapon_spread: 0xffcc44, invincible: 0xffffff, firerate: 0xff88aa };
+    this.mat.color.set(TYPE_COLORS[this._type]);
   }
   update(dt, t) {
     this._life -= dt;
@@ -437,6 +440,14 @@ class BambuAoE {
   remove(sc) { sc.remove(this.mesh); }
 }
 
+class DamageNumber {
+  constructor(worldX, worldY, worldZ) {
+    this.wx = worldX; this.wy = worldY; this.wz = worldZ;
+    this._life = 0.6;
+  }
+  update(dt) { this._life -= dt; this.wy += 2.5 * dt; return this._life > 0; }
+}
+
 // ── Melee types ───────────────────────────────────────────────────────────────
 const MELEE_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPLITTA,
@@ -458,19 +469,22 @@ let sludgeRibbons = [];
 let bambuAoes     = [];
 let gates         = [];
 let powerups      = [];
+let damageNumbers = [];
 let wave         = 0;
 let waveTimer    = 0;
 let waveDuration = ROUND_DUR;
 let pendingSpawns = [];
 
 // ── Score ─────────────────────────────────────────────────────────────────────
-let score   = 0;
-let streak  = 0;
+let score        = 0;
+let streak       = 0;
+let streakFlashT = 0;
 let hiScore = parseInt(localStorage.getItem('tokoDropHi') || '0');
 
 function onKill(e) {
   streak++;
   score += 100 * streak;
+  streakFlashT = 0.4;
   addShake(0.13);
   audio.enemyDie();
   // Spawn death FX from chunk data populated by e.destroy()
@@ -482,6 +496,7 @@ function onKill(e) {
 
 function onPlayerHit() {
   streak = 0;
+  streakFlashT = 0;
   addShake(0.38);
   audio.playerHit();
 }
@@ -525,7 +540,7 @@ function drawStick(stick, defaultX, defaultY) {
 function drawHUD() {
   ctx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
 
-  if (gameState !== 'playing' && gameState !== 'paused') return;
+  if (gameState !== 'playing' && gameState !== 'paused' && gameState !== 'upgrade') return;
 
   // Sticks
   drawStick(input.left,  uiCanvas.width * 0.22, uiCanvas.height * 0.78);
@@ -553,8 +568,11 @@ function drawHUD() {
   ctx.textAlign = 'right';
   ctx.fillText(`${score}`, uiCanvas.width - 16, 24);
   if (streak > 1) {
+    const flashScale = 1 + Math.max(0, streakFlashT / 0.4) * 0.4;
+    ctx.font = `bold ${Math.round(14 * flashScale)}px monospace`;
     ctx.fillStyle = '#ffdd44';
     ctx.fillText(`×${streak} STREAK`, uiCanvas.width - 16, 44);
+    ctx.font = 'bold 14px monospace';
   }
   ctx.textAlign = 'left';
 
@@ -566,6 +584,26 @@ function drawHUD() {
     ctx.fillStyle = i < player.hp ? '#ff3355' : 'rgba(255,255,255,0.15)';
     ctx.fill();
   }
+
+  // Weapon mode indicator
+  if (player._weaponMode && player._weaponMode !== 'SINGLE') {
+    const dotAreaW = player.maxHp * dotGap;
+    ctx.font = 'bold 12px monospace';
+    ctx.fillStyle = '#00ccaa';
+    ctx.fillText(`[${player._weaponMode}]`, 16 + dotAreaW + 8, dotY + 5);
+    ctx.font = 'bold 14px monospace';
+  }
+
+  // Damage numbers
+  ctx.textAlign = 'center';
+  for (const dn of damageNumbers) {
+    const s = toScreen({ x: dn.wx, y: dn.wy, z: dn.wz });
+    const alpha = Math.max(0, dn._life / 0.6);
+    ctx.fillStyle = `rgba(255,255,100,${alpha.toFixed(2)})`;
+    ctx.font = 'bold 13px monospace';
+    ctx.fillText('-1', s.x, s.y);
+  }
+  ctx.textAlign = 'left';
 
   // Enemy HP bars (world→screen projection)
   for (const e of enemies) {
@@ -627,6 +665,7 @@ function clearFX() {
   for (const a of bambuAoes)     a.remove(scene); bambuAoes     = [];
   for (const g of gates)        g.remove(scene); gates         = [];
   for (const p of powerups)     p.remove(scene); powerups      = [];
+  damageNumbers = [];
 }
 
 function spawnWave() {
@@ -658,9 +697,76 @@ function spawnWave() {
   announceWave();
 }
 
+// ── Upgrade cards ─────────────────────────────────────────────────────────────
+const UPGRADE_POOL = [
+  { id: 'hp',         label: '+1 HP',          desc: 'Gain one extra hit point.' },
+  { id: 'speed',      label: 'Speed Up',       desc: 'Move 20% faster permanently.' },
+  { id: 'firerate',   label: 'Fire Rate Up',   desc: 'Fire 20% faster permanently.' },
+  { id: 'bigbullets', label: 'Bigger Bullets', desc: 'Player bullets are 30% larger.' },
+  { id: 'dashcd',     label: 'Dash Refresh',   desc: 'Dash cooldown −0.15 s.' },
+  { id: 'nuke',       label: 'Nuke',           desc: 'Clear all enemy bullets now.' },
+];
+
+function applyUpgrade(id) {
+  if (id === 'hp') {
+    player.maxHp++;
+    player.hp = Math.min(player.hp + 1, player.maxHp);
+  } else if (id === 'speed') {
+    player._speedMult *= 1.2;
+  } else if (id === 'firerate') {
+    player._fireRateMult *= 0.8;
+  } else if (id === 'bigbullets') {
+    BULLET_CONFIG.playerBulletScale = Math.min(3.0, BULLET_CONFIG.playerBulletScale * 1.3);
+  } else if (id === 'dashcd') {
+    player._dashCDMult = Math.max(0.2, player._dashCDMult - 0.15);
+  } else if (id === 'nuke') {
+    for (let i = bullets.active.length - 1; i >= 0; i--) {
+      if (!bullets.active[i].isPlayer) bullets.recycleAt(i);
+    }
+  }
+}
+
+function showUpgradeCards() {
+  gameState = 'upgrade';
+  overlay.style.display = 'none';
+
+  const pool = [...UPGRADE_POOL].sort(() => Math.random() - 0.5).slice(0, 3);
+  const panel = document.createElement('div');
+  panel.id = 'upgrade-panel';
+  panel.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:60;font-family:monospace;color:#fff;';
+
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:24px;font-weight:bold;margin-bottom:24px;text-shadow:0 0 20px #aa00ff;';
+  title.textContent = 'CHOOSE UPGRADE';
+  panel.appendChild(title);
+
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:16px;flex-wrap:wrap;justify-content:center;';
+  panel.appendChild(row);
+
+  for (const card of pool) {
+    const btn = document.createElement('div');
+    btn.style.cssText = 'background:#1a1a2e;border:2px solid #5555cc;border-radius:8px;padding:20px 24px;min-width:140px;max-width:180px;text-align:center;cursor:pointer;';
+    btn.innerHTML = `<div style="font-size:16px;font-weight:bold;margin-bottom:8px">${card.label}</div><div style="font-size:12px;opacity:0.65">${card.desc}</div>`;
+    btn.addEventListener('pointerover', () => { btn.style.borderColor = '#00ccaa'; });
+    btn.addEventListener('pointerout',  () => { btn.style.borderColor = '#5555cc'; });
+    btn.addEventListener('pointerdown', () => {
+      panel.remove();
+      applyUpgrade(card.id);
+      gameState = 'playing';
+      spawnWave();
+    });
+    row.appendChild(btn);
+  }
+
+  document.body.appendChild(panel);
+}
+
 function startGame() {
   overlay.style.display = 'none';
+  document.getElementById('upgrade-panel')?.remove();
   score  = 0; streak = 0; wave = 0;
+  BULLET_CONFIG.playerBulletScale = 1.0;
   player.reset();
   bullets.clear();
   clearFX();
@@ -736,7 +842,7 @@ function loop() {
   updateShake(dt);
 
   // Title / paused — just render the scene, no game logic
-  if (gameState === 'title' || gameState === 'paused') {
+  if (gameState === 'title' || gameState === 'paused' || gameState === 'upgrade') {
     renderer.render(scene, camera);
     drawHUD();
     return;
@@ -828,6 +934,11 @@ function loop() {
     if (!bambuAoes[i].update(dt)) { bambuAoes[i].remove(scene); bambuAoes.splice(i, 1); }
   }
 
+  for (let i = damageNumbers.length - 1; i >= 0; i--) {
+    if (!damageNumbers[i].update(dt)) damageNumbers.splice(i, 1);
+  }
+  if (streakFlashT > 0) streakFlashT -= dt;
+
   // SLUDGE_CUBE ribbon: create on first sight, update every frame
   for (const e of enemies) {
     if (e.type === EnemyType.SLUDGE_CUBE && !e._ribbon) {
@@ -875,7 +986,7 @@ function loop() {
       if (!e.alive) continue;
       const dx = b.mesh.position.x - e.position.x;
       const dz = b.mesh.position.z - e.position.z;
-      if (Math.hypot(dx, dz) < BULLET_R + e.radius) {
+      if (Math.hypot(dx, dz) < BULLET_R * BULLET_CONFIG.playerBulletScale + e.radius) {
         const died = e.hit();
         bullets.recycleAt(i);
         if (died) {
@@ -889,6 +1000,7 @@ function loop() {
           }
         } else {
           audio.enemyHit();
+          damageNumbers.push(new DamageNumber(e.position.x, e.position.y + e.radius, e.position.z));
         }
         break;
       }
@@ -968,7 +1080,11 @@ function loop() {
     const dx = player.position.x - pu.x, dz = player.position.z - pu.z;
     if (Math.hypot(dx, dz) < 0.8 + PLAYER_RADIUS) {
       pu.collected = true;
-      if (pu._type === 'invincible') {
+      if (pu._type === 'weapon_burst') {
+        player._weaponMode = 'BURST';
+      } else if (pu._type === 'weapon_spread') {
+        player._weaponMode = 'SPREAD';
+      } else if (pu._type === 'invincible') {
         player.grantInvincibility(3.0);
       } else {
         player.grantFireRateBoost(5.0);
@@ -1008,7 +1124,7 @@ function loop() {
     audio.waveClear();
     addShake(0.22);
     score += wave * 500;
-    spawnWave();
+    showUpgradeCards();
   }
 
   floorUniforms.uTime.value = performance.now() / 1000;
