@@ -32,10 +32,12 @@ def print_menu():
     print(f"""
 {BOLD}What would you like to do?{RESET}
 
-  {CYAN}1{RESET}  Generate new level content
-  {CYAN}2{RESET}  Review game.js code
-  {CYAN}3{RESET}  Apply a code suggestion (describe a patch)
-  {CYAN}4{RESET}  Exit
+  {CYAN}1{RESET}  Generate new level content  (Suds Jack)
+  {CYAN}2{RESET}  Review game.js code         (Suds Jack)
+  {CYAN}3{RESET}  Apply a code suggestion     (Suds Jack)
+  {CYAN}4{RESET}  Playtester report           (Suds Jack)
+  {CYAN}5{RESET}  Playtester report           (Toko Drop)
+  {CYAN}6{RESET}  Exit
 
 """, end='')
 
@@ -214,10 +216,16 @@ def main():
         elif choice == '3':
             handle_apply_suggestion(last_suggestions)
         elif choice == '4':
+            from agents.playtester import run as run_suds_playtester
+            run_suds_playtester()
+        elif choice == '5':
+            from agents.toko_playtester import run as run_toko_playtester
+            run_toko_playtester()
+        elif choice == '6':
             print(f'\n{GREEN}Goodbye! Keep it psychedelic.{RESET}\n')
             break
         else:
-            print(f'{YELLOW}Please enter 1, 2, 3, or 4.{RESET}')
+            print(f'{YELLOW}Please enter 1–6.{RESET}')
 
         print()
         follow_up = ask('What would you like to change or improve? (Enter to continue to menu)')
