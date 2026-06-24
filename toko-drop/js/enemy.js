@@ -377,8 +377,8 @@ export class Enemy {
       // Reflect away from any wall the next stride would cross.
       const nx = this.mesh.position.x + dir.x * stride;
       const nz = this.mesh.position.z + dir.z * stride;
-      if (Math.abs(nx) > H) dir = { x: -Math.sign(this.mesh.position.x), z: 0 };
-      else if (Math.abs(nz) > H) dir = { x: 0, z: -Math.sign(this.mesh.position.z) };
+      if (Math.abs(nx) > H) dir = { x: -(Math.sign(this.mesh.position.x) || 1), z: 0 };
+      else if (Math.abs(nz) > H) dir = { x: 0, z: -(Math.sign(this.mesh.position.z) || 1) };
 
       this._flopDir = dir;
       this._flopAxis.set(dir.z, 0, -dir.x).normalize(); // ground-horizontal, perp to travel
@@ -893,6 +893,7 @@ export class Enemy {
     this._deathT = 0.28;
     this._sq     = 1.0;
     this._sqV    = 0.0;
+    if (this._flopActive) { this.mesh.quaternion.identity(); this._flopActive = false; }
     this._setEmissive(0xffffff);
     this.mat.transparent = true;
     this.mat.depthWrite  = false;
