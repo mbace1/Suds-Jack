@@ -482,6 +482,8 @@ let streak       = 0;
 const STREAK_FLASH_DUR = 0.4;
 let streakFlashT = 0;
 let hiScore = parseInt(localStorage.getItem('tokoDropHi') || '0');
+// Roguelike mode (default on): show upgrade cards between waves. Off = plain arcade run.
+let roguelikeMode = localStorage.getItem('tokoDropRogue') !== '0';
 
 function onKill(e) {
   streak++;
@@ -637,10 +639,43 @@ function showTitle() {
     `<div style="font-size:58px;font-weight:bold;letter-spacing:4px">TOKO DROP</div>` +
     `<div style="font-size:14px;opacity:0.5;margin:10px 0 28px">TWIN-STICK BULLET-HELL</div>` +
     `<div style="font-size:16px;opacity:0.8">SPACE / TAP TO START</div>` +
-    `<div style="font-size:12px;opacity:0.4;margin-top:12px">` +
+    `<div id="rogue-toggle-slot" style="margin-top:18px"></div>` +
+    `<div style="font-size:12px;opacity:0.4;margin-top:18px">` +
     `WASD + hold LMB to aim/fire · SPACE to dash<br>` +
     `Right stick to aim/fire · release to dash · ESC pause<br>` +
     `E to toggle eyes</div>`;
+
+  // Roguelike toggle — a clickable chip inside the (pointer-events:none) overlay.
+  const slot = document.getElementById('rogue-toggle-slot');
+  const btn  = document.createElement('div');
+  const hint = document.createElement('div');
+  hint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
+  const render = () => {
+    const on = roguelikeMode;
+    btn.textContent = `ROGUELIKE MODE: ${on ? 'ON' : 'OFF'}`;
+    btn.style.cssText =
+      'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
+      'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
+      'background:rgba(0,0,0,0.35);transition:all 0.12s;' +
+      `border:2px solid ${on ? '#00ccaa' : '#445'};` +
+      `color:${on ? '#00ffcc' : '#7777aa'};` +
+      `text-shadow:${on ? '0 0 12px #00ccaa' : 'none'};`;
+    hint.textContent = on ? 'Pick an upgrade card after each wave'
+                          : 'No upgrades — pure arcade survival';
+  };
+  render();
+  const toggle = e => {
+    e.stopPropagation();
+    e.preventDefault();
+    roguelikeMode = !roguelikeMode;
+    localStorage.setItem('tokoDropRogue', roguelikeMode ? '1' : '0');
+    render();
+  };
+  btn.addEventListener('pointerdown', toggle);
+  // Stop the chip's own touch from bubbling to the window tap-to-start handler.
+  btn.addEventListener('touchend', e => e.stopPropagation());
+  slot.appendChild(btn);
+  slot.appendChild(hint);
 }
 
 function showGameOver() {
@@ -1128,7 +1163,8 @@ function loop() {
     audio.waveClear();
     addShake(0.22);
     score += wave * 500;
-    showUpgradeCards();
+    if (roguelikeMode) showUpgradeCards();
+    else               spawnWave();  // arcade: straight to next wave, no upgrade pick
   }
 
   const _now = performance.now() / 1000;
