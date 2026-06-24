@@ -9,6 +9,18 @@ import { initDesigner } from './designer.js';
 const HALF      = 18;
 const ROUND_DUR = 30; // seconds per wave
 
+// ── Seeded PRNG (mulberry32) ───────────────────────────────────────────────────
+function mulberry32(seed) {
+  return () => {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+let runSeed = 0;
+let rng = Math.random.bind(Math);
+
 // ── Wave scaling (Nex Machina pacing) ─────────────────────────────────────────────
 function getWaveScale(wave) {
   const w = wave - 1;
@@ -20,75 +32,33 @@ function getWaveScale(wave) {
 
 // Returns the spawn list [{type, t: spawnDelaySecs, count?}] for a wave.
 // Delays are front-loaded to fit fast 30 s rounds.
+// Enemy pool: [type, minWave, budget-cost]. Unlocked types grow with wave number.
+// getEnemySchedule uses rng (seeded per run) so every run plays differently.
 function getEnemySchedule(wave) {
   const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
           YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA } = EnemyType;
-  if (wave === 1) return [
-    { type: GLOBBO,      t: 0  },
-    { type: YELA_CUBE,   t: 4  },
-    { type: SPITTOR,     t: 8  },
-    { type: FANNER,      t: 13 },
-    { type: WEEVA,       t: 19 },
+  const POOL = [
+    // [type, minWave, cost]
+    [GLOBBO,      1, 1], [YELA_CUBE,  1, 1], [SPITTOR,    1, 2], [FANNER,     1, 2],
+    [ORANGE_CUBE, 2, 2], [WEEVA,      2, 3],
+    [SLUDGE_CUBE, 3, 2], [BAMBU,      3, 3], [SPLITTA,    3, 3],
+    [REDD_CUBE,   4, 3],
+    [PURP_CUBE,   5, 3], [PYRA,       5, 4],
+    [TORO,        6, 5],
   ];
-  if (wave === 2) return [
-    { type: GLOBBO,      t: 0  },
-    { type: YELA_CUBE,   t: 0  },
-    { type: ORANGE_CUBE, t: 6  },
-    { type: SPITTOR,     t: 11 },
-    { type: FANNER,      t: 16 },
-    { type: WEEVA,       t: 22 },
-  ];
-  if (wave === 3) return [
-    { type: GLOBBO,      t: 0  },
-    { type: YELA_CUBE,   t: 0  },
-    { type: ORANGE_CUBE, t: 4  },
-    { type: SLUDGE_CUBE, t: 9  },
-    { type: SPITTOR,     t: 13 },
-    { type: BAMBU,       t: 17 },
-    { type: WEEVA,       t: 19 },
-    { type: SPLITTA,     t: 23 },
-  ];
-  if (wave === 4) return [
-    { type: GLOBBO,      t: 0  },
-    { type: REDD_CUBE,   t: 0  },
-    { type: ORANGE_CUBE, t: 4  },
-    { type: SLUDGE_CUBE, t: 9  },
-    { type: BAMBU,       t: 13 },
-    { type: FANNER,      t: 16 },
-    { type: WEEVA,       t: 19 },
-    { type: SPLITTA,     t: 23 },
-  ];
-  if (wave === 5) return [
-    { type: GLOBBO,      t: 0,  count: 3 },
-    { type: REDD_CUBE,   t: 0  },
-    { type: PURP_CUBE,   t: 4  },
-    { type: ORANGE_CUBE, t: 8  },
-    { type: PYRA,        t: 11 },
-    { type: SLUDGE_CUBE, t: 15 },
-    { type: FANNER,      t: 20 },
-    { type: SPLITTA,     t: 24 },
-  ];
-  if (wave === 6) return [
-    { type: YELA_CUBE,   t: 0  },
-    { type: REDD_CUBE,   t: 0  },
-    { type: PURP_CUBE,   t: 4  },
-    { type: PYRA,        t: 7  },
-    { type: ORANGE_CUBE, t: 11 },
-    { type: BAMBU,       t: 13 },
-    { type: SPITTOR,     t: 17 },
-    { type: FANNER,      t: 21 },
-    { type: TORO,        t: 25 },
-  ];
-  return [
-    { type: GLOBBO,      t: 0,  count: 3 },
-    { type: BAMBU,       t: 3  },
-    { type: REDD_CUBE,   t: 5  },
-    { type: PURP_CUBE,   t: 9  },
-    { type: ORANGE_CUBE, t: 13 },
-    { type: SLUDGE_CUBE, t: 17 },
-    { type: SPLITTA,     t: 21 },
-    { type: TORO,        t: 25 },
-  ];
+  const available = POOL.filter(([, min]) => wave >= min);
+  const budget = 5 + Math.floor(wave * 1.8);
+  const list = [];
+  let spent = 0, t = 0;
+  while (spent < budget && list.length < 14) {
+    // Pick a random available enemy type
+    const [type, , cost] = available[Math.floor(rng() * available.length)];
+    if (spent + cost > budget + 2) break; // allow slight overage to finish
+    list.push({ type, t });
+    t += 2 + Math.floor(rng() * 6);
+    spent += cost;
+  }
+  return list.length ? list : [{ type: GLOBBO, t: 0 }];
 }
 
 // ── Renderer ────────────────────────────────────────────────────────────────
@@ -393,11 +363,11 @@ class Gate {
   }
 }
 
-const POWERUP_COLORS = { weapon_burst: 0x44ffcc, weapon_spread: 0xffcc44, invincible: 0xffffff, firerate: 0xff88aa };
+const POWERUP_COLORS = { weapon_burst: 0x44ffcc, weapon_spread: 0xffcc44, invincible: 0xffffff, firerate: 0xff88aa, hp: 0xff4466 };
 
 class Powerup {
-  constructor(sc, x, z) {
-    this._life = 8.0;
+  constructor(sc, x, z, forcedType) {
+    this._life = 9.0;
     this.x = x; this.z = z;
     this.collected = false;
     this.mat = new THREE.MeshBasicMaterial({
@@ -406,9 +376,13 @@ class Powerup {
     this.mesh = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 6), this.mat);
     this.mesh.position.set(x, 0.6, z);
     sc.add(this.mesh);
-    const r = Math.random();
-    this._type = r < 0.25 ? 'weapon_burst' : r < 0.5 ? 'weapon_spread' : r < 0.75 ? 'invincible' : 'firerate';
-    this.mat.color.set(POWERUP_COLORS[this._type]);
+    if (forcedType) {
+      this._type = forcedType;
+    } else {
+      const r = Math.random();
+      this._type = r < 0.25 ? 'weapon_burst' : r < 0.5 ? 'weapon_spread' : r < 0.75 ? 'invincible' : 'firerate';
+    }
+    this.mat.color.set(POWERUP_COLORS[this._type] ?? 0xffffff);
   }
   update(dt, t) {
     this._life -= dt;
@@ -441,6 +415,63 @@ class BambuAoE {
   remove(sc) { sc.remove(this.mesh); }
 }
 
+class CargoCluster {
+  constructor(sc) {
+    // 3-5 drones in a perpendicular formation crossing the arena in a straight line.
+    const count = 3 + Math.floor(rng() * 3);
+    const edge  = Math.floor(rng() * 4); // 0=N 1=S 2=W 3=E
+    const H = HALF - 2;
+    let sx, sz, dx, dz;
+    if      (edge === 0) { sx = (rng()-0.5)*H*1.5; sz = -HALF-3; dx = 0;  dz =  1; }
+    else if (edge === 1) { sx = (rng()-0.5)*H*1.5; sz =  HALF+3; dx = 0;  dz = -1; }
+    else if (edge === 2) { sx = -HALF-3; sz = (rng()-0.5)*H*1.5; dx =  1; dz = 0;  }
+    else                 { sx =  HALF+3; sz = (rng()-0.5)*H*1.5; dx = -1; dz = 0;  }
+    this._dx = dx; this._dz = dz;
+    this._speed = 5.5 + rng() * 2;
+    // perpendicular axis for formation spread
+    const px = -dz, pz = dx;
+    this._drones = [];
+    for (let i = 0; i < count; i++) {
+      const spread = (i - (count - 1) / 2) * 1.4;
+      const mat  = new THREE.MeshBasicMaterial({ color: 0xffdd55, transparent: true, opacity: 0.92 });
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.32, 8, 6), mat);
+      mesh.position.set(sx + px * spread, 0.8, sz + pz * spread);
+      sc.add(mesh);
+      this._drones.push({ mesh, mat, alive: true, escaped: false });
+    }
+    this._dropType  = rng() < 0.5 ? 'hp' : 'firerate';
+    this._killedCount = 0;
+    this._lastKillX = sx; this._lastKillZ = sz;
+    this._done = false;
+  }
+
+  update(dt, t) {
+    if (this._done) return 'done';
+    let anyInArena = false;
+    for (const d of this._drones) {
+      if (!d.alive) continue;
+      d.mesh.position.x += this._dx * this._speed * dt;
+      d.mesh.position.z += this._dz * this._speed * dt;
+      d.mat.opacity = 0.7 + 0.22 * Math.sin(t * 7 + d.mesh.position.x);
+      const p = d.mesh.position;
+      if (Math.abs(p.x) > HALF + 4 || Math.abs(p.z) > HALF + 4) {
+        d.escaped = true; d.alive = false; d.mesh.visible = false;
+      } else {
+        anyInArena = true;
+      }
+    }
+    if (!anyInArena) {
+      this._done = true;
+      return this._killedCount === this._drones.length ? 'reward' : 'done';
+    }
+    return 'alive';
+  }
+
+  remove(sc) {
+    for (const d of this._drones) sc.remove(d.mesh);
+  }
+}
+
 class DamageNumber {
   constructor(worldX, worldY, worldZ) {
     this.pos   = new THREE.Vector3(worldX, worldY, worldZ);
@@ -471,6 +502,9 @@ let bambuAoes     = [];
 let gates         = [];
 let powerups      = [];
 let damageNumbers = [];
+let cargoCluster    = null;
+let clusterTimer    = 0;
+let clusterSpawnAt  = 0; // seconds into wave to spawn cluster (0 = none this wave)
 let wave         = 0;
 let waveTimer    = 0;
 let waveDuration = ROUND_DUR;
@@ -630,6 +664,27 @@ function drawHUD() {
     ctx.fillText(`HI ${hiScore}`, uiCanvas.width - 16, 60);
     ctx.textAlign = 'left';
   }
+
+  // Seed (bottom-right, very faint — for sharing runs)
+  if (runSeed > 0) {
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(`SEED ${runSeed.toString(16).toUpperCase().padStart(6,'0')}`, uiCanvas.width - 16, uiCanvas.height - 12);
+    ctx.textAlign = 'left';
+  }
+
+  // Cargo convoy indicator (yellow dot cluster when a convoy is active)
+  if (cargoCluster && !cargoCluster._done) {
+    const alive = cargoCluster._drones.filter(d => d.alive && !d.escaped).length;
+    if (alive > 0) {
+      ctx.font = 'bold 12px monospace';
+      ctx.fillStyle = '#ffdd55';
+      ctx.textAlign = 'center';
+      ctx.fillText(`CONVOY ×${alive}  ${cargoCluster._dropType === 'hp' ? '❤' : '⚡'}`, uiCanvas.width / 2, uiCanvas.height - 14);
+      ctx.textAlign = 'left';
+    }
+  }
 }
 
 // ── Overlay helpers ────────────────────────────────────────────────────────────────
@@ -681,11 +736,13 @@ function showTitle() {
 function showGameOver() {
   overlay.style.display = 'block';
   const newHi = score >= hiScore && score > 0;
+  const seedHex = runSeed.toString(16).toUpperCase().padStart(6, '0');
   overlay.innerHTML =
     `<div style="font-size:52px;font-weight:bold">YOU DIED</div>` +
     `<div style="font-size:22px;margin-top:8px;color:#ff6644">SCORE ${score}</div>` +
     (newHi ? `<div style="font-size:16px;color:#ffdd44;margin-top:6px">NEW BEST!</div>` : ``) +
-    `<div style="font-size:13px;opacity:0.4;margin-top:16px">Restarting…</div>`;
+    `<div style="font-size:12px;opacity:0.35;margin-top:10px">SEED ${seedHex}</div>` +
+    `<div style="font-size:13px;opacity:0.4;margin-top:8px">Restarting…</div>`;
 }
 
 function announceWave() {
@@ -705,6 +762,8 @@ function clearFX() {
   for (const g of gates)        g.remove(scene); gates         = [];
   for (const p of powerups)     p.remove(scene); powerups      = [];
   damageNumbers = [];
+  if (cargoCluster) { cargoCluster.remove(scene); cargoCluster = null; }
+  clusterTimer = 0; clusterSpawnAt = 0;
 }
 
 function spawnWave() {
@@ -733,6 +792,9 @@ function spawnWave() {
     }
   });
   if (wave >= 3) gates.push(new Gate(scene));
+  // Schedule one cargo convoy per wave (starts mid-wave, seeded position)
+  clusterTimer = 0;
+  clusterSpawnAt = 12 + rng() * 12; // 12-24 s into the wave
   announceWave();
 }
 
@@ -806,6 +868,8 @@ function startGame() {
   document.getElementById('upgrade-panel')?.remove();
   score  = 0; streak = 0; wave = 0;
   BULLET_CONFIG.playerBulletScale = 1.0;
+  runSeed = (Math.random() * 0xFFFFFF | 0) >>> 0;
+  rng = mulberry32(runSeed);
   player.reset();
   bullets.clear();
   clearFX();
@@ -1046,6 +1110,34 @@ function loop() {
     }
   }
 
+  // Collision: player bullets → cargo drones
+  if (cargoCluster) {
+    for (let bi = bullets.active.length - 1; bi >= 0; bi--) {
+      const b = bullets.active[bi];
+      if (!b.isPlayer) continue;
+      for (const d of cargoCluster._drones) {
+        if (!d.alive) continue;
+        const ddx = b.mesh.position.x - d.mesh.position.x;
+        const ddz = b.mesh.position.z - d.mesh.position.z;
+        if (Math.hypot(ddx, ddz) < BULLET_R * BULLET_CONFIG.playerBulletScale + 0.32) {
+          d.alive = false; d.mesh.visible = false;
+          cargoCluster._killedCount++;
+          cargoCluster._lastKillX = d.mesh.position.x;
+          cargoCluster._lastKillZ = d.mesh.position.z;
+          bullets.recycleAt(bi);
+          addShake(0.08);
+          audio.enemyDie();
+          for (let fi = 0; fi < 5; fi++) {
+            const a = (fi / 5) * Math.PI * 2;
+            chunks.push(new Chunk(scene, d.mesh.position.x, 0.8, d.mesh.position.z,
+              Math.cos(a) * 3.5, 1.0, Math.sin(a) * 3.5, 0xffdd55, 0.1));
+          }
+          break;
+        }
+      }
+    }
+  }
+
   // Collision: enemy bullets → player
   if (!player.invincible) {
     for (let i = bullets.active.length - 1; i >= 0; i--) {
@@ -1084,6 +1176,29 @@ function loop() {
   for (const g of gates) g.update(dt, _t);
   for (let i = powerups.length - 1; i >= 0; i--) {
     if (!powerups[i].update(dt, _t)) { powerups[i].remove(scene); powerups.splice(i, 1); }
+  }
+
+  // Cargo convoy: spawn + update
+  if (!cargoCluster && clusterSpawnAt > 0) {
+    clusterTimer += dt;
+    if (clusterTimer >= clusterSpawnAt) {
+      cargoCluster = new CargoCluster(scene);
+      clusterSpawnAt = 0;
+      // Brief "CONVOY!" announcement
+      overlay.style.display = 'block';
+      overlay.innerHTML = `<div style="font-size:36px;font-weight:bold;color:#ffdd55;text-shadow:0 0 18px #ffaa00">CONVOY!</div>` +
+        `<div style="font-size:13px;opacity:0.7;margin-top:6px">Kill all drones for a reward</div>`;
+      setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 1200);
+    }
+  }
+  if (cargoCluster) {
+    const res = cargoCluster.update(dt, _t);
+    if (res === 'reward') {
+      powerups.push(new Powerup(scene, cargoCluster._lastKillX, cargoCluster._lastKillZ, cargoCluster._dropType));
+      cargoCluster.remove(scene); cargoCluster = null;
+    } else if (res === 'done') {
+      cargoCluster.remove(scene); cargoCluster = null;
+    }
   }
 
   // Gate interactions
@@ -1125,8 +1240,10 @@ function loop() {
         player._weaponMode = 'SPREAD';
       } else if (pu._type === 'invincible') {
         player.grantInvincibility(3.0);
+      } else if (pu._type === 'hp') {
+        player.hp = Math.min(player.maxHp, player.hp + 1);
       } else {
-        player.grantFireRateBoost(5.0);
+        player.grantFireRateBoost(8.0);
       }
       audio.waveClear();
     }
