@@ -41,9 +41,19 @@ class AudioSystem {
 
   shoot()     { this._tone(920, 0.07, 'square', 0.11); }
   enemyHit()  { this._tone(500, 0.07, 'square', 0.20); }
-  enemyDie()  { this._tone(560, 0.28, 'sawtooth', 0.28, 90); }
+  enemyDieType(cat) {
+    if      (cat === 'blob')  { this._tone(420, 0.22, 'sine',     0.22, 75); }
+    else if (cat === 'toro')  { this._tone(95,  0.45, 'sawtooth', 0.36, 38); this._noise(0.14, 0.22); }
+    else if (cat === 'bambu') { this._tone(480, 0.30, 'triangle', 0.26, 190); }
+    else if (cat === 'pyra')  { this._tone(1300,0.16, 'sine',     0.20, 550); }
+    else                       { this._tone(380, 0.18, 'square',   0.22, 55); this._noise(0.09, 0.13); }
+  }
   playerHit() { this._tone(100, 0.32, 'sawtooth', 0.38); this._noise(0.22, 0.18); }
   playerDie() { this._tone(65,  0.70, 'sawtooth', 0.50); this._noise(0.42, 0.60); }
+  pickup() {
+    [392, 523, 659].forEach((f, i) =>
+      setTimeout(() => this._tone(f, 0.13, 'sine', 0.18), i * 60));
+  }
   waveClear() {
     [261, 329, 392, 523].forEach((f, i) =>
       setTimeout(() => this._tone(f, 0.22, 'sine', 0.20), i * 90));

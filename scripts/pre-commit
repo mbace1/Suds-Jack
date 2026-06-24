@@ -22,6 +22,11 @@ fi
 # Warn when a version is a multiple of 10 — time to archive old entries.
 LATEST_V=$(grep -m1 '^## v[0-9]' VERSIONS.md | grep -oE 'v[0-9]+' | grep -oE '[0-9]+')
 if [ -n "$LATEST_V" ] && [ $(( LATEST_V % 10 )) -eq 0 ] && [ "$LATEST_V" -gt 0 ]; then
+  # Allow commit if archiving was already done (only 1 active ## v entry remains)
+  ACTIVE_V=$(grep -c '^## v[0-9]' VERSIONS.md || true)
+  if [ "$ACTIVE_V" -le 1 ]; then
+    exit 0  # archiving complete — only the new version entry remains
+  fi
   ARCHIVE_END=$(( LATEST_V - 9 ))
   echo ""
   echo "  Version $LATEST_V is a multiple of 10 — time to archive!"

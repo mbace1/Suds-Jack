@@ -552,6 +552,9 @@ const MELEE_TYPES = new Set([
   EnemyType.REDD_MINI, EnemyType.PURP_MINI,
   EnemyType.TORO,
 ]);
+const BLOB_TYPES = new Set([
+  EnemyType.GLOBBO, EnemyType.SPITTOR, EnemyType.FANNER, EnemyType.WEEVA, EnemyType.SPLITTA,
+]);
 
 // ── Game objects ──────────────────────────────────────────────────────────────
 const input   = new InputManager();
@@ -574,6 +577,7 @@ let wave         = 0;
 let waveTimer    = 0;
 let waveDuration = ROUND_DUR;
 let pendingSpawns = [];
+let _prevDashing = false;
 
 // ── Score ─────────────────────────────────────────────────────────────────────
 let score        = 0;
@@ -589,7 +593,11 @@ function onKill(e) {
   score += 100 * streak;
   streakFlashT = STREAK_FLASH_DUR;
   addShake(0.13);
-  audio.enemyDie();
+  const _cat = BLOB_TYPES.has(e.type) ? 'blob'
+    : e.type === EnemyType.TORO  ? 'toro'
+    : e.type === EnemyType.BAMBU ? 'bambu'
+    : e.type === EnemyType.PYRA  ? 'pyra' : 'cube';
+  audio.enemyDieType(_cat);
   // Spawn death FX from chunk data populated by e.destroy()
   for (const cd of e.chunks) {
     chunks.push(new Chunk(scene, cd.x, cd.y, cd.z, cd.vx, cd.vy, cd.vz, e.color, cd.size));
@@ -602,6 +610,18 @@ function onPlayerHit() {
   streakFlashT = 0;
   addShake(0.38);
   audio.playerHit();
+}
+
+function tryHitPlayer() {
+  if (player._shield) {
+    player._shield = false;
+    addShake(0.15);
+    audio.playerHit();
+    return false;
+  }
+  player.hit();
+  onPlayerHit();
+  return !player.alive;
 }
 
 // ── Game state ───────────────────────────────────────────────────────────────
@@ -696,6 +716,14 @@ function drawHUD() {
     ctx.font = 'bold 12px monospace';
     ctx.fillStyle = '#00ccaa';
     ctx.fillText(`[${player._weaponMode}]`, 16 + dotAreaW + 8, dotY + 5);
+    ctx.font = HUD_FONT;
+  }
+
+  // Shield indicator
+  if (player._shield) {
+    ctx.font = 'bold 11px monospace';
+    ctx.fillStyle = '#5599ff';
+    ctx.fillText('✶ SHLD', 16, dotY + 22);
     ctx.font = HUD_FONT;
   }
 
@@ -796,7 +824,7 @@ function showGameOver() {
     `<div style="font-size:22px;margin-top:8px;color:#ff6644">SCORE ${score}</div>` +
     (newHi ? `<div style="font-size:16px;color:#ffdd44;margin-top:6px">NEW BEST!</div>` : ``) +
     `<div style="font-size:12px;opacity:0.35;margin-top:10px">SEED ${seedHex}</div>` +
-    `<div style="font-size:13px;opacity:0.4;margin-top:8px">Restarting…</div>`;
+    `<div style="font-size:13px;opacity:0.4;margin-top:8px">Returning to title…</div>`;
 }
 
 function announceWave() {
@@ -848,6 +876,7 @@ function spawnWave() {
       });
     }
   });
+  if (player._hasShield) player._shield = true;
   if (wave >= 3) gates.push(new Gate(scene));
   // Schedule one cargo convoy per wave (starts mid-wave, seeded position)
   clusterTimer = 0;
@@ -863,6 +892,10 @@ const UPGRADE_POOL = [
   { id: 'bigbullets', label: 'Bigger Bullets', desc: 'Player bullets are 30% larger.' },
   { id: 'dashcd',     label: 'Dash Refresh',   desc: 'Dash cooldown −0.15 s.' },
   { id: 'nuke',       label: 'Nuke',           desc: 'Clear all enemy bullets now.' },
+  { id: 'pierce',     label: 'Pierce',         desc: 'Bullets pass through enemies.' },
+  { id: 'magnet',     label: 'Magnet',         desc: 'Pickups drift toward you.' },
+  { id: 'shield',     label: 'Shield',         desc: 'Absorbs one hit; resets each wave.' },
+  { id: 'dashboom',   label: 'Dash Boom',      desc: 'Radial explosion on every dash.' },
 ];
 
 function applyUpgrade(id) {
@@ -881,6 +914,15 @@ function applyUpgrade(id) {
     for (let i = bullets.active.length - 1; i >= 0; i--) {
       if (!bullets.active[i].isPlayer) bullets.recycleAt(i);
     }
+  } else if (id === 'pierce') {
+    BULLET_CONFIG.playerPiercing = true;
+  } else if (id === 'magnet') {
+    player._magnet = true;
+  } else if (id === 'shield') {
+    player._hasShield = true;
+    player._shield    = true;
+  } else if (id === 'dashboom') {
+    player._dashBoom = true;
   }
 }
 
@@ -925,9 +967,15 @@ function startGame() {
   document.getElementById('upgrade-panel')?.remove();
   score  = 0; streak = 0; wave = 0;
   BULLET_CONFIG.playerBulletScale = 1.0;
+  BULLET_CONFIG.playerPiercing    = false;
   runSeed = (Math.random() * 0xFFFFFF | 0) >>> 0;
   rng = mulberry32(runSeed);
   player.reset();
+  player._magnet    = false;
+  player._hasShield = false;
+  player._shield    = false;
+  player._dashBoom  = false;
+  _prevDashing = false;
   bullets.clear();
   clearFX();
   spawnWave();
@@ -936,7 +984,7 @@ function startGame() {
 
 function triggerGameOver() {
   gameState = 'gameover';
-  restartTimer = 3.2;
+  restartTimer = 2.8;
   if (score > hiScore) {
     hiScore = score;
     localStorage.setItem('tokoDropHi', hiScore);
@@ -1014,7 +1062,14 @@ function loop() {
     for (let i = chunks.length - 1; i >= 0; i--) {
       if (!chunks[i].update(dt)) { chunks[i].remove(scene); chunks.splice(i, 1); }
     }
-    if (restartTimer <= 0) startGame();
+    if (restartTimer <= 0) {
+      clearFX();
+      for (const e of enemies) e.removeFrom(scene);
+      enemies = [];
+      bullets.clear();
+      showTitle();
+      gameState = 'title';
+    }
     renderer.render(scene, camera);
     drawHUD();
     return;
@@ -1053,6 +1108,18 @@ function loop() {
   }
 
   player.update(dt, moveDir, aimDir, bullets, HALF);
+
+  // Dash boom: radial explosion on dash start
+  if (player._dashBoom && player.dashing && !_prevDashing) {
+    const _bx = player.position.x, _bz = player.position.z;
+    for (let _di = 0; _di < 12; _di++) {
+      const _a = (_di / 12) * Math.PI * 2;
+      bullets.spawnDir(_bx, _bz, Math.cos(_a), Math.sin(_a), true, 0xff8844);
+    }
+    addShake(0.18);
+  }
+  _prevDashing = player.dashing;
+
   for (const e of enemies) { e.update(dt, player.position, bullets); e.updateDeath(dt); }
   bullets.update(dt, HALF);
 
@@ -1158,16 +1225,23 @@ function loop() {
   for (let i = bullets.active.length - 1; i >= 0; i--) {
     const b = bullets.active[i];
     if (!b.isPlayer) continue;
+    let hit = false;
     for (const e of enemies) {
       if (!e.alive) continue;
+      if (BULLET_CONFIG.playerPiercing && b._hitIds && b._hitIds.has(e)) continue;
       const dx = b.mesh.position.x - e.position.x;
       const dz = b.mesh.position.z - e.position.z;
       if (Math.hypot(dx, dz) < BULLET_R * BULLET_CONFIG.playerBulletScale + e.radius) {
         const died = e.hit();
-        bullets.recycleAt(i);
+        if (BULLET_CONFIG.playerPiercing) {
+          if (!b._hitIds) b._hitIds = new Set();
+          b._hitIds.add(e);
+        } else {
+          bullets.recycleAt(i);
+          hit = true;
+        }
         if (died) {
           onKill(e);
-          // SPLITTA fires a death-burst ring
           if (e.type === EnemyType.SPLITTA) {
             for (let j = 0; j < 12; j++) {
               const a = (j / 12) * Math.PI * 2;
@@ -1178,9 +1252,10 @@ function loop() {
           audio.enemyHit();
           damageNumbers.push(new DamageNumber(e.position.x, e.position.y + e.radius, e.position.z));
         }
-        break;
+        if (!BULLET_CONFIG.playerPiercing) break;
       }
     }
+    if (hit) continue;
   }
 
   // Collision: player bullets → cargo drones
@@ -1197,7 +1272,7 @@ function loop() {
           cargoCluster._killedCount++;
           bullets.recycleAt(bi);
           addShake(0.08);
-          audio.enemyDie();
+          audio.enemyDieType('blob');
           const kx = d.container.position.x, kz = d.container.position.z;
           for (let fi = 0; fi < 5; fi++) {
             const a = (fi / 5) * Math.PI * 2;
@@ -1228,10 +1303,8 @@ function loop() {
       const dz = b.mesh.position.z - player.position.z;
       const br = b.fat ? FAT_BULLET_R : BULLET_R;
       if (Math.hypot(dx, dz) < br + PLAYER_RADIUS) {
-        player.hit();
         bullets.recycleAt(i);
-        onPlayerHit();
-        if (!player.alive) { triggerGameOver(); break; }
+        if (tryHitPlayer()) { triggerGameOver(); break; }
         break;
       }
     }
@@ -1244,9 +1317,9 @@ function loop() {
       const dx = player.position.x - e.position.x;
       const dz = player.position.z - e.position.z;
       if (Math.hypot(dx, dz) < e.radius + PLAYER_RADIUS) {
-        player.hit(); onPlayerHit();
-        if (e.type === EnemyType.TORO && e._state === 'dashing') addShake(0.27);
-        if (!player.alive) { triggerGameOver(); break; }
+        const died = tryHitPlayer();
+        if (!died && e.type === EnemyType.TORO && e._state === 'dashing') addShake(0.27);
+        if (died) { triggerGameOver(); break; }
         break;
       }
     }
@@ -1300,6 +1373,20 @@ function loop() {
     }
   }
 
+  // Magnet: attract nearby powerups toward player
+  if (player._magnet) {
+    for (const pu of powerups) {
+      if (pu.collected) continue;
+      const _mdx = player.position.x - pu.x, _mdz = player.position.z - pu.z;
+      const _md = Math.hypot(_mdx, _mdz);
+      if (_md < 9 && _md > 0.1) {
+        const _spd = 1 + 5 * (1 - _md / 9);
+        pu._driftX = (_mdx / _md) * _spd;
+        pu._driftZ = (_mdz / _md) * _spd;
+      }
+    }
+  }
+
   // Powerup collection
   for (const pu of powerups) {
     if (pu.collected) continue;
@@ -1317,7 +1404,7 @@ function loop() {
       } else {
         player.grantFireRateBoost(8.0);
       }
-      audio.waveClear();
+      audio.pickup();
     }
   }
 
@@ -1328,8 +1415,7 @@ function loop() {
       const dx = player.position.x - z.mesh.position.x;
       const dz = player.position.z - z.mesh.position.z;
       if (Math.hypot(dx, dz) < z.radius + PLAYER_RADIUS) {
-        player.hit(); onPlayerHit();
-        if (!player.alive) { triggerGameOver(); break; }
+        if (tryHitPlayer()) { triggerGameOver(); break; }
         break;
       }
     }
