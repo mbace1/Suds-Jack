@@ -7,6 +7,10 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v9 — 2026-06-24
+**Remove wave-type labels from announcements**
+- Wave overlay shows only "WAVE N" — no spike/boss label text
+
 ## v8 — 2026-06-24
 **Boss waves**
 - Every 8th wave (8, 16, 24…) is a boss wave: 2.5× budget, "★ BOSS ★" overlay (1.8 s)

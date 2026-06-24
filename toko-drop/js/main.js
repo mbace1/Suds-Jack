@@ -801,13 +801,8 @@ function showGameOver() {
 
 function announceWave() {
   overlay.style.display = 'block';
-  const isBoss  = wave % 8 === 0 && wave > 0;
-  const isSpike = !isBoss && wave % 4 === 0 && wave > 0;
-  let inner = `<div style="font-size:48px;font-weight:bold">WAVE ${wave}</div>`;
-  if (isBoss)       inner += `<div style="font-size:22px;color:#ff2233;margin-top:6px;text-shadow:0 0 22px #ff0000;letter-spacing:3px">★ BOSS ★</div>`;
-  else if (isSpike) inner += `<div style="font-size:18px;color:#ff4455;margin-top:4px;text-shadow:0 0 14px #ff0000">★ SPIKE WAVE ★</div>`;
-  overlay.innerHTML = inner;
-  setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, isBoss ? 1800 : 1300);
+  overlay.innerHTML = `<div style="font-size:48px;font-weight:bold">WAVE ${wave}</div>`;
+  setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 1300);
 }
 
 // ── Wave / restart helpers ──────────────────────────────────────────────────────────
