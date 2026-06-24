@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v12 — 2026-06-24
+**Wave ramp, gate FX, player bullet trails, hit vignette, title animation**
+- Wave budget multiplier 1.8 → 2.8; speed ramp 0.12 → 0.16 (cap 3.2); interval floor 0.35 → 0.26
+- Gate dash-through: 14-shard teal burst + shake + pickup sound when gate deactivates
+- Player bullets now show a green glow trail (opacity 0.45, 0.22-unit step spacing)
+- Hit vignette: red radial gradient on screen edges for 0.32 s on any real hit
+- Title screen: `@keyframes tokoGlow` pulse on title text + staggered `tokoFadeUp` entrance
+
 ## v11 — 2026-06-24
 **Portrait-optimised arena**
 - Arena reshaped from square 36×36 to 22×36 (HALF_X=11, HALF_Z=18) to fill portrait screens

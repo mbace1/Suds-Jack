@@ -96,13 +96,15 @@ export class BulletPool {
         b.shadow.scale.setScalar(shadowR);
         b.shadow.visible = true;
 
-        // Glow trail for enemy bullets only
-        if (!b.isPlayer) {
+        // Glow trail for all bullets (player = green, enemy = red — colour set in spawnDir)
+        {
           const len = Math.hypot(b.vx, b.vz);
           if (len > 0) {
             const nx = b.vx / len, nz = b.vz / len;
             const arr = b._trail.geometry.attributes.position.array;
-            const step = b.fat ? 0.55 : 0.28;
+            const step = b.fat ? 0.55 : (b.isPlayer ? 0.22 : 0.28);
+            const trailOpacity = b.isPlayer ? 0.45 : 0.55;
+            b._trailMat.opacity = trailOpacity;
             for (let j = 0; j < 3; j++) {
               arr[j * 3]     = p.x - nx * step * j;
               arr[j * 3 + 1] = 0.3;

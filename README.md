@@ -33,6 +33,8 @@ Every **8th wave** spawns a boss-scaled enemy (3× HP, 1.5× size) with 2.5× wa
 
 Mid-wave **cargo moth convoys** sweep the arena in sinusoidal paths — shoot them for drifting pickup drops.
 
+Dash through a **gate** to detonate it in a burst of shards and claim a powerup drop.
+
 ## Upgrades
 
 | Card | Effect |

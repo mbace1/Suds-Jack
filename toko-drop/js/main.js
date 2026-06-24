@@ -26,8 +26,8 @@ let rng = Math.random.bind(Math);
 function getWaveScale(wave) {
   const w = wave - 1;
   return {
-    speedMult:    Math.min(1 + w * 0.12, 2.8),
-    intervalMult: Math.max(1 - w * 0.09, 0.35),
+    speedMult:    Math.min(1 + w * 0.16, 3.2),   // ramps faster, higher ceiling
+    intervalMult: Math.max(1 - w * 0.11, 0.26),   // fires more often earlier
   };
 }
 
@@ -50,7 +50,7 @@ function getEnemySchedule(wave) {
   const available = POOL.filter(([, min]) => wave >= min);
   const isBoss  = wave % 8 === 0;
   const isSpike = !isBoss && wave % 4 === 0;
-  const budget = Math.floor((5 + wave * 1.8) * (isBoss ? 2.5 : isSpike ? 1.6 : 1.0));
+  const budget = Math.floor((4 + wave * 2.8) * (isBoss ? 2.5 : isSpike ? 1.6 : 1.0));
   // Variant weights: normal appears 3× so it's most common
   const VARIANTS = ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group'];
   const list = [];
@@ -620,6 +620,7 @@ function tryHitPlayer() {
     audio.playerHit();
     return false;
   }
+  _hitFlashT = 0.32;
   player.hit();
   onPlayerHit();
   return !player.alive;
@@ -629,6 +630,7 @@ function tryHitPlayer() {
 // 'title' | 'playing' | 'paused' | 'gameover'
 let gameState    = 'title';
 let restartTimer = 0;
+let _hitFlashT   = 0;
 
 // ── UI canvas ─────────────────────────────────────────────────────────────────
 const uiCanvas = document.getElementById('canvas-ui');
@@ -665,6 +667,18 @@ const HUD_FONT = 'bold 14px monospace';
 
 function drawHUD() {
   ctx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
+
+  // Hit-damage vignette
+  if (_hitFlashT > 0) {
+    const alpha = (_hitFlashT / 0.32) * 0.55;
+    const cx = uiCanvas.width / 2, cy = uiCanvas.height / 2;
+    const r0 = Math.min(cx, cy) * 0.35, r1 = Math.max(cx, cy) * 1.05;
+    const vgrd = ctx.createRadialGradient(cx, cy, r0, cx, cy, r1);
+    vgrd.addColorStop(0, `rgba(255,0,0,0)`);
+    vgrd.addColorStop(1, `rgba(255,0,0,${alpha.toFixed(2)})`);
+    ctx.fillStyle = vgrd;
+    ctx.fillRect(0, 0, uiCanvas.width, uiCanvas.height);
+  }
 
   if (gameState !== 'playing' && gameState !== 'paused' && gameState !== 'upgrade') return;
 
@@ -772,13 +786,32 @@ function drawHUD() {
 
 // ── Overlay helpers ────────────────────────────────────────────────────────────────
 function showTitle() {
+  // Inject title animation keyframes once
+  if (!document.getElementById('toko-style')) {
+    const s = document.createElement('style');
+    s.id = 'toko-style';
+    s.textContent = `
+      @keyframes tokoGlow {
+        0%   { text-shadow: 0 0 18px #5533ff, 0 0 36px #2211cc; }
+        100% { text-shadow: 0 0 44px #cc55ff, 0 0 88px #6622ee; }
+      }
+      @keyframes tokoFadeUp {
+        from { opacity:0; transform:translateY(12px); }
+        to   { opacity:1; transform:translateY(0); }
+      }
+    `;
+    document.head.appendChild(s);
+  }
   overlay.style.display = 'block';
   overlay.innerHTML =
-    `<div style="font-size:clamp(34px,11vw,58px);font-weight:bold;letter-spacing:4px">TOKO DROP</div>` +
-    `<div style="font-size:13px;opacity:0.5;margin:8px 0 22px">TWIN-STICK BULLET-HELL · PORTRAIT</div>` +
-    `<div style="font-size:16px;opacity:0.85">TAP OR PRESS SPACE TO START</div>` +
-    `<div id="rogue-toggle-slot" style="margin-top:18px"></div>` +
-    `<div style="font-size:12px;opacity:0.38;margin-top:20px;line-height:2;text-align:center">` +
+    `<div style="font-size:clamp(34px,11vw,58px);font-weight:bold;letter-spacing:4px;` +
+    `animation:tokoGlow 1.6s ease-in-out infinite alternate,tokoFadeUp 0.5s ease both">TOKO DROP</div>` +
+    `<div style="font-size:13px;opacity:0.5;margin:8px 0 22px;animation:tokoFadeUp 0.5s 0.1s ease both">` +
+    `TWIN-STICK BULLET-HELL · PORTRAIT</div>` +
+    `<div style="font-size:16px;opacity:0.85;animation:tokoFadeUp 0.5s 0.2s ease both">TAP OR PRESS SPACE TO START</div>` +
+    `<div id="rogue-toggle-slot" style="margin-top:18px;animation:tokoFadeUp 0.5s 0.3s ease both"></div>` +
+    `<div style="font-size:12px;opacity:0.38;margin-top:20px;line-height:2;text-align:center;` +
+    `animation:tokoFadeUp 0.5s 0.4s ease both">` +
     `Move &nbsp;·&nbsp; left stick / WASD<br>` +
     `Aim &amp; fire &nbsp;·&nbsp; right stick / hold LMB<br>` +
     `Dash &nbsp;·&nbsp; release stick / Space<br>` +
@@ -977,7 +1010,8 @@ function startGame() {
   player._hasShield = false;
   player._shield    = false;
   player._dashBoom  = false;
-  _prevDashing = false;
+  _prevDashing  = false;
+  _hitFlashT    = 0;
   bullets.clear();
   clearFX();
   spawnWave();
@@ -1121,6 +1155,7 @@ function loop() {
     addShake(0.18);
   }
   _prevDashing = player.dashing;
+  if (_hitFlashT > 0) _hitFlashT -= dt;
 
   for (const e of enemies) { e.update(dt, player.position, bullets); e.updateDeath(dt); }
   bullets.update(dt, Math.max(HALF_X, HALF_Z));
@@ -1356,6 +1391,15 @@ function loop() {
       if (g.hitsPoint(px, pz, PLAYER_RADIUS)) {
         if (player.dashing) {
           g.deactivate(scene);
+          // Burst of teal shards at gate centre
+          for (let _gi = 0; _gi < 14; _gi++) {
+            const _ga = (_gi / 14) * Math.PI * 2;
+            chunks.push(new Chunk(scene, g._x, 0.9, g._z,
+              Math.cos(_ga) * 5.5, 1.2 + Math.random() * 1.0, Math.sin(_ga) * 5.5,
+              (_gi % 2 === 0) ? 0x44ff88 : 0x88ffcc, 0.13));
+          }
+          addShake(0.14);
+          audio.pickup();
           powerups.push(new Powerup(scene, g._x, g._z));
         }
       }
