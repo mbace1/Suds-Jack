@@ -131,7 +131,7 @@ export class Player {
     this._sqV += 0.6; // elongate at dash start
   }
 
-  update(dt, moveDir, aimDir, bullets, halfSize) {
+  update(dt, moveDir, aimDir, bullets, halfX, halfZ) {
     if (!this.alive) return;
 
     if (this._dashCD        > 0) this._dashCD        -= dt;
@@ -206,9 +206,10 @@ export class Player {
     const _psx = 1 / Math.sqrt(Math.max(this._sq, 0.1));
     this.mesh.scale.set(_psx, this._sq, _psx);
 
-    const h = halfSize - PLAYER_RADIUS;
-    this.mesh.position.x = Math.max(-h, Math.min(h, this.mesh.position.x));
-    this.mesh.position.z = Math.max(-h, Math.min(h, this.mesh.position.z));
+    const hx = halfX - PLAYER_RADIUS;
+    const hz = halfZ - PLAYER_RADIUS;
+    this.mesh.position.x = Math.max(-hx, Math.min(hx, this.mesh.position.x));
+    this.mesh.position.z = Math.max(-hz, Math.min(hz, this.mesh.position.z));
 
     for (let i = this._burstQueue.length - 1; i >= 0; i--) {
       this._burstQueue[i].t -= dt;

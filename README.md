@@ -15,6 +15,8 @@ Live at **[mbace1.github.io/Suds-Jack/toko-drop/](https://mbace1.github.io/Suds-
 
 **ESC** — pause · **E** — toggle eye style
 
+The arena is portrait-optimised (22 × 36 units) — designed for vertical mobile play.
+
 ## Modes
 
 **Roguelike** *(default)* — choose an upgrade card after every wave cleared.  

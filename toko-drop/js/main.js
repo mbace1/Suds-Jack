@@ -6,7 +6,8 @@ import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js';
 import { audio } from './audio.js';
 import { initDesigner } from './designer.js';
 
-const HALF      = 18;
+const HALF_X    = 11;   // arena half-width  (portrait: narrow side)
+const HALF_Z    = 18;   // arena half-depth  (portrait: deep side)
 const ROUND_DUR = 30; // seconds per wave
 
 // ── Seeded PRNG (mulberry32) ───────────────────────────────────────────────────
@@ -111,9 +112,9 @@ scene.background = new THREE.Color(0x0d0d1a);
 scene.fog = new THREE.Fog(0x0d0d1a, 42, 80);
 
 // ── Camera ────────────────────────────────────────────────────────────────
-const CAM_REST = new THREE.Vector3(0, 26, 19);
-const CAM_LOOK = new THREE.Vector3(0, 0, -2);
-const camera   = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 120);
+const CAM_REST = new THREE.Vector3(0, 27, 21);
+const CAM_LOOK = new THREE.Vector3(0, 0, -3);
+const camera   = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 120);
 camera.position.copy(CAM_REST);
 camera.lookAt(CAM_LOOK);
 
@@ -159,7 +160,8 @@ const FLOOR_FRAG = `
   varying vec2 vUv;
   void main() {
     vec3 base = vec3(0.079, 0.079, 0.169);
-    float gx = abs(fract(vUv.x * 28.0) - 0.5);
+    // Frequencies scaled to keep grid cells square on the non-square floor (HALF_X:HALF_Z = 11:18)
+    float gx = abs(fract(vUv.x * 17.1) - 0.5);
     float gz = abs(fract(vUv.y * 28.0) - 0.5);
     float grid = max(0.0, 1.0 - min(gx, gz) * 50.0);
     float pulse = 0.7 + 0.3 * sin(uTime * 1.2);
@@ -170,14 +172,14 @@ const FLOOR_FRAG = `
 `;
 const floorUniforms = { uTime: { value: 0 } };
 const floor = new THREE.Mesh(
-  new THREE.PlaneGeometry(HALF * 2, HALF * 2),
+  new THREE.PlaneGeometry(HALF_X * 2, HALF_Z * 2),
   new THREE.ShaderMaterial({ vertexShader: FLOOR_VERT, fragmentShader: FLOOR_FRAG, uniforms: floorUniforms }),
 );
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
 const border = new THREE.LineSegments(
-  new THREE.EdgesGeometry(new THREE.BoxGeometry(HALF * 2, 0.05, HALF * 2)),
+  new THREE.EdgesGeometry(new THREE.BoxGeometry(HALF_X * 2, 0.05, HALF_Z * 2)),
   new THREE.LineBasicMaterial({ color: 0x5555cc }),
 );
 border.position.y = 0.02;
@@ -347,8 +349,8 @@ class SludgeRibbon {
 
 class Gate {
   constructor(sc) {
-    const x = (Math.random() - 0.5) * 22;
-    const z = (Math.random() - 0.5) * 22;
+    const x = (Math.random() - 0.5) * HALF_X * 1.5;
+    const z = (Math.random() - 0.5) * HALF_Z * 1.5;
     const angle = Math.random() * Math.PI;
     this._x = x; this._z = z; this._angle = angle;
     this.alive = true;
@@ -459,12 +461,11 @@ class CargoCluster {
   constructor(sc) {
     const count = 3 + Math.floor(rng() * 3);
     const edge  = Math.floor(rng() * 4);
-    const H = HALF - 2;
     let sx, sz, dx, dz;
-    if      (edge === 0) { sx = (rng()-0.5)*H*1.5; sz = -HALF-3; dx = 0;  dz =  1; }
-    else if (edge === 1) { sx = (rng()-0.5)*H*1.5; sz =  HALF+3; dx = 0;  dz = -1; }
-    else if (edge === 2) { sx = -HALF-3; sz = (rng()-0.5)*H*1.5; dx =  1; dz = 0;  }
-    else                 { sx =  HALF+3; sz = (rng()-0.5)*H*1.5; dx = -1; dz = 0;  }
+    if      (edge === 0) { sx = (rng()-0.5)*HALF_X*1.5; sz = -(HALF_Z+3); dx = 0;  dz =  1; }
+    else if (edge === 1) { sx = (rng()-0.5)*HALF_X*1.5; sz =   HALF_Z+3;  dx = 0;  dz = -1; }
+    else if (edge === 2) { sx = -(HALF_X+3); sz = (rng()-0.5)*HALF_Z*1.5; dx =  1; dz = 0;  }
+    else                 { sx =   HALF_X+3;  sz = (rng()-0.5)*HALF_Z*1.5; dx = -1; dz = 0;  }
     this._dx = dx; this._dz = dz;
     this._speed = 5.5 + rng() * 2;
     const px = -dz, pz = dx; // perpendicular unit vector
@@ -519,7 +520,7 @@ class CargoCluster {
       d.wR.rotation.z = -flap;
       d.body.rotation.y = t * 1.5 + i * 0.5;
       const p = d.container.position;
-      if (Math.abs(p.x) > HALF + 5 || Math.abs(p.z) > HALF + 5) {
+      if (Math.abs(p.x) > HALF_X + 5 || Math.abs(p.z) > HALF_Z + 5) {
         d.escaped = true; d.alive = false;
       } else {
         anyInArena = true;
@@ -773,14 +774,15 @@ function drawHUD() {
 function showTitle() {
   overlay.style.display = 'block';
   overlay.innerHTML =
-    `<div style="font-size:58px;font-weight:bold;letter-spacing:4px">TOKO DROP</div>` +
-    `<div style="font-size:14px;opacity:0.5;margin:10px 0 28px">TWIN-STICK BULLET-HELL</div>` +
-    `<div style="font-size:16px;opacity:0.8">SPACE / TAP TO START</div>` +
+    `<div style="font-size:clamp(34px,11vw,58px);font-weight:bold;letter-spacing:4px">TOKO DROP</div>` +
+    `<div style="font-size:13px;opacity:0.5;margin:8px 0 22px">TWIN-STICK BULLET-HELL · PORTRAIT</div>` +
+    `<div style="font-size:16px;opacity:0.85">TAP OR PRESS SPACE TO START</div>` +
     `<div id="rogue-toggle-slot" style="margin-top:18px"></div>` +
-    `<div style="font-size:12px;opacity:0.4;margin-top:18px">` +
-    `WASD + hold LMB to aim/fire · SPACE to dash<br>` +
-    `Right stick to aim/fire · release to dash · ESC pause<br>` +
-    `E to toggle eyes</div>`;
+    `<div style="font-size:12px;opacity:0.38;margin-top:20px;line-height:2;text-align:center">` +
+    `Move &nbsp;·&nbsp; left stick / WASD<br>` +
+    `Aim &amp; fire &nbsp;·&nbsp; right stick / hold LMB<br>` +
+    `Dash &nbsp;·&nbsp; release stick / Space<br>` +
+    `Pause ESC &nbsp;·&nbsp; Eyes E</div>`;
 
   // Roguelike toggle — a clickable chip inside the (pointer-events:none) overlay.
   const slot = document.getElementById('rogue-toggle-slot');
@@ -1084,8 +1086,8 @@ function loop() {
   waveTimer += dt;
   while (pendingSpawns.length > 0 && waveTimer >= pendingSpawns[0].delay) {
     const s = pendingSpawns.shift();
-    const r = HALF * 0.6;
-    const bx = Math.cos(s.angle) * r, bz = Math.sin(s.angle) * r;
+    const bx = Math.cos(s.angle) * HALF_X * 0.85;
+    const bz = Math.sin(s.angle) * HALF_Z * 0.85;
     const ox = s.clusterOffset ? s.clusterOffset.x : 0;
     const oz = s.clusterOffset ? s.clusterOffset.z : 0;
     const en = new Enemy(scene, s.type, bx + ox, bz + oz, s.speedMult, s.intervalMult);
@@ -1107,7 +1109,7 @@ function loop() {
     enemies.push(en);
   }
 
-  player.update(dt, moveDir, aimDir, bullets, HALF);
+  player.update(dt, moveDir, aimDir, bullets, HALF_X, HALF_Z);
 
   // Dash boom: radial explosion on dash start
   if (player._dashBoom && player.dashing && !_prevDashing) {
@@ -1121,7 +1123,7 @@ function loop() {
   _prevDashing = player.dashing;
 
   for (const e of enemies) { e.update(dt, player.position, bullets); e.updateDeath(dt); }
-  bullets.update(dt, HALF);
+  bullets.update(dt, Math.max(HALF_X, HALF_Z));
 
   // Update / cull death FX
   for (let i = chunks.length - 1; i >= 0; i--) {

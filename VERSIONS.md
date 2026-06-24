@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v11 — 2026-06-24
+**Portrait-optimised arena**
+- Arena reshaped from square 36×36 to 22×36 (HALF_X=11, HALF_Z=18) to fill portrait screens
+- Camera raised and pulled back (0,27,21), look-at z=−3, FOV 58→60 for better portrait framing
+- Floor grid frequencies adjusted (17.1×, 28×) to keep grid cells square on non-square floor
+- Enemy spawn changed from circle to ellipse matching arena proportions (×0.85 on each axis)
+- CargoCluster, Gate, escape-bounds, bullet-bounds all updated for asymmetric arena
+- Player boundary clamping now uses separate halfX/halfZ in player.js
+- Intro screen: viewport-relative title size (`clamp`), touch-first control hints, portrait label
+
 ## v10 — 2026-06-24
 **Death → title · new upgrade cards · audio pass**
 - Death screen returns player to title after 2.8 s instead of auto-restarting
