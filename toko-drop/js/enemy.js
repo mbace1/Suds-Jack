@@ -9,15 +9,26 @@ const GOO_VERT = `
   uniform float uTime;
   uniform float uPhase;
   uniform float uWobble;
+  uniform float uRadius;
   varying vec3 vNormal;
   varying vec3 vViewPos;
   void main() {
     vec3 pos = position;
-    float wave = sin(pos.y * 3.5 + uTime * 2.8 + pos.x * 1.7 + uPhase) * 0.5
-               + sin(pos.z * 2.1 + uTime * 1.9 + uPhase * 0.7)           * 0.5;
-    pos += normal * wave * 0.038 * uWobble;
+    // Work in radius-normalized space so every blob (r 0.55–1.1, shared 14x10 topology)
+    // gets the same lump count and stays under the sphere's sampling limit (no faceting).
+    vec3 q = position / uRadius;
+    float a1 = q.x * 3.6 + uTime * 2.1 + uPhase;
+    float a2 = q.y * 4.2 + uTime * 1.6 + uPhase * 1.3;
+    float a3 = q.z * 4.8 + uTime * 2.5 + uPhase * 0.7;
+    float wave = (sin(a1) + sin(a2) + sin(a3)) * 0.3333;
+    float amp  = 0.13 * uRadius * uWobble;
+    pos += normal * wave * amp;
+    // Perturb the normal by the height-field gradient so lumps catch light. The uRadius
+    // factors cancel here, giving consistent lump shading independent of blob size.
+    vec3 gradWave = vec3(cos(a1) * 3.6, cos(a2) * 4.2, cos(a3) * 4.8) * (0.3333 / uRadius);
+    vec3 N = normalize(normal - gradWave * amp);
     vec4 mvPos = modelViewMatrix * vec4(pos, 1.0);
-    vNormal  = normalMatrix * normal;
+    vNormal  = normalMatrix * N;
     vViewPos = -mvPos.xyz;
     gl_Position = projectionMatrix * mvPos;
   }
@@ -45,21 +56,21 @@ const GOO_FRAG = `
     float NdV = max(dot(N, V),     0.0);
     float specA      = pow(NdH, uSpecAPow) * 2.60;
     float specB      = pow(NdH, uSpecBPow) * 0.32;
-    float fresnel      = pow(1.0 - NdV, 2.8) * uFresnel;
-    float fresnelTight = pow(1.0 - NdV, 7.0) * uFresnel * 0.4;
+    float fresnel      = pow(1.0 - NdV, 2.2) * uFresnel;
+    float fresnelTight = pow(1.0 - NdV, 6.0) * uFresnel * 0.7;
     float sssPulse   = 1.0 + 0.12 * sin(uTime * 1.6 + uPhase);
     float sss        = pow(max(0.0, -dot(N, LIGHT) * 0.42 + 0.58), 2.2) * uSSS * sssPulse;
     vec3 col = uColor * 0.08
              + uColor * NdL * 0.8
              + vec3(1.0) * (specA + specB) * 0.5
-             + mix(uColor, vec3(1.0), 0.6) * fresnel * 1.2
-             + vec3(1.0) * fresnelTight * 0.8
+             + mix(uColor, vec3(1.0), 0.6) * fresnel * 1.9
+             + vec3(1.0) * fresnelTight * 1.1
              + uColor * sss
              + uEmissive;
     gl_FragColor = vec4(col, uOpacity);
   }
 `;
-export function makeGooMat(color, opacity, wobble = 0) {
+export function makeGooMat(color, opacity, wobble = 0, radius = 0.5) {
   return new THREE.ShaderMaterial({
     vertexShader:   GOO_VERT,
     fragmentShader: GOO_FRAG,
@@ -74,6 +85,7 @@ export function makeGooMat(color, opacity, wobble = 0) {
       uTime:     GOO_TIME,
       uPhase:    { value: Math.random() * Math.PI * 2 },
       uWobble:   { value: wobble },
+      uRadius:   { value: radius },
     },
     transparent: opacity < 1,
     depthWrite:  opacity >= 0.9,
@@ -187,7 +199,7 @@ export class Enemy {
     const matOpacity = isCube ? 0.88 : 0.82;
 
     if (isBlob) {
-      this.mat = makeGooMat(cfg.color, matOpacity, 1.0);
+      this.mat = makeGooMat(cfg.color, matOpacity, 1.0, cfg.radius);
     } else {
       this.mat = new THREE.MeshPhongMaterial({
         color:       cfg.color,
