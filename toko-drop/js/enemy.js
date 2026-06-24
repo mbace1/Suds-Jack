@@ -101,25 +101,55 @@ export class Enemy {
     // Build geometry based on type family
     let geo;
     if (BLOB_TYPES.has(type)) {
-      geo = new THREE.SphereGeometry(cfg.radius, 14, 10);
+      geo = new THREE.SphereGeometry(cfg.radius, 22, 15);  // extra verts for smooth vertex wobble
     } else if (CUBE_TYPES.has(type)) {
-      geo = new RoundedBoxGeometry(cfg.radius * 1.8, cfg.radius * 1.8, cfg.radius * 1.8, 4, 0.18);
+      geo = new RoundedBoxGeometry(cfg.radius * 1.8, cfg.radius * 1.8, cfg.radius * 1.8, 4, 0.22);
     } else if (type === EnemyType.TORO) {
-      geo = new THREE.TorusGeometry(cfg.radius * 0.68, cfg.radius * 0.32, 8, 18);
+      geo = new THREE.TorusGeometry(cfg.radius * 0.68, cfg.radius * 0.32, 10, 22);
     }
 
-    const isCube = CUBE_TYPES.has(type);
-    const isToro = type === EnemyType.TORO;
-    const matOpacity = isCube ? 0.88 : 0.82;
-    const matShininess = isToro ? 140 : 100;
-
-    this.mat = new THREE.MeshPhongMaterial({
-      color:       cfg.color,
-      emissive:    0x000000,
-      transparent: true,
-      opacity:     matOpacity,
-      shininess:   matShininess,
-    });
+    // Gel materials — blobs use goo-surface style (soft, watery), cubes use goo-flop style (firm, glassy)
+    if (BLOB_TYPES.has(type)) {
+      this.mat = new THREE.MeshPhysicalMaterial({
+        color:              cfg.color,
+        emissive:           0x000000,
+        roughness:          0.05,
+        metalness:          0.0,
+        transmission:       0.62,
+        thickness:          cfg.radius * 1.8,
+        ior:                1.38,
+        clearcoat:          0.55,
+        clearcoatRoughness: 0.07,
+        transparent:        true,
+        opacity:            0.92,
+      });
+    } else if (CUBE_TYPES.has(type)) {
+      this.mat = new THREE.MeshPhysicalMaterial({
+        color:              cfg.color,
+        emissive:           0x000000,
+        roughness:          0.09,
+        metalness:          0.02,
+        transmission:       0.44,
+        thickness:          cfg.radius * 2.2,
+        ior:                1.50,
+        clearcoat:          0.35,
+        clearcoatRoughness: 0.10,
+        transparent:        true,
+        opacity:            0.88,
+      });
+    } else {
+      // TORO and fallback
+      this.mat = new THREE.MeshPhysicalMaterial({
+        color:              cfg.color,
+        emissive:           0x000000,
+        roughness:          0.07,
+        metalness:          0.18,
+        clearcoat:          0.80,
+        clearcoatRoughness: 0.05,
+        transparent:        true,
+        opacity:            0.90,
+      });
+    }
 
     // Organic vertex-shader jiggle for blob types — collision shape stays fixed
     if (BLOB_TYPES.has(type)) {
@@ -153,7 +183,10 @@ export class Enemy {
       this.group = new THREE.Group();
       this.group.add(this.mesh);
       const spikeGeo = new THREE.ConeGeometry(0.12, 0.3, 4);
-      const spikeMat = new THREE.MeshPhongMaterial({ color: cfg.color, shininess: 100 });
+      const spikeMat = new THREE.MeshPhysicalMaterial({
+        color: cfg.color, roughness: 0.07, metalness: 0.18,
+        clearcoat: 0.7, clearcoatRoughness: 0.05,
+      });
       for (let i = 0; i < 6; i++) {
         const a = (i / 6) * Math.PI * 2;
         const spike = new THREE.Mesh(spikeGeo, spikeMat);
@@ -182,8 +215,11 @@ export class Enemy {
 
     } else if (type === EnemyType.BAMBU) {
       // BAMBU: stationary cross-stalk enemy
-      this._bambuMat = new THREE.MeshPhongMaterial({
-        color: cfg.color, transparent: true, opacity: 0.88, shininess: 80,
+      this._bambuMat = new THREE.MeshPhysicalMaterial({
+        color: cfg.color, transparent: true, opacity: 0.88,
+        roughness: 0.10, metalness: 0.0,
+        transmission: 0.38, thickness: 1.0, ior: 1.45,
+        clearcoat: 0.4, clearcoatRoughness: 0.10,
       });
       this.mat = this._bambuMat;
       this.group = new THREE.Group();
@@ -215,8 +251,11 @@ export class Enemy {
 
     } else if (type === EnemyType.PYRA) {
       // PYRA: spinning ring with destroyable holes
-      this.mat = new THREE.MeshPhongMaterial({
-        color: cfg.color, transparent: true, opacity: 0.85, shininess: 120,
+      this.mat = new THREE.MeshPhysicalMaterial({
+        color: cfg.color, transparent: true, opacity: 0.85,
+        roughness: 0.06, metalness: 0.08,
+        transmission: 0.30, thickness: 0.35, ior: 1.48,
+        clearcoat: 0.70, clearcoatRoughness: 0.06,
       });
       this.group = new THREE.Group();
       this.group.position.set(x, cfg.radius, z);
@@ -236,7 +275,10 @@ export class Enemy {
       const tier = Math.floor(intervalMult > 0 ? (1 - intervalMult) / 0.09 : 0);
       const holeCount = tier < 3 ? 4 : tier < 5 ? 6 : 8;
       this._holes = [];
-      const holeMat = new THREE.MeshPhongMaterial({ color: 0xffcc44, shininess: 80 });
+      const holeMat = new THREE.MeshPhysicalMaterial({
+        color: 0xffcc44, roughness: 0.08, metalness: 0.1,
+        clearcoat: 0.5, emissive: 0x221100, emissiveIntensity: 0.4,
+      });
       for (let i = 0; i < holeCount; i++) {
         const a = (i / holeCount) * Math.PI * 2;
         const holeMesh = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.4, 5), holeMat);
