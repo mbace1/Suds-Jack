@@ -95,6 +95,9 @@ export class Enemy {
     this._aoeReady     = false;
     this._lobReady     = null;
 
+    // Per-enemy wobble uniforms (used by vertex shader for blob types)
+    this._wUni = { u_wt: { value: 0 }, u_hw: { value: 0 } };
+
     // Build geometry based on type family
     let geo;
     if (BLOB_TYPES.has(type)) {
@@ -117,6 +120,27 @@ export class Enemy {
       opacity:     matOpacity,
       shininess:   matShininess,
     });
+
+    // Organic vertex-shader jiggle for blob types — collision shape stays fixed
+    if (BLOB_TYPES.has(type)) {
+      const wUni = this._wUni;
+      this.mat.onBeforeCompile = shader => {
+        shader.uniforms.u_wt = wUni.u_wt;
+        shader.uniforms.u_hw = wUni.u_hw;
+        shader.vertexShader = 'uniform float u_wt;\nuniform float u_hw;\n' + shader.vertexShader;
+        shader.vertexShader = shader.vertexShader.replace(
+          '#include <begin_vertex>',
+          `#include <begin_vertex>
+          // breathing ripple
+          float _b = sin(position.y * 3.8 + u_wt * 5.2) * 0.08
+                   + cos(position.x * 3.2 + u_wt * 4.7) * 0.06
+                   + cos(position.z * 3.5 + u_wt * 5.8) * 0.04;
+          // hit burst — radial wave that decays with u_hw
+          float _h = sin(length(position) * 9.0 - u_wt * 20.0) * u_hw * 0.28;
+          transformed += normal * (_b + _h);`,
+        );
+      };
+    }
 
     this.mesh = new THREE.Mesh(geo, this.mat);
     this.mesh.castShadow = true;
@@ -683,10 +707,23 @@ export class Enemy {
       const amp  = isSplitOrBig ? 0.10 : (CUBE_TYPES.has(this.type) ? 0.035 : 0.04);
       const freq = isSplitOrBig ? 4.0  : (CUBE_TYPES.has(this.type) ? 2.2   : 2.8);
       const breathe = amp * Math.sin(this._wobbleT * freq);
-      if (!this._isTelegraphing || this.type !== EnemyType.SPITTOR) {
-        const sy  = Math.max(0.1, 1 + breathe - this._hitWobble);
-        const sxz = Math.max(0.1, 1 - breathe * 0.5 + this._hitWobble * 0.5);
-        this.mesh.scale.set(sxz, sy, sxz);
+
+      if (BLOB_TYPES.has(this.type)) {
+        // Blobs: vertex shader handles hit burst; CPU side does only global squash/stretch
+        if (!this._isTelegraphing || this.type !== EnemyType.SPITTOR) {
+          const sy  = Math.max(0.1, 1 + breathe);
+          const sxz = Math.max(0.1, 1 - breathe * 0.5);
+          this.mesh.scale.set(sxz, sy, sxz);
+        }
+        this._wUni.u_wt.value = this._wobbleT;
+        this._wUni.u_hw.value = this._hitWobble;
+      } else {
+        // Cubes: scale-based squash + hit wobble
+        if (!this._isTelegraphing || this.type !== EnemyType.SPITTOR) {
+          const sy  = Math.max(0.1, 1 + breathe - this._hitWobble);
+          const sxz = Math.max(0.1, 1 - breathe * 0.5 + this._hitWobble * 0.5);
+          this.mesh.scale.set(sxz, sy, sxz);
+        }
       }
     } else {
       // TORO: hit squash only

@@ -28,6 +28,7 @@ export class Player {
     this._fireT    = 0;
     this._lastAim  = { x: 1, z: 0 };
     this._ghostT   = 0;
+    this._fireBoostT = 0;
     this.onShoot   = null;
 
     const geo = new THREE.SphereGeometry(PLAYER_RADIUS, 14, 10);
@@ -67,6 +68,7 @@ export class Player {
 
   // Invincible during dash OR mercy frames after a hit
   get invincible() { return this._dashTime > 0 || this._mercyT > 0; }
+  get dashing()    { return this._dashTime > 0; }
 
   get position() { return this.mesh.position; }
 
@@ -79,6 +81,7 @@ export class Player {
     this._dashCD   = 0;
     this._fireT    = 0;
     this._ghostT   = 0;
+    this._fireBoostT = 0;
     this.mat.emissive.setHex(0x222222);
     this.mat.transparent = false;
     this.mat.opacity = 1;
@@ -111,8 +114,9 @@ export class Player {
   update(dt, moveDir, aimDir, bullets, halfSize) {
     if (!this.alive) return;
 
-    if (this._dashCD > 0) this._dashCD -= dt;
-    if (this._fireT  > 0) this._fireT  -= dt;
+    if (this._dashCD > 0)    this._dashCD    -= dt;
+    if (this._fireT  > 0)    this._fireT     -= dt;
+    if (this._fireBoostT > 0) this._fireBoostT -= dt;
 
     // Hit flash (red emissive)
     if (this._flashT > 0) {
@@ -188,7 +192,7 @@ export class Player {
       const ox = this.mesh.position.x + aimDir.x * (PLAYER_RADIUS + 0.3);
       const oz = this.mesh.position.z + aimDir.z * (PLAYER_RADIUS + 0.3);
       bullets.spawnDir(ox, oz, aimDir.x, aimDir.z, true);
-      this._fireT = FIRE_RATE;
+      this._fireT = this._fireBoostT > 0 ? FIRE_RATE * 0.4 : FIRE_RATE;
       this.onShoot?.();
     }
 
@@ -218,6 +222,14 @@ export class Player {
     for (const g of this._ghosts) { g.life = 0; g.mesh.visible = false; }
     this._eyeL.visible = false;
     this._eyeR.visible = false;
+  }
+
+  grantInvincibility(duration) {
+    this._mercyT = Math.max(this._mercyT, duration);
+  }
+
+  grantFireRateBoost(duration) {
+    this._fireBoostT = Math.max(this._fireBoostT ?? 0, duration);
   }
 
   toggleEyes() {
