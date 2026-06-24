@@ -7,6 +7,13 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v15 — 2026-06-24
+**Bloom post-processing**
+- `EffectComposer` + `UnrealBloomPass` wired into all render sites (title, playing, gameover, upgrade)
+- ACES Filmic tone mapping (exposure 1.1) for richer colour rendering
+- Strength 0.9, radius 0.4, threshold 0.15 — player sphere, bullets, enemy rims, gate all bloom
+- Resize handler updated to propagate new dimensions to composer and bloom pass
+
 ## v14 — 2026-06-24
 **GDD added — living design document**
 - `GDD.md` added at repo root: 14-section Game Design Document
