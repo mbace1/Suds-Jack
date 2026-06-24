@@ -47,13 +47,25 @@ function getEnemySchedule(wave) {
     [TORO,        6, 5],
   ];
   const available = POOL.filter(([, min]) => wave >= min);
-  const isSpike = wave % 4 === 0;
-  const budget = Math.floor((5 + wave * 1.8) * (isSpike ? 1.6 : 1.0));
+  const isBoss  = wave % 8 === 0;
+  const isSpike = !isBoss && wave % 4 === 0;
+  const budget = Math.floor((5 + wave * 1.8) * (isBoss ? 2.5 : isSpike ? 1.6 : 1.0));
   // Variant weights: normal appears 3× so it's most common
   const VARIANTS = ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group'];
   const list = [];
   let spent = 0, t = 0;
-  while (spent < budget && list.length < 16) {
+
+  // Boss wave: guaranteed large enemy up front
+  if (isBoss) {
+    const topPool = [TORO, PYRA, BAMBU, PURP_CUBE].filter(tp => available.some(([at]) => at === tp));
+    const bossType = topPool.length ? topPool[topPool.length - 1] : available[available.length - 1][0];
+    const bossCost = POOL.find(([tp]) => tp === bossType)?.[2] ?? 3;
+    list.push({ type: bossType, t: 0, boss: true });
+    spent += Math.ceil(bossCost * 2.5);
+    t = 4;
+  }
+
+  while (spent < budget && list.length < 18) {
     const [type, , cost] = available[Math.floor(rng() * available.length)];
     const variant = wave >= 2 ? VARIANTS[Math.floor(rng() * VARIANTS.length)] : 'normal';
     let entry, entryCost;
@@ -789,11 +801,13 @@ function showGameOver() {
 
 function announceWave() {
   overlay.style.display = 'block';
-  const isSpike = wave % 4 === 0 && wave > 0;
-  overlay.innerHTML = isSpike
-    ? `<div style="font-size:48px;font-weight:bold">WAVE ${wave}</div><div style="font-size:18px;color:#ff4455;margin-top:4px;text-shadow:0 0 14px #ff0000">★ SPIKE WAVE ★</div>`
-    : `<div style="font-size:48px;font-weight:bold">WAVE ${wave}</div>`;
-  setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 1300);
+  const isBoss  = wave % 8 === 0 && wave > 0;
+  const isSpike = !isBoss && wave % 4 === 0 && wave > 0;
+  let inner = `<div style="font-size:48px;font-weight:bold">WAVE ${wave}</div>`;
+  if (isBoss)       inner += `<div style="font-size:22px;color:#ff2233;margin-top:6px;text-shadow:0 0 22px #ff0000;letter-spacing:3px">★ BOSS ★</div>`;
+  else if (isSpike) inner += `<div style="font-size:18px;color:#ff4455;margin-top:4px;text-shadow:0 0 14px #ff0000">★ SPIKE WAVE ★</div>`;
+  overlay.innerHTML = inner;
+  setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, isBoss ? 1800 : 1300);
 }
 
 // ── Wave / restart helpers ──────────────────────────────────────────────────────────
@@ -833,6 +847,7 @@ function spawnWave() {
         clusterOffset: k > 0 ? { x: (rng()-0.5)*3, z: (rng()-0.5)*3 } : null,
         speedMult,
         intervalMult,
+        boss: entry.boss || false,
         elite: entry.elite || false,
         elitelite: entry.elitelite || false,
       });
@@ -1024,7 +1039,12 @@ function loop() {
     const ox = s.clusterOffset ? s.clusterOffset.x : 0;
     const oz = s.clusterOffset ? s.clusterOffset.z : 0;
     const en = new Enemy(scene, s.type, bx + ox, bz + oz, s.speedMult, s.intervalMult);
-    if (s.elite) {
+    if (s.boss) {
+      if (en.type !== EnemyType.BAMBU && en.type !== EnemyType.PYRA) {
+        en.hp = Math.ceil(en.hp * 3); en._hpMult = 3;
+      }
+      en.mesh.scale.multiplyScalar(1.5); en._radiusMult = 1.5;
+    } else if (s.elite) {
       if (en.type !== EnemyType.BAMBU && en.type !== EnemyType.PYRA) {
         en.hp = Math.ceil(en.hp * 2); en._hpMult = 2;
       }

@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v8 — 2026-06-24
+**Boss waves**
+- Every 8th wave (8, 16, 24…) is a boss wave: 2.5× budget, "★ BOSS ★" overlay (1.8 s)
+- Guaranteed top-tier enemy (TORO → PYRA → BAMBU → PURP_CUBE priority) at t=0
+- Boss scaling: 3× HP, 1.5× scale — clearly larger than elite (1.2×) or elite-lite
+- Boss wave supersedes spike-wave logic; `isBoss` checked before `isSpike`
+- `boss` flag propagated through `pendingSpawns` to spawn trickle
+
 ## v7 — 2026-06-24
 **Silent wavy convoy with drifting drops**
 - Convoy spawns silently — no overlay announcement, no HUD indicator
