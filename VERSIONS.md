@@ -7,6 +7,10 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v13 — 2026-06-24
+**Version number in HUD**
+- "v13" shown bottom-left in same style as seed (10px monospace, 0.18 opacity)
+
 ## v12 — 2026-06-24
 **Wave ramp, gate FX, player bullet trails, hit vignette, title animation**
 - Wave budget multiplier 1.8 → 2.8; speed ramp 0.12 → 0.16 (cap 3.2); interval floor 0.35 → 0.26
