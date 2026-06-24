@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { InputManager } from './input.js';
 import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js';
 import { Player, PLAYER_RADIUS } from './player.js';
-import { Enemy, EnemyType } from './enemy.js';
+import { Enemy, EnemyType, GOO_TIME } from './enemy.js';
 import { audio } from './audio.js';
 import { initDesigner } from './designer.js';
 
@@ -1131,7 +1131,9 @@ function loop() {
     showUpgradeCards();
   }
 
-  floorUniforms.uTime.value = performance.now() / 1000;
+  const _now = performance.now() / 1000;
+  GOO_TIME.value            = _now;
+  floorUniforms.uTime.value = _now;
   renderer.render(scene, camera);
   drawHUD();
 }

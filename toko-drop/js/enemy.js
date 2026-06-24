@@ -2,11 +2,21 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
+// Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
+export const GOO_TIME = { value: 0 };
+
 const GOO_VERT = `
+  uniform float uTime;
+  uniform float uPhase;
+  uniform float uWobble;
   varying vec3 vNormal;
   varying vec3 vViewPos;
   void main() {
-    vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+    vec3 pos = position;
+    float wave = sin(pos.y * 3.5 + uTime * 2.8 + pos.x * 1.7 + uPhase) * 0.5
+               + sin(pos.z * 2.1 + uTime * 1.9 + uPhase * 0.7)           * 0.5;
+    pos += normal * wave * 0.038 * uWobble;
+    vec4 mvPos = modelViewMatrix * vec4(pos, 1.0);
     vNormal  = normalMatrix * normal;
     vViewPos = -mvPos.xyz;
     gl_Position = projectionMatrix * mvPos;
@@ -21,6 +31,8 @@ const GOO_FRAG = `
   uniform float uSpecAPow;
   uniform float uSpecBPow;
   uniform float uSSS;
+  uniform float uTime;
+  uniform float uPhase;
   varying vec3 vNormal;
   varying vec3 vViewPos;
   void main() {
@@ -31,20 +43,23 @@ const GOO_FRAG = `
     float NdL = max(dot(N, LIGHT), 0.0);
     float NdH = max(dot(N, H),     0.0);
     float NdV = max(dot(N, V),     0.0);
-    float specA   = pow(NdH, uSpecAPow) * 2.60;
-    float specB   = pow(NdH, uSpecBPow) * 0.32;
-    float fresnel = pow(1.0 - NdV, 3.80) * uFresnel;
-    float sss     = pow(max(0.0, -dot(N, LIGHT) * 0.42 + 0.58), 2.2) * uSSS;
+    float specA      = pow(NdH, uSpecAPow) * 2.60;
+    float specB      = pow(NdH, uSpecBPow) * 0.32;
+    float fresnel      = pow(1.0 - NdV, 2.8) * uFresnel;
+    float fresnelTight = pow(1.0 - NdV, 7.0) * uFresnel * 0.4;
+    float sssPulse   = 1.0 + 0.12 * sin(uTime * 1.6 + uPhase);
+    float sss        = pow(max(0.0, -dot(N, LIGHT) * 0.42 + 0.58), 2.2) * uSSS * sssPulse;
     vec3 col = uColor * 0.08
              + uColor * NdL * 0.8
              + vec3(1.0) * (specA + specB) * 0.5
-             + uColor * fresnel * 1.2
+             + mix(uColor, vec3(1.0), 0.6) * fresnel * 1.2
+             + vec3(1.0) * fresnelTight * 0.8
              + uColor * sss
              + uEmissive;
     gl_FragColor = vec4(col, uOpacity);
   }
 `;
-export function makeGooMat(color, opacity) {
+export function makeGooMat(color, opacity, wobble = 0) {
   return new THREE.ShaderMaterial({
     vertexShader:   GOO_VERT,
     fragmentShader: GOO_FRAG,
@@ -56,6 +71,9 @@ export function makeGooMat(color, opacity) {
       uSpecAPow: { value: 88.0 },
       uSpecBPow: { value: 11.0 },
       uSSS:      { value: 0.42 },
+      uTime:     GOO_TIME,
+      uPhase:    { value: Math.random() * Math.PI * 2 },
+      uWobble:   { value: wobble },
     },
     transparent: opacity < 1,
     depthWrite:  opacity >= 0.9,
@@ -169,7 +187,7 @@ export class Enemy {
     const matOpacity = isCube ? 0.88 : 0.82;
 
     if (isBlob) {
-      this.mat = makeGooMat(cfg.color, matOpacity);
+      this.mat = makeGooMat(cfg.color, matOpacity, 1.0);
     } else {
       this.mat = new THREE.MeshPhongMaterial({
         color:       cfg.color,
