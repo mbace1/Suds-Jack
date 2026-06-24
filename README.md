@@ -1,4 +1,4 @@
-# Toko Drop
+# Toko Drop — v14
 
 Twin-stick bullet-hell arena shooter built with Three.js and Web Audio.
 
@@ -49,6 +49,10 @@ Dash through a **gate** to detonate it in a burst of shards and claim a powerup 
 | Magnet | Pickups are attracted to you |
 | Shield | Absorbs one hit, resets each wave |
 | Dash Boom | Radial explosion on every dash |
+
+## Design Reference
+
+See [GDD.md](GDD.md) for the full Game Design Document with per-section version stamps.
 
 ## Changelog
 

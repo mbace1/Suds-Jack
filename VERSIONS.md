@@ -7,6 +7,12 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v14 — 2026-06-24
+**GDD added — living design document**
+- `GDD.md` added at repo root: 14-section Game Design Document
+- Per-section `*(vN)*` stamps track when each section was last meaningfully updated
+- Covers: concept, core loop, arena, player, enemy roster, wave system, upgrades, pickups, gates, audio, visuals, HUD, seeded runs, balance
+
 ## v13 — 2026-06-24
 **Version number in HUD**
 - "v13" shown bottom-left in same style as seed (10px monospace, 0.18 opacity)
