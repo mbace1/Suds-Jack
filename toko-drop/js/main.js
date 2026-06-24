@@ -830,16 +830,16 @@ function loop() {
   }
 
   // Collision: player bullets → enemies
-  for (let i = bullets.active.length - 1; i >= 0; i--) {
-    const b = bullets.active[i];
-    if (!b.isPlayer) continue;
+  for (let ai = bullets.active.length - 1; ai >= 0; ai--) {
+    const s = bullets.active[ai];
+    if (!bullets.isPlayer[s]) continue;
     for (const e of enemies) {
       if (!e.alive) continue;
-      const dx = b.mesh.position.x - e.position.x;
-      const dz = b.mesh.position.z - e.position.z;
+      const dx = bullets.x[s] - e.position.x;
+      const dz = bullets.z[s] - e.position.z;
       if (Math.hypot(dx, dz) < BULLET_R + e.radius) {
         const died = e.hit();
-        bullets.recycleAt(i);
+        bullets.recycleAt(ai);
         if (died) {
           onKill(e);
           // SPLITTA fires a death-burst ring
@@ -859,15 +859,15 @@ function loop() {
 
   // Collision: enemy bullets → player
   if (!player.invincible) {
-    for (let i = bullets.active.length - 1; i >= 0; i--) {
-      const b = bullets.active[i];
-      if (b.isPlayer) continue;
-      const dx = b.mesh.position.x - player.position.x;
-      const dz = b.mesh.position.z - player.position.z;
-      const br = b.fat ? FAT_BULLET_R : BULLET_R;
+    for (let ai = bullets.active.length - 1; ai >= 0; ai--) {
+      const s = bullets.active[ai];
+      if (bullets.isPlayer[s]) continue;
+      const dx = bullets.x[s] - player.position.x;
+      const dz = bullets.z[s] - player.position.z;
+      const br = bullets.fat[s] ? FAT_BULLET_R : BULLET_R;
       if (Math.hypot(dx, dz) < br + PLAYER_RADIUS) {
         player.hit();
-        bullets.recycleAt(i);
+        bullets.recycleAt(ai);
         onPlayerHit();
         if (!player.alive) { triggerGameOver(); break; }
         break;
