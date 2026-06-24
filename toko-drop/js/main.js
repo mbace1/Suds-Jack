@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { InputManager } from './input.js';
 import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js';
 import { Player, PLAYER_RADIUS } from './player.js';
-import { Enemy, EnemyType, GOO_TIME } from './enemy.js';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js';
 import { audio } from './audio.js';
 import { initDesigner } from './designer.js';
 
@@ -47,16 +47,39 @@ function getEnemySchedule(wave) {
     [TORO,        6, 5],
   ];
   const available = POOL.filter(([, min]) => wave >= min);
-  const budget = 5 + Math.floor(wave * 1.8);
+  const isSpike = wave % 4 === 0;
+  const budget = Math.floor((5 + wave * 1.8) * (isSpike ? 1.6 : 1.0));
+  // Variant weights: normal appears 3× so it's most common
+  const VARIANTS = ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group'];
   const list = [];
   let spent = 0, t = 0;
-  while (spent < budget && list.length < 14) {
-    // Pick a random available enemy type
+  while (spent < budget && list.length < 16) {
     const [type, , cost] = available[Math.floor(rng() * available.length)];
-    if (spent + cost > budget + 2) break; // allow slight overage to finish
-    list.push({ type, t });
-    t += 2 + Math.floor(rng() * 6);
-    spent += cost;
+    const variant = wave >= 2 ? VARIANTS[Math.floor(rng() * VARIANTS.length)] : 'normal';
+    let entry, entryCost;
+    if (variant === 'elite') {
+      entryCost = Math.ceil(cost * 1.6);
+      entry = { type, t, elite: true };
+    } else if (variant === 'elitelite') {
+      entryCost = Math.ceil(cost * 1.25);
+      entry = { type, t, elitelite: true };
+    } else if (variant === 'twin') {
+      entryCost = Math.ceil(cost * 1.6);
+      entry = { type, t, count: 2 };
+    } else if (variant === 'group') {
+      const cheaper = available.filter(([, , c]) => c <= 2);
+      const pick = cheaper.length ? cheaper[Math.floor(rng() * cheaper.length)] : [type, 0, cost];
+      const cnt = 3 + Math.floor(rng() * 2);
+      entryCost = pick[2] * cnt;
+      entry = { type: pick[0], t, count: cnt };
+    } else {
+      entryCost = cost;
+      entry = { type, t };
+    }
+    if (spent + entryCost > budget + 3) break;
+    list.push(entry);
+    t += 1.5 + Math.floor(rng() * 5);
+    spent += entryCost;
   }
   return list.length ? list : [{ type: GLOBBO, t: 0 }];
 }
@@ -417,9 +440,8 @@ class BambuAoE {
 
 class CargoCluster {
   constructor(sc) {
-    // 3-5 drones in a perpendicular formation crossing the arena in a straight line.
     const count = 3 + Math.floor(rng() * 3);
-    const edge  = Math.floor(rng() * 4); // 0=N 1=S 2=W 3=E
+    const edge  = Math.floor(rng() * 4);
     const H = HALF - 2;
     let sx, sz, dx, dz;
     if      (edge === 0) { sx = (rng()-0.5)*H*1.5; sz = -HALF-3; dx = 0;  dz =  1; }
@@ -428,34 +450,63 @@ class CargoCluster {
     else                 { sx =  HALF+3; sz = (rng()-0.5)*H*1.5; dx = -1; dz = 0;  }
     this._dx = dx; this._dz = dz;
     this._speed = 5.5 + rng() * 2;
-    // perpendicular axis for formation spread
-    const px = -dz, pz = dx;
+    const px = -dz, pz = dx; // perpendicular unit vector
+    this._px = px; this._pz = pz;
+
+    // Curved or straight sweep
+    this._curved    = rng() < 0.5;
+    this._curveAmp  = (0.4 + rng() * 0.8) * 5;
+    this._curveFreq = 0.8 + rng() * 1.2;
+    this._curvePhase = rng() * Math.PI * 2;
+    this._cx = sx; this._cz = sz; // formation centre (advances each frame)
+    this._elapsed = 0;
+
     this._drones = [];
     for (let i = 0; i < count; i++) {
-      const spread = (i - (count - 1) / 2) * 1.4;
-      const mat  = new THREE.MeshBasicMaterial({ color: 0xffdd55, transparent: true, opacity: 0.92 });
-      const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.32, 8, 6), mat);
-      mesh.position.set(sx + px * spread, 0.8, sz + pz * spread);
-      sc.add(mesh);
-      this._drones.push({ mesh, mat, alive: true, escaped: false });
+      const basePerp = (i - (count - 1) / 2) * 1.4;
+      // Goo moth: golden goo-shader body + translucent wing planes
+      const bodyR = 0.32;
+      const mat = makeGooMat(0xffdd55, 0.92, 1.0, bodyR);
+      const body = new THREE.Mesh(new THREE.SphereGeometry(bodyR, 10, 8), mat);
+      const mkWing = () => new THREE.Mesh(
+        new THREE.PlaneGeometry(0.52, 0.28),
+        new THREE.MeshBasicMaterial({ color: 0xffee88, transparent: true, opacity: 0.6, side: THREE.DoubleSide }),
+      );
+      const wL = mkWing(); wL.position.set(-0.40, 0.06, 0);
+      const wR = mkWing(); wR.position.set( 0.40, 0.06, 0);
+      const container = new THREE.Object3D();
+      container.add(body, wL, wR);
+      container.position.set(sx + px * basePerp, 0.8, sz + pz * basePerp);
+      sc.add(container);
+      this._drones.push({ container, body, mat, wL, wR, alive: true, escaped: false, basePerp });
     }
-    this._dropType  = rng() < 0.5 ? 'hp' : 'firerate';
     this._killedCount = 0;
-    this._lastKillX = sx; this._lastKillZ = sz;
     this._done = false;
   }
 
   update(dt, t) {
     if (this._done) return 'done';
+    this._elapsed += dt;
+    this._cx += this._dx * this._speed * dt;
+    this._cz += this._dz * this._speed * dt;
+    const curveOff = this._curved
+      ? Math.sin(this._curveFreq * this._elapsed + this._curvePhase) * this._curveAmp
+      : 0;
     let anyInArena = false;
-    for (const d of this._drones) {
+    for (let i = 0; i < this._drones.length; i++) {
+      const d = this._drones[i];
       if (!d.alive) continue;
-      d.mesh.position.x += this._dx * this._speed * dt;
-      d.mesh.position.z += this._dz * this._speed * dt;
-      d.mat.opacity = 0.7 + 0.22 * Math.sin(t * 7 + d.mesh.position.x);
-      const p = d.mesh.position;
-      if (Math.abs(p.x) > HALF + 4 || Math.abs(p.z) > HALF + 4) {
-        d.escaped = true; d.alive = false; d.mesh.visible = false;
+      const perp = d.basePerp + curveOff;
+      d.container.position.x = this._cx + this._px * perp;
+      d.container.position.z = this._cz + this._pz * perp;
+      // Wing flap + body spin
+      const flap = Math.sin(t * 12 + i * 0.8) * 0.75;
+      d.wL.rotation.z =  flap;
+      d.wR.rotation.z = -flap;
+      d.body.rotation.y = t * 1.5 + i * 0.5;
+      const p = d.container.position;
+      if (Math.abs(p.x) > HALF + 5 || Math.abs(p.z) > HALF + 5) {
+        d.escaped = true; d.alive = false;
       } else {
         anyInArena = true;
       }
@@ -468,7 +519,7 @@ class CargoCluster {
   }
 
   remove(sc) {
-    for (const d of this._drones) sc.remove(d.mesh);
+    for (const d of this._drones) sc.remove(d.container);
   }
 }
 
@@ -681,7 +732,7 @@ function drawHUD() {
       ctx.font = 'bold 12px monospace';
       ctx.fillStyle = '#ffdd55';
       ctx.textAlign = 'center';
-      ctx.fillText(`CONVOY ×${alive}  ${cargoCluster._dropType === 'hp' ? '❤' : '⚡'}`, uiCanvas.width / 2, uiCanvas.height - 14);
+      ctx.fillText(`CONVOY ×${alive}  ★`, uiCanvas.width / 2, uiCanvas.height - 14);
       ctx.textAlign = 'left';
     }
   }
@@ -747,8 +798,11 @@ function showGameOver() {
 
 function announceWave() {
   overlay.style.display = 'block';
-  overlay.innerHTML = `<div style="font-size:48px;font-weight:bold">WAVE ${wave}</div>`;
-  setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 1100);
+  const isSpike = wave % 4 === 0 && wave > 0;
+  overlay.innerHTML = isSpike
+    ? `<div style="font-size:48px;font-weight:bold">WAVE ${wave}</div><div style="font-size:18px;color:#ff4455;margin-top:4px;text-shadow:0 0 14px #ff0000">★ SPIKE WAVE ★</div>`
+    : `<div style="font-size:48px;font-weight:bold">WAVE ${wave}</div>`;
+  setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 1300);
 }
 
 // ── Wave / restart helpers ──────────────────────────────────────────────────────────
@@ -785,9 +839,11 @@ function spawnWave() {
         type: entry.type,
         delay: entry.t,
         angle: (i / total) * Math.PI * 2,
-        clusterOffset: k > 0 ? { x: (Math.random()-0.5)*3, z: (Math.random()-0.5)*3 } : null,
+        clusterOffset: k > 0 ? { x: (rng()-0.5)*3, z: (rng()-0.5)*3 } : null,
         speedMult,
         intervalMult,
+        elite: entry.elite || false,
+        elitelite: entry.elitelite || false,
       });
     }
   });
@@ -976,7 +1032,18 @@ function loop() {
     const bx = Math.cos(s.angle) * r, bz = Math.sin(s.angle) * r;
     const ox = s.clusterOffset ? s.clusterOffset.x : 0;
     const oz = s.clusterOffset ? s.clusterOffset.z : 0;
-    enemies.push(new Enemy(scene, s.type, bx + ox, bz + oz, s.speedMult, s.intervalMult));
+    const en = new Enemy(scene, s.type, bx + ox, bz + oz, s.speedMult, s.intervalMult);
+    if (s.elite) {
+      if (en.type !== EnemyType.BAMBU && en.type !== EnemyType.PYRA) {
+        en.hp = Math.ceil(en.hp * 2); en._hpMult = 2;
+      }
+      en.mesh.scale.multiplyScalar(1.2); en._radiusMult = 1.2;
+    } else if (s.elitelite) {
+      if (en.type !== EnemyType.BAMBU && en.type !== EnemyType.PYRA) {
+        en.hp = Math.ceil(en.hp * 1.5); en._hpMult = 1.5;
+      }
+    }
+    enemies.push(en);
   }
 
   player.update(dt, moveDir, aimDir, bullets, HALF);
@@ -1117,19 +1184,17 @@ function loop() {
       if (!b.isPlayer) continue;
       for (const d of cargoCluster._drones) {
         if (!d.alive) continue;
-        const ddx = b.mesh.position.x - d.mesh.position.x;
-        const ddz = b.mesh.position.z - d.mesh.position.z;
+        const ddx = b.mesh.position.x - d.container.position.x;
+        const ddz = b.mesh.position.z - d.container.position.z;
         if (Math.hypot(ddx, ddz) < BULLET_R * BULLET_CONFIG.playerBulletScale + 0.32) {
-          d.alive = false; d.mesh.visible = false;
+          d.alive = false; d.container.visible = false;
           cargoCluster._killedCount++;
-          cargoCluster._lastKillX = d.mesh.position.x;
-          cargoCluster._lastKillZ = d.mesh.position.z;
           bullets.recycleAt(bi);
           addShake(0.08);
           audio.enemyDie();
           for (let fi = 0; fi < 5; fi++) {
             const a = (fi / 5) * Math.PI * 2;
-            chunks.push(new Chunk(scene, d.mesh.position.x, 0.8, d.mesh.position.z,
+            chunks.push(new Chunk(scene, d.container.position.x, 0.8, d.container.position.z,
               Math.cos(a) * 3.5, 1.0, Math.sin(a) * 3.5, 0xffdd55, 0.1));
           }
           break;
@@ -1187,14 +1252,20 @@ function loop() {
       // Brief "CONVOY!" announcement
       overlay.style.display = 'block';
       overlay.innerHTML = `<div style="font-size:36px;font-weight:bold;color:#ffdd55;text-shadow:0 0 18px #ffaa00">CONVOY!</div>` +
-        `<div style="font-size:13px;opacity:0.7;margin-top:6px">Kill all drones for a reward</div>`;
+        `<div style="font-size:13px;opacity:0.7;margin-top:6px">Kill all moths for a score bonus</div>`;
       setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 1200);
     }
   }
   if (cargoCluster) {
     const res = cargoCluster.update(dt, _t);
     if (res === 'reward') {
-      powerups.push(new Powerup(scene, cargoCluster._lastKillX, cargoCluster._lastKillZ, cargoCluster._dropType));
+      const bonus = wave * 500;
+      score += bonus;
+      streak = 0; // reset streak so bonus is clean
+      overlay.style.display = 'block';
+      overlay.innerHTML = `<div style="font-size:32px;font-weight:bold;color:#ffdd55;text-shadow:0 0 16px #ffaa00">CONVOY CLEARED!</div>` +
+        `<div style="font-size:22px;color:#ffaa00;margin-top:8px">+${bonus}</div>`;
+      setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 1800);
       cargoCluster.remove(scene); cargoCluster = null;
     } else if (res === 'done') {
       cargoCluster.remove(scene); cargoCluster = null;

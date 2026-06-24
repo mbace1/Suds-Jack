@@ -380,12 +380,12 @@ export class Enemy {
   get color()  { return CFG[this.type].color; }
   get radius() {
     if (this.type === EnemyType.BAMBU) return Math.max(0.6, (this._segs ? this._segs.length : 1) * 0.6);
-    return CFG[this.type].radius;
+    return CFG[this.type].radius * (this._radiusMult || 1);
   }
   get hpFrac() {
     if (this.type === EnemyType.BAMBU) return this.hp / Math.max(1, this._maxSegs);
     if (this.type === EnemyType.PYRA)  return this.hp / Math.max(1, this._holes ? this._holes.length : CFG[EnemyType.PYRA].hp);
-    return this.hp / CFG[this.type].hp;
+    return this.hp / (CFG[this.type].hp * (this._hpMult || 1));
   }
 
   // Cube locomotion: tip end-over-end about the leading bottom edge, advancing
