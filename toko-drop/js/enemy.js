@@ -145,8 +145,6 @@ export class Enemy {
     // State machine fields
     this._state        = 'idle';
     this._stateT       = 0;
-    this._cardDir      = { x: 1, z: 0 };
-    this._cardTimer    = 0;
     this._poisonReady  = false;
     this._poisonTimer  = 0;
     this._aimArrow     = null;
@@ -298,28 +296,19 @@ export class Enemy {
       scene.add(this.mesh);
     }
 
-    // Cardinal mover initial direction
-    if (type === EnemyType.YELA_CUBE || type === EnemyType.REDD_CUBE) {
+    // Flopping cube movers — shared tumble state (see _flopMove)
+    if (CUBE_TYPES.has(type) && type !== EnemyType.ORANGE_CUBE) {
       const dirs = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1}];
-      this._cardDir = dirs[Math.floor(Math.random() * 4)];
-      this._cardTimer = 1.8 + Math.random() * 2.0;
+      this._flopActive = false;
+      this._flopRest   = Math.random() * 0.25; // stagger first flop across the wave
+      this._flopDir    = dirs[Math.floor(Math.random() * 4)];
+      this._flopAxis   = new THREE.Vector3();
       if (type === EnemyType.YELA_CUBE) this._trailTimer = 0.3;
-    } else if (type === EnemyType.REDD_MINI) {
-      const dirs = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1}];
-      this._cardDir = dirs[Math.floor(Math.random() * 4)];
-      this._cardTimer = 0.4 + Math.random() * 0.8;
-    } else if (type === EnemyType.SLUDGE_CUBE) {
-      const dirs = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1},{x:0.7,z:0.7},{x:-0.7,z:0.7}];
-      const d = dirs[Math.floor(Math.random() * dirs.length)];
-      const len = Math.hypot(d.x, d.z);
-      this._cardDir = { x: d.x/len, z: d.z/len };
-      this._cardTimer = 3.0 + Math.random() * 2.0;
-      this._poisonTimer = 0.5;
-      this._trailPositions = [];
-      this._trailPushTimer = 0;
-    } else if (type === EnemyType.PURP_MINI) {
-      const angle = Math.random() * Math.PI * 2;
-      this._cardDir = { x: Math.cos(angle), z: Math.sin(angle) };
+      if (type === EnemyType.SLUDGE_CUBE) {
+        this._poisonTimer    = 0.5;
+        this._trailPositions = [];
+        this._trailPushTimer = 0;
+      }
     } else if (type === EnemyType.ORANGE_CUBE) {
       this._target = { x: (Math.random()-0.5)*24, z: (Math.random()-0.5)*24 };
       this._target.x = Math.max(-16, Math.min(16, this._target.x));
@@ -367,6 +356,58 @@ export class Enemy {
     if (this.type === EnemyType.BAMBU) return this.hp / Math.max(1, this._maxSegs);
     if (this.type === EnemyType.PYRA)  return this.hp / Math.max(1, this._holes ? this._holes.length : CFG[EnemyType.PYRA].hp);
     return this.hp / CFG[this.type].hp;
+  }
+
+  // Cube locomotion: tip end-over-end about the leading bottom edge, advancing
+  // one face-width per 90° flop. Cardinal-only; biased random walk between flops.
+  _flopMove(dt, spd, H) {
+    const radius = CFG[this.type].radius;
+    const stride = radius * 1.8;          // one face width = one flop's advance
+    const restY  = radius;                // resting center height (matches spawn)
+    const liftPeak = radius * 0.22;       // gentle hop apex mid-flop
+    const restGap  = 0.06;                // settle beat between flops
+    const cardinals = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1}];
+
+    if (!this._flopActive) {
+      this._flopRest -= dt;
+      if (this._flopRest > 0) return;
+
+      // Biased random walk: mostly keep heading, occasionally turn.
+      let dir = (Math.random() < 0.7) ? this._flopDir : cardinals[Math.floor(Math.random() * 4)];
+      // Reflect away from any wall the next stride would cross.
+      const nx = this.mesh.position.x + dir.x * stride;
+      const nz = this.mesh.position.z + dir.z * stride;
+      if (Math.abs(nx) > H) dir = { x: -Math.sign(this.mesh.position.x), z: 0 };
+      else if (Math.abs(nz) > H) dir = { x: 0, z: -Math.sign(this.mesh.position.z) };
+
+      this._flopDir = dir;
+      this._flopAxis.set(dir.z, 0, -dir.x).normalize(); // ground-horizontal, perp to travel
+      this._flopX0 = this.mesh.position.x;
+      this._flopZ0 = this.mesh.position.z;
+      this._flopT  = 0;
+      this._flopDur = Math.max(0.14, stride / Math.max(spd, 0.01) - restGap);
+      this._flopActive = true;
+    }
+
+    this._flopT += dt;
+    const p = Math.min(1, this._flopT / this._flopDur);
+    const e = p * p * (3 - 2 * p); // smoothstep
+
+    this.mesh.position.x = this._flopX0 + this._flopDir.x * stride * e;
+    this.mesh.position.z = this._flopZ0 + this._flopDir.z * stride * e;
+    this.mesh.position.y = restY + liftPeak * Math.sin(p * Math.PI);
+    this.mesh.quaternion.setFromAxisAngle(this._flopAxis, e * Math.PI / 2);
+
+    if (p >= 1) {
+      // Land: snap home, reset rotation (cube is symmetric → seamless), slap squash.
+      this.mesh.position.x = this._flopX0 + this._flopDir.x * stride;
+      this.mesh.position.z = this._flopZ0 + this._flopDir.z * stride;
+      this.mesh.position.y = restY;
+      this.mesh.quaternion.identity();
+      this._sqV -= 0.5;
+      this._flopActive = false;
+      this._flopRest = restGap;
+    }
   }
 
   _makeBambuSeg(segIndex) {
@@ -484,103 +525,31 @@ export class Enemy {
         break;
 
       case EnemyType.YELA_CUBE:
-      case EnemyType.REDD_CUBE: {
-        this._cardTimer -= dt;
-        if (this._cardTimer <= 0) {
-          const cardinals = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1}];
-          const diagonals = [{x:0.707,z:0.707},{x:-0.707,z:0.707},{x:0.707,z:-0.707},{x:-0.707,z:-0.707}];
-          const dirs = (this.type === EnemyType.YELA_CUBE && Math.random() < 0.5) ? diagonals : cardinals;
-          this._cardDir = dirs[Math.floor(Math.random() * dirs.length)];
-          this._cardTimer = 1.8 + Math.random() * 2.0;
-        }
-        this.mesh.position.x += this._cardDir.x * spd * dt;
-        this.mesh.position.z += this._cardDir.z * spd * dt;
-        if (Math.abs(this.mesh.position.x) > H) {
-          this._cardDir.x = -Math.sign(this.mesh.position.x);
-          this.mesh.position.x = Math.sign(this.mesh.position.x) * H;
-          this._cardTimer = 0.5 + Math.random();
-        }
-        if (Math.abs(this.mesh.position.z) > H) {
-          this._cardDir.z = -Math.sign(this.mesh.position.z);
-          this.mesh.position.z = Math.sign(this.mesh.position.z) * H;
-          this._cardTimer = 0.5 + Math.random();
-        }
+      case EnemyType.REDD_CUBE:
+      case EnemyType.PURP_CUBE:
+      case EnemyType.SLUDGE_CUBE:
+      case EnemyType.REDD_MINI:
+      case EnemyType.PURP_MINI: {
+        this._flopMove(dt, spd, H);
+        // Per-type emissions (locomotion handled by _flopMove)
         if (this.type === EnemyType.YELA_CUBE) {
           this._trailTimer -= dt;
           if (this._trailTimer <= 0) { this._trailTimer = 0.3; this._trailReady = true; }
         }
-        break;
-      }
-
-      case EnemyType.REDD_MINI: {
-        this._cardTimer -= dt;
-        if (this._cardTimer <= 0) {
-          const dirs = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1}];
-          this._cardDir = dirs[Math.floor(Math.random() * 4)];
-          this._cardTimer = 0.4 + Math.random() * 0.8;
-        }
-        this.mesh.position.x += this._cardDir.x * spd * dt;
-        this.mesh.position.z += this._cardDir.z * spd * dt;
-        if (Math.abs(this.mesh.position.x) > H) {
-          this._cardDir.x = -Math.sign(this.mesh.position.x);
-          this.mesh.position.x = Math.sign(this.mesh.position.x) * H;
-          this._cardTimer = 0.2 + Math.random() * 0.4;
-        }
-        if (Math.abs(this.mesh.position.z) > H) {
-          this._cardDir.z = -Math.sign(this.mesh.position.z);
-          this.mesh.position.z = Math.sign(this.mesh.position.z) * H;
-          this._cardTimer = 0.2 + Math.random() * 0.4;
-        }
-        break;
-      }
-
-      case EnemyType.SLUDGE_CUBE: {
-        this._cardTimer -= dt;
-        if (this._cardTimer <= 0) {
-          const dirs = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1},{x:0.7,z:0.7},{x:-0.7,z:0.7}];
-          const d = dirs[Math.floor(Math.random() * dirs.length)];
-          const len = Math.hypot(d.x, d.z);
-          this._cardDir = { x: d.x/len, z: d.z/len };
-          this._cardTimer = 3.0 + Math.random() * 2.0;
-        }
-        this.mesh.position.x += this._cardDir.x * spd * dt;
-        this.mesh.position.z += this._cardDir.z * spd * dt;
-        if (Math.abs(this.mesh.position.x) > H) {
-          this._cardDir.x = -Math.sign(this.mesh.position.x);
-          this.mesh.position.x = Math.sign(this.mesh.position.x) * H;
-          this._cardTimer = 1.0 + Math.random();
-        }
-        if (Math.abs(this.mesh.position.z) > H) {
-          this._cardDir.z = -Math.sign(this.mesh.position.z);
-          this.mesh.position.z = Math.sign(this.mesh.position.z) * H;
-          this._cardTimer = 1.0 + Math.random();
-        }
-        // Trail position ring buffer for ribbon
-        this._trailPushTimer -= dt;
-        if (this._trailPushTimer <= 0) {
-          this._trailPushTimer = 0.15;
-          this._trailPositions.push({ x: this.mesh.position.x, z: this.mesh.position.z });
-          if (this._trailPositions.length > 12) this._trailPositions.shift();
-        }
-        // Poison emission every 0.5s
-        this._poisonTimer -= dt;
-        if (this._poisonTimer <= 0) {
-          this._poisonTimer = 0.5;
-          this._poisonReady = true;
-        }
-        break;
-      }
-
-      case EnemyType.PURP_MINI: {
-        this.mesh.position.x += this._cardDir.x * spd * dt;
-        this.mesh.position.z += this._cardDir.z * spd * dt;
-        if (Math.abs(this.mesh.position.x) > H) {
-          this._cardDir.x *= -1;
-          this.mesh.position.x = Math.sign(this.mesh.position.x) * H;
-        }
-        if (Math.abs(this.mesh.position.z) > H) {
-          this._cardDir.z *= -1;
-          this.mesh.position.z = Math.sign(this.mesh.position.z) * H;
+        if (this.type === EnemyType.SLUDGE_CUBE) {
+          // Trail position ring buffer for ribbon
+          this._trailPushTimer -= dt;
+          if (this._trailPushTimer <= 0) {
+            this._trailPushTimer = 0.15;
+            this._trailPositions.push({ x: this.mesh.position.x, z: this.mesh.position.z });
+            if (this._trailPositions.length > 12) this._trailPositions.shift();
+          }
+          // Poison emission every 0.5s
+          this._poisonTimer -= dt;
+          if (this._poisonTimer <= 0) {
+            this._poisonTimer = 0.5;
+            this._poisonReady = true;
+          }
         }
         break;
       }
@@ -764,6 +733,8 @@ export class Enemy {
       const sx = 1 / Math.sqrt(Math.max(this._sq, 0.1));
       if (this.type === EnemyType.TORO) {
         this.group.scale.set(sx, this._sq, sx);
+      } else if (this._flopActive) {
+        this.mesh.scale.set(1, 1, 1); // flop owns the transform; no squash mid-tumble
       } else if (!this._isTelegraphing || this.type !== EnemyType.SPITTOR) {
         this.mesh.scale.set(sx, this._sq, sx);
       }
