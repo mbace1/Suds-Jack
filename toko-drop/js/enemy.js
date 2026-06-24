@@ -108,46 +108,49 @@ export class Enemy {
       geo = new THREE.TorusGeometry(cfg.radius * 0.68, cfg.radius * 0.32, 10, 22);
     }
 
-    // Gel materials — blobs use goo-surface style (soft, watery), cubes use goo-flop style (firm, glassy)
+    // Gel materials — blobs: soft goo-surface style; cubes: firm candy-glass goo-flop style
     if (BLOB_TYPES.has(type)) {
       this.mat = new THREE.MeshPhysicalMaterial({
         color:              cfg.color,
-        emissive:           0x000000,
-        roughness:          0.05,
+        emissive:           cfg.color,
+        emissiveIntensity:  0.18,
+        roughness:          0.02,
         metalness:          0.0,
-        transmission:       0.62,
-        thickness:          cfg.radius * 1.8,
-        ior:                1.38,
-        clearcoat:          0.55,
-        clearcoatRoughness: 0.07,
+        transmission:       0.78,
+        thickness:          cfg.radius * 2.4,
+        ior:                1.42,
+        clearcoat:          0.90,
+        clearcoatRoughness: 0.04,
         transparent:        true,
-        opacity:            0.92,
+        opacity:            1.0,
       });
     } else if (CUBE_TYPES.has(type)) {
       this.mat = new THREE.MeshPhysicalMaterial({
         color:              cfg.color,
-        emissive:           0x000000,
-        roughness:          0.09,
-        metalness:          0.02,
-        transmission:       0.44,
-        thickness:          cfg.radius * 2.2,
-        ior:                1.50,
-        clearcoat:          0.35,
-        clearcoatRoughness: 0.10,
+        emissive:           cfg.color,
+        emissiveIntensity:  0.12,
+        roughness:          0.04,
+        metalness:          0.0,
+        transmission:       0.62,
+        thickness:          cfg.radius * 2.8,
+        ior:                1.55,
+        clearcoat:          0.70,
+        clearcoatRoughness: 0.05,
         transparent:        true,
-        opacity:            0.88,
+        opacity:            1.0,
       });
     } else {
       // TORO and fallback
       this.mat = new THREE.MeshPhysicalMaterial({
         color:              cfg.color,
-        emissive:           0x000000,
-        roughness:          0.07,
-        metalness:          0.18,
-        clearcoat:          0.80,
-        clearcoatRoughness: 0.05,
+        emissive:           cfg.color,
+        emissiveIntensity:  0.10,
+        roughness:          0.05,
+        metalness:          0.15,
+        clearcoat:          0.90,
+        clearcoatRoughness: 0.04,
         transparent:        true,
-        opacity:            0.90,
+        opacity:            0.95,
       });
     }
 
@@ -161,12 +164,12 @@ export class Enemy {
         shader.vertexShader = shader.vertexShader.replace(
           '#include <begin_vertex>',
           `#include <begin_vertex>
-          // breathing ripple
-          float _b = sin(position.y * 3.8 + u_wt * 5.2) * 0.08
-                   + cos(position.x * 3.2 + u_wt * 4.7) * 0.06
-                   + cos(position.z * 3.5 + u_wt * 5.8) * 0.04;
-          // hit burst — radial wave that decays with u_hw
-          float _h = sin(length(position) * 9.0 - u_wt * 20.0) * u_hw * 0.28;
+          // breathing ripple — large amplitude so the blob visibly pulses
+          float _b = sin(position.y * 3.8 + u_wt * 5.2) * 0.22
+                   + cos(position.x * 3.2 + u_wt * 4.7) * 0.16
+                   + cos(position.z * 3.5 + u_wt * 5.8) * 0.12;
+          // hit burst — strong radial shockwave, decays with u_hw
+          float _h = sin(length(position) * 8.0 - u_wt * 18.0) * u_hw * 0.55;
           transformed += normal * (_b + _h);`,
         );
       };
@@ -374,7 +377,7 @@ export class Enemy {
   hit() {
     if (!this.alive) return false;
     this._flashT    = 0.12;
-    this._hitWobble = 0.35;
+    this._hitWobble = 0.65;
 
     if (this.type === EnemyType.BAMBU && this._segs && this._segs.length > 0) {
       const topSeg = this._segs.pop();
@@ -709,7 +712,7 @@ export class Enemy {
               this.group.position.z = Math.max(-17, Math.min(17, this.group.position.z));
               this._state = 'recovering';
               this._stateT = 0.8;
-              this._hitWobble = 0.5;
+              this._hitWobble = 0.65;
             }
             break;
           case 'recovering':
@@ -742,19 +745,18 @@ export class Enemy {
 
     // ── Wobble / scale ────────────────────────────────────────────────────────
     this._wobbleT += dt;
-    if (this._hitWobble > 0) this._hitWobble = Math.max(0, this._hitWobble - dt * 2.0);
+    if (this._hitWobble > 0) this._hitWobble = Math.max(0, this._hitWobble - dt * 1.1);
 
     if (this.type !== EnemyType.TORO && this.type !== EnemyType.BAMBU && this.type !== EnemyType.PYRA) {
       const isSplitOrBig = this.type === EnemyType.SPLITTA;
-      const amp  = isSplitOrBig ? 0.10 : (CUBE_TYPES.has(this.type) ? 0.035 : 0.04);
-      const freq = isSplitOrBig ? 4.0  : (CUBE_TYPES.has(this.type) ? 2.2   : 2.8);
+      const amp  = isSplitOrBig ? 0.18 : (CUBE_TYPES.has(this.type) ? 0.10 : 0.13);
+      const freq = isSplitOrBig ? 4.0  : (CUBE_TYPES.has(this.type) ? 2.2  : 2.8);
       const breathe = amp * Math.sin(this._wobbleT * freq);
 
       if (BLOB_TYPES.has(this.type)) {
-        // Blobs: vertex shader handles hit burst; CPU side does only global squash/stretch
         if (!this._isTelegraphing || this.type !== EnemyType.SPITTOR) {
-          const sy  = Math.max(0.1, 1 + breathe);
-          const sxz = Math.max(0.1, 1 - breathe * 0.5);
+          const sy  = Math.max(0.1, 1 + breathe - this._hitWobble * 0.4);
+          const sxz = Math.max(0.1, 1 - breathe * 0.5 + this._hitWobble * 0.6);
           this.mesh.scale.set(sxz, sy, sxz);
         }
         this._wUni.u_wt.value = this._wobbleT;
@@ -762,15 +764,15 @@ export class Enemy {
       } else {
         // Cubes: scale-based squash + hit wobble
         if (!this._isTelegraphing || this.type !== EnemyType.SPITTOR) {
-          const sy  = Math.max(0.1, 1 + breathe - this._hitWobble);
-          const sxz = Math.max(0.1, 1 - breathe * 0.5 + this._hitWobble * 0.5);
+          const sy  = Math.max(0.1, 1 + breathe - this._hitWobble * 0.5);
+          const sxz = Math.max(0.1, 1 - breathe * 0.5 + this._hitWobble * 0.7);
           this.mesh.scale.set(sxz, sy, sxz);
         }
       }
     } else {
       // TORO: hit squash only
       if (this._hitWobble > 0) {
-        this.mesh.scale.setScalar(Math.max(0.1, 1 + this._hitWobble * 0.3));
+        this.mesh.scale.setScalar(Math.max(0.1, 1 + this._hitWobble * 0.4));
       } else {
         this.mesh.scale.setScalar(1);
       }
