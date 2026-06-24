@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v7 — 2026-06-24
+**Silent wavy convoy with drifting drops**
+- Convoy spawns silently — no overlay announcement, no HUD indicator
+- Always sinusoidal sweep (amplitude 3–8 units, freq 0.7–1.7 Hz) — straight path removed
+- Each killed moth drops a slow-drifting random powerup (speed 0.8–1.4 u/s, random angle)
+- Drops expire after 7 s if not collected; drift applied to collision x/z each frame
+- Removed score-bonus-for-full-clear; convoy is now ambient ambient event
+
 ## v6 — 2026-06-24
 **Spike waves, enemy variations, goo moths, score bonus**
 - Every 4th wave is a spike wave (1.6× budget) with "★ SPIKE WAVE ★" overlay

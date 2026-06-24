@@ -389,9 +389,10 @@ class Gate {
 const POWERUP_COLORS = { weapon_burst: 0x44ffcc, weapon_spread: 0xffcc44, invincible: 0xffffff, firerate: 0xff88aa, hp: 0xff4466 };
 
 class Powerup {
-  constructor(sc, x, z, forcedType) {
+  constructor(sc, x, z, forcedType, driftX = 0, driftZ = 0) {
     this._life = 9.0;
     this.x = x; this.z = z;
+    this._driftX = driftX; this._driftZ = driftZ;
     this.collected = false;
     this.mat = new THREE.MeshBasicMaterial({
       color: 0xffffff, transparent: true, opacity: 0.9,
@@ -409,6 +410,10 @@ class Powerup {
   }
   update(dt, t) {
     this._life -= dt;
+    this.x += this._driftX * dt;
+    this.z += this._driftZ * dt;
+    this.mesh.position.x = this.x;
+    this.mesh.position.z = this.z;
     this.mesh.position.y = 0.6 + Math.sin(t * 3) * 0.15;
     this.mat.opacity = 0.5 + 0.4 * Math.sin(t * 5);
     return this._life > 0 && !this.collected;
@@ -453,10 +458,9 @@ class CargoCluster {
     const px = -dz, pz = dx; // perpendicular unit vector
     this._px = px; this._pz = pz;
 
-    // Curved or straight sweep
-    this._curved    = rng() < 0.5;
-    this._curveAmp  = (0.4 + rng() * 0.8) * 5;
-    this._curveFreq = 0.8 + rng() * 1.2;
+    // Always a sinusoidal sweep — amp and freq vary per convoy
+    this._curveAmp  = 3 + rng() * 5;
+    this._curveFreq = 0.7 + rng() * 1.0;
     this._curvePhase = rng() * Math.PI * 2;
     this._cx = sx; this._cz = sz; // formation centre (advances each frame)
     this._elapsed = 0;
@@ -489,9 +493,7 @@ class CargoCluster {
     this._elapsed += dt;
     this._cx += this._dx * this._speed * dt;
     this._cz += this._dz * this._speed * dt;
-    const curveOff = this._curved
-      ? Math.sin(this._curveFreq * this._elapsed + this._curvePhase) * this._curveAmp
-      : 0;
+    const curveOff = Math.sin(this._curveFreq * this._elapsed + this._curvePhase) * this._curveAmp;
     let anyInArena = false;
     for (let i = 0; i < this._drones.length; i++) {
       const d = this._drones[i];
@@ -513,7 +515,7 @@ class CargoCluster {
     }
     if (!anyInArena) {
       this._done = true;
-      return this._killedCount === this._drones.length ? 'reward' : 'done';
+      return 'done';
     }
     return 'alive';
   }
@@ -725,17 +727,6 @@ function drawHUD() {
     ctx.textAlign = 'left';
   }
 
-  // Cargo convoy indicator (yellow dot cluster when a convoy is active)
-  if (cargoCluster && !cargoCluster._done) {
-    const alive = cargoCluster._drones.filter(d => d.alive && !d.escaped).length;
-    if (alive > 0) {
-      ctx.font = 'bold 12px monospace';
-      ctx.fillStyle = '#ffdd55';
-      ctx.textAlign = 'center';
-      ctx.fillText(`CONVOY ×${alive}  ★`, uiCanvas.width / 2, uiCanvas.height - 14);
-      ctx.textAlign = 'left';
-    }
-  }
 }
 
 // ── Overlay helpers ────────────────────────────────────────────────────────────────
@@ -1192,11 +1183,21 @@ function loop() {
           bullets.recycleAt(bi);
           addShake(0.08);
           audio.enemyDie();
+          const kx = d.container.position.x, kz = d.container.position.z;
           for (let fi = 0; fi < 5; fi++) {
             const a = (fi / 5) * Math.PI * 2;
-            chunks.push(new Chunk(scene, d.container.position.x, 0.8, d.container.position.z,
+            chunks.push(new Chunk(scene, kx, 0.8, kz,
               Math.cos(a) * 3.5, 1.0, Math.sin(a) * 3.5, 0xffdd55, 0.1));
           }
+          // Drop a slow-drifting pickup away from the convoy path
+          const driftAngle = Math.random() * Math.PI * 2;
+          const driftSpeed = 0.8 + Math.random() * 0.6;
+          const dropTypes = ['hp', 'firerate', 'weapon_burst', 'weapon_spread', 'invincible'];
+          const dropType = dropTypes[Math.floor(Math.random() * dropTypes.length)];
+          const pu = new Powerup(scene, kx, kz, dropType,
+            Math.cos(driftAngle) * driftSpeed, Math.sin(driftAngle) * driftSpeed);
+          pu._life = 7.0;
+          powerups.push(pu);
           break;
         }
       }
@@ -1243,31 +1244,16 @@ function loop() {
     if (!powerups[i].update(dt, _t)) { powerups[i].remove(scene); powerups.splice(i, 1); }
   }
 
-  // Cargo convoy: spawn + update
+  // Cargo convoy: spawn silently + update
   if (!cargoCluster && clusterSpawnAt > 0) {
     clusterTimer += dt;
     if (clusterTimer >= clusterSpawnAt) {
       cargoCluster = new CargoCluster(scene);
       clusterSpawnAt = 0;
-      // Brief "CONVOY!" announcement
-      overlay.style.display = 'block';
-      overlay.innerHTML = `<div style="font-size:36px;font-weight:bold;color:#ffdd55;text-shadow:0 0 18px #ffaa00">CONVOY!</div>` +
-        `<div style="font-size:13px;opacity:0.7;margin-top:6px">Kill all moths for a score bonus</div>`;
-      setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 1200);
     }
   }
   if (cargoCluster) {
-    const res = cargoCluster.update(dt, _t);
-    if (res === 'reward') {
-      const bonus = wave * 500;
-      score += bonus;
-      streak = 0; // reset streak so bonus is clean
-      overlay.style.display = 'block';
-      overlay.innerHTML = `<div style="font-size:32px;font-weight:bold;color:#ffdd55;text-shadow:0 0 16px #ffaa00">CONVOY CLEARED!</div>` +
-        `<div style="font-size:22px;color:#ffaa00;margin-top:8px">+${bonus}</div>`;
-      setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 1800);
-      cargoCluster.remove(scene); cargoCluster = null;
-    } else if (res === 'done') {
+    if (cargoCluster.update(dt, _t) === 'done') {
       cargoCluster.remove(scene); cargoCluster = null;
     }
   }
