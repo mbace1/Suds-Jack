@@ -31,8 +31,14 @@ export class Player {
     this._fireBoostT = 0;
     this.onShoot   = null;
 
-    const geo = new THREE.SphereGeometry(PLAYER_RADIUS, 14, 10);
-    this.mat = new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x222222 });
+    const geo = new THREE.SphereGeometry(PLAYER_RADIUS, 20, 14);
+    this.mat = new THREE.MeshPhysicalMaterial({
+      color: 0xffffff, emissive: 0x222222,
+      roughness: 0.05, metalness: 0.0,
+      transmission: 0.55, thickness: 0.8, ior: 1.35,
+      clearcoat: 0.7, clearcoatRoughness: 0.05,
+      transparent: true, opacity: 0.95,
+    });
     this.mesh = new THREE.Mesh(geo, this.mat);
     this.mesh.castShadow = true;
     scene.add(this.mesh);

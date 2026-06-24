@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { InputManager } from './input.js';
 import { BulletPool, BULLET_R, FAT_BULLET_R } from './bullet.js';
 import { Player, PLAYER_RADIUS } from './player.js';
@@ -95,12 +96,21 @@ const renderer = new THREE.WebGLRenderer({
 });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping      = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
 renderer.setSize(innerWidth, innerHeight);
+
+// IBL — needed for MeshPhysicalMaterial transmission + clearcoat
+const _pmrem = new THREE.PMREMGenerator(renderer);
+const _envTex = _pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+_pmrem.dispose();
 
 // ── Scene ─────────────────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0d0d1a);
 scene.fog = new THREE.Fog(0x0d0d1a, 42, 80);
+scene.environment = _envTex;  // IBL for physical materials
 
 // ── Camera ────────────────────────────────────────────────────────────────────
 const CAM_REST = new THREE.Vector3(0, 26, 19);

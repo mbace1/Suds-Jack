@@ -51,14 +51,16 @@ Twin-stick bullet-hell arena shooter built on Three.js r167.
 - Powerup types: invincibility (3 s), fire-rate boost (5 s, ×2.5 rate)
 - Death FX: chunk physics, puddle decals, sludge ribbons, poison zones
 - Score + streak multiplier, hi-score in localStorage
+- **Gel material pass:** all enemies + player use `MeshPhysicalMaterial` with transmission, clearcoat, and IOR — blobs read as translucent goo, cubes as candy-glass; vertex shader surface ripple on blob types via `onBeforeCompile`; IBL via `RoomEnvironment` + `PMREMGenerator`
 
 ---
 
 ## Changelog
 
 ### 2026-06
+- **toko-drop gel material pass:** all enemies + player upgraded to `MeshPhysicalMaterial` — blobs (GLOBBO/SPITTOR/FANNER/WEEVA/SPLITTA) get transmission + clearcoat gel look; cubes (YELA/ORANGE/SLUDGE/REDD/PURP) get rounded-box candy-glass; IBL via `RoomEnvironment`; ACESFilmic tonemapping
 - **toko-drop perf pass:** bullets rewritten with `InstancedMesh` + typed arrays — 300 draw calls → 2; zero allocations per frame
-- **Blob vertex shader:** organic surface ripple on GLOBBO/SPITTOR/FANNER/WEEVA/SPLITTA via `onBeforeCompile`; hit-burst wave decays after each shot; collision shape unchanged
+- **Blob vertex shader:** organic surface ripple on blob-type enemies via `onBeforeCompile`; hit-burst wave decays after each shot; collision shape unchanged
 - **Player powerup methods:** `grantInvincibility`, `grantFireRateBoost`, `dashing` getter (were called but not implemented)
 - **goo-flop:** full 90° side-flop physics; pivot-arc geometry; gravity-torque model; swipe gesture detection
 
