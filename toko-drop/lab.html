@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toko-Drop · Visual Lab</title>
+  <script type="importmap">{
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+    }
+  }</script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:     #0d0d1a;
+      --panel:  #09090f;
+      --border: #1c1c38;
+      --text:   #c8c8e8;
+      --dim:    #55557a;
+      --acc:    #44aaff;
+      --green:  #44ff88;
+      --red:    #ff4433;
+      --yellow: #ffdd00;
+    }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Courier New', monospace; }
+
+    /* ── Root grid ─────────────────────────────────────────────────────────── */
+    #root {
+      display: grid;
+      grid-template-columns: 170px 1fr 290px;
+      grid-template-rows: 1fr 200px;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* ── Enemy list ────────────────────────────────────────────────────────── */
+    #enemy-list {
+      grid-row: 1;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .list-heading {
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      color: var(--dim);
+      text-transform: uppercase;
+      padding: 4px 4px 10px;
+    }
+    .enemy-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 10px;
+      padding: 5px 9px;
+      cursor: pointer;
+      text-align: left;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: background 0.1s, border-color 0.1s, color 0.1s;
+      position: relative;
+    }
+    .enemy-btn:hover  { background: #13132a; border-color: #3a3a6a; }
+    .enemy-btn.active { border-color: var(--acc); color: var(--acc); background: #0a1525; }
+    .enemy-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .enemy-snap-badge {
+      margin-left: auto;
+      font-size: 8px;
+      background: #1c3c2c;
+      color: var(--green);
+      padding: 1px 4px;
+      border-radius: 6px;
+      display: none;
+    }
+    .enemy-snap-badge.visible { display: inline; }
+    .family-label {
+      font-size: 8px;
+      color: var(--dim);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 8px 4px 4px;
+      margin-top: 6px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Preview ───────────────────────────────────────────────────────────── */
+    #preview-wrap {
+      grid-row: 1;
+      position: relative;
+      overflow: hidden;
+      background: var(--bg);
+    }
+    #preview-canvas { display: block; width: 100%; height: 100%; }
+    #preview-label {
+      position: absolute;
+      top: 14px;
+      left: 18px;
+      pointer-events: none;
+    }
+    #preview-label .name {
+      font-size: 22px;
+      font-weight: bold;
+      letter-spacing: 0.08em;
+    }
+    #preview-label .sub {
+      font-size: 10px;
+      color: var(--dim);
+      letter-spacing: 0.1em;
+      margin-top: 2px;
+    }
+    #preview-hint {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      color: var(--dim);
+      letter-spacing: 0.1em;
+      pointer-events: none;
+    }
+    #preview-hit-flash {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, rgba(255,200,100,0.12) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.05s;
+    }
+
+    /* ── Sliders ───────────────────────────────────────────────────────────── */
+    #sliders-panel {
+      grid-row: 1;
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 12px 14px 24px;
+    }
+    .param-group { margin-bottom: 18px; }
+    .param-group-title {
+      font-size: 8px;
+      letter-spacing: 0.16em;
+      color: var(--dim);
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 5px;
+      margin-bottom: 12px;
+    }
+    .param-row { margin-bottom: 10px; }
+    .param-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+    .param-name { font-size: 10px; color: var(--text); }
+    .param-val  { font-size: 10px; color: var(--acc); font-variant-numeric: tabular-nums; min-width: 38px; text-align: right; }
+    .param-desc { font-size: 9px; color: var(--dim); line-height: 1.45; margin-bottom: 4px; }
+    input[type="range"] {
+      display: block;
+      width: 100%;
+      height: 3px;
+      -webkit-appearance: none;
+      background: var(--border);
+      outline: none;
+      cursor: pointer;
+      accent-color: var(--acc);
+      border-radius: 2px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: var(--acc);
+    }
+
+    /* ── Feedback bar ──────────────────────────────────────────────────────── */
+    #feedback-bar {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      background: #07070e;
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      padding: 12px 16px;
+    }
+    #feedback-left { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    #feedback-meta { font-size: 9px; color: var(--dim); letter-spacing: 0.07em; }
+    #feedback-text {
+      flex: 1;
+      background: #0c0c1e;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 11px;
+      padding: 8px 10px;
+      resize: none;
+      outline: none;
+      line-height: 1.55;
+      min-height: 90px;
+    }
+    #feedback-text:focus { border-color: var(--acc); }
+    #feedback-text::placeholder { color: var(--dim); }
+    #feedback-right {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      justify-content: center;
+      min-width: 160px;
+    }
+    .btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 10px;
+      padding: 7px 14px;
+      cursor: pointer;
+      letter-spacing: 0.07em;
+      text-align: center;
+      transition: border-color 0.1s, color 0.1s, background 0.1s;
+      white-space: nowrap;
+    }
+    .btn:hover       { border-color: var(--acc); color: var(--acc); }
+    .btn.primary     { border-color: var(--green); color: var(--green); }
+    .btn.primary:hover { background: #0a2018; }
+    .btn.warn        { border-color: var(--red); color: var(--red); }
+    .btn.warn:hover  { background: #1e0808; }
+    #snap-count {
+      background: var(--green);
+      color: #000;
+      font-size: 8px;
+      padding: 1px 5px;
+      border-radius: 6px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+<div id="root">
+  <aside id="enemy-list">
+    <div class="list-heading">Enemies</div>
+  </aside>
+
+  <div id="preview-wrap">
+    <canvas id="preview-canvas"></canvas>
+    <div id="preview-label">
+      <div class="name" id="lbl-name">—</div>
+      <div class="sub"  id="lbl-sub">—</div>
+    </div>
+    <div id="preview-hit-flash"></div>
+    <div id="preview-hint">scroll · drag · click = hit</div>
+  </div>
+
+  <aside id="sliders-panel"></aside>
+
+  <footer id="feedback-bar">
+    <div id="feedback-left">
+      <div id="feedback-meta">no enemy selected</div>
+      <textarea id="feedback-text"
+        placeholder="Describe what looks right or wrong — jelly weight, glow level, wobble feel, surface wetness, colour read. Be specific. This feeds the next iteration."></textarea>
+    </div>
+    <div id="feedback-right">
+      <button class="btn primary" id="btn-record">📸 Record<span id="snap-count">0</span></button>
+      <button class="btn"         id="btn-export">📤 Export JSON</button>
+      <button class="btn"         id="btn-prompt">💬 Copy as Prompt</button>
+      <button class="btn"         id="btn-code">⚙ Copy Code Patch</button>
+      <button class="btn warn"    id="btn-reset">↩ Reset Defaults</button>
+    </div>
+  </footer>
+</div>
+
+<script type="module">
+import * as THREE          from 'three';
+import { OrbitControls }    from 'three/addons/controls/OrbitControls.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { RoomEnvironment }  from 'three/addons/environments/RoomEnvironment.js';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CATALOGUE
+// ═══════════════════════════════════════════════════════════════════════════════
+const FAMILIES = [
+  {
+    label: 'Blob',
+    members: [
+      { key: 'GLOBBO',  color: 0x00ccaa, radius: 0.55 },
+      { key: 'SPITTOR', color: 0xff5533, radius: 0.90 },
+      { key: 'FANNER',  color: 0xff00aa, radius: 0.75 },
+      { key: 'WEEVA',   color: 0x4422ee, radius: 0.80 },
+      { key: 'SPLITTA', color: 0x88ff22, radius: 1.10 },
+    ],
+  },
+  {
+    label: 'Cube',
+    members: [
+      { key: 'YELA_CUBE',   color: 0xffdd00, radius: 0.70 },
+      { key: 'ORANGE_CUBE', color: 0xff8800, radius: 0.75 },
+      { key: 'SLUDGE_CUBE', color: 0xaaee00, radius: 0.65 },
+      { key: 'REDD_CUBE',   color: 0xff2211, radius: 0.75 },
+      { key: 'PURP_CUBE',   color: 0xcc44ff, radius: 0.75 },
+      { key: 'REDD_MINI',   color: 0xff4433, radius: 0.32 },
+      { key: 'PURP_MINI',   color: 0xdd66ff, radius: 0.26 },
+    ],
+  },
+  {
+    label: 'Unique',
+    members: [
+      { key: 'TORO',  color: 0x4488cc, radius: 1.0 },
+      { key: 'BAMBU', color: 0xaa8844, radius: 0.7 },
+    ],
+  },
+];
+
+const ALL_ENEMIES = FAMILIES.flatMap(f => f.members.map(e => ({ ...e, family: f.label.toLowerCase() })));
+const BY_KEY = Object.fromEntries(ALL_ENEMIES.map(e => [e.key, e]));
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PARAMETER SCHEMA
+// Each entry: { key, label, min, max, step, desc, code }
+// ═══════════════════════════════════════════════════════════════════════════════
+const PARAM_GROUPS = [
+  {
+    title: 'Material — physical',
+    params: [
+      { key: 'transmission',       label: 'Transmission',        min: 0,   max: 1,   step: 0.01,
+        desc: 'Light that passes through rather than bouncing off. 0=fully opaque, 1=pure glass. Above 0.85 triggers a costly extra render pass — reserve for bosses.',
+        code: 'MeshPhysicalMaterial.transmission' },
+      { key: 'ior',                label: 'IOR',                 min: 1.0, max: 2.5, step: 0.01,
+        desc: 'Index of refraction — how much the gel bends light passing through it. Water≈1.33, glass≈1.52, dense gel≈1.45. Higher = more distortion.',
+        code: 'MeshPhysicalMaterial.ior' },
+      { key: 'clearcoat',          label: 'Clearcoat',           min: 0,   max: 1,   step: 0.01,
+        desc: 'A second glossy layer on top of the base material — gives that wet/lacquered look. 1.0 = full jelly skin.',
+        code: 'MeshPhysicalMaterial.clearcoat' },
+      { key: 'clearcoatRoughness', label: 'Clearcoat Roughness', min: 0,   max: 1,   step: 0.01,
+        desc: 'How blurry the clearcoat specular highlight is. 0=mirror gloss (dew drop), 0.3=matte wet skin.',
+        code: 'MeshPhysicalMaterial.clearcoatRoughness' },
+      { key: 'roughness',          label: 'Roughness',           min: 0,   max: 1,   step: 0.01,
+        desc: 'Base surface roughness. 0=mirror, 1=chalk. Gel should be 0.02–0.1 to get specular highlights.',
+        code: 'MeshPhysicalMaterial.roughness' },
+      { key: 'emissiveIntensity',  label: 'Emissive Glow',       min: 0,   max: 1,   step: 0.01,
+        desc: 'Inner glow at the base colour — simulates subsurface scattering cheaply. 0.15–0.25 gives the Jell-O lit-from-inside look.',
+        code: 'MeshPhysicalMaterial.emissiveIntensity (emissive=cfg.color)' },
+      { key: 'opacity',            label: 'Opacity',             min: 0,   max: 1,   step: 0.01,
+        desc: 'Overall alpha. When transmission>0, keep this at 1.0 — the physical transmission handles apparent transparency. Lowering this will just make it fade to nothing.',
+        code: 'MeshPhysicalMaterial.opacity' },
+    ],
+  },
+  {
+    title: 'Vertex wobble — blob surface ripple',
+    params: [
+      { key: 'vertexAmpA',        label: 'Amp A  (Y ripple)',    min: 0, max: 0.7, step: 0.01,
+        desc: 'Amplitude of the primary sin(Y) ripple wave. This is the main "breathing" surface distortion on the Y axis. 0.22 ≈ visible but controlled.',
+        code: 'enemy.js onBeforeCompile → u_ampA uniform' },
+      { key: 'vertexAmpB',        label: 'Amp B  (X ripple)',    min: 0, max: 0.7, step: 0.01,
+        desc: 'Amplitude of the secondary cos(X) wave — creates asymmetry so blobs don\'t look perfectly symmetrical.',
+        code: 'enemy.js onBeforeCompile → u_ampB uniform' },
+      { key: 'vertexAmpC',        label: 'Amp C  (Z ripple)',    min: 0, max: 0.7, step: 0.01,
+        desc: 'Amplitude of the tertiary cos(Z) wave — adds depth variation.',
+        code: 'enemy.js onBeforeCompile → u_ampC uniform' },
+      { key: 'wobbleSpeed',       label: 'Wobble Speed',         min: 0.5, max: 12, step: 0.1,
+        desc: 'How fast the ripple waves animate. Low = slow molasses. High = rapid jelly quiver. ~5 = natural idle.',
+        code: 'enemy.js onBeforeCompile → u_wt * speed multiplier' },
+      { key: 'hitWobbleStrength', label: 'Hit Burst Strength',   min: 0, max: 1.2, step: 0.01,
+        desc: 'Radial shockwave magnitude when struck. 0.55 = strong visible bounce; above 0.9 starts looking chaotic.',
+        code: 'enemy.js onBeforeCompile → u_hitStr uniform' },
+    ],
+  },
+  {
+    title: 'Scale animation — breathe + squash',
+    params: [
+      { key: 'breatheAmp',  label: 'Breathe Amplitude', min: 0,   max: 0.5, step: 0.005,
+        desc: 'How much the whole mesh scales up/down on the Y axis per breathe cycle. 0.13 = 13% height variation — noticeably alive without being distracting.',
+        code: 'enemy.js update() → breathe = amp * sin(t * freq)' },
+      { key: 'breatheFreq', label: 'Breathe Frequency',  min: 0.5, max: 9,   step: 0.1,
+        desc: 'Breathe cycles per second. 2.8 ≈ slow pulsing heart. 6+ = rapid quiver.',
+        code: 'enemy.js update() → freq parameter' },
+    ],
+  },
+  {
+    title: 'Hit response — squash on impact',
+    params: [
+      { key: 'hitWobbleInit', label: 'Hit Wobble (init)',  min: 0,   max: 1.5, step: 0.01,
+        desc: 'Initial hit wobble value when struck. Drives both the scale squash and the vertex burst. 0.65 = dramatic but readable.',
+        code: 'enemy.js hit() → this._hitWobble = value' },
+      { key: 'hitSquashY',    label: 'Hit Squash Y',       min: 0,   max: 1.5, step: 0.01,
+        desc: 'How much the hit wobble compresses the Y axis. sy = 1 + breathe - hitWobble * this. 0.4 = medium squash.',
+        code: 'enemy.js update() → sy computation' },
+      { key: 'hitExpandXZ',   label: 'Hit Expand XZ',      min: 0,   max: 1.5, step: 0.01,
+        desc: 'How much the hit expands the XZ plane (conservation of volume feel). 0.6 = matching squash ≈ feels physical.',
+        code: 'enemy.js update() → sxz computation' },
+      { key: 'hitDecay',      label: 'Decay Rate',         min: 0.2, max: 5,   step: 0.05,
+        desc: 'How fast hit wobble returns to rest. hitWobble -= dt * decay. 1.1 = slow springy return. 3+ = snappy.',
+        code: 'enemy.js update() → dt * hitDecay' },
+    ],
+  },
+];
+
+// Family-specific defaults
+const DEFAULTS = {
+  blob: {
+    transmission: 0.78, ior: 1.42, clearcoat: 0.90, clearcoatRoughness: 0.04,
+    roughness: 0.02, emissiveIntensity: 0.18, opacity: 1.0,
+    vertexAmpA: 0.22, vertexAmpB: 0.16, vertexAmpC: 0.12,
+    wobbleSpeed: 5.2, hitWobbleStrength: 0.55,
+    breatheAmp: 0.13, breatheFreq: 2.8,
+    hitWobbleInit: 0.65, hitSquashY: 0.4, hitExpandXZ: 0.6, hitDecay: 1.1,
+  },
+  cube: {
+    transmission: 0.62, ior: 1.55, clearcoat: 0.70, clearcoatRoughness: 0.05,
+    roughness: 0.04, emissiveIntensity: 0.12, opacity: 1.0,
+    vertexAmpA: 0, vertexAmpB: 0, vertexAmpC: 0,
+    wobbleSpeed: 5.2, hitWobbleStrength: 0,
+    breatheAmp: 0.10, breatheFreq: 2.2,
+    hitWobbleInit: 0.65, hitSquashY: 0.5, hitExpandXZ: 0.7, hitDecay: 1.1,
+  },
+  unique: {
+    transmission: 0.0, ior: 1.5, clearcoat: 0.90, clearcoatRoughness: 0.04,
+    roughness: 0.05, emissiveIntensity: 0.10, opacity: 0.95,
+    vertexAmpA: 0, vertexAmpB: 0, vertexAmpC: 0,
+    wobbleSpeed: 5.2, hitWobbleStrength: 0,
+    breatheAmp: 0.06, breatheFreq: 2.0,
+    hitWobbleInit: 0.5, hitSquashY: 0.3, hitExpandXZ: 0.4, hitDecay: 1.5,
+  },
+};
+
+// Per-enemy tweaks on top of family defaults
+const OVERRIDES = {
+  SPLITTA: { breatheAmp: 0.18, breatheFreq: 4.0, vertexAmpA: 0.28 },
+  BAMBU:   { transmission: 0.38, ior: 1.45, clearcoat: 0.4 },
+};
+
+function defaultsFor(key) {
+  const e = BY_KEY[key];
+  return { ...DEFAULTS[e.family], ...(OVERRIDES[key] || {}) };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// THREE.JS SCENE
+// ═══════════════════════════════════════════════════════════════════════════════
+const canvas   = document.getElementById('preview-canvas');
+const wrap     = document.getElementById('preview-wrap');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace     = THREE.SRGBColorSpace;
+renderer.toneMapping          = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure  = 1.15;
+renderer.shadowMap.enabled    = true;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0d0d1a);
+scene.fog        = new THREE.Fog(0x0d0d1a, 12, 30);
+
+const pmrem  = new THREE.PMREMGenerator(renderer);
+const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+pmrem.dispose();
+scene.environment = envTex;
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+sun.position.set(4, 8, 6);
+sun.castShadow = true;
+scene.add(sun);
+
+// Floor
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(10, 10),
+  new THREE.MeshPhongMaterial({ color: 0x14142b }),
+);
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+scene.add(new THREE.GridHelper(10, 20, 0x22224a, 0x22224a));
+
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 40);
+camera.position.set(0, 2.2, 5.5);
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.target.set(0, 0.7, 0);
+controls.minDistance = 1.2;
+controls.maxDistance = 12;
+controls.autoRotate  = true;
+controls.autoRotateSpeed = 0.9;
+
+const ro = new ResizeObserver(() => {
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+});
+ro.observe(wrap);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════════════
+let currentKey    = null;
+let currentParams = {};
+let previewMesh   = null;
+let wUni          = {};
+let wobbleT       = 0;
+let hitWobble     = 0;
+
+const sessionId  = `${new Date().toISOString().slice(0,10)}-${Math.random().toString(36).slice(2,6)}`;
+let   snapshots  = JSON.parse(localStorage.getItem('tokoLabSnapshots') || '[]');
+
+// Declared here so selectEnemy/refreshSliders can reference them before sliders are built
+const sliderPanel = document.getElementById('sliders-panel');
+const sliderEls   = {}; // key → { range, valEl (direct element ref) }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MESH BUILD
+// ═══════════════════════════════════════════════════════════════════════════════
+function buildMesh(key, params) {
+  if (previewMesh) {
+    scene.remove(previewMesh);
+    previewMesh.geometry.dispose();
+    previewMesh.material.dispose();
+    previewMesh = null;
+  }
+
+  const e = BY_KEY[key];
+  const r = e.radius;
+
+  let geo;
+  if (e.family === 'blob')   geo = new THREE.SphereGeometry(r, 24, 16);
+  else if (e.family === 'cube') geo = new RoundedBoxGeometry(r*1.8, r*1.8, r*1.8, 4, 0.22);
+  else geo = new THREE.TorusGeometry(r*0.68, r*0.32, 10, 24);
+
+  wUni = {
+    u_wt:     { value: 0 },
+    u_hw:     { value: 0 },
+    u_ampA:   { value: params.vertexAmpA },
+    u_ampB:   { value: params.vertexAmpB },
+    u_ampC:   { value: params.vertexAmpC },
+    u_spd:    { value: params.wobbleSpeed },
+    u_hitStr: { value: params.hitWobbleStrength },
+  };
+
+  const mat = new THREE.MeshPhysicalMaterial({
+    color:              e.color,
+    emissive:           e.color,
+    emissiveIntensity:  params.emissiveIntensity,
+    roughness:          params.roughness,
+    metalness:          0,
+    transmission:       params.transmission,
+    thickness:          r * 2.2,
+    ior:                params.ior,
+    clearcoat:          params.clearcoat,
+    clearcoatRoughness: params.clearcoatRoughness,
+    transparent:        true,
+    opacity:            params.opacity,
+  });
+
+  if (e.family === 'blob') {
+    const wu = wUni;
+    mat.onBeforeCompile = shader => {
+      Object.assign(shader.uniforms, wu);
+      shader.vertexShader = `
+uniform float u_wt; uniform float u_hw;
+uniform float u_ampA; uniform float u_ampB; uniform float u_ampC;
+uniform float u_spd;  uniform float u_hitStr;
+` + shader.vertexShader;
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+        float _t = u_wt * u_spd;
+        float _b = sin(position.y * 3.8 + _t) * u_ampA
+                 + cos(position.x * 3.2 + _t * 0.9) * u_ampB
+                 + cos(position.z * 3.5 + _t * 1.12) * u_ampC;
+        float _h = sin(length(position) * 8.0 - u_wt * 18.0) * u_hw * u_hitStr;
+        transformed += normal * (_b + _h);`
+      );
+    };
+  }
+
+  previewMesh = new THREE.Mesh(geo, mat);
+  previewMesh.position.y = e.family === 'cube' ? r * 0.9 : r;
+  previewMesh.castShadow = true;
+  scene.add(previewMesh);
+  wobbleT  = 0;
+  hitWobble = 0;
+}
+
+// Live-apply material params without rebuilding geometry
+function applyMaterial(params) {
+  if (!previewMesh) return;
+  const m = previewMesh.material;
+  m.transmission       = params.transmission;
+  m.ior                = params.ior;
+  m.clearcoat          = params.clearcoat;
+  m.clearcoatRoughness = params.clearcoatRoughness;
+  m.roughness          = params.roughness;
+  m.emissiveIntensity  = params.emissiveIntensity;
+  m.opacity            = params.opacity;
+  m.needsUpdate        = true;
+  // Vertex uniforms
+  if (wUni.u_ampA)   { wUni.u_ampA.value   = params.vertexAmpA; }
+  if (wUni.u_ampB)   { wUni.u_ampB.value   = params.vertexAmpB; }
+  if (wUni.u_ampC)   { wUni.u_ampC.value   = params.vertexAmpC; }
+  if (wUni.u_spd)    { wUni.u_spd.value    = params.wobbleSpeed; }
+  if (wUni.u_hitStr) { wUni.u_hitStr.value = params.hitWobbleStrength; }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ANIMATION LOOP
+// ═══════════════════════════════════════════════════════════════════════════════
+let prevT = performance.now();
+function animate() {
+  requestAnimationFrame(animate);
+  const now = performance.now();
+  const dt  = Math.min((now - prevT) / 1000, 0.05);
+  prevT = now;
+
+  wobbleT   += dt;
+  if (hitWobble > 0) hitWobble = Math.max(0, hitWobble - dt * (currentParams.hitDecay || 1.1));
+
+  if (previewMesh) {
+    if (wUni.u_wt) wUni.u_wt.value = wobbleT;
+    if (wUni.u_hw) wUni.u_hw.value = hitWobble;
+
+    const { breatheAmp = 0, breatheFreq = 2.8, hitSquashY = 0.4, hitExpandXZ = 0.6 } = currentParams;
+    const breathe = breatheAmp * Math.sin(wobbleT * breatheFreq);
+    const sy  = Math.max(0.05, 1 + breathe - hitWobble * hitSquashY);
+    const sxz = Math.max(0.05, 1 - breathe * 0.5 + hitWobble * hitExpandXZ);
+    previewMesh.scale.set(sxz, sy, sxz);
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+// ─── Click canvas → trigger hit wobble ────────────────────────────────────────
+canvas.addEventListener('click', () => {
+  hitWobble = currentParams.hitWobbleInit || 0.65;
+  const flash = document.getElementById('preview-hit-flash');
+  flash.style.opacity = '1';
+  setTimeout(() => { flash.style.opacity = '0'; }, 80);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ENEMY LIST UI
+// ═══════════════════════════════════════════════════════════════════════════════
+const listEl = document.getElementById('enemy-list');
+const btnMap = {};
+
+FAMILIES.forEach(fam => {
+  const lbl = document.createElement('div');
+  lbl.className   = 'family-label';
+  lbl.textContent = fam.label;
+  listEl.appendChild(lbl);
+
+  fam.members.forEach(e => {
+    const btn  = document.createElement('button');
+    btn.className   = 'enemy-btn';
+    btn.dataset.key = e.key;
+    const hex = '#' + e.color.toString(16).padStart(6, '0');
+    btn.innerHTML = `
+      <span class="enemy-dot" style="background:${hex}"></span>
+      ${e.key}
+      <span class="enemy-snap-badge" id="badge-${e.key}">0</span>`;
+    btn.addEventListener('click', () => selectEnemy(e.key));
+    listEl.appendChild(btn);
+    btnMap[e.key] = btn;
+  });
+});
+
+function selectEnemy(key) {
+  currentKey    = key;
+  const stored  = JSON.parse(localStorage.getItem(`tokoLabP_${key}`) || 'null');
+  currentParams = stored || defaultsFor(key);
+  buildMesh(key, currentParams);
+  refreshSliders();
+  refreshPreviewLabel();
+  refreshFeedbackMeta();
+  Object.values(btnMap).forEach(b => b.classList.remove('active'));
+  if (btnMap[key]) btnMap[key].classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SLIDERS UI
+// ═══════════════════════════════════════════════════════════════════════════════
+PARAM_GROUPS.forEach(group => {
+  const sec   = document.createElement('div');
+  sec.className = 'param-group';
+  sec.innerHTML = `<div class="param-group-title">${group.title}</div>`;
+
+  group.params.forEach(p => {
+    const row  = document.createElement('div');
+    row.className = 'param-row';
+
+    const top    = document.createElement('div');
+    top.className = 'param-top';
+
+    const nameSp = document.createElement('span');
+    nameSp.className   = 'param-name';
+    nameSp.textContent = p.label;
+
+    const valSp  = document.createElement('span');
+    valSp.className = 'param-val';
+    valSp.textContent = '—';
+    top.append(nameSp, valSp);
+
+    const desc = document.createElement('div');
+    desc.className   = 'param-desc';
+    desc.textContent = p.desc;
+
+    const range = document.createElement('input');
+    range.type  = 'range';
+    range.min   = p.min;
+    range.max   = p.max;
+    range.step  = p.step;
+
+    range.addEventListener('input', () => {
+      const v = parseFloat(range.value);
+      currentParams[p.key] = v;
+      valSp.textContent = fmt(v, p.step);
+      applyMaterial(currentParams);
+      localStorage.setItem(`tokoLabP_${currentKey}`, JSON.stringify(currentParams));
+    });
+
+    row.append(top, desc, range);
+    sec.appendChild(row);
+    sliderEls[p.key] = { range, valEl: valSp }; // direct ref — no getElementById needed
+  });
+
+  sliderPanel.appendChild(sec);
+});
+
+function fmt(v, step) {
+  return typeof v === 'number' ? v.toFixed(step < 0.05 ? 2 : step < 0.5 ? 1 : 0) : String(v);
+}
+
+function refreshSliders() {
+  PARAM_GROUPS.forEach(g => g.params.forEach(p => {
+    const els = sliderEls[p.key];
+    if (!els) return;
+    const v = currentParams[p.key] ?? defaultsFor(currentKey)[p.key] ?? 0;
+    els.range.value       = v;
+    els.valEl.textContent = fmt(v, p.step);
+  }));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PREVIEW LABEL + META
+// ═══════════════════════════════════════════════════════════════════════════════
+function refreshPreviewLabel() {
+  const e = BY_KEY[currentKey];
+  document.getElementById('lbl-name').textContent = e.key;
+  document.getElementById('lbl-sub').textContent  =
+    `${e.family} family  ·  radius ${e.radius}  ·  #${e.color.toString(16).padStart(6,'0')}`;
+}
+
+function refreshFeedbackMeta() {
+  const n = snapshots.filter(s => s.enemy === currentKey).length;
+  document.getElementById('feedback-meta').textContent =
+    `enemy: ${currentKey}  ·  session: ${sessionId}  ·  snapshots this enemy: ${n}`;
+}
+
+function refreshBadges() {
+  ALL_ENEMIES.forEach(e => {
+    const n   = snapshots.filter(s => s.enemy === e.key).length;
+    const el  = document.getElementById(`badge-${e.key}`);
+    if (!el) return;
+    el.textContent = n;
+    el.classList.toggle('visible', n > 0);
+  });
+  document.getElementById('snap-count').textContent = snapshots.length;
+}
+refreshBadges();
+
+// Initial selection — must happen after sliders are built and sliderEls is populated
+selectEnemy('GLOBBO');
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FEEDBACK ACTIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+const feedbackText = document.getElementById('feedback-text');
+
+document.getElementById('btn-record').addEventListener('click', () => {
+  const snap = {
+    id:        crypto.randomUUID(),
+    timestamp: new Date().toISOString(),
+    session:   sessionId,
+    enemy:     currentKey,
+    family:    BY_KEY[currentKey].family,
+    color:     '#' + BY_KEY[currentKey].color.toString(16).padStart(6, '0'),
+    iteration: snapshots.filter(s => s.enemy === currentKey && s.session === sessionId).length + 1,
+    params:    { ...currentParams },
+    feedback:  feedbackText.value.trim(),
+  };
+  snapshots.push(snap);
+  localStorage.setItem('tokoLabSnapshots', JSON.stringify(snapshots));
+  feedbackText.value = '';
+  refreshBadges();
+  refreshFeedbackMeta();
+  // Flash border
+  const btn = document.getElementById('btn-record');
+  btn.style.background = '#0a3020';
+  setTimeout(() => { btn.style.background = ''; }, 350);
+});
+
+document.getElementById('btn-export').addEventListener('click', () => {
+  const byEnemy = {};
+  snapshots.forEach(s => { (byEnemy[s.enemy] = byEnemy[s.enemy] || []).push(s); });
+  const payload = {
+    meta:     { exported: new Date().toISOString(), session: sessionId, total: snapshots.length },
+    by_enemy: byEnemy,
+    snapshots,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const a    = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(blob),
+    download: `toko-lab-${sessionId}.json`,
+  });
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+document.getElementById('btn-prompt').addEventListener('click', async () => {
+  if (!snapshots.length) { alert('Record at least one snapshot first.'); return; }
+
+  const lines = [
+    '# Toko-Drop Visual Lab — Feedback Context',
+    `Session: ${sessionId}   Exported: ${new Date().toISOString()}`,
+    `Total snapshots: ${snapshots.length}`,
+    '',
+    '## Summary per enemy',
+  ];
+  const grouped = {};
+  snapshots.forEach(s => (grouped[s.enemy] = grouped[s.enemy] || []).push(s));
+  Object.entries(grouped).forEach(([enemy, snaps]) => {
+    lines.push(`\n### ${enemy}  (${snaps[0].family})`);
+    snaps.forEach(s => {
+      lines.push(`\nIteration ${s.iteration} · ${s.timestamp}`);
+      lines.push('Parameters:');
+      Object.entries(s.params).forEach(([k, v]) =>
+        lines.push(`  ${k}: ${typeof v === 'number' ? v.toFixed(3) : v}`));
+      if (s.feedback) lines.push(`Feedback: "${s.feedback}"`);
+    });
+  });
+  lines.push('', '---',
+    'Based on the parameter snapshots and feedback above:',
+    '1. For each enemy, what specific material/wobble/squash changes are most likely to move it closer to the target "moist jelly with glistening clearcoat" look?',
+    '2. Which parameters show the most variance across iterations — suggesting they need wider exploration?',
+    '3. Are any parameters at extreme values that might indicate a different architectural approach is needed?',
+  );
+
+  const text = lines.join('\n');
+  try { await navigator.clipboard.writeText(text); } catch { alert(text); return; }
+  const btn = document.getElementById('btn-prompt');
+  const orig = btn.textContent;
+  btn.textContent = '✓ Copied to clipboard';
+  setTimeout(() => { btn.textContent = orig; }, 1600);
+});
+
+document.getElementById('btn-code').addEventListener('click', async () => {
+  const p   = currentParams;
+  const e   = BY_KEY[currentKey];
+  const hex = '0x' + e.color.toString(16).padStart(6, '0');
+  const lines = [
+    `// ${currentKey} material patch — from lab session ${sessionId}`,
+    `// ${new Date().toISOString()}`,
+    `// feedback: "${feedbackText.value.trim() || '(none)'}"`,
+    ``,
+    `// In enemy.js, ${e.family === 'blob' ? 'BLOB branch' : e.family === 'cube' ? 'CUBE branch' : 'fallback'} MeshPhysicalMaterial:`,
+    `this.mat = new THREE.MeshPhysicalMaterial({`,
+    `  color:              ${hex},`,
+    `  emissive:           ${hex},`,
+    `  emissiveIntensity:  ${p.emissiveIntensity.toFixed(3)},`,
+    `  roughness:          ${p.roughness.toFixed(3)},`,
+    `  metalness:          0.0,`,
+    `  transmission:       ${p.transmission.toFixed(3)},`,
+    `  thickness:          cfg.radius * 2.2,`,
+    `  ior:                ${p.ior.toFixed(3)},`,
+    `  clearcoat:          ${p.clearcoat.toFixed(3)},`,
+    `  clearcoatRoughness: ${p.clearcoatRoughness.toFixed(3)},`,
+    `  transparent:        true,`,
+    `  opacity:            ${p.opacity.toFixed(3)},`,
+    `});`,
+    ``,
+    `// Wobble (update in enemy.js update() → wobble block):`,
+    `// breatheAmp  = ${p.breatheAmp.toFixed(3)}`,
+    `// breatheFreq = ${p.breatheFreq.toFixed(2)}`,
+    `// hitWobbleInit (in hit()) = ${p.hitWobbleInit.toFixed(3)}`,
+    `// hitDecay (in update())   = ${p.hitDecay.toFixed(2)}`,
+    `// hitSquashY               = ${p.hitSquashY.toFixed(3)}`,
+    `// hitExpandXZ              = ${p.hitExpandXZ.toFixed(3)}`,
+  ];
+  if (e.family === 'blob') {
+    lines.push(``,
+      `// Vertex shader uniforms (onBeforeCompile):`,
+      `// u_ampA    = ${p.vertexAmpA.toFixed(3)}  (was 0.22)`,
+      `// u_ampB    = ${p.vertexAmpB.toFixed(3)}  (was 0.16)`,
+      `// u_ampC    = ${p.vertexAmpC.toFixed(3)}  (was 0.12)`,
+      `// u_hitStr  = ${p.hitWobbleStrength.toFixed(3)}  (was 0.55)`,
+    );
+  }
+
+  const text = lines.join('\n');
+  try { await navigator.clipboard.writeText(text); } catch { alert(text); return; }
+  const btn = document.getElementById('btn-code');
+  const orig = btn.textContent;
+  btn.textContent = '✓ Patch copied';
+  setTimeout(() => { btn.textContent = orig; }, 1600);
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  if (!confirm(`Reset ${currentKey} to ${BY_KEY[currentKey].family} family defaults?`)) return;
+  localStorage.removeItem(`tokoLabP_${currentKey}`);
+  currentParams = defaultsFor(currentKey);
+  buildMesh(currentKey, currentParams);
+  refreshSliders();
+});
+</script>
+</body>
+</html>
