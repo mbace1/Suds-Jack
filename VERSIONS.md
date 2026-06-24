@@ -8,8 +8,8 @@
 -->
 
 ## v9 — 2026-06-24
-**Remove wave-type labels from announcements**
-- Wave overlay shows only "WAVE N" — no spike/boss label text
+**Minimal wave announcement**
+- Overlay shows only small "WAVE N" (22px, 0.75 opacity, 900 ms) — no large banner
 
 ## v8 — 2026-06-24
 **Boss waves**

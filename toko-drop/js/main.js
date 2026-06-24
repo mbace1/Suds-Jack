@@ -801,8 +801,8 @@ function showGameOver() {
 
 function announceWave() {
   overlay.style.display = 'block';
-  overlay.innerHTML = `<div style="font-size:48px;font-weight:bold">WAVE ${wave}</div>`;
-  setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 1300);
+  overlay.innerHTML = `<div style="font-size:22px;opacity:0.75">WAVE ${wave}</div>`;
+  setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 900);
 }
 
 // ── Wave / restart helpers ──────────────────────────────────────────────────────────
