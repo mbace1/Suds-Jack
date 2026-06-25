@@ -1,8 +1,9 @@
 import * as THREE from 'three';
-import { COL } from './palette.js?v=2';
-import { DRIVE_HALF } from './player.js?v=2';
+import { COL } from './palette.js?v=3';
+import { DRIVE_HALF } from './player.js?v=3';
 
 const HOUSE_X      = DRIVE_HALF + 2.6;   // house centre line, just beyond the kerb
+export const DELIVER_X = HOUSE_X - 1.6;  // kerbside mailbox line papers fly to
 const HOUSE_SPACING= 9.5;
 const SPAWN_AHEAD  = 78;                 // how far ahead of the bike to build
 const CULL_BEHIND  = 20;
@@ -29,8 +30,12 @@ export class World {
     this._roofGeo  = new THREE.ConeGeometry(2.4, 1.8, 4);
     this._bodyGeo  = new THREE.BoxGeometry(3.4, 2.6, 3.4);
     this._winGeo   = new THREE.BoxGeometry(0.7, 0.8, 0.08);
-    this._postGeo  = new THREE.CylinderGeometry(0.08, 0.08, 1.0, 6);
-    this._boxGeo   = new THREE.BoxGeometry(0.5, 0.35, 0.7);
+    this._doorGeo  = new THREE.BoxGeometry(0.8, 1.4, 0.1);
+    this._postGeo  = new THREE.CylinderGeometry(0.07, 0.07, 1.0, 6);
+    this._mailGeo  = new THREE.BoxGeometry(0.34, 0.34, 0.56);   // mailbox body
+    this._flagGeo  = new THREE.BoxGeometry(0.04, 0.22, 0.14);   // red flag
+    this._trunkGeo = new THREE.CylinderGeometry(0.16, 0.2, 1.2, 6);
+    this._foliaGeo = new THREE.SphereGeometry(1.0, 8, 6);
     this.reset(0);
   }
 
@@ -72,12 +77,27 @@ export class World {
       g.add(w); windows.push(w);
     }
 
-    // Subscriber mailbox post by the kerb
-    if (sub) {
-      const post = new THREE.Mesh(this._postGeo, new THREE.MeshLambertMaterial({ color: 0x6a4a2a }));
-      post.position.set(-side * 1.6, 0.5, 0); g.add(post);
-      const box = new THREE.Mesh(this._boxGeo, new THREE.MeshLambertMaterial({ color: COL.delivered }));
-      box.position.set(-side * 1.6, 1.0, 0); g.add(box);
+    // Front door facing the road
+    const door = new THREE.Mesh(this._doorGeo,
+      new THREE.MeshLambertMaterial({ color: sub ? COL.subRoof : COL.nonSubRoof }));
+    door.position.set(0, 0.9, -side * 1.72); g.add(door);
+
+    // Curbside mailbox at the delivery line — every house has one (US-style box + flag)
+    const post = new THREE.Mesh(this._postGeo, new THREE.MeshLambertMaterial({ color: 0x6a4a2a }));
+    post.position.set(-side * 1.6, 0.5, 0); g.add(post);
+    const mbox = new THREE.Mesh(this._mailGeo,
+      new THREE.MeshLambertMaterial({ color: sub ? 0xf3f3ea : 0x8b9088 }));
+    mbox.position.set(-side * 1.6, 1.05, 0); g.add(mbox);
+    const flag = new THREE.Mesh(this._flagGeo, new THREE.MeshLambertMaterial({ color: COL.hudDanger }));
+    flag.position.set(-side * 1.84, sub ? 1.22 : 0.98, 0); g.add(flag); // flag up = wants a paper
+
+    // A leafy tree on the lawn, set back from the road
+    if (Math.random() < 0.6) {
+      const tx = side * 2.6, tz = (Math.random() * 2 - 1) * 2.6;
+      const trunk = new THREE.Mesh(this._trunkGeo, new THREE.MeshLambertMaterial({ color: 0x6a4a2a }));
+      trunk.position.set(tx, 0.6, tz); trunk.castShadow = true; g.add(trunk);
+      const foliage = new THREE.Mesh(this._foliaGeo, new THREE.MeshLambertMaterial({ color: 0x4f9e36 }));
+      foliage.position.set(tx, 1.8, tz); foliage.scale.set(1, 0.85, 1); foliage.castShadow = true; g.add(foliage);
     }
 
     this.scene.add(g);
