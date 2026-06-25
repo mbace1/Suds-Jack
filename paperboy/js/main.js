@@ -1,19 +1,20 @@
 import * as THREE from 'three';
-import { COL } from './palette.js?v=2';
-import { InputManager } from './input.js?v=2';
-import { Player, DRIVE_HALF, PLAYER_R } from './player.js?v=2';
-import { PaperPool } from './paper.js?v=2';
-import { World } from './world.js?v=2';
-import { audio } from './audio.js?v=2';
+import { COL } from './palette.js?v=3';
+import { InputManager } from './input.js?v=3';
+import { Player, DRIVE_HALF, PLAYER_R } from './player.js?v=3';
+import { PaperPool } from './paper.js?v=3';
+import { World } from './world.js?v=3';
+import { audio } from './audio.js?v=3';
 
 const MAX_LIVES  = 3;
 const START_PAPERS = 10;
 const MAX_PAPERS = 25;
 const DAY_DIST   = 130;     // metres per "day"
 
-// Isometric framing: orthographic camera at the classic Paperboy 3/4 angle.
-const ISO_OFF  = new THREE.Vector3(20, 24, 20);  // camera offset from the bike
-const VIEW_SIZE = 30;                             // world units shown vertically
+// Paperboy framing: the route rolls mostly UP the screen with a slight rightward
+// lean (small x offset), not a hard 45° diagonal. Orthographic for the flat read.
+const ISO_OFF  = new THREE.Vector3(5, 19, 21);   // camera offset from the bike
+const VIEW_SIZE = 28;                             // world units shown vertically
 
 // ── Renderer (flat & bright — Paperboy daytime, no bloom/gel) ──────────────────
 const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas-game'), antialias: true });
@@ -84,6 +85,35 @@ const kerbR = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 700), kerbMat);
 kerbL.position.set(-(DRIVE_HALF + 1.1), 0.2, 0);
 kerbR.position.set( (DRIVE_HALF + 1.1), 0.2, 0);
 scene.add(kerbL, kerbR);
+
+// Grey sidewalk strip between kerb and houses (where the mailboxes sit)
+const swMat = new THREE.MeshLambertMaterial({ color: COL.sidewalk });
+const swGeo = new THREE.PlaneGeometry(2.0, 700);
+const swL = new THREE.Mesh(swGeo, swMat); const swR = new THREE.Mesh(swGeo, swMat);
+swL.rotation.x = swR.rotation.x = -Math.PI / 2; swL.position.y = swR.position.y = 0.012;
+swL.position.x = -(DRIVE_HALF + 1.6); swR.position.x = (DRIVE_HALF + 1.6);
+swL.receiveShadow = swR.receiveShadow = true;
+scene.add(swL, swR);
+
+// White picket fence lines along the kerb (uses a tiny picket texture)
+function makeFenceTex() {
+  const c = document.createElement('canvas'); c.width = 32; c.height = 16;
+  const g = c.getContext('2d');
+  g.clearRect(0, 0, 32, 16); g.fillStyle = '#f7f9f4';
+  g.fillRect(2, 2, 7, 14);                                    // picket
+  g.fillRect(0, 7, 32, 3);                                    // top rail joining pickets
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = THREE.RepeatWrapping; tex.repeat.set(230, 1); tex.magFilter = THREE.NearestFilter;
+  return tex;
+}
+const fenceTex = makeFenceTex();
+const fenceGeo = new THREE.PlaneGeometry(700, 0.9);
+const fenceMat = new THREE.MeshLambertMaterial({ map: fenceTex, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide });
+const fenceL = new THREE.Mesh(fenceGeo, fenceMat); const fenceR = new THREE.Mesh(fenceGeo, fenceMat);
+fenceL.rotation.y = fenceR.rotation.y = Math.PI / 2;
+fenceL.position.set(-(DRIVE_HALF + 0.9), 0.45, 0);
+fenceR.position.set( (DRIVE_HALF + 0.9), 0.45, 0);
+scene.add(fenceL, fenceR);
 
 // ── Sparks ────────────────────────────────────────────────────────────────────
 class Spark {
@@ -307,6 +337,7 @@ function loop() {
   // Follow road/ground/kerbs to the bike; scroll lane texture
   const pz = player.position.z;
   road.position.z = pz; ground.position.z = pz; kerbL.position.z = pz; kerbR.position.z = pz;
+  swL.position.z = swR.position.z = pz; fenceL.position.z = fenceR.position.z = pz;
   roadTex.offset.y = pz * (90 / 700);   // scroll markings with travel
 
   world.update(dt, pz, t);

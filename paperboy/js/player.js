@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { COL } from './palette.js?v=2';
+import { COL } from './palette.js?v=3';
 
 export const DRIVE_HALF   = 7.4;   // how far the bike may stray laterally (road + kerbs)
 export const PLAYER_R     = 0.55;
@@ -58,17 +58,26 @@ export class Player {
     seat.position.set(0, 0.72, 0.5);
     this.group.add(seat);
 
-    const wheelGeo = new THREE.TorusGeometry(0.42, 0.11, 8, 18);
-    const wheelMat = flat(COL.wheel);
-    this.wheelF = new THREE.Mesh(wheelGeo, wheelMat);
-    this.wheelB = new THREE.Mesh(wheelGeo, wheelMat);
+    // Wheels: bake the axle along X (lateral) so rotation.x rolls them properly.
+    const tireGeo = new THREE.TorusGeometry(0.4, 0.1, 10, 20); tireGeo.rotateY(Math.PI / 2);
+    const hubGeo  = new THREE.CylinderGeometry(0.09, 0.09, 0.16, 8); hubGeo.rotateZ(Math.PI / 2);
+    const spokeGeo = new THREE.BoxGeometry(0.05, 0.64, 0.05);
+    const mkWheel = () => {
+      const w = new THREE.Group();
+      const tire = new THREE.Mesh(tireGeo, flat(COL.wheel)); tire.castShadow = true;
+      const hub  = new THREE.Mesh(hubGeo,  flat(0xb9bcc2));
+      const s1 = new THREE.Mesh(spokeGeo, flat(0xb9bcc2));
+      const s2 = new THREE.Mesh(spokeGeo, flat(0xb9bcc2)); s2.rotation.x = Math.PI / 2;
+      w.add(tire, hub, s1, s2);
+      return w;
+    };
+    this.wheelF = mkWheel(); this.wheelB = mkWheel();
     this.wheelF.position.set(0, 0.42, -0.62);
     this.wheelB.position.set(0, 0.42,  0.62);
-    this.wheelF.castShadow = this.wheelB.castShadow = true;
     this.group.add(this.wheelF, this.wheelB);
 
     // Collect meshes whose opacity we flicker during crash mercy frames.
-    this._parts = [torso, head, cap, brim, frame, bar, seat, this.wheelF, this.wheelB];
+    this._parts = [torso, head, cap, brim, frame, bar, seat];
   }
 
   get position() { return this.group.position; }
