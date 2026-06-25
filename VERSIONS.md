@@ -7,6 +7,10 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v17 — 2026-06-25
+**Fix roguelike default: rename localStorage key**
+- Changed key `tokoDropRogue` → `tokoDropRogue2` so stale `'1'` values from previous sessions don't override the arcade-by-default setting
+
 ## v16 — 2026-06-25
 **Faster waves, arcade default, input fix**
 - Roguelike mode OFF by default (was ON); localStorage key `tokoDropRogue` now requires `'1'` to enable

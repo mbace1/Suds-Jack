@@ -603,7 +603,7 @@ const STREAK_FLASH_DUR = 0.4;
 let streakFlashT = 0;
 let hiScore = parseInt(localStorage.getItem('tokoDropHi') || '0');
 // Roguelike mode (default on): show upgrade cards between waves. Off = plain arcade run.
-let roguelikeMode = localStorage.getItem('tokoDropRogue') === '1';
+let roguelikeMode = localStorage.getItem('tokoDropRogue2') === '1';
 
 function onKill(e) {
   streak++;
@@ -862,7 +862,7 @@ function showTitle() {
     e.stopPropagation();
     e.preventDefault();
     roguelikeMode = !roguelikeMode;
-    localStorage.setItem('tokoDropRogue', roguelikeMode ? '1' : '0');
+    localStorage.setItem('tokoDropRogue2', roguelikeMode ? '1' : '0');
     render();
   };
   btn.addEventListener('pointerdown', toggle);
