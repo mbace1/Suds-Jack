@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { COL } from './palette.js';
+import { COL } from './palette.js?v=2';
 
 export const DRIVE_HALF   = 7.4;   // how far the bike may stray laterally (road + kerbs)
 export const PLAYER_R     = 0.55;
