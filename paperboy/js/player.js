@@ -5,8 +5,6 @@ export const DRIVE_HALF   = 7.4;   // how far the bike may stray laterally (road
 export const PLAYER_R     = 0.55;
 const STEER_SPEED  = 7.5;          // lateral units/s at full lock
 const MERCY_DUR    = 1.6;
-const GHOST_COUNT  = 6;
-const GHOST_LIFE   = 0.26;
 
 export class Player {
   constructor(scene) {
@@ -15,43 +13,53 @@ export class Player {
     this.baseSpeed = 9;
     this.speed   = 0;
     this._mercyT = 0;
-    this._ghostT = 0;
     this._lean   = 0;
     this._wheelSpin = 0;
 
     this.group = new THREE.Group();
     scene.add(this.group);
 
-    // Gel rider body (the toko-drop translucent look, warm cream tint)
-    const bodyGeo = new THREE.SphereGeometry(PLAYER_R, 20, 14);
-    this.bodyMat = new THREE.MeshPhysicalMaterial({
-      color: COL.rider, emissive: COL.riderGlow, emissiveIntensity: 0.6,
-      roughness: 0.05, metalness: 0.0,
-      transmission: 0.5, thickness: 0.8, ior: 1.35,
-      clearcoat: 0.8, clearcoatRoughness: 0.05,
-      transparent: true, opacity: 0.96,
-    });
-    this.body = new THREE.Mesh(bodyGeo, this.bodyMat);
-    this.body.position.y = 0.95;
-    this.body.castShadow = true;
-    this.group.add(this.body);
+    const flat = (color, opts = {}) => new THREE.MeshLambertMaterial({ color, ...opts });
 
-    // Low-poly coral bike: frame bar + two wheels
-    const frameMat = new THREE.MeshPhysicalMaterial({
-      color: COL.bike, emissive: 0x3a0e00, emissiveIntensity: 0.4,
-      roughness: 0.25, metalness: 0.1, clearcoat: 0.7,
-    });
-    const frame = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.16, 1.5), frameMat);
+    // ── Little BMX kid (flat-shaded, Paperboy-style) ──────────────────────────
+    // Torso (red jersey)
+    this.torsoMat = flat(COL.rider);
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.62, 0.42), this.torsoMat);
+    torso.position.y = 1.06; torso.castShadow = true;
+    this.group.add(torso);
+    // Head
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 14, 10), flat(COL.skin));
+    head.position.y = 1.6; head.castShadow = true;
+    this.group.add(head);
+    // Cap / helmet
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.28, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), flat(COL.helmet));
+    cap.position.y = 1.66; cap.castShadow = true;
+    this.group.add(cap);
+    const brim = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.06, 0.22), flat(COL.helmet));
+    brim.position.set(0, 1.62, -0.26);
+    this.group.add(brim);
+    // Arms reaching to the bars
+    const armMat = flat(COL.rider);
+    for (const sx of [-0.32, 0.32]) {
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.6), armMat);
+      arm.position.set(sx, 1.06, -0.34); arm.rotation.x = 0.5;
+      this.group.add(arm);
+    }
+
+    // ── BMX bike ──────────────────────────────────────────────────────────────
+    const frameMat = flat(COL.bike);
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.14, 1.4), frameMat);
     frame.position.y = 0.5; frame.castShadow = true;
     this.group.add(frame);
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.12, 0.12), frameMat);
-    bar.position.set(0, 0.7, -0.6);
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.1, 0.1), frameMat);
+    bar.position.set(0, 0.72, -0.6);
     this.group.add(bar);
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.1, 0.28), flat(0x222222));
+    seat.position.set(0, 0.72, 0.5);
+    this.group.add(seat);
 
-    const wheelGeo = new THREE.TorusGeometry(0.42, 0.12, 8, 18);
-    const wheelMat = new THREE.MeshPhysicalMaterial({
-      color: COL.wheel, roughness: 0.4, metalness: 0.2, clearcoat: 0.5,
-    });
+    const wheelGeo = new THREE.TorusGeometry(0.42, 0.11, 8, 18);
+    const wheelMat = flat(COL.wheel);
     this.wheelF = new THREE.Mesh(wheelGeo, wheelMat);
     this.wheelB = new THREE.Mesh(wheelGeo, wheelMat);
     this.wheelF.position.set(0, 0.42, -0.62);
@@ -59,29 +67,8 @@ export class Player {
     this.wheelF.castShadow = this.wheelB.castShadow = true;
     this.group.add(this.wheelF, this.wheelB);
 
-    // Kirby eyes (signature toko-drop touch)
-    const eyeGeo = new THREE.SphereGeometry(0.13, 8, 6);
-    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
-    this.eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-    this.eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-    this.eyeL.scale.set(0.55, 1.15, 0.4);
-    this.eyeR.scale.set(0.55, 1.15, 0.4);
-    const reflGeo = new THREE.SphereGeometry(0.042, 5, 4);
-    const reflMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-    [this.eyeL, this.eyeR].forEach(e => {
-      const r = new THREE.Mesh(reflGeo, reflMat); r.position.set(0.04, 0.05, -0.06); e.add(r);
-    });
-    this.eyeL.position.set(-0.17, 1.05, -0.42);
-    this.eyeR.position.set( 0.17, 1.05, -0.42);
-    this.body.add(this.eyeL, this.eyeR);
-
-    // Speed-line ghosts
-    this._ghosts = Array.from({ length: GHOST_COUNT }, () => {
-      const m = new THREE.Mesh(bodyGeo,
-        new THREE.MeshBasicMaterial({ color: COL.subscriber, transparent: true, opacity: 0, depthWrite: false }));
-      m.visible = false; scene.add(m);
-      return { mesh: m, life: 0 };
-    });
+    // Collect meshes whose opacity we flicker during crash mercy frames.
+    this._parts = [torso, head, cap, brim, frame, bar, seat, this.wheelF, this.wheelB];
   }
 
   get position() { return this.group.position; }
@@ -92,8 +79,7 @@ export class Player {
     this._mercyT = 0;
     this.group.position.set(0, 0, 0);
     this.group.visible = true;
-    this.bodyMat.opacity = 0.96;
-    for (const g of this._ghosts) { g.life = 0; g.mesh.visible = false; }
+    this._setOpacity(1);
   }
 
   setBaseSpeed(s) { this.baseSpeed = s; }
@@ -102,6 +88,11 @@ export class Player {
     if (this.invincible || !this.alive) return false;
     this._mercyT = MERCY_DUR;
     return true;
+  }
+
+  _setOpacity(o) {
+    const transparent = o < 1;
+    for (const m of this._parts) { m.material.transparent = transparent; m.material.opacity = o; }
   }
 
   update(dt, steer, throttle) {
@@ -117,40 +108,18 @@ export class Player {
     this.group.position.x = Math.max(-DRIVE_HALF, Math.min(DRIVE_HALF, this.group.position.x));
 
     // Visual lean + wheel spin
-    this._lean += ((-steer * 0.5) - this._lean) * Math.min(1, dt * 10);
+    this._lean += ((-steer * 0.45) - this._lean) * Math.min(1, dt * 10);
     this.group.rotation.z = this._lean;
     this._wheelSpin -= this.speed * dt * 1.6;
     this.wheelF.rotation.x = this.wheelB.rotation.x = this._wheelSpin;
 
-    // Gentle bob
-    this.body.position.y = 0.95 + Math.sin(performance.now() / 140) * 0.04;
-
     // Mercy flicker after a crash
     if (this._mercyT > 0) {
       this._mercyT -= dt;
-      this.bodyMat.opacity = 0.3 + 0.66 * Math.abs(Math.sin(this._mercyT * 16));
-      if (this._mercyT <= 0) this.bodyMat.opacity = 0.96;
-    }
-
-    // Ghost trail when moving quick
-    this._ghostT -= dt;
-    if (this._ghostT <= 0) {
-      this._ghostT = 0.03;
-      const g = this._ghosts.find(g => g.life <= 0);
-      if (g) {
-        g.mesh.position.copy(this.body.getWorldPosition(new THREE.Vector3()));
-        g.life = GHOST_LIFE; g.mesh.visible = true;
-      }
-    }
-    for (const g of this._ghosts) {
-      if (g.life > 0) {
-        g.life -= dt;
-        if (g.life <= 0) g.mesh.visible = false;
-        else { const t = g.life / GHOST_LIFE; g.mesh.material.opacity = t * 0.32; g.mesh.scale.setScalar(0.6 + 0.4 * t); }
-      }
+      this._setOpacity(0.35 + 0.6 * Math.abs(Math.sin(this._mercyT * 16)));
+      if (this._mercyT <= 0) this._setOpacity(1);
     }
   }
 
-  hide() { this.alive = false; this.group.visible = false;
-    for (const g of this._ghosts) { g.life = 0; g.mesh.visible = false; } }
+  hide() { this.alive = false; this.group.visible = false; }
 }

@@ -53,22 +53,13 @@ export class World {
     const g = new THREE.Group();
     g.position.set(side * HOUSE_X, 0, z);
 
-    const bodyMat = new THREE.MeshPhysicalMaterial({
-      color: sub ? COL.subscriber : COL.nonSub,
-      emissive: sub ? 0x0a3a2c : 0x2a0a06,
-      emissiveIntensity: sub ? 0.7 : 0.35,
-      roughness: 0.18, metalness: 0.0,
-      transmission: 0.25, thickness: 0.6, ior: 1.3,
-      clearcoat: 0.8, clearcoatRoughness: 0.1,
-      transparent: true, opacity: 0.97,
-    });
+    const bodyMat = new THREE.MeshLambertMaterial({ color: sub ? COL.subscriber : COL.nonSub });
     const body = new THREE.Mesh(this._bodyGeo, bodyMat);
     body.position.y = 1.3; body.castShadow = true; body.receiveShadow = true;
     g.add(body);
 
-    const roof = new THREE.Mesh(this._roofGeo, new THREE.MeshPhysicalMaterial({
-      color: sub ? COL.delivered : COL.car, roughness: 0.3, metalness: 0.05, clearcoat: 0.6,
-    }));
+    const roof = new THREE.Mesh(this._roofGeo,
+      new THREE.MeshLambertMaterial({ color: sub ? COL.subRoof : COL.nonSubRoof }));
     roof.position.y = 3.4; roof.rotation.y = Math.PI / 4; roof.castShadow = true;
     g.add(roof);
 
@@ -83,12 +74,9 @@ export class World {
 
     // Subscriber mailbox post by the kerb
     if (sub) {
-      const postMat = new THREE.MeshBasicMaterial({ color: COL.delivered });
-      const post = new THREE.Mesh(this._postGeo, postMat);
+      const post = new THREE.Mesh(this._postGeo, new THREE.MeshLambertMaterial({ color: 0x6a4a2a }));
       post.position.set(-side * 1.6, 0.5, 0); g.add(post);
-      const box = new THREE.Mesh(this._boxGeo, new THREE.MeshPhysicalMaterial({
-        color: COL.delivered, emissive: 0x0a3a2c, emissiveIntensity: 0.8, roughness: 0.3, clearcoat: 0.6,
-      }));
+      const box = new THREE.Mesh(this._boxGeo, new THREE.MeshLambertMaterial({ color: COL.delivered }));
       box.position.set(-side * 1.6, 1.0, 0); g.add(box);
     }
 
@@ -97,46 +85,45 @@ export class World {
       group: g, side, z, sub,
       delivered: false, smashed: false, missed: false,
       zoneX: side * (HOUSE_X - 1.6), zoneR: 3.5,
-      bodyMat, windows, flashT: 0, flashCol: null,
+      bodyMat, baseColor: sub ? COL.subscriber : COL.nonSub, windows, flashT: 0,
     });
   }
 
   _buildHazard(type, x, z) {
     let mesh, r = 0.7, vx = 0, vz = 0;
     if (type === 'car') {
-      mesh = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.9, 2.6),
-        new THREE.MeshPhysicalMaterial({ color: COL.car, emissive: 0x3a000c, emissiveIntensity: 0.5,
-          roughness: 0.15, metalness: 0.3, clearcoat: 0.9 }));
-      mesh.position.set(x, 0.55, z);
+      const body = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.7, 2.6),
+        new THREE.MeshLambertMaterial({ color: COL.car }));
+      const cab = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.5, 1.3),
+        new THREE.MeshLambertMaterial({ color: COL.car }));
+      cab.position.y = 0.55;
+      mesh = new THREE.Group(); mesh.add(body, cab);
+      mesh.position.set(x, 0.5, z);
       r = 1.2;
       vz = (3 + this.difficulty * 0.8) * (Math.random() < 0.7 ? 1 : -1); // mostly oncoming
     } else if (type === 'hydrant') {
       mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 1.0, 8),
-        new THREE.MeshPhysicalMaterial({ color: COL.hydrant, emissive: 0x3a2200, emissiveIntensity: 0.5,
-          roughness: 0.3, metalness: 0.2, clearcoat: 0.6 }));
+        new THREE.MeshLambertMaterial({ color: COL.hydrant }));
       mesh.position.set(x, 0.5, z); r = 0.6;
     } else if (type === 'cone') {
       mesh = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.9, 12),
-        new THREE.MeshPhysicalMaterial({ color: COL.cone, emissive: 0x3a2a00, emissiveIntensity: 0.6,
-          roughness: 0.4, clearcoat: 0.5 }));
+        new THREE.MeshLambertMaterial({ color: COL.cone }));
       mesh.position.set(x, 0.45, z); r = 0.5;
     } else { // dog
       mesh = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 8),
-        new THREE.MeshPhysicalMaterial({ color: COL.dog, emissive: 0x1a0a3a, emissiveIntensity: 0.6,
-          roughness: 0.2, transmission: 0.3, thickness: 0.5, clearcoat: 0.7, transparent: true, opacity: 0.95 }));
+        new THREE.MeshLambertMaterial({ color: COL.dog }));
       mesh.position.set(x, 0.5, z); r = 0.6;
       vx = (Math.random() < 0.5 ? -1 : 1) * (2 + this.difficulty * 0.5);
     }
-    mesh.castShadow = true;
+    mesh.traverse?.(o => { if (o.isMesh) o.castShadow = true; });
+    if (mesh.isMesh) mesh.castShadow = true;
     this.scene.add(mesh);
     this.hazards.push({ type, mesh, x, z, r, vx, vz, alive: true });
   }
 
   _buildPickup(x, z) {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7),
-      new THREE.MeshPhysicalMaterial({ color: COL.bundle, emissive: 0x003a4a, emissiveIntensity: 0.8,
-        roughness: 0.1, metalness: 0.0, transmission: 0.3, thickness: 0.5, ior: 1.3,
-        clearcoat: 0.9, transparent: true, opacity: 0.95 }));
+      new THREE.MeshLambertMaterial({ color: COL.bundle }));
     mesh.position.set(x, 0.6, z); mesh.castShadow = true;
     this.scene.add(mesh);
     this.pickups.push({ mesh, x, z, r: 0.9, taken: false });
@@ -192,8 +179,8 @@ export class World {
       if (h.flashT > 0) {
         h.flashT -= dt;
         const k = Math.max(0, h.flashT / 0.5);
-        h.bodyMat.emissiveIntensity = (h.sub ? 0.7 : 0.35) + k * 2.5;
-        if (h.flashT <= 0) h.bodyMat.emissiveIntensity = h.sub ? 0.7 : 0.35;
+        h.bodyMat.emissive.setRGB(k, k, k);   // bright pop on hit, fading out
+        if (h.flashT <= 0) h.bodyMat.emissive.setRGB(0, 0, 0);
       }
       // Missed subscriber: scrolled behind the bike, never delivered
       if (h.sub && !h.delivered && !h.missed && h.z > playerZ + 4) {

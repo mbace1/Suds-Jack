@@ -1,43 +1,47 @@
 // ── Palette ────────────────────────────────────────────────────────────────
-// Same gel/neon ART as toko-drop, but a brand-new WARM-DAWN colour scheme.
-// toko-drop = navy + violet + electric blue.  Paper Route = teal dusk + coral
-// houses + gold paper + mint deliveries.  Everything reads off this file so the
-// scheme can be re-tinted in one place.
+// Paperboy-style art direction: bright sunny suburban morning, flat opaque
+// surfaces, isometric read. Distinct "dawn" tint rather than a 1:1 arcade copy.
+// Everything reads off this file so the scheme re-tints in one place.
 export const COL = {
   // World
-  sky:          0x0c2420,   // dark teal dusk backdrop / fog
-  road:         0x10342b,   // wet teal asphalt
-  roadLine:     0x46c08f,   // mint lane markings
-  sidewalk:     0x1c4a3c,   // raised mint-grey kerb
-  grid:         0x2f6b55,   // faint mint grid
+  sky:          0x9bd7ff,   // bright morning sky (scene background)
+  haze:         0xc8e9ff,   // far distance haze
+  road:         0x9aa0a8,   // grey asphalt
+  roadLine:     0xfff0a8,   // warm yellow lane markings
+  sidewalk:     0xe8e3d4,   // pale concrete kerb
+  lawn:         0x7cc24a,   // suburban grass
 
-  // Paperboy
-  rider:        0xffe7ad,   // warm cream gel body
-  riderGlow:    0x3a2a00,   // gold inner emissive
-  bike:         0xff7a4a,   // coral frame
-  wheel:        0x123028,   // dark rims
+  // Paperboy + BMX
+  rider:        0xff5a3c,   // red jersey
+  skin:         0xffcf9e,   // face/hands
+  helmet:       0xffe14a,   // yellow cap/helmet
+  bike:         0x2b6cff,   // blue BMX frame
+  wheel:        0x2a2a2a,   // tyres
 
   // Houses
-  subscriber:   0x55ffcc,   // mint — wants a paper
-  subWindow:    0xbfffe9,   // lit windows
-  nonSub:       0xff6b5a,   // coral — not a customer
-  nonSubWindow: 0x3a1410,   // dark windows
-  delivered:    0x9affd6,   // flash on successful delivery
-  smash:        0xffd24a,   // flash on window smash
+  subscriber:   0x37c8e0,   // cyan — wants a paper
+  subRoof:      0x1f7e95,
+  subWindow:    0xfff7d6,   // lit windows
+  nonSub:       0xe5533a,   // terracotta — not a customer
+  nonSubRoof:   0x9c3527,
+  nonSubWindow: 0x35506a,   // dark windows
+  delivered:    0x7cffb0,   // flash on successful delivery
+  smash:        0xfff2a0,   // flash on window smash
 
   // Items
-  paper:        0xffd24a,   // gold newspaper
-  bundle:       0x33ddff,   // cyan paper-bundle pickup
+  paper:        0xf4f1e8,   // newsprint
+  paperBand:    0x2b6cff,   // blue wrap
+  bundle:       0x3a7bd5,   // stacked paper bundle pickup
 
   // Hazards
-  car:          0xff3366,   // hot magenta cars
-  hydrant:      0xff9e2c,   // amber hydrant
-  cone:         0xffc24a,   // gold cone
-  dog:          0xc78bff,   // lilac dog
+  car:          0x3b6fe2,   // a passing car
+  hydrant:      0xe03a2a,   // red hydrant
+  cone:         0xff8a1e,   // orange cone
+  dog:          0x9a6b3f,   // brown dog
 
   // FX / HUD
   spark:        0xffffff,
-  hudWarm:      0xffb14a,
-  hudMint:      0x2bffb0,
-  hudDanger:    0xff3366,
+  hudInk:       0x14324a,   // dark HUD ink (reads on the bright sky)
+  hudGood:      0x108a52,
+  hudDanger:    0xc7321f,
 };

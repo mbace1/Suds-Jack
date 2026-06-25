@@ -1,10 +1,4 @@
 import * as THREE from 'three';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { COL } from './palette.js';
 import { InputManager } from './input.js';
 import { Player, DRIVE_HALF, PLAYER_R } from './player.js';
@@ -17,67 +11,55 @@ const START_PAPERS = 10;
 const MAX_PAPERS = 25;
 const DAY_DIST   = 130;     // metres per "day"
 
-// ── Renderer (same pipeline as toko-drop) ──────────────────────────────────────
+// Isometric framing: orthographic camera at the classic Paperboy 3/4 angle.
+const ISO_OFF  = new THREE.Vector3(20, 24, 20);  // camera offset from the bike
+const VIEW_SIZE = 30;                             // world units shown vertically
+
+// ── Renderer (flat & bright — Paperboy daytime, no bloom/gel) ──────────────────
 const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas-game'), antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.12;
+renderer.toneMapping = THREE.NoToneMapping;       // keep colours flat & poster-bright
 renderer.setSize(innerWidth, innerHeight);
-
-const _pmrem = new THREE.PMREMGenerator(renderer);
-const _envTex = _pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-_pmrem.dispose();
 
 // ── Scene ───────────────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(COL.sky);
-scene.fog = new THREE.Fog(COL.sky, 48, 96);
-scene.environment = _envTex;
+scene.fog = new THREE.Fog(COL.haze, 70, 140);
 
-const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 160);
+function makeOrthoCamera() {
+  const aspect = innerWidth / innerHeight;
+  const c = new THREE.OrthographicCamera(
+    -VIEW_SIZE * aspect / 2, VIEW_SIZE * aspect / 2,
+     VIEW_SIZE / 2, -VIEW_SIZE / 2, -50, 220);
+  return c;
+}
+let camera = makeOrthoCamera();
 
-// ── Post: bloom + chromatic aberration + ACES ──────────────────────────────────
-const ChromaticAberrationShader = {
-  uniforms: { tDiffuse: { value: null }, u_amount: { value: 0.0015 } },
-  vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-  fragmentShader: `
-    uniform sampler2D tDiffuse; uniform float u_amount; varying vec2 vUv;
-    void main(){
-      vec2 dir = vUv - 0.5; float d = dot(dir,dir);
-      vec2 off = dir * u_amount * (1.0 + d*3.0);
-      float r = texture2D(tDiffuse, vUv+off).r;
-      float g = texture2D(tDiffuse, vUv).g;
-      float b = texture2D(tDiffuse, vUv-off).b;
-      gl_FragColor = vec4(r,g,b,1.0);
-    }`,
-};
-const composer = new EffectComposer(renderer);
-composer.addPass(new RenderPass(scene, camera));
-const bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.6, 0.5, 0.85);
-composer.addPass(bloomPass);
-composer.addPass(new ShaderPass(ChromaticAberrationShader));
-composer.addPass(new OutputPass());
-
-// ── Lights ──────────────────────────────────────────────────────────────────
-scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-const sun = new THREE.DirectionalLight(0xfff0d0, 1.25);   // warm dawn key light
-sun.position.set(-10, 22, 8);
+// ── Lights (bright sunny day) ──────────────────────────────────────────────────
+scene.add(new THREE.HemisphereLight(0xeaf6ff, COL.lawn, 0.95)); // sky/ground bounce
+const sun = new THREE.DirectionalLight(0xfff4e0, 1.5);
+sun.position.set(-14, 26, 10);
 sun.castShadow = true;
-sun.shadow.mapSize.set(1024, 1024);
-sun.shadow.camera.left = -30; sun.shadow.camera.right = 30;
-sun.shadow.camera.top = 30;  sun.shadow.camera.bottom = -30;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -34; sun.shadow.camera.right = 34;
+sun.shadow.camera.top = 34;  sun.shadow.camera.bottom = -34;
+sun.shadow.camera.near = 1;  sun.shadow.camera.far = 90;
+sun.shadow.bias = -0.0004;
 scene.add(sun);
+scene.add(sun.target);
 
 // ── Road + ground (follow the bike; scrolling lane texture sells the speed) ─────
+function hex(c) { return '#' + c.toString(16).padStart(6, '0'); }
 function makeRoadTexture() {
   const c = document.createElement('canvas'); c.width = c.height = 128;
   const g = c.getContext('2d');
-  g.fillStyle = '#10342b'; g.fillRect(0, 0, 128, 128);          // tarmac
-  g.fillStyle = '#46c08f';                                       // mint lane edges
-  g.fillRect(8, 0, 4, 128); g.fillRect(116, 0, 4, 128);
-  g.fillRect(60, 6, 8, 52);                                      // dashed centre line
+  g.fillStyle = hex(COL.road); g.fillRect(0, 0, 128, 128);        // asphalt
+  g.fillStyle = hex(COL.roadLine);                                // yellow markings
+  g.fillRect(7, 0, 5, 128); g.fillRect(116, 0, 5, 128);           // solid lane edges
+  g.fillRect(61, 8, 6, 50);                                       // dashed centre line
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(1, 90);
@@ -87,16 +69,16 @@ function makeRoadTexture() {
 const roadTex = makeRoadTexture();
 const ROAD_W = (DRIVE_HALF + 1) * 2;
 const road = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_W, 700),
-  new THREE.MeshPhongMaterial({ map: roadTex, shininess: 30, specular: 0x113a30 }));
+  new THREE.MeshLambertMaterial({ map: roadTex }));
 road.rotation.x = -Math.PI / 2; road.position.y = 0.0; road.receiveShadow = true;
 scene.add(road);
 
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(120, 700),
-  new THREE.MeshPhongMaterial({ color: 0x0a1f1a }));
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(160, 700),
+  new THREE.MeshLambertMaterial({ color: COL.lawn }));
 ground.rotation.x = -Math.PI / 2; ground.position.y = -0.02; ground.receiveShadow = true;
 scene.add(ground);
 
-const kerbMat = new THREE.MeshPhysicalMaterial({ color: COL.sidewalk, emissive: 0x06231b, emissiveIntensity: 0.6, roughness: 0.4, clearcoat: 0.4 });
+const kerbMat = new THREE.MeshLambertMaterial({ color: COL.sidewalk });
 const kerbL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 700), kerbMat);
 const kerbR = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 700), kerbMat);
 kerbL.position.set(-(DRIVE_HALF + 1.1), 0.2, 0);
@@ -169,9 +151,9 @@ function showGameOver() {
   const newHi = score >= hiScore && score > 0;
   overlay.innerHTML =
     `<div style="font-size:48px;font-weight:bold">ROUTE OVER</div>` +
-    `<div style="font-size:22px;margin-top:8px;color:#2bffb0">SCORE ${score}</div>` +
+    `<div style="font-size:22px;margin-top:8px;color:#108a52">SCORE ${score}</div>` +
     `<div style="font-size:15px;opacity:0.7;margin-top:4px">reached DAY ${day}</div>` +
-    (newHi ? `<div style="font-size:16px;color:#ffd24a;margin-top:6px">NEW BEST!</div>` : ``) +
+    (newHi ? `<div style="font-size:16px;color:#c7321f;margin-top:6px">NEW BEST!</div>` : ``) +
     `<div style="font-size:13px;opacity:0.4;margin-top:16px">Restarting…</div>`;
 }
 function announceDay() {
@@ -184,41 +166,43 @@ function drawHUD() {
   ctx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
   if (gameState !== 'playing' && gameState !== 'paused') return;
 
+  const ink = COL_css(COL.hudInk);
+
   // Day + distance (top-left)
   ctx.textAlign = 'left';
-  ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.font = 'bold 15px monospace';
+  ctx.fillStyle = ink; ctx.font = 'bold 15px monospace';
   ctx.fillText(`DAY ${day}`, 16, 26);
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.font = '12px monospace';
+  ctx.font = '12px monospace';
   ctx.fillText(`${Math.floor(-player.position.z)} m`, 16, 44);
 
   // Score + hi (top-right)
   ctx.textAlign = 'right';
-  ctx.fillStyle = COL_css(COL.hudMint); ctx.font = 'bold 16px monospace';
+  ctx.fillStyle = ink; ctx.font = 'bold 16px monospace';
   ctx.fillText(`${score}`, uiCanvas.width - 16, 26);
-  if (streak > 1) { ctx.fillStyle = COL_css(COL.paper); ctx.font = 'bold 13px monospace';
+  if (streak > 1) { ctx.fillStyle = COL_css(COL.hudGood); ctx.font = 'bold 13px monospace';
     ctx.fillText(`×${streak}`, uiCanvas.width - 16, 46); }
-  if (hiScore > 0) { ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.font = '12px monospace';
+  if (hiScore > 0) { ctx.fillStyle = ink; ctx.font = '12px monospace';
     ctx.fillText(`HI ${hiScore}`, uiCanvas.width - 16, 62); }
 
   // Lives (hearts) + papers (top-left, second row)
   ctx.textAlign = 'left';
   for (let i = 0; i < MAX_LIVES; i++) {
     ctx.beginPath(); ctx.arc(20 + i * 22, 64, 7, 0, Math.PI * 2);
-    ctx.fillStyle = i < lives ? COL_css(COL.car) : 'rgba(255,255,255,0.15)'; ctx.fill();
+    ctx.fillStyle = i < lives ? COL_css(COL.hudDanger) : 'rgba(20,50,74,0.18)'; ctx.fill();
   }
-  ctx.fillStyle = COL_css(COL.paper); ctx.font = 'bold 14px monospace';
+  ctx.fillStyle = ink; ctx.font = 'bold 14px monospace';
   ctx.fillText(`PAPERS ${paperCount}`, 16, 92);
   if (paperCount === 0) { ctx.fillStyle = COL_css(COL.hudDanger);
-    ctx.fillText(`OUT OF PAPERS — grab a cyan bundle`, 16, 110); }
+    ctx.fillText(`OUT OF PAPERS — grab a blue bundle`, 16, 110); }
 
   // Steer stick
   if (input.stick.active) {
     const s = input.stick, R = 64;
     ctx.beginPath(); ctx.arc(s.ox, s.oy, R, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.strokeStyle = 'rgba(20,50,74,0.3)'; ctx.lineWidth = 2; ctx.stroke();
     const cx = s.ox + Math.max(-R, Math.min(R, s.dx)), cy = s.oy + Math.max(-R, Math.min(R, s.dy));
     ctx.beginPath(); ctx.arc(cx, cy, 26, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.32)'; ctx.fill();
+    ctx.fillStyle = 'rgba(20,50,74,0.4)'; ctx.fill();
   }
 
   // Throw buttons
@@ -227,9 +211,9 @@ function drawHUD() {
 }
 function drawThrowBtn(b, label) {
   ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255,210,74,0.12)'; ctx.fill();
-  ctx.strokeStyle = COL_css(COL.paper); ctx.lineWidth = 2; ctx.stroke();
-  ctx.fillStyle = COL_css(COL.paper); ctx.font = `bold ${Math.floor(b.r)}px monospace`;
+  ctx.fillStyle = 'rgba(43,108,255,0.18)'; ctx.fill();
+  ctx.strokeStyle = COL_css(COL.hudInk); ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = COL_css(COL.hudInk); ctx.font = `bold ${Math.floor(b.r)}px monospace`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(label, b.x, b.y + 1); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
 }
@@ -272,25 +256,29 @@ input.onPause = () => {
 };
 addEventListener('touchend', () => { if (gameState === 'title') startGame(); });
 
-// ── Camera follow ──────────────────────────────────────────────────────────────
+// ── Camera follow (fixed isometric angle, tracks the bike) ─────────────────────
 const _camLook = new THREE.Vector3();
 function updateCamera(dt) {
   const p = player.position;
-  let cx = p.x * 0.35, cy = 8.6, cz = p.z + 13.5;
+  // Look a little ahead of the bike so you can read the road coming up.
+  _camLook.set(p.x * 0.4, 0.8, p.z - 6);
+  let ox = 0, oy = 0, oz = 0;
   if (shakeTrauma > 0) {
     shakeTrauma = Math.max(0, shakeTrauma - dt * 2.6);
     const m = shakeTrauma * shakeTrauma, t = performance.now() / 1000;
-    cx += Math.sin(t * 41) * m * 1.6; cy += Math.sin(t * 37) * m * 1.1; cz += Math.sin(t * 43) * m * 1.1;
+    ox = Math.sin(t * 41) * m * 1.4; oy = Math.sin(t * 37) * m * 1.0; oz = Math.sin(t * 43) * m * 1.4;
   }
-  camera.position.set(cx, cy, cz);
-  _camLook.set(p.x * 0.45, 1.2, p.z - 11);
+  camera.position.set(_camLook.x + ISO_OFF.x + ox, ISO_OFF.y + oy, p.z + ISO_OFF.z + oz);
   camera.lookAt(_camLook);
+  // Keep the sun (and its shadow frustum) over the bike.
+  sun.position.set(p.x - 14, 26, p.z + 10);
+  sun.target.position.set(p.x, 0, p.z);
 }
 
 // ── Main loop ─────────────────────────────────────────────────────────────────
 let prev = performance.now();
 showTitle();
-camera.position.set(0, 8.6, 13.5); camera.lookAt(0, 1.2, -11);
+updateCamera(0);
 
 function loop() {
   requestAnimationFrame(loop);
@@ -300,13 +288,13 @@ function loop() {
   const t = now / 1000;
 
   if (gameState === 'title' || gameState === 'paused') {
-    updateCamera(dt); composer.render(); drawHUD(); return;
+    updateCamera(dt); renderer.render(scene, camera); drawHUD(); return;
   }
 
   if (gameState === 'gameover') {
     restartTimer -= dt;
     for (let i = sparks.length - 1; i >= 0; i--) if (!sparks[i].update(dt)) { sparks[i].remove(); sparks.splice(i, 1); }
-    updateCamera(dt); composer.render(); drawHUD();
+    updateCamera(dt); renderer.render(scene, camera); drawHUD();
     if (restartTimer <= 0) startGame();
     return;
   }
@@ -366,16 +354,17 @@ function loop() {
   for (let i = sparks.length - 1; i >= 0; i--) if (!sparks[i].update(dt)) { sparks[i].remove(); sparks.splice(i, 1); }
 
   updateCamera(dt);
-  composer.render();
+  renderer.render(scene, camera);
   drawHUD();
 }
 
 // ── Resize ────────────────────────────────────────────────────────────────────
 function resize() {
   renderer.setSize(innerWidth, innerHeight);
-  composer.setSize(innerWidth, innerHeight);
-  bloomPass.resolution.set(innerWidth, innerHeight);
-  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  const aspect = innerWidth / innerHeight;
+  camera.left = -VIEW_SIZE * aspect / 2; camera.right = VIEW_SIZE * aspect / 2;
+  camera.top = VIEW_SIZE / 2; camera.bottom = -VIEW_SIZE / 2;
+  camera.updateProjectionMatrix();
   uiCanvas.width = innerWidth; uiCanvas.height = innerHeight;
 }
 addEventListener('resize', resize);

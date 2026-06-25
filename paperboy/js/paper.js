@@ -11,11 +11,8 @@ const GROUND_Y  = 0.06;
 export class PaperPool {
   constructor(scene) {
     this.scene = scene;
-    const geo = new THREE.BoxGeometry(0.34, 0.1, 0.24);
-    const mat = new THREE.MeshPhysicalMaterial({
-      color: COL.paper, emissive: 0x4a3600, emissiveIntensity: 0.5,
-      roughness: 0.35, metalness: 0.0, clearcoat: 0.6, clearcoatRoughness: 0.2,
-    });
+    const geo = new THREE.BoxGeometry(0.34, 0.12, 0.24);
+    const mat = new THREE.MeshLambertMaterial({ color: COL.paper });
     this.mat = mat;
     this.items = Array.from({ length: POOL }, () => {
       const m = new THREE.Mesh(geo, mat);
