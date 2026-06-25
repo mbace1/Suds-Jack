@@ -7,6 +7,12 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v22 — 2026-06-25
+**Wave ends on last kill — no empty arena wait**
+- Removed `pendingSpawns.length === 0` gate from wave-end condition
+- Wave ends the moment all living enemies die; remaining scheduled spawns are flushed
+- Eliminates the empty-arena pause while waiting for stragglers to spawn
+
 ## v21 — 2026-06-25
 **Harder early waves; run summary on death**
 - Budget formula `4 + wave×2.8` → `8 + wave×3.0` — wave 1 jumps from budget 6 to 11; ramp steepens

@@ -1482,11 +1482,11 @@ function loop() {
     }
   }
 
-  // All enemies dead → next wave immediately, no interruption
+  // All living enemies dead → end wave immediately; flush any queued spawns
   if (gameState === 'playing' &&
-      pendingSpawns.length === 0 &&
       enemies.length > 0 &&
       enemies.every(e => !e.alive && !e._dying)) {
+    pendingSpawns = [];
     score += wave * 500;
     if (roguelikeMode) showUpgradeCards();
     else               spawnWave();
