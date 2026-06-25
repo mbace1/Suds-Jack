@@ -9,6 +9,17 @@ HTML5 demo built with **Three.js / WebGL**.
 Concept: "Bomb Jack x Suds 51 x Tempest 2000" — floating bomb-collection gameplay, soap/bubble aesthetic, Tempest 2000 psychedelic tube-shooter energy.
 Build tooling: TBD — update this file once chosen and add dev/build commands.
 
+### Paper Route — Dawn Run (`paperboy/`)
+A **Paperboy clone** built on Three.js r167 that deliberately **reuses the toko-drop
+art pipeline** — gel `MeshPhysicalMaterial` (transmission + clearcoat + IOR), bloom +
+chromatic-aberration + ACES post, IBL via `RoomEnvironment`, Kirby eyes, screen-shake,
+ghost trail — but swaps the toko-drop navy/violet scheme for a **warm-dawn palette**
+(teal-dusk road, mint subscriber houses, coral non-subscribers, gold papers, cyan
+bundles). The whole colour scheme lives in `paperboy/js/palette.js` so it re-tints in
+one edit. Endless auto-scrolling route; deliver to the mint houses, dodge road hazards,
+refill from cyan bundles, survive 3 crashes. No build step — open `paperboy/index.html`
+(three.js loads from the jsDelivr CDN via an importmap, same as toko-drop).
+
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
 Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
 
@@ -40,6 +51,16 @@ toko-drop/
     player.js   # Player movement, dash mechanic, firing
     enemy.js    # Enemy class — 4 bullet-hell patterns, each with distinct color
     bullet.js   # Object-pooled bullets (300 cap, shared pool for all bullets)
+paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new palette)
+  index.html
+  js/
+    main.js     # Scene + render pipeline (bloom/chroma/ACES/IBL), loop, collisions, HUD, states
+    palette.js  # Central warm-dawn colour scheme (single source of truth for all tints)
+    world.js    # Route streaming (houses/hazards/pickups) + cull, paper→house resolution
+    player.js   # Gel rider + low-poly bike, steer/throttle, lean, crash mercy, ghost trail
+    paper.js    # Object-pooled thrown papers with arc/gravity physics + landing detection
+    input.js    # Touch stick (steer/throttle) + two throw buttons; WASD/ZX keyboard fallback
+    audio.js    # WebAudio bleep kit (throw/deliver/smash/pickup/crash/day-clear)
 ```
 
 ## Toko Drop — Architecture Notes
@@ -59,3 +80,37 @@ toko-drop/
 **Dash:** 0.18 s at 26 units/s, 0.9 s cooldown, invincible during dash. Direction uses last aim direction if stick was released before movement.
 
 **Wave progression:** when all 4 enemies are dead, `spawnWave()` removes old meshes from scene and spawns fresh enemies at `0.6 × HALF` radius in a cross pattern. Wave counter displayed in UI.
+
+## Paper Route (`paperboy/`) — Architecture Notes
+
+**Coordinate system:** forward = −z (the bike auto-advances into −z); +x is right. The
+road, lawns, and kerbs are long static meshes re-centred on `player.position.z` every
+frame, and the road's lane texture scrolls via `roadTex.offset.y` to sell the speed —
+so the world is effectively infinite without moving the geometry.
+
+**Streaming (`world.js`):** houses (both kerbs), hazards, and pickups spawn ahead of the
+bike (independent z-cursors advancing toward `playerZ - SPAWN_AHEAD`) and are culled +
+disposed once well behind. Houses are randomly subscriber (~55%, mint) or not (coral).
+Each house carries a delivery zone `{ zoneX, z, zoneR }` near its mailbox.
+
+**Throw → delivery:** `paper.js` is an arc-physics pool — `throw_(x,z,side,speed)` launches
+a paper with lateral velocity toward `side`, slight forward lead, and gravity. On landing
+it's flagged; `main` polls `papers.freshLandings()` and calls `world.resolvePaper(p)`,
+which finds the nearest same-side house within `zoneR`: subscriber → deliver (250 ×
+streak), non-subscriber → window smash (100). Tuning that matters: `THROW_VX`,
+`HOUSE_X`/`zoneX`, and `zoneR` jointly set the deliverable lane band — land-x ≈
+playerX + THROW_VX·flightTime must fall within `zoneX ± zoneR`, so the rider delivers
+from the matching lane, not dead centre.
+
+**Crash / lives:** `world.hazardHit()` returns an overlapping live hazard; a hit calls
+`player.crash()` (mercy i-frames + flicker, returns false while invincible to avoid
+double-hits), costs a life, breaks the streak. 0 lives → game over → auto-restart.
+
+**Days:** every `DAY_DIST` (130 m) increments the day, bumps `player.setBaseSpeed` and
+`world.setDifficulty` (hazard density + car speed), and awards a bonus. Hi-score persists
+in `localStorage` under `paperRouteHi`.
+
+**Controls:** desktop A/D-←/→ steer, W/S throttle, Z/X (or M) throw left/right, Space
+throws toward the lean side, Esc pause. Touch: left-half stick (x = steer, y = throttle)
++ on-screen ◀ ▶ throw buttons whose hit-rects live on `InputManager` and are drawn by the
+HUD.
