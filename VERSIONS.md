@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v21 — 2026-06-25
+**Harder early waves; run summary on death**
+- Budget formula `4 + wave×2.8` → `8 + wave×3.0` — wave 1 jumps from budget 6 to 11; ramp steepens
+- Enemy speed floor `1 + w×0.16` → `1.2 + w×0.14` — enemies 20% faster from wave 1; same ceiling
+- Variants (twins/groups/elites) now roll from wave 1 (was wave 2+)
+- Death screen now shows wave reached, time survived (Xm Ys), and score on one line
+- `runTimer` added — tracks seconds played per run, resets on game start
+- HUD version label updated to `v21`
+
 ## v20 — 2026-06-25
 **Seamless wave flow — zero interruption**
 - Wave transition stripped to bare minimum: no announcement overlay, no particle burst, no shake, no bullet clear

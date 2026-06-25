@@ -26,8 +26,8 @@ let rng = Math.random.bind(Math);
 function getWaveScale(wave) {
   const w = wave - 1;
   return {
-    speedMult:    Math.min(1 + w * 0.16, 3.2),   // ramps faster, higher ceiling
-    intervalMult: Math.max(1 - w * 0.11, 0.26),   // fires more often earlier
+    speedMult:    Math.min(1.2 + w * 0.14, 3.2),  // starts 20% faster; same ceiling
+    intervalMult: Math.max(1 - w * 0.11, 0.26),
   };
 }
 
@@ -50,7 +50,7 @@ function getEnemySchedule(wave) {
   const available = POOL.filter(([, min]) => wave >= min);
   const isBoss  = wave % 8 === 0;
   const isSpike = !isBoss && wave % 4 === 0;
-  const budget = Math.floor((4 + wave * 2.8) * (isBoss ? 2.5 : isSpike ? 1.6 : 1.0));
+  const budget = Math.floor((8 + wave * 3.0) * (isBoss ? 2.5 : isSpike ? 1.6 : 1.0));
   // Variant weights: normal appears 3× so it's most common
   const VARIANTS = ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group'];
   const list = [];
@@ -68,7 +68,7 @@ function getEnemySchedule(wave) {
 
   while (spent < budget && list.length < 18) {
     const [type, , cost] = available[Math.floor(rng() * available.length)];
-    const variant = wave >= 2 ? VARIANTS[Math.floor(rng() * VARIANTS.length)] : 'normal';
+    const variant = VARIANTS[Math.floor(rng() * VARIANTS.length)];
     let entry, entryCost;
     if (variant === 'elite') {
       entryCost = Math.ceil(cost * 1.6);
@@ -583,6 +583,7 @@ let _prevDashing = false;
 // ── Score ─────────────────────────────────────────────────────────────────────
 let score        = 0;
 let streak       = 0;
+let runTimer     = 0;
 const STREAK_FLASH_DUR = 0.4;
 let streakFlashT = 0;
 let hiScore = parseInt(localStorage.getItem('tokoDropHi') || '0');
@@ -777,7 +778,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v13', 16, uiCanvas.height - 12);
+  ctx.fillText('v21', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -860,11 +861,15 @@ function showGameOver() {
   overlay.style.display = 'block';
   const newHi = score >= hiScore && score > 0;
   const seedHex = runSeed.toString(16).toUpperCase().padStart(6, '0');
+  const m = Math.floor(runTimer / 60), s = Math.floor(runTimer % 60);
+  const timeStr = m > 0 ? `${m}m ${s}s` : `${s}s`;
   overlay.innerHTML =
     `<div style="font-size:52px;font-weight:bold">YOU DIED</div>` +
-    `<div style="font-size:22px;margin-top:8px;color:#ff6644">SCORE ${score}</div>` +
-    (newHi ? `<div style="font-size:16px;color:#ffdd44;margin-top:6px">NEW BEST!</div>` : ``) +
-    `<div style="font-size:12px;opacity:0.35;margin-top:10px">SEED ${seedHex}</div>` +
+    `<div style="font-size:15px;opacity:0.6;margin-top:10px;letter-spacing:2px">` +
+      `WAVE ${wave} &nbsp;·&nbsp; ${timeStr} &nbsp;·&nbsp; ${score} PTS` +
+    `</div>` +
+    (newHi ? `<div style="font-size:16px;color:#ffdd44;margin-top:8px">NEW BEST!</div>` : ``) +
+    `<div style="font-size:12px;opacity:0.3;margin-top:10px">SEED ${seedHex}</div>` +
     `<div style="font-size:13px;opacity:0.4;margin-top:8px">Returning to title…</div>`;
 }
 
@@ -1006,7 +1011,7 @@ function startGame() {
   overlay.style.display = 'none';
   document.getElementById('upgrade-panel')?.remove();
   input.reset();
-  score  = 0; streak = 0; wave = 0;
+  score  = 0; streak = 0; wave = 0; runTimer = 0;
   BULLET_CONFIG.playerBulletScale = 1.0;
   BULLET_CONFIG.playerPiercing    = false;
   runSeed = (Math.random() * 0xFFFFFF | 0) >>> 0;
@@ -1127,6 +1132,7 @@ function loop() {
 
   // Trickle spawn pending enemies
   waveTimer += dt;
+  runTimer  += dt;
   while (pendingSpawns.length > 0 && waveTimer >= pendingSpawns[0].delay) {
     const s = pendingSpawns.shift();
     const bx = Math.cos(s.angle) * HALF_X * 0.85;
