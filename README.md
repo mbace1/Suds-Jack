@@ -20,24 +20,25 @@ SPH-lite (Smoothed Particle Hydrodynamics) goop on a flat surface. 64 particles,
 Single gel cube that flops onto its side on a horizontal swipe. Physics: gravity-torque model (restoring below 45°, accelerating above), pivot-arc geometry for center tracking, squish on impact. Ray-marched SDF with Rodrigues rotation. Swipe right/left → cube tips and rests on its side; opposite swipe rights it.
 
 ### `paperboy/`
-**Paper Route — Dawn Run.** A Paperboy clone built on Three.js r167, reusing the
-toko-drop gel/neon art pipeline (`MeshPhysicalMaterial` transmission + clearcoat,
-`UnrealBloomPass`, chromatic-aberration `ShaderPass`, ACES tonemap, IBL via
-`RoomEnvironment`, Kirby eyes) with a **brand-new warm-dawn palette** — teal-dusk
-road, mint subscriber houses, coral non-subscribers, gold papers, cyan bundles.
-All colours live in `js/palette.js` so the scheme re-tints in one place.
+**Paper Route — Dawn Run.** A Paperboy clone built on Three.js r167 with an
+**isometric, flat-shaded homage to the original Paperboy art** — orthographic 3/4
+camera, bright sunny-day palette (sky-blue backdrop, grey road, green lawns, cube
+houses with pitched roofs, a BMX kid in a yellow helmet). Flat `MeshLambertMaterial`
+under a hemisphere/sun rig, `NoToneMapping`, **no** bloom / chromatic aberration /
+gel transmission (that look belongs to toko-drop). All colours live in `js/palette.js`
+so the scheme re-tints in one place.
 
 **Controls:** A/D or ←/→ steer · W/S throttle/brake · Z throw left · X (or M) throw right · SPACE throw to lean side · ESC pause  
 **Mobile:** left-half stick rides (x = steer, y = throttle) · ◀ ▶ buttons throw
 
 #### Gameplay
 - Endless auto-scrolling paper route; the road/lawns follow the bike and a scrolling lane texture sells the speed
-- Houses stream in on both kerbs — **mint = subscribers** (deliver to the mailbox for 250 × streak), **coral = non-subscribers** (smash a window for 100)
+- Houses stream in on both kerbs — **teal = subscribers** (deliver to the mailbox for 250 × streak), **terracotta = non-subscribers** (smash a window for 100)
 - Land a paper near a subscriber's mailbox zone to deliver; miss a subscriber as it scrolls past and your delivery streak resets
-- Road hazards: magenta cars (oncoming/moving), amber hydrants, gold cones, lilac hopping dogs — a hit costs a life (3 lives, mercy i-frames + flicker after a crash)
-- 10 starting papers; grab cyan **paper bundles** on the road to refill (+5, cap 25)
+- Road hazards: passing cars (oncoming/moving), red hydrants, orange cones, brown hopping dogs — a hit costs a life (3 lives, mercy i-frames + flicker after a crash)
+- 10 starting papers; grab blue **paper bundles** on the road to refill (+5, cap 25)
 - "Day" milestones every 130 m ramp bike speed + hazard density and award a bonus; hi-score in localStorage
-- FX reused from toko-drop: screen-shake trauma, spark bursts, speed-line ghost trail, gel-glow deliveries
+- Screen-shake trauma + spark bursts on deliveries, smashes, pickups and crashes
 
 ### `toko-drop/`
 Twin-stick bullet-hell arena shooter built on Three.js r167.
@@ -78,7 +79,7 @@ Twin-stick bullet-hell arena shooter built on Three.js r167.
 ## Changelog
 
 ### 2026-06
-- **`paperboy/` — Paper Route (Dawn Run):** new Paperboy clone reusing the toko-drop gel/neon art pipeline (physical gel materials, bloom + chromatic aberration + ACES, IBL, Kirby eyes, screen-shake, ghost trail) with a fresh warm-dawn palette centralised in `js/palette.js` (teal road, mint subscriber houses, coral non-subscribers, gold papers, cyan bundles). Endless auto-scrolling route with streamed-and-culled houses/hazards/pickups, arc-throw paper delivery to mailbox zones, window smashing, paper-bundle resupply, 3-life crash system, and 130 m "day" difficulty ramp with localStorage hi-score. Modular `js/`: `main` (scene + loop + collisions + HUD), `world` (route streaming + paper resolution), `player` (gel rider + bike), `paper` (arc-throw pool), `input`, `audio`, `palette`
+- **`paperboy/` — Paper Route (Dawn Run):** new Paperboy clone. **Art rebuilt as an isometric, flat-shaded Paperboy homage** — orthographic 3/4 camera (`OrthographicCamera` + `ISO_OFF`, sun/shadow frustum follows the bike), bright sunny-day palette, `MeshLambertMaterial` under a hemisphere/sun rig, `NoToneMapping`, no bloom/chroma/gel (dropped the toko-drop pipeline that the first cut used). Cube houses with pitched roofs, a low-poly BMX kid. Gameplay unchanged: endless streamed-and-culled route, arc-throw delivery to subscriber mailbox zones, window smashing, blue-bundle resupply, 3-life crash system, 130 m "day" ramp, localStorage hi-score. Colours centralised in `js/palette.js`. Modular `js/`: `main`, `world`, `player`, `paper`, `input`, `audio`, `palette`. Live site is served from the `gh-pages` branch (not `main`)
 - **toko-drop "all-out gel" VFX pass:** five-part physical upgrade — (1) post-processing pipeline (`EffectComposer`: `UnrealBloomPass` strength 0.55/threshold 0.9 so only hot highlights bloom + custom chromatic-aberration `ShaderPass` + `OutputPass` ACES/sRGB); (2) `iridescence` + `attenuationColor`/`attenuationDistance` on blobs, plus `sheen` + `anisotropy` on cubes (Jell-O colour depth, soap-film sheen, candy-glass streaks); (3) Fresnel rim glow injected in the fragment shader (wet glistening silhouette edges); (4) blob geometry densified to 48×32 segments (smooth vertex-displaced surface, no faceting); (5) `SludgeRibbon` rewritten from a flat strip into an arched 3D `TubeGeometry` gel bead
 - **Godot port brief (`toko-drop/GODOT_PORT.md`):** dispatch-ready doc mapping every browser gel/VFX system to its Godot 4.3+ equivalent — true SSS, screen-space refraction, verlet tentacles dragging on the floor, `GPUParticles3D` drips, `SoftBody3D` splits, `WorldEnvironment` SSR/SSIL/SDFGI, custom Compositor passes; includes a `gel.gdshader` skeleton, ordered task list, and parity checklist
 - **Visual Lab (`toko-drop/lab.html`):** per-enemy slider tuning tool — live Three.js preview (OrbitControls, click-to-hit), 4 param groups (material, vertex wobble, scale breathe, hit response) each with plain-English descriptions; Record Snapshot saves params + text note to localStorage; Copy as Prompt formats all snapshots as LLM-ready context; Copy Code Patch generates paste-ready `enemy.js` block; Export JSON for archival

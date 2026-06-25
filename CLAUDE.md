@@ -10,15 +10,20 @@ Concept: "Bomb Jack x Suds 51 x Tempest 2000" — floating bomb-collection gamep
 Build tooling: TBD — update this file once chosen and add dev/build commands.
 
 ### Paper Route — Dawn Run (`paperboy/`)
-A **Paperboy clone** built on Three.js r167 that deliberately **reuses the toko-drop
-art pipeline** — gel `MeshPhysicalMaterial` (transmission + clearcoat + IOR), bloom +
-chromatic-aberration + ACES post, IBL via `RoomEnvironment`, Kirby eyes, screen-shake,
-ghost trail — but swaps the toko-drop navy/violet scheme for a **warm-dawn palette**
-(teal-dusk road, mint subscriber houses, coral non-subscribers, gold papers, cyan
-bundles). The whole colour scheme lives in `paperboy/js/palette.js` so it re-tints in
-one edit. Endless auto-scrolling route; deliver to the mint houses, dodge road hazards,
-refill from cyan bundles, survive 3 crashes. No build step — open `paperboy/index.html`
-(three.js loads from the jsDelivr CDN via an importmap, same as toko-drop).
+A **Paperboy clone** built on Three.js r167 with an **isometric, flat-shaded homage to
+the original Paperboy art** — orthographic 3/4 camera, bright sunny-day palette (sky-blue
+backdrop, grey road, green lawns, cube houses with pitched roofs, a little BMX kid in a
+yellow helmet). It uses `MeshLambertMaterial` + a hemisphere/sun light rig and **no**
+bloom / chromatic-aberration / gel transmission (those belong to toko-drop; this game
+deliberately reads flat and poster-bright instead). The whole colour scheme lives in
+`paperboy/js/palette.js` so it re-tints in one edit. Endless auto-scrolling route;
+deliver to the teal subscriber houses, dodge road hazards, refill from blue bundles,
+survive 3 crashes. No build step — open `paperboy/index.html` (three.js loads from the
+jsDelivr CDN via an importmap, same as toko-drop).
+
+> Note on deploys: the published site is served from the **`gh-pages` branch** (a
+> separate curated site root that already holds `toko-drop/`), **not** `main`. Demo
+> updates must be copied onto `gh-pages` to go live at `/Suds-Jack/paperboy/`.
 
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
 Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
@@ -87,6 +92,13 @@ paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new p
 road, lawns, and kerbs are long static meshes re-centred on `player.position.z` every
 frame, and the road's lane texture scrolls via `roadTex.offset.y` to sell the speed —
 so the world is effectively infinite without moving the geometry.
+
+**Camera / art:** a fixed-angle `OrthographicCamera` offset by `ISO_OFF` from the bike
+gives the isometric Paperboy read; `updateCamera` also drags the sun + its shadow
+frustum along so shadows stay crisp over the bike. Rendering is a plain
+`renderer.render` (no `EffectComposer`) with `NoToneMapping` for flat poster colours.
+All meshes are `MeshLambertMaterial`; the only post-y touch is house "flash" via the
+Lambert `emissive` channel on a delivery/smash.
 
 **Streaming (`world.js`):** houses (both kerbs), hazards, and pickups spawn ahead of the
 bike (independent z-cursors advancing toward `playerZ - SPAWN_AHEAD`) and are culled +
