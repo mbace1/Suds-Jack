@@ -921,7 +921,7 @@ function spawnWave() {
   if (wave >= 3) gates.push(new Gate(scene));
   // Schedule one cargo convoy per wave (starts mid-wave, seeded position)
   clusterTimer = 0;
-  clusterSpawnAt = 12 + rng() * 12; // 12-24 s into the wave
+  clusterSpawnAt = 3 + rng() * 5; // 3-8 s into the wave — always overlaps live enemies
   announceWave();
 }
 
@@ -1477,10 +1477,9 @@ function loop() {
     }
   }
 
-  // All enemies dead + wave duration elapsed → next wave
+  // All enemies dead → next wave (no timer gate — pendingSpawns covers spawn pacing)
   if (gameState === 'playing' &&
       pendingSpawns.length === 0 &&
-      waveTimer >= waveDuration &&
       enemies.length > 0 &&
       enemies.every(e => !e.alive && !e._dying)) {
     bullets.clear();

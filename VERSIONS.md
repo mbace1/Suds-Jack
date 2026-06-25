@@ -7,6 +7,11 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v19 — 2026-06-25
+**Wave flow — no drag, convoys on field**
+- Removed `waveTimer >= waveDuration` gate from wave-end condition — wave ends the moment all enemies are dead
+- Convoy spawn window moved from 12–24 s to 3–8 s so moths always appear while enemies are alive
+
 ## v18 — 2026-06-25
 **Revert bloom; hard-fix roguelike default**
 - Removed `EffectComposer` / `UnrealBloomPass` — back to direct `renderer.render()`; tone mapping removed
