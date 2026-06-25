@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v16 — 2026-06-25
+**Faster waves, arcade default, input fix**
+- Roguelike mode OFF by default (was ON); localStorage key `tokoDropRogue` now requires `'1'` to enable
+- Wave duration reduced 30 s → 20 s for snappier pacing
+- Wave announcement shortened 900 ms → 450 ms
+- Tapping roguelike toggle on title no longer accidentally starts the game
+- Input state (`left`/`right` sticks, touch map) cleared on game start to prevent stale joystick position
+- `InputManager.reset()` added to `input.js`
+
 ## v15 — 2026-06-24
 **Bloom post-processing**
 - `EffectComposer` + `UnrealBloomPass` wired into all render sites (title, playing, gameover, upgrade)

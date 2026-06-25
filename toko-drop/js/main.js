@@ -11,7 +11,7 @@ import { initDesigner } from './designer.js';
 
 const HALF_X    = 11;   // arena half-width  (portrait: narrow side)
 const HALF_Z    = 18;   // arena half-depth  (portrait: deep side)
-const ROUND_DUR = 30; // seconds per wave
+const ROUND_DUR = 20; // seconds per wave
 
 // ── Seeded PRNG (mulberry32) ───────────────────────────────────────────────────
 function mulberry32(seed) {
@@ -603,7 +603,7 @@ const STREAK_FLASH_DUR = 0.4;
 let streakFlashT = 0;
 let hiScore = parseInt(localStorage.getItem('tokoDropHi') || '0');
 // Roguelike mode (default on): show upgrade cards between waves. Off = plain arcade run.
-let roguelikeMode = localStorage.getItem('tokoDropRogue') !== '0';
+let roguelikeMode = localStorage.getItem('tokoDropRogue') === '1';
 
 function onKill(e) {
   streak++;
@@ -887,7 +887,7 @@ function showGameOver() {
 function announceWave() {
   overlay.style.display = 'block';
   overlay.innerHTML = `<div style="font-size:22px;opacity:0.75">WAVE ${wave}</div>`;
-  setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 900);
+  setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 450);
 }
 
 // ── Wave / restart helpers ──────────────────────────────────────────────────────────
@@ -1022,6 +1022,7 @@ function showUpgradeCards() {
 function startGame() {
   overlay.style.display = 'none';
   document.getElementById('upgrade-panel')?.remove();
+  input.reset();
   score  = 0; streak = 0; wave = 0;
   BULLET_CONFIG.playerBulletScale = 1.0;
   BULLET_CONFIG.playerPiercing    = false;
@@ -1071,9 +1072,12 @@ window.addEventListener('keyup', e => {
   if (e.code === 'Space' && gameState === 'title') startGame();
   if (e.code === 'KeyE') player.toggleEyes();
 });
-// Tap anywhere (outside stick zones) starts from title on mobile
-window.addEventListener('touchend', () => {
-  if (gameState === 'title') startGame();
+// Tap anywhere (outside overlay UI elements) starts from title on mobile
+window.addEventListener('touchend', (e) => {
+  if (gameState !== 'title') return;
+  // Ignore taps that landed on interactive elements inside the overlay (e.g. roguelike toggle)
+  if (e.target?.closest?.('#overlay') && e.target?.id !== 'overlay') return;
+  startGame();
 }, { once: false });
 
 player.onShoot = () => audio.shoot();

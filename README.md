@@ -1,4 +1,4 @@
-# Toko Drop — v15
+# Toko Drop — v16
 
 Twin-stick bullet-hell arena shooter built with Three.js and Web Audio.
 
@@ -19,8 +19,8 @@ The arena is portrait-optimised (22 × 36 units) — designed for vertical mobil
 
 ## Modes
 
-**Roguelike** *(default)* — choose an upgrade card after every wave cleared.  
-**Arcade** — waves run back-to-back, no upgrade pick. Toggle on the title screen.
+**Arcade** *(default)* — waves run back-to-back with no interruption.  
+**Roguelike** — choose an upgrade card after every wave cleared. Toggle on the title screen.
 
 Death returns you to the title screen so you can start a fresh run.
 

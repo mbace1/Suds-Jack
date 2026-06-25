@@ -73,6 +73,12 @@ export class InputManager {
     }
   }
 
+  reset() {
+    this.left  = { active: false, ox: 0, oy: 0, dx: 0, dy: 0 };
+    this.right = { active: false, ox: 0, oy: 0, dx: 0, dy: 0 };
+    this._touchMap.clear();
+  }
+
   /** Returns {x, z} normalized world-space move direction. */
   getMoveDir() {
     if (this.left.active) {
