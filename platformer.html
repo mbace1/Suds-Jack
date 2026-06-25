@@ -203,64 +203,80 @@ const LEVEL_H = 9;  // tiles tall (H/TILE = 270/32 ≈ 8.4)
 
 function buildLevel() {
   const map = [];
-  for (let r = 0; r < LEVEL_H; r++) {
-    map.push(new Array(LEVEL_W).fill(0));
-  }
+  for (let r = 0; r < LEVEL_H; r++) map.push(new Array(LEVEL_W).fill(0));
 
-  // Ground row
+  // Ground
   for (let c = 0; c < LEVEL_W; c++) map[LEVEL_H-1][c] = 1;
 
-  // Gaps
-  const gaps = [[12,14],[28,30],[45,47],[60,62]];
+  // Gaps: 1 tile wide — jumpable at normal walking pace
+  const gaps = [[22,23],[40,41],[57,58],[71,72]];
   for (const [a,b] of gaps) for (let c = a; c < b; c++) map[LEVEL_H-1][c] = 0;
 
-  // Platforms
+  // Platforms: 3-4 tiles wide, at row 5 (3 tiles above ground) or row 6 (2 tiles up)
+  // [c_start, c_end_exclusive, row]
   const platforms = [
-    [5,6,3],[8,10,3],[14,16,5],[18,20,5],
-    [22,25,3],[30,33,5],[35,37,3],[38,41,5],
-    [48,51,3],[53,55,5],[63,66,3],[68,71,5],
-    [72,75,3],
+    [5, 9, 6],   // early gentle step-up
+    [13,17, 5],  // slightly higher
+    [19,23, 6],  // leads to gap
+    [25,30, 6],  // wide safe landing
+    [33,37, 5],
+    [39,44, 6],  // wide, spans the gap area
+    [47,51, 5],
+    [53,58, 6],  // leads to gap
+    [60,64, 5],
+    [66,72, 6],  // long safe stretch
+    [73,78, 5],  // final approach
   ];
   for (const [c1,c2,row] of platforms) {
     for (let c = c1; c < c2; c++) map[row][c] = 2;
   }
 
-  // Question blocks (row 4)
-  for (const c of [6,10,20,24,34,40,52,65,73]) map[4][c] = 3;
+  // Question blocks — above platforms, reachable with a good jump
+  for (const c of [7,15,21,27,35,41,49,55,62,68,75]) map[4][c] = 3;
 
-  // Pipes
-  for (const c of [16,36,56,70]) {
-    map[LEVEL_H-2][c] = 4; map[LEVEL_H-2][c+1] = 4;
-    map[LEVEL_H-1][c] = 5; map[LEVEL_H-1][c+1] = 5; // already ground, repurpose
-  }
+  // Traffic lights — decorative road furniture
+  for (const c of [11,31,51,64]) map[LEVEL_H-2][c] = 4;
 
   return map;
 }
 
 function buildCoins(map) {
   const coins = [];
-  const rows = [3,2];
-  const colGroups = [[3,4,5],[9,10],[17,18,19],[25,26,27],[32,33],[42,43,44],[50,51],[64,65,66],[72,73,74]];
-  for (const cols of colGroups) {
-    for (const c of cols) {
-      const r = 3;
-      if (!map[r][c]) coins.push({ cx: c*TILE+16, cy: r*TILE+8, collected: false });
-    }
+  // Stars on the ground in safe early stretch
+  for (const c of [3,4,5]) coins.push({ cx: c*TILE+16, cy: (LEVEL_H-2)*TILE+4, collected: false });
+  // Stars floating above platforms
+  const platStars = [
+    [6,5],[7,5],[8,5],
+    [14,4],[15,4],[16,4],
+    [20,5],[21,5],
+    [26,5],[27,5],[28,5],
+    [34,4],[35,4],
+    [40,5],[41,5],[42,5],
+    [48,4],[49,4],
+    [54,5],[55,5],
+    [61,4],[62,4],[63,4],
+    [67,5],[68,5],[69,5],
+    [74,4],[75,4],[76,4],
+  ];
+  for (const [c,r] of platStars) {
+    if (!map[r][c]) coins.push({ cx: c*TILE+16, cy: r*TILE+8, collected: false });
   }
   return coins;
 }
 
 function buildEnemies() {
   const enemies = [];
+  // 8 cones total — none in first 12 tiles, none adjacent to gaps
+  // Ground cones: [col, 7] lands on ground row 8
+  // Platform cones: [col, row-1] lands on platform row below
   const positions = [
-    [8,7],[18,7],[26,7],[38,7],[50,7],[63,7],[71,7],
-    // on platforms
-    [9,2],[15,4],[31,4],[39,4],[53,2],[69,4],
+    [15, 7], [29, 7], [45, 7], [59, 7], // ground patrol
+    [7,  5], [26, 5], [48, 5], [70, 5], // platform patrol (row 6 platforms)
   ];
   for (const [c,r] of positions) {
     enemies.push({
-      x: c*TILE, y: r*TILE - TILE,
-      vx: -40, vy: 0,
+      x: c*TILE, y: r*TILE,
+      vx: -26, vy: 0,  // slower — more manageable for kids
       onGround: false, alive: true, dying: false, dyingTimer: 0,
       w: TILE, h: TILE,
     });
