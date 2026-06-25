@@ -922,7 +922,6 @@ function spawnWave() {
   // Schedule one cargo convoy per wave (starts mid-wave, seeded position)
   clusterTimer = 0;
   clusterSpawnAt = 3 + rng() * 5; // 3-8 s into the wave — always overlaps live enemies
-  announceWave();
 }
 
 // ── Upgrade cards ─────────────────────────────────────────────────────────────
@@ -1477,24 +1476,14 @@ function loop() {
     }
   }
 
-  // All enemies dead → next wave (no timer gate — pendingSpawns covers spawn pacing)
+  // All enemies dead → next wave immediately, no interruption
   if (gameState === 'playing' &&
       pendingSpawns.length === 0 &&
       enemies.length > 0 &&
       enemies.every(e => !e.alive && !e._dying)) {
-    bullets.clear();
-    for (const c of chunks) c.remove(scene); chunks = [];
-    // Wave-clear burst: 16 white/gold particles from center (after old chunks cleared)
-    for (let i = 0; i < 16; i++) {
-      const a   = (i / 16) * Math.PI * 2;
-      const col = (i % 2 === 0) ? 0xffffff : 0xffdd44;
-      chunks.push(new Chunk(scene, 0, 0.3, 0, Math.cos(a) * 8, 1.5, Math.sin(a) * 8, col, 0.12));
-    }
-    audio.waveClear();
-    addShake(0.22);
     score += wave * 500;
     if (roguelikeMode) showUpgradeCards();
-    else               spawnWave();  // arcade: straight to next wave, no upgrade pick
+    else               spawnWave();
   }
 
   const _now = performance.now() / 1000;

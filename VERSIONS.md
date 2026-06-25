@@ -3,84 +3,30 @@
 <!-- Rules:
   - Add a new ## vN entry at the top for EVERY commit that touches game files.
   - Stage this file alongside your changes: git add VERSIONS.md
-  - When v21 is added, move v11–v20 into the Archive section below.
+  - When v31 is added, move v21–v30 into the Archive section below.
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v19 — 2026-06-25
-**Wave flow — no drag, convoys on field**
-- Removed `waveTimer >= waveDuration` gate from wave-end condition — wave ends the moment all enemies are dead
-- Convoy spawn window moved from 12–24 s to 3–8 s so moths always appear while enemies are alive
-
-## v18 — 2026-06-25
-**Revert bloom; hard-fix roguelike default**
-- Removed `EffectComposer` / `UnrealBloomPass` — back to direct `renderer.render()`; tone mapping removed
-- `roguelikeMode` now hardcoded `false` at startup — no longer reads from `localStorage` (cuts through any cached/stale browser value)
-
-## v17 — 2026-06-25
-**Fix roguelike default: rename localStorage key**
-- Changed key `tokoDropRogue` → `tokoDropRogue2` so stale `'1'` values from previous sessions don't override the arcade-by-default setting
-
-## v16 — 2026-06-25
-**Faster waves, arcade default, input fix**
-- Roguelike mode OFF by default (was ON); localStorage key `tokoDropRogue` now requires `'1'` to enable
-- Wave duration reduced 30 s → 20 s for snappier pacing
-- Wave announcement shortened 900 ms → 450 ms
-- Tapping roguelike toggle on title no longer accidentally starts the game
-- Input state (`left`/`right` sticks, touch map) cleared on game start to prevent stale joystick position
-- `InputManager.reset()` added to `input.js`
-
-## v15 — 2026-06-24
-**Bloom post-processing**
-- `EffectComposer` + `UnrealBloomPass` wired into all render sites (title, playing, gameover, upgrade)
-- ACES Filmic tone mapping (exposure 1.1) for richer colour rendering
-- Strength 0.9, radius 0.4, threshold 0.15 — player sphere, bullets, enemy rims, gate all bloom
-- Resize handler updated to propagate new dimensions to composer and bloom pass
-
-## v14 — 2026-06-24
-**GDD added — living design document**
-- `GDD.md` added at repo root: 14-section Game Design Document
-- Per-section `*(vN)*` stamps track when each section was last meaningfully updated
-- Covers: concept, core loop, arena, player, enemy roster, wave system, upgrades, pickups, gates, audio, visuals, HUD, seeded runs, balance
-
-## v13 — 2026-06-24
-**Version number in HUD**
-- "v13" shown bottom-left in same style as seed (10px monospace, 0.18 opacity)
-
-## v12 — 2026-06-24
-**Wave ramp, gate FX, player bullet trails, hit vignette, title animation**
-- Wave budget multiplier 1.8 → 2.8; speed ramp 0.12 → 0.16 (cap 3.2); interval floor 0.35 → 0.26
-- Gate dash-through: 14-shard teal burst + shake + pickup sound when gate deactivates
-- Player bullets now show a green glow trail (opacity 0.45, 0.22-unit step spacing)
-- Hit vignette: red radial gradient on screen edges for 0.32 s on any real hit
-- Title screen: `@keyframes tokoGlow` pulse on title text + staggered `tokoFadeUp` entrance
-
-## v11 — 2026-06-24
-**Portrait-optimised arena**
-- Arena reshaped from square 36×36 to 22×36 (HALF_X=11, HALF_Z=18) to fill portrait screens
-- Camera raised and pulled back (0,27,21), look-at z=−3, FOV 58→60 for better portrait framing
-- Floor grid frequencies adjusted (17.1×, 28×) to keep grid cells square on non-square floor
-- Enemy spawn changed from circle to ellipse matching arena proportions (×0.85 on each axis)
-- CargoCluster, Gate, escape-bounds, bullet-bounds all updated for asymmetric arena
-- Player boundary clamping now uses separate halfX/halfZ in player.js
-- Intro screen: viewport-relative title size (`clamp`), touch-first control hints, portrait label
-
-## v10 — 2026-06-24
-**Death → title · new upgrade cards · audio pass**
-- Death screen returns player to title after 2.8 s instead of auto-restarting
-- Four new upgrade cards: Pierce (bullets pass through), Magnet (pickups drift to you), Shield (absorbs 1 hit; resets each wave), Dash Boom (radial shot ring on every dash)
-- Shield shown in HUD as "✶ SHLD" indicator; recharged at wave start
-- Pierce tracks per-bullet hit-set so each enemy is only hit once per shot
-- Magnet sets drift velocity toward player within 9 u; increases as pickup gets closer
-- Dash Boom fires 12 player bullets radially on dash-start transition
-- `tryHitPlayer()` helper centralises shield check at all 3 damage sites (bullets, melee, poison)
-- Audio pass: `enemyDieType(cat)` with distinct sounds for blobs, cubes, TORO, BAMBU, PYRA
-- `audio.pickup()` — 3-note ascending arpeggio for item collection (was waveClear jingle)
-- Cargo drone death now uses blob sound category
+## v20 — 2026-06-25
+**Seamless wave flow — zero interruption**
+- Wave transition stripped to bare minimum: no announcement overlay, no particle burst, no shake, no bullet clear
+- Score still increments; roguelike upgrade screen still works when enabled
+- `announceWave()` no longer called between waves
 
 ---
 
 ## Archive
+
+**v11–v19 summary (2026-06-24 – 2026-06-25)**
+- v11: Portrait-optimised arena — 22×36 (HALF_X=11, HALF_Z=18), updated camera/intro
+- v12: Wave ramp (budget ×2.8, speed 0.16, interval floor 0.26); gate burst FX; player bullet trails; hit vignette; title animation
+- v13: Version number "v13" in HUD bottom-left
+- v14: GDD.md added — 14-section living design document with per-section version stamps
+- v15: Bloom post-processing (EffectComposer + UnrealBloomPass, ACES tone mapping) — later reverted
+- v16: Arcade default (roguelike OFF); wave duration 30 s→20 s; announcement 900 ms→450 ms; input reset on game start; toggle-start bug fixed
+- v17: localStorage key renamed `tokoDropRogue`→`tokoDropRogue2` to clear stale ON default
+- v18: Bloom reverted; roguelikeMode hardcoded `false` at startup
+- v19: Wave-end timer gate removed (waves end on last enemy death); convoy spawn 12–24 s→3–8 s
 
 **v1–v9 summary (2026-06-24)**
 - v1: Initial baseline — 13 enemy types, roguelike upgrade cards, goo shader, audio, gates
