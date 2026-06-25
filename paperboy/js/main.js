@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { COL } from './palette.js';
-import { InputManager } from './input.js';
-import { Player, DRIVE_HALF, PLAYER_R } from './player.js';
-import { PaperPool } from './paper.js';
-import { World } from './world.js';
-import { audio } from './audio.js';
+import { COL } from './palette.js?v=2';
+import { InputManager } from './input.js?v=2';
+import { Player, DRIVE_HALF, PLAYER_R } from './player.js?v=2';
+import { PaperPool } from './paper.js?v=2';
+import { World } from './world.js?v=2';
+import { audio } from './audio.js?v=2';
 
 const MAX_LIVES  = 3;
 const START_PAPERS = 10;
@@ -134,7 +134,7 @@ function showTitle() {
   overlay.style.display = 'block';
   overlay.innerHTML =
     `<div style="font-size:54px;font-weight:bold;letter-spacing:3px">PAPER ROUTE</div>` +
-    `<div style="font-size:14px;opacity:0.6;margin:8px 0 26px">DAWN RUN · deliver to the mint houses</div>` +
+    `<div style="font-size:14px;opacity:0.6;margin:8px 0 26px">DAWN RUN · deliver to the teal houses</div>` +
     `<div style="font-size:16px;opacity:0.85">ENTER / TAP TO START</div>` +
     `<div style="font-size:12px;opacity:0.45;margin-top:14px">` +
     `A/D or ←/→ steer · W/S throttle<br>` +

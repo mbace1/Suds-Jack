@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { COL } from './palette.js';
-import { DRIVE_HALF } from './player.js';
+import { COL } from './palette.js?v=2';
+import { DRIVE_HALF } from './player.js?v=2';
 
 const HOUSE_X      = DRIVE_HALF + 2.6;   // house centre line, just beyond the kerb
 const HOUSE_SPACING= 9.5;

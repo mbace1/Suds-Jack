@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { COL } from './palette.js';
+import { COL } from './palette.js?v=2';
 
 const POOL      = 40;
 const GRAV      = 26;
