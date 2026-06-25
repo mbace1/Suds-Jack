@@ -101,7 +101,7 @@ export class Enemy {
     // Build geometry based on type family
     let geo;
     if (BLOB_TYPES.has(type)) {
-      geo = new THREE.SphereGeometry(cfg.radius, 22, 15);  // extra verts for smooth vertex wobble
+      geo = new THREE.SphereGeometry(cfg.radius, 48, 32);  // dense mesh → smooth vertex-displaced surface (no faceting on big ripples)
     } else if (CUBE_TYPES.has(type)) {
       geo = new RoundedBoxGeometry(cfg.radius * 1.8, cfg.radius * 1.8, cfg.radius * 1.8, 4, 0.22);
     } else if (type === EnemyType.TORO) {
@@ -111,33 +111,49 @@ export class Enemy {
     // Gel materials — blobs: soft goo-surface style; cubes: firm candy-glass goo-flop style
     if (BLOB_TYPES.has(type)) {
       this.mat = new THREE.MeshPhysicalMaterial({
-        color:              cfg.color,
-        emissive:           cfg.color,
-        emissiveIntensity:  0.18,
-        roughness:          0.02,
-        metalness:          0.0,
-        transmission:       0.78,
-        thickness:          cfg.radius * 2.4,
-        ior:                1.42,
-        clearcoat:          0.90,
-        clearcoatRoughness: 0.04,
-        transparent:        true,
-        opacity:            1.0,
+        color:               cfg.color,
+        emissive:            cfg.color,
+        emissiveIntensity:   0.10,
+        roughness:           0.02,
+        metalness:           0.0,
+        transmission:        0.78,
+        thickness:           cfg.radius * 2.4,
+        ior:                 1.42,
+        clearcoat:           0.90,
+        clearcoatRoughness:  0.04,
+        // Jell-O depth: light is absorbed into colour as it travels through the body,
+        // so thin edges read translucent and the core reads deep, saturated colour.
+        attenuationColor:    new THREE.Color(cfg.color),
+        attenuationDistance: cfg.radius * 1.4,
+        // Soap-bubble thin-film shimmer on the gel skin.
+        iridescence:         0.45,
+        iridescenceIOR:      1.30,
+        transparent:         true,
+        opacity:             1.0,
       });
     } else if (CUBE_TYPES.has(type)) {
       this.mat = new THREE.MeshPhysicalMaterial({
-        color:              cfg.color,
-        emissive:           cfg.color,
-        emissiveIntensity:  0.12,
-        roughness:          0.04,
-        metalness:          0.0,
-        transmission:       0.62,
-        thickness:          cfg.radius * 2.8,
-        ior:                1.55,
-        clearcoat:          0.70,
-        clearcoatRoughness: 0.05,
-        transparent:        true,
-        opacity:            1.0,
+        color:               cfg.color,
+        emissive:            cfg.color,
+        emissiveIntensity:   0.06,
+        roughness:           0.04,
+        metalness:           0.0,
+        transmission:        0.62,
+        thickness:           cfg.radius * 2.8,
+        ior:                 1.55,
+        clearcoat:           0.70,
+        clearcoatRoughness:  0.05,
+        attenuationColor:    new THREE.Color(cfg.color),
+        attenuationDistance: cfg.radius * 1.8,
+        // Wet velvet micro-gloss + brushed-glass streaks → candy-glass read.
+        sheen:               0.4,
+        sheenColor:          new THREE.Color(cfg.color),
+        sheenRoughness:      0.3,
+        anisotropy:          0.6,
+        iridescence:         0.25,
+        iridescenceIOR:      1.25,
+        transparent:         true,
+        opacity:             1.0,
       });
     } else {
       // TORO and fallback
@@ -154,12 +170,17 @@ export class Enemy {
       });
     }
 
-    // Organic vertex-shader jiggle for blob types — collision shape stays fixed
+    // Bright wet rim colour — cfg.color pushed toward white for a glistening silhouette.
+    const _rim = new THREE.Color(cfg.color).lerp(new THREE.Color(0xffffff), 0.55);
+
+    // Organic vertex-shader jiggle (blobs) + Fresnel rim glow (blobs + cubes).
     if (BLOB_TYPES.has(type)) {
       const wUni = this._wUni;
       this.mat.onBeforeCompile = shader => {
-        shader.uniforms.u_wt = wUni.u_wt;
-        shader.uniforms.u_hw = wUni.u_hw;
+        shader.uniforms.u_wt   = wUni.u_wt;
+        shader.uniforms.u_hw   = wUni.u_hw;
+        shader.uniforms.u_rim  = { value: _rim };
+        // ── vertex: surface ripple ──
         shader.vertexShader = 'uniform float u_wt;\nuniform float u_hw;\n' + shader.vertexShader;
         shader.vertexShader = shader.vertexShader.replace(
           '#include <begin_vertex>',
@@ -171,6 +192,25 @@ export class Enemy {
           // hit burst — strong radial shockwave, decays with u_hw
           float _h = sin(length(position) * 8.0 - u_wt * 18.0) * u_hw * 0.55;
           transformed += normal * (_b + _h);`,
+        );
+        // ── fragment: Fresnel rim glow (wet glistening edge) ──
+        shader.fragmentShader = 'uniform vec3 u_rim;\n' + shader.fragmentShader;
+        shader.fragmentShader = shader.fragmentShader.replace(
+          '#include <dithering_fragment>',
+          `#include <dithering_fragment>
+          float _fres = pow(1.0 - abs(dot(normalize(vNormal), normalize(vViewPosition))), 4.0);
+          gl_FragColor.rgb += u_rim * _fres * 0.7;`,
+        );
+      };
+    } else if (CUBE_TYPES.has(type)) {
+      this.mat.onBeforeCompile = shader => {
+        shader.uniforms.u_rim = { value: _rim };
+        shader.fragmentShader = 'uniform vec3 u_rim;\n' + shader.fragmentShader;
+        shader.fragmentShader = shader.fragmentShader.replace(
+          '#include <dithering_fragment>',
+          `#include <dithering_fragment>
+          float _fres = pow(1.0 - abs(dot(normalize(vNormal), normalize(vViewPosition))), 5.0);
+          gl_FragColor.rgb += u_rim * _fres * 0.5;`,
         );
       };
     }

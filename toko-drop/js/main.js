@@ -1,5 +1,10 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { InputManager } from './input.js';
 import { BulletPool, BULLET_R, FAT_BULLET_R } from './bullet.js';
 import { Player, PLAYER_RADIUS } from './player.js';
@@ -139,6 +144,48 @@ function updateShake(dt) {
   camera.lookAt(CAM_LOOK);
 }
 
+// ── Post-processing: bloom + chromatic aberration ──────────────────────────────
+// Chromatic aberration — R/B channel split toward screen edges (glass fringe)
+const ChromaticAberrationShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    u_amount: { value: 0.0016 },
+  },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+  `,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform float u_amount;
+    varying vec2 vUv;
+    void main() {
+      vec2 dir = vUv - 0.5;            // outward from centre
+      float d  = dot(dir, dir);        // stronger toward corners
+      vec2 off = dir * u_amount * (1.0 + d * 3.0);
+      float r = texture2D(tDiffuse, vUv + off).r;
+      float g = texture2D(tDiffuse, vUv).g;
+      float b = texture2D(tDiffuse, vUv - off).b;
+      gl_FragColor = vec4(r, g, b, 1.0);
+    }
+  `,
+};
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+// Bloom — emissive gel peaks + transmission hotspots glow independently
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(innerWidth, innerHeight),
+  0.55,   // strength
+  0.5,    // radius
+  0.9,    // threshold — only the hottest specular/rim highlights bloom, body keeps its detail
+);
+composer.addPass(bloomPass);
+const chromaPass = new ShaderPass(ChromaticAberrationShader);
+composer.addPass(chromaPass);
+// OutputPass applies ACESFilmic tonemap + sRGB after linear-space bloom
+composer.addPass(new OutputPass());
+
 // ── Lights ────────────────────────────────────────────────────────────────────
 scene.add(new THREE.AmbientLight(0xffffff, 0.45));
 const sun = new THREE.DirectionalLight(0xffffff, 1.3);
@@ -254,60 +301,57 @@ class SlimeTrail {
 
 class SludgeRibbon {
   constructor(sc, enemy) {
-    this._enemy     = enemy;
-    this._fading    = false;
-    this._fadeLife  = 2.0;
-    const maxPts    = 12;
-    this._geo       = new THREE.BufferGeometry();
-    this._posArr    = new Float32Array(maxPts * 2 * 3);
-    this._geo.setAttribute('position', new THREE.BufferAttribute(this._posArr, 3));
-    const idx = [];
-    for (let i = 0; i < maxPts - 1; i++) {
-      const a = i*2, b = i*2+1, c = (i+1)*2, d = (i+1)*2+1;
-      idx.push(a, b, c,  b, d, c);
-    }
-    this._geo.setIndex(idx);
-    this.mat = new THREE.MeshBasicMaterial({
-      color: 0x88cc00, transparent: true, opacity: 0.4,
-      depthWrite: false, side: THREE.DoubleSide,
+    this._enemy    = enemy;
+    this._sc       = sc;
+    this._fading   = false;
+    this._fadeLife = 2.0;
+    this._geo      = null;
+    this._rebuildT = 0;
+    // Raised wet bead of gel — translucent, refractive, blooms at highlights
+    this.mat = new THREE.MeshPhysicalMaterial({
+      color: 0x9ad400, emissive: 0x2a3a00, emissiveIntensity: 0.4,
+      roughness: 0.06, metalness: 0.0,
+      transmission: 0.45, thickness: 0.4, ior: 1.4,
+      clearcoat: 0.8, clearcoatRoughness: 0.05,
+      transparent: true, opacity: 0.85, depthWrite: false,
     });
-    this.mesh = new THREE.Mesh(this._geo, this.mat);
-    this.mesh.position.y = 0.015;
+    this.mesh = new THREE.Mesh(new THREE.BufferGeometry(), this.mat);
     sc.add(this.mesh);
+  }
+  _rebuild() {
+    const pts = this._enemy._trailPositions;
+    const n   = pts ? pts.length : 0;
+    if (n < 2) return;
+    // Lift the bead into an arch: ends sit on the floor, middle bulges up
+    const v3 = [];
+    for (let i = 0; i < n; i++) {
+      const f = i / (n - 1);
+      const arch = Math.sin(f * Math.PI) * 0.18;   // peak height at the centre of the run
+      v3.push(new THREE.Vector3(pts[i].x, 0.08 + arch, pts[i].z));
+    }
+    const curve = new THREE.CatmullRomCurve3(v3);
+    // Radius tapers from fat (newest, at the enemy) to thin (oldest, drying out)
+    const tube = new THREE.TubeGeometry(curve, Math.max(8, n * 2), 0.16, 6, false);
+    if (this._geo) this._geo.dispose();
+    this._geo = tube;
+    this.mesh.geometry = tube;
   }
   update(dt) {
     if (!this._enemy.alive && !this._fading) this._fading = true;
     if (this._fading) {
       this._fadeLife -= dt;
-      this.mat.opacity = 0.4 * Math.max(0, this._fadeLife / 2.0);
+      this.mat.opacity = 0.85 * Math.max(0, this._fadeLife / 2.0);
       if (this._fadeLife <= 0) return false;
     }
-    const pts = this._enemy._trailPositions;
-    const n   = pts ? pts.length : 0;
-    if (n >= 2) {
-      const hw = 0.4;
-      for (let i = 0; i < n; i++) {
-        let tx, tz;
-        if (i < n - 1) { tx = pts[i+1].x - pts[i].x; tz = pts[i+1].z - pts[i].z; }
-        else            { tx = pts[i].x - pts[i-1].x; tz = pts[i].z - pts[i-1].z; }
-        const tl = Math.hypot(tx, tz) || 1;
-        const px = -tz / tl * hw, pz = tx / tl * hw;
-        const b = i * 6;
-        this._posArr[b]   = pts[i].x + px; this._posArr[b+1] = 0; this._posArr[b+2] = pts[i].z + pz;
-        this._posArr[b+3] = pts[i].x - px; this._posArr[b+4] = 0; this._posArr[b+5] = pts[i].z - pz;
-      }
-      for (let i = n; i < 12; i++) {
-        const b = i * 6;
-        this._posArr[b]   = pts[n-1].x; this._posArr[b+1] = 0; this._posArr[b+2] = pts[n-1].z;
-        this._posArr[b+3] = pts[n-1].x; this._posArr[b+4] = 0; this._posArr[b+5] = pts[n-1].z;
-      }
-    } else {
-      this._posArr.fill(0);
+    // Rebuild tube a few times a second — trail points only push every 0.15s anyway
+    this._rebuildT -= dt;
+    if (this._rebuildT <= 0) {
+      this._rebuildT = 0.12;
+      this._rebuild();
     }
-    this._geo.attributes.position.needsUpdate = true;
     return true;
   }
-  remove(sc) { sc.remove(this.mesh); this._geo.dispose(); }
+  remove(sc) { sc.remove(this.mesh); if (this._geo) this._geo.dispose(); }
 }
 
 class Gate {
@@ -709,7 +753,7 @@ function loop() {
 
   // Title / paused — just render the scene, no game logic
   if (gameState === 'title' || gameState === 'paused') {
-    renderer.render(scene, camera);
+    composer.render();
     drawHUD();
     return;
   }
@@ -721,7 +765,7 @@ function loop() {
       if (!chunks[i].update(dt)) { chunks[i].remove(scene); chunks.splice(i, 1); }
     }
     if (restartTimer <= 0) startGame();
-    renderer.render(scene, camera);
+    composer.render();
     drawHUD();
     return;
   }
@@ -983,13 +1027,15 @@ function loop() {
     spawnWave();
   }
 
-  renderer.render(scene, camera);
+  composer.render();
   drawHUD();
 }
 
 // ── Resize ────────────────────────────────────────────────────────────────────
 function resize() {
   renderer.setSize(innerWidth, innerHeight);
+  composer.setSize(innerWidth, innerHeight);
+  bloomPass.resolution.set(innerWidth, innerHeight);
   if (camera) { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
   uiCanvas.width = innerWidth; uiCanvas.height = innerHeight;
 }
