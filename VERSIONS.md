@@ -7,6 +7,11 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v18 — 2026-06-25
+**Revert bloom; hard-fix roguelike default**
+- Removed `EffectComposer` / `UnrealBloomPass` — back to direct `renderer.render()`; tone mapping removed
+- `roguelikeMode` now hardcoded `false` at startup — no longer reads from `localStorage` (cuts through any cached/stale browser value)
+
 ## v17 — 2026-06-25
 **Fix roguelike default: rename localStorage key**
 - Changed key `tokoDropRogue` → `tokoDropRogue2` so stale `'1'` values from previous sessions don't override the arcade-by-default setting

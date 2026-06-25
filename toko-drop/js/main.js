@@ -1,7 +1,4 @@
 import * as THREE from 'three';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass }     from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { InputManager } from './input.js';
 import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js';
 import { Player, PLAYER_RADIUS } from './player.js';
@@ -108,8 +105,6 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.setSize(innerWidth, innerHeight);
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.1;
 
 // ── Scene ───────────────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
@@ -122,17 +117,6 @@ const CAM_LOOK = new THREE.Vector3(0, 0, -3);
 const camera   = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 120);
 camera.position.copy(CAM_REST);
 camera.lookAt(CAM_LOOK);
-
-// ── Post-processing (bloom) ──────────────────────────────────────────────────
-const composer = new EffectComposer(renderer);
-composer.addPass(new RenderPass(scene, camera));
-const bloomPass = new UnrealBloomPass(
-  new THREE.Vector2(innerWidth, innerHeight),
-  0.9,   // strength
-  0.4,   // radius
-  0.15,  // threshold — objects with luminance above this bloom
-);
-composer.addPass(bloomPass);
 
 // ── Screen shake ───────────────────────────────────────────────────────────
 let shakeTrauma = 0;
@@ -603,7 +587,7 @@ const STREAK_FLASH_DUR = 0.4;
 let streakFlashT = 0;
 let hiScore = parseInt(localStorage.getItem('tokoDropHi') || '0');
 // Roguelike mode (default on): show upgrade cards between waves. Off = plain arcade run.
-let roguelikeMode = localStorage.getItem('tokoDropRogue2') === '1';
+let roguelikeMode = false;
 
 function onKill(e) {
   streak++;
@@ -1113,7 +1097,7 @@ function loop() {
 
   // Title / paused — just render the scene, no game logic
   if (gameState === 'title' || gameState === 'paused' || gameState === 'upgrade') {
-    composer.render();
+    renderer.render(scene, camera);
     drawHUD();
     return;
   }
@@ -1132,7 +1116,7 @@ function loop() {
       showTitle();
       gameState = 'title';
     }
-    composer.render();
+    renderer.render(scene, camera);
     drawHUD();
     return;
   }
@@ -1517,15 +1501,13 @@ function loop() {
   const _now = performance.now() / 1000;
   GOO_TIME.value            = _now;
   floorUniforms.uTime.value = _now;
-  composer.render();
+  renderer.render(scene, camera);
   drawHUD();
 }
 
 // ── Resize ───────────────────────────────────────────────────────────────────
 function resize() {
   renderer.setSize(innerWidth, innerHeight);
-  composer.setSize(innerWidth, innerHeight);
-  bloomPass.resolution.set(innerWidth, innerHeight);
   if (camera) { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
   uiCanvas.width = innerWidth; uiCanvas.height = innerHeight;
 }
