@@ -1,5 +1,6 @@
 const STICK_RADIUS = 60;
 const AIM_DEADZONE = 15;
+const GP_DEADZONE  = 0.20;  // gamepad analog stick deadzone
 
 export class InputManager {
   constructor() {
@@ -10,10 +11,17 @@ export class InputManager {
     this.mouse = { x: 0, y: 0, down: false };
     this.onDash  = null;
     this.onPause = null;
+    // Gamepad state (read each frame via pollGamepad)
+    this.gp = { connected: false, mx: 0, my: 0, ax: 0, ay: 0 };
+    this.usingGamepad = false;  // true once the pad is actively driving input
+    this._prevDash  = false;
+    this._prevPause = false;
     this._init();
   }
 
   _init() {
+    window.addEventListener('gamepadconnected',    () => { this.gp.connected = true; });
+    window.addEventListener('gamepaddisconnected', () => { this.gp.connected = false; this.usingGamepad = false; });
     window.addEventListener('keydown', e => { this.keys[e.code] = true; });
     window.addEventListener('keyup', e => {
       this.keys[e.code] = false;
@@ -33,6 +41,7 @@ export class InputManager {
   }
 
   _touchStart(e) {
+    this.usingGamepad = false;  // a screen touch reverts to touch controls
     for (const t of e.changedTouches) {
       // Pause zone: top-centre strip (80 px wide, 56 px tall)
       if (t.clientY < 56 && Math.abs(t.clientX - window.innerWidth / 2) < 40) {
@@ -77,10 +86,48 @@ export class InputManager {
     this.left  = { active: false, ox: 0, oy: 0, dx: 0, dy: 0 };
     this.right = { active: false, ox: 0, oy: 0, dx: 0, dy: 0 };
     this._touchMap.clear();
+    this.gp.mx = this.gp.my = this.gp.ax = this.gp.ay = 0;
+  }
+
+  /** Poll the active gamepad once per frame: fills gp axes, edge-triggers dash/pause. */
+  pollGamepad() {
+    if (!this.gp.connected || !navigator.getGamepads) return;
+    let pad = null;
+    for (const p of navigator.getGamepads()) { if (p) { pad = p; break; } }
+    if (!pad) return;
+
+    const lx = pad.axes[0] || 0, ly = pad.axes[1] || 0;
+    const rx = pad.axes[2] || 0, ry = pad.axes[3] || 0;
+    const lLen = Math.hypot(lx, ly), rLen = Math.hypot(rx, ry);
+    this.gp.mx = lLen > GP_DEADZONE ? lx : 0;
+    this.gp.my = lLen > GP_DEADZONE ? ly : 0;
+    this.gp.ax = rLen > GP_DEADZONE ? rx : 0;
+    this.gp.ay = rLen > GP_DEADZONE ? ry : 0;
+
+    // Dash: A button (0), right bumper (5), or right trigger (7)
+    const dash = !!(pad.buttons[0]?.pressed || pad.buttons[5]?.pressed || pad.buttons[7]?.pressed);
+    if (dash && !this._prevDash) this.onDash?.();
+    this._prevDash = dash;
+
+    // Pause: Start (9)
+    const pause = !!pad.buttons[9]?.pressed;
+    if (pause && !this._prevPause) this.onPause?.();
+    this._prevPause = pause;
+
+    // Any meaningful gamepad activity switches the UI into gamepad mode
+    if (this.gp.mx || this.gp.my || this.gp.ax || this.gp.ay || dash || pause) {
+      this.usingGamepad = true;
+    }
   }
 
   /** Returns {x, z} normalized world-space move direction. */
   getMoveDir() {
+    if (this.gp.mx || this.gp.my) {
+      let x = this.gp.mx, z = this.gp.my;
+      const len = Math.hypot(x, z);
+      if (len > 1) { x /= len; z /= len; }
+      return { x, z };
+    }
     if (this.left.active) {
       let x = this.left.dx / STICK_RADIUS;
       let z = this.left.dy / STICK_RADIUS;
@@ -102,6 +149,10 @@ export class InputManager {
    * Sets useMouse:true when no touch stick is active (caller should use raycasting).
    */
   getAimDir() {
+    if (this.gp.ax || this.gp.ay) {
+      const len = Math.hypot(this.gp.ax, this.gp.ay);
+      return { x: this.gp.ax / len, z: this.gp.ay / len, valid: true };  // auto-fire while pushed
+    }
     if (this.right.active) {
       const len = Math.hypot(this.right.dx, this.right.dy);
       if (len < AIM_DEADZONE) return { x: 0, z: 0, valid: false };

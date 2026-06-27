@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v24 — 2026-06-27
+**Gamepad support + input auto-detect (Steam Deck pt.1)**
+- Gamepad polling added to `InputManager.pollGamepad()` (called once per frame)
+- Left stick = move, right stick = aim + auto-fire (matches touch model), deadzone 0.20
+- Dash on A / right bumper / right trigger; pause on Start; A also starts game from title
+- Auto-detect: any gamepad activity sets `usingGamepad`, which hides the on-screen touch joysticks; a screen touch reverts to touch controls
+- Title control hints updated for gamepad buttons
+- Rumble/haptics deferred to a later update
+
 ## v23 — 2026-06-27
 **Landscape / Steam Deck mode**
 - New ORIENTATION toggle on title screen — PORTRAIT (tall 22×36) or LANDSCAPE (wide 38×22)

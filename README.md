@@ -1,4 +1,4 @@
-# Toko Drop — v23
+# Toko Drop — v24
 
 Twin-stick bullet-hell arena shooter built with Three.js and Web Audio.
 
@@ -8,12 +8,13 @@ Live at **[mbace1.github.io/Suds-Jack/toko-drop/](https://mbace1.github.io/Suds-
 
 ## Controls
 
-|  | Move | Aim / Fire | Dash |
-|---|---|---|---|
-| **Keyboard** | WASD | Hold LMB toward target | Space |
-| **Touch / Gamepad** | Left stick | Right stick | Release right stick |
+|  | Move | Aim / Fire | Dash | Pause |
+|---|---|---|---|---|
+| **Keyboard** | WASD | Hold LMB toward target | Space | ESC |
+| **Touch** | Left stick | Right stick | Release right stick | Top-centre tap |
+| **Gamepad** | Left stick | Right stick (auto-fire) | A / bumper / trigger | Start |
 
-**ESC** — pause · **E** — toggle eye style
+On-screen joysticks hide automatically when a gamepad is in use. **E** — toggle eye style.
 
 Two arena orientations, switchable on the title screen:
 - **Portrait** (22 × 36) — upright mobile play

@@ -714,8 +714,10 @@ function drawHUD() {
   if (gameState !== 'playing' && gameState !== 'paused' && gameState !== 'upgrade') return;
 
   // Sticks
-  drawStick(input.left,  uiCanvas.width * 0.22, uiCanvas.height * 0.78);
-  drawStick(input.right, uiCanvas.width * 0.78, uiCanvas.height * 0.78);
+  if (!input.usingGamepad) {
+    drawStick(input.left,  uiCanvas.width * 0.22, uiCanvas.height * 0.78);
+    drawStick(input.right, uiCanvas.width * 0.78, uiCanvas.height * 0.78);
+  }
 
   // Pause button (top centre)
   ctx.fillStyle = 'rgba(255,255,255,0.25)';
@@ -808,7 +810,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v23', 16, uiCanvas.height - 12);
+  ctx.fillText('v24', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -852,8 +854,8 @@ function showTitle() {
     `animation:tokoFadeUp 0.5s 0.4s ease both">` +
     `Move &nbsp;·&nbsp; left stick / WASD<br>` +
     `Aim &amp; fire &nbsp;·&nbsp; right stick / hold LMB<br>` +
-    `Dash &nbsp;·&nbsp; release stick / Space<br>` +
-    `Pause ESC &nbsp;·&nbsp; Eyes E</div>`;
+    `Dash &nbsp;·&nbsp; A / bumper / Space<br>` +
+    `Pause Start / ESC &nbsp;·&nbsp; Eyes E</div>`;
 
   // Orientation toggle — switches arena between portrait and landscape (Steam Deck).
   {
@@ -1113,6 +1115,8 @@ input.onDash  = () => {
     const move = input.getMoveDir();
     const dir = { x: move.x, z: move.z, valid: move.x !== 0 || move.z !== 0 };
     player.dash(dir);
+  } else if (gameState === 'title') {
+    startGame();  // A / bumper / trigger starts the game from the title
   }
 };
 input.onPause = () => {
@@ -1163,6 +1167,7 @@ function loop() {
   const dt  = Math.min((now - prev) / 1000, 0.05);
   prev = now;
 
+  input.pollGamepad();
   updateShake(dt);
 
   // Title / paused — just render the scene, no game logic
