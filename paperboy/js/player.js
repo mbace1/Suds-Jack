@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { COL } from './palette.js?v=3';
+import { COL } from './palette.js?v=4';
 
 export const DRIVE_HALF   = 7.4;   // how far the bike may stray laterally (road + kerbs)
 export const PLAYER_R     = 0.55;
@@ -19,7 +19,7 @@ export class Player {
     this.group = new THREE.Group();
     scene.add(this.group);
 
-    const flat = (color, opts = {}) => new THREE.MeshLambertMaterial({ color, ...opts });
+    const flat = (color, opts = {}) => new THREE.MeshBasicMaterial({ color, ...opts });
 
     // ── Little BMX kid (flat-shaded, Paperboy-style) ──────────────────────────
     // Torso (red jersey)

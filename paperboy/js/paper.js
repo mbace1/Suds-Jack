@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { COL } from './palette.js?v=3';
-import { DELIVER_X } from './world.js?v=3';
+import { COL } from './palette.js?v=4';
+import { DELIVER_X } from './world.js?v=4';
 
 const POOL      = 40;
 const THROW_VX  = 19;    // fast, flat lateral throw toward the target side
@@ -12,7 +12,7 @@ export class PaperPool {
   constructor(scene) {
     this.scene = scene;
     const geo = new THREE.BoxGeometry(0.36, 0.14, 0.22);
-    const mat = new THREE.MeshLambertMaterial({ color: COL.paper });
+    const mat = new THREE.MeshBasicMaterial({ color: COL.paper });
     this.mat = mat;
     this.items = Array.from({ length: POOL }, () => {
       const m = new THREE.Mesh(geo, mat);
