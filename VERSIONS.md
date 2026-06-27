@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v23 — 2026-06-27
+**Landscape / Steam Deck mode**
+- New ORIENTATION toggle on title screen — PORTRAIT (tall 22×36) or LANDSCAPE (wide 38×22)
+- Landscape arena optimised for Steam Deck (16:10) and sideways mobile
+- Arena dims now swappable at runtime: `applyArenaMode()` rebuilds floor + border geometry, swaps camera framing, and updates grid uniforms
+- Grid frequencies converted to `uGridX`/`uGridZ` uniforms (derived from arena size + `GRID_CELL`) so cells stay square in either orientation
+- Landscape camera: rest (0,27,14), look (0,0,−2); portrait unchanged (0,27,21)/(0,0,−3)
+- Orientation persists in `localStorage` (`tokoDropLandscape`); applied on title load and game start; toggle live-updates the title arena
+
 ## v22 — 2026-06-25
 **Wave ends on last kill — no empty arena wait**
 - Removed `pendingSpawns.length === 0` gate from wave-end condition

@@ -6,8 +6,14 @@ import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js';
 import { audio } from './audio.js';
 import { initDesigner } from './designer.js';
 
-const HALF_X    = 11;   // arena half-width  (portrait: narrow side)
-const HALF_Z    = 18;   // arena half-depth  (portrait: deep side)
+// Arena dimensions are swappable between portrait and landscape modes.
+const ARENA_PRESETS = {
+  portrait:  { halfX: 11, halfZ: 18, camRest: [0, 27, 21], camLook: [0, 0, -3], label: 'PORTRAIT' },
+  landscape: { halfX: 19, halfZ: 11, camRest: [0, 27, 14], camLook: [0, 0, -2], label: 'LANDSCAPE · STEAM DECK' },
+};
+let HALF_X      = ARENA_PRESETS.portrait.halfX;   // arena half-width
+let HALF_Z      = ARENA_PRESETS.portrait.halfZ;   // arena half-depth
+const GRID_CELL = 1.286;                          // world units per grid cell (keeps cells square)
 const ROUND_DUR = 20; // seconds per wave
 
 // ── Seeded PRNG (mulberry32) ───────────────────────────────────────────────────
@@ -157,12 +163,14 @@ const FLOOR_VERT = `
 const FLOOR_FRAG = `
   precision highp float;
   uniform float uTime;
+  uniform float uGridX;
+  uniform float uGridZ;
   varying vec2 vUv;
   void main() {
     vec3 base = vec3(0.079, 0.079, 0.169);
-    // Frequencies scaled to keep grid cells square on the non-square floor (HALF_X:HALF_Z = 11:18)
-    float gx = abs(fract(vUv.x * 17.1) - 0.5);
-    float gz = abs(fract(vUv.y * 28.0) - 0.5);
+    // Frequencies (set from arena dims) keep grid cells square on the non-square floor
+    float gx = abs(fract(vUv.x * uGridX) - 0.5);
+    float gz = abs(fract(vUv.y * uGridZ) - 0.5);
     float grid = max(0.0, 1.0 - min(gx, gz) * 50.0);
     float pulse = 0.7 + 0.3 * sin(uTime * 1.2);
     vec3 gridColor = mix(vec3(0.13, 0.07, 0.38), vec3(0.0, 0.55, 0.50), grid);
@@ -170,7 +178,11 @@ const FLOOR_FRAG = `
     gl_FragColor = vec4(col, 1.0);
   }
 `;
-const floorUniforms = { uTime: { value: 0 } };
+const floorUniforms = {
+  uTime:  { value: 0 },
+  uGridX: { value: (HALF_X * 2) / GRID_CELL },
+  uGridZ: { value: (HALF_Z * 2) / GRID_CELL },
+};
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(HALF_X * 2, HALF_Z * 2),
   new THREE.ShaderMaterial({ vertexShader: FLOOR_VERT, fragmentShader: FLOOR_FRAG, uniforms: floorUniforms }),
@@ -184,6 +196,22 @@ const border = new THREE.LineSegments(
 );
 border.position.y = 0.02;
 scene.add(border);
+
+// Swap arena dimensions, camera framing, floor + border geometry, and grid uniforms.
+function applyArenaMode(landscape) {
+  const p = landscape ? ARENA_PRESETS.landscape : ARENA_PRESETS.portrait;
+  HALF_X = p.halfX; HALF_Z = p.halfZ;
+  CAM_REST.set(...p.camRest);
+  CAM_LOOK.set(...p.camLook);
+  camera.position.copy(CAM_REST);
+  camera.lookAt(CAM_LOOK);
+  floor.geometry.dispose();
+  floor.geometry = new THREE.PlaneGeometry(HALF_X * 2, HALF_Z * 2);
+  border.geometry.dispose();
+  border.geometry = new THREE.EdgesGeometry(new THREE.BoxGeometry(HALF_X * 2, 0.05, HALF_Z * 2));
+  floorUniforms.uGridX.value = (HALF_X * 2) / GRID_CELL;
+  floorUniforms.uGridZ.value = (HALF_Z * 2) / GRID_CELL;
+}
 
 // ── Death FX: chunks + puddles ────────────────────────────────────────────────
 class Chunk {
@@ -589,6 +617,8 @@ let streakFlashT = 0;
 let hiScore = parseInt(localStorage.getItem('tokoDropHi') || '0');
 // Roguelike mode (default on): show upgrade cards between waves. Off = plain arcade run.
 let roguelikeMode = false;
+let landscapeMode = localStorage.getItem('tokoDropLandscape') === '1';
+applyArenaMode(landscapeMode);
 
 function onKill(e) {
   streak++;
@@ -778,7 +808,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v21', 16, uiCanvas.height - 12);
+  ctx.fillText('v23', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -814,15 +844,50 @@ function showTitle() {
     `<div style="font-size:clamp(34px,11vw,58px);font-weight:bold;letter-spacing:4px;` +
     `animation:tokoGlow 1.6s ease-in-out infinite alternate,tokoFadeUp 0.5s ease both">TOKO DROP</div>` +
     `<div style="font-size:13px;opacity:0.5;margin:8px 0 22px;animation:tokoFadeUp 0.5s 0.1s ease both">` +
-    `TWIN-STICK BULLET-HELL · PORTRAIT</div>` +
+    `TWIN-STICK BULLET-HELL</div>` +
     `<div style="font-size:16px;opacity:0.85;animation:tokoFadeUp 0.5s 0.2s ease both">TAP OR PRESS SPACE TO START</div>` +
-    `<div id="rogue-toggle-slot" style="margin-top:18px;animation:tokoFadeUp 0.5s 0.3s ease both"></div>` +
+    `<div id="orient-toggle-slot" style="margin-top:18px;animation:tokoFadeUp 0.5s 0.28s ease both"></div>` +
+    `<div id="rogue-toggle-slot" style="margin-top:14px;animation:tokoFadeUp 0.5s 0.3s ease both"></div>` +
     `<div style="font-size:12px;opacity:0.38;margin-top:20px;line-height:2;text-align:center;` +
     `animation:tokoFadeUp 0.5s 0.4s ease both">` +
     `Move &nbsp;·&nbsp; left stick / WASD<br>` +
     `Aim &amp; fire &nbsp;·&nbsp; right stick / hold LMB<br>` +
     `Dash &nbsp;·&nbsp; release stick / Space<br>` +
     `Pause ESC &nbsp;·&nbsp; Eyes E</div>`;
+
+  // Orientation toggle — switches arena between portrait and landscape (Steam Deck).
+  {
+    const oslot = document.getElementById('orient-toggle-slot');
+    const obtn  = document.createElement('div');
+    const ohint = document.createElement('div');
+    ohint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
+    const orender = () => {
+      const land = landscapeMode;
+      obtn.textContent = `ORIENTATION: ${land ? 'LANDSCAPE' : 'PORTRAIT'}`;
+      obtn.style.cssText =
+        'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
+        'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
+        'background:rgba(0,0,0,0.35);transition:all 0.12s;' +
+        `border:2px solid ${land ? '#ffaa33' : '#445'};` +
+        `color:${land ? '#ffcc66' : '#7777aa'};` +
+        `text-shadow:${land ? '0 0 12px #ffaa33' : 'none'};`;
+      ohint.textContent = land ? 'Wide arena — Steam Deck / sideways mobile'
+                               : 'Tall arena — upright mobile';
+    };
+    orender();
+    const otoggle = e => {
+      e.stopPropagation();
+      e.preventDefault();
+      landscapeMode = !landscapeMode;
+      localStorage.setItem('tokoDropLandscape', landscapeMode ? '1' : '0');
+      applyArenaMode(landscapeMode);  // live-update the title-screen arena
+      orender();
+    };
+    obtn.addEventListener('pointerdown', otoggle);
+    obtn.addEventListener('touchend', e => e.stopPropagation());
+    oslot.appendChild(obtn);
+    oslot.appendChild(ohint);
+  }
 
   // Roguelike toggle — a clickable chip inside the (pointer-events:none) overlay.
   const slot = document.getElementById('rogue-toggle-slot');
@@ -1011,6 +1076,7 @@ function startGame() {
   overlay.style.display = 'none';
   document.getElementById('upgrade-panel')?.remove();
   input.reset();
+  applyArenaMode(landscapeMode);
   score  = 0; streak = 0; wave = 0; runTimer = 0;
   BULLET_CONFIG.playerBulletScale = 1.0;
   BULLET_CONFIG.playerPiercing    = false;

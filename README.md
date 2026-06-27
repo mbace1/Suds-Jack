@@ -1,4 +1,4 @@
-# Toko Drop — v22
+# Toko Drop — v23
 
 Twin-stick bullet-hell arena shooter built with Three.js and Web Audio.
 
@@ -15,7 +15,9 @@ Live at **[mbace1.github.io/Suds-Jack/toko-drop/](https://mbace1.github.io/Suds-
 
 **ESC** — pause · **E** — toggle eye style
 
-The arena is portrait-optimised (22 × 36 units) — designed for vertical mobile play.
+Two arena orientations, switchable on the title screen:
+- **Portrait** (22 × 36) — upright mobile play
+- **Landscape** (38 × 22) — Steam Deck and sideways mobile
 
 ## Modes
 
