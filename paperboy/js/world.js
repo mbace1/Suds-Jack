@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { COL } from './palette.js?v=3';
-import { DRIVE_HALF } from './player.js?v=3';
+import { COL } from './palette.js?v=4';
+import { DRIVE_HALF } from './player.js?v=4';
 
 const HOUSE_X      = DRIVE_HALF + 2.6;   // house centre line, just beyond the kerb
 export const DELIVER_X = HOUSE_X - 1.6;  // kerbside mailbox line papers fly to
@@ -10,6 +10,7 @@ const CULL_BEHIND  = 20;
 const ROAD_HALF    = DRIVE_HALF - 1.6;   // cars stay on tarmac
 
 const HAZARD_TYPES = ['car', 'car', 'hydrant', 'cone', 'dog'];
+const _WHITE = new THREE.Color(0xffffff);   // for the flat-colour delivery flash
 
 // Dispose all materials under a group (geometries are shared, so leave them).
 function disposeTree(group) {
@@ -58,13 +59,13 @@ export class World {
     const g = new THREE.Group();
     g.position.set(side * HOUSE_X, 0, z);
 
-    const bodyMat = new THREE.MeshLambertMaterial({ color: sub ? COL.subscriber : COL.nonSub });
+    const bodyMat = new THREE.MeshBasicMaterial({ color: sub ? COL.subscriber : COL.nonSub });
     const body = new THREE.Mesh(this._bodyGeo, bodyMat);
     body.position.y = 1.3; body.castShadow = true; body.receiveShadow = true;
     g.add(body);
 
     const roof = new THREE.Mesh(this._roofGeo,
-      new THREE.MeshLambertMaterial({ color: sub ? COL.subRoof : COL.nonSubRoof }));
+      new THREE.MeshBasicMaterial({ color: sub ? COL.subRoof : COL.nonSubRoof }));
     roof.position.y = 3.4; roof.rotation.y = Math.PI / 4; roof.castShadow = true;
     g.add(roof);
 
@@ -79,24 +80,24 @@ export class World {
 
     // Front door facing the road
     const door = new THREE.Mesh(this._doorGeo,
-      new THREE.MeshLambertMaterial({ color: sub ? COL.subRoof : COL.nonSubRoof }));
+      new THREE.MeshBasicMaterial({ color: sub ? COL.subRoof : COL.nonSubRoof }));
     door.position.set(0, 0.9, -side * 1.72); g.add(door);
 
     // Curbside mailbox at the delivery line — every house has one (US-style box + flag)
-    const post = new THREE.Mesh(this._postGeo, new THREE.MeshLambertMaterial({ color: 0x6a4a2a }));
+    const post = new THREE.Mesh(this._postGeo, new THREE.MeshBasicMaterial({ color: 0x6a4a2a }));
     post.position.set(-side * 1.6, 0.5, 0); g.add(post);
     const mbox = new THREE.Mesh(this._mailGeo,
-      new THREE.MeshLambertMaterial({ color: sub ? 0xf3f3ea : 0x8b9088 }));
+      new THREE.MeshBasicMaterial({ color: sub ? 0xf3f3ea : 0x8b9088 }));
     mbox.position.set(-side * 1.6, 1.05, 0); g.add(mbox);
-    const flag = new THREE.Mesh(this._flagGeo, new THREE.MeshLambertMaterial({ color: COL.hudDanger }));
+    const flag = new THREE.Mesh(this._flagGeo, new THREE.MeshBasicMaterial({ color: COL.hudDanger }));
     flag.position.set(-side * 1.84, sub ? 1.22 : 0.98, 0); g.add(flag); // flag up = wants a paper
 
     // A leafy tree on the lawn, set back from the road
     if (Math.random() < 0.6) {
       const tx = side * 2.6, tz = (Math.random() * 2 - 1) * 2.6;
-      const trunk = new THREE.Mesh(this._trunkGeo, new THREE.MeshLambertMaterial({ color: 0x6a4a2a }));
+      const trunk = new THREE.Mesh(this._trunkGeo, new THREE.MeshBasicMaterial({ color: 0x6a4a2a }));
       trunk.position.set(tx, 0.6, tz); trunk.castShadow = true; g.add(trunk);
-      const foliage = new THREE.Mesh(this._foliaGeo, new THREE.MeshLambertMaterial({ color: 0x4f9e36 }));
+      const foliage = new THREE.Mesh(this._foliaGeo, new THREE.MeshBasicMaterial({ color: 0x4f9e36 }));
       foliage.position.set(tx, 1.8, tz); foliage.scale.set(1, 0.85, 1); foliage.castShadow = true; g.add(foliage);
     }
 
@@ -113,9 +114,9 @@ export class World {
     let mesh, r = 0.7, vx = 0, vz = 0;
     if (type === 'car') {
       const body = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.7, 2.6),
-        new THREE.MeshLambertMaterial({ color: COL.car }));
+        new THREE.MeshBasicMaterial({ color: COL.car }));
       const cab = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.5, 1.3),
-        new THREE.MeshLambertMaterial({ color: COL.car }));
+        new THREE.MeshBasicMaterial({ color: COL.car }));
       cab.position.y = 0.55;
       mesh = new THREE.Group(); mesh.add(body, cab);
       mesh.position.set(x, 0.5, z);
@@ -123,15 +124,15 @@ export class World {
       vz = (3 + this.difficulty * 0.8) * (Math.random() < 0.7 ? 1 : -1); // mostly oncoming
     } else if (type === 'hydrant') {
       mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 1.0, 8),
-        new THREE.MeshLambertMaterial({ color: COL.hydrant }));
+        new THREE.MeshBasicMaterial({ color: COL.hydrant }));
       mesh.position.set(x, 0.5, z); r = 0.6;
     } else if (type === 'cone') {
       mesh = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.9, 12),
-        new THREE.MeshLambertMaterial({ color: COL.cone }));
+        new THREE.MeshBasicMaterial({ color: COL.cone }));
       mesh.position.set(x, 0.45, z); r = 0.5;
     } else { // dog
       mesh = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 8),
-        new THREE.MeshLambertMaterial({ color: COL.dog }));
+        new THREE.MeshBasicMaterial({ color: COL.dog }));
       mesh.position.set(x, 0.5, z); r = 0.6;
       vx = (Math.random() < 0.5 ? -1 : 1) * (2 + this.difficulty * 0.5);
     }
@@ -143,7 +144,7 @@ export class World {
 
   _buildPickup(x, z) {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7),
-      new THREE.MeshLambertMaterial({ color: COL.bundle }));
+      new THREE.MeshBasicMaterial({ color: COL.bundle }));
     mesh.position.set(x, 0.6, z); mesh.castShadow = true;
     this.scene.add(mesh);
     this.pickups.push({ mesh, x, z, r: 0.9, taken: false });
@@ -199,13 +200,13 @@ export class World {
       if (h.flashT > 0) {
         h.flashT -= dt;
         const k = Math.max(0, h.flashT / 0.5);
-        h.bodyMat.emissive.setRGB(k, k, k);   // bright pop on hit, fading out
-        if (h.flashT <= 0) h.bodyMat.emissive.setRGB(0, 0, 0);
+        h.bodyMat.color.set(h.baseColor).lerp(_WHITE, k);   // white pop, fading back
+        if (h.flashT <= 0) h.bodyMat.color.set(h.baseColor);
       }
       // Missed subscriber: scrolled behind the bike, never delivered
       if (h.sub && !h.delivered && !h.missed && h.z > playerZ + 4) {
         h.missed = true; this.missedEvents++;
-        h.bodyMat.color.setHex(COL.hudDanger);
+        h.baseColor = COL.hudDanger; h.bodyMat.color.setHex(COL.hudDanger);
       }
     }
 
@@ -231,6 +232,7 @@ export class World {
 
     if (best.sub && !best.delivered) {
       best.delivered = true;
+      best.baseColor = COL.delivered;            // house stays green after the flash
       best.flashT = 0.5; best.bodyMat.color.setHex(COL.delivered);
       for (const w of best.windows) w.material.color.setHex(COL.smash);
       return { result: 'deliver', points: 250, house: best };

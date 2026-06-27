@@ -23,9 +23,9 @@ Single gel cube that flops onto its side on a horizontal swipe. Physics: gravity
 **Paper Route — Dawn Run.** A Paperboy clone built on Three.js r167 with an
 **isometric, flat-shaded homage to the original Paperboy art** — orthographic 3/4
 camera, bright sunny-day palette (sky-blue backdrop, grey road, green lawns, cube
-houses with pitched roofs, a BMX kid in a yellow helmet). Flat `MeshLambertMaterial`
-under a hemisphere/sun rig, `NoToneMapping`, **no** bloom / chromatic aberration /
-gel transmission (that look belongs to toko-drop). All colours live in `js/palette.js`
+houses with pitched roofs, a BMX kid in a yellow helmet). **Unlit flat `MeshBasicMaterial`
+— no lights, shadows or fog** — with `NoToneMapping` for a flat 2D poster read; no bloom /
+chromatic aberration / gel transmission (that look belongs to toko-drop). All colours live in `js/palette.js`
 so the scheme re-tints in one place.
 
 **Controls:** A/D or ←/→ steer · W/S throttle/brake · Z throw left · X (or M) throw right · SPACE throw to lean side · ESC pause  

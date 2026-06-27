@@ -13,9 +13,9 @@ Build tooling: TBD — update this file once chosen and add dev/build commands.
 A **Paperboy clone** built on Three.js r167 with an **isometric, flat-shaded homage to
 the original Paperboy art** — orthographic 3/4 camera, bright sunny-day palette (sky-blue
 backdrop, grey road, green lawns, cube houses with pitched roofs, a little BMX kid in a
-yellow helmet). It uses `MeshLambertMaterial` + a hemisphere/sun light rig and **no**
-bloom / chromatic-aberration / gel transmission (those belong to toko-drop; this game
-deliberately reads flat and poster-bright instead). The whole colour scheme lives in
+yellow helmet). It renders **flat and unlit** — `MeshBasicMaterial` solid colours, **no
+lights, shadows, fog, bloom, chromatic-aberration or gel transmission** (those belong to
+toko-drop) — for a deliberately 2D poster read. The whole colour scheme lives in
 `paperboy/js/palette.js` so it re-tints in one edit. Endless auto-scrolling route;
 deliver to the teal subscriber houses, dodge road hazards, refill from blue bundles,
 survive 3 crashes. No build step — open `paperboy/index.html` (three.js loads from the
@@ -94,11 +94,12 @@ frame, and the road's lane texture scrolls via `roadTex.offset.y` to sell the sp
 so the world is effectively infinite without moving the geometry.
 
 **Camera / art:** a fixed-angle `OrthographicCamera` offset by `ISO_OFF` from the bike
-gives the isometric Paperboy read; `updateCamera` also drags the sun + its shadow
-frustum along so shadows stay crisp over the bike. Rendering is a plain
-`renderer.render` (no `EffectComposer`) with `NoToneMapping` for flat poster colours.
-All meshes are `MeshLambertMaterial`; the only post-y touch is house "flash" via the
-Lambert `emissive` channel on a delivery/smash.
+gives the isometric Paperboy read; the route rolls mostly *up* the screen with a slight
+rightward lean. Rendering is a plain `renderer.render` (no `EffectComposer`) with
+`NoToneMapping`, and every mesh is **unlit `MeshBasicMaterial`** — no lights, shadows or
+fog — for a flat 2D look. House "flash" on a delivery/smash is a colour lerp toward white
+(`bodyMat.color.lerp(_WHITE, k)`), since `MeshBasic` has no emissive channel; `baseColor`
+is updated on delivery so the house stays green after the flash settles.
 
 **Streaming (`world.js`):** houses (both kerbs), hazards, and pickups spawn ahead of the
 bike (independent z-cursors advancing toward `playerZ - SPAWN_AHEAD`) and are culled +
