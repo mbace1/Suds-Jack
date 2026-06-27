@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { COL } from './palette.js?v=3';
-import { InputManager } from './input.js?v=3';
-import { Player, DRIVE_HALF, PLAYER_R } from './player.js?v=3';
-import { PaperPool } from './paper.js?v=3';
-import { World } from './world.js?v=3';
-import { audio } from './audio.js?v=3';
+import { COL } from './palette.js?v=4';
+import { InputManager } from './input.js?v=4';
+import { Player, DRIVE_HALF, PLAYER_R } from './player.js?v=4';
+import { PaperPool } from './paper.js?v=4';
+import { World } from './world.js?v=4';
+import { audio } from './audio.js?v=4';
 
 const MAX_LIVES  = 3;
 const START_PAPERS = 10;
@@ -19,16 +19,14 @@ const VIEW_SIZE = 28;                             // world units shown verticall
 // ── Renderer (flat & bright — Paperboy daytime, no bloom/gel) ──────────────────
 const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas-game'), antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = false;               // flat 2D look — no shadows
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NoToneMapping;       // keep colours flat & poster-bright
 renderer.setSize(innerWidth, innerHeight);
 
 // ── Scene ───────────────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(COL.sky);
-scene.fog = new THREE.Fog(COL.haze, 70, 140);
+scene.background = new THREE.Color(COL.sky);       // flat sky, no fog/depth haze
 
 function makeOrthoCamera() {
   const aspect = innerWidth / innerHeight;
@@ -39,18 +37,7 @@ function makeOrthoCamera() {
 }
 let camera = makeOrthoCamera();
 
-// ── Lights (bright sunny day) ──────────────────────────────────────────────────
-scene.add(new THREE.HemisphereLight(0xeaf6ff, COL.lawn, 0.95)); // sky/ground bounce
-const sun = new THREE.DirectionalLight(0xfff4e0, 1.5);
-sun.position.set(-14, 26, 10);
-sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
-sun.shadow.camera.left = -34; sun.shadow.camera.right = 34;
-sun.shadow.camera.top = 34;  sun.shadow.camera.bottom = -34;
-sun.shadow.camera.near = 1;  sun.shadow.camera.far = 90;
-sun.shadow.bias = -0.0004;
-scene.add(sun);
-scene.add(sun.target);
+// No lights needed — every material is unlit MeshBasic (flat colour) for the 2D read.
 
 // ── Road + ground (follow the bike; scrolling lane texture sells the speed) ─────
 function hex(c) { return '#' + c.toString(16).padStart(6, '0'); }
@@ -70,16 +57,16 @@ function makeRoadTexture() {
 const roadTex = makeRoadTexture();
 const ROAD_W = (DRIVE_HALF + 1) * 2;
 const road = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_W, 700),
-  new THREE.MeshLambertMaterial({ map: roadTex }));
+  new THREE.MeshBasicMaterial({ map: roadTex }));
 road.rotation.x = -Math.PI / 2; road.position.y = 0.0; road.receiveShadow = true;
 scene.add(road);
 
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(160, 700),
-  new THREE.MeshLambertMaterial({ color: COL.lawn }));
+  new THREE.MeshBasicMaterial({ color: COL.lawn }));
 ground.rotation.x = -Math.PI / 2; ground.position.y = -0.02; ground.receiveShadow = true;
 scene.add(ground);
 
-const kerbMat = new THREE.MeshLambertMaterial({ color: COL.sidewalk });
+const kerbMat = new THREE.MeshBasicMaterial({ color: COL.sidewalk });
 const kerbL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 700), kerbMat);
 const kerbR = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 700), kerbMat);
 kerbL.position.set(-(DRIVE_HALF + 1.1), 0.2, 0);
@@ -87,7 +74,7 @@ kerbR.position.set( (DRIVE_HALF + 1.1), 0.2, 0);
 scene.add(kerbL, kerbR);
 
 // Grey sidewalk strip between kerb and houses (where the mailboxes sit)
-const swMat = new THREE.MeshLambertMaterial({ color: COL.sidewalk });
+const swMat = new THREE.MeshBasicMaterial({ color: COL.sidewalk });
 const swGeo = new THREE.PlaneGeometry(2.0, 700);
 const swL = new THREE.Mesh(swGeo, swMat); const swR = new THREE.Mesh(swGeo, swMat);
 swL.rotation.x = swR.rotation.x = -Math.PI / 2; swL.position.y = swR.position.y = 0.012;
@@ -108,7 +95,7 @@ function makeFenceTex() {
 }
 const fenceTex = makeFenceTex();
 const fenceGeo = new THREE.PlaneGeometry(700, 0.9);
-const fenceMat = new THREE.MeshLambertMaterial({ map: fenceTex, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide });
+const fenceMat = new THREE.MeshBasicMaterial({ map: fenceTex, transparent: true, alphaTest: 0.5, side: THREE.DoubleSide });
 const fenceL = new THREE.Mesh(fenceGeo, fenceMat); const fenceR = new THREE.Mesh(fenceGeo, fenceMat);
 fenceL.rotation.y = fenceR.rotation.y = Math.PI / 2;
 fenceL.position.set(-(DRIVE_HALF + 0.9), 0.45, 0);
@@ -300,9 +287,6 @@ function updateCamera(dt) {
   }
   camera.position.set(_camLook.x + ISO_OFF.x + ox, ISO_OFF.y + oy, p.z + ISO_OFF.z + oz);
   camera.lookAt(_camLook);
-  // Keep the sun (and its shadow frustum) over the bike.
-  sun.position.set(p.x - 14, 26, p.z + 10);
-  sun.target.position.set(p.x, 0, p.z);
 }
 
 // ── Main loop ─────────────────────────────────────────────────────────────────
