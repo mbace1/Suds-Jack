@@ -193,13 +193,19 @@ export class Enemy {
           float _h = sin(length(position) * 8.0 - u_wt * 18.0) * u_hw * 0.55;
           transformed += normal * (_b + _h);`,
         );
-        // ── fragment: Fresnel rim glow (wet glistening edge) ──
-        shader.fragmentShader = 'uniform vec3 u_rim;\n' + shader.fragmentShader;
+        // ── fragment: Fresnel rim glow (wet glistening edge) + hit boost + material response ──
+        shader.fragmentShader = 'uniform vec3 u_rim;\nuniform float u_hw;\n' + shader.fragmentShader;
         shader.fragmentShader = shader.fragmentShader.replace(
           '#include <dithering_fragment>',
           `#include <dithering_fragment>
           float _fres = pow(1.0 - abs(dot(normalize(vNormal), normalize(vViewPosition))), 4.0);
-          gl_FragColor.rgb += u_rim * _fres * 0.7;`,
+          float _hitBoost = u_hw * 0.6;
+          gl_FragColor.rgb += u_rim * _fres * (0.7 + _hitBoost);
+          gl_FragColor.rgb += u_rim * _hitBoost * 0.25;
+          // Extra transmission shift on hit for more visible 'squish' feel
+          if (u_hw > 0.1) {
+            gl_FragColor.rgb *= 1.0 + u_hw * 0.15;
+          }`,
         );
       };
     } else if (CUBE_TYPES.has(type)) {
@@ -531,8 +537,7 @@ export class Enemy {
           this._cardTimer = 0.5 + Math.random();
         }
         if (Math.abs(this.mesh.position.z) > H) {
-          this._cardDir.z = -Math.sign(this.mesh.position.z);
-          this.mesh.position.z = Math.sign(this.mesh.position.z) * H;
+          this._cardDir.z = -Math.sign(this.mesh.position.z) * H;
           this._cardTimer = 0.5 + Math.random();
         }
         if (this.type === EnemyType.YELA_CUBE) {
@@ -557,7 +562,6 @@ export class Enemy {
           this._cardTimer = 0.2 + Math.random() * 0.4;
         }
         if (Math.abs(this.mesh.position.z) > H) {
-          this._cardDir.z = -Math.sign(this.mesh.position.z);
           this.mesh.position.z = Math.sign(this.mesh.position.z) * H;
           this._cardTimer = 0.2 + Math.random() * 0.4;
         }
@@ -581,7 +585,6 @@ export class Enemy {
           this._cardTimer = 1.0 + Math.random();
         }
         if (Math.abs(this.mesh.position.z) > H) {
-          this._cardDir.z = -Math.sign(this.mesh.position.z);
           this.mesh.position.z = Math.sign(this.mesh.position.z) * H;
           this._cardTimer = 1.0 + Math.random();
         }
@@ -609,8 +612,8 @@ export class Enemy {
           this.mesh.position.x = Math.sign(this.mesh.position.x) * H;
         }
         if (Math.abs(this.mesh.position.z) > H) {
-          this._cardDir.z *= -1;
           this.mesh.position.z = Math.sign(this.mesh.position.z) * H;
+          this._cardTimer = 0.2 + Math.random() * 0.4;
         }
         break;
       }
@@ -709,7 +712,7 @@ export class Enemy {
             }
             this._idleTimer -= dt;
             if (this._idleTimer <= 0) {
-              this._state = 'revving';
+              this._state = 'revring';
               this._stateT = 1.6;
               const dl = Math.hypot(ddx, ddz) || 1;
               this._dashDir = { x: ddx/dl, z: ddz/dl };
@@ -717,7 +720,7 @@ export class Enemy {
               this._dashDir = { x: Math.cos(ang), z: Math.sin(ang) };
             }
             break;
-          case 'revving':
+          case 'revring':
             this._stateT -= dt;
             this._spinAngle += (3 + (1.6 - Math.max(this._stateT, 0)) * 8) * dt;
             this.group.rotation.y = this._spinAngle;
@@ -773,7 +776,7 @@ export class Enemy {
       this.mat.emissive.setHex(0xffffff);
     } else if (this.type === EnemyType.ORANGE_CUBE && this._state === 'aiming') {
       this.mat.emissive.setHex(Math.sin(performance.now() * 0.015) > 0 ? 0x442200 : 0x000000);
-    } else if (this.type === EnemyType.TORO && this._state === 'revving') {
+    } else if (this.type === EnemyType.TORO && this._state === 'revring') {
       const ramp = Math.max(0, 1.6 - Math.max(this._stateT, 0)) / 1.6;
       const v = Math.floor(ramp * 0x33);
       this.mat.emissive.setHex((v << 8) | (v * 0.5));
