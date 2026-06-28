@@ -193,7 +193,7 @@ export class Enemy {
           float _h = sin(length(position) * 8.0 - u_wt * 18.0) * u_hw * 0.55;
           transformed += normal * (_b + _h);`,
         );
-        // ── fragment: Fresnel rim glow (wet glistening edge) + hit boost ──
+        // ── fragment: Fresnel rim glow (wet glistening edge) + hit boost + material response ──
         shader.fragmentShader = 'uniform vec3 u_rim;\nuniform float u_hw;\n' + shader.fragmentShader;
         shader.fragmentShader = shader.fragmentShader.replace(
           '#include <dithering_fragment>',
@@ -201,7 +201,11 @@ export class Enemy {
           float _fres = pow(1.0 - abs(dot(normalize(vNormal), normalize(vViewPosition))), 4.0);
           float _hitBoost = u_hw * 0.6;
           gl_FragColor.rgb += u_rim * _fres * (0.7 + _hitBoost);
-          gl_FragColor.rgb += u_rim * _hitBoost * 0.25;`,
+          gl_FragColor.rgb += u_rim * _hitBoost * 0.25;
+          // Extra transmission shift on hit for more visible 'squish' feel
+          if (u_hw > 0.1) {
+            gl_FragColor.rgb *= 1.0 + u_hw * 0.15;
+          }`,
         );
       };
     } else if (CUBE_TYPES.has(type)) {
@@ -581,7 +585,7 @@ export class Enemy {
           this._cardTimer = 1.0 + Math.random();
         }
         if (Math.abs(this.mesh.position.z) > H) {
-          this._cardDir.z = -Math.sign(this.mesh.position.z) * H;
+          this.mesh.position.z = Math.sign(this.mesh.position.z) * H;
           this._cardTimer = 1.0 + Math.random();
         }
         // Trail position ring buffer for ribbon
