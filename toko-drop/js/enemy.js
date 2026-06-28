@@ -581,7 +581,7 @@ export class Enemy {
           this._cardTimer = 1.0 + Math.random();
         }
         if (Math.abs(this.mesh.position.z) > H) {
-          this.mesh.position.z = Math.sign(this.mesh.position.z) * H;
+          this._cardDir.z = -Math.sign(this.mesh.position.z) * H;
           this._cardTimer = 1.0 + Math.random();
         }
         // Trail position ring buffer for ribbon
