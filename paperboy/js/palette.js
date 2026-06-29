@@ -1,47 +1,43 @@
 // ── Palette ────────────────────────────────────────────────────────────────
-// Paperboy-style art direction: bright sunny suburban morning, flat opaque
-// surfaces, isometric read. Distinct "dawn" tint rather than a 1:1 arcade copy.
-// Everything reads off this file so the scheme re-tints in one place.
+// Full-2D Paperboy homage. Same composition as the arcade reference, but a
+// fresh "candy dusk" colour scheme (teal subscribers, coral non-subscribers,
+// lavender sidewalk, magenta cars) instead of the original yellow/green/grey.
+// Each solid pixel-art element gets flat face shades (front / side / top).
 export const COL = {
-  // World
-  sky:          0x9bd7ff,   // bright morning sky (scene background)
-  haze:         0xc8e9ff,   // far distance haze
-  road:         0x9aa0a8,   // grey asphalt
-  roadLine:     0xfff0a8,   // warm yellow lane markings
-  sidewalk:     0xe8e3d4,   // pale concrete kerb
-  lawn:         0x7cc24a,   // suburban grass
+  // Ground
+  grass1: '#54bd87', grass2: '#49ac79',          // mowed-lawn stripes
+  road:   '#6b6f86', roadLine: '#d9d4e8', curb: '#9a9fb6',
+  walk:   '#cdc7dc', walkLine: '#b4abc9',
 
-  // Paperboy + BMX
-  rider:        0xff5a3c,   // red jersey
-  skin:         0xffcf9e,   // face/hands
-  helmet:       0xffe14a,   // yellow cap/helmet
-  bike:         0x2b6cff,   // blue BMX frame
-  wheel:        0x2a2a2a,   // tyres
+  // Subscriber house (teal — wants a paper)
+  subFront: '#37c8b0', subSide: '#239b89', subTop: '#62e8d4',
+  subRoofL: '#2f8f8a', subRoofR: '#236d69',
+  // Non-subscriber house (coral)
+  nsFront: '#ff7a66', nsSide: '#d65946', nsTop: '#ff9684',
+  nsRoofL: '#9c3f3a', nsRoofR: '#7c322e',
 
-  // Houses
-  subscriber:   0x37c8e0,   // cyan — wants a paper
-  subRoof:      0x1f7e95,
-  subWindow:    0xfff7d6,   // lit windows
-  nonSub:       0xe5533a,   // terracotta — not a customer
-  nonSubRoof:   0x9c3527,
-  nonSubWindow: 0x35506a,   // dark windows
-  delivered:    0x7cffb0,   // flash on successful delivery
-  smash:        0xfff2a0,   // flash on window smash
+  door: '#5a3a2a', winLit: '#fff3c0', winDark: '#33405a',
+  mailbox: '#ece8f4', mailDark: '#c3bdd4', mailPost: '#6a4a3a', flag: '#e5484d',
+  fence: '#f3eefb', fenceShade: '#cdc7dc',
 
-  // Items
-  paper:        0xf4f1e8,   // newsprint
-  paperBand:    0x2b6cff,   // blue wrap
-  bundle:       0x3a7bd5,   // stacked paper bundle pickup
+  // Props
+  bush: '#3f9e6f', bushHi: '#56b886',
+  sign: '#ece8f4', signPost: '#6a4a3a', signInk: '#c2384a',
+  trash: '#b7bcc9', trashTop: '#9aa0b0', trashSide: '#9a9fb6',
 
-  // Hazards
-  car:          0x3b6fe2,   // a passing car
-  hydrant:      0xe03a2a,   // red hydrant
-  cone:         0xff8a1e,   // orange cone
-  dog:          0x9a6b3f,   // brown dog
+  // Car
+  carBody: '#ff4d8d', carSide: '#d6356f', carTop: '#ff79a9', carWin: '#2b2b44',
 
-  // FX / HUD
-  spark:        0xffffff,
-  hudInk:       0x14324a,   // dark HUD ink (reads on the bright sky)
-  hudGood:      0x108a52,
-  hudDanger:    0xc7321f,
+  // Paperboy
+  jersey: '#ffd24a', skin: '#ffcf9e', helmet: '#ff5a3c',
+  bike: '#3a7bff', bikeDark: '#2a5ad0', wheel: '#23233a',
+
+  paper: '#fff6df', bundle: '#33ddff', bundleDark: '#1ba6c8',
+  delivered: '#9affd0', smashGlass: '#fff2a0',
+  shadow: 'rgba(20,30,25,0.18)',
+
+  // HUD top status bar
+  barBg: '#241f3a', barEdge: '#15122a', barInk: '#ffffff',
+  barGood: '#5fe6d0', barWarn: '#ffd24a', barDanger: '#ff5a6a',
+  segs: ['#ff5a6a', '#ffd24a', '#5fe6d0', '#7a9bff', '#c98bff'],
 };
