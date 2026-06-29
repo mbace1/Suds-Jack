@@ -769,6 +769,10 @@ let _prevDashing = false;
 let score        = 0;
 let streak       = 0;
 let runTimer     = 0;
+
+// ── Hit telemetry (v41) ───────────────────────────────────────────────────────
+let collectedUpgrades = []; // upgrade ids applied this run (roguelike)
+let hitEventLog       = []; // one entry per HP-loss event this run
 const STREAK_FLASH_DUR = 0.4;
 let streakFlashT = 0;
 // ── Personal bests (local; structured for a future online leaderboard) ───────
@@ -875,18 +879,118 @@ function onPlayerHit() {
   audio.playerHit();
 }
 
-function tryHitPlayer() {
+function tryHitPlayer(source = 'bullet') {
   if (player._shield) {
     player._shield = false;
     addShake(0.15);
     audio.playerHit();
     return false;
   }
+  const hpBefore = player.hp;
   _hitFlashT = 0.32;
   player.hit();
   onPlayerHit();
+  recordHitEvent(source, hpBefore);
   return !player.alive;
 }
+
+// v41: capture a snapshot of game state at the moment player takes HP damage.
+const _ET_NAMES = Object.fromEntries(Object.entries(EnemyType).map(([k, v]) => [v, k]));
+function recordHitEvent(source, hpBefore) {
+  const typeCounts = {};
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    const name = _ET_NAMES[e.type] ?? String(e.type);
+    typeCounts[name] = (typeCounts[name] || 0) + 1;
+  }
+  hitEventLog.push({
+    wave, kind: waveKind(wave),
+    time: Math.round(runTimer),
+    hpBefore, hpAfter: player.hp,
+    source,
+    enemyCount: enemies.filter(e => e.alive).length,
+    enemyTypes: typeCounts,
+    bulletCount: bullets.active.filter(b => !b.isPlayer).length,
+    upgrades: [...collectedUpgrades],
+    score,
+  });
+}
+
+function saveHitLog() {
+  if (hitEventLog.length === 0) return;
+  const KEY = 'tokoDropHitLog';
+  const sessions = JSON.parse(localStorage.getItem(KEY) || '[]');
+  sessions.unshift({
+    seed: runSeed, mode: roguelikeMode ? 'roguelike' : 'arcade',
+    waveReached: wave, date: new Date().toISOString(),
+    events: hitEventLog,
+  });
+  if (sessions.length > 20) sessions.length = 20;
+  localStorage.setItem(KEY, JSON.stringify(sessions));
+}
+
+function generateHitReport(sessions) {
+  if (!sessions || sessions.length === 0) return 'No hit data yet. Play some runs first.';
+  const allEv = sessions.flatMap(s => s.events);
+  if (allEv.length === 0) return 'No hit events recorded.';
+
+  const tally = obj => Object.entries(obj).sort((a, b) => b[1] - a[1]);
+  const pct   = (n, tot) => `${(n / tot * 100).toFixed(0)}%`;
+
+  const byKind = {}, byType = {}, bySrc = {};
+  let totalBullets = 0;
+  for (const ev of allEv) {
+    byKind[ev.kind]   = (byKind[ev.kind]   || 0) + 1;
+    bySrc[ev.source]  = (bySrc[ev.source]  || 0) + 1;
+    totalBullets += ev.bulletCount;
+    for (const [t, c] of Object.entries(ev.enemyTypes))
+      byType[t] = (byType[t] || 0) + c;
+  }
+  const avgBullets = (totalBullets / allEv.length).toFixed(1);
+  const deaths     = allEv.filter(e => e.hpAfter === 0).length;
+  const withShield = allEv.filter(e => e.upgrades.includes('shield')).length;
+  const avgHitT    = (allEv.reduce((s, e) => s + e.time, 0) / allEv.length).toFixed(0);
+
+  let r = `=== TOKO DROP HIT REPORT (${allEv.length} events · ${sessions.length} sessions) ===\n\n`;
+
+  r += `DAMAGE SOURCE:\n`;
+  for (const [src, n] of tally(bySrc)) r += `  ${src.padEnd(8)} ${n}  (${pct(n, allEv.length)})\n`;
+
+  r += `\nWAVE KIND AT HIT:\n`;
+  for (const [k, n] of tally(byKind)) r += `  ${k.padEnd(10)} ${n} hits\n`;
+
+  r += `\nENEMY TYPES PRESENT AT HIT (summed appearances):\n`;
+  for (const [t, n] of tally(byType).slice(0, 8)) r += `  ${t.padEnd(14)} ${n}\n`;
+
+  r += `\nSTATS:\n`;
+  r += `  Avg enemy bullets on field at hit: ${avgBullets}\n`;
+  r += `  Killing hits (HP → 0):             ${deaths} / ${allEv.length}\n`;
+  r += `  Hits without shield upgrade:        ${pct(allEv.length - withShield, allEv.length)}\n`;
+  r += `  Avg time into run when hit:         ${avgHitT}s\n`;
+
+  r += `\nTUNING NOTES:\n`;
+  const topKind = tally(byKind)[0];
+  if (topKind) r += `  · ${topKind[0].toUpperCase()} waves cause the most damage — budget or speed may need a trim\n`;
+  const topType = tally(byType)[0];
+  if (topType) r += `  · ${topType[0]} is present at the most hit moments — it may outpace counterplay\n`;
+  if (parseFloat(avgBullets) > 10)
+    r += `  · High bullet density at hits (avg ${avgBullets}) — bullet patterns may need spread reduction\n`;
+  const shieldlessPct = parseInt(pct(allEv.length - withShield, allEv.length));
+  if (shieldlessPct > 65)
+    r += `  · ${shieldlessPct}% of hits without shield — offering shield earlier would help survivability\n`;
+  r += `  · Most hits happen at ~${avgHitT}s — consider powerup/pickup timing relative to that window\n`;
+
+  return r;
+}
+
+window._hitReport = () => {
+  const sessions = JSON.parse(localStorage.getItem('tokoDropHitLog') || '[]');
+  const report = generateHitReport(sessions);
+  console.log(report);
+  return report;
+};
+
+window._hitLog = () => JSON.parse(localStorage.getItem('tokoDropHitLog') || '[]');
 
 // ── Game state ───────────────────────────────────────────────────────────────
 // 'title' | 'playing' | 'paused' | 'gameover'
@@ -1051,7 +1155,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v40', 16, uiCanvas.height - 12);
+  ctx.fillText('v41', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1274,6 +1378,7 @@ const UPGRADE_POOL = [
 ];
 
 function applyUpgrade(id) {
+  collectedUpgrades.push(id);
   if (id === 'hp') {
     player.maxHp++;
     player.hp = Math.min(player.hp + 1, player.maxHp);
@@ -1343,6 +1448,7 @@ function startGame() {
   input.reset();
   applyArenaMode(landscapeMode);
   score  = 0; streak = 0; wave = 0; runTimer = 0;
+  collectedUpgrades = []; hitEventLog = [];
   BULLET_CONFIG.playerBulletScale = 1.0;
   BULLET_CONFIG.playerPiercing    = false;
   runSeed = (Math.random() * 0xFFFFFF | 0) >>> 0;
@@ -1363,6 +1469,7 @@ function startGame() {
 function triggerGameOver() {
   gameState = 'gameover';
   restartTimer = 2.8;
+  saveHitLog();
   _runBests = recordRun();
   hiScore = pb.bestScore;
   addShake(0.9);
@@ -1707,7 +1814,7 @@ function loop() {
       const br = b.fat ? FAT_BULLET_R : BULLET_R;
       if (Math.hypot(dx, dz) < br + PLAYER_RADIUS) {
         bullets.recycleAt(i);
-        if (tryHitPlayer()) { triggerGameOver(); break; }
+        if (tryHitPlayer('bullet')) { triggerGameOver(); break; }
         break;
       }
     }
@@ -1720,7 +1827,7 @@ function loop() {
       const dx = player.position.x - e.position.x;
       const dz = player.position.z - e.position.z;
       if (Math.hypot(dx, dz) < e.radius + PLAYER_RADIUS) {
-        const died = tryHitPlayer();
+        const died = tryHitPlayer('melee');
         if (!died && e.type === EnemyType.TORO && e._state === 'dashing') addShake(0.27);
         if (died) { triggerGameOver(); break; }
         break;
@@ -1853,7 +1960,7 @@ function loop() {
       const dx = player.position.x - z.mesh.position.x;
       const dz = player.position.z - z.mesh.position.z;
       if (Math.hypot(dx, dz) < z.radius + PLAYER_RADIUS) {
-        if (tryHitPlayer()) { triggerGameOver(); break; }
+        if (tryHitPlayer('poison')) { triggerGameOver(); break; }
         break;
       }
     }

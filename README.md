@@ -1,4 +1,4 @@
-# Toko Drop — v40
+# Toko Drop — v41
 
 Twin-stick bullet-hell arena shooter built with Three.js and Web Audio.
 
@@ -62,6 +62,14 @@ Dash through a **gate** to detonate it in a burst of shards and claim a powerup 
 | Magnet | Pickups are attracted to you |
 | Shield | Absorbs one hit, resets each wave |
 | Dash Boom | Radial explosion on every dash |
+
+## Hit Telemetry
+
+Every run records a damage log: each HP-loss captures the wave, enemy composition, bullet count, active upgrades, and damage source (bullet / melee / poison). Logs are saved locally under `tokoDropHitLog`.
+
+Open the browser console and run:
+- `_hitReport()` — formatted analysis with wave-kind breakdown, dangerous enemies, tuning notes
+- `_hitLog()` — raw JSON of all recorded sessions
 
 ## Design Reference
 

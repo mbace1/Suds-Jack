@@ -7,6 +7,18 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v41 — 2026-06-29
+**Hit-event telemetry system**
+- Every HP-loss event records a snapshot: wave, wave kind, time into run, HP before/after, damage source (bullet/melee/poison), live enemy types/count, enemy bullet count, active upgrades, score
+- Session log persisted to `localStorage` under `tokoDropHitLog` (last 20 runs, up to 50 events each)
+- `window._hitReport()` — prints a formatted analysis to the console: damage-source split, wave-kind breakdown, most-present enemy types at hit moments, avg bullet density, shield-absence rate, powerup timing hints, and tuning notes
+- `window._hitLog()` — returns raw JSON for deeper inspection
+- `collectedUpgrades` array tracks roguelike upgrade picks per run; snapshot included in every event
+- `tryHitPlayer(source)` — extended with explicit source tag; all three call sites (bullet, melee, poison) tagged
+- HUD label bumped to `v41`
+
+---
+
 ## v40 — 2026-06-29
 **Cube behaviour variety (per-enemy pass pt.1)**
 - Cubes no longer share one aimless random walk — each type is now a distinct archetype:
