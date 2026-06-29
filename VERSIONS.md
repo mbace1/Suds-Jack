@@ -7,6 +7,13 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v36 — 2026-06-29
+**Per-enemy trail tuning — motion threat-reads**
+- New `TRAIL_CFG` gives each type its own motion-trail signature (cadence + size)
+- TORO (top threat) leaves a thick, dense streak (interval 0.035, size 0.85×r); GLOBBO subtle (0.08, 0.45×); SPITTOR sparse; cubes/specialists leave none
+- Trail emit gate + spawn size now driven per type via `_trailInterval` / `_trailMult` (replaces the flat blobs+TORO rule)
+- Verified: TORO mult 0.85 > GLOBBO 0.45 > cube 0, trails active, zero errors
+
 ## v35 — 2026-06-29
 **Hit-feedback polish — weighted shake + muzzle flash**
 - Kill shake now scales with enemy size: `0.07 + radius×0.13` (GLOBBO ≈0.14, TORO ≈0.20, bosses more) — heavier enemies kick the camera harder

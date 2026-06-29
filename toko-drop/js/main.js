@@ -1036,7 +1036,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v35', 16, uiCanvas.height - 12);
+  ctx.fillText('v36', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1521,12 +1521,12 @@ function loop() {
     slimeTrails.push(new SlimeTrail(scene, e.position.x, e.position.z, 0.5));
   }
 
-  // Motion-trail afterimages (blobs + TORO) — pooled ghost spheres
+  // Motion-trail afterimages — pooled ghost spheres, per-type size signature (v36)
   for (const e of enemies) {
     if (!e._motionTrailReady) continue;
     e._motionTrailReady = false;
     const p = e.position;
-    trailPool.spawn(p.x, p.y, p.z, e.color, e.radius * 0.55);
+    trailPool.spawn(p.x, p.y, p.z, e.color, e.radius * e._trailMult);
   }
 
   // BAMBU AoE telegraphs and lob bullets; drain hitChunks for all enemies

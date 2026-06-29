@@ -153,6 +153,17 @@ export const CFG = {
   [EnemyType.PYRA]:        { color: 0xff9900, radius: 1.0,  speed: 0,   hp: 4, bulletColor: 0xffcc44, fireInterval: 2.5  },
 };
 
+// Per-type motion-trail signature (v36) — interval = cadence (denser = smaller),
+// size = mark size ×radius. Dangerous/fast types leave bolder streaks; absent = no trail.
+const TRAIL_CFG = {
+  [EnemyType.TORO]:    { interval: 0.035, size: 0.85 }, // charger — thick, dense streak (top threat)
+  [EnemyType.SPLITTA]: { interval: 0.07,  size: 0.60 },
+  [EnemyType.WEEVA]:   { interval: 0.06,  size: 0.55 },
+  [EnemyType.GLOBBO]:  { interval: 0.08,  size: 0.45 }, // basic chaser — subtle
+  [EnemyType.FANNER]:  { interval: 0.09,  size: 0.45 },
+  [EnemyType.SPITTOR]: { interval: 0.11,  size: 0.40 }, // mostly stationary — sparse
+};
+
 export const BLOB_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPITTOR, EnemyType.FANNER,
   EnemyType.WEEVA, EnemyType.SPLITTA,
@@ -198,6 +209,9 @@ export class Enemy {
     this._stretch = 0;
     this._motionTrailReady = false;
     this._motionTrailTimer = 0;
+    const _tc = TRAIL_CFG[type];
+    this._trailInterval = _tc ? _tc.interval : 0; // 0 ⇒ this type leaves no motion trail
+    this._trailMult     = _tc ? _tc.size     : 0;
     this._hitRipple = 0; // v32: decays 1→0 after a hit, drives the goo surface ripple
 
     // State machine fields
@@ -812,11 +826,11 @@ export class Enemy {
         }
       }
 
-      // Motion-trail (afterimage) emission for fast movers — blobs + TORO.
-      if (BLOB_TYPES.has(this.type) || this.type === EnemyType.TORO) {
+      // Motion-trail (afterimage) emission — cadence/size per type (v36 threat read).
+      if (this._trailInterval > 0) {
         this._motionTrailTimer -= dt;
         if (sp > 1.5 && this._motionTrailTimer <= 0) {
-          this._motionTrailTimer = 0.06;
+          this._motionTrailTimer = this._trailInterval;
           this._motionTrailReady = true;
         }
       }
