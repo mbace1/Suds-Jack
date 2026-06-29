@@ -7,6 +7,13 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v25 — 2026-06-27
+**Deck-first defaults (Steam Deck pt.2)**
+- A connected gamepad now defaults the arena to LANDSCAPE — the Deck "just works" with no title-screen fiddling
+- Auto-default only applies when the player hasn't explicitly chosen an orientation; an explicit pick (new `tokoDropOrientSet` flag) is always respected
+- A pad connecting later flips an un-chosen orientation to landscape live on the title screen
+- `gamepadconnected` immediately switches the UI to gamepad mode (touch joysticks hidden on sight)
+
 ## v24 — 2026-06-27
 **Gamepad support + input auto-detect (Steam Deck pt.1)**
 - Gamepad polling added to `InputManager.pollGamepad()` (called once per frame)

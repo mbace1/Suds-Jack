@@ -1,4 +1,4 @@
-# Toko Drop — v24
+# Toko Drop — v25
 
 Twin-stick bullet-hell arena shooter built with Three.js and Web Audio.
 
@@ -19,6 +19,8 @@ On-screen joysticks hide automatically when a gamepad is in use. **E** — toggl
 Two arena orientations, switchable on the title screen:
 - **Portrait** (22 × 36) — upright mobile play
 - **Landscape** (38 × 22) — Steam Deck and sideways mobile
+
+A connected gamepad defaults to landscape automatically, unless you've picked an orientation yourself.
 
 ## Modes
 

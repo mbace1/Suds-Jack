@@ -20,7 +20,7 @@ export class InputManager {
   }
 
   _init() {
-    window.addEventListener('gamepadconnected',    () => { this.gp.connected = true; });
+    window.addEventListener('gamepadconnected',    () => { this.gp.connected = true; this.usingGamepad = true; });
     window.addEventListener('gamepaddisconnected', () => { this.gp.connected = false; this.usingGamepad = false; });
     window.addEventListener('keydown', e => { this.keys[e.code] = true; });
     window.addEventListener('keyup', e => {

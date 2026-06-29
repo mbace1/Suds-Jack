@@ -617,8 +617,29 @@ let streakFlashT = 0;
 let hiScore = parseInt(localStorage.getItem('tokoDropHi') || '0');
 // Roguelike mode (default on): show upgrade cards between waves. Off = plain arcade run.
 let roguelikeMode = false;
-let landscapeMode = localStorage.getItem('tokoDropLandscape') === '1';
+
+// Orientation: respect an explicit player choice; otherwise default by device.
+// A gamepad (Steam Deck) defaults to landscape so it "just works" without touching the toggle.
+let orientUserSet = localStorage.getItem('tokoDropOrientSet') === '1';
+function anyGamepadPresent() {
+  if (!navigator.getGamepads) return false;
+  for (const p of navigator.getGamepads()) { if (p) return true; }
+  return false;
+}
+let landscapeMode = orientUserSet
+  ? localStorage.getItem('tokoDropLandscape') === '1'
+  : anyGamepadPresent();
 applyArenaMode(landscapeMode);
+
+// A pad that connects later (common — browsers reveal pads only after input) flips an
+// un-chosen orientation to landscape live while still on the title screen.
+window.addEventListener('gamepadconnected', () => {
+  if (!orientUserSet && !landscapeMode && gameState === 'title') {
+    landscapeMode = true;
+    applyArenaMode(true);
+    showTitle();  // re-render toggle chip + arena to reflect the switch
+  }
+});
 
 function onKill(e) {
   streak++;
@@ -810,7 +831,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v24', 16, uiCanvas.height - 12);
+  ctx.fillText('v25', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -881,7 +902,9 @@ function showTitle() {
       e.stopPropagation();
       e.preventDefault();
       landscapeMode = !landscapeMode;
+      orientUserSet = true;  // explicit choice from now on — overrides device default
       localStorage.setItem('tokoDropLandscape', landscapeMode ? '1' : '0');
+      localStorage.setItem('tokoDropOrientSet', '1');
       applyArenaMode(landscapeMode);  // live-update the title-screen arena
       orender();
     };
