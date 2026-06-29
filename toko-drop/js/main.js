@@ -879,7 +879,7 @@ function onPlayerHit() {
   audio.playerHit();
 }
 
-function tryHitPlayer(source = 'bullet') {
+function tryHitPlayer(source = 'bullet', attackerType = null) {
   if (player._shield) {
     player._shield = false;
     addShake(0.15);
@@ -890,30 +890,37 @@ function tryHitPlayer(source = 'bullet') {
   _hitFlashT = 0.32;
   player.hit();
   onPlayerHit();
-  recordHitEvent(source, hpBefore);
+  recordHitEvent(source, hpBefore, attackerType);
   return !player.alive;
 }
 
 // v41: capture a snapshot of game state at the moment player takes HP damage.
 const _ET_NAMES = Object.fromEntries(Object.entries(EnemyType).map(([k, v]) => [v, k]));
-function recordHitEvent(source, hpBefore) {
+let _lastHitTime = -1; // runTimer at the previous hit event (for gap tracking)
+function recordHitEvent(source, hpBefore, attackerType) {
   const typeCounts = {};
   for (const e of enemies) {
     if (!e.alive) continue;
     const name = _ET_NAMES[e.type] ?? String(e.type);
     typeCounts[name] = (typeCounts[name] || 0) + 1;
   }
+  const t = Math.round(runTimer);
   hitEventLog.push({
     wave, kind: waveKind(wave),
-    time: Math.round(runTimer),
+    time: t,
+    waveTimeSecs: Math.round(waveTimer),
     hpBefore, hpAfter: player.hp,
     source,
+    attacker: attackerType !== null ? (_ET_NAMES[attackerType] ?? String(attackerType)) : null,
+    dashReady: player._dashCD <= 0 && !player.dashing,
     enemyCount: enemies.filter(e => e.alive).length,
     enemyTypes: typeCounts,
     bulletCount: bullets.active.filter(b => !b.isPlayer).length,
+    timeSinceLastHit: _lastHitTime < 0 ? null : t - _lastHitTime,
     upgrades: [...collectedUpgrades],
     score,
   });
+  _lastHitTime = t;
 }
 
 function saveHitLog() {
@@ -937,34 +944,49 @@ function generateHitReport(sessions) {
   const tally = obj => Object.entries(obj).sort((a, b) => b[1] - a[1]);
   const pct   = (n, tot) => `${(n / tot * 100).toFixed(0)}%`;
 
-  const byKind = {}, byType = {}, bySrc = {};
-  let totalBullets = 0;
+  const byKind = {}, byType = {}, bySrc = {}, byAttacker = {};
+  let totalBullets = 0, dashDownHits = 0, clusterHits = 0;
+  const gapsBetweenHits = [];
   for (const ev of allEv) {
     byKind[ev.kind]   = (byKind[ev.kind]   || 0) + 1;
     bySrc[ev.source]  = (bySrc[ev.source]  || 0) + 1;
     totalBullets += ev.bulletCount;
-    for (const [t, c] of Object.entries(ev.enemyTypes))
+    if (ev.dashReady === false) dashDownHits++;
+    if (ev.attacker) byAttacker[ev.attacker] = (byAttacker[ev.attacker] || 0) + 1;
+    for (const [t, c] of Object.entries(ev.enemyTypes || {}))
       byType[t] = (byType[t] || 0) + c;
+    if (ev.timeSinceLastHit !== null && ev.timeSinceLastHit <= 3) clusterHits++;
+    if (ev.timeSinceLastHit !== null) gapsBetweenHits.push(ev.timeSinceLastHit);
   }
   const avgBullets = (totalBullets / allEv.length).toFixed(1);
   const deaths     = allEv.filter(e => e.hpAfter === 0).length;
-  const withShield = allEv.filter(e => e.upgrades.includes('shield')).length;
+  const withShield = allEv.filter(e => (e.upgrades || []).includes('shield')).length;
   const avgHitT    = (allEv.reduce((s, e) => s + e.time, 0) / allEv.length).toFixed(0);
+  const avgGap     = gapsBetweenHits.length
+    ? (gapsBetweenHits.reduce((a, b) => a + b, 0) / gapsBetweenHits.length).toFixed(1)
+    : 'n/a';
 
   let r = `=== TOKO DROP HIT REPORT (${allEv.length} events · ${sessions.length} sessions) ===\n\n`;
 
   r += `DAMAGE SOURCE:\n`;
   for (const [src, n] of tally(bySrc)) r += `  ${src.padEnd(8)} ${n}  (${pct(n, allEv.length)})\n`;
+  if (Object.keys(byAttacker).length) {
+    r += `  Known attackers:\n`;
+    for (const [t, n] of tally(byAttacker)) r += `    ${t.padEnd(14)} ${n}\n`;
+  }
 
   r += `\nWAVE KIND AT HIT:\n`;
   for (const [k, n] of tally(byKind)) r += `  ${k.padEnd(10)} ${n} hits\n`;
 
-  r += `\nENEMY TYPES PRESENT AT HIT (summed appearances):\n`;
+  r += `\nENEMY TYPES ON FIELD AT HIT (summed appearances):\n`;
   for (const [t, n] of tally(byType).slice(0, 8)) r += `  ${t.padEnd(14)} ${n}\n`;
 
   r += `\nSTATS:\n`;
-  r += `  Avg enemy bullets on field at hit: ${avgBullets}\n`;
-  r += `  Killing hits (HP → 0):             ${deaths} / ${allEv.length}\n`;
+  r += `  Avg enemy bullets on field at hit:  ${avgBullets}\n`;
+  r += `  Hits while dash on cooldown:        ${dashDownHits} / ${allEv.length}  (${pct(dashDownHits, allEv.length)})\n`;
+  r += `  Cluster hits (≤3s apart):           ${clusterHits}\n`;
+  r += `  Avg gap between consecutive hits:   ${avgGap}s\n`;
+  r += `  Killing hits (HP → 0):              ${deaths} / ${allEv.length}\n`;
   r += `  Hits without shield upgrade:        ${pct(allEv.length - withShield, allEv.length)}\n`;
   r += `  Avg time into run when hit:         ${avgHitT}s\n`;
 
@@ -972,13 +994,17 @@ function generateHitReport(sessions) {
   const topKind = tally(byKind)[0];
   if (topKind) r += `  · ${topKind[0].toUpperCase()} waves cause the most damage — budget or speed may need a trim\n`;
   const topType = tally(byType)[0];
-  if (topType) r += `  · ${topType[0]} is present at the most hit moments — it may outpace counterplay\n`;
+  if (topType) r += `  · ${topType[0]} appears most at hit moments — it may outpace counterplay\n`;
   if (parseFloat(avgBullets) > 10)
     r += `  · High bullet density at hits (avg ${avgBullets}) — bullet patterns may need spread reduction\n`;
+  if (dashDownHits / allEv.length > 0.5)
+    r += `  · Dash cooldown is blocking escape in ${pct(dashDownHits, allEv.length)} of hits — consider shorter dash CD or more iframes\n`;
+  if (clusterHits > allEv.length * 0.25)
+    r += `  · ${clusterHits} cluster hits (≤3s gap) — a "blender" moment is killing runs; look at bullet clear / mercy timing\n`;
   const shieldlessPct = parseInt(pct(allEv.length - withShield, allEv.length));
   if (shieldlessPct > 65)
     r += `  · ${shieldlessPct}% of hits without shield — offering shield earlier would help survivability\n`;
-  r += `  · Most hits happen at ~${avgHitT}s — consider powerup/pickup timing relative to that window\n`;
+  r += `  · Most hits happen at ~${avgHitT}s — powerups offered before this point help most\n`;
 
   return r;
 }
@@ -991,6 +1017,38 @@ window._hitReport = () => {
 };
 
 window._hitLog = () => JSON.parse(localStorage.getItem('tokoDropHitLog') || '[]');
+
+window._hitExport = () => {
+  const sessions = JSON.parse(localStorage.getItem('tokoDropHitLog') || '[]');
+  if (sessions.length === 0) { console.warn('No hit data to export.'); return; }
+  const COLS = [
+    'session_date','seed','mode','wave_reached',
+    'event_wave','event_kind','time_in_run','time_in_wave',
+    'hp_before','hp_after','source','attacker','dash_ready',
+    'enemy_count','bullet_count','time_since_last_hit','upgrades','score',
+    'enemy_types',
+  ];
+  const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const rows = [COLS.join(',')];
+  for (const s of sessions) {
+    for (const ev of s.events) {
+      rows.push([
+        esc(s.date), esc(s.seed), esc(s.mode), esc(s.waveReached),
+        esc(ev.wave), esc(ev.kind), esc(ev.time), esc(ev.waveTimeSecs),
+        esc(ev.hpBefore), esc(ev.hpAfter), esc(ev.source), esc(ev.attacker ?? ''),
+        esc(ev.dashReady ?? ''), esc(ev.enemyCount), esc(ev.bulletCount),
+        esc(ev.timeSinceLastHit ?? ''), esc((ev.upgrades || []).join('+')), esc(ev.score),
+        esc(Object.entries(ev.enemyTypes || {}).map(([t, n]) => `${t}:${n}`).join(' ')),
+      ].join(','));
+    }
+  }
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `toko_hits_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  console.log(`Exported ${rows.length - 1} rows across ${sessions.length} sessions.`);
+};
 
 // ── Game state ───────────────────────────────────────────────────────────────
 // 'title' | 'playing' | 'paused' | 'gameover'
@@ -1448,7 +1506,7 @@ function startGame() {
   input.reset();
   applyArenaMode(landscapeMode);
   score  = 0; streak = 0; wave = 0; runTimer = 0;
-  collectedUpgrades = []; hitEventLog = [];
+  collectedUpgrades = []; hitEventLog = []; _lastHitTime = -1;
   BULLET_CONFIG.playerBulletScale = 1.0;
   BULLET_CONFIG.playerPiercing    = false;
   runSeed = (Math.random() * 0xFFFFFF | 0) >>> 0;
@@ -1827,7 +1885,7 @@ function loop() {
       const dx = player.position.x - e.position.x;
       const dz = player.position.z - e.position.z;
       if (Math.hypot(dx, dz) < e.radius + PLAYER_RADIUS) {
-        const died = tryHitPlayer('melee');
+        const died = tryHitPlayer('melee', e.type);
         if (!died && e.type === EnemyType.TORO && e._state === 'dashing') addShake(0.27);
         if (died) { triggerGameOver(); break; }
         break;
@@ -1960,7 +2018,7 @@ function loop() {
       const dx = player.position.x - z.mesh.position.x;
       const dz = player.position.z - z.mesh.position.z;
       if (Math.hypot(dx, dz) < z.radius + PLAYER_RADIUS) {
-        if (tryHitPlayer('poison')) { triggerGameOver(); break; }
+        if (tryHitPlayer('poison', EnemyType.SLUDGE_CUBE)) { triggerGameOver(); break; }
         break;
       }
     }

@@ -9,12 +9,15 @@
 
 ## v41 — 2026-06-29
 **Hit-event telemetry system**
-- Every HP-loss event records a snapshot: wave, wave kind, time into run, HP before/after, damage source (bullet/melee/poison), live enemy types/count, enemy bullet count, active upgrades, score
-- Session log persisted to `localStorage` under `tokoDropHitLog` (last 20 runs, up to 50 events each)
-- `window._hitReport()` — prints a formatted analysis to the console: damage-source split, wave-kind breakdown, most-present enemy types at hit moments, avg bullet density, shield-absence rate, powerup timing hints, and tuning notes
-- `window._hitLog()` — returns raw JSON for deeper inspection
-- `collectedUpgrades` array tracks roguelike upgrade picks per run; snapshot included in every event
-- `tryHitPlayer(source)` — extended with explicit source tag; all three call sites (bullet, melee, poison) tagged
+- Every HP-loss event records a full snapshot: wave + kind, time in run + time in wave, HP before/after, damage source (bullet/melee/poison), specific attacker type (melee + poison resolved; bullets anonymous), dash-available flag, live enemy count + type breakdown, enemy bullet count on field, gap since previous hit, active upgrades list, score
+- `timeSinceLastHit` enables cluster-hit detection (≤3 s gap = "blender" moment flag)
+- `dashReady` flag reveals whether the escape option was unavailable when hit
+- Session log persisted to `localStorage` under `tokoDropHitLog` (last 20 runs)
+- `window._hitReport()` — formatted console analysis: source/attacker breakdown, wave-kind heatmap, top enemy types at hit moments, bullet density, dash-down rate, cluster hits, avg hit gap, shield-absence rate, powerup timing suggestion, and tuning notes
+- `window._hitLog()` — raw JSON for deeper inspection
+- `window._hitExport()` — downloads a `.csv` with one row per event across all stored sessions; opens directly in Excel / Google Sheets and grows each time you export
+- `collectedUpgrades` array tracks roguelike picks per run; snapshot included in every event
+- `tryHitPlayer(source, attackerType)` extended; melee passes `e.type`, poison passes `SLUDGE_CUBE`, bullets pass null
 - HUD label bumped to `v41`
 
 ---
