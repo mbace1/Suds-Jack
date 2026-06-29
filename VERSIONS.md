@@ -7,6 +7,19 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v43 — 2026-06-29
+**ORANGE_CUBE flop + difficulty ramp rebalance**
+- ORANGE_CUBE now tumbles like other cubes — removed explicit exclusion from flop setup; during 'moving' state calls `_flopMove` with `exact=true` so it rolls freely toward its target without cardinal snapping, visually distinct from the hop-and-snap of YELA/REDD/PURP
+- `_flopMove` gains optional 6th param `exact=false`; when true, uses the raw normalized heading directly (no 70/20/10 cardinal-snap split), enabling diagonal tumbling
+- Difficulty ramp substantially reduced across the board:
+  - Budget: `8 + wave×3.3` → `5 + wave×1.8` (wave 3 swarm was 27 budget, now 13)
+  - Kind multipliers: boss 2.5→2.0, spike 1.6→1.4, swarm 1.5→1.25, breather 0.7→0.6
+  - Enemy cap: now grows with wave (`4+wave`, max 14 normal / `5+wave×1.4`, max 22 swarm); early waves stay sparse
+  - Enemy speed: `1.2 + wave×0.12` → `1.1 + wave×0.09` (wave 1 was 1.32, now 1.19)
+  - Fire interval: gentler acceleration, floor 0.35 (was 0.30)
+
+---
+
 ## v42 — 2026-06-29
 **Bullet origin tracking — full attacker identity on every hit**
 - `Bullet` class gains `originType` field (enemy type enum value, null for player/gate/dash-boom)

@@ -373,7 +373,7 @@ export class Enemy {
     }
 
     // Flopping cube movers — shared tumble state (see _flopMove)
-    if (CUBE_TYPES.has(type) && type !== EnemyType.ORANGE_CUBE) {
+    if (CUBE_TYPES.has(type)) {
       const dirs = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1}];
       this._flopActive = false;
       this._flopRest   = Math.random() * 0.25; // stagger first flop across the wave
@@ -436,7 +436,7 @@ export class Enemy {
 
   // Cube locomotion: tip end-over-end about the leading bottom edge, advancing
   // one face-width per 90° flop. Cardinal-only; biased random walk between flops.
-  _flopMove(dt, spd, H, wantX = 0, wantZ = 0) {
+  _flopMove(dt, spd, H, wantX = 0, wantZ = 0, exact = false) {
     const radius = CFG[this.type].radius;
     const stride = radius * 1.8;          // one face width = one flop's advance
     const restY  = radius;                // resting center height (matches spawn)
@@ -448,10 +448,13 @@ export class Enemy {
       this._flopRest -= dt;
       if (this._flopRest > 0) return;
 
-      // Direction choice. With a desired heading, snap it to the nearest cardinal
-      // and mostly steer that way (still hoppy); otherwise biased random walk.
+      // Direction choice. exact=true: use the raw (wantX,wantZ) heading directly, giving
+      // free diagonal tumbling (used by ORANGE_CUBE). Otherwise: snap to nearest cardinal.
       let dir;
-      if (wantX !== 0 || wantZ !== 0) {
+      if (exact && (wantX !== 0 || wantZ !== 0)) {
+        const len = Math.hypot(wantX, wantZ);
+        dir = { x: wantX / len, z: wantZ / len };
+      } else if (wantX !== 0 || wantZ !== 0) {
         const toward = Math.abs(wantX) > Math.abs(wantZ)
           ? { x: Math.sign(wantX), z: 0 }
           : { x: 0, z: Math.sign(wantZ) };
@@ -681,7 +684,8 @@ export class Enemy {
           case 'moving': {
             const tdx = this._target.x - ex, tdz = this._target.z - ez;
             const td = Math.hypot(tdx, tdz);
-            if (td < 1.0) {
+            // Switch to aiming once close and not mid-flop, so we snap cleanly between states.
+            if (!this._flopActive && td < 2.2) {
               this._state = 'aiming';
               this._stateT = 0.9;
               const dirs8 = [
@@ -704,8 +708,9 @@ export class Enemy {
                 this._aimArrow.visible = true;
               }
             } else {
-              this.mesh.position.x += (tdx/td) * spd * dt;
-              this.mesh.position.z += (tdz/td) * spd * dt;
+              // Flop toward target without cardinal snapping — looks like a tumbling cube
+              // gliding freely, distinct from the hop-and-snap of other cube types.
+              this._flopMove(dt, spd, H, tdx / (td || 1), tdz / (td || 1), true);
             }
             break;
           }

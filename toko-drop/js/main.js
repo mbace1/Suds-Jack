@@ -35,8 +35,8 @@ function getWaveScale(wave) {
   const ramp = Math.min(wave, 10) - 1;   // 0..9 across waves 1-10
   const post = Math.max(0, wave - 10);   // 0,1,2… after wave 10
   return {
-    speedMult:    Math.min(1.2 + ramp * 0.12 + post * 0.03, 2.7),
-    intervalMult: Math.max(1.0 - ramp * 0.065 - post * 0.012, 0.30),
+    speedMult:    Math.min(1.1 + ramp * 0.09 + post * 0.02, 2.4),
+    intervalMult: Math.max(1.0 - ramp * 0.055 - post * 0.010, 0.35),
   };
 }
 
@@ -73,11 +73,13 @@ function getEnemySchedule(wave) {
   // A normal wave directly after any intense wave runs lighter — the breather/lull.
   const isBreather = kind === 'normal' && waveKind(wave - 1) !== 'normal';
 
-  // Budget plateaus at wave 10 (knee), then creeps slowly — matches the 8/10-by-10 curve.
+  // Budget grows slowly in early waves so the ramp feels earned, not punishing.
+  // Knee at wave 10; kind multipliers are gentler than before so even spike/swarm
+  // waves in the first few rounds don't wall the player.
   const rampB  = Math.min(wave, 10);
   const postB  = Math.max(0, wave - 10);
-  const base   = 8 + rampB * 3.3 + postB * 1.0;
-  const mod    = isBoss ? 2.5 : isSpike ? 1.6 : isSwarm ? 1.5 : isBreather ? 0.7 : 1.0;
+  const base   = 5 + rampB * 1.8 + postB * 0.8;
+  const mod    = isBoss ? 2.0 : isSpike ? 1.4 : isSwarm ? 1.25 : isBreather ? 0.6 : 1.0;
   const budget = Math.floor(base * mod);
 
   // Swarm waves favour bodies (groups/twins of cheap fast enemies); others use the full mix.
@@ -89,7 +91,10 @@ function getEnemySchedule(wave) {
 
   const list = [];
   let spent = 0, t = 0;
-  const cap = isSwarm ? 30 : 22;
+  // Cap grows with wave number so early waves stay sparse; later waves can fill the arena.
+  const cap = isSwarm
+    ? Math.min(22, 5 + Math.floor(wave * 1.4))
+    : Math.min(14, 4 + wave);
 
   // Boss wave: guaranteed large enemy up front
   if (isBoss) {
@@ -1213,7 +1218,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v41', 16, uiCanvas.height - 12);
+  ctx.fillText('v43', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
