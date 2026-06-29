@@ -245,37 +245,88 @@ function applyArenaMode(landscape) {
 }
 
 // ── Death FX: chunks + puddles ────────────────────────────────────────────────
-class Chunk {
-  constructor(sc, x, y, z, vx, vy, vz, color, size = 0.18) {
-    this.vx = vx; this.vy = vy; this.vz = vz;
-    this._life = 1.4;
-    this._sq   = 1.0;
-    this._sqV  = 0.0;
-    this.mat  = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1 });
-    this.mesh = new THREE.Mesh(new THREE.SphereGeometry(size, 5, 3), this.mat);
-    this.mesh.position.set(x, y, z);
+// Pooled death chunks — one InstancedMesh (1 draw call, zero per-spawn alloc).
+// Replaces the old per-chunk Mesh churn that spiked GC during dense swarm clears.
+const CHUNK_POOL = 256;
+class ChunkPool {
+  constructor(sc) {
+    const geo = new THREE.SphereGeometry(1, 5, 3);          // unit sphere, scaled per instance
+    const mat = new THREE.MeshBasicMaterial();              // opaque; instanceColor multiplies
+    this.mesh = new THREE.InstancedMesh(geo, mat, CHUNK_POOL);
+    this.mesh.frustumCulled = false;
+    this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     sc.add(this.mesh);
+    // Per-instance state (typed arrays — no per-frame allocation)
+    this.x  = new Float32Array(CHUNK_POOL); this.y  = new Float32Array(CHUNK_POOL); this.z = new Float32Array(CHUNK_POOL);
+    this.vx = new Float32Array(CHUNK_POOL); this.vy = new Float32Array(CHUNK_POOL); this.vz = new Float32Array(CHUNK_POOL);
+    this.life = new Float32Array(CHUNK_POOL);
+    this.size = new Float32Array(CHUNK_POOL);
+    this.sq   = new Float32Array(CHUNK_POOL);
+    this.sqV  = new Float32Array(CHUNK_POOL);
+    this.active = new Uint8Array(CHUNK_POOL);
+    this._m   = new THREE.Matrix4();
+    this._p   = new THREE.Vector3();
+    this._q   = new THREE.Quaternion();
+    this._s   = new THREE.Vector3();
+    this._col = new THREE.Color();
+    for (let i = 0; i < CHUNK_POOL; i++) this._hide(i);
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+  _hide(i) {
+    this._m.makeScale(0, 0, 0);
+    this.mesh.setMatrixAt(i, this._m);
+  }
+  _findSlot() {
+    for (let i = 0; i < CHUNK_POOL; i++) if (!this.active[i]) return i;
+    // Pool full — reuse the slot with the least life remaining.
+    let min = 0, minLife = Infinity;
+    for (let i = 0; i < CHUNK_POOL; i++) if (this.life[i] < minLife) { minLife = this.life[i]; min = i; }
+    return min;
+  }
+  spawn(x, y, z, vx, vy, vz, color, size = 0.18) {
+    const i = this._findSlot();
+    this.x[i] = x; this.y[i] = y; this.z[i] = z;
+    this.vx[i] = vx; this.vy[i] = vy; this.vz[i] = vz;
+    this.life[i] = 1.4; this.size[i] = size;
+    this.sq[i] = 1.0; this.sqV[i] = 0.0; this.active[i] = 1;
+    this._col.set(color);
+    this.mesh.setColorAt(i, this._col);
+    if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
   }
   update(dt) {
-    this._life -= dt;
-    this.vy    -= 14 * dt;
-    this.mesh.position.x += this.vx * dt;
-    this.mesh.position.y += this.vy * dt;
-    this.mesh.position.z += this.vz * dt;
-    if (this.mesh.position.y <= 0.01 && this.vy < 0) {
-      this.mesh.position.y = 0;
-      this._sqV -= Math.abs(this.vy) * 0.4; // squash on landing
-      this.vy = 0; this.vx *= 0.35; this.vz *= 0.35;
+    let dirty = false;
+    for (let i = 0; i < CHUNK_POOL; i++) {
+      if (!this.active[i]) continue;
+      dirty = true;
+      this.life[i] -= dt;
+      if (this.life[i] <= 0) { this.active[i] = 0; this._hide(i); continue; }
+      this.vy[i] -= 14 * dt;
+      this.x[i] += this.vx[i] * dt;
+      this.y[i] += this.vy[i] * dt;
+      this.z[i] += this.vz[i] * dt;
+      if (this.y[i] <= 0.01 && this.vy[i] < 0) {
+        this.y[i] = 0;
+        this.sqV[i] -= Math.abs(this.vy[i]) * 0.4; // squash on landing
+        this.vy[i] = 0; this.vx[i] *= 0.35; this.vz[i] *= 0.35;
+      }
+      // Spring squash
+      this.sqV[i] = (this.sqV[i] - (this.sq[i] - 1.0) * 0.32) * 0.80;
+      this.sq[i]  = Math.max(0.55, Math.min(1.4, this.sq[i] + this.sqV[i]));
+      const sq   = this.sq[i];
+      const sx   = 1 / Math.sqrt(Math.max(sq, 0.1));
+      const fade = Math.min(1, this.life[i] / 0.3);  // shrink-to-zero in place of alpha fade
+      const f    = this.size[i] * fade;
+      this._p.set(this.x[i], this.y[i], this.z[i]);
+      this._s.set(sx * f, sq * f, sx * f);
+      this._m.compose(this._p, this._q, this._s);
+      this.mesh.setMatrixAt(i, this._m);
     }
-    // Spring squash per frame
-    this._sqV = (this._sqV - (this._sq - 1.0) * 0.32) * 0.80;
-    this._sq  = Math.max(0.55, Math.min(1.4, this._sq + this._sqV));
-    const sx = 1 / Math.sqrt(Math.max(this._sq, 0.1));
-    this.mesh.scale.set(sx, this._sq, sx);
-    this.mat.opacity = Math.min(1, this._life / 0.3);
-    return this._life > 0;
+    if (dirty) this.mesh.instanceMatrix.needsUpdate = true;
   }
-  remove(sc) { sc.remove(this.mesh); }
+  clear() {
+    for (let i = 0; i < CHUNK_POOL; i++) { this.active[i] = 0; this._hide(i); }
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
 }
 
 class Puddle {
@@ -621,7 +672,7 @@ const input   = new InputManager();
 const bullets = new BulletPool(scene);
 const player  = new Player(scene);
 let enemies      = [];
-let chunks       = [];
+const chunkPool  = new ChunkPool(scene);
 let puddles      = [];
 let poisonZones  = [];
 let slimeTrails  = [];
@@ -737,7 +788,7 @@ function onKill(e) {
   audio.enemyDieType(_cat);
   // Spawn death FX from chunk data populated by e.destroy()
   for (const cd of e.chunks) {
-    chunks.push(new Chunk(scene, cd.x, cd.y, cd.z, cd.vx, cd.vy, cd.vz, e.color, cd.size));
+    chunkPool.spawn(cd.x, cd.y, cd.z, cd.vx, cd.vy, cd.vz, e.color, cd.size);
   }
   puddles.push(new Puddle(scene, e.position.x, e.position.z, e.color, e.radius * 1.5));
 }
@@ -911,11 +962,21 @@ function drawHUD() {
     ctx.textAlign = 'left';
   }
 
+  // FPS meter (bottom-left, above version — green/amber/red for at-a-glance health)
+  {
+    const fps = Math.round(fpsEMA);
+    const rgb = fps >= 55 ? '90,255,140' : fps >= 30 ? '255,200,80' : '255,90,90';
+    ctx.fillStyle = `rgba(${rgb},0.3)`;
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${fps} FPS`, 16, uiCanvas.height - 26);
+  }
+
   // Version (bottom-left)
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v27', 16, uiCanvas.height - 12);
+  ctx.fillText('v28', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1063,7 +1124,7 @@ function announceWave() {
 
 // ── Wave / restart helpers ──────────────────────────────────────────────────────────
 function clearFX() {
-  for (const c of chunks)        c.remove(scene); chunks        = [];
+  chunkPool.clear();
   for (const p of puddles)       p.remove(scene); puddles       = [];
   for (const z of poisonZones)   z.remove(scene); poisonZones   = [];
   for (const s of slimeTrails)   s.remove(scene); slimeTrails   = [];
@@ -1272,13 +1333,16 @@ function mouseAimDir() {
 
 // ── Main loop ───────────────────────────────────────────────────────────────────
 let prev = performance.now();
+let fpsEMA = 0;
 showTitle();
 
 function loop() {
   requestAnimationFrame(loop);
   const now = performance.now();
-  const dt  = Math.min((now - prev) / 1000, 0.05);
+  const raw = (now - prev) / 1000;            // unclamped, for the FPS meter
+  const dt  = Math.min(raw, 0.05);
   prev = now;
+  if (raw > 0) fpsEMA = fpsEMA ? fpsEMA * 0.9 + (1 / raw) * 0.1 : 1 / raw;
 
   input.pollGamepad();
   updateShake(dt);
@@ -1293,9 +1357,7 @@ function loop() {
   if (gameState === 'gameover') {
     restartTimer -= dt;
     for (const e of enemies) e.updateDeath(dt);
-    for (let i = chunks.length - 1; i >= 0; i--) {
-      if (!chunks[i].update(dt)) { chunks[i].remove(scene); chunks.splice(i, 1); }
-    }
+    chunkPool.update(dt);
     if (restartTimer <= 0) {
       clearFX();
       for (const e of enemies) e.removeFrom(scene);
@@ -1360,9 +1422,7 @@ function loop() {
   bullets.update(dt, Math.max(HALF_X, HALF_Z));
 
   // Update / cull death FX
-  for (let i = chunks.length - 1; i >= 0; i--) {
-    if (!chunks[i].update(dt)) { chunks[i].remove(scene); chunks.splice(i, 1); }
-  }
+  chunkPool.update(dt);
   for (let i = puddles.length - 1; i >= 0; i--) {
     if (!puddles[i].update(dt)) { puddles[i].remove(scene); puddles.splice(i, 1); }
   }
@@ -1404,7 +1464,7 @@ function loop() {
     }
     if (e._hitChunks && e._hitChunks.length > 0) {
       for (const cd of e._hitChunks) {
-        chunks.push(new Chunk(scene, cd.x, cd.y, cd.z, cd.vx, cd.vy, cd.vz, cd.color, cd.size));
+        chunkPool.spawn(cd.x, cd.y, cd.z, cd.vx, cd.vy, cd.vz, cd.color, cd.size);
       }
       e._hitChunks.length = 0;
     }
@@ -1512,8 +1572,8 @@ function loop() {
           const kx = d.container.position.x, kz = d.container.position.z;
           for (let fi = 0; fi < 5; fi++) {
             const a = (fi / 5) * Math.PI * 2;
-            chunks.push(new Chunk(scene, kx, 0.8, kz,
-              Math.cos(a) * 3.5, 1.0, Math.sin(a) * 3.5, 0xffdd55, 0.1));
+            chunkPool.spawn(kx, 0.8, kz,
+              Math.cos(a) * 3.5, 1.0, Math.sin(a) * 3.5, 0xffdd55, 0.1);
           }
           // Drop a slow-drifting pickup away from the convoy path
           const driftAngle = Math.random() * Math.PI * 2;
@@ -1593,9 +1653,9 @@ function loop() {
           // Burst of teal shards at gate centre
           for (let _gi = 0; _gi < 14; _gi++) {
             const _ga = (_gi / 14) * Math.PI * 2;
-            chunks.push(new Chunk(scene, g._x, 0.9, g._z,
+            chunkPool.spawn(g._x, 0.9, g._z,
               Math.cos(_ga) * 5.5, 1.2 + Math.random() * 1.0, Math.sin(_ga) * 5.5,
-              (_gi % 2 === 0) ? 0x44ff88 : 0x88ffcc, 0.13));
+              (_gi % 2 === 0) ? 0x44ff88 : 0x88ffcc, 0.13);
           }
           addShake(0.14);
           audio.pickup();

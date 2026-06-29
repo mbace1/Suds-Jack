@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v28 — 2026-06-29
+**Perf gate + pooled death chunks (WebGL overhaul pt.1)**
+- Always-on subtle FPS meter (bottom-left, above version): EMA of raw frame time, tinted green ≥55 / amber 30–54 / red <30
+- Death chunks moved from per-spawn `Mesh`+`SphereGeometry`+`MeshBasicMaterial` to a single pooled `InstancedMesh` (cap 256, per-instance color + matrix) — 1 draw call, zero per-spawn allocation
+- Eliminates the GC spike when a dense swarm (18–22 enemies) dies near-simultaneously (was 100–150 throwaway meshes)
+- Opacity fade replaced by shrink-to-zero so the chunk material stays opaque (no transparency sort)
+- All spawn sites (enemy death, hit-chunks, cargo, gate burst) and both update loops rewired to the pool; `clearFX` empties it
+- Verified: 1 InstancedMesh, 300-burst caps at 256 and recycles, settles to 0, frame cost stable, zero errors
+- Note: blob `ShaderMaterial` + hit flash/squash/breathing already existed (doc's Phase 1/2 largely done); bloom stays off until Phase 4
+
 ## v27 — 2026-06-29
 **Personal bests (local, future-proofed for a leaderboard)**
 - New `tokoDropPB` localStorage record (schema-versioned): bestScore / bestTime / bestWave + capped top-10 `runs[]`
