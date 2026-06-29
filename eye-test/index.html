@@ -14,23 +14,24 @@
   body{
     background:radial-gradient(120% 120% at 50% 0%, #fbf7ee 0%, #e7dcc6 55%, #d3c4a3 100%);
     color:var(--ink); user-select:none; touch-action:manipulation;
-    display:flex; flex-direction:column; height:100dvh;
+    display:flex; flex-direction:column; height:100dvh; height:100vh; height:100dvh;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 
   /* ---- top HUD ---- */
   #hud{
-    flex:0 0 auto; display:flex; align-items:center; gap:14px;
-    padding:8px clamp(10px,2.5vw,28px); font-weight:bold;
-    letter-spacing:.5px;
+    flex:0 0 auto; display:flex; align-items:center; gap:clamp(5px,1.4vw,14px);
+    padding:clamp(4px,1.2vh,8px) clamp(8px,2.2vw,26px); font-weight:bold;
+    letter-spacing:.5px; flex-wrap:nowrap; min-width:0;
   }
-  #hud .brand{font-size:clamp(15px,2.4vw,24px); color:var(--accent); margin-right:auto;
-    text-shadow:0 1px 0 #fff;}
+  #hud .brand{font-size:clamp(14px,2.2vw,24px); color:var(--accent); margin-right:auto;
+    text-shadow:0 1px 0 #fff; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   #hud .brand small{color:var(--ink); opacity:.55; font-weight:bold; letter-spacing:1px;}
   .pill{
     background:var(--paper); border:2px solid rgba(27,58,75,.18);
-    border-radius:999px; padding:5px 13px; font-size:clamp(12px,1.8vw,18px);
+    border-radius:999px; padding:4px clamp(8px,1.4vw,13px); font-size:clamp(11px,1.6vw,18px);
     box-shadow:0 2px 0 rgba(27,58,75,.12); display:flex; gap:6px; align-items:center;
-    white-space:nowrap;
+    white-space:nowrap; flex:0 0 auto;
   }
   .pill b{color:var(--accent);}
   #lives{letter-spacing:2px;}
@@ -38,7 +39,7 @@
   /* ---- play area ---- */
   #stage{
     flex:1 1 auto; display:flex; align-items:stretch; justify-content:center;
-    gap:clamp(10px,2.2vw,30px); padding:0 clamp(10px,2.2vw,30px) clamp(8px,1.6vh,16px);
+    gap:clamp(8px,2vw,30px); padding:0 clamp(8px,2vw,30px) clamp(4px,1vh,12px);
     min-height:0;
   }
   .card{
@@ -69,8 +70,9 @@
 
   /* ---- prompt strip ---- */
   #prompt{
-    flex:0 0 auto; text-align:center; padding:6px 12px 12px;
-    font-size:clamp(13px,2vw,20px); font-weight:bold; color:var(--ink);
+    flex:0 0 auto; text-align:center;
+    padding:clamp(4px,1vh,8px) 12px calc(clamp(6px,1.6vh,14px) + env(safe-area-inset-bottom));
+    font-size:clamp(12px,1.9vw,20px); font-weight:bold; color:var(--ink); line-height:1.25;
   }
   #prompt span{color:var(--accent);}
   #prompt .feedback{display:inline-block; min-width:1px;}
