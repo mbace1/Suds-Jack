@@ -29,16 +29,27 @@ let runSeed = 0;
 let rng = Math.random.bind(Math);
 
 // ── Wave scaling (Nex Machina pacing) ─────────────────────────────────────────────
+// Difficulty climbs to ~8/10 by wave 10 (the "knee"), then plateaus with a slow
+// creep toward 9/10 — tuned for competitive 5–10 min runs.
 function getWaveScale(wave) {
-  const w = wave - 1;
+  const ramp = Math.min(wave, 10) - 1;   // 0..9 across waves 1-10
+  const post = Math.max(0, wave - 10);   // 0,1,2… after wave 10
   return {
-    speedMult:    Math.min(1.2 + w * 0.14, 3.2),  // starts 20% faster; same ceiling
-    intervalMult: Math.max(1 - w * 0.11, 0.26),
+    speedMult:    Math.min(1.2 + ramp * 0.12 + post * 0.03, 2.7),
+    intervalMult: Math.max(1.0 - ramp * 0.065 - post * 0.012, 0.30),
   };
 }
 
+// Wave rhythm — creates intensity pulses across waves (swarm beats + breather lulls).
+function waveKind(w) {
+  if (w % 8 === 0)           return 'boss';   // every 8th: big guaranteed enemy
+  if (w % 4 === 0)           return 'spike';  // every 4th (not boss): heavy budget
+  if (w >= 3 && w % 3 === 0) return 'swarm';  // every 3rd (not spike/boss): rush of bodies
+  return 'normal';
+}
+
 // Returns the spawn list [{type, t: spawnDelaySecs, count?}] for a wave.
-// Delays are front-loaded to fit fast 30 s rounds.
+// Spawn delays are tight so the arena fills fast (supports instant wave-end + dense pressure).
 // Enemy pool: [type, minWave, budget-cost]. Unlocked types grow with wave number.
 // getEnemySchedule uses rng (seeded per run) so every run plays differently.
 function getEnemySchedule(wave) {
@@ -54,13 +65,31 @@ function getEnemySchedule(wave) {
     [TORO,        6, 5],
   ];
   const available = POOL.filter(([, min]) => wave >= min);
-  const isBoss  = wave % 8 === 0;
-  const isSpike = !isBoss && wave % 4 === 0;
-  const budget = Math.floor((8 + wave * 3.0) * (isBoss ? 2.5 : isSpike ? 1.6 : 1.0));
-  // Variant weights: normal appears 3× so it's most common
-  const VARIANTS = ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group'];
+
+  const kind       = waveKind(wave);
+  const isBoss     = kind === 'boss';
+  const isSpike    = kind === 'spike';
+  const isSwarm    = kind === 'swarm';
+  // A normal wave directly after any intense wave runs lighter — the breather/lull.
+  const isBreather = kind === 'normal' && waveKind(wave - 1) !== 'normal';
+
+  // Budget plateaus at wave 10 (knee), then creeps slowly — matches the 8/10-by-10 curve.
+  const rampB  = Math.min(wave, 10);
+  const postB  = Math.max(0, wave - 10);
+  const base   = 8 + rampB * 3.3 + postB * 1.0;
+  const mod    = isBoss ? 2.5 : isSpike ? 1.6 : isSwarm ? 1.5 : isBreather ? 0.7 : 1.0;
+  const budget = Math.floor(base * mod);
+
+  // Swarm waves favour bodies (groups/twins of cheap fast enemies); others use the full mix.
+  const VARIANTS = isSwarm
+    ? ['group', 'group', 'twin', 'normal']
+    : ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group'];
+  const swarmPool = available.filter(([, , c]) => c <= 2);
+  const drawPool  = (isSwarm && swarmPool.length) ? swarmPool : available;
+
   const list = [];
   let spent = 0, t = 0;
+  const cap = isSwarm ? 30 : 22;
 
   // Boss wave: guaranteed large enemy up front
   if (isBoss) {
@@ -72,8 +101,8 @@ function getEnemySchedule(wave) {
     t = 4;
   }
 
-  while (spent < budget && list.length < 18) {
-    const [type, , cost] = available[Math.floor(rng() * available.length)];
+  while (spent < budget && list.length < cap) {
+    const [type, , cost] = drawPool[Math.floor(rng() * drawPool.length)];
     const variant = VARIANTS[Math.floor(rng() * VARIANTS.length)];
     let entry, entryCost;
     if (variant === 'elite') {
@@ -97,7 +126,9 @@ function getEnemySchedule(wave) {
     }
     if (spent + entryCost > budget + 3) break;
     list.push(entry);
-    t += 1.5 + Math.floor(rng() * 5);
+    // Tight spawn cadence so most of the budget is on-field before the player can
+    // clear it (prevents instant wave-end from trivialising waves). Swarms burst faster.
+    t += isSwarm ? (0.08 + rng() * 0.28) : (0.18 + rng() * 0.5);
     spent += entryCost;
   }
   return list.length ? list : [{ type: GLOBBO, t: 0 }];
@@ -831,7 +862,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v25', 16, uiCanvas.height - 12);
+  ctx.fillText('v26', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {

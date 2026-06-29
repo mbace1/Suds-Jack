@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v26 — 2026-06-29
+**Difficulty curve reshape + pacing pulses**
+- Curve now climbs to ~8/10 by wave 10 (the "knee"), then plateaus with a slow creep toward 9/10 — tuned for competitive 5–10 min runs
+- `getWaveScale` rewritten piecewise: speed 1.2→2.28 by wave 10 (cap 2.7); fire interval 1.0→0.42 by wave 10 (floor 0.30)
+- Budget plateaus: `8 + min(wave,10)×3.3 + max(0,wave−10)×1.0` (wave 1≈11, wave 10≈41, wave 20≈51)
+- New wave rhythm via `waveKind()`: **swarm** every 3rd wave (rush of cheap fast bodies, ×1.5 budget, tight burst), **breather** lull after any intense wave (×0.7), alongside existing spike (4th, ×1.6) and boss (8th, ×2.5)
+- Spawn cadence tightened (0.18–0.68 s; swarms 0.08–0.36 s) so the crowd is on-field before a fast clear can trip instant wave-end
+- Verified: waves field real crowds (w1≈6, swarm w3≈18–20), pulses visible, stationary dummy now dies by wave 6
+
 ## v25 — 2026-06-27
 **Deck-first defaults (Steam Deck pt.2)**
 - A connected gamepad now defaults the arena to LANDSCAPE — the Deck "just works" with no title-screen fiddling

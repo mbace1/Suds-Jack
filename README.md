@@ -1,4 +1,4 @@
-# Toko Drop — v25
+# Toko Drop — v26
 
 Twin-stick bullet-hell arena shooter built with Three.js and Web Audio.
 
@@ -32,9 +32,15 @@ Death returns you to the title screen so you can start a fresh run.
 ## Enemies
 
 13 enemy types: blobs, cubes, and specialists.  
-Variants include **elite** (2× HP, 1.2× scale), **elite-lite** (1.5× HP), **twins**, and **groups**.  
-Every **8th wave** spawns a boss-scaled enemy (3× HP, 1.5× size) with 2.5× wave budget.  
-**Spike waves** (4th, 12th, 20th…) run 1.6× budget.
+Variants include **elite** (2× HP, 1.2× scale), **elite-lite** (1.5× HP), **twins**, and **groups**.
+
+Waves pulse in intensity rather than running flat:
+- **Swarm** (every 3rd) — a rush of cheap, fast enemies bursting in tight
+- **Spike** (every 4th) — heavy 1.6× budget
+- **Boss** (every 8th) — a boss-scaled enemy (3× HP, 1.5× size), 2.5× budget
+- **Breather** — the wave after any intense one runs lighter (a brief lull)
+
+Difficulty climbs to its peak by around wave 10, then holds — built for competitive 5–10 minute runs.
 
 Mid-wave **cargo moth convoys** sweep the arena in sinusoidal paths — shoot them for drifting pickup drops.
 
