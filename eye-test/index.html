@@ -35,6 +35,15 @@
   }
   .pill b{color:var(--accent);}
   #lives{letter-spacing:2px;}
+  #fsBtn{
+    flex:0 0 auto; background:var(--paper); border:2px solid rgba(27,58,75,.18);
+    border-radius:999px; padding:4px 10px; font-size:clamp(14px,2vw,20px);
+    box-shadow:0 2px 0 rgba(27,58,75,.12); cursor:pointer; line-height:1;
+    color:var(--ink); display:flex; align-items:center; justify-content:center;
+    transition:background .1s;
+  }
+  #fsBtn:active{background:var(--paper2);}
+  :fullscreen body, :-webkit-full-screen body{ height:100vh; }
 
   /* ---- play area ---- */
   #stage{
@@ -121,6 +130,7 @@
     <div class="pill">Score <b id="score">0</b></div>
     <div class="pill">Streak <b id="streak">0</b></div>
     <div class="pill" id="lives">❤️❤️❤️</div>
+    <button id="fsBtn" title="Fullscreen">⛶</button>
   </div>
 
   <div id="stage">
@@ -503,11 +513,23 @@ $('#startBtn').addEventListener('click', startGame);
 $('#againBtn').addEventListener('click', startGame);
 
 window.addEventListener('resize', ()=>{
-  if(state.playing && !state.locked){
-    // re-fit current round's drawings (filters stay on the style)
-    sizeCanvases();
+  if(state.playing && !state.locked) sizeCanvases();
+});
+
+/* ---------- fullscreen ---------- */
+const fsBtn = $('#fsBtn');
+function isFS(){ return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+function updateFsIcon(){ fsBtn.textContent = isFS() ? '✕' : '⛶'; fsBtn.title = isFS() ? 'Exit fullscreen' : 'Fullscreen'; }
+fsBtn.addEventListener('click', ()=>{
+  if(isFS()){
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  } else {
+    const el = document.documentElement;
+    (el.requestFullscreen || el.webkitRequestFullscreen).call(el).catch(()=>{});
   }
 });
+document.addEventListener('fullscreenchange', ()=>{ updateFsIcon(); setTimeout(sizeCanvases, 120); });
+document.addEventListener('webkitfullscreenchange', ()=>{ updateFsIcon(); setTimeout(sizeCanvases, 120); });
 </script>
 </body>
 </html>
