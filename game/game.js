@@ -85,6 +85,50 @@
     }
   }
 
+  // ─── Touch Input ─────────────────────────────────────────────────────────────
+  const touch = { left: false, right: false, zap: false };
+
+  function touchZone(x, y) {
+    const w = canvas.width, h = canvas.height;
+    const btnH = Math.min(120, h * 0.18);
+    const btnW = w / 3;
+    if (y > h - btnH) {
+      if (x < btnW) return 'left';
+      if (x > w - btnW) return 'right';
+      return 'zap';
+    }
+    return 'none';
+  }
+
+  function handleTouchStart(e) {
+    e.preventDefault();
+    if (state === 'title' || state === 'gameover') { startGame(); return; }
+    for (const t of e.changedTouches) {
+      const zone = touchZone(t.clientX * (canvas.width / window.innerWidth),
+                             t.clientY * (canvas.height / window.innerHeight));
+      if (zone === 'left') touch.left = true;
+      if (zone === 'right') touch.right = true;
+      if (zone === 'zap') { touch.zap = true; trySuperzapper(); }
+    }
+  }
+
+  function handleTouchEnd(e) {
+    e.preventDefault();
+    // recompute which zones still have active touches
+    touch.left = false; touch.right = false; touch.zap = false;
+    for (const t of e.touches) {
+      const zone = touchZone(t.clientX * (canvas.width / window.innerWidth),
+                             t.clientY * (canvas.height / window.innerHeight));
+      if (zone === 'left') touch.left = true;
+      if (zone === 'right') touch.right = true;
+      if (zone === 'zap') touch.zap = true;
+    }
+  }
+
+  canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+  canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+  canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+
   // ─── Geometry Helpers ────────────────────────────────────────────────────────
   function cx() { return canvas.width / 2; }
   function cy() { return canvas.height; }  // vanishing point at bottom center — actually let's do top-center feel
@@ -508,19 +552,19 @@
       if (superzapperTimer <= 0) superzapperActive = false;
     }
 
-    // Player movement
+    // Player movement (keyboard + touch)
     if (playerMoveCD <= 0) {
-      if (keys['ArrowLeft'] || keys['KeyA']) {
+      if (keys['ArrowLeft'] || keys['KeyA'] || touch.left) {
         playerSpoke = (playerSpoke - 1 + NUM_SPOKES) % NUM_SPOKES;
         playerMoveCD = 120;
-      } else if (keys['ArrowRight'] || keys['KeyD']) {
+      } else if (keys['ArrowRight'] || keys['KeyD'] || touch.right) {
         playerSpoke = (playerSpoke + 1) % NUM_SPOKES;
         playerMoveCD = 120;
       }
     }
 
-    // Auto-shoot when holding space
-    if (keys['Space']) tryShoot();
+    // Auto-shoot: keyboard hold OR always on mobile (touch device)
+    if (keys['Space'] || touch.left || touch.right || ('ontouchstart' in window)) tryShoot();
 
     // Wave spawning
     const lv = currentLevel();
@@ -669,6 +713,69 @@
     }
   }
 
+  // ─── Touch Button Drawing ────────────────────────────────────────────────────
+  function drawTouchButtons() {
+    const w = canvas.width, h = canvas.height;
+    const btnH = Math.min(120, h * 0.18);
+    const btnW = w / 3;
+    const zapReady = superzapperCD <= 0 && !superzapperActive;
+
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+
+    // Left button
+    const lActive = touch.left;
+    ctx.fillStyle = lActive ? '#0ff' : '#003333';
+    ctx.fillRect(0, h - btnH, btnW, btnH);
+
+    // Right button
+    const rActive = touch.right;
+    ctx.fillStyle = rActive ? '#0ff' : '#003333';
+    ctx.fillRect(w - btnW, h - btnH, btnW, btnH);
+
+    // Zap button
+    ctx.fillStyle = zapReady ? (touch.zap ? '#ff0' : '#332200') : '#111';
+    ctx.fillRect(btnW, h - btnH, btnW, btnH);
+
+    ctx.globalAlpha = 1;
+
+    // Button borders
+    ctx.strokeStyle = '#0ff';
+    ctx.shadowColor = '#0ff';
+    ctx.shadowBlur = lActive ? 20 : 8;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(1, h - btnH, btnW - 1, btnH - 1);
+    ctx.shadowBlur = rActive ? 20 : 8;
+    ctx.strokeRect(w - btnW, h - btnH, btnW - 1, btnH - 1);
+
+    ctx.strokeStyle = zapReady ? '#ff0' : '#444';
+    ctx.shadowColor = zapReady ? '#ff0' : '#444';
+    ctx.shadowBlur = zapReady ? 15 : 4;
+    ctx.strokeRect(btnW, h - btnH, btnW, btnH - 1);
+
+    // Labels
+    ctx.shadowBlur = 0;
+    const fontSize = Math.min(36, btnH * 0.45);
+    ctx.font = `bold ${fontSize}px Courier New`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const midY = h - btnH / 2;
+
+    ctx.fillStyle = lActive ? '#000' : '#0ff';
+    ctx.fillText('◀', btnW / 2, midY);
+
+    ctx.fillStyle = rActive ? '#000' : '#0ff';
+    ctx.fillText('▶', w - btnW / 2, midY);
+
+    ctx.fillStyle = zapReady ? '#ff0' : '#444';
+    const zapLabel = zapReady ? 'ZAP' : `${Math.ceil(superzapperCD / 1000)}s`;
+    ctx.font = `bold ${Math.min(28, btnH * 0.35)}px Courier New`;
+    ctx.fillText(zapLabel, w / 2, midY);
+
+    ctx.textBaseline = 'alphabetic';
+    ctx.restore();
+  }
+
   // ─── Render ──────────────────────────────────────────────────────────────────
   function render() {
     ctx.save();
@@ -705,8 +812,8 @@
       ctx.shadowBlur = 0;
     }
 
-    // Superzapper charge indicator
-    if (state === 'playing') {
+    // Superzapper charge indicator (desktop)
+    if (state === 'playing' && !('ontouchstart' in window)) {
       const zapReady = superzapperCD <= 0 && !superzapperActive;
       ctx.font = '14px Courier New';
       ctx.textAlign = 'left';
@@ -715,6 +822,11 @@
       ctx.shadowBlur = zapReady ? 10 : 0;
       ctx.fillText('Z: SUPERZAPPER' + (zapReady ? ' [READY]' : ` [${Math.ceil(superzapperCD / 1000)}s]`), 20, canvas.height - 20);
       ctx.shadowBlur = 0;
+    }
+
+    // Mobile touch buttons
+    if ('ontouchstart' in window && (state === 'playing' || state === 'dead')) {
+      drawTouchButtons();
     }
 
     ctx.restore();
