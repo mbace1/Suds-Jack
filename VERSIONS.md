@@ -7,6 +7,13 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v39 — 2026-06-29
+**Bullet visual pass — readability**
+- Bullets now render as additive glowing cores so they pop against the dark arena (no extra meshes — perf-safe)
+- Brighter defaults: player bright cyan-green (`0x66ffcc`), enemy hot orange-red (`0xff5533`)
+- Enemy bullets run 1.25× larger and gently pulse (per-bullet phase) so the threats you must dodge stay easy to track
+- Verified: glow material live, zero errors
+
 ## v38 — 2026-06-29
 **Gate + convoy FX pass — set-piece presence**
 - Gate: added an additive glow-beam halo around the core laser (pulses with it) so it reads as an energy barrier, not a thin line

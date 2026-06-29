@@ -11,7 +11,10 @@ export const FAT_BULLET_R = 0.45;
 class Bullet {
   constructor(scene) {
     const geo = new THREE.SphereGeometry(0.15, 6, 4);
-    this.mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    // Additive glow core — bullets read as bright energy against the dark arena
+    this.mat = new THREE.MeshBasicMaterial({
+      color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+    });
     this.mesh = new THREE.Mesh(geo, this.mat);
     this.mesh.visible = false;
     scene.add(this.mesh);
@@ -64,7 +67,8 @@ export class BulletPool {
     b.speed = speed;
     b.fat = fat;
     b.mesh.position.set(x, 0.3, z);
-    const resolvedColor = color ?? (isPlayer ? 0x44ff88 : 0xff4422);
+    // Brighter defaults so the additive cores pop: player bright cyan-green, enemy hot orange-red
+    const resolvedColor = color ?? (isPlayer ? 0x66ffcc : 0xff5533);
     b.mat.color.set(resolvedColor);
     b._trailMat.color.set(resolvedColor);
     b.vx = dx * speed; b.vz = dz * speed;
@@ -72,11 +76,10 @@ export class BulletPool {
     b.lifetime = 4;
     b.mesh.visible = true;
     b._trail.visible = false;
-    if (fat) {
-      b.mesh.scale.setScalar(3);
-    } else {
-      b.mesh.scale.setScalar(isPlayer ? BULLET_CONFIG.playerBulletScale : 1);
-    }
+    b._phase = Math.random() * Math.PI * 2;
+    // Enemy bullets run a touch larger so the threats you must dodge read clearly.
+    b._baseScale = fat ? 3 : (isPlayer ? BULLET_CONFIG.playerBulletScale : 1.25);
+    b.mesh.scale.setScalar(b._baseScale);
     this.active.push(b);
   }
 
@@ -95,6 +98,12 @@ export class BulletPool {
         b.shadow.position.set(p.x, 0.02, p.z);
         b.shadow.scale.setScalar(shadowR);
         b.shadow.visible = true;
+
+        // Enemy bullets gently pulse so the threats you must dodge stay easy to track.
+        if (!b.isPlayer && !b.fat) {
+          const pulse = 1 + 0.18 * Math.sin(performance.now() * 0.012 + b._phase);
+          b.mesh.scale.setScalar(b._baseScale * pulse);
+        }
 
         // Glow trail for all bullets (player = green, enemy = red — colour set in spawnDir)
         {
