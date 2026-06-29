@@ -7,6 +7,13 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v34 — 2026-06-29
+**Impact spark**
+- Non-fatal bullet hits now fling a small spat of goo (3 chunks) outward from the contact point, in a cone around the surface normal
+- Tinted to the enemy's colour; reuses the pooled `chunkPool` (no new allocation)
+- Pairs with the v32 hit ripple to complete the hit moment; death still spawns its own full chunk burst
+- Verified: a non-fatal hit spawns 3 spark chunks via the collision path, zero errors
+
 ## v33 — 2026-06-29
 **Pre-death tear**
 - Goo vertex shader gains `uTear` — violent high-frequency thrash (0.22×radius) that convulses the blob as it dies

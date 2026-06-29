@@ -1036,7 +1036,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v33', 16, uiCanvas.height - 12);
+  ctx.fillText('v34', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1629,6 +1629,15 @@ function loop() {
         } else {
           audio.enemyHit();
           damageNumbers.push(new DamageNumber(e.position.x, e.position.y + e.radius, e.position.z));
+          // Impact spark: a small spat of goo flung outward from the contact point
+          const nlen = Math.hypot(dx, dz) || 1;
+          const baseA = Math.atan2(dz, dx);
+          for (let j = 0; j < 3; j++) {
+            const a  = baseA + (Math.random() - 0.5) * 1.4;
+            const sp = 2.5 + Math.random() * 3;
+            chunkPool.spawn(b.mesh.position.x, e.position.y + 0.1, b.mesh.position.z,
+              Math.cos(a) * sp, 1.5 + Math.random() * 2.5, Math.sin(a) * sp, e.color, 0.09);
+          }
         }
         if (!BULLET_CONFIG.playerPiercing) break;
       }
