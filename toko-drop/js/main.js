@@ -971,8 +971,8 @@ function generateHitReport(sessions) {
   r += `DAMAGE SOURCE:\n`;
   for (const [src, n] of tally(bySrc)) r += `  ${src.padEnd(8)} ${n}  (${pct(n, allEv.length)})\n`;
   if (Object.keys(byAttacker).length) {
-    r += `  Known attackers:\n`;
-    for (const [t, n] of tally(byAttacker)) r += `    ${t.padEnd(14)} ${n}\n`;
+    r += `  by attacker type:\n`;
+    for (const [t, n] of tally(byAttacker)) r += `    ${t.padEnd(16)} ${n}  (${pct(n, allEv.length)})\n`;
   }
 
   r += `\nWAVE KIND AT HIT:\n`;
@@ -1721,7 +1721,7 @@ function loop() {
         const ex = e.position.x, ez = e.position.z;
         const dx = tgt.x - ex, dz = tgt.z - ez;
         const dl = Math.hypot(dx, dz) || 1;
-        bullets.spawnDir(ex, ez, dx/dl, dz/dl, false, 0xddbb44, true);
+        bullets.spawnDir(ex, ez, dx/dl, dz/dl, false, 0xddbb44, true, e.type);
       }
     }
     if (e._hitChunks && e._hitChunks.length > 0) {
@@ -1803,7 +1803,7 @@ function loop() {
           if (e.type === EnemyType.SPLITTA) {
             for (let j = 0; j < 12; j++) {
               const a = (j / 12) * Math.PI * 2;
-              bullets.spawnDir(e.position.x, e.position.z, Math.cos(a), Math.sin(a), false, 0xaaff44);
+              bullets.spawnDir(e.position.x, e.position.z, Math.cos(a), Math.sin(a), false, 0xaaff44, false, EnemyType.SPLITTA);
             }
           }
         } else {
@@ -1871,8 +1871,9 @@ function loop() {
       const dz = b.mesh.position.z - player.position.z;
       const br = b.fat ? FAT_BULLET_R : BULLET_R;
       if (Math.hypot(dx, dz) < br + PLAYER_RADIUS) {
+        const _origin = b.originType; // capture before recycle clears it
         bullets.recycleAt(i);
-        if (tryHitPlayer('bullet')) { triggerGameOver(); break; }
+        if (tryHitPlayer('bullet', _origin)) { triggerGameOver(); break; }
         break;
       }
     }

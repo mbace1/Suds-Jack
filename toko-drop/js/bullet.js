@@ -51,6 +51,7 @@ class Bullet {
     this.lifetime = 0;
     this.fat = false;
     this.speed = ENEMY_BULLET_SPEED;
+    this.originType = null; // enemy type that fired this bullet (null = player / gate / dash-boom)
   }
 }
 
@@ -60,7 +61,7 @@ export class BulletPool {
     this.active = [];
   }
 
-  spawnDir(x, z, dx, dz, isPlayer, color, fat = false) {
+  spawnDir(x, z, dx, dz, isPlayer, color, fat = false, originType = null) {
     const b = this._pool.pop();
     if (!b) return;
     const speed = isPlayer ? PLAYER_BULLET_SPEED : (fat ? 3.5 : BULLET_CONFIG.enemySpeed);
@@ -72,7 +73,7 @@ export class BulletPool {
     b.mat.color.set(resolvedColor);
     b._trailMat.color.set(resolvedColor);
     b.vx = dx * speed; b.vz = dz * speed;
-    b.alive = true; b.isPlayer = isPlayer;
+    b.alive = true; b.isPlayer = isPlayer; b.originType = originType;
     b.lifetime = 4;
     b.mesh.visible = true;
     b._trail.visible = false;
@@ -135,6 +136,7 @@ export class BulletPool {
     b.shadow.visible = false;
     b._trail.visible = false;
     b.fat = false;
+    b.originType = null;
     this.active.splice(i, 1);
     this._pool.push(b);
   }

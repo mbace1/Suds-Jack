@@ -645,7 +645,7 @@ export class Enemy {
           if (this._purpFireT <= 0) {
             this._purpFireT = 0.5 * this._intervalMult;
             bullets.spawnDir(ex, ez, Math.cos(this._spiralAngle), Math.sin(this._spiralAngle),
-              false, cfg.bulletColor);
+              false, cfg.bulletColor, false, this.type);
             this._spiralAngle += 0.55;
           }
         } else if (this.type === EnemyType.SLUDGE_CUBE) {
@@ -726,7 +726,7 @@ export class Enemy {
               bullets.spawnDir(
                 ex + perpX * t, ez + perpZ * t,
                 this._fireDir.x, this._fireDir.z,
-                false, cfg.bulletColor, true
+                false, cfg.bulletColor, true, this.type
               );
               this._shotsFired++;
               this._stateT = 0.75;
@@ -927,7 +927,7 @@ export class Enemy {
           const spread = Math.PI / 6;
           for (let j = 0; j < 3; j++) {
             const fa = Math.atan2(forwardZ, forwardX) - spread / 2 + j * (spread / 2);
-            bullets.spawnDir(ex, ez, Math.cos(fa), Math.sin(fa), false, cfg.bulletColor);
+            bullets.spawnDir(ex, ez, Math.cos(fa), Math.sin(fa), false, cfg.bulletColor, false, this.type);
           }
         }
       }
@@ -976,7 +976,7 @@ export class Enemy {
           if (this._telegraphT <= 0) {
             this._isTelegraphing = false;
             this._sqV -= 1.0; // squash on fire
-            this._ring(ex, ez, 8, cfg.bulletColor, bullets);
+            this._ring(ex, ez, 8, cfg.bulletColor, bullets, this.type);
           }
         }
         break;
@@ -1001,7 +1001,7 @@ export class Enemy {
               const span  = Math.PI * 0.6;
               for (let j = 0; j < count; j++) {
                 const a = base - span / 2 + j * (span / (count - 1));
-                bullets.spawnDir(ex, ez, Math.cos(a), Math.sin(a), false, cfg.bulletColor);
+                bullets.spawnDir(ex, ez, Math.cos(a), Math.sin(a), false, cfg.bulletColor, false, this.type);
               }
             }
           }
@@ -1012,7 +1012,7 @@ export class Enemy {
         const rotSpeed = (0.38 + this._spiralAccel) / this._intervalMult;
         if (this._t >= cfg.fireInterval) {
           this._t = 0;
-          bullets.spawnDir(ex, ez, Math.cos(this._spiralAngle), Math.sin(this._spiralAngle), false, cfg.bulletColor);
+          bullets.spawnDir(ex, ez, Math.cos(this._spiralAngle), Math.sin(this._spiralAngle), false, cfg.bulletColor, false, this.type);
           this._spiralAngle += rotSpeed;
           this._spiralAccel  = Math.min(this._spiralAccel + 0.002, 0.4);
         }
@@ -1021,10 +1021,10 @@ export class Enemy {
     }
   }
 
-  _ring(x, z, count, color, bullets) {
+  _ring(x, z, count, color, bullets, originType = null) {
     for (let i = 0; i < count; i++) {
       const a = (i / count) * Math.PI * 2;
-      bullets.spawnDir(x, z, Math.cos(a), Math.sin(a), false, color);
+      bullets.spawnDir(x, z, Math.cos(a), Math.sin(a), false, color, false, originType);
     }
   }
 

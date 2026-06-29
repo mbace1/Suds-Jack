@@ -7,6 +7,18 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v42 — 2026-06-29
+**Bullet origin tracking — full attacker identity on every hit**
+- `Bullet` class gains `originType` field (enemy type enum value, null for player/gate/dash-boom)
+- `BulletPool.spawnDir(...)` extended with `originType` parameter (default null, no caller breakage)
+- All 6 enemy-side `spawnDir` calls in `enemy.js` pass `this.type`; `_ring()` helper forwards its new `originType` param
+- BAMBU lob and SPLITTA death-burst in `main.js` pass `e.type` / `EnemyType.SPLITTA`
+- Bullet collision: `b.originType` captured before `recycleAt` wipes it, forwarded to `tryHitPlayer` → `recordHitEvent`
+- `_hitReport()` now shows exact attacker type with % for every bullet hit; `attacker` column already in CSV
+- Combined with v41's melee+poison attacker tags: every hit event now has a fully resolved attacker
+
+---
+
 ## v41 — 2026-06-29
 **Hit-event telemetry system**
 - Every HP-loss event records a full snapshot: wave + kind, time in run + time in wave, HP before/after, damage source (bullet/melee/poison), specific attacker type (melee + poison resolved; bullets anonymous), dash-available flag, live enemy count + type breakdown, enemy bullet count on field, gap since previous hit, active upgrades list, score
