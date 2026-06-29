@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v44 — 2026-06-29
+**Enemy separation — no more stacking**
+- Post-update separation pass: after all enemies move each frame, pairs closer than `radiusA + radiusB + 0.25` are pushed apart by half the overlap each, split symmetrically
+- Two passes per frame resolve chain-reaction bunching (A pushed into C) without visible jitter
+- For flopping cubes, `_flopX0/_flopZ0` (the flop's start anchor) is nudged by the same delta so the tumble animation stays consistent with the corrected position
+- Both enemies clamped to arena bounds after each nudge
+- O(n²) per pass; at the reduced caps from v43 (≤14 non-swarm, ≤22 swarm) this is ~100–242 pair checks × 2 passes — negligible at 60 fps
+
+---
+
 ## v43 — 2026-06-29
 **ORANGE_CUBE flop + difficulty ramp rebalance**
 - ORANGE_CUBE now tumbles like other cubes — removed explicit exclusion from flop setup; during 'moving' state calls `_flopMove` with `exact=true` so it rolls freely toward its target without cardinal snapping, visually distinct from the hop-and-snap of YELA/REDD/PURP

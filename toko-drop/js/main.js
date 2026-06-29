@@ -1218,7 +1218,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v43', 16, uiCanvas.height - 12);
+  ctx.fillText('v44', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1677,6 +1677,38 @@ function loop() {
   if (_hitFlashT > 0) _hitFlashT -= dt;
 
   for (const e of enemies) { e.update(dt, player.position, bullets); e.updateDeath(dt); }
+
+  // Separation: push overlapping enemies apart so they never fully stack.
+  // Two passes per frame smooth out chain-reaction bunching without noticeable jitter.
+  for (let _pass = 0; _pass < 2; _pass++) {
+    for (let _i = 0; _i < enemies.length; _i++) {
+      const _a = enemies[_i];
+      if (!_a.alive) continue;
+      for (let _j = _i + 1; _j < enemies.length; _j++) {
+        const _b = enemies[_j];
+        if (!_b.alive) continue;
+        const _dx = _a.position.x - _b.position.x;
+        const _dz = _a.position.z - _b.position.z;
+        const _d  = Math.hypot(_dx, _dz);
+        const _min = _a.radius + _b.radius + 0.25;
+        if (_d < _min && _d > 0.001) {
+          const _over = (_min - _d) * 0.5;
+          const _nx = _dx / _d, _nz = _dz / _d;
+          _a.position.x += _nx * _over; _a.position.z += _nz * _over;
+          _b.position.x -= _nx * _over; _b.position.z -= _nz * _over;
+          // Keep flopping-cube animation in sync with the nudged position
+          if (_a._flopActive) { _a._flopX0 += _nx * _over; _a._flopZ0 += _nz * _over; }
+          if (_b._flopActive) { _b._flopX0 -= _nx * _over; _b._flopZ0 -= _nz * _over; }
+          // Clamp both to arena
+          _a.position.x = Math.max(-HALF_X + _a.radius, Math.min(HALF_X - _a.radius, _a.position.x));
+          _a.position.z = Math.max(-HALF_Z + _a.radius, Math.min(HALF_Z - _a.radius, _a.position.z));
+          _b.position.x = Math.max(-HALF_X + _b.radius, Math.min(HALF_X - _b.radius, _b.position.x));
+          _b.position.z = Math.max(-HALF_Z + _b.radius, Math.min(HALF_Z - _b.radius, _b.position.z));
+        }
+      }
+    }
+  }
+
   bullets.update(dt, Math.max(HALF_X, HALF_Z));
 
   // Update / cull death FX
