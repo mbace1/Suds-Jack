@@ -7,6 +7,13 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v38 — 2026-06-29
+**Gate + convoy FX pass — set-piece presence**
+- Gate: added an additive glow-beam halo around the core laser (pulses with it) so it reads as an energy barrier, not a thin line
+- Convoy: living moths now leave a golden pooled trail as they sweep — the convoy reads as a streaking ribbon crossing the arena
+- Both reuse existing systems (trailPool); glow removed cleanly on gate deactivate/remove
+- Verified: gate glow present at wave 3, convoy emits ~35 trail marks, zero errors
+
 ## v37 — 2026-06-29
 **Powerup / pickup VFX**
 - Collection pop: grabbing a pickup bursts 8 goo bits in its colour + a light camera kick (was a silent vanish)

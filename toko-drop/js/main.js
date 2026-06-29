@@ -543,18 +543,31 @@ class Gate {
     this._laser.position.set(x, 0.9, z);
     this._laser.rotation.y = angle + Math.PI / 2;
     sc.add(this._laser);
+
+    // Glow beam — a thicker additive halo around the core, reads as an energy barrier
+    this._glowMat = new THREE.MeshBasicMaterial({
+      color: 0x44ff88, transparent: true, opacity: 0.22, depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    this._glow = new THREE.Mesh(new THREE.BoxGeometry(4, 0.55, 0.55), this._glowMat);
+    this._glow.position.copy(this._laser.position);
+    this._glow.rotation.y = this._laser.rotation.y;
+    sc.add(this._glow);
   }
   update(dt, t) {
     if (!this.alive) return;
-    this._laserMat.opacity = 0.5 + 0.4 * Math.sin(t * 8);
+    const pulse = 0.5 + 0.4 * Math.sin(t * 8);
+    this._laserMat.opacity = pulse;
+    this._glowMat.opacity  = 0.12 + 0.18 * pulse;
     if (this._dmgCooldown > 0) this._dmgCooldown -= dt;
   }
   deactivate(sc) {
     this.alive = false;
     sc.remove(this._laser);
+    sc.remove(this._glow);
   }
   remove(sc) {
-    sc.remove(this._p1); sc.remove(this._p2); sc.remove(this._laser);
+    sc.remove(this._p1); sc.remove(this._p2); sc.remove(this._laser); sc.remove(this._glow);
   }
   // Returns true if point (px, pz) intersects the laser beam (approximate capsule check)
   hitsPoint(px, pz, radius) {
@@ -745,6 +758,7 @@ let damageNumbers = [];
 let cargoCluster    = null;
 let clusterTimer    = 0;
 let clusterSpawnAt  = 0; // seconds into wave to spawn cluster (0 = none this wave)
+let convoyTrailT    = 0; // v38: cadence for the convoy's golden trail ribbon
 let wave         = 0;
 let waveTimer    = 0;
 let waveDuration = ROUND_DUR;
@@ -1037,7 +1051,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v37', 16, uiCanvas.height - 12);
+  ctx.fillText('v38', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1732,6 +1746,18 @@ function loop() {
   if (cargoCluster) {
     if (cargoCluster.update(dt, _t) === 'done') {
       cargoCluster.remove(scene); cargoCluster = null;
+    } else {
+      // Golden trail ribbon — each living moth streaks as the convoy sweeps (more presence)
+      convoyTrailT -= dt;
+      if (convoyTrailT <= 0) {
+        convoyTrailT = 0.05;
+        for (const d of cargoCluster._drones) {
+          if (d.alive) {
+            const p = d.container.position;
+            trailPool.spawn(p.x, p.y, p.z, 0xffdd55, 0.28);
+          }
+        }
+      }
     }
   }
 
