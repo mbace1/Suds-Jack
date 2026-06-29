@@ -14,6 +14,7 @@ const GOO_VERT = `
   uniform vec2  uStretchDir;  // normalized world/obj xz travel direction
   uniform float uHit;         // 1 at impact, decays to 0 — drives the hit ripple
   uniform vec2  uHitDir;      // obj-space xz direction toward the impact point
+  uniform float uTear;        // 1 at death onset → 0 — violent pre-pop thrash
   varying vec3 vNormal;
   varying vec3 vViewPos;
   void main() {
@@ -35,6 +36,9 @@ const GOO_VERT = `
     float hd = dot(normalize(q), vec3(uHitDir.x, 0.0, uHitDir.y));
     float ripple = sin(hd * 9.0 - (1.0 - uHit) * 16.0) * uHit;
     pos += normal * ripple * 0.11 * uRadius;
+    // Pre-death tear: violent high-frequency thrash as the blob convulses and bursts.
+    float te = (sin(q.x*15.0 + uTime*34.0) + sin(q.y*17.0 - uTime*29.0) + sin(q.z*13.0 + uTime*38.0)) * 0.3333;
+    pos += normal * te * 0.22 * uRadius * uTear;
     // Directional squash-stretch: lunge along travel, compress height (volume feel).
     vec3 sdir = vec3(uStretchDir.x, 0.0, uStretchDir.y);
     pos  += sdir * dot(pos, sdir) * uStretch;
@@ -102,6 +106,7 @@ export function makeGooMat(color, opacity, wobble = 0, radius = 0.5) {
       uStretchDir: { value: new THREE.Vector2(0, 0) },
       uHit:        { value: 0 },
       uHitDir:     { value: new THREE.Vector2(0, 0) },
+      uTear:       { value: 0 },
     },
     transparent: opacity < 1,
     depthWrite:  opacity >= 0.9,
@@ -969,6 +974,11 @@ export class Enemy {
     }
     const baseOpacity = (CUBE_TYPES.has(this.type) || this.type === EnemyType.BAMBU) ? 0.88 : 0.82;
     this._setOpacity((1 - t) * baseOpacity);
+
+    // Pre-death tear (blobs): violent thrash strongest at death onset, fading as it bursts.
+    if (BLOB_TYPES.has(this.type) && this.mat.uniforms && this.mat.uniforms.uTear) {
+      this.mat.uniforms.uTear.value = Math.max(0, this._deathT / 0.28);
+    }
 
     if (this._deathT <= 0) {
       this._dying = false;

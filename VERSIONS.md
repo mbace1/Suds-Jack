@@ -7,6 +7,13 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v33 — 2026-06-29
+**Pre-death tear**
+- Goo vertex shader gains `uTear` — violent high-frequency thrash (0.22×radius) that convulses the blob as it dies
+- Driven during `updateDeath`: strongest at death onset (~1), fading to 0 over the 0.28 s pop
+- Death now reads as a rupture/burst rather than a clean scale-pop; blobs only (Phong cubes unchanged)
+- Verified: uTear spikes to ~0.87 at death onset, decays, death completes cleanly, zero shader errors
+
 ## v32 — 2026-06-29
 **In-shader hit ripple**
 - Goo vertex shader gains `uHit`/`uHitDir` — a concentric surface shockwave that spreads from the bullet's impact point and expands as it decays
