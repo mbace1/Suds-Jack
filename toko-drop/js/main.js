@@ -576,6 +576,7 @@ class Powerup {
     this._life = 9.0;
     this.x = x; this.z = z;
     this._driftX = driftX; this._driftZ = driftZ;
+    this._magTrailT = 0; // v37: cadence for the magnet pull-streak
     this.collected = false;
     this.mat = new THREE.MeshBasicMaterial({
       color: 0xffffff, transparent: true, opacity: 0.9,
@@ -1036,7 +1037,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v36', 16, uiCanvas.height - 12);
+  ctx.fillText('v37', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1780,6 +1781,12 @@ function loop() {
         const _spd = 1 + 5 * (1 - _md / 9);
         pu._driftX = (_mdx / _md) * _spd;
         pu._driftZ = (_mdz / _md) * _spd;
+        // Pull-streak: leave a glowing trail as the pickup zips toward the player
+        pu._magTrailT -= dt;
+        if (pu._magTrailT <= 0) {
+          pu._magTrailT = 0.05;
+          trailPool.spawn(pu.x, 0.6, pu.z, pu.mat.color.getHex(), 0.25);
+        }
       }
     }
   }
@@ -1802,6 +1809,14 @@ function loop() {
         player.grantFireRateBoost(8.0);
       }
       audio.pickup();
+      // Collection pop: radial burst of goo bits in the pickup's colour
+      const _pc = pu.mat.color.getHex();
+      for (let j = 0; j < 8; j++) {
+        const a = (j / 8) * Math.PI * 2;
+        const sp = 3 + Math.random() * 3;
+        chunkPool.spawn(pu.x, 0.6, pu.z, Math.cos(a) * sp, 2 + Math.random() * 3, Math.sin(a) * sp, _pc, 0.12);
+      }
+      addShake(0.12);
     }
   }
 

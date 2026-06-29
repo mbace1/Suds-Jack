@@ -7,6 +7,13 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v37 — 2026-06-29
+**Powerup / pickup VFX**
+- Collection pop: grabbing a pickup bursts 8 goo bits in its colour + a light camera kick (was a silent vanish)
+- Magnet pull-streak: a magnet-dragged pickup leaves a glowing trail (pooled) as it zips to the player
+- Reuses `chunkPool` (pop) and `trailPool` (streak) — no new allocation
+- Verified: collection spawns 8 pop chunks, zero errors
+
 ## v36 — 2026-06-29
 **Per-enemy trail tuning — motion threat-reads**
 - New `TRAIL_CFG` gives each type its own motion-trail signature (cadence + size)
