@@ -1036,7 +1036,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v29', 16, uiCanvas.height - 12);
+  ctx.fillText('v30', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1211,14 +1211,25 @@ function spawnWave() {
   const total  = list.length;
   pendingSpawns = [];
   list.forEach((entry, i) => {
-    const cnt = entry.count || 1;
+    const cnt       = entry.count || 1;
+    const baseAngle = (i / total) * Math.PI * 2;
+    const isGroup   = cnt >= 3;  // 3+ = a coordinated group; 2 = twins (stay paired)
     for (let k = 0; k < cnt; k++) {
+      let angle = baseAngle, clusterOffset = null;
+      if (isGroup) {
+        // Fan members across a wide arc so the group arrives on a broad front and
+        // pincers the player from several directions — not a single dodge-able clump.
+        const SPREAD = 1.5; // radians (~86°)
+        angle = baseAngle + (k / (cnt - 1) - 0.5) * SPREAD;
+      } else {
+        clusterOffset = k > 0 ? { x: (rng()-0.5)*3, z: (rng()-0.5)*3 } : null;
+      }
       pendingSpawns.push({
         type: entry.type,
-        delay: entry.t,
-        angle: (i / total) * Math.PI * 2,
-        clusterOffset: k > 0 ? { x: (rng()-0.5)*3, z: (rng()-0.5)*3 } : null,
-        speedMult,
+        delay: entry.t + (isGroup ? k * 0.12 : 0),     // light stagger → rolling advance
+        angle,
+        clusterOffset,
+        speedMult: speedMult * (isGroup ? 1.2 : 1),     // groups push in with intent
         intervalMult,
         boss: entry.boss || false,
         elite: entry.elite || false,
