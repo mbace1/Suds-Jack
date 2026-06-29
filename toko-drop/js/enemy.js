@@ -145,7 +145,7 @@ export const CFG = {
   [EnemyType.ORANGE_CUBE]: { color: 0xff8800, radius: 0.75, speed: 1.4, hp: 4, bulletColor: 0xff6600, fireInterval: 3.2  },
   [EnemyType.SLUDGE_CUBE]: { color: 0xaaee00, radius: 0.65, speed: 0.75,hp: 2, bulletColor: null,     fireInterval: null },
   [EnemyType.REDD_CUBE]:   { color: 0xff2211, radius: 0.75, speed: 1.9, hp: 3, bulletColor: null,     fireInterval: null },
-  [EnemyType.PURP_CUBE]:   { color: 0xcc44ff, radius: 0.75, speed: 1.6, hp: 3, bulletColor: null,     fireInterval: null },
+  [EnemyType.PURP_CUBE]:   { color: 0xcc44ff, radius: 0.75, speed: 1.6, hp: 3, bulletColor: 0xcc66ff, fireInterval: null },
   [EnemyType.REDD_MINI]:   { color: 0xff4433, radius: 0.32, speed: 3.2, hp: 1, bulletColor: null,     fireInterval: null },
   [EnemyType.PURP_MINI]:   { color: 0xdd66ff, radius: 0.26, speed: 3.8, hp: 1, bulletColor: null,     fireInterval: null },
   [EnemyType.TORO]:        { color: 0x4488cc, radius: 1.0,  speed: 5.0, hp: 6, bulletColor: null,     fireInterval: null },
@@ -213,6 +213,10 @@ export class Enemy {
     this._trailInterval = _tc ? _tc.interval : 0; // 0 ⇒ this type leaves no motion trail
     this._trailMult     = _tc ? _tc.size     : 0;
     this._hitRipple = 0; // v32: decays 1→0 after a hit, drives the goo surface ripple
+    // Cube archetype state (v40): flank/orbit side chosen once, PURP spiral timer
+    this._flankSign = Math.random() < 0.5 ? 1 : -1;
+    this._orbitSign = Math.random() < 0.5 ? 1 : -1;
+    this._purpFireT = 0.5;
 
     // State machine fields
     this._state        = 'idle';
@@ -432,7 +436,7 @@ export class Enemy {
 
   // Cube locomotion: tip end-over-end about the leading bottom edge, advancing
   // one face-width per 90° flop. Cardinal-only; biased random walk between flops.
-  _flopMove(dt, spd, H) {
+  _flopMove(dt, spd, H, wantX = 0, wantZ = 0) {
     const radius = CFG[this.type].radius;
     const stride = radius * 1.8;          // one face width = one flop's advance
     const restY  = radius;                // resting center height (matches spawn)
@@ -444,8 +448,18 @@ export class Enemy {
       this._flopRest -= dt;
       if (this._flopRest > 0) return;
 
-      // Biased random walk: mostly keep heading, occasionally turn.
-      let dir = (Math.random() < 0.7) ? this._flopDir : cardinals[Math.floor(Math.random() * 4)];
+      // Direction choice. With a desired heading, snap it to the nearest cardinal
+      // and mostly steer that way (still hoppy); otherwise biased random walk.
+      let dir;
+      if (wantX !== 0 || wantZ !== 0) {
+        const toward = Math.abs(wantX) > Math.abs(wantZ)
+          ? { x: Math.sign(wantX), z: 0 }
+          : { x: 0, z: Math.sign(wantZ) };
+        const r = Math.random();
+        dir = r < 0.70 ? toward : (r < 0.90 ? this._flopDir : cardinals[Math.floor(Math.random() * 4)]);
+      } else {
+        dir = (Math.random() < 0.7) ? this._flopDir : cardinals[Math.floor(Math.random() * 4)];
+      }
       // Reflect away from any wall the next stride would cross.
       const nx = this.mesh.position.x + dir.x * stride;
       const nz = this.mesh.position.z + dir.z * stride;
@@ -613,7 +627,32 @@ export class Enemy {
       case EnemyType.SLUDGE_CUBE:
       case EnemyType.REDD_MINI:
       case EnemyType.PURP_MINI: {
-        this._flopMove(dt, spd, H);
+        // Per-archetype desired heading fed to the flop locomotion.
+        const ux = ddx / dist, uz = ddz / dist;       // unit toward player
+        let wantX = ux, wantZ = uz;                    // default: direct (YELA, minis)
+        if (this.type === EnemyType.REDD_CUBE) {
+          // Flanker: approach from a side, straightening as it closes.
+          const ang = (dist > 5) ? this._flankSign * 0.9 : this._flankSign * 0.3;
+          const c = Math.cos(ang), s = Math.sin(ang);
+          wantX = ux * c - uz * s; wantZ = ux * s + uz * c;
+        } else if (this.type === EnemyType.PURP_CUBE) {
+          // Circler: tangential, nudged in/out to hold a tight ~5 radius (visible orbit).
+          const radial = (dist - 5) * 0.18;            // +ve = pull inward
+          wantX = -uz * this._orbitSign + ux * radial;
+          wantZ =  ux * this._orbitSign + uz * radial;
+          // Rotating spiral fire.
+          this._purpFireT -= dt;
+          if (this._purpFireT <= 0) {
+            this._purpFireT = 0.5 * this._intervalMult;
+            bullets.spawnDir(ex, ez, Math.cos(this._spiralAngle), Math.sin(this._spiralAngle),
+              false, cfg.bulletColor);
+            this._spiralAngle += 0.55;
+          }
+        } else if (this.type === EnemyType.SLUDGE_CUBE) {
+          // Zoner: advance to mid-range, then hold and keep laying poison.
+          if (dist <= 7) { wantX = 0; wantZ = 0; }
+        }
+        this._flopMove(dt, spd, H, wantX, wantZ);
         // Per-type emissions (locomotion handled by _flopMove)
         if (this.type === EnemyType.YELA_CUBE) {
           this._trailTimer -= dt;
@@ -649,7 +688,16 @@ export class Enemy {
                 {x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1},
                 {x:0.707,z:0.707},{x:-0.707,z:0.707},{x:0.707,z:-0.707},{x:-0.707,z:-0.707},
               ];
-              this._fireDir = dirs8[Math.floor(Math.random() * dirs8.length)];
+              // Aim the bullet-wall at the player: pick the 8-dir best aligned with them.
+              const _adx = playerPos.x - ex, _adz = playerPos.z - ez;
+              const _al = Math.hypot(_adx, _adz) || 1;
+              const _aux = _adx / _al, _auz = _adz / _al;
+              let _best = 0, _bestDot = -Infinity;
+              for (let k = 0; k < dirs8.length; k++) {
+                const d = dirs8[k].x * _aux + dirs8[k].z * _auz;
+                if (d > _bestDot) { _bestDot = d; _best = k; }
+              }
+              this._fireDir = dirs8[_best];
               if (this._aimArrow) {
                 this._aimArrow.position.set(ex + this._fireDir.x * 2.5, 0.02, ez + this._fireDir.z * 2.5);
                 this._aimArrow.rotation.y = Math.atan2(this._fireDir.x, this._fireDir.z);
@@ -692,7 +740,11 @@ export class Enemy {
             this._stateT -= dt;
             if (this._stateT <= 0) {
               this._state = 'moving';
-              this._target = { x: (Math.random()-0.5)*26, z: (Math.random()-0.5)*26 };
+              // Reposition near the player (offset ~4) rather than a fully random point.
+              this._target = {
+                x: playerPos.x + (Math.random() - 0.5) * 8,
+                z: playerPos.z + (Math.random() - 0.5) * 8,
+              };
               this._target.x = Math.max(-16, Math.min(16, this._target.x));
               this._target.z = Math.max(-16, Math.min(16, this._target.z));
             }

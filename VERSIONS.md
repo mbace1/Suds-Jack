@@ -3,85 +3,36 @@
 <!-- Rules:
   - Add a new ## vN entry at the top for EVERY commit that touches game files.
   - Stage this file alongside your changes: git add VERSIONS.md
-  - When v41 is added, move v31–v40 into the Archive section below.
+  - When v50 is reached, move v41–v49 into the Archive section below.
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v39 — 2026-06-29
-**Bullet visual pass — readability**
-- Bullets now render as additive glowing cores so they pop against the dark arena (no extra meshes — perf-safe)
-- Brighter defaults: player bright cyan-green (`0x66ffcc`), enemy hot orange-red (`0xff5533`)
-- Enemy bullets run 1.25× larger and gently pulse (per-bullet phase) so the threats you must dodge stay easy to track
-- Verified: glow material live, zero errors
-
-## v38 — 2026-06-29
-**Gate + convoy FX pass — set-piece presence**
-- Gate: added an additive glow-beam halo around the core laser (pulses with it) so it reads as an energy barrier, not a thin line
-- Convoy: living moths now leave a golden pooled trail as they sweep — the convoy reads as a streaking ribbon crossing the arena
-- Both reuse existing systems (trailPool); glow removed cleanly on gate deactivate/remove
-- Verified: gate glow present at wave 3, convoy emits ~35 trail marks, zero errors
-
-## v37 — 2026-06-29
-**Powerup / pickup VFX**
-- Collection pop: grabbing a pickup bursts 8 goo bits in its colour + a light camera kick (was a silent vanish)
-- Magnet pull-streak: a magnet-dragged pickup leaves a glowing trail (pooled) as it zips to the player
-- Reuses `chunkPool` (pop) and `trailPool` (streak) — no new allocation
-- Verified: collection spawns 8 pop chunks, zero errors
-
-## v36 — 2026-06-29
-**Per-enemy trail tuning — motion threat-reads**
-- New `TRAIL_CFG` gives each type its own motion-trail signature (cadence + size)
-- TORO (top threat) leaves a thick, dense streak (interval 0.035, size 0.85×r); GLOBBO subtle (0.08, 0.45×); SPITTOR sparse; cubes/specialists leave none
-- Trail emit gate + spawn size now driven per type via `_trailInterval` / `_trailMult` (replaces the flat blobs+TORO rule)
-- Verified: TORO mult 0.85 > GLOBBO 0.45 > cube 0, trails active, zero errors
-
-## v35 — 2026-06-29
-**Hit-feedback polish — weighted shake + muzzle flash**
-- Kill shake now scales with enemy size: `0.07 + radius×0.13` (GLOBBO ≈0.14, TORO ≈0.20, bosses more) — heavier enemies kick the camera harder
-- Light camera kick (0.035) on non-fatal hits; trauma caps so rapid fire never over-shakes
-- Muzzle flash: a brief additive pop at the gun barrel on every shot (expand-and-vanish over 0.05 s), shown instantly on fire
-- Verified: muzzle visible at 0.9 opacity on fire, zero errors
-
-## v34 — 2026-06-29
-**Impact spark**
-- Non-fatal bullet hits now fling a small spat of goo (3 chunks) outward from the contact point, in a cone around the surface normal
-- Tinted to the enemy's colour; reuses the pooled `chunkPool` (no new allocation)
-- Pairs with the v32 hit ripple to complete the hit moment; death still spawns its own full chunk burst
-- Verified: a non-fatal hit spawns 3 spark chunks via the collision path, zero errors
-
-## v33 — 2026-06-29
-**Pre-death tear**
-- Goo vertex shader gains `uTear` — violent high-frequency thrash (0.22×radius) that convulses the blob as it dies
-- Driven during `updateDeath`: strongest at death onset (~1), fading to 0 over the 0.28 s pop
-- Death now reads as a rupture/burst rather than a clean scale-pop; blobs only (Phong cubes unchanged)
-- Verified: uTear spikes to ~0.87 at death onset, decays, death completes cleanly, zero shader errors
-
-## v32 — 2026-06-29
-**In-shader hit ripple**
-- Goo vertex shader gains `uHit`/`uHitDir` — a concentric surface shockwave that spreads from the bullet's impact point and expands as it decays
-- `Enemy.hit(impactX, impactZ)` triggers it; ripple eases out over ~0.28 s on top of the existing emissive flash + squash
-- Impact direction passed from the bullet position so the wave originates where the shot lands (blobs only — Phong cubes unaffected)
-- Verified: uHit 1→0 decay on a surviving blob, clean shader compile, zero errors
-
-## v31 — 2026-06-29
-**Player movement VFX — velocity stretch**
-- Player now lunges along travel via the goo `uStretch`/`uStretchDir` uniforms (added v29), driven by smoothed velocity
-- Subtle while walking (~0.15), strong elongation along a dash (~0.44), relaxes to 0 when idle
-- Complements the existing dash ghost-trail (the player's "trail they leave")
-- Player-only change; verified idle 0 / walk 0.15 / dash 0.44 / relax 0, zero errors
-
-## v30 — 2026-06-29
-**Better-planned enemy clusters — pincer spawns**
-- Groups (3+ count) now fan across a ~1.5 rad arc instead of clumping at one edge point — they arrive on a broad front and pincer the player from several directions
-- Group members stagger their entry (×0.12 s each) for a rolling advance, and get a ×1.2 speed push so a cluster pushes in with intent rather than drifting
-- Twins (count 2) stay paired; single enemies unchanged
-- Fixes "slow-moving clusters that don't challenge" — a swarm now surrounds rather than presenting one dodge-able blob
-- Verified: swarm wave 3 fields 15 enemies across a 345° spawn-direction span, zero errors
-- (Systemic spawn/movement pass; per-enemy individual tuning still planned for later)
+## v40 — 2026-06-29
+**Cube behaviour variety (per-enemy pass pt.1)**
+- Cubes no longer share one aimless random walk — each type is now a distinct archetype:
+  - **YELA + REDD/PURP minis** — direct rushers (flop straight at the player)
+  - **REDD_CUBE** — flanker (approaches from a side angle, straightens as it closes)
+  - **PURP_CUBE** — circler + spiral (orbits at ~5 radius, fires a rotating spiral; gained a bullet `0xcc66ff`)
+  - **SLUDGE_CUBE** — positional zoner (advances to ~7 then holds, laying poison)
+  - **ORANGE_CUBE** — position & shoot, now actually targets near the player and aims its bullet-wall *at* the player (was random point + random direction)
+- `_flopMove` generalised to steer toward a per-type desired heading (cardinal-snapped, keeps the tumbling-cube look)
+- Verified: YELA closes, PURP holds radius ~5 while sweeping 35–57° + spiral fire, SLUDGE advances; zero errors
 
 ---
 
 ## Archive
+
+**v30–v39 summary (2026-06-29)**
+- v30: Pincer cluster spawns — groups fan across an arc, stagger entry, push in with intent
+- v31: Player movement VFX — velocity-driven directional stretch (walk/dash lunge)
+- v32: In-shader hit ripple — concentric shockwave from the bullet's impact point
+- v33: Pre-death tear — violent `uTear` convulsion as a blob dies
+- v34: Impact spark — goo bits flung from the contact point on a non-fatal hit
+- v35: Hit-feedback polish — enemy-weight kill shake + muzzle flash
+- v36: Per-enemy trail tuning — `TRAIL_CFG` motion signatures (TORO bold, blobs subtle)
+- v37: Powerup/pickup VFX — collection pop + magnet pull-streak
+- v38: Gate glow-beam halo + convoy golden trail ribbon
+- v39: Bullet visual pass — additive glow cores, brighter colours, pulsing enemy bullets
 
 **v20–v29 summary (2026-06-25 – 2026-06-29)**
 - v20: Seamless wave flow — no announcement/burst/shake between waves
