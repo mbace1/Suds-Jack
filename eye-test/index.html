@@ -45,6 +45,36 @@
   #fsBtn:active{background:var(--paper2);}
   :fullscreen body, :-webkit-full-screen body{ height:100vh; }
 
+  /* ---- speed mode ---- */
+  #modeBtn{
+    flex:0 0 auto; background:var(--paper); border:2px solid rgba(27,58,75,.18);
+    border-radius:999px; padding:4px 11px; font-size:clamp(11px,1.5vw,15px);
+    box-shadow:0 2px 0 rgba(27,58,75,.12); cursor:pointer;
+    color:var(--ink); font-weight:bold; letter-spacing:.3px;
+    display:flex; align-items:center; gap:4px; white-space:nowrap; transition:background .12s, color .12s, border-color .12s;
+  }
+  #modeBtn.on{ background:var(--accent); color:#fff; border-color:var(--accent); box-shadow:0 2px 0 #225d79; }
+  #modeBtn:active{ opacity:.8; }
+  #speedInfo{ display:none; align-items:center; gap:clamp(5px,1.2vw,10px); }
+  body.speed #speedInfo{ display:flex; }
+  body.speed .pill{ display:none; }
+  body.speed .card .tag{ opacity:0; }
+  body.speed #prompt{ font-size:clamp(11px,1.5vw,16px); opacity:.5;
+    padding-top:2px; padding-bottom:clamp(3px,.8vh,8px); }
+  body.speed #vs{ opacity:.15; }
+  #spTimer{ font-variant-numeric:tabular-nums; min-width:4.5ch; text-align:right; }
+
+  /* ---- mode tabs (start screen) ---- */
+  .mode-tabs{ display:flex; gap:0; border-radius:999px; overflow:hidden;
+    border:2px solid rgba(27,58,75,.2); box-shadow:0 2px 0 rgba(27,58,75,.1); }
+  .mode-tab{ cursor:pointer; border:none; font-family:inherit; font-weight:bold;
+    font-size:clamp(13px,2vw,18px); letter-spacing:.4px; padding:9px 22px;
+    background:var(--paper2); color:var(--ink); transition:background .12s, color .12s; }
+  .mode-tab.active{ background:var(--accent); color:#fff; }
+  .mode-tab:first-child{ border-radius:999px 0 0 999px; }
+  .mode-tab:last-child { border-radius:0 999px 999px 0; }
+  .mode-desc{ font-size:clamp(12px,1.7vw,15px); opacity:.6; margin-top:-8px; }
+
   /* ---- play area ---- */
   #stage{
     flex:1 1 auto; display:flex; align-items:stretch; justify-content:center;
@@ -130,6 +160,11 @@
     <div class="pill">Score <b id="score">0</b></div>
     <div class="pill">Streak <b id="streak">0</b></div>
     <div class="pill" id="lives">❤️❤️❤️</div>
+    <button id="modeBtn" title="Toggle speed mode">⚡ Speed</button>
+    <div id="speedInfo">
+      <div class="pill"><b id="spRound">0</b>/20</div>
+      <div class="pill" id="spTimer">0.0s</div>
+    </div>
     <button id="fsBtn" title="Fullscreen">⛶</button>
   </div>
 
@@ -144,10 +179,13 @@
   <!-- Start -->
   <div class="overlay" id="start">
     <h1>20/20<small>EYESIGHT TEST</small></h1>
-    <p>Two pictures of the same thing — a house, a cow, a tree… both run through optometry-style
-       distortions: blur, low contrast, haze, double-vision and more.
+    <p>Two pictures of the same thing — both distorted with optometry-style filters.
        <b>One is always a little clearer.</b> Tap it.</p>
-    <p class="big">Read the eye chart. Trust your eyes.</p>
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="normTab">Normal</button>
+      <button class="mode-tab" id="speedTab">⚡ Speed</button>
+    </div>
+    <p class="mode-desc" id="modeDesc">Endless rounds · streak scoring · 3 lives</p>
     <button class="btn" id="startBtn">Begin Test</button>
     <p class="hint">Tap a picture · or use ← / → keys · best in landscape</p>
   </div>
@@ -184,11 +222,20 @@ const elFb = $('#fb');
 
 const LIVES_START = 3;
 const HI_KEY = 'eyeTestHi';
+const SPEED_HI_KEY = 'eyeTestSpeedBest';
+const SPEED_ROUNDS = 20;
 
 let state = {
   round:0, score:0, streak:0, lives:LIVES_START,
   clearSide:'L', locked:true, playing:false
 };
+
+let speedMode = false;
+let speedCorrect = 0, speedStart = 0, speedEnd = 0;
+let speedTimerIv = null;
+
+const spRoundEl = $('#spRound');
+const spTimerEl = $('#spTimer');
 
 /* ---------- palette ---------- */
 const SKY   = '#bfe3f2', SKY2='#dceffa';
@@ -438,9 +485,22 @@ function choose(side){
   if(state.locked || !state.playing) return;
   state.locked = true;
   const correct = side === state.clearSide;
+
+  if(speedMode){
+    if(correct) speedCorrect++;
+    spRoundEl.textContent = state.round;
+    if(state.round >= SPEED_ROUNDS){
+      speedEnd = Date.now();
+      clearInterval(speedTimerIv);
+      gameOver();
+    } else {
+      newRound();
+    }
+    return;
+  }
+
   const chosen = side==='L'?cardL:cardR;
   const other  = side==='L'?cardR:cardL;
-
   if(correct){
     state.streak++;
     const bonus = 100 + (state.streak-1)*20;
@@ -455,7 +515,6 @@ function choose(side){
     fbEl.textContent = '✗ that one was blurrier'; fbEl.style.color = 'var(--bad)';
   }
   refreshHud();
-
   setTimeout(()=>{
     if(state.lives<=0) gameOver();
     else newRound();
@@ -463,6 +522,10 @@ function choose(side){
 }
 
 function refreshHud(){
+  if(speedMode){
+    spRoundEl.textContent = state.round;
+    return;
+  }
   elScore.textContent  = state.score;
   elStreak.textContent = state.streak;
   elLives.textContent  = '❤️'.repeat(Math.max(0,state.lives)) + '🖤'.repeat(LIVES_START-Math.max(0,state.lives));
@@ -470,19 +533,51 @@ function refreshHud(){
 
 /* ---------- start / end ---------- */
 function startGame(){
+  speedCorrect = 0; speedStart = 0; speedEnd = 0;
+  clearInterval(speedTimerIv);
   state = {round:0, score:0, streak:0, lives:LIVES_START, clearSide:'L', locked:true, playing:true};
   refreshHud();
   $('#start').classList.add('hidden');
   $('#over').classList.add('hidden');
+  if(speedMode){
+    spRoundEl.textContent = '0';
+    spTimerEl.textContent = '0.0s';
+    speedStart = Date.now();
+    speedTimerIv = setInterval(()=>{
+      spTimerEl.textContent = ((Date.now()-speedStart)/1000).toFixed(1)+'s';
+    }, 100);
+  }
   newRound();
 }
 
 function gameOver(){
   state.playing = false;
+  clearInterval(speedTimerIv);
+
+  if(speedMode){
+    const elapsed = ((speedEnd - speedStart) / 1000).toFixed(2);
+    const perfect = speedCorrect === SPEED_ROUNDS;
+    const prevBest = parseFloat(localStorage.getItem(SPEED_HI_KEY)) || Infinity;
+    if(perfect && parseFloat(elapsed) < prevBest)
+      localStorage.setItem(SPEED_HI_KEY, elapsed);
+    const bestTime = parseFloat(localStorage.getItem(SPEED_HI_KEY)) || null;
+
+    $('#overTitle').textContent = perfect ? '20/20' : `${speedCorrect}/${SPEED_ROUNDS}`;
+    $('#overScore').textContent = perfect
+      ? `Perfect score! · ${elapsed}s`
+      : `${speedCorrect} correct, ${SPEED_ROUNDS-speedCorrect} missed · ${elapsed}s`;
+    $('#overMsg').textContent = perfect
+      ? 'Flawless vision. Superhuman acuity! 🦅'
+      : speedCorrect >= 16 ? 'Sharp eyes — almost perfect.'
+      : speedCorrect >= 12 ? 'Pretty good. Keep practising.'
+      : 'Maybe see an optometrist… 👓';
+    $('#overBest').textContent = bestTime ? `Best time (perfect): ${bestTime}s` : '';
+    $('#over').classList.remove('hidden');
+    return;
+  }
+
   const hi = Math.max(state.score, +(localStorage.getItem(HI_KEY)||0));
   localStorage.setItem(HI_KEY, hi);
-
-  // a playful "diagnosis" based on how far they got
   let line = '20/20 vision', sub = 'Perfect eyes!';
   const r = state.round;
   if(r < 4)      { line='20/200';  sub='Maybe see an optometrist… 👓'; }
@@ -490,13 +585,32 @@ function gameOver(){
   else if(r < 13){ line='20/40';   sub='Pretty sharp!'; }
   else if(r < 20){ line='20/25';   sub='Eagle-ish eyes. 🦅'; }
   else           { line='20/15';   sub='Superhuman acuity!'; }
-
   $('#overTitle').textContent = `Diagnosis: ${line}`;
   $('#overScore').textContent = `Score ${state.score} · reached round ${state.round}`;
   $('#overMsg').textContent = sub;
   $('#overBest').textContent = `Best score: ${hi}`;
   $('#over').classList.remove('hidden');
+  // re-sync tabs for the "again" path back to start screen
+  setSpeedMode(speedMode);
 }
+
+/* ---------- speed mode toggle ---------- */
+const modeBtn = $('#modeBtn');
+const normTab = $('#normTab'), speedTab = $('#speedTab'), modeDesc = $('#modeDesc');
+
+function setSpeedMode(on){
+  speedMode = on;
+  document.body.classList.toggle('speed', on);
+  modeBtn.classList.toggle('on', on);
+  normTab.classList.toggle('active', !on);
+  speedTab.classList.toggle('active', on);
+  modeDesc.textContent = on
+    ? '20 rounds · no feedback · timed · perfect score = 20/20'
+    : 'Endless rounds · streak scoring · 3 lives';
+}
+normTab.addEventListener('click',  ()=>{ if(!state.playing) setSpeedMode(false); });
+speedTab.addEventListener('click', ()=>{ if(!state.playing) setSpeedMode(true);  });
+modeBtn.addEventListener('click',  ()=>{ if(!state.playing) setSpeedMode(!speedMode); });
 
 /* ---------- input ---------- */
 cardL.addEventListener('click', ()=>choose('L'));
