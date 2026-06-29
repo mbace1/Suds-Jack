@@ -33,6 +33,10 @@ export class Player {
     this._fireRateBoost = 0;
     this._sq  = 1.0;
     this._sqV = 0.0;
+    // Movement stretch (v31): velocity-driven directional lunge via goo shader
+    this._prevX = 0; this._prevZ = 0;
+    this._velX = 0; this._velZ = 0;
+    this._stretch = 0;
     this.onShoot   = null;
     this._weaponMode   = 'SINGLE';
     this._burstQueue   = [];
@@ -95,6 +99,10 @@ export class Player {
     this._fireRateBoost = 0;
     this._sq  = 1.0;
     this._sqV = 0.0;
+    this._prevX = 0; this._prevZ = 0;
+    this._velX = 0; this._velZ = 0;
+    this._stretch = 0;
+    this.mat.uniforms.uStretch.value = 0;
     this.maxHp         = MAX_HP;
     this._weaponMode   = 'SINGLE';
     this._burstQueue   = [];
@@ -210,6 +218,22 @@ export class Player {
     const hz = halfZ - PLAYER_RADIUS;
     this.mesh.position.x = Math.max(-hx, Math.min(hx, this.mesh.position.x));
     this.mesh.position.z = Math.max(-hz, Math.min(hz, this.mesh.position.z));
+
+    // ── Movement stretch (v31): subtle lunge while walking, strong on dash ────
+    {
+      const invDt = 1 / Math.max(dt, 1e-4);
+      const ivx = (this.mesh.position.x - this._prevX) * invDt;
+      const ivz = (this.mesh.position.z - this._prevZ) * invDt;
+      this._prevX = this.mesh.position.x;
+      this._prevZ = this.mesh.position.z;
+      this._velX += (ivx - this._velX) * 0.4;
+      this._velZ += (ivz - this._velZ) * 0.4;
+      const sp = Math.hypot(this._velX, this._velZ);
+      const target = Math.min(sp * 0.025, 0.45);   // walk ≈0.15, dash ≈0.45
+      this._stretch += (target - this._stretch) * 0.35;
+      this.mat.uniforms.uStretch.value = this._stretch;
+      if (sp > 0.3) this.mat.uniforms.uStretchDir.value.set(this._velX / sp, this._velZ / sp);
+    }
 
     for (let i = this._burstQueue.length - 1; i >= 0; i--) {
       this._burstQueue[i].t -= dt;

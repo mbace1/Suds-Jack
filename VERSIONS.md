@@ -7,6 +7,13 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v31 — 2026-06-29
+**Player movement VFX — velocity stretch**
+- Player now lunges along travel via the goo `uStretch`/`uStretchDir` uniforms (added v29), driven by smoothed velocity
+- Subtle while walking (~0.15), strong elongation along a dash (~0.44), relaxes to 0 when idle
+- Complements the existing dash ghost-trail (the player's "trail they leave")
+- Player-only change; verified idle 0 / walk 0.15 / dash 0.44 / relax 0, zero errors
+
 ## v30 — 2026-06-29
 **Better-planned enemy clusters — pincer spawns**
 - Groups (3+ count) now fan across a ~1.5 rad arc instead of clumping at one edge point — they arrive on a broad front and pincer the player from several directions
