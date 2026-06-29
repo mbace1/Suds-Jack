@@ -7,6 +7,13 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v32 — 2026-06-29
+**In-shader hit ripple**
+- Goo vertex shader gains `uHit`/`uHitDir` — a concentric surface shockwave that spreads from the bullet's impact point and expands as it decays
+- `Enemy.hit(impactX, impactZ)` triggers it; ripple eases out over ~0.28 s on top of the existing emissive flash + squash
+- Impact direction passed from the bullet position so the wave originates where the shot lands (blobs only — Phong cubes unaffected)
+- Verified: uHit 1→0 decay on a surviving blob, clean shader compile, zero errors
+
 ## v31 — 2026-06-29
 **Player movement VFX — velocity stretch**
 - Player now lunges along travel via the goo `uStretch`/`uStretchDir` uniforms (added v29), driven by smoothed velocity

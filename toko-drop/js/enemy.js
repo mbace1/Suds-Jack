@@ -12,6 +12,8 @@ const GOO_VERT = `
   uniform float uRadius;
   uniform float uStretch;     // 0 = none; ~0.45 = strong lunge
   uniform vec2  uStretchDir;  // normalized world/obj xz travel direction
+  uniform float uHit;         // 1 at impact, decays to 0 — drives the hit ripple
+  uniform vec2  uHitDir;      // obj-space xz direction toward the impact point
   varying vec3 vNormal;
   varying vec3 vViewPos;
   void main() {
@@ -29,6 +31,10 @@ const GOO_VERT = `
     // factors cancel here, giving consistent lump shading independent of blob size.
     vec3 gradWave = vec3(cos(a1) * 3.6, cos(a2) * 4.2, cos(a3) * 4.8) * (0.3333 / uRadius);
     vec3 N = normalize(normal - gradWave * amp);
+    // Hit ripple: concentric waves spreading from the impact point, expanding as uHit decays.
+    float hd = dot(normalize(q), vec3(uHitDir.x, 0.0, uHitDir.y));
+    float ripple = sin(hd * 9.0 - (1.0 - uHit) * 16.0) * uHit;
+    pos += normal * ripple * 0.11 * uRadius;
     // Directional squash-stretch: lunge along travel, compress height (volume feel).
     vec3 sdir = vec3(uStretchDir.x, 0.0, uStretchDir.y);
     pos  += sdir * dot(pos, sdir) * uStretch;
@@ -94,6 +100,8 @@ export function makeGooMat(color, opacity, wobble = 0, radius = 0.5) {
       uRadius:     { value: radius },
       uStretch:    { value: 0 },
       uStretchDir: { value: new THREE.Vector2(0, 0) },
+      uHit:        { value: 0 },
+      uHitDir:     { value: new THREE.Vector2(0, 0) },
     },
     transparent: opacity < 1,
     depthWrite:  opacity >= 0.9,
@@ -185,6 +193,7 @@ export class Enemy {
     this._stretch = 0;
     this._motionTrailReady = false;
     this._motionTrailTimer = 0;
+    this._hitRipple = 0; // v32: decays 1→0 after a hit, drives the goo surface ripple
 
     // State machine fields
     this._state        = 'idle';
@@ -469,10 +478,21 @@ export class Enemy {
     return segGroup;
   }
 
-  hit() {
+  hit(impactX, impactZ) {
     if (!this.alive) return false;
     this._flashT    = 0.12;
     this._sqV      -= 0.75;
+
+    // Trigger the goo surface ripple from the impact point (blobs only).
+    this._hitRipple = 1;
+    if (BLOB_TYPES.has(this.type) && this.mat.uniforms && this.mat.uniforms.uHitDir
+        && impactX !== undefined) {
+      const p = this.position;
+      let dx = impactX - p.x, dz = impactZ - p.z;
+      const d = Math.hypot(dx, dz);
+      if (d > 0.001) this.mat.uniforms.uHitDir.value.set(dx / d, dz / d);
+      else           this.mat.uniforms.uHitDir.value.set(0, 0);
+    }
 
     if (this.type === EnemyType.BAMBU && this._segs && this._segs.length > 0) {
       const topSeg = this._segs.pop();
@@ -780,6 +800,11 @@ export class Enemy {
         this._stretch += (target - this._stretch) * 0.4;
         this.mat.uniforms.uStretch.value = this._stretch;
         if (sp > 0.4) this.mat.uniforms.uStretchDir.value.set(this._velX / sp, this._velZ / sp);
+        // Hit ripple decay (v32) — eases the goo surface shockwave back to rest over ~0.28 s
+        if (this._hitRipple > 0) {
+          this._hitRipple = Math.max(0, this._hitRipple - dt / 0.28);
+          this.mat.uniforms.uHit.value = this._hitRipple;
+        }
       }
 
       // Motion-trail (afterimage) emission for fast movers — blobs + TORO.

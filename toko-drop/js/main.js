@@ -1036,7 +1036,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v31', 16, uiCanvas.height - 12);
+  ctx.fillText('v32', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1610,7 +1610,7 @@ function loop() {
       const dx = b.mesh.position.x - e.position.x;
       const dz = b.mesh.position.z - e.position.z;
       if (Math.hypot(dx, dz) < BULLET_R * BULLET_CONFIG.playerBulletScale + e.radius) {
-        const died = e.hit();
+        const died = e.hit(b.mesh.position.x, b.mesh.position.z);
         if (BULLET_CONFIG.playerPiercing) {
           if (!b._hitIds) b._hitIds = new Set();
           b._hitIds.add(e);
