@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>20/20 — Eyesight Test Game</title>
+<style>
+  :root{
+    --ink:#1b3a4b; --paper:#f4efe4; --paper2:#e9e1cf;
+    --good:#3fa66b; --bad:#d8503e; --accent:#2f7da3;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{width:100%;height:100%;overflow:hidden;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;}
+  body{
+    background:radial-gradient(120% 120% at 50% 0%, #fbf7ee 0%, #e7dcc6 55%, #d3c4a3 100%);
+    color:var(--ink); user-select:none; touch-action:manipulation;
+    display:flex; flex-direction:column; height:100dvh;
+  }
+
+  /* ---- top HUD ---- */
+  #hud{
+    flex:0 0 auto; display:flex; align-items:center; gap:14px;
+    padding:8px clamp(10px,2.5vw,28px); font-weight:bold;
+    letter-spacing:.5px;
+  }
+  #hud .brand{font-size:clamp(15px,2.4vw,24px); color:var(--accent); margin-right:auto;
+    text-shadow:0 1px 0 #fff;}
+  #hud .brand small{color:var(--ink); opacity:.55; font-weight:bold; letter-spacing:1px;}
+  .pill{
+    background:var(--paper); border:2px solid rgba(27,58,75,.18);
+    border-radius:999px; padding:5px 13px; font-size:clamp(12px,1.8vw,18px);
+    box-shadow:0 2px 0 rgba(27,58,75,.12); display:flex; gap:6px; align-items:center;
+    white-space:nowrap;
+  }
+  .pill b{color:var(--accent);}
+  #lives{letter-spacing:2px;}
+
+  /* ---- play area ---- */
+  #stage{
+    flex:1 1 auto; display:flex; align-items:stretch; justify-content:center;
+    gap:clamp(10px,2.2vw,30px); padding:0 clamp(10px,2.2vw,30px) clamp(8px,1.6vh,16px);
+    min-height:0;
+  }
+  .card{
+    position:relative; flex:1 1 0; min-width:0; max-width:48%;
+    background:var(--paper); border-radius:18px;
+    border:3px solid rgba(27,58,75,.15);
+    box-shadow:0 8px 22px rgba(27,58,75,.18), inset 0 0 0 6px #fff;
+    overflow:hidden; cursor:pointer;
+    transition:transform .08s ease, box-shadow .12s ease, border-color .12s;
+    display:flex;
+  }
+  .card:active{transform:scale(.985);}
+  .card canvas{width:100%; height:100%; display:block; image-rendering:auto;}
+  .card .tag{
+    position:absolute; left:50%; bottom:10px; transform:translateX(-50%);
+    background:rgba(27,58,75,.82); color:#fff; font-size:clamp(11px,1.6vw,16px);
+    padding:4px 14px; border-radius:999px; font-weight:bold; letter-spacing:1px;
+    pointer-events:none; opacity:.85;
+  }
+  .card.correct{border-color:var(--good); box-shadow:0 0 0 4px var(--good), 0 8px 22px rgba(63,166,107,.4);}
+  .card.wrong{border-color:var(--bad); box-shadow:0 0 0 4px var(--bad), 0 8px 22px rgba(216,80,62,.4);}
+  .card.dim{opacity:.45; filter:grayscale(.4);}
+
+  #vs{
+    align-self:center; font-weight:bold; color:var(--ink); opacity:.4;
+    font-size:clamp(14px,2vw,22px);
+  }
+
+  /* ---- prompt strip ---- */
+  #prompt{
+    flex:0 0 auto; text-align:center; padding:6px 12px 12px;
+    font-size:clamp(13px,2vw,20px); font-weight:bold; color:var(--ink);
+  }
+  #prompt span{color:var(--accent);}
+  #prompt .feedback{display:inline-block; min-width:1px;}
+
+  /* ---- overlays ---- */
+  .overlay{
+    position:fixed; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center; gap:18px;
+    padding:24px; z-index:20;
+    background:radial-gradient(120% 120% at 50% 0%, rgba(251,247,238,.96), rgba(211,196,163,.97));
+    backdrop-filter:blur(2px);
+  }
+  .overlay h1{font-size:clamp(30px,7vw,68px); color:var(--accent);
+    letter-spacing:1px; line-height:1; text-shadow:0 2px 0 #fff;}
+  .overlay h1 small{display:block; font-size:.28em; letter-spacing:6px; color:var(--ink);
+    opacity:.6; margin-top:.5em;}
+  .overlay p{max-width:640px; font-size:clamp(14px,2.4vw,19px); line-height:1.5; opacity:.85;}
+  .overlay .big{font-size:clamp(22px,4vw,38px); font-weight:bold; color:var(--ink);}
+  .btn{
+    cursor:pointer; border:none; font-family:inherit; font-weight:bold;
+    font-size:clamp(16px,2.6vw,24px); letter-spacing:1px;
+    color:#fff; background:var(--accent); padding:14px 38px; border-radius:999px;
+    box-shadow:0 5px 0 #225d79, 0 10px 22px rgba(47,125,163,.45);
+    transition:transform .06s, box-shadow .06s;
+  }
+  .btn:active{transform:translateY(4px); box-shadow:0 1px 0 #225d79;}
+  .hint{font-size:clamp(12px,1.8vw,15px); opacity:.6;}
+  .hidden{display:none !important;}
+
+  /* rotate nudge */
+  #rotate{
+    position:fixed; inset:0; z-index:50; display:none;
+    flex-direction:column; align-items:center; justify-content:center; gap:18px;
+    background:#1b3a4b; color:#f4efe4; text-align:center; padding:30px;
+  }
+  #rotate .ph{font-size:64px; animation:spin 2.2s ease-in-out infinite;}
+  @keyframes spin{0%,40%{transform:rotate(0)}60%,100%{transform:rotate(90deg)}}
+  @media (orientation:portrait){ #rotate{display:flex;} }
+</style>
+</head>
+<body>
+
+  <div id="hud">
+    <div class="brand">👓 20/20 <small>EYESIGHT&nbsp;TEST</small></div>
+    <div class="pill">Round <b id="round">1</b></div>
+    <div class="pill">Score <b id="score">0</b></div>
+    <div class="pill">Streak <b id="streak">0</b></div>
+    <div class="pill" id="lives">❤️❤️❤️</div>
+  </div>
+
+  <div id="stage">
+    <div class="card" id="cardL" data-side="L"><canvas></canvas><div class="tag">TAP IF CLEARER</div></div>
+    <div id="vs">vs</div>
+    <div class="card" id="cardR" data-side="R"><canvas></canvas><div class="tag">TAP IF CLEARER</div></div>
+  </div>
+
+  <div id="prompt">Which picture is <span>clearer</span>? &nbsp;<span class="feedback" id="fb"></span></div>
+
+  <!-- Start -->
+  <div class="overlay" id="start">
+    <h1>20/20<small>EYESIGHT TEST</small></h1>
+    <p>Two pictures of the same thing — a house, a cow, a tree… both run through optometry-style
+       distortions: blur, low contrast, haze, double-vision and more.
+       <b>One is always a little clearer.</b> Tap it.</p>
+    <p class="big">Read the eye chart. Trust your eyes.</p>
+    <button class="btn" id="startBtn">Begin Test</button>
+    <p class="hint">Tap a picture · or use ← / → keys · best in landscape</p>
+  </div>
+
+  <!-- Game over -->
+  <div class="overlay hidden" id="over">
+    <h1 id="overTitle">Test Complete</h1>
+    <p class="big" id="overScore">Score 0</p>
+    <p id="overMsg"></p>
+    <button class="btn" id="againBtn">Test Again</button>
+    <p class="hint" id="overBest"></p>
+  </div>
+
+  <!-- rotate nudge -->
+  <div id="rotate"><div class="ph">📱</div><div style="font-size:22px;font-weight:bold">Rotate to landscape</div><div style="opacity:.7">This eye test wants a wide view.</div></div>
+
+<script>
+"use strict";
+/* ============================================================
+   20/20 — Eyesight Test Game
+   Two procedurally-drawn pictures, both filtered, one clearer.
+   Self-contained: no assets, no build step.
+   ============================================================ */
+
+const $ = s => document.querySelector(s);
+const cardL = $('#cardL'), cardR = $('#cardR');
+const canvasL = cardL.querySelector('canvas');
+const canvasR = cardR.querySelector('canvas');
+const ctxL = canvasL.getContext('2d');
+const ctxR = canvasR.getContext('2d');
+
+const elRound = $('#round'), elScore = $('#score'), elStreak = $('#streak'), elLives = $('#lives');
+const elFb = $('#fb');
+
+const LIVES_START = 3;
+const HI_KEY = 'eyeTestHi';
+
+let state = {
+  round:0, score:0, streak:0, lives:LIVES_START,
+  clearSide:'L', locked:true, playing:false
+};
+
+/* ---------- palette ---------- */
+const SKY   = '#bfe3f2', SKY2='#dceffa';
+const GRASS = '#8fcf6b', GRASS2='#6fb84e';
+const SUN   = '#ffd34d';
+
+/* ============================================================
+   SCENES — each draws the same picture; pure procedural art.
+   Coordinates are in a fixed 1000x1000 space, scaled to canvas.
+   ============================================================ */
+function bg(ctx, top, bottom){
+  const g = ctx.createLinearGradient(0,0,0,1000);
+  g.addColorStop(0, top); g.addColorStop(1, bottom);
+  ctx.fillStyle = g; ctx.fillRect(0,0,1000,1000);
+}
+function ground(ctx, y, col){ ctx.fillStyle=col; ctx.fillRect(0,y,1000,1000-y); }
+function circle(ctx,x,y,r,c){ ctx.fillStyle=c; ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill(); }
+function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); }
+
+const SCENES = {
+  house(ctx){
+    bg(ctx, SKY2, SKY); ground(ctx, 720, GRASS);
+    circle(ctx, 840, 150, 80, SUN);
+    // body
+    ctx.fillStyle='#f2e7c9'; roundRect(ctx,300,420,400,310,10); ctx.fill();
+    // roof
+    ctx.fillStyle='#c0533c'; ctx.beginPath();
+    ctx.moveTo(260,430); ctx.lineTo(500,250); ctx.lineTo(740,430); ctx.closePath(); ctx.fill();
+    // door
+    ctx.fillStyle='#7b4a2d'; roundRect(ctx,455,560,90,170,8); ctx.fill();
+    circle(ctx,530,650,8,'#ffd34d');
+    // windows
+    ctx.fillStyle='#8fd0e8';
+    roundRect(ctx,340,470,90,90,6); ctx.fill();
+    roundRect(ctx,570,470,90,90,6); ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=8;
+    ctx.beginPath(); ctx.moveTo(385,470); ctx.lineTo(385,560);
+    ctx.moveTo(340,515); ctx.lineTo(430,515);
+    ctx.moveTo(615,470); ctx.lineTo(615,560);
+    ctx.moveTo(570,515); ctx.lineTo(660,515); ctx.stroke();
+    // chimney
+    ctx.fillStyle='#9a5a3f'; ctx.fillRect(620,300,55,110);
+  },
+  cow(ctx){
+    bg(ctx, SKY2, SKY); ground(ctx, 700, GRASS2);
+    circle(ctx, 160, 160, 70, SUN);
+    // body
+    ctx.fillStyle='#fff'; roundRect(ctx,280,420,420,230,90); ctx.fill();
+    // spots
+    ctx.fillStyle='#2c2c2c';
+    circle(ctx,380,500,46,'#2c2c2c'); circle(ctx,560,560,54,'#2c2c2c'); circle(ctx,640,460,30,'#2c2c2c');
+    // legs
+    ctx.fillStyle='#fff'; [330,440,560,650].forEach(x=>ctx.fillRect(x,630,46,120));
+    ctx.fillStyle='#2c2c2c'; [330,440,560,650].forEach(x=>ctx.fillRect(x,720,46,30));
+    // head
+    ctx.fillStyle='#fff'; roundRect(ctx,640,360,180,150,60); ctx.fill();
+    ctx.fillStyle='#f2c0c8'; roundRect(ctx,760,430,80,70,30); ctx.fill(); // muzzle
+    circle(ctx,790,455,9,'#2c2c2c'); circle(ctx,815,455,9,'#2c2c2c');
+    circle(ctx,690,400,12,'#2c2c2c'); // eye
+    // ears + horns
+    ctx.fillStyle='#fff'; circle(ctx,650,360,26,'#fff');
+    ctx.fillStyle='#e8d6a0'; circle(ctx,700,345,16,'#e8d6a0'); circle(ctx,760,345,16,'#e8d6a0');
+    // tail
+    ctx.strokeStyle='#fff'; ctx.lineWidth=18; ctx.beginPath(); ctx.moveTo(285,460); ctx.quadraticCurveTo(220,560,250,660); ctx.stroke();
+    ctx.fillStyle='#2c2c2c'; circle(ctx,250,665,18,'#2c2c2c');
+  },
+  tree(ctx){
+    bg(ctx, SKY2, SKY); ground(ctx, 760, GRASS);
+    circle(ctx, 830, 170, 70, SUN);
+    ctx.fillStyle='#7b4a2d'; ctx.fillRect(460,520,90,260);
+    ctx.fillStyle='#4ea64e';
+    circle(ctx,505,420,180,'#4ea64e');
+    circle(ctx,360,470,120,'#57b657'); circle(ctx,650,470,120,'#57b657');
+    circle(ctx,505,330,120,'#62c062');
+    // apples
+    ['#d8503e','#d8503e','#d8503e','#e86a58'].forEach((c,i)=>
+      circle(ctx, 420+i*95, 420+ (i%2)*70, 22, c));
+  },
+  cat(ctx){
+    bg(ctx, '#fbe7c6', '#f6d49b'); ground(ctx, 760, '#caa46a');
+    // body
+    ctx.fillStyle='#f59e3c'; roundRect(ctx,360,470,300,250,80); ctx.fill();
+    // tail
+    ctx.strokeStyle='#f59e3c'; ctx.lineWidth=46; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(650,640); ctx.quadraticCurveTo(800,620,770,470); ctx.stroke();
+    // head
+    ctx.fillStyle='#f59e3c'; circle(ctx,500,400,160,'#f59e3c');
+    // ears
+    ctx.beginPath(); ctx.moveTo(370,300); ctx.lineTo(410,150); ctx.lineTo(500,290); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(630,300); ctx.lineTo(590,150); ctx.lineTo(500,290); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#f7c08a'; circle(ctx,500,470,70,'#f7c08a'); // muzzle
+    // eyes
+    circle(ctx,440,380,30,'#fff'); circle(ctx,560,380,30,'#fff');
+    circle(ctx,445,385,15,'#2c2c2c'); circle(ctx,555,385,15,'#2c2c2c');
+    // nose + mouth
+    ctx.fillStyle='#d8503e'; ctx.beginPath(); ctx.moveTo(485,450); ctx.lineTo(515,450); ctx.lineTo(500,470); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle='#7b4a2d'; ctx.lineWidth=4;
+    // whiskers
+    ctx.beginPath();
+    ctx.moveTo(420,470); ctx.lineTo(300,450); ctx.moveTo(420,485); ctx.lineTo(300,500);
+    ctx.moveTo(580,470); ctx.lineTo(700,450); ctx.moveTo(580,485); ctx.lineTo(700,500); ctx.stroke();
+  },
+  boat(ctx){
+    bg(ctx, '#cdeefb', '#e9f7ff');
+    circle(ctx, 200, 180, 75, SUN);
+    // sea
+    ctx.fillStyle='#3f9bd0'; ctx.fillRect(0,640,1000,360);
+    ctx.fillStyle='#5fb0de';
+    for(let i=0;i<6;i++){ ctx.beginPath(); ctx.arc(90+i*180,660,60,Math.PI,0); ctx.fill(); }
+    // hull
+    ctx.fillStyle='#b1432e'; ctx.beginPath();
+    ctx.moveTo(330,600); ctx.lineTo(680,600); ctx.lineTo(620,720); ctx.lineTo(390,720); ctx.closePath(); ctx.fill();
+    // mast + sails
+    ctx.strokeStyle='#7b4a2d'; ctx.lineWidth=14; ctx.beginPath(); ctx.moveTo(505,610); ctx.lineTo(505,300); ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.moveTo(505,320); ctx.lineTo(505,580); ctx.lineTo(360,580); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#f2e7c9'; ctx.beginPath(); ctx.moveTo(520,320); ctx.lineTo(520,580); ctx.lineTo(660,580); ctx.closePath(); ctx.fill();
+    // flag
+    ctx.fillStyle='#d8503e'; ctx.beginPath(); ctx.moveTo(505,300); ctx.lineTo(580,320); ctx.lineTo(505,340); ctx.closePath(); ctx.fill();
+  },
+  flower(ctx){
+    bg(ctx, SKY2, SKY); ground(ctx, 720, GRASS);
+    ctx.strokeStyle='#3f8f3f'; ctx.lineWidth=26; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(500,720); ctx.lineTo(500,420); ctx.stroke();
+    // leaves
+    ctx.fillStyle='#4ea64e';
+    ctx.beginPath(); ctx.ellipse(420,560,70,30,-0.5,0,7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(580,610,70,30,0.5,0,7); ctx.fill();
+    // petals
+    ctx.fillStyle='#e85d8a';
+    for(let i=0;i<8;i++){ const a=i/8*Math.PI*2; circle(ctx,500+Math.cos(a)*120,360+Math.sin(a)*120,62,'#e85d8a'); }
+    circle(ctx,500,360,80,SUN);
+    circle(ctx,840,170,70,SUN);
+  },
+  fish(ctx){
+    bg(ctx,'#2f86b8','#1f6a96');
+    // bubbles
+    ctx.fillStyle='rgba(255,255,255,.35)';
+    [[200,200,30],[260,300,18],[800,250,26],[760,150,14]].forEach(b=>circle(ctx,b[0],b[1],b[2],'rgba(255,255,255,.35)'));
+    // body
+    ctx.fillStyle='#ff8c42'; ctx.beginPath(); ctx.ellipse(480,500,210,140,0,0,7); ctx.fill();
+    // tail
+    ctx.beginPath(); ctx.moveTo(680,500); ctx.lineTo(840,400); ctx.lineTo(840,600); ctx.closePath(); ctx.fill();
+    // stripes
+    ctx.fillStyle='#fff';
+    [380,470,560].forEach(x=>{ ctx.beginPath(); ctx.ellipse(x,500,26,130,0,0,7); ctx.fill(); });
+    // eye
+    circle(ctx,360,460,34,'#fff'); circle(ctx,355,460,16,'#2c2c2c');
+    // fin
+    ctx.fillStyle='#ffae6b'; ctx.beginPath(); ctx.moveTo(470,360); ctx.lineTo(560,400); ctx.lineTo(420,420); ctx.closePath(); ctx.fill();
+  },
+};
+const SCENE_KEYS = Object.keys(SCENES);
+const SCENE_NAMES = {house:'a house',cow:'a cow',tree:'a tree',cat:'a cat',boat:'a sailboat',flower:'a flower',fish:'a fish'};
+
+/* ============================================================
+   FILTERS — both pictures always get a filter stack; the
+   "clearer" side simply gets a milder strength. Difficulty
+   shrinks the gap between the two as rounds go on.
+   ============================================================ */
+const FILTER_TYPES = ['blur','lowContrast','highContrast','haze','desaturate','sepia','ghost'];
+
+function filterString(type, s){
+  // s = 0 (pristine) .. 1 (heavily degraded)
+  const blur = (s*5.5).toFixed(2);
+  switch(type){
+    case 'blur':          return `blur(${blur}px)`;
+    case 'lowContrast':   return `blur(${(s*2).toFixed(2)}px) contrast(${(1 - s*0.62).toFixed(3)}) brightness(${(1+s*0.08).toFixed(3)})`;
+    case 'highContrast':  return `blur(${(s*1.5).toFixed(2)}px) contrast(${(1 + s*1.4).toFixed(3)}) saturate(${(1+s*0.6).toFixed(3)})`;
+    case 'haze':          return `blur(${(s*3).toFixed(2)}px) brightness(${(1 + s*0.35).toFixed(3)}) contrast(${(1 - s*0.4).toFixed(3)})`;
+    case 'desaturate':    return `blur(${(s*2.5).toFixed(2)}px) saturate(${(1 - s*0.9).toFixed(3)})`;
+    case 'sepia':         return `blur(${(s*2.5).toFixed(2)}px) sepia(${(s*0.9).toFixed(3)}) contrast(${(1 - s*0.2).toFixed(3)})`;
+    case 'ghost':         return `blur(${(s*1.8).toFixed(2)}px) drop-shadow(${(s*9).toFixed(1)}px 0 0 rgba(40,40,40,.5))`;
+    default:              return `blur(${blur}px)`;
+  }
+}
+
+/* ============================================================
+   ROUND FLOW
+   ============================================================ */
+function sizeCanvases(){
+  [canvasL, canvasR].forEach(cv=>{
+    const r = cv.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio||1, 2);
+    cv.width  = Math.max(2, Math.round(r.width  * dpr));
+    cv.height = Math.max(2, Math.round(r.height * dpr));
+  });
+}
+
+function drawScene(ctx, cv, key){
+  const w = cv.width, h = cv.height;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,w,h);
+  // cover-fit the 1000x1000 scene into the canvas
+  const scale = Math.max(w, h) / 1000;
+  const sw = 1000*scale, sh = 1000*scale;
+  ctx.save();
+  ctx.translate((w-sw)/2, (h-sh)/2);
+  ctx.scale(scale, scale);
+  SCENES[key](ctx);
+  ctx.restore();
+}
+
+function newRound(){
+  state.round++;
+  state.locked = true;
+  elRound.textContent = state.round;
+  fbEl.textContent = '';
+  cardL.className = 'card'; cardR.className = 'card';
+
+  sizeCanvases();
+  const key  = SCENE_KEYS[(Math.random()*SCENE_KEYS.length)|0];
+  const type = FILTER_TYPES[(Math.random()*FILTER_TYPES.length)|0];
+
+  // gap between clear & blurry shrinks with level -> harder
+  const lvl  = state.round;
+  const gap  = Math.max(0.5 - (lvl-1)*0.028, 0.09);
+  const clearS  = 0.12 + Math.random()*0.16;          // even the "clear" one is filtered
+  const blurryS = Math.min(clearS + gap, 0.96);
+
+  state.clearSide = Math.random() < 0.5 ? 'L' : 'R';
+  const sClear  = state.clearSide==='L' ? clearS  : clearS;
+  const sBlurry = blurryS;
+
+  // draw identical scene to both, then apply CSS filter per side
+  drawScene(ctxL, canvasL, key);
+  drawScene(ctxR, canvasR, key);
+
+  const fClear  = filterString(type, clearS);
+  const fBlurry = filterString(type, blurryS);
+  if(state.clearSide==='L'){ canvasL.style.filter=fClear;  canvasR.style.filter=fBlurry; }
+  else                     { canvasL.style.filter=fBlurry; canvasR.style.filter=fClear;  }
+
+  $('#prompt').firstChild.nodeValue = 'Which picture of ';
+  promptName.textContent = SCENE_NAMES[key];
+
+  // small delay so the eye can't "catch" the draw, then unlock
+  requestAnimationFrame(()=>{ state.locked = false; });
+}
+
+// build a richer prompt: "Which picture of <thing> is clearer?"
+const promptEl = $('#prompt');
+promptEl.innerHTML = 'Which picture of <span id="pname">it</span> is <span>clearer</span>? &nbsp;<span class="feedback" id="fb"></span>';
+const promptName = $('#pname');
+const fbEl = $('#fb');
+
+function choose(side){
+  if(state.locked || !state.playing) return;
+  state.locked = true;
+  const correct = side === state.clearSide;
+  const chosen = side==='L'?cardL:cardR;
+  const other  = side==='L'?cardR:cardL;
+
+  if(correct){
+    state.streak++;
+    const bonus = 100 + (state.streak-1)*20;
+    state.score += bonus;
+    chosen.classList.add('correct'); other.classList.add('dim');
+    fbEl.textContent = `✓ +${bonus}`; fbEl.style.color = 'var(--good)';
+  } else {
+    state.streak = 0;
+    state.lives--;
+    chosen.classList.add('wrong');
+    (state.clearSide==='L'?cardL:cardR).classList.add('correct');
+    fbEl.textContent = '✗ that one was blurrier'; fbEl.style.color = 'var(--bad)';
+  }
+  refreshHud();
+
+  setTimeout(()=>{
+    if(state.lives<=0) gameOver();
+    else newRound();
+  }, correct ? 650 : 1050);
+}
+
+function refreshHud(){
+  elScore.textContent  = state.score;
+  elStreak.textContent = state.streak;
+  elLives.textContent  = '❤️'.repeat(Math.max(0,state.lives)) + '🖤'.repeat(LIVES_START-Math.max(0,state.lives));
+}
+
+/* ---------- start / end ---------- */
+function startGame(){
+  state = {round:0, score:0, streak:0, lives:LIVES_START, clearSide:'L', locked:true, playing:true};
+  refreshHud();
+  $('#start').classList.add('hidden');
+  $('#over').classList.add('hidden');
+  newRound();
+}
+
+function gameOver(){
+  state.playing = false;
+  const hi = Math.max(state.score, +(localStorage.getItem(HI_KEY)||0));
+  localStorage.setItem(HI_KEY, hi);
+
+  // a playful "diagnosis" based on how far they got
+  let line = '20/20 vision', sub = 'Perfect eyes!';
+  const r = state.round;
+  if(r < 4)      { line='20/200';  sub='Maybe see an optometrist… 👓'; }
+  else if(r < 8) { line='20/70';   sub='Glasses might help.'; }
+  else if(r < 13){ line='20/40';   sub='Pretty sharp!'; }
+  else if(r < 20){ line='20/25';   sub='Eagle-ish eyes. 🦅'; }
+  else           { line='20/15';   sub='Superhuman acuity!'; }
+
+  $('#overTitle').textContent = `Diagnosis: ${line}`;
+  $('#overScore').textContent = `Score ${state.score} · reached round ${state.round}`;
+  $('#overMsg').textContent = sub;
+  $('#overBest').textContent = `Best score: ${hi}`;
+  $('#over').classList.remove('hidden');
+}
+
+/* ---------- input ---------- */
+cardL.addEventListener('click', ()=>choose('L'));
+cardR.addEventListener('click', ()=>choose('R'));
+window.addEventListener('keydown', e=>{
+  if(!state.playing){
+    if(e.key==='Enter'||e.key===' ') { if(!$('#start').classList.contains('hidden')) startGame(); else if(!$('#over').classList.contains('hidden')) startGame(); }
+    return;
+  }
+  if(e.key==='ArrowLeft')  choose('L');
+  if(e.key==='ArrowRight') choose('R');
+});
+$('#startBtn').addEventListener('click', startGame);
+$('#againBtn').addEventListener('click', startGame);
+
+window.addEventListener('resize', ()=>{
+  if(state.playing && !state.locked){
+    // re-fit current round's drawings (filters stay on the style)
+    sizeCanvases();
+  }
+});
+</script>
+</body>
+</html>

@@ -19,6 +19,18 @@ SPH-lite (Smoothed Particle Hydrodynamics) goop on a flat surface. 64 particles,
 ### `goo-flop.html`
 Single gel cube that flops onto its side on a horizontal swipe. Physics: gravity-torque model (restoring below 45°, accelerating above), pivot-arc geometry for center tracking, squish on impact. Ray-marched SDF with Rodrigues rotation. Swipe right/left → cube tips and rests on its side; opposite swipe rights it.
 
+### `eye-test/`
+**20/20 — Eyesight Test Game.** A landscape-first vision-test mini-game. Each round
+shows **two procedurally-drawn pictures of the same thing** — a house, a cow, a tree,
+a cat, a sailboat, a flower, a fish — and runs **both** through optometry-style
+distortions (blur, low/high contrast, haze, desaturation, sepia, double-vision ghosting).
+**One picture is always a little clearer; tap it.** The clarity gap shrinks every round,
+so it gets harder as your "vision" is tested. 3 lives, streak-scaled scoring, a playful
+20/20-style "diagnosis" on game over, and a localStorage best score. Self-contained
+single file — no assets, no build step, all art drawn on `<canvas>` and filtered with CSS.
+
+**Controls:** tap/click a picture · or ←/→ keys · Enter to start/restart · best in landscape
+
 ### `paperboy/`
 **Paper Route — Dawn Run.** A Paperboy clone built on Three.js r167 with an
 **isometric, flat-shaded homage to the original Paperboy art** — orthographic 3/4
