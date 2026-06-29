@@ -7,6 +7,13 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v35 — 2026-06-29
+**Hit-feedback polish — weighted shake + muzzle flash**
+- Kill shake now scales with enemy size: `0.07 + radius×0.13` (GLOBBO ≈0.14, TORO ≈0.20, bosses more) — heavier enemies kick the camera harder
+- Light camera kick (0.035) on non-fatal hits; trauma caps so rapid fire never over-shakes
+- Muzzle flash: a brief additive pop at the gun barrel on every shot (expand-and-vanish over 0.05 s), shown instantly on fire
+- Verified: muzzle visible at 0.9 opacity on fire, zero errors
+
 ## v34 — 2026-06-29
 **Impact spark**
 - Non-fatal bullet hits now fling a small spat of goo (3 chunks) outward from the contact point, in a cone around the surface normal

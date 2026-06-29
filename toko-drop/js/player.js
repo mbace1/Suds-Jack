@@ -77,6 +77,18 @@ export class Player {
     scene.add(this._eyeL);
     scene.add(this._eyeR);
     this._eyesOn = true;
+
+    // Muzzle flash — a brief additive pop at the gun barrel on each shot
+    this._muzzle = new THREE.Mesh(
+      new THREE.SphereGeometry(0.2, 8, 6),
+      new THREE.MeshBasicMaterial({
+        color: 0xaaffcc, transparent: true, opacity: 0,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      }),
+    );
+    this._muzzle.visible = false;
+    scene.add(this._muzzle);
+    this._muzzleT = 0;
   }
 
   get invincible() { return this._dashTime > 0 || this._mercyT > 0 || this._invincBoost > 0; }
@@ -115,6 +127,8 @@ export class Player {
     this.mesh.visible = true;
     this.mesh.position.set(0, PLAYER_RADIUS, 0);
     for (const g of this._ghosts) { g.life = 0; g.mesh.visible = false; }
+    this._muzzleT = 0;
+    if (this._muzzle) this._muzzle.visible = false;
     this._eyeL.visible = true;
     this._eyeR.visible = true;
   }
@@ -208,6 +222,17 @@ export class Player {
       }
     }
 
+    // Muzzle flash fade (quick expand-and-vanish)
+    if (this._muzzleT > 0) {
+      this._muzzleT -= dt;
+      const mt = Math.max(0, this._muzzleT / 0.05);
+      this._muzzle.visible = true;
+      this._muzzle.material.opacity = mt * 0.9;
+      this._muzzle.scale.setScalar(0.6 + (1 - mt) * 0.8);
+    } else if (this._muzzle.visible) {
+      this._muzzle.visible = false;
+    }
+
     // Spring squash
     this._sqV = (this._sqV - (this._sq - 1.0) * 0.28) * 0.84;
     this._sq  = Math.max(0.55, Math.min(1.55, this._sq + this._sqV));
@@ -268,6 +293,15 @@ export class Player {
         this.onShoot?.();
       }
       this._fireT = fireRate;
+      // Muzzle flash at the barrel — shown immediately (fade handled next frames)
+      this._muzzleT = 0.05;
+      this._muzzle.position.set(
+        this.mesh.position.x + aimDir.x * (PLAYER_RADIUS + 0.35),
+        0.3,
+        this.mesh.position.z + aimDir.z * (PLAYER_RADIUS + 0.35));
+      this._muzzle.visible = true;
+      this._muzzle.material.opacity = 0.9;
+      this._muzzle.scale.setScalar(0.6);
     }
 
     // ── Eyes ──────────────────────────────────────────────────────────────────
@@ -294,6 +328,7 @@ export class Player {
     this.alive = false;
     this.mesh.visible = false;
     for (const g of this._ghosts) { g.life = 0; g.mesh.visible = false; }
+    if (this._muzzle) this._muzzle.visible = false;
     this._eyeL.visible = false;
     this._eyeR.visible = false;
   }

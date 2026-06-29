@@ -840,7 +840,7 @@ function onKill(e) {
   streak++;
   score += 100 * streak;
   streakFlashT = STREAK_FLASH_DUR;
-  addShake(0.13);
+  addShake(0.07 + e.radius * 0.13);  // heavier enemies kick the camera harder
   const _cat = BLOB_TYPES.has(e.type) ? 'blob'
     : e.type === EnemyType.TORO  ? 'toro'
     : e.type === EnemyType.BAMBU ? 'bambu'
@@ -1036,7 +1036,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v34', 16, uiCanvas.height - 12);
+  ctx.fillText('v35', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1628,6 +1628,7 @@ function loop() {
           }
         } else {
           audio.enemyHit();
+          addShake(0.035); // light kick on a non-fatal hit (trauma caps, so rapid fire won't over-shake)
           damageNumbers.push(new DamageNumber(e.position.x, e.position.y + e.radius, e.position.z));
           // Impact spark: a small spat of goo flung outward from the contact point
           const nlen = Math.hypot(dx, dz) || 1;
