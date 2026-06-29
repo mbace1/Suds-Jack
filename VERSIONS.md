@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v29 — 2026-06-29
+**Movement VFX — blob stretch + motion trails**
+- Blobs now lunge: goo vertex shader gains `uStretch`/`uStretchDir`, driven by smoothed per-enemy velocity — elongate along travel, compress height (punchy, eases to 0 when idle)
+- New pooled `TrailPool` (InstancedMesh, cap 256, translucent ghost spheres, shrink-to-zero fade) — fast movers (blobs + TORO) drop afterimage trails on a ~0.06 s cadence
+- Trails are material-agnostic so the Phong TORO gets them too; cubes keep their flop as their movement signature
+- Shader stretch is blob-only (player wobble-0 unaffected); 2 pools total = 2 extra draw calls
+- Verified: stretch ~0.37 while moving (relaxes to 0 idle), trails active and bounded under cap, zero errors
+
 ## v28 — 2026-06-29
 **Perf gate + pooled death chunks (WebGL overhaul pt.1)**
 - Always-on subtle FPS meter (bottom-left, above version): EMA of raw frame time, tinted green ≥55 / amber 30–54 / red <30

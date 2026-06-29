@@ -329,6 +329,65 @@ class ChunkPool {
   }
 }
 
+// Pooled motion-trail afterimages — translucent ghost spheres dropped by fast
+// movers (blobs + TORO). One InstancedMesh; shrink-to-zero fade over ~0.45 s.
+const TRAIL_POOL = 256;
+class TrailPool {
+  constructor(sc) {
+    const geo = new THREE.SphereGeometry(1, 5, 3);
+    const mat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.4, depthWrite: false });
+    this.mesh = new THREE.InstancedMesh(geo, mat, TRAIL_POOL);
+    this.mesh.frustumCulled = false;
+    this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    sc.add(this.mesh);
+    this.x = new Float32Array(TRAIL_POOL); this.y = new Float32Array(TRAIL_POOL); this.z = new Float32Array(TRAIL_POOL);
+    this.life = new Float32Array(TRAIL_POOL);
+    this.size = new Float32Array(TRAIL_POOL);
+    this.active = new Uint8Array(TRAIL_POOL);
+    this._m = new THREE.Matrix4();
+    this._p = new THREE.Vector3();
+    this._q = new THREE.Quaternion();
+    this._s = new THREE.Vector3();
+    this._col = new THREE.Color();
+    for (let i = 0; i < TRAIL_POOL; i++) this._hide(i);
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+  _hide(i) { this._m.makeScale(0, 0, 0); this.mesh.setMatrixAt(i, this._m); }
+  _findSlot() {
+    for (let i = 0; i < TRAIL_POOL; i++) if (!this.active[i]) return i;
+    let min = 0, minLife = Infinity;
+    for (let i = 0; i < TRAIL_POOL; i++) if (this.life[i] < minLife) { minLife = this.life[i]; min = i; }
+    return min;
+  }
+  spawn(x, y, z, color, size = 0.4) {
+    const i = this._findSlot();
+    this.x[i] = x; this.y[i] = y; this.z[i] = z;
+    this.life[i] = 0.45; this.size[i] = size; this.active[i] = 1;
+    this._col.set(color);
+    this.mesh.setColorAt(i, this._col);
+    if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
+  }
+  update(dt) {
+    let dirty = false;
+    for (let i = 0; i < TRAIL_POOL; i++) {
+      if (!this.active[i]) continue;
+      dirty = true;
+      this.life[i] -= dt;
+      if (this.life[i] <= 0) { this.active[i] = 0; this._hide(i); continue; }
+      const f = this.size[i] * (this.life[i] / 0.45); // shrink-to-zero fade
+      this._p.set(this.x[i], this.y[i], this.z[i]);
+      this._s.set(f, f, f);
+      this._m.compose(this._p, this._q, this._s);
+      this.mesh.setMatrixAt(i, this._m);
+    }
+    if (dirty) this.mesh.instanceMatrix.needsUpdate = true;
+  }
+  clear() {
+    for (let i = 0; i < TRAIL_POOL; i++) { this.active[i] = 0; this._hide(i); }
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+}
+
 class Puddle {
   constructor(sc, x, z, color, radius) {
     this._life = 5;
@@ -673,6 +732,7 @@ const bullets = new BulletPool(scene);
 const player  = new Player(scene);
 let enemies      = [];
 const chunkPool  = new ChunkPool(scene);
+const trailPool  = new TrailPool(scene);
 let puddles      = [];
 let poisonZones  = [];
 let slimeTrails  = [];
@@ -976,7 +1036,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v28', 16, uiCanvas.height - 12);
+  ctx.fillText('v29', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1125,6 +1185,7 @@ function announceWave() {
 // ── Wave / restart helpers ──────────────────────────────────────────────────────────
 function clearFX() {
   chunkPool.clear();
+  trailPool.clear();
   for (const p of puddles)       p.remove(scene); puddles       = [];
   for (const z of poisonZones)   z.remove(scene); poisonZones   = [];
   for (const s of slimeTrails)   s.remove(scene); slimeTrails   = [];
@@ -1358,6 +1419,7 @@ function loop() {
     restartTimer -= dt;
     for (const e of enemies) e.updateDeath(dt);
     chunkPool.update(dt);
+    trailPool.update(dt);
     if (restartTimer <= 0) {
       clearFX();
       for (const e of enemies) e.removeFrom(scene);
@@ -1423,6 +1485,7 @@ function loop() {
 
   // Update / cull death FX
   chunkPool.update(dt);
+  trailPool.update(dt);
   for (let i = puddles.length - 1; i >= 0; i--) {
     if (!puddles[i].update(dt)) { puddles[i].remove(scene); puddles.splice(i, 1); }
   }
@@ -1445,6 +1508,14 @@ function loop() {
     if (!e._trailReady) continue;
     e._trailReady = false;
     slimeTrails.push(new SlimeTrail(scene, e.position.x, e.position.z, 0.5));
+  }
+
+  // Motion-trail afterimages (blobs + TORO) — pooled ghost spheres
+  for (const e of enemies) {
+    if (!e._motionTrailReady) continue;
+    e._motionTrailReady = false;
+    const p = e.position;
+    trailPool.spawn(p.x, p.y, p.z, e.color, e.radius * 0.55);
   }
 
   // BAMBU AoE telegraphs and lob bullets; drain hitChunks for all enemies

@@ -10,6 +10,8 @@ const GOO_VERT = `
   uniform float uPhase;
   uniform float uWobble;
   uniform float uRadius;
+  uniform float uStretch;     // 0 = none; ~0.45 = strong lunge
+  uniform vec2  uStretchDir;  // normalized world/obj xz travel direction
   varying vec3 vNormal;
   varying vec3 vViewPos;
   void main() {
@@ -27,6 +29,10 @@ const GOO_VERT = `
     // factors cancel here, giving consistent lump shading independent of blob size.
     vec3 gradWave = vec3(cos(a1) * 3.6, cos(a2) * 4.2, cos(a3) * 4.8) * (0.3333 / uRadius);
     vec3 N = normalize(normal - gradWave * amp);
+    // Directional squash-stretch: lunge along travel, compress height (volume feel).
+    vec3 sdir = vec3(uStretchDir.x, 0.0, uStretchDir.y);
+    pos  += sdir * dot(pos, sdir) * uStretch;
+    pos.y *= (1.0 - uStretch * 0.4);
     vec4 mvPos = modelViewMatrix * vec4(pos, 1.0);
     vNormal  = normalMatrix * N;
     vViewPos = -mvPos.xyz;
@@ -82,10 +88,12 @@ export function makeGooMat(color, opacity, wobble = 0, radius = 0.5) {
       uSpecAPow: { value: 88.0 },
       uSpecBPow: { value: 11.0 },
       uSSS:      { value: 0.42 },
-      uTime:     GOO_TIME,
-      uPhase:    { value: Math.random() * Math.PI * 2 },
-      uWobble:   { value: wobble },
-      uRadius:   { value: radius },
+      uTime:       GOO_TIME,
+      uPhase:      { value: Math.random() * Math.PI * 2 },
+      uWobble:     { value: wobble },
+      uRadius:     { value: radius },
+      uStretch:    { value: 0 },
+      uStretchDir: { value: new THREE.Vector2(0, 0) },
     },
     transparent: opacity < 1,
     depthWrite:  opacity >= 0.9,
@@ -171,6 +179,12 @@ export class Enemy {
     this._trailReady   = false;
     this._trailTimer   = 0;
     this.chunks        = [];
+
+    // Movement VFX (v29): smoothed velocity → blob stretch + motion-trail emission
+    this._velX = 0; this._velZ = 0;
+    this._stretch = 0;
+    this._motionTrailReady = false;
+    this._motionTrailTimer = 0;
 
     // State machine fields
     this._state        = 'idle';
@@ -750,6 +764,32 @@ export class Enemy {
       this._setEmissive(this.type === EnemyType.SPITTOR ? 0x442200 : 0x440022);
     } else {
       this._setEmissive(0x000000);
+    }
+
+    // ── Movement VFX: velocity → blob stretch + trail emission (v29) ──────────
+    {
+      const np = this.position;
+      const invDt = 1 / Math.max(dt, 1e-4);
+      this._velX += (((np.x - ex) * invDt) - this._velX) * 0.3;
+      this._velZ += (((np.z - ez) * invDt) - this._velZ) * 0.3;
+      const sp = Math.hypot(this._velX, this._velZ);
+
+      // Blob directional stretch via shader uniforms; eases toward 0 when slow.
+      if (BLOB_TYPES.has(this.type) && this.mat.uniforms && this.mat.uniforms.uStretch) {
+        const target = Math.min(sp * 0.11, 0.5);
+        this._stretch += (target - this._stretch) * 0.4;
+        this.mat.uniforms.uStretch.value = this._stretch;
+        if (sp > 0.4) this.mat.uniforms.uStretchDir.value.set(this._velX / sp, this._velZ / sp);
+      }
+
+      // Motion-trail (afterimage) emission for fast movers — blobs + TORO.
+      if (BLOB_TYPES.has(this.type) || this.type === EnemyType.TORO) {
+        this._motionTrailTimer -= dt;
+        if (sp > 1.5 && this._motionTrailTimer <= 0) {
+          this._motionTrailTimer = 0.06;
+          this._motionTrailReady = true;
+        }
+      }
     }
 
     // ── Spring squash / scale ─────────────────────────────────────────────────
