@@ -1,4 +1,4 @@
-# Toko Drop — v26
+# Toko Drop — v27
 
 Twin-stick bullet-hell arena shooter built with Three.js and Web Audio.
 
@@ -28,6 +28,8 @@ A connected gamepad defaults to landscape automatically, unless you've picked an
 **Roguelike** — choose an upgrade card after every wave cleared. Toggle on the title screen.
 
 Death returns you to the title screen so you can start a fresh run.
+
+Your **personal bests** (score, deepest wave, longest time) are saved locally and shown on the title screen — beat any of them and the death screen flags it with a ★ badge.
 
 ## Enemies
 

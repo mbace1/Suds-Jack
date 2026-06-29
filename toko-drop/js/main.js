@@ -645,7 +645,60 @@ let streak       = 0;
 let runTimer     = 0;
 const STREAK_FLASH_DUR = 0.4;
 let streakFlashT = 0;
-let hiScore = parseInt(localStorage.getItem('tokoDropHi') || '0');
+// ── Personal bests (local; structured for a future online leaderboard) ───────
+const PB_KEY = 'tokoDropPB';
+function loadPB() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(PB_KEY));
+    if (raw && raw.v === 1) {
+      raw.runs = Array.isArray(raw.runs) ? raw.runs : [];
+      return raw;
+    }
+  } catch { /* fall through to legacy migration */ }
+  const legacy = parseInt(localStorage.getItem('tokoDropHi') || '0');
+  return { v: 1, bestScore: legacy, bestTime: 0, bestWave: 0, lastRun: null, runs: [] };
+}
+let pb = loadPB();
+let _runBests = { isBestScore: false, isBestTime: false, isBestWave: false };
+
+// Build the leaderboard-shaped record for the current run.
+function makeRunRecord() {
+  return {
+    v: 1,
+    score, time: Math.round(runTimer), wave, seed: runSeed,
+    mode: roguelikeMode ? 'roguelike' : 'arcade',
+    orientation: landscapeMode ? 'landscape' : 'portrait',
+    date: new Date().toISOString(),
+  };
+}
+
+// Record a finished run: update bests, persist, return which bests were newly set.
+function recordRun() {
+  const rec = makeRunRecord();
+  const flags = {
+    isBestScore: rec.score > pb.bestScore,
+    isBestTime:  rec.time  > pb.bestTime,
+    isBestWave:  rec.wave  > pb.bestWave,
+  };
+  pb.bestScore = Math.max(pb.bestScore, rec.score);
+  pb.bestTime  = Math.max(pb.bestTime,  rec.time);
+  pb.bestWave  = Math.max(pb.bestWave,  rec.wave);
+  pb.lastRun   = rec;
+  pb.runs = [...pb.runs, rec].sort((a, b) => b.score - a.score).slice(0, 10);
+  try {
+    localStorage.setItem(PB_KEY, JSON.stringify(pb));
+    localStorage.setItem('tokoDropHi', String(pb.bestScore)); // keep legacy key in sync
+  } catch { /* storage may be unavailable; bests still live in memory */ }
+  return flags;
+}
+
+// Format whole seconds as "Xm Ys" (or "Ys" under a minute).
+function fmtTime(secs) {
+  const m = Math.floor(secs / 60), s = Math.floor(secs % 60);
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+let hiScore = pb.bestScore;
 // Roguelike mode (default on): show upgrade cards between waves. Off = plain arcade run.
 let roguelikeMode = false;
 
@@ -862,7 +915,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v26', 16, uiCanvas.height - 12);
+  ctx.fillText('v27', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -899,6 +952,11 @@ function showTitle() {
     `animation:tokoGlow 1.6s ease-in-out infinite alternate,tokoFadeUp 0.5s ease both">TOKO DROP</div>` +
     `<div style="font-size:13px;opacity:0.5;margin:8px 0 22px;animation:tokoFadeUp 0.5s 0.1s ease both">` +
     `TWIN-STICK BULLET-HELL</div>` +
+    (pb.bestScore > 0
+      ? `<div style="font-size:13px;color:#ffdd44;opacity:0.85;margin-bottom:14px;letter-spacing:1px;` +
+        `animation:tokoFadeUp 0.5s 0.15s ease both">` +
+        `BEST &nbsp;${pb.bestScore} PTS &nbsp;·&nbsp; WAVE ${pb.bestWave} &nbsp;·&nbsp; ${fmtTime(pb.bestTime)}</div>`
+      : ``) +
     `<div style="font-size:16px;opacity:0.85;animation:tokoFadeUp 0.5s 0.2s ease both">TAP OR PRESS SPACE TO START</div>` +
     `<div id="orient-toggle-slot" style="margin-top:18px;animation:tokoFadeUp 0.5s 0.28s ease both"></div>` +
     `<div id="rogue-toggle-slot" style="margin-top:14px;animation:tokoFadeUp 0.5s 0.3s ease both"></div>` +
@@ -980,16 +1038,19 @@ function showTitle() {
 
 function showGameOver() {
   overlay.style.display = 'block';
-  const newHi = score >= hiScore && score > 0;
   const seedHex = runSeed.toString(16).toUpperCase().padStart(6, '0');
-  const m = Math.floor(runTimer / 60), s = Math.floor(runTimer % 60);
-  const timeStr = m > 0 ? `${m}m ${s}s` : `${s}s`;
+  const badges = [];
+  if (_runBests.isBestScore) badges.push('★ BEST SCORE');
+  if (_runBests.isBestTime)  badges.push('★ BEST TIME');
+  if (_runBests.isBestWave)  badges.push('★ BEST WAVE');
   overlay.innerHTML =
     `<div style="font-size:52px;font-weight:bold">YOU DIED</div>` +
     `<div style="font-size:15px;opacity:0.6;margin-top:10px;letter-spacing:2px">` +
-      `WAVE ${wave} &nbsp;·&nbsp; ${timeStr} &nbsp;·&nbsp; ${score} PTS` +
+      `WAVE ${wave} &nbsp;·&nbsp; ${fmtTime(runTimer)} &nbsp;·&nbsp; ${score} PTS` +
     `</div>` +
-    (newHi ? `<div style="font-size:16px;color:#ffdd44;margin-top:8px">NEW BEST!</div>` : ``) +
+    (badges.length
+      ? `<div style="font-size:16px;color:#ffdd44;margin-top:8px;letter-spacing:1px">${badges.join('&nbsp;&nbsp;')}</div>`
+      : ``) +
     `<div style="font-size:12px;opacity:0.3;margin-top:10px">SEED ${seedHex}</div>` +
     `<div style="font-size:13px;opacity:0.4;margin-top:8px">Returning to title…</div>`;
 }
@@ -1154,10 +1215,8 @@ function startGame() {
 function triggerGameOver() {
   gameState = 'gameover';
   restartTimer = 2.8;
-  if (score > hiScore) {
-    hiScore = score;
-    localStorage.setItem('tokoDropHi', hiScore);
-  }
+  _runBests = recordRun();
+  hiScore = pb.bestScore;
   addShake(0.9);
   audio.playerDie();
   showGameOver();

@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v27 — 2026-06-29
+**Personal bests (local, future-proofed for a leaderboard)**
+- New `tokoDropPB` localStorage record (schema-versioned): bestScore / bestTime / bestWave + capped top-10 `runs[]`
+- Each run stored as a leaderboard-shaped `RunRecord`: score, time, wave, seed, mode, orientation, ISO date
+- Legacy `tokoDropHi` integer migrated into `bestScore` on first load; kept in sync for backward-compat
+- Title screen shows a `BEST  N PTS · WAVE N · Xm Ys` line (only once a run exists)
+- Death screen shows per-metric `★ BEST SCORE / TIME / WAVE` badges for whatever you just beat
+- Pure additive — no gameplay logic touched; bloom remains off (deferred to the WebGL plan's Phase 4)
+
 ## v26 — 2026-06-29
 **Difficulty curve reshape + pacing pulses**
 - Curve now climbs to ~8/10 by wave 10 (the "knee"), then plateaus with a slow creep toward 9/10 — tuned for competitive 5–10 min runs
