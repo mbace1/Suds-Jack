@@ -59,7 +59,7 @@ function showTitle() {
     `<div style="font-size:clamp(10px,2vw,14px);margin-top:28px">A / D &nbsp;or&nbsp; ← / → &nbsp;&nbsp;steer</div>`,
     `<div style="font-size:clamp(10px,2vw,14px);margin-top:4px">W / S &nbsp;throttle</div>`,
     `<div style="font-size:clamp(10px,2vw,14px);margin-top:4px">Z / X / M &nbsp;throw &nbsp;(Space = quick throw)</div>`,
-    `<div style="font-size:clamp(13px,3vw,20px);color:${COL.barGood};margin-top:28px">ENTER or SPACE to play</div>`,
+    `<div style="font-size:clamp(13px,3vw,20px);color:${COL.barGood};margin-top:28px">TAP &nbsp;/&nbsp; ENTER &nbsp;/&nbsp; SPACE to play</div>`,
     hi > 0 ? `<div style="font-size:clamp(10px,2vw,14px);color:${COL.barWarn};margin-top:18px">HI-SCORE &nbsp;${hi}</div>` : '',
   ].join('');
 }
@@ -73,7 +73,7 @@ function showGameOver() {
     `<div style="font-size:clamp(26px,6vw,48px);color:${COL.barDanger}">GAME OVER</div>`,
     `<div style="font-size:clamp(14px,3vw,24px);margin-top:16px">SCORE &nbsp;${score}</div>`,
     newHi && score > 0 ? `<div style="font-size:clamp(10px,2vw,14px);color:${COL.barWarn};margin-top:8px">NEW HIGH SCORE!</div>` : `<div style="font-size:clamp(10px,2vw,14px);color:${COL.barInk};margin-top:8px;opacity:0.5">HI &nbsp;${hi}</div>`,
-    `<div style="font-size:clamp(13px,3vw,20px);color:${COL.barGood};margin-top:28px">ENTER or SPACE to retry</div>`,
+    `<div style="font-size:clamp(13px,3vw,20px);color:${COL.barGood};margin-top:28px">TAP &nbsp;/&nbsp; ENTER &nbsp;/&nbsp; SPACE to retry</div>`,
   ].join('');
 }
 
@@ -239,29 +239,65 @@ function drawHUD() {
 function drawTouch() {
   if (!navigator.maxTouchPoints) return;
   const b = input.throwBtn;
+  const j = input.stickHint;
 
-  // throw button ring
-  ctx.globalAlpha = 0.22;
-  ctx.fillStyle = '#ffffff';
+  ctx.save();
+
+  // ── throw button ─────────────────────────────────────────────────────────
+  ctx.globalAlpha = 0.32;
+  ctx.fillStyle = COL.jersey;
   ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
-  ctx.globalAlpha = 0.8;
+  ctx.globalAlpha = 0.70;
+  ctx.strokeStyle = COL.paper;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.stroke();
+  ctx.globalAlpha = 0.90;
   ctx.fillStyle = COL.paper;
-  ctx.font = Math.round(b.r * 0.75) + 'px monospace';
+  ctx.font = 'bold ' + Math.round(b.r * 0.55) + 'px monospace';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('✉', b.x, b.y);
+  ctx.fillText('THROW', b.x, b.y);
   ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-  ctx.globalAlpha = 1;
 
-  // stick visualisation
+  // ── joystick ─────────────────────────────────────────────────────────────
   if (input.stick.active) {
     const { ox, oy, dx, dy } = input.stick;
-    ctx.globalAlpha = 0.13; ctx.fillStyle = '#ffffff';
-    ctx.beginPath(); ctx.arc(ox, oy, 64, 0, Math.PI * 2); ctx.fill();
-    ctx.globalAlpha = 0.45;
-    ctx.beginPath(); ctx.arc(ox + dx, oy + dy, 22, 0, Math.PI * 2); ctx.fill();
-    ctx.globalAlpha = 1;
+    // outer ring at touch origin
+    ctx.globalAlpha = 0.18; ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(ox, oy, j.r, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 0.55; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(ox, oy, j.r, 0, Math.PI * 2); ctx.stroke();
+    // thumb dot — clamped to ring edge visually
+    const dist = Math.hypot(dx, dy);
+    const cap  = j.r * 0.72;
+    const tx   = dist < cap ? dx : dx / dist * cap;
+    const ty   = dist < cap ? dy : dy / dist * cap;
+    ctx.globalAlpha = 0.75; ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(ox + tx, oy + ty, j.r * 0.30, 0, Math.PI * 2); ctx.fill();
+  } else {
+    // resting hint at default position
+    ctx.globalAlpha = 0.14; ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(j.x, j.y, j.r, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 0.35; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(j.x, j.y, j.r, 0, Math.PI * 2); ctx.stroke();
+    // center dot
+    ctx.globalAlpha = 0.35; ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.arc(j.x, j.y, j.r * 0.28, 0, Math.PI * 2); ctx.fill();
+    // label
+    ctx.globalAlpha = 0.45; ctx.fillStyle = COL.barInk;
+    ctx.font = 'bold ' + Math.round(j.r * 0.30) + 'px monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('STEER', j.x, j.y);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
   }
+
+  ctx.restore();
 }
+
+// ── tap-to-start (mobile) ─────────────────────────────────────────────────────
+input.onTap = () => {
+  if (state === 'title' || state === 'gameover') startGame();
+  else if (state === 'paused') { state = 'playing'; overlay.style.display = 'none'; }
+};
 
 // ── start ─────────────────────────────────────────────────────────────────────
 showTitle();

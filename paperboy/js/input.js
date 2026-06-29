@@ -10,12 +10,17 @@ export class InputManager {
     this.onThrow = null;
     this.onStart = null;
     this.onPause = null;
+    this.onTap   = null;  // fires on any touchstart (used for tap-to-start)
     this._init();
   }
 
   get throwBtn() {
-    const r = Math.min(innerWidth, innerHeight) * 0.12;
-    return { x: innerWidth - r * 1.5, y: innerHeight - r * 1.5, r };
+    const r = Math.min(innerWidth, innerHeight) * 0.13;
+    return { x: innerWidth - r * 1.6, y: innerHeight - r * 1.6, r };
+  }
+  get stickHint() {
+    const r = Math.min(innerWidth, innerHeight) * 0.13;
+    return { x: r * 1.6, y: innerHeight - r * 1.6, r };
   }
   _inBtn(b, x, y) { return Math.hypot(x - b.x, y - b.y) < b.r; }
 
@@ -40,6 +45,7 @@ export class InputManager {
   }
 
   _tStart(e) {
+    this.onTap?.();
     for (const t of e.changedTouches) {
       const x = t.clientX, y = t.clientY;
       if (this._inBtn(this.throwBtn, x, y)) { this._touch.set(t.identifier, 'throw'); this.onThrow?.(); continue; }
