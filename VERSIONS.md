@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v53 — 2026-06-30
+**Fix feedback form buttons on mobile — touch events no longer swallowed**
+- Root cause: `InputManager` called `e.preventDefault()` on all `touchend` events except `#dsgn` and `#upgrade-panel`, suppressing synthetic `click` events on the game-over feedback chips and buttons
+- Fix: added `#overlay` to the `inUI` exclusion selector in `input.js` so touches on overlay children are not preventDefault-ed; browser now fires click events normally for feedback chips, SEND & CONTINUE, and SKIP
+- Cache-bust `?v=8` → `?v=9`; HUD label → v53
+
+---
+
 ## v52 — 2026-06-30
 **Contra-style weapon pods: glyphs on moths, 8 weapons, kill-all bonus**
 - Moths now always drop weapon pods with a letter glyph (S/B/L/R + Lv2 S2/B2/L2/R2); gates give non-weapon drops (HP/invincible/firerate)
