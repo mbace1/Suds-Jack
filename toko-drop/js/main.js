@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=12';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=12';
-import { Player, PLAYER_RADIUS } from './player.js?v=12';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=12';
-import { audio } from './audio.js?v=12';
-import { initDesigner } from './designer.js?v=12';
+import { InputManager } from './input.js?v=13';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=13';
+import { Player, PLAYER_RADIUS } from './player.js?v=13';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=13';
+import { audio } from './audio.js?v=13';
+import { initDesigner } from './designer.js?v=13';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1391,7 +1391,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v56', 16, uiCanvas.height - 12);
+  ctx.fillText('v57', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {

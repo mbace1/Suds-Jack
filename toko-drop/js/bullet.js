@@ -5,6 +5,12 @@ const ENEMY_BULLET_SPEED  = 7;
 const PLAYER_BULLET_SPEED = 24;
 export const BULLET_CONFIG = { enemySpeed: ENEMY_BULLET_SPEED, playerBulletScale: 1.0 };
 
+// Visual-only readability boost for player bullets. playerBulletScale also
+// drives the player-bullet HITBOX (collision in main.js + the "bigger bullets"
+// upgrade), so we must NOT change that to make bullets look chunkier — this
+// factor enlarges only the rendered halo/core, leaving the hitbox untouched.
+const PLAYER_BULLET_VISUAL_BOOST = 1.3;
+
 export const BULLET_R     = 0.15;
 export const FAT_BULLET_R = 0.45;
 
@@ -74,7 +80,8 @@ export class BulletPool {
     b.mesh.visible = true;
     b._phase = Math.random() * Math.PI * 2;
     // Enemy bullets run a touch larger so the threats you must dodge read clearly.
-    b._baseScale = fat ? 3.0 : (isPlayer ? BULLET_CONFIG.playerBulletScale : 1.25);
+    b._baseScale = fat ? 3.0
+      : (isPlayer ? BULLET_CONFIG.playerBulletScale * PLAYER_BULLET_VISUAL_BOOST : 1.6);
     b.mesh.scale.setScalar(b._baseScale);
     this.active.push(b);
   }
