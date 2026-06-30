@@ -26,20 +26,26 @@ jsDelivr CDN via an importmap, same as toko-drop).
 > updates must be copied onto `gh-pages` to go live at `/Suds-Jack/paperboy/`.
 
 ### Skltr — Minimalist Survival Roguelike (`skltr/`)
-A **3rd-person action roguelike that plays like Risk of Rain 2**, built on Three.js r167
-with a **minimalist vector look** — a pure-white void, white `MeshBasic` bodies with black
-`EdgesGeometry` outlines, a grey ground grid, and a small accent palette (teal = you, red =
-enemies, amber = gold/chests, violet = teleporter). Over-the-shoulder 3/4 camera; WASD move
-+ mouse aim, hold-to-fire, sprint, jump, and **four RoR2-style skill slots** — M1 primary,
-M2 piercing slug, Q i-frame dash, R radial nova (each on its own cooldown).
+A **3rd-person action roguelike** built on Three.js r167 with a **minimalist vector look** —
+a pure-white void, white `MeshBasic` bodies with black `EdgesGeometry` outlines, a grey
+ground grid, and a small accent palette (teal = you, red = enemies, amber = gold/chests,
+violet = teleporter). **Camera + pacing target Returnal**: a tight **over-the-shoulder**
+camera (close, character framed lower-left, centred reticle) over **blistering, multi-
+directional bullet-hell** — ranged enemies and bosses fire slow, dense neon clusters
+(aimed fans + radial rings) you weave through with the **i-frame dodge-dash** (short
+cooldown, the core defensive verb). WASD move + mouse aim, hold-to-fire, sprint, jump, and
+**four skill slots** — M1 primary, M2 piercing slug, Q dash, R radial nova.
 
-Core loop: a **spawn director** trickles in melee/ranged/brute enemies (floating HP bars)
-whose HP and damage **scale continuously with a difficulty clock** (time + stage), shown as
-RoR2-style tiers (EASY → … → HAHAHA). Kills bank **gold**; spend it on **chests** that roll
-**stacking passive items** across common/uncommon/rare tiers (damage, attack speed, crit,
-forks, pierce, lifesteal, max HP, regen, gold) — items combine into your run's build. Each
-stage has a **teleporter**: engage it to spawn a **boss** and a horde, hold the ring to
-charge it to 100%, then warp to the next, harder stage. Permadeath; furthest stage persists
+A Returnal-style **Adrenaline** engine drives the second-to-second loop: kills without
+taking a hit climb 5 tiers (each escalating damage + fire rate), and **any hit instantly
+wipes it to zero**. Meta loop: a **spawn director** trickles in melee/ranged/brute enemies
+(floating HP bars) whose HP and damage **scale continuously with a difficulty clock**
+(time + stage), shown as tiers (EASY → … → HAHAHA). Kills bank **gold**; spend it on
+**chests** that roll **stacking passive items** across common/uncommon/rare tiers (damage,
+attack speed, crit, forks, pierce, lifesteal, max HP, regen, gold) — items combine into
+your run's build. Each stage has a **teleporter**: engage it to spawn a **boss** and a
+horde, hold the ring to charge it to 100%, then warp to the next, harder stage. Permadeath;
+furthest stage persists
 in `localStorage` under `skltrHiStage`. No build step — open `skltr/index.html` (three.js
 via the jsDelivr importmap, same as toko-drop / paperboy). Keyboard+mouse (with Arrow-key
 camera fallback) or touch (left-stick move, right-stick aim/fire, on-screen skill buttons).
