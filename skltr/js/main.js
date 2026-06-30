@@ -32,7 +32,7 @@ let gameState = 'title';   // title | playing | paused | gameover
 let gold = 0, kills = 0, stage = 1, runTime = 0, difficulty = 1;
 let credits = 0, spawnCD = 0, shake = 0, bossAlive = false, restartTimer = 0;
 let enemies = [], toasts = [], prompt = '';
-let hiStage = parseInt(localStorage.getItem('ribbonHiStage') || '1');
+let hiStage = parseInt(localStorage.getItem('skltrHiStage') || '1');
 
 const DIFF_TIERS = [
   [1.3, 'EASY', 0x39c66b], [1.9, 'NORMAL', 0x2b8cff], [2.8, 'HARD', 0xf5a623],
@@ -50,7 +50,7 @@ function showOverlay(html) { overlay.innerHTML = html; overlay.style.display = '
 
 function showTitle() {
   showOverlay(
-    `<div style="font-size:58px;font-weight:bold;letter-spacing:6px">RIBBON</div>` +
+    `<div style="font-size:58px;font-weight:bold;letter-spacing:8px">SKLTR</div>` +
     `<div style="font-size:13px;opacity:.55;margin:6px 0 22px">a minimalist survival roguelike — loot, scale, charge the teleporter, escape</div>` +
     `<div style="font-size:15px;opacity:.85">CLICK / TAP / ENTER to start</div>` +
     `<div style="font-size:12px;opacity:.5;margin-top:16px;line-height:1.7">` +
@@ -87,7 +87,7 @@ function startGame() {
 }
 function gameOver() {
   gameState = 'gameover'; shake = 1; restartTimer = 3.4;
-  if (stage > hiStage) { hiStage = stage; localStorage.setItem('ribbonHiStage', hiStage); }
+  if (stage > hiStage) { hiStage = stage; localStorage.setItem('skltrHiStage', hiStage); }
   audio.gameover(); showGameOver();
 }
 function nextStage() {

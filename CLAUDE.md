@@ -25,7 +25,7 @@ jsDelivr CDN via an importmap, same as toko-drop).
 > separate curated site root that already holds `toko-drop/`), **not** `main`. Demo
 > updates must be copied onto `gh-pages` to go live at `/Suds-Jack/paperboy/`.
 
-### Ribbon — Minimalist Survival Roguelike (`ribbon/`)
+### Skltr — Minimalist Survival Roguelike (`skltr/`)
 A **3rd-person action roguelike that plays like Risk of Rain 2**, built on Three.js r167
 with a **minimalist vector look** — a pure-white void, white `MeshBasic` bodies with black
 `EdgesGeometry` outlines, a grey ground grid, and a small accent palette (teal = you, red =
@@ -40,12 +40,13 @@ RoR2-style tiers (EASY → … → HAHAHA). Kills bank **gold**; spend it on **c
 forks, pierce, lifesteal, max HP, regen, gold) — items combine into your run's build. Each
 stage has a **teleporter**: engage it to spawn a **boss** and a horde, hold the ring to
 charge it to 100%, then warp to the next, harder stage. Permadeath; furthest stage persists
-in `localStorage` under `ribbonHiStage`. No build step — open `ribbon/index.html` (three.js
+in `localStorage` under `skltrHiStage`. No build step — open `skltr/index.html` (three.js
 via the jsDelivr importmap, same as toko-drop / paperboy). Keyboard+mouse (with Arrow-key
 camera fallback) or touch (left-stick move, right-stick aim/fire, on-screen skill buttons).
 
 > Note on deploys: published to the **`gh-pages` branch** as **`Skltr/`** — live at
-> `/Suds-Jack/Skltr/`. Copy the `ribbon/` folder onto `gh-pages` as `Skltr/` to update it.
+> `/Suds-Jack/Skltr/`, linked from the gh-pages landing page. Copy the `skltr/` folder onto
+> `gh-pages` as `Skltr/` to update it.
 
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
 Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
@@ -88,7 +89,7 @@ paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new p
     paper.js    # Object-pooled thrown papers with arc/gravity physics + landing detection
     input.js    # Touch stick (steer/throttle) + two throw buttons; WASD/ZX keyboard fallback
     audio.js    # WebAudio bleep kit (throw/deliver/smash/pickup/crash/day-clear)
-ribbon/         # Ribbon — minimalist survival roguelike (RoR2-style, vector look)
+skltr/          # Skltr — minimalist survival roguelike (RoR2-style, vector look)
   index.html
   js/
     main.js       # Scene, 3rd-person camera, loop/states, spawn director + difficulty clock,
