@@ -25,30 +25,32 @@ jsDelivr CDN via an importmap, same as toko-drop).
 > separate curated site root that already holds `toko-drop/`), **not** `main`. Demo
 > updates must be copied onto `gh-pages` to go live at `/Suds-Jack/paperboy/`.
 
-### Skltr — Minimalist Survival Roguelike (`skltr/`)
-A **3rd-person action roguelike** built on Three.js r167 with a **minimalist vector look** —
-a pure-white void, white `MeshBasic` bodies with black `EdgesGeometry` outlines, a grey
-ground grid, and a small accent palette (teal = you, red = enemies, amber = gold/chests,
-violet = teleporter). **Camera + pacing target Returnal**: a tight **over-the-shoulder**
-camera (close, character framed lower-left, centred reticle) over **blistering, multi-
-directional bullet-hell** — ranged enemies and bosses fire slow, dense neon clusters
-(aimed fans + radial rings) you weave through with the **i-frame dodge-dash** (short
-cooldown, the core defensive verb). WASD move + mouse aim, hold-to-fire, sprint, jump, and
-**four skill slots** — M1 primary, M2 piercing slug, Q dash, R radial nova.
+### Skltr — Neon Survival Roguelike (`skltr/`)
+A **3rd-person action roguelike** built on Three.js r167, **rebuilt from scratch** around the
+Returnal moment-to-moment feel (the `3PA Evolutionary Dossier` is the foundational brief).
+**Art = "night mode"** — a **white hand-drawn sketch look on pure black** (Vib Ribbon): every
+body is a black-filled shape wearing a **white `EdgesGeometry` outline**, lit by a soft bloom,
+with a faint grid on black. The hero is a **big-eyed, long-eared bunny humanoid** (sketchy
+white-line limbs holding a gun); enemies are **white-line critters** (skittering chaser, squat
+spitting frog-turret, hovering bat-flyer, many-eyed boss) that all turn to face you.
 
-A Returnal-style **Adrenaline** engine drives the second-to-second loop: kills without
-taking a hit climb 5 tiers (each escalating damage + fire rate), and **any hit instantly
-wipes it to zero**. Meta loop: a **spawn director** trickles in melee/ranged/brute enemies
-(floating HP bars) whose HP and damage **scale continuously with a difficulty clock**
-(time + stage), shown as tiers (EASY → … → HAHAHA). Kills bank **gold**; spend it on
-**chests** that roll **stacking passive items** across common/uncommon/rare tiers (damage,
-attack speed, crit, forks, pierce, lifesteal, max HP, regen, gold) — items combine into
-your run's build. Each stage has a **teleporter**: engage it to spawn a **boss** and a
-horde, hold the ring to charge it to 100%, then warp to the next, harder stage. Permadeath;
-furthest stage persists
-in `localStorage` under `skltrHiStage`. No build step — open `skltr/index.html` (three.js
-via the jsDelivr importmap, same as toko-drop / paperboy). Keyboard+mouse (with Arrow-key
-camera fallback) or touch (left-stick move, right-stick aim/fire, on-screen skill buttons).
+**Gameplay-first, Returnal pacing:** an **over-the-shoulder free-look** camera that aims **in
+every direction** (full 360° yaw + near-full pitch, so you can shoot up at flyers); fast WASD
+movement; **hold-to-fire**; **Shift** sprint; and the **i-frame dash** (**Space** / DASH button,
+short cooldown) as the core dodge through **slow, dense bullet-hell** — turrets fire radial
+rings, flyers rain aimed clusters, the boss alternates 20-shot rings and wide fans. A
+**5-tier Adrenaline** engine drives intensity: kills without taking a hit climb the tiers (each
+escalating damage + fire rate) and **any hit instantly wipes it to zero**. A time-scaling
+**spawn director** ramps enemy HP/damage/density through named phases (CALM → … → NIGHTMARE)
+with periodic **boss** spikes. Permadeath; survive as long as you can — best time persists in
+`localStorage` under `skltrBestTime`.
+
+> Meta-progression (gold / chests / stacking items / teleporter-stage loop) was intentionally
+> stripped in this rebuild to focus on the core combat feel; it can be layered back on later.
+
+No build step — open `skltr/index.html` (three.js + addons via the jsDelivr importmap, same as
+toko-drop / paperboy; uses `EffectComposer` + `UnrealBloomPass`). Keyboard+mouse (pointer-lock,
+Arrow-key camera fallback) or touch (left-stick move, right-stick free-look + fire, DASH button).
 
 > Note on deploys: published to the **`gh-pages` branch** as **`Skltr/`** — live at
 > `/Suds-Jack/Skltr/`, linked from the gh-pages landing page. Copy the `skltr/` folder onto
@@ -95,19 +97,17 @@ paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new p
     paper.js    # Object-pooled thrown papers with arc/gravity physics + landing detection
     input.js    # Touch stick (steer/throttle) + two throw buttons; WASD/ZX keyboard fallback
     audio.js    # WebAudio bleep kit (throw/deliver/smash/pickup/crash/day-clear)
-skltr/          # Skltr — minimalist survival roguelike (RoR2-style, vector look)
-  index.html
+skltr/          # Skltr — neon survival roguelike (Returnal feel, white-sketch-on-black)
+  index.html      # importmap (three + addons); near-black page
   js/
-    main.js       # Scene, 3rd-person camera, loop/states, spawn director + difficulty clock,
-                  #   collisions, teleporter/stage loop, HUD (bars, skills, inventory, prompts)
-    shared.js     # Vector materials/palette, outlined-box helper, procedural Figure (player+enemies)
-    player.js     # Movement/sprint/jump/dash, 4 skill slots + cooldowns, item-derived stats, health
-    enemy.js      # Enemy archetypes (grunt/gunner/brute/boss), chase-and-attack AI, time-scaling
-    projectile.js # Object-pooled projectiles shared by player & enemies (crit/pierce/lifesteal)
-    items.js      # Stacking passive items (3 rarities) + rarity rolls + stat resolver
-    world.js      # Arena grid/boundary, gold chests, teleporter event + charge logic
-    input.js      # WASD+mouse (pointer-lock, Arrow fallback) + touch sticks/skill buttons
-    audio.js      # WebAudio bleep kit (shoot/skills/kill/gold/chest/teleport/boss/over)
+    main.js       # Night scene + bloom (EffectComposer/UnrealBloomPass), free-look OTS camera,
+                  #   loop/states, spawn director + phases, 3D collisions, sparks, HUD
+    shared.js     # Night palette, white-line glow()/makeEye() helpers, big-eared Bunny hero
+    player.js     # Movement/sprint, dash i-frames, 3D aim+fire, health, 5-tier Adrenaline
+    enemy.js      # White-line critters (chaser/turret-frog/flyer-bat/boss) + bullet-hell AI
+    projectile.js # 3D object-pooled neon-faint projectiles shared by player & enemies
+    input.js      # WASD + full free-look mouse (pointer-lock, Arrow fallback) + touch sticks/DASH
+    audio.js      # WebAudio bleep kit (shoot/dash/kill/adrenaline/boss/over)
 ```
 
 ## Toko Drop — Architecture Notes
