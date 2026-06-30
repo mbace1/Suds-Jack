@@ -447,7 +447,7 @@ export class Enemy {
 
   // Cube locomotion: tip end-over-end about the leading bottom edge, advancing
   // one face-width per 90° flop. Cardinal-only; biased random walk between flops.
-  _flopMove(dt, spd, H, wantX = 0, wantZ = 0, exact = false) {
+  _flopMove(dt, spd, halfX, halfZ, wantX = 0, wantZ = 0, exact = false) {
     const radius = CFG[this.type].radius;
     const stride = radius * 1.8;          // one face width = one flop's advance
     const restY  = radius;                // resting center height (matches spawn)
@@ -474,11 +474,15 @@ export class Enemy {
       } else {
         dir = (Math.random() < 0.7) ? this._flopDir : cardinals[Math.floor(Math.random() * 4)];
       }
-      // Reflect away from any wall the next stride would cross.
+      // Reflect away from any wall the next stride would cross. Bounds are the
+      // real per-axis arena half-dimensions (minus the cube radius) so cubes turn
+      // at the actual wall instead of a phantom square — portrait and landscape
+      // arenas differ on each axis.
+      const bx = halfX - radius, bz = halfZ - radius;
       const nx = this.mesh.position.x + dir.x * stride;
       const nz = this.mesh.position.z + dir.z * stride;
-      if (Math.abs(nx) > H) dir = { x: -(Math.sign(this.mesh.position.x) || 1), z: 0 };
-      else if (Math.abs(nz) > H) dir = { x: 0, z: -(Math.sign(this.mesh.position.z) || 1) };
+      if (Math.abs(nx) > bx) dir = { x: -(Math.sign(this.mesh.position.x) || 1), z: 0 };
+      else if (Math.abs(nz) > bz) dir = { x: 0, z: -(Math.sign(this.mesh.position.z) || 1) };
 
       this._flopDir = dir;
       this._flopAxis.set(dir.z, 0, -dir.x).normalize(); // ground-horizontal, perp to travel
@@ -596,7 +600,7 @@ export class Enemy {
     return false;
   }
 
-  update(dt, playerPos, bullets) {
+  update(dt, playerPos, bullets, halfX = 19, halfZ = 18) {
     if (!this.alive) return;
 
     const cfg  = CFG[this.type];
@@ -605,7 +609,6 @@ export class Enemy {
     const ddx  = playerPos.x - ex, ddz = playerPos.z - ez;
     const dist = Math.hypot(ddx, ddz) || 0.001;
     const spd  = cfg.speed * this._speedMult;
-    const H    = 17.5;
 
     // ── Movement ──────────────────────────────────────────────────────────────
     switch (this.type) {
@@ -679,7 +682,7 @@ export class Enemy {
           // Zoner: advance to mid-range, then hold and keep laying poison.
           if (dist <= 7) { wantX = 0; wantZ = 0; }
         }
-        this._flopMove(dt, spd, H, wantX, wantZ);
+        this._flopMove(dt, spd, halfX, halfZ, wantX, wantZ);
         // Per-type emissions (locomotion handled by _flopMove)
         if (this.type === EnemyType.YELA_CUBE) {
           this._trailTimer -= dt;
@@ -738,7 +741,7 @@ export class Enemy {
             } else {
               // Flop toward target without cardinal snapping — looks like a tumbling cube
               // gliding freely, distinct from the hop-and-snap of other cube types.
-              this._flopMove(dt, spd, H, tdx / (td || 1), tdz / (td || 1), true);
+              this._flopMove(dt, spd, halfX, halfZ, tdx / (td || 1), tdz / (td || 1), true);
             }
             break;
           }

@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v49 — 2026-06-30
+**Code-health pass: real arena flop bounds + dead-code removal**
+- Cube flop wall-reflection now uses the **real per-axis arena half-dimensions** (`HALF_X`/`HALF_Z`, minus the cube radius) instead of a hardcoded `H = 17.5` phantom square. Portrait (11×18) and landscape (19×11) differ on each axis, so the old single value let cubes flop several units past the visible wall before the separation pass yanked them back. `_flopMove(dt, spd, H, …)` → `_flopMove(dt, spd, halfX, halfZ, …)`; `update()` now receives `halfX, halfZ` from the main loop
+- Removed dead `restartTimer` (set in `triggerGameOver`, never read since v46 dropped the death-screen auto-return)
+- Cache-bust token `?v=4` → `?v=5` across `index.html` + all relative imports so the deploy refreshes
+- Verified: smoke suite green (ORANGE/TORO/BAMBU/feedback), and cubes spawned at the X wall reflect back inside (max |x| 10.0 < 11) with zero console errors
+
+---
+
 ## v48 — 2026-06-30
 **Cache-bust the whole module graph — deployed updates actually reach players**
 - Symptom: after deploying, the live site kept showing an old HUD version. Cause: `index.html` always loaded `js/main.js?v=3` (token never changed between releases), so browsers/CDN served the cached `main.js` from the identical URL; and the modules `main.js` imports (`enemy.js`, `bullet.js`, …) had no cache-bust token at all
