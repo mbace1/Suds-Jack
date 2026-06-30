@@ -7,6 +7,18 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v58 — 2026-06-30
+**Blob behaviour pass — each blob gets a distinct signature (like the v40 cubes)**
+- **GLOBBO → Pouncer**: stalks at base speed, then crouches (squash telegraph) and leaps at the player at ~3× speed; cycles every ~2 s when within range
+- **WEEVA → Drifting spiral turret**: still weaves, but now also slowly closes on the player (was meandering in place, never approaching) while firing its accelerating spiral
+- **SPITTOR → aimed ring**: its 8-bullet ring is now rotated so one bullet leads straight at the player, reading as a real threat instead of a fixed grid
+- **FANNER → heavier beat**: every 3rd volley fans wider (9 shots over ~0.95π vs 6 over 0.6π)
+- **SPLITTA → pre-burst tell**: pulses green once at ≤2 HP, telegraphing its on-death bullet burst
+- `_ring()` gains a `base` angle param; new blob state (`_pounceState/_pounceT/_pounceDir`, `_fannerShot`)
+- Cache-bust `?v=13` → `?v=14`; HUD label → v58
+
+---
+
 ## v57 — 2026-06-30
 **Bigger, more readable bullets + release tooling**
 - Bullet visuals enlarged for readability: enemy non-fat `1.25 → 1.6`; player bullets get a visual-only `×1.3` boost (`PLAYER_BULLET_VISUAL_BOOST`). Fat bullets unchanged at `3.0`
