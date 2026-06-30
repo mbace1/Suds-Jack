@@ -398,9 +398,8 @@ export class Enemy {
         this._trailPushTimer = 0;
       }
     } if (type === EnemyType.ORANGE_CUBE) {
-      this._target = { x: (Math.random()-0.5)*24, z: (Math.random()-0.5)*24 };
-      this._target.x = Math.max(-16, Math.min(16, this._target.x));
-      this._target.z = Math.max(-16, Math.min(16, this._target.z));
+      this._target = null; // chosen on the first 'moving' update (needs playerPos)
+      this._moveT  = 0;
       this._shotsFired = 0;
       this._fireDir = { x: 1, z: 0 };
       this._state = 'moving';
@@ -509,6 +508,19 @@ export class Enemy {
       this._flopActive = false;
       this._flopRest = restGap;
     }
+  }
+
+  // ORANGE_CUBE repositioning target: a point on a ring ~6–9 around the player,
+  // clamped to a ±10 box that fits inside BOTH arena orientations (portrait
+  // 11×18, landscape 19×11) so the target is always reachable — otherwise the
+  // cube flops into a wall, never closes to firing range, and looks frozen.
+  _orangeTarget(playerPos) {
+    const ang = Math.random() * Math.PI * 2;
+    const rad = 6 + Math.random() * 3;
+    return {
+      x: Math.max(-10, Math.min(10, playerPos.x + Math.cos(ang) * rad)),
+      z: Math.max(-10, Math.min(10, playerPos.z + Math.sin(ang) * rad)),
+    };
   }
 
   _makeBambuSeg(segIndex) {
@@ -694,10 +706,14 @@ export class Enemy {
       case EnemyType.ORANGE_CUBE: {
         switch (this._state) {
           case 'moving': {
+            if (!this._target) { this._target = this._orangeTarget(playerPos); this._moveT = 0; }
+            this._moveT = (this._moveT || 0) + dt;
             const tdx = this._target.x - ex, tdz = this._target.z - ez;
             const td = Math.hypot(tdx, tdz);
-            // Switch to aiming once close and not mid-flop, so we snap cleanly between states.
-            if (!this._flopActive && td < 2.2) {
+            // Aim once close (threshold > one flop stride so we can't straddle the
+            // point forever), or after a 5 s safety timeout so a cube that can't
+            // quite settle still stops to shoot instead of flopping endlessly.
+            if (!this._flopActive && (td < 2.6 || this._moveT > 5)) {
               this._state = 'aiming';
               this._stateT = 0.9;
               const dirs8 = [
@@ -757,13 +773,9 @@ export class Enemy {
             this._stateT -= dt;
             if (this._stateT <= 0) {
               this._state = 'moving';
-              // Reposition near the player (offset ~4) rather than a fully random point.
-              this._target = {
-                x: playerPos.x + (Math.random() - 0.5) * 8,
-                z: playerPos.z + (Math.random() - 0.5) * 8,
-              };
-              this._target.x = Math.max(-16, Math.min(16, this._target.x));
-              this._target.z = Math.max(-16, Math.min(16, this._target.z));
+              // Reposition to a fresh, reachable ring point around the player.
+              this._target = this._orangeTarget(playerPos);
+              this._moveT  = 0;
             }
             break;
         }

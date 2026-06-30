@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v47 — 2026-06-30
+**ORANGE_CUBE movement fix — no longer freezes against a wall**
+- Root cause: the initial `_target` was a fully-random point in ±16 on both axes, but the portrait arena is only ±11 wide in X (landscape ±11 in Z). Cubes routinely got an unreachable target, flopped into a wall where the bounds-clamp pinned them, and never closed to the `td < 2.2` firing threshold — so they sat in 'moving' forever, reading as frozen
+- Targets now come from `_orangeTarget(playerPos)`: a point on a ring ~6–9 around the player, clamped to a ±10 box that fits inside *both* arena orientations, so it's always reachable. Used for the first target (set lazily on the first 'moving' update, since it needs `playerPos`) and every reposition after shooting
+- Arrival threshold widened 2.2 → 2.6 (just over one flop stride) so a cube can't straddle the target point and hop back and forth across it forever
+- Added a 5 s move-timeout safety (`_moveT`): a cube that still can't settle stops and shoots from where it is rather than flopping endlessly
+- Verified: 3 cubes spawned at arena edges all traverse in and cycle moving→aiming→shooting→cooldown; zero errors
+
+---
+
 ## v46 — 2026-06-30
 **BAMBU growth + lob charge, bullet-hell projectiles, death-screen feedback form**
 - BAMBU now grows all 3 segments instantly in sequence (`_growTimer` 8.0 → 0.18, `_maxSegs` always 3) right after emerging, instead of one segment every 8 s
