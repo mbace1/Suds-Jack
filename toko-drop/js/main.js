@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=11';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=11';
-import { Player, PLAYER_RADIUS } from './player.js?v=11';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=11';
-import { audio } from './audio.js?v=11';
-import { initDesigner } from './designer.js?v=11';
+import { InputManager } from './input.js?v=12';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=12';
+import { Player, PLAYER_RADIUS } from './player.js?v=12';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=12';
+import { audio } from './audio.js?v=12';
+import { initDesigner } from './designer.js?v=12';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -546,7 +546,10 @@ class Gate {
     });
     this._laser = new THREE.Mesh(new THREE.BoxGeometry(4, 0.25, 0.5), this._laserMat);
     this._laser.position.set(x, 0.9, z);
-    this._laser.rotation.y = angle + Math.PI / 2;
+    // Posts run along (-sin a, cos a); three.js Y-rotation maps local +X to
+    // (cos θ, -sin θ), so the beam must rotate by -(angle + π/2) to line up
+    // with the posts (a plain +angle mirrors the z-axis and crosses them).
+    this._laser.rotation.y = -(angle + Math.PI / 2);
     sc.add(this._laser);
 
     // Glow beam — a thicker additive halo around the core, reads as an energy barrier
@@ -1388,7 +1391,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v55', 16, uiCanvas.height - 12);
+  ctx.fillText('v56', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
