@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { makeGooMat } from './enemy.js?v=7';
+import { makeGooMat } from './enemy.js?v=8';
 
 const SPEED          = 6;
 const DASH_SPEED     = 26;
@@ -276,23 +276,35 @@ export class Player {
       this._lastAim = { x: aimDir.x, z: aimDir.z };
       const ox = this.mesh.position.x + aimDir.x * (PLAYER_RADIUS + 0.3);
       const oz = this.mesh.position.z + aimDir.z * (PLAYER_RADIUS + 0.3);
-      const fireRate = FIRE_RATE * this._fireRateMult * (this._fireRateBoost > 0 ? 0.4 : 1);
-      if (this._weaponMode === 'SPREAD') {
-        for (const offset of [-2, -1, 0, 1, 2]) {
-          const a = offset * (Math.PI / 9);
+      const baseRate = FIRE_RATE * this._fireRateMult * (this._fireRateBoost > 0 ? 0.4 : 1);
+      const mode = this._weaponMode;
+      if (mode === 'SPREAD' || mode === 'SPREAD2') {
+        const offsets = mode === 'SPREAD2' ? [-3, -2, -1, 0, 1, 2, 3] : [-2, -1, 0, 1, 2];
+        const step    = mode === 'SPREAD2' ? Math.PI / 10 : Math.PI / 9;
+        for (const offset of offsets) {
+          const a = offset * step;
           const c = Math.cos(a), s = Math.sin(a);
           bullets.spawnDir(ox, oz, aimDir.x * c - aimDir.z * s, aimDir.x * s + aimDir.z * c, true);
         }
         this.onShoot?.();
-      } else if (this._weaponMode === 'BURST') {
+      } else if (mode === 'BURST' || mode === 'BURST2') {
         bullets.spawnDir(ox, oz, aimDir.x, aimDir.z, true);
-        this._burstQueue.push({ t: 0.12, dx: aimDir.x, dz: aimDir.z }, { t: 0.24, dx: aimDir.x, dz: aimDir.z });
+        if (mode === 'BURST2') {
+          this._burstQueue.push(
+            { t: 0.10, dx: aimDir.x, dz: aimDir.z }, { t: 0.20, dx: aimDir.x, dz: aimDir.z },
+            { t: 0.30, dx: aimDir.x, dz: aimDir.z }, { t: 0.40, dx: aimDir.x, dz: aimDir.z },
+          );
+        } else {
+          this._burstQueue.push({ t: 0.12, dx: aimDir.x, dz: aimDir.z }, { t: 0.24, dx: aimDir.x, dz: aimDir.z });
+        }
         this.onShoot?.();
       } else {
+        // SINGLE, LASER, LASER2, RAPID, RAPID2
         bullets.spawnDir(ox, oz, aimDir.x, aimDir.z, true);
         this.onShoot?.();
       }
-      this._fireT = fireRate;
+      this._fireT = (mode === 'RAPID') ? baseRate * 0.45 :
+                    (mode === 'RAPID2') ? baseRate * 0.28 : baseRate;
       // Muzzle flash at the barrel — shown immediately (fade handled next frames)
       this._muzzleT = 0.05;
       this._muzzle.position.set(

@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=7';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=7';
-import { Player, PLAYER_RADIUS } from './player.js?v=7';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=7';
-import { audio } from './audio.js?v=7';
-import { initDesigner } from './designer.js?v=7';
+import { InputManager } from './input.js?v=8';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=8';
+import { Player, PLAYER_RADIUS } from './player.js?v=8';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=8';
+import { audio } from './audio.js?v=8';
+import { initDesigner } from './designer.js?v=8';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -587,40 +587,97 @@ class Gate {
   }
 }
 
-const POWERUP_COLORS = { weapon_burst: 0x44ffcc, weapon_spread: 0xffcc44, invincible: 0xffffff, firerate: 0xff88aa, hp: 0xff4466 };
+// ── Weapon pod system ─────────────────────────────────────────────────────────
+// Each entry: the player._weaponMode to set, display glyph, orb color, rarity level.
+const WEAPON_PODS = {
+  S:  { mode: 'SPREAD',  color: 0xffcc44, level: 1 },
+  S2: { mode: 'SPREAD2', color: 0xffee11, level: 2 },
+  B:  { mode: 'BURST',   color: 0x44ffcc, level: 1 },
+  B2: { mode: 'BURST2',  color: 0x11ffee, level: 2 },
+  L:  { mode: 'LASER',   color: 0xff3355, level: 1 },
+  L2: { mode: 'LASER2',  color: 0xff1133, level: 2 },
+  R:  { mode: 'RAPID',   color: 0xaa55ff, level: 1 },
+  R2: { mode: 'RAPID2',  color: 0xcc22ff, level: 2 },
+};
+const LV1_WEAPONS = ['S', 'B', 'L', 'R'];
+const LV2_WEAPONS = ['S2', 'B2', 'L2', 'R2'];
+const NON_WEAPON_COLORS = { hp: 0xff4466, invincible: 0xffffff, firerate: 0xff88aa };
+
+function randomWeaponPodId(lv2Allowed = false) {
+  if (lv2Allowed && Math.random() < 0.28) return LV2_WEAPONS[Math.floor(Math.random() * LV2_WEAPONS.length)];
+  return LV1_WEAPONS[Math.floor(Math.random() * LV1_WEAPONS.length)];
+}
+
+function makeGlyphTexture(text, colorHex) {
+  const c = document.createElement('canvas');
+  c.width = 64; c.height = 64;
+  const ctx2d = c.getContext('2d');
+  const col = '#' + colorHex.toString(16).padStart(6, '0');
+  ctx2d.strokeStyle = col;
+  ctx2d.lineWidth = 2;
+  ctx2d.beginPath(); ctx2d.arc(32, 32, 26, 0, Math.PI * 2); ctx2d.stroke();
+  ctx2d.fillStyle = col;
+  ctx2d.font = `bold ${text.length > 1 ? 22 : 28}px monospace`;
+  ctx2d.textAlign = 'center'; ctx2d.textBaseline = 'middle';
+  ctx2d.fillText(text, 32, 33);
+  return new THREE.CanvasTexture(c);
+}
+
+function equipWeapon(podId) {
+  const def = WEAPON_PODS[podId];
+  if (!def) return;
+  player._weaponMode = def.mode;
+  // Laser modes pierce; all others remove pierce (unless pierce card was taken)
+  if (def.mode !== 'LASER' && def.mode !== 'LASER2') BULLET_CONFIG.playerWeaponPierce = false;
+  else BULLET_CONFIG.playerWeaponPierce = true;
+}
 
 class Powerup {
-  constructor(sc, x, z, forcedType, driftX = 0, driftZ = 0) {
+  constructor(sc, x, z, type, driftX = 0, driftZ = 0) {
     this._life = 9.0;
     this.x = x; this.z = z;
     this._driftX = driftX; this._driftZ = driftZ;
-    this._magTrailT = 0; // v37: cadence for the magnet pull-streak
+    this._magTrailT = 0;
     this.collected = false;
-    this.mat = new THREE.MeshBasicMaterial({
-      color: 0xffffff, transparent: true, opacity: 0.9,
-    });
-    this.mesh = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 6), this.mat);
+    this._pairedWith = null;
+    this._type = type;
+
+    const wpDef = WEAPON_PODS[type];
+    const orbColor = wpDef ? wpDef.color : (NON_WEAPON_COLORS[type] ?? 0xffffff);
+    this.mat = new THREE.MeshBasicMaterial({ color: orbColor, transparent: true, opacity: 0.9 });
+    const orbR = wpDef ? (wpDef.level === 2 ? 0.45 : 0.38) : 0.38;
+    this.mesh = new THREE.Mesh(new THREE.SphereGeometry(orbR, 8, 6), this.mat);
     this.mesh.position.set(x, 0.6, z);
     sc.add(this.mesh);
-    if (forcedType) {
-      this._type = forcedType;
-    } else {
-      const r = Math.random();
-      this._type = r < 0.25 ? 'weapon_burst' : r < 0.5 ? 'weapon_spread' : r < 0.75 ? 'invincible' : 'firerate';
+
+    this._sprite = null;
+    if (wpDef) {
+      const tex = makeGlyphTexture(type, wpDef.color);
+      const spMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+      this._sprite = new THREE.Sprite(spMat);
+      this._sprite.scale.setScalar(wpDef.level === 2 ? 1.1 : 0.9);
+      this._sprite.position.set(x, 1.5, z);
+      sc.add(this._sprite);
     }
-    this.mat.color.set(POWERUP_COLORS[this._type] ?? 0xffffff);
   }
   update(dt, t) {
     this._life -= dt;
     this.x += this._driftX * dt;
     this.z += this._driftZ * dt;
-    this.mesh.position.x = this.x;
-    this.mesh.position.z = this.z;
-    this.mesh.position.y = 0.6 + Math.sin(t * 3) * 0.15;
+    const y = 0.6 + Math.sin(t * 3) * 0.15;
+    this.mesh.position.set(this.x, y, this.z);
     this.mat.opacity = 0.5 + 0.4 * Math.sin(t * 5);
+    if (this._sprite) this._sprite.position.set(this.x, y + 0.9, this.z);
     return this._life > 0 && !this.collected;
   }
-  remove(sc) { sc.remove(this.mesh); }
+  remove(sc) {
+    sc.remove(this.mesh);
+    if (this._sprite) {
+      this._sprite.material.map.dispose();
+      this._sprite.material.dispose();
+      sc.remove(this._sprite);
+    }
+  }
 }
 
 class BambuAoE {
@@ -1267,12 +1324,14 @@ function drawHUD() {
     ctx.fill();
   }
 
-  // Weapon mode indicator
+  // Weapon mode indicator — show the pod letter and colour
   if (player._weaponMode !== 'SINGLE') {
+    const podId = Object.keys(WEAPON_PODS).find(k => WEAPON_PODS[k].mode === player._weaponMode);
+    const podColor = podId ? '#' + WEAPON_PODS[podId].color.toString(16).padStart(6, '0') : '#00ccaa';
     const dotAreaW = player.maxHp * dotGap;
-    ctx.font = 'bold 12px monospace';
-    ctx.fillStyle = '#00ccaa';
-    ctx.fillText(`[${player._weaponMode}]`, 16 + dotAreaW + 8, dotY + 5);
+    ctx.font = 'bold 13px monospace';
+    ctx.fillStyle = podColor;
+    ctx.fillText(`[${podId ?? player._weaponMode}]`, 16 + dotAreaW + 8, dotY + 5);
     ctx.font = HUD_FONT;
   }
 
@@ -1329,7 +1388,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v51', 16, uiCanvas.height - 12);
+  ctx.fillText('v52', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1700,8 +1759,9 @@ function startGame() {
   applyArenaMode(landscapeMode);
   score  = 0; streak = 0; wave = 0; runTimer = 0;
   collectedUpgrades = []; hitEventLog = []; _lastHitTime = -1;
-  BULLET_CONFIG.playerBulletScale = 1.0;
-  BULLET_CONFIG.playerPiercing    = false;
+  BULLET_CONFIG.playerBulletScale  = 1.0;
+  BULLET_CONFIG.playerPiercing     = false;
+  BULLET_CONFIG.playerWeaponPierce = false;
   runSeed = (Math.random() * 0xFFFFFF | 0) >>> 0;
   rng = mulberry32(runSeed);
   player.reset();
@@ -2022,12 +2082,13 @@ function loop() {
     let hit = false;
     for (const e of enemies) {
       if (!e.alive) continue;
-      if (BULLET_CONFIG.playerPiercing && b._hitIds && b._hitIds.has(e)) continue;
+      const _piercing = BULLET_CONFIG.playerPiercing || BULLET_CONFIG.playerWeaponPierce;
+      if (_piercing && b._hitIds && b._hitIds.has(e)) continue;
       const dx = b.mesh.position.x - e.position.x;
       const dz = b.mesh.position.z - e.position.z;
       if (Math.hypot(dx, dz) < BULLET_R * BULLET_CONFIG.playerBulletScale + e.radius) {
         const died = e.hit(b.mesh.position.x, b.mesh.position.z);
-        if (BULLET_CONFIG.playerPiercing) {
+        if (_piercing) {
           if (!b._hitIds) b._hitIds = new Set();
           b._hitIds.add(e);
         } else {
@@ -2056,7 +2117,7 @@ function loop() {
               Math.cos(a) * sp, 1.5 + Math.random() * 2.5, Math.sin(a) * sp, e.color, 0.09);
           }
         }
-        if (!BULLET_CONFIG.playerPiercing) break;
+        if (!_piercing) break;
       }
     }
     if (hit) continue;
@@ -2083,15 +2144,29 @@ function loop() {
             chunkPool.spawn(kx, 0.8, kz,
               Math.cos(a) * 3.5, 1.0, Math.sin(a) * 3.5, 0xffdd55, 0.1);
           }
-          // Drop a slow-drifting pickup away from the convoy path
-          const driftAngle = Math.random() * Math.PI * 2;
-          const driftSpeed = 0.8 + Math.random() * 0.6;
-          const dropTypes = ['hp', 'firerate', 'weapon_burst', 'weapon_spread', 'invincible'];
-          const dropType = dropTypes[Math.floor(Math.random() * dropTypes.length)];
-          const pu = new Powerup(scene, kx, kz, dropType,
-            Math.cos(driftAngle) * driftSpeed, Math.sin(driftAngle) * driftSpeed);
-          pu._life = 7.0;
-          powerups.push(pu);
+          // Drop weapon pod(s). Killing all moths before any escape gives a 2-choice bonus.
+          const lv2Ok = wave >= 4;
+          const allKilled = cargoCluster._drones.every(d => !d.alive) &&
+                            !cargoCluster._drones.some(d => d.escaped);
+          if (allKilled) {
+            // 2-choice pods side by side; player picks one, the other vanishes
+            const idA = randomWeaponPodId(lv2Ok);
+            let idB = randomWeaponPodId(lv2Ok);
+            while (idB === idA) idB = randomWeaponPodId(lv2Ok);
+            const puA = new Powerup(scene, kx - 1.2, kz, idA);
+            const puB = new Powerup(scene, kx + 1.2, kz, idB);
+            puA._pairedWith = puB; puB._pairedWith = puA;
+            puA._life = puB._life = 12.0;
+            powerups.push(puA, puB);
+          } else {
+            // Single random weapon pod drifting from kill position
+            const driftAngle = Math.random() * Math.PI * 2;
+            const driftSpeed = 0.8 + Math.random() * 0.6;
+            const pu = new Powerup(scene, kx, kz, randomWeaponPodId(lv2Ok),
+              Math.cos(driftAngle) * driftSpeed, Math.sin(driftAngle) * driftSpeed);
+            pu._life = 7.0;
+            powerups.push(pu);
+          }
           break;
         }
       }
@@ -2180,7 +2255,8 @@ function loop() {
           }
           addShake(0.14);
           audio.pickup();
-          powerups.push(new Powerup(scene, g._x, g._z));
+          const gateTypes = ['hp', 'invincible', 'firerate'];
+          powerups.push(new Powerup(scene, g._x, g._z, gateTypes[Math.floor(Math.random() * gateTypes.length)]));
         }
       }
       // Enemies hitting laser take damage (once per 0.5s)
@@ -2225,16 +2301,21 @@ function loop() {
     const dx = player.position.x - pu.x, dz = player.position.z - pu.z;
     if (Math.hypot(dx, dz) < 0.8 + PLAYER_RADIUS) {
       pu.collected = true;
-      if (pu._type === 'weapon_burst') {
-        player._weaponMode = 'BURST';
-      } else if (pu._type === 'weapon_spread') {
-        player._weaponMode = 'SPREAD';
+      if (WEAPON_PODS[pu._type]) {
+        equipWeapon(pu._type);
       } else if (pu._type === 'invincible') {
         player.grantInvincibility(3.0);
       } else if (pu._type === 'hp') {
         player.hp = Math.min(player.maxHp, player.hp + 1);
-      } else {
+      } else if (pu._type === 'firerate') {
         player.grantFireRateBoost(8.0);
+      }
+      // Dismiss the paired choice pod if this was a 2-option pickup
+      if (pu._pairedWith) {
+        pu._pairedWith.collected = true;
+        pu._pairedWith.remove(scene);
+        const pi = powerups.indexOf(pu._pairedWith);
+        if (pi !== -1) powerups.splice(pi, 1);
       }
       audio.pickup();
       // Collection pop: radial burst of goo bits in the pickup's colour

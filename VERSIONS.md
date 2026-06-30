@@ -7,6 +7,18 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v52 — 2026-06-30
+**Contra-style weapon pods: glyphs on moths, 8 weapons, kill-all bonus**
+- Moths now always drop weapon pods with a letter glyph (S/B/L/R + Lv2 S2/B2/L2/R2); gates give non-weapon drops (HP/invincible/firerate)
+- New weapon modes: **L** (Laser — pierce), **L2** (Laser+pierce faster), **R** (Rapid — 2× fire rate), **R2** (Hyperspeed — 3.6× fire rate), **S2** (7-way spread), **B2** (5-shot burst)
+- Kill all moths before any escape → **2-choice pod pair** spawns side-by-side at last kill; walking into one dismisses the other. Lv2 pods (28% chance) unlock from wave 4+
+- `equipWeapon(podId)` helper sets `_weaponMode` and weapon-local pierce flag; pierce card (`BULLET_CONFIG.playerPiercing`) stacks independently
+- Glyph rendered via `makeGlyphTexture()` → `THREE.Sprite` that bobs with the orb; disposed on collect/remove
+- HUD weapon indicator now shows pod letter in pod color
+- Cache-bust `?v=7` → `?v=8`; HUD label → v52
+
+---
+
 ## v51 — 2026-06-30
 **ORANGE_CUBE shoots while moving + smaller bullet-hell visuals**
 - ORANGE_CUBE state machine (moving→aiming→shooting→cooldown) replaced with always-moving flop + independent fire timer (`_fireT`): cube continuously tumbles toward its repositioning target while firing a bullet wall every 3–4.5 s, no pauses
