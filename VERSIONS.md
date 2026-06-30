@@ -7,6 +7,13 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v55 — 2026-06-30
+**No-cache headers on index.html to fix stale mobile browser caching**
+- Added `Cache-Control: no-cache, no-store, must-revalidate` + Pragma + Expires meta tags so mobile browsers always fetch a fresh `index.html`
+- Cache-bust `?v=10` → `?v=11`; HUD label → v55
+
+---
+
 ## v54 — 2026-06-30
 **Revert bullet sizes to pre-v51 bullet-hell scale**
 - Player bullet `0.7 → 1.0`, enemy non-fat `0.85 → 1.25`, fat `2.5 → 3.0`; collision radii unchanged
