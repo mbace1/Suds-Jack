@@ -25,6 +25,21 @@ jsDelivr CDN via an importmap, same as toko-drop).
 > separate curated site root that already holds `toko-drop/`), **not** `main`. Demo
 > updates must be copied onto `gh-pages` to go live at `/Suds-Jack/paperboy/`.
 
+### Ribbon — Minimalist Vector Runner-Roguelike (`ribbon/`)
+A **3rd-person, minimalist runner** built on Three.js r167 — a **3D homage to Vib Ribbon**:
+a pure-white void, flat **vector look** (white `MeshBasic` boxes with black `EdgesGeometry`
+outlines, one warm `ACCENT` red for cues/hearts) and a black ribbon track receding to a
+vanishing point. A procedural stick-figure runner auto-advances down the ribbon; obstacles
+stream toward you, each tagged with one of four reaction cues — **↑ JUMP, ↓ SLIDE, ← / →
+DODGE** — and you react inside a timing window as each reaches you. Clean reactions build a
+**combo** (notes climb a scale); a miss costs a heart (3 hearts = permadeath). The
+**roguelite layer** is a **TUNE-UP** every 14 clears: pick 1 of 3 perks (extra heart,
+wider timing window, score multiplier, shields, slower tempo) that persist for the run.
+Speed and obstacle density ramp with distance; hi-score persists in `localStorage` under
+`ribbonHi`. No build step — open `ribbon/index.html` (three.js via the jsDelivr importmap,
+same as toko-drop / paperboy). Keyboard (arrows / WASD / Space) or touch (swipe in the
+cue's direction; tap perk cards).
+
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
 Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
 
@@ -66,6 +81,14 @@ paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new p
     paper.js    # Object-pooled thrown papers with arc/gravity physics + landing detection
     input.js    # Touch stick (steer/throttle) + two throw buttons; WASD/ZX keyboard fallback
     audio.js    # WebAudio bleep kit (throw/deliver/smash/pickup/crash/day-clear)
+ribbon/         # Ribbon — minimalist vector runner-roguelike (3D Vib Ribbon homage)
+  index.html
+  js/
+    main.js     # Scene, perspective camera, loop, states, scoring, TUNE-UP perks, HUD
+    track.js    # Shared vector materials + scrolling ribbon + obstacle streaming/timing judge
+    runner.js   # Procedural vector stick-figure with run/jump/slide/dodge/stumble poses
+    input.js    # 4 directional reactions (keys + swipes) + menu/perk tap targets
+    audio.js    # WebAudio bleep kit (combo notes climb a scale, miss/perk/over)
 ```
 
 ## Toko Drop — Architecture Notes
