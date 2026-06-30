@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>RIBBON — a minimalist survival roguelike</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { background: #ffffff; overflow: hidden; touch-action: none; }
+    #canvas-game { display: block; }
+    #canvas-ui {
+      position: fixed;
+      top: 0; left: 0;
+      pointer-events: none;
+    }
+    #overlay {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: #111;
+      font-family: 'Courier New', monospace;
+      text-align: center;
+      pointer-events: none;
+      display: none;
+      line-height: 1.35;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas-game"></canvas>
+  <canvas id="canvas-ui"></canvas>
+  <div id="overlay"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="js/main.js?v=2"></script>
+</body>
+</html>
