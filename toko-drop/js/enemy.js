@@ -218,6 +218,12 @@ export class Enemy {
     this._orbitSign = Math.random() < 0.5 ? 1 : -1;
     this._purpFireT = 0.5;
 
+    // Blob archetype state (v58)
+    this._pounceState = 'stalk';                  // GLOBBO: stalk → crouch → leap
+    this._pounceT     = 1.0 + Math.random() * 1.4;
+    this._pounceDir   = { x: 0, z: 1 };
+    this._fannerShot  = 0;                         // FANNER: every 3rd volley goes wide
+
     // State machine fields
     this._state        = 'idle';
     this._stateT       = 0;
@@ -603,7 +609,37 @@ export class Enemy {
 
     // ── Movement ──────────────────────────────────────────────────────────────
     switch (this.type) {
-      case EnemyType.GLOBBO:
+      case EnemyType.GLOBBO: {
+        // Pouncer: stalks at base speed, crouches to telegraph, then leaps.
+        this._pounceT -= dt;
+        if (this._pounceState === 'stalk') {
+          if (dist > 1.2) {
+            this.mesh.position.x += (ddx / dist) * spd * dt;
+            this.mesh.position.z += (ddz / dist) * spd * dt;
+          }
+          if (this._pounceT <= 0 && dist < 12) {
+            this._pounceState = 'crouch';
+            this._pounceT     = 0.32;
+            this._sqV        -= 0.85;                      // crouch squash (tell)
+            this._pounceDir   = { x: ddx / dist, z: ddz / dist };
+          }
+        } else if (this._pounceState === 'crouch') {
+          if (this._pounceT <= 0) {
+            this._pounceState = 'leap';
+            this._pounceT     = 0.30;
+            this._sqV        += 0.7;                       // stretch on launch
+          }
+        } else { // leap
+          this.mesh.position.x += this._pounceDir.x * spd * 3.2 * dt;
+          this.mesh.position.z += this._pounceDir.z * spd * 3.2 * dt;
+          if (this._pounceT <= 0) {
+            this._pounceState = 'stalk';
+            this._pounceT     = 1.6 + Math.random() * 1.4;
+          }
+        }
+        break;
+      }
+
       case EnemyType.SPLITTA:
         if (dist > 1.2) {
           this.mesh.position.x += (ddx / dist) * spd * dt;
@@ -638,8 +674,10 @@ export class Enemy {
       }
 
       case EnemyType.WEEVA:
-        this.mesh.position.x += Math.sin(this._wobbleT * 0.7) * spd * 0.5 * dt;
-        this.mesh.position.z += Math.cos(this._wobbleT * 0.5) * spd * 0.5 * dt;
+        // Drifting spiral turret: weaves while slowly closing on the player so
+        // it actually applies pressure instead of meandering in place.
+        this.mesh.position.x += (Math.sin(this._wobbleT * 0.7) * 0.5 + (ddx / dist) * 0.45) * spd * dt;
+        this.mesh.position.z += (Math.cos(this._wobbleT * 0.5) * 0.5 + (ddz / dist) * 0.45) * spd * dt;
         break;
 
       case EnemyType.YELA_CUBE:
@@ -833,6 +871,9 @@ export class Enemy {
       const ramp = Math.max(0, 1.6 - Math.max(this._stateT, 0)) / 1.6;
       const v = Math.floor(ramp * 0x33);
       this._setEmissive((v << 8) | (v * 0.5));
+    } else if (this.type === EnemyType.SPLITTA && this.hp <= 2) {
+      // Nervous green pulse as it nears death — telegraphs the on-death bullet burst.
+      this._setEmissive(Math.sin(performance.now() * 0.018) > 0 ? 0x224400 : 0x000000);
     } else if (this._isTelegraphing) {
       this._setEmissive(this.type === EnemyType.SPITTOR ? 0x442200 : 0x440022);
     } else {
@@ -968,7 +1009,10 @@ export class Enemy {
           if (this._telegraphT <= 0) {
             this._isTelegraphing = false;
             this._sqV -= 1.0; // squash on fire
-            this._ring(ex, ez, 8, cfg.bulletColor, bullets, this.type);
+            // Aim the ring so one bullet leads straight at the player — the
+            // symmetric ring reads better as a real threat than a fixed grid.
+            const baseA = Math.atan2(playerPos.z - ez, playerPos.x - ex);
+            this._ring(ex, ez, 8, cfg.bulletColor, bullets, this.type, baseA);
           }
         }
         break;
@@ -988,9 +1032,12 @@ export class Enemy {
             const adx = playerPos.x - ex, adz = playerPos.z - ez;
             const len = Math.hypot(adx, adz);
             if (len > 0) {
+              // Every 3rd volley fans wider with more shots — a heavier beat.
+              this._fannerShot = (this._fannerShot + 1) % 3;
+              const wide  = this._fannerShot === 0;
               const base  = Math.atan2(adz, adx);
-              const count = 6;
-              const span  = Math.PI * 0.6;
+              const count = wide ? 9 : 6;
+              const span  = wide ? Math.PI * 0.95 : Math.PI * 0.6;
               for (let j = 0; j < count; j++) {
                 const a = base - span / 2 + j * (span / (count - 1));
                 bullets.spawnDir(ex, ez, Math.cos(a), Math.sin(a), false, cfg.bulletColor, false, this.type);
@@ -1013,9 +1060,9 @@ export class Enemy {
     }
   }
 
-  _ring(x, z, count, color, bullets, originType = null) {
+  _ring(x, z, count, color, bullets, originType = null, base = 0) {
     for (let i = 0; i < count; i++) {
-      const a = (i / count) * Math.PI * 2;
+      const a = base + (i / count) * Math.PI * 2;
       bullets.spawnDir(x, z, Math.cos(a), Math.sin(a), false, color, false, originType);
     }
   }
