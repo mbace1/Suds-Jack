@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=15';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=15';
-import { Player, PLAYER_RADIUS } from './player.js?v=15';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=15';
-import { audio } from './audio.js?v=15';
-import { initDesigner } from './designer.js?v=15';
+import { InputManager } from './input.js?v=16';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=16';
+import { Player, PLAYER_RADIUS } from './player.js?v=16';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=16';
+import { audio } from './audio.js?v=16';
+import { initDesigner } from './designer.js?v=16';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -420,25 +420,52 @@ class Puddle {
 class PoisonZone {
   constructor(sc, x, z, radius) {
     this._life = 3.5;
+    this._t = 0;
     this.radius = radius;
+    // Toxic fill.
     this.mat = new THREE.MeshBasicMaterial({
-      color: 0x88cc00,
-      transparent: true,
-      opacity: 0.55,
-      depthWrite: false,
+      color: 0x88cc00, transparent: true, opacity: 0.5, depthWrite: false,
     });
-    this.mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, 10), this.mat);
+    this.mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, 24), this.mat);
     this.mesh.rotation.x = -Math.PI / 2;
     this.mesh.position.set(x, 0.015, z);
     sc.add(this.mesh);
+    // Warning rim — a bright pulsing outline on the lethal edge while the zone
+    // is active, so the player can read exactly where (and when) it hurts.
+    this.rimMat = new THREE.MeshBasicMaterial({
+      color: 0xccff33, transparent: true, opacity: 0.8,
+      side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    this.rim = new THREE.Mesh(new THREE.RingGeometry(radius * 0.8, radius, 32), this.rimMat);
+    this.rim.rotation.x = -Math.PI / 2;
+    this.rim.position.set(x, 0.02, z);
+    sc.add(this.rim);
   }
   get isDangerous() { return this._life > 1.0; }
   update(dt) {
     this._life -= dt;
-    this.mat.opacity = this._life > 1.0 ? 0.55 : 0.28 * (this._life / 1.0);
+    this._t += dt;
+    if (this._life > 1.0) {
+      // Active hazard — saturated, pulsing fill + bright pulsing rim.
+      const pulse = 0.5 + 0.5 * Math.abs(Math.sin(this._t * 6));
+      this.mat.color.setHex(0x88cc00);
+      this.mat.opacity = 0.38 + 0.22 * pulse;
+      this.rim.visible = true;
+      this.rimMat.opacity = 0.45 + 0.45 * pulse;
+      this.rim.scale.setScalar(1 + 0.05 * pulse);
+    } else {
+      // Spent — desaturate to a dull grey-green and drop the rim: reads as safe.
+      this.rim.visible = false;
+      this.mat.color.setHex(0x556644);
+      this.mat.opacity = 0.22 * (this._life / 1.0);
+    }
     return this._life > 0;
   }
-  remove(sc) { sc.remove(this.mesh); }
+  remove(sc) {
+    sc.remove(this.mesh); sc.remove(this.rim);
+    this.mesh.geometry.dispose(); this.rim.geometry.dispose();
+    this.mat.dispose(); this.rimMat.dispose();
+  }
 }
 
 class SlimeTrail {
@@ -1410,7 +1437,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v59', 16, uiCanvas.height - 12);
+  ctx.fillText('v60', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
