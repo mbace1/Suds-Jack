@@ -1,4 +1,4 @@
-# Toko Drop — v44
+# Toko Drop — v47
 
 Twin-stick bullet-hell arena shooter built with Three.js and Web Audio.
 
@@ -70,6 +70,10 @@ Every run records a damage log: each HP-loss captures the wave, enemy compositio
 Open the browser console and run:
 - `_hitReport()` — formatted analysis with wave-kind breakdown, dangerous enemies, tuning notes
 - `_hitLog()` — raw JSON of all recorded sessions
+
+On death, a feedback panel offers quick-pick reasons (some predicted from the run's telemetry — e.g. the enemy that hit you most) plus a free-text box. Feedback is saved locally under `tokoDropFeedback`:
+- `_feedback()` — summary of reason counts and written comments
+- `_feedbackExport()` — downloads a `.csv` of all feedback entries
 
 ## Design Reference
 

@@ -261,7 +261,7 @@ export class Enemy {
 
     if (type === EnemyType.TORO) {
       // Toro uses a group for position management
-      this.mesh.rotation.x = Math.PI / 2;
+      this.mesh.rotation.x = 0;
 
       // Add 6 spike meshes around the torus
       this.group = new THREE.Group();
@@ -304,8 +304,7 @@ export class Enemy {
       this.group.position.set(x, 0, z);
       scene.add(this.group);
 
-      const tier = Math.floor(intervalMult > 0 ? (1 - intervalMult) / 0.09 : 0);
-      this._maxSegs = tier < 2 ? 1 : tier < 4 ? 2 : 3;
+      this._maxSegs = 3;
       this._segs = [];
       this._segs.push(this._makeBambuSeg(0));
       this.hp = 1;
@@ -314,12 +313,25 @@ export class Enemy {
       this.group.scale.y = 0.01;
       this._emergeT = 0.6;
 
-      // Lob fire state
-      this._bambuFireTimer = cfg.fireInterval * intervalMult;
+      // Lob fire state — segments pop up rapidly right after emerging, then the
+      // first lob charges up through the stalk almost immediately.
+      this._bambuFireTimer = 1.3;
       this._bambuState = 'waiting';
-      this._growTimer  = 8.0;
+      this._growTimer  = 0.18;
       this._lobTargetX = 0;
       this._lobTargetZ = 0;
+
+      // Charge orb: rises through the stalk during the lob telegraph, reading as
+      // the shot travelling up through each segment before it launches.
+      this._chargeOrb = new THREE.Mesh(
+        new THREE.SphereGeometry(0.35, 10, 8),
+        new THREE.MeshBasicMaterial({
+          color: cfg.bulletColor, transparent: true, opacity: 0.9,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+        }),
+      );
+      this._chargeOrb.visible = false;
+      this.group.add(this._chargeOrb);
 
       // Dummy mesh for code paths that reference this.mesh
       this.mesh = new THREE.Mesh(
@@ -385,10 +397,9 @@ export class Enemy {
         this._trailPositions = [];
         this._trailPushTimer = 0;
       }
-    } else if (type === EnemyType.ORANGE_CUBE) {
-      this._target = { x: (Math.random()-0.5)*24, z: (Math.random()-0.5)*24 };
-      this._target.x = Math.max(-16, Math.min(16, this._target.x));
-      this._target.z = Math.max(-16, Math.min(16, this._target.z));
+    } if (type === EnemyType.ORANGE_CUBE) {
+      this._target = null; // chosen on the first 'moving' update (needs playerPos)
+      this._moveT  = 0;
       this._shotsFired = 0;
       this._fireDir = { x: 1, z: 0 };
       this._state = 'moving';
@@ -497,6 +508,19 @@ export class Enemy {
       this._flopActive = false;
       this._flopRest = restGap;
     }
+  }
+
+  // ORANGE_CUBE repositioning target: a point on a ring ~6–9 around the player,
+  // clamped to a ±10 box that fits inside BOTH arena orientations (portrait
+  // 11×18, landscape 19×11) so the target is always reachable — otherwise the
+  // cube flops into a wall, never closes to firing range, and looks frozen.
+  _orangeTarget(playerPos) {
+    const ang = Math.random() * Math.PI * 2;
+    const rad = 6 + Math.random() * 3;
+    return {
+      x: Math.max(-10, Math.min(10, playerPos.x + Math.cos(ang) * rad)),
+      z: Math.max(-10, Math.min(10, playerPos.z + Math.sin(ang) * rad)),
+    };
   }
 
   _makeBambuSeg(segIndex) {
@@ -682,10 +706,14 @@ export class Enemy {
       case EnemyType.ORANGE_CUBE: {
         switch (this._state) {
           case 'moving': {
+            if (!this._target) { this._target = this._orangeTarget(playerPos); this._moveT = 0; }
+            this._moveT = (this._moveT || 0) + dt;
             const tdx = this._target.x - ex, tdz = this._target.z - ez;
             const td = Math.hypot(tdx, tdz);
-            // Switch to aiming once close and not mid-flop, so we snap cleanly between states.
-            if (!this._flopActive && td < 2.2) {
+            // Aim once close (threshold > one flop stride so we can't straddle the
+            // point forever), or after a 5 s safety timeout so a cube that can't
+            // quite settle still stops to shoot instead of flopping endlessly.
+            if (!this._flopActive && (td < 2.6 || this._moveT > 5)) {
               this._state = 'aiming';
               this._stateT = 0.9;
               const dirs8 = [
@@ -745,13 +773,9 @@ export class Enemy {
             this._stateT -= dt;
             if (this._stateT <= 0) {
               this._state = 'moving';
-              // Reposition near the player (offset ~4) rather than a fully random point.
-              this._target = {
-                x: playerPos.x + (Math.random() - 0.5) * 8,
-                z: playerPos.z + (Math.random() - 0.5) * 8,
-              };
-              this._target.x = Math.max(-16, Math.min(16, this._target.x));
-              this._target.z = Math.max(-16, Math.min(16, this._target.z));
+              // Reposition to a fresh, reachable ring point around the player.
+              this._target = this._orangeTarget(playerPos);
+              this._moveT  = 0;
             }
             break;
         }
@@ -771,7 +795,7 @@ export class Enemy {
           this.group.scale.y = 1;
           this._growTimer -= dt;
           if (this._growTimer <= 0 && this._segs.length < this._maxSegs) {
-            this._growTimer = 8.0;
+            this._growTimer = 0.18;
             this._segs.push(this._makeBambuSeg(this._segs.length));
             this.hp++;
           }
@@ -951,10 +975,20 @@ export class Enemy {
         }
       } else if (this._bambuState === 'telegraphing') {
         this._bambuTimer -= dt;
+        // Charge orb climbs from the base up past each segment to the top of the
+        // stalk, then the lob fires the instant it reaches the tip.
+        if (this._chargeOrb) {
+          const prog = Math.max(0, Math.min(1, 1 - this._bambuTimer / 1.0));
+          const topY = this._segs.length * 1.0;
+          this._chargeOrb.visible = true;
+          this._chargeOrb.position.y = prog * topY;
+          this._chargeOrb.scale.setScalar(0.6 + prog * 0.9);
+        }
         if (this._bambuTimer <= 0) {
           this._bambuState     = 'waiting';
           this._bambuFireTimer = cfg.fireInterval * this._intervalMult;
           this._lobReady = { x: this._lobTargetX, z: this._lobTargetZ };
+          if (this._chargeOrb) this._chargeOrb.visible = false;
         }
       }
       return;

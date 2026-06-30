@@ -7,6 +7,36 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v47 — 2026-06-30
+**ORANGE_CUBE movement fix — no longer freezes against a wall**
+- Root cause: the initial `_target` was a fully-random point in ±16 on both axes, but the portrait arena is only ±11 wide in X (landscape ±11 in Z). Cubes routinely got an unreachable target, flopped into a wall where the bounds-clamp pinned them, and never closed to the `td < 2.2` firing threshold — so they sat in 'moving' forever, reading as frozen
+- Targets now come from `_orangeTarget(playerPos)`: a point on a ring ~6–9 around the player, clamped to a ±10 box that fits inside *both* arena orientations, so it's always reachable. Used for the first target (set lazily on the first 'moving' update, since it needs `playerPos`) and every reposition after shooting
+- Arrival threshold widened 2.2 → 2.6 (just over one flop stride) so a cube can't straddle the target point and hop back and forth across it forever
+- Added a 5 s move-timeout safety (`_moveT`): a cube that still can't settle stops and shoots from where it is rather than flopping endlessly
+- Verified: 3 cubes spawned at arena edges all traverse in and cycle moving→aiming→shooting→cooldown; zero errors
+
+---
+
+## v46 — 2026-06-30
+**BAMBU growth + lob charge, bullet-hell projectiles, death-screen feedback form**
+- BAMBU now grows all 3 segments instantly in sequence (`_growTimer` 8.0 → 0.18, `_maxSegs` always 3) right after emerging, instead of one segment every 8 s
+- Lob telegraph animates a charge orb rising up through each stalk segment to the tip, then fires the instant it reaches the top; first lob comes ~1.3 s after spawn (`_bambuFireTimer` initial 1.3) so the climb reads right after growth
+- Bullets reworked into bullet-hell style: solid bright-white core + saturated additive colour halo, no motion tail — clearly distinct from the matte goo splatter chunks (which fall and squash on the floor); trail rendering removed from `bullet.js`
+- Death-screen feedback form: quick-pick reason chips (the first few predicted from this run's hit telemetry — top attacker, crowding, dash-down, bullet density, swarm — plus generic ones) and a free-text box
+- Feedback saved to `localStorage` under `tokoDropFeedback` (last 100); `_feedback()` console summary (reason tally + comments), `_feedbackExport()` CSV download
+- Death screen no longer auto-returns to title (so there's time to leave feedback); SEND & CONTINUE / SKIP buttons, or Space / Start, dismiss it via new `returnToTitle()`
+
+---
+
+## v45 — 2026-06-30
+**Four bug fixes: ORANGE_CUBE flop, TORO orientation, gate laser visibility, gate lifetime**
+- ORANGE_CUBE flop fixed: constructor `else if` was preventing the flop init block from running (ORANGE_CUBE is in `CUBE_TYPES`); changed to a separate `if` so both blocks run — ORANGE_CUBE now tumbles toward its target using `_flopMove` with `exact=true`
+- TORO stands upright like a wheel: `mesh.rotation.x = Math.PI/2` (flat pancake) → `0` (upright ring); the rolling dash animation via `group.rotation.y` was already correct
+- Gate laser beam visible: laser `BoxGeometry(4, 0.12, 0.12)` → `(4, 0.25, 0.5)`; glow `(4, 0.55, 0.55)` → `(4, 0.7, 1.1)` with opacity 0.22 → 0.28
+- Gates persist across waves: removed gate-clearing from `spawnWave()`; instead cap at 2 active gates by removing the oldest before spawning a new one; `clearFX()` still clears all gates on game restart/death
+
+---
+
 ## v44 — 2026-06-29
 **Enemy separation — no more stacking**
 - Post-update separation pass: after all enemies move each frame, pairs closer than `radiusA + radiusB + 0.25` are pushed apart by half the overlap each, split symmetrically
