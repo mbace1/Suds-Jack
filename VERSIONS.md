@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v57 — 2026-06-30
+**Bigger, more readable bullets + release tooling**
+- Bullet visuals enlarged for readability: enemy non-fat `1.25 → 1.6`; player bullets get a visual-only `×1.3` boost (`PLAYER_BULLET_VISUAL_BOOST`). Fat bullets unchanged at `3.0`
+- Player hitbox is **unchanged**: `playerBulletScale` drives both the player-bullet collision radius and the "bigger bullets" upgrade, so the new boost enlarges only the rendered halo/core — no difficulty change
+- `scripts/bump-version.sh <N>`: one command bumps the cache-bust token across the module graph, the HUD label, the README H1, and prepends a `VERSIONS.md` stub (replaces the error-prone 6-spot manual edit; README header had drifted to v50)
+- `scripts/release.sh`: resyncs local + remote feature branch to the merged `gh-pages` tip after a squash-merge, ending the recurring branch divergence and the stop-hook false positive
+- Cache-bust `?v=12` → `?v=13`; HUD label → v57
+
+---
+
 ## v56 — 2026-06-30
 **Gate laser beam now aligns with its posts**
 - The visible laser/glow beam was rotated by `angle + π/2`, but three.js Y-rotation maps local +X to `(cos θ, -sin θ)`, flipping the z-axis vs. the post placement direction `(-sin a, cos a)`. For most random angles the beam was mirrored and crossed the posts instead of connecting them (only lined up at angle 0/π/2)
