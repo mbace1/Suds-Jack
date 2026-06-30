@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v46 — 2026-06-30
+**BAMBU growth + lob charge, bullet-hell projectiles, death-screen feedback form**
+- BAMBU now grows all 3 segments instantly in sequence (`_growTimer` 8.0 → 0.18, `_maxSegs` always 3) right after emerging, instead of one segment every 8 s
+- Lob telegraph animates a charge orb rising up through each stalk segment to the tip, then fires the instant it reaches the top; first lob comes ~1.3 s after spawn (`_bambuFireTimer` initial 1.3) so the climb reads right after growth
+- Bullets reworked into bullet-hell style: solid bright-white core + saturated additive colour halo, no motion tail — clearly distinct from the matte goo splatter chunks (which fall and squash on the floor); trail rendering removed from `bullet.js`
+- Death-screen feedback form: quick-pick reason chips (the first few predicted from this run's hit telemetry — top attacker, crowding, dash-down, bullet density, swarm — plus generic ones) and a free-text box
+- Feedback saved to `localStorage` under `tokoDropFeedback` (last 100); `_feedback()` console summary (reason tally + comments), `_feedbackExport()` CSV download
+- Death screen no longer auto-returns to title (so there's time to leave feedback); SEND & CONTINUE / SKIP buttons, or Space / Start, dismiss it via new `returnToTitle()`
+
+---
+
 ## v45 — 2026-06-30
 **Four bug fixes: ORANGE_CUBE flop, TORO orientation, gate laser visibility, gate lifetime**
 - ORANGE_CUBE flop fixed: constructor `else if` was preventing the flop init block from running (ORANGE_CUBE is in `CUBE_TYPES`); changed to a separate `if` so both blocks run — ORANGE_CUBE now tumbles toward its target using `_flopMove` with `exact=true`

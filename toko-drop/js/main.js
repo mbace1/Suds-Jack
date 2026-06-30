@@ -1055,6 +1055,118 @@ window._hitExport = () => {
   console.log(`Exported ${rows.length - 1} rows across ${sessions.length} sessions.`);
 };
 
+// ── Player feedback ──────────────────────────────────────────────────────────
+// Human-readable names for the death-screen "what went wrong" prompts.
+const ENEMY_LABEL = {
+  [EnemyType.GLOBBO]:      'teal globbo',
+  [EnemyType.SPITTOR]:     'red spittor',
+  [EnemyType.FANNER]:      'pink fanner',
+  [EnemyType.WEEVA]:       'blue weeva',
+  [EnemyType.SPLITTA]:     'green splitta',
+  [EnemyType.YELA_CUBE]:   'yellow cube',
+  [EnemyType.ORANGE_CUBE]: 'orange cube',
+  [EnemyType.SLUDGE_CUBE]: 'sludge cube',
+  [EnemyType.REDD_CUBE]:   'red cube',
+  [EnemyType.PURP_CUBE]:   'purple cube',
+  [EnemyType.REDD_MINI]:   'red mini',
+  [EnemyType.PURP_MINI]:   'purple mini',
+  [EnemyType.TORO]:        'Toro charger',
+  [EnemyType.BAMBU]:       'Bambu lobber',
+  [EnemyType.PYRA]:        'Pyra spinner',
+};
+const _cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+// Build the quick-pick "reason" chips for the death screen. The first few are
+// derived from this run's hit telemetry (the actual culprits), then a handful of
+// always-available generic reasons. Each: { id, label }.
+function buildFeedbackReasons() {
+  const ev = hitEventLog;
+  const out = [];
+  const push = (id, label) => out.push({ id, label });
+  if (ev.length) {
+    const atk = {};
+    for (const e of ev) if (e.attacker) atk[e.attacker] = (atk[e.attacker] || 0) + 1;
+    const topAtk = Object.entries(atk).sort((a, b) => b[1] - a[1])[0];
+    if (topAtk) {
+      const label = ENEMY_LABEL[EnemyType[topAtk[0]]] ?? topAtk[0];
+      push(`atk:${topAtk[0]}`, `${_cap(label)} hit me too often`);
+    }
+    const field = {};
+    for (const e of ev) for (const [t, c] of Object.entries(e.enemyTypes || {})) field[t] = (field[t] || 0) + c;
+    const topField = Object.entries(field).sort((a, b) => b[1] - a[1])[0];
+    if (topField && (!topAtk || topField[0] !== topAtk[0])) {
+      const label = ENEMY_LABEL[EnemyType[topField[0]]] ?? topField[0];
+      push(`field:${topField[0]}`, `Too many ${label}s at once`);
+    }
+    const dashDown = ev.filter(e => e.dashReady === false).length;
+    if (dashDown / ev.length > 0.4) push('dash', 'Dash was on cooldown');
+    const avgB = ev.reduce((s, e) => s + e.bulletCount, 0) / ev.length;
+    if (avgB > 8) push('bullets', 'Too many bullets onscreen');
+    const cluster = ev.filter(e => e.timeSinceLastHit !== null && e.timeSinceLastHit <= 3).length;
+    if (cluster / ev.length > 0.25) push('blender', 'Got swarmed all at once');
+  }
+  push('too_fast', 'Enemies / bullets too fast');
+  push('unfair',   'Felt unfair / cheap');
+  push('unclear',  "Couldn't read the threat");
+  // De-dup by id, cap at 6.
+  const seen = new Set(); const reasons = [];
+  for (const r of out) { if (seen.has(r.id)) continue; seen.add(r.id); reasons.push(r); if (reasons.length >= 6) break; }
+  return reasons;
+}
+
+// Persist one feedback entry. Stored under tokoDropFeedback (last 100), with a
+// compact run summary so it's useful even without the full hit log.
+function saveFeedback(selectedIds, selectedLabels, comment) {
+  if (!selectedIds.length && !comment) return;
+  const KEY = 'tokoDropFeedback';
+  const list = JSON.parse(localStorage.getItem(KEY) || '[]');
+  const atk = {};
+  for (const e of hitEventLog) if (e.attacker) atk[e.attacker] = (atk[e.attacker] || 0) + 1;
+  list.unshift({
+    date: new Date().toISOString(),
+    seed: runSeed, mode: roguelikeMode ? 'roguelike' : 'arcade',
+    wave, time: Math.round(runTimer), score,
+    reasons: selectedLabels, reasonIds: selectedIds,
+    comment: comment || '',
+    hits: hitEventLog.length,
+    topAttacker: Object.entries(atk).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null,
+  });
+  if (list.length > 100) list.length = 100;
+  localStorage.setItem(KEY, JSON.stringify(list));
+}
+
+window._feedback = () => {
+  const list = JSON.parse(localStorage.getItem('tokoDropFeedback') || '[]');
+  console.log(`=== TOKO DROP FEEDBACK (${list.length} entries) ===`);
+  const reasonTally = {};
+  for (const f of list) for (const r of (f.reasons || [])) reasonTally[r] = (reasonTally[r] || 0) + 1;
+  for (const [r, n] of Object.entries(reasonTally).sort((a, b) => b[1] - a[1]))
+    console.log(`  ${n}×  ${r}`);
+  const comments = list.filter(f => f.comment).map(f => `  [w${f.wave}] ${f.comment}`);
+  if (comments.length) { console.log('\nCOMMENTS:'); comments.forEach(c => console.log(c)); }
+  return list;
+};
+
+window._feedbackExport = () => {
+  const list = JSON.parse(localStorage.getItem('tokoDropFeedback') || '[]');
+  if (list.length === 0) { console.warn('No feedback to export.'); return; }
+  const COLS = ['date', 'seed', 'mode', 'wave', 'time', 'score', 'hits', 'top_attacker', 'reasons', 'comment'];
+  const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const rows = [COLS.join(',')];
+  for (const f of list) {
+    rows.push([
+      esc(f.date), esc(f.seed), esc(f.mode), esc(f.wave), esc(f.time), esc(f.score),
+      esc(f.hits), esc(f.topAttacker ?? ''), esc((f.reasons || []).join(' | ')), esc(f.comment),
+    ].join(','));
+  }
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `toko_feedback_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  console.log(`Exported ${rows.length - 1} feedback entries.`);
+};
+
 // ── Game state ───────────────────────────────────────────────────────────────
 // 'title' | 'playing' | 'paused' | 'gameover'
 let gameState    = 'title';
@@ -1218,7 +1330,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v45', 16, uiCanvas.height - 12);
+  ctx.fillText('v46', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1355,7 +1467,81 @@ function showGameOver() {
       ? `<div style="font-size:16px;color:#ffdd44;margin-top:8px;letter-spacing:1px">${badges.join('&nbsp;&nbsp;')}</div>`
       : ``) +
     `<div style="font-size:12px;opacity:0.3;margin-top:10px">SEED ${seedHex}</div>` +
-    `<div style="font-size:13px;opacity:0.4;margin-top:8px">Returning to title…</div>`;
+    `<div id="feedback-slot" style="margin-top:18px"></div>`;
+
+  buildFeedbackPanel(document.getElementById('feedback-slot'));
+}
+
+// Death-screen feedback panel: quick-pick reason chips (some predicted from this
+// run's telemetry) + a free-text box, saved to localStorage on continue.
+function buildFeedbackPanel(slot) {
+  if (!slot) return;
+  const selected = new Set();
+  const labelById = {};
+
+  const title = document.createElement('div');
+  title.textContent = 'WHAT WENT WRONG?  (optional)';
+  title.style.cssText = 'font-size:12px;letter-spacing:2px;opacity:0.55;margin-bottom:10px';
+  slot.appendChild(title);
+
+  const chipRow = document.createElement('div');
+  chipRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:440px;margin:0 auto 12px';
+  for (const r of buildFeedbackReasons()) {
+    labelById[r.id] = r.label;
+    const chip = document.createElement('div');
+    chip.className = 'fb-chip';
+    chip.textContent = r.label;
+    const paint = () => {
+      const on = selected.has(r.id);
+      chip.style.cssText =
+        'pointer-events:auto;cursor:pointer;user-select:none;font-size:12px;' +
+        'padding:7px 13px;border-radius:16px;transition:all 0.1s;' +
+        `border:1.5px solid ${on ? '#ff6644' : '#445'};` +
+        `background:${on ? 'rgba(255,90,60,0.22)' : 'rgba(0,0,0,0.3)'};` +
+        `color:${on ? '#ffbbaa' : '#8888aa'};` +
+        `text-shadow:${on ? '0 0 10px #ff5533' : 'none'};`;
+    };
+    paint();
+    chip.addEventListener('click', e => {
+      e.stopPropagation();
+      if (selected.has(r.id)) selected.delete(r.id); else selected.add(r.id);
+      paint();
+    });
+    chipRow.appendChild(chip);
+  }
+  slot.appendChild(chipRow);
+
+  const box = document.createElement('textarea');
+  box.placeholder = 'Anything else? (optional)';
+  box.rows = 2;
+  box.style.cssText =
+    'pointer-events:auto;user-select:text;display:block;width:min(440px,80vw);margin:0 auto 14px;' +
+    'background:rgba(0,0,0,0.4);border:1.5px solid #445;border-radius:8px;color:#ccd;' +
+    'font-family:monospace;font-size:13px;padding:8px 10px;resize:none;outline:none';
+  box.addEventListener('keydown', e => e.stopPropagation());
+  slot.appendChild(box);
+
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:12px;justify-content:center';
+  const mkBtn = (text, accent, onClick) => {
+    const b = document.createElement('div');
+    b.className = 'fb-btn';
+    b.textContent = text;
+    b.style.cssText =
+      'pointer-events:auto;cursor:pointer;user-select:none;font-size:14px;font-weight:bold;' +
+      `padding:9px 20px;border-radius:8px;letter-spacing:1px;transition:all 0.12s;` +
+      `border:2px solid ${accent ? '#44cc88' : '#445'};` +
+      `background:rgba(0,0,0,0.35);color:${accent ? '#88ffbb' : '#8888aa'};` +
+      `text-shadow:${accent ? '0 0 12px #44cc88' : 'none'};`;
+    b.addEventListener('click', e => { e.stopPropagation(); onClick(); });
+    return b;
+  };
+  btnRow.appendChild(mkBtn('SEND & CONTINUE', true, () => {
+    saveFeedback([...selected], [...selected].map(id => labelById[id]), box.value.trim());
+    returnToTitle();
+  }));
+  btnRow.appendChild(mkBtn('SKIP', false, returnToTitle));
+  slot.appendChild(btnRow);
 }
 
 function announceWave() {
@@ -1531,6 +1717,19 @@ function startGame() {
   gameState = 'playing';
 }
 
+// Tear down the finished run and go back to the title screen. Called by the
+// death-screen feedback buttons (the screen no longer auto-dismisses, so the
+// player has time to leave feedback) and by Space / Start as a quick skip.
+function returnToTitle() {
+  if (gameState !== 'gameover') return;
+  clearFX();
+  for (const e of enemies) e.removeFrom(scene);
+  enemies = [];
+  bullets.clear();
+  showTitle();
+  gameState = 'title';
+}
+
 function triggerGameOver() {
   gameState = 'gameover';
   restartTimer = 2.8;
@@ -1556,11 +1755,16 @@ input.onPause = () => {
   if (gameState === 'playing') { gameState = 'paused';  designer.show(); }
   else if (gameState === 'paused')  { gameState = 'playing'; designer.hide(); }
   else if (gameState === 'title')   startGame();
+  else if (gameState === 'gameover') returnToTitle();  // Start skips feedback
 };
 
 // Space also starts from title on desktop (keyup so the same keyup doesn't also trigger dash)
 window.addEventListener('keyup', e => {
+  // Don't hijack keys while the player is typing feedback.
+  const tag = e.target?.tagName;
+  if (tag === 'TEXTAREA' || tag === 'INPUT') return;
   if (e.code === 'Space' && gameState === 'title') startGame();
+  if (e.code === 'Space' && gameState === 'gameover') returnToTitle();  // skip feedback
   if (e.code === 'KeyE') player.toggleEyes();
 });
 // Tap anywhere (outside overlay UI elements) starts from title on mobile
@@ -1614,18 +1818,11 @@ function loop() {
   }
 
   if (gameState === 'gameover') {
-    restartTimer -= dt;
+    // No auto-return — the death screen stays up so the player can leave
+    // feedback. returnToTitle() (feedback buttons / Space / Start) dismisses it.
     for (const e of enemies) e.updateDeath(dt);
     chunkPool.update(dt);
     trailPool.update(dt);
-    if (restartTimer <= 0) {
-      clearFX();
-      for (const e of enemies) e.removeFrom(scene);
-      enemies = [];
-      bullets.clear();
-      showTitle();
-      gameState = 'title';
-    }
     renderer.render(scene, camera);
     drawHUD();
     return;

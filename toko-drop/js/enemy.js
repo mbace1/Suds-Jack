@@ -304,8 +304,7 @@ export class Enemy {
       this.group.position.set(x, 0, z);
       scene.add(this.group);
 
-      const tier = Math.floor(intervalMult > 0 ? (1 - intervalMult) / 0.09 : 0);
-      this._maxSegs = tier < 2 ? 1 : tier < 4 ? 2 : 3;
+      this._maxSegs = 3;
       this._segs = [];
       this._segs.push(this._makeBambuSeg(0));
       this.hp = 1;
@@ -314,12 +313,25 @@ export class Enemy {
       this.group.scale.y = 0.01;
       this._emergeT = 0.6;
 
-      // Lob fire state
-      this._bambuFireTimer = cfg.fireInterval * intervalMult;
+      // Lob fire state — segments pop up rapidly right after emerging, then the
+      // first lob charges up through the stalk almost immediately.
+      this._bambuFireTimer = 1.3;
       this._bambuState = 'waiting';
-      this._growTimer  = 8.0;
+      this._growTimer  = 0.18;
       this._lobTargetX = 0;
       this._lobTargetZ = 0;
+
+      // Charge orb: rises through the stalk during the lob telegraph, reading as
+      // the shot travelling up through each segment before it launches.
+      this._chargeOrb = new THREE.Mesh(
+        new THREE.SphereGeometry(0.35, 10, 8),
+        new THREE.MeshBasicMaterial({
+          color: cfg.bulletColor, transparent: true, opacity: 0.9,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+        }),
+      );
+      this._chargeOrb.visible = false;
+      this.group.add(this._chargeOrb);
 
       // Dummy mesh for code paths that reference this.mesh
       this.mesh = new THREE.Mesh(
@@ -771,7 +783,7 @@ export class Enemy {
           this.group.scale.y = 1;
           this._growTimer -= dt;
           if (this._growTimer <= 0 && this._segs.length < this._maxSegs) {
-            this._growTimer = 8.0;
+            this._growTimer = 0.18;
             this._segs.push(this._makeBambuSeg(this._segs.length));
             this.hp++;
           }
@@ -951,10 +963,20 @@ export class Enemy {
         }
       } else if (this._bambuState === 'telegraphing') {
         this._bambuTimer -= dt;
+        // Charge orb climbs from the base up past each segment to the top of the
+        // stalk, then the lob fires the instant it reaches the tip.
+        if (this._chargeOrb) {
+          const prog = Math.max(0, Math.min(1, 1 - this._bambuTimer / 1.0));
+          const topY = this._segs.length * 1.0;
+          this._chargeOrb.visible = true;
+          this._chargeOrb.position.y = prog * topY;
+          this._chargeOrb.scale.setScalar(0.6 + prog * 0.9);
+        }
         if (this._bambuTimer <= 0) {
           this._bambuState     = 'waiting';
           this._bambuFireTimer = cfg.fireInterval * this._intervalMult;
           this._lobReady = { x: this._lobTargetX, z: this._lobTargetZ };
+          if (this._chargeOrb) this._chargeOrb.visible = false;
         }
       }
       return;

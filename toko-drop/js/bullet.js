@@ -10,40 +10,36 @@ export const FAT_BULLET_R = 0.45;
 
 class Bullet {
   constructor(scene) {
-    const geo = new THREE.SphereGeometry(0.15, 6, 4);
-    // Additive glow core — bullets read as bright energy against the dark arena
+    // Bullet-hell projectile: a crisp solid-white core ringed by a saturated
+    // additive halo. The hard white centre + glowing rim reads as a discrete
+    // "bullet" — visually distinct from the matte goo splatter chunks (which are
+    // opaque colour blobs that fall and squash on the floor).
+    const haloGeo = new THREE.SphereGeometry(0.15, 10, 8);
     this.mat = new THREE.MeshBasicMaterial({
-      color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+      color: 0xffffff, transparent: true, opacity: 0.6,
+      blending: THREE.AdditiveBlending, depthWrite: false,
     });
-    this.mesh = new THREE.Mesh(geo, this.mat);
+    this.mesh = new THREE.Mesh(haloGeo, this.mat);
     this.mesh.visible = false;
     scene.add(this.mesh);
 
-    // Drop shadow
+    // Solid bright core — child of the halo so it inherits position + pulse.
+    this.coreMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff, transparent: true, opacity: 0.96, depthWrite: false,
+    });
+    this.core = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 6), this.coreMat);
+    this.core.scale.setScalar(0.5);
+    this.mesh.add(this.core);
+
+    // Drop shadow — depth cue so bullets read as floating, not floor splatter.
     const shadowGeo = new THREE.CircleGeometry(1, 8);
     const shadowMat = new THREE.MeshBasicMaterial({
-      color: 0x000000,
-      transparent: true,
-      opacity: 0.25,
-      depthWrite: false,
+      color: 0x000000, transparent: true, opacity: 0.25, depthWrite: false,
     });
     this.shadow = new THREE.Mesh(shadowGeo, shadowMat);
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadow.visible = false;
     scene.add(this.shadow);
-
-    // Glow trail for enemy bullets
-    const trailGeo = new THREE.BufferGeometry();
-    trailGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(9), 3));
-    this._trailMat = new THREE.LineBasicMaterial({
-      color: 0xff4422,
-      transparent: true,
-      opacity: 0.55,
-      depthWrite: false,
-    });
-    this._trail = new THREE.Line(trailGeo, this._trailMat);
-    this._trail.visible = false;
-    scene.add(this._trail);
 
     this.vx = 0; this.vz = 0;
     this.alive = false;
@@ -68,15 +64,14 @@ export class BulletPool {
     b.speed = speed;
     b.fat = fat;
     b.mesh.position.set(x, 0.3, z);
-    // Brighter defaults so the additive cores pop: player bright cyan-green, enemy hot orange-red
+    // Saturated halo colour: player bright cyan-green, enemy hot orange-red. The
+    // white core stays white so every bullet keeps a readable bright centre.
     const resolvedColor = color ?? (isPlayer ? 0x66ffcc : 0xff5533);
     b.mat.color.set(resolvedColor);
-    b._trailMat.color.set(resolvedColor);
     b.vx = dx * speed; b.vz = dz * speed;
     b.alive = true; b.isPlayer = isPlayer; b.originType = originType;
     b.lifetime = 4;
     b.mesh.visible = true;
-    b._trail.visible = false;
     b._phase = Math.random() * Math.PI * 2;
     // Enemy bullets run a touch larger so the threats you must dodge read clearly.
     b._baseScale = fat ? 3 : (isPlayer ? BULLET_CONFIG.playerBulletScale : 1.25);
@@ -102,27 +97,8 @@ export class BulletPool {
 
         // Enemy bullets gently pulse so the threats you must dodge stay easy to track.
         if (!b.isPlayer && !b.fat) {
-          const pulse = 1 + 0.18 * Math.sin(performance.now() * 0.012 + b._phase);
+          const pulse = 1 + 0.15 * Math.sin(performance.now() * 0.012 + b._phase);
           b.mesh.scale.setScalar(b._baseScale * pulse);
-        }
-
-        // Glow trail for all bullets (player = green, enemy = red — colour set in spawnDir)
-        {
-          const len = Math.hypot(b.vx, b.vz);
-          if (len > 0) {
-            const nx = b.vx / len, nz = b.vz / len;
-            const arr = b._trail.geometry.attributes.position.array;
-            const step = b.fat ? 0.55 : (b.isPlayer ? 0.22 : 0.28);
-            const trailOpacity = b.isPlayer ? 0.45 : 0.55;
-            b._trailMat.opacity = trailOpacity;
-            for (let j = 0; j < 3; j++) {
-              arr[j * 3]     = p.x - nx * step * j;
-              arr[j * 3 + 1] = 0.3;
-              arr[j * 3 + 2] = p.z - nz * step * j;
-            }
-            b._trail.geometry.attributes.position.needsUpdate = true;
-            b._trail.visible = true;
-          }
         }
       }
     }
@@ -134,7 +110,6 @@ export class BulletPool {
     b.mesh.visible = false;
     b.mesh.scale.setScalar(1);
     b.shadow.visible = false;
-    b._trail.visible = false;
     b.fat = false;
     b.originType = null;
     this.active.splice(i, 1);
