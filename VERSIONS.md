@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v61 — 2026-06-30
+**PURP_CUBE spiral polish — distinct 2-arm galaxies**
+- PURP_CUBE fired one bullet every 0.5 s rotating a fixed `+0.55` rad — identical and mechanical on every cube
+- Now fires a **2-arm spiral** (opposite bullets at `θ` and `θ+π`) and each cube gets a **per-cube spin rate + direction** (`_purpSpin`, ±0.42–0.76 rad/shot), so multiple PURPs make varied interlocking galaxy patterns
+- Cache-bust `?v=16` → `?v=17`; HUD label → v61
+
+---
+
 ## v60 — 2026-06-30
 **SLUDGE_CUBE poison zone now reads as a hazard**
 - Poison pools had a flat green circle that looked identical whether actively lethal or harmlessly fading — no readable danger boundary
