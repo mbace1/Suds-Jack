@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v51 — 2026-06-30
+**ORANGE_CUBE shoots while moving + smaller bullet-hell visuals**
+- ORANGE_CUBE state machine (moving→aiming→shooting→cooldown) replaced with always-moving flop + independent fire timer (`_fireT`): cube continuously tumbles toward its repositioning target while firing a bullet wall every 3–4.5 s, no pauses
+- Pre-fire emissive flash now triggers when `_fireT < 0.6` (was tied to the `aiming` state)
+- ORANGE_CUBE now fires non-fat bullets so the wall travels at full enemy speed (7 u/s), matching the bullet-hell aesthetic; removed the aim-arrow mesh (no longer has an aiming phase)
+- All bullet visual scales reduced ~30%: player `1.0 → 0.7`, enemy non-fat `1.25 → 0.85`, fat `3 → 2.5`; collision radii unchanged (`BULLET_R = 0.15`, `FAT_BULLET_R = 0.45`)
+- Cache-bust token `?v=6` → `?v=7`; HUD label → v51
+
+---
+
 ## v50 — 2026-06-30
 **Feedback form interactivity fix — buttons and textarea now respond**
 - Root cause: `#overlay` has `pointer-events: none` in CSS, and inline `pointer-events:auto` on child elements is overridden by the inherited block in some browsers/contexts

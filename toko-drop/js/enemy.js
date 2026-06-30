@@ -398,20 +398,11 @@ export class Enemy {
         this._trailPushTimer = 0;
       }
     } if (type === EnemyType.ORANGE_CUBE) {
-      this._target = null; // chosen on the first 'moving' update (needs playerPos)
+      this._target = null; // chosen on the first update (needs playerPos)
       this._moveT  = 0;
-      this._shotsFired = 0;
-      this._fireDir = { x: 1, z: 0 };
-      this._state = 'moving';
       const tier = Math.floor(intervalMult > 0 ? (1 - intervalMult) / 0.09 : 0);
       this._totalShots = Math.min(12, 6 + tier * 2);
-      const arrowGeo = new THREE.PlaneGeometry(0.3, 3);
-      this._aimArrow = new THREE.Mesh(arrowGeo, new THREE.MeshBasicMaterial({
-        color: 0xff8800, transparent: true, opacity: 0.7, depthWrite: false,
-      }));
-      this._aimArrow.rotation.x = -Math.PI / 2;
-      this._aimArrow.visible = false;
-      scene.add(this._aimArrow);
+      this._fireT = 1.5 + Math.random(); // fire while moving
     }
   }
 
@@ -707,80 +698,39 @@ export class Enemy {
       }
 
       case EnemyType.ORANGE_CUBE: {
-        switch (this._state) {
-          case 'moving': {
-            if (!this._target) { this._target = this._orangeTarget(playerPos); this._moveT = 0; }
-            this._moveT = (this._moveT || 0) + dt;
-            const tdx = this._target.x - ex, tdz = this._target.z - ez;
-            const td = Math.hypot(tdx, tdz);
-            // Aim once close (threshold > one flop stride so we can't straddle the
-            // point forever), or after a 5 s safety timeout so a cube that can't
-            // quite settle still stops to shoot instead of flopping endlessly.
-            if (!this._flopActive && (td < 2.6 || this._moveT > 5)) {
-              this._state = 'aiming';
-              this._stateT = 0.9;
-              const dirs8 = [
-                {x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1},
-                {x:0.707,z:0.707},{x:-0.707,z:0.707},{x:0.707,z:-0.707},{x:-0.707,z:-0.707},
-              ];
-              // Aim the bullet-wall at the player: pick the 8-dir best aligned with them.
-              const _adx = playerPos.x - ex, _adz = playerPos.z - ez;
-              const _al = Math.hypot(_adx, _adz) || 1;
-              const _aux = _adx / _al, _auz = _adz / _al;
-              let _best = 0, _bestDot = -Infinity;
-              for (let k = 0; k < dirs8.length; k++) {
-                const d = dirs8[k].x * _aux + dirs8[k].z * _auz;
-                if (d > _bestDot) { _bestDot = d; _best = k; }
-              }
-              this._fireDir = dirs8[_best];
-              if (this._aimArrow) {
-                this._aimArrow.position.set(ex + this._fireDir.x * 2.5, 0.02, ez + this._fireDir.z * 2.5);
-                this._aimArrow.rotation.y = Math.atan2(this._fireDir.x, this._fireDir.z);
-                this._aimArrow.visible = true;
-              }
-            } else {
-              // Flop toward target without cardinal snapping — looks like a tumbling cube
-              // gliding freely, distinct from the hop-and-snap of other cube types.
-              this._flopMove(dt, spd, halfX, halfZ, tdx / (td || 1), tdz / (td || 1), true);
-            }
-            break;
+        // Always moving; bullet wall fires independently on a timer.
+        if (!this._target) { this._target = this._orangeTarget(playerPos); this._moveT = 0; }
+        this._moveT += dt;
+        const tdx = this._target.x - ex, tdz = this._target.z - ez;
+        const td = Math.hypot(tdx, tdz);
+        if (!this._flopActive && (td < 2.6 || this._moveT > 5)) {
+          this._target = this._orangeTarget(playerPos);
+          this._moveT = 0;
+        } else {
+          this._flopMove(dt, spd, halfX, halfZ, tdx / (td || 1), tdz / (td || 1), true);
+        }
+        this._fireT -= dt;
+        if (this._fireT <= 0) {
+          const adx = playerPos.x - ex, adz = playerPos.z - ez;
+          const al = Math.hypot(adx, adz) || 1;
+          const dirs8 = [
+            {x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1},
+            {x:0.707,z:0.707},{x:-0.707,z:0.707},{x:0.707,z:-0.707},{x:-0.707,z:-0.707},
+          ];
+          let best = 0, bestDot = -Infinity;
+          for (let k = 0; k < dirs8.length; k++) {
+            const dot = dirs8[k].x * adx / al + dirs8[k].z * adz / al;
+            if (dot > bestDot) { bestDot = dot; best = k; }
           }
-          case 'aiming':
-            this._stateT -= dt;
-            if (this._stateT <= 0) {
-              this._state = 'shooting';
-              this._shotsFired = 0;
-              this._stateT = 0;
-              if (this._aimArrow) this._aimArrow.visible = false;
-            }
-            break;
-          case 'shooting':
-            this._stateT -= dt;
-            if (this._stateT <= 0 && this._shotsFired < this._totalShots) {
-              const perpX = -this._fireDir.z, perpZ = this._fireDir.x;
-              const t = (this._shotsFired / (this._totalShots - 1) - 0.5) * 4.0;
-              bullets.spawnDir(
-                ex + perpX * t, ez + perpZ * t,
-                this._fireDir.x, this._fireDir.z,
-                false, cfg.bulletColor, true, this.type
-              );
-              this._shotsFired++;
-              this._stateT = 0.75;
-              if (this._shotsFired >= this._totalShots) {
-                this._state = 'cooldown';
-                this._stateT = 1.2;
-              }
-            }
-            break;
-          case 'cooldown':
-            this._stateT -= dt;
-            if (this._stateT <= 0) {
-              this._state = 'moving';
-              // Reposition to a fresh, reachable ring point around the player.
-              this._target = this._orangeTarget(playerPos);
-              this._moveT  = 0;
-            }
-            break;
+          const fd = dirs8[best];
+          const perpX = -fd.z, perpZ = fd.x;
+          for (let s = 0; s < this._totalShots; s++) {
+            const t = (s / (this._totalShots - 1) - 0.5) * 4.0;
+            bullets.spawnDir(ex + perpX * t, ez + perpZ * t, fd.x, fd.z, false, cfg.bulletColor, false, this.type);
+          }
+          this._fireT = 3.0 + Math.random() * 1.5;
+          this._target = this._orangeTarget(playerPos);
+          this._moveT = 0;
         }
         break;
       }
@@ -877,8 +827,8 @@ export class Enemy {
     if (this._flashT > 0) {
       this._flashT -= dt;
       this._setEmissive(0xffffff);
-    } else if (this.type === EnemyType.ORANGE_CUBE && this._state === 'aiming') {
-      this._setEmissive(Math.sin(performance.now() * 0.015) > 0 ? 0x442200 : 0x000000);
+    } else if (this.type === EnemyType.ORANGE_CUBE && this._fireT < 0.6) {
+      this._setEmissive(Math.sin(performance.now() * 0.02) > 0 ? 0x442200 : 0x000000);
     } else if (this.type === EnemyType.TORO && this._state === 'revving') {
       const ramp = Math.max(0, 1.6 - Math.max(this._stateT, 0)) / 1.6;
       const v = Math.floor(ramp * 0x33);
