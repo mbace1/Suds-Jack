@@ -217,6 +217,9 @@ export class Enemy {
     this._flankSign = Math.random() < 0.5 ? 1 : -1;
     this._orbitSign = Math.random() < 0.5 ? 1 : -1;
     this._purpFireT = 0.5;
+    // PURP_CUBE spiral (v61): per-cube rotation speed + direction so each one
+    // traces a distinct 2-arm galaxy instead of an identical mechanical spiral.
+    this._purpSpin  = (0.42 + Math.random() * 0.34) * (Math.random() < 0.5 ? 1 : -1);
 
     // Blob archetype state (v58)
     this._pounceState = 'stalk';                  // GLOBBO: stalk → crouch → leap
@@ -708,13 +711,15 @@ export class Enemy {
           const radial = (dist - 5) * 0.18;            // +ve = pull inward
           wantX = -uz * this._orbitSign + ux * radial;
           wantZ =  ux * this._orbitSign + uz * radial;
-          // Rotating spiral fire.
+          // Rotating 2-arm spiral fire — opposite arms at a per-cube spin rate.
           this._purpFireT -= dt;
           if (this._purpFireT <= 0) {
             this._purpFireT = 0.5 * this._intervalMult;
             bullets.spawnDir(ex, ez, Math.cos(this._spiralAngle), Math.sin(this._spiralAngle),
               false, cfg.bulletColor, false, this.type);
-            this._spiralAngle += 0.55;
+            bullets.spawnDir(ex, ez, Math.cos(this._spiralAngle + Math.PI), Math.sin(this._spiralAngle + Math.PI),
+              false, cfg.bulletColor, false, this.type);
+            this._spiralAngle += this._purpSpin;
           }
         } else if (this.type === EnemyType.SLUDGE_CUBE) {
           // Zoner: advance to mid-range, then hold and keep laying poison.
