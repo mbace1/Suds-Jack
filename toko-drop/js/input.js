@@ -33,7 +33,7 @@ export class InputManager {
     window.addEventListener('mouseup',   () => { this.mouse.down = false; });
 
     const opt = { passive: false };
-    const inUI = e => e.target?.closest?.('#dsgn, #upgrade-panel');
+    const inUI = e => e.target?.closest?.('#dsgn, #upgrade-panel, #overlay');
     window.addEventListener('touchstart',  e => { if (inUI(e)) return; e.preventDefault(); this._touchStart(e); }, opt);
     window.addEventListener('touchmove',   e => { if (inUI(e)) return; e.preventDefault(); this._touchMove(e);  }, opt);
     window.addEventListener('touchend',    e => { if (inUI(e)) return; e.preventDefault(); this._touchEnd(e);   }, opt);
