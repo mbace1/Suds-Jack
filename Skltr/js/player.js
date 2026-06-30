@@ -5,8 +5,13 @@ import { computeStats } from './items.js?v=2';
 const Y = new THREE.Vector3(0, 1, 0);
 const GRAV = 26, JUMP_V = 9.5, SPRINT_MUL = 1.5;
 
-// Cooldowns (seconds) for the four RoR2-style skill slots.
-const CD = { m2: 2.6, q: 4.0, r: 9.0 };
+// Cooldowns (seconds). Dash (q) is short — Returnal makes the i-frame dodge the
+// central defensive verb for weaving through dense projectile clusters.
+const CD = { m2: 2.6, q: 2.3, r: 9.0 };
+
+// Returnal-style Adrenaline: kills without taking a hit climb 5 tiers; a single hit
+// wipes it. Each tier escalates damage + fire rate.
+const ADR_THRESH = [3, 6, 10, 15, 21];   // cumulative kills for tiers 1..5
 
 export class Player {
   constructor(scene, pool) {
@@ -23,7 +28,17 @@ export class Player {
     this.hp = this.stats.maxHp;
     this.cool = { m2: 0, q: 0, r: 0 };
     this.fireT = 0; this.aimHold = 0; this.iframe = 0; this.alive = true;
+    this.adr = 0; this.adrKills = 0;   // adrenaline tier (0..5) + kills banked toward the next
     this.fig.group.visible = true;
+  }
+
+  // adrenaline buffs
+  adrDmgMul()  { return 1 + 0.07 * this.adr; }
+  adrFireMul() { return 1 / (1 + 0.09 * this.adr); }
+  addKill() {
+    this.adrKills++;
+    let t = 0; for (const k of ADR_THRESH) if (this.adrKills >= k) t++;
+    this.adr = t;
   }
 
   recompute() {
@@ -58,7 +73,7 @@ export class Player {
       const off = n === 1 ? 0 : (i - (n - 1) / 2) * spread;
       const a = base + off;
       const crit = Math.random() < this.stats.critChance;
-      const dmg = this.stats.damage * dmgMul * (crit ? this.stats.critMult : 1);
+      const dmg = this.stats.damage * dmgMul * this.adrDmgMul() * (crit ? this.stats.critMult : 1);
       this.pool.spawn(this.x, this.z, Math.sin(a), Math.cos(a), {
         fromPlayer: true, speed, damage: dmg, crit, pierce, color, y: 1.0, r: 0.4,
       });
@@ -68,7 +83,7 @@ export class Player {
 
   primary(enemies) {
     if (this.fireT > 0) return;
-    this.fireT = this.stats.fireInterval;
+    this.fireT = this.stats.fireInterval * this.adrFireMul();
     this._shoot(this.aimDir(enemies), 1 + this.stats.forks, 1, C.player);
   }
   secondary(enemies) {                       // PHASE ROUND — heavy piercing slug
@@ -98,6 +113,7 @@ export class Player {
   hurt(d) {
     if (!this.alive || this.iframe > 0) return;
     this.hp -= d; this.fig.hit();
+    this.adr = 0; this.adrKills = 0;               // any hit wipes adrenaline (Returnal)
     if (this.hp <= 0) { this.hp = 0; this.alive = false; this.fig.group.visible = false; }
   }
   heal(a) { this.hp = Math.min(this.stats.maxHp, this.hp + a); }

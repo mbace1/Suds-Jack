@@ -42,5 +42,6 @@ class AudioSystem {
   stageClear(){ [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => this._tone(f, 0.2, 'triangle', 0.22), i * 90)); }
   start() { [392, 523, 659].forEach((f, i) => setTimeout(() => this._tone(f, 0.14, 'square', 0.14), i * 70)); }
   gameover(){ this._tone(160, 0.8, 'sawtooth', 0.4, 50); this._noise(0.3, 0.6); }
+  adrenaline(t){ this._tone(520 + t * 90, 0.12, 'square', 0.16, 1000 + t * 120); }
 }
 export const audio = new AudioSystem();

@@ -118,7 +118,7 @@ function pickType() {
 function director(dt) {
   const charging = world.tele.state === 'charging';
   credits += dt * (2.2 + difficulty * 1.5) * (charging ? 2.2 : 1);
-  const cap = 16 + stage * 3 + (charging ? 12 : 0);
+  const cap = 12 + stage * 2 + (charging ? 10 : 0);   // fewer bodies — readable bullet-hell, not a pile-up
   spawnCD -= dt;
   if (spawnCD <= 0 && enemies.length < cap) {
     spawnCD = Math.max(0.25, 1.4 - difficulty * 0.06);
@@ -158,6 +158,8 @@ function collide() {
 }
 function onEnemyDead(e) {
   gold += Math.round(e.gold * player.stats.goldMult); kills++; audio.kill();
+  const before = player.adr; player.addKill();
+  if (player.adr > before) { audio.adrenaline(player.adr); toast(`ADRENALINE ${player.adr}`, C.gold); }
   if (e.boss) { bossAlive = false; toast('BOSS DOWN', C.gold); }
 }
 
@@ -188,19 +190,23 @@ input.onPause = () => {
 // tap anywhere starts from title / game over (toko-drop)
 addEventListener('touchend', () => { if (gameState === 'title' || gameState === 'gameover') startGame(); });
 
-// ── Camera ────────────────────────────────────────────────────────────────────
+// ── Camera (Returnal-style: tight over-the-shoulder, character framed lower-left) ──
 const _tgt = new THREE.Vector3();
+const SHOULDER = 0.95;        // lateral offset → you aim over the right shoulder
 function updateCamera() {
-  const yaw = input.yaw, pitch = input.pitch, dist = 12;
-  _tgt.set(player.x, player.y + 1.4, player.z);
+  const yaw = input.yaw, pitch = input.pitch, dist = 6.0;
   const cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const rx = Math.cos(yaw), rz = -Math.sin(yaw);          // camera-right vector
+  // shift both the camera and its look-point right by the same amount: keeps the
+  // reticle aligned with fire while pushing the player to the lower-left of frame.
+  _tgt.set(player.x + rx * SHOULDER, player.y + 1.5, player.z + rz * SHOULDER);
   let sx = 0, sy = 0;
-  if (shake > 0) { const m = shake * shake, t = performance.now() / 1000; sx = Math.sin(t * 53) * m * 0.6; sy = Math.cos(t * 47) * m * 0.5; }
+  if (shake > 0) { const m = shake * shake, t = performance.now() / 1000; sx = Math.sin(t * 53) * m * 0.5; sy = Math.cos(t * 47) * m * 0.4; }
   camera.position.set(
     _tgt.x + Math.sin(yaw) * dist * cp + sx,
     _tgt.y + sp * dist + sy,
     _tgt.z + Math.cos(yaw) * dist * cp);
-  camera.lookAt(_tgt.x, _tgt.y, _tgt.z);   // over-the-shoulder, looking down onto the arena
+  camera.lookAt(_tgt.x, _tgt.y, _tgt.z);
 }
 
 // ── HUD ───────────────────────────────────────────────────────────────────────
@@ -238,9 +244,15 @@ function drawHUD() {
 
   enemyBars();
 
-  // crosshair
-  ctx.strokeStyle = 'rgba(20,20,20,.6)'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.arc(W / 2, H / 2, 5, 0, Math.PI * 2); ctx.stroke();
+  // reticle (centre-screen aim point, Returnal-style cross + dot)
+  ctx.strokeStyle = 'rgba(20,20,20,.65)'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(W / 2 - 11, H / 2); ctx.lineTo(W / 2 - 4, H / 2);
+  ctx.moveTo(W / 2 + 4, H / 2); ctx.lineTo(W / 2 + 11, H / 2);
+  ctx.moveTo(W / 2, H / 2 - 11); ctx.lineTo(W / 2, H / 2 - 4);
+  ctx.moveTo(W / 2, H / 2 + 4); ctx.lineTo(W / 2, H / 2 + 11);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(20,20,20,.8)'; ctx.beginPath(); ctx.arc(W / 2, H / 2, 1.6, 0, Math.PI * 2); ctx.fill();
 
   // health + gold (top-left)
   ctx.textAlign = 'left';
@@ -249,6 +261,17 @@ function drawHUD() {
   ctx.fillText(`${Math.ceil(player.hp)} / ${player.stats.maxHp}`, 22, 30);
   ctx.fillStyle = css(C.gold); ctx.font = 'bold 16px monospace';
   ctx.fillText(`$ ${gold}`, 16, 56);
+
+  // adrenaline meter (Returnal) — 5 tiers, climbs on kills, wiped on any hit
+  ctx.font = 'bold 10px monospace';
+  ctx.fillStyle = player.adr > 0 ? '#ff7a1a' : 'rgba(20,20,20,.45)';
+  ctx.fillText('ADRENALINE', 16, 76);
+  for (let i = 0; i < 5; i++) {
+    const px = 16 + i * 16, py = 82;
+    ctx.beginPath(); ctx.rect(px, py, 12, 8);
+    if (i < player.adr) { ctx.fillStyle = '#ff7a1a'; ctx.fill(); }
+    ctx.strokeStyle = 'rgba(20,20,20,.4)'; ctx.lineWidth = 1; ctx.stroke();
+  }
 
   // timer + difficulty + stage (top-center)
   const tier = diffTier();
@@ -267,7 +290,7 @@ function drawHUD() {
   }
 
   // inventory (left column of item chips)
-  let iy = 78; ctx.textAlign = 'left'; ctx.font = 'bold 11px monospace';
+  let iy = 104; ctx.textAlign = 'left'; ctx.font = 'bold 11px monospace';
   for (const [id, n] of player.inv) {
     const it = itemById(id); if (!it) continue;
     ctx.fillStyle = css(RARITY[it.rarity]); ctx.fillRect(16, iy, 12, 12);

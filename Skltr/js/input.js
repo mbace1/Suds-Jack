@@ -11,7 +11,7 @@ export class InputManager {
     this.canvas = canvas;
     this.keys = {};
     this.locked = false;
-    this.yaw = 0; this.pitch = 0.66;
+    this.yaw = 0; this.pitch = 0.40;   // tight over-the-shoulder tilt (Returnal-ish)
     this._mouseDown = false;
     this.left = { active: false, ox: 0, oy: 0, dx: 0, dy: 0 };   // move stick
     this.look = { active: false, ox: 0, oy: 0, dx: 0, dy: 0 };   // aim/turn + fire stick
@@ -132,4 +132,4 @@ export class InputManager {
     }
   }
 }
-const clampPitch = p => Math.max(0.34, Math.min(1.0, p));   // keep a sane 3rd-person range
+const clampPitch = p => Math.max(0.2, Math.min(0.72, p));   // close over-the-shoulder range
