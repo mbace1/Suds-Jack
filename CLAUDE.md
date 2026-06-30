@@ -42,7 +42,10 @@ stage has a **teleporter**: engage it to spawn a **boss** and a horde, hold the 
 charge it to 100%, then warp to the next, harder stage. Permadeath; furthest stage persists
 in `localStorage` under `ribbonHiStage`. No build step — open `ribbon/index.html` (three.js
 via the jsDelivr importmap, same as toko-drop / paperboy). Keyboard+mouse (with Arrow-key
-camera fallback) or touch (left-stick move, right-drag aim/fire, on-screen skill buttons).
+camera fallback) or touch (left-stick move, right-stick aim/fire, on-screen skill buttons).
+
+> Note on deploys: published to the **`gh-pages` branch** as **`Skltr/`** — live at
+> `/Suds-Jack/Skltr/`. Copy the `ribbon/` folder onto `gh-pages` as `Skltr/` to update it.
 
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
 Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
