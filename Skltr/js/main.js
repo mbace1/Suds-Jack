@@ -1,108 +1,110 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=2';
-import { Player } from './player.js?v=2';
-import { Enemy, ENEMY_COST } from './enemy.js?v=2';
-import { ProjectilePool } from './projectile.js?v=2';
-import { World, ARENA_R } from './world.js?v=2';
-import { itemById } from './items.js?v=2';
-import { C, INK, RARITY } from './shared.js?v=2';
-import { audio } from './audio.js?v=2';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { InputManager } from './input.js?v=3';
+import { Player } from './player.js?v=3';
+import { Enemy, COST } from './enemy.js?v=3';
+import { ProjectilePool } from './projectile.js?v=3';
+import { C, glow } from './shared.js?v=3';
+import { audio } from './audio.js?v=3';
 
 const css = h => '#' + (h >>> 0).toString(16).padStart(6, '0').slice(-6);
+const ARENA_R = 47;
 
-// ── Renderer / scene ──────────────────────────────────────────────────────────
+// ── Renderer + night scene with neon bloom ────────────────────────────────────
 const gameCanvas = document.getElementById('canvas-game');
 const renderer = new THREE.WebGLRenderer({ canvas: gameCanvas, antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xffffff);
-const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 500);
+scene.background = new THREE.Color(C.bg);
+scene.fog = new THREE.Fog(C.bg, 36, 96);
+const camera = new THREE.PerspectiveCamera(66, innerWidth / innerHeight, 0.1, 400);
+
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.35, 0.5, 0.0);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+// floor: black plane + faint white grid + faint boundary ring (sketch on black)
+scene.add(new THREE.Mesh(new THREE.PlaneGeometry(ARENA_R * 2.4, ARENA_R * 2.4),
+  new THREE.MeshBasicMaterial({ color: 0x050505 })).rotateX(-Math.PI / 2));
+const grid = new THREE.GridHelper(ARENA_R * 2, 40, C.dim, C.dim);
+grid.material.transparent = true; grid.material.opacity = 0.45; scene.add(grid);
+const ring = new THREE.Mesh(new THREE.TorusGeometry(ARENA_R, 0.12, 6, 96),
+  new THREE.MeshBasicMaterial({ color: 0x888888 })); ring.rotation.x = -Math.PI / 2; scene.add(ring);
 
 // ── Objects ───────────────────────────────────────────────────────────────────
 const input = new InputManager(gameCanvas);
 const pool = new ProjectilePool(scene);
 const player = new Player(scene, pool);
-const world = new World(scene);
+let enemies = [];
 
 // ── Run state ─────────────────────────────────────────────────────────────────
-let gameState = 'title';   // title | playing | paused | gameover
-let gold = 0, kills = 0, stage = 1, runTime = 0, difficulty = 1;
-let credits = 0, spawnCD = 0, shake = 0, bossAlive = false, restartTimer = 0;
-let enemies = [], toasts = [], prompt = '';
-let hiStage = parseInt(localStorage.getItem('skltrHiStage') || '1');
+let gameState = 'title';     // title | playing | paused | gameover
+let runTime = 0, kills = 0, shake = 0, restartTimer = 0;
+let credits = 0, spawnCD = 0, nextBoss = 65, bossAlive = false;
+let toasts = [];
+let best = parseFloat(localStorage.getItem('skltrBestTime') || '0');
 
-const DIFF_TIERS = [
-  [1.3, 'EASY', 0x39c66b], [1.9, 'NORMAL', 0x2b8cff], [2.8, 'HARD', 0xf5a623],
-  [4.0, 'VERY HARD', 0xff7a45], [5.5, 'INSANE', 0xff3b30], [7.5, 'IMPOSSIBLE', 0xd11f1f],
-  [10, 'I SEE YOU', 0xb1119b], [1e9, 'HAHAHA', 0x8e1f6b],
-];
-function diffTier() { for (const t of DIFF_TIERS) if (difficulty < t[0]) return t; return DIFF_TIERS[DIFF_TIERS.length - 1]; }
-function scaling() { return { hpMul: Math.pow(difficulty, 1.1), dmgMul: 0.5 + (difficulty - 1) * 0.55 }; }
+const PHASES = [[25, 'CALM', 0x9be7b0], [60, 'RISING', 0x9bc7ff], [110, 'FRENZY', 0xffd36b],
+                [170, 'OVERLOAD', 0xff9a3a], [1e9, 'NIGHTMARE', 0xff5a6b]];
+function phase() { for (const p of PHASES) if (runTime < p[0]) return p; return PHASES[PHASES.length - 1]; }
+function scaling() { return { hpMul: 1 + runTime * 0.011, dmgMul: 0.55 + runTime * 0.008 }; }
 
 // ── HUD / overlay ─────────────────────────────────────────────────────────────
 const uiCanvas = document.getElementById('canvas-ui');
 const ctx = uiCanvas.getContext('2d');
 const overlay = document.getElementById('overlay');
-function showOverlay(html) { overlay.innerHTML = html; overlay.style.display = 'block'; }
+function showOverlay(h) { overlay.innerHTML = h; overlay.style.display = 'block'; }
+function fmt(s) { const m = (s / 60) | 0, ss = (s % 60) | 0; return `${m}:${ss.toString().padStart(2, '0')}`; }
+function toast(t, c) { toasts.push({ t, c, life: 2.6 }); }
 
 function showTitle() {
   showOverlay(
-    `<div style="font-size:58px;font-weight:bold;letter-spacing:8px">SKLTR</div>` +
-    `<div style="font-size:13px;opacity:.55;margin:6px 0 22px">a minimalist survival roguelike — loot, scale, charge the teleporter, escape</div>` +
-    `<div style="font-size:15px;opacity:.85">CLICK / TAP / ENTER to start</div>` +
-    `<div style="font-size:12px;opacity:.5;margin-top:16px;line-height:1.7">` +
-    `WASD move · mouse aim · hold LMB fire · Shift sprint · Space jump<br>` +
-    `RMB secondary · Q dash · R nova · F open chest / use teleporter<br>` +
-    `<span style="opacity:.8">Touch: left stick move (push to sprint) · right stick aim+fire · buttons for skills</span></div>`);
+    `<div style="font-size:64px;font-weight:bold;letter-spacing:10px;color:#9bfff0">SKLTR</div>` +
+    `<div style="font-size:13px;opacity:.6;margin:8px 0 22px">neon survival — dodge the storm, ride the adrenaline</div>` +
+    `<div style="font-size:15px">CLICK / TAP / ENTER to drop in</div>` +
+    `<div style="font-size:12px;opacity:.55;margin-top:16px;line-height:1.7">` +
+    `WASD move · mouse aim (look anywhere) · hold LMB fire<br>` +
+    `SPACE dash (i-frames) · SHIFT sprint · ESC pause<br>` +
+    `<span style="opacity:.85">Touch: left stick move · right stick aim+fire · DASH button</span></div>`);
 }
 function showPause() { showOverlay(`<div style="font-size:42px;font-weight:bold">PAUSED</div><div style="font-size:13px;opacity:.5;margin-top:10px">ESC to resume</div>`); }
 function showGameOver() {
-  const best = stage >= hiStage;
+  const rec = runTime >= best;
   showOverlay(
-    `<div style="font-size:42px;font-weight:bold;letter-spacing:3px">YOU DIED</div>` +
-    `<div style="font-size:18px;margin-top:10px;color:${css(C.gold)}">reached STAGE ${stage} · ${fmtTime(runTime)}</div>` +
-    `<div style="font-size:14px;opacity:.7;margin-top:4px">${kills} kills · ${gold} gold banked</div>` +
-    (best ? `<div style="font-size:15px;color:${css(C.enemy)};margin-top:6px">FURTHEST YET!</div>` : ``) +
-    `<div style="font-size:13px;opacity:.4;margin-top:16px">Restarting…  ·  CLICK / TAP / ENTER to run now</div>`);
-}
-function fmtTime(s) { const m = (s / 60) | 0, ss = (s % 60) | 0; return `${m}:${ss.toString().padStart(2, '0')}`; }
-function toast(text, color) { toasts.push({ text, color, t: 3 }); }
-function announceStage() {           // brief centred flash, toko-drop style
-  showOverlay(`<div style="font-size:48px;font-weight:bold;letter-spacing:3px">STAGE ${stage}</div>`);
-  setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 1100);
+    `<div style="font-size:44px;font-weight:bold;letter-spacing:3px;color:#ff7aa0">DOWN</div>` +
+    `<div style="font-size:20px;margin-top:10px;color:#9bfff0">survived ${fmt(runTime)} · ${kills} kills</div>` +
+    (rec ? `<div style="font-size:15px;color:${css(C.adr)};margin-top:6px">NEW BEST!</div>` : `<div style="font-size:12px;opacity:.5;margin-top:6px">best ${fmt(best)}</div>`) +
+    `<div style="font-size:13px;opacity:.4;margin-top:16px">Restarting…  ·  CLICK / TAP / ENTER to retry</div>`);
 }
 
 // ── Flow ──────────────────────────────────────────────────────────────────────
 function startGame() {
   overlay.style.display = 'none';
-  gold = 0; kills = 0; stage = 1; runTime = 0; difficulty = 1; credits = 0; spawnCD = 0;
-  bossAlive = false; prompt = ''; toasts = [];
+  runTime = 0; kills = 0; shake = 0; credits = 0; spawnCD = 0; nextBoss = 65; bossAlive = false; toasts = [];
   for (const e of enemies) e.dispose(); enemies = []; pool.clear();
   player.reset();
-  world.newStage(1);
-  gameState = 'playing'; audio.start(); announceStage();
+  gameState = 'playing'; audio.start();
 }
 function gameOver() {
-  gameState = 'gameover'; shake = 1; restartTimer = 3.4;
-  if (stage > hiStage) { hiStage = stage; localStorage.setItem('skltrHiStage', hiStage); }
+  gameState = 'gameover'; shake = 1; restartTimer = 3.6;
+  if (runTime > best) { best = runTime; localStorage.setItem('skltrBestTime', best.toFixed(1)); }
   audio.gameover(); showGameOver();
-}
-function nextStage() {
-  stage++;
-  for (const e of enemies) e.dispose(); enemies = []; pool.clear();
-  bossAlive = false; gold += 25 * stage;
-  player.x = 0; player.z = 0; player.vx = player.vz = 0;
-  world.newStage(stage);
-  audio.stageClear(); announceStage();
 }
 
 // ── Spawn director ────────────────────────────────────────────────────────────
-function spawnEnemy(type) {
+function spawnAt(type, dist = 26) {
   const e = new Enemy(scene, type, scaling());
-  const a = Math.random() * Math.PI * 2, r = 22 + Math.random() * 12;
+  const a = Math.random() * Math.PI * 2, r = dist + Math.random() * 8;
   let x = player.x + Math.cos(a) * r, z = player.z + Math.sin(a) * r;
   x = Math.max(-ARENA_R + 2, Math.min(ARENA_R - 2, x)); z = Math.max(-ARENA_R + 2, Math.min(ARENA_R - 2, z));
   e.place(x, z); enemies.push(e);
@@ -111,130 +113,132 @@ function spawnEnemy(type) {
 }
 function pickType() {
   const r = Math.random();
-  if (difficulty > 2.2 && r < 0.22) return 'brute';
-  if (r < 0.4) return 'gunner';
-  return 'grunt';
+  if (runTime > 22 && r < 0.16) return 'flyer';
+  if (runTime > 8 && r < 0.44) return 'turret';
+  return 'chaser';
 }
 function director(dt) {
-  const charging = world.tele.state === 'charging';
-  credits += dt * (2.2 + difficulty * 1.5) * (charging ? 2.2 : 1);
-  const cap = 12 + stage * 2 + (charging ? 10 : 0);   // fewer bodies — readable bullet-hell, not a pile-up
+  credits += dt * (2.4 + runTime * 0.05);
+  const cap = 9 + Math.floor(runTime / 11);
   spawnCD -= dt;
   if (spawnCD <= 0 && enemies.length < cap) {
-    spawnCD = Math.max(0.25, 1.4 - difficulty * 0.06);
-    const type = pickType();
-    const cost = ENEMY_COST[type] * (1 + difficulty * 0.25);
-    if (credits >= cost) { credits -= cost; spawnEnemy(type); }
+    spawnCD = Math.max(0.35, 1.15 - runTime * 0.004);
+    const type = pickType(), cost = COST[type];
+    if (credits >= cost) { credits -= cost; spawnAt(type); }
   }
+  if (runTime >= nextBoss && !bossAlive) { spawnAt('boss', 30); toast('BOSS INBOUND', C.boss); nextBoss += 95; }
 }
 
-// ── Collisions ────────────────────────────────────────────────────────────────
+// ── Collisions (3D) ───────────────────────────────────────────────────────────
 function collide() {
   for (let i = pool.active.length - 1; i >= 0; i--) {
     const p = pool.active[i];
     if (p.fromPlayer) {
       let consumed = false;
       for (const e of enemies) {
-        if (!e.alive) continue;
-        if (p.hitSet && p.hitSet.has(e)) continue;
-        if (Math.hypot(e.x - p.x, e.z - p.z) > 1.1 + p.r) continue;
+        if (!e.alive || (p.hitSet && p.hitSet.has(e))) continue;
+        if (Math.hypot(e.x - p.x, e.y - p.y, e.z - p.z) > e.r + p.r) continue;
         const dead = e.takeDamage(p.damage);
-        if (player.stats.lifesteal) player.heal(player.stats.lifesteal);
-        if (dead) { onEnemyDead(e); }
-        if (p.pierce > 0) { p.pierce--; (p.hitSet || (p.hitSet = new Set())).add(e); }
-        else { consumed = true; }
+        if (dead) onKill(e);
+        if (p.pierce > 0) { p.pierce--; (p.hitSet || (p.hitSet = new Set())).add(e); } else consumed = true;
         break;
       }
       if (consumed) pool.recycle(i);
     } else {
-      if (Math.hypot(player.x - p.x, player.z - p.z) < 1.0 + p.r) {
-        player.hurt(p.damage); pool.recycle(i);
-        if (!player.alive) gameOver();
+      if (Math.hypot(player.x - p.x, 1.0 - p.y, player.z - p.z) < 0.85 + p.r) {
+        const hpb = player.hp; player.hurt(p.damage); pool.recycle(i);
+        if (player.hp < hpb) shake = Math.max(shake, 0.55);
+        if (!player.alive) { gameOver(); return; }
       }
     }
   }
-  // clear dead enemies left in array
   for (let i = enemies.length - 1; i >= 0; i--) if (!enemies[i].alive) { enemies[i].dispose(); enemies.splice(i, 1); }
 }
-function onEnemyDead(e) {
-  gold += Math.round(e.gold * player.stats.goldMult); kills++; audio.kill();
+function onKill(e) {
+  kills++; audio.kill();
   const before = player.adr; player.addKill();
-  if (player.adr > before) { audio.adrenaline(player.adr); toast(`ADRENALINE ${player.adr}`, C.gold); }
-  if (e.boss) { bossAlive = false; toast('BOSS DOWN', C.gold); }
+  if (player.adr > before) { audio.adrenaline(player.adr); toast(`ADRENALINE ${player.adr}`, C.adr); }
+  if (e.boss) { bossAlive = false; toast('BOSS DOWN', C.adr); }
+  burst(e.x, e.y, e.z, C.line);
 }
 
-// ── Interact (chest / teleporter) ─────────────────────────────────────────────
-input.onInteract = () => {
-  if (gameState !== 'playing') return;
-  const c = world.nearestChest(player.x, player.z);
-  if (c) {
-    if (gold >= c.cost) { gold -= c.cost; const it = world.openChest(c); player.addItem(it.id); audio.chest(); toast(`${it.name}`, RARITY[it.rarity]); }
-    else toast('NOT ENOUGH GOLD', C.enemy);
-    return;
+// ── Hit sparks ────────────────────────────────────────────────────────────────
+let sparks = [];
+function burst(x, y, z, color, n = 8) {
+  for (let i = 0; i < n; i++) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.12, 5, 4), new THREE.MeshBasicMaterial({ color }));
+    m.position.set(x, y, z); scene.add(m);
+    const a = Math.random() * Math.PI * 2, e = Math.random() * Math.PI - Math.PI / 2, s = 3 + Math.random() * 5;
+    sparks.push({ m, vx: Math.cos(a) * Math.cos(e) * s, vy: Math.sin(e) * s + 2, vz: Math.sin(a) * Math.cos(e) * s, life: 0.5 });
   }
-  if (world.inTeleporter(player.x, player.z)) {
-    if (world.tele.state === 'idle') { world.startCharge(); spawnEnemy('boss'); toast('TELEPORTER ENGAGED — survive!', C.tele); audio.teleport(); }
-    else if (world.tele.state === 'ready') { audio.teleport(); nextStage(); }
+}
+function updateSparks(dt) {
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const s = sparks[i]; s.life -= dt; s.vy -= 14 * dt;
+    s.m.position.x += s.vx * dt; s.m.position.y += s.vy * dt; s.m.position.z += s.vz * dt;
+    if (s.life <= 0) { scene.remove(s.m); sparks.splice(i, 1); }
   }
-};
-input.onSecondary = () => { if (gameState === 'playing') { player.secondary(enemies); audio.secondary(); } };
-input.onUtility   = () => { if (gameState === 'playing') { const c0 = player.cool.q; player.utility(); if (player.cool.q !== c0) audio.dash(); } };
-input.onSpecial   = () => { if (gameState === 'playing') { const c0 = player.cool.r; player.special(enemies); if (player.cool.r !== c0) audio.special(); } };
-input.onJump      = () => { if (gameState === 'playing') player.tryJump(); };
+}
+
+// ── Input wiring ──────────────────────────────────────────────────────────────
+input.onDash = () => { if (gameState === 'playing' && player.dash()) audio.dash(); };
 input.onStart = () => { if (gameState === 'title' || gameState === 'gameover') startGame(); };
 input.onPause = () => {
   if (gameState === 'playing') { gameState = 'paused'; showPause(); }
   else if (gameState === 'paused') { overlay.style.display = 'none'; gameState = 'playing'; }
   else if (gameState === 'title') startGame();
 };
-// tap anywhere starts from title / game over (toko-drop)
 addEventListener('touchend', () => { if (gameState === 'title' || gameState === 'gameover') startGame(); });
 
-// ── Camera (Returnal-style: tight over-the-shoulder, character framed lower-left) ──
-const _tgt = new THREE.Vector3();
-const SHOULDER = 0.95;        // lateral offset → you aim over the right shoulder
+// ── Camera (free-look over-the-shoulder; aim any direction) ────────────────────
+const _aim = { fx: 0, fy: 0, fz: -1, yaw: 0, pitch: 0 };
+function computeAim() {
+  const y = input.yaw, p = input.pitch, cp = Math.cos(p);
+  _aim.yaw = y; _aim.pitch = p;
+  _aim.fx = -Math.sin(y) * cp; _aim.fy = Math.sin(p); _aim.fz = -Math.cos(y) * cp;
+  return _aim;
+}
 function updateCamera() {
-  const yaw = input.yaw, pitch = input.pitch, dist = 6.0;
-  const cp = Math.cos(pitch), sp = Math.sin(pitch);
-  const rx = Math.cos(yaw), rz = -Math.sin(yaw);          // camera-right vector
-  // shift both the camera and its look-point right by the same amount: keeps the
-  // reticle aligned with fire while pushing the player to the lower-left of frame.
-  _tgt.set(player.x + rx * SHOULDER, player.y + 1.5, player.z + rz * SHOULDER);
+  const a = _aim, dist = 5.6, shoulder = 0.8;
+  const cp = Math.cos(a.pitch);
+  const rx = Math.cos(a.yaw), rz = -Math.sin(a.yaw);        // camera-right (horizontal)
   let sx = 0, sy = 0;
-  if (shake > 0) { const m = shake * shake, t = performance.now() / 1000; sx = Math.sin(t * 53) * m * 0.5; sy = Math.cos(t * 47) * m * 0.4; }
-  camera.position.set(
-    _tgt.x + Math.sin(yaw) * dist * cp + sx,
-    _tgt.y + sp * dist + sy,
-    _tgt.z + Math.cos(yaw) * dist * cp);
-  camera.lookAt(_tgt.x, _tgt.y, _tgt.z);
+  if (shake > 0) { const m = shake * shake, t = performance.now() / 1000; sx = Math.sin(t * 53) * m * 0.5; sy = Math.cos(t * 47) * m * 0.5; }
+  const hx = player.x, hy = player.y + 1.5, hz = player.z;
+  const camY = Math.max(1.0, hy - a.fy * dist + 0.25 + sy);   // never dip below the floor
+  camera.position.set(hx - a.fx * dist + rx * shoulder * cp + sx, camY, hz - a.fz * dist + rz * shoulder * cp);
+  camera.lookAt(camera.position.x + a.fx, camera.position.y + a.fy, camera.position.z + a.fz);
 }
 
 // ── HUD ───────────────────────────────────────────────────────────────────────
-function bar(x, y, w, h, k, color, bg = 'rgba(20,20,20,.12)') {
-  ctx.fillStyle = bg; ctx.fillRect(x, y, w, h);
+function bar(x, y, w, h, k, color) {
+  ctx.fillStyle = 'rgba(255,255,255,.1)'; ctx.fillRect(x, y, w, h);
   ctx.fillStyle = color; ctx.fillRect(x, y, w * Math.max(0, Math.min(1, k)), h);
-  ctx.strokeStyle = css(INK); ctx.lineWidth = 1.5; ctx.strokeRect(x, y, w, h);
 }
 const _v = new THREE.Vector3();
 function enemyBars() {
   for (const e of enemies) {
-    if (!e.alive) continue;
-    _v.set(e.x, 2.2 * (e.boss ? 2 : 1) + 0.6, e.z).project(camera);
+    if (!e.alive || (!e.boss && e.type === 'chaser')) continue;
+    _v.set(e.x, e.y + e.r + 0.5, e.z).project(camera);
     if (_v.z > 1) continue;
-    const sx = (_v.x * 0.5 + 0.5) * uiCanvas.width, sy = (-_v.y * 0.5 + 0.5) * uiCanvas.height;
-    const w = e.boss ? 120 : 34, h = e.boss ? 7 : 4;
-    bar(sx - w / 2, sy, w, h, e.hp / e.maxHp, css(e.boss ? C.boss : C.enemy));
+    const sx = (_v.x * .5 + .5) * uiCanvas.width, sy = (-_v.y * .5 + .5) * uiCanvas.height;
+    const w = e.boss ? 160 : 34, h = e.boss ? 7 : 4;
+    bar(sx - w / 2, sy, w, h, e.hp / e.maxHp, css(e.boss ? 0xff6b7e : 0xffffff));
   }
 }
-function skillIcon(x, y, key, label, cd, cdMax) {
-  const s = 46;
-  ctx.fillStyle = '#fff'; ctx.fillRect(x, y, s, s);
-  ctx.strokeStyle = css(INK); ctx.lineWidth = 2; ctx.strokeRect(x, y, s, s);
-  if (cd > 0) { ctx.fillStyle = 'rgba(20,20,20,.55)'; ctx.fillRect(x, y, s, s * (cd / cdMax)); }
-  ctx.fillStyle = css(INK); ctx.textAlign = 'center';
-  ctx.font = 'bold 16px monospace'; ctx.fillText(key, x + s / 2, y + 20);
-  ctx.font = '9px monospace'; ctx.fillStyle = 'rgba(20,20,20,.6)'; ctx.fillText(label, x + s / 2, y + 38);
-  return s;
+function reticle(W, H) {
+  const adrCol = player.adr > 0 ? C.adr : C.player;
+  ctx.strokeStyle = css(adrCol); ctx.lineWidth = 2;
+  const cx = W / 2, cy = H / 2;
+  ctx.beginPath();
+  ctx.moveTo(cx - 12, cy); ctx.lineTo(cx - 5, cy); ctx.moveTo(cx + 5, cy); ctx.lineTo(cx + 12, cy);
+  ctx.moveTo(cx, cy - 12); ctx.lineTo(cx, cy - 5); ctx.moveTo(cx, cy + 5); ctx.lineTo(cx, cy + 12);
+  ctx.stroke();
+  ctx.fillStyle = css(adrCol); ctx.beginPath(); ctx.arc(cx, cy, 1.6, 0, 7); ctx.fill();
+  // dash-cooldown ring around the reticle
+  const k = 1 - player.dashCD / 1.1;
+  ctx.strokeStyle = k >= 1 ? css(C.player) : 'rgba(180,200,255,.5)'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.arc(cx, cy, 20, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0, k)); ctx.stroke();
 }
 function drawHUD() {
   ctx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
@@ -243,172 +247,91 @@ function drawHUD() {
   if (gameState !== 'playing' && gameState !== 'paused') return;
 
   enemyBars();
+  reticle(W, H);
 
-  // reticle (centre-screen aim point, Returnal-style cross + dot)
-  ctx.strokeStyle = 'rgba(20,20,20,.65)'; ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(W / 2 - 11, H / 2); ctx.lineTo(W / 2 - 4, H / 2);
-  ctx.moveTo(W / 2 + 4, H / 2); ctx.lineTo(W / 2 + 11, H / 2);
-  ctx.moveTo(W / 2, H / 2 - 11); ctx.lineTo(W / 2, H / 2 - 4);
-  ctx.moveTo(W / 2, H / 2 + 4); ctx.lineTo(W / 2, H / 2 + 11);
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(20,20,20,.8)'; ctx.beginPath(); ctx.arc(W / 2, H / 2, 1.6, 0, Math.PI * 2); ctx.fill();
-
-  // health + gold (top-left)
+  // health + adrenaline (top-left)
   ctx.textAlign = 'left';
-  bar(16, 16, 240, 18, player.hp / player.stats.maxHp, css(C.hp));
-  ctx.fillStyle = css(INK); ctx.font = 'bold 12px monospace';
-  ctx.fillText(`${Math.ceil(player.hp)} / ${player.stats.maxHp}`, 22, 30);
-  ctx.fillStyle = css(C.gold); ctx.font = 'bold 16px monospace';
-  ctx.fillText(`$ ${gold}`, 16, 56);
+  bar(16, 16, 240, 16, player.hp / player.maxHp, css(C.hp));
+  ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 1; ctx.strokeRect(16, 16, 240, 16);
+  ctx.fillStyle = '#cdeaff'; ctx.font = 'bold 11px monospace'; ctx.fillText(`${Math.ceil(player.hp)}`, 22, 28);
+  ctx.fillStyle = player.adr > 0 ? css(C.adr) : 'rgba(205,234,255,.4)'; ctx.font = 'bold 10px monospace';
+  ctx.fillText('ADRENALINE', 16, 50);
+  for (let i = 0; i < 5; i++) { const px = 16 + i * 16;
+    ctx.beginPath(); ctx.rect(px, 56, 12, 8);
+    if (i < player.adr) { ctx.fillStyle = css(C.adr); ctx.fill(); }
+    ctx.strokeStyle = 'rgba(205,234,255,.35)'; ctx.lineWidth = 1; ctx.stroke(); }
 
-  // adrenaline meter (Returnal) — 5 tiers, climbs on kills, wiped on any hit
-  ctx.font = 'bold 10px monospace';
-  ctx.fillStyle = player.adr > 0 ? '#ff7a1a' : 'rgba(20,20,20,.45)';
-  ctx.fillText('ADRENALINE', 16, 76);
-  for (let i = 0; i < 5; i++) {
-    const px = 16 + i * 16, py = 82;
-    ctx.beginPath(); ctx.rect(px, py, 12, 8);
-    if (i < player.adr) { ctx.fillStyle = '#ff7a1a'; ctx.fill(); }
-    ctx.strokeStyle = 'rgba(20,20,20,.4)'; ctx.lineWidth = 1; ctx.stroke();
-  }
-
-  // timer + difficulty + stage (top-center)
-  const tier = diffTier();
+  // time + phase (top-center)
+  const ph = phase();
   ctx.textAlign = 'center';
-  ctx.fillStyle = css(INK); ctx.font = 'bold 20px monospace'; ctx.fillText(fmtTime(runTime), W / 2, 28);
-  ctx.fillStyle = css(tier[2]); ctx.font = 'bold 13px monospace'; ctx.fillText(tier[1], W / 2, 46);
-  ctx.fillStyle = 'rgba(20,20,20,.6)'; ctx.font = '12px monospace'; ctx.fillText(`STAGE ${stage}`, W / 2, 62);
+  ctx.fillStyle = '#cdeaff'; ctx.font = 'bold 22px monospace'; ctx.fillText(fmt(runTime), W / 2, 30);
+  ctx.fillStyle = css(ph[2]); ctx.font = 'bold 13px monospace'; ctx.fillText(ph[1], W / 2, 50);
 
-  // skill bar (bottom-centre) — desktop only; touch shows skills on the buttons themselves
-  if (!input.isTouch) {
-    let sx = W / 2 - (46 * 4 + 30) / 2, sy = H - 64;
-    skillIcon(sx, sy, 'M1', 'FIRE', 0, 1); sx += 56;
-    skillIcon(sx, sy, 'M2', 'SLUG', player.cool.m2, 2.6); sx += 56;
-    skillIcon(sx, sy, 'Q', 'DASH', player.cool.q, 4); sx += 56;
-    skillIcon(sx, sy, 'R', 'NOVA', player.cool.r, 9);
-  }
-
-  // inventory (left column of item chips)
-  let iy = 104; ctx.textAlign = 'left'; ctx.font = 'bold 11px monospace';
-  for (const [id, n] of player.inv) {
-    const it = itemById(id); if (!it) continue;
-    ctx.fillStyle = css(RARITY[it.rarity]); ctx.fillRect(16, iy, 12, 12);
-    ctx.strokeStyle = css(INK); ctx.lineWidth = 1; ctx.strokeRect(16, iy, 12, 12);
-    ctx.fillStyle = css(INK); ctx.fillText(`${it.name} ×${n}`, 34, iy + 10);
-    iy += 18;
-  }
-
-  // teleporter charge + prompts
-  if (world.tele.state === 'charging') {
-    ctx.textAlign = 'center'; ctx.fillStyle = css(C.tele); ctx.font = 'bold 13px monospace';
-    ctx.fillText(world.inTeleporter(player.x, player.z) ? 'CHARGING…' : 'RETURN TO THE TELEPORTER', W / 2, H - 92);
-    bar(W / 2 - 130, H - 86, 260, 12, world.tele.progress, css(C.tele));
-  } else if (world.tele.state === 'ready') {
-    ctx.textAlign = 'center'; ctx.fillStyle = css(C.hp); ctx.font = 'bold 14px monospace';
-    ctx.fillText('TELEPORTER READY — stand in it and press F', W / 2, H - 92);
-  }
-  // contextual interact prompt
-  const c = world.nearestChest(player.x, player.z);
-  if (c) { ctx.textAlign = 'center'; ctx.fillStyle = css(C.gold); ctx.font = 'bold 13px monospace';
-    ctx.fillText(`F — open chest ($${c.cost})`, W / 2, H - 110); }
-  else if (world.tele.state === 'idle' && world.inTeleporter(player.x, player.z)) {
-    ctx.textAlign = 'center'; ctx.fillStyle = css(C.tele); ctx.font = 'bold 13px monospace';
-    ctx.fillText('F — engage teleporter', W / 2, H - 110); }
+  // kills + best (top-right)
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#cdeaff'; ctx.font = 'bold 18px monospace'; ctx.fillText(`${kills} kills`, W - 16, 28);
+  if (best > 0) { ctx.fillStyle = 'rgba(205,234,255,.5)'; ctx.font = '11px monospace'; ctx.fillText(`best ${fmt(best)}`, W - 16, 46); }
 
   // toasts
   ctx.textAlign = 'center'; ctx.font = 'bold 15px monospace';
-  toasts.forEach((t, i) => { ctx.globalAlpha = Math.min(1, t.t); ctx.fillStyle = css(t.color);
-    ctx.fillText(t.text, W / 2, H * 0.32 + i * 22); ctx.globalAlpha = 1; });
+  toasts.forEach((t, i) => { ctx.globalAlpha = Math.min(1, t.life); ctx.fillStyle = css(t.c); ctx.fillText(t.t, W / 2, H * 0.3 + i * 22); ctx.globalAlpha = 1; });
 
-  // off-screen teleporter arrow when not idle-found
-  drawTeleArrow(W, H);
-
-  // touch UI (mobile): floating sticks, pause glyph, skill buttons
   if (input.isTouch) drawTouchUI(W, H);
 }
-function drawTeleArrow(W, H) {
-  _v.set(world.tele.x, 1, world.tele.z).project(camera);
-  const onScreen = _v.z < 1 && Math.abs(_v.x) < 1 && Math.abs(_v.y) < 1;
-  if (onScreen) return;
-  const ang = Math.atan2(world.tele.z - player.z, world.tele.x - player.x) - input.yaw + Math.PI / 2;
-  const r = Math.min(W, H) * 0.32, ax = W / 2 + Math.cos(ang) * r, ay = H / 2 + Math.sin(ang) * r;
-  ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang + Math.PI / 2);
-  ctx.fillStyle = css(world.tele.state === 'ready' ? C.hp : C.tele);
-  ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(8, 8); ctx.lineTo(-8, 8); ctx.closePath(); ctx.fill();
-  ctx.restore();
-}
-// floating stick visual (toko-drop): rest position when idle, follows the touch when active
-function drawStick(stick, defX, defY) {
-  const bx = stick.active ? stick.ox : defX, by = stick.active ? stick.oy : defY, R = 60, kr = 28;
-  ctx.beginPath(); ctx.arc(bx, by, R, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(20,20,20,.18)'; ctx.lineWidth = 2; ctx.stroke();
-  ctx.fillStyle = 'rgba(20,20,20,.03)'; ctx.fill();
-  const clamp = v => Math.max(-R, Math.min(R, v));
-  ctx.beginPath(); ctx.arc(bx + clamp(stick.dx), by + clamp(stick.dy), kr, 0, Math.PI * 2);
-  ctx.fillStyle = stick.active ? 'rgba(20,20,20,.34)' : 'rgba(20,20,20,.12)'; ctx.fill();
-}
-function touchBtn(id, label, x, y, cd, cdMax, color) {
-  const r = 30;
-  input.btns.push({ id, x, y, r, label });
-  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fillStyle = '#fff'; ctx.fill();
-  if (cd > 0) { ctx.save(); ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (cd / cdMax)); ctx.closePath();
-    ctx.fillStyle = 'rgba(20,20,20,.5)'; ctx.fill(); ctx.restore(); }
-  ctx.strokeStyle = css(color || INK); ctx.lineWidth = 2.5; ctx.stroke();
-  ctx.fillStyle = css(INK); ctx.font = 'bold 15px monospace'; ctx.textAlign = 'center'; ctx.fillText(label, x, y + 5);
+function drawStick(s, dx, dy) {
+  const bx = s.active ? s.ox : dx, by = s.active ? s.oy : dy, R = 60, kr = 26;
+  ctx.beginPath(); ctx.arc(bx, by, R, 0, 7); ctx.strokeStyle = 'rgba(205,234,255,.25)'; ctx.lineWidth = 2; ctx.stroke();
+  const cl = v => Math.max(-R, Math.min(R, v));
+  ctx.beginPath(); ctx.arc(bx + cl(s.dx), by + cl(s.dy), kr, 0, 7); ctx.fillStyle = s.active ? 'rgba(120,240,230,.4)' : 'rgba(205,234,255,.14)'; ctx.fill();
 }
 function drawTouchUI(W, H) {
-  drawStick(input.left, W * 0.2, H * 0.74);     // move
-  drawStick(input.look, W * 0.8, H * 0.74);     // aim + fire
-  // pause glyph (top-centre tap zone)
-  ctx.fillStyle = 'rgba(20,20,20,.3)'; ctx.font = '18px monospace'; ctx.textAlign = 'center'; ctx.fillText('❙❙', W / 2, 40);
-  // skill cluster (bottom-right, near the aim thumb)
-  touchBtn('f',  'F',  W - 150, H - 196, 0, 1, C.gold);
-  touchBtn('m2', 'M2', W - 64,  H - 168, player.cool.m2, 2.6, C.player);
-  touchBtn('q',  'Q',  W - 132, H - 116, player.cool.q, 4, C.player);
-  touchBtn('r',  'R',  W - 64,  H - 92,  player.cool.r, 9, C.player);
-  touchBtn('jump', '⤴', W - 232, H - 92, 0, 1, INK);
+  drawStick(input.left, W * 0.2, H * 0.74);
+  drawStick(input.look, W * 0.8, H * 0.74);
+  ctx.fillStyle = 'rgba(205,234,255,.35)'; ctx.font = '18px monospace'; ctx.textAlign = 'center'; ctx.fillText('❙❙', W / 2, 40);
+  const dx = W - 74, dy = H - 110, r = 34;
+  input.btns.push({ id: 'dash', x: dx, y: dy, r, label: 'DASH' });
+  ctx.beginPath(); ctx.arc(dx, dy, r, 0, 7);
+  ctx.fillStyle = player.dashCD <= 0 ? 'rgba(53,240,216,.18)' : 'rgba(120,140,180,.12)'; ctx.fill();
+  ctx.strokeStyle = css(player.dashCD <= 0 ? C.player : 0x4a5a80); ctx.lineWidth = 2.5; ctx.stroke();
+  ctx.fillStyle = '#cdeaff'; ctx.font = 'bold 13px monospace'; ctx.fillText('DASH', dx, dy + 5);
 }
 
 // ── Loop ──────────────────────────────────────────────────────────────────────
 let prev = performance.now();
 function loop() {
   requestAnimationFrame(loop);
-  const now = performance.now();
-  const dt = Math.min((now - prev) / 1000, 0.05); prev = now;
+  const now = performance.now(); const dt = Math.min((now - prev) / 1000, 0.05); prev = now;
   if (shake > 0) shake = Math.max(0, shake - dt * 2.2);
-  for (let i = toasts.length - 1; i >= 0; i--) { toasts[i].t -= dt; if (toasts[i].t <= 0) toasts.splice(i, 1); }
+  for (let i = toasts.length - 1; i >= 0; i--) { toasts[i].life -= dt; if (toasts[i].life <= 0) toasts.splice(i, 1); }
+  computeAim();
 
   if (gameState === 'playing') {
     runTime += dt;
-    difficulty = (1 + (runTime / 60) * 0.13) * Math.pow(1.16, stage - 1);
-    input.updateLook(dt);                       // touch right-stick turns the camera
-    const m = input.getMove();
-    const hpBefore = player.hp;
-    player.update(dt, { moveX: m.x, moveZ: m.z, sprint: input.sprint, jump: input.jump, firing: input.firing, yaw: input.yaw, enemies });
-    if (input.firing && !input.sprint && player.fireT >= player.stats.fireInterval - 0.001) audio.shoot();
+    input.updateLook(dt);
+    const fired = input.firing && !input.sprint && player.fireT <= 0;
+    player.update(dt, input, _aim, enemies);
+    if (fired) audio.shoot();
     for (const e of enemies) e.update(dt, player, pool);
     pool.update(dt);
     collide();
     director(dt);
-    const done = world.update(dt, world.inTeleporter(player.x, player.z));
-    if (done) { audio.stageClear(); toast('TELEPORTER READY', C.hp); }
-    if (player.hp < hpBefore) shake = Math.max(shake, 0.5);
-    if (!player.alive && gameState === 'playing') gameOver();
+    updateSparks(dt);
   } else {
-    if (gameState === 'gameover') { restartTimer -= dt; if (restartTimer <= 0) startGame(); }   // auto-restart (toko-drop)
-    player.update(dt, { moveX: 0, moveZ: 0, sprint: false, jump: false, firing: false, yaw: input.yaw, enemies: [] });
+    if (gameState === 'gameover') { restartTimer -= dt; updateSparks(dt); if (restartTimer <= 0) startGame(); }
+    player.fig.group.position.set(player.x, player.y, player.z);
+    player.fig.group.rotation.y = input.yaw + Math.PI;     // face the camera on the title screen
+    player.fig.update(dt, { speed: 0, aimPitch: 0 });
   }
 
   updateCamera();
-  renderer.render(scene, camera);
+  composer.render();
   drawHUD();
 }
 
 // ── Resize / boot ─────────────────────────────────────────────────────────────
 function resize() {
-  renderer.setSize(innerWidth, innerHeight);
+  renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight);
+  bloom.resolution.set(innerWidth, innerHeight);
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
   uiCanvas.width = innerWidth; uiCanvas.height = innerHeight;
 }
