@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v48 — 2026-06-30
+**Cache-bust the whole module graph — deployed updates actually reach players**
+- Symptom: after deploying, the live site kept showing an old HUD version. Cause: `index.html` always loaded `js/main.js?v=3` (token never changed between releases), so browsers/CDN served the cached `main.js` from the identical URL; and the modules `main.js` imports (`enemy.js`, `bullet.js`, …) had no cache-bust token at all
+- Bumped the entry token `?v=3` → `?v=4`, and added the same `?v=4` token to **every** relative import across `main.js`, `designer.js`, `player.js`
+- Token is identical on every import of a given module (e.g. all three importers use `./enemy.js?v=4`) so the browser still loads one instance — no duplicate-module bugs
+- Process note: bump this token (and the HUD label) every release so deploys are guaranteed to refresh
+- HUD label → v48 so a successful deploy is visually obvious
+- Verified: full module graph loads with `?v=4`, smoke test green (ORANGE moves, TORO upright, BAMBU growth + charge, feedback save), zero console errors
+
+---
+
 ## v47 — 2026-06-30
 **ORANGE_CUBE movement fix — no longer freezes against a wall**
 - Root cause: the initial `_target` was a fully-random point in ±16 on both axes, but the portrait arena is only ±11 wide in X (landscape ±11 in Z). Cubes routinely got an unreachable target, flopped into a wall where the bounds-clamp pinned them, and never closed to the `td < 2.2` firing threshold — so they sat in 'moving' forever, reading as frozen
