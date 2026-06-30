@@ -93,6 +93,8 @@ export class Player {
     }
   }
 
+  tryJump() { if (this.alive && this.y <= 0.001) this.vy = JUMP_V; }   // mobile jump button
+
   hurt(d) {
     if (!this.alive || this.iframe > 0) return;
     this.hp -= d; this.fig.hit();

@@ -1,42 +1,54 @@
-// Input for the action-roguelike.
-//   Move: WASD          Sprint: Shift     Jump: Space      Fire: hold LMB
-//   Secondary: RMB / E… (M2)  Utility/Dash: Q   Special: R   Interact (chest/teleporter): F
-//   Aim: move the mouse (click to lock the pointer) or the Arrow keys.
-//   Enter: start / restart    Esc: pause
-// Touch: left half = move stick; right half drag = aim + fire; on-screen skill buttons.
-const LOOK_SENS = 0.0024, ARROW_SENS = 2.2;
+// Input for the action-roguelike — toko-drop-style twin floating sticks on touch,
+// keyboard+mouse on desktop.
+//   Desktop:  WASD move · mouse aim (click locks pointer) · hold LMB fire · Shift sprint
+//             Space jump · RMB secondary · Q dash · R nova · F interact · Enter/Esc
+//   Touch:    left half = move stick (push far to sprint); right half = aim/fire stick
+//             (drag turns the camera, holding fires); on-screen skill buttons + pause tap.
+const STICK_R = 60, LOOK_DEAD = 12, TURN_RATE = 2.7, PITCH_RATE = 1.4, ARROW_SENS = 2.2, MOUSE_SENS = 0.0024;
 
 export class InputManager {
   constructor(canvas) {
     this.canvas = canvas;
     this.keys = {};
-    this.yaw = 0; this.pitch = 0.66;
-    this.firing = false;
-    this._mouseDown = false;
     this.locked = false;
-
-    this.onStart = this.onPause = this.onSecondary = this.onUtility = this.onSpecial = this.onInteract = null;
-
-    // touch state
-    this.move = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, id: -1 };
-    this.look = { active: false, id: -1, lx: 0 };
-    this.btns = [];                 // filled by HUD: [{id,x,y,r,label}]
+    this.yaw = 0; this.pitch = 0.66;
+    this._mouseDown = false;
+    this.left = { active: false, ox: 0, oy: 0, dx: 0, dy: 0 };   // move stick
+    this.look = { active: false, ox: 0, oy: 0, dx: 0, dy: 0 };   // aim/turn + fire stick
+    this._touch = new Map();          // id → 'move' | 'look' | 'pause' | 'btn'
+    this.btns = [];                   // on-screen buttons, set by the HUD each frame
+    this.isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+    this.onStart = this.onPause = this.onSecondary = this.onUtility = this.onSpecial = this.onInteract = this.onJump = null;
     this._init();
   }
 
-  // resolved planar move input, camera-relative axes (z forward = +1)
+  // ── resolved inputs ──
   getMove() {
-    if (this.move.active) {
-      const R = 60;
-      return { x: clamp(this.move.dx / R), z: clamp(-this.move.dy / R) };
+    if (this.left.active) {
+      let x = this.left.dx / STICK_R, z = -this.left.dy / STICK_R;
+      const l = Math.hypot(x, z); if (l > 1) { x /= l; z /= l; }
+      return { x, z };
     }
     let x = 0, z = 0;
     if (this.keys['KeyW']) z += 1; if (this.keys['KeyS']) z -= 1;
     if (this.keys['KeyD']) x += 1; if (this.keys['KeyA']) x -= 1;
-    return { x, z };
+    const l = Math.hypot(x, z); return l > 0 ? { x: x / l, z: z / l } : { x: 0, z: 0 };
   }
-  get sprint() { return !!this.keys['ShiftLeft'] || !!this.keys['ShiftRight']; }
+  get moveMag() {
+    if (this.left.active) return Math.min(1, Math.hypot(this.left.dx, this.left.dy) / STICK_R);
+    const m = this.getMove(); return Math.hypot(m.x, m.z);
+  }
+  get sprint() { return !!this.keys['ShiftLeft'] || !!this.keys['ShiftRight'] || (this.left.active && this.moveMag > 0.85); }
   get jump()   { return !!this.keys['Space']; }
+  get firing() { return this._mouseDown || this.look.active; }
+
+  // continuous camera turn from the right stick (called each frame while playing)
+  updateLook(dt) {
+    if (!this.look.active) return;
+    if (Math.hypot(this.look.dx, this.look.dy) < LOOK_DEAD) return;
+    this.yaw += (this.look.dx / STICK_R) * TURN_RATE * dt;
+    this.pitch = clampPitch(this.pitch + (this.look.dy / STICK_R) * PITCH_RATE * dt);
+  }
 
   _init() {
     addEventListener('keydown', e => {
@@ -54,7 +66,7 @@ export class InputManager {
     });
     addEventListener('keyup', e => { this.keys[e.code] = false; });
 
-    // arrow keys also turn/pitch the camera (keyboard-only fallback)
+    // arrow-key camera fallback (keyboard-only / headless testing)
     this._arrowTimer = setInterval(() => {
       if (this.keys['ArrowLeft'])  this.yaw -= ARROW_SENS * 0.016;
       if (this.keys['ArrowRight']) this.yaw += ARROW_SENS * 0.016;
@@ -63,15 +75,16 @@ export class InputManager {
     }, 16);
 
     addEventListener('mousedown', e => {
-      if (e.button === 0) { this._mouseDown = true; this.firing = true; this.onStart?.('click'); if (!this.locked) this.canvas.requestPointerLock?.(); }
+      if (e.button === 0) { this._mouseDown = true; this.onStart?.('click'); if (!this.locked) this.canvas.requestPointerLock?.(); }
       if (e.button === 2) this.onSecondary?.();
     });
-    addEventListener('mouseup', e => { if (e.button === 0) { this._mouseDown = false; this.firing = false; } });
+    addEventListener('mouseup', e => { if (e.button === 0) this._mouseDown = false; });
     addEventListener('contextmenu', e => e.preventDefault());
     document.addEventListener('pointerlockchange', () => { this.locked = document.pointerLockElement === this.canvas; });
     addEventListener('mousemove', e => {
-      const mx = e.movementX || 0, my = e.movementY || 0;
-      this.yaw += mx * LOOK_SENS; this.pitch = clampPitch(this.pitch + my * LOOK_SENS);
+      if (this.isTouch) return;
+      this.yaw += (e.movementX || 0) * MOUSE_SENS;
+      this.pitch = clampPitch(this.pitch + (e.movementY || 0) * MOUSE_SENS);
     });
 
     const opt = { passive: false };
@@ -82,36 +95,41 @@ export class InputManager {
   }
 
   _hitBtn(x, y) { for (const b of this.btns) if (Math.hypot(x - b.x, y - b.y) < b.r) return b; return null; }
-  _fireBtn(b) {
-    if (b.id === 'q') this.onUtility?.(); else if (b.id === 'r') this.onSpecial?.();
-    else if (b.id === 'm2') this.onSecondary?.(); else if (b.id === 'f') this.onInteract?.();
-    else if (b.id === 'start') this.onStart?.();
+  _fireBtn(id) {
+    if (id === 'q') this.onUtility?.(); else if (id === 'r') this.onSpecial?.();
+    else if (id === 'm2') this.onSecondary?.(); else if (id === 'f') this.onInteract?.();
+    else if (id === 'jump') this.onJump?.();
   }
 
   _tStart(e) {
     for (const t of e.changedTouches) {
       const x = t.clientX, y = t.clientY;
+      // pause zone — top-centre strip (toko-drop)
+      if (y < 56 && Math.abs(x - innerWidth / 2) < 40) { this._touch.set(t.identifier, 'pause'); this.onPause?.(); continue; }
       const b = this._hitBtn(x, y);
-      if (b) { this._fireBtn(b); continue; }
-      if (x < innerWidth * 0.5 && !this.move.active) {
-        this.move = { active: true, ox: x, oy: y, dx: 0, dy: 0, id: t.identifier };
-      } else if (!this.look.active) {
-        this.look = { active: true, id: t.identifier, lx: x }; this.firing = true;  // right side = aim+fire
+      if (b) { this._touch.set(t.identifier, 'btn'); this._fireBtn(b.id); continue; }
+      if (x < innerWidth * 0.5) {
+        if (this.left.active) continue;
+        this._touch.set(t.identifier, 'move'); this.left = { active: true, ox: x, oy: y, dx: 0, dy: 0 };
+      } else {
+        if (this.look.active) continue;
+        this._touch.set(t.identifier, 'look'); this.look = { active: true, ox: x, oy: y, dx: 0, dy: 0 };
       }
     }
   }
   _tMove(e) {
     for (const t of e.changedTouches) {
-      if (t.identifier === this.move.id) { this.move.dx = t.clientX - this.move.ox; this.move.dy = t.clientY - this.move.oy; }
-      if (t.identifier === this.look.id) { this.yaw += (t.clientX - this.look.lx) * 0.01; this.look.lx = t.clientX; }
+      const role = this._touch.get(t.identifier);
+      if (role === 'move') { this.left.dx = t.clientX - this.left.ox; this.left.dy = t.clientY - this.left.oy; }
+      else if (role === 'look') { this.look.dx = t.clientX - this.look.ox; this.look.dy = t.clientY - this.look.oy; }
     }
   }
   _tEnd(e) {
     for (const t of e.changedTouches) {
-      if (t.identifier === this.move.id) this.move = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, id: -1 };
-      if (t.identifier === this.look.id) { this.look = { active: false, id: -1, lx: 0 }; this.firing = false; }
+      const role = this._touch.get(t.identifier); this._touch.delete(t.identifier);
+      if (role === 'move') this.left = { active: false, ox: 0, oy: 0, dx: 0, dy: 0 };
+      else if (role === 'look') this.look = { active: false, ox: 0, oy: 0, dx: 0, dy: 0 };
     }
   }
 }
-const clamp = v => Math.max(-1, Math.min(1, v));
 const clampPitch = p => Math.max(0.34, Math.min(1.0, p));   // keep a sane 3rd-person range

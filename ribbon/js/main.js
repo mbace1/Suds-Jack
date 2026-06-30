@@ -30,7 +30,7 @@ const world = new World(scene);
 // ── Run state ─────────────────────────────────────────────────────────────────
 let gameState = 'title';   // title | playing | paused | gameover
 let gold = 0, kills = 0, stage = 1, runTime = 0, difficulty = 1;
-let credits = 0, spawnCD = 0, shake = 0, bossAlive = false;
+let credits = 0, spawnCD = 0, shake = 0, bossAlive = false, restartTimer = 0;
 let enemies = [], toasts = [], prompt = '';
 let hiStage = parseInt(localStorage.getItem('ribbonHiStage') || '1');
 
@@ -52,10 +52,11 @@ function showTitle() {
   showOverlay(
     `<div style="font-size:58px;font-weight:bold;letter-spacing:6px">RIBBON</div>` +
     `<div style="font-size:13px;opacity:.55;margin:6px 0 22px">a minimalist survival roguelike — loot, scale, charge the teleporter, escape</div>` +
-    `<div style="font-size:15px;opacity:.85">CLICK / ENTER to start</div>` +
+    `<div style="font-size:15px;opacity:.85">CLICK / TAP / ENTER to start</div>` +
     `<div style="font-size:12px;opacity:.5;margin-top:16px;line-height:1.7">` +
     `WASD move · mouse aim · hold LMB fire · Shift sprint · Space jump<br>` +
-    `RMB secondary · Q dash · R nova · F open chest / use teleporter</div>`);
+    `RMB secondary · Q dash · R nova · F open chest / use teleporter<br>` +
+    `<span style="opacity:.8">Touch: left stick move (push to sprint) · right stick aim+fire · buttons for skills</span></div>`);
 }
 function showPause() { showOverlay(`<div style="font-size:42px;font-weight:bold">PAUSED</div><div style="font-size:13px;opacity:.5;margin-top:10px">ESC to resume</div>`); }
 function showGameOver() {
@@ -65,10 +66,14 @@ function showGameOver() {
     `<div style="font-size:18px;margin-top:10px;color:${css(C.gold)}">reached STAGE ${stage} · ${fmtTime(runTime)}</div>` +
     `<div style="font-size:14px;opacity:.7;margin-top:4px">${kills} kills · ${gold} gold banked</div>` +
     (best ? `<div style="font-size:15px;color:${css(C.enemy)};margin-top:6px">FURTHEST YET!</div>` : ``) +
-    `<div style="font-size:13px;opacity:.5;margin-top:16px">CLICK / ENTER to run again</div>`);
+    `<div style="font-size:13px;opacity:.4;margin-top:16px">Restarting…  ·  CLICK / TAP / ENTER to run now</div>`);
 }
 function fmtTime(s) { const m = (s / 60) | 0, ss = (s % 60) | 0; return `${m}:${ss.toString().padStart(2, '0')}`; }
 function toast(text, color) { toasts.push({ text, color, t: 3 }); }
+function announceStage() {           // brief centred flash, toko-drop style
+  showOverlay(`<div style="font-size:48px;font-weight:bold;letter-spacing:3px">STAGE ${stage}</div>`);
+  setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 1100);
+}
 
 // ── Flow ──────────────────────────────────────────────────────────────────────
 function startGame() {
@@ -78,20 +83,20 @@ function startGame() {
   for (const e of enemies) e.dispose(); enemies = []; pool.clear();
   player.reset();
   world.newStage(1);
-  gameState = 'playing'; audio.start();
+  gameState = 'playing'; audio.start(); announceStage();
 }
 function gameOver() {
-  gameState = 'gameover'; shake = 1;
+  gameState = 'gameover'; shake = 1; restartTimer = 3.4;
   if (stage > hiStage) { hiStage = stage; localStorage.setItem('ribbonHiStage', hiStage); }
   audio.gameover(); showGameOver();
 }
 function nextStage() {
-  stage++; difficulty *= 1.0;        // time keeps driving difficulty; stage adds via scaling()
+  stage++;
   for (const e of enemies) e.dispose(); enemies = []; pool.clear();
   bossAlive = false; gold += 25 * stage;
   player.x = 0; player.z = 0; player.vx = player.vz = 0;
   world.newStage(stage);
-  audio.stageClear(); toast(`STAGE ${stage}`, C.tele);
+  audio.stageClear(); announceStage();
 }
 
 // ── Spawn director ────────────────────────────────────────────────────────────
@@ -173,11 +178,15 @@ input.onInteract = () => {
 input.onSecondary = () => { if (gameState === 'playing') { player.secondary(enemies); audio.secondary(); } };
 input.onUtility   = () => { if (gameState === 'playing') { const c0 = player.cool.q; player.utility(); if (player.cool.q !== c0) audio.dash(); } };
 input.onSpecial   = () => { if (gameState === 'playing') { const c0 = player.cool.r; player.special(enemies); if (player.cool.r !== c0) audio.special(); } };
+input.onJump      = () => { if (gameState === 'playing') player.tryJump(); };
 input.onStart = () => { if (gameState === 'title' || gameState === 'gameover') startGame(); };
 input.onPause = () => {
   if (gameState === 'playing') { gameState = 'paused'; showPause(); }
   else if (gameState === 'paused') { overlay.style.display = 'none'; gameState = 'playing'; }
+  else if (gameState === 'title') startGame();
 };
+// tap anywhere starts from title / game over (toko-drop)
+addEventListener('touchend', () => { if (gameState === 'title' || gameState === 'gameover') startGame(); });
 
 // ── Camera ────────────────────────────────────────────────────────────────────
 const _tgt = new THREE.Vector3();
@@ -248,12 +257,14 @@ function drawHUD() {
   ctx.fillStyle = css(tier[2]); ctx.font = 'bold 13px monospace'; ctx.fillText(tier[1], W / 2, 46);
   ctx.fillStyle = 'rgba(20,20,20,.6)'; ctx.font = '12px monospace'; ctx.fillText(`STAGE ${stage}`, W / 2, 62);
 
-  // skill bar (bottom-center)
-  let sx = W / 2 - (46 * 4 + 30) / 2, sy = H - 64;
-  skillIcon(sx, sy, 'M1', 'FIRE', 0, 1); sx += 56;
-  skillIcon(sx, sy, 'M2', 'SLUG', player.cool.m2, 2.6); sx += 56;
-  skillIcon(sx, sy, 'Q', 'DASH', player.cool.q, 4); sx += 56;
-  skillIcon(sx, sy, 'R', 'NOVA', player.cool.r, 9);
+  // skill bar (bottom-centre) — desktop only; touch shows skills on the buttons themselves
+  if (!input.isTouch) {
+    let sx = W / 2 - (46 * 4 + 30) / 2, sy = H - 64;
+    skillIcon(sx, sy, 'M1', 'FIRE', 0, 1); sx += 56;
+    skillIcon(sx, sy, 'M2', 'SLUG', player.cool.m2, 2.6); sx += 56;
+    skillIcon(sx, sy, 'Q', 'DASH', player.cool.q, 4); sx += 56;
+    skillIcon(sx, sy, 'R', 'NOVA', player.cool.r, 9);
+  }
 
   // inventory (left column of item chips)
   let iy = 78; ctx.textAlign = 'left'; ctx.font = 'bold 11px monospace';
@@ -290,8 +301,8 @@ function drawHUD() {
   // off-screen teleporter arrow when not idle-found
   drawTeleArrow(W, H);
 
-  // touch buttons (mobile)
-  if ('ontouchstart' in window) drawTouchButtons(W, H);
+  // touch UI (mobile): floating sticks, pause glyph, skill buttons
+  if (input.isTouch) drawTouchUI(W, H);
 }
 function drawTeleArrow(W, H) {
   _v.set(world.tele.x, 1, world.tele.z).project(camera);
@@ -304,15 +315,37 @@ function drawTeleArrow(W, H) {
   ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(8, 8); ctx.lineTo(-8, 8); ctx.closePath(); ctx.fill();
   ctx.restore();
 }
-function drawTouchButtons(W, H) {
-  const defs = [['m2', 'M2', W - 60, H - 150], ['q', 'Q', W - 130, H - 110], ['r', 'R', W - 60, H - 80], ['f', 'F', W - 130, H - 200]];
-  for (const [id, label, x, y] of defs) {
-    input.btns.push({ id, x, y, r: 30, label });
-    ctx.beginPath(); ctx.arc(x, y, 30, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(20,20,20,.06)'; ctx.fill();
-    ctx.strokeStyle = css(INK); ctx.lineWidth = 2; ctx.stroke();
-    ctx.fillStyle = css(INK); ctx.font = 'bold 15px monospace'; ctx.textAlign = 'center'; ctx.fillText(label, x, y + 5);
-  }
+// floating stick visual (toko-drop): rest position when idle, follows the touch when active
+function drawStick(stick, defX, defY) {
+  const bx = stick.active ? stick.ox : defX, by = stick.active ? stick.oy : defY, R = 60, kr = 28;
+  ctx.beginPath(); ctx.arc(bx, by, R, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(20,20,20,.18)'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = 'rgba(20,20,20,.03)'; ctx.fill();
+  const clamp = v => Math.max(-R, Math.min(R, v));
+  ctx.beginPath(); ctx.arc(bx + clamp(stick.dx), by + clamp(stick.dy), kr, 0, Math.PI * 2);
+  ctx.fillStyle = stick.active ? 'rgba(20,20,20,.34)' : 'rgba(20,20,20,.12)'; ctx.fill();
+}
+function touchBtn(id, label, x, y, cd, cdMax, color) {
+  const r = 30;
+  input.btns.push({ id, x, y, r, label });
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff'; ctx.fill();
+  if (cd > 0) { ctx.save(); ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (cd / cdMax)); ctx.closePath();
+    ctx.fillStyle = 'rgba(20,20,20,.5)'; ctx.fill(); ctx.restore(); }
+  ctx.strokeStyle = css(color || INK); ctx.lineWidth = 2.5; ctx.stroke();
+  ctx.fillStyle = css(INK); ctx.font = 'bold 15px monospace'; ctx.textAlign = 'center'; ctx.fillText(label, x, y + 5);
+}
+function drawTouchUI(W, H) {
+  drawStick(input.left, W * 0.2, H * 0.74);     // move
+  drawStick(input.look, W * 0.8, H * 0.74);     // aim + fire
+  // pause glyph (top-centre tap zone)
+  ctx.fillStyle = 'rgba(20,20,20,.3)'; ctx.font = '18px monospace'; ctx.textAlign = 'center'; ctx.fillText('❙❙', W / 2, 40);
+  // skill cluster (bottom-right, near the aim thumb)
+  touchBtn('f',  'F',  W - 150, H - 196, 0, 1, C.gold);
+  touchBtn('m2', 'M2', W - 64,  H - 168, player.cool.m2, 2.6, C.player);
+  touchBtn('q',  'Q',  W - 132, H - 116, player.cool.q, 4, C.player);
+  touchBtn('r',  'R',  W - 64,  H - 92,  player.cool.r, 9, C.player);
+  touchBtn('jump', '⤴', W - 232, H - 92, 0, 1, INK);
 }
 
 // ── Loop ──────────────────────────────────────────────────────────────────────
@@ -327,6 +360,7 @@ function loop() {
   if (gameState === 'playing') {
     runTime += dt;
     difficulty = (1 + (runTime / 60) * 0.13) * Math.pow(1.16, stage - 1);
+    input.updateLook(dt);                       // touch right-stick turns the camera
     const m = input.getMove();
     const hpBefore = player.hp;
     player.update(dt, { moveX: m.x, moveZ: m.z, sprint: input.sprint, jump: input.jump, firing: input.firing, yaw: input.yaw, enemies });
@@ -340,6 +374,7 @@ function loop() {
     if (player.hp < hpBefore) shake = Math.max(shake, 0.5);
     if (!player.alive && gameState === 'playing') gameOver();
   } else {
+    if (gameState === 'gameover') { restartTimer -= dt; if (restartTimer <= 0) startGame(); }   // auto-restart (toko-drop)
     player.update(dt, { moveX: 0, moveZ: 0, sprint: false, jump: false, firing: false, yaw: input.yaw, enemies: [] });
   }
 
