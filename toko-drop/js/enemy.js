@@ -235,6 +235,11 @@ export class Enemy {
     this._aoeReady     = false;
     this._lobReady     = null;
 
+    // Boss identity (v59)
+    this._isBoss     = false;
+    this._bossMaxHp  = 0;
+    this._enraged    = false;
+
     // Build geometry based on type family
     let geo;
     if (BLOB_TYPES.has(type)) {
@@ -432,6 +437,8 @@ export class Enemy {
       ? this.group.position : this.mesh.position;
   }
   get color()  { return CFG[this.type].color; }
+  // Flag this enemy as a boss; maxHp is its post-multiplier HP (for enrage threshold).
+  setBoss(maxHp) { this._isBoss = true; this._bossMaxHp = maxHp; }
   get radius() {
     if (this.type === EnemyType.BAMBU) return Math.max(0.6, (this._segs ? this._segs.length : 1) * 0.6);
     return CFG[this.type].radius * (this._radiusMult || 1);
@@ -605,7 +612,9 @@ export class Enemy {
     const ex   = pos.x, ez = pos.z;
     const ddx  = playerPos.x - ex, ddz = playerPos.z - ez;
     const dist = Math.hypot(ddx, ddz) || 0.001;
-    const spd  = cfg.speed * this._speedMult;
+    // Boss enrage (v59): below 35% HP a boss speeds up for a desperate final phase.
+    if (this._isBoss && !this._enraged && this.hp <= this._bossMaxHp * 0.35) this._enraged = true;
+    const spd  = cfg.speed * this._speedMult * (this._enraged ? 1.45 : 1);
 
     // ── Movement ──────────────────────────────────────────────────────────────
     switch (this.type) {

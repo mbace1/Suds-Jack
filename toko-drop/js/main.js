@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=14';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=14';
-import { Player, PLAYER_RADIUS } from './player.js?v=14';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=14';
-import { audio } from './audio.js?v=14';
-import { initDesigner } from './designer.js?v=14';
+import { InputManager } from './input.js?v=15';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=15';
+import { Player, PLAYER_RADIUS } from './player.js?v=15';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=15';
+import { audio } from './audio.js?v=15';
+import { initDesigner } from './designer.js?v=15';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -590,6 +590,24 @@ class Gate {
   }
 }
 
+// Boss identity (v59): a flat pulsing ground ring marks the every-8th-wave boss.
+// It follows the enemy each frame and turns red when the boss enrages (<35% HP).
+function makeBossAura(enemy) {
+  const r = enemy.radius * 1.7;
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(r * 0.82, r, 40),
+    new THREE.MeshBasicMaterial({
+      color: 0xffcc33, transparent: true, opacity: 0.6,
+      side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false,
+    }),
+  );
+  ring.rotation.x = -Math.PI / 2;
+  const p = enemy.position;
+  ring.position.set(p.x, 0.04, p.z);
+  scene.add(ring);
+  return { enemy, ring, baseColor: 0xffcc33 };
+}
+
 // ── Weapon pod system ─────────────────────────────────────────────────────────
 // Each entry: the player._weaponMode to set, display glyph, orb color, rarity level.
 const WEAPON_PODS = {
@@ -819,6 +837,7 @@ let sludgeRibbons = [];
 let bambuAoes     = [];
 let gates         = [];
 let powerups      = [];
+let bossAuras     = [];
 let damageNumbers = [];
 let cargoCluster    = null;
 let clusterTimer    = 0;
@@ -1391,7 +1410,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v58', 16, uiCanvas.height - 12);
+  ctx.fillText('v59', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1623,14 +1642,25 @@ function clearFX() {
   for (const a of bambuAoes)     a.remove(scene); bambuAoes     = [];
   for (const g of gates)        g.remove(scene); gates         = [];
   for (const p of powerups)     p.remove(scene); powerups      = [];
+  clearBossAuras();
   damageNumbers = [];
   if (cargoCluster) { cargoCluster.remove(scene); cargoCluster = null; }
   clusterTimer = 0; clusterSpawnAt = 0;
 }
 
+function clearBossAuras() {
+  for (const a of bossAuras) {
+    scene.remove(a.ring);
+    a.ring.geometry.dispose();
+    a.ring.material.dispose();
+  }
+  bossAuras = [];
+}
+
 function spawnWave() {
   for (const e of enemies) e.removeFrom(scene);
   enemies = [];
+  clearBossAuras();
   for (const p of powerups) p.remove(scene); powerups = [];
   wave++;
   const { speedMult, intervalMult } = getWaveScale(wave);
@@ -1911,6 +1941,8 @@ function loop() {
         en.hp = Math.ceil(en.hp * 3); en._hpMult = 3;
       }
       en.mesh.scale.multiplyScalar(1.5); en._radiusMult = 1.5;
+      en.setBoss(en.hp);
+      bossAuras.push(makeBossAura(en));
     } else if (s.elite) {
       if (en.type !== EnemyType.BAMBU && en.type !== EnemyType.PYRA) {
         en.hp = Math.ceil(en.hp * 2); en._hpMult = 2;
@@ -2051,6 +2083,23 @@ function loop() {
       sludgeRibbons[i].remove(scene);
       sludgeRibbons.splice(i, 1);
     }
+  }
+
+  // Boss auras — follow their boss, pulse, redden on enrage, dispose on death.
+  for (let i = bossAuras.length - 1; i >= 0; i--) {
+    const a = bossAuras[i];
+    if (!a.enemy.alive) {
+      scene.remove(a.ring);
+      a.ring.geometry.dispose();
+      a.ring.material.dispose();
+      bossAuras.splice(i, 1);
+      continue;
+    }
+    const p = a.enemy.position;
+    a.ring.position.set(p.x, 0.04, p.z);
+    a.ring.material.opacity = 0.45 + 0.3 * Math.sin(performance.now() * 0.005);
+    a.ring.material.color.setHex(a.enemy._enraged ? 0xff2200 : a.baseColor);
+    a.ring.scale.setScalar(a.enemy._enraged ? 1.15 + 0.1 * Math.sin(performance.now() * 0.02) : 1.0);
   }
 
   // Check for children to spawn (SPLITTA, REDD_CUBE, PURP_CUBE)
