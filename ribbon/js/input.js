@@ -1,73 +1,117 @@
-// Input for RIBBON — four directional reactions plus menu taps.
-//
-// Desktop:  ↑/W/Space = JUMP   ↓/S = SLIDE   ←/A = DODGE LEFT   →/D = DODGE RIGHT
-//           Enter = start/confirm   Esc = pause   1/2/3 = pick a tune-up perk
-// Touch:    swipe up/down/left/right anywhere to react; tap a card/button to confirm.
-const SWIPE_MIN = 28;       // px of travel before a touch counts as a directional swipe
+// Input for the action-roguelike.
+//   Move: WASD          Sprint: Shift     Jump: Space      Fire: hold LMB
+//   Secondary: RMB / E… (M2)  Utility/Dash: Q   Special: R   Interact (chest/teleporter): F
+//   Aim: move the mouse (click to lock the pointer) or the Arrow keys.
+//   Enter: start / restart    Esc: pause
+// Touch: left half = move stick; right half drag = aim + fire; on-screen skill buttons.
+const LOOK_SENS = 0.0024, ARROW_SENS = 2.2;
 
 export class InputManager {
-  constructor() {
+  constructor(canvas) {
+    this.canvas = canvas;
     this.keys = {};
-    this._touches = new Map();  // id → { x0, y0, t0 }
-    this.onAction = null;       // (dir) — 'up' | 'down' | 'left' | 'right'
-    this.onStart  = null;
-    this.onPause  = null;
-    this.onPerk   = null;       // (index 0..n)
-    this.onTap    = null;       // (x, y) — generic tap fallback (start screens)
-    this.tapTargets = [];       // [{ x, y, w, h, fn }] — set by the HUD while a menu is up
+    this.yaw = 0; this.pitch = 0.66;
+    this.firing = false;
+    this._mouseDown = false;
+    this.locked = false;
+
+    this.onStart = this.onPause = this.onSecondary = this.onUtility = this.onSpecial = this.onInteract = null;
+
+    // touch state
+    this.move = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, id: -1 };
+    this.look = { active: false, id: -1, lx: 0 };
+    this.btns = [];                 // filled by HUD: [{id,x,y,r,label}]
     this._init();
   }
 
-  _hitTarget(x, y) {
-    for (const t of this.tapTargets) {
-      if (x >= t.x && x <= t.x + t.w && y >= t.y && y <= t.y + t.h) { t.fn(); return true; }
+  // resolved planar move input, camera-relative axes (z forward = +1)
+  getMove() {
+    if (this.move.active) {
+      const R = 60;
+      return { x: clamp(this.move.dx / R), z: clamp(-this.move.dy / R) };
     }
-    return false;
+    let x = 0, z = 0;
+    if (this.keys['KeyW']) z += 1; if (this.keys['KeyS']) z -= 1;
+    if (this.keys['KeyD']) x += 1; if (this.keys['KeyA']) x -= 1;
+    return { x, z };
   }
+  get sprint() { return !!this.keys['ShiftLeft'] || !!this.keys['ShiftRight']; }
+  get jump()   { return !!this.keys['Space']; }
 
   _init() {
     addEventListener('keydown', e => {
       if (!this.keys[e.code]) {
         switch (e.code) {
-          case 'ArrowUp': case 'KeyW': case 'Space': this.onAction?.('up'); break;
-          case 'ArrowDown': case 'KeyS':             this.onAction?.('down'); break;
-          case 'ArrowLeft': case 'KeyA':             this.onAction?.('left'); break;
-          case 'ArrowRight': case 'KeyD':            this.onAction?.('right'); break;
-          case 'Enter':                              this.onStart?.(); break;
-          case 'Escape':                             this.onPause?.(); break;
-          case 'Digit1': case 'Numpad1':             this.onPerk?.(0); break;
-          case 'Digit2': case 'Numpad2':             this.onPerk?.(1); break;
-          case 'Digit3': case 'Numpad3':             this.onPerk?.(2); break;
+          case 'KeyQ': this.onUtility?.(); break;
+          case 'KeyR': this.onSpecial?.(); break;
+          case 'KeyE': case 'KeyF': this.onInteract?.(); break;
+          case 'Enter': this.onStart?.(); break;
+          case 'Escape': this.onPause?.(); break;
         }
       }
-      if (e.code === 'Space') e.preventDefault();   // stop the page from scrolling
+      if (e.code === 'Space') e.preventDefault();
       this.keys[e.code] = true;
     });
     addEventListener('keyup', e => { this.keys[e.code] = false; });
 
-    const opt = { passive: false };
-    addEventListener('touchstart', e => { e.preventDefault();
-      for (const t of e.changedTouches) this._touches.set(t.identifier, { x0: t.clientX, y0: t.clientY, t0: performance.now() });
-    }, opt);
-    addEventListener('touchend', e => { e.preventDefault();
-      for (const t of e.changedTouches) {
-        const s = this._touches.get(t.identifier); this._touches.delete(t.identifier);
-        if (!s) continue;
-        const dx = t.clientX - s.x0, dy = t.clientY - s.y0;
-        if (Math.abs(dx) > SWIPE_MIN || Math.abs(dy) > SWIPE_MIN) {
-          if (Math.abs(dx) > Math.abs(dy)) this.onAction?.(dx > 0 ? 'right' : 'left');
-          else                             this.onAction?.(dy > 0 ? 'down' : 'up');
-        } else {
-          // A tap: route to a menu target first, otherwise the generic handler.
-          if (!this._hitTarget(t.clientX, t.clientY)) this.onTap?.(t.clientX, t.clientY);
-        }
-      }
-    }, opt);
-    addEventListener('touchcancel', e => { for (const t of e.changedTouches) this._touches.delete(t.identifier); }, opt);
+    // arrow keys also turn/pitch the camera (keyboard-only fallback)
+    this._arrowTimer = setInterval(() => {
+      if (this.keys['ArrowLeft'])  this.yaw -= ARROW_SENS * 0.016;
+      if (this.keys['ArrowRight']) this.yaw += ARROW_SENS * 0.016;
+      if (this.keys['ArrowUp'])    this.pitch = clampPitch(this.pitch - ARROW_SENS * 0.012);
+      if (this.keys['ArrowDown'])  this.pitch = clampPitch(this.pitch + ARROW_SENS * 0.012);
+    }, 16);
 
-    // Mouse clicks drive the menus on desktop too (gameplay is keyboard).
     addEventListener('mousedown', e => {
-      if (!this._hitTarget(e.clientX, e.clientY)) this.onTap?.(e.clientX, e.clientY);
+      if (e.button === 0) { this._mouseDown = true; this.firing = true; this.onStart?.('click'); if (!this.locked) this.canvas.requestPointerLock?.(); }
+      if (e.button === 2) this.onSecondary?.();
     });
+    addEventListener('mouseup', e => { if (e.button === 0) { this._mouseDown = false; this.firing = false; } });
+    addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('pointerlockchange', () => { this.locked = document.pointerLockElement === this.canvas; });
+    addEventListener('mousemove', e => {
+      const mx = e.movementX || 0, my = e.movementY || 0;
+      this.yaw += mx * LOOK_SENS; this.pitch = clampPitch(this.pitch + my * LOOK_SENS);
+    });
+
+    const opt = { passive: false };
+    addEventListener('touchstart', e => { e.preventDefault(); this._tStart(e); }, opt);
+    addEventListener('touchmove', e => { e.preventDefault(); this._tMove(e); }, opt);
+    addEventListener('touchend', e => { e.preventDefault(); this._tEnd(e); }, opt);
+    addEventListener('touchcancel', e => { e.preventDefault(); this._tEnd(e); }, opt);
+  }
+
+  _hitBtn(x, y) { for (const b of this.btns) if (Math.hypot(x - b.x, y - b.y) < b.r) return b; return null; }
+  _fireBtn(b) {
+    if (b.id === 'q') this.onUtility?.(); else if (b.id === 'r') this.onSpecial?.();
+    else if (b.id === 'm2') this.onSecondary?.(); else if (b.id === 'f') this.onInteract?.();
+    else if (b.id === 'start') this.onStart?.();
+  }
+
+  _tStart(e) {
+    for (const t of e.changedTouches) {
+      const x = t.clientX, y = t.clientY;
+      const b = this._hitBtn(x, y);
+      if (b) { this._fireBtn(b); continue; }
+      if (x < innerWidth * 0.5 && !this.move.active) {
+        this.move = { active: true, ox: x, oy: y, dx: 0, dy: 0, id: t.identifier };
+      } else if (!this.look.active) {
+        this.look = { active: true, id: t.identifier, lx: x }; this.firing = true;  // right side = aim+fire
+      }
+    }
+  }
+  _tMove(e) {
+    for (const t of e.changedTouches) {
+      if (t.identifier === this.move.id) { this.move.dx = t.clientX - this.move.ox; this.move.dy = t.clientY - this.move.oy; }
+      if (t.identifier === this.look.id) { this.yaw += (t.clientX - this.look.lx) * 0.01; this.look.lx = t.clientX; }
+    }
+  }
+  _tEnd(e) {
+    for (const t of e.changedTouches) {
+      if (t.identifier === this.move.id) this.move = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, id: -1 };
+      if (t.identifier === this.look.id) { this.look = { active: false, id: -1, lx: 0 }; this.firing = false; }
+    }
   }
 }
+const clamp = v => Math.max(-1, Math.min(1, v));
+const clampPitch = p => Math.max(0.34, Math.min(1.0, p));   // keep a sane 3rd-person range

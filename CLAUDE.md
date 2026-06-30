@@ -25,20 +25,24 @@ jsDelivr CDN via an importmap, same as toko-drop).
 > separate curated site root that already holds `toko-drop/`), **not** `main`. Demo
 > updates must be copied onto `gh-pages` to go live at `/Suds-Jack/paperboy/`.
 
-### Ribbon — Minimalist Vector Runner-Roguelike (`ribbon/`)
-A **3rd-person, minimalist runner** built on Three.js r167 — a **3D homage to Vib Ribbon**:
-a pure-white void, flat **vector look** (white `MeshBasic` boxes with black `EdgesGeometry`
-outlines, one warm `ACCENT` red for cues/hearts) and a black ribbon track receding to a
-vanishing point. A procedural stick-figure runner auto-advances down the ribbon; obstacles
-stream toward you, each tagged with one of four reaction cues — **↑ JUMP, ↓ SLIDE, ← / →
-DODGE** — and you react inside a timing window as each reaches you. Clean reactions build a
-**combo** (notes climb a scale); a miss costs a heart (3 hearts = permadeath). The
-**roguelite layer** is a **TUNE-UP** every 14 clears: pick 1 of 3 perks (extra heart,
-wider timing window, score multiplier, shields, slower tempo) that persist for the run.
-Speed and obstacle density ramp with distance; hi-score persists in `localStorage` under
-`ribbonHi`. No build step — open `ribbon/index.html` (three.js via the jsDelivr importmap,
-same as toko-drop / paperboy). Keyboard (arrows / WASD / Space) or touch (swipe in the
-cue's direction; tap perk cards).
+### Ribbon — Minimalist Survival Roguelike (`ribbon/`)
+A **3rd-person action roguelike that plays like Risk of Rain 2**, built on Three.js r167
+with a **minimalist vector look** — a pure-white void, white `MeshBasic` bodies with black
+`EdgesGeometry` outlines, a grey ground grid, and a small accent palette (teal = you, red =
+enemies, amber = gold/chests, violet = teleporter). Over-the-shoulder 3/4 camera; WASD move
++ mouse aim, hold-to-fire, sprint, jump, and **four RoR2-style skill slots** — M1 primary,
+M2 piercing slug, Q i-frame dash, R radial nova (each on its own cooldown).
+
+Core loop: a **spawn director** trickles in melee/ranged/brute enemies (floating HP bars)
+whose HP and damage **scale continuously with a difficulty clock** (time + stage), shown as
+RoR2-style tiers (EASY → … → HAHAHA). Kills bank **gold**; spend it on **chests** that roll
+**stacking passive items** across common/uncommon/rare tiers (damage, attack speed, crit,
+forks, pierce, lifesteal, max HP, regen, gold) — items combine into your run's build. Each
+stage has a **teleporter**: engage it to spawn a **boss** and a horde, hold the ring to
+charge it to 100%, then warp to the next, harder stage. Permadeath; furthest stage persists
+in `localStorage` under `ribbonHiStage`. No build step — open `ribbon/index.html` (three.js
+via the jsDelivr importmap, same as toko-drop / paperboy). Keyboard+mouse (with Arrow-key
+camera fallback) or touch (left-stick move, right-drag aim/fire, on-screen skill buttons).
 
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
 Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
@@ -81,14 +85,19 @@ paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new p
     paper.js    # Object-pooled thrown papers with arc/gravity physics + landing detection
     input.js    # Touch stick (steer/throttle) + two throw buttons; WASD/ZX keyboard fallback
     audio.js    # WebAudio bleep kit (throw/deliver/smash/pickup/crash/day-clear)
-ribbon/         # Ribbon — minimalist vector runner-roguelike (3D Vib Ribbon homage)
+ribbon/         # Ribbon — minimalist survival roguelike (RoR2-style, vector look)
   index.html
   js/
-    main.js     # Scene, perspective camera, loop, states, scoring, TUNE-UP perks, HUD
-    track.js    # Shared vector materials + scrolling ribbon + obstacle streaming/timing judge
-    runner.js   # Procedural vector stick-figure with run/jump/slide/dodge/stumble poses
-    input.js    # 4 directional reactions (keys + swipes) + menu/perk tap targets
-    audio.js    # WebAudio bleep kit (combo notes climb a scale, miss/perk/over)
+    main.js       # Scene, 3rd-person camera, loop/states, spawn director + difficulty clock,
+                  #   collisions, teleporter/stage loop, HUD (bars, skills, inventory, prompts)
+    shared.js     # Vector materials/palette, outlined-box helper, procedural Figure (player+enemies)
+    player.js     # Movement/sprint/jump/dash, 4 skill slots + cooldowns, item-derived stats, health
+    enemy.js      # Enemy archetypes (grunt/gunner/brute/boss), chase-and-attack AI, time-scaling
+    projectile.js # Object-pooled projectiles shared by player & enemies (crit/pierce/lifesteal)
+    items.js      # Stacking passive items (3 rarities) + rarity rolls + stat resolver
+    world.js      # Arena grid/boundary, gold chests, teleporter event + charge logic
+    input.js      # WASD+mouse (pointer-lock, Arrow fallback) + touch sticks/skill buttons
+    audio.js      # WebAudio bleep kit (shoot/skills/kill/gold/chest/teleport/boss/over)
 ```
 
 ## Toko Drop — Architecture Notes

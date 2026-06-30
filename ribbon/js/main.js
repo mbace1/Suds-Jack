@@ -1,239 +1,318 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=1';
-import { Runner } from './runner.js?v=1';
-import { Track, INK, ACCENT, GOOD, SHIELD, ARROW, LABEL } from './track.js?v=1';
-import { audio } from './audio.js?v=1';
+import { InputManager } from './input.js?v=2';
+import { Player } from './player.js?v=2';
+import { Enemy, ENEMY_COST } from './enemy.js?v=2';
+import { ProjectilePool } from './projectile.js?v=2';
+import { World, ARENA_R } from './world.js?v=2';
+import { itemById } from './items.js?v=2';
+import { C, INK, RARITY } from './shared.js?v=2';
+import { audio } from './audio.js?v=2';
 
-// ── Tunables ──────────────────────────────────────────────────────────────────
-const MAX_HEALTH_START = 3;
-const CLEARS_PER_TUNE  = 14;      // clears between each roguelite "tune-up" choice
-const SPEED_BASE = 15, SPEED_GROW = 0.012, SPEED_CAP = 34;
-const css = h => '#' + h.toString(16).padStart(6, '0');
+const css = h => '#' + (h >>> 0).toString(16).padStart(6, '0').slice(-6);
 
-// ── Renderer / scene (pure white void, flat vector look) ───────────────────────
-const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas-game'), antialias: true });
+// ── Renderer / scene ──────────────────────────────────────────────────────────
+const gameCanvas = document.getElementById('canvas-game');
+const renderer = new THREE.WebGLRenderer({ canvas: gameCanvas, antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.NoToneMapping;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xffffff);
-
-const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.1, 400);
+const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 500);
 
 // ── Objects ───────────────────────────────────────────────────────────────────
-const input  = new InputManager();
-const track  = new Track(scene);
-const runner = new Runner(scene);
+const input = new InputManager(gameCanvas);
+const pool = new ProjectilePool(scene);
+const player = new Player(scene, pool);
+const world = new World(scene);
 
-// ── State ─────────────────────────────────────────────────────────────────────
-let gameState = 'title';   // title | playing | perk | paused | gameover
-let score = 0, combo = 0, bestCombo = 0, clears = 0, clearsSinceTune = 0;
-let health = MAX_HEALTH_START, maxHealth = MAX_HEALTH_START, shields = 0;
-let scoreMul = 1, windowScale = 1, speedMul = 1;
-let shake = 0, flash = 0, flashCol = ACCENT;
-let perks = [];            // current tune-up offer
-let hiScore = parseInt(localStorage.getItem('ribbonHi') || '0');
+// ── Run state ─────────────────────────────────────────────────────────────────
+let gameState = 'title';   // title | playing | paused | gameover
+let gold = 0, kills = 0, stage = 1, runTime = 0, difficulty = 1;
+let credits = 0, spawnCD = 0, shake = 0, bossAlive = false;
+let enemies = [], toasts = [], prompt = '';
+let hiStage = parseInt(localStorage.getItem('ribbonHiStage') || '1');
 
-// ── Perk pool (the roguelite layer) ───────────────────────────────────────────
-const PERK_POOL = [
-  { name: 'STEADY BEAT', desc: '+1 max heart, heal up',  apply: () => { maxHealth++; health = maxHealth; } },
-  { name: 'LOOSE GROOVE', desc: 'wider timing window',   apply: () => { windowScale += 0.22; } },
-  { name: 'ENCORE',       desc: '+0.5 score multiplier',  apply: () => { scoreMul += 0.5; } },
-  { name: 'REWIND',       desc: '+2 shields (save a miss)', apply: () => { shields += 2; } },
-  { name: 'METRONOME',    desc: 'ease the tempo a touch',  apply: () => { speedMul *= 0.92; } },
+const DIFF_TIERS = [
+  [1.3, 'EASY', 0x39c66b], [1.9, 'NORMAL', 0x2b8cff], [2.8, 'HARD', 0xf5a623],
+  [4.0, 'VERY HARD', 0xff7a45], [5.5, 'INSANE', 0xff3b30], [7.5, 'IMPOSSIBLE', 0xd11f1f],
+  [10, 'I SEE YOU', 0xb1119b], [1e9, 'HAHAHA', 0x8e1f6b],
 ];
+function diffTier() { for (const t of DIFF_TIERS) if (difficulty < t[0]) return t; return DIFF_TIERS[DIFF_TIERS.length - 1]; }
+function scaling() { return { hpMul: Math.pow(difficulty, 1.1), dmgMul: 0.5 + (difficulty - 1) * 0.55 }; }
 
-// ── HUD canvas + DOM overlay ──────────────────────────────────────────────────
+// ── HUD / overlay ─────────────────────────────────────────────────────────────
 const uiCanvas = document.getElementById('canvas-ui');
 const ctx = uiCanvas.getContext('2d');
 const overlay = document.getElementById('overlay');
-
-function ctxNow() {
-  const speed = Math.min(SPEED_CAP, SPEED_BASE + track.traveled * SPEED_GROW) * speedMul;
-  const gap = Math.max(6.5, 13 - track.traveled * 0.006);
-  return { speed, gap, windowScale };
-}
-
-// ── Flow ──────────────────────────────────────────────────────────────────────
-function startGame() {
-  overlay.style.display = 'none';
-  score = combo = bestCombo = clears = clearsSinceTune = 0;
-  maxHealth = health = MAX_HEALTH_START; shields = 0;
-  scoreMul = windowScale = speedMul = 1; shake = flash = 0;
-  track.reset(); runner.reset();
-  gameState = 'playing';
-  audio.start();
-}
-
-function gameOver() {
-  gameState = 'gameover';
-  if (score > hiScore) { hiScore = score; localStorage.setItem('ribbonHi', hiScore); }
-  shake = 1; runner.visible(false); audio.gameover();
-  showOverlay(
-    `<div style="font-size:40px;font-weight:bold;letter-spacing:4px">OFF THE RIBBON</div>` +
-    `<div style="font-size:22px;margin-top:10px;color:${css(GOOD)}">SCORE ${score}</div>` +
-    `<div style="font-size:14px;opacity:.7;margin-top:4px">best combo ×${bestCombo} · ${Math.floor(track.traveled)} m</div>` +
-    (score >= hiScore && score > 0 ? `<div style="font-size:15px;color:${css(ACCENT)};margin-top:6px">NEW BEST!</div>` : ``) +
-    `<div style="font-size:13px;opacity:.5;margin-top:18px">ENTER / TAP to run again</div>`);
-}
-
-function openTuneUp() {
-  gameState = 'perk';
-  // three distinct random perks
-  const pool = PERK_POOL.slice(); perks = [];
-  for (let i = 0; i < 3 && pool.length; i++) perks.push(pool.splice((Math.random() * pool.length) | 0, 1)[0]);
-  audio.perkOpen();
-}
-function pickPerk(i) {
-  if (gameState !== 'perk' || !perks[i]) return;
-  perks[i].apply(); perks = []; input.tapTargets = [];
-  clearsSinceTune = 0; flash = 0.5; flashCol = SHIELD;
-  gameState = 'playing'; audio.perkPick();
-}
-
-// ── Scoring helpers ───────────────────────────────────────────────────────────
-function onClear() {
-  combo++; bestCombo = Math.max(bestCombo, combo);
-  score += Math.round((100 + combo * 15) * scoreMul);
-  clears++; clearsSinceTune++;
-  flash = 0.35; flashCol = GOOD;
-  audio.clear(combo);
-  if (clearsSinceTune >= CLEARS_PER_TUNE) openTuneUp();
-}
-function onMiss() {
-  if (gameState !== 'playing') return;   // a multi-miss frame can't re-trigger game over
-  combo = 0;
-  if (shields > 0) { shields--; flash = 0.4; flashCol = SHIELD; runner.stumble(); audio.miss(); shake = Math.max(shake, 0.4); return; }
-  health--; flash = 0.5; flashCol = ACCENT; shake = Math.max(shake, 0.7);
-  runner.stumble(); audio.miss();
-  if (health <= 0) gameOver();
-}
-
-// ── Input wiring ──────────────────────────────────────────────────────────────
-input.onAction = dir => {
-  if (gameState !== 'playing') return;
-  runner.trigger(dir);
-  const res = track.tryAction(dir, ctxNow());
-  if (res === 'clear') onClear();
-  else if (res === 'wrong') onMiss();
-  // 'none' → free move, no penalty
-};
-input.onStart = () => { if (gameState === 'title' || gameState === 'gameover') startGame(); };
-input.onTap   = () => { if (gameState === 'title' || gameState === 'gameover') startGame(); };
-input.onPerk  = i => pickPerk(i);
-input.onPause = () => {
-  if (gameState === 'playing') { gameState = 'paused'; showOverlay(`<div style="font-size:40px;font-weight:bold">PAUSED</div><div style="font-size:13px;opacity:.5;margin-top:10px">ESC to resume</div>`); }
-  else if (gameState === 'paused') { overlay.style.display = 'none'; gameState = 'playing'; }
-};
-
-// ── Camera ────────────────────────────────────────────────────────────────────
-const _look = new THREE.Vector3();
-function updateCamera(dt) {
-  let sx = 0, sy = 0;
-  if (shake > 0) {
-    shake = Math.max(0, shake - dt * 2.4);
-    const m = shake * shake, t = performance.now() / 1000;
-    sx = Math.sin(t * 47) * m * 0.5; sy = Math.cos(t * 41) * m * 0.4;
-  }
-  const rx = runner.group.position.x;
-  camera.position.set(rx * 0.45 + sx, 4.2 + sy, 7.4);
-  _look.set(rx * 0.2, 1.0, -10);
-  camera.lookAt(_look);
-}
-
-// ── HUD ───────────────────────────────────────────────────────────────────────
 function showOverlay(html) { overlay.innerHTML = html; overlay.style.display = 'block'; }
 
 function showTitle() {
   showOverlay(
-    `<div style="font-size:60px;font-weight:bold;letter-spacing:8px">RIBBON</div>` +
-    `<div style="font-size:13px;opacity:.55;margin:6px 0 26px">a minimalist vector run · read the cue, hit the beat</div>` +
-    `<div style="font-size:15px;opacity:.85">ENTER / TAP to start</div>` +
-    `<div style="font-size:12px;opacity:.5;margin-top:18px;line-height:1.7">` +
-    `↑ / W / Space — JUMP &nbsp;&nbsp; ↓ / S — SLIDE<br>` +
-    `← / A — DODGE LEFT &nbsp;&nbsp; → / D — DODGE RIGHT<br>` +
-    `touch: swipe in the cue's direction</div>`);
+    `<div style="font-size:58px;font-weight:bold;letter-spacing:6px">RIBBON</div>` +
+    `<div style="font-size:13px;opacity:.55;margin:6px 0 22px">a minimalist survival roguelike — loot, scale, charge the teleporter, escape</div>` +
+    `<div style="font-size:15px;opacity:.85">CLICK / ENTER to start</div>` +
+    `<div style="font-size:12px;opacity:.5;margin-top:16px;line-height:1.7">` +
+    `WASD move · mouse aim · hold LMB fire · Shift sprint · Space jump<br>` +
+    `RMB secondary · Q dash · R nova · F open chest / use teleporter</div>`);
+}
+function showPause() { showOverlay(`<div style="font-size:42px;font-weight:bold">PAUSED</div><div style="font-size:13px;opacity:.5;margin-top:10px">ESC to resume</div>`); }
+function showGameOver() {
+  const best = stage >= hiStage;
+  showOverlay(
+    `<div style="font-size:42px;font-weight:bold;letter-spacing:3px">YOU DIED</div>` +
+    `<div style="font-size:18px;margin-top:10px;color:${css(C.gold)}">reached STAGE ${stage} · ${fmtTime(runTime)}</div>` +
+    `<div style="font-size:14px;opacity:.7;margin-top:4px">${kills} kills · ${gold} gold banked</div>` +
+    (best ? `<div style="font-size:15px;color:${css(C.enemy)};margin-top:6px">FURTHEST YET!</div>` : ``) +
+    `<div style="font-size:13px;opacity:.5;margin-top:16px">CLICK / ENTER to run again</div>`);
+}
+function fmtTime(s) { const m = (s / 60) | 0, ss = (s % 60) | 0; return `${m}:${ss.toString().padStart(2, '0')}`; }
+function toast(text, color) { toasts.push({ text, color, t: 3 }); }
+
+// ── Flow ──────────────────────────────────────────────────────────────────────
+function startGame() {
+  overlay.style.display = 'none';
+  gold = 0; kills = 0; stage = 1; runTime = 0; difficulty = 1; credits = 0; spawnCD = 0;
+  bossAlive = false; prompt = ''; toasts = [];
+  for (const e of enemies) e.dispose(); enemies = []; pool.clear();
+  player.reset();
+  world.newStage(1);
+  gameState = 'playing'; audio.start();
+}
+function gameOver() {
+  gameState = 'gameover'; shake = 1;
+  if (stage > hiStage) { hiStage = stage; localStorage.setItem('ribbonHiStage', hiStage); }
+  audio.gameover(); showGameOver();
+}
+function nextStage() {
+  stage++; difficulty *= 1.0;        // time keeps driving difficulty; stage adds via scaling()
+  for (const e of enemies) e.dispose(); enemies = []; pool.clear();
+  bossAlive = false; gold += 25 * stage;
+  player.x = 0; player.z = 0; player.vx = player.vz = 0;
+  world.newStage(stage);
+  audio.stageClear(); toast(`STAGE ${stage}`, C.tele);
 }
 
-function heart(x, y, r, fill) {
-  ctx.beginPath();
-  ctx.moveTo(x, y + r * 0.3);
-  ctx.bezierCurveTo(x, y - r * 0.5, x - r, y - r * 0.5, x - r, y + r * 0.25);
-  ctx.bezierCurveTo(x - r, y + r * 0.8, x, y + r, x, y + r * 1.2);
-  ctx.bezierCurveTo(x, y + r, x + r, y + r * 0.8, x + r, y + r * 0.25);
-  ctx.bezierCurveTo(x + r, y - r * 0.5, x, y - r * 0.5, x, y + r * 0.3);
-  ctx.closePath();
-  ctx.fillStyle = fill; ctx.fill();
+// ── Spawn director ────────────────────────────────────────────────────────────
+function spawnEnemy(type) {
+  const e = new Enemy(scene, type, scaling());
+  const a = Math.random() * Math.PI * 2, r = 22 + Math.random() * 12;
+  let x = player.x + Math.cos(a) * r, z = player.z + Math.sin(a) * r;
+  x = Math.max(-ARENA_R + 2, Math.min(ARENA_R - 2, x)); z = Math.max(-ARENA_R + 2, Math.min(ARENA_R - 2, z));
+  e.place(x, z); enemies.push(e);
+  if (e.boss) { bossAlive = true; audio.bossSpawn(); }
+  return e;
+}
+function pickType() {
+  const r = Math.random();
+  if (difficulty > 2.2 && r < 0.22) return 'brute';
+  if (r < 0.4) return 'gunner';
+  return 'grunt';
+}
+function director(dt) {
+  const charging = world.tele.state === 'charging';
+  credits += dt * (2.2 + difficulty * 1.5) * (charging ? 2.2 : 1);
+  const cap = 16 + stage * 3 + (charging ? 12 : 0);
+  spawnCD -= dt;
+  if (spawnCD <= 0 && enemies.length < cap) {
+    spawnCD = Math.max(0.25, 1.4 - difficulty * 0.06);
+    const type = pickType();
+    const cost = ENEMY_COST[type] * (1 + difficulty * 0.25);
+    if (credits >= cost) { credits -= cost; spawnEnemy(type); }
+  }
 }
 
+// ── Collisions ────────────────────────────────────────────────────────────────
+function collide() {
+  for (let i = pool.active.length - 1; i >= 0; i--) {
+    const p = pool.active[i];
+    if (p.fromPlayer) {
+      let consumed = false;
+      for (const e of enemies) {
+        if (!e.alive) continue;
+        if (p.hitSet && p.hitSet.has(e)) continue;
+        if (Math.hypot(e.x - p.x, e.z - p.z) > 1.1 + p.r) continue;
+        const dead = e.takeDamage(p.damage);
+        if (player.stats.lifesteal) player.heal(player.stats.lifesteal);
+        if (dead) { onEnemyDead(e); }
+        if (p.pierce > 0) { p.pierce--; (p.hitSet || (p.hitSet = new Set())).add(e); }
+        else { consumed = true; }
+        break;
+      }
+      if (consumed) pool.recycle(i);
+    } else {
+      if (Math.hypot(player.x - p.x, player.z - p.z) < 1.0 + p.r) {
+        player.hurt(p.damage); pool.recycle(i);
+        if (!player.alive) gameOver();
+      }
+    }
+  }
+  // clear dead enemies left in array
+  for (let i = enemies.length - 1; i >= 0; i--) if (!enemies[i].alive) { enemies[i].dispose(); enemies.splice(i, 1); }
+}
+function onEnemyDead(e) {
+  gold += Math.round(e.gold * player.stats.goldMult); kills++; audio.kill();
+  if (e.boss) { bossAlive = false; toast('BOSS DOWN', C.gold); }
+}
+
+// ── Interact (chest / teleporter) ─────────────────────────────────────────────
+input.onInteract = () => {
+  if (gameState !== 'playing') return;
+  const c = world.nearestChest(player.x, player.z);
+  if (c) {
+    if (gold >= c.cost) { gold -= c.cost; const it = world.openChest(c); player.addItem(it.id); audio.chest(); toast(`${it.name}`, RARITY[it.rarity]); }
+    else toast('NOT ENOUGH GOLD', C.enemy);
+    return;
+  }
+  if (world.inTeleporter(player.x, player.z)) {
+    if (world.tele.state === 'idle') { world.startCharge(); spawnEnemy('boss'); toast('TELEPORTER ENGAGED — survive!', C.tele); audio.teleport(); }
+    else if (world.tele.state === 'ready') { audio.teleport(); nextStage(); }
+  }
+};
+input.onSecondary = () => { if (gameState === 'playing') { player.secondary(enemies); audio.secondary(); } };
+input.onUtility   = () => { if (gameState === 'playing') { const c0 = player.cool.q; player.utility(); if (player.cool.q !== c0) audio.dash(); } };
+input.onSpecial   = () => { if (gameState === 'playing') { const c0 = player.cool.r; player.special(enemies); if (player.cool.r !== c0) audio.special(); } };
+input.onStart = () => { if (gameState === 'title' || gameState === 'gameover') startGame(); };
+input.onPause = () => {
+  if (gameState === 'playing') { gameState = 'paused'; showPause(); }
+  else if (gameState === 'paused') { overlay.style.display = 'none'; gameState = 'playing'; }
+};
+
+// ── Camera ────────────────────────────────────────────────────────────────────
+const _tgt = new THREE.Vector3();
+function updateCamera() {
+  const yaw = input.yaw, pitch = input.pitch, dist = 12;
+  _tgt.set(player.x, player.y + 1.4, player.z);
+  const cp = Math.cos(pitch), sp = Math.sin(pitch);
+  let sx = 0, sy = 0;
+  if (shake > 0) { const m = shake * shake, t = performance.now() / 1000; sx = Math.sin(t * 53) * m * 0.6; sy = Math.cos(t * 47) * m * 0.5; }
+  camera.position.set(
+    _tgt.x + Math.sin(yaw) * dist * cp + sx,
+    _tgt.y + sp * dist + sy,
+    _tgt.z + Math.cos(yaw) * dist * cp);
+  camera.lookAt(_tgt.x, _tgt.y, _tgt.z);   // over-the-shoulder, looking down onto the arena
+}
+
+// ── HUD ───────────────────────────────────────────────────────────────────────
+function bar(x, y, w, h, k, color, bg = 'rgba(20,20,20,.12)') {
+  ctx.fillStyle = bg; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = color; ctx.fillRect(x, y, w * Math.max(0, Math.min(1, k)), h);
+  ctx.strokeStyle = css(INK); ctx.lineWidth = 1.5; ctx.strokeRect(x, y, w, h);
+}
+const _v = new THREE.Vector3();
+function enemyBars() {
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    _v.set(e.x, 2.2 * (e.boss ? 2 : 1) + 0.6, e.z).project(camera);
+    if (_v.z > 1) continue;
+    const sx = (_v.x * 0.5 + 0.5) * uiCanvas.width, sy = (-_v.y * 0.5 + 0.5) * uiCanvas.height;
+    const w = e.boss ? 120 : 34, h = e.boss ? 7 : 4;
+    bar(sx - w / 2, sy, w, h, e.hp / e.maxHp, css(e.boss ? C.boss : C.enemy));
+  }
+}
+function skillIcon(x, y, key, label, cd, cdMax) {
+  const s = 46;
+  ctx.fillStyle = '#fff'; ctx.fillRect(x, y, s, s);
+  ctx.strokeStyle = css(INK); ctx.lineWidth = 2; ctx.strokeRect(x, y, s, s);
+  if (cd > 0) { ctx.fillStyle = 'rgba(20,20,20,.55)'; ctx.fillRect(x, y, s, s * (cd / cdMax)); }
+  ctx.fillStyle = css(INK); ctx.textAlign = 'center';
+  ctx.font = 'bold 16px monospace'; ctx.fillText(key, x + s / 2, y + 20);
+  ctx.font = '9px monospace'; ctx.fillStyle = 'rgba(20,20,20,.6)'; ctx.fillText(label, x + s / 2, y + 38);
+  return s;
+}
 function drawHUD() {
   ctx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
   const W = uiCanvas.width, H = uiCanvas.height;
-
-  // accent flash wash on a clear / miss
-  if (flash > 0) {
-    ctx.fillStyle = css(flashCol); ctx.globalAlpha = flash * 0.18;
-    ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
-  }
-  if (gameState === 'perk') { drawPerks(W, H); return; }
+  input.btns = [];
   if (gameState !== 'playing' && gameState !== 'paused') return;
 
-  // hearts + shields (top-left)
-  for (let i = 0; i < maxHealth; i++) heart(24 + i * 26, 26, 9, i < health ? css(ACCENT) : 'rgba(20,20,20,.13)');
-  for (let i = 0; i < shields; i++) {
-    ctx.beginPath(); ctx.arc(24 + (maxHealth) * 26 + i * 18, 30, 6, 0, Math.PI * 2);
-    ctx.fillStyle = css(SHIELD); ctx.fill();
-  }
+  enemyBars();
 
-  // score / combo / hi (top-right)
-  ctx.textAlign = 'right'; ctx.fillStyle = css(INK);
-  ctx.font = 'bold 22px monospace'; ctx.fillText(`${score}`, W - 18, 30);
-  ctx.font = '11px monospace'; ctx.fillStyle = 'rgba(20,20,20,.55)';
-  ctx.fillText(`HI ${hiScore}  ·  ×${scoreMul.toFixed(1)}`, W - 18, 48);
-  if (combo > 1) { ctx.fillStyle = css(GOOD); ctx.font = 'bold 16px monospace'; ctx.fillText(`COMBO ×${combo}`, W - 18, 70); }
+  // crosshair
+  ctx.strokeStyle = 'rgba(20,20,20,.6)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(W / 2, H / 2, 5, 0, Math.PI * 2); ctx.stroke();
 
-  // distance + next tune-up (top-centre)
-  ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(20,20,20,.5)'; ctx.font = '12px monospace';
-  ctx.fillText(`${Math.floor(track.traveled)} m`, W / 2, 26);
-  ctx.fillText(`tune-up in ${Math.max(0, CLEARS_PER_TUNE - clearsSinceTune)}`, W / 2, 44);
+  // health + gold (top-left)
+  ctx.textAlign = 'left';
+  bar(16, 16, 240, 18, player.hp / player.stats.maxHp, css(C.hp));
+  ctx.fillStyle = css(INK); ctx.font = 'bold 12px monospace';
+  ctx.fillText(`${Math.ceil(player.hp)} / ${player.stats.maxHp}`, 22, 30);
+  ctx.fillStyle = css(C.gold); ctx.font = 'bold 16px monospace';
+  ctx.fillText(`$ ${gold}`, 16, 56);
 
-  // control legend (bottom)
-  ctx.textAlign = 'center'; ctx.font = '12px monospace'; ctx.fillStyle = 'rgba(20,20,20,.45)';
-  ctx.fillText('↑ JUMP    ↓ SLIDE    ← DODGE    → DODGE', W / 2, H - 22);
-}
-
-function drawPerks(W, H) {
+  // timer + difficulty + stage (top-center)
+  const tier = diffTier();
   ctx.textAlign = 'center';
-  ctx.fillStyle = css(INK); ctx.font = 'bold 30px monospace';
-  ctx.fillText('TUNE-UP', W / 2, H * 0.26);
-  ctx.font = '13px monospace'; ctx.fillStyle = 'rgba(20,20,20,.55)';
-  ctx.fillText('pick one — press 1 / 2 / 3 or tap', W / 2, H * 0.26 + 24);
+  ctx.fillStyle = css(INK); ctx.font = 'bold 20px monospace'; ctx.fillText(fmtTime(runTime), W / 2, 28);
+  ctx.fillStyle = css(tier[2]); ctx.font = 'bold 13px monospace'; ctx.fillText(tier[1], W / 2, 46);
+  ctx.fillStyle = 'rgba(20,20,20,.6)'; ctx.font = '12px monospace'; ctx.fillText(`STAGE ${stage}`, W / 2, 62);
 
-  const cw = Math.min(220, (W - 80) / 3), ch = 150, gap = 20;
-  const total = perks.length * cw + (perks.length - 1) * gap;
-  let x = (W - total) / 2, y = H / 2 - ch / 2;
-  input.tapTargets = [];
-  perks.forEach((p, i) => {
-    ctx.strokeStyle = css(INK); ctx.lineWidth = 2;
-    ctx.fillStyle = '#fff'; ctx.fillRect(x, y, cw, ch); ctx.strokeRect(x, y, cw, ch);
-    ctx.fillStyle = css(ACCENT); ctx.font = 'bold 22px monospace'; ctx.fillText(`${i + 1}`, x + cw / 2, y + 38);
-    ctx.fillStyle = css(INK); ctx.font = 'bold 15px monospace'; ctx.fillText(p.name, x + cw / 2, y + 78);
-    ctx.fillStyle = 'rgba(20,20,20,.6)'; ctx.font = '12px monospace';
-    wrap(p.desc, x + cw / 2, y + 104, cw - 24);
-    input.tapTargets.push({ x, y, w: cw, h: ch, fn: () => pickPerk(i) });
-    x += cw + gap;
-  });
-}
-function wrap(text, cx, cy, maxw) {
-  const words = text.split(' '); let line = '', yy = cy;
-  for (const w of words) {
-    const test = line ? line + ' ' + w : w;
-    if (ctx.measureText(test).width > maxw && line) { ctx.fillText(line, cx, yy); line = w; yy += 16; }
-    else line = test;
+  // skill bar (bottom-center)
+  let sx = W / 2 - (46 * 4 + 30) / 2, sy = H - 64;
+  skillIcon(sx, sy, 'M1', 'FIRE', 0, 1); sx += 56;
+  skillIcon(sx, sy, 'M2', 'SLUG', player.cool.m2, 2.6); sx += 56;
+  skillIcon(sx, sy, 'Q', 'DASH', player.cool.q, 4); sx += 56;
+  skillIcon(sx, sy, 'R', 'NOVA', player.cool.r, 9);
+
+  // inventory (left column of item chips)
+  let iy = 78; ctx.textAlign = 'left'; ctx.font = 'bold 11px monospace';
+  for (const [id, n] of player.inv) {
+    const it = itemById(id); if (!it) continue;
+    ctx.fillStyle = css(RARITY[it.rarity]); ctx.fillRect(16, iy, 12, 12);
+    ctx.strokeStyle = css(INK); ctx.lineWidth = 1; ctx.strokeRect(16, iy, 12, 12);
+    ctx.fillStyle = css(INK); ctx.fillText(`${it.name} ×${n}`, 34, iy + 10);
+    iy += 18;
   }
-  ctx.fillText(line, cx, yy);
+
+  // teleporter charge + prompts
+  if (world.tele.state === 'charging') {
+    ctx.textAlign = 'center'; ctx.fillStyle = css(C.tele); ctx.font = 'bold 13px monospace';
+    ctx.fillText(world.inTeleporter(player.x, player.z) ? 'CHARGING…' : 'RETURN TO THE TELEPORTER', W / 2, H - 92);
+    bar(W / 2 - 130, H - 86, 260, 12, world.tele.progress, css(C.tele));
+  } else if (world.tele.state === 'ready') {
+    ctx.textAlign = 'center'; ctx.fillStyle = css(C.hp); ctx.font = 'bold 14px monospace';
+    ctx.fillText('TELEPORTER READY — stand in it and press F', W / 2, H - 92);
+  }
+  // contextual interact prompt
+  const c = world.nearestChest(player.x, player.z);
+  if (c) { ctx.textAlign = 'center'; ctx.fillStyle = css(C.gold); ctx.font = 'bold 13px monospace';
+    ctx.fillText(`F — open chest ($${c.cost})`, W / 2, H - 110); }
+  else if (world.tele.state === 'idle' && world.inTeleporter(player.x, player.z)) {
+    ctx.textAlign = 'center'; ctx.fillStyle = css(C.tele); ctx.font = 'bold 13px monospace';
+    ctx.fillText('F — engage teleporter', W / 2, H - 110); }
+
+  // toasts
+  ctx.textAlign = 'center'; ctx.font = 'bold 15px monospace';
+  toasts.forEach((t, i) => { ctx.globalAlpha = Math.min(1, t.t); ctx.fillStyle = css(t.color);
+    ctx.fillText(t.text, W / 2, H * 0.32 + i * 22); ctx.globalAlpha = 1; });
+
+  // off-screen teleporter arrow when not idle-found
+  drawTeleArrow(W, H);
+
+  // touch buttons (mobile)
+  if ('ontouchstart' in window) drawTouchButtons(W, H);
+}
+function drawTeleArrow(W, H) {
+  _v.set(world.tele.x, 1, world.tele.z).project(camera);
+  const onScreen = _v.z < 1 && Math.abs(_v.x) < 1 && Math.abs(_v.y) < 1;
+  if (onScreen) return;
+  const ang = Math.atan2(world.tele.z - player.z, world.tele.x - player.x) - input.yaw + Math.PI / 2;
+  const r = Math.min(W, H) * 0.32, ax = W / 2 + Math.cos(ang) * r, ay = H / 2 + Math.sin(ang) * r;
+  ctx.save(); ctx.translate(ax, ay); ctx.rotate(ang + Math.PI / 2);
+  ctx.fillStyle = css(world.tele.state === 'ready' ? C.hp : C.tele);
+  ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(8, 8); ctx.lineTo(-8, 8); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function drawTouchButtons(W, H) {
+  const defs = [['m2', 'M2', W - 60, H - 150], ['q', 'Q', W - 130, H - 110], ['r', 'R', W - 60, H - 80], ['f', 'F', W - 130, H - 200]];
+  for (const [id, label, x, y] of defs) {
+    input.btns.push({ id, x, y, r: 30, label });
+    ctx.beginPath(); ctx.arc(x, y, 30, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(20,20,20,.06)'; ctx.fill();
+    ctx.strokeStyle = css(INK); ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = css(INK); ctx.font = 'bold 15px monospace'; ctx.textAlign = 'center'; ctx.fillText(label, x, y + 5);
+  }
 }
 
 // ── Loop ──────────────────────────────────────────────────────────────────────
@@ -242,17 +321,29 @@ function loop() {
   requestAnimationFrame(loop);
   const now = performance.now();
   const dt = Math.min((now - prev) / 1000, 0.05); prev = now;
-  if (flash > 0) flash = Math.max(0, flash - dt * 1.6);
+  if (shake > 0) shake = Math.max(0, shake - dt * 2.2);
+  for (let i = toasts.length - 1; i >= 0; i--) { toasts[i].t -= dt; if (toasts[i].t <= 0) toasts.splice(i, 1); }
 
   if (gameState === 'playing') {
-    const c = ctxNow();
-    for (const m of track.update(dt, c)) onMiss();
-    runner.update(dt, c.speed * 0.85);
+    runTime += dt;
+    difficulty = (1 + (runTime / 60) * 0.13) * Math.pow(1.16, stage - 1);
+    const m = input.getMove();
+    const hpBefore = player.hp;
+    player.update(dt, { moveX: m.x, moveZ: m.z, sprint: input.sprint, jump: input.jump, firing: input.firing, yaw: input.yaw, enemies });
+    if (input.firing && !input.sprint && player.fireT >= player.stats.fireInterval - 0.001) audio.shoot();
+    for (const e of enemies) e.update(dt, player, pool);
+    pool.update(dt);
+    collide();
+    director(dt);
+    const done = world.update(dt, world.inTeleporter(player.x, player.z));
+    if (done) { audio.stageClear(); toast('TELEPORTER READY', C.hp); }
+    if (player.hp < hpBefore) shake = Math.max(shake, 0.5);
+    if (!player.alive && gameState === 'playing') gameOver();
   } else {
-    runner.update(dt, 6);           // jog in place on menus
+    player.update(dt, { moveX: 0, moveZ: 0, sprint: false, jump: false, firing: false, yaw: input.yaw, enemies: [] });
   }
 
-  updateCamera(dt);
+  updateCamera();
   renderer.render(scene, camera);
   drawHUD();
 }
