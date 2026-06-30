@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v59 — 2026-06-30
+**Boss identity — every-8th-wave boss now looks and behaves like a boss**
+- Boss-wave enemies (3× HP, 1.5× scale) get a **pulsing gold ground ring** that follows them, making the boss unmistakable from the top-down view
+- **Enrage**: below 35% HP the boss speeds up ×1.45 for a desperate final phase, and its aura ring flares **red** and throbs
+- `Enemy.setBoss(maxHp)` flags the boss + stores its enrage threshold; aura managed in `main.js` (`makeBossAura`/`bossAuras`/`clearBossAuras`), disposed on death and on all run-reset paths
+- Cache-bust `?v=14` → `?v=15`; HUD label → v59
+
+---
+
 ## v58 — 2026-06-30
 **Blob behaviour pass — each blob gets a distinct signature (like the v40 cubes)**
 - **GLOBBO → Pouncer**: stalks at base speed, then crouches (squash telegraph) and leaps at the player at ~3× speed; cycles every ~2 s when within range
