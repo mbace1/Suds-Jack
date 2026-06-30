@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v56 — 2026-06-30
+**Gate laser beam now aligns with its posts**
+- The visible laser/glow beam was rotated by `angle + π/2`, but three.js Y-rotation maps local +X to `(cos θ, -sin θ)`, flipping the z-axis vs. the post placement direction `(-sin a, cos a)`. For most random angles the beam was mirrored and crossed the posts instead of connecting them (only lined up at angle 0/π/2)
+- Fix: rotate the beam by `-(angle + π/2)` so it matches the posts and the hitbox; gates now look consistent at every orientation
+- Cache-bust `?v=11` → `?v=12`; HUD label → v56
+
+---
+
 ## v55 — 2026-06-30
 **No-cache headers on index.html to fix stale mobile browser caching**
 - Added `Cache-Control: no-cache, no-store, must-revalidate` + Pragma + Expires meta tags so mobile browsers always fetch a fresh `index.html`
