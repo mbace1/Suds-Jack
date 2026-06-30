@@ -7,6 +7,13 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v54 — 2026-06-30
+**Revert bullet sizes to pre-v51 bullet-hell scale**
+- Player bullet `0.7 → 1.0`, enemy non-fat `0.85 → 1.25`, fat `2.5 → 3.0`; collision radii unchanged
+- Cache-bust `?v=9` → `?v=10`; HUD label → v54
+
+---
+
 ## v53 — 2026-06-30
 **Fix feedback form buttons on mobile — touch events no longer swallowed**
 - Root cause: `InputManager` called `e.preventDefault()` on all `touchend` events except `#dsgn` and `#upgrade-panel`, suppressing synthetic `click` events on the game-over feedback chips and buttons
