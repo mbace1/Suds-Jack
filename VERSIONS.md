@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v45 — 2026-06-30
+**Four bug fixes: ORANGE_CUBE flop, TORO orientation, gate laser visibility, gate lifetime**
+- ORANGE_CUBE flop fixed: constructor `else if` was preventing the flop init block from running (ORANGE_CUBE is in `CUBE_TYPES`); changed to a separate `if` so both blocks run — ORANGE_CUBE now tumbles toward its target using `_flopMove` with `exact=true`
+- TORO stands upright like a wheel: `mesh.rotation.x = Math.PI/2` (flat pancake) → `0` (upright ring); the rolling dash animation via `group.rotation.y` was already correct
+- Gate laser beam visible: laser `BoxGeometry(4, 0.12, 0.12)` → `(4, 0.25, 0.5)`; glow `(4, 0.55, 0.55)` → `(4, 0.7, 1.1)` with opacity 0.22 → 0.28
+- Gates persist across waves: removed gate-clearing from `spawnWave()`; instead cap at 2 active gates by removing the oldest before spawning a new one; `clearFX()` still clears all gates on game restart/death
+
+---
+
 ## v44 — 2026-06-29
 **Enemy separation — no more stacking**
 - Post-update separation pass: after all enemies move each frame, pairs closer than `radiusA + radiusB + 0.25` are pushed apart by half the overlap each, split symmetrically

@@ -261,7 +261,7 @@ export class Enemy {
 
     if (type === EnemyType.TORO) {
       // Toro uses a group for position management
-      this.mesh.rotation.x = Math.PI / 2;
+      this.mesh.rotation.x = 0;
 
       // Add 6 spike meshes around the torus
       this.group = new THREE.Group();
@@ -385,7 +385,7 @@ export class Enemy {
         this._trailPositions = [];
         this._trailPushTimer = 0;
       }
-    } else if (type === EnemyType.ORANGE_CUBE) {
+    } if (type === EnemyType.ORANGE_CUBE) {
       this._target = { x: (Math.random()-0.5)*24, z: (Math.random()-0.5)*24 };
       this._target.x = Math.max(-16, Math.min(16, this._target.x));
       this._target.z = Math.max(-16, Math.min(16, this._target.z));

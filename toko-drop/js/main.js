@@ -544,17 +544,17 @@ class Gate {
     this._laserMat = new THREE.MeshBasicMaterial({
       color: 0x44ff88, transparent: true, opacity: 0.7, depthWrite: false,
     });
-    this._laser = new THREE.Mesh(new THREE.BoxGeometry(4, 0.12, 0.12), this._laserMat);
+    this._laser = new THREE.Mesh(new THREE.BoxGeometry(4, 0.25, 0.5), this._laserMat);
     this._laser.position.set(x, 0.9, z);
     this._laser.rotation.y = angle + Math.PI / 2;
     sc.add(this._laser);
 
     // Glow beam — a thicker additive halo around the core, reads as an energy barrier
     this._glowMat = new THREE.MeshBasicMaterial({
-      color: 0x44ff88, transparent: true, opacity: 0.22, depthWrite: false,
+      color: 0x44ff88, transparent: true, opacity: 0.28, depthWrite: false,
       blending: THREE.AdditiveBlending,
     });
-    this._glow = new THREE.Mesh(new THREE.BoxGeometry(4, 0.55, 0.55), this._glowMat);
+    this._glow = new THREE.Mesh(new THREE.BoxGeometry(4, 0.7, 1.1), this._glowMat);
     this._glow.position.copy(this._laser.position);
     this._glow.rotation.y = this._laser.rotation.y;
     sc.add(this._glow);
@@ -1218,7 +1218,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v44', 16, uiCanvas.height - 12);
+  ctx.fillText('v45', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1383,7 +1383,6 @@ function clearFX() {
 function spawnWave() {
   for (const e of enemies) e.removeFrom(scene);
   enemies = [];
-  for (const g of gates)    g.remove(scene); gates    = [];
   for (const p of powerups) p.remove(scene); powerups = [];
   wave++;
   const { speedMult, intervalMult } = getWaveScale(wave);
@@ -1420,7 +1419,10 @@ function spawnWave() {
     }
   });
   if (player._hasShield) player._shield = true;
-  if (wave >= 3) gates.push(new Gate(scene));
+  if (wave >= 3) {
+    if (gates.length >= 2) { gates[0].remove(scene); gates.shift(); }
+    gates.push(new Gate(scene));
+  }
   // Schedule one cargo convoy per wave (starts mid-wave, seeded position)
   clusterTimer = 0;
   clusterSpawnAt = 3 + rng() * 5; // 3-8 s into the wave — always overlaps live enemies
