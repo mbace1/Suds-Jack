@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v65 — 2026-07-01
+**Full localization — HUD + upgrade cards now translate too**
+- Finishes the v64 language toggle: the previously-English-only bits now localize with the toggle
+- **On-canvas HUD** localized: `WAVE`, `×N STREAK`, `✶ SHLD`, `HI`, `SEED` (score/FPS/version stay numeric/universal); HUD + overlay fonts get a `sans-serif` fallback so Japanese glyphs render (monospace often lacks CJK; canvas/CSS fall back per-glyph)
+- **Roguelike upgrade cards** localized: `UPGRADE_POOL` reduced to ids, text moved to lang.js `c_<id>`/`c_<id>_d`; "CHOOSE UPGRADE" title localized
+- Added `hudStreak`/`hudShld`/`hudHi`/`chooseUpgrade` + 10 card label/desc pairs across en/ja/fi
+- Cache-bust `?v=20` → `?v=21`; HUD label → v65
+
+---
+
 ## v64 — 2026-07-01
 **Language toggle — English / 日本語 / Suomi**
 - New `lang.js` i18n module: `STRINGS` table for `en`/`ja`/`fi`, `t(key, ...args)` lookup with English fallback, `cycleLang()`/`langLabel()`, choice persisted under `tokoDropLang`
