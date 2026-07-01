@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v64 — 2026-07-01
+**Language toggle — English / 日本語 / Suomi**
+- New `lang.js` i18n module: `STRINGS` table for `en`/`ja`/`fi`, `t(key, ...args)` lookup with English fallback, `cycleLang()`/`langLabel()`, choice persisted under `tokoDropLang`
+- Title screen gains a **LANGUAGE** toggle chip (ENG → 日本語 → SUOMI) that re-renders the title in the chosen language
+- Localized: title subtitle, best-run line, tap-to-start, controls block, orientation + roguelike toggles and their hints, death screen (YOU DIED / wave-time-pts / best badges / seed), wave banner, and the full feedback panel (both chip headings, all positive + negative chip labels including telemetry-derived ones, textarea placeholder, SEND/SKIP)
+- Left in English by design: on-canvas HUD labels (canvas monospace renders CJK unreliably) and roguelike upgrade cards
+- `bump-version.sh` now also token-syncs `lang.js`
+- Cache-bust `?v=19` → `?v=20`; HUD label → v64
+
+---
+
 ## v63 — 2026-07-01
 **Positive feedback on the death screen**
 - Death-screen feedback now leads with a green **"WHAT DID YOU ENJOY?"** chip row (weapon pods / boss fights / movement feel / dodging / enemy variety / visuals) above the existing red "WHAT WENT WRONG?" row
