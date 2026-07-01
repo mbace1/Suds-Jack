@@ -2,11 +2,12 @@ import * as THREE from 'three';
 import { Bunny, C } from './shared.js?v=3';
 
 const ADR_THRESH = [3, 6, 10, 15, 21];   // cumulative no-hit kills for tiers 1..5
+const STEP_MAX = 0.6;                     // ledges taller than this need a jump (act as walls)
 
 // Tuned for Returnal's second-to-second: fast, twitchy, dash-centric, now with a jump.
 const BASE = {
   damage: 9, fireInterval: 0.11, moveSpeed: 8.2, sprintMul: 1.4, maxHp: 100,
-  dashCD: 1.0, dashSpeed: 30, dashTime: 0.18, iframe: 0.34,
+  dashCD: 1.0, dashSpeed: 30, dashTime: 0.18, dashHoldMax: 0.5, iframe: 0.34,
   airDashSpeed: 26, jumpV: 10.5, grav: 26,
 };
 
@@ -23,6 +24,7 @@ export class Player {
     this.vx = 0; this.vz = 0; this.yaw = 0;
     this.hp = BASE.maxHp; this.maxHp = BASE.maxHp;
     this.fireT = 0; this.dashCD = 0; this.dashT = 0; this.iframe = 0;
+    this.dashing = false; this.dashElapsed = 0; this.dashDirX = 0; this.dashDirZ = 0; this._dashGround = true;
     this.airDashUsed = false; this._fired = false; this._target = false;
     this.adr = 0; this.adrKills = 0; this.alive = true;
     this.fig.visible(true);
@@ -35,15 +37,20 @@ export class Player {
 
   // ── traversal verbs ──
   jump() { if (this.alive && this.grounded()) { this.vy = BASE.jumpV; return true; } return false; }
+  _startDash(dir, ground) {
+    this.dashing = true; this.dashElapsed = 0; this._dashGround = ground;
+    this.dashDirX = dir.x; this.dashDirZ = dir.z;
+    this.dashT = BASE.dashTime; this.iframe = BASE.iframe;
+    const sp = ground ? BASE.dashSpeed : BASE.airDashSpeed;
+    this.vx = dir.x * sp; this.vz = dir.z * sp;
+  }
   groundDash(dir) {
-    if (!this.alive || !this.grounded() || this.dashCD > 0) return false;
-    this.dashCD = BASE.dashCD; this.dashT = BASE.dashTime; this.iframe = BASE.iframe;
-    this.vx = dir.x * BASE.dashSpeed; this.vz = dir.z * BASE.dashSpeed; return true;
+    if (!this.alive || !this.grounded() || this.dashCD > 0 || this.dashing) return false;
+    this._startDash(dir, true); return true;
   }
   airDash(dir) {
-    if (!this.alive || this.grounded() || this.airDashUsed) return false;
-    this.airDashUsed = true; this.dashT = BASE.dashTime; this.iframe = BASE.iframe; this.vy = 0;
-    this.vx = dir.x * BASE.airDashSpeed; this.vz = dir.z * BASE.airDashSpeed; return true;
+    if (!this.alive || this.grounded() || this.airDashUsed || this.dashing) return false;
+    this.airDashUsed = true; this.vy = 0; this._startDash(dir, false); return true;
   }
 
   // 3D aim result: camera-forward, snapping onto a near enemy in the sights (locked).
@@ -75,7 +82,7 @@ export class Player {
   }
   heal(a) { this.hp = Math.min(this.maxHp, this.hp + a); }
 
-  update(dt, input, aim, enemies) {
+  update(dt, input, aim, enemies, heightAt = () => 0) {
     this._fired = false;
     this.fireT = Math.max(0, this.fireT - dt);
     this.dashCD = Math.max(0, this.dashCD - dt);
@@ -95,11 +102,26 @@ export class Player {
     const accel = this.dashT > 0 ? 1.5 : (this.grounded() ? 13 : 4);   // dash momentum / air control
     this.vx += (tvx - this.vx) * Math.min(1, dt * accel);
     this.vz += (tvz - this.vz) * Math.min(1, dt * accel);
+    // dash sustain — hold to extend; i-frame window stays fixed, cooldown starts on end
+    if (this.dashing) {
+      this.dashElapsed += dt;
+      const active = this.dashElapsed < BASE.dashTime || (input.dashHeld && this.dashElapsed < BASE.dashHoldMax);
+      if (active) { const sp = this._dashGround ? BASE.dashSpeed : BASE.airDashSpeed; this.vx = this.dashDirX * sp; this.vz = this.dashDirZ * sp; this.dashT = 0.06; }
+      else { this.dashing = false; this.dashCD = BASE.dashCD; }
+    }
+    const prevX = this.x, prevZ = this.z;
     this.x += this.vx * dt; this.z += this.vz * dt;
 
-    // jump / gravity
+    // jump / gravity + terrain follow
     this.vy -= BASE.grav * dt; this.y += this.vy * dt;
-    if (this.y <= 0) { this.y = 0; this.vy = 0; this.airDashUsed = false; }
+    const ground = heightAt(this.x, this.z);
+    if (ground - this.y > STEP_MAX && this.vy <= 0.1) {   // too tall to step onto → act as a wall
+      this.x = prevX; this.z = prevZ;
+      const g = heightAt(this.x, this.z);
+      if (this.y <= g) { this.y = g; this.vy = 0; this.airDashUsed = false; }
+    } else if (this.y <= ground) {
+      this.y = ground; this.vy = 0; this.airDashUsed = false;
+    }
 
     this.yaw = aim.yaw;
     this.fig.group.position.set(this.x, this.y, this.z);

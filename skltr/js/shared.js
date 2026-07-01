@@ -95,6 +95,8 @@ export class Bunny {
     this.armL = new Bone(shL, 0.44, 0.07, e);
     this.armR = new Bone(shR, 0.44, 0.07, e);
     this._buildAR(this.armR.tip, e);                          // AR held in the right hand
+    this.muzzle = new THREE.Mesh(new THREE.OctahedronGeometry(0.16, 0), new THREE.MeshBasicMaterial({ color: 0xfff0a0 }));
+    this.muzzle.position.set(0, -0.03, 0.82); this.muzzle.visible = false; this.armR.tip.add(this.muzzle);   // muzzle flash
 
     const hpL = new THREE.Object3D(); hpL.position.set(-0.12, 0.7, 0); this.body.add(hpL);
     const hpR = new THREE.Object3D(); hpR.position.set( 0.12, 0.7, 0); this.body.add(hpR);
@@ -115,6 +117,8 @@ export class Bunny {
   update(dt, { speed = 0, aimPitch = 0, yOffset = 0, airborne = false, dashing = false, firing = false } = {}) {
     this.phase += dt * (3 + speed * 1.1);
     this.recoil = firing ? Math.min(1, this.recoil + 0.6) : Math.max(0, this.recoil - dt * 7);
+    const on = this.recoil > 0.2; this.muzzle.visible = on;
+    if (on) this.muzzle.scale.setScalar((0.55 + Math.random() * 0.9) * this.recoil);
     const hurt = this.flash, s = Math.sin(this.phase) * Math.min(1, speed / 4);
 
     // legs: tuck in the air, sweep back on a dash, else run cycle
@@ -129,7 +133,7 @@ export class Bunny {
     }
 
     // body lean: forward when dashing / fast, jerk back when hurt
-    let lean = dashing ? 0.55 : (speed > 6 ? 0.22 : 0);
+    let lean = dashing ? 0.72 : (speed > 6 ? 0.22 : 0);
     if (hurt > 0) lean = -0.5 * hurt;
     this.body.rotation.x = lerp(this.body.rotation.x, lean, dt * 12);
     this.body.rotation.z = hurt > 0 ? (Math.random() - 0.5) * 0.2 * hurt : lerp(this.body.rotation.z, 0, dt * 10);
