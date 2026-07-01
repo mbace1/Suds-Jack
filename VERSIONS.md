@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v68 — 2026-07-01
+**Fewer feedback chips on the death screen**
+- Positive "WHAT DID YOU ENJOY?" row trimmed 6 → 4 (weapon pods / boss fights / movement feel / dodging)
+- Negative "WHAT WENT WRONG?" row cap lowered 6 → 4 (telemetry-derived reasons still take priority)
+- SEND & CONTINUE / SKIP buttons unchanged
+- Cache-bust `?v=23` → `?v=24`; HUD label → v68
+
+---
+
 ## v67 — 2026-07-01
 **Smaller death-screen buttons + hidden "fix" feedback list**
 - Death-screen SEND/SKIP buttons shrunk ~12% (font 14→12px, padding 9×20→8×17, radius 8→7)
