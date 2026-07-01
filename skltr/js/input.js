@@ -1,25 +1,27 @@
-// Input — free-look aiming in every direction, with the dash as the core dodge.
-//   Desktop: WASD move · mouse aim (click locks pointer; look anywhere incl. up/down)
-//            hold LMB fire · Space dash · Shift sprint · Enter start · Esc pause
-//   Touch:   left half = move stick (push far to sprint); right half = look stick
-//            (drag aims in any direction + fires); DASH button.
+// Input — free-look aiming in every direction, with a gesture layer on the sticks:
+//   tap a stick        → JUMP (grounded) / AIR-DASH (airborne)
+//   swipe a stick      → DASH in that direction (ground or air)
+//   hold left stick    → move (push far to sprint)
+//   hold right stick   → free-look aim + fire   (horizontal axis is REVERSED)
+// Desktop: WASD move · mouse aim (any direction) · hold LMB fire · Space jump/air-dash
+//          Q dash · Shift sprint · T toggle auto-aim · Enter start · Esc pause
 const STICK_R = 60, LOOK_DEAD = 10, TURN_RATE = 2.8, PITCH_RATE = 2.0;
-const ARROW_SENS = 2.2, MOUSE_SENS = 0.0023;
-const PITCH_MAX = 1.45;        // ~83° up / down — effectively look all directions
+const ARROW_SENS = 2.2, MOUSE_SENS = 0.0023, PITCH_MAX = 1.45;
+const TAP_MS = 220, TAP_DIST = 18, SWIPE_MIN = 42, SWIPE_MS = 280;
 
 export class InputManager {
   constructor(canvas) {
     this.canvas = canvas;
     this.keys = {};
     this.locked = false;
-    this.yaw = 0; this.pitch = -0.15;   // slight downward default (over-the-shoulder)
+    this.yaw = 0; this.pitch = -0.15;
     this._mouseDown = false;
-    this.left = { active: false, ox: 0, oy: 0, dx: 0, dy: 0 };   // move
-    this.look = { active: false, ox: 0, oy: 0, dx: 0, dy: 0 };   // aim + fire
+    this.left = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, t0: 0 };   // move
+    this.look = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, t0: 0 };   // aim + fire
     this._touch = new Map();
     this.btns = [];
     this.isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-    this.onStart = this.onPause = this.onDash = null;
+    this.onStart = this.onPause = this.onTap = this.onSwipe = this.onDashKey = this.onToggleAim = null;
     this._init();
   }
 
@@ -44,14 +46,16 @@ export class InputManager {
   updateLook(dt) {
     if (!this.look.active) return;
     if (Math.hypot(this.look.dx, this.look.dy) < LOOK_DEAD) return;
-    this.yaw += (this.look.dx / STICK_R) * TURN_RATE * dt;
+    this.yaw -= (this.look.dx / STICK_R) * TURN_RATE * dt;              // reversed horizontal
     this.pitch = clampPitch(this.pitch - (this.look.dy / STICK_R) * PITCH_RATE * dt);
   }
 
   _init() {
     addEventListener('keydown', e => {
       if (!this.keys[e.code]) {
-        if (e.code === 'Space') this.onDash?.();
+        if (e.code === 'Space') this.onTap?.();
+        else if (e.code === 'KeyQ') this.onDashKey?.();
+        else if (e.code === 'KeyT') this.onToggleAim?.();
         else if (e.code === 'Enter') this.onStart?.();
         else if (e.code === 'Escape') this.onPause?.();
       }
@@ -92,14 +96,14 @@ export class InputManager {
     for (const t of e.changedTouches) {
       const x = t.clientX, y = t.clientY;
       if (y < 56 && Math.abs(x - innerWidth / 2) < 40) { this._touch.set(t.identifier, 'pause'); this.onPause?.(); continue; }
-      const b = this._hitBtn(x, y);
-      if (b) { this._touch.set(t.identifier, 'btn'); if (b.id === 'dash') this.onDash?.(); continue; }
+      if (this._hitBtn(x, y)) { this._touch.set(t.identifier, 'btn'); continue; }
+      const now = performance.now();
       if (x < innerWidth * 0.5) {
         if (this.left.active) continue;
-        this._touch.set(t.identifier, 'move'); this.left = { active: true, ox: x, oy: y, dx: 0, dy: 0 };
+        this._touch.set(t.identifier, 'move'); this.left = { active: true, ox: x, oy: y, dx: 0, dy: 0, t0: now };
       } else {
         if (this.look.active) continue;
-        this._touch.set(t.identifier, 'look'); this.look = { active: true, ox: x, oy: y, dx: 0, dy: 0 };
+        this._touch.set(t.identifier, 'look'); this.look = { active: true, ox: x, oy: y, dx: 0, dy: 0, t0: now };
       }
     }
   }
@@ -110,11 +114,16 @@ export class InputManager {
       else if (r === 'look') { this.look.dx = t.clientX - this.look.ox; this.look.dy = t.clientY - this.look.oy; }
     }
   }
+  _classify(s) {
+    const dur = performance.now() - s.t0, dist = Math.hypot(s.dx, s.dy);
+    if (dist >= SWIPE_MIN && dur <= SWIPE_MS) this.onSwipe?.(s.dx / dist, s.dy / dist);   // flick → dash
+    else if (dist <= TAP_DIST && dur <= TAP_MS) this.onTap?.();                            // tap → jump / air-dash
+  }
   _tEnd(e) {
     for (const t of e.changedTouches) {
       const r = this._touch.get(t.identifier); this._touch.delete(t.identifier);
-      if (r === 'move') this.left = { active: false, ox: 0, oy: 0, dx: 0, dy: 0 };
-      else if (r === 'look') this.look = { active: false, ox: 0, oy: 0, dx: 0, dy: 0 };
+      if (r === 'move') { this._classify(this.left); this.left = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, t0: 0 }; }
+      else if (r === 'look') { this._classify(this.look); this.look = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, t0: 0 }; }
     }
   }
 }

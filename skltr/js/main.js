@@ -73,9 +73,9 @@ function showTitle() {
     `<div style="font-size:13px;opacity:.6;margin:8px 0 22px">neon survival — dodge the storm, ride the adrenaline</div>` +
     `<div style="font-size:15px">CLICK / TAP / ENTER to drop in</div>` +
     `<div style="font-size:12px;opacity:.55;margin-top:16px;line-height:1.7">` +
-    `WASD move · mouse aim (look anywhere) · hold LMB fire<br>` +
-    `SPACE dash (i-frames) · SHIFT sprint · ESC pause<br>` +
-    `<span style="opacity:.85">Touch: left stick move · right stick aim+fire · DASH button</span></div>`);
+    `WASD move · mouse aim (look anywhere) · auto-fire on target (hold LMB to force)<br>` +
+    `SPACE jump / air-dash · Q dash · SHIFT sprint · T auto-aim · ESC pause<br>` +
+    `<span style="opacity:.85">Touch: left move · right aim · tap = jump / air-dash · swipe = dash</span></div>`);
 }
 function showPause() { showOverlay(`<div style="font-size:42px;font-weight:bold">PAUSED</div><div style="font-size:13px;opacity:.5;margin-top:10px">ESC to resume</div>`); }
 function showGameOver() {
@@ -129,7 +129,15 @@ function director(dt) {
   if (runTime >= nextBoss && !bossAlive) { spawnAt('boss', 30); toast('BOSS INBOUND', C.boss); nextBoss += 95; }
 }
 
-// ── Collisions (3D) ───────────────────────────────────────────────────────────
+// distance from point P to the segment A→B (swept collision, prevents tunneling)
+function segDist(ax, ay, az, bx, by, bz, px, py, pz) {
+  const dx = bx - ax, dy = by - ay, dz = bz - az;
+  const l2 = dx * dx + dy * dy + dz * dz;
+  let t = l2 > 1e-9 ? ((px - ax) * dx + (py - ay) * dy + (pz - az) * dz) / l2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (ax + dx * t), py - (ay + dy * t), pz - (az + dz * t));
+}
+// ── Collisions (3D, swept) ────────────────────────────────────────────────────
 function collide() {
   for (let i = pool.active.length - 1; i >= 0; i--) {
     const p = pool.active[i];
@@ -137,7 +145,7 @@ function collide() {
       let consumed = false;
       for (const e of enemies) {
         if (!e.alive || (p.hitSet && p.hitSet.has(e))) continue;
-        if (Math.hypot(e.x - p.x, e.y - p.y, e.z - p.z) > e.r + p.r) continue;
+        if (segDist(p.px, p.py, p.pz, p.x, p.y, p.z, e.x, e.y, e.z) > e.r + p.r) continue;
         const dead = e.takeDamage(p.damage);
         if (dead) onKill(e);
         if (p.pierce > 0) { p.pierce--; (p.hitSet || (p.hitSet = new Set())).add(e); } else consumed = true;
@@ -145,7 +153,7 @@ function collide() {
       }
       if (consumed) pool.recycle(i);
     } else {
-      if (Math.hypot(player.x - p.x, 1.0 - p.y, player.z - p.z) < 0.85 + p.r) {
+      if (segDist(p.px, p.py, p.pz, p.x, p.y, p.z, player.x, 1.0, player.z) < 0.85 + p.r) {
         const hpb = player.hp; player.hurt(p.damage); pool.recycle(i);
         if (player.hp < hpb) shake = Math.max(shake, 0.55);
         if (!player.alive) { gameOver(); return; }
@@ -181,7 +189,33 @@ function updateSparks(dt) {
 }
 
 // ── Input wiring ──────────────────────────────────────────────────────────────
-input.onDash = () => { if (gameState === 'playing' && player.dash()) audio.dash(); };
+function dashDir() {                     // world dir from move input, else aim-forward
+  const mv = input.getMove();
+  if (Math.hypot(mv.x, mv.z) > 0.1) {
+    const s = Math.sin(input.yaw), c = Math.cos(input.yaw);
+    let x = -s * mv.z + c * mv.x, z = -c * mv.z - s * mv.x; const l = Math.hypot(x, z) || 1; return { x: x / l, z: z / l };
+  }
+  const l = Math.hypot(_aim.fx, _aim.fz) || 1; return { x: _aim.fx / l, z: _aim.fz / l };
+}
+function screenToWorld(sx, sy) {         // swipe screen dir → world dir (camera-relative)
+  const s = Math.sin(input.yaw), c = Math.cos(input.yaw);
+  let x = (-s) * (-sy) + c * sx, z = (-c) * (-sy) + (-s) * sx; const l = Math.hypot(x, z) || 1; return { x: x / l, z: z / l };
+}
+input.onTap = () => {                    // tap: jump on ground, air-dash in the air
+  if (gameState !== 'playing') return;
+  if (player.grounded()) { if (player.jump()) audio.jump(); }
+  else if (player.airDash(dashDir())) audio.dash();
+};
+input.onSwipe = (sx, sy) => {            // swipe: dash in the flicked direction
+  if (gameState !== 'playing') return;
+  const d = screenToWorld(sx, sy);
+  if (player.grounded() ? player.groundDash(d) : player.airDash(d)) audio.dash();
+};
+input.onDashKey = () => {                // desktop Q
+  if (gameState !== 'playing') return;
+  if (player.grounded() ? player.groundDash(dashDir()) : player.airDash(dashDir())) audio.dash();
+};
+input.onToggleAim = () => { player.autoAim = !player.autoAim; toast(player.autoAim ? 'AUTO-AIM ON' : 'AUTO-AIM OFF', C.adr); };
 input.onStart = () => { if (gameState === 'title' || gameState === 'gameover') startGame(); };
 input.onPause = () => {
   if (gameState === 'playing') { gameState = 'paused'; showPause(); }
@@ -227,14 +261,17 @@ function enemyBars() {
   }
 }
 function reticle(W, H) {
-  const adrCol = player.adr > 0 ? C.adr : C.player;
-  ctx.strokeStyle = css(adrCol); ctx.lineWidth = 2;
-  const cx = W / 2, cy = H / 2;
+  const locked = player._target;
+  const col = locked ? 0xff6b7e : (player.adr > 0 ? C.adr : C.player);
+  ctx.strokeStyle = css(col); ctx.lineWidth = 2;
+  const cx = W / 2, cy = H / 2, o = locked ? 15 : 12;
   ctx.beginPath();
-  ctx.moveTo(cx - 12, cy); ctx.lineTo(cx - 5, cy); ctx.moveTo(cx + 5, cy); ctx.lineTo(cx + 12, cy);
-  ctx.moveTo(cx, cy - 12); ctx.lineTo(cx, cy - 5); ctx.moveTo(cx, cy + 5); ctx.lineTo(cx, cy + 12);
+  ctx.moveTo(cx - o, cy); ctx.lineTo(cx - 5, cy); ctx.moveTo(cx + 5, cy); ctx.lineTo(cx + o, cy);
+  ctx.moveTo(cx, cy - o); ctx.lineTo(cx, cy - 5); ctx.moveTo(cx, cy + 5); ctx.lineTo(cx, cy + o);
   ctx.stroke();
-  ctx.fillStyle = css(adrCol); ctx.beginPath(); ctx.arc(cx, cy, 1.6, 0, 7); ctx.fill();
+  if (locked) { ctx.beginPath(); ctx.arc(cx, cy, 9, 0, 7); ctx.stroke(); }   // lock ring
+  ctx.fillStyle = css(col); ctx.beginPath(); ctx.arc(cx, cy, 1.6, 0, 7); ctx.fill();
+  if (player.autoAim) { ctx.fillStyle = 'rgba(205,234,255,.4)'; ctx.font = '9px monospace'; ctx.textAlign = 'center'; ctx.fillText('AUTO', cx, cy + 30); }
   // dash-cooldown ring around the reticle
   const k = 1 - player.dashCD / 1.1;
   ctx.strokeStyle = k >= 1 ? css(C.player) : 'rgba(180,200,255,.5)'; ctx.lineWidth = 2.5;
@@ -288,12 +325,9 @@ function drawTouchUI(W, H) {
   drawStick(input.left, W * 0.2, H * 0.74);
   drawStick(input.look, W * 0.8, H * 0.74);
   ctx.fillStyle = 'rgba(205,234,255,.35)'; ctx.font = '18px monospace'; ctx.textAlign = 'center'; ctx.fillText('❙❙', W / 2, 40);
-  const dx = W - 74, dy = H - 110, r = 34;
-  input.btns.push({ id: 'dash', x: dx, y: dy, r, label: 'DASH' });
-  ctx.beginPath(); ctx.arc(dx, dy, r, 0, 7);
-  ctx.fillStyle = player.dashCD <= 0 ? 'rgba(53,240,216,.18)' : 'rgba(120,140,180,.12)'; ctx.fill();
-  ctx.strokeStyle = css(player.dashCD <= 0 ? C.player : 0x4a5a80); ctx.lineWidth = 2.5; ctx.stroke();
-  ctx.fillStyle = '#cdeaff'; ctx.font = 'bold 13px monospace'; ctx.fillText('DASH', dx, dy + 5);
+  // gesture hints (tap = jump/air-dash · swipe = dash)
+  ctx.fillStyle = 'rgba(205,234,255,.3)'; ctx.font = '10px monospace';
+  ctx.fillText('tap: jump / air-dash    swipe: dash', W / 2, H - 12);
 }
 
 // ── Loop ──────────────────────────────────────────────────────────────────────
@@ -308,9 +342,8 @@ function loop() {
   if (gameState === 'playing') {
     runTime += dt;
     input.updateLook(dt);
-    const fired = input.firing && !input.sprint && player.fireT <= 0;
     player.update(dt, input, _aim, enemies);
-    if (fired) audio.shoot();
+    if (player._fired) audio.shoot();
     for (const e of enemies) e.update(dt, player, pool);
     pool.update(dt);
     collide();
