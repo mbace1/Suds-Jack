@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v63 — 2026-07-01
+**Positive feedback on the death screen**
+- Death-screen feedback now leads with a green **"WHAT DID YOU ENJOY?"** chip row (weapon pods / boss fights / movement feel / dodging / enemy variety / visuals) above the existing red "WHAT WENT WRONG?" row
+- Chip-row rendering refactored into a shared `addChipRow(heading, reasons, set, accent)` helper (pos = green, neg = red); positive picks persisted under `liked`/`likedIds` in `tokoDropFeedback`
+- `window._feedback()` console summary now tallies LIKED and WENT WRONG separately
+- Cache-bust `?v=18` → `?v=19`; HUD label → v63
+
+---
+
 ## v62 — 2026-07-01
 **Boss enrage now actually affects the boss (TORO)**
 - v59's enrage multiplied `spd`, but the every-8th-wave boss is almost always a TORO, whose charge behaviour uses hardcoded speeds — so enrage was visual-only (red ring) on the real boss
