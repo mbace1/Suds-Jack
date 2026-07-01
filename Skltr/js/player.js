@@ -104,12 +104,16 @@ export class Player {
     this.yaw = aim.yaw;
     this.fig.group.position.set(this.x, this.y, this.z);
     this.fig.group.rotation.y = this.yaw;
-    this.fig.update(dt, { speed: Math.hypot(this.vx, this.vz), aimPitch: aim.pitch, yOffset: this.y });
 
     // aim + fire: auto-fire when a target is in the sights (auto-aim), or when held
     const ar = this._aim(aim, enemies);
     this._target = ar.locked;
     const wantFire = !sprint && ((this.autoAim && ar.locked) || input.firing);
     if (wantFire && this.fireT <= 0) this._fire(ar);
+
+    this.fig.update(dt, {
+      speed: Math.hypot(this.vx, this.vz), aimPitch: aim.pitch, yOffset: this.y,
+      airborne: !this.grounded(), dashing: this.dashT > 0, firing: this._fired,
+    });
   }
 }
