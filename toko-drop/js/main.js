@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=23';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=23';
-import { Player, PLAYER_RADIUS } from './player.js?v=23';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=23';
-import { audio } from './audio.js?v=23';
-import { initDesigner } from './designer.js?v=23';
-import { t, getLang, setLang, langs } from './lang.js?v=23';
+import { InputManager } from './input.js?v=24';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=24';
+import { Player, PLAYER_RADIUS } from './player.js?v=24';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=24';
+import { audio } from './audio.js?v=24';
+import { initDesigner } from './designer.js?v=24';
+import { t, getLang, setLang, langs } from './lang.js?v=24';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1215,9 +1215,9 @@ function buildFeedbackReasons() {
   push('too_fast', t('fbTooFast'));
   push('unfair',   t('fbUnfair'));
   push('unclear',  t('fbUnclear'));
-  // De-dup by id, cap at 6.
+  // De-dup by id, cap at 4 (telemetry-derived reasons come first, so they win).
   const seen = new Set(); const reasons = [];
-  for (const r of out) { if (seen.has(r.id)) continue; seen.add(r.id); reasons.push(r); if (reasons.length >= 6) break; }
+  for (const r of out) { if (seen.has(r.id)) continue; seen.add(r.id); reasons.push(r); if (reasons.length >= 4) break; }
   return reasons;
 }
 
@@ -1228,8 +1228,6 @@ function buildPositiveReasons() {
     { id: 'like:bosses',  label: t('likeBosses') },
     { id: 'like:feel',    label: t('likeFeel') },
     { id: 'like:dodging', label: t('likeDodging') },
-    { id: 'like:variety', label: t('likeVariety') },
-    { id: 'like:vibe',    label: t('likeVibe') },
   ];
 }
 
@@ -1483,7 +1481,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v67', 16, uiCanvas.height - 12);
+  ctx.fillText('v68', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
