@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=18';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=18';
-import { Player, PLAYER_RADIUS } from './player.js?v=18';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=18';
-import { audio } from './audio.js?v=18';
-import { initDesigner } from './designer.js?v=18';
+import { InputManager } from './input.js?v=19';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=19';
+import { Player, PLAYER_RADIUS } from './player.js?v=19';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=19';
+import { audio } from './audio.js?v=19';
+import { initDesigner } from './designer.js?v=19';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1220,10 +1220,22 @@ function buildFeedbackReasons() {
   return reasons;
 }
 
+// Positive-feedback options — what the player enjoyed this run.
+function buildPositiveReasons() {
+  return [
+    { id: 'like:weapons', label: 'The weapon pods' },
+    { id: 'like:bosses',  label: 'Boss fights' },
+    { id: 'like:feel',    label: 'Movement / dash feel' },
+    { id: 'like:dodging', label: 'Bullet-hell dodging' },
+    { id: 'like:variety', label: 'Enemy variety' },
+    { id: 'like:vibe',    label: 'Visuals / vibe' },
+  ];
+}
+
 // Persist one feedback entry. Stored under tokoDropFeedback (last 100), with a
 // compact run summary so it's useful even without the full hit log.
-function saveFeedback(selectedIds, selectedLabels, comment) {
-  if (!selectedIds.length && !comment) return;
+function saveFeedback(selectedIds, selectedLabels, comment, likedIds = [], likedLabels = []) {
+  if (!selectedIds.length && !likedIds.length && !comment) return;
   const KEY = 'tokoDropFeedback';
   const list = JSON.parse(localStorage.getItem(KEY) || '[]');
   const atk = {};
@@ -1233,6 +1245,7 @@ function saveFeedback(selectedIds, selectedLabels, comment) {
     seed: runSeed, mode: roguelikeMode ? 'roguelike' : 'arcade',
     wave, time: Math.round(runTimer), score,
     reasons: selectedLabels, reasonIds: selectedIds,
+    liked: likedLabels, likedIds,
     comment: comment || '',
     hits: hitEventLog.length,
     topAttacker: Object.entries(atk).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null,
@@ -1244,10 +1257,20 @@ function saveFeedback(selectedIds, selectedLabels, comment) {
 window._feedback = () => {
   const list = JSON.parse(localStorage.getItem('tokoDropFeedback') || '[]');
   console.log(`=== TOKO DROP FEEDBACK (${list.length} entries) ===`);
+  const likedTally = {};
+  for (const f of list) for (const r of (f.liked || [])) likedTally[r] = (likedTally[r] || 0) + 1;
+  if (Object.keys(likedTally).length) {
+    console.log('LIKED:');
+    for (const [r, n] of Object.entries(likedTally).sort((a, b) => b[1] - a[1]))
+      console.log(`  ${n}×  ${r}`);
+  }
   const reasonTally = {};
   for (const f of list) for (const r of (f.reasons || [])) reasonTally[r] = (reasonTally[r] || 0) + 1;
-  for (const [r, n] of Object.entries(reasonTally).sort((a, b) => b[1] - a[1]))
-    console.log(`  ${n}×  ${r}`);
+  if (Object.keys(reasonTally).length) {
+    console.log('WENT WRONG:');
+    for (const [r, n] of Object.entries(reasonTally).sort((a, b) => b[1] - a[1]))
+      console.log(`  ${n}×  ${r}`);
+  }
   const comments = list.filter(f => f.comment).map(f => `  [w${f.wave}] ${f.comment}`);
   if (comments.length) { console.log('\nCOMMENTS:'); comments.forEach(c => console.log(c)); }
   return list;
@@ -1437,7 +1460,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v62', 16, uiCanvas.height - 12);
+  ctx.fillText('v63', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1584,40 +1607,49 @@ function showGameOver() {
 // run's telemetry) + a free-text box, saved to localStorage on continue.
 function buildFeedbackPanel(slot) {
   if (!slot) return;
-  const selected = new Set();
+  const liked     = new Set();  // positives
+  const selected  = new Set();  // negatives
   const labelById = {};
 
-  const title = document.createElement('div');
-  title.textContent = 'WHAT WENT WRONG?  (optional)';
-  title.style.cssText = 'font-size:12px;letter-spacing:2px;opacity:0.55;margin-bottom:10px';
-  slot.appendChild(title);
-
-  const chipRow = document.createElement('div');
-  chipRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:440px;margin:0 auto 12px';
-  for (const r of buildFeedbackReasons()) {
-    labelById[r.id] = r.label;
-    const chip = document.createElement('div');
-    chip.className = 'fb-chip';
-    chip.textContent = r.label;
-    const paint = () => {
-      const on = selected.has(r.id);
-      chip.style.cssText =
-        'pointer-events:auto;cursor:pointer;user-select:none;font-size:12px;' +
-        'padding:7px 13px;border-radius:16px;transition:all 0.1s;' +
-        `border:1.5px solid ${on ? '#ff6644' : '#445'};` +
-        `background:${on ? 'rgba(255,90,60,0.22)' : 'rgba(0,0,0,0.3)'};` +
-        `color:${on ? '#ffbbaa' : '#8888aa'};` +
-        `text-shadow:${on ? '0 0 10px #ff5533' : 'none'};`;
-    };
-    paint();
-    chip.addEventListener('click', e => {
-      e.stopPropagation();
-      if (selected.has(r.id)) selected.delete(r.id); else selected.add(r.id);
+  // Reusable labeled chip row. accent 'pos' → green, 'neg' → red.
+  const addChipRow = (heading, reasons, set, accent) => {
+    const onCol = accent === 'pos'
+      ? { border: '#44cc88', bg: 'rgba(60,220,150,0.20)', col: '#aaffcc', glow: '0 0 10px #33cc77' }
+      : { border: '#ff6644', bg: 'rgba(255,90,60,0.22)',  col: '#ffbbaa', glow: '0 0 10px #ff5533' };
+    const title = document.createElement('div');
+    title.textContent = heading;
+    title.style.cssText = 'font-size:12px;letter-spacing:2px;opacity:0.55;margin-bottom:10px';
+    slot.appendChild(title);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:440px;margin:0 auto 14px';
+    for (const r of reasons) {
+      labelById[r.id] = r.label;
+      const chip = document.createElement('div');
+      chip.className = 'fb-chip';
+      chip.textContent = r.label;
+      const paint = () => {
+        const on = set.has(r.id);
+        chip.style.cssText =
+          'pointer-events:auto;cursor:pointer;user-select:none;font-size:12px;' +
+          'padding:7px 13px;border-radius:16px;transition:all 0.1s;' +
+          `border:1.5px solid ${on ? onCol.border : '#445'};` +
+          `background:${on ? onCol.bg : 'rgba(0,0,0,0.3)'};` +
+          `color:${on ? onCol.col : '#8888aa'};` +
+          `text-shadow:${on ? onCol.glow : 'none'};`;
+      };
       paint();
-    });
-    chipRow.appendChild(chip);
-  }
-  slot.appendChild(chipRow);
+      chip.addEventListener('click', e => {
+        e.stopPropagation();
+        if (set.has(r.id)) set.delete(r.id); else set.add(r.id);
+        paint();
+      });
+      row.appendChild(chip);
+    }
+    slot.appendChild(row);
+  };
+
+  addChipRow('WHAT DID YOU ENJOY?  (optional)', buildPositiveReasons(), liked, 'pos');
+  addChipRow('WHAT WENT WRONG?  (optional)',    buildFeedbackReasons(), selected, 'neg');
 
   const box = document.createElement('textarea');
   box.placeholder = 'Anything else? (optional)';
@@ -1645,7 +1677,10 @@ function buildFeedbackPanel(slot) {
     return b;
   };
   btnRow.appendChild(mkBtn('SEND & CONTINUE', true, () => {
-    saveFeedback([...selected], [...selected].map(id => labelById[id]), box.value.trim());
+    saveFeedback(
+      [...selected], [...selected].map(id => labelById[id]), box.value.trim(),
+      [...liked],    [...liked].map(id => labelById[id]),
+    );
     returnToTitle();
   }));
   btnRow.appendChild(mkBtn('SKIP', false, returnToTitle));
