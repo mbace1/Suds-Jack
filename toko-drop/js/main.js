@@ -1,10 +1,11 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=19';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=19';
-import { Player, PLAYER_RADIUS } from './player.js?v=19';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=19';
-import { audio } from './audio.js?v=19';
-import { initDesigner } from './designer.js?v=19';
+import { InputManager } from './input.js?v=20';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=20';
+import { Player, PLAYER_RADIUS } from './player.js?v=20';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=20';
+import { audio } from './audio.js?v=20';
+import { initDesigner } from './designer.js?v=20';
+import { t, langLabel, cycleLang } from './lang.js?v=20';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1195,25 +1196,25 @@ function buildFeedbackReasons() {
     const topAtk = Object.entries(atk).sort((a, b) => b[1] - a[1])[0];
     if (topAtk) {
       const label = ENEMY_LABEL[EnemyType[topAtk[0]]] ?? topAtk[0];
-      push(`atk:${topAtk[0]}`, `${_cap(label)} hit me too often`);
+      push(`atk:${topAtk[0]}`, t('fbHit', _cap(label)));
     }
     const field = {};
-    for (const e of ev) for (const [t, c] of Object.entries(e.enemyTypes || {})) field[t] = (field[t] || 0) + c;
+    for (const e of ev) for (const [ty, c] of Object.entries(e.enemyTypes || {})) field[ty] = (field[ty] || 0) + c;
     const topField = Object.entries(field).sort((a, b) => b[1] - a[1])[0];
     if (topField && (!topAtk || topField[0] !== topAtk[0])) {
       const label = ENEMY_LABEL[EnemyType[topField[0]]] ?? topField[0];
-      push(`field:${topField[0]}`, `Too many ${label}s at once`);
+      push(`field:${topField[0]}`, t('fbMany', label));
     }
     const dashDown = ev.filter(e => e.dashReady === false).length;
-    if (dashDown / ev.length > 0.4) push('dash', 'Dash was on cooldown');
+    if (dashDown / ev.length > 0.4) push('dash', t('fbDash'));
     const avgB = ev.reduce((s, e) => s + e.bulletCount, 0) / ev.length;
-    if (avgB > 8) push('bullets', 'Too many bullets onscreen');
+    if (avgB > 8) push('bullets', t('fbBullets'));
     const cluster = ev.filter(e => e.timeSinceLastHit !== null && e.timeSinceLastHit <= 3).length;
-    if (cluster / ev.length > 0.25) push('blender', 'Got swarmed all at once');
+    if (cluster / ev.length > 0.25) push('blender', t('fbBlender'));
   }
-  push('too_fast', 'Enemies / bullets too fast');
-  push('unfair',   'Felt unfair / cheap');
-  push('unclear',  "Couldn't read the threat");
+  push('too_fast', t('fbTooFast'));
+  push('unfair',   t('fbUnfair'));
+  push('unclear',  t('fbUnclear'));
   // De-dup by id, cap at 6.
   const seen = new Set(); const reasons = [];
   for (const r of out) { if (seen.has(r.id)) continue; seen.add(r.id); reasons.push(r); if (reasons.length >= 6) break; }
@@ -1223,12 +1224,12 @@ function buildFeedbackReasons() {
 // Positive-feedback options — what the player enjoyed this run.
 function buildPositiveReasons() {
   return [
-    { id: 'like:weapons', label: 'The weapon pods' },
-    { id: 'like:bosses',  label: 'Boss fights' },
-    { id: 'like:feel',    label: 'Movement / dash feel' },
-    { id: 'like:dodging', label: 'Bullet-hell dodging' },
-    { id: 'like:variety', label: 'Enemy variety' },
-    { id: 'like:vibe',    label: 'Visuals / vibe' },
+    { id: 'like:weapons', label: t('likeWeapons') },
+    { id: 'like:bosses',  label: t('likeBosses') },
+    { id: 'like:feel',    label: t('likeFeel') },
+    { id: 'like:dodging', label: t('likeDodging') },
+    { id: 'like:variety', label: t('likeVariety') },
+    { id: 'like:vibe',    label: t('likeVibe') },
   ];
 }
 
@@ -1460,7 +1461,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v63', 16, uiCanvas.height - 12);
+  ctx.fillText('v64', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1496,21 +1497,43 @@ function showTitle() {
     `<div style="font-size:clamp(34px,11vw,58px);font-weight:bold;letter-spacing:4px;` +
     `animation:tokoGlow 1.6s ease-in-out infinite alternate,tokoFadeUp 0.5s ease both">TOKO DROP</div>` +
     `<div style="font-size:13px;opacity:0.5;margin:8px 0 22px;animation:tokoFadeUp 0.5s 0.1s ease both">` +
-    `TWIN-STICK BULLET-HELL</div>` +
+    `${t('subtitle')}</div>` +
     (pb.bestScore > 0
       ? `<div style="font-size:13px;color:#ffdd44;opacity:0.85;margin-bottom:14px;letter-spacing:1px;` +
         `animation:tokoFadeUp 0.5s 0.15s ease both">` +
-        `BEST &nbsp;${pb.bestScore} PTS &nbsp;·&nbsp; WAVE ${pb.bestWave} &nbsp;·&nbsp; ${fmtTime(pb.bestTime)}</div>`
+        `${t('best')} &nbsp;${pb.bestScore} ${t('pts')} &nbsp;·&nbsp; ${t('wave')} ${pb.bestWave} &nbsp;·&nbsp; ${fmtTime(pb.bestTime)}</div>`
       : ``) +
-    `<div style="font-size:16px;opacity:0.85;animation:tokoFadeUp 0.5s 0.2s ease both">TAP OR PRESS SPACE TO START</div>` +
-    `<div id="orient-toggle-slot" style="margin-top:18px;animation:tokoFadeUp 0.5s 0.28s ease both"></div>` +
+    `<div style="font-size:16px;opacity:0.85;animation:tokoFadeUp 0.5s 0.2s ease both">${t('tapStart')}</div>` +
+    `<div id="lang-toggle-slot" style="margin-top:18px;animation:tokoFadeUp 0.5s 0.24s ease both"></div>` +
+    `<div id="orient-toggle-slot" style="margin-top:14px;animation:tokoFadeUp 0.5s 0.28s ease both"></div>` +
     `<div id="rogue-toggle-slot" style="margin-top:14px;animation:tokoFadeUp 0.5s 0.3s ease both"></div>` +
     `<div style="font-size:12px;opacity:0.38;margin-top:20px;line-height:2;text-align:center;` +
     `animation:tokoFadeUp 0.5s 0.4s ease both">` +
-    `Move &nbsp;·&nbsp; left stick / WASD<br>` +
-    `Aim &amp; fire &nbsp;·&nbsp; right stick / hold LMB<br>` +
-    `Dash &nbsp;·&nbsp; A / bumper / Space<br>` +
-    `Pause Start / ESC &nbsp;·&nbsp; Eyes E</div>`;
+    `${t('ctrlMove')} &nbsp;·&nbsp; ${t('ctrlMoveH')}<br>` +
+    `${t('ctrlAim')} &nbsp;·&nbsp; ${t('ctrlAimH')}<br>` +
+    `${t('ctrlDash')} &nbsp;·&nbsp; ${t('ctrlDashH')}<br>` +
+    `${t('ctrlPause')} ${t('ctrlPauseH')} &nbsp;·&nbsp; ${t('ctrlEyes')} ${t('ctrlEyesH')}</div>`;
+
+  // Language toggle — cycles ENG → 日本語 → SUOMI, re-rendering the title.
+  {
+    const lslot = document.getElementById('lang-toggle-slot');
+    const lbtn  = document.createElement('div');
+    lbtn.textContent = `${t('language')}: ${langLabel()}`;
+    lbtn.style.cssText =
+      'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
+      'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
+      'background:rgba(0,0,0,0.35);transition:all 0.12s;' +
+      'border:2px solid #6688ff;color:#99bbff;text-shadow:0 0 12px #4466ff;';
+    const ltoggle = e => {
+      e.stopPropagation();
+      e.preventDefault();
+      cycleLang();
+      showTitle();  // re-render everything in the newly-chosen language
+    };
+    lbtn.addEventListener('pointerdown', ltoggle);
+    lbtn.addEventListener('touchend', e => e.stopPropagation());
+    lslot.appendChild(lbtn);
+  }
 
   // Orientation toggle — switches arena between portrait and landscape (Steam Deck).
   {
@@ -1520,7 +1543,7 @@ function showTitle() {
     ohint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
     const orender = () => {
       const land = landscapeMode;
-      obtn.textContent = `ORIENTATION: ${land ? 'LANDSCAPE' : 'PORTRAIT'}`;
+      obtn.textContent = `${t('orientation')}: ${land ? t('landscape') : t('portrait')}`;
       obtn.style.cssText =
         'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
         'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
@@ -1528,8 +1551,7 @@ function showTitle() {
         `border:2px solid ${land ? '#ffaa33' : '#445'};` +
         `color:${land ? '#ffcc66' : '#7777aa'};` +
         `text-shadow:${land ? '0 0 12px #ffaa33' : 'none'};`;
-      ohint.textContent = land ? 'Wide arena — Steam Deck / sideways mobile'
-                               : 'Tall arena — upright mobile';
+      ohint.textContent = land ? t('orientLandH') : t('orientPortH');
     };
     orender();
     const otoggle = e => {
@@ -1555,7 +1577,7 @@ function showTitle() {
   hint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
   const render = () => {
     const on = roguelikeMode;
-    btn.textContent = `ROGUELIKE MODE: ${on ? 'ON' : 'OFF'}`;
+    btn.textContent = `${t('rogue')}: ${on ? t('on') : t('off')}`;
     btn.style.cssText =
       'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
       'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
@@ -1563,8 +1585,7 @@ function showTitle() {
       `border:2px solid ${on ? '#00ccaa' : '#445'};` +
       `color:${on ? '#00ffcc' : '#7777aa'};` +
       `text-shadow:${on ? '0 0 12px #00ccaa' : 'none'};`;
-    hint.textContent = on ? 'Pick an upgrade card after each wave'
-                          : 'No upgrades — pure arcade survival';
+    hint.textContent = on ? t('rogueOnH') : t('rogueOffH');
   };
   render();
   const toggle = e => {
@@ -1586,18 +1607,18 @@ function showGameOver() {
   overlay.style.pointerEvents = 'auto';
   const seedHex = runSeed.toString(16).toUpperCase().padStart(6, '0');
   const badges = [];
-  if (_runBests.isBestScore) badges.push('★ BEST SCORE');
-  if (_runBests.isBestTime)  badges.push('★ BEST TIME');
-  if (_runBests.isBestWave)  badges.push('★ BEST WAVE');
+  if (_runBests.isBestScore) badges.push(t('bestScore'));
+  if (_runBests.isBestTime)  badges.push(t('bestTime'));
+  if (_runBests.isBestWave)  badges.push(t('bestWave'));
   overlay.innerHTML =
-    `<div style="font-size:52px;font-weight:bold">YOU DIED</div>` +
+    `<div style="font-size:52px;font-weight:bold">${t('youDied')}</div>` +
     `<div style="font-size:15px;opacity:0.6;margin-top:10px;letter-spacing:2px">` +
-      `WAVE ${wave} &nbsp;·&nbsp; ${fmtTime(runTimer)} &nbsp;·&nbsp; ${score} PTS` +
+      `${t('wave')} ${wave} &nbsp;·&nbsp; ${fmtTime(runTimer)} &nbsp;·&nbsp; ${score} ${t('pts')}` +
     `</div>` +
     (badges.length
       ? `<div style="font-size:16px;color:#ffdd44;margin-top:8px;letter-spacing:1px">${badges.join('&nbsp;&nbsp;')}</div>`
       : ``) +
-    `<div style="font-size:12px;opacity:0.3;margin-top:10px">SEED ${seedHex}</div>` +
+    `<div style="font-size:12px;opacity:0.3;margin-top:10px">${t('seed')} ${seedHex}</div>` +
     `<div id="feedback-slot" style="margin-top:18px"></div>`;
 
   buildFeedbackPanel(document.getElementById('feedback-slot'));
@@ -1648,11 +1669,11 @@ function buildFeedbackPanel(slot) {
     slot.appendChild(row);
   };
 
-  addChipRow('WHAT DID YOU ENJOY?  (optional)', buildPositiveReasons(), liked, 'pos');
-  addChipRow('WHAT WENT WRONG?  (optional)',    buildFeedbackReasons(), selected, 'neg');
+  addChipRow(t('fbEnjoy'), buildPositiveReasons(), liked, 'pos');
+  addChipRow(t('fbWrong'), buildFeedbackReasons(), selected, 'neg');
 
   const box = document.createElement('textarea');
-  box.placeholder = 'Anything else? (optional)';
+  box.placeholder = t('fbElse');
   box.rows = 2;
   box.style.cssText =
     'pointer-events:auto;user-select:text;display:block;width:min(440px,80vw);margin:0 auto 14px;' +
@@ -1676,20 +1697,20 @@ function buildFeedbackPanel(slot) {
     b.addEventListener('click', e => { e.stopPropagation(); onClick(); });
     return b;
   };
-  btnRow.appendChild(mkBtn('SEND & CONTINUE', true, () => {
+  btnRow.appendChild(mkBtn(t('fbSend'), true, () => {
     saveFeedback(
       [...selected], [...selected].map(id => labelById[id]), box.value.trim(),
       [...liked],    [...liked].map(id => labelById[id]),
     );
     returnToTitle();
   }));
-  btnRow.appendChild(mkBtn('SKIP', false, returnToTitle));
+  btnRow.appendChild(mkBtn(t('fbSkip'), false, returnToTitle));
   slot.appendChild(btnRow);
 }
 
 function announceWave() {
   overlay.style.display = 'block';
-  overlay.innerHTML = `<div style="font-size:22px;opacity:0.75">WAVE ${wave}</div>`;
+  overlay.innerHTML = `<div style="font-size:22px;opacity:0.75">${t('wave')} ${wave}</div>`;
   setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 450);
 }
 
