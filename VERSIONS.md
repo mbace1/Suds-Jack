@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v62 — 2026-07-01
+**Boss enrage now actually affects the boss (TORO)**
+- v59's enrage multiplied `spd`, but the every-8th-wave boss is almost always a TORO, whose charge behaviour uses hardcoded speeds — so enrage was visual-only (red ring) on the real boss
+- Enraged TORO now stalks faster between dashes (idle 0.8 → 1.5), winds up quicker (rev 1.6 s → 1.0 s), and dashes ~2× as often (recovery idle gap ×0.45)
+- Cache-bust `?v=17` → `?v=18`; HUD label → v62
+
+---
+
 ## v61 — 2026-06-30
 **PURP_CUBE spiral polish — distinct 2-arm galaxies**
 - PURP_CUBE fired one bullet every 0.5 s rotating a fixed `+0.55` rad — identical and mechanical on every cube
