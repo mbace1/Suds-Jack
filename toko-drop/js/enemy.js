@@ -810,21 +810,24 @@ export class Enemy {
 
       case EnemyType.TORO: {
         switch (this._state) {
-          case 'idle':
+          case 'idle': {
+            // Enraged boss stalks faster between dashes (v62).
+            const idleSpd = this._enraged ? 1.5 : 0.8;
             if (dist > 2) {
-              this.group.position.x += (ddx/dist) * 0.8 * dt;
-              this.group.position.z += (ddz/dist) * 0.8 * dt;
+              this.group.position.x += (ddx/dist) * idleSpd * dt;
+              this.group.position.z += (ddz/dist) * idleSpd * dt;
             }
             this._idleTimer -= dt;
             if (this._idleTimer <= 0) {
               this._state = 'revving';
-              this._stateT = 1.6;
+              this._stateT = this._enraged ? 1.0 : 1.6;  // winds up quicker when enraged
               const dl = Math.hypot(ddx, ddz) || 1;
               this._dashDir = { x: ddx/dl, z: ddz/dl };
               const ang = Math.round(Math.atan2(this._dashDir.z, this._dashDir.x) / (Math.PI/4)) * (Math.PI/4);
               this._dashDir = { x: Math.cos(ang), z: Math.sin(ang) };
             }
             break;
+          }
           case 'revving':
             this._stateT -= dt;
             this._spinAngle += (3 + (1.6 - Math.max(this._stateT, 0)) * 8) * dt;
@@ -867,7 +870,8 @@ export class Enemy {
             this._stateT -= dt;
             if (this._stateT <= 0) {
               this._state = 'idle';
-              this._idleTimer = 1.0 + Math.random() * 1.5;
+              // Enraged boss dashes about twice as often (v62).
+              this._idleTimer = (1.0 + Math.random() * 1.5) * (this._enraged ? 0.45 : 1);
             }
             break;
         }
