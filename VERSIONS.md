@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v66 — 2026-07-01
+**Language picker — all three options shown at once at the bottom**
+- Replaced the single cycling LANGUAGE chip with a **row of three chips (ENG / 日本語 / SUOMI)** at the bottom of the title screen; the active language is highlighted and tapping any one selects it directly
+- `lang.js` gains `setLang(code)` and `langs()` (returns `{code,label}[]`); `cycleLang`/`langLabel` retained but no longer used by the title
+- Cache-bust `?v=21` → `?v=22`; HUD label → v66
+
+---
+
 ## v65 — 2026-07-01
 **Full localization — HUD + upgrade cards now translate too**
 - Finishes the v64 language toggle: the previously-English-only bits now localize with the toggle

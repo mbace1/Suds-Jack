@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=21';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=21';
-import { Player, PLAYER_RADIUS } from './player.js?v=21';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=21';
-import { audio } from './audio.js?v=21';
-import { initDesigner } from './designer.js?v=21';
-import { t, langLabel, cycleLang } from './lang.js?v=21';
+import { InputManager } from './input.js?v=22';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=22';
+import { Player, PLAYER_RADIUS } from './player.js?v=22';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=22';
+import { audio } from './audio.js?v=22';
+import { initDesigner } from './designer.js?v=22';
+import { t, getLang, setLang, langs } from './lang.js?v=22';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1463,7 +1463,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v65', 16, uiCanvas.height - 12);
+  ctx.fillText('v66', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1506,35 +1506,41 @@ function showTitle() {
         `${t('best')} &nbsp;${pb.bestScore} ${t('pts')} &nbsp;·&nbsp; ${t('wave')} ${pb.bestWave} &nbsp;·&nbsp; ${fmtTime(pb.bestTime)}</div>`
       : ``) +
     `<div style="font-size:16px;opacity:0.85;animation:tokoFadeUp 0.5s 0.2s ease both">${t('tapStart')}</div>` +
-    `<div id="lang-toggle-slot" style="margin-top:18px;animation:tokoFadeUp 0.5s 0.24s ease both"></div>` +
-    `<div id="orient-toggle-slot" style="margin-top:14px;animation:tokoFadeUp 0.5s 0.28s ease both"></div>` +
+    `<div id="orient-toggle-slot" style="margin-top:18px;animation:tokoFadeUp 0.5s 0.28s ease both"></div>` +
     `<div id="rogue-toggle-slot" style="margin-top:14px;animation:tokoFadeUp 0.5s 0.3s ease both"></div>` +
     `<div style="font-size:12px;opacity:0.38;margin-top:20px;line-height:2;text-align:center;` +
     `animation:tokoFadeUp 0.5s 0.4s ease both">` +
     `${t('ctrlMove')} &nbsp;·&nbsp; ${t('ctrlMoveH')}<br>` +
     `${t('ctrlAim')} &nbsp;·&nbsp; ${t('ctrlAimH')}<br>` +
     `${t('ctrlDash')} &nbsp;·&nbsp; ${t('ctrlDashH')}<br>` +
-    `${t('ctrlPause')} ${t('ctrlPauseH')} &nbsp;·&nbsp; ${t('ctrlEyes')} ${t('ctrlEyesH')}</div>`;
+    `${t('ctrlPause')} ${t('ctrlPauseH')} &nbsp;·&nbsp; ${t('ctrlEyes')} ${t('ctrlEyesH')}</div>` +
+    `<div id="lang-toggle-slot" style="margin-top:22px;display:flex;gap:8px;justify-content:center;` +
+    `animation:tokoFadeUp 0.5s 0.5s ease both"></div>`;
 
-  // Language toggle — cycles ENG → 日本語 → SUOMI, re-rendering the title.
+  // Language picker — all three options shown at once at the bottom; tap to select.
   {
     const lslot = document.getElementById('lang-toggle-slot');
-    const lbtn  = document.createElement('div');
-    lbtn.textContent = `${t('language')}: ${langLabel()}`;
-    lbtn.style.cssText =
-      'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
-      'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
-      'background:rgba(0,0,0,0.35);transition:all 0.12s;' +
-      'border:2px solid #6688ff;color:#99bbff;text-shadow:0 0 12px #4466ff;';
-    const ltoggle = e => {
-      e.stopPropagation();
-      e.preventDefault();
-      cycleLang();
-      showTitle();  // re-render everything in the newly-chosen language
-    };
-    lbtn.addEventListener('pointerdown', ltoggle);
-    lbtn.addEventListener('touchend', e => e.stopPropagation());
-    lslot.appendChild(lbtn);
+    const active = getLang();
+    for (const { code, label } of langs()) {
+      const on   = code === active;
+      const chip = document.createElement('div');
+      chip.textContent = label;
+      chip.style.cssText =
+        'pointer-events:auto;cursor:pointer;user-select:none;' +
+        'font-size:13px;font-weight:bold;padding:7px 14px;border-radius:8px;' +
+        'background:rgba(0,0,0,0.35);transition:all 0.12s;' +
+        `border:2px solid ${on ? '#6688ff' : '#445'};` +
+        `color:${on ? '#aaccff' : '#7777aa'};` +
+        `text-shadow:${on ? '0 0 12px #4466ff' : 'none'};`;
+      const pick = e => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (code !== getLang()) { setLang(code); showTitle(); }
+      };
+      chip.addEventListener('pointerdown', pick);
+      chip.addEventListener('touchend', e => e.stopPropagation());
+      lslot.appendChild(chip);
+    }
   }
 
   // Orientation toggle — switches arena between portrait and landscape (Steam Deck).
