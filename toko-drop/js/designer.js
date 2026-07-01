@@ -1,5 +1,5 @@
-import { CFG, EnemyType, BLOB_TYPES } from './enemy.js?v=21';
-import { BULLET_CONFIG } from './bullet.js?v=21';
+import { CFG, EnemyType, BLOB_TYPES } from './enemy.js?v=22';
+import { BULLET_CONFIG } from './bullet.js?v=22';
 
 const TYPE_NAMES = {
   [EnemyType.GLOBBO]:      'GLOBBO',

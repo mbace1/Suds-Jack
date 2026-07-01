@@ -157,6 +157,20 @@ if (!LANGS.includes(_lang)) _lang = 'en';
 export function getLang()   { return _lang; }
 export function langLabel() { return LANG_LABELS[_lang]; }
 
+// All selectable languages as {code, label} — for rendering a picker.
+export function langs() {
+  return LANGS.map(code => ({ code, label: LANG_LABELS[code] }));
+}
+
+// Set the active language directly and persist it.
+export function setLang(code) {
+  if (LANGS.includes(code)) {
+    _lang = code;
+    localStorage.setItem('tokoDropLang', _lang);
+  }
+  return _lang;
+}
+
 // Advance to the next language (EN → JA → FI → EN) and persist the choice.
 export function cycleLang() {
   _lang = LANGS[(LANGS.indexOf(_lang) + 1) % LANGS.length];
