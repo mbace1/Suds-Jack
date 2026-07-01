@@ -34,6 +34,7 @@ class AudioSystem {
   dash()  { this._tone(520, 0.18, 'sine', 0.14, 1100); }
   special(){ this._tone(180, 0.4, 'sawtooth', 0.25, 700); this._noise(0.12, 0.2); }
   kill()  { this._tone(440, 0.07, 'triangle', 0.12, 660); }
+  jump()  { this._tone(300, 0.14, 'sine', 0.14, 720); }
   gold()  { this._tone(880, 0.06, 'sine', 0.10, 1320); }
   chest() { [659, 880, 1047].forEach((f, i) => setTimeout(() => this._tone(f, 0.12, 'triangle', 0.18), i * 60)); }
   hurt()  { this._tone(200, 0.18, 'sawtooth', 0.22, 90); this._noise(0.14, 0.12); }

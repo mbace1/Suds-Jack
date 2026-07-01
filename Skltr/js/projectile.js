@@ -19,7 +19,7 @@ export class ProjectilePool {
 
   spawn(x, y, z, dx, dy, dz, o) {
     const p = this.free.pop(); if (!p) return null;
-    p.x = x; p.y = y; p.z = z; p.dx = dx; p.dy = dy; p.dz = dz;
+    p.x = x; p.y = y; p.z = z; p.px = x; p.py = y; p.pz = z; p.dx = dx; p.dy = dy; p.dz = dz;
     p.speed = o.speed; p.life = o.life ?? 3;
     p.fromPlayer = !!o.fromPlayer; p.damage = o.damage; p.r = o.r || 0.35;
     p.pierce = o.pierce || 0; p.crit = !!o.crit; p.hitSet = null;
@@ -34,6 +34,7 @@ export class ProjectilePool {
   update(dt) {
     for (let i = this.active.length - 1; i >= 0; i--) {
       const p = this.active[i];
+      p.px = p.x; p.py = p.y; p.pz = p.z;                    // for swept collision
       p.x += p.dx * p.speed * dt; p.y += p.dy * p.speed * dt; p.z += p.dz * p.speed * dt;
       p.mesh.position.set(p.x, p.y, p.z);
       p.life -= dt;
