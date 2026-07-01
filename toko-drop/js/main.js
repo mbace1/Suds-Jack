@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=20';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=20';
-import { Player, PLAYER_RADIUS } from './player.js?v=20';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=20';
-import { audio } from './audio.js?v=20';
-import { initDesigner } from './designer.js?v=20';
-import { t, langLabel, cycleLang } from './lang.js?v=20';
+import { InputManager } from './input.js?v=21';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=21';
+import { Player, PLAYER_RADIUS } from './player.js?v=21';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=21';
+import { audio } from './audio.js?v=21';
+import { initDesigner } from './designer.js?v=21';
+import { t, langLabel, cycleLang } from './lang.js?v=21';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1333,7 +1333,9 @@ function drawStick(stick, defaultX, defaultY) {
   ctx.fill();
 }
 
-const HUD_FONT = 'bold 14px monospace';
+// sans-serif fallback so CJK (Japanese) HUD labels render — monospace often
+// lacks CJK glyphs; canvas falls back per-glyph across the family list.
+const HUD_FONT = 'bold 14px monospace, sans-serif';
 
 function drawHUD() {
   ctx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
@@ -1368,7 +1370,7 @@ function drawHUD() {
   // Wave + score (top row)
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
   ctx.font = HUD_FONT;
-  ctx.fillText(`WAVE ${wave}`, 16, 24);
+  ctx.fillText(`${t('wave')} ${wave}`, 16, 24);
 
   // Wave progress bar
   const _prog = Math.min(1, waveTimer / waveDuration);
@@ -1381,9 +1383,9 @@ function drawHUD() {
   ctx.fillText(`${score}`, uiCanvas.width - 16, 24);
   if (streak > 1) {
     const flashScale = 1 + Math.max(0, streakFlashT / STREAK_FLASH_DUR) * 0.4;
-    ctx.font = `bold ${Math.round(14 * flashScale)}px monospace`;
+    ctx.font = `bold ${Math.round(14 * flashScale)}px monospace, sans-serif`;
     ctx.fillStyle = '#ffdd44';
-    ctx.fillText(`×${streak} STREAK`, uiCanvas.width - 16, 44);
+    ctx.fillText(`×${streak} ${t('hudStreak')}`, uiCanvas.width - 16, 44);
     ctx.font = HUD_FONT;
   }
   ctx.textAlign = 'left';
@@ -1410,9 +1412,9 @@ function drawHUD() {
 
   // Shield indicator
   if (player._shield) {
-    ctx.font = 'bold 11px monospace';
+    ctx.font = 'bold 11px monospace, sans-serif';
     ctx.fillStyle = '#5599ff';
-    ctx.fillText('✶ SHLD', 16, dotY + 22);
+    ctx.fillText(`✶ ${t('hudShld')}`, 16, dotY + 22);
     ctx.font = HUD_FONT;
   }
 
@@ -1441,9 +1443,9 @@ function drawHUD() {
   // Hi-score
   if (hiScore > 0) {
     ctx.fillStyle = 'rgba(255,255,255,0.28)';
-    ctx.font = '12px monospace';
+    ctx.font = '12px monospace, sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(`HI ${hiScore}`, uiCanvas.width - 16, 60);
+    ctx.fillText(`${t('hudHi')} ${hiScore}`, uiCanvas.width - 16, 60);
     ctx.textAlign = 'left';
   }
 
@@ -1461,14 +1463,14 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v64', 16, uiCanvas.height - 12);
+  ctx.fillText('v65', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
     ctx.fillStyle = 'rgba(255,255,255,0.18)';
-    ctx.font = '10px monospace';
+    ctx.font = '10px monospace, sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(`SEED ${runSeed.toString(16).toUpperCase().padStart(6,'0')}`, uiCanvas.width - 16, uiCanvas.height - 12);
+    ctx.fillText(`${t('seed')} ${runSeed.toString(16).toUpperCase().padStart(6,'0')}`, uiCanvas.width - 16, uiCanvas.height - 12);
     ctx.textAlign = 'left';
   }
 
@@ -1678,7 +1680,7 @@ function buildFeedbackPanel(slot) {
   box.style.cssText =
     'pointer-events:auto;user-select:text;display:block;width:min(440px,80vw);margin:0 auto 14px;' +
     'background:rgba(0,0,0,0.4);border:1.5px solid #445;border-radius:8px;color:#ccd;' +
-    'font-family:monospace;font-size:13px;padding:8px 10px;resize:none;outline:none';
+    'font-family:monospace,sans-serif;font-size:13px;padding:8px 10px;resize:none;outline:none';
   box.addEventListener('keydown', e => e.stopPropagation());
   slot.appendChild(box);
 
@@ -1790,17 +1792,11 @@ function spawnWave() {
 }
 
 // ── Upgrade cards ─────────────────────────────────────────────────────────────
+// Text lives in lang.js under c_<id> / c_<id>_d and is looked up at render time.
 const UPGRADE_POOL = [
-  { id: 'hp',         label: '+1 HP',          desc: 'Gain one extra hit point.' },
-  { id: 'speed',      label: 'Speed Up',       desc: 'Move 20% faster permanently.' },
-  { id: 'firerate',   label: 'Fire Rate Up',   desc: 'Fire 20% faster permanently.' },
-  { id: 'bigbullets', label: 'Bigger Bullets', desc: 'Player bullets are 30% larger.' },
-  { id: 'dashcd',     label: 'Dash Refresh',   desc: 'Dash cooldown −0.15 s.' },
-  { id: 'nuke',       label: 'Nuke',           desc: 'Clear all enemy bullets now.' },
-  { id: 'pierce',     label: 'Pierce',         desc: 'Bullets pass through enemies.' },
-  { id: 'magnet',     label: 'Magnet',         desc: 'Pickups drift toward you.' },
-  { id: 'shield',     label: 'Shield',         desc: 'Absorbs one hit; resets each wave.' },
-  { id: 'dashboom',   label: 'Dash Boom',      desc: 'Radial explosion on every dash.' },
+  { id: 'hp' }, { id: 'speed' }, { id: 'firerate' }, { id: 'bigbullets' },
+  { id: 'dashcd' }, { id: 'nuke' }, { id: 'pierce' }, { id: 'magnet' },
+  { id: 'shield' }, { id: 'dashboom' },
 ];
 
 function applyUpgrade(id) {
@@ -1839,11 +1835,11 @@ function showUpgradeCards() {
   const pool = [...UPGRADE_POOL].sort(() => Math.random() - 0.5).slice(0, 3);
   const panel = document.createElement('div');
   panel.id = 'upgrade-panel';
-  panel.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:60;font-family:monospace;color:#fff;';
+  panel.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:60;font-family:monospace,sans-serif;color:#fff;';
 
   const title = document.createElement('div');
   title.style.cssText = 'font-size:24px;font-weight:bold;margin-bottom:24px;text-shadow:0 0 20px #aa00ff;';
-  title.textContent = 'CHOOSE UPGRADE';
+  title.textContent = t('chooseUpgrade');
   panel.appendChild(title);
 
   const row = document.createElement('div');
@@ -1853,7 +1849,7 @@ function showUpgradeCards() {
   for (const card of pool) {
     const btn = document.createElement('div');
     btn.style.cssText = 'background:#1a1a2e;border:2px solid #5555cc;border-radius:8px;padding:20px 24px;min-width:140px;max-width:180px;text-align:center;cursor:pointer;';
-    btn.innerHTML = `<div style="font-size:16px;font-weight:bold;margin-bottom:8px">${card.label}</div><div style="font-size:12px;opacity:0.65">${card.desc}</div>`;
+    btn.innerHTML = `<div style="font-size:16px;font-weight:bold;margin-bottom:8px">${t('c_' + card.id)}</div><div style="font-size:12px;opacity:0.65">${t('c_' + card.id + '_d')}</div>`;
     btn.addEventListener('pointerover', () => { btn.style.borderColor = '#00ccaa'; });
     btn.addEventListener('pointerout',  () => { btn.style.borderColor = '#5555cc'; });
     btn.addEventListener('pointerdown', () => {
