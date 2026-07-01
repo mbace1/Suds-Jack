@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=22';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=22';
-import { Player, PLAYER_RADIUS } from './player.js?v=22';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=22';
-import { audio } from './audio.js?v=22';
-import { initDesigner } from './designer.js?v=22';
-import { t, getLang, setLang, langs } from './lang.js?v=22';
+import { InputManager } from './input.js?v=23';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=23';
+import { Player, PLAYER_RADIUS } from './player.js?v=23';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=23';
+import { audio } from './audio.js?v=23';
+import { initDesigner } from './designer.js?v=23';
+import { t, getLang, setLang, langs } from './lang.js?v=23';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1241,18 +1241,28 @@ function saveFeedback(selectedIds, selectedLabels, comment, likedIds = [], liked
   const list = JSON.parse(localStorage.getItem(KEY) || '[]');
   const atk = {};
   for (const e of hitEventLog) if (e.attacker) atk[e.attacker] = (atk[e.attacker] || 0) + 1;
+  // Hidden: a comment containing "fix" is also filed to an actionable fix list.
+  const isFix = !!comment && comment.toLowerCase().includes('fix');
   list.unshift({
     date: new Date().toISOString(),
     seed: runSeed, mode: roguelikeMode ? 'roguelike' : 'arcade',
     wave, time: Math.round(runTimer), score,
     reasons: selectedLabels, reasonIds: selectedIds,
     liked: likedLabels, likedIds,
-    comment: comment || '',
+    comment: comment || '', isFix,
     hits: hitEventLog.length,
     topAttacker: Object.entries(atk).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null,
   });
   if (list.length > 100) list.length = 100;
   localStorage.setItem(KEY, JSON.stringify(list));
+
+  if (isFix) {
+    const FIX_KEY = 'tokoDropFixList';
+    const fixes = JSON.parse(localStorage.getItem(FIX_KEY) || '[]');
+    fixes.unshift({ date: new Date().toISOString(), wave, comment, done: false });
+    if (fixes.length > 200) fixes.length = 200;
+    localStorage.setItem(FIX_KEY, JSON.stringify(fixes));
+  }
 }
 
 window._feedback = () => {
@@ -1276,6 +1286,16 @@ window._feedback = () => {
   if (comments.length) { console.log('\nCOMMENTS:'); comments.forEach(c => console.log(c)); }
   return list;
 };
+
+// Actionable fix list — comments containing "fix" are collected here so they
+// can be reviewed and worked through. Share this output to have them acted on.
+window._fixlist = () => {
+  const fixes = JSON.parse(localStorage.getItem('tokoDropFixList') || '[]');
+  console.log(`=== TOKO DROP FIX LIST (${fixes.length}) ===`);
+  fixes.forEach((f, i) => console.log(`  ${i + 1}. ${f.done ? '[done] ' : ''}[w${f.wave}] ${f.comment}`));
+  return fixes;
+};
+window._fixlistClear = () => { localStorage.removeItem('tokoDropFixList'); console.log('Fix list cleared.'); };
 
 window._feedbackExport = () => {
   const list = JSON.parse(localStorage.getItem('tokoDropFeedback') || '[]');
@@ -1463,7 +1483,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v66', 16, uiCanvas.height - 12);
+  ctx.fillText('v67', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1697,8 +1717,8 @@ function buildFeedbackPanel(slot) {
     b.className = 'fb-btn';
     b.textContent = text;
     b.style.cssText =
-      'pointer-events:auto;cursor:pointer;user-select:none;font-size:14px;font-weight:bold;' +
-      `padding:9px 20px;border-radius:8px;letter-spacing:1px;transition:all 0.12s;` +
+      'pointer-events:auto;cursor:pointer;user-select:none;font-size:12px;font-weight:bold;' +
+      `padding:8px 17px;border-radius:7px;letter-spacing:1px;transition:all 0.12s;` +
       `border:2px solid ${accent ? '#44cc88' : '#445'};` +
       `background:rgba(0,0,0,0.35);color:${accent ? '#88ffbb' : '#8888aa'};` +
       `text-shadow:${accent ? '0 0 12px #44cc88' : 'none'};`;
