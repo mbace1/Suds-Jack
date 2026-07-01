@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v67 — 2026-07-01
+**Smaller death-screen buttons + hidden "fix" feedback list**
+- Death-screen SEND/SKIP buttons shrunk ~12% (font 14→12px, padding 9×20→8×17, radius 8→7)
+- Hidden: a feedback comment containing **"fix"** is also filed to a dedicated `tokoDropFixList` — an actionable list of things to change. Inspect with `_fixlist()` (and `_fixlistClear()`) in the console
+- Feedback entries now carry an `isFix` flag
+- Cache-bust `?v=22` → `?v=23`; HUD label → v67
+
+---
+
 ## v66 — 2026-07-01
 **Language picker — all three options shown at once at the bottom**
 - Replaced the single cycling LANGUAGE chip with a **row of three chips (ENG / 日本語 / SUOMI)** at the bottom of the title screen; the active language is highlighted and tapping any one selects it directly
