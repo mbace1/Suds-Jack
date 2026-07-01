@@ -60,7 +60,7 @@ export class Enemy {
   takeDamage(d) { this.hp -= d; this.flash = 1; this.edge.color.setHex(0xff6b6b); if (this.hp <= 0) { this.hp = 0; this.alive = false; } return !this.alive; }
   dispose() { this.g.parent && this.g.parent.remove(this.g); }
 
-  update(dt, player, pool) {
+  update(dt, player, pool, heightAt = () => 0) {
     if (!this.alive) return;
     this.cd = Math.max(0, this.cd - dt);
     if (this.flash > 0) { this.flash = Math.max(0, this.flash - dt * 5); if (this.flash === 0) this.edge.color.setHex(C.line); }
@@ -78,10 +78,10 @@ export class Enemy {
       const keep = this.t.keep;
       if (dh > keep) { this.x += dx / dh * this.t.speed * dt; this.z += dz / dh * this.t.speed * dt; }
       else if (dh < keep * 0.6) { this.x -= dx / dh * this.t.speed * dt; this.z -= dz / dh * this.t.speed * dt; }
-      this.y = this.t.y + (this.boss ? Math.sin(this.bob) * 0.2 : 0);
     } else {
       this.x += dx / dh * this.t.speed * dt; this.z += dz / dh * this.t.speed * dt;
     }
+    if (!this.t.fly) this.y = heightAt(this.x, this.z) + this.t.y + (this.boss ? Math.sin(this.bob) * 0.2 : 0);   // walk on terrain
 
     if (this.cd === 0) {
       if (this.t.ranged) {

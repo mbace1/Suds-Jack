@@ -41,6 +41,77 @@ grid.material.transparent = true; grid.material.opacity = 0.45; scene.add(grid);
 const ring = new THREE.Mesh(new THREE.TorusGeometry(ARENA_R, 0.12, 6, 96),
   new THREE.MeshBasicMaterial({ color: 0x888888 })); ring.rotation.x = -Math.PI / 2; scene.add(ring);
 
+// ── Terrain (vertical test geometry) ──────────────────────────────────────────
+// Flat surfaces (platforms/steps) + linear ramps. heightAt() is authoritative for
+// physics; glow slabs/ramps render the white-line surfaces. Spawn (0,0) stays flat.
+const flats = [
+  { x0: 9,   x1: 24,  z0: -25, z1: -9,  top: 3.0 },   // raised NE platform
+  { x0: -25, x1: -11, z0: 9,   z1: 22,  top: 1.6 },   // low SW platform
+  { x0: -6,  x1: 6,   z0: 21,  z1: 31,  top: 2.2 },   // north platform
+  { x0: -9,  x1: -4,  z0: -11, z1: -6,  top: 0.7 },   // step
+  { x0: 5,   x1: 10,  z0: 6,   z1: 11,  top: 0.9 },   // step
+];
+const ramps = [
+  { x0: 13,  x1: 20,  z0: -9, z1: -1, hA: 3.0, hB: 0 },    // up to NE platform
+  { x0: -22, x1: -14, z0: 6,  z1: 9,  hA: 0,   hB: 1.6 },  // up to SW platform
+  { x0: -3,  x1: 3,   z0: 15, z1: 21, hA: 0,   hB: 2.2 },  // up to north platform
+];
+function heightAt(x, z) {
+  let h = 0;
+  for (const r of ramps) if (x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z1) {
+    const t = Math.min(1, Math.max(0, (z - r.z0) / (r.z1 - r.z0))); h = Math.max(h, r.hA + (r.hB - r.hA) * t);
+  }
+  for (const f of flats) if (x >= f.x0 && x <= f.x1 && z >= f.z0 && z <= f.z1) h = Math.max(h, f.top);
+  return h;
+}
+for (const f of flats) {
+  const g = glow(new THREE.BoxGeometry(f.x1 - f.x0, f.top, f.z1 - f.z0));
+  g.position.set((f.x0 + f.x1) / 2, f.top / 2, (f.z0 + f.z1) / 2); scene.add(g);
+}
+for (const r of ramps) {
+  const w = r.x1 - r.x0, lenZ = r.z1 - r.z0, rise = r.hB - r.hA;
+  const g = glow(new THREE.BoxGeometry(w, 0.12, Math.hypot(lenZ, rise)));
+  g.position.set((r.x0 + r.x1) / 2, (r.hA + r.hB) / 2, (r.z0 + r.z1) / 2);
+  g.rotation.x = -Math.atan2(rise, lenZ); scene.add(g);
+}
+
+// ── A→B objective challenge (beacon at each waypoint; reach A then B) ──────────
+const OBJ_SPOTS = [
+  { x: 16, z: -17 }, { x: -18, z: 15 }, { x: 0, z: 26 },     // on the platforms (need traversal)
+  { x: 32, z: 18 }, { x: -32, z: -18 }, { x: 28, z: -32 }, { x: -28, z: 32 }, { x: 0, z: -38 }, { x: 36, z: -4 },
+];
+const BEACON_COL = 0x35f0d8;
+const beacon = new THREE.Group();
+const beaconCol = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 22, 12, 1, true),
+  new THREE.MeshBasicMaterial({ color: BEACON_COL, transparent: true, opacity: 0.22, side: THREE.DoubleSide }));
+beaconCol.position.y = 11; beacon.add(beaconCol);
+const beaconRing = new THREE.Mesh(new THREE.TorusGeometry(3.2, 0.16, 8, 40), new THREE.MeshBasicMaterial({ color: BEACON_COL }));
+beaconRing.rotation.x = -Math.PI / 2; beaconRing.position.y = 0.12; beacon.add(beaconRing);
+scene.add(beacon); beacon.visible = false;
+const obj = { pts: [], idx: 0, r: 3.4 };
+function placeBeacon() { const w = obj.pts[obj.idx]; beacon.position.set(w.x, heightAt(w.x, w.z), w.z); beacon.visible = true; }
+function newChallenge() {
+  const pool2 = OBJ_SPOTS.slice();
+  const A = pool2.splice((Math.random() * pool2.length) | 0, 1)[0];
+  let B; do { B = pool2[(Math.random() * pool2.length) | 0]; } while (Math.hypot(B.x - A.x, B.z - A.z) < 28);
+  obj.pts = [A, B]; obj.idx = 0; placeBeacon();
+  toast('CHALLENGE — REACH A', BEACON_COL);
+}
+function objectiveUpdate(dt) {
+  beacon.rotation.y += dt * 0.8;
+  beaconRing.scale.setScalar(1 + Math.sin(performance.now() / 300) * 0.05);
+  const w = obj.pts[obj.idx];
+  if (Math.hypot(player.x - w.x, player.z - w.z) < obj.r) {
+    if (obj.idx === 0) { obj.idx = 1; placeBeacon(); toast('REACH B', BEACON_COL); audio.objective(0); }
+    else {
+      challenges++; player.heal(30);
+      burst(w.x, heightAt(w.x, w.z) + 1, w.z, BEACON_COL, 18);
+      toast('CHALLENGE COMPLETE  +heal', C.hp); audio.objective(1);
+      newChallenge();
+    }
+  }
+}
+
 // ── Objects ───────────────────────────────────────────────────────────────────
 const input = new InputManager(gameCanvas);
 const pool = new ProjectilePool(scene);
@@ -49,7 +120,7 @@ let enemies = [];
 
 // ── Run state ─────────────────────────────────────────────────────────────────
 let gameState = 'title';     // title | playing | paused | gameover
-let runTime = 0, kills = 0, shake = 0, restartTimer = 0;
+let runTime = 0, kills = 0, shake = 0, restartTimer = 0, fovKick = 0, challenges = 0;
 let credits = 0, spawnCD = 0, nextBoss = 65, bossAlive = false;
 let toasts = [];
 let best = parseFloat(localStorage.getItem('skltrBestTime') || '0');
@@ -90,9 +161,9 @@ function showGameOver() {
 // ── Flow ──────────────────────────────────────────────────────────────────────
 function startGame() {
   overlay.style.display = 'none';
-  runTime = 0; kills = 0; shake = 0; credits = 0; spawnCD = 0; nextBoss = 65; bossAlive = false; toasts = [];
+  runTime = 0; kills = 0; shake = 0; credits = 0; spawnCD = 0; nextBoss = 65; bossAlive = false; toasts = []; challenges = 0;
   for (const e of enemies) e.dispose(); enemies = []; pool.clear();
-  player.reset();
+  player.reset(); newChallenge();
   gameState = 'playing'; audio.start();
 }
 function gameOver() {
@@ -201,19 +272,20 @@ function screenToWorld(sx, sy) {         // swipe screen dir → world dir (came
   const s = Math.sin(input.yaw), c = Math.cos(input.yaw);
   let x = (-s) * (-sy) + c * sx, z = (-c) * (-sy) + (-s) * sx; const l = Math.hypot(x, z) || 1; return { x: x / l, z: z / l };
 }
+function didDash() { audio.dash(); fovKick = 1; }   // dash feedback: whoosh + camera punch
 input.onTap = () => {                    // tap: jump on ground, air-dash in the air
   if (gameState !== 'playing') return;
   if (player.grounded()) { if (player.jump()) audio.jump(); }
-  else if (player.airDash(dashDir())) audio.dash();
+  else if (player.airDash(dashDir())) didDash();
 };
-input.onSwipe = (sx, sy) => {            // swipe: dash in the flicked direction
+input.onSwipe = (sx, sy) => {            // swipe/flick: dash in the flicked direction
   if (gameState !== 'playing') return;
   const d = screenToWorld(sx, sy);
-  if (player.grounded() ? player.groundDash(d) : player.airDash(d)) audio.dash();
+  if (player.grounded() ? player.groundDash(d) : player.airDash(d)) didDash();
 };
 input.onDashKey = () => {                // desktop Q
   if (gameState !== 'playing') return;
-  if (player.grounded() ? player.groundDash(dashDir()) : player.airDash(dashDir())) audio.dash();
+  if (player.grounded() ? player.groundDash(dashDir()) : player.airDash(dashDir())) didDash();
 };
 input.onToggleAim = () => { player.autoAim = !player.autoAim; toast(player.autoAim ? 'AUTO-AIM ON' : 'AUTO-AIM OFF', C.adr); };
 input.onStart = () => { if (gameState === 'title' || gameState === 'gameover') startGame(); };
@@ -242,6 +314,8 @@ function updateCamera() {
   const camY = Math.max(1.0, hy - a.fy * dist + 0.25 + sy);   // never dip below the floor
   camera.position.set(hx - a.fx * dist + rx * shoulder * cp + sx, camY, hz - a.fz * dist + rz * shoulder * cp);
   camera.lookAt(camera.position.x + a.fx, camera.position.y + a.fy, camera.position.z + a.fz);
+  const fov = 66 + fovKick * 7;                              // dash punch
+  if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
 }
 
 // ── HUD ───────────────────────────────────────────────────────────────────────
@@ -259,6 +333,26 @@ function enemyBars() {
     const w = e.boss ? 160 : 34, h = e.boss ? 7 : 4;
     bar(sx - w / 2, sy, w, h, e.hp / e.maxHp, css(e.boss ? 0xff6b7e : 0xffffff));
   }
+}
+function drawObjective(W, H) {
+  const w = obj.pts[obj.idx]; if (!w) return;
+  const label = obj.idx === 0 ? 'A' : 'B';
+  _v.set(w.x, heightAt(w.x, w.z) + 2.4, w.z).project(camera);
+  const onScreen = _v.z < 1 && Math.abs(_v.x) < 0.96 && Math.abs(_v.y) < 0.96;
+  ctx.fillStyle = css(BEACON_COL); ctx.strokeStyle = css(BEACON_COL); ctx.lineWidth = 2; ctx.textAlign = 'center';
+  if (onScreen) {
+    const sx = (_v.x * .5 + .5) * W, sy = (-_v.y * .5 + .5) * H;
+    ctx.beginPath(); ctx.arc(sx, sy, 12, 0, 7); ctx.stroke();
+    ctx.font = 'bold 13px monospace'; ctx.fillText(label, sx, sy + 4);
+  } else {
+    const camAng = Math.atan2(-Math.cos(input.yaw), -Math.sin(input.yaw));
+    const bearing = Math.atan2(w.z - player.z, w.x - player.x) - camAng;
+    const r = Math.min(W, H) * 0.34, ax = W / 2 + Math.sin(bearing) * r, ay = H / 2 - Math.cos(bearing) * r;
+    ctx.save(); ctx.translate(ax, ay); ctx.rotate(bearing);
+    ctx.beginPath(); ctx.moveTo(0, -11); ctx.lineTo(9, 8); ctx.lineTo(-9, 8); ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+  const dist = Math.hypot(player.x - w.x, player.z - w.z) | 0;
+  ctx.font = 'bold 13px monospace'; ctx.fillText(`REACH ${label}  ·  ${dist}m`, W / 2, H - 42);
 }
 function reticle(W, H) {
   const locked = player._target;
@@ -284,6 +378,7 @@ function drawHUD() {
   if (gameState !== 'playing' && gameState !== 'paused') return;
 
   enemyBars();
+  drawObjective(W, H);
   reticle(W, H);
 
   // health + adrenaline (top-left)
@@ -307,7 +402,8 @@ function drawHUD() {
   // kills + best (top-right)
   ctx.textAlign = 'right';
   ctx.fillStyle = '#cdeaff'; ctx.font = 'bold 18px monospace'; ctx.fillText(`${kills} kills`, W - 16, 28);
-  if (best > 0) { ctx.fillStyle = 'rgba(205,234,255,.5)'; ctx.font = '11px monospace'; ctx.fillText(`best ${fmt(best)}`, W - 16, 46); }
+  ctx.fillStyle = css(BEACON_COL); ctx.font = 'bold 12px monospace'; ctx.fillText(`${challenges} runs`, W - 16, 46);
+  if (best > 0) { ctx.fillStyle = 'rgba(205,234,255,.5)'; ctx.font = '11px monospace'; ctx.fillText(`best ${fmt(best)}`, W - 16, 62); }
 
   // toasts
   ctx.textAlign = 'center'; ctx.font = 'bold 15px monospace';
@@ -336,18 +432,25 @@ function loop() {
   requestAnimationFrame(loop);
   const now = performance.now(); const dt = Math.min((now - prev) / 1000, 0.05); prev = now;
   if (shake > 0) shake = Math.max(0, shake - dt * 2.2);
+  if (fovKick > 0) fovKick = Math.max(0, fovKick - dt * 4);
   for (let i = toasts.length - 1; i >= 0; i--) { toasts[i].life -= dt; if (toasts[i].life <= 0) toasts.splice(i, 1); }
   computeAim();
 
   if (gameState === 'playing') {
     runTime += dt;
     input.updateLook(dt);
-    player.update(dt, input, _aim, enemies);
+    player.update(dt, input, _aim, enemies, heightAt);
     if (player._fired) audio.shoot();
-    for (const e of enemies) e.update(dt, player, pool);
+    if (player.dashing) {                       // fading dash streak
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.12, 4, 3), new THREE.MeshBasicMaterial({ color: C.player, transparent: true }));
+      m.position.set(player.x, player.y + 0.8, player.z); scene.add(m);
+      sparks.push({ m, vx: 0, vy: 0, vz: 0, life: 0.3 });
+    }
+    for (const e of enemies) e.update(dt, player, pool, heightAt);
     pool.update(dt);
     collide();
     director(dt);
+    objectiveUpdate(dt);
     updateSparks(dt);
   } else {
     if (gameState === 'gameover') { restartTimer -= dt; updateSparks(dt); if (restartTimer <= 0) startGame(); }
