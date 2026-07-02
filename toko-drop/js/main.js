@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=25';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=25';
-import { Player, PLAYER_RADIUS } from './player.js?v=25';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=25';
-import { audio } from './audio.js?v=25';
-import { initDesigner } from './designer.js?v=25';
-import { t, getLang, setLang, langs } from './lang.js?v=25';
+import { InputManager } from './input.js?v=26';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=26';
+import { Player, PLAYER_RADIUS } from './player.js?v=26';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=26';
+import { audio } from './audio.js?v=26';
+import { initDesigner } from './designer.js?v=26';
+import { t, getLang, setLang, langs } from './lang.js?v=26';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -647,9 +647,11 @@ const WEAPON_PODS = {
   L2: { mode: 'LASER2',  color: 0xff1133, level: 2 },
   R:  { mode: 'RAPID',   color: 0xaa55ff, level: 1 },
   R2: { mode: 'RAPID2',  color: 0xcc22ff, level: 2 },
+  H:  { mode: 'HOMING',  color: 0x44ddff, level: 1 },
+  H2: { mode: 'HOMING2', color: 0x22aaff, level: 2 },
 };
-const LV1_WEAPONS = ['S', 'B', 'L', 'R'];
-const LV2_WEAPONS = ['S2', 'B2', 'L2', 'R2'];
+const LV1_WEAPONS = ['S', 'B', 'L', 'R', 'H'];
+const LV2_WEAPONS = ['S2', 'B2', 'L2', 'R2', 'H2'];
 const NON_WEAPON_COLORS = { hp: 0xff4466, invincible: 0xffffff, firerate: 0xff88aa };
 
 function randomWeaponPodId(lv2Allowed = false) {
@@ -1481,7 +1483,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v69', 16, uiCanvas.height - 12);
+  ctx.fillText('v70', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2106,7 +2108,7 @@ function loop() {
     }
   }
 
-  bullets.update(dt, Math.max(HALF_X, HALF_Z));
+  bullets.update(dt, Math.max(HALF_X, HALF_Z), enemies);
 
   // Update / cull death FX
   chunkPool.update(dt);

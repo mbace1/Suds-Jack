@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { makeGooMat } from './enemy.js?v=25';
+import { makeGooMat } from './enemy.js?v=26';
 
 const SPEED          = 6;
 const DASH_SPEED     = 26;
@@ -298,13 +298,20 @@ export class Player {
           this._burstQueue.push({ t: 0.12, dx: aimDir.x, dz: aimDir.z }, { t: 0.24, dx: aimDir.x, dz: aimDir.z });
         }
         this.onShoot?.();
+      } else if (mode === 'HOMING' || mode === 'HOMING2') {
+        // Homing pod (v70): fires a bullet that gradually steers toward the
+        // nearest enemy; Lv2 locks on tighter (higher turn rate).
+        bullets.spawnDir(ox, oz, aimDir.x, aimDir.z, true, undefined, false, null, true,
+          mode === 'HOMING2' ? 10 : 6);
+        this.onShoot?.();
       } else {
         // SINGLE, LASER, LASER2, RAPID, RAPID2
         bullets.spawnDir(ox, oz, aimDir.x, aimDir.z, true);
         this.onShoot?.();
       }
       this._fireT = (mode === 'RAPID') ? baseRate * 0.45 :
-                    (mode === 'RAPID2') ? baseRate * 0.28 : baseRate;
+                    (mode === 'RAPID2') ? baseRate * 0.28 :
+                    (mode === 'HOMING2') ? baseRate * 0.75 : baseRate;
       // Muzzle flash at the barrel — shown immediately (fade handled next frames)
       this._muzzleT = 0.05;
       this._muzzle.position.set(
