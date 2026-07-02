@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { C } from './shared.js?v=4';
+import { C } from './shared.js?v=5';
 
 // 3D object-pooled neon projectiles, shared by player and enemies. Velocity is a
 // full 3D direction so shots travel any way (up at flyers, down from them).
@@ -38,7 +38,7 @@ export class ProjectilePool {
       p.x += p.dx * p.speed * dt; p.y += p.dy * p.speed * dt; p.z += p.dz * p.speed * dt;
       p.mesh.position.set(p.x, p.y, p.z);
       p.life -= dt;
-      if (p.life <= 0 || p.y < -1 || Math.abs(p.x) > 90 || Math.abs(p.z) > 90) this.recycle(i);
+      if (p.life <= 0 || p.y < -25 || Math.abs(p.x) > 140 || Math.abs(p.z) > 140) this.recycle(i);
     }
   }
   clear() { for (let i = this.active.length - 1; i >= 0; i--) this.recycle(i); }

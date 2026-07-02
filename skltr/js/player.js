@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Bunny, C } from './shared.js?v=4';
+import { Bunny, C } from './shared.js?v=5';
 
 const ADR_THRESH = [3, 6, 10, 15, 21];   // cumulative no-hit kills for tiers 1..5
 const STEP_MAX = 0.6;                     // ledges taller than this need a jump (act as walls)
@@ -26,11 +26,11 @@ export class Player {
     this.fireT = 0; this.dashCD = 0; this.dashT = 0; this.iframe = 0;
     this.dashing = false; this.dashElapsed = 0; this.dashDirX = 0; this.dashDirZ = 0; this._dashGround = true;
     this.airDashUsed = false; this.airJumpUsed = false; this._fired = false; this._target = false;
-    this.adr = 0; this.adrKills = 0; this.alive = true;
+    this.adr = 0; this.adrKills = 0; this.alive = true; this.groundY = 0;
     this.fig.visible(true);
   }
 
-  grounded() { return this.y <= 0.02; }
+  grounded() { return this.y <= this.groundY + 0.02; }
   adrDmgMul()  { return 1 + 0.06 * this.adr; }
   adrFireMul() { return 1 / (1 + 0.08 * this.adr); }
   addKill() { this.adrKills++; let t = 0; for (const k of ADR_THRESH) if (this.adrKills >= k) t++; this.adr = t; }
@@ -118,10 +118,11 @@ export class Player {
     const ground = heightAt(this.x, this.z);
     if (ground - this.y > STEP_MAX && this.vy <= 0.1) {   // too tall to step onto → act as a wall
       this.x = prevX; this.z = prevZ;
-      const g = heightAt(this.x, this.z);
+      const g = heightAt(this.x, this.z); this.groundY = g;
       if (this.y <= g) { this.y = g; this.vy = 0; this.airDashUsed = false; this.airJumpUsed = false; }
-    } else if (this.y <= ground) {
-      this.y = ground; this.vy = 0; this.airDashUsed = false; this.airJumpUsed = false;
+    } else {
+      this.groundY = ground;
+      if (this.y <= ground) { this.y = ground; this.vy = 0; this.airDashUsed = false; this.airJumpUsed = false; }
     }
 
     this.yaw = aim.yaw;
