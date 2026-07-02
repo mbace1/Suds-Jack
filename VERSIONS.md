@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v77 — 2026-07-02
+**Title/pause-menu polish: smaller controls block, chip-styled volume, trimmed pause menu**
+- Title screen controls block (Move/Aim/Dash/Pause/Eyes) shrunk to a smaller, tighter area: font 12→9.5px, line-height 2→1.6, constrained to `max-width:230px`
+- Volume slider restyled as a bordered menu-item chip (matching the REDUCE MOTION toggle's box treatment) instead of a bare native `<input type=range>` floating in space
+- **Pause menu refined**: the panel doubling as the real pause screen is now framed as one — title changed from "ENEMY DESIGNER" to "PAUSED" (bigger, brighter). The **VISUAL** tab (shader-uniform tuning: Fresnel/Specular/SSS/Shininess/color pickers) is removed entirely — real players pausing mid-run have no use for a Specular Sharpness slider. The enemy-tuning list/sliders (the "enemies page") are left as-is for now, to revisit separately
+- Dead code cleanup: `renderVisual()`, `colorRow()`, `fromHex()`, the now-single-tab tab bar, and the unused `getEnemies` designer param all removed
+- Cache-bust `?v=32` → `?v=33`; HUD label → v77
+
+---
+
 ## v76 — 2026-07-02
 **Run History view — final roadmap item**
 - New **RUN HISTORY** link on the title screen opens a panel listing the top 10 runs by score (rank/score/wave/time/mode) — no new tracking added, it's a view over `pb.runs`, which `recordRun()` has already been maintaining since v27

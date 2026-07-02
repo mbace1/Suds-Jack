@@ -1,5 +1,5 @@
-import { CFG, EnemyType, BLOB_TYPES } from './enemy.js?v=32';
-import { BULLET_CONFIG } from './bullet.js?v=32';
+import { CFG, EnemyType } from './enemy.js?v=33';
+import { BULLET_CONFIG } from './bullet.js?v=33';
 
 const TYPE_NAMES = {
   [EnemyType.GLOBBO]:      'GLOBBO',
@@ -23,7 +23,6 @@ const TYPE_NAMES = {
 const ALL_TYPES = Object.values(EnemyType);
 
 function toHex(n) { return '#' + (n ?? 0).toString(16).padStart(6, '0'); }
-function fromHex(s) { return parseInt(s.slice(1), 16); }
 function fmt(v, step) { return step < 1 ? v.toFixed(2) : Math.round(v).toString(); }
 
 function saveCFG() {
@@ -65,15 +64,7 @@ const CSS = `
     padding: 0 18px; height: 50px;
     border-bottom: 1px solid #141428; flex-shrink: 0;
   }
-  #dsgn .dtitle { font-size: 10px; letter-spacing: 4px; color: #2a2a44; }
-  #dsgn .dtabs  { display: flex; gap: 2px; }
-  #dsgn .dtab {
-    background: none; border: none; border-bottom: 2px solid transparent;
-    color: #555; cursor: pointer; font-family: monospace; font-size: 12px;
-    letter-spacing: 2px; padding: 6px 18px; transition: color .12s;
-  }
-  #dsgn .dtab.on  { color: #fff; border-color: #00ccaa; }
-  #dsgn .dtab:hover:not(.on) { color: #999; }
+  #dsgn .dtitle { font-size: 14px; font-weight: bold; letter-spacing: 4px; color: #8888aa; }
   #dsgn .dbody { display: flex; flex: 1; overflow: hidden; min-height: 0; }
   #dsgn .dlist {
     width: 170px; overflow-y: auto; border-right: 1px solid #141428;
@@ -118,10 +109,9 @@ const CSS = `
   }
 `;
 
-export function initDesigner({ getEnemies, onResume }) {
+export function initDesigner({ onResume }) {
   loadCFG();
   let selectedType = EnemyType.GLOBBO;
-  let activeTab    = 'gameplay';
 
   // ── Inject styles ─────────────────────────────────────────────────────────────
   const style = document.createElement('style');
@@ -129,15 +119,15 @@ export function initDesigner({ getEnemies, onResume }) {
   document.head.appendChild(style);
 
   // ── Build panel ───────────────────────────────────────────────────────────────
+  // This doubles as the real pause menu, so it's framed as one (PAUSED) rather
+  // than a raw dev tool — the enemy-tuning list/sliders stay for now (revisit
+  // separately); the VISUAL tab (shader-uniform tuning) was removed since
+  // real players pausing mid-run have no use for a Specular Sharpness slider.
   const panel = document.createElement('div');
   panel.id = 'dsgn';
   panel.innerHTML = `
     <div class="dh">
-      <span class="dtitle">ENEMY DESIGNER</span>
-      <div class="dtabs">
-        <button class="dtab on" data-t="gameplay">GAMEPLAY</button>
-        <button class="dtab"    data-t="visual">VISUAL</button>
-      </div>
+      <span class="dtitle">PAUSED</span>
       <button class="dbtn" id="d-reset">↺  RESET</button>
       <button class="dbtn" id="d-resume">✕  RESUME</button>
     </div>
@@ -147,14 +137,6 @@ export function initDesigner({ getEnemies, onResume }) {
     </div>
   `;
   document.body.appendChild(panel);
-
-  panel.querySelectorAll('.dtab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      activeTab = btn.dataset.t;
-      panel.querySelectorAll('.dtab').forEach(b => b.classList.toggle('on', b === btn));
-      renderControls();
-    });
-  });
 
   panel.querySelector('#d-reset').addEventListener('click', () => {
     localStorage.removeItem('tokoCFG');
@@ -199,11 +181,10 @@ export function initDesigner({ getEnemies, onResume }) {
   function renderControls() {
     const el = panel.querySelector('#d-cnt');
     el.innerHTML = '';
-    if (activeTab === 'gameplay') renderGameplay(el);
-    else                          renderVisual(el);
+    renderGameplay(el);
   }
 
-  // ── GAMEPLAY tab ──────────────────────────────────────────────────────────────
+  // ── Enemy tuning ──────────────────────────────────────────────────────────────
   function renderGameplay(el) {
     const cfg = CFG[selectedType];
 
@@ -244,77 +225,6 @@ export function initDesigner({ getEnemies, onResume }) {
     el.appendChild(mkExport());
   }
 
-  // ── VISUAL tab ────────────────────────────────────────────────────────────────
-  function renderVisual(el) {
-    const cfg    = CFG[selectedType];
-    const isBlob = BLOB_TYPES.has(selectedType);
-    const live   = getEnemies();
-
-    function liveGet(key, def, uniform = true) {
-      if (uniform) {
-        const e = live.find(e => e.type === selectedType && e.alive && e.mat?.uniforms?.[key]);
-        return e ? e.mat.uniforms[key].value : def;
-      }
-      const e = live.find(e => e.type === selectedType && e.alive && !e.mat?.uniforms);
-      return e ? e.mat[key] : def;
-    }
-
-    el.appendChild(sec('COLORS'));
-    el.appendChild(colorRow('Body Color', cfg.color, v => {
-      CFG[selectedType].color = v;
-      for (const e of live) {
-        if (e.type !== selectedType || !e.alive) continue;
-        if (e.mat.uniforms) e.mat.uniforms.uColor.value.setHex(v);
-        else e.mat.color.setHex(v);
-      }
-      const dots = panel.querySelectorAll('.ddot');
-      const idx  = ALL_TYPES.indexOf(selectedType);
-      if (dots[idx]) dots[idx].style.background = toHex(v);
-      saveCFG();
-    }));
-
-    if (cfg.bulletColor != null) {
-      el.appendChild(colorRow('Bullet Color', cfg.bulletColor, v => {
-        CFG[selectedType].bulletColor = v; saveCFG();
-      }));
-    }
-
-    el.appendChild(sec('MATERIAL'));
-    function blobSlider(label, min, max, step, key, def) {
-      return slider(label, min, max, step, liveGet(key, def), v => {
-        for (const e of live)
-          if (e.type === selectedType && e.alive && e.mat?.uniforms?.[key])
-            e.mat.uniforms[key].value = v;
-      });
-    }
-
-    const defOpacity = isBlob ? 0.82 : 0.88;
-    const curOpacity = liveGet(isBlob ? 'uOpacity' : 'opacity', defOpacity, isBlob);
-    el.appendChild(slider('Opacity', 0.05, 1.0, 0.01, curOpacity, v => {
-      for (const e of live) {
-        if (e.type !== selectedType || !e.alive) continue;
-        if (e.mat.uniforms) e.mat.uniforms.uOpacity.value = v;
-        else { e.mat.opacity = v; e.mat.needsUpdate = true; }
-      }
-    }));
-
-    if (isBlob) {
-      el.appendChild(sec('GOO SHADER'));
-      el.appendChild(blobSlider('Fresnel',        0,  2.0, 0.01, 'uFresnel',  0.62));
-      el.appendChild(blobSlider('Specular Sharp', 10, 200, 1,    'uSpecAPow', 88));
-      el.appendChild(blobSlider('Specular Soft',  1,  30,  0.5,  'uSpecBPow', 11));
-      el.appendChild(blobSlider('SSS Amount',     0,  1.5, 0.01, 'uSSS',      0.42));
-    } else {
-      el.appendChild(slider('Shininess', 10, 300, 5, liveGet('shininess', 100, false), v => {
-        for (const e of live)
-          if (e.type === selectedType && e.alive && !e.mat?.uniforms)
-            e.mat.shininess = v;
-      }));
-    }
-
-    el.appendChild(mkExport());
-  }
-
   // ── DOM helpers ───────────────────────────────────────────────────────────────
   function sec(label) {
     const d = document.createElement('div');
@@ -348,21 +258,6 @@ export function initDesigner({ getEnemies, onResume }) {
     });
 
     row.appendChild(lbl); row.appendChild(inp); row.appendChild(val);
-    return row;
-  }
-
-  function colorRow(label, hexInt, onChange) {
-    const row = document.createElement('div');
-    row.className = 'drow';
-
-    const lbl = document.createElement('span');
-    lbl.className = 'dlbl'; lbl.textContent = label;
-
-    const inp = document.createElement('input');
-    inp.type = 'color'; inp.value = toHex(hexInt);
-    inp.addEventListener('input', () => onChange(fromHex(inp.value)));
-
-    row.appendChild(lbl); row.appendChild(inp);
     return row;
   }
 
