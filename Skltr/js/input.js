@@ -52,7 +52,9 @@ export class InputManager {
   }
 
   _init() {
+    const typing = e => { const n = e.target && e.target.tagName; return n === 'TEXTAREA' || n === 'INPUT'; };
     addEventListener('keydown', e => {
+      if (typing(e)) return;                                 // don't hijack keys while typing feedback
       if (!this.keys[e.code]) {
         if (e.code === 'Space') this.onTap?.();
         else if (e.code === 'KeyQ') this.onDashKey?.();
@@ -63,7 +65,7 @@ export class InputManager {
       if (e.code === 'Space') e.preventDefault();
       this.keys[e.code] = true;
     });
-    addEventListener('keyup', e => { this.keys[e.code] = false; });
+    addEventListener('keyup', e => { if (!typing(e)) this.keys[e.code] = false; });
 
     this._arrowTimer = setInterval(() => {
       if (this.keys['ArrowLeft'])  this.yaw -= ARROW_SENS * 0.016;
@@ -73,7 +75,10 @@ export class InputManager {
     }, 16);
 
     addEventListener('mousedown', e => {
-      if (e.button === 0) { this._mouseDown = true; this.onStart?.('click'); if (!this.locked) this.canvas.requestPointerLock?.(); }
+      if (e.button !== 0) return;
+      const onUI = e.target && e.target.closest && e.target.closest('#overlay') && e.target.id !== 'overlay';
+      if (onUI) return;                                      // let overlay chips/buttons handle their own clicks
+      this._mouseDown = true; if (!this.locked) this.canvas.requestPointerLock?.();
     });
     addEventListener('mouseup', e => { if (e.button === 0) this._mouseDown = false; });
     addEventListener('contextmenu', e => e.preventDefault());
