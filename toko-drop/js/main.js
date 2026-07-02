@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=31';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=31';
-import { Player, PLAYER_RADIUS } from './player.js?v=31';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=31';
-import { audio } from './audio.js?v=31';
-import { initDesigner } from './designer.js?v=31';
-import { t, getLang, setLang, langs } from './lang.js?v=31';
+import { InputManager } from './input.js?v=32';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=32';
+import { Player, PLAYER_RADIUS } from './player.js?v=32';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=32';
+import { audio } from './audio.js?v=32';
+import { initDesigner } from './designer.js?v=32';
+import { t, getLang, setLang, langs } from './lang.js?v=32';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1514,7 +1514,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v75', 16, uiCanvas.height - 12);
+  ctx.fillText('v76', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1716,7 +1716,85 @@ function showTitle() {
     mBtn.addEventListener('touchend', e => e.stopPropagation());
     sslot.appendChild(mBtn);
     sslot.appendChild(mHint);
+
+    // Run History button (v76) — opens a panel over data already recorded
+    // in pb.runs (top 10 by score, maintained by recordRun()).
+    const rhBtn = document.createElement('div');
+    rhBtn.textContent = t('runHistory');
+    rhBtn.style.cssText =
+      'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
+      'font-size:12px;letter-spacing:1px;opacity:0.5;padding:4px 10px;text-decoration:underline;';
+    rhBtn.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); showRunHistory(); });
+    rhBtn.addEventListener('touchend', e => e.stopPropagation());
+    sslot.appendChild(rhBtn);
   }
+}
+
+// Run History panel (v76): lists the top runs already tracked in pb.runs —
+// no new tracking needed, just a view over data recordRun() already saves.
+function showRunHistory() {
+  // Panel is a document.body sibling of #overlay (like the upgrade-card panel),
+  // so switch gameState away from 'title' while it's open — otherwise the
+  // title screen's tap-to-start touchend handler (which only excludes taps
+  // inside #overlay) would also fire on every tap inside this panel,
+  // including CLOSE, immediately starting a run underneath it.
+  gameState = 'runhistory';
+  const panel = document.createElement('div');
+  panel.id = 'runhistory-panel';
+  panel.style.cssText =
+    'position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;' +
+    'align-items:center;justify-content:center;background:rgba(0,0,0,0.8);z-index:65;' +
+    'font-family:monospace,sans-serif;color:#fff;';
+
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:20px;font-weight:bold;margin-bottom:18px;letter-spacing:2px;text-shadow:0 0 16px #6688ff;';
+  title.textContent = t('runHistory');
+  panel.appendChild(title);
+
+  if (!pb.runs.length) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'font-size:13px;opacity:0.6;margin-bottom:20px';
+    empty.textContent = t('noRuns');
+    panel.appendChild(empty);
+  } else {
+    const list = document.createElement('div');
+    list.style.cssText =
+      'display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow-y:auto;' +
+      'width:min(440px,86vw);margin-bottom:20px;padding:4px';
+    const header = document.createElement('div');
+    header.style.cssText =
+      'display:grid;grid-template-columns:28px 1fr 1fr 1fr 1fr;gap:8px;' +
+      'font-size:10px;opacity:0.45;letter-spacing:1px;padding:0 10px;';
+    header.innerHTML = `<span>#</span><span>${t('rhScore')}</span><span>${t('rhWave')}</span>` +
+      `<span>${t('rhTime')}</span><span>${t('rhMode')}</span>`;
+    list.appendChild(header);
+    pb.runs.forEach((r, i) => {
+      const row = document.createElement('div');
+      row.style.cssText =
+        'display:grid;grid-template-columns:28px 1fr 1fr 1fr 1fr;gap:8px;align-items:center;' +
+        `background:rgba(255,255,255,${i % 2 === 0 ? 0.04 : 0.0});border-radius:6px;` +
+        'font-size:12px;padding:6px 10px;';
+      row.innerHTML =
+        `<span style="opacity:0.5">${i + 1}</span>` +
+        `<span style="color:#ffdd44">${r.score}</span>` +
+        `<span>${r.wave}</span>` +
+        `<span>${fmtTime(r.time)}</span>` +
+        `<span style="opacity:0.6;font-size:10px">${r.mode === 'roguelike' ? 'ROGUE' : 'ARCADE'}</span>`;
+      list.appendChild(row);
+    });
+    panel.appendChild(list);
+  }
+
+  const closeBtn = document.createElement('div');
+  closeBtn.textContent = t('close');
+  closeBtn.style.cssText =
+    'cursor:pointer;user-select:none;font-size:13px;font-weight:bold;letter-spacing:1px;' +
+    'padding:8px 22px;border-radius:8px;border:2px solid #6688ff;color:#aaccff;' +
+    'background:rgba(0,0,0,0.35);text-shadow:0 0 10px #4466ff;';
+  closeBtn.addEventListener('pointerdown', () => { panel.remove(); gameState = 'title'; });
+  panel.appendChild(closeBtn);
+
+  document.body.appendChild(panel);
 }
 
 function showGameOver() {
@@ -2097,8 +2175,8 @@ function loop() {
   input.pollGamepad();
   updateShake(dt);
 
-  // Title / paused — just render the scene, no game logic
-  if (gameState === 'title' || gameState === 'paused' || gameState === 'upgrade') {
+  // Title / paused / run-history — just render the scene, no game logic
+  if (gameState === 'title' || gameState === 'paused' || gameState === 'upgrade' || gameState === 'runhistory') {
     renderer.render(scene, camera);
     drawHUD();
     return;

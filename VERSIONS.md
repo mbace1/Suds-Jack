@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v76 — 2026-07-02
+**Run History view — final roadmap item**
+- New **RUN HISTORY** link on the title screen opens a panel listing the top 10 runs by score (rank/score/wave/time/mode) — no new tracking added, it's a view over `pb.runs`, which `recordRun()` has already been maintaining since v27
+- Introduces a `'runhistory'` `gameState` while the panel is open (mirrors how `showUpgradeCards()` uses `'upgrade'`): needed because the panel is a `document.body` sibling of `#overlay`, and the title screen's tap-to-start `touchend` handler only excludes taps *inside* `#overlay` — without this, tapping anywhere in the panel (including CLOSE) would have also started a new run underneath it. Added to the idle-render early-return alongside title/paused/upgrade so it doesn't fall through into full gameplay-tick logic
+- Localized (en/ja/fi)
+- Cache-bust `?v=31` → `?v=32`; HUD label → v76
+
+This completes the full **Systems & meta** bucket, closing out the entire post-v68 roadmap: new content (v70–72), polish & juice (v73–74), systems & meta (v75–76).
+
+---
+
 ## v75 — 2026-07-02
 **Settings screen — volume slider + reduce-motion toggle**
 - New **VOLUME** slider (0–100%, persisted `tokoDropVolume`) on the title screen; `AudioSystem` gains `setVolume()` — a master gain multiplier applied in `_tone()`/`_noise()`, so every existing sound effect respects it with no per-call-site changes
