@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=29';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=29';
-import { Player, PLAYER_RADIUS } from './player.js?v=29';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=29';
-import { audio } from './audio.js?v=29';
-import { initDesigner } from './designer.js?v=29';
-import { t, getLang, setLang, langs } from './lang.js?v=29';
+import { InputManager } from './input.js?v=30';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=30';
+import { Player, PLAYER_RADIUS } from './player.js?v=30';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=30';
+import { audio } from './audio.js?v=30';
+import { initDesigner } from './designer.js?v=30';
+import { t, getLang, setLang, langs } from './lang.js?v=30';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1322,6 +1322,7 @@ window._feedbackExport = () => {
 // 'title' | 'playing' | 'paused' | 'gameover'
 let gameState    = 'title';
 let _hitFlashT   = 0;
+let waveClearFlashT = 0; // v74: brief white pulse marking the instant a wave clears
 
 // ── UI canvas ─────────────────────────────────────────────────────────────────
 const uiCanvas = document.getElementById('canvas-ui');
@@ -1370,6 +1371,14 @@ function drawHUD() {
     vgrd.addColorStop(0, `rgba(255,0,0,0)`);
     vgrd.addColorStop(1, `rgba(255,0,0,${alpha.toFixed(2)})`);
     ctx.fillStyle = vgrd;
+    ctx.fillRect(0, 0, uiCanvas.width, uiCanvas.height);
+  }
+
+  // Wave-clear flash (v74): a brief bright pulse marking the instant the last
+  // enemy dies — waves already end instantly (v22) but had no visual beat.
+  if (waveClearFlashT > 0) {
+    const alpha = (waveClearFlashT / 0.4) * 0.3;
+    ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(2)})`;
     ctx.fillRect(0, 0, uiCanvas.width, uiCanvas.height);
   }
 
@@ -1494,7 +1503,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v73', 16, uiCanvas.height - 12);
+  ctx.fillText('v74', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1906,7 +1915,7 @@ function startGame() {
   document.getElementById('upgrade-panel')?.remove();
   input.reset();
   applyArenaMode(landscapeMode);
-  score  = 0; streak = 0; wave = 0; runTimer = 0; scoreMultT = 0;
+  score  = 0; streak = 0; wave = 0; runTimer = 0; scoreMultT = 0; waveClearFlashT = 0;
   collectedUpgrades = []; hitEventLog = []; _lastHitTime = -1;
   BULLET_CONFIG.playerBulletScale  = 1.0;
   BULLET_CONFIG.playerPiercing     = false;
@@ -2085,6 +2094,7 @@ function loop() {
   }
   _prevDashing = player.dashing;
   if (_hitFlashT > 0) _hitFlashT -= dt;
+  if (waveClearFlashT > 0) waveClearFlashT -= dt;
 
   for (const e of enemies) { e.update(dt, player.position, bullets, HALF_X, HALF_Z); e.updateDeath(dt); }
 
@@ -2519,6 +2529,8 @@ function loop() {
       enemies.every(e => !e.alive && !e._dying)) {
     pendingSpawns = [];
     score += wave * 500;
+    waveClearFlashT = 0.4;
+    audio.waveClear();
     if (roguelikeMode) showUpgradeCards();
     else               spawnWave();
   }

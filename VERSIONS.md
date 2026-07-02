@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v74 — 2026-07-02
+**Wave-clear flash — the instant-end (v22) now gets a visual + audio beat**
+- Waves have ended instantly on the last kill since v22, but nothing marked the moment — added a brief white screen pulse (`waveClearFlashT`, 0.4 s, fades from 30% opacity) drawn on the HUD canvas the instant `enemies.every(dead)` triggers
+- Also wired up `audio.waveClear()` — a 4-note ascending chime that's existed in `audio.js` since early versions but was never actually called anywhere
+- Cache-bust `?v=29` → `?v=30`; HUD label → v74
+
+---
+
 ## v73 — 2026-07-02
 **Per-blob visual accents — the 5 blobs now read distinctly at a glance**
 - Each blob got a distinct *behaviour* in v58 (pounce/aimed-ring/wide-fan/orbit-spiral/burst) but all still shared the identical goo shader, making them hard to tell apart mid-swarm. Added small glowing accent beacons (children of the mesh, own `MeshBasicMaterial`, additive) so silhouette + colour now differ per type without touching the shared goo shader (used by every blob **and** the player)
