@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=27';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=27';
-import { Player, PLAYER_RADIUS } from './player.js?v=27';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=27';
-import { audio } from './audio.js?v=27';
-import { initDesigner } from './designer.js?v=27';
-import { t, getLang, setLang, langs } from './lang.js?v=27';
+import { InputManager } from './input.js?v=28';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=28';
+import { Player, PLAYER_RADIUS } from './player.js?v=28';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=28';
+import { audio } from './audio.js?v=28';
+import { initDesigner } from './designer.js?v=28';
+import { t, getLang, setLang, langs } from './lang.js?v=28';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -651,7 +651,7 @@ const WEAPON_PODS = {
 };
 const LV1_WEAPONS = ['S', 'B', 'L', 'R', 'H'];
 const LV2_WEAPONS = ['S2', 'B2', 'L2', 'R2', 'H2'];
-const NON_WEAPON_COLORS = { hp: 0xff4466, invincible: 0xffffff, firerate: 0xff88aa };
+const NON_WEAPON_COLORS = { hp: 0xff4466, invincible: 0xffffff, firerate: 0xff88aa, scoremult: 0xffdd22 };
 
 function randomWeaponPodId(lv2Allowed = false) {
   if (lv2Allowed && Math.random() < 0.28) return LV2_WEAPONS[Math.floor(Math.random() * LV2_WEAPONS.length)];
@@ -888,6 +888,7 @@ let collectedUpgrades = []; // upgrade ids applied this run (roguelike)
 let hitEventLog       = []; // one entry per HP-loss event this run
 const STREAK_FLASH_DUR = 0.4;
 let streakFlashT = 0;
+let scoreMultT = 0; // Score Multiplier powerup (v72): ×2 score on kill while active
 // ── Personal bests (local; structured for a future online leaderboard) ───────
 const PB_KEY = 'tokoDropPB';
 function loadPB() {
@@ -970,7 +971,7 @@ window.addEventListener('gamepadconnected', () => {
 
 function onKill(e) {
   streak++;
-  score += 100 * streak;
+  score += 100 * streak * (scoreMultT > 0 ? 2 : 1);
   streakFlashT = STREAK_FLASH_DUR;
   addShake(0.07 + e.radius * 0.13);  // heavier enemies kick the camera harder
   const _cat = BLOB_TYPES.has(e.type) ? 'blob'
@@ -1438,6 +1439,16 @@ function drawHUD() {
     ctx.font = HUD_FONT;
   }
 
+  // Score Multiplier indicator (v72)
+  if (scoreMultT > 0) {
+    ctx.textAlign = 'right';
+    ctx.font = 'bold 12px monospace, sans-serif';
+    ctx.fillStyle = `rgba(255,221,34,${0.6 + 0.4 * Math.sin(performance.now() * 0.01)})`;
+    ctx.fillText(`×2 ${t('hudScoreMult')}`, uiCanvas.width - 16, 78);
+    ctx.font = HUD_FONT;
+    ctx.textAlign = 'left';
+  }
+
   // Damage numbers
   ctx.textAlign = 'center';
   for (const dn of damageNumbers) {
@@ -1483,7 +1494,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v71', 16, uiCanvas.height - 12);
+  ctx.fillText('v72', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1895,7 +1906,7 @@ function startGame() {
   document.getElementById('upgrade-panel')?.remove();
   input.reset();
   applyArenaMode(landscapeMode);
-  score  = 0; streak = 0; wave = 0; runTimer = 0;
+  score  = 0; streak = 0; wave = 0; runTimer = 0; scoreMultT = 0;
   collectedUpgrades = []; hitEventLog = []; _lastHitTime = -1;
   BULLET_CONFIG.playerBulletScale  = 1.0;
   BULLET_CONFIG.playerPiercing     = false;
@@ -2175,6 +2186,7 @@ function loop() {
     if (!damageNumbers[i].update(dt)) damageNumbers.splice(i, 1);
   }
   if (streakFlashT > 0) streakFlashT -= dt;
+  if (scoreMultT   > 0) scoreMultT   -= dt;
 
   // SLUDGE_CUBE ribbon: create on first sight, update every frame
   for (const e of enemies) {
@@ -2412,7 +2424,7 @@ function loop() {
           }
           addShake(0.14);
           audio.pickup();
-          const gateTypes = ['hp', 'invincible', 'firerate'];
+          const gateTypes = ['hp', 'invincible', 'firerate', 'scoremult'];
           powerups.push(new Powerup(scene, g._x, g._z, gateTypes[Math.floor(Math.random() * gateTypes.length)]));
         }
       }
@@ -2466,6 +2478,8 @@ function loop() {
         player.hp = Math.min(player.maxHp, player.hp + 1);
       } else if (pu._type === 'firerate') {
         player.grantFireRateBoost(8.0);
+      } else if (pu._type === 'scoremult') {
+        scoreMultT = 10.0;
       }
       // Dismiss the paired choice pod if this was a 2-option pickup
       if (pu._pairedWith) {

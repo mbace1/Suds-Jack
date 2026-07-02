@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v72 — 2026-07-02
+**New powerup: Score Multiplier — gate drops now have 4 options**
+- New **Score Multiplier** powerup (gold orb): doubles all kill-streak score for 10 s. Drops from gates alongside HP/Invincible/Fire Rate
+- Pulsing gold `×2 SCORE` HUD indicator (right side, below HI) shows while active; localized in en/ja/fi
+- `scoreMultT` timer added alongside the existing streak-flash/hit-flash timers; multiplies the `100 × streak` kill score only (the once-per-wave clear bonus is unaffected — a deliberate scope choice, not a bug)
+- Cache-bust `?v=27` → `?v=28`; HUD label → v72
+
+---
+
 ## v71 — 2026-07-02
 **Boss-exclusive enemy: OMEGA — every-8th-wave boss is no longer just a scaled-up regular**
 - New **OMEGA** enemy type: a faceted crystal core (icosahedron geometry, distinct from every blob/cube/TORO silhouette) that only ever spawns as the guaranteed every-8th-wave boss — never appears in the regular enemy pool
