@@ -240,7 +240,8 @@ function buildFeedbackPanel(slot) {
         el.style.cssText = 'pointer-events:auto;cursor:pointer;user-select:none;font-size:12px;padding:7px 13px;border-radius:16px;transition:all .1s;'
           + `border:1.5px solid ${s ? on.b : '#3a4a6a'};background:${s ? on.bg : 'rgba(0,0,0,.3)'};color:${s ? on.c : '#8888aa'};text-shadow:${s ? on.g : 'none'};`; };
       paint();
-      el.addEventListener('click', e => { e.stopPropagation(); set.has(r.id) ? set.delete(r.id) : set.add(r.id); paint(); });
+      el.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); set.has(r.id) ? set.delete(r.id) : set.add(r.id); paint(); });
+      el.addEventListener('touchend', e => e.stopPropagation());
       row.appendChild(el);
     }
     slot.appendChild(row);
@@ -256,7 +257,8 @@ function buildFeedbackPanel(slot) {
     const b = document.createElement('div'); b.textContent = text;
     b.style.cssText = 'pointer-events:auto;cursor:pointer;user-select:none;font-size:12px;font-weight:bold;padding:8px 17px;border-radius:7px;letter-spacing:1px;transition:all .12s;'
       + `border:2px solid ${ac ? '#44cc88' : '#3a4a6a'};background:rgba(0,0,0,.35);color:${ac ? '#88ffbb' : '#8888aa'};text-shadow:${ac ? '0 0 12px #44cc88' : 'none'};`;
-    b.addEventListener('click', e => { e.stopPropagation(); cb(); }); return b;
+    b.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); cb(); });
+    b.addEventListener('touchend', e => e.stopPropagation()); return b;
   };
   btnRow.appendChild(mkBtn(t('fbSend'), true, () => {
     saveFeedback([...selected], [...selected].map(id => labelById[id]), box.value.trim(), [...liked], [...liked].map(id => labelById[id]));

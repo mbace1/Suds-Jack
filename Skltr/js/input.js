@@ -89,11 +89,14 @@ export class InputManager {
       this.pitch = clampPitch(this.pitch - (e.movementY || 0) * MOUSE_SENS * MOUSE_PITCH);
     });
 
+    // Let taps on overlay UI (chips / buttons / textarea) behave natively — don't
+    // preventDefault or turn them into sticks, so clicks fire and the textarea focuses.
+    const onOverlayUI = e => { const t = e.target; return t && t.closest && t.closest('#overlay') && t.id !== 'overlay'; };
     const opt = { passive: false };
-    addEventListener('touchstart', e => { e.preventDefault(); this._tStart(e); }, opt);
-    addEventListener('touchmove', e => { e.preventDefault(); this._tMove(e); }, opt);
-    addEventListener('touchend', e => { e.preventDefault(); this._tEnd(e); }, opt);
-    addEventListener('touchcancel', e => { e.preventDefault(); this._tEnd(e); }, opt);
+    addEventListener('touchstart', e => { if (onOverlayUI(e)) return; e.preventDefault(); this._tStart(e); }, opt);
+    addEventListener('touchmove', e => { if (onOverlayUI(e)) return; e.preventDefault(); this._tMove(e); }, opt);
+    addEventListener('touchend', e => { if (onOverlayUI(e)) return; e.preventDefault(); this._tEnd(e); }, opt);
+    addEventListener('touchcancel', e => { if (onOverlayUI(e)) return; e.preventDefault(); this._tEnd(e); }, opt);
   }
 
   _hitBtn(x, y) { for (const b of this.btns) if (Math.hypot(x - b.x, y - b.y) < b.r) return b; return null; }
