@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v73 — 2026-07-02
+**Per-blob visual accents — the 5 blobs now read distinctly at a glance**
+- Each blob got a distinct *behaviour* in v58 (pounce/aimed-ring/wide-fan/orbit-spiral/burst) but all still shared the identical goo shader, making them hard to tell apart mid-swarm. Added small glowing accent beacons (children of the mesh, own `MeshBasicMaterial`, additive) so silhouette + colour now differ per type without touching the shared goo shader (used by every blob **and** the player)
+- **GLOBBO** (Pouncer): single forward beacon. **SPITTOR**: one large "mouth" beacon. **FANNER**: 3-wide fan of beacons. **WEEVA**: single beacon that continuously orbits the body (echoes its fired spiral). **SPLITTA**: twin "eye" beacons
+- Beacon colour reuses each type's `bulletColor` — the colour of the bullets it actually fires, reinforcing recognition
+- Cache-bust `?v=28` → `?v=29`; HUD label → v73
+
+---
+
 ## v72 — 2026-07-02
 **New powerup: Score Multiplier — gate drops now have 4 options**
 - New **Score Multiplier** powerup (gold orb): doubles all kill-streak score for 10 s. Drops from gates alongside HP/Invincible/Fire Rate
