@@ -54,6 +54,8 @@ class Bullet {
     this.fat = false;
     this.speed = ENEMY_BULLET_SPEED;
     this.originType = null; // enemy type that fired this bullet (null = player / gate / dash-boom)
+    this.homing = false;    // Homing pod (v70): steers toward the nearest enemy each frame
+    this.turnRate = 0;
   }
 }
 
@@ -63,7 +65,7 @@ export class BulletPool {
     this.active = [];
   }
 
-  spawnDir(x, z, dx, dz, isPlayer, color, fat = false, originType = null) {
+  spawnDir(x, z, dx, dz, isPlayer, color, fat = false, originType = null, homing = false, turnRate = 6) {
     const b = this._pool.pop();
     if (!b) return;
     const speed = isPlayer ? PLAYER_BULLET_SPEED : (fat ? 3.5 : BULLET_CONFIG.enemySpeed);
@@ -76,6 +78,7 @@ export class BulletPool {
     b.mat.color.set(resolvedColor);
     b.vx = dx * speed; b.vz = dz * speed;
     b.alive = true; b.isPlayer = isPlayer; b.originType = originType;
+    b.homing = homing; b.turnRate = turnRate;
     b.lifetime = 4;
     b.mesh.visible = true;
     b._phase = Math.random() * Math.PI * 2;
@@ -86,9 +89,10 @@ export class BulletPool {
     this.active.push(b);
   }
 
-  update(dt, halfSize) {
+  update(dt, halfSize, enemies = null) {
     for (let i = this.active.length - 1; i >= 0; i--) {
       const b = this.active[i];
+      if (b.homing && enemies) this._steerHoming(b, dt, enemies);
       b.mesh.position.x += b.vx * dt;
       b.mesh.position.z += b.vz * dt;
       b.lifetime -= dt;
@@ -111,6 +115,26 @@ export class BulletPool {
     }
   }
 
+  // Rotates the bullet's velocity a fraction of the way toward the nearest
+  // alive enemy each frame — a turn, not a snap, so it reads as "homing" and
+  // stays dodgeable rather than becoming a guaranteed hit.
+  _steerHoming(b, dt, enemies) {
+    let nearest = null, nearestD2 = Infinity;
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      const dx = e.position.x - b.mesh.position.x, dz = e.position.z - b.mesh.position.z;
+      const d2 = dx * dx + dz * dz;
+      if (d2 < nearestD2) { nearestD2 = d2; nearest = e; }
+    }
+    if (!nearest) return;
+    const dx = nearest.position.x - b.mesh.position.x, dz = nearest.position.z - b.mesh.position.z;
+    const len = Math.hypot(dx, dz) || 1;
+    const tx = (dx / len) * b.speed, tz = (dz / len) * b.speed;
+    const turn = Math.min(1, b.turnRate * dt);
+    b.vx += (tx - b.vx) * turn;
+    b.vz += (tz - b.vz) * turn;
+  }
+
   recycleAt(i) {
     const b = this.active[i];
     b.alive = false;
@@ -119,6 +143,7 @@ export class BulletPool {
     b.shadow.visible = false;
     b.fat = false;
     b.originType = null;
+    b.homing = false;
     this.active.splice(i, 1);
     this._pool.push(b);
   }

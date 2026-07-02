@@ -3,104 +3,35 @@
 <!-- Rules:
   - Add a new ## vN entry at the top for EVERY commit that touches game files.
   - Stage this file alongside your changes: git add VERSIONS.md
-  - When v60 is reached, move v51–v59 into the Archive section below.
+  - When a new multiple of 10 is reached, move the prior decade's entries into the Archive section below.
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v69 — 2026-07-02
-**Fix: wave 8 (first boss) was unreachable — two enemies fired far more than intended**
-- **WEEVA** (unlocks wave 2!) was checking its raw, unscaled `cfg.fireInterval` (0.08s) directly instead of the shared `interval` var every other enemy uses — a **constant 12.5 bullets/sec from its very first appearance**, un-scaled by wave, with v58's added closing-distance movement stacked on top. Fixed to scale with `intervalMult` like everything else, and raised the base interval 0.08 → 0.16s so wave-2 output drops to a reasonable ~6.6/sec while still escalating properly at higher waves
-- **PURP_CUBE** (v61's 2-arm spiral) fired 2 bullets per pulse at the *same* cadence as the old 1-bullet version — a straight doubling of output introduced as a visual change, not a balance one. Pulse interval `0.5→1.0 × intervalMult` restores the original total bullets/sec while keeping the 2-arm galaxy look
-- Confirmed via investigation: bullet collision radii (`BULLET_R`/`FAT_BULLET_R`), player stats (HP/dash/mercy), and the overall wave-budget curve were all unaffected — this was two specific enemy-level anomalies, not a broad difficulty problem
-- Cache-bust `?v=24` → `?v=25`; HUD label → v69
-
----
-
-## v68 — 2026-07-01
-**Fewer feedback chips on the death screen**
-- Positive "WHAT DID YOU ENJOY?" row trimmed 6 → 4 (weapon pods / boss fights / movement feel / dodging)
-- Negative "WHAT WENT WRONG?" row cap lowered 6 → 4 (telemetry-derived reasons still take priority)
-- SEND & CONTINUE / SKIP buttons unchanged
-- Cache-bust `?v=23` → `?v=24`; HUD label → v68
-
----
-
-## v67 — 2026-07-01
-**Smaller death-screen buttons + hidden "fix" feedback list**
-- Death-screen SEND/SKIP buttons shrunk ~12% (font 14→12px, padding 9×20→8×17, radius 8→7)
-- Hidden: a feedback comment containing **"fix"** is also filed to a dedicated `tokoDropFixList` — an actionable list of things to change. Inspect with `_fixlist()` (and `_fixlistClear()`) in the console
-- Feedback entries now carry an `isFix` flag
-- Cache-bust `?v=22` → `?v=23`; HUD label → v67
-
----
-
-## v66 — 2026-07-01
-**Language picker — all three options shown at once at the bottom**
-- Replaced the single cycling LANGUAGE chip with a **row of three chips (ENG / 日本語 / SUOMI)** at the bottom of the title screen; the active language is highlighted and tapping any one selects it directly
-- `lang.js` gains `setLang(code)` and `langs()` (returns `{code,label}[]`); `cycleLang`/`langLabel` retained but no longer used by the title
-- Cache-bust `?v=21` → `?v=22`; HUD label → v66
-
----
-
-## v65 — 2026-07-01
-**Full localization — HUD + upgrade cards now translate too**
-- Finishes the v64 language toggle: the previously-English-only bits now localize with the toggle
-- **On-canvas HUD** localized: `WAVE`, `×N STREAK`, `✶ SHLD`, `HI`, `SEED` (score/FPS/version stay numeric/universal); HUD + overlay fonts get a `sans-serif` fallback so Japanese glyphs render (monospace often lacks CJK; canvas/CSS fall back per-glyph)
-- **Roguelike upgrade cards** localized: `UPGRADE_POOL` reduced to ids, text moved to lang.js `c_<id>`/`c_<id>_d`; "CHOOSE UPGRADE" title localized
-- Added `hudStreak`/`hudShld`/`hudHi`/`chooseUpgrade` + 10 card label/desc pairs across en/ja/fi
-- Cache-bust `?v=20` → `?v=21`; HUD label → v65
-
----
-
-## v64 — 2026-07-01
-**Language toggle — English / 日本語 / Suomi**
-- New `lang.js` i18n module: `STRINGS` table for `en`/`ja`/`fi`, `t(key, ...args)` lookup with English fallback, `cycleLang()`/`langLabel()`, choice persisted under `tokoDropLang`
-- Title screen gains a **LANGUAGE** toggle chip (ENG → 日本語 → SUOMI) that re-renders the title in the chosen language
-- Localized: title subtitle, best-run line, tap-to-start, controls block, orientation + roguelike toggles and their hints, death screen (YOU DIED / wave-time-pts / best badges / seed), wave banner, and the full feedback panel (both chip headings, all positive + negative chip labels including telemetry-derived ones, textarea placeholder, SEND/SKIP)
-- Left in English by design: on-canvas HUD labels (canvas monospace renders CJK unreliably) and roguelike upgrade cards
-- `bump-version.sh` now also token-syncs `lang.js`
-- Cache-bust `?v=19` → `?v=20`; HUD label → v64
-
----
-
-## v63 — 2026-07-01
-**Positive feedback on the death screen**
-- Death-screen feedback now leads with a green **"WHAT DID YOU ENJOY?"** chip row (weapon pods / boss fights / movement feel / dodging / enemy variety / visuals) above the existing red "WHAT WENT WRONG?" row
-- Chip-row rendering refactored into a shared `addChipRow(heading, reasons, set, accent)` helper (pos = green, neg = red); positive picks persisted under `liked`/`likedIds` in `tokoDropFeedback`
-- `window._feedback()` console summary now tallies LIKED and WENT WRONG separately
-- Cache-bust `?v=18` → `?v=19`; HUD label → v63
-
----
-
-## v62 — 2026-07-01
-**Boss enrage now actually affects the boss (TORO)**
-- v59's enrage multiplied `spd`, but the every-8th-wave boss is almost always a TORO, whose charge behaviour uses hardcoded speeds — so enrage was visual-only (red ring) on the real boss
-- Enraged TORO now stalks faster between dashes (idle 0.8 → 1.5), winds up quicker (rev 1.6 s → 1.0 s), and dashes ~2× as often (recovery idle gap ×0.45)
-- Cache-bust `?v=17` → `?v=18`; HUD label → v62
-
----
-
-## v61 — 2026-06-30
-**PURP_CUBE spiral polish — distinct 2-arm galaxies**
-- PURP_CUBE fired one bullet every 0.5 s rotating a fixed `+0.55` rad — identical and mechanical on every cube
-- Now fires a **2-arm spiral** (opposite bullets at `θ` and `θ+π`) and each cube gets a **per-cube spin rate + direction** (`_purpSpin`, ±0.42–0.76 rad/shot), so multiple PURPs make varied interlocking galaxy patterns
-- Cache-bust `?v=16` → `?v=17`; HUD label → v61
-
----
-
-## v60 — 2026-06-30
-**SLUDGE_CUBE poison zone now reads as a hazard**
-- Poison pools had a flat green circle that looked identical whether actively lethal or harmlessly fading — no readable danger boundary
-- Active zone now has a **bright pulsing rim** on the lethal edge (`z.radius`, exactly matching the collision) plus a saturated pulsing fill, so the player can read where and when it hurts
-- When spent (after the 1 s grace, `isDangerous` already false) it **desaturates to dull grey-green** and drops the rim — clearly safe
-- `PoisonZone.remove()` now disposes geometries/materials
-- Cache-bust `?v=15` → `?v=16`; HUD label → v60
+## v70 — 2026-07-02
+**New weapon pod: Homing (H/H2) — 10th weapon type**
+- New **Homing** pod: fires a bullet that gradually steers toward the nearest alive enemy each frame (a turn, not a snap-lock, so it stays dodgeable/avoidable by enemies rather than a guaranteed hit). Lv1 turn rate 6, Lv2 (`HOMING2`) locks on tighter at turn rate 10 and fires ~33% faster (`baseRate × 0.75`)
+- `BulletPool.spawnDir()` gains `homing`/`turnRate` params; `BulletPool.update()` gains an optional `enemies` arg and a `_steerHoming()` step that finds the nearest alive enemy and rotates the bullet's velocity toward it each frame
+- `WEAPON_PODS` grows to 10 entries (`H`/`H2` added to `LV1_WEAPONS`/`LV2_WEAPONS`); reuses the existing glyph/equip/HUD pipeline unchanged
+- Cache-bust `?v=25` → `?v=26`; HUD label → v70
 
 ---
 
 ## Archive
 
-**v50–v59 summary (2026-06-30)**
+**v61–v69 summary (2026-06-30 – 2026-07-02)**
+- v61: PURP_CUBE 2-arm spiral fire with per-cube spin rate/direction
+- v62: Boss enrage fixed to actually speed up TORO's charge behaviour (was visual-only)
+- v63: Positive feedback chip row ("WHAT DID YOU ENJOY?") added to the death screen
+- v64: Language toggle — English/日本語/Suomi, `lang.js` i18n module
+- v65: Full localization — on-canvas HUD + roguelike upgrade cards now translate
+- v66: Language picker — three chips shown at once instead of a cycling button
+- v67: Smaller death-screen buttons + hidden "fix" feedback list (`tokoDropFixList`, `_fixlist()`)
+- v68: Feedback chip rows trimmed from 6 to 4 each
+- v69: Fixed WEEVA (unscaled 12.5 bullets/sec from wave 2) and PURP_CUBE (doubled bullet output) — real cause of wave 8 being unreachable
+
+---
+
+**v50–v60 summary (2026-06-30)**
 - v50: Feedback form interactivity fix — `showGameOver()` sets `overlay.style.pointerEvents='auto'`; reset in `returnToTitle()`
 - v51: ORANGE_CUBE shoots while moving (state machine → flop + `_fireT`); all bullet visual scales reduced ~30%
 - v52: Contra-style weapon pods — moths drop lettered pods (S/B/L/R + Lv2), 8 weapon modes, kill-all 2-choice pod pair; `equipWeapon()`/`makeGlyphTexture()`
@@ -111,6 +42,7 @@
 - v57: Bigger readable bullets (enemy 1.6; player visual-only ×1.3 `PLAYER_BULLET_VISUAL_BOOST`, hitbox unchanged) + `scripts/bump-version.sh` & `scripts/release.sh`
 - v58: Blob behaviour pass — GLOBBO pouncer, WEEVA drifting spiral turret, SPITTOR aimed ring, FANNER wide 3rd volley, SPLITTA low-HP pre-burst pulse
 - v59: Boss identity — pulsing gold ground ring (`makeBossAura`) + enrage (×1.45 speed, red ring) below 35% HP via `Enemy.setBoss()`
+- v60: SLUDGE_CUBE poison zone hazard readability — pulsing rim while lethal, desaturates when spent
 
 **v40–v49 summary (2026-06-29 – 2026-06-30)**
 - v40: Cube behaviour variety — each cube type is now a distinct archetype (YELA/minis rush, REDD flanks, PURP orbits+spiral, SLUDGE zones, ORANGE positions+shoots); `_flopMove` generalised with per-type heading
