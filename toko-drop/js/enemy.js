@@ -281,6 +281,40 @@ export class Enemy {
     this.mesh = new THREE.Mesh(geo, this.mat);
     this.mesh.castShadow = true;
 
+    // Blob accent markers (v73): small glowing beacons, layered on top of the
+    // shared goo shader (used by every blob and the player, so left untouched),
+    // so each blob type reads distinctly at a glance during swarms. Count and
+    // arrangement echo each type's identity; colour reuses its bulletColor —
+    // the colour of the bullets it actually fires.
+    this._blobMarkerAngle = 0;
+    if (isBlob) {
+      const markerColor = cfg.bulletColor ?? 0x004433;
+      const markerMat = new THREE.MeshBasicMaterial({
+        color: markerColor, transparent: true, opacity: 0.85,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      });
+      this._blobMarkers = [];
+      const addMarker = (mx, my, mz, r) => {
+        const m = new THREE.Mesh(new THREE.SphereGeometry(r, 6, 5), markerMat);
+        m.position.set(mx, my, mz);
+        this.mesh.add(m);
+        this._blobMarkers.push(m);
+      };
+      const R = cfg.radius;
+      if (type === EnemyType.GLOBBO) {
+        addMarker(0, R * 0.3, R * 0.75, 0.14);               // single forward beacon
+      } else if (type === EnemyType.SPITTOR) {
+        addMarker(0, R * 0.1, R * 0.95, 0.20);                // one large "mouth" beacon
+      } else if (type === EnemyType.FANNER) {
+        for (let i = -1; i <= 1; i++) addMarker(i * R * 0.55, R * 0.2, R * 0.75, 0.11); // 3-wide fan
+      } else if (type === EnemyType.WEEVA) {
+        addMarker(R * 0.85, 0, 0, 0.13);                      // single orbiting beacon
+      } else if (type === EnemyType.SPLITTA) {
+        addMarker(-R * 0.4, R * 0.2, R * 0.7, 0.12);
+        addMarker(R * 0.4, R * 0.2, R * 0.7, 0.12);           // twin "eyes"
+      }
+    }
+
     if (type === EnemyType.TORO) {
       // Toro uses a group for position management
       this.mesh.rotation.x = 0;
@@ -700,6 +734,12 @@ export class Enemy {
         // it actually applies pressure instead of meandering in place.
         this.mesh.position.x += (Math.sin(this._wobbleT * 0.7) * 0.5 + (ddx / dist) * 0.45) * spd * dt;
         this.mesh.position.z += (Math.cos(this._wobbleT * 0.5) * 0.5 + (ddz / dist) * 0.45) * spd * dt;
+        // Spin the accent beacon continuously, echoing the spiral it fires.
+        this._blobMarkerAngle += 2.0 * dt;
+        if (this._blobMarkers && this._blobMarkers[0]) {
+          const bm = this._blobMarkers[0], mr = cfg.radius * 0.85;
+          bm.position.set(Math.cos(this._blobMarkerAngle) * mr, 0, Math.sin(this._blobMarkerAngle) * mr);
+        }
         break;
 
       case EnemyType.YELA_CUBE:
