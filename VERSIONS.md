@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v78 — 2026-07-02
+**Prep: added tuning.js, enemy-lab.html, and the visual/behavior port brief (no wiring, no gameplay change)**
+- `toko-drop/js/tuning.js` — single source of truth config module for enemy look & feel, provided as-is; not yet imported anywhere
+- `toko-drop/enemy-lab.html` — standalone visual tester/reference for a planned enemy visual+behavior overhaul; not linked from the game
+- `toko-drop/TOKO_DROP_PORT_BRIEF.md` — the task brief describing the full port (Parts 1–6)
+- No cache-bust — nothing user-facing changed; `index.html`/`main.js` untouched. Part 1 (wiring `TUNING` into `enemy.js`/`main.js`, removing hardcoded duplicates) follows in a separate commit/PR
+
+---
+
 ## v77 — 2026-07-02
 **Title/pause-menu polish: smaller controls block, chip-styled volume, trimmed pause menu**
 - Title screen controls block (Move/Aim/Dash/Pause/Eyes) shrunk to a smaller, tighter area: font 12→9.5px, line-height 2→1.6, constrained to `max-width:230px`
