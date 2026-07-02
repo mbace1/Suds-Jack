@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { FILL_MAT, makeEye, C } from './shared.js?v=4';
+import { FILL_MAT, makeEye, C } from './shared.js?v=5';
 
 // Archetypes — white-line critters. y is the shape's CENTER height (flyers hover).
 // Ranged types spit slow, dense neon-faint clusters (the Returnal bullet-hell).
@@ -60,7 +60,7 @@ export class Enemy {
   takeDamage(d) { this.hp -= d; this.flash = 1; this.edge.color.setHex(0xff6b6b); if (this.hp <= 0) { this.hp = 0; this.alive = false; } return !this.alive; }
   dispose() { this.g.parent && this.g.parent.remove(this.g); }
 
-  update(dt, player, pool, heightAt = () => 0) {
+  update(dt, player, pool, heightAt = () => 0, bound = 47) {
     if (!this.alive) return;
     this.cd = Math.max(0, this.cd - dt);
     if (this.flash > 0) { this.flash = Math.max(0, this.flash - dt * 5); if (this.flash === 0) this.edge.color.setHex(C.line); }
@@ -103,7 +103,7 @@ export class Enemy {
       } else if (dh < this.r + 0.9) { this.cd = this.t.cd; player.hurt(this.dmg); }
     }
 
-    const R = 47; this.x = Math.max(-R, Math.min(R, this.x)); this.z = Math.max(-R, Math.min(R, this.z));
+    this.x = Math.max(-bound, Math.min(bound, this.x)); this.z = Math.max(-bound, Math.min(bound, this.z));
     this.g.position.set(this.x, this.y, this.z);
     this.g.rotation.y = Math.atan2(-dx, -dz);                // face the player (eyes on you)
     if (this.t.fly) this.g.rotation.z = Math.sin(this.bob) * 0.15;

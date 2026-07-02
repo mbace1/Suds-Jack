@@ -3,16 +3,16 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=4';
-import { Player } from './player.js?v=4';
-import { Enemy, COST } from './enemy.js?v=4';
-import { ProjectilePool } from './projectile.js?v=4';
-import { C, glow } from './shared.js?v=4';
-import { audio } from './audio.js?v=4';
-import { t, getLang, setLang, langs } from './lang.js?v=4';
+import { InputManager } from './input.js?v=5';
+import { Player } from './player.js?v=5';
+import { Enemy, COST } from './enemy.js?v=5';
+import { ProjectilePool } from './projectile.js?v=5';
+import { C, glow } from './shared.js?v=5';
+import { audio } from './audio.js?v=5';
+import { t, getLang, setLang, langs } from './lang.js?v=5';
 
 const css = h => '#' + (h >>> 0).toString(16).padStart(6, '0').slice(-6);
-const ARENA_R = 47;
+const ARENA_R = 78;
 
 // ── Renderer + night scene with neon bloom ────────────────────────────────────
 const gameCanvas = document.getElementById('canvas-game');
@@ -25,7 +25,7 @@ renderer.toneMappingExposure = 1.15;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(C.bg);
-scene.fog = new THREE.Fog(C.bg, 36, 96);
+scene.fog = new THREE.Fog(C.bg, 42, 165);
 const camera = new THREE.PerspectiveCamera(66, innerWidth / innerHeight, 0.1, 400);
 
 // ── Orientation (portrait / landscape camera framing) — toko-drop-style toggle ──
@@ -42,17 +42,10 @@ const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
 
-// floor: black plane + faint white grid + faint boundary ring (sketch on black)
-scene.add(new THREE.Mesh(new THREE.PlaneGeometry(ARENA_R * 2.4, ARENA_R * 2.4),
-  new THREE.MeshBasicMaterial({ color: 0x050505 })).rotateX(-Math.PI / 2));
-const grid = new THREE.GridHelper(ARENA_R * 2, 40, C.dim, C.dim);
-grid.material.transparent = true; grid.material.opacity = 0.45; scene.add(grid);
-const ring = new THREE.Mesh(new THREE.TorusGeometry(ARENA_R, 0.12, 6, 96),
-  new THREE.MeshBasicMaterial({ color: 0x888888 })); ring.rotation.x = -Math.PI / 2; scene.add(ring);
-
-// ── Terrain (vertical test geometry) ──────────────────────────────────────────
-// Flat surfaces (platforms/steps) + linear ramps. heightAt() is authoritative for
-// physics; glow slabs/ramps render the white-line surfaces. Spawn (0,0) stays flat.
+// ── Terrain (elevation above 0 + canyons below 0) ──────────────────────────────
+// Flat surfaces (platforms/steps) + linear ramps rise above the y=0 plane;
+// pit floors + pit ramps carve canyons below it. heightAt() is authoritative for
+// physics; glow slabs/ramps/walls render the white-line surfaces. Spawn (0,0) flat.
 const flats = [
   { x0: 9,   x1: 24,  z0: -25, z1: -9,  top: 3.0 },   // raised NE platform
   { x0: -25, x1: -11, z0: 9,   z1: 22,  top: 1.6 },   // low SW platform
@@ -65,29 +58,91 @@ const ramps = [
   { x0: -22, x1: -14, z0: 6,  z1: 9,  hA: 0,   hB: 1.6 },  // up to SW platform
   { x0: -3,  x1: 3,   z0: 15, z1: 21, hA: 0,   hB: 2.2 },  // up to north platform
 ];
+// Canyons: a long west trench (walk-through, ramps at both ends) + a dead-end
+// south-east pocket (one ramp in). Floors/ramps go negative; walls are the cliff faces.
+const pitFloors = [
+  { x0: -70, x1: -50, z0: -40, z1: 10, floor: -8 },     // long west canyon floor
+  { x0: 34,  x1: 58,  z0: 34,  z1: 58, floor: -5.5 },   // SE dead-end pocket floor
+];
+const pitRamps = [
+  { x0: -70, x1: -50, z0: -50, z1: -40, hA: 0,   hB: -8 },   // descend into west canyon (north end)
+  { x0: -70, x1: -50, z0: 10,  z1: 20,  hA: -8,  hB: 0 },    // climb back out (south end)
+  { x0: 34,  x1: 58,  z0: 24,  z1: 34,  hA: 0,   hB: -5.5 }, // descend into SE pocket (north edge)
+];
+const pitWalls = [
+  { x: -70, z0: -40, z1: 10, floor: -8,   axis: 'x' },       // west canyon: west wall
+  { x: -50, z0: -40, z1: 10, floor: -8,   axis: 'x' },       // west canyon: east wall
+  { x: 34,  z0: 34,  z1: 58, floor: -5.5, axis: 'x' },       // SE pocket: west wall
+  { x: 58,  z0: 34,  z1: 58, floor: -5.5, axis: 'x' },       // SE pocket: east wall
+  { z: 58,  x0: 34,  x1: 58, floor: -5.5, axis: 'z' },       // SE pocket: south wall
+];
 function heightAt(x, z) {
   let h = 0;
   for (const r of ramps) if (x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z1) {
     const t = Math.min(1, Math.max(0, (z - r.z0) / (r.z1 - r.z0))); h = Math.max(h, r.hA + (r.hB - r.hA) * t);
   }
   for (const f of flats) if (x >= f.x0 && x <= f.x1 && z >= f.z0 && z <= f.z1) h = Math.max(h, f.top);
-  return h;
+  if (h > 0) return h;                                    // elevated ground always wins (e.g. a bridge)
+  let d = 0;
+  for (const pr of pitRamps) if (x >= pr.x0 && x <= pr.x1 && z >= pr.z0 && z <= pr.z1) {
+    const t = Math.min(1, Math.max(0, (z - pr.z0) / (pr.z1 - pr.z0))); d = Math.min(d, pr.hA + (pr.hB - pr.hA) * t);
+  }
+  for (const p of pitFloors) if (x >= p.x0 && x <= p.x1 && z >= p.z0 && z <= p.z1) d = Math.min(d, p.floor);
+  return d;
 }
-for (const f of flats) {
-  const g = glow(new THREE.BoxGeometry(f.x1 - f.x0, f.top, f.z1 - f.z0));
-  g.position.set((f.x0 + f.x1) / 2, f.top / 2, (f.z0 + f.z1) / 2); scene.add(g);
+
+// floor: black plane (with canyon holes cut in) + faint white grid + boundary ring
+const GS = ARENA_R * 1.2;
+const groundShape = new THREE.Shape();
+groundShape.moveTo(-GS, -GS); groundShape.lineTo(GS, -GS); groundShape.lineTo(GS, GS); groundShape.lineTo(-GS, GS); groundShape.closePath();
+function cutHole(x0, x1, z0, z1) {
+  const h = new THREE.Path();
+  h.moveTo(x0, -z0); h.lineTo(x1, -z0); h.lineTo(x1, -z1); h.lineTo(x0, -z1); h.closePath();
+  groundShape.holes.push(h);
 }
-for (const r of ramps) {
+for (const p of pitFloors) cutHole(p.x0, p.x1, p.z0, p.z1);
+for (const pr of pitRamps) cutHole(pr.x0, pr.x1, pr.z0, pr.z1);
+const groundMesh = new THREE.Mesh(new THREE.ShapeGeometry(groundShape), new THREE.MeshBasicMaterial({ color: 0x050505 }));
+groundMesh.rotateX(-Math.PI / 2); scene.add(groundMesh);
+const gridDiv = Math.round(ARENA_R * 40 / 47);
+const grid = new THREE.GridHelper(ARENA_R * 2, gridDiv, C.dim, C.dim);
+grid.material.transparent = true; grid.material.opacity = 0.45; scene.add(grid);
+const ring = new THREE.Mesh(new THREE.TorusGeometry(ARENA_R, 0.12, 6, 96),
+  new THREE.MeshBasicMaterial({ color: 0x888888 })); ring.rotation.x = -Math.PI / 2; scene.add(ring);
+
+function renderRamp(r) {
   const w = r.x1 - r.x0, lenZ = r.z1 - r.z0, rise = r.hB - r.hA;
   const g = glow(new THREE.BoxGeometry(w, 0.12, Math.hypot(lenZ, rise)));
   g.position.set((r.x0 + r.x1) / 2, (r.hA + r.hB) / 2, (r.z0 + r.z1) / 2);
   g.rotation.x = -Math.atan2(rise, lenZ); scene.add(g);
 }
+for (const f of flats) {
+  const g = glow(new THREE.BoxGeometry(f.x1 - f.x0, f.top, f.z1 - f.z0));
+  g.position.set((f.x0 + f.x1) / 2, f.top / 2, (f.z0 + f.z1) / 2); scene.add(g);
+}
+for (const r of ramps) renderRamp(r);
+for (const p of pitFloors) {
+  const g = glow(new THREE.BoxGeometry(p.x1 - p.x0, 0.15, p.z1 - p.z0));
+  g.position.set((p.x0 + p.x1) / 2, p.floor, (p.z0 + p.z1) / 2); scene.add(g);
+}
+for (const pr of pitRamps) renderRamp(pr);
+for (const w of pitWalls) {
+  const h = -w.floor;
+  if (w.axis === 'x') {
+    const g = glow(new THREE.BoxGeometry(0.3, h, w.z1 - w.z0));
+    g.position.set(w.x, w.floor / 2, (w.z0 + w.z1) / 2); scene.add(g);
+  } else {
+    const g = glow(new THREE.BoxGeometry(w.x1 - w.x0, h, 0.3));
+    g.position.set((w.x0 + w.x1) / 2, w.floor / 2, w.z); scene.add(g);
+  }
+}
 
 // ── A→B objective challenge (beacon at each waypoint; reach A then B) ──────────
 const OBJ_SPOTS = [
   { x: 16, z: -17 }, { x: -18, z: 15 }, { x: 0, z: 26 },     // on the platforms (need traversal)
+  { x: -60, z: -14 }, { x: 46, z: 46 },                      // down in the canyons (need a ramp descent)
   { x: 32, z: 18 }, { x: -32, z: -18 }, { x: 28, z: -32 }, { x: -28, z: 32 }, { x: 0, z: -38 }, { x: 36, z: -4 },
+  { x: 62, z: 0 }, { x: -62, z: 55 }, { x: 55, z: -62 }, { x: -14, z: -62 },
 ];
 const BEACON_COL = 0x35f0d8;
 const beacon = new THREE.Group();
@@ -441,7 +496,7 @@ function updateCamera() {
   let sx = 0, sy = 0;
   if (shake > 0) { const m = shake * shake, t = performance.now() / 1000; sx = Math.sin(t * 53) * m * 0.5; sy = Math.cos(t * 47) * m * 0.5; }
   const hx = player.x, hy = player.y + 1.5, hz = player.z;
-  const camY = Math.max(1.0, hy - a.fy * dist + 0.25 + sy);   // never dip below the floor
+  const camY = Math.max(player.y + 0.3, hy - a.fy * dist + 0.25 + sy);   // never dip below the player's feet
   camera.position.set(hx - a.fx * dist + rx * shoulder * cp + sx, camY, hz - a.fz * dist + rz * shoulder * cp);
   camera.lookAt(camera.position.x + a.fx, camera.position.y + a.fy, camera.position.z + a.fz);
   const fov = camFovBase + fovKick * 7;                      // orientation base + dash punch
@@ -576,7 +631,7 @@ function loop() {
       m.position.set(player.x, player.y + 0.8, player.z); scene.add(m);
       sparks.push({ m, vx: 0, vy: 0, vz: 0, life: 0.3 });
     }
-    for (const e of enemies) e.update(dt, player, pool, heightAt);
+    for (const e of enemies) e.update(dt, player, pool, heightAt, ARENA_R);
     pool.update(dt);
     collide();
     director(dt);
