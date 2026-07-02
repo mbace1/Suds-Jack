@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v79 — 2026-07-02
+**Port brief Part 1: wire TUNING into enemy.js (no behavior/visual change)**
+- `toko-drop/js/enemy.js` now imports `TUNING` from `./tuning.js?v=33` and reads 12 constants from it in place of hardcoded literals: BAMBU `fireInterval`/`_maxSegs`, YELA_CUBE/SLUDGE_CUBE trail & poison timer cadences, and all 8 TORO state-machine constants (revTime incl. enrage ratio, dirSnapDeg, telegraphTime, indicatorFlashHz, dashSpeed, dashDecel, dashMin, recoverTime)
+- Every wired constant was cross-checked byte-for-byte against the prior hardcoded value first — only exact matches were wired, so gameplay/visuals are unchanged
+- Deliberately left hardcoded (values in `tuning.js` don't match current code, or describe not-yet-built features from Parts 2-6): `material`, most of `blob`, most of `flop`, TORO `rimSpikes`/`indicatorWidth`/`arrow`, most of `bambu` (lob flight/arc/spread/landingRing), and `fx.splatLife`/`poisonLife`/`slimeTrailLife`/`hitDroplets`/`hitWobble*`
+- `main.js` needed no changes — none of the safely-wireable constants are duplicated there
+- No cache-bust — this is a refactor-only PR for review; ship/deploy deferred pending decision on Parts 2-6
+
+---
+
 ## v78 — 2026-07-02
 **Prep: added tuning.js, enemy-lab.html, and the visual/behavior port brief (no wiring, no gameplay change)**
 - `toko-drop/js/tuning.js` — single source of truth config module for enemy look & feel, provided as-is; not yet imported anywhere
