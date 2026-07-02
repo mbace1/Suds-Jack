@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=32';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=32';
-import { Player, PLAYER_RADIUS } from './player.js?v=32';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=32';
-import { audio } from './audio.js?v=32';
-import { initDesigner } from './designer.js?v=32';
-import { t, getLang, setLang, langs } from './lang.js?v=32';
+import { InputManager } from './input.js?v=33';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=33';
+import { Player, PLAYER_RADIUS } from './player.js?v=33';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=33';
+import { audio } from './audio.js?v=33';
+import { initDesigner } from './designer.js?v=33';
+import { t, getLang, setLang, langs } from './lang.js?v=33';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1342,8 +1342,7 @@ const overlay  = document.getElementById('overlay');
 const _proj    = new THREE.Vector3();
 
 const designer = initDesigner({
-  getEnemies: () => enemies,
-  onResume:   () => { gameState = 'playing'; },
+  onResume: () => { gameState = 'playing'; },
 });
 
 function toScreen(worldPos) {
@@ -1514,7 +1513,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v76', 16, uiCanvas.height - 12);
+  ctx.fillText('v77', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1560,8 +1559,8 @@ function showTitle() {
     `<div id="orient-toggle-slot" style="margin-top:18px;animation:tokoFadeUp 0.5s 0.28s ease both"></div>` +
     `<div id="rogue-toggle-slot" style="margin-top:14px;animation:tokoFadeUp 0.5s 0.3s ease both"></div>` +
     `<div id="settings-slot" style="margin-top:14px;animation:tokoFadeUp 0.5s 0.32s ease both"></div>` +
-    `<div style="font-size:12px;opacity:0.38;margin-top:20px;line-height:2;text-align:center;` +
-    `animation:tokoFadeUp 0.5s 0.4s ease both">` +
+    `<div style="font-size:9.5px;opacity:0.32;margin:14px auto 0;line-height:1.6;text-align:center;` +
+    `max-width:230px;animation:tokoFadeUp 0.5s 0.4s ease both">` +
     `${t('ctrlMove')} &nbsp;·&nbsp; ${t('ctrlMoveH')}<br>` +
     `${t('ctrlAim')} &nbsp;·&nbsp; ${t('ctrlAimH')}<br>` +
     `${t('ctrlDash')} &nbsp;·&nbsp; ${t('ctrlDashH')}<br>` +
@@ -1666,15 +1665,22 @@ function showTitle() {
     const sslot = document.getElementById('settings-slot');
     sslot.style.cssText += ';display:flex;flex-direction:column;align-items:center;gap:10px';
 
+    // Styled as a menu-item chip (border/background box) to match the
+    // reduce-motion toggle below it, rather than a bare native slider.
     const volRow = document.createElement('div');
-    volRow.style.cssText = 'display:flex;align-items:center;gap:10px;pointer-events:auto';
+    volRow.style.cssText =
+      'display:flex;align-items:center;gap:12px;pointer-events:auto;' +
+      'border:2px solid #00ccaa;border-radius:8px;padding:7px 16px;' +
+      'background:rgba(0,0,0,0.35);';
     const volLabel = document.createElement('span');
-    volLabel.style.cssText = 'font-size:11px;opacity:0.55;letter-spacing:1px';
+    volLabel.style.cssText =
+      'font-size:13px;font-weight:bold;letter-spacing:1px;color:#00ffcc;' +
+      'text-shadow:0 0 12px #00ccaa;white-space:nowrap;';
     const volInput = document.createElement('input');
     volInput.type = 'range'; volInput.min = '0'; volInput.max = '100'; volInput.step = '5';
     volInput.value = String(Math.round(audioVolume * 100));
-    volInput.style.cssText = 'pointer-events:auto;cursor:pointer;width:140px;accent-color:#00ccaa';
-    const volRender = () => { volLabel.textContent = `${t('volume')} ${Math.round(audioVolume * 100)}%`; };
+    volInput.style.cssText = 'pointer-events:auto;cursor:pointer;width:120px;accent-color:#00ccaa';
+    const volRender = () => { volLabel.textContent = `${t('volume')}: ${Math.round(audioVolume * 100)}%`; };
     volRender();
     const volChange = e => {
       e.stopPropagation();
