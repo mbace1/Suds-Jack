@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=35';
+import { TUNING } from './tuning.js?v=36';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -113,6 +113,42 @@ export function makeGooMat(color, opacity, wobble = 0, radius = 0.5) {
     depthWrite:  opacity >= 0.9,
   });
 }
+
+// ── Blob gel-dome geometry (port brief Part 2) ────────────────────────────────
+// SDF-generated dome: most of a ball with a flat rounded-off bottom (same
+// family as the player, fuller than a half-ball). Shrink-wraps a dense unit
+// sphere by binary-searching each vertex direction to the SDF zero crossing;
+// normals from the SDF gradient. Matches enemy-lab.html's blobGeo exactly.
+function smin(a, b, k) { const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k * 0.25; }
+function smax(a, b, k) { return -smin(-a, -b, k); }
+function sdfGeometry(sdf, detail) {
+  const geo = new THREE.SphereGeometry(1, detail, Math.round(detail * 0.66));
+  const pos = geo.attributes.position, nor = geo.attributes.normal;
+  const v = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v.fromBufferAttribute(pos, i).normalize();
+    let lo = 0.05, hi = 2.4;
+    for (let it = 0; it < 24; it++) { const m = (lo + hi) * 0.5; (sdf(v.x * m, v.y * m, v.z * m) < 0) ? lo = m : hi = m; }
+    const t = (lo + hi) * 0.5;
+    pos.setXYZ(i, v.x * t, v.y * t, v.z * t);
+    const e = 0.003, qx = v.x * t, qy = v.y * t, qz = v.z * t;
+    const nx = sdf(qx + e, qy, qz) - sdf(qx - e, qy, qz),
+          ny = sdf(qx, qy + e, qz) - sdf(qx, qy - e, qz),
+          nz = sdf(qx, qy, qz + e) - sdf(qx, qy, qz - e);
+    const inv = 1 / Math.hypot(nx, ny, nz);
+    nor.setXYZ(i, nx * inv, ny * inv, nz * inv);
+  }
+  return geo;
+}
+// Unit-radius dome shared by every blob (sized per-enemy via mesh.scale);
+// origin translated to the floor contact point so rest position is y=0 and
+// all squash/breathe/drag scaling anchors to the ground (no floating).
+const BLOB_GEO = (() => {
+  const { domeCut, domeRound } = TUNING.blob;
+  const g = sdfGeometry((x, y, z) => smax(Math.hypot(x, y, z) - 1, -y - domeCut, domeRound), 72);
+  g.translate(0, domeCut, 0);
+  return g;
+})();
 
 export const EnemyType = {
   // Blob family (spheres)
@@ -251,7 +287,8 @@ export class Enemy {
     // Build geometry based on type family
     let geo;
     if (BLOB_TYPES.has(type)) {
-      geo = new THREE.SphereGeometry(cfg.radius, 14, 10);
+      // Shared unit gel dome (Part 2) — radius + silhouette applied via mesh.scale.
+      geo = BLOB_GEO;
     } else if (CUBE_TYPES.has(type)) {
       geo = new RoundedBoxGeometry(cfg.radius * 1.8, cfg.radius * 1.8, cfg.radius * 1.8, 4, 0.18);
     } else if (type === EnemyType.TORO) {
@@ -268,7 +305,19 @@ export class Enemy {
     const matOpacity = isCube ? 0.88 : 0.82;
 
     if (isBlob) {
-      this.mat = makeGooMat(cfg.color, matOpacity, 1.0, cfg.radius);
+      // uRadius=1: the shared dome is unit-sized in object space (mesh.scale
+      // carries the real radius), so the shader's radius-normalized wobble
+      // math sees the same lump frequencies it did with radius-baked spheres.
+      this.mat = makeGooMat(cfg.color, matOpacity, 1.0, 1);
+      // Per-blob silhouette (TUNING.blob): squat grounded baseline, with
+      // snouty/pancake/tall overrides for SPITTOR/FANNER/WEEVA.
+      const shapes = TUNING.blob.shapes;
+      this._shape =
+        type === EnemyType.SPITTOR ? shapes.SPITTOR :
+        type === EnemyType.FANNER  ? shapes.FANNER  :
+        type === EnemyType.WEEVA   ? shapes.WEEVA   : TUNING.blob.shape;
+      this._phase   = Math.random() * Math.PI * 2; // desyncs breathe/lunge across the wave
+      this._moveYaw = 0;
     } else {
       this.mat = new THREE.MeshPhongMaterial({
         color:       cfg.color,
@@ -295,6 +344,9 @@ export class Enemy {
         blending: THREE.AdditiveBlending, depthWrite: false,
       });
       this._blobMarkers = [];
+      // Marker coords are in the dome's unit object space (origin at the floor
+      // contact, body center ~y=1 pre-squash); mesh.scale carries the radius,
+      // so marker geometry sizes divide by R to keep their old world size.
       const addMarker = (mx, my, mz, r) => {
         const m = new THREE.Mesh(new THREE.SphereGeometry(r, 6, 5), markerMat);
         m.position.set(mx, my, mz);
@@ -303,16 +355,27 @@ export class Enemy {
       };
       const R = cfg.radius;
       if (type === EnemyType.GLOBBO) {
-        addMarker(0, R * 0.3, R * 0.75, 0.14);               // single forward beacon
+        addMarker(0, 1.3, 0.75, 0.14 / R);                    // single forward beacon
       } else if (type === EnemyType.SPITTOR) {
-        addMarker(0, R * 0.1, R * 0.95, 0.20);                // one large "mouth" beacon
+        addMarker(0, 1.1, 0.95, 0.20 / R);                    // one large "mouth" beacon
       } else if (type === EnemyType.FANNER) {
-        for (let i = -1; i <= 1; i++) addMarker(i * R * 0.55, R * 0.2, R * 0.75, 0.11); // 3-wide fan
+        for (let i = -1; i <= 1; i++) addMarker(i * 0.55, 1.2, 0.75, 0.11 / R); // 3-wide fan
       } else if (type === EnemyType.WEEVA) {
-        addMarker(R * 0.85, 0, 0, 0.13);                      // single orbiting beacon
+        addMarker(0.85, 1.0, 0, 0.13 / R);                    // single orbiting beacon
       } else if (type === EnemyType.SPLITTA) {
-        addMarker(-R * 0.4, R * 0.2, R * 0.7, 0.12);
-        addMarker(R * 0.4, R * 0.2, R * 0.7, 0.12);           // twin "eyes"
+        addMarker(-0.4, 1.2, 0.7, 0.12 / R);
+        addMarker(0.4, 1.2, 0.7, 0.12 / R);                   // twin "eyes"
+      }
+      // SPLITTA: the two children it splits into, visibly bulging inside the
+      // body before the split happens (TUNING.blob.splittaChildBulges).
+      if (type === EnemyType.SPLITTA) {
+        const { offset, scale } = TUNING.blob.splittaChildBulges;
+        for (const sxo of [-offset[0], offset[0]]) {
+          const b = new THREE.Mesh(BLOB_GEO, this.mat);
+          b.position.set(sxo, offset[1], offset[2]);
+          b.scale.setScalar(scale);
+          this.mesh.add(b);
+        }
       }
     }
 
@@ -437,7 +500,15 @@ export class Enemy {
       this._pyraFireTimer = cfg.fireInterval * intervalMult;
 
     } else {
-      this.mesh.position.set(x, cfg.radius, z);
+      // Blob dome origin sits at the floor contact → rest y = 0; cubes/OMEGA
+      // keep their center origin at radius height.
+      if (isBlob) {
+        this.mesh.position.set(x, 0, z);
+        const shp = this._shape;
+        this.mesh.scale.set(cfg.radius * shp.x, cfg.radius * shp.y, cfg.radius * shp.z);
+      } else {
+        this.mesh.position.set(x, cfg.radius, z);
+      }
       scene.add(this.mesh);
     }
 
@@ -495,6 +566,14 @@ export class Enemy {
     if (this.type === EnemyType.BAMBU) return this.hp / Math.max(1, this._maxSegs);
     if (this.type === EnemyType.PYRA)  return this.hp / Math.max(1, this._holes ? this._holes.length : CFG[EnemyType.PYRA].hp);
     return this.hp / (CFG[this.type].hp * (this._hpMult || 1));
+  }
+  // Vertical anchor for FX/HUD at the body's mid-height. Blob dome origin sits
+  // at the floor contact (Part 2), so their position.y is 0, not the center.
+  get fxY() { return BLOB_TYPES.has(this.type) ? this.radius : this.position.y; }
+  // Uniform base scale for the death pop/reset: blobs carry radius in
+  // mesh.scale (shared unit dome); everything else bakes size into geometry.
+  _deathBaseScale() {
+    return BLOB_TYPES.has(this.type) ? CFG[this.type].radius * (this._radiusMult || 1) : 1;
   }
 
   // Cube locomotion: tip end-over-end about the leading bottom edge, advancing
@@ -606,8 +685,15 @@ export class Enemy {
       const p = this.position;
       let dx = impactX - p.x, dz = impactZ - p.z;
       const d = Math.hypot(dx, dz);
-      if (d > 0.001) this.mat.uniforms.uHitDir.value.set(dx / d, dz / d);
-      else           this.mat.uniforms.uHitDir.value.set(0, 0);
+      if (d > 0.001) {
+        // The dome yaws to face its motion (Part 2 drag), so rotate the world
+        // impact direction into object space or the ripple origin drifts.
+        const yaw = this.mesh.rotation.y, c = Math.cos(yaw), s = Math.sin(yaw);
+        const wx = dx / d, wz = dz / d;
+        this.mat.uniforms.uHitDir.value.set(c * wx - s * wz, s * wx + c * wz);
+      } else {
+        this.mat.uniforms.uHitDir.value.set(0, 0);
+      }
     }
 
     if (this.type === EnemyType.BAMBU && this._segs && this._segs.length > 0) {
@@ -671,8 +757,13 @@ export class Enemy {
         this._pounceT -= dt;
         if (this._pounceState === 'stalk') {
           if (dist > 1.2) {
-            this.mesh.position.x += (ddx / dist) * spd * dt;
-            this.mesh.position.z += (ddz / dist) * spd * dt;
+            // Lunging-slime speed pulse (Part 2 tell) — surges and settles as
+            // it stalks, on top of the pounce state machine kept from v58.
+            const B = TUNING.blob;
+            const lunge = Math.pow(Math.max(0, Math.sin(this._wobbleT * B.globboLungeHz + this._phase)), 2)
+                          * B.globboLungeGain + B.globboLungeFloor;
+            this.mesh.position.x += (ddx / dist) * spd * lunge * dt;
+            this.mesh.position.z += (ddz / dist) * spd * lunge * dt;
           }
           if (this._pounceT <= 0 && dist < 12) {
             this._pounceState = 'crouch';
@@ -736,10 +827,11 @@ export class Enemy {
         this.mesh.position.x += (Math.sin(this._wobbleT * 0.7) * 0.5 + (ddx / dist) * 0.45) * spd * dt;
         this.mesh.position.z += (Math.cos(this._wobbleT * 0.5) * 0.5 + (ddz / dist) * 0.45) * spd * dt;
         // Spin the accent beacon continuously, echoing the spiral it fires.
+        // Unit object space (dome origin at floor): orbit radius 0.85, mid-body height.
         this._blobMarkerAngle += 2.0 * dt;
         if (this._blobMarkers && this._blobMarkers[0]) {
-          const bm = this._blobMarkers[0], mr = cfg.radius * 0.85;
-          bm.position.set(Math.cos(this._blobMarkerAngle) * mr, 0, Math.sin(this._blobMarkerAngle) * mr);
+          const bm = this._blobMarkers[0];
+          bm.position.set(Math.cos(this._blobMarkerAngle) * 0.85, 1.0, Math.sin(this._blobMarkerAngle) * 0.85);
         }
         break;
 
@@ -993,13 +1085,10 @@ export class Enemy {
       this._velZ += (((np.z - ez) * invDt) - this._velZ) * 0.3;
       const sp = Math.hypot(this._velX, this._velZ);
 
-      // Blob directional stretch via shader uniforms; eases toward 0 when slow.
-      if (BLOB_TYPES.has(this.type) && this.mat.uniforms && this.mat.uniforms.uStretch) {
-        const target = Math.min(sp * 0.11, 0.5);
-        this._stretch += (target - this._stretch) * 0.4;
-        this.mat.uniforms.uStretch.value = this._stretch;
-        if (sp > 0.4) this.mat.uniforms.uStretchDir.value.set(this._velX / sp, this._velZ / sp);
-        // Hit ripple decay (v32) — eases the goo surface shockwave back to rest over ~0.28 s
+      // Part 2: directional smear moved from the uStretch shader path to the
+      // grounded-drag mesh transform in the blob scale block below — the
+      // uniform stays at 0. The hit-ripple shockwave (v32) is kept unchanged.
+      if (BLOB_TYPES.has(this.type) && this.mat.uniforms) {
         if (this._hitRipple > 0) {
           this._hitRipple = Math.max(0, this._hitRipple - dt / 0.28);
           this.mat.uniforms.uHit.value = this._hitRipple;
@@ -1033,7 +1122,36 @@ export class Enemy {
         this.group.scale.set(sx, this._sq, sx);
       } else if (this._flopActive) {
         this.mesh.scale.set(rm, rm, rm); // flop owns the transform; no squash mid-tumble
-      } else if (!this._isTelegraphing || this.type !== EnemyType.SPITTOR) {
+      } else if (BLOB_TYPES.has(this.type)) {
+        // Grounded gel (Part 2): baseline silhouette × spring squash × body
+        // breathe × drag smear × per-type tells, all anchored to the floor
+        // contact (the dome's origin), so nothing ever floats.
+        const B   = TUNING.blob;
+        const r   = CFG[this.type].radius;
+        const shp = this._shape;
+        const amp = this.type === EnemyType.SPLITTA ? B.breatheAmpSplitta : B.breatheAmp;
+        const breathe = amp * Math.sin(this._wobbleT * 2.4 + this._phase);
+        const sy  = this._sq * (1 + breathe);
+        const sxz = sx * (1 - breathe * 0.5);
+        // Drag: smears along travel, nose lifts, rear drags the floor.
+        const sp   = Math.hypot(this._velX, this._velZ);
+        const drag = Math.min(sp * B.dragStretchPerSpeed, B.dragMax);
+        if (sp > 0.4) this._moveYaw = Math.atan2(this._velX, this._velZ);
+        // Tells: SPITTOR pre-fire inflate, WEEVA drill vibration, FANNER sway.
+        let inflate = 0;
+        if (this.type === EnemyType.SPITTOR && this._isTelegraphing) {
+          inflate = B.spittorInflate * (1 - Math.max(0, this._telegraphT / this._telegraphMax));
+        }
+        const jit  = this.type === EnemyType.WEEVA
+          ? Math.sin(this._wobbleT * B.weevaVibrateHz) * B.weevaVibrate : 0;
+        const rock = this.type === EnemyType.FANNER
+          ? Math.sin(this._wobbleT * B.fannerSwayHz) * B.fannerSway : 0;
+        this.mesh.rotation.set(-drag * B.rearDragTilt, this._moveYaw, rock);
+        this.mesh.scale.set(
+          r * rm * shp.x * (sxz + jit) * (1 + inflate),
+          r * rm * shp.y * (sy - drag * 0.25 - jit) * (1 + inflate),
+          r * rm * shp.z * (sxz + drag) * (1 + inflate));
+      } else {
         this.mesh.scale.set(sx * rm, this._sq * rm, sx * rm);
       }
     }
@@ -1105,20 +1223,24 @@ export class Enemy {
       case EnemyType.SPITTOR:
         if (!this._isTelegraphing && this._t >= interval) {
           this._t              = 0;
-          this._telegraphT     = 0.6;
-          this._telegraphMax   = 0.6;
+          // Part 2 tell: inflates up to +spittorInflate over spittorInflateTime
+          // before firing (the scale is applied in the blob scale block, so it
+          // composes with breathe/drag instead of stomping them).
+          this._telegraphT     = TUNING.blob.spittorInflateTime;
+          this._telegraphMax   = TUNING.blob.spittorInflateTime;
           this._isTelegraphing = true;
         }
         if (this._isTelegraphing) {
           this._telegraphT -= dt;
-          const frac = Math.max(0, this._telegraphT / this._telegraphMax);
-          this.mesh.scale.setScalar(1 + 0.35 * (1 - frac));
           if (this._telegraphT <= 0) {
             this._isTelegraphing = false;
             this._sqV -= 1.0; // squash on fire
             // Aim the ring so one bullet leads straight at the player — the
             // symmetric ring reads better as a real threat than a fixed grid.
             const baseA = Math.atan2(playerPos.z - ez, playerPos.x - ex);
+            // Spit recoil (Part 2): kicks backward off the shot.
+            this.mesh.position.x -= Math.cos(baseA) * TUNING.blob.spittorRecoil;
+            this.mesh.position.z -= Math.sin(baseA) * TUNING.blob.spittorRecoil;
             this._ring(ex, ez, 8, cfg.bulletColor, bullets, this.type, baseA);
           }
         }
@@ -1182,7 +1304,9 @@ export class Enemy {
     if (this.type === EnemyType.TORO || this.type === EnemyType.BAMBU || this.type === EnemyType.PYRA) {
       this.group.scale.setScalar(1 + t * 2.2);
     } else {
-      this.mesh.scale.setScalar(1 + t * 2.2);
+      // Blobs: the shared dome is unit-sized, so the death pop scales from the
+      // real body size (radius × elite mult), not from 1.
+      this.mesh.scale.setScalar(this._deathBaseScale() * (1 + t * 2.2));
     }
     const baseOpacity = (CUBE_TYPES.has(this.type) || this.type === EnemyType.BAMBU) ? 0.88 : 0.82;
     this._setOpacity((1 - t) * baseOpacity);
@@ -1217,7 +1341,7 @@ export class Enemy {
     if (this.type === EnemyType.TORO || this.type === EnemyType.BAMBU || this.type === EnemyType.PYRA) {
       this.group.scale.setScalar(1);
     } else {
-      this.mesh.scale.setScalar(1);
+      this.mesh.scale.setScalar(this._deathBaseScale());
     }
     if (this.type !== EnemyType.BAMBU) this.mesh.visible = true;
 
@@ -1239,7 +1363,7 @@ export class Enemy {
       const hspd  = 3 + Math.random() * 4;
       this.chunks.push({
         x:  pos.x,
-        y:  pos.y,
+        y:  this.fxY,
         z:  pos.z,
         vx: Math.cos(angle) * hspd,
         vy: 3 + Math.random() * 5,
