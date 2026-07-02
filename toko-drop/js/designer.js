@@ -1,5 +1,5 @@
-import { CFG, EnemyType, BLOB_TYPES } from './enemy.js?v=26';
-import { BULLET_CONFIG } from './bullet.js?v=26';
+import { CFG, EnemyType, BLOB_TYPES } from './enemy.js?v=27';
+import { BULLET_CONFIG } from './bullet.js?v=27';
 
 const TYPE_NAMES = {
   [EnemyType.GLOBBO]:      'GLOBBO',
@@ -17,6 +17,7 @@ const TYPE_NAMES = {
   [EnemyType.TORO]:        'TORO',
   [EnemyType.BAMBU]:       'BAMBU',
   [EnemyType.PYRA]:        'PYRA',
+  [EnemyType.OMEGA]:       'OMEGA (boss)',
 };
 
 const ALL_TYPES = Object.values(EnemyType);

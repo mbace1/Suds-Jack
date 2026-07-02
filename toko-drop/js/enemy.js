@@ -133,6 +133,9 @@ export const EnemyType = {
   TORO:        12,
   BAMBU:       13,
   PYRA:        14,
+  // Boss-exclusive (v71) — never spawns in the regular pool, only as the
+  // guaranteed every-8th-wave boss (see getEnemySchedule in main.js)
+  OMEGA:       15,
 };
 
 export const CFG = {
@@ -151,6 +154,7 @@ export const CFG = {
   [EnemyType.TORO]:        { color: 0x4488cc, radius: 1.0,  speed: 5.0, hp: 6, bulletColor: null,     fireInterval: null },
   [EnemyType.BAMBU]:       { color: 0xaa8844, radius: 0.7,  speed: 0,   hp: 1, bulletColor: 0xddbb44, fireInterval: 4.0  },
   [EnemyType.PYRA]:        { color: 0xff9900, radius: 1.0,  speed: 0,   hp: 4, bulletColor: 0xffcc44, fireInterval: 2.5  },
+  [EnemyType.OMEGA]:       { color: 0x00eeff, radius: 0.95, speed: 1.3, hp: 5, bulletColor: 0x66f2ff, fireInterval: null },
 };
 
 // Per-type motion-trail signature (v36) — interval = cadence (denser = smaller),
@@ -251,6 +255,10 @@ export class Enemy {
       geo = new RoundedBoxGeometry(cfg.radius * 1.8, cfg.radius * 1.8, cfg.radius * 1.8, 4, 0.18);
     } else if (type === EnemyType.TORO) {
       geo = new THREE.TorusGeometry(cfg.radius * 0.68, cfg.radius * 0.32, 8, 18);
+    } else if (type === EnemyType.OMEGA) {
+      // Faceted crystal core — visually distinct from every blob/cube/TORO
+      // silhouette so the boss reads as its own thing, not a scaled-up regular.
+      geo = new THREE.IcosahedronGeometry(cfg.radius, 0);
     }
 
     const isBlob = BLOB_TYPES.has(type);
@@ -417,6 +425,8 @@ export class Enemy {
       const tier = Math.floor(intervalMult > 0 ? (1 - intervalMult) / 0.09 : 0);
       this._totalShots = Math.min(12, 6 + tier * 2);
       this._fireT = 1.5 + Math.random(); // fire while moving
+    } if (type === EnemyType.OMEGA) {
+      this._omegaFireT = 1.2 + Math.random() * 0.6;
     }
   }
 
@@ -789,6 +799,37 @@ export class Enemy {
         break;
       }
 
+      case EnemyType.OMEGA: {
+        // Boss-exclusive: holds a mid-range orbit around the player while
+        // firing an aimed fan; once enraged (<35% HP, v59) it switches to a
+        // full radial ring burst — a real pattern change, not just a speed-up.
+        const want   = 7.5;
+        const perpX  = -ddz / dist, perpZ = ddx / dist;
+        const radial = dist > want + 1.5 ? 1 : dist < want - 1.5 ? -1 : 0;
+        this.mesh.position.x += (ddx / dist * radial * 0.5 + perpX * this._orbitSign) * spd * dt;
+        this.mesh.position.z += (ddz / dist * radial * 0.5 + perpZ * this._orbitSign) * spd * dt;
+        // Independent crystal spin — visual flavour only, no gameplay effect.
+        this.mesh.rotation.y += 0.6 * dt;
+        this.mesh.rotation.x += 0.25 * dt;
+
+        this._omegaFireT -= dt;
+        if (this._omegaFireT <= 0) {
+          if (this._enraged) {
+            this._omegaFireT = 0.7 * this._intervalMult;
+            this._ring(ex, ez, 12, cfg.bulletColor, bullets, this.type);
+          } else {
+            this._omegaFireT = 0.9 * this._intervalMult;
+            const baseA = Math.atan2(playerPos.z - ez, playerPos.x - ex);
+            const count = 5, span = Math.PI * 0.35;
+            for (let j = 0; j < count; j++) {
+              const a = baseA - span / 2 + j * (span / (count - 1));
+              bullets.spawnDir(ex, ez, Math.cos(a), Math.sin(a), false, cfg.bulletColor, false, this.type);
+            }
+          }
+        }
+        break;
+      }
+
       case EnemyType.PYRA:
         this.group.rotation.y += this._spinSpeed * dt;
         break;
@@ -894,6 +935,8 @@ export class Enemy {
     } else if (this.type === EnemyType.SPLITTA && this.hp <= 2) {
       // Nervous green pulse as it nears death — telegraphs the on-death bullet burst.
       this._setEmissive(Math.sin(performance.now() * 0.018) > 0 ? 0x224400 : 0x000000);
+    } else if (this.type === EnemyType.OMEGA && this._omegaFireT < 0.25) {
+      this._setEmissive(Math.sin(performance.now() * 0.03) > 0 ? 0x0088aa : 0x000000);
     } else if (this._isTelegraphing) {
       this._setEmissive(this.type === EnemyType.SPITTOR ? 0x442200 : 0x440022);
     } else {
@@ -940,12 +983,16 @@ export class Enemy {
       this._sqV = (this._sqV - (this._sq - 1.0) * spring) * damp;
       this._sq  = Math.max(0.55, Math.min(1.55, this._sq + this._sqV));
       const sx = 1 / Math.sqrt(Math.max(this._sq, 0.1));
+      // Bake in _radiusMult (elite/boss size boost) so it survives the squash
+      // spring — without this, the spring resets scale toward 1.0 every frame
+      // and silently erases the size boost applied at spawn time.
+      const rm = this._radiusMult || 1;
       if (this.type === EnemyType.TORO) {
         this.group.scale.set(sx, this._sq, sx);
       } else if (this._flopActive) {
-        this.mesh.scale.set(1, 1, 1); // flop owns the transform; no squash mid-tumble
+        this.mesh.scale.set(rm, rm, rm); // flop owns the transform; no squash mid-tumble
       } else if (!this._isTelegraphing || this.type !== EnemyType.SPITTOR) {
-        this.mesh.scale.set(sx, this._sq, sx);
+        this.mesh.scale.set(sx * rm, this._sq * rm, sx * rm);
       }
     }
 
