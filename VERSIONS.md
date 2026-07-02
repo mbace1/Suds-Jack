@@ -7,6 +7,19 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v82 — 2026-07-02
+**Port brief Part 2: blob gel-dome geometry, per-blob silhouettes, grounded drag + motion tells**
+- **Blob geometry replaced**: all 5 blob types now share one SDF-generated gel dome (most of a ball with a flat rounded-off bottom, `smax(|p|−1, −y−domeCut, domeRound)`, shrink-wrapped 72-detail sphere — exact port of `enemy-lab.html`'s `blobGeo`) instead of per-instance `SphereGeometry`. Origin at the floor contact point → rest y=0 and every squash/breathe/drag anchors to the ground
+- **Per-blob silhouettes** (TUNING.blob): squat baseline {1.05, 0.82, 1.05}; SPITTOR snouty (long Z), FANNER wide flat pancake, WEEVA taller drill dome
+- **Grounded drag** (all blobs): body yaws to face motion, stretches along travel, nose lifts / rear drags (`drag = min(speed×0.10, 0.35)`); replaces the old world-space `uStretch` shader smear (the goo wobble + hit-ripple shader paths are kept unchanged — ripples now radiate from the contact point)
+- **Motion tells**: GLOBBO lunging-slime speed pulses while stalking (pounce machine from v58 kept — the brief's tell layered on, not replacing gameplay); SPITTOR inflates +22% over 0.45s before firing (was flat +35%/0.6s) and recoils 0.18 on fire; WEEVA ±3% scale vibration at 40Hz; FANNER sways `rotation.z` at 7Hz; SPLITTA's two children visibly bulge inside before the split; whole-body breathe (0.13 / 0.18 SPLITTA)
+- **Fixed enemy-lab.html crash**: the lab referenced `smin` without defining it (`ReferenceError` on load — it can't ever have rendered); added the standard polynomial smooth-min the brief specifies
+- Blob y-anchor plumbing: new `Enemy.fxY` getter keeps damage numbers, hit sparks, death chunks, motion-trail ghosts, and HP bars at mid-body height now that blob `position.y` is 0
+- Created `CLAUDE.md` (brief's verify step): tuning.js single-source-of-truth note + versioning/release conventions
+- Cache-bust `?v=35` → `?v=36`; HUD label → v82
+
+---
+
 ## v81 — 2026-07-02
 **Pause-menu rework: SETTINGS page (volume + reduce-motion moved from title) + ENEMY LAB launcher**
 - The pause menu's left list now has a **⚙ SETTINGS** page above an "ENEMIES" group of the existing per-enemy tuning pages; the menu opens on SETTINGS (players pausing mid-run mostly want volume/motion — tuning is one tap away)

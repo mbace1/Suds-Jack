@@ -307,6 +307,7 @@ const allMats = [];
 
 /* ============ shared geometries ============ */
 const DETAIL = isMobile ? 80 : 112;
+function smin(a, b, k){ const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h*h*k*0.25; }
 function smax(a, b, k){ return -smin(-a, -b, k); }
 const blobGeo = (() => {   // hero-style gel dome: most of a ball, flat rounded-off bottom (like Toko, but fuller)
   const g = sdfGeometry((x,y,z) => smax(Math.hypot(x,y,z) - 1, -y - 0.7, 0.22), isMobile ? 72 : 96);

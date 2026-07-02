@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=35';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=35';
-import { Player, PLAYER_RADIUS } from './player.js?v=35';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=35';
-import { audio } from './audio.js?v=35';
-import { initDesigner } from './designer.js?v=35';
-import { t, getLang, setLang, langs } from './lang.js?v=35';
+import { InputManager } from './input.js?v=36';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=36';
+import { Player, PLAYER_RADIUS } from './player.js?v=36';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=36';
+import { audio } from './audio.js?v=36';
+import { initDesigner } from './designer.js?v=36';
+import { t, getLang, setLang, langs } from './lang.js?v=36';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1364,6 +1364,7 @@ function toScreen(worldPos) {
   _proj.copy(worldPos).project(camera);
   return { x: (_proj.x + 1) / 2 * uiCanvas.width, y: (-_proj.y + 1) / 2 * uiCanvas.height };
 }
+const _hpAnchor = new THREE.Vector3(); // scratch for HP-bar world anchors
 
 function hexToCSS(hex) { return '#' + hex.toString(16).padStart(6, '0'); }
 
@@ -1494,10 +1495,12 @@ function drawHUD() {
   }
   ctx.textAlign = 'left';
 
-  // Enemy HP bars (world→screen projection)
+  // Enemy HP bars (world→screen projection). Anchor at mid-body height via
+  // fxY — blob dome origins sit at the floor (v82), not the body center.
   for (const e of enemies) {
     if (!e.alive && !e._dying) continue;
-    const s = toScreen(e.position);
+    _hpAnchor.set(e.position.x, e.fxY, e.position.z);
+    const s = toScreen(_hpAnchor);
     const barW = 36, barH = 5;
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.fillRect(s.x - barW / 2, s.y - 44, barW, barH);
@@ -1528,7 +1531,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v81', 16, uiCanvas.height - 12);
+  ctx.fillText('v82', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2280,7 +2283,7 @@ function loop() {
     if (!e._motionTrailReady) continue;
     e._motionTrailReady = false;
     const p = e.position;
-    trailPool.spawn(p.x, p.y, p.z, e.color, e.radius * e._trailMult);
+    trailPool.spawn(p.x, e.fxY, p.z, e.color, e.radius * e._trailMult);
   }
 
   // BAMBU AoE telegraphs and lob bullets; drain hitChunks for all enemies
@@ -2402,14 +2405,14 @@ function loop() {
         } else {
           audio.enemyHit();
           addShake(0.035); // light kick on a non-fatal hit (trauma caps, so rapid fire won't over-shake)
-          damageNumbers.push(new DamageNumber(e.position.x, e.position.y + e.radius, e.position.z));
+          damageNumbers.push(new DamageNumber(e.position.x, e.fxY + e.radius, e.position.z));
           // Impact spark: a small spat of goo flung outward from the contact point
           const nlen = Math.hypot(dx, dz) || 1;
           const baseA = Math.atan2(dz, dx);
           for (let j = 0; j < 3; j++) {
             const a  = baseA + (Math.random() - 0.5) * 1.4;
             const sp = 2.5 + Math.random() * 3;
-            chunkPool.spawn(b.mesh.position.x, e.position.y + 0.1, b.mesh.position.z,
+            chunkPool.spawn(b.mesh.position.x, e.fxY + 0.1, b.mesh.position.z,
               Math.cos(a) * sp, 1.5 + Math.random() * 2.5, Math.sin(a) * sp, e.color, 0.09);
           }
         }
