@@ -25,7 +25,7 @@ export class Player {
     this.hp = BASE.maxHp; this.maxHp = BASE.maxHp;
     this.fireT = 0; this.dashCD = 0; this.dashT = 0; this.iframe = 0;
     this.dashing = false; this.dashElapsed = 0; this.dashDirX = 0; this.dashDirZ = 0; this._dashGround = true;
-    this.airDashUsed = false; this._fired = false; this._target = false;
+    this.airDashUsed = false; this.airJumpUsed = false; this._fired = false; this._target = false;
     this.adr = 0; this.adrKills = 0; this.alive = true;
     this.fig.visible(true);
   }
@@ -37,6 +37,7 @@ export class Player {
 
   // ── traversal verbs ──
   jump() { if (this.alive && this.grounded()) { this.vy = BASE.jumpV; return true; } return false; }
+  doubleJump() { if (this.alive && !this.grounded() && !this.airJumpUsed) { this.vy = BASE.jumpV; this.airJumpUsed = true; return true; } return false; }
   _startDash(dir, ground) {
     this.dashing = true; this.dashElapsed = 0; this._dashGround = ground;
     this.dashDirX = dir.x; this.dashDirZ = dir.z;
@@ -118,9 +119,9 @@ export class Player {
     if (ground - this.y > STEP_MAX && this.vy <= 0.1) {   // too tall to step onto → act as a wall
       this.x = prevX; this.z = prevZ;
       const g = heightAt(this.x, this.z);
-      if (this.y <= g) { this.y = g; this.vy = 0; this.airDashUsed = false; }
+      if (this.y <= g) { this.y = g; this.vy = 0; this.airDashUsed = false; this.airJumpUsed = false; }
     } else if (this.y <= ground) {
-      this.y = ground; this.vy = 0; this.airDashUsed = false;
+      this.y = ground; this.vy = 0; this.airDashUsed = false; this.airJumpUsed = false;
     }
 
     this.yaw = aim.yaw;
