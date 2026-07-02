@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>Toko Drop</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
     body { background: #000; overflow: hidden; touch-action: none; }
     #canvas-game { display: block; }
     #canvas-ui {
@@ -20,6 +21,17 @@
       position: fixed;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
+      /* Short/landscape screens: cap to the viewport and scroll inside instead
+         of cropping top+bottom (body overflow is hidden, so this is the only
+         way tall screens like game-over/feedback stay reachable). */
+      max-width: 100vw;
+      max-height: 100vh;
+      max-height: 100svh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      touch-action: pan-y;
+      scrollbar-width: thin;
+      padding: 10px 14px;
       color: #fff;
       font-family: monospace, sans-serif;
       text-align: center;
@@ -43,6 +55,6 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=33"></script>
+  <script type="module" src="js/main.js?v=34"></script>
 </body>
 </html>
