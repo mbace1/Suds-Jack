@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=30';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=30';
-import { Player, PLAYER_RADIUS } from './player.js?v=30';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=30';
-import { audio } from './audio.js?v=30';
-import { initDesigner } from './designer.js?v=30';
-import { t, getLang, setLang, langs } from './lang.js?v=30';
+import { InputManager } from './input.js?v=31';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=31';
+import { Player, PLAYER_RADIUS } from './player.js?v=31';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=31';
+import { audio } from './audio.js?v=31';
+import { initDesigner } from './designer.js?v=31';
+import { t, getLang, setLang, langs } from './lang.js?v=31';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -162,7 +162,10 @@ camera.lookAt(CAM_LOOK);
 
 // ── Screen shake ───────────────────────────────────────────────────────────
 let shakeTrauma = 0;
-function addShake(trauma) { shakeTrauma = Math.min(shakeTrauma + trauma, 1); }
+function addShake(trauma) {
+  if (reduceMotion) return; // Settings: reduce-motion skips camera shake entirely
+  shakeTrauma = Math.min(shakeTrauma + trauma, 1);
+}
 function updateShake(dt) {
   if (shakeTrauma <= 0) {
     camera.position.copy(CAM_REST);
@@ -959,6 +962,14 @@ let landscapeMode = orientUserSet
   : anyGamepadPresent();
 applyArenaMode(landscapeMode);
 
+// Settings (v75): audio volume + reduce-motion (screen shake), both persisted.
+let audioVolume = (() => {
+  const raw = parseFloat(localStorage.getItem('tokoDropVolume'));
+  return Number.isFinite(raw) ? Math.max(0, Math.min(1, raw)) : 1.0;
+})();
+let reduceMotion = localStorage.getItem('tokoDropReduceMotion') === '1';
+audio.setVolume(audioVolume);
+
 // A pad that connects later (common — browsers reveal pads only after input) flips an
 // un-chosen orientation to landscape live while still on the title screen.
 window.addEventListener('gamepadconnected', () => {
@@ -1503,7 +1514,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v74', 16, uiCanvas.height - 12);
+  ctx.fillText('v75', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1548,6 +1559,7 @@ function showTitle() {
     `<div style="font-size:16px;opacity:0.85;animation:tokoFadeUp 0.5s 0.2s ease both">${t('tapStart')}</div>` +
     `<div id="orient-toggle-slot" style="margin-top:18px;animation:tokoFadeUp 0.5s 0.28s ease both"></div>` +
     `<div id="rogue-toggle-slot" style="margin-top:14px;animation:tokoFadeUp 0.5s 0.3s ease both"></div>` +
+    `<div id="settings-slot" style="margin-top:14px;animation:tokoFadeUp 0.5s 0.32s ease both"></div>` +
     `<div style="font-size:12px;opacity:0.38;margin-top:20px;line-height:2;text-align:center;` +
     `animation:tokoFadeUp 0.5s 0.4s ease both">` +
     `${t('ctrlMove')} &nbsp;·&nbsp; ${t('ctrlMoveH')}<br>` +
@@ -1648,6 +1660,63 @@ function showTitle() {
   btn.addEventListener('touchend', e => e.stopPropagation());
   slot.appendChild(btn);
   slot.appendChild(hint);
+
+  // Settings (v75): volume slider + reduce-motion toggle chip.
+  {
+    const sslot = document.getElementById('settings-slot');
+    sslot.style.cssText += ';display:flex;flex-direction:column;align-items:center;gap:10px';
+
+    const volRow = document.createElement('div');
+    volRow.style.cssText = 'display:flex;align-items:center;gap:10px;pointer-events:auto';
+    const volLabel = document.createElement('span');
+    volLabel.style.cssText = 'font-size:11px;opacity:0.55;letter-spacing:1px';
+    const volInput = document.createElement('input');
+    volInput.type = 'range'; volInput.min = '0'; volInput.max = '100'; volInput.step = '5';
+    volInput.value = String(Math.round(audioVolume * 100));
+    volInput.style.cssText = 'pointer-events:auto;cursor:pointer;width:140px;accent-color:#00ccaa';
+    const volRender = () => { volLabel.textContent = `${t('volume')} ${Math.round(audioVolume * 100)}%`; };
+    volRender();
+    const volChange = e => {
+      e.stopPropagation();
+      audioVolume = Number(volInput.value) / 100;
+      audio.setVolume(audioVolume);
+      localStorage.setItem('tokoDropVolume', String(audioVolume));
+      volRender();
+    };
+    volInput.addEventListener('input', volChange);
+    volInput.addEventListener('pointerdown', e => e.stopPropagation());
+    volInput.addEventListener('touchend', e => e.stopPropagation());
+    volRow.appendChild(volLabel);
+    volRow.appendChild(volInput);
+    sslot.appendChild(volRow);
+
+    const mBtn  = document.createElement('div');
+    const mHint = document.createElement('div');
+    mHint.style.cssText = 'font-size:11px;opacity:0.45';
+    const mRender = () => {
+      mBtn.textContent = `${t('reduceMotion')}: ${reduceMotion ? t('on') : t('off')}`;
+      mBtn.style.cssText =
+        'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
+        'font-size:13px;font-weight:bold;padding:7px 16px;border-radius:8px;' +
+        'background:rgba(0,0,0,0.35);transition:all 0.12s;' +
+        `border:2px solid ${reduceMotion ? '#ff8844' : '#445'};` +
+        `color:${reduceMotion ? '#ffbb88' : '#7777aa'};` +
+        `text-shadow:${reduceMotion ? '0 0 12px #ff8844' : 'none'};`;
+      mHint.textContent = reduceMotion ? t('reduceMotionOnH') : t('reduceMotionOffH');
+    };
+    mRender();
+    const mToggle = e => {
+      e.stopPropagation();
+      e.preventDefault();
+      reduceMotion = !reduceMotion;
+      localStorage.setItem('tokoDropReduceMotion', reduceMotion ? '1' : '0');
+      mRender();
+    };
+    mBtn.addEventListener('pointerdown', mToggle);
+    mBtn.addEventListener('touchend', e => e.stopPropagation());
+    sslot.appendChild(mBtn);
+    sslot.appendChild(mHint);
+  }
 }
 
 function showGameOver() {
