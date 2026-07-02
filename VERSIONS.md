@@ -7,82 +7,30 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v77 — 2026-07-02
-**Title/pause-menu polish: smaller controls block, chip-styled volume, trimmed pause menu**
-- Title screen controls block (Move/Aim/Dash/Pause/Eyes) shrunk to a smaller, tighter area: font 12→9.5px, line-height 2→1.6, constrained to `max-width:230px`
-- Volume slider restyled as a bordered menu-item chip (matching the REDUCE MOTION toggle's box treatment) instead of a bare native `<input type=range>` floating in space
-- **Pause menu refined**: the panel doubling as the real pause screen is now framed as one — title changed from "ENEMY DESIGNER" to "PAUSED" (bigger, brighter). The **VISUAL** tab (shader-uniform tuning: Fresnel/Specular/SSS/Shininess/color pickers) is removed entirely — real players pausing mid-run have no use for a Specular Sharpness slider. The enemy-tuning list/sliders (the "enemies page") are left as-is for now, to revisit separately
-- Dead code cleanup: `renderVisual()`, `colorRow()`, `fromHex()`, the now-single-tab tab bar, and the unused `getEnemies` designer param all removed
-- Cache-bust `?v=32` → `?v=33`; HUD label → v77
-
----
-
-## v76 — 2026-07-02
-**Run History view — final roadmap item**
-- New **RUN HISTORY** link on the title screen opens a panel listing the top 10 runs by score (rank/score/wave/time/mode) — no new tracking added, it's a view over `pb.runs`, which `recordRun()` has already been maintaining since v27
-- Introduces a `'runhistory'` `gameState` while the panel is open (mirrors how `showUpgradeCards()` uses `'upgrade'`): needed because the panel is a `document.body` sibling of `#overlay`, and the title screen's tap-to-start `touchend` handler only excludes taps *inside* `#overlay` — without this, tapping anywhere in the panel (including CLOSE) would have also started a new run underneath it. Added to the idle-render early-return alongside title/paused/upgrade so it doesn't fall through into full gameplay-tick logic
-- Localized (en/ja/fi)
-- Cache-bust `?v=31` → `?v=32`; HUD label → v76
-
-This completes the full **Systems & meta** bucket, closing out the entire post-v68 roadmap: new content (v70–72), polish & juice (v73–74), systems & meta (v75–76).
-
----
-
-## v75 — 2026-07-02
-**Settings screen — volume slider + reduce-motion toggle**
-- New **VOLUME** slider (0–100%, persisted `tokoDropVolume`) on the title screen; `AudioSystem` gains `setVolume()` — a master gain multiplier applied in `_tone()`/`_noise()`, so every existing sound effect respects it with no per-call-site changes
-- New **REDUCE MOTION** toggle chip (persisted `tokoDropReduceMotion`): when on, `addShake()` is a no-op, skipping camera shake entirely — an accessibility option for players sensitive to screen shake
-- Both localized (en/ja/fi), styled to match the existing orientation/roguelike toggle chips
-- Cache-bust `?v=30` → `?v=31`; HUD label → v75
-
----
-
-## v74 — 2026-07-02
-**Wave-clear flash — the instant-end (v22) now gets a visual + audio beat**
-- Waves have ended instantly on the last kill since v22, but nothing marked the moment — added a brief white screen pulse (`waveClearFlashT`, 0.4 s, fades from 30% opacity) drawn on the HUD canvas the instant `enemies.every(dead)` triggers
-- Also wired up `audio.waveClear()` — a 4-note ascending chime that's existed in `audio.js` since early versions but was never actually called anywhere
-- Cache-bust `?v=29` → `?v=30`; HUD label → v74
-
----
-
-## v73 — 2026-07-02
-**Per-blob visual accents — the 5 blobs now read distinctly at a glance**
-- Each blob got a distinct *behaviour* in v58 (pounce/aimed-ring/wide-fan/orbit-spiral/burst) but all still shared the identical goo shader, making them hard to tell apart mid-swarm. Added small glowing accent beacons (children of the mesh, own `MeshBasicMaterial`, additive) so silhouette + colour now differ per type without touching the shared goo shader (used by every blob **and** the player)
-- **GLOBBO** (Pouncer): single forward beacon. **SPITTOR**: one large "mouth" beacon. **FANNER**: 3-wide fan of beacons. **WEEVA**: single beacon that continuously orbits the body (echoes its fired spiral). **SPLITTA**: twin "eye" beacons
-- Beacon colour reuses each type's `bulletColor` — the colour of the bullets it actually fires, reinforcing recognition
-- Cache-bust `?v=28` → `?v=29`; HUD label → v73
-
----
-
-## v72 — 2026-07-02
-**New powerup: Score Multiplier — gate drops now have 4 options**
-- New **Score Multiplier** powerup (gold orb): doubles all kill-streak score for 10 s. Drops from gates alongside HP/Invincible/Fire Rate
-- Pulsing gold `×2 SCORE` HUD indicator (right side, below HI) shows while active; localized in en/ja/fi
-- `scoreMultT` timer added alongside the existing streak-flash/hit-flash timers; multiplies the `100 × streak` kill score only (the once-per-wave clear bonus is unaffected — a deliberate scope choice, not a bug)
-- Cache-bust `?v=27` → `?v=28`; HUD label → v72
-
----
-
-## v71 — 2026-07-02
-**Boss-exclusive enemy: OMEGA — every-8th-wave boss is no longer just a scaled-up regular**
-- New **OMEGA** enemy type: a faceted crystal core (icosahedron geometry, distinct from every blob/cube/TORO silhouette) that only ever spawns as the guaranteed every-8th-wave boss — never appears in the regular enemy pool
-- Behaviour: holds a mid-range orbit around the player while firing an aimed 5-shot fan; once enraged (<35% HP, reusing v59's `_enraged` flag) it switches to a full 12-point radial ring burst — a genuine pattern change, not just a speed-up like the pre-v62 TORO enrage
-- **Bug fix discovered while wiring this up**: the squash-spring animation was resetting `mesh.scale` toward ~1.0 every frame for any non-TORO/BAMBU/PYRA enemy, silently erasing the elite/boss `_radiusMult` size boost applied at spawn — meaning OMEGA (and existing elite blobs/cubes) wouldn't actually render bigger despite having more HP. Fixed by baking `_radiusMult` into the per-frame scale assignment
-- `getEnemySchedule()`'s boss-selection now always picks OMEGA instead of choosing from `[TORO, PYRA, BAMBU, PURP_CUBE]`; those four remain in the regular pool as normal/elite/twin/group spawns, unaffected
-- Cache-bust `?v=26` → `?v=27`; HUD label → v71
-
----
-
-## v70 — 2026-07-02
-**New weapon pod: Homing (H/H2) — 10th weapon type**
-- New **Homing** pod: fires a bullet that gradually steers toward the nearest alive enemy each frame (a turn, not a snap-lock, so it stays dodgeable/avoidable by enemies rather than a guaranteed hit). Lv1 turn rate 6, Lv2 (`HOMING2`) locks on tighter at turn rate 10 and fires ~33% faster (`baseRate × 0.75`)
-- `BulletPool.spawnDir()` gains `homing`/`turnRate` params; `BulletPool.update()` gains an optional `enemies` arg and a `_steerHoming()` step that finds the nearest alive enemy and rotates the bullet's velocity toward it each frame
-- `WEAPON_PODS` grows to 10 entries (`H`/`H2` added to `LV1_WEAPONS`/`LV2_WEAPONS`); reuses the existing glyph/equip/HUD pipeline unchanged
-- Cache-bust `?v=25` → `?v=26`; HUD label → v70
+## v80 — 2026-07-02
+**Landscape crop fix (scrollable overlay + rotation-safe canvas) + TUNING wiring goes live**
+- **Death/title overlay no longer crops on short landscape screens** (the reported bug — phone/PC in landscape cut off the game-over stats at the top and the feedback buttons at the bottom, with no way to reach them since `body` has `overflow:hidden`): `#overlay` now caps at `100svh`/`100vw` and scrolls internally (`overflow-y:auto`, `touch-action:pan-y`). Scrolling works because v53 already exempted `#overlay` touches from `preventDefault` and `showGameOver()` sets `pointerEvents:auto`
+- **Rotation dead-strip fix**: some phones fire `resize` before the rotated dimensions settle, leaving the canvas at the old size (black strip on one edge). Added `orientationchange` re-resize (immediate + 250ms + 600ms) and a `visualViewport` resize listener; `viewport-fit=cover` added to the meta viewport so cutout letterboxing stops reserving a dead strip
+- Verified numerically (projected all arena corners at aspects 0.46–2.16) that the 3D camera itself was NOT the crop cause — the arena fits the frustum at all common landscape aspects, so camera framing is untouched
+- Ships v78 (tuning.js/enemy-lab/port-brief assets) and v79 (Part 1 TUNING wiring) — both behavior-neutral
+- `scripts/bump-version.sh` now includes `enemy.js` in the cache-token loop (it carries the `tuning.js?v=` import since v79)
+- Cache-bust `?v=33` → `?v=34`; HUD label → v80
 
 ---
 
 ## Archive
+
+**v70–v79 summary (2026-07-02)**
+- v70: New Homing weapon pod (H/H2) — 10th weapon type; `spawnDir` homing/turnRate params
+- v71: OMEGA boss-exclusive enemy (crystal core, orbit+fan → enraged radial ring); fixed `_radiusMult` being erased by the squash-spring each frame
+- v72: Score Multiplier powerup (gold orb, 2x kill-streak score 10s) — 4th gate drop
+- v73: Per-blob accent beacons (bulletColor-matched) — 5 blobs readable at a glance
+- v74: Wave-clear white flash + wired up the never-called `audio.waveClear()` chime
+- v75: Settings — volume slider (master gain) + reduce-motion toggle, persisted
+- v76: Run History panel — top 10 runs by score from existing `pb.runs` data
+- v77: Title/pause polish — smaller controls block, chip-styled volume, "PAUSED" title, VISUAL tab removed
+- v78: Added tuning.js + enemy-lab.html + port brief as assets (no wiring)
+- v79: Port brief Part 1 — enemy.js reads 12 exact-match constants from TUNING (BAMBU cooldown/segments, YELA/SLUDGE trail+poison cadence, 8 TORO state constants); mismatched/not-yet-built values left hardcoded; zero behavior change
 
 **v61–v69 summary (2026-06-30 – 2026-07-02)**
 - v61: PURP_CUBE 2-arm spiral fire with per-cube spin rate/direction

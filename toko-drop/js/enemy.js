@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { TUNING } from './tuning.js?v=34';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -152,7 +153,7 @@ export const CFG = {
   [EnemyType.REDD_MINI]:   { color: 0xff4433, radius: 0.32, speed: 3.2, hp: 1, bulletColor: null,     fireInterval: null },
   [EnemyType.PURP_MINI]:   { color: 0xdd66ff, radius: 0.26, speed: 3.8, hp: 1, bulletColor: null,     fireInterval: null },
   [EnemyType.TORO]:        { color: 0x4488cc, radius: 1.0,  speed: 5.0, hp: 6, bulletColor: null,     fireInterval: null },
-  [EnemyType.BAMBU]:       { color: 0xaa8844, radius: 0.7,  speed: 0,   hp: 1, bulletColor: 0xddbb44, fireInterval: 4.0  },
+  [EnemyType.BAMBU]:       { color: 0xaa8844, radius: 0.7,  speed: 0,   hp: 1, bulletColor: 0xddbb44, fireInterval: TUNING.bambu.lobCooldown },
   [EnemyType.PYRA]:        { color: 0xff9900, radius: 1.0,  speed: 0,   hp: 4, bulletColor: 0xffcc44, fireInterval: 2.5  },
   [EnemyType.OMEGA]:       { color: 0x00eeff, radius: 0.95, speed: 1.3, hp: 5, bulletColor: 0x66f2ff, fireInterval: null },
 };
@@ -360,7 +361,7 @@ export class Enemy {
       this.group.position.set(x, 0, z);
       scene.add(this.group);
 
-      this._maxSegs = 3;
+      this._maxSegs = TUNING.bambu.segments;
       this._segs = [];
       this._segs.push(this._makeBambuSeg(0));
       this.hp = 1;
@@ -447,9 +448,9 @@ export class Enemy {
       this._flopRest   = Math.random() * 0.25; // stagger first flop across the wave
       this._flopDir    = dirs[Math.floor(Math.random() * 4)];
       this._flopAxis   = new THREE.Vector3();
-      if (type === EnemyType.YELA_CUBE) this._trailTimer = 0.3;
+      if (type === EnemyType.YELA_CUBE) this._trailTimer = TUNING.fx.slimeTrailInterval;
       if (type === EnemyType.SLUDGE_CUBE) {
-        this._poisonTimer    = 0.5;
+        this._poisonTimer    = TUNING.fx.poisonInterval;
         this._trailPositions = [];
         this._trailPushTimer = 0;
       }
@@ -781,7 +782,7 @@ export class Enemy {
         // Per-type emissions (locomotion handled by _flopMove)
         if (this.type === EnemyType.YELA_CUBE) {
           this._trailTimer -= dt;
-          if (this._trailTimer <= 0) { this._trailTimer = 0.3; this._trailReady = true; }
+          if (this._trailTimer <= 0) { this._trailTimer = TUNING.fx.slimeTrailInterval; this._trailReady = true; }
         }
         if (this.type === EnemyType.SLUDGE_CUBE) {
           // Trail position ring buffer for ribbon
@@ -791,10 +792,10 @@ export class Enemy {
             this._trailPositions.push({ x: this.mesh.position.x, z: this.mesh.position.z });
             if (this._trailPositions.length > 12) this._trailPositions.shift();
           }
-          // Poison emission every 0.5s
+          // Poison emission cadence (TUNING.fx.poisonInterval)
           this._poisonTimer -= dt;
           if (this._poisonTimer <= 0) {
-            this._poisonTimer = 0.5;
+            this._poisonTimer = TUNING.fx.poisonInterval;
             this._poisonReady = true;
           }
         }
@@ -903,10 +904,11 @@ export class Enemy {
             this._idleTimer -= dt;
             if (this._idleTimer <= 0) {
               this._state = 'revving';
-              this._stateT = this._enraged ? 1.0 : 1.6;  // winds up quicker when enraged
+              this._stateT = this._enraged ? TUNING.toro.revTime * 0.625 : TUNING.toro.revTime;  // winds up quicker when enraged
               const dl = Math.hypot(ddx, ddz) || 1;
               this._dashDir = { x: ddx/dl, z: ddz/dl };
-              const ang = Math.round(Math.atan2(this._dashDir.z, this._dashDir.x) / (Math.PI/4)) * (Math.PI/4);
+              const snapRad = TUNING.toro.dirSnapDeg * Math.PI / 180;
+              const ang = Math.round(Math.atan2(this._dashDir.z, this._dashDir.x) / snapRad) * snapRad;
               this._dashDir = { x: Math.cos(ang), z: Math.sin(ang) };
             }
             break;
@@ -917,7 +919,7 @@ export class Enemy {
             this.group.rotation.y = this._spinAngle;
             if (this._stateT <= 0) {
               this._state = 'telegraphing';
-              this._stateT = 0.5;
+              this._stateT = TUNING.toro.telegraphTime;
               const midX = this.group.position.x + this._dashDir.x * 18;
               const midZ = this.group.position.z + this._dashDir.z * 18;
               this._indicator.position.set(midX, 0.03, midZ);
@@ -928,15 +930,15 @@ export class Enemy {
             break;
           case 'telegraphing':
             this._stateT -= dt;
-            this._indicator.material.opacity = (Math.sin(this._stateT * 25) > 0) ? 0.7 : 0.15;
+            this._indicator.material.opacity = (Math.sin(this._stateT * TUNING.toro.indicatorFlashHz) > 0) ? 0.7 : 0.15;
             if (this._stateT <= 0) {
               this._indicator.visible = false;
               this._state = 'dashing';
-              this._dashSpeed = 22;
+              this._dashSpeed = TUNING.toro.dashSpeed;
             }
             break;
           case 'dashing':
-            this._dashSpeed = Math.max(this._dashSpeed - 8 * dt, 14);
+            this._dashSpeed = Math.max(this._dashSpeed - TUNING.toro.dashDecel * dt, TUNING.toro.dashMin);
             this.group.position.x += this._dashDir.x * this._dashSpeed * dt;
             this.group.position.z += this._dashDir.z * this._dashSpeed * dt;
             this._spinAngle += 12 * dt;
@@ -945,7 +947,7 @@ export class Enemy {
               this.group.position.x = Math.max(-17, Math.min(17, this.group.position.x));
               this.group.position.z = Math.max(-17, Math.min(17, this.group.position.z));
               this._state = 'recovering';
-              this._stateT = 0.8;
+              this._stateT = TUNING.toro.recoverTime;
               this._sqV -= 0.5;
             }
             break;
