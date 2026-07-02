@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=34';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=34';
-import { Player, PLAYER_RADIUS } from './player.js?v=34';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=34';
-import { audio } from './audio.js?v=34';
-import { initDesigner } from './designer.js?v=34';
-import { t, getLang, setLang, langs } from './lang.js?v=34';
+import { InputManager } from './input.js?v=35';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=35';
+import { Player, PLAYER_RADIUS } from './player.js?v=35';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=35';
+import { audio } from './audio.js?v=35';
+import { initDesigner } from './designer.js?v=35';
+import { t, getLang, setLang, langs } from './lang.js?v=35';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1343,6 +1343,21 @@ const _proj    = new THREE.Vector3();
 
 const designer = initDesigner({
   onResume: () => { gameState = 'playing'; },
+  // Settings page (v81) — volume + reduce-motion live in the pause menu now;
+  // state and persistence stay here, the menu just reads/writes through these.
+  settings: {
+    getVolume: () => audioVolume,
+    setVolume: v => {
+      audioVolume = v;
+      audio.setVolume(v);
+      localStorage.setItem('tokoDropVolume', String(v));
+    },
+    getReduceMotion: () => reduceMotion,
+    setReduceMotion: on => {
+      reduceMotion = on;
+      localStorage.setItem('tokoDropReduceMotion', on ? '1' : '0');
+    },
+  },
 });
 
 function toScreen(worldPos) {
@@ -1513,7 +1528,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v80', 16, uiCanvas.height - 12);
+  ctx.fillText('v81', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1660,68 +1675,12 @@ function showTitle() {
   slot.appendChild(btn);
   slot.appendChild(hint);
 
-  // Settings (v75): volume slider + reduce-motion toggle chip.
+  // v81: volume + reduce-motion moved into the pause menu's SETTINGS page —
+  // the title keeps only the run-history link and a faint pointer to where
+  // the settings went.
   {
     const sslot = document.getElementById('settings-slot');
     sslot.style.cssText += ';display:flex;flex-direction:column;align-items:center;gap:10px';
-
-    // Styled as a menu-item chip (border/background box) to match the
-    // reduce-motion toggle below it, rather than a bare native slider.
-    const volRow = document.createElement('div');
-    volRow.style.cssText =
-      'display:flex;align-items:center;gap:12px;pointer-events:auto;' +
-      'border:2px solid #00ccaa;border-radius:8px;padding:7px 16px;' +
-      'background:rgba(0,0,0,0.35);';
-    const volLabel = document.createElement('span');
-    volLabel.style.cssText =
-      'font-size:13px;font-weight:bold;letter-spacing:1px;color:#00ffcc;' +
-      'text-shadow:0 0 12px #00ccaa;white-space:nowrap;';
-    const volInput = document.createElement('input');
-    volInput.type = 'range'; volInput.min = '0'; volInput.max = '100'; volInput.step = '5';
-    volInput.value = String(Math.round(audioVolume * 100));
-    volInput.style.cssText = 'pointer-events:auto;cursor:pointer;width:120px;accent-color:#00ccaa';
-    const volRender = () => { volLabel.textContent = `${t('volume')}: ${Math.round(audioVolume * 100)}%`; };
-    volRender();
-    const volChange = e => {
-      e.stopPropagation();
-      audioVolume = Number(volInput.value) / 100;
-      audio.setVolume(audioVolume);
-      localStorage.setItem('tokoDropVolume', String(audioVolume));
-      volRender();
-    };
-    volInput.addEventListener('input', volChange);
-    volInput.addEventListener('pointerdown', e => e.stopPropagation());
-    volInput.addEventListener('touchend', e => e.stopPropagation());
-    volRow.appendChild(volLabel);
-    volRow.appendChild(volInput);
-    sslot.appendChild(volRow);
-
-    const mBtn  = document.createElement('div');
-    const mHint = document.createElement('div');
-    mHint.style.cssText = 'font-size:11px;opacity:0.45';
-    const mRender = () => {
-      mBtn.textContent = `${t('reduceMotion')}: ${reduceMotion ? t('on') : t('off')}`;
-      mBtn.style.cssText =
-        'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
-        'font-size:13px;font-weight:bold;padding:7px 16px;border-radius:8px;' +
-        'background:rgba(0,0,0,0.35);transition:all 0.12s;' +
-        `border:2px solid ${reduceMotion ? '#ff8844' : '#445'};` +
-        `color:${reduceMotion ? '#ffbb88' : '#7777aa'};` +
-        `text-shadow:${reduceMotion ? '0 0 12px #ff8844' : 'none'};`;
-      mHint.textContent = reduceMotion ? t('reduceMotionOnH') : t('reduceMotionOffH');
-    };
-    mRender();
-    const mToggle = e => {
-      e.stopPropagation();
-      e.preventDefault();
-      reduceMotion = !reduceMotion;
-      localStorage.setItem('tokoDropReduceMotion', reduceMotion ? '1' : '0');
-      mRender();
-    };
-    mBtn.addEventListener('pointerdown', mToggle);
-    mBtn.addEventListener('touchend', e => e.stopPropagation());
-    sslot.appendChild(mBtn);
-    sslot.appendChild(mHint);
 
     // Run History button (v76) — opens a panel over data already recorded
     // in pb.runs (top 10 by score, maintained by recordRun()).
@@ -1733,6 +1692,11 @@ function showTitle() {
     rhBtn.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); showRunHistory(); });
     rhBtn.addEventListener('touchend', e => e.stopPropagation());
     sslot.appendChild(rhBtn);
+
+    const sHint = document.createElement('div');
+    sHint.textContent = t('settingsHint');
+    sHint.style.cssText = 'font-size:10px;opacity:0.3;letter-spacing:1px';
+    sslot.appendChild(sHint);
   }
 }
 

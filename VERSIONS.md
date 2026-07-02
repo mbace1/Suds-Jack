@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v81 — 2026-07-02
+**Pause-menu rework: SETTINGS page (volume + reduce-motion moved from title) + ENEMY LAB launcher**
+- The pause menu's left list now has a **⚙ SETTINGS** page above an "ENEMIES" group of the existing per-enemy tuning pages; the menu opens on SETTINGS (players pausing mid-run mostly want volume/motion — tuning is one tap away)
+- **VOLUME slider and REDUCE MOTION toggle moved from the title screen into the pause menu** (the standing request from v77's "sound bar seems like a menu item"): state + persistence stay in `main.js`, the menu reads/writes through getter/setter accessors passed to `initDesigner`; localized labels reused (en/ja/fi, new `settings`/`settingsHint` keys)
+- Title screen slimmed accordingly — keeps orientation/roguelike/language/run-history plus a faint "settings are in the pause menu (⏸)" pointer
+- **OPEN ENEMY LAB ↗** button on the SETTINGS page launches `enemy-lab.html` (deployed since v80) in a new tab — the visual reference for the Parts 2–6 enemy overhaul; noted in-menu as a separate page that doesn't affect the run
+- Full Part 6 (live TUNING tuner with material presets/sliders) deliberately deferred until Parts 2–5 wire those visuals into the game — sliders bound to nothing would be noise
+- Cache-bust `?v=34` → `?v=35`; HUD label → v81
+
+---
+
 ## v80 — 2026-07-02
 **Landscape crop fix (scrollable overlay + rotation-safe canvas) + TUNING wiring goes live**
 - **Death/title overlay no longer crops on short landscape screens** (the reported bug — phone/PC in landscape cut off the game-over stats at the top and the feedback buttons at the bottom, with no way to reach them since `body` has `overflow:hidden`): `#overlay` now caps at `100svh`/`100vw` and scrolls internally (`overflow-y:auto`, `touch-action:pan-y`). Scrolling works because v53 already exempted `#overlay` touches from `preventDefault` and `showGameOver()` sets `pointerEvents:auto`

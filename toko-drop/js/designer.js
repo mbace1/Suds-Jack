@@ -1,5 +1,9 @@
-import { CFG, EnemyType } from './enemy.js?v=34';
-import { BULLET_CONFIG } from './bullet.js?v=34';
+import { CFG, EnemyType } from './enemy.js?v=35';
+import { BULLET_CONFIG } from './bullet.js?v=35';
+import { t } from './lang.js?v=35';
+
+// Sentinel for the non-enemy SETTINGS page in the pause-menu list.
+const SETTINGS_PAGE = 'settings';
 
 const TYPE_NAMES = {
   [EnemyType.GLOBBO]:      'GLOBBO',
@@ -78,6 +82,11 @@ const CSS = `
   #dsgn .dit:hover { color: #aaa; }
   #dsgn .dit.on   { color: #fff; background: rgba(255,255,255,.04); }
   #dsgn .ddot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  #dsgn .ddiv { border-bottom: 1px solid #141428; margin: 6px 0; }
+  #dsgn .dgroup {
+    font-size: 8px; letter-spacing: 3px; color: #2e2e50;
+    padding: 8px 14px 3px;
+  }
   #dsgn .dcnt { flex: 1; overflow-y: auto; padding: 16px 24px 32px; }
   #dsgn .dsec {
     font-size: 9px; letter-spacing: 3px; color: #2e2e50;
@@ -109,9 +118,11 @@ const CSS = `
   }
 `;
 
-export function initDesigner({ onResume }) {
+export function initDesigner({ onResume, settings }) {
   loadCFG();
-  let selectedType = EnemyType.GLOBBO;
+  // Opens on SETTINGS — players pausing mid-run mostly want volume/motion;
+  // the enemy-tuning pages are one tap away in the same list.
+  let selectedType = SETTINGS_PAGE;
 
   // ── Inject styles ─────────────────────────────────────────────────────────────
   const style = document.createElement('style');
@@ -158,22 +169,37 @@ export function initDesigner({ onResume }) {
     panel.style.display = 'none';
   }
 
-  // ── Enemy list ────────────────────────────────────────────────────────────────
+  // ── Menu list: SETTINGS page, then the enemy-tuning pages ─────────────────────
   function renderList() {
     const list = panel.querySelector('#d-list');
     list.innerHTML = '';
-    for (const type of ALL_TYPES) {
+
+    const addItem = (key, html) => {
       const item = document.createElement('div');
-      item.className = 'dit' + (type === selectedType ? ' on' : '');
-      item.innerHTML =
-        `<span class="ddot" style="background:${toHex(CFG[type].color)}"></span>` +
-        TYPE_NAMES[type];
+      item.className = 'dit' + (key === selectedType ? ' on' : '');
+      item.innerHTML = html;
       item.addEventListener('click', () => {
-        selectedType = type;
+        selectedType = key;
         panel.querySelectorAll('.dit').forEach(el => el.classList.toggle('on', el === item));
         renderControls();
       });
       list.appendChild(item);
+    };
+
+    addItem(SETTINGS_PAGE, `<span style="width:9px;flex-shrink:0">⚙</span>${t('settings')}`);
+
+    const div = document.createElement('div');
+    div.className = 'ddiv';
+    list.appendChild(div);
+    const grp = document.createElement('div');
+    grp.className = 'dgroup';
+    grp.textContent = 'ENEMIES';
+    list.appendChild(grp);
+
+    for (const type of ALL_TYPES) {
+      addItem(type,
+        `<span class="ddot" style="background:${toHex(CFG[type].color)}"></span>` +
+        TYPE_NAMES[type]);
     }
   }
 
@@ -181,7 +207,50 @@ export function initDesigner({ onResume }) {
   function renderControls() {
     const el = panel.querySelector('#d-cnt');
     el.innerHTML = '';
-    renderGameplay(el);
+    if (selectedType === SETTINGS_PAGE) renderSettings(el);
+    else renderGameplay(el);
+  }
+
+  // ── Settings page (moved here from the title screen in v81) ───────────────────
+  function renderSettings(el) {
+    el.appendChild(sec('AUDIO'));
+    el.appendChild(slider(t('volume'), 0, 100, 5, Math.round(settings.getVolume() * 100), v => {
+      settings.setVolume(v / 100);
+    }));
+
+    el.appendChild(sec('MOTION'));
+    {
+      const row = document.createElement('div');
+      row.className = 'drow';
+      const lbl = document.createElement('span');
+      lbl.className = 'dlbl'; lbl.textContent = t('reduceMotion');
+      const btn = document.createElement('button');
+      btn.className = 'dbtn';
+      const hint = document.createElement('div');
+      hint.className = 'dnote';
+      const paint = () => {
+        const on = settings.getReduceMotion();
+        btn.textContent = on ? t('on') : t('off');
+        btn.style.color = on ? '#ffbb88' : '#666';
+        btn.style.borderColor = on ? '#ff884466' : '#1e1e38';
+        hint.textContent = on ? t('reduceMotionOnH') : t('reduceMotionOffH');
+      };
+      paint();
+      btn.addEventListener('click', () => { settings.setReduceMotion(!settings.getReduceMotion()); paint(); });
+      row.appendChild(lbl); row.appendChild(btn);
+      el.appendChild(row);
+      el.appendChild(hint);
+    }
+
+    el.appendChild(sec('ENEMY LAB'));
+    {
+      const btn = document.createElement('button');
+      btn.className = 'dbtn dxbtn';
+      btn.textContent = 'OPEN ENEMY LAB ↗';
+      btn.addEventListener('click', () => window.open('enemy-lab.html', '_blank'));
+      el.appendChild(btn);
+      el.appendChild(note('standalone visual tester for the enemy overhaul — separate page, does not affect this run'));
+    }
   }
 
   // ── Enemy tuning ──────────────────────────────────────────────────────────────
