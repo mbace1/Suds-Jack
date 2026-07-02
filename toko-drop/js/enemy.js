@@ -139,7 +139,7 @@ export const CFG = {
   [EnemyType.GLOBBO]:      { color: 0x00ccaa, radius: 0.55, speed: 2.8, hp: 1, bulletColor: null,     fireInterval: null },
   [EnemyType.SPITTOR]:     { color: 0xff5533, radius: 0.9,  speed: 1.6, hp: 3, bulletColor: 0xff7755, fireInterval: 2.2  },
   [EnemyType.FANNER]:      { color: 0xff00aa, radius: 0.75, speed: 1.4, hp: 3, bulletColor: 0xff66cc, fireInterval: 1.5  },
-  [EnemyType.WEEVA]:       { color: 0x4422ee, radius: 0.8,  speed: 0.6, hp: 3, bulletColor: 0x6644ff, fireInterval: 0.08 },
+  [EnemyType.WEEVA]:       { color: 0x4422ee, radius: 0.8,  speed: 0.6, hp: 3, bulletColor: 0x6644ff, fireInterval: 0.16 },
   [EnemyType.SPLITTA]:     { color: 0x88ff22, radius: 1.1,  speed: 1.0, hp: 5, bulletColor: 0xaaff44, fireInterval: null },
   [EnemyType.YELA_CUBE]:   { color: 0xffdd00, radius: 0.7,  speed: 2.2, hp: 2, bulletColor: null,     fireInterval: null },
   [EnemyType.ORANGE_CUBE]: { color: 0xff8800, radius: 0.75, speed: 1.4, hp: 4, bulletColor: 0xff6600, fireInterval: 3.2  },
@@ -712,9 +712,11 @@ export class Enemy {
           wantX = -uz * this._orbitSign + ux * radial;
           wantZ =  ux * this._orbitSign + uz * radial;
           // Rotating 2-arm spiral fire — opposite arms at a per-cube spin rate.
+          // Pulse interval doubled vs. the single-arm version so firing 2
+          // bullets per pulse doesn't double total bullets/sec.
           this._purpFireT -= dt;
           if (this._purpFireT <= 0) {
-            this._purpFireT = 0.5 * this._intervalMult;
+            this._purpFireT = 1.0 * this._intervalMult;
             bullets.spawnDir(ex, ez, Math.cos(this._spiralAngle), Math.sin(this._spiralAngle),
               false, cfg.bulletColor, false, this.type);
             bullets.spawnDir(ex, ez, Math.cos(this._spiralAngle + Math.PI), Math.sin(this._spiralAngle + Math.PI),
@@ -1006,9 +1008,7 @@ export class Enemy {
       return;
     }
 
-    const interval = this.type === EnemyType.WEEVA
-      ? cfg.fireInterval
-      : cfg.fireInterval * this._intervalMult;
+    const interval = cfg.fireInterval * this._intervalMult;
 
     const ex = this.position.x, ez = this.position.z;
 
@@ -1067,7 +1067,7 @@ export class Enemy {
 
       case EnemyType.WEEVA: {
         const rotSpeed = (0.38 + this._spiralAccel) / this._intervalMult;
-        if (this._t >= cfg.fireInterval) {
+        if (this._t >= interval) {
           this._t = 0;
           bullets.spawnDir(ex, ez, Math.cos(this._spiralAngle), Math.sin(this._spiralAngle), false, cfg.bulletColor, false, this.type);
           this._spiralAngle += rotSpeed;

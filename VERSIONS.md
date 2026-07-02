@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v69 — 2026-07-02
+**Fix: wave 8 (first boss) was unreachable — two enemies fired far more than intended**
+- **WEEVA** (unlocks wave 2!) was checking its raw, unscaled `cfg.fireInterval` (0.08s) directly instead of the shared `interval` var every other enemy uses — a **constant 12.5 bullets/sec from its very first appearance**, un-scaled by wave, with v58's added closing-distance movement stacked on top. Fixed to scale with `intervalMult` like everything else, and raised the base interval 0.08 → 0.16s so wave-2 output drops to a reasonable ~6.6/sec while still escalating properly at higher waves
+- **PURP_CUBE** (v61's 2-arm spiral) fired 2 bullets per pulse at the *same* cadence as the old 1-bullet version — a straight doubling of output introduced as a visual change, not a balance one. Pulse interval `0.5→1.0 × intervalMult` restores the original total bullets/sec while keeping the 2-arm galaxy look
+- Confirmed via investigation: bullet collision radii (`BULLET_R`/`FAT_BULLET_R`), player stats (HP/dash/mercy), and the overall wave-budget curve were all unaffected — this was two specific enemy-level anomalies, not a broad difficulty problem
+- Cache-bust `?v=24` → `?v=25`; HUD label → v69
+
+---
+
 ## v68 — 2026-07-01
 **Fewer feedback chips on the death screen**
 - Positive "WHAT DID YOU ENJOY?" row trimmed 6 → 4 (weapon pods / boss fights / movement feel / dodging)
