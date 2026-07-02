@@ -1,9 +1,9 @@
 // Input — free-look aiming in every direction, with a gesture layer on the sticks:
-//   tap a stick        → JUMP (grounded) / AIR-DASH (airborne)
-//   swipe a stick      → DASH in that direction (ground or air)
+//   tap a stick        → JUMP (grounded) / DOUBLE-JUMP (airborne)
+//   swipe a stick      → DASH in that direction (ground or air) — always a dash
 //   hold left stick    → move (push far to sprint)
 //   hold right stick   → free-look aim + fire   (horizontal axis is REVERSED)
-// Desktop: WASD move · mouse aim (any direction) · hold LMB fire · Space jump/air-dash
+// Desktop: WASD move · mouse aim (any direction) · hold LMB fire · Space jump/double-jump
 //          Q dash · Shift sprint · T toggle auto-aim · Enter start · Esc pause
 const STICK_R = 60, LOOK_DEAD = 10, TURN_RATE = 2.8, PITCH_RATE = 0.7;   // vertical look far less sensitive
 const ARROW_SENS = 2.2, MOUSE_SENS = 0.0023, MOUSE_PITCH = 0.5, PITCH_MAX = 1.45;

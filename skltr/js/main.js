@@ -145,8 +145,8 @@ function showTitle() {
     `<div style="font-size:15px">CLICK / TAP / ENTER to drop in</div>` +
     `<div style="font-size:12px;opacity:.55;margin-top:16px;line-height:1.7">` +
     `WASD move · mouse aim (look anywhere) · auto-fire on target (hold LMB to force)<br>` +
-    `SPACE jump / air-dash · Q dash · SHIFT sprint · T auto-aim · ESC pause<br>` +
-    `<span style="opacity:.85">Touch: left move · right aim · tap = jump / air-dash · swipe = dash</span></div>`);
+    `SPACE jump / double-jump · Q dash · SHIFT sprint · T auto-aim · ESC pause<br>` +
+    `<span style="opacity:.85">Touch: left move · right aim · tap = jump / double-jump · swipe = dash</span></div>`);
 }
 function showPause() { showOverlay(`<div style="font-size:42px;font-weight:bold">PAUSED</div><div style="font-size:13px;opacity:.5;margin-top:10px">ESC to resume</div>`); }
 function showGameOver() {
@@ -273,10 +273,10 @@ function screenToWorld(sx, sy) {         // swipe screen dir → world dir (came
   let x = (-s) * (-sy) + c * sx, z = (-c) * (-sy) + (-s) * sx; const l = Math.hypot(x, z) || 1; return { x: x / l, z: z / l };
 }
 function didDash() { audio.dash(); fovKick = 1; }   // dash feedback: whoosh + camera punch
-input.onTap = () => {                    // tap: jump on ground, air-dash in the air
+input.onTap = () => {                    // tap: jump on ground, double-jump in the air
   if (gameState !== 'playing') return;
   if (player.grounded()) { if (player.jump()) audio.jump(); }
-  else if (player.airDash(dashDir())) didDash();
+  else if (player.doubleJump()) audio.jump();
 };
 input.onSwipe = (sx, sy) => {            // swipe/flick: dash in the flicked direction
   if (gameState !== 'playing') return;
@@ -423,7 +423,7 @@ function drawTouchUI(W, H) {
   ctx.fillStyle = 'rgba(205,234,255,.35)'; ctx.font = '18px monospace'; ctx.textAlign = 'center'; ctx.fillText('❙❙', W / 2, 40);
   // gesture hints (tap = jump/air-dash · swipe = dash)
   ctx.fillStyle = 'rgba(205,234,255,.3)'; ctx.font = '10px monospace';
-  ctx.fillText('tap: jump / air-dash    swipe: dash', W / 2, H - 12);
+  ctx.fillText('tap: jump / double-jump    swipe: dash', W / 2, H - 12);
 }
 
 // ── Loop ──────────────────────────────────────────────────────────────────────
