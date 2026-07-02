@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=26';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=26';
-import { Player, PLAYER_RADIUS } from './player.js?v=26';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=26';
-import { audio } from './audio.js?v=26';
-import { initDesigner } from './designer.js?v=26';
-import { t, getLang, setLang, langs } from './lang.js?v=26';
+import { InputManager } from './input.js?v=27';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=27';
+import { Player, PLAYER_RADIUS } from './player.js?v=27';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=27';
+import { audio } from './audio.js?v=27';
+import { initDesigner } from './designer.js?v=27';
+import { t, getLang, setLang, langs } from './lang.js?v=27';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -55,7 +55,7 @@ function waveKind(w) {
 // getEnemySchedule uses rng (seeded per run) so every run plays differently.
 function getEnemySchedule(wave) {
   const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
-          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA } = EnemyType;
+          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA } = EnemyType;
   const POOL = [
     // [type, minWave, cost]
     [GLOBBO,      1, 1], [YELA_CUBE,  1, 1], [SPITTOR,    1, 2], [FANNER,     1, 2],
@@ -97,13 +97,12 @@ function getEnemySchedule(wave) {
     ? Math.min(22, 5 + Math.floor(wave * 1.4))
     : Math.min(14, 4 + wave);
 
-  // Boss wave: guaranteed large enemy up front
+  // Boss wave: guaranteed boss up front. OMEGA (v71) is boss-exclusive — it
+  // never appears in POOL, so every boss wave gets a purpose-built enemy
+  // instead of an existing regular type just scaled up.
   if (isBoss) {
-    const topPool = [TORO, PYRA, BAMBU, PURP_CUBE].filter(tp => available.some(([at]) => at === tp));
-    const bossType = topPool.length ? topPool[topPool.length - 1] : available[available.length - 1][0];
-    const bossCost = POOL.find(([tp]) => tp === bossType)?.[2] ?? 3;
-    list.push({ type: bossType, t: 0, boss: true });
-    spent += Math.ceil(bossCost * 2.5);
+    list.push({ type: OMEGA, t: 0, boss: true });
+    spent += Math.ceil(4 * 2.5);
     t = 4;
   }
 
@@ -1182,6 +1181,7 @@ const ENEMY_LABEL = {
   [EnemyType.TORO]:        'Toro charger',
   [EnemyType.BAMBU]:       'Bambu lobber',
   [EnemyType.PYRA]:        'Pyra spinner',
+  [EnemyType.OMEGA]:       'Omega boss',
 };
 const _cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -1483,7 +1483,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v70', 16, uiCanvas.height - 12);
+  ctx.fillText('v71', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {

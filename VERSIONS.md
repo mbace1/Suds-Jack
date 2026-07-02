@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v71 — 2026-07-02
+**Boss-exclusive enemy: OMEGA — every-8th-wave boss is no longer just a scaled-up regular**
+- New **OMEGA** enemy type: a faceted crystal core (icosahedron geometry, distinct from every blob/cube/TORO silhouette) that only ever spawns as the guaranteed every-8th-wave boss — never appears in the regular enemy pool
+- Behaviour: holds a mid-range orbit around the player while firing an aimed 5-shot fan; once enraged (<35% HP, reusing v59's `_enraged` flag) it switches to a full 12-point radial ring burst — a genuine pattern change, not just a speed-up like the pre-v62 TORO enrage
+- **Bug fix discovered while wiring this up**: the squash-spring animation was resetting `mesh.scale` toward ~1.0 every frame for any non-TORO/BAMBU/PYRA enemy, silently erasing the elite/boss `_radiusMult` size boost applied at spawn — meaning OMEGA (and existing elite blobs/cubes) wouldn't actually render bigger despite having more HP. Fixed by baking `_radiusMult` into the per-frame scale assignment
+- `getEnemySchedule()`'s boss-selection now always picks OMEGA instead of choosing from `[TORO, PYRA, BAMBU, PURP_CUBE]`; those four remain in the regular pool as normal/elite/twin/group spawns, unaffected
+- Cache-bust `?v=26` → `?v=27`; HUD label → v71
+
+---
+
 ## v70 — 2026-07-02
 **New weapon pod: Homing (H/H2) — 10th weapon type**
 - New **Homing** pod: fires a bullet that gradually steers toward the nearest alive enemy each frame (a turn, not a snap-lock, so it stays dodgeable/avoidable by enemies rather than a guaranteed hit). Lv1 turn rate 6, Lv2 (`HOMING2`) locks on tighter at turn rate 10 and fires ~33% faster (`baseRate × 0.75`)
