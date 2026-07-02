@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { FILL_MAT, makeEye, C } from './shared.js?v=3';
+import { FILL_MAT, makeEye, C } from './shared.js?v=4';
 
 // Archetypes — white-line critters. y is the shape's CENTER height (flyers hover).
 // Ranged types spit slow, dense neon-faint clusters (the Returnal bullet-hell).

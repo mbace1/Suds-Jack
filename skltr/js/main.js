@@ -3,12 +3,13 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=3';
-import { Player } from './player.js?v=3';
-import { Enemy, COST } from './enemy.js?v=3';
-import { ProjectilePool } from './projectile.js?v=3';
-import { C, glow } from './shared.js?v=3';
-import { audio } from './audio.js?v=3';
+import { InputManager } from './input.js?v=4';
+import { Player } from './player.js?v=4';
+import { Enemy, COST } from './enemy.js?v=4';
+import { ProjectilePool } from './projectile.js?v=4';
+import { C, glow } from './shared.js?v=4';
+import { audio } from './audio.js?v=4';
+import { t, getLang, setLang, langs } from './lang.js?v=4';
 
 const css = h => '#' + (h >>> 0).toString(16).padStart(6, '0').slice(-6);
 const ARENA_R = 47;
@@ -26,6 +27,14 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(C.bg);
 scene.fog = new THREE.Fog(C.bg, 36, 96);
 const camera = new THREE.PerspectiveCamera(66, innerWidth / innerHeight, 0.1, 400);
+
+// ── Orientation (portrait / landscape camera framing) — toko-drop-style toggle ──
+const ORIENT = { landscape: { fov: 66, dist: 5.6 }, portrait: { fov: 78, dist: 6.6 } };
+let orientUserSet = localStorage.getItem('skltrOrientSet') === '1';
+let orientLandscape = orientUserSet ? localStorage.getItem('skltrLandscape') === '1' : innerWidth >= innerHeight;
+let camFovBase = ORIENT.landscape.fov, camDist = ORIENT.landscape.dist;
+function applyOrient(land) { const o = land ? ORIENT.landscape : ORIENT.portrait; camFovBase = o.fov; camDist = o.dist; }
+applyOrient(orientLandscape);
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
@@ -120,7 +129,7 @@ let enemies = [];
 
 // ── Run state ─────────────────────────────────────────────────────────────────
 let gameState = 'title';     // title | playing | paused | gameover
-let runTime = 0, kills = 0, shake = 0, restartTimer = 0, fovKick = 0, challenges = 0;
+let runTime = 0, kills = 0, shake = 0, fovKick = 0, challenges = 0;
 let credits = 0, spawnCD = 0, nextBoss = 65, bossAlive = false;
 let toasts = [];
 let best = parseFloat(localStorage.getItem('skltrBestTime') || '0');
@@ -139,37 +148,153 @@ function fmt(s) { const m = (s / 60) | 0, ss = (s % 60) | 0; return `${m}:${ss.t
 function toast(t, c) { toasts.push({ t, c, life: 2.6 }); }
 
 function showTitle() {
-  showOverlay(
-    `<div style="font-size:64px;font-weight:bold;letter-spacing:10px;color:#9bfff0">SKLTR</div>` +
-    `<div style="font-size:13px;opacity:.6;margin:8px 0 22px">neon survival — dodge the storm, ride the adrenaline</div>` +
-    `<div style="font-size:15px">CLICK / TAP / ENTER to drop in</div>` +
-    `<div style="font-size:12px;opacity:.55;margin-top:16px;line-height:1.7">` +
-    `WASD move · mouse aim (look anywhere) · auto-fire on target (hold LMB to force)<br>` +
-    `SPACE jump / double-jump · Q dash · SHIFT sprint · T auto-aim · ESC pause<br>` +
-    `<span style="opacity:.85">Touch: left move · right aim · tap = jump / double-jump · swipe = dash</span></div>`);
+  overlay.style.pointerEvents = 'none';
+  overlay.innerHTML =
+    `<div style="font-size:clamp(38px,12vw,64px);font-weight:bold;letter-spacing:10px;color:#9bfff0">SKLTR</div>` +
+    `<div style="font-size:13px;opacity:.6;margin:8px 0 18px">${t('subtitle')}</div>` +
+    (best > 0 ? `<div style="font-size:13px;color:${css(C.adr)};opacity:.85;margin-bottom:12px">${t('best')} ${fmt(best)}</div>` : ``) +
+    `<div style="font-size:15px;opacity:.9">${t('tapStart')}</div>` +
+    `<div id="orient-slot" style="margin-top:16px"></div>` +
+    `<div style="font-size:12px;opacity:.5;margin-top:16px;line-height:1.9">${t('ctrlD1')}<br>${t('ctrlD2')}<br>` +
+    `<span style="opacity:.85">${t('ctrlTouch')}</span></div>` +
+    `<div id="lang-slot" style="margin-top:18px;display:flex;gap:8px;justify-content:center"></div>`;
+  overlay.style.display = 'block';
+  buildOrientChip(document.getElementById('orient-slot'));
+  buildLangChips(document.getElementById('lang-slot'));
 }
-function showPause() { showOverlay(`<div style="font-size:42px;font-weight:bold">PAUSED</div><div style="font-size:13px;opacity:.5;margin-top:10px">ESC to resume</div>`); }
+function showPause() { overlay.style.pointerEvents = 'none'; showOverlay(`<div style="font-size:42px;font-weight:bold">PAUSED</div><div style="font-size:13px;opacity:.5;margin-top:10px">ESC to resume</div>`); }
 function showGameOver() {
   const rec = runTime >= best;
-  showOverlay(
-    `<div style="font-size:44px;font-weight:bold;letter-spacing:3px;color:#ff7aa0">DOWN</div>` +
-    `<div style="font-size:20px;margin-top:10px;color:#9bfff0">survived ${fmt(runTime)} · ${kills} kills</div>` +
-    (rec ? `<div style="font-size:15px;color:${css(C.adr)};margin-top:6px">NEW BEST!</div>` : `<div style="font-size:12px;opacity:.5;margin-top:6px">best ${fmt(best)}</div>`) +
-    `<div style="font-size:13px;opacity:.4;margin-top:16px">Restarting…  ·  CLICK / TAP / ENTER to retry</div>`);
+  overlay.style.pointerEvents = 'auto';
+  overlay.innerHTML =
+    `<div style="font-size:44px;font-weight:bold;letter-spacing:3px;color:#ff7aa0">${t('youDied')}</div>` +
+    `<div style="font-size:18px;margin-top:10px;color:#9bfff0">${t('survived', fmt(runTime), kills)}</div>` +
+    (rec ? `<div style="font-size:15px;color:${css(C.adr)};margin-top:6px">${t('newBest')}</div>` : `<div style="font-size:12px;opacity:.5;margin-top:6px">${t('best')} ${fmt(best)}</div>`) +
+    `<div id="fb-slot" style="margin-top:16px"></div>`;
+  overlay.style.display = 'block';
+  buildFeedbackPanel(document.getElementById('fb-slot'));
 }
+
+// A title-screen chip: pointerdown activates, touchend is swallowed so it doesn't start the game.
+function chip(el, activate) {
+  el.addEventListener('pointerdown', e => { e.stopPropagation(); e.preventDefault(); activate(); });
+  el.addEventListener('touchend', e => e.stopPropagation());
+}
+function buildLangChips(slot) {
+  if (!slot) return; const active = getLang();
+  for (const { code, label } of langs()) {
+    const on = code === active, c = document.createElement('div'); c.textContent = label;
+    c.style.cssText = 'pointer-events:auto;cursor:pointer;user-select:none;font-size:13px;font-weight:bold;padding:7px 14px;border-radius:8px;background:rgba(0,0,0,.35);transition:all .12s;'
+      + `border:2px solid ${on ? '#6688ff' : '#3a4a6a'};color:${on ? '#aaccff' : '#7788aa'};text-shadow:${on ? '0 0 12px #4466ff' : 'none'};`;
+    chip(c, () => { if (code !== getLang()) { setLang(code); showTitle(); } });
+    slot.appendChild(c);
+  }
+}
+function buildOrientChip(slot) {
+  if (!slot) return;
+  const btn = document.createElement('div'), hint = document.createElement('div');
+  hint.style.cssText = 'font-size:11px;opacity:.45;margin-top:6px';
+  const render = () => {
+    const land = orientLandscape;
+    btn.textContent = `${t('orientation')}: ${land ? t('landscape') : t('portrait')}`;
+    btn.style.cssText = 'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;background:rgba(0,0,0,.35);transition:all .12s;'
+      + `border:2px solid ${land ? '#ffaa33' : '#3a4a6a'};color:${land ? '#ffcc66' : '#7788aa'};text-shadow:${land ? '0 0 12px #ffaa33' : 'none'};`;
+    hint.textContent = land ? t('orientLandH') : t('orientPortH');
+  };
+  render();
+  chip(btn, () => { orientLandscape = !orientLandscape; orientUserSet = true;
+    localStorage.setItem('skltrLandscape', orientLandscape ? '1' : '0'); localStorage.setItem('skltrOrientSet', '1');
+    applyOrient(orientLandscape); render(); });
+  slot.appendChild(btn); slot.appendChild(hint);
+}
+
+// ── Feedback (death screen) — ported from toko-drop ────────────────────────────
+function buildPositiveReasons() { return [
+  { id: 'like:feel', label: t('likeFeel') }, { id: 'like:dodge', label: t('likeDodge') },
+  { id: 'like:aim', label: t('likeAim') }, { id: 'like:vibe', label: t('likeVibe') }, { id: 'like:vert', label: t('likeVert') }]; }
+function buildFeedbackReasons() { return [
+  { id: 'too_fast', label: t('fbFast') }, { id: 'unfair', label: t('fbUnfair') }, { id: 'unclear', label: t('fbUnclear') },
+  { id: 'bullets', label: t('fbBullets') }, { id: 'dash', label: t('fbDash') }, { id: 'swarm', label: t('fbSwarm') }]; }
+function saveFeedback(selIds, selLabels, comment, likedIds = [], likedLabels = []) {
+  if (!selIds.length && !likedIds.length && !comment) return;
+  const KEY = 'skltrFeedback', list = JSON.parse(localStorage.getItem(KEY) || '[]');
+  list.unshift({ date: new Date().toISOString(), time: Math.round(runTime), kills, challenges, lang: getLang(),
+    reasons: selLabels, reasonIds: selIds, liked: likedLabels, likedIds, comment: comment || '' });
+  if (list.length > 100) list.length = 100;
+  localStorage.setItem(KEY, JSON.stringify(list));
+}
+function buildFeedbackPanel(slot) {
+  if (!slot) return;
+  const liked = new Set(), selected = new Set(), labelById = {};
+  const addRow = (heading, reasons, set, accent) => {
+    const on = accent === 'pos' ? { b: '#44cc88', bg: 'rgba(60,220,150,.20)', c: '#aaffcc', g: '0 0 10px #33cc77' }
+                                : { b: '#ff6644', bg: 'rgba(255,90,60,.22)', c: '#ffbbaa', g: '0 0 10px #ff5533' };
+    const title = document.createElement('div'); title.textContent = heading;
+    title.style.cssText = 'font-size:12px;letter-spacing:2px;opacity:.55;margin-bottom:10px'; slot.appendChild(title);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:440px;margin:0 auto 14px';
+    for (const r of reasons) {
+      labelById[r.id] = r.label;
+      const el = document.createElement('div'); el.textContent = r.label;
+      const paint = () => { const s = set.has(r.id);
+        el.style.cssText = 'pointer-events:auto;cursor:pointer;user-select:none;font-size:12px;padding:7px 13px;border-radius:16px;transition:all .1s;'
+          + `border:1.5px solid ${s ? on.b : '#3a4a6a'};background:${s ? on.bg : 'rgba(0,0,0,.3)'};color:${s ? on.c : '#8888aa'};text-shadow:${s ? on.g : 'none'};`; };
+      paint();
+      el.addEventListener('click', e => { e.stopPropagation(); set.has(r.id) ? set.delete(r.id) : set.add(r.id); paint(); });
+      row.appendChild(el);
+    }
+    slot.appendChild(row);
+  };
+  addRow(t('fbEnjoy'), buildPositiveReasons(), liked, 'pos');
+  addRow(t('fbWrong'), buildFeedbackReasons(), selected, 'neg');
+  const box = document.createElement('textarea'); box.placeholder = t('fbElse'); box.rows = 2;
+  box.style.cssText = 'pointer-events:auto;user-select:text;display:block;width:min(440px,80vw);margin:0 auto 14px;background:rgba(0,0,0,.4);border:1.5px solid #3a4a6a;border-radius:8px;color:#ccd;font-family:monospace,sans-serif;font-size:13px;padding:8px 10px;resize:none;outline:none';
+  box.addEventListener('keydown', e => e.stopPropagation());
+  slot.appendChild(box);
+  const btnRow = document.createElement('div'); btnRow.style.cssText = 'display:flex;gap:12px;justify-content:center';
+  const mkBtn = (text, ac, cb) => {
+    const b = document.createElement('div'); b.textContent = text;
+    b.style.cssText = 'pointer-events:auto;cursor:pointer;user-select:none;font-size:12px;font-weight:bold;padding:8px 17px;border-radius:7px;letter-spacing:1px;transition:all .12s;'
+      + `border:2px solid ${ac ? '#44cc88' : '#3a4a6a'};background:rgba(0,0,0,.35);color:${ac ? '#88ffbb' : '#8888aa'};text-shadow:${ac ? '0 0 12px #44cc88' : 'none'};`;
+    b.addEventListener('click', e => { e.stopPropagation(); cb(); }); return b;
+  };
+  btnRow.appendChild(mkBtn(t('fbSend'), true, () => {
+    saveFeedback([...selected], [...selected].map(id => labelById[id]), box.value.trim(), [...liked], [...liked].map(id => labelById[id]));
+    returnToTitle();
+  }));
+  btnRow.appendChild(mkBtn(t('fbSkip'), false, returnToTitle));
+  slot.appendChild(btnRow);
+}
+window._feedback = () => { const l = JSON.parse(localStorage.getItem('skltrFeedback') || '[]');
+  console.log(`=== SKLTR FEEDBACK (${l.length}) ===`); const tally = {};
+  for (const f of l) for (const r of (f.liked || []).concat(f.reasons || [])) tally[r] = (tally[r] || 0) + 1;
+  for (const [r, n] of Object.entries(tally).sort((a, b) => b[1] - a[1])) console.log(`  ${n}×  ${r}`);
+  l.filter(f => f.comment).forEach(f => console.log(`  [${f.time}s] ${f.comment}`)); return l; };
+window._feedbackExport = () => { const l = JSON.parse(localStorage.getItem('skltrFeedback') || '[]');
+  if (!l.length) { console.warn('No feedback.'); return; }
+  const cols = ['date', 'time', 'kills', 'challenges', 'lang', 'liked', 'reasons', 'comment'], esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const rows = [cols.join(',')];
+  for (const f of l) rows.push([esc(f.date), esc(f.time), esc(f.kills), esc(f.challenges), esc(f.lang), esc((f.liked || []).join(' | ')), esc((f.reasons || []).join(' | ')), esc(f.comment)].join(','));
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([rows.join('\n')], { type: 'text/csv' }));
+  a.download = `skltr_feedback_${new Date().toISOString().slice(0, 10)}.csv`; a.click(); };
 
 // ── Flow ──────────────────────────────────────────────────────────────────────
 function startGame() {
-  overlay.style.display = 'none';
+  overlay.style.display = 'none'; overlay.style.pointerEvents = 'none';
   runTime = 0; kills = 0; shake = 0; credits = 0; spawnCD = 0; nextBoss = 65; bossAlive = false; toasts = []; challenges = 0;
   for (const e of enemies) e.dispose(); enemies = []; pool.clear();
   player.reset(); newChallenge();
   gameState = 'playing'; audio.start();
 }
 function gameOver() {
-  gameState = 'gameover'; shake = 1; restartTimer = 3.6;
+  gameState = 'gameover'; shake = 1;
   if (runTime > best) { best = runTime; localStorage.setItem('skltrBestTime', best.toFixed(1)); }
   audio.gameover(); showGameOver();
+}
+function returnToTitle() {
+  if (gameState !== 'gameover') return;
+  for (const e of enemies) e.dispose(); enemies = []; pool.clear();
+  overlay.style.pointerEvents = 'none'; gameState = 'title'; showTitle();
 }
 
 // ── Spawn director ────────────────────────────────────────────────────────────
@@ -288,13 +413,16 @@ input.onDashKey = () => {                // desktop Q
   if (player.grounded() ? player.groundDash(dashDir()) : player.airDash(dashDir())) didDash();
 };
 input.onToggleAim = () => { player.autoAim = !player.autoAim; toast(player.autoAim ? 'AUTO-AIM ON' : 'AUTO-AIM OFF', C.adr); };
-input.onStart = () => { if (gameState === 'title' || gameState === 'gameover') startGame(); };
+input.onStart = () => { if (gameState === 'title') startGame(); else if (gameState === 'gameover') returnToTitle(); };
 input.onPause = () => {
   if (gameState === 'playing') { gameState = 'paused'; showPause(); }
   else if (gameState === 'paused') { overlay.style.display = 'none'; gameState = 'playing'; }
   else if (gameState === 'title') startGame();
+  else if (gameState === 'gameover') returnToTitle();
 };
-addEventListener('touchend', () => { if (gameState === 'title' || gameState === 'gameover') startGame(); });
+// tap / click to start from the title (ignores taps on overlay chips/buttons)
+const _onOverlayUI = e => e.target && e.target.closest && e.target.closest('#overlay') && e.target.id !== 'overlay';
+addEventListener('pointerdown', e => { if (_onOverlayUI(e)) return; if (gameState === 'title') startGame(); });
 
 // ── Camera (free-look over-the-shoulder; aim any direction) ────────────────────
 const _aim = { fx: 0, fy: 0, fz: -1, yaw: 0, pitch: 0 };
@@ -305,7 +433,7 @@ function computeAim() {
   return _aim;
 }
 function updateCamera() {
-  const a = _aim, dist = 5.6, shoulder = 0.8;
+  const a = _aim, dist = camDist, shoulder = 0.8;
   const cp = Math.cos(a.pitch);
   const rx = Math.cos(a.yaw), rz = -Math.sin(a.yaw);        // camera-right (horizontal)
   let sx = 0, sy = 0;
@@ -314,7 +442,7 @@ function updateCamera() {
   const camY = Math.max(1.0, hy - a.fy * dist + 0.25 + sy);   // never dip below the floor
   camera.position.set(hx - a.fx * dist + rx * shoulder * cp + sx, camY, hz - a.fz * dist + rz * shoulder * cp);
   camera.lookAt(camera.position.x + a.fx, camera.position.y + a.fy, camera.position.z + a.fz);
-  const fov = 66 + fovKick * 7;                              // dash punch
+  const fov = camFovBase + fovKick * 7;                      // orientation base + dash punch
   if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
 }
 
@@ -453,9 +581,9 @@ function loop() {
     objectiveUpdate(dt);
     updateSparks(dt);
   } else {
-    if (gameState === 'gameover') { restartTimer -= dt; updateSparks(dt); if (restartTimer <= 0) startGame(); }
+    if (gameState === 'gameover') updateSparks(dt);        // death FX linger; feedback panel drives the return
     player.fig.group.position.set(player.x, player.y, player.z);
-    player.fig.group.rotation.y = input.yaw + Math.PI;     // face the camera on the title screen
+    player.fig.group.rotation.y = input.yaw + Math.PI;     // face the camera on the title / death screen
     player.fig.update(dt, { speed: 0, aimPitch: 0 });
   }
 
@@ -470,6 +598,8 @@ function resize() {
   bloom.resolution.set(innerWidth, innerHeight);
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
   uiCanvas.width = innerWidth; uiCanvas.height = innerHeight;
+  // default orientation follows the device until the player picks one explicitly
+  if (!orientUserSet) { const land = innerWidth >= innerHeight; if (land !== orientLandscape) { orientLandscape = land; applyOrient(land); if (gameState === 'title') showTitle(); } }
 }
 addEventListener('resize', resize);
 resize();

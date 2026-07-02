@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Bunny, C } from './shared.js?v=3';
+import { Bunny, C } from './shared.js?v=4';
 
 const ADR_THRESH = [3, 6, 10, 15, 21];   // cumulative no-hit kills for tiers 1..5
 const STEP_MAX = 0.6;                     // ledges taller than this need a jump (act as walls)
