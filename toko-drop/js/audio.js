@@ -1,5 +1,7 @@
 class AudioSystem {
-  constructor() { this._ctx = null; }
+  constructor() { this._ctx = null; this._volume = 1.0; }
+
+  setVolume(v) { this._volume = Math.max(0, Math.min(1, v)); }
 
   _ensure() {
     if (!this._ctx) this._ctx = new AudioContext();
@@ -8,6 +10,7 @@ class AudioSystem {
   }
 
   _tone(freq, dur, type = 'sine', vol = 0.25, freqEnd = null) {
+    if (this._volume <= 0) return;
     try {
       const ctx = this._ensure();
       const osc  = ctx.createOscillator();
@@ -16,13 +19,14 @@ class AudioSystem {
       osc.type = type;
       osc.frequency.setValueAtTime(freq, ctx.currentTime);
       if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, ctx.currentTime + dur);
-      gain.gain.setValueAtTime(vol, ctx.currentTime);
+      gain.gain.setValueAtTime(vol * this._volume, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
       osc.start(); osc.stop(ctx.currentTime + dur);
     } catch (_) {}
   }
 
   _noise(vol, dur) {
+    if (this._volume <= 0) return;
     try {
       const ctx = this._ensure();
       const n   = Math.floor(ctx.sampleRate * dur);
@@ -33,7 +37,7 @@ class AudioSystem {
       const gain = ctx.createGain();
       src.buffer = buf;
       src.connect(gain); gain.connect(ctx.destination);
-      gain.gain.setValueAtTime(vol, ctx.currentTime);
+      gain.gain.setValueAtTime(vol * this._volume, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
       src.start();
     } catch (_) {}

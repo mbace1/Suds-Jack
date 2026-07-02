@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v75 — 2026-07-02
+**Settings screen — volume slider + reduce-motion toggle**
+- New **VOLUME** slider (0–100%, persisted `tokoDropVolume`) on the title screen; `AudioSystem` gains `setVolume()` — a master gain multiplier applied in `_tone()`/`_noise()`, so every existing sound effect respects it with no per-call-site changes
+- New **REDUCE MOTION** toggle chip (persisted `tokoDropReduceMotion`): when on, `addShake()` is a no-op, skipping camera shake entirely — an accessibility option for players sensitive to screen shake
+- Both localized (en/ja/fi), styled to match the existing orientation/roguelike toggle chips
+- Cache-bust `?v=30` → `?v=31`; HUD label → v75
+
+---
+
 ## v74 — 2026-07-02
 **Wave-clear flash — the instant-end (v22) now gets a visual + audio beat**
 - Waves have ended instantly on the last kill since v22, but nothing marked the moment — added a brief white screen pulse (`waveClearFlashT`, 0.4 s, fades from 30% opacity) drawn on the HUD canvas the instant `enemies.every(dead)` triggers
