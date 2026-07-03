@@ -1,9 +1,74 @@
-import { CFG, EnemyType } from './enemy.js?v=40';
-import { BULLET_CONFIG } from './bullet.js?v=40';
-import { t } from './lang.js?v=40';
+import { CFG, EnemyType } from './enemy.js?v=41';
+import { BULLET_CONFIG } from './bullet.js?v=41';
+import { t } from './lang.js?v=41';
+import { TUNING } from './tuning.js?v=41';
 
-// Sentinel for the non-enemy SETTINGS page in the pause-menu list.
+// Sentinels for the non-enemy pages in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
+const TUNING_PAGE   = 'tuning';
+
+// ── Live TUNING tuner (port brief Part 6) ─────────────────────────────────────
+// Slider spec: [path, label, min, max, step]. Only values the game reads live
+// (per-frame or per state transition) are listed — geometry/spawn-time values
+// and the material presets wait for their systems. Edits write straight into
+// TUNING, so they apply to the running game on unpause.
+const TUNING_ROWS = [
+  ['BLOB — MOTION & TELLS', [
+    ['blob.breatheAmp',          'Breathe Amp',          0,    0.4,  0.01],
+    ['blob.breatheAmpSplitta',   'Breathe (Splitta)',    0,    0.5,  0.01],
+    ['blob.dragStretchPerSpeed', 'Drag per Speed',       0,    0.3,  0.01],
+    ['blob.dragMax',             'Drag Max',             0,    0.8,  0.01],
+    ['blob.rearDragTilt',        'Rear Drag Tilt',       0,    1,    0.01],
+    ['blob.globboLungeHz',       'Globbo Lunge Hz',      0.5,  8,    0.1],
+    ['blob.globboLungeGain',     'Globbo Lunge Gain',    0,    6,    0.1],
+    ['blob.spittorInflate',      'Spittor Inflate',      0,    0.6,  0.01],
+    ['blob.spittorInflateTime',  'Spittor Inflate (s)',  0.1,  1.5,  0.05],
+    ['blob.spittorRecoil',       'Spittor Recoil',       0,    1,    0.01],
+    ['blob.weevaVibrate',        'Weeva Vibrate',        0,    0.1,  0.005],
+    ['blob.weevaVibrateHz',      'Weeva Vibrate Hz',     5,    80,   1],
+    ['blob.fannerSway',          'Fanner Sway',          0,    0.4,  0.01],
+    ['blob.fannerSwayHz',        'Fanner Sway Hz',       1,    20,   0.5],
+  ]],
+  ['CUBE FLOP', [
+    ['flop.landSquish',       'Land Squish',          0,    1,    0.02],
+    ['flop.flopTimeMax',      'Flop Time Max (s)',    0.1,  0.8,  0.02],
+    ['flop.flopShareOfCycle', 'Flop Share of Cycle',  0.2,  1,    0.05],
+    ['flop.breatheAmp',       'Breathe Amp',          0,    0.3,  0.01],
+  ]],
+  ['TORO', [
+    ['toro.revTime',          'Rev Time (s)',         0.4,  4,    0.1],
+    ['toro.telegraphTime',    'Telegraph (s)',        0.1,  2,    0.05],
+    ['toro.dashSpeed',        'Dash Speed',           8,    40,   0.5],
+    ['toro.dashMin',          'Dash Min Speed',       4,    30,   0.5],
+    ['toro.dashDecel',        'Dash Decel',           0,    30,   0.5],
+    ['toro.recoverTime',      'Recover (s)',          0.1,  3,    0.05],
+    ['toro.indicatorFlashHz', 'Telegraph Flash Hz',   5,    60,   1],
+  ]],
+  ['BAMBU LOB', [
+    ['bambu.lobTelegraph', 'Ring Telegraph (s)', 0.2,  2,   0.05],
+    ['bambu.lobFlight',    'Flight Time (s)',    0.3,  3,   0.05],
+    ['bambu.lobArcHeight', 'Arc Height',         0.5,  6,   0.1],
+    ['bambu.lobSpread',    'Landing Spread',     0,    4,   0.1],
+  ]],
+  ['FX', [
+    ['fx.slimeTrailInterval', 'Slime Trail Interval (s)', 0.1, 1.5, 0.05],
+    ['fx.poisonInterval',     'Poison Interval (s)',      0.1, 2,   0.05],
+  ]],
+];
+
+function getPath(obj, path) { return path.split('.').reduce((o, k) => o?.[k], obj); }
+function setPath(obj, path, v) {
+  const ks = path.split('.'); const last = ks.pop();
+  const target = ks.reduce((o, k) => o?.[k], obj);
+  if (target && typeof target === 'object') target[last] = v;
+}
+// Persistence stores only the paths the user actually touched (not the whole
+// TUNING object), so future default changes in tuning.js aren't shadowed by
+// stale saved copies of values the user never edited.
+function loadTuningEdits() {
+  try { return JSON.parse(localStorage.getItem('tokoTUNING')) || {}; }
+  catch (_) { return {}; }
+}
 
 const TYPE_NAMES = {
   [EnemyType.GLOBBO]:      'GLOBBO',
@@ -120,6 +185,13 @@ const CSS = `
 
 export function initDesigner({ onResume, settings }) {
   loadCFG();
+  // Re-apply persisted TUNING edits (touched paths only) onto the defaults.
+  const tuningEdits = loadTuningEdits();
+  for (const [p, v] of Object.entries(tuningEdits)) setPath(TUNING, p, v);
+  const saveTuning = (path, v) => {
+    tuningEdits[path] = v;
+    localStorage.setItem('tokoTUNING', JSON.stringify(tuningEdits));
+  };
   // Opens on SETTINGS — players pausing mid-run mostly want volume/motion;
   // the enemy-tuning pages are one tap away in the same list.
   let selectedType = SETTINGS_PAGE;
@@ -151,6 +223,7 @@ export function initDesigner({ onResume, settings }) {
 
   panel.querySelector('#d-reset').addEventListener('click', () => {
     localStorage.removeItem('tokoCFG');
+    localStorage.removeItem('tokoTUNING');
     location.reload();
   });
 
@@ -187,6 +260,7 @@ export function initDesigner({ onResume, settings }) {
     };
 
     addItem(SETTINGS_PAGE, `<span style="width:9px;flex-shrink:0">⚙</span>${t('settings')}`);
+    addItem(TUNING_PAGE, `<span style="width:9px;flex-shrink:0">🎛</span>LIVE TUNING`);
 
     const div = document.createElement('div');
     div.className = 'ddiv';
@@ -208,7 +282,64 @@ export function initDesigner({ onResume, settings }) {
     const el = panel.querySelector('#d-cnt');
     el.innerHTML = '';
     if (selectedType === SETTINGS_PAGE) renderSettings(el);
+    else if (selectedType === TUNING_PAGE) renderTuning(el);
     else renderGameplay(el);
+  }
+
+  // ── Live TUNING page (Part 6): sliders write straight into TUNING ────────────
+  function renderTuning(el) {
+    el.appendChild(note('edits apply to the live game on unpause · persisted until RESET'));
+    for (const [heading, rows] of TUNING_ROWS) {
+      el.appendChild(sec(heading));
+      for (const [path, label, min, max, step] of rows) {
+        el.appendChild(slider(label, min, max, step, getPath(TUNING, path), v => {
+          setPath(TUNING, path, v);
+          saveTuning(path, v);
+        }));
+      }
+    }
+
+    // Copy / paste the whole TUNING JSON (geometry & spawn-time values included
+    // — those apply to newly spawned enemies).
+    el.appendChild(sec('EXPORT / IMPORT'));
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:10px';
+    const out = document.createElement('textarea');
+    out.className = 'dout';
+    out.style.display = 'block'; // always visible here — it's also the paste target
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'dbtn dxbtn';
+    copyBtn.textContent = 'COPY TUNING JSON';
+    copyBtn.addEventListener('click', () => {
+      out.value = JSON.stringify(TUNING, null, 2);
+      out.select();
+    });
+    const applyBtn = document.createElement('button');
+    applyBtn.className = 'dbtn';
+    applyBtn.textContent = 'APPLY PASTED JSON';
+    applyBtn.addEventListener('click', () => {
+      try {
+        const merge = (dst, src, prefix) => {
+          for (const [k, v] of Object.entries(src)) {
+            if (v && typeof v === 'object' && !Array.isArray(v) && dst[k] && typeof dst[k] === 'object') {
+              merge(dst[k], v, `${prefix}${k}.`);
+            } else if (k in dst) {
+              dst[k] = v;
+              if (typeof v === 'number') saveTuning(`${prefix}${k}`, v);
+            }
+          }
+        };
+        merge(TUNING, JSON.parse(out.value), '');
+        renderControls(); // refresh sliders to the imported values
+      } catch (_) {
+        out.value = '// paste valid TUNING JSON above, then APPLY\n' + out.value;
+      }
+    });
+    btnRow.appendChild(copyBtn);
+    btnRow.appendChild(applyBtn);
+    el.appendChild(btnRow);
+    el.appendChild(out);
+    el.appendChild(note('material presets return with the material overhaul; segment geometry & lob cooldown apply on next spawn (cooldown lives in the enemy pages as Fire Interval)'));
   }
 
   // ── Settings page (moved here from the title screen in v81) ───────────────────

@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v87 — 2026-07-03
+**Port brief Part 6: LIVE TUNING page in the pause menu — the port is complete**
+- New **🎛 LIVE TUNING** page in the pause-menu list (between SETTINGS and the enemy pages): 31 sliders writing **directly into `TUNING`**, grouped BLOB (breathe/drag/tells) · CUBE FLOP (squish/cadence) · TORO (rev/telegraph/dash) · BAMBU LOB (telegraph/flight/arc/spread) · FX (trail/poison cadence). Everything listed is read by the game per-frame or per state transition, so edits apply to the live run on unpause
+- **COPY TUNING JSON** serializes the whole `TUNING` object; **APPLY PASTED JSON** deep-merges pasted JSON back in (only keys that exist) — the round-trip path for promoting tuned values into `tuning.js`
+- Edits persist across reloads as **touched paths only** (`tokoTUNING`) — future default changes in `tuning.js` aren't shadowed by stale saved copies of values never edited. The header **RESET** button now clears both `tokoCFG` and `tokoTUNING`
+- Deliberately absent: material preset buttons/sliders (no material system to drive yet) and the spawn-a-specimen preview (the brief marked it optional — it would complicate wave state); segment geometry + lob cooldown apply on next spawn, with the cooldown already editable as Fire Interval on BAMBU's enemy page
+- This closes out **all six parts** of `TOKO_DROP_PORT_BRIEF.md` (v79 wiring, v82 blobs, v84 flop, v85 TORO, v86 BAMBU, v87 tuner)
+- Cache-bust `?v=40` → `?v=41`; HUD label → v87
+
+---
+
 ## v86 — 2026-07-03
 **Port brief Part 5: BAMBU bamboo tower + parabolic lob + flashing landing ring**
 - **Body rebuilt**: each segment is now a cylinder flaring wider toward its top (`bottomR 0.20+i·0.02`, `topR 0.36+i·0.03`, h 0.6) with a thin node lip between segments — an actual bamboo stalk instead of the old cross of rounded boxes. Emerge-from-floor and pop-a-segment-per-hit behavior kept (segment heights rescaled to `segHeight`)
