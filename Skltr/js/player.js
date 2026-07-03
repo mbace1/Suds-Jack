@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { Bunny, C } from './shared.js?v=6';
-import { visualTest } from './modes.js?v=6';
+import { Bunny, C } from './shared.js?v=7';
+import { visualTest } from './modes.js?v=7';
 
 const ADR_THRESH = [3, 6, 10, 15, 21];   // cumulative no-hit kills for tiers 1..5
 const ADR_TINT = [0xffffff, 0x9bffce, 0x6bffa0, 0xffd36b, 0xff9a3a, 0xff4d5e];   // Visual Test: hero edge tints with adrenaline tier
@@ -21,14 +21,20 @@ export class Player {
     this.reset();
   }
 
-  reset() {
+  // overrides: optional resolved meta-progression stats (see progress.js's resolvedStats())
+  reset(overrides = {}) {
+    this._stats = {
+      maxHp: overrides.maxHp ?? BASE.maxHp, dashCD: overrides.dashCD ?? BASE.dashCD,
+      fireInterval: overrides.fireInterval ?? BASE.fireInterval, iframe: overrides.iframe ?? BASE.iframe,
+    };
     this.x = 0; this.z = 0; this.y = 0; this.vy = 0;
     this.vx = 0; this.vz = 0; this.yaw = 0;
-    this.hp = BASE.maxHp; this.maxHp = BASE.maxHp;
+    this.hp = this._stats.maxHp; this.maxHp = this._stats.maxHp;
     this.fireT = 0; this.dashCD = 0; this.dashT = 0; this.iframe = 0;
     this.dashing = false; this.dashElapsed = 0; this.dashDirX = 0; this.dashDirZ = 0; this._dashGround = true;
     this.airDashUsed = false; this.airJumpUsed = false; this._fired = false; this._target = false;
-    this.adr = 0; this.adrKills = 0; this.alive = true; this.groundY = 0;
+    this.adr = overrides.startAdr || 0; this.adrKills = this.adr ? ADR_THRESH[this.adr - 1] : 0;
+    this.alive = true; this.groundY = 0;
     this.fig.visible(true);
   }
 
@@ -43,7 +49,7 @@ export class Player {
   _startDash(dir, ground) {
     this.dashing = true; this.dashElapsed = 0; this._dashGround = ground;
     this.dashDirX = dir.x; this.dashDirZ = dir.z;
-    this.dashT = BASE.dashTime; this.iframe = BASE.iframe;
+    this.dashT = BASE.dashTime; this.iframe = this._stats.iframe;
     const sp = ground ? BASE.dashSpeed : BASE.airDashSpeed;
     this.vx = dir.x * sp; this.vz = dir.z * sp;
   }
@@ -70,7 +76,7 @@ export class Player {
   }
 
   _fire(dir) {
-    this.fireT = BASE.fireInterval * this.adrFireMul();
+    this.fireT = this._stats.fireInterval * this.adrFireMul();
     const dmg = BASE.damage * this.adrDmgMul();
     this.pool.spawn(this.x + dir.x * 0.4, 1.25 + dir.y * 0.4, this.z + dir.z * 0.4, dir.x, dir.y, dir.z,
       { fromPlayer: true, speed: 46, damage: dmg, color: C.shot, r: 0.4, life: 1.6 });
@@ -110,7 +116,7 @@ export class Player {
       this.dashElapsed += dt;
       const active = this.dashElapsed < BASE.dashTime || (input.dashHeld && this.dashElapsed < BASE.dashHoldMax);
       if (active) { const sp = this._dashGround ? BASE.dashSpeed : BASE.airDashSpeed; this.vx = this.dashDirX * sp; this.vz = this.dashDirZ * sp; this.dashT = 0.06; }
-      else { this.dashing = false; this.dashCD = BASE.dashCD; }
+      else { this.dashing = false; this.dashCD = this._stats.dashCD; }
     }
     const prevX = this.x, prevZ = this.z;
     this.x += this.vx * dt; this.z += this.vz * dt;
