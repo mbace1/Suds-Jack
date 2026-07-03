@@ -2,12 +2,13 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { InputManager } from './input.js?v=8';
 import { Player } from './player.js?v=8';
 import { Enemy, COST } from './enemy.js?v=8';
 import { ProjectilePool } from './projectile.js?v=8';
-import { C, glow } from './shared.js?v=8';
+import { C, glow, FILL_MAT } from './shared.js?v=8';
 import { audio } from './audio.js?v=8';
 import { t, getLang, setLang, langs } from './lang.js?v=8';
 import { visualTest, depthTest, setVisualTest, setDepthTest } from './modes.js?v=8';
@@ -47,29 +48,54 @@ composer.addPass(new RenderPass(scene, camera));
 const bloomRes = LOW_TIER ? new THREE.Vector2(innerWidth / 2, innerHeight / 2) : new THREE.Vector2(innerWidth, innerHeight);
 const bloom = new UnrealBloomPass(bloomRes, visualTest ? 0.62 : 0.35, 0.5, 0.0);
 composer.addPass(bloom);
+// Visual Test's "Neon Arcade" pass: RGB channel split + scrolling scanlines. Off by
+// default (enabled toggled with the mode), lets Visual Test read as a genuinely
+// different render pipeline rather than just recolored edges.
+const NEON_SHADER = {
+  uniforms: { tDiffuse: { value: null }, time: { value: 0 } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+  fragmentShader: `
+    uniform sampler2D tDiffuse; uniform float time; varying vec2 vUv;
+    void main() {
+      vec2 uv = vUv;
+      float shift = 0.0035;
+      float r = texture2D(tDiffuse, uv + vec2(shift, 0.0)).r;
+      float g = texture2D(tDiffuse, uv).g;
+      float b = texture2D(tDiffuse, uv - vec2(shift, 0.0)).b;
+      vec3 col = vec3(r, g, b);
+      col -= max(0.0, sin(uv.y * 340.0 + time * 2.0)) * 0.06;
+      gl_FragColor = vec4(col, 1.0);
+    }`,
+};
+const neonPass = new ShaderPass(NEON_SHADER);
+neonPass.enabled = visualTest;
+composer.addPass(neonPass);
 composer.addPass(new OutputPass());
+FILL_MAT.color.setHex(visualTest ? 0x170022 : 0x000000);   // Visual Test: dark violet fill instead of pure black
 
 // ── Terrain (elevation above 0 + canyons below 0) ──────────────────────────────
-// Flat surfaces (platforms/steps) + linear ramps rise above the y=0 plane (fixed,
-// same in every mode); pit floors/ramps/walls carve canyons below it and roofs are
-// floating overhang slabs (visual only). heightAt() is authoritative for physics.
-// Depth Test swaps the big features + arena scale for giant versions (buildTerrain).
-const flats = [
-  { x0: 9,   x1: 24,  z0: -25, z1: -9,  top: 3.0 },   // raised NE platform
-  { x0: -25, x1: -11, z0: 9,   z1: 22,  top: 1.6 },   // low SW platform
-  { x0: -6,  x1: 6,   z0: 21,  z1: 31,  top: 2.2 },   // north platform
-  { x0: -9,  x1: -4,  z0: -11, z1: -6,  top: 0.7 },   // step
-  { x0: 5,   x1: 10,  z0: 6,   z1: 11,  top: 0.9 },   // step
-];
-const ramps = [
-  { x0: 13,  x1: 20,  z0: -9, z1: -1, hA: 3.0, hB: 0 },    // up to NE platform
-  { x0: -22, x1: -14, z0: 6,  z1: 9,  hA: 0,   hB: 1.6 },  // up to SW platform
-  { x0: -3,  x1: 3,   z0: 15, z1: 21, hA: 0,   hB: 2.2 },  // up to north platform
-];
+// Flat surfaces (platforms/steps) + linear ramps rise above the y=0 plane; pit
+// floors/ramps/walls carve canyons below it; islands float at any height over a
+// void; roofs are floating overhang slabs (visual only). heightAt() is
+// authoritative for physics. All are per-mode now (see NORMAL/DEPTH, buildTerrain).
 // Normal scale: a long west trench (walk-through, ramps at both ends) + a dead-end
 // south-east pocket (one ramp in).
 const NORMAL = {
   arenaR: 78,
+  flats: [
+    { x0: 9,   x1: 24,  z0: -25, z1: -9,  top: 3.0 },   // raised NE platform
+    { x0: -25, x1: -11, z0: 9,   z1: 22,  top: 1.6 },   // low SW platform
+    { x0: -6,  x1: 6,   z0: 21,  z1: 31,  top: 2.2 },   // north platform
+    { x0: -9,  x1: -4,  z0: -11, z1: -6,  top: 0.7 },   // step
+    { x0: 5,   x1: 10,  z0: 6,   z1: 11,  top: 0.9 },   // step
+  ],
+  ramps: [
+    { x0: 13,  x1: 20,  z0: -9, z1: -1, hA: 3.0, hB: 0 },    // up to NE platform
+    { x0: -22, x1: -14, z0: 6,  z1: 9,  hA: 0,   hB: 1.6 },  // up to SW platform
+    { x0: -3,  x1: 3,   z0: 15, z1: 21, hA: 0,   hB: 2.2 },  // up to north platform
+  ],
+  islands: [],
+  voidFloor: 0,
   pitFloors: [
     { x0: -70, x1: -50, z0: -40, z1: 10, floor: -8 },
     { x0: 34,  x1: 58,  z0: 34,  z1: 58, floor: -5.5 },
@@ -100,62 +126,81 @@ const NORMAL = {
     { x: 62, z: 0 }, { x: -62, z: 55 }, { x: 55, z: -62 }, { x: -14, z: -62 },
   ],
 };
-// Depth Test: a much bigger arena — a terraced giant valley (two tiers down to -18)
-// and a giant roofed cave (a floating overhang above a sunken floor).
+// Depth Test: "THE ABYSS" — a radically different landscape from NORMAL's canyon-in-
+// flat-ground. There is no continuous ground at all: a small spawn plateau, four long
+// walkable ramp-arms climbing/descending out to floating islands, and nothing else —
+// step off any of it and you fall into a bottomless void (fall death, see loop()).
+// Ramps stay walkable (no jump needed) because the slope is gradual over a long run;
+// jump height in this game is tiny (~2 units), so big elevation changes are always
+// bridged by a long ramp, never a ledge.
+function depthArm(axis, dir, run, rise, halfW, islandDepth, islandHalfW) {
+  const near = 16, far = near + run;
+  const ramp = axis === 'z'
+    ? { x0: -halfW, x1: halfW, z0: dir < 0 ? -far : near, z1: dir < 0 ? -near : far, hA: dir < 0 ? rise : 0, hB: dir < 0 ? 0 : rise, axis: 'z' }
+    : { x0: dir < 0 ? -far : near, x1: dir < 0 ? -near : far, z0: -halfW, z1: halfW, hA: dir < 0 ? rise : 0, hB: dir < 0 ? 0 : rise, axis: 'x' };
+  const islandCenter = dir < 0 ? -(far + islandDepth / 2) : (far + islandDepth / 2);
+  const island = axis === 'z'
+    ? { x0: -islandHalfW, x1: islandHalfW, z0: islandCenter - islandDepth / 2, z1: islandCenter + islandDepth / 2, top: rise }
+    : { x0: islandCenter - islandDepth / 2, x1: islandCenter + islandDepth / 2, z0: -islandHalfW, z1: islandHalfW, top: rise };
+  return { ramp, island };
+}
+const ARM_N = depthArm('z', +1, 48, 20, 9, 20, 13);    // north — climbs up to a high vista island
+const ARM_S = depthArm('z', -1, 48, -16, 9, 20, 13);   // south — descends to a sunken island
+const ARM_E = depthArm('x', +1, 44, 16, 9, 20, 13);    // east — climbs up
+const ARM_W = depthArm('x', -1, 44, -14, 9, 20, 13);   // west — descends
 const DEPTH = {
-  arenaR: 118,
-  pitFloors: [
-    { x0: -95, x1: -25, z0: -25, z1: 5,   floor: -8 },    // valley tier A floor
-    { x0: -95, x1: -25, z0: -95, z1: -45, floor: -18 },   // valley tier B floor (deep basin)
-    { x0: 40,  x1: 95,  z0: -60, z1: -10, floor: -6 },    // cave floor
+  arenaR: 112,
+  flats: [], ramps: [ARM_N.ramp, ARM_E.ramp],       // rising arms use the elevated (Math.max) composition
+  pitFloors: [],
+  pitRamps: [ARM_S.ramp, ARM_W.ramp],               // descending arms use the pit (Math.min) composition
+  pitWalls: [],
+  roofs: [],
+  islands: [
+    { x0: -16, x1: 16, z0: -16, z1: 16, top: 0 },   // spawn plateau
+    ARM_N.island, ARM_S.island, ARM_E.island, ARM_W.island,
+    { x0: 55, x1: 75, z0: 40, z1: 60, top: 20 },     // satellite off the east/north high islands (same height, jump/dash gap)
   ],
-  pitRamps: [
-    { x0: -95, x1: -25, z0: 5,   z1: 15,  hA: 0,  hB: -8 },     // descend into the valley
-    { x0: -95, x1: -25, z0: -45, z1: -25, hA: -8, hB: -18 },    // deeper into the basin
-    { x0: 40,  x1: 95,  z0: -10, z1: 10,  hA: 0,  hB: -6 },     // descend into the cave
-  ],
-  pitWalls: [
-    { x: -95, z0: -25, z1: 15,  floor: -8,           axis: 'x' },
-    { x: -25, z0: -25, z1: 15,  floor: -8,           axis: 'x' },
-    { x: -95, z0: -95, z1: -25, top: -8, floor: -18, axis: 'x' },
-    { x: -25, z0: -95, z1: -25, top: -8, floor: -18, axis: 'x' },
-    { z: -95, x0: -95, x1: -25, top: -8, floor: -18, axis: 'z' },   // valley dead-end cap
-    { x: 40,  z0: -60, z1: -10, floor: -6,           axis: 'x' },
-    { x: 95,  z0: -60, z1: -10, floor: -6,           axis: 'x' },
-    { z: -60, x0: 40,  x1: 95,  floor: -6,           axis: 'z' },   // cave dead-end cap
-  ],
-  roofs: [
-    { x0: 35, x1: 100, z0: -65, z1: -5, bottom: 5, top: 9 },        // floating cave ceiling
-  ],
+  voidFloor: -500,   // heightAt() default off any island — falling here is fatal, see loop()'s void check
   hazards: [
-    { x: -60, z: -70, r: 7, dps: 20 },       // electrified pool in the deep basin
+    { x: 0, z: -74, r: 6, dps: 20 },                 // electrified pool on the sunken south island
   ],
   movingPlatforms: [
-    { x0: -80, x1: -74, z0: -25, z1: -15, top: -4, axis: 'z', amp: 8, speed: 0.35, phase: 0 },   // sliding stepping-stone across the valley terrace
+    { x0: 60, x1: 70, z0: 16, z1: 40, top: 18, axis: 'z', amp: 12, speed: 0.3, phase: 0 },   // bridges the east island to its satellite
   ],
   objSpots: [
-    { x: 16, z: -17 }, { x: -18, z: 15 }, { x: 0, z: 26 },
-    { x: -60, z: -10 }, { x: -60, z: -70 }, { x: 65, z: -35 },
-    { x: 100, z: 0 }, { x: -100, z: 80 }, { x: 90, z: -95 }, { x: -14, z: -100 }, { x: 0, z: 100 },
+    { x: 0, z: 74 }, { x: 0, z: -74 }, { x: 70, z: 0 }, { x: -70, z: 0 }, { x: 65, z: 50 },
   ],
 };
 
-let ARENA_R = NORMAL.arenaR, pitFloors = [], pitRamps = [], pitWalls = [], roofs = [], hazards = [], movingPlatforms = [], OBJ_SPOTS = [];
+let ARENA_R = NORMAL.arenaR, flats = [], ramps = [], pitFloors = [], pitRamps = [], pitWalls = [], roofs = [], hazards = [], movingPlatforms = [], islands = [], voidFloor = 0, OBJ_SPOTS = [];
+// A ramp's height varies along z by default (the original, still-used convention);
+// axis:'x' varies it along x instead — needed for Depth Test's 4-directional arms.
+function rampHeight(r, x, z) {
+  if (r.axis === 'x') { const t = Math.min(1, Math.max(0, (x - r.x0) / (r.x1 - r.x0))); return r.hA + (r.hB - r.hA) * t; }
+  const t = Math.min(1, Math.max(0, (z - r.z0) / (r.z1 - r.z0))); return r.hA + (r.hB - r.hA) * t;
+}
 function heightAt(x, z) {
   let h = 0;
-  for (const r of ramps) if (x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z1) {
-    const t = Math.min(1, Math.max(0, (z - r.z0) / (r.z1 - r.z0))); h = Math.max(h, r.hA + (r.hB - r.hA) * t);
-  }
+  for (const r of ramps) if (x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z1) h = Math.max(h, rampHeight(r, x, z));
   for (const f of flats) if (x >= f.x0 && x <= f.x1 && z >= f.z0 && z <= f.z1) h = Math.max(h, f.top);
   let base;
   if (h > 0) base = h;                                    // elevated ground always wins (e.g. a bridge)
   else {
-    let d = 0;
+    // pit/island composition tracks whether anything matched at all, rather than
+    // seeding the accumulator with voidFloor — Math.min/Math.max against a very
+    // negative void value would otherwise swallow every real (less extreme) height.
+    let matchedPit = false, d = 0;
     for (const pr of pitRamps) if (x >= pr.x0 && x <= pr.x1 && z >= pr.z0 && z <= pr.z1) {
-      const t = Math.min(1, Math.max(0, (z - pr.z0) / (pr.z1 - pr.z0))); d = Math.min(d, pr.hA + (pr.hB - pr.hA) * t);
+      const v = rampHeight(pr, x, z); d = matchedPit ? Math.min(d, v) : v; matchedPit = true;
     }
-    for (const p of pitFloors) if (x >= p.x0 && x <= p.x1 && z >= p.z0 && z <= p.z1) d = Math.min(d, p.floor);
-    base = d;
+    for (const p of pitFloors) if (x >= p.x0 && x <= p.x1 && z >= p.z0 && z <= p.z1) {
+      d = matchedPit ? Math.min(d, p.floor) : p.floor; matchedPit = true;
+    }
+    let matchedIsl = false, isl2 = 0;
+    for (const isl of islands) if (x >= isl.x0 && x <= isl.x1 && z >= isl.z0 && z <= isl.z1) {
+      isl2 = matchedIsl ? Math.max(isl2, isl.top) : isl.top; matchedIsl = true;
+    }
+    base = matchedIsl ? isl2 : (matchedPit ? d : voidFloor);   // voidFloor: 0 in NORMAL, a bottomless drop in Depth Test
   }
   // moving platforms slide back and forth over time (runTime closure) — every heightAt
   // call site automatically picks up the current position with no signature change.
@@ -173,10 +218,19 @@ function heightAt(x, z) {
 let terrainMeshes = [], groundMesh = null, grid = null, ring = null, platformMeshes = [];
 function disposeMesh(o) { o.traverse?.(c => c.geometry?.dispose()); scene.remove(o); }
 function renderRamp(r) {
-  const w = r.x1 - r.x0, lenZ = r.z1 - r.z0, rise = r.hB - r.hA;
-  const g = glow(new THREE.BoxGeometry(w, 0.12, Math.hypot(lenZ, rise)));
+  const rise = r.hB - r.hA;
+  let g;
+  if (r.axis === 'x') {
+    const lenX = r.x1 - r.x0, d = r.z1 - r.z0;
+    g = glow(new THREE.BoxGeometry(Math.hypot(lenX, rise), 0.12, d));
+    g.rotation.z = Math.atan2(rise, lenX);
+  } else {
+    const w = r.x1 - r.x0, lenZ = r.z1 - r.z0;
+    g = glow(new THREE.BoxGeometry(w, 0.12, Math.hypot(lenZ, rise)));
+    g.rotation.x = -Math.atan2(rise, lenZ);
+  }
   g.position.set((r.x0 + r.x1) / 2, (r.hA + r.hB) / 2, (r.z0 + r.z1) / 2);
-  g.rotation.x = -Math.atan2(rise, lenZ); scene.add(g); terrainMeshes.push(g);
+  scene.add(g); terrainMeshes.push(g);
 }
 // (re)builds the ground/grid/ring + all terrain geometry for the current mode —
 // called once at boot and again whenever Depth Test is toggled on the title screen.
@@ -185,34 +239,42 @@ function buildTerrain() {
   terrainMeshes = [];
   for (const pm of platformMeshes) disposeMesh(pm.mesh);
   platformMeshes = [];
-  if (groundMesh) { disposeMesh(groundMesh); groundMesh.material.dispose(); }
-  if (grid) disposeMesh(grid);
-  if (ring) { disposeMesh(ring); ring.material.dispose(); }
+  if (groundMesh) { disposeMesh(groundMesh); groundMesh.material.dispose(); groundMesh = null; }
+  if (grid) { disposeMesh(grid); grid = null; }
+  if (ring) { disposeMesh(ring); ring.material.dispose(); ring = null; }
 
   const D = depthTest ? DEPTH : NORMAL;
-  ARENA_R = D.arenaR; pitFloors = D.pitFloors; pitRamps = D.pitRamps; pitWalls = D.pitWalls; roofs = D.roofs;
-  hazards = D.hazards ?? []; movingPlatforms = D.movingPlatforms ?? []; OBJ_SPOTS = D.objSpots;
+  ARENA_R = D.arenaR; flats = D.flats; ramps = D.ramps; pitFloors = D.pitFloors; pitRamps = D.pitRamps; pitWalls = D.pitWalls; roofs = D.roofs;
+  hazards = D.hazards ?? []; movingPlatforms = D.movingPlatforms ?? []; islands = D.islands ?? []; voidFloor = D.voidFloor ?? 0; OBJ_SPOTS = D.objSpots;
   scene.fog.far = ARENA_R * 2.1;
 
-  // floor: black plane (with canyon holes cut in) + faint white grid + boundary ring
-  const GS = ARENA_R * 1.2;
-  const groundShape = new THREE.Shape();
-  groundShape.moveTo(-GS, -GS); groundShape.lineTo(GS, -GS); groundShape.lineTo(GS, GS); groundShape.lineTo(-GS, GS); groundShape.closePath();
-  const cutHole = (x0, x1, z0, z1) => {
-    const h = new THREE.Path();
-    h.moveTo(x0, -z0); h.lineTo(x1, -z0); h.lineTo(x1, -z1); h.lineTo(x0, -z1); h.closePath();
-    groundShape.holes.push(h);
-  };
-  for (const p of pitFloors) cutHole(p.x0, p.x1, p.z0, p.z1);
-  for (const pr of pitRamps) cutHole(pr.x0, pr.x1, pr.z0, pr.z1);
-  groundMesh = new THREE.Mesh(new THREE.ShapeGeometry(groundShape), new THREE.MeshBasicMaterial({ color: 0x050505 }));
-  groundMesh.rotateX(-Math.PI / 2); scene.add(groundMesh);
-  const gridDiv = Math.round(ARENA_R * 40 / 47);
-  grid = new THREE.GridHelper(ARENA_R * 2, gridDiv, C.dim, C.dim);
-  grid.material.transparent = true; grid.material.opacity = 0.45; scene.add(grid);
+  // NORMAL: a black ground plane (with canyon holes cut in) + faint grid — continuous
+  // ground everywhere except the carved pits. Depth Test has NO ground plane at all —
+  // it's a void by design (see islands/voidFloor above) — only the boundary ring stays.
+  if (!depthTest) {
+    const GS = ARENA_R * 1.2;
+    const groundShape = new THREE.Shape();
+    groundShape.moveTo(-GS, -GS); groundShape.lineTo(GS, -GS); groundShape.lineTo(GS, GS); groundShape.lineTo(-GS, GS); groundShape.closePath();
+    const cutHole = (x0, x1, z0, z1) => {
+      const h = new THREE.Path();
+      h.moveTo(x0, -z0); h.lineTo(x1, -z0); h.lineTo(x1, -z1); h.lineTo(x0, -z1); h.closePath();
+      groundShape.holes.push(h);
+    };
+    for (const p of pitFloors) cutHole(p.x0, p.x1, p.z0, p.z1);
+    for (const pr of pitRamps) cutHole(pr.x0, pr.x1, pr.z0, pr.z1);
+    groundMesh = new THREE.Mesh(new THREE.ShapeGeometry(groundShape), new THREE.MeshBasicMaterial({ color: 0x050505 }));
+    groundMesh.rotateX(-Math.PI / 2); scene.add(groundMesh);
+    const gridDiv = Math.round(ARENA_R * 40 / 47);
+    grid = new THREE.GridHelper(ARENA_R * 2, gridDiv, C.dim, C.dim);
+    grid.material.transparent = true; grid.material.opacity = 0.45; scene.add(grid);
+  }
   ring = new THREE.Mesh(new THREE.TorusGeometry(ARENA_R, 0.12, 6, 96),
     new THREE.MeshBasicMaterial({ color: 0x888888 })); ring.rotation.x = -Math.PI / 2; scene.add(ring);
 
+  for (const isl of islands) {                                // floating island — a thin slab, not connected to any ground
+    const g = glow(new THREE.BoxGeometry(isl.x1 - isl.x0, 0.6, isl.z1 - isl.z0));
+    g.position.set((isl.x0 + isl.x1) / 2, isl.top, (isl.z0 + isl.z1) / 2); scene.add(g); terrainMeshes.push(g);
+  }
   for (const f of flats) {
     const g = glow(new THREE.BoxGeometry(f.x1 - f.x0, f.top, f.z1 - f.z0));
     g.position.set((f.x0 + f.x1) / 2, f.top / 2, (f.z0 + f.z1) / 2); scene.add(g); terrainMeshes.push(g);
@@ -308,6 +370,11 @@ function hazardUpdate(dt) {
   }
   hazardInsidePrev = inside;
 }
+// Depth Test's islands float over a real bottomless void — falling off one is fatal,
+// same as any other way of dying. voidFloor is always 0 in NORMAL, so this never fires there.
+function voidCheck() {
+  if (depthTest && player.alive && player.y < -50) gameOver();
+}
 
 // ── Objects ───────────────────────────────────────────────────────────────────
 const pool = new ProjectilePool(scene);
@@ -335,25 +402,64 @@ function showOverlay(h) { overlay.innerHTML = h; overlay.style.display = 'block'
 function fmt(s) { const m = (s / 60) | 0, ss = (s % 60) | 0; return `${m}:${ss.toString().padStart(2, '0')}`; }
 function toast(t, c) { toasts.push({ t, c, life: 2.6 }); }
 
+// title screen has 3 states: main (default), 'settings', 'upgrades' — keeps the
+// default screen down to logo/best/start, with everything else behind one tap.
+let titlePanel = null;
+function backChip(slot, label) {
+  const b = document.createElement('div'); b.textContent = '‹ BACK';
+  b.style.cssText = 'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;font-size:12px;font-weight:bold;padding:6px 14px;border-radius:7px;margin-bottom:18px;border:2px solid #3a4a6a;color:#8899bb;';
+  chip(b, () => { titlePanel = null; showTitle(); });
+  slot.appendChild(b);
+  const h = document.createElement('div'); h.textContent = label;
+  h.style.cssText = 'font-size:16px;font-weight:bold;letter-spacing:3px;opacity:.85;margin-bottom:18px'; slot.appendChild(h);
+}
 function showTitle() {
   overlay.style.pointerEvents = 'none';
+  if (titlePanel === 'settings') return showSettingsPanel();
+  if (titlePanel === 'upgrades') return showUpgradesPanel();
   overlay.innerHTML =
     `<div style="font-size:clamp(38px,12vw,64px);font-weight:bold;letter-spacing:10px;color:#9bfff0">SKLTR</div>` +
     `<div style="font-size:13px;opacity:.6;margin:8px 0 18px">${t('subtitle')}</div>` +
     (best > 0 ? `<div style="font-size:13px;color:${css(C.adr)};opacity:.85;margin-bottom:12px">${t('best')} ${fmt(best)}</div>` : ``) +
     `<div style="font-size:15px;opacity:.9">${t('tapStart')}</div>` +
-    `<div style="font-size:12px;opacity:.6;margin-top:4px">SHARDS: ${shards}</div>` +
-    `<div id="orient-slot" style="margin-top:16px"></div>` +
-    `<div style="font-size:12px;opacity:.5;margin-top:16px;line-height:1.9">${t('ctrlD1')}<br>${t('ctrlD2')}<br>` +
-    `<span style="opacity:.85">${t('ctrlTouch')}</span></div>` +
-    `<div id="lang-slot" style="margin-top:18px;display:flex;gap:8px;justify-content:center"></div>` +
-    `<div id="mode-slot" style="margin-top:16px"></div>` +
-    `<div id="unlock-slot" style="margin-top:18px"></div>`;
+    `<div style="font-size:11px;opacity:.45;margin-top:8px">${t('ctrlTouch')}</div>` +
+    `<div id="menu-slot" style="margin-top:22px;display:flex;gap:10px;justify-content:center"></div>`;
   overlay.style.display = 'block';
-  buildOrientChip(document.getElementById('orient-slot'));
-  buildLangChips(document.getElementById('lang-slot'));
-  buildModeChips(document.getElementById('mode-slot'));
-  buildUnlockPanel(document.getElementById('unlock-slot'));
+  buildMainMenuButtons(document.getElementById('menu-slot'));
+}
+function buildMainMenuButtons(slot) {
+  if (!slot) return;
+  const mk = (label, cb) => {
+    const b = document.createElement('div'); b.textContent = label;
+    b.style.cssText = 'pointer-events:auto;cursor:pointer;user-select:none;font-size:12px;font-weight:bold;padding:9px 16px;border-radius:8px;background:rgba(0,0,0,.35);border:2px solid #3a4a6a;color:#8899bb;';
+    chip(b, cb); return b;
+  };
+  slot.appendChild(mk('SETTINGS', () => { titlePanel = 'settings'; showTitle(); }));
+  slot.appendChild(mk(`UPGRADES · ${shards}◆`, () => { titlePanel = 'upgrades'; showTitle(); }));
+}
+function showSettingsPanel() {
+  overlay.innerHTML = `<div id="settings-body" style="text-align:left;display:inline-block;max-width:min(440px,84vw)"></div>`;
+  overlay.style.display = 'block';
+  const body = document.getElementById('settings-body');
+  body.style.textAlign = 'center';
+  backChip(body, 'SETTINGS');
+  const orient = document.createElement('div'); orient.style.marginBottom = '18px'; body.appendChild(orient);
+  buildOrientChip(orient);
+  const lang = document.createElement('div'); lang.style.cssText = 'display:flex;gap:8px;justify-content:center;margin-bottom:18px'; body.appendChild(lang);
+  buildLangChips(lang);
+  const modes = document.createElement('div'); modes.style.marginBottom = '18px'; body.appendChild(modes);
+  buildModeChips(modes);
+  const ctrl = document.createElement('div');
+  ctrl.style.cssText = 'font-size:11px;opacity:.5;line-height:1.9;margin-top:8px';
+  ctrl.innerHTML = `${t('ctrlD1')}<br>${t('ctrlD2')}<br><span style="opacity:.85">${t('ctrlTouch')}</span>`;
+  body.appendChild(ctrl);
+}
+function showUpgradesPanel() {
+  overlay.innerHTML = `<div id="upgrades-body"></div>`;
+  overlay.style.display = 'block';
+  const body = document.getElementById('upgrades-body');
+  backChip(body, `UPGRADES · ${shards}◆`);
+  buildUnlockPanel(body);
 }
 function showPause() { overlay.style.pointerEvents = 'none'; showOverlay(`<div style="font-size:42px;font-weight:bold">PAUSED</div><div style="font-size:13px;opacity:.5;margin-top:10px">ESC to resume</div>`); }
 function showGameOver(earned = 0) {
@@ -419,7 +525,12 @@ function buildModeChips(slot) {
     return btn;
   };
   row.appendChild(mkToggle(t('visualTest'), 0xff8bd6, () => visualTest,
-    () => { setVisualTest(!visualTest); bloom.strength = visualTest ? 0.62 : 0.35; }));
+    () => {
+      setVisualTest(!visualTest);
+      bloom.strength = visualTest ? 0.62 : 0.35;
+      neonPass.enabled = visualTest;
+      FILL_MAT.color.setHex(visualTest ? 0x170022 : 0x000000);
+    }));
   row.appendChild(mkToggle(t('depthTest'), 0x6bd9ff, () => depthTest,
     () => { setDepthTest(!depthTest); buildTerrain(); }));
   slot.appendChild(row);
@@ -432,8 +543,6 @@ function buildModeChips(slot) {
 // progress.js). Buying re-renders the whole title, matching the lang/mode chips' convention.
 function buildUnlockPanel(slot) {
   if (!slot) return;
-  const title = document.createElement('div'); title.textContent = 'UNLOCKS';
-  title.style.cssText = 'font-size:12px;letter-spacing:2px;opacity:.55;margin-bottom:10px'; slot.appendChild(title);
   const row = document.createElement('div');
   row.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:440px;margin:0 auto';
   for (const u of UPGRADES) {
@@ -542,7 +651,7 @@ function gameOver() {
 function returnToTitle() {
   if (gameState !== 'gameover') return;
   for (const e of enemies) e.dispose(); enemies = []; pool.clear();
-  overlay.style.pointerEvents = 'none'; gameState = 'title'; showTitle();
+  overlay.style.pointerEvents = 'none'; gameState = 'title'; titlePanel = null; showTitle();
 }
 
 // ── Spawn director ────────────────────────────────────────────────────────────
@@ -688,16 +797,20 @@ input.onDashKey = () => {                // desktop Q
   if (player.grounded() ? player.groundDash(dashDir()) : player.airDash(dashDir())) didDash();
 };
 input.onToggleAim = () => { player.autoAim = !player.autoAim; toast(player.autoAim ? 'AUTO-AIM ON' : 'AUTO-AIM OFF', C.adr); };
-input.onStart = () => { if (gameState === 'title') startGame(); else if (gameState === 'gameover') returnToTitle(); };
+input.onStart = () => {
+  if (gameState === 'title') { if (titlePanel) { titlePanel = null; showTitle(); } else startGame(); }
+  else if (gameState === 'gameover') returnToTitle();
+};
 input.onPause = () => {
   if (gameState === 'playing') { gameState = 'paused'; showPause(); }
   else if (gameState === 'paused') { overlay.style.display = 'none'; gameState = 'playing'; }
-  else if (gameState === 'title') startGame();
+  else if (gameState === 'title') { if (titlePanel) { titlePanel = null; showTitle(); } else startGame(); }
   else if (gameState === 'gameover') returnToTitle();
 };
-// tap / click to start from the title (ignores taps on overlay chips/buttons)
+// tap / click to start from the title (ignores taps on overlay chips/buttons, and does
+// nothing while a settings/upgrades sub-panel is open — only its own BACK chip returns)
 const _onOverlayUI = e => e.target && e.target.closest && e.target.closest('#overlay') && e.target.id !== 'overlay';
-addEventListener('pointerdown', e => { if (_onOverlayUI(e)) return; if (gameState === 'title') startGame(); });
+addEventListener('pointerdown', e => { if (_onOverlayUI(e)) return; if (gameState === 'title' && !titlePanel) startGame(); });
 
 // ── Camera (free-look over-the-shoulder; aim any direction) ────────────────────
 const _aim = { fx: 0, fy: 0, fz: -1, yaw: 0, pitch: 0 };
@@ -851,6 +964,7 @@ function loop() {
     input.updateLook(dt);
     player.update(dt, input, _aim, enemies, heightAt);
     updatePlatforms();
+    voidCheck();
     if (player._fired) audio.shoot();
     if (player.dashing) {                       // fading dash streak
       const col = visualTest ? (player.adr > 0 ? C.adr : 0x6bd9ff) : C.player;
@@ -872,6 +986,7 @@ function loop() {
   }
 
   updateCamera();
+  if (visualTest) neonPass.uniforms.time.value = now / 1000;
   composer.render();
   drawHUD();
 }
