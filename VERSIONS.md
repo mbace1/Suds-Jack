@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v94 — 2026-07-03
+**HOTFIX: game black-screened since v93 (SyntaxError in designer.js) + a real syntax gate**
+- `designer.js:97` contained `function getPathfunction getPath(...)` — a stray fragment from the v93 tester refactor glued onto the real definition. `main.js` imports `designer.js` at boot, so the SyntaxError killed the whole module graph → nothing loaded
+- **Why it shipped**: `node --check` silently exits 0 on ES modules (it only parses CommonJS) — every syntax check in the v79–v93 pipeline was a no-op. Diagnosed by loading the game in headless Chromium against a local three.js testbed, which surfaced the exact console error
+- **New gate**: `scripts/check-syntax.sh` compiles every `toko-drop/js/*.js` as a real ES module (`vm.SourceTextModule`) — verified to catch this exact error — and `scripts/pre-commit` now runs it whenever game files are staged, so a parse-broken file can no longer be committed (re-install hook: `cp scripts/pre-commit .git/hooks/pre-commit`)
+- Verified end-to-end in the headless testbed: full game boots to the title with zero console errors; the enemy harness (spawn all 17 types → 30 update frames → hit/kill pass) reports ALL OK
+- Cache-bust `?v=47` → `?v=48`; HUD label → v94
+
+---
+
 ## v93 — 2026-07-03
 **In-menu enemy tester replaces the LIVE TUNING page — pause menu simplified**
 - **Each enemy page now opens with a live specimen viewport**: the selected enemy spawns in a self-contained mini three.js scene embedded in the pause menu (own renderer/camera/lights/grid floor) — it moves, telegraphs, breathes, and wears the current CFG + TUNING + material values, chasing a ghost target. **HIT / KILL / RESPAWN** debug buttons poke it (HIT pops BAMBU segments and PYRA holes too); killed specimens play their death anim and auto-respawn. Zero contact with wave state — separate scene, stub bullet pool, no scoring/collisions, torn down on resume

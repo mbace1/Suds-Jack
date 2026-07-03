@@ -9,6 +9,12 @@ if [ -z "$GAME_CHANGED" ]; then
   exit 0  # only infra / doc changes — no version entry required
 fi
 
+# Real ESM syntax gate — node --check no-ops on ES modules and let a
+# parse-broken designer.js ship in v93 (black screen). Never again.
+if [ -x scripts/check-syntax.sh ]; then
+  scripts/check-syntax.sh || exit 1
+fi
+
 VERSIONS_STAGED=$(git diff --cached --name-only | grep -c '^VERSIONS\.md$')
 if [ "$VERSIONS_STAGED" -eq 0 ]; then
   echo ""
