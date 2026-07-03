@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v102 — 2026-07-03
+**Logo glow: soft oval wash instead of the pink square**
+- The v101 logo's neon glow used CSS `drop-shadow`, which (amplified by faint paper-texture alpha left in the PNG) read as a soft pink rectangle behind the lettering — the reported "pink in a square"
+- Replaced with an **elliptical radial-gradient wash** behind the logo (red core → purple mid → fully transparent at ~74%), fading to nothing in an oval; the lettering keeps only a tight red drop-shadow for pop
+- `logo.png` alpha scrubbed: residual paper-texture pixels (alpha < 25) zeroed so nothing outside the brush strokes can catch a glow
+- Cache-bust `?v=55` → `?v=56`; HUD label → v102
+
+---
+
 ## v101 — 2026-07-03
 **Hand-drawn logo on the title screen + roguelike upgrades offered less often**
 - **The title is now the hand-brushed TOKO DROP lettering** from the concept art (`toko-drop/logo.png`): cropped from the drawing, stray speed-lines/specks removed via connected-component filtering, strokes solidified, tinted yellow (#ffdd33) with the existing red/purple neon drop-shadow glow. `alt="TOKO DROP"` keeps it accessible; the old text title is retired

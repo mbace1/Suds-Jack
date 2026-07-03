@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=55';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=55';
-import { Player, PLAYER_RADIUS } from './player.js?v=55';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=55';
-import { audio } from './audio.js?v=55';
-import { initDesigner } from './designer.js?v=55';
-import { t, getLang, setLang, langs } from './lang.js?v=55';
-import { TUNING } from './tuning.js?v=55';
+import { InputManager } from './input.js?v=56';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=56';
+import { Player, PLAYER_RADIUS } from './player.js?v=56';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=56';
+import { audio } from './audio.js?v=56';
+import { initDesigner } from './designer.js?v=56';
+import { t, getLang, setLang, langs } from './lang.js?v=56';
+import { TUNING } from './tuning.js?v=56';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1532,7 +1532,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v101', 16, uiCanvas.height - 12);
+  ctx.fillText('v102', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1565,9 +1565,14 @@ function showTitle() {
   }
   overlay.style.display = 'block';
   overlay.innerHTML =
-    `<img src="logo.png" alt="TOKO DROP" style="width:min(72vw,340px);display:block;margin:0 auto;` +
-    `filter:drop-shadow(0 0 18px #ff4422) drop-shadow(0 0 40px #aa00ff);` +
-    `animation:tokoFadeUp 0.5s ease both">` +
+    `<div style="position:relative;width:min(72vw,340px);margin:0 auto;animation:tokoFadeUp 0.5s ease both">` +
+    // Soft oval neon wash behind the lettering — a radial gradient that fades
+    // to nothing (the old rectangular drop-shadow read as a pink box).
+    `<div style="position:absolute;inset:-34% -22%;pointer-events:none;` +
+    `background:radial-gradient(ellipse 52% 48% at 50% 50%,rgba(255,68,34,0.50),rgba(170,0,255,0.30) 55%,rgba(170,0,255,0) 74%)"></div>` +
+    `<img src="logo.png" alt="TOKO DROP" style="position:relative;width:100%;display:block;` +
+    `filter:drop-shadow(0 0 8px rgba(255,68,34,0.8))">` +
+    `</div>` +
     `<div style="font-size:13px;opacity:0.5;margin:8px 0 22px;animation:tokoFadeUp 0.5s 0.1s ease both">` +
     `${t('subtitle')}</div>` +
     (pb.bestScore > 0
