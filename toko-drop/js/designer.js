@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=47';
-import { BULLET_CONFIG } from './bullet.js?v=47';
-import { t } from './lang.js?v=47';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=47';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=48';
+import { BULLET_CONFIG } from './bullet.js?v=48';
+import { t } from './lang.js?v=48';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=48';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -94,7 +94,7 @@ function testerStop() {
   if (tester.specimen) { tester.specimen.removeFrom(tester.scene); tester.specimen = null; tester.type = null; }
 }
 
-function getPathfunction getPath(obj, path) { return path.split('.').reduce((o, k) => o?.[k], obj); }
+function getPath(obj, path) { return path.split('.').reduce((o, k) => o?.[k], obj); }
 function setPath(obj, path, v) {
   const ks = path.split('.'); const last = ks.pop();
   const target = ks.reduce((o, k) => o?.[k], obj);
