@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v89 — 2026-07-03
+**Moth drops diversified: score nuggets + score-multiplier orbs join weapon pods**
+- Single-moth kills now roll a drop table instead of always dropping a weapon pod: **55% weapon pod · 25% score nugget · 20% Score Multiplier orb** — moths carry loot, not just armament
+- New **score nugget** pickup (soft-green orb): instant `250 + wave×25` points on collection, doubled while a Score Multiplier is active — worth chasing more in later waves
+- The **kill-every-moth 2-choice pod bonus is untouched** — clearing the whole convoy before any escape still guarantees the weapon pick, so the designed reward stays weapons
+- Gate drops unchanged (hp/invincible/firerate/scoremult); the nugget is moth-exclusive
+- Cache-bust `?v=42` → `?v=43`; HUD label → v89
+
+---
+
 ## v88 — 2026-07-03
 **New enemy: BOTFLY flying homing bot — and homing leaves the player's arsenal**
 - **BOTFLY** (17th enemy type, unlocks wave 5, cost 4): a pink goo bot hovering at ~y1.5 on flapping translucent wings. Holds an ~8-unit band around the player while drifting tangentially, and every 3.8s fires a **slow homing shot** (speed ×0.62, turn rate 1.8 — outrunnable and dashable, per the "slower rate" design) with a 0.5s charge-up emissive flicker as the tell. No contact damage — it flies
