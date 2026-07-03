@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=49';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=49';
-import { Player, PLAYER_RADIUS } from './player.js?v=49';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=49';
-import { audio } from './audio.js?v=49';
-import { initDesigner } from './designer.js?v=49';
-import { t, getLang, setLang, langs } from './lang.js?v=49';
-import { TUNING } from './tuning.js?v=49';
+import { InputManager } from './input.js?v=50';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=50';
+import { Player, PLAYER_RADIUS } from './player.js?v=50';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat } from './enemy.js?v=50';
+import { audio } from './audio.js?v=50';
+import { initDesigner } from './designer.js?v=50';
+import { t, getLang, setLang, langs } from './lang.js?v=50';
+import { TUNING } from './tuning.js?v=50';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -771,7 +771,7 @@ class CargoCluster {
       const basePerp = (i - (count - 1) / 2) * 1.4;
       // Goo moth: golden goo-shader body + translucent wing planes
       const bodyR = 0.32;
-      const mat = makeGooMat(0xffdd55, 0.92, 1.0, bodyR);
+      const mat = makeSatinMat(0xffdd55, 'blob', bodyR); // moths join the satin gel family (v96)
       const body = new THREE.Mesh(new THREE.SphereGeometry(bodyR, 10, 8), mat);
       const mkWing = () => new THREE.Mesh(
         new THREE.PlaneGeometry(0.52, 0.28),
@@ -1528,7 +1528,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v95', 16, uiCanvas.height - 12);
+  ctx.fillText('v96', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {

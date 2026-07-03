@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v96 — 2026-07-03
+**Visual unification: satin gel materials extend to the specialists + moths**
+- TORO (wheel + rim spikes, now sharing one material), BAMBU (whole stalk + lips), PYRA (ring + cones), and OMEGA now render with the v90 `MeshPhysicalMaterial` satin system instead of `MeshPhong` — every enemy family speaks the same material language, and all respond to the pause-menu material presets/sliders live
+- New per-family looks in `TUNING.material.families`: `toro`/`pyra` = hard candy-glass (roughness 0.10, transmission 0.25), `bambu` = matte woody (roughness 0.20, transmission 0.10), `omega` = glassy-hard crystal (roughness 0.04, transmission 0.40) so the boss keeps its crystal read
+- Cargo moths join the satin blob family too
+- **Player deliberately unchanged** — its goo material drives dash/stretch uniforms from `player.js`; migrating it is v97's call, pending the verdict on this look
+- Verified with `scripts/smoke.sh` (boot clean + all-17-types harness ALL OK)
+- Cache-bust `?v=49` → `?v=50`; HUD label → v96
+
+---
+
 ## v95 — 2026-07-03
 **Gentler on-ramp (waves 1–5 only) + automated headless smoke test**
 - **Early waves are very slightly easier**: waves 1–5 shave a bit of enemy speed (−0.06 at wave 1, fading linearly to 0 by wave 6: 1.10→1.04, 1.19→1.14, 1.28→1.24, 1.37→1.35, 1.46→1.45) and spawn ~1 fewer enemy per wave (budget ×0.85 at wave 1, fading to ×1.0 by wave 6). **Wave 6 onward is numerically identical to before** — fire rates, caps, wave rhythm, unlock gates, and the post-10 curve untouched. Verified old-vs-new in node for waves 1–8

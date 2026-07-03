@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=49';
+import { TUNING } from './tuning.js?v=50';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -175,7 +175,7 @@ export function applySatinValues() {
   }
 }
 
-function makeSatinMat(color, fam, radius) {
+export function makeSatinMat(color, fam, radius) {
   const M = TUNING.material, famOv = M.families[fam] || {};
   const col = new THREE.Color(color);
   const mat = new THREE.MeshPhysicalMaterial({
@@ -420,13 +420,8 @@ export class Enemy {
       // Firmer candy-glass (TUNING.material.families.cube), gentler wobble.
       this.mat = makeSatinMat(cfg.color, 'cube', cfg.radius);
     } else {
-      this.mat = new THREE.MeshPhongMaterial({
-        color:       cfg.color,
-        emissive:    0x000000,
-        transparent: true,
-        opacity:     matOpacity,
-        shininess:   isToro ? 140 : 100,
-      });
+      // Specialists (v96): TORO wheel, OMEGA crystal — per-family satin looks.
+      this.mat = makeSatinMat(cfg.color, isToro ? 'toro' : 'omega', cfg.radius);
     }
 
     this.mesh = new THREE.Mesh(geo, this.mat);
@@ -491,7 +486,7 @@ export class Enemy {
       this._wheel.add(this.mesh);
       const rimR = cfg.radius * 0.68; // torus major radius
       const spikeGeo = new THREE.ConeGeometry(0.12, 0.3, 4);
-      const spikeMat = new THREE.MeshPhongMaterial({ color: cfg.color, shininess: 100 });
+      const spikeMat = this.mat; // spikes share the wheel's satin gel (v96)
       for (let i = 0; i < TUNING.toro.rimSpikes; i++) {
         const a = (i / TUNING.toro.rimSpikes) * Math.PI * 2;
         const spike = new THREE.Mesh(spikeGeo, spikeMat);
@@ -530,9 +525,7 @@ export class Enemy {
 
     } else if (type === EnemyType.BAMBU) {
       // BAMBU: stationary cross-stalk enemy
-      this._bambuMat = new THREE.MeshPhongMaterial({
-        color: cfg.color, transparent: true, opacity: 0.88, shininess: 80,
-      });
+      this._bambuMat = makeSatinMat(cfg.color, 'bambu', cfg.radius);
       this.mat = this._bambuMat;
       this.group = new THREE.Group();
       this.group.position.set(x, 0, z);
@@ -602,9 +595,7 @@ export class Enemy {
 
     } else if (type === EnemyType.PYRA) {
       // PYRA: spinning ring with destroyable holes
-      this.mat = new THREE.MeshPhongMaterial({
-        color: cfg.color, transparent: true, opacity: 0.85, shininess: 120,
-      });
+      this.mat = makeSatinMat(cfg.color, 'pyra', cfg.radius);
       this.group = new THREE.Group();
       this.group.position.set(x, cfg.radius, z);
       scene.add(this.group);
