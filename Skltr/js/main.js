@@ -4,17 +4,17 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=8';
-import { Player } from './player.js?v=8';
-import { Enemy, COST } from './enemy.js?v=8';
-import { ProjectilePool } from './projectile.js?v=8';
-import { C, glow, FILL_MAT } from './shared.js?v=8';
-import { audio } from './audio.js?v=8';
-import { t, getLang, setLang, langs } from './lang.js?v=8';
-import { visualTest, depthTest, setVisualTest, setDepthTest } from './modes.js?v=8';
-import { shards, UPGRADES, levelOf, canBuy, buy, addShards, resolvedStats } from './progress.js?v=8';
+import { InputManager } from './input.js?v=9';
+import { Player } from './player.js?v=9';
+import { Enemy, COST } from './enemy.js?v=9';
+import { ProjectilePool } from './projectile.js?v=9';
+import { C, glow, FILL_MAT } from './shared.js?v=9';
+import { audio } from './audio.js?v=9';
+import { t, getLang, setLang, langs } from './lang.js?v=9';
+import { visualTest, depthTest, setVisualTest, setDepthTest } from './modes.js?v=9';
+import { shards, UPGRADES, levelOf, canBuy, buy, addShards, resolvedStats } from './progress.js?v=9';
 import { seenWelcome, seenDash, seenDoubleJump, seenHazard, seenObjective,
-  markWelcome, markDash, markDoubleJump, markHazard, markObjective } from './onboarding.js?v=8';
+  markWelcome, markDash, markDoubleJump, markHazard, markObjective } from './onboarding.js?v=9';
 
 const css = h => '#' + (h >>> 0).toString(16).padStart(6, '0').slice(-6);
 let runTime = 0;   // declared early: heightAt()/updatePlatforms() close over this for moving platforms, and buildTerrain() runs at module load
@@ -730,6 +730,7 @@ function onKill(e) {
   if (e.boss) { bossAlive = false; bossKills++; toast('BOSS DOWN', C.adr); }
   hitstopT = Math.max(hitstopT, e.boss ? HITSTOP_BOSS_KILL : HITSTOP_KILL);
   killPunch = Math.max(killPunch, e.boss ? 1.6 : 1);
+  player.fig.perk();
   burst(e.x, e.y, e.z, visualTest ? e.restColor : C.line, visualTest ? 16 : 8);
 }
 

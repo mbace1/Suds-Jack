@@ -60,9 +60,10 @@ function box(parent, w, h, d, x, y, z, edge) {
 }
 
 // ── The bunny-humanoid protagonist (Vib-Ribbon sketch) ────────────────────────
-// A small head with two big eyes, two upright ears splayed to the sides, a spindly
-// white-line body holding an AR that tracks the 3D aim. Simple procedural anims for
-// run / jump / dash / fire-recoil / hurt.
+// A distinctly small head with two big eyes, two long upright ears splayed out to
+// the sides, a spindly white-line body holding an AR that tracks the 3D aim.
+// Procedural anims for run / jump / land-squash / dash / fire-recoil / hurt, plus
+// idle breathing + ear twitches and an ear-perk flourish on kills.
 export class Bunny {
   constructor(scene) {
     this.group = new THREE.Group(); scene.add(this.group);
@@ -70,21 +71,21 @@ export class Bunny {
     const e = this.edge;
     this.body = new THREE.Object3D(); this.group.add(this.body);
 
-    // smaller head + eyes
-    const head = glow(new THREE.IcosahedronGeometry(0.32, 0), C.line); head.position.y = 1.44;
+    // small head + big eyes (head deliberately small so the ears dominate the silhouette)
+    const head = glow(new THREE.IcosahedronGeometry(0.24, 0), C.line); head.position.y = 1.46;
     head.userData.edge.color = e.color; this.body.add(head);
-    const eL = makeEye(0.12); eL.position.set(-0.12, 1.47, -0.28); this.body.add(eL);
-    const eR = makeEye(0.12); eR.position.set( 0.12, 1.47, -0.28); this.body.add(eR);
+    const eL = makeEye(0.10); eL.position.set(-0.095, 1.49, -0.20); this.body.add(eL);
+    const eR = makeEye(0.10); eR.position.set( 0.095, 1.49, -0.20); this.body.add(eR);
 
-    // ears: mostly upright, splayed out to the sides (a small back tilt)
+    // ears: long, upright, splayed wide to the sides — the signature silhouette read
     this.ears = [];
     for (const sx of [-1, 1]) {
-      const ear = new THREE.Object3D(); ear.position.set(sx * 0.13, 1.62, 0.0); this.body.add(ear);
-      ear.rotation.set(0.12, 0, sx * 0.42);       // up, spread sideways
-      ear.userData.sx = sx;
-      box(ear, 0.09, 0.5, 0.07, 0, 0.25, 0, e);
-      const tip = new THREE.Object3D(); tip.position.y = 0.48; tip.rotation.x = -0.18; ear.add(tip);
-      box(tip, 0.08, 0.28, 0.06, 0, 0.14, 0, e);
+      const ear = new THREE.Object3D(); ear.position.set(sx * 0.10, 1.60, 0.01); this.body.add(ear);
+      ear.rotation.set(0.04, 0, sx * 0.55);       // nearly vertical, spread hard sideways
+      ear.userData.sx = sx; ear.userData.baseZ = sx * 0.55;
+      box(ear, 0.09, 0.55, 0.07, 0, 0.275, 0, e);
+      const tip = new THREE.Object3D(); tip.position.y = 0.53; tip.rotation.x = -0.15; ear.add(tip);
+      box(tip, 0.08, 0.30, 0.06, 0, 0.15, 0, e);
       this.ears.push(ear);
     }
 
@@ -105,6 +106,9 @@ export class Bunny {
     this.legR = new Bone(hpR, 0.72, 0.08, e);
 
     this.phase = 0; this.flash = 0; this.recoil = 0;
+    this.squash = 0; this.perkT = 0; this.breath = 0;         // landing squash / kill ear-perk / idle breathing clocks
+    this.twitchT = 1.5; this.twitchEar = null; this.twitchA = 0;
+    this._airPrev = false;
   }
 
   _buildAR(hand, e) {
@@ -117,10 +121,30 @@ export class Bunny {
 
   update(dt, { speed = 0, aimPitch = 0, yOffset = 0, airborne = false, dashing = false, firing = false, accent = null } = {}) {
     this.phase += dt * (3 + speed * 1.1);
+    this.breath += dt;
     this.recoil = firing ? Math.min(1, this.recoil + 0.6) : Math.max(0, this.recoil - dt * 7);
     const on = this.recoil > 0.2; this.muzzle.visible = on;
     if (on) this.muzzle.scale.setScalar((0.55 + Math.random() * 0.9) * this.recoil);
     const hurt = this.flash, s = Math.sin(this.phase) * Math.min(1, speed / 4);
+    const idle = !airborne && speed < 0.8;
+
+    // landing squash: fires on the airborne→grounded transition, decays fast
+    if (this._airPrev && !airborne) this.squash = 1;
+    this._airPrev = airborne;
+    this.squash = Math.max(0, this.squash - dt * 5);
+    this.perkT = Math.max(0, this.perkT - dt * 2.5);
+    this.twitchA = Math.max(0, this.twitchA - dt * 4);
+
+    // squash & stretch: compress on landing, slight stretch while airborne
+    const sq = this.squash, stretch = airborne ? 0.05 : 0;
+    this.body.scale.set(1 + sq * 0.15, 1 - sq * 0.22 + stretch, 1 + sq * 0.15);
+
+    // idle life: slow breathing bob + an occasional single-ear twitch
+    if (idle) {
+      this.twitchT -= dt;
+      if (this.twitchT <= 0) { this.twitchT = 1.6 + Math.random() * 2.5; this.twitchEar = this.ears[(Math.random() * 2) | 0]; this.twitchA = 1; }
+      this.body.position.y = Math.sin(this.breath * 2.2) * 0.015;
+    } else this.body.position.y = lerp(this.body.position.y, 0, dt * 8);
 
     // legs: tuck in the air, sweep back on a dash, else run cycle
     if (airborne) {
@@ -133,26 +157,32 @@ export class Bunny {
       this.legL.pivot.rotation.x = s * 0.9; this.legR.pivot.rotation.x = -s * 0.9;
     }
 
-    // body lean: forward when dashing / fast, jerk back when hurt
+    // body lean: forward when dashing / fast, jerk back when hurt, slight roll with the stride
     let lean = dashing ? 0.72 : (speed > 6 ? 0.22 : 0);
     if (hurt > 0) lean = -0.5 * hurt;
     this.body.rotation.x = lerp(this.body.rotation.x, lean, dt * 12);
-    this.body.rotation.z = hurt > 0 ? (Math.random() - 0.5) * 0.2 * hurt : lerp(this.body.rotation.z, 0, dt * 10);
+    this.body.rotation.z = hurt > 0 ? (Math.random() - 0.5) * 0.2 * hurt : lerp(this.body.rotation.z, s * 0.07, dt * 10);
 
     // arms brace the AR toward the aim, with a recoil kick while firing
     const kick = this.recoil * 0.22;
     this.armR.pivot.rotation.x = -1.5 - aimPitch + kick;
     this.armL.pivot.rotation.x = -1.35 - aimPitch * 0.6 + kick * 0.7;
 
-    // ears: floppy sway while moving, pinned back on dash / in air
+    // ears: sway while moving, pinned back on dash / in air, perked forward on a kill,
+    // splay narrowing while perked, plus the idle single-ear twitch
     const back = (airborne || dashing) ? 0.6 : 0;
     const sway = Math.sin(this.phase * 1.3) * 0.14 * Math.min(1, speed / 3);
-    for (const ear of this.ears) ear.rotation.x = lerp(ear.rotation.x, 0.12 + back + sway, dt * 10);
+    for (const ear of this.ears) {
+      ear.rotation.x = lerp(ear.rotation.x, 0.04 + back + sway - this.perkT * 0.45, dt * 10);
+      const twitch = (ear === this.twitchEar && this.twitchA > 0) ? Math.sin(this.twitchA * Math.PI * 3) * 0.18 * this.twitchA : 0;
+      ear.rotation.z = ear.userData.baseZ * (1 - this.perkT * 0.35) + twitch;
+    }
 
     this.group.position.y = yOffset + (airborne ? 0 : Math.abs(s) * 0.04);
     if (this.flash > 0) { this.flash = Math.max(0, this.flash - dt * 4); this.edge.color.setHex(0xffffff); }
     else this.edge.color.setHex(accent ?? C.line);
   }
   hit() { this.flash = 1; }
+  perk() { this.perkT = 1; }    // ears snap up/forward for a beat — kill flourish
   visible(v) { this.group.visible = v; }
 }
