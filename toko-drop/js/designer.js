@@ -1,70 +1,100 @@
-import { CFG, EnemyType, applySatinValues } from './enemy.js?v=46';
-import { BULLET_CONFIG } from './bullet.js?v=46';
-import { t } from './lang.js?v=46';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=46';
+import * as THREE from 'three';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=47';
+import { BULLET_CONFIG } from './bullet.js?v=47';
+import { t } from './lang.js?v=47';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=47';
 
-// Sentinels for the non-enemy pages in the pause-menu list.
+// Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
-const TUNING_PAGE   = 'tuning';
 
-// ── Live TUNING tuner (port brief Part 6) ─────────────────────────────────────
-// Slider spec: [path, label, min, max, step]. Only values the game reads live
-// (per-frame, per state transition, or — for material.* — pushed onto live
-// materials via applySatinValues) are listed; geometry/spawn-time values apply
-// on next spawn. Edits write straight into TUNING.
-const TUNING_ROWS = [
-  // material.* rows restyle already-spawned enemies via applySatinValues().
-  ['MATERIAL (all gel)', [
-    ['material.sss',          'SSS Glow',      0,  1.5, 0.05],
-    ['material.roughness',    'Roughness',     0,  1,   0.01],
-    ['material.clearcoat',    'Clearcoat',     0,  1,   0.02],
-    ['material.sheen',        'Sheen',         0,  1,   0.02],
-    ['material.transmission', 'Transmission',  0,  0.9, 0.02],
-  ]],
-  ['BLOB — MOTION & TELLS', [
-    ['blob.breatheAmp',          'Breathe Amp',          0,    0.4,  0.01],
-    ['blob.breatheAmpSplitta',   'Breathe (Splitta)',    0,    0.5,  0.01],
-    ['blob.dragStretchPerSpeed', 'Drag per Speed',       0,    0.3,  0.01],
-    ['blob.dragMax',             'Drag Max',             0,    0.8,  0.01],
-    ['blob.rearDragTilt',        'Rear Drag Tilt',       0,    1,    0.01],
-    ['blob.globboLungeHz',       'Globbo Lunge Hz',      0.5,  8,    0.1],
-    ['blob.globboLungeGain',     'Globbo Lunge Gain',    0,    6,    0.1],
-    ['blob.spittorInflate',      'Spittor Inflate',      0,    0.6,  0.01],
-    ['blob.spittorInflateTime',  'Spittor Inflate (s)',  0.1,  1.5,  0.05],
-    ['blob.spittorRecoil',       'Spittor Recoil',       0,    1,    0.01],
-    ['blob.weevaVibrate',        'Weeva Vibrate',        0,    0.1,  0.005],
-    ['blob.weevaVibrateHz',      'Weeva Vibrate Hz',     5,    80,   1],
-    ['blob.fannerSway',          'Fanner Sway',          0,    0.4,  0.01],
-    ['blob.fannerSwayHz',        'Fanner Sway Hz',       1,    20,   0.5],
-  ]],
-  ['CUBE FLOP', [
-    ['flop.landSquish',       'Land Squish',          0,    1,    0.02],
-    ['flop.flopTimeMax',      'Flop Time Max (s)',    0.1,  0.8,  0.02],
-    ['flop.flopShareOfCycle', 'Flop Share of Cycle',  0.2,  1,    0.05],
-    ['flop.breatheAmp',       'Breathe Amp',          0,    0.3,  0.01],
-  ]],
-  ['TORO', [
-    ['toro.revTime',          'Rev Time (s)',         0.4,  4,    0.1],
-    ['toro.telegraphTime',    'Telegraph (s)',        0.1,  2,    0.05],
-    ['toro.dashSpeed',        'Dash Speed',           8,    40,   0.5],
-    ['toro.dashMin',          'Dash Min Speed',       4,    30,   0.5],
-    ['toro.dashDecel',        'Dash Decel',           0,    30,   0.5],
-    ['toro.recoverTime',      'Recover (s)',          0.1,  3,    0.05],
-    ['toro.indicatorFlashHz', 'Telegraph Flash Hz',   5,    60,   1],
-  ]],
-  ['BAMBU LOB', [
-    ['bambu.lobTelegraph', 'Ring Telegraph (s)', 0.2,  2,   0.05],
-    ['bambu.lobFlight',    'Flight Time (s)',    0.3,  3,   0.05],
-    ['bambu.lobArcHeight', 'Arc Height',         0.5,  6,   0.1],
-    ['bambu.lobSpread',    'Landing Spread',     0,    4,   0.1],
-  ]],
-  ['FX', [
-    ['fx.slimeTrailInterval', 'Slime Trail Interval (s)', 0.1, 1.5, 0.05],
-    ['fx.poisonInterval',     'Poison Interval (s)',      0.1, 2,   0.05],
-  ]],
+// ── Material sliders (shared across every enemy page) ────────────────────────
+// material.* edits restyle already-spawned enemies via applySatinValues().
+const MATERIAL_ROWS = [
+  ['material.sss',          'SSS Glow',      0,  1.5, 0.05],
+  ['material.roughness',    'Roughness',     0,  1,   0.01],
+  ['material.clearcoat',    'Clearcoat',     0,  1,   0.02],
+  ['material.sheen',        'Sheen',         0,  1,   0.02],
+  ['material.transmission', 'Transmission',  0,  0.9, 0.02],
 ];
 
-function getPath(obj, path) { return path.split('.').reduce((o, k) => o?.[k], obj); }
+// ── In-menu enemy tester (v93) ────────────────────────────────────────────────
+// A self-contained mini three.js world embedded in the pause menu: the chosen
+// enemy spawns as a live specimen (current CFG + TUNING applied) chasing a
+// ghost target, with HIT/KILL debug buttons. Entirely separate scene — zero
+// contact with wave state, scoring, or collisions; paused-game safe.
+let tester = null;
+function ensureTester() {
+  if (tester) return tester;
+  const canvas = document.createElement('canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+  renderer.setSize(520, 260, false);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x07071a);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.3);
+  sun.position.set(8, 20, 10);
+  scene.add(sun);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(26, 18),
+    new THREE.MeshBasicMaterial({ color: 0x0d0d24 }));
+  floor.rotation.x = -Math.PI / 2;
+  scene.add(floor);
+  const grid = new THREE.GridHelper(24, 18, 0x222248, 0x15152e);
+  grid.position.y = 0.01;
+  scene.add(grid);
+  const camera = new THREE.PerspectiveCamera(45, 2, 0.1, 60);
+  camera.position.set(0, 6.2, 7.6);
+  camera.lookAt(0, 0.7, 0);
+  tester = {
+    canvas, renderer, scene, camera,
+    specimen: null, type: null, t: 0, respawnT: 0, running: false, last: 0,
+    ghost: { x: 3, z: 0 },              // fake player the specimen reacts to
+    stubBullets: { spawnDir() {} },     // firing behaviors no-op safely
+  };
+  return tester;
+}
+function testerSpawn(type) {
+  const T = ensureTester();
+  if (T.specimen) T.specimen.removeFrom(T.scene);
+  T.type = type;
+  T.specimen = new Enemy(T.scene, type, 0, 0, 1, 1);
+  T.respawnT = 0;
+}
+function testerLoop(ts) {
+  const T = tester;
+  if (!T || !T.running) return;
+  requestAnimationFrame(testerLoop);
+  const dt = Math.min(0.05, (ts - T.last) / 1000 || 0.016);
+  T.last = ts;
+  T.t += dt;
+  GOO_TIME.value += dt; // keep goo wobble alive while the game clock is paused
+  T.ghost.x = Math.sin(T.t * 0.5) * 4;
+  T.ghost.z = Math.cos(T.t * 0.65) * 2.6;
+  const s = T.specimen;
+  if (s) {
+    if (s.alive) s.update(dt, T.ghost, T.stubBullets, 11, 7);
+    s.updateDeath(dt);
+    if (!s.alive && !s._dying) {
+      T.respawnT += dt;
+      if (T.respawnT > 1.1) testerSpawn(T.type);
+    }
+  }
+  T.renderer.render(T.scene, T.camera);
+}
+function testerStart() {
+  const T = ensureTester();
+  if (T.running) return;
+  T.running = true;
+  T.last = performance.now();
+  requestAnimationFrame(testerLoop);
+}
+function testerStop() {
+  if (!tester) return;
+  tester.running = false;
+  if (tester.specimen) { tester.specimen.removeFrom(tester.scene); tester.specimen = null; tester.type = null; }
+}
+
+function getPathfunction getPath(obj, path) { return path.split('.').reduce((o, k) => o?.[k], obj); }
 function setPath(obj, path, v) {
   const ks = path.split('.'); const last = ks.pop();
   const target = ks.reduce((o, k) => o?.[k], obj);
@@ -248,6 +278,7 @@ export function initDesigner({ onResume, settings }) {
   }
 
   function hide() {
+    testerStop(); // specimen + its render loop end with the menu
     panel.style.display = 'none';
   }
 
@@ -269,7 +300,6 @@ export function initDesigner({ onResume, settings }) {
     };
 
     addItem(SETTINGS_PAGE, `<span style="width:9px;flex-shrink:0">⚙</span>${t('settings')}`);
-    addItem(TUNING_PAGE, `<span style="width:9px;flex-shrink:0">🎛</span>LIVE TUNING`);
 
     const div = document.createElement('div');
     div.className = 'ddiv';
@@ -290,17 +320,14 @@ export function initDesigner({ onResume, settings }) {
   function renderControls() {
     const el = panel.querySelector('#d-cnt');
     el.innerHTML = '';
-    if (selectedType === SETTINGS_PAGE) renderSettings(el);
-    else if (selectedType === TUNING_PAGE) renderTuning(el);
+    if (selectedType === SETTINGS_PAGE) { testerStop(); renderSettings(el); }
     else renderGameplay(el);
   }
 
-  // ── Live TUNING page (Part 6): sliders write straight into TUNING ────────────
-  function renderTuning(el) {
-    el.appendChild(note('edits apply to the live game on unpause · persisted until RESET'));
-
+  // ── Material presets/sliders + TUNING JSON round-trip (shared section) ────────
+  function renderMaterialAndExport(el) {
     // Material preset chips (v90) — apply a named look onto TUNING.material
-    // and restyle every gel enemy currently on screen.
+    // and restyle every gel enemy (specimen included) instantly.
     el.appendChild(sec('MATERIAL PRESETS'));
     const presetRow = document.createElement('div');
     presetRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px';
@@ -320,15 +347,12 @@ export function initDesigner({ onResume, settings }) {
     }
     el.appendChild(presetRow);
 
-    for (const [heading, rows] of TUNING_ROWS) {
-      el.appendChild(sec(heading));
-      for (const [path, label, min, max, step] of rows) {
-        el.appendChild(slider(label, min, max, step, getPath(TUNING, path), v => {
-          setPath(TUNING, path, v);
-          saveTuning(path, v);
-          if (path.startsWith('material.')) applySatinValues();
-        }));
-      }
+    for (const [path, label, min, max, step] of MATERIAL_ROWS) {
+      el.appendChild(slider(label, min, max, step, getPath(TUNING, path), v => {
+        setPath(TUNING, path, v);
+        saveTuning(path, v);
+        applySatinValues();
+      }));
     }
 
     // Copy / paste the whole TUNING JSON (geometry & spawn-time values included
@@ -367,11 +391,15 @@ export function initDesigner({ onResume, settings }) {
         out.value = '// paste valid TUNING JSON above, then APPLY\n' + out.value;
       }
     });
+    const labBtn = document.createElement('button');
+    labBtn.className = 'dbtn';
+    labBtn.textContent = 'OPEN FULL LAB ↗';
+    labBtn.addEventListener('click', () => window.open('enemy-lab.html', '_blank'));
     btnRow.appendChild(copyBtn);
     btnRow.appendChild(applyBtn);
+    btnRow.appendChild(labBtn);
     el.appendChild(btnRow);
     el.appendChild(out);
-    el.appendChild(note('segment geometry & lob cooldown apply on next spawn (cooldown lives in the enemy pages as Fire Interval)'));
   }
 
   // ── Settings page (moved here from the title screen in v81) ───────────────────
@@ -405,20 +433,38 @@ export function initDesigner({ onResume, settings }) {
       el.appendChild(hint);
     }
 
-    el.appendChild(sec('ENEMY LAB'));
-    {
-      const btn = document.createElement('button');
-      btn.className = 'dbtn dxbtn';
-      btn.textContent = 'OPEN ENEMY LAB ↗';
-      btn.addEventListener('click', () => window.open('enemy-lab.html', '_blank'));
-      el.appendChild(btn);
-      el.appendChild(note('standalone visual tester for the enemy overhaul — separate page, does not affect this run'));
-    }
   }
 
-  // ── Enemy tuning ──────────────────────────────────────────────────────────────
+  // ── Enemy page: live specimen tester + tuning sliders ────────────────────────
   function renderGameplay(el) {
     const cfg = CFG[selectedType];
+
+    // Specimen viewport — the selected enemy runs live in its own mini scene.
+    const T = ensureTester();
+    T.canvas.style.cssText =
+      'width:100%;max-width:520px;display:block;border:1px solid #141428;border-radius:4px;margin-bottom:8px';
+    el.appendChild(T.canvas);
+    if (T.type !== selectedType || !T.specimen) testerSpawn(selectedType);
+    testerStart();
+    const dbgRow = document.createElement('div');
+    dbgRow.style.cssText = 'display:flex;gap:10px;margin-bottom:14px';
+    const mkDbg = (label, fn) => {
+      const b = document.createElement('button');
+      b.className = 'dbtn';
+      b.textContent = label;
+      b.addEventListener('click', fn);
+      dbgRow.appendChild(b);
+    };
+    mkDbg('HIT', () => {
+      const s = T.specimen;
+      if (s && s.alive) {
+        const a = Math.random() * Math.PI * 2;
+        s.hit(s.position.x + Math.cos(a), s.position.z + Math.sin(a));
+      }
+    });
+    mkDbg('KILL', () => { if (T.specimen && T.specimen.alive) T.specimen.destroy(); });
+    mkDbg('RESPAWN', () => testerSpawn(selectedType));
+    el.appendChild(dbgRow);
 
     function cfgSlider(label, min, max, step, key) {
       return slider(label, min, max, step, cfg[key], v => { CFG[selectedType][key] = v; saveCFG(); });
@@ -455,6 +501,7 @@ export function initDesigner({ onResume, settings }) {
     }));
 
     el.appendChild(mkExport());
+    renderMaterialAndExport(el);
   }
 
   // ── DOM helpers ───────────────────────────────────────────────────────────────
