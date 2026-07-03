@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=42';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=42';
-import { Player, PLAYER_RADIUS } from './player.js?v=42';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=42';
-import { audio } from './audio.js?v=42';
-import { initDesigner } from './designer.js?v=42';
-import { t, getLang, setLang, langs } from './lang.js?v=42';
-import { TUNING } from './tuning.js?v=42';
+import { InputManager } from './input.js?v=43';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=43';
+import { Player, PLAYER_RADIUS } from './player.js?v=43';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=43';
+import { audio } from './audio.js?v=43';
+import { initDesigner } from './designer.js?v=43';
+import { t, getLang, setLang, langs } from './lang.js?v=43';
+import { TUNING } from './tuning.js?v=43';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -660,7 +660,7 @@ const WEAPON_PODS = {
 // case a pod is ever re-added.
 const LV1_WEAPONS = ['S', 'B', 'L', 'R'];
 const LV2_WEAPONS = ['S2', 'B2', 'L2', 'R2'];
-const NON_WEAPON_COLORS = { hp: 0xff4466, invincible: 0xffffff, firerate: 0xff88aa, scoremult: 0xffdd22 };
+const NON_WEAPON_COLORS = { hp: 0xff4466, invincible: 0xffffff, firerate: 0xff88aa, scoremult: 0xffdd22, score: 0x88ff88 };
 
 function randomWeaponPodId(lv2Allowed = false) {
   if (lv2Allowed && Math.random() < 0.28) return LV2_WEAPONS[Math.floor(Math.random() * LV2_WEAPONS.length)];
@@ -1522,7 +1522,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v88', 16, uiCanvas.height - 12);
+  ctx.fillText('v89', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2453,10 +2453,15 @@ function loop() {
             puA._life = puB._life = 12.0;
             powerups.push(puA, puB);
           } else {
-            // Single random weapon pod drifting from kill position
+            // Single drop drifting from the kill position. Moths carry more
+            // than weapons (v89): mostly pods, sometimes pure score or a
+            // score-multiplier orb.
+            const roll = Math.random();
+            const dropType = roll < 0.55 ? randomWeaponPodId(lv2Ok)
+                           : roll < 0.80 ? 'score' : 'scoremult';
             const driftAngle = Math.random() * Math.PI * 2;
             const driftSpeed = 0.8 + Math.random() * 0.6;
-            const pu = new Powerup(scene, kx, kz, randomWeaponPodId(lv2Ok),
+            const pu = new Powerup(scene, kx, kz, dropType,
               Math.cos(driftAngle) * driftSpeed, Math.sin(driftAngle) * driftSpeed);
             pu._life = 7.0;
             powerups.push(pu);
@@ -2603,6 +2608,10 @@ function loop() {
         player.hp = Math.min(player.maxHp, player.hp + 1);
       } else if (pu._type === 'firerate') {
         player.grantFireRateBoost(8.0);
+      } else if (pu._type === 'score') {
+        // Instant score nugget (v89) — worth more in later waves, doubled by
+        // an active Score Multiplier.
+        score += (250 + wave * 25) * (scoreMultT > 0 ? 2 : 1);
       } else if (pu._type === 'scoremult') {
         scoreMultT = 10.0;
       }
