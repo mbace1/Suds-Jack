@@ -7,103 +7,28 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v99 — 2026-07-03
-**SPLITTA cleanup: no embedded bulges, always splits into exactly 3 small blobs**
-- The two child domes bulging inside SPLITTA's body (added in v82 as the split preview) are removed — the body is clean gel now; the split is telegraphed by its low-HP nervous pulse (v58) and its stronger breathe (0.18 vs 0.13)
-- On death SPLITTA now always spawns **3** GLOBBO children (was a coin-flip between 2 and 3)
-- Cache-bust `?v=52` → `?v=53`; HUD label → v99
-
----
-
-## v98 — 2026-07-03
-**Removed the "eyes" from enemy blobs (the v73 accent beacons)**
-- The glowing dot beacons added in v73 (GLOBBO forward dot, SPITTOR mouth dot, FANNER 3-dot fan, WEEVA orbiting dot, SPLITTA twin "eyes") are gone — they were added when all blobs shared one shader and were hard to tell apart, but since the Part 2 port every blob reads by silhouette (snouty/pancake/tall/squat) and motion tell (lunge/inflate/vibrate/sway/bulges), so the dots were just clutter on the gel
-- SPLITTA's internal child bulges stay — that's the split preview, not decoration
-- WEEVA's beacon-orbit update code and the marker plumbing removed with it
-- Cache-bust `?v=51` → `?v=52`; HUD label → v98
-
----
-
-## v97 — 2026-07-03
-**PERFORMANCE MODE toggle for weaker phones**
-- New **PERFORMANCE MODE** toggle on the pause-menu SETTINGS page (persisted `tokoDropPerf`, localized en/ja/fi): drops render resolution (pixelRatio cap 2 → 1.25) and zeroes material transmission across `TUNING.material` + all family overrides, which makes three.js skip its transmission render pass entirely — the two big GPU costs since v90's physical materials
-- Fully reversible live: original transmission values are stashed and restored on toggle-off, then `applySatinValues()` restyles everything on screen; applied at boot from the saved setting
-- Player satin migration (the conditional second half of the v97 plan) deferred until the v96 specialist look gets a verdict
-- Cache-bust `?v=50` → `?v=51`; HUD label → v97
-
----
-
-## v96 — 2026-07-03
-**Visual unification: satin gel materials extend to the specialists + moths**
-- TORO (wheel + rim spikes, now sharing one material), BAMBU (whole stalk + lips), PYRA (ring + cones), and OMEGA now render with the v90 `MeshPhysicalMaterial` satin system instead of `MeshPhong` — every enemy family speaks the same material language, and all respond to the pause-menu material presets/sliders live
-- New per-family looks in `TUNING.material.families`: `toro`/`pyra` = hard candy-glass (roughness 0.10, transmission 0.25), `bambu` = matte woody (roughness 0.20, transmission 0.10), `omega` = glassy-hard crystal (roughness 0.04, transmission 0.40) so the boss keeps its crystal read
-- Cargo moths join the satin blob family too
-- **Player deliberately unchanged** — its goo material drives dash/stretch uniforms from `player.js`; migrating it is v97's call, pending the verdict on this look
-- Verified with `scripts/smoke.sh` (boot clean + all-17-types harness ALL OK)
-- Cache-bust `?v=49` → `?v=50`; HUD label → v96
-
----
-
-## v95 — 2026-07-03
-**Gentler on-ramp (waves 1–5 only) + automated headless smoke test**
-- **Early waves are very slightly easier**: waves 1–5 shave a bit of enemy speed (−0.06 at wave 1, fading linearly to 0 by wave 6: 1.10→1.04, 1.19→1.14, 1.28→1.24, 1.37→1.35, 1.46→1.45) and spawn ~1 fewer enemy per wave (budget ×0.85 at wave 1, fading to ×1.0 by wave 6). **Wave 6 onward is numerically identical to before** — fire rates, caps, wave rhythm, unlock gates, and the post-10 curve untouched. Verified old-vs-new in node for waves 1–8
-- **`scripts/smoke.sh`**: the headless testbed from the v93/v94 incident, automated — vendors three.js from npm, copies the game with a local importmap, boots `index.html` in headless Chromium (fails on any uncaught error), and runs a harness that spawns all 17 enemy types, steps 30 frames, and does a hit/kill pass. Runs before every merge from now on
-- Cache-bust `?v=48` → `?v=49`; HUD label → v95
-
----
-
-## v94 — 2026-07-03
-**HOTFIX: game black-screened since v93 (SyntaxError in designer.js) + a real syntax gate**
-- `designer.js:97` contained `function getPathfunction getPath(...)` — a stray fragment from the v93 tester refactor glued onto the real definition. `main.js` imports `designer.js` at boot, so the SyntaxError killed the whole module graph → nothing loaded
-- **Why it shipped**: `node --check` silently exits 0 on ES modules (it only parses CommonJS) — every syntax check in the v79–v93 pipeline was a no-op. Diagnosed by loading the game in headless Chromium against a local three.js testbed, which surfaced the exact console error
-- **New gate**: `scripts/check-syntax.sh` compiles every `toko-drop/js/*.js` as a real ES module (`vm.SourceTextModule`) — verified to catch this exact error — and `scripts/pre-commit` now runs it whenever game files are staged, so a parse-broken file can no longer be committed (re-install hook: `cp scripts/pre-commit .git/hooks/pre-commit`)
-- Verified end-to-end in the headless testbed: full game boots to the title with zero console errors; the enemy harness (spawn all 17 types → 30 update frames → hit/kill pass) reports ALL OK
-- *Deploy note*: GitHub Pages' deployment of the first v94 push failed on GitHub's side ("Deployment failed, try again later") and the re-run sat queued, so the site kept serving broken v93 — a follow-up commit re-triggered the Pages build
-- Cache-bust `?v=47` → `?v=48`; HUD label → v94
-
----
-
-## v93 — 2026-07-03
-**In-menu enemy tester replaces the LIVE TUNING page — pause menu simplified**
-- **Each enemy page now opens with a live specimen viewport**: the selected enemy spawns in a self-contained mini three.js scene embedded in the pause menu (own renderer/camera/lights/grid floor) — it moves, telegraphs, breathes, and wears the current CFG + TUNING + material values, chasing a ghost target. **HIT / KILL / RESPAWN** debug buttons poke it (HIT pops BAMBU segments and PYRA holes too); killed specimens play their death anim and auto-respawn. Zero contact with wave state — separate scene, stub bullet pool, no scoring/collisions, torn down on resume
-- **LIVE TUNING page removed** (per request): the 31 behavior sliders are gone; the **material presets + 5 material sliders + COPY/APPLY TUNING JSON** moved to the bottom of every enemy page (behavior values remain reachable via APPLY PASTED JSON). Persisted `tokoTUNING` edits still load and apply
-- **SETTINGS slimmed to volume + reduce-motion only** — the OPEN ENEMY LAB button moved next to the JSON tools as OPEN FULL LAB ↗ (the in-menu tester covers the common case now)
-- `GOO_TIME` is advanced by the tester loop while paused so goo wobble stays alive in the preview
-- Pause menu is now: ⚙ SETTINGS · ENEMIES (17 tester pages) — the requested structure
-- Cache-bust `?v=46` → `?v=47`; HUD label → v93
-
----
-
-## v92 — 2026-07-03
-**Weapon pickup simplified: convoy-clear drops one pod, not a 2-choice pair**
-- Clearing every moth before any escape now drops a **single random weapon pod** (same generous 12s pickup window) instead of two side-by-side pods where grabbing one deleted the other — the choice moment was more UI than fun and read poorly mid-swarm
-- The reward structure is otherwise unchanged: full clear still guarantees a weapon (vs. the 55/25/20 pod/score/multiplier roll on partial kills)
-- `_pairedWith` pickup-pairing plumbing removed (spawn, collection-dismissal, and field init) — the 2-choice mechanic has no other users
-- Cache-bust `?v=45` → `?v=46`; HUD label → v92
-
----
-
-## v91 — 2026-07-03
-**Title-screen fix: stray vertical line + squeezed buttons (overlay scrollbar)**
-- The reported vertical line on the intro screen's right side was the `#overlay` scrollbar introduced by v80's crop fix: on screens where the title content overflows `100svh`, `overflow-y:auto` + `scrollbar-width:thin` rendered a thin track, and its gutter narrowed the centered column — which is what shifted the button layout
-- Overlay is now scrollable but chromeless: `scrollbar-width:none` + `::-webkit-scrollbar{display:none}` (touch/wheel scrolling unaffected), plus `overscroll-behavior:contain` so overlay scrolling can't chain anywhere
-- No layout/geometry changes beyond removing the gutter — buttons return to their full-width centering
-- Cache-bust `?v=44` → `?v=45`; HUD label → v91
-
----
-
-## v90 — 2026-07-03
-**Satin gel materials: TUNING.material goes live (MeshPhysicalMaterial port of the lab's satinGoo)**
-- **Blobs and cubes now render with `MeshPhysicalMaterial`** — clearcoat, sheen, transmission, thickness/IOR, attenuation — driven by `TUNING.material` with per-family overrides (cube = firmer candy-glass: roughness 0.10, transmission 0.25). This is the lab's `satinGoo()` look replacing the custom goo `ShaderMaterial` (blobs) and `MeshPhong` (cubes)
-- **Nothing animated was lost**: the goo vertex FX (radius-normalized lumps, directional hit ripple, pre-death tear) are injected into the physical material via `onBeforeCompile`, and the lab's soft-translucency glow (back-light SSS + wrap lighting) is added into the emissive term. Emissive flashes/telegraph tints and death fades work through the material's native `.emissive`/`.opacity`
-- **Live restyling**: every satin material registers in a set (`SATIN_MATS`, pruned on despawn); `applySatinValues()` pushes `TUNING.material` onto all of them — so the LIVE TUNING page's new **MATERIAL PRESETS** row (SATIN/JELLY/GLASSY/CANDY/CLAY/NEON via `applyMaterialPreset`) and **5 material sliders** (SSS/roughness/clearcoat/sheen/transmission) restyle enemies already on screen. This un-defers the last piece of Part 6
-- Player, TORO torus, BAMBU stalk, PYRA ring, OMEGA crystal keep their existing materials for now (the gel *families* were the scope; specialists can follow if the look lands)
-- Preset/slider edits persist via the same touched-paths `tokoTUNING` mechanism
-- Cache-bust `?v=43` → `?v=44`; HUD label → v90
+## v100 — 2026-07-03
+**Trail rework: afterimages trail BEHIND movers; SLUDGE lays one continuous ribbon**
+- **Motion-trail afterimages** now spawn one body-radius behind the mover along its velocity — previously they spawned at the mover's exact position, so each ghost was born inside/under the body and mostly hidden before it faded (the "trails are under the blobs" report)
+- **SLUDGE's poison trail is a single continuous ribbon** instead of a chain of filled circles: `PoisonZone` is now an invisible pure-damage hazard (same lingering damage, same lethal window), and the existing `SludgeRibbon` is promoted to the one visual — widened to match the poison hitbox (`enemy.radius × 1.5` half-width vs the zones' ×1.8 radius), pulsing saturated green while the trail is lethal, fading out over 2s when the cube dies. The v60 "spent zone desaturates" read carries over: the ribbon's ring-buffer tail drops old points on roughly the same clock as the zones expire
+- YELA's small slime dots unchanged (only sludge was the complaint)
+- Cache-bust `?v=53` → `?v=54`; HUD label → v100
 
 ---
 
 ## Archive
+
+**v90–v99 summary (2026-07-03)**
+- v90: Satin gel materials — TUNING.material live via MeshPhysicalMaterial (blobs+cubes), goo vertex FX preserved via onBeforeCompile, presets/sliders restyle live
+- v91: Title-screen fix — overlay scrollbar hidden (stray vertical line + squeezed buttons)
+- v92: Convoy-clear drops a single weapon pod (2-choice pair removed)
+- v93: In-menu enemy tester (mini-scene specimen viewport per enemy page, HIT/KILL/RESPAWN); LIVE TUNING page folded into enemy pages; SETTINGS = volume + reduce-motion
+- v94: HOTFIX — v93 shipped a designer.js SyntaxError (game black-screened; node --check no-ops on ESM); added scripts/check-syntax.sh gate + headless testbed diagnosis; Pages deploy also failed transiently and needed a re-trigger
+- v95: Gentler waves 1–5 (speed −0.012·(6−wave), budget ×0.85→×1.0; wave 6+ identical) + scripts/smoke.sh headless boot/harness test
+- v96: Satin materials extended to TORO/BAMBU/PYRA/OMEGA + moths with per-family looks
+- v97: PERFORMANCE MODE toggle — pixelRatio 1.25 + transmission off, reversible live
+- v98: Removed the blob "eye" beacons (v73) — blobs read by silhouette + motion tell
+- v99: SPLITTA — embedded bulges removed, always splits into exactly 3 GLOBBOs
 
 **v80–v89 summary (2026-07-02 – 2026-07-03)**
 - v80: Landscape crop fix (scrollable #overlay + rotation-safe canvas resize + viewport-fit=cover); shipped v78/v79 tuning prep

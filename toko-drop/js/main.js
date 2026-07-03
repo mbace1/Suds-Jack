@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=53';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=53';
-import { Player, PLAYER_RADIUS } from './player.js?v=53';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=53';
-import { audio } from './audio.js?v=53';
-import { initDesigner } from './designer.js?v=53';
-import { t, getLang, setLang, langs } from './lang.js?v=53';
-import { TUNING } from './tuning.js?v=53';
+import { InputManager } from './input.js?v=54';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=54';
+import { Player, PLAYER_RADIUS } from './player.js?v=54';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=54';
+import { audio } from './audio.js?v=54';
+import { initDesigner } from './designer.js?v=54';
+import { t, getLang, setLang, langs } from './lang.js?v=54';
+import { TUNING } from './tuning.js?v=54';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -430,55 +430,18 @@ class Puddle {
   remove(sc) { sc.remove(this.mesh); }
 }
 
+// Poison hazard (v100): pure damage data — no meshes. The SLUDGE trail is
+// drawn as ONE continuous ribbon (SludgeRibbon below) instead of a chain of
+// filled circles; these invisible zones just carry the lingering damage.
 class PoisonZone {
   constructor(sc, x, z, radius) {
     this._life = 3.5;
-    this._t = 0;
+    this.x = x; this.z = z;
     this.radius = radius;
-    // Toxic fill.
-    this.mat = new THREE.MeshBasicMaterial({
-      color: 0x88cc00, transparent: true, opacity: 0.5, depthWrite: false,
-    });
-    this.mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, 24), this.mat);
-    this.mesh.rotation.x = -Math.PI / 2;
-    this.mesh.position.set(x, 0.015, z);
-    sc.add(this.mesh);
-    // Warning rim — a bright pulsing outline on the lethal edge while the zone
-    // is active, so the player can read exactly where (and when) it hurts.
-    this.rimMat = new THREE.MeshBasicMaterial({
-      color: 0xccff33, transparent: true, opacity: 0.8,
-      side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false,
-    });
-    this.rim = new THREE.Mesh(new THREE.RingGeometry(radius * 0.8, radius, 32), this.rimMat);
-    this.rim.rotation.x = -Math.PI / 2;
-    this.rim.position.set(x, 0.02, z);
-    sc.add(this.rim);
   }
   get isDangerous() { return this._life > 1.0; }
-  update(dt) {
-    this._life -= dt;
-    this._t += dt;
-    if (this._life > 1.0) {
-      // Active hazard — saturated, pulsing fill + bright pulsing rim.
-      const pulse = 0.5 + 0.5 * Math.abs(Math.sin(this._t * 6));
-      this.mat.color.setHex(0x88cc00);
-      this.mat.opacity = 0.38 + 0.22 * pulse;
-      this.rim.visible = true;
-      this.rimMat.opacity = 0.45 + 0.45 * pulse;
-      this.rim.scale.setScalar(1 + 0.05 * pulse);
-    } else {
-      // Spent — desaturate to a dull grey-green and drop the rim: reads as safe.
-      this.rim.visible = false;
-      this.mat.color.setHex(0x556644);
-      this.mat.opacity = 0.22 * (this._life / 1.0);
-    }
-    return this._life > 0;
-  }
-  remove(sc) {
-    sc.remove(this.mesh); sc.remove(this.rim);
-    this.mesh.geometry.dispose(); this.rim.geometry.dispose();
-    this.mat.dispose(); this.rimMat.dispose();
-  }
+  update(dt) { this._life -= dt; return this._life > 0; }
+  remove(sc) {}
 }
 
 class SlimeTrail {
@@ -524,19 +487,26 @@ class SludgeRibbon {
     });
     this.mesh = new THREE.Mesh(this._geo, this.mat);
     this.mesh.position.y = 0.015;
+    this._t = 0;
     sc.add(this.mesh);
   }
   update(dt) {
+    this._t += dt;
     if (!this._enemy.alive && !this._fading) this._fading = true;
     if (this._fading) {
       this._fadeLife -= dt;
       this.mat.opacity = 0.4 * Math.max(0, this._fadeLife / 2.0);
       if (this._fadeLife <= 0) return false;
+    } else {
+      // The ribbon IS the hazard visual now (v100): saturated pulse while the
+      // trail is being laid (its zones are lethal), fade handled above.
+      this.mat.opacity = 0.35 + 0.2 * Math.abs(Math.sin(this._t * 5));
     }
     const pts = this._enemy._trailPositions;
     const n   = pts ? pts.length : 0;
     if (n >= 2) {
-      const hw = 0.4;
+      // Width matches the poison hitbox (zones spawn at enemy.radius * 1.8).
+      const hw = this._enemy.radius * 1.5;
       for (let i = 0; i < n; i++) {
         let tx, tz;
         if (i < n - 1) { tx = pts[i+1].x - pts[i].x; tz = pts[i+1].z - pts[i].z; }
@@ -1562,7 +1532,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v99', 16, uiCanvas.height - 12);
+  ctx.fillText('v100', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2315,8 +2285,15 @@ function loop() {
   for (const e of enemies) {
     if (!e._motionTrailReady) continue;
     e._motionTrailReady = false;
-    const p = e.position;
-    trailPool.spawn(p.x, e.fxY, p.z, e.color, e.radius * e._trailMult);
+    // Spawn one body-radius behind the mover along its velocity (v100) — at
+    // the mover's own position the ghost was hidden inside/under the body.
+    const p  = e.position;
+    const vs = Math.hypot(e._velX, e._velZ) || 1;
+    trailPool.spawn(
+      p.x - (e._velX / vs) * e.radius * 1.1,
+      e.fxY,
+      p.z - (e._velZ / vs) * e.radius * 1.1,
+      e.color, e.radius * e._trailMult);
   }
 
   // BAMBU lob splashdowns (Part 5); drain hitChunks for all enemies
@@ -2667,8 +2644,8 @@ function loop() {
   if (!player.invincible) {
     for (const z of poisonZones) {
       if (!z.isDangerous) continue;
-      const dx = player.position.x - z.mesh.position.x;
-      const dz = player.position.z - z.mesh.position.z;
+      const dx = player.position.x - z.x;
+      const dz = player.position.z - z.z;
       if (Math.hypot(dx, dz) < z.radius + PLAYER_RADIUS) {
         if (tryHitPlayer('poison', EnemyType.SLUDGE_CUBE)) { triggerGameOver(); break; }
         break;
