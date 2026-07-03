@@ -2,19 +2,18 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=9';
-import { Player } from './player.js?v=9';
-import { Enemy, COST } from './enemy.js?v=9';
-import { ProjectilePool } from './projectile.js?v=9';
-import { C, glow, FILL_MAT } from './shared.js?v=9';
-import { audio } from './audio.js?v=9';
-import { t, getLang, setLang, langs } from './lang.js?v=9';
-import { visualTest, depthTest, setVisualTest, setDepthTest } from './modes.js?v=9';
-import { shards, UPGRADES, levelOf, canBuy, buy, addShards, resolvedStats } from './progress.js?v=9';
+import { InputManager } from './input.js?v=10';
+import { Player } from './player.js?v=10';
+import { Enemy, COST } from './enemy.js?v=10';
+import { ProjectilePool } from './projectile.js?v=10';
+import { C, glow, applyPalette } from './shared.js?v=10';
+import { audio } from './audio.js?v=10';
+import { t, getLang, setLang, langs } from './lang.js?v=10';
+import { visualTest, depthTest, setVisualTest, setDepthTest } from './modes.js?v=10';
+import { shards, UPGRADES, levelOf, canBuy, buy, addShards, resolvedStats } from './progress.js?v=10';
 import { seenWelcome, seenDash, seenDoubleJump, seenHazard, seenObjective,
-  markWelcome, markDash, markDoubleJump, markHazard, markObjective } from './onboarding.js?v=9';
+  markWelcome, markDash, markDoubleJump, markHazard, markObjective } from './onboarding.js?v=10';
 
 const css = h => '#' + (h >>> 0).toString(16).padStart(6, '0').slice(-6);
 let runTime = 0;   // declared early: heightAt()/updatePlatforms() close over this for moving platforms, and buildTerrain() runs at module load
@@ -46,32 +45,10 @@ applyOrient(orientLandscape);
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 const bloomRes = LOW_TIER ? new THREE.Vector2(innerWidth / 2, innerHeight / 2) : new THREE.Vector2(innerWidth, innerHeight);
-const bloom = new UnrealBloomPass(bloomRes, visualTest ? 0.62 : 0.35, 0.5, 0.0);
+const bloom = new UnrealBloomPass(bloomRes, 0.35, 0.5, 0.0);
+bloom.enabled = !visualTest;   // desert daylight has no neon glow — bloom is a night-mode effect
 composer.addPass(bloom);
-// Visual Test's "Neon Arcade" pass: RGB channel split + scrolling scanlines. Off by
-// default (enabled toggled with the mode), lets Visual Test read as a genuinely
-// different render pipeline rather than just recolored edges.
-const NEON_SHADER = {
-  uniforms: { tDiffuse: { value: null }, time: { value: 0 } },
-  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
-  fragmentShader: `
-    uniform sampler2D tDiffuse; uniform float time; varying vec2 vUv;
-    void main() {
-      vec2 uv = vUv;
-      float shift = 0.0035;
-      float r = texture2D(tDiffuse, uv + vec2(shift, 0.0)).r;
-      float g = texture2D(tDiffuse, uv).g;
-      float b = texture2D(tDiffuse, uv - vec2(shift, 0.0)).b;
-      vec3 col = vec3(r, g, b);
-      col -= max(0.0, sin(uv.y * 340.0 + time * 2.0)) * 0.06;
-      gl_FragColor = vec4(col, 1.0);
-    }`,
-};
-const neonPass = new ShaderPass(NEON_SHADER);
-neonPass.enabled = visualTest;
-composer.addPass(neonPass);
 composer.addPass(new OutputPass());
-FILL_MAT.color.setHex(visualTest ? 0x170022 : 0x000000);   // Visual Test: dark violet fill instead of pure black
 
 // ── Terrain (elevation above 0 + canyons below 0) ──────────────────────────────
 // Flat surfaces (platforms/steps) + linear ramps rise above the y=0 plane; pit
@@ -126,51 +103,49 @@ const NORMAL = {
     { x: 62, z: 0 }, { x: -62, z: 55 }, { x: 55, z: -62 }, { x: -14, z: -62 },
   ],
 };
-// Depth Test: "THE ABYSS" — a radically different landscape from NORMAL's canyon-in-
-// flat-ground. There is no continuous ground at all: a small spawn plateau, four long
-// walkable ramp-arms climbing/descending out to floating islands, and nothing else —
-// step off any of it and you fall into a bottomless void (fall death, see loop()).
-// Ramps stay walkable (no jump needed) because the slope is gradual over a long run;
-// jump height in this game is tiny (~2 units), so big elevation changes are always
-// bridged by a long ramp, never a ledge.
-function depthArm(axis, dir, run, rise, halfW, islandDepth, islandHalfW) {
-  const near = 16, far = near + run;
-  const ramp = axis === 'z'
-    ? { x0: -halfW, x1: halfW, z0: dir < 0 ? -far : near, z1: dir < 0 ? -near : far, hA: dir < 0 ? rise : 0, hB: dir < 0 ? 0 : rise, axis: 'z' }
-    : { x0: dir < 0 ? -far : near, x1: dir < 0 ? -near : far, z0: -halfW, z1: halfW, hA: dir < 0 ? rise : 0, hB: dir < 0 ? 0 : rise, axis: 'x' };
-  const islandCenter = dir < 0 ? -(far + islandDepth / 2) : (far + islandDepth / 2);
-  const island = axis === 'z'
-    ? { x0: -islandHalfW, x1: islandHalfW, z0: islandCenter - islandDepth / 2, z1: islandCenter + islandDepth / 2, top: rise }
-    : { x0: islandCenter - islandDepth / 2, x1: islandCenter + islandDepth / 2, z0: -islandHalfW, z1: islandHalfW, top: rise };
-  return { ramp, island };
-}
-const ARM_N = depthArm('z', +1, 48, 20, 9, 20, 13);    // north — climbs up to a high vista island
-const ARM_S = depthArm('z', -1, 48, -16, 9, 20, 13);   // south — descends to a sunken island
-const ARM_E = depthArm('x', +1, 44, 16, 9, 20, 13);    // east — climbs up
-const ARM_W = depthArm('x', -1, 44, -14, 9, 20, 13);   // west — descends
+// Depth Test: "CANYON RUN" — a long walled corridor along the z axis with a constant
+// forward push (see CANYON_PUSH / the drift passed into player.update). Boulders to
+// jump or dodge, sweeper platforms sliding wall-to-wall, hazard pools, and objective
+// beacons strung down the run. Reaching the far end wraps you back to the start for
+// another lap (canyonLoops counter + a small heal). 12-high walls line both sides —
+// enemies spawning beyond them land on the rim and snipe down into the run.
 const DEPTH = {
-  arenaR: 112,
-  flats: [], ramps: [ARM_N.ramp, ARM_E.ramp],       // rising arms use the elevated (Math.max) composition
-  pitFloors: [],
-  pitRamps: [ARM_S.ramp, ARM_W.ramp],               // descending arms use the pit (Math.min) composition
-  pitWalls: [],
-  roofs: [],
-  islands: [
-    { x0: -16, x1: 16, z0: -16, z1: 16, top: 0 },   // spawn plateau
-    ARM_N.island, ARM_S.island, ARM_E.island, ARM_W.island,
-    { x0: 55, x1: 75, z0: 40, z1: 60, top: 20 },     // satellite off the east/north high islands (same height, jump/dash gap)
+  arenaR: 170,
+  flats: [
+    { x0: -80, x1: -14, z0: -160, z1: 160, top: 12 },   // west canyon wall (wide — spawns land on top)
+    { x0: 14,  x1: 80,  z0: -160, z1: 160, top: 12 },   // east canyon wall
+    // boulders: 1.6-high are jumpable, 2.6-high must be dodged around
+    { x0: -12, x1: -5, z0: 118,  z1: 124,  top: 1.6 },
+    { x0: 3,   x1: 12, z0: 92,   z1: 98,   top: 2.6 },
+    { x0: -4,  x1: 4,  z0: 66,   z1: 71,   top: 1.6 },
+    { x0: -13, x1: -6, z0: 40,   z1: 46,   top: 2.6 },
+    { x0: 5,   x1: 13, z0: 16,   z1: 22,   top: 1.6 },
+    { x0: -9,  x1: -1, z0: -12,  z1: -6,   top: 2.6 },
+    { x0: 2,   x1: 11, z0: -40,  z1: -34,  top: 1.6 },
+    { x0: -12, x1: -4, z0: -70,  z1: -64,  top: 2.6 },
+    { x0: -2,  x1: 6,  z0: -100, z1: -94,  top: 1.6 },
+    { x0: 6,   x1: 13, z0: -128, z1: -122, top: 2.6 },
   ],
-  voidFloor: -500,   // heightAt() default off any island — falling here is fatal, see loop()'s void check
+  ramps: [],
+  pitFloors: [], pitRamps: [], pitWalls: [], roofs: [],
+  islands: [], voidFloor: 0,
   hazards: [
-    { x: 0, z: -74, r: 6, dps: 20 },                 // electrified pool on the sunken south island
+    { x: -6, z: 80,   r: 4, dps: 18 },
+    { x: 6,  z: -52,  r: 4, dps: 18 },
+    { x: 0,  z: -115, r: 5, dps: 18 },
   ],
-  movingPlatforms: [
-    { x0: 60, x1: 70, z0: 16, z1: 40, top: 18, axis: 'z', amp: 12, speed: 0.3, phase: 0 },   // bridges the east island to its satellite
+  movingPlatforms: [   // sweepers — 2.6-high sliding blocks that sweep wall-to-wall; time your way past
+    { x0: -5, x1: 5, z0: 52,  z1: 56,  top: 2.6, axis: 'x', amp: 9, speed: 0.6,  phase: 0 },
+    { x0: -5, x1: 5, z0: -22, z1: -18, top: 2.6, axis: 'x', amp: 9, speed: 0.45, phase: 2 },
+    { x0: -5, x1: 5, z0: -82, z1: -78, top: 2.6, axis: 'x', amp: 9, speed: 0.7,  phase: 4 },
   ],
   objSpots: [
-    { x: 0, z: 74 }, { x: 0, z: -74 }, { x: 70, z: 0 }, { x: -70, z: 0 }, { x: 65, z: 50 },
+    { x: 0, z: 130 }, { x: -8, z: 75 }, { x: 8, z: 30 }, { x: 0, z: -20 },
+    { x: -8, z: -60 }, { x: 8, z: -108 }, { x: 0, z: -140 },
   ],
 };
+const CANYON_PUSH = 5.5;         // constant forward drift (toward -z) while Depth Test is on
+const CANYON_END = 148;          // |z| where the run wraps back to the start
 
 let ARENA_R = NORMAL.arenaR, flats = [], ramps = [], pitFloors = [], pitRamps = [], pitWalls = [], roofs = [], hazards = [], movingPlatforms = [], islands = [], voidFloor = 0, OBJ_SPOTS = [];
 // A ramp's height varies along z by default (the original, still-used convention);
@@ -248,33 +223,30 @@ function buildTerrain() {
   hazards = D.hazards ?? []; movingPlatforms = D.movingPlatforms ?? []; islands = D.islands ?? []; voidFloor = D.voidFloor ?? 0; OBJ_SPOTS = D.objSpots;
   scene.fog.far = ARENA_R * 2.1;
 
-  // NORMAL: a black ground plane (with canyon holes cut in) + faint grid — continuous
-  // ground everywhere except the carved pits. Depth Test has NO ground plane at all —
-  // it's a void by design (see islands/voidFloor above) — only the boundary ring stays.
-  if (!depthTest) {
-    const GS = ARENA_R * 1.2;
-    const groundShape = new THREE.Shape();
-    groundShape.moveTo(-GS, -GS); groundShape.lineTo(GS, -GS); groundShape.lineTo(GS, GS); groundShape.lineTo(-GS, GS); groundShape.closePath();
-    const cutHole = (x0, x1, z0, z1) => {
-      const h = new THREE.Path();
-      h.moveTo(x0, -z0); h.lineTo(x1, -z0); h.lineTo(x1, -z1); h.lineTo(x0, -z1); h.closePath();
-      groundShape.holes.push(h);
-    };
-    for (const p of pitFloors) cutHole(p.x0, p.x1, p.z0, p.z1);
-    for (const pr of pitRamps) cutHole(pr.x0, pr.x1, pr.z0, pr.z1);
-    groundMesh = new THREE.Mesh(new THREE.ShapeGeometry(groundShape), new THREE.MeshBasicMaterial({ color: 0x050505 }));
-    groundMesh.rotateX(-Math.PI / 2); scene.add(groundMesh);
-    const gridDiv = Math.round(ARENA_R * 40 / 47);
-    grid = new THREE.GridHelper(ARENA_R * 2, gridDiv, C.dim, C.dim);
-    grid.material.transparent = true; grid.material.opacity = 0.45; scene.add(grid);
-  }
+  // ground plane (with holes cut over any pit regions) + faint grid + boundary ring
+  const GS = ARENA_R * 1.2;
+  const groundShape = new THREE.Shape();
+  groundShape.moveTo(-GS, -GS); groundShape.lineTo(GS, -GS); groundShape.lineTo(GS, GS); groundShape.lineTo(-GS, GS); groundShape.closePath();
+  const cutHole = (x0, x1, z0, z1) => {
+    const h = new THREE.Path();
+    h.moveTo(x0, -z0); h.lineTo(x1, -z0); h.lineTo(x1, -z1); h.lineTo(x0, -z1); h.closePath();
+    groundShape.holes.push(h);
+  };
+  for (const p of pitFloors) cutHole(p.x0, p.x1, p.z0, p.z1);
+  for (const pr of pitRamps) cutHole(pr.x0, pr.x1, pr.z0, pr.z1);
+  groundMesh = new THREE.Mesh(new THREE.ShapeGeometry(groundShape), new THREE.MeshBasicMaterial({ color: C.ground }));
+  groundMesh.rotateX(-Math.PI / 2); scene.add(groundMesh);
+  const gridDiv = Math.round(ARENA_R * 40 / 47);
+  grid = new THREE.GridHelper(ARENA_R * 2, gridDiv, C.dim, C.dim);
+  grid.material.transparent = true; grid.material.opacity = 0.45; scene.add(grid);
   ring = new THREE.Mesh(new THREE.TorusGeometry(ARENA_R, 0.12, 6, 96),
-    new THREE.MeshBasicMaterial({ color: 0x888888 })); ring.rotation.x = -Math.PI / 2; scene.add(ring);
+    new THREE.MeshBasicMaterial({ color: C.ring })); ring.rotation.x = -Math.PI / 2; scene.add(ring);
 
   for (const isl of islands) {                                // floating island — a thin slab, not connected to any ground
     const g = glow(new THREE.BoxGeometry(isl.x1 - isl.x0, 0.6, isl.z1 - isl.z0));
     g.position.set((isl.x0 + isl.x1) / 2, isl.top, (isl.z0 + isl.z1) / 2); scene.add(g); terrainMeshes.push(g);
   }
+  if (visualTest) buildDesertProps();                         // sun, dunes, cacti — the stylized-desert set dressing
   for (const f of flats) {
     const g = glow(new THREE.BoxGeometry(f.x1 - f.x0, f.top, f.z1 - f.z0));
     g.position.set((f.x0 + f.x1) / 2, f.top / 2, (f.z0 + f.z1) / 2); scene.add(g); terrainMeshes.push(g);
@@ -307,6 +279,35 @@ function buildTerrain() {
   }
   updatePlatforms();
 }
+// Desert set dressing (Visual Test only): a big low sun, soft dune silhouettes on
+// the horizon, and ink-line saguaro cacti scattered around (on the canyon rims when
+// Depth Test is also on — heightAt() places them on whatever is underneath).
+function buildDesertProps() {
+  const sun = new THREE.Mesh(new THREE.CircleGeometry(ARENA_R * 0.22, 32),
+    new THREE.MeshBasicMaterial({ color: 0xe06f24, fog: false }));
+  sun.position.set(ARENA_R * 0.6, ARENA_R * 0.28, -ARENA_R * 1.05);
+  sun.lookAt(0, 10, 0); scene.add(sun); terrainMeshes.push(sun);
+  for (const a of [0.5, 1.8, 3.4, 4.6]) {                     // dunes — flattened spheres fading into the fog
+    const dune = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), new THREE.MeshBasicMaterial({ color: 0xcf9f6b }));
+    dune.scale.set(ARENA_R * 0.5, ARENA_R * 0.08, ARENA_R * 0.12);
+    dune.position.set(Math.cos(a) * ARENA_R * 1.02, 0, Math.sin(a) * ARENA_R * 1.02);
+    scene.add(dune); terrainMeshes.push(dune);
+  }
+  for (let i = 0; i < 7; i++) {                               // saguaro cacti — trunk + two arms in the glow() sketch style
+    const a = (i / 7) * Math.PI * 2 + 0.4, r = ARENA_R * 0.52;
+    const cx = Math.cos(a) * r, cz = Math.sin(a) * r;
+    if (Math.hypot(cx, cz) < 20) continue;
+    const base = heightAt(cx, cz);
+    const cactus = new THREE.Group();
+    const trunk = glow(new THREE.BoxGeometry(0.5, 3.2, 0.5)); trunk.position.y = 1.6; cactus.add(trunk);
+    for (const sx of [-1, 1]) {
+      const joint = glow(new THREE.BoxGeometry(0.8, 0.35, 0.35)); joint.position.set(sx * 0.55, 1.6 + sx * 0.3, 0); cactus.add(joint);
+      const arm = glow(new THREE.BoxGeometry(0.35, 1.3, 0.35)); arm.position.set(sx * 0.85, 2.35 + sx * 0.3, 0); cactus.add(arm);
+    }
+    cactus.position.set(cx, base, cz);
+    scene.add(cactus); terrainMeshes.push(cactus);
+  }
+}
 // repositions each moving-platform mesh from the same sine formula heightAt() uses,
 // so the visible slab always matches where heightAt() says its top surface is.
 function updatePlatforms() {
@@ -335,18 +336,18 @@ function newChallenge() {
   const A = pool2.splice((Math.random() * pool2.length) | 0, 1)[0];
   let B; do { B = pool2[(Math.random() * pool2.length) | 0]; } while (Math.hypot(B.x - A.x, B.z - A.z) < 28);
   obj.pts = [A, B]; obj.idx = 0; placeBeacon();
-  toast('CHALLENGE — REACH A', BEACON_COL);
-  if (!seenObjective) { markObjective(); toast('Reach the glowing beacon for a heal', BEACON_COL); }
+  toast('CHALLENGE — REACH A', C.beacon);
+  if (!seenObjective) { markObjective(); toast('Reach the glowing beacon for a heal', C.beacon); }
 }
 function objectiveUpdate(dt) {
   beacon.rotation.y += dt * 0.8;
   beaconRing.scale.setScalar(1 + Math.sin(performance.now() / 300) * 0.05);
   const w = obj.pts[obj.idx];
   if (Math.hypot(player.x - w.x, player.z - w.z) < obj.r) {
-    if (obj.idx === 0) { obj.idx = 1; placeBeacon(); toast('REACH B', BEACON_COL); audio.objective(0); }
+    if (obj.idx === 0) { obj.idx = 1; placeBeacon(); toast('REACH B', C.beacon); audio.objective(0); }
     else {
       challenges++; player.heal(30);
-      burst(w.x, heightAt(w.x, w.z) + 1, w.z, BEACON_COL, 18);
+      burst(w.x, heightAt(w.x, w.z) + 1, w.z, C.beacon, 18);
       toast('CHALLENGE COMPLETE  +heal', C.hp); audio.objective(1);
       newChallenge();
     }
@@ -370,10 +371,21 @@ function hazardUpdate(dt) {
   }
   hazardInsidePrev = inside;
 }
-// Depth Test's islands float over a real bottomless void — falling off one is fatal,
-// same as any other way of dying. voidFloor is always 0 in NORMAL, so this never fires there.
+// safety net kept from the old Abyss layout — fatal only if something ever drops the
+// player far below any real floor (both current modes have voidFloor 0, so it's dormant).
 function voidCheck() {
   if (depthTest && player.alive && player.y < -50) gameOver();
+}
+// Canyon Run lap wrap: crossing the far end teleports you back to the start line for
+// another lap — small heal, lap counter, and the objective beacon keeps working since
+// it's all absolute-position distance checks.
+function canyonUpdate() {
+  if (!depthTest || !player.alive) return;
+  if (player.z < -CANYON_END) {
+    player.z = CANYON_END; canyonLoops++;
+    player.heal(15); audio.objective(1);
+    toast(`CANYON LAP ${canyonLoops}`, C.adr);
+  }
 }
 
 // ── Objects ───────────────────────────────────────────────────────────────────
@@ -383,14 +395,14 @@ let enemies = [];
 
 // ── Run state ─────────────────────────────────────────────────────────────────
 let gameState = 'title';     // title | playing | paused | gameover
-let kills = 0, shake = 0, fovKick = 0, challenges = 0, hitstopT = 0, killPunch = 0, dashTipTimer = 0;
+let kills = 0, shake = 0, fovKick = 0, challenges = 0, hitstopT = 0, killPunch = 0, dashTipTimer = 0, canyonLoops = 0;
 const HITSTOP_KILL = 0.05, HITSTOP_BOSS_KILL = 0.09, HITSTOP_HURT = 0.07;
 let credits = 0, spawnCD = 0, nextBoss = 65, bossAlive = false, bossKills = 0;
 let toasts = [];
 let best = parseFloat(localStorage.getItem('skltrBestTime') || '0');
 
-const PHASES = [[25, 'CALM', 0x9be7b0], [60, 'RISING', 0x9bc7ff], [110, 'FRENZY', 0xffd36b],
-                [170, 'OVERLOAD', 0xff9a3a], [1e9, 'NIGHTMARE', 0xff5a6b]];
+const PHASES = [[25, 'CALM', 0x9be7b0, 0x1f6e54], [60, 'RISING', 0x9bc7ff, 0x1c5cab], [110, 'FRENZY', 0xffd36b, 0x8a5a10],
+                [170, 'OVERLOAD', 0xff9a3a, 0xb35b00], [1e9, 'NIGHTMARE', 0xff5a6b, 0xa3241a]];
 function phase() { for (const p of PHASES) if (runTime < p[0]) return p; return PHASES[PHASES.length - 1]; }
 function scaling() { return { hpMul: 1 + runTime * 0.011, dmgMul: 0.55 + runTime * 0.008 }; }
 
@@ -413,12 +425,18 @@ function backChip(slot, label) {
   const h = document.createElement('div'); h.textContent = label;
   h.style.cssText = 'font-size:16px;font-weight:bold;letter-spacing:3px;opacity:.85;margin-bottom:18px'; slot.appendChild(h);
 }
+// overlay base ink follows the palette so DOM text stays readable on the sand background
+function applyOverlayInk() {
+  overlay.style.color = visualTest ? '#2b1a0e' : '#cdeaff';
+  overlay.style.textShadow = visualTest ? 'none' : '0 0 12px rgba(80,200,255,0.5)';
+}
 function showTitle() {
   overlay.style.pointerEvents = 'none';
+  applyOverlayInk();
   if (titlePanel === 'settings') return showSettingsPanel();
   if (titlePanel === 'upgrades') return showUpgradesPanel();
   overlay.innerHTML =
-    `<div style="font-size:clamp(38px,12vw,64px);font-weight:bold;letter-spacing:10px;color:#9bfff0">SKLTR</div>` +
+    `<div style="font-size:clamp(38px,12vw,64px);font-weight:bold;letter-spacing:10px;color:${visualTest ? '#7a2f10' : '#9bfff0'}">SKLTR</div>` +
     `<div style="font-size:13px;opacity:.6;margin:8px 0 18px">${t('subtitle')}</div>` +
     (best > 0 ? `<div style="font-size:13px;color:${css(C.adr)};opacity:.85;margin-bottom:12px">${t('best')} ${fmt(best)}</div>` : ``) +
     `<div style="font-size:15px;opacity:.9">${t('tapStart')}</div>` +
@@ -461,13 +479,14 @@ function showUpgradesPanel() {
   backChip(body, `UPGRADES · ${shards}◆`);
   buildUnlockPanel(body);
 }
-function showPause() { overlay.style.pointerEvents = 'none'; showOverlay(`<div style="font-size:42px;font-weight:bold">PAUSED</div><div style="font-size:13px;opacity:.5;margin-top:10px">ESC to resume</div>`); }
+function showPause() { overlay.style.pointerEvents = 'none'; applyOverlayInk(); showOverlay(`<div style="font-size:42px;font-weight:bold">PAUSED</div><div style="font-size:13px;opacity:.5;margin-top:10px">ESC to resume</div>`); }
 function showGameOver(earned = 0) {
   const rec = runTime >= best;
   overlay.style.pointerEvents = 'auto';
+  applyOverlayInk();
   overlay.innerHTML =
-    `<div style="font-size:44px;font-weight:bold;letter-spacing:3px;color:#ff7aa0">${t('youDied')}</div>` +
-    `<div style="font-size:18px;margin-top:10px;color:#9bfff0">${t('survived', fmt(runTime), kills)}</div>` +
+    `<div style="font-size:44px;font-weight:bold;letter-spacing:3px;color:${visualTest ? '#a3241a' : '#ff7aa0'}">${t('youDied')}</div>` +
+    `<div style="font-size:18px;margin-top:10px;color:${visualTest ? '#1f5f4f' : '#9bfff0'}">${t('survived', fmt(runTime), kills)}</div>` +
     (rec ? `<div style="font-size:15px;color:${css(C.adr)};margin-top:6px">${t('newBest')}</div>` : `<div style="font-size:12px;opacity:.5;margin-top:6px">${t('best')} ${fmt(best)}</div>`) +
     `<div style="font-size:12px;opacity:.7;margin-top:6px">+${earned} shards</div>` +
     `<div id="fb-slot" style="margin-top:16px"></div>`;
@@ -527,9 +546,10 @@ function buildModeChips(slot) {
   row.appendChild(mkToggle(t('visualTest'), 0xff8bd6, () => visualTest,
     () => {
       setVisualTest(!visualTest);
-      bloom.strength = visualTest ? 0.62 : 0.35;
-      neonPass.enabled = visualTest;
-      FILL_MAT.color.setHex(visualTest ? 0x170022 : 0x000000);
+      applyPalette(visualTest);
+      scene.background.setHex(C.bg); scene.fog.color.setHex(C.bg);
+      bloom.enabled = !visualTest;
+      buildTerrain();                  // re-tints ground/grid/ring, adds/removes desert props
     }));
   row.appendChild(mkToggle(t('depthTest'), 0x6bd9ff, () => depthTest,
     () => { setDepthTest(!depthTest); buildTerrain(); }));
@@ -634,7 +654,7 @@ function startGame() {
   overlay.style.display = 'none'; overlay.style.pointerEvents = 'none';
   runTime = 0; kills = 0; shake = 0; credits = 0; spawnCD = 0; nextBoss = 65; bossAlive = false; bossKills = 0; toasts = []; challenges = 0;
   hitstopT = 0; killPunch = 0;
-  hazardInsidePrev = false; dashTipTimer = 0;
+  hazardInsidePrev = false; dashTipTimer = 0; canyonLoops = 0;
   for (const e of enemies) e.dispose(); enemies = []; pool.clear();
   player.reset(resolvedStats());
   if (!seenWelcome) { markWelcome(); toast('WASD move · aim anywhere · auto-fire on target', C.line); }
@@ -836,8 +856,13 @@ function updateCamera() {
 }
 
 // ── HUD ───────────────────────────────────────────────────────────────────────
+// HUD ink follows the palette: pale cool blue on the night mode, dark warm ink on the
+// desert (Visual Test) — checked per frame so toggling re-skins the HUD instantly.
+const hudHex = () => visualTest ? '#2b1a0e' : '#cdeaff';
+const hudA = a => visualTest ? `rgba(43,26,14,${a})` : `rgba(205,234,255,${a})`;
+const trackA = a => visualTest ? `rgba(43,26,14,${a})` : `rgba(255,255,255,${a})`;
 function bar(x, y, w, h, k, color) {
-  ctx.fillStyle = 'rgba(255,255,255,.1)'; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = trackA(0.12); ctx.fillRect(x, y, w, h);
   ctx.fillStyle = color; ctx.fillRect(x, y, w * Math.max(0, Math.min(1, k)), h);
 }
 const _v = new THREE.Vector3();
@@ -856,7 +881,7 @@ function drawObjective(W, H) {
   const label = obj.idx === 0 ? 'A' : 'B';
   _v.set(w.x, heightAt(w.x, w.z) + 2.4, w.z).project(camera);
   const onScreen = _v.z < 1 && Math.abs(_v.x) < 0.96 && Math.abs(_v.y) < 0.96;
-  ctx.fillStyle = css(BEACON_COL); ctx.strokeStyle = css(BEACON_COL); ctx.lineWidth = 2; ctx.textAlign = 'center';
+  ctx.fillStyle = css(C.beacon); ctx.strokeStyle = css(C.beacon); ctx.lineWidth = 2; ctx.textAlign = 'center';
   if (onScreen) {
     const sx = (_v.x * .5 + .5) * W, sy = (-_v.y * .5 + .5) * H;
     ctx.beginPath(); ctx.arc(sx, sy, 12, 0, 7); ctx.stroke();
@@ -882,10 +907,10 @@ function reticle(W, H) {
   ctx.stroke();
   if (locked) { ctx.beginPath(); ctx.arc(cx, cy, 9, 0, 7); ctx.stroke(); }   // lock ring
   ctx.fillStyle = css(col); ctx.beginPath(); ctx.arc(cx, cy, 1.6, 0, 7); ctx.fill();
-  if (player.autoAim) { ctx.fillStyle = 'rgba(205,234,255,.4)'; ctx.font = '9px monospace'; ctx.textAlign = 'center'; ctx.fillText('AUTO', cx, cy + 30); }
+  if (player.autoAim) { ctx.fillStyle = hudA(.4); ctx.font = '9px monospace'; ctx.textAlign = 'center'; ctx.fillText('AUTO', cx, cy + 30); }
   // dash-cooldown ring around the reticle
   const k = 1 - player.dashCD / 1.1;
-  ctx.strokeStyle = k >= 1 ? css(C.player) : 'rgba(180,200,255,.5)'; ctx.lineWidth = 2.5;
+  ctx.strokeStyle = k >= 1 ? css(C.player) : hudA(.5); ctx.lineWidth = 2.5;
   ctx.beginPath(); ctx.arc(cx, cy, 20, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0, k)); ctx.stroke();
 }
 function drawHUD() {
@@ -901,26 +926,26 @@ function drawHUD() {
   // health + adrenaline (top-left)
   ctx.textAlign = 'left';
   bar(16, 16, 240, 16, player.hp / player.maxHp, css(C.hp));
-  ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 1; ctx.strokeRect(16, 16, 240, 16);
-  ctx.fillStyle = '#cdeaff'; ctx.font = 'bold 11px monospace'; ctx.fillText(`${Math.ceil(player.hp)}`, 22, 28);
-  ctx.fillStyle = player.adr > 0 ? css(C.adr) : 'rgba(205,234,255,.4)'; ctx.font = 'bold 10px monospace';
+  ctx.strokeStyle = trackA(.25); ctx.lineWidth = 1; ctx.strokeRect(16, 16, 240, 16);
+  ctx.fillStyle = hudHex(); ctx.font = 'bold 11px monospace'; ctx.fillText(`${Math.ceil(player.hp)}`, 22, 28);
+  ctx.fillStyle = player.adr > 0 ? css(C.adr) : hudA(.4); ctx.font = 'bold 10px monospace';
   ctx.fillText('ADRENALINE', 16, 50);
   for (let i = 0; i < 5; i++) { const px = 16 + i * 16;
     ctx.beginPath(); ctx.rect(px, 56, 12, 8);
     if (i < player.adr) { ctx.fillStyle = css(C.adr); ctx.fill(); }
-    ctx.strokeStyle = 'rgba(205,234,255,.35)'; ctx.lineWidth = 1; ctx.stroke(); }
+    ctx.strokeStyle = hudA(.35); ctx.lineWidth = 1; ctx.stroke(); }
 
   // time + phase (top-center)
   const ph = phase();
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#cdeaff'; ctx.font = 'bold 22px monospace'; ctx.fillText(fmt(runTime), W / 2, 30);
-  ctx.fillStyle = css(ph[2]); ctx.font = 'bold 13px monospace'; ctx.fillText(ph[1], W / 2, 50);
+  ctx.fillStyle = hudHex(); ctx.font = 'bold 22px monospace'; ctx.fillText(fmt(runTime), W / 2, 30);
+  ctx.fillStyle = css(visualTest ? ph[3] : ph[2]); ctx.font = 'bold 13px monospace'; ctx.fillText(ph[1], W / 2, 50);
 
   // kills + best (top-right)
   ctx.textAlign = 'right';
-  ctx.fillStyle = '#cdeaff'; ctx.font = 'bold 18px monospace'; ctx.fillText(`${kills} kills`, W - 16, 28);
-  ctx.fillStyle = css(BEACON_COL); ctx.font = 'bold 12px monospace'; ctx.fillText(`${challenges} runs`, W - 16, 46);
-  if (best > 0) { ctx.fillStyle = 'rgba(205,234,255,.5)'; ctx.font = '11px monospace'; ctx.fillText(`best ${fmt(best)}`, W - 16, 62); }
+  ctx.fillStyle = hudHex(); ctx.font = 'bold 18px monospace'; ctx.fillText(`${kills} kills`, W - 16, 28);
+  ctx.fillStyle = css(C.beacon); ctx.font = 'bold 12px monospace'; ctx.fillText(`${challenges} runs`, W - 16, 46);
+  if (best > 0) { ctx.fillStyle = hudA(.5); ctx.font = '11px monospace'; ctx.fillText(`best ${fmt(best)}`, W - 16, 62); }
 
   // toasts
   ctx.textAlign = 'center'; ctx.font = 'bold 15px monospace';
@@ -930,16 +955,16 @@ function drawHUD() {
 }
 function drawStick(s, dx, dy) {
   const bx = s.active ? s.ox : dx, by = s.active ? s.oy : dy, R = 60, kr = 26;
-  ctx.beginPath(); ctx.arc(bx, by, R, 0, 7); ctx.strokeStyle = 'rgba(205,234,255,.25)'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.beginPath(); ctx.arc(bx, by, R, 0, 7); ctx.strokeStyle = hudA(.25); ctx.lineWidth = 2; ctx.stroke();
   const cl = v => Math.max(-R, Math.min(R, v));
-  ctx.beginPath(); ctx.arc(bx + cl(s.dx), by + cl(s.dy), kr, 0, 7); ctx.fillStyle = s.active ? 'rgba(120,240,230,.4)' : 'rgba(205,234,255,.14)'; ctx.fill();
+  ctx.beginPath(); ctx.arc(bx + cl(s.dx), by + cl(s.dy), kr, 0, 7); ctx.fillStyle = s.active ? (visualTest ? 'rgba(163,56,18,.4)' : 'rgba(120,240,230,.4)') : hudA(.14); ctx.fill();
 }
 function drawTouchUI(W, H) {
   drawStick(input.left, W * 0.2, H * 0.74);
   drawStick(input.look, W * 0.8, H * 0.74);
-  ctx.fillStyle = 'rgba(205,234,255,.35)'; ctx.font = '18px monospace'; ctx.textAlign = 'center'; ctx.fillText('❙❙', W / 2, 40);
+  ctx.fillStyle = hudA(.35); ctx.font = '18px monospace'; ctx.textAlign = 'center'; ctx.fillText('❙❙', W / 2, 40);
   // gesture hints (tap = jump/air-dash · swipe = dash)
-  ctx.fillStyle = 'rgba(205,234,255,.3)'; ctx.font = '10px monospace';
+  ctx.fillStyle = hudA(.3); ctx.font = '10px monospace';
   ctx.fillText('tap: jump / double-jump    swipe: dash', W / 2, H - 12);
 }
 
@@ -963,12 +988,13 @@ function loop() {
       if (dashTipTimer > 8 && player.dashCD <= 0) { markDash(); toast('Q / swipe to DASH through bullets', C.shot); }
     }
     input.updateLook(dt);
-    player.update(dt, input, _aim, enemies, heightAt);
+    player.update(dt, input, _aim, enemies, heightAt, depthTest ? { x: 0, z: -CANYON_PUSH } : null);
     updatePlatforms();
     voidCheck();
+    canyonUpdate();
     if (player._fired) audio.shoot();
     if (player.dashing) {                       // fading dash streak
-      const col = visualTest ? (player.adr > 0 ? C.adr : 0x6bd9ff) : C.player;
+      const col = visualTest ? (player.adr > 0 ? C.adr : C.shot) : C.player;
       sparkSpawn(player.x, player.y + 0.8, player.z, col, visualTest ? 0.17 : 0.12, visualTest ? 0.45 : 0.3);
     }
     for (const e of enemies) e.update(dt, player, pool, heightAt, ARENA_R);
@@ -987,7 +1013,6 @@ function loop() {
   }
 
   updateCamera();
-  if (visualTest) neonPass.uniforms.time.value = now / 1000;
   composer.render();
   drawHUD();
 }
