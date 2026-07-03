@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=39';
+import { TUNING } from './tuning.js?v=40';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -466,6 +466,33 @@ export class Enemy {
       this._chargeOrb.visible = false;
       this.group.add(this._chargeOrb);
 
+      // Lob projectile + flashing landing ring (Part 5) — scene-level, since
+      // the landing point is independent of the tower. The ring shows WHERE
+      // the lob lands BEFORE it lands; the blob flies a visible parabola.
+      this._lobBlob = new THREE.Mesh(
+        new THREE.SphereGeometry(TUNING.bambu.lobBlobRadius, 20, 14),
+        new THREE.MeshPhongMaterial({
+          color: cfg.bulletColor, emissive: cfg.bulletColor, emissiveIntensity: 0.6, shininess: 60,
+        }),
+      );
+      this._lobBlob.visible = false;
+      this._lobBlob.castShadow = true;
+      scene.add(this._lobBlob);
+      this._lobRing = new THREE.Mesh(
+        new THREE.RingGeometry(TUNING.bambu.landingRing.inner, TUNING.bambu.landingRing.outer, 28),
+        new THREE.MeshBasicMaterial({
+          color: cfg.bulletColor, transparent: true, opacity: 0.6,
+          side: THREE.DoubleSide, depthWrite: false,
+        }),
+      );
+      this._lobRing.rotation.x = -Math.PI / 2;
+      this._lobRing.position.y = 0.02;
+      this._lobRing.visible = false;
+      scene.add(this._lobRing);
+      this._lobT     = 0;                 // elapsed time in the current lob phase (flash clock)
+      this._lobStart = { x: 0, y: 0, z: 0 };
+      this._lobLanded = null;             // set on splashdown; main.js drains it
+
       // Dummy mesh for code paths that reference this.mesh
       this.mesh = new THREE.Mesh(
         new THREE.SphereGeometry(0.01),
@@ -685,17 +712,24 @@ export class Enemy {
     };
   }
 
+  // Bamboo tower segment (Part 5): a cylinder flaring wider toward its top —
+  // bottomR/topR grow per segment — capped with a thin node lip, replacing the
+  // old cross of rounded boxes. All TUNING.bambu-driven.
   _makeBambuSeg(segIndex) {
-    const geo = new RoundedBoxGeometry(0.9, 0.9, 0.9, 4, 0.18);
+    const B = TUNING.bambu;
     const segGroup = new THREE.Group();
-    segGroup.position.y = segIndex * 1.0;
-    const offsets = [{x:0.9,z:0},{x:-0.9,z:0},{x:0,z:0.9},{x:0,z:-0.9}];
-    for (const off of offsets) {
-      const box = new THREE.Mesh(geo, this._bambuMat);
-      box.position.set(off.x, 0, off.z);
-      box.castShadow = true;
-      segGroup.add(box);
-    }
+    segGroup.position.y = segIndex * B.segHeight;
+    const botR = B.flareBottom + segIndex * B.flareBottomStep;
+    const topR = B.flareTop    + segIndex * B.flareTopStep;
+    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(topR, botR, B.segHeight, 14), this._bambuMat);
+    cyl.position.y = B.segHeight / 2; // segment base sits at the group origin
+    cyl.castShadow = true;
+    segGroup.add(cyl);
+    const lip = new THREE.Mesh(
+      new THREE.CylinderGeometry(topR * B.lipScale, topR * B.lipScale, B.lipHeight, 14), this._bambuMat);
+    lip.position.y = B.segHeight;
+    lip.castShadow = true;
+    segGroup.add(lip);
     this.group.add(segGroup);
     return segGroup;
   }
@@ -726,7 +760,7 @@ export class Enemy {
     if (this.type === EnemyType.BAMBU && this._segs && this._segs.length > 0) {
       const topSeg = this._segs.pop();
       this.group.remove(topSeg);
-      const segY = this._segs.length * 1.0 + 0.45;
+      const segY = (this._segs.length + 0.5) * TUNING.bambu.segHeight;
       for (let k = 0; k < 3; k++) {
         const a = Math.random() * Math.PI * 2;
         this._hitChunks.push({
@@ -1000,13 +1034,21 @@ export class Enemy {
           this.group.scale.y = Math.min(1, 1 - this._emergeT / 0.6);
         }
         if (this._emergeT <= 0) {
-          this.group.scale.y = 1;
           this._growTimer -= dt;
           if (this._growTimer <= 0 && this._segs.length < this._maxSegs) {
             this._growTimer = 0.18;
             this._segs.push(this._makeBambuSeg(this._segs.length));
             this.hp++;
           }
+          // Tower breathe + squash-strain while charging the lob (Part 5): the
+          // stalk visibly compresses as the shot climbs, then releases.
+          const strain = this._bambuState === 'telegraphing'
+            ? (1 - Math.max(this._bambuTimer, 0) / TUNING.bambu.lobTelegraph) * 0.14 : 0;
+          const br = 0.05 * Math.sin(this._wobbleT * 2.4 + this._phase);
+          this.group.scale.set(
+            1 - br * 0.5 + strain * 0.5,
+            1 + br - strain,
+            1 - br * 0.5 + strain * 0.5);
         }
         break;
       }
@@ -1237,31 +1279,62 @@ export class Enemy {
     }
 
     if (this.type === EnemyType.BAMBU) {
+      // Part 5 attack cycle: pick a landing point near the player (± spread) →
+      // flashing landing ring while the charge climbs the stalk → launch a
+      // visible emissive blob on a parabola from the tower top → splashdown
+      // (main.js drains _lobLanded for droplets/splat/damage-if-in-ring).
+      const B = TUNING.bambu;
       if (this._bambuState === 'waiting') {
         this._bambuFireTimer -= dt;
-        if (this._bambuFireTimer <= 0) {
+        if (this._bambuFireTimer <= 0 && this._emergeT <= 0) {
           this._bambuState   = 'telegraphing';
-          this._bambuTimer   = 1.0;
-          this._lobTargetX   = playerPos.x;
-          this._lobTargetZ   = playerPos.z;
-          this._aoeReady     = true;
+          this._bambuTimer   = B.lobTelegraph;
+          this._lobT         = 0;
+          this._lobTargetX   = playerPos.x + (Math.random() * 2 - 1) * B.lobSpread;
+          this._lobTargetZ   = playerPos.z + (Math.random() * 2 - 1) * B.lobSpread;
+          this._lobRing.position.set(this._lobTargetX, 0.02, this._lobTargetZ);
+          this._lobRing.visible = true;
         }
       } else if (this._bambuState === 'telegraphing') {
         this._bambuTimer -= dt;
+        this._lobT += dt;
+        this._lobRing.material.opacity =
+          Math.sin(this._lobT * B.landingRing.telegraphFlashHz) > 0 ? 0.75 : 0.2;
         // Charge orb climbs from the base up past each segment to the top of the
-        // stalk, then the lob fires the instant it reaches the tip.
+        // stalk, then the lob launches the instant it reaches the tip.
         if (this._chargeOrb) {
-          const prog = Math.max(0, Math.min(1, 1 - this._bambuTimer / 1.0));
-          const topY = this._segs.length * 1.0;
+          const prog = Math.max(0, Math.min(1, 1 - this._bambuTimer / B.lobTelegraph));
+          const topY = this._segs.length * B.segHeight;
           this._chargeOrb.visible = true;
           this._chargeOrb.position.y = prog * topY;
           this._chargeOrb.scale.setScalar(0.6 + prog * 0.9);
         }
         if (this._bambuTimer <= 0) {
+          this._bambuState = 'lobbing';
+          this._bambuTimer = B.lobFlight;
+          this._lobStart.x = this.position.x;
+          this._lobStart.y = this._segs.length * B.segHeight;
+          this._lobStart.z = this.position.z;
+          this._lobBlob.visible = true;
+          if (this._chargeOrb) this._chargeOrb.visible = false;
+        }
+      } else if (this._bambuState === 'lobbing') {
+        this._bambuTimer -= dt;
+        this._lobT += dt;
+        // Ring flashes faster while the lob is airborne — impact imminent.
+        this._lobRing.material.opacity =
+          Math.sin(this._lobT * B.landingRing.flightFlashHz) > 0 ? 0.85 : 0.25;
+        const p = Math.max(0, Math.min(1, 1 - this._bambuTimer / B.lobFlight));
+        this._lobBlob.position.set(
+          this._lobStart.x + (this._lobTargetX - this._lobStart.x) * p,
+          this._lobStart.y * (1 - p) + B.lobArcHeight * 4 * p * (1 - p),
+          this._lobStart.z + (this._lobTargetZ - this._lobStart.z) * p);
+        if (this._bambuTimer <= 0) {
+          this._lobBlob.visible = false;
+          this._lobRing.visible = false;
+          this._lobLanded = { x: this._lobTargetX, z: this._lobTargetZ };
           this._bambuState     = 'waiting';
           this._bambuFireTimer = cfg.fireInterval * this._intervalMult;
-          this._lobReady = { x: this._lobTargetX, z: this._lobTargetZ };
-          if (this._chargeOrb) this._chargeOrb.visible = false;
         }
       }
       return;
@@ -1445,6 +1518,8 @@ export class Enemy {
     if (this.type === EnemyType.TORO && this._indicator) {
       this._indicator.visible = false;
     }
+    // Hide any in-flight lob when BAMBU dies mid-cycle
+    if (this._lobBlob) { this._lobBlob.visible = false; this._lobRing.visible = false; }
     if (this._aimArrow) this._aimArrow.visible = false;
   }
 
@@ -1455,6 +1530,7 @@ export class Enemy {
       if (this._indicator) scene.remove(this._indicator);
     } else if (this.type === EnemyType.BAMBU || this.type === EnemyType.PYRA) {
       scene.remove(this.group);
+      if (this._lobBlob) { scene.remove(this._lobBlob); scene.remove(this._lobRing); }
     } else {
       scene.remove(this.mesh);
     }

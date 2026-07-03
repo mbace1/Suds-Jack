@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v86 — 2026-07-03
+**Port brief Part 5: BAMBU bamboo tower + parabolic lob + flashing landing ring**
+- **Body rebuilt**: each segment is now a cylinder flaring wider toward its top (`bottomR 0.20+i·0.02`, `topR 0.36+i·0.03`, h 0.6) with a thin node lip between segments — an actual bamboo stalk instead of the old cross of rounded boxes. Emerge-from-floor and pop-a-segment-per-hit behavior kept (segment heights rescaled to `segHeight`)
+- **Attack cycle rebuilt** (the important gameplay change — the player now sees where the lob lands *before* it lands): every `lobCooldown` 4s, BAMBU picks a landing point near the player (±`lobSpread` 1.2) → a **flashing landing ring** (`RingGeometry(0.55, 0.95)`, 22Hz) marks it for `lobTelegraph` 0.7s while the charge orb climbs the stalk and the tower visibly squash-strains → an emissive blob (r 0.34) flies a **visible parabola** (arc height 2.4, `lobFlight` 1.0s) from the tower top, ring flashing faster (40Hz) → **splashdown**: droplet burst, splat decal, and damage only if the player is inside the ring at impact
+- Replaces the old instant straight-line fat bullet aimed at the player's position + the separate orange `BambuAoE` circle (class removed — it was visual-only and implied an AoE that never damaged); telemetry logs these hits as source `'lob'`
+- Tower gains the lab's idle breathe; lob blob/ring are hidden if BAMBU dies mid-cycle and cleaned up on despawn
+- `main.js` now imports TUNING (first use outside enemy.js)
+- Cache-bust `?v=39` → `?v=40`; HUD label → v86
+
+---
+
 ## v85 — 2026-07-03
 **Port brief Part 4: TORO rolls like a wheel + exact-length telegraph with arrowhead**
 - **Wheel orientation fixed**: torus + rim spikes now live in a `_wheel` subgroup spinning about the axle (local Z) while the outer group yaws to face the travel/dash direction — TORO visually *rolls*. Previously the whole group spun about the vertical axis (like a coin on a table) and the 6 spikes were laid out in the horizontal plane while the torus stood upright — they didn't even ring the wheel. Now `TUNING.toro.rimSpikes` (5) spikes ring the rim in the wheel plane

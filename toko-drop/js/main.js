@@ -1,11 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=39';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=39';
-import { Player, PLAYER_RADIUS } from './player.js?v=39';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=39';
-import { audio } from './audio.js?v=39';
-import { initDesigner } from './designer.js?v=39';
-import { t, getLang, setLang, langs } from './lang.js?v=39';
+import { InputManager } from './input.js?v=40';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=40';
+import { Player, PLAYER_RADIUS } from './player.js?v=40';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=40';
+import { audio } from './audio.js?v=40';
+import { initDesigner } from './designer.js?v=40';
+import { t, getLang, setLang, langs } from './lang.js?v=40';
+import { TUNING } from './tuning.js?v=40';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -735,28 +736,6 @@ class Powerup {
   }
 }
 
-class BambuAoE {
-  constructor(sc, x, z, radius, duration) {
-    this._life = duration;
-    this._dur  = duration;
-    this.x = x; this.z = z;
-    this.mat = new THREE.MeshBasicMaterial({
-      color: 0xff8800, transparent: true, opacity: 0.6, depthWrite: false,
-    });
-    this.mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, 12), this.mat);
-    this.mesh.rotation.x = -Math.PI / 2;
-    this.mesh.position.set(x, 0.016, z);
-    sc.add(this.mesh);
-  }
-  update(dt) {
-    this._life -= dt;
-    const frac = Math.max(0, this._life / this._dur);
-    this.mat.opacity = 0.6 * frac * (0.5 + 0.5 * Math.sin(this._life * Math.PI * 6));
-    return this._life > 0;
-  }
-  remove(sc) { sc.remove(this.mesh); }
-}
-
 class CargoCluster {
   constructor(sc) {
     const count = 3 + Math.floor(rng() * 3);
@@ -876,7 +855,6 @@ let puddles      = [];
 let poisonZones  = [];
 let slimeTrails  = [];
 let sludgeRibbons = [];
-let bambuAoes     = [];
 let gates         = [];
 let powerups      = [];
 let bossAuras     = [];
@@ -1541,7 +1519,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v85', 16, uiCanvas.height - 12);
+  ctx.fillText('v86', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1901,7 +1879,6 @@ function clearFX() {
   for (const z of poisonZones)   z.remove(scene); poisonZones   = [];
   for (const s of slimeTrails)   s.remove(scene); slimeTrails   = [];
   for (const r of sludgeRibbons) r.remove(scene); sludgeRibbons = [];
-  for (const a of bambuAoes)     a.remove(scene); bambuAoes     = [];
   for (const g of gates)        g.remove(scene); gates         = [];
   for (const p of powerups)     p.remove(scene); powerups      = [];
   clearBossAuras();
@@ -2299,19 +2276,24 @@ function loop() {
     trailPool.spawn(p.x, e.fxY, p.z, e.color, e.radius * e._trailMult);
   }
 
-  // BAMBU AoE telegraphs and lob bullets; drain hitChunks for all enemies
+  // BAMBU lob splashdowns (Part 5); drain hitChunks for all enemies
   for (const e of enemies) {
-    if (e.type === EnemyType.BAMBU) {
-      if (e._aoeReady) {
-        e._aoeReady = false;
-        bambuAoes.push(new BambuAoE(scene, e._lobTargetX, e._lobTargetZ, 2.2, 1.0));
+    if (e.type === EnemyType.BAMBU && e._lobLanded) {
+      const { x: lx, z: lz } = e._lobLanded;
+      e._lobLanded = null;
+      // Splashdown: droplet burst + splat decal + damage if caught in the ring
+      for (let j = 0; j < 10; j++) {
+        const a  = (j / 10) * Math.PI * 2 + Math.random() * 0.6;
+        const sp = 2.5 + Math.random() * 3;
+        gooChunkPool.spawn(lx, 0.4, lz, Math.cos(a) * sp, 2 + Math.random() * 3, Math.sin(a) * sp, 0xddbb44, 0.11);
       }
-      if (e._lobReady && e.alive) {
-        const tgt = e._lobReady; e._lobReady = null;
-        const ex = e.position.x, ez = e.position.z;
-        const dx = tgt.x - ex, dz = tgt.z - ez;
-        const dl = Math.hypot(dx, dz) || 1;
-        bullets.spawnDir(ex, ez, dx/dl, dz/dl, false, 0xddbb44, true, e.type);
+      puddles.push(new Puddle(scene, lx, lz, 0xddbb44, 1.1));
+      addShake(0.12);
+      if (!player.invincible) {
+        const pdx = player.position.x - lx, pdz = player.position.z - lz;
+        if (Math.hypot(pdx, pdz) < TUNING.bambu.landingRing.outer + PLAYER_RADIUS) {
+          if (tryHitPlayer('lob', EnemyType.BAMBU)) { triggerGameOver(); break; }
+        }
       }
     }
     if (e._hitChunks && e._hitChunks.length > 0) {
@@ -2320,9 +2302,6 @@ function loop() {
       }
       e._hitChunks.length = 0;
     }
-  }
-  for (let i = bambuAoes.length - 1; i >= 0; i--) {
-    if (!bambuAoes[i].update(dt)) { bambuAoes[i].remove(scene); bambuAoes.splice(i, 1); }
   }
 
   for (let i = damageNumbers.length - 1; i >= 0; i--) {
