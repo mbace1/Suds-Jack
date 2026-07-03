@@ -13,6 +13,7 @@
 - **Why it shipped**: `node --check` silently exits 0 on ES modules (it only parses CommonJS) — every syntax check in the v79–v93 pipeline was a no-op. Diagnosed by loading the game in headless Chromium against a local three.js testbed, which surfaced the exact console error
 - **New gate**: `scripts/check-syntax.sh` compiles every `toko-drop/js/*.js` as a real ES module (`vm.SourceTextModule`) — verified to catch this exact error — and `scripts/pre-commit` now runs it whenever game files are staged, so a parse-broken file can no longer be committed (re-install hook: `cp scripts/pre-commit .git/hooks/pre-commit`)
 - Verified end-to-end in the headless testbed: full game boots to the title with zero console errors; the enemy harness (spawn all 17 types → 30 update frames → hit/kill pass) reports ALL OK
+- *Deploy note*: GitHub Pages' deployment of the first v94 push failed on GitHub's side ("Deployment failed, try again later") and the re-run sat queued, so the site kept serving broken v93 — a follow-up commit re-triggered the Pages build
 - Cache-bust `?v=47` → `?v=48`; HUD label → v94
 
 ---
