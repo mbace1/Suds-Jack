@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v88 — 2026-07-03
+**New enemy: BOTFLY flying homing bot — and homing leaves the player's arsenal**
+- **BOTFLY** (17th enemy type, unlocks wave 5, cost 4): a pink goo bot hovering at ~y1.5 on flapping translucent wings. Holds an ~8-unit band around the player while drifting tangentially, and every 3.8s fires a **slow homing shot** (speed ×0.62, turn rate 1.8 — outrunnable and dashable, per the "slower rate" design) with a 0.5s charge-up emissive flicker as the tell. No contact damage — it flies
+- **Homing removed from the player weapon roster** (the requested trade): `H`/`H2` pods no longer appear in the LV1/LV2 drop pools, making homing an enemy-exclusive threat. The HOMING firing modes stay implemented but unreachable, in case a pod ever returns
+- `bullet.js`: `spawnDir` gains a `speedMult` param; homing now steers per side — player homing bullets chase the nearest enemy (as since v70), enemy homing bullets chase the player (shared `_steerToward` helper; `bullets.update` takes `playerPos`). The 4s bullet lifetime keeps a dodged homing shot from circling forever
+- Death FX: hovers mean its droplets rain down from flight height (fxY); dies with goo droplets (not cube chunks) and the blob death sound
+- GDD: backlog item closed, BOTFLY documented in §15
+- Cache-bust `?v=41` → `?v=42`; HUD label → v88
+
+---
+
 ## v87 — 2026-07-03
 **Port brief Part 6: LIVE TUNING page in the pause menu — the port is complete**
 - New **🎛 LIVE TUNING** page in the pause-menu list (between SETTINGS and the enemy pages): 31 sliders writing **directly into `TUNING`**, grouped BLOB (breathe/drag/tells) · CUBE FLOP (squish/cadence) · TORO (rev/telegraph/dash) · BAMBU LOB (telegraph/flight/arc/spread) · FX (trail/poison cadence). Everything listed is read by the game per-frame or per state transition, so edits apply to the live run on unpause

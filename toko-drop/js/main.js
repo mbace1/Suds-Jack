@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=41';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=41';
-import { Player, PLAYER_RADIUS } from './player.js?v=41';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=41';
-import { audio } from './audio.js?v=41';
-import { initDesigner } from './designer.js?v=41';
-import { t, getLang, setLang, langs } from './lang.js?v=41';
-import { TUNING } from './tuning.js?v=41';
+import { InputManager } from './input.js?v=42';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=42';
+import { Player, PLAYER_RADIUS } from './player.js?v=42';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=42';
+import { audio } from './audio.js?v=42';
+import { initDesigner } from './designer.js?v=42';
+import { t, getLang, setLang, langs } from './lang.js?v=42';
+import { TUNING } from './tuning.js?v=42';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -56,14 +56,14 @@ function waveKind(w) {
 // getEnemySchedule uses rng (seeded per run) so every run plays differently.
 function getEnemySchedule(wave) {
   const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
-          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA } = EnemyType;
+          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY } = EnemyType;
   const POOL = [
     // [type, minWave, cost]
     [GLOBBO,      1, 1], [YELA_CUBE,  1, 1], [SPITTOR,    1, 2], [FANNER,     1, 2],
     [ORANGE_CUBE, 2, 2], [WEEVA,      2, 3],
     [SLUDGE_CUBE, 3, 2], [BAMBU,      3, 3], [SPLITTA,    3, 3],
     [REDD_CUBE,   4, 3],
-    [PURP_CUBE,   5, 3], [PYRA,       5, 4],
+    [PURP_CUBE,   5, 3], [PYRA,       5, 4], [BOTFLY,     5, 4],
     [TORO,        6, 5],
   ];
   const available = POOL.filter(([, min]) => wave >= min);
@@ -655,8 +655,11 @@ const WEAPON_PODS = {
   H:  { mode: 'HOMING',  color: 0x44ddff, level: 1 },
   H2: { mode: 'HOMING2', color: 0x22aaff, level: 2 },
 };
-const LV1_WEAPONS = ['S', 'B', 'L', 'R', 'H'];
-const LV2_WEAPONS = ['S2', 'B2', 'L2', 'R2', 'H2'];
+// v88: H/H2 removed from the drop pools — homing is enemy-exclusive now
+// (BOTFLY fires homing shots). The HOMING firing modes stay implemented in
+// case a pod is ever re-added.
+const LV1_WEAPONS = ['S', 'B', 'L', 'R'];
+const LV2_WEAPONS = ['S2', 'B2', 'L2', 'R2'];
 const NON_WEAPON_COLORS = { hp: 0xff4466, invincible: 0xffffff, firerate: 0xff88aa, scoremult: 0xffdd22 };
 
 function randomWeaponPodId(lv2Allowed = false) {
@@ -973,7 +976,7 @@ function onKill(e) {
   score += 100 * streak * (scoreMultT > 0 ? 2 : 1);
   streakFlashT = STREAK_FLASH_DUR;
   addShake(0.07 + e.radius * 0.13);  // heavier enemies kick the camera harder
-  const _cat = BLOB_TYPES.has(e.type) ? 'blob'
+  const _cat = BLOB_TYPES.has(e.type) || e.type === EnemyType.BOTFLY ? 'blob'
     : e.type === EnemyType.TORO  ? 'toro'
     : e.type === EnemyType.BAMBU ? 'bambu'
     : e.type === EnemyType.PYRA  ? 'pyra' : 'cube';
@@ -1519,7 +1522,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v87', 16, uiCanvas.height - 12);
+  ctx.fillText('v88', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2238,7 +2241,7 @@ function loop() {
     }
   }
 
-  bullets.update(dt, Math.max(HALF_X, HALF_Z), enemies);
+  bullets.update(dt, Math.max(HALF_X, HALF_Z), enemies, player.position);
 
   // Update / cull death FX
   chunkPool.update(dt);

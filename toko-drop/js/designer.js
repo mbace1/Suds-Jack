@@ -1,7 +1,7 @@
-import { CFG, EnemyType } from './enemy.js?v=41';
-import { BULLET_CONFIG } from './bullet.js?v=41';
-import { t } from './lang.js?v=41';
-import { TUNING } from './tuning.js?v=41';
+import { CFG, EnemyType } from './enemy.js?v=42';
+import { BULLET_CONFIG } from './bullet.js?v=42';
+import { t } from './lang.js?v=42';
+import { TUNING } from './tuning.js?v=42';
 
 // Sentinels for the non-enemy pages in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -87,6 +87,7 @@ const TYPE_NAMES = {
   [EnemyType.BAMBU]:       'BAMBU',
   [EnemyType.PYRA]:        'PYRA',
   [EnemyType.OMEGA]:       'OMEGA (boss)',
+  [EnemyType.BOTFLY]:      'BOTFLY',
 };
 
 const ALL_TYPES = Object.values(EnemyType);
