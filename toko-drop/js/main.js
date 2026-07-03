@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=45';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=45';
-import { Player, PLAYER_RADIUS } from './player.js?v=45';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=45';
-import { audio } from './audio.js?v=45';
-import { initDesigner } from './designer.js?v=45';
-import { t, getLang, setLang, langs } from './lang.js?v=45';
-import { TUNING } from './tuning.js?v=45';
+import { InputManager } from './input.js?v=46';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=46';
+import { Player, PLAYER_RADIUS } from './player.js?v=46';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=46';
+import { audio } from './audio.js?v=46';
+import { initDesigner } from './designer.js?v=46';
+import { t, getLang, setLang, langs } from './lang.js?v=46';
+import { TUNING } from './tuning.js?v=46';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -698,7 +698,6 @@ class Powerup {
     this._driftX = driftX; this._driftZ = driftZ;
     this._magTrailT = 0;
     this.collected = false;
-    this._pairedWith = null;
     this._type = type;
 
     const wpDef = WEAPON_PODS[type];
@@ -1522,7 +1521,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v91', 16, uiCanvas.height - 12);
+  ctx.fillText('v92', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2438,20 +2437,16 @@ function loop() {
             gooChunkPool.spawn(kx, 0.8, kz,
               Math.cos(a) * 3.5, 1.0, Math.sin(a) * 3.5, 0xffdd55, 0.1);
           }
-          // Drop weapon pod(s). Killing all moths before any escape gives a 2-choice bonus.
+          // Drop loot. Clearing every moth before any escape guarantees a
+          // weapon pod (single, v92 — the 2-choice pair was more UI than fun)
+          // with a generous pickup window.
           const lv2Ok = wave >= 4;
           const allKilled = cargoCluster._drones.every(d => !d.alive) &&
                             !cargoCluster._drones.some(d => d.escaped);
           if (allKilled) {
-            // 2-choice pods side by side; player picks one, the other vanishes
-            const idA = randomWeaponPodId(lv2Ok);
-            let idB = randomWeaponPodId(lv2Ok);
-            while (idB === idA) idB = randomWeaponPodId(lv2Ok);
-            const puA = new Powerup(scene, kx - 1.2, kz, idA);
-            const puB = new Powerup(scene, kx + 1.2, kz, idB);
-            puA._pairedWith = puB; puB._pairedWith = puA;
-            puA._life = puB._life = 12.0;
-            powerups.push(puA, puB);
+            const pu = new Powerup(scene, kx, kz, randomWeaponPodId(lv2Ok));
+            pu._life = 12.0;
+            powerups.push(pu);
           } else {
             // Single drop drifting from the kill position. Moths carry more
             // than weapons (v89): mostly pods, sometimes pure score or a
@@ -2614,13 +2609,6 @@ function loop() {
         score += (250 + wave * 25) * (scoreMultT > 0 ? 2 : 1);
       } else if (pu._type === 'scoremult') {
         scoreMultT = 10.0;
-      }
-      // Dismiss the paired choice pod if this was a 2-option pickup
-      if (pu._pairedWith) {
-        pu._pairedWith.collected = true;
-        pu._pairedWith.remove(scene);
-        const pi = powerups.indexOf(pu._pairedWith);
-        if (pi !== -1) powerups.splice(pi, 1);
       }
       audio.pickup();
       // Collection pop: radial burst of goo bits in the pickup's colour
