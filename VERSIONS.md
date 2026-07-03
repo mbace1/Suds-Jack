@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v93 — 2026-07-03
+**In-menu enemy tester replaces the LIVE TUNING page — pause menu simplified**
+- **Each enemy page now opens with a live specimen viewport**: the selected enemy spawns in a self-contained mini three.js scene embedded in the pause menu (own renderer/camera/lights/grid floor) — it moves, telegraphs, breathes, and wears the current CFG + TUNING + material values, chasing a ghost target. **HIT / KILL / RESPAWN** debug buttons poke it (HIT pops BAMBU segments and PYRA holes too); killed specimens play their death anim and auto-respawn. Zero contact with wave state — separate scene, stub bullet pool, no scoring/collisions, torn down on resume
+- **LIVE TUNING page removed** (per request): the 31 behavior sliders are gone; the **material presets + 5 material sliders + COPY/APPLY TUNING JSON** moved to the bottom of every enemy page (behavior values remain reachable via APPLY PASTED JSON). Persisted `tokoTUNING` edits still load and apply
+- **SETTINGS slimmed to volume + reduce-motion only** — the OPEN ENEMY LAB button moved next to the JSON tools as OPEN FULL LAB ↗ (the in-menu tester covers the common case now)
+- `GOO_TIME` is advanced by the tester loop while paused so goo wobble stays alive in the preview
+- Pause menu is now: ⚙ SETTINGS · ENEMIES (17 tester pages) — the requested structure
+- Cache-bust `?v=46` → `?v=47`; HUD label → v93
+
+---
+
 ## v92 — 2026-07-03
 **Weapon pickup simplified: convoy-clear drops one pod, not a 2-choice pair**
 - Clearing every moth before any escape now drops a **single random weapon pod** (same generous 12s pickup window) instead of two side-by-side pods where grabbing one deleted the other — the choice moment was more UI than fun and read poorly mid-swarm
