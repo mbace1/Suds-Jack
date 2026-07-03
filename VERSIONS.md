@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v84 — 2026-07-03
+**Port brief Part 3: rigid edge-pivot cube flop + speed-derived cadence**
+- `_flopMove` rewritten to the goo-flop/enemy-lab math: the cube mechanically tips over its leading bottom edge — pivot arc sweeps `arcStartDeg`→`arcEndDeg` (135°→45°), center displacement `L + D·cos(ang)` (0→2L), height `D·sin(ang)` where `L` = half-extent and `D = L·√2` — replacing the old smoothstep glide + sine hop (which slid the contact point). Linear arc sweep, no easing
+- **Cadence now derives from each type's speed** (TUNING.flop): `cycle = 2L/speed`, flop lasts `min(0.30, cycle·0.65)`, rest for the remainder — average ground speed stays exactly the configured speed; fast minis scurry with quick flops, slow SLUDGE does a heavy flop… pause… flop rhythm (was: fixed 0.06s rest between back-to-back flops for everyone)
+- Landing squish now `TUNING.flop.landSquish` (0.32, was 0.5); land-flat orientation reset kept; direction-picking and wall bouncing untouched
+- **Two latent bugs fixed by the same math**: cubes rested at `y = radius` but their box half-extent is `0.9·radius` — every cube hovered slightly off the floor; and stride/rest-height ignored `_radiusMult`, so elite/boss cubes sank into the ground and understrode their own body width. Both now use `L = 0.9·radius·mult`
+- Cube family also gets the gentle at-rest breathe from the lab (`TUNING.flop.breatheAmp` 0.10) between flops; `_phase` desync moved to common init
+- Cache-bust `?v=37` → `?v=38`; HUD label → v84
+
+---
+
 ## v83 — 2026-07-03
 **Death particles match the family: cube-looking chunks only from cube enemies**
 - The pooled chunk system used one deliberately low-poly `SphereGeometry(1, 5, 3)` for every burst — at 5×3 segments it reads as an angular cube-ish nugget, so *every* enemy appeared to shatter into cubes (the reported issue)

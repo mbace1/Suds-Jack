@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=37';
+import { TUNING } from './tuning.js?v=38';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -227,6 +227,7 @@ export class Enemy {
     this._wobbleT      = Math.random() * Math.PI * 2;
     this._sq           = 1.0;
     this._sqV          = 0.0;
+    this._phase        = Math.random() * Math.PI * 2; // desyncs breathe/tells across the wave
     this._speedMult    = speedMult;
     this._intervalMult = intervalMult;
     this._t            = Math.random() * 0.5;
@@ -316,7 +317,6 @@ export class Enemy {
         type === EnemyType.SPITTOR ? shapes.SPITTOR :
         type === EnemyType.FANNER  ? shapes.FANNER  :
         type === EnemyType.WEEVA   ? shapes.WEEVA   : TUNING.blob.shape;
-      this._phase   = Math.random() * Math.PI * 2; // desyncs breathe/lunge across the wave
       this._moveYaw = 0;
     } else {
       this.mat = new THREE.MeshPhongMaterial({
@@ -500,14 +500,16 @@ export class Enemy {
       this._pyraFireTimer = cfg.fireInterval * intervalMult;
 
     } else {
-      // Blob dome origin sits at the floor contact → rest y = 0; cubes/OMEGA
-      // keep their center origin at radius height.
+      // Blob dome origin sits at the floor contact → rest y = 0. Cubes rest at
+      // their half-extent (the RoundedBox is radius*1.8 wide → 0.9·radius; the
+      // old radius-height rest left them hovering slightly). OMEGA keeps its
+      // center origin at radius height.
       if (isBlob) {
         this.mesh.position.set(x, 0, z);
         const shp = this._shape;
         this.mesh.scale.set(cfg.radius * shp.x, cfg.radius * shp.y, cfg.radius * shp.z);
       } else {
-        this.mesh.position.set(x, cfg.radius, z);
+        this.mesh.position.set(x, isCube ? cfg.radius * 0.9 : cfg.radius, z);
       }
       scene.add(this.mesh);
     }
@@ -576,14 +578,22 @@ export class Enemy {
     return BLOB_TYPES.has(this.type) ? CFG[this.type].radius * (this._radiusMult || 1) : 1;
   }
 
-  // Cube locomotion: tip end-over-end about the leading bottom edge, advancing
-  // one face-width per 90° flop. Cardinal-only; biased random walk between flops.
+  // Cube locomotion (port brief Part 3): rigid edge-pivot flop about the
+  // leading bottom edge. The pivot arc angle sweeps arcStartDeg→arcEndDeg;
+  // center displacement along dir = L + D·cos(ang) (0→2L) and center height
+  // = D·sin(ang), where L = half-extent and D = L·√2 — so the contact edge
+  // stays planted and the body mechanically tips over it (math from
+  // goo-flop.html / enemy-lab.html). Cadence derives from each type's speed:
+  // cycle = 2L/speed, flop for min(flopTimeMax, cycle·flopShareOfCycle),
+  // rest for the remainder — average ground speed stays exactly `spd`.
   _flopMove(dt, spd, halfX, halfZ, wantX = 0, wantZ = 0, exact = false) {
+    const F      = TUNING.flop;
     const radius = CFG[this.type].radius;
-    const stride = radius * 1.8;          // one face width = one flop's advance
-    const restY  = radius;                // resting center height (matches spawn)
-    const liftPeak = radius * 0.22;       // gentle hop apex mid-flop
-    const restGap  = 0.06;                // settle beat between flops
+    const rm     = this._radiusMult || 1;
+    const L      = radius * 0.9 * rm;     // half-extent (RoundedBox is radius*1.8 wide, × elite mult)
+    const D      = L * Math.SQRT2;        // center → pivot-edge distance
+    const stride = 2 * L;                 // one face width = one flop's advance
+    const cycle  = stride / Math.max(spd, 0.01);
     const cardinals = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1}];
 
     if (!this._flopActive) {
@@ -620,28 +630,32 @@ export class Enemy {
       this._flopX0 = this.mesh.position.x;
       this._flopZ0 = this.mesh.position.z;
       this._flopT  = 0;
-      this._flopDur = Math.max(0.14, stride / Math.max(spd, 0.01) - restGap);
+      this._flopDur = Math.min(F.flopTimeMax, cycle * F.flopShareOfCycle);
       this._flopActive = true;
     }
 
     this._flopT += dt;
     const p = Math.min(1, this._flopT / this._flopDur);
-    const e = p * p * (3 - 2 * p); // smoothstep
 
-    this.mesh.position.x = this._flopX0 + this._flopDir.x * stride * e;
-    this.mesh.position.z = this._flopZ0 + this._flopDir.z * stride * e;
-    this.mesh.position.y = restY + liftPeak * Math.sin(p * Math.PI);
-    this.mesh.quaternion.setFromAxisAngle(this._flopAxis, e * Math.PI / 2);
+    // Rigid pivot: linear arc sweep (no easing — a tipping body doesn't ease).
+    const ang  = (F.arcStartDeg + (F.arcEndDeg - F.arcStartDeg) * p) * Math.PI / 180;
+    const disp = L + D * Math.cos(ang);
+    this.mesh.position.x = this._flopX0 + this._flopDir.x * disp;
+    this.mesh.position.z = this._flopZ0 + this._flopDir.z * disp;
+    this.mesh.position.y = D * Math.sin(ang);
+    this.mesh.quaternion.setFromAxisAngle(this._flopAxis, p * Math.PI / 2);
 
     if (p >= 1) {
-      // Land: snap home, reset rotation (cube is symmetric → seamless), slap squash.
+      // Land flat every flop: snap home, reset orientation (the cube is
+      // symmetric — this avoids the crooked rest pose after diagonal flops).
       this.mesh.position.x = this._flopX0 + this._flopDir.x * stride;
       this.mesh.position.z = this._flopZ0 + this._flopDir.z * stride;
-      this.mesh.position.y = restY;
+      this.mesh.position.y = L;
       this.mesh.quaternion.identity();
-      this._sqV -= 0.5;
+      this._sqV -= F.landSquish;
       this._flopActive = false;
-      this._flopRest = restGap;
+      // Rest for the remainder of the speed-derived cycle.
+      this._flopRest = Math.max(0.02, cycle - this._flopDur);
     }
   }
 
@@ -1151,6 +1165,14 @@ export class Enemy {
           r * rm * shp.x * (sxz + jit) * (1 + inflate),
           r * rm * shp.y * (sy - drag * 0.25 - jit) * (1 + inflate),
           r * rm * shp.z * (sxz + drag) * (1 + inflate));
+      } else if (CUBE_TYPES.has(this.type)) {
+        // Cube family gets a gentle at-rest breathe (Part 3) on top of the
+        // squash spring; the flop branch above owns the transform mid-tumble.
+        const breathe = TUNING.flop.breatheAmp * Math.sin(this._wobbleT * 2.4 + this._phase);
+        this.mesh.scale.set(
+          sx * rm * (1 - breathe * 0.5),
+          this._sq * rm * (1 + breathe),
+          sx * rm * (1 - breathe * 0.5));
       } else {
         this.mesh.scale.set(sx * rm, this._sq * rm, sx * rm);
       }
