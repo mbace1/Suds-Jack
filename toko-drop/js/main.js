@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=48';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=48';
-import { Player, PLAYER_RADIUS } from './player.js?v=48';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=48';
-import { audio } from './audio.js?v=48';
-import { initDesigner } from './designer.js?v=48';
-import { t, getLang, setLang, langs } from './lang.js?v=48';
-import { TUNING } from './tuning.js?v=48';
+import { InputManager } from './input.js?v=49';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=49';
+import { Player, PLAYER_RADIUS } from './player.js?v=49';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=49';
+import { audio } from './audio.js?v=49';
+import { initDesigner } from './designer.js?v=49';
+import { t, getLang, setLang, langs } from './lang.js?v=49';
+import { TUNING } from './tuning.js?v=49';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -36,8 +36,12 @@ let rng = Math.random.bind(Math);
 function getWaveScale(wave) {
   const ramp = Math.min(wave, 10) - 1;   // 0..9 across waves 1-10
   const post = Math.max(0, wave - 10);   // 0,1,2… after wave 10
+  // Gentler on-ramp (v95): waves 1-5 shave a little enemy speed, fading out
+  // linearly so wave 6+ rejoins the original curve exactly. Fire rates and
+  // the post-10 curve are untouched.
+  const earlyEase = wave < 6 ? (6 - wave) * 0.012 : 0;
   return {
-    speedMult:    Math.min(1.1 + ramp * 0.09 + post * 0.02, 2.4),
+    speedMult:    Math.min(1.1 + ramp * 0.09 + post * 0.02 - earlyEase, 2.4),
     intervalMult: Math.max(1.0 - ramp * 0.055 - post * 0.010, 0.35),
   };
 }
@@ -82,7 +86,10 @@ function getEnemySchedule(wave) {
   const postB  = Math.max(0, wave - 10);
   const base   = 5 + rampB * 1.8 + postB * 0.8;
   const mod    = isBoss ? 2.0 : isSpike ? 1.4 : isSwarm ? 1.25 : isBreather ? 0.6 : 1.0;
-  const budget = Math.floor(base * mod);
+  let budget = Math.floor(base * mod);
+  // Gentler on-ramp (v95): waves 1-5 spawn a bit less (−15% at wave 1,
+  // fading to 0 by wave 6); caps, rhythm, and unlock gates are unchanged.
+  if (wave < 6) budget = Math.floor(budget * (0.85 + 0.03 * (wave - 1)));
 
   // Swarm waves favour bodies (groups/twins of cheap fast enemies); others use the full mix.
   const VARIANTS = isSwarm
@@ -1521,7 +1528,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v94', 16, uiCanvas.height - 12);
+  ctx.fillText('v95', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
