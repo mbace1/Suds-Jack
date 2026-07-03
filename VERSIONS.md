@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v92 — 2026-07-03
+**Weapon pickup simplified: convoy-clear drops one pod, not a 2-choice pair**
+- Clearing every moth before any escape now drops a **single random weapon pod** (same generous 12s pickup window) instead of two side-by-side pods where grabbing one deleted the other — the choice moment was more UI than fun and read poorly mid-swarm
+- The reward structure is otherwise unchanged: full clear still guarantees a weapon (vs. the 55/25/20 pod/score/multiplier roll on partial kills)
+- `_pairedWith` pickup-pairing plumbing removed (spawn, collection-dismissal, and field init) — the 2-choice mechanic has no other users
+- Cache-bust `?v=45` → `?v=46`; HUD label → v92
+
+---
+
 ## v91 — 2026-07-03
 **Title-screen fix: stray vertical line + squeezed buttons (overlay scrollbar)**
 - The reported vertical line on the intro screen's right side was the `#overlay` scrollbar introduced by v80's crop fix: on screens where the title content overflows `100svh`, `overflow-y:auto` + `scrollbar-width:thin` rendered a thin track, and its gutter narrowed the centered column — which is what shifted the button layout
