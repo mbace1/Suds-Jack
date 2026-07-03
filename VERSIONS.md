@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v99 — 2026-07-03
+**SPLITTA cleanup: no embedded bulges, always splits into exactly 3 small blobs**
+- The two child domes bulging inside SPLITTA's body (added in v82 as the split preview) are removed — the body is clean gel now; the split is telegraphed by its low-HP nervous pulse (v58) and its stronger breathe (0.18 vs 0.13)
+- On death SPLITTA now always spawns **3** GLOBBO children (was a coin-flip between 2 and 3)
+- Cache-bust `?v=52` → `?v=53`; HUD label → v99
+
+---
+
 ## v98 — 2026-07-03
 **Removed the "eyes" from enemy blobs (the v73 accent beacons)**
 - The glowing dot beacons added in v73 (GLOBBO forward dot, SPITTOR mouth dot, FANNER 3-dot fan, WEEVA orbiting dot, SPLITTA twin "eyes") are gone — they were added when all blobs shared one shader and were hard to tell apart, but since the Part 2 port every blob reads by silhouette (snouty/pancake/tall/squat) and motion tell (lunge/inflate/vibrate/sway/bulges), so the dots were just clutter on the gel

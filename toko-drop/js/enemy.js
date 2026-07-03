@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=52';
+import { TUNING } from './tuning.js?v=53';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -427,22 +427,9 @@ export class Enemy {
     this.mesh = new THREE.Mesh(geo, this.mat);
     this.mesh.castShadow = true;
 
-    // (v98) The v73 accent beacons — the glowing "eye" dots — are gone: each
-    // blob now reads by silhouette + motion tell (Part 2), so the dots were
-    // redundant clutter on the gel.
-    if (isBlob) {
-      // SPLITTA: the two children it splits into, visibly bulging inside the
-      // body before the split happens (TUNING.blob.splittaChildBulges).
-      if (type === EnemyType.SPLITTA) {
-        const { offset, scale } = TUNING.blob.splittaChildBulges;
-        for (const sxo of [-offset[0], offset[0]]) {
-          const b = new THREE.Mesh(BLOB_GEO, this.mat);
-          b.position.set(sxo, offset[1], offset[2]);
-          b.scale.setScalar(scale);
-          this.mesh.add(b);
-        }
-      }
-    }
+    // (v98/v99) No accent beacons or embedded bulges on blobs — every blob
+    // reads by silhouette + motion tell alone; SPLITTA's split is telegraphed
+    // by its low-HP pulse and stronger breathe instead.
 
     if (type === EnemyType.TORO) {
       // Upright wheel (Part 4): the torus lies in its local XY plane (rolling
@@ -1606,7 +1593,7 @@ export class Enemy {
     // Set child spawn info for SPLITTA, REDD_CUBE, PURP_CUBE
     if (this.type === EnemyType.SPLITTA) {
       this._childType    = EnemyType.GLOBBO;
-      this._childCount   = 2 + Math.floor(Math.random() * 2);
+      this._childCount   = 3; // always splits into 3 small blobs (v99)
       this._childFreeform = false;
     } else if (this.type === EnemyType.REDD_CUBE) {
       this._childType    = EnemyType.REDD_MINI;
