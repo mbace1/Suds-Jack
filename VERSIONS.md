@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v97 — 2026-07-03
+**PERFORMANCE MODE toggle for weaker phones**
+- New **PERFORMANCE MODE** toggle on the pause-menu SETTINGS page (persisted `tokoDropPerf`, localized en/ja/fi): drops render resolution (pixelRatio cap 2 → 1.25) and zeroes material transmission across `TUNING.material` + all family overrides, which makes three.js skip its transmission render pass entirely — the two big GPU costs since v90's physical materials
+- Fully reversible live: original transmission values are stashed and restored on toggle-off, then `applySatinValues()` restyles everything on screen; applied at boot from the saved setting
+- Player satin migration (the conditional second half of the v97 plan) deferred until the v96 specialist look gets a verdict
+- Cache-bust `?v=50` → `?v=51`; HUD label → v97
+
+---
+
 ## v96 — 2026-07-03
 **Visual unification: satin gel materials extend to the specialists + moths**
 - TORO (wheel + rim spikes, now sharing one material), BAMBU (whole stalk + lips), PYRA (ring + cones), and OMEGA now render with the v90 `MeshPhysicalMaterial` satin system instead of `MeshPhong` — every enemy family speaks the same material language, and all respond to the pause-menu material presets/sliders live

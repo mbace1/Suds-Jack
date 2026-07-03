@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=50';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=50';
-import { Player, PLAYER_RADIUS } from './player.js?v=50';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat } from './enemy.js?v=50';
-import { audio } from './audio.js?v=50';
-import { initDesigner } from './designer.js?v=50';
-import { t, getLang, setLang, langs } from './lang.js?v=50';
-import { TUNING } from './tuning.js?v=50';
+import { InputManager } from './input.js?v=51';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=51';
+import { Player, PLAYER_RADIUS } from './player.js?v=51';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=51';
+import { audio } from './audio.js?v=51';
+import { initDesigner } from './designer.js?v=51';
+import { t, getLang, setLang, langs } from './lang.js?v=51';
+import { TUNING } from './tuning.js?v=51';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -967,6 +967,34 @@ let audioVolume = (() => {
 let reduceMotion = localStorage.getItem('tokoDropReduceMotion') === '1';
 audio.setVolume(audioVolume);
 
+// Performance mode (v97): halves render resolution (pixelRatio 2 → 1.25) and
+// zeroes material transmission so three.js skips its transmission render pass
+// entirely — the two big GPU costs on weaker phones. Reversible live.
+let perfMode = localStorage.getItem('tokoDropPerf') === '1';
+let _perfSavedTrans = null;
+function applyPerfMode() {
+  renderer.setPixelRatio(Math.min(devicePixelRatio, perfMode ? 1.25 : 2));
+  const M = TUNING.material;
+  if (perfMode) {
+    if (!_perfSavedTrans) {
+      _perfSavedTrans = {
+        base: M.transmission,
+        fams: Object.fromEntries(Object.entries(M.families).map(([k, v]) => [k, v.transmission])),
+      };
+    }
+    M.transmission = 0;
+    for (const f of Object.values(M.families)) if (f.transmission !== undefined) f.transmission = 0;
+  } else if (_perfSavedTrans) {
+    M.transmission = _perfSavedTrans.base;
+    for (const [k, v] of Object.entries(M.families)) {
+      if (_perfSavedTrans.fams[k] !== undefined) v.transmission = _perfSavedTrans.fams[k];
+    }
+    _perfSavedTrans = null;
+  }
+  applySatinValues();
+}
+applyPerfMode();
+
 // A pad that connects later (common — browsers reveal pads only after input) flips an
 // un-chosen orientation to landscape live while still on the title screen.
 window.addEventListener('gamepadconnected', () => {
@@ -1354,6 +1382,12 @@ const designer = initDesigner({
       reduceMotion = on;
       localStorage.setItem('tokoDropReduceMotion', on ? '1' : '0');
     },
+    getPerf: () => perfMode,
+    setPerf: on => {
+      perfMode = on;
+      localStorage.setItem('tokoDropPerf', on ? '1' : '0');
+      applyPerfMode();
+    },
   },
 });
 
@@ -1528,7 +1562,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v96', 16, uiCanvas.height - 12);
+  ctx.fillText('v97', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
