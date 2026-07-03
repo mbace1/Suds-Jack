@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=41';
+import { TUNING } from './tuning.js?v=42';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -173,6 +173,9 @@ export const EnemyType = {
   // Boss-exclusive (v71) — never spawns in the regular pool, only as the
   // guaranteed every-8th-wave boss (see getEnemySchedule in main.js)
   OMEGA:       15,
+  // Flying bot (v88) — hovers at mid-range and fires slow homing shots.
+  // Homing is enemy-exclusive from v88 on (H/H2 pods removed from drops).
+  BOTFLY:      16,
 };
 
 export const CFG = {
@@ -192,6 +195,7 @@ export const CFG = {
   [EnemyType.BAMBU]:       { color: 0xaa8844, radius: 0.7,  speed: 0,   hp: 1, bulletColor: 0xddbb44, fireInterval: TUNING.bambu.lobCooldown },
   [EnemyType.PYRA]:        { color: 0xff9900, radius: 1.0,  speed: 0,   hp: 4, bulletColor: 0xffcc44, fireInterval: 2.5  },
   [EnemyType.OMEGA]:       { color: 0x00eeff, radius: 0.95, speed: 1.3, hp: 5, bulletColor: 0x66f2ff, fireInterval: null },
+  [EnemyType.BOTFLY]:      { color: 0xff55bb, radius: 0.5,  speed: 2.0, hp: 2, bulletColor: 0xff66ee, fireInterval: 3.8  },
 };
 
 // Per-type motion-trail signature (v36) — interval = cadence (denser = smaller),
@@ -298,6 +302,8 @@ export class Enemy {
       // Faceted crystal core — visually distinct from every blob/cube/TORO
       // silhouette so the boss reads as its own thing, not a scaled-up regular.
       geo = new THREE.IcosahedronGeometry(cfg.radius, 0);
+    } else if (type === EnemyType.BOTFLY) {
+      geo = new THREE.SphereGeometry(cfg.radius, 12, 9);
     }
 
     const isBlob = BLOB_TYPES.has(type);
@@ -575,6 +581,23 @@ export class Enemy {
       this._fireT = 1.5 + Math.random(); // fire while moving
     } if (type === EnemyType.OMEGA) {
       this._omegaFireT = 1.2 + Math.random() * 0.6;
+    } if (type === EnemyType.BOTFLY) {
+      // Flying bot (v88): hovers above the arena on translucent wings and
+      // fires slow homing shots — the only homing source in the game now.
+      this._hoverBase = 1.5;
+      this.mesh.position.y = this._hoverBase;
+      this._botOrbit = Math.random() < 0.5 ? -1 : 1;
+      const wingMat = new THREE.MeshBasicMaterial({
+        color: 0xffaadd, transparent: true, opacity: 0.55,
+        side: THREE.DoubleSide, depthWrite: false,
+      });
+      this._wings = [];
+      for (const s of [-1, 1]) {
+        const w = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.3), wingMat);
+        w.position.set(s * (cfg.radius + 0.18), 0.12, 0);
+        this.mesh.add(w);
+        this._wings.push(w);
+      }
     }
   }
 
@@ -896,6 +919,22 @@ export class Enemy {
         }
         break;
 
+      case EnemyType.BOTFLY: {
+        // Flying bot: holds a mid-range band while drifting tangentially, so
+        // its homing shots pressure the player from changing angles.
+        const want   = 8;
+        const perpX  = -ddz / dist, perpZ = ddx / dist;
+        const radial = dist > want + 1.5 ? 1 : dist < want - 1.5 ? -1 : 0;
+        this.mesh.position.x += (ddx / dist * radial + perpX * this._botOrbit * 0.8) * spd * dt;
+        this.mesh.position.z += (ddz / dist * radial + perpZ * this._botOrbit * 0.8) * spd * dt;
+        this.mesh.position.y = this._hoverBase + Math.sin(this._wobbleT * 3 + this._phase) * 0.22;
+        // Wing flap
+        for (let wi = 0; wi < this._wings.length; wi++) {
+          this._wings[wi].rotation.z = (wi === 0 ? 1 : -1) * (0.45 + Math.sin(this._wobbleT * 22) * 0.5);
+        }
+        break;
+      }
+
       case EnemyType.YELA_CUBE:
       case EnemyType.REDD_CUBE:
       case EnemyType.PURP_CUBE:
@@ -1157,6 +1196,10 @@ export class Enemy {
       this._setEmissive(Math.sin(performance.now() * 0.018) > 0 ? 0x224400 : 0x000000);
     } else if (this.type === EnemyType.OMEGA && this._omegaFireT < 0.25) {
       this._setEmissive(Math.sin(performance.now() * 0.03) > 0 ? 0x0088aa : 0x000000);
+    } else if (this.type === EnemyType.BOTFLY
+               && this._t >= CFG[EnemyType.BOTFLY].fireInterval * this._intervalMult - 0.5) {
+      // Charge-up flicker before launching a homing shot.
+      this._setEmissive(Math.sin(performance.now() * 0.025) > 0 ? 0x661144 : 0x000000);
     } else if (this._isTelegraphing) {
       this._setEmissive(this.type === EnemyType.SPITTOR ? 0x442200 : 0x440022);
     } else {
@@ -1400,6 +1443,19 @@ export class Enemy {
           }
         }
         break;
+
+      case EnemyType.BOTFLY: {
+        if (this._t >= interval) {
+          this._t = 0;
+          const dl = Math.hypot(playerPos.x - ex, playerPos.z - ez) || 1;
+          // Slow homing shot: launched at the player, then steered toward them
+          // each frame by bullet.js (speedMult 0.62 keeps it outrunnable).
+          bullets.spawnDir(ex, ez, (playerPos.x - ex) / dl, (playerPos.z - ez) / dl,
+            false, cfg.bulletColor, false, this.type, true, 1.8, 0.62);
+          this._sqV -= 0.5;
+        }
+        break;
+      }
 
       case EnemyType.WEEVA: {
         const rotSpeed = (0.38 + this._spiralAccel) / this._intervalMult;

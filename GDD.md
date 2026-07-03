@@ -280,12 +280,18 @@ Each run generates a `runSeed` (24-bit hex, shown bottom-right and on game-over)
 
 ## 15. Backlog (accepted, not yet scheduled)
 
-- **Flying homing bots**: a new flying enemy type that fires homing shots at a
-  slow rate. When it ships, **remove Homing (H/H2) from the player weapon-pod
-  roster** — homing becomes an enemy-exclusive mechanic. (Requested 2026-07-03.)
-- Enemy visual/behavior port Parts 3–6 (`toko-drop/TOKO_DROP_PORT_BRIEF.md`):
-  cube edge-pivot flop, TORO wheel + exact telegraph, BAMBU tower + parabolic
-  lob + landing ring, pause-menu live TUNING tuner.
+- *(empty — flying homing bots shipped as BOTFLY in v88; port Parts 3–6
+  shipped in v84–v87)*
+
+### BOTFLY (v88)
+
+Flying bot: hovers at ~y1.5 on translucent wings, holds a mid-range band
+around the player while drifting tangentially, and fires a **slow homing
+shot** every 3.8s (speed ×0.62, turn rate 1.8 — outrunnable and dashable).
+Charge-up emissive flicker 0.5s before each shot. No contact damage (it
+flies). Unlocks wave 5, cost 4. With its arrival, **Homing (H/H2) left the
+player weapon-pod drop pools** — homing is enemy-exclusive; the HOMING
+firing modes remain implemented but unreachable.
 
 ---
 

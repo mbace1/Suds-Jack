@@ -65,10 +65,10 @@ export class BulletPool {
     this.active = [];
   }
 
-  spawnDir(x, z, dx, dz, isPlayer, color, fat = false, originType = null, homing = false, turnRate = 6) {
+  spawnDir(x, z, dx, dz, isPlayer, color, fat = false, originType = null, homing = false, turnRate = 6, speedMult = 1) {
     const b = this._pool.pop();
     if (!b) return;
-    const speed = isPlayer ? PLAYER_BULLET_SPEED : (fat ? 3.5 : BULLET_CONFIG.enemySpeed);
+    const speed = (isPlayer ? PLAYER_BULLET_SPEED : (fat ? 3.5 : BULLET_CONFIG.enemySpeed)) * speedMult;
     b.speed = speed;
     b.fat = fat;
     b.mesh.position.set(x, 0.3, z);
@@ -89,10 +89,15 @@ export class BulletPool {
     this.active.push(b);
   }
 
-  update(dt, halfSize, enemies = null) {
+  update(dt, halfSize, enemies = null, playerPos = null) {
     for (let i = this.active.length - 1; i >= 0; i--) {
       const b = this.active[i];
-      if (b.homing && enemies) this._steerHoming(b, dt, enemies);
+      if (b.homing) {
+        // Player homing bullets chase the nearest enemy; enemy homing bullets
+        // (BOTFLY, v88) chase the player.
+        if (b.isPlayer && enemies) this._steerHoming(b, dt, enemies);
+        else if (!b.isPlayer && playerPos) this._steerToward(b, dt, playerPos.x, playerPos.z);
+      }
       b.mesh.position.x += b.vx * dt;
       b.mesh.position.z += b.vz * dt;
       b.lifetime -= dt;
@@ -127,7 +132,12 @@ export class BulletPool {
       if (d2 < nearestD2) { nearestD2 = d2; nearest = e; }
     }
     if (!nearest) return;
-    const dx = nearest.position.x - b.mesh.position.x, dz = nearest.position.z - b.mesh.position.z;
+    this._steerToward(b, dt, nearest.position.x, nearest.position.z);
+  }
+
+  // Shared limited-rate turn toward a world point (used by both homing kinds).
+  _steerToward(b, dt, x, z) {
+    const dx = x - b.mesh.position.x, dz = z - b.mesh.position.z;
     const len = Math.hypot(dx, dz) || 1;
     const tx = (dx / len) * b.speed, tz = (dz / len) * b.speed;
     const turn = Math.min(1, b.turnRate * dt);
