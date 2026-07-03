@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v101 — 2026-07-03
+**Hand-drawn logo on the title screen + roguelike upgrades offered less often**
+- **The title is now the hand-brushed TOKO DROP lettering** from the concept art (`toko-drop/logo.png`): cropped from the drawing, stray speed-lines/specks removed via connected-component filtering, strokes solidified, tinted yellow (#ffdd33) with the existing red/purple neon drop-shadow glow. `alt="TOKO DROP"` keeps it accessible; the old text title is retired
+- **Roguelike pacing**: an upgrade card is now offered every **3rd** cleared wave instead of after every wave — with instant wave-ends chaining fast, the every-wave card picker interrupted constantly ("offered way too often")
+- Cache-bust `?v=54` → `?v=55`; HUD label → v101
+
+---
+
 ## v100 — 2026-07-03
 **Trail rework: afterimages trail BEHIND movers; SLUDGE lays one continuous ribbon**
 - **Motion-trail afterimages** now spawn one body-radius behind the mover along its velocity — previously they spawned at the mover's exact position, so each ghost was born inside/under the body and mostly hidden before it faded (the "trails are under the blobs" report)
