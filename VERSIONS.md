@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v98 — 2026-07-03
+**Removed the "eyes" from enemy blobs (the v73 accent beacons)**
+- The glowing dot beacons added in v73 (GLOBBO forward dot, SPITTOR mouth dot, FANNER 3-dot fan, WEEVA orbiting dot, SPLITTA twin "eyes") are gone — they were added when all blobs shared one shader and were hard to tell apart, but since the Part 2 port every blob reads by silhouette (snouty/pancake/tall/squat) and motion tell (lunge/inflate/vibrate/sway/bulges), so the dots were just clutter on the gel
+- SPLITTA's internal child bulges stay — that's the split preview, not decoration
+- WEEVA's beacon-orbit update code and the marker plumbing removed with it
+- Cache-bust `?v=51` → `?v=52`; HUD label → v98
+
+---
+
 ## v97 — 2026-07-03
 **PERFORMANCE MODE toggle for weaker phones**
 - New **PERFORMANCE MODE** toggle on the pause-menu SETTINGS page (persisted `tokoDropPerf`, localized en/ja/fi): drops render resolution (pixelRatio cap 2 → 1.25) and zeroes material transmission across `TUNING.material` + all family overrides, which makes three.js skip its transmission render pass entirely — the two big GPU costs since v90's physical materials

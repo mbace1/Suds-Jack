@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=51';
+import { TUNING } from './tuning.js?v=52';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -427,41 +427,10 @@ export class Enemy {
     this.mesh = new THREE.Mesh(geo, this.mat);
     this.mesh.castShadow = true;
 
-    // Blob accent markers (v73): small glowing beacons, layered on top of the
-    // shared goo shader (used by every blob and the player, so left untouched),
-    // so each blob type reads distinctly at a glance during swarms. Count and
-    // arrangement echo each type's identity; colour reuses its bulletColor —
-    // the colour of the bullets it actually fires.
-    this._blobMarkerAngle = 0;
+    // (v98) The v73 accent beacons — the glowing "eye" dots — are gone: each
+    // blob now reads by silhouette + motion tell (Part 2), so the dots were
+    // redundant clutter on the gel.
     if (isBlob) {
-      const markerColor = cfg.bulletColor ?? 0x004433;
-      const markerMat = new THREE.MeshBasicMaterial({
-        color: markerColor, transparent: true, opacity: 0.85,
-        blending: THREE.AdditiveBlending, depthWrite: false,
-      });
-      this._blobMarkers = [];
-      // Marker coords are in the dome's unit object space (origin at the floor
-      // contact, body center ~y=1 pre-squash); mesh.scale carries the radius,
-      // so marker geometry sizes divide by R to keep their old world size.
-      const addMarker = (mx, my, mz, r) => {
-        const m = new THREE.Mesh(new THREE.SphereGeometry(r, 6, 5), markerMat);
-        m.position.set(mx, my, mz);
-        this.mesh.add(m);
-        this._blobMarkers.push(m);
-      };
-      const R = cfg.radius;
-      if (type === EnemyType.GLOBBO) {
-        addMarker(0, 1.3, 0.75, 0.14 / R);                    // single forward beacon
-      } else if (type === EnemyType.SPITTOR) {
-        addMarker(0, 1.1, 0.95, 0.20 / R);                    // one large "mouth" beacon
-      } else if (type === EnemyType.FANNER) {
-        for (let i = -1; i <= 1; i++) addMarker(i * 0.55, 1.2, 0.75, 0.11 / R); // 3-wide fan
-      } else if (type === EnemyType.WEEVA) {
-        addMarker(0.85, 1.0, 0, 0.13 / R);                    // single orbiting beacon
-      } else if (type === EnemyType.SPLITTA) {
-        addMarker(-0.4, 1.2, 0.7, 0.12 / R);
-        addMarker(0.4, 1.2, 0.7, 0.12 / R);                   // twin "eyes"
-      }
       // SPLITTA: the two children it splits into, visibly bulging inside the
       // body before the split happens (TUNING.blob.splittaChildBulges).
       if (type === EnemyType.SPLITTA) {
@@ -996,13 +965,6 @@ export class Enemy {
         // it actually applies pressure instead of meandering in place.
         this.mesh.position.x += (Math.sin(this._wobbleT * 0.7) * 0.5 + (ddx / dist) * 0.45) * spd * dt;
         this.mesh.position.z += (Math.cos(this._wobbleT * 0.5) * 0.5 + (ddz / dist) * 0.45) * spd * dt;
-        // Spin the accent beacon continuously, echoing the spiral it fires.
-        // Unit object space (dome origin at floor): orbit radius 0.85, mid-body height.
-        this._blobMarkerAngle += 2.0 * dt;
-        if (this._blobMarkers && this._blobMarkers[0]) {
-          const bm = this._blobMarkers[0];
-          bm.position.set(Math.cos(this._blobMarkerAngle) * 0.85, 1.0, Math.sin(this._blobMarkerAngle) * 0.85);
-        }
         break;
 
       case EnemyType.BOTFLY: {
