@@ -1,17 +1,19 @@
 import * as THREE from 'three';
-import { FILL_MAT, makeEye, C } from './shared.js?v=7';
-import { visualTest } from './modes.js?v=7';
+import { FILL_MAT, makeEye, C } from './shared.js?v=8';
+import { visualTest } from './modes.js?v=8';
 
 // Archetypes — white-line critters. y is the shape's CENTER height (flyers hover).
 // Ranged types spit slow, dense neon-faint clusters (the Returnal bullet-hell).
 // accent only shows up in Visual Test mode — the base look stays plain white sketch.
 const T = {
-  chaser: { hp: 26,  speed: 5.2, dmg: 12, r: 0.7, y: 0.7, cd: 0.7, ranged: false, accent: 0x6bffc9 },
-  turret: { hp: 40,  speed: 2.0, dmg: 9,  r: 0.9, y: 1.1, cd: 1.6, ranged: true,  keep: 14, accent: 0xffcf6b },
-  flyer:  { hp: 30,  speed: 3.4, dmg: 10, r: 0.8, y: 3.6, cd: 1.3, ranged: true,  keep: 16, fly: true, accent: 0xc06bff },
-  boss:   { hp: 1500,speed: 2.4, dmg: 16, r: 2.0, y: 2.2, cd: 1.0, ranged: true,  keep: 18, boss: true, accent: 0xff5a6b },
+  chaser: { hp: 26,  speed: 5.2, dmg: 12, r: 0.7, y: 0.7,  cd: 0.7,  ranged: false, accent: 0x6bffc9 },
+  turret: { hp: 40,  speed: 2.0, dmg: 9,  r: 0.9, y: 1.1,  cd: 1.6,  ranged: true,  keep: 14, accent: 0xffcf6b },
+  flyer:  { hp: 30,  speed: 3.4, dmg: 10, r: 0.8, y: 3.6,  cd: 1.3,  ranged: true,  keep: 16, fly: true, accent: 0xc06bff },
+  boss:   { hp: 1500,speed: 2.4, dmg: 16, r: 2.0, y: 2.2,  cd: 1.0,  ranged: true,  keep: 18, boss: true, accent: 0xff5a6b },
+  boss2:  { hp: 900, speed: 4.6, dmg: 10, r: 1.3, y: 1.4,  cd: 2.4,  ranged: true,  keep: 20, boss: true, accent: 0xffcf6b },   // swarm caller — fast, glassy, calls in backup
+  boss3:  { hp: 2200,speed: 0,   dmg: 18, r: 2.4, y: 2.0,  cd: 0.55, ranged: true,  keep: 0,  boss: true, accent: 0xc06bff },   // turret nest — stationary (speed 0), 4 spiral arms
 };
-export const COST = { chaser: 1, turret: 1.6, flyer: 2, boss: 30 };
+export const COST = { chaser: 1, turret: 1.6, flyer: 2, boss: 30, boss2: 22, boss3: 34 };
 
 function part(parent, geo, edge) {
   const o = new THREE.Object3D();
@@ -40,10 +42,26 @@ function build(type, edge) {
       w.position.set(sx * 0.55, 0.05, 0); w.rotation.z = sx * 0.3; w.rotation.y = sx * 0.2;
       const e = makeEye(0.11); e.position.set(sx * 0.13, 0.06, -0.36); g.add(e);
     }
-  } else {                                                   // boss — big many-eyed beast
+  } else if (type === 'boss') {                              // many-eyed beast
     part(g, new THREE.IcosahedronGeometry(1.85, 0), edge);
     for (const a of [-0.5, 0, 0.5]) { const e = makeEye(0.3); e.position.set(Math.sin(a) * 1.0, 0.5, -Math.cos(a) * 1.6); e.rotation.y = Math.PI + a; g.add(e); }
     for (const sx of [-1, 1]) { const s = part(g, new THREE.ConeGeometry(0.3, 1.0, 4), edge); s.position.set(sx * 1.4, 0.8, 0.4); s.rotation.z = sx * 0.5; }
+  } else if (type === 'boss2') {                             // swarm caller — lean quadruped, banner-spikes
+    const body = part(g, new THREE.OctahedronGeometry(0.95), edge); body.scale.set(1, 0.7, 1.3);
+    const head = part(g, new THREE.IcosahedronGeometry(0.4), edge); head.position.set(0, 0.6, -0.7);
+    for (const a of [-0.8, -0.27, 0.27, 0.8]) {
+      const s = part(g, new THREE.ConeGeometry(0.18, 1.3, 4), edge);
+      s.position.set(Math.sin(a) * 0.7, 1.1, Math.cos(a) * 0.4); s.rotation.z = -a * 0.6; s.rotation.x = -0.3;
+    }
+    for (const sx of [-1, 1]) { const e = makeEye(0.2); e.position.set(sx * 0.16, 0.68, -0.95); g.add(e); }
+  } else {                                                   // boss3 — turret nest, squat drum ringed with eyes/barrels
+    part(g, new THREE.CylinderGeometry(1.7, 2.1, 1.6, 8), edge);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const e = makeEye(0.26); e.position.set(Math.sin(a) * 1.75, 0.3, Math.cos(a) * 1.75); e.rotation.y = Math.PI + a; g.add(e);
+      const barrel = part(g, new THREE.CylinderGeometry(0.12, 0.12, 0.6, 5), edge);
+      barrel.position.set(Math.sin(a) * 2.0, 0.3, Math.cos(a) * 2.0); barrel.rotation.x = Math.PI / 2; barrel.rotation.y = -a;
+    }
   }
   return g;
 }
@@ -58,6 +76,8 @@ export class Enemy {
     this.dmg = t.dmg * sc.dmgMul;
     this.r = t.r; this.alive = true; this.cd = 0.4 + Math.random() * t.cd;
     this.x = 0; this.z = 0; this.y = t.y; this.bob = Math.random() * 6; this.spin = 0; this.flash = 0; this._v = 0;
+    this.summonPulse = false;                                    // boss2: set true once per pulse, main.js reads+clears it
+    this._arms = [0, Math.PI / 2, Math.PI, Math.PI * 1.5];       // boss3: 4 simultaneous spiral-arm phase offsets
   }
   place(x, z) { this.x = x; this.z = z; this.g.position.set(x, this.y, z); }
   takeDamage(d) { this.hp -= d; this.flash = 1; this.edge.color.setHex(0xff6b6b); if (this.hp <= 0) { this.hp = 0; this.alive = false; } return !this.alive; }
@@ -93,10 +113,17 @@ export class Enemy {
         const col = C.eshot;
         const fire = (dirx, diry, dirz, sp) => pool.spawn(this.x, this.y, this.z, dirx, diry, dirz,
           { fromPlayer: false, speed: sp, damage: this.dmg, color: col, r: 0.45, life: 6, scale: 1.3 });
-        if (this.boss) {
+        if (this.boss && this.type === 'boss') {                 // many-eyed beast: alternating ring / aimed fan
           this._v ^= 1;
           if (this._v === 0) { const N = 20; for (let i = 0; i < N; i++) { const a = (i / N) * Math.PI * 2 + this.spin; fire(Math.cos(a), 0, Math.sin(a), 10); } }
           else { const [ax, ay, az] = aim(); const base = Math.atan2(az, ax); for (let i = -3; i <= 3; i++) { const a = base + i * 0.16; fire(Math.cos(a), ay, Math.sin(a), 13); } }
+        } else if (this.boss && this.type === 'boss2') {          // swarm caller: sparse aimed burst + periodic summon pulse
+          const [ax, ay, az] = aim(); const base = Math.atan2(az, ax);
+          for (let i = -1; i <= 1; i++) { const a = base + i * 0.22; fire(Math.cos(a), ay, Math.sin(a), 15); }
+          this._v = (this._v + 1) % 3;
+          if (this._v === 0) this.summonPulse = true;
+        } else if (this.boss && this.type === 'boss3') {          // turret nest: 4 simultaneous rotating spiral arms
+          for (const armOffset of this._arms) { const a = armOffset + this.spin * 2.2; fire(Math.cos(a), 0, Math.sin(a), 9); }
         } else if (this.t.fly) {
           const [ax, ay, az] = aim(); const base = Math.atan2(az, ax);
           for (let i = -1; i <= 1; i++) { const a = base + i * 0.18; fire(Math.cos(a), ay, Math.sin(a), 14); }

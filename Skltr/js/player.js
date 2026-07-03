@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { Bunny, C } from './shared.js?v=7';
-import { visualTest } from './modes.js?v=7';
+import { Bunny, C } from './shared.js?v=8';
+import { visualTest } from './modes.js?v=8';
 
 const ADR_THRESH = [3, 6, 10, 15, 21];   // cumulative no-hit kills for tiers 1..5
 const ADR_TINT = [0xffffff, 0x9bffce, 0x6bffa0, 0xffd36b, 0xff9a3a, 0xff4d5e];   // Visual Test: hero edge tints with adrenaline tier

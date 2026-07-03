@@ -3,23 +3,27 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=7';
-import { Player } from './player.js?v=7';
-import { Enemy, COST } from './enemy.js?v=7';
-import { ProjectilePool } from './projectile.js?v=7';
-import { C, glow } from './shared.js?v=7';
-import { audio } from './audio.js?v=7';
-import { t, getLang, setLang, langs } from './lang.js?v=7';
-import { visualTest, depthTest, setVisualTest, setDepthTest } from './modes.js?v=7';
-import { shards, UPGRADES, levelOf, canBuy, buy, addShards, resolvedStats } from './progress.js?v=7';
+import { InputManager } from './input.js?v=8';
+import { Player } from './player.js?v=8';
+import { Enemy, COST } from './enemy.js?v=8';
+import { ProjectilePool } from './projectile.js?v=8';
+import { C, glow } from './shared.js?v=8';
+import { audio } from './audio.js?v=8';
+import { t, getLang, setLang, langs } from './lang.js?v=8';
+import { visualTest, depthTest, setVisualTest, setDepthTest } from './modes.js?v=8';
+import { shards, UPGRADES, levelOf, canBuy, buy, addShards, resolvedStats } from './progress.js?v=8';
+import { seenWelcome, seenDash, seenDoubleJump, seenHazard, seenObjective,
+  markWelcome, markDash, markDoubleJump, markHazard, markObjective } from './onboarding.js?v=8';
 
 const css = h => '#' + (h >>> 0).toString(16).padStart(6, '0').slice(-6);
 let runTime = 0;   // declared early: heightAt()/updatePlatforms() close over this for moving platforms, and buildTerrain() runs at module load
 
 // ── Renderer + night scene with neon bloom ────────────────────────────────────
 const gameCanvas = document.getElementById('canvas-game');
-const renderer = new THREE.WebGLRenderer({ canvas: gameCanvas, antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const input = new InputManager(gameCanvas);   // built early: input.isTouch gates the quality tier below
+const LOW_TIER = input.isTouch || devicePixelRatio < 1.5;   // touch / low-DPR devices get a lighter render path
+const renderer = new THREE.WebGLRenderer({ canvas: gameCanvas, antialias: !LOW_TIER });
+renderer.setPixelRatio(Math.min(devicePixelRatio, LOW_TIER ? 1.5 : 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -40,7 +44,8 @@ applyOrient(orientLandscape);
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), visualTest ? 0.62 : 0.35, 0.5, 0.0);
+const bloomRes = LOW_TIER ? new THREE.Vector2(innerWidth / 2, innerHeight / 2) : new THREE.Vector2(innerWidth, innerHeight);
+const bloom = new UnrealBloomPass(bloomRes, visualTest ? 0.62 : 0.35, 0.5, 0.0);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
 
@@ -269,6 +274,7 @@ function newChallenge() {
   let B; do { B = pool2[(Math.random() * pool2.length) | 0]; } while (Math.hypot(B.x - A.x, B.z - A.z) < 28);
   obj.pts = [A, B]; obj.idx = 0; placeBeacon();
   toast('CHALLENGE — REACH A', BEACON_COL);
+  if (!seenObjective) { markObjective(); toast('Reach the glowing beacon for a heal', BEACON_COL); }
 }
 function objectiveUpdate(dt) {
   beacon.rotation.y += dt * 0.8;
@@ -296,21 +302,23 @@ function hazardUpdate(dt) {
     if (player.hp < hpb) shake = Math.max(shake, 0.3);
     if (!player.alive) { gameOver(); return; }
   }
-  if (inside && !hazardInsidePrev) audio.hurt();
+  if (inside && !hazardInsidePrev) {
+    audio.hurt();
+    if (!seenHazard) { markHazard(); toast('Hazard zone — get out, it drains HP', C.hazard); }
+  }
   hazardInsidePrev = inside;
 }
 
 // ── Objects ───────────────────────────────────────────────────────────────────
-const input = new InputManager(gameCanvas);
 const pool = new ProjectilePool(scene);
 const player = new Player(scene, pool);
 let enemies = [];
 
 // ── Run state ─────────────────────────────────────────────────────────────────
 let gameState = 'title';     // title | playing | paused | gameover
-let kills = 0, shake = 0, fovKick = 0, challenges = 0, hitstopT = 0, killPunch = 0;
+let kills = 0, shake = 0, fovKick = 0, challenges = 0, hitstopT = 0, killPunch = 0, dashTipTimer = 0;
 const HITSTOP_KILL = 0.05, HITSTOP_BOSS_KILL = 0.09, HITSTOP_HURT = 0.07;
-let credits = 0, spawnCD = 0, nextBoss = 65, bossAlive = false;
+let credits = 0, spawnCD = 0, nextBoss = 65, bossAlive = false, bossKills = 0;
 let toasts = [];
 let best = parseFloat(localStorage.getItem('skltrBestTime') || '0');
 
@@ -515,11 +523,13 @@ window._feedbackExport = () => { const l = JSON.parse(localStorage.getItem('sklt
 // ── Flow ──────────────────────────────────────────────────────────────────────
 function startGame() {
   overlay.style.display = 'none'; overlay.style.pointerEvents = 'none';
-  runTime = 0; kills = 0; shake = 0; credits = 0; spawnCD = 0; nextBoss = 65; bossAlive = false; toasts = []; challenges = 0;
+  runTime = 0; kills = 0; shake = 0; credits = 0; spawnCD = 0; nextBoss = 65; bossAlive = false; bossKills = 0; toasts = []; challenges = 0;
   hitstopT = 0; killPunch = 0;
-  hazardInsidePrev = false;
+  hazardInsidePrev = false; dashTipTimer = 0;
   for (const e of enemies) e.dispose(); enemies = []; pool.clear();
-  player.reset(resolvedStats()); newChallenge();
+  player.reset(resolvedStats());
+  if (!seenWelcome) { markWelcome(); toast('WASD move · aim anywhere · auto-fire on target', C.line); }
+  newChallenge();
   gameState = 'playing'; audio.start();
 }
 function gameOver() {
@@ -551,16 +561,24 @@ function pickType() {
   if (runTime > 8 && r < 0.44) return 'turret';
   return 'chaser';
 }
+// boss2 unlocks after the player's first boss kill this run, boss3 after their second —
+// simple run-local pacing, no persisted state.
+function pickBoss() {
+  const pool2 = ['boss'];
+  if (bossKills >= 1) pool2.push('boss2');
+  if (bossKills >= 2) pool2.push('boss3');
+  return pool2[(Math.random() * pool2.length) | 0];
+}
 function director(dt) {
   credits += dt * (2.4 + runTime * 0.05);
-  const cap = 9 + Math.floor(runTime / 11);
+  const cap = Math.min(9 + Math.floor(runTime / 11), LOW_TIER ? 24 : 60);
   spawnCD -= dt;
   if (spawnCD <= 0 && enemies.length < cap) {
     spawnCD = Math.max(0.35, 1.15 - runTime * 0.004);
     const type = pickType(), cost = COST[type];
     if (credits >= cost) { credits -= cost; spawnAt(type); }
   }
-  if (runTime >= nextBoss && !bossAlive) { spawnAt('boss', 30); toast('BOSS INBOUND', C.boss); nextBoss += 95; }
+  if (runTime >= nextBoss && !bossAlive) { spawnAt(pickBoss(), 30); toast('BOSS INBOUND', C.boss); nextBoss += 95; }
 }
 
 // distance from point P to the segment A→B (swept collision, prevents tunneling)
@@ -600,27 +618,41 @@ function onKill(e) {
   kills++; audio.kill();
   const before = player.adr; player.addKill();
   if (player.adr > before) { audio.adrenaline(player.adr); toast(`ADRENALINE ${player.adr}`, C.adr); }
-  if (e.boss) { bossAlive = false; toast('BOSS DOWN', C.adr); }
+  if (e.boss) { bossAlive = false; bossKills++; toast('BOSS DOWN', C.adr); }
   hitstopT = Math.max(hitstopT, e.boss ? HITSTOP_BOSS_KILL : HITSTOP_KILL);
   killPunch = Math.max(killPunch, e.boss ? 1.6 : 1);
   burst(e.x, e.y, e.z, visualTest ? e.restColor : C.line, visualTest ? 16 : 8);
 }
 
-// ── Hit sparks ────────────────────────────────────────────────────────────────
-let sparks = [];
+// ── Hit sparks (object-pooled — same pattern as ProjectilePool, no per-hit alloc) ──
+const SPARK_CAP = 160;
+const sparkGeo = new THREE.SphereGeometry(1, 5, 4);   // unit sphere; per-spawn scale sets the visible radius
+const sparkPool = [];
+for (let i = 0; i < SPARK_CAP; i++) {
+  const mesh = new THREE.Mesh(sparkGeo, new THREE.MeshBasicMaterial({ transparent: true }));
+  mesh.visible = false; scene.add(mesh);
+  sparkPool.push({ mesh, active: false, vx: 0, vy: 0, vz: 0, life: 0 });
+}
+function sparkSpawn(x, y, z, color, radius, life) {
+  const s = sparkPool.find(s => !s.active); if (!s) return null;   // pool exhausted → drop, never allocate
+  s.active = true; s.vx = 0; s.vy = 0; s.vz = 0; s.life = life;
+  s.mesh.visible = true; s.mesh.material.color.setHex(color); s.mesh.material.opacity = 1;
+  s.mesh.scale.setScalar(radius); s.mesh.position.set(x, y, z);
+  return s;
+}
 function burst(x, y, z, color, n = 8) {
   for (let i = 0; i < n; i++) {
-    const m = new THREE.Mesh(new THREE.SphereGeometry(0.12, 5, 4), new THREE.MeshBasicMaterial({ color }));
-    m.position.set(x, y, z); scene.add(m);
-    const a = Math.random() * Math.PI * 2, e = Math.random() * Math.PI - Math.PI / 2, s = 3 + Math.random() * 5;
-    sparks.push({ m, vx: Math.cos(a) * Math.cos(e) * s, vy: Math.sin(e) * s + 2, vz: Math.sin(a) * Math.cos(e) * s, life: 0.5 });
+    const s = sparkSpawn(x, y, z, color, 0.12, 0.5); if (!s) continue;
+    const a = Math.random() * Math.PI * 2, e = Math.random() * Math.PI - Math.PI / 2, sp = 3 + Math.random() * 5;
+    s.vx = Math.cos(a) * Math.cos(e) * sp; s.vy = Math.sin(e) * sp + 2; s.vz = Math.sin(a) * Math.cos(e) * sp;
   }
 }
 function updateSparks(dt) {
-  for (let i = sparks.length - 1; i >= 0; i--) {
-    const s = sparks[i]; s.life -= dt; s.vy -= 14 * dt;
-    s.m.position.x += s.vx * dt; s.m.position.y += s.vy * dt; s.m.position.z += s.vz * dt;
-    if (s.life <= 0) { scene.remove(s.m); sparks.splice(i, 1); }
+  for (const s of sparkPool) {
+    if (!s.active) continue;
+    s.life -= dt; s.vy -= 14 * dt;
+    s.mesh.position.x += s.vx * dt; s.mesh.position.y += s.vy * dt; s.mesh.position.z += s.vz * dt;
+    if (s.life <= 0) { s.active = false; s.mesh.visible = false; }
   }
 }
 
@@ -641,7 +673,10 @@ function didDash() { audio.dash(); fovKick = 1; }   // dash feedback: whoosh + c
 input.onTap = () => {                    // tap: jump on ground, double-jump in the air
   if (gameState !== 'playing') return;
   if (player.grounded()) { if (player.jump()) audio.jump(); }
-  else if (player.doubleJump()) audio.jump();
+  else {
+    if (!seenDoubleJump) { markDoubleJump(); toast('Jump again mid-air to double-jump', C.line); }
+    if (player.doubleJump()) audio.jump();
+  }
 };
 input.onSwipe = (sx, sy) => {            // swipe/flick: dash in the flicked direction
   if (gameState !== 'playing') return;
@@ -809,17 +844,20 @@ function loop() {
 
   if (gameState === 'playing') {
     runTime += dt;
+    if (!seenDash && !player.dashing) {
+      dashTipTimer += dt;
+      if (dashTipTimer > 8 && player.dashCD <= 0) { markDash(); toast('Q / swipe to DASH through bullets', C.shot); }
+    }
     input.updateLook(dt);
     player.update(dt, input, _aim, enemies, heightAt);
     updatePlatforms();
     if (player._fired) audio.shoot();
     if (player.dashing) {                       // fading dash streak
       const col = visualTest ? (player.adr > 0 ? C.adr : 0x6bd9ff) : C.player;
-      const m = new THREE.Mesh(new THREE.SphereGeometry(visualTest ? 0.17 : 0.12, 4, 3), new THREE.MeshBasicMaterial({ color: col, transparent: true }));
-      m.position.set(player.x, player.y + 0.8, player.z); scene.add(m);
-      sparks.push({ m, vx: 0, vy: 0, vz: 0, life: visualTest ? 0.45 : 0.3 });
+      sparkSpawn(player.x, player.y + 0.8, player.z, col, visualTest ? 0.17 : 0.12, visualTest ? 0.45 : 0.3);
     }
     for (const e of enemies) e.update(dt, player, pool, heightAt, ARENA_R);
+    for (const e of enemies) if (e.summonPulse) { e.summonPulse = false; spawnAt('chaser', 4); spawnAt('chaser', 4); }
     pool.update(dt);
     collide();
     hazardUpdate(dt);
@@ -841,7 +879,7 @@ function loop() {
 // ── Resize / boot ─────────────────────────────────────────────────────────────
 function resize() {
   renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight);
-  bloom.resolution.set(innerWidth, innerHeight);
+  bloom.resolution.set(innerWidth / (LOW_TIER ? 2 : 1), innerHeight / (LOW_TIER ? 2 : 1));
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
   uiCanvas.width = innerWidth; uiCanvas.height = innerHeight;
   // default orientation follows the device until the player picks one explicitly
