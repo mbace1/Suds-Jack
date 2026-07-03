@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v95 — 2026-07-03
+**Gentler on-ramp (waves 1–5 only) + automated headless smoke test**
+- **Early waves are very slightly easier**: waves 1–5 shave a bit of enemy speed (−0.06 at wave 1, fading linearly to 0 by wave 6: 1.10→1.04, 1.19→1.14, 1.28→1.24, 1.37→1.35, 1.46→1.45) and spawn ~1 fewer enemy per wave (budget ×0.85 at wave 1, fading to ×1.0 by wave 6). **Wave 6 onward is numerically identical to before** — fire rates, caps, wave rhythm, unlock gates, and the post-10 curve untouched. Verified old-vs-new in node for waves 1–8
+- **`scripts/smoke.sh`**: the headless testbed from the v93/v94 incident, automated — vendors three.js from npm, copies the game with a local importmap, boots `index.html` in headless Chromium (fails on any uncaught error), and runs a harness that spawns all 17 enemy types, steps 30 frames, and does a hit/kill pass. Runs before every merge from now on
+- Cache-bust `?v=48` → `?v=49`; HUD label → v95
+
+---
+
 ## v94 — 2026-07-03
 **HOTFIX: game black-screened since v93 (SyntaxError in designer.js) + a real syntax gate**
 - `designer.js:97` contained `function getPathfunction getPath(...)` — a stray fragment from the v93 tester refactor glued onto the real definition. `main.js` imports `designer.js` at boot, so the SyntaxError killed the whole module graph → nothing loaded
