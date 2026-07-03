@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v91 — 2026-07-03
+**Title-screen fix: stray vertical line + squeezed buttons (overlay scrollbar)**
+- The reported vertical line on the intro screen's right side was the `#overlay` scrollbar introduced by v80's crop fix: on screens where the title content overflows `100svh`, `overflow-y:auto` + `scrollbar-width:thin` rendered a thin track, and its gutter narrowed the centered column — which is what shifted the button layout
+- Overlay is now scrollable but chromeless: `scrollbar-width:none` + `::-webkit-scrollbar{display:none}` (touch/wheel scrolling unaffected), plus `overscroll-behavior:contain` so overlay scrolling can't chain anywhere
+- No layout/geometry changes beyond removing the gutter — buttons return to their full-width centering
+- Cache-bust `?v=44` → `?v=45`; HUD label → v91
+
+---
+
 ## v90 — 2026-07-03
 **Satin gel materials: TUNING.material goes live (MeshPhysicalMaterial port of the lab's satinGoo)**
 - **Blobs and cubes now render with `MeshPhysicalMaterial`** — clearcoat, sheen, transmission, thickness/IOR, attenuation — driven by `TUNING.material` with per-family overrides (cube = firmer candy-glass: roughness 0.10, transmission 0.25). This is the lab's `satinGoo()` look replacing the custom goo `ShaderMaterial` (blobs) and `MeshPhong` (cubes)

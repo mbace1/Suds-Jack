@@ -1,7 +1,7 @@
-import { CFG, EnemyType, applySatinValues } from './enemy.js?v=44';
-import { BULLET_CONFIG } from './bullet.js?v=44';
-import { t } from './lang.js?v=44';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=44';
+import { CFG, EnemyType, applySatinValues } from './enemy.js?v=45';
+import { BULLET_CONFIG } from './bullet.js?v=45';
+import { t } from './lang.js?v=45';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=45';
 
 // Sentinels for the non-enemy pages in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
