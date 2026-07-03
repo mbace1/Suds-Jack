@@ -18,6 +18,10 @@ export const TUNING = {
     families: {
       blob: {},                                        // uses active values as-is
       cube: { roughness: 0.10, transmission: 0.25 },   // firmer candy-glass
+      toro: { roughness: 0.10, transmission: 0.25 },   // hard rolling wheel
+      bambu: { roughness: 0.20, transmission: 0.10 },  // matte woody stalk
+      pyra: { roughness: 0.10, transmission: 0.25 },
+      omega: { roughness: 0.04, transmission: 0.40 },  // boss keeps a hard crystal read
     },
   },
 
