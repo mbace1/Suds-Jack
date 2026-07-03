@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=43';
+import { TUNING } from './tuning.js?v=44';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -149,6 +149,98 @@ const BLOB_GEO = (() => {
   g.translate(0, domeCut, 0);
   return g;
 })();
+
+// ── Satin gel material (v90 — TUNING.material) ───────────────────────────────
+// MeshPhysicalMaterial port of enemy-lab.html's satinGoo(): clearcoat/sheen/
+// transmission surface driven by TUNING.material (+ per-family overrides),
+// with the game's goo vertex FX (radius-normalized lumps, directional hit
+// ripple, pre-death tear) injected via onBeforeCompile so nothing animated
+// is lost in the swap. Live materials register in SATIN_MATS so pause-menu
+// preset/slider edits restyle enemies already on screen.
+const SATIN_MATS = new Set();
+const SUN_DIR = new THREE.Vector3(8, 20, 10).normalize(); // matches main.js's sun
+
+export function applySatinValues() {
+  const M = TUNING.material;
+  for (const m of SATIN_MATS) {
+    const fam = M.families[m.gooFam] || {};
+    m.roughness          = fam.roughness    ?? M.roughness;
+    m.clearcoat          = M.clearcoat;
+    m.clearcoatRoughness = M.clearcoatRoughness;
+    m.sheen              = M.sheen;
+    m.transmission       = fam.transmission ?? M.transmission;
+    m.thickness          = M.thickness;
+    m.ior                = M.ior;
+    m.gooU.uSSS.value    = M.sss;
+  }
+}
+
+function makeSatinMat(color, fam, radius) {
+  const M = TUNING.material, famOv = M.families[fam] || {};
+  const col = new THREE.Color(color);
+  const mat = new THREE.MeshPhysicalMaterial({
+    color: col, metalness: 0,
+    roughness: famOv.roughness ?? M.roughness,
+    clearcoat: M.clearcoat, clearcoatRoughness: M.clearcoatRoughness,
+    sheen: M.sheen,
+    sheenColor: col.clone().lerp(new THREE.Color(0xffffff), 0.4),
+    sheenRoughness: 0.35,
+    transmission: famOv.transmission ?? M.transmission,
+    thickness: M.thickness, ior: M.ior,
+    attenuationColor: col, attenuationDistance: 1.2,
+  });
+  const u = {
+    uTime:   GOO_TIME,
+    uPhase:  { value: Math.random() * Math.PI * 2 },
+    uWobble: { value: fam === 'blob' ? 1.0 : 0.35 },
+    uRadius: { value: radius },
+    uHit:    { value: 0 },
+    uHitDir: { value: new THREE.Vector2(0, 0) },
+    uTear:   { value: 0 },
+    uSSS:    { value: M.sss },
+    uSSSColor: { value: col.clone().lerp(new THREE.Color(0xffffff), 0.25) },
+    uLightDir: { value: SUN_DIR.clone() },
+  };
+  mat.gooU = u;     // FX uniform access for enemy.js (physical mats have no .uniforms)
+  mat.gooFam = fam; // family for applySatinValues overrides
+  mat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, u);
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', `#include <common>
+        uniform float uTime, uPhase, uWobble, uRadius, uHit, uTear;
+        uniform vec2 uHitDir;`)
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+        {
+          // Same displacement family as the legacy goo shader (GOO_VERT).
+          vec3 q = position / uRadius;
+          float a1 = q.x * 3.6 + uTime * 2.1 + uPhase;
+          float a2 = q.y * 4.2 + uTime * 1.6 + uPhase * 1.3;
+          float a3 = q.z * 4.8 + uTime * 2.5 + uPhase * 0.7;
+          float wave = (sin(a1) + sin(a2) + sin(a3)) * 0.3333;
+          transformed += normal * wave * (0.13 * uRadius * uWobble);
+          float hd = dot(normalize(q), vec3(uHitDir.x, 0.0, uHitDir.y));
+          transformed += normal * sin(hd * 9.0 - (1.0 - uHit) * 16.0) * uHit * 0.11 * uRadius;
+          float te = (sin(q.x*15.0 + uTime*34.0) + sin(q.y*17.0 - uTime*29.0) + sin(q.z*13.0 + uTime*38.0)) * 0.3333;
+          transformed += normal * te * 0.22 * uRadius * uTear;
+        }`);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+        uniform float uSSS; uniform vec3 uSSSColor, uLightDir;`)
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+        {
+          // Soft translucency glow (enemy-lab satinGoo): back-light bleed +
+          // wrap lighting added into the emissive term.
+          vec3 V = normalize(vViewPosition);
+          vec3 L = normalize((viewMatrix * vec4(uLightDir, 0.0)).xyz);
+          vec3 H = normalize(L + normalize(normal) * 0.45);
+          float sss = pow(clamp(dot(V, -H), 0.0, 1.0), 2.2) * uSSS;
+          float wrap = clamp(dot(normalize(normal), L) * 0.5 + 0.5, 0.0, 1.0);
+          totalEmissiveRadiance += uSSSColor * (sss + wrap * 0.18 * uSSS);
+        }`);
+  };
+  SATIN_MATS.add(mat);
+  return mat;
+}
 
 export const EnemyType = {
   // Blob family (spheres)
@@ -312,10 +404,10 @@ export class Enemy {
     const matOpacity = isCube ? 0.88 : 0.82;
 
     if (isBlob) {
-      // uRadius=1: the shared dome is unit-sized in object space (mesh.scale
-      // carries the real radius), so the shader's radius-normalized wobble
-      // math sees the same lump frequencies it did with radius-baked spheres.
-      this.mat = makeGooMat(cfg.color, matOpacity, 1.0, 1);
+      // Satin gel (v90). uRadius=1: the shared dome is unit-sized in object
+      // space (mesh.scale carries the real radius), so the radius-normalized
+      // wobble math sees the same lump frequencies as before.
+      this.mat = makeSatinMat(cfg.color, 'blob', 1);
       // Per-blob silhouette (TUNING.blob): squat grounded baseline, with
       // snouty/pancake/tall overrides for SPITTOR/FANNER/WEEVA.
       const shapes = TUNING.blob.shapes;
@@ -324,6 +416,9 @@ export class Enemy {
         type === EnemyType.FANNER  ? shapes.FANNER  :
         type === EnemyType.WEEVA   ? shapes.WEEVA   : TUNING.blob.shape;
       this._moveYaw = 0;
+    } else if (isCube) {
+      // Firmer candy-glass (TUNING.material.families.cube), gentler wobble.
+      this.mat = makeSatinMat(cfg.color, 'cube', cfg.radius);
     } else {
       this.mat = new THREE.MeshPhongMaterial({
         color:       cfg.color,
@@ -764,8 +859,8 @@ export class Enemy {
 
     // Trigger the goo surface ripple from the impact point (blobs only).
     this._hitRipple = 1;
-    if (BLOB_TYPES.has(this.type) && this.mat.uniforms && this.mat.uniforms.uHitDir
-        && impactX !== undefined) {
+    const _gu = this.mat.uniforms ?? this.mat.gooU; // ShaderMaterial or satin physical
+    if (BLOB_TYPES.has(this.type) && _gu && _gu.uHitDir && impactX !== undefined) {
       const p = this.position;
       let dx = impactX - p.x, dz = impactZ - p.z;
       const d = Math.hypot(dx, dz);
@@ -774,9 +869,9 @@ export class Enemy {
         // impact direction into object space or the ripple origin drifts.
         const yaw = this.mesh.rotation.y, c = Math.cos(yaw), s = Math.sin(yaw);
         const wx = dx / d, wz = dz / d;
-        this.mat.uniforms.uHitDir.value.set(c * wx - s * wz, s * wx + c * wz);
+        _gu.uHitDir.value.set(c * wx - s * wz, s * wx + c * wz);
       } else {
-        this.mat.uniforms.uHitDir.value.set(0, 0);
+        _gu.uHitDir.value.set(0, 0);
       }
     }
 
@@ -1217,10 +1312,11 @@ export class Enemy {
       // Part 2: directional smear moved from the uStretch shader path to the
       // grounded-drag mesh transform in the blob scale block below — the
       // uniform stays at 0. The hit-ripple shockwave (v32) is kept unchanged.
-      if (BLOB_TYPES.has(this.type) && this.mat.uniforms) {
+      const _gu = this.mat.uniforms ?? this.mat.gooU;
+      if (BLOB_TYPES.has(this.type) && _gu) {
         if (this._hitRipple > 0) {
           this._hitRipple = Math.max(0, this._hitRipple - dt / 0.28);
-          this.mat.uniforms.uHit.value = this._hitRipple;
+          _gu.uHit.value = this._hitRipple;
         }
       }
 
@@ -1493,8 +1589,9 @@ export class Enemy {
     this._setOpacity((1 - t) * baseOpacity);
 
     // Pre-death tear (blobs): violent thrash strongest at death onset, fading as it bursts.
-    if (BLOB_TYPES.has(this.type) && this.mat.uniforms && this.mat.uniforms.uTear) {
-      this.mat.uniforms.uTear.value = Math.max(0, this._deathT / 0.28);
+    const _gu = this.mat.uniforms ?? this.mat.gooU;
+    if (BLOB_TYPES.has(this.type) && _gu && _gu.uTear) {
+      _gu.uTear.value = Math.max(0, this._deathT / 0.28);
     }
 
     if (this._deathT <= 0) {
@@ -1581,6 +1678,7 @@ export class Enemy {
 
   removeFrom(scene) {
     this.mesh.visible = false;
+    SATIN_MATS.delete(this.mat); // no-op for non-satin materials
     if (this.type === EnemyType.TORO) {
       scene.remove(this.group);
       if (this._indicator) scene.remove(this._indicator);

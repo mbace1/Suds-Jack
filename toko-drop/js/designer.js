@@ -1,7 +1,7 @@
-import { CFG, EnemyType } from './enemy.js?v=43';
-import { BULLET_CONFIG } from './bullet.js?v=43';
-import { t } from './lang.js?v=43';
-import { TUNING } from './tuning.js?v=43';
+import { CFG, EnemyType, applySatinValues } from './enemy.js?v=44';
+import { BULLET_CONFIG } from './bullet.js?v=44';
+import { t } from './lang.js?v=44';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=44';
 
 // Sentinels for the non-enemy pages in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -9,10 +9,18 @@ const TUNING_PAGE   = 'tuning';
 
 // ── Live TUNING tuner (port brief Part 6) ─────────────────────────────────────
 // Slider spec: [path, label, min, max, step]. Only values the game reads live
-// (per-frame or per state transition) are listed — geometry/spawn-time values
-// and the material presets wait for their systems. Edits write straight into
-// TUNING, so they apply to the running game on unpause.
+// (per-frame, per state transition, or — for material.* — pushed onto live
+// materials via applySatinValues) are listed; geometry/spawn-time values apply
+// on next spawn. Edits write straight into TUNING.
 const TUNING_ROWS = [
+  // material.* rows restyle already-spawned enemies via applySatinValues().
+  ['MATERIAL (all gel)', [
+    ['material.sss',          'SSS Glow',      0,  1.5, 0.05],
+    ['material.roughness',    'Roughness',     0,  1,   0.01],
+    ['material.clearcoat',    'Clearcoat',     0,  1,   0.02],
+    ['material.sheen',        'Sheen',         0,  1,   0.02],
+    ['material.transmission', 'Transmission',  0,  0.9, 0.02],
+  ]],
   ['BLOB — MOTION & TELLS', [
     ['blob.breatheAmp',          'Breathe Amp',          0,    0.4,  0.01],
     ['blob.breatheAmpSplitta',   'Breathe (Splitta)',    0,    0.5,  0.01],
@@ -290,12 +298,35 @@ export function initDesigner({ onResume, settings }) {
   // ── Live TUNING page (Part 6): sliders write straight into TUNING ────────────
   function renderTuning(el) {
     el.appendChild(note('edits apply to the live game on unpause · persisted until RESET'));
+
+    // Material preset chips (v90) — apply a named look onto TUNING.material
+    // and restyle every gel enemy currently on screen.
+    el.appendChild(sec('MATERIAL PRESETS'));
+    const presetRow = document.createElement('div');
+    presetRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px';
+    for (const name of Object.keys(TUNING.material.presets)) {
+      const b = document.createElement('button');
+      b.className = 'dbtn';
+      b.textContent = name.toUpperCase();
+      b.addEventListener('click', () => {
+        applyMaterialPreset(name);
+        for (const k of ['sss', 'roughness', 'clearcoat', 'sheen', 'transmission']) {
+          saveTuning(`material.${k}`, TUNING.material[k]);
+        }
+        applySatinValues();
+        renderControls(); // refresh the material sliders to the preset values
+      });
+      presetRow.appendChild(b);
+    }
+    el.appendChild(presetRow);
+
     for (const [heading, rows] of TUNING_ROWS) {
       el.appendChild(sec(heading));
       for (const [path, label, min, max, step] of rows) {
         el.appendChild(slider(label, min, max, step, getPath(TUNING, path), v => {
           setPath(TUNING, path, v);
           saveTuning(path, v);
+          if (path.startsWith('material.')) applySatinValues();
         }));
       }
     }
@@ -340,7 +371,7 @@ export function initDesigner({ onResume, settings }) {
     btnRow.appendChild(applyBtn);
     el.appendChild(btnRow);
     el.appendChild(out);
-    el.appendChild(note('material presets return with the material overhaul; segment geometry & lob cooldown apply on next spawn (cooldown lives in the enemy pages as Fire Interval)'));
+    el.appendChild(note('segment geometry & lob cooldown apply on next spawn (cooldown lives in the enemy pages as Fire Interval)'));
   }
 
   // ── Settings page (moved here from the title screen in v81) ───────────────────

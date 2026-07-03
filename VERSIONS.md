@@ -7,117 +7,31 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v89 — 2026-07-03
-**Moth drops diversified: score nuggets + score-multiplier orbs join weapon pods**
-- Single-moth kills now roll a drop table instead of always dropping a weapon pod: **55% weapon pod · 25% score nugget · 20% Score Multiplier orb** — moths carry loot, not just armament
-- New **score nugget** pickup (soft-green orb): instant `250 + wave×25` points on collection, doubled while a Score Multiplier is active — worth chasing more in later waves
-- The **kill-every-moth 2-choice pod bonus is untouched** — clearing the whole convoy before any escape still guarantees the weapon pick, so the designed reward stays weapons
-- Gate drops unchanged (hp/invincible/firerate/scoremult); the nugget is moth-exclusive
-- Cache-bust `?v=42` → `?v=43`; HUD label → v89
-
----
-
-## v88 — 2026-07-03
-**New enemy: BOTFLY flying homing bot — and homing leaves the player's arsenal**
-- **BOTFLY** (17th enemy type, unlocks wave 5, cost 4): a pink goo bot hovering at ~y1.5 on flapping translucent wings. Holds an ~8-unit band around the player while drifting tangentially, and every 3.8s fires a **slow homing shot** (speed ×0.62, turn rate 1.8 — outrunnable and dashable, per the "slower rate" design) with a 0.5s charge-up emissive flicker as the tell. No contact damage — it flies
-- **Homing removed from the player weapon roster** (the requested trade): `H`/`H2` pods no longer appear in the LV1/LV2 drop pools, making homing an enemy-exclusive threat. The HOMING firing modes stay implemented but unreachable, in case a pod ever returns
-- `bullet.js`: `spawnDir` gains a `speedMult` param; homing now steers per side — player homing bullets chase the nearest enemy (as since v70), enemy homing bullets chase the player (shared `_steerToward` helper; `bullets.update` takes `playerPos`). The 4s bullet lifetime keeps a dodged homing shot from circling forever
-- Death FX: hovers mean its droplets rain down from flight height (fxY); dies with goo droplets (not cube chunks) and the blob death sound
-- GDD: backlog item closed, BOTFLY documented in §15
-- Cache-bust `?v=41` → `?v=42`; HUD label → v88
-
----
-
-## v87 — 2026-07-03
-**Port brief Part 6: LIVE TUNING page in the pause menu — the port is complete**
-- New **🎛 LIVE TUNING** page in the pause-menu list (between SETTINGS and the enemy pages): 31 sliders writing **directly into `TUNING`**, grouped BLOB (breathe/drag/tells) · CUBE FLOP (squish/cadence) · TORO (rev/telegraph/dash) · BAMBU LOB (telegraph/flight/arc/spread) · FX (trail/poison cadence). Everything listed is read by the game per-frame or per state transition, so edits apply to the live run on unpause
-- **COPY TUNING JSON** serializes the whole `TUNING` object; **APPLY PASTED JSON** deep-merges pasted JSON back in (only keys that exist) — the round-trip path for promoting tuned values into `tuning.js`
-- Edits persist across reloads as **touched paths only** (`tokoTUNING`) — future default changes in `tuning.js` aren't shadowed by stale saved copies of values never edited. The header **RESET** button now clears both `tokoCFG` and `tokoTUNING`
-- Deliberately absent: material preset buttons/sliders (no material system to drive yet) and the spawn-a-specimen preview (the brief marked it optional — it would complicate wave state); segment geometry + lob cooldown apply on next spawn, with the cooldown already editable as Fire Interval on BAMBU's enemy page
-- This closes out **all six parts** of `TOKO_DROP_PORT_BRIEF.md` (v79 wiring, v82 blobs, v84 flop, v85 TORO, v86 BAMBU, v87 tuner)
-- Cache-bust `?v=40` → `?v=41`; HUD label → v87
-
----
-
-## v86 — 2026-07-03
-**Port brief Part 5: BAMBU bamboo tower + parabolic lob + flashing landing ring**
-- **Body rebuilt**: each segment is now a cylinder flaring wider toward its top (`bottomR 0.20+i·0.02`, `topR 0.36+i·0.03`, h 0.6) with a thin node lip between segments — an actual bamboo stalk instead of the old cross of rounded boxes. Emerge-from-floor and pop-a-segment-per-hit behavior kept (segment heights rescaled to `segHeight`)
-- **Attack cycle rebuilt** (the important gameplay change — the player now sees where the lob lands *before* it lands): every `lobCooldown` 4s, BAMBU picks a landing point near the player (±`lobSpread` 1.2) → a **flashing landing ring** (`RingGeometry(0.55, 0.95)`, 22Hz) marks it for `lobTelegraph` 0.7s while the charge orb climbs the stalk and the tower visibly squash-strains → an emissive blob (r 0.34) flies a **visible parabola** (arc height 2.4, `lobFlight` 1.0s) from the tower top, ring flashing faster (40Hz) → **splashdown**: droplet burst, splat decal, and damage only if the player is inside the ring at impact
-- Replaces the old instant straight-line fat bullet aimed at the player's position + the separate orange `BambuAoE` circle (class removed — it was visual-only and implied an AoE that never damaged); telemetry logs these hits as source `'lob'`
-- Tower gains the lab's idle breathe; lob blob/ring are hidden if BAMBU dies mid-cycle and cleaned up on despawn
-- `main.js` now imports TUNING (first use outside enemy.js)
-- Cache-bust `?v=39` → `?v=40`; HUD label → v86
-
----
-
-## v85 — 2026-07-03
-**Port brief Part 4: TORO rolls like a wheel + exact-length telegraph with arrowhead**
-- **Wheel orientation fixed**: torus + rim spikes now live in a `_wheel` subgroup spinning about the axle (local Z) while the outer group yaws to face the travel/dash direction — TORO visually *rolls*. Previously the whole group spun about the vertical axis (like a coin on a table) and the 6 spikes were laid out in the horizontal plane while the torus stood upright — they didn't even ring the wheel. Now `TUNING.toro.rimSpikes` (5) spikes ring the rim in the wheel plane
-- Rev-up keeps the accelerating spin (`3 + ramp·8` rad/s, ramp now TUNING-driven); during the dash, spin rate = `dashSpeed / rimRadius` so ground speed and rotation match
-- **Telegraph**: the fixed 36-unit line is replaced by a shaft (`indicatorWidth` 0.34) stretched to the **exact dash length** — computed against the real arena walls along the dash direction — plus a 3-sided cone arrowhead (0.5 × 0.9) whose **tip sits exactly at the impact point**. Flash cadence unchanged
-- **Latent bug fixed**: the dash clamp used hardcoded `±17` bounds from the old square arena — in portrait mode (halfX 11) TORO could dash ~6 units *outside* the side walls (and its telegraph pointed at a spot off-screen). Dash + telegraph now clamp to the live per-axis arena bounds minus the wheel radius
-- Idle creep also yaws the wheel to face its movement
-- Cache-bust `?v=38` → `?v=39`; HUD label → v85
-
----
-
-## v84 — 2026-07-03
-**Port brief Part 3: rigid edge-pivot cube flop + speed-derived cadence**
-- `_flopMove` rewritten to the goo-flop/enemy-lab math: the cube mechanically tips over its leading bottom edge — pivot arc sweeps `arcStartDeg`→`arcEndDeg` (135°→45°), center displacement `L + D·cos(ang)` (0→2L), height `D·sin(ang)` where `L` = half-extent and `D = L·√2` — replacing the old smoothstep glide + sine hop (which slid the contact point). Linear arc sweep, no easing
-- **Cadence now derives from each type's speed** (TUNING.flop): `cycle = 2L/speed`, flop lasts `min(0.30, cycle·0.65)`, rest for the remainder — average ground speed stays exactly the configured speed; fast minis scurry with quick flops, slow SLUDGE does a heavy flop… pause… flop rhythm (was: fixed 0.06s rest between back-to-back flops for everyone)
-- Landing squish now `TUNING.flop.landSquish` (0.32, was 0.5); land-flat orientation reset kept; direction-picking and wall bouncing untouched
-- **Two latent bugs fixed by the same math**: cubes rested at `y = radius` but their box half-extent is `0.9·radius` — every cube hovered slightly off the floor; and stride/rest-height ignored `_radiusMult`, so elite/boss cubes sank into the ground and understrode their own body width. Both now use `L = 0.9·radius·mult`
-- Cube family also gets the gentle at-rest breathe from the lab (`TUNING.flop.breatheAmp` 0.10) between flops; `_phase` desync moved to common init
-- Cache-bust `?v=37` → `?v=38`; HUD label → v84
-
----
-
-## v83 — 2026-07-03
-**Death particles match the family: cube-looking chunks only from cube enemies**
-- The pooled chunk system used one deliberately low-poly `SphereGeometry(1, 5, 3)` for every burst — at 5×3 segments it reads as an angular cube-ish nugget, so *every* enemy appeared to shatter into cubes (the reported issue)
-- Split into two instanced pools: the angular pool now serves only the **cube family** (YELA/ORANGE/SLUDGE/REDD/PURP + minis) and hard shards (gate dash-through burst); a new smooth-droplet pool (`SphereGeometry(1, 9, 7)`) serves **blobs, TORO, BAMBU, PYRA, OMEGA, pickup pops, and moth kills** — goo bursts into round droplets, still 1 draw call per pool
-- Routing via a `chunksFor(type)` helper on every spawn site (death chunks, non-fatal hit sparks, BAMBU segment/PYRA hole pops)
-- GDD: new **Backlog** section — flying homing bots (slow homing shots) + removing Homing from the player weapon roster when they land, and port Parts 3–6
-- Cache-bust `?v=36` → `?v=37`; HUD label → v83
-
----
-
-## v82 — 2026-07-02
-**Port brief Part 2: blob gel-dome geometry, per-blob silhouettes, grounded drag + motion tells**
-- **Blob geometry replaced**: all 5 blob types now share one SDF-generated gel dome (most of a ball with a flat rounded-off bottom, `smax(|p|−1, −y−domeCut, domeRound)`, shrink-wrapped 72-detail sphere — exact port of `enemy-lab.html`'s `blobGeo`) instead of per-instance `SphereGeometry`. Origin at the floor contact point → rest y=0 and every squash/breathe/drag anchors to the ground
-- **Per-blob silhouettes** (TUNING.blob): squat baseline {1.05, 0.82, 1.05}; SPITTOR snouty (long Z), FANNER wide flat pancake, WEEVA taller drill dome
-- **Grounded drag** (all blobs): body yaws to face motion, stretches along travel, nose lifts / rear drags (`drag = min(speed×0.10, 0.35)`); replaces the old world-space `uStretch` shader smear (the goo wobble + hit-ripple shader paths are kept unchanged — ripples now radiate from the contact point)
-- **Motion tells**: GLOBBO lunging-slime speed pulses while stalking (pounce machine from v58 kept — the brief's tell layered on, not replacing gameplay); SPITTOR inflates +22% over 0.45s before firing (was flat +35%/0.6s) and recoils 0.18 on fire; WEEVA ±3% scale vibration at 40Hz; FANNER sways `rotation.z` at 7Hz; SPLITTA's two children visibly bulge inside before the split; whole-body breathe (0.13 / 0.18 SPLITTA)
-- **Fixed enemy-lab.html crash**: the lab referenced `smin` without defining it (`ReferenceError` on load — it can't ever have rendered); added the standard polynomial smooth-min the brief specifies
-- Blob y-anchor plumbing: new `Enemy.fxY` getter keeps damage numbers, hit sparks, death chunks, motion-trail ghosts, and HP bars at mid-body height now that blob `position.y` is 0
-- Created `CLAUDE.md` (brief's verify step): tuning.js single-source-of-truth note + versioning/release conventions
-- Cache-bust `?v=35` → `?v=36`; HUD label → v82
-
----
-
-## v81 — 2026-07-02
-**Pause-menu rework: SETTINGS page (volume + reduce-motion moved from title) + ENEMY LAB launcher**
-- The pause menu's left list now has a **⚙ SETTINGS** page above an "ENEMIES" group of the existing per-enemy tuning pages; the menu opens on SETTINGS (players pausing mid-run mostly want volume/motion — tuning is one tap away)
-- **VOLUME slider and REDUCE MOTION toggle moved from the title screen into the pause menu** (the standing request from v77's "sound bar seems like a menu item"): state + persistence stay in `main.js`, the menu reads/writes through getter/setter accessors passed to `initDesigner`; localized labels reused (en/ja/fi, new `settings`/`settingsHint` keys)
-- Title screen slimmed accordingly — keeps orientation/roguelike/language/run-history plus a faint "settings are in the pause menu (⏸)" pointer
-- **OPEN ENEMY LAB ↗** button on the SETTINGS page launches `enemy-lab.html` (deployed since v80) in a new tab — the visual reference for the Parts 2–6 enemy overhaul; noted in-menu as a separate page that doesn't affect the run
-- Full Part 6 (live TUNING tuner with material presets/sliders) deliberately deferred until Parts 2–5 wire those visuals into the game — sliders bound to nothing would be noise
-- Cache-bust `?v=34` → `?v=35`; HUD label → v81
-
----
-
-## v80 — 2026-07-02
-**Landscape crop fix (scrollable overlay + rotation-safe canvas) + TUNING wiring goes live**
-- **Death/title overlay no longer crops on short landscape screens** (the reported bug — phone/PC in landscape cut off the game-over stats at the top and the feedback buttons at the bottom, with no way to reach them since `body` has `overflow:hidden`): `#overlay` now caps at `100svh`/`100vw` and scrolls internally (`overflow-y:auto`, `touch-action:pan-y`). Scrolling works because v53 already exempted `#overlay` touches from `preventDefault` and `showGameOver()` sets `pointerEvents:auto`
-- **Rotation dead-strip fix**: some phones fire `resize` before the rotated dimensions settle, leaving the canvas at the old size (black strip on one edge). Added `orientationchange` re-resize (immediate + 250ms + 600ms) and a `visualViewport` resize listener; `viewport-fit=cover` added to the meta viewport so cutout letterboxing stops reserving a dead strip
-- Verified numerically (projected all arena corners at aspects 0.46–2.16) that the 3D camera itself was NOT the crop cause — the arena fits the frustum at all common landscape aspects, so camera framing is untouched
-- Ships v78 (tuning.js/enemy-lab/port-brief assets) and v79 (Part 1 TUNING wiring) — both behavior-neutral
-- `scripts/bump-version.sh` now includes `enemy.js` in the cache-token loop (it carries the `tuning.js?v=` import since v79)
-- Cache-bust `?v=33` → `?v=34`; HUD label → v80
+## v90 — 2026-07-03
+**Satin gel materials: TUNING.material goes live (MeshPhysicalMaterial port of the lab's satinGoo)**
+- **Blobs and cubes now render with `MeshPhysicalMaterial`** — clearcoat, sheen, transmission, thickness/IOR, attenuation — driven by `TUNING.material` with per-family overrides (cube = firmer candy-glass: roughness 0.10, transmission 0.25). This is the lab's `satinGoo()` look replacing the custom goo `ShaderMaterial` (blobs) and `MeshPhong` (cubes)
+- **Nothing animated was lost**: the goo vertex FX (radius-normalized lumps, directional hit ripple, pre-death tear) are injected into the physical material via `onBeforeCompile`, and the lab's soft-translucency glow (back-light SSS + wrap lighting) is added into the emissive term. Emissive flashes/telegraph tints and death fades work through the material's native `.emissive`/`.opacity`
+- **Live restyling**: every satin material registers in a set (`SATIN_MATS`, pruned on despawn); `applySatinValues()` pushes `TUNING.material` onto all of them — so the LIVE TUNING page's new **MATERIAL PRESETS** row (SATIN/JELLY/GLASSY/CANDY/CLAY/NEON via `applyMaterialPreset`) and **5 material sliders** (SSS/roughness/clearcoat/sheen/transmission) restyle enemies already on screen. This un-defers the last piece of Part 6
+- Player, TORO torus, BAMBU stalk, PYRA ring, OMEGA crystal keep their existing materials for now (the gel *families* were the scope; specialists can follow if the look lands)
+- Preset/slider edits persist via the same touched-paths `tokoTUNING` mechanism
+- Cache-bust `?v=43` → `?v=44`; HUD label → v90
 
 ---
 
 ## Archive
+
+**v80–v89 summary (2026-07-02 – 2026-07-03)**
+- v80: Landscape crop fix (scrollable #overlay + rotation-safe canvas resize + viewport-fit=cover); shipped v78/v79 tuning prep
+- v81: Pause-menu SETTINGS page (volume + reduce-motion moved off the title) + ENEMY LAB launcher
+- v82: Port Part 2 — SDF gel-dome blob geometry (floor-contact origin), per-blob silhouettes, grounded drag, motion tells; fixed enemy-lab.html's missing smin (crashed on load); Enemy.fxY anchor plumbing
+- v83: Family-matched death particles — angular chunks only from cubes; smooth droplet pool for everything else
+- v84: Port Part 3 — rigid edge-pivot cube flop (arc 135°→45°), speed-derived cadence; fixed cube hover + elite stride/rest-height bugs
+- v85: Port Part 4 — TORO rolls about its axle (5 rim spikes actually on the rim), exact-length telegraph with arrowhead; fixed hardcoded ±17 dash bounds escaping the portrait arena
+- v86: Port Part 5 — BAMBU flared-cylinder bamboo tower + telegraphed parabolic lob with flashing landing ring (damage only inside the ring at impact); BambuAoE removed
+- v87: Port Part 6 — LIVE TUNING pause-menu page (31 sliders into TUNING, copy/paste JSON, touched-paths persistence); port brief complete
+- v88: BOTFLY flying homing bot (slow homing shots, charge-up tell); H/H2 pods removed — homing is enemy-exclusive; per-side homing steer in bullet.js
+- v89: Moth drops diversified — 55% pod / 25% score nugget (250 + wave×25) / 20% Score Multiplier; convoy-clear 2-pod choice untouched
+
 
 **v70–v79 summary (2026-07-02)**
 - v70: New Homing weapon pod (H/H2) — 10th weapon type; `spawnDir` homing/turnRate params
