@@ -114,7 +114,7 @@ export class Bunny {
     box(hand, 0.025, 0.06, 0.03, 0, 0.03, 0.28, e);          // front sight
   }
 
-  update(dt, { speed = 0, aimPitch = 0, yOffset = 0, airborne = false, dashing = false, firing = false } = {}) {
+  update(dt, { speed = 0, aimPitch = 0, yOffset = 0, airborne = false, dashing = false, firing = false, accent = null } = {}) {
     this.phase += dt * (3 + speed * 1.1);
     this.recoil = firing ? Math.min(1, this.recoil + 0.6) : Math.max(0, this.recoil - dt * 7);
     const on = this.recoil > 0.2; this.muzzle.visible = on;
@@ -149,7 +149,8 @@ export class Bunny {
     for (const ear of this.ears) ear.rotation.x = lerp(ear.rotation.x, 0.12 + back + sway, dt * 10);
 
     this.group.position.y = yOffset + (airborne ? 0 : Math.abs(s) * 0.04);
-    if (this.flash > 0) { this.flash = Math.max(0, this.flash - dt * 4); this.edge.color.setHex(this.flash > 0 ? 0xffffff : C.line); }
+    if (this.flash > 0) { this.flash = Math.max(0, this.flash - dt * 4); this.edge.color.setHex(0xffffff); }
+    else this.edge.color.setHex(accent ?? C.line);
   }
   hit() { this.flash = 1; }
   visible(v) { this.group.visible = v; }

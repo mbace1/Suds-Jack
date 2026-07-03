@@ -1,13 +1,15 @@
 import * as THREE from 'three';
-import { FILL_MAT, makeEye, C } from './shared.js?v=5';
+import { FILL_MAT, makeEye, C } from './shared.js?v=6';
+import { visualTest } from './modes.js?v=6';
 
 // Archetypes — white-line critters. y is the shape's CENTER height (flyers hover).
 // Ranged types spit slow, dense neon-faint clusters (the Returnal bullet-hell).
+// accent only shows up in Visual Test mode — the base look stays plain white sketch.
 const T = {
-  chaser: { hp: 26,  speed: 5.2, dmg: 12, r: 0.7, y: 0.7, cd: 0.7, ranged: false },
-  turret: { hp: 40,  speed: 2.0, dmg: 9,  r: 0.9, y: 1.1, cd: 1.6, ranged: true,  keep: 14 },
-  flyer:  { hp: 30,  speed: 3.4, dmg: 10, r: 0.8, y: 3.6, cd: 1.3, ranged: true,  keep: 16, fly: true },
-  boss:   { hp: 1500,speed: 2.4, dmg: 16, r: 2.0, y: 2.2, cd: 1.0, ranged: true,  keep: 18, boss: true },
+  chaser: { hp: 26,  speed: 5.2, dmg: 12, r: 0.7, y: 0.7, cd: 0.7, ranged: false, accent: 0x6bffc9 },
+  turret: { hp: 40,  speed: 2.0, dmg: 9,  r: 0.9, y: 1.1, cd: 1.6, ranged: true,  keep: 14, accent: 0xffcf6b },
+  flyer:  { hp: 30,  speed: 3.4, dmg: 10, r: 0.8, y: 3.6, cd: 1.3, ranged: true,  keep: 16, fly: true, accent: 0xc06bff },
+  boss:   { hp: 1500,speed: 2.4, dmg: 16, r: 2.0, y: 2.2, cd: 1.0, ranged: true,  keep: 18, boss: true, accent: 0xff5a6b },
 };
 export const COST = { chaser: 1, turret: 1.6, flyer: 2, boss: 30 };
 
@@ -49,7 +51,8 @@ function build(type, edge) {
 export class Enemy {
   constructor(scene, type, sc) {
     const t = T[type]; this.t = t; this.type = type; this.boss = !!t.boss;
-    this.edge = new THREE.LineBasicMaterial({ color: C.line });
+    this.restColor = visualTest ? t.accent : C.line;
+    this.edge = new THREE.LineBasicMaterial({ color: this.restColor });
     this.g = build(type, this.edge); scene.add(this.g);
     this.maxHp = Math.round(t.hp * sc.hpMul); this.hp = this.maxHp;
     this.dmg = t.dmg * sc.dmgMul;
@@ -63,7 +66,7 @@ export class Enemy {
   update(dt, player, pool, heightAt = () => 0, bound = 47) {
     if (!this.alive) return;
     this.cd = Math.max(0, this.cd - dt);
-    if (this.flash > 0) { this.flash = Math.max(0, this.flash - dt * 5); if (this.flash === 0) this.edge.color.setHex(C.line); }
+    if (this.flash > 0) { this.flash = Math.max(0, this.flash - dt * 5); if (this.flash === 0) this.edge.color.setHex(this.restColor); }
     this.spin += dt * 1.2; this.bob += dt * 2;
 
     const px = player.x, pz = player.z, py = 1.1;

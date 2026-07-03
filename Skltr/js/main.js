@@ -3,16 +3,16 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=5';
-import { Player } from './player.js?v=5';
-import { Enemy, COST } from './enemy.js?v=5';
-import { ProjectilePool } from './projectile.js?v=5';
-import { C, glow } from './shared.js?v=5';
-import { audio } from './audio.js?v=5';
-import { t, getLang, setLang, langs } from './lang.js?v=5';
+import { InputManager } from './input.js?v=6';
+import { Player } from './player.js?v=6';
+import { Enemy, COST } from './enemy.js?v=6';
+import { ProjectilePool } from './projectile.js?v=6';
+import { C, glow } from './shared.js?v=6';
+import { audio } from './audio.js?v=6';
+import { t, getLang, setLang, langs } from './lang.js?v=6';
+import { visualTest, depthTest, setVisualTest, setDepthTest } from './modes.js?v=6';
 
 const css = h => '#' + (h >>> 0).toString(16).padStart(6, '0').slice(-6);
-const ARENA_R = 78;
 
 // ── Renderer + night scene with neon bloom ────────────────────────────────────
 const gameCanvas = document.getElementById('canvas-game');
@@ -38,14 +38,15 @@ applyOrient(orientLandscape);
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.35, 0.5, 0.0);
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), visualTest ? 0.62 : 0.35, 0.5, 0.0);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
 
 // ── Terrain (elevation above 0 + canyons below 0) ──────────────────────────────
-// Flat surfaces (platforms/steps) + linear ramps rise above the y=0 plane;
-// pit floors + pit ramps carve canyons below it. heightAt() is authoritative for
-// physics; glow slabs/ramps/walls render the white-line surfaces. Spawn (0,0) flat.
+// Flat surfaces (platforms/steps) + linear ramps rise above the y=0 plane (fixed,
+// same in every mode); pit floors/ramps/walls carve canyons below it and roofs are
+// floating overhang slabs (visual only). heightAt() is authoritative for physics.
+// Depth Test swaps the big features + arena scale for giant versions (buildTerrain).
 const flats = [
   { x0: 9,   x1: 24,  z0: -25, z1: -9,  top: 3.0 },   // raised NE platform
   { x0: -25, x1: -11, z0: 9,   z1: 22,  top: 1.6 },   // low SW platform
@@ -58,24 +59,69 @@ const ramps = [
   { x0: -22, x1: -14, z0: 6,  z1: 9,  hA: 0,   hB: 1.6 },  // up to SW platform
   { x0: -3,  x1: 3,   z0: 15, z1: 21, hA: 0,   hB: 2.2 },  // up to north platform
 ];
-// Canyons: a long west trench (walk-through, ramps at both ends) + a dead-end
-// south-east pocket (one ramp in). Floors/ramps go negative; walls are the cliff faces.
-const pitFloors = [
-  { x0: -70, x1: -50, z0: -40, z1: 10, floor: -8 },     // long west canyon floor
-  { x0: 34,  x1: 58,  z0: 34,  z1: 58, floor: -5.5 },   // SE dead-end pocket floor
-];
-const pitRamps = [
-  { x0: -70, x1: -50, z0: -50, z1: -40, hA: 0,   hB: -8 },   // descend into west canyon (north end)
-  { x0: -70, x1: -50, z0: 10,  z1: 20,  hA: -8,  hB: 0 },    // climb back out (south end)
-  { x0: 34,  x1: 58,  z0: 24,  z1: 34,  hA: 0,   hB: -5.5 }, // descend into SE pocket (north edge)
-];
-const pitWalls = [
-  { x: -70, z0: -40, z1: 10, floor: -8,   axis: 'x' },       // west canyon: west wall
-  { x: -50, z0: -40, z1: 10, floor: -8,   axis: 'x' },       // west canyon: east wall
-  { x: 34,  z0: 34,  z1: 58, floor: -5.5, axis: 'x' },       // SE pocket: west wall
-  { x: 58,  z0: 34,  z1: 58, floor: -5.5, axis: 'x' },       // SE pocket: east wall
-  { z: 58,  x0: 34,  x1: 58, floor: -5.5, axis: 'z' },       // SE pocket: south wall
-];
+// Normal scale: a long west trench (walk-through, ramps at both ends) + a dead-end
+// south-east pocket (one ramp in).
+const NORMAL = {
+  arenaR: 78,
+  pitFloors: [
+    { x0: -70, x1: -50, z0: -40, z1: 10, floor: -8 },
+    { x0: 34,  x1: 58,  z0: 34,  z1: 58, floor: -5.5 },
+  ],
+  pitRamps: [
+    { x0: -70, x1: -50, z0: -50, z1: -40, hA: 0,   hB: -8 },
+    { x0: -70, x1: -50, z0: 10,  z1: 20,  hA: -8,  hB: 0 },
+    { x0: 34,  x1: 58,  z0: 24,  z1: 34,  hA: 0,   hB: -5.5 },
+  ],
+  pitWalls: [
+    { x: -70, z0: -40, z1: 10, floor: -8,   axis: 'x' },
+    { x: -50, z0: -40, z1: 10, floor: -8,   axis: 'x' },
+    { x: 34,  z0: 34,  z1: 58, floor: -5.5, axis: 'x' },
+    { x: 58,  z0: 34,  z1: 58, floor: -5.5, axis: 'x' },
+    { z: 58,  x0: 34,  x1: 58, floor: -5.5, axis: 'z' },
+  ],
+  roofs: [],
+  objSpots: [
+    { x: 16, z: -17 }, { x: -18, z: 15 }, { x: 0, z: 26 },
+    { x: -60, z: -14 }, { x: 46, z: 46 },
+    { x: 32, z: 18 }, { x: -32, z: -18 }, { x: 28, z: -32 }, { x: -28, z: 32 }, { x: 0, z: -38 }, { x: 36, z: -4 },
+    { x: 62, z: 0 }, { x: -62, z: 55 }, { x: 55, z: -62 }, { x: -14, z: -62 },
+  ],
+};
+// Depth Test: a much bigger arena — a terraced giant valley (two tiers down to -18)
+// and a giant roofed cave (a floating overhang above a sunken floor).
+const DEPTH = {
+  arenaR: 118,
+  pitFloors: [
+    { x0: -95, x1: -25, z0: -25, z1: 5,   floor: -8 },    // valley tier A floor
+    { x0: -95, x1: -25, z0: -95, z1: -45, floor: -18 },   // valley tier B floor (deep basin)
+    { x0: 40,  x1: 95,  z0: -60, z1: -10, floor: -6 },    // cave floor
+  ],
+  pitRamps: [
+    { x0: -95, x1: -25, z0: 5,   z1: 15,  hA: 0,  hB: -8 },     // descend into the valley
+    { x0: -95, x1: -25, z0: -45, z1: -25, hA: -8, hB: -18 },    // deeper into the basin
+    { x0: 40,  x1: 95,  z0: -10, z1: 10,  hA: 0,  hB: -6 },     // descend into the cave
+  ],
+  pitWalls: [
+    { x: -95, z0: -25, z1: 15,  floor: -8,           axis: 'x' },
+    { x: -25, z0: -25, z1: 15,  floor: -8,           axis: 'x' },
+    { x: -95, z0: -95, z1: -25, top: -8, floor: -18, axis: 'x' },
+    { x: -25, z0: -95, z1: -25, top: -8, floor: -18, axis: 'x' },
+    { z: -95, x0: -95, x1: -25, top: -8, floor: -18, axis: 'z' },   // valley dead-end cap
+    { x: 40,  z0: -60, z1: -10, floor: -6,           axis: 'x' },
+    { x: 95,  z0: -60, z1: -10, floor: -6,           axis: 'x' },
+    { z: -60, x0: 40,  x1: 95,  floor: -6,           axis: 'z' },   // cave dead-end cap
+  ],
+  roofs: [
+    { x0: 35, x1: 100, z0: -65, z1: -5, bottom: 5, top: 9 },        // floating cave ceiling
+  ],
+  objSpots: [
+    { x: 16, z: -17 }, { x: -18, z: 15 }, { x: 0, z: 26 },
+    { x: -60, z: -10 }, { x: -60, z: -70 }, { x: 65, z: -35 },
+    { x: 100, z: 0 }, { x: -100, z: 80 }, { x: 90, z: -95 }, { x: -14, z: -100 }, { x: 0, z: 100 },
+  ],
+};
+
+let ARENA_R = NORMAL.arenaR, pitFloors = [], pitRamps = [], pitWalls = [], roofs = [], OBJ_SPOTS = [];
 function heightAt(x, z) {
   let h = 0;
   for (const r of ramps) if (x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z1) {
@@ -91,59 +137,71 @@ function heightAt(x, z) {
   return d;
 }
 
-// floor: black plane (with canyon holes cut in) + faint white grid + boundary ring
-const GS = ARENA_R * 1.2;
-const groundShape = new THREE.Shape();
-groundShape.moveTo(-GS, -GS); groundShape.lineTo(GS, -GS); groundShape.lineTo(GS, GS); groundShape.lineTo(-GS, GS); groundShape.closePath();
-function cutHole(x0, x1, z0, z1) {
-  const h = new THREE.Path();
-  h.moveTo(x0, -z0); h.lineTo(x1, -z0); h.lineTo(x1, -z1); h.lineTo(x0, -z1); h.closePath();
-  groundShape.holes.push(h);
-}
-for (const p of pitFloors) cutHole(p.x0, p.x1, p.z0, p.z1);
-for (const pr of pitRamps) cutHole(pr.x0, pr.x1, pr.z0, pr.z1);
-const groundMesh = new THREE.Mesh(new THREE.ShapeGeometry(groundShape), new THREE.MeshBasicMaterial({ color: 0x050505 }));
-groundMesh.rotateX(-Math.PI / 2); scene.add(groundMesh);
-const gridDiv = Math.round(ARENA_R * 40 / 47);
-const grid = new THREE.GridHelper(ARENA_R * 2, gridDiv, C.dim, C.dim);
-grid.material.transparent = true; grid.material.opacity = 0.45; scene.add(grid);
-const ring = new THREE.Mesh(new THREE.TorusGeometry(ARENA_R, 0.12, 6, 96),
-  new THREE.MeshBasicMaterial({ color: 0x888888 })); ring.rotation.x = -Math.PI / 2; scene.add(ring);
-
+let terrainMeshes = [], groundMesh = null, grid = null, ring = null;
+function disposeMesh(o) { o.traverse?.(c => c.geometry?.dispose()); scene.remove(o); }
 function renderRamp(r) {
   const w = r.x1 - r.x0, lenZ = r.z1 - r.z0, rise = r.hB - r.hA;
   const g = glow(new THREE.BoxGeometry(w, 0.12, Math.hypot(lenZ, rise)));
   g.position.set((r.x0 + r.x1) / 2, (r.hA + r.hB) / 2, (r.z0 + r.z1) / 2);
-  g.rotation.x = -Math.atan2(rise, lenZ); scene.add(g);
+  g.rotation.x = -Math.atan2(rise, lenZ); scene.add(g); terrainMeshes.push(g);
 }
-for (const f of flats) {
-  const g = glow(new THREE.BoxGeometry(f.x1 - f.x0, f.top, f.z1 - f.z0));
-  g.position.set((f.x0 + f.x1) / 2, f.top / 2, (f.z0 + f.z1) / 2); scene.add(g);
-}
-for (const r of ramps) renderRamp(r);
-for (const p of pitFloors) {
-  const g = glow(new THREE.BoxGeometry(p.x1 - p.x0, 0.15, p.z1 - p.z0));
-  g.position.set((p.x0 + p.x1) / 2, p.floor, (p.z0 + p.z1) / 2); scene.add(g);
-}
-for (const pr of pitRamps) renderRamp(pr);
-for (const w of pitWalls) {
-  const h = -w.floor;
-  if (w.axis === 'x') {
-    const g = glow(new THREE.BoxGeometry(0.3, h, w.z1 - w.z0));
-    g.position.set(w.x, w.floor / 2, (w.z0 + w.z1) / 2); scene.add(g);
-  } else {
-    const g = glow(new THREE.BoxGeometry(w.x1 - w.x0, h, 0.3));
-    g.position.set((w.x0 + w.x1) / 2, w.floor / 2, w.z); scene.add(g);
+// (re)builds the ground/grid/ring + all terrain geometry for the current mode —
+// called once at boot and again whenever Depth Test is toggled on the title screen.
+function buildTerrain() {
+  for (const o of terrainMeshes) disposeMesh(o);
+  terrainMeshes = [];
+  if (groundMesh) { disposeMesh(groundMesh); groundMesh.material.dispose(); }
+  if (grid) disposeMesh(grid);
+  if (ring) { disposeMesh(ring); ring.material.dispose(); }
+
+  const D = depthTest ? DEPTH : NORMAL;
+  ARENA_R = D.arenaR; pitFloors = D.pitFloors; pitRamps = D.pitRamps; pitWalls = D.pitWalls; roofs = D.roofs; OBJ_SPOTS = D.objSpots;
+  scene.fog.far = ARENA_R * 2.1;
+
+  // floor: black plane (with canyon holes cut in) + faint white grid + boundary ring
+  const GS = ARENA_R * 1.2;
+  const groundShape = new THREE.Shape();
+  groundShape.moveTo(-GS, -GS); groundShape.lineTo(GS, -GS); groundShape.lineTo(GS, GS); groundShape.lineTo(-GS, GS); groundShape.closePath();
+  const cutHole = (x0, x1, z0, z1) => {
+    const h = new THREE.Path();
+    h.moveTo(x0, -z0); h.lineTo(x1, -z0); h.lineTo(x1, -z1); h.lineTo(x0, -z1); h.closePath();
+    groundShape.holes.push(h);
+  };
+  for (const p of pitFloors) cutHole(p.x0, p.x1, p.z0, p.z1);
+  for (const pr of pitRamps) cutHole(pr.x0, pr.x1, pr.z0, pr.z1);
+  groundMesh = new THREE.Mesh(new THREE.ShapeGeometry(groundShape), new THREE.MeshBasicMaterial({ color: 0x050505 }));
+  groundMesh.rotateX(-Math.PI / 2); scene.add(groundMesh);
+  const gridDiv = Math.round(ARENA_R * 40 / 47);
+  grid = new THREE.GridHelper(ARENA_R * 2, gridDiv, C.dim, C.dim);
+  grid.material.transparent = true; grid.material.opacity = 0.45; scene.add(grid);
+  ring = new THREE.Mesh(new THREE.TorusGeometry(ARENA_R, 0.12, 6, 96),
+    new THREE.MeshBasicMaterial({ color: 0x888888 })); ring.rotation.x = -Math.PI / 2; scene.add(ring);
+
+  for (const f of flats) {
+    const g = glow(new THREE.BoxGeometry(f.x1 - f.x0, f.top, f.z1 - f.z0));
+    g.position.set((f.x0 + f.x1) / 2, f.top / 2, (f.z0 + f.z1) / 2); scene.add(g); terrainMeshes.push(g);
+  }
+  for (const r of ramps) renderRamp(r);
+  for (const p of pitFloors) {
+    const g = glow(new THREE.BoxGeometry(p.x1 - p.x0, 0.15, p.z1 - p.z0));
+    g.position.set((p.x0 + p.x1) / 2, p.floor, (p.z0 + p.z1) / 2); scene.add(g); terrainMeshes.push(g);
+  }
+  for (const pr of pitRamps) renderRamp(pr);
+  for (const w of pitWalls) {
+    const top = w.top ?? 0, h = top - w.floor;
+    let g;
+    if (w.axis === 'x') { g = glow(new THREE.BoxGeometry(0.3, h, w.z1 - w.z0)); g.position.set(w.x, (top + w.floor) / 2, (w.z0 + w.z1) / 2); }
+    else { g = glow(new THREE.BoxGeometry(w.x1 - w.x0, h, 0.3)); g.position.set((w.x0 + w.x1) / 2, (top + w.floor) / 2, w.z); }
+    scene.add(g); terrainMeshes.push(g);
+  }
+  for (const rf of roofs) {                                 // floating overhang slab — visual only, no heightAt effect
+    const g = glow(new THREE.BoxGeometry(rf.x1 - rf.x0, rf.top - rf.bottom, rf.z1 - rf.z0));
+    g.position.set((rf.x0 + rf.x1) / 2, (rf.top + rf.bottom) / 2, (rf.z0 + rf.z1) / 2); scene.add(g); terrainMeshes.push(g);
   }
 }
+buildTerrain();
 
 // ── A→B objective challenge (beacon at each waypoint; reach A then B) ──────────
-const OBJ_SPOTS = [
-  { x: 16, z: -17 }, { x: -18, z: 15 }, { x: 0, z: 26 },     // on the platforms (need traversal)
-  { x: -60, z: -14 }, { x: 46, z: 46 },                      // down in the canyons (need a ramp descent)
-  { x: 32, z: 18 }, { x: -32, z: -18 }, { x: 28, z: -32 }, { x: -28, z: 32 }, { x: 0, z: -38 }, { x: 36, z: -4 },
-  { x: 62, z: 0 }, { x: -62, z: 55 }, { x: 55, z: -62 }, { x: -14, z: -62 },
-];
 const BEACON_COL = 0x35f0d8;
 const beacon = new THREE.Group();
 const beaconCol = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 22, 12, 1, true),
@@ -212,10 +270,12 @@ function showTitle() {
     `<div id="orient-slot" style="margin-top:16px"></div>` +
     `<div style="font-size:12px;opacity:.5;margin-top:16px;line-height:1.9">${t('ctrlD1')}<br>${t('ctrlD2')}<br>` +
     `<span style="opacity:.85">${t('ctrlTouch')}</span></div>` +
-    `<div id="lang-slot" style="margin-top:18px;display:flex;gap:8px;justify-content:center"></div>`;
+    `<div id="lang-slot" style="margin-top:18px;display:flex;gap:8px;justify-content:center"></div>` +
+    `<div id="mode-slot" style="margin-top:16px"></div>`;
   overlay.style.display = 'block';
   buildOrientChip(document.getElementById('orient-slot'));
   buildLangChips(document.getElementById('lang-slot'));
+  buildModeChips(document.getElementById('mode-slot'));
 }
 function showPause() { overlay.style.pointerEvents = 'none'; showOverlay(`<div style="font-size:42px;font-weight:bold">PAUSED</div><div style="font-size:13px;opacity:.5;margin-top:10px">ESC to resume</div>`); }
 function showGameOver() {
@@ -261,6 +321,33 @@ function buildOrientChip(slot) {
     localStorage.setItem('skltrLandscape', orientLandscape ? '1' : '0'); localStorage.setItem('skltrOrientSet', '1');
     applyOrient(orientLandscape); render(); });
   slot.appendChild(btn); slot.appendChild(hint);
+}
+// Two experimental preview toggles: Visual Test (color/VFX pass) and Depth Test
+// (giant valley + cave, bigger arena). Both default off; Depth Test rebuilds terrain.
+function buildModeChips(slot) {
+  if (!slot) return;
+  const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:8px;justify-content:center;flex-wrap:wrap';
+  const mkToggle = (label, accentHex, isOn, onToggle) => {
+    const accent = css(accentHex), btn = document.createElement('div');
+    const render = () => {
+      const on = isOn();
+      btn.textContent = `${label}: ${on ? 'ON' : 'OFF'}`;
+      btn.style.cssText = 'pointer-events:auto;cursor:pointer;user-select:none;font-size:12px;font-weight:bold;padding:7px 14px;border-radius:8px;background:rgba(0,0,0,.35);transition:all .12s;'
+        + `border:2px solid ${on ? accent : '#3a4a6a'};color:${on ? accent : '#7788aa'};text-shadow:${on ? `0 0 12px ${accent}` : 'none'};`;
+    };
+    render();
+    chip(btn, () => { onToggle(); render(); });
+    return btn;
+  };
+  row.appendChild(mkToggle(t('visualTest'), 0xff8bd6, () => visualTest,
+    () => { setVisualTest(!visualTest); bloom.strength = visualTest ? 0.62 : 0.35; }));
+  row.appendChild(mkToggle(t('depthTest'), 0x6bd9ff, () => depthTest,
+    () => { setDepthTest(!depthTest); buildTerrain(); }));
+  slot.appendChild(row);
+  const hint = document.createElement('div');
+  hint.style.cssText = 'font-size:11px;opacity:.45;margin-top:6px;line-height:1.6';
+  hint.innerHTML = `${t('visualTestH')}<br>${t('depthTestH')}`;
+  slot.appendChild(hint);
 }
 
 // ── Feedback (death screen) — ported from toko-drop ────────────────────────────
@@ -420,7 +507,7 @@ function onKill(e) {
   const before = player.adr; player.addKill();
   if (player.adr > before) { audio.adrenaline(player.adr); toast(`ADRENALINE ${player.adr}`, C.adr); }
   if (e.boss) { bossAlive = false; toast('BOSS DOWN', C.adr); }
-  burst(e.x, e.y, e.z, C.line);
+  burst(e.x, e.y, e.z, visualTest ? e.restColor : C.line, visualTest ? 16 : 8);
 }
 
 // ── Hit sparks ────────────────────────────────────────────────────────────────
@@ -627,9 +714,10 @@ function loop() {
     player.update(dt, input, _aim, enemies, heightAt);
     if (player._fired) audio.shoot();
     if (player.dashing) {                       // fading dash streak
-      const m = new THREE.Mesh(new THREE.SphereGeometry(0.12, 4, 3), new THREE.MeshBasicMaterial({ color: C.player, transparent: true }));
+      const col = visualTest ? (player.adr > 0 ? C.adr : 0x6bd9ff) : C.player;
+      const m = new THREE.Mesh(new THREE.SphereGeometry(visualTest ? 0.17 : 0.12, 4, 3), new THREE.MeshBasicMaterial({ color: col, transparent: true }));
       m.position.set(player.x, player.y + 0.8, player.z); scene.add(m);
-      sparks.push({ m, vx: 0, vy: 0, vz: 0, life: 0.3 });
+      sparks.push({ m, vx: 0, vy: 0, vz: 0, life: visualTest ? 0.45 : 0.3 });
     }
     for (const e of enemies) e.update(dt, player, pool, heightAt, ARENA_R);
     pool.update(dt);
