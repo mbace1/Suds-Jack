@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { makeGooMat } from './enemy.js?v=44';
+import { makeGooMat } from './enemy.js?v=45';
 
 const SPEED          = 6;
 const DASH_SPEED     = 26;

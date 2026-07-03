@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=44';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=44';
-import { Player, PLAYER_RADIUS } from './player.js?v=44';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=44';
-import { audio } from './audio.js?v=44';
-import { initDesigner } from './designer.js?v=44';
-import { t, getLang, setLang, langs } from './lang.js?v=44';
-import { TUNING } from './tuning.js?v=44';
+import { InputManager } from './input.js?v=45';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=45';
+import { Player, PLAYER_RADIUS } from './player.js?v=45';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=45';
+import { audio } from './audio.js?v=45';
+import { initDesigner } from './designer.js?v=45';
+import { t, getLang, setLang, langs } from './lang.js?v=45';
+import { TUNING } from './tuning.js?v=45';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1522,7 +1522,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v90', 16, uiCanvas.height - 12);
+  ctx.fillText('v91', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
