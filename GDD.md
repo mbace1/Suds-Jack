@@ -278,4 +278,15 @@ Each run generates a `runSeed` (24-bit hex, shown bottom-right and on game-over)
 
 ---
 
+## 15. Backlog (accepted, not yet scheduled)
+
+- **Flying homing bots**: a new flying enemy type that fires homing shots at a
+  slow rate. When it ships, **remove Homing (H/H2) from the player weapon-pod
+  roster** — homing becomes an enemy-exclusive mechanic. (Requested 2026-07-03.)
+- Enemy visual/behavior port Parts 3–6 (`toko-drop/TOKO_DROP_PORT_BRIEF.md`):
+  cube edge-pivot flop, TORO wheel + exact telegraph, BAMBU tower + parabolic
+  lob + landing ring, pause-menu live TUNING tuner.
+
+---
+
 *GDD maintained alongside `VERSIONS.md`. Update the relevant section(s) and bump the version stamp when design changes.*

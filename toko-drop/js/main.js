@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=36';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=36';
-import { Player, PLAYER_RADIUS } from './player.js?v=36';
-import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=36';
-import { audio } from './audio.js?v=36';
-import { initDesigner } from './designer.js?v=36';
-import { t, getLang, setLang, langs } from './lang.js?v=36';
+import { InputManager } from './input.js?v=37';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=37';
+import { Player, PLAYER_RADIUS } from './player.js?v=37';
+import { Enemy, EnemyType, GOO_TIME, makeGooMat } from './enemy.js?v=37';
+import { audio } from './audio.js?v=37';
+import { initDesigner } from './designer.js?v=37';
+import { t, getLang, setLang, langs } from './lang.js?v=37';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -257,8 +257,10 @@ function applyArenaMode(landscape) {
 // Replaces the old per-chunk Mesh churn that spiked GC during dense swarm clears.
 const CHUNK_POOL = 256;
 class ChunkPool {
-  constructor(sc) {
-    const geo = new THREE.SphereGeometry(1, 5, 3);          // unit sphere, scaled per instance
+  // Default geometry is the deliberately low-poly (5×3) sphere — it reads as an
+  // angular nugget, right for cube-family debris and hard shards. Pass a denser
+  // sphere for smooth goo droplets (blob-family deaths must NOT look like cubes).
+  constructor(sc, geo = new THREE.SphereGeometry(1, 5, 3)) {
     const mat = new THREE.MeshBasicMaterial();              // opaque; instanceColor multiplies
     this.mesh = new THREE.InstancedMesh(geo, mat, CHUNK_POOL);
     this.mesh.frustumCulled = false;
@@ -854,13 +856,21 @@ const MELEE_TYPES = new Set([
 const BLOB_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPITTOR, EnemyType.FANNER, EnemyType.WEEVA, EnemyType.SPLITTA,
 ]);
+const CUBE_TYPES_FX = new Set([
+  EnemyType.YELA_CUBE, EnemyType.ORANGE_CUBE, EnemyType.SLUDGE_CUBE,
+  EnemyType.REDD_CUBE, EnemyType.PURP_CUBE, EnemyType.REDD_MINI, EnemyType.PURP_MINI,
+]);
 
 // ── Game objects ──────────────────────────────────────────────────────────────
 const input   = new InputManager();
 const bullets = new BulletPool(scene);
 const player  = new Player(scene);
 let enemies      = [];
-const chunkPool  = new ChunkPool(scene);
+const chunkPool  = new ChunkPool(scene);                                   // angular: cube debris, hard shards
+const gooChunkPool = new ChunkPool(scene, new THREE.SphereGeometry(1, 9, 7)); // smooth droplets: goo splatter
+// Cube-looking death particles only come from cube enemies; everything else
+// (blobs, TORO, BAMBU, PYRA, OMEGA, pickups, moths) bursts into round goo bits.
+const chunksFor = type => CUBE_TYPES_FX.has(type) ? chunkPool : gooChunkPool;
 const trailPool  = new TrailPool(scene);
 let puddles      = [];
 let poisonZones  = [];
@@ -992,7 +1002,7 @@ function onKill(e) {
   audio.enemyDieType(_cat);
   // Spawn death FX from chunk data populated by e.destroy()
   for (const cd of e.chunks) {
-    chunkPool.spawn(cd.x, cd.y, cd.z, cd.vx, cd.vy, cd.vz, e.color, cd.size);
+    chunksFor(e.type).spawn(cd.x, cd.y, cd.z, cd.vx, cd.vy, cd.vz, e.color, cd.size);
   }
   puddles.push(new Puddle(scene, e.position.x, e.position.z, e.color, e.radius * 1.5));
 }
@@ -1531,7 +1541,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v82', 16, uiCanvas.height - 12);
+  ctx.fillText('v83', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1885,6 +1895,7 @@ function announceWave() {
 // ── Wave / restart helpers ──────────────────────────────────────────────────────────
 function clearFX() {
   chunkPool.clear();
+  gooChunkPool.clear();
   trailPool.clear();
   for (const p of puddles)       p.remove(scene); puddles       = [];
   for (const z of poisonZones)   z.remove(scene); poisonZones   = [];
@@ -2160,6 +2171,7 @@ function loop() {
     // feedback. returnToTitle() (feedback buttons / Space / Start) dismisses it.
     for (const e of enemies) e.updateDeath(dt);
     chunkPool.update(dt);
+    gooChunkPool.update(dt);
     trailPool.update(dt);
     renderer.render(scene, camera);
     drawHUD();
@@ -2253,6 +2265,7 @@ function loop() {
 
   // Update / cull death FX
   chunkPool.update(dt);
+  gooChunkPool.update(dt);
   trailPool.update(dt);
   for (let i = puddles.length - 1; i >= 0; i--) {
     if (!puddles[i].update(dt)) { puddles[i].remove(scene); puddles.splice(i, 1); }
@@ -2303,7 +2316,7 @@ function loop() {
     }
     if (e._hitChunks && e._hitChunks.length > 0) {
       for (const cd of e._hitChunks) {
-        chunkPool.spawn(cd.x, cd.y, cd.z, cd.vx, cd.vy, cd.vz, cd.color, cd.size);
+        chunksFor(e.type).spawn(cd.x, cd.y, cd.z, cd.vx, cd.vy, cd.vz, cd.color, cd.size);
       }
       e._hitChunks.length = 0;
     }
@@ -2412,7 +2425,7 @@ function loop() {
           for (let j = 0; j < 3; j++) {
             const a  = baseA + (Math.random() - 0.5) * 1.4;
             const sp = 2.5 + Math.random() * 3;
-            chunkPool.spawn(b.mesh.position.x, e.fxY + 0.1, b.mesh.position.z,
+            chunksFor(e.type).spawn(b.mesh.position.x, e.fxY + 0.1, b.mesh.position.z,
               Math.cos(a) * sp, 1.5 + Math.random() * 2.5, Math.sin(a) * sp, e.color, 0.09);
           }
         }
@@ -2440,7 +2453,7 @@ function loop() {
           const kx = d.container.position.x, kz = d.container.position.z;
           for (let fi = 0; fi < 5; fi++) {
             const a = (fi / 5) * Math.PI * 2;
-            chunkPool.spawn(kx, 0.8, kz,
+            gooChunkPool.spawn(kx, 0.8, kz,
               Math.cos(a) * 3.5, 1.0, Math.sin(a) * 3.5, 0xffdd55, 0.1);
           }
           // Drop weapon pod(s). Killing all moths before any escape gives a 2-choice bonus.
@@ -2624,7 +2637,7 @@ function loop() {
       for (let j = 0; j < 8; j++) {
         const a = (j / 8) * Math.PI * 2;
         const sp = 3 + Math.random() * 3;
-        chunkPool.spawn(pu.x, 0.6, pu.z, Math.cos(a) * sp, 2 + Math.random() * 3, Math.sin(a) * sp, _pc, 0.12);
+        gooChunkPool.spawn(pu.x, 0.6, pu.z, Math.cos(a) * sp, 2 + Math.random() * 3, Math.sin(a) * sp, _pc, 0.12);
       }
       addShake(0.12);
     }

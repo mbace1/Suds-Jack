@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v83 — 2026-07-03
+**Death particles match the family: cube-looking chunks only from cube enemies**
+- The pooled chunk system used one deliberately low-poly `SphereGeometry(1, 5, 3)` for every burst — at 5×3 segments it reads as an angular cube-ish nugget, so *every* enemy appeared to shatter into cubes (the reported issue)
+- Split into two instanced pools: the angular pool now serves only the **cube family** (YELA/ORANGE/SLUDGE/REDD/PURP + minis) and hard shards (gate dash-through burst); a new smooth-droplet pool (`SphereGeometry(1, 9, 7)`) serves **blobs, TORO, BAMBU, PYRA, OMEGA, pickup pops, and moth kills** — goo bursts into round droplets, still 1 draw call per pool
+- Routing via a `chunksFor(type)` helper on every spawn site (death chunks, non-fatal hit sparks, BAMBU segment/PYRA hole pops)
+- GDD: new **Backlog** section — flying homing bots (slow homing shots) + removing Homing from the player weapon roster when they land, and port Parts 3–6
+- Cache-bust `?v=36` → `?v=37`; HUD label → v83
+
+---
+
 ## v82 — 2026-07-02
 **Port brief Part 2: blob gel-dome geometry, per-blob silhouettes, grounded drag + motion tells**
 - **Blob geometry replaced**: all 5 blob types now share one SDF-generated gel dome (most of a ball with a flat rounded-off bottom, `smax(|p|−1, −y−domeCut, domeRound)`, shrink-wrapped 72-detail sphere — exact port of `enemy-lab.html`'s `blobGeo`) instead of per-instance `SphereGeometry`. Origin at the floor contact point → rest y=0 and every squash/breathe/drag anchors to the ground
