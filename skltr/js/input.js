@@ -5,9 +5,12 @@
 //   hold right stick   → free-look aim + fire   (horizontal axis is REVERSED)
 // Desktop: WASD move · mouse aim (any direction) · hold LMB fire · Space jump/double-jump
 //          Q dash · Shift sprint · T toggle auto-aim · Enter start · Esc pause
+// Gamepad (Standard Gamepad layout): left stick move · right stick aim · right trigger
+//          fire · A jump/double-jump · RB dash · X toggle auto-aim · Start pause/start
 const STICK_R = 60, LOOK_DEAD = 10, TURN_RATE = 2.8, PITCH_RATE = 0.7;   // vertical look far less sensitive
 const ARROW_SENS = 2.2, MOUSE_SENS = 0.0023, MOUSE_PITCH = 0.5, PITCH_MAX = 1.45;
 const TAP_MS = 220, TAP_DIST = 18, SWIPE_MIN = 42, SWIPE_MS = 280, SWIPE_VEL = 1100;   // px/s flick → dash
+const GAMEPAD_DEADZONE = 0.18, TRIGGER_THRESH = 0.35;
 
 export class InputManager {
   constructor(canvas) {
@@ -22,6 +25,8 @@ export class InputManager {
     this.btns = [];
     this.isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
     this.onStart = this.onPause = this.onTap = this.onSwipe = this.onDashKey = this.onToggleAim = null;
+    this._padMoveMag = 0; this._padX = 0; this._padZ = 0; this._padFiring = false; this._padDashHeld = false;
+    this._padPrev = new Array(16).fill(false);
     this._init();
   }
 
@@ -31,6 +36,7 @@ export class InputManager {
       const l = Math.hypot(x, z); if (l > 1) { x /= l; z /= l; }
       return { x, z };
     }
+    if (this._padMoveMag > GAMEPAD_DEADZONE) return { x: this._padX, z: this._padZ };
     let x = 0, z = 0;
     if (this.keys['KeyW']) z += 1; if (this.keys['KeyS']) z -= 1;
     if (this.keys['KeyD']) x += 1; if (this.keys['KeyA']) x -= 1;
@@ -38,13 +44,41 @@ export class InputManager {
   }
   get moveMag() {
     if (this.left.active) return Math.min(1, Math.hypot(this.left.dx, this.left.dy) / STICK_R);
+    if (this._padMoveMag > GAMEPAD_DEADZONE) return this._padMoveMag;
     const m = this.getMove(); return Math.hypot(m.x, m.z);
   }
-  get sprint() { return !!this.keys['ShiftLeft'] || !!this.keys['ShiftRight'] || (this.left.active && this.moveMag > 0.86); }
-  get firing() { return this._mouseDown || this.look.active; }
-  get dashHeld() { return !!this.keys['KeyQ'] || this.left.dashing || this.look.dashing; }   // hold to extend the dash
+  get sprint() {
+    return !!this.keys['ShiftLeft'] || !!this.keys['ShiftRight']
+      || (this.left.active && this.moveMag > 0.86) || (this._padMoveMag > 0.86);
+  }
+  get firing() { return this._mouseDown || this.look.active || this._padFiring; }
+  get dashHeld() { return !!this.keys['KeyQ'] || this.left.dashing || this.look.dashing || this._padDashHeld; }   // hold to extend the dash
+
+  // Gamepads have no event API — poll once per frame, folded into the same per-frame
+  // tick main.js already calls for the touch look-stick.
+  _pollGamepad(dt) {
+    const gp = navigator.getGamepads?.()[0];
+    if (!gp) { this._padMoveMag = 0; this._padFiring = false; this._padDashHeld = false; return; }
+    const dz = v => Math.abs(v) < GAMEPAD_DEADZONE ? 0 : v;
+    const lx = dz(gp.axes[0] || 0), ly = dz(gp.axes[1] || 0);
+    this._padMoveMag = Math.min(1, Math.hypot(lx, ly));
+    if (this._padMoveMag > 0) { const l = Math.hypot(lx, ly) || 1; this._padX = lx / l * this._padMoveMag; this._padZ = -ly / l * this._padMoveMag; }
+    const rx = dz(gp.axes[2] || 0), ry = dz(gp.axes[3] || 0);
+    this.yaw -= rx * TURN_RATE * dt;
+    this.pitch = clampPitch(this.pitch - ry * PITCH_RATE * dt);
+    const rt = gp.buttons[7];
+    this._padFiring = !!rt && (rt.value > TRIGGER_THRESH || rt.pressed);
+    this._padDashHeld = !!(gp.buttons[5] && gp.buttons[5].pressed);
+    const pressed = i => !!(gp.buttons[i] && gp.buttons[i].pressed);
+    const edge = (i, cb) => { const now = pressed(i); if (now && !this._padPrev[i]) cb(); this._padPrev[i] = now; };
+    edge(0, () => this.onTap?.());          // A/Cross    → jump / double-jump
+    edge(5, () => this.onDashKey?.());      // RB/R1      → dash
+    edge(2, () => this.onToggleAim?.());    // X/Square   → toggle auto-aim
+    edge(9, () => this.onPause?.());        // Start/Menu → pause / resume / start / return-to-title
+  }
 
   updateLook(dt) {
+    this._pollGamepad(dt);
     if (!this.look.active) return;
     if (Math.hypot(this.look.dx, this.look.dy) < LOOK_DEAD) return;
     this.yaw -= (this.look.dx / STICK_R) * TURN_RATE * dt;              // reversed horizontal

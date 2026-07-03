@@ -3,16 +3,18 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=6';
-import { Player } from './player.js?v=6';
-import { Enemy, COST } from './enemy.js?v=6';
-import { ProjectilePool } from './projectile.js?v=6';
-import { C, glow } from './shared.js?v=6';
-import { audio } from './audio.js?v=6';
-import { t, getLang, setLang, langs } from './lang.js?v=6';
-import { visualTest, depthTest, setVisualTest, setDepthTest } from './modes.js?v=6';
+import { InputManager } from './input.js?v=7';
+import { Player } from './player.js?v=7';
+import { Enemy, COST } from './enemy.js?v=7';
+import { ProjectilePool } from './projectile.js?v=7';
+import { C, glow } from './shared.js?v=7';
+import { audio } from './audio.js?v=7';
+import { t, getLang, setLang, langs } from './lang.js?v=7';
+import { visualTest, depthTest, setVisualTest, setDepthTest } from './modes.js?v=7';
+import { shards, UPGRADES, levelOf, canBuy, buy, addShards, resolvedStats } from './progress.js?v=7';
 
 const css = h => '#' + (h >>> 0).toString(16).padStart(6, '0').slice(-6);
+let runTime = 0;   // declared early: heightAt()/updatePlatforms() close over this for moving platforms, and buildTerrain() runs at module load
 
 // ── Renderer + night scene with neon bloom ────────────────────────────────────
 const gameCanvas = document.getElementById('canvas-game');
@@ -80,6 +82,12 @@ const NORMAL = {
     { z: 58,  x0: 34,  x1: 58, floor: -5.5, axis: 'z' },
   ],
   roofs: [],
+  hazards: [
+    { x: -60, z: -15, r: 5, dps: 16 },       // electrified pool on the west canyon floor
+  ],
+  movingPlatforms: [
+    { x0: -52, x1: -48, z0: -8, z1: -2, top: -4, axis: 'z', amp: 5, speed: 0.4, phase: 0 },   // sliding stepping-stone
+  ],
   objSpots: [
     { x: 16, z: -17 }, { x: -18, z: 15 }, { x: 0, z: 26 },
     { x: -60, z: -14 }, { x: 46, z: 46 },
@@ -114,6 +122,12 @@ const DEPTH = {
   roofs: [
     { x0: 35, x1: 100, z0: -65, z1: -5, bottom: 5, top: 9 },        // floating cave ceiling
   ],
+  hazards: [
+    { x: -60, z: -70, r: 7, dps: 20 },       // electrified pool in the deep basin
+  ],
+  movingPlatforms: [
+    { x0: -80, x1: -74, z0: -25, z1: -15, top: -4, axis: 'z', amp: 8, speed: 0.35, phase: 0 },   // sliding stepping-stone across the valley terrace
+  ],
   objSpots: [
     { x: 16, z: -17 }, { x: -18, z: 15 }, { x: 0, z: 26 },
     { x: -60, z: -10 }, { x: -60, z: -70 }, { x: 65, z: -35 },
@@ -121,23 +135,37 @@ const DEPTH = {
   ],
 };
 
-let ARENA_R = NORMAL.arenaR, pitFloors = [], pitRamps = [], pitWalls = [], roofs = [], OBJ_SPOTS = [];
+let ARENA_R = NORMAL.arenaR, pitFloors = [], pitRamps = [], pitWalls = [], roofs = [], hazards = [], movingPlatforms = [], OBJ_SPOTS = [];
 function heightAt(x, z) {
   let h = 0;
   for (const r of ramps) if (x >= r.x0 && x <= r.x1 && z >= r.z0 && z <= r.z1) {
     const t = Math.min(1, Math.max(0, (z - r.z0) / (r.z1 - r.z0))); h = Math.max(h, r.hA + (r.hB - r.hA) * t);
   }
   for (const f of flats) if (x >= f.x0 && x <= f.x1 && z >= f.z0 && z <= f.z1) h = Math.max(h, f.top);
-  if (h > 0) return h;                                    // elevated ground always wins (e.g. a bridge)
-  let d = 0;
-  for (const pr of pitRamps) if (x >= pr.x0 && x <= pr.x1 && z >= pr.z0 && z <= pr.z1) {
-    const t = Math.min(1, Math.max(0, (z - pr.z0) / (pr.z1 - pr.z0))); d = Math.min(d, pr.hA + (pr.hB - pr.hA) * t);
+  let base;
+  if (h > 0) base = h;                                    // elevated ground always wins (e.g. a bridge)
+  else {
+    let d = 0;
+    for (const pr of pitRamps) if (x >= pr.x0 && x <= pr.x1 && z >= pr.z0 && z <= pr.z1) {
+      const t = Math.min(1, Math.max(0, (z - pr.z0) / (pr.z1 - pr.z0))); d = Math.min(d, pr.hA + (pr.hB - pr.hA) * t);
+    }
+    for (const p of pitFloors) if (x >= p.x0 && x <= p.x1 && z >= p.z0 && z <= p.z1) d = Math.min(d, p.floor);
+    base = d;
   }
-  for (const p of pitFloors) if (x >= p.x0 && x <= p.x1 && z >= p.z0 && z <= p.z1) d = Math.min(d, p.floor);
-  return d;
+  // moving platforms slide back and forth over time (runTime closure) — every heightAt
+  // call site automatically picks up the current position with no signature change.
+  // Compared last via Math.max so a platform sitting inside a canyon (top negative but
+  // higher than the local pit floor) still wins over the plain floor beneath it.
+  for (const mp of movingPlatforms) {
+    const off = Math.sin(runTime * mp.speed + (mp.phase || 0)) * mp.amp;
+    const x0 = mp.x0 + (mp.axis === 'x' ? off : 0), x1 = mp.x1 + (mp.axis === 'x' ? off : 0);
+    const z0 = mp.z0 + (mp.axis === 'z' ? off : 0), z1 = mp.z1 + (mp.axis === 'z' ? off : 0);
+    if (x >= x0 && x <= x1 && z >= z0 && z <= z1) base = Math.max(base, mp.top);
+  }
+  return base;
 }
 
-let terrainMeshes = [], groundMesh = null, grid = null, ring = null;
+let terrainMeshes = [], groundMesh = null, grid = null, ring = null, platformMeshes = [];
 function disposeMesh(o) { o.traverse?.(c => c.geometry?.dispose()); scene.remove(o); }
 function renderRamp(r) {
   const w = r.x1 - r.x0, lenZ = r.z1 - r.z0, rise = r.hB - r.hA;
@@ -150,12 +178,15 @@ function renderRamp(r) {
 function buildTerrain() {
   for (const o of terrainMeshes) disposeMesh(o);
   terrainMeshes = [];
+  for (const pm of platformMeshes) disposeMesh(pm.mesh);
+  platformMeshes = [];
   if (groundMesh) { disposeMesh(groundMesh); groundMesh.material.dispose(); }
   if (grid) disposeMesh(grid);
   if (ring) { disposeMesh(ring); ring.material.dispose(); }
 
   const D = depthTest ? DEPTH : NORMAL;
-  ARENA_R = D.arenaR; pitFloors = D.pitFloors; pitRamps = D.pitRamps; pitWalls = D.pitWalls; roofs = D.roofs; OBJ_SPOTS = D.objSpots;
+  ARENA_R = D.arenaR; pitFloors = D.pitFloors; pitRamps = D.pitRamps; pitWalls = D.pitWalls; roofs = D.roofs;
+  hazards = D.hazards ?? []; movingPlatforms = D.movingPlatforms ?? []; OBJ_SPOTS = D.objSpots;
   scene.fog.far = ARENA_R * 2.1;
 
   // floor: black plane (with canyon holes cut in) + faint white grid + boundary ring
@@ -198,6 +229,26 @@ function buildTerrain() {
     const g = glow(new THREE.BoxGeometry(rf.x1 - rf.x0, rf.top - rf.bottom, rf.z1 - rf.z0));
     g.position.set((rf.x0 + rf.x1) / 2, (rf.top + rf.bottom) / 2, (rf.z0 + rf.z1) / 2); scene.add(g); terrainMeshes.push(g);
   }
+  for (const hz of hazards) {                               // DoT zone — a warning ring on the floor beneath it
+    const ring2 = new THREE.Mesh(new THREE.TorusGeometry(hz.r, 0.08, 6, 32), new THREE.MeshBasicMaterial({ color: C.hazard }));
+    ring2.rotation.x = -Math.PI / 2; ring2.position.set(hz.x, heightAt(hz.x, hz.z) + 0.05, hz.z);
+    scene.add(ring2); terrainMeshes.push(ring2);
+  }
+  for (const mp of movingPlatforms) {
+    const mesh = glow(new THREE.BoxGeometry(mp.x1 - mp.x0, 0.3, mp.z1 - mp.z0));
+    scene.add(mesh); platformMeshes.push({ mesh, mp });
+  }
+  updatePlatforms();
+}
+// repositions each moving-platform mesh from the same sine formula heightAt() uses,
+// so the visible slab always matches where heightAt() says its top surface is.
+function updatePlatforms() {
+  for (const pm of platformMeshes) {
+    const mp = pm.mp, off = Math.sin(runTime * mp.speed + (mp.phase || 0)) * mp.amp;
+    const cx = (mp.x0 + mp.x1) / 2 + (mp.axis === 'x' ? off : 0);
+    const cz = (mp.z0 + mp.z1) / 2 + (mp.axis === 'z' ? off : 0);
+    pm.mesh.position.set(cx, mp.top, cz);
+  }
 }
 buildTerrain();
 
@@ -234,6 +285,21 @@ function objectiveUpdate(dt) {
   }
 }
 
+// ── Environmental hazards (DoT zones) ───────────────────────────────────────────
+let hazardInsidePrev = false;
+function hazardUpdate(dt) {
+  let inside = false;
+  for (const hz of hazards) {
+    if (Math.hypot(player.x - hz.x, player.z - hz.z) > hz.r) continue;
+    inside = true;
+    const hpb = player.hp; player.hurt(hz.dps * dt);
+    if (player.hp < hpb) shake = Math.max(shake, 0.3);
+    if (!player.alive) { gameOver(); return; }
+  }
+  if (inside && !hazardInsidePrev) audio.hurt();
+  hazardInsidePrev = inside;
+}
+
 // ── Objects ───────────────────────────────────────────────────────────────────
 const input = new InputManager(gameCanvas);
 const pool = new ProjectilePool(scene);
@@ -242,7 +308,8 @@ let enemies = [];
 
 // ── Run state ─────────────────────────────────────────────────────────────────
 let gameState = 'title';     // title | playing | paused | gameover
-let runTime = 0, kills = 0, shake = 0, fovKick = 0, challenges = 0;
+let kills = 0, shake = 0, fovKick = 0, challenges = 0, hitstopT = 0, killPunch = 0;
+const HITSTOP_KILL = 0.05, HITSTOP_BOSS_KILL = 0.09, HITSTOP_HURT = 0.07;
 let credits = 0, spawnCD = 0, nextBoss = 65, bossAlive = false;
 let toasts = [];
 let best = parseFloat(localStorage.getItem('skltrBestTime') || '0');
@@ -267,24 +334,28 @@ function showTitle() {
     `<div style="font-size:13px;opacity:.6;margin:8px 0 18px">${t('subtitle')}</div>` +
     (best > 0 ? `<div style="font-size:13px;color:${css(C.adr)};opacity:.85;margin-bottom:12px">${t('best')} ${fmt(best)}</div>` : ``) +
     `<div style="font-size:15px;opacity:.9">${t('tapStart')}</div>` +
+    `<div style="font-size:12px;opacity:.6;margin-top:4px">SHARDS: ${shards}</div>` +
     `<div id="orient-slot" style="margin-top:16px"></div>` +
     `<div style="font-size:12px;opacity:.5;margin-top:16px;line-height:1.9">${t('ctrlD1')}<br>${t('ctrlD2')}<br>` +
     `<span style="opacity:.85">${t('ctrlTouch')}</span></div>` +
     `<div id="lang-slot" style="margin-top:18px;display:flex;gap:8px;justify-content:center"></div>` +
-    `<div id="mode-slot" style="margin-top:16px"></div>`;
+    `<div id="mode-slot" style="margin-top:16px"></div>` +
+    `<div id="unlock-slot" style="margin-top:18px"></div>`;
   overlay.style.display = 'block';
   buildOrientChip(document.getElementById('orient-slot'));
   buildLangChips(document.getElementById('lang-slot'));
   buildModeChips(document.getElementById('mode-slot'));
+  buildUnlockPanel(document.getElementById('unlock-slot'));
 }
 function showPause() { overlay.style.pointerEvents = 'none'; showOverlay(`<div style="font-size:42px;font-weight:bold">PAUSED</div><div style="font-size:13px;opacity:.5;margin-top:10px">ESC to resume</div>`); }
-function showGameOver() {
+function showGameOver(earned = 0) {
   const rec = runTime >= best;
   overlay.style.pointerEvents = 'auto';
   overlay.innerHTML =
     `<div style="font-size:44px;font-weight:bold;letter-spacing:3px;color:#ff7aa0">${t('youDied')}</div>` +
     `<div style="font-size:18px;margin-top:10px;color:#9bfff0">${t('survived', fmt(runTime), kills)}</div>` +
     (rec ? `<div style="font-size:15px;color:${css(C.adr)};margin-top:6px">${t('newBest')}</div>` : `<div style="font-size:12px;opacity:.5;margin-top:6px">${t('best')} ${fmt(best)}</div>`) +
+    `<div style="font-size:12px;opacity:.7;margin-top:6px">+${earned} shards</div>` +
     `<div id="fb-slot" style="margin-top:16px"></div>`;
   overlay.style.display = 'block';
   buildFeedbackPanel(document.getElementById('fb-slot'));
@@ -348,6 +419,25 @@ function buildModeChips(slot) {
   hint.style.cssText = 'font-size:11px;opacity:.45;margin-top:6px;line-height:1.6';
   hint.innerHTML = `${t('visualTestH')}<br>${t('depthTestH')}`;
   slot.appendChild(hint);
+}
+// Title-screen shard shop — a small, bounded set of permanent stat unlocks (see
+// progress.js). Buying re-renders the whole title, matching the lang/mode chips' convention.
+function buildUnlockPanel(slot) {
+  if (!slot) return;
+  const title = document.createElement('div'); title.textContent = 'UNLOCKS';
+  title.style.cssText = 'font-size:12px;letter-spacing:2px;opacity:.55;margin-bottom:10px'; slot.appendChild(title);
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:440px;margin:0 auto';
+  for (const u of UPGRADES) {
+    const lvl = levelOf(u.id), maxed = lvl >= u.maxLevel, buyable = !maxed && canBuy(u.id);
+    const el = document.createElement('div');
+    el.textContent = `${u.name} · Lv ${lvl}/${u.maxLevel} · ${maxed ? 'MAX' : u.cost(lvl) + '◆'}`;
+    el.style.cssText = 'pointer-events:auto;cursor:pointer;user-select:none;font-size:11px;padding:7px 12px;border-radius:14px;transition:all .1s;'
+      + `border:1.5px solid ${buyable ? '#44cc88' : '#3a4a6a'};background:${buyable ? 'rgba(60,220,150,.20)' : 'rgba(0,0,0,.3)'};color:${buyable ? '#aaffcc' : '#8888aa'};text-shadow:${buyable ? '0 0 10px #33cc77' : 'none'};`;
+    chip(el, () => { if (buy(u.id)) showTitle(); });
+    row.appendChild(el);
+  }
+  slot.appendChild(row);
 }
 
 // ── Feedback (death screen) — ported from toko-drop ────────────────────────────
@@ -426,14 +516,18 @@ window._feedbackExport = () => { const l = JSON.parse(localStorage.getItem('sklt
 function startGame() {
   overlay.style.display = 'none'; overlay.style.pointerEvents = 'none';
   runTime = 0; kills = 0; shake = 0; credits = 0; spawnCD = 0; nextBoss = 65; bossAlive = false; toasts = []; challenges = 0;
+  hitstopT = 0; killPunch = 0;
+  hazardInsidePrev = false;
   for (const e of enemies) e.dispose(); enemies = []; pool.clear();
-  player.reset(); newChallenge();
+  player.reset(resolvedStats()); newChallenge();
   gameState = 'playing'; audio.start();
 }
 function gameOver() {
   gameState = 'gameover'; shake = 1;
   if (runTime > best) { best = runTime; localStorage.setItem('skltrBestTime', best.toFixed(1)); }
-  audio.gameover(); showGameOver();
+  const earned = Math.floor(kills / 4) + Math.floor(runTime / 20) + challenges * 3;
+  addShards(earned);
+  audio.gameover(); showGameOver(earned);
 }
 function returnToTitle() {
   if (gameState !== 'gameover') return;
@@ -495,7 +589,7 @@ function collide() {
     } else {
       if (segDist(p.px, p.py, p.pz, p.x, p.y, p.z, player.x, 1.0, player.z) < 0.85 + p.r) {
         const hpb = player.hp; player.hurt(p.damage); pool.recycle(i);
-        if (player.hp < hpb) shake = Math.max(shake, 0.55);
+        if (player.hp < hpb) { shake = Math.max(shake, 0.55); hitstopT = Math.max(hitstopT, HITSTOP_HURT); audio.hurt(); }
         if (!player.alive) { gameOver(); return; }
       }
     }
@@ -507,6 +601,8 @@ function onKill(e) {
   const before = player.adr; player.addKill();
   if (player.adr > before) { audio.adrenaline(player.adr); toast(`ADRENALINE ${player.adr}`, C.adr); }
   if (e.boss) { bossAlive = false; toast('BOSS DOWN', C.adr); }
+  hitstopT = Math.max(hitstopT, e.boss ? HITSTOP_BOSS_KILL : HITSTOP_KILL);
+  killPunch = Math.max(killPunch, e.boss ? 1.6 : 1);
   burst(e.x, e.y, e.z, visualTest ? e.restColor : C.line, visualTest ? 16 : 8);
 }
 
@@ -586,7 +682,7 @@ function updateCamera() {
   const camY = Math.max(player.y + 0.3, hy - a.fy * dist + 0.25 + sy);   // never dip below the player's feet
   camera.position.set(hx - a.fx * dist + rx * shoulder * cp + sx, camY, hz - a.fz * dist + rz * shoulder * cp);
   camera.lookAt(camera.position.x + a.fx, camera.position.y + a.fy, camera.position.z + a.fz);
-  const fov = camFovBase + fovKick * 7;                      // orientation base + dash punch
+  const fov = camFovBase + fovKick * 7 + killPunch * 4;       // orientation base + dash punch + kill punch
   if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
 }
 
@@ -702,16 +798,20 @@ function drawTouchUI(W, H) {
 let prev = performance.now();
 function loop() {
   requestAnimationFrame(loop);
-  const now = performance.now(); const dt = Math.min((now - prev) / 1000, 0.05); prev = now;
-  if (shake > 0) shake = Math.max(0, shake - dt * 2.2);
-  if (fovKick > 0) fovKick = Math.max(0, fovKick - dt * 4);
-  for (let i = toasts.length - 1; i >= 0; i--) { toasts[i].life -= dt; if (toasts[i].life <= 0) toasts.splice(i, 1); }
+  const now = performance.now(); const rawDt = Math.min((now - prev) / 1000, 0.05); prev = now;
+  if (shake > 0) shake = Math.max(0, shake - rawDt * 2.2);
+  if (fovKick > 0) fovKick = Math.max(0, fovKick - rawDt * 4);
+  if (killPunch > 0) killPunch = Math.max(0, killPunch - rawDt * 6);
+  if (hitstopT > 0) hitstopT = Math.max(0, hitstopT - rawDt);
+  for (let i = toasts.length - 1; i >= 0; i--) { toasts[i].life -= rawDt; if (toasts[i].life <= 0) toasts.splice(i, 1); }
   computeAim();
+  const dt = hitstopT > 0 ? 0 : rawDt;   // brief freeze-frame on big hits/kills; rendering below still runs every real frame
 
   if (gameState === 'playing') {
     runTime += dt;
     input.updateLook(dt);
     player.update(dt, input, _aim, enemies, heightAt);
+    updatePlatforms();
     if (player._fired) audio.shoot();
     if (player.dashing) {                       // fading dash streak
       const col = visualTest ? (player.adr > 0 ? C.adr : 0x6bd9ff) : C.player;
@@ -722,6 +822,7 @@ function loop() {
     for (const e of enemies) e.update(dt, player, pool, heightAt, ARENA_R);
     pool.update(dt);
     collide();
+    hazardUpdate(dt);
     director(dt);
     objectiveUpdate(dt);
     updateSparks(dt);

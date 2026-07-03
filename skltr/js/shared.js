@@ -14,6 +14,7 @@ export const C = {
   eshot:  0xff7a8a,   // enemy fire — faint warm (danger)
   adr:    0xffd36b,   // adrenaline accent (HUD)
   hp:     0xffffff,
+  hazard: 0xff5533,   // environmental DoT zone warning ring
 };
 
 export const FILL_MAT = new THREE.MeshBasicMaterial({ color: 0x000000 }); // occludes back lines
