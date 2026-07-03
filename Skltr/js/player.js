@@ -1,9 +1,10 @@
 import * as THREE from 'three';
-import { Bunny, C } from './shared.js?v=9';
-import { visualTest } from './modes.js?v=9';
+import { Bunny, C } from './shared.js?v=10';
+import { visualTest } from './modes.js?v=10';
 
 const ADR_THRESH = [3, 6, 10, 15, 21];   // cumulative no-hit kills for tiers 1..5
-const ADR_TINT = [0xffffff, 0x9bffce, 0x6bffa0, 0xffd36b, 0xff9a3a, 0xff4d5e];   // Visual Test: hero edge tints with adrenaline tier
+// Visual Test (desert): hero's ink outline heats up with adrenaline tier — base ink → embers → hot red.
+const ADR_TINT = [null, 0x7a4a10, 0x995408, 0xb35b00, 0xc24a00, 0xd03b3b];
 const STEP_MAX = 0.6;                     // ledges taller than this need a jump (act as walls)
 
 // Tuned for Returnal's second-to-second: fast, twitchy, dash-centric, now with a jump.
@@ -91,7 +92,10 @@ export class Player {
   }
   heal(a) { this.hp = Math.min(this.maxHp, this.hp + a); }
 
-  update(dt, input, aim, enemies, heightAt = () => 0) {
+  // drift: optional constant world-space velocity added to the movement target (the
+  // canyon-run forward push) — folded into the target velocity so the terrain
+  // wall/step collision handles it like any other movement.
+  update(dt, input, aim, enemies, heightAt = () => 0, drift = null) {
     this._fired = false;
     this.fireT = Math.max(0, this.fireT - dt);
     this.dashCD = Math.max(0, this.dashCD - dt);
@@ -107,7 +111,7 @@ export class Player {
     const spd = BASE.moveSpeed * (sprint ? BASE.sprintMul : 1);
     let dx = fwd.x * mv.z + rgt.x * mv.x, dz = fwd.z * mv.z + rgt.z * mv.x;
     const m = Math.hypot(dx, dz); if (m > 0.001) { dx /= m; dz /= m; }
-    const tvx = dx * spd, tvz = dz * spd;
+    const tvx = dx * spd + (drift ? drift.x : 0), tvz = dz * spd + (drift ? drift.z : 0);
     const accel = this.dashT > 0 ? 1.5 : (this.grounded() ? 13 : 4);   // dash momentum / air control
     this.vx += (tvx - this.vx) * Math.min(1, dt * accel);
     this.vz += (tvz - this.vz) * Math.min(1, dt * accel);

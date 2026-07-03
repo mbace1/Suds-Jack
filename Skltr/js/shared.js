@@ -1,25 +1,37 @@
 import * as THREE from 'three';
+import { visualTest } from './modes.js?v=10';
 
-// ── Night-mode "white sketch on black" palette (Vib Ribbon look) ──────────────
-// Everything is a white line drawing on pure black: shapes are black-filled so only
-// their white outline edges read. A few faint functional tints stay on projectiles
-// so a bullet-hell is still legible.
-export const C = {
-  bg:     0x000000,
-  line:   0xffffff,   // white sketch lines (player + enemies)
-  dim:    0x3a3a3a,   // faint grid
-  player: 0xffffff,
-  shot:   0xa9ecff,   // your fire — faint cool white
-  enemy:  0xffffff,
-  eshot:  0xff7a8a,   // enemy fire — faint warm (danger)
-  adr:    0xffd36b,   // adrenaline accent (HUD)
-  hp:     0xffffff,
-  hazard: 0xff5533,   // environmental DoT zone warning ring
+// ── Two full palettes ─────────────────────────────────────────────────────────
+// NIGHT (default): a white line drawing on pure black (Vib Ribbon look) — shapes
+// are black-filled so only their white outline edges read.
+// DESERT (Visual Test): the inverse — sun-bleached sand world, dark ink outlines,
+// same sketch principle with the values flipped. applyPalette() mutates C and the
+// shared materials in place so every consumer picks the change up.
+const NIGHT = {
+  bg: 0x000000, line: 0xffffff, dim: 0x3a3a3a, player: 0xffffff,
+  shot: 0xa9ecff, enemy: 0xffffff, eshot: 0xff7a8a, adr: 0xffd36b,
+  hp: 0xffffff, hazard: 0xff5533, boss: 0xff6b7e, beacon: 0x35f0d8,
+  fill: 0x000000, ground: 0x050505, ring: 0x888888,
 };
+const DESERT = {
+  bg: 0xdfb98a, line: 0x2b1a0e, dim: 0xb08a5f, player: 0x2b1a0e,
+  shot: 0x1c5cab, enemy: 0x2b1a0e, eshot: 0xb3241a, adr: 0xb35b00,
+  hp: 0x2b1a0e, hazard: 0xa33812, boss: 0xa3241a, beacon: 0x0e6e5e,
+  fill: 0xdfb98a, ground: 0xd8b183, ring: 0x8a6a45,
+};
+export const C = { ...NIGHT };
 
-export const FILL_MAT = new THREE.MeshBasicMaterial({ color: 0x000000 }); // occludes back lines
+export const FILL_MAT = new THREE.MeshBasicMaterial({ color: C.fill }); // occludes back lines
 export const LINE_MAT = new THREE.LineBasicMaterial({ color: C.line });
 export const EYE_MAT  = new THREE.MeshBasicMaterial({ color: C.line });
+
+export function applyPalette(desert) {
+  Object.assign(C, desert ? DESERT : NIGHT);
+  FILL_MAT.color.setHex(C.fill);
+  LINE_MAT.color.setHex(C.line);
+  EYE_MAT.color.setHex(C.line);
+}
+applyPalette(visualTest);   // palette is set before any consumer constructs geometry
 const lerp = (a, b, t) => a + (b - a) * t;
 export { lerp };
 

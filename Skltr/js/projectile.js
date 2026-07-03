@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { C } from './shared.js?v=9';
+import { C } from './shared.js?v=10';
 
 // 3D object-pooled neon projectiles, shared by player and enemies. Velocity is a
 // full 3D direction so shots travel any way (up at flyers, down from them).
