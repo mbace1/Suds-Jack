@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=50';
-import { BULLET_CONFIG } from './bullet.js?v=50';
-import { t } from './lang.js?v=50';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=50';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=51';
+import { BULLET_CONFIG } from './bullet.js?v=51';
+import { t } from './lang.js?v=51';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=51';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -428,6 +428,30 @@ export function initDesigner({ onResume, settings }) {
       };
       paint();
       btn.addEventListener('click', () => { settings.setReduceMotion(!settings.getReduceMotion()); paint(); });
+      row.appendChild(lbl); row.appendChild(btn);
+      el.appendChild(row);
+      el.appendChild(hint);
+    }
+
+    el.appendChild(sec('PERFORMANCE'));
+    {
+      const row = document.createElement('div');
+      row.className = 'drow';
+      const lbl = document.createElement('span');
+      lbl.className = 'dlbl'; lbl.textContent = t('perfMode');
+      const btn = document.createElement('button');
+      btn.className = 'dbtn';
+      const hint = document.createElement('div');
+      hint.className = 'dnote';
+      const paint = () => {
+        const on = settings.getPerf();
+        btn.textContent = on ? t('on') : t('off');
+        btn.style.color = on ? '#88ffbb' : '#666';
+        btn.style.borderColor = on ? '#44cc8866' : '#1e1e38';
+        hint.textContent = on ? t('perfOnH') : t('perfOffH');
+      };
+      paint();
+      btn.addEventListener('click', () => { settings.setPerf(!settings.getPerf()); paint(); });
       row.appendChild(lbl); row.appendChild(btn);
       el.appendChild(row);
       el.appendChild(hint);
