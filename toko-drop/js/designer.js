@@ -1,21 +1,11 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=56';
-import { BULLET_CONFIG } from './bullet.js?v=56';
-import { t } from './lang.js?v=56';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=56';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=57';
+import { BULLET_CONFIG } from './bullet.js?v=57';
+import { t } from './lang.js?v=57';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=57';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
-
-// ── Material sliders (shared across every enemy page) ────────────────────────
-// material.* edits restyle already-spawned enemies via applySatinValues().
-const MATERIAL_ROWS = [
-  ['material.sss',          'SSS Glow',      0,  1.5, 0.05],
-  ['material.roughness',    'Roughness',     0,  1,   0.01],
-  ['material.clearcoat',    'Clearcoat',     0,  1,   0.02],
-  ['material.sheen',        'Sheen',         0,  1,   0.02],
-  ['material.transmission', 'Transmission',  0,  0.9, 0.02],
-];
 
 // ── In-menu enemy tester (v93) ────────────────────────────────────────────────
 // A self-contained mini three.js world embedded in the pause menu: the chosen
@@ -50,8 +40,34 @@ function ensureTester() {
     specimen: null, type: null, t: 0, respawnT: 0, running: false, last: 0,
     ghost: { x: 3, z: 0 },              // fake player the specimen reacts to
     stubBullets: { spawnDir() {} },     // firing behaviors no-op safely
+    fx: [],                             // droplets/splats so HIT/KILL show VFX
+    splatDone: false,
+    dropGeo: new THREE.SphereGeometry(1, 7, 5),
   };
   return tester;
+}
+// Goo droplet burst inside the tester scene (mirrors the in-game splatter).
+function testerBurst(x, y, z, color, n, power) {
+  const T = ensureTester();
+  for (let i = 0; i < n; i++) {
+    const m = new THREE.Mesh(T.dropGeo, new THREE.MeshBasicMaterial({ color }));
+    const a = Math.random() * Math.PI * 2;
+    const sp = (2 + Math.random() * 3) * power;
+    m.position.set(x, y, z);
+    m.scale.setScalar(0.09 + Math.random() * 0.08);
+    T.scene.add(m);
+    T.fx.push({ m, vx: Math.cos(a) * sp, vy: 2.5 + Math.random() * 3.5, vz: Math.sin(a) * sp, life: 1.0, splat: false });
+  }
+}
+// Flat splat decal that fades out (death mark).
+function testerSplat(x, z, color, size) {
+  const T = ensureTester();
+  const m = new THREE.Mesh(new THREE.CircleGeometry(size, 16),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2;
+  m.position.set(x, 0.02, z);
+  T.scene.add(m);
+  T.fx.push({ m, vx: 0, vy: 0, vz: 0, life: 2.2, splat: true });
 }
 function testerSpawn(type) {
   const T = ensureTester();
@@ -59,6 +75,7 @@ function testerSpawn(type) {
   T.type = type;
   T.specimen = new Enemy(T.scene, type, 0, 0, 1, 1);
   T.respawnT = 0;
+  T.splatDone = false;
 }
 function testerLoop(ts) {
   const T = tester;
@@ -74,10 +91,40 @@ function testerLoop(ts) {
   if (s) {
     if (s.alive) s.update(dt, T.ghost, T.stubBullets, 11, 7);
     s.updateDeath(dt);
+    // Drain the enemy's queued FX (death chunks, BAMBU/PYRA hit chunks) into
+    // the tester's droplet system so HIT/KILL actually splatter here.
+    if (s.chunks && s.chunks.length) {
+      for (const c of s.chunks) testerBurst(c.x, c.y, c.z, CFG[s.type].color, 1, 1.1);
+      s.chunks.length = 0;
+    }
+    if (s._hitChunks && s._hitChunks.length) {
+      for (const c of s._hitChunks) testerBurst(c.x, c.y, c.z, c.color, 1, 0.8);
+      s._hitChunks.length = 0;
+    }
+    if (!s.alive && !T.splatDone) {
+      T.splatDone = true;
+      testerSplat(s.position.x, s.position.z, CFG[s.type].color, 0.9 + s.radius);
+    }
     if (!s.alive && !s._dying) {
       T.respawnT += dt;
       if (T.respawnT > 1.1) testerSpawn(T.type);
     }
+  }
+  // Droplet physics: gravity, floor squash-stop, shrink out.
+  for (let i = T.fx.length - 1; i >= 0; i--) {
+    const f = T.fx[i];
+    f.life -= dt;
+    if (!f.splat) {
+      f.vy -= 12 * dt;
+      f.m.position.x += f.vx * dt;
+      f.m.position.y = Math.max(0.04, f.m.position.y + f.vy * dt);
+      f.m.position.z += f.vz * dt;
+      if (f.m.position.y <= 0.05) { f.vx *= 0.5; f.vz *= 0.5; f.vy = 0; }
+      f.m.scale.multiplyScalar(Math.max(0, Math.min(1, f.life * 2.2)) ** 0.08);
+    } else {
+      f.m.material.opacity = 0.5 * Math.max(0, f.life / 2.2);
+    }
+    if (f.life <= 0) { T.scene.remove(f.m); f.m.material.dispose(); T.fx.splice(i, 1); }
   }
   T.renderer.render(T.scene, T.camera);
 }
@@ -92,9 +139,10 @@ function testerStop() {
   if (!tester) return;
   tester.running = false;
   if (tester.specimen) { tester.specimen.removeFrom(tester.scene); tester.specimen = null; tester.type = null; }
+  for (const f of tester.fx) { tester.scene.remove(f.m); f.m.material.dispose(); }
+  tester.fx.length = 0;
 }
 
-function getPath(obj, path) { return path.split('.').reduce((o, k) => o?.[k], obj); }
 function setPath(obj, path, v) {
   const ks = path.split('.'); const last = ks.pop();
   const target = ks.reduce((o, k) => o?.[k], obj);
@@ -272,6 +320,7 @@ export function initDesigner({ onResume, settings }) {
 
   // ── Public ────────────────────────────────────────────────────────────────────
   function show() {
+    selectedType = SETTINGS_PAGE; // always land on the simple settings view
     renderList();
     renderControls();
     panel.style.display = 'flex';
@@ -282,7 +331,7 @@ export function initDesigner({ onResume, settings }) {
     panel.style.display = 'none';
   }
 
-  // ── Menu list: SETTINGS page, then the enemy-tuning pages ─────────────────────
+  // ── Enemy list (tester mode only) ─────────────────────────────────────────────
   function renderList() {
     const list = panel.querySelector('#d-list');
     list.innerHTML = '';
@@ -293,22 +342,18 @@ export function initDesigner({ onResume, settings }) {
       item.innerHTML = html;
       item.addEventListener('click', () => {
         selectedType = key;
+        if (key === SETTINGS_PAGE) { renderList(); }
         panel.querySelectorAll('.dit').forEach(el => el.classList.toggle('on', el === item));
         renderControls();
       });
       list.appendChild(item);
     };
 
-    addItem(SETTINGS_PAGE, `<span style="width:9px;flex-shrink:0">⚙</span>${t('settings')}`);
-
-    const div = document.createElement('div');
-    div.className = 'ddiv';
-    list.appendChild(div);
+    addItem(SETTINGS_PAGE, `<span style="width:9px;flex-shrink:0">←</span>${t('settings')}`);
     const grp = document.createElement('div');
     grp.className = 'dgroup';
     grp.textContent = 'ENEMIES';
     list.appendChild(grp);
-
     for (const type of ALL_TYPES) {
       addItem(type,
         `<span class="ddot" style="background:${toHex(CFG[type].color)}"></span>` +
@@ -316,19 +361,25 @@ export function initDesigner({ onResume, settings }) {
     }
   }
 
-  // ── Controls ──────────────────────────────────────────────────────────────────
+  // ── Controls: settings view hides the sidebar; tester view shows it ───────────
   function renderControls() {
     const el = panel.querySelector('#d-cnt');
+    const list = panel.querySelector('#d-list');
     el.innerHTML = '';
-    if (selectedType === SETTINGS_PAGE) { testerStop(); renderSettings(el); }
-    else renderGameplay(el);
+    if (selectedType === SETTINGS_PAGE) {
+      list.style.display = 'none';
+      testerStop();
+      renderSettings(el);
+    } else {
+      list.style.display = '';
+      renderGameplay(el);
+    }
   }
 
   // ── Material presets/sliders + TUNING JSON round-trip (shared section) ────────
-  function renderMaterialAndExport(el) {
-    // Material preset chips (v90) — apply a named look onto TUNING.material
-    // and restyle every gel enemy (specimen included) instantly.
-    el.appendChild(sec('MATERIAL PRESETS'));
+  // ── Shared "LOOK" section: one-tap gel styles + a single feedback button ─────
+  function renderLook(el) {
+    el.appendChild(sec('LOOK — CHANGES EVERY ENEMY'));
     const presetRow = document.createElement('div');
     presetRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px';
     for (const name of Object.keys(TUNING.material.presets)) {
@@ -341,65 +392,36 @@ export function initDesigner({ onResume, settings }) {
           saveTuning(`material.${k}`, TUNING.material[k]);
         }
         applySatinValues();
-        renderControls(); // refresh the material sliders to the preset values
       });
       presetRow.appendChild(b);
     }
     el.appendChild(presetRow);
+    el.appendChild(note('tap a style — the enemy above (and the whole game) changes instantly'));
 
-    for (const [path, label, min, max, step] of MATERIAL_ROWS) {
-      el.appendChild(slider(label, min, max, step, getPath(TUNING, path), v => {
-        setPath(TUNING, path, v);
-        saveTuning(path, v);
-        applySatinValues();
-      }));
-    }
-
-    // Copy / paste the whole TUNING JSON (geometry & spawn-time values included
-    // — those apply to newly spawned enemies).
-    el.appendChild(sec('EXPORT / IMPORT'));
-    const btnRow = document.createElement('div');
-    btnRow.style.cssText = 'display:flex;gap:10px';
-    const out = document.createElement('textarea');
-    out.className = 'dout';
-    out.style.display = 'block'; // always visible here — it's also the paste target
+    // One button for development feedback: copies the current numbers so they
+    // can be pasted into a message ("this is how I tuned it").
+    el.appendChild(sec('FEEDBACK'));
     const copyBtn = document.createElement('button');
     copyBtn.className = 'dbtn dxbtn';
-    copyBtn.textContent = 'COPY TUNING JSON';
-    copyBtn.addEventListener('click', () => {
-      out.value = JSON.stringify(TUNING, null, 2);
-      out.select();
-    });
-    const applyBtn = document.createElement('button');
-    applyBtn.className = 'dbtn';
-    applyBtn.textContent = 'APPLY PASTED JSON';
-    applyBtn.addEventListener('click', () => {
-      try {
-        const merge = (dst, src, prefix) => {
-          for (const [k, v] of Object.entries(src)) {
-            if (v && typeof v === 'object' && !Array.isArray(v) && dst[k] && typeof dst[k] === 'object') {
-              merge(dst[k], v, `${prefix}${k}.`);
-            } else if (k in dst) {
-              dst[k] = v;
-              if (typeof v === 'number') saveTuning(`${prefix}${k}`, v);
-            }
-          }
-        };
-        merge(TUNING, JSON.parse(out.value), '');
-        renderControls(); // refresh sliders to the imported values
-      } catch (_) {
-        out.value = '// paste valid TUNING JSON above, then APPLY\n' + out.value;
+    copyBtn.textContent = 'COPY MY SETTINGS';
+    copyBtn.addEventListener('click', async () => {
+      const cfgOut = {};
+      for (const [name, type] of Object.entries(EnemyType)) {
+        const c = CFG[type];
+        cfgOut[name] = { speed: +c.speed.toFixed(2), hp: c.hp,
+                         fireInterval: c.fireInterval === null ? null : +c.fireInterval.toFixed(2) };
       }
+      const M = TUNING.material;
+      const text = JSON.stringify({
+        enemies: cfgOut,
+        look: { sss: M.sss, roughness: M.roughness, clearcoat: M.clearcoat, sheen: M.sheen, transmission: M.transmission },
+      }, null, 1);
+      try { await navigator.clipboard.writeText(text); copyBtn.textContent = 'COPIED ✓'; }
+      catch (_) { prompt('Copy this:', text); }
+      setTimeout(() => { copyBtn.textContent = 'COPY MY SETTINGS'; }, 1500);
     });
-    const labBtn = document.createElement('button');
-    labBtn.className = 'dbtn';
-    labBtn.textContent = 'OPEN FULL LAB ↗';
-    labBtn.addEventListener('click', () => window.open('enemy-lab.html', '_blank'));
-    btnRow.appendChild(copyBtn);
-    btnRow.appendChild(applyBtn);
-    btnRow.appendChild(labBtn);
-    el.appendChild(btnRow);
-    el.appendChild(out);
+    el.appendChild(copyBtn);
+    el.appendChild(note('copies your tuned numbers to the clipboard — paste them into feedback'));
   }
 
   // ── Settings page (moved here from the title screen in v81) ───────────────────
@@ -431,6 +453,20 @@ export function initDesigner({ onResume, settings }) {
       row.appendChild(lbl); row.appendChild(btn);
       el.appendChild(row);
       el.appendChild(hint);
+    }
+
+    el.appendChild(sec('ENEMY TESTER'));
+    {
+      const btn = document.createElement('button');
+      btn.className = 'dbtn dxbtn';
+      btn.textContent = 'OPEN ENEMY TESTER →';
+      btn.addEventListener('click', () => {
+        selectedType = ALL_TYPES[0];
+        renderList();
+        renderControls();
+      });
+      el.appendChild(btn);
+      el.appendChild(note('watch any enemy up close, poke it, and tweak how it plays'));
     }
 
     el.appendChild(sec('PERFORMANCE'));
@@ -483,7 +519,9 @@ export function initDesigner({ onResume, settings }) {
       const s = T.specimen;
       if (s && s.alive) {
         const a = Math.random() * Math.PI * 2;
-        s.hit(s.position.x + Math.cos(a), s.position.z + Math.sin(a));
+        const ix = s.position.x + Math.cos(a), iz = s.position.z + Math.sin(a);
+        s.hit(ix, iz);
+        testerBurst(ix, s.fxY + 0.1, iz, CFG[selectedType].color, 4, 0.8); // impact spark
       }
     });
     mkDbg('KILL', () => { if (T.specimen && T.specimen.alive) T.specimen.destroy(); });
@@ -494,38 +532,16 @@ export function initDesigner({ onResume, settings }) {
       return slider(label, min, max, step, cfg[key], v => { CFG[selectedType][key] = v; saveCFG(); });
     }
 
-    el.appendChild(sec('MOVEMENT'));
-    el.appendChild(cfgSlider('Move Speed', 0, 12, 0.1, 'speed'));
-
-    el.appendChild(sec('COMBAT'));
-    el.appendChild(cfgSlider('HP', 1, 20, 1, 'hp'));
-    if (selectedType === EnemyType.BAMBU || selectedType === EnemyType.PYRA) {
-      const row = document.createElement('div');
-      row.className = 'drow';
-      const lbl = document.createElement('span');
-      lbl.className = 'dlbl'; lbl.textContent = 'Hitbox Radius';
-      const val = document.createElement('span');
-      val.style.flex = '1'; val.style.fontSize = '11px'; val.style.color = '#444';
-      val.textContent = 'computed from geometry';
-      row.appendChild(lbl); row.appendChild(val);
-      el.appendChild(row);
-    } else {
-      el.appendChild(cfgSlider('Hitbox Radius', 0.15, 2.5, 0.05, 'radius'));
-      el.appendChild(note('(live — affects collision; visual size changes on next spawn)'));
-    }
-
+    // Three plain-language knobs — everything else was dev noise.
+    el.appendChild(sec('TWEAK THIS ENEMY'));
+    if (cfg.speed > 0) el.appendChild(cfgSlider('Speed', 0, 12, 0.1, 'speed'));
+    el.appendChild(cfgSlider('Health (hits to kill)', 1, 20, 1, 'hp'));
     if (cfg.fireInterval !== null) {
-      el.appendChild(sec('FIRING'));
-      el.appendChild(cfgSlider('Fire Interval (s)', 0.05, 10, 0.05, 'fireInterval'));
+      el.appendChild(cfgSlider('Seconds between attacks', 0.05, 10, 0.05, 'fireInterval'));
     }
+    el.appendChild(note('changes apply to the real game too — RESET (top) restores everything'));
 
-    el.appendChild(sec('GLOBAL — ALL ENEMIES'));
-    el.appendChild(slider('Bullet Speed', 1, 20, 0.5, BULLET_CONFIG.enemySpeed, v => {
-      BULLET_CONFIG.enemySpeed = v; saveCFG();
-    }));
-
-    el.appendChild(mkExport());
-    renderMaterialAndExport(el);
+    renderLook(el);
   }
 
   // ── DOM helpers ───────────────────────────────────────────────────────────────
@@ -562,34 +578,6 @@ export function initDesigner({ onResume, settings }) {
 
     row.appendChild(lbl); row.appendChild(inp); row.appendChild(val);
     return row;
-  }
-
-  function mkExport() {
-    const wrap = document.createElement('div');
-    wrap.style.marginTop = '28px';
-
-    const btn = document.createElement('button');
-    btn.className = 'dbtn dxbtn'; btn.textContent = 'EXPORT CFG';
-
-    const out = document.createElement('textarea');
-    out.className = 'dout'; out.readOnly = true;
-
-    btn.addEventListener('click', () => {
-      const lines = Object.entries(EnemyType).map(([name, type]) => {
-        const c  = CFG[type];
-        const col = '0x' + c.color.toString(16).padStart(6, '0');
-        const bc  = c.bulletColor != null
-          ? '0x' + c.bulletColor.toString(16).padStart(6, '0') : 'null';
-        const fi = c.fireInterval !== null ? c.fireInterval.toFixed(2) : 'null';
-        return `  [EnemyType.${name}]: { color: ${col}, radius: ${c.radius.toFixed(2)}, speed: ${c.speed.toFixed(1)}, hp: ${c.hp}, bulletColor: ${bc}, fireInterval: ${fi} },`;
-      });
-      out.value = `export const CFG = {\n${lines.join('\n')}\n};\n\n// BULLET_CONFIG.enemySpeed: ${BULLET_CONFIG.enemySpeed}`;
-      out.style.display = 'block';
-      out.select();
-    });
-
-    wrap.appendChild(btn); wrap.appendChild(out);
-    return wrap;
   }
 
   return { show, hide };

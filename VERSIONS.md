@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v103 — 2026-07-03
+**Pause menu simplified: settings-first, tester behind one button, VFX in the preview, plain-language options**
+- **Pausing now lands on a clean SETTINGS view with no sidebar** — volume, screen shake, performance mode, and one **OPEN ENEMY TESTER →** button. The 17-enemy list only appears once you're inside the tester (with a ← back item), and re-pausing always starts at settings
+- **The tester preview now shows VFX**: HIT sparks goo droplets at the impact point, kills splatter droplets + leave a fading splat decal, and BAMBU/PYRA part-pops shed chunks — a tiny self-contained droplet system inside the tester scene (drains the enemy's queued chunk data), torn down with the menu
+- **Options cut to plain language**: each enemy page is now the viewport + HIT/KILL/RESPAWN + up to three knobs — *Speed*, *Health (hits to kill)*, *Seconds between attacks* — plus the six one-tap **LOOK** style buttons (SATIN/JELLY/…) and a single **COPY MY SETTINGS** feedback button (tuned numbers → clipboard). Removed: hitbox-radius slider, global bullet speed, EXPORT CFG textarea, the 5 material-jargon sliders (SSS/clearcoat/sheen…), COPY/APPLY TUNING JSON textareas, and the OPEN FULL LAB link
+- Preset picks still persist (`tokoTUNING`); header RESET still restores everything
+- Cache-bust `?v=56` → `?v=57`; HUD label → v103
+
+---
+
 ## v102 — 2026-07-03
 **Logo glow: soft oval wash instead of the pink square**
 - The v101 logo's neon glow used CSS `drop-shadow`, which (amplified by faint paper-texture alpha left in the PNG) read as a soft pink rectangle behind the lettering — the reported "pink in a square"
