@@ -1,8 +1,7 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=57';
-import { BULLET_CONFIG } from './bullet.js?v=57';
-import { t } from './lang.js?v=57';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=57';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=58';
+import { t } from './lang.js?v=58';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=58';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -187,7 +186,6 @@ function saveCFG() {
     data[k] = { color: v.color, radius: v.radius, speed: v.speed, hp: v.hp,
                 bulletColor: v.bulletColor, fireInterval: v.fireInterval };
   }
-  data._bulletSpeed = BULLET_CONFIG.enemySpeed;
   localStorage.setItem('tokoCFG', JSON.stringify(data));
 }
 
@@ -197,7 +195,12 @@ function loadCFG() {
   try {
     const saved = JSON.parse(raw);
     for (const [k, v] of Object.entries(saved)) {
-      if (k === '_bulletSpeed') { BULLET_CONFIG.enemySpeed = v; continue; }
+      // v104: `_bulletSpeed` from old saves is deliberately IGNORED. The global
+      // Bullet Speed slider (removed in v103) persisted it, and a stale low
+      // value kept restoring on boot — enemy bullets crawled and expired
+      // mid-arena with no visible way to fix it. Bullets always use the
+      // built-in speed now.
+      if (k === '_bulletSpeed') continue;
       const type = +k;
       if (!CFG[type]) continue;
       for (const field of ['color', 'radius', 'speed', 'hp', 'bulletColor', 'fireInterval']) {

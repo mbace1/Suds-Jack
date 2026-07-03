@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v104 — 2026-07-03
+**FIX: enemy bullets back to normal speed (stale saved slider value was restoring on every boot)**
+- The reported slow, early-fizzling enemy bullets weren't a code change to bullets at all: the old global **Bullet Speed** slider (menu, removed in v103) persisted `BULLET_CONFIG.enemySpeed` into `tokoCFG`, and `loadCFG()` silently restored it on every boot. A low value saved while exploring the old cluttered menu made bullets crawl — and since bullet lifetime is 4s, crawling bullets expired mid-arena ("dissipate early"). With the slider gone there was no visible way to recover
+- `loadCFG()` now **ignores** `_bulletSpeed` from old saves and `saveCFG()` no longer writes it — enemy bullets always fly at the built-in speed (7). No RESET needed; the fix applies on next load
+- Unused `BULLET_CONFIG` import dropped from designer.js
+- Cache-bust `?v=57` → `?v=58`; HUD label → v104
+
+---
+
 ## v103 — 2026-07-03
 **Pause menu simplified: settings-first, tester behind one button, VFX in the preview, plain-language options**
 - **Pausing now lands on a clean SETTINGS view with no sidebar** — volume, screen shake, performance mode, and one **OPEN ENEMY TESTER →** button. The 17-enemy list only appears once you're inside the tester (with a ← back item), and re-pausing always starts at settings
