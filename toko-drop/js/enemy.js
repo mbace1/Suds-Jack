@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=38';
+import { TUNING } from './tuning.js?v=39';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -380,30 +380,43 @@ export class Enemy {
     }
 
     if (type === EnemyType.TORO) {
-      // Toro uses a group for position management
-      this.mesh.rotation.x = 0;
-
-      // Add 6 spike meshes around the torus
-      this.group = new THREE.Group();
-      this.group.add(this.mesh);
+      // Upright wheel (Part 4): the torus lies in its local XY plane (rolling
+      // direction = local +X, axle = local Z). Torus + rim spikes live in a
+      // `_wheel` subgroup that spins about the axle — accelerating during rev,
+      // rolling at dashSpeed/rimRadius during the dash — while the outer group
+      // yaws to face the (45°-snapped) dash direction.
+      this.group  = new THREE.Group();
+      this._wheel = new THREE.Group();
+      this._wheel.add(this.mesh);
+      const rimR = cfg.radius * 0.68; // torus major radius
       const spikeGeo = new THREE.ConeGeometry(0.12, 0.3, 4);
       const spikeMat = new THREE.MeshPhongMaterial({ color: cfg.color, shininess: 100 });
-      for (let i = 0; i < 6; i++) {
-        const a = (i / 6) * Math.PI * 2;
+      for (let i = 0; i < TUNING.toro.rimSpikes; i++) {
+        const a = (i / TUNING.toro.rimSpikes) * Math.PI * 2;
         const spike = new THREE.Mesh(spikeGeo, spikeMat);
-        spike.position.set(Math.cos(a) * cfg.radius * 0.68, 0, Math.sin(a) * cfg.radius * 0.68);
-        spike.rotation.z = -Math.PI / 2;
-        spike.rotation.y = a;
-        this.group.add(spike);
+        spike.position.set(Math.cos(a) * rimR, Math.sin(a) * rimR, 0);
+        spike.rotation.z = a - Math.PI / 2; // cone +Y points radially outward
+        this._wheel.add(spike);
       }
+      this.group.add(this._wheel);
       this.group.position.set(x, cfg.radius, z);
       scene.add(this.group);
 
-      // Indicator line for telegraph
-      const indGeo = new THREE.BoxGeometry(0.08, 0.05, 36);
-      this._indicator = new THREE.Mesh(indGeo, new THREE.MeshBasicMaterial({
+      // Telegraph (Part 4): shaft stretched to the exact dash length (computed
+      // against the arena walls at telegraph time) + a 3-sided cone arrowhead
+      // whose tip sits exactly at the impact point.
+      this._indMat = new THREE.MeshBasicMaterial({
         color: 0xff2200, transparent: true, opacity: 0.55,
-      }));
+      });
+      const shaftGeo = new THREE.BoxGeometry(TUNING.toro.indicatorWidth, 0.04, 1);
+      shaftGeo.translate(0, 0, 0.5);          // origin at the near end → scale.z = dash length
+      this._indShaft = new THREE.Mesh(shaftGeo, this._indMat);
+      const arrowGeo = new THREE.ConeGeometry(TUNING.toro.arrow.radius, TUNING.toro.arrow.length, 3);
+      arrowGeo.rotateX(Math.PI / 2);          // cone +Y → +Z (lies along the path)
+      arrowGeo.translate(0, 0, -TUNING.toro.arrow.length / 2); // tip at local z=0
+      this._indArrow = new THREE.Mesh(arrowGeo, this._indMat);
+      this._indicator = new THREE.Group();
+      this._indicator.add(this._indShaft, this._indArrow);
       this._indicator.visible = false;
       scene.add(this._indicator);
 
@@ -999,6 +1012,10 @@ export class Enemy {
       }
 
       case EnemyType.TORO: {
+        // Dash/telegraph bounds: wheel center stops one radius short of the
+        // real per-axis walls (the old hardcoded ±17 let TORO dash 6 units
+        // outside the portrait arena's side walls).
+        const toroBX = halfX - cfg.radius, toroBZ = halfZ - cfg.radius;
         switch (this._state) {
           case 'idle': {
             // Enraged boss stalks faster between dashes (v62).
@@ -1006,6 +1023,8 @@ export class Enemy {
             if (dist > 2) {
               this.group.position.x += (ddx/dist) * idleSpd * dt;
               this.group.position.z += (ddz/dist) * idleSpd * dt;
+              // Wheel yaws to face its creep direction (local +X = travel).
+              this.group.rotation.y = Math.atan2(-ddz, ddx);
             }
             this._idleTimer -= dt;
             if (this._idleTimer <= 0) {
@@ -1016,47 +1035,58 @@ export class Enemy {
               const snapRad = TUNING.toro.dirSnapDeg * Math.PI / 180;
               const ang = Math.round(Math.atan2(this._dashDir.z, this._dashDir.x) / snapRad) * snapRad;
               this._dashDir = { x: Math.cos(ang), z: Math.sin(ang) };
+              // Face the snapped dash direction for the whole rev→dash cycle.
+              this.group.rotation.y = Math.atan2(-this._dashDir.z, this._dashDir.x);
             }
             break;
           }
           case 'revving':
             this._stateT -= dt;
-            this._spinAngle += (3 + (1.6 - Math.max(this._stateT, 0)) * 8) * dt;
-            this.group.rotation.y = this._spinAngle;
+            // Wheel spin accelerates about the axle as it winds up.
+            this._spinAngle += (3 + (TUNING.toro.revTime - Math.max(this._stateT, 0)) * 8) * dt;
+            this._wheel.rotation.z = -this._spinAngle;
             if (this._stateT <= 0) {
               this._state = 'telegraphing';
               this._stateT = TUNING.toro.telegraphTime;
-              const midX = this.group.position.x + this._dashDir.x * 18;
-              const midZ = this.group.position.z + this._dashDir.z * 18;
-              this._indicator.position.set(midX, 0.03, midZ);
-              const ang2 = Math.atan2(this._dashDir.x, this._dashDir.z);
-              this._indicator.rotation.y = ang2;
+              // Exact dash length: distance along dashDir to the wall clamp.
+              const px = this.group.position.x, pz = this.group.position.z;
+              const tx = this._dashDir.x > 0 ? (toroBX - px) / this._dashDir.x
+                       : this._dashDir.x < 0 ? (-toroBX - px) / this._dashDir.x : Infinity;
+              const tz = this._dashDir.z > 0 ? (toroBZ - pz) / this._dashDir.z
+                       : this._dashDir.z < 0 ? (-toroBZ - pz) / this._dashDir.z : Infinity;
+              const dashLen = Math.max(0.5, Math.min(tx, tz));
+              this._indShaft.scale.z = dashLen;
+              this._indArrow.position.z = dashLen; // arrowhead tip exactly at impact
+              this._indicator.position.set(px, 0.03, pz);
+              this._indicator.rotation.y = Math.atan2(this._dashDir.x, this._dashDir.z);
               this._indicator.visible = true;
             }
             break;
           case 'telegraphing':
             this._stateT -= dt;
-            this._indicator.material.opacity = (Math.sin(this._stateT * TUNING.toro.indicatorFlashHz) > 0) ? 0.7 : 0.15;
+            this._indMat.opacity = (Math.sin(this._stateT * TUNING.toro.indicatorFlashHz) > 0) ? 0.7 : 0.15;
             if (this._stateT <= 0) {
               this._indicator.visible = false;
               this._state = 'dashing';
               this._dashSpeed = TUNING.toro.dashSpeed;
             }
             break;
-          case 'dashing':
+          case 'dashing': {
             this._dashSpeed = Math.max(this._dashSpeed - TUNING.toro.dashDecel * dt, TUNING.toro.dashMin);
             this.group.position.x += this._dashDir.x * this._dashSpeed * dt;
             this.group.position.z += this._dashDir.z * this._dashSpeed * dt;
-            this._spinAngle += 12 * dt;
-            this.group.rotation.y = this._spinAngle;
-            if (Math.abs(this.group.position.x) > 17 || Math.abs(this.group.position.z) > 17) {
-              this.group.position.x = Math.max(-17, Math.min(17, this.group.position.x));
-              this.group.position.z = Math.max(-17, Math.min(17, this.group.position.z));
+            // Rolls for real: spin rate = ground speed / rim radius.
+            this._spinAngle += (this._dashSpeed / (cfg.radius * 0.68)) * dt;
+            this._wheel.rotation.z = -this._spinAngle;
+            if (Math.abs(this.group.position.x) > toroBX || Math.abs(this.group.position.z) > toroBZ) {
+              this.group.position.x = Math.max(-toroBX, Math.min(toroBX, this.group.position.x));
+              this.group.position.z = Math.max(-toroBZ, Math.min(toroBZ, this.group.position.z));
               this._state = 'recovering';
               this._stateT = TUNING.toro.recoverTime;
               this._sqV -= 0.5;
             }
             break;
+          }
           case 'recovering':
             this._stateT -= dt;
             if (this._stateT <= 0) {
@@ -1077,7 +1107,7 @@ export class Enemy {
     } else if (this.type === EnemyType.ORANGE_CUBE && this._fireT < 0.6) {
       this._setEmissive(Math.sin(performance.now() * 0.02) > 0 ? 0x442200 : 0x000000);
     } else if (this.type === EnemyType.TORO && this._state === 'revving') {
-      const ramp = Math.max(0, 1.6 - Math.max(this._stateT, 0)) / 1.6;
+      const ramp = Math.max(0, TUNING.toro.revTime - Math.max(this._stateT, 0)) / TUNING.toro.revTime;
       const v = Math.floor(ramp * 0x33);
       this._setEmissive((v << 8) | (v * 0.5));
     } else if (this.type === EnemyType.SPLITTA && this.hp <= 2) {

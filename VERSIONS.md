@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v85 — 2026-07-03
+**Port brief Part 4: TORO rolls like a wheel + exact-length telegraph with arrowhead**
+- **Wheel orientation fixed**: torus + rim spikes now live in a `_wheel` subgroup spinning about the axle (local Z) while the outer group yaws to face the travel/dash direction — TORO visually *rolls*. Previously the whole group spun about the vertical axis (like a coin on a table) and the 6 spikes were laid out in the horizontal plane while the torus stood upright — they didn't even ring the wheel. Now `TUNING.toro.rimSpikes` (5) spikes ring the rim in the wheel plane
+- Rev-up keeps the accelerating spin (`3 + ramp·8` rad/s, ramp now TUNING-driven); during the dash, spin rate = `dashSpeed / rimRadius` so ground speed and rotation match
+- **Telegraph**: the fixed 36-unit line is replaced by a shaft (`indicatorWidth` 0.34) stretched to the **exact dash length** — computed against the real arena walls along the dash direction — plus a 3-sided cone arrowhead (0.5 × 0.9) whose **tip sits exactly at the impact point**. Flash cadence unchanged
+- **Latent bug fixed**: the dash clamp used hardcoded `±17` bounds from the old square arena — in portrait mode (halfX 11) TORO could dash ~6 units *outside* the side walls (and its telegraph pointed at a spot off-screen). Dash + telegraph now clamp to the live per-axis arena bounds minus the wheel radius
+- Idle creep also yaws the wheel to face its movement
+- Cache-bust `?v=38` → `?v=39`; HUD label → v85
+
+---
+
 ## v84 — 2026-07-03
 **Port brief Part 3: rigid edge-pivot cube flop + speed-derived cadence**
 - `_flopMove` rewritten to the goo-flop/enemy-lab math: the cube mechanically tips over its leading bottom edge — pivot arc sweeps `arcStartDeg`→`arcEndDeg` (135°→45°), center displacement `L + D·cos(ang)` (0→2L), height `D·sin(ang)` where `L` = half-extent and `D = L·√2` — replacing the old smoothstep glide + sine hop (which slid the contact point). Linear arc sweep, no easing
