@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=58';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=58';
-import { Player, PLAYER_RADIUS } from './player.js?v=58';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=58';
-import { audio } from './audio.js?v=58';
-import { initDesigner } from './designer.js?v=58';
-import { t, getLang, setLang, langs } from './lang.js?v=58';
-import { TUNING } from './tuning.js?v=58';
+import { InputManager } from './input.js?v=59';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=59';
+import { Player, PLAYER_RADIUS } from './player.js?v=59';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=59';
+import { audio } from './audio.js?v=59';
+import { initDesigner } from './designer.js?v=59';
+import { t, getLang, setLang, langs } from './lang.js?v=59';
+import { TUNING } from './tuning.js?v=59';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -503,16 +503,25 @@ class SludgeRibbon {
       this.mat.opacity = 0.35 + 0.2 * Math.abs(Math.sin(this._t * 5));
     }
     const pts = this._enemy._trailPositions;
-    const n   = pts ? pts.length : 0;
+    // Expire points older than the poison zones' lethal window (v105) so a
+    // resting SLUDGE's old ribbon doesn't outlive its actual hazard.
+    if (pts && pts.length && this._enemy.alive) {
+      const now = this._enemy._wobbleT;
+      while (pts.length && now - (pts[0].t ?? now) > 3.0) pts.shift();
+    }
+    const n = pts ? pts.length : 0;
     if (n >= 2) {
       // Width matches the poison hitbox (zones spawn at enemy.radius * 1.8).
       const hw = this._enemy.radius * 1.5;
+      let lpx = 0, lpz = hw; // fallback perpendicular for degenerate segments
       for (let i = 0; i < n; i++) {
         let tx, tz;
         if (i < n - 1) { tx = pts[i+1].x - pts[i].x; tz = pts[i+1].z - pts[i].z; }
         else            { tx = pts[i].x - pts[i-1].x; tz = pts[i].z - pts[i-1].z; }
-        const tl = Math.hypot(tx, tz) || 1;
-        const px = -tz / tl * hw, pz = tx / tl * hw;
+        const tl = Math.hypot(tx, tz);
+        let px, pz;
+        if (tl < 1e-4) { px = lpx; pz = lpz; } // coincident points: keep last direction
+        else           { px = -tz / tl * hw; pz = tx / tl * hw; lpx = px; lpz = pz; }
         const b = i * 6;
         this._posArr[b]   = pts[i].x + px; this._posArr[b+1] = 0; this._posArr[b+2] = pts[i].z + pz;
         this._posArr[b+3] = pts[i].x - px; this._posArr[b+4] = 0; this._posArr[b+5] = pts[i].z - pz;
@@ -1532,7 +1541,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v104', 16, uiCanvas.height - 12);
+  ctx.fillText('v105', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
