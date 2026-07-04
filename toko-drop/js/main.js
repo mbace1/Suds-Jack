@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=63';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=63';
-import { Player, PLAYER_RADIUS } from './player.js?v=63';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=63';
-import { audio } from './audio.js?v=63';
-import { initDesigner } from './designer.js?v=63';
-import { t, getLang, setLang, langs } from './lang.js?v=63';
-import { TUNING } from './tuning.js?v=63';
+import { InputManager } from './input.js?v=64';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=64';
+import { Player, PLAYER_RADIUS } from './player.js?v=64';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=64';
+import { audio } from './audio.js?v=64';
+import { initDesigner } from './designer.js?v=64';
+import { t, getLang, setLang, langs } from './lang.js?v=64';
+import { TUNING } from './tuning.js?v=64';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -937,18 +937,12 @@ let smashMode = localStorage.getItem('tokoDropSmash') === '1';
 let announcerOn = localStorage.getItem('tokoDropAnnouncer') === '1';
 audio.setAnnouncer(announcerOn);
 
-// Orientation: respect an explicit player choice; otherwise default by device —
-// a gamepad (Steam Deck) or a wide viewport (phone held sideways, desktop) means
-// landscape, so the arena matches the screen without touching the toggle.
-let orientUserSet = localStorage.getItem('tokoDropOrientSet') === '1';
-function anyGamepadPresent() {
-  if (!navigator.getGamepads) return false;
-  for (const p of navigator.getGamepads()) { if (p) return true; }
-  return false;
-}
-let landscapeMode = orientUserSet
-  ? localStorage.getItem('tokoDropLandscape') === '1'
-  : anyGamepadPresent() || innerWidth > innerHeight;
+// Orientation (v110): the arena ALWAYS matches the screen — wide viewport,
+// wide arena. The old manual toggle let a stale saved choice pin a vertical
+// map onto a landscape screen (and vice versa), so it's gone: viewport aspect
+// is the single source of truth, re-checked at the title and at run start.
+// Old tokoDropLandscape / tokoDropOrientSet saves are deliberately ignored.
+let landscapeMode = innerWidth > innerHeight;
 applyArenaMode(landscapeMode);
 
 // Settings (v75): audio volume + reduce-motion (screen shake), both persisted.
@@ -987,19 +981,18 @@ function applyPerfMode() {
 }
 applyPerfMode();
 
-// Re-derive an un-chosen orientation while still on the title screen: a pad that
-// connects late (browsers reveal pads only after input) or a device rotation
-// flips the arena live. An explicit toggle choice or a running game never flips.
+// Re-derive orientation while on the title screen: rotating the device flips
+// the arena live. A running game never flips (bounds swapping mid-fight would
+// teleport the battle); the next run picks up the new orientation instead.
 function syncAutoOrientation() {
-  if (orientUserSet || gameState !== 'title') return;
-  const want = anyGamepadPresent() || innerWidth > innerHeight;
+  if (gameState !== 'title') return;
+  const want = innerWidth > innerHeight;
   if (want !== landscapeMode) {
     landscapeMode = want;
     applyArenaMode(want);
-    showTitle();  // re-render toggle chip + arena to reflect the switch
+    showTitle();  // re-render the title over the re-framed arena
   }
 }
-window.addEventListener('gamepadconnected', syncAutoOrientation);
 
 function onKill(e) {
   streak++;
@@ -1574,7 +1567,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v109', 16, uiCanvas.height - 12);
+  ctx.fillText('v110', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1629,8 +1622,7 @@ function showTitle() {
         `${t('best')} &nbsp;${pb.bestScore} ${t('pts')} &nbsp;·&nbsp; ${t('wave')} ${pb.bestWave} &nbsp;·&nbsp; ${fmtTime(pb.bestTime)}</div>`
       : ``) +
     `<div style="font-size:16px;opacity:0.85;animation:tokoFadeUp 0.5s 0.2s ease both">${t('tapStart')}</div>` +
-    `<div id="orient-toggle-slot" style="margin-top:18px;animation:tokoFadeUp 0.5s 0.28s ease both"></div>` +
-    `<div id="rogue-toggle-slot" style="margin-top:14px;animation:tokoFadeUp 0.5s 0.3s ease both"></div>` +
+    `<div id="rogue-toggle-slot" style="margin-top:18px;animation:tokoFadeUp 0.5s 0.3s ease both"></div>` +
     `<div id="settings-slot" style="margin-top:14px;animation:tokoFadeUp 0.5s 0.32s ease both"></div>` +
     `<div class="t-help" style="font-size:9.5px;opacity:0.32;margin:14px auto 0;line-height:1.6;text-align:center;` +
     `max-width:230px;animation:tokoFadeUp 0.5s 0.4s ease both">` +
@@ -1668,41 +1660,8 @@ function showTitle() {
     }
   }
 
-  // Orientation toggle — switches arena between portrait and landscape (Steam Deck).
-  {
-    const oslot = document.getElementById('orient-toggle-slot');
-    const obtn  = document.createElement('div');
-    obtn.dataset.ui = '1';
-    const ohint = document.createElement('div');
-    ohint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
-    const orender = () => {
-      const land = landscapeMode;
-      obtn.textContent = `${t('orientation')}: ${land ? t('landscape') : t('portrait')}`;
-      obtn.style.cssText =
-        'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
-        'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
-        'background:rgba(0,0,0,0.35);transition:all 0.12s;' +
-        `border:2px solid ${land ? '#ffaa33' : '#445'};` +
-        `color:${land ? '#ffcc66' : '#7777aa'};` +
-        `text-shadow:${land ? '0 0 12px #ffaa33' : 'none'};`;
-      ohint.textContent = land ? t('orientLandH') : t('orientPortH');
-    };
-    orender();
-    const otoggle = e => {
-      e.stopPropagation();
-      e.preventDefault();
-      landscapeMode = !landscapeMode;
-      orientUserSet = true;  // explicit choice from now on — overrides device default
-      localStorage.setItem('tokoDropLandscape', landscapeMode ? '1' : '0');
-      localStorage.setItem('tokoDropOrientSet', '1');
-      applyArenaMode(landscapeMode);  // live-update the title-screen arena
-      orender();
-    };
-    obtn.addEventListener('pointerdown', otoggle);
-    obtn.addEventListener('touchend', e => e.stopPropagation());
-    oslot.appendChild(obtn);
-    oslot.appendChild(ohint);
-  }
+  // (The old ORIENTATION toggle is gone — v110: the arena always follows the
+  // screen, so there's nothing to choose and no way to save a mismatch.)
 
   // Roguelike toggle — a clickable chip inside the (pointer-events:none) overlay.
   const slot = document.getElementById('rogue-toggle-slot');
@@ -2119,6 +2078,9 @@ function startGame() {
   overlay.style.pointerEvents = '';  // back to CSS default (none) for gameplay HUD
   document.getElementById('upgrade-panel')?.remove();
   input.reset();
+  // Re-derive from the live viewport at run start — the run then keeps this
+  // arena even if the device rotates mid-fight (no mid-run bound swaps).
+  landscapeMode = innerWidth > innerHeight;
   applyArenaMode(landscapeMode);
   score  = 0; streak = 0; wave = 0; runTimer = 0; scoreMultT = 0; waveClearFlashT = 0;
   collectedUpgrades = []; hitEventLog = []; _lastHitTime = -1;
