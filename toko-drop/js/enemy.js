@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=58';
+import { TUNING } from './tuning.js?v=59';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -1013,11 +1013,17 @@ export class Enemy {
         }
         if (this.type === EnemyType.SLUDGE_CUBE) {
           // Trail position ring buffer for ribbon
-          this._trailPushTimer -= dt;
-          if (this._trailPushTimer <= 0) {
-            this._trailPushTimer = 0.15;
-            this._trailPositions.push({ x: this.mesh.position.x, z: this.mesh.position.z });
-            if (this._trailPositions.length > 12) this._trailPositions.shift();
+          // Ribbon points are pushed by DISTANCE, not time (v105): the flop-rest
+          // movement cycle used to fill the ring buffer with coincident points
+          // during rests, which crumpled the v100 ribbon. Timestamps let the
+          // ribbon expire old points on the poison zones' clock.
+          {
+            const px = this.mesh.position.x, pz = this.mesh.position.z;
+            const lp = this._trailPositions[this._trailPositions.length - 1];
+            if (!lp || Math.hypot(px - lp.x, pz - lp.z) >= 0.35) {
+              this._trailPositions.push({ x: px, z: pz, t: this._wobbleT });
+              if (this._trailPositions.length > 12) this._trailPositions.shift();
+            }
           }
           // Poison emission cadence (TUNING.fx.poisonInterval)
           this._poisonTimer -= dt;

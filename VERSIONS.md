@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v105 — 2026-07-04
+**FIX: sludge ribbon crumpled (v100 regression) — distance-spaced points + age expiry**
+- Trail points were pushed every 0.15s regardless of movement; since v84 SLUDGE moves in flop(0.3s)/rest(~1.3s) cycles, so rests filled the 12-point ring buffer with coincident points. The ribbon derives its quad orientation from consecutive-point deltas — near-zero deltas produced garbage perpendiculars, and at v100's full width (the ribbon is the sole visual now) it rendered as crumpled bowties stuck at rest spots with gaps between flops
+- Points now push by **distance** (≥0.35 units moved), carry timestamps, and the ribbon **expires points older than 3s** (matching the poison zones' lethal window) so a resting SLUDGE's old ribbon can't outlive its hazard; coincident-segment perpendiculars reuse the previous direction instead of exploding
+- Cache-bust `?v=58` → `?v=59`; HUD label → v105
+
+---
+
 ## v104 — 2026-07-03
 **FIX: enemy bullets back to normal speed (stale saved slider value was restoring on every boot)**
 - The reported slow, early-fizzling enemy bullets weren't a code change to bullets at all: the old global **Bullet Speed** slider (menu, removed in v103) persisted `BULLET_CONFIG.enemySpeed` into `tokoCFG`, and `loadCFG()` silently restored it on every boot. A low value saved while exploring the old cluttered menu made bullets crawl — and since bullet lifetime is 4s, crawling bullets expired mid-arena ("dissipate early"). With the slider gone there was no visible way to recover
