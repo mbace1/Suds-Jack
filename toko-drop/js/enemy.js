@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=61';
+import { TUNING } from './tuning.js?v=62';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -348,6 +348,7 @@ export class Enemy {
     this._childFreeform = false;
     this._trailReady   = false;
     this._trailTimer   = 0;
+    this._shotReady    = false;  // BOTFLY: set on homing launch; main.js drains for audio
     this.chunks        = [];
 
     // Movement VFX (v29): smoothed velocity → blob stretch + motion-trail emission
@@ -1503,6 +1504,7 @@ export class Enemy {
           bullets.spawnDir(ex, ez, (playerPos.x - ex) / dl, (playerPos.z - ez) / dl,
             false, cfg.bulletColor, false, this.type, true, 1.8, 0.62);
           this._sqV -= 0.5;
+          this._shotReady = true;  // main.js drains → audio.botShot()
         }
         break;
       }

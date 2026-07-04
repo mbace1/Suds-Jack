@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=61';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=61';
-import { Player, PLAYER_RADIUS } from './player.js?v=61';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=61';
-import { audio } from './audio.js?v=61';
-import { initDesigner } from './designer.js?v=61';
-import { t, getLang, setLang, langs } from './lang.js?v=61';
-import { TUNING } from './tuning.js?v=61';
+import { InputManager } from './input.js?v=62';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=62';
+import { Player, PLAYER_RADIUS } from './player.js?v=62';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=62';
+import { audio } from './audio.js?v=62';
+import { initDesigner } from './designer.js?v=62';
+import { t, getLang, setLang, langs } from './lang.js?v=62';
+import { TUNING } from './tuning.js?v=62';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1546,7 +1546,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v107', 16, uiCanvas.height - 12);
+  ctx.fillText('v108', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2322,6 +2322,14 @@ function loop() {
     slimeTrails.push(new SlimeTrail(scene, e.position.x, e.position.z, 0.5));
   }
 
+  // BOTFLY homing launch chirp (v108) — the shot was silent, so the first
+  // warning a player got was the projectile already on their tail.
+  for (const e of enemies) {
+    if (!e._shotReady) continue;
+    e._shotReady = false;
+    audio.botShot();
+  }
+
   // Motion-trail afterimages — pooled ghost spheres, per-type size signature (v36)
   for (const e of enemies) {
     if (!e._motionTrailReady) continue;
@@ -2350,6 +2358,7 @@ function loop() {
       }
       puddles.push(new Puddle(scene, lx, lz, 0xddbb44, 1.1));
       addShake(0.12);
+      audio.lobSplash();  // v108: the splashdown was silent
       if (!player.invincible) {
         const pdx = player.position.x - lx, pdz = player.position.z - lz;
         if (Math.hypot(pdx, pdz) < TUNING.bambu.landingRing.outer + PLAYER_RADIUS) {

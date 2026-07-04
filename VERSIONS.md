@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v108 — 2026-07-04
+**Audio for the silent mechanics: BAMBU lob splashdown + BOTFLY homing launch**
+- `audio.lobSplash()` — wet low thud (150→55 Hz sine) + a short splash of noise, played where main.js drains `_lobLanded`; the goo lob's landing was completely silent even though it damages inside the ring
+- `audio.botShot()` — soft rising zip (380→1150 Hz triangle) when a BOTFLY launches its homing shot; previously the first warning a player got was the projectile already on their tail. BOTFLY sets a `_shotReady` flag in its fire block, drained in main.js next to the other per-enemy FX drains (same pattern as `_trailReady`)
+- Both go through the existing `_tone`/`_noise` helpers, so the master volume slider applies
+- Cache-bust `?v=61` → `?v=62`; HUD label → v108
+
+---
+
 ## v107 — 2026-07-04
 **Player joins the satin look — same gel material as the enemies, LOOK presets restyle it too**
 - The player was the last mesh on the legacy goo `ShaderMaterial`; it now uses `makeSatinMat(0xffffff, 'blob', r)` like everything else, so the whole cast shares one material system and the pause menu's LOOK presets (SATIN/JELLY/GLASSY/…) restyle the player live along with the enemies

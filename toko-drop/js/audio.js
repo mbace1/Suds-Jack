@@ -52,6 +52,10 @@ class AudioSystem {
     else if (cat === 'pyra')  { this._tone(1300,0.16, 'sine',     0.20, 550); }
     else                       { this._tone(380, 0.18, 'square',   0.22, 55); this._noise(0.09, 0.13); }
   }
+  // BAMBU lob splashdown (v108): wet low thud + short splash of noise.
+  lobSplash() { this._tone(150, 0.28, 'sine', 0.30, 55); this._noise(0.16, 0.20); }
+  // BOTFLY homing launch (v108): soft rising zip — a warning you can hear.
+  botShot()   { this._tone(380, 0.16, 'triangle', 0.14, 1150); }
   playerHit() { this._tone(100, 0.32, 'sawtooth', 0.38); this._noise(0.22, 0.18); }
   playerDie() { this._tone(65,  0.70, 'sawtooth', 0.50); this._noise(0.42, 0.60); }
   pickup() {
