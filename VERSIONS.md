@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v112 — 2026-07-04
+**Landscape zoom is now aspect-aware — the camera dollies in until the arena just fits YOUR screen**
+- v111's fixed landscape framing was capped by the 16:9 fit, leaving unused margin on wider phones ("still needs zooming in"). New `fitLandscapeCamera()` binary-searches the camera distance along the preset's view ray until the arena's four corners just fit the current viewport (|x| ≤ 0.96, |y| ≤ 0.93) — at 19.5:9 the camera comes in from dist 23.3 → ~19.8 and top/bottom margins drop from 0.305/0.326 to ~0.21/0.18
+- Refits live: on rotation and any resize while on the title (camera-only, no geometry churn), and at every run start; a run keeps its framing mid-fight
+- Same view ray/tilt as v111; 16:9 screens get the identical v111 framing (they were already at the fit limit). Portrait untouched
+- Cache-bust `?v=65` → `?v=66`; HUD label → v112
+
+---
+
 ## v111 — 2026-07-04
 **Landscape camera zoomed in — arena's top gap now matches the bottom gap**
 - The landscape camera framed the arena low: the far edge sat 0.63 NDC from the screen top while the near edge sat 0.22 from the bottom (the reported "blur bar on top" far from the edge). New framing (`camRest [0, 20.5, 13.5]`, `camLook [0, 0, 2.5]`) was solved numerically: top/bottom margins now 0.305/0.326 (symmetric) and the arena fills ~19% more of the screen height, same 3/4 view tilt (61.8° vs 59.3°)
