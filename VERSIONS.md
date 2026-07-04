@@ -13,6 +13,7 @@
 - `audio.botShot()` — soft rising zip (380→1150 Hz triangle) when a BOTFLY launches its homing shot; previously the first warning a player got was the projectile already on their tail. BOTFLY sets a `_shotReady` flag in its fire block, drained in main.js next to the other per-enemy FX drains (same pattern as `_trailReady`)
 - Both go through the existing `_tone`/`_noise` helpers, so the master volume slider applies
 - Cache-bust `?v=61` → `?v=62`; HUD label → v108
+- (Deploy note: the first Pages deployment of this version hit GitHub's transient "Deployment failed, try again later" — same as v94; this follow-up commit re-triggered it)
 
 ---
 
