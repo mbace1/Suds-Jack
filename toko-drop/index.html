@@ -45,6 +45,16 @@
       user-select: none;
     }
     #overlay::-webkit-scrollbar { display: none; }
+    /* Short viewports (landscape phones ~400px high): tighten the title column
+       so the whole thing fits without scrolling. !important because the title
+       markup carries these as inline styles. Scrolling remains the fallback. */
+    @media (max-height: 560px) {
+      #overlay { line-height: 1.2; padding: 8px 12px; }
+      #overlay .t-sub  { margin: 4px 0 10px !important; }
+      #overlay .t-help { margin: 8px auto 0 !important; line-height: 1.4 !important; }
+      #orient-toggle-slot, #rogue-toggle-slot, #settings-slot { margin-top: 8px !important; }
+      #lang-toggle-slot { margin-top: 12px !important; }
+    }
   </style>
 </head>
 <body>
@@ -59,6 +69,6 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=59"></script>
+  <script type="module" src="js/main.js?v=60"></script>
 </body>
 </html>

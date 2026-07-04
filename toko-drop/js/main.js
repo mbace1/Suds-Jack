@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=59';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=59';
-import { Player, PLAYER_RADIUS } from './player.js?v=59';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=59';
-import { audio } from './audio.js?v=59';
-import { initDesigner } from './designer.js?v=59';
-import { t, getLang, setLang, langs } from './lang.js?v=59';
-import { TUNING } from './tuning.js?v=59';
+import { InputManager } from './input.js?v=60';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=60';
+import { Player, PLAYER_RADIUS } from './player.js?v=60';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=60';
+import { audio } from './audio.js?v=60';
+import { initDesigner } from './designer.js?v=60';
+import { t, getLang, setLang, langs } from './lang.js?v=60';
+import { TUNING } from './tuning.js?v=60';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -925,8 +925,9 @@ let hiScore = pb.bestScore;
 // Roguelike mode (default on): show upgrade cards between waves. Off = plain arcade run.
 let roguelikeMode = false;
 
-// Orientation: respect an explicit player choice; otherwise default by device.
-// A gamepad (Steam Deck) defaults to landscape so it "just works" without touching the toggle.
+// Orientation: respect an explicit player choice; otherwise default by device —
+// a gamepad (Steam Deck) or a wide viewport (phone held sideways, desktop) means
+// landscape, so the arena matches the screen without touching the toggle.
 let orientUserSet = localStorage.getItem('tokoDropOrientSet') === '1';
 function anyGamepadPresent() {
   if (!navigator.getGamepads) return false;
@@ -935,7 +936,7 @@ function anyGamepadPresent() {
 }
 let landscapeMode = orientUserSet
   ? localStorage.getItem('tokoDropLandscape') === '1'
-  : anyGamepadPresent();
+  : anyGamepadPresent() || innerWidth > innerHeight;
 applyArenaMode(landscapeMode);
 
 // Settings (v75): audio volume + reduce-motion (screen shake), both persisted.
@@ -974,15 +975,19 @@ function applyPerfMode() {
 }
 applyPerfMode();
 
-// A pad that connects later (common — browsers reveal pads only after input) flips an
-// un-chosen orientation to landscape live while still on the title screen.
-window.addEventListener('gamepadconnected', () => {
-  if (!orientUserSet && !landscapeMode && gameState === 'title') {
-    landscapeMode = true;
-    applyArenaMode(true);
+// Re-derive an un-chosen orientation while still on the title screen: a pad that
+// connects late (browsers reveal pads only after input) or a device rotation
+// flips the arena live. An explicit toggle choice or a running game never flips.
+function syncAutoOrientation() {
+  if (orientUserSet || gameState !== 'title') return;
+  const want = anyGamepadPresent() || innerWidth > innerHeight;
+  if (want !== landscapeMode) {
+    landscapeMode = want;
+    applyArenaMode(want);
     showTitle();  // re-render toggle chip + arena to reflect the switch
   }
-});
+}
+window.addEventListener('gamepadconnected', syncAutoOrientation);
 
 function onKill(e) {
   streak++;
@@ -1541,7 +1546,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v105', 16, uiCanvas.height - 12);
+  ctx.fillText('v106', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1573,8 +1578,14 @@ function showTitle() {
     document.head.appendChild(s);
   }
   overlay.style.display = 'block';
+  // v106: interactive on the title too, so short screens (landscape phones) can
+  // scroll the column. Tap-to-start still works — the window touchend handler
+  // keys off [data-ui] elements, not the overlay. startGame() resets this.
+  overlay.style.pointerEvents = 'auto';
   overlay.innerHTML =
-    `<div style="position:relative;width:min(72vw,340px);margin:0 auto;animation:tokoFadeUp 0.5s ease both">` +
+    // Logo width: also capped by height (aspect 1.64 → 43vh ≈ 26vh tall) so a
+    // short landscape viewport doesn't spend half its height on the logo.
+    `<div style="position:relative;width:min(72vw,340px,43vh);margin:0 auto;animation:tokoFadeUp 0.5s ease both">` +
     // Soft oval neon wash behind the lettering — a radial gradient that fades
     // to nothing (the old rectangular drop-shadow read as a pink box).
     `<div style="position:absolute;inset:-34% -22%;pointer-events:none;` +
@@ -1582,7 +1593,7 @@ function showTitle() {
     `<img src="logo.png" alt="TOKO DROP" style="position:relative;width:100%;display:block;` +
     `filter:drop-shadow(0 0 8px rgba(255,68,34,0.8))">` +
     `</div>` +
-    `<div style="font-size:13px;opacity:0.5;margin:8px 0 22px;animation:tokoFadeUp 0.5s 0.1s ease both">` +
+    `<div class="t-sub" style="font-size:13px;opacity:0.5;margin:8px 0 22px;animation:tokoFadeUp 0.5s 0.1s ease both">` +
     `${t('subtitle')}</div>` +
     (pb.bestScore > 0
       ? `<div style="font-size:13px;color:#ffdd44;opacity:0.85;margin-bottom:14px;letter-spacing:1px;` +
@@ -1593,7 +1604,7 @@ function showTitle() {
     `<div id="orient-toggle-slot" style="margin-top:18px;animation:tokoFadeUp 0.5s 0.28s ease both"></div>` +
     `<div id="rogue-toggle-slot" style="margin-top:14px;animation:tokoFadeUp 0.5s 0.3s ease both"></div>` +
     `<div id="settings-slot" style="margin-top:14px;animation:tokoFadeUp 0.5s 0.32s ease both"></div>` +
-    `<div style="font-size:9.5px;opacity:0.32;margin:14px auto 0;line-height:1.6;text-align:center;` +
+    `<div class="t-help" style="font-size:9.5px;opacity:0.32;margin:14px auto 0;line-height:1.6;text-align:center;` +
     `max-width:230px;animation:tokoFadeUp 0.5s 0.4s ease both">` +
     `${t('ctrlMove')} &nbsp;·&nbsp; ${t('ctrlMoveH')}<br>` +
     `${t('ctrlAim')} &nbsp;·&nbsp; ${t('ctrlAimH')}<br>` +
@@ -1609,6 +1620,7 @@ function showTitle() {
     for (const { code, label } of langs()) {
       const on   = code === active;
       const chip = document.createElement('div');
+      chip.dataset.ui = '1';  // excluded from tap-to-start
       chip.textContent = label;
       chip.style.cssText =
         'pointer-events:auto;cursor:pointer;user-select:none;' +
@@ -1632,6 +1644,7 @@ function showTitle() {
   {
     const oslot = document.getElementById('orient-toggle-slot');
     const obtn  = document.createElement('div');
+    obtn.dataset.ui = '1';
     const ohint = document.createElement('div');
     ohint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
     const orender = () => {
@@ -1666,6 +1679,7 @@ function showTitle() {
   // Roguelike toggle — a clickable chip inside the (pointer-events:none) overlay.
   const slot = document.getElementById('rogue-toggle-slot');
   const btn  = document.createElement('div');
+  btn.dataset.ui = '1';
   const hint = document.createElement('div');
   hint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
   const render = () => {
@@ -1704,6 +1718,7 @@ function showTitle() {
     // Run History button (v76) — opens a panel over data already recorded
     // in pb.runs (top 10 by score, maintained by recordRun()).
     const rhBtn = document.createElement('div');
+    rhBtn.dataset.ui = '1';
     rhBtn.textContent = t('runHistory');
     rhBtn.style.cssText =
       'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
@@ -2048,6 +2063,7 @@ function showUpgradeCards() {
 
 function startGame() {
   overlay.style.display = 'none';
+  overlay.style.pointerEvents = '';  // back to CSS default (none) for gameplay HUD
   document.getElementById('upgrade-panel')?.remove();
   input.reset();
   applyArenaMode(landscapeMode);
@@ -2121,11 +2137,21 @@ window.addEventListener('keyup', e => {
   if (e.code === 'Space' && gameState === 'gameover') returnToTitle();  // skip feedback
   if (e.code === 'KeyE') player.toggleEyes();
 });
-// Tap anywhere (outside overlay UI elements) starts from title on mobile
+// Tap anywhere (outside interactive [data-ui] elements) starts from title on
+// mobile. The overlay itself is pointer-events:auto on the title (v106) so it
+// can scroll on short screens — so the guard must (a) key off [data-ui], not
+// the whole overlay, and (b) tell a scroll drag apart from a tap by distance.
+let _tapX = 0, _tapY = 0;
+window.addEventListener('touchstart', (e) => {
+  _tapX = e.touches[0]?.clientX ?? 0;
+  _tapY = e.touches[0]?.clientY ?? 0;
+});
 window.addEventListener('touchend', (e) => {
   if (gameState !== 'title') return;
-  // Ignore taps that landed on interactive elements inside the overlay (e.g. roguelike toggle)
-  if (e.target?.closest?.('#overlay') && e.target?.id !== 'overlay') return;
+  // Ignore taps that landed on interactive elements (toggles, chips, links)
+  if (e.target?.closest?.('[data-ui]')) return;
+  const tp = e.changedTouches?.[0];
+  if (tp && Math.hypot(tp.clientX - _tapX, tp.clientY - _tapY) > 12) return;  // scroll, not tap
   startGame();
 }, { once: false });
 
@@ -2694,6 +2720,7 @@ function resize() {
   renderer.setSize(innerWidth, innerHeight);
   if (camera) { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
   uiCanvas.width = innerWidth; uiCanvas.height = innerHeight;
+  syncAutoOrientation();  // rotation on the title re-picks the arena preset
 }
 window.addEventListener('resize', resize);
 // Some phones fire `resize` before rotation dimensions settle, leaving the
