@@ -1,17 +1,21 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=64';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=64';
-import { Player, PLAYER_RADIUS } from './player.js?v=64';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=64';
-import { audio } from './audio.js?v=64';
-import { initDesigner } from './designer.js?v=64';
-import { t, getLang, setLang, langs } from './lang.js?v=64';
-import { TUNING } from './tuning.js?v=64';
+import { InputManager } from './input.js?v=65';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=65';
+import { Player, PLAYER_RADIUS } from './player.js?v=65';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=65';
+import { audio } from './audio.js?v=65';
+import { initDesigner } from './designer.js?v=65';
+import { t, getLang, setLang, langs } from './lang.js?v=65';
+import { TUNING } from './tuning.js?v=65';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
   portrait:  { halfX: 11, halfZ: 18, camRest: [0, 27, 21], camLook: [0, 0, -3], label: 'PORTRAIT' },
-  landscape: { halfX: 19, halfZ: 11, camRest: [0, 27, 14], camLook: [0, 0, -2], label: 'LANDSCAPE · STEAM DECK' },
+  // Landscape camera (v111): framed so the arena's far and near edges sit at
+  // matching distances from the screen top/bottom (top/bottom NDC margins
+  // 0.305/0.326 vs the old 0.63/0.22) and the arena fills more of the screen.
+  // Numerically solved; the widest fit constraint is the near corners at 16:9.
+  landscape: { halfX: 19, halfZ: 11, camRest: [0, 20.5, 13.5], camLook: [0, 0, 2.5], label: 'LANDSCAPE · STEAM DECK' },
 };
 let HALF_X      = ARENA_PRESETS.portrait.halfX;   // arena half-width
 let HALF_Z      = ARENA_PRESETS.portrait.halfZ;   // arena half-depth
@@ -1567,7 +1571,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v110', 16, uiCanvas.height - 12);
+  ctx.fillText('v111', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
