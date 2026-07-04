@@ -1,20 +1,21 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=65';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=65';
-import { Player, PLAYER_RADIUS } from './player.js?v=65';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=65';
-import { audio } from './audio.js?v=65';
-import { initDesigner } from './designer.js?v=65';
-import { t, getLang, setLang, langs } from './lang.js?v=65';
-import { TUNING } from './tuning.js?v=65';
+import { InputManager } from './input.js?v=66';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=66';
+import { Player, PLAYER_RADIUS } from './player.js?v=66';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=66';
+import { audio } from './audio.js?v=66';
+import { initDesigner } from './designer.js?v=66';
+import { t, getLang, setLang, langs } from './lang.js?v=66';
+import { TUNING } from './tuning.js?v=66';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
   portrait:  { halfX: 11, halfZ: 18, camRest: [0, 27, 21], camLook: [0, 0, -3], label: 'PORTRAIT' },
-  // Landscape camera (v111): framed so the arena's far and near edges sit at
-  // matching distances from the screen top/bottom (top/bottom NDC margins
-  // 0.305/0.326 vs the old 0.63/0.22) and the arena fills more of the screen.
-  // Numerically solved; the widest fit constraint is the near corners at 16:9.
+  // Landscape camera (v111/v112): camRest defines the view RAY (direction +
+  // baseline distance, symmetric top/bottom margins at 16:9); the actual
+  // camera position is fitted per-viewport by fitLandscapeCamera() — wider
+  // screens have side headroom, so the camera dollies in and the arena fills
+  // more of the screen. Portrait keeps its fixed framing.
   landscape: { halfX: 19, halfZ: 11, camRest: [0, 20.5, 13.5], camLook: [0, 0, 2.5], label: 'LANDSCAPE · STEAM DECK' },
 };
 let HALF_X      = ARENA_PRESETS.portrait.halfX;   // arena half-width
@@ -254,12 +255,51 @@ const border = new THREE.LineSegments(
 border.position.y = 0.02;
 scene.add(border);
 
+// Aspect-aware landscape zoom (v112): dolly the camera along the preset's
+// view ray until the arena's four corners just fit the current viewport
+// (|x| ≤ 0.96 half-widths, |y| ≤ 0.93). The side corners are the binding
+// constraint at every landscape aspect, so wider screens (19.5:9 phones)
+// get a closer camera and a noticeably bigger arena than 16:9.
+function fitLandscapeCamera() {
+  const p = ARENA_PRESETS.landscape;
+  const look = new THREE.Vector3(...p.camLook);
+  const dir  = new THREE.Vector3(...p.camRest).sub(look).normalize();
+  const aspect = innerWidth / Math.max(1, innerHeight);
+  const t = Math.tan(Math.PI / 6); // half of the 60° vertical FOV
+  const up = new THREE.Vector3(0, 1, 0);
+  const cam = new THREE.Vector3(), f = new THREE.Vector3(),
+        r = new THREE.Vector3(), u = new THREE.Vector3(), d = new THREE.Vector3();
+  const fits = (dist) => {
+    cam.copy(look).addScaledVector(dir, dist);
+    f.copy(look).sub(cam).normalize();
+    r.crossVectors(f, up).normalize();
+    u.crossVectors(r, f);
+    for (const sx of [-1, 1]) {
+      for (const sz of [-1, 1]) {
+        d.set(sx * p.halfX, 0, sz * p.halfZ).sub(cam);
+        const z = d.dot(f);
+        if (z <= 0) return false;
+        if (Math.abs(d.dot(r) / (z * t * aspect)) > 0.96) return false;
+        if (Math.abs(d.dot(u) / (z * t)) > 0.93) return false;
+      }
+    }
+    return true;
+  };
+  let lo = 10, hi = 45;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (fits(mid)) hi = mid; else lo = mid;
+  }
+  return cam.copy(look).addScaledVector(dir, hi);
+}
+
 // Swap arena dimensions, camera framing, floor + border geometry, and grid uniforms.
 function applyArenaMode(landscape) {
   const p = landscape ? ARENA_PRESETS.landscape : ARENA_PRESETS.portrait;
   HALF_X = p.halfX; HALF_Z = p.halfZ;
-  CAM_REST.set(...p.camRest);
   CAM_LOOK.set(...p.camLook);
+  if (landscape) CAM_REST.copy(fitLandscapeCamera());
+  else           CAM_REST.set(...p.camRest);
   camera.position.copy(CAM_REST);
   camera.lookAt(CAM_LOOK);
   floor.geometry.dispose();
@@ -995,6 +1035,12 @@ function syncAutoOrientation() {
     landscapeMode = want;
     applyArenaMode(want);
     showTitle();  // re-render the title over the re-framed arena
+  } else if (landscapeMode) {
+    // Same orientation but the aspect may have changed (window resize, URL
+    // bar) — refit the zoom. Camera-only, no geometry churn.
+    CAM_REST.copy(fitLandscapeCamera());
+    camera.position.copy(CAM_REST);
+    camera.lookAt(CAM_LOOK);
   }
 }
 
@@ -1571,7 +1617,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v111', 16, uiCanvas.height - 12);
+  ctx.fillText('v112', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
