@@ -1,7 +1,71 @@
+// Arcade game-show announcer (v109): original soap-themed lines in the spirit
+// of the classic arena shooters, spoken via the browser's speech synthesis.
+// Deliberately NOT an imitation of any real person's voice — it uses whatever
+// stock en-US voice the device ships, pitched down for game-show bombast.
+const ANNOUNCER_LINES = {
+  start:    ['WELCOME TO TOKO DROP! GOOD LUCK — YOU\'LL NEED IT!',
+             'LADIES AND GENTLEMEN... LET\'S DROP SOME TOKO!'],
+  wave:     ['HERE THEY COME!', 'FRESH MEAT FOR THE GRINDER!',
+             'MOP THEM UP!', 'NO MERCY! NO REFUNDS!'],
+  boss:     ['MEGA MESS INCOMING!', 'IT\'S HUGE! IT\'S HORRIBLE! I LOVE IT!'],
+  streak:   ['TOTAL CLEANUP! I LOVE IT!', 'UNSTOPPABLE!',
+             'WHAT A PLAYER!', 'THE CROWD GOES WILD!'],
+  prize:    ['BIG BUBBLES! BIG PRIZES!', 'GRAB THAT PRIZE!'],
+  money:    ['BIG MONEY!', 'CHA-CHING!'],
+  mult:     ['DOUBLE IT UP!', 'TWO FOR ONE! I LOVE IT!'],
+  ouch:     ['OOOH! THAT\'S GOTTA STING!', 'RIGHT IN THE SUDS!'],
+  gameover: ['TOTAL WIPEOUT! SEE YOU NEXT SHOW!',
+             'AND THAT\'S THE GAME! WHAT A FINISH!'],
+  clear:    ['EXCELLENT!', 'GOOD! GOOD!', 'SPOTLESS!'],
+};
+// gameover/boss cut off whatever is mid-sentence; everything else waits its turn.
+const ANNOUNCER_URGENT = new Set(['gameover', 'boss']);
+
 class AudioSystem {
-  constructor() { this._ctx = null; this._volume = 1.0; }
+  constructor() {
+    this._ctx = null; this._volume = 1.0;
+    this._announcer = false;
+    this._sayLast = 0;      // performance.now() of the last spoken line
+    this._voice = null;     // cached SpeechSynthesisVoice (or null = default)
+    if (typeof speechSynthesis !== 'undefined') {
+      const pick = () => {
+        const vs = speechSynthesis.getVoices();
+        this._voice = vs.find(v => v.lang?.startsWith('en') && v.localService)
+                   ?? vs.find(v => v.lang?.startsWith('en')) ?? null;
+      };
+      pick();
+      speechSynthesis.addEventListener?.('voiceschanged', pick);
+    }
+  }
 
   setVolume(v) { this._volume = Math.max(0, Math.min(1, v)); }
+
+  setAnnouncer(on) { this._announcer = !!on; }
+
+  // announce('wave', 5) → speaks a random line for the key; extra becomes a
+  // "WAVE 5!" prefix on wave lines. Silently no-ops without speechSynthesis
+  // (headless/older browsers), at volume 0, or when the toggle is off.
+  announce(key, extra = null) {
+    if (!this._announcer || this._volume <= 0) return;
+    if (typeof speechSynthesis === 'undefined') return;
+    const lines = ANNOUNCER_LINES[key];
+    if (!lines) return;
+    const now = performance.now();
+    const urgent = ANNOUNCER_URGENT.has(key);
+    if (!urgent && (now - this._sayLast < 3000 || speechSynthesis.speaking)) return;
+    try {
+      if (urgent) speechSynthesis.cancel();
+      let text = lines[Math.floor(Math.random() * lines.length)];
+      if (key === 'wave' && extra != null) text = `WAVE ${extra}! ${text}`;
+      const u = new SpeechSynthesisUtterance(text);
+      if (this._voice) u.voice = this._voice;
+      u.pitch  = 0.6;   // deep game-show boom
+      u.rate   = 1.12;  // excited pacing
+      u.volume = this._volume;
+      speechSynthesis.speak(u);
+      this._sayLast = now;
+    } catch (_) {}
+  }
 
   _ensure() {
     if (!this._ctx) this._ctx = new AudioContext();

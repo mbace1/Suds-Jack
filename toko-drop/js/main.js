@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=62';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=62';
-import { Player, PLAYER_RADIUS } from './player.js?v=62';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=62';
-import { audio } from './audio.js?v=62';
-import { initDesigner } from './designer.js?v=62';
-import { t, getLang, setLang, langs } from './lang.js?v=62';
-import { TUNING } from './tuning.js?v=62';
+import { InputManager } from './input.js?v=63';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=63';
+import { Player, PLAYER_RADIUS } from './player.js?v=63';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=63';
+import { audio } from './audio.js?v=63';
+import { initDesigner } from './designer.js?v=63';
+import { t, getLang, setLang, langs } from './lang.js?v=63';
+import { TUNING } from './tuning.js?v=63';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -90,11 +90,16 @@ function getEnemySchedule(wave) {
   // Gentler on-ramp (v95): waves 1-5 spawn a bit less (−15% at wave 1,
   // fading to 0 by wave 6); caps, rhythm, and unlock gates are unchanged.
   if (wave < 6) budget = Math.floor(budget * (0.85 + 0.03 * (wave - 1)));
+  // SMASH TV (v109): the show wants bodies — 40% more budget on every wave.
+  if (smashMode) budget = Math.floor(budget * 1.4);
 
-  // Swarm waves favour bodies (groups/twins of cheap fast enemies); others use the full mix.
+  // Swarm waves favour bodies (groups/twins of cheap fast enemies); others use
+  // the full mix. SMASH TV leans every wave toward door-rush groups.
   const VARIANTS = isSwarm
     ? ['group', 'group', 'twin', 'normal']
-    : ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group'];
+    : smashMode
+      ? ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group', 'group', 'group']
+      : ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group'];
   const swarmPool = available.filter(([, , c]) => c <= 2);
   const drawPool  = (isSwarm && swarmPool.length) ? swarmPool : available;
 
@@ -140,8 +145,9 @@ function getEnemySchedule(wave) {
     if (spent + entryCost > budget + 3) break;
     list.push(entry);
     // Tight spawn cadence so most of the budget is on-field before the player can
-    // clear it (prevents instant wave-end from trivialising waves). Swarms burst faster.
-    t += isSwarm ? (0.08 + rng() * 0.28) : (0.18 + rng() * 0.5);
+    // clear it (prevents instant wave-end from trivialising waves). Swarms burst
+    // faster; SMASH TV compresses everything so bursts stack up at the doors.
+    t += (isSwarm ? (0.08 + rng() * 0.28) : (0.18 + rng() * 0.5)) * (smashMode ? 0.6 : 1);
     spent += entryCost;
   }
   return list.length ? list : [{ type: GLOBBO, t: 0 }];
@@ -849,7 +855,7 @@ let bossAuras     = [];
 let damageNumbers = [];
 let cargoCluster    = null;
 let clusterTimer    = 0;
-let clusterSpawnAt  = 0; // seconds into wave to spawn cluster (0 = none this wave)
+let clusterSpawnAt  = []; // seconds-into-wave queue of convoy spawns (empty = none left); SMASH TV gets two per wave
 let convoyTrailT    = 0; // v38: cadence for the convoy's golden trail ribbon
 let wave         = 0;
 let waveTimer    = 0;
@@ -924,6 +930,12 @@ function fmtTime(secs) {
 let hiScore = pb.bestScore;
 // Roguelike mode (default on): show upgrade cards between waves. Off = plain arcade run.
 let roguelikeMode = false;
+// SMASH TV mode (v109): enemies pour in bursts from 4 arena-edge "doors",
+// waves run bigger and burstier, and moths/convoys drop more prizes.
+let smashMode = localStorage.getItem('tokoDropSmash') === '1';
+// Announcer (v109): game-show commentary via speech synthesis.
+let announcerOn = localStorage.getItem('tokoDropAnnouncer') === '1';
+audio.setAnnouncer(announcerOn);
 
 // Orientation: respect an explicit player choice; otherwise default by device —
 // a gamepad (Steam Deck) or a wide viewport (phone held sideways, desktop) means
@@ -992,6 +1004,7 @@ window.addEventListener('gamepadconnected', syncAutoOrientation);
 function onKill(e) {
   streak++;
   score += 100 * streak * (scoreMultT > 0 ? 2 : 1);
+  if (streak > 0 && streak % 5 === 0) audio.announce('streak');
   streakFlashT = STREAK_FLASH_DUR;
   addShake(0.07 + e.radius * 0.13);  // heavier enemies kick the camera harder
   const _cat = BLOB_TYPES.has(e.type) || e.type === EnemyType.BOTFLY ? 'blob'
@@ -1023,6 +1036,7 @@ function tryHitPlayer(source = 'bullet', attackerType = null) {
   const hpBefore = player.hp;
   _hitFlashT = 0.32;
   player.hit();
+  if (player.alive) audio.announce('ouch');  // death gets the gameover line instead
   onPlayerHit();
   recordHitEvent(source, hpBefore, attackerType);
   return !player.alive;
@@ -1351,7 +1365,9 @@ const overlay  = document.getElementById('overlay');
 const _proj    = new THREE.Vector3();
 
 const designer = initDesigner({
-  onResume: () => { gameState = 'playing'; },
+  // The same panel serves as the mid-run pause menu and the title's OPTIONS
+  // screen — resume back to whichever state opened it.
+  onResume: () => { gameState = gameState === 'options' ? 'title' : 'playing'; },
   // Settings page (v81) — volume + reduce-motion live in the pause menu now;
   // state and persistence stay here, the menu just reads/writes through these.
   settings: {
@@ -1371,6 +1387,18 @@ const designer = initDesigner({
       perfMode = on;
       localStorage.setItem('tokoDropPerf', on ? '1' : '0');
       applyPerfMode();
+    },
+    getSmash: () => smashMode,
+    setSmash: on => {
+      smashMode = on;
+      localStorage.setItem('tokoDropSmash', on ? '1' : '0');
+    },
+    getAnnouncer: () => announcerOn,
+    setAnnouncer: on => {
+      announcerOn = on;
+      localStorage.setItem('tokoDropAnnouncer', on ? '1' : '0');
+      audio.setAnnouncer(on);
+      if (on) audio.announce('start');  // mic check — inside the click gesture
     },
   },
 });
@@ -1546,7 +1574,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v108', 16, uiCanvas.height - 12);
+  ctx.fillText('v109', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1727,10 +1755,24 @@ function showTitle() {
     rhBtn.addEventListener('touchend', e => e.stopPropagation());
     sslot.appendChild(rhBtn);
 
-    const sHint = document.createElement('div');
-    sHint.textContent = t('settingsHint');
-    sHint.style.cssText = 'font-size:10px;opacity:0.3;letter-spacing:1px';
-    sslot.appendChild(sHint);
+    // OPTIONS (v109) — opens the pause menu right from the title (settings +
+    // SMASH TV / announcer toggles + enemy tester) instead of a passive hint.
+    const optBtn = document.createElement('div');
+    optBtn.dataset.ui = '1';
+    optBtn.textContent = t('options');
+    optBtn.style.cssText =
+      'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
+      'font-size:12px;letter-spacing:1px;opacity:0.5;padding:4px 10px;text-decoration:underline;';
+    optBtn.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      // Same pattern as showRunHistory(): leave 'title' while the panel is up
+      // so the window tap-to-start handler can't fire underneath it.
+      gameState = 'options';
+      designer.show(t('options'));
+    });
+    optBtn.addEventListener('touchend', e => e.stopPropagation());
+    sslot.appendChild(optBtn);
   }
 }
 
@@ -1927,7 +1969,7 @@ function clearFX() {
   clearBossAuras();
   damageNumbers = [];
   if (cargoCluster) { cargoCluster.remove(scene); cargoCluster = null; }
-  clusterTimer = 0; clusterSpawnAt = 0;
+  clusterTimer = 0; clusterSpawnAt = [];
 }
 
 function clearBossAuras() {
@@ -1951,16 +1993,23 @@ function spawnWave() {
   waveTimer    = 0;
   const total  = list.length;
   pendingSpawns = [];
+  // SMASH TV (v109): everything enters through 4 "doors" at the edge midpoints
+  // (the spawn projection maps angle 0/π to the side walls, ±π/2 to top/bottom),
+  // so waves pour in like arena-show contestants instead of surrounding evenly.
+  const DOORS = [0, Math.PI / 2, Math.PI, Math.PI * 1.5];
   list.forEach((entry, i) => {
     const cnt       = entry.count || 1;
-    const baseAngle = (i / total) * Math.PI * 2;
+    const baseAngle = smashMode
+      ? DOORS[i % 4] + (rng() - 0.5) * 0.24
+      : (i / total) * Math.PI * 2;
     const isGroup   = cnt >= 3;  // 3+ = a coordinated group; 2 = twins (stay paired)
     for (let k = 0; k < cnt; k++) {
       let angle = baseAngle, clusterOffset = null;
       if (isGroup) {
         // Fan members across a wide arc so the group arrives on a broad front and
-        // pincers the player from several directions — not a single dodge-able clump.
-        const SPREAD = 1.5; // radians (~86°)
+        // pincers the player from several directions — not a single dodge-able
+        // clump. SMASH TV keeps the group tight so it pours out of ONE door.
+        const SPREAD = smashMode ? 0.5 : 1.5; // radians (~29° vs ~86°)
         angle = baseAngle + (k / (cnt - 1) - 0.5) * SPREAD;
       } else {
         clusterOffset = k > 0 ? { x: (rng()-0.5)*3, z: (rng()-0.5)*3 } : null;
@@ -1983,9 +2032,13 @@ function spawnWave() {
     if (gates.length >= 2) { gates[0].remove(scene); gates.shift(); }
     gates.push(new Gate(scene));
   }
-  // Schedule one cargo convoy per wave (starts mid-wave, seeded position)
+  // Schedule cargo convoys (start mid-wave, seeded position). SMASH TV runs a
+  // second prize convoy per wave — big money, big prizes.
   clusterTimer = 0;
-  clusterSpawnAt = 3 + rng() * 5; // 3-8 s into the wave — always overlaps live enemies
+  clusterSpawnAt = [3 + rng() * 5]; // 3-8 s into the wave — always overlaps live enemies
+  if (smashMode) clusterSpawnAt.push(12 + rng() * 5);
+
+  audio.announce(waveKind(wave) === 'boss' ? 'boss' : 'wave', wave);
 }
 
 // ── Upgrade cards ─────────────────────────────────────────────────────────────
@@ -2083,6 +2136,7 @@ function startGame() {
   _hitFlashT    = 0;
   bullets.clear();
   clearFX();
+  audio.announce('start');
   spawnWave();
   gameState = 'playing';
 }
@@ -2108,6 +2162,7 @@ function triggerGameOver() {
   hiScore = pb.bestScore;
   addShake(0.9);
   audio.playerDie();
+  audio.announce('gameover');
   showGameOver();
 }
 
@@ -2124,6 +2179,7 @@ input.onDash  = () => {
 input.onPause = () => {
   if (gameState === 'playing') { gameState = 'paused';  designer.show(); }
   else if (gameState === 'paused')  { gameState = 'playing'; designer.hide(); }
+  else if (gameState === 'options') { gameState = 'title';   designer.hide(); }
   else if (gameState === 'title')   startGame();
   else if (gameState === 'gameover') returnToTitle();  // Start skips feedback
 };
@@ -2190,8 +2246,9 @@ function loop() {
   input.pollGamepad();
   updateShake(dt);
 
-  // Title / paused / run-history — just render the scene, no game logic
-  if (gameState === 'title' || gameState === 'paused' || gameState === 'upgrade' || gameState === 'runhistory') {
+  // Title / paused / options / run-history — just render the scene, no game logic
+  if (gameState === 'title' || gameState === 'paused' || gameState === 'upgrade' ||
+      gameState === 'runhistory' || gameState === 'options') {
     renderer.render(scene, camera);
     drawHUD();
     return;
@@ -2518,10 +2575,11 @@ function loop() {
           } else {
             // Single drop drifting from the kill position. Moths carry more
             // than weapons (v89): mostly pods, sometimes pure score or a
-            // score-multiplier orb.
+            // score-multiplier orb. SMASH TV leans harder into prizes.
             const roll = Math.random();
-            const dropType = roll < 0.55 ? randomWeaponPodId(lv2Ok)
-                           : roll < 0.80 ? 'score' : 'scoremult';
+            const dropType = smashMode
+              ? (roll < 0.40 ? randomWeaponPodId(lv2Ok) : roll < 0.70 ? 'score' : 'scoremult')
+              : (roll < 0.55 ? randomWeaponPodId(lv2Ok) : roll < 0.80 ? 'score' : 'scoremult');
             const driftAngle = Math.random() * Math.PI * 2;
             const driftSpeed = 0.8 + Math.random() * 0.6;
             const pu = new Powerup(scene, kx, kz, dropType,
@@ -2575,11 +2633,11 @@ function loop() {
   }
 
   // Cargo convoy: spawn silently + update
-  if (!cargoCluster && clusterSpawnAt > 0) {
+  if (!cargoCluster && clusterSpawnAt.length > 0) {
     clusterTimer += dt;
-    if (clusterTimer >= clusterSpawnAt) {
+    if (clusterTimer >= clusterSpawnAt[0]) {
       cargoCluster = new CargoCluster(scene);
-      clusterSpawnAt = 0;
+      clusterSpawnAt.shift();
     }
   }
   if (cargoCluster) {
@@ -2665,6 +2723,7 @@ function loop() {
       pu.collected = true;
       if (WEAPON_PODS[pu._type]) {
         equipWeapon(pu._type);
+        audio.announce('prize');
       } else if (pu._type === 'invincible') {
         player.grantInvincibility(3.0);
       } else if (pu._type === 'hp') {
@@ -2675,8 +2734,10 @@ function loop() {
         // Instant score nugget (v89) — worth more in later waves, doubled by
         // an active Score Multiplier.
         score += (250 + wave * 25) * (scoreMultT > 0 ? 2 : 1);
+        audio.announce('money');
       } else if (pu._type === 'scoremult') {
         scoreMultT = 10.0;
+        audio.announce('mult');
       }
       audio.pickup();
       // Collection pop: radial burst of goo bits in the pickup's colour
@@ -2711,6 +2772,7 @@ function loop() {
     score += wave * 500;
     waveClearFlashT = 0.4;
     audio.waveClear();
+    audio.announce('clear');
     // Roguelike pacing (v101): a card every 3rd cleared wave — every wave was
     // way too frequent with instant wave-ends chaining fast.
     if (roguelikeMode && wave % 3 === 0) showUpgradeCards();
