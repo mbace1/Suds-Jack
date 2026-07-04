@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v106 — 2026-07-04
+**FIX: landscape actually works — auto arena orientation from viewport + title fits/scrolls on short screens**
+- The arena stayed portrait-sized on a landscape phone: the landscape preset only ever applied via the manual title toggle or a gamepad. Orientation now defaults from the **viewport aspect** (`innerWidth > innerHeight` → wide arena) when the player hasn't explicitly chosen, and **re-picks live on rotation** while on the title (`syncAutoOrientation()`, called from `resize()`; the gamepadconnected handler now routes through it too). An explicit toggle choice still wins forever
+- Half the title screen was cropped in landscape: `#overlay` was `pointer-events:none` on the title, so the v80 scroll machinery couldn't work there. The title overlay is now interactive (reset on start); the window tap-to-start guard keys off `data-ui` on the actual chips/buttons instead of the whole overlay, and a touch that moved >12px counts as a scroll, not a start
+- Short viewports (`max-height: 560px`) get a compact title: logo width additionally capped by height (43vh ≈ 26vh tall at its 1.64 aspect), tightened margins between the chips/help/language rows
+- Cache-bust `?v=59` → `?v=60`; HUD label → v106
+
+---
+
 ## v105 — 2026-07-04
 **FIX: sludge ribbon crumpled (v100 regression) — distance-spaced points + age expiry**
 - Trail points were pushed every 0.15s regardless of movement; since v84 SLUDGE moves in flop(0.3s)/rest(~1.3s) cycles, so rests filled the 12-point ring buffer with coincident points. The ribbon derives its quad orientation from consecutive-point deltas — near-zero deltas produced garbage perpendiculars, and at v100's full width (the ribbon is the sole visual now) it rendered as crumpled bowties stuck at rest spots with gaps between flops
