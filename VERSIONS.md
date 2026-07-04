@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v107 — 2026-07-04
+**Player joins the satin look — same gel material as the enemies, LOOK presets restyle it too**
+- The player was the last mesh on the legacy goo `ShaderMaterial`; it now uses `makeSatinMat(0xffffff, 'blob', r)` like everything else, so the whole cast shares one material system and the pause menu's LOOK presets (SATIN/JELLY/GLASSY/…) restyle the player live along with the enemies
+- The satin vertex inject gained the **directional squash-stretch** displacement from the goo shader (`uStretch`/`uStretchDir`) — the player's walk lunge and dash elongation drive it every frame and would otherwise have been lost in the swap
+- Dash/mercy flicker and the red hit flash now write the physical material's native `opacity`/`emissive` (same `uniforms ?? gooU` adapter pattern enemies use); wobble set gentler than enemy blobs (0.6× vs 1.0) so the hero reads calm
+- Cache-bust `?v=60` → `?v=61`; HUD label → v107
+
+---
+
 ## v106 — 2026-07-04
 **FIX: landscape actually works — auto arena orientation from viewport + title fits/scrolls on short screens**
 - The arena stayed portrait-sized on a landscape phone: the landscape preset only ever applied via the manual title toggle or a gamepad. Orientation now defaults from the **viewport aspect** (`innerWidth > innerHeight` → wide arena) when the player hasn't explicitly chosen, and **re-picks live on rotation** while on the title (`syncAutoOrientation()`, called from `resize()`; the gamepadconnected handler now routes through it too). An explicit toggle choice still wins forever

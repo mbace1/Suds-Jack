@@ -1,4 +1,4 @@
-# Toko Drop — v106
+# Toko Drop — v107
 
 Twin-stick bullet-hell arena shooter built with Three.js and Web Audio.
 
