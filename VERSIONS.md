@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v111 — 2026-07-04
+**Landscape camera zoomed in — arena's top gap now matches the bottom gap**
+- The landscape camera framed the arena low: the far edge sat 0.63 NDC from the screen top while the near edge sat 0.22 from the bottom (the reported "blur bar on top" far from the edge). New framing (`camRest [0, 20.5, 13.5]`, `camLook [0, 0, 2.5]`) was solved numerically: top/bottom margins now 0.305/0.326 (symmetric) and the arena fills ~19% more of the screen height, same 3/4 view tilt (61.8° vs 59.3°)
+- Fit constraint is the arena's near corners at 16:9 (x = −0.96); phone aspects (19.5:9, 2:1) have more side headroom. Portrait framing untouched
+- Cache-bust `?v=64` → `?v=65`; HUD label → v111
+
+---
+
 ## v110 — 2026-07-04
 **FIX: landscape screens never get the vertical map — arena always follows the viewport, ORIENTATION toggle removed**
 - v106's auto-orientation deferred to any explicit ORIENTATION-chip choice forever — so a stale saved "portrait" pick (from any past tap on the toggle) pinned the tall arena onto a landscape screen. Viewport aspect (`innerWidth > innerHeight`) is now the **single source of truth**: checked at boot, re-checked live on rotation at the title, and re-derived at every run start. Old `tokoDropLandscape`/`tokoDropOrientSet` saves are deliberately ignored
