@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=62';
-import { t } from './lang.js?v=62';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=62';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=63';
+import { t } from './lang.js?v=63';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=63';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -322,7 +322,8 @@ export function initDesigner({ onResume, settings }) {
   });
 
   // ── Public ────────────────────────────────────────────────────────────────────
-  function show() {
+  function show(label = 'PAUSED') {
+    panel.querySelector('.dtitle').textContent = label; // "OPTIONS" when opened from the title
     selectedType = SETTINGS_PAGE; // always land on the simple settings view
     renderList();
     renderControls();
@@ -433,6 +434,35 @@ export function initDesigner({ onResume, settings }) {
     el.appendChild(slider(t('volume'), 0, 100, 5, Math.round(settings.getVolume() * 100), v => {
       settings.setVolume(v / 100);
     }));
+
+    // GAME SHOW (v109): SMASH TV door-rush mode + the arcade announcer.
+    el.appendChild(sec('GAME SHOW'));
+    const toggleRow = (label, get, set, onH, offH, onColor, onBorder) => {
+      const row = document.createElement('div');
+      row.className = 'drow';
+      const lbl = document.createElement('span');
+      lbl.className = 'dlbl'; lbl.textContent = label;
+      const btn = document.createElement('button');
+      btn.className = 'dbtn';
+      const hint = document.createElement('div');
+      hint.className = 'dnote';
+      const paint = () => {
+        const on = get();
+        btn.textContent = on ? t('on') : t('off');
+        btn.style.color = on ? onColor : '#666';
+        btn.style.borderColor = on ? onBorder : '#1e1e38';
+        hint.textContent = on ? onH : offH;
+      };
+      paint();
+      btn.addEventListener('click', () => { set(!get()); paint(); });
+      row.appendChild(lbl); row.appendChild(btn);
+      el.appendChild(row);
+      el.appendChild(hint);
+    };
+    toggleRow(t('smashTV'), settings.getSmash, settings.setSmash,
+      t('smashOnH'), t('smashOffH'), '#ffdd66', '#ffcc4466');
+    toggleRow(t('announcer'), settings.getAnnouncer, settings.setAnnouncer,
+      t('annOnH'), t('annOffH'), '#ff88dd', '#ff66cc66');
 
     el.appendChild(sec('MOTION'));
     {

@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v109 — 2026-07-04
+**SMASH TV mode + arcade announcer, OPTIONS button on the title**
+- **SMASH TV MODE toggle**: enemies pour in tight bursts from **4 "doors"** at the arena edge midpoints (groups spill out of a single door instead of fanning 86°), every wave gets **+40% budget** with extra group entries and a 0.6× compressed spawn cadence, moth drops lean harder into prizes (40% pod / 30% score / 30% multiplier vs 55/25/20), and a **second prize convoy** runs each wave. Persisted (`tokoDropSmash`), applies from the next wave
+- **ANNOUNCER toggle**: over-the-top game-show commentary via the browser's speech synthesis — original soap-themed lines in the arena-show spirit ("BIG BUBBLES! BIG PRIZES!", "TOTAL CLEANUP! I LOVE IT!") at wave start, boss entrances, 5-kill streaks, prize/score/multiplier pickups, player hits, wave clears, and game over. Deliberately **not** an imitation of any real person's voice — it uses the device's stock en-US voice pitched down (0.6) with excited pacing (1.12). Throttled to one line per 3s (game over/boss interrupt); respects the volume slider; silently no-ops where speechSynthesis is unavailable. Toggling it on speaks a mic-check line
+- **OPTIONS on the title screen**: replaces the "settings are in the pause menu" hint — opens the same panel (headered OPTIONS, new `options` game state; RESUME/ESC returns to the title). Both new toggles live in its SETTINGS page under GAME SHOW
+- Cache-bust `?v=62` → `?v=63`; HUD label → v109
+
+---
+
 ## v108 — 2026-07-04
 **Audio for the silent mechanics: BAMBU lob splashdown + BOTFLY homing launch**
 - `audio.lobSplash()` — wet low thud (150→55 Hz sine) + a short splash of noise, played where main.js drains `_lobLanded`; the goo lob's landing was completely silent even though it damages inside the ring
