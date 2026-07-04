@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=60';
+import { TUNING } from './tuning.js?v=61';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -197,6 +197,10 @@ export function makeSatinMat(color, fam, radius) {
     uHit:    { value: 0 },
     uHitDir: { value: new THREE.Vector2(0, 0) },
     uTear:   { value: 0 },
+    // Directional squash-stretch (v107): unused by enemies (their smear is a
+    // scale transform) but the player's dash/walk lunge drives these.
+    uStretch:    { value: 0 },
+    uStretchDir: { value: new THREE.Vector2(0, 0) },
     uSSS:    { value: M.sss },
     uSSSColor: { value: col.clone().lerp(new THREE.Color(0xffffff), 0.25) },
     uLightDir: { value: SUN_DIR.clone() },
@@ -207,8 +211,8 @@ export function makeSatinMat(color, fam, radius) {
     Object.assign(sh.uniforms, u);
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>
-        uniform float uTime, uPhase, uWobble, uRadius, uHit, uTear;
-        uniform vec2 uHitDir;`)
+        uniform float uTime, uPhase, uWobble, uRadius, uHit, uTear, uStretch;
+        uniform vec2 uHitDir, uStretchDir;`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
         {
           // Same displacement family as the legacy goo shader (GOO_VERT).
@@ -222,6 +226,10 @@ export function makeSatinMat(color, fam, radius) {
           transformed += normal * sin(hd * 9.0 - (1.0 - uHit) * 16.0) * uHit * 0.11 * uRadius;
           float te = (sin(q.x*15.0 + uTime*34.0) + sin(q.y*17.0 - uTime*29.0) + sin(q.z*13.0 + uTime*38.0)) * 0.3333;
           transformed += normal * te * 0.22 * uRadius * uTear;
+          // Directional squash-stretch (GOO_VERT): lunge along travel, compress height.
+          vec3 sdir = vec3(uStretchDir.x, 0.0, uStretchDir.y);
+          transformed += sdir * dot(transformed, sdir) * uStretch;
+          transformed.y *= (1.0 - uStretch * 0.4);
         }`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>

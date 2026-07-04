@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { makeGooMat } from './enemy.js?v=60';
+import { makeSatinMat } from './enemy.js?v=61';
 
 const SPEED          = 6;
 const DASH_SPEED     = 26;
@@ -45,7 +45,14 @@ export class Player {
     this._dashCDMult   = 1.0;
 
     const geo = new THREE.SphereGeometry(PLAYER_RADIUS, 14, 10);
-    this.mat = makeGooMat(0xffffff, 0.98); // white goo, Fresnel rim glow
+    // v107: same satin gel material as the enemies (registers in SATIN_MATS, so
+    // pause-menu LOOK presets restyle the player too). Physical mats keep FX
+    // uniforms on .gooU; emissive/opacity are native material properties.
+    this.mat = makeSatinMat(0xffffff, 'blob', PLAYER_RADIUS);
+    this.mat.transparent = true;   // dash/mercy flicker drives opacity every frame
+    this.mat.opacity = 0.98;
+    this._gu = this.mat.uniforms ?? this.mat.gooU;
+    this._gu.uWobble.value = 0.6;  // gentler than enemy blobs — the hero reads calm
     this.mesh = new THREE.Mesh(geo, this.mat);
     this.mesh.castShadow = true;
     scene.add(this.mesh);
@@ -98,6 +105,17 @@ export class Player {
   grantInvincibility(t)  { this._invincBoost   = Math.max(this._invincBoost, t); }
   grantFireRateBoost(t)  { this._fireRateBoost = Math.max(this._fireRateBoost, t); }
 
+  // Same adapter pattern as enemy.js: legacy goo ShaderMaterials carry these as
+  // uniforms; the satin physical material uses native emissive/opacity.
+  _setEmissive(hex) {
+    if (this.mat.uniforms) this.mat.uniforms.uEmissive.value.setHex(hex);
+    else this.mat.emissive.setHex(hex);
+  }
+  _setOpacity(val) {
+    if (this.mat.uniforms) this.mat.uniforms.uOpacity.value = val;
+    else this.mat.opacity = val;
+  }
+
   reset() {
     this.alive    = true;
     this.hp       = MAX_HP;
@@ -114,15 +132,15 @@ export class Player {
     this._prevX = 0; this._prevZ = 0;
     this._velX = 0; this._velZ = 0;
     this._stretch = 0;
-    this.mat.uniforms.uStretch.value = 0;
+    this._gu.uStretch.value = 0;
     this.maxHp         = MAX_HP;
     this._weaponMode   = 'SINGLE';
     this._burstQueue   = [];
     this._speedMult    = 1.0;
     this._fireRateMult = 1.0;
     this._dashCDMult   = 1.0;
-    this.mat.uniforms.uEmissive.value.setHex(0x000000);
-    this.mat.uniforms.uOpacity.value = 0.98;
+    this._setEmissive(0x000000);
+    this._setOpacity(0.98);
     this.mesh.scale.setScalar(1);
     this.mesh.visible = true;
     this.mesh.position.set(0, PLAYER_RADIUS, 0);
@@ -164,9 +182,9 @@ export class Player {
     // Hit flash (red emissive)
     if (this._flashT > 0) {
       this._flashT -= dt;
-      this.mat.uniforms.uEmissive.value.setHex(0xff1100);
+      this._setEmissive(0xff1100);
     } else if (this._mercyT <= 0) {
-      this.mat.uniforms.uEmissive.value.setHex(0x000000);
+      this._setEmissive(0x000000);
     }
 
     if (this._dashTime > 0) {
@@ -174,7 +192,7 @@ export class Player {
       this.mesh.position.x += this._dashDir.x * DASH_SPEED * dt;
       this.mesh.position.z += this._dashDir.z * DASH_SPEED * dt;
 
-      this.mat.uniforms.uOpacity.value = 0.35 + 0.65 * Math.abs(Math.sin(this._dashTime * 55));
+      this._setOpacity(0.35 + 0.65 * Math.abs(Math.sin(this._dashTime * 55)));
 
       this._ghostT -= dt;
       if (this._ghostT <= 0) {
@@ -190,7 +208,7 @@ export class Player {
 
       if (this._dashTime <= 0) {
         this._dashCD = DASH_CD * this._dashCDMult;
-        if (this._mercyT <= 0) this.mat.uniforms.uOpacity.value = 0.98;
+        if (this._mercyT <= 0) this._setOpacity(0.98);
       }
     } else {
       // Normal movement always applies — even during mercy i-frames
@@ -201,10 +219,10 @@ export class Player {
     // Mercy i-frame flicker — independent of movement
     if (this._mercyT > 0) {
       this._mercyT -= dt;
-      this.mat.uniforms.uOpacity.value = 0.3 + 0.7 * Math.abs(Math.sin(this._mercyT * 12));
+      this._setOpacity(0.3 + 0.7 * Math.abs(Math.sin(this._mercyT * 12)));
       if (this._mercyT <= 0) {
-        this.mat.uniforms.uOpacity.value = 0.98;
-        this.mat.uniforms.uEmissive.value.setHex(0x000000);
+        this._setOpacity(0.98);
+        this._setEmissive(0x000000);
       }
     }
 
@@ -256,8 +274,8 @@ export class Player {
       const sp = Math.hypot(this._velX, this._velZ);
       const target = Math.min(sp * 0.025, 0.45);   // walk ≈0.15, dash ≈0.45
       this._stretch += (target - this._stretch) * 0.35;
-      this.mat.uniforms.uStretch.value = this._stretch;
-      if (sp > 0.3) this.mat.uniforms.uStretchDir.value.set(this._velX / sp, this._velZ / sp);
+      this._gu.uStretch.value = this._stretch;
+      if (sp > 0.3) this._gu.uStretchDir.value.set(this._velX / sp, this._velZ / sp);
     }
 
     for (let i = this._burstQueue.length - 1; i >= 0; i--) {
