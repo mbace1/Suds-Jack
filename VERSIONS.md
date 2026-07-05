@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v115 — 2026-07-05
+**SMASH TV rooms: fixed studio-room size, real door frames, walk-out exits with a minimap room choice**
+- **One fixed room size in both orientations** (new `smash` arena preset, 30×22 ≈ the show's 4:3 room); `fitPresetCamera()` (generalized from v112) fits it to whatever screen you hold — portrait just views it from farther out. Toggling SMASH TV on the title reframes the arena immediately
+- **Real doorways**: the glow quads grew posts + lintel frames — enemies now spawn AT the door mouth and visibly step through into the room
+- **Room traversal like the show**: clearing a room no longer chains straight to the next wave — 2-3 **EXIT doors open (green)**, a **ROOM CLEAR! / BONUS** tally card shows, and you **walk out through a door of your choosing**; the next room starts with you entering through the **opposing wall** (brief mercy window). No backtracking through the wall you came in from
+- **Educated moves**: rooms live on a 2D lattice with deterministic per-run kinds — each EXIT door and the **zoomed 3×3 minimap** (top-right, live player dot, visited-room marks) show what's behind it: MOBS / SWARM / HEAVY / **PRIZE$** (lighter wave, 3 convoys) / **BOSS!** (every 8th room, all exits lead there)
+- Announcer gets exit lines ("THE DOORS ARE OPEN — MOVE!"); room intro card now names the room kind
+- Cache-bust `?v=68` → `?v=69`; HUD label → v115
+
+---
+
 ## v114 — 2026-07-05
 **SMASH TV mode actually feels like the show — visible doors, room-long door bursts, floor cash, intro card, applause**
 - **Visible doors**: four glowing doorway quads at the arena edge midpoints (matching the spawn angles). Dim while idle; a door **flares up in the ~0.9s before a burst pours through it** — the show's "they're coming through THAT wall" telegraph. Built at run start, torn down with the run
