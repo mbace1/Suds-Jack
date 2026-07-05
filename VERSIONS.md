@@ -7,6 +7,18 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v118 — 2026-07-05
+**Quality-of-life batch: vendored three.js, Sheets-ready feedback, loot popups, real valuables meshes, BOSS IN N, favicon + share metadata**
+- **three.js vendored locally** (`toko-drop/vendor/`, three@0.167.0 min build + RoundedBoxGeometry): the CDN importmap was the game's single point of failure and is blocked on some networks. The game now loads with zero external requests
+- **Feedback → Google Sheets, ready to switch**: `scripts/feedback-sheet.gs` is a paste-in Apps Script web app (3-minute setup documented in the file) that appends each SEND & CONTINUE to a Sheet with no submission limit; `postFeedback()` now has a `SHEET_ENDPOINT` slot that takes over from the Formspree fallback the moment the deployed /exec URL is pasted in (text/plain + no-cors, since Apps Script can't answer CORS preflights)
+- **Loot value popups**: collecting cash/prizes floats "+150"/"+1000" in gold at the pickup point (DamageNumber generalized to carry text/color); multiplier orbs float "x2!"
+- **Valuables look like valuables**: cash piles are flat green bill-stack boxes, big prizes are spinning gold gift boxes (shared geometries, no leaks); all pickups gained a slow spin
+- **BOSS IN N** on the traversal minimap — see the floor boss coming ("BOSS NEXT!" in red when it's the next room)
+- **Favicon + share metadata**: favicon.png / apple-touch-icon.png (from the logo) and OG/Twitter card tags so a shared link unfurls with the TOKO DROP artwork
+- Cache-bust `?v=71` → `?v=72`; HUD label → v118
+
+---
+
 ## v117 — 2026-07-05
 **Playtest feedback reaches the developer — SEND & CONTINUE posts to a form inbox**
 - The death screen's **SEND & CONTINUE** record (chips + free text + the compact run summary: wave, time, score, seed, mode, hit count, top attacker) is now also **POSTed to a Formspree inbox**, enriched with build number (from the module's own `?v=` token), SMASH TV/announcer flags, language, screen size, and user agent

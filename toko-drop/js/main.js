@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=71';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=71';
-import { Player, PLAYER_RADIUS } from './player.js?v=71';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=71';
-import { audio } from './audio.js?v=71';
-import { initDesigner } from './designer.js?v=71';
-import { t, getLang, setLang, langs } from './lang.js?v=71';
-import { TUNING } from './tuning.js?v=71';
+import { InputManager } from './input.js?v=72';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=72';
+import { Player, PLAYER_RADIUS } from './player.js?v=72';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=72';
+import { audio } from './audio.js?v=72';
+import { initDesigner } from './designer.js?v=72';
+import { t, getLang, setLang, langs } from './lang.js?v=72';
+import { TUNING } from './tuning.js?v=72';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -782,6 +782,11 @@ function equipWeapon(podId) {
   else BULLET_CONFIG.playerWeaponPierce = true;
 }
 
+// Floor valuables (v118): shared geometries so swapping a Powerup's look
+// leaks nothing — cash reads as a flat bill stack, prizes as a gift box.
+const CASH_GEO  = new THREE.BoxGeometry(0.55, 0.2, 0.4);
+const PRIZE_GEO = new THREE.BoxGeometry(0.62, 0.62, 0.62);
+
 class Powerup {
   constructor(sc, x, z, type, driftX = 0, driftZ = 0) {
     this._life = 9.0;
@@ -815,6 +820,7 @@ class Powerup {
     this.z += this._driftZ * dt;
     const y = 0.6 + Math.sin(t * 3) * 0.15;
     this.mesh.position.set(this.x, y, this.z);
+    this.mesh.rotation.y += dt * 1.6;  // slow spin — sells boxes/prizes, invisible on orbs
     this.mat.opacity = 0.5 + 0.4 * Math.sin(t * 5);
     if (this._sprite) this._sprite.position.set(this.x, y + 0.9, this.z);
     return this._life > 0 && !this.collected;
@@ -911,9 +917,13 @@ class CargoCluster {
 }
 
 class DamageNumber {
-  constructor(worldX, worldY, worldZ) {
+  // Generic floating text (v118): defaults keep the classic "-1" hit marker;
+  // loot pickups pass their value ("+150") in gold.
+  constructor(worldX, worldY, worldZ, text = '-1', rgb = '255,255,100') {
     this.pos   = new THREE.Vector3(worldX, worldY, worldZ);
     this._life = 0.6;
+    this.text  = text;
+    this.rgb   = rgb;
   }
   update(dt) { this._life -= dt; this.pos.y += 2.5 * dt; return this._life > 0; }
 }
@@ -1419,28 +1429,49 @@ function buildPositiveReasons() {
   ];
 }
 
-// Remote feedback (v117): the SEND & CONTINUE record is also POSTed to a
-// form inbox so playtest feedback reaches the developer directly. Explicit
-// consent by design — it fires ONLY on the SEND action (SKIP sends nothing),
-// and it's fire-and-forget: offline, ad-blocked, or over-quota all fail
-// silently without touching the local save.
-const FEEDBACK_ENDPOINT = 'https://formspree.io/f/mdarbpve';
+// Remote feedback (v117/v118): the SEND & CONTINUE record is POSTed to an
+// inbox so playtest feedback reaches the developer directly. Explicit consent
+// by design — it fires ONLY on the SEND action (SKIP sends nothing), and it's
+// fire-and-forget: offline, ad-blocked, or over-quota all fail silently
+// without touching the local save.
+//
+// Two sinks (v118):
+//  - SHEET_ENDPOINT: Google Apps Script web app (scripts/feedback-sheet.gs
+//    has the server code + 3-minute setup steps) — rows land in a Google
+//    Sheet, no submission limit. Paste the deployment's /exec URL here and
+//    it takes over as primary.
+//  - Formspree fallback (~50 submissions/month free) while SHEET_ENDPOINT
+//    is empty.
+const SHEET_ENDPOINT     = '';  // e.g. 'https://script.google.com/macros/s/XXXX/exec'
+const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mdarbpve';
 function postFeedback(record) {
+  const payload = JSON.stringify({
+    ...record,
+    game: 'toko-drop',
+    build: new URL(import.meta.url).searchParams.get('v') ?? '?',
+    smash: smashMode,
+    announcer: announcerOn,
+    lang: getLang(),
+    screen: `${innerWidth}x${innerHeight}`,
+    ua: navigator.userAgent,
+  });
   try {
-    fetch(FEEDBACK_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({
-        ...record,
-        game: 'toko-drop',
-        build: new URL(import.meta.url).searchParams.get('v') ?? '?',
-        smash: smashMode,
-        announcer: announcerOn,
-        lang: getLang(),
-        screen: `${innerWidth}x${innerHeight}`,
-        ua: navigator.userAgent,
-      }),
-    }).catch(() => {});
+    if (SHEET_ENDPOINT) {
+      // Apps Script can't answer CORS preflights — text/plain + no-cors keeps
+      // the POST "simple" (no OPTIONS round-trip); the opaque response is fine
+      // for fire-and-forget.
+      fetch(SHEET_ENDPOINT, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: payload,
+      }).catch(() => {});
+    } else {
+      fetch(FORMSPREE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: payload,
+      }).catch(() => {});
+    }
   } catch (_) {}
 }
 
@@ -1672,6 +1703,12 @@ function drawSmashMinimap() {
       }
     }
   }
+  // Rooms until the floor boss (v118) — every 8th room; when it's next, all
+  // exits already say BOSS!, this just lets you see it coming.
+  const toBoss = 8 - (wave % 8);
+  ctx.font = 'bold 11px monospace, sans-serif';
+  ctx.fillStyle = toBoss <= 1 ? '#ff5566' : 'rgba(190,190,230,0.85)';
+  ctx.fillText(toBoss <= 1 ? 'BOSS NEXT!' : `BOSS IN ${toBoss}`, mx + size / 2, my + size + 15);
   ctx.restore();
 }
 
@@ -1827,14 +1864,14 @@ function drawHUD() {
     ctx.textAlign = 'left';
   }
 
-  // Damage numbers
+  // Damage numbers / loot value popups
   ctx.textAlign = 'center';
   for (const dn of damageNumbers) {
     const s = toScreen(dn.pos);
     const alpha = Math.max(0, dn._life / 0.6);
-    ctx.fillStyle = `rgba(255,255,100,${alpha.toFixed(2)})`;
+    ctx.fillStyle = `rgba(${dn.rgb},${alpha.toFixed(2)})`;
     ctx.font = 'bold 13px monospace';
-    ctx.fillText('-1', s.x, s.y);
+    ctx.fillText(dn.text, s.x, s.y);
   }
   ctx.textAlign = 'left';
 
@@ -1874,7 +1911,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v117', 16, uiCanvas.height - 12);
+  ctx.fillText('v118', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2406,12 +2443,15 @@ function spawnWave() {
       pu._life = 999;  // floor loot lasts the whole room
       if (pu._type === 'score') {
         if (roll > 0.82) {
-          // Big prize — a TV, a toaster, a golden duck. Reads bigger, worth more.
+          // Big prize — a TV, a toaster, a golden duck. Gift-box mesh, worth more.
           pu._value = 1000 + wave * 50;
-          pu.mesh.scale.setScalar(1.6);
+          pu.mesh.geometry = PRIZE_GEO;
+          pu.mat.color.setHex(0xffcc33);
+          pu.mesh.scale.setScalar(1.25);
         } else {
-          pu._value = 150 + wave * 10;   // everyday cash pile
-          pu.mesh.scale.setScalar(0.75);
+          pu._value = 150 + wave * 10;   // everyday cash pile — flat bill stack
+          pu.mesh.geometry = CASH_GEO;
+          pu.mat.color.setHex(0x99ee66);
         }
       }
       powerups.push(pu);
@@ -3146,10 +3186,13 @@ function loop() {
         // Instant score nugget (v89) — worth more in later waves, doubled by
         // an active Score Multiplier. Floor valuables (v116) carry their own
         // value: small cash piles, big prizes.
-        score += (pu._value ?? (250 + wave * 25)) * (scoreMultT > 0 ? 2 : 1);
+        const gained = (pu._value ?? (250 + wave * 25)) * (scoreMultT > 0 ? 2 : 1);
+        score += gained;
+        damageNumbers.push(new DamageNumber(pu.x, 1.2, pu.z, `+${gained}`, '255,221,68'));
         audio.announce('money');
       } else if (pu._type === 'scoremult') {
         scoreMultT = 10.0;
+        damageNumbers.push(new DamageNumber(pu.x, 1.2, pu.z, 'x2!', '255,170,255'));
         audio.announce('mult');
       }
       audio.pickup();
