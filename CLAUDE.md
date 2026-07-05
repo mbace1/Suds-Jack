@@ -64,10 +64,18 @@ bursts from the pooled `BoltPool`), BRUTE (ember cleaver hulk, ground-slam AoE w
 expanding telegraph ring). Every 4th room is a brute room.
 
 **Run loop (`js/main.js`):** clear the room's pending+live spawns → +100×room bonus →
-pick 1 of 3 stat upgrades (they mutate `player.stats` multipliers) → next room with the
-next neon hue and a bigger spawn budget (`4 + 2×room`, capped 20; difficulty scalar also
-grows). Kill streak (broken on taking damage) scales score up to ×3; death → run summary;
-hi-score persists in `localStorage` under `neonRoninHi`.
+pick 1 of 3 cards → next room with the next neon hue and a bigger spawn budget
+(`8 + 4×room`, capped 40; difficulty scalar also grows). Cards mix repeatable **stat
+upgrades** with one-shot **modifiers** (orange `MODS` in main.js — flags on
+`player.stats.mods`): STATIC WAKE (dash trail), ECHO BLADE (every 3rd strike
+shockwaves), CHAIN ARC (kills detonate/cascade), BOLT MAGNET (deflects return fire),
+BERSERK PROTOCOL (+40% dmg under 40% HP, via `player.dmgMul()`), SECOND CORE (one
+revive per room, `player.reviveUsed`), OVERCHARGE SWAP (swap fires a bolt nova),
+GLASS EDGE (dmg up / defense down). Owned mods leave the offer pool. The upgrade
+overlay stacks its cards vertically on portrait/narrow screens (CSS media queries in
+index.html). Kill streak (broken on taking damage) scales score up to ×3; death → run
+summary; hi-score persists in `localStorage` under `neonRoninHi`. Longer-term model
+and animation plans live in `neon-ronin/ROADMAP.md`.
 
 **Combat resolution:** all damage flows through the `combat` object in `main.js` —
 `meleeStrike` does XZ sector tests (range + half-angle; point-blank hits ignore the
