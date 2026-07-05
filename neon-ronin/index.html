@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Neon Ronin</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; font-family: monospace; user-select: none; }
+    #canvas-game { display: block; }
+
+    /* ── HUD ── */
+    .hud { position: fixed; color: #cfe6ff; text-shadow: 0 0 10px #0af; pointer-events: none; }
+    #hp { top: 18px; left: 18px; width: 240px; }
+    #hp .label { font-size: 11px; letter-spacing: 2px; opacity: 0.8; margin-bottom: 4px; }
+    #hpbar { height: 12px; border: 1px solid #2ee6ff88; background: #04121a; }
+    #hpfill { height: 100%; width: 100%; background: linear-gradient(90deg, #00f0ff, #7cff9a); box-shadow: 0 0 12px #00f0ffaa; transition: width 0.15s; }
+    #stats { top: 18px; right: 18px; text-align: right; font-size: 14px; line-height: 1.6; }
+    #stats .dim { opacity: 0.55; font-size: 11px; letter-spacing: 2px; }
+    #multlbl { color: #ffd24d; text-shadow: 0 0 10px #fa0; }
+
+    #forms { bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; }
+    .chip { border: 1px solid; padding: 7px 14px; background: #04070dcc; text-align: center; transition: opacity 0.2s; }
+    .chip .chip-key { font-size: 10px; opacity: 0.6; }
+    .chip .chip-name { font-size: 14px; letter-spacing: 2px; }
+    .chip.active { background: #0e1a24; box-shadow: 0 0 16px #ffffff22 inset, 0 0 12px #0af6; }
+
+    #announce { top: 22%; left: 50%; transform: translateX(-50%); text-align: center; opacity: 0; }
+    #announce .big { font-size: 42px; letter-spacing: 10px; text-shadow: 0 0 24px #0af, 0 0 60px #a0f; }
+    #announce .sub { font-size: 13px; letter-spacing: 4px; opacity: 0.8; margin-top: 6px; }
+
+    #vignette { inset: 0; opacity: 0; box-shadow: inset 0 0 140px 50px #f2003c; transition: opacity 0.1s; }
+
+    /* ── Overlays ── */
+    .overlay {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center;
+      color: #cfe6ff; background: #02040acc; cursor: pointer; z-index: 5;
+    }
+    .overlay h1 { font-size: 52px; letter-spacing: 14px; text-shadow: 0 0 24px #00f0ff, 0 0 70px #a04dff; margin-bottom: 18px; }
+    .overlay p { font-size: 13px; line-height: 2; letter-spacing: 1px; opacity: 0.85; }
+    .overlay .go { margin-top: 26px; font-size: 16px; letter-spacing: 4px; animation: pulse 1.4s infinite; }
+    @keyframes pulse { 50% { opacity: 0.35; } }
+
+    #pause, #gameover { display: none; }
+    #gameover h1 { text-shadow: 0 0 24px #f2003c, 0 0 70px #a04dff; }
+
+    #upgrade { display: none; position: fixed; inset: 0; z-index: 5; background: #02040acc;
+      flex-direction: column; align-items: center; justify-content: center; color: #cfe6ff; }
+    #upgrade .title { font-size: 22px; letter-spacing: 8px; margin-bottom: 26px; text-shadow: 0 0 18px #0af; }
+    #cards { display: flex; gap: 18px; }
+    .card {
+      width: 200px; padding: 26px 18px; border: 1px solid #2ee6ff66; background: #060b14;
+      cursor: pointer; transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .card:hover { transform: translateY(-6px); box-shadow: 0 0 26px #00f0ff55; border-color: #00f0ff; }
+    .card-name { font-size: 15px; letter-spacing: 2px; color: #7df9ff; margin-bottom: 12px; text-shadow: 0 0 10px #0af; }
+    .card-desc { font-size: 12px; line-height: 1.7; opacity: 0.85; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas-game"></canvas>
+
+  <div id="hp" class="hud">
+    <div class="label">INTEGRITY</div>
+    <div id="hpbar"><div id="hpfill"></div></div>
+  </div>
+  <div id="stats" class="hud">
+    <div><span class="dim">ROOM</span> <span id="roomlbl">1</span></div>
+    <div><span class="dim">SCORE</span> <span id="scorelbl">0</span> <span id="multlbl"></span></div>
+    <div><span class="dim">HI</span> <span id="hilbl">0</span></div>
+  </div>
+  <div id="forms" class="hud">
+    <div class="chip" id="chip0"><div class="chip-key">1</div><div class="chip-name"></div></div>
+    <div class="chip" id="chip1"><div class="chip-key">2</div><div class="chip-name"></div></div>
+    <div class="chip" id="chip2"><div class="chip-key">3</div><div class="chip-name"></div></div>
+  </div>
+  <div id="announce" class="hud"></div>
+  <div id="vignette" class="hud"></div>
+
+  <div id="start" class="overlay">
+    <h1>NEON RONIN</h1>
+    <p>
+      three frames. one soul. endless caves.<br><br>
+      WASD move &nbsp;·&nbsp; MOUSE camera &nbsp;·&nbsp; LMB attack (chain combos)<br>
+      SHIFT / SPACE dash (invincible) &nbsp;·&nbsp; 1 2 3 or Q swap frame<br>
+      swapping detonates a burst — weave it into your combos<br>
+      clear each cave, pick an upgrade, descend deeper
+    </p>
+    <div class="go">CLICK TO JACK IN</div>
+  </div>
+  <div id="pause" class="overlay">
+    <h1>PAUSED</h1>
+    <div class="go">CLICK TO RESUME</div>
+  </div>
+  <div id="gameover" class="overlay">
+    <h1>FRAME LOST</h1>
+    <p id="overstats"></p>
+    <div class="go">CLICK TO REBOOT</div>
+  </div>
+  <div id="upgrade">
+    <div class="title">CHOOSE UPGRADE</div>
+    <div id="cards">
+      <div class="card" id="card0"></div>
+      <div class="card" id="card1"></div>
+      <div class="card" id="card2"></div>
+    </div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -25,6 +25,41 @@ jsDelivr CDN via an importmap, same as toko-drop).
 > separate curated site root that already holds `toko-drop/`), **not** `main`. Demo
 > updates must be copied onto `gh-pages` to go live at `/Suds-Jack/paperboy/`.
 
+### Neon Ronin (`neon-ronin/`) — Character-Swap Action Roguelike
+A **third-person hack-and-slash action roguelike** in the spirit of Morbid Metal: instant
+character swapping mid-combo, arena combat, pick-an-upgrade roguelike rooms. Art is
+**deliberately simple low-poly** — every fighter is the same box-primitive humanoid
+samurai-robot rig (`js/robots.js`) tinted per role — set in **dark caves lit by neon**:
+near-black fog, emissive pillars/floor-rings that re-tint each room, `UnrealBloomPass`,
+point lights only. No build step — open `neon-ronin/index.html` (three.js r167 from the
+jsDelivr CDN via an importmap, same as toko-drop).
+
+**Player frames (1/2/3 or Q to swap, shared 2.2 s cooldown):** KIRI (cyan katana,
+balanced 3-hit combo) · GORO (magenta cleaver, slow 2-hit, huge arc + knockback) · SAYA
+(lime daggers, 5-hit chain, fastest dash). Swapping detonates a 360° burst, grants brief
+i-frames, and cancels the current swing — weaving swaps into combos is the core
+mechanic. LMB chains combos (input-buffered), Shift/Space dashes with i-frames, and
+slashes deflect enemy bolts caught in the arc.
+
+**Enemies (`js/enemy.js`):** SLASHER (crimson katana, telegraphed slash — blade glow
+ramps during windup), GUNNER (violet rifle, holds a ~9 u ring while strafing, 3-bolt
+bursts from the pooled `BoltPool`), BRUTE (ember cleaver hulk, ground-slam AoE with an
+expanding telegraph ring). Every 4th room is a brute room.
+
+**Run loop (`js/main.js`):** clear the room's pending+live spawns → +100×room bonus →
+pick 1 of 3 stat upgrades (they mutate `player.stats` multipliers) → next room with the
+next neon hue and a bigger spawn budget (`4 + 2×room`, capped 20; difficulty scalar also
+grows). Kill streak (broken on taking damage) scales score up to ×3; death → run summary;
+hi-score persists in `localStorage` under `neonRoninHi`.
+
+**Combat resolution:** all damage flows through the `combat` object in `main.js` —
+`meleeStrike` does XZ sector tests (range + half-angle; point-blank hits ignore the
+angle) against enemies and bolts; `hurtPlayer` respects dash/mercy i-frames. Rigs are
+posed procedurally every frame (stateless `poseWalk`/`poseSwing`/… in `robots.js`, called
+after `poseStance` resets joints); accent/blade materials are cloned per rig so telegraph
+glow (`setGlow`) and hit flash (`setFlash`) never bleed between robots, while geometries
+are cached module-wide.
+
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
 Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
 
@@ -66,6 +101,16 @@ paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new p
     paper.js    # Object-pooled thrown papers with arc/gravity physics + landing detection
     input.js    # Touch stick (steer/throttle) + two throw buttons; WASD/ZX keyboard fallback
     audio.js    # WebAudio bleep kit (throw/deliver/smash/pickup/crash/day-clear)
+neon-ronin/     # Neon Ronin (character-swap action roguelike, low-poly samurai robots)
+  index.html    # HUD (integrity bar, form chips, announce), overlays (start/pause/over/upgrade)
+  js/
+    main.js     # Scene + bloom, cave arena, 3rd-person camera, rooms/upgrades, combat resolver
+    robots.js   # Box-primitive samurai-robot rig factory + stateless procedural poses
+    player.js   # 3 swappable frames, combo melee, dash i-frames, swap burst, run stats
+    enemy.js    # SLASHER/GUNNER/BRUTE state machines + pooled neon BoltPool
+    effects.js  # Transient VFX (slash arcs, telegraph/shock rings, sparks, shards, spawn beams)
+    input.js    # Pointer-lock mouse + WASD; buffered attack/dash/swap one-shots
+    audio.js    # WebAudio bleep kit (slash/hit/kill/hurt/dash/swap/slam/upgrade/…)
 ```
 
 ## Toko Drop — Architecture Notes
