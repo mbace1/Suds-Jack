@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v117 — 2026-07-05
+**Playtest feedback reaches the developer — SEND & CONTINUE posts to a form inbox**
+- The death screen's **SEND & CONTINUE** record (chips + free text + the compact run summary: wave, time, score, seed, mode, hit count, top attacker) is now also **POSTed to a Formspree inbox**, enriched with build number (from the module's own `?v=` token), SMASH TV/announcer flags, language, screen size, and user agent
+- **Explicit consent by design**: fires only on the SEND action — SKIP sends nothing, and no automatic beacons exist. Fire-and-forget: offline, ad-blocked, or over-quota all fail silently and never touch the local `tokoDropFeedback` save
+- Free-tier note: ~50 submissions/month on Formspree's free plan
+- Cache-bust `?v=70` → `?v=71`; HUD label → v117
+
+---
+
 ## v116 — 2026-07-05
 **Composed waves — mob floods stay, shooters become deliberate; floor valuables with rare multipliers**
 - **Wave design (both modes)**: the schedule is now composed from two pools. **Melee mobs flood** (groups/twins of cheap bodies — the fodder you mow), while **shooting enemies are placed deliberately**: capped (1 at wave 1 → 5 by wave 12; swarms allow 1, boss waves 2), arriving spaced ~3s apart, and given **maximally separated positions** — spread entry angles in normal mode, different doors in SMASH TV — so their fire lanes cross the arena and each shooter is a prioritisation problem, not part of the noise. Shooters no longer appear in the random mob draw at all
