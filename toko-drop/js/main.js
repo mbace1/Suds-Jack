@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=70';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=70';
-import { Player, PLAYER_RADIUS } from './player.js?v=70';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=70';
-import { audio } from './audio.js?v=70';
-import { initDesigner } from './designer.js?v=70';
-import { t, getLang, setLang, langs } from './lang.js?v=70';
-import { TUNING } from './tuning.js?v=70';
+import { InputManager } from './input.js?v=71';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=71';
+import { Player, PLAYER_RADIUS } from './player.js?v=71';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=71';
+import { audio } from './audio.js?v=71';
+import { initDesigner } from './designer.js?v=71';
+import { t, getLang, setLang, langs } from './lang.js?v=71';
+import { TUNING } from './tuning.js?v=71';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1419,6 +1419,31 @@ function buildPositiveReasons() {
   ];
 }
 
+// Remote feedback (v117): the SEND & CONTINUE record is also POSTed to a
+// form inbox so playtest feedback reaches the developer directly. Explicit
+// consent by design — it fires ONLY on the SEND action (SKIP sends nothing),
+// and it's fire-and-forget: offline, ad-blocked, or over-quota all fail
+// silently without touching the local save.
+const FEEDBACK_ENDPOINT = 'https://formspree.io/f/mdarbpve';
+function postFeedback(record) {
+  try {
+    fetch(FEEDBACK_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        ...record,
+        game: 'toko-drop',
+        build: new URL(import.meta.url).searchParams.get('v') ?? '?',
+        smash: smashMode,
+        announcer: announcerOn,
+        lang: getLang(),
+        screen: `${innerWidth}x${innerHeight}`,
+        ua: navigator.userAgent,
+      }),
+    }).catch(() => {});
+  } catch (_) {}
+}
+
 // Persist one feedback entry. Stored under tokoDropFeedback (last 100), with a
 // compact run summary so it's useful even without the full hit log.
 function saveFeedback(selectedIds, selectedLabels, comment, likedIds = [], likedLabels = []) {
@@ -1441,6 +1466,7 @@ function saveFeedback(selectedIds, selectedLabels, comment, likedIds = [], liked
   });
   if (list.length > 100) list.length = 100;
   localStorage.setItem(KEY, JSON.stringify(list));
+  postFeedback(list[0]);
 
   if (isFix) {
     const FIX_KEY = 'tokoDropFixList';
@@ -1848,7 +1874,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v116', 16, uiCanvas.height - 12);
+  ctx.fillText('v117', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
