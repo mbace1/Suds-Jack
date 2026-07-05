@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { Bunny, C } from './shared.js?v=10';
-import { visualTest } from './modes.js?v=10';
+import { Bunny, C } from './shared.js?v=11';
+import { visualTest } from './modes.js?v=11';
 
 const ADR_THRESH = [3, 6, 10, 15, 21];   // cumulative no-hit kills for tiers 1..5
 // Visual Test (desert): hero's ink outline heats up with adrenaline tier — base ink → embers → hot red.
