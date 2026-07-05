@@ -1,22 +1,26 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=68';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=68';
-import { Player, PLAYER_RADIUS } from './player.js?v=68';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=68';
-import { audio } from './audio.js?v=68';
-import { initDesigner } from './designer.js?v=68';
-import { t, getLang, setLang, langs } from './lang.js?v=68';
-import { TUNING } from './tuning.js?v=68';
+import { InputManager } from './input.js?v=69';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=69';
+import { Player, PLAYER_RADIUS } from './player.js?v=69';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=69';
+import { audio } from './audio.js?v=69';
+import { initDesigner } from './designer.js?v=69';
+import { t, getLang, setLang, langs } from './lang.js?v=69';
+import { TUNING } from './tuning.js?v=69';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
   portrait:  { halfX: 11, halfZ: 18, camRest: [0, 27, 21], camLook: [0, 0, -3], label: 'PORTRAIT' },
   // Landscape camera (v111/v112): camRest defines the view RAY (direction +
   // baseline distance, symmetric top/bottom margins at 16:9); the actual
-  // camera position is fitted per-viewport by fitLandscapeCamera() — wider
+  // camera position is fitted per-viewport by fitPresetCamera() — wider
   // screens have side headroom, so the camera dollies in and the arena fills
   // more of the screen. Portrait keeps its fixed framing.
   landscape: { halfX: 19, halfZ: 11, camRest: [0, 20.5, 13.5], camLook: [0, 0, 2.5], label: 'LANDSCAPE · STEAM DECK' },
+  // SMASH TV room (v115): ONE fixed studio-room size in both orientations,
+  // shaped like the show's rooms (wider than deep, ~4:3). The camera fits it
+  // to whatever screen you hold — portrait just views it from farther out.
+  smash: { halfX: 15, halfZ: 11, camRest: [0, 20.5, 13.5], camLook: [0, 0, 2.5], label: 'SMASH TV' },
 };
 let HALF_X      = ARENA_PRESETS.portrait.halfX;   // arena half-width
 let HALF_Z      = ARENA_PRESETS.portrait.halfZ;   // arena half-depth
@@ -77,10 +81,13 @@ function getEnemySchedule(wave) {
   ];
   const available = POOL.filter(([, min]) => wave >= min);
 
-  const kind       = waveKind(wave);
+  // SMASH TV (v115): the room's kind was chosen at the exit door; otherwise
+  // fall back to the wave rhythm.
+  const kind       = (smashMode && smashRoomKind) ? smashRoomKind : waveKind(wave);
   const isBoss     = kind === 'boss';
   const isSpike    = kind === 'spike';
   const isSwarm    = kind === 'swarm';
+  const isPrize    = kind === 'prize';
   // A normal wave directly after any intense wave runs lighter — the breather/lull.
   const isBreather = kind === 'normal' && waveKind(wave - 1) !== 'normal';
 
@@ -90,7 +97,7 @@ function getEnemySchedule(wave) {
   const rampB  = Math.min(wave, 10);
   const postB  = Math.max(0, wave - 10);
   const base   = 5 + rampB * 1.8 + postB * 0.8;
-  const mod    = isBoss ? 2.0 : isSpike ? 1.4 : isSwarm ? 1.25 : isBreather ? 0.6 : 1.0;
+  const mod    = isBoss ? 2.0 : isSpike ? 1.4 : isSwarm ? 1.25 : isPrize ? 0.8 : isBreather ? 0.6 : 1.0;
   let budget = Math.floor(base * mod);
   // Gentler on-ramp (v95): waves 1-5 spawn a bit less (−15% at wave 1,
   // fading to 0 by wave 6); caps, rhythm, and unlock gates are unchanged.
@@ -269,13 +276,12 @@ const border = new THREE.LineSegments(
 border.position.y = 0.02;
 scene.add(border);
 
-// Aspect-aware landscape zoom (v112): dolly the camera along the preset's
-// view ray until the arena's four corners just fit the current viewport
-// (|x| ≤ 0.96 half-widths, |y| ≤ 0.93). The side corners are the binding
-// constraint at every landscape aspect, so wider screens (19.5:9 phones)
-// get a closer camera and a noticeably bigger arena than 16:9.
-function fitLandscapeCamera() {
-  const p = ARENA_PRESETS.landscape;
+// Aspect-aware zoom (v112, generalized v115): dolly the camera along the
+// preset's view ray until the arena's four corners just fit the current
+// viewport (|x| ≤ 0.96 half-widths, |y| ≤ 0.93). Wider screens get a closer
+// camera; the SMASH TV room uses this in BOTH orientations (portrait fits
+// vertically from farther out).
+function fitPresetCamera(p) {
   const look = new THREE.Vector3(...p.camLook);
   const dir  = new THREE.Vector3(...p.camRest).sub(look).normalize();
   const aspect = innerWidth / Math.max(1, innerHeight);
@@ -307,13 +313,16 @@ function fitLandscapeCamera() {
   return cam.copy(look).addScaledVector(dir, hi);
 }
 
-// Swap arena dimensions, camera framing, floor + border geometry, and grid uniforms.
+// Swap arena dimensions, camera framing, floor + border geometry, and grid
+// uniforms. SMASH TV mode overrides orientation entirely: one fixed room,
+// camera fitted to whichever way the screen is held.
 function applyArenaMode(landscape) {
-  const p = landscape ? ARENA_PRESETS.landscape : ARENA_PRESETS.portrait;
+  const p = smashMode ? ARENA_PRESETS.smash
+          : landscape ? ARENA_PRESETS.landscape : ARENA_PRESETS.portrait;
   HALF_X = p.halfX; HALF_Z = p.halfZ;
   CAM_LOOK.set(...p.camLook);
-  if (landscape) CAM_REST.copy(fitLandscapeCamera());
-  else           CAM_REST.set(...p.camRest);
+  if (smashMode || landscape) CAM_REST.copy(fitPresetCamera(p));
+  else                        CAM_REST.set(...p.camRest);
   camera.position.copy(CAM_REST);
   camera.lookAt(CAM_LOOK);
   floor.geometry.dispose();
@@ -991,6 +1000,51 @@ let roguelikeMode = false;
 // SMASH TV mode (v109): enemies pour in bursts from 4 arena-edge "doors",
 // waves run bigger and burstier, and moths/convoys drop more prizes.
 let smashMode = localStorage.getItem('tokoDropSmash') === '1';
+// SMASH TV room graph (v115): rooms live on a 2D lattice. Clearing a room
+// opens EXIT doors; each leads to a neighbor whose kind is knowable in
+// advance (minimap), and you enter the next room from the opposing wall.
+let roomX = 0, roomY = 0;
+let visitedRooms = new Set();
+let smashRoomKind = null;   // kind chosen via the exit taken; null = derive from wave rhythm
+let exitPhase = false;      // room cleared, doors open, player walking out
+let exitDoors = [];         // [{ door: 0-3, kind }]
+let roomTallyT = 0;         // bonus tally card timer
+let _entryDoor = null;      // door index the player enters the NEXT room through
+let _cameFromDoor = null;   // wall the player entered THIS room through (no backtracking)
+const ROOM_KINDS = {
+  normal: { label: 'MOBS',   color: '#aab4ff' },
+  swarm:  { label: 'SWARM',  color: '#66ffcc' },
+  spike:  { label: 'HEAVY',  color: '#ffaa44' },
+  prize:  { label: 'PRIZE$', color: '#ffdd44' },
+  boss:   { label: 'BOSS!',  color: '#ff5566' },
+};
+// Deterministic per-run room kind for lattice cell (x, y). The 8th room of a
+// run is always the boss (mirrors the wave rhythm), so every exit says BOSS!.
+function roomKindAt(x, y) {
+  if ((wave + 1) % 8 === 0) return 'boss';
+  const h = mulberry32((runSeed ^ (x * 73856093) ^ (y * 19349663)) | 0)();
+  return h < 0.45 ? 'normal' : h < 0.65 ? 'swarm' : h < 0.85 ? 'spike' : 'prize';
+}
+// door index ↔ lattice direction (matches the DOORS spawn angles):
+// 0 = +x (east), 1 = +z (south / near edge), 2 = −x (west), 3 = −z (north / far)
+const DOOR_DX = [1, 0, -1, 0];
+const DOOR_DY = [0, 1, 0, -1];
+function smashDoorPos(i) {
+  return [[HALF_X, 0], [0, HALF_Z], [-HALF_X, 0], [0, -HALF_Z]][i];
+}
+// 2-3 exit doors per cleared room, never the wall you came in through; each
+// carries the (knowable) kind of the room behind it — that's the choice.
+function pickSmashExits() {
+  const cands = [0, 1, 2, 3].filter(d => d !== _cameFromDoor);
+  for (let i = cands.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [cands[i], cands[j]] = [cands[j], cands[i]];
+  }
+  return cands.slice(0, 2 + (rng() < 0.5 ? 1 : 0)).map(d => ({
+    door: d,
+    kind: roomKindAt(roomX + DOOR_DX[d], roomY + DOOR_DY[d]),
+  }));
+}
 // Announcer (v109): game-show commentary via speech synthesis.
 let announcerOn = localStorage.getItem('tokoDropAnnouncer') === '1';
 audio.setAnnouncer(announcerOn);
@@ -1049,10 +1103,10 @@ function syncAutoOrientation() {
     landscapeMode = want;
     applyArenaMode(want);
     showTitle();  // re-render the title over the re-framed arena
-  } else if (landscapeMode) {
+  } else if (smashMode || landscapeMode) {
     // Same orientation but the aspect may have changed (window resize, URL
     // bar) — refit the zoom. Camera-only, no geometry churn.
-    CAM_REST.copy(fitLandscapeCamera());
+    CAM_REST.copy(fitPresetCamera(smashMode ? ARENA_PRESETS.smash : ARENA_PRESETS.landscape));
     camera.position.copy(CAM_REST);
     camera.lookAt(CAM_LOOK);
   }
@@ -1457,6 +1511,9 @@ const designer = initDesigner({
     setSmash: on => {
       smashMode = on;
       localStorage.setItem('tokoDropSmash', on ? '1' : '0');
+      // The mode has its own fixed room size (v115) — re-frame the title arena
+      // immediately when toggled from the title's OPTIONS panel.
+      if (gameState === 'title' || gameState === 'options') applyArenaMode(landscapeMode);
     },
     getAnnouncer: () => announcerOn,
     setAnnouncer: on => {
@@ -1493,6 +1550,73 @@ function drawStick(stick, defaultX, defaultY) {
 // lacks CJK glyphs; canvas falls back per-glyph across the family list.
 const HUD_FONT = 'bold 14px monospace, sans-serif';
 
+// SMASH TV traversal minimap (v115): a zoomed 3×3 view of the room lattice,
+// shown while the exit doors are open. Center = this room (live player dot);
+// neighbors behind open exits show their KIND so the pick is an informed one;
+// already-visited neighbors are marked. North (top) = the arena's far wall.
+function drawSmashMinimap() {
+  const cell = Math.max(40, Math.min(62, Math.floor(uiCanvas.width * 0.065)));
+  const pad  = 8;
+  const size = cell * 3 + pad * 2;
+  // Top-right, under the score readout — clear of both touch sticks.
+  const mx = uiCanvas.width - size - 14;
+  const my = 46;
+  ctx.save();
+  ctx.fillStyle = 'rgba(6,6,24,0.85)';
+  ctx.strokeStyle = 'rgba(130,140,255,0.55)';
+  ctx.lineWidth = 1.5;
+  ctx.fillRect(mx, my, size, size);
+  ctx.strokeRect(mx, my, size, size);
+  ctx.textAlign = 'center';
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      if (dx !== 0 && dy !== 0) continue;          // 4-connected lattice — skip corners
+      const cx = mx + pad + (dx + 1) * cell;
+      const cy = my + pad + (dy + 1) * cell;
+      const w = cell - 6, o = 3;
+      if (dx === 0 && dy === 0) {
+        // Current room + live player dot (so you can line up your exit walk)
+        ctx.strokeStyle = '#aaccff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(cx + o, cy + o, w, w);
+        const px = cx + o + w / 2 + (player.position.x / HALF_X) * (w / 2 - 3);
+        const py = cy + o + w / 2 + (player.position.z / HALF_Z) * (w / 2 - 3);
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+        continue;
+      }
+      const door = DOOR_DX.findIndex((v, i) => v === dx && DOOR_DY[i] === dy);
+      const exit = exitDoors.find(ed => ed.door === door);
+      const key  = `${roomX + dx},${roomY + dy}`;
+      if (exit) {
+        const k = ROOM_KINDS[exit.kind];
+        ctx.strokeStyle = '#33ff88';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(cx + o, cy + o, w, w);
+        ctx.fillStyle = k.color;
+        ctx.font = `bold ${Math.floor(cell * 0.2)}px monospace, sans-serif`;
+        ctx.fillText(k.label, cx + cell / 2, cy + cell / 2 + 4);
+        // doorway notch between this cell and the center cell
+        ctx.fillStyle = '#33ff88';
+        const nx = cx + cell / 2 - dx * (cell / 2 - 1), ny = cy + cell / 2 - dy * (cell / 2 - 1);
+        ctx.fillRect(nx - (dy !== 0 ? 5 : 2), ny - (dx !== 0 ? 5 : 2), dy !== 0 ? 10 : 4, dx !== 0 ? 10 : 4);
+      } else if (visitedRooms.has(key)) {
+        ctx.strokeStyle = 'rgba(120,120,160,0.5)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(cx + o, cy + o, w, w);
+        ctx.fillStyle = 'rgba(150,150,190,0.6)';
+        ctx.font = `bold ${Math.floor(cell * 0.26)}px monospace, sans-serif`;
+        ctx.fillText('✓', cx + cell / 2, cy + cell / 2 + 5);
+      } else {
+        ctx.strokeStyle = 'rgba(70,70,110,0.3)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(cx + o, cy + o, w, w);
+      }
+    }
+  }
+  ctx.restore();
+}
+
 function drawHUD() {
   ctx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
 
@@ -1527,6 +1651,45 @@ function drawHUD() {
     ctx.shadowBlur = 26;
     ctx.fillStyle = '#ffdd44';
     ctx.fillText(waveIntroText, uiCanvas.width / 2, uiCanvas.height * 0.30);
+    ctx.restore();
+  }
+
+  // SMASH TV room-clear tally + traversal UI (v115)
+  if (exitPhase && gameState === 'playing') {
+    // Bonus tally card (first couple of seconds)
+    if (roomTallyT > 0) {
+      const a = Math.min(1, roomTallyT * 3, (2.2 - roomTallyT) * 5);
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, a);
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 38px monospace, sans-serif';
+      ctx.shadowColor = '#33cc77';
+      ctx.shadowBlur = 24;
+      ctx.fillStyle = '#aaffcc';
+      ctx.fillText('ROOM CLEAR!', uiCanvas.width / 2, uiCanvas.height * 0.26);
+      ctx.font = 'bold 20px monospace, sans-serif';
+      ctx.fillText(`BONUS +${wave * 500}`, uiCanvas.width / 2, uiCanvas.height * 0.26 + 34);
+      ctx.restore();
+    }
+    drawSmashMinimap();
+    // EXIT labels floating over the open doors (drawn after the minimap so a
+    // door near the panel keeps its label legible)
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 15px monospace, sans-serif';
+    for (const ed of exitDoors) {
+      const [dx, dz] = smashDoorPos(ed.door);
+      const p = toScreen({ x: dx, y: 2.9, z: dz });
+      ctx.shadowColor = '#33ff88';
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = '#aaffcc';
+      ctx.fillText('EXIT', p.x, p.y);
+      ctx.shadowBlur = 0;
+      ctx.font = 'bold 11px monospace, sans-serif';
+      ctx.fillStyle = ROOM_KINDS[ed.kind].color;
+      ctx.fillText(ROOM_KINDS[ed.kind].label, p.x, p.y + 14);
+      ctx.font = 'bold 15px monospace, sans-serif';
+    }
     ctx.restore();
   }
 
@@ -1653,7 +1816,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v114', 16, uiCanvas.height - 12);
+  ctx.fillText('v115', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2020,24 +2183,34 @@ function buildSmashDoors() {
     { x: -HALF_X, z: 0,       ry: Math.PI / 2 },
     { x: 0,       z: -HALF_Z, ry: 0 },
   ];
+  const frameMat = new THREE.MeshBasicMaterial({ color: 0x2a2a55 });
+  const postGeo   = new THREE.BoxGeometry(0.4, 2.3, 0.4);
+  const lintelGeo = new THREE.BoxGeometry(5.4, 0.4, 0.4);
   for (const d of defs) {
-    const m = new THREE.Mesh(
-      new THREE.PlaneGeometry(4.4, 2.1),
+    // Real doorway geometry (v115): two posts + a lintel form a wall gap the
+    // enemies pour through; the inner glow quad carries the telegraph/exit state.
+    const g = new THREE.Group();
+    const pL = new THREE.Mesh(postGeo, frameMat); pL.position.set(-2.5, 1.15, 0);
+    const pR = new THREE.Mesh(postGeo, frameMat); pR.position.set( 2.5, 1.15, 0);
+    const li = new THREE.Mesh(lintelGeo, frameMat); li.position.set(0, 2.45, 0);
+    const glow = new THREE.Mesh(
+      new THREE.PlaneGeometry(4.6, 2.2),
       new THREE.MeshBasicMaterial({
         color: 0xff3366, transparent: true, opacity: 0.10,
         blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
       }));
-    m.position.set(d.x, 1.05, d.z);
-    m.rotation.y = d.ry;
-    scene.add(m);
-    smashDoorFX.push(m);
+    glow.position.set(0, 1.1, 0);
+    g.add(pL, pR, li, glow);
+    g.position.set(d.x, 0, d.z);
+    g.rotation.y = d.ry;
+    scene.add(g);
+    smashDoorFX.push({ group: g, glow });
   }
 }
 function clearSmashDoors() {
-  for (const m of smashDoorFX) {
-    scene.remove(m);
-    m.geometry.dispose();
-    m.material.dispose();
+  for (const { group } of smashDoorFX) {
+    scene.remove(group);
+    for (const c of group.children) { c.geometry.dispose(); c.material.dispose(); }
   }
   smashDoorFX = [];
 }
@@ -2051,15 +2224,27 @@ function updateSmashDoors() {
   }
   const pulse = 0.55 + 0.25 * Math.sin(performance.now() * 0.022);
   for (let i = 0; i < 4; i++) {
-    const target = soon[i] ? pulse : 0.10;
-    const mat = smashDoorFX[i].material;
-    mat.opacity += (target - mat.opacity) * 0.25;
+    const { glow } = smashDoorFX[i];
+    let target = 0.10, color = 0xff3366;
+    if (exitPhase) {
+      // Cleared room: EXIT doors glow inviting green; the rest go dark.
+      const isExit = exitDoors.some(ed => ed.door === i);
+      color  = isExit ? 0x33ff88 : 0xff3366;
+      target = isExit ? pulse : 0.04;
+    } else if (soon[i]) {
+      target = pulse;  // spawn telegraph: this wall is about to pour
+    }
+    glow.material.color.setHex(color);
+    glow.material.opacity += (target - glow.material.opacity) * 0.25;
   }
 }
 
 function clearFX() {
   clearSmashDoors();
   waveIntroT = 0;
+  roomTallyT = 0;
+  exitPhase  = false;
+  exitDoors  = [];
   chunkPool.clear();
   gooChunkPool.clear();
   trailPool.clear();
@@ -2138,16 +2323,30 @@ function spawnWave() {
   }
   // Schedule cargo convoys (start mid-wave, seeded position). SMASH TV runs a
   // second prize convoy per wave — big money, big prizes.
+  const kind = (smashMode && smashRoomKind) ? smashRoomKind : waveKind(wave);
   clusterTimer = 0;
   clusterSpawnAt = [3 + rng() * 5]; // 3-8 s into the wave — always overlaps live enemies
   if (smashMode) clusterSpawnAt.push(12 + rng() * 5);
+  if (smashMode && kind === 'prize') clusterSpawnAt.push(7 + rng() * 3); // PRIZE room: 3rd convoy
 
-  // SMASH TV: game-show room intro card on the HUD (v114)
+  // SMASH TV: game-show room intro card on the HUD (v114/v115 — names the room kind)
   if (smashMode) {
     waveIntroT    = 1.5;
-    waveIntroText = waveKind(wave) === 'boss' ? `WAVE ${wave} — BOSS!` : `WAVE ${wave}`;
+    waveIntroText = kind === 'boss' ? `WAVE ${wave} — BOSS!`
+                  : kind === 'normal' ? `WAVE ${wave}`
+                  : `WAVE ${wave} — ${ROOM_KINDS[kind].label}`;
+    clusterSpawnAt.sort((a, b) => a - b);
+    // Enter the new room through the opposing wall from the exit just taken:
+    // spawn at that door's mouth, step in with a moment of mercy.
+    if (_entryDoor != null) {
+      const ex = Math.cos(DOORS[_entryDoor]) * (HALF_X - PLAYER_RADIUS * 2);
+      const ez = Math.sin(DOORS[_entryDoor]) * (HALF_Z - PLAYER_RADIUS * 2);
+      player.mesh.position.set(ex, PLAYER_RADIUS, ez);
+      player.grantInvincibility(1.2);
+      _entryDoor = null;
+    }
   }
-  audio.announce(waveKind(wave) === 'boss' ? 'boss' : 'wave', wave);
+  audio.announce(kind === 'boss' ? 'boss' : 'wave', wave);
 }
 
 // ── Upgrade cards ─────────────────────────────────────────────────────────────
@@ -2248,6 +2447,11 @@ function startGame() {
   _hitFlashT    = 0;
   bullets.clear();
   clearFX();
+  // SMASH TV room lattice: every run starts a fresh studio floor at (0,0).
+  roomX = 0; roomY = 0;
+  visitedRooms = new Set(['0,0']);
+  smashRoomKind = null;
+  _entryDoor = null; _cameFromDoor = null;
   buildSmashDoors();  // no-op unless SMASH TV mode is on
   audio.announce('start');
   spawnWave();
@@ -2389,8 +2593,11 @@ function loop() {
   runTimer  += dt;
   while (pendingSpawns.length > 0 && waveTimer >= pendingSpawns[0].delay) {
     const s = pendingSpawns.shift();
-    const bx = Math.cos(s.angle) * HALF_X * 0.85;
-    const bz = Math.sin(s.angle) * HALF_Z * 0.85;
+    // SMASH TV: spawn right at the doorway mouth so enemies visibly step THROUGH
+    // the door frame into the room, instead of materialising inside it.
+    const edge = smashMode ? 0.99 : 0.85;
+    const bx = Math.cos(s.angle) * HALF_X * edge;
+    const bz = Math.sin(s.angle) * HALF_Z * edge;
     const ox = s.clusterOffset ? s.clusterOffset.x : 0;
     const oz = s.clusterOffset ? s.clusterOffset.z : 0;
     const en = new Enemy(scene, s.type, bx + ox, bz + oz, s.speedMult, s.intervalMult);
@@ -2550,6 +2757,7 @@ function loop() {
   if (streakFlashT > 0) streakFlashT -= dt;
   if (scoreMultT   > 0) scoreMultT   -= dt;
   if (waveIntroT   > 0) waveIntroT   -= dt;
+  if (roomTallyT   > 0) roomTallyT   -= dt;
   updateSmashDoors();
 
   // SLUDGE_CUBE ribbon: create on first sight, update every frame
@@ -2882,7 +3090,7 @@ function loop() {
   // All living enemies dead → end wave immediately; flush any queued spawns.
   // SMASH TV: the room isn't cleared while door bursts are still queued — the
   // doors keep pouring (clearing between pulses just buys a breather).
-  if (gameState === 'playing' &&
+  if (gameState === 'playing' && !exitPhase &&
       enemies.length > 0 &&
       enemies.every(e => !e.alive && !e._dying) &&
       (!smashMode || pendingSpawns.length === 0)) {
@@ -2890,12 +3098,41 @@ function loop() {
     score += wave * 500;
     waveClearFlashT = 0.4;
     audio.waveClear();
-    if (smashMode) audio.applause();  // the studio crowd approves (v114)
-    audio.announce('clear');
-    // Roguelike pacing (v101): a card every 3rd cleared wave — every wave was
-    // way too frequent with instant wave-ends chaining fast.
-    if (roguelikeMode && wave % 3 === 0) showUpgradeCards();
-    else                                 spawnWave();
+    if (smashMode) {
+      // SMASH TV (v115): the room doesn't chain straight into the next wave —
+      // EXIT doors open, the tally card shows, the minimap comes up, and the
+      // player WALKS OUT through a door of their choosing.
+      exitPhase  = true;
+      exitDoors  = pickSmashExits();
+      roomTallyT = 2.2;
+      audio.applause();
+      audio.announce('exit');
+    } else {
+      audio.announce('clear');
+      // Roguelike pacing (v101): a card every 3rd cleared wave — every wave was
+      // way too frequent with instant wave-ends chaining fast.
+      if (roguelikeMode && wave % 3 === 0) showUpgradeCards();
+      else                                 spawnWave();
+    }
+  }
+
+  // SMASH TV exit walk: touching an open EXIT door commits the choice — next
+  // room's kind is what the door advertised, entered from the opposing wall.
+  if (exitPhase && gameState === 'playing') {
+    for (const ed of exitDoors) {
+      const [dx, dz] = smashDoorPos(ed.door);
+      if (Math.hypot(player.position.x - dx, player.position.z - dz) < 2.2) {
+        exitPhase = false; roomTallyT = 0;
+        roomX += DOOR_DX[ed.door]; roomY += DOOR_DY[ed.door];
+        visitedRooms.add(`${roomX},${roomY}`);
+        smashRoomKind = ed.kind;
+        _entryDoor    = (ed.door + 2) % 4;
+        _cameFromDoor = _entryDoor;
+        if (roguelikeMode && wave % 3 === 0) showUpgradeCards();
+        else                                 spawnWave();
+        break;
+      }
+    }
   }
 
   const _now = performance.now() / 1000;

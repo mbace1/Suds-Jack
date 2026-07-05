@@ -17,6 +17,8 @@ const ANNOUNCER_LINES = {
   gameover: ['TOTAL WIPEOUT! SEE YOU NEXT SHOW!',
              'AND THAT\'S THE GAME! WHAT A FINISH!'],
   clear:    ['EXCELLENT!', 'GOOD! GOOD!', 'SPOTLESS!'],
+  exit:     ['THE DOORS ARE OPEN — MOVE!', 'PICK A DOOR! ANY DOOR!',
+             'CHOOSE YOUR NEXT ROOM!'],
 };
 // gameover/boss cut off whatever is mid-sentence; everything else waits its turn.
 const ANNOUNCER_URGENT = new Set(['gameover', 'boss']);
