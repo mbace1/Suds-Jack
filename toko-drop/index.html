@@ -7,6 +7,14 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>Toko Drop</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta property="og:title" content="TOKO DROP">
+  <meta property="og:description" content="Twin-stick bullet-hell survival — dodge the goo, mow the mobs. Big bubbles! Big prizes!">
+  <meta property="og:image" content="https://mbace1.github.io/Suds-Jack/toko-drop/logo.png">
+  <meta property="og:url" content="https://mbace1.github.io/Suds-Jack/toko-drop/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { height: 100%; }
@@ -71,14 +79,17 @@
   <canvas id="canvas-game"></canvas>
   <canvas id="canvas-ui"></canvas>
   <div id="overlay"></div>
+  <!-- three.js vendored locally (v118): the CDN was the game's single point of
+       failure and is blocked on some networks. Files under vendor/ track
+       three@0.167.0 — update them together if the version ever bumps. -->
   <script type="importmap">
   {
     "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+      "three": "./vendor/three.module.min.js",
+      "three/addons/": "./vendor/jsm/"
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=71"></script>
+  <script type="module" src="js/main.js?v=72"></script>
 </body>
 </html>
