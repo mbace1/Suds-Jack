@@ -38,12 +38,19 @@ jsDelivr CDN via an importmap, same as toko-drop).
 balanced 3-hit combo) · GORO (magenta cleaver, slow 2-hit, huge arc + knockback) · SAYA
 (lime daggers, 5-hit chain, fastest dash). Swapping detonates a 360° burst, grants brief
 i-frames, and cancels the current swing — weaving swaps into combos is the core
-mechanic. LMB chains combos (input-buffered), Shift/Space dashes with i-frames, and
-slashes deflect enemy bolts caught in the arc.
+mechanic. LMB chains combos (input-buffered), Shift/Space dashes with i-frames (**2
+charges**, refilling one at a time), and slashes deflect enemy bolts caught in the arc.
+Player frames use the `fancy` rig dressing (kasa hat, rope obi + scabbards, hakama
+skirt, piston shins); enemies keep the leaner V-crest silhouette. The run cycle winds
+up/down via `player.speedK` (stride, footfall bounce and forward lean all scale with
+it — max lean at full speed, `poseRun` in `robots.js`), and heading banks at
+`TURN_RATE` instead of snapping.
 
-**Touch controls:** floating dual sticks — left stick moves (tap **or lift = dash**),
-right stick orbits the camera as a rate control (tap/lift = **jump**, again mid-air =
-**double jump**; jumping above y 0.9 dodges melee, slams and bolts). While touch drives,
+**Touch controls:** floating dual sticks — left stick moves, **flicking it in any
+direction dashes that way** (flick = ≥30 px of stick travel inside 90 ms; the stick
+must settle before the next flick registers), right stick orbits the camera as a rate
+control (tap/lift = **jump**, again mid-air = **double jump**; jumping above y 0.9
+dodges melee, slams and bolts). While touch drives,
 combat is **automatic** (`input.autoCombat`): melee mode auto-swings/chains when an enemy
 is in reach; ranged mode auto-fires bolts (from a second `BoltPool`, `pBolts`) at the
 nearest enemy — toggled by the ⚔/➶ button above the right stick. Form chips double as

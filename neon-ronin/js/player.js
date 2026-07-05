@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { buildSamurai, poseStance, poseWalk, poseIdle, poseSwing, poseAim, setGlow } from './robots.js';
+import { buildSamurai, poseStance, poseRun, poseIdle, poseSwing, poseAim, setGlow } from './robots.js';
 
 export const PLAYER_RADIUS = 0.55;
 
@@ -9,17 +9,17 @@ export const PLAYER_RADIUS = 0.55;
 // SAYA  — lime twin daggers, blender-fast 5-hit chain, quickest dash
 export const FORMS = [
   {
-    name: 'KIRI', accent: 0x00f0ff, body: 0x1d2530, weapon: 'katana',
+    name: 'KIRI', accent: 0x00f0ff, body: 0x1d2530, weapon: 'katana', fancy: true,
     speed: 6.2, dmg: 22, range: 2.7, arc: 110, knock: 4,
     swings: [0.32, 0.3, 0.44], lastHitMult: 1.6, dashCdMult: 1,
   },
   {
-    name: 'GORO', accent: 0xff2fd6, body: 0x2c1d2c, weapon: 'cleaver',
+    name: 'GORO', accent: 0xff2fd6, body: 0x2c1d2c, weapon: 'cleaver', fancy: true,
     speed: 5.1, dmg: 48, range: 3.3, arc: 150, knock: 8,
     swings: [0.55, 0.62], lastHitMult: 1.4, dashCdMult: 1.2, twoHanded: true,
   },
   {
-    name: 'SAYA', accent: 0xa8ff00, body: 0x232b1a, weapon: 'daggers',
+    name: 'SAYA', accent: 0xa8ff00, body: 0x232b1a, weapon: 'daggers', fancy: true,
     speed: 7.3, dmg: 11, range: 2.2, arc: 90, knock: 2,
     swings: [0.17, 0.17, 0.17, 0.17, 0.2], lastHitMult: 2, dashCdMult: 0.65,
   },
@@ -28,8 +28,12 @@ export const FORMS = [
 const SWAP_CD  = 2.2;
 const DASH_DUR = 0.22;
 const DASH_SPD = 19;
-const DASH_CD  = 0.95;
+const DASH_CD  = 0.95;      // recharge time per dash charge (2 charges)
+const DASH_CHARGES = 2;
 const HURT_IFRAMES = 0.6;
+const RUN_WINDUP = 5.5;     // how fast the run cycle winds up / back down
+const RUN_WINDDOWN = 7;
+const TURN_RATE = 13;
 
 const JUMP_V = 10;
 const DOUBLE_JUMP_V = 8.8;
@@ -61,6 +65,7 @@ export class Player {
     this.yaw = Math.PI;      // face away from the spawn camera
     this.walkPhase = 0;
     this.moving = false;
+    this.speedK = 0;         // smoothed 0..1 run factor (wind-up / wind-down)
 
     this.attackT = -1;      // <0 idle, else elapsed time in current swing
     this.swingIdx = 0;
@@ -68,7 +73,8 @@ export class Player {
     this.chainBuffered = false;
 
     this.dashT = -1;
-    this.dashCd = 0;
+    this.dashCharges = DASH_CHARGES;
+    this.dashRegen = 0;
     this.dashDir = new THREE.Vector3(0, 0, 1);
     this.swapCd = 0;
     this.iframes = 0;
@@ -93,12 +99,14 @@ export class Player {
     this.yaw = Math.PI;
     this.attackT = -1;
     this.dashT = -1;
-    this.dashCd = 0;
+    this.dashCharges = DASH_CHARGES;
+    this.dashRegen = 0;
     this.swapCd = 0;
     this.iframes = 0;
     this.vy = 0;
     this.jumps = 0;
     this.fireT = 0;
+    this.speedK = 0;
     this.dead = false;
     this._setForm(0);
   }
@@ -127,9 +135,18 @@ export class Player {
     const { input, camYaw, dt, t } = ctx;
     const c = this.conf;
 
-    this.dashCd = Math.max(0, this.dashCd - dt);
     this.swapCd = Math.max(0, this.swapCd - dt);
     this.iframes = Math.max(0, this.iframes - dt);
+
+    // dash charges refill one at a time
+    const dashCdFull = DASH_CD * c.dashCdMult * this.stats.dashCdMul;
+    if (this.dashCharges < DASH_CHARGES) {
+      this.dashRegen -= dt;
+      if (this.dashRegen <= 0) {
+        this.dashCharges++;
+        this.dashRegen = this.dashCharges < DASH_CHARGES ? dashCdFull : 0;
+      }
+    }
 
     // hurt/dash flicker
     this.rig.group.visible = this.iframes > 0 ? (t * 24 | 0) % 2 === 0 : true;
@@ -160,13 +177,23 @@ export class Player {
     this.moving = mLen > 0.01;
     if (this.moving) { mx /= mLen; mz /= mLen; }
 
-    // ── dash ──
-    if (input.consumeDash() && this.dashCd <= 0 && this.dashT < 0) {
+    // ── dash: 2 charges, usable from any state (even mid-dash / mid-air).
+    // Touch flicks carry their own direction; keyboard uses move dir/facing.
+    const dq = input.consumeDash();
+    if (dq && this.dashCharges > 0 && !this.dead) {
+      if (typeof dq === 'object') {
+        const wx = fx * dq.y + rx * dq.x;   // flick vector, camera-relative
+        const wz = fz * dq.y + rz * dq.x;
+        const l = Math.hypot(wx, wz) || 1;
+        this.dashDir.set(wx / l, 0, wz / l);
+      } else {
+        this.dashDir.set(
+          this.moving ? mx : Math.sin(this.yaw), 0,
+          this.moving ? mz : Math.cos(this.yaw));
+      }
+      if (this.dashCharges === DASH_CHARGES) this.dashRegen = dashCdFull;
+      this.dashCharges--;
       this.dashT = 0;
-      this.dashCd = DASH_CD * c.dashCdMult * this.stats.dashCdMul;
-      this.dashDir.set(
-        this.moving ? mx : Math.sin(this.yaw), 0,
-        this.moving ? mz : Math.cos(this.yaw));
       this.attackT = -1;
       ctx.audio.dash();
     }
@@ -179,12 +206,14 @@ export class Player {
         ctx.effects.sparks({ x: this.pos.x, y: 0.6, z: this.pos.z }, c.accent, 2, 2);
       }
       if (this.dashT >= DASH_DUR) this.dashT = -1;
+      this.speedK = Math.min(1, this.speedK + 4 * dt);   // exit dashes at speed
       poseStance(this.rig);
       this.rig.torso.rotation.x = 0.5;
     } else if (this.attackT >= 0) {
       // ── attacking ──
       const dur = c.swings[this.swingIdx] * this.stats.atkSpdMul;
       this.attackT += dt;
+      this.speedK = Math.max(0, this.speedK - 6 * dt);   // swings root the run
       const k = Math.min(this.attackT / dur, 1);
       poseStance(this.rig);
       poseSwing(this.rig, k, c.twoHanded);
@@ -216,17 +245,28 @@ export class Player {
         }
       }
     } else {
-      // ── free movement ──
+      // ── free movement: run winds up from a standstill and back down when
+      // the stick releases; stride, bounce and lean all scale with speedK ──
+      const targetK = this.moving ? 1 : 0;
+      this.speedK += (targetK - this.speedK) *
+        Math.min(1, (this.moving ? RUN_WINDUP : RUN_WINDDOWN) * dt);
+      const sp = c.speed * this.stats.spdMul * (0.35 + 0.65 * this.speedK);
       if (this.moving) {
-        const sp = c.speed * this.stats.spdMul;
         this.pos.x += mx * sp * dt;
         this.pos.z += mz * sp * dt;
-        this.yaw = Math.atan2(mx, mz);
-        this.walkPhase += dt * sp * 2.1;
-        poseStance(this.rig);
-        poseWalk(this.rig, this.walkPhase);
+        // bank into the new heading instead of snapping
+        const want = Math.atan2(mx, mz);
+        let dyaw = want - this.yaw;
+        while (dyaw > Math.PI) dyaw -= Math.PI * 2;
+        while (dyaw < -Math.PI) dyaw += Math.PI * 2;
+        this.yaw += dyaw * Math.min(1, TURN_RATE * dt);
+      }
+      poseStance(this.rig);
+      if (this.speedK > 0.04) {
+        // stride keeps cycling (slower) through the wind-down
+        this.walkPhase += dt * sp * 2.3 * (this.moving ? 1 : this.speedK);
+        poseRun(this.rig, this.walkPhase, this.speedK);
       } else {
-        poseStance(this.rig);
         poseIdle(this.rig, t);
       }
       if (input.consumeAttack()) {

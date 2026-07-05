@@ -1,13 +1,17 @@
 // ── Keyboard + pointer-lock mouse + touch dual-stick input ────────────────────
 // Desktop: buffered one-shot actions (attack/dash/swap) so a click landing
 // mid-swing still chains the combo; mouse deltas accumulate until consumed.
-// Touch: floating dual sticks — LEFT stick moves (tap or lift = dash), RIGHT
+// Touch: floating dual sticks — LEFT stick moves and FLICKING it in any
+// direction dashes that way (dashQueued carries the flick vector); RIGHT
 // stick orbits the camera (tap or lift = jump, again mid-air = double jump).
 // While touch is driving, combat is automatic (see player.js) and the
 // melee/ranged mode button above the right stick picks the fighting style.
 
-const STICK_R = 56;      // px deflection that maps to full stick throw
+const STICK_R = 56;        // px deflection that maps to full stick throw
 const DEAD = 0.18;
+const FLICK_WINDOW = 90;   // ms of stick history a flick is measured over
+const FLICK_PX = 30;       // displacement inside the window that reads as a flick
+const FLICK_RESET = 12;    // stick must settle below this before the next flick
 
 export class InputManager {
   constructor(canvas) {
@@ -17,7 +21,7 @@ export class InputManager {
     this._dx = 0;
     this._dy = 0;
     this.attackQueued = false;
-    this.dashQueued = false;
+    this.dashQueued = null;    // true (keyboard) or {x, y} flick vector (touch)
     this.jumpQueued = false;
     this.swapQueued = -1;      // -1 none, 0..2 form index, 3 = cycle
     this.mode = 'melee';       // 'melee' | 'ranged' (touch auto-combat style)
@@ -88,7 +92,10 @@ export class InputManager {
       for (const t of e.changedTouches) {
         const side = t.clientX < innerWidth / 2 ? 'L' : 'R';
         if (this._sticks[side]) continue;
-        this._sticks[side] = { id: t.identifier, x0: t.clientX, y0: t.clientY, dx: 0, dy: 0 };
+        this._sticks[side] = {
+          id: t.identifier, x0: t.clientX, y0: t.clientY, dx: 0, dy: 0,
+          hist: [], flicked: false,
+        };
         const el = this._els()[side];
         el.base.style.display = 'block';
         el.base.style.left = `${t.clientX}px`;
@@ -107,6 +114,7 @@ export class InputManager {
           s.dy = t.clientY - s.y0;
           const len = Math.hypot(s.dx, s.dy);
           if (len > STICK_R) { s.dx *= STICK_R / len; s.dy *= STICK_R / len; }
+          if (side === 'L') this._checkFlick(s);
           const el = this._els()[side];
           el.nub.style.transform = `translate(calc(-50% + ${s.dx}px), calc(-50% + ${s.dy}px))`;
         }
@@ -119,9 +127,8 @@ export class InputManager {
         for (const side of ['L', 'R']) {
           const s = this._sticks[side];
           if (!s || s.id !== t.identifier) continue;
-          // tap OR lift fires the stick's action
-          if (side === 'L') this.dashQueued = true;
-          else this.jumpQueued = true;
+          // right stick: tap OR lift = jump. left stick dashes on flicks only.
+          if (side === 'R') this.jumpQueued = true;
           this._sticks[side] = null;
           this._els()[side].base.style.display = 'none';
         }
@@ -129,6 +136,24 @@ export class InputManager {
     };
     this.canvas.addEventListener('touchend', end, opt);
     this.canvas.addEventListener('touchcancel', end, opt);
+  }
+
+  // A flick = the stick moving fast: enough displacement inside a short
+  // window. One flick fires one dash; the stick has to settle before the
+  // next one so holding a full deflection doesn't machine-gun dashes.
+  _checkFlick(s) {
+    const now = performance.now();
+    s.hist.push({ t: now, x: s.dx, y: s.dy });
+    while (s.hist.length && now - s.hist[0].t > FLICK_WINDOW) s.hist.shift();
+    const o = s.hist[0];
+    const ddx = s.dx - o.x, ddy = s.dy - o.y;
+    const d = Math.hypot(ddx, ddy);
+    if (!s.flicked && d > FLICK_PX) {
+      s.flicked = true;
+      this.dashQueued = { x: ddx / d, y: -ddy / d };   // moveAxes convention
+    } else if (s.flicked && d < FLICK_RESET) {
+      s.flicked = false;
+    }
   }
 
   requestLock() {
@@ -164,7 +189,7 @@ export class InputManager {
   }
 
   consumeAttack() { const q = this.attackQueued; this.attackQueued = false; return q; }
-  consumeDash()   { const q = this.dashQueued;   this.dashQueued = false;   return q; }
+  consumeDash()   { const q = this.dashQueued;   this.dashQueued = null;    return q; }
   consumeJump()   { const q = this.jumpQueued;   this.jumpQueued = false;   return q; }
   consumeSwap()   { const q = this.swapQueued;   this.swapQueued = -1;      return q; }
 }
