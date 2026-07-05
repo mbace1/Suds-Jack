@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=67';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=67';
-import { Player, PLAYER_RADIUS } from './player.js?v=67';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=67';
-import { audio } from './audio.js?v=67';
-import { initDesigner } from './designer.js?v=67';
-import { t, getLang, setLang, langs } from './lang.js?v=67';
-import { TUNING } from './tuning.js?v=67';
+import { InputManager } from './input.js?v=68';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=68';
+import { Player, PLAYER_RADIUS } from './player.js?v=68';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=68';
+import { audio } from './audio.js?v=68';
+import { initDesigner } from './designer.js?v=68';
+import { t, getLang, setLang, langs } from './lang.js?v=68';
+import { TUNING } from './tuning.js?v=68';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -150,10 +150,24 @@ function getEnemySchedule(wave) {
     if (spent + entryCost > budget + 3) break;
     list.push(entry);
     // Tight spawn cadence so most of the budget is on-field before the player can
-    // clear it (prevents instant wave-end from trivialising waves). Swarms burst
-    // faster; SMASH TV compresses everything so bursts stack up at the doors.
-    t += (isSwarm ? (0.08 + rng() * 0.28) : (0.18 + rng() * 0.5)) * (smashMode ? 0.6 : 1);
+    // clear it (prevents instant wave-end from trivialising waves). Swarms burst faster.
+    t += isSwarm ? (0.08 + rng() * 0.28) : (0.18 + rng() * 0.5);
     spent += entryCost;
+  }
+  // SMASH TV (v114): re-pace the room like the show — entries arrive as door
+  // BURSTS of ~3 every couple of seconds for the whole wave (each burst from
+  // ONE door, walking around the room), not one big up-front dump. The wave
+  // won't end while bursts remain queued, so the room keeps pouring.
+  if (smashMode && list.length) {
+    const pulseT = [0];
+    for (let pi = 1; pi <= Math.ceil(list.length / 3); pi++) {
+      pulseT.push(pulseT[pi - 1] + 2.0 + rng() * 1.0);
+    }
+    list.forEach((entry, i) => {
+      const pi = Math.floor(i / 3);
+      entry.t    = pulseT[pi] + (i % 3) * 0.15;
+      entry.door = pi % 4;
+    });
   }
   return list.length ? list : [{ type: GLOBBO, t: 0 }];
 }
@@ -1048,6 +1062,14 @@ function onKill(e) {
   streak++;
   score += 100 * streak * (scoreMultT > 0 ? 2 : 1);
   if (streak > 0 && streak % 5 === 0) audio.announce('streak');
+  // SMASH TV (v114): kills sometimes drop cash that lies on the floor — walk
+  // over it before it fades. Big money. Big prizes.
+  if (smashMode && Math.random() < 0.15 && powerups.length < 14) {
+    const pu = new Powerup(scene, e.position.x, e.position.z, 'score',
+      (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 0.6);
+    pu._life = 6.0;
+    powerups.push(pu);
+  }
   streakFlashT = STREAK_FLASH_DUR;
   addShake(0.07 + e.radius * 0.13);  // heavier enemies kick the camera harder
   const _cat = BLOB_TYPES.has(e.type) || e.type === EnemyType.BOTFLY ? 'blob'
@@ -1494,6 +1516,20 @@ function drawHUD() {
     ctx.fillRect(0, 0, uiCanvas.width, uiCanvas.height);
   }
 
+  // SMASH TV room intro card (v114): big game-show wave title, quick in/out.
+  if (waveIntroT > 0 && gameState === 'playing') {
+    const a = Math.min(1, waveIntroT * 3, (1.5 - waveIntroT) * 5);
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, a);
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 44px monospace, sans-serif';
+    ctx.shadowColor = '#ff4422';
+    ctx.shadowBlur = 26;
+    ctx.fillStyle = '#ffdd44';
+    ctx.fillText(waveIntroText, uiCanvas.width / 2, uiCanvas.height * 0.30);
+    ctx.restore();
+  }
+
   if (gameState !== 'playing' && gameState !== 'paused' && gameState !== 'upgrade') return;
 
   // Sticks
@@ -1617,7 +1653,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v113', 16, uiCanvas.height - 12);
+  ctx.fillText('v114', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1967,7 +2003,63 @@ function announceWave() {
 }
 
 // ── Wave / restart helpers ──────────────────────────────────────────────────────────
+// ── SMASH TV doors (v114) ─────────────────────────────────────────────────────
+// Four glowing doorways at the arena edge midpoints (matching the DOORS spawn
+// angles). Dim while idle; a door flares up in the ~0.9s before a burst pours
+// through it — the show's "they're coming through THAT wall" telegraph.
+let smashDoorFX = [];
+let waveIntroT = 0, waveIntroText = '';
+function buildSmashDoors() {
+  clearSmashDoors();
+  if (!smashMode) return;
+  // Order matches DOORS = [0, π/2, π, 3π/2] under the (cos·HALF_X, sin·HALF_Z)
+  // spawn projection: +x wall, +z wall, −x wall, −z wall.
+  const defs = [
+    { x:  HALF_X, z: 0,       ry: Math.PI / 2 },
+    { x: 0,       z:  HALF_Z, ry: 0 },
+    { x: -HALF_X, z: 0,       ry: Math.PI / 2 },
+    { x: 0,       z: -HALF_Z, ry: 0 },
+  ];
+  for (const d of defs) {
+    const m = new THREE.Mesh(
+      new THREE.PlaneGeometry(4.4, 2.1),
+      new THREE.MeshBasicMaterial({
+        color: 0xff3366, transparent: true, opacity: 0.10,
+        blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+      }));
+    m.position.set(d.x, 1.05, d.z);
+    m.rotation.y = d.ry;
+    scene.add(m);
+    smashDoorFX.push(m);
+  }
+}
+function clearSmashDoors() {
+  for (const m of smashDoorFX) {
+    scene.remove(m);
+    m.geometry.dispose();
+    m.material.dispose();
+  }
+  smashDoorFX = [];
+}
+function updateSmashDoors() {
+  if (!smashDoorFX.length) return;
+  const soon = [false, false, false, false];
+  for (const s of pendingSpawns) {
+    if (s.door == null) continue;
+    const eta = s.delay - waveTimer;
+    if (eta >= -0.15 && eta <= 0.9) soon[s.door] = true;
+  }
+  const pulse = 0.55 + 0.25 * Math.sin(performance.now() * 0.022);
+  for (let i = 0; i < 4; i++) {
+    const target = soon[i] ? pulse : 0.10;
+    const mat = smashDoorFX[i].material;
+    mat.opacity += (target - mat.opacity) * 0.25;
+  }
+}
+
 function clearFX() {
+  clearSmashDoors();
+  waveIntroT = 0;
   chunkPool.clear();
   gooChunkPool.clear();
   trailPool.clear();
@@ -2011,7 +2103,7 @@ function spawnWave() {
   list.forEach((entry, i) => {
     const cnt       = entry.count || 1;
     const baseAngle = smashMode
-      ? DOORS[i % 4] + (rng() - 0.5) * 0.24
+      ? DOORS[(entry.door ?? i) % 4] + (rng() - 0.5) * 0.24
       : (i / total) * Math.PI * 2;
     const isGroup   = cnt >= 3;  // 3+ = a coordinated group; 2 = twins (stay paired)
     for (let k = 0; k < cnt; k++) {
@@ -2029,6 +2121,7 @@ function spawnWave() {
         type: entry.type,
         delay: entry.t + (isGroup ? k * 0.12 : 0),     // light stagger → rolling advance
         angle,
+        door: entry.door,                               // SMASH TV: which wall door (telegraph FX)
         clusterOffset,
         speedMult: speedMult * (isGroup ? 1.2 : 1),     // groups push in with intent
         intervalMult,
@@ -2049,6 +2142,11 @@ function spawnWave() {
   clusterSpawnAt = [3 + rng() * 5]; // 3-8 s into the wave — always overlaps live enemies
   if (smashMode) clusterSpawnAt.push(12 + rng() * 5);
 
+  // SMASH TV: game-show room intro card on the HUD (v114)
+  if (smashMode) {
+    waveIntroT    = 1.5;
+    waveIntroText = waveKind(wave) === 'boss' ? `WAVE ${wave} — BOSS!` : `WAVE ${wave}`;
+  }
   audio.announce(waveKind(wave) === 'boss' ? 'boss' : 'wave', wave);
 }
 
@@ -2150,6 +2248,7 @@ function startGame() {
   _hitFlashT    = 0;
   bullets.clear();
   clearFX();
+  buildSmashDoors();  // no-op unless SMASH TV mode is on
   audio.announce('start');
   spawnWave();
   gameState = 'playing';
@@ -2450,6 +2549,8 @@ function loop() {
   }
   if (streakFlashT > 0) streakFlashT -= dt;
   if (scoreMultT   > 0) scoreMultT   -= dt;
+  if (waveIntroT   > 0) waveIntroT   -= dt;
+  updateSmashDoors();
 
   // SLUDGE_CUBE ribbon: create on first sight, update every frame
   for (const e of enemies) {
@@ -2778,14 +2879,18 @@ function loop() {
     }
   }
 
-  // All living enemies dead → end wave immediately; flush any queued spawns
+  // All living enemies dead → end wave immediately; flush any queued spawns.
+  // SMASH TV: the room isn't cleared while door bursts are still queued — the
+  // doors keep pouring (clearing between pulses just buys a breather).
   if (gameState === 'playing' &&
       enemies.length > 0 &&
-      enemies.every(e => !e.alive && !e._dying)) {
+      enemies.every(e => !e.alive && !e._dying) &&
+      (!smashMode || pendingSpawns.length === 0)) {
     pendingSpawns = [];
     score += wave * 500;
     waveClearFlashT = 0.4;
     audio.waveClear();
+    if (smashMode) audio.applause();  // the studio crowd approves (v114)
     audio.announce('clear');
     // Roguelike pacing (v101): a card every 3rd cleared wave — every wave was
     // way too frequent with instant wave-ends chaining fast.

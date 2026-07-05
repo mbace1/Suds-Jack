@@ -130,6 +130,12 @@ class AudioSystem {
     [261, 329, 392, 523].forEach((f, i) =>
       setTimeout(() => this._tone(f, 0.22, 'sine', 0.20), i * 90));
   }
+  // SMASH TV room clear (v114): studio-crowd swell — staggered, decaying
+  // noise bursts read as applause through the lo-fi synth palette.
+  applause() {
+    [0, 90, 190, 310, 450, 620].forEach((d, i) =>
+      setTimeout(() => this._noise(0.11 - i * 0.013, 0.30), d));
+  }
 }
 
 export const audio = new AudioSystem();
