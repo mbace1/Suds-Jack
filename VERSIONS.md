@@ -7,6 +7,18 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v114 — 2026-07-05
+**SMASH TV mode actually feels like the show — visible doors, room-long door bursts, floor cash, intro card, applause**
+- **Visible doors**: four glowing doorway quads at the arena edge midpoints (matching the spawn angles). Dim while idle; a door **flares up in the ~0.9s before a burst pours through it** — the show's "they're coming through THAT wall" telegraph. Built at run start, torn down with the run
+- **Room-long door bursts**: instead of dumping most of the wave up front, entries now arrive as bursts of ~3 every ~2-3s from ONE door at a time (walking around the room). The wave can't end while bursts are still queued — the room keeps pouring; clearing between pulses just buys a breather
+- **Cash on the floor**: kills have a 15% chance to drop a score nugget that lies where the enemy died for 6s — walk over it. Big money. Big prizes
+- **Game-show wave intro**: big "WAVE N" (or "WAVE N — BOSS!") card flashes on the HUD at each room start
+- **Applause**: staggered noise-burst crowd swell on room clear (through the master volume)
+- All of it gated on the SMASH TV toggle; normal mode untouched
+- Cache-bust `?v=67` → `?v=68`; HUD label → v114
+
+---
+
 ## v113 — 2026-07-05
 **FIX: death screen fits landscape — compact layout on short viewports instead of hiding half below the fold**
 - On a ~430px-high landscape phone the death screen was cut off mid-chips: the textarea and SEND/SKIP buttons were only reachable by scrolling (the reported "death screen not working for landscape")
