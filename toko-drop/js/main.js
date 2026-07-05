@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=66';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=66';
-import { Player, PLAYER_RADIUS } from './player.js?v=66';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=66';
-import { audio } from './audio.js?v=66';
-import { initDesigner } from './designer.js?v=66';
-import { t, getLang, setLang, langs } from './lang.js?v=66';
-import { TUNING } from './tuning.js?v=66';
+import { InputManager } from './input.js?v=67';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=67';
+import { Player, PLAYER_RADIUS } from './player.js?v=67';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=67';
+import { audio } from './audio.js?v=67';
+import { initDesigner } from './designer.js?v=67';
+import { t, getLang, setLang, langs } from './lang.js?v=67';
+import { TUNING } from './tuning.js?v=67';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1617,7 +1617,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v112', 16, uiCanvas.height - 12);
+  ctx.fillText('v113', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1861,14 +1861,14 @@ function showGameOver() {
   if (_runBests.isBestTime)  badges.push(t('bestTime'));
   if (_runBests.isBestWave)  badges.push(t('bestWave'));
   overlay.innerHTML =
-    `<div style="font-size:52px;font-weight:bold">${t('youDied')}</div>` +
-    `<div style="font-size:15px;opacity:0.6;margin-top:10px;letter-spacing:2px">` +
+    `<div class="d-title" style="font-size:52px;font-weight:bold">${t('youDied')}</div>` +
+    `<div class="d-sub" style="font-size:15px;opacity:0.6;margin-top:10px;letter-spacing:2px">` +
       `${t('wave')} ${wave} &nbsp;·&nbsp; ${fmtTime(runTimer)} &nbsp;·&nbsp; ${score} ${t('pts')}` +
     `</div>` +
     (badges.length
-      ? `<div style="font-size:16px;color:#ffdd44;margin-top:8px;letter-spacing:1px">${badges.join('&nbsp;&nbsp;')}</div>`
+      ? `<div class="d-sub" style="font-size:16px;color:#ffdd44;margin-top:8px;letter-spacing:1px">${badges.join('&nbsp;&nbsp;')}</div>`
       : ``) +
-    `<div style="font-size:12px;opacity:0.3;margin-top:10px">${t('seed')} ${seedHex}</div>` +
+    `<div class="d-sub" style="font-size:12px;opacity:0.3;margin-top:10px">${t('seed')} ${seedHex}</div>` +
     `<div id="feedback-slot" style="margin-top:18px"></div>`;
 
   buildFeedbackPanel(document.getElementById('feedback-slot'));
@@ -1888,10 +1888,12 @@ function buildFeedbackPanel(slot) {
       ? { border: '#44cc88', bg: 'rgba(60,220,150,0.20)', col: '#aaffcc', glow: '0 0 10px #33cc77' }
       : { border: '#ff6644', bg: 'rgba(255,90,60,0.22)',  col: '#ffbbaa', glow: '0 0 10px #ff5533' };
     const title = document.createElement('div');
+    title.className = 'fb-head';
     title.textContent = heading;
     title.style.cssText = 'font-size:12px;letter-spacing:2px;opacity:0.55;margin-bottom:10px';
     slot.appendChild(title);
     const row = document.createElement('div');
+    row.className = 'fb-row';
     row.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:440px;margin:0 auto 14px';
     for (const r of reasons) {
       labelById[r.id] = r.label;

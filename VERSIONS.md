@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v113 — 2026-07-05
+**FIX: death screen fits landscape — compact layout on short viewports instead of hiding half below the fold**
+- On a ~430px-high landscape phone the death screen was cut off mid-chips: the textarea and SEND/SKIP buttons were only reachable by scrolling (the reported "death screen not working for landscape")
+- The `@media (max-height: 560px)` compact block now also covers the death screen: "YOU DIED" 52→28px, tightened stat/seed/heading margins, smaller chips (10.5px / 4px padding), chip rows widened to 620px so each fits one line on a wide screen, tighter buttons — the whole screen (score → chips → textarea → buttons) fits ~400px with no scrolling. Elements got classes (`d-title`/`d-sub`/`fb-head`/`fb-row`; `fb-chip`/`fb-btn` already existed) so the media query can override their inline styles
+- Portrait death screen unchanged (media query only bites under 560px height)
+- Cache-bust `?v=66` → `?v=67`; HUD label → v113
+
+---
+
 ## v112 — 2026-07-04
 **Landscape zoom is now aspect-aware — the camera dollies in until the arena just fits YOUR screen**
 - v111's fixed landscape framing was capped by the 16:9 fit, leaving unused margin on wider phones ("still needs zooming in"). New `fitLandscapeCamera()` binary-searches the camera distance along the preset's view ray until the arena's four corners just fit the current viewport (|x| ≤ 0.96, |y| ≤ 0.93) — at 19.5:9 the camera comes in from dist 23.3 → ~19.8 and top/bottom margins drop from 0.305/0.326 to ~0.21/0.18

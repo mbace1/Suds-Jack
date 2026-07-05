@@ -54,6 +54,16 @@
       #overlay .t-help { margin: 8px auto 0 !important; line-height: 1.4 !important; }
       #rogue-toggle-slot, #settings-slot { margin-top: 8px !important; }
       #lang-toggle-slot { margin-top: 12px !important; }
+      /* Death screen (v113): compact so score + chips + textarea + buttons all
+         fit a ~400px-high landscape phone instead of hiding below the fold. */
+      #overlay .d-title { font-size: 28px !important; }
+      #overlay .d-sub   { margin-top: 3px !important; font-size: 12px !important; }
+      #overlay #feedback-slot { margin-top: 8px !important; }
+      #overlay .fb-head { font-size: 10.5px !important; margin-bottom: 5px !important; }
+      #overlay .fb-row  { gap: 6px !important; margin: 0 auto 8px !important; max-width: 620px !important; }
+      #overlay .fb-chip { font-size: 10.5px !important; padding: 4px 10px !important; }
+      #overlay .fb-btn  { padding: 6px 14px !important; }
+      #overlay textarea { margin-bottom: 8px !important; width: min(560px, 70vw) !important; }
     }
   </style>
 </head>
@@ -69,6 +79,6 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=66"></script>
+  <script type="module" src="js/main.js?v=67"></script>
 </body>
 </html>
