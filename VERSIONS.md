@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v116 — 2026-07-05
+**Composed waves — mob floods stay, shooters become deliberate; floor valuables with rare multipliers**
+- **Wave design (both modes)**: the schedule is now composed from two pools. **Melee mobs flood** (groups/twins of cheap bodies — the fodder you mow), while **shooting enemies are placed deliberately**: capped (1 at wave 1 → 5 by wave 12; swarms allow 1, boss waves 2), arriving spaced ~3s apart, and given **maximally separated positions** — spread entry angles in normal mode, different doors in SMASH TV — so their fire lanes cross the arena and each shooter is a prioritisation problem, not part of the noise. Shooters no longer appear in the random mob draw at all
+- **Floor valuables (SMASH TV)**: 3-6 items scattered per room — everyday **cash piles** (small orb, 150 + wave×10), occasional **big prizes** (large orb, 1000 + wave×50, ~14%), and a **rare score-multiplier orb** (~4%). They lie there the whole room; walk over them. Values carried per-item (`pu._value`), doubled by an active multiplier; kill-drop nuggets unchanged
+- Spawn schedule now explicitly sorted by delay (shooter/mob interleave broke the drain queue's ordering assumption)
+- Cache-bust `?v=69` → `?v=70`; HUD label → v116
+
+---
+
 ## v115 — 2026-07-05
 **SMASH TV rooms: fixed studio-room size, real door frames, walk-out exits with a minimap room choice**
 - **One fixed room size in both orientations** (new `smash` arena preset, 30×22 ≈ the show's 4:3 room); `fitPresetCamera()` (generalized from v112) fits it to whatever screen you hold — portrait just views it from farther out. Toggling SMASH TV on the title reframes the arena immediately
