@@ -6,8 +6,8 @@
   <title>Neon Ronin</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #000; overflow: hidden; font-family: monospace; user-select: none; }
-    #canvas-game { display: block; }
+    body { background: #000; overflow: hidden; font-family: monospace; user-select: none; touch-action: none; }
+    #canvas-game { display: block; touch-action: none; }
 
     /* ── HUD ── */
     .hud { position: fixed; color: #cfe6ff; text-shadow: 0 0 10px #0af; pointer-events: none; }
@@ -20,7 +20,8 @@
     #multlbl { color: #ffd24d; text-shadow: 0 0 10px #fa0; }
 
     #forms { bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; }
-    .chip { border: 1px solid; padding: 7px 14px; background: #04070dcc; text-align: center; transition: opacity 0.2s; }
+    .chip { border: 1px solid; padding: 7px 14px; background: #04070dcc; text-align: center; transition: opacity 0.2s;
+      pointer-events: auto; cursor: pointer; }
     .chip .chip-key { font-size: 10px; opacity: 0.6; }
     .chip .chip-name { font-size: 14px; letter-spacing: 2px; }
     .chip.active { background: #0e1a24; box-shadow: 0 0 16px #ffffff22 inset, 0 0 12px #0af6; }
@@ -30,6 +31,27 @@
     #announce .sub { font-size: 13px; letter-spacing: 4px; opacity: 0.8; margin-top: 6px; }
 
     #vignette { inset: 0; opacity: 0; box-shadow: inset 0 0 140px 50px #f2003c; transition: opacity 0.1s; }
+
+    /* ── Touch controls (shown once a touch is detected) ── */
+    .stick {
+      position: fixed; width: 124px; height: 124px; border-radius: 50%;
+      border: 1px solid #2ee6ff55; background: #00f0ff0d;
+      transform: translate(-50%, -50%); pointer-events: none; z-index: 3; display: none;
+    }
+    .stick .nub {
+      position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; border-radius: 50%;
+      background: #00f0ff33; border: 1px solid #00f0ffaa; box-shadow: 0 0 14px #00f0ff66;
+      transform: translate(-50%, -50%);
+    }
+    #modebtn {
+      position: fixed; right: 26px; bottom: 215px; z-index: 4; display: none;
+      font-family: monospace; font-size: 14px; letter-spacing: 2px;
+      color: #cfe6ff; background: #060b14dd; border: 1px solid #2ee6ff88;
+      padding: 12px 18px; border-radius: 4px; text-shadow: 0 0 8px #0af;
+    }
+    #modebtn.ranged { border-color: #ffaa4d; color: #ffe0b0; text-shadow: 0 0 8px #fa0; }
+    body.touch #modebtn { display: block; }
+    body.touch #forms { bottom: 156px; }
 
     /* ── Overlays ── */
     .overlay {
@@ -77,6 +99,9 @@
   </div>
   <div id="announce" class="hud"></div>
   <div id="vignette" class="hud"></div>
+  <div id="stickL" class="stick"><div class="nub"></div></div>
+  <div id="stickR" class="stick"><div class="nub"></div></div>
+  <button id="modebtn"></button>
 
   <div id="start" class="overlay">
     <h1>NEON RONIN</h1>
@@ -85,7 +110,10 @@
       WASD move &nbsp;·&nbsp; MOUSE camera &nbsp;·&nbsp; LMB attack (chain combos)<br>
       SHIFT / SPACE dash (invincible) &nbsp;·&nbsp; 1 2 3 or Q swap frame<br>
       swapping detonates a burst — weave it into your combos<br>
-      clear each cave, pick an upgrade, descend deeper
+      clear each cave, pick an upgrade, descend deeper<br><br>
+      TOUCH: left stick move (tap/lift = dash) · right stick camera<br>
+      (tap/lift = jump, again mid-air = double jump) · fighting is automatic —<br>
+      toggle ⚔/➶ above the right stick, tap the frame chips to swap
     </p>
     <div class="go">CLICK TO JACK IN</div>
   </div>

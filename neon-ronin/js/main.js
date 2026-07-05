@@ -134,7 +134,8 @@ function setRoomHue(room) {
 const input = new InputManager(canvas);
 const effects = new Effects(scene);
 const player = new Player(scene);
-const bolts = new BoltPool(scene);
+const bolts = new BoltPool(scene);        // enemy fire
+const pBolts = new BoltPool(scene, 60);   // player ranged-mode fire
 let enemies = [];
 
 // neon glow that follows the active form
@@ -150,7 +151,12 @@ const CAM_DIST = 9.5;
 function updateCamera(dt) {
   const { dx, dy } = input.consumeMouse();
   camYaw -= dx * 0.0026;
-  camPitch = Math.min(1.15, Math.max(0.12, camPitch + dy * 0.0022));
+  camPitch += dy * 0.0022;
+  // touch: right stick deflection = orbit rate
+  const look = input.stick('R');
+  camYaw -= look.x * 2.8 * dt;
+  camPitch += look.y * 1.9 * dt;
+  camPitch = Math.min(1.15, Math.max(0.12, camPitch));
   shakeAmp = Math.max(0, shakeAmp - dt * 2.2);
   const p = player.pos;
   const cp = Math.cos(camPitch), sp = Math.sin(camPitch);
@@ -158,7 +164,7 @@ function updateCamera(dt) {
     p.x + Math.sin(camYaw) * cp * CAM_DIST + (Math.random() - 0.5) * shakeAmp,
     1.5 + sp * CAM_DIST + (Math.random() - 0.5) * shakeAmp,
     p.z + Math.cos(camYaw) * cp * CAM_DIST + (Math.random() - 0.5) * shakeAmp);
-  camera.lookAt(p.x, 1.4, p.z);
+  camera.lookAt(p.x, p.y + 1.4, p.z);
 }
 
 // ── HUD ───────────────────────────────────────────────────────────────────────
@@ -250,6 +256,7 @@ const combat = {
   },
 
   hurtPlayer(dmg, fromPos, knock = 4) {
+    if (player.pos.y > 0.9) return;   // jumped clear of the strike
     if (!player.hurt(dmg)) return;
     streak = 0;
     vignetteT = 0.5;
@@ -307,6 +314,7 @@ function resetRun() {
   for (const e of enemies) scene.remove(e.mesh);
   enemies = [];
   bolts.clear();
+  pBolts.clear();
   player.reset();
   score = 0;
   streak = 0;
@@ -377,10 +385,32 @@ hud.pause.addEventListener('click', () => {
   input.requestLock();
 });
 input.onLockChange = (locked) => {
-  if (state !== 'fight') return;
+  if (state !== 'fight' || input.touch) return;
   paused = !locked;
   hud.pause.style.display = locked ? 'none' : 'flex';
 };
+
+// melee/ranged toggle for touch auto-combat (sits above the right stick)
+const modeBtn = $('modebtn');
+function refreshModeBtn() {
+  modeBtn.textContent = input.mode === 'melee' ? '⚔ MELEE' : '➶ RANGED';
+  modeBtn.classList.toggle('ranged', input.mode === 'ranged');
+}
+refreshModeBtn();
+for (const ev of ['click', 'touchstart']) {
+  modeBtn.addEventListener(ev, (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    input.mode = input.mode === 'melee' ? 'ranged' : 'melee';
+    refreshModeBtn();
+    audio.swap();
+  }, { passive: false });
+}
+
+// form chips double as swap buttons on touch
+hud.chips.forEach((chip, i) => {
+  chip.addEventListener('click', () => { input.swapQueued = i; });
+});
 
 // ── HUD refresh ───────────────────────────────────────────────────────────────
 function updateHud(dt) {
@@ -421,8 +451,11 @@ function frame(now) {
   composer.render();
 }
 
+// debug/testing hook
+window.__nr = { player, getEnemies: () => enemies, getScore: () => score, input };
+
 function simulate(dt) {
-  const ctx = { input, camYaw, dt, t, combat, effects, audio, bolts, enemies, arenaR: ARENA_R, playerPos: player.pos };
+  const ctx = { input, camYaw, dt, t, combat, effects, audio, bolts, pBolts, enemies, arenaR: ARENA_R, playerPos: player.pos };
 
   player.update(ctx);
   playerLight.position.set(player.pos.x, 1.6, player.pos.z);
@@ -452,9 +485,9 @@ function simulate(dt) {
     }
   }
 
-  // bolts vs player
+  // enemy bolts vs player (jumping clears them)
   bolts.update(dt, ARENA_R + 2);
-  if (!player.invincible) {
+  if (!player.invincible && player.pos.y < 0.9) {
     for (let i = bolts.active.length - 1; i >= 0; i--) {
       const b = bolts.active[i].mesh.position;
       const dx = b.x - player.pos.x, dz = b.z - player.pos.z;
@@ -462,6 +495,25 @@ function simulate(dt) {
         bolts.recycleAt(i);
         combat.hurtPlayer(10, null);
         if (player.dead) break;
+      }
+    }
+  }
+
+  // player bolts (ranged mode) vs enemies
+  pBolts.update(dt, ARENA_R + 2);
+  for (let i = pBolts.active.length - 1; i >= 0; i--) {
+    const b = pBolts.active[i];
+    const bp = b.mesh.position;
+    for (const e of enemies) {
+      if (e.dead) continue;
+      const dx = bp.x - e.pos.x, dz = bp.z - e.pos.z;
+      if (dx * dx + dz * dz < (e.radius + BOLT_R + 0.1) ** 2) {
+        effects.sparks(bp.clone(), player.conf.accent, 4, 3);
+        const died = e.hit(b.dmg, player.pos);
+        if (died) combat.onKill(e);
+        audio.hit();
+        pBolts.recycleAt(i);
+        break;
       }
     }
   }

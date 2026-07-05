@@ -33,7 +33,7 @@ export class BoltPool {
     }
   }
 
-  spawn(pos, dir, speed, color = 0xcc80ff) {
+  spawn(pos, dir, speed, color = 0xcc80ff, dmg = 0) {
     const b = this.free.pop();
     if (!b) return;
     b.mesh.position.copy(pos);
@@ -41,6 +41,7 @@ export class BoltPool {
     b.mesh.visible = true;
     b.vel.copy(dir).setY(0).normalize().multiplyScalar(speed);
     b.ttl = 4;
+    b.dmg = dmg;
     this.active.push(b);
   }
 

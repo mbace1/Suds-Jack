@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { buildSamurai, poseStance, poseWalk, poseIdle, poseSwing, setGlow } from './robots.js';
+import { buildSamurai, poseStance, poseWalk, poseIdle, poseSwing, poseAim, setGlow } from './robots.js';
 
 export const PLAYER_RADIUS = 0.55;
 
@@ -31,7 +31,12 @@ const DASH_SPD = 19;
 const DASH_CD  = 0.95;
 const HURT_IFRAMES = 0.6;
 
+const JUMP_V = 10;
+const DOUBLE_JUMP_V = 8.8;
+const GRAVITY = 28;
+
 const _v = new THREE.Vector3();
+const _v2 = new THREE.Vector3();
 
 export class Player {
   constructor(scene) {
@@ -67,6 +72,9 @@ export class Player {
     this.dashDir = new THREE.Vector3(0, 0, 1);
     this.swapCd = 0;
     this.iframes = 0;
+    this.vy = 0;
+    this.jumps = 0;
+    this.fireT = 0;
     this.dead = false;
   }
 
@@ -88,6 +96,9 @@ export class Player {
     this.dashCd = 0;
     this.swapCd = 0;
     this.iframes = 0;
+    this.vy = 0;
+    this.jumps = 0;
+    this.fireT = 0;
     this.dead = false;
     this._setForm(0);
   }
@@ -192,6 +203,10 @@ export class Player {
         ctx.effects.slashArc(this.pos, this.yaw, c.range, c.arc, c.accent);
         c.twoHanded ? ctx.audio.heavy() : ctx.audio.slash();
       }
+      // touch auto-fight: keep the combo rolling while something is in reach
+      if (input.autoCombat && input.mode === 'melee' && this._nearest(ctx, c.range + 1.6)) {
+        this.chainBuffered = true;
+      }
       if (k >= 1) {
         if (this.chainBuffered && this.swingIdx < c.swings.length - 1) {
           this.swingIdx++;
@@ -217,7 +232,36 @@ export class Player {
       if (input.consumeAttack()) {
         this.swingIdx = 0;
         this._startSwing(ctx);
+      } else if (input.autoCombat) {
+        // touch auto-fight: swing when something wanders into reach,
+        // or pepper the nearest target in ranged mode
+        if (input.mode === 'melee') {
+          if (this._nearest(ctx, c.range + 1.2)) { this.swingIdx = 0; this._startSwing(ctx); }
+        } else {
+          this._autoShoot(ctx);
+        }
       }
+    }
+
+    // ── vertical physics: right-stick tap = jump, again mid-air = double ──
+    if (input.consumeJump() && this.jumps < 2 && !this.dead) {
+      this.vy = this.jumps === 0 ? JUMP_V : DOUBLE_JUMP_V;
+      this.jumps++;
+      ctx.audio.jump();
+      ctx.effects.sparks({ x: this.pos.x, y: 0.25, z: this.pos.z }, c.accent, 5, 3);
+    }
+    if (this.pos.y > 0 || this.vy > 0) {
+      this.vy -= GRAVITY * dt;
+      this.pos.y += this.vy * dt;
+      if (this.pos.y <= 0) {
+        this.pos.y = 0;
+        this.vy = 0;
+        this.jumps = 0;
+        ctx.effects.sparks({ x: this.pos.x, y: 0.2, z: this.pos.z }, c.accent, 3, 2);
+      }
+      // tucked legs while airborne
+      this.rig.legL.rotation.x = 0.55;
+      this.rig.legR.rotation.x = 0.2;
     }
 
     // arena bound
@@ -225,6 +269,32 @@ export class Player {
     if (r > maxR) { this.pos.x *= maxR / r; this.pos.z *= maxR / r; }
 
     this.group.rotation.y = this.yaw;
+  }
+
+  _nearest(ctx, maxD) {
+    let best = null, bestD = maxD;
+    for (const e of ctx.enemies) {
+      if (e.dead) continue;
+      const d = Math.hypot(e.pos.x - this.pos.x, e.pos.z - this.pos.z);
+      if (d < bestD) { bestD = d; best = e; }
+    }
+    return best;
+  }
+
+  _autoShoot(ctx) {
+    this.fireT -= ctx.dt;
+    const tgt = this._nearest(ctx, 15);
+    if (!tgt) return;
+    this.yaw = Math.atan2(tgt.pos.x - this.pos.x, tgt.pos.z - this.pos.z);
+    poseAim(this.rig);
+    if (this.fireT > 0) return;
+    this.fireT = 0.26 * this.stats.atkSpdMul;
+    const dx = Math.sin(this.yaw), dz = Math.cos(this.yaw);
+    ctx.pBolts.spawn(
+      _v2.set(this.pos.x + dx * 0.5, this.pos.y + 1.25, this.pos.z + dz * 0.5),
+      _v.set(dx, 0, dz), 16, this.conf.accent,
+      this.conf.dmg * 0.5 * this.stats.dmgMul);
+    ctx.audio.shot();
   }
 
   _startSwing(ctx) {

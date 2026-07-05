@@ -41,6 +41,16 @@ i-frames, and cancels the current swing — weaving swaps into combos is the cor
 mechanic. LMB chains combos (input-buffered), Shift/Space dashes with i-frames, and
 slashes deflect enemy bolts caught in the arc.
 
+**Touch controls:** floating dual sticks — left stick moves (tap **or lift = dash**),
+right stick orbits the camera as a rate control (tap/lift = **jump**, again mid-air =
+**double jump**; jumping above y 0.9 dodges melee, slams and bolts). While touch drives,
+combat is **automatic** (`input.autoCombat`): melee mode auto-swings/chains when an enemy
+is in reach; ranged mode auto-fires bolts (from a second `BoltPool`, `pBolts`) at the
+nearest enemy — toggled by the ⚔/➶ button above the right stick. Form chips double as
+tap-to-swap buttons. Touch mode flips on at the first `touchstart` anywhere (window-level
+listener) so pointer lock is never requested on phones; desktop keyboard/mouse is
+unchanged.
+
 **Enemies (`js/enemy.js`):** SLASHER (crimson katana, telegraphed slash — blade glow
 ramps during windup), GUNNER (violet rifle, holds a ~9 u ring while strafing, 3-bolt
 bursts from the pooled `BoltPool`), BRUTE (ember cleaver hulk, ground-slam AoE with an
