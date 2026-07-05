@@ -55,12 +55,15 @@ export class Player {
     this.form = 0;
     this.rigs[0].group.visible = true;
 
-    // run-modifiable stats (upgrades multiply these)
+    // run-modifiable stats (upgrades multiply these; mods flag build changers)
     this.stats = {
       dmgMul: 1, spdMul: 1, atkSpdMul: 1, dashCdMul: 1, swapCdMul: 1,
-      maxHp: 100, dmgTakenMul: 1, lifesteal: 0, swapDmgMul: 1,
+      maxHp: 100, dmgTakenMul: 1, lifesteal: 0, swapDmgMul: 1, mods: {},
     };
     this.hp = this.stats.maxHp;
+    this.echoCount = 0;
+    this.wakeT = 0;
+    this.reviveUsed = false;
 
     this.yaw = Math.PI;      // face away from the spawn camera
     this.walkPhase = 0;
@@ -92,8 +95,11 @@ export class Player {
   reset() {
     this.stats = {
       dmgMul: 1, spdMul: 1, atkSpdMul: 1, dashCdMul: 1, swapCdMul: 1,
-      maxHp: 100, dmgTakenMul: 1, lifesteal: 0, swapDmgMul: 1,
+      maxHp: 100, dmgTakenMul: 1, lifesteal: 0, swapDmgMul: 1, mods: {},
     };
+    this.echoCount = 0;
+    this.wakeT = 0;
+    this.reviveUsed = false;
     this.hp = this.stats.maxHp;
     this.pos.set(0, 0, 0);
     this.yaw = Math.PI;
@@ -130,6 +136,12 @@ export class Player {
 
   heal(n) { this.hp = Math.min(this.stats.maxHp, this.hp + n); }
 
+  // effective damage multiplier — BERSERK PROTOCOL kicks in below 40% HP
+  dmgMul() {
+    const berserk = this.stats.mods.berserk && this.hp < this.stats.maxHp * 0.4 ? 1.4 : 1;
+    return this.stats.dmgMul * berserk;
+  }
+
   // ctx: { input, camYaw, dt, t, combat, effects, audio, enemies, arenaR }
   update(ctx) {
     const { input, camYaw, dt, t } = ctx;
@@ -159,10 +171,19 @@ export class Player {
         this._setForm(target);
         this.swapCd = SWAP_CD * this.stats.swapCdMul;
         this.iframes = Math.max(this.iframes, 0.35);
-        const burst = 35 * this.stats.swapDmgMul * this.stats.dmgMul;
+        const burst = 35 * this.stats.swapDmgMul * this.dmgMul();
         ctx.combat.meleeStrike(this.pos, this.yaw, 3.4, 360, burst, this.conf.knock + 3, this.conf.accent);
         ctx.effects.ring(this.pos, 3.4, 0.3, this.conf.accent, true);
         ctx.effects.sparks(this.pos, this.conf.accent, 10, 5);
+        if (this.stats.mods.overcharge) {   // OVERCHARGE SWAP: radial bolt nova
+          for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * Math.PI * 2;
+            ctx.pBolts.spawn(
+              _v2.set(this.pos.x, this.pos.y + 1.25, this.pos.z),
+              _v.set(Math.sin(a), 0, Math.cos(a)), 14, this.conf.accent,
+              this.conf.dmg * 0.5 * this.dmgMul());
+          }
+        }
         ctx.audio.swap();
       }
     }
@@ -205,6 +226,13 @@ export class Player {
       if ((t * 60 | 0) % 3 === 0) {
         ctx.effects.sparks({ x: this.pos.x, y: 0.6, z: this.pos.z }, c.accent, 2, 2);
       }
+      if (this.stats.mods.wake) {   // STATIC WAKE: the dash path burns
+        this.wakeT -= dt;
+        if (this.wakeT <= 0) {
+          this.wakeT = 0.06;
+          ctx.combat.meleeStrike(this.pos, this.yaw, 1.5, 360, 8 * this.dmgMul(), 1, c.accent);
+        }
+      }
       if (this.dashT >= DASH_DUR) this.dashT = -1;
       this.speedK = Math.min(1, this.speedK + 4 * dt);   // exit dashes at speed
       poseStance(this.rig);
@@ -227,9 +255,14 @@ export class Player {
       if (!this.struck && k >= 0.45) {
         this.struck = true;
         const last = this.swingIdx === c.swings.length - 1;
-        const dmg = c.dmg * this.stats.dmgMul * (last ? c.lastHitMult : 1);
+        const dmg = c.dmg * this.dmgMul() * (last ? c.lastHitMult : 1);
         ctx.combat.meleeStrike(this.pos, this.yaw, c.range, c.arc, dmg, c.knock * (last ? 1.6 : 1), c.accent);
         ctx.effects.slashArc(this.pos, this.yaw, c.range, c.arc, c.accent);
+        if (this.stats.mods.echo && ++this.echoCount % 3 === 0) {
+          // ECHO BLADE: every 3rd strike rings a 360° shockwave
+          ctx.combat.meleeStrike(this.pos, this.yaw, 3.2, 360, c.dmg * 0.6 * this.dmgMul(), 3, c.accent);
+          ctx.effects.ring(this.pos, 3.2, 0.3, c.accent, true);
+        }
         c.twoHanded ? ctx.audio.heavy() : ctx.audio.slash();
       }
       // touch auto-fight: keep the combo rolling while something is in reach
@@ -333,7 +366,7 @@ export class Player {
     ctx.pBolts.spawn(
       _v2.set(this.pos.x + dx * 0.5, this.pos.y + 1.25, this.pos.z + dz * 0.5),
       _v.set(dx, 0, dz), 16, this.conf.accent,
-      this.conf.dmg * 0.5 * this.stats.dmgMul);
+      this.conf.dmg * 0.5 * this.dmgMul());
     ctx.audio.shot();
   }
 

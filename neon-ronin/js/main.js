@@ -230,7 +230,7 @@ const combat = {
       effects.sparks(_tmp, color, died ? 4 : 6);
       if (died) this.onKill(e);
     }
-    // slashes swat bolts out of the air
+    // slashes swat bolts out of the air (BOLT MAGNET returns them to sender)
     for (let i = bolts.active.length - 1; i >= 0; i--) {
       const b = bolts.active[i].mesh.position;
       const dx = b.x - pos.x, dz = b.z - pos.z;
@@ -239,6 +239,18 @@ const combat = {
       while (da > Math.PI) da -= Math.PI * 2;
       while (da < -Math.PI) da += Math.PI * 2;
       if (Math.abs(da) > half) continue;
+      if (player.stats.mods.magnet) {
+        let tgt = null, td = 99;
+        for (const e of enemies) {
+          if (e.dead) continue;
+          const d = Math.hypot(e.pos.x - b.x, e.pos.z - b.z);
+          if (d < td) { td = d; tgt = e; }
+        }
+        if (tgt) {
+          _tmp.set(tgt.pos.x - b.x, 0, tgt.pos.z - b.z);
+          pBolts.spawn(b, _tmp, 16, player.conf.accent, player.conf.dmg * 0.6 * player.stats.dmgMul);
+        }
+      }
       effects.sparks(b.clone(), 0xffffff, 3, 3);
       bolts.recycleAt(i);
       score += 10;
@@ -255,6 +267,15 @@ const combat = {
     if (player.stats.lifesteal) player.heal(player.stats.lifesteal);
     audio.kill();
     this.shake(e.type === EnemyType.BRUTE ? 0.3 : 0.12);
+    // CHAIN ARC: the kill detonates and can cascade
+    if (player.stats.mods.chain) {
+      effects.ring(e.pos, 2.6, 0.25, e.conf.accent, true);
+      for (const o of enemies) {
+        if (o.dead || o === e) continue;
+        const d = Math.hypot(o.pos.x - e.pos.x, o.pos.z - e.pos.z);
+        if (d < 2.6 && o.hit(24 * player.stats.dmgMul, e.pos)) this.onKill(o);
+      }
+    }
   },
 
   hurtPlayer(dmg, fromPos, knock = 4) {
@@ -268,6 +289,16 @@ const combat = {
       _tmp.subVectors(player.pos, fromPos).setY(0).normalize();
       player.pos.addScaledVector(_tmp, knock * 0.25);
     }
+    // SECOND CORE: cheat death once per room
+    if (player.dead && player.stats.mods.core && !player.reviveUsed) {
+      player.dead = false;
+      player.reviveUsed = true;
+      player.hp = Math.round(player.stats.maxHp * 0.3);
+      player.iframes = 1.5;
+      effects.ring(player.pos, 4.2, 0.45, 0xffffff, true);
+      effects.sparks(player.pos, 0xffffff, 14, 6);
+      audio.upgrade();
+    }
     if (player.dead) gameOver();
   },
 };
@@ -276,7 +307,8 @@ const combat = {
 function rollSpawns(n) {
   const list = [];
   const bruteRoom = n % 4 === 0;
-  const budget = Math.min(4 + n * 2, 20);
+  // double-length rooms: twice the old budget before an upgrade choice comes up
+  const budget = Math.min(8 + n * 4, 40);
   let spent = 0, i = 0;
   if (bruteRoom) {
     const brutes = Math.min(1 + Math.floor(n / 6), 3);
@@ -287,7 +319,7 @@ function rollSpawns(n) {
     let type = EnemyType.SLASHER, cost = 1;
     if (n >= 3 && roll > 0.85 && !bruteRoom) { type = EnemyType.BRUTE; cost = 4; }
     else if (n >= 2 && roll > 0.6) { type = EnemyType.GUNNER; cost = 2; }
-    list.push({ type, delay: 0.4 + Math.floor(i / 3) * 2.2 + Math.random() * 0.8 });
+    list.push({ type, delay: 0.4 + Math.floor(i / 4) * 2 + Math.random() * 0.8 });
     spent += cost;
     i++;
   }
@@ -308,6 +340,7 @@ function startRoom(n) {
   room = n;
   setRoomHue(n);
   pending = rollSpawns(n);
+  player.reviveUsed = false;    // SECOND CORE recharges each room
   state = 'fight';
   announce(`ROOM ${n}`, n % 4 === 0 ? 'heavy signatures detected' : '');
 }
@@ -336,7 +369,7 @@ function gameOver() {
   document.exitPointerLock?.();
 }
 
-// ── Upgrades ──────────────────────────────────────────────────────────────────
+// ── Upgrades (repeatable stat boosts) + Modifiers (one-shot build changers) ───
 const UPGRADES = [
   { n: 'PLASMA EDGE', d: '+20% damage', a: (s) => { s.dmgMul *= 1.2; } },
   { n: 'OVERCLOCKED SERVOS', d: '+15% move speed', a: (s) => { s.spdMul *= 1.15; } },
@@ -348,13 +381,37 @@ const UPGRADES = [
   { n: 'REACTIVE PLATING', d: '-15% damage taken', a: (s) => { s.dmgTakenMul *= 0.85; } },
 ];
 
+const MODS = [
+  { n: 'STATIC WAKE', mod: 'wake', d: 'dashing leaves a damaging trail' },
+  { n: 'ECHO BLADE', mod: 'echo', d: 'every 3rd strike emits a shockwave' },
+  { n: 'CHAIN ARC', mod: 'chain', d: 'kills detonate, arcing to nearby enemies' },
+  { n: 'BOLT MAGNET', mod: 'magnet', d: 'deflected bolts fly back at enemies' },
+  { n: 'BERSERK PROTOCOL', mod: 'berserk', d: '+40% damage below 40% integrity' },
+  { n: 'SECOND CORE', mod: 'core', d: 'survive one lethal hit per room' },
+  { n: 'OVERCHARGE SWAP', mod: 'overcharge', d: 'swapping also fires a bolt nova' },
+  { n: 'GLASS EDGE', mod: 'glass', d: '+35% damage, +15% damage taken' },
+];
+for (const m of MODS) {
+  const flag = m.mod;
+  m.a = (s) => {
+    s.mods[flag] = true;
+    if (flag === 'glass') { s.dmgMul *= 1.35; s.dmgTakenMul *= 1.15; }
+  };
+}
+
 let offered = [];
 function showUpgrades() {
   state = 'upgrade';
   document.exitPointerLock?.();
-  offered = [...UPGRADES].sort(() => Math.random() - 0.5).slice(0, 3);
+  // modifiers only offered while not yet owned; stat upgrades repeat freely
+  const pool = [...UPGRADES, ...MODS.filter((m) => !player.stats.mods[m.mod])];
+  offered = pool.sort(() => Math.random() - 0.5).slice(0, 3);
   for (let i = 0; i < 3; i++) {
-    hud.cards[i].innerHTML = `<div class="card-name">${offered[i].n}</div><div class="card-desc">${offered[i].d}</div>`;
+    const o = offered[i];
+    hud.cards[i].classList.toggle('mod', !!o.mod);
+    hud.cards[i].innerHTML =
+      `<div class="card-tag">${o.mod ? 'MODIFIER' : 'STAT'}</div>` +
+      `<div class="card-name">${o.n}</div><div class="card-desc">${o.d}</div>`;
   }
   hud.upgrade.style.display = 'flex';
 }

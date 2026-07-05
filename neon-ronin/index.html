@@ -71,16 +71,39 @@
     #gameover h1 { text-shadow: 0 0 24px #f2003c, 0 0 70px #a04dff; }
 
     #upgrade { display: none; position: fixed; inset: 0; z-index: 5; background: #02040acc;
-      flex-direction: column; align-items: center; justify-content: center; color: #cfe6ff; }
+      flex-direction: column; align-items: center; justify-content: center; color: #cfe6ff;
+      overflow-y: auto; padding: 16px; }
     #upgrade .title { font-size: 22px; letter-spacing: 8px; margin-bottom: 26px; text-shadow: 0 0 18px #0af; }
-    #cards { display: flex; gap: 18px; }
+    #cards { display: flex; gap: 18px; align-items: stretch; justify-content: center; }
     .card {
       width: 200px; padding: 26px 18px; border: 1px solid #2ee6ff66; background: #060b14;
       cursor: pointer; transition: transform 0.12s, box-shadow 0.12s;
     }
     .card:hover { transform: translateY(-6px); box-shadow: 0 0 26px #00f0ff55; border-color: #00f0ff; }
+    .card-tag { font-size: 9px; letter-spacing: 3px; opacity: 0.55; margin-bottom: 8px; }
     .card-name { font-size: 15px; letter-spacing: 2px; color: #7df9ff; margin-bottom: 12px; text-shadow: 0 0 10px #0af; }
     .card-desc { font-size: 12px; line-height: 1.7; opacity: 0.85; }
+    .card.mod { border-color: #ffaa4d88; }
+    .card.mod:hover { border-color: #ffaa4d; box-shadow: 0 0 26px #ffaa4d55; }
+    .card.mod .card-tag { color: #ffd9a8; opacity: 0.9; }
+    .card.mod .card-name { color: #ffd24d; text-shadow: 0 0 10px #fa0; }
+
+    /* narrow / portrait screens: stack the cards so all three stay on-screen */
+    @media (orientation: portrait), (max-width: 700px) {
+      #cards { flex-direction: column; gap: 10px; width: 100%; align-items: center; }
+      .card { width: min(82vw, 340px); padding: 14px 18px; }
+      .card:hover { transform: none; }
+      .card-name { margin-bottom: 6px; }
+      #upgrade .title { font-size: 16px; letter-spacing: 5px; margin-bottom: 14px; }
+      .overlay h1 { font-size: 30px; letter-spacing: 8px; }
+      .overlay p { font-size: 11px; }
+      #announce .big { font-size: 28px; letter-spacing: 6px; }
+    }
+    /* short landscape (phones sideways): compress the card row instead */
+    @media (orientation: landscape) and (max-height: 480px) {
+      .card { width: 172px; padding: 14px 14px; }
+      #upgrade .title { font-size: 16px; margin-bottom: 12px; }
+    }
   </style>
 </head>
 <body>
