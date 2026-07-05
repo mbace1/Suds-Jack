@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=69';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=69';
-import { Player, PLAYER_RADIUS } from './player.js?v=69';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=69';
-import { audio } from './audio.js?v=69';
-import { initDesigner } from './designer.js?v=69';
-import { t, getLang, setLang, langs } from './lang.js?v=69';
-import { TUNING } from './tuning.js?v=69';
+import { InputManager } from './input.js?v=70';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=70';
+import { Player, PLAYER_RADIUS } from './player.js?v=70';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=70';
+import { audio } from './audio.js?v=70';
+import { initDesigner } from './designer.js?v=70';
+import { t, getLang, setLang, langs } from './lang.js?v=70';
+import { TUNING } from './tuning.js?v=70';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -105,15 +105,22 @@ function getEnemySchedule(wave) {
   // SMASH TV (v109): the show wants bodies — 40% more budget on every wave.
   if (smashMode) budget = Math.floor(budget * 1.4);
 
-  // Swarm waves favour bodies (groups/twins of cheap fast enemies); others use
-  // the full mix. SMASH TV leans every wave toward door-rush groups.
+  // Composed waves (v116): melee mobs FLOOD the arena (groups/twins — the
+  // fodder you mow through), while ranged enemies are placed DELIBERATELY —
+  // few of them, capped, spread apart in arrival time and position so each
+  // shooter is a tactical problem to prioritise, not part of the noise.
+  const SHOOTERS  = new Set([SPITTOR, FANNER, WEEVA, ORANGE_CUBE, PURP_CUBE, BAMBU, PYRA, BOTFLY]);
+  const meleePool = available.filter(([ty]) => !SHOOTERS.has(ty));
+  const shootPool = available.filter(([ty]) =>  SHOOTERS.has(ty));
+
+  // Mob variants: swarm waves favour bodies; SMASH TV leans toward door-rush groups.
   const VARIANTS = isSwarm
     ? ['group', 'group', 'twin', 'normal']
     : smashMode
       ? ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group', 'group', 'group']
       : ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group'];
-  const swarmPool = available.filter(([, , c]) => c <= 2);
-  const drawPool  = (isSwarm && swarmPool.length) ? swarmPool : available;
+  const swarmPool = meleePool.filter(([, , c]) => c <= 2);
+  const drawPool  = (isSwarm && swarmPool.length) ? swarmPool : (meleePool.length ? meleePool : available);
 
   const list = [];
   let spent = 0, t = 0;
@@ -131,6 +138,27 @@ function getEnemySchedule(wave) {
     t = 4;
   }
 
+  // Deliberate shooters: 1 at wave 1 growing to 5 by wave 12 (swarms allow
+  // only 1, boss waves 2 — OMEGA is already the ranged threat). They arrive
+  // spaced ~3s apart and spawnWave assigns them maximally separated positions
+  // (spread angles / different doors) so they form crossfires to be prioritised.
+  {
+    let shooterCap = Math.min(1 + Math.floor(wave / 3), 5);
+    if (isSwarm) shooterCap = 1;
+    if (isBoss)  shooterCap = Math.min(shooterCap, 2);
+    const shooterBudget = Math.floor(budget * 0.35);
+    let sSpent = 0, k = 0, st = 0.8;
+    while (shootPool.length && k < shooterCap && sSpent < shooterBudget) {
+      const [type, , cost] = shootPool[Math.floor(rng() * shootPool.length)];
+      if (sSpent + cost > shooterBudget + 2) break;
+      list.push({ type, t: st, shooter: true, slot: k });
+      sSpent += cost;
+      st += 2.5 + rng() * 1.5;
+      k++;
+    }
+    spent += sSpent;
+  }
+
   while (spent < budget && list.length < cap) {
     const [type, , cost] = drawPool[Math.floor(rng() * drawPool.length)];
     const variant = VARIANTS[Math.floor(rng() * VARIANTS.length)];
@@ -145,7 +173,7 @@ function getEnemySchedule(wave) {
       entryCost = Math.ceil(cost * 1.6);
       entry = { type, t, count: 2 };
     } else if (variant === 'group') {
-      const cheaper = available.filter(([, , c]) => c <= 2);
+      const cheaper = swarmPool.length ? swarmPool : meleePool;
       const pick = cheaper.length ? cheaper[Math.floor(rng() * cheaper.length)] : [type, 0, cost];
       const cnt = 3 + Math.floor(rng() * 2);
       entryCost = pick[2] * cnt;
@@ -161,21 +189,25 @@ function getEnemySchedule(wave) {
     t += isSwarm ? (0.08 + rng() * 0.28) : (0.18 + rng() * 0.5);
     spent += entryCost;
   }
-  // SMASH TV (v114): re-pace the room like the show — entries arrive as door
-  // BURSTS of ~3 every couple of seconds for the whole wave (each burst from
-  // ONE door, walking around the room), not one big up-front dump. The wave
-  // won't end while bursts remain queued, so the room keeps pouring.
+  // SMASH TV (v114): re-pace the MOB flood like the show — bursts of ~3 every
+  // couple of seconds for the whole wave, each burst from ONE door, walking
+  // around the room. Shooters keep their own spaced schedule but get spread
+  // across DIFFERENT doors, so their crossfire comes from separate walls.
   if (smashMode && list.length) {
+    const mobs = list.filter(e => !e.shooter && !e.boss);
     const pulseT = [0];
-    for (let pi = 1; pi <= Math.ceil(list.length / 3); pi++) {
+    for (let pi = 1; pi <= Math.ceil(mobs.length / 3); pi++) {
       pulseT.push(pulseT[pi - 1] + 2.0 + rng() * 1.0);
     }
-    list.forEach((entry, i) => {
+    mobs.forEach((entry, i) => {
       const pi = Math.floor(i / 3);
       entry.t    = pulseT[pi] + (i % 3) * 0.15;
       entry.door = pi % 4;
     });
+    const doorOff = Math.floor(rng() * 4);
+    for (const e of list) if (e.shooter) e.door = (doorOff + e.slot) % 4;
   }
+  list.sort((a, b) => a.t - b.t);  // spawn drain expects delays in order
   return list.length ? list : [{ type: GLOBBO, t: 0 }];
 }
 
@@ -1816,7 +1848,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v115', 16, uiCanvas.height - 12);
+  ctx.fillText('v116', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2285,11 +2317,17 @@ function spawnWave() {
   // (the spawn projection maps angle 0/π to the side walls, ±π/2 to top/bottom),
   // so waves pour in like arena-show contestants instead of surrounding evenly.
   const DOORS = [0, Math.PI / 2, Math.PI, Math.PI * 1.5];
+  // Shooters (v116) get maximally separated entry angles so their fire lanes
+  // cross the arena from different sides — positioning problems, not spam.
+  const nShoot = list.reduce((n, e) => n + (e.shooter ? 1 : 0), 0);
+  const shooterBase = rng() * Math.PI * 2;
   list.forEach((entry, i) => {
     const cnt       = entry.count || 1;
     const baseAngle = smashMode
       ? DOORS[(entry.door ?? i) % 4] + (rng() - 0.5) * 0.24
-      : (i / total) * Math.PI * 2;
+      : entry.shooter
+        ? shooterBase + entry.slot * (Math.PI * 2 / Math.max(1, nShoot))
+        : (i / total) * Math.PI * 2;
     const isGroup   = cnt >= 3;  // 3+ = a coordinated group; 2 = twins (stay paired)
     for (let k = 0; k < cnt; k++) {
       let angle = baseAngle, clusterOffset = null;
@@ -2328,6 +2366,31 @@ function spawnWave() {
   clusterSpawnAt = [3 + rng() * 5]; // 3-8 s into the wave — always overlaps live enemies
   if (smashMode) clusterSpawnAt.push(12 + rng() * 5);
   if (smashMode && kind === 'prize') clusterSpawnAt.push(7 + rng() * 3); // PRIZE room: 3rd convoy
+
+  // SMASH TV valuables (v116): cash piles and the odd big prize scattered on
+  // the room floor — walk over them. Rarely, a score-multiplier orb glitters
+  // among them. Cleared with the room (spawnWave wipes powerups).
+  if (smashMode) {
+    const n = 3 + Math.floor(rng() * 4);  // 3-6 valuables per room
+    for (let i = 0; i < n; i++) {
+      const vx = (rng() * 2 - 1) * (HALF_X - 3);
+      const vz = (rng() * 2 - 1) * (HALF_Z - 3);
+      const roll = rng();
+      const pu = new Powerup(scene, vx, vz, roll > 0.96 ? 'scoremult' : 'score');
+      pu._life = 999;  // floor loot lasts the whole room
+      if (pu._type === 'score') {
+        if (roll > 0.82) {
+          // Big prize — a TV, a toaster, a golden duck. Reads bigger, worth more.
+          pu._value = 1000 + wave * 50;
+          pu.mesh.scale.setScalar(1.6);
+        } else {
+          pu._value = 150 + wave * 10;   // everyday cash pile
+          pu.mesh.scale.setScalar(0.75);
+        }
+      }
+      powerups.push(pu);
+    }
+  }
 
   // SMASH TV: game-show room intro card on the HUD (v114/v115 — names the room kind)
   if (smashMode) {
@@ -3055,8 +3118,9 @@ function loop() {
         player.grantFireRateBoost(8.0);
       } else if (pu._type === 'score') {
         // Instant score nugget (v89) — worth more in later waves, doubled by
-        // an active Score Multiplier.
-        score += (250 + wave * 25) * (scoreMultT > 0 ? 2 : 1);
+        // an active Score Multiplier. Floor valuables (v116) carry their own
+        // value: small cash piles, big prizes.
+        score += (pu._value ?? (250 + wave * 25)) * (scoreMultT > 0 ? 2 : 1);
         audio.announce('money');
       } else if (pu._type === 'scoremult') {
         scoreMultT = 10.0;
