@@ -138,8 +138,9 @@ const bolts = new BoltPool(scene);        // enemy fire
 const pBolts = new BoltPool(scene, 60);   // player ranged-mode fire
 let enemies = [];
 
-// neon glow that follows the active form
-const playerLight = new THREE.PointLight(FORMS[0].accent, 26, 12, 1.6);
+// neon glow that follows the active form — kept soft and above the rig so
+// the kasa/skirt surfaces don't blow out into a bloom blob at point-blank
+const playerLight = new THREE.PointLight(FORMS[0].accent, 9, 11, 1.6);
 scene.add(playerLight);
 
 // ── Camera rig ────────────────────────────────────────────────────────────────
@@ -170,7 +171,8 @@ function updateCamera(dt) {
 // ── HUD ───────────────────────────────────────────────────────────────────────
 const $ = (id) => document.getElementById(id);
 const hud = {
-  hpfill: $('hpfill'), room: $('roomlbl'), score: $('scorelbl'), hi: $('hilbl'),
+  hpfill: $('hpfill'), dashpips: [...document.querySelectorAll('#dashpips span')],
+  room: $('roomlbl'), score: $('scorelbl'), hi: $('hilbl'),
   mult: $('multlbl'), chips: [$('chip0'), $('chip1'), $('chip2')],
   announce: $('announce'), vignette: $('vignette'),
   start: $('start'), pause: $('pause'), over: $('gameover'), overStats: $('overstats'),
@@ -415,6 +417,7 @@ hud.chips.forEach((chip, i) => {
 // ── HUD refresh ───────────────────────────────────────────────────────────────
 function updateHud(dt) {
   hud.hpfill.style.width = `${(player.hp / player.stats.maxHp) * 100}%`;
+  hud.dashpips.forEach((pip, i) => pip.classList.toggle('on', player.dashCharges > i));
   hud.room.textContent = room;
   hud.score.textContent = score;
   hud.hi.textContent = hi;
@@ -458,7 +461,7 @@ function simulate(dt) {
   const ctx = { input, camYaw, dt, t, combat, effects, audio, bolts, pBolts, enemies, arenaR: ARENA_R, playerPos: player.pos };
 
   player.update(ctx);
-  playerLight.position.set(player.pos.x, 1.6, player.pos.z);
+  playerLight.position.set(player.pos.x, player.pos.y + 2.6, player.pos.z);
   playerLight.color.setHex(player.conf.accent);
 
   // pending spawns → beam telegraph → live enemy

@@ -15,6 +15,9 @@
     #hp .label { font-size: 11px; letter-spacing: 2px; opacity: 0.8; margin-bottom: 4px; }
     #hpbar { height: 12px; border: 1px solid #2ee6ff88; background: #04121a; }
     #hpfill { height: 100%; width: 100%; background: linear-gradient(90deg, #00f0ff, #7cff9a); box-shadow: 0 0 12px #00f0ffaa; transition: width 0.15s; }
+    #dashpips { display: flex; gap: 6px; margin-top: 6px; }
+    #dashpips span { width: 26px; height: 6px; background: #0a1a22; border: 1px solid #2ee6ff44; transform: skewX(-28deg); transition: background 0.15s, box-shadow 0.15s; }
+    #dashpips span.on { background: #00f0ff; box-shadow: 0 0 10px #00f0ffaa; }
     #stats { top: 18px; right: 18px; text-align: right; font-size: 14px; line-height: 1.6; }
     #stats .dim { opacity: 0.55; font-size: 11px; letter-spacing: 2px; }
     #multlbl { color: #ffd24d; text-shadow: 0 0 10px #fa0; }
@@ -86,6 +89,7 @@
   <div id="hp" class="hud">
     <div class="label">INTEGRITY</div>
     <div id="hpbar"><div id="hpfill"></div></div>
+    <div id="dashpips"><span></span><span></span></div>
   </div>
   <div id="stats" class="hud">
     <div><span class="dim">ROOM</span> <span id="roomlbl">1</span></div>
@@ -108,12 +112,12 @@
     <p>
       three frames. one soul. endless caves.<br><br>
       WASD move &nbsp;·&nbsp; MOUSE camera &nbsp;·&nbsp; LMB attack (chain combos)<br>
-      SHIFT / SPACE dash (invincible) &nbsp;·&nbsp; 1 2 3 or Q swap frame<br>
+      SHIFT / SPACE dash ×2 (invincible) &nbsp;·&nbsp; 1 2 3 or Q swap frame<br>
       swapping detonates a burst — weave it into your combos<br>
       clear each cave, pick an upgrade, descend deeper<br><br>
-      TOUCH: left stick move (tap/lift = dash) · right stick camera<br>
-      (tap/lift = jump, again mid-air = double jump) · fighting is automatic —<br>
-      toggle ⚔/➶ above the right stick, tap the frame chips to swap
+      TOUCH: left stick move — flick it any direction to dash (×2 charges)<br>
+      right stick camera (tap/lift = jump, again mid-air = double jump)<br>
+      fighting is automatic — toggle ⚔/➶ above the right stick, tap chips to swap
     </p>
     <div class="go">CLICK TO JACK IN</div>
   </div>
