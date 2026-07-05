@@ -3,17 +3,17 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=10';
-import { Player } from './player.js?v=10';
-import { Enemy, COST } from './enemy.js?v=10';
-import { ProjectilePool } from './projectile.js?v=10';
-import { C, glow, applyPalette } from './shared.js?v=10';
-import { audio } from './audio.js?v=10';
-import { t, getLang, setLang, langs } from './lang.js?v=10';
-import { visualTest, depthTest, setVisualTest, setDepthTest } from './modes.js?v=10';
-import { shards, UPGRADES, levelOf, canBuy, buy, addShards, resolvedStats } from './progress.js?v=10';
+import { InputManager } from './input.js?v=11';
+import { Player } from './player.js?v=11';
+import { Enemy, COST } from './enemy.js?v=11';
+import { ProjectilePool } from './projectile.js?v=11';
+import { C, glow, applyPalette } from './shared.js?v=11';
+import { audio } from './audio.js?v=11';
+import { t, getLang, setLang, langs } from './lang.js?v=11';
+import { visualTest, depthTest, setVisualTest, setDepthTest } from './modes.js?v=11';
+import { shards, UPGRADES, levelOf, canBuy, buy, addShards, resolvedStats } from './progress.js?v=11';
 import { seenWelcome, seenDash, seenDoubleJump, seenHazard, seenObjective,
-  markWelcome, markDash, markDoubleJump, markHazard, markObjective } from './onboarding.js?v=10';
+  markWelcome, markDash, markDoubleJump, markHazard, markObjective } from './onboarding.js?v=11';
 
 const css = h => '#' + (h >>> 0).toString(16).padStart(6, '0').slice(-6);
 let runTime = 0;   // declared early: heightAt()/updatePlatforms() close over this for moving platforms, and buildTerrain() runs at module load
