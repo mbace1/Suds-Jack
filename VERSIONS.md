@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v119 — 2026-07-06
+**FIX: black screen right after the v118 deploy — cache-bust the vendored three.js imports**
+- v118 introduced the brand-new `vendor/` paths; GitHub Pages' edge caches responses (including 404s) for ~10 minutes, so loading during propagation got a failed `three` import → black screen, and the failure could stick in browser cache. Verified the deployed gh-pages bytes themselves boot clean headless — the code was fine, the edge window wasn't
+- The importmap's vendor entries now carry the standard `?v=` token (the RoundedBoxGeometry addon via an exact-specifier entry, since a prefix mapping can't carry a query). Every release busts any stale/404-cached copy; bump-version.sh's global token replace covers them automatically
+- Cache-bust `?v=72` → `?v=73`; HUD label → v119
+
+---
+
 ## v118 — 2026-07-05
 **Quality-of-life batch: vendored three.js, Sheets-ready feedback, loot popups, real valuables meshes, BOSS IN N, favicon + share metadata**
 - **three.js vendored locally** (`toko-drop/vendor/`, three@0.167.0 min build + RoundedBoxGeometry): the CDN importmap was the game's single point of failure and is blocked on some networks. The game now loads with zero external requests

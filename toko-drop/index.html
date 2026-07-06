@@ -81,15 +81,19 @@
   <div id="overlay"></div>
   <!-- three.js vendored locally (v118): the CDN was the game's single point of
        failure and is blocked on some networks. Files under vendor/ track
-       three@0.167.0 — update them together if the version ever bumps. -->
+       three@0.167.0 — update them together if the version ever bumps.
+       The ?v= token (v119) exists to bust Pages-edge/browser caches — right
+       after the v118 deploy the brand-new vendor path could 404 for up to
+       10 minutes on the CDN edge, and that 404 got cached as a black screen. -->
   <script type="importmap">
   {
     "imports": {
-      "three": "./vendor/three.module.min.js",
+      "three": "./vendor/three.module.min.js?v=73",
+      "three/addons/geometries/RoundedBoxGeometry.js": "./vendor/jsm/geometries/RoundedBoxGeometry.js?v=73",
       "three/addons/": "./vendor/jsm/"
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=72"></script>
+  <script type="module" src="js/main.js?v=73"></script>
 </body>
 </html>
