@@ -29,3 +29,26 @@ Browser bullet-hell survival game (three.js, ES modules, no build step).
   (mbace1.github.io/Suds-Jack/toko-drop/). Ship = PR into `gh-pages`, squash
   merge, then `scripts/release.sh` to resync the working branch.
 - Never skip hooks (`--no-verify`); never force-push to the default branch.
+
+## Multi-game workflow (agreed 2026-07-06)
+
+- **Toko Drop changes always go via PR + squash into `gh-pages`** — the
+  hooks, VERSIONS.md discipline, smoke tests, and deploy verification hang
+  off that flow.
+- **Other games (`neon-ronin/`, `Skltr/`, …) may be pushed directly to
+  `gh-pages`** as long as the commit touches only that game's directory.
+  Agents resync their working branch over such pushes (`scripts/release.sh`).
+- **After ANY push, confirm the "pages build and deployment" Actions run
+  concluded `success`** — deploys fail transiently (v94, v108) and a failed
+  or superseded deploy looks exactly like "the site is broken".
+- **New file paths need `?v=` cache tokens from day one** (v118/v119 lesson):
+  the Pages CDN caches responses INCLUDING 404s for ~10 min, so a brand-new
+  untokened path can serve a black screen right after its first deploy.
+
+## Playtest feedback pipeline
+
+- Death-screen **SEND & CONTINUE** POSTs the feedback + run summary to the
+  inbox configured in `main.js` (`SHEET_ENDPOINT` if set, else the Formspree
+  fallback, ~50/month). `scripts/feedback-sheet.gs` is the unlimited Google
+  Sheets sink — deploy per its header, paste the `/exec` URL into
+  `SHEET_ENDPOINT`. SKIP sends nothing; no automatic beacons.
