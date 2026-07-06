@@ -25,6 +25,16 @@ jsDelivr CDN via an importmap, same as toko-drop).
 > separate curated site root that already holds `toko-drop/`), **not** `main`. Demo
 > updates must be copied onto `gh-pages` to go live at `/Suds-Jack/paperboy/`.
 
+### Hyper Dagger (`hyperdagger/`)
+A first-person **Devil Daggers × HYPERDEMON homage** on Three.js r167 — survive a swarm
+of **voxel** skulls on a neon disc in a synthwave void; survival time is the only score.
+Enemies are string-art voxel models (one `InstancedMesh` per enemy, per-voxel colors) and
+deaths explode them into **physical voxel debris** (gravity, floor bounce, tumble) from a
+shared pool. Desktop: pointer-lock mouse look + hold-LMB dagger stream. Touch: dual
+on-screen sticks — right stick looks *and auto-fires* — plus a centre jump button.
+No build step — open `hyperdagger/index.html` (three.js via jsDelivr importmap, same as
+toko-drop). Same `gh-pages` deploy caveat as paperboy.
+
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
 Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
 
@@ -66,6 +76,16 @@ paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new p
     paper.js    # Object-pooled thrown papers with arc/gravity physics + landing detection
     input.js    # Touch stick (steer/throttle) + two throw buttons; WASD/ZX keyboard fallback
     audio.js    # WebAudio bleep kit (throw/deliver/smash/pickup/crash/day-clear)
+hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel enemies
+  index.html
+  js/
+    main.js     # Scene (grid arena, shader sky, bloom), loop, spawn director, combat, HUD, states
+    voxel.js    # String-art voxel models + parser, VoxelSprite (InstancedMesh), DebrisPool physics
+    enemy.js    # Skull (chaser), Brute (tank), Totem (skull spawner) — all voxel sprites
+    daggers.js  # Object-pooled dagger projectiles (prev position kept for segment hit tests)
+    player.js   # First-person controller: yaw/pitch, WASD/stick strafe, jump, head-bob
+    input.js    # Pointer-lock mouse + WASD, or dual touch sticks (right = look + auto-fire) + jump btn
+    audio.js    # WebAudio synth kit (fire/hit/gib/spawn/death + detuned-saw drone)
 ```
 
 ## Toko Drop — Architecture Notes
@@ -85,6 +105,45 @@ paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new p
 **Dash:** 0.18 s at 26 units/s, 0.9 s cooldown, invincible during dash. Direction uses last aim direction if stick was released before movement.
 
 **Wave progression:** when all 4 enemies are dead, `spawnWave()` removes old meshes from scene and spawns fresh enemies at `0.6 × HALF` radius in a cross pattern. Wave counter displayed in UI.
+
+## Hyper Dagger (`hyperdagger/`) — Architecture Notes
+
+**Voxel pipeline (`voxel.js`):** `MODELS` defines enemies as string-art layers —
+`layers[0]` is the bottom slice, each layer an array of rows, row 0 the *front* face
+(mapped to +z so `Object3D.lookAt(player)` points the face at the player). Palette values
+are hex ints, or `[r,g,b]` arrays with components > 1 for **HDR glow voxels** (eyes,
+totem veins) that trip the bloom threshold while bone/body stays matte. `VoxelSprite`
+bakes a model into one `InstancedMesh` (per-voxel `setColorAt`; hit-flash brightens
+`material.color`, which multiplies every instance). `DebrisPool` is a single 1600-cube
+`InstancedMesh`: gravity −28, floor bounce ×−0.38 with friction, Euler tumble, shrink-out
+over the last 0.3 s; `burst(worldVoxels, …)` explodes a dead enemy's actual voxels
+outward from their centroid plus the killing dagger's impulse.
+
+**Combat:** dagger stream at 12/s with small random spread; each dagger keeps `prev`
+position and collisions use **segment-vs-sphere** tests so fast projectiles can't tunnel.
+Skulls take knockback along the dagger direction (brutes mostly resist via lower
+`knock`). Enemy → player kill test is against both torso and camera positions; totems
+don't kill, they `player.pushOut(...)` as solids.
+
+**Spawn director (`main.js`):** totems (cap 6) appear every 24 s at ring spots ≥ 12 u from
+the player, each exhaling skulls (global cap 42) at an interval that tightens with game
+time; brutes join after 40 s every 16 s. Skull `maxSpeed` scales with time. A pairwise
+separation pass keeps the swarm from collapsing into one blob.
+
+**Input quirks:** right touch stick is *look + auto-fire* (Devil Daggers wants constant
+fire; a separate fire button costs a thumb). Pointer-lock mousemove deltas with
+`hypot > 400` are dropped — some browsers emit one giant bogus delta right after locking.
+Jump button is a fixed circle bottom-centre, checked before stick assignment in
+`touchstart`.
+
+**Render:** ACES tone mapping + `EffectComposer` (`RenderPass` → `UnrealBloomPass`
+0.7/0.45/0.6 → `OutputPass`). Bloom is *selective* via HDR colors (daggers, edge ring,
+glow voxels exceed 1.0). Sky is a `BackSide` sphere with an animated gradient + band
+shader (`fog: false`); the floor is a `CanvasTexture` neon grid on a circle, fog
+`0x14041c` blends it toward the horizon. Death/menu/pause are DOM overlays; touch sticks
+are drawn on the `#canvas-ui` overlay each frame. Hi-score lives in `localStorage` under
+`hyperDaggerHi`. `window.__hd` exposes `{enemies, player, debris, daggers}` for console
+tinkering and automated smoke tests.
 
 ## Paper Route (`paperboy/`) — Architecture Notes
 

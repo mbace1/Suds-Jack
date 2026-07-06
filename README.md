@@ -40,6 +40,24 @@ so the scheme re-tints in one place.
 - "Day" milestones every 130 m ramp bike speed + hazard density and award a bonus; hi-score in localStorage
 - Screen-shake trauma + spark bursts on deliveries, smashes, pickups and crashes
 
+### `hyperdagger/`
+**Hyper Dagger.** A first-person **Devil Daggers × HYPERDEMON homage** built on Three.js
+r167 — survive a swarm of voxel skulls on a neon disc floating in a synthwave void; your
+survival time is your only score. All enemies are **string-art voxel models** rendered as
+one `InstancedMesh` each, and every kill explodes them into **physical voxel debris**
+(gravity, floor bounce with damping, tumbling, shrink-out) via a shared 1600-cube pool.
+`UnrealBloomPass` + HDR palette colors (only eyes / totem veins / daggers / arena ring
+exceed 1.0) give selective glow without washing out the bone.
+
+**Controls:** mouse look (pointer lock) · hold LMB to fire the dagger stream · WASD move · SPACE jump  
+**Mobile:** left on-screen stick moves · right stick looks **and auto-fires while held** · centre button jumps
+
+#### Gameplay
+- Obsidian **totems** rise around the arena and exhale chasing **skulls** (faster over time); horned **brutes** (10 HP, knockback-resistant) join after 40 s
+- Dagger stream: 12/s with slight spread; segment-vs-sphere hit tests so fast daggers can't tunnel; skulls take knockback per hit
+- One touch kills you — DEVOURED screen, instant tap/click retry, hi-score in localStorage
+- Skull-vs-skull separation keeps the swarm from stacking into one blob; totems are solid and shove the player out
+
 ### `toko-drop/`
 Twin-stick bullet-hell arena shooter built on Three.js r167.
 
@@ -77,6 +95,9 @@ Twin-stick bullet-hell arena shooter built on Three.js r167.
 ---
 
 ## Changelog
+
+### 2026-07
+- **`hyperdagger/` — Hyper Dagger:** new first-person Devil Daggers × HYPERDEMON homage. Voxel enemies (string-art layer models → per-enemy `InstancedMesh` with per-voxel `setColorAt`), physical voxel-gib debris pool (gravity, floor bounce, tumble, shrink-out), dagger-stream combat with segment-sphere hit tests + knockback, totem/skull/brute spawn director, animated shader sky + synthwave grid arena, selective HDR bloom, WebAudio synth kit incl. detuned-saw drone. Desktop pointer-lock mouse look; mobile dual on-screen sticks (right stick auto-fires) + jump button. Survival-time score, localStorage hi-score
 
 ### 2026-06
 - **toko-drop v0.3.3:** Stronger death VFX (heavier gel-like chunks) + improved material hit response on blobs (visible temporary refraction/transmission shift when hit).
