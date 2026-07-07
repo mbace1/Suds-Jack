@@ -5,13 +5,13 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=2';
-import { Player } from './player.js?v=2';
-import { DaggerPool } from './daggers.js?v=2';
-import { GemPool } from './gems.js?v=2';
-import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=2';
-import { Skull, Wraith, Brute, Totem, Serpent, Spider, Leviathan } from './enemy.js?v=2';
-import { AudioKit } from './audio.js?v=2';
+import { InputManager } from './input.js?v=3';
+import { Player } from './player.js?v=3';
+import { DaggerPool } from './daggers.js?v=3';
+import { GemPool } from './gems.js?v=3';
+import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=3';
+import { Skull, Wraith, Brute, Totem, Serpent, Spider, Leviathan } from './enemy.js?v=3';
+import { AudioKit } from './audio.js?v=3';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
