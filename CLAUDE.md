@@ -151,6 +151,12 @@ centre that exhales skulls and every 9 s drags the player toward itself for 1.8 
 (`player.nudge` at 7 u/s — walk or dash out); it drops 10 gems. A pairwise separation
 pass (skull/brute only) keeps the swarm from collapsing into one blob.
 
+**Modes:** menu-button toggle, persisted in `localStorage` (`hyperDaggerMode`). PURE =
+one-touch death (DD). HYPER = HYPERDEMON rules: `lifeT` drains in real time (start 30,
+cap 60), kills add `e.score` seconds, an enemy touch costs 10 + `player.nudge`
+knockback + 1.2 s `mercyT` i-frames, and 0 → `die(true)` = TIME OUT. Hi-scores are
+per-mode (`hyperDaggerHi` / `hyperDaggerHiHyper`).
+
 **Input quirks:** right touch stick is *look + auto-fire* (Devil Daggers wants constant
 fire; a separate fire button costs a thumb); a sub-250 ms / sub-12 px tap on it is the
 shotgun. Pointer-lock mousemove deltas with `hypot > 400` are dropped — some browsers

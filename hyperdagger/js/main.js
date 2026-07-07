@@ -250,10 +250,21 @@ let deathAt = 0;
 let trauma = 0;
 let fovKick = 0;
 let slowmo = 0;
-let hiScore = parseFloat(localStorage.getItem('hyperDaggerHi') || '0');
+// PURE = Devil Daggers rules (one touch kills). HYPER = HYPERDEMON rules:
+// a draining life-timer is your health — kills add seconds, hits cost 10.
+let mode = localStorage.getItem('hyperDaggerMode') === 'hyper' ? 'hyper' : 'pure';
+let hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
+const HYPER_START = 30;
+const HYPER_CAP = 60;
+const HYPER_HIT_COST = 10;
+let lifeT = HYPER_START;
+let mercyT = 0; // post-hit i-frames (hyper mode)
 
 function showMenu() {
   elMsg.style.display = 'block';
+  const modeLine = mode === 'hyper'
+    ? `HYPER &mdash; your clock is your life: kills add seconds, a hit costs ${HYPER_HIT_COST}`
+    : 'PURE &mdash; Devil Daggers rules: one touch kills';
   elMsg.innerHTML =
     `<h1>HYPER DAGGER</h1>
      <p class="sub">a Devil Daggers &times; HYPERDEMON homage</p>
@@ -261,21 +272,31 @@ function showMenu() {
      gems from heavy kills level your daggers up &mdash; level 3 daggers <b>home</b></p>
      <p class="keys">desktop &mdash; mouse look &middot; <b>LMB</b> tap shotgun / hold stream &middot; <b>WASD</b> move &middot; <b>SHIFT</b> dash &middot; <b>SPACE</b> jump<br>
      touch &mdash; left stick move &middot; right stick look + auto-fire (quick tap = shotgun) &middot; DASH / JUMP buttons</p>
+     <button id="modeBtn">MODE: ${modeLine}</button>
      <p class="go">${hiScore > 0 ? `best ${hiScore.toFixed(1)}s &mdash; ` : ''}click / tap to descend</p>`;
+  document.getElementById('modeBtn').addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    mode = mode === 'hyper' ? 'pure' : 'hyper';
+    localStorage.setItem('hyperDaggerMode', mode);
+    hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
+    showMenu();
+  });
 }
 
-function showDeath() {
+function hiKey() { return mode === 'hyper' ? 'hyperDaggerHiHyper' : 'hyperDaggerHi'; }
+
+function showDeath(timedOut) {
   const t = gameTime.toFixed(1);
   const best = gameTime > hiScore;
   if (best) {
     hiScore = gameTime;
-    localStorage.setItem('hyperDaggerHi', String(hiScore));
+    localStorage.setItem(hiKey(), String(hiScore));
   }
   elMsg.style.display = 'block';
   elMsg.innerHTML =
-    `<h1 class="dead">DEVOURED</h1>
+    `<h1 class="dead">${timedOut ? 'TIME OUT' : 'DEVOURED'}</h1>
      <p class="big">${t}s &middot; ${kills} kills &middot; ${gemCount} gems</p>
-     <p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}</p>
+     <p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}${mode === 'hyper' ? ' &middot; hyper' : ''}</p>
      <p class="go">click / tap to retry</p>`;
 }
 
@@ -306,6 +327,8 @@ function resetRun() {
   trauma = 0;
   fovKick = 0;
   slowmo = 0;
+  lifeT = HYPER_START;
+  mercyT = 0;
   player.reset();
 }
 
@@ -318,7 +341,7 @@ function startGame() {
   audio.droneStart();
 }
 
-function die() {
+function die(timedOut = false) {
   state = 'dead';
   deathAt = performance.now();
   slowmo = 1;
@@ -329,7 +352,7 @@ function die() {
   setTimeout(() => { elVignette.style.opacity = 0; }, 450);
   elCross.style.display = 'none';
   if (document.pointerLockElement) document.exitPointerLock();
-  showDeath();
+  showDeath(timedOut);
 }
 
 window.addEventListener('pointerdown', e => {
@@ -546,6 +569,7 @@ function fireDagger(spread, speed, homing) {
 function killEnemy(e, dir) {
   e.alive = false;
   kills += e.score;
+  if (mode === 'hyper') lifeT = Math.min(HYPER_CAP, lifeT + e.score); // kills buy time
   e.center(_c);
   debris.burst(e.sprite.worldVoxels(), e.sprite.size,
     _hitDir.copy(dir).multiplyScalar(5), e.type === 'skull' ? 1 : 1.4);
@@ -624,6 +648,7 @@ function updateCombat(dt) {
   if (got) onGemsCollected(got);
 
   // enemy → player
+  if (mercyT > 0) mercyT -= dt;
   for (const e of enemies) {
     if (e.spawnK < 0.7) continue;
     if (e.type === 'totem') {
@@ -632,6 +657,21 @@ function updateCombat(dt) {
     }
     e.center(_c);
     if (_c.distanceTo(_p0) < e.radius + 0.5 || _c.distanceTo(camera.position) < e.radius + 0.4) {
+      if (mode === 'hyper') {
+        if (mercyT > 0) continue;
+        // HYPERDEMON rules: a hit costs time, shoves you clear, grants i-frames
+        lifeT -= HYPER_HIT_COST;
+        mercyT = 1.2;
+        trauma = 1;
+        audio.gib(true);
+        elVignette.style.opacity = 0.8;
+        setTimeout(() => { if (state === 'playing') elVignette.style.opacity = 0; }, 300);
+        const dx = player.feet.x - e.pos.x, dz = player.feet.z - e.pos.z;
+        const d = Math.hypot(dx, dz) || 1;
+        player.nudge(dx / d * 3, dz / d * 3);
+        if (lifeT <= 0) { die(); return; }
+        continue;
+      }
       die();
       return;
     }
@@ -690,8 +730,17 @@ function step(dt) {
   separateSkulls();
   updateCombat(dt);
   debris.update(dt);
-  elTimer.textContent = gameTime.toFixed(1);
-  elKills.textContent = `${kills} kills`;
+  if (mode === 'hyper' && state === 'playing') {
+    lifeT -= dt; // the clock is your life
+    if (lifeT <= 0) { lifeT = 0; die(true); }
+    elTimer.textContent = lifeT.toFixed(1);
+    elTimer.style.color = lifeT < 10 ? '#ff3355' : '';
+    elKills.textContent = `${kills} kills · run ${gameTime.toFixed(1)}s`;
+  } else {
+    elTimer.textContent = gameTime.toFixed(1);
+    elTimer.style.color = '';
+    elKills.textContent = `${kills} kills`;
+  }
   elGems.textContent = `◆ ${gemCount} · LV ${weaponLv}${weaponLv >= 3 ? ' HOMING' : ''}`;
 }
 
@@ -748,5 +797,7 @@ window.__hd = {
     spawnSerpent() { spawnSerpent(); },
     spawnSpider() { enemies.push(new Spider(scene, ringSpot(8).clone())); },
     spawnLeviathan() { enemies.push(new Leviathan(scene, 5)); },
+    setLife(n) { lifeT = n; },
+    getState() { return { mode, lifeT, gameTime, mercyT, state }; },
   },
 };

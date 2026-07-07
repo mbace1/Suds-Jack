@@ -82,6 +82,19 @@
     #msg .big { font-size: 26px; color: #ffd24a; }
     #msg .keys { font-size: 12px; opacity: 0.8; margin-top: 12px; }
     #msg .go { margin-top: 16px; color: #7dffdc; animation: pulse 1.2s ease-in-out infinite; }
+    #modeBtn {
+      pointer-events: auto;
+      cursor: pointer;
+      margin-top: 14px;
+      padding: 8px 14px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #ffd24a;
+      background: rgba(255, 47, 214, 0.12);
+      border: 1px solid rgba(255, 47, 214, 0.5);
+      border-radius: 6px;
+    }
+    #modeBtn:hover { background: rgba(255, 47, 214, 0.25); }
     @keyframes pulse { 50% { opacity: 0.35; } }
   </style>
 </head>
@@ -106,6 +119,6 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=2"></script>
+  <script type="module" src="js/main.js?v=3"></script>
 </body>
 </html>
