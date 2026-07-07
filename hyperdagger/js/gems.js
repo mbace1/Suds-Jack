@@ -16,7 +16,7 @@ export class GemPool {
     this.pool = [];
     this.active = [];
     const geo = new THREE.OctahedronGeometry(0.17);
-    const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(2.4, 0.35, 0.8) });
+    const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(2.4, 0.15, 0.15) });
     for (let i = 0; i < cap; i++) {
       const m = new THREE.Mesh(geo, mat);
       m.visible = false;

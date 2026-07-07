@@ -5,30 +5,33 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=1';
-import { Player } from './player.js?v=1';
-import { DaggerPool } from './daggers.js?v=1';
-import { GemPool } from './gems.js?v=1';
-import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=1';
-import { Skull, Wraith, Brute, Totem, Serpent, Spider, Leviathan } from './enemy.js?v=1';
-import { AudioKit } from './audio.js?v=1';
+import { InputManager } from './input.js?v=2';
+import { Player } from './player.js?v=2';
+import { DaggerPool } from './daggers.js?v=2';
+import { GemPool } from './gems.js?v=2';
+import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=2';
+import { Skull, Wraith, Brute, Totem, Serpent, Spider, Leviathan } from './enemy.js?v=2';
+import { AudioKit } from './audio.js?v=2';
 
 const ARENA_R = 26;
-const BASE_FOV = 78;
 const FIRE_SPREAD = 0.035;   // radians
 const SKULL_CAP = 42;
 const TOTEM_CAP = 6;
 const SERPENT_CAP = 2;
-const SHOTGUN_CD = 0.5;
-const STREAM_HOLD = 0.26;    // desktop: hold this long before the stream starts
+
+// player-tunable options (pause menu), persisted across sessions
+const OPTS_KEY = 'hyperDaggerOpts';
+const opts = Object.assign(
+  { speed: 1, fov: 80, smear: true, shake: true, chroma: true },
+  JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
 
 // Devil-Daggers-style dagger levels, advanced by collecting gems.
 const LEVEL_GEMS = [0, 0, 10, 30]; // gems needed to reach index level
 const WEAPON = [
   null,
-  { stream: 12, shotgun: 8, homing: false },
-  { stream: 17, shotgun: 12, homing: false },
-  { stream: 17, shotgun: 14, homing: true },
+  { stream: 13, homing: false },
+  { stream: 18, homing: false },
+  { stream: 18, homing: true },
 ];
 const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10 };
 
@@ -40,9 +43,9 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x14041c, 30, 95);
+scene.fog = new THREE.Fog(0x050505, 30, 95);
 
-const camera = new THREE.PerspectiveCamera(BASE_FOV, window.innerWidth / window.innerHeight, 0.1, 300);
+const camera = new THREE.PerspectiveCamera(opts.fov, window.innerWidth / window.innerHeight, 0.1, 300);
 scene.add(camera); // so the first-person hand (a camera child) renders
 
 // HYPERDEMON-ish chromatic aberration, driven by the trauma system
@@ -81,21 +84,21 @@ function makeFloorTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = 256;
   const g = c.getContext('2d');
-  g.fillStyle = '#0b0414';
+  g.fillStyle = '#060606';
   g.fillRect(0, 0, 256, 256);
   for (let ty = 0; ty < 4; ty++) for (let tx = 0; tx < 4; tx++) {
     if (Math.random() < 0.3) {
-      g.fillStyle = 'rgba(0,0,0,0.35)';
+      g.fillStyle = 'rgba(255,255,255,0.02)';
       g.fillRect(tx * 64, ty * 64, 64, 64);
     }
   }
-  g.strokeStyle = 'rgba(255,45,170,0.16)';
+  g.strokeStyle = 'rgba(255,255,255,0.09)';
   g.lineWidth = 1;
   for (let i = 0; i <= 256; i += 32) {
     g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 256); g.stroke();
     g.beginPath(); g.moveTo(0, i); g.lineTo(256, i); g.stroke();
   }
-  g.strokeStyle = 'rgba(255,45,170,0.55)';
+  g.strokeStyle = 'rgba(255,255,255,0.34)';
   g.lineWidth = 2;
   for (let i = 0; i <= 256; i += 64) {
     g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 256); g.stroke();
@@ -107,21 +110,15 @@ function makeFloorTexture() {
   return tex;
 }
 
+// the grid simply stops at the arena edge — no barrier visual
 const floor = new THREE.Mesh(
-  new THREE.CircleGeometry(ARENA_R + 3, 64).rotateX(-Math.PI / 2),
+  new THREE.CircleGeometry(ARENA_R, 64).rotateX(-Math.PI / 2),
   new THREE.MeshBasicMaterial({ map: makeFloorTexture() }),
 );
 scene.add(floor);
 
-const edgeRing = new THREE.Mesh(
-  new THREE.TorusGeometry(ARENA_R, 0.12, 8, 96).rotateX(Math.PI / 2),
-  new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(2.4, 0.4, 2.0) }),
-);
-edgeRing.position.y = 0.06;
-scene.add(edgeRing);
-
-// HYPERDEMON rainbow-band sky: hue wheel around the horizon, two counter-
-// rotating band layers, hot magenta glow right at the horizon line.
+// monochrome sky: grey band shimmer over black, with a single dark-red
+// ember glow hugging the horizon as the one contrast color
 const skyMat = new THREE.ShaderMaterial({
   side: THREE.BackSide,
   depthWrite: false,
@@ -136,23 +133,16 @@ const skyMat = new THREE.ShaderMaterial({
   fragmentShader: /* glsl */`
     varying vec3 vPos;
     uniform float uTime;
-    vec3 hue(float h) {
-      vec3 p = abs(fract(vec3(h) + vec3(0.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0);
-      return clamp(p - 1.0, 0.0, 1.0);
-    }
     void main() {
       vec3 d = normalize(vPos);
       float h = d.y;
       float ang = atan(d.z, d.x);
-      vec3 horizon = vec3(0.26, 0.02, 0.33);
-      vec3 zenith  = vec3(0.012, 0.0, 0.03);
-      vec3 col = mix(horizon, zenith, clamp(abs(h) * 2.2, 0.0, 1.0));
+      vec3 col = mix(vec3(0.055), vec3(0.0), clamp(abs(h) * 2.2, 0.0, 1.0));
       float b1 = 0.5 + 0.5 * sin(ang * 7.0 - uTime * 0.6 + h * 9.0);
       float b2 = 0.5 + 0.5 * sin(ang * 13.0 + uTime * 0.9 - h * 14.0);
-      vec3 rain = hue(fract(ang / 6.2831 + uTime * 0.02 + h * 0.35));
       float horiz = 1.0 - clamp(abs(h) * 2.6, 0.0, 1.0);
-      col += rain * (0.16 * b1 + 0.10 * b2) * horiz;
-      col += vec3(0.5, 0.1, 0.6) * pow(max(0.0, 1.0 - abs(h) * 4.0), 3.0) * 0.35;
+      col += vec3(0.05) * (b1 * 0.6 + b2 * 0.4) * horiz;
+      col += vec3(0.30, 0.02, 0.02) * pow(max(0.0, 1.0 - abs(h) * 4.0), 3.0);
       gl_FragColor = vec4(col, 1.0);
     }`,
 });
@@ -172,7 +162,7 @@ const dust = (() => {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   const mat = new THREE.PointsMaterial({
-    color: 0xff66cc, size: 0.07, transparent: true, opacity: 0.5,
+    color: 0xffffff, size: 0.07, transparent: true, opacity: 0.3,
     blending: THREE.AdditiveBlending, depthWrite: false,
   });
   const p = new THREE.Points(geo, mat);
@@ -239,8 +229,6 @@ let kills = 0;
 let gemCount = 0;
 let weaponLv = 1;
 let fireTimer = 0;
-let holdT = 0;
-let shotgunCd = 0;
 let nextTotemAt = 0;
 let nextBruteAt = 0;
 let nextSerpentAt = 0;
@@ -270,8 +258,8 @@ function showMenu() {
      <p class="sub">a Devil Daggers &times; HYPERDEMON homage</p>
      <p>survive the swarm &mdash; time is your only score<br>
      gems from heavy kills level your daggers up &mdash; level 3 daggers <b>home</b></p>
-     <p class="keys">desktop &mdash; mouse look &middot; <b>LMB</b> tap shotgun / hold stream &middot; <b>WASD</b> move &middot; <b>SHIFT</b> dash &middot; <b>SPACE</b> jump<br>
-     touch &mdash; left stick move &middot; right stick look + auto-fire (quick tap = shotgun) &middot; DASH / JUMP buttons</p>
+     <p class="keys">desktop &mdash; mouse look &middot; hold <b>LMB</b> to fire &middot; <b>WASD</b> move &middot; <b>SPACE</b> jump &times;2 &middot; <b>SHIFT</b> dash &middot; <b>ESC</b> options<br>
+     touch &mdash; left stick move (tap = jump &times;2) &middot; right stick look + fire &middot; flick a stick to dash &middot; &#10074;&#10074; pause</p>
      <button id="modeBtn">MODE: ${modeLine}</button>
      <p class="go">${hiScore > 0 ? `best ${hiScore.toFixed(1)}s &mdash; ` : ''}click / tap to descend</p>`;
   document.getElementById('modeBtn').addEventListener('pointerdown', e => {
@@ -317,8 +305,6 @@ function resetRun() {
   gemCount = 0;
   weaponLv = 1;
   fireTimer = 0;
-  holdT = 0;
-  shotgunCd = 0;
   nextTotemAt = 0;
   nextBruteAt = 40;
   nextSerpentAt = 70;
@@ -338,6 +324,7 @@ function startGame() {
   paused = false;
   elMsg.style.display = 'none';
   elCross.style.display = input.touchMode ? 'none' : 'block';
+  elPause.style.display = 'block';
   audio.droneStart();
 }
 
@@ -351,6 +338,7 @@ function die(timedOut = false) {
   elVignette.style.opacity = 1;
   setTimeout(() => { elVignette.style.opacity = 0; }, 450);
   elCross.style.display = 'none';
+  elPause.style.display = 'none';
   if (document.pointerLockElement) document.exitPointerLock();
   showDeath(timedOut);
 }
@@ -366,6 +354,7 @@ window.addEventListener('pointerdown', e => {
   } else if (state === 'playing' && paused) {
     paused = false;
     elMsg.style.display = 'none';
+    elPause.style.display = 'block';
   }
   if (isMouse && state === 'playing' && !document.pointerLockElement) {
     canvas.requestPointerLock();
@@ -373,12 +362,60 @@ window.addEventListener('pointerdown', e => {
 });
 
 document.addEventListener('pointerlockchange', () => {
-  if (state === 'playing' && !input.touchMode && !document.pointerLockElement) {
-    paused = true;
-    elMsg.style.display = 'block';
-    elMsg.innerHTML = `<h1>PAUSED</h1><p class="go">click to resume</p>`;
+  if (state === 'playing' && !input.touchMode && !document.pointerLockElement && !paused) {
+    showPause();
   }
 });
+
+// ------------------------------------------------------------- pause menu
+const elPause = document.getElementById('pauseBtn');
+elPause.addEventListener('pointerdown', e => {
+  e.stopPropagation();
+  if (state === 'playing' && !paused) {
+    if (document.pointerLockElement) document.exitPointerLock(); // triggers showPause
+    else showPause();
+  }
+});
+
+function saveOpts() {
+  localStorage.setItem(OPTS_KEY, JSON.stringify(opts));
+  applyOpts();
+}
+
+function applyOpts() {
+  afterimage.enabled = opts.smear;
+  chromaPass.enabled = opts.chroma;
+}
+
+function optRow(label, key, values, fmt) {
+  const btns = values.map(v =>
+    `<button class="opt ${opts[key] === v ? 'on' : ''}" data-k="${key}" data-v="${v}">${fmt(v)}</button>`).join('');
+  return `<div class="optrow"><span>${label}</span>${btns}</div>`;
+}
+
+function showPause() {
+  paused = true;
+  elPause.style.display = 'none';
+  elMsg.style.display = 'block';
+  elMsg.innerHTML =
+    `<h1>PAUSED</h1>
+     ${optRow('SPEED', 'speed', [1, 1.25, 1.5], v => v + '\u00d7')}
+     ${optRow('FOV', 'fov', [70, 80, 90], v => v)}
+     ${optRow('FX', 'smear', [true, false], v => v ? 'SMEAR ON' : 'SMEAR OFF')}
+     ${optRow('', 'shake', [true, false], v => v ? 'SHAKE ON' : 'SHAKE OFF')}
+     ${optRow('', 'chroma', [true, false], v => v ? 'CHROMA ON' : 'CHROMA OFF')}
+     <p class="go">click / tap anywhere else to resume</p>`;
+  for (const b of elMsg.querySelectorAll('button.opt')) {
+    b.addEventListener('pointerdown', e => {
+      e.stopPropagation();
+      const k = b.dataset.k;
+      const raw = b.dataset.v;
+      opts[k] = raw === 'true' ? true : raw === 'false' ? false : parseFloat(raw);
+      saveOpts();
+      showPause(); // re-render with the new selection
+    });
+  }
+}
 
 // ---------------------------------------------------------------- spawning
 const _sv = new THREE.Vector3();
@@ -463,13 +500,13 @@ function director(dt) {
     const interval = Math.max(1.7, 3.4 - gameTime * 0.02);
     const at = ringSpot(12).clone();
     audio.spawn();
-    telegraph(at, [1.8, 0.3, 1.6], 0.7, () => enemies.push(new Totem(scene, at, interval)));
+    telegraph(at, [2.0, 0.15, 0.15], 0.7, () => enemies.push(new Totem(scene, at, interval)));
     nextTotemAt = gameTime + 24;
   }
   if (gameTime >= nextBruteAt) {
     const at = ringSpot(14).clone();
     audio.spawn();
-    telegraph(at, [1.8, 0.4, 0.6], 0.7, () => {
+    telegraph(at, [2.0, 0.15, 0.15], 0.7, () => {
       at.y = 1.25;
       enemies.push(new Brute(scene, at, Math.min(1.5, (gameTime - 40) * 0.01)));
     });
@@ -483,14 +520,14 @@ function director(dt) {
     if (enemies.filter(e => e.type === 'spider').length < 2) {
       const at = ringSpot(10).clone();
       audio.spawn();
-      telegraph(at, [1.6, 0.3, 0.4], 0.7, () => enemies.push(new Spider(scene, at)));
+      telegraph(at, [2.0, 0.15, 0.15], 0.7, () => enemies.push(new Spider(scene, at)));
     }
     nextSpiderAt = gameTime + 30;
   }
   if (gameTime >= nextLevAt) {
     if (!enemies.some(e => e.type === 'leviathan')) {
       audio.roar();
-      telegraph(new THREE.Vector3(0, 0, 0), [2.4, 0.5, 0.5], 1.2,
+      telegraph(new THREE.Vector3(0, 0, 0), [2.6, 0.2, 0.2], 1.2,
         () => enemies.push(new Leviathan(scene, 5)));
     }
     nextLevAt = gameTime + 120;
@@ -586,23 +623,8 @@ function killEnemy(e, dir) {
 function updateCombat(dt) {
   const w = WEAPON[weaponLv];
 
-  // tap = shotgun burst
-  shotgunCd -= dt;
-  if (input.consumeShotgun()
-      && shotgunCd <= 0
-      && (input.touchMode || document.pointerLockElement)) {
-    shotgunCd = SHOTGUN_CD;
-    for (let i = 0; i < w.shotgun; i++) fireDagger(0.13, 52, w.homing);
-    audio.shotgun();
-    recoil = 0.16;
-    fovKick = 4;
-    trauma = Math.max(trauma, 0.25);
-  }
-
-  // hold = dagger stream (immediate on touch, after a short hold on desktop)
-  if (input.firing) holdT += dt; else holdT = 0;
-  const streaming = input.firing && (input.touchMode || holdT > STREAM_HOLD);
-  if (streaming) {
+  // hold = dagger stream
+  if (input.firing) {
     fireTimer -= dt;
     while (fireTimer <= 0) {
       fireTimer += 1 / w.stream;
@@ -709,6 +731,10 @@ function step(dt) {
     audio.dash();
     trauma = Math.max(trauma, 0.15);
   }
+  if (player.justJumped) {
+    player.justJumped = false;
+    audio.jump();
+  }
   director(dt);
   for (const e of enemies) {
     e.update(dt, camera.position, gems);
@@ -734,7 +760,7 @@ function step(dt) {
     lifeT -= dt; // the clock is your life
     if (lifeT <= 0) { lifeT = 0; die(true); }
     elTimer.textContent = lifeT.toFixed(1);
-    elTimer.style.color = lifeT < 10 ? '#ff3355' : '';
+    elTimer.style.color = lifeT < 10 ? '#c81e1e' : '';
     elKills.textContent = `${kills} kills · run ${gameTime.toFixed(1)}s`;
   } else {
     elTimer.textContent = gameTime.toFixed(1);
@@ -748,14 +774,14 @@ function updateFeel(dt) {
   // trauma-driven shake + chromatic aberration + FOV kicks (dash, shotgun)
   trauma = Math.max(0, trauma - dt * 1.5);
   const t2 = trauma * trauma;
-  if (state === 'playing' && !paused) {
+  if (opts.shake && state === 'playing' && !paused) {
     camera.rotation.z += (Math.random() - 0.5) * t2 * 0.07;
     camera.rotation.x += (Math.random() - 0.5) * t2 * 0.03;
     camera.position.y += (Math.random() - 0.5) * t2 * 0.08;
   }
   chromaPass.uniforms.uAmount.value = 0.0012 + t2 * 0.02;
   fovKick = Math.max(0, fovKick - dt * 18);
-  const fov = BASE_FOV + player.dashK * 9 + fovKick;
+  const fov = opts.fov + player.dashK * 9 + fovKick;
   if (Math.abs(camera.fov - fov) > 0.01) {
     camera.fov = fov;
     camera.updateProjectionMatrix();
@@ -772,7 +798,7 @@ function animate() {
   skyMat.uniforms.uTime.value += dt;
   dust.rotation.y += dt * 0.012;
   if (state === 'playing' && !paused) {
-    step(dt);
+    step(dt * opts.speed);
   } else if (state !== 'playing') {
     // death slow-mo: debris + daggers keep tumbling at quarter speed
     slowmo = Math.max(0, slowmo - dt * 0.8);
@@ -786,6 +812,7 @@ function animate() {
   if (state === 'playing' && !paused) input.drawTouchUI(uiCtx);
 }
 
+applyOpts();
 showMenu();
 animate();
 

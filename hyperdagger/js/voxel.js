@@ -25,18 +25,18 @@ const SKULL_LAYERS = [
 export const MODELS = {
   skull: {
     voxelSize: 0.22,
-    palette: { W: 0xcfc5ac, S: 0xa89c82, R: [2.6, 0.25, 0.5], K: 0x2a2138 },
+    palette: { W: 0xd8d8d8, S: 0xa8a8a8, R: [2.8, 0.2, 0.2], K: 0x1a1a1a },
     layers: SKULL_LAYERS,
   },
-  // gilded skull — faster, 2 HP, amber eyes, gold crown
+  // crowned skull — faster, 2 HP, red crown
   skull2: {
     voxelSize: 0.22,
-    palette: { W: 0xaec4d8, S: 0x7e93a8, R: [2.6, 1.2, 0.2], K: 0x1e2a38, C: [2.0, 1.6, 0.3] },
+    palette: { W: 0x8a8a8a, S: 0x666666, R: [2.8, 0.2, 0.2], K: 0x111111, C: [2.2, 0.2, 0.2] },
     layers: [...SKULL_LAYERS, ['.C.C.C.', '.......', '.......']],
   },
   brute: {
     voxelSize: 0.46,
-    palette: { W: 0xc23e5e, S: 0x8a2440, R: [0.4, 2.6, 1.9], K: 0x330a1e, V: 0x8a3ce0 },
+    palette: { W: 0x2e2e2e, S: 0x1e1e1e, R: [2.8, 0.2, 0.2], K: 0x0a0a0a, V: [1.8, 0.15, 0.15] },
     layers: [
       ...SKULL_LAYERS.map(l => l.map(r => r)),
       ['V.....V', '.......', '.......'],
@@ -46,7 +46,7 @@ export const MODELS = {
   // serpent body segment — armored ring with an HDR core
   serpent: {
     voxelSize: 0.3,
-    palette: { S: 0x35104a, C: [2.2, 0.4, 1.2] },
+    palette: { S: 0xcfcfcf, C: [2.4, 0.2, 0.2] },
     layers: [
       ['.S.', 'SSS', '.S.'],
       ['SSS', 'SCS', 'SSS'],
@@ -56,7 +56,7 @@ export const MODELS = {
   // serpent head — eyes + open mouth at the front face
   serpentHead: {
     voxelSize: 0.36,
-    palette: { S: 0x35104a, C: [2.2, 0.4, 1.2], R: [2.6, 0.25, 0.5] },
+    palette: { S: 0x9a9a9a, C: [2.4, 0.2, 0.2], R: [2.8, 0.2, 0.2] },
     layers: [
       ['.S.', 'SSS', '.S.'],
       ['S.S', 'SCS', 'SSS'],
@@ -67,7 +67,7 @@ export const MODELS = {
   // gem thief — squat body, corner legs, red eyes front
   spider: {
     voxelSize: 0.24,
-    palette: { B: 0x4d2030, D: 0x2a1020, L: 0x2a1020, R: [2.6, 0.25, 0.4] },
+    palette: { B: 0x242424, D: 0x151515, L: 0x151515, R: [2.8, 0.2, 0.2] },
     layers: [
       ['L...L', '.....', 'L...L'],
       ['.BBB.', 'BDBDB', '.BBB.'],
@@ -78,8 +78,8 @@ export const MODELS = {
   leviathan: {
     voxelSize: 0.7,
     palette: {
-      W: 0x3d2545, S: 0x2a1732, K: 0x150a1c,
-      R: [3.0, 0.3, 0.3], V: [1.8, 0.5, 2.2], C: [2.0, 1.6, 0.3],
+      W: 0x1c1c1c, S: 0x101010, K: 0x000000,
+      R: [3.0, 0.2, 0.2], V: [2.0, 0.15, 0.15], C: [2.4, 2.4, 2.4],
     },
     layers: [
       ['..WWWWW..', '..SSSSS..'],
@@ -93,10 +93,10 @@ export const MODELS = {
     ],
   },
   // first-person gauntlet: checkerboarded glove (unlit voxels need baked
-  // shading to read as cubes), long HDR gold blade forward (row 0)
+  // shading to read as cubes), long HDR white blade forward (row 0)
   hand: {
     voxelSize: 0.05,
-    palette: { G: 0x5a3f7d, D: 0x3d2a58, H: 0x9a6a3a, B: [1.5, 1.2, 0.45] },
+    palette: { G: 0x3a3a3a, D: 0x222222, H: 0x555555, B: [1.8, 1.8, 1.8] },
     layers: [
       ['...', '...', '...', '...', '...', '...', '...', 'DGD', 'GDG', 'DGD'],
       ['.B.', '.B.', '.B.', '.B.', '.B.', '.B.', '.B.', 'GHG', 'DGD', 'GDG'],
@@ -112,7 +112,7 @@ export const MODELS = {
     return {
       voxelSize: 0.34,
       anchor: 'bottom',
-      palette: { O: 0x2a1745, M: [2.4, 0.3, 2.0] },
+      palette: { O: 0x161616, M: [2.4, 0.2, 0.2] },
       layers: [B, A, B, A, B, A, B, mouth, mouth, crown],
     };
   })(),

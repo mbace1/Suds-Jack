@@ -49,12 +49,12 @@ one `InstancedMesh` each, and every kill explodes them into **physical voxel deb
 `UnrealBloomPass` + HDR palette colors (only eyes / totem veins / daggers / arena ring
 exceed 1.0) give selective glow without washing out the bone.
 
-**Controls:** mouse look (pointer lock) · LMB **tap = shotgun burst / hold = dagger stream** · WASD move · SHIFT dash · SPACE jump  
-**Mobile:** left on-screen stick moves · right stick looks **and auto-fires while held** (quick tap = shotgun) · centre DASH / JUMP buttons
+**Controls:** mouse look (pointer lock) · hold LMB to fire · WASD move · SPACE **jump / double jump** · SHIFT dash · ESC pause/options  
+**Mobile:** left stick moves (**tap = jump / double jump**) · right stick looks + auto-fires · **flick either stick to dash** · ⏸ pause — no on-screen buttons
 
 #### Gameplay
 - Obsidian **totems** (slowly drifting) rise behind telegraph light-beams and exhale chasing **skulls** (faster over time, 30% **gilded** 2-HP skulls after 60 s); horned **brutes** (10 HP, knockback-resistant) join after 40 s; segmented **serpents** weave around the arena and dive-bomb after 70 s — every ring is individually destructible and gibs on its own
-- **Gems** drop from heavy kills (totems 3, brutes 2, each serpent ring 1, Leviathan 10), scatter physically, then magnet to you: 10 gems → faster stream + wider shotgun, 30 gems → **homing daggers**
+- **Gems** drop from heavy kills (totems 3, brutes 2, each serpent ring 1, Leviathan 10), scatter physically, then magnet to you: 10 gems → faster stream, 30 gems → **homing daggers**
 - **Spiders** (after 55 s) skitter across the floor eating your loose gems — kill one and it refunds everything it swallowed +1; the **Leviathan** (after 120 s) rises at the arena centre, exhales skulls, and drags you toward its face every 9 s — walk or dash out of the pull
 - Segment-vs-sphere hit tests so fast daggers can't tunnel; skulls take knockback per hit
 - Two modes (menu toggle): **PURE** — Devil Daggers rules, one touch kills; **HYPER** — HYPERDEMON rules, a draining life-clock is your health: kills add their score in seconds (cap 60), a hit costs 10 + mercy i-frames, 0 = TIME OUT. Separate hi-scores
@@ -100,6 +100,7 @@ Twin-stick bullet-hell arena shooter built on Three.js r167.
 ## Changelog
 
 ### 2026-07
+- **hyperdagger v2 — feel + monochrome restyle:** faster all around (move 12 u/s, dash 30 u/s on a 1 s cooldown, hotter streams, quicker enemies); **double jump** replaces the shotgun (Space ×2 / tap the left touch stick); **flick either stick to dash** in the flick direction; on-screen DASH/JUMP buttons removed; new ⏸ **pause menu** (Esc on desktop) with persisted options — game speed ×1/1.25/1.5, FOV 70/80/90, smear/shake/chroma toggles. Art rebuilt **black & white with dark red as the single contrast color** — grey band sky with a red ember horizon, white-on-black grid that simply stops at the arena edge (barrier ring removed), white daggers/blade, red eyes/veins/gems/telegraphs
 - **hyperdagger HYPER mode:** menu-toggleable HYPERDEMON scoring — a draining life-clock is your health (start 30 s, cap 60 s): kills add their score in seconds, a hit costs 10 s + knockback + 1.2 s mercy i-frames instead of instant death, 0 = TIME OUT. PURE mode (one-touch DD rules) unchanged; separate localStorage hi-scores per mode
 - **hyperdagger roster completion:** **Spider** gem-thief (skitters on the floor eating loose gems, refunds its haul +1 when killed) and the **Leviathan** boss (60-HP voxel god-head at the arena centre after 120 s — exhales skulls, drags the player toward its face every 9 s, showers 10 gems on death). New `pull()` synth warning, `player.nudge()` external-force hook, debug spawners
 - **hyperdagger parity pass:** Devil Daggers feature parity — tap-shotgun / hold-stream firing, gem drops with magnet physics, 3-tier dagger levels (LV 3 homing), gilded 2-HP skulls, 12-ring **serpent** (centipede homage) with individually gibbing segments, drifting totems, telegraphed spawns. HYPERDEMON graphics parity — `AfterimagePass` motion smear, trauma-driven shake + chromatic-aberration `ShaderPass`, FOV kicks, dash move (Shift / on-screen DASH), rainbow hue-wheel sky, first-person checkerboard voxel gauntlet with recoil, death slow-mo. New `gems.js`; new synth sounds (shotgun/gem/levelup/dash/roar)

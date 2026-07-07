@@ -30,14 +30,17 @@ A first-person **Devil Daggers × HYPERDEMON homage** on Three.js r167 — survi
 of **voxel** skulls on a neon disc in a synthwave void; survival time is the only score.
 Enemies are string-art voxel models (one `InstancedMesh` per enemy, per-voxel colors) and
 deaths explode them into **physical voxel debris** (gravity, floor bounce, tumble) from a
-shared pool. DD-parity combat: **tap = shotgun burst, hold = dagger stream**, gems drop
-from heavy kills and level the daggers up (LV 3 = **homing**); enemy roster is skulls,
-gilded skulls, brutes, drifting totem spawners, and a **segmented serpent** whose rings
-gib individually. HYPERDEMON-parity feel: dash, afterimage motion smear, trauma-driven
-shake + chromatic aberration, rainbow-band sky, telegraph beams, voxel gauntlet.
-Desktop: pointer-lock mouse look, LMB tap/hold, Shift dash, Space jump. Touch: dual
-on-screen sticks — right stick looks *and auto-fires*, quick tap = shotgun — plus centre
-DASH/JUMP buttons. No build step — open `hyperdagger/index.html` (three.js via jsDelivr
+shared pool. Combat: **hold to stream daggers**, gems drop from heavy kills and level
+the daggers up (LV 3 = **homing**); enemy roster is skulls, crowned skulls, brutes,
+drifting totem spawners, a **segmented serpent** whose rings gib individually, spider
+gem-thieves, and the Leviathan boss. Movement: **jump + double jump**, dash with FOV
+kick. Art is **black & white with dark red as the only contrast color** — the neon grid
+just stops at the arena edge (no barrier visual). Desktop: pointer-lock mouse look,
+hold LMB, Space jump ×2, Shift dash, Esc = pause/options. Touch: dual on-screen sticks —
+left moves (quick tap = jump ×2), right looks *and auto-fires*, **flick either stick to
+dash** in the flick direction; ⏸ button top-right. The pause menu carries persisted
+options (`hyperDaggerOpts`): game speed ×1/1.25/1.5, FOV 70/80/90, and smear/shake/
+chroma toggles. No build step — open `hyperdagger/index.html` (three.js via jsDelivr
 importmap, same as toko-drop). Same `gh-pages` deploy caveat as paperboy.
 
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
@@ -125,10 +128,8 @@ bakes a model into one `InstancedMesh` (per-voxel `setColorAt`; hit-flash bright
 over the last 0.3 s; `burst(worldVoxels, …)` explodes a dead enemy's actual voxels
 outward from their centroid plus the killing dagger's impulse.
 
-**Combat:** LMB tap (or quick right-stick tap on touch) = shotgun burst; hold = stream
-(desktop stream starts after a 0.26 s hold so a tap stays a clean shotgun; touch streams
-immediately). Weapon levels via gems — `LEVEL_GEMS = [0,0,10,30]`, `WEAPON[lv]` sets
-stream rate / shotgun count / homing. LV 3 daggers steer toward the best target in a
+**Combat:** hold LMB (or hold the right touch stick) = dagger stream. Weapon levels via
+gems — `LEVEL_GEMS = [0,0,10,30]`, `WEAPON[lv]` sets stream rate / homing. LV 3 daggers steer toward the best target in a
 ~37° cone (`DaggerPool.update(dt, targets)`). Each dagger keeps `prev` position and
 collisions use **segment-vs-sphere** tests so fast projectiles can't tunnel. Skulls take
 knockback along the dagger direction (brutes mostly resist via lower `knock`).
@@ -158,23 +159,27 @@ knockback + 1.2 s `mercyT` i-frames, and 0 → `die(true)` = TIME OUT. Hi-scores
 per-mode (`hyperDaggerHi` / `hyperDaggerHiHyper`).
 
 **Input quirks:** right touch stick is *look + auto-fire* (Devil Daggers wants constant
-fire; a separate fire button costs a thumb); a sub-250 ms / sub-12 px tap on it is the
-shotgun. Pointer-lock mousemove deltas with `hypot > 400` are dropped — some browsers
-emit one giant bogus delta right after locking. DASH/JUMP are fixed circles
-bottom-centre, checked before stick assignment in `touchstart`. Shotgun-on-mousedown is
-gated on `document.pointerLockElement` so menu/resume clicks don't fire.
+fire; a separate fire button costs a thumb). A sub-250 ms / sub-12 px tap on the LEFT
+stick = jump (works mid-air for the double jump); a sub-260 ms / ≥36 px **flick on
+either stick = dash** along the screen-space flick direction. No on-screen buttons —
+touches that start on DOM controls (`button`, `#pauseBtn`) are left alone so the pause
+menu stays tappable. Pointer-lock mousemove deltas with `hypot > 400` are dropped —
+some browsers emit one giant bogus delta right after locking. On desktop the pause
+button can't be clicked while pointer-locked (lock routes all events to the canvas) —
+Esc is the pause path there; the button exists for touch.
 
 **Render / feel:** ACES tone mapping + `EffectComposer` (`RenderPass` →
 `AfterimagePass` 0.72 (HYPERDEMON motion smear) → `UnrealBloomPass` 0.7/0.45/0.6 →
-chromatic-aberration `ShaderPass` → `OutputPass`). Bloom is *selective* via HDR colors
-(daggers, edge ring, glow voxels exceed 1.0). A **trauma** value (kills, shotgun, dash,
+chromatic-aberration `ShaderPass` → `OutputPass`); smear/shake/chroma each sit behind a
+pause-menu toggle. Bloom is *selective* via HDR colors (white daggers/blade/crown, red
+eyes/veins/gems exceed 1.0). A **trauma** value (kills, shotgun, dash,
 death) drives camera shake + the chroma amount; dash and shotgun kick the FOV. The
 first-person **voxel gauntlet** is a camera child (`scene.add(camera)` required) at
 z −1.05 — closer and it smears into a slab at the screen corner; its glove is
 checkerboarded because unlit same-color voxels read as one flat polygon. Death = red
-vignette + slow-mo debris. Sky is a `BackSide` sphere with an animated hue-wheel band
-shader (`fog: false`); the floor is a `CanvasTexture` neon grid on a circle, fog
-`0x14041c` blends it toward the horizon. Death/menu/pause are DOM overlays; touch sticks
+vignette + slow-mo debris. Sky is a `BackSide` sphere: greyscale band shimmer over black with one dark-red ember
+glow at the horizon (`fog: false`); the floor is a `CanvasTexture` white-on-black grid
+on a circle of exactly `ARENA_R` — the grid simply ends at the edge, no barrier mesh. Death/menu/pause are DOM overlays; touch sticks
 are drawn on the `#canvas-ui` overlay each frame. Hi-score lives in `localStorage` under
 `hyperDaggerHi`. `window.__hd` exposes `{enemies, player, debris, daggers, gems,
 serpents, debug}` (debug: `addGems(n)`, `spawnSerpent()`, `spawnSpider()`,
