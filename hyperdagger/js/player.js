@@ -112,6 +112,13 @@ export class Player {
     this.camera.rotation.set(this.pitch, this.yaw, 0);
   }
 
+  /** External horizontal shove (e.g. the Leviathan's drag). */
+  nudge(dx, dz) {
+    this.feet.x += dx;
+    this.feet.z += dz;
+    this._sync();
+  }
+
   /** Push the player horizontally out of a solid at (x, z) with radius r. */
   pushOut(x, z, r) {
     const dx = this.feet.x - x, dz = this.feet.z - z;

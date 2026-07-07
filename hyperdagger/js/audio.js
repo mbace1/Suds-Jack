@@ -102,6 +102,12 @@ export class AudioKit {
     this._noise(0.7, 'lowpass', 300, 0.7, 0.35);
   }
 
+  pull() {
+    if (!this.ctx) return;
+    this._tone('sawtooth', 40, 130, 1.4, 0.28);
+    this._noise(1.4, 'lowpass', 220, 0.7, 0.2);
+  }
+
   spawn() {
     if (!this.ctx) return;
     this._tone('sawtooth', 90, 300, 0.35, 0.12);

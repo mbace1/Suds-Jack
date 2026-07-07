@@ -140,6 +140,120 @@ export class Totem extends VoxelEnemy {
   }
 }
 
+/**
+ * Gem thief (Devil Daggers spider homage). Skitters on the floor toward loose
+ * gems and eats them; killing it releases everything it swallowed plus one.
+ */
+export class Spider extends VoxelEnemy {
+  constructor(scene, pos) {
+    super(scene, MODELS.spider, pos);
+    this.type = 'spider';
+    this.hp = 6;
+    this.radius = 0.9;
+    this.score = 3;
+    this.stolen = 0;
+    this.vel = new THREE.Vector3();
+    this.wanderT = 0;
+    this.wander = new THREE.Vector3();
+    this.pos.y = 0.45;
+  }
+
+  update(dt, playerEye, gems) {
+    this.baseUpdate(dt);
+    // chase the nearest loose gem; otherwise skitter between edge waypoints
+    let target = null, best = Infinity;
+    if (gems) {
+      for (const g of gems.active) {
+        const d2 = g.m.position.distanceToSquared(this.pos);
+        if (d2 < best) { best = d2; target = g; }
+      }
+    }
+    if (target) {
+      _dir.copy(target.m.position).sub(this.pos);
+      _dir.y = 0;
+      const d = _dir.length();
+      if (d < 0.8) {
+        gems.recycle(gems.active.indexOf(target));
+        this.stolen++;
+        this.sprite.flash(0.8);
+        target = null;
+      } else {
+        _dir.divideScalar(d);
+      }
+    }
+    if (!target) {
+      this.wanderT -= dt;
+      if (this.wanderT <= 0) {
+        this.wanderT = 4;
+        const a = Math.random() * Math.PI * 2;
+        this.wander.set(Math.cos(a) * 20, 0, Math.sin(a) * 20);
+      }
+      _dir.copy(this.wander).sub(this.pos);
+      _dir.y = 0;
+      _dir.normalize();
+    }
+    this.vel.addScaledVector(_dir, 12 * dt);
+    if (this.vel.length() > 4.5) this.vel.setLength(4.5);
+    this.pos.addScaledVector(this.vel, dt);
+    this.pos.y = 0.45 + Math.abs(Math.sin(performance.now() * 0.012)) * 0.06;
+    _c.copy(this.pos).add(this.vel);
+    _c.y = this.pos.y;
+    this.group.lookAt(_c);
+  }
+
+  hit(dmg, dir) {
+    super.hit(dmg, dir);
+    this.vel.addScaledVector(dir, 4);
+    this.vel.y = 0;
+  }
+}
+
+/**
+ * Late-game boss (Devil Daggers Leviathan homage): a huge dark god-head that
+ * rises at the arena centre, exhales skulls, and periodically drags the
+ * player toward itself — dash out or die on its face.
+ */
+export class Leviathan extends VoxelEnemy {
+  constructor(scene, interval) {
+    super(scene, MODELS.leviathan, new THREE.Vector3(0, 3.2, 0));
+    this.type = 'leviathan';
+    this.hp = 60;
+    this.radius = 4.2;
+    this.score = 25;
+    this.interval = interval;
+    this.spawnTimer = interval;
+    this.emit = false;
+    this.pullCycle = 6;   // first pull comes fairly quickly
+    this.pullT = 0;
+    this.pullStarted = false;
+    this.bobT = 0;
+  }
+
+  get pullActive() { return this.pullT > 0; }
+
+  mouthPos(out) { return out.set(this.pos.x, 4.8, this.pos.z); }
+
+  update(dt) {
+    this.baseUpdate(dt);
+    this.bobT += dt;
+    this.group.rotation.y += dt * 0.4;
+    this.pos.y = 3.2 + Math.sin(this.bobT * 0.9) * 0.35;
+    if (this.spawnK < 1) return;
+    this.spawnTimer -= dt;
+    if (this.spawnTimer <= 0) {
+      this.spawnTimer = this.interval;
+      this.emit = true;
+    }
+    this.pullCycle -= dt;
+    if (this.pullCycle <= 0) {
+      this.pullCycle = 9;
+      this.pullT = 1.8;
+      this.pullStarted = true; // main plays the warning + applies the drag
+    }
+    if (this.pullT > 0) this.pullT -= dt;
+  }
+}
+
 /** One destructible ring of the serpent. Moved by its Serpent controller. */
 export class SerpentSegment extends VoxelEnemy {
   constructor(scene, pos, isHead) {

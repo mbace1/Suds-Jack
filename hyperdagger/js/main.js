@@ -10,7 +10,7 @@ import { Player } from './player.js';
 import { DaggerPool } from './daggers.js';
 import { GemPool } from './gems.js';
 import { DebrisPool, VoxelSprite, MODELS } from './voxel.js';
-import { Skull, Wraith, Brute, Totem, Serpent } from './enemy.js';
+import { Skull, Wraith, Brute, Totem, Serpent, Spider, Leviathan } from './enemy.js';
 import { AudioKit } from './audio.js';
 
 const ARENA_R = 26;
@@ -30,7 +30,7 @@ const WEAPON = [
   { stream: 17, shotgun: 12, homing: false },
   { stream: 17, shotgun: 14, homing: true },
 ];
-const GEM_DROPS = { totem: 3, brute: 2, serpent: 1 };
+const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10 };
 
 // ---------------------------------------------------------------- renderer
 const canvas = document.getElementById('canvas-game');
@@ -244,6 +244,8 @@ let shotgunCd = 0;
 let nextTotemAt = 0;
 let nextBruteAt = 0;
 let nextSerpentAt = 0;
+let nextSpiderAt = 0;
+let nextLevAt = 0;
 let deathAt = 0;
 let trauma = 0;
 let fovKick = 0;
@@ -299,6 +301,8 @@ function resetRun() {
   nextTotemAt = 0;
   nextBruteAt = 40;
   nextSerpentAt = 70;
+  nextSpiderAt = 55;
+  nextLevAt = 120;
   trauma = 0;
   fovKick = 0;
   slowmo = 0;
@@ -452,8 +456,24 @@ function director(dt) {
     if (serpents.length < SERPENT_CAP) spawnSerpent();
     nextSerpentAt = gameTime + 45;
   }
+  if (gameTime >= nextSpiderAt) {
+    if (enemies.filter(e => e.type === 'spider').length < 2) {
+      const at = ringSpot(10).clone();
+      audio.spawn();
+      telegraph(at, [1.6, 0.3, 0.4], 0.7, () => enemies.push(new Spider(scene, at)));
+    }
+    nextSpiderAt = gameTime + 30;
+  }
+  if (gameTime >= nextLevAt) {
+    if (!enemies.some(e => e.type === 'leviathan')) {
+      audio.roar();
+      telegraph(new THREE.Vector3(0, 0, 0), [2.4, 0.5, 0.5], 1.2,
+        () => enemies.push(new Leviathan(scene, 5)));
+    }
+    nextLevAt = gameTime + 120;
+  }
   for (const e of enemies) {
-    if (e.type === 'totem' && e.emit) {
+    if ((e.type === 'totem' || e.type === 'leviathan') && e.emit) {
       e.emit = false;
       if (skullCount() < SKULL_CAP) {
         const m = e.mouthPos(_sv);
@@ -533,7 +553,9 @@ function killEnemy(e, dir) {
   trauma = Math.max(trauma, e.type === 'skull' ? 0.18 : 0.35);
   let drops = GEM_DROPS[e.type] || 0;
   if (e.isHead) drops = 2;
+  if (e.type === 'spider') drops = 1 + e.stolen; // thieves give it all back
   for (let i = 0; i < drops; i++) gems.spawn(_c);
+  if (e.type === 'leviathan') trauma = 1;
   e.remove(scene);
 }
 
@@ -648,7 +670,22 @@ function step(dt) {
     trauma = Math.max(trauma, 0.15);
   }
   director(dt);
-  for (const e of enemies) e.update(dt, camera.position);
+  for (const e of enemies) {
+    e.update(dt, camera.position, gems);
+    // Leviathan drag: pulls the player in along the floor — dash out
+    if (e.type === 'leviathan' && e.alive) {
+      if (e.pullStarted) {
+        e.pullStarted = false;
+        audio.pull();
+        trauma = Math.max(trauma, 0.3);
+      }
+      if (e.pullActive) {
+        const dx = e.pos.x - player.feet.x, dz = e.pos.z - player.feet.z;
+        const d = Math.hypot(dx, dz);
+        if (d > 0.5) player.nudge(dx / d * 7 * dt, dz / d * 7 * dt);
+      }
+    }
+  }
   for (const s of serpents) s.update(dt, camera.position);
   separateSkulls();
   updateCombat(dt);
@@ -709,5 +746,7 @@ window.__hd = {
   debug: {
     addGems(n) { onGemsCollected(n); },
     spawnSerpent() { spawnSerpent(); },
+    spawnSpider() { enemies.push(new Spider(scene, ringSpot(8).clone())); },
+    spawnLeviathan() { enemies.push(new Leviathan(scene, 5)); },
   },
 };

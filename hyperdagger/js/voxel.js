@@ -64,6 +64,34 @@ export const MODELS = {
       ['.S.', 'SSS', '.S.'],
     ],
   },
+  // gem thief — squat body, corner legs, red eyes front
+  spider: {
+    voxelSize: 0.24,
+    palette: { B: 0x4d2030, D: 0x2a1020, L: 0x2a1020, R: [2.6, 0.25, 0.4] },
+    layers: [
+      ['L...L', '.....', 'L...L'],
+      ['.BBB.', 'BDBDB', '.BBB.'],
+      ['.RBR.', 'BBBBB', '.BBB.'],
+    ],
+  },
+  // late-game boss: dark god-head, glowing eyes/horns/crown, voxelSize 0.7
+  leviathan: {
+    voxelSize: 0.7,
+    palette: {
+      W: 0x3d2545, S: 0x2a1732, K: 0x150a1c,
+      R: [3.0, 0.3, 0.3], V: [1.8, 0.5, 2.2], C: [2.0, 1.6, 0.3],
+    },
+    layers: [
+      ['..WWWWW..', '..SSSSS..'],
+      ['.WWWWWWW.', '.WSWSWSW.', '..WWWWW..'],
+      ['.WWWKWWW.', 'WWWWWWWWW', '.WWWWWWW.'],
+      ['WRRWKWRRW', 'WWWWWWWWW', '.WWWWWWW.'],
+      ['WWWWWWWWW', 'WWWWWWWWW', '.WWWWWWW.'],
+      ['.WWWWWWW.', '.WWWWWWW.', '..WWWWW..'],
+      ['V.C.C.C.V', '.........', '.........'],
+      ['V.......V', '.........', '.........'],
+    ],
+  },
   // first-person gauntlet: checkerboarded glove (unlit voxels need baked
   // shading to read as cubes), long HDR gold blade forward (row 0)
   hand: {

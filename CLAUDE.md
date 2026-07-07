@@ -86,7 +86,7 @@ hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel
   js/
     main.js     # Scene (grid arena, rainbow sky, afterimage/bloom/chroma), director, combat, HUD
     voxel.js    # String-art voxel models + parser, VoxelSprite (InstancedMesh), DebrisPool physics
-    enemy.js    # Skull/Wraith (chasers), Brute (tank), Totem (drifting spawner), Serpent (chain)
+    enemy.js    # Skull/Wraith, Brute, Totem (spawner), Serpent (chain), Spider (thief), Leviathan
     daggers.js  # Object-pooled dagger projectiles; homing steer at LV 3; segment hit tests
     gems.js     # DD-style gem drops: ballistic scatter, hover, player magnet, collect
     player.js   # First-person controller: yaw/pitch, WASD/stick strafe, jump, dash, head-bob
@@ -144,8 +144,12 @@ after 40 s every 16 s; **serpents** (cap 2) after 70 s every 45 s. A `Serpent` i
 controller owning 12 `SerpentSegment` enemies (pushed into the main `enemies` array so
 the normal collision loops apply); the head weaves around the player and dive-bombs
 every 8 s, surviving segments chain-follow at 0.95 u spacing, and each ring gibs + drops
-a gem individually. A pairwise separation pass (skull/brute only) keeps the swarm from
-collapsing into one blob.
+a gem individually. **Spiders** (cap 2, after 55 s every 30 s) skitter on the floor and
+eat loose gems — killing one refunds everything it swallowed + 1. The **Leviathan**
+(after 120 s, one at a time, respawning every 120 s) is a 60-HP god-head at the arena
+centre that exhales skulls and every 9 s drags the player toward itself for 1.8 s
+(`player.nudge` at 7 u/s — walk or dash out); it drops 10 gems. A pairwise separation
+pass (skull/brute only) keeps the swarm from collapsing into one blob.
 
 **Input quirks:** right touch stick is *look + auto-fire* (Devil Daggers wants constant
 fire; a separate fire button costs a thumb); a sub-250 ms / sub-12 px tap on it is the
@@ -167,8 +171,8 @@ shader (`fog: false`); the floor is a `CanvasTexture` neon grid on a circle, fog
 `0x14041c` blends it toward the horizon. Death/menu/pause are DOM overlays; touch sticks
 are drawn on the `#canvas-ui` overlay each frame. Hi-score lives in `localStorage` under
 `hyperDaggerHi`. `window.__hd` exposes `{enemies, player, debris, daggers, gems,
-serpents, debug}` (debug: `addGems(n)`, `spawnSerpent()`) for console tinkering and
-automated smoke tests.
+serpents, debug}` (debug: `addGems(n)`, `spawnSerpent()`, `spawnSpider()`,
+`spawnLeviathan()`) for console tinkering and automated smoke tests.
 
 ## Paper Route (`paperboy/`) — Architecture Notes
 
