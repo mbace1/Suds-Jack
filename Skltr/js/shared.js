@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { visualTest } from './modes.js?v=11';
+import { visualTest } from './modes.js?v=12';
 
 // ── Two full palettes ─────────────────────────────────────────────────────────
 // NIGHT (default): a white line drawing on pure black (Vib Ribbon look) — shapes
@@ -153,7 +153,7 @@ export class Bunny {
     this.phase = 0; this.flash = 0; this.recoil = 0;
     this.squash = 0; this.perkT = 0; this.breath = 0;         // landing squash / kill ear-perk / idle breathing clocks
     this.twitchT = 1.5; this.twitchEar = null; this.twitchA = 0;
-    this._airPrev = false;
+    this._airPrev = false; this.dashK = 0;                    // smoothed dash-stretch factor
   }
 
   _buildAR(hand, e) {
@@ -164,7 +164,7 @@ export class Bunny {
     box(hand, 0.025, 0.06, 0.03, 0, 0.03, 0.28, e);          // front sight
   }
 
-  update(dt, { speed = 0, aimPitch = 0, yOffset = 0, airborne = false, dashing = false, firing = false, accent = null } = {}) {
+  update(dt, { speed = 0, aimPitch = 0, yOffset = 0, airborne = false, dashing = false, firing = false, vy = 0, accent = null } = {}) {
     this.phase += dt * (3 + speed * 1.35);
     this.breath += dt;
     this.recoil = firing ? Math.min(1, this.recoil + 0.6) : Math.max(0, this.recoil - dt * 7);
@@ -180,9 +180,14 @@ export class Bunny {
     this.perkT = Math.max(0, this.perkT - dt * 2.5);
     this.twitchA = Math.max(0, this.twitchA - dt * 4);
 
-    // squash & stretch: compress on landing, slight stretch while airborne
+    // squash & stretch: compress on landing, slight stretch while airborne, and a
+    // smoothed velocity-stretch along the lunge while dashing (Returnal blink read)
+    const dk = this.dashK = lerp(this.dashK, dashing ? 1 : 0, Math.min(1, dt * 14));
     const sq = this.squash, stretch = airborne ? 0.06 : 0;
-    this.body.scale.set(1 + sq * 0.16, 1 - sq * 0.24 + stretch, 1 + sq * 0.16);
+    this.body.scale.set(
+      (1 + sq * 0.16) * (1 - 0.07 * dk),
+      (1 - sq * 0.24 + stretch) * (1 - 0.05 * dk),
+      (1 + sq * 0.16) * (1 + 0.22 * dk));
 
     // idle life: breathing bob, weight shift, a slow look-around, occasional ear twitch
     if (idle) {
@@ -202,7 +207,8 @@ export class Bunny {
       leg.shin.pivot.rotation.x = lerp(leg.shin.pivot.rotation.x, sh, dt * rate);
       leg.foot.rotation.x = -(leg.thigh.pivot.rotation.x + leg.shin.pivot.rotation.x) * 0.55;
     };
-    if (airborne) { setLeg(this.legL, -0.55, 0.5, 12); setLeg(this.legR, 0.75, 1.15, 12); }        // split-leg jump pose
+    if (airborne && vy > 1) { setLeg(this.legL, -0.7, 0.9, 12); setLeg(this.legR, 0.9, 1.25, 12); } // rising: knees tucked hard
+    else if (airborne) { setLeg(this.legL, 0.12, 0.35, 10); setLeg(this.legR, -0.1, 0.3, 10); }     // falling: legs reach for the ground
     else if (dashing) { setLeg(this.legL, 0.85, 0.5, 16); setLeg(this.legR, 1.05, 0.7, 16); }       // legs trail the lunge
     else {
       const a = Math.sin(this.phase), b = Math.sin(this.phase + Math.PI);
@@ -211,7 +217,7 @@ export class Bunny {
     }
 
     // torso: lean into dashes/speed, jerk back when hurt, twist the chest with the stride
-    let lean = dashing ? 0.8 : (speed > 6 ? 0.26 : (airborne ? 0.15 : 0));
+    let lean = dashing ? 1.0 : (speed > 6 ? 0.26 : (airborne ? 0.15 : 0));
     if (hurt > 0) lean = -0.5 * hurt;
     this.body.rotation.x = lerp(this.body.rotation.x, lean, dt * 12);
     if (!idle) this.body.rotation.z = hurt > 0 ? (Math.random() - 0.5) * 0.2 * hurt : lerp(this.body.rotation.z, s * 0.06, dt * 10);

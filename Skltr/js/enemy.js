@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { FILL_MAT, makeEye, C, lerp } from './shared.js?v=11';
-import { visualTest } from './modes.js?v=11';
+import { FILL_MAT, makeEye, C, lerp } from './shared.js?v=12';
+import { visualTest } from './modes.js?v=12';
 
 // Archetypes — animal ROBOTS in the wireframe sketch style: a robot wolf, a tank
 // tortoise, a wasp drone, and three heavy chassis bosses. y is the shape's CENTER

@@ -30,9 +30,9 @@ export function buy(id) {
 export function resolvedStats() {
   const s = {};
   const hp = levelOf('hp'); if (hp) s.maxHp = 100 + hp * 12;
-  const dc = levelOf('dashcd'); if (dc) s.dashCD = Math.max(0.8, 1.0 - dc * 0.1);
+  const dc = levelOf('dashcd'); if (dc) s.dashCD = Math.max(0.7, 0.9 - dc * 0.1);
   const fr = levelOf('firerate'); if (fr) s.fireInterval = Math.max(0.09, 0.11 - fr * 0.01);
-  const ifr = levelOf('iframe'); if (ifr) s.iframe = 0.34 + ifr * 0.05;
+  const ifr = levelOf('iframe'); if (ifr) s.iframe = 0.3 + ifr * 0.05;
   if (levelOf('headstart')) s.startAdr = 1;
   return s;
 }
