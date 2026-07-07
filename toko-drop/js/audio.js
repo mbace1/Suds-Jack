@@ -122,6 +122,11 @@ class AudioSystem {
   lobSplash() { this._tone(150, 0.28, 'sine', 0.30, 55); this._noise(0.16, 0.20); }
   // BOTFLY homing launch (v108): soft rising zip — a warning you can hear.
   botShot()   { this._tone(380, 0.16, 'triangle', 0.14, 1150); }
+  // Shooter entrance (v120): sharp two-note alert — a ranged threat just arrived.
+  shooterPing() {
+    this._tone(1150, 0.06, 'square', 0.13);
+    setTimeout(() => this._tone(1550, 0.07, 'square', 0.11), 75);
+  }
   playerHit() { this._tone(100, 0.32, 'sawtooth', 0.38); this._noise(0.22, 0.18); }
   playerDie() { this._tone(65,  0.70, 'sawtooth', 0.50); this._noise(0.42, 0.60); }
   pickup() {

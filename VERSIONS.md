@@ -7,103 +7,30 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v119 — 2026-07-06
-**FIX: black screen right after the v118 deploy — cache-bust the vendored three.js imports**
-- v118 introduced the brand-new `vendor/` paths; GitHub Pages' edge caches responses (including 404s) for ~10 minutes, so loading during propagation got a failed `three` import → black screen, and the failure could stick in browser cache. Verified the deployed gh-pages bytes themselves boot clean headless — the code was fine, the edge window wasn't
-- The importmap's vendor entries now carry the standard `?v=` token (the RoundedBoxGeometry addon via an exact-specifier entry, since a prefix mapping can't carry a query). Every release busts any stale/404-cached copy; bump-version.sh's global token replace covers them automatically
-- Cache-bust `?v=72` → `?v=73`; HUD label → v119
-
----
-
-## v118 — 2026-07-05
-**Quality-of-life batch: vendored three.js, Sheets-ready feedback, loot popups, real valuables meshes, BOSS IN N, favicon + share metadata**
-- **three.js vendored locally** (`toko-drop/vendor/`, three@0.167.0 min build + RoundedBoxGeometry): the CDN importmap was the game's single point of failure and is blocked on some networks. The game now loads with zero external requests
-- **Feedback → Google Sheets, ready to switch**: `scripts/feedback-sheet.gs` is a paste-in Apps Script web app (3-minute setup documented in the file) that appends each SEND & CONTINUE to a Sheet with no submission limit; `postFeedback()` now has a `SHEET_ENDPOINT` slot that takes over from the Formspree fallback the moment the deployed /exec URL is pasted in (text/plain + no-cors, since Apps Script can't answer CORS preflights)
-- **Loot value popups**: collecting cash/prizes floats "+150"/"+1000" in gold at the pickup point (DamageNumber generalized to carry text/color); multiplier orbs float "x2!"
-- **Valuables look like valuables**: cash piles are flat green bill-stack boxes, big prizes are spinning gold gift boxes (shared geometries, no leaks); all pickups gained a slow spin
-- **BOSS IN N** on the traversal minimap — see the floor boss coming ("BOSS NEXT!" in red when it's the next room)
-- **Favicon + share metadata**: favicon.png / apple-touch-icon.png (from the logo) and OG/Twitter card tags so a shared link unfurls with the TOKO DROP artwork
-- Cache-bust `?v=71` → `?v=72`; HUD label → v118
-
----
-
-## v117 — 2026-07-05
-**Playtest feedback reaches the developer — SEND & CONTINUE posts to a form inbox**
-- The death screen's **SEND & CONTINUE** record (chips + free text + the compact run summary: wave, time, score, seed, mode, hit count, top attacker) is now also **POSTed to a Formspree inbox**, enriched with build number (from the module's own `?v=` token), SMASH TV/announcer flags, language, screen size, and user agent
-- **Explicit consent by design**: fires only on the SEND action — SKIP sends nothing, and no automatic beacons exist. Fire-and-forget: offline, ad-blocked, or over-quota all fail silently and never touch the local `tokoDropFeedback` save
-- Free-tier note: ~50 submissions/month on Formspree's free plan
-- Cache-bust `?v=70` → `?v=71`; HUD label → v117
-
----
-
-## v116 — 2026-07-05
-**Composed waves — mob floods stay, shooters become deliberate; floor valuables with rare multipliers**
-- **Wave design (both modes)**: the schedule is now composed from two pools. **Melee mobs flood** (groups/twins of cheap bodies — the fodder you mow), while **shooting enemies are placed deliberately**: capped (1 at wave 1 → 5 by wave 12; swarms allow 1, boss waves 2), arriving spaced ~3s apart, and given **maximally separated positions** — spread entry angles in normal mode, different doors in SMASH TV — so their fire lanes cross the arena and each shooter is a prioritisation problem, not part of the noise. Shooters no longer appear in the random mob draw at all
-- **Floor valuables (SMASH TV)**: 3-6 items scattered per room — everyday **cash piles** (small orb, 150 + wave×10), occasional **big prizes** (large orb, 1000 + wave×50, ~14%), and a **rare score-multiplier orb** (~4%). They lie there the whole room; walk over them. Values carried per-item (`pu._value`), doubled by an active multiplier; kill-drop nuggets unchanged
-- Spawn schedule now explicitly sorted by delay (shooter/mob interleave broke the drain queue's ordering assumption)
-- Cache-bust `?v=69` → `?v=70`; HUD label → v116
-
----
-
-## v115 — 2026-07-05
-**SMASH TV rooms: fixed studio-room size, real door frames, walk-out exits with a minimap room choice**
-- **One fixed room size in both orientations** (new `smash` arena preset, 30×22 ≈ the show's 4:3 room); `fitPresetCamera()` (generalized from v112) fits it to whatever screen you hold — portrait just views it from farther out. Toggling SMASH TV on the title reframes the arena immediately
-- **Real doorways**: the glow quads grew posts + lintel frames — enemies now spawn AT the door mouth and visibly step through into the room
-- **Room traversal like the show**: clearing a room no longer chains straight to the next wave — 2-3 **EXIT doors open (green)**, a **ROOM CLEAR! / BONUS** tally card shows, and you **walk out through a door of your choosing**; the next room starts with you entering through the **opposing wall** (brief mercy window). No backtracking through the wall you came in from
-- **Educated moves**: rooms live on a 2D lattice with deterministic per-run kinds — each EXIT door and the **zoomed 3×3 minimap** (top-right, live player dot, visited-room marks) show what's behind it: MOBS / SWARM / HEAVY / **PRIZE$** (lighter wave, 3 convoys) / **BOSS!** (every 8th room, all exits lead there)
-- Announcer gets exit lines ("THE DOORS ARE OPEN — MOVE!"); room intro card now names the room kind
-- Cache-bust `?v=68` → `?v=69`; HUD label → v115
-
----
-
-## v114 — 2026-07-05
-**SMASH TV mode actually feels like the show — visible doors, room-long door bursts, floor cash, intro card, applause**
-- **Visible doors**: four glowing doorway quads at the arena edge midpoints (matching the spawn angles). Dim while idle; a door **flares up in the ~0.9s before a burst pours through it** — the show's "they're coming through THAT wall" telegraph. Built at run start, torn down with the run
-- **Room-long door bursts**: instead of dumping most of the wave up front, entries now arrive as bursts of ~3 every ~2-3s from ONE door at a time (walking around the room). The wave can't end while bursts are still queued — the room keeps pouring; clearing between pulses just buys a breather
-- **Cash on the floor**: kills have a 15% chance to drop a score nugget that lies where the enemy died for 6s — walk over it. Big money. Big prizes
-- **Game-show wave intro**: big "WAVE N" (or "WAVE N — BOSS!") card flashes on the HUD at each room start
-- **Applause**: staggered noise-burst crowd swell on room clear (through the master volume)
-- All of it gated on the SMASH TV toggle; normal mode untouched
-- Cache-bust `?v=67` → `?v=68`; HUD label → v114
-
----
-
-## v113 — 2026-07-05
-**FIX: death screen fits landscape — compact layout on short viewports instead of hiding half below the fold**
-- On a ~430px-high landscape phone the death screen was cut off mid-chips: the textarea and SEND/SKIP buttons were only reachable by scrolling (the reported "death screen not working for landscape")
-- The `@media (max-height: 560px)` compact block now also covers the death screen: "YOU DIED" 52→28px, tightened stat/seed/heading margins, smaller chips (10.5px / 4px padding), chip rows widened to 620px so each fits one line on a wide screen, tighter buttons — the whole screen (score → chips → textarea → buttons) fits ~400px with no scrolling. Elements got classes (`d-title`/`d-sub`/`fb-head`/`fb-row`; `fb-chip`/`fb-btn` already existed) so the media query can override their inline styles
-- Portrait death screen unchanged (media query only bites under 560px height)
-- Cache-bust `?v=66` → `?v=67`; HUD label → v113
-
----
-
-## v112 — 2026-07-04
-**Landscape zoom is now aspect-aware — the camera dollies in until the arena just fits YOUR screen**
-- v111's fixed landscape framing was capped by the 16:9 fit, leaving unused margin on wider phones ("still needs zooming in"). New `fitLandscapeCamera()` binary-searches the camera distance along the preset's view ray until the arena's four corners just fit the current viewport (|x| ≤ 0.96, |y| ≤ 0.93) — at 19.5:9 the camera comes in from dist 23.3 → ~19.8 and top/bottom margins drop from 0.305/0.326 to ~0.21/0.18
-- Refits live: on rotation and any resize while on the title (camera-only, no geometry churn), and at every run start; a run keeps its framing mid-fight
-- Same view ray/tilt as v111; 16:9 screens get the identical v111 framing (they were already at the fit limit). Portrait untouched
-- Cache-bust `?v=65` → `?v=66`; HUD label → v112
-
----
-
-## v111 — 2026-07-04
-**Landscape camera zoomed in — arena's top gap now matches the bottom gap**
-- The landscape camera framed the arena low: the far edge sat 0.63 NDC from the screen top while the near edge sat 0.22 from the bottom (the reported "blur bar on top" far from the edge). New framing (`camRest [0, 20.5, 13.5]`, `camLook [0, 0, 2.5]`) was solved numerically: top/bottom margins now 0.305/0.326 (symmetric) and the arena fills ~19% more of the screen height, same 3/4 view tilt (61.8° vs 59.3°)
-- Fit constraint is the arena's near corners at 16:9 (x = −0.96); phone aspects (19.5:9, 2:1) have more side headroom. Portrait framing untouched
-- Cache-bust `?v=64` → `?v=65`; HUD label → v111
-
----
-
-## v110 — 2026-07-04
-**FIX: landscape screens never get the vertical map — arena always follows the viewport, ORIENTATION toggle removed**
-- v106's auto-orientation deferred to any explicit ORIENTATION-chip choice forever — so a stale saved "portrait" pick (from any past tap on the toggle) pinned the tall arena onto a landscape screen. Viewport aspect (`innerWidth > innerHeight`) is now the **single source of truth**: checked at boot, re-checked live on rotation at the title, and re-derived at every run start. Old `tokoDropLandscape`/`tokoDropOrientSet` saves are deliberately ignored
-- The ORIENTATION toggle chip is gone from the title (there's nothing to choose — a manual pick could only ever create a mismatch); the title column gets shorter, which also helps landscape phones
-- A running game still never swaps bounds mid-fight; rotating mid-run takes effect on the next run
-- Cache-bust `?v=63` → `?v=64`; HUD label → v110
+## v120 — 2026-07-07
+**Design round two: risk-priced exits, greed placement, shooter entrance pings (both modes), room-transition dip, PWA install**
+- **Risk-priced exits (SMASH TV)**: the minimap choice is now a trade, not a freebie — **HEAVY rooms pay 2× floor loot** (+1 item, label reads "HEAVY 2×$"), **PRIZE$ rooms drop far fewer weapon pods** from moths (20/45/35 vs the smash-standard 40/30/30 — loot-rich but firepower-poor), SWARM's reward stays its streak-scoring bodies
+- **Greed placement (SMASH TV)**: big gold prizes now spawn NEAR a door — the walls that pour enemies — so grabbing the gift box is a risk you choose; cash piles stay scattered
+- **Shooter entrance pings (BOTH modes)**: when a deliberate shooter (v116) enters, a pulsing "!" hangs over it for ~1.6s and a sharp two-note alert plays — the game tells you the tactical picture changed
+- **Room-transition dip (SMASH TV)**: walking through an exit now fades to black for ~half a second with the room swap at the fade peak — traversal reads as going THROUGH the door, not a teleport (upgrade-card rooms skip it; the card panel is its own transition)
+- **PWA install**: `manifest.webmanifest` + 192/512 icons — the game installs to a phone home screen and runs fullscreen
+- Cache-bust `?v=73` → `?v=74`; HUD label → v120
 
 ---
 
 ## Archive
+
+**v110–v119 summary (2026-07-04 – 2026-07-06)**
+- v110: FIX — arena always follows the viewport (stale ORIENTATION-chip choice pinned vertical maps onto landscape screens); toggle removed
+- v111: Landscape camera re-framed — symmetric top/bottom margins, ~19% more arena on screen
+- v112: Aspect-aware landscape zoom — fitPresetCamera() dollies in until the arena just fits the viewport
+- v113: FIX — death screen fits landscape (compact @media block; chips/textarea/buttons all on screen)
+- v114: SMASH TV feel — glowing door telegraphs, room-long door bursts, kill-drop floor cash, wave intro card, applause
+- v115: SMASH TV rooms — fixed studio-room size both orientations, post+lintel door frames, walk-out EXIT doors entering the next room from the opposing wall, 3×3 traversal minimap with room kinds (MOBS/SWARM/HEAVY/PRIZE$/BOSS!)
+- v116: Composed waves (both modes) — melee mobs flood, shooters capped/spaced/spread as tactical problems; floor valuables (cash piles, big prizes, rare multipliers)
+- v117: SEND & CONTINUE posts feedback + run summary to a Formspree inbox (explicit consent, fire-and-forget)
+- v118: QoL — vendored three.js (no CDN), Sheets-ready feedback (scripts/feedback-sheet.gs + SHEET_ENDPOINT), loot value popups, bill-stack/gift-box valuables meshes, BOSS IN N, favicon + OG tags
+- v119: FIX — cache-bust vendored imports (Pages edge caches 404s ~10 min; the brand-new vendor/ path black-screened right after the v118 deploy)
 
 **v100–v109 summary (2026-07-03 – 2026-07-04)**
 - v100: Trail rework — afterimages spawn behind movers; SLUDGE poison is one continuous ribbon (PoisonZone invisible pure-damage)
