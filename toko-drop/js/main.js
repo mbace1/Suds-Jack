@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=73';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=73';
-import { Player, PLAYER_RADIUS } from './player.js?v=73';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=73';
-import { audio } from './audio.js?v=73';
-import { initDesigner } from './designer.js?v=73';
-import { t, getLang, setLang, langs } from './lang.js?v=73';
-import { TUNING } from './tuning.js?v=73';
+import { InputManager } from './input.js?v=74';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=74';
+import { Player, PLAYER_RADIUS } from './player.js?v=74';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=74';
+import { audio } from './audio.js?v=74';
+import { initDesigner } from './designer.js?v=74';
+import { t, getLang, setLang, langs } from './lang.js?v=74';
+import { TUNING } from './tuning.js?v=74';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1051,12 +1051,17 @@ let smashRoomKind = null;   // kind chosen via the exit taken; null = derive fro
 let exitPhase = false;      // room cleared, doors open, player walking out
 let exitDoors = [];         // [{ door: 0-3, kind }]
 let roomTallyT = 0;         // bonus tally card timer
+let roomFadeT  = 0;         // v120: black dip while walking through an exit door
+let _roomSwap  = null;      // exit taken, waiting for the fade peak to swap rooms
 let _entryDoor = null;      // door index the player enters the NEXT room through
 let _cameFromDoor = null;   // wall the player entered THIS room through (no backtracking)
+// Risk-priced room kinds (v120): the exit choice is a trade, not a freebie —
+// HEAVY rooms pay double floor loot (+1 item), PRIZE$ rooms drop fewer weapon
+// pods from moths (loot-rich but firepower-poor), SWARM feeds kill streaks.
 const ROOM_KINDS = {
   normal: { label: 'MOBS',   color: '#aab4ff' },
   swarm:  { label: 'SWARM',  color: '#66ffcc' },
-  spike:  { label: 'HEAVY',  color: '#ffaa44' },
+  spike:  { label: 'HEAVY 2×$', color: '#ffaa44' },
   prize:  { label: 'PRIZE$', color: '#ffdd44' },
   boss:   { label: 'BOSS!',  color: '#ff5566' },
 };
@@ -1735,6 +1740,13 @@ function drawHUD() {
     ctx.fillRect(0, 0, uiCanvas.width, uiCanvas.height);
   }
 
+  // Room-traversal black dip (v120): peak at roomFadeT = 0.3, where the swap fires.
+  if (roomFadeT > 0) {
+    const a = roomFadeT > 0.3 ? (0.55 - roomFadeT) / 0.25 : roomFadeT / 0.3;
+    ctx.fillStyle = `rgba(5,5,16,${Math.max(0, Math.min(1, a)).toFixed(2)})`;
+    ctx.fillRect(0, 0, uiCanvas.width, uiCanvas.height);
+  }
+
   // SMASH TV room intro card (v114): big game-show wave title, quick in/out.
   if (waveIntroT > 0 && gameState === 'playing') {
     const a = Math.min(1, waveIntroT * 3, (1.5 - waveIntroT) * 5);
@@ -1864,6 +1876,23 @@ function drawHUD() {
     ctx.textAlign = 'left';
   }
 
+  // Shooter entrance pings (v120): pulsing "!" over freshly arrived shooters
+  ctx.textAlign = 'center';
+  for (const e of enemies) {
+    if (!e._pingT || e._pingT <= 0 || !e.alive) continue;
+    const p = toScreen({ x: e.position.x, y: e.fxY + e.radius * 2 + 0.8, z: e.position.z });
+    const a = Math.min(1, e._pingT * 2);
+    const pulse = 1 + 0.18 * Math.sin(performance.now() * 0.02);
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.font = `bold ${Math.round(20 * pulse)}px monospace, sans-serif`;
+    ctx.shadowColor = '#ff4444';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = '#ffdd44';
+    ctx.fillText('!', p.x, p.y);
+    ctx.restore();
+  }
+
   // Damage numbers / loot value popups
   ctx.textAlign = 'center';
   for (const dn of damageNumbers) {
@@ -1911,7 +1940,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v119', 16, uiCanvas.height - 12);
+  ctx.fillText('v120', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2338,6 +2367,8 @@ function clearFX() {
   clearSmashDoors();
   waveIntroT = 0;
   roomTallyT = 0;
+  roomFadeT  = 0;
+  _roomSwap  = false;
   exitPhase  = false;
   exitDoors  = [];
   chunkPool.clear();
@@ -2408,6 +2439,7 @@ function spawnWave() {
         delay: entry.t + (isGroup ? k * 0.12 : 0),     // light stagger → rolling advance
         angle,
         door: entry.door,                               // SMASH TV: which wall door (telegraph FX)
+        shooter: entry.shooter || false,                // v120: entrance ping on tactical shooters
         clusterOffset,
         speedMult: speedMult * (isGroup ? 1.2 : 1),     // groups push in with intent
         intervalMult,
@@ -2434,22 +2466,31 @@ function spawnWave() {
   // the room floor — walk over them. Rarely, a score-multiplier orb glitters
   // among them. Cleared with the room (spawnWave wipes powerups).
   if (smashMode) {
-    const n = 3 + Math.floor(rng() * 4);  // 3-6 valuables per room
+    const heavy = kind === 'spike';                     // v120: HEAVY rooms pay 2×$
+    const n = 3 + Math.floor(rng() * 4) + (heavy ? 1 : 0);
     for (let i = 0; i < n; i++) {
-      const vx = (rng() * 2 - 1) * (HALF_X - 3);
-      const vz = (rng() * 2 - 1) * (HALF_Z - 3);
+      let vx = (rng() * 2 - 1) * (HALF_X - 3);
+      let vz = (rng() * 2 - 1) * (HALF_Z - 3);
       const roll = rng();
+      const isPrizeItem = roll <= 0.96 && roll > 0.82;
+      if (isPrizeItem) {
+        // Greed placement (v120): big prizes sit NEAR a door — the walls that
+        // pour enemies. Grabbing the golden gift box is a risk you choose.
+        const [gx, gz] = smashDoorPos(Math.floor(rng() * 4));
+        vx = gx * 0.8 + (rng() - 0.5) * 3;
+        vz = gz * 0.8 + (rng() - 0.5) * 3;
+      }
       const pu = new Powerup(scene, vx, vz, roll > 0.96 ? 'scoremult' : 'score');
       pu._life = 999;  // floor loot lasts the whole room
       if (pu._type === 'score') {
-        if (roll > 0.82) {
+        if (isPrizeItem) {
           // Big prize — a TV, a toaster, a golden duck. Gift-box mesh, worth more.
-          pu._value = 1000 + wave * 50;
+          pu._value = (1000 + wave * 50) * (heavy ? 2 : 1);
           pu.mesh.geometry = PRIZE_GEO;
           pu.mat.color.setHex(0xffcc33);
           pu.mesh.scale.setScalar(1.25);
         } else {
-          pu._value = 150 + wave * 10;   // everyday cash pile — flat bill stack
+          pu._value = (150 + wave * 10) * (heavy ? 2 : 1);  // everyday cash pile
           pu.mesh.geometry = CASH_GEO;
           pu.mat.color.setHex(0x99ee66);
         }
@@ -2730,6 +2771,12 @@ function loop() {
     const ox = s.clusterOffset ? s.clusterOffset.x : 0;
     const oz = s.clusterOffset ? s.clusterOffset.z : 0;
     const en = new Enemy(scene, s.type, bx + ox, bz + oz, s.speedMult, s.intervalMult);
+    // v120: shooters are the tactical objects (v116) — announce their entrance
+    // with a brief "!" ping + alert blip so the player can start prioritising.
+    if (s.shooter) {
+      en._pingT = 1.6;
+      audio.shooterPing();
+    }
     if (s.boss) {
       if (en.type !== EnemyType.BAMBU && en.type !== EnemyType.PYRA) {
         en.hp = Math.ceil(en.hp * 3); en._hpMult = 3;
@@ -2765,7 +2812,11 @@ function loop() {
   if (_hitFlashT > 0) _hitFlashT -= dt;
   if (waveClearFlashT > 0) waveClearFlashT -= dt;
 
-  for (const e of enemies) { e.update(dt, player.position, bullets, HALF_X, HALF_Z); e.updateDeath(dt); }
+  for (const e of enemies) {
+    e.update(dt, player.position, bullets, HALF_X, HALF_Z);
+    e.updateDeath(dt);
+    if (e._pingT > 0) e._pingT -= dt;
+  }
 
   // Separation: push overlapping enemies apart so they never fully stack.
   // Two passes per frame smooth out chain-reaction bunching without noticeable jitter.
@@ -3027,11 +3078,17 @@ function loop() {
           } else {
             // Single drop drifting from the kill position. Moths carry more
             // than weapons (v89): mostly pods, sometimes pure score or a
-            // score-multiplier orb. SMASH TV leans harder into prizes.
+            // score-multiplier orb. SMASH TV leans harder into prizes, and
+            // PRIZE$ rooms (v120) are loot-rich but firepower-poor: pods are
+            // rare there — the trade for the lighter wave and extra convoys.
             const roll = Math.random();
-            const dropType = smashMode
-              ? (roll < 0.40 ? randomWeaponPodId(lv2Ok) : roll < 0.70 ? 'score' : 'scoremult')
-              : (roll < 0.55 ? randomWeaponPodId(lv2Ok) : roll < 0.80 ? 'score' : 'scoremult');
+            const rk = smashMode ? (smashRoomKind || waveKind(wave)) : null;
+            // [pod, score] bands; the rest is scoremult. prize 20/45/35,
+            // smash 40/30/30 (v116), classic 55/25/20 (v89).
+            const [podC, scoreC] = rk === 'prize' ? [0.20, 0.45]
+                                 : smashMode      ? [0.40, 0.30] : [0.55, 0.25];
+            const dropType = roll < podC ? randomWeaponPodId(lv2Ok)
+                           : roll < podC + scoreC ? 'score' : 'scoremult';
             const driftAngle = Math.random() * Math.PI * 2;
             const driftSpeed = 0.8 + Math.random() * 0.6;
             const pu = new Powerup(scene, kx, kz, dropType,
@@ -3251,6 +3308,9 @@ function loop() {
 
   // SMASH TV exit walk: touching an open EXIT door commits the choice — next
   // room's kind is what the door advertised, entered from the opposing wall.
+  // The swap happens under a quick black dip (v120) so traversal reads as
+  // walking THROUGH the door, not a teleport. (Upgrade-card rooms skip the
+  // fade — the card panel is its own transition.)
   if (exitPhase && gameState === 'playing') {
     for (const ed of exitDoors) {
       const [dx, dz] = smashDoorPos(ed.door);
@@ -3261,10 +3321,21 @@ function loop() {
         smashRoomKind = ed.kind;
         _entryDoor    = (ed.door + 2) % 4;
         _cameFromDoor = _entryDoor;
-        if (roguelikeMode && wave % 3 === 0) showUpgradeCards();
-        else                                 spawnWave();
+        if (roguelikeMode && wave % 3 === 0) {
+          showUpgradeCards();
+        } else {
+          roomFadeT = 0.55;      // fade in… (swap fires at the 0.3 peak below)
+          _roomSwap = true;
+        }
         break;
       }
+    }
+  }
+  if (roomFadeT > 0) {
+    roomFadeT -= dt;
+    if (_roomSwap && roomFadeT <= 0.3) {
+      _roomSwap = false;
+      spawnWave();               // …swap behind the black, then fade back out
     }
   }
 
