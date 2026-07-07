@@ -23,6 +23,7 @@ export class Player {
     camera.rotation.order = 'YXZ';
     this.feet = new THREE.Vector3();
     this.speed = 12;
+    this.sens = 1; // look sensitivity multiplier (pause-menu option)
     this.reset();
   }
 
@@ -36,6 +37,8 @@ export class Player {
     this.dashT = 0;
     this.dashCd = 0;
     this.dashDir = this.dashDir || new THREE.Vector3();
+    this.dashBuf = 0;
+    this.dashBufFlick = null;
     this.justDashed = false;
     this.justJumped = false;
     this.jumpsLeft = MAX_JUMPS;
@@ -49,11 +52,11 @@ export class Player {
   update(dt) {
     // Look: mouse pixels (pointer lock) + right-stick deflection rate.
     const look = this.input.consumeLook();
-    this.yaw -= look.dx * MOUSE_SENS;
-    this.pitch -= look.dy * MOUSE_SENS;
+    this.yaw -= look.dx * MOUSE_SENS * this.sens;
+    this.pitch -= look.dy * MOUSE_SENS * this.sens;
     const rate = this.input.getLookRate();
-    this.yaw -= rate.x * STICK_YAW_RATE * dt;
-    this.pitch -= rate.y * STICK_PITCH_RATE * dt;
+    this.yaw -= rate.x * STICK_YAW_RATE * this.sens * dt;
+    this.pitch -= rate.y * STICK_PITCH_RATE * this.sens * dt;
     this.pitch = Math.max(-1.45, Math.min(1.45, this.pitch));
 
     // Move relative to yaw. Camera faces -z at yaw 0.
@@ -65,15 +68,25 @@ export class Player {
     this.feet.z += (_right.z * mv.x + _fwd.z * mv.y) * this.speed * dt;
 
     // Dash: Shift bursts along the move direction (facing if standing
-    // still); a stick flick bursts along the flick direction.
+    // still); a stick flick bursts along the flick direction. Requests are
+    // buffered briefly so a dash pressed just before cooldown ends still fires.
     this.dashCd -= dt;
     const flick = this.input.consumeDashFlick();
-    if ((this.input.consumeDash() || flick) && this.dashCd <= 0) {
-      if (flick) {
+    if (this.input.consumeDash() || flick) {
+      this.dashBuf = 0.25;
+      this.dashBufFlick = flick || null;
+    } else if (this.dashBuf > 0) {
+      this.dashBuf -= dt;
+    }
+    if (this.dashBuf > 0 && this.dashCd <= 0) {
+      const bufFlick = this.dashBufFlick;
+      this.dashBuf = 0;
+      this.dashBufFlick = null;
+      if (bufFlick) {
         // flick is screen-space: x = right, y = down → -y = forward
         this.dashDir.set(
-          _right.x * flick.x - _fwd.x * flick.y, 0,
-          _right.z * flick.x - _fwd.z * flick.y).normalize();
+          _right.x * bufFlick.x - _fwd.x * bufFlick.y, 0,
+          _right.z * bufFlick.x - _fwd.z * bufFlick.y).normalize();
       } else {
         const len = Math.hypot(mv.x, mv.y);
         if (len > 0.15) {

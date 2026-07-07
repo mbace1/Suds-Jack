@@ -108,6 +108,24 @@ export class AudioKit {
     this._noise(1.4, 'lowpass', 220, 0.7, 0.2);
   }
 
+  orb() {
+    if (!this.ctx) return;
+    this._tone('sine', 520, 180, 0.18, 0.14);
+  }
+
+  warn() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this._tone('square', 1100, 1100, 0.05, 0.09, t);
+    this._tone('square', 1100, 1100, 0.05, 0.09, t + 0.11);
+  }
+
+  ring() {
+    if (!this.ctx) return;
+    this._noise(0.4, 'bandpass', 500, 1.2, 0.22);
+    this._tone('sine', 220, 90, 0.35, 0.16);
+  }
+
   spawn() {
     if (!this.ctx) return;
     this._tone('sawtooth', 90, 300, 0.35, 0.12);

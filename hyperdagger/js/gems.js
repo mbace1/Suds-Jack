@@ -11,7 +11,7 @@ const LIFETIME = 25;
  *  hover in place, magnet to the player when close. Collecting them levels
  *  the dagger stream up. */
 export class GemPool {
-  constructor(scene, cap = 40) {
+  constructor(scene, cap = 80) {
     this.scene = scene;
     this.pool = [];
     this.active = [];

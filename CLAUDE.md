@@ -31,16 +31,19 @@ of **voxel** skulls on a neon disc in a synthwave void; survival time is the onl
 Enemies are string-art voxel models (one `InstancedMesh` per enemy, per-voxel colors) and
 deaths explode them into **physical voxel debris** (gravity, floor bounce, tumble) from a
 shared pool. Combat: **hold to stream daggers**, gems drop from heavy kills and level
-the daggers up (LV 3 = **homing**); enemy roster is skulls, crowned skulls, brutes,
-drifting totem spawners, a **segmented serpent** whose rings gib individually, spider
-gem-thieves, and the Leviathan boss. Movement: **jump + double jump**, dash with FOV
-kick. Art is **black & white with dark red as the only contrast color** — the neon grid
+the daggers up (LV 3 = **homing**); enemy roster is skulls, crowned skulls, splitter
+skulls (burst into minis), brutes, drifting totem spawners (which also pulse **jumpable
+orb rings**), **watcher** drones firing aimed orb volleys, thorn spikes erupting under
+the player, a **segmented serpent** whose rings gib individually, spider gem-thieves,
+and the Leviathan boss. Returnal-inspired bullet-hell: enemy orbs are slow, readable,
+and the **dash phases through projectiles** (never bodies). Movement: **jump + double
+jump**, dash with FOV kick (requests buffered 0.25 s across the cooldown). Art is **black & white with dark red as the only contrast color** — the neon grid
 just stops at the arena edge (no barrier visual). Desktop: pointer-lock mouse look,
 hold LMB, Space jump ×2, Shift dash, Esc = pause/options. Touch: dual on-screen sticks —
 left moves (quick tap = jump ×2), right looks *and auto-fires*, **flick either stick to
 dash** in the flick direction; ⏸ button top-right. The pause menu carries persisted
-options (`hyperDaggerOpts`): game speed ×1/1.25/1.5, FOV 70/80/90, and smear/shake/
-chroma toggles. No build step — open `hyperdagger/index.html` (three.js via jsDelivr
+options (`hyperDaggerOpts`): game speed ×1/1.25/1.5, FOV 70/80/90, look sensitivity, and smear/
+shake/chroma toggles. Touch play requests fullscreen + landscape lock on start. No build step — open `hyperdagger/index.html` (three.js via jsDelivr
 importmap, same as toko-drop). Same `gh-pages` deploy caveat as paperboy.
 
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
@@ -141,7 +144,10 @@ magnet to the player inside 5.5 u.
 beam marks the spot for 0.7 s (`pending[]`), then the enemy appears. Totems (cap 6,
 slow orbit drift) every 24 s at ring spots ≥ 12 u from the player, exhaling skulls
 (global cap 42, 30% gilded `Wraith` after 60 s) at a tightening interval; brutes join
-after 40 s every 16 s; **serpents** (cap 2) after 70 s every 45 s. A `Serpent` is a
+after 40 s every 16 s; **watchers** (cap 3) after 30 s every 20 s; **thorns** erupt
+under the player's feet after 50 s (0.9 s sigil warning, lethal below `feet.y` 1.4);
+**serpents** (cap 2) after 70 s every 45 s. Totem exhales roll splitters (15%, > 45 s)
+before crowned skulls (30%, > 60 s). A `Serpent` is a
 controller owning 12 `SerpentSegment` enemies (pushed into the main `enemies` array so
 the normal collision loops apply); the head weaves around the player and dive-bombs
 every 8 s, surviving segments chain-follow at 0.95 u spacing, and each ring gibs + drops

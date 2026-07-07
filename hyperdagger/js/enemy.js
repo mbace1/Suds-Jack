@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=3';
+import { VoxelSprite, MODELS } from './voxel.js?v=4';
 
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();
@@ -85,6 +85,100 @@ export class Wraith extends Skull {
   }
 }
 
+/** Big white-crowned skull; bursts into three fast minis on death. */
+export class Splitter extends Skull {
+  constructor(scene, pos, speedBoost = 0) {
+    super(scene, pos, speedBoost - 1.5, MODELS.skullBig);
+    this.hp = 4;
+    this.radius = 1.05;
+    this.score = 2;
+    this.knock = 4;
+    this.splits = true;
+  }
+}
+
+/** Tiny frantic skull spawned when a Splitter pops. */
+export class MiniSkull extends Skull {
+  constructor(scene, pos, speedBoost = 0) {
+    super(scene, pos, speedBoost + 2.6, MODELS.skullTiny);
+    this.radius = 0.45;
+    this.accel = 20;
+    this.knock = 11;
+  }
+}
+
+const _wt = new THREE.Vector3();
+
+/**
+ * Hovering drone eye (Returnal turret nod): strafes a ring around the player
+ * at mid range, brightens as a telegraph, then fires a 3-orb aimed fan. The
+ * game's only ranged enemy — it punishes running in a straight line.
+ */
+export class Watcher extends VoxelEnemy {
+  constructor(scene, pos, bound = 25) {
+    super(scene, MODELS.watcher, pos);
+    this.type = 'watcher';
+    this.hp = 4;
+    this.radius = 0.85;
+    this.score = 3;
+    this.bound = bound;
+    this.vel = new THREE.Vector3();
+    this.orbitA = Math.random() * Math.PI * 2;
+    this.orbitDir = Math.random() < 0.5 ? -1 : 1;
+    this.fireT = 2.5 + Math.random() * 2;
+    this.bobT = Math.random() * Math.PI * 2;
+    this.warnReq = false;   // main plays the tick
+    this.volley = null;     // main spawns the orbs
+    this._warned = false;
+  }
+
+  update(dt, playerEye) {
+    this.baseUpdate(dt);
+    this.bobT += dt;
+    this.orbitA += this.orbitDir * dt * 0.35;
+    _wt.set(
+      playerEye.x + Math.cos(this.orbitA) * 13,
+      2.3 + Math.sin(this.bobT * 1.3) * 0.5,
+      playerEye.z + Math.sin(this.orbitA) * 13,
+    );
+    _dir.copy(_wt).sub(this.pos).normalize();
+    this.vel.addScaledVector(_dir, 8 * dt);
+    if (this.vel.length() > 6) this.vel.setLength(6);
+    this.pos.addScaledVector(this.vel, dt);
+    const hr = Math.hypot(this.pos.x, this.pos.z);
+    if (hr > this.bound) {
+      this.pos.x *= this.bound / hr;
+      this.pos.z *= this.bound / hr;
+    }
+    if (this.pos.y < 1.2) this.pos.y = 1.2;
+    this.group.lookAt(playerEye);
+
+    if (this.spawnK < 1) return;
+    this.fireT -= dt;
+    if (this.fireT <= 0.7) {
+      if (!this._warned) { this._warned = true; this.warnReq = true; }
+      this.sprite.flash(0.5); // eye burns bright while aiming
+    }
+    if (this.fireT <= 0) {
+      this.fireT = 4.2;
+      this._warned = false;
+      _dir.copy(playerEye).sub(this.pos).normalize();
+      const dirs = [];
+      for (const a of [-0.12, 0, 0.12]) {
+        const cos = Math.cos(a), sin = Math.sin(a);
+        dirs.push(new THREE.Vector3(
+          _dir.x * cos - _dir.z * sin, _dir.y, _dir.x * sin + _dir.z * cos).normalize());
+      }
+      this.volley = dirs;
+    }
+  }
+
+  hit(dmg, dir) {
+    super.hit(dmg, dir);
+    this.vel.addScaledVector(dir, 5);
+  }
+}
+
 /** Slow tank with cyan eyes and horns. Shrugs off most knockback. */
 export class Brute extends Skull {
   constructor(scene, pos, speedBoost = 0) {
@@ -118,6 +212,8 @@ export class Totem extends VoxelEnemy {
     this.emit = false;
     this.orbitR = Math.hypot(pos.x, pos.z);
     this.orbitA = Math.atan2(pos.z, pos.x);
+    this.ringTimer = 5 + Math.random() * 3;
+    this.ringReq = false; // main emits the orb ring
   }
 
   center(out) { return out.set(this.pos.x, this.hitY, this.pos.z); }
@@ -136,6 +232,12 @@ export class Totem extends VoxelEnemy {
     if (this.spawnTimer <= 0) {
       this.spawnTimer = this.interval;
       this.emit = true;
+    }
+    // Returnal-style bullet wave: a flat, jumpable ring of orbs
+    this.ringTimer -= dt;
+    if (this.ringTimer <= 0) {
+      this.ringTimer = 7;
+      this.ringReq = true;
     }
   }
 }
