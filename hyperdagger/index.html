@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Hyper Dagger</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; touch-action: none; }
+    #canvas-game { display: block; }
+    #canvas-ui {
+      position: fixed;
+      top: 0; left: 0;
+      pointer-events: none;
+    }
+    #hud {
+      position: fixed;
+      top: 14px; left: 50%;
+      transform: translateX(-50%);
+      color: #ffd24a;
+      font-family: monospace;
+      text-align: center;
+      pointer-events: none;
+      user-select: none;
+      text-shadow: 0 0 18px #ff2fd6;
+    }
+    #timer { font-size: 34px; font-weight: bold; }
+    #kills { font-size: 13px; color: #ff9ae4; }
+    #gems { font-size: 13px; color: #ff5f9e; margin-top: 2px; }
+    #toast {
+      position: fixed;
+      top: 22%; left: 50%;
+      transform: translateX(-50%);
+      color: #ffd24a;
+      font-family: monospace;
+      font-size: 22px;
+      letter-spacing: 3px;
+      pointer-events: none;
+      user-select: none;
+      text-shadow: 0 0 24px #ff2fd6;
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+    #toast.show { opacity: 1; }
+    #crosshair {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: #ffd24a;
+      font-family: monospace;
+      font-size: 18px;
+      pointer-events: none;
+      user-select: none;
+      display: none;
+      text-shadow: 0 0 8px #ff2fd6;
+    }
+    #vignette {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 30%, rgba(255, 20, 40, 0.75) 100%);
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    #msg {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(92vw, 640px);
+      color: #f3e9ff;
+      font-family: monospace;
+      text-align: center;
+      pointer-events: none;
+      user-select: none;
+      line-height: 1.5;
+      text-shadow: 0 0 24px #ff2fd6, 0 0 60px #7722ff;
+      display: none;
+    }
+    #msg h1 { font-size: 44px; letter-spacing: 6px; color: #ffd24a; }
+    #msg h1.dead { color: #ff3355; }
+    #msg .sub { color: #ff9ae4; margin-bottom: 12px; }
+    #msg .big { font-size: 26px; color: #ffd24a; }
+    #msg .keys { font-size: 12px; opacity: 0.8; margin-top: 12px; }
+    #msg .go { margin-top: 16px; color: #7dffdc; animation: pulse 1.2s ease-in-out infinite; }
+    #modeBtn {
+      pointer-events: auto;
+      cursor: pointer;
+      margin-top: 14px;
+      padding: 8px 14px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #ffd24a;
+      background: rgba(255, 47, 214, 0.12);
+      border: 1px solid rgba(255, 47, 214, 0.5);
+      border-radius: 6px;
+    }
+    #modeBtn:hover { background: rgba(255, 47, 214, 0.25); }
+    @keyframes pulse { 50% { opacity: 0.35; } }
+  </style>
+</head>
+<body>
+  <canvas id="canvas-game"></canvas>
+  <canvas id="canvas-ui"></canvas>
+  <div id="hud">
+    <div id="timer">0.0</div>
+    <div id="kills">0 kills</div>
+    <div id="gems">◆ 0 · LV 1</div>
+  </div>
+  <div id="toast"></div>
+  <div id="crosshair">+</div>
+  <div id="vignette"></div>
+  <div id="msg"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="js/main.js?v=3"></script>
+</body>
+</html>
