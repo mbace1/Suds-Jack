@@ -20,19 +20,22 @@
 // The exact gameplay tuning from player.js (BASE) — change these here to taste,
 // but know the live game uses these values.
 export const TUNING = {
-  moveSpeed: 8.2,      // ground target speed, units/s
-  sprintMul: 1.4,      // sprint multiplier (full-stick push on pad/touch)
-  dashCD: 1.0,         // dash cooldown, starts when the dash ENDS
-  dashSpeed: 30,       // ground dash speed
-  airDashSpeed: 26,    // air dash speed (one per airtime)
-  dashTime: 0.18,      // minimum dash burst, seconds
+  moveSpeed: 8.8,      // ground target speed, units/s
+  sprintMul: 1.45,     // sprint multiplier (full-stick push on pad/touch)
+  dashCD: 0.9,         // dash cooldown, starts when the dash ENDS
+  dashSpeed: 34,       // ground dash speed
+  airDashSpeed: 30,    // air dash speed (one per airtime)
+  dashTime: 0.22,      // minimum dash burst, seconds
   dashHoldMax: 0.5,    // holding the dash control sustains it up to this total
-  iframe: 0.34,        // invulnerability window from dash start (fixed, not extended)
-  jumpV: 10.5,         // jump velocity (double jump uses the same)
-  grav: 26,            // gravity, units/s²
+  iframe: 0.3,         // invulnerability window from dash start (fixed, not extended)
+  jumpV: 11,           // jump velocity (double jump uses the same)
+  gravUp: 24,          // gravity while rising, units/s² (quick, light rise)
+  gravDown: 34,        // gravity while falling (heavy, decisive drop)
+  apexBand: 2.5,       // |vy| below this = jump apex → gravity scaled by apexHang
+  apexHang: 0.55,      // apex gravity multiplier (the floaty beat at the top)
   stepMax: 0.6,        // ledges taller than this act as walls; shorter are stepped up
-  groundAccel: 13,     // velocity lerp rate on the ground
-  airAccel: 4,         // velocity lerp rate airborne (air control)
+  groundAccel: 30,     // velocity lerp rate on the ground (near-instant start/stop)
+  airAccel: 7,         // velocity lerp rate airborne (air control)
   dashAccel: 1.5,      // velocity lerp rate during a dash (momentum carries)
 };
 
@@ -126,16 +129,25 @@ export class MovementSim {
         const sp = this._dashGround ? TUNING.dashSpeed : TUNING.airDashSpeed;
         this.vx = this.dashDirX * sp; this.vz = this.dashDirZ * sp;
         this.dashT = 0.06;                         // keeps "dashing" true while sustained
-      } else { this.dashing = false; this.dashCD = TUNING.dashCD; }
+      } else {
+        // the dash ends CRISPLY: horizontal speed clamps straight back to run speed
+        // (Returnal's decisive blink-stop) instead of bleeding off over half a second
+        this.dashing = false; this.dashCD = TUNING.dashCD;
+        const sp2 = Math.hypot(this.vx, this.vz), cap = TUNING.moveSpeed * 1.15;
+        if (sp2 > cap) { this.vx *= cap / sp2; this.vz *= cap / sp2; }
+      }
     }
 
     const prevX = this.x, prevZ = this.z;
     const wasAirborne = !this.grounded();
     this.x += this.vx * dt; this.z += this.vz * dt;
 
-    // gravity + terrain follow. Ledges taller than stepMax act as walls (position
-    // reverts); shorter ones are climbed. Landing resets the air-dash/air-jump.
-    this.vy -= TUNING.grav * dt; this.y += this.vy * dt;
+    // gravity + terrain follow — asymmetric gravity: lighter on the way up, a
+    // floaty beat at the apex, heavy on the way down (the Returnal jump arc).
+    // Ledges taller than stepMax act as walls (position reverts); shorter ones
+    // are climbed. Landing resets the air-dash/air-jump.
+    const grav = (this.vy > 0 ? TUNING.gravUp : TUNING.gravDown) * (Math.abs(this.vy) < TUNING.apexBand ? TUNING.apexHang : 1);
+    this.vy -= grav * dt; this.y += this.vy * dt;
     const ground = heightAt(this.x, this.z);
     if (ground - this.y > TUNING.stepMax && this.vy <= 0.1) {
       this.x = prevX; this.z = prevZ;
@@ -158,8 +170,10 @@ export class MovementSim {
   // The live rig maps them like this, for reference:
   //   speed      → run-cycle rate + stride amplitude (runK = min(1, speed/4)),
   //                torso stride-roll, chest counter-twist, ear sway
-  //   airborne   → split-leg jump pose, slight vertical stretch, ears stream back
-  //   dashing    → lunge lean (~0.8 rad), legs trail, ears pinned hard back
+  //   airborne   → jump pose split by vy (rising = hard knee tuck, falling = legs
+  //                reach for the ground), slight vertical stretch, ears stream back
+  //   dashing    → lunge lean (~1.0 rad), legs trail, ears pinned hard back,
+  //                smoothed velocity-stretch along the lunge (z +22%, x/y squeeze)
   //   justLanded → squash-and-stretch impulse (scale y dips ~0.24, decays at 5/s)
   //   aimPitch   → arm shoulder/elbow brace angles + slight head tracking
   //   idle (speed<0.8 && !airborne) → breathing bob, weight shift, look-around,

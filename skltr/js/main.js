@@ -3,17 +3,17 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=11';
-import { Player } from './player.js?v=11';
-import { Enemy, COST } from './enemy.js?v=11';
-import { ProjectilePool } from './projectile.js?v=11';
-import { C, glow, applyPalette } from './shared.js?v=11';
-import { audio } from './audio.js?v=11';
-import { t, getLang, setLang, langs } from './lang.js?v=11';
-import { visualTest, depthTest, setVisualTest, setDepthTest } from './modes.js?v=11';
-import { shards, UPGRADES, levelOf, canBuy, buy, addShards, resolvedStats } from './progress.js?v=11';
+import { InputManager } from './input.js?v=12';
+import { Player } from './player.js?v=12';
+import { Enemy, COST } from './enemy.js?v=12';
+import { ProjectilePool } from './projectile.js?v=12';
+import { C, glow, applyPalette } from './shared.js?v=12';
+import { audio } from './audio.js?v=12';
+import { t, getLang, setLang, langs } from './lang.js?v=12';
+import { visualTest, depthTest, setVisualTest, setDepthTest } from './modes.js?v=12';
+import { shards, UPGRADES, levelOf, canBuy, buy, addShards, resolvedStats } from './progress.js?v=12';
 import { seenWelcome, seenDash, seenDoubleJump, seenHazard, seenObjective,
-  markWelcome, markDash, markDoubleJump, markHazard, markObjective } from './onboarding.js?v=11';
+  markWelcome, markDash, markDoubleJump, markHazard, markObjective } from './onboarding.js?v=12';
 
 const css = h => '#' + (h >>> 0).toString(16).padStart(6, '0').slice(-6);
 let runTime = 0;   // declared early: heightAt()/updatePlatforms() close over this for moving platforms, and buildTerrain() runs at module load
@@ -395,7 +395,7 @@ let enemies = [];
 
 // ── Run state ─────────────────────────────────────────────────────────────────
 let gameState = 'title';     // title | playing | paused | gameover
-let kills = 0, shake = 0, fovKick = 0, challenges = 0, hitstopT = 0, killPunch = 0, dashTipTimer = 0, canyonLoops = 0;
+let kills = 0, shake = 0, fovKick = 0, challenges = 0, hitstopT = 0, killPunch = 0, dashTipTimer = 0, canyonLoops = 0, sprintF = 0;
 const HITSTOP_KILL = 0.05, HITSTOP_BOSS_KILL = 0.09, HITSTOP_HURT = 0.07;
 let credits = 0, spawnCD = 0, nextBoss = 65, bossAlive = false, bossKills = 0;
 let toasts = [];
@@ -851,7 +851,7 @@ function updateCamera() {
   const camY = Math.max(player.y + 0.3, hy - a.fy * dist + 0.25 + sy);   // never dip below the player's feet
   camera.position.set(hx - a.fx * dist + rx * shoulder * cp + sx, camY, hz - a.fz * dist + rz * shoulder * cp);
   camera.lookAt(camera.position.x + a.fx, camera.position.y + a.fy, camera.position.z + a.fz);
-  const fov = camFovBase + fovKick * 7 + killPunch * 4;       // orientation base + dash punch + kill punch
+  const fov = camFovBase + fovKick * 10 + killPunch * 4 + sprintF * 4;   // base + dash punch + kill punch + sprint widen
   if (Math.abs(camera.fov - fov) > 0.01) { camera.fov = fov; camera.updateProjectionMatrix(); }
 }
 
@@ -909,7 +909,7 @@ function reticle(W, H) {
   ctx.fillStyle = css(col); ctx.beginPath(); ctx.arc(cx, cy, 1.6, 0, 7); ctx.fill();
   if (player.autoAim) { ctx.fillStyle = hudA(.4); ctx.font = '9px monospace'; ctx.textAlign = 'center'; ctx.fillText('AUTO', cx, cy + 30); }
   // dash-cooldown ring around the reticle
-  const k = 1 - player.dashCD / 1.1;
+  const k = 1 - player.dashCD / (player._stats ? player._stats.dashCD : 0.9);
   ctx.strokeStyle = k >= 1 ? css(C.player) : hudA(.5); ctx.lineWidth = 2.5;
   ctx.beginPath(); ctx.arc(cx, cy, 20, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0, k)); ctx.stroke();
 }
@@ -974,7 +974,7 @@ function loop() {
   requestAnimationFrame(loop);
   const now = performance.now(); const rawDt = Math.min((now - prev) / 1000, 0.05); prev = now;
   if (shake > 0) shake = Math.max(0, shake - rawDt * 2.2);
-  if (fovKick > 0) fovKick = Math.max(0, fovKick - rawDt * 4);
+  if (fovKick > 0) fovKick = Math.max(0, fovKick - rawDt * 5.5);
   if (killPunch > 0) killPunch = Math.max(0, killPunch - rawDt * 6);
   if (hitstopT > 0) hitstopT = Math.max(0, hitstopT - rawDt);
   for (let i = toasts.length - 1; i >= 0; i--) { toasts[i].life -= rawDt; if (toasts[i].life <= 0) toasts.splice(i, 1); }
@@ -988,14 +988,18 @@ function loop() {
       if (dashTipTimer > 8 && player.dashCD <= 0) { markDash(); toast('Q / swipe to DASH through bullets', C.shot); }
     }
     input.updateLook(dt);
+    const wasAir = !player.grounded(), preVy = player.vy;
     player.update(dt, input, _aim, enemies, heightAt, depthTest ? { x: 0, z: -CANYON_PUSH } : null);
+    if (wasAir && player.grounded()) shake = Math.max(shake, Math.min(0.38, -preVy * 0.022));   // weighty landings
+    sprintF += ((Math.hypot(player.vx, player.vz) > 9.8 ? 1 : 0) - sprintF) * Math.min(1, dt * 6);
     updatePlatforms();
     voidCheck();
     canyonUpdate();
     if (player._fired) audio.shoot();
-    if (player.dashing) {                       // fading dash streak
+    if (player.dashing) {                       // fading dash streak — doubled up for a denser blur read
       const col = visualTest ? (player.adr > 0 ? C.adr : C.shot) : C.player;
       sparkSpawn(player.x, player.y + 0.8, player.z, col, visualTest ? 0.17 : 0.12, visualTest ? 0.45 : 0.3);
+      sparkSpawn(player.x - player.vx * 0.018, player.y + 1.15, player.z - player.vz * 0.018, col, 0.1, 0.24);
     }
     for (const e of enemies) e.update(dt, player, pool, heightAt, ARENA_R);
     for (const e of enemies) if (e.summonPulse) { e.summonPulse = false; spawnAt('chaser', 4); spawnAt('chaser', 4); }
@@ -1030,3 +1034,4 @@ addEventListener('resize', resize);
 resize();
 showTitle();
 loop();
+

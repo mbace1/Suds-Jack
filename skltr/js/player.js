@@ -1,17 +1,21 @@
 import * as THREE from 'three';
-import { Bunny, C } from './shared.js?v=11';
-import { visualTest } from './modes.js?v=11';
+import { Bunny, C } from './shared.js?v=12';
+import { visualTest } from './modes.js?v=12';
 
 const ADR_THRESH = [3, 6, 10, 15, 21];   // cumulative no-hit kills for tiers 1..5
 // Visual Test (desert): hero's ink outline heats up with adrenaline tier — base ink → embers → hot red.
 const ADR_TINT = [null, 0x7a4a10, 0x995408, 0xb35b00, 0xc24a00, 0xd03b3b];
 const STEP_MAX = 0.6;                     // ledges taller than this need a jump (act as walls)
 
-// Tuned for Returnal's second-to-second: fast, twitchy, dash-centric, now with a jump.
+// Tuned for Returnal's second-to-second: near-instant accel/stop, a hard decisive
+// dash that ends crisply, an asymmetric jump (quick rise, apex hang, fast fall),
+// and strong air control.
 const BASE = {
-  damage: 9, fireInterval: 0.11, moveSpeed: 8.2, sprintMul: 1.4, maxHp: 100,
-  dashCD: 1.0, dashSpeed: 30, dashTime: 0.18, dashHoldMax: 0.5, iframe: 0.34,
-  airDashSpeed: 26, jumpV: 10.5, grav: 26,
+  damage: 9, fireInterval: 0.11, moveSpeed: 8.8, sprintMul: 1.45, maxHp: 100,
+  dashCD: 0.9, dashSpeed: 34, dashTime: 0.22, dashHoldMax: 0.5, iframe: 0.3,
+  airDashSpeed: 30, jumpV: 11,
+  gravUp: 24, gravDown: 34, apexBand: 2.5, apexHang: 0.55,   // rise fast, hang at the top, drop hard
+  groundAccel: 30, airAccel: 7, dashAccel: 1.5,
 };
 
 export class Player {
@@ -112,21 +116,29 @@ export class Player {
     let dx = fwd.x * mv.z + rgt.x * mv.x, dz = fwd.z * mv.z + rgt.z * mv.x;
     const m = Math.hypot(dx, dz); if (m > 0.001) { dx /= m; dz /= m; }
     const tvx = dx * spd + (drift ? drift.x : 0), tvz = dz * spd + (drift ? drift.z : 0);
-    const accel = this.dashT > 0 ? 1.5 : (this.grounded() ? 13 : 4);   // dash momentum / air control
+    const accel = this.dashT > 0 ? BASE.dashAccel : (this.grounded() ? BASE.groundAccel : BASE.airAccel);
     this.vx += (tvx - this.vx) * Math.min(1, dt * accel);
     this.vz += (tvz - this.vz) * Math.min(1, dt * accel);
-    // dash sustain — hold to extend; i-frame window stays fixed, cooldown starts on end
+    // dash sustain — hold to extend; i-frame window stays fixed, cooldown starts on end.
+    // The dash ends CRISPLY: horizontal speed is clamped straight back to run speed
+    // (Returnal's decisive blink-stop) instead of bleeding off over half a second.
     if (this.dashing) {
       this.dashElapsed += dt;
       const active = this.dashElapsed < BASE.dashTime || (input.dashHeld && this.dashElapsed < BASE.dashHoldMax);
       if (active) { const sp = this._dashGround ? BASE.dashSpeed : BASE.airDashSpeed; this.vx = this.dashDirX * sp; this.vz = this.dashDirZ * sp; this.dashT = 0.06; }
-      else { this.dashing = false; this.dashCD = this._stats.dashCD; }
+      else {
+        this.dashing = false; this.dashCD = this._stats.dashCD;
+        const sp2 = Math.hypot(this.vx, this.vz), cap = BASE.moveSpeed * 1.15;
+        if (sp2 > cap) { this.vx *= cap / sp2; this.vz *= cap / sp2; }
+      }
     }
     const prevX = this.x, prevZ = this.z;
     this.x += this.vx * dt; this.z += this.vz * dt;
 
-    // jump / gravity + terrain follow
-    this.vy -= BASE.grav * dt; this.y += this.vy * dt;
+    // jump / gravity + terrain follow — asymmetric gravity: lighter on the way up,
+    // a floaty beat at the apex, heavy on the way down (the Returnal jump arc)
+    const grav = (this.vy > 0 ? BASE.gravUp : BASE.gravDown) * (Math.abs(this.vy) < BASE.apexBand ? BASE.apexHang : 1);
+    this.vy -= grav * dt; this.y += this.vy * dt;
     const ground = heightAt(this.x, this.z);
     if (ground - this.y > STEP_MAX && this.vy <= 0.1) {   // too tall to step onto → act as a wall
       this.x = prevX; this.z = prevZ;
@@ -150,7 +162,7 @@ export class Player {
     this.fig.update(dt, {
       speed: Math.hypot(this.vx, this.vz), aimPitch: aim.pitch, yOffset: this.y,
       airborne: !this.grounded(), dashing: this.dashT > 0, firing: this._fired,
-      accent: visualTest ? ADR_TINT[this.adr] : null,
+      vy: this.vy, accent: visualTest ? ADR_TINT[this.adr] : null,
     });
   }
 }
