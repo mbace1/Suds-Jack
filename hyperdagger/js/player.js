@@ -6,9 +6,10 @@ const JUMP_V = 8.6;
 const MOUSE_SENS = 0.0023;   // rad per pixel
 const STICK_YAW_RATE = 2.8;  // rad/s at full right-stick deflection
 const STICK_PITCH_RATE = 2.0;
-const DASH_SPEED = 26;
+const DASH_SPEED = 30;
 const DASH_TIME = 0.16;
-const DASH_CD = 1.25;
+const DASH_CD = 1.0;
+const MAX_JUMPS = 2; // ground jump + one air jump
 
 const _fwd = new THREE.Vector3();
 const _right = new THREE.Vector3();
@@ -21,7 +22,7 @@ export class Player {
     this.arenaR = arenaR;
     camera.rotation.order = 'YXZ';
     this.feet = new THREE.Vector3();
-    this.speed = 9.5;
+    this.speed = 12;
     this.reset();
   }
 
@@ -36,6 +37,8 @@ export class Player {
     this.dashCd = 0;
     this.dashDir = this.dashDir || new THREE.Vector3();
     this.justDashed = false;
+    this.justJumped = false;
+    this.jumpsLeft = MAX_JUMPS;
     this._sync();
   }
 
@@ -61,16 +64,25 @@ export class Player {
     this.feet.x += (_right.x * mv.x + _fwd.x * mv.y) * this.speed * dt;
     this.feet.z += (_right.z * mv.x + _fwd.z * mv.y) * this.speed * dt;
 
-    // Dash: burst along the move direction (facing if standing still).
+    // Dash: Shift bursts along the move direction (facing if standing
+    // still); a stick flick bursts along the flick direction.
     this.dashCd -= dt;
-    if (this.input.consumeDash() && this.dashCd <= 0) {
-      const len = Math.hypot(mv.x, mv.y);
-      if (len > 0.15) {
+    const flick = this.input.consumeDashFlick();
+    if ((this.input.consumeDash() || flick) && this.dashCd <= 0) {
+      if (flick) {
+        // flick is screen-space: x = right, y = down → -y = forward
         this.dashDir.set(
-          (_right.x * mv.x + _fwd.x * mv.y) / len, 0,
-          (_right.z * mv.x + _fwd.z * mv.y) / len);
+          _right.x * flick.x - _fwd.x * flick.y, 0,
+          _right.z * flick.x - _fwd.z * flick.y).normalize();
       } else {
-        this.dashDir.set(_fwd.x, 0, _fwd.z);
+        const len = Math.hypot(mv.x, mv.y);
+        if (len > 0.15) {
+          this.dashDir.set(
+            (_right.x * mv.x + _fwd.x * mv.y) / len, 0,
+            (_right.z * mv.x + _fwd.z * mv.y) / len);
+        } else {
+          this.dashDir.set(_fwd.x, 0, _fwd.z);
+        }
       }
       this.dashT = DASH_TIME;
       this.dashCd = DASH_CD;
@@ -89,8 +101,13 @@ export class Player {
       this.feet.z *= max / r;
     }
 
-    // Jump + gravity.
-    if (this.input.consumeJump() && this.feet.y <= 0.001) this.vy = JUMP_V;
+    // Jump + double jump + gravity.
+    if (this.feet.y <= 0.001 && this.vy <= 0) this.jumpsLeft = MAX_JUMPS;
+    if (this.input.consumeJump() && this.jumpsLeft > 0) {
+      this.vy = this.jumpsLeft === MAX_JUMPS ? JUMP_V : JUMP_V * 0.92;
+      this.jumpsLeft--;
+      this.justJumped = true;
+    }
     this.vy += GRAVITY * dt;
     this.feet.y += this.vy * dt;
     if (this.feet.y < 0) { this.feet.y = 0; this.vy = 0; }

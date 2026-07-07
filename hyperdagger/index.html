@@ -17,27 +17,42 @@
       position: fixed;
       top: 14px; left: 50%;
       transform: translateX(-50%);
-      color: #ffd24a;
+      color: #f0f0f0;
       font-family: monospace;
       text-align: center;
       pointer-events: none;
       user-select: none;
-      text-shadow: 0 0 18px #ff2fd6;
+      text-shadow: 0 0 16px rgba(200, 30, 30, 0.8);
     }
     #timer { font-size: 34px; font-weight: bold; }
-    #kills { font-size: 13px; color: #ff9ae4; }
-    #gems { font-size: 13px; color: #ff5f9e; margin-top: 2px; }
+    #kills { font-size: 13px; color: #9a9a9a; }
+    #gems { font-size: 13px; color: #c81e1e; margin-top: 2px; }
+    #pauseBtn {
+      position: fixed;
+      top: 12px; right: 12px;
+      width: 42px; height: 42px;
+      font-family: monospace;
+      font-size: 16px;
+      color: #f0f0f0;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+      display: none;
+    }
+    #pauseBtn:hover { background: rgba(255, 255, 255, 0.14); }
     #toast {
       position: fixed;
       top: 22%; left: 50%;
       transform: translateX(-50%);
-      color: #ffd24a;
+      color: #f0f0f0;
       font-family: monospace;
       font-size: 22px;
       letter-spacing: 3px;
       pointer-events: none;
       user-select: none;
-      text-shadow: 0 0 24px #ff2fd6;
+      text-shadow: 0 0 24px rgba(200, 30, 30, 0.9);
       opacity: 0;
       transition: opacity 0.25s;
     }
@@ -46,19 +61,19 @@
       position: fixed;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      color: #ffd24a;
+      color: #f0f0f0;
       font-family: monospace;
       font-size: 18px;
       pointer-events: none;
       user-select: none;
       display: none;
-      text-shadow: 0 0 8px #ff2fd6;
+      text-shadow: 0 0 8px rgba(200, 30, 30, 0.9);
     }
     #vignette {
       position: fixed;
       inset: 0;
       pointer-events: none;
-      background: radial-gradient(ellipse at center, transparent 30%, rgba(255, 20, 40, 0.75) 100%);
+      background: radial-gradient(ellipse at center, transparent 30%, rgba(160, 10, 10, 0.8) 100%);
       opacity: 0;
       transition: opacity 0.4s;
     }
@@ -67,34 +82,46 @@
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       width: min(92vw, 640px);
-      color: #f3e9ff;
+      color: #e8e8e8;
       font-family: monospace;
       text-align: center;
       pointer-events: none;
       user-select: none;
       line-height: 1.5;
-      text-shadow: 0 0 24px #ff2fd6, 0 0 60px #7722ff;
+      text-shadow: 0 0 24px rgba(200, 30, 30, 0.8);
       display: none;
     }
-    #msg h1 { font-size: 44px; letter-spacing: 6px; color: #ffd24a; }
-    #msg h1.dead { color: #ff3355; }
-    #msg .sub { color: #ff9ae4; margin-bottom: 12px; }
-    #msg .big { font-size: 26px; color: #ffd24a; }
+    #msg h1 { font-size: 44px; letter-spacing: 6px; color: #ffffff; }
+    #msg h1.dead { color: #c81e1e; }
+    #msg .sub { color: #9a9a9a; margin-bottom: 12px; }
+    #msg .big { font-size: 26px; color: #ffffff; }
     #msg .keys { font-size: 12px; opacity: 0.8; margin-top: 12px; }
-    #msg .go { margin-top: 16px; color: #7dffdc; animation: pulse 1.2s ease-in-out infinite; }
-    #modeBtn {
+    #msg .go { margin-top: 16px; color: #c81e1e; animation: pulse 1.2s ease-in-out infinite; }
+    #modeBtn, #msg button.opt {
       pointer-events: auto;
       cursor: pointer;
-      margin-top: 14px;
+      margin: 4px 3px 0;
       padding: 8px 14px;
       font-family: monospace;
       font-size: 12px;
-      color: #ffd24a;
-      background: rgba(255, 47, 214, 0.12);
-      border: 1px solid rgba(255, 47, 214, 0.5);
+      color: #f0f0f0;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.3);
       border-radius: 6px;
     }
-    #modeBtn:hover { background: rgba(255, 47, 214, 0.25); }
+    #modeBtn:hover, #msg button.opt:hover { background: rgba(255, 255, 255, 0.14); }
+    #msg button.opt.on {
+      color: #fff;
+      border-color: #c81e1e;
+      background: rgba(200, 30, 30, 0.25);
+    }
+    #msg .optrow { margin-top: 8px; }
+    #msg .optrow span {
+      display: inline-block;
+      min-width: 64px;
+      font-size: 12px;
+      color: #9a9a9a;
+    }
     @keyframes pulse { 50% { opacity: 0.35; } }
   </style>
 </head>
@@ -107,6 +134,7 @@
     <div id="gems">◆ 0 · LV 1</div>
   </div>
   <div id="toast"></div>
+  <button id="pauseBtn">&#10074;&#10074;</button>
   <div id="crosshair">+</div>
   <div id="vignette"></div>
   <div id="msg"></div>
@@ -119,6 +147,6 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=3"></script>
+  <script type="module" src="js/main.js?v=4"></script>
 </body>
 </html>

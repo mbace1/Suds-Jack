@@ -1,11 +1,16 @@
 const STICK_R = 60;
 const LOOK_DEADZONE = 0.12;
+const TAP_MS = 250;      // max duration for a tap
+const TAP_PX = 12;       // max travel for a tap
+const FLICK_MS = 260;    // max duration for a flick
+const FLICK_PX = 36;     // min travel for a flick
 
 /**
- * Unified input. Desktop: pointer-lock mouse look, WASD, LMB press = shotgun
- * burst / hold = dagger stream, Space jump, Shift dash. Touch: left on-screen
- * stick moves, right stick looks and auto-fires while held (a quick tap on the
- * right half fires the shotgun), centre DASH + JUMP buttons.
+ * Unified input. Desktop: pointer-lock mouse look, WASD, hold LMB for the
+ * dagger stream, Space = jump / double jump, Shift = dash. Touch: left
+ * on-screen stick moves (quick tap = jump / double jump), right stick looks
+ * and auto-fires while held; a fast flick on either stick dashes in the
+ * flick direction. No on-screen buttons.
  */
 export class InputManager {
   constructor() {
@@ -14,12 +19,12 @@ export class InputManager {
     this.touchMode = false;
     this.left = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, t0: 0 };
     this.right = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, t0: 0 };
-    this._touchMap = new Map(); // touch id → 'left' | 'right' | 'jump' | 'dash'
+    this._touchMap = new Map(); // touch id → 'left' | 'right'
     this._lookX = 0;
     this._lookY = 0;
     this._jump = false;
     this._dash = false;
-    this._shotgun = false;
+    this._dashFlick = null; // {x, y} normalized screen-space flick direction
     this._init();
   }
 
@@ -31,11 +36,7 @@ export class InputManager {
     });
     window.addEventListener('keyup', e => { this.keys[e.code] = false; });
 
-    document.addEventListener('mousedown', e => {
-      if (e.button !== 0) return;
-      this.mouseDown = true;
-      this._shotgun = true;
-    });
+    document.addEventListener('mousedown', e => { if (e.button === 0) this.mouseDown = true; });
     document.addEventListener('mouseup', e => { if (e.button === 0) this.mouseDown = false; });
     document.addEventListener('mousemove', e => {
       if (document.pointerLockElement) {
@@ -47,35 +48,25 @@ export class InputManager {
     });
 
     const opt = { passive: false };
-    window.addEventListener('touchstart', e => { e.preventDefault(); this._touchStart(e); }, opt);
+    window.addEventListener('touchstart', e => {
+      if (this._uiTouch(e)) return; // let DOM buttons (pause/options) work
+      e.preventDefault();
+      this._touchStart(e);
+    }, opt);
     window.addEventListener('touchmove', e => { e.preventDefault(); this._touchMove(e); }, opt);
     window.addEventListener('touchend', e => { e.preventDefault(); this._touchEnd(e); }, opt);
     window.addEventListener('touchcancel', e => { e.preventDefault(); this._touchEnd(e); }, opt);
   }
 
-  jumpButton() {
-    return { x: window.innerWidth / 2 + 56, y: window.innerHeight - 74, r: 38, label: 'JUMP' };
-  }
-
-  dashButton() {
-    return { x: window.innerWidth / 2 - 56, y: window.innerHeight - 74, r: 38, label: 'DASH' };
+  /** True when the touch began on an interactive DOM control. */
+  _uiTouch(e) {
+    const t = e.target;
+    return !!(t && t.closest && t.closest('button, #pauseBtn'));
   }
 
   _touchStart(e) {
     this.touchMode = true;
-    const jb = this.jumpButton();
-    const db = this.dashButton();
     for (const t of e.changedTouches) {
-      if (Math.hypot(t.clientX - jb.x, t.clientY - jb.y) < jb.r + 12) {
-        this._touchMap.set(t.identifier, 'jump');
-        this._jump = true;
-        continue;
-      }
-      if (Math.hypot(t.clientX - db.x, t.clientY - db.y) < db.r + 12) {
-        this._touchMap.set(t.identifier, 'dash');
-        this._dash = true;
-        continue;
-      }
       const side = t.clientX < window.innerWidth / 2 ? 'left' : 'right';
       const stick = this[side];
       if (!stick.active) {
@@ -91,7 +82,7 @@ export class InputManager {
   _touchMove(e) {
     for (const t of e.changedTouches) {
       const side = this._touchMap.get(t.identifier);
-      if (side !== 'left' && side !== 'right') continue;
+      if (!side) continue;
       const stick = this[side];
       stick.dx = t.clientX - stick.ox;
       stick.dy = t.clientY - stick.oy;
@@ -102,13 +93,14 @@ export class InputManager {
     for (const t of e.changedTouches) {
       const side = this._touchMap.get(t.identifier);
       this._touchMap.delete(t.identifier);
-      if (side !== 'left' && side !== 'right') continue;
+      if (!side) continue;
       const stick = this[side];
-      // quick tap on the look side = shotgun burst
-      if (side === 'right'
-          && performance.now() - stick.t0 < 250
-          && Math.hypot(stick.dx, stick.dy) < 12) {
-        this._shotgun = true;
+      const dur = performance.now() - stick.t0;
+      const dist = Math.hypot(stick.dx, stick.dy);
+      if (side === 'left' && dur < TAP_MS && dist < TAP_PX) {
+        this._jump = true; // tap the move stick = jump / double jump
+      } else if (dur < FLICK_MS && dist >= FLICK_PX) {
+        this._dashFlick = { x: stick.dx / dist, y: stick.dy / dist };
       }
       stick.active = false;
       stick.dx = 0; stick.dy = 0;
@@ -165,13 +157,13 @@ export class InputManager {
     return d;
   }
 
-  consumeShotgun() {
-    const s = this._shotgun;
-    this._shotgun = false;
-    return s;
+  consumeDashFlick() {
+    const f = this._dashFlick;
+    this._dashFlick = null;
+    return f;
   }
 
-  /** Draw sticks + dash/jump buttons on the HUD canvas (touch mode only). */
+  /** Draw the two sticks on the HUD canvas (touch mode only). */
   drawTouchUI(ctx) {
     if (!this.touchMode) return;
     const w = window.innerWidth, h = window.innerHeight;
@@ -179,7 +171,7 @@ export class InputManager {
     for (const side of ['left', 'right']) {
       const s = this[side];
       const [bx, by] = s.active ? [s.ox, s.oy] : rest[side];
-      ctx.strokeStyle = side === 'right' ? 'rgba(255,47,214,0.5)' : 'rgba(255,210,74,0.5)';
+      ctx.strokeStyle = side === 'right' ? 'rgba(200,30,30,0.55)' : 'rgba(255,255,255,0.4)';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(bx, by, STICK_R, 0, Math.PI * 2);
@@ -190,23 +182,10 @@ export class InputManager {
         const k = len > STICK_R ? STICK_R / len : 1;
         kx += s.dx * k; ky += s.dy * k;
       }
-      ctx.fillStyle = side === 'right' ? 'rgba(255,47,214,0.35)' : 'rgba(255,210,74,0.35)';
+      ctx.fillStyle = side === 'right' ? 'rgba(200,30,30,0.3)' : 'rgba(255,255,255,0.22)';
       ctx.beginPath();
       ctx.arc(kx, ky, 26, 0, Math.PI * 2);
       ctx.fill();
-    }
-    ctx.font = '12px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    for (const b of [this.dashButton(), this.jumpButton()]) {
-      ctx.strokeStyle = 'rgba(120,255,220,0.55)';
-      ctx.fillStyle = 'rgba(120,255,220,0.12)';
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = 'rgba(120,255,220,0.8)';
-      ctx.fillText(b.label, b.x, b.y);
     }
   }
 }

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=1';
+import { VoxelSprite, MODELS } from './voxel.js?v=2';
 
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();
@@ -49,7 +49,7 @@ export class Skull extends VoxelEnemy {
     this.radius = 0.75;
     this.score = 1;
     this.vel = new THREE.Vector3();
-    this.maxSpeed = 5.2 + speedBoost;
+    this.maxSpeed = 6.2 + speedBoost;
     this.accel = 15;
     this.knock = 8;
     this.bobT = Math.random() * Math.PI * 2;
@@ -93,7 +93,7 @@ export class Brute extends Skull {
     this.hp = 10;
     this.radius = 1.55;
     this.score = 5;
-    this.maxSpeed = 3.1 + speedBoost;
+    this.maxSpeed = 3.7 + speedBoost;
     this.accel = 6;
     this.knock = 1.6;
   }
@@ -193,7 +193,7 @@ export class Spider extends VoxelEnemy {
       _dir.normalize();
     }
     this.vel.addScaledVector(_dir, 12 * dt);
-    if (this.vel.length() > 4.5) this.vel.setLength(4.5);
+    if (this.vel.length() > 5.2) this.vel.setLength(5.2);
     this.pos.addScaledVector(this.vel, dt);
     this.pos.y = 0.45 + Math.abs(Math.sin(performance.now() * 0.012)) * 0.06;
     _c.copy(this.pos).add(this.vel);
@@ -303,11 +303,11 @@ export class Serpent {
 
     this.attackT -= dt;
     if (this.attackT <= 0) { this.attacking = 1.6; this.attackT = 8; }
-    let speed = 7.5;
+    let speed = 8.5;
     if (this.attacking > 0) {
       this.attacking -= dt;
       _tv.copy(playerEye);       // dive-bomb straight at the player
-      speed = 11;
+      speed = 12.5;
     } else {
       const a = this.t * 0.55;   // weave a ring around the player
       _tv.set(
