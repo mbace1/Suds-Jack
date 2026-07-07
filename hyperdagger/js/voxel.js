@@ -34,6 +34,41 @@ export const MODELS = {
     palette: { W: 0x8a8a8a, S: 0x666666, R: [2.8, 0.2, 0.2], K: 0x111111, C: [2.2, 0.2, 0.2] },
     layers: [...SKULL_LAYERS, ['.C.C.C.', '.......', '.......']],
   },
+  // splitter — big white-crowned skull that bursts into minis
+  skullBig: {
+    voxelSize: 0.32,
+    palette: { W: 0xdcdcdc, S: 0xaaaaaa, R: [2.8, 0.2, 0.2], K: 0x1a1a1a, C: [2.4, 2.4, 2.4] },
+    layers: [...SKULL_LAYERS, ['.C.C.C.', '.......', '.......']],
+  },
+  skullTiny: {
+    voxelSize: 0.12,
+    palette: { W: 0xb8b8b8, S: 0x8a8a8a, R: [2.8, 0.2, 0.2], K: 0x151515 },
+    layers: SKULL_LAYERS,
+  },
+  // thorn — white spike that erupts from a telegraphed floor sigil
+  thorn: {
+    voxelSize: 0.3,
+    anchor: 'bottom',
+    palette: { W: 0xcfcfcf, S: 0x9a9a9a, R: [2.6, 0.2, 0.2] },
+    layers: [
+      ['WWW', 'WSW', 'WWW'],
+      ['.W.', 'WWW', '.W.'],
+      ['.W.', 'WSW', '.W.'],
+      ['...', '.W.', '...'],
+      ['...', '.W.', '...'],
+      ['...', '.R.', '...'],
+    ],
+  },
+  // watcher — hovering drone eye that fires orb volleys (Returnal turret nod)
+  watcher: {
+    voxelSize: 0.26,
+    palette: { S: 0x2a2a2a, W: 0xcfcfcf, R: [2.8, 0.2, 0.2] },
+    layers: [
+      ['.SSS.', 'SSSSS', '.SSS.'],
+      ['SRRRS', 'SWSWS', 'SSSSS'],
+      ['.SSS.', 'SSSSS', '.SSS.'],
+    ],
+  },
   brute: {
     voxelSize: 0.46,
     palette: { W: 0x2e2e2e, S: 0x1e1e1e, R: [2.8, 0.2, 0.2], K: 0x0a0a0a, V: [1.8, 0.15, 0.15] },

@@ -5,13 +5,14 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=3';
-import { Player } from './player.js?v=3';
-import { DaggerPool } from './daggers.js?v=3';
-import { GemPool } from './gems.js?v=3';
-import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=3';
-import { Skull, Wraith, Brute, Totem, Serpent, Spider, Leviathan } from './enemy.js?v=3';
-import { AudioKit } from './audio.js?v=3';
+import { InputManager } from './input.js?v=4';
+import { Player } from './player.js?v=4';
+import { DaggerPool } from './daggers.js?v=4';
+import { GemPool } from './gems.js?v=4';
+import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=4';
+import { Skull, Wraith, Splitter, MiniSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher } from './enemy.js?v=4';
+import { OrbPool } from './bullets.js?v=1';
+import { AudioKit } from './audio.js?v=4';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -22,7 +23,7 @@ const SERPENT_CAP = 2;
 // player-tunable options (pause menu), persisted across sessions
 const OPTS_KEY = 'hyperDaggerOpts';
 const opts = Object.assign(
-  { speed: 1, fov: 80, smear: true, shake: true, chroma: true },
+  { speed: 1, fov: 80, sens: 1, smear: true, shake: true, chroma: true },
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
 
 // Devil-Daggers-style dagger levels, advanced by collecting gems.
@@ -33,7 +34,7 @@ const WEAPON = [
   { stream: 18, homing: false },
   { stream: 18, homing: true },
 ];
-const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10 };
+const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10, watcher: 1 };
 
 // ---------------------------------------------------------------- renderer
 const canvas = document.getElementById('canvas-game');
@@ -176,6 +177,7 @@ const player = new Player(camera, input, ARENA_R);
 const daggers = new DaggerPool(scene);
 const debris = new DebrisPool(scene);
 const gems = new GemPool(scene);
+const orbs = new OrbPool(scene);
 const audio = new AudioKit();
 const enemies = [];
 const serpents = [];
@@ -234,6 +236,8 @@ let nextBruteAt = 0;
 let nextSerpentAt = 0;
 let nextSpiderAt = 0;
 let nextLevAt = 0;
+let nextWatcherAt = 0;
+let nextThornAt = 0;
 let deathAt = 0;
 let trauma = 0;
 let fovKick = 0;
@@ -300,6 +304,8 @@ function resetRun() {
   daggers.reset();
   debris.reset();
   gems.reset();
+  orbs.reset();
+  clearThorns();
   gameTime = 0;
   kills = 0;
   gemCount = 0;
@@ -310,6 +316,8 @@ function resetRun() {
   nextSerpentAt = 70;
   nextSpiderAt = 55;
   nextLevAt = 120;
+  nextWatcherAt = 30;
+  nextThornAt = 50;
   trauma = 0;
   fovKick = 0;
   slowmo = 0;
@@ -318,7 +326,16 @@ function resetRun() {
   player.reset();
 }
 
+function goFullscreen() {
+  if (!input.touchMode || document.fullscreenElement) return;
+  const p = document.documentElement.requestFullscreen?.();
+  if (p && p.then) {
+    p.then(() => screen.orientation?.lock?.('landscape')).catch(() => {});
+  }
+}
+
 function startGame() {
+  goFullscreen();
   resetRun();
   state = 'playing';
   paused = false;
@@ -385,6 +402,7 @@ function saveOpts() {
 function applyOpts() {
   afterimage.enabled = opts.smear;
   chromaPass.enabled = opts.chroma;
+  player.sens = opts.sens;
 }
 
 function optRow(label, key, values, fmt) {
@@ -401,6 +419,7 @@ function showPause() {
     `<h1>PAUSED</h1>
      ${optRow('SPEED', 'speed', [1, 1.25, 1.5], v => v + '\u00d7')}
      ${optRow('FOV', 'fov', [70, 80, 90], v => v)}
+     ${optRow('SENS', 'sens', [0.7, 1, 1.3, 1.6], v => ({ 0.7: 'LOW', 1: 'MED', 1.3: 'HIGH', 1.6: 'MAX' })[v])}
      ${optRow('FX', 'smear', [true, false], v => v ? 'SMEAR ON' : 'SMEAR OFF')}
      ${optRow('', 'shake', [true, false], v => v ? 'SHAKE ON' : 'SHAKE OFF')}
      ${optRow('', 'chroma', [true, false], v => v ? 'CHROMA ON' : 'CHROMA OFF')}
@@ -454,6 +473,81 @@ function updatePending(dt) {
   }
 }
 
+// Thorn hazard (area denial): a red sigil pulses under the player, then a
+// white voxel spike erupts — move, dash, or be airborne when it fires.
+const thorns = [];
+
+function spawnThorn(x, z) {
+  const sigil = new THREE.Mesh(
+    new THREE.CircleGeometry(1.3, 24).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({
+      color: new THREE.Color().setRGB(1.8, 0.12, 0.12),
+      transparent: true, opacity: 0.0,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    }),
+  );
+  sigil.position.set(x, 0.03, z);
+  scene.add(sigil);
+  const sprite = new VoxelSprite(MODELS.thorn);
+  const group = new THREE.Group();
+  group.add(sprite.mesh);
+  group.position.set(x, 0, z);
+  group.scale.y = 0.01;
+  group.visible = false;
+  scene.add(group);
+  thorns.push({ sigil, sprite, group, state: 'warn', t: 0.9, struck: false });
+  audio.warn();
+}
+
+function updateThorns(dt) {
+  for (let i = thorns.length - 1; i >= 0; i--) {
+    const th = thorns[i];
+    th.t -= dt;
+    if (th.state === 'warn') {
+      th.sigil.material.opacity = 0.25 + 0.35 * Math.abs(Math.sin(th.t * 18));
+      if (th.t <= 0) {
+        th.state = 'up';
+        th.t = 0.12;
+        th.group.visible = true;
+        audio.gib(false);
+        trauma = Math.max(trauma, 0.15);
+      }
+      continue;
+    }
+    if (th.state === 'up') {
+      th.group.scale.y = Math.min(1, 1 - th.t / 0.12);
+      if (th.t <= 0) { th.state = 'hold'; th.t = 1.1; }
+    } else if (th.state === 'hold') {
+      if (th.t <= 0) { th.state = 'down'; th.t = 0.35; }
+    } else {
+      th.group.scale.y = Math.max(0.01, th.t / 0.35);
+      if (th.t <= 0) { removeThorn(i); continue; }
+    }
+    th.sigil.material.opacity = Math.max(0, th.sigil.material.opacity - dt * 2);
+    // spike is lethal while up; a good jump (or dash-through timing) clears it
+    if (!th.struck && th.state !== 'down'
+        && Math.hypot(player.feet.x - th.group.position.x, player.feet.z - th.group.position.z) < 1.1
+        && player.feet.y < 1.4) {
+      th.struck = true;
+      if (playerStruck(th.group.position.x, th.group.position.z)) return;
+    }
+  }
+}
+
+function removeThorn(i) {
+  const th = thorns[i];
+  scene.remove(th.sigil);
+  th.sigil.geometry.dispose();
+  th.sigil.material.dispose();
+  scene.remove(th.group);
+  th.sprite.dispose();
+  thorns.splice(i, 1);
+}
+
+function clearThorns() {
+  for (let i = thorns.length - 1; i >= 0; i--) removeThorn(i);
+}
+
 function clearPending() {
   for (const p of pending) {
     scene.remove(p.beam);
@@ -464,11 +558,19 @@ function clearPending() {
 }
 
 function ringSpot(minPlayerDist) {
-  for (let tries = 0; tries < 10; tries++) {
+  for (let tries = 0; tries < 12; tries++) {
     const a = Math.random() * Math.PI * 2;
     const r = ARENA_R * (0.45 + Math.random() * 0.4);
     _sv.set(Math.cos(a) * r, 0, Math.sin(a) * r);
-    if (_sv.distanceTo(player.feet) > minPlayerDist) return _sv;
+    if (_sv.distanceTo(player.feet) < minPlayerDist) continue;
+    let nearTotem = false;
+    for (const e of enemies) {
+      if (e.type === 'totem' && Math.hypot(e.pos.x - _sv.x, e.pos.z - _sv.z) < 5) {
+        nearTotem = true;
+        break;
+      }
+    }
+    if (!nearTotem) return _sv;
   }
   return _sv;
 }
@@ -524,6 +626,19 @@ function director(dt) {
     }
     nextSpiderAt = gameTime + 30;
   }
+  if (gameTime >= nextThornAt) {
+    spawnThorn(player.feet.x, player.feet.z);
+    nextThornAt = gameTime + Math.max(7, 12 - gameTime * 0.02);
+  }
+  if (gameTime >= nextWatcherAt) {
+    if (enemies.filter(e => e.type === 'watcher').length < 3) {
+      const at = ringSpot(12).clone();
+      at.y = 2.2;
+      audio.spawn();
+      telegraph(at, [2.0, 0.15, 0.15], 0.7, () => enemies.push(new Watcher(scene, at, ARENA_R - 1)));
+    }
+    nextWatcherAt = gameTime + 20;
+  }
   if (gameTime >= nextLevAt) {
     if (!enemies.some(e => e.type === 'leviathan')) {
       audio.roar();
@@ -538,8 +653,11 @@ function director(dt) {
       if (skullCount() < SKULL_CAP) {
         const m = e.mouthPos(_sv);
         const boost = Math.min(6, gameTime * 0.06);
-        const gilded = gameTime > 60 && Math.random() < 0.3;
-        const skull = gilded ? new Wraith(scene, m, boost) : new Skull(scene, m, boost);
+        const roll = Math.random();
+        const skull =
+          gameTime > 45 && roll < 0.15 ? new Splitter(scene, m, boost) :
+          gameTime > 60 && roll < 0.45 ? new Wraith(scene, m, boost) :
+          new Skull(scene, m, boost);
         enemies.push(skull);
         for (let i = 0; i < 4; i++) {
           debris.spawn(m, skull.sprite.randomColor(),
@@ -616,6 +734,12 @@ function killEnemy(e, dir) {
   if (e.isHead) drops = 2;
   if (e.type === 'spider') drops = 1 + e.stolen; // thieves give it all back
   for (let i = 0; i < drops; i++) gems.spawn(_c);
+  if (e.splits) {
+    for (let i = 0; i < 3; i++) {
+      _seg.set(_c.x + (Math.random() - 0.5) * 1.2, _c.y, _c.z + (Math.random() - 0.5) * 1.2);
+      enemies.push(new MiniSkull(scene, _seg, Math.min(6, gameTime * 0.06)));
+    }
+  }
   if (e.type === 'leviathan') trauma = 1;
   e.remove(scene);
 }
@@ -679,25 +803,38 @@ function updateCombat(dt) {
     }
     e.center(_c);
     if (_c.distanceTo(_p0) < e.radius + 0.5 || _c.distanceTo(camera.position) < e.radius + 0.4) {
-      if (mode === 'hyper') {
-        if (mercyT > 0) continue;
-        // HYPERDEMON rules: a hit costs time, shoves you clear, grants i-frames
-        lifeT -= HYPER_HIT_COST;
-        mercyT = 1.2;
-        trauma = 1;
-        audio.gib(true);
-        elVignette.style.opacity = 0.8;
-        setTimeout(() => { if (state === 'playing') elVignette.style.opacity = 0; }, 300);
-        const dx = player.feet.x - e.pos.x, dz = player.feet.z - e.pos.z;
-        const d = Math.hypot(dx, dz) || 1;
-        player.nudge(dx / d * 3, dz / d * 3);
-        if (lifeT <= 0) { die(); return; }
-        continue;
-      }
-      die();
-      return;
+      if (playerStruck(e.pos.x, e.pos.z)) return;
     }
   }
+
+  // orb → player: the dash phases through projectiles (never through bodies)
+  for (let i = orbs.active.length - 1; i >= 0; i--) {
+    const o = orbs.active[i];
+    if (o.m.position.distanceTo(_p0) < 0.72 || o.m.position.distanceTo(camera.position) < 0.62) {
+      if (player.dashK > 0) continue;
+      const ox = o.m.position.x, oz = o.m.position.z;
+      orbs.recycle(i);
+      if (playerStruck(ox, oz)) return;
+    }
+  }
+}
+
+/** One enemy/projectile contact. Returns true when the run ended. */
+function playerStruck(sx, sz) {
+  if (mode !== 'hyper') { die(); return true; }
+  if (mercyT > 0) return false;
+  // HYPERDEMON rules: a hit costs time, shoves you clear, grants i-frames
+  lifeT -= HYPER_HIT_COST;
+  mercyT = 1.2;
+  trauma = 1;
+  audio.gib(true);
+  elVignette.style.opacity = 0.8;
+  setTimeout(() => { if (state === 'playing') elVignette.style.opacity = 0; }, 300);
+  const dx = player.feet.x - sx, dz = player.feet.z - sz;
+  const d = Math.hypot(dx, dz) || 1;
+  player.nudge(dx / d * 3, dz / d * 3);
+  if (lifeT <= 0) { die(); return true; }
+  return false;
 }
 
 // skulls shove each other apart so the swarm doesn't stack into one voxel blob
@@ -738,6 +875,27 @@ function step(dt) {
   director(dt);
   for (const e of enemies) {
     e.update(dt, camera.position, gems);
+    if (e.type === 'watcher') {
+      if (e.warnReq) { e.warnReq = false; audio.warn(); }
+      if (e.volley) {
+        for (const dir of e.volley) {
+          _sv.copy(e.pos).addScaledVector(dir, 1.0);
+          orbs.fire(_sv, dir.multiplyScalar(11));
+        }
+        e.volley = null;
+        audio.orb();
+      }
+    }
+    if (e.type === 'totem' && e.ringReq) {
+      e.ringReq = false;
+      audio.ring();
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2;
+        _sv.set(e.pos.x + Math.cos(a) * 1.3, 1.15, e.pos.z + Math.sin(a) * 1.3);
+        _hitDir.set(Math.cos(a) * 5.5, 0, Math.sin(a) * 5.5);
+        orbs.fire(_sv, _hitDir);
+      }
+    }
     // Leviathan drag: pulls the player in along the floor — dash out
     if (e.type === 'leviathan' && e.alive) {
       if (e.pullStarted) {
@@ -754,6 +912,8 @@ function step(dt) {
   }
   for (const s of serpents) s.update(dt, camera.position);
   separateSkulls();
+  updateThorns(dt);
+  orbs.update(dt, ARENA_R + 6);
   updateCombat(dt);
   debris.update(dt);
   if (mode === 'hyper' && state === 'playing') {
@@ -818,11 +978,14 @@ animate();
 
 // tiny debug handle (console tinkering + automated smoke tests)
 window.__hd = {
-  enemies, player, debris, daggers, gems, serpents,
+  enemies, player, debris, daggers, gems, serpents, orbs, thorns,
   debug: {
     addGems(n) { onGemsCollected(n); },
     spawnSerpent() { spawnSerpent(); },
     spawnSpider() { enemies.push(new Spider(scene, ringSpot(8).clone())); },
+    spawnWatcher() { const p = ringSpot(8).clone(); p.y = 2.2; enemies.push(new Watcher(scene, p, ARENA_R - 1)); },
+    spawnSplitter() { const p = ringSpot(8).clone(); p.y = 1.2; enemies.push(new Splitter(scene, p)); },
+    spawnThorn() { spawnThorn(player.feet.x, player.feet.z); },
     spawnLeviathan() { enemies.push(new Leviathan(scene, 5)); },
     setLife(n) { lifeT = n; },
     getState() { return { mode, lifeT, gameTime, mercyT, state }; },
