@@ -26,6 +26,22 @@
     }
     #timer { font-size: 34px; font-weight: bold; }
     #kills { font-size: 13px; color: #ff9ae4; }
+    #gems { font-size: 13px; color: #ff5f9e; margin-top: 2px; }
+    #toast {
+      position: fixed;
+      top: 22%; left: 50%;
+      transform: translateX(-50%);
+      color: #ffd24a;
+      font-family: monospace;
+      font-size: 22px;
+      letter-spacing: 3px;
+      pointer-events: none;
+      user-select: none;
+      text-shadow: 0 0 24px #ff2fd6;
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+    #toast.show { opacity: 1; }
     #crosshair {
       position: fixed;
       top: 50%; left: 50%;
@@ -75,7 +91,9 @@
   <div id="hud">
     <div id="timer">0.0</div>
     <div id="kills">0 kills</div>
+    <div id="gems">◆ 0 · LV 1</div>
   </div>
+  <div id="toast"></div>
   <div id="crosshair">+</div>
   <div id="vignette"></div>
   <div id="msg"></div>
@@ -88,6 +106,6 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=1"></script>
+  <script type="module" src="js/main.js?v=2"></script>
 </body>
 </html>

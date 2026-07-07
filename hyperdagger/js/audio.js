@@ -69,6 +69,39 @@ export class AudioKit {
     this._tone('sine', big ? 150 : 190, 35, big ? 0.45 : 0.3, 0.45);
   }
 
+  shotgun() {
+    if (!this.ctx) return;
+    this._noise(0.28, 'lowpass', 900, 0.8, 0.55);
+    this._tone('square', 130, 40, 0.22, 0.4);
+  }
+
+  gem() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this._tone('sine', 880, 880, 0.08, 0.14, t);
+    this._tone('sine', 1320, 1320, 0.1, 0.1, t + 0.05);
+  }
+
+  levelup() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this._tone('square', 440, 440, 0.12, 0.16, t);
+    this._tone('square', 660, 660, 0.14, 0.16, t + 0.11);
+    this._tone('square', 880, 880, 0.25, 0.16, t + 0.22);
+    this._noise(0.4, 'highpass', 4000, 1, 0.08, t + 0.22);
+  }
+
+  dash() {
+    if (!this.ctx) return;
+    this._noise(0.22, 'bandpass', 700, 1.5, 0.3);
+  }
+
+  roar() {
+    if (!this.ctx) return;
+    this._tone('sawtooth', 70, 180, 0.7, 0.3);
+    this._noise(0.7, 'lowpass', 300, 0.7, 0.35);
+  }
+
   spawn() {
     if (!this.ctx) return;
     this._tone('sawtooth', 90, 300, 0.35, 0.12);

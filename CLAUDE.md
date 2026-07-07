@@ -30,10 +30,15 @@ A first-person **Devil Daggers × HYPERDEMON homage** on Three.js r167 — survi
 of **voxel** skulls on a neon disc in a synthwave void; survival time is the only score.
 Enemies are string-art voxel models (one `InstancedMesh` per enemy, per-voxel colors) and
 deaths explode them into **physical voxel debris** (gravity, floor bounce, tumble) from a
-shared pool. Desktop: pointer-lock mouse look + hold-LMB dagger stream. Touch: dual
-on-screen sticks — right stick looks *and auto-fires* — plus a centre jump button.
-No build step — open `hyperdagger/index.html` (three.js via jsDelivr importmap, same as
-toko-drop). Same `gh-pages` deploy caveat as paperboy.
+shared pool. DD-parity combat: **tap = shotgun burst, hold = dagger stream**, gems drop
+from heavy kills and level the daggers up (LV 3 = **homing**); enemy roster is skulls,
+gilded skulls, brutes, drifting totem spawners, and a **segmented serpent** whose rings
+gib individually. HYPERDEMON-parity feel: dash, afterimage motion smear, trauma-driven
+shake + chromatic aberration, rainbow-band sky, telegraph beams, voxel gauntlet.
+Desktop: pointer-lock mouse look, LMB tap/hold, Shift dash, Space jump. Touch: dual
+on-screen sticks — right stick looks *and auto-fires*, quick tap = shotgun — plus centre
+DASH/JUMP buttons. No build step — open `hyperdagger/index.html` (three.js via jsDelivr
+importmap, same as toko-drop). Same `gh-pages` deploy caveat as paperboy.
 
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
 Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
@@ -79,13 +84,14 @@ paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new p
 hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel enemies
   index.html
   js/
-    main.js     # Scene (grid arena, shader sky, bloom), loop, spawn director, combat, HUD, states
+    main.js     # Scene (grid arena, rainbow sky, afterimage/bloom/chroma), director, combat, HUD
     voxel.js    # String-art voxel models + parser, VoxelSprite (InstancedMesh), DebrisPool physics
-    enemy.js    # Skull (chaser), Brute (tank), Totem (skull spawner) — all voxel sprites
-    daggers.js  # Object-pooled dagger projectiles (prev position kept for segment hit tests)
-    player.js   # First-person controller: yaw/pitch, WASD/stick strafe, jump, head-bob
-    input.js    # Pointer-lock mouse + WASD, or dual touch sticks (right = look + auto-fire) + jump btn
-    audio.js    # WebAudio synth kit (fire/hit/gib/spawn/death + detuned-saw drone)
+    enemy.js    # Skull/Wraith (chasers), Brute (tank), Totem (drifting spawner), Serpent (chain)
+    daggers.js  # Object-pooled dagger projectiles; homing steer at LV 3; segment hit tests
+    gems.js     # DD-style gem drops: ballistic scatter, hover, player magnet, collect
+    player.js   # First-person controller: yaw/pitch, WASD/stick strafe, jump, dash, head-bob
+    input.js    # Pointer-lock mouse + WASD, or dual touch sticks + DASH/JUMP btns; tap-vs-hold fire
+    audio.js    # WebAudio synth kit (fire/shotgun/hit/gib/gem/levelup/dash/roar/death + drone)
 ```
 
 ## Toko Drop — Architecture Notes
@@ -119,31 +125,50 @@ bakes a model into one `InstancedMesh` (per-voxel `setColorAt`; hit-flash bright
 over the last 0.3 s; `burst(worldVoxels, …)` explodes a dead enemy's actual voxels
 outward from their centroid plus the killing dagger's impulse.
 
-**Combat:** dagger stream at 12/s with small random spread; each dagger keeps `prev`
-position and collisions use **segment-vs-sphere** tests so fast projectiles can't tunnel.
-Skulls take knockback along the dagger direction (brutes mostly resist via lower
-`knock`). Enemy → player kill test is against both torso and camera positions; totems
-don't kill, they `player.pushOut(...)` as solids.
+**Combat:** LMB tap (or quick right-stick tap on touch) = shotgun burst; hold = stream
+(desktop stream starts after a 0.26 s hold so a tap stays a clean shotgun; touch streams
+immediately). Weapon levels via gems — `LEVEL_GEMS = [0,0,10,30]`, `WEAPON[lv]` sets
+stream rate / shotgun count / homing. LV 3 daggers steer toward the best target in a
+~37° cone (`DaggerPool.update(dt, targets)`). Each dagger keeps `prev` position and
+collisions use **segment-vs-sphere** tests so fast projectiles can't tunnel. Skulls take
+knockback along the dagger direction (brutes mostly resist via lower `knock`).
+Enemy → player kill test is against both torso and camera positions; totems don't kill,
+they `player.pushOut(...)` as solids. Gems (`gems.js`) scatter ballistically, hover, then
+magnet to the player inside 5.5 u.
 
-**Spawn director (`main.js`):** totems (cap 6) appear every 24 s at ring spots ≥ 12 u from
-the player, each exhaling skulls (global cap 42) at an interval that tightens with game
-time; brutes join after 40 s every 16 s. Skull `maxSpeed` scales with time. A pairwise
-separation pass keeps the swarm from collapsing into one blob.
+**Spawn director (`main.js`):** all heavy spawns are **telegraphed** — an additive light
+beam marks the spot for 0.7 s (`pending[]`), then the enemy appears. Totems (cap 6,
+slow orbit drift) every 24 s at ring spots ≥ 12 u from the player, exhaling skulls
+(global cap 42, 30% gilded `Wraith` after 60 s) at a tightening interval; brutes join
+after 40 s every 16 s; **serpents** (cap 2) after 70 s every 45 s. A `Serpent` is a
+controller owning 12 `SerpentSegment` enemies (pushed into the main `enemies` array so
+the normal collision loops apply); the head weaves around the player and dive-bombs
+every 8 s, surviving segments chain-follow at 0.95 u spacing, and each ring gibs + drops
+a gem individually. A pairwise separation pass (skull/brute only) keeps the swarm from
+collapsing into one blob.
 
 **Input quirks:** right touch stick is *look + auto-fire* (Devil Daggers wants constant
-fire; a separate fire button costs a thumb). Pointer-lock mousemove deltas with
-`hypot > 400` are dropped — some browsers emit one giant bogus delta right after locking.
-Jump button is a fixed circle bottom-centre, checked before stick assignment in
-`touchstart`.
+fire; a separate fire button costs a thumb); a sub-250 ms / sub-12 px tap on it is the
+shotgun. Pointer-lock mousemove deltas with `hypot > 400` are dropped — some browsers
+emit one giant bogus delta right after locking. DASH/JUMP are fixed circles
+bottom-centre, checked before stick assignment in `touchstart`. Shotgun-on-mousedown is
+gated on `document.pointerLockElement` so menu/resume clicks don't fire.
 
-**Render:** ACES tone mapping + `EffectComposer` (`RenderPass` → `UnrealBloomPass`
-0.7/0.45/0.6 → `OutputPass`). Bloom is *selective* via HDR colors (daggers, edge ring,
-glow voxels exceed 1.0). Sky is a `BackSide` sphere with an animated gradient + band
+**Render / feel:** ACES tone mapping + `EffectComposer` (`RenderPass` →
+`AfterimagePass` 0.72 (HYPERDEMON motion smear) → `UnrealBloomPass` 0.7/0.45/0.6 →
+chromatic-aberration `ShaderPass` → `OutputPass`). Bloom is *selective* via HDR colors
+(daggers, edge ring, glow voxels exceed 1.0). A **trauma** value (kills, shotgun, dash,
+death) drives camera shake + the chroma amount; dash and shotgun kick the FOV. The
+first-person **voxel gauntlet** is a camera child (`scene.add(camera)` required) at
+z −1.05 — closer and it smears into a slab at the screen corner; its glove is
+checkerboarded because unlit same-color voxels read as one flat polygon. Death = red
+vignette + slow-mo debris. Sky is a `BackSide` sphere with an animated hue-wheel band
 shader (`fog: false`); the floor is a `CanvasTexture` neon grid on a circle, fog
 `0x14041c` blends it toward the horizon. Death/menu/pause are DOM overlays; touch sticks
 are drawn on the `#canvas-ui` overlay each frame. Hi-score lives in `localStorage` under
-`hyperDaggerHi`. `window.__hd` exposes `{enemies, player, debris, daggers}` for console
-tinkering and automated smoke tests.
+`hyperDaggerHi`. `window.__hd` exposes `{enemies, player, debris, daggers, gems,
+serpents, debug}` (debug: `addGems(n)`, `spawnSerpent()`) for console tinkering and
+automated smoke tests.
 
 ## Paper Route (`paperboy/`) — Architecture Notes
 

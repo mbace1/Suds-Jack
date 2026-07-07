@@ -2,21 +2,24 @@ const STICK_R = 60;
 const LOOK_DEADZONE = 0.12;
 
 /**
- * Unified input. Desktop: pointer-lock mouse look, WASD, hold LMB to fire,
- * Space to jump. Touch: left on-screen stick moves, right stick looks and
- * auto-fires while held, centre button jumps.
+ * Unified input. Desktop: pointer-lock mouse look, WASD, LMB press = shotgun
+ * burst / hold = dagger stream, Space jump, Shift dash. Touch: left on-screen
+ * stick moves, right stick looks and auto-fires while held (a quick tap on the
+ * right half fires the shotgun), centre DASH + JUMP buttons.
  */
 export class InputManager {
   constructor() {
     this.keys = {};
     this.mouseDown = false;
     this.touchMode = false;
-    this.left = { active: false, ox: 0, oy: 0, dx: 0, dy: 0 };
-    this.right = { active: false, ox: 0, oy: 0, dx: 0, dy: 0 };
-    this._touchMap = new Map(); // touch id → 'left' | 'right' | 'jump'
+    this.left = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, t0: 0 };
+    this.right = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, t0: 0 };
+    this._touchMap = new Map(); // touch id → 'left' | 'right' | 'jump' | 'dash'
     this._lookX = 0;
     this._lookY = 0;
     this._jump = false;
+    this._dash = false;
+    this._shotgun = false;
     this._init();
   }
 
@@ -24,10 +27,15 @@ export class InputManager {
     window.addEventListener('keydown', e => {
       this.keys[e.code] = true;
       if (e.code === 'Space' && !e.repeat) this._jump = true;
+      if ((e.code === 'ShiftLeft' || e.code === 'ShiftRight') && !e.repeat) this._dash = true;
     });
     window.addEventListener('keyup', e => { this.keys[e.code] = false; });
 
-    document.addEventListener('mousedown', e => { if (e.button === 0) this.mouseDown = true; });
+    document.addEventListener('mousedown', e => {
+      if (e.button !== 0) return;
+      this.mouseDown = true;
+      this._shotgun = true;
+    });
     document.addEventListener('mouseup', e => { if (e.button === 0) this.mouseDown = false; });
     document.addEventListener('mousemove', e => {
       if (document.pointerLockElement) {
@@ -46,16 +54,26 @@ export class InputManager {
   }
 
   jumpButton() {
-    return { x: window.innerWidth / 2, y: window.innerHeight - 74, r: 38 };
+    return { x: window.innerWidth / 2 + 56, y: window.innerHeight - 74, r: 38, label: 'JUMP' };
+  }
+
+  dashButton() {
+    return { x: window.innerWidth / 2 - 56, y: window.innerHeight - 74, r: 38, label: 'DASH' };
   }
 
   _touchStart(e) {
     this.touchMode = true;
     const jb = this.jumpButton();
+    const db = this.dashButton();
     for (const t of e.changedTouches) {
-      if (Math.hypot(t.clientX - jb.x, t.clientY - jb.y) < jb.r + 16) {
+      if (Math.hypot(t.clientX - jb.x, t.clientY - jb.y) < jb.r + 12) {
         this._touchMap.set(t.identifier, 'jump');
         this._jump = true;
+        continue;
+      }
+      if (Math.hypot(t.clientX - db.x, t.clientY - db.y) < db.r + 12) {
+        this._touchMap.set(t.identifier, 'dash');
+        this._dash = true;
         continue;
       }
       const side = t.clientX < window.innerWidth / 2 ? 'left' : 'right';
@@ -65,6 +83,7 @@ export class InputManager {
         stick.active = true;
         stick.ox = t.clientX; stick.oy = t.clientY;
         stick.dx = 0; stick.dy = 0;
+        stick.t0 = performance.now();
       }
     }
   }
@@ -85,6 +104,12 @@ export class InputManager {
       this._touchMap.delete(t.identifier);
       if (side !== 'left' && side !== 'right') continue;
       const stick = this[side];
+      // quick tap on the look side = shotgun burst
+      if (side === 'right'
+          && performance.now() - stick.t0 < 250
+          && Math.hypot(stick.dx, stick.dy) < 12) {
+        this._shotgun = true;
+      }
       stick.active = false;
       stick.dx = 0; stick.dy = 0;
     }
@@ -134,7 +159,19 @@ export class InputManager {
     return j;
   }
 
-  /** Draw sticks + jump button on the HUD canvas (touch mode only). */
+  consumeDash() {
+    const d = this._dash;
+    this._dash = false;
+    return d;
+  }
+
+  consumeShotgun() {
+    const s = this._shotgun;
+    this._shotgun = false;
+    return s;
+  }
+
+  /** Draw sticks + dash/jump buttons on the HUD canvas (touch mode only). */
   drawTouchUI(ctx) {
     if (!this.touchMode) return;
     const w = window.innerWidth, h = window.innerHeight;
@@ -158,17 +195,18 @@ export class InputManager {
       ctx.arc(kx, ky, 26, 0, Math.PI * 2);
       ctx.fill();
     }
-    const jb = this.jumpButton();
-    ctx.strokeStyle = 'rgba(120,255,220,0.55)';
-    ctx.fillStyle = 'rgba(120,255,220,0.12)';
-    ctx.beginPath();
-    ctx.arc(jb.x, jb.y, jb.r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = 'rgba(120,255,220,0.8)';
     ctx.font = '12px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('JUMP', jb.x, jb.y);
+    for (const b of [this.dashButton(), this.jumpButton()]) {
+      ctx.strokeStyle = 'rgba(120,255,220,0.55)';
+      ctx.fillStyle = 'rgba(120,255,220,0.12)';
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(120,255,220,0.8)';
+      ctx.fillText(b.label, b.x, b.y);
+    }
   }
 }

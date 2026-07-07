@@ -13,43 +13,79 @@ const _s = new THREE.Vector3();
  * Palette values are hex ints, or [r,g,b] arrays with components > 1 for
  * HDR glow parts that should trip the bloom pass.
  */
+const SKULL_LAYERS = [
+  ['..WWW..', '..SWS..'],
+  ['.WWWWW.', '.WSWSW.', '..WWW..'],
+  ['.WWKWW.', 'WWWWWWW', '.WWWWW.'],
+  ['WRRWRRW', 'WWWWWWW', '.WWWWW.'],
+  ['WWWWWWW', 'WWWWWWW', '.WWWWW.'],
+  ['.WWWWW.', '.WWWWW.', '..WWW..'],
+];
+
 export const MODELS = {
   skull: {
     voxelSize: 0.22,
     palette: { W: 0xcfc5ac, S: 0xa89c82, R: [2.6, 0.25, 0.5], K: 0x2a2138 },
-    layers: [
-      ['..WWW..', '..SWS..'],
-      ['.WWWWW.', '.WSWSW.', '..WWW..'],
-      ['.WWKWW.', 'WWWWWWW', '.WWWWW.'],
-      ['WRRWRRW', 'WWWWWWW', '.WWWWW.'],
-      ['WWWWWWW', 'WWWWWWW', '.WWWWW.'],
-      ['.WWWWW.', '.WWWWW.', '..WWW..'],
-    ],
+    layers: SKULL_LAYERS,
+  },
+  // gilded skull — faster, 2 HP, amber eyes, gold crown
+  skull2: {
+    voxelSize: 0.22,
+    palette: { W: 0xaec4d8, S: 0x7e93a8, R: [2.6, 1.2, 0.2], K: 0x1e2a38, C: [2.0, 1.6, 0.3] },
+    layers: [...SKULL_LAYERS, ['.C.C.C.', '.......', '.......']],
   },
   brute: {
     voxelSize: 0.46,
     palette: { W: 0xc23e5e, S: 0x8a2440, R: [0.4, 2.6, 1.9], K: 0x330a1e, V: 0x8a3ce0 },
     layers: [
-      ['..WWW..', '..SWS..'],
-      ['.WWWWW.', '.WSWSW.', '..WWW..'],
-      ['.WWKWW.', 'WWWWWWW', '.WWWWW.'],
-      ['WRRWRRW', 'WWWWWWW', '.WWWWW.'],
-      ['WWWWWWW', 'WWWWWWW', '.WWWWW.'],
-      ['.WWWWW.', '.WWWWW.', '..WWW..'],
+      ...SKULL_LAYERS.map(l => l.map(r => r)),
       ['V.....V', '.......', '.......'],
       ['V.....V', '.......', '.......'],
     ],
   },
+  // serpent body segment — armored ring with an HDR core
+  serpent: {
+    voxelSize: 0.3,
+    palette: { S: 0x35104a, C: [2.2, 0.4, 1.2] },
+    layers: [
+      ['.S.', 'SSS', '.S.'],
+      ['SSS', 'SCS', 'SSS'],
+      ['.S.', 'SSS', '.S.'],
+    ],
+  },
+  // serpent head — eyes + open mouth at the front face
+  serpentHead: {
+    voxelSize: 0.36,
+    palette: { S: 0x35104a, C: [2.2, 0.4, 1.2], R: [2.6, 0.25, 0.5] },
+    layers: [
+      ['.S.', 'SSS', '.S.'],
+      ['S.S', 'SCS', 'SSS'],
+      ['R.R', 'SSS', 'SSS'],
+      ['.S.', 'SSS', '.S.'],
+    ],
+  },
+  // first-person gauntlet: checkerboarded glove (unlit voxels need baked
+  // shading to read as cubes), long HDR gold blade forward (row 0)
+  hand: {
+    voxelSize: 0.05,
+    palette: { G: 0x5a3f7d, D: 0x3d2a58, H: 0x9a6a3a, B: [1.5, 1.2, 0.45] },
+    layers: [
+      ['...', '...', '...', '...', '...', '...', '...', 'DGD', 'GDG', 'DGD'],
+      ['.B.', '.B.', '.B.', '.B.', '.B.', '.B.', '.B.', 'GHG', 'DGD', 'GDG'],
+      ['...', '...', '...', '...', '...', '...', '...', 'DGD', 'GDG', 'DGD'],
+    ],
+  },
   totem: (() => {
-    const A = ['.OOO.', 'OOOOO', 'OOMOO', 'OOOOO', '.OOO.'];
-    const B = ['.OOO.', 'OOMOO', 'OMMMO', 'OOMOO', '.OOO.'];
-    const mouth = ['.OOO.', 'OO.OO', 'O.M.O', 'OO.OO', '.OOO.'];
-    const crown = ['..O..', '.OOO.', '.OMO.', '.OOO.', '..O..'];
+    // M veins sit on the outer faces so the pillar glows from every angle
+    const A = ['.OMO.', 'OOOOO', 'MOOOM', 'OOOOO', '.OMO.'];
+    const B = ['.OOO.', 'OOOOO', 'OOOOO', 'OOOOO', '.OOO.'];
+    const mouth = ['.OMO.', 'OO.OO', 'M.M.M', 'OO.OO', '.OMO.'];
+    const crown = ['..O..', '.OMO.', '.MOM.', '.OMO.', '..O..'];
     return {
       voxelSize: 0.34,
       anchor: 'bottom',
       palette: { O: 0x2a1745, M: [2.4, 0.3, 2.0] },
-      layers: [A, B, A, B, A, B, A, mouth, mouth, crown],
+      layers: [B, A, B, A, B, A, B, mouth, mouth, crown],
     };
   })(),
 };

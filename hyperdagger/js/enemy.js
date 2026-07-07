@@ -75,6 +75,16 @@ export class Skull extends VoxelEnemy {
   }
 }
 
+/** Gilded skull — faster, 2 HP, appears later in a run. */
+export class Wraith extends Skull {
+  constructor(scene, pos, speedBoost = 0) {
+    super(scene, pos, speedBoost + 1.8, MODELS.skull2);
+    this.hp = 2;
+    this.score = 2;
+    this.accel = 18;
+  }
+}
+
 /** Slow tank with cyan eyes and horns. Shrugs off most knockback. */
 export class Brute extends Skull {
   constructor(scene, pos, speedBoost = 0) {
@@ -94,7 +104,7 @@ export class Brute extends Skull {
   }
 }
 
-/** Stationary obsidian pillar that exhales skulls from its mouth. */
+/** Drifting obsidian pillar that exhales skulls from its mouth. */
 export class Totem extends VoxelEnemy {
   constructor(scene, pos, interval) {
     super(scene, MODELS.totem, pos);
@@ -106,6 +116,8 @@ export class Totem extends VoxelEnemy {
     this.interval = interval;
     this.spawnTimer = interval * 0.5;
     this.emit = false;
+    this.orbitR = Math.hypot(pos.x, pos.z);
+    this.orbitA = Math.atan2(pos.z, pos.x);
   }
 
   center(out) { return out.set(this.pos.x, this.hitY, this.pos.z); }
@@ -116,10 +128,104 @@ export class Totem extends VoxelEnemy {
     this.baseUpdate(dt);
     this.group.rotation.y += dt * 0.6;
     if (this.spawnK < 1) return;
+    // slow orbit around the arena centre
+    this.orbitA += dt * 0.05;
+    this.pos.x = Math.cos(this.orbitA) * this.orbitR;
+    this.pos.z = Math.sin(this.orbitA) * this.orbitR;
     this.spawnTimer -= dt;
     if (this.spawnTimer <= 0) {
       this.spawnTimer = this.interval;
       this.emit = true;
+    }
+  }
+}
+
+/** One destructible ring of the serpent. Moved by its Serpent controller. */
+export class SerpentSegment extends VoxelEnemy {
+  constructor(scene, pos, isHead) {
+    super(scene, isHead ? MODELS.serpentHead : MODELS.serpent, pos);
+    this.type = 'serpent';
+    this.isHead = isHead;
+    this.hp = isHead ? 4 : 2;
+    this.radius = isHead ? 0.85 : 0.7;
+    this.score = isHead ? 3 : 1;
+  }
+
+  update(dt) { this.baseUpdate(dt); }
+}
+
+const _tv = new THREE.Vector3();
+const _sd = new THREE.Vector3();
+
+/**
+ * Segmented flying worm (Devil Daggers centipede homage). Owns an array of
+ * SerpentSegment enemies; the caller pushes them into the main enemies list so
+ * daggers/player collisions reuse the normal loops. The controller snakes the
+ * head around the player, dive-bombing every few seconds, and chain-follows
+ * the surviving segments behind it.
+ */
+export class Serpent {
+  constructor(scene, origin, bound, nSeg = 12) {
+    this.bound = bound;
+    this.t = Math.random() * 10;
+    this.attackT = 6;
+    this.attacking = 0;
+    this.vel = new THREE.Vector3(0, -4, 0);
+    this.segments = [];
+    for (let i = 0; i < nSeg; i++) {
+      const pos = origin.clone();
+      pos.y += i * 0.95;
+      this.segments.push(new SerpentSegment(scene, pos, i === 0));
+    }
+  }
+
+  get alive() { return this.segments.some(s => s.alive); }
+
+  update(dt, playerEye) {
+    this.t += dt;
+    const chain = this.segments.filter(s => s.alive);
+    if (!chain.length) return;
+    const head = chain[0];
+
+    this.attackT -= dt;
+    if (this.attackT <= 0) { this.attacking = 1.6; this.attackT = 8; }
+    let speed = 7.5;
+    if (this.attacking > 0) {
+      this.attacking -= dt;
+      _tv.copy(playerEye);       // dive-bomb straight at the player
+      speed = 11;
+    } else {
+      const a = this.t * 0.55;   // weave a ring around the player
+      _tv.set(
+        playerEye.x + Math.cos(a) * 11,
+        3.2 + Math.sin(this.t * 0.8) * 2.4,
+        playerEye.z + Math.sin(a) * 11,
+      );
+    }
+
+    _sd.copy(_tv).sub(head.pos).normalize();
+    this.vel.addScaledVector(_sd, 9 * dt);
+    if (this.vel.length() > speed) this.vel.setLength(speed);
+    head.pos.addScaledVector(this.vel, dt);
+    if (head.pos.y < 0.8) head.pos.y = 0.8;
+    const hr = Math.hypot(head.pos.x, head.pos.z);
+    if (hr > this.bound) {
+      head.pos.x *= this.bound / hr;
+      head.pos.z *= this.bound / hr;
+    }
+    head.group.lookAt(_tv.copy(head.pos).add(this.vel));
+
+    // rigid chain-follow through the surviving segments
+    let prev = head;
+    for (let i = 1; i < chain.length; i++) {
+      const s = chain[i];
+      _sd.copy(prev.pos).sub(s.pos);
+      const d = _sd.length() || 0.001;
+      const spacing = 0.95;
+      if (d > spacing) s.pos.addScaledVector(_sd, (d - spacing) / d);
+      if (s.pos.y < 0.6) s.pos.y = 0.6;
+      s.group.lookAt(prev.pos);
+      prev = s;
     }
   }
 }

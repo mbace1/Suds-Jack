@@ -49,14 +49,15 @@ one `InstancedMesh` each, and every kill explodes them into **physical voxel deb
 `UnrealBloomPass` + HDR palette colors (only eyes / totem veins / daggers / arena ring
 exceed 1.0) give selective glow without washing out the bone.
 
-**Controls:** mouse look (pointer lock) · hold LMB to fire the dagger stream · WASD move · SPACE jump  
-**Mobile:** left on-screen stick moves · right stick looks **and auto-fires while held** · centre button jumps
+**Controls:** mouse look (pointer lock) · LMB **tap = shotgun burst / hold = dagger stream** · WASD move · SHIFT dash · SPACE jump  
+**Mobile:** left on-screen stick moves · right stick looks **and auto-fires while held** (quick tap = shotgun) · centre DASH / JUMP buttons
 
 #### Gameplay
-- Obsidian **totems** rise around the arena and exhale chasing **skulls** (faster over time); horned **brutes** (10 HP, knockback-resistant) join after 40 s
-- Dagger stream: 12/s with slight spread; segment-vs-sphere hit tests so fast daggers can't tunnel; skulls take knockback per hit
-- One touch kills you — DEVOURED screen, instant tap/click retry, hi-score in localStorage
-- Skull-vs-skull separation keeps the swarm from stacking into one blob; totems are solid and shove the player out
+- Obsidian **totems** (slowly drifting) rise behind telegraph light-beams and exhale chasing **skulls** (faster over time, 30% **gilded** 2-HP skulls after 60 s); horned **brutes** (10 HP, knockback-resistant) join after 40 s; segmented **serpents** weave around the arena and dive-bomb after 70 s — every ring is individually destructible and gibs on its own
+- **Gems** drop from heavy kills (totems 3, brutes 2, each serpent ring 1), scatter physically, then magnet to you: 10 gems → faster stream + wider shotgun, 30 gems → **homing daggers**
+- Segment-vs-sphere hit tests so fast daggers can't tunnel; skulls take knockback per hit
+- One touch kills you — DEVOURED slow-mo, instant tap/click retry, hi-score in localStorage
+- HYPERDEMON feel: afterimage motion smear, trauma-driven screen shake + chromatic aberration, FOV kicks on dash/shotgun, rainbow-band sky, first-person voxel gauntlet with recoil
 
 ### `toko-drop/`
 Twin-stick bullet-hell arena shooter built on Three.js r167.
@@ -97,6 +98,7 @@ Twin-stick bullet-hell arena shooter built on Three.js r167.
 ## Changelog
 
 ### 2026-07
+- **hyperdagger parity pass:** Devil Daggers feature parity — tap-shotgun / hold-stream firing, gem drops with magnet physics, 3-tier dagger levels (LV 3 homing), gilded 2-HP skulls, 12-ring **serpent** (centipede homage) with individually gibbing segments, drifting totems, telegraphed spawns. HYPERDEMON graphics parity — `AfterimagePass` motion smear, trauma-driven shake + chromatic-aberration `ShaderPass`, FOV kicks, dash move (Shift / on-screen DASH), rainbow hue-wheel sky, first-person checkerboard voxel gauntlet with recoil, death slow-mo. New `gems.js`; new synth sounds (shotgun/gem/levelup/dash/roar)
 - **`hyperdagger/` — Hyper Dagger:** new first-person Devil Daggers × HYPERDEMON homage. Voxel enemies (string-art layer models → per-enemy `InstancedMesh` with per-voxel `setColorAt`), physical voxel-gib debris pool (gravity, floor bounce, tumble, shrink-out), dagger-stream combat with segment-sphere hit tests + knockback, totem/skull/brute spawn director, animated shader sky + synthwave grid arena, selective HDR bloom, WebAudio synth kit incl. detuned-saw drone. Desktop pointer-lock mouse look; mobile dual on-screen sticks (right stick auto-fires) + jump button. Survival-time score, localStorage hi-score
 
 ### 2026-06

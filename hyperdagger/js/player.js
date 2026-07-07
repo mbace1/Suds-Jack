@@ -6,6 +6,9 @@ const JUMP_V = 8.6;
 const MOUSE_SENS = 0.0023;   // rad per pixel
 const STICK_YAW_RATE = 2.8;  // rad/s at full right-stick deflection
 const STICK_PITCH_RATE = 2.0;
+const DASH_SPEED = 26;
+const DASH_TIME = 0.16;
+const DASH_CD = 1.25;
 
 const _fwd = new THREE.Vector3();
 const _right = new THREE.Vector3();
@@ -29,8 +32,14 @@ export class Player {
     this.pitch = 0;
     this.bobT = 0;
     this.bobK = 0;
+    this.dashT = 0;
+    this.dashCd = 0;
+    this.dashDir = this.dashDir || new THREE.Vector3();
+    this.justDashed = false;
     this._sync();
   }
+
+  get dashK() { return Math.max(0, this.dashT) / DASH_TIME; }
 
   get eyePos() { return this.camera.position; }
 
@@ -51,6 +60,26 @@ export class Player {
     _right.set(cos, 0, -sin);
     this.feet.x += (_right.x * mv.x + _fwd.x * mv.y) * this.speed * dt;
     this.feet.z += (_right.z * mv.x + _fwd.z * mv.y) * this.speed * dt;
+
+    // Dash: burst along the move direction (facing if standing still).
+    this.dashCd -= dt;
+    if (this.input.consumeDash() && this.dashCd <= 0) {
+      const len = Math.hypot(mv.x, mv.y);
+      if (len > 0.15) {
+        this.dashDir.set(
+          (_right.x * mv.x + _fwd.x * mv.y) / len, 0,
+          (_right.z * mv.x + _fwd.z * mv.y) / len);
+      } else {
+        this.dashDir.set(_fwd.x, 0, _fwd.z);
+      }
+      this.dashT = DASH_TIME;
+      this.dashCd = DASH_CD;
+      this.justDashed = true;
+    }
+    if (this.dashT > 0) {
+      this.dashT -= dt;
+      this.feet.addScaledVector(this.dashDir, DASH_SPEED * dt);
+    }
 
     // Keep inside the arena.
     const r = Math.hypot(this.feet.x, this.feet.z);
