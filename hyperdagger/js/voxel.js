@@ -45,6 +45,48 @@ export const MODELS = {
     palette: { W: 0xb8b8b8, S: 0x8a8a8a, R: [2.8, 0.2, 0.2], K: 0x151515 },
     layers: SKULL_LAYERS,
   },
+  // blinker — glitch shard that teleports toward the player
+  blinker: {
+    voxelSize: 0.26,
+    palette: { D: 0x3a3a3a, R: [2.6, 0.2, 0.2] },
+    layers: [
+      ['...', '.D.', '...'],
+      ['.D.', 'DRD', '.D.'],
+      ['D.D', '.R.', 'D.D'],
+      ['.D.', 'DRD', '.D.'],
+      ['...', '.D.', '...'],
+    ],
+  },
+  // spider egg — hatches skulls unless shot first
+  egg: {
+    voxelSize: 0.2,
+    palette: { W: 0xe8e8e8, R: [2.4, 0.15, 0.15] },
+    layers: [
+      ['.W.', 'WWW', '.W.'],
+      ['WWW', 'WRW', 'WWW'],
+      ['.W.', 'WWW', '.W.'],
+    ],
+  },
+  // ghost serpent — pale rings armored from the front (shoot from behind)
+  serpentGhost: {
+    voxelSize: 0.3,
+    palette: { S: 0xf0f0f0, C: [1.4, 1.4, 1.4] },
+    layers: [
+      ['.S.', 'SSS', '.S.'],
+      ['SSS', 'SCS', 'SSS'],
+      ['.S.', 'SSS', '.S.'],
+    ],
+  },
+  serpentGhostHead: {
+    voxelSize: 0.36,
+    palette: { S: 0xd8d8d8, C: [1.4, 1.4, 1.4], R: [2.8, 0.2, 0.2] },
+    layers: [
+      ['.S.', 'SSS', '.S.'],
+      ['S.S', 'SCS', 'SSS'],
+      ['R.R', 'SSS', 'SSS'],
+      ['.S.', 'SSS', '.S.'],
+    ],
+  },
   // thorn — white spike that erupts from a telegraphed floor sigil
   thorn: {
     voxelSize: 0.3,

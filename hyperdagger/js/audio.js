@@ -126,6 +126,17 @@ export class AudioKit {
     this._tone('sine', 220, 90, 0.35, 0.16);
   }
 
+  blink() {
+    if (!this.ctx) return;
+    this._tone('square', 900, 200, 0.12, 0.15);
+  }
+
+  clink() {
+    if (!this.ctx) return;
+    this._tone('triangle', 1600, 1200, 0.06, 0.15);
+    this._noise(0.05, 'highpass', 3000, 1, 0.1);
+  }
+
   spawn() {
     if (!this.ctx) return;
     this._tone('sawtooth', 90, 300, 0.35, 0.12);

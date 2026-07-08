@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=4';
+import { VoxelSprite, MODELS } from './voxel.js?v=5';
 
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();
@@ -179,6 +179,77 @@ export class Watcher extends VoxelEnemy {
   }
 }
 
+/**
+ * HYPERDEMON-flavored teleporter: hovers in place, then jump-cuts 6-8 u
+ * toward the player every couple of seconds. Anti-kiting — running away
+ * doesn't build distance.
+ */
+export class Blinker extends VoxelEnemy {
+  constructor(scene, pos, bound = 25) {
+    super(scene, MODELS.blinker, pos);
+    this.type = 'blinker';
+    this.hp = 3;
+    this.radius = 0.8;
+    this.score = 3;
+    this.bound = bound;
+    this.blinkT = 1 + Math.random();
+    this.bobT = Math.random() * Math.PI * 2;
+    this.puffReq = null; // main bursts departure debris + plays the zap
+  }
+
+  update(dt, playerEye) {
+    this.baseUpdate(dt);
+    this.bobT += dt;
+    this.pos.y = 1.2 + Math.sin(this.bobT * 2) * 0.15;
+    this.group.rotation.y += dt * 1.5;
+    if (this.spawnK < 1) return;
+    this.blinkT -= dt;
+    if (this.blinkT > 0) return;
+    this.blinkT = 2.2;
+    const dx = playerEye.x - this.pos.x, dz = playerEye.z - this.pos.z;
+    const d = Math.hypot(dx, dz) || 1;
+    const step = Math.min(d - 1.6, 7.5);
+    if (step < 0.5) return;
+    this.puffReq = this.pos.clone();
+    const jitter = (Math.random() - 0.5) * 4;
+    this.pos.x += (dx / d) * step + (-dz / d) * jitter;
+    this.pos.z += (dz / d) * step + (dx / d) * jitter;
+    const hr = Math.hypot(this.pos.x, this.pos.z);
+    if (hr > this.bound) {
+      this.pos.x *= this.bound / hr;
+      this.pos.z *= this.bound / hr;
+    }
+    this.spawnK = 0.35;      // brief materialize-in (also a grace window)
+    this.sprite.flash(1.5);
+  }
+}
+
+/**
+ * Spider egg sac: pulses for a few seconds, then hatches two skulls unless
+ * shot first. Harmless to touch — it's a target, not a threat.
+ */
+export class Egg extends VoxelEnemy {
+  constructor(scene, pos) {
+    super(scene, MODELS.egg, pos);
+    this.type = 'egg';
+    this.hp = 2;
+    this.radius = 0.55;
+    this.score = 1;
+    this.hatchT = 4;
+    this.hatch = false; // main spawns the skulls
+    this.pos.y = 0.35;
+  }
+
+  update(dt) {
+    this.baseUpdate(dt);
+    if (this.spawnK < 1) return;
+    this.hatchT -= dt;
+    const pulse = 1 + Math.sin(this.hatchT * 12) * 0.08 * (1 - this.hatchT / 4);
+    this.group.scale.setScalar(pulse);
+    if (this.hatchT <= 0) this.hatch = true;
+  }
+}
+
 /** Slow tank with cyan eyes and horns. Shrugs off most knockback. */
 export class Brute extends Skull {
   constructor(scene, pos, speedBoost = 0) {
@@ -257,6 +328,8 @@ export class Spider extends VoxelEnemy {
     this.vel = new THREE.Vector3();
     this.wanderT = 0;
     this.wander = new THREE.Vector3();
+    this.eggT = 8 + Math.random() * 4;
+    this.layEgg = false; // main spawns the egg sac
     this.pos.y = 0.45;
   }
 
@@ -293,6 +366,13 @@ export class Spider extends VoxelEnemy {
       _dir.copy(this.wander).sub(this.pos);
       _dir.y = 0;
       _dir.normalize();
+    }
+    if (this.spawnK >= 1) {
+      this.eggT -= dt;
+      if (this.eggT <= 0) {
+        this.eggT = 10;
+        this.layEgg = true;
+      }
     }
     this.vel.addScaledVector(_dir, 12 * dt);
     if (this.vel.length() > 5.2) this.vel.setLength(5.2);
@@ -358,10 +438,13 @@ export class Leviathan extends VoxelEnemy {
 
 /** One destructible ring of the serpent. Moved by its Serpent controller. */
 export class SerpentSegment extends VoxelEnemy {
-  constructor(scene, pos, isHead) {
-    super(scene, isHead ? MODELS.serpentHead : MODELS.serpent, pos);
+  constructor(scene, pos, isHead, ghost = false) {
+    super(scene, ghost
+      ? (isHead ? MODELS.serpentGhostHead : MODELS.serpentGhost)
+      : (isHead ? MODELS.serpentHead : MODELS.serpent), pos);
     this.type = 'serpent';
     this.isHead = isHead;
+    this.armored = ghost; // ghost rings deflect daggers from the front
     this.hp = isHead ? 4 : 2;
     this.radius = isHead ? 0.85 : 0.7;
     this.score = isHead ? 3 : 1;
@@ -381,8 +464,9 @@ const _sd = new THREE.Vector3();
  * the surviving segments behind it.
  */
 export class Serpent {
-  constructor(scene, origin, bound, nSeg = 12) {
+  constructor(scene, origin, bound, ghost = false, nSeg = 12) {
     this.bound = bound;
+    this.ghost = ghost;
     this.t = Math.random() * 10;
     this.attackT = 6;
     this.attacking = 0;
@@ -391,7 +475,7 @@ export class Serpent {
     for (let i = 0; i < nSeg; i++) {
       const pos = origin.clone();
       pos.y += i * 0.95;
-      this.segments.push(new SerpentSegment(scene, pos, i === 0));
+      this.segments.push(new SerpentSegment(scene, pos, i === 0, ghost));
     }
   }
 
