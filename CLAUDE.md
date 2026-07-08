@@ -34,8 +34,10 @@ shared pool. Combat: **hold to stream daggers**, gems drop from heavy kills and 
 the daggers up (LV 3 = **homing**); enemy roster is skulls, crowned skulls, splitter
 skulls (burst into minis), brutes, drifting totem spawners (which also pulse **jumpable
 orb rings**), **watcher** drones firing aimed orb volleys, thorn spikes erupting under
-the player, a **segmented serpent** whose rings gib individually, spider gem-thieves,
-and the Leviathan boss. Returnal-inspired bullet-hell: enemy orbs are slow, readable,
+the player, **blinkers** that teleport toward you, a **segmented serpent** whose rings
+gib individually (its pale **ghost** variant is armored from the front — shoot the rings
+from behind), spider gem-thieves that also lay **egg sacs** (hatch 2 skulls unless shot,
+harmless to touch), and the Leviathan boss. Returnal-inspired bullet-hell: enemy orbs are slow, readable,
 and the **dash phases through projectiles** (never bodies). Movement: **jump + double
 jump**, dash with FOV kick (requests buffered 0.25 s across the cooldown). Art is **black & white with dark red as the only contrast color** — the neon grid
 just stops at the arena edge (no barrier visual). Desktop: pointer-lock mouse look,
@@ -146,8 +148,9 @@ slow orbit drift) every 24 s at ring spots ≥ 12 u from the player, exhaling sk
 (global cap 42, 30% gilded `Wraith` after 60 s) at a tightening interval; brutes join
 after 40 s every 16 s; **watchers** (cap 3) after 30 s every 20 s; **thorns** erupt
 under the player's feet after 50 s (0.9 s sigil warning, lethal below `feet.y` 1.4);
-**serpents** (cap 2) after 70 s every 45 s. Totem exhales roll splitters (15%, > 45 s)
-before crowned skulls (30%, > 60 s). A `Serpent` is a
+**serpents** (cap 2) after 70 s every 45 s — every second serpent is a ghost;
+**blinkers** (cap 3) after 65 s every 25 s. Totem exhales roll splitters (15%, > 45 s)
+before crowned skulls (30%, > 60 s). Spiders lay an egg sac every ~10 s. A `Serpent` is a
 controller owning 12 `SerpentSegment` enemies (pushed into the main `enemies` array so
 the normal collision loops apply); the head weaves around the player and dive-bombs
 every 8 s, surviving segments chain-follow at 0.95 u spacing, and each ring gibs + drops

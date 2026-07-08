@@ -5,14 +5,14 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=4';
-import { Player } from './player.js?v=4';
-import { DaggerPool } from './daggers.js?v=4';
-import { GemPool } from './gems.js?v=4';
-import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=4';
-import { Skull, Wraith, Splitter, MiniSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher } from './enemy.js?v=4';
-import { OrbPool } from './bullets.js?v=1';
-import { AudioKit } from './audio.js?v=4';
+import { InputManager } from './input.js?v=5';
+import { Player } from './player.js?v=5';
+import { DaggerPool } from './daggers.js?v=5';
+import { GemPool } from './gems.js?v=5';
+import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=5';
+import { Skull, Wraith, Splitter, MiniSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=5';
+import { OrbPool } from './bullets.js?v=2';
+import { AudioKit } from './audio.js?v=5';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -34,7 +34,7 @@ const WEAPON = [
   { stream: 18, homing: false },
   { stream: 18, homing: true },
 ];
-const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10, watcher: 1 };
+const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10, watcher: 1, blinker: 1 };
 
 // ---------------------------------------------------------------- renderer
 const canvas = document.getElementById('canvas-game');
@@ -238,6 +238,8 @@ let nextSpiderAt = 0;
 let nextLevAt = 0;
 let nextWatcherAt = 0;
 let nextThornAt = 0;
+let nextBlinkerAt = 0;
+let serpentsSpawned = 0;
 let deathAt = 0;
 let trauma = 0;
 let fovKick = 0;
@@ -318,6 +320,8 @@ function resetRun() {
   nextLevAt = 120;
   nextWatcherAt = 30;
   nextThornAt = 50;
+  nextBlinkerAt = 65;
+  serpentsSpawned = 0;
   trauma = 0;
   fovKick = 0;
   slowmo = 0;
@@ -587,11 +591,12 @@ function totemCount() {
   return n;
 }
 
-function spawnSerpent() {
+function spawnSerpent(ghost = serpentsSpawned % 2 === 1) {
   const p = ringSpot(14).clone();
   p.y = 8;
   audio.roar();
-  const s = new Serpent(scene, p, ARENA_R + 5);
+  serpentsSpawned++;
+  const s = new Serpent(scene, p, ARENA_R + 5, ghost);
   serpents.push(s);
   enemies.push(...s.segments);
 }
@@ -638,6 +643,15 @@ function director(dt) {
       telegraph(at, [2.0, 0.15, 0.15], 0.7, () => enemies.push(new Watcher(scene, at, ARENA_R - 1)));
     }
     nextWatcherAt = gameTime + 20;
+  }
+  if (gameTime >= nextBlinkerAt) {
+    if (enemies.filter(e => e.type === 'blinker').length < 3) {
+      const at = ringSpot(12).clone();
+      at.y = 1.2;
+      audio.spawn();
+      telegraph(at, [2.0, 0.15, 0.15], 0.7, () => enemies.push(new Blinker(scene, at, ARENA_R - 1)));
+    }
+    nextBlinkerAt = gameTime + 25;
   }
   if (gameTime >= nextLevAt) {
     if (!enemies.some(e => e.type === 'leviathan')) {
@@ -697,6 +711,7 @@ const _p0 = new THREE.Vector3();
 const _c = new THREE.Vector3();
 const _seg = new THREE.Vector3();
 const _hitDir = new THREE.Vector3();
+const _fwd2 = new THREE.Vector3();
 
 function segHitsSphere(p0, p1, c, r) {
   _seg.copy(p1).sub(p0);
@@ -771,6 +786,18 @@ function updateCombat(dt) {
       e.center(_c);
       if (!segHitsSphere(d.prev, d.m.position, _c, e.radius)) continue;
       _hitDir.copy(d.vel).normalize();
+      if (e.armored) {
+        e.group.getWorldDirection(_fwd2);
+        if (_hitDir.dot(_fwd2) < 0.15) {
+          // head-on hit on a ghost ring: deflected
+          audio.clink();
+          debris.spawn(d.m.position, e.sprite.randomColor(),
+            _seg.set((Math.random() - 0.5) * 6, 2 + Math.random() * 2, (Math.random() - 0.5) * 6),
+            0.1, 0.35);
+          daggers.recycle(i);
+          break;
+        }
+      }
       e.hit(1, _hitDir);
       audio.hit();
       for (let k = 0; k < 2; k++) {
@@ -797,6 +824,7 @@ function updateCombat(dt) {
   if (mercyT > 0) mercyT -= dt;
   for (const e of enemies) {
     if (e.spawnK < 0.7) continue;
+    if (e.type === 'egg') continue; // eggs are targets, not threats
     if (e.type === 'totem') {
       player.pushOut(e.pos.x, e.pos.z, 2.0);
       continue;
@@ -884,6 +912,31 @@ function step(dt) {
         }
         e.volley = null;
         audio.orb();
+      }
+    }
+    if (e.type === 'blinker' && e.puffReq) {
+      for (let k = 0; k < 6; k++) {
+        debris.spawn(e.puffReq, e.sprite.randomColor(),
+          _sv.set((Math.random() - 0.5) * 6, 1 + Math.random() * 3, (Math.random() - 0.5) * 6),
+          0.14, 0.5);
+      }
+      e.puffReq = null;
+      audio.blink();
+    }
+    if (e.type === 'spider' && e.layEgg) {
+      e.layEgg = false;
+      _sv.copy(e.pos);
+      _sv.y = 0.35;
+      enemies.push(new Egg(scene, _sv));
+      audio.spawn();
+    }
+    if (e.type === 'egg' && e.hatch && e.alive) {
+      e.alive = false;
+      e.remove(scene);
+      audio.roar();
+      for (let k = 0; k < 2; k++) {
+        _sv.set(e.pos.x + (Math.random() - 0.5), 1.2, e.pos.z + (Math.random() - 0.5));
+        enemies.push(new Skull(scene, _sv, Math.min(6, gameTime * 0.06)));
       }
     }
     if (e.type === 'totem' && e.ringReq) {
@@ -986,6 +1039,8 @@ window.__hd = {
     spawnWatcher() { const p = ringSpot(8).clone(); p.y = 2.2; enemies.push(new Watcher(scene, p, ARENA_R - 1)); },
     spawnSplitter() { const p = ringSpot(8).clone(); p.y = 1.2; enemies.push(new Splitter(scene, p)); },
     spawnThorn() { spawnThorn(player.feet.x, player.feet.z); },
+    spawnBlinker() { const p = ringSpot(8).clone(); p.y = 1.2; enemies.push(new Blinker(scene, p, ARENA_R - 1)); },
+    spawnGhostSerpent() { spawnSerpent(true); },
     spawnLeviathan() { enemies.push(new Leviathan(scene, 5)); },
     setLife(n) { lifeT = n; },
     getState() { return { mode, lifeT, gameTime, mercyT, state }; },
