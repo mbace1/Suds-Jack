@@ -173,7 +173,7 @@ export const MODELS = {
   // shading to read as cubes), long HDR white blade forward (row 0)
   hand: {
     voxelSize: 0.05,
-    palette: { G: 0x3a3a3a, D: 0x222222, H: 0x555555, B: [1.8, 1.8, 1.8] },
+    palette: { G: 0x3a3a3a, D: 0x222222, H: 0x555555, B: [1.25, 1.25, 1.25] },
     layers: [
       ['...', '...', '...', '...', '...', '...', '...', 'DGD', 'GDG', 'DGD'],
       ['.B.', '.B.', '.B.', '.B.', '.B.', '.B.', '.B.', 'GHG', 'DGD', 'GDG'],
