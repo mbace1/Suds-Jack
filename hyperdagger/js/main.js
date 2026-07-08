@@ -5,14 +5,14 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=6';
-import { Player } from './player.js?v=6';
-import { DaggerPool } from './daggers.js?v=6';
-import { GemPool } from './gems.js?v=6';
-import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=6';
-import { Skull, Wraith, Splitter, MiniSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=6';
-import { OrbPool } from './bullets.js?v=3';
-import { AudioKit } from './audio.js?v=6';
+import { InputManager } from './input.js?v=7';
+import { Player } from './player.js?v=7';
+import { DaggerPool } from './daggers.js?v=7';
+import { GemPool } from './gems.js?v=7';
+import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=7';
+import { Skull, Wraith, Splitter, MiniSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=7';
+import { OrbPool } from './bullets.js?v=4';
+import { AudioKit } from './audio.js?v=7';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -731,8 +731,12 @@ function fireDagger(spread, speed, homing) {
   _hitDir.y += (Math.random() - 0.5) * spread * 2;
   _hitDir.z += (Math.random() - 0.5) * spread * 2;
   _hitDir.normalize();
-  _p0.copy(camera.position).addScaledVector(_hitDir, 0.5);
-  _p0.y -= 0.12;
+  // launch from the gauntlet corner, not the crosshair — with auto-fire on
+  // nearly all the time, streaks through screen centre are too distracting
+  _p0.copy(camera.position).addScaledVector(_hitDir, 0.7);
+  _seg.setFromMatrixColumn(camera.matrixWorld, 0); // camera right
+  _p0.addScaledVector(_seg, 0.24);
+  _p0.y -= 0.26;
   daggers.fire(_p0, _hitDir, speed, homing);
 }
 
@@ -771,7 +775,7 @@ function updateCombat(dt) {
     while (fireTimer <= 0) {
       fireTimer += 1 / w.stream;
       fireDagger(FIRE_SPREAD, 58, w.homing);
-      recoil = Math.min(0.12, recoil + 0.03);
+      recoil = Math.min(0.035, recoil + 0.007);
       audio.fire();
     }
   } else {

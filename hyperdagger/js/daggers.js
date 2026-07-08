@@ -13,8 +13,8 @@ export class DaggerPool {
     this.scene = scene;
     this.pool = [];
     this.active = [];
-    const geo = new THREE.BoxGeometry(0.07, 0.07, 0.55);
-    const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(2.2, 2.2, 2.2) });
+    const geo = new THREE.BoxGeometry(0.045, 0.045, 0.4);
+    const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(1.2, 1.2, 1.2) });
     for (let i = 0; i < cap; i++) {
       const m = new THREE.Mesh(geo, mat);
       m.visible = false;
