@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v122 — 2026-07-08
+**FIX: recorded title intro now actually plays — its own INTRO VOICE toggle + reliable gesture-safe triggers**
+- The v121 intro was gated on the ANNOUNCER toggle and only fired from `showTitle()`, but returning from OPTIONS (where the toggle lives) doesn't re-render the title and cold loads can't autoplay before a gesture — so it commonly never played
+- **New INTRO VOICE toggle** in OPTIONS → GAME SHOW (own `tokoDropIntroVoice` flag, **on by default**, fully independent of the announcer commentary). `audio.introJingle()` now gates on `setIntroVoice`, not the announcer
+- **Reliable triggers**, all inside a user gesture so audio is unlocked: flipping the toggle ON plays it immediately (hear exactly what it is); returning to the title from OPTIONS (RESUME) plays it; landing on the title after a run plays it. Still once per title visit; cold-load autoplay-block still self-retries on the next title render
+- en/ja/fi strings for the new toggle
+- Cache-bust `?v=75` → `?v=76`; HUD label → v122
+
+---
+
 ## v121 — 2026-07-08
 **Recorded announcer intro on the title screen (when the announcer toggle is on)**
 - A real voice clip ("TOKO DROP — START SHOOTING!") plays on the title screen when the **ANNOUNCER** toggle is on — `toko-drop/audio/announcer-intro.mp3` (62 KB), played via `audio.introJingle()` through an `HTMLAudioElement` at the master volume
