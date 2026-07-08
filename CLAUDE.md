@@ -46,7 +46,10 @@ Esc = pause/options. Touch: dual on-screen sticks — left moves, right looks; *
 automatic while moving** (or while the look stick is held); **tap either stick = jump ×2,
 flick either stick = dash**; ⏸ button top-right. The pause menu carries persisted
 options (`hyperDaggerOpts`): game speed ×1/1.25/1.5, FOV 70/80/90, look sensitivity, and smear/
-shake/chroma toggles. Touch play requests fullscreen + landscape lock on start. No build step — open `hyperdagger/index.html` (three.js via jsDelivr
+shake/chroma toggles. Touch play requests fullscreen + landscape lock on start. Onboarding
+is paced across the first ~150s (one new enemy roughly every 15-20s) and recurring spawns
+tighten over time; the death screen recaps what killed you, a kill breakdown, and your
+last 10 run times. No build step — open `hyperdagger/index.html` (three.js via jsDelivr
 importmap, same as toko-drop). Same `gh-pages` deploy caveat as paperboy.
 
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
@@ -144,23 +147,39 @@ they `player.pushOut(...)` as solids. Gems (`gems.js`) scatter ballistically, ho
 magnet to the player inside 5.5 u.
 
 **Spawn director (`main.js`):** all heavy spawns are **telegraphed** — an additive light
-beam marks the spot for 0.7 s (`pending[]`), then the enemy appears. Totems (cap 6,
-slow orbit drift) every 24 s at ring spots ≥ 12 u from the player, exhaling skulls
-(global cap 42, 30% gilded `Wraith` after 60 s) at a tightening interval; brutes join
-after 40 s every 16 s; **watchers** (cap 3) after 30 s every 20 s; **thorns** erupt
-under the player's feet after 50 s (0.9 s sigil warning, lethal below `feet.y` 1.4);
-**serpents** (cap 2) after 70 s every 45 s — every second serpent is a ghost;
-**blinkers** (cap 3) after 65 s every 25 s. Totem exhales roll splitters (15%, > 45 s)
-before crowned skulls (30%, > 60 s). Spiders lay an egg sac every ~10 s. A `Serpent` is a
-controller owning 12 `SerpentSegment` enemies (pushed into the main `enemies` array so
-the normal collision loops apply); the head weaves around the player and dive-bombs
-every 8 s, surviving segments chain-follow at 0.95 u spacing, and each ring gibs + drops
-a gem individually. **Spiders** (cap 2, after 55 s every 30 s) skitter on the floor and
-eat loose gems — killing one refunds everything it swallowed + 1. The **Leviathan**
-(after 120 s, one at a time, respawning every 120 s) is a 60-HP god-head at the arena
-centre that exhales skulls and every 9 s drags the player toward itself for 1.8 s
-(`player.nudge` at 7 u/s — walk or dash out); it drops 10 gems. A pairwise separation
-pass (skull/brute only) keeps the swarm from collapsing into one blob.
+beam marks the spot for 0.7 s (`pending[]`), then the enemy appears. First-appearance
+times are spread across the first ~150s so mechanics land one at a time rather than
+piling up (each debut in `resetRun()`, each recurring cadence tightening via
+`Math.max(floor, base - gameTime * rate)` in `director()`): totems (cap 6, slow orbit
+drift) from t=0 every 24s tightening to 16s, exhaling skulls (global cap 46, 30% gilded
+`Wraith` after 60s) at a tightening interval and pulsing an orb ring every 6s; **watchers**
+(cap 3) from t=25 every 20s tightening to 12s; brutes from t=45 every 16s tightening to
+10s; **thorns** from t=60 (0.9s sigil warning, lethal below `feet.y` 1.4) every 12s
+tightening to 6s; **spiders** (cap 2) from t=75 every 30s tightening to 20s, laying an egg
+sac every ~10s; **blinkers** (cap 3) from t=90 every 25s tightening to 14s; **serpents**
+(cap 2) from t=100 every 45s tightening to 32s — every second serpent is a ghost; the
+**Leviathan** from t=150, one at a time, respawning every 120s. Totem exhales roll
+splitters (15%, > 45s) before crowned skulls (30%, > 60s). A `Serpent` is a controller
+owning 12 `SerpentSegment` enemies (pushed into the main `enemies` array so the normal
+collision loops apply); the head weaves around the player and dive-bombs every 8s,
+surviving segments chain-follow at 0.95 u spacing, and each ring gibs + drops a gem
+individually. Spiders skitter on the floor and eat loose gems — killing one refunds
+everything it swallowed + 1. The Leviathan is a 60-HP god-head at the arena centre that
+exhales skulls and every 9s drags the player toward itself for 1.8s (`player.nudge` at
+7 u/s — walk or dash out); it drops 10 gems. A pairwise separation pass (skull/brute
+only) keeps the swarm from collapsing into one blob.
+
+**Death recap (`main.js`):** `killsByType` tallies kills by `e.type` (Wraith/Splitter/
+MiniSkull all report `'skull'` — they never override the base type, so the breakdown
+line only ever needs the handful of distinct enemy types) and `lastKiller` is
+overwritten by every `playerStruck(sx, sz, killerType)` call, so on the fatal call it's
+already the correct cause — no post-hoc reordering needed. `showDeath()` builds a
+"felled by ___ · daggers LV_" line plus the kill breakdown, then reads/writes a
+`hyperDaggerHistory` localStorage array (last 10 runs, newest first) and renders
+`hist.slice(1, 9)` — skipping index 0, the run that was just pushed — as the "recent"
+line, since showing the run you're already looking at the big stat line for is
+redundant. TIME OUT (HYPER's clock hitting 0 in `step()`) bypasses the cause line
+entirely rather than blaming a stale `lastKiller` from an earlier survived hit.
 
 **Modes:** menu-button toggle, persisted in `localStorage` (`hyperDaggerMode`). PURE =
 one-touch death (DD). HYPER = HYPERDEMON rules: `lifeT` drains in real time (start 30,
@@ -195,7 +214,9 @@ on a circle of exactly `ARENA_R` — the grid simply ends at the edge, no barrie
 are drawn on the `#canvas-ui` overlay each frame. Hi-score lives in `localStorage` under
 `hyperDaggerHi`. `window.__hd` exposes `{enemies, player, debris, daggers, gems,
 serpents, debug}` (debug: `addGems(n)`, `spawnSerpent()`, `spawnSpider()`,
-`spawnLeviathan()`) for console tinkering and automated smoke tests.
+`spawnLeviathan()`, `getSchedule()` — the raw `nextXAt` timers, useful for verifying the
+onboarding pacing without needing real-time simulation) for console tinkering and
+automated smoke tests.
 
 ## Paper Route (`paperboy/`) — Architecture Notes
 
