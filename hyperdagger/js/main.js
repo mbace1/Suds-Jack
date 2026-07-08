@@ -5,20 +5,27 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=7';
-import { Player } from './player.js?v=7';
-import { DaggerPool } from './daggers.js?v=7';
-import { GemPool } from './gems.js?v=7';
-import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=7';
-import { Skull, Wraith, Splitter, MiniSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=7';
-import { OrbPool } from './bullets.js?v=4';
-import { AudioKit } from './audio.js?v=7';
+import { InputManager } from './input.js?v=8';
+import { Player } from './player.js?v=8';
+import { DaggerPool } from './daggers.js?v=8';
+import { GemPool } from './gems.js?v=8';
+import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=8';
+import { Skull, Wraith, Splitter, MiniSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=8';
+import { OrbPool } from './bullets.js?v=5';
+import { AudioKit } from './audio.js?v=8';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
-const SKULL_CAP = 42;
+const SKULL_CAP = 46;
 const TOTEM_CAP = 6;
 const SERPENT_CAP = 2;
+
+// display names for the death-recap "felled by ___" line + kill breakdown
+const ENEMY_NAMES = {
+  skull: 'a skull', brute: 'a brute', serpent: 'the serpent', spider: 'a spider',
+  watcher: 'a watcher', blinker: 'a blinker', leviathan: 'THE LEVIATHAN',
+  thorn: 'a thorn spike', orb: 'an orb', totem: 'a totem',
+};
 
 // player-tunable options (pause menu), persisted across sessions
 const OPTS_KEY = 'hyperDaggerOpts';
@@ -228,6 +235,8 @@ let state = 'menu'; // 'menu' | 'playing' | 'dead'
 let paused = false;
 let gameTime = 0;
 let kills = 0;
+let killsByType = {};
+let lastKiller = null;
 let gemCount = 0;
 let weaponLv = 1;
 let fireTimer = 0;
@@ -279,6 +288,18 @@ function showMenu() {
 
 function hiKey() { return mode === 'hyper' ? 'hyperDaggerHiHyper' : 'hyperDaggerHi'; }
 
+// last-10 run history (all modes together), most recent first
+const HISTORY_KEY = 'hyperDaggerHistory';
+
+function pushRunHistory(entry) {
+  let hist = [];
+  try { hist = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { hist = []; }
+  hist.unshift(entry);
+  hist = hist.slice(0, 10);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+  return hist;
+}
+
 function showDeath(timedOut) {
   const t = gameTime.toFixed(1);
   const best = gameTime > hiScore;
@@ -286,11 +307,26 @@ function showDeath(timedOut) {
     hiScore = gameTime;
     localStorage.setItem(hiKey(), String(hiScore));
   }
+
+  const causeLine = timedOut
+    ? 'the clock ran out'
+    : `felled by ${ENEMY_NAMES[lastKiller] || 'something'}`;
+  const breakdown = Object.entries(killsByType)
+    .sort((a, b) => b[1] - a[1])
+    .map(([type, n]) => `${n}&times; ${ENEMY_NAMES[type] || type}`)
+    .join(' &middot; ');
+
+  const hist = pushRunHistory({ t: gameTime, mode });
+  const historyLine = hist.slice(1, 9).map(r => r.t.toFixed(1) + 's').join(' &middot; ');
+
   elMsg.style.display = 'block';
   elMsg.innerHTML =
     `<h1 class="dead">${timedOut ? 'TIME OUT' : 'DEVOURED'}</h1>
      <p class="big">${t}s &middot; ${kills} kills &middot; ${gemCount} gems</p>
+     <p class="cause">${causeLine} &middot; daggers LV${weaponLv}</p>
+     ${breakdown ? `<p class="breakdown">${breakdown}</p>` : ''}
      <p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}${mode === 'hyper' ? ' &middot; hyper' : ''}</p>
+     ${historyLine ? `<p class="history">recent: ${historyLine}</p>` : ''}
      <p class="go">click / tap to retry</p>`;
 }
 
@@ -310,17 +346,22 @@ function resetRun() {
   clearThorns();
   gameTime = 0;
   kills = 0;
+  killsByType = {};
+  lastKiller = null;
   gemCount = 0;
   weaponLv = 1;
   fireTimer = 0;
+  // onboarding is spread across the first ~100s so mechanics land one at a
+  // time (totems/skulls only at first, then one new thing roughly every
+  // 15-20s) rather than the old 40-70s pile-up of five simultaneous debuts
   nextTotemAt = 0;
-  nextBruteAt = 40;
-  nextSerpentAt = 70;
-  nextSpiderAt = 55;
-  nextLevAt = 120;
-  nextWatcherAt = 30;
-  nextThornAt = 50;
-  nextBlinkerAt = 65;
+  nextWatcherAt = 25;
+  nextBruteAt = 45;
+  nextThornAt = 60;
+  nextSpiderAt = 75;
+  nextBlinkerAt = 90;
+  nextSerpentAt = 100;
+  nextLevAt = 150;
   serpentsSpawned = 0;
   trauma = 0;
   fovKick = 0;
@@ -533,7 +574,7 @@ function updateThorns(dt) {
         && Math.hypot(player.feet.x - th.group.position.x, player.feet.z - th.group.position.z) < 1.1
         && player.feet.y < 1.4) {
       th.struck = true;
-      if (playerStruck(th.group.position.x, th.group.position.z)) return;
+      if (playerStruck(th.group.position.x, th.group.position.z, 'thorn')) return;
     }
   }
 }
@@ -608,7 +649,8 @@ function director(dt) {
     const at = ringSpot(12).clone();
     audio.spawn();
     telegraph(at, [2.0, 0.15, 0.15], 0.7, () => enemies.push(new Totem(scene, at, interval)));
-    nextTotemAt = gameTime + 24;
+    // cadence tightens from every 24s down to every 16s as the run goes on
+    nextTotemAt = gameTime + Math.max(16, 24 - gameTime * 0.03);
   }
   if (gameTime >= nextBruteAt) {
     const at = ringSpot(14).clone();
@@ -617,11 +659,11 @@ function director(dt) {
       at.y = 1.25;
       enemies.push(new Brute(scene, at, Math.min(1.5, (gameTime - 40) * 0.01)));
     });
-    nextBruteAt = gameTime + 16;
+    nextBruteAt = gameTime + Math.max(10, 16 - gameTime * 0.02);
   }
   if (gameTime >= nextSerpentAt) {
     if (serpents.length < SERPENT_CAP) spawnSerpent();
-    nextSerpentAt = gameTime + 45;
+    nextSerpentAt = gameTime + Math.max(32, 45 - gameTime * 0.02);
   }
   if (gameTime >= nextSpiderAt) {
     if (enemies.filter(e => e.type === 'spider').length < 2) {
@@ -629,11 +671,11 @@ function director(dt) {
       audio.spawn();
       telegraph(at, [2.0, 0.15, 0.15], 0.7, () => enemies.push(new Spider(scene, at)));
     }
-    nextSpiderAt = gameTime + 30;
+    nextSpiderAt = gameTime + Math.max(20, 30 - gameTime * 0.02);
   }
   if (gameTime >= nextThornAt) {
     spawnThorn(player.feet.x, player.feet.z);
-    nextThornAt = gameTime + Math.max(7, 12 - gameTime * 0.02);
+    nextThornAt = gameTime + Math.max(6, 12 - gameTime * 0.025);
   }
   if (gameTime >= nextWatcherAt) {
     if (enemies.filter(e => e.type === 'watcher').length < 3) {
@@ -642,7 +684,7 @@ function director(dt) {
       audio.spawn();
       telegraph(at, [2.0, 0.15, 0.15], 0.7, () => enemies.push(new Watcher(scene, at, ARENA_R - 1)));
     }
-    nextWatcherAt = gameTime + 20;
+    nextWatcherAt = gameTime + Math.max(12, 20 - gameTime * 0.02);
   }
   if (gameTime >= nextBlinkerAt) {
     if (enemies.filter(e => e.type === 'blinker').length < 3) {
@@ -651,7 +693,7 @@ function director(dt) {
       audio.spawn();
       telegraph(at, [2.0, 0.15, 0.15], 0.7, () => enemies.push(new Blinker(scene, at, ARENA_R - 1)));
     }
-    nextBlinkerAt = gameTime + 25;
+    nextBlinkerAt = gameTime + Math.max(14, 25 - gameTime * 0.02);
   }
   if (gameTime >= nextLevAt) {
     if (!enemies.some(e => e.type === 'leviathan')) {
@@ -743,6 +785,7 @@ function fireDagger(spread, speed, homing) {
 function killEnemy(e, dir) {
   e.alive = false;
   kills += e.score;
+  killsByType[e.type] = (killsByType[e.type] || 0) + 1;
   if (mode === 'hyper') lifeT = Math.min(HYPER_CAP, lifeT + e.score); // kills buy time
   e.center(_c);
   debris.burst(e.sprite.worldVoxels(), e.sprite.size,
@@ -838,7 +881,7 @@ function updateCombat(dt) {
     }
     e.center(_c);
     if (_c.distanceTo(_p0) < e.radius + 0.5 || _c.distanceTo(camera.position) < e.radius + 0.4) {
-      if (playerStruck(e.pos.x, e.pos.z)) return;
+      if (playerStruck(e.pos.x, e.pos.z, e.type)) return;
     }
   }
 
@@ -849,15 +892,16 @@ function updateCombat(dt) {
       if (player.dashK > 0) continue;
       const ox = o.m.position.x, oz = o.m.position.z;
       orbs.recycle(i);
-      if (playerStruck(ox, oz)) return;
+      if (playerStruck(ox, oz, 'orb')) return;
     }
   }
 }
 
 /** One enemy/projectile contact. Returns true when the run ended. */
-function playerStruck(sx, sz) {
-  if (mode !== 'hyper') { die(); return true; }
+function playerStruck(sx, sz, killerType) {
+  if (mode !== 'hyper') { lastKiller = killerType; die(); return true; }
   if (mercyT > 0) return false;
+  lastKiller = killerType;
   // HYPERDEMON rules: a hit costs time, shoves you clear, grants i-frames
   lifeT -= HYPER_HIT_COST;
   mercyT = 1.2;
@@ -1051,5 +1095,11 @@ window.__hd = {
     spawnLeviathan() { enemies.push(new Leviathan(scene, 5)); },
     setLife(n) { lifeT = n; },
     getState() { return { mode, lifeT, gameTime, mercyT, state }; },
+    getSchedule() {
+      return {
+        nextTotemAt, nextWatcherAt, nextBruteAt, nextThornAt,
+        nextSpiderAt, nextBlinkerAt, nextSerpentAt, nextLevAt,
+      };
+    },
   },
 };

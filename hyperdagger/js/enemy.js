@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=7';
+import { VoxelSprite, MODELS } from './voxel.js?v=8';
 
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();
@@ -307,7 +307,7 @@ export class Totem extends VoxelEnemy {
     // Returnal-style bullet wave: a flat, jumpable ring of orbs
     this.ringTimer -= dt;
     if (this.ringTimer <= 0) {
-      this.ringTimer = 7;
+      this.ringTimer = 6;
       this.ringReq = true;
     }
   }
