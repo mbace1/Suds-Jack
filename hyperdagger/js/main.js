@@ -5,14 +5,14 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=8';
-import { Player } from './player.js?v=8';
-import { DaggerPool } from './daggers.js?v=8';
-import { GemPool } from './gems.js?v=8';
-import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=8';
-import { Skull, Wraith, Splitter, MiniSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=8';
-import { OrbPool } from './bullets.js?v=5';
-import { AudioKit } from './audio.js?v=8';
+import { InputManager } from './input.js?v=9';
+import { Player } from './player.js?v=9';
+import { DaggerPool } from './daggers.js?v=9';
+import { GemPool } from './gems.js?v=9';
+import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=9';
+import { Skull, Wraith, Splitter, MiniSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=9';
+import { OrbPool } from './bullets.js?v=6';
+import { AudioKit } from './audio.js?v=9';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -212,11 +212,20 @@ const elCross = document.getElementById('crosshair');
 const elVignette = document.getElementById('vignette');
 let toastTimeout = 0;
 
-function toast(text) {
+function toast(text, ms = 1500) {
   elToast.textContent = text;
   elToast.classList.add('show');
   clearTimeout(toastTimeout);
-  toastTimeout = setTimeout(() => elToast.classList.remove('show'), 1500);
+  toastTimeout = setTimeout(() => elToast.classList.remove('show'), ms);
+}
+
+/** First-encounter announcement: big toast + stinger, once per run per key. */
+function announce(key, text) {
+  if (announced[key]) return;
+  announced[key] = true;
+  toast(text, 2200);
+  audio.stinger();
+  trauma = Math.max(trauma, 0.2);
 }
 
 function resize() {
@@ -249,6 +258,7 @@ let nextWatcherAt = 0;
 let nextThornAt = 0;
 let nextBlinkerAt = 0;
 let serpentsSpawned = 0;
+let announced = {};
 let deathAt = 0;
 let trauma = 0;
 let fovKick = 0;
@@ -363,6 +373,7 @@ function resetRun() {
   nextSerpentAt = 100;
   nextLevAt = 150;
   serpentsSpawned = 0;
+  announced = {};
   trauma = 0;
   fovKick = 0;
   slowmo = 0;
@@ -633,6 +644,7 @@ function totemCount() {
 }
 
 function spawnSerpent(ghost = serpentsSpawned % 2 === 1) {
+  announce(ghost ? 'ghostSerpent' : 'serpent', ghost ? 'THE PALE SERPENT' : 'THE SERPENT');
   const p = ringSpot(14).clone();
   p.y = 8;
   audio.roar();
@@ -653,6 +665,7 @@ function director(dt) {
     nextTotemAt = gameTime + Math.max(16, 24 - gameTime * 0.03);
   }
   if (gameTime >= nextBruteAt) {
+    announce('brute', 'THE BRUTES');
     const at = ringSpot(14).clone();
     audio.spawn();
     telegraph(at, [2.0, 0.15, 0.15], 0.7, () => {
@@ -667,6 +680,7 @@ function director(dt) {
   }
   if (gameTime >= nextSpiderAt) {
     if (enemies.filter(e => e.type === 'spider').length < 2) {
+      announce('spider', 'THE THIEVES');
       const at = ringSpot(10).clone();
       audio.spawn();
       telegraph(at, [2.0, 0.15, 0.15], 0.7, () => enemies.push(new Spider(scene, at)));
@@ -674,11 +688,13 @@ function director(dt) {
     nextSpiderAt = gameTime + Math.max(20, 30 - gameTime * 0.02);
   }
   if (gameTime >= nextThornAt) {
+    announce('thorn', 'THORNS BENEATH');
     spawnThorn(player.feet.x, player.feet.z);
     nextThornAt = gameTime + Math.max(6, 12 - gameTime * 0.025);
   }
   if (gameTime >= nextWatcherAt) {
     if (enemies.filter(e => e.type === 'watcher').length < 3) {
+      announce('watcher', 'THE WATCHERS');
       const at = ringSpot(12).clone();
       at.y = 2.2;
       audio.spawn();
@@ -688,6 +704,7 @@ function director(dt) {
   }
   if (gameTime >= nextBlinkerAt) {
     if (enemies.filter(e => e.type === 'blinker').length < 3) {
+      announce('blinker', 'THE BLINKERS');
       const at = ringSpot(12).clone();
       at.y = 1.2;
       audio.spawn();
@@ -697,6 +714,9 @@ function director(dt) {
   }
   if (gameTime >= nextLevAt) {
     if (!enemies.some(e => e.type === 'leviathan')) {
+      // the boss always gets its entrance, even on respawns
+      announced.leviathan = false;
+      announce('leviathan', 'THE LEVIATHAN RISES');
       audio.roar();
       telegraph(new THREE.Vector3(0, 0, 0), [2.6, 0.2, 0.2], 1.2,
         () => enemies.push(new Leviathan(scene, 5)));
@@ -714,6 +734,8 @@ function director(dt) {
           gameTime > 45 && roll < 0.15 ? new Splitter(scene, m, boost) :
           gameTime > 60 && roll < 0.45 ? new Wraith(scene, m, boost) :
           new Skull(scene, m, boost);
+        if (skull instanceof Splitter) announce('splitter', 'THE SPLITTERS');
+        else if (skull instanceof Wraith) announce('wraith', 'CROWNED SKULLS');
         enemies.push(skull);
         for (let i = 0; i < 4; i++) {
           debris.spawn(m, skull.sprite.randomColor(),
@@ -1094,6 +1116,7 @@ window.__hd = {
     spawnGhostSerpent() { spawnSerpent(true); },
     spawnLeviathan() { enemies.push(new Leviathan(scene, 5)); },
     setLife(n) { lifeT = n; },
+    setTime(t) { gameTime = t; },
     getState() { return { mode, lifeT, gameTime, mercyT, state }; },
     getSchedule() {
       return {
