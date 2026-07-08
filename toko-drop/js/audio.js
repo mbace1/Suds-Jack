@@ -38,11 +38,33 @@ class AudioSystem {
       pick();
       speechSynthesis.addEventListener?.('voiceschanged', pick);
     }
+    this._introEl = null;   // lazy recorded title-intro clip (v121)
   }
 
-  setVolume(v) { this._volume = Math.max(0, Math.min(1, v)); }
+  setVolume(v) {
+    this._volume = Math.max(0, Math.min(1, v));
+    if (this._introEl) this._introEl.volume = this._volume;
+  }
 
   setAnnouncer(on) { this._announcer = !!on; }
+
+  // Recorded announcer intro (v121): "TOKO DROP — START SHOOTING!", pre-baked
+  // with bass boost / presence EQ / PA slap / compression / stereo widen (see
+  // scripts, offline ffmpeg). Plays on the title when the announcer toggle is
+  // on. Returns the play() promise so the caller can detect an autoplay block
+  // (cold load, before any gesture) and retry. No-ops when muted/announcer-off.
+  introJingle() {
+    if (!this._announcer || this._volume <= 0) return null;
+    try {
+      if (!this._introEl) {
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=75', import.meta.url).href);
+        this._introEl.preload = 'auto';
+      }
+      this._introEl.volume = this._volume;
+      this._introEl.currentTime = 0;
+      return this._introEl.play();   // may reject under autoplay policy
+    } catch (_) { return null; }
+  }
 
   // announce('wave', 5) → speaks a random line for the key; extra becomes a
   // "WAVE 5!" prefix on wave lines. Silently no-ops without speechSynthesis

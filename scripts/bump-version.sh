@@ -37,7 +37,7 @@ echo "game version  v$OLD_V -> v$NEW_V"
 echo "cache token   ?v=$OLD_T -> ?v=$NEW_T"
 
 # 1) cache-bust token across the whole module graph
-for f in toko-drop/index.html toko-drop/js/main.js toko-drop/js/player.js toko-drop/js/designer.js toko-drop/js/lang.js toko-drop/js/enemy.js; do
+for f in toko-drop/index.html toko-drop/js/main.js toko-drop/js/player.js toko-drop/js/designer.js toko-drop/js/lang.js toko-drop/js/enemy.js toko-drop/js/audio.js; do
   sed -i "s/?v=$OLD_T/?v=$NEW_T/g" "$f"
 done
 

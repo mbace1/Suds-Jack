@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v121 — 2026-07-08
+**Recorded announcer intro on the title screen (when the announcer toggle is on)**
+- A real voice clip ("TOKO DROP — START SHOOTING!") plays on the title screen when the **ANNOUNCER** toggle is on — `toko-drop/audio/announcer-intro.mp3` (62 KB), played via `audio.introJingle()` through an `HTMLAudioElement` at the master volume
+- **Post-processed offline** (ffmpeg, per the user's spec): rumble cut → **bass boost** (low-shelf +6 dB @110 Hz) → mud-cut + **presence EQ** (+4 dB @2.6 kHz) → short PA slap (`aecho`, the "**announcer vocalizer**") → **compression** (4:1, +5 dB makeup) → **stereo widen** (`extrastereo`) → limiter; encoded 128 kbps MP3 (baseline codec, plays everywhere; source m4a was HE-AAC which Chromium can't reliably decode)
+- Plays **once per title visit** (`_titleIntroPlayed`, reset in `startGame`); if a cold load blocks autoplay before any gesture, the flag un-sets so the next title re-render (after any chip/toggle tap) plays it. No-ops when the announcer is off or volume is 0
+- `scripts/bump-version.sh` now also tokenizes `js/audio.js` so the new mp3 path's `?v=` cache token bumps with every release (v118/v119 new-path lesson)
+- Cache-bust `?v=74` → `?v=75`; HUD label → v121
+
+---
+
 ## v120 — 2026-07-07
 **Design round two: risk-priced exits, greed placement, shooter entrance pings (both modes), room-transition dip, PWA install**
 - **Risk-priced exits (SMASH TV)**: the minimap choice is now a trade, not a freebie — **HEAVY rooms pay 2× floor loot** (+1 item, label reads "HEAVY 2×$"), **PRIZE$ rooms drop far fewer weapon pods** from moths (20/45/35 vs the smash-standard 40/30/30 — loot-rich but firepower-poor), SWARM's reward stays its streak-scoring bodies

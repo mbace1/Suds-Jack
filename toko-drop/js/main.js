@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=74';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=74';
-import { Player, PLAYER_RADIUS } from './player.js?v=74';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=74';
-import { audio } from './audio.js?v=74';
-import { initDesigner } from './designer.js?v=74';
-import { t, getLang, setLang, langs } from './lang.js?v=74';
-import { TUNING } from './tuning.js?v=74';
+import { InputManager } from './input.js?v=75';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=75';
+import { Player, PLAYER_RADIUS } from './player.js?v=75';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=75';
+import { audio } from './audio.js?v=75';
+import { initDesigner } from './designer.js?v=75';
+import { t, getLang, setLang, langs } from './lang.js?v=75';
+import { TUNING } from './tuning.js?v=75';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1095,6 +1095,7 @@ function pickSmashExits() {
 // Announcer (v109): game-show commentary via speech synthesis.
 let announcerOn = localStorage.getItem('tokoDropAnnouncer') === '1';
 audio.setAnnouncer(announcerOn);
+let _titleIntroPlayed = false;  // v121: recorded announcer intro plays once per title visit
 
 // Orientation (v110): the arena ALWAYS matches the screen — wide viewport,
 // wide arena. The old manual toggle let a stale saved choice pin a vertical
@@ -1940,7 +1941,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v120', 16, uiCanvas.height - 12);
+  ctx.fillText('v121', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1955,6 +1956,14 @@ function drawHUD() {
 
 // ── Overlay helpers ────────────────────────────────────────────────────────────────
 function showTitle() {
+  // v121: recorded announcer intro, once per title visit (reset in startGame).
+  // If autoplay blocks it on a cold load (no gesture yet), un-set the flag so a
+  // later title re-render — after any tap on a chip/toggle — plays it.
+  if (announcerOn && !_titleIntroPlayed) {
+    _titleIntroPlayed = true;
+    const p = audio.introJingle();
+    if (p && p.catch) p.catch(() => { _titleIntroPlayed = false; });
+  }
   // Inject title animation keyframes once
   if (!document.getElementById('toko-style')) {
     const s = document.createElement('style');
@@ -2623,6 +2632,7 @@ function startGame() {
   smashRoomKind = null;
   _entryDoor = null; _cameFromDoor = null;
   buildSmashDoors();  // no-op unless SMASH TV mode is on
+  _titleIntroPlayed = false;  // v121: arm the recorded intro for the next title visit
   audio.announce('start');
   spawnWave();
   gameState = 'playing';
