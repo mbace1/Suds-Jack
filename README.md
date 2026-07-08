@@ -66,6 +66,7 @@ exceed 1.0) give selective glow without washing out the bone.
 - One touch kills you (PURE) — DEVOURED slow-mo, instant tap/click retry, hi-score in localStorage
 - **Death recap:** the death screen names what killed you, a per-enemy kill breakdown, your dagger level reached, and your last 10 run times
 - HYPERDEMON feel: afterimage motion smear, trauma-driven screen shake + chromatic aberration, FOV kicks on dash/shotgun, rainbow-band sky, first-person voxel gauntlet with recoil
+- **Adaptive music:** an all-synth minor-pentatonic arpeggio layers voices in as the swarm and run time build — bass at all times, arp / hi-hat / lead counter-melody phasing in with intensity, over the detuned-saw drone; toggle in the pause menu
 
 ### `toko-drop/`
 Twin-stick bullet-hell arena shooter built on Three.js r167.
@@ -106,6 +107,7 @@ Twin-stick bullet-hell arena shooter built on Three.js r167.
 ## Changelog
 
 ### 2026-07
+- **hyperdagger v3.5 — adaptive music layer:** an all-synth A1 minor-pentatonic arpeggio on a lookahead scheduler (16th notes queued ~0.15 s ahead so it never stutters, resyncs after a pause instead of bursting) plays over the drone. Voices layer in with a run-intensity signal (live-threat count + run progress): bass always, arp above ~0.25, hi-hat tick above ~0.5, a lead counter-melody above ~0.75 — so the soundtrack thickens as the swarm builds and thins when you clear it. New MUSIC on/off toggle in the pause menu (`opts.music`, persisted, reconciles live)
 - **hyperdagger v3.4 — milestone announcements:** every enemy debut now gets an authored first-encounter moment — a 2.2 s named toast (THE WATCHERS / THE BRUTES / THORNS BENEATH / THE THIEVES / THE BLINKERS / THE SERPENT / THE PALE SERPENT / CROWNED SKULLS / THE SPLITTERS) plus a low two-note dread stinger and a trauma pulse; THE LEVIATHAN RISES re-announces on every boss respawn. One-per-run keyed in `announced{}`; new `debug.setTime()` warp for testing the schedule
 - **hyperdagger v3.3 — difficulty pacing + death recap:** onboarding spread across the first ~150 s so mechanics debut one at a time (watcher 25 s, brute 45 s, thorn 60 s, spider 75 s, blinker 90 s, serpent 100 s, Leviathan 150 s — replacing the old 40-70 s five-enemy pile-up); every recurring spawn now tightens its cadence toward a floor as the run goes on instead of holding flat; skull cap 42→46. Death screen now recaps the run: what killed you, a kill breakdown by enemy type, dagger level reached, and your last 10 run times (`hyperDaggerHistory` in localStorage)
 - **hyperdagger v3.2 — symmetric sticks + minimalistic shooting:** tap EITHER stick to jump/double-jump (flick-dash was already on both); a second finger tapping an occupied half jumps too. Shooting is now automatic whenever you're moving — on desktop and touch alike — with hold-LMB / hold-look-stick as the standing-still fire; standing motionless without input is the only way to hold fire

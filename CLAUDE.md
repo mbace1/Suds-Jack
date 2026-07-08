@@ -103,7 +103,7 @@ hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel
     gems.js     # DD-style gem drops: ballistic scatter, hover, player magnet, collect
     player.js   # First-person controller: yaw/pitch, WASD/stick strafe, jump, dash, head-bob
     input.js    # Pointer-lock mouse + WASD, or dual touch sticks + DASH/JUMP btns; tap-vs-hold fire
-    audio.js    # WebAudio synth kit (fire/shotgun/hit/gib/gem/levelup/dash/roar/death + drone)
+    audio.js    # WebAudio synth kit (fire/hit/gib/gem/levelup/dash/roar/death + drone + intensity music)
 ```
 
 ## Toko Drop — Architecture Notes
@@ -210,14 +210,27 @@ death) drives camera shake + the chroma amount; dash and shotgun kick the FOV. T
 first-person **voxel gauntlet** is a camera child (`scene.add(camera)` required) at
 z −1.05 — closer and it smears into a slab at the screen corner; its glove is
 checkerboarded because unlit same-color voxels read as one flat polygon. Death = red
-vignette + slow-mo debris. Sky is a `BackSide` sphere: greyscale band shimmer over black with one dark-red ember
+vignette + slow-mo debris.
+
+**Audio (`audio.js`):** all-synth, no assets. A detuned-saw **drone** underlays every run;
+over it sits an **intensity-driven music layer** — an A1 minor-pentatonic arpeggio on a
+lookahead scheduler (`musicUpdate(intensity)` called each frame schedules 16th notes
+~0.15 s ahead so it stays steady regardless of frame rate; falling >0.25 s behind, e.g.
+after a pause, resyncs instead of bursting). Voices layer in by intensity (computed in
+`step()` from live-threat count + run progress): bass always, arp > 0.25, hi-hat tick
+> 0.5, lead counter-melody > 0.75. `musicStart/Stop` bracket the drone in `startGame`/
+`die`; a MUSIC pause-menu toggle (`opts.music`) reconciles live via `applyOpts` →
+`musicPlaying()`.
+
+Sky is a `BackSide` sphere: greyscale band shimmer over black with one dark-red ember
 glow at the horizon (`fog: false`); the floor is a `CanvasTexture` white-on-black grid
 on a circle of exactly `ARENA_R` — the grid simply ends at the edge, no barrier mesh. Death/menu/pause are DOM overlays; touch sticks
 are drawn on the `#canvas-ui` overlay each frame. Hi-score lives in `localStorage` under
 `hyperDaggerHi`. `window.__hd` exposes `{enemies, player, debris, daggers, gems,
-serpents, debug}` (debug: `addGems(n)`, `spawnSerpent()`, `spawnSpider()`,
-`spawnLeviathan()`, `getSchedule()` — the raw `nextXAt` timers, useful for verifying the
-onboarding pacing without needing real-time simulation) for console tinkering and
+serpents, audio, debug}` (debug: `addGems(n)`, `spawnSerpent()`, `spawnSpider()`,
+`spawnLeviathan()`, `setTime(t)` + `getSchedule()` — the raw `nextXAt` timers, for
+verifying onboarding pacing / announcements without real-time simulation) for console
+tinkering and
 automated smoke tests.
 
 ## Paper Route (`paperboy/`) — Architecture Notes

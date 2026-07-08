@@ -5,14 +5,14 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=9';
-import { Player } from './player.js?v=9';
-import { DaggerPool } from './daggers.js?v=9';
-import { GemPool } from './gems.js?v=9';
-import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=9';
-import { Skull, Wraith, Splitter, MiniSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=9';
-import { OrbPool } from './bullets.js?v=6';
-import { AudioKit } from './audio.js?v=9';
+import { InputManager } from './input.js?v=10';
+import { Player } from './player.js?v=10';
+import { DaggerPool } from './daggers.js?v=10';
+import { GemPool } from './gems.js?v=10';
+import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=10';
+import { Skull, Wraith, Splitter, MiniSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=10';
+import { OrbPool } from './bullets.js?v=7';
+import { AudioKit } from './audio.js?v=10';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -30,7 +30,7 @@ const ENEMY_NAMES = {
 // player-tunable options (pause menu), persisted across sessions
 const OPTS_KEY = 'hyperDaggerOpts';
 const opts = Object.assign(
-  { speed: 1, fov: 80, sens: 1, smear: true, shake: true, chroma: true },
+  { speed: 1, fov: 80, sens: 1, smear: true, shake: true, chroma: true, music: true },
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
 
 // Devil-Daggers-style dagger levels, advanced by collecting gems.
@@ -399,6 +399,7 @@ function startGame() {
   elCross.style.display = input.touchMode ? 'none' : 'block';
   elPause.style.display = 'block';
   audio.droneStart();
+  if (opts.music) audio.musicStart();
 }
 
 function die(timedOut = false) {
@@ -407,6 +408,7 @@ function die(timedOut = false) {
   slowmo = 1;
   trauma = 1;
   audio.droneStop();
+  audio.musicStop();
   audio.death();
   elVignette.style.opacity = 1;
   setTimeout(() => { elVignette.style.opacity = 0; }, 450);
@@ -459,6 +461,11 @@ function applyOpts() {
   afterimage.enabled = opts.smear;
   chromaPass.enabled = opts.chroma;
   player.sens = opts.sens;
+  // reconcile music with the toggle live (only while a run is active)
+  if (state === 'playing') {
+    if (opts.music && !audio.musicPlaying()) audio.musicStart();
+    else if (!opts.music && audio.musicPlaying()) audio.musicStop();
+  }
 }
 
 function optRow(label, key, values, fmt) {
@@ -479,6 +486,7 @@ function showPause() {
      ${optRow('FX', 'smear', [true, false], v => v ? 'SMEAR ON' : 'SMEAR OFF')}
      ${optRow('', 'shake', [true, false], v => v ? 'SHAKE ON' : 'SHAKE OFF')}
      ${optRow('', 'chroma', [true, false], v => v ? 'CHROMA ON' : 'CHROMA OFF')}
+     ${optRow('', 'music', [true, false], v => v ? 'MUSIC ON' : 'MUSIC OFF')}
      <p class="go">click / tap anywhere else to resume</p>`;
   for (const b of elMsg.querySelectorAll('button.opt')) {
     b.addEventListener('pointerdown', e => {
@@ -1042,6 +1050,11 @@ function step(dt) {
   orbs.update(dt, ARENA_R + 6);
   updateCombat(dt);
   debris.update(dt);
+  // music intensity: swarm density (live threats, not eggs) + run progress
+  let threats = 0;
+  for (const e of enemies) if (e.type !== 'egg' && e.type !== 'totem') threats++;
+  const intensity = Math.min(1, threats / 16 * 0.65 + Math.min(gameTime / 150, 1) * 0.35);
+  audio.musicUpdate(intensity);
   if (mode === 'hyper' && state === 'playing') {
     lifeT -= dt; // the clock is your life
     if (lifeT <= 0) { lifeT = 0; die(true); }
@@ -1104,7 +1117,7 @@ animate();
 
 // tiny debug handle (console tinkering + automated smoke tests)
 window.__hd = {
-  enemies, player, debris, daggers, gems, serpents, orbs, thorns,
+  enemies, player, debris, daggers, gems, serpents, orbs, thorns, audio,
   debug: {
     addGems(n) { onGemsCollected(n); },
     spawnSerpent() { spawnSerpent(); },
