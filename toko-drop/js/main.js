@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=75';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=75';
-import { Player, PLAYER_RADIUS } from './player.js?v=75';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=75';
-import { audio } from './audio.js?v=75';
-import { initDesigner } from './designer.js?v=75';
-import { t, getLang, setLang, langs } from './lang.js?v=75';
-import { TUNING } from './tuning.js?v=75';
+import { InputManager } from './input.js?v=76';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=76';
+import { Player, PLAYER_RADIUS } from './player.js?v=76';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=76';
+import { audio } from './audio.js?v=76';
+import { initDesigner } from './designer.js?v=76';
+import { t, getLang, setLang, langs } from './lang.js?v=76';
+import { TUNING } from './tuning.js?v=76';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1095,7 +1095,11 @@ function pickSmashExits() {
 // Announcer (v109): game-show commentary via speech synthesis.
 let announcerOn = localStorage.getItem('tokoDropAnnouncer') === '1';
 audio.setAnnouncer(announcerOn);
-let _titleIntroPlayed = false;  // v121: recorded announcer intro plays once per title visit
+// Recorded title intro voice (v122): its OWN toggle, on by default, separate
+// from the announcer commentary. `!== '0'` → defaults on unless turned off.
+let introVoiceOn = localStorage.getItem('tokoDropIntroVoice') !== '0';
+audio.setIntroVoice(introVoiceOn);
+let _titleIntroPlayed = false;  // recorded intro plays once per title visit
 
 // Orientation (v110): the arena ALWAYS matches the screen — wide viewport,
 // wide arena. The old manual toggle let a stale saved choice pin a vertical
@@ -1580,8 +1584,13 @@ const _proj    = new THREE.Vector3();
 
 const designer = initDesigner({
   // The same panel serves as the mid-run pause menu and the title's OPTIONS
-  // screen — resume back to whichever state opened it.
-  onResume: () => { gameState = gameState === 'options' ? 'title' : 'playing'; },
+  // screen — resume back to whichever state opened it. Returning to the title
+  // is a gesture (RESUME tap), so it's a safe moment to fire the intro voice.
+  onResume: () => {
+    const backToTitle = gameState === 'options';
+    gameState = backToTitle ? 'title' : 'playing';
+    if (backToTitle) playTitleIntro();
+  },
   // Settings page (v81) — volume + reduce-motion live in the pause menu now;
   // state and persistence stay here, the menu just reads/writes through these.
   settings: {
@@ -1616,6 +1625,16 @@ const designer = initDesigner({
       localStorage.setItem('tokoDropAnnouncer', on ? '1' : '0');
       audio.setAnnouncer(on);
       if (on) audio.announce('start');  // mic check — inside the click gesture
+    },
+    getIntroVoice: () => introVoiceOn,
+    setIntroVoice: on => {
+      introVoiceOn = on;
+      localStorage.setItem('tokoDropIntroVoice', on ? '1' : '0');
+      audio.setIntroVoice(on);
+      // Turning it on plays the clip right now (inside the click gesture) so you
+      // hear exactly what it is; mark it played so returning to the title won't double it.
+      if (on) { _titleIntroPlayed = true; audio.introJingle(); }
+      else    { _titleIntroPlayed = false; }
     },
   },
 });
@@ -1941,7 +1960,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v121', 16, uiCanvas.height - 12);
+  ctx.fillText('v122', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -1955,15 +1974,21 @@ function drawHUD() {
 }
 
 // ── Overlay helpers ────────────────────────────────────────────────────────────────
+// Recorded title intro voice (v122): play once per title visit, gesture-safe.
+// Called from showTitle() and when returning to the title from OPTIONS / a run.
+function playTitleIntro() {
+  if (!introVoiceOn || _titleIntroPlayed) return;
+  _titleIntroPlayed = true;
+  const p = audio.introJingle();
+  if (p && p.catch) p.catch(() => { _titleIntroPlayed = false; });  // autoplay-blocked → retry next gesture
+}
+
 function showTitle() {
-  // v121: recorded announcer intro, once per title visit (reset in startGame).
-  // If autoplay blocks it on a cold load (no gesture yet), un-set the flag so a
-  // later title re-render — after any tap on a chip/toggle — plays it.
-  if (announcerOn && !_titleIntroPlayed) {
-    _titleIntroPlayed = true;
-    const p = audio.introJingle();
-    if (p && p.catch) p.catch(() => { _titleIntroPlayed = false; });
-  }
+  // v121/v122: recorded intro voice, once per title visit (reset in startGame),
+  // gated by its own INTRO VOICE toggle. If autoplay blocks it on a cold load
+  // (no gesture yet), un-set the flag so a later title re-render — after any
+  // tap on a chip/toggle — plays it.
+  playTitleIntro();
   // Inject title animation keyframes once
   if (!document.getElementById('toko-style')) {
     const s = document.createElement('style');

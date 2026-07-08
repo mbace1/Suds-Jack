@@ -39,6 +39,7 @@ class AudioSystem {
       speechSynthesis.addEventListener?.('voiceschanged', pick);
     }
     this._introEl = null;   // lazy recorded title-intro clip (v121)
+    this._introVoice = true; // v122: own toggle, independent of the announcer
   }
 
   setVolume(v) {
@@ -48,16 +49,19 @@ class AudioSystem {
 
   setAnnouncer(on) { this._announcer = !!on; }
 
+  setIntroVoice(on) { this._introVoice = !!on; }
+
   // Recorded announcer intro (v121): "TOKO DROP — START SHOOTING!", pre-baked
   // with bass boost / presence EQ / PA slap / compression / stereo widen (see
-  // scripts, offline ffmpeg). Plays on the title when the announcer toggle is
-  // on. Returns the play() promise so the caller can detect an autoplay block
-  // (cold load, before any gesture) and retry. No-ops when muted/announcer-off.
+  // scripts, offline ffmpeg). Plays on the title, gated by its own INTRO VOICE
+  // toggle (v122, independent of the commentary announcer). Returns the play()
+  // promise so the caller can detect an autoplay block (cold load, before any
+  // gesture) and retry. No-ops when muted or the intro voice is off.
   introJingle() {
-    if (!this._announcer || this._volume <= 0) return null;
+    if (!this._introVoice || this._volume <= 0) return null;
     try {
       if (!this._introEl) {
-        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=75', import.meta.url).href);
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=76', import.meta.url).href);
         this._introEl.preload = 'auto';
       }
       this._introEl.volume = this._volume;
