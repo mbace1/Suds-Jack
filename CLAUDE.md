@@ -150,7 +150,9 @@ magnet to the player inside 5.5 u.
 beam marks the spot for 0.7 s (`pending[]`), then the enemy appears. First-appearance
 times are spread across the first ~150s so mechanics land one at a time rather than
 piling up (each debut in `resetRun()`, each recurring cadence tightening via
-`Math.max(floor, base - gameTime * rate)` in `director()`): totems (cap 6, slow orbit
+`Math.max(floor, base - gameTime * rate)` in `director()`; each debut fires a one-per-run
+`announce()` — big toast + `audio.stinger()`, keys in `announced{}`, the Leviathan
+re-announcing on every respawn): totems (cap 6, slow orbit
 drift) from t=0 every 24s tightening to 16s, exhaling skulls (global cap 46, 30% gilded
 `Wraith` after 60s) at a tightening interval and pulsing an orb ring every 6s; **watchers**
 (cap 3) from t=25 every 20s tightening to 12s; brutes from t=45 every 16s tightening to

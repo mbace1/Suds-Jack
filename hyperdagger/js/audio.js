@@ -102,6 +102,15 @@ export class AudioKit {
     this._noise(0.7, 'lowpass', 300, 0.7, 0.35);
   }
 
+  /** Milestone stinger: a low two-note dread hit for first encounters. */
+  stinger() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this._tone('sawtooth', 110, 108, 0.5, 0.22, t);
+    this._tone('sawtooth', 55, 54, 0.9, 0.26, t + 0.18);
+    this._noise(0.7, 'lowpass', 250, 0.7, 0.16, t + 0.18);
+  }
+
   pull() {
     if (!this.ctx) return;
     this._tone('sawtooth', 40, 130, 1.4, 0.28);
