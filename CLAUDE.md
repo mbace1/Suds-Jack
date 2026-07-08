@@ -41,9 +41,10 @@ harmless to touch), and the Leviathan boss. Returnal-inspired bullet-hell: enemy
 and the **dash phases through projectiles** (never bodies). Movement: **jump + double
 jump**, dash with FOV kick (requests buffered 0.25 s across the cooldown). Art is **black & white with dark red as the only contrast color** — the neon grid
 just stops at the arena edge (no barrier visual). Desktop: pointer-lock mouse look,
-hold LMB, Space jump ×2, Shift dash, Esc = pause/options. Touch: dual on-screen sticks —
-left moves (quick tap = jump ×2), right looks *and auto-fires*, **flick either stick to
-dash** in the flick direction; ⏸ button top-right. The pause menu carries persisted
+**fire is automatic while moving** (hold LMB when still), Space jump ×2, Shift dash,
+Esc = pause/options. Touch: dual on-screen sticks — left moves, right looks; **firing is
+automatic while moving** (or while the look stick is held); **tap either stick = jump ×2,
+flick either stick = dash**; ⏸ button top-right. The pause menu carries persisted
 options (`hyperDaggerOpts`): game speed ×1/1.25/1.5, FOV 70/80/90, look sensitivity, and smear/
 shake/chroma toggles. Touch play requests fullscreen + landscape lock on start. No build step — open `hyperdagger/index.html` (three.js via jsDelivr
 importmap, same as toko-drop). Same `gh-pages` deploy caveat as paperboy.
@@ -167,10 +168,12 @@ cap 60), kills add `e.score` seconds, an enemy touch costs 10 + `player.nudge`
 knockback + 1.2 s `mercyT` i-frames, and 0 → `die(true)` = TIME OUT. Hi-scores are
 per-mode (`hyperDaggerHi` / `hyperDaggerHiHyper`).
 
-**Input quirks:** right touch stick is *look + auto-fire* (Devil Daggers wants constant
-fire; a separate fire button costs a thumb). A sub-250 ms / sub-12 px tap on the LEFT
-stick = jump (works mid-air for the double jump); a sub-260 ms / ≥36 px **flick on
-either stick = dash** along the screen-space flick direction. No on-screen buttons —
+**Input quirks:** shooting is minimalistic — the stream is automatic whenever move
+input is nonzero (`getMove()` length > 0.15), and holding LMB / the look stick fires
+while standing still. A sub-250 ms / sub-12 px tap on EITHER stick = jump (works
+mid-air for the double jump; a second finger tapping an occupied half also jumps); a
+fast ≥40 px flick within the last 150 ms before release on **either stick = dash**
+along the screen-space flick direction. No on-screen buttons —
 touches that start on DOM controls (`button`, `#pauseBtn`) are left alone so the pause
 menu stays tappable. Pointer-lock mousemove deltas with `hypot > 400` are dropped —
 some browsers emit one giant bogus delta right after locking. On desktop the pause

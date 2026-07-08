@@ -6,13 +6,13 @@ const FLICK_WINDOW = 150;  // ms of trailing movement examined at release
 const FLICK_PX = 40;       // min travel within that window to count as a flick
 
 /**
- * Unified input. Desktop: pointer-lock mouse look, WASD, hold LMB for the
- * dagger stream, Space = jump / double jump, Shift = dash. Touch: left
- * on-screen stick moves (quick tap = jump / double jump — a second finger
- * tapping the left half also jumps while the stick is held), right stick
- * looks and auto-fires while held; a fast flick on either stick dashes in
- * the flick direction. Flicks are judged by the LAST 150 ms of movement
- * before release, so flicking out of a long look-drag works. No buttons.
+ * Unified input. Desktop: pointer-lock mouse look, WASD, hold LMB to fire
+ * (firing is also automatic while moving), Space = jump / double jump,
+ * Shift = dash. Touch: left stick moves, right stick looks; a quick tap on
+ * EITHER stick jumps (a second finger tapping while a stick is held works
+ * too), and a fast flick on either stick dashes in the flick direction.
+ * Flicks are judged by the LAST 150 ms of movement before release, so
+ * flicking out of a long look-drag works. No buttons.
  */
 export class InputManager {
   constructor() {
@@ -79,8 +79,8 @@ export class InputManager {
         stick.dx = 0; stick.dy = 0;
         stick.t0 = now;
         stick.hist = [{ x: t.clientX, y: t.clientY, t: now }];
-      } else if (side === 'left') {
-        // second finger tapping the move half = jump, even while steering
+      } else {
+        // second finger tapping an occupied half = jump, even mid-steer/aim
         this._jump = true;
         this._touchMap.set(t.identifier, 'tap');
       }
@@ -111,8 +111,8 @@ export class InputManager {
       const stick = this[side];
       const dur = now - stick.t0;
       const dist = Math.hypot(stick.dx, stick.dy);
-      if (side === 'left' && dur < TAP_MS && dist < TAP_PX) {
-        this._jump = true; // tap the move stick = jump / double jump
+      if (dur < TAP_MS && dist < TAP_PX) {
+        this._jump = true; // tap either stick = jump / double jump
       } else {
         // flick = fast travel within the last FLICK_WINDOW ms before release,
         // so a flick at the end of a long look-drag still dashes

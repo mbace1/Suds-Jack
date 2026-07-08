@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=5';
+import { VoxelSprite, MODELS } from './voxel.js?v=6';
 
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();

@@ -49,8 +49,8 @@ one `InstancedMesh` each, and every kill explodes them into **physical voxel deb
 `UnrealBloomPass` + HDR palette colors (only eyes / totem veins / daggers / arena ring
 exceed 1.0) give selective glow without washing out the bone.
 
-**Controls:** mouse look (pointer lock) · hold LMB to fire · WASD move · SPACE **jump / double jump** · SHIFT dash · ESC pause/options  
-**Mobile:** left stick moves (**tap = jump / double jump**) · right stick looks + auto-fires · **flick either stick to dash** · ⏸ pause — no on-screen buttons
+**Controls:** mouse look (pointer lock) · **fire is automatic while you move** (hold LMB when still) · WASD · SPACE **jump / double jump** · SHIFT dash · ESC pause/options  
+**Mobile:** left stick moves · right stick looks · **fire is automatic** · **tap either stick = jump / double jump** · **flick either stick to dash** · ⏸ pause — no on-screen buttons
 
 #### Gameplay
 - Obsidian **totems** (slowly drifting) rise behind telegraph light-beams and exhale chasing **skulls** (faster over time, 30% **gilded** 2-HP skulls after 60 s); horned **brutes** (10 HP, knockback-resistant) join after 40 s; segmented **serpents** weave around the arena and dive-bomb after 70 s — every ring is individually destructible and gibs on its own
@@ -103,6 +103,7 @@ Twin-stick bullet-hell arena shooter built on Three.js r167.
 ## Changelog
 
 ### 2026-07
+- **hyperdagger v3.2 — symmetric sticks + minimalistic shooting:** tap EITHER stick to jump/double-jump (flick-dash was already on both); a second finger tapping an occupied half jumps too. Shooting is now automatic whenever you're moving — on desktop and touch alike — with hold-LMB / hold-look-stick as the standing-still fire; standing motionless without input is the only way to hold fire
 - **hyperdagger v3.1 — roster round two:** **Blinker** (glitch shard that jump-cuts 6-8 u toward the player every 2.2 s with a debris puff + zap at the departure point — anti-kiting), **ghost serpent** (every second serpent; pale rings armored from the front, daggers *clink* off — damage only from behind/side, which also counters lazy homing), **spider egg sacs** (laid every ~10 s, pulse for 4 s then hatch two skulls; 2 HP targets, harmless to touch)
 - **hyperdagger v3 — Returnal-inspired bullet-hell pass:** new `bullets.js` orb pool (slow readable red orbs, culled past the arena); **Watcher** drone (orbits at mid range, eye-burn telegraph + warning tick, 3-orb aimed fan — the game's first ranged enemy), **totem orb rings** (flat, jumpable expanding waves every 7 s), **Thorn** floor spikes (red sigil under your feet → white voxel spike; move, dash, or jump), **Splitter** skull → 3 mini skulls. Dash gets projectile i-frames (phases through orbs, never bodies) + 0.25 s input buffering. Fixes: gem pool 40→80, totems can't spawn overlapping, look-sensitivity option in the pause menu, fullscreen + landscape lock on touch play, notch-safe HUD (`viewport-fit=cover` + safe-area insets)
 - **hyperdagger v2 — feel + monochrome restyle:** faster all around (move 12 u/s, dash 30 u/s on a 1 s cooldown, hotter streams, quicker enemies); **double jump** replaces the shotgun (Space ×2 / tap the left touch stick); **flick either stick to dash** in the flick direction; on-screen DASH/JUMP buttons removed; new ⏸ **pause menu** (Esc on desktop) with persisted options — game speed ×1/1.25/1.5, FOV 70/80/90, smear/shake/chroma toggles. Art rebuilt **black & white with dark red as the single contrast color** — grey band sky with a red ember horizon, white-on-black grid that simply stops at the arena edge (barrier ring removed), white daggers/blade, red eyes/veins/gems/telegraphs

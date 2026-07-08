@@ -5,14 +5,14 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=5';
-import { Player } from './player.js?v=5';
-import { DaggerPool } from './daggers.js?v=5';
-import { GemPool } from './gems.js?v=5';
-import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=5';
-import { Skull, Wraith, Splitter, MiniSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=5';
-import { OrbPool } from './bullets.js?v=2';
-import { AudioKit } from './audio.js?v=5';
+import { InputManager } from './input.js?v=6';
+import { Player } from './player.js?v=6';
+import { DaggerPool } from './daggers.js?v=6';
+import { GemPool } from './gems.js?v=6';
+import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=6';
+import { Skull, Wraith, Splitter, MiniSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=6';
+import { OrbPool } from './bullets.js?v=3';
+import { AudioKit } from './audio.js?v=6';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -264,8 +264,8 @@ function showMenu() {
      <p class="sub">a Devil Daggers &times; HYPERDEMON homage</p>
      <p>survive the swarm &mdash; time is your only score<br>
      gems from heavy kills level your daggers up &mdash; level 3 daggers <b>home</b></p>
-     <p class="keys">desktop &mdash; mouse look &middot; hold <b>LMB</b> to fire &middot; <b>WASD</b> move &middot; <b>SPACE</b> jump &times;2 &middot; <b>SHIFT</b> dash &middot; <b>ESC</b> options<br>
-     touch &mdash; left stick move (tap = jump &times;2) &middot; right stick look + fire &middot; flick a stick to dash &middot; &#10074;&#10074; pause</p>
+     <p class="keys">desktop &mdash; mouse look &middot; <b>fire is automatic while you move</b> (hold <b>LMB</b> when still) &middot; <b>WASD</b> &middot; <b>SPACE</b> jump &times;2 &middot; <b>SHIFT</b> dash &middot; <b>ESC</b> options<br>
+     touch &mdash; left stick moves &middot; right stick looks &middot; fire is automatic &middot; <b>tap either stick = jump &times;2</b> &middot; <b>flick either stick = dash</b> &middot; &#10074;&#10074; pause</p>
      <button id="modeBtn">MODE: ${modeLine}</button>
      <p class="go">${hiScore > 0 ? `best ${hiScore.toFixed(1)}s &mdash; ` : ''}click / tap to descend</p>`;
   document.getElementById('modeBtn').addEventListener('pointerdown', e => {
@@ -762,8 +762,11 @@ function killEnemy(e, dir) {
 function updateCombat(dt) {
   const w = WEAPON[weaponLv];
 
-  // hold = dagger stream
-  if (input.firing) {
+  // minimalistic shooting: the stream is automatic while you're moving;
+  // holding LMB / the look stick fires while standing still
+  const mv = input.getMove();
+  const autoFire = Math.hypot(mv.x, mv.y) > 0.15;
+  if (input.firing || autoFire) {
     fireTimer -= dt;
     while (fireTimer <= 0) {
       fireTimer += 1 / w.stream;
