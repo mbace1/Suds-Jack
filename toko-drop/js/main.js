@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=76';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=76';
-import { Player, PLAYER_RADIUS } from './player.js?v=76';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=76';
-import { audio } from './audio.js?v=76';
-import { initDesigner } from './designer.js?v=76';
-import { t, getLang, setLang, langs } from './lang.js?v=76';
-import { TUNING } from './tuning.js?v=76';
+import { InputManager } from './input.js?v=77';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=77';
+import { Player, PLAYER_RADIUS } from './player.js?v=77';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=77';
+import { audio } from './audio.js?v=77';
+import { initDesigner } from './designer.js?v=77';
+import { t, getLang, setLang, langs } from './lang.js?v=77';
+import { TUNING } from './tuning.js?v=77';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1767,16 +1767,17 @@ function drawHUD() {
     ctx.fillRect(0, 0, uiCanvas.width, uiCanvas.height);
   }
 
-  // SMASH TV room intro card (v114): big game-show wave title, quick in/out.
+  // Wave-start banner (v114 SMASH room card / v123 classic rhythm banner):
+  // big color-coded wave title, quick fade in/out.
   if (waveIntroT > 0 && gameState === 'playing') {
-    const a = Math.min(1, waveIntroT * 3, (1.5 - waveIntroT) * 5);
+    const a = Math.min(1, waveIntroT * 3, (waveIntroDur - waveIntroT) * 5);
     ctx.save();
     ctx.globalAlpha = Math.max(0, a);
     ctx.textAlign = 'center';
     ctx.font = 'bold 44px monospace, sans-serif';
-    ctx.shadowColor = '#ff4422';
+    ctx.shadowColor = waveIntroColor;
     ctx.shadowBlur = 26;
-    ctx.fillStyle = '#ffdd44';
+    ctx.fillStyle = waveIntroColor;
     ctx.fillText(waveIntroText, uiCanvas.width / 2, uiCanvas.height * 0.30);
     ctx.restore();
   }
@@ -1960,7 +1961,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v122', 16, uiCanvas.height - 12);
+  ctx.fillText('v123', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2317,11 +2318,16 @@ function buildFeedbackPanel(slot) {
   slot.appendChild(btnRow);
 }
 
-function announceWave() {
-  overlay.style.display = 'block';
-  overlay.innerHTML = `<div style="font-size:22px;opacity:0.75">${t('wave')} ${wave}</div>`;
-  setTimeout(() => { if (gameState === 'playing') overlay.style.display = 'none'; }, 450);
-}
+// Classic-mode wave banner (v123): the game already picks a wave RHYTHM
+// (normal / swarm / spike / boss) but never told the player — now each wave
+// opens with a brief color-coded banner naming the incoming pressure, so the
+// rhythm is readable and you can plan the next 20 seconds.
+const WAVE_BANNER = {
+  normal: { suffix: '',          color: '#ffdd44' },
+  swarm:  { suffix: ' — SWARM',  color: '#66ffcc' },
+  spike:  { suffix: ' — HEAVY',  color: '#ffaa44' },
+  boss:   { suffix: ' — BOSS!',  color: '#ff5566' },
+};
 
 // ── Wave / restart helpers ──────────────────────────────────────────────────────────
 // ── SMASH TV doors (v114) ─────────────────────────────────────────────────────
@@ -2329,7 +2335,7 @@ function announceWave() {
 // angles). Dim while idle; a door flares up in the ~0.9s before a burst pours
 // through it — the show's "they're coming through THAT wall" telegraph.
 let smashDoorFX = [];
-let waveIntroT = 0, waveIntroText = '';
+let waveIntroT = 0, waveIntroDur = 1.5, waveIntroText = '', waveIntroColor = '#ffdd44';
 function buildSmashDoors() {
   clearSmashDoors();
   if (!smashMode) return;
@@ -2533,12 +2539,12 @@ function spawnWave() {
     }
   }
 
-  // SMASH TV: game-show room intro card on the HUD (v114/v115 — names the room kind)
+  // Wave-start banner (v114 SMASH / v123 classic): name the incoming pressure.
   if (smashMode) {
-    waveIntroT    = 1.5;
-    waveIntroText = kind === 'boss' ? `WAVE ${wave} — BOSS!`
-                  : kind === 'normal' ? `WAVE ${wave}`
-                  : `WAVE ${wave} — ${ROOM_KINDS[kind].label}`;
+    // SMASH TV: game-show room intro card, named + colored by room kind.
+    waveIntroT     = waveIntroDur = 1.5;
+    waveIntroText  = kind === 'normal' ? `WAVE ${wave}` : `WAVE ${wave} — ${ROOM_KINDS[kind].label}`;
+    waveIntroColor = ROOM_KINDS[kind]?.color ?? '#ffdd44';
     clusterSpawnAt.sort((a, b) => a - b);
     // Enter the new room through the opposing wall from the exit just taken:
     // spawn at that door's mouth, step in with a moment of mercy.
@@ -2549,7 +2555,16 @@ function spawnWave() {
       player.grantInvincibility(1.2);
       _entryDoor = null;
     }
+  } else {
+    // Classic: color-coded wave banner naming the rhythm (v123).
+    const b = WAVE_BANNER[kind] ?? WAVE_BANNER.normal;
+    waveIntroT     = waveIntroDur = kind === 'boss' ? 2.0 : 1.4;  // boss lingers a beat longer
+    waveIntroText  = `WAVE ${wave}${b.suffix}`;
+    waveIntroColor = b.color;
   }
+  // Boss klaxon (v123): a real audio cue for the boss wave in BOTH modes, even
+  // with the spoken announcer off — you always get the "here comes the boss" beat.
+  if (kind === 'boss') audio.bossHorn();
   audio.announce(kind === 'boss' ? 'boss' : 'wave', wave);
 }
 

@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v123 — 2026-07-09
+**Main (classic) mode: readable wave rhythm — color-coded wave banners + a boss klaxon**
+- Classic mode computed a wave RHYTHM (normal / swarm / spike / boss every 8th) since forever but never surfaced it — the `announceWave()` helper was even dead code. Now **each wave opens with a brief color-coded banner** naming the incoming pressure so the rhythm is readable and you can plan the next ~20s: `WAVE N` (gold), `WAVE N — SWARM` (cyan), `WAVE N — HEAVY` (orange), `WAVE N — BOSS!` (red, lingers a beat longer)
+- **Boss klaxon** (`audio.bossHorn()`) — two ominous rising low tones + a noise swell on every boss wave in **both** modes, independent of the spoken announcer, so you always get the "here comes the boss" beat
+- The wave-banner renderer is now duration-aware (`waveIntroDur`) and color-driven (`waveIntroColor`); the SMASH TV room card reuses it, now tinted by room kind. Dead `announceWave()` removed
+- Cache-bust `?v=76` → `?v=77`; HUD label → v123
+
+---
+
 ## v122 — 2026-07-08
 **FIX: recorded title intro now actually plays — its own INTRO VOICE toggle + reliable gesture-safe triggers**
 - The v121 intro was gated on the ANNOUNCER toggle and only fired from `showTitle()`, but returning from OPTIONS (where the toggle lives) doesn't re-render the title and cold loads can't autoplay before a gesture — so it commonly never played

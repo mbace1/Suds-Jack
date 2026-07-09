@@ -61,7 +61,7 @@ class AudioSystem {
     if (!this._introVoice || this._volume <= 0) return null;
     try {
       if (!this._introEl) {
-        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=76', import.meta.url).href);
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=77', import.meta.url).href);
         this._introEl.preload = 'auto';
       }
       this._introEl.volume = this._volume;
@@ -152,6 +152,13 @@ class AudioSystem {
   shooterPing() {
     this._tone(1150, 0.06, 'square', 0.13);
     setTimeout(() => this._tone(1550, 0.07, 'square', 0.11), 75);
+  }
+  // Boss-wave klaxon (v123): two ominous rising low tones + a noise swell —
+  // the "here comes the boss" beat, fires regardless of the spoken announcer.
+  bossHorn() {
+    this._tone(70, 0.55, 'sawtooth', 0.40, 130);
+    setTimeout(() => this._tone(90, 0.70, 'sawtooth', 0.34, 155), 200);
+    this._noise(0.14, 0.5);
   }
   playerHit() { this._tone(100, 0.32, 'sawtooth', 0.38); this._noise(0.22, 0.18); }
   playerDie() { this._tone(65,  0.70, 'sawtooth', 0.50); this._noise(0.42, 0.60); }
