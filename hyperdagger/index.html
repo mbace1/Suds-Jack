@@ -28,6 +28,37 @@
     #timer { font-size: 34px; font-weight: bold; }
     #kills { font-size: 13px; color: #9a9a9a; }
     #gems { font-size: 13px; color: #c81e1e; margin-top: 2px; }
+    #style {
+      margin-top: 6px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    #style .row {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 6px;
+    }
+    #styleRank {
+      font-size: 20px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    #styleMult { font-size: 12px; color: #9a9a9a; }
+    #styleBar {
+      width: 92px;
+      height: 3px;
+      margin: 3px auto 0;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    #styleFill {
+      height: 100%;
+      width: 0%;
+      background: #f0f0f0;
+      transition: width 0.12s linear;
+    }
     #pauseBtn {
       position: fixed;
       top: max(12px, env(safe-area-inset-top));
@@ -137,6 +168,10 @@
     <div id="timer">0.0</div>
     <div id="kills">0 kills</div>
     <div id="gems">◆ 0 · LV 1</div>
+    <div id="style">
+      <div class="row"><span id="styleRank"></span><span id="styleMult"></span></div>
+      <div id="styleBar"><div id="styleFill"></div></div>
+    </div>
   </div>
   <div id="toast"></div>
   <button id="pauseBtn">&#10074;&#10074;</button>
@@ -152,6 +187,6 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=12"></script>
+  <script type="module" src="js/main.js?v=13"></script>
 </body>
 </html>
