@@ -5,7 +5,7 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=10';
+import { InputManager } from './input.js?v=13';
 import { Player } from './player.js?v=10';
 import { DaggerPool } from './daggers.js?v=10';
 import { GemPool } from './gems.js?v=10';
@@ -42,6 +42,27 @@ const WEAPON = [
   { stream: 18, homing: true },
 ];
 const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10, watcher: 1, blinker: 1 };
+
+// Style/combo meter (Returnal/DMC-flavoured): fast kills and dash-throughs
+// fill it, idling bleeds it out. Rank climbs D→SSS; it drives music intensity
+// and the peak rank is a run-end brag. `min` is the fill needed to reach a
+// tier. Style gained per event scales with the meter, rewarding chains.
+const STYLE_TIERS = [
+  { min: 0, label: '', color: '' },
+  { min: 6, label: 'D', color: '#9a9a9a' },
+  { min: 15, label: 'C', color: '#c8c8c8' },
+  { min: 28, label: 'B', color: '#f0f0f0' },
+  { min: 45, label: 'A', color: '#ffffff' },
+  { min: 66, label: 'S', color: '#ff6b6b' },
+  { min: 92, label: 'SS', color: '#e83030' },
+  { min: 124, label: 'SSS', color: '#c81e1e' },
+];
+const STYLE_CAP = 150;
+// style awarded per kill by enemy type (dash-through orbs + gems add their own)
+const STYLE_GAIN = {
+  skull: 3, brute: 6, serpent: 5, spider: 5, watcher: 5,
+  blinker: 5, leviathan: 30, thorn: 0,
+};
 
 // ---------------------------------------------------------------- renderer
 const canvas = document.getElementById('canvas-game');
@@ -206,6 +227,10 @@ const uiCtx = ui.getContext('2d');
 const elTimer = document.getElementById('timer');
 const elKills = document.getElementById('kills');
 const elGems = document.getElementById('gems');
+const elStyle = document.getElementById('style');
+const elStyleRank = document.getElementById('styleRank');
+const elStyleMult = document.getElementById('styleMult');
+const elStyleFill = document.getElementById('styleFill');
 const elMsg = document.getElementById('msg');
 const elToast = document.getElementById('toast');
 const elCross = document.getElementById('crosshair');
@@ -249,6 +274,8 @@ let lastKiller = null;
 let gemCount = 0;
 let weaponLv = 1;
 let fireTimer = 0;
+let styleVal = 0;      // current meter fill (0..STYLE_CAP), bleeds when idle
+let stylePeakIdx = 0;  // best tier reached this run (for the death recap)
 let nextTotemAt = 0;
 let nextBruteAt = 0;
 let nextSerpentAt = 0;
@@ -284,6 +311,7 @@ function showMenu() {
      <p>survive the swarm &mdash; time is your only score<br>
      gems from heavy kills level your daggers up &mdash; level 3 daggers <b>home</b></p>
      <p class="keys">desktop &mdash; mouse look &middot; <b>fire is automatic while you move</b> (hold <b>LMB</b> when still) &middot; <b>WASD</b> &middot; <b>SPACE</b> jump &times;2 &middot; <b>SHIFT</b> dash &middot; <b>ESC</b> options<br>
+     gamepad &mdash; sticks move / look &middot; <b>RT</b> fire &middot; <b>A</b> jump &times;2 &middot; <b>B</b> dash<br>
      touch &mdash; left stick moves &middot; right stick looks &middot; fire is automatic &middot; <b>tap either stick = jump &times;2</b> &middot; <b>flick either stick = dash</b> &middot; &#10074;&#10074; pause</p>
      <button id="modeBtn">MODE: ${modeLine}</button>
      <p class="go">${hiScore > 0 ? `best ${hiScore.toFixed(1)}s &mdash; ` : ''}click / tap to descend</p>`;
@@ -328,12 +356,13 @@ function showDeath(timedOut) {
 
   const hist = pushRunHistory({ t: gameTime, mode });
   const historyLine = hist.slice(1, 9).map(r => r.t.toFixed(1) + 's').join(' &middot; ');
+  const peakRank = stylePeakIdx > 0 ? ` &middot; peak rank ${STYLE_TIERS[stylePeakIdx].label}` : '';
 
   elMsg.style.display = 'block';
   elMsg.innerHTML =
     `<h1 class="dead">${timedOut ? 'TIME OUT' : 'DEVOURED'}</h1>
      <p class="big">${t}s &middot; ${kills} kills &middot; ${gemCount} gems</p>
-     <p class="cause">${causeLine} &middot; daggers LV${weaponLv}</p>
+     <p class="cause">${causeLine} &middot; daggers LV${weaponLv}${peakRank}</p>
      ${breakdown ? `<p class="breakdown">${breakdown}</p>` : ''}
      <p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}${mode === 'hyper' ? ' &middot; hyper' : ''}</p>
      ${historyLine ? `<p class="history">recent: ${historyLine}</p>` : ''}
@@ -361,6 +390,8 @@ function resetRun() {
   gemCount = 0;
   weaponLv = 1;
   fireTimer = 0;
+  styleVal = 0;
+  stylePeakIdx = 0;
   // onboarding is spread across the first ~100s so mechanics land one at a
   // time (totems/skulls only at first, then one new thing roughly every
   // 15-20s) rather than the old 40-70s pile-up of five simultaneous debuts
@@ -414,6 +445,7 @@ function die(timedOut = false) {
   setTimeout(() => { elVignette.style.opacity = 0; }, 450);
   elCross.style.display = 'none';
   elPause.style.display = 'none';
+  elStyle.style.opacity = '0';
   if (document.pointerLockElement) document.exitPointerLock();
   showDeath(timedOut);
 }
@@ -769,12 +801,56 @@ function levelForGems(n) {
 function onGemsCollected(n) {
   gemCount += n;
   audio.gem();
+  addStyle(n); // hoarding gems mid-fight keeps the meter warm
   const lv = levelForGems(gemCount);
   if (lv > weaponLv) {
     weaponLv = lv;
     audio.levelup();
     toast(lv === 3 ? 'DAGGERS LEVEL 3 — HOMING' : `DAGGERS LEVEL ${lv}`);
     trauma = Math.max(trauma, 0.3);
+  }
+}
+
+// ---------------------------------------------------------------- style
+function styleTierIdx(v) {
+  for (let i = STYLE_TIERS.length - 1; i > 0; i--) {
+    if (v >= STYLE_TIERS[i].min) return i;
+  }
+  return 0;
+}
+
+/** Paint the rank badge + fill bar to match the current meter value. */
+function updateStyleHud() {
+  const idx = styleTierIdx(styleVal);
+  if (idx === 0) { elStyle.style.opacity = '0'; return; }
+  const tier = STYLE_TIERS[idx];
+  const next = STYLE_TIERS[idx + 1];
+  const hi = next ? next.min : STYLE_CAP;
+  const frac = Math.max(0, Math.min(1, (styleVal - tier.min) / (hi - tier.min)));
+  elStyle.style.opacity = '1';
+  elStyleRank.textContent = tier.label;
+  elStyleRank.style.color = tier.color;
+  elStyleMult.textContent = '×' + (1 + idx * 0.5).toFixed(1);
+  elStyleFill.style.width = (frac * 100) + '%';
+  elStyleFill.style.background = tier.color;
+}
+
+/** Add to the style meter and remember the tier crossings for the recap +
+ *  a rank-up flourish (stinger + trauma) so climbing feels like an event. */
+function addStyle(amount) {
+  if (amount <= 0 || state !== 'playing') return;
+  const before = styleTierIdx(styleVal);
+  styleVal = Math.min(STYLE_CAP, styleVal + amount);
+  const after = styleTierIdx(styleVal);
+  if (after > before) {
+    if (after > stylePeakIdx) stylePeakIdx = after;
+    // only S+ interrupts with a toast/flourish — lower tiers read off the
+    // HUD meter so we never clobber an enemy-debut announcement
+    if (after >= 5) {
+      audio.levelup();
+      trauma = Math.max(trauma, 0.2);
+      toast(`RANK ${STYLE_TIERS[after].label}`, 900);
+    }
   }
 }
 
@@ -816,6 +892,7 @@ function killEnemy(e, dir) {
   e.alive = false;
   kills += e.score;
   killsByType[e.type] = (killsByType[e.type] || 0) + 1;
+  addStyle(STYLE_GAIN[e.type] ?? 3);
   if (mode === 'hyper') lifeT = Math.min(HYPER_CAP, lifeT + e.score); // kills buy time
   e.center(_c);
   debris.burst(e.sprite.worldVoxels(), e.sprite.size,
@@ -919,7 +996,10 @@ function updateCombat(dt) {
   for (let i = orbs.active.length - 1; i >= 0; i--) {
     const o = orbs.active[i];
     if (o.m.position.distanceTo(_p0) < 0.72 || o.m.position.distanceTo(camera.position) < 0.62) {
-      if (player.dashK > 0) continue;
+      if (player.dashK > 0) { // stylish dodge — credited once per orb
+        if (!o.phased) { o.phased = true; addStyle(4); }
+        continue;
+      }
       const ox = o.m.position.x, oz = o.m.position.z;
       orbs.recycle(i);
       if (playerStruck(ox, oz, 'orb')) return;
@@ -1050,10 +1130,16 @@ function step(dt) {
   orbs.update(dt, ARENA_R + 6);
   updateCombat(dt);
   debris.update(dt);
-  // music intensity: swarm density (live threats, not eggs) + run progress
+  // style meter bleeds when you stop scoring — faster at higher ranks so the
+  // top tiers stay fleeting and demand a continuous chain
+  if (styleVal > 0) styleVal = Math.max(0, styleVal - dt * (6 + styleVal * 0.05));
+  updateStyleHud();
+  // music intensity: swarm density (live threats, not eggs) + run progress +
+  // how hard you're chaining right now (the style meter)
   let threats = 0;
   for (const e of enemies) if (e.type !== 'egg' && e.type !== 'totem') threats++;
-  const intensity = Math.min(1, threats / 16 * 0.65 + Math.min(gameTime / 150, 1) * 0.35);
+  const intensity = Math.min(1,
+    threats / 16 * 0.5 + Math.min(gameTime / 150, 1) * 0.25 + (styleVal / STYLE_CAP) * 0.35);
   audio.musicUpdate(intensity);
   if (mode === 'hyper' && state === 'playing') {
     lifeT -= dt; // the clock is your life
@@ -1094,6 +1180,7 @@ function updateFeel(dt) {
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
+  input.pollGamepad();
   skyMat.uniforms.uTime.value += dt;
   dust.rotation.y += dt * 0.012;
   if (state === 'playing' && !paused) {
@@ -1120,6 +1207,8 @@ window.__hd = {
   enemies, player, debris, daggers, gems, serpents, orbs, thorns, audio,
   debug: {
     addGems(n) { onGemsCollected(n); },
+    addStyle(n) { addStyle(n); },
+    getStyle() { return { styleVal, tier: STYLE_TIERS[styleTierIdx(styleVal)].label, peak: STYLE_TIERS[stylePeakIdx].label }; },
     spawnSerpent() { spawnSerpent(); },
     spawnSpider() { enemies.push(new Spider(scene, ringSpot(8).clone())); },
     spawnWatcher() { const p = ringSpot(8).clone(); p.y = 2.2; enemies.push(new Watcher(scene, p, ARENA_R - 1)); },

@@ -96,13 +96,13 @@ paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new p
 hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel enemies
   index.html
   js/
-    main.js     # Scene (grid arena, rainbow sky, afterimage/bloom/chroma), director, combat, HUD
+    main.js     # Scene (grid arena, rainbow sky, afterimage/bloom/chroma), director, combat, HUD, style meter
     voxel.js    # String-art voxel models + parser, VoxelSprite (InstancedMesh), DebrisPool physics
     enemy.js    # Skull/Wraith, Brute, Totem (spawner), Serpent (chain), Spider (thief), Leviathan
     daggers.js  # Object-pooled dagger projectiles; homing steer at LV 3; segment hit tests
     gems.js     # DD-style gem drops: ballistic scatter, hover, player magnet, collect
     player.js   # First-person controller: yaw/pitch, WASD/stick strafe, jump, dash, head-bob
-    input.js    # Pointer-lock mouse + WASD, or dual touch sticks + DASH/JUMP btns; tap-vs-hold fire
+    input.js    # Pointer-lock mouse+WASD, gamepad (sticks/RT/A/B), or dual touch sticks; tap-vs-hold fire
     audio.js    # WebAudio synth kit (fire/hit/gib/gem/levelup/dash/roar/death + drone + intensity music)
 ```
 
@@ -199,7 +199,23 @@ touches that start on DOM controls (`button`, `#pauseBtn`) are left alone so the
 menu stays tappable. Pointer-lock mousemove deltas with `hypot > 400` are dropped —
 some browsers emit one giant bogus delta right after locking. On desktop the pause
 button can't be clicked while pointer-locked (lock routes all events to the canvas) —
-Esc is the pause path there; the button exists for touch.
+Esc is the pause path there; the button exists for touch. **Gamepad** is a third path:
+`input.pollGamepad()` runs once per frame in `animate()`, reading the first connected
+controller and feeding the SAME `getMove`/`getLookRate`/`firing` getters as
+mouse+keyboard (left stick move, right stick look-rate, RT/RB hold-fire) with A =
+jump ×2 and B/LT = dash edge-detected in the poll — so nothing downstream knows a pad
+is in use. Axes are deadzoned (0.18) and the move vector clamped to unit length. When
+no pad is present the getters fall through to the existing mouse/keyboard/touch logic.
+
+**Style meter (`main.js`):** a Returnal/DMC-style rank that rewards chaining. `addStyle`
+adds by event (per-type kills via `STYLE_GAIN`, +4 per dash-through-orb credited once
+via `o.phased`, +n on gem pickup) into `styleVal` (cap 150); `step()` bleeds it every
+frame at `6 + styleVal*0.05` per second so the top tiers (`STYLE_TIERS` D→SSS) stay
+fleeting and demand a continuous chain. The tier drives a HUD badge (`#style` rank +
+`×mult` + fill bar, `updateStyleHud()`), folds into music intensity (0.35 weight
+alongside threat count and run progress), and only **S+** rank-ups toast/flourish so
+lower crossings never clobber an enemy-debut announcement. `stylePeakIdx` is the
+run-end "peak rank" recap line. Debug: `__hd.debug.addStyle(n)` / `getStyle()`.
 
 **Render / feel:** ACES tone mapping + `EffectComposer` (`RenderPass` →
 `AfterimagePass` 0.72 (HYPERDEMON motion smear) → `UnrealBloomPass` 0.7/0.45/0.6 →

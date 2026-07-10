@@ -8,17 +8,19 @@ const FLICK_PX = 40;       // min travel within that window to count as a flick
 /**
  * Unified input. Desktop: pointer-lock mouse look, WASD, hold LMB to fire
  * (firing is also automatic while moving), Space = jump / double jump,
- * Shift = dash. Touch: left stick moves, right stick looks; a quick tap on
- * EITHER stick jumps (a second finger tapping while a stick is held works
- * too), and a fast flick on either stick dashes in the flick direction.
- * Flicks are judged by the LAST 150 ms of movement before release, so
- * flicking out of a long look-drag works. No buttons.
+ * Shift = dash. Gamepad: left stick moves, right stick looks, RT/RB fire,
+ * A jumps (×2), B/LT dashes. Touch: left stick moves, right stick looks; a
+ * quick tap on EITHER stick jumps (a second finger tapping while a stick is
+ * held works too), and a fast flick on either stick dashes in the flick
+ * direction. Flicks are judged by the LAST 150 ms of movement before
+ * release, so flicking out of a long look-drag works. No buttons.
  */
 export class InputManager {
   constructor() {
     this.keys = {};
     this.mouseDown = false;
     this.touchMode = false;
+    this.gamepad = false; // a controller is connected + active
     this.left = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, t0: 0, hist: [] };
     this.right = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, t0: 0, hist: [] };
     this._touchMap = new Map(); // touch id → 'left' | 'right'
@@ -27,6 +29,8 @@ export class InputManager {
     this._jump = false;
     this._dash = false;
     this._dashFlick = null; // {x, y} normalized screen-space flick direction
+    this._pad = { move: { x: 0, y: 0 }, look: { x: 0, y: 0 }, firing: false };
+    this._padPrev = { jump: false, dash: false }; // edge detection
     this._init();
   }
 
@@ -131,6 +135,43 @@ export class InputManager {
     }
   }
 
+  /** Poll the first connected controller once per frame. Feeds the same
+   *  move/look/fire/jump/dash paths as mouse+keyboard, so nothing downstream
+   *  needs to know a pad is in use. Buttons are edge-detected here. */
+  pollGamepad() {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : null;
+    let gp = null;
+    if (pads) for (const p of pads) { if (p && p.connected) { gp = p; break; } }
+    if (!gp) {
+      this.gamepad = false;
+      this._pad.move = { x: 0, y: 0 };
+      this._pad.look = { x: 0, y: 0 };
+      this._pad.firing = false;
+      this._padPrev.jump = this._padPrev.dash = false;
+      return;
+    }
+    this.gamepad = true;
+    const DZ = 0.18;
+    const ax = i => {
+      const v = gp.axes[i] || 0;
+      return Math.abs(v) < DZ ? 0 : (v - Math.sign(v) * DZ) / (1 - DZ);
+    };
+    // left stick → move (screen-up is forward, so invert y); clamp to unit
+    let mx = ax(0), my = -ax(1);
+    const ml = Math.hypot(mx, my);
+    if (ml > 1) { mx /= ml; my /= ml; }
+    this._pad.move = { x: mx, y: my };
+    this._pad.look = { x: ax(2), y: ax(3) };
+    const btn = i => !!(gp.buttons[i] && gp.buttons[i].pressed);
+    this._pad.firing = btn(7) || btn(5); // RT / RB hold to fire
+    const jumpNow = btn(0);              // A = jump / double jump
+    const dashNow = btn(1) || btn(6);    // B / LT = dash
+    if (jumpNow && !this._padPrev.jump) this._jump = true;
+    if (dashNow && !this._padPrev.dash) this._dash = true;
+    this._padPrev.jump = jumpNow;
+    this._padPrev.dash = dashNow;
+  }
+
   /** Accumulated pointer-lock mouse pixels since last call. */
   consumeLook() {
     const r = { dx: this._lookX, dy: this._lookY };
@@ -138,13 +179,16 @@ export class InputManager {
     return r;
   }
 
-  /** Right-stick deflection, each axis in [-1, 1], deadzoned. */
+  /** Right-stick deflection (touch or gamepad), each axis in [-1, 1]. */
   getLookRate() {
-    if (!this.right.active) return { x: 0, y: 0 };
-    let x = Math.max(-1, Math.min(1, this.right.dx / STICK_R));
-    let y = Math.max(-1, Math.min(1, this.right.dy / STICK_R));
-    if (Math.hypot(x, y) < LOOK_DEADZONE) return { x: 0, y: 0 };
-    return { x, y };
+    if (this.right.active) {
+      let x = Math.max(-1, Math.min(1, this.right.dx / STICK_R));
+      let y = Math.max(-1, Math.min(1, this.right.dy / STICK_R));
+      if (Math.hypot(x, y) < LOOK_DEADZONE) return { x: 0, y: 0 };
+      return { x, y };
+    }
+    const p = this._pad.look;
+    return (p.x || p.y) ? { x: p.x, y: p.y } : { x: 0, y: 0 };
   }
 
   /** {x: strafe right, y: forward}, length ≤ 1. */
@@ -162,11 +206,14 @@ export class InputManager {
     if (this.keys['KeyW'] || this.keys['ArrowUp']) y += 1;
     if (this.keys['KeyS'] || this.keys['ArrowDown']) y -= 1;
     const len = Math.hypot(x, y);
-    return len > 0 ? { x: x / len, y: y / len } : { x: 0, y: 0 };
+    if (len > 0) return { x: x / len, y: y / len };
+    const p = this._pad.move;
+    return (p.x || p.y) ? { x: p.x, y: p.y } : { x: 0, y: 0 };
   }
 
   get firing() {
-    return this.touchMode ? this.right.active : this.mouseDown;
+    if (this.touchMode) return this.right.active;
+    return this.mouseDown || this._pad.firing;
   }
 
   consumeJump() {
