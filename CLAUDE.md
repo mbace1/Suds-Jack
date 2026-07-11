@@ -199,6 +199,13 @@ weapon level) — tune balance from this, not guesses. `__hd.debug.die()` forces
 Audio mix: drone ducks up to 50% under the music layer with intensity; gibs carry ±12%
 pitch variance.
 
+**Death cam + share (`main.js`):** `playerStruck` records the fatal hit position +
+entity ref; `die()` (except TIME OUT / debug deaths) sets `deathCam` and the
+non-playing branch of `animate()` lerps yaw/pitch toward the killer (shortest-path
+wrap) while its sprite flashes. The recap adds "survived N pulses (M heavy)" and a
+COPY RUN clipboard share button (`stopPropagation` so it doesn't restart; falls back
+to showing the string inline when clipboard is blocked).
+
 **Death recap (`main.js`):** `killsByType` tallies kills by `e.type` (Wraith/Splitter/
 MiniSkull all report `'skull'` — they never override the base type, so the breakdown
 line only ever needs the handful of distinct enemy types) and `lastKiller` is
