@@ -61,7 +61,7 @@ class AudioSystem {
     if (!this._introVoice || this._volume <= 0) return null;
     try {
       if (!this._introEl) {
-        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=77', import.meta.url).href);
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=78', import.meta.url).href);
         this._introEl.preload = 'auto';
       }
       this._introEl.volume = this._volume;
@@ -148,6 +148,13 @@ class AudioSystem {
   lobSplash() { this._tone(150, 0.28, 'sine', 0.30, 55); this._noise(0.16, 0.20); }
   // BOTFLY homing launch (v108): soft rising zip — a warning you can hear.
   botShot()   { this._tone(380, 0.16, 'triangle', 0.14, 1150); }
+  // WARDEN deflection (v124): dull high tink — reads "shielded", not "missed".
+  shieldTink() { this._tone(1900, 0.05, 'triangle', 0.10, 1400); }
+  // Score milestone (v124): quick rising three-note sparkle.
+  milestone() {
+    [523, 659, 784].forEach((f, i) =>
+      setTimeout(() => this._tone(f, 0.14, 'triangle', 0.18), i * 70));
+  }
   // Shooter entrance (v120): sharp two-note alert — a ranged threat just arrived.
   shooterPing() {
     this._tone(1150, 0.06, 'square', 0.13);
