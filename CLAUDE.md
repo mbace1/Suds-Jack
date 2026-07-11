@@ -151,22 +151,27 @@ they `player.pushOut(...)` as solids. Gems (`gems.js`) scatter ballistically, ho
 magnet to the player inside 5.5 u.
 
 **Spawn director (`main.js`):** all heavy spawns are **telegraphed** — an additive light
-beam marks the spot for 0.7 s (`pending[]`), then the enemy appears. First-appearance
-times are spread across the first ~150s so mechanics land one at a time rather than
-piling up (each debut in `resetRun()`, each recurring cadence tightening via
-`Math.max(floor, base - gameTime * rate)` in `director()`; each debut fires a one-per-run
-`announce()` — big toast + `audio.stinger()`, keys in `announced{}`, the Leviathan
-re-announcing on every respawn): totems (cap 6, slow orbit
-drift) from t=0 every 24s tightening to 16s, exhaling skulls (global cap 46, 30% gilded
-`Wraith` after 60s) at a tightening interval and pulsing an orb ring every 6s; **watchers**
-(cap 3) from t=25 every 20s tightening to 12s; brutes from t=45 every 16s tightening to
-10s; **thorns** from t=60 (0.9s sigil warning, lethal below `feet.y` 1.4) every 12s
-tightening to 6s; **spiders** (cap 2) from t=75 every 30s tightening to 20s, laying an egg
-sac every ~10s; **blinkers** (cap 3) from t=90 every 25s tightening to 14s; **serpents**
-(cap 2) from t=100 every 45s tightening to 32s — every second serpent is a ghost;
-**dread skulls** (cap 2, Skull-IV analog: 8 HP, faster than walking speed, knock 2,
-type `'dread'`, in the separation set) from t=120 every 40s tightening to 24s; the
-**Leviathan** from t=150, one at a time, respawning every 120s. Totem exhales roll
+beam marks the spot for 0.7 s+ (`pending[]`), then the enemy appears. Recurring pressure
+is a **pulse director** (toko-drop's wave/budget system adapted to continuous time):
+every ~14s tightening to 9s a pulse fires with budget `3 + min(t/60, 2.5)·3.2 +
+max(0, t/60 − 2.5)·1.4` (knee at 2.5 min), spent on `PULSE_POOL` `[key, unlockTime,
+cost]` picks — skull-pack×3 @20s cost 2, watcher @25s cost 3 (cap 3), brute @45s cost 3,
+spider @75s cost 4 (cap 2), blinker @90s cost 3 (cap 3), serpent @100s cost 8 (cap 2),
+dread @120s cost 6 (cap 2) — so unlock gates preserve the one-mechanic-at-a-time
+onboarding. A deterministic rhythm (`pulseKind(n)`, n<1 → 'normal') shapes pulses:
+every **8th = HEAVY** (1.6×, opens with a guaranteed serpent — else dread — centrepiece),
+every **4th = SPIKE** (1.5×, 70% draws from brute/dread/spider), every **3rd = SWARM**
+(1.3×, bodies only: skull packs + blinkers, tight 0.12–0.42s stagger vs the normal
+0.4–1.2s), and a normal pulse right after any intense one runs at **0.5× (breather)**.
+Picks costlier than remaining+1 redraw (20-draw guard). Outside the pulse system:
+**totems** (cap 6, slow orbit drift) from t=0 every 24s tightening to 16s, exhaling
+skulls (global cap 46, 30% gilded `Wraith` after 60s, orb ring every 6s); **thorns**
+from t=60 (0.9s sigil, lethal below `feet.y` 1.4) every 12s tightening to 6s; the
+**Leviathan** from t=150, one at a time, respawning every 120s. Each debut fires a
+one-per-run `announce()` — big toast + `audio.stinger()`, keys in `announced{}`, the
+Leviathan re-announcing on every respawn. Dread skulls are the Skull-IV analog (8 HP,
+faster than walking speed, knock 2, type `'dread'`, in the separation set). Debug:
+`__hd.debug.pulse(n)` forces a pulse, `pulseInfo(n)` returns `{kind, budget}`. Totem exhales roll
 splitters (15%, > 45s) before crowned skulls (30%, > 60s). A `Serpent` is a controller
 owning 12 `SerpentSegment` enemies (pushed into the main `enemies` array so the normal
 collision loops apply); the head weaves around the player and dive-bombs every 8s,

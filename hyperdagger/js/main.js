@@ -317,14 +317,10 @@ let fireTimer = 0;
 let styleVal = 0;      // current meter fill (0..STYLE_CAP), bleeds when idle
 let stylePeakIdx = 0;  // best tier reached this run (for the death recap)
 let nextTotemAt = 0;
-let nextBruteAt = 0;
-let nextSerpentAt = 0;
-let nextSpiderAt = 0;
 let nextLevAt = 0;
-let nextWatcherAt = 0;
 let nextThornAt = 0;
-let nextBlinkerAt = 0;
-let nextDreadAt = 0;
+let nextPulseAt = 0; // budgeted pressure pulses (toko-drop's wave system, adapted)
+let pulseN = 0;
 let serpentsSpawned = 0;
 let musicI = 0; // smoothed music intensity, reused by the reactive floor
 let announced = {};
@@ -434,18 +430,14 @@ function resetRun() {
   fireTimer = 0;
   styleVal = 0;
   stylePeakIdx = 0;
-  // onboarding is spread across the first ~100s so mechanics land one at a
-  // time (totems/skulls only at first, then one new thing roughly every
-  // 15-20s) rather than the old 40-70s pile-up of five simultaneous debuts
+  // onboarding pacing lives in PULSE_POOL's unlock gates (watcher 25s …
+  // dread 120s) — pulses can only draw a type once its gate opens, so debuts
+  // still land one at a time. Totems/thorns/Leviathan stay on their own clocks.
   nextTotemAt = 0;
-  nextWatcherAt = 25;
-  nextBruteAt = 45;
   nextThornAt = 60;
-  nextSpiderAt = 75;
-  nextBlinkerAt = 90;
-  nextSerpentAt = 100;
-  nextDreadAt = 120;
   nextLevAt = 150;
+  nextPulseAt = 20;
+  pulseN = 0;
   serpentsSpawned = 0;
   musicI = 0;
   applyGauntlet(1);
@@ -739,6 +731,133 @@ function spawnSerpent(ghost = serpentsSpawned % 2 === 1) {
   enemies.push(...s.segments);
 }
 
+// ---------------------------------------------------- pulse director
+// Toko-drop's wave/budget system adapted to continuous time: every ~14s a
+// "pulse" fires with a budget that grows over the run (knee at 2.5 min),
+// spent on a [key, unlockTime, cost] pool. A deterministic rhythm shapes the
+// pulses — every 8th is HEAVY (guaranteed serpent/dread centrepiece), every
+// 4th a SPIKE (1.5× budget, favours heavies), every 3rd a SWARM (bodies only,
+// tight burst), and a normal pulse right after any intense one runs at half
+// budget (the breather). Unlock gates preserve the onboarding debut order.
+const PULSE_POOL = [
+  // [key, unlockTime, cost]
+  ['skulls', 20, 2], // pack of 3 direct chasers — the swarm fodder
+  ['watcher', 25, 3],
+  ['brute', 45, 3],
+  ['spider', 75, 4],
+  ['blinker', 90, 3],
+  ['serpent', 100, 8],
+  ['dread', 120, 6],
+];
+const PULSE_CAPS = { watcher: 3, blinker: 3, spider: 2, dread: 2 };
+const SWARM_KEYS = new Set(['skulls', 'blinker']);
+const SPIKE_KEYS = new Set(['brute', 'dread', 'spider']);
+
+function pulseKind(n) {
+  if (n < 1) return 'normal'; // so pulse 1 isn't judged a post-"spike 0" breather
+  if (n % 8 === 0) return 'heavy';
+  if (n % 4 === 0) return 'spike';
+  if (n >= 3 && n % 3 === 0) return 'swarm';
+  return 'normal';
+}
+
+function pulseBudget(n, kind) {
+  const min = gameTime / 60;
+  const base = 3 + Math.min(min, 2.5) * 3.2 + Math.max(0, min - 2.5) * 1.4;
+  const breather = kind === 'normal' && pulseKind(n - 1) !== 'normal';
+  const mod = kind === 'heavy' ? 1.6 : kind === 'spike' ? 1.5
+    : kind === 'swarm' ? 1.3 : breather ? 0.5 : 1;
+  return base * mod;
+}
+
+function enemyCount(type) {
+  let n = 0;
+  for (const e of enemies) if (e.type === type) n++;
+  return n;
+}
+
+function pulseEligible([key, unlock]) {
+  if (gameTime < unlock) return false;
+  if (key === 'serpent') return serpents.length < SERPENT_CAP;
+  if (key === 'skulls') return skullCount() <= SKULL_CAP - 3;
+  const cap = PULSE_CAPS[key];
+  return cap === undefined || enemyCount(key) < cap;
+}
+
+/** Telegraphed spawn of one pool pick, `stagger` seconds after the pulse. */
+function spawnPick(key, stagger) {
+  const delay = 0.7 + stagger;
+  if (key === 'serpent') { spawnSerpent(); return; } // its own sky entrance
+  audio.spawn();
+  if (key === 'skulls') {
+    const at = ringSpot(12).clone();
+    telegraph(at, [2.0, 0.15, 0.15], delay, () => {
+      const boost = Math.min(6, gameTime * 0.06);
+      for (let i = 0; i < 3 && skullCount() < SKULL_CAP; i++) {
+        _sv.set(at.x + (Math.random() - 0.5) * 1.6, 1.1 + Math.random() * 0.8,
+          at.z + (Math.random() - 0.5) * 1.6);
+        enemies.push(gameTime > 60 && Math.random() < 0.3
+          ? new Wraith(scene, _sv, boost) : new Skull(scene, _sv, boost));
+      }
+    });
+  } else if (key === 'watcher') {
+    announce('watcher', 'THE WATCHERS');
+    const at = ringSpot(12).clone();
+    at.y = 2.2;
+    telegraph(at, [2.0, 0.15, 0.15], delay, () => enemies.push(new Watcher(scene, at, ARENA_R - 1)));
+  } else if (key === 'brute') {
+    announce('brute', 'THE BRUTES');
+    const at = ringSpot(14).clone();
+    telegraph(at, [2.0, 0.15, 0.15], delay, () => {
+      at.y = 1.25;
+      enemies.push(new Brute(scene, at, Math.min(1.5, (gameTime - 40) * 0.01)));
+    });
+  } else if (key === 'spider') {
+    announce('spider', 'THE THIEVES');
+    const at = ringSpot(10).clone();
+    telegraph(at, [2.0, 0.15, 0.15], delay, () => enemies.push(new Spider(scene, at)));
+  } else if (key === 'blinker') {
+    announce('blinker', 'THE BLINKERS');
+    const at = ringSpot(12).clone();
+    at.y = 1.2;
+    telegraph(at, [2.0, 0.15, 0.15], delay, () => enemies.push(new Blinker(scene, at, ARENA_R - 1)));
+  } else if (key === 'dread') {
+    announce('dread', 'THE DREAD SKULL');
+    const at = ringSpot(15).clone();
+    telegraph(at, [2.6, 0.2, 0.2], delay + 0.2, () => {
+      at.y = 1.5;
+      enemies.push(new DreadSkull(scene, at, Math.min(4, (gameTime - 110) * 0.008)));
+    });
+  }
+}
+
+function runPulse(n) {
+  const kind = pulseKind(n);
+  let budget = pulseBudget(n, kind);
+  let stagger = 0;
+  // heavy pulses open with a guaranteed centrepiece
+  if (kind === 'heavy') {
+    if (gameTime >= 100 && serpents.length < SERPENT_CAP) { spawnPick('serpent', 0); budget -= 8; }
+    else if (gameTime >= 120 && enemyCount('dread') < PULSE_CAPS.dread) { spawnPick('dread', 0); budget -= 6; }
+  }
+  for (let guard = 0; guard < 20 && budget > 0.5; guard++) {
+    let pool = PULSE_POOL.filter(pulseEligible);
+    if (!pool.length) break;
+    if (kind === 'swarm') {
+      const p = pool.filter(([k]) => SWARM_KEYS.has(k));
+      if (p.length) pool = p;
+    } else if (kind === 'spike' && Math.random() < 0.7) {
+      const p = pool.filter(([k]) => SPIKE_KEYS.has(k));
+      if (p.length) pool = p;
+    }
+    const [key, , cost] = pool[(Math.random() * pool.length) | 0];
+    if (cost > budget + 1) continue; // too rich for what's left — redraw
+    spawnPick(key, stagger);
+    budget -= cost;
+    stagger += kind === 'swarm' ? 0.12 + Math.random() * 0.3 : 0.4 + Math.random() * 0.8;
+  }
+}
+
 function director(dt) {
   updatePending(dt);
   if (gameTime >= nextTotemAt && totemCount() < TOTEM_CAP) {
@@ -749,65 +868,16 @@ function director(dt) {
     // cadence tightens from every 24s down to every 16s as the run goes on
     nextTotemAt = gameTime + Math.max(16, 24 - gameTime * 0.03);
   }
-  if (gameTime >= nextBruteAt) {
-    announce('brute', 'THE BRUTES');
-    const at = ringSpot(14).clone();
-    audio.spawn();
-    telegraph(at, [2.0, 0.15, 0.15], 0.7, () => {
-      at.y = 1.25;
-      enemies.push(new Brute(scene, at, Math.min(1.5, (gameTime - 40) * 0.01)));
-    });
-    nextBruteAt = gameTime + Math.max(10, 16 - gameTime * 0.02);
-  }
-  if (gameTime >= nextSerpentAt) {
-    if (serpents.length < SERPENT_CAP) spawnSerpent();
-    nextSerpentAt = gameTime + Math.max(32, 45 - gameTime * 0.02);
-  }
-  if (gameTime >= nextSpiderAt) {
-    if (enemies.filter(e => e.type === 'spider').length < 2) {
-      announce('spider', 'THE THIEVES');
-      const at = ringSpot(10).clone();
-      audio.spawn();
-      telegraph(at, [2.0, 0.15, 0.15], 0.7, () => enemies.push(new Spider(scene, at)));
-    }
-    nextSpiderAt = gameTime + Math.max(20, 30 - gameTime * 0.02);
+  if (gameTime >= nextPulseAt) {
+    pulseN++;
+    runPulse(pulseN);
+    // pulse cadence tightens from ~14s toward a 9s floor over the run
+    nextPulseAt = gameTime + Math.max(9, 14 - gameTime * 0.01);
   }
   if (gameTime >= nextThornAt) {
     announce('thorn', 'THORNS BENEATH');
     spawnThorn(player.feet.x, player.feet.z);
     nextThornAt = gameTime + Math.max(6, 12 - gameTime * 0.025);
-  }
-  if (gameTime >= nextWatcherAt) {
-    if (enemies.filter(e => e.type === 'watcher').length < 3) {
-      announce('watcher', 'THE WATCHERS');
-      const at = ringSpot(12).clone();
-      at.y = 2.2;
-      audio.spawn();
-      telegraph(at, [2.0, 0.15, 0.15], 0.7, () => enemies.push(new Watcher(scene, at, ARENA_R - 1)));
-    }
-    nextWatcherAt = gameTime + Math.max(12, 20 - gameTime * 0.02);
-  }
-  if (gameTime >= nextBlinkerAt) {
-    if (enemies.filter(e => e.type === 'blinker').length < 3) {
-      announce('blinker', 'THE BLINKERS');
-      const at = ringSpot(12).clone();
-      at.y = 1.2;
-      audio.spawn();
-      telegraph(at, [2.0, 0.15, 0.15], 0.7, () => enemies.push(new Blinker(scene, at, ARENA_R - 1)));
-    }
-    nextBlinkerAt = gameTime + Math.max(14, 25 - gameTime * 0.02);
-  }
-  if (gameTime >= nextDreadAt) {
-    if (enemies.filter(e => e.type === 'dread').length < 2) {
-      announce('dread', 'THE DREAD SKULL');
-      const at = ringSpot(15).clone();
-      audio.spawn();
-      telegraph(at, [2.6, 0.2, 0.2], 0.9, () => {
-        at.y = 1.5;
-        enemies.push(new DreadSkull(scene, at, Math.min(4, (gameTime - 110) * 0.008)));
-      });
-    }
-    nextDreadAt = gameTime + Math.max(24, 40 - gameTime * 0.03);
   }
   if (gameTime >= nextLevAt) {
     if (!enemies.some(e => e.type === 'leviathan')) {
@@ -1288,12 +1358,11 @@ window.__hd = {
     spawnLeviathan() { enemies.push(new Leviathan(scene, 5)); },
     setLife(n) { lifeT = n; },
     setTime(t) { gameTime = t; },
+    pulse(n) { runPulse(n ?? ++pulseN); },
+    pulseInfo(n) { const k = pulseKind(n ?? pulseN); return { kind: k, budget: pulseBudget(n ?? pulseN, k) }; },
     getState() { return { mode, lifeT, gameTime, mercyT, state }; },
     getSchedule() {
-      return {
-        nextTotemAt, nextWatcherAt, nextBruteAt, nextThornAt,
-        nextSpiderAt, nextBlinkerAt, nextSerpentAt, nextDreadAt, nextLevAt,
-      };
+      return { nextTotemAt, nextThornAt, nextLevAt, nextPulseAt, pulseN };
     },
   },
 };
