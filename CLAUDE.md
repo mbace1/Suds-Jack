@@ -14,6 +14,9 @@ Browser bullet-hell survival game (three.js, ES modules, no build step).
 - `js/main.js` — game loop, waves, collisions, HUD, title/pause/death screens
 - `js/bullet.js`, `js/player.js`, `js/input.js`, `js/audio.js`, `js/lang.js`
   (en/ja/fi strings), `js/designer.js` (pause menu: settings + enemy tuner)
+- Forward planning lives in **`TOKO_DROP_ROADMAP.md`** (milestones toward
+  public 1.0 and beyond); `GDD.md` holds design truths, `VERSIONS.md` holds
+  what shipped.
 
 ## Versioning & release discipline
 

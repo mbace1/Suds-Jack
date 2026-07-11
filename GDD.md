@@ -214,7 +214,9 @@ Spawn from wave 3. One gate per wave. A gate is two posts with a laser beam betw
 
 ## 10. Audio Design *(v10)*
 
-All sounds procedural via Web Audio API (`AudioSystem` in `audio.js`). No files, no format dependencies.
+All sounds procedural via Web Audio API (`AudioSystem` in `audio.js`). No files, no format dependencies. (One deliberate exception since v121: the recorded title-intro clip `audio/announcer-intro.mp3`, behind its own INTRO VOICE toggle.)
+
+**The game is music-free by design (decided 2026-07-11).** SFX, synth stingers, and the announcer ARE the audio identity — do not add background music. Any future audio work extends the stinger/announcer palette instead.
 
 | Event | Sound |
 |---|---|
@@ -285,10 +287,11 @@ Each run generates a `runSeed` (24-bit hex, shown bottom-right and on game-over)
 
 ---
 
-## 15. Backlog (accepted, not yet scheduled)
+## 15. Backlog (retired → roadmap)
 
-- *(empty — flying homing bots shipped as BOTFLY in v88; port Parts 3–6
-  shipped in v84–v87)*
+Forward planning lives in **`TOKO_DROP_ROADMAP.md`** (four milestones toward
+public 1.0 and beyond, agreed 2026-07-11). This section is retired — accepted
+ideas go on the roadmap, and VERSIONS.md records what shipped.
 
 ### BOTFLY (v88)
 
