@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=79';
+import { TUNING } from './tuning.js?v=80';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -1129,6 +1129,12 @@ export class Enemy {
         const radial = dist > want + 1.5 ? 1 : dist < want - 1.5 ? -1 : 0;
         this.mesh.position.x += (ddx / dist * radial * 0.5 + perpX * this._orbitSign) * spd * dt;
         this.mesh.position.z += (ddz / dist * radial * 0.5 + perpZ * this._orbitSign) * spd * dt;
+        // Keep the boss inside the walls (v126): the 7.5 orbit radius is wider
+        // than half the SMASH TV room (15×11 halves), so a wall-hugging player
+        // could push the crystal out through the doors. Clamp like TORO does.
+        const obx = halfX - cfg.radius, obz = halfZ - cfg.radius;
+        this.mesh.position.x = Math.max(-obx, Math.min(obx, this.mesh.position.x));
+        this.mesh.position.z = Math.max(-obz, Math.min(obz, this.mesh.position.z));
         // Independent crystal spin — visual flavour only, no gameplay effect.
         this.mesh.rotation.y += 0.6 * dt;
         this.mesh.rotation.x += 0.25 * dt;

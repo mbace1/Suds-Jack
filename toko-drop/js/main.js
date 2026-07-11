@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=79';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=79';
-import { Player, PLAYER_RADIUS } from './player.js?v=79';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=79';
-import { audio } from './audio.js?v=79';
-import { initDesigner } from './designer.js?v=79';
-import { t, getLang, setLang, langs } from './lang.js?v=79';
-import { TUNING } from './tuning.js?v=79';
+import { InputManager } from './input.js?v=80';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=80';
+import { Player, PLAYER_RADIUS } from './player.js?v=80';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=80';
+import { audio } from './audio.js?v=80';
+import { initDesigner } from './designer.js?v=80';
+import { t, getLang, setLang, langs } from './lang.js?v=80';
+import { TUNING } from './tuning.js?v=80';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -996,6 +996,7 @@ let streakFlashT = 0;
 let milestoneT = 0, milestoneText = '';
 let nextMilestone = 25000;
 let grazeCount = 0;  // v125: bullets skimmed past while vulnerable (+25 each)
+let shieldBlockCount = 0;  // v126: player shots eaten by WARDEN auras this run
 let scoreMultT = 0; // Score Multiplier powerup (v72): ×2 score on kill while active
 // ── Personal bests (local; structured for a future online leaderboard) ───────
 const PB_KEY = 'tokoDropPB';
@@ -1408,6 +1409,8 @@ const ENEMY_LABEL = {
   [EnemyType.BAMBU]:       'Bambu lobber',
   [EnemyType.PYRA]:        'Pyra spinner',
   [EnemyType.OMEGA]:       'Omega boss',
+  [EnemyType.BOTFLY]:      'pink Botfly',
+  [EnemyType.WARDEN]:      'teal Warden',
 };
 const _cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -1440,6 +1443,9 @@ function buildFeedbackReasons() {
     const cluster = ev.filter(e => e.timeSinceLastHit !== null && e.timeSinceLastHit <= 3).length;
     if (cluster / ev.length > 0.25) push('blender', t('fbBlender'));
   }
+  // v126: ask about the new systems when this run actually touched them.
+  if (shieldBlockCount >= 6) push('warden', t('fbWarden'));
+  if (smashMode) push('doors', t('fbDoors'));
   push('too_fast', t('fbTooFast'));
   push('unfair',   t('fbUnfair'));
   push('unclear',  t('fbUnclear'));
@@ -1449,13 +1455,22 @@ function buildFeedbackReasons() {
   return reasons;
 }
 
-// Positive-feedback options — what the player enjoyed this run.
+// Positive-feedback options — what the player enjoyed this run. Mode-aware
+// since v126 so the chips ask about the systems this run actually had:
+// SMASH TV probes rooms + floor loot; classic swaps in graze once it happened.
 function buildPositiveReasons() {
+  if (smashMode) return [
+    { id: 'like:rooms', label: t('likeRooms') },
+    { id: 'like:loot',  label: t('likeLoot') },
+    { id: 'like:graze', label: t('likeGraze') },
+    { id: 'like:feel',  label: t('likeFeel') },
+  ];
   return [
     { id: 'like:weapons', label: t('likeWeapons') },
     { id: 'like:bosses',  label: t('likeBosses') },
     { id: 'like:feel',    label: t('likeFeel') },
-    { id: 'like:dodging', label: t('likeDodging') },
+    grazeCount > 0 ? { id: 'like:graze',   label: t('likeGraze') }
+                   : { id: 'like:dodging', label: t('likeDodging') },
   ];
 }
 
@@ -1524,6 +1539,7 @@ function saveFeedback(selectedIds, selectedLabels, comment, likedIds = [], liked
     comment: comment || '', isFix,
     hits: hitEventLog.length,
     grazes: grazeCount,
+    shieldBlocks: shieldBlockCount,
     topAttacker: Object.entries(atk).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null,
   });
   if (list.length > 100) list.length = 100;
@@ -2018,7 +2034,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v125', 16, uiCanvas.height - 12);
+  ctx.fillText('v126', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2709,7 +2725,7 @@ function startGame() {
   landscapeMode = innerWidth > innerHeight;
   applyArenaMode(landscapeMode);
   score  = 0; streak = 0; wave = 0; runTimer = 0; scoreMultT = 0; waveClearFlashT = 0;
-  milestoneT = 0; nextMilestone = 25000; grazeCount = 0;
+  milestoneT = 0; nextMilestone = 25000; grazeCount = 0; shieldBlockCount = 0;
   collectedUpgrades = []; hitEventLog = []; _lastHitTime = -1;
   BULLET_CONFIG.playerBulletScale  = 1.0;
   BULLET_CONFIG.playerPiercing     = false;
@@ -3135,6 +3151,7 @@ function loop() {
               Math.hypot(w.position.x - e.position.x, w.position.z - e.position.z) < WARDEN_AURA)) {
           bullets.recycleAt(i);   // shields stop even piercing shots
           hit = true;
+          shieldBlockCount++;
           audio.shieldTink();
           // cyan deflection spark so "no damage" reads as SHIELDED, not a whiff
           for (let j = 0; j < 3; j++) {

@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v126 — 2026-07-11
+**Roadmap M1 groundwork: OMEGA wall clamp + feedback chips ask about the new systems**
+- **OMEGA stays inside the walls**: the boss's 7.5-unit orbit is wider than half the SMASH TV room, so a wall-hugging player could push the crystal out through the doors (milder version possible in classic portrait too). Its position is now clamped to the arena every frame, like TORO
+- **Feedback chips refreshed** (roadmap M1): death-screen chips now probe the v114–v125 systems. New telemetry-driven "Wardens blocked my shots" chip (fires after 6+ shielded shots — tracked by a new per-run `shieldBlocks` counter that also rides the feedback payload) and a SMASH TV-only "Room exits confused me" chip. Positive chips are mode-aware: SMASH TV asks about door-to-door rooms, cash & prizes, grazes; classic swaps "Bullet-hell dodging" for "Close-call grazes" once you actually grazed. en/ja/fi
+- BOTFLY and WARDEN added to the telemetry chip name table (previously showed raw type names)
+- Cache-bust `?v=79` → `?v=80`; HUD label → v126
+
+---
+
 ## v125 — 2026-07-11
 **GRAZE system + boss escorts — risk pays, late bosses scale in tactics**
 - **GRAZE (both modes)**: an enemy bullet skimming within 0.55 units of you **while vulnerable** pays +25 score (doubled by an active multiplier) with a whisper-quiet zip + a tiny white spark, once per bullet. Dash i-frames don't graze — the reward tracks real risk, so weaving through fire beats dashing through it. Grazes feed the 25k milestones, show on the death screen (`· N GRAZE`, en/ja/fi), and ride along in the feedback payload for balance data
