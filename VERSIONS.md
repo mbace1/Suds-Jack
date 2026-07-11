@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v128 — 2026-07-11
+**Roadmap M2: offline PWA — service worker caches the game for offline play**
+- **`toko-drop/sw.js`** (new, `?v=` tokened from day one): the whole module graph + shell + icons + logo + intro clip are **precached at install** (the first load races the worker, so runtime caching alone would leave offline boot to the evictable HTTP cache; verified — 20 entries, full title boots with the network cut). Tokened requests serve **cache-first** (immutable per release), the untokened page shell **network-first** with cache fallback, so the installed PWA plays offline but picks up new releases the moment it's online
+- Release discipline built in: the cache name embeds the literal `?v=` token so `bump-version.sh`'s global replace rotates it every release (sw.js added to the script's file loop); activation deletes old caches; only `res.ok` responses are cached (an edge 404 can't get pinned — v118/v119 lesson); GET + same-origin only, so feedback POSTs pass through untouched
+- Registered from `main.js` after `load` (never competes with boot), silent no-op where unsupported
+- Cache-bust `?v=81` → `?v=82`; HUD label → v128
+
+---
+
 ## v127 — 2026-07-11
 **Roadmap M2: SHARE button on the death screen + first-run tutorial hints**
 - **SHARE** (death screen, next to SEND/SKIP): native share sheet where it exists (mobile), clipboard fallback on desktop with a brief "COPIED!" flip. Shares `TOKO DROP — score · wave (· SMASH TV) · seed` + the game URL; doesn't dismiss the screen, so feedback can still be sent. en/ja/fi
