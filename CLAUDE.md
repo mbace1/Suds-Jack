@@ -45,8 +45,12 @@ just stops at the arena edge (no barrier visual). Desktop: pointer-lock mouse lo
 Esc = pause/options. Touch: dual on-screen sticks — left moves, right looks; **firing is
 automatic while moving** (or while the look stick is held); **tap either stick = jump ×2,
 flick either stick = dash**; ⏸ button top-right. The pause menu carries persisted
-options (`hyperDaggerOpts`): game speed ×1/1.25/1.5, FOV 70/80/90, look sensitivity, and smear/
-shake/chroma toggles. Touch play requests fullscreen + landscape lock on start. Onboarding
+options (`hyperDaggerOpts`): game speed ×1/1.25/1.5, FOV 70/80/90, look sensitivity, smear/
+shake/chroma toggles, and A11Y rows — MOTION REDUCED (`opts.motion` master switch, composes
+as `userToggle && motion` so individual toggles are never rewritten) and CONTRAST HIGH
+(hotter orbs/telegraphs via `OrbPool.mat`, floor red flush off). A one-time 3-tip card
+(`hyperDaggerSeenTips`, state `'tips'`) precedes the very first run. Touch play requests
+fullscreen + landscape lock on start. Onboarding
 is paced across the first ~150s (one new enemy roughly every 15-20s) and recurring spawns
 tighten over time; the death screen recaps what killed you, a kill breakdown, and your
 last 10 run times. No build step — open `hyperdagger/index.html` (three.js via jsDelivr
