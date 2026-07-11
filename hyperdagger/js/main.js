@@ -9,8 +9,8 @@ import { InputManager } from './input.js?v=13';
 import { Player } from './player.js?v=10';
 import { DaggerPool } from './daggers.js?v=10';
 import { GemPool } from './gems.js?v=10';
-import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=14';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=14';
+import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=17';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=17';
 import { OrbPool } from './bullets.js?v=16';
 import { AudioKit } from './audio.js?v=10';
 
@@ -33,8 +33,31 @@ const opts = Object.assign(
   // motion=false is the reduced-motion master switch (forces smear/shake/chroma/FOV
   // kicks off without touching the individual toggles); contrast=true brightens
   // orbs + telegraphs and kills the floor's red flush for readability
-  { speed: 1, fov: 80, sens: 1, smear: true, shake: true, chroma: true, music: true, motion: true, contrast: false },
+  { speed: 1, fov: 80, sens: 1, smear: true, shake: true, chroma: true, music: true, motion: true, contrast: false, perf: 'auto' },
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
+
+// ------------------------------------------------ performance governor
+// Auto-degrades render cost on weak devices (opts.perf 'auto'; 'high'/'low'
+// pin tier 0/4). The governor NEVER writes opts.* — effective pass state is
+// always userToggle && tierAllows (reconciled in applyOpts), so the pause
+// menu keeps showing user intent and a step-up can't resurrect a toggle the
+// user turned off.
+const BASE_PR = Math.min(window.devicePixelRatio, 2);
+const PERF_TIERS = [
+  { chroma: true,  smear: true,  pr: BASE_PR,                bloom: true,  debrisCap: 1600 }, // T0 full
+  { chroma: false, smear: true,  pr: BASE_PR,                bloom: true,  debrisCap: 1600 }, // T1
+  { chroma: false, smear: false, pr: BASE_PR,                bloom: true,  debrisCap: 1600 }, // T2
+  { chroma: false, smear: false, pr: Math.min(BASE_PR, 1.5), bloom: true,  debrisCap: 1600 }, // T3
+  { chroma: false, smear: false, pr: 1,                      bloom: false, debrisCap: 800  }, // T4 floor
+];
+// mutable so headless tests can shrink the timescales
+const perfTuning = { downMs: 40, upMs: 22, settleMs: 2000, stableMs: 15000, downHoldMs: 1500, emaAlpha: 0.08 };
+let perfTier = 0;
+let frameEMA = 16.7;
+let perfSettleUntil = 0; // ignore samples until this performance.now()
+let perfBadSince = 0;
+let perfGoodSince = 0;
+let forcedFrameTime = null; // debug override (ms)
 
 // Devil-Daggers-style dagger levels, advanced by collecting gems.
 const LEVEL_GEMS = [0, 0, 10, 30, 70]; // gems needed to reach index level
@@ -82,7 +105,7 @@ const STYLE_GAIN = {
 // ---------------------------------------------------------------- renderer
 const canvas = document.getElementById('canvas-game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(BASE_PR);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
@@ -296,9 +319,19 @@ function announce(key, text) {
   trauma = Math.max(trauma, 0.2);
 }
 
-function resize() {
+/** One code path for pixel ratio + size so tier changes and window resizes
+ *  can't undo each other. EffectComposer caches its own pixel ratio — setting
+ *  only the renderer's is not enough. */
+function applyRenderScale() {
+  const pr = PERF_TIERS[perfTier].pr;
+  renderer.setPixelRatio(pr);
+  composer.setPixelRatio(pr);
   renderer.setSize(window.innerWidth, window.innerHeight);
   composer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function resize() {
+  applyRenderScale();
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   ui.width = window.innerWidth;
@@ -306,6 +339,52 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 resize();
+
+function setPerfTier(t) {
+  t = Math.max(0, Math.min(PERF_TIERS.length - 1, t));
+  if (t === perfTier) return;
+  perfTier = t;
+  applyRenderScale();
+  applyOpts();
+  perfSettleUntil = performance.now() + perfTuning.settleMs;
+  perfBadSince = 0;
+  perfGoodSince = 0;
+}
+
+/** Called once per frame with the UNCLAMPED delta (ms). EMA-based hysteresis:
+ *  step down after ~1.5s sustained over downMs, step up one tier per ~15s
+ *  stable under upMs. Samples right after tier changes / unpause /
+ *  tab-visibility flips are ignored (perfSettleUntil). */
+function perfGovern(now, rawMs) {
+  if (opts.perf !== 'auto' || state !== 'playing' || paused) return;
+  const ms = forcedFrameTime ?? rawMs;
+  // the >250ms discard catches tab-hidden gaps — it only applies to REAL
+  // samples, so forced (test) frame times always count
+  if (now < perfSettleUntil || (forcedFrameTime === null && rawMs > 250)) {
+    perfBadSince = 0;
+    perfGoodSince = 0;
+    return;
+  }
+  frameEMA += (ms - frameEMA) * perfTuning.emaAlpha;
+  if (frameEMA > perfTuning.downMs) {
+    perfGoodSince = 0;
+    if (!perfBadSince) perfBadSince = now;
+    else if (now - perfBadSince > perfTuning.downHoldMs) setPerfTier(perfTier + 1);
+  } else if (frameEMA < perfTuning.upMs) {
+    perfBadSince = 0;
+    if (!perfGoodSince) perfGoodSince = now;
+    else if (now - perfGoodSince > perfTuning.stableMs) setPerfTier(perfTier - 1);
+  } else {
+    perfBadSince = 0;
+    perfGoodSince = 0;
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    perfSettleUntil = performance.now() + perfTuning.settleMs;
+  }
+});
 
 // ---------------------------------------------------------------- game state
 let state = 'menu'; // 'menu' | 'tips' | 'playing' | 'dead'
@@ -523,6 +602,7 @@ window.addEventListener('pointerdown', e => {
     startGame();
   } else if (state === 'playing' && paused) {
     paused = false;
+    perfSettleUntil = performance.now() + perfTuning.settleMs; // stale EMA after pause
     elMsg.style.display = 'none';
     elPause.style.display = 'block';
   }
@@ -553,10 +633,17 @@ function saveOpts() {
 }
 
 function applyOpts() {
-  // reduced motion (opts.motion=false) overrides the individual FX toggles
-  // without rewriting them — user intent in opts.* stays untouched
-  afterimage.enabled = opts.smear && opts.motion;
-  chromaPass.enabled = opts.chroma && opts.motion;
+  // perf HIGH/LOW pin the tier; setPerfTier no-ops when unchanged so the
+  // recursive applyOpts call inside it terminates immediately
+  if (opts.perf === 'high') setPerfTier(0);
+  else if (opts.perf === 'low') setPerfTier(PERF_TIERS.length - 1);
+  const tier = PERF_TIERS[perfTier];
+  // reduced motion (opts.motion=false) and the perf tier both override the
+  // individual FX toggles without rewriting them — user intent stays in opts.*
+  afterimage.enabled = opts.smear && opts.motion && tier.smear;
+  chromaPass.enabled = opts.chroma && opts.motion && tier.chroma;
+  bloom.enabled = tier.bloom;
+  debris.softCap = tier.debrisCap;
   // high contrast: hotter orbs so projectiles read against the bloom
   orbs.mat.color.setRGB(...(opts.contrast ? [3.4, 0.5, 0.5] : [2.6, 0.2, 0.2]));
   player.sens = opts.sens;
@@ -588,6 +675,7 @@ function showPause() {
      ${optRow('', 'music', [true, false], v => v ? 'MUSIC ON' : 'MUSIC OFF')}
      ${optRow('A11Y', 'motion', [true, false], v => v ? 'MOTION FULL' : 'MOTION REDUCED')}
      ${optRow('', 'contrast', [false, true], v => v ? 'CONTRAST HIGH' : 'CONTRAST NORMAL')}
+     ${optRow('PERF', 'perf', ['auto', 'high', 'low'], v => v.toUpperCase())}
      <p class="go">click / tap anywhere else to resume</p>`;
   for (const b of elMsg.querySelectorAll('button.opt')) {
     b.addEventListener('pointerdown', e => {
@@ -1351,7 +1439,9 @@ function updateFeel(dt) {
 
 function animate() {
   requestAnimationFrame(animate);
-  const dt = Math.min(clock.getDelta(), 0.05);
+  const rawDt = clock.getDelta(); // unclamped — the governor needs real frame cost
+  const dt = Math.min(rawDt, 0.05);
+  perfGovern(performance.now(), rawDt * 1000);
   input.pollGamepad();
   skyMat.uniforms.uTime.value += dt;
   dust.rotation.y += dt * 0.012;
@@ -1395,6 +1485,16 @@ window.__hd = {
     pulse(n) { runPulse(n ?? ++pulseN); },
     setOpt(k, v) { opts[k] = v; saveOpts(); },
     getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, fov: camera.fov, uRed: floorMat.uniforms.uRed.value }; },
+    forceFrameTime(ms) { forcedFrameTime = ms; },
+    getPerfTier() {
+      return {
+        tier: perfTier, ema: frameEMA, mode: opts.perf,
+        smear: afterimage.enabled, chroma: chromaPass.enabled, bloom: bloom.enabled,
+        pixelRatio: renderer.getPixelRatio(), debrisSoftCap: debris.softCap,
+      };
+    },
+    setPerfTier(t) { setPerfTier(t); },
+    perfTuning,
     pulseInfo(n) { const k = pulseKind(n ?? pulseN); return { kind: k, budget: pulseBudget(n ?? pulseN, k) }; },
     getState() { return { mode, lifeT, gameTime, mercyT, state }; },
     getSchedule() {

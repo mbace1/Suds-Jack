@@ -48,7 +48,11 @@ flick either stick = dash**; ⏸ button top-right. The pause menu carries persis
 options (`hyperDaggerOpts`): game speed ×1/1.25/1.5, FOV 70/80/90, look sensitivity, smear/
 shake/chroma toggles, and A11Y rows — MOTION REDUCED (`opts.motion` master switch, composes
 as `userToggle && motion` so individual toggles are never rewritten) and CONTRAST HIGH
-(hotter orbs/telegraphs via `OrbPool.mat`, floor red flush off). A one-time 3-tip card
+(hotter orbs/telegraphs via `OrbPool.mat`, floor red flush off), plus PERF AUTO/HIGH/LOW —
+a frame-time-EMA governor that walks a 5-tier degrade ladder (chroma→smear→pixelRatio→
+bloom+debris soft-cap) and never rewrites `opts.*` (effective = `userToggle && motion &&
+tierAllows`; `applyRenderScale()` is the single renderer+composer pixel-ratio path, shared
+with `resize()`). A one-time 3-tip card
 (`hyperDaggerSeenTips`, state `'tips'`) precedes the very first run. Touch play requests
 fullscreen + landscape lock on start. Onboarding
 is paced across the first ~150s (one new enemy roughly every 15-20s) and recurring spawns
