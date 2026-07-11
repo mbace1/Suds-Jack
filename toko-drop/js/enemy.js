@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=77';
+import { TUNING } from './tuning.js?v=78';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -276,7 +276,14 @@ export const EnemyType = {
   // Flying bot (v88) — hovers at mid-range and fires slow homing shots.
   // Homing is enemy-exclusive from v88 on (H/H2 pods removed from drops).
   BOTFLY:      16,
+  // Shield-bearer (v124) — projects an aura that makes nearby enemies immune
+  // to bullets. Never attacks; the threat is what it protects. Priority target.
+  WARDEN:      17,
 };
+
+// WARDEN aura radius (world units) — main.js uses it for the damage-immunity
+// check, enemy.js for the ring visual, so the read and the rule can't drift.
+export const WARDEN_AURA = 4.5;
 
 export const CFG = {
   [EnemyType.GLOBBO]:      { color: 0x00ccaa, radius: 0.55, speed: 2.8, hp: 1, bulletColor: null,     fireInterval: null },
@@ -296,6 +303,7 @@ export const CFG = {
   [EnemyType.PYRA]:        { color: 0xff9900, radius: 1.0,  speed: 0,   hp: 4, bulletColor: 0xffcc44, fireInterval: 2.5  },
   [EnemyType.OMEGA]:       { color: 0x00eeff, radius: 0.95, speed: 1.3, hp: 5, bulletColor: 0x66f2ff, fireInterval: null },
   [EnemyType.BOTFLY]:      { color: 0xff55bb, radius: 0.5,  speed: 2.0, hp: 2, bulletColor: 0xff66ee, fireInterval: 3.8  },
+  [EnemyType.WARDEN]:      { color: 0x33ffdd, radius: 0.85, speed: 1.1, hp: 5, bulletColor: null,     fireInterval: null },
 };
 
 // Per-type motion-trail signature (v36) — interval = cadence (denser = smaller),
@@ -311,7 +319,7 @@ const TRAIL_CFG = {
 
 export const BLOB_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPITTOR, EnemyType.FANNER,
-  EnemyType.WEEVA, EnemyType.SPLITTA,
+  EnemyType.WEEVA, EnemyType.SPLITTA, EnemyType.WARDEN,
 ]);
 
 const CUBE_TYPES = new Set([
@@ -609,6 +617,22 @@ export class Enemy {
         this.mesh.position.set(x, isCube ? cfg.radius * 0.9 : cfg.radius, z);
       }
       scene.add(this.mesh);
+    }
+
+    // WARDEN (v124): visible shield aura — a flat cyan ring on the floor
+    // marking the immunity zone. Follows the warden in update(); hidden the
+    // instant it dies (the shield rule in main.js checks alive, so the
+    // visual and the rule drop together).
+    if (type === EnemyType.WARDEN) {
+      this._auraRing = new THREE.Mesh(
+        new THREE.RingGeometry(WARDEN_AURA - 0.18, WARDEN_AURA, 48),
+        new THREE.MeshBasicMaterial({
+          color: 0x33ffdd, transparent: true, opacity: 0.32,
+          blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+        }));
+      this._auraRing.rotation.x = -Math.PI / 2;
+      this._auraRing.position.set(x, 0.06, z);
+      scene.add(this._auraRing);
     }
 
     // Flopping cube movers — shared tumble state (see _flopMove)
@@ -929,6 +953,20 @@ export class Enemy {
           this.mesh.position.z += (ddz / dist) * spd * dt;
         }
         break;
+
+      case EnemyType.WARDEN: {
+        // Shield-bearer: plods toward the player so its aura drags the
+        // protected pack forward. No attack — the threat is the umbrella.
+        if (dist > 1.4) {
+          this.mesh.position.x += (ddx / dist) * spd * dt;
+          this.mesh.position.z += (ddz / dist) * spd * dt;
+        }
+        if (this._auraRing) {
+          this._auraRing.position.set(this.mesh.position.x, 0.06, this.mesh.position.z);
+          this._auraRing.material.opacity = 0.30 + 0.13 * Math.sin(this._wobbleT * 3.1 + this._phase);
+        }
+        break;
+      }
 
       case EnemyType.SPITTOR: {
         const want = 10;
@@ -1566,6 +1604,7 @@ export class Enemy {
     this.alive   = false;
     this._dying  = true;
     this._deathT = 0.28;
+    if (this._auraRing) this._auraRing.visible = false;  // shield drops with the warden
     this._sq     = 1.0;
     this._sqV    = 0.0;
     if (this._flopActive) { this.mesh.quaternion.identity(); this._flopActive = false; }
@@ -1645,5 +1684,10 @@ export class Enemy {
       scene.remove(this.mesh);
     }
     if (this._aimArrow) scene.remove(this._aimArrow);
+    if (this._auraRing) {
+      scene.remove(this._auraRing);
+      this._auraRing.geometry.dispose();
+      this._auraRing.material.dispose();
+    }
   }
 }

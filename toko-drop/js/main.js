@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=77';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=77';
-import { Player, PLAYER_RADIUS } from './player.js?v=77';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues } from './enemy.js?v=77';
-import { audio } from './audio.js?v=77';
-import { initDesigner } from './designer.js?v=77';
-import { t, getLang, setLang, langs } from './lang.js?v=77';
-import { TUNING } from './tuning.js?v=77';
+import { InputManager } from './input.js?v=78';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=78';
+import { Player, PLAYER_RADIUS } from './player.js?v=78';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=78';
+import { audio } from './audio.js?v=78';
+import { initDesigner } from './designer.js?v=78';
+import { t, getLang, setLang, langs } from './lang.js?v=78';
+import { TUNING } from './tuning.js?v=78';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -69,7 +69,7 @@ function waveKind(w) {
 // getEnemySchedule uses rng (seeded per run) so every run plays differently.
 function getEnemySchedule(wave) {
   const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
-          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY } = EnemyType;
+          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY, WARDEN } = EnemyType;
   const POOL = [
     // [type, minWave, cost]
     [GLOBBO,      1, 1], [YELA_CUBE,  1, 1], [SPITTOR,    1, 2], [FANNER,     1, 2],
@@ -78,6 +78,7 @@ function getEnemySchedule(wave) {
     [REDD_CUBE,   4, 3],
     [PURP_CUBE,   5, 3], [PYRA,       5, 4], [BOTFLY,     5, 4],
     [TORO,        6, 5],
+    [WARDEN,      7, 5],  // v124: shield-bearer — cost keeps it rare, one per wave-ish
   ];
   const available = POOL.filter(([, min]) => wave >= min);
 
@@ -982,6 +983,10 @@ let collectedUpgrades = []; // upgrade ids applied this run (roguelike)
 let hitEventLog       = []; // one entry per HP-loss event this run
 const STREAK_FLASH_DUR = 0.4;
 let streakFlashT = 0;
+// Live scoring feedback (v124): mid-action milestone popups — score thresholds
+// and streak tiers — one shared channel (rare events, latest wins).
+let milestoneT = 0, milestoneText = '';
+let nextMilestone = 25000;
 let scoreMultT = 0; // Score Multiplier powerup (v72): ×2 score on kill while active
 // ── Personal bests (local; structured for a future online leaderboard) ───────
 const PB_KEY = 'tokoDropPB';
@@ -1168,6 +1173,12 @@ function onKill(e) {
   streak++;
   score += 100 * streak * (scoreMultT > 0 ? 2 : 1);
   if (streak > 0 && streak % 5 === 0) audio.announce('streak');
+  // Streak-tier popup (v124): a beat of celebration at 10/20/30… without
+  // interrupting play (classic mode stays uninterrupted by design).
+  if (streak >= 10 && streak % 10 === 0) {
+    milestoneT = 1.1;
+    milestoneText = `STREAK ×${streak}!`;
+  }
   // SMASH TV (v114): kills sometimes drop cash that lies on the floor — walk
   // over it before it fades. Big money. Big prizes.
   if (smashMode && Math.random() < 0.15 && powerups.length < 14) {
@@ -1767,6 +1778,21 @@ function drawHUD() {
     ctx.fillRect(0, 0, uiCanvas.width, uiCanvas.height);
   }
 
+  // Mid-action milestone popup (v124): score thresholds + streak tiers.
+  // Sits below the wave banner's line so the two never overlap.
+  if (milestoneT > 0 && gameState === 'playing') {
+    const a = Math.min(1, milestoneT * 4, (1.2 - milestoneT) * 6);
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, a));
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 26px monospace, sans-serif';
+    ctx.shadowColor = '#ffcc33';
+    ctx.shadowBlur = 18;
+    ctx.fillStyle = '#ffee88';
+    ctx.fillText(milestoneText, uiCanvas.width / 2, uiCanvas.height * 0.40);
+    ctx.restore();
+  }
+
   // Wave-start banner (v114 SMASH room card / v123 classic rhythm banner):
   // big color-coded wave title, quick fade in/out.
   if (waveIntroT > 0 && gameState === 'playing') {
@@ -1851,11 +1877,32 @@ function drawHUD() {
   ctx.textAlign = 'right';
   ctx.fillText(`${score}`, uiCanvas.width - 16, 24);
   if (streak > 1) {
+    // Streak heat tiers (v124): the meter visibly escalates — gold → orange
+    // (10+) → red-hot with glow (20+) — so the scoring depth reads at a glance.
     const flashScale = 1 + Math.max(0, streakFlashT / STREAK_FLASH_DUR) * 0.4;
-    ctx.font = `bold ${Math.round(14 * flashScale)}px monospace, sans-serif`;
-    ctx.fillStyle = '#ffdd44';
+    const heat = streak >= 20 ? { c: '#ff5566', glow: 16 }
+               : streak >= 10 ? { c: '#ffaa44', glow: 10 }
+               : streak >= 5  ? { c: '#ffdd44', glow: 6 }
+               :                { c: '#ffdd44', glow: 0 };
+    ctx.font = `bold ${Math.round((14 + Math.min(6, streak * 0.2)) * flashScale)}px monospace, sans-serif`;
+    if (heat.glow) { ctx.shadowColor = heat.c; ctx.shadowBlur = heat.glow; }
+    ctx.fillStyle = heat.c;
     ctx.fillText(`×${streak} ${t('hudStreak')}`, uiCanvas.width - 16, 44);
+    ctx.shadowBlur = 0;
     ctx.font = HUD_FONT;
+  }
+  // Active 2× score multiplier (v124): pulsing tag + a draining time bar, so
+  // you know to cash in kills before it expires.
+  if (scoreMultT > 0) {
+    const pulse = 0.7 + 0.3 * Math.sin(performance.now() * 0.012);
+    ctx.font = 'bold 13px monospace, sans-serif';
+    ctx.fillStyle = `rgba(255,204,51,${pulse.toFixed(2)})`;
+    ctx.fillText('2×', uiCanvas.width - 16, 64);
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.fillRect(uiCanvas.width - 76, 70, 60, 3);
+    ctx.fillStyle = '#ffcc33';
+    ctx.fillRect(uiCanvas.width - 76 + 60 * (1 - Math.min(1, scoreMultT / 10)), 70,
+                 60 * Math.min(1, scoreMultT / 10), 3);
   }
   ctx.textAlign = 'left';
 
@@ -1961,7 +2008,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v123', 16, uiCanvas.height - 12);
+  ctx.fillText('v124', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2651,6 +2698,7 @@ function startGame() {
   landscapeMode = innerWidth > innerHeight;
   applyArenaMode(landscapeMode);
   score  = 0; streak = 0; wave = 0; runTimer = 0; scoreMultT = 0; waveClearFlashT = 0;
+  milestoneT = 0; nextMilestone = 25000;
   collectedUpgrades = []; hitEventLog = []; _lastHitTime = -1;
   BULLET_CONFIG.playerBulletScale  = 1.0;
   BULLET_CONFIG.playerPiercing     = false;
@@ -2823,7 +2871,8 @@ function loop() {
     const en = new Enemy(scene, s.type, bx + ox, bz + oz, s.speedMult, s.intervalMult);
     // v120: shooters are the tactical objects (v116) — announce their entrance
     // with a brief "!" ping + alert blip so the player can start prioritising.
-    if (s.shooter) {
+    // v124: WARDENs get the same treatment; the shield-bearer IS a priority call.
+    if (s.shooter || s.type === EnemyType.WARDEN) {
       en._pingT = 1.6;
       audio.shooterPing();
     }
@@ -2987,6 +3036,15 @@ function loop() {
   if (streakFlashT > 0) streakFlashT -= dt;
   if (scoreMultT   > 0) scoreMultT   -= dt;
   if (waveIntroT   > 0) waveIntroT   -= dt;
+  if (milestoneT   > 0) milestoneT   -= dt;
+  // Score milestone (v124): every 25k, a popup + sparkle — score is checked
+  // here once per frame so every scoring path (kills, loot, bonuses) counts.
+  if (score >= nextMilestone) {
+    milestoneT = 1.2;
+    milestoneText = `${nextMilestone.toLocaleString('en-US')}!`;
+    nextMilestone += 25000;
+    audio.milestone();
+  }
   if (roomTallyT   > 0) roomTallyT   -= dt;
   updateSmashDoors();
 
@@ -3058,6 +3116,23 @@ function loop() {
       const dx = b.mesh.position.x - e.position.x;
       const dz = b.mesh.position.z - e.position.z;
       if (Math.hypot(dx, dz) < BULLET_R * BULLET_CONFIG.playerBulletScale + e.radius) {
+        // WARDEN shield (v124): enemies inside a living warden's aura shrug
+        // bullets off — kill the warden first. Wardens never shield each other
+        // or themselves, so the priority target is always killable.
+        if (e.type !== EnemyType.WARDEN && enemies.some(w =>
+              w.alive && w.type === EnemyType.WARDEN &&
+              Math.hypot(w.position.x - e.position.x, w.position.z - e.position.z) < WARDEN_AURA)) {
+          bullets.recycleAt(i);   // shields stop even piercing shots
+          hit = true;
+          audio.shieldTink();
+          // cyan deflection spark so "no damage" reads as SHIELDED, not a whiff
+          for (let j = 0; j < 3; j++) {
+            const a = Math.atan2(dz, dx) + (Math.random() - 0.5) * 1.6;
+            gooChunkPool.spawn(b.mesh.position.x, e.fxY + 0.15, b.mesh.position.z,
+              Math.cos(a) * 4, 2 + Math.random() * 2, Math.sin(a) * 4, 0x33ffdd, 0.08);
+          }
+          break;
+        }
         const died = e.hit(b.mesh.position.x, b.mesh.position.z);
         if (_piercing) {
           if (!b._hitIds) b._hitIds = new Set();

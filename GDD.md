@@ -30,6 +30,13 @@ Title screen
 
 **Roguelike mode** is the default. Players opt into pure Arcade via a toggle on the title screen (persisted to `localStorage`).
 
+**Design boundary (fixed rule, agreed 2026-07-09):** classic/arcade mode has
+**no between-wave interruptions** — no screens, choices, or reward beats;
+waves flow into each other uninterrupted. The between-wave upgrade layer
+belongs to Roguelike mode exclusively. Non-interrupting feedback (fading
+banners, sounds, HUD meters) is fine in classic; anything that pauses play
+or asks for input between waves is not.
+
 ---
 
 ## 3. Arena *(v11)*

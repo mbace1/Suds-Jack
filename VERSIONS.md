@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v124 — 2026-07-11
+**Main-mode round: WARDEN shield-bearer, live scoring feedback, streak-heat juice — all in-action, no between-wave interruptions**
+- **WARDEN** (new enemy #18, wave 7+, cost 5 — rare): a cyan shield-bearer blob projecting a visible **floor aura (r 4.5)** that makes every enemy inside it **immune to bullets** (even piercing). It never attacks and never shields itself — the priority-target puzzle layered on top of the v116 shooter play. Gets the "!" entrance ping; the shield drops the instant it dies. Deflections read clearly: cyan sparks + a dull `shieldTink` instead of the hit sound
+- **Live scoring feedback (both modes, HUD-only)**: streak meter now escalates through **heat tiers** (gold → orange at ×10 → red-hot glow at ×20, size grows with streak); an active **2× score multiplier** shows a pulsing tag + draining time bar under the score; **milestone popups** flash mid-action for every 25,000 points (with a three-note sparkle) and at streak ×10/×20/×30
+- **Design boundary recorded in GDD §2** (agreed): classic/arcade mode has NO between-wave interruptions — screens/choices/reward beats belong to Roguelike mode exclusively; only non-interrupting feedback (fading banners, sounds, HUD meters) is allowed in classic. Everything in this release honors it
+- Difficulty-curve tuning deferred until real playtest runs land in the feedback inbox — that data drives the next balance pass
+- Cache-bust `?v=77` → `?v=78`; HUD label → v124
+
+---
+
 ## v123 — 2026-07-09
 **Main (classic) mode: readable wave rhythm — color-coded wave banners + a boss klaxon**
 - Classic mode computed a wave RHYTHM (normal / swarm / spike / boss every 8th) since forever but never surfaced it — the `announceWave()` helper was even dead code. Now **each wave opens with a brief color-coded banner** naming the incoming pressure so the rhythm is readable and you can plan the next ~20s: `WAVE N` (gold), `WAVE N — SWARM` (cyan), `WAVE N — HEAVY` (orange), `WAVE N — BOSS!` (red, lingers a beat longer)
