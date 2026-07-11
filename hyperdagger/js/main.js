@@ -11,7 +11,7 @@ import { DaggerPool } from './daggers.js?v=10';
 import { GemPool } from './gems.js?v=10';
 import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=14';
 import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=14';
-import { OrbPool } from './bullets.js?v=7';
+import { OrbPool } from './bullets.js?v=16';
 import { AudioKit } from './audio.js?v=10';
 
 const ARENA_R = 26;
@@ -30,7 +30,10 @@ const ENEMY_NAMES = {
 // player-tunable options (pause menu), persisted across sessions
 const OPTS_KEY = 'hyperDaggerOpts';
 const opts = Object.assign(
-  { speed: 1, fov: 80, sens: 1, smear: true, shake: true, chroma: true, music: true },
+  // motion=false is the reduced-motion master switch (forces smear/shake/chroma/FOV
+  // kicks off without touching the individual toggles); contrast=true brightens
+  // orbs + telegraphs and kills the floor's red flush for readability
+  { speed: 1, fov: 80, sens: 1, smear: true, shake: true, chroma: true, music: true, motion: true, contrast: false },
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
 
 // Devil-Daggers-style dagger levels, advanced by collecting gems.
@@ -305,7 +308,7 @@ window.addEventListener('resize', resize);
 resize();
 
 // ---------------------------------------------------------------- game state
-let state = 'menu'; // 'menu' | 'playing' | 'dead'
+let state = 'menu'; // 'menu' | 'tips' | 'playing' | 'dead'
 let paused = false;
 let gameTime = 0;
 let kills = 0;
@@ -346,11 +349,9 @@ function showMenu() {
   elMsg.innerHTML =
     `<h1>HYPER DAGGER</h1>
      <p class="sub">a Devil Daggers &times; HYPERDEMON homage</p>
-     <p>survive the swarm &mdash; time is your only score<br>
-     gems from heavy kills level your daggers up (10 / 30 / 70) &mdash; LV 3 <b>homes</b>, LV 4 is <b>the crimson hand</b></p>
-     <p class="keys">desktop &mdash; mouse look &middot; <b>fire is automatic while you move</b> (hold <b>LMB</b> when still) &middot; <b>WASD</b> &middot; <b>SPACE</b> jump &times;2 &middot; <b>SHIFT</b> dash &middot; <b>ESC</b> options<br>
-     gamepad &mdash; sticks move / look &middot; <b>RT</b> fire &middot; <b>A</b> jump &times;2 &middot; <b>B</b> dash<br>
-     touch &mdash; left stick moves &middot; right stick looks &middot; fire is automatic &middot; <b>tap either stick = jump &times;2</b> &middot; <b>flick either stick = dash</b> &middot; &#10074;&#10074; pause</p>
+     <p>survive the swarm &mdash; time is your only score</p>
+     <p class="keys">mouse look + <b>WASD</b> &middot; <b>SPACE</b> jump &times;2 &middot; <b>SHIFT</b> dash &middot; <b>ESC</b> options<br>
+     gamepad &mdash; sticks &middot; <b>A</b> jump &middot; <b>B</b> dash &nbsp;|&nbsp; touch &mdash; dual sticks &middot; <b>tap = jump</b> &middot; <b>flick = dash</b></p>
      <button id="modeBtn">MODE: ${modeLine}</button>
      <p class="go">${hiScore > 0 ? `best ${hiScore.toFixed(1)}s &mdash; ` : ''}click / tap to descend</p>`;
   document.getElementById('modeBtn').addEventListener('pointerdown', e => {
@@ -360,6 +361,24 @@ function showMenu() {
     hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
     showMenu();
   });
+}
+
+// One-time 3-tip card before the very first run — the mechanics that aren't
+// obvious from the HUD. After this the menu stays terse.
+const TIPS_KEY = 'hyperDaggerSeenTips';
+
+function showTips() {
+  state = 'tips';
+  elMsg.style.display = 'block';
+  elMsg.innerHTML =
+    `<h1>HOW TO SURVIVE</h1>
+     <p class="big">&#9876; fire is <b>automatic while you move</b></p>
+     <p class="sub">stand still and hold LMB / the look stick to fire in place</p>
+     <p class="big">&#10227; the <b>dash phases through orbs</b></p>
+     <p class="sub">never through bodies &mdash; charge the red projectiles, dodge the bone</p>
+     <p class="big">&#9670; <b>gems level your daggers</b></p>
+     <p class="sub">heavy kills drop them &mdash; 10 / 30 / 70 &rarr; faster &middot; homing &middot; the crimson hand</p>
+     <p class="go">click / tap to descend</p>`;
 }
 
 function hiKey() { return mode === 'hyper' ? 'hyperDaggerHiHyper' : 'hyperDaggerHi'; }
@@ -491,6 +510,13 @@ window.addEventListener('pointerdown', e => {
   audio.ensure();
   const isMouse = e.pointerType === 'mouse';
   if (state === 'menu') {
+    if (!localStorage.getItem(TIPS_KEY)) {
+      localStorage.setItem(TIPS_KEY, '1');
+      showTips();
+    } else {
+      startGame();
+    }
+  } else if (state === 'tips') {
     startGame();
   } else if (state === 'dead') {
     if (performance.now() - deathAt < 700) return;
@@ -527,8 +553,12 @@ function saveOpts() {
 }
 
 function applyOpts() {
-  afterimage.enabled = opts.smear;
-  chromaPass.enabled = opts.chroma;
+  // reduced motion (opts.motion=false) overrides the individual FX toggles
+  // without rewriting them — user intent in opts.* stays untouched
+  afterimage.enabled = opts.smear && opts.motion;
+  chromaPass.enabled = opts.chroma && opts.motion;
+  // high contrast: hotter orbs so projectiles read against the bloom
+  orbs.mat.color.setRGB(...(opts.contrast ? [3.4, 0.5, 0.5] : [2.6, 0.2, 0.2]));
   player.sens = opts.sens;
   // reconcile music with the toggle live (only while a run is active)
   if (state === 'playing') {
@@ -556,13 +586,16 @@ function showPause() {
      ${optRow('', 'shake', [true, false], v => v ? 'SHAKE ON' : 'SHAKE OFF')}
      ${optRow('', 'chroma', [true, false], v => v ? 'CHROMA ON' : 'CHROMA OFF')}
      ${optRow('', 'music', [true, false], v => v ? 'MUSIC ON' : 'MUSIC OFF')}
+     ${optRow('A11Y', 'motion', [true, false], v => v ? 'MOTION FULL' : 'MOTION REDUCED')}
+     ${optRow('', 'contrast', [false, true], v => v ? 'CONTRAST HIGH' : 'CONTRAST NORMAL')}
      <p class="go">click / tap anywhere else to resume</p>`;
   for (const b of elMsg.querySelectorAll('button.opt')) {
     b.addEventListener('pointerdown', e => {
       e.stopPropagation();
       const k = b.dataset.k;
       const raw = b.dataset.v;
-      opts[k] = raw === 'true' ? true : raw === 'false' ? false : parseFloat(raw);
+      opts[k] = raw === 'true' ? true : raw === 'false' ? false
+        : isNaN(parseFloat(raw)) ? raw : parseFloat(raw);
       saveOpts();
       showPause(); // re-render with the new selection
     });
@@ -576,10 +609,11 @@ const _sv = new THREE.Vector3();
 const pending = [];
 
 function telegraph(pos, colorRGB, delay, fn) {
+  const hot = opts.contrast ? 1.4 : 1;
   const beam = new THREE.Mesh(
     new THREE.CylinderGeometry(0.45, 0.45, 26, 10, 1, true),
     new THREE.MeshBasicMaterial({
-      color: new THREE.Color().setRGB(...colorRGB),
+      color: new THREE.Color().setRGB(colorRGB[0] * hot, colorRGB[1] * hot, colorRGB[2] * hot),
       transparent: true, opacity: 0,
       blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
     }),
@@ -1291,20 +1325,20 @@ function updateFeel(dt) {
   // trauma-driven shake + chromatic aberration + FOV kicks (dash, shotgun)
   trauma = Math.max(0, trauma - dt * 1.5);
   const t2 = trauma * trauma;
-  if (opts.shake && state === 'playing' && !paused) {
+  if (opts.shake && opts.motion && state === 'playing' && !paused) {
     camera.rotation.z += (Math.random() - 0.5) * t2 * 0.07;
     camera.rotation.x += (Math.random() - 0.5) * t2 * 0.03;
     camera.position.y += (Math.random() - 0.5) * t2 * 0.08;
   }
   chromaPass.uniforms.uAmount.value = 0.0012 + t2 * 0.02;
   // reactive floor: grid thumps on the 138 BPM beat scaled by music intensity,
-  // and flushes red when you take trauma
+  // and flushes red when you take trauma (high contrast keeps the grid clean)
   if (state !== 'playing' || paused) musicI = Math.max(0, musicI - dt * 0.8);
   const beat = 1 - ((performance.now() / 1000) * (138 / 60)) % 1;
   floorMat.uniforms.uPulse.value = musicI * (0.25 + 0.75 * beat * beat);
-  floorMat.uniforms.uRed.value = t2 * 0.85;
+  floorMat.uniforms.uRed.value = opts.contrast ? 0 : t2 * 0.85;
   fovKick = Math.max(0, fovKick - dt * 18);
-  const fov = opts.fov + player.dashK * 9 + fovKick;
+  const fov = opts.fov + (opts.motion ? player.dashK * 9 + fovKick : 0);
   if (Math.abs(camera.fov - fov) > 0.01) {
     camera.fov = fov;
     camera.updateProjectionMatrix();
@@ -1359,6 +1393,8 @@ window.__hd = {
     setLife(n) { lifeT = n; },
     setTime(t) { gameTime = t; },
     pulse(n) { runPulse(n ?? ++pulseN); },
+    setOpt(k, v) { opts[k] = v; saveOpts(); },
+    getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, fov: camera.fov, uRed: floorMat.uniforms.uRed.value }; },
     pulseInfo(n) { const k = pulseKind(n ?? pulseN); return { kind: k, budget: pulseBudget(n ?? pulseN, k) }; },
     getState() { return { mode, lifeT, gameTime, mercyT, state }; },
     getSchedule() {

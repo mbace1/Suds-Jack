@@ -12,6 +12,7 @@ export class OrbPool {
     this.active = [];
     const geo = new THREE.SphereGeometry(0.22, 10, 8);
     const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(2.6, 0.2, 0.2) });
+    this.mat = mat; // shared by every orb — retinted live by the contrast option
     for (let i = 0; i < cap; i++) {
       const m = new THREE.Mesh(geo, mat);
       m.visible = false;
