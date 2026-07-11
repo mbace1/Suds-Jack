@@ -12,7 +12,7 @@ import { GemPool } from './gems.js?v=10';
 import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=17';
 import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=17';
 import { OrbPool } from './bullets.js?v=16';
-import { AudioKit } from './audio.js?v=10';
+import { AudioKit } from './audio.js?v=18';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -474,6 +474,56 @@ function pushRunHistory(entry) {
   return hist;
 }
 
+// Run telemetry (toko-drop's hit-log pattern): one record per death, capped
+// at 40 runs, powering __hd.debug.report() so balance tuning works from data
+// instead of guesses. Local only — nothing leaves the browser.
+const RUNLOG_KEY = 'hyperDaggerRunLog';
+
+function pushRunLog(timedOut) {
+  let log = [];
+  try { log = JSON.parse(localStorage.getItem(RUNLOG_KEY) || '[]'); } catch { log = []; }
+  log.unshift({
+    t: Math.round(gameTime * 10) / 10,
+    mode,
+    cause: timedOut ? 'timeout' : (lastKiller || 'unknown'),
+    kills,
+    killsByType: { ...killsByType },
+    lv: weaponLv,
+    gems: gemCount,
+    peak: STYLE_TIERS[stylePeakIdx].label || '-',
+    pulseN,
+    lastPulseKind: pulseKind(pulseN),
+  });
+  log = log.slice(0, 40);
+  localStorage.setItem(RUNLOG_KEY, JSON.stringify(log));
+}
+
+/** Console balance report over the run log: what kills players, when, and
+ *  how far the weapon/style economy gets. */
+function runReport() {
+  let log = [];
+  try { log = JSON.parse(localStorage.getItem(RUNLOG_KEY) || '[]'); } catch { log = []; }
+  if (!log.length) return { runs: 0 };
+  const ts = log.map(r => r.t).sort((a, b) => a - b);
+  const causes = {};
+  const kinds = {};
+  let lvSum = 0;
+  for (const r of log) {
+    causes[r.cause] = (causes[r.cause] || 0) + 1;
+    kinds[r.lastPulseKind || '-'] = (kinds[r.lastPulseKind || '-'] || 0) + 1;
+    lvSum += r.lv;
+  }
+  return {
+    runs: log.length,
+    medianT: ts[(ts.length / 2) | 0],
+    bestT: ts[ts.length - 1],
+    deathsByCause: Object.fromEntries(Object.entries(causes).sort((a, b) => b[1] - a[1])),
+    deathsByPulseKind: kinds,
+    avgWeaponLv: Math.round(lvSum / log.length * 10) / 10,
+    peaks: log.map(r => r.peak).join(' '),
+  };
+}
+
 function showDeath(timedOut) {
   const t = gameTime.toFixed(1);
   const best = gameTime > hiScore;
@@ -491,6 +541,7 @@ function showDeath(timedOut) {
     .join(' &middot; ');
 
   const hist = pushRunHistory({ t: gameTime, mode });
+  pushRunLog(timedOut);
   const historyLine = hist.slice(1, 9).map(r => r.t.toFixed(1) + 's').join(' &middot; ');
   const peakRank = stylePeakIdx > 0 ? ` &middot; peak rank ${STYLE_TIERS[stylePeakIdx].label}` : '';
 
@@ -1385,7 +1436,9 @@ function step(dt) {
   debris.update(dt);
   // style meter bleeds when you stop scoring — faster at higher ranks so the
   // top tiers stay fleeting and demand a continuous chain
-  if (styleVal > 0) styleVal = Math.max(0, styleVal - dt * (6 + styleVal * 0.05));
+  // provisional v4.1 soften (was 6 + 0.05v): S-rank was bleeding out between
+  // pulse peaks even on good runs — revisit once the run log has real data
+  if (styleVal > 0) styleVal = Math.max(0, styleVal - dt * (5 + styleVal * 0.045));
   updateStyleHud();
   // music intensity: swarm density (live threats, not eggs) + run progress +
   // how hard you're chaining right now (the style meter)
@@ -1482,6 +1535,8 @@ window.__hd = {
     spawnLeviathan() { enemies.push(new Leviathan(scene, 5)); },
     setLife(n) { lifeT = n; },
     setTime(t) { gameTime = t; },
+    die() { if (state === 'playing') die(false); },
+    report() { return runReport(); },
     pulse(n) { runPulse(n ?? ++pulseN); },
     setOpt(k, v) { opts[k] = v; saveOpts(); },
     getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, fov: camera.fov, uRed: floorMat.uniforms.uRed.value }; },

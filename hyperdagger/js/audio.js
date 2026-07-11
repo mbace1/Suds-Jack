@@ -77,8 +77,10 @@ export class AudioKit {
 
   gib(big = false) {
     if (!this.ctx) return;
-    this._noise(big ? 0.5 : 0.3, 'lowpass', big ? 500 : 800, 0.7, big ? 0.55 : 0.4);
-    this._tone('sine', big ? 150 : 190, 35, big ? 0.45 : 0.3, 0.45);
+    // ±12% pitch variance so back-to-back gibs don't machine-gun identically
+    const v = 0.88 + Math.random() * 0.24;
+    this._noise(big ? 0.5 : 0.3, 'lowpass', (big ? 500 : 800) * v, 0.7, big ? 0.55 : 0.4);
+    this._tone('sine', (big ? 150 : 190) * v, 35, big ? 0.45 : 0.3, 0.45);
   }
 
   shotgun() {
@@ -236,6 +238,11 @@ export class AudioKit {
     const now = this.ctx.currentTime;
     m.intensity += (intensity - m.intensity) * 0.05; // smooth
     const I = m.intensity;
+    // duck the drone under the music as intensity climbs — at full swarm the
+    // arrangement carries the low end, the drone just muddies it
+    if (this._drone) {
+      this._drone.g.gain.setTargetAtTime(0.055 * (1 - 0.5 * I), now, 0.4);
+    }
     // if we fell behind (tab throttled / paused), resync instead of bursting
     if (m.next < now - 0.25) m.next = now + 0.02;
     while (m.next < now + 0.15) {

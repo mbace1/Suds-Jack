@@ -190,6 +190,13 @@ exhales skulls and every 9s drags the player toward itself for 1.8s (`player.nud
 7 u/s — walk or dash out); it drops 10 gems. A pairwise separation pass (skull/brute
 only) keeps the swarm from collapsing into one blob.
 
+**Telemetry (`main.js`):** each death appends to `hyperDaggerRunLog` (cap 40):
+`{t, mode, cause, kills, killsByType, lv, gems, peak, pulseN, lastPulseKind}`;
+`__hd.debug.report()` aggregates (median/best time, deaths by cause/pulse kind, avg
+weapon level) — tune balance from this, not guesses. `__hd.debug.die()` forces a death.
+Audio mix: drone ducks up to 50% under the music layer with intensity; gibs carry ±12%
+pitch variance.
+
 **Death recap (`main.js`):** `killsByType` tallies kills by `e.type` (Wraith/Splitter/
 MiniSkull all report `'skull'` — they never override the base type, so the breakdown
 line only ever needs the handful of distinct enemy types) and `lastKiller` is
