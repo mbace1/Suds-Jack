@@ -112,6 +112,7 @@ hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel
     player.js   # First-person controller: yaw/pitch, WASD/stick strafe, jump, dash, head-bob
     input.js    # Pointer-lock mouse+WASD, gamepad (sticks/RT/A/B), or dual touch sticks; tap-vs-hold fire
     audio.js    # WebAudio synth kit (fire/hit/gib/gem/levelup/dash/roar/death + drone + intensity music)
+    rng.js      # mulberry32 / fnv1a / utcDateStr / mixSeed — seeded draws for daily runs
 ```
 
 ## Toko Drop — Architecture Notes
@@ -161,9 +162,10 @@ magnet to the player inside 5.5 u.
 **Spawn director (`main.js`):** all heavy spawns are **telegraphed** — an additive light
 beam marks the spot for 0.7 s+ (`pending[]`), then the enemy appears. Recurring pressure
 is a **pulse director** (toko-drop's wave/budget system adapted to continuous time):
-every ~14s tightening to 9s a pulse fires with budget `3 + min(t/60, 2.5)·3.2 +
-max(0, t/60 − 2.5)·1.4` (knee at 2.5 min), spent on `PULSE_POOL` `[key, unlockTime,
-cost]` picks — skull-pack×3 @20s cost 2, watcher @25s cost 3 (cap 3), brute @45s cost 3,
+every ~14s tightening to 9s a pulse fires with budget `3 + min(n, 11)·0.75 +
+max(0, n − 11)·0.3` (n = pulse index — the director's own clock, NOT wall time, so
+daily pick sequences stay comparable across players; knee ≈ old 2.5-min knee), spent
+on `PULSE_POOL` `[key, unlockTime, cost]` picks — skull-pack×3 @20s cost 2, watcher @25s cost 3 (cap 3), brute @45s cost 3,
 spider @75s cost 4 (cap 2), blinker @90s cost 3 (cap 3), serpent @100s cost 8 (cap 2),
 dread @120s cost 6 (cap 2) — so unlock gates preserve the one-mechanic-at-a-time
 onboarding. A deterministic rhythm (`pulseKind(n)`, n<1 → 'normal') shapes pulses:
@@ -208,6 +210,18 @@ already the correct cause — no post-hoc reordering needed. `showDeath()` build
 line, since showing the run you're already looking at the big stat line for is
 redundant. TIME OUT (HYPER's clock hitting 0 in `step()`) bypasses the cause line
 entirely rather than blaming a stale `lastKiller` from an earlier survived hit.
+
+**Daily runs (`main.js` + `rng.js`):** RUN DAILY/FREE menu toggle (`hyperDaggerRunKind`).
+DAILY seeds the director from `fnv1a(utcDate + ':' + mode)`; each pulse gets a FRESH
+`mulberry32(mixSeed(runSeed, pulseN))` stream so pulse N's pick sequence is comparable
+across players regardless of when it fires (full determinism is impossible — player
+input diverges the sim; enemy micro-jitter/debris/gems stay `Math.random`). Only
+director-level draws are seeded: per-pulse picks/staggers, `ringSpot(min, draw)`,
+totem/leviathan exhale rolls (`rng.next`, the run-stream). Scoring: per-day best in
+`hyperDaggerDaily:<date>:<mode>` (pinned to `runDate` from `resetRun` — midnight
+straddle), capped 30-entry all-time table `hyperDaggerDailyBest`, `gcDailyKeys()`
+merges + deletes stale keys at boot. Daily deaths never write the FREE `hiKey()`.
+Debug: `setRunKind`, `setDate`, `getRunInfo`, `lastPulsePicks`, `getDailyTable`.
 
 **Modes:** menu-button toggle, persisted in `localStorage` (`hyperDaggerMode`). PURE =
 one-touch death (DD). HYPER = HYPERDEMON rules: `lifeT` drains in real time (start 30,
