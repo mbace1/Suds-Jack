@@ -45,6 +45,12 @@ export const MODELS = {
     palette: { W: 0xb8b8b8, S: 0x8a8a8a, R: [2.8, 0.2, 0.2], K: 0x151515 },
     layers: SKULL_LAYERS,
   },
+  // dread skull — the Skull IV analog: big, fast, dark-red bone, burning crown
+  skullDread: {
+    voxelSize: 0.4,
+    palette: { W: 0x6e1212, S: 0x4a0c0c, R: [3.2, 0.35, 0.35], K: 0x0a0202, C: [2.6, 0.2, 0.2] },
+    layers: [...SKULL_LAYERS, ['C.C.C.C', '.......', '.......']],
+  },
   // blinker — glitch shard that teleports toward the player
   blinker: {
     voxelSize: 0.26,
@@ -216,6 +222,7 @@ export function parseModel(def) {
           y: anchor === 'bottom' ? (y + 0.5) * s : (y - (h - 1) / 2) * s,
           z: ((d - 1) / 2 - zi) * s,
           color,
+          key: row[x], // palette key kept for later retints (gauntlet evolution)
         });
       }
     }
@@ -253,6 +260,19 @@ export class VoxelSprite {
       this.flashK = Math.max(0, this.flashK - dt * 7);
       this.material.color.setScalar(1 + this.flashK);
     }
+  }
+
+  /** Recolor every voxel whose palette key appears in `palette` (hex int or
+   *  [r,g,b] HDR array). Drives the per-level gauntlet evolution. */
+  retint(palette) {
+    this.voxels.forEach((v, i) => {
+      const col = palette[v.key];
+      if (col === undefined) return;
+      if (Array.isArray(col)) v.color.setRGB(col[0], col[1], col[2]);
+      else v.color.set(col);
+      this.mesh.setColorAt(i, v.color);
+    });
+    this.mesh.instanceColor.needsUpdate = true;
   }
 
   randomColor() {

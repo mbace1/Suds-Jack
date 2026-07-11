@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=10';
+import { VoxelSprite, MODELS } from './voxel.js?v=14';
 
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();
@@ -94,6 +94,20 @@ export class Splitter extends Skull {
     this.score = 2;
     this.knock = 4;
     this.splits = true;
+  }
+}
+
+/** Skull IV analog: big, FAST, dark-red bone with a burning crown. Late-run
+ *  pressure spike — it outruns a walking player, so it forces dashes. */
+export class DreadSkull extends Skull {
+  constructor(scene, pos, speedBoost = 0) {
+    super(scene, pos, speedBoost + 2.6, MODELS.skullDread);
+    this.type = 'dread';
+    this.hp = 8;
+    this.radius = 1.3;
+    this.score = 5;
+    this.accel = 22;
+    this.knock = 2; // barely flinches
   }
 }
 

@@ -138,8 +138,12 @@ over the last 0.3 s; `burst(worldVoxels, …)` explodes a dead enemy's actual vo
 outward from their centroid plus the killing dagger's impulse.
 
 **Combat:** hold LMB (or hold the right touch stick) = dagger stream. Weapon levels via
-gems — `LEVEL_GEMS = [0,0,10,30]`, `WEAPON[lv]` sets stream rate / homing. LV 3 daggers steer toward the best target in a
-~37° cone (`DaggerPool.update(dt, targets)`). Each dagger keeps `prev` position and
+gems — `LEVEL_GEMS = [0,0,10,30,70]`, `WEAPON[lv]` sets stream rate / homing (LV4 "crimson
+hand" = 26/s + homing). LV 3+ daggers steer toward the best target in a
+~37° cone (`DaggerPool.update(dt, targets)`). The first-person gauntlet **evolves per
+level**: parsed voxels keep their palette `key` and `VoxelSprite.retint(GAUNTLET_TIERS[lv])`
+rewrites just those voxels (LV2 knuckle glow, LV3 red veins, LV4 crimson);
+`applyGauntlet(1)` resets it each run. Each dagger keeps `prev` position and
 collisions use **segment-vs-sphere** tests so fast projectiles can't tunnel. Skulls take
 knockback along the dagger direction (brutes mostly resist via lower `knock`).
 Enemy → player kill test is against both torso and camera positions; totems don't kill,
@@ -159,7 +163,9 @@ drift) from t=0 every 24s tightening to 16s, exhaling skulls (global cap 46, 30%
 10s; **thorns** from t=60 (0.9s sigil warning, lethal below `feet.y` 1.4) every 12s
 tightening to 6s; **spiders** (cap 2) from t=75 every 30s tightening to 20s, laying an egg
 sac every ~10s; **blinkers** (cap 3) from t=90 every 25s tightening to 14s; **serpents**
-(cap 2) from t=100 every 45s tightening to 32s — every second serpent is a ghost; the
+(cap 2) from t=100 every 45s tightening to 32s — every second serpent is a ghost;
+**dread skulls** (cap 2, Skull-IV analog: 8 HP, faster than walking speed, knock 2,
+type `'dread'`, in the separation set) from t=120 every 40s tightening to 24s; the
 **Leviathan** from t=150, one at a time, respawning every 120s. Totem exhales roll
 splitters (15%, > 45s) before crowned skulls (30%, > 60s). A `Serpent` is a controller
 owning 12 `SerpentSegment` enemies (pushed into the main `enemies` array so the normal
@@ -240,11 +246,14 @@ after a pause, resyncs instead of bursting). Voices layer in by intensity (compu
 
 Sky is a `BackSide` sphere: greyscale band shimmer over black with one dark-red ember
 glow at the horizon (`fog: false`); the floor is a `CanvasTexture` white-on-black grid
-on a circle of exactly `ARENA_R` — the grid simply ends at the edge, no barrier mesh. Death/menu/pause are DOM overlays; touch sticks
+on a circle of exactly `ARENA_R` — the grid simply ends at the edge, no barrier mesh.
+The floor is a `ShaderMaterial` (**reactive**): `uPulse` thumps the grid on the 138 BPM
+beat scaled by `musicI` (smoothed music intensity from `step()`), `uRed` flushes it red
+from trauma; both set every frame in `updateFeel()`. Death/menu/pause are DOM overlays; touch sticks
 are drawn on the `#canvas-ui` overlay each frame. Hi-score lives in `localStorage` under
 `hyperDaggerHi`. `window.__hd` exposes `{enemies, player, debris, daggers, gems,
 serpents, audio, debug}` (debug: `addGems(n)`, `spawnSerpent()`, `spawnSpider()`,
-`spawnLeviathan()`, `setTime(t)` + `getSchedule()` — the raw `nextXAt` timers, for
+`spawnDread()`, `spawnLeviathan()`, `setTime(t)` + `getSchedule()` — the raw `nextXAt` timers, for
 verifying onboarding pacing / announcements without real-time simulation) for console
 tinkering and
 automated smoke tests.

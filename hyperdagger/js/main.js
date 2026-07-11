@@ -9,8 +9,8 @@ import { InputManager } from './input.js?v=13';
 import { Player } from './player.js?v=10';
 import { DaggerPool } from './daggers.js?v=10';
 import { GemPool } from './gems.js?v=10';
-import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=10';
-import { Skull, Wraith, Splitter, MiniSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=10';
+import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=14';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=14';
 import { OrbPool } from './bullets.js?v=7';
 import { AudioKit } from './audio.js?v=10';
 
@@ -24,7 +24,7 @@ const SERPENT_CAP = 2;
 const ENEMY_NAMES = {
   skull: 'a skull', brute: 'a brute', serpent: 'the serpent', spider: 'a spider',
   watcher: 'a watcher', blinker: 'a blinker', leviathan: 'THE LEVIATHAN',
-  thorn: 'a thorn spike', orb: 'an orb', totem: 'a totem',
+  thorn: 'a thorn spike', orb: 'an orb', totem: 'a totem', dread: 'the DREAD SKULL',
 };
 
 // player-tunable options (pause menu), persisted across sessions
@@ -34,14 +34,26 @@ const opts = Object.assign(
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
 
 // Devil-Daggers-style dagger levels, advanced by collecting gems.
-const LEVEL_GEMS = [0, 0, 10, 30]; // gems needed to reach index level
+const LEVEL_GEMS = [0, 0, 10, 30, 70]; // gems needed to reach index level
 const WEAPON = [
   null,
   { stream: 13, homing: false },
   { stream: 18, homing: false },
   { stream: 18, homing: true },
+  { stream: 26, homing: true }, // LV4 — the crimson hand (DD's fourth tier)
 ];
-const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10, watcher: 1, blinker: 1 };
+const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10, watcher: 1, blinker: 1, dread: 3 };
+
+// The gauntlet itself evolves with the weapon (DD's hand upgrades): knuckle
+// glow at LV2, red veins at LV3, full crimson-and-fire at LV4. Keys are the
+// hand model's palette letters; retint() rewrites just those voxels.
+const GAUNTLET_TIERS = [
+  null,
+  { G: 0x3a3a3a, D: 0x222222, H: 0x555555, B: [1.25, 1.25, 1.25] },      // base
+  { G: 0x3a3a3a, D: 0x222222, H: [1.35, 1.35, 1.35], B: [1.5, 1.5, 1.5] }, // knuckle glow
+  { G: 0x3a3a3a, D: [1.7, 0.14, 0.14], H: [1.35, 1.35, 1.35], B: [1.5, 1.5, 1.5] }, // red veins
+  { G: 0x4a1010, D: [2.2, 0.16, 0.16], H: [2.0, 0.2, 0.2], B: [1.8, 0.6, 0.6] },    // crimson hand
+];
 
 // Style/combo meter (Returnal/DMC-flavoured): fast kills and dash-throughs
 // fill it, idling bleeds it out. Rank climbs D→SSS; it drives music intensity
@@ -61,7 +73,7 @@ const STYLE_CAP = 150;
 // style awarded per kill by enemy type (dash-through orbs + gems add their own)
 const STYLE_GAIN = {
   skull: 3, brute: 6, serpent: 5, spider: 5, watcher: 5,
-  blinker: 5, leviathan: 30, thorn: 0,
+  blinker: 5, leviathan: 30, thorn: 0, dread: 8,
 };
 
 // ---------------------------------------------------------------- renderer
@@ -139,10 +151,33 @@ function makeFloorTexture() {
   return tex;
 }
 
-// the grid simply stops at the arena edge — no barrier visual
+// the grid simply stops at the arena edge — no barrier visual. The grid
+// pulses with the music and flushes red with trauma (HYPERDEMON's reactive
+// world): uPulse brightens the lines on the beat, uRed tints them.
+const floorMat = new THREE.ShaderMaterial({
+  uniforms: {
+    map: { value: makeFloorTexture() },
+    uPulse: { value: 0 },
+    uRed: { value: 0 },
+  },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D map;
+    uniform float uPulse;
+    uniform float uRed;
+    varying vec2 vUv;
+    void main() {
+      vec3 col = texture2D(map, vUv * 14.0).rgb;
+      col *= 1.0 + uPulse * 0.9;                                  // beat glow
+      col = mix(col, col * vec3(2.2, 0.25, 0.25), clamp(uRed, 0.0, 1.0)); // hurt flush
+      gl_FragColor = vec4(col, 1.0);
+    }`,
+});
 const floor = new THREE.Mesh(
   new THREE.CircleGeometry(ARENA_R, 64).rotateX(-Math.PI / 2),
-  new THREE.MeshBasicMaterial({ map: makeFloorTexture() }),
+  floorMat,
 );
 scene.add(floor);
 
@@ -221,6 +256,11 @@ handGroup.position.set(0.32, -0.4, -1.05); // far enough that it reads as a hand
 camera.add(handGroup);
 let recoil = 0;
 
+/** Re-skin the gauntlet to match the current dagger level (DD's evolving hand). */
+function applyGauntlet(lv) {
+  hand.retint(GAUNTLET_TIERS[Math.min(lv, GAUNTLET_TIERS.length - 1)]);
+}
+
 // ---------------------------------------------------------------- HUD
 const ui = document.getElementById('canvas-ui');
 const uiCtx = ui.getContext('2d');
@@ -284,7 +324,9 @@ let nextLevAt = 0;
 let nextWatcherAt = 0;
 let nextThornAt = 0;
 let nextBlinkerAt = 0;
+let nextDreadAt = 0;
 let serpentsSpawned = 0;
+let musicI = 0; // smoothed music intensity, reused by the reactive floor
 let announced = {};
 let deathAt = 0;
 let trauma = 0;
@@ -309,7 +351,7 @@ function showMenu() {
     `<h1>HYPER DAGGER</h1>
      <p class="sub">a Devil Daggers &times; HYPERDEMON homage</p>
      <p>survive the swarm &mdash; time is your only score<br>
-     gems from heavy kills level your daggers up &mdash; level 3 daggers <b>home</b></p>
+     gems from heavy kills level your daggers up (10 / 30 / 70) &mdash; LV 3 <b>homes</b>, LV 4 is <b>the crimson hand</b></p>
      <p class="keys">desktop &mdash; mouse look &middot; <b>fire is automatic while you move</b> (hold <b>LMB</b> when still) &middot; <b>WASD</b> &middot; <b>SPACE</b> jump &times;2 &middot; <b>SHIFT</b> dash &middot; <b>ESC</b> options<br>
      gamepad &mdash; sticks move / look &middot; <b>RT</b> fire &middot; <b>A</b> jump &times;2 &middot; <b>B</b> dash<br>
      touch &mdash; left stick moves &middot; right stick looks &middot; fire is automatic &middot; <b>tap either stick = jump &times;2</b> &middot; <b>flick either stick = dash</b> &middot; &#10074;&#10074; pause</p>
@@ -402,8 +444,11 @@ function resetRun() {
   nextSpiderAt = 75;
   nextBlinkerAt = 90;
   nextSerpentAt = 100;
+  nextDreadAt = 120;
   nextLevAt = 150;
   serpentsSpawned = 0;
+  musicI = 0;
+  applyGauntlet(1);
   announced = {};
   trauma = 0;
   fovKick = 0;
@@ -752,6 +797,18 @@ function director(dt) {
     }
     nextBlinkerAt = gameTime + Math.max(14, 25 - gameTime * 0.02);
   }
+  if (gameTime >= nextDreadAt) {
+    if (enemies.filter(e => e.type === 'dread').length < 2) {
+      announce('dread', 'THE DREAD SKULL');
+      const at = ringSpot(15).clone();
+      audio.spawn();
+      telegraph(at, [2.6, 0.2, 0.2], 0.9, () => {
+        at.y = 1.5;
+        enemies.push(new DreadSkull(scene, at, Math.min(4, (gameTime - 110) * 0.008)));
+      });
+    }
+    nextDreadAt = gameTime + Math.max(24, 40 - gameTime * 0.03);
+  }
   if (gameTime >= nextLevAt) {
     if (!enemies.some(e => e.type === 'leviathan')) {
       // the boss always gets its entrance, even on respawns
@@ -805,9 +862,11 @@ function onGemsCollected(n) {
   const lv = levelForGems(gemCount);
   if (lv > weaponLv) {
     weaponLv = lv;
+    applyGauntlet(lv);
     audio.levelup();
-    toast(lv === 3 ? 'DAGGERS LEVEL 3 — HOMING' : `DAGGERS LEVEL ${lv}`);
-    trauma = Math.max(trauma, 0.3);
+    toast(lv === 4 ? 'LEVEL 4 — THE CRIMSON HAND'
+      : lv === 3 ? 'DAGGERS LEVEL 3 — HOMING' : `DAGGERS LEVEL ${lv}`);
+    trauma = Math.max(trauma, lv === 4 ? 0.5 : 0.3);
   }
 }
 
@@ -1027,13 +1086,15 @@ function playerStruck(sx, sz, killerType) {
 }
 
 // skulls shove each other apart so the swarm doesn't stack into one voxel blob
+const SEPARATES = new Set(['skull', 'brute', 'dread']);
+
 function separateSkulls() {
   for (let i = 0; i < enemies.length; i++) {
     const a = enemies[i];
-    if (a.type !== 'skull' && a.type !== 'brute') continue;
+    if (!SEPARATES.has(a.type)) continue;
     for (let j = i + 1; j < enemies.length; j++) {
       const b = enemies[j];
-      if (b.type !== 'skull' && b.type !== 'brute') continue;
+      if (!SEPARATES.has(b.type)) continue;
       const dx = b.pos.x - a.pos.x, dy = b.pos.y - a.pos.y, dz = b.pos.z - a.pos.z;
       const d2 = dx * dx + dy * dy + dz * dz;
       const min = a.radius + b.radius;
@@ -1140,6 +1201,7 @@ function step(dt) {
   for (const e of enemies) if (e.type !== 'egg' && e.type !== 'totem') threats++;
   const intensity = Math.min(1,
     threats / 16 * 0.5 + Math.min(gameTime / 150, 1) * 0.25 + (styleVal / STYLE_CAP) * 0.35);
+  musicI += (intensity - musicI) * Math.min(1, dt * 3); // smoothed for the floor
   audio.musicUpdate(intensity);
   if (mode === 'hyper' && state === 'playing') {
     lifeT -= dt; // the clock is your life
@@ -1152,7 +1214,7 @@ function step(dt) {
     elTimer.style.color = '';
     elKills.textContent = `${kills} kills`;
   }
-  elGems.textContent = `◆ ${gemCount} · LV ${weaponLv}${weaponLv >= 3 ? ' HOMING' : ''}`;
+  elGems.textContent = `◆ ${gemCount} · LV ${weaponLv}${weaponLv >= 4 ? ' CRIMSON' : weaponLv >= 3 ? ' HOMING' : ''}`;
 }
 
 function updateFeel(dt) {
@@ -1165,6 +1227,12 @@ function updateFeel(dt) {
     camera.position.y += (Math.random() - 0.5) * t2 * 0.08;
   }
   chromaPass.uniforms.uAmount.value = 0.0012 + t2 * 0.02;
+  // reactive floor: grid thumps on the 138 BPM beat scaled by music intensity,
+  // and flushes red when you take trauma
+  if (state !== 'playing' || paused) musicI = Math.max(0, musicI - dt * 0.8);
+  const beat = 1 - ((performance.now() / 1000) * (138 / 60)) % 1;
+  floorMat.uniforms.uPulse.value = musicI * (0.25 + 0.75 * beat * beat);
+  floorMat.uniforms.uRed.value = t2 * 0.85;
   fovKick = Math.max(0, fovKick - dt * 18);
   const fov = opts.fov + player.dashK * 9 + fovKick;
   if (Math.abs(camera.fov - fov) > 0.01) {
@@ -1215,6 +1283,7 @@ window.__hd = {
     spawnSplitter() { const p = ringSpot(8).clone(); p.y = 1.2; enemies.push(new Splitter(scene, p)); },
     spawnThorn() { spawnThorn(player.feet.x, player.feet.z); },
     spawnBlinker() { const p = ringSpot(8).clone(); p.y = 1.2; enemies.push(new Blinker(scene, p, ARENA_R - 1)); },
+    spawnDread() { const p = ringSpot(8).clone(); p.y = 1.5; enemies.push(new DreadSkull(scene, p)); },
     spawnGhostSerpent() { spawnSerpent(true); },
     spawnLeviathan() { enemies.push(new Leviathan(scene, 5)); },
     setLife(n) { lifeT = n; },
@@ -1223,7 +1292,7 @@ window.__hd = {
     getSchedule() {
       return {
         nextTotemAt, nextWatcherAt, nextBruteAt, nextThornAt,
-        nextSpiderAt, nextBlinkerAt, nextSerpentAt, nextLevAt,
+        nextSpiderAt, nextBlinkerAt, nextSerpentAt, nextDreadAt, nextLevAt,
       };
     },
   },
