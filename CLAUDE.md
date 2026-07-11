@@ -25,6 +25,33 @@ jsDelivr CDN via an importmap, same as toko-drop).
 > separate curated site root that already holds `toko-drop/`), **not** `main`. Demo
 > updates must be copied onto `gh-pages` to go live at `/Suds-Jack/paperboy/`.
 
+### Hyper Dagger (`hyperdagger/`)
+A first-person **Devil Daggers × HYPERDEMON homage** on Three.js r167 — survive a swarm
+of **voxel** skulls on a neon disc in a synthwave void; survival time is the only score.
+Enemies are string-art voxel models (one `InstancedMesh` per enemy, per-voxel colors) and
+deaths explode them into **physical voxel debris** (gravity, floor bounce, tumble) from a
+shared pool. Combat: **hold to stream daggers**, gems drop from heavy kills and level
+the daggers up (LV 3 = **homing**); enemy roster is skulls, crowned skulls, splitter
+skulls (burst into minis), brutes, drifting totem spawners (which also pulse **jumpable
+orb rings**), **watcher** drones firing aimed orb volleys, thorn spikes erupting under
+the player, **blinkers** that teleport toward you, a **segmented serpent** whose rings
+gib individually (its pale **ghost** variant is armored from the front — shoot the rings
+from behind), spider gem-thieves that also lay **egg sacs** (hatch 2 skulls unless shot,
+harmless to touch), and the Leviathan boss. Returnal-inspired bullet-hell: enemy orbs are slow, readable,
+and the **dash phases through projectiles** (never bodies). Movement: **jump + double
+jump**, dash with FOV kick (requests buffered 0.25 s across the cooldown). Art is **black & white with dark red as the only contrast color** — the neon grid
+just stops at the arena edge (no barrier visual). Desktop: pointer-lock mouse look,
+**fire is automatic while moving** (hold LMB when still), Space jump ×2, Shift dash,
+Esc = pause/options. Touch: dual on-screen sticks — left moves, right looks; **firing is
+automatic while moving** (or while the look stick is held); **tap either stick = jump ×2,
+flick either stick = dash**; ⏸ button top-right. The pause menu carries persisted
+options (`hyperDaggerOpts`): game speed ×1/1.25/1.5, FOV 70/80/90, look sensitivity, and smear/
+shake/chroma toggles. Touch play requests fullscreen + landscape lock on start. Onboarding
+is paced across the first ~150s (one new enemy roughly every 15-20s) and recurring spawns
+tighten over time; the death screen recaps what killed you, a kill breakdown, and your
+last 10 run times. No build step — open `hyperdagger/index.html` (three.js via jsDelivr
+importmap, same as toko-drop). Same `gh-pages` deploy caveat as paperboy.
+
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
 Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
 
@@ -66,6 +93,17 @@ paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new p
     paper.js    # Object-pooled thrown papers with arc/gravity physics + landing detection
     input.js    # Touch stick (steer/throttle) + two throw buttons; WASD/ZX keyboard fallback
     audio.js    # WebAudio bleep kit (throw/deliver/smash/pickup/crash/day-clear)
+hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel enemies
+  index.html
+  js/
+    main.js     # Scene (grid arena, rainbow sky, afterimage/bloom/chroma), director, combat, HUD, style meter
+    voxel.js    # String-art voxel models + parser, VoxelSprite (InstancedMesh), DebrisPool physics
+    enemy.js    # Skull/Wraith, Brute, Totem (spawner), Serpent (chain), Spider (thief), Leviathan
+    daggers.js  # Object-pooled dagger projectiles; homing steer at LV 3; segment hit tests
+    gems.js     # DD-style gem drops: ballistic scatter, hover, player magnet, collect
+    player.js   # First-person controller: yaw/pitch, WASD/stick strafe, jump, dash, head-bob
+    input.js    # Pointer-lock mouse+WASD, gamepad (sticks/RT/A/B), or dual touch sticks; tap-vs-hold fire
+    audio.js    # WebAudio synth kit (fire/hit/gib/gem/levelup/dash/roar/death + drone + intensity music)
 ```
 
 ## Toko Drop — Architecture Notes
@@ -85,6 +123,131 @@ paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new p
 **Dash:** 0.18 s at 26 units/s, 0.9 s cooldown, invincible during dash. Direction uses last aim direction if stick was released before movement.
 
 **Wave progression:** when all 4 enemies are dead, `spawnWave()` removes old meshes from scene and spawns fresh enemies at `0.6 × HALF` radius in a cross pattern. Wave counter displayed in UI.
+
+## Hyper Dagger (`hyperdagger/`) — Architecture Notes
+
+**Voxel pipeline (`voxel.js`):** `MODELS` defines enemies as string-art layers —
+`layers[0]` is the bottom slice, each layer an array of rows, row 0 the *front* face
+(mapped to +z so `Object3D.lookAt(player)` points the face at the player). Palette values
+are hex ints, or `[r,g,b]` arrays with components > 1 for **HDR glow voxels** (eyes,
+totem veins) that trip the bloom threshold while bone/body stays matte. `VoxelSprite`
+bakes a model into one `InstancedMesh` (per-voxel `setColorAt`; hit-flash brightens
+`material.color`, which multiplies every instance). `DebrisPool` is a single 1600-cube
+`InstancedMesh`: gravity −28, floor bounce ×−0.38 with friction, Euler tumble, shrink-out
+over the last 0.3 s; `burst(worldVoxels, …)` explodes a dead enemy's actual voxels
+outward from their centroid plus the killing dagger's impulse.
+
+**Combat:** hold LMB (or hold the right touch stick) = dagger stream. Weapon levels via
+gems — `LEVEL_GEMS = [0,0,10,30]`, `WEAPON[lv]` sets stream rate / homing. LV 3 daggers steer toward the best target in a
+~37° cone (`DaggerPool.update(dt, targets)`). Each dagger keeps `prev` position and
+collisions use **segment-vs-sphere** tests so fast projectiles can't tunnel. Skulls take
+knockback along the dagger direction (brutes mostly resist via lower `knock`).
+Enemy → player kill test is against both torso and camera positions; totems don't kill,
+they `player.pushOut(...)` as solids. Gems (`gems.js`) scatter ballistically, hover, then
+magnet to the player inside 5.5 u.
+
+**Spawn director (`main.js`):** all heavy spawns are **telegraphed** — an additive light
+beam marks the spot for 0.7 s (`pending[]`), then the enemy appears. First-appearance
+times are spread across the first ~150s so mechanics land one at a time rather than
+piling up (each debut in `resetRun()`, each recurring cadence tightening via
+`Math.max(floor, base - gameTime * rate)` in `director()`; each debut fires a one-per-run
+`announce()` — big toast + `audio.stinger()`, keys in `announced{}`, the Leviathan
+re-announcing on every respawn): totems (cap 6, slow orbit
+drift) from t=0 every 24s tightening to 16s, exhaling skulls (global cap 46, 30% gilded
+`Wraith` after 60s) at a tightening interval and pulsing an orb ring every 6s; **watchers**
+(cap 3) from t=25 every 20s tightening to 12s; brutes from t=45 every 16s tightening to
+10s; **thorns** from t=60 (0.9s sigil warning, lethal below `feet.y` 1.4) every 12s
+tightening to 6s; **spiders** (cap 2) from t=75 every 30s tightening to 20s, laying an egg
+sac every ~10s; **blinkers** (cap 3) from t=90 every 25s tightening to 14s; **serpents**
+(cap 2) from t=100 every 45s tightening to 32s — every second serpent is a ghost; the
+**Leviathan** from t=150, one at a time, respawning every 120s. Totem exhales roll
+splitters (15%, > 45s) before crowned skulls (30%, > 60s). A `Serpent` is a controller
+owning 12 `SerpentSegment` enemies (pushed into the main `enemies` array so the normal
+collision loops apply); the head weaves around the player and dive-bombs every 8s,
+surviving segments chain-follow at 0.95 u spacing, and each ring gibs + drops a gem
+individually. Spiders skitter on the floor and eat loose gems — killing one refunds
+everything it swallowed + 1. The Leviathan is a 60-HP god-head at the arena centre that
+exhales skulls and every 9s drags the player toward itself for 1.8s (`player.nudge` at
+7 u/s — walk or dash out); it drops 10 gems. A pairwise separation pass (skull/brute
+only) keeps the swarm from collapsing into one blob.
+
+**Death recap (`main.js`):** `killsByType` tallies kills by `e.type` (Wraith/Splitter/
+MiniSkull all report `'skull'` — they never override the base type, so the breakdown
+line only ever needs the handful of distinct enemy types) and `lastKiller` is
+overwritten by every `playerStruck(sx, sz, killerType)` call, so on the fatal call it's
+already the correct cause — no post-hoc reordering needed. `showDeath()` builds a
+"felled by ___ · daggers LV_" line plus the kill breakdown, then reads/writes a
+`hyperDaggerHistory` localStorage array (last 10 runs, newest first) and renders
+`hist.slice(1, 9)` — skipping index 0, the run that was just pushed — as the "recent"
+line, since showing the run you're already looking at the big stat line for is
+redundant. TIME OUT (HYPER's clock hitting 0 in `step()`) bypasses the cause line
+entirely rather than blaming a stale `lastKiller` from an earlier survived hit.
+
+**Modes:** menu-button toggle, persisted in `localStorage` (`hyperDaggerMode`). PURE =
+one-touch death (DD). HYPER = HYPERDEMON rules: `lifeT` drains in real time (start 30,
+cap 60), kills add `e.score` seconds, an enemy touch costs 10 + `player.nudge`
+knockback + 1.2 s `mercyT` i-frames, and 0 → `die(true)` = TIME OUT. Hi-scores are
+per-mode (`hyperDaggerHi` / `hyperDaggerHiHyper`).
+
+**Input quirks:** shooting is minimalistic — the stream is automatic whenever move
+input is nonzero (`getMove()` length > 0.15), and holding LMB / the look stick fires
+while standing still. A sub-250 ms / sub-12 px tap on EITHER stick = jump (works
+mid-air for the double jump; a second finger tapping an occupied half also jumps); a
+fast ≥40 px flick within the last 150 ms before release on **either stick = dash**
+along the screen-space flick direction. No on-screen buttons —
+touches that start on DOM controls (`button`, `#pauseBtn`) are left alone so the pause
+menu stays tappable. Pointer-lock mousemove deltas with `hypot > 400` are dropped —
+some browsers emit one giant bogus delta right after locking. On desktop the pause
+button can't be clicked while pointer-locked (lock routes all events to the canvas) —
+Esc is the pause path there; the button exists for touch. **Gamepad** is a third path:
+`input.pollGamepad()` runs once per frame in `animate()`, reading the first connected
+controller and feeding the SAME `getMove`/`getLookRate`/`firing` getters as
+mouse+keyboard (left stick move, right stick look-rate, RT/RB hold-fire) with A =
+jump ×2 and B/LT = dash edge-detected in the poll — so nothing downstream knows a pad
+is in use. Axes are deadzoned (0.18) and the move vector clamped to unit length. When
+no pad is present the getters fall through to the existing mouse/keyboard/touch logic.
+
+**Style meter (`main.js`):** a Returnal/DMC-style rank that rewards chaining. `addStyle`
+adds by event (per-type kills via `STYLE_GAIN`, +4 per dash-through-orb credited once
+via `o.phased`, +n on gem pickup) into `styleVal` (cap 150); `step()` bleeds it every
+frame at `6 + styleVal*0.05` per second so the top tiers (`STYLE_TIERS` D→SSS) stay
+fleeting and demand a continuous chain. The tier drives a HUD badge (`#style` rank +
+`×mult` + fill bar, `updateStyleHud()`), folds into music intensity (0.35 weight
+alongside threat count and run progress), and only **S+** rank-ups toast/flourish so
+lower crossings never clobber an enemy-debut announcement. `stylePeakIdx` is the
+run-end "peak rank" recap line. Debug: `__hd.debug.addStyle(n)` / `getStyle()`.
+
+**Render / feel:** ACES tone mapping + `EffectComposer` (`RenderPass` →
+`AfterimagePass` 0.72 (HYPERDEMON motion smear) → `UnrealBloomPass` 0.7/0.45/0.6 →
+chromatic-aberration `ShaderPass` → `OutputPass`); smear/shake/chroma each sit behind a
+pause-menu toggle. Bloom is *selective* via HDR colors (white daggers/blade/crown, red
+eyes/veins/gems exceed 1.0). A **trauma** value (kills, shotgun, dash,
+death) drives camera shake + the chroma amount; dash and shotgun kick the FOV. The
+first-person **voxel gauntlet** is a camera child (`scene.add(camera)` required) at
+z −1.05 — closer and it smears into a slab at the screen corner; its glove is
+checkerboarded because unlit same-color voxels read as one flat polygon. Death = red
+vignette + slow-mo debris.
+
+**Audio (`audio.js`):** all-synth, no assets. A detuned-saw **drone** underlays every run;
+over it sits an **intensity-driven music layer** — an A1 minor-pentatonic arpeggio on a
+lookahead scheduler (`musicUpdate(intensity)` called each frame schedules 16th notes
+~0.15 s ahead so it stays steady regardless of frame rate; falling >0.25 s behind, e.g.
+after a pause, resyncs instead of bursting). Voices layer in by intensity (computed in
+`step()` from live-threat count + run progress): bass always, arp > 0.25, hi-hat tick
+> 0.5, lead counter-melody > 0.75. `musicStart/Stop` bracket the drone in `startGame`/
+`die`; a MUSIC pause-menu toggle (`opts.music`) reconciles live via `applyOpts` →
+`musicPlaying()`.
+
+Sky is a `BackSide` sphere: greyscale band shimmer over black with one dark-red ember
+glow at the horizon (`fog: false`); the floor is a `CanvasTexture` white-on-black grid
+on a circle of exactly `ARENA_R` — the grid simply ends at the edge, no barrier mesh. Death/menu/pause are DOM overlays; touch sticks
+are drawn on the `#canvas-ui` overlay each frame. Hi-score lives in `localStorage` under
+`hyperDaggerHi`. `window.__hd` exposes `{enemies, player, debris, daggers, gems,
+serpents, audio, debug}` (debug: `addGems(n)`, `spawnSerpent()`, `spawnSpider()`,
+`spawnLeviathan()`, `setTime(t)` + `getSchedule()` — the raw `nextXAt` timers, for
+verifying onboarding pacing / announcements without real-time simulation) for console
+tinkering and
+automated smoke tests.
 
 ## Paper Route (`paperboy/`) — Architecture Notes
 

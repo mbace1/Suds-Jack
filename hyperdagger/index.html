@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Hyper Dagger</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; touch-action: none; }
+    #canvas-game { display: block; }
+    #canvas-ui {
+      position: fixed;
+      top: 0; left: 0;
+      pointer-events: none;
+    }
+    #hud {
+      position: fixed;
+      top: max(14px, env(safe-area-inset-top));
+      left: 50%;
+      transform: translateX(-50%);
+      color: #f0f0f0;
+      font-family: monospace;
+      text-align: center;
+      pointer-events: none;
+      user-select: none;
+      text-shadow: 0 0 16px rgba(200, 30, 30, 0.8);
+    }
+    #timer { font-size: 34px; font-weight: bold; }
+    #kills { font-size: 13px; color: #9a9a9a; }
+    #gems { font-size: 13px; color: #c81e1e; margin-top: 2px; }
+    #style {
+      margin-top: 6px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    #style .row {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 6px;
+    }
+    #styleRank {
+      font-size: 20px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    #styleMult { font-size: 12px; color: #9a9a9a; }
+    #styleBar {
+      width: 92px;
+      height: 3px;
+      margin: 3px auto 0;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    #styleFill {
+      height: 100%;
+      width: 0%;
+      background: #f0f0f0;
+      transition: width 0.12s linear;
+    }
+    #pauseBtn {
+      position: fixed;
+      top: max(12px, env(safe-area-inset-top));
+      right: max(12px, env(safe-area-inset-right));
+      width: 42px; height: 42px;
+      font-family: monospace;
+      font-size: 16px;
+      color: #f0f0f0;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+      display: none;
+    }
+    #pauseBtn:hover { background: rgba(255, 255, 255, 0.14); }
+    #toast {
+      position: fixed;
+      top: 22%; left: 50%;
+      transform: translateX(-50%);
+      color: #f0f0f0;
+      font-family: monospace;
+      font-size: 22px;
+      letter-spacing: 3px;
+      pointer-events: none;
+      user-select: none;
+      text-shadow: 0 0 24px rgba(200, 30, 30, 0.9);
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+    #toast.show { opacity: 1; }
+    #crosshair {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: #f0f0f0;
+      font-family: monospace;
+      font-size: 18px;
+      pointer-events: none;
+      user-select: none;
+      display: none;
+      text-shadow: 0 0 8px rgba(200, 30, 30, 0.9);
+    }
+    #vignette {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 30%, rgba(160, 10, 10, 0.8) 100%);
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    #msg {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(92vw, 640px);
+      color: #e8e8e8;
+      font-family: monospace;
+      text-align: center;
+      pointer-events: none;
+      user-select: none;
+      line-height: 1.5;
+      text-shadow: 0 0 24px rgba(200, 30, 30, 0.8);
+      display: none;
+    }
+    #msg h1 { font-size: 44px; letter-spacing: 6px; color: #ffffff; }
+    #msg h1.dead { color: #c81e1e; }
+    #msg .sub { color: #9a9a9a; margin-bottom: 12px; }
+    #msg .big { font-size: 26px; color: #ffffff; }
+    #msg .cause { font-size: 13px; color: #c81e1e; margin-top: 4px; }
+    #msg .breakdown { font-size: 11px; color: #8a8a8a; margin-top: 6px; }
+    #msg .history { font-size: 11px; color: #6a6a6a; margin-top: 10px; }
+    #msg .keys { font-size: 12px; opacity: 0.8; margin-top: 12px; }
+    #msg .go { margin-top: 16px; color: #c81e1e; animation: pulse 1.2s ease-in-out infinite; }
+    #modeBtn, #msg button.opt {
+      pointer-events: auto;
+      cursor: pointer;
+      margin: 4px 3px 0;
+      padding: 8px 14px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #f0f0f0;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+    }
+    #modeBtn:hover, #msg button.opt:hover { background: rgba(255, 255, 255, 0.14); }
+    #msg button.opt.on {
+      color: #fff;
+      border-color: #c81e1e;
+      background: rgba(200, 30, 30, 0.25);
+    }
+    #msg .optrow { margin-top: 8px; }
+    #msg .optrow span {
+      display: inline-block;
+      min-width: 64px;
+      font-size: 12px;
+      color: #9a9a9a;
+    }
+    @keyframes pulse { 50% { opacity: 0.35; } }
+  </style>
+</head>
+<body>
+  <canvas id="canvas-game"></canvas>
+  <canvas id="canvas-ui"></canvas>
+  <div id="hud">
+    <div id="timer">0.0</div>
+    <div id="kills">0 kills</div>
+    <div id="gems">◆ 0 · LV 1</div>
+    <div id="style">
+      <div class="row"><span id="styleRank"></span><span id="styleMult"></span></div>
+      <div id="styleBar"><div id="styleFill"></div></div>
+    </div>
+  </div>
+  <div id="toast"></div>
+  <button id="pauseBtn">&#10074;&#10074;</button>
+  <div id="crosshair">+</div>
+  <div id="vignette"></div>
+  <div id="msg"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="js/main.js?v=13"></script>
+</body>
+</html>
