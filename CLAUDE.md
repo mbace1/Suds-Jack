@@ -266,8 +266,13 @@ run-end "peak rank" recap line. Debug: `__hd.debug.addStyle(n)` / `getStyle()`.
 
 **Render / feel:** ACES tone mapping + `EffectComposer` (`RenderPass` →
 `AfterimagePass` 0.72 (HYPERDEMON motion smear) → `UnrealBloomPass` 0.7/0.45/0.6 →
-chromatic-aberration `ShaderPass` → `OutputPass`); smear/shake/chroma each sit behind a
-pause-menu toggle. Bloom is *selective* via HDR colors (white daggers/blade/crown, red
+chromatic-aberration `ShaderPass` → dash-speedlines `ShaderPass` (radial spokes driven
+by `dashK`, gated `opts.motion && tier.smear`) → `OutputPass`); smear/shake/chroma each
+sit behind a pause-menu toggle. **Ground VFX (`main.js`):** a 96-cap `InstancedMesh` of
+blob shadows under player + enemies (scale falls with altitude, totems skipped —
+z-fight), pooled additive impact sparks on dagger hits, and dissolving shockwave rings
+on heavy kills (`spawnShockwave`); all updated in `step()`/death slow-mo, debug via
+`getVfx()`. Bloom is *selective* via HDR colors (white daggers/blade/crown, red
 eyes/veins/gems exceed 1.0). A **trauma** value (kills, shotgun, dash,
 death) drives camera shake + the chroma amount; dash and shotgun kick the FOV. The
 first-person **voxel gauntlet** is a camera child (`scene.add(camera)` required) at
