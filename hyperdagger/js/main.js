@@ -145,6 +145,38 @@ const bloom = new UnrealBloomPass(
 composer.addPass(bloom);
 const chromaPass = new ShaderPass(ChromaShader);
 composer.addPass(chromaPass);
+
+// dash speedlines: additive radial streaks from screen centre while dashK is
+// hot (HYPERDEMON's punched-through-space read). Enabled only mid-dash, and
+// gated by the motion toggle + the same perf tier as the smear.
+const SpeedShader = {
+  uniforms: { tDiffuse: { value: null }, uAmount: { value: 0 }, uTime: { value: 0 } },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform float uAmount;
+    uniform float uTime;
+    varying vec2 vUv;
+    float hash(float n) { return fract(sin(n) * 43758.5453); }
+    void main() {
+      vec4 col = texture2D(tDiffuse, vUv);
+      vec2 d = vUv - 0.5;
+      float ang = atan(d.y, d.x);
+      float r = length(d);
+      // ~60 radial spokes, randomly gated per-spoke, sliding outward
+      float spoke = floor((ang + 3.14159) * 9.55);
+      float gate = step(0.72, hash(spoke + floor(uTime * 14.0) * 61.0));
+      float line = smoothstep(0.92, 1.0, fract((ang + 3.14159) * 9.55));
+      float mask = smoothstep(0.12, 0.55, r); // keep the centre clean
+      col.rgb += vec3(1.0) * line * gate * mask * uAmount * 0.5;
+      gl_FragColor = col;
+    }`,
+};
+const speedPass = new ShaderPass(SpeedShader);
+speedPass.enabled = false;
+composer.addPass(speedPass);
 composer.addPass(new OutputPass());
 
 // ---------------------------------------------------------------- arena
@@ -271,6 +303,109 @@ const orbs = new OrbPool(scene);
 const audio = new AudioKit();
 const enemies = [];
 const serpents = [];
+
+// ------------------------------------------------------------- ground VFX
+// Blob shadows: flat dark discs under the player + every enemy so unlit
+// voxels stop floating — height finally reads (jumps, serpent dives, orbs).
+// One InstancedMesh; scale shrinks with altitude to fake soft attenuation.
+const SHADOW_CAP = 96;
+const shadows = new THREE.InstancedMesh(
+  new THREE.CircleGeometry(1, 20).rotateX(-Math.PI / 2),
+  new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.4, depthWrite: false }),
+  SHADOW_CAP,
+);
+shadows.frustumCulled = false;
+shadows.renderOrder = 1; // above the floor, below everything else
+scene.add(shadows);
+const _shM = new THREE.Matrix4();
+const _shQ = new THREE.Quaternion();
+const _shS = new THREE.Vector3();
+const _shP = new THREE.Vector3();
+
+function updateShadows() {
+  let i = 0;
+  const put = (x, y, z, base) => {
+    if (i >= SHADOW_CAP) return;
+    const k = Math.max(0, 1 - y / 9); // higher = smaller, gone by y=9
+    if (k <= 0.05) return;
+    _shM.compose(
+      _shP.set(x, 0.02, z),
+      _shQ.identity(),
+      _shS.setScalar(base * (0.55 + 0.45 * k) * k),
+    );
+    shadows.setMatrixAt(i++, _shM);
+  };
+  put(player.feet.x, player.feet.y, player.feet.z, 0.62);
+  for (const e of enemies) {
+    if (e.type === 'totem') continue; // grounded pillar — a disc just z-fights
+    e.center(_shP);
+    const y = _shP.y;
+    put(e.pos.x, Math.max(0, y - e.radius), e.pos.z, e.radius * 1.35);
+  }
+  shadows.count = i;
+  shadows.instanceMatrix.needsUpdate = true;
+}
+
+// Impact sparks (dagger hits) + shockwave rings (heavy kills): tiny pooled
+// additive quads/rings, scale-and-fade — combat juice, no physics.
+const sparks = [];
+const sparkPool = [];
+const sparkGeo = new THREE.PlaneGeometry(0.5, 0.5);
+const sparkMat = new THREE.MeshBasicMaterial({
+  color: new THREE.Color().setRGB(2.2, 0.7, 0.5), transparent: true, opacity: 1,
+  blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+});
+const ringGeo = new THREE.RingGeometry(0.82, 1, 40).rotateX(-Math.PI / 2);
+const ringMat = new THREE.MeshBasicMaterial({
+  color: new THREE.Color().setRGB(2.4, 0.25, 0.25), transparent: true, opacity: 1,
+  blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+});
+
+function spawnSpark(pos, big = false) {
+  let m = sparkPool.pop();
+  if (!m) {
+    if (sparks.length > 40) return;
+    m = new THREE.Mesh(sparkGeo, sparkMat.clone());
+    scene.add(m);
+  }
+  m.visible = true;
+  m.position.copy(pos);
+  m.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+  sparks.push({ m, t: 0.14, max: 0.14, big, ring: false });
+}
+
+function spawnShockwave(pos) {
+  const m = new THREE.Mesh(ringGeo, ringMat.clone()); // rare (heavy kills only) — no pool
+  scene.add(m);
+  m.position.set(pos.x, 0.05, pos.z);
+  sparks.push({ m, t: 0.45, max: 0.45, big: true, ring: true });
+}
+
+function updateSparks(dt) {
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const s = sparks[i];
+    s.t -= dt;
+    const k = Math.max(0, s.t / s.max);
+    if (s.ring) {
+      s.m.scale.setScalar(0.4 + (1 - k) * 7);
+      s.m.material.opacity = k * 0.9;
+    } else {
+      s.m.scale.setScalar((s.big ? 1.6 : 0.8) * (0.4 + (1 - k) * 1.4));
+      s.m.material.opacity = k;
+      s.m.lookAt(camera.position);
+    }
+    if (s.t <= 0) {
+      if (s.ring) {
+        scene.remove(s.m);
+        s.m.material.dispose();
+      } else {
+        s.m.visible = false;
+        sparkPool.push(s.m);
+      }
+      sparks.splice(i, 1);
+    }
+  }
+}
 
 // first-person voxel gauntlet, child of the camera; recoils on fire
 const hand = new VoxelSprite(MODELS.hand);
@@ -485,7 +620,7 @@ function showMenu() {
      <p class="keys">mouse look + <b>WASD</b> &middot; <b>SPACE</b> jump &times;2 &middot; <b>SHIFT</b> dash &middot; <b>ESC</b> options<br>
      gamepad &mdash; sticks &middot; <b>A</b> jump &middot; <b>B</b> dash &nbsp;|&nbsp; touch &mdash; dual sticks &middot; <b>tap = jump</b> &middot; <b>flick = dash</b></p>
      <button id="modeBtn">MODE: ${modeLine}</button>
-     <button id="runKindBtn">RUN: ${runKind === 'daily'
+     <button id="runKindBtn" class="opt">RUN: ${runKind === 'daily'
     ? `DAILY &mdash; everyone faces the ${todayStr()} seed`
     : 'FREE &mdash; pure random'}</button>
      <p class="go">${bestLine()}click / tap to descend</p>`;
@@ -1343,6 +1478,10 @@ function killEnemy(e, dir) {
   debris.burst(e.sprite.worldVoxels(), e.sprite.size,
     _hitDir.copy(dir).multiplyScalar(5), e.type === 'skull' ? 1 : 1.4);
   audio.gib(e.type !== 'skull');
+  // heavy kills stamp a shockwave ring into the floor
+  if (e.type === 'brute' || e.type === 'dread' || e.type === 'leviathan' || e.isHead) {
+    spawnShockwave(_c);
+  }
   trauma = Math.max(trauma, e.type === 'skull' ? 0.18 : 0.35);
   let drops = GEM_DROPS[e.type] || 0;
   if (e.isHead) drops = 2;
@@ -1402,6 +1541,7 @@ function updateCombat(dt) {
       }
       e.hit(1, _hitDir);
       audio.hit();
+      spawnSpark(d.m.position, e.hp <= 0);
       for (let k = 0; k < 2; k++) {
         debris.spawn(d.m.position, e.sprite.randomColor(),
           _seg.set((Math.random() - 0.5) * 5, 2 + Math.random() * 3, (Math.random() - 0.5) * 5),
@@ -1575,6 +1715,8 @@ function step(dt) {
   }
   for (const s of serpents) s.update(dt, camera.position);
   separateSkulls();
+  updateShadows();
+  updateSparks(dt);
   updateThorns(dt);
   orbs.update(dt, ARENA_R + 6);
   updateCombat(dt);
@@ -1623,6 +1765,10 @@ function updateFeel(dt) {
   const beat = 1 - ((performance.now() / 1000) * (138 / 60)) % 1;
   floorMat.uniforms.uPulse.value = musicI * (0.25 + 0.75 * beat * beat);
   floorMat.uniforms.uRed.value = opts.contrast ? 0 : t2 * 0.85;
+  // dash speedlines ride the same gates as the smear (motion + perf tier)
+  speedPass.uniforms.uTime.value += dt;
+  speedPass.uniforms.uAmount.value = player.dashK;
+  speedPass.enabled = player.dashK > 0.02 && opts.motion && PERF_TIERS[perfTier].smear;
   fovKick = Math.max(0, fovKick - dt * 18);
   const fov = opts.fov + (opts.motion ? player.dashK * 9 + fovKick : 0);
   if (Math.abs(camera.fov - fov) > 0.01) {
@@ -1651,6 +1797,7 @@ function animate() {
     const eff = dt * (1 - 0.75 * slowmo);
     debris.update(eff);
     daggers.update(eff);
+    updateSparks(eff); // in-flight sparks/shockwaves finish out in slow-mo
     // killer-focus swing (shortest-path yaw so it never spins the long way)
     if (deathCam && state === 'dead') {
       deathCam.t -= dt;
@@ -1699,6 +1846,7 @@ window.__hd = {
     pulse(n) { runPulse(n ?? ++pulseN); },
     setOpt(k, v) { opts[k] = v; saveOpts(); },
     getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, fov: camera.fov, uRed: floorMat.uniforms.uRed.value }; },
+    getVfx() { return { shadows: shadows.count, sparks: sparks.length, speedOn: speedPass.enabled }; },
     forceFrameTime(ms) { forcedFrameTime = ms; },
     getPerfTier() {
       return {
