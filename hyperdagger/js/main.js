@@ -13,6 +13,7 @@ import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=17';
 import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=17';
 import { OrbPool } from './bullets.js?v=16';
 import { AudioKit } from './audio.js?v=18';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=1';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -420,6 +421,55 @@ const HYPER_HIT_COST = 10;
 let lifeT = HYPER_START;
 let mercyT = 0; // post-hit i-frames (hyper mode)
 
+// -------------------------------------------------------- daily runs
+// DAILY seeds the director from the UTC date + mode so same-day players face
+// the same unlock schedule and per-pulse pick sequences (full determinism is
+// impossible — player input diverges the sim immediately; see rng.js). Only
+// director-level draws use the seeded stream; enemy micro-jitter, debris and
+// gems stay Math.random.
+let runKind = localStorage.getItem('hyperDaggerRunKind') === 'daily' ? 'daily' : 'free';
+let runSeed = 0;
+let runDate = ''; // pinned at resetRun so a run straddling UTC midnight scores against its seed day
+let dateOverride = null; // debug/test hook
+const rng = { next: Math.random }; // director-level stream, swapped per run
+const DAILY_TABLE_KEY = 'hyperDaggerDailyBest';
+
+function todayStr() { return dateOverride ?? utcDateStr(); }
+
+function dailyKey(date, m) { return `hyperDaggerDaily:${date}:${m}`; }
+
+function readDailyTable() {
+  try { return JSON.parse(localStorage.getItem(DAILY_TABLE_KEY) || '[]'); } catch { return []; }
+}
+
+/** Fold a finished daily time into the capped all-time table; returns rank. */
+function pushDailyTable(date, m, t) {
+  const table = readDailyTable();
+  const rank = 1 + table.filter(e => e.t > t).length;
+  table.push({ date, mode: m, t });
+  table.sort((a, b) => b.t - a.t);
+  localStorage.setItem(DAILY_TABLE_KEY, JSON.stringify(table.slice(0, 30)));
+  return rank;
+}
+
+/** Merge stale per-day keys into the table, then delete them — localStorage
+ *  stays bounded at ≤2 live keys (pure+hyper today) plus one 30-entry table. */
+function gcDailyKeys() {
+  const today = todayStr();
+  const stale = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    const m = k && k.match(/^hyperDaggerDaily:(\d{4}-\d{2}-\d{2}):(\w+)$/);
+    if (m && m[1] !== today) stale.push({ k, date: m[1], mode: m[2] });
+  }
+  for (const s of stale) {
+    const t = parseFloat(localStorage.getItem(s.k) || '0');
+    if (t > 0) pushDailyTable(s.date, s.mode, t);
+    localStorage.removeItem(s.k);
+  }
+}
+gcDailyKeys();
+
 function showMenu() {
   elMsg.style.display = 'block';
   const modeLine = mode === 'hyper'
@@ -432,7 +482,10 @@ function showMenu() {
      <p class="keys">mouse look + <b>WASD</b> &middot; <b>SPACE</b> jump &times;2 &middot; <b>SHIFT</b> dash &middot; <b>ESC</b> options<br>
      gamepad &mdash; sticks &middot; <b>A</b> jump &middot; <b>B</b> dash &nbsp;|&nbsp; touch &mdash; dual sticks &middot; <b>tap = jump</b> &middot; <b>flick = dash</b></p>
      <button id="modeBtn">MODE: ${modeLine}</button>
-     <p class="go">${hiScore > 0 ? `best ${hiScore.toFixed(1)}s &mdash; ` : ''}click / tap to descend</p>`;
+     <button id="runKindBtn">RUN: ${runKind === 'daily'
+    ? `DAILY &mdash; everyone faces the ${todayStr()} seed`
+    : 'FREE &mdash; pure random'}</button>
+     <p class="go">${bestLine()}click / tap to descend</p>`;
   document.getElementById('modeBtn').addEventListener('pointerdown', e => {
     e.stopPropagation();
     mode = mode === 'hyper' ? 'pure' : 'hyper';
@@ -440,6 +493,20 @@ function showMenu() {
     hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
     showMenu();
   });
+  document.getElementById('runKindBtn').addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    runKind = runKind === 'daily' ? 'free' : 'daily';
+    localStorage.setItem('hyperDaggerRunKind', runKind);
+    showMenu();
+  });
+}
+
+function bestLine() {
+  if (runKind === 'daily') {
+    const dayBest = parseFloat(localStorage.getItem(dailyKey(todayStr(), mode)) || '0');
+    return dayBest > 0 ? `today's best ${dayBest.toFixed(1)}s &mdash; ` : '';
+  }
+  return hiScore > 0 ? `best ${hiScore.toFixed(1)}s &mdash; ` : '';
 }
 
 // One-time 3-tip card before the very first run — the mechanics that aren't
@@ -526,8 +593,20 @@ function runReport() {
 
 function showDeath(timedOut) {
   const t = gameTime.toFixed(1);
-  const best = gameTime > hiScore;
-  if (best) {
+  // daily times never touch the FREE all-time board — separate economies
+  let best = false;
+  let dailyLines = '';
+  if (runKind === 'daily') {
+    const key = dailyKey(runDate, mode); // runDate, not today — midnight straddle
+    const dayBest = parseFloat(localStorage.getItem(key) || '0');
+    best = gameTime > dayBest;
+    if (best) localStorage.setItem(key, String(gameTime));
+    const rank = pushDailyTable(runDate, mode, gameTime);
+    dailyLines =
+      `<p>${best ? 'NEW DAILY BEST' : `today's best ${dayBest.toFixed(1)}s`} &middot; ${runDate}${
+        rank <= 30 ? ` &middot; daily #${rank} all-time` : ''}</p>`;
+  } else if (gameTime > hiScore) {
+    best = true;
     hiScore = gameTime;
     localStorage.setItem(hiKey(), String(hiScore));
   }
@@ -540,7 +619,7 @@ function showDeath(timedOut) {
     .map(([type, n]) => `${n}&times; ${ENEMY_NAMES[type] || type}`)
     .join(' &middot; ');
 
-  const hist = pushRunHistory({ t: gameTime, mode });
+  const hist = pushRunHistory({ t: gameTime, mode, daily: runKind === 'daily' || undefined });
   pushRunLog(timedOut);
   const historyLine = hist.slice(1, 9).map(r => r.t.toFixed(1) + 's').join(' &middot; ');
   const peakRank = stylePeakIdx > 0 ? ` &middot; peak rank ${STYLE_TIERS[stylePeakIdx].label}` : '';
@@ -551,7 +630,8 @@ function showDeath(timedOut) {
      <p class="big">${t}s &middot; ${kills} kills &middot; ${gemCount} gems</p>
      <p class="cause">${causeLine} &middot; daggers LV${weaponLv}${peakRank}</p>
      ${breakdown ? `<p class="breakdown">${breakdown}</p>` : ''}
-     <p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}${mode === 'hyper' ? ' &middot; hyper' : ''}</p>
+     ${runKind === 'daily' ? dailyLines
+    : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}${mode === 'hyper' ? ' &middot; hyper' : ''}</p>`}
      ${historyLine ? `<p class="history">recent: ${historyLine}</p>` : ''}
      <p class="go">click / tap to retry</p>`;
 }
@@ -563,6 +643,14 @@ function clearEnemies() {
 }
 
 function resetRun() {
+  runDate = todayStr();
+  if (runKind === 'daily') {
+    runSeed = fnv1a(runDate + ':' + mode);
+    rng.next = mulberry32(runSeed);
+  } else {
+    runSeed = 0;
+    rng.next = Math.random;
+  }
   clearEnemies();
   clearPending();
   daggers.reset();
@@ -863,10 +951,10 @@ function clearPending() {
   pending.length = 0;
 }
 
-function ringSpot(minPlayerDist) {
+function ringSpot(minPlayerDist, draw = rng.next) {
   for (let tries = 0; tries < 12; tries++) {
-    const a = Math.random() * Math.PI * 2;
-    const r = ARENA_R * (0.45 + Math.random() * 0.4);
+    const a = draw() * Math.PI * 2;
+    const r = ARENA_R * (0.45 + draw() * 0.4);
     _sv.set(Math.cos(a) * r, 0, Math.sin(a) * r);
     if (_sv.distanceTo(player.feet) < minPlayerDist) continue;
     let nearTotem = false;
@@ -935,8 +1023,12 @@ function pulseKind(n) {
 }
 
 function pulseBudget(n, kind) {
-  const min = gameTime / 60;
-  const base = 3 + Math.min(min, 2.5) * 3.2 + Math.max(0, min - 2.5) * 1.4;
+  // budget grows with PULSE INDEX, not wall time — the pulse count is the
+  // director's own clock, and it keeps daily pick sequences comparable
+  // across players (a time-based budget made the same pulse redraw
+  // differently depending on when it fired). Knee at pulse 11 ≈ the old
+  // 2.5-minute knee at average cadence.
+  const base = 3 + Math.min(n, 11) * 0.75 + Math.max(0, n - 11) * 0.3;
   const breather = kind === 'normal' && pulseKind(n - 1) !== 'normal';
   const mod = kind === 'heavy' ? 1.6 : kind === 'spike' ? 1.5
     : kind === 'swarm' ? 1.3 : breather ? 0.5 : 1;
@@ -957,46 +1049,49 @@ function pulseEligible([key, unlock]) {
   return cap === undefined || enemyCount(key) < cap;
 }
 
-/** Telegraphed spawn of one pool pick, `stagger` seconds after the pulse. */
-function spawnPick(key, stagger) {
+/** Telegraphed spawn of one pool pick, `stagger` seconds after the pulse.
+ *  `draw` is the pulse's PRNG (seeded per pulse index in daily runs) — the
+ *  telegraph callbacks capture it, and staggers are monotonic within a pulse,
+ *  so draw order stays deterministic even though spawns resolve later. */
+function spawnPick(key, stagger, draw = rng.next) {
   const delay = 0.7 + stagger;
   if (key === 'serpent') { spawnSerpent(); return; } // its own sky entrance
   audio.spawn();
   if (key === 'skulls') {
-    const at = ringSpot(12).clone();
+    const at = ringSpot(12, draw).clone();
     telegraph(at, [2.0, 0.15, 0.15], delay, () => {
       const boost = Math.min(6, gameTime * 0.06);
       for (let i = 0; i < 3 && skullCount() < SKULL_CAP; i++) {
-        _sv.set(at.x + (Math.random() - 0.5) * 1.6, 1.1 + Math.random() * 0.8,
-          at.z + (Math.random() - 0.5) * 1.6);
-        enemies.push(gameTime > 60 && Math.random() < 0.3
+        _sv.set(at.x + (draw() - 0.5) * 1.6, 1.1 + draw() * 0.8,
+          at.z + (draw() - 0.5) * 1.6);
+        enemies.push(gameTime > 60 && draw() < 0.3
           ? new Wraith(scene, _sv, boost) : new Skull(scene, _sv, boost));
       }
     });
   } else if (key === 'watcher') {
     announce('watcher', 'THE WATCHERS');
-    const at = ringSpot(12).clone();
+    const at = ringSpot(12, draw).clone();
     at.y = 2.2;
     telegraph(at, [2.0, 0.15, 0.15], delay, () => enemies.push(new Watcher(scene, at, ARENA_R - 1)));
   } else if (key === 'brute') {
     announce('brute', 'THE BRUTES');
-    const at = ringSpot(14).clone();
+    const at = ringSpot(14, draw).clone();
     telegraph(at, [2.0, 0.15, 0.15], delay, () => {
       at.y = 1.25;
       enemies.push(new Brute(scene, at, Math.min(1.5, (gameTime - 40) * 0.01)));
     });
   } else if (key === 'spider') {
     announce('spider', 'THE THIEVES');
-    const at = ringSpot(10).clone();
+    const at = ringSpot(10, draw).clone();
     telegraph(at, [2.0, 0.15, 0.15], delay, () => enemies.push(new Spider(scene, at)));
   } else if (key === 'blinker') {
     announce('blinker', 'THE BLINKERS');
-    const at = ringSpot(12).clone();
+    const at = ringSpot(12, draw).clone();
     at.y = 1.2;
     telegraph(at, [2.0, 0.15, 0.15], delay, () => enemies.push(new Blinker(scene, at, ARENA_R - 1)));
   } else if (key === 'dread') {
     announce('dread', 'THE DREAD SKULL');
-    const at = ringSpot(15).clone();
+    const at = ringSpot(15, draw).clone();
     telegraph(at, [2.6, 0.2, 0.2], delay + 0.2, () => {
       at.y = 1.5;
       enemies.push(new DreadSkull(scene, at, Math.min(4, (gameTime - 110) * 0.008)));
@@ -1004,14 +1099,20 @@ function spawnPick(key, stagger) {
   }
 }
 
+const lastPulsePicks = []; // debug: {n, kind, picks[]} per pulse, capped
+
 function runPulse(n) {
   const kind = pulseKind(n);
+  // daily runs seed a FRESH stream per pulse index, so pulse N's pick
+  // sequence is comparable across players regardless of when it fires
+  const draw = runKind === 'daily' ? mulberry32(mixSeed(runSeed, n)) : Math.random;
   let budget = pulseBudget(n, kind);
   let stagger = 0;
+  const picks = [];
   // heavy pulses open with a guaranteed centrepiece
   if (kind === 'heavy') {
-    if (gameTime >= 100 && serpents.length < SERPENT_CAP) { spawnPick('serpent', 0); budget -= 8; }
-    else if (gameTime >= 120 && enemyCount('dread') < PULSE_CAPS.dread) { spawnPick('dread', 0); budget -= 6; }
+    if (gameTime >= 100 && serpents.length < SERPENT_CAP) { spawnPick('serpent', 0, draw); budget -= 8; picks.push('serpent'); }
+    else if (gameTime >= 120 && enemyCount('dread') < PULSE_CAPS.dread) { spawnPick('dread', 0, draw); budget -= 6; picks.push('dread'); }
   }
   for (let guard = 0; guard < 20 && budget > 0.5; guard++) {
     let pool = PULSE_POOL.filter(pulseEligible);
@@ -1019,16 +1120,19 @@ function runPulse(n) {
     if (kind === 'swarm') {
       const p = pool.filter(([k]) => SWARM_KEYS.has(k));
       if (p.length) pool = p;
-    } else if (kind === 'spike' && Math.random() < 0.7) {
+    } else if (kind === 'spike' && draw() < 0.7) {
       const p = pool.filter(([k]) => SPIKE_KEYS.has(k));
       if (p.length) pool = p;
     }
-    const [key, , cost] = pool[(Math.random() * pool.length) | 0];
+    const [key, , cost] = pool[(draw() * pool.length) | 0];
     if (cost > budget + 1) continue; // too rich for what's left — redraw
-    spawnPick(key, stagger);
+    spawnPick(key, stagger, draw);
     budget -= cost;
-    stagger += kind === 'swarm' ? 0.12 + Math.random() * 0.3 : 0.4 + Math.random() * 0.8;
+    picks.push(key);
+    stagger += kind === 'swarm' ? 0.12 + draw() * 0.3 : 0.4 + draw() * 0.8;
   }
+  lastPulsePicks.push({ n, kind, picks });
+  if (lastPulsePicks.length > 20) lastPulsePicks.shift();
 }
 
 function director(dt) {
@@ -1069,7 +1173,7 @@ function director(dt) {
       if (skullCount() < SKULL_CAP) {
         const m = e.mouthPos(_sv);
         const boost = Math.min(6, gameTime * 0.06);
-        const roll = Math.random();
+        const roll = rng.next(); // seeded in daily runs — exhale mix is part of the schedule
         const skull =
           gameTime > 45 && roll < 0.15 ? new Splitter(scene, m, boost) :
           gameTime > 60 && roll < 0.45 ? new Wraith(scene, m, boost) :
@@ -1537,6 +1641,11 @@ window.__hd = {
     setTime(t) { gameTime = t; },
     die() { if (state === 'playing') die(false); },
     report() { return runReport(); },
+    setRunKind(k) { runKind = k; localStorage.setItem('hyperDaggerRunKind', k); },
+    setDate(s) { dateOverride = s; },
+    getRunInfo() { return { runKind, runSeed, runDate, mode, pulseN }; },
+    lastPulsePicks,
+    getDailyTable() { return readDailyTable(); },
     pulse(n) { runPulse(n ?? ++pulseN); },
     setOpt(k, v) { opts[k] = v; saveOpts(); },
     getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, fov: camera.fov, uRed: floorMat.uniforms.uRed.value }; },
