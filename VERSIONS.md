@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v127 — 2026-07-11
+**Roadmap M2: SHARE button on the death screen + first-run tutorial hints**
+- **SHARE** (death screen, next to SEND/SKIP): native share sheet where it exists (mobile), clipboard fallback on desktop with a brief "COPIED!" flip. Shares `TOKO DROP — score · wave (· SMASH TV) · seed` + the game URL; doesn't dismiss the screen, so feedback can still be sent. en/ja/fi
+- **First-run tutorial hints**: a brand-new player's first ~22 s get four fading callouts low on the HUD — move, aim & fire, dash, and the graze rule ("near-misses pay score — dashes don't graze"). Input-aware (touch wording vs keyboard/stick), text-only per the GDD §2 boundary (no pauses, no input), marked seen (`tokoDropHintsSeen`) only after the full sequence plays so dying mid-sequence re-shows them next run
+- Cache-bust `?v=80` → `?v=81`; HUD label → v127
+
+---
+
 ## v126 — 2026-07-11
 **Roadmap M1 groundwork: OMEGA wall clamp + feedback chips ask about the new systems**
 - **OMEGA stays inside the walls**: the boss's 7.5-unit orbit is wider than half the SMASH TV room, so a wall-hugging player could push the crystal out through the doors (milder version possible in classic portrait too). Its position is now clamped to the arena every frame, like TORO

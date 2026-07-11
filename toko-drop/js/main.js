@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=80';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=80';
-import { Player, PLAYER_RADIUS } from './player.js?v=80';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=80';
-import { audio } from './audio.js?v=80';
-import { initDesigner } from './designer.js?v=80';
-import { t, getLang, setLang, langs } from './lang.js?v=80';
-import { TUNING } from './tuning.js?v=80';
+import { InputManager } from './input.js?v=81';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=81';
+import { Player, PLAYER_RADIUS } from './player.js?v=81';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=81';
+import { audio } from './audio.js?v=81';
+import { initDesigner } from './designer.js?v=81';
+import { t, getLang, setLang, langs } from './lang.js?v=81';
+import { TUNING } from './tuning.js?v=81';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1834,6 +1834,30 @@ function drawHUD() {
     ctx.restore();
   }
 
+  // First-run tutorial hints (v127): low on the screen, clear of the wave
+  // banner (0.30) and milestone (0.40) lines. Fade in fast, out gently.
+  if (tutorialHints && gameState === 'playing') {
+    const last = tutorialHints[tutorialHints.length - 1];
+    if (runTimer > last.at + last.dur) {
+      tutorialHints = null;
+      localStorage.setItem('tokoDropHintsSeen', '1');
+    } else {
+      for (const h of tutorialHints) {
+        const ht = runTimer - h.at;
+        if (ht < 0 || ht > h.dur) continue;
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, Math.min(1, ht / 0.4, (h.dur - ht) / 0.8)) * 0.92;
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 16px monospace, sans-serif';
+        ctx.shadowColor = '#66bbff';
+        ctx.shadowBlur = 14;
+        ctx.fillStyle = '#cceeff';
+        ctx.fillText(h.text, uiCanvas.width / 2, uiCanvas.height * 0.70);
+        ctx.restore();
+      }
+    }
+  }
+
   // SMASH TV room-clear tally + traversal UI (v115)
   if (exitPhase && gameState === 'playing') {
     // Bonus tally card (first couple of seconds)
@@ -2034,7 +2058,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v126', 16, uiCanvas.height - 12);
+  ctx.fillText('v127', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2388,6 +2412,22 @@ function buildFeedbackPanel(slot) {
     );
     returnToTitle();
   }));
+  // SHARE (v127, roadmap M2): native share sheet where it exists (mobile),
+  // clipboard fallback on desktop. Doesn't dismiss the screen — feedback can
+  // still be sent afterwards. Share-sheet cancel / clipboard denial: no drama.
+  const shareBtn = mkBtn(t('fbShare'), false, async () => {
+    const seedHex = runSeed.toString(16).toUpperCase().padStart(6, '0');
+    const text = `TOKO DROP — ${score} ${t('pts')} · ${t('wave')} ${wave}` +
+                 (smashMode ? ' · SMASH TV' : '') + ` · ${t('seed')} ${seedHex}`;
+    const url = location.href.split(/[?#]/)[0];
+    try {
+      if (navigator.share) { await navigator.share({ text: `${text}\n${url}` }); return; }
+      await navigator.clipboard.writeText(`${text}\n${url}`);
+      shareBtn.textContent = t('fbCopied');
+      setTimeout(() => { shareBtn.textContent = t('fbShare'); }, 1500);
+    } catch (_) {}
+  });
+  btnRow.appendChild(shareBtn);
   btnRow.appendChild(mkBtn(t('fbSkip'), false, returnToTitle));
   slot.appendChild(btnRow);
 }
@@ -2402,6 +2442,29 @@ const WAVE_BANNER = {
   spike:  { suffix: ' — HEAVY',  color: '#ffaa44' },
   boss:   { suffix: ' — BOSS!',  color: '#ff5566' },
 };
+
+// ── First-run tutorial hints (v127, roadmap M2) ──────────────────────────────
+// Fading callouts over a brand-new player's first two waves: move, aim, dash,
+// and the graze rule. Non-interrupting by design (GDD §2 boundary) — text only,
+// no pauses, no input. Marked seen once the full sequence has played, so a
+// player who dies mid-sequence gets them again on the next run. Canvas HUD
+// stays English deliberately (see lang.js header).
+let tutorialHints = null;   // active schedule [{ at, dur, text }], or null
+function scheduleTutorialHints() {
+  if (localStorage.getItem('tokoDropHintsSeen')) { tutorialHints = null; return; }
+  const touch = navigator.maxTouchPoints > 0 && !input.usingGamepad;
+  tutorialHints = touch ? [
+    { at: 0.8,  dur: 4.5, text: 'LEFT THUMB — MOVE' },
+    { at: 6.0,  dur: 4.5, text: 'RIGHT THUMB — AIM & FIRE' },
+    { at: 11.5, dur: 4.5, text: 'RELEASE RIGHT THUMB — DASH' },
+    { at: 17.0, dur: 5.0, text: "NEAR-MISSES PAY SCORE — DASHES DON'T GRAZE" },
+  ] : [
+    { at: 0.8,  dur: 4.5, text: 'WASD / LEFT STICK — MOVE' },
+    { at: 6.0,  dur: 4.5, text: 'MOUSE / RIGHT STICK — AIM & FIRE' },
+    { at: 11.5, dur: 4.5, text: 'SPACE / A — DASH THROUGH BULLETS' },
+    { at: 17.0, dur: 5.0, text: "NEAR-MISSES PAY SCORE — DASHES DON'T GRAZE" },
+  ];
+}
 
 // ── Wave / restart helpers ──────────────────────────────────────────────────────────
 // ── SMASH TV doors (v114) ─────────────────────────────────────────────────────
@@ -2727,6 +2790,7 @@ function startGame() {
   score  = 0; streak = 0; wave = 0; runTimer = 0; scoreMultT = 0; waveClearFlashT = 0;
   milestoneT = 0; nextMilestone = 25000; grazeCount = 0; shieldBlockCount = 0;
   collectedUpgrades = []; hitEventLog = []; _lastHitTime = -1;
+  scheduleTutorialHints();
   BULLET_CONFIG.playerBulletScale  = 1.0;
   BULLET_CONFIG.playerPiercing     = false;
   BULLET_CONFIG.playerWeaponPierce = false;
