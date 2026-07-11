@@ -301,6 +301,7 @@ export class VoxelSprite {
 export class DebrisPool {
   constructor(scene, cap = 1600) {
     this.cap = cap;
+    this.softCap = cap; // perf governor lowers this; pool stays preallocated
     this.mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
     this.mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), this.mat, cap);
     this.mesh.frustumCulled = false;
@@ -315,7 +316,7 @@ export class DebrisPool {
   }
 
   spawn(pos, color, vel, size, life = 1.6) {
-    if (!this.free.length) return;
+    if (!this.free.length || this.items.length >= this.softCap) return;
     const i = this.free.pop();
     this.items.push({
       i, size, life, maxLife: life,
