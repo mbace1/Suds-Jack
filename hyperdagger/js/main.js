@@ -394,6 +394,9 @@ let gameTime = 0;
 let kills = 0;
 let killsByType = {};
 let lastKiller = null;
+const lastKillerPos = new THREE.Vector3(); // where the fatal hit came from
+let lastKillerRef = null;                  // entity ref for the death-cam flash
+let deathCam = null;                       // {yaw, pitch, t} — killer-focus lerp
 let gemCount = 0;
 let weaponLv = 1;
 let fireTimer = 0;
@@ -624,16 +627,35 @@ function showDeath(timedOut) {
   const historyLine = hist.slice(1, 9).map(r => r.t.toFixed(1) + 's').join(' &middot; ');
   const peakRank = stylePeakIdx > 0 ? ` &middot; peak rank ${STYLE_TIERS[stylePeakIdx].label}` : '';
 
+  const heavies = Math.floor(pulseN / 8);
+  const pulseLine = pulseN > 0
+    ? `<p class="breakdown">survived ${pulseN} pulse${pulseN === 1 ? '' : 's'}${heavies ? ` (${heavies} heavy)` : ''}</p>` : '';
+  const share = `HYPER DAGGER · ${runKind === 'daily' ? `daily ${runDate}` : 'free run'} · ${
+    mode.toUpperCase()} · ${t}s · ${kills} kills · LV${weaponLv}${
+    stylePeakIdx > 0 ? ` · rank ${STYLE_TIERS[stylePeakIdx].label}` : ''}`;
+
   elMsg.style.display = 'block';
   elMsg.innerHTML =
     `<h1 class="dead">${timedOut ? 'TIME OUT' : 'DEVOURED'}</h1>
      <p class="big">${t}s &middot; ${kills} kills &middot; ${gemCount} gems</p>
      <p class="cause">${causeLine} &middot; daggers LV${weaponLv}${peakRank}</p>
      ${breakdown ? `<p class="breakdown">${breakdown}</p>` : ''}
+     ${pulseLine}
      ${runKind === 'daily' ? dailyLines
     : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}${mode === 'hyper' ? ' &middot; hyper' : ''}</p>`}
      ${historyLine ? `<p class="history">recent: ${historyLine}</p>` : ''}
+     <button id="shareBtn" class="opt">COPY RUN</button>
      <p class="go">click / tap to retry</p>`;
+  document.getElementById('shareBtn').addEventListener('pointerdown', async e => {
+    e.stopPropagation(); // don't let the copy tap restart the run
+    const btn = e.currentTarget;
+    try {
+      await navigator.clipboard.writeText(share);
+      btn.textContent = 'COPIED';
+    } catch {
+      btn.textContent = share; // clipboard blocked — show it for manual copy
+    }
+  });
 }
 
 function clearEnemies() {
@@ -662,6 +684,8 @@ function resetRun() {
   kills = 0;
   killsByType = {};
   lastKiller = null;
+  lastKillerRef = null;
+  deathCam = null;
   gemCount = 0;
   weaponLv = 1;
   fireTimer = 0;
@@ -712,6 +736,21 @@ function die(timedOut = false) {
   deathAt = performance.now();
   slowmo = 1;
   trauma = 1;
+  // killer-focus death cam: swing the view toward what got you during the
+  // slow-mo. TIME OUT has no killer — the clock did it — so no swing there.
+  if (!timedOut && lastKiller && lastKiller !== 'timeout') {
+    const dx = lastKillerPos.x - camera.position.x;
+    const dz = lastKillerPos.z - camera.position.z;
+    const hd = Math.hypot(dx, dz);
+    if (hd > 0.4) {
+      deathCam = {
+        yaw: Math.atan2(-dx, -dz),
+        pitch: Math.max(-0.9, Math.min(0.6, Math.atan2(lastKillerPos.y - camera.position.y, hd))),
+        t: 1.3,
+      };
+      lastKillerRef?.sprite?.flash?.(3); // the killer burns bright
+    }
+  }
   audio.droneStop();
   audio.musicStop();
   audio.death();
@@ -923,7 +962,7 @@ function updateThorns(dt) {
         && Math.hypot(player.feet.x - th.group.position.x, player.feet.z - th.group.position.z) < 1.1
         && player.feet.y < 1.4) {
       th.struck = true;
-      if (playerStruck(th.group.position.x, th.group.position.z, 'thorn')) return;
+      if (playerStruck(th.group.position.x, th.group.position.z, 'thorn', th)) return;
     }
   }
 }
@@ -1394,7 +1433,7 @@ function updateCombat(dt) {
     }
     e.center(_c);
     if (_c.distanceTo(_p0) < e.radius + 0.5 || _c.distanceTo(camera.position) < e.radius + 0.4) {
-      if (playerStruck(e.pos.x, e.pos.z, e.type)) return;
+      if (playerStruck(e.pos.x, e.pos.z, e.type, e)) return;
     }
   }
 
@@ -1414,7 +1453,9 @@ function updateCombat(dt) {
 }
 
 /** One enemy/projectile contact. Returns true when the run ended. */
-function playerStruck(sx, sz, killerType) {
+function playerStruck(sx, sz, killerType, killer = null) {
+  lastKillerPos.set(sx, 1.2, sz);
+  lastKillerRef = killer;
   if (mode !== 'hyper') { lastKiller = killerType; die(); return true; }
   if (mercyT > 0) return false;
   lastKiller = killerType;
@@ -1610,6 +1651,15 @@ function animate() {
     const eff = dt * (1 - 0.75 * slowmo);
     debris.update(eff);
     daggers.update(eff);
+    // killer-focus swing (shortest-path yaw so it never spins the long way)
+    if (deathCam && state === 'dead') {
+      deathCam.t -= dt;
+      const k = Math.min(1, dt * 4);
+      const dy = ((deathCam.yaw - camera.rotation.y + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+      camera.rotation.y += dy * k;
+      camera.rotation.x += (deathCam.pitch - camera.rotation.x) * k;
+      if (deathCam.t <= 0) deathCam = null;
+    }
   }
   updateFeel(dt);
   composer.render();
