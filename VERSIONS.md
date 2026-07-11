@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v125 — 2026-07-11
+**GRAZE system + boss escorts — risk pays, late bosses scale in tactics**
+- **GRAZE (both modes)**: an enemy bullet skimming within 0.55 units of you **while vulnerable** pays +25 score (doubled by an active multiplier) with a whisper-quiet zip + a tiny white spark, once per bullet. Dash i-frames don't graze — the reward tracks real risk, so weaving through fire beats dashing through it. Grazes feed the 25k milestones, show on the death screen (`· N GRAZE`, en/ja/fi), and ride along in the feedback payload for balance data
+- **Boss escorts**: from the 2nd boss (wave 16) OMEGA arrives under a **WARDEN umbrella** — two wardens from the 3rd (wave 24). Later bosses scale in TACTICS, not just HP: break the shield line first or fight a bullet-immune boss
+- Cache-bust `?v=78` → `?v=79`; HUD label → v125
+
+---
+
 ## v124 — 2026-07-11
 **Main-mode round: WARDEN shield-bearer, live scoring feedback, streak-heat juice — all in-action, no between-wave interruptions**
 - **WARDEN** (new enemy #18, wave 7+, cost 5 — rare): a cyan shield-bearer blob projecting a visible **floor aura (r 4.5)** that makes every enemy inside it **immune to bullets** (even piercing). It never attacks and never shields itself — the priority-target puzzle layered on top of the v116 shooter play. Gets the "!" entrance ping; the shield drops the instant it dies. Deflections read clearly: cyan sparks + a dull `shieldTink` instead of the hit sound

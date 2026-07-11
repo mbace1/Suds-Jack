@@ -61,7 +61,7 @@ class AudioSystem {
     if (!this._introVoice || this._volume <= 0) return null;
     try {
       if (!this._introEl) {
-        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=78', import.meta.url).href);
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=79', import.meta.url).href);
         this._introEl.preload = 'auto';
       }
       this._introEl.volume = this._volume;
@@ -150,6 +150,8 @@ class AudioSystem {
   botShot()   { this._tone(380, 0.16, 'triangle', 0.14, 1150); }
   // WARDEN deflection (v124): dull high tink — reads "shielded", not "missed".
   shieldTink() { this._tone(1900, 0.05, 'triangle', 0.10, 1400); }
+  // Graze (v125): whisper-quiet zip as a bullet skims past — felt, not loud.
+  grazeTick() { this._tone(2400, 0.035, 'sine', 0.07, 2800); }
   // Score milestone (v124): quick rising three-note sparkle.
   milestone() {
     [523, 659, 784].forEach((f, i) =>

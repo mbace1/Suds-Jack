@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=78';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=78';
-import { Player, PLAYER_RADIUS } from './player.js?v=78';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=78';
-import { audio } from './audio.js?v=78';
-import { initDesigner } from './designer.js?v=78';
-import { t, getLang, setLang, langs } from './lang.js?v=78';
-import { TUNING } from './tuning.js?v=78';
+import { InputManager } from './input.js?v=79';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=79';
+import { Player, PLAYER_RADIUS } from './player.js?v=79';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=79';
+import { audio } from './audio.js?v=79';
+import { initDesigner } from './designer.js?v=79';
+import { t, getLang, setLang, langs } from './lang.js?v=79';
+import { TUNING } from './tuning.js?v=79';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -137,6 +137,14 @@ function getEnemySchedule(wave) {
     list.push({ type: OMEGA, t: 0, boss: true });
     spent += Math.ceil(4 * 2.5);
     t = 4;
+    // Boss escorts (v125): from the 2nd boss on, OMEGA arrives under a WARDEN
+    // umbrella (two from the 3rd) — later bosses scale in TACTICS, not just HP:
+    // break the shield line first or fight the boss unhurt-able.
+    const escorts = Math.min(2, Math.floor(wave / 8) - 1);
+    for (let k = 0; k < escorts; k++) {
+      list.push({ type: WARDEN, t: 2.0 + k * 1.5 });
+      spent += 5;
+    }
   }
 
   // Deliberate shooters: 1 at wave 1 growing to 5 by wave 12 (swarms allow
@@ -987,6 +995,7 @@ let streakFlashT = 0;
 // and streak tiers — one shared channel (rare events, latest wins).
 let milestoneT = 0, milestoneText = '';
 let nextMilestone = 25000;
+let grazeCount = 0;  // v125: bullets skimmed past while vulnerable (+25 each)
 let scoreMultT = 0; // Score Multiplier powerup (v72): ×2 score on kill while active
 // ── Personal bests (local; structured for a future online leaderboard) ───────
 const PB_KEY = 'tokoDropPB';
@@ -1514,6 +1523,7 @@ function saveFeedback(selectedIds, selectedLabels, comment, likedIds = [], liked
     liked: likedLabels, likedIds,
     comment: comment || '', isFix,
     hits: hitEventLog.length,
+    grazes: grazeCount,
     topAttacker: Object.entries(atk).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null,
   });
   if (list.length > 100) list.length = 100;
@@ -2008,7 +2018,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v124', 16, uiCanvas.height - 12);
+  ctx.fillText('v125', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2269,6 +2279,7 @@ function showGameOver() {
     `<div class="d-title" style="font-size:52px;font-weight:bold">${t('youDied')}</div>` +
     `<div class="d-sub" style="font-size:15px;opacity:0.6;margin-top:10px;letter-spacing:2px">` +
       `${t('wave')} ${wave} &nbsp;·&nbsp; ${fmtTime(runTimer)} &nbsp;·&nbsp; ${score} ${t('pts')}` +
+      (grazeCount > 0 ? ` &nbsp;·&nbsp; ${grazeCount} ${t('graze')}` : ``) +
     `</div>` +
     (badges.length
       ? `<div class="d-sub" style="font-size:16px;color:#ffdd44;margin-top:8px;letter-spacing:1px">${badges.join('&nbsp;&nbsp;')}</div>`
@@ -2698,7 +2709,7 @@ function startGame() {
   landscapeMode = innerWidth > innerHeight;
   applyArenaMode(landscapeMode);
   score  = 0; streak = 0; wave = 0; runTimer = 0; scoreMultT = 0; waveClearFlashT = 0;
-  milestoneT = 0; nextMilestone = 25000;
+  milestoneT = 0; nextMilestone = 25000; grazeCount = 0;
   collectedUpgrades = []; hitEventLog = []; _lastHitTime = -1;
   BULLET_CONFIG.playerBulletScale  = 1.0;
   BULLET_CONFIG.playerPiercing     = false;
@@ -3227,7 +3238,7 @@ function loop() {
     }
   }
 
-  // Collision: enemy bullets → player
+  // Collision: enemy bullets → player (+ GRAZE, v125)
   if (!player.invincible) {
     for (let i = bullets.active.length - 1; i >= 0; i--) {
       const b = bullets.active[i];
@@ -3235,11 +3246,23 @@ function loop() {
       const dx = b.mesh.position.x - player.position.x;
       const dz = b.mesh.position.z - player.position.z;
       const br = b.fat ? FAT_BULLET_R : BULLET_R;
-      if (Math.hypot(dx, dz) < br + PLAYER_RADIUS) {
+      const d  = Math.hypot(dx, dz);
+      if (d < br + PLAYER_RADIUS) {
         const _origin = b.originType; // capture before recycle clears it
         bullets.recycleAt(i);
         if (tryHitPlayer('bullet', _origin)) { triggerGameOver(); break; }
         break;
+      }
+      // GRAZE (v125): a bullet skimming past while you're VULNERABLE pays
+      // score — weaving through fire is worth points, dashing through (i-frames)
+      // is not, so the reward tracks real risk. Once per bullet.
+      if (!b._grazed && d < br + PLAYER_RADIUS + 0.55) {
+        b._grazed = true;
+        grazeCount++;
+        score += 25 * (scoreMultT > 0 ? 2 : 1);
+        audio.grazeTick();
+        gooChunkPool.spawn(b.mesh.position.x, 0.5, b.mesh.position.z,
+          -dx * 3, 2.5, -dz * 3, 0xffffff, 0.06);
       }
     }
   }
