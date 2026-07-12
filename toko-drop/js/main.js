@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=82';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=82';
-import { Player, PLAYER_RADIUS } from './player.js?v=82';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=82';
-import { audio } from './audio.js?v=82';
-import { initDesigner } from './designer.js?v=82';
-import { t, getLang, setLang, langs } from './lang.js?v=82';
-import { TUNING } from './tuning.js?v=82';
+import { InputManager } from './input.js?v=83';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=83';
+import { Player, PLAYER_RADIUS } from './player.js?v=83';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=83';
+import { audio } from './audio.js?v=83';
+import { initDesigner } from './designer.js?v=83';
+import { t, getLang, setLang, langs } from './lang.js?v=83';
+import { TUNING } from './tuning.js?v=83';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -836,6 +836,13 @@ class Powerup {
   }
   remove(sc) {
     sc.remove(this.mesh);
+    // v129: the per-instance sphere + material leaked GPU-side on every pod
+    // collected/expired. Valuables swap in the SHARED cash/prize geometries —
+    // those must survive; everything per-instance gets disposed.
+    if (this.mesh.geometry !== CASH_GEO && this.mesh.geometry !== PRIZE_GEO) {
+      this.mesh.geometry.dispose();
+    }
+    this.mat.dispose();
     if (this._sprite) {
       this._sprite.material.map.dispose();
       this._sprite.material.dispose();
@@ -1139,6 +1146,9 @@ let perfMode = localStorage.getItem('tokoDropPerf') === '1';
 let _perfSavedTrans = null;
 function applyPerfMode() {
   renderer.setPixelRatio(Math.min(devicePixelRatio, perfMode ? 1.25 : 2));
+  // v129: the 1024² shadow pass is the third big GPU cost — drop it too.
+  // (three re-selects programs automatically when a light's castShadow flips.)
+  sun.castShadow = !perfMode;
   const M = TUNING.material;
   if (perfMode) {
     if (!_perfSavedTrans) {
@@ -1626,7 +1636,9 @@ const designer = initDesigner({
   onResume: () => {
     const backToTitle = gameState === 'options';
     gameState = backToTitle ? 'title' : 'playing';
-    if (backToTitle) playTitleIntro();
+    // The device may have rotated while the panel was open (sync early-returns
+    // outside the title state), so re-check the arena fit on the way back.
+    if (backToTitle) { syncAutoOrientation(); playTitleIntro(); }
   },
   // Settings page (v81) — volume + reduce-motion live in the pause menu now;
   // state and persistence stay here, the menu just reads/writes through these.
@@ -2058,7 +2070,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v128', 16, uiCanvas.height - 12);
+  ctx.fillText('v129', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2660,6 +2672,7 @@ function spawnWave() {
       const pu = new Powerup(scene, vx, vz, roll > 0.96 ? 'scoremult' : 'score');
       pu._life = 999;  // floor loot lasts the whole room
       if (pu._type === 'score') {
+        pu.mesh.geometry.dispose();  // v129: the swapped-out sphere leaked
         if (isPrizeItem) {
           // Big prize — a TV, a toaster, a golden duck. Gift-box mesh, worth more.
           pu._value = (1000 + wave * 50) * (heavy ? 2 : 1);
@@ -2911,13 +2924,34 @@ let prev = performance.now();
 let fpsEMA = 0;
 showTitle();
 
+// Auto perf-mode (v129, roadmap M2 sweep): if the player has NEVER touched the
+// PERFORMANCE toggle and mid-run FPS stays low, flip it on for them once and
+// persist — the toggle in OPTIONS reverses it (and any explicit choice, on or
+// off, ends the auto behavior for good since the key then exists).
+let _autoPerfLowT = 0;
+let _autoPerfDone = localStorage.getItem('tokoDropPerf') !== null;
+
 function loop() {
   requestAnimationFrame(loop);
   const now = performance.now();
   const raw = (now - prev) / 1000;            // unclamped, for the FPS meter
   const dt  = Math.min(raw, 0.05);
   prev = now;
-  if (raw > 0) fpsEMA = fpsEMA ? fpsEMA * 0.9 + (1 / raw) * 0.1 : 1 / raw;
+  // Frames longer than 250 ms are tab-switches/hidden throttling, not game
+  // perf — feeding them to the EMA would poison the meter (and could false-
+  // trigger auto perf-mode) for seconds after coming back.
+  if (raw > 0 && raw < 0.25) fpsEMA = fpsEMA ? fpsEMA * 0.9 + (1 / raw) * 0.1 : 1 / raw;
+
+  if (!_autoPerfDone && gameState === 'playing' && raw > 0 && raw < 0.25) {
+    _autoPerfLowT = (fpsEMA && fpsEMA < 42) ? _autoPerfLowT + raw : 0;
+    if (_autoPerfLowT > 6 && runTimer > 5) {   // sustained, and past load jank
+      _autoPerfDone = true;
+      perfMode = true;
+      localStorage.setItem('tokoDropPerf', '1');
+      applyPerfMode();
+      milestoneT = 1.2; milestoneText = 'PERF MODE AUTO-ON — SEE OPTIONS';
+    }
+  }
 
   input.pollGamepad();
   updateShake(dt);
@@ -3602,6 +3636,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=82').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=83').catch(() => {});
   });
 }

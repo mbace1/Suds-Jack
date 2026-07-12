@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v129 — 2026-07-12
+**Fixes & perf round: powerup GPU leak plugged, auto perf-mode on weak phones, perf mode drops shadows, OPTIONS-rotation fix**
+- **FIX — powerup GPU leak**: every pod/valuable created a fresh sphere geometry + material that `remove()` never disposed, and valuables swapping to the shared cash/prize meshes orphaned their sphere at swap time — hundreds of leaked GPU objects over a long SMASH TV session. All per-instance geometry/materials now disposed (shared CASH/PRIZE geometries correctly survive)
+- **Auto perf-mode** (roadmap M2 sweep item): if the player has NEVER touched the PERFORMANCE toggle and mid-run FPS stays under 42 for 6 s, it flips on by itself (persisted, HUD notice "PERF MODE AUTO-ON — SEE OPTIONS"). Any explicit toggle choice ends the auto behavior for good
+- **Perf mode now also drops the 1024² shadow pass** (the third big GPU cost after resolution + transmission); OPTIONS help strings updated (en/ja/fi)
+- **FIX — FPS meter poisoning**: frames longer than 250 ms (tab switches / background throttling) no longer feed the FPS EMA, which showed bogus low FPS for seconds after returning (and could have false-triggered auto perf-mode)
+- **FIX — rotating while OPTIONS is open**: the arena never re-fit because orientation sync only runs on the title; RESUME now re-checks the fit on the way back
+- Cache-bust `?v=82` → `?v=83`; HUD label → v129
+
+---
+
 ## v128 — 2026-07-11
 **Roadmap M2: offline PWA — service worker caches the game for offline play**
 - **`toko-drop/sw.js`** (new, `?v=` tokened from day one): the whole module graph + shell + icons + logo + intro clip are **precached at install** (the first load races the worker, so runtime caching alone would leave offline boot to the evictable HTTP cache; verified — 20 entries, full title boots with the network cut). Tokened requests serve **cache-first** (immutable per release), the untokened page shell **network-first** with cache fallback, so the installed PWA plays offline but picks up new releases the moment it's online
