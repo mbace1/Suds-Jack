@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=83';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=83';
-import { Player, PLAYER_RADIUS } from './player.js?v=83';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=83';
-import { audio } from './audio.js?v=83';
-import { initDesigner } from './designer.js?v=83';
-import { t, getLang, setLang, langs } from './lang.js?v=83';
-import { TUNING } from './tuning.js?v=83';
+import { InputManager } from './input.js?v=84';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=84';
+import { Player, PLAYER_RADIUS } from './player.js?v=84';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=84';
+import { audio } from './audio.js?v=84';
+import { initDesigner } from './designer.js?v=84';
+import { t, getLang, setLang, langs } from './lang.js?v=84';
+import { TUNING } from './tuning.js?v=84';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1064,6 +1064,16 @@ let roguelikeMode = false;
 // SMASH TV mode (v109): enemies pour in bursts from 4 arena-edge "doors",
 // waves run bigger and burstier, and moths/convoys drop more prizes.
 let smashMode = localStorage.getItem('tokoDropSmash') === '1';
+// DAILY RUN (v130, roadmap M3): everyone who flips the chip plays the same
+// UTC-date-derived seed that day — no server needed. Whatever mode toggles
+// you bring are yours; the run is tagged DAILY (death screen, share, feedback
+// payload) and a separate per-day local best is kept.
+let dailyMode = localStorage.getItem('tokoDropDaily') === '1';
+let _dailyRun = null;   // 'YYYY-MM-DD' while the current/last run was a daily
+function dailyBestGet() {
+  try { return JSON.parse(localStorage.getItem('tokoDropDailyBest') || '{}'); }
+  catch (_) { return {}; }
+}
 // SMASH TV room graph (v115): rooms live on a 2D lattice. Clearing a room
 // opens EXIT doors; each leads to a neighbor whose kind is knowable in
 // advance (minimap), and you enter the next room from the opposing wall.
@@ -1550,6 +1560,7 @@ function saveFeedback(selectedIds, selectedLabels, comment, likedIds = [], liked
     hits: hitEventLog.length,
     grazes: grazeCount,
     shieldBlocks: shieldBlockCount,
+    daily: _dailyRun,
     topAttacker: Object.entries(atk).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null,
   });
   if (list.length > 100) list.length = 100;
@@ -2070,14 +2081,14 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v129', 16, uiCanvas.height - 12);
+  ctx.fillText('v130', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
     ctx.fillStyle = 'rgba(255,255,255,0.18)';
     ctx.font = '10px monospace, sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(`${t('seed')} ${runSeed.toString(16).toUpperCase().padStart(6,'0')}`, uiCanvas.width - 16, uiCanvas.height - 12);
+    ctx.fillText(`${_dailyRun && gameState !== 'title' ? 'DAILY · ' : ''}${t('seed')} ${runSeed.toString(16).toUpperCase().padStart(6,'0')}`, uiCanvas.width - 16, uiCanvas.height - 12);
     ctx.textAlign = 'left';
   }
 
@@ -2212,6 +2223,39 @@ function showTitle() {
   slot.appendChild(btn);
   slot.appendChild(hint);
 
+  // DAILY RUN chip (v130) — same styling family as the roguelike chip, gold.
+  const dbtn  = document.createElement('div');
+  dbtn.dataset.ui = '1';
+  const dhint = document.createElement('div');
+  dhint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
+  const drender = () => {
+    const on = dailyMode;
+    dbtn.textContent = `${t('daily')}: ${on ? t('on') : t('off')}`;
+    dbtn.style.cssText =
+      'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
+      'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
+      'background:rgba(0,0,0,0.35);transition:all 0.12s;margin-top:10px;' +
+      `border:2px solid ${on ? '#ffcc33' : '#445'};` +
+      `color:${on ? '#ffdd66' : '#7777aa'};` +
+      `text-shadow:${on ? '0 0 12px #ffaa00' : 'none'};`;
+    const db = dailyBestGet();
+    const todayBest = on && db.date === new Date().toISOString().slice(0, 10)
+      ? ` — ${t('dailyBest')} ${db.score}` : '';
+    dhint.textContent = (on ? t('dailyOnH') : t('dailyOffH')) + todayBest;
+  };
+  drender();
+  const dtoggle = e => {
+    e.stopPropagation();
+    e.preventDefault();
+    dailyMode = !dailyMode;
+    localStorage.setItem('tokoDropDaily', dailyMode ? '1' : '0');
+    drender();
+  };
+  dbtn.addEventListener('pointerdown', dtoggle);
+  dbtn.addEventListener('touchend', e => e.stopPropagation());
+  slot.appendChild(dbtn);
+  slot.appendChild(dhint);
+
   // v81: volume + reduce-motion moved into the pause menu's SETTINGS page —
   // the title keeps only the run-history link and a faint pointer to where
   // the settings went.
@@ -2327,6 +2371,15 @@ function showGameOver() {
   if (_runBests.isBestScore) badges.push(t('bestScore'));
   if (_runBests.isBestTime)  badges.push(t('bestTime'));
   if (_runBests.isBestWave)  badges.push(t('bestWave'));
+  // Daily best (v130): per-day, separate from the all-time PB above.
+  if (_dailyRun) {
+    const db = dailyBestGet();
+    if (db.date !== _dailyRun || score > (db.score || 0)) {
+      localStorage.setItem('tokoDropDailyBest',
+        JSON.stringify({ date: _dailyRun, score, wave }));
+      badges.push(`★ ${t('dailyBest')}`);
+    }
+  }
   overlay.innerHTML =
     `<div class="d-title" style="font-size:52px;font-weight:bold">${t('youDied')}</div>` +
     `<div class="d-sub" style="font-size:15px;opacity:0.6;margin-top:10px;letter-spacing:2px">` +
@@ -2336,7 +2389,9 @@ function showGameOver() {
     (badges.length
       ? `<div class="d-sub" style="font-size:16px;color:#ffdd44;margin-top:8px;letter-spacing:1px">${badges.join('&nbsp;&nbsp;')}</div>`
       : ``) +
-    `<div class="d-sub" style="font-size:12px;opacity:0.3;margin-top:10px">${t('seed')} ${seedHex}</div>` +
+    `<div class="d-sub" style="font-size:12px;opacity:0.3;margin-top:10px">${t('seed')} ${seedHex}` +
+      (_dailyRun ? ` &nbsp;·&nbsp; <span style="color:#ffdd66">DAILY ${_dailyRun}</span>` : ``) +
+    `</div>` +
     `<div id="feedback-slot" style="margin-top:18px"></div>`;
 
   buildFeedbackPanel(document.getElementById('feedback-slot'));
@@ -2430,7 +2485,9 @@ function buildFeedbackPanel(slot) {
   const shareBtn = mkBtn(t('fbShare'), false, async () => {
     const seedHex = runSeed.toString(16).toUpperCase().padStart(6, '0');
     const text = `TOKO DROP — ${score} ${t('pts')} · ${t('wave')} ${wave}` +
-                 (smashMode ? ' · SMASH TV' : '') + ` · ${t('seed')} ${seedHex}`;
+                 (smashMode ? ' · SMASH TV' : '') +
+                 (_dailyRun ? ` · DAILY ${_dailyRun}` : '') +
+                 ` · ${t('seed')} ${seedHex}`;
     const url = location.href.split(/[?#]/)[0];
     try {
       if (navigator.share) { await navigator.share({ text: `${text}\n${url}` }); return; }
@@ -2807,7 +2864,15 @@ function startGame() {
   BULLET_CONFIG.playerBulletScale  = 1.0;
   BULLET_CONFIG.playerPiercing     = false;
   BULLET_CONFIG.playerWeaponPierce = false;
-  runSeed = (Math.random() * 0xFFFFFF | 0) >>> 0;
+  if (dailyMode) {
+    // Same seed for everyone today: hash the UTC date through the PRNG once
+    // so consecutive days land far apart in seed space.
+    _dailyRun = new Date().toISOString().slice(0, 10);
+    runSeed = (mulberry32(Number(_dailyRun.replaceAll('-', '')))() * 0xFFFFFF | 0) >>> 0;
+  } else {
+    _dailyRun = null;
+    runSeed = (Math.random() * 0xFFFFFF | 0) >>> 0;
+  }
   rng = mulberry32(runSeed);
   player.reset();
   player._magnet    = false;
@@ -3636,6 +3701,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=83').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=84').catch(() => {});
   });
 }

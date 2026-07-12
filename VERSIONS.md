@@ -7,102 +7,29 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v129 — 2026-07-12
-**Fixes & perf round: powerup GPU leak plugged, auto perf-mode on weak phones, perf mode drops shadows, OPTIONS-rotation fix**
-- **FIX — powerup GPU leak**: every pod/valuable created a fresh sphere geometry + material that `remove()` never disposed, and valuables swapping to the shared cash/prize meshes orphaned their sphere at swap time — hundreds of leaked GPU objects over a long SMASH TV session. All per-instance geometry/materials now disposed (shared CASH/PRIZE geometries correctly survive)
-- **Auto perf-mode** (roadmap M2 sweep item): if the player has NEVER touched the PERFORMANCE toggle and mid-run FPS stays under 42 for 6 s, it flips on by itself (persisted, HUD notice "PERF MODE AUTO-ON — SEE OPTIONS"). Any explicit toggle choice ends the auto behavior for good
-- **Perf mode now also drops the 1024² shadow pass** (the third big GPU cost after resolution + transmission); OPTIONS help strings updated (en/ja/fi)
-- **FIX — FPS meter poisoning**: frames longer than 250 ms (tab switches / background throttling) no longer feed the FPS EMA, which showed bogus low FPS for seconds after returning (and could have false-triggered auto perf-mode)
-- **FIX — rotating while OPTIONS is open**: the arena never re-fit because orientation sync only runs on the title; RESUME now re-checks the fit on the way back
-- Cache-bust `?v=82` → `?v=83`; HUD label → v129
-
----
-
-## v128 — 2026-07-11
-**Roadmap M2: offline PWA — service worker caches the game for offline play**
-- **`toko-drop/sw.js`** (new, `?v=` tokened from day one): the whole module graph + shell + icons + logo + intro clip are **precached at install** (the first load races the worker, so runtime caching alone would leave offline boot to the evictable HTTP cache; verified — 20 entries, full title boots with the network cut). Tokened requests serve **cache-first** (immutable per release), the untokened page shell **network-first** with cache fallback, so the installed PWA plays offline but picks up new releases the moment it's online
-- Release discipline built in: the cache name embeds the literal `?v=` token so `bump-version.sh`'s global replace rotates it every release (sw.js added to the script's file loop); activation deletes old caches; only `res.ok` responses are cached (an edge 404 can't get pinned — v118/v119 lesson); GET + same-origin only, so feedback POSTs pass through untouched
-- Registered from `main.js` after `load` (never competes with boot), silent no-op where unsupported
-- Cache-bust `?v=81` → `?v=82`; HUD label → v128
-
----
-
-## v127 — 2026-07-11
-**Roadmap M2: SHARE button on the death screen + first-run tutorial hints**
-- **SHARE** (death screen, next to SEND/SKIP): native share sheet where it exists (mobile), clipboard fallback on desktop with a brief "COPIED!" flip. Shares `TOKO DROP — score · wave (· SMASH TV) · seed` + the game URL; doesn't dismiss the screen, so feedback can still be sent. en/ja/fi
-- **First-run tutorial hints**: a brand-new player's first ~22 s get four fading callouts low on the HUD — move, aim & fire, dash, and the graze rule ("near-misses pay score — dashes don't graze"). Input-aware (touch wording vs keyboard/stick), text-only per the GDD §2 boundary (no pauses, no input), marked seen (`tokoDropHintsSeen`) only after the full sequence plays so dying mid-sequence re-shows them next run
-- Cache-bust `?v=80` → `?v=81`; HUD label → v127
-
----
-
-## v126 — 2026-07-11
-**Roadmap M1 groundwork: OMEGA wall clamp + feedback chips ask about the new systems**
-- **OMEGA stays inside the walls**: the boss's 7.5-unit orbit is wider than half the SMASH TV room, so a wall-hugging player could push the crystal out through the doors (milder version possible in classic portrait too). Its position is now clamped to the arena every frame, like TORO
-- **Feedback chips refreshed** (roadmap M1): death-screen chips now probe the v114–v125 systems. New telemetry-driven "Wardens blocked my shots" chip (fires after 6+ shielded shots — tracked by a new per-run `shieldBlocks` counter that also rides the feedback payload) and a SMASH TV-only "Room exits confused me" chip. Positive chips are mode-aware: SMASH TV asks about door-to-door rooms, cash & prizes, grazes; classic swaps "Bullet-hell dodging" for "Close-call grazes" once you actually grazed. en/ja/fi
-- BOTFLY and WARDEN added to the telemetry chip name table (previously showed raw type names)
-- Cache-bust `?v=79` → `?v=80`; HUD label → v126
-
----
-
-## v125 — 2026-07-11
-**GRAZE system + boss escorts — risk pays, late bosses scale in tactics**
-- **GRAZE (both modes)**: an enemy bullet skimming within 0.55 units of you **while vulnerable** pays +25 score (doubled by an active multiplier) with a whisper-quiet zip + a tiny white spark, once per bullet. Dash i-frames don't graze — the reward tracks real risk, so weaving through fire beats dashing through it. Grazes feed the 25k milestones, show on the death screen (`· N GRAZE`, en/ja/fi), and ride along in the feedback payload for balance data
-- **Boss escorts**: from the 2nd boss (wave 16) OMEGA arrives under a **WARDEN umbrella** — two wardens from the 3rd (wave 24). Later bosses scale in TACTICS, not just HP: break the shield line first or fight a bullet-immune boss
-- Cache-bust `?v=78` → `?v=79`; HUD label → v125
-
----
-
-## v124 — 2026-07-11
-**Main-mode round: WARDEN shield-bearer, live scoring feedback, streak-heat juice — all in-action, no between-wave interruptions**
-- **WARDEN** (new enemy #18, wave 7+, cost 5 — rare): a cyan shield-bearer blob projecting a visible **floor aura (r 4.5)** that makes every enemy inside it **immune to bullets** (even piercing). It never attacks and never shields itself — the priority-target puzzle layered on top of the v116 shooter play. Gets the "!" entrance ping; the shield drops the instant it dies. Deflections read clearly: cyan sparks + a dull `shieldTink` instead of the hit sound
-- **Live scoring feedback (both modes, HUD-only)**: streak meter now escalates through **heat tiers** (gold → orange at ×10 → red-hot glow at ×20, size grows with streak); an active **2× score multiplier** shows a pulsing tag + draining time bar under the score; **milestone popups** flash mid-action for every 25,000 points (with a three-note sparkle) and at streak ×10/×20/×30
-- **Design boundary recorded in GDD §2** (agreed): classic/arcade mode has NO between-wave interruptions — screens/choices/reward beats belong to Roguelike mode exclusively; only non-interrupting feedback (fading banners, sounds, HUD meters) is allowed in classic. Everything in this release honors it
-- Difficulty-curve tuning deferred until real playtest runs land in the feedback inbox — that data drives the next balance pass
-- Cache-bust `?v=77` → `?v=78`; HUD label → v124
-
----
-
-## v123 — 2026-07-09
-**Main (classic) mode: readable wave rhythm — color-coded wave banners + a boss klaxon**
-- Classic mode computed a wave RHYTHM (normal / swarm / spike / boss every 8th) since forever but never surfaced it — the `announceWave()` helper was even dead code. Now **each wave opens with a brief color-coded banner** naming the incoming pressure so the rhythm is readable and you can plan the next ~20s: `WAVE N` (gold), `WAVE N — SWARM` (cyan), `WAVE N — HEAVY` (orange), `WAVE N — BOSS!` (red, lingers a beat longer)
-- **Boss klaxon** (`audio.bossHorn()`) — two ominous rising low tones + a noise swell on every boss wave in **both** modes, independent of the spoken announcer, so you always get the "here comes the boss" beat
-- The wave-banner renderer is now duration-aware (`waveIntroDur`) and color-driven (`waveIntroColor`); the SMASH TV room card reuses it, now tinted by room kind. Dead `announceWave()` removed
-- Cache-bust `?v=76` → `?v=77`; HUD label → v123
-
----
-
-## v122 — 2026-07-08
-**FIX: recorded title intro now actually plays — its own INTRO VOICE toggle + reliable gesture-safe triggers**
-- The v121 intro was gated on the ANNOUNCER toggle and only fired from `showTitle()`, but returning from OPTIONS (where the toggle lives) doesn't re-render the title and cold loads can't autoplay before a gesture — so it commonly never played
-- **New INTRO VOICE toggle** in OPTIONS → GAME SHOW (own `tokoDropIntroVoice` flag, **on by default**, fully independent of the announcer commentary). `audio.introJingle()` now gates on `setIntroVoice`, not the announcer
-- **Reliable triggers**, all inside a user gesture so audio is unlocked: flipping the toggle ON plays it immediately (hear exactly what it is); returning to the title from OPTIONS (RESUME) plays it; landing on the title after a run plays it. Still once per title visit; cold-load autoplay-block still self-retries on the next title render
-- en/ja/fi strings for the new toggle
-- Cache-bust `?v=75` → `?v=76`; HUD label → v122
-
----
-
-## v121 — 2026-07-08
-**Recorded announcer intro on the title screen (when the announcer toggle is on)**
-- A real voice clip ("TOKO DROP — START SHOOTING!") plays on the title screen when the **ANNOUNCER** toggle is on — `toko-drop/audio/announcer-intro.mp3` (62 KB), played via `audio.introJingle()` through an `HTMLAudioElement` at the master volume
-- **Post-processed offline** (ffmpeg, per the user's spec): rumble cut → **bass boost** (low-shelf +6 dB @110 Hz) → mud-cut + **presence EQ** (+4 dB @2.6 kHz) → short PA slap (`aecho`, the "**announcer vocalizer**") → **compression** (4:1, +5 dB makeup) → **stereo widen** (`extrastereo`) → limiter; encoded 128 kbps MP3 (baseline codec, plays everywhere; source m4a was HE-AAC which Chromium can't reliably decode)
-- Plays **once per title visit** (`_titleIntroPlayed`, reset in `startGame`); if a cold load blocks autoplay before any gesture, the flag un-sets so the next title re-render (after any chip/toggle tap) plays it. No-ops when the announcer is off or volume is 0
-- `scripts/bump-version.sh` now also tokenizes `js/audio.js` so the new mp3 path's `?v=` cache token bumps with every release (v118/v119 new-path lesson)
-- Cache-bust `?v=74` → `?v=75`; HUD label → v121
-
----
-
-## v120 — 2026-07-07
-**Design round two: risk-priced exits, greed placement, shooter entrance pings (both modes), room-transition dip, PWA install**
-- **Risk-priced exits (SMASH TV)**: the minimap choice is now a trade, not a freebie — **HEAVY rooms pay 2× floor loot** (+1 item, label reads "HEAVY 2×$"), **PRIZE$ rooms drop far fewer weapon pods** from moths (20/45/35 vs the smash-standard 40/30/30 — loot-rich but firepower-poor), SWARM's reward stays its streak-scoring bodies
-- **Greed placement (SMASH TV)**: big gold prizes now spawn NEAR a door — the walls that pour enemies — so grabbing the gift box is a risk you choose; cash piles stay scattered
-- **Shooter entrance pings (BOTH modes)**: when a deliberate shooter (v116) enters, a pulsing "!" hangs over it for ~1.6s and a sharp two-note alert plays — the game tells you the tactical picture changed
-- **Room-transition dip (SMASH TV)**: walking through an exit now fades to black for ~half a second with the room swap at the fade peak — traversal reads as going THROUGH the door, not a teleport (upgrade-card rooms skip it; the card panel is its own transition)
-- **PWA install**: `manifest.webmanifest` + 192/512 icons — the game installs to a phone home screen and runs fullscreen
-- Cache-bust `?v=73` → `?v=74`; HUD label → v120
+## v130 — 2026-07-12
+**Roadmap M3: DAILY RUN — everyone plays the same UTC-date seed**
+- **DAILY RUN chip** on the title (gold, under ROGUELIKE, persisted `tokoDropDaily`): while on, every run that day uses the same seed derived from the UTC date (hashed through the PRNG so consecutive days land far apart) — no server needed. Mode toggles stay yours; the run is simply tagged
+- **Daily best** kept per day (`tokoDropDailyBest`, separate from the all-time PB): new best shows a `★ DAILY BEST` badge on the death screen; today's best shows in the chip hint on the title
+- **DAILY tagging everywhere**: HUD seed label reads `DAILY · SEED …` mid-run, death screen shows `DAILY YYYY-MM-DD`, SHARE text includes it, and the feedback payload carries a `daily` field (groundwork for the v131 leaderboard)
+- en/ja/fi strings
+- Cache-bust `?v=83` → `?v=84`; HUD label → v130
 
 ---
 
 ## Archive
+
+**v120–v129 summary (2026-07-07 – 2026-07-12)**
+- v120: SMASH TV design round two — risk-priced exits (HEAVY 2×$, pod-poor PRIZE$ rooms), greed prize placement near doors, shooter entrance "!" pings (both modes), room-transition black dip, PWA install (manifest + icons)
+- v121: Recorded announcer intro on the title — ffmpeg-processed `announcer-intro.mp3` (bass boost / presence EQ / PA slap / compression / stereo widen)
+- v122: FIX — intro voice actually plays: own INTRO VOICE toggle (default on) + gesture-safe triggers (toggle flip, OPTIONS resume, post-run title)
+- v123: Classic wave rhythm made readable — color-coded wave banners (normal/SWARM/HEAVY/BOSS!) + boss klaxon in both modes
+- v124: WARDEN shield-bearer (aura makes nearby enemies bullet-immune; never shields itself), live scoring feedback (streak heat tiers, 2× multiplier tag + drain bar, 25k milestone popups), GDD §2 no-interruption boundary recorded
+- v125: GRAZE — near-misses while vulnerable pay +25 (dash i-frames don't); WARDEN escorts under late bosses
+- v126: FIX — OMEGA clamped inside the walls (could be pushed out through SMASH TV doors); feedback chips refreshed to probe the new systems (warden blocks, room exits, rooms/loot/graze positives)
+- v127: SHARE button on the death screen (native sheet / clipboard) + first-run tutorial hints (move/aim/dash/graze, input-aware, non-interrupting)
+- v128: Offline PWA — `sw.js` precaches the module graph at install; cache-first for tokened URLs, network-first shell; cache name rotates with the ?v= token
+- v129: FIX — powerup GPU leak (undisposed sphere geometry/material per pod, orphaned spheres on cash/prize swaps); auto perf-mode at sustained low FPS; perf mode also drops the shadow pass; FPS-EMA tab-switch guard; OPTIONS-rotation arena refit
 
 **v110–v119 summary (2026-07-04 – 2026-07-06)**
 - v110: FIX — arena always follows the viewport (stale ORIENTATION-chip choice pinned vertical maps onto landscape screens); toggle removed
