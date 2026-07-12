@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v132 — 2026-07-12
+**Visual feedback round: toned-down death pop, organic poison trails + fizz, glyph badges on every pickup**
+- **Death pop toned down** (user feedback: "large white 2D panels"): dying enemies flashed FULL white while scaling 3.2× — with the flat gel domes and several deaths a frame it strobed. Now the flash is the enemy's own color pulled 40% toward white, the pop grows 2.3×, and opacity fades on a squared curve (mostly transparent by the time it's large)
+- **Poison trails de-squared**: SLIME pools are 18-segment circles (were octagons) with a random rotation + irregular squash; the SLUDGE ribbon's width now undulates per point (organic poured streak instead of a straight-edged band)
+- **Minimalist fumes**: new instanced `BubblePool` (48 cap, droppable FX) — tiny rising, wiggling, popping bubbles fizz off live sludge ribbons and slime pools
+- **Every pickup carries a glyph badge** (was: weapon pods only): `+` HP, `★` invincible, `»` fire-rate, `×2` score multiplier, `$` cash/prizes — smaller and lower than pod glyphs so the field stays readable
+- Cache-bust `?v=85` → `?v=86`; HUD label → v132
+
+---
+
 ## v131 — 2026-07-12
 **Roadmap M3 complete: trust-based daily leaderboard (needs the Apps Script /exec URL to go live)**
 - **`scripts/leaderboard-sheet.gs`** (new): Apps Script web app, same 3-minute setup as the feedback sink but its own deployment — POST appends a row (initials/score/wave/seed/mode/build) with server-side plausibility caps (score ≤ 2M, wave ≤ 200, initials sanitized to 1-3 A-Z0-9); GET returns the day's top 10 as JSON, cached 60 s. Trust-based by design — documented in the script header

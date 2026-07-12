@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=85';
+import { TUNING } from './tuning.js?v=86';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -305,6 +305,10 @@ export const CFG = {
   [EnemyType.BOTFLY]:      { color: 0xff55bb, radius: 0.5,  speed: 2.0, hp: 2, bulletColor: 0xff66ee, fireInterval: 3.8  },
   [EnemyType.WARDEN]:      { color: 0x33ffdd, radius: 0.85, speed: 1.1, hp: 5, bulletColor: null,     fireInterval: null },
 };
+
+// Scratch colors for the tinted death flash (v132) — no per-death allocation.
+const _deathFlash = new THREE.Color();
+const _deathWhite = new THREE.Color(0xffffff);
 
 // Per-type motion-trail signature (v36) — interval = cadence (denser = smaller),
 // size = mark size ×radius. Dangerous/fast types leave bolder streaks; absent = no trail.
@@ -1578,15 +1582,18 @@ export class Enemy {
     this._deathT -= dt;
     const t = 1 - Math.max(this._deathT, 0) / 0.28;
 
+    // v132: pop growth 3.2× → 2.3× and a squared fade (mostly transparent by
+    // the time it's large) — the death stays readable without the old
+    // screen-filling flash panels.
     if (this.type === EnemyType.TORO || this.type === EnemyType.BAMBU || this.type === EnemyType.PYRA) {
-      this.group.scale.setScalar(1 + t * 2.2);
+      this.group.scale.setScalar(1 + t * 1.3);
     } else {
       // Blobs: the shared dome is unit-sized, so the death pop scales from the
       // real body size (radius × elite mult), not from 1.
-      this.mesh.scale.setScalar(this._deathBaseScale() * (1 + t * 2.2));
+      this.mesh.scale.setScalar(this._deathBaseScale() * (1 + t * 1.3));
     }
     const baseOpacity = (CUBE_TYPES.has(this.type) || this.type === EnemyType.BAMBU) ? 0.88 : 0.82;
-    this._setOpacity((1 - t) * baseOpacity);
+    this._setOpacity((1 - t) * (1 - t) * baseOpacity);
 
     // Pre-death tear (blobs): violent thrash strongest at death onset, fading as it bursts.
     const _gu = this.mat.uniforms ?? this.mat.gooU;
@@ -1614,7 +1621,11 @@ export class Enemy {
     this._sq     = 1.0;
     this._sqV    = 0.0;
     if (this._flopActive) { this.mesh.quaternion.identity(); this._flopActive = false; }
-    this._setEmissive(0xffffff);
+    // v132: the death pop used to flash FULL white — with the flat gel domes
+    // and several deaths a frame it read as harsh white panels slamming the
+    // screen. Flash in the enemy's own color pulled 40% toward white instead:
+    // still a clear "it died" pop, no strobe.
+    this._setEmissive(_deathFlash.setHex(CFG[this.type].color).lerp(_deathWhite, 0.4).getHex());
     this.mat.transparent = true;
     this.mat.depthWrite  = false;
     if (this.type === EnemyType.TORO || this.type === EnemyType.BAMBU || this.type === EnemyType.PYRA) {
