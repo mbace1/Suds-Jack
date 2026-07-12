@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { makeSatinMat } from './enemy.js?v=82';
+import { makeSatinMat } from './enemy.js?v=83';
 
 const SPEED          = 6;
 const DASH_SPEED     = 26;
