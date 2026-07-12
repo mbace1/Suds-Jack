@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v133 — 2026-07-12
+**Strategic layer: BOUNTY targets + CLEANSE foam zones (the anti-hazard) — GDD §9b**
+- **BOUNTY** (every 3rd wave from 4, never boss waves): the wave's first arrival carries a pulsing gold floor ring + a "BOUNTY 8" countdown tag. Kill it inside the window → `1500 + wave×100` cash (×2 under a multiplier), a gold popup, and a **guaranteed weapon pod** at the body — from ANY kill source (everything funnels through `onKill`). Expired = it quietly becomes a normal enemy. Announcer gets bounty lines
+- **CLEANSE foam zone** (every 4th wave from 6, seeded — daily runs get identical placements): a glowing foam pool you WANT to stand in — the deliberate anti-thesis of the poison hazards. Hold your ground inside ~1.2 s (progress ring fills; decays 1.5× when you leave) → full-screen enemy-bullet cleanse paying `500 + 10 per bullet cleared`, foam-spark burst, new `cleanse()` sparkle. Standing still in a bullet-hell IS the price. Ignored zones fade out after 12 s
+- Both are optional, in-action, and non-interrupting (GDD §2); design recorded as **GDD §9b** alongside gates
+- Cache-bust `?v=86` → `?v=87`; HUD label → v133
+
+---
+
 ## v132 — 2026-07-12
 **Visual feedback round: toned-down death pop, organic poison trails + fizz, glyph badges on every pickup**
 - **Death pop toned down** (user feedback: "large white 2D panels"): dying enemies flashed FULL white while scaling 3.2× — with the flat gel domes and several deaths a frame it strobed. Now the flash is the enemy's own color pulled 40% toward white, the pop grows 2.3×, and opacity fades on a squared curve (mostly transparent by the time it's large)

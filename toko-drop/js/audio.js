@@ -19,6 +19,7 @@ const ANNOUNCER_LINES = {
   clear:    ['EXCELLENT!', 'GOOD! GOOD!', 'SPOTLESS!'],
   exit:     ['THE DOORS ARE OPEN — MOVE!', 'PICK A DOOR! ANY DOOR!',
              'CHOOSE YOUR NEXT ROOM!'],
+  bounty:   ['BOUNTY ON THE FIELD — TAG IT!', 'GOLD TARGET! EIGHT SECONDS!'],
 };
 // gameover/boss cut off whatever is mid-sentence; everything else waits its turn.
 const ANNOUNCER_URGENT = new Set(['gameover', 'boss']);
@@ -61,7 +62,7 @@ class AudioSystem {
     if (!this._introVoice || this._volume <= 0) return null;
     try {
       if (!this._introEl) {
-        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=86', import.meta.url).href);
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=87', import.meta.url).href);
         this._introEl.preload = 'auto';
       }
       this._introEl.volume = this._volume;
@@ -152,6 +153,12 @@ class AudioSystem {
   shieldTink() { this._tone(1900, 0.05, 'triangle', 0.10, 1400); }
   // Graze (v125): whisper-quiet zip as a bullet skims past — felt, not loud.
   grazeTick() { this._tone(2400, 0.035, 'sine', 0.07, 2800); }
+  // CLEANSE burst (v133): bright rising sparkle over a soft foam wash.
+  cleanse() {
+    [660, 880, 1320].forEach((f, i) =>
+      setTimeout(() => this._tone(f, 0.16, 'sine', 0.18), i * 60));
+    this._noise(0.10, 0.35);
+  }
   // Score milestone (v124): quick rising three-note sparkle.
   milestone() {
     [523, 659, 784].forEach((f, i) =>
