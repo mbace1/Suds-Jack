@@ -253,6 +253,12 @@ mouse+keyboard (left stick move, right stick look-rate, RT/RB hold-fire) with A 
 jump ×2 and B/LT = dash edge-detected in the poll — so nothing downstream knows a pad
 is in use. Axes are deadzoned (0.18) and the move vector clamped to unit length. When
 no pad is present the getters fall through to the existing mouse/keyboard/touch logic.
+Menus too: `input.consumeUi()` returns edge-detected d-pad/stick up-down + A/B/Start;
+`gamepadMenu()` (main.js, in `animate()` whenever not actively playing) moves a
+`gfocus` class across the overlay's buttons, A activates via synthetic `pointerdown`
+(main action when nothing focused), Start pauses mid-run, B/Start resumes.
+`startGame()` drains stale A/B edges. Gamepad presses don't grant user-activation —
+audio needs one real click/touch first.
 
 **Style meter (`main.js`):** a Returnal/DMC-style rank that rewards chaining. `addStyle`
 adds by event (per-type kills via `STYLE_GAIN`, +4 per dash-through-orb credited once

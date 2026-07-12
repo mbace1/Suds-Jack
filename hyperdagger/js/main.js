@@ -5,7 +5,7 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=13';
+import { InputManager } from './input.js?v=22';
 import { Player } from './player.js?v=10';
 import { DaggerPool } from './daggers.js?v=10';
 import { GemPool } from './gems.js?v=10';
@@ -857,6 +857,12 @@ function goFullscreen() {
 function startGame() {
   goFullscreen();
   resetRun();
+  gfocus = -1;
+  // drain A/B edges accumulated while menuing so the run doesn't open with
+  // a phantom jump or dash
+  input.consumeJump();
+  input.consumeDash();
+  input.consumeDashFlick();
   state = 'playing';
   paused = false;
   elMsg.style.display = 'none';
@@ -1781,12 +1787,48 @@ function updateFeel(dt) {
   handGroup.position.y = -0.4 + Math.sin(performance.now() * 0.0017) * 0.006;
 }
 
+// Gamepad menu navigation: d-pad / left stick moves focus across the overlay
+// buttons, A activates (or fires the screen's main action when nothing is
+// focused), B/Start resumes from pause, Start pauses mid-run. Focus is a CSS
+// class re-applied every frame so menu re-renders can't strand it.
+let gfocus = -1;
+
+function menuButtons() {
+  return elMsg.style.display === 'block' ? [...elMsg.querySelectorAll('button')] : [];
+}
+
+function gamepadMenu() {
+  const ui = input.consumeUi();
+  const btns = menuButtons();
+  if (gfocus >= btns.length) gfocus = btns.length - 1;
+  if (ui.down && btns.length) gfocus = (gfocus + 1) % btns.length;
+  if (ui.up && btns.length) gfocus = gfocus <= 0 ? btns.length - 1 : gfocus - 1;
+  btns.forEach((b, i) => b.classList.toggle('gfocus', i === gfocus));
+  const resume = state === 'playing' && paused && (ui.b || ui.start);
+  if (ui.a && gfocus >= 0 && btns[gfocus]) {
+    btns[gfocus].dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+  } else if ((ui.a && gfocus < 0) || resume) {
+    // main action: start / retry / resume — same path as a screen tap.
+    // (Note: gamepad presses don't grant browser user-activation, so audio
+    // stays silent until the first real click/touch — unavoidable.)
+    gfocus = -1;
+    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+  }
+}
+
 function animate() {
   requestAnimationFrame(animate);
   const rawDt = clock.getDelta(); // unclamped — the governor needs real frame cost
   const dt = Math.min(rawDt, 0.05);
   perfGovern(performance.now(), rawDt * 1000);
   input.pollGamepad();
+  if (state !== 'playing' || paused) {
+    gamepadMenu();
+  } else if (input.consumeUi().start) {
+    // Start pauses mid-run (pointer-locked mice can't reach the ⏸ button)
+    if (document.pointerLockElement) document.exitPointerLock(); // triggers showPause
+    else showPause();
+  }
   skyMat.uniforms.uTime.value += dt;
   dust.rotation.y += dt * 0.012;
   if (state === 'playing' && !paused) {
