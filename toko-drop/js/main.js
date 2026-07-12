@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=86';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=86';
-import { Player, PLAYER_RADIUS } from './player.js?v=86';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=86';
-import { audio } from './audio.js?v=86';
-import { initDesigner } from './designer.js?v=86';
-import { t, getLang, setLang, langs } from './lang.js?v=86';
-import { TUNING } from './tuning.js?v=86';
+import { InputManager } from './input.js?v=87';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=87';
+import { Player, PLAYER_RADIUS } from './player.js?v=87';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=87';
+import { audio } from './audio.js?v=87';
+import { initDesigner } from './designer.js?v=87';
+import { t, getLang, setLang, langs } from './lang.js?v=87';
+import { TUNING } from './tuning.js?v=87';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1050,6 +1050,99 @@ class BubblePool {
   }
 }
 const bubblePool = new BubblePool(scene);
+
+// ── Secondary objectives (v133) ──────────────────────────────────────────────
+// BOUNTY: every 3rd wave one arrival is marked gold for 8 s — kill it inside
+// the window for big cash + a guaranteed weapon pod. Miss it and it's just an
+// enemy again. A prioritization problem layered onto the wave, the way gates
+// reward a positioning detour.
+let bountyEnemy = null, bountyT = 0, bountyArm = false;
+const bountyRing = new THREE.Mesh(
+  new THREE.RingGeometry(1.05, 1.3, 26),
+  new THREE.MeshBasicMaterial({ color: 0xffcc33, transparent: true, opacity: 0.8,
+    blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+bountyRing.rotation.x = -Math.PI / 2;
+bountyRing.position.y = 0.05;
+bountyRing.visible = false;
+scene.add(bountyRing);
+function clearBounty() { bountyEnemy = null; bountyT = 0; bountyRing.visible = false; }
+
+// CLEANSE zone: the anti-hazard — a foam pool you WANT to stand in. Hold your
+// ground inside for ~1.2 s and it detonates a full-screen bullet cleanse and
+// pays per bullet cleared. Standing still in a bullet-hell IS the price.
+// Appears every 4th wave from wave 6; expires if ignored.
+let foamZones = [];
+class FoamZone {
+  constructor(sc, x, z) {
+    this.x = x; this.z = z;
+    this.radius  = 2.2;
+    this._life   = 12;
+    this._charge = 0;
+    this._done   = false;
+    this._burstT = 0;
+    this.mat = new THREE.MeshBasicMaterial({ color: 0x99eeff, transparent: true, opacity: 0.16, depthWrite: false });
+    this.mesh = new THREE.Mesh(new THREE.CircleGeometry(this.radius, 26), this.mat);
+    this.mesh.rotation.x = -Math.PI / 2; this.mesh.position.set(x, 0.02, z);
+    this.rimMat = new THREE.MeshBasicMaterial({ color: 0xbbf4ff, transparent: true, opacity: 0.5, depthWrite: false, side: THREE.DoubleSide });
+    this.rim = new THREE.Mesh(new THREE.RingGeometry(this.radius - 0.12, this.radius, 32), this.rimMat);
+    this.rim.rotation.x = -Math.PI / 2; this.rim.position.set(x, 0.025, z);
+    // Charge disc: grows from the center as the player holds their ground.
+    this.fillMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.22, depthWrite: false });
+    this.fill = new THREE.Mesh(new THREE.CircleGeometry(this.radius, 26), this.fillMat);
+    this.fill.rotation.x = -Math.PI / 2; this.fill.position.set(x, 0.03, z);
+    this.fill.scale.setScalar(0.001);
+    sc.add(this.mesh); sc.add(this.rim); sc.add(this.fill);
+  }
+  update(dt) {
+    if (this._done) {   // burst: quick expand + fade, then gone
+      this._burstT -= dt;
+      const k = 1 - Math.max(0, this._burstT) / 0.3;
+      this.fill.scale.setScalar(1 + k * 1.6);
+      this.fillMat.opacity = 0.35 * (1 - k);
+      this.rimMat.opacity  = 0.5  * (1 - k);
+      this.mat.opacity     = 0.16 * (1 - k);
+      return this._burstT > 0;
+    }
+    this._life -= dt;
+    if (this._life <= 0) return false;
+    const inside = player.alive &&
+      Math.hypot(player.position.x - this.x, player.position.z - this.z) < this.radius;
+    this._charge = Math.max(0, Math.min(1.2, this._charge + (inside ? dt : -dt * 1.5)));
+    this.fill.scale.setScalar(Math.max(0.001, this._charge / 1.2));
+    this.rimMat.opacity = 0.3 + (inside ? 0.4 : 0.12) * Math.abs(Math.sin(performance.now() * 0.006));
+    this.mat.opacity = 0.16 * Math.min(1, this._life / 1.5);  // fade out if ignored
+    if (Math.random() < dt * 4) {
+      bubblePool.spawn(this.x + (Math.random() - 0.5) * this.radius * 1.4,
+                       this.z + (Math.random() - 0.5) * this.radius * 1.4, 0xccf6ff);
+    }
+    if (this._charge >= 1.2) this._cleanse();
+    return true;
+  }
+  _cleanse() {
+    this._done = true; this._burstT = 0.3;
+    let n = 0;
+    for (let i = bullets.active.length - 1; i >= 0; i--) {
+      const b = bullets.active[i];
+      if (b.isPlayer) continue;
+      gooChunkPool.spawn(b.mesh.position.x, 0.5, b.mesh.position.z,
+        (Math.random() - 0.5) * 3, 2.5, (Math.random() - 0.5) * 3, 0xccf6ff, 0.07);
+      bullets.recycleAt(i); n++;
+    }
+    const r = (500 + n * 10) * (scoreMultT > 0 ? 2 : 1);  // pays per bullet cleared
+    score += r;
+    damageNumbers.push(new DamageNumber(this.x, 1.2, this.z, `+${r}`, '187,244,255'));
+    milestoneT = 1.1; milestoneText = 'CLEANSED!';
+    addShake(0.18);
+    audio.cleanse();
+    audio.announce('clear');
+  }
+  remove(sc) {
+    sc.remove(this.mesh); sc.remove(this.rim); sc.remove(this.fill);
+    this.mesh.geometry.dispose(); this.mat.dispose();
+    this.rim.geometry.dispose();  this.rimMat.dispose();
+    this.fill.geometry.dispose(); this.fillMat.dispose();
+  }
+}
 // Cube-looking death particles only come from cube enemies; everything else
 // (blobs, TORO, BAMBU, PYRA, OMEGA, pickups, moths) bursts into round goo bits.
 const chunksFor = type => CUBE_TYPES_FX.has(type) ? chunkPool : gooChunkPool;
@@ -1287,6 +1380,22 @@ function onKill(e) {
   streak++;
   score += 100 * streak * (scoreMultT > 0 ? 2 : 1);
   if (streak > 0 && streak % 5 === 0) audio.announce('streak');
+  // BOUNTY claim (v133): marked target down inside the window — big cash and
+  // a guaranteed weapon pod at the body. Works from any kill source (bullets,
+  // gate lasers, dash boom) since everything funnels through onKill.
+  if (e === bountyEnemy && bountyT > 0) {
+    const r = (1500 + wave * 100) * (scoreMultT > 0 ? 2 : 1);
+    score += r;
+    milestoneT = 1.2; milestoneText = `BOUNTY +${r}!`;
+    damageNumbers.push(new DamageNumber(
+      e.position.x, e.fxY + e.radius + 0.4, e.position.z, `+${r}`, '255,204,51'));
+    const pod = new Powerup(scene, e.position.x, e.position.z, randomWeaponPodId(wave >= 4));
+    pod._life = 10.0;
+    powerups.push(pod);
+    audio.milestone();
+    audio.announce('money');
+    clearBounty();
+  }
   // Streak-tier popup (v124): a beat of celebration at 10/20/30… without
   // interrupting play (classic mode stays uninterrupted by design).
   if (streak >= 10 && streak % 10 === 0) {
@@ -2123,6 +2232,23 @@ function drawHUD() {
     ctx.restore();
   }
 
+  // BOUNTY tag (v133): gold label + countdown shadowing the marked enemy.
+  if (bountyEnemy && bountyEnemy.alive && bountyT > 0 && gameState === 'playing') {
+    const p = toScreen({
+      x: bountyEnemy.position.x,
+      y: bountyEnemy.fxY + bountyEnemy.radius * 2 + 1.3,
+      z: bountyEnemy.position.z,
+    });
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 13px monospace, sans-serif';
+    ctx.shadowColor = '#ffcc33';
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = '#ffdd66';
+    ctx.fillText(`BOUNTY ${Math.ceil(bountyT)}`, p.x, p.y);
+    ctx.restore();
+  }
+
   // Damage numbers / loot value popups
   ctx.textAlign = 'center';
   for (const dn of damageNumbers) {
@@ -2170,7 +2296,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v132', 16, uiCanvas.height - 12);
+  ctx.fillText('v133', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2799,6 +2925,8 @@ function clearFX() {
   for (const z of poisonZones)   z.remove(scene); poisonZones   = [];
   for (const s of slimeTrails)   s.remove(scene); slimeTrails   = [];
   for (const r of sludgeRibbons) r.remove(scene); sludgeRibbons = [];
+  for (const f of foamZones)    f.remove(scene); foamZones     = [];
+  clearBounty();
   for (const g of gates)        g.remove(scene); gates         = [];
   for (const p of powerups)     p.remove(scene); powerups      = [];
   clearBossAuras();
@@ -2878,6 +3006,16 @@ function spawnWave() {
   // Schedule cargo convoys (start mid-wave, seeded position). SMASH TV runs a
   // second prize convoy per wave — big money, big prizes.
   const kind = (smashMode && smashRoomKind) ? smashRoomKind : waveKind(wave);
+  // Secondary objectives (v133): an unclaimed bounty dies with its wave; every
+  // 3rd wave (from 4, never boss waves) arms a new one for the spawn drain to
+  // mark. CLEANSE foam appears every 4th wave from 6 — seeded, so daily runs
+  // get identical placements.
+  clearBounty();
+  bountyArm = wave >= 4 && wave % 3 === 1 && kind !== 'boss';
+  if (wave >= 6 && wave % 4 === 2) {
+    foamZones.push(new FoamZone(scene,
+      (rng() * 2 - 1) * (HALF_X - 4), (rng() * 2 - 1) * (HALF_Z - 4)));
+  }
   clusterTimer = 0;
   clusterSpawnAt = [3 + rng() * 5]; // 3-8 s into the wave — always overlaps live enemies
   if (smashMode) clusterSpawnAt.push(12 + rng() * 5);
@@ -3259,6 +3397,17 @@ function loop() {
         en.hp = Math.ceil(en.hp * 1.5); en._hpMult = 1.5;
       }
     }
+    // BOUNTY mark (v133): the first non-boss arrival of an armed wave carries
+    // the gold ring — 8 s on the clock from the moment it steps in.
+    if (bountyArm && !s.boss) {
+      bountyArm = false;
+      bountyEnemy = en;
+      bountyT = 8;
+      bountyRing.visible = true;
+      en._pingT = Math.max(en._pingT || 0, 1.6);
+      audio.shooterPing();
+      audio.announce('bounty');
+    }
     enemies.push(en);
   }
 
@@ -3329,6 +3478,22 @@ function loop() {
   }
   for (let i = slimeTrails.length - 1; i >= 0; i--) {
     if (!slimeTrails[i].update(dt)) { slimeTrails[i].remove(scene); slimeTrails.splice(i, 1); }
+  }
+  for (let i = foamZones.length - 1; i >= 0; i--) {
+    if (!foamZones[i].update(dt)) { foamZones[i].remove(scene); foamZones.splice(i, 1); }
+  }
+
+  // BOUNTY tick (v133): the ring shadows its target; the window closing
+  // un-marks the enemy without ceremony — it's just an enemy again.
+  if (bountyEnemy) {
+    if (!bountyEnemy.alive || (bountyT -= dt) <= 0) {
+      clearBounty();
+    } else {
+      bountyRing.position.set(bountyEnemy.position.x, 0.05, bountyEnemy.position.z);
+      bountyRing.scale.setScalar(Math.max(0.8, bountyEnemy.radius) *
+        (1 + 0.1 * Math.sin(performance.now() * 0.012)));
+      bountyRing.material.opacity = 0.45 + 0.35 * Math.abs(Math.sin(performance.now() * 0.008));
+    }
   }
 
   // Sludge poison emission
@@ -3878,6 +4043,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=86').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=87').catch(() => {});
   });
 }

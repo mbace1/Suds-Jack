@@ -210,6 +210,22 @@ Spawn from wave 3. One gate per wave. A gate is two posts with a laser beam betw
 - **Player dash-through:** detonates gate — 14-shard teal burst, camera shake, pickup sound, spawns one floor powerup at gate centre. Posts remain as scenery.
 - Gate position: random within `HALF_X × 1.5` / `HALF_Z × 1.5`.
 
+### 9b. Secondary objectives & anti-hazards *(v133)*
+
+Gates proved the pattern: an optional in-action objective that rewards a
+deliberate detour. Two more layers on the same axis (both fully optional,
+non-interrupting per §2):
+
+- **BOUNTY** — every 3rd wave (from 4, never boss waves) the first arrival is
+  marked with a gold ring + 8 s countdown. Kill it inside the window →
+  `1500 + wave×100` (×2 under a multiplier) + a guaranteed weapon pod at the
+  body. Expired = it's just an enemy again. A *prioritization* problem.
+- **CLEANSE foam zone** — the anti-thesis of the poison hazards: a foam pool
+  you *want* to stand in. Every 4th wave (from 6, seeded — daily runs match).
+  Holding your ground inside for ~1.2 s (progress decays 1.5× when you leave)
+  detonates a full-screen enemy-bullet cleanse paying `500 + 10/bullet`.
+  Standing still in a bullet-hell IS the price. A *positioning* problem.
+
 ---
 
 ## 10. Audio Design *(v10)*
