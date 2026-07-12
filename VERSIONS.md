@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v131 — 2026-07-12
+**Roadmap M3 complete: trust-based daily leaderboard (needs the Apps Script /exec URL to go live)**
+- **`scripts/leaderboard-sheet.gs`** (new): Apps Script web app, same 3-minute setup as the feedback sink but its own deployment — POST appends a row (initials/score/wave/seed/mode/build) with server-side plausibility caps (score ≤ 2M, wave ≤ 200, initials sanitized to 1-3 A-Z0-9); GET returns the day's top 10 as JSON, cached 60 s. Trust-based by design — documented in the script header
+- **Death-screen DAILY TOP 10** (daily runs only, and ONLY once `LEADERBOARD_ENDPOINT` in `main.js` is set — until then zero UI): the day's board loads above the feedback chips (fails silent offline); posting is explicit — 3-letter initials (remembered in `tokoDropInitials`) + POST SCORE, once per death; your row inserts optimistically, gold-highlighted at its rank
+- en/ja/fi strings
+- Cache-bust `?v=84` → `?v=85`; HUD label → v131
+
+---
+
 ## v130 — 2026-07-12
 **Roadmap M3: DAILY RUN — everyone plays the same UTC-date seed**
 - **DAILY RUN chip** on the title (gold, under ROGUELIKE, persisted `tokoDropDaily`): while on, every run that day uses the same seed derived from the UTC date (hashed through the PRNG so consecutive days land far apart) — no server needed. Mode toggles stay yours; the run is simply tagged

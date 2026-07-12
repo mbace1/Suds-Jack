@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=84';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=84';
-import { Player, PLAYER_RADIUS } from './player.js?v=84';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=84';
-import { audio } from './audio.js?v=84';
-import { initDesigner } from './designer.js?v=84';
-import { t, getLang, setLang, langs } from './lang.js?v=84';
-import { TUNING } from './tuning.js?v=84';
+import { InputManager } from './input.js?v=85';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=85';
+import { Player, PLAYER_RADIUS } from './player.js?v=85';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=85';
+import { audio } from './audio.js?v=85';
+import { initDesigner } from './designer.js?v=85';
+import { t, getLang, setLang, langs } from './lang.js?v=85';
+import { TUNING } from './tuning.js?v=85';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1509,6 +1509,11 @@ function buildPositiveReasons() {
 //    is empty.
 const SHEET_ENDPOINT     = '';  // e.g. 'https://script.google.com/macros/s/XXXX/exec'
 const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mdarbpve';
+// Daily leaderboard (v131, roadmap M3): scripts/leaderboard-sheet.gs, same
+// 3-minute Apps Script setup as the feedback sink but its own deployment.
+// EMPTY = the death screen shows no leaderboard UI at all.
+const LEADERBOARD_ENDPOINT = '';  // e.g. 'https://script.google.com/macros/s/YYYY/exec'
+let _lbPosted = false;  // one POST per death, reset each run
 function postFeedback(record) {
   const payload = JSON.stringify({
     ...record,
@@ -2081,7 +2086,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v130', 16, uiCanvas.height - 12);
+  ctx.fillText('v131', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2392,9 +2397,94 @@ function showGameOver() {
     `<div class="d-sub" style="font-size:12px;opacity:0.3;margin-top:10px">${t('seed')} ${seedHex}` +
       (_dailyRun ? ` &nbsp;·&nbsp; <span style="color:#ffdd66">DAILY ${_dailyRun}</span>` : ``) +
     `</div>` +
+    `<div id="lb-slot"></div>` +
     `<div id="feedback-slot" style="margin-top:18px"></div>`;
 
+  buildDailyLeaderboard(document.getElementById('lb-slot'));
   buildFeedbackPanel(document.getElementById('feedback-slot'));
+}
+
+// Daily leaderboard panel (v131): DAILY runs only, and only once
+// LEADERBOARD_ENDPOINT is configured. GET fills the day's top 10 (fails
+// silent offline); POST is explicit — initials + a tap — and once per death.
+// The POST is no-cors/text/plain like the feedback sink, so the response is
+// opaque: the player's row is inserted locally, optimistically.
+function buildDailyLeaderboard(slot) {
+  if (!slot || !LEADERBOARD_ENDPOINT || !_dailyRun) return;
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'margin:16px auto 0;width:min(300px,80vw)';
+  wrap.innerHTML =
+    `<div style="font-size:12px;letter-spacing:2px;color:#ffdd66;margin-bottom:8px">` +
+    `${t('lbTitle')} — ${_dailyRun}</div>`;
+  const list = document.createElement('div');
+  list.style.cssText = 'font-size:12px;line-height:1.7;margin-bottom:10px;min-height:17px;opacity:0.85';
+  list.textContent = '…';
+  wrap.appendChild(list);
+
+  const renderRows = rows => {
+    list.innerHTML = '';
+    if (!rows.length) { list.textContent = t('lbNone'); return; }
+    rows.slice(0, 10).forEach((r, i) => {
+      const row = document.createElement('div');
+      row.style.cssText =
+        'display:flex;gap:10px;justify-content:space-between;padding:0 8px;' +
+        (r._mine ? 'color:#ffdd66;text-shadow:0 0 8px #ffaa00;' : '');
+      row.innerHTML = `<span>${i + 1}. ${r.initials}</span>` +
+        `<span>${r.score} ${t('pts')} · W${r.wave}</span>`;
+      list.appendChild(row);
+    });
+  };
+
+  let rows = [];
+  fetch(`${LEADERBOARD_ENDPOINT}?daily=${_dailyRun}`)
+    .then(res => res.json())
+    .then(top => { rows = Array.isArray(top) ? top : []; renderRows(rows); })
+    .catch(() => { list.textContent = ''; });
+
+  const form = document.createElement('div');
+  form.style.cssText = 'display:flex;gap:8px;justify-content:center;align-items:center';
+  const ini = document.createElement('input');
+  ini.maxLength = 3;
+  ini.placeholder = 'AAA';
+  ini.value = localStorage.getItem('tokoDropInitials') || '';
+  ini.style.cssText =
+    'pointer-events:auto;width:56px;text-align:center;text-transform:uppercase;' +
+    'background:rgba(0,0,0,0.4);border:1.5px solid #445;border-radius:7px;color:#ffdd66;' +
+    'font-family:monospace,sans-serif;font-size:14px;font-weight:bold;padding:6px 4px;outline:none';
+  ini.addEventListener('keydown', e => e.stopPropagation());
+  const postBtn = document.createElement('div');
+  postBtn.dataset.ui = '1';
+  postBtn.textContent = _lbPosted ? t('lbPosted') : t('lbPost');
+  postBtn.style.cssText =
+    'pointer-events:auto;cursor:pointer;user-select:none;font-size:12px;font-weight:bold;' +
+    'padding:7px 14px;border-radius:7px;letter-spacing:1px;border:2px solid #ffcc33;' +
+    'background:rgba(0,0,0,0.35);color:#ffdd66;text-shadow:0 0 10px #ffaa00;';
+  postBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    if (_lbPosted) return;
+    const initials = ini.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
+    if (!initials) { ini.focus(); return; }
+    localStorage.setItem('tokoDropInitials', initials);
+    _lbPosted = true;
+    fetch(LEADERBOARD_ENDPOINT, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        initials, score, wave, daily: _dailyRun,
+        seed: runSeed.toString(16).toUpperCase().padStart(6, '0'),
+        mode: `${roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}`,
+        build: new URL(import.meta.url).searchParams.get('v') ?? '?',
+      }),
+    }).catch(() => {});
+    postBtn.textContent = t('lbPosted');
+    rows = [...rows, { initials, score, wave, _mine: true }]
+      .sort((a, b) => b.score - a.score);
+    renderRows(rows);
+  });
+  form.appendChild(ini);
+  form.appendChild(postBtn);
+  wrap.appendChild(form);
+  slot.appendChild(wrap);
 }
 
 // Death-screen feedback panel: quick-pick reason chips (some predicted from this
@@ -2859,7 +2949,7 @@ function startGame() {
   applyArenaMode(landscapeMode);
   score  = 0; streak = 0; wave = 0; runTimer = 0; scoreMultT = 0; waveClearFlashT = 0;
   milestoneT = 0; nextMilestone = 25000; grazeCount = 0; shieldBlockCount = 0;
-  collectedUpgrades = []; hitEventLog = []; _lastHitTime = -1;
+  collectedUpgrades = []; hitEventLog = []; _lastHitTime = -1; _lbPosted = false;
   scheduleTutorialHints();
   BULLET_CONFIG.playerBulletScale  = 1.0;
   BULLET_CONFIG.playerPiercing     = false;
@@ -3701,6 +3791,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=84').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=85').catch(() => {});
   });
 }
