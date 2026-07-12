@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=85';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=85';
-import { Player, PLAYER_RADIUS } from './player.js?v=85';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=85';
-import { audio } from './audio.js?v=85';
-import { initDesigner } from './designer.js?v=85';
-import { t, getLang, setLang, langs } from './lang.js?v=85';
-import { TUNING } from './tuning.js?v=85';
+import { InputManager } from './input.js?v=86';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=86';
+import { Player, PLAYER_RADIUS } from './player.js?v=86';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=86';
+import { audio } from './audio.js?v=86';
+import { initDesigner } from './designer.js?v=86';
+import { t, getLang, setLang, langs } from './lang.js?v=86';
+import { TUNING } from './tuning.js?v=86';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -567,14 +567,23 @@ class SlimeTrail {
       opacity: 0.45,
       depthWrite: false,
     });
-    this.mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, 8), this.mat);
+    // v132: 18 segments (was 8 — the octagon read as a square splat) plus a
+    // slight irregular squash so pools look organic, not stamped.
+    this.mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, 18), this.mat);
     this.mesh.rotation.x = -Math.PI / 2;
+    this.mesh.rotation.z = Math.random() * Math.PI * 2;
+    this.mesh.scale.set(0.85 + Math.random() * 0.3, 0.85 + Math.random() * 0.3, 1);
     this.mesh.position.set(x, 0.013, z);
     sc.add(this.mesh);
   }
   update(dt) {
     this._life -= dt;
     this.mat.opacity = 0.45 * Math.max(0, this._life / 2.0);
+    // Lazy fizz: the odd bubble rises off a live pool.
+    if (this._life > 0.5 && Math.random() < dt * 1.5) {
+      bubblePool.spawn(this.mesh.position.x + (Math.random() - 0.5) * 0.6,
+                       this.mesh.position.z + (Math.random() - 0.5) * 0.6, 0xccee66);
+    }
     return this._life > 0;
   }
   remove(sc) { sc.remove(this.mesh); }
@@ -633,12 +642,20 @@ class SludgeRibbon {
         if (i < n - 1) { tx = pts[i+1].x - pts[i].x; tz = pts[i+1].z - pts[i].z; }
         else            { tx = pts[i].x - pts[i-1].x; tz = pts[i].z - pts[i-1].z; }
         const tl = Math.hypot(tx, tz);
+        // v132: undulating width — the straight-edged quad strip read as a
+        // square band; a per-point sway makes it a poured organic streak.
+        const ww = hw * (0.72 + 0.28 * Math.sin(i * 1.9 + this._t * 2.2));
         let px, pz;
         if (tl < 1e-4) { px = lpx; pz = lpz; } // coincident points: keep last direction
-        else           { px = -tz / tl * hw; pz = tx / tl * hw; lpx = px; lpz = pz; }
+        else           { px = -tz / tl * ww; pz = tx / tl * ww; lpx = px; lpz = pz; }
         const b = i * 6;
         this._posArr[b]   = pts[i].x + px; this._posArr[b+1] = 0; this._posArr[b+2] = pts[i].z + pz;
         this._posArr[b+3] = pts[i].x - px; this._posArr[b+4] = 0; this._posArr[b+5] = pts[i].z - pz;
+      }
+      // Fumes (v132): faint bubbles rise off the live trail.
+      if (!this._fading && Math.random() < dt * 5) {
+        const p = pts[Math.floor(Math.random() * n)];
+        bubblePool.spawn(p.x + (Math.random() - 0.5) * hw, p.z + (Math.random() - 0.5) * hw, 0xaadd44);
       }
       for (let i = n; i < 12; i++) {
         const b = i * 6;
@@ -795,6 +812,10 @@ function equipWeapon(podId) {
 // leaks nothing — cash reads as a flat bill stack, prizes as a gift box.
 const CASH_GEO  = new THREE.BoxGeometry(0.55, 0.2, 0.4);
 const PRIZE_GEO = new THREE.BoxGeometry(0.62, 0.62, 0.62);
+// v132: glyph badges for the non-weapon pickups (weapon pods show their id).
+const NON_WEAPON_GLYPHS = {
+  hp: '+', invincible: '★', firerate: '»', scoremult: '×2', score: '$',
+};
 
 class Powerup {
   constructor(sc, x, z, type, driftX = 0, driftZ = 0) {
@@ -814,12 +835,16 @@ class Powerup {
     sc.add(this.mesh);
 
     this._sprite = null;
-    if (wpDef) {
-      const tex = makeGlyphTexture(type, wpDef.color);
+    // v132: EVERY pickup carries a glyph badge, not just weapon pods —
+    // non-weapon types get a smaller, lower one so the field stays readable.
+    const glyph = wpDef ? type : (NON_WEAPON_GLYPHS[type] ?? null);
+    if (glyph) {
+      const tex = makeGlyphTexture(glyph, orbColor);
       const spMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
       this._sprite = new THREE.Sprite(spMat);
-      this._sprite.scale.setScalar(wpDef.level === 2 ? 1.1 : 0.9);
-      this._sprite.position.set(x, 1.5, z);
+      this._sprite.scale.setScalar(wpDef ? (wpDef.level === 2 ? 1.1 : 0.9) : 0.68);
+      this._spriteLift = wpDef ? 0.9 : 0.62;
+      this._sprite.position.set(x, 0.6 + this._spriteLift, z);
       sc.add(this._sprite);
     }
   }
@@ -831,7 +856,7 @@ class Powerup {
     this.mesh.position.set(this.x, y, this.z);
     this.mesh.rotation.y += dt * 1.6;  // slow spin — sells boxes/prizes, invisible on orbs
     this.mat.opacity = 0.5 + 0.4 * Math.sin(t * 5);
-    if (this._sprite) this._sprite.position.set(this.x, y + 0.9, this.z);
+    if (this._sprite) this._sprite.position.set(this.x, y + this._spriteLift, this.z);
     return this._life > 0 && !this.collected;
   }
   remove(sc) {
@@ -966,6 +991,65 @@ const player  = new Player(scene);
 let enemies      = [];
 const chunkPool  = new ChunkPool(scene);                                   // angular: cube debris, hard shards
 const gooChunkPool = new ChunkPool(scene, new THREE.SphereGeometry(1, 9, 7)); // smooth droplets: goo splatter
+
+// ── Bubble pool (v132) ────────────────────────────────────────────────────────
+// Tiny rising, fading spheres — minimalist fumes over poison trails and pools
+// (and any future "fizzing" surface). Instanced like ChunkPool; no gravity, no
+// bounce, just drift up and pop.
+const BUBBLE_POOL = 48;
+class BubblePool {
+  constructor(sc) {
+    this.mesh = new THREE.InstancedMesh(
+      new THREE.SphereGeometry(1, 6, 5),
+      new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.5, depthWrite: false }),
+      BUBBLE_POOL);
+    this.mesh.frustumCulled = false;
+    this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    sc.add(this.mesh);
+    this.x = new Float32Array(BUBBLE_POOL); this.y = new Float32Array(BUBBLE_POOL);
+    this.z = new Float32Array(BUBBLE_POOL);
+    this.life = new Float32Array(BUBBLE_POOL);
+    this.size = new Float32Array(BUBBLE_POOL);
+    this.active = new Uint8Array(BUBBLE_POOL);
+    this._m = new THREE.Matrix4();
+    this._c = new THREE.Color();
+    for (let i = 0; i < BUBBLE_POOL; i++) this._hide(i);
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+  _hide(i) { this._m.makeScale(0, 0, 0); this.mesh.setMatrixAt(i, this._m); }
+  spawn(x, z, color) {
+    let s = -1;
+    for (let i = 0; i < BUBBLE_POOL; i++) if (!this.active[i]) { s = i; break; }
+    if (s < 0) return;                       // full — bubbles are droppable FX
+    this.x[s] = x; this.y[s] = 0.08; this.z[s] = z;
+    this.life[s] = 0.9 + Math.random() * 0.5;
+    this.size[s] = 0.07 + Math.random() * 0.08;
+    this.active[s] = 1;
+    this._c.set(color);
+    this.mesh.setColorAt(s, this._c);
+    if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
+  }
+  update(dt) {
+    let dirty = false;
+    for (let i = 0; i < BUBBLE_POOL; i++) {
+      if (!this.active[i]) continue;
+      dirty = true;
+      this.life[i] -= dt;
+      if (this.life[i] <= 0) { this.active[i] = 0; this._hide(i); continue; }
+      this.y[i] += 0.9 * dt;                 // gentle rise
+      this.x[i] += Math.sin(this.y[i] * 9 + i) * 0.15 * dt;  // lazy wiggle
+      const k = this.size[i] * Math.min(1, this.life[i] * 3); // pop = shrink out
+      this._m.makeScale(k, k, k).setPosition(this.x[i], this.y[i], this.z[i]);
+      this.mesh.setMatrixAt(i, this._m);
+    }
+    if (dirty) this.mesh.instanceMatrix.needsUpdate = true;
+  }
+  clear() {
+    for (let i = 0; i < BUBBLE_POOL; i++) { this.active[i] = 0; this._hide(i); }
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+}
+const bubblePool = new BubblePool(scene);
 // Cube-looking death particles only come from cube enemies; everything else
 // (blobs, TORO, BAMBU, PYRA, OMEGA, pickups, moths) bursts into round goo bits.
 const chunksFor = type => CUBE_TYPES_FX.has(type) ? chunkPool : gooChunkPool;
@@ -2086,7 +2170,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v131', 16, uiCanvas.height - 12);
+  ctx.fillText('v132', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2709,6 +2793,7 @@ function clearFX() {
   exitDoors  = [];
   chunkPool.clear();
   gooChunkPool.clear();
+  bubblePool.clear();
   trailPool.clear();
   for (const p of puddles)       p.remove(scene); puddles       = [];
   for (const z of poisonZones)   z.remove(scene); poisonZones   = [];
@@ -3125,6 +3210,7 @@ function loop() {
     for (const e of enemies) e.updateDeath(dt);
     chunkPool.update(dt);
     gooChunkPool.update(dt);
+    bubblePool.update(dt);
     trailPool.update(dt);
     renderer.render(scene, camera);
     drawHUD();
@@ -3233,6 +3319,7 @@ function loop() {
   // Update / cull death FX
   chunkPool.update(dt);
   gooChunkPool.update(dt);
+  bubblePool.update(dt);
   trailPool.update(dt);
   for (let i = puddles.length - 1; i >= 0; i--) {
     if (!puddles[i].update(dt)) { puddles[i].remove(scene); puddles.splice(i, 1); }
@@ -3791,6 +3878,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=85').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=86').catch(() => {});
   });
 }
