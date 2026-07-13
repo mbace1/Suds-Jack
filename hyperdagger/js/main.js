@@ -8,10 +8,10 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { InputManager } from './input.js?v=22';
 import { Player } from './player.js?v=10';
 import { DaggerPool } from './daggers.js?v=10';
-import { GemPool } from './gems.js?v=10';
+import { GemPool } from './gems.js?v=23';
 import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=17';
 import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=17';
-import { OrbPool } from './bullets.js?v=16';
+import { OrbPool } from './bullets.js?v=23';
 import { AudioKit } from './audio.js?v=18';
 import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=1';
 
@@ -177,7 +177,39 @@ const SpeedShader = {
 const speedPass = new ShaderPass(SpeedShader);
 speedPass.enabled = false;
 composer.addPass(speedPass);
+
+// impact distortion: a damped radial UV ripple from screen centre, fired on
+// heavy kills / player hits / death (HYPERDEMON's space-warp hits)
+const RippleShader = {
+  uniforms: { tDiffuse: { value: null }, uT: { value: 9 }, uAmp: { value: 0 } },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform float uT;
+    uniform float uAmp;
+    varying vec2 vUv;
+    void main() {
+      vec2 d = vUv - 0.5;
+      float r = length(d);
+      float w = sin(r * 42.0 - uT * 16.0) * exp(-r * 3.5) * exp(-uT * 6.0) * uAmp;
+      vec2 uv = vUv + (r > 0.0001 ? d / r : vec2(0.0)) * w * 0.02;
+      gl_FragColor = texture2D(tDiffuse, uv);
+    }`,
+};
+const ripplePass = new ShaderPass(RippleShader);
+ripplePass.enabled = false;
+composer.addPass(ripplePass);
 composer.addPass(new OutputPass());
+
+let rippleT = 9;
+let rippleAmp = 0;
+
+function triggerRipple(amp) {
+  rippleT = 0;
+  rippleAmp = Math.max(rippleAmp, amp);
+}
 
 // ---------------------------------------------------------------- arena
 function makeFloorTexture() {
@@ -246,7 +278,7 @@ const skyMat = new THREE.ShaderMaterial({
   side: THREE.BackSide,
   depthWrite: false,
   fog: false,
-  uniforms: { uTime: { value: 0 } },
+  uniforms: { uTime: { value: 0 }, uEmber: { value: 0 } },
   vertexShader: /* glsl */`
     varying vec3 vPos;
     void main() {
@@ -256,6 +288,7 @@ const skyMat = new THREE.ShaderMaterial({
   fragmentShader: /* glsl */`
     varying vec3 vPos;
     uniform float uTime;
+    uniform float uEmber;
     void main() {
       vec3 d = normalize(vPos);
       float h = d.y;
@@ -265,7 +298,8 @@ const skyMat = new THREE.ShaderMaterial({
       float b2 = 0.5 + 0.5 * sin(ang * 13.0 + uTime * 0.9 - h * 14.0);
       float horiz = 1.0 - clamp(abs(h) * 2.6, 0.0, 1.0);
       col += vec3(0.05) * (b1 * 0.6 + b2 * 0.4) * horiz;
-      col += vec3(0.30, 0.02, 0.02) * pow(max(0.0, 1.0 - abs(h) * 4.0), 3.0);
+      // ember horizon swells with trauma and while the Leviathan lives
+      col += vec3(0.30, 0.02, 0.02) * pow(max(0.0, 1.0 - abs(h) * 4.0), 3.0) * (1.0 + uEmber);
       gl_FragColor = vec4(col, 1.0);
     }`,
 });
@@ -543,7 +577,9 @@ let nextThornAt = 0;
 let nextPulseAt = 0; // budgeted pressure pulses (toko-drop's wave system, adapted)
 let pulseN = 0;
 let serpentsSpawned = 0;
-let musicI = 0; // smoothed music intensity, reused by the reactive floor
+let musicI = 0; // smoothed music intensity, reused by the reactive floor + sky
+let levAlive = false; // Leviathan on the field — the sky's ember burns hotter
+let hitStop = 0; // heavy-kill micro time-freeze (seconds remaining)
 let announced = {};
 let deathAt = 0;
 let trauma = 0;
@@ -821,6 +857,10 @@ function resetRun() {
   lastKiller = null;
   lastKillerRef = null;
   deathCam = null;
+  hitStop = 0;
+  rippleT = 9;
+  rippleAmp = 0;
+  levAlive = false;
   gemCount = 0;
   weaponLv = 1;
   fireTimer = 0;
@@ -877,6 +917,7 @@ function die(timedOut = false) {
   deathAt = performance.now();
   slowmo = 1;
   trauma = 1;
+  triggerRipple(1);
   // killer-focus death cam: swing the view toward what got you during the
   // slow-mo. TIME OUT has no killer — the clock did it — so no swing there.
   if (!timedOut && lastKiller && lastKiller !== 'timeout') {
@@ -1484,9 +1525,12 @@ function killEnemy(e, dir) {
   debris.burst(e.sprite.worldVoxels(), e.sprite.size,
     _hitDir.copy(dir).multiplyScalar(5), e.type === 'skull' ? 1 : 1.4);
   audio.gib(e.type !== 'skull');
-  // heavy kills stamp a shockwave ring into the floor
+  // heavy kills stamp a shockwave ring into the floor, warp the frame, and
+  // freeze time for a beat (~50ms at 12% speed) so the impact lands
   if (e.type === 'brute' || e.type === 'dread' || e.type === 'leviathan' || e.isHead) {
     spawnShockwave(_c);
+    triggerRipple(e.type === 'leviathan' ? 1 : 0.7);
+    hitStop = 0.05;
   }
   trauma = Math.max(trauma, e.type === 'skull' ? 0.18 : 0.35);
   let drops = GEM_DROPS[e.type] || 0;
@@ -1606,6 +1650,7 @@ function playerStruck(sx, sz, killerType, killer = null) {
   if (mercyT > 0) return false;
   lastKiller = killerType;
   // HYPERDEMON rules: a hit costs time, shoves you clear, grants i-frames
+  triggerRipple(0.5);
   lifeT -= HYPER_HIT_COST;
   mercyT = 1.2;
   trauma = 1;
@@ -1736,7 +1781,11 @@ function step(dt) {
   // music intensity: swarm density (live threats, not eggs) + run progress +
   // how hard you're chaining right now (the style meter)
   let threats = 0;
-  for (const e of enemies) if (e.type !== 'egg' && e.type !== 'totem') threats++;
+  levAlive = false;
+  for (const e of enemies) {
+    if (e.type !== 'egg' && e.type !== 'totem') threats++;
+    if (e.type === 'leviathan') levAlive = true;
+  }
   const intensity = Math.min(1,
     threats / 16 * 0.5 + Math.min(gameTime / 150, 1) * 0.25 + (styleVal / STYLE_CAP) * 0.35);
   musicI += (intensity - musicI) * Math.min(1, dt * 3); // smoothed for the floor
@@ -1775,6 +1824,14 @@ function updateFeel(dt) {
   speedPass.uniforms.uTime.value += dt;
   speedPass.uniforms.uAmount.value = player.dashK;
   speedPass.enabled = player.dashK > 0.02 && opts.motion && PERF_TIERS[perfTier].smear;
+  // impact ripple: same gates; amp clears once the wave has fully decayed
+  rippleT += dt;
+  if (rippleT > 0.8) rippleAmp = 0;
+  ripplePass.uniforms.uT.value = rippleT;
+  ripplePass.uniforms.uAmp.value = rippleAmp;
+  ripplePass.enabled = rippleAmp > 0 && opts.motion && PERF_TIERS[perfTier].smear;
+  // sky ember swells with trauma and while the Leviathan is on the field
+  skyMat.uniforms.uEmber.value = t2 * 0.9 + (levAlive ? 0.7 : 0);
   fovKick = Math.max(0, fovKick - dt * 18);
   const fov = opts.fov + (opts.motion ? player.dashK * 9 + fovKick : 0);
   if (Math.abs(camera.fov - fov) > 0.01) {
@@ -1829,10 +1886,14 @@ function animate() {
     if (document.pointerLockElement) document.exitPointerLock(); // triggers showPause
     else showPause();
   }
-  skyMat.uniforms.uTime.value += dt;
+  // sky bands accelerate with the music (warped clock keeps phase continuous)
+  skyMat.uniforms.uTime.value += dt * (1 + musicI * 1.8);
   dust.rotation.y += dt * 0.012;
   if (state === 'playing' && !paused) {
-    step(dt * opts.speed);
+    // heavy-kill hit-stop: a beat at 12% speed so the impact registers
+    const ts = hitStop > 0 ? 0.12 : 1;
+    if (hitStop > 0) hitStop -= rawDt;
+    step(dt * opts.speed * ts);
   } else if (state !== 'playing') {
     // death slow-mo: debris + daggers keep tumbling at quarter speed
     slowmo = Math.max(0, slowmo - dt * 0.8);
@@ -1888,7 +1949,8 @@ window.__hd = {
     pulse(n) { runPulse(n ?? ++pulseN); },
     setOpt(k, v) { opts[k] = v; saveOpts(); },
     getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, fov: camera.fov, uRed: floorMat.uniforms.uRed.value }; },
-    getVfx() { return { shadows: shadows.count, sparks: sparks.length, speedOn: speedPass.enabled }; },
+    getVfx() { return { shadows: shadows.count, sparks: sparks.length, speedOn: speedPass.enabled, rippleT, rippleOn: ripplePass.enabled, ember: skyMat.uniforms.uEmber.value }; },
+    ripple(amp) { triggerRipple(amp ?? 1); },
     forceFrameTime(ms) { forcedFrameTime = ms; },
     getPerfTier() {
       return {
