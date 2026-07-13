@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v149 — 2026-07-13
+**GAUNDROP — cabinet #2 (Gauntlet tribute): dungeon levels, generators, maze walls**
+- **GAUNDROP chip on the title** (bronze launcher): torchlit 8-bit dungeon look per the user's Conan-palette direction — dark stone background, bronze vector bounds, stone-brown maze walls, pixel rendering forced
+- **The Gauntlet loop**: LEVELS, not waves. Each level seeds **maze walls** (block player, enemies, AND bullets — cover is real), 1–4 **GENERATORS** that pour globbos / orange cubes / minis / toros until you smash them (6 hits, +500), **suds food** (+1 HP) and treasure on the floor, and a **glowing gold exit tile** — stepping on it pays +1000 and descends immediately. Escape is always legal; killing everything is optional
+- Deeper levels: more walls, more generators, nastier generator types (TORO from level 5). No wave-clear concept at all — the exit is the only way forward
+- Runs tagged `gaundrop`; the cabinet borrows pixel-on/smash-off and restores them on exit, skips gates/convoys/bounties/foam/dailies. Cabinet guards generalized (`inCabinet()`) for the row to come
+- Cache-bust `?v=102` → `?v=103`; HUD label → v149
+
+---
+
 ## v148 — 2026-07-13
 **TOKOTRON — the first arcade cabinet (Robotron: 2084 tribute, roadmap M5)**
 - **TOKOTRON chip on the title** (cyan, under DAILY): tap to play the first tribute cabinet. Art direction per the user: **dark room (near-black, floor grid gone), shiny vector-bright bounds, pixel rendering forced on** — and yes, the orange cubes are in the roster
