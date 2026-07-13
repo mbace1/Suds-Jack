@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v146 — 2026-07-13
+**ROGUELIKE B — bonus gauntlets: goal-oriented room runs with pinball multipliers and rare upgrades**
+- **The ROGUELIKE chip now cycles OFF → A → B**. A is the classic card mode; **B adds a third RARE card to every card screen: the BONUS GAUNTLET** — a gold invitation stating the challenge and the price ("death is death")
+- **Tier 1 gauntlet**: a scripted SMASH-style detour — 4 rooms (MOBS → SWARM → HEAVY → PRIZE$) + a boss room. **All score is multiplied pinball-style**: ×2 in room 1, +1 per room (×6 at the boss); the HUD shows `GAUNTLET ×N · ROOM i/n`. Clear it → a big payout bonus + **choose 1 of 2 RARE upgrades** (Iron Heart +2 HP, Overdrive +40% fire rate, Mercury Soles +40% speed, Lance Rounds pierce+size)
+- **Tier 2** (next offer after clearing tier 1): 2 HEAVY rooms, a boss, then a **MEGA boss** (5× HP, 1.7× size) — bigger multiplier, same rules
+- Built on the SMASH TV machinery (doors, exits, minimap all work inside); the smash toggle is saved/restored around the detour, dying inside restores it too, and classic waves resume exactly where they left off. en/ja/fi
+- Cache-bust `?v=99` → `?v=100`; HUD label → v146
+
+---
+
 ## v145 — 2026-07-13
 **Elite affixes — VOLATILE / SWIFT / ANCHORED, each with a visible tell (roadmap M4, fifth in order)**
 - Elites are no longer just bigger/more-HP: **every elite** (and half of elite-lites) rolls one behavior affix, seeded so daily runs match:
