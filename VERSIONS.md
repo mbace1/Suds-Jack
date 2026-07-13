@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v135 — 2026-07-13
+**SMASH TV door telegraphs + entry-door mercy; pickup expiry blink**
+- **Floor chevrons at telegraphing doors**: a red arrow pulses on the floor just inside any door that's about to pour enemies, pointing into the room — readable without looking up at the wall glow. Telegraph window widened 0.9 → 1.4 s so there's time to react
+- **No ambush at your own entrance**: the opening seconds of a room never spawn through the door the player just stepped in from — those spawns (and their telegraphs) remap to the opposite wall
+- **Pickup expiry blink**: pods, cash drops, and orbs blink hard for their last 2.5 s (badge included) so "grab it or lose it" reads at a glance; room-long floor loot never blinks
+- Cache-bust `?v=88` → `?v=89`; HUD label → v135
+
+---
+
 ## v134 — 2026-07-13
 **Controller menu navigation — every menu is now stick/d-pad navigable**
 - **D-pad or left stick moves a gold focus outline** across whatever menu is up: title chips (ROGUELIKE / DAILY / RUN HISTORY / OPTIONS / language), death-screen feedback chips + SEND/SHARE/SKIP + leaderboard POST, the pause/OPTIONS panel (list items, buttons, and **sliders — left/right adjusts a focused slider**), run history, and roguelike upgrade cards. Focus movement is geometric (nearest element in the pressed direction), so every panel layout works without per-menu wiring

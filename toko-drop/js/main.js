@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=88';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=88';
-import { Player, PLAYER_RADIUS } from './player.js?v=88';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=88';
-import { audio } from './audio.js?v=88';
-import { initDesigner } from './designer.js?v=88';
-import { t, getLang, setLang, langs } from './lang.js?v=88';
-import { TUNING } from './tuning.js?v=88';
+import { InputManager } from './input.js?v=89';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=89';
+import { Player, PLAYER_RADIUS } from './player.js?v=89';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=89';
+import { audio } from './audio.js?v=89';
+import { initDesigner } from './designer.js?v=89';
+import { t, getLang, setLang, langs } from './lang.js?v=89';
+import { TUNING } from './tuning.js?v=89';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -215,6 +215,14 @@ function getEnemySchedule(wave) {
     });
     const doorOff = Math.floor(rng() * 4);
     for (const e of list) if (e.shooter) e.door = (doorOff + e.slot) % 4;
+    // v135: never pour the opening seconds through the door the player is
+    // stepping in from — remap those spawns to the opposite wall. (The spawn
+    // angle derives from e.door later, so this moves bodies AND telegraph.)
+    if (_entryDoor != null) {
+      for (const e of list) {
+        if (e.door === _entryDoor && e.t < 4) e.door = (e.door + 2) % 4;
+      }
+    }
   }
   list.sort((a, b) => a.t - b.t);  // spawn drain expects delays in order
   return list.length ? list : [{ type: GLOBBO, t: 0 }];
@@ -856,7 +864,15 @@ class Powerup {
     this.mesh.position.set(this.x, y, this.z);
     this.mesh.rotation.y += dt * 1.6;  // slow spin — sells boxes/prizes, invisible on orbs
     this.mat.opacity = 0.5 + 0.4 * Math.sin(t * 5);
-    if (this._sprite) this._sprite.position.set(this.x, y + this._spriteLift, this.z);
+    // v135: expiry warning — the last 2.5 s blink hard so "grab it or lose
+    // it" reads at a glance. Room-long floor loot (_life 999) never blinks.
+    let blink = 1;
+    if (this._life < 2.5) blink = Math.sin(this._life * 16) > 0 ? 1 : 0.12;
+    this.mat.opacity *= blink;
+    if (this._sprite) {
+      this._sprite.position.set(this.x, y + this._spriteLift, this.z);
+      this._sprite.material.opacity = blink;
+    }
     return this._life > 0 && !this.collected;
   }
   remove(sc) {
@@ -2296,7 +2312,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v134', 16, uiCanvas.height - 12);
+  ctx.fillText('v135', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2876,27 +2892,46 @@ function buildSmashDoors() {
     g.position.set(d.x, 0, d.z);
     g.rotation.y = d.ry;
     scene.add(g);
-    smashDoorFX.push({ group: g, glow });
+    // Floor chevron (v135): a red arrow on the floor just inside the doorway,
+    // pointing into the room — the "they're coming through HERE" telegraph you
+    // can read without looking up at the wall glow.
+    const warnGeo = new THREE.BufferGeometry();
+    warnGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+      1.1, 0, 0,   -0.5, 0, 0.85,   -0.5, 0, -0.85,
+    ]), 3));
+    const warn = new THREE.Mesh(warnGeo, new THREE.MeshBasicMaterial({
+      color: 0xff3355, transparent: true, opacity: 0,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+    }));
+    const il = Math.hypot(d.x, d.z);
+    const ix = -d.x / il, iz = -d.z / il;         // inward unit vector
+    warn.position.set(d.x + ix * 2.1, 0.03, d.z + iz * 2.1);
+    warn.rotation.y = Math.atan2(-iz, ix);        // point the chevron inward
+    scene.add(warn);
+    smashDoorFX.push({ group: g, glow, warn });
   }
 }
 function clearSmashDoors() {
-  for (const { group } of smashDoorFX) {
+  for (const { group, warn } of smashDoorFX) {
     scene.remove(group);
     for (const c of group.children) { c.geometry.dispose(); c.material.dispose(); }
+    if (warn) { scene.remove(warn); warn.geometry.dispose(); warn.material.dispose(); }
   }
   smashDoorFX = [];
 }
 function updateSmashDoors() {
   if (!smashDoorFX.length) return;
+  // v135: telegraph window widened 0.9 → 1.4 s so there's time to react.
   const soon = [false, false, false, false];
   for (const s of pendingSpawns) {
     if (s.door == null) continue;
     const eta = s.delay - waveTimer;
-    if (eta >= -0.15 && eta <= 0.9) soon[s.door] = true;
+    if (eta >= -0.15 && eta <= 1.4) soon[s.door] = true;
   }
   const pulse = 0.55 + 0.25 * Math.sin(performance.now() * 0.022);
+  const warnPulse = 0.5 + 0.4 * Math.abs(Math.sin(performance.now() * 0.012));
   for (let i = 0; i < 4; i++) {
-    const { glow } = smashDoorFX[i];
+    const { glow, warn } = smashDoorFX[i];
     let target = 0.10, color = 0xff3366;
     if (exitPhase) {
       // Cleared room: EXIT doors glow inviting green; the rest go dark.
@@ -2908,6 +2943,11 @@ function updateSmashDoors() {
     }
     glow.material.color.setHex(color);
     glow.material.opacity += (target - glow.material.opacity) * 0.25;
+    // Floor chevron (v135): pulses hard while its door is telegraphing,
+    // breathes toward the room center; hidden during the exit walk.
+    const wTarget = (!exitPhase && soon[i]) ? warnPulse : 0;
+    warn.material.opacity += (wTarget - warn.material.opacity) * 0.3;
+    warn.scale.setScalar(1 + 0.25 * Math.abs(Math.sin(performance.now() * 0.012)));
   }
 }
 
@@ -4157,6 +4197,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=88').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=89').catch(() => {});
   });
 }
