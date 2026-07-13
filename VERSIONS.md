@@ -7,99 +7,29 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v149 — 2026-07-13
-**GAUNDROP — cabinet #2 (Gauntlet tribute): dungeon levels, generators, maze walls**
-- **GAUNDROP chip on the title** (bronze launcher): torchlit 8-bit dungeon look per the user's Conan-palette direction — dark stone background, bronze vector bounds, stone-brown maze walls, pixel rendering forced
-- **The Gauntlet loop**: LEVELS, not waves. Each level seeds **maze walls** (block player, enemies, AND bullets — cover is real), 1–4 **GENERATORS** that pour globbos / orange cubes / minis / toros until you smash them (6 hits, +500), **suds food** (+1 HP) and treasure on the floor, and a **glowing gold exit tile** — stepping on it pays +1000 and descends immediately. Escape is always legal; killing everything is optional
-- Deeper levels: more walls, more generators, nastier generator types (TORO from level 5). No wave-clear concept at all — the exit is the only way forward
-- Runs tagged `gaundrop`; the cabinet borrows pixel-on/smash-off and restores them on exit, skips gates/convoys/bounties/foam/dailies. Cabinet guards generalized (`inCabinet()`) for the row to come
-- Cache-bust `?v=102` → `?v=103`; HUD label → v149
-
----
-
-## v148 — 2026-07-13
-**TOKOTRON — the first arcade cabinet (Robotron: 2084 tribute, roadmap M5)**
-- **TOKOTRON chip on the title** (cyan, under DAILY): tap to play the first tribute cabinet. Art direction per the user: **dark room (near-black, floor grid gone), shiny vector-bright bounds, pixel rendering forced on** — and yes, the orange cubes are in the roster
-- **The Robotron loop**: one fixed room (the SMASH-sized arena), each wave **floods in all at once** scattered around you (never within 6 units), clears chain onward after just 0.6 s. Roster: grunt globbos, orange cubes, mini swarmers, weevas for crossfire from wave 3 — up to 26 bodies a wave
-- **CIVILIANS**: 2–6 golden little wanderers per wave. Touch one to rescue it — **1000 × chain** (chain resets each wave), gold popup. Any enemy that reaches one converts it (gray puff + a sad `civDown()` slide). The whole mode in one sentence: shoot the flood, save the family
-- Runs are tagged `tokotron` in history/telemetry; the chip borrows SMASH-off + pixel-on and returns every toggle when the run ends. Skips gates/convoys/bounties/foam/dailies — the cabinet is its own thing, refined individually from here
-- Cache-bust `?v=101` → `?v=102`; HUD label → v148
-
----
-
-## v147 — 2026-07-13
-**Arcade Tribute Wing designed (roadmap M5) + PIXEL PREVIEW toggle — the shared retro renderer**
-- **Roadmap M5 — Arcade Tribute Wing** (user vision 2026-07-13): Roguelike B's bonus games grow into a cabinet row of retro tribute modes, each also selectable from the menu — GRID RESCUE (Robotron-tribute), DUNGEON RUN (Gauntlet-tribute), LOADOUT ARENA (Re-Loaded-tribute), KAIKKI IRTI (Tapan Kaikki 3-tribute), and MACHINA (Nex Machina-inspired **final unlockable**, earned by clearing the other four). Pixel graphics evoking the originals, Toko Drop enemies mingling with reference-INSPIRED original designs, each mode's feel refined individually; **2-player (local co-op) is the stated long-term goal**. Naming/IP rule recorded: references live in design docs, the game ships original tribute names + fully original assets
-- **PIXEL PREVIEW toggle** (OPTIONS → DEV, persisted `tokoDropPixel`, en/ja/fi): the shared foundation every tribute mode builds on — the world renders at a chunky low resolution (0.22× pixel ratio) with nearest-neighbor upscale while the HUD/UI canvas stays crisp: the modern+classic mix in one frame. A DEV preview now so the look can be dialed in before the first cabinet is built
-- Cache-bust `?v=100` → `?v=101`; HUD label → v147
-
----
-
-## v146 — 2026-07-13
-**ROGUELIKE B — bonus gauntlets: goal-oriented room runs with pinball multipliers and rare upgrades**
-- **The ROGUELIKE chip now cycles OFF → A → B**. A is the classic card mode; **B adds a third RARE card to every card screen: the BONUS GAUNTLET** — a gold invitation stating the challenge and the price ("death is death")
-- **Tier 1 gauntlet**: a scripted SMASH-style detour — 4 rooms (MOBS → SWARM → HEAVY → PRIZE$) + a boss room. **All score is multiplied pinball-style**: ×2 in room 1, +1 per room (×6 at the boss); the HUD shows `GAUNTLET ×N · ROOM i/n`. Clear it → a big payout bonus + **choose 1 of 2 RARE upgrades** (Iron Heart +2 HP, Overdrive +40% fire rate, Mercury Soles +40% speed, Lance Rounds pierce+size)
-- **Tier 2** (next offer after clearing tier 1): 2 HEAVY rooms, a boss, then a **MEGA boss** (5× HP, 1.7× size) — bigger multiplier, same rules
-- Built on the SMASH TV machinery (doors, exits, minimap all work inside); the smash toggle is saved/restored around the detour, dying inside restores it too, and classic waves resume exactly where they left off. en/ja/fi
-- Cache-bust `?v=99` → `?v=100`; HUD label → v146
-
----
-
-## v145 — 2026-07-13
-**Elite affixes — VOLATILE / SWIFT / ANCHORED, each with a visible tell (roadmap M4, fifth in order)**
-- Elites are no longer just bigger/more-HP: **every elite** (and half of elite-lites) rolls one behavior affix, seeded so daily runs match:
-  - **VOLATILE** — smoulders orange the whole time (the fuse); on death it pops a slow **8-bullet ring** from the corpse. Make space before the kill shot
-  - **SWIFT** — 1.35× speed, shedding **ice-blue speed ribbons** as it moves
-  - **ANCHORED** — squat, wide, stone-still silhouette; **cannot be shoved** by the crowd (ignores separation pushes), so it holds lanes the pack would normally open
-- Affix rules honor the roadmap constraint: one mechanic each, tell before it matters (fuse glow, ribbons, silhouette). VOLATILE's ring fires from ANY kill source via `onKill`
-- Cache-bust `?v=98` → `?v=99`; HUD label → v145
-
----
-
-## v144 — 2026-07-13
-**MAGNA — enemy #22, the magnet (roadmap M4, fourth in order)**
-- **MAGNA** (amber blob, wave 10+, cost 5): lumbers to mid range, holds, and **pulls the player toward it** (1.1 u/s within 11 units — you run ~3.5) while a **glowing amber tether** connects you, pulsing exactly while the pull has hold. Movement pressure that stacks dangerously with live bullet patterns
-- **Dash breaks the hold**: dashing grants ~1.2 s of pull immunity (the tether visibly drops). Stacked magnas cap at 2.0 u/s total, and the pull can never drag you through a wall
-- Entrance "!" ping (it's a control enemy — the support/specialist family grows: WARDEN protects, SIREN accelerates, BULWARK walls, CLOAKER ambushes, MAGNA drags)
-- Cache-bust `?v=97` → `?v=98`; HUD label → v144
-
----
-
-## v143 — 2026-07-13
-**CLOAKER — enemy #21, the ambusher (roadmap M4, third in order)**
-- **CLOAKER** (ice-blue blob, wave 9+, cost 4): lingers a beat at full presence, then **fades to a faint shimmer** and runs to a flank point ~90° around you at mid range. There it **decloaks over 0.6 s** — opacity ramps back with a strobing teal glow, the tell — and fires one aimed 3-shot burst, then repeats. Punishes tunnel vision; rewards watching for ripples
-- **Cloaked bodies can still be hit** — tracking the shimmer pays. Counts as a tactical shooter (capped, spaced, entrance "!" ping); TEST MODE meets it at wave 1
-- Cache-bust `?v=96` → `?v=97`; HUD label → v143
-
----
-
-## v142 — 2026-07-13
-**TEST MODE — a playtest workbench toggle (OPTIONS → DEV)**
-- **TEST MODE toggle** (persisted `tokoDropTest`, en/ja/fi): every enemy type unlocks from **wave 1**, and early waves get a wave-8-sized budget floor so the expensive types (WARDEN, SIREN…) actually fit — meet a new design within seconds of pressing start instead of surviving to wave 8
-- **Test runs leave no records**: no personal bests, no run history entry, never counts as a DAILY (seed reverts to random), no daily best, no leaderboard; feedback records are tagged `test: true` so telemetry stays clean. The HUD seed label reads `TEST · SEED …` so screenshots are self-explaining
-- Cache-bust `?v=95` → `?v=96`; HUD label → v142
-
----
-
-## v141 — 2026-07-13
-**SIREN — enemy #20, the screamer (roadmap M4, second in order)**
-- **SIREN** (violet blob, wave 8+, cost 5): a coward support that hovers at mid distance, backs away when pressed, and never attacks. Every ~4 s it **inhales for 0.8 s** (visible swell + strobing violet glow — the tell), then **screams**: every non-boss enemy within 7 units gets a **1.6× speed surge for 3 s**, marked by an expanding violet ring + a rising two-voice wail
-- With WARDEN it completes the **kill-the-support-first family**: WARDEN protects the pack, SIREN accelerates it. Gets the "!" entrance ping like the other priority targets
-- Surges never stack state — a per-enemy timer multiplies speed while it runs; bosses and other sirens are immune
-- Cache-bust `?v=94` → `?v=95`; HUD label → v141
-
----
-
-## v140 — 2026-07-13
-**BULWARK — enemy #19, the shield-plate walker (roadmap M4, first in order)**
-- **BULWARK** (steel-blue blob, wave 6+, cost 4): walks straight at you behind a visible steel plate — shots landing on its FRONT arc (~±60° of facing) are shrugged off with a dull `plateTink()` clank + steel sparks, **even piercing shots**. Flank it: the plate turns with a limited turn rate (2.2 rad/s), so a committed side-step or dash-through always opens the back. The positioning counterpart to WARDEN's priority puzzle (per the roadmap's one-mechanic/one-tell rule)
-- The plate IS the tell: a floating steel slab on its front face, glinting brighter as it squares up; it drops the frame the bulwark dies. Blocks ride the same `shieldBlocks` telemetry/chip as the warden
-- Melee contact damage like the blob pack; smoke harness now exercises 19 types
-- Cache-bust `?v=93` → `?v=94`; HUD label → v140
+## v150 — 2026-07-13
+**THE BINDING OF TOKO — cabinet #3 (Binding of Isaac tribute): rooms, floors, and an item economy**
+- **BINDING OF TOKO chip on the title** (fleshy-pink launcher): basement-gloom look (dark red-black, fleshy red vector bounds, pixel rendering), built directly on the SMASH room lattice — doors, exits, minimap, entry-from-opposite-wall all work room to room
+- **The Isaac loop, item-first** per the user's direction: every ~3rd room is an **ITEM ROOM** — no enemies, doors already open, one glowing `?` pedestal mid-room; touching it opens a **free 3-card upgrade pick** and returns you to the same room. Every 6th room is the **FLOOR BOSS**; clearing it pays a **RARE pick on the spot** and the next door starts a new floor (`BINDING — FLOOR N` banners). Mods stack for the whole run — the build IS the run
+- Normal/swarm/heavy rooms use the full smash composition (shooters, wardens, valuables, prizes) so the combat depth carries over; the room script is seeded, doors advertise what's next
+- Card panels gained an `afterPick` mode (free picks don't chain a new wave); the gauntlet card never appears inside the basement; runs tagged `binding`; every borrowed toggle restored on exit
+- VERSIONS: v141–v149 archived (decade rule)
+- Cache-bust `?v=103` → `?v=104`; HUD label → v150
 
 ---
 
 ## Archive
+
+**v141–v149 summary (2026-07-13)**
+- v141: SIREN — screamer support; 0.8 s inhale tell → 1.6× speed surge to the pack within 7 units
+- v142: TEST MODE (OPTIONS → DEV) — all enemies from wave 1 with a budget floor; runs leave no records
+- v143: CLOAKER — shimmer-flanks ~90°, 0.6 s decloak tell, aimed 3-burst; still hittable while cloaked
+- v144: MAGNA — amber tether pull (1.1 u/s within 11); dash grants ~1.2 s immunity; stacked cap 2.0
+- v145: Elite affixes — VOLATILE (fuse glow → 8-bullet death ring), SWIFT (1.35× + ribbons), ANCHORED (shove-immune)
+- v146: ROGUELIKE B — OFF→A→B chip; BONUS GAUNTLET rare card: scripted smash rooms with pinball multiplier (×2+1/room), rare-upgrade payout, tier 2 mega-boss; fixed a smash double-clear-bonus bug
+- v147: Arcade Tribute Wing designed (roadmap M5, five cabinets, 2P goal, IP rule) + PIXEL PREVIEW toggle (0.22× nearest-neighbor world, crisp HUD)
+- v148: TOKOTRON — cabinet #1 (Robotron tribute): dark vector room, flood waves, civilians (1000×chain rescues)
+- v149: GAUNDROP — cabinet #2 (Gauntlet tribute): torchlit maze levels, wall cover, enemy generators, suds food, gold exit tile
 
 **v131–v139 summary (2026-07-12 – 2026-07-13)**
 - v131: Trust-based daily leaderboard — `scripts/leaderboard-sheet.gs` (plausibility caps, 60 s GET cache) + death-screen DAILY TOP 10 with explicit initials + POST (zero UI until LEADERBOARD_ENDPOINT is set)
