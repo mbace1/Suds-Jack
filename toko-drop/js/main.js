@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=92';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=92';
-import { Player, PLAYER_RADIUS } from './player.js?v=92';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=92';
-import { audio } from './audio.js?v=92';
-import { initDesigner } from './designer.js?v=92';
-import { t, getLang, setLang, langs } from './lang.js?v=92';
-import { TUNING } from './tuning.js?v=92';
+import { InputManager } from './input.js?v=93';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=93';
+import { Player, PLAYER_RADIUS } from './player.js?v=93';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=93';
+import { audio } from './audio.js?v=93';
+import { initDesigner } from './designer.js?v=93';
+import { t, getLang, setLang, langs } from './lang.js?v=93';
+import { TUNING } from './tuning.js?v=93';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -2351,7 +2351,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v138', 16, uiCanvas.height - 12);
+  ctx.fillText('v139', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2761,6 +2761,15 @@ function buildFeedbackPanel(slot) {
   const liked     = new Set();  // positives
   const selected  = new Set();  // negatives
   const labelById = {};
+  // v139: one button instead of three — its label says whether continuing
+  // will send ("SEND & CONTINUE" once anything is picked/typed, else
+  // "CONTINUE"), so there's never doubt about whether feedback went out.
+  let sendBtn = null, boxRef = null;
+  const refreshSendLabel = () => {
+    if (!sendBtn) return;
+    const dirty = liked.size || selected.size || (boxRef && boxRef.value.trim());
+    sendBtn.textContent = dirty ? t('fbSend') : t('fbContinue');
+  };
 
   // Reusable labeled chip row. accent 'pos' → green, 'neg' → red.
   const addChipRow = (heading, reasons, set, accent) => {
@@ -2795,6 +2804,7 @@ function buildFeedbackPanel(slot) {
         e.stopPropagation();
         if (set.has(r.id)) set.delete(r.id); else set.add(r.id);
         paint();
+        refreshSendLabel();
       });
       row.appendChild(chip);
     }
@@ -2812,6 +2822,8 @@ function buildFeedbackPanel(slot) {
     'background:rgba(0,0,0,0.4);border:1.5px solid #445;border-radius:8px;color:#ccd;' +
     'font-family:monospace,sans-serif;font-size:13px;padding:8px 10px;resize:none;outline:none';
   box.addEventListener('keydown', e => e.stopPropagation());
+  box.addEventListener('input', () => refreshSendLabel());
+  boxRef = box;
   slot.appendChild(box);
 
   const btnRow = document.createElement('div');
@@ -2829,13 +2841,17 @@ function buildFeedbackPanel(slot) {
     b.addEventListener('click', e => { e.stopPropagation(); onClick(); });
     return b;
   };
-  btnRow.appendChild(mkBtn(t('fbSend'), true, () => {
+  // v139: CONTINUE always leaves the screen; it sends only when there is
+  // something to send (saveFeedback no-ops on empty input), and the label
+  // says which will happen. SKIP is gone — Space / Start / B still skip.
+  sendBtn = mkBtn(t('fbContinue'), true, () => {
     saveFeedback(
       [...selected], [...selected].map(id => labelById[id]), box.value.trim(),
       [...liked],    [...liked].map(id => labelById[id]),
     );
     returnToTitle();
-  }));
+  });
+  btnRow.appendChild(sendBtn);
   // SHARE (v127, roadmap M2): native share sheet where it exists (mobile),
   // clipboard fallback on desktop. Doesn't dismiss the screen — feedback can
   // still be sent afterwards. Share-sheet cancel / clipboard denial: no drama.
@@ -2854,7 +2870,6 @@ function buildFeedbackPanel(slot) {
     } catch (_) {}
   });
   btnRow.appendChild(shareBtn);
-  btnRow.appendChild(mkBtn(t('fbSkip'), false, returnToTitle));
   slot.appendChild(btnRow);
 }
 
@@ -4257,6 +4272,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=92').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=93').catch(() => {});
   });
 }

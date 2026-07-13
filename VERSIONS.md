@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v139 — 2026-07-13
+**Death screen down to two buttons — CONTINUE tells you when it will send**
+- Three buttons (SEND & CONTINUE / SHARE / SKIP) were one too many, and players couldn't tell whether they'd sent. Now ONE primary button: reads **CONTINUE** while nothing is picked, flips live to **SEND & CONTINUE** the moment any chip is tapped or a comment typed — continuing always leaves the screen, and the label says whether feedback goes out (sending no-ops on empty input, exactly as before). SHARE stays; SKIP is gone (Space / Start / B still skip). en/ja/fi
+- **Roadmap: content milestones designed** while the user-gated 1.0 steps wait — M4 enemy & boss expansion (BULWARK / SIREN / CLOAKER / MAGNA, elite affixes with tells, TWIN PRISMS second boss), M5 living arena (gate chains, RISK gates, VAULT/ESCORT objectives, STEAM VENTS / DRAIN / SUDS SURGE hazards, new room kinds), M6 modes & meta (floors, daily modifiers, cursed cards). Real-device pass marked done
+- Cache-bust `?v=92` → `?v=93`; HUD label → v139
+
+---
+
 ## v138 — 2026-07-13
 **Gates teach themselves: a DASH THROUGH! tag until the move lands once**
 - Players didn't know gates want a dash. Every live gate now carries a pulsing teal **DASH THROUGH!** tag (HUD, same style as the bounty tag) until the player detonates a gate for the first time ever — then it's learned and never shown again (`tokoDropGateUsed`, persisted)
