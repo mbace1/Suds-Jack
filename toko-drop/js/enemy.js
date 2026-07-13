@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=89';
+import { TUNING } from './tuning.js?v=90';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -401,6 +401,8 @@ export class Enemy {
     this._isBoss     = false;
     this._bossMaxHp  = 0;
     this._enraged    = false;
+    this._bossPhase  = 1;    // boss act (v136): 1 fans / 2 spiral / 3 ring rage
+    this._phaseFlashT = 0;
 
     // Build geometry based on type family
     let geo;
@@ -910,7 +912,20 @@ export class Enemy {
     const ddx  = playerPos.x - ex, ddz = playerPos.z - ez;
     const dist = Math.hypot(ddx, ddz) || 0.001;
     // Boss enrage (v59): below 35% HP a boss speeds up for a desperate final phase.
-    if (this._isBoss && !this._enraged && this.hp <= this._bossMaxHp * 0.35) this._enraged = true;
+    // Boss phases (v136): three acts by HP — >66% aimed fans, 66–33% rotating
+    // spiral crossfire, <33% radial-ring rage. Transitions flash the crystal
+    // and raise _phaseJustChanged for main.js to sound/announce. _enraged
+    // stays as the phase-3 alias (speed boost + non-OMEGA boss behaviors).
+    if (this._isBoss) {
+      const frac = this.hp / this._bossMaxHp;
+      const want = frac <= 0.33 ? 3 : frac <= 0.66 ? 2 : 1;
+      if (want > this._bossPhase) {
+        this._bossPhase = want;
+        this._phaseFlashT = 0.5;
+        this._phaseJustChanged = true;
+      }
+      this._enraged = this._bossPhase === 3;
+    }
     const spd  = cfg.speed * this._speedMult * (this._enraged ? 1.45 : 1);
 
     // ── Movement ──────────────────────────────────────────────────────────────
@@ -1125,14 +1140,17 @@ export class Enemy {
       }
 
       case EnemyType.OMEGA: {
-        // Boss-exclusive: holds a mid-range orbit around the player while
-        // firing an aimed fan; once enraged (<35% HP, v59) it switches to a
-        // full radial ring burst — a real pattern change, not just a speed-up.
-        const want   = 7.5;
+        // Boss-exclusive, three acts (v136): phase 1 holds a mid-range orbit
+        // firing aimed fans; phase 2 (≤66% HP) presses closer with a rotating
+        // twin-arm SPIRAL you weave between; phase 3 (≤33%) is the classic
+        // enraged radial ring rage (v59) at 1.45× speed.
+        const phase  = this._bossPhase;
+        const want   = phase === 2 ? 6.2 : 7.5;
+        const pspd   = spd * (phase === 2 ? 1.18 : 1);
         const perpX  = -ddz / dist, perpZ = ddx / dist;
         const radial = dist > want + 1.5 ? 1 : dist < want - 1.5 ? -1 : 0;
-        this.mesh.position.x += (ddx / dist * radial * 0.5 + perpX * this._orbitSign) * spd * dt;
-        this.mesh.position.z += (ddz / dist * radial * 0.5 + perpZ * this._orbitSign) * spd * dt;
+        this.mesh.position.x += (ddx / dist * radial * 0.5 + perpX * this._orbitSign) * pspd * dt;
+        this.mesh.position.z += (ddz / dist * radial * 0.5 + perpZ * this._orbitSign) * pspd * dt;
         // Keep the boss inside the walls (v126): the 7.5 orbit radius is wider
         // than half the SMASH TV room (15×11 halves), so a wall-hugging player
         // could push the crystal out through the doors. Clamp like TORO does.
@@ -1145,9 +1163,17 @@ export class Enemy {
 
         this._omegaFireT -= dt;
         if (this._omegaFireT <= 0) {
-          if (this._enraged) {
+          if (phase === 3) {
             this._omegaFireT = 0.7 * this._intervalMult;
             this._ring(ex, ez, 12, cfg.bulletColor, bullets, this.type);
+          } else if (phase === 2) {
+            // Rotating twin-arm spiral: fast cadence, predictable sweep —
+            // the dodge is reading the arms, not outrunning a burst.
+            this._omegaFireT = 0.24 * this._intervalMult;
+            this._spiralA = (this._spiralA ?? Math.random() * Math.PI * 2) + 0.55;
+            for (const a of [this._spiralA, this._spiralA + Math.PI]) {
+              bullets.spawnDir(ex, ez, Math.cos(a), Math.sin(a), false, cfg.bulletColor, false, this.type);
+            }
           } else {
             this._omegaFireT = 0.9 * this._intervalMult;
             const baseA = Math.atan2(playerPos.z - ez, playerPos.x - ex);
@@ -1292,8 +1318,13 @@ export class Enemy {
     } else if (this.type === EnemyType.SPLITTA && this.hp <= 2) {
       // Nervous green pulse as it nears death — telegraphs the on-death bullet burst.
       this._setEmissive(Math.sin(performance.now() * 0.018) > 0 ? 0x224400 : 0x000000);
+    } else if (this.type === EnemyType.OMEGA && this._phaseFlashT > 0) {
+      // Phase pop (v136): half a second of hot gold strobing — unmissable.
+      this._phaseFlashT -= dt;
+      this._setEmissive(Math.sin(performance.now() * 0.06) > 0 ? 0xffee88 : 0xff5500);
     } else if (this.type === EnemyType.OMEGA && this._omegaFireT < 0.25) {
-      this._setEmissive(Math.sin(performance.now() * 0.03) > 0 ? 0x0088aa : 0x000000);
+      const pc = this._bossPhase === 3 ? 0xaa2200 : this._bossPhase === 2 ? 0x885500 : 0x0088aa;
+      this._setEmissive(Math.sin(performance.now() * 0.03) > 0 ? pc : 0x000000);
     } else if (this.type === EnemyType.BOTFLY
                && this._t >= CFG[EnemyType.BOTFLY].fireInterval * this._intervalMult - 0.5) {
       // Charge-up flicker before launching a homing shot.

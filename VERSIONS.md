@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v136 — 2026-07-13
+**Three-phase boss, smoother wave transitions, sharper pickup badges**
+- **OMEGA has 3 acts by HP** (was 2): >66% aimed 5-shot fans on a wide orbit · **66–33% NEW rotating twin-arm SPIRAL** — presses to a tighter, faster orbit while sweeping two predictable bullet arms you weave between · <33% the radial-ring rage at 1.45× speed. Each transition strobes the crystal gold for half a second, kicks the camera, plays a two-snarl `phaseShift()` and pops "BOSS PHASE N!" — plus a per-phase emissive tell before every volley (cyan/amber/red)
+- **Wave transitions breathe** (classic + non-card roguelike waves): instead of the next wave slamming in on the same frame the last enemy dies, a **1.5 s breather** follows the clear jingle — a green `WAVE N CLEAR` banner bridges into the next wave banner, and leftover drops stay grabbable through the gap. Non-interrupting (GDD §2): play continues, nothing to click. SMASH TV keeps its exit-walk flow, upgrade-card waves keep the card
+- **Pickup badges sharpened**: glyph textures re-rendered at 96 px with a heavier ring (crisp at play distance), non-weapon badges enlarged 0.68 → 0.8, and all badges now draw **over** everything (`depthTest: false`) so a badge can never hide behind an enemy or door frame
+- Cache-bust `?v=89` → `?v=90`; HUD label → v136
+
+---
+
 ## v135 — 2026-07-13
 **SMASH TV door telegraphs + entry-door mercy; pickup expiry blink**
 - **Floor chevrons at telegraphing doors**: a red arrow pulses on the floor just inside any door that's about to pour enemies, pointing into the room — readable without looking up at the wall glow. Telegraph window widened 0.9 → 1.4 s so there's time to react
