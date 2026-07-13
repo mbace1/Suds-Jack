@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=96';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=96';
-import { Player, PLAYER_RADIUS } from './player.js?v=96';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=96';
-import { audio } from './audio.js?v=96';
-import { initDesigner } from './designer.js?v=96';
-import { t, getLang, setLang, langs } from './lang.js?v=96';
-import { TUNING } from './tuning.js?v=96';
+import { InputManager } from './input.js?v=97';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=97';
+import { Player, PLAYER_RADIUS } from './player.js?v=97';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=97';
+import { audio } from './audio.js?v=97';
+import { initDesigner } from './designer.js?v=97';
+import { t, getLang, setLang, langs } from './lang.js?v=97';
+import { TUNING } from './tuning.js?v=97';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -69,7 +69,7 @@ function waveKind(w) {
 // getEnemySchedule uses rng (seeded per run) so every run plays differently.
 function getEnemySchedule(wave) {
   const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
-          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY, WARDEN, BULWARK, SIREN } = EnemyType;
+          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY, WARDEN, BULWARK, SIREN, CLOAKER } = EnemyType;
   const POOL = [
     // [type, minWave, cost]
     [GLOBBO,      1, 1], [YELA_CUBE,  1, 1], [SPITTOR,    1, 2], [FANNER,     1, 2],
@@ -81,6 +81,7 @@ function getEnemySchedule(wave) {
     [WARDEN,      7, 5],  // v124: shield-bearer — cost keeps it rare, one per wave-ish
     [BULWARK,     6, 4],  // v140: plate walker — front is bulletproof, flank it
     [SIREN,       8, 5],  // v141: screamer — surges the pack, kill it first
+    [CLOAKER,     9, 4],  // v143: ambusher — shimmer-flanks, telegraphed burst
   ];
   // TEST MODE (v142): every enemy type is unlocked from wave 1 so new
   // designs can be met within seconds of pressing start.
@@ -117,7 +118,7 @@ function getEnemySchedule(wave) {
   // fodder you mow through), while ranged enemies are placed DELIBERATELY —
   // few of them, capped, spread apart in arrival time and position so each
   // shooter is a tactical problem to prioritise, not part of the noise.
-  const SHOOTERS  = new Set([SPITTOR, FANNER, WEEVA, ORANGE_CUBE, PURP_CUBE, BAMBU, PYRA, BOTFLY]);
+  const SHOOTERS  = new Set([SPITTOR, FANNER, WEEVA, ORANGE_CUBE, PURP_CUBE, BAMBU, PYRA, BOTFLY, CLOAKER]);
   const meleePool = available.filter(([ty]) => !SHOOTERS.has(ty));
   const shootPool = available.filter(([ty]) =>  SHOOTERS.has(ty));
 
@@ -1688,6 +1689,7 @@ const ENEMY_LABEL = {
   [EnemyType.WARDEN]:      'teal Warden',
   [EnemyType.BULWARK]:     'steel Bulwark',
   [EnemyType.SIREN]:       'violet Siren',
+  [EnemyType.CLOAKER]:     'ice Cloaker',
 };
 const _cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -2394,7 +2396,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v142', 16, uiCanvas.height - 12);
+  ctx.fillText('v143', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -4350,6 +4352,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=96').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=97').catch(() => {});
   });
 }
