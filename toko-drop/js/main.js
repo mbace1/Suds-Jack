@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=91';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=91';
-import { Player, PLAYER_RADIUS } from './player.js?v=91';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=91';
-import { audio } from './audio.js?v=91';
-import { initDesigner } from './designer.js?v=91';
-import { t, getLang, setLang, langs } from './lang.js?v=91';
-import { TUNING } from './tuning.js?v=91';
+import { InputManager } from './input.js?v=92';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=92';
+import { Player, PLAYER_RADIUS } from './player.js?v=92';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=92';
+import { audio } from './audio.js?v=92';
+import { initDesigner } from './designer.js?v=92';
+import { t, getLang, setLang, langs } from './lang.js?v=92';
+import { TUNING } from './tuning.js?v=92';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1859,6 +1859,9 @@ let gameState    = 'title';
 let _hitFlashT   = 0;
 let waveClearFlashT = 0; // v74: brief white pulse marking the instant a wave clears
 let waveGapT = 0; // v136: classic-mode breather between waves — play continues, next wave waits
+// v138: gates teach themselves — a DASH! tag hangs over every gate until the
+// player has detonated one, ever. Persisted; the mechanic only needs teaching once.
+let gateUsed = localStorage.getItem('tokoDropGateUsed') === '1';
 
 // ── UI canvas ─────────────────────────────────────────────────────────────────
 const uiCanvas = document.getElementById('canvas-ui');
@@ -2266,6 +2269,24 @@ function drawHUD() {
     ctx.restore();
   }
 
+  // Gate teaching tag (v138): until the player has ever dashed a gate, every
+  // live gate advertises the move — pulsing, dash-colored, impossible to miss.
+  if (!gateUsed && gameState === 'playing') {
+    for (const g of gates) {
+      if (!g.alive) continue;
+      const p = toScreen({ x: g._x, y: 2.1, z: g._z });
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.globalAlpha = 0.75 + 0.25 * Math.sin(performance.now() * 0.006);
+      ctx.font = 'bold 13px monospace, sans-serif';
+      ctx.shadowColor = '#44ff88';
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = '#aaffcc';
+      ctx.fillText('DASH THROUGH!', p.x, p.y);
+      ctx.restore();
+    }
+  }
+
   // BOUNTY tag (v133): gold label + countdown shadowing the marked enemy.
   if (bountyEnemy && bountyEnemy.alive && bountyT > 0 && gameState === 'playing') {
     const p = toScreen({
@@ -2330,7 +2351,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v137', 16, uiCanvas.height - 12);
+  ctx.fillText('v138', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -4022,6 +4043,7 @@ function loop() {
       if (!g.alive) continue;
       if (g.hitsPoint(px, pz, PLAYER_RADIUS)) {
         if (player.dashing) {
+          if (!gateUsed) { gateUsed = true; localStorage.setItem('tokoDropGateUsed', '1'); }
           g.deactivate(scene);
           // Burst of teal shards at gate centre
           for (let _gi = 0; _gi < 14; _gi++) {
@@ -4235,6 +4257,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=91').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=92').catch(() => {});
   });
 }

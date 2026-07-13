@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v138 — 2026-07-13
+**Gates teach themselves: a DASH THROUGH! tag until the move lands once**
+- Players didn't know gates want a dash. Every live gate now carries a pulsing teal **DASH THROUGH!** tag (HUD, same style as the bounty tag) until the player detonates a gate for the first time ever — then it's learned and never shown again (`tokoDropGateUsed`, persisted)
+- Broader gate/environmental-objective redesign and NEW environmental hazards noted on the roadmap (M4) per playtest direction
+- Cache-bust `?v=91` → `?v=92`; HUD label → v138
+
+---
+
 ## v137 — 2026-07-13
 **Audio controls: announcer volume slider + sustained-fire noise ducking**
 - **ANNOUNCER VOL. slider** (OPTIONS → AUDIO, en/ja/fi, persisted `tokoDropAnnVol`): the spoken announcer AND the recorded intro clip get their own loudness, independent of the master — speech synthesis caps at 1.0 and was tied to master volume, so quiet-SFX setups made the announcer inaudible. Now SFX can sit low while the announcer stays loud (or vice versa); master 0 still mutes everything
