@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=99';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=99';
-import { Player, PLAYER_RADIUS } from './player.js?v=99';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=99';
-import { audio } from './audio.js?v=99';
-import { initDesigner } from './designer.js?v=99';
-import { t, getLang, setLang, langs } from './lang.js?v=99';
-import { TUNING } from './tuning.js?v=99';
+import { InputManager } from './input.js?v=100';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=100';
+import { Player, PLAYER_RADIUS } from './player.js?v=100';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=100';
+import { audio } from './audio.js?v=100';
+import { initDesigner } from './designer.js?v=100';
+import { t, getLang, setLang, langs } from './lang.js?v=100';
+import { TUNING } from './tuning.js?v=100';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1297,8 +1297,17 @@ function fmtTime(secs) {
 }
 
 let hiScore = pb.bestScore;
-// Roguelike mode (default on): show upgrade cards between waves. Off = plain arcade run.
-let roguelikeMode = false;
+// Roguelike mode: show upgrade cards every 3rd wave. Variant B (v146) adds a
+// third RARE card to every card screen: the BONUS GAUNTLET — a goal-oriented
+// SMASH-style room run (tier 1: 4 rooms + boss; tier 2+: 2 brutal rooms +
+// boss + mega-boss) with a pinball score multiplier that climbs per room.
+// Clearing a gauntlet pays a RARE upgrade pick. Dying in one ends the run.
+let roguelikeMode = localStorage.getItem('tokoDropRogue2') === '1';
+let rogueB        = localStorage.getItem('tokoDropRogueB') === '1';
+if (rogueB) roguelikeMode = true;
+let gauntlet      = null;   // { tier, rooms, roomIdx, mult, mega } while inside
+let gauntletTier  = 1;      // next gauntlet offer's tier (per run)
+let _gSavedSmash  = null;   // smashMode to restore when the gauntlet ends
 // SMASH TV mode (v109): enemies pour in bursts from 4 arena-edge "doors",
 // waves run bigger and burstier, and moths/convoys drop more prizes.
 let smashMode = localStorage.getItem('tokoDropSmash') === '1';
@@ -1459,7 +1468,7 @@ function onKill(e) {
     addShake(0.12);
   }
   streak++;
-  score += 100 * streak * (scoreMultT > 0 ? 2 : 1);
+  score += 100 * streak * (scoreMultT > 0 ? 2 : 1) * (gauntlet ? gauntlet.mult : 1);
   if (streak > 0 && streak % 5 === 0) audio.announce('streak');
   // BOUNTY claim (v133): marked target down inside the window — big cash and
   // a guaranteed weapon pod at the body. Works from any kill source (bullets,
@@ -2351,6 +2360,19 @@ function drawHUD() {
     }
   }
 
+  // GAUNTLET tag (v146): the live pinball multiplier, top-center.
+  if (gauntlet && gameState === 'playing') {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 15px monospace, sans-serif';
+    ctx.shadowColor = '#ffcc33';
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = '#ffdd66';
+    ctx.fillText(`GAUNTLET  ×${gauntlet.mult}  ·  ROOM ${gauntlet.roomIdx + 1}/${gauntlet.rooms.length}`,
+      uiCanvas.width / 2, 26);
+    ctx.restore();
+  }
+
   // BOUNTY tag (v133): gold label + countdown shadowing the marked enemy.
   if (bountyEnemy && bountyEnemy.alive && bountyT > 0 && gameState === 'playing') {
     const p = toScreen({
@@ -2415,7 +2437,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v145', 16, uiCanvas.height - 12);
+  ctx.fillText('v146', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2533,7 +2555,7 @@ function showTitle() {
   hint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
   const render = () => {
     const on = roguelikeMode;
-    btn.textContent = `${t('rogue')}: ${on ? t('on') : t('off')}`;
+    btn.textContent = `${t('rogue')}: ${!on ? t('off') : rogueB ? 'B' : 'A'}`;
     btn.style.cssText =
       'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
       'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
@@ -2541,14 +2563,18 @@ function showTitle() {
       `border:2px solid ${on ? '#00ccaa' : '#445'};` +
       `color:${on ? '#00ffcc' : '#7777aa'};` +
       `text-shadow:${on ? '0 0 12px #00ccaa' : 'none'};`;
-    hint.textContent = on ? t('rogueOnH') : t('rogueOffH');
+    hint.textContent = !on ? t('rogueOffH') : rogueB ? t('rogueBH') : t('rogueOnH');
   };
   render();
   const toggle = e => {
     e.stopPropagation();
     e.preventDefault();
-    roguelikeMode = !roguelikeMode;
+    // three-state cycle: OFF → A → B → OFF
+    if (!roguelikeMode)      { roguelikeMode = true;  rogueB = false; }
+    else if (!rogueB)        { rogueB = true; }
+    else                     { roguelikeMode = false; rogueB = false; }
     localStorage.setItem('tokoDropRogue2', roguelikeMode ? '1' : '0');
+    localStorage.setItem('tokoDropRogueB', rogueB ? '1' : '0');
     render();
   };
   btn.addEventListener('pointerdown', toggle);
@@ -3291,7 +3317,8 @@ function showUpgradeCards() {
   gameState = 'upgrade';
   overlay.style.display = 'none';
 
-  const pool = [...UPGRADE_POOL].sort(() => Math.random() - 0.5).slice(0, 3);
+  // Roguelike B (v146): 2 regular mods + 1 rare gauntlet invitation.
+  const pool = [...UPGRADE_POOL].sort(() => Math.random() - 0.5).slice(0, rogueB ? 2 : 3);
   const panel = document.createElement('div');
   panel.id = 'upgrade-panel';
   panel.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:60;font-family:monospace,sans-serif;color:#fff;';
@@ -3321,6 +3348,97 @@ function showUpgradeCards() {
     row.appendChild(btn);
   }
 
+  if (rogueB) {
+    const tier = gauntletTier;
+    const g = document.createElement('div');
+    g.dataset.ui = '1';
+    g.style.cssText = 'background:#2a2010;border:2px solid #ffcc33;border-radius:8px;' +
+      'padding:20px 24px;min-width:140px;max-width:180px;text-align:center;cursor:pointer;' +
+      'box-shadow:0 0 18px rgba(255,204,51,0.25);';
+    g.innerHTML = `<div style="font-size:16px;font-weight:bold;margin-bottom:8px;color:#ffdd66">` +
+      `${t(tier === 1 ? 'g_t1' : 'g_t2')}</div>` +
+      `<div style="font-size:12px;opacity:0.75;color:#ffeebb">${t(tier === 1 ? 'g_t1_d' : 'g_t2_d')}</div>`;
+    g.addEventListener('pointerover', () => { g.style.borderColor = '#ffee88'; });
+    g.addEventListener('pointerout',  () => { g.style.borderColor = '#ffcc33'; });
+    g.addEventListener('pointerdown', () => {
+      panel.remove();
+      startGauntlet(tier);
+    });
+    row.appendChild(g);
+  }
+
+  document.body.appendChild(panel);
+}
+
+// ── BONUS GAUNTLET (v146, Roguelike B) ───────────────────────────────────────
+// A goal-oriented detour built on the SMASH TV room machinery: fixed room
+// sequence, all score ×mult (climbing per room, pinball-style), a RARE
+// upgrade pick on completion. The regular smash toggle is restored after.
+function startGauntlet(tier) {
+  _gSavedSmash = smashMode;
+  smashMode = true;
+  gauntlet = tier === 1
+    ? { tier, rooms: ['normal', 'swarm', 'spike', 'prize', 'boss'], roomIdx: 0, mult: 2, mega: false }
+    : { tier, rooms: ['spike', 'spike', 'boss', 'boss'],            roomIdx: 0, mult: 2, mega: true };
+  applyArenaMode(landscapeMode);
+  roomX = 0; roomY = 0;
+  visitedRooms = new Set(['0,0']);
+  smashRoomKind = gauntlet.rooms[0];
+  _entryDoor = null; _cameFromDoor = null;
+  buildSmashDoors();
+  gameState = 'playing';
+  audio.announce('start');
+  spawnWave();
+}
+
+// Rare upgrades — the gauntlet's payout: doubled-up versions of the pool.
+const RARE_POOL = [
+  { id: 'r_hp',     apply: () => { applyUpgrade('hp'); applyUpgrade('hp'); } },
+  { id: 'r_rate',   apply: () => { applyUpgrade('firerate'); applyUpgrade('firerate'); } },
+  { id: 'r_speed',  apply: () => { applyUpgrade('speed'); applyUpgrade('speed'); } },
+  { id: 'r_pierce', apply: () => { applyUpgrade('pierce'); applyUpgrade('bigbullets'); } },
+];
+function finishGauntlet() {
+  const bonus = 2500 * gauntlet.tier * gauntlet.mult;
+  score += bonus;
+  milestoneT = 1.2; milestoneText = `GAUNTLET CLEAR! +${bonus}`;
+  gauntletTier++;
+  smashMode = _gSavedSmash;
+  gauntlet = null;
+  smashRoomKind = null;
+  applyArenaMode(landscapeMode);
+  buildSmashDoors();          // clears the doors when smash is off
+  audio.applause();
+  showRareCards();
+}
+function showRareCards() {
+  gameState = 'upgrade';
+  overlay.style.display = 'none';
+  const picks = [...RARE_POOL].sort(() => Math.random() - 0.5).slice(0, 2);
+  const panel = document.createElement('div');
+  panel.id = 'upgrade-panel';
+  panel.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);z-index:60;font-family:monospace,sans-serif;color:#fff;';
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:24px;font-weight:bold;margin-bottom:24px;color:#ffdd66;text-shadow:0 0 20px #ffaa00;';
+  title.textContent = t('chooseRare');
+  panel.appendChild(title);
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:16px;flex-wrap:wrap;justify-content:center;';
+  panel.appendChild(row);
+  for (const card of picks) {
+    const btn = document.createElement('div');
+    btn.dataset.ui = '1';
+    btn.style.cssText = 'background:#2a2010;border:2px solid #ffcc33;border-radius:8px;padding:20px 24px;min-width:140px;max-width:180px;text-align:center;cursor:pointer;box-shadow:0 0 18px rgba(255,204,51,0.25);';
+    btn.innerHTML = `<div style="font-size:16px;font-weight:bold;margin-bottom:8px;color:#ffdd66">${t('c_' + card.id)}</div>` +
+      `<div style="font-size:12px;opacity:0.75;color:#ffeebb">${t('c_' + card.id + '_d')}</div>`;
+    btn.addEventListener('pointerdown', () => {
+      panel.remove();
+      card.apply();
+      gameState = 'playing';
+      spawnWave();
+    });
+    row.appendChild(btn);
+  }
   document.body.appendChild(panel);
 }
 
@@ -3335,6 +3453,7 @@ function startGame() {
   applyArenaMode(landscapeMode);
   score  = 0; streak = 0; wave = 0; runTimer = 0; scoreMultT = 0; waveClearFlashT = 0; waveGapT = 0;
   milestoneT = 0; nextMilestone = 25000; grazeCount = 0; shieldBlockCount = 0;
+  gauntlet = null; gauntletTier = 1;
   collectedUpgrades = []; hitEventLog = []; _lastHitTime = -1; _lbPosted = false;
   scheduleTutorialHints();
   BULLET_CONFIG.playerBulletScale  = 1.0;
@@ -3386,6 +3505,11 @@ function returnToTitle() {
 }
 
 function triggerGameOver() {
+  if (gauntlet) {                       // died inside a gauntlet: restore state
+    smashMode = _gSavedSmash;
+    gauntlet = null;
+    smashRoomKind = null;
+  }
   gameState = 'gameover';
   saveHitLog();
   _runBests = testMode ? {} : recordRun();   // test runs leave no records (v142)
@@ -3656,10 +3780,13 @@ function loop() {
       audio.shooterPing();
     }
     if (s.boss) {
+      // Gauntlet mega-boss (v146): the tier-2 finale hits far harder.
+      const mega = gauntlet && gauntlet.mega && gauntlet.roomIdx === gauntlet.rooms.length - 1;
+      const bossHpMult = mega ? 5 : 3;
       if (en.type !== EnemyType.BAMBU && en.type !== EnemyType.PYRA) {
-        en.hp = Math.ceil(en.hp * 3); en._hpMult = 3;
+        en.hp = Math.ceil(en.hp * bossHpMult); en._hpMult = bossHpMult;
       }
-      en.mesh.scale.multiplyScalar(1.5); en._radiusMult = 1.5;
+      en.mesh.scale.multiplyScalar(mega ? 1.7 : 1.5); en._radiusMult = mega ? 1.7 : 1.5;
       en.setBoss(en.hp);
       bossAuras.push(makeBossAura(en));
     } else if (s.elite) {
@@ -4270,7 +4397,7 @@ function loop() {
         // Instant score nugget (v89) — worth more in later waves, doubled by
         // an active Score Multiplier. Floor valuables (v116) carry their own
         // value: small cash piles, big prizes.
-        const gained = (pu._value ?? (250 + wave * 25)) * (scoreMultT > 0 ? 2 : 1);
+        const gained = (pu._value ?? (250 + wave * 25)) * (scoreMultT > 0 ? 2 : 1) * (gauntlet ? gauntlet.mult : 1);
         score += gained;
         damageNumbers.push(new DamageNumber(pu.x, 1.2, pu.z, `+${gained}`, '255,221,68'));
         audio.announce('money');
@@ -4313,20 +4440,30 @@ function loop() {
   // All living enemies dead → end wave immediately; flush any queued spawns.
   // SMASH TV: the room isn't cleared while door bursts are still queued — the
   // doors keep pouring (clearing between pulses just buys a breather).
+  // v146 FIX: never re-evaluate the clear while a room transition is in
+  // flight (_roomSwap / roomFadeT) — the old room's dead enemies linger until
+  // spawnWave, so the clear could re-fire mid-fade, double-paying the bonus
+  // and (in gauntlets) cascading through the whole room script instantly.
   if (gameState === 'playing' && !exitPhase && waveGapT <= 0 &&
+      !_roomSwap && roomFadeT <= 0 &&
       enemies.length > 0 &&
       enemies.every(e => !e.alive && !e._dying) &&
       (!smashMode || pendingSpawns.length === 0)) {
     pendingSpawns = [];
-    score += wave * 500;
+    score += wave * 500 * (gauntlet ? gauntlet.mult : 1);
     waveClearFlashT = 0.4;
     audio.waveClear();
-    if (smashMode) {
+    if (gauntlet && gauntlet.roomIdx >= gauntlet.rooms.length - 1) {
+      // BONUS GAUNTLET (v146): final room down — payout and back to classic.
+      finishGauntlet();
+    } else if (smashMode) {
       // SMASH TV (v115): the room doesn't chain straight into the next wave —
       // EXIT doors open, the tally card shows, the minimap comes up, and the
       // player WALKS OUT through a door of their choosing.
       exitPhase  = true;
       exitDoors  = pickSmashExits();
+      // Gauntlet doors all lead to the SAME scripted next room (v146).
+      if (gauntlet) for (const ed of exitDoors) ed.kind = gauntlet.rooms[gauntlet.roomIdx + 1];
       roomTallyT = 2.2;
       audio.applause();
       audio.announce('exit');
@@ -4360,9 +4497,14 @@ function loop() {
         roomX += DOOR_DX[ed.door]; roomY += DOOR_DY[ed.door];
         visitedRooms.add(`${roomX},${roomY}`);
         smashRoomKind = ed.kind;
+        if (gauntlet) {                      // v146: scripted room list + pinball ramp
+          gauntlet.roomIdx++;
+          gauntlet.mult++;
+          smashRoomKind = gauntlet.rooms[gauntlet.roomIdx];
+        }
         _entryDoor    = (ed.door + 2) % 4;
         _cameFromDoor = _entryDoor;
-        if (roguelikeMode && wave % 3 === 0) {
+        if (!gauntlet && roguelikeMode && wave % 3 === 0) {
           showUpgradeCards();
         } else {
           roomFadeT = 0.55;      // fade in… (swap fires at the 0.3 peak below)
@@ -4414,6 +4556,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=99').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=100').catch(() => {});
   });
 }
