@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=97';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=97';
-import { Player, PLAYER_RADIUS } from './player.js?v=97';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=97';
-import { audio } from './audio.js?v=97';
-import { initDesigner } from './designer.js?v=97';
-import { t, getLang, setLang, langs } from './lang.js?v=97';
-import { TUNING } from './tuning.js?v=97';
+import { InputManager } from './input.js?v=98';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=98';
+import { Player, PLAYER_RADIUS } from './player.js?v=98';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=98';
+import { audio } from './audio.js?v=98';
+import { initDesigner } from './designer.js?v=98';
+import { t, getLang, setLang, langs } from './lang.js?v=98';
+import { TUNING } from './tuning.js?v=98';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -69,7 +69,7 @@ function waveKind(w) {
 // getEnemySchedule uses rng (seeded per run) so every run plays differently.
 function getEnemySchedule(wave) {
   const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
-          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY, WARDEN, BULWARK, SIREN, CLOAKER } = EnemyType;
+          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY, WARDEN, BULWARK, SIREN, CLOAKER, MAGNA } = EnemyType;
   const POOL = [
     // [type, minWave, cost]
     [GLOBBO,      1, 1], [YELA_CUBE,  1, 1], [SPITTOR,    1, 2], [FANNER,     1, 2],
@@ -82,6 +82,7 @@ function getEnemySchedule(wave) {
     [BULWARK,     6, 4],  // v140: plate walker — front is bulletproof, flank it
     [SIREN,       8, 5],  // v141: screamer — surges the pack, kill it first
     [CLOAKER,     9, 4],  // v143: ambusher — shimmer-flanks, telegraphed burst
+    [MAGNA,      10, 5],  // v144: magnet — pulls you off your line, dash breaks it
   ];
   // TEST MODE (v142): every enemy type is unlocked from wave 1 so new
   // designs can be met within seconds of pressing start.
@@ -1125,6 +1126,9 @@ class ScreamRing {
   remove(sc) { sc.remove(this.mesh); this.mesh.geometry.dispose(); this.mat.dispose(); }
 }
 const SIREN_RADIUS = 7;  // scream surge reach
+const MAGNA_REACH = 11;  // pull range (v144)
+const MAGNA_PULL  = 1.1; // pull strength, u/s per magna (player runs ~3.5)
+let magnaImmuneT = 0;    // dash-granted pull immunity
 class FoamZone {
   constructor(sc, x, z) {
     this.x = x; this.z = z;
@@ -1690,6 +1694,7 @@ const ENEMY_LABEL = {
   [EnemyType.BULWARK]:     'steel Bulwark',
   [EnemyType.SIREN]:       'violet Siren',
   [EnemyType.CLOAKER]:     'ice Cloaker',
+  [EnemyType.MAGNA]:       'amber Magna',
 };
 const _cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -2396,7 +2401,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v143', 16, uiCanvas.height - 12);
+  ctx.fillText('v144', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3630,7 +3635,8 @@ function loop() {
     // v120: shooters are the tactical objects (v116) — announce their entrance
     // with a brief "!" ping + alert blip so the player can start prioritising.
     // v124: WARDENs get the same treatment; the shield-bearer IS a priority call.
-    if (s.shooter || s.type === EnemyType.WARDEN || s.type === EnemyType.SIREN) {
+    if (s.shooter || s.type === EnemyType.WARDEN || s.type === EnemyType.SIREN ||
+        s.type === EnemyType.MAGNA) {
       en._pingT = 1.6;
       audio.shooterPing();
     }
@@ -3666,6 +3672,32 @@ function loop() {
   }
 
   player.update(dt, moveDir, aimDir, bullets, HALF_X, HALF_Z);
+
+  // MAGNA pull (v144): every living magna within reach drags the player
+  // toward it. Dashing grants ~1.2 s of immunity (momentum breaks the hold),
+  // total pull is capped, and the tether visual mirrors exactly this state.
+  if (player.alive) {
+    if (player.dashing) magnaImmuneT = 1.2;
+    else if (magnaImmuneT > 0) magnaImmuneT -= dt;
+    let pullX = 0, pullZ = 0;
+    for (const e of enemies) {
+      if (!e.alive || e.type !== EnemyType.MAGNA) continue;
+      const mx = e.position.x - player.position.x;
+      const mz = e.position.z - player.position.z;
+      const md = Math.hypot(mx, mz);
+      const held = magnaImmuneT <= 0 && md < MAGNA_REACH && md > 1.2;
+      e._pullActive = held;
+      if (held) { pullX += (mx / md) * MAGNA_PULL; pullZ += (mz / md) * MAGNA_PULL; }
+    }
+    const pl = Math.hypot(pullX, pullZ);
+    if (pl > 2.0) { pullX *= 2.0 / pl; pullZ *= 2.0 / pl; }  // stacked magnas cap out
+    if (pl > 0) {
+      player.mesh.position.x = Math.max(-HALF_X + PLAYER_RADIUS,
+        Math.min(HALF_X - PLAYER_RADIUS, player.mesh.position.x + pullX * dt));
+      player.mesh.position.z = Math.max(-HALF_Z + PLAYER_RADIUS,
+        Math.min(HALF_Z - PLAYER_RADIUS, player.mesh.position.z + pullZ * dt));
+    }
+  }
 
   // Dash boom: radial explosion on dash start
   if (player._dashBoom && player.dashing && !_prevDashing) {
@@ -4352,6 +4384,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=97').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=98').catch(() => {});
   });
 }
