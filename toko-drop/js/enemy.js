@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=94';
+import { TUNING } from './tuning.js?v=95';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -282,6 +282,10 @@ export const EnemyType = {
   // Shield-plate walker (v140, roadmap M4) — melee plodder whose FRONT is
   // bulletproof. The positioning counterpart to WARDEN's priority puzzle.
   BULWARK:     18,
+  // Screamer (v141, roadmap M4) — support blob that keeps its distance and
+  // periodically screams a 3 s speed surge into every mob around it. Never
+  // attacks; with WARDEN it forms the kill-the-support-first family.
+  SIREN:       19,
 };
 
 // WARDEN aura radius (world units) — main.js uses it for the damage-immunity
@@ -308,6 +312,7 @@ export const CFG = {
   [EnemyType.BOTFLY]:      { color: 0xff55bb, radius: 0.5,  speed: 2.0, hp: 2, bulletColor: 0xff66ee, fireInterval: 3.8  },
   [EnemyType.WARDEN]:      { color: 0x33ffdd, radius: 0.85, speed: 1.1, hp: 5, bulletColor: null,     fireInterval: null },
   [EnemyType.BULWARK]:     { color: 0x7f93c4, radius: 0.9,  speed: 1.5, hp: 4, bulletColor: null,     fireInterval: null },
+  [EnemyType.SIREN]:       { color: 0xbb66ff, radius: 0.75, speed: 1.2, hp: 3, bulletColor: null,     fireInterval: null },
 };
 
 // Scratch colors for the tinted death flash (v132) — no per-death allocation.
@@ -328,6 +333,7 @@ const TRAIL_CFG = {
 export const BLOB_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPITTOR, EnemyType.FANNER,
   EnemyType.WEEVA, EnemyType.SPLITTA, EnemyType.WARDEN, EnemyType.BULWARK,
+  EnemyType.SIREN,
 ]);
 
 const CUBE_TYPES = new Set([
@@ -657,6 +663,16 @@ export class Enemy {
       scene.add(this._plate);
     }
 
+    // SIREN (v141): scream cycle — cruise, 0.8 s inhale (visible swell +
+    // brightening glow), then scream. The scream itself (surge + ring FX +
+    // sound) is applied in main.js via the _screamReady flag, the same
+    // pattern SLUDGE uses for poison.
+    if (type === EnemyType.SIREN) {
+      this._screamT     = 2.5 + Math.random() * 1.5;  // time to next inhale
+      this._inhaleT     = 0;
+      this._screamReady = false;
+    }
+
     // Flopping cube movers — shared tumble state (see _flopMove)
     if (CUBE_TYPES.has(type)) {
       const dirs = [{x:1,z:0},{x:-1,z:0},{x:0,z:1},{x:0,z:-1}];
@@ -942,7 +958,9 @@ export class Enemy {
       }
       this._enraged = this._bossPhase === 3;
     }
-    const spd  = cfg.speed * this._speedMult * (this._enraged ? 1.45 : 1);
+    if (this._surgeT > 0) this._surgeT -= dt;   // SIREN scream surge (v141)
+    const spd  = cfg.speed * this._speedMult * (this._enraged ? 1.45 : 1)
+               * (this._surgeT > 0 ? 1.6 : 1);
 
     // ── Movement ──────────────────────────────────────────────────────────────
     switch (this.type) {
@@ -1025,6 +1043,30 @@ export class Enemy {
           this._plate.rotation.y = Math.atan2(this._faceX, this._faceZ);
           // steel glint — brightens as it squares up to you
           this._plate.material.opacity = 0.75 + 0.2 * Math.abs(Math.sin(this._wobbleT * 2.2));
+        }
+        break;
+      }
+
+      case EnemyType.SIREN: {
+        // Coward support: hovers at mid distance, backs away when pressed.
+        const keep = 9;
+        if      (dist > keep + 1) { this.mesh.position.x += (ddx / dist) * spd * dt; this.mesh.position.z += (ddz / dist) * spd * dt; }
+        else if (dist < keep - 1) { this.mesh.position.x -= (ddx / dist) * spd * 1.3 * dt; this.mesh.position.z -= (ddz / dist) * spd * 1.3 * dt; }
+        if (this._inhaleT > 0) {
+          this._inhaleT -= dt;
+          // Inhale tell: swells and glows brighter until the scream pops.
+          const k = 1 - this._inhaleT / 0.8;
+          this.mesh.scale.setScalar(cfg.radius * (this._radiusMult || 1) * (1 + k * 0.45));
+          this._setEmissive(Math.sin(this._wobbleT * 20) > 0 ? 0x6633aa : 0x220044);
+          if (this._inhaleT <= 0) {
+            this._screamReady = true;
+            this._screamT = 3.5 + Math.random() * 1.5;
+            this.mesh.scale.setScalar(cfg.radius * (this._radiusMult || 1));
+            this._setEmissive(0x000000);
+          }
+        } else {
+          this._screamT -= dt;
+          if (this._screamT <= 0) this._inhaleT = 0.8;
         }
         break;
       }

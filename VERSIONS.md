@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v141 — 2026-07-13
+**SIREN — enemy #20, the screamer (roadmap M4, second in order)**
+- **SIREN** (violet blob, wave 8+, cost 5): a coward support that hovers at mid distance, backs away when pressed, and never attacks. Every ~4 s it **inhales for 0.8 s** (visible swell + strobing violet glow — the tell), then **screams**: every non-boss enemy within 7 units gets a **1.6× speed surge for 3 s**, marked by an expanding violet ring + a rising two-voice wail
+- With WARDEN it completes the **kill-the-support-first family**: WARDEN protects the pack, SIREN accelerates it. Gets the "!" entrance ping like the other priority targets
+- Surges never stack state — a per-enemy timer multiplies speed while it runs; bosses and other sirens are immune
+- Cache-bust `?v=94` → `?v=95`; HUD label → v141
+
+---
+
 ## v140 — 2026-07-13
 **BULWARK — enemy #19, the shield-plate walker (roadmap M4, first in order)**
 - **BULWARK** (steel-blue blob, wave 6+, cost 4): walks straight at you behind a visible steel plate — shots landing on its FRONT arc (~±60° of facing) are shrugged off with a dull `plateTink()` clank + steel sparks, **even piercing shots**. Flank it: the plate turns with a limited turn rate (2.2 rad/s), so a committed side-step or dash-through always opens the back. The positioning counterpart to WARDEN's priority puzzle (per the roadmap's one-mechanic/one-tell rule)
