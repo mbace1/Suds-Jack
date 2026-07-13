@@ -62,7 +62,7 @@ class AudioSystem {
     if (!this._introVoice || this._volume <= 0) return null;
     try {
       if (!this._introEl) {
-        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=89', import.meta.url).href);
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=90', import.meta.url).href);
         this._introEl.preload = 'auto';
       }
       this._introEl.volume = this._volume;
@@ -153,6 +153,11 @@ class AudioSystem {
   shieldTink() { this._tone(1900, 0.05, 'triangle', 0.10, 1400); }
   // Graze (v125): whisper-quiet zip as a bullet skims past — felt, not loud.
   grazeTick() { this._tone(2400, 0.035, 'sine', 0.07, 2800); }
+  // Boss phase shift (v136): two rising snarls — the fight just changed gear.
+  phaseShift() {
+    this._tone(160, 0.22, 'sawtooth', 0.32, 230);
+    setTimeout(() => this._tone(210, 0.26, 'sawtooth', 0.30, 320), 130);
+  }
   // CLEANSE burst (v133): bright rising sparkle over a soft foam wash.
   cleanse() {
     [660, 880, 1320].forEach((f, i) =>

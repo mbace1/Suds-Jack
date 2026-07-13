@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=89';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=89';
-import { Player, PLAYER_RADIUS } from './player.js?v=89';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=89';
-import { audio } from './audio.js?v=89';
-import { initDesigner } from './designer.js?v=89';
-import { t, getLang, setLang, langs } from './lang.js?v=89';
-import { TUNING } from './tuning.js?v=89';
+import { InputManager } from './input.js?v=90';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=90';
+import { Player, PLAYER_RADIUS } from './player.js?v=90';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=90';
+import { audio } from './audio.js?v=90';
+import { initDesigner } from './designer.js?v=90';
+import { t, getLang, setLang, langs } from './lang.js?v=90';
+import { TUNING } from './tuning.js?v=90';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -793,17 +793,18 @@ function randomWeaponPodId(lv2Allowed = false) {
 }
 
 function makeGlyphTexture(text, colorHex) {
+  // v136: 96px canvas (was 64) + heavier ring — crisper badges at play distance.
   const c = document.createElement('canvas');
-  c.width = 64; c.height = 64;
+  c.width = 96; c.height = 96;
   const ctx2d = c.getContext('2d');
   const col = '#' + colorHex.toString(16).padStart(6, '0');
   ctx2d.strokeStyle = col;
-  ctx2d.lineWidth = 2;
-  ctx2d.beginPath(); ctx2d.arc(32, 32, 26, 0, Math.PI * 2); ctx2d.stroke();
+  ctx2d.lineWidth = 4;
+  ctx2d.beginPath(); ctx2d.arc(48, 48, 40, 0, Math.PI * 2); ctx2d.stroke();
   ctx2d.fillStyle = col;
-  ctx2d.font = `bold ${text.length > 1 ? 22 : 28}px monospace`;
+  ctx2d.font = `bold ${text.length > 1 ? 34 : 44}px monospace`;
   ctx2d.textAlign = 'center'; ctx2d.textBaseline = 'middle';
-  ctx2d.fillText(text, 32, 33);
+  ctx2d.fillText(text, 48, 50);
   return new THREE.CanvasTexture(c);
 }
 
@@ -848,9 +849,13 @@ class Powerup {
     const glyph = wpDef ? type : (NON_WEAPON_GLYPHS[type] ?? null);
     if (glyph) {
       const tex = makeGlyphTexture(glyph, orbColor);
-      const spMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+      const spMat = new THREE.SpriteMaterial({
+        map: tex, transparent: true, depthWrite: false,
+        depthTest: false,   // v136: badges draw over everything — never hidden
+      });
       this._sprite = new THREE.Sprite(spMat);
-      this._sprite.scale.setScalar(wpDef ? (wpDef.level === 2 ? 1.1 : 0.9) : 0.68);
+      this._sprite.renderOrder = 5;
+      this._sprite.scale.setScalar(wpDef ? (wpDef.level === 2 ? 1.1 : 0.9) : 0.8);
       this._spriteLift = wpDef ? 0.9 : 0.62;
       this._sprite.position.set(x, 0.6 + this._spriteLift, z);
       sc.add(this._sprite);
@@ -1847,6 +1852,7 @@ window._feedbackExport = () => {
 let gameState    = 'title';
 let _hitFlashT   = 0;
 let waveClearFlashT = 0; // v74: brief white pulse marking the instant a wave clears
+let waveGapT = 0; // v136: classic-mode breather between waves — play continues, next wave waits
 
 // ── UI canvas ─────────────────────────────────────────────────────────────────
 const uiCanvas = document.getElementById('canvas-ui');
@@ -2312,7 +2318,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v135', 16, uiCanvas.height - 12);
+  ctx.fillText('v136', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3213,7 +3219,7 @@ function startGame() {
   // arena even if the device rotates mid-fight (no mid-run bound swaps).
   landscapeMode = innerWidth > innerHeight;
   applyArenaMode(landscapeMode);
-  score  = 0; streak = 0; wave = 0; runTimer = 0; scoreMultT = 0; waveClearFlashT = 0;
+  score  = 0; streak = 0; wave = 0; runTimer = 0; scoreMultT = 0; waveClearFlashT = 0; waveGapT = 0;
   milestoneT = 0; nextMilestone = 25000; grazeCount = 0; shieldBlockCount = 0;
   collectedUpgrades = []; hitEventLog = []; _lastHitTime = -1; _lbPosted = false;
   scheduleTutorialHints();
@@ -3582,6 +3588,12 @@ function loop() {
 
   for (const e of enemies) {
     e.update(dt, player.position, bullets, HALF_X, HALF_Z);
+    if (e._phaseJustChanged) {   // boss act change (v136): sound + popup
+      e._phaseJustChanged = false;
+      milestoneT = 1.1; milestoneText = `BOSS PHASE ${e._bossPhase}!`;
+      addShake(0.3);
+      audio.phaseShift();
+    }
     e.updateDeath(dt);
     if (e._pingT > 0) e._pingT -= dt;
   }
@@ -4101,10 +4113,16 @@ function loop() {
     }
   }
 
+  // Wave breather tick (v136): when it runs out, the next wave rolls in.
+  if (waveGapT > 0 && gameState === 'playing') {
+    waveGapT -= dt;
+    if (waveGapT <= 0) spawnWave();
+  }
+
   // All living enemies dead → end wave immediately; flush any queued spawns.
   // SMASH TV: the room isn't cleared while door bursts are still queued — the
   // doors keep pouring (clearing between pulses just buys a breather).
-  if (gameState === 'playing' && !exitPhase &&
+  if (gameState === 'playing' && !exitPhase && waveGapT <= 0 &&
       enemies.length > 0 &&
       enemies.every(e => !e.alive && !e._dying) &&
       (!smashMode || pendingSpawns.length === 0)) {
@@ -4126,7 +4144,15 @@ function loop() {
       // Roguelike pacing (v101): a card every 3rd cleared wave — every wave was
       // way too frequent with instant wave-ends chaining fast.
       if (roguelikeMode && wave % 3 === 0) showUpgradeCards();
-      else                                 spawnWave();
+      else {
+        // v136: breather — a beat to exhale and grab leftover drops instead of
+        // the next wave slamming in on the same frame. Non-interrupting: play
+        // continues, nothing to click; the CLEAR banner bridges the gap.
+        waveGapT = 1.5;
+        waveIntroT = waveIntroDur = 1.0;
+        waveIntroText  = `WAVE ${wave} CLEAR`;
+        waveIntroColor = '#66ffcc';
+      }
     }
   }
 
@@ -4197,6 +4223,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=89').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=90').catch(() => {});
   });
 }
