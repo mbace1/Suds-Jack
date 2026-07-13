@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=94';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=94';
-import { Player, PLAYER_RADIUS } from './player.js?v=94';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=94';
-import { audio } from './audio.js?v=94';
-import { initDesigner } from './designer.js?v=94';
-import { t, getLang, setLang, langs } from './lang.js?v=94';
-import { TUNING } from './tuning.js?v=94';
+import { InputManager } from './input.js?v=95';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=95';
+import { Player, PLAYER_RADIUS } from './player.js?v=95';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=95';
+import { audio } from './audio.js?v=95';
+import { initDesigner } from './designer.js?v=95';
+import { t, getLang, setLang, langs } from './lang.js?v=95';
+import { TUNING } from './tuning.js?v=95';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -69,7 +69,7 @@ function waveKind(w) {
 // getEnemySchedule uses rng (seeded per run) so every run plays differently.
 function getEnemySchedule(wave) {
   const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
-          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY, WARDEN, BULWARK } = EnemyType;
+          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY, WARDEN, BULWARK, SIREN } = EnemyType;
   const POOL = [
     // [type, minWave, cost]
     [GLOBBO,      1, 1], [YELA_CUBE,  1, 1], [SPITTOR,    1, 2], [FANNER,     1, 2],
@@ -80,6 +80,7 @@ function getEnemySchedule(wave) {
     [TORO,        6, 5],
     [WARDEN,      7, 5],  // v124: shield-bearer — cost keeps it rare, one per wave-ish
     [BULWARK,     6, 4],  // v140: plate walker — front is bulletproof, flank it
+    [SIREN,       8, 5],  // v141: screamer — surges the pack, kill it first
   ];
   const available = POOL.filter(([, min]) => wave >= min);
 
@@ -1094,6 +1095,30 @@ function clearBounty() { bountyEnemy = null; bountyT = 0; bountyRing.visible = f
 // pays per bullet cleared. Standing still in a bullet-hell IS the price.
 // Appears every 4th wave from wave 6; expires if ignored.
 let foamZones = [];
+// SIREN scream rings (v141): one-shot expanding ring marking the surge radius.
+let screamRings = [];
+class ScreamRing {
+  constructor(sc, x, z) {
+    this._t = 0;
+    this.mat = new THREE.MeshBasicMaterial({
+      color: 0xbb66ff, transparent: true, opacity: 0.7,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+    });
+    this.mesh = new THREE.Mesh(new THREE.RingGeometry(0.82, 1.0, 40), this.mat);
+    this.mesh.rotation.x = -Math.PI / 2;
+    this.mesh.position.set(x, 0.05, z);
+    sc.add(this.mesh);
+  }
+  update(dt) {
+    this._t += dt;
+    const k = this._t / 0.55;
+    this.mesh.scale.setScalar(1 + k * (SIREN_RADIUS - 1));
+    this.mat.opacity = 0.7 * (1 - k);
+    return k < 1;
+  }
+  remove(sc) { sc.remove(this.mesh); this.mesh.geometry.dispose(); this.mat.dispose(); }
+}
+const SIREN_RADIUS = 7;  // scream surge reach
 class FoamZone {
   constructor(sc, x, z) {
     this.x = x; this.z = z;
@@ -1653,6 +1678,7 @@ const ENEMY_LABEL = {
   [EnemyType.BOTFLY]:      'pink Botfly',
   [EnemyType.WARDEN]:      'teal Warden',
   [EnemyType.BULWARK]:     'steel Bulwark',
+  [EnemyType.SIREN]:       'violet Siren',
 };
 const _cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -2353,7 +2379,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v140', 16, uiCanvas.height - 12);
+  ctx.fillText('v141', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3024,6 +3050,7 @@ function clearFX() {
   for (const s of slimeTrails)   s.remove(scene); slimeTrails   = [];
   for (const r of sludgeRibbons) r.remove(scene); sludgeRibbons = [];
   for (const f of foamZones)    f.remove(scene); foamZones     = [];
+  for (const r of screamRings)  r.remove(scene); screamRings   = [];
   clearBounty();
   for (const g of gates)        g.remove(scene); gates         = [];
   for (const p of powerups)     p.remove(scene); powerups      = [];
@@ -3586,7 +3613,7 @@ function loop() {
     // v120: shooters are the tactical objects (v116) — announce their entrance
     // with a brief "!" ping + alert blip so the player can start prioritising.
     // v124: WARDENs get the same treatment; the shield-bearer IS a priority call.
-    if (s.shooter || s.type === EnemyType.WARDEN) {
+    if (s.shooter || s.type === EnemyType.WARDEN || s.type === EnemyType.SIREN) {
       en._pingT = 1.6;
       audio.shooterPing();
     }
@@ -3638,6 +3665,17 @@ function loop() {
 
   for (const e of enemies) {
     e.update(dt, player.position, bullets, HALF_X, HALF_Z);
+    if (e._screamReady) {        // SIREN scream (v141): surge the pack
+      e._screamReady = false;
+      for (const w of enemies) {
+        if (!w.alive || w === e || w._isBoss || w.type === EnemyType.SIREN) continue;
+        if (Math.hypot(w.position.x - e.position.x, w.position.z - e.position.z) < SIREN_RADIUS) {
+          w._surgeT = 3;
+        }
+      }
+      screamRings.push(new ScreamRing(scene, e.position.x, e.position.z));
+      audio.sirenScream();
+    }
     if (e._phaseJustChanged) {   // boss act change (v136): sound + popup
       e._phaseJustChanged = false;
       milestoneT = 1.1; milestoneText = `BOSS PHASE ${e._bossPhase}!`;
@@ -3697,6 +3735,9 @@ function loop() {
   }
   for (let i = foamZones.length - 1; i >= 0; i--) {
     if (!foamZones[i].update(dt)) { foamZones[i].remove(scene); foamZones.splice(i, 1); }
+  }
+  for (let i = screamRings.length - 1; i >= 0; i--) {
+    if (!screamRings[i].update(dt)) { screamRings[i].remove(scene); screamRings.splice(i, 1); }
   }
 
   // BOUNTY tick (v133): the ring shadows its target; the window closing
@@ -4294,6 +4335,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=94').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=95').catch(() => {});
   });
 }

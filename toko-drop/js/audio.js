@@ -73,7 +73,7 @@ class AudioSystem {
     if (!this._introVoice || this._volume <= 0) return null;
     try {
       if (!this._introEl) {
-        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=94', import.meta.url).href);
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=95', import.meta.url).href);
         this._introEl.preload = 'auto';
       }
       this._introEl.volume = this._annVolume;
@@ -171,6 +171,12 @@ class AudioSystem {
   botShot()   { this._tone(380, 0.16, 'triangle', 0.14, 1150); }
   // WARDEN deflection (v124): dull high tink — reads "shielded", not "missed".
   shieldTink() { this._tone(1900, 0.05, 'triangle', 0.10, 1400); }
+  // SIREN scream (v141): rising two-voice wail — the pack just got faster.
+  sirenScream() {
+    this._tone(700, 0.45, 'sawtooth', 0.20, 1500);
+    this._tone(705, 0.45, 'square',   0.10, 1520);
+    this._noise(0.06, 0.3);
+  }
   // BULWARK plate clank (v140): lower and duller than the warden tink —
   // reads "armor", cueing the flank without a glance.
   plateTink() { this._tone(720, 0.06, 'square', 0.15, 480); }
