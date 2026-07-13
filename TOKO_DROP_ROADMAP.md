@@ -93,11 +93,16 @@ Shared foundation (build first):
   room/goal sequence with its own multiplier, offered as Roguelike B's rare
   card AND as a menu mode. Per-mode tuning objects, one entry point.
 
+**Art direction (user, 2026-07-13): all cabinets share a very similar pixel
+style — each with its own reference-driven accent — and the orange cubes are
+welcome everywhere. TOKOTRON sets the template: dark background, no grid,
+shiny vector-bright graphics.**
+
 The cabinet row (each refined individually, in build order):
-1. **GRID RESCUE** *(Robotron: 2084 tribute)* — single fixed screen, waves of
-   swarming hunters, and civilians to rescue by touch before enemies convert
-   them; per-rescue score climbs. Closest to existing systems (arena + a
-   rescue objective in the ESCORT family).
+1. **TOKOTRON** *(Robotron: 2084 tribute)* — SHIPPED v148 (v1: dark room,
+   flood waves, civilians, rescue chains). Refinement backlog: per-mode high
+   score, family variety (mommy/daddy/mikey-style civilian types), brain-like
+   converter enemy that turns civilians into hostiles, 2P.
 2. **DUNGEON RUN** *(Gauntlet tribute)* — the room lattice grows corridors +
    keys + locked doors + food ("the blob needs suds… badly"); enemy
    generators you must destroy (spawner objects — new enemy family).

@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v148 — 2026-07-13
+**TOKOTRON — the first arcade cabinet (Robotron: 2084 tribute, roadmap M5)**
+- **TOKOTRON chip on the title** (cyan, under DAILY): tap to play the first tribute cabinet. Art direction per the user: **dark room (near-black, floor grid gone), shiny vector-bright bounds, pixel rendering forced on** — and yes, the orange cubes are in the roster
+- **The Robotron loop**: one fixed room (the SMASH-sized arena), each wave **floods in all at once** scattered around you (never within 6 units), clears chain onward after just 0.6 s. Roster: grunt globbos, orange cubes, mini swarmers, weevas for crossfire from wave 3 — up to 26 bodies a wave
+- **CIVILIANS**: 2–6 golden little wanderers per wave. Touch one to rescue it — **1000 × chain** (chain resets each wave), gold popup. Any enemy that reaches one converts it (gray puff + a sad `civDown()` slide). The whole mode in one sentence: shoot the flood, save the family
+- Runs are tagged `tokotron` in history/telemetry; the chip borrows SMASH-off + pixel-on and returns every toggle when the run ends. Skips gates/convoys/bounties/foam/dailies — the cabinet is its own thing, refined individually from here
+- Cache-bust `?v=101` → `?v=102`; HUD label → v148
+
+---
+
 ## v147 — 2026-07-13
 **Arcade Tribute Wing designed (roadmap M5) + PIXEL PREVIEW toggle — the shared retro renderer**
 - **Roadmap M5 — Arcade Tribute Wing** (user vision 2026-07-13): Roguelike B's bonus games grow into a cabinet row of retro tribute modes, each also selectable from the menu — GRID RESCUE (Robotron-tribute), DUNGEON RUN (Gauntlet-tribute), LOADOUT ARENA (Re-Loaded-tribute), KAIKKI IRTI (Tapan Kaikki 3-tribute), and MACHINA (Nex Machina-inspired **final unlockable**, earned by clearing the other four). Pixel graphics evoking the originals, Toko Drop enemies mingling with reference-INSPIRED original designs, each mode's feel refined individually; **2-player (local co-op) is the stated long-term goal**. Naming/IP rule recorded: references live in design docs, the game ships original tribute names + fully original assets

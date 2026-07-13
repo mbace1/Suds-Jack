@@ -73,7 +73,7 @@ class AudioSystem {
     if (!this._introVoice || this._volume <= 0) return null;
     try {
       if (!this._introEl) {
-        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=101', import.meta.url).href);
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=102', import.meta.url).href);
         this._introEl.preload = 'auto';
       }
       this._introEl.volume = this._annVolume;
@@ -171,6 +171,8 @@ class AudioSystem {
   botShot()   { this._tone(380, 0.16, 'triangle', 0.14, 1150); }
   // WARDEN deflection (v124): dull high tink — reads "shielded", not "missed".
   shieldTink() { this._tone(1900, 0.05, 'triangle', 0.10, 1400); }
+  // Civilian down (v148, TOKOTRON): a short sad slide — you were too slow.
+  civDown() { this._tone(320, 0.28, 'sawtooth', 0.2, 90); }
   // SIREN scream (v141): rising two-voice wail — the pack just got faster.
   sirenScream() {
     this._tone(700, 0.45, 'sawtooth', 0.20, 1500);
