@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=98';
+import { TUNING } from './tuning.js?v=99';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -1491,6 +1491,10 @@ export class Enemy {
     if (this._flashT > 0) {
       this._flashT -= dt;
       this._setEmissive(0xffffff);
+    } else if (this._affix === 'volatile') {
+      // VOLATILE fuse (v145): a slow orange smoulder, always on — this one
+      // pops a bullet ring when it dies, so make space before the kill shot.
+      this._setEmissive(Math.sin(this._wobbleT * 5) > 0 ? 0x662200 : 0x1a0800);
     } else if (this.type === EnemyType.ORANGE_CUBE && this._fireT < 0.6) {
       this._setEmissive(Math.sin(performance.now() * 0.02) > 0 ? 0x442200 : 0x000000);
     } else if (this.type === EnemyType.TORO && this._state === 'revving') {

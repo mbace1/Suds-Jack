@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=98';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=98';
-import { Player, PLAYER_RADIUS } from './player.js?v=98';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=98';
-import { audio } from './audio.js?v=98';
-import { initDesigner } from './designer.js?v=98';
-import { t, getLang, setLang, langs } from './lang.js?v=98';
-import { TUNING } from './tuning.js?v=98';
+import { InputManager } from './input.js?v=99';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=99';
+import { Player, PLAYER_RADIUS } from './player.js?v=99';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=99';
+import { audio } from './audio.js?v=99';
+import { initDesigner } from './designer.js?v=99';
+import { t, getLang, setLang, langs } from './lang.js?v=99';
+import { TUNING } from './tuning.js?v=99';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -70,6 +70,7 @@ function waveKind(w) {
 function getEnemySchedule(wave) {
   const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
           YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY, WARDEN, BULWARK, SIREN, CLOAKER, MAGNA } = EnemyType;
+  const AFFIXES = ['volatile', 'swift', 'anchored'];
   const POOL = [
     // [type, minWave, cost]
     [GLOBBO,      1, 1], [YELA_CUBE,  1, 1], [SPITTOR,    1, 2], [FANNER,     1, 2],
@@ -183,10 +184,13 @@ function getEnemySchedule(wave) {
     let entry, entryCost;
     if (variant === 'elite') {
       entryCost = Math.ceil(cost * 1.6);
-      entry = { type, t, elite: true };
+      // Elite affixes (v145): every elite carries one behavior modifier with
+      // a readable tell — not just bigger/more HP. Seeded, so dailies match.
+      entry = { type, t, elite: true, affix: AFFIXES[Math.floor(rng() * AFFIXES.length)] };
     } else if (variant === 'elitelite') {
       entryCost = Math.ceil(cost * 1.25);
-      entry = { type, t, elitelite: true };
+      entry = { type, t, elitelite: true,
+                affix: rng() < 0.5 ? AFFIXES[Math.floor(rng() * AFFIXES.length)] : null };
     } else if (variant === 'twin') {
       entryCost = Math.ceil(cost * 1.6);
       entry = { type, t, count: 2 };
@@ -1444,6 +1448,16 @@ function syncAutoOrientation() {
 }
 
 function onKill(e) {
+  // VOLATILE affix (v145): the fuse pays off — a slow 8-bullet ring from the
+  // corpse. The orange strobe telegraphed it the whole time.
+  if (e._affix === 'volatile') {
+    for (let j = 0; j < 8; j++) {
+      const a = (j / 8) * Math.PI * 2;
+      bullets.spawnDir(e.position.x, e.position.z, Math.cos(a), Math.sin(a),
+        false, 0xff8833, false, e.type);
+    }
+    addShake(0.12);
+  }
   streak++;
   score += 100 * streak * (scoreMultT > 0 ? 2 : 1);
   if (streak > 0 && streak % 5 === 0) audio.announce('streak');
@@ -2401,7 +2415,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v144', 16, uiCanvas.height - 12);
+  ctx.fillText('v145', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3142,6 +3156,7 @@ function spawnWave() {
         boss: entry.boss || false,
         elite: entry.elite || false,
         elitelite: entry.elitelite || false,
+        affix: entry.affix || null,
       });
     }
   });
@@ -3657,6 +3672,17 @@ function loop() {
         en.hp = Math.ceil(en.hp * 1.5); en._hpMult = 1.5;
       }
     }
+    // Elite affixes (v145): each with its own visible tell.
+    if (s.affix) {
+      en._affix = s.affix;
+      if (s.affix === 'swift') {
+        en._speedMult *= 1.35;               // tell: the ribbons it sheds
+      } else if (s.affix === 'anchored') {
+        // tell: squat, wide, stone-still silhouette — and it cannot be shoved
+        en.mesh.scale.x *= 1.25; en.mesh.scale.z *= 1.25; en.mesh.scale.y *= 0.8;
+      }
+      // volatile's tell is its fuse glow (enemy.js) — the pop comes in onKill
+    }
     // BOUNTY mark (v133): the first non-boss arrival of an armed wave carries
     // the gold ring — 8 s on the clock from the moment it steps in.
     if (bountyArm && !s.boss) {
@@ -3714,6 +3740,9 @@ function loop() {
 
   for (const e of enemies) {
     e.update(dt, player.position, bullets, HALF_X, HALF_Z);
+    if (e._affix === 'swift' && e.alive && Math.random() < dt * 10) {
+      trailPool.spawn(e.position.x, e.fxY, e.position.z, 0x99e6ff, 0.22);
+    }
     if (e._screamReady) {        // SIREN scream (v141): surge the pack
       e._screamReady = false;
       for (const w of enemies) {
@@ -3748,7 +3777,8 @@ function loop() {
         const _dz = _a.position.z - _b.position.z;
         const _d  = Math.hypot(_dx, _dz);
         const _min = _a.radius + _b.radius + 0.25;
-        if (_d < _min && _d > 0.001) {
+        if (_d < _min && _d > 0.001 &&
+            _a._affix !== 'anchored' && _b._affix !== 'anchored') {
           const _over = (_min - _d) * 0.5;
           const _nx = _dx / _d, _nz = _dz / _d;
           _a.position.x += _nx * _over; _a.position.z += _nz * _over;
@@ -4384,6 +4414,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=98').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=99').catch(() => {});
   });
 }

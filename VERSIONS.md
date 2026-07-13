@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v145 — 2026-07-13
+**Elite affixes — VOLATILE / SWIFT / ANCHORED, each with a visible tell (roadmap M4, fifth in order)**
+- Elites are no longer just bigger/more-HP: **every elite** (and half of elite-lites) rolls one behavior affix, seeded so daily runs match:
+  - **VOLATILE** — smoulders orange the whole time (the fuse); on death it pops a slow **8-bullet ring** from the corpse. Make space before the kill shot
+  - **SWIFT** — 1.35× speed, shedding **ice-blue speed ribbons** as it moves
+  - **ANCHORED** — squat, wide, stone-still silhouette; **cannot be shoved** by the crowd (ignores separation pushes), so it holds lanes the pack would normally open
+- Affix rules honor the roadmap constraint: one mechanic each, tell before it matters (fuse glow, ribbons, silhouette). VOLATILE's ring fires from ANY kill source via `onKill`
+- Cache-bust `?v=98` → `?v=99`; HUD label → v145
+
+---
+
 ## v144 — 2026-07-13
 **MAGNA — enemy #22, the magnet (roadmap M4, fourth in order)**
 - **MAGNA** (amber blob, wave 10+, cost 5): lumbers to mid range, holds, and **pulls the player toward it** (1.1 u/s within 11 units — you run ~3.5) while a **glowing amber tether** connects you, pulsing exactly while the pull has hold. Movement pressure that stacks dangerously with live bullet patterns
