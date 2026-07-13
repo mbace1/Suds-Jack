@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=95';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=95';
-import { Player, PLAYER_RADIUS } from './player.js?v=95';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=95';
-import { audio } from './audio.js?v=95';
-import { initDesigner } from './designer.js?v=95';
-import { t, getLang, setLang, langs } from './lang.js?v=95';
-import { TUNING } from './tuning.js?v=95';
+import { InputManager } from './input.js?v=96';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=96';
+import { Player, PLAYER_RADIUS } from './player.js?v=96';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=96';
+import { audio } from './audio.js?v=96';
+import { initDesigner } from './designer.js?v=96';
+import { t, getLang, setLang, langs } from './lang.js?v=96';
+import { TUNING } from './tuning.js?v=96';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -82,7 +82,9 @@ function getEnemySchedule(wave) {
     [BULWARK,     6, 4],  // v140: plate walker — front is bulletproof, flank it
     [SIREN,       8, 5],  // v141: screamer — surges the pack, kill it first
   ];
-  const available = POOL.filter(([, min]) => wave >= min);
+  // TEST MODE (v142): every enemy type is unlocked from wave 1 so new
+  // designs can be met within seconds of pressing start.
+  const available = POOL.filter(([, min]) => testMode || wave >= min);
 
   // SMASH TV (v115): the room's kind was chosen at the exit door; otherwise
   // fall back to the wave rhythm.
@@ -107,6 +109,9 @@ function getEnemySchedule(wave) {
   if (wave < 6) budget = Math.floor(budget * (0.85 + 0.03 * (wave - 1)));
   // SMASH TV (v109): the show wants bodies — 40% more budget on every wave.
   if (smashMode) budget = Math.floor(budget * 1.4);
+  // TEST MODE (v142): early waves get a wave-8-sized budget floor so the
+  // expensive late types (WARDEN 5, SIREN 5…) actually fit from wave 1.
+  if (testMode) budget = Math.max(budget, 24);
 
   // Composed waves (v116): melee mobs FLOOD the arena (groups/twins — the
   // fodder you mow through), while ranged enemies are placed DELIBERATELY —
@@ -1351,6 +1356,10 @@ function pickSmashExits() {
 // Announcer (v109): game-show commentary via speech synthesis.
 let announcerOn = localStorage.getItem('tokoDropAnnouncer') === '1';
 audio.setAnnouncer(announcerOn);
+// TEST MODE (v142): a playtest workbench run — all enemy types unlock from
+// wave 1 and the run leaves NO records (no PB, no daily best, no leaderboard;
+// feedback records are tagged test). For meeting new enemies fast.
+let testMode = localStorage.getItem('tokoDropTest') === '1';
 // v137: announcer volume slider (independent of master — speech caps at 1.0).
 let announcerVol = (() => {
   const raw = parseFloat(localStorage.getItem('tokoDropAnnVol') ?? '1');
@@ -1814,6 +1823,7 @@ function saveFeedback(selectedIds, selectedLabels, comment, likedIds = [], liked
     grazes: grazeCount,
     shieldBlocks: shieldBlockCount,
     daily: _dailyRun,
+    test: testMode,
     topAttacker: Object.entries(atk).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null,
   });
   if (list.length > 100) list.length = 100;
@@ -1935,6 +1945,11 @@ const designer = initDesigner({
       // The mode has its own fixed room size (v115) — re-frame the title arena
       // immediately when toggled from the title's OPTIONS panel.
       if (gameState === 'title' || gameState === 'options') applyArenaMode(landscapeMode);
+    },
+    getTest: () => testMode,
+    setTest: on => {
+      testMode = on;
+      localStorage.setItem('tokoDropTest', on ? '1' : '0');
     },
     getAnnVol: () => announcerVol,
     setAnnVol: v => {
@@ -2379,14 +2394,14 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v141', 16, uiCanvas.height - 12);
+  ctx.fillText('v142', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
     ctx.fillStyle = 'rgba(255,255,255,0.18)';
     ctx.font = '10px monospace, sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText(`${_dailyRun && gameState !== 'title' ? 'DAILY · ' : ''}${t('seed')} ${runSeed.toString(16).toUpperCase().padStart(6,'0')}`, uiCanvas.width - 16, uiCanvas.height - 12);
+    ctx.fillText(`${testMode && gameState !== 'title' ? 'TEST · ' : ''}${_dailyRun && gameState !== 'title' ? 'DAILY · ' : ''}${t('seed')} ${runSeed.toString(16).toUpperCase().padStart(6,'0')}`, uiCanvas.width - 16, uiCanvas.height - 12);
     ctx.textAlign = 'left';
   }
 
@@ -3303,7 +3318,7 @@ function startGame() {
   BULLET_CONFIG.playerBulletScale  = 1.0;
   BULLET_CONFIG.playerPiercing     = false;
   BULLET_CONFIG.playerWeaponPierce = false;
-  if (dailyMode) {
+  if (dailyMode && !testMode) {   // a test run is never a daily (v142)
     // Same seed for everyone today: hash the UTC date through the PRNG once
     // so consecutive days land far apart in seed space.
     _dailyRun = new Date().toISOString().slice(0, 10);
@@ -3351,7 +3366,7 @@ function returnToTitle() {
 function triggerGameOver() {
   gameState = 'gameover';
   saveHitLog();
-  _runBests = recordRun();
+  _runBests = testMode ? {} : recordRun();   // test runs leave no records (v142)
   hiScore = pb.bestScore;
   addShake(0.9);
   audio.playerDie();
@@ -4335,6 +4350,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=95').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=96').catch(() => {});
   });
 }
