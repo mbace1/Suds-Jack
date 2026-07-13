@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=93';
+import { TUNING } from './tuning.js?v=94';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -279,6 +279,9 @@ export const EnemyType = {
   // Shield-bearer (v124) — projects an aura that makes nearby enemies immune
   // to bullets. Never attacks; the threat is what it protects. Priority target.
   WARDEN:      17,
+  // Shield-plate walker (v140, roadmap M4) — melee plodder whose FRONT is
+  // bulletproof. The positioning counterpart to WARDEN's priority puzzle.
+  BULWARK:     18,
 };
 
 // WARDEN aura radius (world units) — main.js uses it for the damage-immunity
@@ -304,6 +307,7 @@ export const CFG = {
   [EnemyType.OMEGA]:       { color: 0x00eeff, radius: 0.95, speed: 1.3, hp: 5, bulletColor: 0x66f2ff, fireInterval: null },
   [EnemyType.BOTFLY]:      { color: 0xff55bb, radius: 0.5,  speed: 2.0, hp: 2, bulletColor: 0xff66ee, fireInterval: 3.8  },
   [EnemyType.WARDEN]:      { color: 0x33ffdd, radius: 0.85, speed: 1.1, hp: 5, bulletColor: null,     fireInterval: null },
+  [EnemyType.BULWARK]:     { color: 0x7f93c4, radius: 0.9,  speed: 1.5, hp: 4, bulletColor: null,     fireInterval: null },
 };
 
 // Scratch colors for the tinted death flash (v132) — no per-death allocation.
@@ -323,7 +327,7 @@ const TRAIL_CFG = {
 
 export const BLOB_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPITTOR, EnemyType.FANNER,
-  EnemyType.WEEVA, EnemyType.SPLITTA, EnemyType.WARDEN,
+  EnemyType.WEEVA, EnemyType.SPLITTA, EnemyType.WARDEN, EnemyType.BULWARK,
 ]);
 
 const CUBE_TYPES = new Set([
@@ -639,6 +643,18 @@ export class Enemy {
       this._auraRing.rotation.x = -Math.PI / 2;
       this._auraRing.position.set(x, 0.06, z);
       scene.add(this._auraRing);
+    }
+
+    // BULWARK (v140): the shield plate — a steel slab hovering on its front
+    // face. Follows + faces the walk direction in update(); the block rule in
+    // main.js uses the same facing, so the visual IS the hitbox arc's tell.
+    if (type === EnemyType.BULWARK) {
+      this._plate = new THREE.Mesh(
+        new THREE.BoxGeometry(1.7, 1.15, 0.16),
+        new THREE.MeshBasicMaterial({ color: 0xc7d4f2, transparent: true, opacity: 0.9 }));
+      this._plate.position.set(x, 0.6, z + cfg.radius + 0.2);
+      this._faceX = 0; this._faceZ = 1;
+      scene.add(this._plate);
     }
 
     // Flopping cube movers — shared tumble state (see _flopMove)
@@ -983,6 +999,32 @@ export class Enemy {
         if (this._auraRing) {
           this._auraRing.position.set(this.mesh.position.x, 0.06, this.mesh.position.z);
           this._auraRing.material.opacity = 0.30 + 0.13 * Math.sin(this._wobbleT * 3.1 + this._phase);
+        }
+        break;
+      }
+
+      case EnemyType.BULWARK: {
+        // Plate-first advance: walks straight at the player, faster than the
+        // blob pack, daring you to flank. Facing turns smoothly so a quick
+        // side-step stays a real answer (the plate can't snap-track).
+        if (dist > 1.3) {
+          this.mesh.position.x += (ddx / dist) * spd * dt;
+          this.mesh.position.z += (ddz / dist) * spd * dt;
+        }
+        const tx = ddx / (dist || 1), tz = ddz / (dist || 1);
+        const turn = Math.min(1, 2.2 * dt);            // limited turn rate
+        this._faceX += (tx - this._faceX) * turn;
+        this._faceZ += (tz - this._faceZ) * turn;
+        const fl = Math.hypot(this._faceX, this._faceZ) || 1;
+        this._faceX /= fl; this._faceZ /= fl;
+        if (this._plate) {
+          const r = cfg.radius * (this._radiusMult || 1) + 0.25;
+          this._plate.position.set(
+            this.mesh.position.x + this._faceX * r, 0.6,
+            this.mesh.position.z + this._faceZ * r);
+          this._plate.rotation.y = Math.atan2(this._faceX, this._faceZ);
+          // steel glint — brightens as it squares up to you
+          this._plate.material.opacity = 0.75 + 0.2 * Math.abs(Math.sin(this._wobbleT * 2.2));
         }
         break;
       }
@@ -1649,6 +1691,7 @@ export class Enemy {
     this._dying  = true;
     this._deathT = 0.28;
     if (this._auraRing) this._auraRing.visible = false;  // shield drops with the warden
+    if (this._plate) this._plate.visible = false;         // plate falls with the bulwark
     this._sq     = 1.0;
     this._sqV    = 0.0;
     if (this._flopActive) { this.mesh.quaternion.identity(); this._flopActive = false; }
@@ -1732,6 +1775,12 @@ export class Enemy {
       scene.remove(this.mesh);
     }
     if (this._aimArrow) scene.remove(this._aimArrow);
+    if (this._plate) {
+      scene.remove(this._plate);
+      this._plate.geometry.dispose();
+      this._plate.material.dispose();
+      this._plate = null;
+    }
     if (this._auraRing) {
       scene.remove(this._auraRing);
       this._auraRing.geometry.dispose();

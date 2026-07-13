@@ -73,7 +73,7 @@ class AudioSystem {
     if (!this._introVoice || this._volume <= 0) return null;
     try {
       if (!this._introEl) {
-        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=93', import.meta.url).href);
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=94', import.meta.url).href);
         this._introEl.preload = 'auto';
       }
       this._introEl.volume = this._annVolume;
@@ -171,6 +171,9 @@ class AudioSystem {
   botShot()   { this._tone(380, 0.16, 'triangle', 0.14, 1150); }
   // WARDEN deflection (v124): dull high tink — reads "shielded", not "missed".
   shieldTink() { this._tone(1900, 0.05, 'triangle', 0.10, 1400); }
+  // BULWARK plate clank (v140): lower and duller than the warden tink —
+  // reads "armor", cueing the flank without a glance.
+  plateTink() { this._tone(720, 0.06, 'square', 0.15, 480); }
   // Graze (v125): whisper-quiet zip as a bullet skims past — felt, not loud.
   grazeTick() { this._tone(2400, 0.035, 'sine', 0.07, 2800); }
   // Boss phase shift (v136): two rising snarls — the fight just changed gear.
