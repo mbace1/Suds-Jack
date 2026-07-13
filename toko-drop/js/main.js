@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=101';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=101';
-import { Player, PLAYER_RADIUS } from './player.js?v=101';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=101';
-import { audio } from './audio.js?v=101';
-import { initDesigner } from './designer.js?v=101';
-import { t, getLang, setLang, langs } from './lang.js?v=101';
-import { TUNING } from './tuning.js?v=101';
+import { InputManager } from './input.js?v=102';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=102';
+import { Player, PLAYER_RADIUS } from './player.js?v=102';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=102';
+import { audio } from './audio.js?v=102';
+import { initDesigner } from './designer.js?v=102';
+import { t, getLang, setLang, langs } from './lang.js?v=102';
+import { TUNING } from './tuning.js?v=102';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -379,11 +379,11 @@ function fitPresetCamera(p) {
 // uniforms. SMASH TV mode overrides orientation entirely: one fixed room,
 // camera fitted to whichever way the screen is held.
 function applyArenaMode(landscape) {
-  const p = smashMode ? ARENA_PRESETS.smash
+  const p = (smashMode || tokotronMode) ? ARENA_PRESETS.smash
           : landscape ? ARENA_PRESETS.landscape : ARENA_PRESETS.portrait;
   HALF_X = p.halfX; HALF_Z = p.halfZ;
   CAM_LOOK.set(...p.camLook);
-  if (smashMode || landscape) CAM_REST.copy(fitPresetCamera(p));
+  if (smashMode || tokotronMode || landscape) CAM_REST.copy(fitPresetCamera(p));
   else                        CAM_REST.set(...p.camRest);
   camera.position.copy(CAM_REST);
   camera.lookAt(CAM_LOOK);
@@ -1264,7 +1264,7 @@ function makeRunRecord() {
   return {
     v: 1,
     score, time: Math.round(runTimer), wave, seed: runSeed,
-    mode: roguelikeMode ? 'roguelike' : 'arcade',
+    mode: tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     orientation: landscapeMode ? 'landscape' : 'portrait',
     date: new Date().toISOString(),
   };
@@ -1374,6 +1374,66 @@ function pickSmashExits() {
 // Announcer (v109): game-show commentary via speech synthesis.
 let announcerOn = localStorage.getItem('tokoDropAnnouncer') === '1';
 audio.setAnnouncer(announcerOn);
+// TOKOTRON (v148, roadmap M5 cabinet #1 — Robotron: 2084 tribute): a single
+// fixed dark room, no grid, shiny vector-bright bounds, waves that flood in
+// around you, and civilians to rescue by touch before the swarm gets them.
+// Launched from its own title chip; forces the pixel renderer for the run
+// and restores every toggle it borrowed when the run ends.
+let tokotronMode = false;
+let civilians = [];
+let rescueChain = 0;
+let _tkSavedPixel = null, _tkSavedSmash = null;
+function setTokotronLook(on) {
+  scene.background.setHex(on ? 0x030309 : 0x0d0d1a);
+  floor.visible = !on;                                   // dark void, no grid
+  border.material.color.setHex(on ? 0x44eeff : 0x5555cc); // shiny vector bounds
+}
+function startTokotron() {
+  tokotronMode = true;
+  _tkSavedSmash = smashMode; smashMode = false;
+  _tkSavedPixel = pixelMode; pixelMode = true;
+  applyPerfMode();
+  setTokotronLook(true);
+  startGame();
+}
+function exitTokotron() {
+  tokotronMode = false;
+  smashMode = _tkSavedSmash;
+  pixelMode = _tkSavedPixel;
+  applyPerfMode();
+  setTokotronLook(false);
+  applyArenaMode(landscapeMode);
+}
+class Civilian {
+  constructor(sc, x, z) {
+    this.alive = true;
+    this.x = x; this.z = z;
+    this._dir = Math.random() * Math.PI * 2;
+    this._turnT = 0;
+    this.mat = new THREE.MeshBasicMaterial({ color: 0xffee88 });
+    this.group = new THREE.Group();
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.44, 0.22), this.mat);
+    torso.position.y = 0.32;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 6), this.mat);
+    head.position.y = 0.66;
+    this.group.add(torso, head);
+    this.group.position.set(x, 0, z);
+    sc.add(this.group);
+  }
+  update(dt) {
+    this._turnT -= dt;
+    if (this._turnT <= 0) { this._turnT = 0.8 + Math.random() * 1.4; this._dir = Math.random() * Math.PI * 2; }
+    this.x = Math.max(-HALF_X + 0.6, Math.min(HALF_X - 0.6, this.x + Math.cos(this._dir) * 1.3 * dt));
+    this.z = Math.max(-HALF_Z + 0.6, Math.min(HALF_Z - 0.6, this.z + Math.sin(this._dir) * 1.3 * dt));
+    this.group.position.set(this.x, 0.06 + 0.05 * Math.abs(Math.sin(performance.now() * 0.012)), this.z);
+  }
+  remove(sc) {
+    sc.remove(this.group);
+    for (const c of this.group.children) c.geometry.dispose();
+    this.mat.dispose();
+  }
+}
+
 // TEST MODE (v142): a playtest workbench run — all enemy types unlock from
 // wave 1 and the run leaves NO records (no PB, no daily best, no leaderboard;
 // feedback records are tagged test). For meeting new enemies fast.
@@ -1578,7 +1638,7 @@ function saveHitLog() {
   const KEY = 'tokoDropHitLog';
   const sessions = JSON.parse(localStorage.getItem(KEY) || '[]');
   sessions.unshift({
-    seed: runSeed, mode: roguelikeMode ? 'roguelike' : 'arcade',
+    seed: runSeed, mode: tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     waveReached: wave, date: new Date().toISOString(),
     events: hitEventLog,
   });
@@ -1851,7 +1911,7 @@ function saveFeedback(selectedIds, selectedLabels, comment, likedIds = [], liked
   const isFix = !!comment && comment.toLowerCase().includes('fix');
   list.unshift({
     date: new Date().toISOString(),
-    seed: runSeed, mode: roguelikeMode ? 'roguelike' : 'arcade',
+    seed: runSeed, mode: tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     wave, time: Math.round(runTimer), score,
     reasons: selectedLabels, reasonIds: selectedIds,
     liked: likedLabels, likedIds,
@@ -2450,7 +2510,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v147', 16, uiCanvas.height - 12);
+  ctx.fillText('v148', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2628,6 +2688,27 @@ function showTitle() {
   dbtn.addEventListener('touchend', e => e.stopPropagation());
   slot.appendChild(dbtn);
   slot.appendChild(dhint);
+
+  // TOKOTRON cabinet chip (v148) — a launcher, not a toggle: tap to play.
+  const tkbtn = document.createElement('div');
+  tkbtn.dataset.ui = '1';
+  tkbtn.textContent = t('tokotron');
+  tkbtn.style.cssText =
+    'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
+    'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
+    'background:rgba(0,0,0,0.35);transition:all 0.12s;margin-top:10px;' +
+    'border:2px solid #44eeff;color:#88f4ff;text-shadow:0 0 12px #22ccff;';
+  const tkhint = document.createElement('div');
+  tkhint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
+  tkhint.textContent = t('tokotronH');
+  tkbtn.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    startTokotron();
+  });
+  tkbtn.addEventListener('touchend', e => e.stopPropagation());
+  slot.appendChild(tkbtn);
+  slot.appendChild(tkhint);
 
   // v81: volume + reduce-motion moved into the pause menu's SETTINGS page —
   // the title keeps only the run-history link and a faint pointer to where
@@ -2842,7 +2923,7 @@ function buildDailyLeaderboard(slot) {
       body: JSON.stringify({
         initials, score, wave, daily: _dailyRun,
         seed: runSeed.toString(16).toUpperCase().padStart(6, '0'),
-        mode: `${roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}`,
+        mode: `${tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}`,
         build: new URL(import.meta.url).searchParams.get('v') ?? '?',
       }),
     }).catch(() => {});
@@ -3126,6 +3207,7 @@ function clearFX() {
   for (const r of sludgeRibbons) r.remove(scene); sludgeRibbons = [];
   for (const f of foamZones)    f.remove(scene); foamZones     = [];
   for (const r of screamRings)  r.remove(scene); screamRings   = [];
+  for (const c of civilians)    c.remove(scene); civilians     = [];
   clearBounty();
   for (const g of gates)        g.remove(scene); gates         = [];
   for (const p of powerups)     p.remove(scene); powerups      = [];
@@ -3151,7 +3233,7 @@ function spawnWave() {
   for (const p of powerups) p.remove(scene); powerups = [];
   wave++;
   const { speedMult, intervalMult } = getWaveScale(wave);
-  const list   = getEnemySchedule(wave);
+  const list   = tokotronMode ? [] : getEnemySchedule(wave);
   waveDuration = ROUND_DUR;
   waveTimer    = 0;
   const total  = list.length;
@@ -3200,9 +3282,41 @@ function spawnWave() {
     }
   });
   if (player._hasShield) player._shield = true;
-  if (wave >= 3) {
+  if (!tokotronMode && wave >= 3) {
     if (gates.length >= 2) { gates[0].remove(scene); gates.shift(); }
     gates.push(new Gate(scene));
+  }
+
+  // TOKOTRON (v148): the whole wave floods in at once, scattered around the
+  // room (never within 6 of the player) — the reference's opening slam. The
+  // roster stays Toko: grunt globbos, the beloved orange cubes, mini swarmers,
+  // a weeva or two for crossfire from wave 3. Civilians respawn per wave;
+  // the rescue chain resets with them.
+  if (tokotronMode) {
+    const n = Math.min(26, 7 + wave * 3);
+    for (let i = 0; i < n; i++) {
+      const roll = rng();
+      const ty = roll < 0.55 ? EnemyType.GLOBBO
+               : roll < 0.80 ? EnemyType.ORANGE_CUBE
+               : roll < 0.93 ? EnemyType.REDD_MINI
+               : (wave >= 3 ? EnemyType.WEEVA : EnemyType.GLOBBO);
+      let px, pz, tries = 0;
+      do {
+        px = (rng() * 2 - 1) * (HALF_X - 1.5);
+        pz = (rng() * 2 - 1) * (HALF_Z - 1.5);
+      } while (Math.hypot(px - player.position.x, pz - player.position.z) < 6 && ++tries < 20);
+      pendingSpawns.push({ type: ty, delay: 0.15 + i * 0.045, px, pz,
+        angle: 0, shooter: false, clusterOffset: null, speedMult, intervalMult });
+    }
+    for (const c of civilians) c.remove(scene);
+    civilians = [];
+    rescueChain = 0;
+    const nCiv = Math.min(6, 2 + wave);
+    for (let i = 0; i < nCiv; i++) {
+      civilians.push(new Civilian(scene,
+        (rng() * 2 - 1) * (HALF_X - 2), (rng() * 2 - 1) * (HALF_Z - 2)));
+    }
+    clusterSpawnAt = [];   // no convoys in the dark room
   }
   // Schedule cargo convoys (start mid-wave, seeded position). SMASH TV runs a
   // second prize convoy per wave — big money, big prizes.
@@ -3212,8 +3326,8 @@ function spawnWave() {
   // mark. CLEANSE foam appears every 4th wave from 6 — seeded, so daily runs
   // get identical placements.
   clearBounty();
-  bountyArm = wave >= 4 && wave % 3 === 1 && kind !== 'boss';
-  if (wave >= 6 && wave % 4 === 2) {
+  bountyArm = !tokotronMode && wave >= 4 && wave % 3 === 1 && kind !== 'boss';
+  if (!tokotronMode && wave >= 6 && wave % 4 === 2) {
     foamZones.push(new FoamZone(scene,
       (rng() * 2 - 1) * (HALF_X - 4), (rng() * 2 - 1) * (HALF_Z - 4)));
   }
@@ -3276,6 +3390,10 @@ function spawnWave() {
       player.grantInvincibility(1.2);
       _entryDoor = null;
     }
+  } else if (tokotronMode) {
+    waveIntroT = waveIntroDur = 1.2;
+    waveIntroText  = `TOKOTRON — WAVE ${wave}`;
+    waveIntroColor = '#44eeff';
   } else {
     // Classic: color-coded wave banner naming the rhythm (v123).
     const b = WAVE_BANNER[kind] ?? WAVE_BANNER.normal;
@@ -3472,7 +3590,7 @@ function startGame() {
   BULLET_CONFIG.playerBulletScale  = 1.0;
   BULLET_CONFIG.playerPiercing     = false;
   BULLET_CONFIG.playerWeaponPierce = false;
-  if (dailyMode && !testMode) {   // a test run is never a daily (v142)
+  if (dailyMode && !testMode && !tokotronMode) {   // test/cabinet runs are never dailies
     // Same seed for everyone today: hash the UTC date through the PRNG once
     // so consecutive days land far apart in seed space.
     _dailyRun = new Date().toISOString().slice(0, 10);
@@ -3508,6 +3626,7 @@ function startGame() {
 // player has time to leave feedback) and by Space / Start as a quick skip.
 function returnToTitle() {
   if (gameState !== 'gameover') return;
+  if (tokotronMode) exitTokotron();   // v148: give back the borrowed toggles
   clearFX();
   for (const e of enemies) e.removeFrom(scene);
   enemies = [];
@@ -3779,8 +3898,8 @@ function loop() {
     // SMASH TV: spawn right at the doorway mouth so enemies visibly step THROUGH
     // the door frame into the room, instead of materialising inside it.
     const edge = smashMode ? 0.99 : 0.85;
-    const bx = Math.cos(s.angle) * HALF_X * edge;
-    const bz = Math.sin(s.angle) * HALF_Z * edge;
+    const bx = s.px != null ? s.px : Math.cos(s.angle) * HALF_X * edge;
+    const bz = s.pz != null ? s.pz : Math.sin(s.angle) * HALF_Z * edge;
     const ox = s.clusterOffset ? s.clusterOffset.x : 0;
     const oz = s.clusterOffset ? s.clusterOffset.z : 0;
     const en = new Enemy(scene, s.type, bx + ox, bz + oz, s.speedMult, s.intervalMult);
@@ -3838,6 +3957,34 @@ function loop() {
   }
 
   player.update(dt, moveDir, aimDir, bullets, HALF_X, HALF_Z);
+
+  // TOKOTRON civilians (v148): wander, get rescued by touch (chain pays
+  // 1000 × chain, Robotron-style), or die to any enemy that reaches them.
+  if (tokotronMode && player.alive) {
+    for (let i = civilians.length - 1; i >= 0; i--) {
+      const c = civilians[i];
+      c.update(dt);
+      if (Math.hypot(c.x - player.position.x, c.z - player.position.z) < PLAYER_RADIUS + 0.5) {
+        rescueChain++;
+        const pay = 1000 * rescueChain * (scoreMultT > 0 ? 2 : 1);
+        score += pay;
+        damageNumbers.push(new DamageNumber(c.x, 1.0, c.z, `+${pay}`, '255,238,136'));
+        audio.pickup();
+        c.remove(scene); civilians.splice(i, 1);
+        continue;
+      }
+      let taken = false;
+      for (const e of enemies) {
+        if (!e.alive) continue;
+        if (Math.hypot(c.x - e.position.x, c.z - e.position.z) < e.radius + 0.35) { taken = true; break; }
+      }
+      if (taken) {
+        gooChunkPool.spawn(c.x, 0.5, c.z, 0, 2.5, 0, 0x888888, 0.1);
+        audio.civDown();
+        c.remove(scene); civilians.splice(i, 1);
+      }
+    }
+  }
 
   // MAGNA pull (v144): every living magna within reach drags the player
   // toward it. Dashing grants ~1.2 s of immunity (momentum breaks the hold),
@@ -4484,7 +4631,8 @@ function loop() {
       audio.announce('clear');
       // Roguelike pacing (v101): a card every 3rd cleared wave — every wave was
       // way too frequent with instant wave-ends chaining fast.
-      if (roguelikeMode && wave % 3 === 0) showUpgradeCards();
+      if (tokotronMode) waveGapT = 0.6;   // v148: the reference slams onward
+      else if (roguelikeMode && wave % 3 === 0) showUpgradeCards();
       else {
         // v136: breather — a beat to exhale and grab leftover drops instead of
         // the next wave slamming in on the same frame. Non-interrupting: play
@@ -4569,6 +4717,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=101').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=102').catch(() => {});
   });
 }
