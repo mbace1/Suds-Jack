@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=90';
-import { t } from './lang.js?v=90';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=90';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=91';
+import { t } from './lang.js?v=91';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=91';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -434,6 +434,10 @@ export function initDesigner({ onResume, settings }) {
     el.appendChild(sec('AUDIO'));
     el.appendChild(slider(t('volume'), 0, 100, 5, Math.round(settings.getVolume() * 100), v => {
       settings.setVolume(v / 100);
+    }));
+    // v137: the announcer has its own loudness — independent of the master.
+    el.appendChild(slider(t('annVolume'), 0, 100, 5, Math.round(settings.getAnnVol() * 100), v => {
+      settings.setAnnVol(v / 100);
     }));
 
     // GAME SHOW (v109): SMASH TV door-rush mode + the arcade announcer.

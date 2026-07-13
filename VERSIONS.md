@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v137 — 2026-07-13
+**Audio controls: announcer volume slider + sustained-fire noise ducking**
+- **ANNOUNCER VOL. slider** (OPTIONS → AUDIO, en/ja/fi, persisted `tokoDropAnnVol`): the spoken announcer AND the recorded intro clip get their own loudness, independent of the master — speech synthesis caps at 1.0 and was tied to master volume, so quiet-SFX setups made the announcer inaudible. Now SFX can sit low while the announcer stays loud (or vice versa); master 0 still mutes everything
+- **Shot-noise ducking**: holding the trigger ducks the per-shot blip smoothly to **50% over ~2.5 s of sustained fire**; half a second without firing resets it. Constant fire stops dominating the mix without touching any other sound
+- Cache-bust `?v=90` → `?v=91`; HUD label → v137
+
+---
+
 ## v136 — 2026-07-13
 **Three-phase boss, smoother wave transitions, sharper pickup badges**
 - **OMEGA has 3 acts by HP** (was 2): >66% aimed 5-shot fans on a wide orbit · **66–33% NEW rotating twin-arm SPIRAL** — presses to a tighter, faster orbit while sweeping two predictable bullet arms you weave between · <33% the radial-ring rage at 1.45× speed. Each transition strobes the crystal gold for half a second, kicks the camera, plays a two-snarl `phaseShift()` and pops "BOSS PHASE N!" — plus a per-phase emissive tell before every volley (cyan/amber/red)

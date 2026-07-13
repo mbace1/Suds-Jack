@@ -41,16 +41,27 @@ class AudioSystem {
     }
     this._introEl = null;   // lazy recorded title-intro clip (v121)
     this._introVoice = true; // v122: own toggle, independent of the announcer
+    this._annVolume = 1.0;   // v137: announcer's own volume, NOT scaled by master
+    this._lastShotAt = 0;    // v137: shot-noise ducking clock
+    this._shootHeat  = 0;
   }
 
   setVolume(v) {
     this._volume = Math.max(0, Math.min(1, v));
-    if (this._introEl) this._introEl.volume = this._volume;
+
   }
 
   setAnnouncer(on) { this._announcer = !!on; }
 
   setIntroVoice(on) { this._introVoice = !!on; }
+
+  // v137: the announcer gets its own slider — speech synthesis caps at 1.0 and
+  // was tied to the master volume, so a quiet-SFX setup made it inaudible.
+  // Independent by design (master 0 still mutes everything via the gates).
+  setAnnouncerVolume(v) {
+    this._annVolume = Math.max(0, Math.min(1, v));
+    if (this._introEl) this._introEl.volume = this._annVolume;
+  }
 
   // Recorded announcer intro (v121): "TOKO DROP — START SHOOTING!", pre-baked
   // with bass boost / presence EQ / PA slap / compression / stereo widen (see
@@ -62,10 +73,10 @@ class AudioSystem {
     if (!this._introVoice || this._volume <= 0) return null;
     try {
       if (!this._introEl) {
-        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=90', import.meta.url).href);
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=91', import.meta.url).href);
         this._introEl.preload = 'auto';
       }
-      this._introEl.volume = this._volume;
+      this._introEl.volume = this._annVolume;
       this._introEl.currentTime = 0;
       return this._introEl.play();   // may reject under autoplay policy
     } catch (_) { return null; }
@@ -90,7 +101,7 @@ class AudioSystem {
       if (this._voice) u.voice = this._voice;
       u.pitch  = 0.6;   // deep game-show boom
       u.rate   = 1.12;  // excited pacing
-      u.volume = this._volume;
+      u.volume = this._annVolume;
       speechSynthesis.speak(u);
       this._sayLast = now;
     } catch (_) {}
@@ -136,7 +147,16 @@ class AudioSystem {
     } catch (_) {}
   }
 
-  shoot()     { this._tone(920, 0.07, 'square', 0.11); }
+  // v137: sustained fire ducks the shot blip toward 50% over ~2.5 s so a held
+  // trigger doesn't dominate the mix; half a second of not firing resets it.
+  shoot() {
+    const now = performance.now();
+    const gap = now - this._lastShotAt;
+    this._shootHeat = gap < 500 ? Math.min(2500, this._shootHeat + gap) : 0;
+    this._lastShotAt = now;
+    const duck = 1 - 0.5 * (this._shootHeat / 2500);
+    this._tone(920, 0.07, 'square', 0.11 * duck);
+  }
   enemyHit()  { this._tone(500, 0.07, 'square', 0.20); }
   enemyDieType(cat) {
     if      (cat === 'blob')  { this._tone(420, 0.22, 'sine',     0.22, 75); }
