@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v144 — 2026-07-13
+**MAGNA — enemy #22, the magnet (roadmap M4, fourth in order)**
+- **MAGNA** (amber blob, wave 10+, cost 5): lumbers to mid range, holds, and **pulls the player toward it** (1.1 u/s within 11 units — you run ~3.5) while a **glowing amber tether** connects you, pulsing exactly while the pull has hold. Movement pressure that stacks dangerously with live bullet patterns
+- **Dash breaks the hold**: dashing grants ~1.2 s of pull immunity (the tether visibly drops). Stacked magnas cap at 2.0 u/s total, and the pull can never drag you through a wall
+- Entrance "!" ping (it's a control enemy — the support/specialist family grows: WARDEN protects, SIREN accelerates, BULWARK walls, CLOAKER ambushes, MAGNA drags)
+- Cache-bust `?v=97` → `?v=98`; HUD label → v144
+
+---
+
 ## v143 — 2026-07-13
 **CLOAKER — enemy #21, the ambusher (roadmap M4, third in order)**
 - **CLOAKER** (ice-blue blob, wave 9+, cost 4): lingers a beat at full presence, then **fades to a faint shimmer** and runs to a flank point ~90° around you at mid range. There it **decloaks over 0.6 s** — opacity ramps back with a strobing teal glow, the tell — and fires one aimed 3-shot burst, then repeats. Punishes tunnel vision; rewards watching for ripples

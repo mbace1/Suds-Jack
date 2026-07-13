@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=97';
+import { TUNING } from './tuning.js?v=98';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -290,6 +290,10 @@ export const EnemyType = {
   // decloaks with a 0.6 s glow tell, fires one aimed burst, repeats.
   // Punishes tunnel vision; cloaked bodies can still be hit if you track them.
   CLOAKER:     20,
+  // Magnet (v144, roadmap M4) — projects a slow pull on the player while
+  // alive; a visible tether is the tell, dashing breaks the pull. Movement
+  // pressure that stacks dangerously with bullet patterns.
+  MAGNA:       21,
 };
 
 // WARDEN aura radius (world units) — main.js uses it for the damage-immunity
@@ -318,6 +322,7 @@ export const CFG = {
   [EnemyType.BULWARK]:     { color: 0x7f93c4, radius: 0.9,  speed: 1.5, hp: 4, bulletColor: null,     fireInterval: null },
   [EnemyType.SIREN]:       { color: 0xbb66ff, radius: 0.75, speed: 1.2, hp: 3, bulletColor: null,     fireInterval: null },
   [EnemyType.CLOAKER]:     { color: 0x66ddee, radius: 0.7,  speed: 2.4, hp: 3, bulletColor: 0x88eeff, fireInterval: null },
+  [EnemyType.MAGNA]:       { color: 0xff9944, radius: 0.8,  speed: 0.9, hp: 4, bulletColor: null,     fireInterval: null },
 };
 
 // Scratch colors for the tinted death flash (v132) — no per-death allocation.
@@ -338,7 +343,7 @@ const TRAIL_CFG = {
 export const BLOB_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPITTOR, EnemyType.FANNER,
   EnemyType.WEEVA, EnemyType.SPLITTA, EnemyType.WARDEN, EnemyType.BULWARK,
-  EnemyType.SIREN, EnemyType.CLOAKER,
+  EnemyType.SIREN, EnemyType.CLOAKER, EnemyType.MAGNA,
 ]);
 
 const CUBE_TYPES = new Set([
@@ -676,6 +681,21 @@ export class Enemy {
       this._screamT     = 2.5 + Math.random() * 1.5;  // time to next inhale
       this._inhaleT     = 0;
       this._screamReady = false;
+    }
+
+    // MAGNA (v144): the pull tether — a faint amber thread from the magna to
+    // the player whenever the pull has hold (main.js sets _pullActive; the
+    // pull itself is applied there too, where dash immunity is known).
+    if (type === EnemyType.MAGNA) {
+      this._tether = new THREE.Mesh(
+        new THREE.BoxGeometry(0.09, 0.02, 1),
+        new THREE.MeshBasicMaterial({
+          color: 0xffaa55, transparent: true, opacity: 0,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+        }));
+      this._tether.position.set(x, 0.45, z);
+      this._pullActive = false;
+      scene.add(this._tether);
     }
 
     // CLOAKER (v143): visible → cloak-and-flank → decloak tell → burst.
@@ -1125,6 +1145,26 @@ export class Enemy {
             this._ckState = 'visible';
             this._ckT = 0.9 + Math.random() * 0.5;
           }
+        }
+        break;
+      }
+
+      case EnemyType.MAGNA: {
+        // Lumbers to mid range and holds — the pull does the chasing.
+        const keepM = 8;
+        if (dist > keepM + 1) {
+          this.mesh.position.x += (ddx / dist) * spd * dt;
+          this.mesh.position.z += (ddz / dist) * spd * dt;
+        }
+        if (this._tether) {
+          const mx = (this.mesh.position.x + playerPos.x) / 2;
+          const mz = (this.mesh.position.z + playerPos.z) / 2;
+          this._tether.position.set(mx, 0.45, mz);
+          this._tether.rotation.y = Math.atan2(
+            playerPos.x - this.mesh.position.x, playerPos.z - this.mesh.position.z);
+          this._tether.scale.z = Math.max(0.01, dist);
+          const want = this._pullActive ? 0.3 + 0.15 * Math.abs(Math.sin(this._wobbleT * 6)) : 0;
+          this._tether.material.opacity += (want - this._tether.material.opacity) * 0.25;
         }
         break;
       }
@@ -1792,6 +1832,7 @@ export class Enemy {
     this._deathT = 0.28;
     if (this._auraRing) this._auraRing.visible = false;  // shield drops with the warden
     if (this._plate) this._plate.visible = false;         // plate falls with the bulwark
+    if (this._tether) this._tether.visible = false;       // pull dies with the magna
     this._sq     = 1.0;
     this._sqV    = 0.0;
     if (this._flopActive) { this.mesh.quaternion.identity(); this._flopActive = false; }
@@ -1880,6 +1921,12 @@ export class Enemy {
       this._plate.geometry.dispose();
       this._plate.material.dispose();
       this._plate = null;
+    }
+    if (this._tether) {
+      scene.remove(this._tether);
+      this._tether.geometry.dispose();
+      this._tether.material.dispose();
+      this._tether = null;
     }
     if (this._auraRing) {
       scene.remove(this._auraRing);
