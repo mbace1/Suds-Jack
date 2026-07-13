@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v147 — 2026-07-13
+**Arcade Tribute Wing designed (roadmap M5) + PIXEL PREVIEW toggle — the shared retro renderer**
+- **Roadmap M5 — Arcade Tribute Wing** (user vision 2026-07-13): Roguelike B's bonus games grow into a cabinet row of retro tribute modes, each also selectable from the menu — GRID RESCUE (Robotron-tribute), DUNGEON RUN (Gauntlet-tribute), LOADOUT ARENA (Re-Loaded-tribute), KAIKKI IRTI (Tapan Kaikki 3-tribute), and MACHINA (Nex Machina-inspired **final unlockable**, earned by clearing the other four). Pixel graphics evoking the originals, Toko Drop enemies mingling with reference-INSPIRED original designs, each mode's feel refined individually; **2-player (local co-op) is the stated long-term goal**. Naming/IP rule recorded: references live in design docs, the game ships original tribute names + fully original assets
+- **PIXEL PREVIEW toggle** (OPTIONS → DEV, persisted `tokoDropPixel`, en/ja/fi): the shared foundation every tribute mode builds on — the world renders at a chunky low resolution (0.22× pixel ratio) with nearest-neighbor upscale while the HUD/UI canvas stays crisp: the modern+classic mix in one frame. A DEV preview now so the look can be dialed in before the first cabinet is built
+- Cache-bust `?v=100` → `?v=101`; HUD label → v147
+
+---
+
 ## v146 — 2026-07-13
 **ROGUELIKE B — bonus gauntlets: goal-oriented room runs with pinball multipliers and rare upgrades**
 - **The ROGUELIKE chip now cycles OFF → A → B**. A is the classic card mode; **B adds a third RARE card to every card screen: the BONUS GAUNTLET** — a gold invitation stating the challenge and the price ("death is death")

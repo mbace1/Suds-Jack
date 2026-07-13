@@ -22,7 +22,7 @@ actually shipped — items are deleted here as they land.
   and go into BOTH `scripts/bump-version.sh`'s file loop and `sw.js`'s
   precache list.
 
-*Shipped so far: v126–v139 — see VERSIONS.md. Real-device pass (mobile +
+*Shipped so far: v126–v146 — see VERSIONS.md. Real-device pass (mobile +
 PC/DualSense) done 2026-07-13.*
 
 ---
@@ -60,21 +60,9 @@ build what the data says players engage with first.*
 *Theme: new decisions, not new bullet sponges. Each enemy is one mechanic
 with one tell; support enemies grow into a family alongside WARDEN.*
 
-- **BULWARK** — carries a frontal shield plate; bullets only land from the
-  sides/behind. Tell: the plate visibly glints. The melee-lane counterpart
-  to WARDEN's aura: positioning, not priority.
-- **SIREN** — periodically screams (rising audio tell + expanding ring):
-  nearby enemies get a 3 s speed surge. Never attacks. With WARDEN, forms
-  the "kill the support first" family.
-- **CLOAKER** — fades to a faint shimmer while repositioning, decloaks with
-  a 0.6 s glow tell, fires one aimed burst, repeats. Teaches watching for
-  ripples, punishes tunnel vision.
-- **MAGNA** — projects a slow pull on the player while alive (bubbles
-  stream toward it as the tell). Dash breaks the pull. Movement pressure
-  that stacks dangerously with bullet patterns.
-- **Elite affixes with visible tells** (replaces "bigger/more HP"):
-  VOLATILE (orange fuse glow → death ring burst), SWIFT (speed ribbons),
-  ANCHORED (stone-dark tint, immune to knockback/separation pushes).
+*(Shipped: BULWARK v140, SIREN v141, CLOAKER v143, MAGNA v144, elite
+affixes v145 — plus TEST MODE v142 and the Roguelike B gauntlet v146.)*
+
 - **Second boss: TWIN PRISMS** — two half-HP crystals orbiting in opposite
   phase, alternating volleys; when one dies the survivor enrages instantly
   (phase 3 rules). Alternates with OMEGA per boss cycle; daily seed decides
@@ -82,7 +70,49 @@ with one tell; support enemies grow into a family alongside WARDEN.*
 - **Announcer variety**: lines for the new enemies + bounty/cleanse events;
   recorded clips can replace synth speech wherever the user supplies audio.
 
-## M5 — The living arena (objectives & hazards)
+## M5 — Arcade Tribute Wing (Roguelike B grows into a cabinet row)
+
+*Vision (user, 2026-07-13): Roguelike B's bonus games expand into a set of
+retro tribute modes — each ALSO selectable directly from the menu. Pixel
+graphics that evoke the originals, Toko Drop enemies mingling with
+reference-INSPIRED (but original) designs — modern + classic in one frame,
+keeping the pacing and appeal of each reference. Every mode's visuals,
+gameplay, and feel get refined individually. **2-player is the long-term
+goal** (local co-op first: second gamepad, shared screen).*
+
+**Naming/IP rule: reference names live HERE and in design docs only. In-game
+modes ship under original tribute names with fully original assets — we
+emulate pacing and structure, never sprites, names, or characters.**
+
+Shared foundation (build first):
+- **Pixel render mode** — low-res render target + nearest-neighbor upscale
+  (world pixelated, HUD/UI stays crisp: the modern+classic mix). Shipped as
+  a DEV preview toggle in v147; each tribute mode turns it on with its own
+  resolution/palette.
+- **Bonus-game framework** — the v146 gauntlet generalizes: a scripted
+  room/goal sequence with its own multiplier, offered as Roguelike B's rare
+  card AND as a menu mode. Per-mode tuning objects, one entry point.
+
+The cabinet row (each refined individually, in build order):
+1. **GRID RESCUE** *(Robotron: 2084 tribute)* — single fixed screen, waves of
+   swarming hunters, and civilians to rescue by touch before enemies convert
+   them; per-rescue score climbs. Closest to existing systems (arena + a
+   rescue objective in the ESCORT family).
+2. **DUNGEON RUN** *(Gauntlet tribute)* — the room lattice grows corridors +
+   keys + locked doors + food ("the blob needs suds… badly"); enemy
+   generators you must destroy (spawner objects — new enemy family).
+3. **LOADOUT ARENA** *(Re-Loaded tribute)* — pick a loadout (weapon + perk)
+   at the door, mission objectives per room (destroy X, defend Y), darker
+   palette, heavier weapons feel.
+4. **KAIKKI IRTI** *(Tapan Kaikki 3 tribute)* — top-down carnage economy:
+   money from everything, a between-mission SHOP (allowed here — GDD §2 only
+   protects classic mode), escalating arsenals.
+5. **MACHINA** *(Nex Machina inspired — the final unlockable)* — dash-through
+   everything, humans to save under a timer, chained secrets, relentless
+   forward pacing. Unlocked by clearing the other four; the crown jewel and
+   the most polish-demanding.
+
+## M5b — The living arena (objectives & hazards)
 
 *Theme: the floor is a player too. Objectives you chase, hazards you route
 around — every one telegraphs before it matters (and hazards hurt enemies

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=100';
-import { t } from './lang.js?v=100';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=100';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=101';
+import { t } from './lang.js?v=101';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=101';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -478,6 +478,8 @@ export function initDesigner({ onResume, settings }) {
     el.appendChild(sec('DEV'));
     toggleRow(t('testMode'), settings.getTest, settings.setTest,
       t('testOnH'), t('testOffH'), '#66eeff', '#44ccff66');
+    toggleRow(t('pixelMode'), settings.getPixel, settings.setPixel,
+      t('pixelOnH'), t('pixelOffH'), '#ff88cc', '#ff66bb66');
 
     el.appendChild(sec('MOTION'));
     {
