@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v142 — 2026-07-13
+**TEST MODE — a playtest workbench toggle (OPTIONS → DEV)**
+- **TEST MODE toggle** (persisted `tokoDropTest`, en/ja/fi): every enemy type unlocks from **wave 1**, and early waves get a wave-8-sized budget floor so the expensive types (WARDEN, SIREN…) actually fit — meet a new design within seconds of pressing start instead of surviving to wave 8
+- **Test runs leave no records**: no personal bests, no run history entry, never counts as a DAILY (seed reverts to random), no daily best, no leaderboard; feedback records are tagged `test: true` so telemetry stays clean. The HUD seed label reads `TEST · SEED …` so screenshots are self-explaining
+- Cache-bust `?v=95` → `?v=96`; HUD label → v142
+
+---
+
 ## v141 — 2026-07-13
 **SIREN — enemy #20, the screamer (roadmap M4, second in order)**
 - **SIREN** (violet blob, wave 8+, cost 5): a coward support that hovers at mid distance, backs away when pressed, and never attacks. Every ~4 s it **inhales for 0.8 s** (visible swell + strobing violet glow — the tell), then **screams**: every non-boss enemy within 7 units gets a **1.6× speed surge for 3 s**, marked by an expanding violet ring + a rising two-voice wail
