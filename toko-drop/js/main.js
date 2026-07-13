@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=103';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=103';
-import { Player, PLAYER_RADIUS } from './player.js?v=103';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=103';
-import { audio } from './audio.js?v=103';
-import { initDesigner } from './designer.js?v=103';
-import { t, getLang, setLang, langs } from './lang.js?v=103';
-import { TUNING } from './tuning.js?v=103';
+import { InputManager } from './input.js?v=104';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=104';
+import { Player, PLAYER_RADIUS } from './player.js?v=104';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=104';
+import { audio } from './audio.js?v=104';
+import { initDesigner } from './designer.js?v=104';
+import { t, getLang, setLang, langs } from './lang.js?v=104';
+import { TUNING } from './tuning.js?v=104';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -798,7 +798,7 @@ const WEAPON_PODS = {
 // case a pod is ever re-added.
 const LV1_WEAPONS = ['S', 'B', 'L', 'R'];
 const LV2_WEAPONS = ['S2', 'B2', 'L2', 'R2'];
-const NON_WEAPON_COLORS = { hp: 0xff4466, invincible: 0xffffff, firerate: 0xff88aa, scoremult: 0xffdd22, score: 0x88ff88 };
+const NON_WEAPON_COLORS = { hp: 0xff4466, invincible: 0xffffff, firerate: 0xff88aa, scoremult: 0xffdd22, score: 0x88ff88, item: 0xff88bb };
 
 function randomWeaponPodId(lv2Allowed = false) {
   if (lv2Allowed && Math.random() < 0.28) return LV2_WEAPONS[Math.floor(Math.random() * LV2_WEAPONS.length)];
@@ -836,7 +836,7 @@ const CASH_GEO  = new THREE.BoxGeometry(0.55, 0.2, 0.4);
 const PRIZE_GEO = new THREE.BoxGeometry(0.62, 0.62, 0.62);
 // v132: glyph badges for the non-weapon pickups (weapon pods show their id).
 const NON_WEAPON_GLYPHS = {
-  hp: '+', invincible: '★', firerate: '»', scoremult: '×2', score: '$',
+  hp: '+', invincible: '★', firerate: '»', scoremult: '×2', score: '$', item: '?',
 };
 
 class Powerup {
@@ -1264,7 +1264,7 @@ function makeRunRecord() {
   return {
     v: 1,
     score, time: Math.round(runTimer), wave, seed: runSeed,
-    mode: gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
+    mode: bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     orientation: landscapeMode ? 'landscape' : 'portrait',
     date: new Date().toISOString(),
   };
@@ -1343,6 +1343,7 @@ const ROOM_KINDS = {
   spike:  { label: 'HEAVY 2×$', color: '#ffaa44' },
   prize:  { label: 'PRIZE$', color: '#ffdd44' },
   boss:   { label: 'BOSS!',  color: '#ff5566' },
+  item:   { label: 'ITEM',   color: '#ff88bb' },   // Binding of Toko (v150)
 };
 // Deterministic per-run room kind for lattice cell (x, y). The 8th room of a
 // run is always the boss (mirrors the wave rhythm), so every exit says BOSS!.
@@ -1444,7 +1445,7 @@ let gdWalls = [];        // { mesh, x, z, hx, hz } axis-aligned blockers
 let gdGenerators = [];
 let gdExit = null;
 let _gdSavedPixel = null, _gdSavedSmash = null;
-const inCabinet = () => tokotronMode || gaundropMode;
+const inCabinet = () => tokotronMode || gaundropMode || bindingMode;
 function setGaundropLook(on) {
   scene.background.setHex(on ? 0x140a04 : 0x0d0d1a);   // torchlit dark
   floor.visible = !on;
@@ -1543,6 +1544,45 @@ function gdInsideWall(x, z, r = 0) {
     if (Math.abs(x - w.x) < w.hx + r && Math.abs(z - w.z) < w.hz + r) return true;
   }
   return false;
+}
+
+// THE BINDING OF TOKO (v150, roadmap M5 cabinet #3 — Binding of Isaac
+// tribute): room-by-room basement floors on the SMASH lattice, but the soul
+// is the ITEM ECONOMY — item rooms every ~3rd door hand out a free upgrade
+// pick, every 6th room is a floor boss paying a RARE pick. Mods stack for
+// the whole run; the build IS the run.
+let bindingMode = false;
+let bindingRoomN = 1;    // rooms entered this run
+let bindingFloor = 1;
+let _bdSavedPixel = null, _bdSavedSmash = null;
+function bindingKindFor(n) {
+  if (n % 6 === 0) return 'boss';
+  if (n % 3 === 0) return 'item';
+  const r = Math.abs(Math.sin(runSeed + n * 7.13));   // seeded, stable per room
+  return r < 0.55 ? 'normal' : r < 0.8 ? 'swarm' : 'spike';
+}
+function setBindingLook(on) {
+  scene.background.setHex(on ? 0x0d0509 : 0x0d0d1a);   // basement gloom
+  floor.visible = !on;
+  border.material.color.setHex(on ? 0xcc4466 : 0x5555cc); // fleshy red bounds
+}
+function startBinding() {
+  bindingMode = true;
+  bindingRoomN = 1;
+  bindingFloor = 1;
+  _bdSavedSmash = smashMode; smashMode = true;   // borrow the WHOLE room system
+  _bdSavedPixel = pixelMode; pixelMode = true;
+  applyPerfMode();
+  setBindingLook(true);
+  startGame();
+}
+function exitBinding() {
+  bindingMode = false;
+  smashMode = _bdSavedSmash;
+  pixelMode = _bdSavedPixel;
+  applyPerfMode();
+  setBindingLook(false);
+  applyArenaMode(landscapeMode);
 }
 
 // TEST MODE (v142): a playtest workbench run — all enemy types unlock from
@@ -1749,7 +1789,7 @@ function saveHitLog() {
   const KEY = 'tokoDropHitLog';
   const sessions = JSON.parse(localStorage.getItem(KEY) || '[]');
   sessions.unshift({
-    seed: runSeed, mode: gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
+    seed: runSeed, mode: bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     waveReached: wave, date: new Date().toISOString(),
     events: hitEventLog,
   });
@@ -2022,7 +2062,7 @@ function saveFeedback(selectedIds, selectedLabels, comment, likedIds = [], liked
   const isFix = !!comment && comment.toLowerCase().includes('fix');
   list.unshift({
     date: new Date().toISOString(),
-    seed: runSeed, mode: gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
+    seed: runSeed, mode: bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     wave, time: Math.round(runTimer), score,
     reasons: selectedLabels, reasonIds: selectedIds,
     liked: likedLabels, likedIds,
@@ -2621,7 +2661,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v149', 16, uiCanvas.height - 12);
+  ctx.fillText('v150', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2842,6 +2882,27 @@ function showTitle() {
   slot.appendChild(gdbtn);
   slot.appendChild(gdhint);
 
+  // THE BINDING OF TOKO cabinet chip (v150) — fleshy-pink launcher.
+  const bdbtn = document.createElement('div');
+  bdbtn.dataset.ui = '1';
+  bdbtn.textContent = t('binding');
+  bdbtn.style.cssText =
+    'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
+    'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
+    'background:rgba(0,0,0,0.35);transition:all 0.12s;margin-top:10px;' +
+    'border:2px solid #cc4466;color:#ff99bb;text-shadow:0 0 12px #cc2255;';
+  const bdhint = document.createElement('div');
+  bdhint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
+  bdhint.textContent = t('bindingH');
+  bdbtn.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    startBinding();
+  });
+  bdbtn.addEventListener('touchend', e => e.stopPropagation());
+  slot.appendChild(bdbtn);
+  slot.appendChild(bdhint);
+
   // v81: volume + reduce-motion moved into the pause menu's SETTINGS page —
   // the title keeps only the run-history link and a faint pointer to where
   // the settings went.
@@ -3055,7 +3116,7 @@ function buildDailyLeaderboard(slot) {
       body: JSON.stringify({
         initials, score, wave, daily: _dailyRun,
         seed: runSeed.toString(16).toUpperCase().padStart(6, '0'),
-        mode: `${gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}`,
+        mode: `${bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}`,
         build: new URL(import.meta.url).searchParams.get('v') ?? '?',
       }),
     }).catch(() => {});
@@ -3366,7 +3427,10 @@ function spawnWave() {
   for (const p of powerups) p.remove(scene); powerups = [];
   wave++;
   const { speedMult, intervalMult } = getWaveScale(wave);
-  const list   = inCabinet() ? [] : getEnemySchedule(wave);
+  // Binding rooms use the normal smash schedules — except ITEM rooms, which
+  // hold only the pedestal (tokotron/gaundrop build their own floods).
+  const list = (tokotronMode || gaundropMode ||
+                (bindingMode && smashRoomKind === 'item')) ? [] : getEnemySchedule(wave);
   waveDuration = ROUND_DUR;
   waveTimer    = 0;
   const total  = list.length;
@@ -3500,6 +3564,18 @@ function spawnWave() {
     clusterSpawnAt = [];
   }
 
+  // BINDING OF TOKO item room (v150): no enemies — one glowing pedestal in
+  // the middle, doors already open. Take the item, or don't, and move on.
+  if (bindingMode && smashRoomKind === 'item') {
+    const pu = new Powerup(scene, 0, 0, 'item');
+    pu._life = 999;
+    powerups.push(pu);
+    exitPhase  = true;
+    exitDoors  = pickSmashExits();
+    for (const ed of exitDoors) ed.kind = bindingKindFor(bindingRoomN + 1);
+    roomTallyT = 0;
+  }
+
   // TOKOTRON (v148): the whole wave floods in at once, scattered around the
   // room (never within 6 of the player) — the reference's opening slam. The
   // roster stays Toko: grunt globbos, the beloved orange cubes, mini swarmers,
@@ -3588,7 +3664,12 @@ function spawnWave() {
   }
 
   // Wave-start banner (v114 SMASH / v123 classic): name the incoming pressure.
-  if (smashMode) {
+  if (bindingMode) {
+    const k = ROOM_KINDS[smashRoomKind ?? 'normal'] ?? ROOM_KINDS.normal;
+    waveIntroT     = waveIntroDur = 1.3;
+    waveIntroText  = `BINDING — FLOOR ${bindingFloor}` + (smashRoomKind && smashRoomKind !== 'normal' ? ` · ${k.label}` : '');
+    waveIntroColor = '#ff88bb';
+  } else if (smashMode) {
     // SMASH TV: game-show room intro card, named + colored by room kind.
     waveIntroT     = waveIntroDur = 1.5;
     waveIntroText  = kind === 'normal' ? `WAVE ${wave}` : `WAVE ${wave} — ${ROOM_KINDS[kind].label}`;
@@ -3661,7 +3742,9 @@ function applyUpgrade(id) {
   }
 }
 
-function showUpgradeCards() {
+function showUpgradeCards(afterPick = null) {
+  // afterPick (v150): item-room pedestals hand out a FREE pick mid-room —
+  // the caller decides what happens after (default: classic wave chaining).
   gameState = 'upgrade';
   overlay.style.display = 'none';
 
@@ -3690,13 +3773,13 @@ function showUpgradeCards() {
     btn.addEventListener('pointerdown', () => {
       panel.remove();
       applyUpgrade(card.id);
-      gameState = 'playing';
-      spawnWave();
+      if (afterPick) afterPick();
+      else { gameState = 'playing'; spawnWave(); }
     });
     row.appendChild(btn);
   }
 
-  if (rogueB) {
+  if (rogueB && !afterPick && !bindingMode) {
     const tier = gauntletTier;
     const g = document.createElement('div');
     g.dataset.ui = '1';
@@ -3759,7 +3842,7 @@ function finishGauntlet() {
   audio.applause();
   showRareCards();
 }
-function showRareCards() {
+function showRareCards(afterPick = null) {
   gameState = 'upgrade';
   overlay.style.display = 'none';
   const picks = [...RARE_POOL].sort(() => Math.random() - 0.5).slice(0, 2);
@@ -3782,8 +3865,8 @@ function showRareCards() {
     btn.addEventListener('pointerdown', () => {
       panel.remove();
       card.apply();
-      gameState = 'playing';
-      spawnWave();
+      if (afterPick) afterPick();
+      else { gameState = 'playing'; spawnWave(); }
     });
     row.appendChild(btn);
   }
@@ -3845,6 +3928,7 @@ function returnToTitle() {
   if (gameState !== 'gameover') return;
   if (tokotronMode) exitTokotron();   // v148: give back the borrowed toggles
   if (gaundropMode) exitGaundrop();   // v149: same deal for the dungeon
+  if (bindingMode) exitBinding();     // v150: and the basement
   clearFX();
   for (const e of enemies) e.removeFrom(scene);
   enemies = [];
@@ -4832,6 +4916,9 @@ function loop() {
         scoreMultT = 10.0;
         damageNumbers.push(new DamageNumber(pu.x, 1.2, pu.z, 'x2!', '255,170,255'));
         audio.announce('mult');
+      } else if (pu._type === 'item') {
+        // Binding pedestal (v150): a free pick, then back to the same room.
+        showUpgradeCards(() => { gameState = 'playing'; });
       }
       audio.pickup();
       // Collection pop: radial burst of goo bits in the pickup's colour
@@ -4891,6 +4978,11 @@ function loop() {
       exitDoors  = pickSmashExits();
       // Gauntlet doors all lead to the SAME scripted next room (v146).
       if (gauntlet) for (const ed of exitDoors) ed.kind = gauntlet.rooms[gauntlet.roomIdx + 1];
+      if (bindingMode) {
+        for (const ed of exitDoors) ed.kind = bindingKindFor(bindingRoomN + 1);
+        // Floor boss down (v150): the basement pays a RARE pick on the spot.
+        if (smashRoomKind === 'boss') showRareCards(() => { gameState = 'playing'; });
+      }
       roomTallyT = 2.2;
       audio.applause();
       audio.announce('exit');
@@ -4930,9 +5022,16 @@ function loop() {
           gauntlet.mult++;
           smashRoomKind = gauntlet.rooms[gauntlet.roomIdx];
         }
+        if (bindingMode) {                   // v150: the basement script
+          if (smashRoomKind !== undefined && bindingKindFor(bindingRoomN) === 'boss') {
+            bindingFloor++;                  // leaving a boss room = next floor
+          }
+          bindingRoomN++;
+          smashRoomKind = bindingKindFor(bindingRoomN);
+        }
         _entryDoor    = (ed.door + 2) % 4;
         _cameFromDoor = _entryDoor;
-        if (!gauntlet && roguelikeMode && wave % 3 === 0) {
+        if (!gauntlet && !bindingMode && roguelikeMode && wave % 3 === 0) {
           showUpgradeCards();
         } else {
           roomFadeT = 0.55;      // fade in… (swap fires at the 0.3 peak below)
@@ -4984,6 +5083,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=103').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=104').catch(() => {});
   });
 }
