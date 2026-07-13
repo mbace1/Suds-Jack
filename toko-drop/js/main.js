@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=100';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=100';
-import { Player, PLAYER_RADIUS } from './player.js?v=100';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=100';
-import { audio } from './audio.js?v=100';
-import { initDesigner } from './designer.js?v=100';
-import { t, getLang, setLang, langs } from './lang.js?v=100';
-import { TUNING } from './tuning.js?v=100';
+import { InputManager } from './input.js?v=101';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=101';
+import { Player, PLAYER_RADIUS } from './player.js?v=101';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=101';
+import { audio } from './audio.js?v=101';
+import { initDesigner } from './designer.js?v=101';
+import { t, getLang, setLang, langs } from './lang.js?v=101';
+import { TUNING } from './tuning.js?v=101';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1410,9 +1410,16 @@ audio.setVolume(audioVolume);
 // zeroes material transmission so three.js skips its transmission render pass
 // entirely — the two big GPU costs on weaker phones. Reversible live.
 let perfMode = localStorage.getItem('tokoDropPerf') === '1';
+// PIXEL PREVIEW (v147, tribute-wing foundation): render the world at a chunky
+// low resolution with nearest-neighbor upscale — the shared look every arcade
+// tribute mode (roadmap M5) will build on. HUD/UI canvas stays crisp: the
+// modern+classic mix. DEV toggle for now so the feel can be dialed in early.
+let pixelMode = localStorage.getItem('tokoDropPixel') === '1';
 let _perfSavedTrans = null;
 function applyPerfMode() {
-  renderer.setPixelRatio(Math.min(devicePixelRatio, perfMode ? 1.25 : 2));
+  renderer.setPixelRatio(pixelMode ? 0.22
+    : Math.min(devicePixelRatio, perfMode ? 1.25 : 2));
+  renderer.domElement.style.imageRendering = pixelMode ? 'pixelated' : '';
   // v129: the 1024² shadow pass is the third big GPU cost — drop it too.
   // (three re-selects programs automatically when a light's castShadow flips.)
   sun.castShadow = !perfMode;
@@ -1976,6 +1983,12 @@ const designer = initDesigner({
       // immediately when toggled from the title's OPTIONS panel.
       if (gameState === 'title' || gameState === 'options') applyArenaMode(landscapeMode);
     },
+    getPixel: () => pixelMode,
+    setPixel: on => {
+      pixelMode = on;
+      localStorage.setItem('tokoDropPixel', on ? '1' : '0');
+      applyPerfMode();
+    },
     getTest: () => testMode,
     setTest: on => {
       testMode = on;
@@ -2437,7 +2450,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v146', 16, uiCanvas.height - 12);
+  ctx.fillText('v147', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -4556,6 +4569,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=100').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=101').catch(() => {});
   });
 }
