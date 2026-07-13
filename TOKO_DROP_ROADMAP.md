@@ -65,6 +65,12 @@ played runs (SEND & CONTINUE) and optionally the Sheets deployment**.*
   tougher lattice on the next; bonus room between floors.
 - **Announcer variety**: more lines; recorded clips can replace synth speech
   wherever the user supplies audio (the intro-voice ffmpeg pipeline exists).
+- **Environmental objectives, round 2** (playtest direction 2026-07-13): gates
+  need a deeper redesign beyond the v138 teaching tag; the gate/bounty/cleanse
+  axis (GDD §9b) should grow more variety.
+- **NEW environmental hazards** (playtest direction 2026-07-13): the poison
+  trails are the only hazard family — explore hazards that aren't
+  enemy-emitted (arena features), as the counterpart to the cleanse zones.
 
 ---
 
