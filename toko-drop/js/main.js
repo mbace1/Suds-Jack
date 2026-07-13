@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=90';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=90';
-import { Player, PLAYER_RADIUS } from './player.js?v=90';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=90';
-import { audio } from './audio.js?v=90';
-import { initDesigner } from './designer.js?v=90';
-import { t, getLang, setLang, langs } from './lang.js?v=90';
-import { TUNING } from './tuning.js?v=90';
+import { InputManager } from './input.js?v=91';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=91';
+import { Player, PLAYER_RADIUS } from './player.js?v=91';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=91';
+import { audio } from './audio.js?v=91';
+import { initDesigner } from './designer.js?v=91';
+import { t, getLang, setLang, langs } from './lang.js?v=91';
+import { TUNING } from './tuning.js?v=91';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1325,6 +1325,12 @@ function pickSmashExits() {
 // Announcer (v109): game-show commentary via speech synthesis.
 let announcerOn = localStorage.getItem('tokoDropAnnouncer') === '1';
 audio.setAnnouncer(announcerOn);
+// v137: announcer volume slider (independent of master — speech caps at 1.0).
+let announcerVol = (() => {
+  const raw = parseFloat(localStorage.getItem('tokoDropAnnVol') ?? '1');
+  return Number.isFinite(raw) ? Math.max(0, Math.min(1, raw)) : 1.0;
+})();
+audio.setAnnouncerVolume(announcerVol);
 // Recorded title intro voice (v122): its OWN toggle, on by default, separate
 // from the announcer commentary. `!== '0'` → defaults on unless turned off.
 let introVoiceOn = localStorage.getItem('tokoDropIntroVoice') !== '0';
@@ -1899,6 +1905,12 @@ const designer = initDesigner({
       // immediately when toggled from the title's OPTIONS panel.
       if (gameState === 'title' || gameState === 'options') applyArenaMode(landscapeMode);
     },
+    getAnnVol: () => announcerVol,
+    setAnnVol: v => {
+      announcerVol = v;
+      audio.setAnnouncerVolume(v);
+      localStorage.setItem('tokoDropAnnVol', String(v));
+    },
     getAnnouncer: () => announcerOn,
     setAnnouncer: on => {
       announcerOn = on;
@@ -2318,7 +2330,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v136', 16, uiCanvas.height - 12);
+  ctx.fillText('v137', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -4223,6 +4235,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=90').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=91').catch(() => {});
   });
 }
