@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v134 — 2026-07-13
+**Controller menu navigation — every menu is now stick/d-pad navigable**
+- **D-pad or left stick moves a gold focus outline** across whatever menu is up: title chips (ROGUELIKE / DAILY / RUN HISTORY / OPTIONS / language), death-screen feedback chips + SEND/SHARE/SKIP + leaderboard POST, the pause/OPTIONS panel (list items, buttons, and **sliders — left/right adjusts a focused slider**), run history, and roguelike upgrade cards. Focus movement is geometric (nearest element in the pressed direction), so every panel layout works without per-menu wiring
+- **A activates** the focused element; **B backs out** (resume from pause/OPTIONS, close run history, skip feedback on the death screen, unfocus on the title). A still starts the run from the title when nothing is focused; Start keeps all its shortcuts
+- Mouse/touch behavior untouched — the layer only reacts to a connected pad and only in menu states; synthetic activations are non-bubbling so they can never reach the tap-to-start handler
+- Cache-bust `?v=87` → `?v=88`; HUD label → v134
+
+---
+
 ## v133 — 2026-07-12
 **Strategic layer: BOUNTY targets + CLEANSE foam zones (the anti-hazard) — GDD §9b**
 - **BOUNTY** (every 3rd wave from 4, never boss waves): the wave's first arrival carries a pulsing gold floor ring + a "BOUNTY 8" countdown tag. Kill it inside the window → `1500 + wave×100` cash (×2 under a multiplier), a gold popup, and a **guaranteed weapon pod** at the body — from ANY kill source (everything funnels through `onKill`). Expired = it quietly becomes a normal enemy. Announcer gets bounty lines

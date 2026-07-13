@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=87';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=87';
-import { Player, PLAYER_RADIUS } from './player.js?v=87';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=87';
-import { audio } from './audio.js?v=87';
-import { initDesigner } from './designer.js?v=87';
-import { t, getLang, setLang, langs } from './lang.js?v=87';
-import { TUNING } from './tuning.js?v=87';
+import { InputManager } from './input.js?v=88';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=88';
+import { Player, PLAYER_RADIUS } from './player.js?v=88';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=88';
+import { audio } from './audio.js?v=88';
+import { initDesigner } from './designer.js?v=88';
+import { t, getLang, setLang, langs } from './lang.js?v=88';
+import { TUNING } from './tuning.js?v=88';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -2296,7 +2296,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v133', 16, uiCanvas.height - 12);
+  ctx.fillText('v134', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2567,6 +2567,8 @@ function showRunHistory() {
   }
 
   const closeBtn = document.createElement('div');
+  closeBtn.id = 'rh-close';
+  closeBtn.dataset.ui = '1';
   closeBtn.textContent = t('close');
   closeBtn.style.cssText =
     'cursor:pointer;user-select:none;font-size:13px;font-weight:bold;letter-spacing:1px;' +
@@ -3145,6 +3147,7 @@ function showUpgradeCards() {
 
   for (const card of pool) {
     const btn = document.createElement('div');
+    btn.dataset.ui = '1';
     btn.style.cssText = 'background:#1a1a2e;border:2px solid #5555cc;border-radius:8px;padding:20px 24px;min-width:140px;max-width:180px;text-align:center;cursor:pointer;';
     btn.innerHTML = `<div style="font-size:16px;font-weight:bold;margin-bottom:8px">${t('c_' + card.id)}</div><div style="font-size:12px;opacity:0.65">${t('c_' + card.id + '_d')}</div>`;
     btn.addEventListener('pointerover', () => { btn.style.borderColor = '#00ccaa'; });
@@ -3234,13 +3237,123 @@ function triggerGameOver() {
 }
 
 // ── Input wiring ────────────────────────────────────────────────────────────────
+// ── Gamepad menu navigation (v134) ───────────────────────────────────────────
+// Every DOM menu (title chips, death-screen feedback, pause/OPTIONS panel,
+// run history, upgrade cards) becomes stick/d-pad navigable: move focus with
+// d-pad or left stick, A activates, B backs out. Focus is drawn as a gold
+// outline. The layer self-gates on menu states and only reacts to a real pad,
+// so mouse/touch behavior is untouched.
+const NAV_STATES = new Set(['title', 'gameover', 'paused', 'options', 'runhistory', 'upgrade']);
+const NAV_SEL = '[data-ui], .fb-chip, .fb-btn, .dit, #dsgn button, #dsgn input[type=range]';
+let navEl = null, _navPrevOutline = '', _navPrevOffset = '';
+let _navDirHeld = false, _navRepeatT = 0, _navPrevA = false, _navPrevB = false;
+
+function navVisible(el) {
+  if (!el.isConnected) return false;
+  const r = el.getBoundingClientRect();
+  return r.width > 2 && r.height > 2 && r.bottom > 0 && r.top < innerHeight;
+}
+function navTargets() { return [...document.querySelectorAll(NAV_SEL)].filter(navVisible); }
+function navClear() {
+  if (navEl) { navEl.style.outline = _navPrevOutline; navEl.style.outlineOffset = _navPrevOffset; }
+  navEl = null;
+}
+function navSet(el) {
+  navClear();
+  navEl = el;
+  _navPrevOutline = el.style.outline;
+  _navPrevOffset  = el.style.outlineOffset;
+  el.style.outline = '3px solid #ffdd44';
+  el.style.outlineOffset = '2px';
+  el.scrollIntoView?.({ block: 'nearest' });
+}
+// Geometric focus move: nearest element whose center lies in the pressed
+// direction, penalizing sideways drift — robust across every panel layout.
+function navMove(dx, dy) {
+  const els = navTargets();
+  if (!els.length) { navClear(); return; }
+  if (!navEl || !els.includes(navEl)) { navSet(els[0]); return; }
+  const r0 = navEl.getBoundingClientRect();
+  const cx = r0.left + r0.width / 2, cy = r0.top + r0.height / 2;
+  let best = null, bestScore = Infinity;
+  for (const el of els) {
+    if (el === navEl) continue;
+    const r = el.getBoundingClientRect();
+    const vx = r.left + r.width / 2 - cx, vy = r.top + r.height / 2 - cy;
+    const along = vx * dx + vy * dy;
+    if (along < 4) continue;
+    const score = along + (Math.abs(vx * dy) + Math.abs(vy * dx)) * 2.5;
+    if (score < bestScore) { bestScore = score; best = el; }
+  }
+  if (best) navSet(best);
+}
+function navActivate() {
+  const el = navEl;
+  if (!el) return;
+  // Non-bubbling on purpose: handlers sit on the elements themselves, and a
+  // bubbled synthetic tap must never reach the window tap-to-start handler.
+  el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: false, cancelable: true }));
+  el.dispatchEvent(new MouseEvent('click', { bubbles: false, cancelable: true }));
+  // Chip handlers rewrite style.cssText (selection styling), wiping the focus
+  // outline — re-apply if the element survived the activation.
+  if (el.isConnected && navVisible(el)) navSet(el); else navClear();
+}
+function navBack() {
+  if (gameState === 'paused')  { gameState = 'playing'; designer.hide(); navClear(); }
+  else if (gameState === 'options') { gameState = 'title'; designer.hide(); navClear(); }
+  else if (gameState === 'runhistory') {
+    // the CLOSE button listens to pointerdown, not click
+    document.getElementById('rh-close')
+      ?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: false }));
+    navClear();
+  }
+  else if (gameState === 'gameover') returnToTitle();
+  else if (gameState === 'title') navClear();  // unfocus → A starts the run again
+}
+function updateMenuNav(dt) {
+  if (!NAV_STATES.has(gameState)) { if (navEl) navClear(); return; }
+  if (!navigator.getGamepads) return;
+  let pad = null;
+  for (const p of navigator.getGamepads()) { if (p) { pad = p; break; } }
+  if (!pad) return;
+  const lx = pad.axes[0] || 0, ly = pad.axes[1] || 0;
+  const dirX = (pad.buttons[15]?.pressed || lx >  0.55) ? 1 : (pad.buttons[14]?.pressed || lx < -0.55) ? -1 : 0;
+  const dirY = (pad.buttons[13]?.pressed || ly >  0.55) ? 1 : (pad.buttons[12]?.pressed || ly < -0.55) ? -1 : 0;
+  const a = !!pad.buttons[0]?.pressed;
+  const b = !!pad.buttons[1]?.pressed;
+  if (dirX || dirY || a || b) input.usingGamepad = true;
+
+  _navRepeatT -= dt;
+  if (dirX || dirY) {
+    if (!_navDirHeld || _navRepeatT <= 0) {
+      _navRepeatT = _navDirHeld ? 0.14 : 0.38;  // initial delay, then key-repeat
+      if (navEl?.tagName === 'INPUT' && navEl.type === 'range' && dirX && !dirY) {
+        // Focused slider: left/right adjusts instead of moving focus.
+        const step = parseFloat(navEl.step) || 1;
+        navEl.value = Math.min(parseFloat(navEl.max),
+          Math.max(parseFloat(navEl.min), parseFloat(navEl.value) + step * dirX));
+        navEl.dispatchEvent(new Event('input'));
+      } else {
+        navMove(dirX, dirY);
+      }
+    }
+    _navDirHeld = true;
+  } else { _navDirHeld = false; _navRepeatT = 0; }
+
+  if (a && !_navPrevA && navEl && navVisible(navEl)) navActivate();
+  _navPrevA = a;
+  if (b && !_navPrevB) navBack();
+  _navPrevB = b;
+}
+
 input.onDash  = () => {
   if (gameState === 'playing') {
     const move = input.getMoveDir();
     const dir = { x: move.x, z: move.z, valid: move.x !== 0 || move.z !== 0 };
     player.dash(dir);
-  } else if (gameState === 'title') {
-    startGame();  // A / bumper / trigger starts the game from the title
+  } else if (gameState === 'title' && !navEl) {
+    startGame();  // A / bumper / trigger starts from the title — unless the
+                  // pad is focused on a menu chip (then A activates the chip)
   }
 };
 input.onPause = () => {
@@ -3332,6 +3445,7 @@ function loop() {
   }
 
   input.pollGamepad();
+  updateMenuNav(dt);   // gamepad menu focus (v134) — self-gates on menu states
   updateShake(dt);
 
   // Title / paused / options / run-history — just render the scene, no game logic
@@ -4043,6 +4157,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=87').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=88').catch(() => {});
   });
 }
