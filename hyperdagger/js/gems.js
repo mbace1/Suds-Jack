@@ -29,6 +29,7 @@ export class GemPool {
     const m = this.pool.pop();
     if (!m) return;
     m.position.copy(pos);
+    m.scale.setScalar(1);
     m.visible = true;
     this.active.push({
       m,
@@ -46,6 +47,9 @@ export class GemPool {
       g.life -= dt;
       g.bobT += dt * 3;
       g.m.rotation.y += dt * 4;
+      // glint pulse; gems about to expire blink hard so you notice them
+      const glint = 1 + 0.2 * Math.sin(g.bobT * 2.7);
+      g.m.scale.setScalar(g.life < 3 ? glint * (0.55 + 0.45 * Math.sin(g.life * 14)) : glint);
       if (g.life <= 0) { this.recycle(i); continue; }
 
       _d.copy(playerPos).sub(g.m.position);

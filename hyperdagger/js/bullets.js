@@ -25,14 +25,17 @@ export class OrbPool {
     const m = this.pool.pop();
     if (!m) return;
     m.position.copy(pos);
+    m.scale.setScalar(1);
     m.visible = true;
-    this.active.push({ m, vel: vel.clone(), life: 7 });
+    this.active.push({ m, vel: vel.clone(), life: 7, age: Math.random() * 6 });
   }
 
   update(dt, cullR) {
     for (let i = this.active.length - 1; i >= 0; i--) {
       const o = this.active[i];
       o.m.position.addScaledVector(o.vel, dt);
+      o.age += dt;
+      o.m.scale.setScalar(1 + 0.16 * Math.sin(o.age * 9)); // menacing breathe
       o.life -= dt;
       const p = o.m.position;
       if (o.life <= 0 || p.x * p.x + p.z * p.z > cullR * cullR) this.recycle(i);

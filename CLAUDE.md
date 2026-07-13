@@ -273,8 +273,13 @@ run-end "peak rank" recap line. Debug: `__hd.debug.addStyle(n)` / `getStyle()`.
 **Render / feel:** ACES tone mapping + `EffectComposer` (`RenderPass` →
 `AfterimagePass` 0.72 (HYPERDEMON motion smear) → `UnrealBloomPass` 0.7/0.45/0.6 →
 chromatic-aberration `ShaderPass` → dash-speedlines `ShaderPass` (radial spokes driven
-by `dashK`, gated `opts.motion && tier.smear`) → `OutputPass`); smear/shake/chroma each
-sit behind a pause-menu toggle. **Ground VFX (`main.js`):** a 96-cap `InstancedMesh` of
+by `dashK`) → impact-ripple `ShaderPass` (damped radial UV wave via `triggerRipple(amp)`
+on heavy kills / HYPER hits / death; both passes gated `opts.motion && tier.smear`) →
+`OutputPass`); smear/shake/chroma each sit behind a pause-menu toggle. Heavy kills also
+set `hitStop` (~50ms at 12% sim speed, clocked on the raw delta in `animate()`). The sky
+band clock advances at `1 + musicI·1.8` (warped accumulation — phase-continuous) and
+`uEmber` swells the horizon with trauma², +0.7 while the Leviathan lives (`levAlive`
+from `step()`). Orbs breathe ±16%, gems glint ±20% and blink in their final 3s. **Ground VFX (`main.js`):** a 96-cap `InstancedMesh` of
 blob shadows under player + enemies (scale falls with altitude, totems skipped —
 z-fight), pooled additive impact sparks on dagger hits, and dissolving shockwave rings
 on heavy kills (`spawnShockwave`); all updated in `step()`/death slow-mo, debug via
