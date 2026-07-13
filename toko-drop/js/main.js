@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=102';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=102';
-import { Player, PLAYER_RADIUS } from './player.js?v=102';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=102';
-import { audio } from './audio.js?v=102';
-import { initDesigner } from './designer.js?v=102';
-import { t, getLang, setLang, langs } from './lang.js?v=102';
-import { TUNING } from './tuning.js?v=102';
+import { InputManager } from './input.js?v=103';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=103';
+import { Player, PLAYER_RADIUS } from './player.js?v=103';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=103';
+import { audio } from './audio.js?v=103';
+import { initDesigner } from './designer.js?v=103';
+import { t, getLang, setLang, langs } from './lang.js?v=103';
+import { TUNING } from './tuning.js?v=103';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1264,7 +1264,7 @@ function makeRunRecord() {
   return {
     v: 1,
     score, time: Math.round(runTimer), wave, seed: runSeed,
-    mode: tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
+    mode: gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     orientation: landscapeMode ? 'landscape' : 'portrait',
     date: new Date().toISOString(),
   };
@@ -1432,6 +1432,117 @@ class Civilian {
     for (const c of this.group.children) c.geometry.dispose();
     this.mat.dispose();
   }
+}
+
+// GAUNDROP (v149, roadmap M5 cabinet #2 — Gauntlet tribute): torchlit 8-bit
+// dungeon levels (Conan-palette: bronze, rust, dark stone), maze walls that
+// block everything, enemy GENERATORS that pour bodies until destroyed, suds
+// food, treasure, and a glowing exit tile — escape is always legal. Levels
+// descend forever; the drop only ends when the blob does.
+let gaundropMode = false;
+let gdWalls = [];        // { mesh, x, z, hx, hz } axis-aligned blockers
+let gdGenerators = [];
+let gdExit = null;
+let _gdSavedPixel = null, _gdSavedSmash = null;
+const inCabinet = () => tokotronMode || gaundropMode;
+function setGaundropLook(on) {
+  scene.background.setHex(on ? 0x140a04 : 0x0d0d1a);   // torchlit dark
+  floor.visible = !on;
+  border.material.color.setHex(on ? 0xcc8833 : 0x5555cc); // bronze bounds
+}
+function startGaundrop() {
+  gaundropMode = true;
+  _gdSavedSmash = smashMode; smashMode = false;
+  _gdSavedPixel = pixelMode; pixelMode = true;
+  applyPerfMode();
+  setGaundropLook(true);
+  startGame();
+}
+function exitGaundrop() {
+  gaundropMode = false;
+  smashMode = _gdSavedSmash;
+  pixelMode = _gdSavedPixel;
+  applyPerfMode();
+  setGaundropLook(false);
+  applyArenaMode(landscapeMode);
+}
+function clearGaundropLevel() {
+  for (const w of gdWalls) { scene.remove(w.mesh); w.mesh.geometry.dispose(); w.mesh.material.dispose(); }
+  gdWalls = [];
+  for (const g of gdGenerators) g.remove(scene);
+  gdGenerators = [];
+  if (gdExit) { scene.remove(gdExit.mesh); gdExit.mesh.geometry.dispose(); gdExit.mat.dispose(); gdExit = null; }
+}
+const GD_WALL_MAT_COLOR = 0x7a4a22;   // stone-brown
+class Generator {
+  constructor(sc, x, z, type) {
+    this.alive = true;
+    this.x = x; this.z = z;
+    this.type = type;
+    this.hp = 6;
+    this._spawnT = 1.2 + Math.random();
+    this._flashT = 0;
+    this.mat = new THREE.MeshBasicMaterial({ color: 0xb06a2a });
+    this.mesh = new THREE.Mesh(new THREE.BoxGeometry(1.25, 1.0, 1.25), this.mat);
+    this.mesh.position.set(x, 0.5, z);
+    sc.add(this.mesh);
+  }
+  update(dt) {
+    this._spawnT -= dt;
+    if (this._flashT > 0) { this._flashT -= dt; this.mat.color.setHex(0xffcc88); }
+    else this.mat.color.setHex(0xb06a2a);
+    this.mesh.rotation.y += dt * 0.4;
+    const aliveCount = enemies.reduce((n, e) => n + (e.alive ? 1 : 0), 0);
+    if (this._spawnT <= 0 && aliveCount < 22) {
+      this._spawnT = 2.2 + Math.random() * 1.2;
+      const a = Math.random() * Math.PI * 2;
+      enemies.push(new Enemy(scene, this.type, this.x + Math.cos(a) * 1.4, this.z + Math.sin(a) * 1.4));
+    }
+  }
+  hit() {
+    this.hp--;
+    this._flashT = 0.1;
+    if (this.hp <= 0) {
+      this.alive = false;
+      score += 500 * (scoreMultT > 0 ? 2 : 1);
+      damageNumbers.push(new DamageNumber(this.x, 1.2, this.z, '+500', '255,170,68'));
+      for (let j = 0; j < 8; j++) {
+        const a = (j / 8) * Math.PI * 2;
+        chunkPool.spawn(this.x, 0.7, this.z, Math.cos(a) * 4, 2 + Math.random() * 2, Math.sin(a) * 4, 0xb06a2a, 0.14);
+      }
+      addShake(0.15);
+      audio.enemyDieType('cube');
+    }
+  }
+  remove(sc) { sc.remove(this.mesh); this.mesh.geometry.dispose(); this.mat.dispose(); }
+}
+// circle-vs-AABB pushout: returns corrected {x, z} for a radius r at (x, z)
+function gdResolveWalls(x, z, r) {
+  for (const w of gdWalls) {
+    const dx = x - Math.max(w.x - w.hx, Math.min(w.x + w.hx, x));
+    const dz = z - Math.max(w.z - w.hz, Math.min(w.z + w.hz, z));
+    const d2 = dx * dx + dz * dz;
+    if (d2 < r * r) {
+      if (d2 > 1e-6) {
+        const d = Math.sqrt(d2);
+        x += (dx / d) * (r - d);
+        z += (dz / d) * (r - d);
+      } else {
+        // center inside the box: push out along the thinnest axis
+        const px = (w.hx + r) - Math.abs(x - w.x);
+        const pz = (w.hz + r) - Math.abs(z - w.z);
+        if (px < pz) x += Math.sign(x - w.x || 1) * px;
+        else         z += Math.sign(z - w.z || 1) * pz;
+      }
+    }
+  }
+  return { x, z };
+}
+function gdInsideWall(x, z, r = 0) {
+  for (const w of gdWalls) {
+    if (Math.abs(x - w.x) < w.hx + r && Math.abs(z - w.z) < w.hz + r) return true;
+  }
+  return false;
 }
 
 // TEST MODE (v142): a playtest workbench run — all enemy types unlock from
@@ -1638,7 +1749,7 @@ function saveHitLog() {
   const KEY = 'tokoDropHitLog';
   const sessions = JSON.parse(localStorage.getItem(KEY) || '[]');
   sessions.unshift({
-    seed: runSeed, mode: tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
+    seed: runSeed, mode: gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     waveReached: wave, date: new Date().toISOString(),
     events: hitEventLog,
   });
@@ -1911,7 +2022,7 @@ function saveFeedback(selectedIds, selectedLabels, comment, likedIds = [], liked
   const isFix = !!comment && comment.toLowerCase().includes('fix');
   list.unshift({
     date: new Date().toISOString(),
-    seed: runSeed, mode: tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
+    seed: runSeed, mode: gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     wave, time: Math.round(runTimer), score,
     reasons: selectedLabels, reasonIds: selectedIds,
     liked: likedLabels, likedIds,
@@ -2510,7 +2621,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v148', 16, uiCanvas.height - 12);
+  ctx.fillText('v149', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2709,6 +2820,27 @@ function showTitle() {
   tkbtn.addEventListener('touchend', e => e.stopPropagation());
   slot.appendChild(tkbtn);
   slot.appendChild(tkhint);
+
+  // GAUNDROP cabinet chip (v149) — bronze launcher.
+  const gdbtn = document.createElement('div');
+  gdbtn.dataset.ui = '1';
+  gdbtn.textContent = t('gaundrop');
+  gdbtn.style.cssText =
+    'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
+    'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
+    'background:rgba(0,0,0,0.35);transition:all 0.12s;margin-top:10px;' +
+    'border:2px solid #cc8833;color:#ffbb66;text-shadow:0 0 12px #aa6611;';
+  const gdhint = document.createElement('div');
+  gdhint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
+  gdhint.textContent = t('gaundropH');
+  gdbtn.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    startGaundrop();
+  });
+  gdbtn.addEventListener('touchend', e => e.stopPropagation());
+  slot.appendChild(gdbtn);
+  slot.appendChild(gdhint);
 
   // v81: volume + reduce-motion moved into the pause menu's SETTINGS page —
   // the title keeps only the run-history link and a faint pointer to where
@@ -2923,7 +3055,7 @@ function buildDailyLeaderboard(slot) {
       body: JSON.stringify({
         initials, score, wave, daily: _dailyRun,
         seed: runSeed.toString(16).toUpperCase().padStart(6, '0'),
-        mode: `${tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}`,
+        mode: `${gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}`,
         build: new URL(import.meta.url).searchParams.get('v') ?? '?',
       }),
     }).catch(() => {});
@@ -3208,6 +3340,7 @@ function clearFX() {
   for (const f of foamZones)    f.remove(scene); foamZones     = [];
   for (const r of screamRings)  r.remove(scene); screamRings   = [];
   for (const c of civilians)    c.remove(scene); civilians     = [];
+  clearGaundropLevel();
   clearBounty();
   for (const g of gates)        g.remove(scene); gates         = [];
   for (const p of powerups)     p.remove(scene); powerups      = [];
@@ -3233,7 +3366,7 @@ function spawnWave() {
   for (const p of powerups) p.remove(scene); powerups = [];
   wave++;
   const { speedMult, intervalMult } = getWaveScale(wave);
-  const list   = tokotronMode ? [] : getEnemySchedule(wave);
+  const list   = inCabinet() ? [] : getEnemySchedule(wave);
   waveDuration = ROUND_DUR;
   waveTimer    = 0;
   const total  = list.length;
@@ -3282,9 +3415,89 @@ function spawnWave() {
     }
   });
   if (player._hasShield) player._shield = true;
-  if (!tokotronMode && wave >= 3) {
+  if (!inCabinet() && wave >= 3) {
     if (gates.length >= 2) { gates[0].remove(scene); gates.shift(); }
     gates.push(new Gate(scene));
+  }
+
+  // GAUNDROP (v149): a level, not a wave — maze walls, generators pouring
+  // bodies until destroyed, suds food (+1 HP), treasure, and the exit tile.
+  // Escape is always legal; deeper levels grow more generators and walls.
+  if (gaundropMode) {
+    clearGaundropLevel();
+    const lvl = wave;
+    // Maze: 3-6 straight stone runs, seeded, clear of the outer ring so the
+    // border lane always connects everything (no seals possible).
+    const nWalls = Math.min(6, 2 + lvl);
+    const wallMat = () => new THREE.MeshBasicMaterial({ color: GD_WALL_MAT_COLOR });
+    for (let i = 0; i < nWalls; i++) {
+      const horiz = rng() < 0.5;
+      const len = 3.5 + rng() * 4.5;
+      const hx = horiz ? len / 2 : 0.5;
+      const hz = horiz ? 0.5 : len / 2;
+      const wx = (rng() * 2 - 1) * (HALF_X - hx - 3.2);
+      const wz = (rng() * 2 - 1) * (HALF_Z - hz - 3.2);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(hx * 2, 1.1, hz * 2), wallMat());
+      mesh.position.set(wx, 0.55, wz);
+      scene.add(mesh);
+      gdWalls.push({ mesh, x: wx, z: wz, hx, hz });
+    }
+    // Generators: the level's engine. Types escalate with depth.
+    const genTypes = [EnemyType.GLOBBO, EnemyType.ORANGE_CUBE,
+                      lvl >= 3 ? EnemyType.REDD_MINI : EnemyType.GLOBBO,
+                      lvl >= 5 ? EnemyType.TORO : EnemyType.ORANGE_CUBE];
+    const nGen = Math.min(4, 1 + Math.floor(lvl / 2));
+    for (let i = 0; i < nGen; i++) {
+      let gx, gz, tries = 0;
+      do {
+        gx = (rng() * 2 - 1) * (HALF_X - 2.5);
+        gz = (rng() * 2 - 1) * (HALF_Z - 2.5);
+      } while ((gdInsideWall(gx, gz, 1.2) ||
+                Math.hypot(gx - player.position.x, gz - player.position.z) < 7) && ++tries < 30);
+      gdGenerators.push(new Generator(scene, gx, gz, genTypes[Math.floor(rng() * genTypes.length)]));
+    }
+    // Food + treasure on the open floor (room-long, like smash loot).
+    const nLoot = 3 + Math.floor(rng() * 3);
+    for (let i = 0; i < nLoot; i++) {
+      let lx, lz, tries = 0;
+      do {
+        lx = (rng() * 2 - 1) * (HALF_X - 2);
+        lz = (rng() * 2 - 1) * (HALF_Z - 2);
+      } while (gdInsideWall(lx, lz, 0.8) && ++tries < 20);
+      const pu = new Powerup(scene, lx, lz, rng() < 0.45 ? 'hp' : 'score');
+      pu._life = 999;
+      if (pu._type === 'score') { pu._value = 200 + lvl * 40; pu.mesh.geometry.dispose(); pu.mesh.geometry = CASH_GEO; pu.mat.color.setHex(0xffcc44); }
+      powerups.push(pu);
+    }
+    // The exit: a glowing gold tile, never too close to the player.
+    {
+      let ex, ez, tries = 0;
+      do {
+        ex = (rng() * 2 - 1) * (HALF_X - 2);
+        ez = (rng() * 2 - 1) * (HALF_Z - 2);
+      } while ((gdInsideWall(ex, ez, 1.0) ||
+                Math.hypot(ex - player.position.x, ez - player.position.z) < 10) && ++tries < 30);
+      const mat = new THREE.MeshBasicMaterial({ color: 0xffcc33, transparent: true, opacity: 0.5,
+        blending: THREE.AdditiveBlending, depthWrite: false });
+      const mesh = new THREE.Mesh(new THREE.CircleGeometry(1.1, 20), mat);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(ex, 0.03, ez);
+      scene.add(mesh);
+      gdExit = { mesh, mat, x: ex, z: ez };
+    }
+    // A small welcome party already on the floor.
+    const n0 = Math.min(10, 3 + lvl);
+    for (let i = 0; i < n0; i++) {
+      let px, pz, tries = 0;
+      do {
+        px = (rng() * 2 - 1) * (HALF_X - 1.5);
+        pz = (rng() * 2 - 1) * (HALF_Z - 1.5);
+      } while ((gdInsideWall(px, pz, 0.8) ||
+                Math.hypot(px - player.position.x, pz - player.position.z) < 6) && ++tries < 20);
+      pendingSpawns.push({ type: rng() < 0.6 ? EnemyType.GLOBBO : EnemyType.ORANGE_CUBE,
+        delay: 0.2 + i * 0.06, px, pz, angle: 0, shooter: false, clusterOffset: null, speedMult, intervalMult });
+    }
+    clusterSpawnAt = [];
   }
 
   // TOKOTRON (v148): the whole wave floods in at once, scattered around the
@@ -3326,8 +3539,8 @@ function spawnWave() {
   // mark. CLEANSE foam appears every 4th wave from 6 — seeded, so daily runs
   // get identical placements.
   clearBounty();
-  bountyArm = !tokotronMode && wave >= 4 && wave % 3 === 1 && kind !== 'boss';
-  if (!tokotronMode && wave >= 6 && wave % 4 === 2) {
+  bountyArm = !inCabinet() && wave >= 4 && wave % 3 === 1 && kind !== 'boss';
+  if (!inCabinet() && wave >= 6 && wave % 4 === 2) {
     foamZones.push(new FoamZone(scene,
       (rng() * 2 - 1) * (HALF_X - 4), (rng() * 2 - 1) * (HALF_Z - 4)));
   }
@@ -3394,6 +3607,10 @@ function spawnWave() {
     waveIntroT = waveIntroDur = 1.2;
     waveIntroText  = `TOKOTRON — WAVE ${wave}`;
     waveIntroColor = '#44eeff';
+  } else if (gaundropMode) {
+    waveIntroT = waveIntroDur = 1.2;
+    waveIntroText  = `GAUNDROP — LEVEL ${wave}`;
+    waveIntroColor = '#ffaa44';
   } else {
     // Classic: color-coded wave banner naming the rhythm (v123).
     const b = WAVE_BANNER[kind] ?? WAVE_BANNER.normal;
@@ -3590,7 +3807,7 @@ function startGame() {
   BULLET_CONFIG.playerBulletScale  = 1.0;
   BULLET_CONFIG.playerPiercing     = false;
   BULLET_CONFIG.playerWeaponPierce = false;
-  if (dailyMode && !testMode && !tokotronMode) {   // test/cabinet runs are never dailies
+  if (dailyMode && !testMode && !inCabinet()) {   // test/cabinet runs are never dailies
     // Same seed for everyone today: hash the UTC date through the PRNG once
     // so consecutive days land far apart in seed space.
     _dailyRun = new Date().toISOString().slice(0, 10);
@@ -3627,6 +3844,7 @@ function startGame() {
 function returnToTitle() {
   if (gameState !== 'gameover') return;
   if (tokotronMode) exitTokotron();   // v148: give back the borrowed toggles
+  if (gaundropMode) exitGaundrop();   // v149: same deal for the dungeon
   clearFX();
   for (const e of enemies) e.removeFrom(scene);
   enemies = [];
@@ -3957,6 +4175,55 @@ function loop() {
   }
 
   player.update(dt, moveDir, aimDir, bullets, HALF_X, HALF_Z);
+
+  // GAUNDROP runtime (v149): generators pour, walls block, the exit calls.
+  if (gaundropMode && player.alive) {
+    for (let i = gdGenerators.length - 1; i >= 0; i--) {
+      const g = gdGenerators[i];
+      g.update(dt);
+      if (!g.alive) { g.remove(scene); gdGenerators.splice(i, 1); }
+    }
+    // player bullets vs generators
+    for (let bi = bullets.active.length - 1; bi >= 0; bi--) {
+      const b = bullets.active[bi];
+      if (!b.isPlayer) continue;
+      for (const g of gdGenerators) {
+        if (!g.alive) continue;
+        if (Math.abs(b.mesh.position.x - g.x) < 0.85 && Math.abs(b.mesh.position.z - g.z) < 0.85) {
+          bullets.recycleAt(bi);
+          g.hit();
+          break;
+        }
+      }
+    }
+    // walls eat bullets from both sides — cover is real
+    for (let bi = bullets.active.length - 1; bi >= 0; bi--) {
+      const b = bullets.active[bi];
+      if (gdInsideWall(b.mesh.position.x, b.mesh.position.z, 0)) bullets.recycleAt(bi);
+    }
+    // walls block bodies
+    {
+      const c = gdResolveWalls(player.position.x, player.position.z, PLAYER_RADIUS);
+      player.mesh.position.x = c.x; player.mesh.position.z = c.z;
+    }
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      const c = gdResolveWalls(e.position.x, e.position.z, e.radius * 0.8);
+      e.position.x = c.x; e.position.z = c.z;
+    }
+    // the exit tile: step on it to descend
+    if (gdExit) {
+      gdExit.mat.opacity = 0.35 + 0.25 * Math.abs(Math.sin(performance.now() * 0.005));
+      if (Math.hypot(player.position.x - gdExit.x, player.position.z - gdExit.z) < 1.1) {
+        score += 1000 * (scoreMultT > 0 ? 2 : 1);
+        audio.waveClear();
+        pendingSpawns = [];
+        for (const e of enemies) e.removeFrom(scene);
+        enemies = [];
+        spawnWave();   // next level (spawnWave rebuilds walls/generators/exit)
+      }
+    }
+  }
 
   // TOKOTRON civilians (v148): wander, get rescued by touch (chain pays
   // 1000 × chain, Robotron-style), or die to any enemy that reaches them.
@@ -4604,7 +4871,7 @@ function loop() {
   // flight (_roomSwap / roomFadeT) — the old room's dead enemies linger until
   // spawnWave, so the clear could re-fire mid-fade, double-paying the bonus
   // and (in gauntlets) cascading through the whole room script instantly.
-  if (gameState === 'playing' && !exitPhase && waveGapT <= 0 &&
+  if (gameState === 'playing' && !exitPhase && waveGapT <= 0 && !gaundropMode &&
       !_roomSwap && roomFadeT <= 0 &&
       enemies.length > 0 &&
       enemies.every(e => !e.alive && !e._dying) &&
@@ -4717,6 +4984,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=102').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=103').catch(() => {});
   });
 }
