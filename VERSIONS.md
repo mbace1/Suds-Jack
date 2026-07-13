@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v143 — 2026-07-13
+**CLOAKER — enemy #21, the ambusher (roadmap M4, third in order)**
+- **CLOAKER** (ice-blue blob, wave 9+, cost 4): lingers a beat at full presence, then **fades to a faint shimmer** and runs to a flank point ~90° around you at mid range. There it **decloaks over 0.6 s** — opacity ramps back with a strobing teal glow, the tell — and fires one aimed 3-shot burst, then repeats. Punishes tunnel vision; rewards watching for ripples
+- **Cloaked bodies can still be hit** — tracking the shimmer pays. Counts as a tactical shooter (capped, spaced, entrance "!" ping); TEST MODE meets it at wave 1
+- Cache-bust `?v=96` → `?v=97`; HUD label → v143
+
+---
+
 ## v142 — 2026-07-13
 **TEST MODE — a playtest workbench toggle (OPTIONS → DEV)**
 - **TEST MODE toggle** (persisted `tokoDropTest`, en/ja/fi): every enemy type unlocks from **wave 1**, and early waves get a wave-8-sized budget floor so the expensive types (WARDEN, SIREN…) actually fit — meet a new design within seconds of pressing start instead of surviving to wave 8

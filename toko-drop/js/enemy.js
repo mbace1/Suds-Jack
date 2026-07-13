@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=96';
+import { TUNING } from './tuning.js?v=97';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -286,6 +286,10 @@ export const EnemyType = {
   // periodically screams a 3 s speed surge into every mob around it. Never
   // attacks; with WARDEN it forms the kill-the-support-first family.
   SIREN:       19,
+  // Ambusher (v143, roadmap M4) — fades to a faint shimmer while it flanks,
+  // decloaks with a 0.6 s glow tell, fires one aimed burst, repeats.
+  // Punishes tunnel vision; cloaked bodies can still be hit if you track them.
+  CLOAKER:     20,
 };
 
 // WARDEN aura radius (world units) — main.js uses it for the damage-immunity
@@ -313,6 +317,7 @@ export const CFG = {
   [EnemyType.WARDEN]:      { color: 0x33ffdd, radius: 0.85, speed: 1.1, hp: 5, bulletColor: null,     fireInterval: null },
   [EnemyType.BULWARK]:     { color: 0x7f93c4, radius: 0.9,  speed: 1.5, hp: 4, bulletColor: null,     fireInterval: null },
   [EnemyType.SIREN]:       { color: 0xbb66ff, radius: 0.75, speed: 1.2, hp: 3, bulletColor: null,     fireInterval: null },
+  [EnemyType.CLOAKER]:     { color: 0x66ddee, radius: 0.7,  speed: 2.4, hp: 3, bulletColor: 0x88eeff, fireInterval: null },
 };
 
 // Scratch colors for the tinted death flash (v132) — no per-death allocation.
@@ -333,7 +338,7 @@ const TRAIL_CFG = {
 export const BLOB_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPITTOR, EnemyType.FANNER,
   EnemyType.WEEVA, EnemyType.SPLITTA, EnemyType.WARDEN, EnemyType.BULWARK,
-  EnemyType.SIREN,
+  EnemyType.SIREN, EnemyType.CLOAKER,
 ]);
 
 const CUBE_TYPES = new Set([
@@ -671,6 +676,14 @@ export class Enemy {
       this._screamT     = 2.5 + Math.random() * 1.5;  // time to next inhale
       this._inhaleT     = 0;
       this._screamReady = false;
+    }
+
+    // CLOAKER (v143): visible → cloak-and-flank → decloak tell → burst.
+    if (type === EnemyType.CLOAKER) {
+      this._ckState = 'visible';
+      this._ckT     = 0.8 + Math.random() * 0.6;
+      this._ckTx = x; this._ckTz = z;
+      this.mat.transparent = true;   // shimmer needs live opacity
     }
 
     // Flopping cube movers — shared tumble state (see _flopMove)
@@ -1067,6 +1080,51 @@ export class Enemy {
         } else {
           this._screamT -= dt;
           if (this._screamT <= 0) this._inhaleT = 0.8;
+        }
+        break;
+      }
+
+      case EnemyType.CLOAKER: {
+        this._ckT -= dt;
+        if (this._ckState === 'visible') {
+          // Linger a beat at full presence, then vanish and pick a flank spot
+          // ~90° around the player at mid range.
+          if (this._ckT <= 0) {
+            this._ckState = 'cloak';
+            this._ckT = 1.8 + Math.random() * 0.6;
+            const side = Math.random() < 0.5 ? 1 : -1;
+            const a0 = Math.atan2(this.position.z - playerPos.z, this.position.x - playerPos.x)
+                     + side * (Math.PI / 2 + Math.random() * 0.6);
+            const r0 = 6.5 + Math.random() * 1.5;
+            this._ckTx = playerPos.x + Math.cos(a0) * r0;
+            this._ckTz = playerPos.z + Math.sin(a0) * r0;
+          }
+        } else if (this._ckState === 'cloak') {
+          // Shimmer-run to the flank point. Still hittable — tracking pays.
+          this._setOpacity(0.14 + 0.05 * Math.sin(this._wobbleT * 9));
+          const mx = this._ckTx - this.mesh.position.x;
+          const mz = this._ckTz - this.mesh.position.z;
+          const ml = Math.hypot(mx, mz);
+          if (ml > 0.3) {
+            this.mesh.position.x += (mx / ml) * spd * dt;
+            this.mesh.position.z += (mz / ml) * spd * dt;
+          }
+          if (this._ckT <= 0 || ml <= 0.3) { this._ckState = 'decloak'; this._ckT = 0.6; }
+        } else { // decloak: the tell — fade back in with a strobing glow
+          const k = 1 - Math.max(this._ckT, 0) / 0.6;
+          this._setOpacity(0.14 + 0.86 * k);
+          this._setEmissive(Math.sin(this._wobbleT * 24) > 0 ? 0x226677 : 0x000000);
+          if (this._ckT <= 0) {
+            this._setOpacity(1.0);
+            this._setEmissive(0x000000);
+            const baseA = Math.atan2(playerPos.z - ez, playerPos.x - ex);
+            for (const off of [-0.18, 0, 0.18]) {
+              bullets.spawnDir(ex, ez, Math.cos(baseA + off), Math.sin(baseA + off),
+                false, cfg.bulletColor, false, this.type);
+            }
+            this._ckState = 'visible';
+            this._ckT = 0.9 + Math.random() * 0.5;
+          }
         }
         break;
       }
