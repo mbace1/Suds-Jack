@@ -7,96 +7,27 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v139 — 2026-07-13
-**Death screen down to two buttons — CONTINUE tells you when it will send**
-- Three buttons (SEND & CONTINUE / SHARE / SKIP) were one too many, and players couldn't tell whether they'd sent. Now ONE primary button: reads **CONTINUE** while nothing is picked, flips live to **SEND & CONTINUE** the moment any chip is tapped or a comment typed — continuing always leaves the screen, and the label says whether feedback goes out (sending no-ops on empty input, exactly as before). SHARE stays; SKIP is gone (Space / Start / B still skip). en/ja/fi
-- **Roadmap: content milestones designed** while the user-gated 1.0 steps wait — M4 enemy & boss expansion (BULWARK / SIREN / CLOAKER / MAGNA, elite affixes with tells, TWIN PRISMS second boss), M5 living arena (gate chains, RISK gates, VAULT/ESCORT objectives, STEAM VENTS / DRAIN / SUDS SURGE hazards, new room kinds), M6 modes & meta (floors, daily modifiers, cursed cards). Real-device pass marked done
-- Cache-bust `?v=92` → `?v=93`; HUD label → v139
-
----
-
-## v138 — 2026-07-13
-**Gates teach themselves: a DASH THROUGH! tag until the move lands once**
-- Players didn't know gates want a dash. Every live gate now carries a pulsing teal **DASH THROUGH!** tag (HUD, same style as the bounty tag) until the player detonates a gate for the first time ever — then it's learned and never shown again (`tokoDropGateUsed`, persisted)
-- Broader gate/environmental-objective redesign and NEW environmental hazards noted on the roadmap (M4) per playtest direction
-- Cache-bust `?v=91` → `?v=92`; HUD label → v138
-
----
-
-## v137 — 2026-07-13
-**Audio controls: announcer volume slider + sustained-fire noise ducking**
-- **ANNOUNCER VOL. slider** (OPTIONS → AUDIO, en/ja/fi, persisted `tokoDropAnnVol`): the spoken announcer AND the recorded intro clip get their own loudness, independent of the master — speech synthesis caps at 1.0 and was tied to master volume, so quiet-SFX setups made the announcer inaudible. Now SFX can sit low while the announcer stays loud (or vice versa); master 0 still mutes everything
-- **Shot-noise ducking**: holding the trigger ducks the per-shot blip smoothly to **50% over ~2.5 s of sustained fire**; half a second without firing resets it. Constant fire stops dominating the mix without touching any other sound
-- Cache-bust `?v=90` → `?v=91`; HUD label → v137
-
----
-
-## v136 — 2026-07-13
-**Three-phase boss, smoother wave transitions, sharper pickup badges**
-- **OMEGA has 3 acts by HP** (was 2): >66% aimed 5-shot fans on a wide orbit · **66–33% NEW rotating twin-arm SPIRAL** — presses to a tighter, faster orbit while sweeping two predictable bullet arms you weave between · <33% the radial-ring rage at 1.45× speed. Each transition strobes the crystal gold for half a second, kicks the camera, plays a two-snarl `phaseShift()` and pops "BOSS PHASE N!" — plus a per-phase emissive tell before every volley (cyan/amber/red)
-- **Wave transitions breathe** (classic + non-card roguelike waves): instead of the next wave slamming in on the same frame the last enemy dies, a **1.5 s breather** follows the clear jingle — a green `WAVE N CLEAR` banner bridges into the next wave banner, and leftover drops stay grabbable through the gap. Non-interrupting (GDD §2): play continues, nothing to click. SMASH TV keeps its exit-walk flow, upgrade-card waves keep the card
-- **Pickup badges sharpened**: glyph textures re-rendered at 96 px with a heavier ring (crisp at play distance), non-weapon badges enlarged 0.68 → 0.8, and all badges now draw **over** everything (`depthTest: false`) so a badge can never hide behind an enemy or door frame
-- Cache-bust `?v=89` → `?v=90`; HUD label → v136
-
----
-
-## v135 — 2026-07-13
-**SMASH TV door telegraphs + entry-door mercy; pickup expiry blink**
-- **Floor chevrons at telegraphing doors**: a red arrow pulses on the floor just inside any door that's about to pour enemies, pointing into the room — readable without looking up at the wall glow. Telegraph window widened 0.9 → 1.4 s so there's time to react
-- **No ambush at your own entrance**: the opening seconds of a room never spawn through the door the player just stepped in from — those spawns (and their telegraphs) remap to the opposite wall
-- **Pickup expiry blink**: pods, cash drops, and orbs blink hard for their last 2.5 s (badge included) so "grab it or lose it" reads at a glance; room-long floor loot never blinks
-- Cache-bust `?v=88` → `?v=89`; HUD label → v135
-
----
-
-## v134 — 2026-07-13
-**Controller menu navigation — every menu is now stick/d-pad navigable**
-- **D-pad or left stick moves a gold focus outline** across whatever menu is up: title chips (ROGUELIKE / DAILY / RUN HISTORY / OPTIONS / language), death-screen feedback chips + SEND/SHARE/SKIP + leaderboard POST, the pause/OPTIONS panel (list items, buttons, and **sliders — left/right adjusts a focused slider**), run history, and roguelike upgrade cards. Focus movement is geometric (nearest element in the pressed direction), so every panel layout works without per-menu wiring
-- **A activates** the focused element; **B backs out** (resume from pause/OPTIONS, close run history, skip feedback on the death screen, unfocus on the title). A still starts the run from the title when nothing is focused; Start keeps all its shortcuts
-- Mouse/touch behavior untouched — the layer only reacts to a connected pad and only in menu states; synthetic activations are non-bubbling so they can never reach the tap-to-start handler
-- Cache-bust `?v=87` → `?v=88`; HUD label → v134
-
----
-
-## v133 — 2026-07-12
-**Strategic layer: BOUNTY targets + CLEANSE foam zones (the anti-hazard) — GDD §9b**
-- **BOUNTY** (every 3rd wave from 4, never boss waves): the wave's first arrival carries a pulsing gold floor ring + a "BOUNTY 8" countdown tag. Kill it inside the window → `1500 + wave×100` cash (×2 under a multiplier), a gold popup, and a **guaranteed weapon pod** at the body — from ANY kill source (everything funnels through `onKill`). Expired = it quietly becomes a normal enemy. Announcer gets bounty lines
-- **CLEANSE foam zone** (every 4th wave from 6, seeded — daily runs get identical placements): a glowing foam pool you WANT to stand in — the deliberate anti-thesis of the poison hazards. Hold your ground inside ~1.2 s (progress ring fills; decays 1.5× when you leave) → full-screen enemy-bullet cleanse paying `500 + 10 per bullet cleared`, foam-spark burst, new `cleanse()` sparkle. Standing still in a bullet-hell IS the price. Ignored zones fade out after 12 s
-- Both are optional, in-action, and non-interrupting (GDD §2); design recorded as **GDD §9b** alongside gates
-- Cache-bust `?v=86` → `?v=87`; HUD label → v133
-
----
-
-## v132 — 2026-07-12
-**Visual feedback round: toned-down death pop, organic poison trails + fizz, glyph badges on every pickup**
-- **Death pop toned down** (user feedback: "large white 2D panels"): dying enemies flashed FULL white while scaling 3.2× — with the flat gel domes and several deaths a frame it strobed. Now the flash is the enemy's own color pulled 40% toward white, the pop grows 2.3×, and opacity fades on a squared curve (mostly transparent by the time it's large)
-- **Poison trails de-squared**: SLIME pools are 18-segment circles (were octagons) with a random rotation + irregular squash; the SLUDGE ribbon's width now undulates per point (organic poured streak instead of a straight-edged band)
-- **Minimalist fumes**: new instanced `BubblePool` (48 cap, droppable FX) — tiny rising, wiggling, popping bubbles fizz off live sludge ribbons and slime pools
-- **Every pickup carries a glyph badge** (was: weapon pods only): `+` HP, `★` invincible, `»` fire-rate, `×2` score multiplier, `$` cash/prizes — smaller and lower than pod glyphs so the field stays readable
-- Cache-bust `?v=85` → `?v=86`; HUD label → v132
-
----
-
-## v131 — 2026-07-12
-**Roadmap M3 complete: trust-based daily leaderboard (needs the Apps Script /exec URL to go live)**
-- **`scripts/leaderboard-sheet.gs`** (new): Apps Script web app, same 3-minute setup as the feedback sink but its own deployment — POST appends a row (initials/score/wave/seed/mode/build) with server-side plausibility caps (score ≤ 2M, wave ≤ 200, initials sanitized to 1-3 A-Z0-9); GET returns the day's top 10 as JSON, cached 60 s. Trust-based by design — documented in the script header
-- **Death-screen DAILY TOP 10** (daily runs only, and ONLY once `LEADERBOARD_ENDPOINT` in `main.js` is set — until then zero UI): the day's board loads above the feedback chips (fails silent offline); posting is explicit — 3-letter initials (remembered in `tokoDropInitials`) + POST SCORE, once per death; your row inserts optimistically, gold-highlighted at its rank
-- en/ja/fi strings
-- Cache-bust `?v=84` → `?v=85`; HUD label → v131
-
----
-
-## v130 — 2026-07-12
-**Roadmap M3: DAILY RUN — everyone plays the same UTC-date seed**
-- **DAILY RUN chip** on the title (gold, under ROGUELIKE, persisted `tokoDropDaily`): while on, every run that day uses the same seed derived from the UTC date (hashed through the PRNG so consecutive days land far apart) — no server needed. Mode toggles stay yours; the run is simply tagged
-- **Daily best** kept per day (`tokoDropDailyBest`, separate from the all-time PB): new best shows a `★ DAILY BEST` badge on the death screen; today's best shows in the chip hint on the title
-- **DAILY tagging everywhere**: HUD seed label reads `DAILY · SEED …` mid-run, death screen shows `DAILY YYYY-MM-DD`, SHARE text includes it, and the feedback payload carries a `daily` field (groundwork for the v131 leaderboard)
-- en/ja/fi strings
-- Cache-bust `?v=83` → `?v=84`; HUD label → v130
+## v140 — 2026-07-13
+**BULWARK — enemy #19, the shield-plate walker (roadmap M4, first in order)**
+- **BULWARK** (steel-blue blob, wave 6+, cost 4): walks straight at you behind a visible steel plate — shots landing on its FRONT arc (~±60° of facing) are shrugged off with a dull `plateTink()` clank + steel sparks, **even piercing shots**. Flank it: the plate turns with a limited turn rate (2.2 rad/s), so a committed side-step or dash-through always opens the back. The positioning counterpart to WARDEN's priority puzzle (per the roadmap's one-mechanic/one-tell rule)
+- The plate IS the tell: a floating steel slab on its front face, glinting brighter as it squares up; it drops the frame the bulwark dies. Blocks ride the same `shieldBlocks` telemetry/chip as the warden
+- Melee contact damage like the blob pack; smoke harness now exercises 19 types
+- Cache-bust `?v=93` → `?v=94`; HUD label → v140
 
 ---
 
 ## Archive
+
+**v131–v139 summary (2026-07-12 – 2026-07-13)**
+- v131: Trust-based daily leaderboard — `scripts/leaderboard-sheet.gs` (plausibility caps, 60 s GET cache) + death-screen DAILY TOP 10 with explicit initials + POST (zero UI until LEADERBOARD_ENDPOINT is set)
+- v132: Visual feedback round — death pop tinted/smaller/faster-fading (no more white panels), organic slime pools + undulating sludge ribbon + BubblePool fumes, glyph badges on every pickup
+- v133: Secondary objectives (GDD §9b) — BOUNTY marked targets (8 s window → cash + guaranteed pod) and CLEANSE foam zones (hold ~1.2 s → full-screen bullet cleanse paying per bullet)
+- v134: Controller menu navigation — geometric gold-outline focus across every menu; A activates, B backs out; sliders adjust with left/right
+- v135: SMASH TV floor chevrons at telegraphing doors (window 0.9→1.4 s), no spawns from the player's entry door in a room's opening seconds, pickup expiry blink (last 2.5 s)
+- v136: OMEGA gained 3 HP-phases (fans / NEW twin-arm spiral / ring rage) with strobing transitions; 1.5 s wave breather with WAVE CLEAR banner; hi-res always-on-top pickup badges (boss act field renamed `_bossPhase` — collided with the wobble-phase offset)
+- v137: ANNOUNCER VOL. slider (independent of master) + sustained-fire shot-noise ducking to 50% over ~2.5 s
+- v138: Gates teach themselves — pulsing DASH THROUGH! tag until the first-ever gate detonation (persisted)
+- v139: Death screen down to two buttons — CONTINUE flips to SEND & CONTINUE when there's anything to send; SKIP removed; content milestones M4–M6 designed on the roadmap; real-device pass done
 
 **v120–v129 summary (2026-07-07 – 2026-07-12)**
 - v120: SMASH TV design round two — risk-priced exits (HEAVY 2×$, pod-poor PRIZE$ rooms), greed prize placement near doors, shooter entrance "!" pings (both modes), room-transition black dip, PWA install (manifest + icons)

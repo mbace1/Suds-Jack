@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=93';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=93';
-import { Player, PLAYER_RADIUS } from './player.js?v=93';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=93';
-import { audio } from './audio.js?v=93';
-import { initDesigner } from './designer.js?v=93';
-import { t, getLang, setLang, langs } from './lang.js?v=93';
-import { TUNING } from './tuning.js?v=93';
+import { InputManager } from './input.js?v=94';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=94';
+import { Player, PLAYER_RADIUS } from './player.js?v=94';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=94';
+import { audio } from './audio.js?v=94';
+import { initDesigner } from './designer.js?v=94';
+import { t, getLang, setLang, langs } from './lang.js?v=94';
+import { TUNING } from './tuning.js?v=94';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -69,7 +69,7 @@ function waveKind(w) {
 // getEnemySchedule uses rng (seeded per run) so every run plays differently.
 function getEnemySchedule(wave) {
   const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
-          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY, WARDEN } = EnemyType;
+          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY, WARDEN, BULWARK } = EnemyType;
   const POOL = [
     // [type, minWave, cost]
     [GLOBBO,      1, 1], [YELA_CUBE,  1, 1], [SPITTOR,    1, 2], [FANNER,     1, 2],
@@ -79,6 +79,7 @@ function getEnemySchedule(wave) {
     [PURP_CUBE,   5, 3], [PYRA,       5, 4], [BOTFLY,     5, 4],
     [TORO,        6, 5],
     [WARDEN,      7, 5],  // v124: shield-bearer — cost keeps it rare, one per wave-ish
+    [BULWARK,     6, 4],  // v140: plate walker — front is bulletproof, flank it
   ];
   const available = POOL.filter(([, min]) => wave >= min);
 
@@ -992,7 +993,7 @@ class DamageNumber {
 
 // ── Melee types ───────────────────────────────────────────────────────────────
 const MELEE_TYPES = new Set([
-  EnemyType.GLOBBO, EnemyType.SPLITTA,
+  EnemyType.GLOBBO, EnemyType.SPLITTA, EnemyType.BULWARK,
   EnemyType.YELA_CUBE, EnemyType.SLUDGE_CUBE, EnemyType.REDD_CUBE, EnemyType.PURP_CUBE,
   EnemyType.REDD_MINI, EnemyType.PURP_MINI,
   EnemyType.TORO,
@@ -1651,6 +1652,7 @@ const ENEMY_LABEL = {
   [EnemyType.OMEGA]:       'Omega boss',
   [EnemyType.BOTFLY]:      'pink Botfly',
   [EnemyType.WARDEN]:      'teal Warden',
+  [EnemyType.BULWARK]:     'steel Bulwark',
 };
 const _cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -2351,7 +2353,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v139', 16, uiCanvas.height - 12);
+  ctx.fillText('v140', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3862,6 +3864,26 @@ function loop() {
       const dx = b.mesh.position.x - e.position.x;
       const dz = b.mesh.position.z - e.position.z;
       if (Math.hypot(dx, dz) < BULLET_R * BULLET_CONFIG.playerBulletScale + e.radius) {
+        // BULWARK plate (v140): shots landing on the FRONT arc (~±60° of its
+        // facing) are shrugged off — flank it. Blocks even piercing shots;
+        // rides the same shieldBlocks telemetry as the warden.
+        if (e.type === EnemyType.BULWARK && e._faceX !== undefined) {
+          const hx = b.mesh.position.x - e.position.x;
+          const hz = b.mesh.position.z - e.position.z;
+          const hl = Math.hypot(hx, hz) || 1;
+          if ((hx / hl) * e._faceX + (hz / hl) * e._faceZ > 0.5) {
+            bullets.recycleAt(i);
+            hit = true;
+            shieldBlockCount++;
+            audio.plateTink();
+            for (let j = 0; j < 3; j++) {
+              const a2 = Math.atan2(hz, hx) + (Math.random() - 0.5) * 1.6;
+              gooChunkPool.spawn(b.mesh.position.x, e.fxY + 0.15, b.mesh.position.z,
+                Math.cos(a2) * 4, 2 + Math.random() * 2, Math.sin(a2) * 4, 0xc7d4f2, 0.08);
+            }
+            break;
+          }
+        }
         // WARDEN shield (v124): enemies inside a living warden's aura shrug
         // bullets off — kill the warden first. Wardens never shield each other
         // or themselves, so the priority target is always killable.
@@ -4272,6 +4294,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=93').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=94').catch(() => {});
   });
 }
