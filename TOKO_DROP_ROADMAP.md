@@ -103,18 +103,22 @@ The cabinet row (each refined individually, in build order):
    flood waves, civilians, rescue chains). Refinement backlog: per-mode high
    score, family variety (mommy/daddy/mikey-style civilian types), brain-like
    converter enemy that turns civilians into hostiles, 2P.
-2. **DUNGEON RUN** *(Gauntlet tribute)* — the room lattice grows corridors +
-   keys + locked doors + food ("the blob needs suds… badly"); enemy
-   generators you must destroy (spawner objects — new enemy family).
-3. **LOADOUT ARENA** *(Re-Loaded tribute)* — pick a loadout (weapon + perk)
+2. **GAUNDROP** *(Gauntlet tribute)* — SHIPPED v149 (v1: torchlit maze
+   levels, wall cover, generators, suds food, exit tiles). Refinement
+   backlog: keys + locked doors, generator spawn telegraphs, exit gating.
+3. **THE BINDING OF TOKO** *(Binding of Isaac tribute, user addition)* —
+   SHIPPED v150 (v1: basement floors on the room lattice, ITEM-room
+   pedestals with free picks, floor bosses paying RARE picks). Refinement
+   backlog: branching door choices, shops, item pools per floor, revisits.
+4. **LOADOUT** *(Re-Loaded tribute)* — pick a loadout (weapon + perk)
    at the door, mission objectives per room (destroy X, defend Y), darker
    palette, heavier weapons feel.
-4. **KAIKKI IRTI** *(Tapan Kaikki 3 tribute)* — top-down carnage economy:
+5. **KAIKKI IRTI 3** *(Tapan Kaikki 3 tribute)* — top-down carnage economy:
    money from everything, a between-mission SHOP (allowed here — GDD §2 only
    protects classic mode), escalating arsenals.
-5. **MACHINA** *(Nex Machina inspired — the final unlockable)* — dash-through
+6. **NEX DEUS** *(Nex Machina inspired — the final unlockable)* — dash-through
    everything, humans to save under a timer, chained secrets, relentless
-   forward pacing. Unlocked by clearing the other four; the crown jewel and
+   forward pacing. Unlocked by clearing the other five; the crown jewel and
    the most polish-demanding.
 
 ## M5b — The living arena (objectives & hazards)
