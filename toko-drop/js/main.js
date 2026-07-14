@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=112';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=112';
-import { Player, PLAYER_RADIUS } from './player.js?v=112';
+import { InputManager } from './input.js?v=113';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=113';
+import { Player, PLAYER_RADIUS } from './player.js?v=113';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=112';
-import { RetroPass } from './retro.js?v=112';
-import { audio } from './audio.js?v=112';
-import { initDesigner } from './designer.js?v=112';
-import { t, getLang, setLang, langs } from './lang.js?v=112';
-import { TUNING } from './tuning.js?v=112';
+         CABINET_STYLE, VIS } from './enemy.js?v=113';
+import { RetroPass } from './retro.js?v=113';
+import { audio } from './audio.js?v=113';
+import { initDesigner } from './designer.js?v=113';
+import { t, getLang, setLang, langs } from './lang.js?v=113';
+import { TUNING } from './tuning.js?v=113';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1271,7 +1271,7 @@ function makeRunRecord() {
   return {
     v: 1,
     score, time: Math.round(runTimer), wave, seed: runSeed,
-    mode: loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
+    mode: kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     orientation: landscapeMode ? 'landscape' : 'portrait',
     date: new Date().toISOString(),
   };
@@ -1322,7 +1322,7 @@ let _gSavedSmash  = null;   // smashMode to restore when the gauntlet ends
 // offer for the next card screen.
 let cabQuest = null;   // { mode, goal, done, mult } while inside a quest
 let questIdx = 0;      // per-run pointer into QUEST_ORDER (advances on accept)
-const QUEST_ORDER = ['gauntlet', 'tokotron', 'gaundrop', 'loadout', 'binding'];
+const QUEST_ORDER = ['gauntlet', 'tokotron', 'gaundrop', 'loadout', 'binding', 'kaikki'];
 // SMASH TV mode (v109): enemies pour in bursts from 4 arena-edge "doors",
 // waves run bigger and burstier, and moths/convoys drop more prizes.
 let smashMode = localStorage.getItem('tokoDropSmash') === '1';
@@ -1476,7 +1476,7 @@ let gdExit = null;
 let gdKeyHeld = false;    // v156: the key opens the locked exit
 let gdHungerT = 0;        // v156: Gauntlet-style drain — suds food resets it
 let _gdSavedPixel = null, _gdSavedSmash = null;
-const inCabinet = () => tokotronMode || gaundropMode || bindingMode || loadoutMode;
+const inCabinet = () => tokotronMode || gaundropMode || bindingMode || loadoutMode || kaikkiMode;
 function setGaundropLook(on) {
   scene.background.setHex(on ? 0x140a04 : 0x0d0d1a);   // torchlit dark
   floor.visible = !on;
@@ -1701,10 +1701,158 @@ function showLoadoutPicks() {
   document.body.appendChild(panel);
 }
 
+// KAIKKI IRTI 3 (v159, roadmap M5 cabinet #5 — Tapan Kaikki 3 tribute):
+// grim DOS-street carnage. Money from EVERYTHING — kills pay cash, crates
+// pop cash, and between missions THE SHOP sells the escalating arsenal
+// (the sanctioned exception to shooting-stays-Toko: the run's guns are
+// BOUGHT, not dropped — convoys stay home). Kill everything, get paid,
+// buy bigger, repeat.
+let kaikkiMode = false;
+let kkCash = 0;          // the wallet — separate from score, spent in THE SHOP
+let kkDone = false;      // mission cleared, shop pending
+let kkCrates = [];
+let kkBought = new Set(); // weapons already owned this run (one purchase each)
+let _kkSavedSmash = null, _kkSavedPixel = null;
+class KkCrate {
+  constructor(sc, x, z) {
+    this.alive = true;
+    this.x = x; this.z = z;
+    this.hp = 2;
+    this.mat = new THREE.MeshBasicMaterial({ color: 0x6b5233 });
+    this.mesh = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.8, 0.9), this.mat);
+    this.mesh.position.set(x, 0.4, z);
+    this.mesh.rotation.y = Math.random() * 0.6;
+    sc.add(this.mesh);
+  }
+  hit() {
+    this.hp--;
+    this.mat.color.setHex(this.hp > 0 ? 0x8a6a44 : 0x6b5233);
+    if (this.hp <= 0) {
+      this.alive = false;
+      const pu = new Powerup(scene, this.x, this.z, 'score');
+      pu._life = 12;
+      pu._value = 100 + wave * 20;
+      pu.mesh.geometry.dispose();
+      pu.mesh.geometry = CASH_GEO;
+      pu.mat.color.setHex(0x99ee66);
+      powerups.push(pu);
+      for (let j = 0; j < 6; j++) {
+        const a = (j / 6) * Math.PI * 2;
+        chunkPool.spawn(this.x, 0.5, this.z, Math.cos(a) * 3.5, 2.5, Math.sin(a) * 3.5, 0x8a6a44, 0.1);
+      }
+      audio.enemyDieType('cube');
+    }
+  }
+  remove(sc) { sc.remove(this.mesh); this.mesh.geometry.dispose(); this.mat.dispose(); }
+}
+function clearKaikkiLevel() {
+  for (const c of kkCrates) c.remove(scene);
+  kkCrates = [];
+}
+function setKaikkiLook(on) {
+  scene.background.setHex(on ? 0x0d0d0d : 0x0d0d1a);   // wet asphalt
+  floor.visible = !on;
+  border.material.color.setHex(on ? 0xbb2222 : 0x5555cc); // blood-red bounds
+  _FOG.color.setHex(on ? 0x0d0d0d : 0x0d0d1a);
+  scene.fog = _FOG;
+  CABINET_STYLE.mode = on ? 'kaikki' : null;
+  player.setCabinetStyle(on ? 'kaikki' : null);
+}
+function startKaikki() {
+  kaikkiMode = true;
+  kkCash = 0;
+  kkDone = false;
+  kkBought = new Set();
+  _kkSavedSmash = smashMode; smashMode = false;
+  _kkSavedPixel = pixelMode; pixelMode = true;
+  applyPerfMode();
+  setKaikkiLook(true);
+  startGame();
+}
+function exitKaikki() {
+  kaikkiMode = false;
+  clearKaikkiLevel();
+  smashMode = _kkSavedSmash;
+  pixelMode = _kkSavedPixel;
+  applyPerfMode();
+  setKaikkiLook(false);
+  applyArenaMode(landscapeMode);
+}
+// THE SHOP (v159): between every mission. Weapons are one-time buys;
+// supplies restock. Prices are flat — the carnage pays more as you go.
+const KK_SHOP = [
+  { id: 'uzi',     cost: 500,  once: true,  buy: () => { equipWeapon('R');  applyUpgrade('firerate'); } },
+  { id: 'shotgun', cost: 900,  once: true,  buy: () => { equipWeapon('S2'); applyUpgrade('bigbullets'); } },
+  { id: 'laser',   cost: 1200, once: true,  buy: () => { equipWeapon('L');  applyUpgrade('pierce'); } },
+  { id: 'sinko',   cost: 1800, once: true,  buy: () => { equipWeapon('B2'); applyUpgrade('pierce'); applyUpgrade('bigbullets'); } },
+  { id: 'medkit',  cost: 400,  once: false, buy: () => { player.hp = Math.min(player.maxHp, player.hp + 2); } },
+  { id: 'kevlar',  cost: 700,  once: false, buy: () => applyUpgrade('hp') },
+  { id: 'boots',   cost: 600,  once: false, buy: () => applyUpgrade('speed') },
+];
+function showKaikkiShop() {
+  gameState = 'upgrade';
+  const panel = document.createElement('div');
+  panel.id = 'upgrade-panel';
+  panel.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.82);z-index:60;font-family:monospace,sans-serif;color:#fff;overflow-y:auto;';
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:24px;font-weight:bold;margin-bottom:6px;color:#ff5544;text-shadow:0 0 20px #aa1111;';
+  title.textContent = t('kkShop');
+  panel.appendChild(title);
+  const cashLine = document.createElement('div');
+  cashLine.style.cssText = 'font-size:15px;color:#99ee66;margin-bottom:18px;';
+  panel.appendChild(cashLine);
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:640px;';
+  panel.appendChild(row);
+  const paint = () => {
+    cashLine.textContent = `${t('kkCash')}: ${kkCash}`;
+    row.innerHTML = '';
+    for (const item of KK_SHOP) {
+      const owned = item.once && kkBought.has(item.id);
+      const afford = kkCash >= item.cost;
+      const btn = document.createElement('div');
+      btn.dataset.ui = '1';
+      btn.style.cssText = 'background:#1a1210;border:2px solid ' +
+        (owned ? '#333' : afford ? '#bb2222' : '#553333') + ';border-radius:8px;' +
+        'padding:14px 16px;min-width:120px;max-width:150px;text-align:center;' +
+        `cursor:${owned || !afford ? 'default' : 'pointer'};opacity:${owned ? 0.45 : afford ? 1 : 0.6};`;
+      btn.innerHTML = `<div style="font-size:14px;font-weight:bold;margin-bottom:5px;color:#ff8877">${t('kk_' + item.id)}</div>` +
+        `<div style="font-size:11px;opacity:0.7;color:#ffbbaa;margin-bottom:6px">${t('kk_' + item.id + '_d')}</div>` +
+        `<div style="font-size:13px;color:${owned ? '#666' : '#99ee66'}">${owned ? t('kkOwned') : '₵' + item.cost}</div>`;
+      if (!owned && afford) {
+        btn.addEventListener('pointerdown', e => {
+          e.stopPropagation();
+          kkCash -= item.cost;
+          if (item.once) kkBought.add(item.id);
+          item.buy();
+          audio.pickup();
+          paint();
+        });
+      }
+      row.appendChild(btn);
+    }
+  };
+  paint();
+  const go = document.createElement('div');
+  go.dataset.ui = '1';
+  go.textContent = t('kkNext');
+  go.style.cssText = 'margin-top:22px;pointer-events:auto;cursor:pointer;user-select:none;' +
+    'font-size:16px;font-weight:bold;padding:12px 34px;border-radius:8px;' +
+    'background:rgba(187,34,34,0.2);border:2px solid #ff5544;color:#ffddcc;text-shadow:0 0 12px #aa1111;';
+  go.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    panel.remove();
+    gameState = 'playing';
+    spawnWave();
+  });
+  panel.appendChild(go);
+  document.body.appendChild(panel);
+}
+
 // Cabinet row (v153): the arcade cabinets are a single-select MOD — picked on
 // the title's cabinet row or in OPTIONS right under SMASH TV, only one armed
 // at a time. TAP TO START then plays the selected cabinet (OFF = classic).
-const CABINETS = ['tokotron', 'gaundrop', 'binding', 'loadout'];
+const CABINETS = ['tokotron', 'gaundrop', 'binding', 'loadout', 'kaikki'];
 let cabinetSel = (() => {
   const v = localStorage.getItem('tokoDropCabinet');
   return CABINETS.includes(v) ? v : null;
@@ -1718,6 +1866,7 @@ function startRun() {
   else if (cabinetSel === 'gaundrop') startGaundrop();
   else if (cabinetSel === 'binding')  startBinding();
   else if (cabinetSel === 'loadout')  startLoadout();
+  else if (cabinetSel === 'kaikki')   startKaikki();
   else startGame();
 }
 
@@ -1769,6 +1918,7 @@ function applyPerfMode() {
   // trick survives only as the PIXEL PREVIEW dev profile.
   const cab = tokotronMode ? 'tokotron' : gaundropMode ? 'gaundrop'
             : bindingMode  ? 'binding'  : loadoutMode ? 'loadout'
+            : kaikkiMode   ? 'kaikki'
             : pixelMode ? 'preview' : null;
   retro.setCabinet(cab, renderer);
   renderer.setPixelRatio(Math.min(devicePixelRatio, perfMode ? 1.25 : 2));
@@ -1776,7 +1926,7 @@ function applyPerfMode() {
   VIS.hz = (cab && cab !== 'preview') ? 12 : 0;   // sprite-era stepped visuals
   // v129: the 1024² shadow pass is the third big GPU cost — drop it too.
   // Flat-lit cabinets (vector/NES) never want shadows either (v151).
-  sun.castShadow = !perfMode && cab !== 'tokotron' && cab !== 'gaundrop' && cab !== 'loadout';
+  sun.castShadow = !perfMode && cab !== 'tokotron' && cab !== 'gaundrop' && cab !== 'loadout' && cab !== 'kaikki';
   const M = TUNING.material;
   if (perfMode) {
     if (!_perfSavedTrans) {
@@ -1870,6 +2020,7 @@ function onKill(e) {
     pu._life = 6.0;
     powerups.push(pu);
   }
+  if (kaikkiMode) kkCash += Math.round(10 + e.radius * 20);   // v159: every body pays
   streakFlashT = STREAK_FLASH_DUR;
   addShake(0.07 + e.radius * 0.13);  // heavier enemies kick the camera harder
   const _cat = BLOB_TYPES.has(e.type) || e.type === EnemyType.BOTFLY ? 'blob'
@@ -1941,7 +2092,7 @@ function saveHitLog() {
   const KEY = 'tokoDropHitLog';
   const sessions = JSON.parse(localStorage.getItem(KEY) || '[]');
   sessions.unshift({
-    seed: runSeed, mode: loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
+    seed: runSeed, mode: kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     waveReached: wave, date: new Date().toISOString(),
     events: hitEventLog,
   });
@@ -2214,7 +2365,7 @@ function saveFeedback(selectedIds, selectedLabels, comment, likedIds = [], liked
   const isFix = !!comment && comment.toLowerCase().includes('fix');
   list.unshift({
     date: new Date().toISOString(),
-    seed: runSeed, mode: loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
+    seed: runSeed, mode: kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     wave, time: Math.round(runTimer), score,
     reasons: selectedLabels, reasonIds: selectedIds,
     liked: likedLabels, likedIds,
@@ -2761,6 +2912,24 @@ function drawHUD() {
     ctx.restore();
   }
 
+  // KAIKKI IRTI 3 line (v159): the one objective + the wallet.
+  if (kaikkiMode && gameState === 'playing') {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 15px monospace, sans-serif';
+    ctx.shadowColor = '#bb2222';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = '#ff6655';
+    const left = enemies.reduce((n2, e) => n2 + (e.alive ? 1 : 0), 0) + pendingSpawns.length;
+    ctx.fillText(kkDone ? 'STREETS CLEARED' : `KILL EVERYTHING — ${left} LEFT`,
+      uiCanvas.width / 2, 26);
+    ctx.font = 'bold 13px monospace, sans-serif';
+    ctx.shadowColor = '#336622';
+    ctx.fillStyle = '#99ee66';
+    ctx.fillText(`₵ ${kkCash}`, uiCanvas.width / 2, 44);
+    ctx.restore();
+  }
+
   // GAUNDROP line (v156): level + lock state, and the hunger clock when it
   // gets loud. Canvas HUD stays English (lang.js header rule).
   if (gaundropMode && gameState === 'playing' && gdExit) {
@@ -2872,7 +3041,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v158', 16, uiCanvas.height - 12);
+  ctx.fillText('v159', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3059,8 +3228,9 @@ function showTitle() {
     gaundrop: ['#cc8833', '#ffbb66', '#aa6611'],
     binding:  ['#cc4466', '#ff99bb', '#cc2255'],
     loadout:  ['#77cc33', '#bbff77', '#55aa11'],
+    kaikki:   ['#bb2222', '#ff6655', '#aa1111'],
   };
-  const CAB_SHORT = { tokotron: 'TOKOTRON', gaundrop: 'GAUNDROP', binding: 'BINDING', loadout: 'LOADOUT' };
+  const CAB_SHORT = { tokotron: 'TOKOTRON', gaundrop: 'GAUNDROP', binding: 'BINDING', loadout: 'LOADOUT', kaikki: 'KAIKKI 3' };
   const cabRow = document.createElement('div');
   cabRow.style.cssText = 'display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:12px;max-width:340px;margin-left:auto;margin-right:auto;';
   const cabHint = document.createElement('div');
@@ -3308,7 +3478,7 @@ function buildDailyLeaderboard(slot) {
       body: JSON.stringify({
         initials, score, wave, daily: _dailyRun,
         seed: runSeed.toString(16).toUpperCase().padStart(6, '0'),
-        mode: `${loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}`,
+        mode: `${kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}`,
         build: new URL(import.meta.url).searchParams.get('v') ?? '?',
       }),
     }).catch(() => {});
@@ -3621,7 +3791,7 @@ function spawnWave() {
   const { speedMult, intervalMult } = getWaveScale(wave);
   // Binding fight rooms use the cabinet's own roster (v157) — only BOSS
   // rooms keep the smash schedule (tokotron/gaundrop build their own floods).
-  const list = (tokotronMode || gaundropMode || loadoutMode ||
+  const list = (tokotronMode || gaundropMode || loadoutMode || kaikkiMode ||
                 (bindingMode && smashRoomKind !== 'boss')) ? [] : getEnemySchedule(wave);
   waveDuration = ROUND_DUR;
   waveTimer    = 0;
@@ -3975,6 +4145,60 @@ function spawnWave() {
     clusterSpawnAt = [];
   }
 
+  // KAIKKI IRTI 3 missions (v159): city blocks, crates, and a crowd to
+  // kill. Every mission is KILL EVERYTHING — the pay is the point: kills
+  // fill the wallet, crates pop cash, THE SHOP opens when the street is
+  // quiet. No convoys, no pods — the arsenal is bought.
+  if (kaikkiMode) {
+    clearGaundropLevel();
+    clearKaikkiLevel();
+    kkDone = false;
+    // city blocks: two loose rows of buildings, streets between
+    const wallMat = () => new THREE.MeshBasicMaterial({ color: 0x2a2a2e });
+    const nBld = 3 + Math.floor(rng() * 3);
+    for (let i = 0; i < nBld; i++) {
+      const hx = 1.6 + rng() * 1.6, hz = 1.3 + rng() * 1.4;
+      const bx = (rng() * 2 - 1) * (HALF_X - hx - 3);
+      const bz = ((i % 2 === 0 ? -1 : 1) * (0.35 + rng() * 0.35)) * (HALF_Z - hz - 3);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(hx * 2, 1.6, hz * 2), wallMat());
+      mesh.position.set(bx, 0.8, bz);
+      scene.add(mesh);
+      gdWalls.push({ mesh, x: bx, z: bz, hx, hz });
+    }
+    // crates in the alleys — every one is money
+    const nCrate = 6 + Math.floor(rng() * 4);
+    for (let i = 0; i < nCrate; i++) {
+      let cx2, cz2, tries = 0;
+      do {
+        cx2 = (rng() * 2 - 1) * (HALF_X - 2);
+        cz2 = (rng() * 2 - 1) * (HALF_Z - 2);
+      } while (gdInsideWall(cx2, cz2, 1.0) && ++tries < 20);
+      kkCrates.push(new KkCrate(scene, cx2, cz2));
+    }
+    // you, at the south end of the street
+    player.mesh.position.set(0, player.mesh.position.y, HALF_Z - 2.2);
+    player.grantInvincibility(1.0);
+    // the crowd — big, mixed, pouring in from all over
+    const n = Math.min(30, 8 + wave * 3);
+    for (let i = 0; i < n; i++) {
+      let px, pz, tries = 0;
+      do {
+        px = (rng() * 2 - 1) * (HALF_X - 1.5);
+        pz = (rng() * 2 - 1) * (HALF_Z - 1.5);
+      } while ((gdInsideWall(px, pz, 0.8) ||
+                Math.hypot(px - player.position.x, pz - player.position.z) < 6) && ++tries < 20);
+      const roll = rng();
+      const ty = roll < 0.42 ? EnemyType.GLOBBO
+               : roll < 0.60 ? EnemyType.YELA_CUBE
+               : roll < 0.78 ? EnemyType.ORANGE_CUBE
+               : roll < 0.90 ? EnemyType.REDD_MINI
+               : (wave >= 3 ? EnemyType.SPITTOR : EnemyType.GLOBBO);
+      pendingSpawns.push({ type: ty, delay: 0.2 + i * 0.05, px, pz,
+        angle: 0, shooter: false, clusterOffset: null, speedMult, intervalMult });
+    }
+    clusterSpawnAt = [];
+  }
+
   // TOKOTRON remake (v155): full Robotron pacing — the ENTIRE wave
   // materializes AT ONCE around a recentered player (no trickle, a beat of
   // spawn grace), running the cabinet's own roster on scripted 8-wave loops:
@@ -4112,6 +4336,10 @@ function spawnWave() {
     waveIntroT = waveIntroDur = 1.2;
     waveIntroText  = `GAUNDROP — LEVEL ${wave}`;
     waveIntroColor = '#ffaa44';
+  } else if (kaikkiMode) {
+    waveIntroT = waveIntroDur = 1.3;
+    waveIntroText  = `KAIKKI IRTI — MISSION ${wave}`;
+    waveIntroColor = '#ff5544';
   } else if (loadoutMode) {
     waveIntroT = waveIntroDur = 1.4;
     waveIntroText = `MISSION ${wave} — ` +
@@ -4337,6 +4565,13 @@ function startCabQuest(mode) {
     _loSavedSmash = smashMode; smashMode = false;
     applyPerfMode();
     setLoadoutLook(true);      // no door pick inside a quest: bring your build
+  } else if (mode === 'kaikki') {
+    kaikkiMode = true;
+    kkDone = false;
+    _kkSavedSmash = smashMode; smashMode = false;
+    _kkSavedPixel = pixelMode; pixelMode = true;
+    applyPerfMode();
+    setKaikkiLook(true);
   } else if (mode === 'binding') {
     bindingMode = true;
     bindingRoomN = 1; bindingFloor = 1;
@@ -4370,6 +4605,9 @@ function exitCabQuest() {
     clearGaundropLevel();        // loadout's walls/generators live in gd arrays
     loObjective = null; loDone = false;
     exitLoadout();
+  } else if (m === 'kaikki') {
+    clearGaundropLevel();      // the city blocks live in the wall kit
+    exitKaikki();
   } else if (m === 'binding') {
     exitBinding();
     smashRoomKind = null;
@@ -4455,6 +4693,7 @@ function returnToTitle() {
   if (gaundropMode) exitGaundrop();   // v149: same deal for the dungeon
   if (bindingMode) exitBinding();     // v150: and the basement
   if (loadoutMode) exitLoadout();     // v152: and the armory
+  if (kaikkiMode) exitKaikki();       // v159: and the streets
   clearFX();
   for (const e of enemies) e.removeFrom(scene);
   enemies = [];
@@ -4873,6 +5112,52 @@ function loop() {
       if (e.type === EnemyType.FLIT) continue;                               // flies clear
       const c = gdResolveWalls(e.position.x, e.position.z, e.radius * 0.8);
       e.position.x = c.x; e.position.z = c.z;
+    }
+  }
+
+  // KAIKKI IRTI 3 runtime (v159): crates take bullets and pay out,
+  // buildings block everything, and a quiet street opens THE SHOP.
+  if (kaikkiMode && player.alive && gameState === 'playing') {
+    for (let bi = bullets.active.length - 1; bi >= 0; bi--) {
+      const b = bullets.active[bi];
+      if (b.isPlayer) {
+        let ate = false;
+        for (const c of kkCrates) {
+          if (c.alive && Math.abs(b.mesh.position.x - c.x) < 0.7 && Math.abs(b.mesh.position.z - c.z) < 0.7) {
+            bullets.recycleAt(bi); c.hit(); ate = true; break;
+          }
+        }
+        if (ate) continue;
+      }
+      if (gdInsideWall(b.mesh.position.x, b.mesh.position.z, 0)) bullets.recycleAt(bi);
+    }
+    for (let i = kkCrates.length - 1; i >= 0; i--) {
+      if (!kkCrates[i].alive) { kkCrates[i].remove(scene); kkCrates.splice(i, 1); }
+    }
+    {
+      const c = gdResolveWalls(player.position.x, player.position.z, PLAYER_RADIUS);
+      player.mesh.position.x = c.x; player.mesh.position.z = c.z;
+    }
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      const c = gdResolveWalls(e.position.x, e.position.z, e.radius * 0.8);
+      e.position.x = c.x; e.position.z = c.z;
+    }
+    if (!kkDone) {
+      const alive = enemies.some(e => e.alive) || pendingSpawns.length > 0;
+      if (!alive && enemies.length > 0) {
+        kkDone = true;
+        const bonus = 300 + 150 * wave;
+        kkCash += bonus;
+        score += bonus;
+        milestoneT = 1.4; milestoneText = `MISSION CLEAR! +₵${bonus}`;
+        audio.waveClear();
+        setTimeout(() => {
+          if (!kaikkiMode || gameState !== 'playing') return;
+          if (cabQuest) { cabQuestAdvance(); return; }   // quests skip the shop
+          showKaikkiShop();
+        }, 1300);
+      }
     }
   }
 
@@ -5630,6 +5915,7 @@ function loop() {
         // value: small cash piles, big prizes.
         const gained = (pu._value ?? (250 + wave * 25)) * (scoreMultT > 0 ? 2 : 1) * (gauntlet ? gauntlet.mult : cabQuest ? cabQuest.mult : 1);
         score += gained;
+        if (kaikkiMode) kkCash += gained;   // v159: money is money
         damageNumbers.push(new DamageNumber(pu.x, 1.2, pu.z, `+${gained}`, '255,221,68'));
         audio.announce('money');
       } else if (pu._type === 'scoremult') {
@@ -5678,7 +5964,7 @@ function loop() {
   // flight (_roomSwap / roomFadeT) — the old room's dead enemies linger until
   // spawnWave, so the clear could re-fire mid-fade, double-paying the bonus
   // and (in gauntlets) cascading through the whole room script instantly.
-  if (gameState === 'playing' && !exitPhase && waveGapT <= 0 && !gaundropMode && !loadoutMode &&
+  if (gameState === 'playing' && !exitPhase && waveGapT <= 0 && !gaundropMode && !loadoutMode && !kaikkiMode &&
       !_roomSwap && roomFadeT <= 0 &&
       enemies.length > 0 &&
       enemies.every(e => (tokotronMode && e.type === EnemyType.BRUTE) ||
@@ -5828,6 +6114,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=112').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=113').catch(() => {});
   });
 }

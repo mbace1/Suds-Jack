@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v159 — 2026-07-14
+**KAIKKI IRTI 3 — cabinet #5 (Tapan Kaikki 3 tribute): kill everything, get paid, buy bigger**
+- **KAIKKI 3 chip joins the cabinet row** (blood-red): grim DOS-VGA street look — wet-asphalt black, blood-red bounds, hard-desaturated Lambert bodies, gray-coat player with red dash ghosts, own RetroPass profile (240p nearest, 32-level posterize, faint scanlines)
+- **Money from EVERYTHING** (the reference's soul): every kill pays cash by body size, **crates in the alleys pop cash pickups** (2 hits), cash pickups fill the wallet AND the score, mission clears pay a carnage bonus. The wallet (`₵`) lives on the HUD next to the one objective: **KILL EVERYTHING — N LEFT**
+- **THE SHOP between every mission** (allowed here — GDD §2 only protects classic): weapons are one-time buys, supplies restock — **KONEPISTOOLI** (rapid + fire rate), **HAULIKKO** (spread + big rounds), **LASERI** (laser + pierce), **SINKO** (heavy burst, pierce, huge rounds), MEDKIT / KEVLAR / NITROSAAPPAAT. **No convoys, no pod drops — the arsenal is BOUGHT** (the sanctioned big-weapon exception, user direction)
+- **City-block missions**: buildings block bullets and bodies (streets between), the crowd pours in bigger each mission, SPITTORs join from mission 3
+- Roguelike B gold card rotation gains **KAIKKI IRTI HIT** (clear 2 street missions; quests skip the shop); cabinet row, OPTIONS cycle, records (`kaikki`), and en/ja/fi strings all wired
+- Cache-bust `?v=112` → `?v=113`; HUD label → v159
+
+---
+
 ## v158 — 2026-07-14
 **LOADOUT remake — assault the compound (cabinet overhaul #4, user direction)**
 - **THE COMPOUND**: every mission is fought around a walled base east of your staging point — a west gate (the assault route), a narrow back gate, and **TURRET emplacements on the inside corners** (more with depth). Random cover walls are gone; the level IS the tactics
