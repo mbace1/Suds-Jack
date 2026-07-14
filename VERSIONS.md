@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v156 — 2026-07-14
+**GAUNDROP remake — a real dungeon crawl (cabinet overhaul #2, user direction)**
+- **Real tile mazes**: every level carves a fresh dungeon on a seeded grid — wide drunkard-walk corridors, three wired-in room clearings, extra loop openings, merged stone runs. You enter at the near corner; the **exit waits at the far one, LOCKED from level 2 — find the KEY** (red tile flips gold, `LOCKED — FIND THE KEY` pings if you jump the gun)
+- **Two cabinet-only enemies**: **GHOST** — one-hit shroud that streams straight at you and spends itself ON you (1 HP each, no score; the stream is the threat); **WRAITH** (level 3+) — the dungeon's dread: phases THROUGH walls, bullets pass through it, costs 1 HP on touch then dissipates. Route around it or feed it and run
+- **Generators pour ghosts** (faster with depth, per-generator rate), **BAMBU lobbers** arc shots over the walls from level 2, deeper levels add REDD_MINI generators
+- **Hunger drain** (the reference's signature): the dungeon ticks you down — starving costs 1 HP with a `STARVING — EAT SUDS!` warning; **suds food = time** (resets the clock, HUD shows a pulsing countdown under 10 s). **POTION** pickup clears the whole floor (generators excepted)
+- HUD level line (`LEVEL N — FIND THE KEY / EXIT OPEN`); tester lists both new types; shooting + dash untouched
+- Cache-bust `?v=109` → `?v=110`; HUD label → v156
+
+---
+
 ## v155 — 2026-07-14
 **TOKOTRON remake — its own roster, its own pacing (cabinet overhaul #1, user direction)**
 - **Robotron pacing for real**: the ENTIRE wave materializes AT ONCE around a recentered player (spawn flashes, 1.4 s of grace, no trickle) on **scripted 8-wave loops** that escalate per loop — brute waves, minder waves, orb hells all have their own beat

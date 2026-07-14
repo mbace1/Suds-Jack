@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=109';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=109';
-import { Player, PLAYER_RADIUS } from './player.js?v=109';
+import { InputManager } from './input.js?v=110';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=110';
+import { Player, PLAYER_RADIUS } from './player.js?v=110';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=109';
-import { RetroPass } from './retro.js?v=109';
-import { audio } from './audio.js?v=109';
-import { initDesigner } from './designer.js?v=109';
-import { t, getLang, setLang, langs } from './lang.js?v=109';
-import { TUNING } from './tuning.js?v=109';
+         CABINET_STYLE, VIS } from './enemy.js?v=110';
+import { RetroPass } from './retro.js?v=110';
+import { audio } from './audio.js?v=110';
+import { initDesigner } from './designer.js?v=110';
+import { t, getLang, setLang, langs } from './lang.js?v=110';
+import { TUNING } from './tuning.js?v=110';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -802,7 +802,7 @@ const WEAPON_PODS = {
 // case a pod is ever re-added.
 const LV1_WEAPONS = ['S', 'B', 'L', 'R'];
 const LV2_WEAPONS = ['S2', 'B2', 'L2', 'R2'];
-const NON_WEAPON_COLORS = { hp: 0xff4466, invincible: 0xffffff, firerate: 0xff88aa, scoremult: 0xffdd22, score: 0x88ff88, item: 0xff88bb };
+const NON_WEAPON_COLORS = { hp: 0xff4466, invincible: 0xffffff, firerate: 0xff88aa, scoremult: 0xffdd22, score: 0x88ff88, item: 0xff88bb, key: 0xffd700, potion: 0x66d9ff };
 
 function randomWeaponPodId(lv2Allowed = false) {
   if (lv2Allowed && Math.random() < 0.28) return LV2_WEAPONS[Math.floor(Math.random() * LV2_WEAPONS.length)];
@@ -840,7 +840,7 @@ const CASH_GEO  = new THREE.BoxGeometry(0.55, 0.2, 0.4);
 const PRIZE_GEO = new THREE.BoxGeometry(0.62, 0.62, 0.62);
 // v132: glyph badges for the non-weapon pickups (weapon pods show their id).
 const NON_WEAPON_GLYPHS = {
-  hp: '+', invincible: '★', firerate: '»', scoremult: '×2', score: '$', item: '?',
+  hp: '+', invincible: '★', firerate: '»', scoremult: '×2', score: '$', item: '?', key: 'K', potion: '✦',
 };
 
 class Powerup {
@@ -1013,6 +1013,8 @@ const MELEE_TYPES = new Set([
   EnemyType.YELA_CUBE, EnemyType.SLUDGE_CUBE, EnemyType.REDD_CUBE, EnemyType.PURP_CUBE,
   EnemyType.REDD_MINI, EnemyType.PURP_MINI,
   EnemyType.TORO,
+  EnemyType.GRUNT, EnemyType.BRUTE,                 // v155 tokotron
+  EnemyType.GHOST, EnemyType.WRAITH,                // v156 gaundrop
 ]);
 const BLOB_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPITTOR, EnemyType.FANNER, EnemyType.WEEVA, EnemyType.SPLITTA,
@@ -1470,6 +1472,8 @@ let gaundropMode = false;
 let gdWalls = [];        // { mesh, x, z, hx, hz } axis-aligned blockers
 let gdGenerators = [];
 let gdExit = null;
+let gdKeyHeld = false;    // v156: the key opens the locked exit
+let gdHungerT = 0;        // v156: Gauntlet-style drain — suds food resets it
 let _gdSavedPixel = null, _gdSavedSmash = null;
 const inCabinet = () => tokotronMode || gaundropMode || bindingMode || loadoutMode;
 function setGaundropLook(on) {
@@ -1506,11 +1510,12 @@ function clearGaundropLevel() {
 }
 const GD_WALL_MAT_COLOR = 0x7a4a22;   // stone-brown
 class Generator {
-  constructor(sc, x, z, type) {
+  constructor(sc, x, z, type, rate = 2.2) {   // v156: ghost gens pour faster, deeper
     this.alive = true;
     this.x = x; this.z = z;
     this.type = type;
     this.hp = 6;
+    this._rate = rate;
     this._spawnT = 1.2 + Math.random();
     this._flashT = 0;
     this.mat = new THREE.MeshBasicMaterial({ color: 0xb06a2a });
@@ -1525,7 +1530,7 @@ class Generator {
     this.mesh.rotation.y += dt * 0.4;
     const aliveCount = enemies.reduce((n, e) => n + (e.alive ? 1 : 0), 0);
     if (this._spawnT <= 0 && aliveCount < 22) {
-      this._spawnT = 2.2 + Math.random() * 1.2;
+      this._spawnT = this._rate + Math.random() * 1.2;
       const a = Math.random() * Math.PI * 2;
       enemies.push(new Enemy(scene, this.type, this.x + Math.cos(a) * 1.4, this.z + Math.sin(a) * 1.4));
     }
@@ -2742,6 +2747,27 @@ function drawHUD() {
     ctx.restore();
   }
 
+  // GAUNDROP line (v156): level + lock state, and the hunger clock when it
+  // gets loud. Canvas HUD stays English (lang.js header rule).
+  if (gaundropMode && gameState === 'playing' && gdExit) {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 15px monospace, sans-serif';
+    ctx.shadowColor = '#cc8833';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = '#ffbb66';
+    ctx.fillText(`LEVEL ${wave} — ${gdExit.locked ? 'FIND THE KEY' : 'EXIT OPEN'}`,
+      uiCanvas.width / 2, 26);
+    if (gdHungerT < 10) {
+      ctx.font = 'bold 13px monospace, sans-serif';
+      ctx.shadowColor = '#ff3322';
+      ctx.fillStyle = Math.sin(performance.now() * 0.012) > 0 ? '#ff5544' : '#ffaa88';
+      ctx.fillText(`HUNGRY — EAT SUDS!  ${Math.max(0, gdHungerT).toFixed(0)}s`,
+        uiCanvas.width / 2, 62);
+    }
+    ctx.restore();
+  }
+
   // CABINET QUEST tag (v154): live multiplier + beats, top-center.
   if (cabQuest && gameState === 'playing') {
     ctx.save();
@@ -2832,7 +2858,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v155', 16, uiCanvas.height - 12);
+  ctx.fillText('v156', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3636,81 +3662,140 @@ function spawnWave() {
     gates.push(new Gate(scene));
   }
 
-  // GAUNDROP (v149): a level, not a wave — maze walls, generators pouring
-  // bodies until destroyed, suds food (+1 HP), treasure, and the exit tile.
-  // Escape is always legal; deeper levels grow more generators and walls.
+  // GAUNDROP remake (v156): a REAL tile dungeon per level — drunkard-walk
+  // corridors + room clearings carved on a seeded grid, merged stone runs,
+  // the player at the near corner and a LOCKED exit at the far one (find the
+  // KEY from level 2). Generators pour GHOST streams (faster with depth),
+  // BAMBU lobbers arc over the walls, a wall-phasing WRAITH haunts level 3+,
+  // suds food fights the hunger drain, and a POTION clears the floor.
   if (gaundropMode) {
     clearGaundropLevel();
     const lvl = wave;
-    // Maze: 3-6 straight stone runs, seeded, clear of the outer ring so the
-    // border lane always connects everything (no seals possible).
-    const nWalls = Math.min(6, 2 + lvl);
+    gdKeyHeld = false;
+    gdHungerT = 32;
+    // ── carve the maze ──
+    const cols = Math.max(9, Math.floor((HALF_X * 2 - 2) / 2.4));
+    const rows = Math.max(7, Math.floor((HALF_Z * 2 - 2) / 2.4));
+    const cw = (HALF_X * 2 - 2) / cols, ch = (HALF_Z * 2 - 2) / rows;
+    const cX = i => -HALF_X + 1 + (i + 0.5) * cw;
+    const cZ = j => -HALF_Z + 1 + (j + 0.5) * ch;
+    const open = Array.from({ length: cols }, () => new Array(rows).fill(false));
+    const carve = (i, j) => { if (i >= 0 && i < cols && j >= 0 && j < rows) open[i][j] = true; };
+    const walk = (i0, j0, i1, j1) => {   // wide drunkard's walk — guaranteed arrival
+      let i = i0, j = j0, guard = 0;
+      carve(i, j);
+      while ((i !== i1 || j !== j1) && guard++ < 500) {
+        if (rng() < 0.5) i += Math.sign(i1 - i) || (rng() < 0.5 ? 1 : -1);
+        else             j += Math.sign(j1 - j) || (rng() < 0.5 ? 1 : -1);
+        i = Math.max(0, Math.min(cols - 1, i));
+        j = Math.max(0, Math.min(rows - 1, j));
+        carve(i, j); carve(i + 1, j);
+      }
+    };
+    const pi = 1, pj = 1, xi = cols - 2, xj = rows - 2;
+    walk(pi, pj, xi, xj);
+    walk(pi, pj, xi, 1);
+    walk(pi, pj, 1, xj);
+    for (let r = 0; r < 3; r++) {        // room clearings, each wired in
+      const ri = 1 + Math.floor(rng() * (cols - 4));
+      const rj = 1 + Math.floor(rng() * (rows - 4));
+      for (let a = 0; a < 3; a++) for (let b = 0; b < 2; b++) carve(ri + a, rj + b);
+      walk(pi, pj, ri + 1, rj);
+    }
+    for (let n = Math.floor(cols * rows * 0.10); n > 0; n--) {  // loops, not tubes
+      carve(Math.floor(rng() * cols), Math.floor(rng() * rows));
+    }
+    // ── merged stone runs from closed cells ──
     const wallMat = () => new THREE.MeshBasicMaterial({ color: GD_WALL_MAT_COLOR });
-    for (let i = 0; i < nWalls; i++) {
-      const horiz = rng() < 0.5;
-      const len = 3.5 + rng() * 4.5;
-      const hx = horiz ? len / 2 : 0.5;
-      const hz = horiz ? 0.5 : len / 2;
-      const wx = (rng() * 2 - 1) * (HALF_X - hx - 3.2);
-      const wz = (rng() * 2 - 1) * (HALF_Z - hz - 3.2);
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(hx * 2, 1.1, hz * 2), wallMat());
-      mesh.position.set(wx, 0.55, wz);
-      scene.add(mesh);
-      gdWalls.push({ mesh, x: wx, z: wz, hx, hz });
+    for (let j = 0; j < rows; j++) {
+      let run = -1;
+      for (let i = 0; i <= cols; i++) {
+        const closed = i < cols && !open[i][j];
+        if (closed && run < 0) run = i;
+        if (!closed && run >= 0) {
+          const x0 = cX(run) - cw / 2, x1 = cX(i - 1) + cw / 2;
+          const hx = (x1 - x0) / 2, hz = ch / 2;
+          const wx = (x0 + x1) / 2, wz = cZ(j);
+          const mesh = new THREE.Mesh(new THREE.BoxGeometry(hx * 2, 1.2, hz * 2), wallMat());
+          mesh.position.set(wx, 0.6, wz);
+          scene.add(mesh);
+          gdWalls.push({ mesh, x: wx, z: wz, hx, hz });
+          run = -1;
+        }
+      }
     }
-    // Generators: the level's engine. Types escalate with depth.
-    const genTypes = [EnemyType.GLOBBO, EnemyType.ORANGE_CUBE,
-                      lvl >= 3 ? EnemyType.REDD_MINI : EnemyType.GLOBBO,
-                      lvl >= 5 ? EnemyType.TORO : EnemyType.ORANGE_CUBE];
-    const nGen = Math.min(4, 1 + Math.floor(lvl / 2));
-    for (let i = 0; i < nGen; i++) {
-      let gx, gz, tries = 0;
-      do {
-        gx = (rng() * 2 - 1) * (HALF_X - 2.5);
-        gz = (rng() * 2 - 1) * (HALF_Z - 2.5);
-      } while ((gdInsideWall(gx, gz, 1.2) ||
-                Math.hypot(gx - player.position.x, gz - player.position.z) < 7) && ++tries < 30);
-      gdGenerators.push(new Generator(scene, gx, gz, genTypes[Math.floor(rng() * genTypes.length)]));
-    }
-    // Food + treasure on the open floor (room-long, like smash loot).
-    const nLoot = 3 + Math.floor(rng() * 3);
-    for (let i = 0; i < nLoot; i++) {
-      let lx, lz, tries = 0;
-      do {
-        lx = (rng() * 2 - 1) * (HALF_X - 2);
-        lz = (rng() * 2 - 1) * (HALF_Z - 2);
-      } while (gdInsideWall(lx, lz, 0.8) && ++tries < 20);
-      const pu = new Powerup(scene, lx, lz, rng() < 0.45 ? 'hp' : 'score');
-      pu._life = 999;
-      if (pu._type === 'score') { pu._value = 200 + lvl * 40; pu.mesh.geometry.dispose(); pu.mesh.geometry = CASH_GEO; pu.mat.color.setHex(0xffcc44); }
-      powerups.push(pu);
-    }
-    // The exit: a glowing gold tile, never too close to the player.
+    const openCells = [];
+    for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++)
+      if (open[i][j]) openCells.push([i, j]);
+    const pickCell = (minD = 0) => {
+      for (let t = 0; t < 50; t++) {
+        const [i, j] = openCells[Math.floor(rng() * openCells.length)];
+        if (Math.hypot(cX(i) - cX(pi), cZ(j) - cZ(pj)) >= minD) return [cX(i), cZ(j)];
+      }
+      const [i, j] = openCells[Math.floor(rng() * openCells.length)];
+      return [cX(i), cZ(j)];
+    };
+    // ── you, the exit, the key ──
+    player.mesh.position.set(cX(pi), player.mesh.position.y, cZ(pj));
+    player.grantInvincibility(1.0);
     {
-      let ex, ez, tries = 0;
-      do {
-        ex = (rng() * 2 - 1) * (HALF_X - 2);
-        ez = (rng() * 2 - 1) * (HALF_Z - 2);
-      } while ((gdInsideWall(ex, ez, 1.0) ||
-                Math.hypot(ex - player.position.x, ez - player.position.z) < 10) && ++tries < 30);
-      const mat = new THREE.MeshBasicMaterial({ color: 0xffcc33, transparent: true, opacity: 0.5,
-        blending: THREE.AdditiveBlending, depthWrite: false });
+      const ex = cX(xi), ez = cZ(xj);
+      const locked = lvl >= 2;
+      const mat = new THREE.MeshBasicMaterial({ color: locked ? 0xff4455 : 0xffcc33,
+        transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false });
       const mesh = new THREE.Mesh(new THREE.CircleGeometry(1.1, 20), mat);
       mesh.rotation.x = -Math.PI / 2;
       mesh.position.set(ex, 0.03, ez);
       scene.add(mesh);
-      gdExit = { mesh, mat, x: ex, z: ez };
+      gdExit = { mesh, mat, x: ex, z: ez, locked, _lockPingT: 0 };
+      if (locked) {
+        const [kx, kz] = pickCell(Math.min(HALF_X, HALF_Z));
+        const pu = new Powerup(scene, kx, kz, 'key');
+        pu._life = 999;
+        powerups.push(pu);
+      }
     }
-    // A small welcome party already on the floor.
-    const n0 = Math.min(10, 3 + lvl);
+    // ── generators: the ghost engine ──
+    const nGen = Math.min(5, 1 + Math.floor(lvl / 2));
+    const ghostRate = Math.max(1.1, 1.8 - lvl * 0.06);
+    for (let i = 0; i < nGen; i++) {
+      const [gx, gz] = pickCell(8);
+      const roll = rng();
+      const ty = roll < 0.6 ? EnemyType.GHOST
+               : roll < 0.85 ? EnemyType.ORANGE_CUBE
+               : (lvl >= 4 ? EnemyType.REDD_MINI : EnemyType.GHOST);
+      gdGenerators.push(new Generator(scene, gx, gz, ty, ty === EnemyType.GHOST ? ghostRate : 2.4));
+    }
+    // ── lobbers arc over walls from level 2; the wraith haunts level 3+ ──
+    if (lvl >= 2) {
+      for (let i = 0; i < 1 + (lvl >= 5 ? 1 : 0); i++) {
+        const [bx, bz] = pickCell(9);
+        enemies.push(new Enemy(scene, EnemyType.BAMBU, bx, bz, speedMult, intervalMult));
+      }
+    }
+    if (lvl >= 3) {
+      enemies.push(new Enemy(scene, EnemyType.WRAITH, cX(xi), cZ(1), speedMult, intervalMult));
+    }
+    // ── loot: suds food (the hunger answer), treasure, maybe a potion ──
+    const nLoot = 3 + Math.floor(rng() * 3);
+    for (let i = 0; i < nLoot; i++) {
+      const [lx, lz] = pickCell(4);
+      const pu = new Powerup(scene, lx, lz, rng() < 0.5 ? 'hp' : 'score');
+      pu._life = 999;
+      if (pu._type === 'score') { pu._value = 200 + lvl * 40; pu.mesh.geometry.dispose(); pu.mesh.geometry = CASH_GEO; pu.mat.color.setHex(0xffcc44); }
+      powerups.push(pu);
+    }
+    if (lvl >= 2 && rng() < 0.6) {
+      const [px2, pz2] = pickCell(7);
+      const pu = new Powerup(scene, px2, pz2, 'potion');
+      pu._life = 999;
+      powerups.push(pu);
+    }
+    // ── a welcome party already loose in the halls ──
+    const n0 = Math.min(12, 4 + lvl);
     for (let i = 0; i < n0; i++) {
-      let px, pz, tries = 0;
-      do {
-        px = (rng() * 2 - 1) * (HALF_X - 1.5);
-        pz = (rng() * 2 - 1) * (HALF_Z - 1.5);
-      } while ((gdInsideWall(px, pz, 0.8) ||
-                Math.hypot(px - player.position.x, pz - player.position.z) < 6) && ++tries < 20);
-      pendingSpawns.push({ type: rng() < 0.6 ? EnemyType.GLOBBO : EnemyType.ORANGE_CUBE,
+      const [px, pz] = pickCell(7);
+      pendingSpawns.push({ type: rng() < 0.65 ? EnemyType.GHOST : EnemyType.ORANGE_CUBE,
         delay: 0.2 + i * 0.06, px, pz, angle: 0, shooter: false, clusterOffset: null, speedMult, intervalMult });
     }
     clusterSpawnAt = [];
@@ -4685,13 +4770,23 @@ function loop() {
     }
     for (const e of enemies) {
       if (!e.alive) continue;
+      if (e.type === EnemyType.WRAITH) continue;   // v156: it phases through
       const c = gdResolveWalls(e.position.x, e.position.z, e.radius * 0.8);
       e.position.x = c.x; e.position.z = c.z;
     }
-    // the exit tile: step on it to descend
+    // the exit tile: step on it to descend — if you've earned the key
     if (gdExit) {
       gdExit.mat.opacity = 0.35 + 0.25 * Math.abs(Math.sin(performance.now() * 0.005));
-      if (Math.hypot(player.position.x - gdExit.x, player.position.z - gdExit.z) < 1.1) {
+      gdExit._lockPingT = Math.max(0, (gdExit._lockPingT || 0) - dt);
+      if (gdExit.locked &&
+          Math.hypot(player.position.x - gdExit.x, player.position.z - gdExit.z) < 1.6) {
+        if (gdExit._lockPingT <= 0) {
+          gdExit._lockPingT = 2.0;
+          milestoneT = 1.2; milestoneText = 'LOCKED — FIND THE KEY';
+          audio.shieldTink();
+        }
+      } else if (!gdExit.locked &&
+          Math.hypot(player.position.x - gdExit.x, player.position.z - gdExit.z) < 1.1) {
         score += 1000 * (scoreMultT > 0 ? 2 : 1) * (cabQuest ? cabQuest.mult : 1);
         audio.waveClear();
         pendingSpawns = [];
@@ -4699,6 +4794,17 @@ function loop() {
         enemies = [];
         if (cabQuest) cabQuestAdvance();   // v154: the delve pays out up top
         else spawnWave();   // next level (spawnWave rebuilds walls/generators/exit)
+      }
+    }
+    // Hunger (v156): the dungeon drains you — suds food is the answer.
+    if (gameState === 'playing') {
+      gdHungerT -= dt;
+      if (gdHungerT <= 0) {
+        gdHungerT = 22;
+        milestoneT = 1.4; milestoneText = 'STARVING — EAT SUDS!';
+        if (!player.invincible) {
+          if (tryHitPlayer('starve', null)) triggerGameOver();
+        }
       }
     }
   }
@@ -5053,6 +5159,7 @@ function loop() {
     let hit = false;
     for (const e of enemies) {
       if (!e.alive) continue;
+      if (e.type === EnemyType.WRAITH) continue;   // v156: bullets pass through
       const _piercing = BULLET_CONFIG.playerPiercing || BULLET_CONFIG.playerWeaponPierce;
       if (_piercing && b._hitIds && b._hitIds.has(e)) continue;
       const dx = b.mesh.position.x - e.position.x;
@@ -5244,6 +5351,12 @@ function loop() {
       if (Math.hypot(dx, dz) < e.radius + PLAYER_RADIUS) {
         const died = tryHitPlayer('melee', e.type);
         if (!died && e.type === EnemyType.TORO && e._state === 'dashing') addShake(0.27);
+        // v156: ghosts and wraiths spend themselves on the touch — no score,
+        // no drops, just the death anim (the hit was their payment).
+        if (e.type === EnemyType.GHOST || e.type === EnemyType.WRAITH) {
+          e.hp = 1;
+          e.hit(e.position.x, e.position.z);
+        }
         if (died) { triggerGameOver(); break; }
         break;
       }
@@ -5354,6 +5467,22 @@ function loop() {
         player.grantInvincibility(3.0);
       } else if (pu._type === 'hp') {
         player.hp = Math.min(player.maxHp, player.hp + 1);
+        if (gaundropMode) gdHungerT = Math.max(gdHungerT, 32);   // v156: food = time
+      } else if (pu._type === 'key') {
+        // v156: the far door opens — the tile flips from red to gold.
+        gdKeyHeld = true;
+        if (gdExit) { gdExit.locked = false; gdExit.mat.color.setHex(0xffcc33); }
+        milestoneT = 1.4; milestoneText = 'KEY! THE EXIT IS OPEN';
+        audio.announce('prize');
+      } else if (pu._type === 'potion') {
+        // v156: Gauntlet magic — the whole floor pops (generators excepted).
+        let n = 0;
+        for (const e of enemies) if (e.alive) { e.hp = 1; e.hit(e.position.x, e.position.z); n++; }
+        score += n * 40;
+        addShake(0.5);
+        waveClearFlashT = 0.4;
+        milestoneT = 1.2; milestoneText = 'POTION! THE FLOOR CLEARS';
+        audio.waveClear();
       } else if (pu._type === 'firerate') {
         player.grantFireRateBoost(8.0);
       } else if (pu._type === 'score') {
@@ -5547,6 +5676,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=109').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=110').catch(() => {});
   });
 }

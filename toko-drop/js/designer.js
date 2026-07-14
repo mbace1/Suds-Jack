@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=109';
-import { t } from './lang.js?v=109';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=109';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=110';
+import { t } from './lang.js?v=110';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=110';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -183,6 +183,8 @@ const TYPE_NAMES = {
   [EnemyType.ORB]:         'ORB (tokotron)',
   [EnemyType.PROG]:        'PROG (tokotron)',
   [EnemyType.MINDER]:      'MINDER (tokotron)',
+  [EnemyType.GHOST]:       'GHOST (gaundrop)',
+  [EnemyType.WRAITH]:      'WRAITH (gaundrop)',
 };
 
 const ALL_TYPES = Object.values(EnemyType);
