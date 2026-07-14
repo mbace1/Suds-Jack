@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=110';
-import { nesSnap, NEON } from './retro.js?v=110';
+import { TUNING } from './tuning.js?v=111';
+import { nesSnap, NEON } from './retro.js?v=111';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -356,6 +356,18 @@ export const EnemyType = {
   // it. Touching you costs 1 HP and dissipates it. Route around it — or
   // feed it and run.
   WRAITH:      28,
+  // ── BINDING cabinet roster (v157) — basement-only. Isaac-shaped decisions:
+  // Orbit-fly that spirals in on a shrinking ring; weak alone, wallpaper
+  // in a swarm.
+  FLIT:        29,
+  // Flesh-blob spitter: waddles in pulses, spits a 3-shot arc.
+  SPITTLE:     30,
+  // Bone knight: prowls until you cross its lane (cardinal alignment),
+  // rattles a 0.45 s tell, then charges the full lane. Stunned after.
+  CHARGER:     31,
+  // Leaper: squat tell → ballistic hop at you; harmless while airborne,
+  // dangerous where it lands.
+  HOPPER:      32,
 };
 
 // WARDEN aura radius (world units) — main.js uses it for the damage-immunity
@@ -394,6 +406,11 @@ export const CFG = {
   // GAUNDROP cabinet roster (v156)
   [EnemyType.GHOST]:       { color: 0x9db4c8, radius: 0.42, speed: 3.1, hp: 1, bulletColor: null,     fireInterval: null },
   [EnemyType.WRAITH]:      { color: 0x881133, radius: 0.8,  speed: 1.15, hp: 9999, bulletColor: null, fireInterval: null },
+  // BINDING cabinet roster (v157)
+  [EnemyType.FLIT]:        { color: 0x445566, radius: 0.3,  speed: 2.4, hp: 1, bulletColor: null,     fireInterval: null },
+  [EnemyType.SPITTLE]:     { color: 0xcc7788, radius: 0.6,  speed: 1.2, hp: 3, bulletColor: 0xdd6677, fireInterval: 2.4  },
+  [EnemyType.CHARGER]:     { color: 0xddddcc, radius: 0.62, speed: 1.0, hp: 4, bulletColor: null,     fireInterval: null },
+  [EnemyType.HOPPER]:      { color: 0xbbaa33, radius: 0.5,  speed: 1.6, hp: 2, bulletColor: null,     fireInterval: null },
 };
 
 // Scratch colors for the tinted death flash (v132) — no per-death allocation.
@@ -415,6 +432,7 @@ export const BLOB_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPITTOR, EnemyType.FANNER,
   EnemyType.WEEVA, EnemyType.SPLITTA, EnemyType.WARDEN, EnemyType.BULWARK,
   EnemyType.SIREN, EnemyType.CLOAKER, EnemyType.MAGNA,
+  EnemyType.SPITTLE, EnemyType.HOPPER,   // v157: binding's gel-bodied pair
 ]);
 
 const CUBE_TYPES = new Set([
@@ -524,6 +542,10 @@ export class Enemy {
       geo = new THREE.ConeGeometry(cfg.radius, 0.9, 6);    // little shroud
     } else if (type === EnemyType.WRAITH) {
       geo = new THREE.SphereGeometry(cfg.radius, 10, 8);
+    } else if (type === EnemyType.FLIT) {
+      geo = new THREE.SphereGeometry(cfg.radius, 8, 6);       // hovering mote
+    } else if (type === EnemyType.CHARGER) {
+      geo = new THREE.CylinderGeometry(0.42, cfg.radius, 1.05, 6);  // bone knight
     }
 
     const isBlob = BLOB_TYPES.has(type);
@@ -1400,6 +1422,111 @@ export class Enemy {
         this.mesh.position.x += (ddx / dist) * spd * dt;
         this.mesh.position.z += (ddz / dist) * spd * dt;
         this._setOpacity(0.45 + 0.15 * Math.sin(this._wobbleT * 2.2 + this._phase));
+        break;
+      }
+
+      case EnemyType.FLIT: {
+        // BINDING flit (v157): orbits on a slowly shrinking ring — wallpaper
+        // alone, a closing net in a swarm. Hovers; pops on touch damage rules.
+        this._flitA = (this._flitA ?? Math.random() * Math.PI * 2) + dt * 1.4 * this._orbitSign;
+        this._flitR = Math.max(1.0, (this._flitR ?? 6.5) - dt * 0.45);
+        const txf = playerPos.x + Math.cos(this._flitA) * this._flitR;
+        const tzf = playerPos.z + Math.sin(this._flitA) * this._flitR;
+        const fdx = txf - ex, fdz = tzf - ez;
+        const fl = Math.hypot(fdx, fdz) || 1;
+        const fstep = Math.min(spd * dt, fl);
+        this.mesh.position.x += (fdx / fl) * fstep;
+        this.mesh.position.z += (fdz / fl) * fstep;
+        this.mesh.position.y = 0.7 + 0.15 * Math.sin(this._wobbleT * 3.2 + this._phase);
+        break;
+      }
+
+      case EnemyType.SPITTLE: {
+        // BINDING spittle (v157): waddles in pulses toward mid range and
+        // spits a 3-shot arc — the basement's area-denial.
+        const pulse = Math.sin(this._wobbleT * 2.0 + this._phase) > 0.2;
+        if (pulse && dist > 5) {
+          this.mesh.position.x += (ddx / dist) * spd * dt;
+          this.mesh.position.z += (ddz / dist) * spd * dt;
+        }
+        this._t -= dt;
+        if (this._t <= 0 && dist < 13) {
+          this._t = cfg.fireInterval * this._intervalMult;
+          const a0 = Math.atan2(ddz, ddx);
+          for (const off of [-0.35, 0, 0.35]) {
+            bullets.spawnDir(ex, ez, Math.cos(a0 + off), Math.sin(a0 + off),
+              false, cfg.bulletColor, false, this.type);
+          }
+        }
+        break;
+      }
+
+      case EnemyType.CHARGER: {
+        // BINDING charger (v157): prowls until you cross its lane — a
+        // near-cardinal line to the player arms a 0.45 s rattle tell, then
+        // it charges the lane flat out and stuns itself at the end.
+        this._chT = (this._chT ?? 0) - dt;
+        if (!this._chState) this._chState = 'prowl';
+        if (this._chState === 'prowl') {
+          if (dist > 1.2) {
+            this.mesh.position.x += (ddx / dist) * spd * 0.5 * dt;
+            this.mesh.position.z += (ddz / dist) * spd * 0.5 * dt;
+          }
+          const ang = Math.atan2(ddz, ddx);
+          const snap = Math.round(ang / (Math.PI / 2)) * (Math.PI / 2);
+          if (dist < 15 && Math.abs(ang - snap) < 0.20 && this._chT <= 0) {
+            this._chState = 'wind';
+            this._chT = 0.45;
+            this._chDx = Math.cos(snap); this._chDz = Math.sin(snap);
+          }
+        } else if (this._chState === 'wind') {
+          this._setEmissive(Math.sin(this._wobbleT * 26) > 0 ? 0x664444 : 0x000000);
+          this.mesh.position.x += (Math.random() - 0.5) * 0.06;   // rattle
+          this.mesh.position.z += (Math.random() - 0.5) * 0.06;
+          if (this._chT <= 0) {
+            this._chState = 'charge';
+            this._chT = 1.2;
+            this._setEmissive(0x000000);
+          }
+        } else if (this._chState === 'charge') {
+          this.mesh.position.x += this._chDx * 7.5 * dt;
+          this.mesh.position.z += this._chDz * 7.5 * dt;
+          if (this._chT <= 0) { this._chState = 'stun'; this._chT = 0.8; }
+        } else if (this._chT <= 0) {   // stun over
+          this._chState = 'prowl';
+          this._chT = 0.6;
+        }
+        break;
+      }
+
+      case EnemyType.HOPPER: {
+        // BINDING hopper (v157): squat tell → ballistic hop at you.
+        // Harmless in the air (main.js skips airborne contact); dangerous
+        // where it lands.
+        this._hpT = (this._hpT ?? (0.4 + Math.random() * 0.5)) - dt;
+        if (!this._hpState) this._hpState = 'sit';
+        if (this._hpState === 'sit') {
+          if (this._hpT <= 0) { this._hpState = 'squat'; this._hpT = 0.35; this._sqV -= 0.8; }
+        } else if (this._hpState === 'squat') {
+          if (this._hpT <= 0) {
+            this._hpState = 'air';
+            this._hpT = 0.55;
+            const hop = Math.min(6, dist);
+            this._hopVx = (ddx / dist) * hop / 0.55;
+            this._hopVz = (ddz / dist) * hop / 0.55;
+            this._sqV += 0.7;
+          }
+        } else {   // air
+          this.mesh.position.x += this._hopVx * dt;
+          this.mesh.position.z += this._hopVz * dt;
+          const k = 1 - Math.max(this._hpT, 0) / 0.55;
+          this.mesh.position.y = Math.sin(k * Math.PI) * 1.5;
+          if (this._hpT <= 0) {
+            this._hpState = 'sit';
+            this._hpT = 0.5 + Math.random() * 0.6;
+            this.mesh.position.y = 0;
+          }
+        }
         break;
       }
 

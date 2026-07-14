@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v157 — 2026-07-14
+**BINDING remake — Isaac-shaped rooms, roster, and choices (cabinet overhaul #3, user direction)**
+- **Room layouts**: every fight room draws a seeded ROCK pattern — four pillars, center cross, diagonal ring, flanking bars, or scattered boulders — that blocks bullets and bodies both ways (the dungeon wall kit, applied to the basement)
+- **Four cabinet-only enemies, ALREADY IN THE ROOM when you walk in** (no door pours — the reference's room contract): **FLIT** — hovering mote orbiting a slowly shrinking ring, wallpaper alone, a closing net in a swarm; **SPITTLE** — gel spitter waddling in pulses, 3-shot arcs; **CHARGER** — bone knight that prowls until you cross its lane, rattles a 0.45 s tell, charges flat out, stuns itself; **HOPPER** — squat tell → ballistic hop, harmless in the air, dangerous where it lands. Compositions scale per floor; bosses keep the full smash boss
+- **REAL branching doors**: between the item/boss cadence beats, each exit door rolls its OWN room kind — the door you take is the choice you made (roadmap backlog item)
+- **Hearts economy**: basement kills sometimes drop a fast-fading suds-heart — the item build is the run, hearts keep it alive long enough to matter (cash drops stay out of the basement)
+- Base gun + dash untouched (user: "very similar base gun"); tester lists all four
+- Cache-bust `?v=110` → `?v=111`; HUD label → v157
+
+---
+
 ## v156 — 2026-07-14
 **GAUNDROP remake — a real dungeon crawl (cabinet overhaul #2, user direction)**
 - **Real tile mazes**: every level carves a fresh dungeon on a seeded grid — wide drunkard-walk corridors, three wired-in room clearings, extra loop openings, merged stone runs. You enter at the near corner; the **exit waits at the far one, LOCKED from level 2 — find the KEY** (red tile flips gold, `LOCKED — FIND THE KEY` pings if you jump the gun)
