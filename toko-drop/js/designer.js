@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=106';
-import { t } from './lang.js?v=106';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=106';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=107';
+import { t } from './lang.js?v=107';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=107';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -470,6 +470,36 @@ export function initDesigner({ onResume, settings }) {
     };
     toggleRow(t('smashTV'), settings.getSmash, settings.setSmash,
       t('smashOnH'), t('smashOffH'), '#ffdd66', '#ffcc4466');
+    // ARCADE CABINET (v153): single-select cycle — the tribute cabinets are
+    // mods like SMASH TV, but only one can be armed at a time.
+    {
+      const row = document.createElement('div');
+      row.className = 'drow';
+      const lbl = document.createElement('span');
+      lbl.className = 'dlbl'; lbl.textContent = t('cabRow');
+      const btn = document.createElement('button');
+      btn.className = 'dbtn';
+      const hint = document.createElement('div');
+      hint.className = 'dnote';
+      const ORDER = [null, 'tokotron', 'gaundrop', 'binding', 'loadout'];
+      const COL = { tokotron: '#88f4ff', gaundrop: '#ffbb66', binding: '#ff99bb', loadout: '#bbff77' };
+      const paint = () => {
+        const sel = settings.getCabinet();
+        btn.textContent = sel ? t(sel) : t('off');
+        btn.style.color = sel ? COL[sel] : '#666';
+        btn.style.borderColor = sel ? COL[sel] + '66' : '#1e1e38';
+        hint.textContent = sel ? t(sel + 'H') : t('cabRowH');
+      };
+      paint();
+      btn.addEventListener('click', () => {
+        const sel = settings.getCabinet();
+        settings.setCabinet(ORDER[(ORDER.indexOf(sel) + 1) % ORDER.length]);
+        paint();
+      });
+      row.appendChild(lbl); row.appendChild(btn);
+      el.appendChild(row);
+      el.appendChild(hint);
+    }
     toggleRow(t('announcer'), settings.getAnnouncer, settings.setAnnouncer,
       t('annOnH'), t('annOffH'), '#ff88dd', '#ff66cc66');
     toggleRow(t('introVoice'), settings.getIntroVoice, settings.setIntroVoice,
