@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=108';
-import { nesSnap, NEON } from './retro.js?v=108';
+import { TUNING } from './tuning.js?v=109';
+import { nesSnap, NEON } from './retro.js?v=109';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -331,6 +331,23 @@ export const EnemyType = {
   // alive; a visible tether is the tell, dashing breaks the pull. Movement
   // pressure that stacks dangerously with bullet patterns.
   MAGNA:       21,
+  // ── TOKOTRON cabinet roster (v155) — never in the classic pool; spawned
+  // only by the cabinet's wave scripts (and the smoke harness). Original
+  // designs that emulate the reference's PACING, not its sprites.
+  // Swarm walker that speeds up the longer it lives — the wave's clock.
+  GRUNT:       22,
+  // Unkillable hulk: bullets only shove it. Hunts civilians; waves end
+  // around it. The reason rescue routes matter.
+  BRUTE:       23,
+  // Rim-running seeder: avoids you along the walls while winding up PROG
+  // spawns (strobe tell, max 3) — a priority target you must chase.
+  ORB:         24,
+  // The orb's brood (and what converted civilians become): strafing
+  // hunter-turret with single aimed shots.
+  PROG:        25,
+  // The converter: grapples a civilian for ~1 s (glow tell) and reprograms
+  // it into a hostile PROG. Kill it mid-grapple to break the conversion.
+  MINDER:      26,
 };
 
 // WARDEN aura radius (world units) — main.js uses it for the damage-immunity
@@ -360,6 +377,12 @@ export const CFG = {
   [EnemyType.SIREN]:       { color: 0xbb66ff, radius: 0.75, speed: 1.2, hp: 3, bulletColor: null,     fireInterval: null },
   [EnemyType.CLOAKER]:     { color: 0x66ddee, radius: 0.7,  speed: 2.4, hp: 3, bulletColor: 0x88eeff, fireInterval: null },
   [EnemyType.MAGNA]:       { color: 0xff9944, radius: 0.8,  speed: 0.9, hp: 4, bulletColor: null,     fireInterval: null },
+  // TOKOTRON cabinet roster (v155)
+  [EnemyType.GRUNT]:       { color: 0xff4455, radius: 0.5,  speed: 2.0, hp: 1, bulletColor: null,     fireInterval: null },
+  [EnemyType.BRUTE]:       { color: 0xffaa22, radius: 1.15, speed: 1.0, hp: 9999, bulletColor: null,  fireInterval: null },
+  [EnemyType.ORB]:         { color: 0xff44cc, radius: 0.65, speed: 3.0, hp: 2, bulletColor: null,     fireInterval: null },
+  [EnemyType.PROG]:        { color: 0x66ff88, radius: 0.45, speed: 2.6, hp: 2, bulletColor: 0x88ffcc, fireInterval: 2.0  },
+  [EnemyType.MINDER]:      { color: 0xcc66ff, radius: 0.7,  speed: 1.6, hp: 3, bulletColor: null,     fireInterval: null },
 };
 
 // Scratch colors for the tinted death flash (v132) — no per-death allocation.
@@ -476,6 +499,16 @@ export class Enemy {
       geo = new THREE.IcosahedronGeometry(cfg.radius, 0);
     } else if (type === EnemyType.BOTFLY) {
       geo = new THREE.SphereGeometry(cfg.radius, 12, 9);
+    } else if (type === EnemyType.GRUNT) {
+      geo = new THREE.BoxGeometry(0.62, 1.0, 0.5);     // slim angular walker
+    } else if (type === EnemyType.BRUTE) {
+      geo = new THREE.BoxGeometry(1.9, 2.3, 1.9);      // a wall with a walk
+    } else if (type === EnemyType.ORB) {
+      geo = new THREE.SphereGeometry(cfg.radius, 10, 8);
+    } else if (type === EnemyType.PROG) {
+      geo = new THREE.BoxGeometry(0.5, 0.9, 0.5);      // hovering pillar
+    } else if (type === EnemyType.MINDER) {
+      geo = new THREE.IcosahedronGeometry(cfg.radius, 1);  // knobby brain-dome
     }
 
     const isBlob = BLOB_TYPES.has(type);
@@ -501,7 +534,11 @@ export class Enemy {
       this.mat = makeSatinMat(cfg.color, 'cube', cfg.radius);
     } else {
       // Specialists (v96): TORO wheel, OMEGA crystal — per-family satin looks.
-      this.mat = makeSatinMat(cfg.color, isToro ? 'toro' : 'omega', cfg.radius);
+      // TOKOTRON boxes (v155) borrow the firmer cube family.
+      const fam = isToro ? 'toro'
+        : (type === EnemyType.GRUNT || type === EnemyType.BRUTE || type === EnemyType.PROG) ? 'cube'
+        : 'omega';
+      this.mat = makeSatinMat(cfg.color, fam, cfg.radius);
     }
 
     this.mesh = new THREE.Mesh(geo, this.mat);
@@ -686,7 +723,12 @@ export class Enemy {
     // the "shiny vector" line-work. Shares the body geometry (never dispose it
     // from here) and rides as a child so wobble/scale stay in lockstep.
     if (CABINET_STYLE.mode === 'tokotron' && this.mesh && this.mesh.geometry) {
-      const neonCol = CUBE_TYPES.has(type) ? NEON.cube
+      const neonCol =
+          type === EnemyType.GRUNT  ? NEON.danger
+        : type === EnemyType.BRUTE  ? NEON.heavy
+        : type === EnemyType.ORB    ? NEON.cube
+        : type === EnemyType.MINDER ? NEON.brain
+        : CUBE_TYPES.has(type) ? NEON.cube
         : (type === EnemyType.TORO || type === EnemyType.OMEGA) ? NEON.heavy
         : cfg.bulletColor ? NEON.ranged : NEON.blob;
       this._cabShell = new THREE.Mesh(this.mesh.geometry, new THREE.MeshBasicMaterial({
@@ -1226,6 +1268,96 @@ export class Enemy {
           this._tether.scale.z = Math.max(0.01, dist);
           const want = this._pullActive ? 0.3 + 0.15 * Math.abs(Math.sin(this._wobbleT * 6)) : 0;
           this._tether.material.opacity += (want - this._tether.material.opacity) * 0.25;
+        }
+        break;
+      }
+
+      case EnemyType.GRUNT: {
+        // TOKOTRON grunt (v155): the relentless straight-line walker — and
+        // the wave's clock. Every second alive it steps a little faster
+        // (rising-panic pacing), capped at ~1.9×. No tricks, just arithmetic.
+        this._ageT = (this._ageT || 0) + dt;
+        const ramp = Math.min(1.9, 1 + this._ageT * 0.03);
+        const gait = 0.55 + 0.45 * Math.abs(Math.sin(this._wobbleT * 4.2 + this._phase));
+        if (dist > 0.9) {
+          this.mesh.position.x += (ddx / dist) * spd * ramp * gait * dt;
+          this.mesh.position.z += (ddz / dist) * spd * ramp * gait * dt;
+        }
+        break;
+      }
+
+      case EnemyType.BRUTE: {
+        // TOKOTRON brute (v155): unkillable — bullets only shove it (main.js
+        // feeds _shove impulses). Hunts the civilian main.js marked via
+        // _tX/_tZ; with no one left to menace it plods at you.
+        const tx = this._tX ?? playerPos.x, tz = this._tZ ?? playerPos.z;
+        const bdx = tx - ex, bdz = tz - ez;
+        const bd = Math.hypot(bdx, bdz) || 0.001;
+        if (bd > 0.7) {
+          this.mesh.position.x += (bdx / bd) * spd * dt;
+          this.mesh.position.z += (bdz / bd) * spd * dt;
+        }
+        this.mesh.position.x += (this._shoveX || 0) * dt;
+        this.mesh.position.z += (this._shoveZ || 0) * dt;
+        const dk = Math.max(0, 1 - dt * 6);
+        this._shoveX = (this._shoveX || 0) * dk;
+        this._shoveZ = (this._shoveZ || 0) * dk;
+        break;
+      }
+
+      case EnemyType.ORB: {
+        // TOKOTRON orb (v155): rim-runner that keeps away from you while
+        // winding up PROG spawns (strobe tell, max 3) — chase it down before
+        // it finishes the brood.
+        const away = dist < 9 ? -0.8 : 0;
+        const opX = -ddz / dist, opZ = ddx / dist;
+        this.mesh.position.x += (opX * this._orbitSign + (ddx / dist) * away) * spd * dt;
+        this.mesh.position.z += (opZ * this._orbitSign + (ddz / dist) * away) * spd * dt;
+        // gentle outward pressure so it hugs the rim
+        this.mesh.position.x += Math.sign(ex || 1) * spd * 0.22 * dt;
+        this.mesh.position.z += Math.sign(ez || 1) * spd * 0.22 * dt;
+        this._orbT = (this._orbT ?? (2.0 + Math.random())) - dt;
+        this._orbSpawned = this._orbSpawned || 0;
+        if (this._orbT < 0.8 && this._orbSpawned < 3) {
+          this._setEmissive(Math.sin(this._wobbleT * 22) > 0 ? 0xff44cc : 0x000000);
+        }
+        if (this._orbT <= 0) {
+          this._setEmissive(0x000000);
+          if (this._orbSpawned < 3) { this._progReady = true; this._orbSpawned++; }
+          this._orbT = 3.2;
+        }
+        break;
+      }
+
+      case EnemyType.PROG: {
+        // TOKOTRON prog (v155): the orb's brood — and what converted
+        // civilians become. Strafes a mid-range band, snaps single aimed shots.
+        const wantP = 7;
+        const ppX = -ddz / dist, ppZ = ddx / dist;
+        this._strafeTimer -= dt;
+        if (this._strafeTimer <= 0) { this._strafeDir = -this._strafeDir; this._strafeTimer = 1.6 + Math.random(); }
+        const radP = dist > wantP + 1.5 ? 1 : dist < wantP - 1.5 ? -1 : 0;
+        this.mesh.position.x += (ddx / dist * radP + ppX * this._strafeDir * 0.9) * spd * dt;
+        this.mesh.position.z += (ddz / dist * radP + ppZ * this._strafeDir * 0.9) * spd * dt;
+        this._t -= dt;
+        if (this._t <= 0 && dist < 17) {
+          this._t = cfg.fireInterval * this._intervalMult;
+          const a = Math.atan2(ddz, ddx) + (Math.random() - 0.5) * 0.12;
+          bullets.spawnDir(ex, ez, Math.cos(a), Math.sin(a), false, cfg.bulletColor, false, this.type);
+        }
+        break;
+      }
+
+      case EnemyType.MINDER: {
+        // TOKOTRON minder (v155): the converter — beelines for the civilian
+        // main.js marked (_tX/_tZ); the ~1 s conversion grapple (glow tell)
+        // runs on the main.js side. No civilians left → it comes for you.
+        const mtx = this._tX ?? playerPos.x, mtz = this._tZ ?? playerPos.z;
+        const mdx = mtx - ex, mdz = mtz - ez;
+        const md = Math.hypot(mdx, mdz) || 0.001;
+        if (md > 0.5) {
+          this.mesh.position.x += (mdx / md) * spd * dt;
+          this.mesh.position.z += (mdz / md) * spd * dt;
         }
         break;
       }

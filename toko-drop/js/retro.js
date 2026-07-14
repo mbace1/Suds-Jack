@@ -22,7 +22,7 @@ export const NES_PALETTE = [
 // Tokotron neon set — used by the material dispatch for shells/lines.
 export const NEON = {
   player: 0x00ffff, blob: 0x00ffee, cube: 0xff33cc, heavy: 0xffbb00,
-  ranged: 0x33ff66, danger: 0xff2244, face: 0x070a12,
+  ranged: 0x33ff66, danger: 0xff2244, brain: 0xcc66ff, face: 0x070a12,
 };
 
 export function nesSnap(hex) {

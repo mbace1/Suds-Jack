@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=108';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=108';
-import { Player, PLAYER_RADIUS } from './player.js?v=108';
+import { InputManager } from './input.js?v=109';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=109';
+import { Player, PLAYER_RADIUS } from './player.js?v=109';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=108';
-import { RetroPass } from './retro.js?v=108';
-import { audio } from './audio.js?v=108';
-import { initDesigner } from './designer.js?v=108';
-import { t, getLang, setLang, langs } from './lang.js?v=108';
-import { TUNING } from './tuning.js?v=108';
+         CABINET_STYLE, VIS } from './enemy.js?v=109';
+import { RetroPass } from './retro.js?v=109';
+import { audio } from './audio.js?v=109';
+import { initDesigner } from './designer.js?v=109';
+import { t, getLang, setLang, langs } from './lang.js?v=109';
+import { TUNING } from './tuning.js?v=109';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1421,26 +1421,37 @@ function exitTokotron() {
   applyArenaMode(landscapeMode);
 }
 class Civilian {
-  constructor(sc, x, z) {
+  // v155 family variety: 0 = kid (small, quick, panicky), 1 = tall (steady),
+  // 2 = elder (slow amble) — silhouettes + wander speeds differ, rescues pay
+  // the same chain (the chain is the reward system, the family is flavor).
+  constructor(sc, x, z, kind = 1) {
     this.alive = true;
+    this.kind = kind;
     this.x = x; this.z = z;
     this._dir = Math.random() * Math.PI * 2;
     this._turnT = 0;
-    this.mat = new THREE.MeshBasicMaterial({ color: 0xffee88 });
+    this._speed = kind === 0 ? 2.0 : kind === 2 ? 0.8 : 1.3;
+    const scale = kind === 0 ? 0.7 : kind === 2 ? 0.95 : 1.15;
+    this.mat = new THREE.MeshBasicMaterial({
+      color: kind === 0 ? 0x88eeff : kind === 2 ? 0xffaa66 : 0xffee88 });
     this.group = new THREE.Group();
     const torso = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.44, 0.22), this.mat);
     torso.position.y = 0.32;
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 6), this.mat);
     head.position.y = 0.66;
     this.group.add(torso, head);
+    this.group.scale.setScalar(scale);
     this.group.position.set(x, 0, z);
     sc.add(this.group);
   }
   update(dt) {
     this._turnT -= dt;
-    if (this._turnT <= 0) { this._turnT = 0.8 + Math.random() * 1.4; this._dir = Math.random() * Math.PI * 2; }
-    this.x = Math.max(-HALF_X + 0.6, Math.min(HALF_X - 0.6, this.x + Math.cos(this._dir) * 1.3 * dt));
-    this.z = Math.max(-HALF_Z + 0.6, Math.min(HALF_Z - 0.6, this.z + Math.sin(this._dir) * 1.3 * dt));
+    if (this._turnT <= 0) {
+      this._turnT = (this.kind === 0 ? 0.5 : 0.8) + Math.random() * 1.4;
+      this._dir = Math.random() * Math.PI * 2;
+    }
+    this.x = Math.max(-HALF_X + 0.6, Math.min(HALF_X - 0.6, this.x + Math.cos(this._dir) * this._speed * dt));
+    this.z = Math.max(-HALF_Z + 0.6, Math.min(HALF_Z - 0.6, this.z + Math.sin(this._dir) * this._speed * dt));
     this.group.position.set(this.x, 0.06 + 0.05 * Math.abs(Math.sin(performance.now() * 0.012)), this.z);
   }
   remove(sc) {
@@ -2821,7 +2832,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v154', 16, uiCanvas.height - 12);
+  ctx.fillText('v155', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3772,34 +3783,55 @@ function spawnWave() {
     clusterSpawnAt = [];
   }
 
-  // TOKOTRON (v148): the whole wave floods in at once, scattered around the
-  // room (never within 6 of the player) — the reference's opening slam. The
-  // roster stays Toko: grunt globbos, the beloved orange cubes, mini swarmers,
-  // a weeva or two for crossfire from wave 3. Civilians respawn per wave;
-  // the rescue chain resets with them.
+  // TOKOTRON remake (v155): full Robotron pacing — the ENTIRE wave
+  // materializes AT ONCE around a recentered player (no trickle, a beat of
+  // spawn grace), running the cabinet's own roster on scripted 8-wave loops:
+  // GRUNT swarms that speed up the longer they live, ORBs seeding PROG
+  // hunters, unkillable BRUTEs stalking the family, MINDERs converting
+  // civilians into hostiles. Orange cubes remain honored guests.
   if (tokotronMode) {
-    const n = Math.min(26, 7 + wave * 3);
-    for (let i = 0; i < n; i++) {
-      const roll = rng();
-      const ty = roll < 0.55 ? EnemyType.GLOBBO
-               : roll < 0.80 ? EnemyType.ORANGE_CUBE
-               : roll < 0.93 ? EnemyType.REDD_MINI
-               : (wave >= 3 ? EnemyType.WEEVA : EnemyType.GLOBBO);
-      let px, pz, tries = 0;
-      do {
-        px = (rng() * 2 - 1) * (HALF_X - 1.5);
-        pz = (rng() * 2 - 1) * (HALF_Z - 1.5);
-      } while (Math.hypot(px - player.position.x, pz - player.position.z) < 6 && ++tries < 20);
-      pendingSpawns.push({ type: ty, delay: 0.15 + i * 0.045, px, pz,
-        angle: 0, shooter: false, clusterOffset: null, speedMult, intervalMult });
+    const loop = Math.floor((wave - 1) / 8);
+    const wi   = (wave - 1) % 8;
+    const k    = 1 + loop * 0.35;              // per-loop escalation
+    const T    = EnemyType;
+    const comp = [
+      { [T.GRUNT]: 12, [T.ORANGE_CUBE]: 2, civ: 4 },
+      { [T.GRUNT]: 14, [T.ORB]: 2, civ: 4 },
+      { [T.GRUNT]: 9,  [T.BRUTE]: 2, [T.ORANGE_CUBE]: 3, civ: 6 },
+      { [T.GRUNT]: 16, [T.ORB]: 3, [T.ORANGE_CUBE]: 2, civ: 3 },
+      { [T.GRUNT]: 8,  [T.MINDER]: 3, civ: 8 },
+      { [T.GRUNT]: 18, [T.BRUTE]: 2, [T.ORB]: 2, civ: 4 },
+      { [T.GRUNT]: 10, [T.ORB]: 4, [T.ORANGE_CUBE]: 4, civ: 4 },
+      { [T.GRUNT]: 16, [T.BRUTE]: 2, [T.MINDER]: 2, [T.ORB]: 3, civ: 6 },
+    ][wi];
+    // Robotron opening: you appear center-room; the wave appears around you.
+    player.mesh.position.set(0, player.mesh.position.y, 0);
+    player.grantInvincibility(1.4);
+    for (const [tyStr, n0] of Object.entries(comp)) {
+      if (tyStr === 'civ') continue;
+      const ty = +tyStr;
+      const heavyCap = ty === T.BRUTE || ty === T.MINDER;   // dread scales gently
+      const n = Math.round(n0 * (heavyCap ? Math.min(k, 1.7) : k));
+      for (let i = 0; i < n; i++) {
+        let px, pz, tries = 0;
+        do {
+          px = (rng() * 2 - 1) * (HALF_X - 1.5);
+          pz = (rng() * 2 - 1) * (HALF_Z - 1.5);
+        } while (Math.hypot(px, pz) < 6.5 && ++tries < 20);
+        const en = new Enemy(scene, ty, px, pz, speedMult, intervalMult);
+        enemies.push(en);                     // instant materialize, no trickle
+        for (let j = 0; j < 3; j++) {         // spawn-in flash
+          const a = (j / 3) * Math.PI * 2 + rng() * 2;
+          chunkPool.spawn(px, 0.6, pz, Math.cos(a) * 3.5, 3, Math.sin(a) * 3.5, en.color, 0.10);
+        }
+      }
     }
     for (const c of civilians) c.remove(scene);
     civilians = [];
     rescueChain = 0;
-    const nCiv = Math.min(6, 2 + wave);
-    for (let i = 0; i < nCiv; i++) {
+    for (let i = 0; i < comp.civ; i++) {
       civilians.push(new Civilian(scene,
-        (rng() * 2 - 1) * (HALF_X - 2), (rng() * 2 - 1) * (HALF_Z - 2)));
+        (rng() * 2 - 1) * (HALF_X - 2), (rng() * 2 - 1) * (HALF_Z - 2), i % 3));
     }
     clusterSpawnAt = [];   // no convoys in the dark room
   }
@@ -4674,6 +4706,47 @@ function loop() {
   // TOKOTRON civilians (v148): wander, get rescued by touch (chain pays
   // 1000 × chain, Robotron-style), or die to any enemy that reaches them.
   if (tokotronMode && player.alive) {
+    // v155: ORB broods, BRUTE/MINDER civilian-hunting, MINDER conversions.
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      if (e._progReady) {
+        e._progReady = false;
+        const progs = enemies.reduce((n, x) => n + (x.alive && x.type === EnemyType.PROG ? 1 : 0), 0);
+        if (progs < 7) {
+          enemies.push(new Enemy(scene, EnemyType.PROG, e.position.x, e.position.z));
+          audio.shooterPing();
+        }
+      }
+      if (e.type === EnemyType.BRUTE || e.type === EnemyType.MINDER) {
+        let best = null, bd = 1e9;
+        for (const c of civilians) {
+          const d = Math.hypot(c.x - e.position.x, c.z - e.position.z);
+          if (d < bd) { bd = d; best = c; }
+        }
+        if (best) { e._tX = best.x; e._tZ = best.z; }
+        else { e._tX = undefined; e._tZ = undefined; }
+        if (e.type === EnemyType.MINDER) {
+          if (best && bd < 1.05) {
+            // conversion grapple: ~1 s of glow, then the civilian returns
+            // as a hostile PROG. Kill the minder mid-grapple to break it.
+            e._convT = (e._convT ?? 1.0) - dt;
+            e._setEmissive(Math.sin(performance.now() * 0.03) > 0 ? 0xcc66ff : 0x220044);
+            if (e._convT <= 0) {
+              e._convT = undefined;
+              e._setEmissive(0x000000);
+              civilians.splice(civilians.indexOf(best), 1);
+              gooChunkPool.spawn(best.x, 0.5, best.z, 0, 3, 0, 0xcc66ff, 0.12);
+              best.remove(scene);
+              enemies.push(new Enemy(scene, EnemyType.PROG, best.x, best.z));
+              audio.civDown();
+            }
+          } else if (e._convT !== undefined) {
+            e._convT = undefined;
+            e._setEmissive(0x000000);
+          }
+        }
+      }
+    }
     for (let i = civilians.length - 1; i >= 0; i--) {
       const c = civilians[i];
       c.update(dt);
@@ -4689,6 +4762,7 @@ function loop() {
       let taken = false;
       for (const e of enemies) {
         if (!e.alive) continue;
+        if (e.type === EnemyType.MINDER) continue;   // v155: it converts, not kills
         if (Math.hypot(c.x - e.position.x, c.z - e.position.z) < e.radius + 0.35) { taken = true; break; }
       }
       if (taken) {
@@ -4984,6 +5058,22 @@ function loop() {
       const dx = b.mesh.position.x - e.position.x;
       const dz = b.mesh.position.z - e.position.z;
       if (Math.hypot(dx, dz) < BULLET_R * BULLET_CONFIG.playerBulletScale + e.radius) {
+        // TOKOTRON BRUTE (v155): unkillable — bullets shove it back instead
+        // of hurting it. The wave ends around it; herd it away from the family.
+        if (e.type === EnemyType.BRUTE) {
+          const kl = Math.hypot(dx, dz) || 1;
+          e._shoveX = Math.max(-6, Math.min(6, (e._shoveX || 0) - (dx / kl) * 3.4));
+          e._shoveZ = Math.max(-6, Math.min(6, (e._shoveZ || 0) - (dz / kl) * 3.4));
+          bullets.recycleAt(i);
+          hit = true;
+          audio.plateTink();
+          for (let j = 0; j < 2; j++) {
+            const a2 = Math.atan2(dz, dx) + (Math.random() - 0.5) * 1.6;
+            gooChunkPool.spawn(b.mesh.position.x, 0.9, b.mesh.position.z,
+              Math.cos(a2) * 4, 2 + Math.random() * 2, Math.sin(a2) * 4, 0xffaa22, 0.08);
+          }
+          break;
+        }
         // BULWARK plate (v140): shots landing on the FRONT arc (~±60° of its
         // facing) are shrugged off — flank it. Blocks even piercing shots;
         // rides the same shieldBlocks telemetry as the warden.
@@ -5323,7 +5413,8 @@ function loop() {
   if (gameState === 'playing' && !exitPhase && waveGapT <= 0 && !gaundropMode && !loadoutMode &&
       !_roomSwap && roomFadeT <= 0 &&
       enemies.length > 0 &&
-      enemies.every(e => !e.alive && !e._dying) &&
+      enemies.every(e => (tokotronMode && e.type === EnemyType.BRUTE) ||
+                         (!e.alive && !e._dying)) &&
       (!smashMode || pendingSpawns.length === 0)) {
     pendingSpawns = [];
     score += wave * 500 * (gauntlet ? gauntlet.mult : cabQuest ? cabQuest.mult : 1);
@@ -5456,6 +5547,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=108').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=109').catch(() => {});
   });
 }

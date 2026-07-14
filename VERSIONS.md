@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v155 — 2026-07-14
+**TOKOTRON remake — its own roster, its own pacing (cabinet overhaul #1, user direction)**
+- **Robotron pacing for real**: the ENTIRE wave materializes AT ONCE around a recentered player (spawn flashes, 1.4 s of grace, no trickle) on **scripted 8-wave loops** that escalate per loop — brute waves, minder waves, orb hells all have their own beat
+- **Five cabinet-only enemies** (never in the classic pool): **GRUNT** — straight-line swarm walker that speeds up the longer it lives (the wave's clock); **BRUTE** — unkillable hulk, bullets only shove it, hunts civilians, waves end around it; **ORB** — rim-runner that avoids you while strobing out up to 3 **PROG** hunters (strafing aimed-shot turrets); **MINDER** — the converter: grapples a civilian for ~1 s (glow tell) and reprograms it into a hostile PROG — kill it mid-grapple to break the conversion
+- **Civilian family variety**: kid (small, quick, panicky), tall (steady), elder (slow amble) — silhouettes, colors, and wander speeds differ; the rescue chain stays the reward
+- Orange cubes remain honored guests; new types wear their own neon (danger-red grunts, amber brutes, brain-purple minders); tester lists all five
+- Toko shooting + dash untouched (user boundary)
+- Cache-bust `?v=108` → `?v=109`; HUD label → v155
+
+---
+
 ## v154 — 2026-07-14
 **Roguelike B: ALL the cabinets are bonus quests (user direction)**
 - The gold rare card now **rotates through the whole cabinet row**: BONUS GAUNTLET → **TOKOTRON RAID** (survive 2 flood waves) → **GAUNDROP DELVE** (find the exit of one dungeon level) → **LOADOUT OP** (complete 2 missions with the build you brought) → **BASEMENT DETOUR** (clear 3 basement rooms) — then back around, gauntlet tiers still ramping. Declining a quest keeps the same offer for the next card screen
