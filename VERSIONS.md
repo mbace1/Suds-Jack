@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v153 — 2026-07-14
+**Cabinet row — the arcade cabinets become a single-select mod (user direction)**
+- The four stacked launcher chips on the title are now **one compact CABINET row** (TOKOTRON / GAUNDROP / BINDING / LOADOUT): pick one — only one can be armed at a time — and **TAP TO START plays it**; tap the active chip again to go back to classic. Selection persists (`tokoDropCabinet`)
+- The same selection lives in **OPTIONS right under SMASH TV** as a CABINET cycle button (OFF → TOKOTRON → GAUNDROP → BINDING → LOADOUT), colored per cabinet with the cabinet's own hint line
+- All four start paths (tap, Space, pad A, Start) route through the selected cabinet; gamepad menu nav picks up the new chips automatically
+- Groundwork for Roguelike B cabinet bonus quests (next) and the per-cabinet remakes
+- Cache-bust `?v=106` → `?v=107`; HUD label → v153
+
+---
+
 ## v152 — 2026-07-14
 **LOADOUT — cabinet #4 (Re-Loaded tribute): pick your kit, run the missions**
 - **LOADOUT chip on the title** (toxic-green launcher): military gunmetal look — near-black olive floor, toxic-green vector bounds, desaturated Lambert enemies, pale-olive player with green dash ghosts, own RetroPass profile (320p nearest pixels, 24-level posterize, mild glow + scanlines)

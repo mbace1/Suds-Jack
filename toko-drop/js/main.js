@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=106';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=106';
-import { Player, PLAYER_RADIUS } from './player.js?v=106';
+import { InputManager } from './input.js?v=107';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=107';
+import { Player, PLAYER_RADIUS } from './player.js?v=107';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=106';
-import { RetroPass } from './retro.js?v=106';
-import { audio } from './audio.js?v=106';
-import { initDesigner } from './designer.js?v=106';
-import { t, getLang, setLang, langs } from './lang.js?v=106';
-import { TUNING } from './tuning.js?v=106';
+         CABINET_STYLE, VIS } from './enemy.js?v=107';
+import { RetroPass } from './retro.js?v=107';
+import { audio } from './audio.js?v=107';
+import { initDesigner } from './designer.js?v=107';
+import { t, getLang, setLang, langs } from './lang.js?v=107';
+import { TUNING } from './tuning.js?v=107';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1674,6 +1674,26 @@ function showLoadoutPicks() {
   document.body.appendChild(panel);
 }
 
+// Cabinet row (v153): the arcade cabinets are a single-select MOD — picked on
+// the title's cabinet row or in OPTIONS right under SMASH TV, only one armed
+// at a time. TAP TO START then plays the selected cabinet (OFF = classic).
+const CABINETS = ['tokotron', 'gaundrop', 'binding', 'loadout'];
+let cabinetSel = (() => {
+  const v = localStorage.getItem('tokoDropCabinet');
+  return CABINETS.includes(v) ? v : null;
+})();
+function setCabinetSel(v) {
+  cabinetSel = CABINETS.includes(v) ? v : null;
+  localStorage.setItem('tokoDropCabinet', cabinetSel ?? '');
+}
+function startRun() {
+  if      (cabinetSel === 'tokotron') startTokotron();
+  else if (cabinetSel === 'gaundrop') startGaundrop();
+  else if (cabinetSel === 'binding')  startBinding();
+  else if (cabinetSel === 'loadout')  startLoadout();
+  else startGame();
+}
+
 // TEST MODE (v142): a playtest workbench run — all enemy types unlock from
 // wave 1 and the run leaves NO records (no PB, no daily best, no leaderboard;
 // feedback records are tagged test). For meeting new enemies fast.
@@ -2282,6 +2302,8 @@ const designer = initDesigner({
       localStorage.setItem('tokoDropPerf', on ? '1' : '0');
       applyPerfMode();
     },
+    getCabinet: () => cabinetSel,
+    setCabinet: v => setCabinetSel(v),
     getSmash: () => smashMode,
     setSmash: on => {
       smashMode = on;
@@ -2778,7 +2800,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v152', 16, uiCanvas.height - 12);
+  ctx.fillText('v153', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2957,89 +2979,49 @@ function showTitle() {
   slot.appendChild(dbtn);
   slot.appendChild(dhint);
 
-  // TOKOTRON cabinet chip (v148) — a launcher, not a toggle: tap to play.
-  const tkbtn = document.createElement('div');
-  tkbtn.dataset.ui = '1';
-  tkbtn.textContent = t('tokotron');
-  tkbtn.style.cssText =
-    'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
-    'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
-    'background:rgba(0,0,0,0.35);transition:all 0.12s;margin-top:10px;' +
-    'border:2px solid #44eeff;color:#88f4ff;text-shadow:0 0 12px #22ccff;';
-  const tkhint = document.createElement('div');
-  tkhint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
-  tkhint.textContent = t('tokotronH');
-  tkbtn.addEventListener('pointerdown', e => {
-    e.stopPropagation();
-    e.preventDefault();
-    startTokotron();
-  });
-  tkbtn.addEventListener('touchend', e => e.stopPropagation());
-  slot.appendChild(tkbtn);
-  slot.appendChild(tkhint);
-
-  // GAUNDROP cabinet chip (v149) — bronze launcher.
-  const gdbtn = document.createElement('div');
-  gdbtn.dataset.ui = '1';
-  gdbtn.textContent = t('gaundrop');
-  gdbtn.style.cssText =
-    'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
-    'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
-    'background:rgba(0,0,0,0.35);transition:all 0.12s;margin-top:10px;' +
-    'border:2px solid #cc8833;color:#ffbb66;text-shadow:0 0 12px #aa6611;';
-  const gdhint = document.createElement('div');
-  gdhint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
-  gdhint.textContent = t('gaundropH');
-  gdbtn.addEventListener('pointerdown', e => {
-    e.stopPropagation();
-    e.preventDefault();
-    startGaundrop();
-  });
-  gdbtn.addEventListener('touchend', e => e.stopPropagation());
-  slot.appendChild(gdbtn);
-  slot.appendChild(gdhint);
-
-  // THE BINDING OF TOKO cabinet chip (v150) — fleshy-pink launcher.
-  const bdbtn = document.createElement('div');
-  bdbtn.dataset.ui = '1';
-  bdbtn.textContent = t('binding');
-  bdbtn.style.cssText =
-    'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
-    'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
-    'background:rgba(0,0,0,0.35);transition:all 0.12s;margin-top:10px;' +
-    'border:2px solid #cc4466;color:#ff99bb;text-shadow:0 0 12px #cc2255;';
-  const bdhint = document.createElement('div');
-  bdhint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
-  bdhint.textContent = t('bindingH');
-  bdbtn.addEventListener('pointerdown', e => {
-    e.stopPropagation();
-    e.preventDefault();
-    startBinding();
-  });
-  bdbtn.addEventListener('touchend', e => e.stopPropagation());
-  slot.appendChild(bdbtn);
-  slot.appendChild(bdhint);
-
-  // LOADOUT cabinet chip (v152) — toxic-green launcher.
-  const lobtn = document.createElement('div');
-  lobtn.dataset.ui = '1';
-  lobtn.textContent = t('loadout');
-  lobtn.style.cssText =
-    'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
-    'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
-    'background:rgba(0,0,0,0.35);transition:all 0.12s;margin-top:10px;' +
-    'border:2px solid #77cc33;color:#bbff77;text-shadow:0 0 12px #55aa11;';
-  const lohint = document.createElement('div');
-  lohint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
-  lohint.textContent = t('loadoutH');
-  lobtn.addEventListener('pointerdown', e => {
-    e.stopPropagation();
-    e.preventDefault();
-    startLoadout();
-  });
-  lobtn.addEventListener('touchend', e => e.stopPropagation());
-  slot.appendChild(lobtn);
-  slot.appendChild(lohint);
+  // ARCADE CABINET row (v153): the tribute cabinets, one compact single-select
+  // row of mods — pick one (tap again to un-pick), then TAP TO START plays it.
+  // The same selection lives in OPTIONS right under SMASH TV.
+  const CAB_STYLE = {
+    tokotron: ['#44eeff', '#88f4ff', '#22ccff'],
+    gaundrop: ['#cc8833', '#ffbb66', '#aa6611'],
+    binding:  ['#cc4466', '#ff99bb', '#cc2255'],
+    loadout:  ['#77cc33', '#bbff77', '#55aa11'],
+  };
+  const CAB_SHORT = { tokotron: 'TOKOTRON', gaundrop: 'GAUNDROP', binding: 'BINDING', loadout: 'LOADOUT' };
+  const cabRow = document.createElement('div');
+  cabRow.style.cssText = 'display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:12px;max-width:340px;margin-left:auto;margin-right:auto;';
+  const cabHint = document.createElement('div');
+  cabHint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
+  const cabRender = () => {
+    cabRow.innerHTML = '';
+    for (const id of CABINETS) {
+      const on = cabinetSel === id;
+      const [bd, fg, glow] = CAB_STYLE[id];
+      const c = document.createElement('div');
+      c.dataset.ui = '1';
+      c.textContent = CAB_SHORT[id];
+      c.style.cssText =
+        'pointer-events:auto;cursor:pointer;user-select:none;' +
+        'font-size:11.5px;font-weight:bold;padding:7px 10px;border-radius:8px;' +
+        'background:rgba(0,0,0,0.35);transition:all 0.12s;' +
+        `border:2px solid ${on ? bd : '#445'};` +
+        `color:${on ? fg : '#7777aa'};` +
+        `text-shadow:${on ? `0 0 12px ${glow}` : 'none'};`;
+      c.addEventListener('pointerdown', e => {
+        e.stopPropagation();
+        e.preventDefault();
+        setCabinetSel(on ? null : id);
+        cabRender();
+      });
+      c.addEventListener('touchend', e => e.stopPropagation());
+      cabRow.appendChild(c);
+    }
+    cabHint.textContent = cabinetSel ? t(cabinetSel + 'H') : t('cabRowH');
+  };
+  cabRender();
+  slot.appendChild(cabRow);
+  slot.appendChild(cabHint);
 
   // v81: volume + reduce-motion moved into the pause menu's SETTINGS page —
   // the title keeps only the run-history link and a faint pointer to where
@@ -4271,7 +4253,7 @@ input.onDash  = () => {
     const dir = { x: move.x, z: move.z, valid: move.x !== 0 || move.z !== 0 };
     player.dash(dir);
   } else if (gameState === 'title' && !navEl) {
-    startGame();  // A / bumper / trigger starts from the title — unless the
+    startRun();  // A / bumper / trigger starts from the title — unless the
                   // pad is focused on a menu chip (then A activates the chip)
   }
 };
@@ -4279,7 +4261,7 @@ input.onPause = () => {
   if (gameState === 'playing') { gameState = 'paused';  designer.show(); }
   else if (gameState === 'paused')  { gameState = 'playing'; designer.hide(); }
   else if (gameState === 'options') { gameState = 'title';   designer.hide(); }
-  else if (gameState === 'title')   startGame();
+  else if (gameState === 'title')   startRun();
   else if (gameState === 'gameover') returnToTitle();  // Start skips feedback
 };
 
@@ -4288,7 +4270,7 @@ window.addEventListener('keyup', e => {
   // Don't hijack keys while the player is typing feedback.
   const tag = e.target?.tagName;
   if (tag === 'TEXTAREA' || tag === 'INPUT') return;
-  if (e.code === 'Space' && gameState === 'title') startGame();
+  if (e.code === 'Space' && gameState === 'title') startRun();
   if (e.code === 'Space' && gameState === 'gameover') returnToTitle();  // skip feedback
   if (e.code === 'KeyE') player.toggleEyes();
 });
@@ -4307,7 +4289,7 @@ window.addEventListener('touchend', (e) => {
   if (e.target?.closest?.('[data-ui]')) return;
   const tp = e.changedTouches?.[0];
   if (tp && Math.hypot(tp.clientX - _tapX, tp.clientY - _tapY) > 12) return;  // scroll, not tap
-  startGame();
+  startRun();
 }, { once: false });
 
 player.onShoot = () => audio.shoot();
@@ -5349,6 +5331,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=106').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=107').catch(() => {});
   });
 }
