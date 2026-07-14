@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=112';
-import { nesSnap, NEON } from './retro.js?v=112';
+import { TUNING } from './tuning.js?v=113';
+import { nesSnap, NEON } from './retro.js?v=113';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -199,6 +199,13 @@ export function makeSatinMat(color, fam, radius) {
     const hsl = { h: 0, s: 0, l: 0 };
     col.getHSL(hsl);
     col.setHSL(hsl.h, hsl.s * 0.6, hsl.l * 0.85);
+    mat = new THREE.MeshLambertMaterial({ color: col, emissive: 0x000000 });
+  } else if (mode === 'kaikki') {
+    // KAIKKI IRTI 3 (v159): grim DOS-VGA street tones — hard desaturate,
+    // darker, flat Lambert. The carnage supplies the color.
+    const hsl = { h: 0, s: 0, l: 0 };
+    col.getHSL(hsl);
+    col.setHSL(hsl.h, hsl.s * 0.45, hsl.l * 0.7);
     mat = new THREE.MeshLambertMaterial({ color: col, emissive: 0x000000 });
   } else if (mode === 'gaundrop') {
     // NES: flat color snapped to the 16-entry palette; the post pass snaps

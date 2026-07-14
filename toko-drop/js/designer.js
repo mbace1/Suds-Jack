@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=112';
-import { t } from './lang.js?v=112';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=112';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=113';
+import { t } from './lang.js?v=113';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=113';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -494,8 +494,8 @@ export function initDesigner({ onResume, settings }) {
       btn.className = 'dbtn';
       const hint = document.createElement('div');
       hint.className = 'dnote';
-      const ORDER = [null, 'tokotron', 'gaundrop', 'binding', 'loadout'];
-      const COL = { tokotron: '#88f4ff', gaundrop: '#ffbb66', binding: '#ff99bb', loadout: '#bbff77' };
+      const ORDER = [null, 'tokotron', 'gaundrop', 'binding', 'loadout', 'kaikki'];
+      const COL = { tokotron: '#88f4ff', gaundrop: '#ffbb66', binding: '#ff99bb', loadout: '#bbff77', kaikki: '#ff6655' };
       const paint = () => {
         const sel = settings.getCabinet();
         btn.textContent = sel ? t(sel) : t('off');
