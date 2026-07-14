@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=116';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=116';
-import { Player, PLAYER_RADIUS } from './player.js?v=116';
+import { InputManager } from './input.js?v=117';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=117';
+import { Player, PLAYER_RADIUS } from './player.js?v=117';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=116';
-import { RetroPass } from './retro.js?v=116';
-import { audio } from './audio.js?v=116';
-import { initDesigner } from './designer.js?v=116';
-import { t, getLang, setLang, langs } from './lang.js?v=116';
-import { TUNING } from './tuning.js?v=116';
+         CABINET_STYLE, VIS } from './enemy.js?v=117';
+import { RetroPass } from './retro.js?v=117';
+import { audio } from './audio.js?v=117';
+import { initDesigner } from './designer.js?v=117';
+import { t, getLang, setLang, langs } from './lang.js?v=117';
+import { TUNING } from './tuning.js?v=117';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1573,6 +1573,12 @@ function exitGaundrop() {
 function clearGaundropLevel() {
   for (const w of gdWalls) { scene.remove(w.mesh); w.mesh.geometry.dispose(); w.mesh.material.dispose(); }
   gdWalls = [];
+  for (const c of bdChasms) {   // v163: binding pits share the terrain clear
+    scene.remove(c.mesh); scene.remove(c.rim);
+    c.mesh.geometry.dispose(); c.mesh.material.dispose();
+    c.rim.geometry.dispose(); c.rim.material.dispose();
+  }
+  bdChasms = [];
   for (const g of gdGenerators) g.remove(scene);
   gdGenerators = [];
   if (gdExit) { scene.remove(gdExit.mesh); gdExit.mesh.geometry.dispose(); gdExit.mat.dispose(); gdExit = null; }
@@ -1633,6 +1639,37 @@ class Generator {
   }
   remove(sc) { sc.remove(this.mesh); this.mesh.geometry.dispose(); this.mat.dispose(); }
 }
+// BINDING chasms (v163): Isaac pits — bodies can't cross, bullets fly
+// over. FLITs (flying) and mid-hop HOPPERs ignore them. Same AABB math as
+// the wall kit, separate array so bullets never interact.
+let bdChasms = [];   // { mesh, rim, x, z, hx, hz }
+function bdInsideChasm(x, z, r = 0) {
+  for (const c of bdChasms) {
+    if (Math.abs(x - c.x) < c.hx + r && Math.abs(z - c.z) < c.hz + r) return true;
+  }
+  return false;
+}
+function bdResolveChasms(x, z, r) {
+  for (const w of bdChasms) {
+    const dx = x - Math.max(w.x - w.hx, Math.min(w.x + w.hx, x));
+    const dz = z - Math.max(w.z - w.hz, Math.min(w.z + w.hz, z));
+    const d2 = dx * dx + dz * dz;
+    if (d2 < r * r) {
+      if (d2 > 1e-6) {
+        const d = Math.sqrt(d2);
+        x += (dx / d) * (r - d);
+        z += (dz / d) * (r - d);
+      } else {
+        const px = (w.hx + r) - Math.abs(x - w.x);
+        const pz = (w.hz + r) - Math.abs(z - w.z);
+        if (px < pz) x += Math.sign(x - w.x || 1) * px;
+        else         z += Math.sign(z - w.z || 1) * pz;
+      }
+    }
+  }
+  return { x, z };
+}
+
 // circle-vs-AABB pushout: returns corrected {x, z} for a radius r at (x, z)
 function gdResolveWalls(x, z, r) {
   for (const w of gdWalls) {
@@ -3127,7 +3164,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v162', 16, uiCanvas.height - 12);
+  ctx.fillText('v163', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -4092,11 +4129,43 @@ function spawnWave() {
   // HOPPERs. Compositions scale with the floor; bosses keep the smash boss.
   if (bindingMode && smashRoomKind !== 'item' && smashRoomKind !== 'boss') {
     clearGaundropLevel();          // previous room's rocks
+    // v163: CHASMS (floor 2+, ~1/3 of fight rooms) — the pit shapes the
+    // room: bodies can't cross, bullets fly over. Red-rimmed voids.
+    if (bindingFloor >= 2 && rng() < 0.38) {
+      const pit = (x, z, hx, hz) => {
+        const mesh = new THREE.Mesh(new THREE.PlaneGeometry(hx * 2, hz * 2),
+          new THREE.MeshBasicMaterial({ color: 0x030103 }));
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.position.set(x, 0.02, z);
+        const rim = new THREE.LineSegments(
+          new THREE.EdgesGeometry(new THREE.PlaneGeometry(hx * 2, hz * 2)),
+          new THREE.LineBasicMaterial({ color: 0x772233 }));
+        rim.rotation.x = -Math.PI / 2;
+        rim.position.set(x, 0.035, z);
+        scene.add(mesh, rim);
+        bdChasms.push({ mesh, rim, x, z, hx, hz });
+      };
+      const cp = Math.floor(rng() * 3);
+      if (cp === 0) {
+        pit(0, 0, 3.4, 2.4);                       // the center void
+      } else if (cp === 1) {
+        pit(-HALF_X * 0.32, 0, 1.3, HALF_Z * 0.42); // twin strips
+        pit( HALF_X * 0.32, 0, 1.3, HALF_Z * 0.42);
+      } else {
+        for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+          pit(sx * HALF_X * 0.4, sz * HALF_Z * 0.4, 1.7, 1.4);  // corner pits
+        }
+      }
+    }
     const rock = (x, z, hx = 0.9, hz = 0.9) => {
       // v161: rocks read ORGANIC — jittered footprint, height, tilt, and a
       // two-tone flesh-stone palette (collision stays axis-aligned).
       hx *= 0.85 + rng() * 0.35;
       hz *= 0.85 + rng() * 0.35;
+      // v163: pits are placed first — no rocks hovering in the void
+      for (const c of bdChasms) {
+        if (Math.abs(x - c.x) < c.hx + hx && Math.abs(z - c.z) < c.hz + hz) return;
+      }
       const h = 0.6 + rng() * 0.55;
       const mesh = new THREE.Mesh(new THREE.BoxGeometry(hx * 2, h, hz * 2),
         new THREE.MeshBasicMaterial({ color: rng() < 0.5 ? 0x5a3a44 : 0x6a4a50 }));
@@ -4146,7 +4215,7 @@ function spawnWave() {
         do {
           px = (rng() * 2 - 1) * (HALF_X - 1.8);
           pz = (rng() * 2 - 1) * (HALF_Z - 1.8);
-        } while ((gdInsideWall(px, pz, 0.8) ||
+        } while ((gdInsideWall(px, pz, 0.8) || bdInsideChasm(px, pz, 0.8) ||
                   Math.hypot(px - player.position.x, pz - player.position.z) < 5) && ++tries < 25);
         const en = new Enemy(scene, ty, px, pz, speedMult, intervalMult);
         enemies.push(en);
@@ -5229,22 +5298,24 @@ function loop() {
     }
   }
 
-  // BINDING rocks (v157): the room layout blocks bullets and bodies both
-  // ways — same wall kit as the dungeon, applied in the basement.
-  if (bindingMode && player.alive && gdWalls.length) {
+  // BINDING rocks (v157) + chasms (v163): rocks block bullets and bodies;
+  // pits block ONLY bodies — bullets sail over the void.
+  if (bindingMode && player.alive && (gdWalls.length || bdChasms.length)) {
     for (let bi = bullets.active.length - 1; bi >= 0; bi--) {
       const b = bullets.active[bi];
       if (gdInsideWall(b.mesh.position.x, b.mesh.position.z, 0)) bullets.recycleAt(bi);
     }
     {
-      const c = gdResolveWalls(player.position.x, player.position.z, PLAYER_RADIUS);
+      let c = gdResolveWalls(player.position.x, player.position.z, PLAYER_RADIUS);
+      c = bdResolveChasms(c.x, c.z, PLAYER_RADIUS * 0.7);
       player.mesh.position.x = c.x; player.mesh.position.z = c.z;
     }
     for (const e of enemies) {
       if (!e.alive) continue;
       if (e.type === EnemyType.HOPPER && e.mesh.position.y > 0.5) continue;  // hops clear
       if (e.type === EnemyType.FLIT) continue;                               // flies clear
-      const c = gdResolveWalls(e.position.x, e.position.z, e.radius * 0.8);
+      let c = gdResolveWalls(e.position.x, e.position.z, e.radius * 0.8);
+      c = bdResolveChasms(c.x, c.z, e.radius * 0.6);
       e.position.x = c.x; e.position.z = c.z;
     }
   }
@@ -6251,6 +6322,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=116').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=117').catch(() => {});
   });
 }
