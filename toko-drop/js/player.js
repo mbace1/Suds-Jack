@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { makeSatinMat } from './enemy.js?v=104';
+import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=105';
 
 const SPEED          = 6;
 const DASH_SPEED     = 26;
@@ -98,6 +98,45 @@ export class Player {
     this._muzzleT = 0;
   }
 
+  // Cabinet style (v151): the player exists before any cabinet starts, so it
+  // swaps materials live. makeSatinMat reads CABINET_STYLE at call time, so
+  // calling it here inside a cabinet returns that cabinet's variant; null
+  // restores the original satin mat (kept, never disposed).
+  setCabinetStyle(mode) {
+    if (!this._satinMat) this._satinMat = this.mat;   // first call: remember home
+    if (this._cabShell) { this.mesh.remove(this._cabShell); this._cabShell.material.dispose(); this._cabShell = null; }
+    if (!mode) {
+      this.mat = this._satinMat;
+    } else {
+      this.mat = makeSatinMat(
+        mode === 'tokotron' ? 0xe8f6ff : mode === 'gaundrop' ? 0xfcfcfc : 0xf0e0d8,
+        'blob', PLAYER_RADIUS);
+      if (mode === 'tokotron') {
+        this._cabShell = new THREE.Mesh(this.mesh.geometry, new THREE.MeshBasicMaterial({
+          color: 0x00ffff, side: THREE.BackSide,
+          blending: THREE.AdditiveBlending, depthWrite: false,
+          transparent: true, opacity: 0.9,
+        }));
+        this._cabShell.scale.setScalar(1.09);
+        this.mesh.add(this._cabShell);
+      }
+    }
+    this.mat.transparent = true;
+    this.mat.opacity = 0.98;
+    this._gu = this.mat.uniforms ?? this.mat.gooU;
+    this._gu.uWobble.value = 0.6;
+    this.mesh.material = this.mat;
+    // dash ghosts wear the cabinet's neon
+    const ghostCol = mode === 'tokotron' ? 0x00ffff
+                   : mode === 'gaundrop' ? 0xfcfcfc
+                   : mode === 'binding'  ? 0xcc4466 : 0x88bbff;
+    for (const g of this._ghosts) {
+      g.mesh.material.color.setHex(ghostCol);
+      g.mesh.material.blending = mode === 'tokotron' ? THREE.AdditiveBlending : THREE.NormalBlending;
+      g.mesh.material.needsUpdate = true;
+    }
+  }
+
   get invincible() { return this._dashTime > 0 || this._mercyT > 0 || this._invincBoost > 0; }
   get dashing()   { return this._dashTime > 0; }
   get position()  { return this.mesh.position; }
@@ -192,7 +231,9 @@ export class Player {
       this.mesh.position.x += this._dashDir.x * DASH_SPEED * dt;
       this.mesh.position.z += this._dashDir.z * DASH_SPEED * dt;
 
-      this._setOpacity(0.35 + 0.65 * Math.abs(Math.sin(this._dashTime * 55)));
+      this._setOpacity(VIS.hz
+        ? (Math.floor(this._dashTime * VIS.hz) % 2 ? 0.35 : 0.98)   // v151: square 12Hz blink
+        : 0.35 + 0.65 * Math.abs(Math.sin(this._dashTime * 55)));
 
       this._ghostT -= dt;
       if (this._ghostT <= 0) {
@@ -233,7 +274,8 @@ export class Player {
         if (g.life <= 0) {
           g.mesh.visible = false;
         } else {
-          const t = g.life / GHOST_LIFE;
+          let t = g.life / GHOST_LIFE;
+          if (VIS.hz) t = Math.ceil(t * VIS.hz * GHOST_LIFE) / (VIS.hz * GHOST_LIFE);  // v151: chunky frames
           g.mesh.material.opacity = t * 0.45;
           g.mesh.scale.setScalar(0.6 + 0.4 * t);
         }

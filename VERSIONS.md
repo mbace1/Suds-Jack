@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v151 — 2026-07-14
+**Cabinet graphics pass — per-cabinet renderers, materials, and sprite-era stepped animation (roadmap M5)**
+- **New `js/retro.js` — the RetroPass post pipeline**: scene renders into a per-cabinet low-res target, then a fullscreen shader applies the cabinet's treatment — bright-pass **glow**, contrast/saturation grade, **NES 16-color palette quantization**, **32-level posterize with ordered dither** + paint pre-blur, and subtle **scanlines** aligned to internal rows. Zero cost when no cabinet is active; classic + SMASH render byte-identical
+- **Per-cabinet art (user direction)**: **TOKOTRON** = vector monitor — near-black Lambert faces + **additive inverted-hull neon shells** (cyan player, pink cubes with crisp edge line-work, teal blobs, amber heavies), fog removed, 0.7× res with linear upscale so the lines glow instead of pixelate, high contrast. **GAUNDROP** = NES — every material color **snapped to a real 16-entry NES palette**, whole frame quantized to the same table, 240p-class pixels. **BINDING** = paint-meets-16bit — satin kept but desaturated toward flesh, soft pre-blur + SNES-depth posterize at 400p
+- **Sprite-era stepped animation** (12 Hz, cabinets only): the shared shader clock, every enemy wobble/strobe oscillator, cube flops (rotation steps through 4 sprite frames — positions stay smooth so collisions are untouched), the player's dash flicker (square-wave blink) and dash-ghost fades all step; gameplay, input, and movement stay 60 fps. **Dash ghosts wear each cabinet's neon**
+- PIXEL PREVIEW (DEV) now previews the shared retro pass; the old 0.22-DPR trick is gone. Flat-lit cabinets skip the shadow pass entirely (faster than classic). retro.js registered in bump loop + sw.js precache
+- Cache-bust `?v=104` → `?v=105`; HUD label → v151
+
+---
+
 ## v150 — 2026-07-13
 **THE BINDING OF TOKO — cabinet #3 (Binding of Isaac tribute): rooms, floors, and an item economy**
 - **BINDING OF TOKO chip on the title** (fleshy-pink launcher): basement-gloom look (dark red-black, fleshy red vector bounds, pixel rendering), built directly on the SMASH room lattice — doors, exits, minimap, entry-from-opposite-wall all work room to room
