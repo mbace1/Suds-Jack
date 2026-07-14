@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=115';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=115';
-import { Player, PLAYER_RADIUS } from './player.js?v=115';
+import { InputManager } from './input.js?v=116';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=116';
+import { Player, PLAYER_RADIUS } from './player.js?v=116';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=115';
-import { RetroPass } from './retro.js?v=115';
-import { audio } from './audio.js?v=115';
-import { initDesigner } from './designer.js?v=115';
-import { t, getLang, setLang, langs } from './lang.js?v=115';
-import { TUNING } from './tuning.js?v=115';
+         CABINET_STYLE, VIS } from './enemy.js?v=116';
+import { RetroPass } from './retro.js?v=116';
+import { audio } from './audio.js?v=116';
+import { initDesigner } from './designer.js?v=116';
+import { t, getLang, setLang, langs } from './lang.js?v=116';
+import { TUNING } from './tuning.js?v=116';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -26,6 +26,13 @@ const ARENA_PRESETS = {
 };
 let HALF_X      = ARENA_PRESETS.portrait.halfX;   // arena half-width
 let HALF_Z      = ARENA_PRESETS.portrait.halfZ;   // arena half-depth
+// v162 (user direction — mode structure taxonomy): SCROLLING-ARENA cabinets
+// (gaundrop / loadout / kaikki, like their references) play in a world
+// arenaScale× bigger than the screen; the camera follows the player and the
+// cabinet fog makes the world OPEN UP as you walk toward the edge.
+// Room-traversal (smash / binding) and fixed-single-screen (tokotron /
+// classic) modes keep arenaScale = 1.
+let arenaScale  = 1;
 const GRID_CELL = 1.286;                          // world units per grid cell (keeps cells square)
 const ROUND_DUR = 20; // seconds per wave
 
@@ -272,21 +279,39 @@ function addShake(trauma) {
   if (reduceMotion) return; // Settings: reduce-motion skips camera shake entirely
   shakeTrauma = Math.min(shakeTrauma + trauma, 1);
 }
+// v162: scroll-follow offset — lerps after the player, clamped so the view
+// window never leaves the (arenaScale×) world. Zero when arenaScale is 1.
+const _camOff  = new THREE.Vector3();
+const _camLook = new THREE.Vector3();
 function updateShake(dt) {
+  if (arenaScale > 1) {
+    const p = (smashMode || tokotronMode) ? ARENA_PRESETS.smash
+            : landscapeMode ? ARENA_PRESETS.landscape : ARENA_PRESETS.portrait;
+    const mx = Math.max(0, HALF_X - p.halfX);
+    const mz = Math.max(0, HALF_Z - p.halfZ);
+    const tx = Math.max(-mx, Math.min(mx, player.position.x));
+    const tz = Math.max(-mz, Math.min(mz, player.position.z));
+    const k = Math.min(1, dt * 4);
+    _camOff.x += (tx - _camOff.x) * k;
+    _camOff.z += (tz - _camOff.z) * k;
+  } else if (_camOff.x !== 0 || _camOff.z !== 0) {
+    _camOff.set(0, 0, 0);
+  }
+  _camLook.copy(CAM_LOOK).add(_camOff);
   if (shakeTrauma <= 0) {
-    camera.position.copy(CAM_REST);
-    camera.lookAt(CAM_LOOK);
+    camera.position.copy(CAM_REST).add(_camOff);
+    camera.lookAt(_camLook);
     return;
   }
   shakeTrauma = Math.max(0, shakeTrauma - dt * 2.8);
   const mag = shakeTrauma * shakeTrauma;
   const t   = performance.now() / 1000;
   camera.position.set(
-    CAM_REST.x + Math.sin(t * 41) * mag * 1.8,
+    CAM_REST.x + _camOff.x + Math.sin(t * 41) * mag * 1.8,
     CAM_REST.y + Math.sin(t * 37) * mag * 1.2,
-    CAM_REST.z + Math.sin(t * 43) * mag * 1.2,
+    CAM_REST.z + _camOff.z + Math.sin(t * 43) * mag * 1.2,
   );
-  camera.lookAt(CAM_LOOK);
+  camera.lookAt(_camLook);
 }
 
 // ── Lights ──────────────────────────────────────────────────────────────────
@@ -385,7 +410,7 @@ function fitPresetCamera(p) {
 function applyArenaMode(landscape) {
   const p = (smashMode || tokotronMode) ? ARENA_PRESETS.smash
           : landscape ? ARENA_PRESETS.landscape : ARENA_PRESETS.portrait;
-  HALF_X = p.halfX; HALF_Z = p.halfZ;
+  HALF_X = p.halfX * arenaScale; HALF_Z = p.halfZ * arenaScale;   // v162
   CAM_LOOK.set(...p.camLook);
   if (smashMode || tokotronMode || landscape) CAM_REST.copy(fitPresetCamera(p));
   else                        CAM_REST.set(...p.camRest);
@@ -1522,12 +1547,14 @@ function setGaundropLook(on) {
   floor.visible = !on;
   border.material.color.setHex(on ? 0xcc8833 : 0x5555cc); // bronze bounds
   _FOG.color.setHex(on ? 0x140a04 : 0x0d0d1a);
+  _FOG.near = on ? 28 : 42; _FOG.far = on ? 58 : 80;   // v162: the crawl reveal
   scene.fog = _FOG;
   CABINET_STYLE.mode = on ? 'gaundrop' : null;
   player.setCabinetStyle(on ? 'gaundrop' : null);
 }
 function startGaundrop() {
   gaundropMode = true;
+  arenaScale = 2.0;   // v162: the dungeon scrolls — twice the world per level
   _gdSavedSmash = smashMode; smashMode = false;
   _gdSavedPixel = pixelMode; pixelMode = true;
   applyPerfMode();
@@ -1536,6 +1563,7 @@ function startGaundrop() {
 }
 function exitGaundrop() {
   gaundropMode = false;
+  arenaScale = 1;
   smashMode = _gdSavedSmash;
   pixelMode = _gdSavedPixel;
   applyPerfMode();
@@ -1700,12 +1728,14 @@ function setLoadoutLook(on) {
   floor.visible = !on;
   border.material.color.setHex(on ? 0x77cc33 : 0x5555cc); // toxic green bounds
   _FOG.color.setHex(on ? 0x0a0c08 : 0x0d0d1a);
+  _FOG.near = on ? 34 : 42; _FOG.far = on ? 70 : 80;   // v162: the theater reveal
   scene.fog = _FOG;
   CABINET_STYLE.mode = on ? 'loadout' : null;
   player.setCabinetStyle(on ? 'loadout' : null);
 }
 function startLoadout() {
   loadoutMode = true;
+  arenaScale = 1.9;   // v162: the theater of operations scrolls
   loMission = 0;
   loObjective = null; loDone = false;
   _loHeavyArmed = true;   // v158: heavier rounds applied after startGame's reset
@@ -1717,6 +1747,7 @@ function startLoadout() {
 }
 function exitLoadout() {
   loadoutMode = false;
+  arenaScale = 1;
   smashMode = _loSavedSmash;
   applyPerfMode();
   setLoadoutLook(false);
@@ -1806,12 +1837,14 @@ function setKaikkiLook(on) {
   floor.visible = !on;
   border.material.color.setHex(on ? 0xbb2222 : 0x5555cc); // blood-red bounds
   _FOG.color.setHex(on ? 0x0d0d0d : 0x0d0d1a);
+  _FOG.near = on ? 30 : 42; _FOG.far = on ? 64 : 80;   // v162: the street reveal
   scene.fog = _FOG;
   CABINET_STYLE.mode = on ? 'kaikki' : null;
   player.setCabinetStyle(on ? 'kaikki' : null);
 }
 function startKaikki() {
   kaikkiMode = true;
+  arenaScale = 1.7;   // v162: the city scrolls
   kkCash = 0;
   kkDone = false;
   kkBought = new Set();
@@ -1823,6 +1856,7 @@ function startKaikki() {
 }
 function exitKaikki() {
   kaikkiMode = false;
+  arenaScale = 1;
   clearKaikkiLevel();
   smashMode = _kkSavedSmash;
   pixelMode = _kkSavedPixel;
@@ -3093,7 +3127,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v161', 16, uiCanvas.height - 12);
+  ctx.fillText('v162', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3908,7 +3942,7 @@ function spawnWave() {
     clearGaundropLevel();
     const lvl = wave;
     gdKeyHeld = false;
-    gdHungerT = 32;
+    gdHungerT = 38;   // v162: the scrolled dungeon is twice the walk
     // ── carve the maze ──
     const cols = Math.max(9, Math.floor((HALF_X * 2 - 2) / 2.4));
     const rows = Math.max(7, Math.floor((HALF_Z * 2 - 2) / 2.4));
@@ -3932,13 +3966,20 @@ function spawnWave() {
     walk(pi, pj, xi, xj);
     walk(pi, pj, xi, 1);
     walk(pi, pj, 1, xj);
-    for (let r = 0; r < 3; r++) {        // room clearings, each wired in
+    // v162: carve effort scales with the grid AREA — the scrolled dungeon
+    // stays corridors-and-halls instead of a solid mass with slits.
+    const nRooms = 3 + Math.floor(cols * rows / 80);
+    for (let r = 0; r < nRooms; r++) {   // room clearings, each wired in
       const ri = 1 + Math.floor(rng() * (cols - 4));
       const rj = 1 + Math.floor(rng() * (rows - 4));
       for (let a = 0; a < 3; a++) for (let b = 0; b < 2; b++) carve(ri + a, rj + b);
       walk(pi, pj, ri + 1, rj);
     }
-    for (let n = Math.floor(cols * rows * 0.10); n > 0; n--) {  // loops, not tubes
+    for (let w2 = Math.floor(cols * rows / 130); w2 > 0; w2--) {  // cross-halls
+      walk(1 + Math.floor(rng() * (cols - 2)), 1 + Math.floor(rng() * (rows - 2)),
+           1 + Math.floor(rng() * (cols - 2)), 1 + Math.floor(rng() * (rows - 2)));
+    }
+    for (let n = Math.floor(cols * rows * 0.13); n > 0; n--) {  // loops, not tubes
       carve(Math.floor(rng() * cols), Math.floor(rng() * rows));
     }
     // ── merged stone runs from closed cells ──
@@ -4198,7 +4239,7 @@ function spawnWave() {
       }
       gdGenerators.push(post);
     } else if (loObjective === 'purge') {
-      const n = Math.min(20, 6 + wave * 2);
+      const n = Math.min(26, 8 + wave * 2);   // v162: bigger theater, more targets
       for (let i = 0; i < n; i++) {
         let px, pz, tries = 0;
         do {
@@ -4227,7 +4268,7 @@ function spawnWave() {
     kkDone = false;
     // city blocks: two loose rows of buildings, streets between
     const wallMat = () => new THREE.MeshBasicMaterial({ color: 0x2a2a2e });
-    const nBld = 3 + Math.floor(rng() * 3);
+    const nBld = 5 + Math.floor(rng() * 3);   // v162: a scrolled city has blocks
     for (let i = 0; i < nBld; i++) {
       const hx = 1.6 + rng() * 1.6, hz = 1.3 + rng() * 1.4;
       const bx = (rng() * 2 - 1) * (HALF_X - hx - 3);
@@ -4252,7 +4293,7 @@ function spawnWave() {
       gdWalls.push({ mesh, x: bx, z: bz, hx, hz });
     }
     // crates in the alleys — every one is money
-    const nCrate = 6 + Math.floor(rng() * 4);
+    const nCrate = 9 + Math.floor(rng() * 5);   // v162
     for (let i = 0; i < nCrate; i++) {
       let cx2, cz2, tries = 0;
       do {
@@ -4265,7 +4306,7 @@ function spawnWave() {
     player.mesh.position.set(0, player.mesh.position.y, HALF_Z - 2.2);
     player.grantInvincibility(1.0);
     // the crowd — big, mixed, pouring in from all over
-    const n = Math.min(30, 8 + wave * 3);
+    const n = Math.min(38, 10 + wave * 3);   // v162: the crowd fills the city
     for (let i = 0; i < n; i++) {
       let px, pz, tries = 0;
       do {
@@ -4639,25 +4680,32 @@ function startCabQuest(mode) {
     _tkSavedPixel = pixelMode; pixelMode = true;
     applyPerfMode();
     setTokotronLook(true);
+    applyArenaMode(landscapeMode);   // v162: tokotron is a fixed room preset
   } else if (mode === 'gaundrop') {
     gaundropMode = true;
+    arenaScale = 2.0;                // v162: quests scroll like the cabinet
     _gdSavedSmash = smashMode; smashMode = false;
     _gdSavedPixel = pixelMode; pixelMode = true;
     applyPerfMode();
     setGaundropLook(true);
+    applyArenaMode(landscapeMode);
   } else if (mode === 'loadout') {
     loadoutMode = true;
+    arenaScale = 1.9;                // v162
     loMission = wave; loObjective = null; loDone = false;
     _loSavedSmash = smashMode; smashMode = false;
     applyPerfMode();
-    setLoadoutLook(true);      // no door pick inside a quest: bring your build
+    setLoadoutLook(true);            // no door pick inside a quest: bring your build
+    applyArenaMode(landscapeMode);
   } else if (mode === 'kaikki') {
     kaikkiMode = true;
+    arenaScale = 1.7;                // v162
     kkDone = false;
     _kkSavedSmash = smashMode; smashMode = false;
     _kkSavedPixel = pixelMode; pixelMode = true;
     applyPerfMode();
     setKaikkiLook(true);
+    applyArenaMode(landscapeMode);
   } else if (mode === 'binding') {
     bindingMode = true;
     bindingRoomN = 1; bindingFloor = 1;
@@ -5147,7 +5195,7 @@ function loop() {
       loTimer -= dt;
       loTrickleT -= dt;
       const alive = enemies.reduce((n, e) => n + (e.alive ? 1 : 0), 0);
-      if (loTrickleT <= 0 && alive < 14) {
+      if (loTrickleT <= 0 && alive < 18) {   // v162: scaled to the theater
         loTrickleT = 2.2;
         const a2 = Math.random() * Math.PI * 2;
         const roll = Math.random();
@@ -6203,6 +6251,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=115').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=116').catch(() => {});
   });
 }
