@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v162 — 2026-07-14
+**Scrolling arenas — the mode-structure taxonomy lands (user direction)**
+- **The taxonomy**: room-traversal games (SMASH, BINDING) traverse discrete arenas; **scrolling-arena games (GAUNDROP 2.0×, LOADOUT 1.9×, KAIKKI 1.7×) now play in worlds BIGGER than the screen** — the camera lerp-follows the player (clamped so the view never leaves the world) and tightened per-cabinet fog makes the level **open up as you walk toward the edge**; fixed-single-screen modes (TOKOTRON, classic) stay put, true to their references
+- The dungeon is twice the crawl (hunger clock eased to 38 s), the compound sits in a real theater of operations (bigger purge floods, deeper trickle cap), the city has more blocks, crates, and crowd
+- Camera follow lives in the one place that writes the camera (shake integrator) — zero cost when arenaScale is 1; classic/SMASH render identical
+- Cabinet QUESTS inherit each mode's scale and arena preset; every exit path restores scale 1
+- Cache-bust `?v=115` → `?v=116`; HUD label → v162
+
+---
+
 ## v161 — 2026-07-14
 **Cabinet identity audit — every mode scrutinized like the tokotron pass (user direction)**
 - Audited all nine modes against their reference identity (does it READ?): classic/SMASH/roguelike/daily are the baseline (no action); TOKOTRON passed in v160; the other four cabinets each had gaps — fixed:
