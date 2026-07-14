@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v166 — 2026-07-14
+**Bonus quests are a SOMETIMES thing — randomized, not guaranteed (user direction)**
+- The Roguelike B gold card no longer appears on every card screen: **~55% of screens roll a bonus quest at all**, and when one appears it's a **random pick** from the six (gauntlet + five cabinets) — never the same quest twice in a row. Scarcity is the appeal; supersedes the v165 fixed rotation
+- Gauntlet tiers still ramp when taken; per-run offer memory resets with the run
+- Cache-bust `?v=119` → `?v=120`; HUD label → v166
+
+---
+
 ## v165 — 2026-07-14
 **FIX: Roguelike B gold card rotates every OFFER (user report: "only getting Gauntlet")**
 - v154's rotation only advanced when a quest was ACCEPTED — a player who never took the gauntlet only ever SAW the gauntlet; the other five bonus quests were unreachable behind it

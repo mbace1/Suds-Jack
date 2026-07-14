@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=119';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=119';
-import { Player, PLAYER_RADIUS } from './player.js?v=119';
+import { InputManager } from './input.js?v=120';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=120';
+import { Player, PLAYER_RADIUS } from './player.js?v=120';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=119';
-import { RetroPass } from './retro.js?v=119';
-import { audio } from './audio.js?v=119';
-import { initDesigner } from './designer.js?v=119';
-import { t, getLang, setLang, langs } from './lang.js?v=119';
-import { TUNING } from './tuning.js?v=119';
+         CABINET_STYLE, VIS } from './enemy.js?v=120';
+import { RetroPass } from './retro.js?v=120';
+import { audio } from './audio.js?v=120';
+import { initDesigner } from './designer.js?v=120';
+import { t, getLang, setLang, langs } from './lang.js?v=120';
+import { TUNING } from './tuning.js?v=120';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1346,7 +1346,7 @@ let _gSavedSmash  = null;   // smashMode to restore when the gauntlet ends
 // pinball multiplier and a RARE pick on completion. Declining keeps the same
 // offer for the next card screen.
 let cabQuest = null;   // { mode, goal, done, mult } while inside a quest
-let questIdx = 0;      // per-run pointer into QUEST_ORDER (advances per OFFER, v165)
+let _lastQuestOffer = null;   // v166: no identical back-to-back offers
 const QUEST_ORDER = ['gauntlet', 'tokotron', 'gaundrop', 'loadout', 'binding', 'kaikki'];
 // SMASH TV mode (v109): enemies pour in bursts from 4 arena-edge "doors",
 // waves run bigger and burstier, and moths/convoys drop more prizes.
@@ -3169,7 +3169,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v165', 16, uiCanvas.height - 12);
+  ctx.fillText('v166', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -4635,12 +4635,14 @@ function showUpgradeCards(afterPick = null) {
     row.appendChild(btn);
   }
 
-  if (rogueB && !afterPick && !inCabinet() && !cabQuest) {
-    // v154: the gold card rotates through ALL the cabinets. v165 FIX: the
-    // rotation advances on every OFFER, not on accept — otherwise a player
-    // who never took the gauntlet only ever SAW the gauntlet (user report).
-    const qMode = QUEST_ORDER[questIdx % QUEST_ORDER.length];
-    questIdx++;
+  if (rogueB && !afterPick && !inCabinet() && !cabQuest && Math.random() < 0.55) {
+    // v166 (user direction): the gold card is a SOMETIMES thing — a bit
+    // over half of card screens roll a bonus quest at all, and the quest is
+    // RANDOM (never the same one twice in a row). Scarcity is the appeal.
+    let qMode;
+    do { qMode = QUEST_ORDER[Math.floor(Math.random() * QUEST_ORDER.length)]; }
+    while (QUEST_ORDER.length > 1 && qMode === _lastQuestOffer);
+    _lastQuestOffer = qMode;
     const tier = gauntletTier;
     const g = document.createElement('div');
     g.dataset.ui = '1';
@@ -4851,7 +4853,7 @@ function startGame() {
   applyArenaMode(landscapeMode);
   score  = 0; streak = 0; wave = 0; runTimer = 0; scoreMultT = 0; waveClearFlashT = 0; waveGapT = 0;
   milestoneT = 0; nextMilestone = 25000; grazeCount = 0; shieldBlockCount = 0;
-  gauntlet = null; gauntletTier = 1; cabQuest = null; questIdx = 0;
+  gauntlet = null; gauntletTier = 1; cabQuest = null; _lastQuestOffer = null;
   collectedUpgrades = []; hitEventLog = []; _lastHitTime = -1; _lbPosted = false;
   scheduleTutorialHints();
   BULLET_CONFIG.playerBulletScale  = 1.0;
@@ -6332,6 +6334,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=119').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=120').catch(() => {});
   });
 }
