@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=111';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=111';
-import { Player, PLAYER_RADIUS } from './player.js?v=111';
+import { InputManager } from './input.js?v=112';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=112';
+import { Player, PLAYER_RADIUS } from './player.js?v=112';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=111';
-import { RetroPass } from './retro.js?v=111';
-import { audio } from './audio.js?v=111';
-import { initDesigner } from './designer.js?v=111';
-import { t, getLang, setLang, langs } from './lang.js?v=111';
-import { TUNING } from './tuning.js?v=111';
+         CABINET_STYLE, VIS } from './enemy.js?v=112';
+import { RetroPass } from './retro.js?v=112';
+import { audio } from './audio.js?v=112';
+import { initDesigner } from './designer.js?v=112';
+import { t, getLang, setLang, langs } from './lang.js?v=112';
+import { TUNING } from './tuning.js?v=112';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1636,6 +1636,7 @@ let loTimer = 0;          // HOLD OUT countdown
 let loTrickleT = 0;
 let loDone = false;       // objective met, transition pending
 let _loSavedSmash = null;
+let _loHeavyArmed = false;  // v158: one-shot flag — startGame resets, then we scale
 const LO_LOADOUTS = [
   { id: 'gunner', pod: 'S2', perk: 'firerate' },
   { id: 'lancer', pod: 'L',  perk: 'pierce' },
@@ -1655,6 +1656,7 @@ function startLoadout() {
   loadoutMode = true;
   loMission = 0;
   loObjective = null; loDone = false;
+  _loHeavyArmed = true;   // v158: heavier rounds applied after startGame's reset
   _loSavedSmash = smashMode; smashMode = false;
   applyPerfMode();
   setLoadoutLook(true);
@@ -2739,7 +2741,9 @@ function drawHUD() {
   // LOADOUT objective line (v152), top-center.
   if (loadoutMode && gameState === 'playing' && loObjective) {
     let txt = '';
-    if (loObjective === 'purge') {
+    if (loObjective === 'assault') {
+      txt = loDone ? 'POST DESTROYED' : 'ASSAULT — DESTROY THE COMMAND POST';
+    } else if (loObjective === 'purge') {
       const left = enemies.reduce((n, e) => n + (e.alive ? 1 : 0), 0) + pendingSpawns.length;
       txt = loDone ? 'PURGED' : `PURGE — ${left} LEFT`;
     } else if (loObjective === 'demolish') {
@@ -2868,7 +2872,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v157', 16, uiCanvas.height - 12);
+  ctx.fillText('v158', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3889,41 +3893,68 @@ function spawnWave() {
     roomTallyT = 0;
   }
 
-  // LOADOUT missions (v152): rotating objectives in a gunmetal room —
-  // PURGE the floor, DEMOLISH the generators, or HOLD OUT on the clock.
-  // A couple of cover walls per mission; generators reuse the Gaundrop kit.
+  // LOADOUT missions (v158 remake): every mission is fought around THE
+  // COMPOUND — a walled base east of your staging point, gated on the west
+  // (the assault route) with a narrow back gate, TURRET emplacements on the
+  // inside corners, and TROOPER riflemen in the mix. Rotating objectives:
+  // PURGE the field, DEMOLISH the generators inside, HOLD OUT on the clock,
+  // or ASSAULT the command post dug in at the back.
   if (loadoutMode) {
     clearGaundropLevel();
     loMission = wave;
     loDone = false;
     loTrickleT = 2.0;
-    const objs = ['purge', 'demolish', 'holdout'];
-    loObjective = objs[(wave - 1) % 3];
-    // cover walls
+    const objs = ['purge', 'demolish', 'holdout', 'assault'];
+    loObjective = objs[(wave - 1) % 4];
     const wallMat = () => new THREE.MeshBasicMaterial({ color: 0x39422e });
-    for (let i = 0; i < 2 + (wave > 4 ? 1 : 0); i++) {
-      const horiz = rng() < 0.5;
-      const len = 3 + rng() * 3.5;
-      const hx = horiz ? len / 2 : 0.45, hz = horiz ? 0.45 : len / 2;
-      const wx = (rng() * 2 - 1) * (HALF_X - hx - 3);
-      const wz = (rng() * 2 - 1) * (HALF_Z - hz - 3);
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(hx * 2, 1.0, hz * 2), wallMat());
-      mesh.position.set(wx, 0.5, wz);
+    const seg = (x, z, hx, hz) => {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(hx * 2, 1.15, hz * 2), wallMat());
+      mesh.position.set(x, 0.58, z);
       scene.add(mesh);
-      gdWalls.push({ mesh, x: wx, z: wz, hx, hz });
+      gdWalls.push({ mesh, x, z, hx, hz });
+    };
+    const ccx = HALF_X * 0.32;                          // compound center, east of mid
+    const cw2 = HALF_X * 0.52, ch2 = HALF_Z * 0.58;     // half extents
+    const gate = ch2 * 0.36;                            // west gate half-width
+    seg(ccx, -ch2, cw2, 0.42);                          // north wall
+    seg(ccx,  ch2, cw2, 0.42);                          // south wall
+    seg(ccx - cw2, -(gate + (ch2 - gate) / 2), 0.42, (ch2 - gate) / 2);  // west, gated
+    seg(ccx - cw2,  (gate + (ch2 - gate) / 2), 0.42, (ch2 - gate) / 2);
+    const bg = gate * 0.5;                              // narrow back gate
+    seg(ccx + cw2, -(bg + (ch2 - bg) / 2), 0.42, (ch2 - bg) / 2);        // east
+    seg(ccx + cw2,  (bg + (ch2 - bg) / 2), 0.42, (ch2 - bg) / 2);
+    // you stage OUTSIDE, west of the walls
+    player.mesh.position.set(-HALF_X + 2.5, player.mesh.position.y, 0);
+    player.grantInvincibility(1.0);
+    // corner turret emplacements inside — more with depth
+    const nTur = Math.min(4, 1 + Math.floor(wave / 2));
+    const tPos = [[ccx - cw2 + 1.6, -ch2 + 1.6], [ccx - cw2 + 1.6, ch2 - 1.6],
+                  [ccx + cw2 - 1.6, ch2 - 1.6], [ccx + cw2 - 1.6, -ch2 + 1.6]];
+    for (let i = 0; i < nTur; i++) {
+      enemies.push(new Enemy(scene, EnemyType.TURRET, tPos[i][0], tPos[i][1], speedMult, intervalMult));
     }
+    const pickInside = () => {
+      let gx, gz, tries = 0;
+      do {
+        gx = ccx + (rng() * 2 - 1) * (cw2 - 2.5);
+        gz = (rng() * 2 - 1) * (ch2 - 2.5);
+      } while (gdInsideWall(gx, gz, 1.2) && ++tries < 30);
+      return [gx, gz];
+    };
     if (loObjective === 'demolish') {
       const nGen = Math.min(4, 2 + Math.floor(wave / 4));
-      const types = [EnemyType.GLOBBO, EnemyType.ORANGE_CUBE, EnemyType.REDD_MINI];
+      const types = [EnemyType.TROOPER, EnemyType.GLOBBO, EnemyType.ORANGE_CUBE];
       for (let i = 0; i < nGen; i++) {
-        let gx, gz, tries = 0;
-        do {
-          gx = (rng() * 2 - 1) * (HALF_X - 2.5);
-          gz = (rng() * 2 - 1) * (HALF_Z - 2.5);
-        } while ((gdInsideWall(gx, gz, 1.2) ||
-                  Math.hypot(gx - player.position.x, gz - player.position.z) < 7) && ++tries < 30);
+        const [gx, gz] = pickInside();
         gdGenerators.push(new Generator(scene, gx, gz, types[Math.floor(rng() * types.length)]));
       }
+    } else if (loObjective === 'assault') {
+      // the command post: one big hardened generator at the back of the base
+      const post = new Generator(scene, ccx + cw2 * 0.55, 0, EnemyType.TROOPER, 5.0);
+      post.hp = 14;
+      post.mesh.scale.setScalar(1.55);
+      post.mat.color.setHex(0x4a5a3a);
+      gdGenerators.push(post);
     } else if (loObjective === 'purge') {
       const n = Math.min(20, 6 + wave * 2);
       for (let i = 0; i < n; i++) {
@@ -3934,7 +3965,7 @@ function spawnWave() {
         } while ((gdInsideWall(px, pz, 0.8) ||
                   Math.hypot(px - player.position.x, pz - player.position.z) < 6) && ++tries < 20);
         const roll = rng();
-        const ty = roll < 0.5 ? EnemyType.GLOBBO : roll < 0.8 ? EnemyType.ORANGE_CUBE : EnemyType.WEEVA;
+        const ty = roll < 0.4 ? EnemyType.TROOPER : roll < 0.75 ? EnemyType.GLOBBO : EnemyType.ORANGE_CUBE;
         pendingSpawns.push({ type: ty, delay: 0.2 + i * 0.05, px, pz,
           angle: 0, shooter: false, clusterOffset: null, speedMult, intervalMult });
       }
@@ -4084,7 +4115,8 @@ function spawnWave() {
   } else if (loadoutMode) {
     waveIntroT = waveIntroDur = 1.4;
     waveIntroText = `MISSION ${wave} — ` +
-      (loObjective === 'purge' ? 'PURGE' : loObjective === 'demolish' ? 'DEMOLISH' : 'HOLD OUT');
+      (loObjective === 'purge' ? 'PURGE' : loObjective === 'demolish' ? 'DEMOLISH'
+       : loObjective === 'assault' ? 'ASSAULT' : 'HOLD OUT');
     waveIntroColor = '#aaff66';
   } else {
     // Classic: color-coded wave banner naming the rhythm (v123).
@@ -4404,6 +4436,10 @@ function startGame() {
   buildSmashDoors();  // no-op unless SMASH TV mode is on
   _titleIntroPlayed = false;  // v121: arm the recorded intro for the next title visit
   audio.announce('start');
+  if (_loHeavyArmed) {   // v158: LOADOUT fires heavier rounds — feel, not stats
+    _loHeavyArmed = false;
+    BULLET_CONFIG.playerBulletScale *= 1.2;
+  }
   // LOADOUT holds mission 1 until the door pick — the pick itself calls
   // spawnWave() (loMission is 0 only between startLoadout and that pick).
   if (!(loadoutMode && loMission === 0)) spawnWave();
@@ -4600,7 +4636,10 @@ window.addEventListener('touchend', (e) => {
   startRun();
 }, { once: false });
 
-player.onShoot = () => audio.shoot();
+player.onShoot = () => {
+  audio.shoot();
+  if (loadoutMode) addShake(0.016);   // v158: the guns have shoulders
+};
 
 // ── Mouse aim ───────────────────────────────────────────────────────────────────
 const raycaster   = new THREE.Raycaster();
@@ -4786,7 +4825,9 @@ function loop() {
       if (loTrickleT <= 0 && alive < 14) {
         loTrickleT = 2.2;
         const a2 = Math.random() * Math.PI * 2;
-        enemies.push(new Enemy(scene, Math.random() < 0.6 ? EnemyType.GLOBBO : EnemyType.ORANGE_CUBE,
+        const roll = Math.random();
+        const ty = roll < 0.4 ? EnemyType.TROOPER : roll < 0.75 ? EnemyType.GLOBBO : EnemyType.ORANGE_CUBE;
+        enemies.push(new Enemy(scene, ty,
           Math.cos(a2) * HALF_X * 0.95, Math.sin(a2) * HALF_Z * 0.95));
       }
     }
@@ -4794,7 +4835,8 @@ function loop() {
     if (!loDone) {
       const alive = enemies.some(e => e.alive) || pendingSpawns.length > 0;
       const met = loObjective === 'purge'    ? !alive
-                : loObjective === 'demolish' ? gdGenerators.length === 0
+                : (loObjective === 'demolish' || loObjective === 'assault')
+                  ? gdGenerators.length === 0
                 : loTimer <= 0;
       if (met) {
         loDone = true;
@@ -5786,6 +5828,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=111').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=112').catch(() => {});
   });
 }
