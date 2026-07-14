@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=114';
-import { nesSnap, NEON } from './retro.js?v=114';
+import { TUNING } from './tuning.js?v=115';
+import { nesSnap, NEON } from './retro.js?v=115';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -417,7 +417,7 @@ export const CFG = {
   [EnemyType.PROG]:        { color: 0x66ff88, radius: 0.45, speed: 2.6, hp: 2, bulletColor: 0x88ffcc, fireInterval: 2.0  },
   [EnemyType.MINDER]:      { color: 0xcc66ff, radius: 0.7,  speed: 1.6, hp: 3, bulletColor: null,     fireInterval: null },
   // GAUNDROP cabinet roster (v156)
-  [EnemyType.GHOST]:       { color: 0x9db4c8, radius: 0.42, speed: 3.1, hp: 1, bulletColor: null,     fireInterval: null },
+  [EnemyType.GHOST]:       { color: 0xdce8f4, radius: 0.42, speed: 3.1, hp: 1, bulletColor: null,     fireInterval: null },
   [EnemyType.WRAITH]:      { color: 0x881133, radius: 0.8,  speed: 1.15, hp: 9999, bulletColor: null, fireInterval: null },
   // BINDING cabinet roster (v157)
   [EnemyType.FLIT]:        { color: 0x445566, radius: 0.3,  speed: 2.4, hp: 1, bulletColor: null,     fireInterval: null },
@@ -557,7 +557,7 @@ export class Enemy {
     } else if (type === EnemyType.GHOST) {
       geo = new THREE.ConeGeometry(cfg.radius, 0.9, 6);    // little shroud
     } else if (type === EnemyType.WRAITH) {
-      geo = new THREE.SphereGeometry(cfg.radius, 10, 8);
+      geo = new THREE.ConeGeometry(cfg.radius, 1.7, 7);   // hooded dread (v161)
     } else if (type === EnemyType.FLIT) {
       geo = new THREE.SphereGeometry(cfg.radius, 8, 6);       // hovering mote
     } else if (type === EnemyType.CHARGER) {
@@ -849,6 +849,27 @@ export class Enemy {
       this._brainCore = new THREE.Mesh(new THREE.SphereGeometry(cfg.radius * 0.5, 8, 6), this._robotMat);
       this._robotBits = [this._brainCore];
       this.mesh.add(this._brainCore);
+    } else if (type === EnemyType.FLIT) {
+      // v161 identity pass: a fly needs WINGS — two pale planes that blur-flap.
+      this._robotMat = new THREE.MeshBasicMaterial({
+        color: 0xc8d4e0, transparent: true, opacity: 0.65,
+        side: THREE.DoubleSide, depthWrite: false });
+      this._wingL = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.16), this._robotMat);
+      this._wingL.position.set(-0.22, 0.12, 0);
+      this._wingR = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.16), this._robotMat);
+      this._wingR.position.set(0.22, 0.12, 0);
+      this._robotBits = [this._wingL, this._wingR];
+      this.mesh.add(this._wingL, this._wingR);
+    } else if (type === EnemyType.TROOPER) {
+      // v161 identity pass: the rifleman gets a helmet + visor like the
+      // grunt got — the soldier read, in loadout's toxic-green.
+      this._robotMat = new THREE.MeshBasicMaterial({ color: 0xccff66 });
+      const visor = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.09, 0.06), this._robotMat);
+      visor.position.set(0, 0.32, 0.26);
+      const helm = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.42), this._robotMat);
+      helm.position.set(0, 0.52, 0);
+      this._robotBits = [visor, helm];
+      this.mesh.add(visor, helm);
     }
 
     // WARDEN (v124): visible shield aura — a flat cyan ring on the floor
@@ -1538,6 +1559,11 @@ export class Enemy {
         this.mesh.position.x += (fdx / fl) * fstep;
         this.mesh.position.z += (fdz / fl) * fstep;
         this.mesh.position.y = 0.7 + 0.15 * Math.sin(this._wobbleT * 3.2 + this._phase);
+        if (this._wingL) {   // v161: blur-flap
+          const f = Math.sin(this._wobbleT * 34) * 0.9;
+          this._wingL.rotation.z =  0.5 + f * 0.4;
+          this._wingR.rotation.z = -0.5 - f * 0.4;
+        }
         break;
       }
 
@@ -1674,6 +1700,7 @@ export class Enemy {
           const a = Math.atan2(ddz, ddx) + (Math.random() - 0.5) * 0.08;
           bullets.spawnDir(ex, ez, Math.cos(a), Math.sin(a), false, cfg.bulletColor, false, this.type);
         }
+        this.mesh.rotation.y = Math.atan2(ddx, ddz);   // v161: visor faces you
         break;
       }
 
