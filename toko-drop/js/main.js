@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=107';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=107';
-import { Player, PLAYER_RADIUS } from './player.js?v=107';
+import { InputManager } from './input.js?v=108';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=108';
+import { Player, PLAYER_RADIUS } from './player.js?v=108';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=107';
-import { RetroPass } from './retro.js?v=107';
-import { audio } from './audio.js?v=107';
-import { initDesigner } from './designer.js?v=107';
-import { t, getLang, setLang, langs } from './lang.js?v=107';
-import { TUNING } from './tuning.js?v=107';
+         CABINET_STYLE, VIS } from './enemy.js?v=108';
+import { RetroPass } from './retro.js?v=108';
+import { audio } from './audio.js?v=108';
+import { initDesigner } from './designer.js?v=108';
+import { t, getLang, setLang, langs } from './lang.js?v=108';
+import { TUNING } from './tuning.js?v=108';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1312,6 +1312,14 @@ if (rogueB) roguelikeMode = true;
 let gauntlet      = null;   // { tier, rooms, roomIdx, mult, mega } while inside
 let gauntletTier  = 1;      // next gauntlet offer's tier (per run)
 let _gSavedSmash  = null;   // smashMode to restore when the gauntlet ends
+// Cabinet bonus quests (v154, Roguelike B): the gold rare card rotates
+// through ALL the arcade cabinets — each a short scripted excursion (clear N
+// waves / find the exit / run N missions / clear N rooms) with the gauntlet's
+// pinball multiplier and a RARE pick on completion. Declining keeps the same
+// offer for the next card screen.
+let cabQuest = null;   // { mode, goal, done, mult } while inside a quest
+let questIdx = 0;      // per-run pointer into QUEST_ORDER (advances on accept)
+const QUEST_ORDER = ['gauntlet', 'tokotron', 'gaundrop', 'loadout', 'binding'];
 // SMASH TV mode (v109): enemies pour in bursts from 4 arena-edge "doors",
 // waves run bigger and burstier, and moths/convoys drop more prizes.
 let smashMode = localStorage.getItem('tokoDropSmash') === '1';
@@ -1802,7 +1810,7 @@ function onKill(e) {
     addShake(0.12);
   }
   streak++;
-  score += 100 * streak * (scoreMultT > 0 ? 2 : 1) * (gauntlet ? gauntlet.mult : 1);
+  score += 100 * streak * (scoreMultT > 0 ? 2 : 1) * (gauntlet ? gauntlet.mult : cabQuest ? cabQuest.mult : 1);
   if (streak > 0 && streak % 5 === 0) audio.announce('streak');
   // BOUNTY claim (v133): marked target down inside the window — big cash and
   // a guaranteed weapon pod at the body. Works from any kill source (bullets,
@@ -2723,6 +2731,19 @@ function drawHUD() {
     ctx.restore();
   }
 
+  // CABINET QUEST tag (v154): live multiplier + beats, top-center.
+  if (cabQuest && gameState === 'playing') {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 15px monospace, sans-serif';
+    ctx.shadowColor = '#ffcc33';
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = '#ffdd66';
+    ctx.fillText(`BONUS QUEST  ×${cabQuest.mult}  ·  ${cabQuest.done}/${cabQuest.goal}`,
+      uiCanvas.width / 2, 44);
+    ctx.restore();
+  }
+
   // GAUNTLET tag (v146): the live pinball multiplier, top-center.
   if (gauntlet && gameState === 'playing') {
     ctx.save();
@@ -2800,7 +2821,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v153', 16, uiCanvas.height - 12);
+  ctx.fillText('v154', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3959,21 +3980,28 @@ function showUpgradeCards(afterPick = null) {
     row.appendChild(btn);
   }
 
-  if (rogueB && !afterPick && !bindingMode) {
+  if (rogueB && !afterPick && !inCabinet() && !cabQuest) {
+    // v154: the gold card rotates through ALL the cabinets — gauntlet first,
+    // then each tribute cabinet as a bonus quest. Declining doesn't advance.
+    const qMode = QUEST_ORDER[questIdx % QUEST_ORDER.length];
     const tier = gauntletTier;
     const g = document.createElement('div');
     g.dataset.ui = '1';
     g.style.cssText = 'background:#2a2010;border:2px solid #ffcc33;border-radius:8px;' +
       'padding:20px 24px;min-width:140px;max-width:180px;text-align:center;cursor:pointer;' +
       'box-shadow:0 0 18px rgba(255,204,51,0.25);';
+    const [qTitle, qDesc] = qMode === 'gauntlet'
+      ? [t(tier === 1 ? 'g_t1' : 'g_t2'), t(tier === 1 ? 'g_t1_d' : 'g_t2_d')]
+      : [t('q_' + qMode), t('q_' + qMode + '_d')];
     g.innerHTML = `<div style="font-size:16px;font-weight:bold;margin-bottom:8px;color:#ffdd66">` +
-      `${t(tier === 1 ? 'g_t1' : 'g_t2')}</div>` +
-      `<div style="font-size:12px;opacity:0.75;color:#ffeebb">${t(tier === 1 ? 'g_t1_d' : 'g_t2_d')}</div>`;
+      `${qTitle}</div>` +
+      `<div style="font-size:12px;opacity:0.75;color:#ffeebb">${qDesc}</div>`;
     g.addEventListener('pointerover', () => { g.style.borderColor = '#ffee88'; });
     g.addEventListener('pointerout',  () => { g.style.borderColor = '#ffcc33'; });
     g.addEventListener('pointerdown', () => {
       panel.remove();
-      startGauntlet(tier);
+      if (qMode === 'gauntlet') { questIdx++; startGauntlet(tier); }
+      else startCabQuest(qMode);
     });
     row.appendChild(g);
   }
@@ -4053,6 +4081,92 @@ function showRareCards(afterPick = null) {
   document.body.appendChild(panel);
 }
 
+// ── CABINET BONUS QUESTS (v154, Roguelike B) ─────────────────────────────────
+// Each quest borrows its cabinet's full machinery (look, spawn systems,
+// runtime) mid-run — mirroring startX() minus the startGame() reset — and
+// hands everything back via the cabinet's own exit on finish OR death.
+function startCabQuest(mode) {
+  questIdx++;
+  cabQuest = { mode, goal: mode === 'binding' ? 3 : mode === 'gaundrop' ? 1 : 2, done: 0, mult: 2 };
+  // leftover classic-wave gates/bounty/foam don't belong inside a cabinet
+  for (const g of gates) g.remove(scene);
+  gates = [];
+  clearBounty();
+  for (const f of foamZones) f.remove(scene);
+  foamZones = [];
+  if (mode === 'tokotron') {
+    tokotronMode = true;
+    _tkSavedSmash = smashMode; smashMode = false;
+    _tkSavedPixel = pixelMode; pixelMode = true;
+    applyPerfMode();
+    setTokotronLook(true);
+  } else if (mode === 'gaundrop') {
+    gaundropMode = true;
+    _gdSavedSmash = smashMode; smashMode = false;
+    _gdSavedPixel = pixelMode; pixelMode = true;
+    applyPerfMode();
+    setGaundropLook(true);
+  } else if (mode === 'loadout') {
+    loadoutMode = true;
+    loMission = wave; loObjective = null; loDone = false;
+    _loSavedSmash = smashMode; smashMode = false;
+    applyPerfMode();
+    setLoadoutLook(true);      // no door pick inside a quest: bring your build
+  } else if (mode === 'binding') {
+    bindingMode = true;
+    bindingRoomN = 1; bindingFloor = 1;
+    _bdSavedSmash = smashMode; smashMode = true;
+    _bdSavedPixel = pixelMode; pixelMode = true;
+    applyPerfMode();
+    setBindingLook(true);
+    applyArenaMode(landscapeMode);
+    roomX = 0; roomY = 0;
+    visitedRooms = new Set(['0,0']);
+    smashRoomKind = bindingKindFor(1);
+    _entryDoor = null; _cameFromDoor = null;
+    buildSmashDoors();
+  }
+  gameState = 'playing';
+  audio.announce('start');
+  spawnWave();
+}
+// Hand the borrowed cabinet back — shared by quest completion and death.
+function exitCabQuest() {
+  const m = cabQuest.mode;
+  cabQuest = null;
+  if (m === 'tokotron') {
+    exitTokotron();
+    for (const c of civilians) c.remove(scene);
+    civilians = []; rescueChain = 0;
+  } else if (m === 'gaundrop') {
+    clearGaundropLevel();
+    exitGaundrop();
+  } else if (m === 'loadout') {
+    clearGaundropLevel();        // loadout's walls/generators live in gd arrays
+    loObjective = null; loDone = false;
+    exitLoadout();
+  } else if (m === 'binding') {
+    exitBinding();
+    smashRoomKind = null;
+    exitPhase = false; exitDoors = []; roomTallyT = 0;
+    buildSmashDoors();
+  }
+}
+// One quest beat done (wave / mission / room / level): ramp or pay out.
+function cabQuestAdvance() {
+  cabQuest.done++;
+  if (cabQuest.done >= cabQuest.goal) finishCabQuest();
+  else { cabQuest.mult++; spawnWave(); }
+}
+function finishCabQuest() {
+  const bonus = 3000 * cabQuest.mult;
+  score += bonus;
+  milestoneT = 1.2; milestoneText = `QUEST CLEAR! +${bonus}`;
+  exitCabQuest();
+  audio.applause();
+  showRareCards();               // default afterPick resumes classic waves
+}
+
 function startGame() {
   overlay.style.display = 'none';
   overlay.style.pointerEvents = '';  // back to CSS default (none) for gameplay HUD
@@ -4064,7 +4178,7 @@ function startGame() {
   applyArenaMode(landscapeMode);
   score  = 0; streak = 0; wave = 0; runTimer = 0; scoreMultT = 0; waveClearFlashT = 0; waveGapT = 0;
   milestoneT = 0; nextMilestone = 25000; grazeCount = 0; shieldBlockCount = 0;
-  gauntlet = null; gauntletTier = 1;
+  gauntlet = null; gauntletTier = 1; cabQuest = null; questIdx = 0;
   collectedUpgrades = []; hitEventLog = []; _lastHitTime = -1; _lbPosted = false;
   scheduleTutorialHints();
   BULLET_CONFIG.playerBulletScale  = 1.0;
@@ -4127,6 +4241,7 @@ function triggerGameOver() {
     gauntlet = null;
     smashRoomKind = null;
   }
+  if (cabQuest) exitCabQuest();         // died inside a cabinet quest: same deal
   gameState = 'gameover';
   saveHitLog();
   _runBests = testMode ? {} : recordRun();   // test runs leave no records (v142)
@@ -4498,6 +4613,7 @@ function loop() {
         audio.waveClear();
         setTimeout(() => {
           if (!loadoutMode || gameState !== 'playing') return;
+          if (cabQuest) { cabQuestAdvance(); return; }   // v154: quest beat
           if (wave % 2 === 0) showLoadoutPicks();   // fresh kit every 2nd mission
           else spawnWave();
         }, 1400);
@@ -4544,12 +4660,13 @@ function loop() {
     if (gdExit) {
       gdExit.mat.opacity = 0.35 + 0.25 * Math.abs(Math.sin(performance.now() * 0.005));
       if (Math.hypot(player.position.x - gdExit.x, player.position.z - gdExit.z) < 1.1) {
-        score += 1000 * (scoreMultT > 0 ? 2 : 1);
+        score += 1000 * (scoreMultT > 0 ? 2 : 1) * (cabQuest ? cabQuest.mult : 1);
         audio.waveClear();
         pendingSpawns = [];
         for (const e of enemies) e.removeFrom(scene);
         enemies = [];
-        spawnWave();   // next level (spawnWave rebuilds walls/generators/exit)
+        if (cabQuest) cabQuestAdvance();   // v154: the delve pays out up top
+        else spawnWave();   // next level (spawnWave rebuilds walls/generators/exit)
       }
     }
   }
@@ -5153,7 +5270,7 @@ function loop() {
         // Instant score nugget (v89) — worth more in later waves, doubled by
         // an active Score Multiplier. Floor valuables (v116) carry their own
         // value: small cash piles, big prizes.
-        const gained = (pu._value ?? (250 + wave * 25)) * (scoreMultT > 0 ? 2 : 1) * (gauntlet ? gauntlet.mult : 1);
+        const gained = (pu._value ?? (250 + wave * 25)) * (scoreMultT > 0 ? 2 : 1) * (gauntlet ? gauntlet.mult : cabQuest ? cabQuest.mult : 1);
         score += gained;
         damageNumbers.push(new DamageNumber(pu.x, 1.2, pu.z, `+${gained}`, '255,221,68'));
         audio.announce('money');
@@ -5209,7 +5326,7 @@ function loop() {
       enemies.every(e => !e.alive && !e._dying) &&
       (!smashMode || pendingSpawns.length === 0)) {
     pendingSpawns = [];
-    score += wave * 500 * (gauntlet ? gauntlet.mult : 1);
+    score += wave * 500 * (gauntlet ? gauntlet.mult : cabQuest ? cabQuest.mult : 1);
     waveClearFlashT = 0.4;
     audio.waveClear();
     if (gauntlet && gauntlet.roomIdx >= gauntlet.rooms.length - 1) {
@@ -5235,7 +5352,10 @@ function loop() {
       audio.announce('clear');
       // Roguelike pacing (v101): a card every 3rd cleared wave — every wave was
       // way too frequent with instant wave-ends chaining fast.
-      if (tokotronMode) waveGapT = 0.6;   // v148: the reference slams onward
+      if (tokotronMode) {
+        if (cabQuest) cabQuestAdvance();     // v154: quest beat — pay or ramp
+        else waveGapT = 0.6;                 // v148: the reference slams onward
+      }
       else if (roguelikeMode && wave % 3 === 0) showUpgradeCards();
       else {
         // v136: breather — a beat to exhale and grab leftover drops instead of
@@ -5273,6 +5393,11 @@ function loop() {
           }
           bindingRoomN++;
           smashRoomKind = bindingKindFor(bindingRoomN);
+          if (cabQuest) {                    // v154: each room walked out of
+            cabQuest.done++;                 // is a quest beat
+            if (cabQuest.done >= cabQuest.goal) { finishCabQuest(); break; }
+            cabQuest.mult++;
+          }
         }
         _entryDoor    = (ed.door + 2) % 4;
         _cameFromDoor = _entryDoor;
@@ -5331,6 +5456,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=107').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=108').catch(() => {});
   });
 }

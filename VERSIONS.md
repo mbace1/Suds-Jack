@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v154 — 2026-07-14
+**Roguelike B: ALL the cabinets are bonus quests (user direction)**
+- The gold rare card now **rotates through the whole cabinet row**: BONUS GAUNTLET → **TOKOTRON RAID** (survive 2 flood waves) → **GAUNDROP DELVE** (find the exit of one dungeon level) → **LOADOUT OP** (complete 2 missions with the build you brought) → **BASEMENT DETOUR** (clear 3 basement rooms) — then back around, gauntlet tiers still ramping. Declining a quest keeps the same offer for the next card screen
+- Each quest borrows its cabinet's **full machinery mid-run** — look, RetroPass profile, spawn systems, walls/generators/civilians/rooms — with the gauntlet's pinball multiplier (×2, +1 per beat) applied to kills, pickups, and clears, a **BONUS QUEST ×N tag** on the HUD, and a **RARE pick + 3000×mult payout** on completion
+- Everything borrowed is handed back on completion AND on death (records stay tagged `roguelike`); classic waves resume right where the detour began
+- en/ja/fi quest card strings
+- Cache-bust `?v=107` → `?v=108`; HUD label → v154
+
+---
+
 ## v153 — 2026-07-14
 **Cabinet row — the arcade cabinets become a single-select mod (user direction)**
 - The four stacked launcher chips on the title are now **one compact CABINET row** (TOKOTRON / GAUNDROP / BINDING / LOADOUT): pick one — only one can be armed at a time — and **TAP TO START plays it**; tap the active chip again to go back to classic. Selection persists (`tokoDropCabinet`)
