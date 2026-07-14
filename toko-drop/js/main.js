@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=110';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=110';
-import { Player, PLAYER_RADIUS } from './player.js?v=110';
+import { InputManager } from './input.js?v=111';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=111';
+import { Player, PLAYER_RADIUS } from './player.js?v=111';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=110';
-import { RetroPass } from './retro.js?v=110';
-import { audio } from './audio.js?v=110';
-import { initDesigner } from './designer.js?v=110';
-import { t, getLang, setLang, langs } from './lang.js?v=110';
-import { TUNING } from './tuning.js?v=110';
+         CABINET_STYLE, VIS } from './enemy.js?v=111';
+import { RetroPass } from './retro.js?v=111';
+import { audio } from './audio.js?v=111';
+import { initDesigner } from './designer.js?v=111';
+import { t, getLang, setLang, langs } from './lang.js?v=111';
+import { TUNING } from './tuning.js?v=111';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1015,6 +1015,7 @@ const MELEE_TYPES = new Set([
   EnemyType.TORO,
   EnemyType.GRUNT, EnemyType.BRUTE,                 // v155 tokotron
   EnemyType.GHOST, EnemyType.WRAITH,                // v156 gaundrop
+  EnemyType.FLIT, EnemyType.CHARGER, EnemyType.HOPPER,  // v157 binding
 ]);
 const BLOB_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPITTOR, EnemyType.FANNER, EnemyType.WEEVA, EnemyType.SPLITTA,
@@ -1850,9 +1851,18 @@ function onKill(e) {
     milestoneT = 1.1;
     milestoneText = `STREAK ×${streak}!`;
   }
+  // BINDING hearts (v157): the basement pays in life — kills sometimes
+  // drop a suds-heart that fades fast. The item build is the run; hearts
+  // keep it alive long enough to matter.
+  if (bindingMode && Math.random() < 0.10 && powerups.length < 12) {
+    const pu = new Powerup(scene, e.position.x, e.position.z, 'hp',
+      (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 0.6);
+    pu._life = 8.0;
+    powerups.push(pu);
+  }
   // SMASH TV (v114): kills sometimes drop cash that lies on the floor — walk
   // over it before it fades. Big money. Big prizes.
-  if (smashMode && Math.random() < 0.15 && powerups.length < 14) {
+  if (smashMode && !bindingMode && Math.random() < 0.15 && powerups.length < 14) {
     const pu = new Powerup(scene, e.position.x, e.position.z, 'score',
       (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 0.6);
     pu._life = 6.0;
@@ -2858,7 +2868,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v156', 16, uiCanvas.height - 12);
+  ctx.fillText('v157', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3605,10 +3615,10 @@ function spawnWave() {
   for (const p of powerups) p.remove(scene); powerups = [];
   wave++;
   const { speedMult, intervalMult } = getWaveScale(wave);
-  // Binding rooms use the normal smash schedules — except ITEM rooms, which
-  // hold only the pedestal (tokotron/gaundrop build their own floods).
+  // Binding fight rooms use the cabinet's own roster (v157) — only BOSS
+  // rooms keep the smash schedule (tokotron/gaundrop build their own floods).
   const list = (tokotronMode || gaundropMode || loadoutMode ||
-                (bindingMode && smashRoomKind === 'item')) ? [] : getEnemySchedule(wave);
+                (bindingMode && smashRoomKind !== 'boss')) ? [] : getEnemySchedule(wave);
   waveDuration = ROUND_DUR;
   waveTimer    = 0;
   const total  = list.length;
@@ -3799,6 +3809,72 @@ function spawnWave() {
         delay: 0.2 + i * 0.06, px, pz, angle: 0, shooter: false, clusterOffset: null, speedMult, intervalMult });
     }
     clusterSpawnAt = [];
+  }
+
+  // BINDING fight rooms (v157 remake): Isaac-shaped — a seeded ROCK layout
+  // (blocks bullets and bodies both ways, reuses the dungeon wall kit) and
+  // the cabinet's own roster ALREADY IN THE ROOM when you walk in: FLIT
+  // orbit-swarms, SPITTLE arc-spitters, lane-charging CHARGERs (floor 2+),
+  // HOPPERs. Compositions scale with the floor; bosses keep the smash boss.
+  if (bindingMode && smashRoomKind !== 'item' && smashRoomKind !== 'boss') {
+    clearGaundropLevel();          // previous room's rocks
+    const rock = (x, z, hx = 0.9, hz = 0.9) => {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(hx * 2, 0.85, hz * 2),
+        new THREE.MeshBasicMaterial({ color: 0x5a3a44 }));
+      mesh.position.set(x, 0.42, z);
+      scene.add(mesh);
+      gdWalls.push({ mesh, x, z, hx, hz });
+    };
+    const mx = HALF_X * 0.45, mz = HALF_Z * 0.45;
+    const pat = Math.floor(rng() * 5);
+    if (pat === 0) {               // four pillars
+      rock(-mx, -mz); rock(mx, -mz); rock(-mx, mz); rock(mx, mz);
+    } else if (pat === 1) {        // center cross
+      rock(0, 0, 2.6, 0.9); rock(0, 0, 0.9, 2.6);
+    } else if (pat === 2) {        // diagonal ring
+      for (let a = 0; a < 4; a++) {
+        const th = a * Math.PI / 2 + Math.PI / 4;
+        rock(Math.cos(th) * 5.5, Math.sin(th) * 5.5);
+      }
+    } else if (pat === 3) {        // two flanking bars
+      rock(-HALF_X * 0.35, 0, 0.9, 3.2); rock(HALF_X * 0.35, 0, 0.9, 3.2);
+    } else {                       // scattered boulders, clear of doors/center
+      for (let i = 0; i < 5; i++) {
+        let bx2, bz2, tr = 0;
+        do {
+          bx2 = (rng() * 2 - 1) * (HALF_X - 3.5);
+          bz2 = (rng() * 2 - 1) * (HALF_Z - 3.5);
+        } while ((Math.hypot(bx2, bz2) < 3 ||
+                  (Math.abs(bx2) > HALF_X - 4 && Math.abs(bz2) < 2.5) ||
+                  (Math.abs(bz2) > HALF_Z - 4 && Math.abs(bx2) < 2.5)) && ++tr < 20);
+        rock(bx2, bz2);
+      }
+    }
+    // the room's residents — present on entry, Isaac-style, never on you
+    const f = bindingFloor;
+    const kind = smashRoomKind || 'normal';
+    const T = EnemyType;
+    const comp = kind === 'swarm'
+      ? { [T.FLIT]: 10 + f * 2, [T.HOPPER]: 2 }
+      : kind === 'spike'
+      ? { [T.CHARGER]: 2 + Math.floor(f / 2), [T.SPITTLE]: 3, [T.HOPPER]: 2 }
+      : { [T.FLIT]: 4 + f, [T.SPITTLE]: 2, [T.CHARGER]: f >= 2 ? 1 : 0, [T.HOPPER]: 1 };
+    for (const [tyStr, n] of Object.entries(comp)) {
+      const ty = +tyStr;
+      for (let i = 0; i < n; i++) {
+        let px, pz, tries = 0;
+        do {
+          px = (rng() * 2 - 1) * (HALF_X - 1.8);
+          pz = (rng() * 2 - 1) * (HALF_Z - 1.8);
+        } while ((gdInsideWall(px, pz, 0.8) ||
+                  Math.hypot(px - player.position.x, pz - player.position.z) < 5) && ++tries < 25);
+        const en = new Enemy(scene, ty, px, pz, speedMult, intervalMult);
+        enemies.push(en);
+        gooChunkPool.spawn(px, 0.5, pz, 0, 2.5, 0, en.color, 0.10);
+      }
+    }
+  } else if (bindingMode) {
+    clearGaundropLevel();          // item/boss rooms stay clear of rocks
   }
 
   // BINDING OF TOKO item room (v150): no enemies — one glowing pedestal in
@@ -4738,6 +4814,26 @@ function loop() {
     }
   }
 
+  // BINDING rocks (v157): the room layout blocks bullets and bodies both
+  // ways — same wall kit as the dungeon, applied in the basement.
+  if (bindingMode && player.alive && gdWalls.length) {
+    for (let bi = bullets.active.length - 1; bi >= 0; bi--) {
+      const b = bullets.active[bi];
+      if (gdInsideWall(b.mesh.position.x, b.mesh.position.z, 0)) bullets.recycleAt(bi);
+    }
+    {
+      const c = gdResolveWalls(player.position.x, player.position.z, PLAYER_RADIUS);
+      player.mesh.position.x = c.x; player.mesh.position.z = c.z;
+    }
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      if (e.type === EnemyType.HOPPER && e.mesh.position.y > 0.5) continue;  // hops clear
+      if (e.type === EnemyType.FLIT) continue;                               // flies clear
+      const c = gdResolveWalls(e.position.x, e.position.z, e.radius * 0.8);
+      e.position.x = c.x; e.position.z = c.z;
+    }
+  }
+
   // GAUNDROP runtime (v149): generators pour, walls block, the exit calls.
   if (gaundropMode && player.alive) {
     for (let i = gdGenerators.length - 1; i >= 0; i--) {
@@ -5346,6 +5442,7 @@ function loop() {
   if (!player.invincible) {
     for (const e of enemies) {
       if (!MELEE_TYPES.has(e.type) || !e.alive) continue;
+      if (e.type === EnemyType.HOPPER && e.mesh.position.y > 0.5) continue;  // v157: airborne
       const dx = player.position.x - e.position.x;
       const dz = player.position.z - e.position.z;
       if (Math.hypot(dx, dz) < e.radius + PLAYER_RADIUS) {
@@ -5561,7 +5658,17 @@ function loop() {
       // Gauntlet doors all lead to the SAME scripted next room (v146).
       if (gauntlet) for (const ed of exitDoors) ed.kind = gauntlet.rooms[gauntlet.roomIdx + 1];
       if (bindingMode) {
-        for (const ed of exitDoors) ed.kind = bindingKindFor(bindingRoomN + 1);
+        // v157: REAL branching — the item/boss cadence still rules those
+        // beats, but between them each door rolls its own room kind.
+        const cadence = bindingKindFor(bindingRoomN + 1);
+        if (cadence === 'item' || cadence === 'boss') {
+          for (const ed of exitDoors) ed.kind = cadence;
+        } else {
+          for (const ed of exitDoors) {
+            const r2 = rng();
+            ed.kind = r2 < 0.5 ? 'normal' : r2 < 0.8 ? 'swarm' : 'spike';
+          }
+        }
         // Floor boss down (v150): the basement pays a RARE pick on the spot.
         if (smashRoomKind === 'boss') showRareCards(() => { gameState = 'playing'; });
       }
@@ -5612,7 +5719,10 @@ function loop() {
             bindingFloor++;                  // leaving a boss room = next floor
           }
           bindingRoomN++;
-          smashRoomKind = bindingKindFor(bindingRoomN);
+          // v157: the door's advertised kind IS the choice; only the
+          // item/boss cadence overrides it.
+          const cad = bindingKindFor(bindingRoomN);
+          if (cad === 'item' || cad === 'boss') smashRoomKind = cad;
           if (cabQuest) {                    // v154: each room walked out of
             cabQuest.done++;                 // is a quest beat
             if (cabQuest.done >= cabQuest.goal) { finishCabQuest(); break; }
@@ -5676,6 +5786,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=110').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=111').catch(() => {});
   });
 }
