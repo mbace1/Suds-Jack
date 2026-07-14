@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v163 — 2026-07-14
+**BINDING chasms — the pit shapes the room (terrain elements, user direction)**
+- **CHASMS in the basement** (floor 2+, ~1/3 of fight rooms): red-rimmed voids in three seeded layouts — the center void, twin strips, corner pits
+- **The rule that makes them Isaac**: pits block BODIES (player and ground enemies pushed out, no dashing across) but **bullets sail over the void** — the exact opposite trade of rocks, so positioning and fire lanes become different questions
+- **FLITs fly across; HOPPERs cross mid-hop** (airborne guard) — the fliers finally have a place where flying matters
+- Spawns and placement avoid the pits; pits share the terrain clear path (no leaks); ITEM and BOSS rooms stay pit-free
+- Cache-bust `?v=116` → `?v=117`; HUD label → v163
+
+---
+
 ## v162 — 2026-07-14
 **Scrolling arenas — the mode-structure taxonomy lands (user direction)**
 - **The taxonomy**: room-traversal games (SMASH, BINDING) traverse discrete arenas; **scrolling-arena games (GAUNDROP 2.0×, LOADOUT 1.9×, KAIKKI 1.7×) now play in worlds BIGGER than the screen** — the camera lerp-follows the player (clamped so the view never leaves the world) and tightened per-cabinet fog makes the level **open up as you walk toward the edge**; fixed-single-screen modes (TOKOTRON, classic) stay put, true to their references
