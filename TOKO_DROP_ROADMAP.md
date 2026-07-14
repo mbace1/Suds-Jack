@@ -99,6 +99,18 @@ style — each with its own reference-driven accent — and the orange cubes are
 welcome everywhere. TOKOTRON sets the template: dark background, no grid,
 shiny vector-bright graphics.**
 
+**Mode identity checklist (user, 2026-07-14) — every cabinet, current and
+future (NEX DEUS included), gets scrutinized on ALL of these, not just looks:**
+- **Visuals**: enemies/objects read their theme at a glance (v160/v161 bar).
+- **Structure**: room-traversal (SMASH, BINDING) vs scrolling-arena
+  (GAUNDROP 2.0×, LOADOUT 1.9×, KAIKKI 1.7× — camera follow + fog reveal,
+  v162) vs fixed single-screen (TOKOTRON, classic).
+- **Terrain/gameplay elements**: chasms (BINDING v163 — bodies blocked,
+  bullets fly over), walls, generators, hunger, economies… each mode's
+  reference mechanics, not shared boilerplate.
+- **Sound**: per-cabinet gun voice + event stingers (v164); classic stays
+  byte-identical; never background music (GDD §10).
+
 *Menu integration SHIPPED: v153 single-select CABINET row (title + OPTIONS
 under SMASH TV); v154 all cabinets as Roguelike B bonus quests on the gold
 card rotation. Full remakes (enemy/level/environment/pacing per cabinet —

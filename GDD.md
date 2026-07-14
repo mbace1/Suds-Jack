@@ -322,3 +322,7 @@ firing modes remain implemented but unreachable.
 ---
 
 *GDD maintained alongside `VERSIONS.md`. Update the relevant section(s) and bump the version stamp when design changes.*
+
+<!-- Mode identity rule (2026-07-14, user): a mode/cabinet's identity =
+visuals + structure (rooms vs scrolling vs fixed screen) + gameplay/terrain
+elements + SOUND. The scrutiny checklist lives in TOKO_DROP_ROADMAP.md M5. -->

@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=117';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=117';
-import { Player, PLAYER_RADIUS } from './player.js?v=117';
+import { InputManager } from './input.js?v=118';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=118';
+import { Player, PLAYER_RADIUS } from './player.js?v=118';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=117';
-import { RetroPass } from './retro.js?v=117';
-import { audio } from './audio.js?v=117';
-import { initDesigner } from './designer.js?v=117';
-import { t, getLang, setLang, langs } from './lang.js?v=117';
-import { TUNING } from './tuning.js?v=117';
+         CABINET_STYLE, VIS } from './enemy.js?v=118';
+import { RetroPass } from './retro.js?v=118';
+import { audio } from './audio.js?v=118';
+import { initDesigner } from './designer.js?v=118';
+import { t, getLang, setLang, langs } from './lang.js?v=118';
+import { TUNING } from './tuning.js?v=118';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1431,6 +1431,7 @@ function setTokotronLook(on) {
   scene.fog = on ? null : _FOG;                          // vector black runs deep
   CABINET_STYLE.mode = on ? 'tokotron' : null;
   player.setCabinetStyle(on ? 'tokotron' : null);
+  audio.setCabinetSound(on ? 'tokotron' : null);   // v164: the gun changes voice
 }
 function startTokotron() {
   tokotronMode = true;
@@ -1551,6 +1552,7 @@ function setGaundropLook(on) {
   scene.fog = _FOG;
   CABINET_STYLE.mode = on ? 'gaundrop' : null;
   player.setCabinetStyle(on ? 'gaundrop' : null);
+  audio.setCabinetSound(on ? 'gaundrop' : null);   // v164: the gun changes voice
 }
 function startGaundrop() {
   gaundropMode = true;
@@ -1722,6 +1724,7 @@ function setBindingLook(on) {
   scene.fog = _FOG;
   CABINET_STYLE.mode = on ? 'binding' : null;
   player.setCabinetStyle(on ? 'binding' : null);
+  audio.setCabinetSound(on ? 'binding' : null);   // v164: the gun changes voice
 }
 function startBinding() {
   bindingMode = true;
@@ -1769,6 +1772,7 @@ function setLoadoutLook(on) {
   scene.fog = _FOG;
   CABINET_STYLE.mode = on ? 'loadout' : null;
   player.setCabinetStyle(on ? 'loadout' : null);
+  audio.setCabinetSound(on ? 'loadout' : null);   // v164: the gun changes voice
 }
 function startLoadout() {
   loadoutMode = true;
@@ -1878,6 +1882,7 @@ function setKaikkiLook(on) {
   scene.fog = _FOG;
   CABINET_STYLE.mode = on ? 'kaikki' : null;
   player.setCabinetStyle(on ? 'kaikki' : null);
+  audio.setCabinetSound(on ? 'kaikki' : null);   // v164: the gun changes voice
 }
 function startKaikki() {
   kaikkiMode = true;
@@ -1948,7 +1953,7 @@ function showKaikkiShop() {
           kkCash -= item.cost;
           if (item.once) kkBought.add(item.id);
           item.buy();
-          audio.pickup();
+          audio.kaChing();   // v164: the till rings
           paint();
         });
       }
@@ -3164,7 +3169,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v163', 16, uiCanvas.height - 12);
+  ctx.fillText('v164', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -4419,6 +4424,7 @@ function spawnWave() {
     // Robotron opening: you appear center-room; the wave appears around you.
     player.mesh.position.set(0, player.mesh.position.y, 0);
     player.grantInvincibility(1.4);
+    audio.waveZap();   // v164: the room materializes with a robotic double-zap
     for (const [tyStr, n0] of Object.entries(comp)) {
       if (tyStr === 'civ') continue;
       const ty = +tyStr;
@@ -5419,6 +5425,7 @@ function loop() {
       } else if (!gdExit.locked &&
           Math.hypot(player.position.x - gdExit.x, player.position.z - gdExit.z) < 1.1) {
         score += 1000 * (scoreMultT > 0 ? 2 : 1) * (cabQuest ? cabQuest.mult : 1);
+        audio.descend();   // v164: the floor swallows you
         audio.waveClear();
         pendingSpawns = [];
         for (const e of enemies) e.removeFrom(scene);
@@ -5433,6 +5440,7 @@ function loop() {
       if (gdHungerT <= 0) {
         gdHungerT = 22;
         milestoneT = 1.4; milestoneText = 'STARVING — EAT SUDS!';
+        audio.hungerKnell();   // v164
         if (!player.invincible) {
           if (tryHitPlayer('starve', null)) triggerGameOver();
         }
@@ -6105,6 +6113,7 @@ function loop() {
         gdKeyHeld = true;
         if (gdExit) { gdExit.locked = false; gdExit.mat.color.setHex(0xffcc33); }
         milestoneT = 1.4; milestoneText = 'KEY! THE EXIT IS OPEN';
+        audio.keyJingle();   // v164
         audio.announce('prize');
       } else if (pu._type === 'potion') {
         // v156: Gauntlet magic — the whole floor pops (generators excepted).
@@ -6123,7 +6132,7 @@ function loop() {
         // value: small cash piles, big prizes.
         const gained = (pu._value ?? (250 + wave * 25)) * (scoreMultT > 0 ? 2 : 1) * (gauntlet ? gauntlet.mult : cabQuest ? cabQuest.mult : 1);
         score += gained;
-        if (kaikkiMode) kkCash += gained;   // v159: money is money
+        if (kaikkiMode) { kkCash += gained; audio.kaChing(); }   // v159/v164: money is money, and it RINGS
         damageNumbers.push(new DamageNumber(pu.x, 1.2, pu.z, `+${gained}`, '255,221,68'));
         audio.announce('money');
       } else if (pu._type === 'scoremult') {
@@ -6322,6 +6331,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=117').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=118').catch(() => {});
   });
 }
