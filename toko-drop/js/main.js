@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=105';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=105';
-import { Player, PLAYER_RADIUS } from './player.js?v=105';
+import { InputManager } from './input.js?v=106';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=106';
+import { Player, PLAYER_RADIUS } from './player.js?v=106';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=105';
-import { RetroPass } from './retro.js?v=105';
-import { audio } from './audio.js?v=105';
-import { initDesigner } from './designer.js?v=105';
-import { t, getLang, setLang, langs } from './lang.js?v=105';
-import { TUNING } from './tuning.js?v=105';
+         CABINET_STYLE, VIS } from './enemy.js?v=106';
+import { RetroPass } from './retro.js?v=106';
+import { audio } from './audio.js?v=106';
+import { initDesigner } from './designer.js?v=106';
+import { t, getLang, setLang, langs } from './lang.js?v=106';
+import { TUNING } from './tuning.js?v=106';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1268,7 +1268,7 @@ function makeRunRecord() {
   return {
     v: 1,
     score, time: Math.round(runTimer), wave, seed: runSeed,
-    mode: bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
+    mode: loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     orientation: landscapeMode ? 'landscape' : 'portrait',
     date: new Date().toISOString(),
   };
@@ -1452,7 +1452,7 @@ let gdWalls = [];        // { mesh, x, z, hx, hz } axis-aligned blockers
 let gdGenerators = [];
 let gdExit = null;
 let _gdSavedPixel = null, _gdSavedSmash = null;
-const inCabinet = () => tokotronMode || gaundropMode || bindingMode;
+const inCabinet = () => tokotronMode || gaundropMode || bindingMode || loadoutMode;
 function setGaundropLook(on) {
   scene.background.setHex(on ? 0x140a04 : 0x0d0d1a);   // torchlit dark
   floor.visible = !on;
@@ -1600,6 +1600,80 @@ function exitBinding() {
   applyArenaMode(landscapeMode);
 }
 
+// LOADOUT (v152, roadmap M5 cabinet #4 — Re-Loaded tribute): gunmetal
+// mission rooms. Pick a loadout (weapon + perk) at the door, then rotating
+// objectives — PURGE (eliminate all), DEMOLISH (smash the generators),
+// HOLD OUT (survive the clock). A fresh loadout offer every 2nd mission.
+let loadoutMode = false;
+let loMission = 1;        // current mission number (== wave)
+let loObjective = null;   // 'purge' | 'demolish' | 'holdout'
+let loTimer = 0;          // HOLD OUT countdown
+let loTrickleT = 0;
+let loDone = false;       // objective met, transition pending
+let _loSavedSmash = null;
+const LO_LOADOUTS = [
+  { id: 'gunner', pod: 'S2', perk: 'firerate' },
+  { id: 'lancer', pod: 'L',  perk: 'pierce' },
+  { id: 'runner', pod: 'R',  perk: 'speed' },
+  { id: 'tank',   pod: 'B2', perk: 'hp' },
+];
+function setLoadoutLook(on) {
+  scene.background.setHex(on ? 0x0a0c08 : 0x0d0d1a);   // oil-dark olive
+  floor.visible = !on;
+  border.material.color.setHex(on ? 0x77cc33 : 0x5555cc); // toxic green bounds
+  _FOG.color.setHex(on ? 0x0a0c08 : 0x0d0d1a);
+  scene.fog = _FOG;
+  CABINET_STYLE.mode = on ? 'loadout' : null;
+  player.setCabinetStyle(on ? 'loadout' : null);
+}
+function startLoadout() {
+  loadoutMode = true;
+  loMission = 0;
+  loObjective = null; loDone = false;
+  _loSavedSmash = smashMode; smashMode = false;
+  applyPerfMode();
+  setLoadoutLook(true);
+  startGame();
+  showLoadoutPicks();   // the door: pick your kit before mission 1
+}
+function exitLoadout() {
+  loadoutMode = false;
+  smashMode = _loSavedSmash;
+  applyPerfMode();
+  setLoadoutLook(false);
+  applyArenaMode(landscapeMode);
+}
+function showLoadoutPicks() {
+  gameState = 'upgrade';
+  const picks = [...LO_LOADOUTS].sort(() => Math.random() - 0.5).slice(0, 3);
+  const panel = document.createElement('div');
+  panel.id = 'upgrade-panel';
+  panel.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.78);z-index:60;font-family:monospace,sans-serif;color:#fff;';
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:24px;font-weight:bold;margin-bottom:24px;color:#aaff66;text-shadow:0 0 20px #66cc22;';
+  title.textContent = t('loPick');
+  panel.appendChild(title);
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:16px;flex-wrap:wrap;justify-content:center;';
+  panel.appendChild(row);
+  for (const lo of picks) {
+    const btn = document.createElement('div');
+    btn.dataset.ui = '1';
+    btn.style.cssText = 'background:#141a10;border:2px solid #77cc33;border-radius:8px;padding:20px 24px;min-width:140px;max-width:180px;text-align:center;cursor:pointer;box-shadow:0 0 18px rgba(119,204,51,0.25);';
+    btn.innerHTML = `<div style="font-size:16px;font-weight:bold;margin-bottom:8px;color:#bbff77">${t('lo_' + lo.id)}</div>` +
+      `<div style="font-size:12px;opacity:0.75;color:#dfffc0">${t('lo_' + lo.id + '_d')}</div>`;
+    btn.addEventListener('pointerdown', () => {
+      panel.remove();
+      equipWeapon(lo.pod);
+      applyUpgrade(lo.perk);
+      gameState = 'playing';
+      spawnWave();
+    });
+    row.appendChild(btn);
+  }
+  document.body.appendChild(panel);
+}
+
 // TEST MODE (v142): a playtest workbench run — all enemy types unlock from
 // wave 1 and the run leaves NO records (no PB, no daily best, no leaderboard;
 // feedback records are tagged test). For meeting new enemies fast.
@@ -1647,14 +1721,15 @@ function applyPerfMode() {
   // profile internal resolution + palette/scanline shader); the old 0.22-DPR
   // trick survives only as the PIXEL PREVIEW dev profile.
   const cab = tokotronMode ? 'tokotron' : gaundropMode ? 'gaundrop'
-            : bindingMode  ? 'binding'  : pixelMode ? 'preview' : null;
+            : bindingMode  ? 'binding'  : loadoutMode ? 'loadout'
+            : pixelMode ? 'preview' : null;
   retro.setCabinet(cab, renderer);
   renderer.setPixelRatio(Math.min(devicePixelRatio, perfMode ? 1.25 : 2));
   renderer.domElement.style.imageRendering = '';
   VIS.hz = (cab && cab !== 'preview') ? 12 : 0;   // sprite-era stepped visuals
   // v129: the 1024² shadow pass is the third big GPU cost — drop it too.
   // Flat-lit cabinets (vector/NES) never want shadows either (v151).
-  sun.castShadow = !perfMode && cab !== 'tokotron' && cab !== 'gaundrop';
+  sun.castShadow = !perfMode && cab !== 'tokotron' && cab !== 'gaundrop' && cab !== 'loadout';
   const M = TUNING.material;
   if (perfMode) {
     if (!_perfSavedTrans) {
@@ -1810,7 +1885,7 @@ function saveHitLog() {
   const KEY = 'tokoDropHitLog';
   const sessions = JSON.parse(localStorage.getItem(KEY) || '[]');
   sessions.unshift({
-    seed: runSeed, mode: bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
+    seed: runSeed, mode: loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     waveReached: wave, date: new Date().toISOString(),
     events: hitEventLog,
   });
@@ -2083,7 +2158,7 @@ function saveFeedback(selectedIds, selectedLabels, comment, likedIds = [], liked
   const isFix = !!comment && comment.toLowerCase().includes('fix');
   list.unshift({
     date: new Date().toISOString(),
-    seed: runSeed, mode: bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
+    seed: runSeed, mode: loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     wave, time: Math.round(runTimer), score,
     reasons: selectedLabels, reasonIds: selectedIds,
     liked: likedLabels, likedIds,
@@ -2605,6 +2680,27 @@ function drawHUD() {
     }
   }
 
+  // LOADOUT objective line (v152), top-center.
+  if (loadoutMode && gameState === 'playing' && loObjective) {
+    let txt = '';
+    if (loObjective === 'purge') {
+      const left = enemies.reduce((n, e) => n + (e.alive ? 1 : 0), 0) + pendingSpawns.length;
+      txt = loDone ? 'PURGED' : `PURGE — ${left} LEFT`;
+    } else if (loObjective === 'demolish') {
+      txt = loDone ? 'DEMOLISHED' : `DEMOLISH — ${gdGenerators.length} GENERATORS`;
+    } else {
+      txt = loDone ? 'HELD' : `HOLD OUT — ${Math.max(0, loTimer).toFixed(0)}s`;
+    }
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 14px monospace, sans-serif';
+    ctx.shadowColor = '#77cc33';
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = '#bbff77';
+    ctx.fillText(txt, uiCanvas.width / 2, 26);
+    ctx.restore();
+  }
+
   // GAUNTLET tag (v146): the live pinball multiplier, top-center.
   if (gauntlet && gameState === 'playing') {
     ctx.save();
@@ -2682,7 +2778,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v151', 16, uiCanvas.height - 12);
+  ctx.fillText('v152', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -2924,6 +3020,27 @@ function showTitle() {
   slot.appendChild(bdbtn);
   slot.appendChild(bdhint);
 
+  // LOADOUT cabinet chip (v152) — toxic-green launcher.
+  const lobtn = document.createElement('div');
+  lobtn.dataset.ui = '1';
+  lobtn.textContent = t('loadout');
+  lobtn.style.cssText =
+    'display:inline-block;pointer-events:auto;cursor:pointer;user-select:none;' +
+    'font-size:14px;font-weight:bold;padding:8px 18px;border-radius:8px;' +
+    'background:rgba(0,0,0,0.35);transition:all 0.12s;margin-top:10px;' +
+    'border:2px solid #77cc33;color:#bbff77;text-shadow:0 0 12px #55aa11;';
+  const lohint = document.createElement('div');
+  lohint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
+  lohint.textContent = t('loadoutH');
+  lobtn.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    startLoadout();
+  });
+  lobtn.addEventListener('touchend', e => e.stopPropagation());
+  slot.appendChild(lobtn);
+  slot.appendChild(lohint);
+
   // v81: volume + reduce-motion moved into the pause menu's SETTINGS page —
   // the title keeps only the run-history link and a faint pointer to where
   // the settings went.
@@ -3137,7 +3254,7 @@ function buildDailyLeaderboard(slot) {
       body: JSON.stringify({
         initials, score, wave, daily: _dailyRun,
         seed: runSeed.toString(16).toUpperCase().padStart(6, '0'),
-        mode: `${bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}`,
+        mode: `${loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}`,
         build: new URL(import.meta.url).searchParams.get('v') ?? '?',
       }),
     }).catch(() => {});
@@ -3450,7 +3567,7 @@ function spawnWave() {
   const { speedMult, intervalMult } = getWaveScale(wave);
   // Binding rooms use the normal smash schedules — except ITEM rooms, which
   // hold only the pedestal (tokotron/gaundrop build their own floods).
-  const list = (tokotronMode || gaundropMode ||
+  const list = (tokotronMode || gaundropMode || loadoutMode ||
                 (bindingMode && smashRoomKind === 'item')) ? [] : getEnemySchedule(wave);
   waveDuration = ROUND_DUR;
   waveTimer    = 0;
@@ -3597,6 +3714,61 @@ function spawnWave() {
     roomTallyT = 0;
   }
 
+  // LOADOUT missions (v152): rotating objectives in a gunmetal room —
+  // PURGE the floor, DEMOLISH the generators, or HOLD OUT on the clock.
+  // A couple of cover walls per mission; generators reuse the Gaundrop kit.
+  if (loadoutMode) {
+    clearGaundropLevel();
+    loMission = wave;
+    loDone = false;
+    loTrickleT = 2.0;
+    const objs = ['purge', 'demolish', 'holdout'];
+    loObjective = objs[(wave - 1) % 3];
+    // cover walls
+    const wallMat = () => new THREE.MeshBasicMaterial({ color: 0x39422e });
+    for (let i = 0; i < 2 + (wave > 4 ? 1 : 0); i++) {
+      const horiz = rng() < 0.5;
+      const len = 3 + rng() * 3.5;
+      const hx = horiz ? len / 2 : 0.45, hz = horiz ? 0.45 : len / 2;
+      const wx = (rng() * 2 - 1) * (HALF_X - hx - 3);
+      const wz = (rng() * 2 - 1) * (HALF_Z - hz - 3);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(hx * 2, 1.0, hz * 2), wallMat());
+      mesh.position.set(wx, 0.5, wz);
+      scene.add(mesh);
+      gdWalls.push({ mesh, x: wx, z: wz, hx, hz });
+    }
+    if (loObjective === 'demolish') {
+      const nGen = Math.min(4, 2 + Math.floor(wave / 4));
+      const types = [EnemyType.GLOBBO, EnemyType.ORANGE_CUBE, EnemyType.REDD_MINI];
+      for (let i = 0; i < nGen; i++) {
+        let gx, gz, tries = 0;
+        do {
+          gx = (rng() * 2 - 1) * (HALF_X - 2.5);
+          gz = (rng() * 2 - 1) * (HALF_Z - 2.5);
+        } while ((gdInsideWall(gx, gz, 1.2) ||
+                  Math.hypot(gx - player.position.x, gz - player.position.z) < 7) && ++tries < 30);
+        gdGenerators.push(new Generator(scene, gx, gz, types[Math.floor(rng() * types.length)]));
+      }
+    } else if (loObjective === 'purge') {
+      const n = Math.min(20, 6 + wave * 2);
+      for (let i = 0; i < n; i++) {
+        let px, pz, tries = 0;
+        do {
+          px = (rng() * 2 - 1) * (HALF_X - 1.5);
+          pz = (rng() * 2 - 1) * (HALF_Z - 1.5);
+        } while ((gdInsideWall(px, pz, 0.8) ||
+                  Math.hypot(px - player.position.x, pz - player.position.z) < 6) && ++tries < 20);
+        const roll = rng();
+        const ty = roll < 0.5 ? EnemyType.GLOBBO : roll < 0.8 ? EnemyType.ORANGE_CUBE : EnemyType.WEEVA;
+        pendingSpawns.push({ type: ty, delay: 0.2 + i * 0.05, px, pz,
+          angle: 0, shooter: false, clusterOffset: null, speedMult, intervalMult });
+      }
+    } else {
+      loTimer = 22 + wave * 1.5;   // HOLD OUT clock grows with depth
+    }
+    clusterSpawnAt = [];
+  }
+
   // TOKOTRON (v148): the whole wave floods in at once, scattered around the
   // room (never within 6 of the player) — the reference's opening slam. The
   // roster stays Toko: grunt globbos, the beloved orange cubes, mini swarmers,
@@ -3713,6 +3885,11 @@ function spawnWave() {
     waveIntroT = waveIntroDur = 1.2;
     waveIntroText  = `GAUNDROP — LEVEL ${wave}`;
     waveIntroColor = '#ffaa44';
+  } else if (loadoutMode) {
+    waveIntroT = waveIntroDur = 1.4;
+    waveIntroText = `MISSION ${wave} — ` +
+      (loObjective === 'purge' ? 'PURGE' : loObjective === 'demolish' ? 'DEMOLISH' : 'HOLD OUT');
+    waveIntroColor = '#aaff66';
   } else {
     // Classic: color-coded wave banner naming the rhythm (v123).
     const b = WAVE_BANNER[kind] ?? WAVE_BANNER.normal;
@@ -3938,7 +4115,9 @@ function startGame() {
   buildSmashDoors();  // no-op unless SMASH TV mode is on
   _titleIntroPlayed = false;  // v121: arm the recorded intro for the next title visit
   audio.announce('start');
-  spawnWave();
+  // LOADOUT holds mission 1 until the door pick — the pick itself calls
+  // spawnWave() (loMission is 0 only between startLoadout and that pick).
+  if (!(loadoutMode && loMission === 0)) spawnWave();
   gameState = 'playing';
 }
 
@@ -3950,6 +4129,7 @@ function returnToTitle() {
   if (tokotronMode) exitTokotron();   // v148: give back the borrowed toggles
   if (gaundropMode) exitGaundrop();   // v149: same deal for the dungeon
   if (bindingMode) exitBinding();     // v150: and the basement
+  if (loadoutMode) exitLoadout();     // v152: and the armory
   clearFX();
   for (const e of enemies) e.removeFrom(scene);
   enemies = [];
@@ -4280,6 +4460,68 @@ function loop() {
   }
 
   player.update(dt, moveDir, aimDir, bullets, HALF_X, HALF_Z);
+
+  // LOADOUT runtime (v152): objectives tick, walls block, trickles pour.
+  if (loadoutMode && player.alive && gameState === 'playing') {
+    for (let i = gdGenerators.length - 1; i >= 0; i--) {
+      const g = gdGenerators[i];
+      g.update(dt);
+      if (!g.alive) { g.remove(scene); gdGenerators.splice(i, 1); }
+    }
+    for (let bi = bullets.active.length - 1; bi >= 0; bi--) {
+      const b = bullets.active[bi];
+      if (b.isPlayer) {
+        for (const g of gdGenerators) {
+          if (g.alive && Math.abs(b.mesh.position.x - g.x) < 0.85 && Math.abs(b.mesh.position.z - g.z) < 0.85) {
+            bullets.recycleAt(bi); g.hit(); break;
+          }
+        }
+      }
+      if (bullets.active[bi] === b && gdInsideWall(b.mesh.position.x, b.mesh.position.z, 0)) bullets.recycleAt(bi);
+    }
+    {
+      const c = gdResolveWalls(player.position.x, player.position.z, PLAYER_RADIUS);
+      player.mesh.position.x = c.x; player.mesh.position.z = c.z;
+    }
+    for (const e of enemies) {
+      if (!e.alive) continue;
+      const c = gdResolveWalls(e.position.x, e.position.z, e.radius * 0.8);
+      e.position.x = c.x; e.position.z = c.z;
+    }
+    // HOLD OUT trickle (and a light drip during DEMOLISH from the field edges)
+    if (loObjective === 'holdout' && !loDone) {
+      loTimer -= dt;
+      loTrickleT -= dt;
+      const alive = enemies.reduce((n, e) => n + (e.alive ? 1 : 0), 0);
+      if (loTrickleT <= 0 && alive < 14) {
+        loTrickleT = 2.2;
+        const a2 = Math.random() * Math.PI * 2;
+        enemies.push(new Enemy(scene, Math.random() < 0.6 ? EnemyType.GLOBBO : EnemyType.ORANGE_CUBE,
+          Math.cos(a2) * HALF_X * 0.95, Math.sin(a2) * HALF_Z * 0.95));
+      }
+    }
+    // objective completion
+    if (!loDone) {
+      const alive = enemies.some(e => e.alive) || pendingSpawns.length > 0;
+      const met = loObjective === 'purge'    ? !alive
+                : loObjective === 'demolish' ? gdGenerators.length === 0
+                : loTimer <= 0;
+      if (met) {
+        loDone = true;
+        const bonus = 1200 * wave;
+        score += bonus;
+        milestoneT = 1.2; milestoneText = `MISSION COMPLETE! +${bonus}`;
+        pendingSpawns = [];
+        for (const e of enemies) if (e.alive) { e.hp = 1; e.hit(e.position.x, e.position.z); onKill(e); }
+        audio.waveClear();
+        setTimeout(() => {
+          if (!loadoutMode || gameState !== 'playing') return;
+          if (wave % 2 === 0) showLoadoutPicks();   // fresh kit every 2nd mission
+          else spawnWave();
+        }, 1400);
+      }
+    }
+  }
 
   // GAUNDROP runtime (v149): generators pour, walls block, the exit calls.
   if (gaundropMode && player.alive) {
@@ -4979,7 +5221,7 @@ function loop() {
   // flight (_roomSwap / roomFadeT) — the old room's dead enemies linger until
   // spawnWave, so the clear could re-fire mid-fade, double-paying the bonus
   // and (in gauntlets) cascading through the whole room script instantly.
-  if (gameState === 'playing' && !exitPhase && waveGapT <= 0 && !gaundropMode &&
+  if (gameState === 'playing' && !exitPhase && waveGapT <= 0 && !gaundropMode && !loadoutMode &&
       !_roomSwap && roomFadeT <= 0 &&
       enemies.length > 0 &&
       enemies.every(e => !e.alive && !e._dying) &&
@@ -5107,6 +5349,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=105').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=106').catch(() => {});
   });
 }

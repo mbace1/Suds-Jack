@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v152 — 2026-07-14
+**LOADOUT — cabinet #4 (Re-Loaded tribute): pick your kit, run the missions**
+- **LOADOUT chip on the title** (toxic-green launcher): military gunmetal look — near-black olive floor, toxic-green vector bounds, desaturated Lambert enemies, pale-olive player with green dash ghosts, own RetroPass profile (320p nearest pixels, 24-level posterize, mild glow + scanlines)
+- **Pick your loadout at the door**: run starts with a 3-of-4 kit pick — GUNNER (twin spread + fire rate), LANCER (laser + pierce), RUNNER (rapid + speed), JUGGERNAUT (heavy burst + HP); each kit = weapon pod + matching perk. A fresh pick is offered every 2nd mission
+- **Mission objectives, not waves**: rotating scripted goals with a MISSION banner and a live objective line on the HUD — **PURGE** (wipe the flood), **DEMOLISH** (destroy the generators dug in behind cover), **HOLD OUT** (survive the timer while enemies trickle in). Cover walls block bullets and bodies both ways; mission clear pays a wave-scaled bonus and wipes the field
+- Reuses the Gaundrop kit (walls, generators) with its own placement; skips gates/bounty/foam/daily like the other cabinets; records tagged `loadout`
+- Cache-bust `?v=105` → `?v=106`; HUD label → v152
+
+---
+
 ## v151 — 2026-07-14
 **Cabinet graphics pass — per-cabinet renderers, materials, and sprite-era stepped animation (roadmap M5)**
 - **New `js/retro.js` — the RetroPass post pipeline**: scene renders into a per-cabinet low-res target, then a fullscreen shader applies the cabinet's treatment — bright-pass **glow**, contrast/saturation grade, **NES 16-color palette quantization**, **32-level posterize with ordered dither** + paint pre-blur, and subtle **scanlines** aligned to internal rows. Zero cost when no cabinet is active; classic + SMASH render byte-identical

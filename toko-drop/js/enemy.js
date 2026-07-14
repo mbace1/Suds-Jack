@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=105';
-import { nesSnap, NEON } from './retro.js?v=105';
+import { TUNING } from './tuning.js?v=106';
+import { nesSnap, NEON } from './retro.js?v=106';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -193,6 +193,13 @@ export function makeSatinMat(color, fam, radius) {
     // shell + the post pass glow. Lambert (not Basic) because the strobe/flash
     // adapters write mat.emissive.
     mat = new THREE.MeshLambertMaterial({ color: NEON.face, emissive: 0x000000 });
+  } else if (mode === 'loadout') {
+    // Gunmetal: dark, desaturated flat shading — heavy-industry palette; the
+    // posterize in the post pass bands what little gradient Lambert leaves.
+    const hsl = { h: 0, s: 0, l: 0 };
+    col.getHSL(hsl);
+    col.setHSL(hsl.h, hsl.s * 0.6, hsl.l * 0.85);
+    mat = new THREE.MeshLambertMaterial({ color: col, emissive: 0x000000 });
   } else if (mode === 'gaundrop') {
     // NES: flat color snapped to the 16-entry palette; the post pass snaps
     // everything else (lighting falloff, FX) to the same table.
