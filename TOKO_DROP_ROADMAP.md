@@ -85,10 +85,11 @@ modes ship under original tribute names with fully original assets — we
 emulate pacing and structure, never sprites, names, or characters.**
 
 Shared foundation (build first):
-- **Pixel render mode** — low-res render target + nearest-neighbor upscale
-  (world pixelated, HUD/UI stays crisp: the modern+classic mix). Shipped as
-  a DEV preview toggle in v147; each tribute mode turns it on with its own
-  resolution/palette.
+- **Pixel render mode** — SHIPPED v147 (DEV preview), SUPERSEDED v151 by the
+  **RetroPass pipeline**: per-cabinet render targets + post shader (palette
+  quantization, posterize, glow, scanlines), per-cabinet materials (neon
+  shells / NES snap / painterly satin), and 12 Hz sprite-era stepped visuals.
+  Each future cabinet declares a profile in `js/retro.js`.
 - **Bonus-game framework** — the v146 gauntlet generalizes: a scripted
   room/goal sequence with its own multiplier, offered as Roguelike B's rare
   card AND as a menu mode. Per-mode tuning objects, one entry point.

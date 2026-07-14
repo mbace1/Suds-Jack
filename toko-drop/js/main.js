@@ -1,12 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=104';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=104';
-import { Player, PLAYER_RADIUS } from './player.js?v=104';
-import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA } from './enemy.js?v=104';
-import { audio } from './audio.js?v=104';
-import { initDesigner } from './designer.js?v=104';
-import { t, getLang, setLang, langs } from './lang.js?v=104';
-import { TUNING } from './tuning.js?v=104';
+import { InputManager } from './input.js?v=105';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=105';
+import { Player, PLAYER_RADIUS } from './player.js?v=105';
+import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
+         CABINET_STYLE, VIS } from './enemy.js?v=105';
+import { RetroPass } from './retro.js?v=105';
+import { audio } from './audio.js?v=105';
+import { initDesigner } from './designer.js?v=105';
+import { t, getLang, setLang, langs } from './lang.js?v=105';
+import { TUNING } from './tuning.js?v=105';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -254,6 +256,8 @@ renderer.setSize(innerWidth, innerHeight);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0d0d1a);
 scene.fog = new THREE.Fog(0x0d0d1a, 42, 80);
+const _FOG = scene.fog;              // v151: cabinets recolor/remove and restore
+const retro = new RetroPass();       // v151: cabinet post pipeline (idle until used)
 
 // ── Camera ────────────────────────────────────────────────────────────────
 const CAM_REST = new THREE.Vector3(0, 27, 21);
@@ -1388,6 +1392,9 @@ function setTokotronLook(on) {
   scene.background.setHex(on ? 0x030309 : 0x0d0d1a);
   floor.visible = !on;                                   // dark void, no grid
   border.material.color.setHex(on ? 0x44eeff : 0x5555cc); // shiny vector bounds
+  scene.fog = on ? null : _FOG;                          // vector black runs deep
+  CABINET_STYLE.mode = on ? 'tokotron' : null;
+  player.setCabinetStyle(on ? 'tokotron' : null);
 }
 function startTokotron() {
   tokotronMode = true;
@@ -1450,6 +1457,10 @@ function setGaundropLook(on) {
   scene.background.setHex(on ? 0x140a04 : 0x0d0d1a);   // torchlit dark
   floor.visible = !on;
   border.material.color.setHex(on ? 0xcc8833 : 0x5555cc); // bronze bounds
+  _FOG.color.setHex(on ? 0x140a04 : 0x0d0d1a);
+  scene.fog = _FOG;
+  CABINET_STYLE.mode = on ? 'gaundrop' : null;
+  player.setCabinetStyle(on ? 'gaundrop' : null);
 }
 function startGaundrop() {
   gaundropMode = true;
@@ -1565,6 +1576,10 @@ function setBindingLook(on) {
   scene.background.setHex(on ? 0x0d0509 : 0x0d0d1a);   // basement gloom
   floor.visible = !on;
   border.material.color.setHex(on ? 0xcc4466 : 0x5555cc); // fleshy red bounds
+  _FOG.color.setHex(on ? 0x0d0509 : 0x0d0d1a);
+  scene.fog = _FOG;
+  CABINET_STYLE.mode = on ? 'binding' : null;
+  player.setCabinetStyle(on ? 'binding' : null);
 }
 function startBinding() {
   bindingMode = true;
@@ -1628,12 +1643,18 @@ let perfMode = localStorage.getItem('tokoDropPerf') === '1';
 let pixelMode = localStorage.getItem('tokoDropPixel') === '1';
 let _perfSavedTrans = null;
 function applyPerfMode() {
-  renderer.setPixelRatio(pixelMode ? 0.22
-    : Math.min(devicePixelRatio, perfMode ? 1.25 : 2));
-  renderer.domElement.style.imageRendering = pixelMode ? 'pixelated' : '';
+  // v151: cabinet looks run through the RetroPass render-target pipeline (per-
+  // profile internal resolution + palette/scanline shader); the old 0.22-DPR
+  // trick survives only as the PIXEL PREVIEW dev profile.
+  const cab = tokotronMode ? 'tokotron' : gaundropMode ? 'gaundrop'
+            : bindingMode  ? 'binding'  : pixelMode ? 'preview' : null;
+  retro.setCabinet(cab, renderer);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, perfMode ? 1.25 : 2));
+  renderer.domElement.style.imageRendering = '';
+  VIS.hz = (cab && cab !== 'preview') ? 12 : 0;   // sprite-era stepped visuals
   // v129: the 1024² shadow pass is the third big GPU cost — drop it too.
-  // (three re-selects programs automatically when a light's castShadow flips.)
-  sun.castShadow = !perfMode;
+  // Flat-lit cabinets (vector/NES) never want shadows either (v151).
+  sun.castShadow = !perfMode && cab !== 'tokotron' && cab !== 'gaundrop';
   const M = TUNING.material;
   if (perfMode) {
     if (!_perfSavedTrans) {
@@ -2661,7 +2682,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v150', 16, uiCanvas.height - 12);
+  ctx.fillText('v151', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -5050,15 +5071,18 @@ function loop() {
   }
 
   const _now = performance.now() / 1000;
-  GOO_TIME.value            = _now;
-  floorUniforms.uTime.value = _now;
-  renderer.render(scene, camera);
+  VIS.now = VIS.hz ? Math.floor(_now * VIS.hz) / VIS.hz : _now;   // v151: stepped
+  GOO_TIME.value            = VIS.now;
+  floorUniforms.uTime.value = VIS.now;
+  if (retro.active) retro.render(renderer, scene, camera);
+  else              renderer.render(scene, camera);
   drawHUD();
 }
 
 // ── Resize ───────────────────────────────────────────────────────────────────
 function resize() {
   renderer.setSize(innerWidth, innerHeight);
+  retro.setSize(renderer);   // v151: cabinet RT tracks the drawing buffer
   if (camera) { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
   uiCanvas.width = innerWidth; uiCanvas.height = innerHeight;
   syncAutoOrientation();  // rotation on the title re-picks the arena preset
@@ -5083,6 +5107,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=104').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=105').catch(() => {});
   });
 }
