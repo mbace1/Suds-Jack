@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=113';
-import { nesSnap, NEON } from './retro.js?v=113';
+import { TUNING } from './tuning.js?v=114';
+import { nesSnap, NEON } from './retro.js?v=114';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -804,6 +804,53 @@ export class Enemy {
       }
     }
 
+    // TOKOTRON robots (v160, user direction): the cabinet's roster reads
+    // MACHINE — glowing visors, stepping leg plates, spinning rings, fins.
+    // Parts are MeshBasicMaterial neon (they must survive the vector-black
+    // Lambert), ride the body mesh, and animate in each type's update case.
+    if (type === EnemyType.GRUNT) {
+      this._robotMat = new THREE.MeshBasicMaterial({ color: NEON.danger });
+      const visor = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.1, 0.06), this._robotMat);
+      visor.position.set(0, 0.34, 0.26);
+      const ant = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.3, 0.04), this._robotMat);
+      ant.position.set(0.14, 0.62, 0);
+      this._legL = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.34, 0.24), this._robotMat);
+      this._legL.position.set(-0.20, -0.42, 0);
+      this._legR = this._legL.clone();
+      this._legR.position.x = 0.20;
+      this._robotBits = [visor, ant, this._legL, this._legR];
+      this.mesh.add(...this._robotBits);
+    } else if (type === EnemyType.BRUTE) {
+      this._robotMat = new THREE.MeshBasicMaterial({ color: NEON.heavy });
+      const visor = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.16, 0.08), this._robotMat);
+      visor.position.set(0, 0.72, 0.97);
+      const shoulders = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.18, 0.5), this._robotMat);
+      shoulders.position.set(0, 1.05, 0);
+      this._robotBits = [visor, shoulders];
+      this.mesh.add(...this._robotBits);
+    } else if (type === EnemyType.ORB) {
+      this._robotMat = new THREE.MeshBasicMaterial({ color: NEON.cube });
+      this._orbRing = new THREE.Mesh(new THREE.TorusGeometry(cfg.radius * 1.25, 0.05, 6, 20), this._robotMat);
+      this._robotBits = [this._orbRing];
+      this.mesh.add(this._orbRing);
+    } else if (type === EnemyType.PROG) {
+      this._robotMat = new THREE.MeshBasicMaterial({ color: NEON.ranged });
+      const eye = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, 0.06), this._robotMat);
+      eye.position.set(0, 0.28, 0.26);
+      const finL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.36, 0.28), this._robotMat);
+      finL.position.set(-0.32, 0, 0);
+      const finR = finL.clone();
+      finR.position.x = 0.32;
+      this._robotBits = [eye, finL, finR];
+      this.mesh.add(...this._robotBits);
+    } else if (type === EnemyType.MINDER) {
+      this._robotMat = new THREE.MeshBasicMaterial({
+        color: NEON.brain, transparent: true, opacity: 0.85 });
+      this._brainCore = new THREE.Mesh(new THREE.SphereGeometry(cfg.radius * 0.5, 8, 6), this._robotMat);
+      this._robotBits = [this._brainCore];
+      this.mesh.add(this._brainCore);
+    }
+
     // WARDEN (v124): visible shield aura — a flat cyan ring on the floor
     // marking the immunity zone. Follows the warden in update(); hidden the
     // instant it dies (the shield rule in main.js checks alive, so the
@@ -1355,6 +1402,14 @@ export class Enemy {
           this.mesh.position.x += (ddx / dist) * spd * ramp * gait * dt;
           this.mesh.position.z += (ddz / dist) * spd * ramp * gait * dt;
         }
+        // robot walk (v160): leg plates alternate steps, faster as it ramps
+        if (this._legL) {
+          const st = Math.sin(this._wobbleT * 6 * ramp + this._phase);
+          this._legL.position.y = -0.42 + Math.max(0, st) * 0.14;
+          this._legR.position.y = -0.42 + Math.max(0, -st) * 0.14;
+        }
+        // face the player — the visor is the intent
+        this.mesh.rotation.y = Math.atan2(ddx, ddz);
         break;
       }
 
@@ -1374,6 +1429,8 @@ export class Enemy {
         const dk = Math.max(0, 1 - dt * 6);
         this._shoveX = (this._shoveX || 0) * dk;
         this._shoveZ = (this._shoveZ || 0) * dk;
+        // the visor tracks its prey (v160)
+        this.mesh.rotation.y = Math.atan2(bdx, bdz);
         break;
       }
 
@@ -1398,6 +1455,12 @@ export class Enemy {
           if (this._orbSpawned < 3) { this._progReady = true; this._orbSpawned++; }
           this._orbT = 3.2;
         }
+        // gyro ring (v160): spins always, whirs faster near a spawn
+        if (this._orbRing) {
+          const whir = this._orbT < 0.8 ? 9 : 2.2;
+          this._orbRing.rotation.y += whir * dt;
+          this._orbRing.rotation.x = Math.sin(this._wobbleT * 1.5) * 0.5;
+        }
         break;
       }
 
@@ -1417,6 +1480,9 @@ export class Enemy {
           const a = Math.atan2(ddz, ddx) + (Math.random() - 0.5) * 0.12;
           bullets.spawnDir(ex, ez, Math.cos(a), Math.sin(a), false, cfg.bulletColor, false, this.type);
         }
+        // eye faces you; fins hover-bob (v160)
+        this.mesh.rotation.y = Math.atan2(ddx, ddz);
+        this.mesh.position.y = 0.45 + 0.1 * Math.sin(this._wobbleT * 2.6 + this._phase);
         break;
       }
 
@@ -1430,6 +1496,11 @@ export class Enemy {
         if (md > 0.5) {
           this.mesh.position.x += (mdx / md) * spd * dt;
           this.mesh.position.z += (mdz / md) * spd * dt;
+        }
+        // exposed brain-core pulses (v160) — harder while converting
+        if (this._brainCore) {
+          const k = this._convT !== undefined ? 7 : 2.4;
+          this._brainCore.scale.setScalar(1 + 0.18 * Math.sin(this._wobbleT * k));
         }
         break;
       }
@@ -2382,6 +2453,12 @@ export class Enemy {
       scene.remove(this._auraRing);
       this._auraRing.geometry.dispose();
       this._auraRing.material.dispose();
+    }
+    if (this._robotBits) {
+      for (const b of this._robotBits) b.geometry.dispose();
+      this._robotMat.dispose();
+      this._robotBits = null;
+      this._robotMat = null;
     }
   }
 }

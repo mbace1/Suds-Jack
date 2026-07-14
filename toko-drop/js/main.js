@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=113';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=113';
-import { Player, PLAYER_RADIUS } from './player.js?v=113';
+import { InputManager } from './input.js?v=114';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=114';
+import { Player, PLAYER_RADIUS } from './player.js?v=114';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=113';
-import { RetroPass } from './retro.js?v=113';
-import { audio } from './audio.js?v=113';
-import { initDesigner } from './designer.js?v=113';
-import { t, getLang, setLang, langs } from './lang.js?v=113';
-import { TUNING } from './tuning.js?v=113';
+         CABINET_STYLE, VIS } from './enemy.js?v=114';
+import { RetroPass } from './retro.js?v=114';
+import { audio } from './audio.js?v=114';
+import { initDesigner } from './designer.js?v=114';
+import { t, getLang, setLang, langs } from './lang.js?v=114';
+import { TUNING } from './tuning.js?v=114';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1425,42 +1425,82 @@ function exitTokotron() {
 }
 class Civilian {
   // v155 family variety: 0 = kid (small, quick, panicky), 1 = tall (steady),
-  // 2 = elder (slow amble) — silhouettes + wander speeds differ, rescues pay
-  // the same chain (the chain is the reward system, the family is flavor).
+  // 2 = elder (slow amble). v160 (user direction): they read as PEOPLE now —
+  // skin, shirt, swinging arms and legs, a waving hand, and a gold rescue
+  // halo on the floor. Rescues pay the same chain; the family is the reason.
   constructor(sc, x, z, kind = 1) {
     this.alive = true;
     this.kind = kind;
     this.x = x; this.z = z;
     this._dir = Math.random() * Math.PI * 2;
     this._turnT = 0;
+    this._waveT = 1 + Math.random() * 3;   // periodically stops to wave for help
     this._speed = kind === 0 ? 2.0 : kind === 2 ? 0.8 : 1.3;
     const scale = kind === 0 ? 0.7 : kind === 2 ? 0.95 : 1.15;
     this.mat = new THREE.MeshBasicMaterial({
-      color: kind === 0 ? 0x88eeff : kind === 2 ? 0xffaa66 : 0xffee88 });
+      color: kind === 0 ? 0x44ccff : kind === 2 ? 0xff8844 : 0xffee66 });   // the shirt
+    this._skinMat = new THREE.MeshBasicMaterial({ color: 0xffd9b0 });
+    this._legMat  = new THREE.MeshBasicMaterial({ color: 0x334455 });
+    this._haloMat = new THREE.MeshBasicMaterial({
+      color: 0xffdd66, transparent: true, opacity: 0.45,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
     this.group = new THREE.Group();
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.44, 0.22), this.mat);
-    torso.position.y = 0.32;
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 6), this.mat);
-    head.position.y = 0.66;
-    this.group.add(torso, head);
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.4, 0.2), this.mat);
+    torso.position.y = 0.5;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 6), this._skinMat);
+    head.position.y = 0.82;
+    this._armL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.32, 0.08), this.mat);
+    this._armL.position.set(-0.22, 0.52, 0);
+    this._armR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.32, 0.08), this.mat);
+    this._armR.position.set(0.22, 0.52, 0);
+    this._legL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.3, 0.1), this._legMat);
+    this._legL.position.set(-0.08, 0.15, 0);
+    this._legR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.3, 0.1), this._legMat);
+    this._legR.position.set(0.08, 0.15, 0);
+    this._halo = new THREE.Mesh(new THREE.RingGeometry(0.34, 0.46, 20), this._haloMat);
+    this._halo.rotation.x = -Math.PI / 2;
+    this._halo.position.y = 0.03;
+    this.group.add(torso, head, this._armL, this._armR, this._legL, this._legR, this._halo);
     this.group.scale.setScalar(scale);
     this.group.position.set(x, 0, z);
     sc.add(this.group);
   }
   update(dt) {
     this._turnT -= dt;
+    this._waveT -= dt;
+    const waving = this._waveT <= 0;
+    if (waving && this._waveT < -1.1) this._waveT = 2.5 + Math.random() * 3;
     if (this._turnT <= 0) {
       this._turnT = (this.kind === 0 ? 0.5 : 0.8) + Math.random() * 1.4;
       this._dir = Math.random() * Math.PI * 2;
     }
-    this.x = Math.max(-HALF_X + 0.6, Math.min(HALF_X - 0.6, this.x + Math.cos(this._dir) * this._speed * dt));
-    this.z = Math.max(-HALF_Z + 0.6, Math.min(HALF_Z - 0.6, this.z + Math.sin(this._dir) * this._speed * dt));
-    this.group.position.set(this.x, 0.06 + 0.05 * Math.abs(Math.sin(performance.now() * 0.012)), this.z);
+    if (!waving) {   // stops in place to wave — a person asking for help
+      this.x = Math.max(-HALF_X + 0.6, Math.min(HALF_X - 0.6, this.x + Math.cos(this._dir) * this._speed * dt));
+      this.z = Math.max(-HALF_Z + 0.6, Math.min(HALF_Z - 0.6, this.z + Math.sin(this._dir) * this._speed * dt));
+    }
+    const ph = performance.now() * 0.011 + this.x * 3;
+    const swing = waving ? 0 : Math.sin(ph) * 0.55;
+    this._legL.rotation.x = swing;
+    this._legR.rotation.x = -swing;
+    this._armL.rotation.x = -swing * 0.7;
+    if (waving) {   // one arm high, waving side to side
+      this._armR.rotation.z = 2.6 + Math.sin(performance.now() * 0.02) * 0.35;
+      this._armR.rotation.x = 0;
+    } else {
+      this._armR.rotation.z = 0;
+      this._armR.rotation.x = swing * 0.7;
+    }
+    this._halo.material.opacity = 0.3 + 0.2 * Math.abs(Math.sin(ph * 1.6));
+    this.group.rotation.y = -this._dir + Math.PI / 2;
+    this.group.position.set(this.x, 0.02 + 0.04 * Math.abs(Math.sin(ph * 2)), this.z);
   }
   remove(sc) {
     sc.remove(this.group);
     for (const c of this.group.children) c.geometry.dispose();
     this.mat.dispose();
+    this._skinMat.dispose();
+    this._legMat.dispose();
+    this._haloMat.dispose();
   }
 }
 
@@ -3041,7 +3081,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v159', 16, uiCanvas.height - 12);
+  ctx.fillText('v160', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -6114,6 +6154,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=113').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=114').catch(() => {});
   });
 }

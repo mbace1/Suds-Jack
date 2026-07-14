@@ -7,113 +7,29 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v159 — 2026-07-14
-**KAIKKI IRTI 3 — cabinet #5 (Tapan Kaikki 3 tribute): kill everything, get paid, buy bigger**
-- **KAIKKI 3 chip joins the cabinet row** (blood-red): grim DOS-VGA street look — wet-asphalt black, blood-red bounds, hard-desaturated Lambert bodies, gray-coat player with red dash ghosts, own RetroPass profile (240p nearest, 32-level posterize, faint scanlines)
-- **Money from EVERYTHING** (the reference's soul): every kill pays cash by body size, **crates in the alleys pop cash pickups** (2 hits), cash pickups fill the wallet AND the score, mission clears pay a carnage bonus. The wallet (`₵`) lives on the HUD next to the one objective: **KILL EVERYTHING — N LEFT**
-- **THE SHOP between every mission** (allowed here — GDD §2 only protects classic): weapons are one-time buys, supplies restock — **KONEPISTOOLI** (rapid + fire rate), **HAULIKKO** (spread + big rounds), **LASERI** (laser + pierce), **SINKO** (heavy burst, pierce, huge rounds), MEDKIT / KEVLAR / NITROSAAPPAAT. **No convoys, no pod drops — the arsenal is BOUGHT** (the sanctioned big-weapon exception, user direction)
-- **City-block missions**: buildings block bullets and bodies (streets between), the crowd pours in bigger each mission, SPITTORs join from mission 3
-- Roguelike B gold card rotation gains **KAIKKI IRTI HIT** (clear 2 street missions; quests skip the shop); cabinet row, OPTIONS cycle, records (`kaikki`), and en/ja/fi strings all wired
-- Cache-bust `?v=112` → `?v=113`; HUD label → v159
-
----
-
-## v158 — 2026-07-14
-**LOADOUT remake — assault the compound (cabinet overhaul #4, user direction)**
-- **THE COMPOUND**: every mission is fought around a walled base east of your staging point — a west gate (the assault route), a narrow back gate, and **TURRET emplacements on the inside corners** (more with depth). Random cover walls are gone; the level IS the tactics
-- **Two cabinet-only enemies**: **TURRET** — static emplacement whose slow barrel traverse is the whole tell; 2-round bursts once it squares up, flank the rotation; **TROOPER** — rifleman that advances to the mid band, strafes it, and snaps aimed shots. Troopers join the purge floods and the holdout trickle
-- **New 4th mission — ASSAULT**: a hardened COMMAND POST (14 HP, oversized, dug in at the back of the base behind the turrets); the rotation is now PURGE → DEMOLISH → HOLD OUT → ASSAULT
-- **Heavier weapon feel** (the reference's shoulders): LOADOUT rounds are 20% bigger and every shot kicks the camera a hair — feel, not stats; classic mode untouched
-- Demolish generators now sit INSIDE the walls and pour troopers; tester lists both new types (35 total)
-- Cache-bust `?v=111` → `?v=112`; HUD label → v158
-
----
-
-## v157 — 2026-07-14
-**BINDING remake — Isaac-shaped rooms, roster, and choices (cabinet overhaul #3, user direction)**
-- **Room layouts**: every fight room draws a seeded ROCK pattern — four pillars, center cross, diagonal ring, flanking bars, or scattered boulders — that blocks bullets and bodies both ways (the dungeon wall kit, applied to the basement)
-- **Four cabinet-only enemies, ALREADY IN THE ROOM when you walk in** (no door pours — the reference's room contract): **FLIT** — hovering mote orbiting a slowly shrinking ring, wallpaper alone, a closing net in a swarm; **SPITTLE** — gel spitter waddling in pulses, 3-shot arcs; **CHARGER** — bone knight that prowls until you cross its lane, rattles a 0.45 s tell, charges flat out, stuns itself; **HOPPER** — squat tell → ballistic hop, harmless in the air, dangerous where it lands. Compositions scale per floor; bosses keep the full smash boss
-- **REAL branching doors**: between the item/boss cadence beats, each exit door rolls its OWN room kind — the door you take is the choice you made (roadmap backlog item)
-- **Hearts economy**: basement kills sometimes drop a fast-fading suds-heart — the item build is the run, hearts keep it alive long enough to matter (cash drops stay out of the basement)
-- Base gun + dash untouched (user: "very similar base gun"); tester lists all four
-- Cache-bust `?v=110` → `?v=111`; HUD label → v157
-
----
-
-## v156 — 2026-07-14
-**GAUNDROP remake — a real dungeon crawl (cabinet overhaul #2, user direction)**
-- **Real tile mazes**: every level carves a fresh dungeon on a seeded grid — wide drunkard-walk corridors, three wired-in room clearings, extra loop openings, merged stone runs. You enter at the near corner; the **exit waits at the far one, LOCKED from level 2 — find the KEY** (red tile flips gold, `LOCKED — FIND THE KEY` pings if you jump the gun)
-- **Two cabinet-only enemies**: **GHOST** — one-hit shroud that streams straight at you and spends itself ON you (1 HP each, no score; the stream is the threat); **WRAITH** (level 3+) — the dungeon's dread: phases THROUGH walls, bullets pass through it, costs 1 HP on touch then dissipates. Route around it or feed it and run
-- **Generators pour ghosts** (faster with depth, per-generator rate), **BAMBU lobbers** arc shots over the walls from level 2, deeper levels add REDD_MINI generators
-- **Hunger drain** (the reference's signature): the dungeon ticks you down — starving costs 1 HP with a `STARVING — EAT SUDS!` warning; **suds food = time** (resets the clock, HUD shows a pulsing countdown under 10 s). **POTION** pickup clears the whole floor (generators excepted)
-- HUD level line (`LEVEL N — FIND THE KEY / EXIT OPEN`); tester lists both new types; shooting + dash untouched
-- Cache-bust `?v=109` → `?v=110`; HUD label → v156
-
----
-
-## v155 — 2026-07-14
-**TOKOTRON remake — its own roster, its own pacing (cabinet overhaul #1, user direction)**
-- **Robotron pacing for real**: the ENTIRE wave materializes AT ONCE around a recentered player (spawn flashes, 1.4 s of grace, no trickle) on **scripted 8-wave loops** that escalate per loop — brute waves, minder waves, orb hells all have their own beat
-- **Five cabinet-only enemies** (never in the classic pool): **GRUNT** — straight-line swarm walker that speeds up the longer it lives (the wave's clock); **BRUTE** — unkillable hulk, bullets only shove it, hunts civilians, waves end around it; **ORB** — rim-runner that avoids you while strobing out up to 3 **PROG** hunters (strafing aimed-shot turrets); **MINDER** — the converter: grapples a civilian for ~1 s (glow tell) and reprograms it into a hostile PROG — kill it mid-grapple to break the conversion
-- **Civilian family variety**: kid (small, quick, panicky), tall (steady), elder (slow amble) — silhouettes, colors, and wander speeds differ; the rescue chain stays the reward
-- Orange cubes remain honored guests; new types wear their own neon (danger-red grunts, amber brutes, brain-purple minders); tester lists all five
-- Toko shooting + dash untouched (user boundary)
-- Cache-bust `?v=108` → `?v=109`; HUD label → v155
-
----
-
-## v154 — 2026-07-14
-**Roguelike B: ALL the cabinets are bonus quests (user direction)**
-- The gold rare card now **rotates through the whole cabinet row**: BONUS GAUNTLET → **TOKOTRON RAID** (survive 2 flood waves) → **GAUNDROP DELVE** (find the exit of one dungeon level) → **LOADOUT OP** (complete 2 missions with the build you brought) → **BASEMENT DETOUR** (clear 3 basement rooms) — then back around, gauntlet tiers still ramping. Declining a quest keeps the same offer for the next card screen
-- Each quest borrows its cabinet's **full machinery mid-run** — look, RetroPass profile, spawn systems, walls/generators/civilians/rooms — with the gauntlet's pinball multiplier (×2, +1 per beat) applied to kills, pickups, and clears, a **BONUS QUEST ×N tag** on the HUD, and a **RARE pick + 3000×mult payout** on completion
-- Everything borrowed is handed back on completion AND on death (records stay tagged `roguelike`); classic waves resume right where the detour began
-- en/ja/fi quest card strings
-- Cache-bust `?v=107` → `?v=108`; HUD label → v154
-
----
-
-## v153 — 2026-07-14
-**Cabinet row — the arcade cabinets become a single-select mod (user direction)**
-- The four stacked launcher chips on the title are now **one compact CABINET row** (TOKOTRON / GAUNDROP / BINDING / LOADOUT): pick one — only one can be armed at a time — and **TAP TO START plays it**; tap the active chip again to go back to classic. Selection persists (`tokoDropCabinet`)
-- The same selection lives in **OPTIONS right under SMASH TV** as a CABINET cycle button (OFF → TOKOTRON → GAUNDROP → BINDING → LOADOUT), colored per cabinet with the cabinet's own hint line
-- All four start paths (tap, Space, pad A, Start) route through the selected cabinet; gamepad menu nav picks up the new chips automatically
-- Groundwork for Roguelike B cabinet bonus quests (next) and the per-cabinet remakes
-- Cache-bust `?v=106` → `?v=107`; HUD label → v153
-
----
-
-## v152 — 2026-07-14
-**LOADOUT — cabinet #4 (Re-Loaded tribute): pick your kit, run the missions**
-- **LOADOUT chip on the title** (toxic-green launcher): military gunmetal look — near-black olive floor, toxic-green vector bounds, desaturated Lambert enemies, pale-olive player with green dash ghosts, own RetroPass profile (320p nearest pixels, 24-level posterize, mild glow + scanlines)
-- **Pick your loadout at the door**: run starts with a 3-of-4 kit pick — GUNNER (twin spread + fire rate), LANCER (laser + pierce), RUNNER (rapid + speed), JUGGERNAUT (heavy burst + HP); each kit = weapon pod + matching perk. A fresh pick is offered every 2nd mission
-- **Mission objectives, not waves**: rotating scripted goals with a MISSION banner and a live objective line on the HUD — **PURGE** (wipe the flood), **DEMOLISH** (destroy the generators dug in behind cover), **HOLD OUT** (survive the timer while enemies trickle in). Cover walls block bullets and bodies both ways; mission clear pays a wave-scaled bonus and wipes the field
-- Reuses the Gaundrop kit (walls, generators) with its own placement; skips gates/bounty/foam/daily like the other cabinets; records tagged `loadout`
-- Cache-bust `?v=105` → `?v=106`; HUD label → v152
-
----
-
-## v151 — 2026-07-14
-**Cabinet graphics pass — per-cabinet renderers, materials, and sprite-era stepped animation (roadmap M5)**
-- **New `js/retro.js` — the RetroPass post pipeline**: scene renders into a per-cabinet low-res target, then a fullscreen shader applies the cabinet's treatment — bright-pass **glow**, contrast/saturation grade, **NES 16-color palette quantization**, **32-level posterize with ordered dither** + paint pre-blur, and subtle **scanlines** aligned to internal rows. Zero cost when no cabinet is active; classic + SMASH render byte-identical
-- **Per-cabinet art (user direction)**: **TOKOTRON** = vector monitor — near-black Lambert faces + **additive inverted-hull neon shells** (cyan player, pink cubes with crisp edge line-work, teal blobs, amber heavies), fog removed, 0.7× res with linear upscale so the lines glow instead of pixelate, high contrast. **GAUNDROP** = NES — every material color **snapped to a real 16-entry NES palette**, whole frame quantized to the same table, 240p-class pixels. **BINDING** = paint-meets-16bit — satin kept but desaturated toward flesh, soft pre-blur + SNES-depth posterize at 400p
-- **Sprite-era stepped animation** (12 Hz, cabinets only): the shared shader clock, every enemy wobble/strobe oscillator, cube flops (rotation steps through 4 sprite frames — positions stay smooth so collisions are untouched), the player's dash flicker (square-wave blink) and dash-ghost fades all step; gameplay, input, and movement stay 60 fps. **Dash ghosts wear each cabinet's neon**
-- PIXEL PREVIEW (DEV) now previews the shared retro pass; the old 0.22-DPR trick is gone. Flat-lit cabinets skip the shadow pass entirely (faster than classic). retro.js registered in bump loop + sw.js precache
-- Cache-bust `?v=104` → `?v=105`; HUD label → v151
-
----
-
-## v150 — 2026-07-13
-**THE BINDING OF TOKO — cabinet #3 (Binding of Isaac tribute): rooms, floors, and an item economy**
-- **BINDING OF TOKO chip on the title** (fleshy-pink launcher): basement-gloom look (dark red-black, fleshy red vector bounds, pixel rendering), built directly on the SMASH room lattice — doors, exits, minimap, entry-from-opposite-wall all work room to room
-- **The Isaac loop, item-first** per the user's direction: every ~3rd room is an **ITEM ROOM** — no enemies, doors already open, one glowing `?` pedestal mid-room; touching it opens a **free 3-card upgrade pick** and returns you to the same room. Every 6th room is the **FLOOR BOSS**; clearing it pays a **RARE pick on the spot** and the next door starts a new floor (`BINDING — FLOOR N` banners). Mods stack for the whole run — the build IS the run
-- Normal/swarm/heavy rooms use the full smash composition (shooters, wardens, valuables, prizes) so the combat depth carries over; the room script is seeded, doors advertise what's next
-- Card panels gained an `afterPick` mode (free picks don't chain a new wave); the gauntlet card never appears inside the basement; runs tagged `binding`; every borrowed toggle restored on exit
-- VERSIONS: v141–v149 archived (decade rule)
-- Cache-bust `?v=103` → `?v=104`; HUD label → v150
+## v160 — 2026-07-14
+**TOKOTRON character pass — robot enemies, human civilians (user direction)**
+- **The roster reads MACHINE now**: every tokotron enemy wears glowing neon robot dressing that survives the vector-black — **GRUNT** gets a danger-red visor, antenna, and leg plates that step faster as it ramps (and it faces you as it walks); **BRUTE** gets an amber visor slit + shoulder bar, tracking its prey; **ORB** gets a spinning gyro ring that whirs faster while winding up a spawn; **PROG** gets an eye bar + hover fins with a bob; **MINDER**'s exposed brain-core pulses — harder while converting
+- **The civilians are PEOPLE now**: skin-tone heads, colored shirts (kid blue / tall yellow / elder orange), dark legs, swinging arms and legs on a real walk cycle — and they periodically **stop and wave for help** with one arm high. A gold **rescue halo** pulses on the floor under every one
+- All parts are cheap MeshBasicMaterial glow riding the body meshes; disposal wired into removeFrom/remove
+- VERSIONS: v151–v159 archived (decade rule)
+- Cache-bust `?v=113` → `?v=114`; HUD label → v160
 
 ---
 
 ## Archive
+
+**v150–v159 summary (2026-07-13 – 2026-07-14)**
+- v150: THE BINDING OF TOKO — cabinet #3 (Binding of Isaac tribute): basement floors on the room lattice, ITEM-room free picks, floor bosses paying RARE picks
+- v151: Cabinet graphics pass — RetroPass pipeline (per-cabinet render targets, palettes, glow, scanlines), per-cabinet materials, 12 Hz stepped animation
+- v152: LOADOUT — cabinet #4 (Re-Loaded tribute): kit pick at the door, PURGE/DEMOLISH/HOLD OUT missions, gunmetal look
+- v153: Cabinet row — single-select mod on the title + OPTIONS under SMASH TV; TAP TO START plays the armed cabinet
+- v154: Roguelike B — ALL cabinets as gold-card bonus quests (RAID/DELVE/OP/DETOUR) with pinball multipliers + RARE payouts
+- v155: TOKOTRON remake — instant full-wave spawns on 8-wave loops; GRUNT/BRUTE/ORB/PROG/MINDER roster; civilian family variety
+- v156: GAUNDROP remake — real tile mazes, KEY + locked exit, GHOST streams, wall-phasing WRAITH, hunger drain + POTION
+- v157: BINDING remake — seeded rock rooms, in-room FLIT/SPITTLE/CHARGER/HOPPER spawns, REAL branching doors, hearts economy
+- v158: LOADOUT remake — THE COMPOUND walled base, TURRET + TROOPER, ASSAULT command-post mission, heavier weapon feel
+- v159: KAIKKI IRTI 3 — cabinet #5: money from everything, alley crates, THE SHOP (bought arsenal), DOS-VGA streets
 
 **v141–v149 summary (2026-07-13)**
 - v141: SIREN — screamer support; 0.8 s inhale tell → 1.6× speed surge to the pack within 7 units
