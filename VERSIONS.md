@@ -7,6 +7,14 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v165 — 2026-07-14
+**FIX: Roguelike B gold card rotates every OFFER (user report: "only getting Gauntlet")**
+- v154's rotation only advanced when a quest was ACCEPTED — a player who never took the gauntlet only ever SAW the gauntlet; the other five bonus quests were unreachable behind it
+- Now the rotation advances on every card screen: decline the gauntlet and the NEXT offer is TOKOTRON RAID, then GAUNDROP DELVE, LOADOUT OP, BASEMENT DETOUR, KAIKKI IRTI HIT, back around — the whole wing is visible without forced picks; gauntlet tiers still ramp when taken
+- Cache-bust `?v=118` → `?v=119`; HUD label → v165
+
+---
+
 ## v164 — 2026-07-14
 **Sound identity — each cabinet has its own voice (user direction)**
 - **Every cabinet fires a different gun** (`audio.setCabinetSound`, switched by each look): TOKOTRON — zappy high-square vector blip; GAUNDROP — dull dungeon thud; BINDING — wet basement pop; LOADOUT — punchy sawtooth report with a grain of noise (the v158 heavy feel, now audible); KAIKKI — gritty street crack. **Classic reproduces the original blip EXACTLY** (same byte-identical rule as the render path); the v137 sustained-fire ducking applies to all of them
