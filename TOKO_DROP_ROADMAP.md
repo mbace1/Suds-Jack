@@ -99,24 +99,32 @@ style — each with its own reference-driven accent — and the orange cubes are
 welcome everywhere. TOKOTRON sets the template: dark background, no grid,
 shiny vector-bright graphics.**
 
+*Menu integration SHIPPED: v153 single-select CABINET row (title + OPTIONS
+under SMASH TV); v154 all cabinets as Roguelike B bonus quests on the gold
+card rotation. Full remakes (enemy/level/environment/pacing per cabinet —
+only shooting + dash stay Toko, user direction) SHIPPED v155–v158.*
+
 The cabinet row (each refined individually, in build order):
-1. **TOKOTRON** *(Robotron: 2084 tribute)* — SHIPPED v148 (v1: dark room,
-   flood waves, civilians, rescue chains). Refinement backlog: per-mode high
-   score, family variety (mommy/daddy/mikey-style civilian types), brain-like
-   converter enemy that turns civilians into hostiles, 2P.
-2. **GAUNDROP** *(Gauntlet tribute)* — SHIPPED v149 (v1: torchlit maze
-   levels, wall cover, generators, suds food, exit tiles). Refinement
-   backlog: keys + locked doors, generator spawn telegraphs, exit gating.
+1. **TOKOTRON** *(Robotron: 2084 tribute)* — v148, graphics v151, REMAKE
+   v155 (instant full-wave spawns on scripted 8-wave loops; GRUNT/BRUTE/
+   ORB/PROG/MINDER roster; civilian family variety). Backlog: per-mode
+   high score, 2P.
+2. **GAUNDROP** *(Gauntlet tribute)* — v149, graphics v151, REMAKE v156
+   (real tile mazes, KEY + locked exit, GHOST streams, wall-phasing WRAITH,
+   hunger drain + food economy, floor-clearing POTION). Backlog: generator
+   spawn telegraphs, treasure rooms, per-mode high score.
 3. **THE BINDING OF TOKO** *(Binding of Isaac tribute, user addition)* —
-   SHIPPED v150 (v1: basement floors on the room lattice, ITEM-room
-   pedestals with free picks, floor bosses paying RARE picks). Refinement
-   backlog: branching door choices, shops, item pools per floor, revisits.
-4. **LOADOUT** *(Re-Loaded tribute)* — pick a loadout (weapon + perk)
-   at the door, mission objectives per room (destroy X, defend Y), darker
-   palette, heavier weapons feel.
-5. **KAIKKI IRTI 3** *(Tapan Kaikki 3 tribute)* — top-down carnage economy:
-   money from everything, a between-mission SHOP (allowed here — GDD §2 only
-   protects classic mode), escalating arsenals.
+   v150, graphics v151, REMAKE v157 (seeded rock layouts, in-room spawns,
+   FLIT/SPITTLE/CHARGER/HOPPER roster, REAL branching doors, hearts
+   economy). Backlog: shops, item pools per floor, revisits.
+4. **LOADOUT** *(Re-Loaded tribute)* — v152, REMAKE v158 (THE COMPOUND
+   walled base, TURRET + TROOPER, ASSAULT command-post mission, heavier
+   weapon feel). Backlog: rescue-the-hostage mission, mission briefings.
+5. **KAIKKI IRTI 3** *(Tapan Kaikki 3 tribute — NEXT TO BUILD)* — top-down
+   carnage economy: money from everything, a between-mission SHOP (allowed
+   here — GDD §2 only protects classic mode), escalating arsenals. The user
+   flagged BIG weapon changes for this one — the exception to the
+   shooting-stays-Toko rule.
 6. **NEX DEUS** *(Nex Machina inspired — the final unlockable)* — dash-through
    everything, humans to save under a timer, chained secrets, relentless
    forward pacing. Unlocked by clearing the other five; the crown jewel and
