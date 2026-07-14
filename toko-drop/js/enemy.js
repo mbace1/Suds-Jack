@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=109';
-import { nesSnap, NEON } from './retro.js?v=109';
+import { TUNING } from './tuning.js?v=110';
+import { nesSnap, NEON } from './retro.js?v=110';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -348,6 +348,14 @@ export const EnemyType = {
   // The converter: grapples a civilian for ~1 s (glow tell) and reprograms
   // it into a hostile PROG. Kill it mid-grapple to break the conversion.
   MINDER:      26,
+  // ── GAUNDROP cabinet roster (v156) — dungeon-only, poured by generators.
+  // One-hit shroud that streams straight at you and pops ON you (contact
+  // costs 1 HP and the ghost). Alone it's nothing; the stream is the threat.
+  GHOST:       27,
+  // The dungeon's dread: slow, phases THROUGH walls, bullets pass through
+  // it. Touching you costs 1 HP and dissipates it. Route around it — or
+  // feed it and run.
+  WRAITH:      28,
 };
 
 // WARDEN aura radius (world units) — main.js uses it for the damage-immunity
@@ -383,6 +391,9 @@ export const CFG = {
   [EnemyType.ORB]:         { color: 0xff44cc, radius: 0.65, speed: 3.0, hp: 2, bulletColor: null,     fireInterval: null },
   [EnemyType.PROG]:        { color: 0x66ff88, radius: 0.45, speed: 2.6, hp: 2, bulletColor: 0x88ffcc, fireInterval: 2.0  },
   [EnemyType.MINDER]:      { color: 0xcc66ff, radius: 0.7,  speed: 1.6, hp: 3, bulletColor: null,     fireInterval: null },
+  // GAUNDROP cabinet roster (v156)
+  [EnemyType.GHOST]:       { color: 0x9db4c8, radius: 0.42, speed: 3.1, hp: 1, bulletColor: null,     fireInterval: null },
+  [EnemyType.WRAITH]:      { color: 0x881133, radius: 0.8,  speed: 1.15, hp: 9999, bulletColor: null, fireInterval: null },
 };
 
 // Scratch colors for the tinted death flash (v132) — no per-death allocation.
@@ -509,6 +520,10 @@ export class Enemy {
       geo = new THREE.BoxGeometry(0.5, 0.9, 0.5);      // hovering pillar
     } else if (type === EnemyType.MINDER) {
       geo = new THREE.IcosahedronGeometry(cfg.radius, 1);  // knobby brain-dome
+    } else if (type === EnemyType.GHOST) {
+      geo = new THREE.ConeGeometry(cfg.radius, 0.9, 6);    // little shroud
+    } else if (type === EnemyType.WRAITH) {
+      geo = new THREE.SphereGeometry(cfg.radius, 10, 8);
     }
 
     const isBlob = BLOB_TYPES.has(type);
@@ -798,6 +813,12 @@ export class Enemy {
       this._tether.position.set(x, 0.45, z);
       this._pullActive = false;
       scene.add(this._tether);
+    }
+
+    // WRAITH (v156): spectral — shimmering translucency, handled per-frame.
+    if (type === EnemyType.WRAITH) {
+      this.mat.transparent = true;
+      this._setOpacity(0.55);
     }
 
     // CLOAKER (v143): visible → cloak-and-flank → decloak tell → burst.
@@ -1359,6 +1380,26 @@ export class Enemy {
           this.mesh.position.x += (mdx / md) * spd * dt;
           this.mesh.position.z += (mdz / md) * spd * dt;
         }
+        break;
+      }
+
+      case EnemyType.GHOST: {
+        // GAUNDROP ghost (v156): the stream. Beelines with a faint waver;
+        // pops on contact (main.js side). Never stops closing.
+        const wob = Math.sin(this._wobbleT * 3.5 + this._phase) * 0.25;
+        const gpx = -ddz / dist, gpz = ddx / dist;
+        this.mesh.position.x += ((ddx / dist) + gpx * wob) * spd * dt;
+        this.mesh.position.z += ((ddz / dist) + gpz * wob) * spd * dt;
+        break;
+      }
+
+      case EnemyType.WRAITH: {
+        // GAUNDROP wraith (v156): dread on a slow clock — phases through
+        // walls (main.js skips its pushout), shrugs bullets (collision skips
+        // it). The shimmer is the tell that this one obeys different rules.
+        this.mesh.position.x += (ddx / dist) * spd * dt;
+        this.mesh.position.z += (ddz / dist) * spd * dt;
+        this._setOpacity(0.45 + 0.15 * Math.sin(this._wobbleT * 2.2 + this._phase));
         break;
       }
 
