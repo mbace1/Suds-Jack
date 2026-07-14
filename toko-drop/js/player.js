@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=105';
+import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=106';
 
 const SPEED          = 6;
 const DASH_SPEED     = 26;
@@ -109,7 +109,8 @@ export class Player {
       this.mat = this._satinMat;
     } else {
       this.mat = makeSatinMat(
-        mode === 'tokotron' ? 0xe8f6ff : mode === 'gaundrop' ? 0xfcfcfc : 0xf0e0d8,
+        mode === 'tokotron' ? 0xe8f6ff : mode === 'gaundrop' ? 0xfcfcfc
+          : mode === 'loadout' ? 0xd8e8c8 : 0xf0e0d8,
         'blob', PLAYER_RADIUS);
       if (mode === 'tokotron') {
         this._cabShell = new THREE.Mesh(this.mesh.geometry, new THREE.MeshBasicMaterial({
@@ -129,7 +130,8 @@ export class Player {
     // dash ghosts wear the cabinet's neon
     const ghostCol = mode === 'tokotron' ? 0x00ffff
                    : mode === 'gaundrop' ? 0xfcfcfc
-                   : mode === 'binding'  ? 0xcc4466 : 0x88bbff;
+                   : mode === 'binding'  ? 0xcc4466
+                   : mode === 'loadout'  ? 0x99ff44 : 0x88bbff;
     for (const g of this._ghosts) {
       g.mesh.material.color.setHex(ghostCol);
       g.mesh.material.blending = mode === 'tokotron' ? THREE.AdditiveBlending : THREE.NormalBlending;

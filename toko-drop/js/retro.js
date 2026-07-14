@@ -44,6 +44,8 @@ export const CABINET_PROFILES = {
               scanline: 0.12, glow: 0.15, glowThresh: 0.75, contrast: 1.05, saturate: 1.0, posterize: 0,  blur: 0 },
   binding:  { shortSide: 400, resFrac: 0,   filter: 'nearest', palette: null,
               scanline: 0.10, glow: 0.25, glowThresh: 0.65, contrast: 1.0,  saturate: 0.88, posterize: 32, blur: 0.75 },
+  loadout:  { shortSide: 320, resFrac: 0,   filter: 'nearest', palette: null,
+              scanline: 0.14, glow: 0.3,  glowThresh: 0.6, contrast: 1.15, saturate: 0.8,  posterize: 24, blur: 0 },
   preview:  { shortSide: 200, resFrac: 0,   filter: 'nearest', palette: null,
               scanline: 0.12, glow: 0.2,  glowThresh: 0.7, contrast: 1.0,  saturate: 1.0,  posterize: 0,  blur: 0 },
 };
