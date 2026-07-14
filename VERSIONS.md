@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v158 — 2026-07-14
+**LOADOUT remake — assault the compound (cabinet overhaul #4, user direction)**
+- **THE COMPOUND**: every mission is fought around a walled base east of your staging point — a west gate (the assault route), a narrow back gate, and **TURRET emplacements on the inside corners** (more with depth). Random cover walls are gone; the level IS the tactics
+- **Two cabinet-only enemies**: **TURRET** — static emplacement whose slow barrel traverse is the whole tell; 2-round bursts once it squares up, flank the rotation; **TROOPER** — rifleman that advances to the mid band, strafes it, and snaps aimed shots. Troopers join the purge floods and the holdout trickle
+- **New 4th mission — ASSAULT**: a hardened COMMAND POST (14 HP, oversized, dug in at the back of the base behind the turrets); the rotation is now PURGE → DEMOLISH → HOLD OUT → ASSAULT
+- **Heavier weapon feel** (the reference's shoulders): LOADOUT rounds are 20% bigger and every shot kicks the camera a hair — feel, not stats; classic mode untouched
+- Demolish generators now sit INSIDE the walls and pour troopers; tester lists both new types (35 total)
+- Cache-bust `?v=111` → `?v=112`; HUD label → v158
+
+---
+
 ## v157 — 2026-07-14
 **BINDING remake — Isaac-shaped rooms, roster, and choices (cabinet overhaul #3, user direction)**
 - **Room layouts**: every fight room draws a seeded ROCK pattern — four pillars, center cross, diagonal ring, flanking bars, or scattered boulders — that blocks bullets and bodies both ways (the dungeon wall kit, applied to the basement)

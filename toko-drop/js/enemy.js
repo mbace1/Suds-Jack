@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=111';
-import { nesSnap, NEON } from './retro.js?v=111';
+import { TUNING } from './tuning.js?v=112';
+import { nesSnap, NEON } from './retro.js?v=112';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -368,6 +368,12 @@ export const EnemyType = {
   // Leaper: squat tell → ballistic hop at you; harmless while airborne,
   // dangerous where it lands.
   HOPPER:      32,
+  // ── LOADOUT cabinet roster (v158) — compound defenders.
+  // Static emplacement: slow traverse toward you, 2-round bursts once it
+  // squares up. Holds the compound corners; flank the traverse.
+  TURRET:      33,
+  // Rifleman: advances to mid range, strafes the band, snaps aimed shots.
+  TROOPER:     34,
 };
 
 // WARDEN aura radius (world units) — main.js uses it for the damage-immunity
@@ -411,6 +417,9 @@ export const CFG = {
   [EnemyType.SPITTLE]:     { color: 0xcc7788, radius: 0.6,  speed: 1.2, hp: 3, bulletColor: 0xdd6677, fireInterval: 2.4  },
   [EnemyType.CHARGER]:     { color: 0xddddcc, radius: 0.62, speed: 1.0, hp: 4, bulletColor: null,     fireInterval: null },
   [EnemyType.HOPPER]:      { color: 0xbbaa33, radius: 0.5,  speed: 1.6, hp: 2, bulletColor: null,     fireInterval: null },
+  // LOADOUT cabinet roster (v158)
+  [EnemyType.TURRET]:      { color: 0x6a7a5a, radius: 0.7,  speed: 0,   hp: 6, bulletColor: 0xffee66, fireInterval: 2.6  },
+  [EnemyType.TROOPER]:     { color: 0x7a8a4a, radius: 0.55, speed: 1.9, hp: 2, bulletColor: 0xccff66, fireInterval: 2.2  },
 };
 
 // Scratch colors for the tinted death flash (v132) — no per-death allocation.
@@ -546,6 +555,10 @@ export class Enemy {
       geo = new THREE.SphereGeometry(cfg.radius, 8, 6);       // hovering mote
     } else if (type === EnemyType.CHARGER) {
       geo = new THREE.CylinderGeometry(0.42, cfg.radius, 1.05, 6);  // bone knight
+    } else if (type === EnemyType.TURRET) {
+      geo = new THREE.CylinderGeometry(cfg.radius * 0.85, cfg.radius, 0.7, 8);  // emplacement
+    } else if (type === EnemyType.TROOPER) {
+      geo = new THREE.BoxGeometry(0.6, 1.0, 0.5);                   // rifleman
     }
 
     const isBlob = BLOB_TYPES.has(type);
@@ -835,6 +848,15 @@ export class Enemy {
       this._tether.position.set(x, 0.45, z);
       this._pullActive = false;
       scene.add(this._tether);
+    }
+
+    // TURRET (v158): the barrel is the tell — its traverse shows where the
+    // burst will land. Shares the body material so hit flashes read on it.
+    if (type === EnemyType.TURRET) {
+      this.mesh.position.y = 0.35;
+      this._barrel = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 1.0), this.mat);
+      this._barrel.position.set(0, 0.18, 0.55);
+      this.mesh.add(this._barrel);
     }
 
     // WRAITH (v156): spectral — shimmering translucency, handled per-frame.
@@ -1526,6 +1548,53 @@ export class Enemy {
             this._hpT = 0.5 + Math.random() * 0.6;
             this.mesh.position.y = 0;
           }
+        }
+        break;
+      }
+
+      case EnemyType.TURRET: {
+        // LOADOUT turret (v158): static — the whole enemy is the traverse.
+        // Slow rotation toward you, a 2-round burst once it squares up.
+        this._trA = this._trA ?? Math.random() * Math.PI * 2;
+        const wantA = Math.atan2(ddz, ddx);
+        let dA = wantA - this._trA;
+        while (dA >  Math.PI) dA -= Math.PI * 2;
+        while (dA < -Math.PI) dA += Math.PI * 2;
+        this._trA += Math.sign(dA) * Math.min(Math.abs(dA), 1.5 * dt);
+        this.mesh.rotation.y = Math.PI / 2 - this._trA;
+        this._t -= dt;
+        if (this._t <= 0 && dist < 16 && Math.abs(dA) < 0.25) {
+          this._t = cfg.fireInterval * this._intervalMult;
+          this._burst = 2;
+          this._burstT = 0;
+        }
+        if (this._burst > 0) {
+          this._burstT -= dt;
+          if (this._burstT <= 0) {
+            this._burst--;
+            this._burstT = 0.16;
+            bullets.spawnDir(ex, ez, Math.cos(this._trA), Math.sin(this._trA),
+              false, cfg.bulletColor, false, this.type);
+          }
+        }
+        break;
+      }
+
+      case EnemyType.TROOPER: {
+        // LOADOUT trooper (v158): rifleman — advances to the mid band,
+        // strafes it, snaps single aimed shots.
+        const wantT = 9;
+        const tpX = -ddz / dist, tpZ = ddx / dist;
+        this._strafeTimer -= dt;
+        if (this._strafeTimer <= 0) { this._strafeDir = -this._strafeDir; this._strafeTimer = 2.0 + Math.random(); }
+        const radT = dist > wantT + 1.5 ? 1 : dist < wantT - 1.5 ? -1 : 0;
+        this.mesh.position.x += (ddx / dist * radT + tpX * this._strafeDir * 0.8) * spd * dt;
+        this.mesh.position.z += (ddz / dist * radT + tpZ * this._strafeDir * 0.8) * spd * dt;
+        this._t -= dt;
+        if (this._t <= 0 && dist < 15) {
+          this._t = cfg.fireInterval * this._intervalMult;
+          const a = Math.atan2(ddz, ddx) + (Math.random() - 0.5) * 0.08;
+          bullets.spawnDir(ex, ez, Math.cos(a), Math.sin(a), false, cfg.bulletColor, false, this.type);
         }
         break;
       }
