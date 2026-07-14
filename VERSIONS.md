@@ -7,6 +7,18 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v161 — 2026-07-14
+**Cabinet identity audit — every mode scrutinized like the tokotron pass (user direction)**
+- Audited all nine modes against their reference identity (does it READ?): classic/SMASH/roguelike/daily are the baseline (no action); TOKOTRON passed in v160; the other four cabinets each had gaps — fixed:
+- **GAUNDROP**: the walls are finally **TORCHLIT** (amber flame planes on long runs, twin-frequency global flicker); the **WRAITH is a hooded shroud** now, not a red ball; **GHOSTS brightened to spectral pale** (they were wall-colored mud in the NES palette)
+- **BINDING**: **FLITs have flapping wings** — they read as flies at a glance; **rocks read organic** — jittered footprints, heights, tilts, two-tone flesh-stone (collision stays axis-aligned)
+- **LOADOUT**: the **TROOPER wears a helmet + visor** (toxic-green, faces you — the soldier read the grunt already had); the **command post grew an antenna mast + red beacon** — it reads COMMAND, not big box
+- **KAIKKI IRTI 3**: buildings get **lit windows** on the street faces (most dark, a few glowing) — the city-at-night read
+- All dressing is shared-geometry BasicMaterial children riding existing disposables (no leaks, no per-frame cost beyond one flicker)
+- Cache-bust `?v=114` → `?v=115`; HUD label → v161
+
+---
+
 ## v160 — 2026-07-14
 **TOKOTRON character pass — robot enemies, human civilians (user direction)**
 - **The roster reads MACHINE now**: every tokotron enemy wears glowing neon robot dressing that survives the vector-black — **GRUNT** gets a danger-red visor, antenna, and leg plates that step faster as it ramps (and it faces you as it walks); **BRUTE** gets an amber visor slit + shoulder bar, tracking its prey; **ORB** gets a spinning gyro ring that whirs faster while winding up a spawn; **PROG** gets an eye bar + hover fins with a bob; **MINDER**'s exposed brain-core pulses — harder while converting

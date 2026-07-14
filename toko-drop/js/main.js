@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=114';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=114';
-import { Player, PLAYER_RADIUS } from './player.js?v=114';
+import { InputManager } from './input.js?v=115';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=115';
+import { Player, PLAYER_RADIUS } from './player.js?v=115';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=114';
-import { RetroPass } from './retro.js?v=114';
-import { audio } from './audio.js?v=114';
-import { initDesigner } from './designer.js?v=114';
-import { t, getLang, setLang, langs } from './lang.js?v=114';
-import { TUNING } from './tuning.js?v=114';
+         CABINET_STYLE, VIS } from './enemy.js?v=115';
+import { RetroPass } from './retro.js?v=115';
+import { audio } from './audio.js?v=115';
+import { initDesigner } from './designer.js?v=115';
+import { t, getLang, setLang, langs } from './lang.js?v=115';
+import { TUNING } from './tuning.js?v=115';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1550,6 +1550,18 @@ function clearGaundropLevel() {
   if (gdExit) { scene.remove(gdExit.mesh); gdExit.mesh.geometry.dispose(); gdExit.mat.dispose(); gdExit = null; }
 }
 const GD_WALL_MAT_COLOR = 0x7a4a22;   // stone-brown
+// v161 identity dressing — SHARED geometry/materials that ride disposable
+// parents (walls, buildings, generators) as children: never disposed, reused.
+const TORCH_GEO = new THREE.PlaneGeometry(0.3, 0.5);
+const TORCH_MAT = new THREE.MeshBasicMaterial({
+  color: 0xffaa33, transparent: true, opacity: 0.7,
+  blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+const WINDOW_GEO = new THREE.PlaneGeometry(0.3, 0.36);
+const WINDOW_MAT = new THREE.MeshBasicMaterial({ color: 0xffcc55 });
+const MAST_GEO = new THREE.BoxGeometry(0.08, 2.4, 0.08);
+const MAST_MAT = new THREE.MeshBasicMaterial({ color: 0x99bb77 });
+const BEACON_GEO = new THREE.SphereGeometry(0.13, 8, 6);
+const BEACON_MAT = new THREE.MeshBasicMaterial({ color: 0xff3322 });
 class Generator {
   constructor(sc, x, z, type, rate = 2.2) {   // v156: ghost gens pour faster, deeper
     this.alive = true;
@@ -3081,7 +3093,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v160', 16, uiCanvas.height - 12);
+  ctx.fillText('v161', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3942,6 +3954,13 @@ function spawnWave() {
           const wx = (x0 + x1) / 2, wz = cZ(j);
           const mesh = new THREE.Mesh(new THREE.BoxGeometry(hx * 2, 1.2, hz * 2), wallMat());
           mesh.position.set(wx, 0.6, wz);
+          // v161: TORCHLIGHT (finally living up to the art direction) — an
+          // amber flame plane on every long run; TORCH_MAT flickers globally.
+          if (hx > 1.6 && rng() < 0.7) {
+            const torch = new THREE.Mesh(TORCH_GEO, TORCH_MAT);
+            torch.position.set((rng() * 2 - 1) * hx * 0.6, 0.9, 0);
+            mesh.add(torch);
+          }
           scene.add(mesh);
           gdWalls.push({ mesh, x: wx, z: wz, hx, hz });
           run = -1;
@@ -4033,9 +4052,15 @@ function spawnWave() {
   if (bindingMode && smashRoomKind !== 'item' && smashRoomKind !== 'boss') {
     clearGaundropLevel();          // previous room's rocks
     const rock = (x, z, hx = 0.9, hz = 0.9) => {
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(hx * 2, 0.85, hz * 2),
-        new THREE.MeshBasicMaterial({ color: 0x5a3a44 }));
-      mesh.position.set(x, 0.42, z);
+      // v161: rocks read ORGANIC — jittered footprint, height, tilt, and a
+      // two-tone flesh-stone palette (collision stays axis-aligned).
+      hx *= 0.85 + rng() * 0.35;
+      hz *= 0.85 + rng() * 0.35;
+      const h = 0.6 + rng() * 0.55;
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(hx * 2, h, hz * 2),
+        new THREE.MeshBasicMaterial({ color: rng() < 0.5 ? 0x5a3a44 : 0x6a4a50 }));
+      mesh.position.set(x, h / 2, z);
+      mesh.rotation.y = (rng() - 0.5) * 0.5;
       scene.add(mesh);
       gdWalls.push({ mesh, x, z, hx, hz });
     };
@@ -4164,6 +4189,13 @@ function spawnWave() {
       post.hp = 14;
       post.mesh.scale.setScalar(1.55);
       post.mat.color.setHex(0x4a5a3a);
+      {   // v161: an antenna mast + red beacon — the COMMAND read
+        const mast = new THREE.Mesh(MAST_GEO, MAST_MAT);
+        mast.position.y = 1.3;
+        const beacon = new THREE.Mesh(BEACON_GEO, BEACON_MAT);
+        beacon.position.y = 2.5;
+        post.mesh.add(mast, beacon);
+      }
       gdGenerators.push(post);
     } else if (loObjective === 'purge') {
       const n = Math.min(20, 6 + wave * 2);
@@ -4202,6 +4234,20 @@ function spawnWave() {
       const bz = ((i % 2 === 0 ? -1 : 1) * (0.35 + rng() * 0.35)) * (HALF_Z - hz - 3);
       const mesh = new THREE.Mesh(new THREE.BoxGeometry(hx * 2, 1.6, hz * 2), wallMat());
       mesh.position.set(bx, 0.8, bz);
+      // v161: LIT WINDOWS on the street faces — most dark, a few glowing;
+      // shared geometry/material ride the building (city-at-night read).
+      for (const side of [-1, 1]) {
+        const cols2 = Math.max(2, Math.floor(hx * 1.6));
+        for (let r = 0; r < 2; r++) {
+          for (let c2 = 0; c2 < cols2; c2++) {
+            if (rng() < 0.55) continue;
+            const win = new THREE.Mesh(WINDOW_GEO, WINDOW_MAT);
+            win.position.set(-hx + (c2 + 0.5) * (hx * 2 / cols2), -0.32 + r * 0.62, side * (hz + 0.02));
+            if (side < 0) win.rotation.y = Math.PI;
+            mesh.add(win);
+          }
+        }
+      }
       scene.add(mesh);
       gdWalls.push({ mesh, x: bx, z: bz, hx, hz });
     }
@@ -5237,6 +5283,9 @@ function loop() {
       const c = gdResolveWalls(e.position.x, e.position.z, e.radius * 0.8);
       e.position.x = c.x; e.position.z = c.z;
     }
+    // v161: shared torch flame flicker — two beat frequencies read as fire
+    TORCH_MAT.opacity = 0.5 + 0.22 * Math.sin(performance.now() * 0.013)
+                            + 0.14 * Math.sin(performance.now() * 0.031);
     // the exit tile: step on it to descend — if you've earned the key
     if (gdExit) {
       gdExit.mat.opacity = 0.35 + 0.25 * Math.abs(Math.sin(performance.now() * 0.005));
@@ -6154,6 +6203,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=114').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=115').catch(() => {});
   });
 }
