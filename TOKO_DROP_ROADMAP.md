@@ -120,11 +120,10 @@ The cabinet row (each refined individually, in build order):
 4. **LOADOUT** *(Re-Loaded tribute)* — v152, REMAKE v158 (THE COMPOUND
    walled base, TURRET + TROOPER, ASSAULT command-post mission, heavier
    weapon feel). Backlog: rescue-the-hostage mission, mission briefings.
-5. **KAIKKI IRTI 3** *(Tapan Kaikki 3 tribute — NEXT TO BUILD)* — top-down
-   carnage economy: money from everything, a between-mission SHOP (allowed
-   here — GDD §2 only protects classic mode), escalating arsenals. The user
-   flagged BIG weapon changes for this one — the exception to the
-   shooting-stays-Toko rule.
+5. **KAIKKI IRTI 3** *(Tapan Kaikki 3 tribute)* — SHIPPED v159 (DOS-VGA
+   streets, money from everything, crates, THE SHOP with the bought arsenal
+   — the sanctioned big-weapon exception). Backlog: more shop tiers
+   (flamethrower-class), civilians-as-witnesses, mission variety.
 6. **NEX DEUS** *(Nex Machina inspired — the final unlockable)* — dash-through
    everything, humans to save under a timer, chained secrets, relentless
    forward pacing. Unlocked by clearing the other five; the crown jewel and
