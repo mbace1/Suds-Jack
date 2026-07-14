@@ -73,7 +73,7 @@ class AudioSystem {
     if (!this._introVoice || this._volume <= 0) return null;
     try {
       if (!this._introEl) {
-        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=117', import.meta.url).href);
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=118', import.meta.url).href);
         this._introEl.preload = 'auto';
       }
       this._introEl.volume = this._annVolume;
@@ -147,6 +147,10 @@ class AudioSystem {
     } catch (_) {}
   }
 
+  // v164 sound identity: each cabinet fires a different gun. null (classic)
+  // reproduces the original blip EXACTLY — same byte-identical rule as the
+  // render path. Set from each cabinet's setXLook() via setCabinetSound().
+  setCabinetSound(mode) { this._cab = mode ?? null; }
   // v137: sustained fire ducks the shot blip toward 50% over ~2.5 s so a held
   // trigger doesn't dominate the mix; half a second of not firing resets it.
   shoot() {
@@ -155,7 +159,21 @@ class AudioSystem {
     this._shootHeat = gap < 500 ? Math.min(2500, this._shootHeat + gap) : 0;
     this._lastShotAt = now;
     const duck = 1 - 0.5 * (this._shootHeat / 2500);
-    this._tone(920, 0.07, 'square', 0.11 * duck);
+    switch (this._cab) {
+      case 'tokotron':   // zappy vector blip — high square with a fast fall
+        this._tone(1250, 0.06, 'square', 0.10 * duck, 700); break;
+      case 'gaundrop':   // dull dungeon thud
+        this._tone(480, 0.09, 'triangle', 0.13 * duck, 260); break;
+      case 'binding':    // wet basement pop
+        this._tone(620, 0.10, 'sine', 0.13 * duck, 300); break;
+      case 'loadout':    // punchy military report with a grain of noise
+        this._tone(240, 0.11, 'sawtooth', 0.15 * duck, 110);
+        this._noise(0.05 * duck, 0.05); break;
+      case 'kaikki':     // gritty street crack
+        this._tone(700, 0.05, 'sawtooth', 0.13 * duck, 320); break;
+      default:           // classic — untouched
+        this._tone(920, 0.07, 'square', 0.11 * duck);
+    }
   }
   enemyHit()  { this._tone(500, 0.07, 'square', 0.20); }
   enemyDieType(cat) {
@@ -211,6 +229,26 @@ class AudioSystem {
     this._tone(70, 0.55, 'sawtooth', 0.40, 130);
     setTimeout(() => this._tone(90, 0.70, 'sawtooth', 0.34, 155), 200);
     this._noise(0.14, 0.5);
+  }
+  // v164 cabinet stingers — one-shot synth SFX, never loops (GDD §10).
+  // TOKOTRON wave materialize: robotic double-zap.
+  waveZap() {
+    this._tone(1600, 0.08, 'square', 0.16, 900);
+    setTimeout(() => this._tone(1100, 0.10, 'square', 0.14, 500), 90);
+  }
+  // GAUNDROP key: bright ring of little teeth.
+  keyJingle() {
+    [1568, 1976, 2637].forEach((f, i) =>
+      setTimeout(() => this._tone(f, 0.09, 'triangle', 0.14), i * 55));
+  }
+  // GAUNDROP hunger: a low knell — eat.
+  hungerKnell() { this._tone(140, 0.5, 'sine', 0.30, 90); this._noise(0.06, 0.2); }
+  // GAUNDROP descend: the floor swallows you.
+  descend() { this._tone(220, 0.5, 'sawtooth', 0.26, 55); this._noise(0.10, 0.35); }
+  // KAIKKI cash register: cha-ching.
+  kaChing() {
+    this._noise(0.10, 0.05);
+    setTimeout(() => { this._tone(1568, 0.12, 'sine', 0.18); this._tone(2093, 0.14, 'sine', 0.14); }, 55);
   }
   playerHit() { this._tone(100, 0.32, 'sawtooth', 0.38); this._noise(0.22, 0.18); }
   playerDie() { this._tone(65,  0.70, 'sawtooth', 0.50); this._noise(0.42, 0.60); }

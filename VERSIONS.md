@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v164 — 2026-07-14
+**Sound identity — each cabinet has its own voice (user direction)**
+- **Every cabinet fires a different gun** (`audio.setCabinetSound`, switched by each look): TOKOTRON — zappy high-square vector blip; GAUNDROP — dull dungeon thud; BINDING — wet basement pop; LOADOUT — punchy sawtooth report with a grain of noise (the v158 heavy feel, now audible); KAIKKI — gritty street crack. **Classic reproduces the original blip EXACTLY** (same byte-identical rule as the render path); the v137 sustained-fire ducking applies to all of them
+- **Cabinet stingers** (one-shot synth, never loops — GDD §10): TOKOTRON **waveZap** (robotic double-zap as the wave materializes); GAUNDROP **keyJingle** (key pickup), **hungerKnell** (low bell when STARVING fires), **descend** (the floor swallows you at the exit tile); KAIKKI **kaChing** (the till rings on every shop purchase AND every cash pickup — money you can hear)
+- Master/announcer volume sliders and speech untouched
+- Cache-bust `?v=117` → `?v=118`; HUD label → v164
+
+---
+
 ## v163 — 2026-07-14
 **BINDING chasms — the pit shapes the room (terrain elements, user direction)**
 - **CHASMS in the basement** (floor 2+, ~1/3 of fight rooms): red-rimmed voids in three seeded layouts — the center void, twin strips, corner pits
