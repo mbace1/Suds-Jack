@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v167 — 2026-07-15
+**Parity pass 1: GRAPHICS — the references have ground (user: parity to originals is low)**
+- **Every floor-cabinet gets real GROUND** (procedural 64px canvas tiles, no assets, NearestFilter for the pixel-era read, graded by each cabinet's RetroPass): GAUNDROP — stone slabs with mortar; BINDING — grimy basement boards; LOADOUT — cracked concrete; KAIKKI — wet asphalt grain. TOKOTRON keeps its authentic black void; classic keeps the neon grid
+- **GAUNDROP walls are BRICK now** — shared canvas texture with offset courses + mortar joints, per-wall UVs scaled so bricks stay square regardless of run length
+- **KAIKKI: the streets remember** — kills leave BLOOD (dark red, 2× size), not goo-colored puddles
+- **LOADOUT: muzzle flash** — two hot sparks off the barrel on every shot, on top of the v158 kick + v164 report
+- Cache-bust `?v=120` → `?v=121`; HUD label → v167
+
+---
+
 ## v166 — 2026-07-14
 **Bonus quests are a SOMETIMES thing — randomized, not guaranteed (user direction)**
 - The Roguelike B gold card no longer appears on every card screen: **~55% of screens roll a bonus quest at all**, and when one appears it's a **random pick** from the six (gauntlet + five cabinets) — never the same quest twice in a row. Scarcity is the appeal; supersedes the v165 fixed rotation
