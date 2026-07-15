@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v168 — 2026-07-15
+**Parity pass 2: GAMEPLAY — the references' signature furniture (user: parity to originals is low)**
+- **TOKOTRON: ELECTRODES** (the Robotron staple): 6-10 glowing yellow octahedra scatter every wave (more per loop, never near the recentered player) — one shot destroys them (+25), grunts that touch them FRY (the room fights for you), BRUTEs bulldoze them for free, the player takes a hit. Positioning furniture, exactly as the reference used it
+- **GAUNDROP: keys are an INVENTORY, doors are LOCKED** (the Gauntlet core loop): keys collect into a pocket (`KEY ×N`, HUD shows `KEYS ×N`); **gold DOOR slabs block corridors** — touch with a key to spend it and open; the **exit spends a key at the tile** (`EXIT UNLOCKED`), no key = dull tink + `LOCKED — FIND A KEY`. Keys spawn doors+1 deep so the exit is always payable; the maze's loops keep routes alive around unaffordable doors
+- **GAUNDROP: hordes** — the dungeon's generator cap rises 22 → 30; Gauntlet is crowds
+- Electrodes and doors clear with their levels/exits (no leaks); quests inherit everything
+- Cache-bust `?v=121` → `?v=122`; HUD label → v168
+
+---
+
 ## v167 — 2026-07-15
 **Parity pass 1: GRAPHICS — the references have ground (user: parity to originals is low)**
 - **Every floor-cabinet gets real GROUND** (procedural 64px canvas tiles, no assets, NearestFilter for the pixel-era read, graded by each cabinet's RetroPass): GAUNDROP — stone slabs with mortar; BINDING — grimy basement boards; LOADOUT — cracked concrete; KAIKKI — wet asphalt grain. TOKOTRON keeps its authentic black void; classic keeps the neon grid

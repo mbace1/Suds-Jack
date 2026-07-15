@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=121';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=121';
-import { Player, PLAYER_RADIUS } from './player.js?v=121';
+import { InputManager } from './input.js?v=122';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=122';
+import { Player, PLAYER_RADIUS } from './player.js?v=122';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=121';
-import { RetroPass } from './retro.js?v=121';
-import { audio } from './audio.js?v=121';
-import { initDesigner } from './designer.js?v=121';
-import { t, getLang, setLang, langs } from './lang.js?v=121';
-import { TUNING } from './tuning.js?v=121';
+         CABINET_STYLE, VIS } from './enemy.js?v=122';
+import { RetroPass } from './retro.js?v=122';
+import { audio } from './audio.js?v=122';
+import { initDesigner } from './designer.js?v=122';
+import { t, getLang, setLang, langs } from './lang.js?v=122';
+import { TUNING } from './tuning.js?v=122';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1492,6 +1492,18 @@ audio.setAnnouncer(announcerOn);
 let tokotronMode = false;
 let civilians = [];
 let rescueChain = 0;
+// v168 (Robotron parity): ELECTRODES — the reference's static furniture.
+// One shot destroys them (+25), grunts that touch them die, the player
+// takes a hit. BRUTEs bulldoze them for free.
+let tkElectrodes = [];   // { mesh, x, z }
+function clearElectrodes() {
+  for (const el of tkElectrodes) {
+    scene.remove(el.mesh);
+    el.mesh.geometry.dispose();
+    el.mesh.material.dispose();
+  }
+  tkElectrodes = [];
+}
 let _tkSavedPixel = null, _tkSavedSmash = null;
 function setTokotronLook(on) {
   scene.background.setHex(on ? 0x030309 : 0x0d0d1a);
@@ -1512,6 +1524,7 @@ function startTokotron() {
 }
 function exitTokotron() {
   tokotronMode = false;
+  clearElectrodes();
   smashMode = _tkSavedSmash;
   pixelMode = _tkSavedPixel;
   applyPerfMode();
@@ -1608,7 +1621,8 @@ let gaundropMode = false;
 let gdWalls = [];        // { mesh, x, z, hx, hz } axis-aligned blockers
 let gdGenerators = [];
 let gdExit = null;
-let gdKeyHeld = false;    // v156: the key opens the locked exit
+let gdKeys = 0;           // v168 (Gauntlet parity): keys are an INVENTORY
+let gdDoors = [];         // v168: locked internal doors — a key opens each
 let gdHungerT = 0;        // v156: Gauntlet-style drain — suds food resets it
 let _gdSavedPixel = null, _gdSavedSmash = null;
 const inCabinet = () => tokotronMode || gaundropMode || bindingMode || loadoutMode || kaikkiMode;
@@ -1645,6 +1659,7 @@ function exitGaundrop() {
 function clearGaundropLevel() {
   for (const w of gdWalls) { scene.remove(w.mesh); w.mesh.geometry.dispose(); w.mesh.material.dispose(); }
   gdWalls = [];
+  gdDoors = [];   // v168: door meshes live in gdWalls — just drop the refs
   for (const c of bdChasms) {   // v163: binding pits share the terrain clear
     scene.remove(c.mesh); scene.remove(c.rim);
     c.mesh.geometry.dispose(); c.mesh.material.dispose();
@@ -1707,7 +1722,8 @@ class Generator {
     else this.mat.color.setHex(0xb06a2a);
     this.mesh.rotation.y += dt * 0.4;
     const aliveCount = enemies.reduce((n, e) => n + (e.alive ? 1 : 0), 0);
-    if (this._spawnT <= 0 && aliveCount < 22) {
+    // v168: Gauntlet is CROWDS — the dungeon runs a deeper cap
+    if (this._spawnT <= 0 && aliveCount < (gaundropMode ? 30 : 22)) {
       this._spawnT = this._rate + Math.random() * 1.2;
       const a = Math.random() * Math.PI * 2;
       enemies.push(new Enemy(scene, this.type, this.x + Math.cos(a) * 1.4, this.z + Math.sin(a) * 1.4));
@@ -3161,7 +3177,8 @@ function drawHUD() {
     ctx.shadowColor = '#cc8833';
     ctx.shadowBlur = 10;
     ctx.fillStyle = '#ffbb66';
-    ctx.fillText(`LEVEL ${wave} — ${gdExit.locked ? 'FIND THE KEY' : 'EXIT OPEN'}`,
+    ctx.fillText(`LEVEL ${wave} — ${gdExit.locked ? 'FIND A KEY' : 'EXIT OPEN'}` +
+      (gdKeys > 0 ? `  ·  KEYS ×${gdKeys}` : ''),
       uiCanvas.width / 2, 26);
     if (gdHungerT < 10) {
       ctx.font = 'bold 13px monospace, sans-serif';
@@ -3263,7 +3280,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v167', 16, uiCanvas.height - 12);
+  ctx.fillText('v168', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3985,6 +4002,7 @@ function clearFX() {
   for (const f of foamZones)    f.remove(scene); foamZones     = [];
   for (const r of screamRings)  r.remove(scene); screamRings   = [];
   for (const c of civilians)    c.remove(scene); civilians     = [];
+  clearElectrodes();
   clearGaundropLevel();
   clearBounty();
   for (const g of gates)        g.remove(scene); gates         = [];
@@ -4077,7 +4095,7 @@ function spawnWave() {
   if (gaundropMode) {
     clearGaundropLevel();
     const lvl = wave;
-    gdKeyHeld = false;
+    gdKeys = 0;
     gdHungerT = 38;   // v162: the scrolled dungeon is twice the walk
     // ── carve the maze ──
     const cols = Math.max(9, Math.floor((HALF_X * 2 - 2) / 2.4));
@@ -4177,11 +4195,29 @@ function spawnWave() {
       mesh.position.set(ex, 0.03, ez);
       scene.add(mesh);
       gdExit = { mesh, mat, x: ex, z: ez, locked, _lockPingT: 0 };
+      // v168 (Gauntlet parity): locked internal DOORS across the halls —
+      // gold slabs on open cells, each opened by one key from the inventory.
+      // Keys spawn (doors + 1) deep so the exit is always payable; the maze's
+      // loops keep routes alive around a door you can't afford yet.
+      const nDoors = locked ? Math.min(2, 1 + Math.floor(lvl / 4)) : 0;
+      for (let i = 0; i < nDoors; i++) {
+        const [dx2, dz2] = pickCell(9);
+        const doorGeo = new THREE.BoxGeometry(cw * 0.96, 1.25, ch * 0.96);
+        const doorMesh = new THREE.Mesh(doorGeo,
+          new THREE.MeshBasicMaterial({ color: 0xd8a020 }));
+        doorMesh.position.set(dx2, 0.62, dz2);
+        scene.add(doorMesh);
+        const rec = { mesh: doorMesh, x: dx2, z: dz2, hx: cw * 0.48, hz: ch * 0.48, _pingT: 0 };
+        gdWalls.push(rec);      // blocks + eats bullets via the wall kit
+        gdDoors.push(rec);
+      }
       if (locked) {
-        const [kx, kz] = pickCell(Math.min(HALF_X, HALF_Z));
-        const pu = new Powerup(scene, kx, kz, 'key');
-        pu._life = 999;
-        powerups.push(pu);
+        for (let i = 0; i < nDoors + 1; i++) {
+          const [kx, kz] = pickCell(8);
+          const pu = new Powerup(scene, kx, kz, 'key');
+          pu._life = 999;
+          powerups.push(pu);
+        }
       }
     }
     // ── generators: the ghost engine ──
@@ -4553,6 +4589,22 @@ function spawnWave() {
     for (let i = 0; i < comp.civ; i++) {
       civilians.push(new Civilian(scene,
         (rng() * 2 - 1) * (HALF_X - 2), (rng() * 2 - 1) * (HALF_Z - 2), i % 3));
+    }
+    // v168: ELECTRODES scatter the room — never near the recentered player
+    clearElectrodes();
+    const nEl = 6 + Math.floor(rng() * 4) + Math.min(4, loop);
+    for (let i = 0; i < nEl; i++) {
+      let ex2, ez2, tries = 0;
+      do {
+        ex2 = (rng() * 2 - 1) * (HALF_X - 2);
+        ez2 = (rng() * 2 - 1) * (HALF_Z - 2);
+      } while (Math.hypot(ex2, ez2) < 5 && ++tries < 20);
+      const mesh = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.34, 0),
+        new THREE.MeshBasicMaterial({ color: 0xffff55 }));
+      mesh.position.set(ex2, 0.4, ez2);
+      scene.add(mesh);
+      tkElectrodes.push({ mesh, x: ex2, z: ez2 });
     }
     clusterSpawnAt = [];   // no convoys in the dark room
   }
@@ -5522,6 +5574,31 @@ function loop() {
       const c = gdResolveWalls(e.position.x, e.position.z, e.radius * 0.8);
       e.position.x = c.x; e.position.z = c.z;
     }
+    // v168: locked DOORS — a key opens each on touch; no key, a dull tink
+    for (let i = gdDoors.length - 1; i >= 0; i--) {
+      const d = gdDoors[i];
+      d._pingT = Math.max(0, d._pingT - dt);
+      if (Math.hypot(player.position.x - d.x, player.position.z - d.z) < d.hx + 1.1) {
+        if (gdKeys > 0) {
+          gdKeys--;
+          for (let j = 0; j < 6; j++) {
+            const a = (j / 6) * Math.PI * 2;
+            chunkPool.spawn(d.x, 0.7, d.z, Math.cos(a) * 4, 3, Math.sin(a) * 4, 0xd8a020, 0.10);
+          }
+          audio.keyJingle();
+          milestoneT = 1.0; milestoneText = `DOOR OPEN — KEYS ×${gdKeys}`;
+          scene.remove(d.mesh);
+          d.mesh.geometry.dispose();
+          d.mesh.material.dispose();
+          const wi2 = gdWalls.indexOf(d);
+          if (wi2 >= 0) gdWalls.splice(wi2, 1);
+          gdDoors.splice(i, 1);
+        } else if (d._pingT <= 0) {
+          d._pingT = 2.0;
+          audio.shieldTink();
+        }
+      }
+    }
     // v161: shared torch flame flicker — two beat frequencies read as fire
     TORCH_MAT.opacity = 0.5 + 0.22 * Math.sin(performance.now() * 0.013)
                             + 0.14 * Math.sin(performance.now() * 0.031);
@@ -5531,9 +5608,15 @@ function loop() {
       gdExit._lockPingT = Math.max(0, (gdExit._lockPingT || 0) - dt);
       if (gdExit.locked &&
           Math.hypot(player.position.x - gdExit.x, player.position.z - gdExit.z) < 1.6) {
-        if (gdExit._lockPingT <= 0) {
+        if (gdKeys > 0) {                       // v168: spend a key at the door
+          gdKeys--;
+          gdExit.locked = false;
+          gdExit.mat.color.setHex(0xffcc33);
+          milestoneT = 1.2; milestoneText = 'EXIT UNLOCKED';
+          audio.keyJingle();
+        } else if (gdExit._lockPingT <= 0) {
           gdExit._lockPingT = 2.0;
-          milestoneT = 1.2; milestoneText = 'LOCKED — FIND THE KEY';
+          milestoneT = 1.2; milestoneText = 'LOCKED — FIND A KEY';
           audio.shieldTink();
         }
       } else if (!gdExit.locked &&
@@ -5565,6 +5648,50 @@ function loop() {
   // TOKOTRON civilians (v148): wander, get rescued by touch (chain pays
   // 1000 × chain, Robotron-style), or die to any enemy that reaches them.
   if (tokotronMode && player.alive) {
+    // v168 ELECTRODES: shot → destroyed (+25); grunt touch → grunt dies;
+    // BRUTE touch → electrode dies; player touch → a hit + the electrode.
+    for (let i = tkElectrodes.length - 1; i >= 0; i--) {
+      const el = tkElectrodes[i];
+      el.mesh.rotation.y += 0.03;
+      let gone = false;
+      for (let bi = bullets.active.length - 1; bi >= 0; bi--) {
+        const b = bullets.active[bi];
+        if (!b.isPlayer) continue;
+        if (Math.hypot(b.mesh.position.x - el.x, b.mesh.position.z - el.z) < 0.55) {
+          bullets.recycleAt(bi);
+          score += 25;
+          gone = true;
+          break;
+        }
+      }
+      if (!gone) {
+        for (const e of enemies) {
+          if (!e.alive) continue;
+          if (Math.hypot(e.position.x - el.x, e.position.z - el.z) < e.radius + 0.35) {
+            if (e.type === EnemyType.BRUTE) { gone = true; break; }
+            e.hp = 1;
+            e.hit(e.position.x, e.position.z);   // fried — no score, the room did it
+            gone = true;
+            break;
+          }
+        }
+      }
+      if (!gone && !player.invincible &&
+          Math.hypot(player.position.x - el.x, player.position.z - el.z) < PLAYER_RADIUS + 0.35) {
+        gone = true;
+        if (tryHitPlayer('electrode', null)) { triggerGameOver(); }
+      }
+      if (gone) {
+        for (let j = 0; j < 4; j++) {
+          const a = (j / 4) * Math.PI * 2;
+          chunkPool.spawn(el.x, 0.4, el.z, Math.cos(a) * 4, 2.5, Math.sin(a) * 4, 0xffff55, 0.08);
+        }
+        scene.remove(el.mesh);
+        el.mesh.geometry.dispose();
+        el.mesh.material.dispose();
+        tkElectrodes.splice(i, 1);
+      }
+    }
     // v155: ORB broods, BRUTE/MINDER civilian-hunting, MINDER conversions.
     for (const e of enemies) {
       if (!e.alive) continue;
@@ -6223,12 +6350,10 @@ function loop() {
         player.hp = Math.min(player.maxHp, player.hp + 1);
         if (gaundropMode) gdHungerT = Math.max(gdHungerT, 32);   // v156: food = time
       } else if (pu._type === 'key') {
-        // v156: the far door opens — the tile flips from red to gold.
-        gdKeyHeld = true;
-        if (gdExit) { gdExit.locked = false; gdExit.mat.color.setHex(0xffcc33); }
-        milestoneT = 1.4; milestoneText = 'KEY! THE EXIT IS OPEN';
+        // v168: keys go in the POCKET — doors and the exit each spend one.
+        gdKeys++;
+        milestoneT = 1.2; milestoneText = `KEY ×${gdKeys}`;
         audio.keyJingle();   // v164
-        audio.announce('prize');
       } else if (pu._type === 'potion') {
         // v156: Gauntlet magic — the whole floor pops (generators excepted).
         let n = 0;
@@ -6445,6 +6570,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=121').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=122').catch(() => {});
   });
 }
