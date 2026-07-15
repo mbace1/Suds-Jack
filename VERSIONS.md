@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v169 — 2026-07-15
+**Parity pass 3: props & people — shaped pickups, bone arches, street thugs**
+- **GAUNDROP pickups are SHAPED now** (hand-merged geometries, no assets): the **KEY looks like a key** (bow, shaft, two teeth), the **POTION is a corked flask**, the food is a **haunch of suds-meat on the bone** — Gauntlet items you recognize mid-sprint, glyph badges retained
+- **BINDING: bone door arches** — the smash studio-blue doorframes turn bone in the basement
+- **KAIKKI: THUG** (cabinet-only, 36 types total): leather-coat melee human with a skin head, comes at you in a hurry with a shoulder-weave — a person running, not a homing missile. ~25% of the street crowd; bleeds red like everything else there
+- Cache-bust `?v=122` → `?v=123`; HUD label → v169
+
+---
+
 ## v168 — 2026-07-15
 **Parity pass 2: GAMEPLAY — the references' signature furniture (user: parity to originals is low)**
 - **TOKOTRON: ELECTRODES** (the Robotron staple): 6-10 glowing yellow octahedra scatter every wave (more per loop, never near the recentered player) — one shot destroys them (+25), grunts that touch them FRY (the room fights for you), BRUTEs bulldoze them for free, the player takes a hit. Positioning furniture, exactly as the reference used it

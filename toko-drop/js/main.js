@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=122';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=122';
-import { Player, PLAYER_RADIUS } from './player.js?v=122';
+import { InputManager } from './input.js?v=123';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=123';
+import { Player, PLAYER_RADIUS } from './player.js?v=123';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=122';
-import { RetroPass } from './retro.js?v=122';
-import { audio } from './audio.js?v=122';
-import { initDesigner } from './designer.js?v=122';
-import { t, getLang, setLang, langs } from './lang.js?v=122';
-import { TUNING } from './tuning.js?v=122';
+         CABINET_STYLE, VIS } from './enemy.js?v=123';
+import { RetroPass } from './retro.js?v=123';
+import { audio } from './audio.js?v=123';
+import { initDesigner } from './designer.js?v=123';
+import { t, getLang, setLang, langs } from './lang.js?v=123';
+import { TUNING } from './tuning.js?v=123';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -932,6 +932,48 @@ function equipWeapon(podId) {
 // leaks nothing — cash reads as a flat bill stack, prizes as a gift box.
 const CASH_GEO  = new THREE.BoxGeometry(0.55, 0.2, 0.4);
 const PRIZE_GEO = new THREE.BoxGeometry(0.62, 0.62, 0.62);
+// v169 parity: SHAPED pickups — a key that looks like a key, a flask that
+// looks like a flask, a haunch of suds-meat. Tiny hand-merged geometries
+// (positions/normals/uvs concatenated; no external utils).
+function mergeGeos(parts) {
+  const pos = [], norm = [], uv = [];
+  for (const part of parts) {
+    const g = part.geo.toNonIndexed();
+    const m = new THREE.Matrix4().compose(
+      new THREE.Vector3(part.x || 0, part.y || 0, part.z || 0),
+      new THREE.Quaternion().setFromEuler(new THREE.Euler(part.rx || 0, part.ry || 0, part.rz || 0)),
+      new THREE.Vector3().setScalar(part.s || 1));
+    g.applyMatrix4(m);
+    pos.push(...g.attributes.position.array);
+    norm.push(...g.attributes.normal.array);
+    if (g.attributes.uv) uv.push(...g.attributes.uv.array);
+    else for (let i = 0; i < g.attributes.position.count * 2; i++) uv.push(0);
+    g.dispose();
+    part.geo.dispose();
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.Float32BufferAttribute(norm, 3));
+  out.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  return out;
+}
+const KEY_GEO = mergeGeos([
+  { geo: new THREE.TorusGeometry(0.16, 0.055, 6, 12), y: 0.26 },          // bow
+  { geo: new THREE.BoxGeometry(0.09, 0.42, 0.07), y: -0.05 },             // shaft
+  { geo: new THREE.BoxGeometry(0.17, 0.06, 0.07), x: 0.09, y: -0.2 },     // tooth
+  { geo: new THREE.BoxGeometry(0.13, 0.06, 0.07), x: 0.07, y: -0.08 },    // tooth
+]);
+const POTION_GEO = mergeGeos([
+  { geo: new THREE.SphereGeometry(0.22, 10, 8) },                          // bulb
+  { geo: new THREE.CylinderGeometry(0.07, 0.07, 0.18, 8), y: 0.24 },       // neck
+  { geo: new THREE.SphereGeometry(0.065, 6, 5), y: 0.36 },                 // cork
+]);
+const FOOD_GEO = mergeGeos([
+  { geo: new THREE.SphereGeometry(0.2, 10, 8), x: 0.08 },                  // haunch
+  { geo: new THREE.CylinderGeometry(0.045, 0.045, 0.3, 6), x: -0.16, rz: Math.PI / 2 },  // bone
+  { geo: new THREE.SphereGeometry(0.06, 6, 5), x: -0.32, z: 0.045 },       // knuckle
+  { geo: new THREE.SphereGeometry(0.06, 6, 5), x: -0.32, z: -0.045 },
+]);
 // v132: glyph badges for the non-weapon pickups (weapon pods show their id).
 const NON_WEAPON_GLYPHS = {
   hp: '+', invincible: '★', firerate: '»', scoremult: '×2', score: '$', item: '?', key: 'K', potion: '✦',
@@ -1110,6 +1152,7 @@ const MELEE_TYPES = new Set([
   EnemyType.GRUNT, EnemyType.BRUTE,                 // v155 tokotron
   EnemyType.GHOST, EnemyType.WRAITH,                // v156 gaundrop
   EnemyType.FLIT, EnemyType.CHARGER, EnemyType.HOPPER,  // v157 binding
+  EnemyType.THUG,                                       // v169 kaikki
 ]);
 const BLOB_TYPES = new Set([
   EnemyType.GLOBBO, EnemyType.SPITTOR, EnemyType.FANNER, EnemyType.WEEVA, EnemyType.SPLITTA,
@@ -3280,7 +3323,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v168', 16, uiCanvas.height - 12);
+  ctx.fillText('v169', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3903,7 +3946,7 @@ function buildSmashDoors() {
     { x: -HALF_X, z: 0,       ry: Math.PI / 2 },
     { x: 0,       z: -HALF_Z, ry: 0 },
   ];
-  const frameMat = new THREE.MeshBasicMaterial({ color: 0x2a2a55 });
+  const frameMat = new THREE.MeshBasicMaterial({ color: bindingMode ? 0xcfc0a8 : 0x2a2a55 });   // v169: bone arches in the basement
   const postGeo   = new THREE.BoxGeometry(0.4, 2.3, 0.4);
   const lintelGeo = new THREE.BoxGeometry(5.4, 0.4, 0.4);
   for (const d of defs) {
@@ -4216,6 +4259,8 @@ function spawnWave() {
           const [kx, kz] = pickCell(8);
           const pu = new Powerup(scene, kx, kz, 'key');
           pu._life = 999;
+          pu.mesh.geometry.dispose();
+          pu.mesh.geometry = KEY_GEO;   // v169: a key that LOOKS like a key
           powerups.push(pu);
         }
       }
@@ -4248,12 +4293,15 @@ function spawnWave() {
       const pu = new Powerup(scene, lx, lz, rng() < 0.5 ? 'hp' : 'score');
       pu._life = 999;
       if (pu._type === 'score') { pu._value = 200 + lvl * 40; pu.mesh.geometry.dispose(); pu.mesh.geometry = CASH_GEO; pu.mat.color.setHex(0xffcc44); }
+      else { pu.mesh.geometry.dispose(); pu.mesh.geometry = FOOD_GEO; pu.mat.color.setHex(0xcc8855); }   // v169: suds-meat
       powerups.push(pu);
     }
     if (lvl >= 2 && rng() < 0.6) {
       const [px2, pz2] = pickCell(7);
       const pu = new Powerup(scene, px2, pz2, 'potion');
       pu._life = 999;
+      pu.mesh.geometry.dispose();
+      pu.mesh.geometry = POTION_GEO;   // v169: a flask that LOOKS like a flask
       powerups.push(pu);
     }
     // ── a welcome party already loose in the halls ──
@@ -4528,8 +4576,9 @@ function spawnWave() {
       } while ((gdInsideWall(px, pz, 0.8) ||
                 Math.hypot(px - player.position.x, pz - player.position.z) < 6) && ++tries < 20);
       const roll = rng();
-      const ty = roll < 0.42 ? EnemyType.GLOBBO
-               : roll < 0.60 ? EnemyType.YELA_CUBE
+      const ty = roll < 0.25 ? EnemyType.THUG          // v169: the streets have people
+               : roll < 0.45 ? EnemyType.GLOBBO
+               : roll < 0.62 ? EnemyType.YELA_CUBE
                : roll < 0.78 ? EnemyType.ORANGE_CUBE
                : roll < 0.90 ? EnemyType.REDD_MINI
                : (wave >= 3 ? EnemyType.SPITTOR : EnemyType.GLOBBO);
@@ -6570,6 +6619,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=122').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=123').catch(() => {});
   });
 }

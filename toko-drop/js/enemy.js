@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=122';
-import { nesSnap, NEON } from './retro.js?v=122';
+import { TUNING } from './tuning.js?v=123';
+import { nesSnap, NEON } from './retro.js?v=123';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -381,6 +381,10 @@ export const EnemyType = {
   TURRET:      33,
   // Rifleman: advances to mid range, strafes the band, snaps aimed shots.
   TROOPER:     34,
+  // ── KAIKKI cabinet roster (v169) — the streets have PEOPLE. Leather-coat
+  // melee thug: weaves at you in a hurry, hits on touch. The reference's
+  // human crowds, Toko-shaped.
+  THUG:        35,
 };
 
 // WARDEN aura radius (world units) — main.js uses it for the damage-immunity
@@ -427,6 +431,8 @@ export const CFG = {
   // LOADOUT cabinet roster (v158)
   [EnemyType.TURRET]:      { color: 0x6a7a5a, radius: 0.7,  speed: 0,   hp: 6, bulletColor: 0xffee66, fireInterval: 2.6  },
   [EnemyType.TROOPER]:     { color: 0x7a8a4a, radius: 0.55, speed: 1.9, hp: 2, bulletColor: 0xccff66, fireInterval: 2.2  },
+  // KAIKKI cabinet roster (v169)
+  [EnemyType.THUG]:        { color: 0x4a3c36, radius: 0.55, speed: 2.2, hp: 2, bulletColor: null,     fireInterval: null },
 };
 
 // Scratch colors for the tinted death flash (v132) — no per-death allocation.
@@ -566,6 +572,8 @@ export class Enemy {
       geo = new THREE.CylinderGeometry(cfg.radius * 0.85, cfg.radius, 0.7, 8);  // emplacement
     } else if (type === EnemyType.TROOPER) {
       geo = new THREE.BoxGeometry(0.6, 1.0, 0.5);                   // rifleman
+    } else if (type === EnemyType.THUG) {
+      geo = new THREE.BoxGeometry(0.58, 1.0, 0.42);                 // leather coat
     }
 
     const isBlob = BLOB_TYPES.has(type);
@@ -860,6 +868,14 @@ export class Enemy {
       this._wingR.position.set(0.22, 0.12, 0);
       this._robotBits = [this._wingL, this._wingR];
       this.mesh.add(this._wingL, this._wingR);
+    } else if (type === EnemyType.THUG) {
+      // v169: a HUMAN hostile — skin head over the leather coat, so the
+      // street crowd reads as people, not props.
+      this._robotMat = new THREE.MeshBasicMaterial({ color: 0xd8a884 });
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), this._robotMat);
+      head.position.y = 0.66;
+      this._robotBits = [head];
+      this.mesh.add(head);
     } else if (type === EnemyType.TROOPER) {
       // v161 identity pass: the rifleman gets a helmet + visor like the
       // grunt got — the soldier read, in loadout's toxic-green.
@@ -1701,6 +1717,19 @@ export class Enemy {
           bullets.spawnDir(ex, ez, Math.cos(a), Math.sin(a), false, cfg.bulletColor, false, this.type);
         }
         this.mesh.rotation.y = Math.atan2(ddx, ddz);   // v161: visor faces you
+        break;
+      }
+
+      case EnemyType.THUG: {
+        // KAIKKI thug (v169): comes at you in a hurry with a shoulder-weave —
+        // a person running, not a homing missile. Hits on touch.
+        const wv = Math.sin(this._wobbleT * 3.0 + this._phase) * 0.4;
+        const tpx = -ddz / dist, tpz = ddx / dist;
+        if (dist > 0.9) {
+          this.mesh.position.x += ((ddx / dist) + tpx * wv) * spd * dt;
+          this.mesh.position.z += ((ddz / dist) + tpz * wv) * spd * dt;
+        }
+        this.mesh.rotation.y = Math.atan2(ddx, ddz);
         break;
       }
 
