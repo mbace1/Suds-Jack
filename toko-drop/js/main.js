@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=120';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=120';
-import { Player, PLAYER_RADIUS } from './player.js?v=120';
+import { InputManager } from './input.js?v=121';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=121';
+import { Player, PLAYER_RADIUS } from './player.js?v=121';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=120';
-import { RetroPass } from './retro.js?v=120';
-import { audio } from './audio.js?v=120';
-import { initDesigner } from './designer.js?v=120';
-import { t, getLang, setLang, langs } from './lang.js?v=120';
-import { TUNING } from './tuning.js?v=120';
+         CABINET_STYLE, VIS } from './enemy.js?v=121';
+import { RetroPass } from './retro.js?v=121';
+import { audio } from './audio.js?v=121';
+import { initDesigner } from './designer.js?v=121';
+import { t, getLang, setLang, langs } from './lang.js?v=121';
+import { TUNING } from './tuning.js?v=121';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -367,6 +367,74 @@ const border = new THREE.LineSegments(
 border.position.y = 0.02;
 scene.add(border);
 
+// v167 parity pass: the references have GROUND. Tiny procedural canvas tiles
+// (no assets, no CDN) — stone slabs, floorboards, concrete, asphalt — on one
+// huge shared plane under the cabinet worlds. Tokotron keeps its authentic
+// void; classic keeps the neon grid. NearestFilter keeps the pixel-era read.
+function makeGroundTex(base, accent, style) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  g.fillStyle = base; g.fillRect(0, 0, 64, 64);
+  g.strokeStyle = accent; g.fillStyle = accent;
+  if (style === 'tiles') {              // gaundrop: stone slabs + mortar
+    g.lineWidth = 2;
+    for (const [x, y] of [[0, 0], [32, 0], [0, 32], [32, 32]]) g.strokeRect(x + 1, y + 1, 30, 30);
+    for (let i = 0; i < 26; i++) g.fillRect(Math.random() * 63, Math.random() * 63, 1.5, 1.5);
+  } else if (style === 'boards') {      // binding: grimy basement boards
+    g.lineWidth = 1;
+    for (let y = 0; y < 64; y += 8) { g.beginPath(); g.moveTo(0, y); g.lineTo(64, y); g.stroke(); }
+    for (let i = 0; i < 34; i++) g.fillRect(Math.random() * 63, Math.random() * 63, 2, 1);
+  } else if (style === 'concrete') {    // loadout: cracked slab
+    for (let i = 0; i < 40; i++) g.fillRect(Math.random() * 63, Math.random() * 63, 1.5, 1.5);
+    g.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      g.beginPath();
+      const x0 = Math.random() * 64, y0 = Math.random() * 64;
+      g.moveTo(x0, y0); g.lineTo(x0 + (Math.random() - 0.5) * 40, y0 + (Math.random() - 0.5) * 40);
+      g.stroke();
+    }
+  } else {                              // kaikki: wet asphalt grain
+    for (let i = 0; i < 70; i++) g.fillRect(Math.random() * 63, Math.random() * 63, 1, 1);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.magFilter = THREE.NearestFilter;
+  tex.repeat.set(100, 100);             // one 64px tile ≈ 4 world units
+  return tex;
+}
+const CAB_GROUND_TEX = {
+  gaundrop: makeGroundTex('#241608', '#1a0f05', 'tiles'),
+  binding:  makeGroundTex('#241a16', '#181110', 'boards'),
+  loadout:  makeGroundTex('#181c10', '#0e100a', 'concrete'),
+  kaikki:   makeGroundTex('#141416', '#0c0c0e', 'asphalt'),
+};
+const cabGround = new THREE.Mesh(
+  new THREE.PlaneGeometry(400, 400),
+  new THREE.MeshBasicMaterial({ color: 0xffffff }));
+cabGround.rotation.x = -Math.PI / 2;
+cabGround.position.y = -0.02;
+cabGround.visible = false;
+scene.add(cabGround);
+let _cabGroundName = null;
+function fitCabGround() {
+  // sized to the CURRENT world so the void returns beyond the bounds — the
+  // references' rooms/streets end where the world ends. Tile ≈ 4 units.
+  cabGround.scale.set((HALF_X * 2) / 400, (HALF_Z * 2) / 400, 1);
+  if (cabGround.material.map) {
+    cabGround.material.map.repeat.set((HALF_X * 2) / 4, (HALF_Z * 2) / 4);
+  }
+}
+function setCabGround(name) {
+  _cabGroundName = name;
+  cabGround.visible = !!name;
+  if (name) {
+    cabGround.material.map = CAB_GROUND_TEX[name];
+    cabGround.material.needsUpdate = true;
+    fitCabGround();
+  }
+}
+
 // Aspect-aware zoom (v112, generalized v115): dolly the camera along the
 // preset's view ray until the arena's four corners just fit the current
 // viewport (|x| ≤ 0.96 half-widths, |y| ≤ 0.93). Wider screens get a closer
@@ -422,6 +490,7 @@ function applyArenaMode(landscape) {
   border.geometry = new THREE.EdgesGeometry(new THREE.BoxGeometry(HALF_X * 2, 0.05, HALF_Z * 2));
   floorUniforms.uGridX.value = (HALF_X * 2) / GRID_CELL;
   floorUniforms.uGridZ.value = (HALF_Z * 2) / GRID_CELL;
+  if (_cabGroundName) fitCabGround();   // v167: ground tracks the world size
 }
 
 // ── Death FX: chunks + puddles ────────────────────────────────────────────────
@@ -1544,6 +1613,7 @@ let gdHungerT = 0;        // v156: Gauntlet-style drain — suds food resets it
 let _gdSavedPixel = null, _gdSavedSmash = null;
 const inCabinet = () => tokotronMode || gaundropMode || bindingMode || loadoutMode || kaikkiMode;
 function setGaundropLook(on) {
+  setCabGround(on ? 'gaundrop' : null);   // v167: the reference has GROUND
   scene.background.setHex(on ? 0x140a04 : 0x0d0d1a);   // torchlit dark
   floor.visible = !on;
   border.material.color.setHex(on ? 0xcc8833 : 0x5555cc); // bronze bounds
@@ -1586,6 +1656,25 @@ function clearGaundropLevel() {
   if (gdExit) { scene.remove(gdExit.mesh); gdExit.mesh.geometry.dispose(); gdExit.mat.dispose(); gdExit = null; }
 }
 const GD_WALL_MAT_COLOR = 0x7a4a22;   // stone-brown
+// v167: brick texture for the dungeon walls — offset courses + mortar lines.
+const GD_BRICK_TEX = (() => {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  g.fillStyle = '#7a4a22'; g.fillRect(0, 0, 64, 64);
+  g.fillStyle = '#5c3617';
+  for (let row = 0; row < 4; row++) {
+    const off = row % 2 ? 16 : 0;
+    g.fillRect(0, row * 16, 64, 2);                       // mortar course
+    for (let x = -16; x < 64; x += 32) g.fillRect(x + off, row * 16, 2, 16);  // joints
+  }
+  g.fillStyle = '#8a5a2e';
+  for (let i = 0; i < 20; i++) g.fillRect(Math.random() * 63, Math.random() * 63, 2, 1);
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.magFilter = THREE.NearestFilter;
+  return tex;
+})();
 // v161 identity dressing — SHARED geometry/materials that ride disposable
 // parents (walls, buildings, generators) as children: never disposed, reused.
 const TORCH_GEO = new THREE.PlaneGeometry(0.3, 0.5);
@@ -1717,6 +1806,7 @@ function bindingKindFor(n) {
   return r < 0.55 ? 'normal' : r < 0.8 ? 'swarm' : 'spike';
 }
 function setBindingLook(on) {
+  setCabGround(on ? 'binding' : null);   // v167: the reference has GROUND
   scene.background.setHex(on ? 0x0d0509 : 0x0d0d1a);   // basement gloom
   floor.visible = !on;
   border.material.color.setHex(on ? 0xcc4466 : 0x5555cc); // fleshy red bounds
@@ -1764,6 +1854,7 @@ const LO_LOADOUTS = [
   { id: 'tank',   pod: 'B2', perk: 'hp' },
 ];
 function setLoadoutLook(on) {
+  setCabGround(on ? 'loadout' : null);   // v167: the reference has GROUND
   scene.background.setHex(on ? 0x0a0c08 : 0x0d0d1a);   // oil-dark olive
   floor.visible = !on;
   border.material.color.setHex(on ? 0x77cc33 : 0x5555cc); // toxic green bounds
@@ -1874,6 +1965,7 @@ function clearKaikkiLevel() {
   kkCrates = [];
 }
 function setKaikkiLook(on) {
+  setCabGround(on ? 'kaikki' : null);   // v167: the reference has GROUND
   scene.background.setHex(on ? 0x0d0d0d : 0x0d0d1a);   // wet asphalt
   floor.visible = !on;
   border.material.color.setHex(on ? 0xbb2222 : 0x5555cc); // blood-red bounds
@@ -2160,7 +2252,9 @@ function onKill(e) {
   for (const cd of e.chunks) {
     chunksFor(e.type).spawn(cd.x, cd.y, cd.z, cd.vx, cd.vy, cd.vz, e.color, cd.size);
   }
-  puddles.push(new Puddle(scene, e.position.x, e.position.z, e.color, e.radius * 1.5));
+  // v167 (KAIKKI parity): the streets remember — kills leave BLOOD, not goo.
+  puddles.push(new Puddle(scene, e.position.x, e.position.z,
+    kaikkiMode ? 0x7a0f0f : e.color, e.radius * (kaikkiMode ? 2.0 : 1.5)));
 }
 
 function onPlayerHit() {
@@ -3169,7 +3263,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v166', 16, uiCanvas.height - 12);
+  ctx.fillText('v167', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -4025,7 +4119,9 @@ function spawnWave() {
       carve(Math.floor(rng() * cols), Math.floor(rng() * rows));
     }
     // ── merged stone runs from closed cells ──
-    const wallMat = () => new THREE.MeshBasicMaterial({ color: GD_WALL_MAT_COLOR });
+    // v167: BRICK walls — shared canvas texture, per-wall UVs scaled so a
+    // brick stays ~2.2 world units regardless of run length.
+    const wallMat = () => new THREE.MeshBasicMaterial({ color: 0xffffff, map: GD_BRICK_TEX });
     for (let j = 0; j < rows; j++) {
       let run = -1;
       for (let i = 0; i <= cols; i++) {
@@ -4035,7 +4131,14 @@ function spawnWave() {
           const x0 = cX(run) - cw / 2, x1 = cX(i - 1) + cw / 2;
           const hx = (x1 - x0) / 2, hz = ch / 2;
           const wx = (x0 + x1) / 2, wz = cZ(j);
-          const mesh = new THREE.Mesh(new THREE.BoxGeometry(hx * 2, 1.2, hz * 2), wallMat());
+          const wallGeo = new THREE.BoxGeometry(hx * 2, 1.2, hz * 2);
+          {   // v167: stretch the brick UVs with the run so courses stay square
+            const uv = wallGeo.attributes.uv;
+            const rep = Math.max(1, (hx * 2) / 2.2);
+            for (let k = 0; k < uv.count; k++) uv.setX(k, uv.getX(k) * rep);
+            uv.needsUpdate = true;
+          }
+          const mesh = new THREE.Mesh(wallGeo, wallMat());
           mesh.position.set(wx, 0.6, wz);
           // v161: TORCHLIGHT (finally living up to the art direction) — an
           // amber flame plane on every long run; TORCH_MAT flickers globally.
@@ -5089,7 +5192,15 @@ window.addEventListener('touchend', (e) => {
 
 player.onShoot = () => {
   audio.shoot();
-  if (loadoutMode) addShake(0.016);   // v158: the guns have shoulders
+  if (loadoutMode) {
+    addShake(0.016);   // v158: the guns have shoulders
+    // v167: and a muzzle flash — two hot sparks off the barrel
+    for (let i = 0; i < 2; i++) {
+      chunkPool.spawn(player.position.x, 0.55, player.position.z,
+        (Math.random() - 0.5) * 3, 2.5 + Math.random() * 2, (Math.random() - 0.5) * 3,
+        0xffee88, 0.07);
+    }
+  }
 };
 
 // ── Mouse aim ───────────────────────────────────────────────────────────────────
@@ -6334,6 +6445,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=120').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=121').catch(() => {});
   });
 }
