@@ -145,6 +145,7 @@ export class InputManager {
     if (pads) for (const p of pads) { if (p && p.connected) { gp = p; break; } }
     if (!gp) {
       this.gamepad = false;
+      this._gp = null;
       this._pad.move = { x: 0, y: 0 };
       this._pad.look = { x: 0, y: 0 };
       this._pad.firing = false;
@@ -152,6 +153,13 @@ export class InputManager {
       return;
     }
     this.gamepad = true;
+    this._gp = gp;
+    // the whole layer assumes the standard mapping — warn once if this pad
+    // reports something else (rare: some Linux/Firefox + DualSense combos)
+    if (gp.mapping !== 'standard' && !this._warnedMapping) {
+      this._warnedMapping = true;
+      console.warn(`[hyperdagger] gamepad "${gp.id}" reports mapping "${gp.mapping}" — buttons may be scrambled (standard mapping expected)`);
+    }
     const DZ = 0.18;
     const ax = i => {
       const v = gp.axes[i] || 0;
@@ -186,6 +194,18 @@ export class InputManager {
     this._padPrev.a = jumpNow;
     this._padPrev.b = dashNow;
     this._padPrev.start = startNow;
+  }
+
+  /** Fire a dual-rumble pulse on the connected pad, if it supports one
+   *  (DualSense + Xbox pads do in Chromium). Silently no-ops elsewhere. */
+  rumble(strong, weak, ms) {
+    const act = this._gp?.vibrationActuator;
+    if (!act?.playEffect) return;
+    act.playEffect('dual-rumble', {
+      duration: ms,
+      strongMagnitude: Math.min(1, strong),
+      weakMagnitude: Math.min(1, weak),
+    }).catch(() => {});
   }
 
   /** Edge-detected gamepad UI actions since last call (menus + pause). */
