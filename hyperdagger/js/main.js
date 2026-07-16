@@ -9,8 +9,8 @@ import { InputManager } from './input.js?v=24';
 import { Player } from './player.js?v=10';
 import { DaggerPool } from './daggers.js?v=10';
 import { GemPool } from './gems.js?v=23';
-import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail } from './voxel.js?v=25';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=25';
+import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail } from './voxel.js?v=26';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=26';
 import { OrbPool } from './bullets.js?v=23';
 import { AudioKit } from './audio.js?v=18';
 import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=1';
@@ -34,7 +34,7 @@ const opts = Object.assign(
   // motion=false is the reduced-motion master switch (forces smear/shake/chroma/FOV
   // kicks off without touching the individual toggles); contrast=true brightens
   // orbs + telegraphs and kills the floor's red flush for readability
-  { speed: 1, fov: 80, sens: 1, smear: true, shake: true, chroma: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true },
+  { speed: 1, fov: 80, sens: 1, smear: true, shake: true, chroma: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto' },
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
 
 // ------------------------------------------------ performance governor
@@ -1006,9 +1006,11 @@ function applyOpts() {
   if (opts.perf === 'high') setPerfTier(0);
   else if (opts.perf === 'low') setPerfTier(PERF_TIERS.length - 1);
   const tier = PERF_TIERS[perfTier];
-  // voxel density follows the perf floor: future spawns drop to 1x minis on
-  // LOW / tier 4 (existing sprites keep their detail until they die)
-  setVoxelDetail(opts.perf === 'low' || perfTier >= PERF_TIERS.length - 1 ? 1 : 2);
+  // voxel density: AUTO follows the perf floor (1x minis on LOW / tier 4,
+  // else 8x); an explicit VOXEL choice overrides it. Existing sprites keep
+  // their detail until they die — the swarm re-densifies within seconds.
+  const autoDetail = (opts.perf === 'low' || perfTier >= PERF_TIERS.length - 1) ? 1 : 2;
+  setVoxelDetail(opts.detail === 'auto' ? autoDetail : opts.detail);
   // reduced motion (opts.motion=false) and the perf tier both override the
   // individual FX toggles without rewriting them — user intent stays in opts.*
   afterimage.enabled = opts.smear && opts.motion && tier.smear;
@@ -1035,8 +1037,11 @@ function showPause() {
   paused = true;
   elPause.style.display = 'none';
   elMsg.style.display = 'block';
+  let voxCount = hand.aliveCount;
+  for (const e of enemies) voxCount += e.sprite.aliveCount;
   elMsg.innerHTML =
     `<h1>PAUSED</h1>
+     <p class="sub">~${Math.min(999, Math.round(1000 / Math.max(1, frameEMA)))} fps &middot; ${voxCount.toLocaleString()} voxels on field &middot; new spawns use the VOXEL setting</p>
      ${optRow('SPEED', 'speed', [1, 1.25, 1.5], v => v + '\u00d7')}
      ${optRow('FOV', 'fov', [70, 80, 90], v => v)}
      ${optRow('SENS', 'sens', [0.7, 1, 1.3, 1.6], v => ({ 0.7: 'LOW', 1: 'MED', 1.3: 'HIGH', 1.6: 'MAX' })[v])}
@@ -1048,6 +1053,7 @@ function showPause() {
      ${optRow('', 'contrast', [false, true], v => v ? 'CONTRAST HIGH' : 'CONTRAST NORMAL')}
      ${optRow('PERF', 'perf', ['auto', 'high', 'low'], v => v.toUpperCase())}
      ${optRow('', 'haptics', [true, false], v => v ? 'HAPTICS ON' : 'HAPTICS OFF')}
+     ${optRow('VOXEL', 'detail', ['auto', 1, 2, 3, 4], v => v === 'auto' ? 'AUTO' : ({ 1: '1X', 2: '8X', 3: '27X', 4: '64X' })[v])}
      <p class="go">click / tap anywhere else to resume</p>`;
   for (const b of elMsg.querySelectorAll('button.opt')) {
     b.addEventListener('pointerdown', e => {

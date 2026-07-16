@@ -206,7 +206,7 @@ export const MODELS = {
 // same silhouette (2 → 8×, 3 → 27×). New sprites pick the current value up;
 // the perf governor drops it to 1 on weak devices (affects future spawns).
 let globalDetail = 2;
-export function setVoxelDetail(n) { globalDetail = Math.max(1, Math.min(3, n | 0)); }
+export function setVoxelDetail(n) { globalDetail = Math.max(1, Math.min(4, n | 0)); }
 export function getVoxelDetail() { return globalDetail; }
 
 /** Parse a model definition into centred local-space voxels, subdividing
@@ -255,7 +255,7 @@ export function parseModel(def, subdivide = 1) {
  *  scaled to zero and excluded from worldVoxels()/death bursts. */
 export class VoxelSprite {
   constructor(def, subdivide = globalDetail + (def.detailBoost || 0)) {
-    subdivide = Math.max(1, Math.min(3, subdivide));
+    subdivide = Math.max(1, Math.min(4, subdivide));
     this.voxels = parseModel(def, subdivide);
     this.size = def.voxelSize / subdivide;
     this.aliveCount = this.voxels.length;
