@@ -57,7 +57,8 @@ with `resize()`). A one-time 3-tip card
 fullscreen + landscape lock on start. Onboarding
 is paced across the first ~150s (one new enemy roughly every 15-20s) and recurring spawns
 tighten over time; the death screen recaps what killed you, a kill breakdown, and your
-last 10 run times. No build step — open `hyperdagger/index.html` (three.js via jsDelivr
+last 10 run times. A harmless serpent omen circles the arena rim at ~10s (`startFlyby`,
+own sprites outside the enemies array) foreshadowing the 100s debut. No build step — open `hyperdagger/index.html` (three.js via jsDelivr
 importmap, same as toko-drop). Same `gh-pages` deploy caveat as paperboy.
 
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
@@ -141,7 +142,13 @@ hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel
 are hex ints, or `[r,g,b]` arrays with components > 1 for **HDR glow voxels** (eyes,
 totem veins) that trip the bloom threshold while bone/body stays matte. `VoxelSprite`
 bakes a model into one `InstancedMesh` (per-voxel `setColorAt`; hit-flash brightens
-`material.color`, which multiplies every instance). `DebrisPool` is a single 1600-cube
+`material.color`, which multiplies every instance). `parseModel(def, subdivide)` splits
+each source voxel into subdivide³ minis — global detail 2 (×8) by default via
+`setVoxelDetail`, `detailBoost: 1` on the Leviathan (×27), ×1 on the LOW perf tier
+(future spawns only). `VoxelSprite.chip(worldPoint, n)` scales the n nearest alive
+voxels to zero (chip damage / bullet holes; ≥4 voxels always survive) and returns them
+for debris; `worldVoxels()` excludes dead voxels so death bursts throw only what's
+left. `DebrisPool.burst` stride-samples inputs to ~170 gibs (size ×∛stride). `DebrisPool` is a single 1600-cube
 `InstancedMesh`: gravity −28, floor bounce ×−0.38 with friction, Euler tumble, shrink-out
 over the last 0.3 s; `burst(worldVoxels, …)` explodes a dead enemy's actual voxels
 outward from their centroid plus the killing dagger's impulse.
