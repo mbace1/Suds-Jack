@@ -7,103 +7,29 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v169 — 2026-07-15
-**Parity pass 3: props & people — shaped pickups, bone arches, street thugs**
-- **GAUNDROP pickups are SHAPED now** (hand-merged geometries, no assets): the **KEY looks like a key** (bow, shaft, two teeth), the **POTION is a corked flask**, the food is a **haunch of suds-meat on the bone** — Gauntlet items you recognize mid-sprint, glyph badges retained
-- **BINDING: bone door arches** — the smash studio-blue doorframes turn bone in the basement
-- **KAIKKI: THUG** (cabinet-only, 36 types total): leather-coat melee human with a skin head, comes at you in a hurry with a shoulder-weave — a person running, not a homing missile. ~25% of the street crowd; bleeds red like everything else there
-- Cache-bust `?v=122` → `?v=123`; HUD label → v169
-
----
-
-## v168 — 2026-07-15
-**Parity pass 2: GAMEPLAY — the references' signature furniture (user: parity to originals is low)**
-- **TOKOTRON: ELECTRODES** (the Robotron staple): 6-10 glowing yellow octahedra scatter every wave (more per loop, never near the recentered player) — one shot destroys them (+25), grunts that touch them FRY (the room fights for you), BRUTEs bulldoze them for free, the player takes a hit. Positioning furniture, exactly as the reference used it
-- **GAUNDROP: keys are an INVENTORY, doors are LOCKED** (the Gauntlet core loop): keys collect into a pocket (`KEY ×N`, HUD shows `KEYS ×N`); **gold DOOR slabs block corridors** — touch with a key to spend it and open; the **exit spends a key at the tile** (`EXIT UNLOCKED`), no key = dull tink + `LOCKED — FIND A KEY`. Keys spawn doors+1 deep so the exit is always payable; the maze's loops keep routes alive around unaffordable doors
-- **GAUNDROP: hordes** — the dungeon's generator cap rises 22 → 30; Gauntlet is crowds
-- Electrodes and doors clear with their levels/exits (no leaks); quests inherit everything
-- Cache-bust `?v=121` → `?v=122`; HUD label → v168
-
----
-
-## v167 — 2026-07-15
-**Parity pass 1: GRAPHICS — the references have ground (user: parity to originals is low)**
-- **Every floor-cabinet gets real GROUND** (procedural 64px canvas tiles, no assets, NearestFilter for the pixel-era read, graded by each cabinet's RetroPass): GAUNDROP — stone slabs with mortar; BINDING — grimy basement boards; LOADOUT — cracked concrete; KAIKKI — wet asphalt grain. TOKOTRON keeps its authentic black void; classic keeps the neon grid
-- **GAUNDROP walls are BRICK now** — shared canvas texture with offset courses + mortar joints, per-wall UVs scaled so bricks stay square regardless of run length
-- **KAIKKI: the streets remember** — kills leave BLOOD (dark red, 2× size), not goo-colored puddles
-- **LOADOUT: muzzle flash** — two hot sparks off the barrel on every shot, on top of the v158 kick + v164 report
-- Cache-bust `?v=120` → `?v=121`; HUD label → v167
-
----
-
-## v166 — 2026-07-14
-**Bonus quests are a SOMETIMES thing — randomized, not guaranteed (user direction)**
-- The Roguelike B gold card no longer appears on every card screen: **~55% of screens roll a bonus quest at all**, and when one appears it's a **random pick** from the six (gauntlet + five cabinets) — never the same quest twice in a row. Scarcity is the appeal; supersedes the v165 fixed rotation
-- Gauntlet tiers still ramp when taken; per-run offer memory resets with the run
-- Cache-bust `?v=119` → `?v=120`; HUD label → v166
-
----
-
-## v165 — 2026-07-14
-**FIX: Roguelike B gold card rotates every OFFER (user report: "only getting Gauntlet")**
-- v154's rotation only advanced when a quest was ACCEPTED — a player who never took the gauntlet only ever SAW the gauntlet; the other five bonus quests were unreachable behind it
-- Now the rotation advances on every card screen: decline the gauntlet and the NEXT offer is TOKOTRON RAID, then GAUNDROP DELVE, LOADOUT OP, BASEMENT DETOUR, KAIKKI IRTI HIT, back around — the whole wing is visible without forced picks; gauntlet tiers still ramp when taken
-- Cache-bust `?v=118` → `?v=119`; HUD label → v165
-
----
-
-## v164 — 2026-07-14
-**Sound identity — each cabinet has its own voice (user direction)**
-- **Every cabinet fires a different gun** (`audio.setCabinetSound`, switched by each look): TOKOTRON — zappy high-square vector blip; GAUNDROP — dull dungeon thud; BINDING — wet basement pop; LOADOUT — punchy sawtooth report with a grain of noise (the v158 heavy feel, now audible); KAIKKI — gritty street crack. **Classic reproduces the original blip EXACTLY** (same byte-identical rule as the render path); the v137 sustained-fire ducking applies to all of them
-- **Cabinet stingers** (one-shot synth, never loops — GDD §10): TOKOTRON **waveZap** (robotic double-zap as the wave materializes); GAUNDROP **keyJingle** (key pickup), **hungerKnell** (low bell when STARVING fires), **descend** (the floor swallows you at the exit tile); KAIKKI **kaChing** (the till rings on every shop purchase AND every cash pickup — money you can hear)
-- Master/announcer volume sliders and speech untouched
-- Cache-bust `?v=117` → `?v=118`; HUD label → v164
-
----
-
-## v163 — 2026-07-14
-**BINDING chasms — the pit shapes the room (terrain elements, user direction)**
-- **CHASMS in the basement** (floor 2+, ~1/3 of fight rooms): red-rimmed voids in three seeded layouts — the center void, twin strips, corner pits
-- **The rule that makes them Isaac**: pits block BODIES (player and ground enemies pushed out, no dashing across) but **bullets sail over the void** — the exact opposite trade of rocks, so positioning and fire lanes become different questions
-- **FLITs fly across; HOPPERs cross mid-hop** (airborne guard) — the fliers finally have a place where flying matters
-- Spawns and placement avoid the pits; pits share the terrain clear path (no leaks); ITEM and BOSS rooms stay pit-free
-- Cache-bust `?v=116` → `?v=117`; HUD label → v163
-
----
-
-## v162 — 2026-07-14
-**Scrolling arenas — the mode-structure taxonomy lands (user direction)**
-- **The taxonomy**: room-traversal games (SMASH, BINDING) traverse discrete arenas; **scrolling-arena games (GAUNDROP 2.0×, LOADOUT 1.9×, KAIKKI 1.7×) now play in worlds BIGGER than the screen** — the camera lerp-follows the player (clamped so the view never leaves the world) and tightened per-cabinet fog makes the level **open up as you walk toward the edge**; fixed-single-screen modes (TOKOTRON, classic) stay put, true to their references
-- The dungeon is twice the crawl (hunger clock eased to 38 s), the compound sits in a real theater of operations (bigger purge floods, deeper trickle cap), the city has more blocks, crates, and crowd
-- Camera follow lives in the one place that writes the camera (shake integrator) — zero cost when arenaScale is 1; classic/SMASH render identical
-- Cabinet QUESTS inherit each mode's scale and arena preset; every exit path restores scale 1
-- Cache-bust `?v=115` → `?v=116`; HUD label → v162
-
----
-
-## v161 — 2026-07-14
-**Cabinet identity audit — every mode scrutinized like the tokotron pass (user direction)**
-- Audited all nine modes against their reference identity (does it READ?): classic/SMASH/roguelike/daily are the baseline (no action); TOKOTRON passed in v160; the other four cabinets each had gaps — fixed:
-- **GAUNDROP**: the walls are finally **TORCHLIT** (amber flame planes on long runs, twin-frequency global flicker); the **WRAITH is a hooded shroud** now, not a red ball; **GHOSTS brightened to spectral pale** (they were wall-colored mud in the NES palette)
-- **BINDING**: **FLITs have flapping wings** — they read as flies at a glance; **rocks read organic** — jittered footprints, heights, tilts, two-tone flesh-stone (collision stays axis-aligned)
-- **LOADOUT**: the **TROOPER wears a helmet + visor** (toxic-green, faces you — the soldier read the grunt already had); the **command post grew an antenna mast + red beacon** — it reads COMMAND, not big box
-- **KAIKKI IRTI 3**: buildings get **lit windows** on the street faces (most dark, a few glowing) — the city-at-night read
-- All dressing is shared-geometry BasicMaterial children riding existing disposables (no leaks, no per-frame cost beyond one flicker)
-- Cache-bust `?v=114` → `?v=115`; HUD label → v161
-
----
-
-## v160 — 2026-07-14
-**TOKOTRON character pass — robot enemies, human civilians (user direction)**
-- **The roster reads MACHINE now**: every tokotron enemy wears glowing neon robot dressing that survives the vector-black — **GRUNT** gets a danger-red visor, antenna, and leg plates that step faster as it ramps (and it faces you as it walks); **BRUTE** gets an amber visor slit + shoulder bar, tracking its prey; **ORB** gets a spinning gyro ring that whirs faster while winding up a spawn; **PROG** gets an eye bar + hover fins with a bob; **MINDER**'s exposed brain-core pulses — harder while converting
-- **The civilians are PEOPLE now**: skin-tone heads, colored shirts (kid blue / tall yellow / elder orange), dark legs, swinging arms and legs on a real walk cycle — and they periodically **stop and wave for help** with one arm high. A gold **rescue halo** pulses on the floor under every one
-- All parts are cheap MeshBasicMaterial glow riding the body meshes; disposal wired into removeFrom/remove
-- VERSIONS: v151–v159 archived (decade rule)
-- Cache-bust `?v=113` → `?v=114`; HUD label → v160
+## v170 — 2026-07-16
+**Cabinets to OPTIONS + a difficulty and variety pass (user direction)**
+- **The cabinet picker is OPTIONS-only now** (the cycle button under SMASH TV): the title row is gone — when a cabinet is armed, the title shows a one-line colored reminder (`CABINET: TOKOTRON · OPTIONS`) so TAP TO START never launches a surprise
+- **Every cabinet got harder** (user: most are too easy): TOKOTRON comps ~25% bigger; GAUNDROP generators 2+lvl/2 (cap 6) pouring faster (0.9-1.5 s ghosts), WRAITH from level 2 (two from 5), welcome party 6+2·lvl; BINDING floors scale steeper on every room kind; LOADOUT opens with 2 turrets, purge is a real occupation force (12+3w, cap 32), trickle 1.8 s at cap 20; KAIKKI is a proper riot (14+4w, cap 46)
+- **More enemy VARIETY in every cabinet** (user: waves need it): TOKOTRON wave scripts pull guests from wave 2 (REDD_MINI packs, BOTFLY pairs, a WEEVA turret); GAUNDROP generator pool adds SLUDGE_CUBE (poison in the halls) and YELA_CUBE, WEEVA prowls from level 3; BINDING breeds classic GLOBBOs and a PURP_CUBE into its rooms; LOADOUT floods add YELA_CUBE + CLOAKER ambushers from mission 3; KAIKKI adds FANNER (m2), SPITTOR (m3), and TORO joyriders (m4)
+- VERSIONS: v161–v169 archived (decade rule)
+- Cache-bust `?v=123` → `?v=124`; HUD label → v170
 
 ---
 
 ## Archive
+
+**v160–v169 summary (2026-07-14 – 2026-07-15)**
+- v160: TOKOTRON character pass — robot dressing on the whole roster (visors, stepping legs, gyro rings, brain-core) + civilians as real people with rescue halos and a help-wave
+- v161: Cabinet identity audit — torchlit gaundrop walls, hooded WRAITH, spectral ghosts, winged FLITs, organic rocks, trooper helmet, command-post mast, kaikki lit windows
+- v162: Scrolling arenas — gaundrop 2.0×/loadout 1.9×/kaikki 1.7× worlds with clamped camera follow + fog reveal; taxonomy recorded (rooms vs scrolling vs fixed)
+- v163: BINDING chasms — red-rimmed pits: bodies blocked, bullets sail over; fliers cross; pits placed before rocks
+- v164: Sound identity — per-cabinet gun voices + stingers (waveZap, keyJingle, hungerKnell, descend, kaChing); classic byte-identical
+- v165: FIX — Roguelike B gold card rotates every OFFER (was accept-only; players only ever saw the gauntlet)
+- v166: Bonus quests randomized + scarce — ~55% of card screens, random pick of six, no back-to-back repeats
+- v167: Parity 1 (graphics) — procedural GROUND per cabinet (slabs/boards/concrete/asphalt), BRICK dungeon walls, kaikki blood, loadout muzzle flash
+- v168: Parity 2 (gameplay) — TOKOTRON electrodes; GAUNDROP key inventory + locked gold doors + 30-cap hordes
+- v169: Parity 3 (props/people) — shaped key/flask/meat pickups, bone door arches, kaikki THUG (36 enemy types)
 
 **v150–v159 summary (2026-07-13 – 2026-07-14)**
 - v150: THE BINDING OF TOKO — cabinet #3 (Binding of Isaac tribute): basement floors on the room lattice, ITEM-room free picks, floor bosses paying RARE picks

@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=123';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=123';
-import { Player, PLAYER_RADIUS } from './player.js?v=123';
+import { InputManager } from './input.js?v=124';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=124';
+import { Player, PLAYER_RADIUS } from './player.js?v=124';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=123';
-import { RetroPass } from './retro.js?v=123';
-import { audio } from './audio.js?v=123';
-import { initDesigner } from './designer.js?v=123';
-import { t, getLang, setLang, langs } from './lang.js?v=123';
-import { TUNING } from './tuning.js?v=123';
+         CABINET_STYLE, VIS } from './enemy.js?v=124';
+import { RetroPass } from './retro.js?v=124';
+import { audio } from './audio.js?v=124';
+import { initDesigner } from './designer.js?v=124';
+import { t, getLang, setLang, langs } from './lang.js?v=124';
+import { TUNING } from './tuning.js?v=124';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -3323,7 +3323,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v169', 16, uiCanvas.height - 12);
+  ctx.fillText('v170', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3502,50 +3502,24 @@ function showTitle() {
   slot.appendChild(dbtn);
   slot.appendChild(dhint);
 
-  // ARCADE CABINET row (v153): the tribute cabinets, one compact single-select
-  // row of mods — pick one (tap again to un-pick), then TAP TO START plays it.
-  // The same selection lives in OPTIONS right under SMASH TV.
-  const CAB_STYLE = {
-    tokotron: ['#44eeff', '#88f4ff', '#22ccff'],
-    gaundrop: ['#cc8833', '#ffbb66', '#aa6611'],
-    binding:  ['#cc4466', '#ff99bb', '#cc2255'],
-    loadout:  ['#77cc33', '#bbff77', '#55aa11'],
-    kaikki:   ['#bb2222', '#ff6655', '#aa1111'],
-  };
-  const CAB_SHORT = { tokotron: 'TOKOTRON', gaundrop: 'GAUNDROP', binding: 'BINDING', loadout: 'LOADOUT', kaikki: 'KAIKKI 3' };
-  const cabRow = document.createElement('div');
-  cabRow.style.cssText = 'display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:12px;max-width:340px;margin-left:auto;margin-right:auto;';
-  const cabHint = document.createElement('div');
-  cabHint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:6px';
-  const cabRender = () => {
-    cabRow.innerHTML = '';
-    for (const id of CABINETS) {
-      const on = cabinetSel === id;
-      const [bd, fg, glow] = CAB_STYLE[id];
-      const c = document.createElement('div');
-      c.dataset.ui = '1';
-      c.textContent = CAB_SHORT[id];
-      c.style.cssText =
-        'pointer-events:auto;cursor:pointer;user-select:none;' +
-        'font-size:11.5px;font-weight:bold;padding:7px 10px;border-radius:8px;' +
-        'background:rgba(0,0,0,0.35);transition:all 0.12s;' +
-        `border:2px solid ${on ? bd : '#445'};` +
-        `color:${on ? fg : '#7777aa'};` +
-        `text-shadow:${on ? `0 0 12px ${glow}` : 'none'};`;
-      c.addEventListener('pointerdown', e => {
-        e.stopPropagation();
-        e.preventDefault();
-        setCabinetSel(on ? null : id);
-        cabRender();
-      });
-      c.addEventListener('touchend', e => e.stopPropagation());
-      cabRow.appendChild(c);
-    }
-    cabHint.textContent = cabinetSel ? t(cabinetSel + 'H') : t('cabRowH');
-  };
-  cabRender();
-  slot.appendChild(cabRow);
-  slot.appendChild(cabHint);
+  // v170 (user direction): the cabinet PICKER lives in OPTIONS (the cycle
+  // button under SMASH TV) — the title only reminds you what's armed so
+  // TAP TO START never launches a surprise.
+  if (cabinetSel) {
+    const CAB_NOTE_COLOR = {
+      tokotron: '#88f4ff', gaundrop: '#ffbb66', binding: '#ff99bb',
+      loadout: '#bbff77', kaikki: '#ff6655',
+    };
+    const note = document.createElement('div');
+    note.style.cssText = 'font-size:12px;margin-top:12px;letter-spacing:1px;' +
+      `color:${CAB_NOTE_COLOR[cabinetSel]};opacity:0.85;`;
+    note.textContent = `${t('cabRow')}: ${t(cabinetSel)}  ·  ${t('options')}`;
+    slot.appendChild(note);
+    const noteHint = document.createElement('div');
+    noteHint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:4px';
+    noteHint.textContent = t(cabinetSel + 'H');
+    slot.appendChild(noteHint);
+  }
 
   // v81: volume + reduce-motion moved into the pause menu's SETTINGS page —
   // the title keeps only the run-history link and a faint pointer to where
@@ -4266,15 +4240,17 @@ function spawnWave() {
       }
     }
     // ── generators: the ghost engine ──
-    const nGen = Math.min(5, 1 + Math.floor(lvl / 2));
-    const ghostRate = Math.max(1.1, 1.8 - lvl * 0.06);
+    const nGen = Math.min(6, 2 + Math.floor(lvl / 2));   // v170: more engines
+    const ghostRate = Math.max(0.9, 1.5 - lvl * 0.06);   // v170: pour faster
     for (let i = 0; i < nGen; i++) {
       const [gx, gz] = pickCell(8);
       const roll = rng();
-      const ty = roll < 0.6 ? EnemyType.GHOST
-               : roll < 0.85 ? EnemyType.ORANGE_CUBE
-               : (lvl >= 4 ? EnemyType.REDD_MINI : EnemyType.GHOST);
-      gdGenerators.push(new Generator(scene, gx, gz, ty, ty === EnemyType.GHOST ? ghostRate : 2.4));
+      const ty = roll < 0.55 ? EnemyType.GHOST            // v170: wider pool
+               : roll < 0.72 ? EnemyType.ORANGE_CUBE
+               : roll < 0.84 ? EnemyType.SLUDGE_CUBE      // poison trails in the halls
+               : roll < 0.94 ? (lvl >= 3 ? EnemyType.REDD_MINI : EnemyType.GHOST)
+               : (lvl >= 4 ? EnemyType.YELA_CUBE : EnemyType.GHOST);
+      gdGenerators.push(new Generator(scene, gx, gz, ty, ty === EnemyType.GHOST ? ghostRate : 2.2));
     }
     // ── lobbers arc over walls from level 2; the wraith haunts level 3+ ──
     if (lvl >= 2) {
@@ -4283,8 +4259,9 @@ function spawnWave() {
         enemies.push(new Enemy(scene, EnemyType.BAMBU, bx, bz, speedMult, intervalMult));
       }
     }
-    if (lvl >= 3) {
+    if (lvl >= 2) {   // v170: the dread comes a level earlier — two deep down
       enemies.push(new Enemy(scene, EnemyType.WRAITH, cX(xi), cZ(1), speedMult, intervalMult));
+      if (lvl >= 5) enemies.push(new Enemy(scene, EnemyType.WRAITH, cX(1), cZ(xj), speedMult, intervalMult));
     }
     // ── loot: suds food (the hunger answer), treasure, maybe a potion ──
     const nLoot = 3 + Math.floor(rng() * 3);
@@ -4305,10 +4282,14 @@ function spawnWave() {
       powerups.push(pu);
     }
     // ── a welcome party already loose in the halls ──
-    const n0 = Math.min(12, 4 + lvl);
+    const n0 = Math.min(18, 6 + lvl * 2);   // v170: the halls are ALREADY busy
     for (let i = 0; i < n0; i++) {
       const [px, pz] = pickCell(7);
-      pendingSpawns.push({ type: rng() < 0.65 ? EnemyType.GHOST : EnemyType.ORANGE_CUBE,
+      const roll2 = rng();
+      const ty0 = roll2 < 0.55 ? EnemyType.GHOST
+                : roll2 < 0.8 ? EnemyType.ORANGE_CUBE
+                : (lvl >= 3 ? EnemyType.WEEVA : EnemyType.GHOST);   // v170: variety
+      pendingSpawns.push({ type: ty0,
         delay: 0.2 + i * 0.06, px, pz, angle: 0, shooter: false, clusterOffset: null, speedMult, intervalMult });
     }
     clusterSpawnAt = [];
@@ -4395,11 +4376,12 @@ function spawnWave() {
     const f = bindingFloor;
     const kind = smashRoomKind || 'normal';
     const T = EnemyType;
+    // v170: harder floors, and the basement breeds classic guests too
     const comp = kind === 'swarm'
-      ? { [T.FLIT]: 10 + f * 2, [T.HOPPER]: 2 }
+      ? { [T.FLIT]: 12 + f * 3, [T.HOPPER]: 2 + Math.floor(f / 2), [T.GLOBBO]: 2 }
       : kind === 'spike'
-      ? { [T.CHARGER]: 2 + Math.floor(f / 2), [T.SPITTLE]: 3, [T.HOPPER]: 2 }
-      : { [T.FLIT]: 4 + f, [T.SPITTLE]: 2, [T.CHARGER]: f >= 2 ? 1 : 0, [T.HOPPER]: 1 };
+      ? { [T.CHARGER]: 2 + Math.floor(f / 2) + 1, [T.SPITTLE]: 4, [T.HOPPER]: 3, [T.PURP_CUBE]: f >= 2 ? 1 : 0 }
+      : { [T.FLIT]: 5 + f * 2, [T.SPITTLE]: 2 + Math.floor(f / 2), [T.CHARGER]: f >= 1 ? 1 : 0, [T.HOPPER]: 2, [T.GLOBBO]: f >= 2 ? 2 : 0 };
     for (const [tyStr, n] of Object.entries(comp)) {
       const ty = +tyStr;
       for (let i = 0; i < n; i++) {
@@ -4464,7 +4446,7 @@ function spawnWave() {
     player.mesh.position.set(-HALF_X + 2.5, player.mesh.position.y, 0);
     player.grantInvincibility(1.0);
     // corner turret emplacements inside — more with depth
-    const nTur = Math.min(4, 1 + Math.floor(wave / 2));
+    const nTur = Math.min(4, 2 + Math.floor(wave / 3));   // v170: two from the door
     const tPos = [[ccx - cw2 + 1.6, -ch2 + 1.6], [ccx - cw2 + 1.6, ch2 - 1.6],
                   [ccx + cw2 - 1.6, ch2 - 1.6], [ccx + cw2 - 1.6, -ch2 + 1.6]];
     for (let i = 0; i < nTur; i++) {
@@ -4500,7 +4482,7 @@ function spawnWave() {
       }
       gdGenerators.push(post);
     } else if (loObjective === 'purge') {
-      const n = Math.min(26, 8 + wave * 2);   // v162: bigger theater, more targets
+      const n = Math.min(32, 12 + wave * 3);   // v170: a real occupation force
       for (let i = 0; i < n; i++) {
         let px, pz, tries = 0;
         do {
@@ -4509,7 +4491,11 @@ function spawnWave() {
         } while ((gdInsideWall(px, pz, 0.8) ||
                   Math.hypot(px - player.position.x, pz - player.position.z) < 6) && ++tries < 20);
         const roll = rng();
-        const ty = roll < 0.4 ? EnemyType.TROOPER : roll < 0.75 ? EnemyType.GLOBBO : EnemyType.ORANGE_CUBE;
+        const ty = roll < 0.35 ? EnemyType.TROOPER
+                 : roll < 0.6 ? EnemyType.GLOBBO
+                 : roll < 0.8 ? EnemyType.ORANGE_CUBE
+                 : roll < 0.92 ? EnemyType.YELA_CUBE
+                 : (wave >= 3 ? EnemyType.CLOAKER : EnemyType.TROOPER);   // v170: ambushers
         pendingSpawns.push({ type: ty, delay: 0.2 + i * 0.05, px, pz,
           angle: 0, shooter: false, clusterOffset: null, speedMult, intervalMult });
       }
@@ -4567,7 +4553,7 @@ function spawnWave() {
     player.mesh.position.set(0, player.mesh.position.y, HALF_Z - 2.2);
     player.grantInvincibility(1.0);
     // the crowd — big, mixed, pouring in from all over
-    const n = Math.min(38, 10 + wave * 3);   // v162: the crowd fills the city
+    const n = Math.min(46, 14 + wave * 4);   // v170: a proper riot
     for (let i = 0; i < n; i++) {
       let px, pz, tries = 0;
       do {
@@ -4577,11 +4563,13 @@ function spawnWave() {
                 Math.hypot(px - player.position.x, pz - player.position.z) < 6) && ++tries < 20);
       const roll = rng();
       const ty = roll < 0.25 ? EnemyType.THUG          // v169: the streets have people
-               : roll < 0.45 ? EnemyType.GLOBBO
-               : roll < 0.62 ? EnemyType.YELA_CUBE
-               : roll < 0.78 ? EnemyType.ORANGE_CUBE
-               : roll < 0.90 ? EnemyType.REDD_MINI
-               : (wave >= 3 ? EnemyType.SPITTOR : EnemyType.GLOBBO);
+               : roll < 0.42 ? EnemyType.GLOBBO
+               : roll < 0.56 ? EnemyType.YELA_CUBE
+               : roll < 0.70 ? EnemyType.ORANGE_CUBE
+               : roll < 0.80 ? EnemyType.REDD_MINI
+               : roll < 0.88 ? (wave >= 2 ? EnemyType.FANNER : EnemyType.GLOBBO)   // v170
+               : roll < 0.96 ? (wave >= 3 ? EnemyType.SPITTOR : EnemyType.GLOBBO)
+               : (wave >= 4 ? EnemyType.TORO : EnemyType.THUG);   // v170: joyriders
       pendingSpawns.push({ type: ty, delay: 0.2 + i * 0.05, px, pz,
         angle: 0, shooter: false, clusterOffset: null, speedMult, intervalMult });
     }
@@ -4599,15 +4587,17 @@ function spawnWave() {
     const wi   = (wave - 1) % 8;
     const k    = 1 + loop * 0.35;              // per-loop escalation
     const T    = EnemyType;
+    // v170: harder + more varied — bigger swarms, and from wave 4 the wave
+    // scripts pull GUEST types (mini swarms, botflies, weevas) into the mix.
     const comp = [
-      { [T.GRUNT]: 12, [T.ORANGE_CUBE]: 2, civ: 4 },
-      { [T.GRUNT]: 14, [T.ORB]: 2, civ: 4 },
-      { [T.GRUNT]: 9,  [T.BRUTE]: 2, [T.ORANGE_CUBE]: 3, civ: 6 },
-      { [T.GRUNT]: 16, [T.ORB]: 3, [T.ORANGE_CUBE]: 2, civ: 3 },
-      { [T.GRUNT]: 8,  [T.MINDER]: 3, civ: 8 },
-      { [T.GRUNT]: 18, [T.BRUTE]: 2, [T.ORB]: 2, civ: 4 },
-      { [T.GRUNT]: 10, [T.ORB]: 4, [T.ORANGE_CUBE]: 4, civ: 4 },
-      { [T.GRUNT]: 16, [T.BRUTE]: 2, [T.MINDER]: 2, [T.ORB]: 3, civ: 6 },
+      { [T.GRUNT]: 15, [T.ORANGE_CUBE]: 3, civ: 4 },
+      { [T.GRUNT]: 17, [T.ORB]: 2, [T.REDD_MINI]: 4, civ: 4 },
+      { [T.GRUNT]: 12, [T.BRUTE]: 2, [T.ORANGE_CUBE]: 4, civ: 6 },
+      { [T.GRUNT]: 19, [T.ORB]: 3, [T.ORANGE_CUBE]: 2, [T.BOTFLY]: 2, civ: 3 },
+      { [T.GRUNT]: 11, [T.MINDER]: 3, [T.REDD_MINI]: 6, civ: 8 },
+      { [T.GRUNT]: 21, [T.BRUTE]: 2, [T.ORB]: 3, [T.WEEVA]: 1, civ: 4 },
+      { [T.GRUNT]: 13, [T.ORB]: 4, [T.ORANGE_CUBE]: 5, [T.BOTFLY]: 2, civ: 4 },
+      { [T.GRUNT]: 19, [T.BRUTE]: 3, [T.MINDER]: 2, [T.ORB]: 3, [T.WEEVA]: 1, civ: 6 },
     ][wi];
     // Robotron opening: you appear center-room; the wave appears around you.
     player.mesh.position.set(0, player.mesh.position.y, 0);
@@ -5485,8 +5475,8 @@ function loop() {
       loTimer -= dt;
       loTrickleT -= dt;
       const alive = enemies.reduce((n, e) => n + (e.alive ? 1 : 0), 0);
-      if (loTrickleT <= 0 && alive < 18) {   // v162: scaled to the theater
-        loTrickleT = 2.2;
+      if (loTrickleT <= 0 && alive < 20) {   // v170: the siege never thins
+        loTrickleT = 1.8;
         const a2 = Math.random() * Math.PI * 2;
         const roll = Math.random();
         const ty = roll < 0.4 ? EnemyType.TROOPER : roll < 0.75 ? EnemyType.GLOBBO : EnemyType.ORANGE_CUBE;
@@ -6619,6 +6609,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=123').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=124').catch(() => {});
   });
 }
