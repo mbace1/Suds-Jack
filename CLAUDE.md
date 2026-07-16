@@ -144,8 +144,9 @@ totem veins) that trip the bloom threshold while bone/body stays matte. `VoxelSp
 bakes a model into one `InstancedMesh` (per-voxel `setColorAt`; hit-flash brightens
 `material.color`, which multiplies every instance). `parseModel(def, subdivide)` splits
 each source voxel into subdivide³ minis — global detail 2 (×8) by default via
-`setVoxelDetail`, `detailBoost: 1` on the Leviathan (×27), ×1 on the LOW perf tier
-(future spawns only). `VoxelSprite.chip(worldPoint, n)` scales the n nearest alive
+`setVoxelDetail` (ceiling 4 = ×64), `detailBoost: 1` on the Leviathan, ×1 on the LOW
+perf tier (future spawns only). Player override: pause row VOXEL AUTO/1X/8X/27X/64X
+(`opts.detail`); the pause header shows ~fps + live voxel count as a benchmark. `VoxelSprite.chip(worldPoint, n)` scales the n nearest alive
 voxels to zero (chip damage / bullet holes; ≥4 voxels always survive) and returns them
 for debris; `worldVoxels()` excludes dead voxels so death bursts throw only what's
 left. `DebrisPool.burst` stride-samples inputs to ~170 gibs (size ×∛stride). `DebrisPool` is a single 1600-cube
