@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v171 — 2026-07-16
+**Walls of bullets — the DRAPER and the ARENA CURTAIN (user direction)**
+- **New enemy: DRAPER, the wall-weaver** (37 types) — a violet loom slab with glowing end-spools that holds ~11 units, faces you (the loom IS the tell), strobes a 0.9 s wind-up while its spools spin, then **looms a 15-slot marching bullet CURTAIN with one 2-slot gap**. Dash the gap or dash the wall — both are answers. Classic pool from wave 7 (shooter budget); guest appearances in LOADOUT floods (mission 4+) and KAIKKI streets (mission 5+)
+- **ARENA CURTAIN event** (classic + SMASH, wave 6+, never boss waves, ~55% of eligible waves): mid-wave, a `BULLET CURTAIN!` warning + two-tone alarm, one beat later a **full arena-spanning wall of slow bullets sweeps from a random wall** with two 3-slot dash-or-weave gaps. Slow enough to read, wide enough to matter — and every bullet is grazeable
+- New stingers: `curtainAlarm` (two-tone warning) + `curtainSweep` (the wall leaves the rail)
+- Cache-bust `?v=124` → `?v=125`; HUD label → v171
+
+---
+
 ## v170 — 2026-07-16
 **Cabinets to OPTIONS + a difficulty and variety pass (user direction)**
 - **The cabinet picker is OPTIONS-only now** (the cycle button under SMASH TV): the title row is gone — when a cabinet is armed, the title shows a one-line colored reminder (`CABINET: TOKOTRON · OPTIONS`) so TAP TO START never launches a surprise

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=124';
-import { nesSnap, NEON } from './retro.js?v=124';
+import { TUNING } from './tuning.js?v=125';
+import { nesSnap, NEON } from './retro.js?v=125';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -385,6 +385,11 @@ export const EnemyType = {
   // melee thug: weaves at you in a hurry, hits on touch. The reference's
   // human crowds, Toko-shaped.
   THUG:        35,
+  // Wall-weaver (v171, user: "walls of bullets, curtains even") — a loom
+  // slab that keeps its distance, strobes a 0.9 s wind-up, then LOOMS a
+  // marching CURTAIN of bullets with one readable gap. Dash the gap or
+  // dash the wall — both are answers.
+  DRAPER:      36,
 };
 
 // WARDEN aura radius (world units) — main.js uses it for the damage-immunity
@@ -433,6 +438,7 @@ export const CFG = {
   [EnemyType.TROOPER]:     { color: 0x7a8a4a, radius: 0.55, speed: 1.9, hp: 2, bulletColor: 0xccff66, fireInterval: 2.2  },
   // KAIKKI cabinet roster (v169)
   [EnemyType.THUG]:        { color: 0x4a3c36, radius: 0.55, speed: 2.2, hp: 2, bulletColor: null,     fireInterval: null },
+  [EnemyType.DRAPER]:      { color: 0x9955ff, radius: 0.8,  speed: 0.9, hp: 5, bulletColor: 0xcc88ff, fireInterval: 5.0  },
 };
 
 // Scratch colors for the tinted death flash (v132) — no per-death allocation.
@@ -574,6 +580,8 @@ export class Enemy {
       geo = new THREE.BoxGeometry(0.6, 1.0, 0.5);                   // rifleman
     } else if (type === EnemyType.THUG) {
       geo = new THREE.BoxGeometry(0.58, 1.0, 0.42);                 // leather coat
+    } else if (type === EnemyType.DRAPER) {
+      geo = new THREE.BoxGeometry(1.5, 0.9, 0.4);                   // the loom
     }
 
     const isBlob = BLOB_TYPES.has(type);
@@ -876,6 +884,15 @@ export class Enemy {
       head.position.y = 0.66;
       this._robotBits = [head];
       this.mesh.add(head);
+    } else if (type === EnemyType.DRAPER) {
+      // v171: glowing end-spools — the curtain visibly comes off the loom.
+      this._robotMat = new THREE.MeshBasicMaterial({ color: 0xcc88ff });
+      const spL = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 1.0, 8), this._robotMat);
+      spL.position.set(-0.78, 0, 0);
+      const spR = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 1.0, 8), this._robotMat);
+      spR.position.set(0.78, 0, 0);
+      this._robotBits = [spL, spR];
+      this.mesh.add(spL, spR);
     } else if (type === EnemyType.TROOPER) {
       // v161 identity pass: the rifleman gets a helmet + visor like the
       // grunt got — the soldier read, in loadout's toxic-green.
@@ -1717,6 +1734,40 @@ export class Enemy {
           bullets.spawnDir(ex, ez, Math.cos(a), Math.sin(a), false, cfg.bulletColor, false, this.type);
         }
         this.mesh.rotation.y = Math.atan2(ddx, ddz);   // v161: visor faces you
+        break;
+      }
+
+      case EnemyType.DRAPER: {
+        // Wall-weaver (v171): holds ~11 units, faces you (the loom IS the
+        // tell), strobes 0.9 s, then looms a 15-slot curtain with one
+        // 2-slot gap that marches at you. Cadence ~5 s.
+        const wantD = 11;
+        if      (dist > wantD + 1.5) { this.mesh.position.x += (ddx / dist) * spd * dt; this.mesh.position.z += (ddz / dist) * spd * dt; }
+        else if (dist < wantD - 1.5) { this.mesh.position.x -= (ddx / dist) * spd * dt; this.mesh.position.z -= (ddz / dist) * spd * dt; }
+        this.mesh.rotation.y = Math.atan2(ddx, ddz);
+        if (this._weaveT === undefined) this._weaveT = 2.0 + Math.random() * 2;
+        if (this._windup === undefined) this._windup = 0;
+        if (this._windup > 0) {
+          this._windup -= dt;
+          this._setEmissive(Math.sin(this._wobbleT * 22) > 0 ? 0x5522aa : 0x110022);
+          if (this._robotBits) for (const b2 of this._robotBits) b2.rotation.x += dt * 18;  // spools spin up
+          if (this._windup <= 0) {
+            this._setEmissive(0x000000);
+            const fx = ddx / dist, fz = ddz / dist;   // march direction
+            const px2 = -fz, pz2 = fx;                // curtain lateral
+            const gap = 2 + Math.floor(Math.random() * 11);   // slots 2..12
+            for (let k2 = 0; k2 < 15; k2++) {
+              if (k2 === gap || k2 === gap + 1) continue;     // the way through
+              const o = (k2 - 7) * 0.85;
+              bullets.spawnDir(ex + px2 * o, ez + pz2 * o, fx, fz,
+                false, cfg.bulletColor, false, this.type, false, 6, 0.72);
+            }
+            this._weaveT = cfg.fireInterval * this._intervalMult;
+          }
+        } else {
+          this._weaveT -= dt;
+          if (this._weaveT <= 0 && dist < 17) this._windup = 0.9;
+        }
         break;
       }
 

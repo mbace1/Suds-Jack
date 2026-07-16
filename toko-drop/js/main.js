@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=124';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=124';
-import { Player, PLAYER_RADIUS } from './player.js?v=124';
+import { InputManager } from './input.js?v=125';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=125';
+import { Player, PLAYER_RADIUS } from './player.js?v=125';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=124';
-import { RetroPass } from './retro.js?v=124';
-import { audio } from './audio.js?v=124';
-import { initDesigner } from './designer.js?v=124';
-import { t, getLang, setLang, langs } from './lang.js?v=124';
-import { TUNING } from './tuning.js?v=124';
+         CABINET_STYLE, VIS } from './enemy.js?v=125';
+import { RetroPass } from './retro.js?v=125';
+import { audio } from './audio.js?v=125';
+import { initDesigner } from './designer.js?v=125';
+import { t, getLang, setLang, langs } from './lang.js?v=125';
+import { TUNING } from './tuning.js?v=125';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -78,7 +78,7 @@ function waveKind(w) {
 // getEnemySchedule uses rng (seeded per run) so every run plays differently.
 function getEnemySchedule(wave) {
   const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
-          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY, WARDEN, BULWARK, SIREN, CLOAKER, MAGNA } = EnemyType;
+          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY, WARDEN, BULWARK, SIREN, CLOAKER, MAGNA, DRAPER } = EnemyType;
   const AFFIXES = ['volatile', 'swift', 'anchored'];
   const POOL = [
     // [type, minWave, cost]
@@ -93,6 +93,7 @@ function getEnemySchedule(wave) {
     [SIREN,       8, 5],  // v141: screamer — surges the pack, kill it first
     [CLOAKER,     9, 4],  // v143: ambusher — shimmer-flanks, telegraphed burst
     [MAGNA,      10, 5],  // v144: magnet — pulls you off your line, dash breaks it
+    [DRAPER,      7, 5],  // v171: wall-weaver — looms marching bullet curtains
   ];
   // TEST MODE (v142): every enemy type is unlocked from wave 1 so new
   // designs can be met within seconds of pressing start.
@@ -129,7 +130,7 @@ function getEnemySchedule(wave) {
   // fodder you mow through), while ranged enemies are placed DELIBERATELY —
   // few of them, capped, spread apart in arrival time and position so each
   // shooter is a tactical problem to prioritise, not part of the noise.
-  const SHOOTERS  = new Set([SPITTOR, FANNER, WEEVA, ORANGE_CUBE, PURP_CUBE, BAMBU, PYRA, BOTFLY, CLOAKER]);
+  const SHOOTERS  = new Set([SPITTOR, FANNER, WEEVA, ORANGE_CUBE, PURP_CUBE, BAMBU, PYRA, BOTFLY, CLOAKER, DRAPER]);
   const meleePool = available.filter(([ty]) => !SHOOTERS.has(ty));
   const shootPool = available.filter(([ty]) =>  SHOOTERS.has(ty));
 
@@ -1366,6 +1367,32 @@ let clusterSpawnAt  = []; // seconds-into-wave queue of convoy spawns (empty = n
 let convoyTrailT    = 0; // v38: cadence for the convoy's golden trail ribbon
 let wave         = 0;
 let waveTimer    = 0;
+// v171 (user: "walls of bullets, curtains even"): the ARENA CURTAIN — an
+// arena-spanning wall of slow bullets that sweeps from one wall to the
+// other with two dash-or-weave gaps. Warned a beat ahead; classic + SMASH
+// only (wave 6+, never boss waves, ~55% of eligible waves).
+let curtainArmed = false;
+let curtainAt    = 0;
+let curtainWarnT = 0;
+function fireArenaCurtain() {
+  const side  = Math.floor(Math.random() * 4);
+  const horiz = side === 1 || side === 3;               // from a ±z wall
+  const span  = horiz ? HALF_X : HALF_Z;
+  const edge  = side === 0 ? HALF_X : side === 1 ? HALF_Z : side === 2 ? -HALF_X : -HALF_Z;
+  const dirX  = side === 0 ? -1 : side === 2 ? 1 : 0;
+  const dirZ  = side === 1 ? -1 : side === 3 ? 1 : 0;
+  const n     = Math.floor((span * 2 - 1) / 0.9);
+  const g1    = 2 + Math.floor(Math.random() * Math.max(1, n - 10));
+  let   g2    = 2 + Math.floor(Math.random() * Math.max(1, n - 10));
+  if (Math.abs(g2 - g1) < 5) g2 = ((g1 + Math.floor(n / 2)) % Math.max(1, n - 4)) + 2;
+  for (let i = 0; i <= n; i++) {
+    if ((i >= g1 && i < g1 + 3) || (i >= g2 && i < g2 + 3)) continue;   // the ways through
+    const o  = -span + 0.5 + i * 0.9;
+    const bx = horiz ? o : edge;
+    const bz = horiz ? edge : o;
+    bullets.spawnDir(bx, bz, dirX, dirZ, false, 0xff66aa, false, null, false, 6, 0.62);
+  }
+}
 let waveDuration = ROUND_DUR;
 let pendingSpawns = [];
 let _prevDashing = false;
@@ -3323,7 +3350,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v170', 16, uiCanvas.height - 12);
+  ctx.fillText('v171', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -4494,8 +4521,9 @@ function spawnWave() {
         const ty = roll < 0.35 ? EnemyType.TROOPER
                  : roll < 0.6 ? EnemyType.GLOBBO
                  : roll < 0.8 ? EnemyType.ORANGE_CUBE
-                 : roll < 0.92 ? EnemyType.YELA_CUBE
-                 : (wave >= 3 ? EnemyType.CLOAKER : EnemyType.TROOPER);   // v170: ambushers
+                 : roll < 0.9 ? EnemyType.YELA_CUBE
+                 : roll < 0.96 ? (wave >= 3 ? EnemyType.CLOAKER : EnemyType.TROOPER)   // v170: ambushers
+                 : (wave >= 4 ? EnemyType.DRAPER : EnemyType.TROOPER);   // v171: curtain teams
         pendingSpawns.push({ type: ty, delay: 0.2 + i * 0.05, px, pz,
           angle: 0, shooter: false, clusterOffset: null, speedMult, intervalMult });
       }
@@ -4568,8 +4596,9 @@ function spawnWave() {
                : roll < 0.70 ? EnemyType.ORANGE_CUBE
                : roll < 0.80 ? EnemyType.REDD_MINI
                : roll < 0.88 ? (wave >= 2 ? EnemyType.FANNER : EnemyType.GLOBBO)   // v170
-               : roll < 0.96 ? (wave >= 3 ? EnemyType.SPITTOR : EnemyType.GLOBBO)
-               : (wave >= 4 ? EnemyType.TORO : EnemyType.THUG);   // v170: joyriders
+               : roll < 0.93 ? (wave >= 3 ? EnemyType.SPITTOR : EnemyType.GLOBBO)
+               : roll < 0.97 ? (wave >= 4 ? EnemyType.TORO : EnemyType.THUG)   // v170: joyriders
+               : (wave >= 5 ? EnemyType.DRAPER : EnemyType.THUG);   // v171: street looms
       pendingSpawns.push({ type: ty, delay: 0.2 + i * 0.05, px, pz,
         angle: 0, shooter: false, clusterOffset: null, speedMult, intervalMult });
     }
@@ -4655,6 +4684,10 @@ function spawnWave() {
   // mark. CLEANSE foam appears every 4th wave from 6 — seeded, so daily runs
   // get identical placements.
   clearBounty();
+  // v171: arm the arena curtain — a mid-wave spectacle, never on boss waves
+  curtainArmed = !inCabinet() && wave >= 6 && kind !== 'boss' && rng() < 0.55;
+  curtainAt    = 5 + rng() * 6;
+  curtainWarnT = 0;
   bountyArm = !inCabinet() && wave >= 4 && wave % 3 === 1 && kind !== 'boss';
   if (!inCabinet() && wave >= 6 && wave % 4 === 2) {
     foamZones.push(new FoamZone(scene,
@@ -6446,6 +6479,22 @@ function loop() {
     }
   }
 
+  // v171 ARENA CURTAIN: one beat of warning, then the wall marches.
+  if (curtainArmed && gameState === 'playing' && !inCabinet() && player.alive) {
+    if (curtainWarnT === 0 && waveTimer >= curtainAt) {
+      curtainWarnT = 1.1;
+      milestoneT = 1.1; milestoneText = 'BULLET CURTAIN!';
+      audio.curtainAlarm();
+    } else if (curtainWarnT > 0) {
+      curtainWarnT -= dt;
+      if (curtainWarnT <= 0) {
+        curtainArmed = false;
+        fireArenaCurtain();
+        audio.curtainSweep();
+      }
+    }
+  }
+
   // Wave breather tick (v136): when it runs out, the next wave rolls in.
   if (waveGapT > 0 && gameState === 'playing') {
     waveGapT -= dt;
@@ -6609,6 +6658,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=124').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=125').catch(() => {});
   });
 }
