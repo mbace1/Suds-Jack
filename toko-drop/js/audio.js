@@ -73,7 +73,7 @@ class AudioSystem {
     if (!this._introVoice || this._volume <= 0) return null;
     try {
       if (!this._introEl) {
-        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=124', import.meta.url).href);
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=125', import.meta.url).href);
         this._introEl.preload = 'auto';
       }
       this._introEl.volume = this._annVolume;
@@ -250,6 +250,13 @@ class AudioSystem {
     this._noise(0.10, 0.05);
     setTimeout(() => { this._tone(1568, 0.12, 'sine', 0.18); this._tone(2093, 0.14, 'sine', 0.14); }, 55);
   }
+  // v171 ARENA CURTAIN: two-tone alarm, then the wall whooshes off the rail.
+  curtainAlarm() {
+    this._tone(880, 0.14, 'square', 0.22);
+    setTimeout(() => this._tone(660, 0.16, 'square', 0.22), 170);
+    setTimeout(() => this._tone(880, 0.14, 'square', 0.20), 340);
+  }
+  curtainSweep() { this._tone(300, 0.5, 'sawtooth', 0.22, 90); this._noise(0.16, 0.45); }
   playerHit() { this._tone(100, 0.32, 'sawtooth', 0.38); this._noise(0.22, 0.18); }
   playerDie() { this._tone(65,  0.70, 'sawtooth', 0.50); this._noise(0.42, 0.60); }
   pickup() {
