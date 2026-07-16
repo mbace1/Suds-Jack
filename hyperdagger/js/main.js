@@ -9,8 +9,8 @@ import { InputManager } from './input.js?v=24';
 import { Player } from './player.js?v=10';
 import { DaggerPool } from './daggers.js?v=10';
 import { GemPool } from './gems.js?v=23';
-import { DebrisPool, VoxelSprite, MODELS } from './voxel.js?v=17';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=17';
+import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail } from './voxel.js?v=25';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=25';
 import { OrbPool } from './bullets.js?v=23';
 import { AudioKit } from './audio.js?v=18';
 import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=1';
@@ -866,6 +866,8 @@ function resetRun() {
   rippleT = 9;
   rippleAmp = 0;
   levAlive = false;
+  endFlyby();
+  flybyDone = false;
   gemCount = 0;
   weaponLv = 1;
   fireTimer = 0;
@@ -1004,6 +1006,9 @@ function applyOpts() {
   if (opts.perf === 'high') setPerfTier(0);
   else if (opts.perf === 'low') setPerfTier(PERF_TIERS.length - 1);
   const tier = PERF_TIERS[perfTier];
+  // voxel density follows the perf floor: future spawns drop to 1x minis on
+  // LOW / tier 4 (existing sprites keep their detail until they die)
+  setVoxelDetail(opts.perf === 'low' || perfTier >= PERF_TIERS.length - 1 ? 1 : 2);
   // reduced motion (opts.motion=false) and the perf tier both override the
   // individual FX toggles without rewriting them — user intent stays in opts.*
   afterimage.enabled = opts.smear && opts.motion && tier.smear;
@@ -1220,6 +1225,78 @@ function spawnSerpent(ghost = serpentsSpawned % 2 === 1) {
   enemies.push(...s.segments);
 }
 
+// ---------------------------------------------- serpent teaser flyby
+// ~10s into every run a serpent circles just beyond the grid — harmless,
+// untargetable, gone in seconds — foreshadowing the real arrival at 100s.
+let flyby = null;
+let flybyDone = false;
+const FLYBY_SEGS = 8;
+
+function flybyPath(t, a0, out) {
+  // 0-2s swoop in from beyond the horizon, 2-9s low orbit, then climb away
+  const orbitR = ARENA_R * 1.08;
+  let r, y;
+  if (t < 2) { r = orbitR + (2 - t) * 14; y = 9 - t * 1.5; }
+  else if (t < 9) { r = orbitR; y = 6 + Math.sin(t * 1.4) * 1.5; }
+  else { r = orbitR + (t - 9) * 9; y = 6 + (t - 9) * 4; }
+  const a = a0 + t * 0.55;
+  return out.set(Math.cos(a) * r, y, Math.sin(a) * r);
+}
+
+function startFlyby() {
+  if (flyby) return;
+  announce('serpentTease', 'SOMETHING CIRCLES THE VOID');
+  audio.roar();
+  const parts = [];
+  for (let i = 0; i <= FLYBY_SEGS; i++) {
+    const sprite = new VoxelSprite(i === 0 ? MODELS.serpentHead : MODELS.serpent);
+    const g = new THREE.Group();
+    g.add(sprite.mesh);
+    g.position.set(0, -60, 0); // below the void until the path places it
+    scene.add(g);
+    parts.push({ sprite, g });
+  }
+  flyby = { parts, trail: [], t: 0, a0: Math.random() * Math.PI * 2 };
+}
+
+function endFlyby() {
+  if (!flyby) return;
+  for (const p of flyby.parts) {
+    scene.remove(p.g);
+    p.sprite.dispose();
+  }
+  flyby = null;
+}
+
+function updateFlyby(dt) {
+  if (!flyby) return;
+  const f = flyby;
+  f.t += dt;
+  flybyPath(f.t, f.a0, _sv);
+  f.trail.push({ x: _sv.x, y: _sv.y, z: _sv.z });
+  if (f.trail.length > 600) f.trail.shift();
+  f.parts[0].g.position.copy(_sv);
+  flybyPath(f.t + 0.15, f.a0, _c);
+  f.parts[0].g.lookAt(_c);
+  f.parts[0].sprite.update(dt);
+  // rings chain-follow the head by arc length along the recorded trail
+  let idx = f.trail.length - 1;
+  let acc = 0;
+  for (let i = 1; i < f.parts.length; i++) {
+    const target = i * 1.0;
+    while (idx > 0 && acc < target) {
+      const a = f.trail[idx], b = f.trail[idx - 1];
+      acc += Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+      idx--;
+    }
+    const tp = f.trail[idx];
+    f.parts[i].g.position.set(tp.x, tp.y, tp.z);
+    f.parts[i].g.lookAt(f.parts[i - 1].g.position);
+    f.parts[i].sprite.update(dt);
+  }
+  if (f.t > 14) endFlyby();
+}
+
 // ---------------------------------------------------- pulse director
 // Toko-drop's wave/budget system adapted to continuous time: every ~14s a
 // "pulse" fires with a budget that grows over the run (knee at 2.5 min),
@@ -1378,6 +1455,10 @@ function director(dt) {
     runPulse(pulseN);
     // pulse cadence tightens from ~14s toward a 9s floor over the run
     nextPulseAt = gameTime + Math.max(9, 14 - gameTime * 0.01);
+  }
+  if (!flybyDone && gameTime >= 10) {
+    flybyDone = true;
+    startFlyby();
   }
   if (gameTime >= nextThornAt) {
     announce('thorn', 'THORNS BENEATH');
@@ -1597,9 +1678,22 @@ function updateCombat(dt) {
           break;
         }
       }
+      e.maxHp ??= e.hp + 1; // captured on first hit (hp already decremented)
       e.hit(1, _hitDir);
       audio.hit();
       spawnSpark(d.m.position, e.hp <= 0);
+      // chip real voxels out of the model near the impact — bullet holes.
+      // Sized so an enemy is ~85% eroded by its final hit.
+      if (e.hp > 0 && e.sprite.chip) {
+        const chips = e.sprite.chip(d.m.position,
+          Math.ceil(e.sprite.voxels.length / (e.maxHp * 1.2)));
+        for (let k = 0; k < chips.length && k < 6; k++) {
+          debris.spawn(chips[k].pos, chips[k].color,
+            _seg.set(_hitDir.x * 3 + (Math.random() - 0.5) * 4, 1.5 + Math.random() * 3,
+              _hitDir.z * 3 + (Math.random() - 0.5) * 4),
+            e.sprite.size, 0.9);
+        }
+      }
       for (let k = 0; k < 2; k++) {
         debris.spawn(d.m.position, e.sprite.randomColor(),
           _seg.set((Math.random() - 0.5) * 5, 2 + Math.random() * 3, (Math.random() - 0.5) * 5),
@@ -1777,6 +1871,7 @@ function step(dt) {
   separateSkulls();
   updateShadows();
   updateSparks(dt);
+  updateFlyby(dt);
   updateThorns(dt);
   orbs.update(dt, ARENA_R + 6);
   updateCombat(dt);
@@ -1960,6 +2055,10 @@ window.__hd = {
     getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, fov: camera.fov, uRed: floorMat.uniforms.uRed.value }; },
     getVfx() { return { shadows: shadows.count, sparks: sparks.length, speedOn: speedPass.enabled, rippleT, rippleOn: ripplePass.enabled, ember: skyMat.uniforms.uEmber.value }; },
     ripple(amp) { triggerRipple(amp ?? 1); },
+    flyby() { startFlyby(); },
+    getFlyby() { return flyby ? { t: flyby.t, parts: flyby.parts.length } : null; },
+    setDetail(n) { setVoxelDetail(n); },
+    getDetail() { return getVoxelDetail(); },
     buzz(s, w, ms) { buzz(s ?? 1, w ?? 1, ms ?? 100); },
     forceFrameTime(ms) { forcedFrameTime = ms; },
     getPerfTier() {

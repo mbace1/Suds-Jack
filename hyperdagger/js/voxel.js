@@ -160,6 +160,7 @@ export const MODELS = {
   // late-game boss: dark god-head, glowing eyes/horns/crown, voxelSize 0.7
   leviathan: {
     voxelSize: 0.7,
+    detailBoost: 1, // the boss gets one extra subdivision tier (27x at default)
     palette: {
       W: 0x1c1c1c, S: 0x101010, K: 0x000000,
       R: [3.0, 0.2, 0.2], V: [2.0, 0.15, 0.15], C: [2.4, 2.4, 2.4],
@@ -201,11 +202,21 @@ export const MODELS = {
   })(),
 };
 
-/** Parse a model definition into centred local-space voxels. */
-export function parseModel(def) {
+// Global voxel density: every model voxel is split into detail³ minis of the
+// same silhouette (2 → 8×, 3 → 27×). New sprites pick the current value up;
+// the perf governor drops it to 1 on weak devices (affects future spawns).
+let globalDetail = 2;
+export function setVoxelDetail(n) { globalDetail = Math.max(1, Math.min(3, n | 0)); }
+export function getVoxelDetail() { return globalDetail; }
+
+/** Parse a model definition into centred local-space voxels, subdividing
+ *  each source voxel into subdivide³ minis. */
+export function parseModel(def, subdivide = 1) {
   const { layers, palette, voxelSize: s, anchor = 'center' } = def;
   const voxels = [];
   const h = layers.length;
+  const ms = s / subdivide; // mini size
+  const off = (s - ms) / 2; // centre the mini grid inside the source voxel
   for (let y = 0; y < h; y++) {
     const rows = layers[y];
     const d = rows.length;
@@ -214,27 +225,40 @@ export function parseModel(def) {
       for (let x = 0; x < row.length; x++) {
         const col = palette[row[x]];
         if (col === undefined) continue;
-        const color = Array.isArray(col)
-          ? new THREE.Color().setRGB(col[0], col[1], col[2])
-          : new THREE.Color(col);
-        voxels.push({
-          x: (x - (row.length - 1) / 2) * s,
-          y: anchor === 'bottom' ? (y + 0.5) * s : (y - (h - 1) / 2) * s,
-          z: ((d - 1) / 2 - zi) * s,
-          color,
-          key: row[x], // palette key kept for later retints (gauntlet evolution)
-        });
+        const cx = (x - (row.length - 1) / 2) * s;
+        const cy = anchor === 'bottom' ? (y + 0.5) * s : (y - (h - 1) / 2) * s;
+        const cz = ((d - 1) / 2 - zi) * s;
+        for (let sx = 0; sx < subdivide; sx++) {
+          for (let sy = 0; sy < subdivide; sy++) {
+            for (let sz = 0; sz < subdivide; sz++) {
+              const color = Array.isArray(col)
+                ? new THREE.Color().setRGB(col[0], col[1], col[2])
+                : new THREE.Color(col);
+              voxels.push({
+                x: cx - off + sx * ms,
+                y: cy - off + sy * ms,
+                z: cz - off + sz * ms,
+                color,
+                key: row[x], // palette key kept for later retints (gauntlet evolution)
+              });
+            }
+          }
+        }
       }
     }
   }
   return voxels;
 }
 
-/** One voxel model as a single InstancedMesh with per-voxel colors. */
+/** One voxel model as a single InstancedMesh with per-voxel colors.
+ *  Voxels can be chipped off before death (bullet holes) — dead voxels are
+ *  scaled to zero and excluded from worldVoxels()/death bursts. */
 export class VoxelSprite {
-  constructor(def) {
-    this.voxels = parseModel(def);
-    this.size = def.voxelSize;
+  constructor(def, subdivide = globalDetail + (def.detailBoost || 0)) {
+    subdivide = Math.max(1, Math.min(3, subdivide));
+    this.voxels = parseModel(def, subdivide);
+    this.size = def.voxelSize / subdivide;
+    this.aliveCount = this.voxels.length;
     this.material = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const mesh = new THREE.InstancedMesh(
       new THREE.BoxGeometry(this.size, this.size, this.size),
@@ -243,6 +267,7 @@ export class VoxelSprite {
     );
     mesh.frustumCulled = false;
     this.voxels.forEach((v, i) => {
+      v.alive = true;
       mesh.setMatrixAt(i, _m.makeTranslation(v.x, v.y, v.z));
       mesh.setColorAt(i, v.color);
     });
@@ -250,6 +275,41 @@ export class VoxelSprite {
     mesh.instanceColor.needsUpdate = true;
     this.mesh = mesh;
     this.flashK = 0;
+  }
+
+  /** Knock out up to n alive voxels nearest to worldPoint (a dagger impact),
+   *  leaving a visible hole. Returns the removed voxels' world positions +
+   *  colors so a few can fly off as debris. */
+  chip(worldPoint, n) {
+    if (this.aliveCount <= 4 || n <= 0) return [];
+    this.mesh.updateWorldMatrix(true, false);
+    _v.copy(worldPoint);
+    this.mesh.worldToLocal(_v);
+    // rank alive voxels by distance to the impact (partial selection is
+    // overkill at these counts — a sort of ≤ a few thousand entries is fine)
+    const ranked = [];
+    for (let i = 0; i < this.voxels.length; i++) {
+      const vx = this.voxels[i];
+      if (!vx.alive) continue;
+      const dx = vx.x - _v.x, dy = vx.y - _v.y, dz = vx.z - _v.z;
+      ranked.push({ i, d2: dx * dx + dy * dy + dz * dz });
+    }
+    ranked.sort((a, b) => a.d2 - b.d2);
+    const out = [];
+    const take = Math.min(n, ranked.length, this.aliveCount - 4);
+    for (let k = 0; k < take; k++) {
+      const i = ranked[k].i;
+      const vx = this.voxels[i];
+      vx.alive = false;
+      this.aliveCount--;
+      out.push({
+        pos: _s.set(vx.x, vx.y, vx.z).applyMatrix4(this.mesh.matrixWorld).clone(),
+        color: vx.color,
+      });
+      this.mesh.setMatrixAt(i, _m.makeScale(0, 0, 0));
+    }
+    if (out.length) this.mesh.instanceMatrix.needsUpdate = true;
+    return out;
   }
 
   /** Hit flash: brightens material.color, which multiplies every instance color. */
@@ -279,13 +339,19 @@ export class VoxelSprite {
     return this.voxels[(Math.random() * this.voxels.length) | 0].color;
   }
 
-  /** World-space voxel positions + colors, for handing off to the debris pool. */
+  /** World-space positions + colors of ALIVE voxels (chipped ones already
+   *  left as debris), for handing off to the debris pool on death. */
   worldVoxels() {
     this.mesh.updateWorldMatrix(true, false);
-    return this.voxels.map(v => ({
-      pos: _v.set(v.x, v.y, v.z).applyMatrix4(this.mesh.matrixWorld).clone(),
-      color: v.color,
-    }));
+    const out = [];
+    for (const v of this.voxels) {
+      if (!v.alive) continue;
+      out.push({
+        pos: _v.set(v.x, v.y, v.z).applyMatrix4(this.mesh.matrixWorld).clone(),
+        color: v.color,
+      });
+    }
+    return out;
   }
 
   dispose() {
@@ -329,8 +395,16 @@ export class DebrisPool {
     this.mesh.instanceColor.needsUpdate = true;
   }
 
-  /** Explode a set of world voxels outward from their centroid, plus an impulse. */
+  /** Explode a set of world voxels outward from their centroid, plus an
+   *  impulse. High-detail models can carry thousands of voxels — stride-sample
+   *  down to ~170 so one death can't drain the shared pool. */
   burst(worldVoxels, size, impulse, power = 1) {
+    if (!worldVoxels.length) return;
+    const stride = Math.max(1, Math.ceil(worldVoxels.length / 170));
+    if (stride > 1) {
+      worldVoxels = worldVoxels.filter((_, i) => i % stride === 0);
+      size *= Math.cbrt(stride); // conserve apparent gib volume
+    }
     const c = _v.set(0, 0, 0);
     for (const v of worldVoxels) c.add(v.pos);
     c.divideScalar(worldVoxels.length);
