@@ -5,7 +5,7 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=22';
+import { InputManager } from './input.js?v=24';
 import { Player } from './player.js?v=10';
 import { DaggerPool } from './daggers.js?v=10';
 import { GemPool } from './gems.js?v=23';
@@ -34,7 +34,7 @@ const opts = Object.assign(
   // motion=false is the reduced-motion master switch (forces smear/shake/chroma/FOV
   // kicks off without touching the individual toggles); contrast=true brightens
   // orbs + telegraphs and kills the floor's red flush for readability
-  { speed: 1, fov: 80, sens: 1, smear: true, shake: true, chroma: true, music: true, motion: true, contrast: false, perf: 'auto' },
+  { speed: 1, fov: 80, sens: 1, smear: true, shake: true, chroma: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true },
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
 
 // ------------------------------------------------ performance governor
@@ -209,6 +209,11 @@ let rippleAmp = 0;
 function triggerRipple(amp) {
   rippleT = 0;
   rippleAmp = Math.max(rippleAmp, amp);
+}
+
+/** Controller haptics, behind the HAPTICS pause toggle. */
+function buzz(strong, weak, ms) {
+  if (opts.haptics) input.rumble(strong, weak, ms);
 }
 
 // ---------------------------------------------------------------- arena
@@ -654,7 +659,7 @@ function showMenu() {
      <p class="sub">a Devil Daggers &times; HYPERDEMON homage</p>
      <p>survive the swarm &mdash; time is your only score</p>
      <p class="keys">mouse look + <b>WASD</b> &middot; <b>SPACE</b> jump &times;2 &middot; <b>SHIFT</b> dash &middot; <b>ESC</b> options<br>
-     gamepad &mdash; sticks &middot; <b>A</b> jump &middot; <b>B</b> dash &nbsp;|&nbsp; touch &mdash; dual sticks &middot; <b>tap = jump</b> &middot; <b>flick = dash</b></p>
+     gamepad &mdash; sticks &middot; <b>A/&#10005;</b> jump &middot; <b>B/&#9675;</b> dash &nbsp;|&nbsp; touch &mdash; dual sticks &middot; <b>tap = jump</b> &middot; <b>flick = dash</b></p>
      <button id="modeBtn">MODE: ${modeLine}</button>
      <button id="runKindBtn" class="opt">RUN: ${runKind === 'daily'
     ? `DAILY &mdash; everyone faces the ${todayStr()} seed`
@@ -918,6 +923,7 @@ function die(timedOut = false) {
   slowmo = 1;
   trauma = 1;
   triggerRipple(1);
+  buzz(1, 1, 320);
   // killer-focus death cam: swing the view toward what got you during the
   // slow-mo. TIME OUT has no killer — the clock did it — so no swing there.
   if (!timedOut && lastKiller && lastKiller !== 'timeout') {
@@ -1036,6 +1042,7 @@ function showPause() {
      ${optRow('A11Y', 'motion', [true, false], v => v ? 'MOTION FULL' : 'MOTION REDUCED')}
      ${optRow('', 'contrast', [false, true], v => v ? 'CONTRAST HIGH' : 'CONTRAST NORMAL')}
      ${optRow('PERF', 'perf', ['auto', 'high', 'low'], v => v.toUpperCase())}
+     ${optRow('', 'haptics', [true, false], v => v ? 'HAPTICS ON' : 'HAPTICS OFF')}
      <p class="go">click / tap anywhere else to resume</p>`;
   for (const b of elMsg.querySelectorAll('button.opt')) {
     b.addEventListener('pointerdown', e => {
@@ -1531,6 +1538,7 @@ function killEnemy(e, dir) {
     spawnShockwave(_c);
     triggerRipple(e.type === 'leviathan' ? 1 : 0.7);
     hitStop = 0.05;
+    buzz(0.7, 0.35, 90);
   }
   trauma = Math.max(trauma, e.type === 'skull' ? 0.18 : 0.35);
   let drops = GEM_DROPS[e.type] || 0;
@@ -1651,6 +1659,7 @@ function playerStruck(sx, sz, killerType, killer = null) {
   lastKiller = killerType;
   // HYPERDEMON rules: a hit costs time, shoves you clear, grants i-frames
   triggerRipple(0.5);
+  buzz(1, 1, 160);
   lifeT -= HYPER_HIT_COST;
   mercyT = 1.2;
   trauma = 1;
@@ -1951,6 +1960,7 @@ window.__hd = {
     getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, fov: camera.fov, uRed: floorMat.uniforms.uRed.value }; },
     getVfx() { return { shadows: shadows.count, sparks: sparks.length, speedOn: speedPass.enabled, rippleT, rippleOn: ripplePass.enabled, ember: skyMat.uniforms.uEmber.value }; },
     ripple(amp) { triggerRipple(amp ?? 1); },
+    buzz(s, w, ms) { buzz(s ?? 1, w ?? 1, ms ?? 100); },
     forceFrameTime(ms) { forcedFrameTime = ms; },
     getPerfTier() {
       return {
