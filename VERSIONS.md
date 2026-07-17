@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v178 — 2026-07-17
+**SMASH TV floor structure (M6) — bosses end floors, floors change everything**
+- **The boss room ends a FLOOR**: beat it and every exit door reads `BONUS!` — walking through advances to the next floor (`FLOOR 2!` fanfare + applause)
+- **BONUS ROOM between floors**: a pure loot festival — 8-10 cash piles and prizes (20% are 4× gold), a guaranteed weapon pod center-stage, a 50% score-mult roll, ZERO enemies, and the exit doors are open from the first second. No curtains, no objectives, no surges intrude
+- **Palette shift per floor**: the studio re-lights — floor 1 indigo (the classic look), floor 2 teal, floor 3 amber, floor 4 crimson, floor 5+ violet, then the cycle repeats. Restored on run start and title return; never touches cabinet or basement looks
+- **Tougher lattice per floor**: +12% enemy budget per floor on top of the show's +40%; wave banners carry the floor (`FLOOR 2 · WAVE 11 — SWARM`)
+- Binding (its own floors) and gauntlets (scripted rooms) are untouched
+- Cache-bust `?v=131` → `?v=132`; HUD label → v178
+
+---
+
 ## v177 — 2026-07-17
 **Curtain variations — crossing, shearing, and cabinet curtains (approved arc, step 6, queue complete)**
 - **CROSSING CURTAINS** (wave 10+, ~35% of curtain events): a second full sheet follows from the ADJACENT wall one beat after the first — the dodge is finding the moving intersection of two gap sets

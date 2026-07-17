@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=131';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=131';
-import { Player, PLAYER_RADIUS } from './player.js?v=131';
+import { InputManager } from './input.js?v=132';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=132';
+import { Player, PLAYER_RADIUS } from './player.js?v=132';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=131';
-import { RetroPass } from './retro.js?v=131';
-import { audio } from './audio.js?v=131';
-import { initDesigner } from './designer.js?v=131';
-import { t, getLang, setLang, langs } from './lang.js?v=131';
-import { TUNING } from './tuning.js?v=131';
+         CABINET_STYLE, VIS } from './enemy.js?v=132';
+import { RetroPass } from './retro.js?v=132';
+import { audio } from './audio.js?v=132';
+import { initDesigner } from './designer.js?v=132';
+import { t, getLang, setLang, langs } from './lang.js?v=132';
+import { TUNING } from './tuning.js?v=132';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -121,7 +121,8 @@ function getEnemySchedule(wave) {
   // fading to 0 by wave 6); caps, rhythm, and unlock gates are unchanged.
   if (wave < 6) budget = Math.floor(budget * (0.85 + 0.03 * (wave - 1)));
   // SMASH TV (v109): the show wants bodies — 40% more budget on every wave.
-  if (smashMode) budget = Math.floor(budget * 1.4);
+  // v178: each SMASH floor raises the stakes on top of the show's +40%
+  if (smashMode) budget = Math.floor(budget * 1.4 * (1 + 0.12 * Math.max(0, smashFloor - 1)));
   // TEST MODE (v142): early waves get a wave-8-sized budget floor so the
   // expensive late types (WARDEN 5, SIREN 5…) actually fit from wave 1.
   if (testMode) budget = Math.max(budget, 24);
@@ -1735,6 +1736,26 @@ const QUEST_ORDER = ['gauntlet', 'tokotron', 'gaundrop', 'loadout', 'binding', '
 // SMASH TV mode (v109): enemies pour in bursts from 4 arena-edge "doors",
 // waves run bigger and burstier, and moths/convoys drop more prizes.
 let smashMode = localStorage.getItem('tokoDropSmash') === '1';
+// v178 (M6): SMASH TV floor structure — the boss room ends a FLOOR. Each
+// floor re-lights the studio (palette shift), toughens the lattice (budget
+// scales), and opens with a BONUS ROOM: pure loot, doors already open.
+let smashFloor = 1;
+const SMASH_FLOOR_LOOKS = [
+  { bg: 0x0d0d1a, border: 0x5555cc },   // floor 1 — the studio default
+  { bg: 0x0d1a17, border: 0x44ccaa },   // floor 2 — teal stage
+  { bg: 0x1a150d, border: 0xcc9944 },   // floor 3 — amber stage
+  { bg: 0x1a0d10, border: 0xcc4455 },   // floor 4 — crimson stage
+  { bg: 0x140d1a, border: 0x9955cc },   // floor 5+ — violet stage, then cycle
+];
+function applySmashFloorLook() {
+  if (bindingMode || gauntlet || inCabinet()) return;   // they own their looks
+  const lk = smashMode
+    ? SMASH_FLOOR_LOOKS[(smashFloor - 1) % SMASH_FLOOR_LOOKS.length]
+    : SMASH_FLOOR_LOOKS[0];
+  scene.background.setHex(lk.bg);
+  border.material.color.setHex(lk.border);
+  _FOG.color.setHex(lk.bg);
+}
 // DAILY RUN (v130, roadmap M3): everyone who flips the chip plays the same
 // UTC-date-derived seed that day — no server needed. Whatever mode toggles
 // you bring are yours; the run is tagged DAILY (death screen, share, feedback
@@ -1769,6 +1790,7 @@ const ROOM_KINDS = {
   boss:   { label: 'BOSS!',  color: '#ff5566' },
   item:   { label: 'ITEM',   color: '#ff88bb' },   // Binding of Toko (v150)
   hazard: { label: 'HAZARD 2×$', color: '#ff8866' },   // v176: vent-heavy, loot-rich
+  bonus:  { label: 'BONUS!', color: '#66ffaa' },       // v178: the floor's breather
   vault:  { label: 'VAULT$', color: '#ffcc33' },       // v176: the crate + guards
 };
 // Deterministic per-run room kind for lattice cell (x, y). The 8th room of a
@@ -3682,7 +3704,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v177', 16, uiCanvas.height - 12);
+  ctx.fillText('v178', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -4412,6 +4434,7 @@ function spawnWave() {
   // Binding fight rooms use the cabinet's own roster (v157) — only BOSS
   // rooms keep the smash schedule (tokotron/gaundrop build their own floods).
   const list = (tokotronMode || gaundropMode || loadoutMode || kaikkiMode || nexdeusMode ||
+                (smashMode && smashRoomKind === 'bonus') ||     // v178: pure loot, no fight
                 (bindingMode && smashRoomKind !== 'boss')) ? [] : getEnemySchedule(wave);
   waveDuration = ROUND_DUR;
   waveTimer    = 0;
@@ -5075,7 +5098,7 @@ function spawnWave() {
   const curtainOk = (!inCabinet() && wave >= 6) ||
                     (tokotronMode && wave >= 4) ||
                     (nexdeusMode && wave >= 2);
-  curtainArmed = curtainOk && kind !== 'boss' && rng() < (inCabinet() ? 0.45 : 0.55);
+  curtainArmed = curtainOk && kind !== 'boss' && kind !== 'bonus' && rng() < (inCabinet() ? 0.45 : 0.55);
   curtainStyle = (wave >= 10 && rng() < 0.35) ? 'cross'
                : (wave >= 8  && rng() < 0.45) ? 'diag' : 'wall';
   curtainColor = tokotronMode ? 0x44eeff : nexdeusMode ? 0xff44ff : 0xff66aa;
@@ -5090,11 +5113,11 @@ function spawnWave() {
   // v175 living-arena objectives — VAULT greed and the ESCORT errand share
   // the classic/SMASH rotation on offset beats so they never stack.
   clearArenaObjectives();
-  if (!inCabinet() && kind !== 'boss' && wave >= 5 && wave % 4 === 3) {
+  if (!inCabinet() && kind !== 'boss' && kind !== 'bonus' && wave >= 5 && wave % 4 === 3) {
     vaultCrate = new VaultCrate(scene,
       (rng() * 2 - 1) * (HALF_X - 5), (rng() * 2 - 1) * (HALF_Z - 5));
   }
-  if (!inCabinet() && kind !== 'boss' && wave >= 6 && wave % 4 === 1) {
+  if (!inCabinet() && kind !== 'boss' && kind !== 'bonus' && wave >= 6 && wave % 4 === 1) {
     escortBot = new EscortBot(scene);
     milestoneT = 1.2; milestoneText = 'ESCORT THE BOT!';
   }
@@ -5118,7 +5141,7 @@ function spawnWave() {
       (rng() * 2 - 1) * (HALF_X - 5), (rng() * 2 - 1) * (HALF_Z - 5));
   }
   // SUDS SURGE: SMASH-only mid-wave spectacle, never boss rooms
-  sudsArmed = smashMode && !bindingMode && wave >= 6 && kind !== 'boss' && rng() < 0.4;
+  sudsArmed = smashMode && !bindingMode && wave >= 6 && kind !== 'boss' && kind !== 'bonus' && rng() < 0.4;
   sudsAt    = 6 + rng() * 4;
   sudsWarnT = 0;
   clusterTimer = 0;
@@ -5164,6 +5187,36 @@ function spawnWave() {
     }
   }
 
+  // v178 BONUS ROOM (plain SMASH): the floor's breather — a loot festival,
+  // zero enemies, EXIT doors open from the first second. Grab and go.
+  if (smashMode && !bindingMode && !gauntlet && kind === 'bonus') {
+    const nLoot = 8 + Math.floor(rng() * 3);
+    for (let i = 0; i < nLoot; i++) {
+      const vx = (rng() * 2 - 1) * (HALF_X - 3);
+      const vz = (rng() * 2 - 1) * (HALF_Z - 3);
+      const pu = new Powerup(scene, vx, vz, 'score');
+      pu._life = 999;
+      pu._value = (250 + wave * 15) * (rng() < 0.2 ? 4 : 1);
+      pu.mesh.geometry.dispose();
+      pu.mesh.geometry = rng() < 0.2 ? PRIZE_GEO : CASH_GEO;
+      pu.mat.color.setHex(rng() < 0.2 ? 0xffcc33 : 0x99ee66);
+      powerups.push(pu);
+    }
+    const pod = new Powerup(scene, 0, 0, randomWeaponPodId(wave >= 8));
+    pod._life = 999;
+    powerups.push(pod);
+    if (rng() < 0.5) {
+      const sm = new Powerup(scene, (rng() * 2 - 1) * 4, (rng() * 2 - 1) * 4, 'scoremult');
+      sm._life = 999;
+      powerups.push(sm);
+    }
+    exitPhase = true;
+    exitDoors = pickSmashExits();
+    roomTallyT = 0;               // no tally — the room IS the reward
+  }
+  // v178: the studio re-lights per floor (no-op off smash / inside cabinets)
+  applySmashFloorLook();
+
   // Wave-start banner (v114 SMASH / v123 classic): name the incoming pressure.
   if (bindingMode) {
     const k = ROOM_KINDS[smashRoomKind ?? 'normal'] ?? ROOM_KINDS.normal;
@@ -5172,8 +5225,12 @@ function spawnWave() {
     waveIntroColor = '#ff88bb';
   } else if (smashMode) {
     // SMASH TV: game-show room intro card, named + colored by room kind.
+    // v178: floors get named once you're off the ground floor.
     waveIntroT     = waveIntroDur = 1.5;
-    waveIntroText  = kind === 'normal' ? `WAVE ${wave}` : `WAVE ${wave} — ${ROOM_KINDS[kind].label}`;
+    const floorTag = smashFloor > 1 ? `FLOOR ${smashFloor} · ` : '';
+    waveIntroText  = kind === 'bonus' ? `FLOOR ${smashFloor} — BONUS ROOM`
+                   : kind === 'normal' ? `${floorTag}WAVE ${wave}`
+                   : `${floorTag}WAVE ${wave} — ${ROOM_KINDS[kind].label}`;
     waveIntroColor = ROOM_KINDS[kind]?.color ?? '#ffdd44';
     clusterSpawnAt.sort((a, b) => a - b);
     // Enter the new room through the opposing wall from the exit just taken:
@@ -5555,6 +5612,8 @@ function startGame() {
   roomX = 0; roomY = 0;
   visitedRooms = new Set(['0,0']);
   smashRoomKind = null;
+  smashFloor = 1;               // v178: every run starts on studio floor 1
+  applySmashFloorLook();
   _entryDoor = null; _cameFromDoor = null;
   buildSmashDoors();  // no-op unless SMASH TV mode is on
   _titleIntroPlayed = false;  // v121: arm the recorded intro for the next title visit
@@ -5580,6 +5639,8 @@ function returnToTitle() {
   if (loadoutMode) exitLoadout();     // v152: and the armory
   if (kaikkiMode) exitKaikki();       // v159: and the streets
   if (nexdeusMode) exitNexdeus();     // v173: and the god-machine
+  smashFloor = 1;                     // v178: the studio re-lights for the title
+  applySmashFloorLook();
   clearFX();
   for (const e of enemies) e.removeFrom(scene);
   enemies = [];
@@ -7332,6 +7393,11 @@ function loop() {
       exitDoors  = pickSmashExits();
       // Gauntlet doors all lead to the SAME scripted next room (v146).
       if (gauntlet) for (const ed of exitDoors) ed.kind = gauntlet.rooms[gauntlet.roomIdx + 1];
+      // v178: a downed boss ends the FLOOR — every door leads to the breather
+      // (fall back to the wave rhythm when no door ever set the room kind)
+      if (!gauntlet && !bindingMode && (smashRoomKind ?? waveKind(wave)) === 'boss') {
+        for (const ed of exitDoors) ed.kind = 'bonus';
+      }
       if (bindingMode) {
         // v157: REAL branching — the item/boss cadence still rules those
         // beats, but between them each door rolls its own room kind.
@@ -7384,6 +7450,11 @@ function loop() {
         roomX += DOOR_DX[ed.door]; roomY += DOOR_DY[ed.door];
         visitedRooms.add(`${roomX},${roomY}`);
         smashRoomKind = ed.kind;
+        if (!gauntlet && !bindingMode && ed.kind === 'bonus') {   // v178
+          smashFloor++;
+          milestoneT = 1.4; milestoneText = `FLOOR ${smashFloor}!`;
+          audio.applause();
+        }
         if (gauntlet) {                      // v146: scripted room list + pinball ramp
           gauntlet.roomIdx++;
           gauntlet.mult++;
@@ -7461,6 +7532,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=131').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=132').catch(() => {});
   });
 }
