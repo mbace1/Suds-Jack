@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Drop Cabal</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: #0b0820; overflow: hidden; touch-action: none; height: 100%; }
+    body { cursor: none; }
+    /* low-res WebGL canvas upscaled with hard pixels */
+    #game {
+      display: block;
+      width: 100vw; height: 100vh;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    #scan {
+      position: fixed; inset: 0; pointer-events: none; z-index: 5;
+      background: repeating-linear-gradient(to bottom, rgba(0,0,0,0.16) 0 1px, transparent 1px 3px);
+      mix-blend-mode: multiply;
+    }
+    .ui { font-family: 'Courier New', monospace; color: #fff2d8; user-select: none;
+          text-shadow: 1px 1px 0 #1a0f33, 0 0 12px rgba(255,80,160,.45); }
+    #hud {
+      position: fixed; top: 8px; left: 0; right: 0; z-index: 10;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; font-size: 15px; font-weight: bold; letter-spacing: 1px;
+      pointer-events: none;
+    }
+    #hud .cell { min-width: 90px; }
+    #hud .mid { text-align: center; }
+    #gauge {
+      width: 180px; height: 10px; margin: 3px auto 2px;
+      background: #241a44; border: 2px solid #fff2d8; border-radius: 2px;
+    }
+    #gaugeFill { height: 100%; width: 0%; background: linear-gradient(90deg, #ff3366, #ffdd00); }
+    #msg {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      z-index: 10; text-align: center; pointer-events: none; display: none;
+      font-size: 26px; font-weight: bold; letter-spacing: 2px; line-height: 1.5;
+    }
+    #msg small { font-size: 14px; letter-spacing: 1px; opacity: 0.85; }
+    #toast {
+      position: fixed; bottom: 15%; left: 50%; transform: translateX(-50%);
+      z-index: 10; font-size: 16px; font-weight: bold; letter-spacing: 2px;
+      pointer-events: none; display: none;
+    }
+    #nadeBtn {
+      position: fixed; right: 20px; bottom: 24px; z-index: 20;
+      width: 72px; height: 72px; border-radius: 50%; display: none;
+      border: 3px solid #fff2d8; background: rgba(40,20,70,0.6);
+      color: #ffdd44; font-size: 30px; font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="scan"></div>
+  <div id="hud" class="ui">
+    <div class="cell">SCORE <span id="score">0</span></div>
+    <div class="cell">HI <span id="hi">0</span></div>
+    <div class="mid">
+      <div id="gauge"><div id="gaugeFill"></div></div>
+      <div id="stageLbl">STAGE 1</div>
+    </div>
+    <div class="cell" style="text-align:right">&#9829; <span id="lives">&#9679;&#9679;&#9679;</span></div>
+    <div class="cell" style="text-align:right">&#10042; <span id="nades">3</span></div>
+  </div>
+  <div id="msg" class="ui"></div>
+  <div id="toast" class="ui"></div>
+  <button id="nadeBtn" class="ui">&#10042;</button>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="js/main.js?v=1"></script>
+</body>
+</html>
