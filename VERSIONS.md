@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v185 — 2026-07-17
+**NEX DEUS backlog — CHAINED SECRETS (cabinet backlog sweep complete)**
+- **Every surge wave hides ONE glitch tile** — a faint magenta shimmer somewhere away from center. Only a **DASH through it** cracks the cache: `SECRET ×n!` paying 800×chain
+- **The chain is consecutive waves**: find it every wave and the multiplier climbs; miss a wave and the machine forgets you (chain resets silently at the next surge)
+- **Chain 3+**: `THE MACHINE WHISPERS` — a level-2 weapon pod materializes on the tile alongside the pay
+- Chain state resets per run; the tile clears with the level on every wave/exit; quest multiplier applies inside NEX DEUS COMMUNION
+- This closes the one-item-per-cabinet backlog sweep: gaundrop v181, loadout v182, kaikki v183, binding v184, nexdeus v185
+- Cache-bust `?v=138` → `?v=139`; HUD label → v185
+
+---
+
 ## v184 — 2026-07-17
 **BINDING backlog — THE BASEMENT SHOP**
 - **A SHOP room joins the basement lattice** (~12% of free door rolls, never overriding the item/boss cadence): no enemies, doors open from the first second, three pedestal deals priced in what the basement trades — blood and points

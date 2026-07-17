@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=138';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=138';
-import { Player, PLAYER_RADIUS } from './player.js?v=138';
+import { InputManager } from './input.js?v=139';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=139';
+import { Player, PLAYER_RADIUS } from './player.js?v=139';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=138';
-import { RetroPass } from './retro.js?v=138';
-import { audio } from './audio.js?v=138';
-import { initDesigner } from './designer.js?v=138';
-import { t, getLang, setLang, langs } from './lang.js?v=138';
-import { TUNING } from './tuning.js?v=138';
+         CABINET_STYLE, VIS } from './enemy.js?v=139';
+import { RetroPass } from './retro.js?v=139';
+import { audio } from './audio.js?v=139';
+import { initDesigner } from './designer.js?v=139';
+import { t, getLang, setLang, langs } from './lang.js?v=139';
+import { TUNING } from './tuning.js?v=139';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -2497,6 +2497,11 @@ let nxSurges = [];        // { x, z, t, ring, list, col, spd, itv }
 let nxHumans = [];        // { civ, t, tMax } — timed rescues
 let nxHumanAt = [];       // waveTimer marks for the next lost-player drop
 let nxChain = 0;
+// v185 (backlog): CHAINED SECRETS — every surge wave hides ONE shimmering
+// glitch tile. Dash THROUGH it to crack the cache; find it in consecutive
+// waves and the chain multiplies. Miss a wave and the machine forgets you.
+let nxSecret = null;        // { x, z, found }
+let nxSecretChain = 0;
 let _nxSavedSmash = null, _nxSavedPixel = null;
 function clearNexLevel() {
   for (const su of nxSurges) {
@@ -2509,6 +2514,7 @@ function clearNexLevel() {
   nxHumans = [];
   nxHumanAt = [];
   nxChain = 0;
+  nxSecret = null;
 }
 function setNexdeusLook(on) {
   setCabGround(on ? 'nexdeus' : null);
@@ -3786,7 +3792,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v184', 16, uiCanvas.height - 12);
+  ctx.fillText('v185', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -5202,10 +5208,19 @@ function spawnWave() {
   // arena itself is the spawner — no doors, no trickle). LOST PLAYERS drop
   // in mid-wave on a rescue countdown.
   if (nexdeusMode) {
+    if (nxSecret && !nxSecret.found) nxSecretChain = 0;   // v185: missed = forgotten
     clearNexLevel();
     player.mesh.position.set(0, player.mesh.position.y, 0);
     player.grantInvincibility(1.4);
     audio.waveZap();
+    {   // v185: hide this wave's glitch tile away from the center
+      let sx3, sz3, tries3 = 0;
+      do {
+        sx3 = (rng() * 2 - 1) * (HALF_X - 3);
+        sz3 = (rng() * 2 - 1) * (HALF_Z - 3);
+      } while (Math.hypot(sx3, sz3) < 6 && ++tries3 < 20);
+      nxSecret = { x: sx3, z: sz3, found: false };
+    }
     const T = EnemyType;
     const k = 1 + (wave - 1) * 0.12;                     // per-surge escalation
     const POOLS = [
@@ -5804,6 +5819,7 @@ function startGame() {
   gauntlet = null; gauntletTier = 1; cabQuest = null; _lastQuestOffer = null;
   collectedUpgrades = []; hitEventLog = []; _lastHitTime = -1; _lbPosted = false;
   grazeMult = 1; vampireOn = false; vampireKills = 0; killScoreMult = 1;   // v180
+  nxSecretChain = 0;   // v185: the machine forgets between runs
   scheduleTutorialHints();
   BULLET_CONFIG.playerBulletScale  = 1.0;
   BULLET_CONFIG.playerPiercing     = false;
@@ -6729,6 +6745,34 @@ function loop() {
         audio.civDown();
         nxChain = 0;                       // the chain dies with them
         h.civ.remove(scene); nxHumans.splice(i, 1);
+      }
+    }
+    // v185 CHAINED SECRET: a faint magenta shimmer marks the glitch tile;
+    // only a DASH through it cracks the cache. Consecutive finds multiply.
+    if (nxSecret && !nxSecret.found) {
+      if (Math.random() < dt * 3) {
+        trailPool.spawn(nxSecret.x + (Math.random() - 0.5) * 1.2, 0.3,
+                        nxSecret.z + (Math.random() - 0.5) * 1.2, 0xff88ff, 0.22);
+      }
+      if (player.dashing &&
+          Math.hypot(player.position.x - nxSecret.x, player.position.z - nxSecret.z) < 1.3) {
+        nxSecret.found = true;
+        nxSecretChain++;
+        const pay = 800 * nxSecretChain * (scoreMultT > 0 ? 2 : 1) * (cabQuest ? cabQuest.mult : 1);
+        score += pay;
+        damageNumbers.push(new DamageNumber(nxSecret.x, 1.1, nxSecret.z, `+${pay}`, '255,136,255'));
+        for (let j = 0; j < 10; j++) {
+          const a = (j / 10) * Math.PI * 2;
+          chunkPool.spawn(nxSecret.x, 0.5, nxSecret.z, Math.cos(a) * 5, 3, Math.sin(a) * 5, 0xff88ff, 0.10);
+        }
+        milestoneT = 1.2;
+        milestoneText = nxSecretChain >= 3 ? `SECRET ×${nxSecretChain} — THE MACHINE WHISPERS`
+                                           : `SECRET ×${nxSecretChain}!`;
+        if (nxSecretChain >= 3) {
+          powerups.push(new Powerup(scene, nxSecret.x, nxSecret.z, randomWeaponPodId(true)));
+        }
+        addShake(0.2);
+        audio.keyJingle();
       }
     }
     // DASH OFFENSE: the signature verb — i-frames plus a cutting edge.
@@ -7841,6 +7885,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=138').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=139').catch(() => {});
   });
 }

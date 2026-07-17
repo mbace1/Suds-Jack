@@ -143,7 +143,8 @@ The cabinet row (each refined individually, in build order):
    v172 (per-cabinet records + unlock bars) + v173 (the cabinet: zone-surge
    eruptions from all five rosters, dash-cuts-everything, timed lost-player
    rescues, heavy-glow neon profile; quest deck entry on unlocked profiles).
-   Backlog: chained secrets, its own boss, polish to crown-jewel level.
+   v185 CHAINED SECRETS (dash-through glitch tiles, consecutive-wave
+   multiplier). Backlog: its own boss, polish to crown-jewel level.
 
 ## M5b — The living arena (objectives & hazards)
 
