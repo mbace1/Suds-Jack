@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=136';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=136';
-import { Player, PLAYER_RADIUS } from './player.js?v=136';
+import { InputManager } from './input.js?v=137';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=137';
+import { Player, PLAYER_RADIUS } from './player.js?v=137';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=136';
-import { RetroPass } from './retro.js?v=136';
-import { audio } from './audio.js?v=136';
-import { initDesigner } from './designer.js?v=136';
-import { t, getLang, setLang, langs } from './lang.js?v=136';
-import { TUNING } from './tuning.js?v=136';
+         CABINET_STYLE, VIS } from './enemy.js?v=137';
+import { RetroPass } from './retro.js?v=137';
+import { audio } from './audio.js?v=137';
+import { initDesigner } from './designer.js?v=137';
+import { t, getLang, setLang, langs } from './lang.js?v=137';
+import { TUNING } from './tuning.js?v=137';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -2406,6 +2406,10 @@ const KK_SHOP = [
   { id: 'medkit',  cost: 400,  once: false, buy: () => { player.hp = Math.min(player.maxHp, player.hp + 2); } },
   { id: 'kevlar',  cost: 700,  once: false, buy: () => applyUpgrade('hp') },
   { id: 'boots',   cost: 600,  once: false, buy: () => applyUpgrade('speed') },
+  // v183 (backlog): TIER 2 — the flamethrower class, unlocked from mission 4.
+  { id: 'liekki',    cost: 3000, once: true,  min: 4, buy: () => { equipWeapon('R2'); applyUpgrade('firerate'); applyUpgrade('bigbullets'); } },
+  { id: 'magneetti', cost: 1400, once: true,  min: 4, buy: () => applyUpgrade('magnet') },
+  { id: 'kilpi',     cost: 900,  once: false, min: 4, buy: () => applyUpgrade('shield') },
 ];
 function showKaikkiShop() {
   gameState = 'upgrade';
@@ -2426,6 +2430,7 @@ function showKaikkiShop() {
     cashLine.textContent = `${t('kkCash')}: ${kkCash}`;
     row.innerHTML = '';
     for (const item of KK_SHOP) {
+      if (item.min && wave < item.min) continue;   // v183: tier 2 waits for M4
       const owned = item.once && kkBought.has(item.id);
       const afford = kkCash >= item.cost;
       const btn = document.createElement('div');
@@ -3752,7 +3757,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v182', 16, uiCanvas.height - 12);
+  ctx.fillText('v183', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -7747,6 +7752,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=136').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=137').catch(() => {});
   });
 }
