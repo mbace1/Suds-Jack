@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v177 — 2026-07-17
+**Curtain variations — crossing, shearing, and cabinet curtains (approved arc, step 6, queue complete)**
+- **CROSSING CURTAINS** (wave 10+, ~35% of curtain events): a second full sheet follows from the ADJACENT wall one beat after the first — the dodge is finding the moving intersection of two gap sets
+- **SHEARING CURTAIN** (wave 8+, ~45%): the sheet slides at a slant — a full-width wall traveling diagonally, so the gaps drift sideways as they approach
+- **Cabinet curtains**: the fixed-screen cabinets now run the event in their own colors — TOKOTRON from wave 4 (vector cyan), NEX DEUS from wave 2 (god-machine magenta), both at ~45%; scrolling cabinets skip (a 2× world sheet is unreadable)
+- Style-aware warnings (`CROSSING CURTAINS!` / `SHEARING CURTAIN!`) + the v176 `<= 0` warn-clock fix applied to the curtain too
+- This completes the approved queue: records → NEX DEUS → TWIN PRISMS → living arena ×2 → curtain variations
+- Cache-bust `?v=130` → `?v=131`; HUD label → v177
+
+---
+
 ## v176 — 2026-07-17
 **The living arena, part 2 — hazards + HAZARD/VAULT rooms (approved arc, step 5 / M5b)**
 - **STEAM VENTS**: floor grates that glow amber for a full readable second, then ERUPT — damage + knockback to ANYTHING standing on them, enemies included (luring is a legal tactic). Classic: 2-3 vents every 3rd wave from 7; SMASH HAZARD rooms are the vent venue (5-6)
