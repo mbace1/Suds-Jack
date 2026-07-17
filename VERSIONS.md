@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v182 — 2026-07-17
+**LOADOUT backlog — the RESCUE mission joins the rotation**
+- **Mission 5 of 5: RESCUE** — 2-4 hostages in soldier fatigues wander the compound yard under a TROOPER/GLOBBO guard detail. Walk up to carry each one out (`HOSTAGE SECURED`, 1000×count); any melee body that reaches one kills them (`HOSTAGE DOWN…`)
+- Mission completes when every hostage is resolved — freed or lost; a **clean extraction** (none lost) drops a bonus weapon pod on the spot
+- Hostages wander wall-clamped (the compound's own collision), the HUD objective line tracks `RESCUE — n HELD · m LOST`, and the mission banner reads `MISSION n — RESCUE`
+- Rotation is now purge → demolish → holdout → assault → rescue (kit picks every 2nd mission unchanged); hostages clear on exit and quest hand-back
+- Cache-bust `?v=135` → `?v=136`; HUD label → v182
+
+---
+
 ## v181 — 2026-07-17
 **GAUNDROP backlog — generator spawn telegraphs + TREASURE VAULTS**
 - **Spawn telegraphs**: every generator now glows hot and swells for half a second before pouring, and the pour itself throws amber sparks at the spawn point — the ghost stream is dodgeable news instead of a surprise

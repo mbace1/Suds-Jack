@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=135';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=135';
-import { Player, PLAYER_RADIUS } from './player.js?v=135';
+import { InputManager } from './input.js?v=136';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=136';
+import { Player, PLAYER_RADIUS } from './player.js?v=136';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=135';
-import { RetroPass } from './retro.js?v=135';
-import { audio } from './audio.js?v=135';
-import { initDesigner } from './designer.js?v=135';
-import { t, getLang, setLang, langs } from './lang.js?v=135';
-import { TUNING } from './tuning.js?v=135';
+         CABINET_STYLE, VIS } from './enemy.js?v=136';
+import { RetroPass } from './retro.js?v=136';
+import { audio } from './audio.js?v=136';
+import { initDesigner } from './designer.js?v=136';
+import { t, getLang, setLang, langs } from './lang.js?v=136';
+import { TUNING } from './tuning.js?v=136';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -2230,7 +2230,15 @@ function exitBinding() {
 // HOLD OUT (survive the clock). A fresh loadout offer every 2nd mission.
 let loadoutMode = false;
 let loMission = 1;        // current mission number (== wave)
-let loObjective = null;   // 'purge' | 'demolish' | 'holdout'
+let loObjective = null;   // 'purge' | 'demolish' | 'holdout' | 'assault' | 'rescue'
+// v182 (backlog): RESCUE mission — hostages held inside the compound.
+let loHostages = [];      // { civ } — carried out by touch
+let loFreed = 0, loLost = 0;
+function clearLoHostages() {
+  for (const h of loHostages) h.civ.remove(scene);
+  loHostages = [];
+  loFreed = 0; loLost = 0;
+}
 let loTimer = 0;          // HOLD OUT countdown
 let loTrickleT = 0;
 let loDone = false;       // objective met, transition pending
@@ -2267,6 +2275,7 @@ function startLoadout() {
   showLoadoutPicks();   // the door: pick your kit before mission 1
 }
 function exitLoadout() {
+  clearLoHostages();
   loadoutMode = false;
   arenaScale = 1;
   smashMode = _loSavedSmash;
@@ -3597,6 +3606,9 @@ function drawHUD() {
       txt = loDone ? 'PURGED' : `PURGE — ${left} LEFT`;
     } else if (loObjective === 'demolish') {
       txt = loDone ? 'DEMOLISHED' : `DEMOLISH — ${gdGenerators.length} GENERATORS`;
+    } else if (loObjective === 'rescue') {
+      txt = loDone ? 'EXTRACTION DONE'
+          : `RESCUE — ${loHostages.length} HELD` + (loLost ? `  ·  ${loLost} LOST` : '');
     } else {
       txt = loDone ? 'HELD' : `HOLD OUT — ${Math.max(0, loTimer).toFixed(0)}s`;
     }
@@ -3740,7 +3752,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v181', 16, uiCanvas.height - 12);
+  ctx.fillText('v182', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -4888,8 +4900,8 @@ function spawnWave() {
     loMission = wave;
     loDone = false;
     loTrickleT = 2.0;
-    const objs = ['purge', 'demolish', 'holdout', 'assault'];
-    loObjective = objs[(wave - 1) % 4];
+    const objs = ['purge', 'demolish', 'holdout', 'assault', 'rescue'];   // v182
+    loObjective = objs[(wave - 1) % 5];
     const wallMat = () => new THREE.MeshBasicMaterial({ color: 0x39422e });
     const seg = (x, z, hx, hz) => {
       const mesh = new THREE.Mesh(new THREE.BoxGeometry(hx * 2, 1.15, hz * 2), wallMat());
@@ -4946,6 +4958,23 @@ function spawnWave() {
         post.mesh.add(mast, beacon);
       }
       gdGenerators.push(post);
+    } else if (loObjective === 'rescue') {
+      // v182: HOSTAGES under guard inside the walls — walk up to carry each
+      // one out. Guards swarm the yard; stray bodies can reach the hostages.
+      clearLoHostages();
+      const nH = Math.min(4, 2 + Math.floor(wave / 4));
+      for (let i = 0; i < nH; i++) {
+        const [hx2, hz2] = pickInside();
+        const civ = new Civilian(scene, hx2, hz2, i % 3);
+        civ.mat.color.setHex(0x9db877);        // fatigues — a soldier to walk out
+        loHostages.push({ civ });
+      }
+      const nGuard = Math.min(14, 6 + wave * 2);
+      for (let i = 0; i < nGuard; i++) {
+        const [gx2, gz2] = pickInside();
+        enemies.push(new Enemy(scene, rng() < 0.6 ? EnemyType.TROOPER : EnemyType.GLOBBO,
+          gx2, gz2, speedMult, intervalMult));
+      }
     } else if (loObjective === 'purge') {
       const n = Math.min(32, 12 + wave * 3);   // v170: a real occupation force
       for (let i = 0; i < n; i++) {
@@ -5344,7 +5373,8 @@ function spawnWave() {
     waveIntroT = waveIntroDur = 1.4;
     waveIntroText = `MISSION ${wave} — ` +
       (loObjective === 'purge' ? 'PURGE' : loObjective === 'demolish' ? 'DEMOLISH'
-       : loObjective === 'assault' ? 'ASSAULT' : 'HOLD OUT');
+       : loObjective === 'assault' ? 'ASSAULT'
+       : loObjective === 'rescue' ? 'RESCUE' : 'HOLD OUT');
     waveIntroColor = '#aaff66';
   } else {
     // Classic: color-coded wave banner naming the rhythm (v123).
@@ -6172,6 +6202,38 @@ function loop() {
       const c = gdResolveWalls(e.position.x, e.position.z, e.radius * 0.8);
       e.position.x = c.x; e.position.z = c.z;
     }
+    // v182 RESCUE runtime: hostages wander the yard (wall-clamped), come
+    // home on touch, and die to any melee body that reaches them.
+    if (loObjective === 'rescue' && !loDone) {
+      for (let i = loHostages.length - 1; i >= 0; i--) {
+        const h = loHostages[i];
+        h.civ.update(dt);
+        const c = gdResolveWalls(h.civ.x, h.civ.z, 0.4);
+        h.civ.x = c.x; h.civ.z = c.z;
+        if (Math.hypot(h.civ.x - player.position.x, h.civ.z - player.position.z) < PLAYER_RADIUS + 0.5) {
+          loFreed++;
+          const pay = 1000 * loFreed * (scoreMultT > 0 ? 2 : 1) * (cabQuest ? cabQuest.mult : 1);
+          score += pay;
+          damageNumbers.push(new DamageNumber(h.civ.x, 1.0, h.civ.z, `+${pay}`, '187,255,119'));
+          milestoneT = 1.1; milestoneText = `HOSTAGE SECURED (${loFreed})`;
+          audio.pickup();
+          h.civ.remove(scene); loHostages.splice(i, 1);
+          continue;
+        }
+        let taken = false;
+        for (const e of enemies) {
+          if (!e.alive || !MELEE_TYPES.has(e.type)) continue;
+          if (Math.hypot(h.civ.x - e.position.x, h.civ.z - e.position.z) < e.radius + 0.35) { taken = true; break; }
+        }
+        if (taken) {
+          loLost++;
+          gooChunkPool.spawn(h.civ.x, 0.5, h.civ.z, 0, 2.5, 0, 0x888888, 0.1);
+          milestoneT = 1.1; milestoneText = 'HOSTAGE DOWN…';
+          audio.civDown();
+          h.civ.remove(scene); loHostages.splice(i, 1);
+        }
+      }
+    }
     // HOLD OUT trickle (and a light drip during DEMOLISH from the field edges)
     if (loObjective === 'holdout' && !loDone) {
       loTimer -= dt;
@@ -6192,9 +6254,16 @@ function loop() {
       const met = loObjective === 'purge'    ? !alive
                 : (loObjective === 'demolish' || loObjective === 'assault')
                   ? gdGenerators.length === 0
+                : loObjective === 'rescue' ? loHostages.length === 0
                 : loTimer <= 0;
       if (met) {
         loDone = true;
+        if (loObjective === 'rescue' && loLost === 0 && loFreed > 0) {
+          // clean sweep: the brass sends a pod down
+          powerups.push(new Powerup(scene, player.position.x, player.position.z,
+            randomWeaponPodId(wave >= 4)));
+          milestoneT = 1.2; milestoneText = 'CLEAN EXTRACTION! SUPPLY DROP';
+        }
         const bonus = 1200 * wave;
         score += bonus;
         milestoneT = 1.2; milestoneText = `MISSION COMPLETE! +${bonus}`;
@@ -7678,6 +7747,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=135').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=136').catch(() => {});
   });
 }
