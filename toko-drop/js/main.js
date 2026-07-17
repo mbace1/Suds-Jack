@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=133';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=133';
-import { Player, PLAYER_RADIUS } from './player.js?v=133';
+import { InputManager } from './input.js?v=134';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=134';
+import { Player, PLAYER_RADIUS } from './player.js?v=134';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=133';
-import { RetroPass } from './retro.js?v=133';
-import { audio } from './audio.js?v=133';
-import { initDesigner } from './designer.js?v=133';
-import { t, getLang, setLang, langs } from './lang.js?v=133';
-import { TUNING } from './tuning.js?v=133';
+         CABINET_STYLE, VIS } from './enemy.js?v=134';
+import { RetroPass } from './retro.js?v=134';
+import { audio } from './audio.js?v=134';
+import { initDesigner } from './designer.js?v=134';
+import { t, getLang, setLang, langs } from './lang.js?v=134';
+import { TUNING } from './tuning.js?v=134';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -2654,7 +2654,13 @@ function onKill(e) {
   }
   streak++;
   score += 100 * streak * (scoreMultT > 0 ? 2 : 1) * (dailyMod === 'glass' ? 2 : 1)   // v179: GLASS pays double
+         * killScoreMult                                                              // v180: GAMBLER's card
          * (gauntlet ? gauntlet.mult : cabQuest ? cabQuest.mult : 1);
+  if (vampireOn && ++vampireKills % 25 === 0 && player.hp < player.maxHp) {
+    player.hp++;                                     // v180: the suds provide
+    milestoneT = 1.1; milestoneText = 'THE SUDS PROVIDE (+1 HP)';
+    audio.pickup();
+  }
   if (streak > 0 && streak % 5 === 0) audio.announce('streak');
   // BOUNTY claim (v133): marked target down inside the window — big cash and
   // a guaranteed weapon pod at the body. Works from any kill source (bullets,
@@ -3721,7 +3727,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v179', 16, uiCanvas.height - 12);
+  ctx.fillText('v180', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -5307,7 +5313,25 @@ const UPGRADE_POOL = [
   { id: 'hp' }, { id: 'speed' }, { id: 'firerate' }, { id: 'bigbullets' },
   { id: 'dashcd' }, { id: 'nuke' }, { id: 'pierce' }, { id: 'magnet' },
   { id: 'shield' }, { id: 'dashboom' },
+  // v180 (M6): three new builds to chase
+  { id: 'graze' }, { id: 'vampire' }, { id: 'longdash' },
 ];
+// v180 CURSED CARDS: power at a price, plainly printed. From wave 6 one card
+// slot sometimes turns purple — never forced, always a real trade.
+const CURSED_POOL = [
+  { id: 'x_berserk' },      // +fire rate, −1 max HP
+  { id: 'x_glasscannon' },  // huge piercing shots, −1 max HP
+  { id: 'x_leadfeet' },     // +2 max HP, −speed
+  { id: 'x_gambler' },      // kills pay double, slower dash recharge
+];
+// v180 run-state the new cards ride on (reset every startGame)
+let grazeMult = 1;
+let vampireOn = false, vampireKills = 0;
+let killScoreMult = 1;
+const dropMaxHp = n => {
+  player.maxHp = Math.max(1, player.maxHp - n);
+  player.hp = Math.min(player.hp, player.maxHp);
+};
 
 function applyUpgrade(id) {
   collectedUpgrades.push(id);
@@ -5335,6 +5359,26 @@ function applyUpgrade(id) {
     player._shield    = true;
   } else if (id === 'dashboom') {
     player._dashBoom = true;
+  } else if (id === 'graze') {
+    grazeMult = 3;                                   // v180: weaving pays triple
+  } else if (id === 'vampire') {
+    vampireOn = true;                                // v180: every 25 kills = +1 HP
+  } else if (id === 'longdash') {
+    player._dashDurMult = Math.min(1.7, (player._dashDurMult ?? 1) * 1.3);
+  } else if (id === 'x_berserk') {
+    player._fireRateMult *= 0.7;
+    dropMaxHp(1);
+  } else if (id === 'x_glasscannon') {
+    BULLET_CONFIG.playerBulletScale = Math.min(3.0, BULLET_CONFIG.playerBulletScale * 1.5);
+    BULLET_CONFIG.playerPiercing = true;
+    dropMaxHp(1);
+  } else if (id === 'x_leadfeet') {
+    player.maxHp += 2;
+    player.hp = Math.min(player.hp + 2, player.maxHp);
+    player._speedMult *= 0.85;
+  } else if (id === 'x_gambler') {
+    killScoreMult = 2;
+    player._dashCDMult = Math.min(3, player._dashCDMult + 0.3);
   }
 }
 
@@ -5346,6 +5390,14 @@ function showUpgradeCards(afterPick = null) {
 
   // Roguelike B (v146): 2 regular mods + 1 rare gauntlet invitation.
   const pool = [...UPGRADE_POOL].sort(() => Math.random() - 0.5).slice(0, rogueB ? 2 : 3);
+  // v180: from wave 6, ~35% of card screens turn one slot PURPLE — a cursed
+  // trade with the price printed on the card. Never the only choice.
+  if (wave >= 6 && Math.random() < 0.35) {
+    pool[pool.length - 1] = {
+      ...CURSED_POOL[Math.floor(Math.random() * CURSED_POOL.length)],
+      cursed: true,
+    };
+  }
   const panel = document.createElement('div');
   panel.id = 'upgrade-panel';
   panel.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:60;font-family:monospace,sans-serif;color:#fff;';
@@ -5362,10 +5414,16 @@ function showUpgradeCards(afterPick = null) {
   for (const card of pool) {
     const btn = document.createElement('div');
     btn.dataset.ui = '1';
-    btn.style.cssText = 'background:#1a1a2e;border:2px solid #5555cc;border-radius:8px;padding:20px 24px;min-width:140px;max-width:180px;text-align:center;cursor:pointer;';
-    btn.innerHTML = `<div style="font-size:16px;font-weight:bold;margin-bottom:8px">${t('c_' + card.id)}</div><div style="font-size:12px;opacity:0.65">${t('c_' + card.id + '_d')}</div>`;
-    btn.addEventListener('pointerover', () => { btn.style.borderColor = '#00ccaa'; });
-    btn.addEventListener('pointerout',  () => { btn.style.borderColor = '#5555cc'; });
+    const baseBorder = card.cursed ? '#aa22ff' : '#5555cc';
+    btn.style.cssText = `background:${card.cursed ? '#1c1026' : '#1a1a2e'};border:2px solid ${baseBorder};` +
+      'border-radius:8px;padding:20px 24px;min-width:140px;max-width:180px;text-align:center;cursor:pointer;' +
+      (card.cursed ? 'box-shadow:0 0 16px rgba(170,34,255,0.35);' : '');
+    btn.innerHTML =
+      (card.cursed ? `<div style="font-size:10px;letter-spacing:2px;color:#cc66ff;margin-bottom:6px">${t('cursedTag')}</div>` : '') +
+      `<div style="font-size:16px;font-weight:bold;margin-bottom:8px${card.cursed ? ';color:#dd99ff' : ''}">${t('c_' + card.id)}</div>` +
+      `<div style="font-size:12px;opacity:0.65">${t('c_' + card.id + '_d')}</div>`;
+    btn.addEventListener('pointerover', () => { btn.style.borderColor = card.cursed ? '#ee88ff' : '#00ccaa'; });
+    btn.addEventListener('pointerout',  () => { btn.style.borderColor = baseBorder; });
     btn.addEventListener('pointerdown', () => {
       panel.remove();
       applyUpgrade(card.id);
@@ -5609,6 +5667,7 @@ function startGame() {
   milestoneT = 0; nextMilestone = 25000; grazeCount = 0; shieldBlockCount = 0;
   gauntlet = null; gauntletTier = 1; cabQuest = null; _lastQuestOffer = null;
   collectedUpgrades = []; hitEventLog = []; _lastHitTime = -1; _lbPosted = false;
+  grazeMult = 1; vampireOn = false; vampireKills = 0; killScoreMult = 1;   // v180
   scheduleTutorialHints();
   BULLET_CONFIG.playerBulletScale  = 1.0;
   BULLET_CONFIG.playerPiercing     = false;
@@ -6945,7 +7004,7 @@ function loop() {
       if (!b._grazed && d < br + PLAYER_RADIUS + 0.55) {
         b._grazed = true;
         grazeCount++;
-        score += 25 * (scoreMultT > 0 ? 2 : 1);
+        score += 25 * grazeMult * (scoreMultT > 0 ? 2 : 1);   // v180: GRAZE card triples this
         audio.grazeTick();
         gooChunkPool.spawn(b.mesh.position.x, 0.5, b.mesh.position.z,
           -dx * 3, 2.5, -dz * 3, 0xffffff, 0.06);
@@ -7567,6 +7626,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=133').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=134').catch(() => {});
   });
 }

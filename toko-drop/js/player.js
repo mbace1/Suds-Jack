@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=133';
+import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=134';
 
 const SPEED          = 6;
 const DASH_SPEED     = 26;
@@ -43,6 +43,7 @@ export class Player {
     this._speedMult    = 1.0;
     this._fireRateMult = 1.0;
     this._dashCDMult   = 1.0;
+    this._dashDurMult  = 1.0;   // v180: LONG DASH card stretches the slide
 
     const geo = new THREE.SphereGeometry(PLAYER_RADIUS, 14, 10);
     // v107: same satin gel material as the enemies (registers in SATIN_MATS, so
@@ -183,6 +184,7 @@ export class Player {
     this._speedMult    = 1.0;
     this._fireRateMult = 1.0;
     this._dashCDMult   = 1.0;
+    this._dashDurMult  = 1.0;   // v180: LONG DASH card stretches the slide
     this._setEmissive(0x000000);
     this._setOpacity(0.98);
     this.mesh.scale.setScalar(1);
@@ -210,7 +212,7 @@ export class Player {
     this._dashDir = aimDir.valid
       ? { x: aimDir.x, z: aimDir.z }
       : { x: this._lastAim.x, z: this._lastAim.z };
-    this._dashTime = DASH_DUR;
+    this._dashTime = DASH_DUR * (this._dashDurMult ?? 1);
     this._ghostT   = 0;
     this._sqV += 0.6; // elongate at dash start
   }
