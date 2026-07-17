@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=126';
-import { t } from './lang.js?v=126';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=126';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=127';
+import { t } from './lang.js?v=127';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=127';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -496,8 +496,12 @@ export function initDesigner({ onResume, settings }) {
       btn.className = 'dbtn';
       const hint = document.createElement('div');
       hint.className = 'dnote';
-      const ORDER = [null, 'tokotron', 'gaundrop', 'binding', 'loadout', 'kaikki'];
-      const COL = { tokotron: '#88f4ff', gaundrop: '#ffbb66', binding: '#ff99bb', loadout: '#bbff77', kaikki: '#ff6655' };
+      // v173: NEX DEUS joins the cycle only once the profile has earned it —
+      // locked means the button simply never lands on it.
+      const ORDER = () => settings.getNexInfo().unlocked
+        ? [null, 'tokotron', 'gaundrop', 'binding', 'loadout', 'kaikki', 'nexdeus']
+        : [null, 'tokotron', 'gaundrop', 'binding', 'loadout', 'kaikki'];
+      const COL = { tokotron: '#88f4ff', gaundrop: '#ffbb66', binding: '#ff99bb', loadout: '#bbff77', kaikki: '#ff6655', nexdeus: '#ff44ff' };
       const nex = document.createElement('div');
       nex.className = 'dnote';
       const paint = () => {
@@ -508,7 +512,7 @@ export function initDesigner({ onResume, settings }) {
         // v172: each cabinet shows its record vs the NEX DEUS requirement
         const nfo = settings.getNexInfo();
         hint.textContent = sel
-          ? `${t(sel + 'H')}  ${t('cabBest')} ${nfo.bests[sel] || 0}/${nfo.req[sel]}`
+          ? `${t(sel + 'H')}  ${t('cabBest')} ${nfo.bests[sel] || 0}${nfo.req[sel] ? '/' + nfo.req[sel] : ''}`
           : t('cabRowH');
         nex.textContent = nfo.unlocked
           ? `${t('nexdeus')}: ${t('nexReadyH')}`
@@ -517,8 +521,9 @@ export function initDesigner({ onResume, settings }) {
       };
       paint();
       btn.addEventListener('click', () => {
+        const o = ORDER();
         const sel = settings.getCabinet();
-        settings.setCabinet(ORDER[(ORDER.indexOf(sel) + 1) % ORDER.length]);
+        settings.setCabinet(o[(o.indexOf(sel) + 1) % o.length]);
         paint();
       });
       row.appendChild(lbl); row.appendChild(btn);

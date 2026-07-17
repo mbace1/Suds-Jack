@@ -73,7 +73,7 @@ class AudioSystem {
     if (!this._introVoice || this._volume <= 0) return null;
     try {
       if (!this._introEl) {
-        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=126', import.meta.url).href);
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=127', import.meta.url).href);
         this._introEl.preload = 'auto';
       }
       this._introEl.volume = this._annVolume;
@@ -171,6 +171,9 @@ class AudioSystem {
         this._noise(0.05 * duck, 0.05); break;
       case 'kaikki':     // gritty street crack
         this._tone(700, 0.05, 'sawtooth', 0.13 * duck, 320); break;
+      case 'nexdeus':    // the god-machine hums — twin bright voices per shot
+        this._tone(1500, 0.07, 'sine', 0.09 * duck, 600);
+        this._tone(755, 0.05, 'square', 0.05 * duck, 380); break;
       default:           // classic — untouched
         this._tone(920, 0.07, 'square', 0.11 * duck);
     }
@@ -251,6 +254,12 @@ class AudioSystem {
     setTimeout(() => { this._tone(1568, 0.12, 'sine', 0.18); this._tone(2093, 0.14, 'sine', 0.14); }, 55);
   }
   // v171 ARENA CURTAIN: two-tone alarm, then the wall whooshes off the rail.
+  // NEX DEUS surge (v173): a ring erupts — deep bloom under a rising shimmer.
+  nexSurge() {
+    this._tone(90, 0.35, 'sawtooth', 0.30, 45);
+    this._tone(700, 0.30, 'sine', 0.16, 1600);
+    this._noise(0.10, 0.22);
+  }
   curtainAlarm() {
     this._tone(880, 0.14, 'square', 0.22);
     setTimeout(() => this._tone(660, 0.16, 'square', 0.22), 170);

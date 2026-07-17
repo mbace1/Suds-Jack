@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=126';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=126';
-import { Player, PLAYER_RADIUS } from './player.js?v=126';
+import { InputManager } from './input.js?v=127';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=127';
+import { Player, PLAYER_RADIUS } from './player.js?v=127';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=126';
-import { RetroPass } from './retro.js?v=126';
-import { audio } from './audio.js?v=126';
-import { initDesigner } from './designer.js?v=126';
-import { t, getLang, setLang, langs } from './lang.js?v=126';
-import { TUNING } from './tuning.js?v=126';
+         CABINET_STYLE, VIS } from './enemy.js?v=127';
+import { RetroPass } from './retro.js?v=127';
+import { audio } from './audio.js?v=127';
+import { initDesigner } from './designer.js?v=127';
+import { t, getLang, setLang, langs } from './lang.js?v=127';
+import { TUNING } from './tuning.js?v=127';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -286,7 +286,7 @@ const _camOff  = new THREE.Vector3();
 const _camLook = new THREE.Vector3();
 function updateShake(dt) {
   if (arenaScale > 1) {
-    const p = (smashMode || tokotronMode) ? ARENA_PRESETS.smash
+    const p = (smashMode || tokotronMode || nexdeusMode) ? ARENA_PRESETS.smash
             : landscapeMode ? ARENA_PRESETS.landscape : ARENA_PRESETS.portrait;
     const mx = Math.max(0, HALF_X - p.halfX);
     const mz = Math.max(0, HALF_Z - p.halfZ);
@@ -409,6 +409,7 @@ const CAB_GROUND_TEX = {
   binding:  makeGroundTex('#241a16', '#181110', 'boards'),
   loadout:  makeGroundTex('#181c10', '#0e100a', 'concrete'),
   kaikki:   makeGroundTex('#141416', '#0c0c0e', 'asphalt'),
+  nexdeus:  makeGroundTex('#0c0018', '#1e0836', 'tiles'),   // v173: void-glass tiles
 };
 const cabGround = new THREE.Mesh(
   new THREE.PlaneGeometry(400, 400),
@@ -477,11 +478,11 @@ function fitPresetCamera(p) {
 // uniforms. SMASH TV mode overrides orientation entirely: one fixed room,
 // camera fitted to whichever way the screen is held.
 function applyArenaMode(landscape) {
-  const p = (smashMode || tokotronMode) ? ARENA_PRESETS.smash
+  const p = (smashMode || tokotronMode || nexdeusMode) ? ARENA_PRESETS.smash
           : landscape ? ARENA_PRESETS.landscape : ARENA_PRESETS.portrait;
   HALF_X = p.halfX * arenaScale; HALF_Z = p.halfZ * arenaScale;   // v162
   CAM_LOOK.set(...p.camLook);
-  if (smashMode || tokotronMode || landscape) CAM_REST.copy(fitPresetCamera(p));
+  if (smashMode || tokotronMode || nexdeusMode || landscape) CAM_REST.copy(fitPresetCamera(p));
   else                        CAM_REST.set(...p.camRest);
   camera.position.copy(CAM_REST);
   camera.lookAt(CAM_LOOK);
@@ -1435,7 +1436,7 @@ function makeRunRecord() {
   return {
     v: 1,
     score, time: Math.round(runTimer), wave, seed: runSeed,
-    mode: kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
+    mode: nexdeusMode ? 'nexdeus' : kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     orientation: landscapeMode ? 'landscape' : 'portrait',
     date: new Date().toISOString(),
   };
@@ -1695,7 +1696,7 @@ let gdKeys = 0;           // v168 (Gauntlet parity): keys are an INVENTORY
 let gdDoors = [];         // v168: locked internal doors — a key opens each
 let gdHungerT = 0;        // v156: Gauntlet-style drain — suds food resets it
 let _gdSavedPixel = null, _gdSavedSmash = null;
-const inCabinet = () => tokotronMode || gaundropMode || bindingMode || loadoutMode || kaikkiMode;
+const inCabinet = () => tokotronMode || gaundropMode || bindingMode || loadoutMode || kaikkiMode || nexdeusMode;
 function setGaundropLook(on) {
   setCabGround(on ? 'gaundrop' : null);   // v167: the reference has GROUND
   scene.background.setHex(on ? 0x140a04 : 0x0d0d1a);   // torchlit dark
@@ -2155,18 +2156,65 @@ function showKaikkiShop() {
   document.body.appendChild(panel);
 }
 
+// ── NEX DEUS (v173): the FINAL cabinet ─────────────────────────────────────────────────────────
+// Unlocked by beating the bar in all five cabinets (nexProgress() === 5).
+// The machine that dreamed the other five: a fixed near-black arena where
+// neon rings warn and then ERUPT squads drawn from every cabinet's roster
+// (zone surges), LOST PLAYERS blink in on a countdown to be carried home,
+// and the dash is a weapon — it wipes bullets and wounds everything it
+// passes through (this cabinet only).
+let nexdeusMode = false;
+let nxSurges = [];        // { x, z, t, ring, list, col, spd, itv }
+let nxHumans = [];        // { civ, t, tMax } — timed rescues
+let nxHumanAt = [];       // waveTimer marks for the next lost-player drop
+let nxChain = 0;
+let _nxSavedSmash = null, _nxSavedPixel = null;
+function clearNexLevel() {
+  for (const su of nxSurges) {
+    scene.remove(su.ring);
+    su.ring.geometry.dispose();
+    su.ring.material.dispose();
+  }
+  nxSurges = [];
+  for (const h of nxHumans) h.civ.remove(scene);
+  nxHumans = [];
+  nxHumanAt = [];
+  nxChain = 0;
+}
+function setNexdeusLook(on) {
+  setCabGround(on ? 'nexdeus' : null);
+  scene.background.setHex(on ? 0x020006 : 0x0d0d1a);   // void, not room
+  floor.visible = !on;
+  border.material.color.setHex(on ? 0xff44ff : 0x5555cc);  // hard magenta rim
+  _FOG.color.setHex(on ? 0x020006 : 0x0d0d1a);
+  _FOG.near = on ? 34 : 42; _FOG.far = on ? 72 : 80;
+  scene.fog = _FOG;
+  CABINET_STYLE.mode = on ? 'nexdeus' : null;
+  player.setCabinetStyle(on ? 'nexdeus' : null);
+  audio.setCabinetSound(on ? 'nexdeus' : null);
+}
+function startNexdeus() {
+  nexdeusMode = true;
+  _nxSavedSmash = smashMode; smashMode = false;
+  _nxSavedPixel = pixelMode; pixelMode = true;
+  applyPerfMode();
+  setNexdeusLook(true);
+  startGame();
+}
+function exitNexdeus() {
+  nexdeusMode = false;
+  clearNexLevel();
+  smashMode = _nxSavedSmash;
+  pixelMode = _nxSavedPixel;
+  applyPerfMode();
+  setNexdeusLook(false);
+  applyArenaMode(landscapeMode);
+}
+
 // Cabinet row (v153): the arcade cabinets are a single-select MOD — picked on
 // the title's cabinet row or in OPTIONS right under SMASH TV, only one armed
 // at a time. TAP TO START then plays the selected cabinet (OFF = classic).
 const CABINETS = ['tokotron', 'gaundrop', 'binding', 'loadout', 'kaikki'];
-let cabinetSel = (() => {
-  const v = localStorage.getItem('tokoDropCabinet');
-  return CABINETS.includes(v) ? v : null;
-})();
-function setCabinetSel(v) {
-  cabinetSel = CABINETS.includes(v) ? v : null;
-  localStorage.setItem('tokoDropCabinet', cabinetSel ?? '');
-}
 // v172: per-cabinet HIGH SCORES (deepest wave/level/floor/mission reached on
 // full runs — quests never count) + the NEX DEUS unlock they feed. Clearing
 // all five thresholds powers on the final cabinet (v173).
@@ -2185,12 +2233,24 @@ function nexProgress() {
   const b = cabBestsGet();
   return CABINETS.filter(c => (b[c] || 0) >= NEX_REQ[c]).length;
 }
+// v173: the sixth slot only exists once the machine is powered — a stale or
+// hand-edited save can never arm a cabinet the profile hasn't earned.
+const cabSelOk = v => CABINETS.includes(v) || (v === 'nexdeus' && nexProgress() >= 5);
+let cabinetSel = (() => {
+  const v = localStorage.getItem('tokoDropCabinet');
+  return cabSelOk(v) ? v : null;
+})();
+function setCabinetSel(v) {
+  cabinetSel = cabSelOk(v) ? v : null;
+  localStorage.setItem('tokoDropCabinet', cabinetSel ?? '');
+}
 function startRun() {
   if      (cabinetSel === 'tokotron') startTokotron();
   else if (cabinetSel === 'gaundrop') startGaundrop();
   else if (cabinetSel === 'binding')  startBinding();
   else if (cabinetSel === 'loadout')  startLoadout();
   else if (cabinetSel === 'kaikki')   startKaikki();
+  else if (cabinetSel === 'nexdeus')  startNexdeus();
   else startGame();
 }
 
@@ -2243,6 +2303,7 @@ function applyPerfMode() {
   const cab = tokotronMode ? 'tokotron' : gaundropMode ? 'gaundrop'
             : bindingMode  ? 'binding'  : loadoutMode ? 'loadout'
             : kaikkiMode   ? 'kaikki'
+            : nexdeusMode  ? 'nexdeus'
             : pixelMode ? 'preview' : null;
   retro.setCabinet(cab, renderer);
   renderer.setPixelRatio(Math.min(devicePixelRatio, perfMode ? 1.25 : 2));
@@ -2250,7 +2311,7 @@ function applyPerfMode() {
   VIS.hz = (cab && cab !== 'preview') ? 12 : 0;   // sprite-era stepped visuals
   // v129: the 1024² shadow pass is the third big GPU cost — drop it too.
   // Flat-lit cabinets (vector/NES) never want shadows either (v151).
-  sun.castShadow = !perfMode && cab !== 'tokotron' && cab !== 'gaundrop' && cab !== 'loadout' && cab !== 'kaikki';
+  sun.castShadow = !perfMode && cab !== 'tokotron' && cab !== 'gaundrop' && cab !== 'loadout' && cab !== 'kaikki' && cab !== 'nexdeus';
   const M = TUNING.material;
   if (perfMode) {
     if (!_perfSavedTrans) {
@@ -2418,7 +2479,7 @@ function saveHitLog() {
   const KEY = 'tokoDropHitLog';
   const sessions = JSON.parse(localStorage.getItem(KEY) || '[]');
   sessions.unshift({
-    seed: runSeed, mode: kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
+    seed: runSeed, mode: nexdeusMode ? 'nexdeus' : kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     waveReached: wave, date: new Date().toISOString(),
     events: hitEventLog,
   });
@@ -2691,7 +2752,7 @@ function saveFeedback(selectedIds, selectedLabels, comment, likedIds = [], liked
   const isFix = !!comment && comment.toLowerCase().includes('fix');
   list.unshift({
     date: new Date().toISOString(),
-    seed: runSeed, mode: kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
+    seed: runSeed, mode: nexdeusMode ? 'nexdeus' : kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade',
     wave, time: Math.round(runTimer), score,
     reasons: selectedLabels, reasonIds: selectedIds,
     liked: likedLabels, likedIds,
@@ -3370,7 +3431,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v172', 16, uiCanvas.height - 12);
+  ctx.fillText('v173', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3555,7 +3616,7 @@ function showTitle() {
   if (cabinetSel) {
     const CAB_NOTE_COLOR = {
       tokotron: '#88f4ff', gaundrop: '#ffbb66', binding: '#ff99bb',
-      loadout: '#bbff77', kaikki: '#ff6655',
+      loadout: '#bbff77', kaikki: '#ff6655', nexdeus: '#ff44ff',
     };
     const note = document.createElement('div');
     note.style.cssText = 'font-size:12px;margin-top:12px;letter-spacing:1px;' +
@@ -3783,7 +3844,7 @@ function buildDailyLeaderboard(slot) {
       body: JSON.stringify({
         initials, score, wave, daily: _dailyRun,
         seed: runSeed.toString(16).toUpperCase().padStart(6, '0'),
-        mode: `${kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}`,
+        mode: `${nexdeusMode ? 'nexdeus' : kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}`,
         build: new URL(import.meta.url).searchParams.get('v') ?? '?',
       }),
     }).catch(() => {});
@@ -4097,7 +4158,7 @@ function spawnWave() {
   const { speedMult, intervalMult } = getWaveScale(wave);
   // Binding fight rooms use the cabinet's own roster (v157) — only BOSS
   // rooms keep the smash schedule (tokotron/gaundrop build their own floods).
-  const list = (tokotronMode || gaundropMode || loadoutMode || kaikkiMode ||
+  const list = (tokotronMode || gaundropMode || loadoutMode || kaikkiMode || nexdeusMode ||
                 (bindingMode && smashRoomKind !== 'boss')) ? [] : getEnemySchedule(wave);
   waveDuration = ROUND_DUR;
   waveTimer    = 0;
@@ -4698,6 +4759,54 @@ function spawnWave() {
     }
     clusterSpawnAt = [];   // no convoys in the dark room
   }
+  // NEX DEUS (v173): ZONE SURGES — rings of light appear at wave start, each
+  // counting down to erupt a squad drawn from ONE of the five cabinets (the
+  // arena itself is the spawner — no doors, no trickle). LOST PLAYERS drop
+  // in mid-wave on a rescue countdown.
+  if (nexdeusMode) {
+    clearNexLevel();
+    player.mesh.position.set(0, player.mesh.position.y, 0);
+    player.grantInvincibility(1.4);
+    audio.waveZap();
+    const T = EnemyType;
+    const k = 1 + (wave - 1) * 0.12;                     // per-surge escalation
+    const POOLS = [
+      { col: 0x44eeff, list: [[T.GRUNT, 7 + wave], [T.ORB, Math.min(3, 1 + (wave >> 1))]] },
+      { col: 0xffaa44, list: [[T.GHOST, 8 + wave], [T.WRAITH, wave >= 3 ? 1 : 0]] },
+      { col: 0xff88bb, list: [[T.FLIT, 4 + (wave >> 1)], [T.SPITTLE, 2], [T.HOPPER, wave >= 2 ? 2 : 0]] },
+      { col: 0xbbff77, list: [[T.TROOPER, 4 + wave], [T.TURRET, 1 + Math.floor(wave / 3)]] },
+      { col: 0xff5544, list: [[T.THUG, 9 + wave * 2]] },
+    ];
+    const nSurge = Math.min(5, 1 + Math.floor(wave / 2));   // 1,2,2,3,3,4,4,5…
+    const order = [0, 1, 2, 3, 4].sort(() => rng() - 0.5);  // distinct pools per wave
+    for (let i = 0; i < nSurge; i++) {
+      const pool = POOLS[order[i % 5]];
+      let sx, sz, tries = 0;
+      do {
+        sx = (rng() * 2 - 1) * (HALF_X - 4);
+        sz = (rng() * 2 - 1) * (HALF_Z - 4);
+      } while (Math.hypot(sx, sz) < 7 && ++tries < 20);
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(2.6, 3.2, 40),
+        new THREE.MeshBasicMaterial({ color: pool.col, transparent: true, opacity: 0.3,
+          blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(sx, 0.04, sz);
+      scene.add(ring);
+      const squad = [];
+      for (const [ty, n0] of pool.list) {
+        const n = Math.round(n0 * k);
+        for (let j = 0; j < n; j++) squad.push(ty);
+      }
+      nxSurges.push({ x: sx, z: sz, t: 2.2 + i * 7.5, ring, list: squad, col: pool.col,
+                      spd: speedMult, itv: intervalMult });
+    }
+    nxHumanAt = [];
+    const nH = 2 + (wave % 2);
+    for (let i = 0; i < nH; i++) nxHumanAt.push(4 + i * 9 + rng() * 4);
+    nxHumanAt.sort((a, b) => a - b);
+    clusterSpawnAt = [];   // the machine ships no cargo
+  }
   // Schedule cargo convoys (start mid-wave, seeded position). SMASH TV runs a
   // second prize convoy per wave — big money, big prizes.
   const kind = (smashMode && smashRoomKind) ? smashRoomKind : waveKind(wave);
@@ -4783,6 +4892,10 @@ function spawnWave() {
     waveIntroT = waveIntroDur = 1.2;
     waveIntroText  = `TOKOTRON — WAVE ${wave}`;
     waveIntroColor = '#44eeff';
+  } else if (nexdeusMode) {
+    waveIntroT = waveIntroDur = 1.4;
+    waveIntroText  = `NEX DEUS — SURGE ${wave}`;
+    waveIntroColor = '#ff44ff';
   } else if (gaundropMode) {
     waveIntroT = waveIntroDur = 1.2;
     waveIntroText  = `GAUNDROP — LEVEL ${wave}`;
@@ -4889,8 +5002,10 @@ function showUpgradeCards(afterPick = null) {
     // over half of card screens roll a bonus quest at all, and the quest is
     // RANDOM (never the same one twice in a row). Scarcity is the appeal.
     let qMode;
-    do { qMode = QUEST_ORDER[Math.floor(Math.random() * QUEST_ORDER.length)]; }
-    while (QUEST_ORDER.length > 1 && qMode === _lastQuestOffer);
+    // v173: the god-machine joins the quest deck only on an unlocked profile
+    const qPool = nexProgress() >= 5 ? [...QUEST_ORDER, 'nexdeus'] : QUEST_ORDER;
+    do { qMode = qPool[Math.floor(Math.random() * qPool.length)]; }
+    while (qPool.length > 1 && qMode === _lastQuestOffer);
     _lastQuestOffer = qMode;
     const tier = gauntletTier;
     const g = document.createElement('div');
@@ -4994,7 +5109,8 @@ function showRareCards(afterPick = null) {
 // runtime) mid-run — mirroring startX() minus the startGame() reset — and
 // hands everything back via the cabinet's own exit on finish OR death.
 function startCabQuest(mode) {
-  cabQuest = { mode, goal: mode === 'binding' ? 3 : mode === 'gaundrop' ? 1 : 2, done: 0, mult: 2 };
+  cabQuest = { mode, goal: mode === 'binding' ? 3 : mode === 'gaundrop' ? 1 : 2, done: 0,
+               mult: mode === 'nexdeus' ? 3 : 2 };   // v173: the endgame detour pays best
   // leftover classic-wave gates/bounty/foam don't belong inside a cabinet
   for (const g of gates) g.remove(scene);
   gates = [];
@@ -5033,6 +5149,13 @@ function startCabQuest(mode) {
     applyPerfMode();
     setKaikkiLook(true);
     applyArenaMode(landscapeMode);
+  } else if (mode === 'nexdeus') {
+    nexdeusMode = true;
+    _nxSavedSmash = smashMode; smashMode = false;
+    _nxSavedPixel = pixelMode; pixelMode = true;
+    applyPerfMode();
+    setNexdeusLook(true);
+    applyArenaMode(landscapeMode);   // fixed room preset, like tokotron
   } else if (mode === 'binding') {
     bindingMode = true;
     bindingRoomN = 1; bindingFloor = 1;
@@ -5069,6 +5192,8 @@ function exitCabQuest() {
   } else if (m === 'kaikki') {
     clearGaundropLevel();      // the city blocks live in the wall kit
     exitKaikki();
+  } else if (m === 'nexdeus') {
+    exitNexdeus();             // clearNexLevel rides the exit
   } else if (m === 'binding') {
     exitBinding();
     smashRoomKind = null;
@@ -5155,6 +5280,7 @@ function returnToTitle() {
   if (bindingMode) exitBinding();     // v150: and the basement
   if (loadoutMode) exitLoadout();     // v152: and the armory
   if (kaikkiMode) exitKaikki();       // v159: and the streets
+  if (nexdeusMode) exitNexdeus();     // v173: and the god-machine
   clearFX();
   for (const e of enemies) e.removeFrom(scene);
   enemies = [];
@@ -5177,6 +5303,7 @@ function triggerGameOver() {
   else if (bindingMode)  cabBestSet('binding', bindingFloor);
   else if (loadoutMode)  cabBestSet('loadout', wave);
   else if (kaikkiMode)   cabBestSet('kaikki', wave);
+  else if (nexdeusMode)  cabBestSet('nexdeus', wave);
   gameState = 'gameover';
   saveHitLog();
   _runBests = testMode ? {} : recordRun();   // test runs leave no records (v142)
@@ -5859,6 +5986,101 @@ function loop() {
     }
   }
 
+  // NEX DEUS runtime (v173): surge rings strobe down and erupt; lost players
+  // tick toward reclamation; the DASH cuts — enemy bullets die and enemies
+  // bleed along its path (this cabinet only — everywhere else i-frames are
+  // purely defensive).
+  if (nexdeusMode && player.alive && gameState === 'playing') {
+    for (let i = nxSurges.length - 1; i >= 0; i--) {
+      const su = nxSurges[i];
+      su.t -= dt;
+      const urgent = su.t < 1.6;
+      su.ring.material.opacity = urgent
+        ? (Math.floor(su.t * 10) % 2 ? 0.15 : 0.85)      // strobe: stand clear
+        : 0.25 + 0.2 * Math.abs(Math.sin(performance.now() * 0.004));
+      su.ring.rotation.z += dt * (urgent ? 2.6 : 0.7);
+      if (su.t <= 0) {
+        for (const ty of su.list) {
+          const a = rng() * Math.PI * 2, r = 0.4 + rng() * 2.2;
+          const ex = Math.max(-HALF_X + 1, Math.min(HALF_X - 1, su.x + Math.cos(a) * r));
+          const ez = Math.max(-HALF_Z + 1, Math.min(HALF_Z - 1, su.z + Math.sin(a) * r));
+          enemies.push(new Enemy(scene, ty, ex, ez, su.spd, su.itv));
+        }
+        for (let j = 0; j < 10; j++) {
+          const a = (j / 10) * Math.PI * 2;
+          chunkPool.spawn(su.x, 0.5, su.z, Math.cos(a) * 6, 3.5, Math.sin(a) * 6, su.col, 0.12);
+        }
+        addShake(0.35);
+        audio.nexSurge();
+        milestoneT = 0.9; milestoneText = 'SURGE!';
+        scene.remove(su.ring);
+        su.ring.geometry.dispose();
+        su.ring.material.dispose();
+        nxSurges.splice(i, 1);
+      }
+    }
+    // LOST PLAYERS: drop in on schedule; the rescue halo IS the timer — it
+    // shrinks and goes ember-red as the machine reclaims them.
+    if (nxHumanAt.length && waveTimer >= nxHumanAt[0]) {
+      nxHumanAt.shift();
+      const hx = (rng() * 2 - 1) * (HALF_X - 3), hz = (rng() * 2 - 1) * (HALF_Z - 3);
+      nxHumans.push({ civ: new Civilian(scene, hx, hz, Math.floor(rng() * 3)), t: 8.0, tMax: 8.0 });
+      milestoneT = 1.0; milestoneText = 'LOST PLAYER! BRING THEM HOME';
+      audio.keyJingle();
+    }
+    for (let i = nxHumans.length - 1; i >= 0; i--) {
+      const h = nxHumans[i];
+      h.t -= dt;
+      h.civ.update(dt);
+      const f = Math.max(0, h.t / h.tMax);
+      h.civ._haloMat.color.setHex(f > 0.4 ? 0xffdd66 : 0xff4422);
+      h.civ._halo.scale.setScalar(0.35 + f * 0.9);
+      if (Math.hypot(h.civ.x - player.position.x, h.civ.z - player.position.z) < PLAYER_RADIUS + 0.5) {
+        nxChain++;
+        const pay = 1500 * nxChain * (scoreMultT > 0 ? 2 : 1) * (cabQuest ? cabQuest.mult : 1);
+        score += pay;
+        damageNumbers.push(new DamageNumber(h.civ.x, 1.0, h.civ.z, `+${pay}`, '255,238,136'));
+        if (nxChain % 3 === 0 && player.hp < player.maxHp) {
+          player.hp++;
+          milestoneT = 1.0; milestoneText = 'THE MACHINE GIVES BACK (+1 HP)';
+        }
+        audio.pickup();
+        h.civ.remove(scene); nxHumans.splice(i, 1);
+        continue;
+      }
+      if (h.t <= 0) {
+        gooChunkPool.spawn(h.civ.x, 0.5, h.civ.z, 0, 3, 0, 0xff44ff, 0.12);
+        audio.civDown();
+        nxChain = 0;                       // the chain dies with them
+        h.civ.remove(scene); nxHumans.splice(i, 1);
+      }
+    }
+    // DASH OFFENSE: the signature verb — i-frames plus a cutting edge.
+    if (player.dashing) {
+      for (let i = bullets.active.length - 1; i >= 0; i--) {
+        const b = bullets.active[i];
+        if (b.isPlayer) continue;
+        if (Math.hypot(b.mesh.position.x - player.position.x,
+                       b.mesh.position.z - player.position.z) < PLAYER_RADIUS + 1.0) {
+          score += 10;
+          gooChunkPool.spawn(b.mesh.position.x, 0.5, b.mesh.position.z, 0, 2.5, 0, 0xff44ff, 0.06);
+          bullets.recycleAt(i);
+        }
+      }
+      for (const e of enemies) {
+        if (!e.alive || (e._nxHitT ?? 0) > 0) continue;
+        if (Math.hypot(e.position.x - player.position.x,
+                       e.position.z - player.position.z) < e.radius + PLAYER_RADIUS + 0.2) {
+          e._nxHitT = 0.45;                // one cut per pass, not per frame
+          const died = e.hit(e.position.x, e.position.z);
+          if (died) onKill(e); else audio.enemyHit();
+          addShake(0.10);
+        }
+      }
+    }
+    for (const e of enemies) if ((e._nxHitT ?? 0) > 0) e._nxHitT -= dt;
+  }
+
   // MAGNA pull (v144): every living magna within reach drags the player
   // toward it. Dashing grants ~1.2 s of immunity (momentum breaks the hold),
   // total pull is capped, and the tether visual mirrors exactly this state.
@@ -6537,6 +6759,7 @@ function loop() {
   // spawnWave, so the clear could re-fire mid-fade, double-paying the bonus
   // and (in gauntlets) cascading through the whole room script instantly.
   if (gameState === 'playing' && !exitPhase && waveGapT <= 0 && !gaundropMode && !loadoutMode && !kaikkiMode &&
+      (!nexdeusMode || nxSurges.length === 0) &&
       !_roomSwap && roomFadeT <= 0 &&
       enemies.length > 0 &&
       enemies.every(e => (tokotronMode && e.type === EnemyType.BRUTE) ||
@@ -6579,9 +6802,9 @@ function loop() {
       audio.announce('clear');
       // Roguelike pacing (v101): a card every 3rd cleared wave — every wave was
       // way too frequent with instant wave-ends chaining fast.
-      if (tokotronMode) {
+      if (tokotronMode || nexdeusMode) {
         if (cabQuest) cabQuestAdvance();     // v154: quest beat — pay or ramp
-        else waveGapT = 0.6;                 // v148: the reference slams onward
+        else waveGapT = tokotronMode ? 0.6 : 1.0;   // v148: the reference slams onward
       }
       else if (roguelikeMode && wave % 3 === 0) showUpgradeCards();
       else {
@@ -6686,6 +6909,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=126').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=127').catch(() => {});
   });
 }

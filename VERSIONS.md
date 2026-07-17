@@ -7,6 +7,18 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v173 — 2026-07-17
+**NEX DEUS — the final cabinet (approved arc, step 2)**
+- **The sixth cabinet is real**: clear all five NEX bars (v172) and NEX DEUS joins the OPTIONS cycle — a fixed near-black arena, hard magenta rim, void-glass tiles, heavy-glow neon RetroPass profile, its own twin-voice gun hum
+- **ZONE SURGES**: neon rings appear at wave start, each strobing down to ERUPT a squad drawn from ONE cabinet's roster (grunts+orbs / ghosts+wraith / flits+spittles+hoppers / troopers+turrets / thug riots) — the arena itself is the spawner; the wave holds open until every ring has fired
+- **THE DASH CUTS** (this cabinet only): dashing wipes enemy bullets along your path (+10 each) and wounds every enemy you pass through — i-frames become an offensive verb
+- **LOST PLAYERS**: humans drop in mid-wave on an 8 s countdown — the rescue halo shrinks and goes ember-red as the machine reclaims them; chained rescues pay 1500×chain and every 3rd gives +1 HP; a loss resets the chain
+- Roguelike B: **NEX DEUS COMMUNION** joins the quest deck (2 surge waves, ×3 pinball ramp) — unlocked profiles only; full runs record a `nexdeus` best like any cabinet
+- Locked profiles can never arm it: the OPTIONS cycle skips the slot and a stale save falls back to OFF
+- Cache-bust `?v=126` → `?v=127`; HUD label → v173
+
+---
+
 ## v172 — 2026-07-17
 **Per-cabinet records + NEX DEUS unlock tracking (approved arc, step 1)**
 - **Every cabinet now keeps a personal best** (localStorage `tokoDropCabBests`), recorded on death for FULL cabinet runs only (Roguelike B quests don't count): TOKOTRON/GAUNDROP/LOADOUT/KAIKKI record the wave/mission/level reached, BINDING records the floor
