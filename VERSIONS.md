@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v179 — 2026-07-17
+**Daily modifiers (M6) — GLASS, SURGE DAY, RICH DAY**
+- **The date picks the day's twist** (pure UTC date math — every player worldwide gets the same one, riding the same daily seed): a 4-day rotation of CLASSIC → **GLASS** (1 HP, kills pay DOUBLE) → **SURGE DAY** (vents doubled, drains every 3rd wave, curtains at 80%, suds surges at 70%) → **RICH DAY** (+40% enemy budget, floor valuables doubled, every kill-drop chance doubled)
+- The title's DAILY chip hint names the twist (`TODAY: GLASS`), and the run opens with a banner spelling out the deal (`GLASS DAY — 1 HP, KILLS PAY DOUBLE`)
+- **The leaderboard tags the modifier**: daily POSTs carry `+glass` / `+surge` / `+rich` in the mode string, so scores are comparable within a day
+- Modifiers only ever apply to DAILY runs (test/cabinet runs stay untouched; a classic day is a plain daily)
+- Cache-bust `?v=132` → `?v=133`; HUD label → v179
+
+---
+
 ## v178 — 2026-07-17
 **SMASH TV floor structure (M6) — bosses end floors, floors change everything**
 - **The boss room ends a FLOOR**: beat it and every exit door reads `BONUS!` — walking through advances to the next floor (`FLOOR 2!` fanfare + applause)

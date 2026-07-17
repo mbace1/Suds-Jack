@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=132';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=132';
-import { Player, PLAYER_RADIUS } from './player.js?v=132';
+import { InputManager } from './input.js?v=133';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=133';
+import { Player, PLAYER_RADIUS } from './player.js?v=133';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=132';
-import { RetroPass } from './retro.js?v=132';
-import { audio } from './audio.js?v=132';
-import { initDesigner } from './designer.js?v=132';
-import { t, getLang, setLang, langs } from './lang.js?v=132';
-import { TUNING } from './tuning.js?v=132';
+         CABINET_STYLE, VIS } from './enemy.js?v=133';
+import { RetroPass } from './retro.js?v=133';
+import { audio } from './audio.js?v=133';
+import { initDesigner } from './designer.js?v=133';
+import { t, getLang, setLang, langs } from './lang.js?v=133';
+import { TUNING } from './tuning.js?v=133';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -126,6 +126,8 @@ function getEnemySchedule(wave) {
   // TEST MODE (v142): early waves get a wave-8-sized budget floor so the
   // expensive late types (WARDEN 5, SIREN 5…) actually fit from wave 1.
   if (testMode) budget = Math.max(budget, 24);
+  // v179: RICH DAY — bigger crowds pay for the bigger loot
+  if (dailyMod === 'rich') budget = Math.floor(budget * 1.4);
 
   // Composed waves (v116): melee mobs FLOOD the arena (groups/twins — the
   // fodder you mow through), while ranged enemies are placed DELIBERATELY —
@@ -1761,6 +1763,20 @@ function applySmashFloorLook() {
 // you bring are yours; the run is tagged DAILY (death screen, share, feedback
 // payload) and a separate per-day local best is kept.
 let dailyMode = localStorage.getItem('tokoDropDaily') === '1';
+// v179 (M6): DAILY MODIFIERS — pure date math picks the day's twist, so
+// every player worldwide gets the same one (no seed handshake needed).
+// 4-day rotation: a classic day, then GLASS / SURGE DAY / RICH DAY.
+const DAILY_MODS = {
+  glass: { label: 'GLASS',     color: '#aaeeff' },
+  surge: { label: 'SURGE DAY', color: '#ff8866' },
+  rich:  { label: 'RICH DAY',  color: '#ffcc33' },
+};
+function todaysMod() {
+  const d = new Date();
+  const day = Math.floor(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 86400000);
+  return [null, 'glass', 'surge', 'rich'][day % 4];
+}
+let dailyMod = null;   // active modifier for THIS run (null off-daily / classic day)
 let _dailyRun = null;   // 'YYYY-MM-DD' while the current/last run was a daily
 function dailyBestGet() {
   try { return JSON.parse(localStorage.getItem('tokoDropDailyBest') || '{}'); }
@@ -2637,7 +2653,8 @@ function onKill(e) {
     addShake(0.12);
   }
   streak++;
-  score += 100 * streak * (scoreMultT > 0 ? 2 : 1) * (gauntlet ? gauntlet.mult : cabQuest ? cabQuest.mult : 1);
+  score += 100 * streak * (scoreMultT > 0 ? 2 : 1) * (dailyMod === 'glass' ? 2 : 1)   // v179: GLASS pays double
+         * (gauntlet ? gauntlet.mult : cabQuest ? cabQuest.mult : 1);
   if (streak > 0 && streak % 5 === 0) audio.announce('streak');
   // BOUNTY claim (v133): marked target down inside the window — big cash and
   // a guaranteed weapon pod at the body. Works from any kill source (bullets,
@@ -3704,7 +3721,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v178', 16, uiCanvas.height - 12);
+  ctx.fillText('v179', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3868,7 +3885,10 @@ function showTitle() {
     const db = dailyBestGet();
     const todayBest = on && db.date === new Date().toISOString().slice(0, 10)
       ? ` — ${t('dailyBest')} ${db.score}` : '';
-    dhint.textContent = (on ? t('dailyOnH') : t('dailyOffH')) + todayBest;
+    // v179: name the day's twist right on the chip hint
+    const _tm = todaysMod();
+    const modTag = _tm ? `  ·  ${t('todayMod')}: ${DAILY_MODS[_tm].label}` : '';
+    dhint.textContent = (on ? t('dailyOnH') : t('dailyOffH')) + modTag + todayBest;
   };
   drender();
   const dtoggle = e => {
@@ -4117,7 +4137,7 @@ function buildDailyLeaderboard(slot) {
       body: JSON.stringify({
         initials, score, wave, daily: _dailyRun,
         seed: runSeed.toString(16).toUpperCase().padStart(6, '0'),
-        mode: `${nexdeusMode ? 'nexdeus' : kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}`,
+        mode: `${nexdeusMode ? 'nexdeus' : kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}${dailyMod ? '+' + dailyMod : ''}`,
         build: new URL(import.meta.url).searchParams.get('v') ?? '?',
       }),
     }).catch(() => {});
@@ -5098,7 +5118,8 @@ function spawnWave() {
   const curtainOk = (!inCabinet() && wave >= 6) ||
                     (tokotronMode && wave >= 4) ||
                     (nexdeusMode && wave >= 2);
-  curtainArmed = curtainOk && kind !== 'boss' && kind !== 'bonus' && rng() < (inCabinet() ? 0.45 : 0.55);
+  curtainArmed = curtainOk && kind !== 'boss' && kind !== 'bonus' &&
+                 rng() < (inCabinet() ? 0.45 : dailyMod === 'surge' ? 0.8 : 0.55);
   curtainStyle = (wave >= 10 && rng() < 0.35) ? 'cross'
                : (wave >= 8  && rng() < 0.45) ? 'diag' : 'wall';
   curtainColor = tokotronMode ? 0x44eeff : nexdeusMode ? 0xff44ff : 0xff66aa;
@@ -5124,15 +5145,17 @@ function spawnWave() {
   // v176 hazards: the floor joins the show. HAZARD rooms are the vent venue;
   // classic runs get a lighter rotation. Everything hurts enemies too.
   clearHazards();
-  const ventN = (smashMode && kind === 'hazard') ? 5 + Math.floor(rng() * 2)
+  const _svm = dailyMod === 'surge' ? 2 : 1;   // v179: SURGE DAY doubles the floor
+  const ventN = ((smashMode && kind === 'hazard') ? 5 + Math.floor(rng() * 2)
               : (!inCabinet() && !smashMode && wave >= 7 && wave % 3 === 0 && kind !== 'boss') ? 2 + Math.floor(rng() * 2)
-              : 0;
+              : 0) * _svm;
   for (let i = 0; i < ventN; i++) {
     steamVents.push(new SteamVent(scene,
       (rng() * 2 - 1) * (HALF_X - 3), (rng() * 2 - 1) * (HALF_Z - 3)));
   }
   if (!inCabinet() && kind !== 'boss' &&
-      ((smashMode && kind === 'hazard') || (!smashMode && wave >= 9 && wave % 5 === 4))) {
+      ((smashMode && kind === 'hazard') ||
+       (!smashMode && wave >= 9 && wave % (dailyMod === 'surge' ? 3 : 5) === 4 % (dailyMod === 'surge' ? 3 : 5)))) {
     drainZone = new Drain(scene,
       (rng() * 2 - 1) * (HALF_X - 6), (rng() * 2 - 1) * (HALF_Z - 6));
   }
@@ -5141,7 +5164,8 @@ function spawnWave() {
       (rng() * 2 - 1) * (HALF_X - 5), (rng() * 2 - 1) * (HALF_Z - 5));
   }
   // SUDS SURGE: SMASH-only mid-wave spectacle, never boss rooms
-  sudsArmed = smashMode && !bindingMode && wave >= 6 && kind !== 'boss' && kind !== 'bonus' && rng() < 0.4;
+  sudsArmed = smashMode && !bindingMode && wave >= 6 && kind !== 'boss' && kind !== 'bonus' &&
+              rng() < (dailyMod === 'surge' ? 0.7 : 0.4);
   sudsAt    = 6 + rng() * 4;
   sudsWarnT = 0;
   clusterTimer = 0;
@@ -5154,7 +5178,7 @@ function spawnWave() {
   // among them. Cleared with the room (spawnWave wipes powerups).
   if (smashMode) {
     const heavy = kind === 'spike' || kind === 'hazard';   // v120/v176: HEAVY + HAZARD pay 2×$
-    const n = 3 + Math.floor(rng() * 4) + (heavy ? 1 : 0);
+    const n = (3 + Math.floor(rng() * 4) + (heavy ? 1 : 0)) * (dailyMod === 'rich' ? 2 : 1);   // v179
     for (let i = 0; i < n; i++) {
       let vx = (rng() * 2 - 1) * (HALF_X - 3);
       let vz = (rng() * 2 - 1) * (HALF_Z - 3);
@@ -5594,12 +5618,21 @@ function startGame() {
     // so consecutive days land far apart in seed space.
     _dailyRun = new Date().toISOString().slice(0, 10);
     runSeed = (mulberry32(Number(_dailyRun.replaceAll('-', '')))() * 0xFFFFFF | 0) >>> 0;
+    dailyMod = todaysMod();   // v179: the date's twist rides the same math
   } else {
+    dailyMod = null;
     _dailyRun = null;
     runSeed = (Math.random() * 0xFFFFFF | 0) >>> 0;
   }
   rng = mulberry32(runSeed);
   player.reset();
+  if (dailyMod === 'glass') { player.maxHp = 1; player.hp = 1; }   // v179: GLASS
+  if (dailyMod) {
+    milestoneT = 2.0;
+    milestoneText = dailyMod === 'glass' ? 'GLASS DAY — 1 HP, KILLS PAY DOUBLE'
+                  : dailyMod === 'surge' ? 'SURGE DAY — THE FLOOR FIGHTS HARDER'
+                  : 'RICH DAY — DOUBLE LOOT, BIGGER CROWDS';
+  }
   player._magnet    = false;
   player._hasShield = false;
   player._shield    = false;
@@ -6874,6 +6907,8 @@ function loop() {
             // smash 40/30/30 (v116), classic 55/25/20 (v89).
             const [podC, scoreC] = rk === 'prize' ? [0.20, 0.45]
                                  : smashMode      ? [0.40, 0.30] : [0.55, 0.25];
+            // v179: RICH DAY compresses the roll — every drop chance doubles
+            if (dailyMod === 'rich') roll *= 0.5;
             const dropType = roll < podC ? randomWeaponPodId(lv2Ok)
                            : roll < podC + scoreC ? 'score' : 'scoremult';
             const driftAngle = Math.random() * Math.PI * 2;
@@ -7532,6 +7567,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=132').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=133').catch(() => {});
   });
 }
