@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=130';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=130';
-import { Player, PLAYER_RADIUS } from './player.js?v=130';
+import { InputManager } from './input.js?v=131';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=131';
+import { Player, PLAYER_RADIUS } from './player.js?v=131';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=130';
-import { RetroPass } from './retro.js?v=130';
-import { audio } from './audio.js?v=130';
-import { initDesigner } from './designer.js?v=130';
-import { t, getLang, setLang, langs } from './lang.js?v=130';
-import { TUNING } from './tuning.js?v=130';
+         CABINET_STYLE, VIS } from './enemy.js?v=131';
+import { RetroPass } from './retro.js?v=131';
+import { audio } from './audio.js?v=131';
+import { initDesigner } from './designer.js?v=131';
+import { t, getLang, setLang, langs } from './lang.js?v=131';
+import { TUNING } from './tuning.js?v=131';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1606,13 +1606,25 @@ let waveTimer    = 0;
 let curtainArmed = false;
 let curtainAt    = 0;
 let curtainWarnT = 0;
-function fireArenaCurtain() {
-  const side  = Math.floor(Math.random() * 4);
+// v177 curtain variations: 'wall' (v171 classic), 'diag' (the sheet shears —
+// full-width wall sliding at a slant), 'cross' (a second sheet follows from
+// the adjacent wall one beat later — find the moving intersection of gaps).
+let curtainStyle = 'wall';
+let curtainColor = 0xff66aa;
+let curtainCross = null;     // pending second sheet { t, side }
+function fireArenaCurtain(style = 'wall', forceSide = null) {
+  const side  = forceSide ?? Math.floor(Math.random() * 4);
   const horiz = side === 1 || side === 3;               // from a ±z wall
   const span  = horiz ? HALF_X : HALF_Z;
   const edge  = side === 0 ? HALF_X : side === 1 ? HALF_Z : side === 2 ? -HALF_X : -HALF_Z;
-  const dirX  = side === 0 ? -1 : side === 2 ? 1 : 0;
-  const dirZ  = side === 1 ? -1 : side === 3 ? 1 : 0;
+  let dirX  = side === 0 ? -1 : side === 2 ? 1 : 0;
+  let dirZ  = side === 1 ? -1 : side === 3 ? 1 : 0;
+  if (style === 'diag') {
+    const lat = Math.random() < 0.5 ? 0.6 : -0.6;
+    if (horiz) dirX = lat; else dirZ = lat;
+    const L = Math.hypot(dirX, dirZ);
+    dirX /= L; dirZ /= L;
+  }
   const n     = Math.floor((span * 2 - 1) / 0.9);
   const g1    = 2 + Math.floor(Math.random() * Math.max(1, n - 10));
   let   g2    = 2 + Math.floor(Math.random() * Math.max(1, n - 10));
@@ -1622,8 +1634,9 @@ function fireArenaCurtain() {
     const o  = -span + 0.5 + i * 0.9;
     const bx = horiz ? o : edge;
     const bz = horiz ? edge : o;
-    bullets.spawnDir(bx, bz, dirX, dirZ, false, 0xff66aa, false, null, false, 6, 0.62);
+    bullets.spawnDir(bx, bz, dirX, dirZ, false, curtainColor, false, null, false, 6, 0.62);
   }
+  return side;
 }
 let waveDuration = ROUND_DUR;
 let pendingSpawns = [];
@@ -3669,7 +3682,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v176', 16, uiCanvas.height - 12);
+  ctx.fillText('v177', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -5056,10 +5069,19 @@ function spawnWave() {
   // mark. CLEANSE foam appears every 4th wave from 6 — seeded, so daily runs
   // get identical placements.
   clearBounty();
-  // v171: arm the arena curtain — a mid-wave spectacle, never on boss waves
-  curtainArmed = !inCabinet() && wave >= 6 && kind !== 'boss' && rng() < 0.55;
+  // v171: arm the arena curtain — a mid-wave spectacle, never on boss waves.
+  // v177: the fixed-screen cabinets run their own curtains (scrolling worlds
+  // skip — a 2× sheet is unreadable), and late waves roll VARIATIONS.
+  const curtainOk = (!inCabinet() && wave >= 6) ||
+                    (tokotronMode && wave >= 4) ||
+                    (nexdeusMode && wave >= 2);
+  curtainArmed = curtainOk && kind !== 'boss' && rng() < (inCabinet() ? 0.45 : 0.55);
+  curtainStyle = (wave >= 10 && rng() < 0.35) ? 'cross'
+               : (wave >= 8  && rng() < 0.45) ? 'diag' : 'wall';
+  curtainColor = tokotronMode ? 0x44eeff : nexdeusMode ? 0xff44ff : 0xff66aa;
   curtainAt    = 5 + rng() * 6;
   curtainWarnT = 0;
+  curtainCross = null;
   bountyArm = !inCabinet() && wave >= 4 && wave % 3 === 1 && kind !== 'boss';
   if (!inCabinet() && wave >= 6 && wave % 4 === 2) {
     foamZones.push(new FoamZone(scene,
@@ -7247,18 +7269,31 @@ function loop() {
   }
 
   // v171 ARENA CURTAIN: one beat of warning, then the wall marches.
-  if (curtainArmed && gameState === 'playing' && !inCabinet() && player.alive) {
-    if (curtainWarnT === 0 && waveTimer >= curtainAt) {
+  // v177: the arming (spawnWave) already encodes who gets curtains — the
+  // fixed-screen cabinets included — and rolls the STYLE for late waves.
+  if (curtainArmed && gameState === 'playing' && player.alive) {
+    if (curtainWarnT <= 0 && waveTimer >= curtainAt) {
       curtainWarnT = 1.1;
-      milestoneT = 1.1; milestoneText = 'BULLET CURTAIN!';
+      milestoneT = 1.1;
+      milestoneText = curtainStyle === 'cross' ? 'CROSSING CURTAINS!'
+                    : curtainStyle === 'diag'  ? 'SHEARING CURTAIN!' : 'BULLET CURTAIN!';
       audio.curtainAlarm();
     } else if (curtainWarnT > 0) {
       curtainWarnT -= dt;
       if (curtainWarnT <= 0) {
         curtainArmed = false;
-        fireArenaCurtain();
+        const s1 = fireArenaCurtain(curtainStyle === 'diag' ? 'diag' : 'wall');
         audio.curtainSweep();
+        if (curtainStyle === 'cross') curtainCross = { t: 1.1, side: (s1 + 1) % 4 };
       }
+    }
+  }
+  if (curtainCross && gameState === 'playing') {
+    curtainCross.t -= dt;
+    if (curtainCross.t <= 0) {
+      fireArenaCurtain('wall', curtainCross.side);
+      audio.curtainSweep();
+      curtainCross = null;
     }
   }
 
@@ -7426,6 +7461,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=130').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=131').catch(() => {});
   });
 }
