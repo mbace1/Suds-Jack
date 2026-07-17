@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v172 — 2026-07-17
+**Per-cabinet records + NEX DEUS unlock tracking (approved arc, step 1)**
+- **Every cabinet now keeps a personal best** (localStorage `tokoDropCabBests`), recorded on death for FULL cabinet runs only (Roguelike B quests don't count): TOKOTRON/GAUNDROP/LOADOUT/KAIKKI record the wave/mission/level reached, BINDING records the floor
+- **NEX DEUS unlock tracking**: beat the bar in all five cabinets — TOKOTRON wave 5, GAUNDROP level 3, BINDING floor 2, LOADOUT mission 4, KAIKKI mission 3 — to unlock the final cabinet (arrives next version). OPTIONS shows each cabinet's `BEST x/req` in its hint plus a `NEX DEUS: LOCKED (n/5)` status line that flips pink when you're ready
+- Title armed-note now shows your best for the armed cabinet (`CABINET: TOKOTRON · BEST 4 · OPTIONS`)
+- Cache-bust `?v=125` → `?v=126`; HUD label → v172
+
+---
+
 ## v171 — 2026-07-16
 **Walls of bullets — the DRAPER and the ARENA CURTAIN (user direction)**
 - **New enemy: DRAPER, the wall-weaver** (37 types) — a violet loom slab with glowing end-spools that holds ~11 units, faces you (the loom IS the tell), strobes a 0.9 s wind-up while its spools spin, then **looms a 15-slot marching bullet CURTAIN with one 2-slot gap**. Dash the gap or dash the wall — both are answers. Classic pool from wave 7 (shooter budget); guest appearances in LOADOUT floods (mission 4+) and KAIKKI streets (mission 5+)

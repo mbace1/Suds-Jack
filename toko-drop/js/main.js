@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=125';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=125';
-import { Player, PLAYER_RADIUS } from './player.js?v=125';
+import { InputManager } from './input.js?v=126';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=126';
+import { Player, PLAYER_RADIUS } from './player.js?v=126';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=125';
-import { RetroPass } from './retro.js?v=125';
-import { audio } from './audio.js?v=125';
-import { initDesigner } from './designer.js?v=125';
-import { t, getLang, setLang, langs } from './lang.js?v=125';
-import { TUNING } from './tuning.js?v=125';
+         CABINET_STYLE, VIS } from './enemy.js?v=126';
+import { RetroPass } from './retro.js?v=126';
+import { audio } from './audio.js?v=126';
+import { initDesigner } from './designer.js?v=126';
+import { t, getLang, setLang, langs } from './lang.js?v=126';
+import { TUNING } from './tuning.js?v=126';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -2167,6 +2167,24 @@ function setCabinetSel(v) {
   cabinetSel = CABINETS.includes(v) ? v : null;
   localStorage.setItem('tokoDropCabinet', cabinetSel ?? '');
 }
+// v172: per-cabinet HIGH SCORES (deepest wave/level/floor/mission reached on
+// full runs — quests never count) + the NEX DEUS unlock they feed. Clearing
+// all five thresholds powers on the final cabinet (v173).
+function cabBestsGet() {
+  try { return JSON.parse(localStorage.getItem('tokoDropCabBests') || '{}'); }
+  catch (_) { return {}; }
+}
+function cabBestSet(mode, val) {
+  const b = cabBestsGet();
+  if ((b[mode] || 0) >= val) return;
+  b[mode] = val;
+  localStorage.setItem('tokoDropCabBests', JSON.stringify(b));
+}
+const NEX_REQ = { tokotron: 5, gaundrop: 3, binding: 2, loadout: 4, kaikki: 3 };
+function nexProgress() {
+  const b = cabBestsGet();
+  return CABINETS.filter(c => (b[c] || 0) >= NEX_REQ[c]).length;
+}
 function startRun() {
   if      (cabinetSel === 'tokotron') startTokotron();
   else if (cabinetSel === 'gaundrop') startGaundrop();
@@ -2799,6 +2817,8 @@ const designer = initDesigner({
     },
     getCabinet: () => cabinetSel,
     setCabinet: v => setCabinetSel(v),
+    getNexInfo: () => ({ progress: nexProgress(), unlocked: nexProgress() >= 5,
+                         bests: cabBestsGet(), req: NEX_REQ }),
     getSmash: () => smashMode,
     setSmash: on => {
       smashMode = on;
@@ -3350,7 +3370,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v171', 16, uiCanvas.height - 12);
+  ctx.fillText('v172', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -3540,7 +3560,9 @@ function showTitle() {
     const note = document.createElement('div');
     note.style.cssText = 'font-size:12px;margin-top:12px;letter-spacing:1px;' +
       `color:${CAB_NOTE_COLOR[cabinetSel]};opacity:0.85;`;
-    note.textContent = `${t('cabRow')}: ${t(cabinetSel)}  ·  ${t('options')}`;
+    const _cb = cabBestsGet()[cabinetSel] || 0;
+    note.textContent = `${t('cabRow')}: ${t(cabinetSel)}` +
+      (_cb > 0 ? `  ·  ${t('cabBest')} ${_cb}` : '') + `  ·  ${t('options')}`;
     slot.appendChild(note);
     const noteHint = document.createElement('div');
     noteHint.style.cssText = 'font-size:11px;opacity:0.45;margin-top:4px';
@@ -5149,6 +5171,12 @@ function triggerGameOver() {
     smashRoomKind = null;
   }
   if (cabQuest) exitCabQuest();         // died inside a cabinet quest: same deal
+  // v172: per-cabinet record — the depth this full run reached
+  if      (tokotronMode) cabBestSet('tokotron', wave);
+  else if (gaundropMode) cabBestSet('gaundrop', wave);
+  else if (bindingMode)  cabBestSet('binding', bindingFloor);
+  else if (loadoutMode)  cabBestSet('loadout', wave);
+  else if (kaikkiMode)   cabBestSet('kaikki', wave);
   gameState = 'gameover';
   saveHitLog();
   _runBests = testMode ? {} : recordRun();   // test runs leave no records (v142)
@@ -6658,6 +6686,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=125').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=126').catch(() => {});
   });
 }
