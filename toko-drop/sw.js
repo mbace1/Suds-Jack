@@ -17,7 +17,7 @@
 //  - Only OK responses are ever cached, and precache failures are non-fatal —
 //    a CDN edge 404 (the v118/v119 propagation lesson) must not get pinned
 //    into the offline cache or brick the install.
-const CACHE = 'toko-drop-?v=136';
+const CACHE = 'toko-drop-?v=137';
 const TOKEN = new URL(self.location.href).searchParams.get('v') ?? '0';
 
 // New game files must be added here as well as to bump-version.sh's file loop.

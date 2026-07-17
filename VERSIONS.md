@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v183 — 2026-07-17
+**KAIKKI backlog — SHOP TIER 2, the flamethrower class**
+- **Three tier-2 items appear in THE SHOP from mission 4**: **LIEKINHEITIN** (₵3000, one-time — a hose of fat fast fire: rapid-2 pod + fire rate + big rounds), **MAGNEETTI** (₵1400, one-time — cash and pickups fly to you; in the money game, that's a build), **KILPI** (₵900, restocked — a shield charge per visit)
+- Before mission 4 the shop shows only the original seven — tier 2 arrives exactly when the wallet can dream about it
+- All names stay in the cabinet's Finnish (KONEPISTOOLI energy); descriptions localized en/ja/fi
+- Cache-bust `?v=136` → `?v=137`; HUD label → v183
+
+---
+
 ## v182 — 2026-07-17
 **LOADOUT backlog — the RESCUE mission joins the rotation**
 - **Mission 5 of 5: RESCUE** — 2-4 hostages in soldier fatigues wander the compound yard under a TROOPER/GLOBBO guard detail. Walk up to carry each one out (`HOSTAGE SECURED`, 1000×count); any melee body that reaches one kills them (`HOSTAGE DOWN…`)
