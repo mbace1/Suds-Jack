@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=127';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=127';
-import { Player, PLAYER_RADIUS } from './player.js?v=127';
+import { InputManager } from './input.js?v=128';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=128';
+import { Player, PLAYER_RADIUS } from './player.js?v=128';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=127';
-import { RetroPass } from './retro.js?v=127';
-import { audio } from './audio.js?v=127';
-import { initDesigner } from './designer.js?v=127';
-import { t, getLang, setLang, langs } from './lang.js?v=127';
-import { TUNING } from './tuning.js?v=127';
+         CABINET_STYLE, VIS } from './enemy.js?v=128';
+import { RetroPass } from './retro.js?v=128';
+import { audio } from './audio.js?v=128';
+import { initDesigner } from './designer.js?v=128';
+import { t, getLang, setLang, langs } from './lang.js?v=128';
+import { TUNING } from './tuning.js?v=128';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -78,7 +78,7 @@ function waveKind(w) {
 // getEnemySchedule uses rng (seeded per run) so every run plays differently.
 function getEnemySchedule(wave) {
   const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
-          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY, WARDEN, BULWARK, SIREN, CLOAKER, MAGNA, DRAPER } = EnemyType;
+          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY, WARDEN, BULWARK, SIREN, CLOAKER, MAGNA, DRAPER, PRISM } = EnemyType;
   const AFFIXES = ['volatile', 'swift', 'anchored'];
   const POOL = [
     // [type, minWave, cost]
@@ -154,7 +154,17 @@ function getEnemySchedule(wave) {
   // never appears in POOL, so every boss wave gets a purpose-built enemy
   // instead of an existing regular type just scaled up.
   if (isBoss) {
-    list.push({ type: OMEGA, t: 0, boss: true });
+    // v174: the headliner ALTERNATES per boss cycle — OMEGA's lone crystal or
+    // the TWIN PRISMS pair (two half-size shards trading volleys; the survivor
+    // enrages instantly). The run seed picks who opens, so daily runs share a
+    // schedule and consecutive bosses in one run always differ.
+    const bossCycle = Math.floor(wave / 8);
+    if ((bossCycle + (runSeed % 2)) % 2 === 0) {
+      list.push({ type: PRISM, t: 0,   boss: true });
+      list.push({ type: PRISM, t: 0.4, boss: true });
+    } else {
+      list.push({ type: OMEGA, t: 0, boss: true });
+    }
     spent += Math.ceil(4 * 2.5);
     t = 4;
     // Boss escorts (v125): from the 2nd boss on, OMEGA arrives under a WARDEN
@@ -3431,7 +3441,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v173', 16, uiCanvas.height - 12);
+  ctx.fillText('v174', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -5594,6 +5604,16 @@ function loop() {
       en.mesh.scale.multiplyScalar(mega ? 1.7 : 1.5); en._radiusMult = mega ? 1.7 : 1.5;
       en.setBoss(en.hp);
       bossAuras.push(makeBossAura(en));
+      // TWIN PRISMS (v174): the pair finds each other on arrival — opposite
+      // orbit directions, offset volley clocks, and the survivor-rage link.
+      if (en.type === EnemyType.PRISM) {
+        const sib = enemies.find(x => x.alive && x !== en && x.type === EnemyType.PRISM);
+        if (sib) {
+          en._twin = sib; sib._twin = en;
+          en._twinIdx = 1; sib._twinIdx = 0;
+          en._orbitSign = -(sib._orbitSign ?? 1);
+        }
+      }
     } else if (s.elite) {
       if (en.type !== EnemyType.BAMBU && en.type !== EnemyType.PYRA) {
         en.hp = Math.ceil(en.hp * 2); en._hpMult = 2;
@@ -6138,9 +6158,13 @@ function loop() {
     }
     if (e._phaseJustChanged) {   // boss act change (v136): sound + popup
       e._phaseJustChanged = false;
-      milestoneT = 1.1; milestoneText = `BOSS PHASE ${e._bossPhase}!`;
+      milestoneT = 1.1;
+      milestoneText = e.type === EnemyType.PRISM
+        ? 'THE SURVIVOR RAGES!'            // v174: twin down — the other snaps
+        : `BOSS PHASE ${e._bossPhase}!`;
       addShake(0.3);
       audio.phaseShift();
+      audio.announce('phase');             // v174: the booth calls the turn
     }
     e.updateDeath(dt);
     if (e._pingT > 0) e._pingT -= dt;
@@ -6909,6 +6933,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=127').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=128').catch(() => {});
   });
 }

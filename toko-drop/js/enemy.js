@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=127';
-import { nesSnap, NEON } from './retro.js?v=127';
+import { TUNING } from './tuning.js?v=128';
+import { nesSnap, NEON } from './retro.js?v=128';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -390,6 +390,8 @@ export const EnemyType = {
   // marching CURTAIN of bullets with one readable gap. Dash the gap or
   // dash the wall — both are answers.
   DRAPER:      36,
+  // boss-exclusive pair (v174) — alternates with OMEGA on boss waves
+  PRISM:       37,
 };
 
 // WARDEN aura radius (world units) — main.js uses it for the damage-immunity
@@ -439,6 +441,7 @@ export const CFG = {
   // KAIKKI cabinet roster (v169)
   [EnemyType.THUG]:        { color: 0x4a3c36, radius: 0.55, speed: 2.2, hp: 2, bulletColor: null,     fireInterval: null },
   [EnemyType.DRAPER]:      { color: 0x9955ff, radius: 0.8,  speed: 0.9, hp: 5, bulletColor: 0xcc88ff, fireInterval: 5.0  },
+  [EnemyType.PRISM]:       { color: 0xff55cc, radius: 0.85, speed: 1.5, hp: 3, bulletColor: 0xff99ee, fireInterval: null },
 };
 
 // Scratch colors for the tinted death flash (v132) — no per-death allocation.
@@ -582,6 +585,11 @@ export class Enemy {
       geo = new THREE.BoxGeometry(0.58, 1.0, 0.42);                 // leather coat
     } else if (type === EnemyType.DRAPER) {
       geo = new THREE.BoxGeometry(1.5, 0.9, 0.4);                   // the loom
+    } else if (type === EnemyType.PRISM) {
+      // Twin shard (v174): a sharp octahedron, leaner than OMEGA's faceted
+      // core — reads as one of a PAIR, not a small OMEGA.
+      geo = new THREE.OctahedronGeometry(cfg.radius, 0);
+      geo.scale(0.8, 1.35, 0.8);
     }
 
     const isBlob = BLOB_TYPES.has(type);
@@ -802,7 +810,7 @@ export class Enemy {
         : type === EnemyType.ORB    ? NEON.cube
         : type === EnemyType.MINDER ? NEON.brain
         : CUBE_TYPES.has(type) ? NEON.cube
-        : (type === EnemyType.TORO || type === EnemyType.OMEGA) ? NEON.heavy
+        : (type === EnemyType.TORO || type === EnemyType.OMEGA || type === EnemyType.PRISM) ? NEON.heavy
         : cfg.bulletColor ? NEON.ranged : NEON.blob;
       this._cabShell = new THREE.Mesh(this.mesh.geometry, new THREE.MeshBasicMaterial({
         color: neonCol, side: THREE.BackSide,
@@ -1257,7 +1265,7 @@ export class Enemy {
     // spiral crossfire, <33% radial-ring rage. Transitions flash the crystal
     // and raise _phaseJustChanged for main.js to sound/announce. _enraged
     // stays as the phase-3 alias (speed boost + non-OMEGA boss behaviors).
-    if (this._isBoss) {
+    if (this._isBoss && this.type !== EnemyType.PRISM) {
       const frac = this.hp / this._bossMaxHp;
       const want = frac <= 0.33 ? 3 : frac <= 0.66 ? 2 : 1;
       if (want > this._bossPhase) {
@@ -1984,6 +1992,50 @@ export class Enemy {
         break;
       }
 
+      case EnemyType.PRISM: {
+        // TWIN PRISMS (v174): boss-exclusive PAIR — two shards orbiting in
+        // opposite directions, trading AIMED VOLLEYS in strict turns (the
+        // rhythm is the read: one fires, you close on the other). When one
+        // shatters, the survivor enrages INSTANTLY — phase-3 ring rage at
+        // 1.45× speed, no matter how much HP it has left.
+        if (this._twin && !this._twin.alive && !this._twinRaged) {
+          this._twinRaged = true;
+          this._bossPhase = 3;
+          this._phaseFlashT = 0.5;
+          this._phaseJustChanged = true;
+        }
+        this._enraged = this._bossPhase === 3;
+        const raged = this._enraged;
+        const want  = raged ? 6.0 : 7.2;
+        const pspd  = cfg.speed * this._speedMult * (raged ? 1.45 : 1);
+        const perpX = -ddz / dist, perpZ = ddx / dist;
+        const radial = dist > want + 1.5 ? 1 : dist < want - 1.5 ? -1 : 0;
+        this.mesh.position.x += (ddx / dist * radial * 0.5 + perpX * this._orbitSign) * pspd * dt;
+        this.mesh.position.z += (ddz / dist * radial * 0.5 + perpZ * this._orbitSign) * pspd * dt;
+        const pbx = halfX - cfg.radius, pbz = halfZ - cfg.radius;
+        this.mesh.position.x = Math.max(-pbx, Math.min(pbx, this.mesh.position.x));
+        this.mesh.position.z = Math.max(-pbz, Math.min(pbz, this.mesh.position.z));
+        this.mesh.rotation.y += (raged ? 1.6 : 0.8) * dt;
+        this._prismFireT = (this._prismFireT ?? (1.2 + (this._twinIdx ?? 0) * 1.4)) - dt;
+        if (this._prismFireT <= 0) {
+          if (raged) {
+            this._prismFireT = 0.75 * this._intervalMult;
+            this._ring(ex, ez, 10, cfg.bulletColor, bullets, this.type);
+          } else {
+            // duet volley: a tight aimed 4-fan, cadence offset per twin so the
+            // pair alternates — never both at once.
+            this._prismFireT = 2.8 * this._intervalMult;
+            const baseA = Math.atan2(playerPos.z - ez, playerPos.x - ex);
+            const span = Math.PI * 0.26;
+            for (let j = 0; j < 4; j++) {
+              const a = baseA - span / 2 + j * (span / 3);
+              bullets.spawnDir(ex, ez, Math.cos(a), Math.sin(a), false, cfg.bulletColor, false, this.type);
+            }
+          }
+        }
+        break;
+      }
+
       case EnemyType.PYRA:
         this.group.rotation.y += this._spinSpeed * dt;
         break;
@@ -2119,12 +2171,15 @@ export class Enemy {
     } else if (this.type === EnemyType.SPLITTA && this.hp <= 2) {
       // Nervous green pulse as it nears death — telegraphs the on-death bullet burst.
       this._setEmissive(Math.sin(performance.now() * 0.018) > 0 ? 0x224400 : 0x000000);
-    } else if (this.type === EnemyType.OMEGA && this._phaseFlashT > 0) {
+    } else if ((this.type === EnemyType.OMEGA || this.type === EnemyType.PRISM) && this._phaseFlashT > 0) {
       // Phase pop (v136): half a second of hot gold strobing — unmissable.
       this._phaseFlashT -= dt;
       this._setEmissive(Math.sin(performance.now() * 0.06) > 0 ? 0xffee88 : 0xff5500);
     } else if (this.type === EnemyType.OMEGA && this._omegaFireT < 0.25) {
       const pc = this._bossPhase === 3 ? 0xaa2200 : this._bossPhase === 2 ? 0x885500 : 0x0088aa;
+      this._setEmissive(Math.sin(performance.now() * 0.03) > 0 ? pc : 0x000000);
+    } else if (this.type === EnemyType.PRISM && (this._prismFireT ?? 9) < 0.3) {
+      const pc = this._bossPhase === 3 ? 0xaa2200 : 0x88104f;
       this._setEmissive(Math.sin(performance.now() * 0.03) > 0 ? pc : 0x000000);
     } else if (this.type === EnemyType.BOTFLY
                && this._t >= CFG[EnemyType.BOTFLY].fireInterval * this._intervalMult - 0.5) {

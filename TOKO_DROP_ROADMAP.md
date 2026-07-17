@@ -63,12 +63,14 @@ with one tell; support enemies grow into a family alongside WARDEN.*
 *(Shipped: BULWARK v140, SIREN v141, CLOAKER v143, MAGNA v144, elite
 affixes v145 — plus TEST MODE v142 and the Roguelike B gauntlet v146.)*
 
-- **Second boss: TWIN PRISMS** — two half-HP crystals orbiting in opposite
-  phase, alternating volleys; when one dies the survivor enrages instantly
-  (phase 3 rules). Alternates with OMEGA per boss cycle; daily seed decides
-  the starting boss.
-- **Announcer variety**: lines for the new enemies + bounty/cleanse events;
-  recorded clips can replace synth speech wherever the user supplies audio.
+- **Second boss: TWIN PRISMS** — SHIPPED v174: two half-HP shards orbiting
+  in opposite directions, trading aimed volleys in strict turns; when one
+  shatters the survivor enrages INSTANTLY (phase-3 ring rage). Alternates
+  with OMEGA per boss cycle; the run seed decides the opener (dailies share
+  it, consecutive bosses in a run always differ).
+- **Announcer variety** — first pass SHIPPED v174 (deeper line pools on every
+  key + a 'phase' key for boss act changes). Still open: recorded clips can
+  replace synth speech wherever the user supplies audio.
 
 ## M5 — Arcade Tribute Wing (Roguelike B grows into a cabinet row)
 
@@ -136,10 +138,11 @@ The cabinet row (each refined individually, in build order):
    streets, money from everything, crates, THE SHOP with the bought arsenal
    — the sanctioned big-weapon exception). Backlog: more shop tiers
    (flamethrower-class), civilians-as-witnesses, mission variety.
-6. **NEX DEUS** *(Nex Machina inspired — the final unlockable)* — dash-through
-   everything, humans to save under a timer, chained secrets, relentless
-   forward pacing. Unlocked by clearing the other five; the crown jewel and
-   the most polish-demanding.
+6. **NEX DEUS** *(Nex Machina inspired — the final unlockable)* — SHIPPED
+   v172 (per-cabinet records + unlock bars) + v173 (the cabinet: zone-surge
+   eruptions from all five rosters, dash-cuts-everything, timed lost-player
+   rescues, heavy-glow neon profile; quest deck entry on unlocked profiles).
+   Backlog: chained secrets, its own boss, polish to crown-jewel level.
 
 ## M5b — The living arena (objectives & hazards)
 
