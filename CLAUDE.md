@@ -52,6 +52,21 @@ tighten over time; the death screen recaps what killed you, a kill breakdown, an
 last 10 run times. No build step — open `hyperdagger/index.html` (three.js via jsDelivr
 importmap, same as toko-drop). Same `gh-pages` deploy caveat as paperboy.
 
+### Drop Cabal (`dropcabal/`)
+A **Cabal (1988 arcade) homage** on Three.js r167 with the **blob and cube enemies from
+Toko Drop** — a gallery shooter with layered depth shooting. Pixel look: renders at a
+**220 px internal height** upscaled with `image-rendering: pixelated` + a CSS scanline
+overlay; everything is unlit `MeshBasicMaterial` with `NoToneMapping` (flat 2D read,
+same rule as paperboy). The little teal gel commando runs along a foreground strip
+behind a sandbag row; the mouse/touch crosshair raycasts into a perspective field
+(ground plane, falling back to an invisible far wall at z −32) and tracers fly INTO the
+depth rows — near enemies and destructible suds towers intercept shots aimed at far
+ones. Enemy orbs fly OUT toward the player plane and are dodged by running or the
+i-frame roll. Grenades lob to the crosshair point (start 3, +1 per stage / bonus tower,
+cap 9). Stage quota gauge Cabal-style; clearing pops all stragglers. No build step —
+open `dropcabal/index.html` (three.js via jsDelivr importmap). Same `gh-pages` deploy
+caveat as paperboy.
+
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
 Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
 
@@ -93,6 +108,18 @@ paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new p
     paper.js    # Object-pooled thrown papers with arc/gravity physics + landing detection
     input.js    # Touch stick (steer/throttle) + two throw buttons; WASD/ZX keyboard fallback
     audio.js    # WebAudio bleep kit (throw/deliver/smash/pickup/crash/day-clear)
+dropcabal/      # Drop Cabal — Cabal-style gallery shooter, toko-drop enemies, pixel render
+  index.html
+  js/
+    main.js     # Scene (sunset sky/hills/checker field), pixel renderer, crosshair raycast,
+                #   spawn director, tracer/orb/grenade collisions, HUD, states
+    palette.js  # Suds-sunset colour scheme (sky/hills/ground/towers/player)
+    enemy.js    # Toko Drop gels on depth rows: GLOBBO/YELA/SPITTOR/ORANGE/SPLITTA(+MINI)
+    player.js   # Gel commando: run along strip, gun lookAt crosshair, dodge roll, mercy
+    shots.js    # Pooled tracers (prev-pos segment tests), enemy orbs (lob gravity), grenades
+    fx.js       # InstancedMesh debris pool + additive boom shells
+    input.js    # Mouse aim/LMB fire/A-D run/Space roll/G-RMB nade; dual-zone touch
+    audio.js    # WebAudio bleep kit (fire/thock/splat/boom/pew/fanfare…)
 hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel enemies
   index.html
   js/
@@ -123,6 +150,44 @@ hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel
 **Dash:** 0.18 s at 26 units/s, 0.9 s cooldown, invincible during dash. Direction uses last aim direction if stick was released before movement.
 
 **Wave progression:** when all 4 enemies are dead, `spawnWave()` removes old meshes from scene and spawns fresh enemies at `0.6 × HALF` radius in a cross pattern. Wave counter displayed in UI.
+
+## Drop Cabal (`dropcabal/`) — Architecture Notes
+
+**Layout:** player strip at z = 8 (`PLAYER_Z`), sandbag row at z ≈ 2.8, enemy depth rows
+at z −7 / −16 / −26 (`ROWS`, weighted far-heavy), destructible towers scattered z −9…−28,
+invisible crosshair far wall at `AIM_WALL_Z` −32, hills/sky behind it. Camera is a
+perspective cam at (playerX·0.35, 7.4, 19.5) — it trucks with the player for the Cabal
+scroll, plus trauma shake.
+
+**Aim / layered shooting:** `computeAim()` raycasts the pointer through the camera at
+the ground plane; misses (or hits behind the wall) fall back to the z −32 wall plane.
+Tracers spawn at the gun tip toward the aim point (+jitter) at 90 u/s and keep `prev`
+each frame; `collideTracers()` picks the LOWEST segment-param hit among tower chunks
+(sphere-approximated), enemies, and enemy orbs (shootable, +20), else ground puff /
+far-wall recycle — so near things really do eat shots aimed at far things.
+
+**Enemies (`enemy.js`):** toko-drop family — GLOBBO (teal hop, aimed orb), YELA CUBE
+(fast slide, quick orb), SPITTOR (red gel, gravity lob), ORANGE CUBE (3-spread), SPLITTA
+(big green, splits into 2 rushing MINIs on death — minis kamikaze the player plane and
+don't count toward spawn quota). Enter from a row edge, then strafe between random
+targets; fire only once in `strafe` state. Debuts (non-GLOBBO) toast once per run.
+
+**Stage flow:** quota = 14 + stage·6 kills; the director keeps ≤ min(8, 3+stage·0.8)
+mains alive, interval tightening with stage. `killEnemy` → gauge; quota reached →
+`stageClear()` pops stragglers, +1 bomb, bonus = stage·1000, 2.4 s banner → next stage
+(fresh scenery, +1 tower per stage capped +3). Bonus towers (gold cap, 22%) give +1
+grenade when fully levelled. Player: 3 lives, orb/mini hit costs one unless rolling
+(0.36 s, i-frames) or in 2 s mercy flicker; grenade = 0.75 s arc to the crosshair ground
+point, r 5.4 boom killing enemies/towers/orbs. Hi-score in localStorage `dropCabalHi`.
+
+**Pixel render:** `renderer.setSize(iw, 220, false)` + CSS `image-rendering: pixelated`
+(canvas stretched to viewport) + scanline overlay div; `NearestFilter` on the sky /
+checker `CanvasTexture`s. The sky canvas is 608×256 to match the 190×80 plane aspect so
+the sun stays round. Careful iterating pools: `hitPlayer()` calls `orbs.clear()`, so the
+orb-vs-player loop re-checks `i` against length; `boomAt`/mini handlers bail out when a
+kill triggers `stageClear`/`gameOver` mid-loop. `window.__dc` exposes
+`{enemies(), orbs, tracers, player, debug: {state, score, setStage, addNades, killAll,
+start}}` for console tinkering and headless smoke tests.
 
 ## Hyper Dagger (`hyperdagger/`) — Architecture Notes
 

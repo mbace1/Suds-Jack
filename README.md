@@ -40,6 +40,29 @@ so the scheme re-tints in one place.
 - "Day" milestones every 130 m ramp bike speed + hazard density and award a bonus; hi-score in localStorage
 - Screen-shake trauma + spark bursts on deliveries, smashes, pickups and crashes
 
+### `dropcabal/`
+**Drop Cabal.** A **Cabal (1988 arcade) homage** built on Three.js r167 — the blob and
+cube gels from Toko Drop invade a Cabal gallery. Chunky **pixel rendering** (220 px
+internal resolution upscaled with `image-rendering: pixelated` + scanlines) over flat
+unlit `MeshBasicMaterial`, suds-sunset palette. **Layered shooting:** your crosshair
+raycasts into a perspective field and tracers fly *into* the depth rows — near enemies
+and destructible suds towers physically intercept shots aimed at far ones, while slow
+readable enemy orbs fly *out* at your strip and have to be dodged.
+
+**Controls:** MOUSE aim · hold LMB fire · A/D run · SPACE dodge roll (i-frames) ·
+G / RMB / SHIFT grenade · ESC pause
+**Mobile:** right finger aims + autofires · left drag runs (quick tap = roll) · ✸ button grenade
+
+#### Gameplay
+- Fill the stage quota gauge Cabal-style; clearing pops the stragglers, banks a stage
+  bonus and hands you +1 bomb
+- GLOBBO hoppers, YELA cubes, lobbing SPITTORs, 3-spread ORANGE cubes, and SPLITTAs
+  that burst into rushing minis — every kill explodes into gel debris
+- Suds towers crumble chunk by chunk for points; gold-capped bonus towers refund a bomb
+- Grenades arc to the crosshair and wipe a radius (enemies, towers, even orbs)
+- Shoot enemy orbs out of the air for +20; roll straight through anything with i-frames
+- 3 lives, mercy flicker, hi-score in localStorage
+
 ### `hyperdagger/`
 **Hyper Dagger.** A first-person **Devil Daggers × HYPERDEMON homage** built on Three.js
 r167 — survive a swarm of voxel skulls on a neon disc floating in a synthwave void; your
