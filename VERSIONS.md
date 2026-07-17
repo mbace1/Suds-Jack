@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v184 — 2026-07-17
+**BINDING backlog — THE BASEMENT SHOP**
+- **A SHOP room joins the basement lattice** (~12% of free door rolls, never overriding the item/boss cadence): no enemies, doors open from the first second, three pedestal deals priced in what the basement trades — blood and points
+- **The deals**: `DEAL: 1 HP` (pay a heart, pick an upgrade card), `DEAL: 1 MAX HP` (pay a heart container, pick a RARE), `+2 HP: 1500 PTS` (points buy a patch-up). Floating gold price tags over each pedestal; sold pedestals grey out and read `SOLD`
+- Can't afford it? A `NOT ENOUGH BLOOD` / `NOT ENOUGH POINTS` bump and the shieldTink — never a punishment, just the till saying no
+- Pedestals clear on every room swap and cabinet exit; minimap doors advertise `SHOP` in gold
+- Cache-bust `?v=137` → `?v=138`; HUD label → v184
+
+---
+
 ## v183 — 2026-07-17
 **KAIKKI backlog — SHOP TIER 2, the flamethrower class**
 - **Three tier-2 items appear in THE SHOP from mission 4**: **LIEKINHEITIN** (₵3000, one-time — a hose of fat fast fire: rapid-2 pod + fire rate + big rounds), **MAGNEETTI** (₵1400, one-time — cash and pickups fly to you; in the money game, that's a build), **KILPI** (₵900, restocked — a shield charge per visit)
