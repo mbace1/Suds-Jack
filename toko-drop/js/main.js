@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=134';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=134';
-import { Player, PLAYER_RADIUS } from './player.js?v=134';
+import { InputManager } from './input.js?v=135';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=135';
+import { Player, PLAYER_RADIUS } from './player.js?v=135';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=134';
-import { RetroPass } from './retro.js?v=134';
-import { audio } from './audio.js?v=134';
-import { initDesigner } from './designer.js?v=134';
-import { t, getLang, setLang, langs } from './lang.js?v=134';
-import { TUNING } from './tuning.js?v=134';
+         CABINET_STYLE, VIS } from './enemy.js?v=135';
+import { RetroPass } from './retro.js?v=135';
+import { audio } from './audio.js?v=135';
+import { initDesigner } from './designer.js?v=135';
+import { t, getLang, setLang, langs } from './lang.js?v=135';
+import { TUNING } from './tuning.js?v=135';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -2079,14 +2079,27 @@ class Generator {
   update(dt) {
     this._spawnT -= dt;
     if (this._flashT > 0) { this._flashT -= dt; this.mat.color.setHex(0xffcc88); }
-    else this.mat.color.setHex(0xb06a2a);
+    else if (this._spawnT < 0.55) {
+      // v181 (backlog): SPAWN TELEGRAPH — the kiln glows hot and swells for
+      // half a second before every pour, so the stream is dodgeable news.
+      this.mat.color.setHex(Math.sin(performance.now() * 0.025) > 0 ? 0xff9944 : 0x7a4418);
+      this.mesh.scale.setScalar(1 + 0.09 * Math.abs(Math.sin(performance.now() * 0.02)));
+    } else {
+      this.mat.color.setHex(0xb06a2a);
+      this.mesh.scale.setScalar(1);
+    }
     this.mesh.rotation.y += dt * 0.4;
     const aliveCount = enemies.reduce((n, e) => n + (e.alive ? 1 : 0), 0);
     // v168: Gauntlet is CROWDS — the dungeon runs a deeper cap
     if (this._spawnT <= 0 && aliveCount < (gaundropMode ? 30 : 22)) {
       this._spawnT = this._rate + Math.random() * 1.2;
+      this.mesh.scale.setScalar(1);
       const a = Math.random() * Math.PI * 2;
-      enemies.push(new Enemy(scene, this.type, this.x + Math.cos(a) * 1.4, this.z + Math.sin(a) * 1.4));
+      const sx2 = this.x + Math.cos(a) * 1.4, sz2 = this.z + Math.sin(a) * 1.4;
+      for (let j = 0; j < 4; j++) {   // v181: the pour is visible too
+        chunkPool.spawn(sx2, 0.5, sz2, (Math.random() - 0.5) * 4, 2.5, (Math.random() - 0.5) * 4, 0xff9944, 0.08);
+      }
+      enemies.push(new Enemy(scene, this.type, sx2, sz2));
     }
   }
   hit() {
@@ -3727,7 +3740,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v180', 16, uiCanvas.height - 12);
+  ctx.fillText('v181', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -4566,6 +4579,25 @@ function spawnWave() {
     for (let n = Math.floor(cols * rows * 0.13); n > 0; n--) {  // loops, not tubes
       carve(Math.floor(rng() * cols), Math.floor(rng() * rows));
     }
+    // v181 TREASURE VAULTS (backlog): 1-2 dead-end alcoves carved off the
+    // halls — a closed cell with exactly ONE open neighbor becomes a gold
+    // nook. Finding them is the reward; a door or a generator moving in on
+    // one is emergent spice, not a bug.
+    const tCells = [];
+    const nVault = lvl >= 5 ? 2 : lvl >= 2 ? 1 : 0;
+    for (let v2 = 0; v2 < nVault; v2++) {
+      for (let t2 = 0; t2 < 120; t2++) {
+        const ti = 1 + Math.floor(rng() * (cols - 2));
+        const tj = 1 + Math.floor(rng() * (rows - 2));
+        if (open[ti][tj]) continue;
+        const nb = (open[ti - 1][tj] ? 1 : 0) + (open[ti + 1][tj] ? 1 : 0) +
+                   (open[ti][tj - 1] ? 1 : 0) + (open[ti][tj + 1] ? 1 : 0);
+        if (nb !== 1) continue;
+        open[ti][tj] = true;
+        tCells.push([ti, tj]);
+        break;
+      }
+    }
     // ── merged stone runs from closed cells ──
     // v167: BRICK walls — shared canvas texture, per-wall UVs scaled so a
     // brick stays ~2.2 world units regardless of run length.
@@ -4693,6 +4725,26 @@ function spawnWave() {
       pu.mesh.geometry.dispose();
       pu.mesh.geometry = POTION_GEO;   // v169: a flask that LOOKS like a flask
       powerups.push(pu);
+    }
+    // v181: the vaults pay — a pile of bright gold, sometimes with a potion
+    for (const [ti, tj] of tCells) {
+      for (let k = 0; k < 3; k++) {
+        const pu = new Powerup(scene,
+          cX(ti) + (rng() - 0.5) * cw * 0.5, cZ(tj) + (rng() - 0.5) * ch * 0.5, 'score');
+        pu._life = 999;
+        pu._value = 400 + lvl * 60;
+        pu.mesh.geometry.dispose();
+        pu.mesh.geometry = CASH_GEO;
+        pu.mat.color.setHex(0xffdd33);
+        powerups.push(pu);
+      }
+      if (rng() < 0.4) {
+        const pu = new Powerup(scene, cX(ti), cZ(tj), 'potion');
+        pu._life = 999;
+        pu.mesh.geometry.dispose();
+        pu.mesh.geometry = POTION_GEO;
+        powerups.push(pu);
+      }
     }
     // ── a welcome party already loose in the halls ──
     const n0 = Math.min(18, 6 + lvl * 2);   // v170: the halls are ALREADY busy
@@ -7626,6 +7678,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=134').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=135').catch(() => {});
   });
 }
