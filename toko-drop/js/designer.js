@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=125';
-import { t } from './lang.js?v=125';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=125';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=126';
+import { t } from './lang.js?v=126';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=126';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -498,12 +498,22 @@ export function initDesigner({ onResume, settings }) {
       hint.className = 'dnote';
       const ORDER = [null, 'tokotron', 'gaundrop', 'binding', 'loadout', 'kaikki'];
       const COL = { tokotron: '#88f4ff', gaundrop: '#ffbb66', binding: '#ff99bb', loadout: '#bbff77', kaikki: '#ff6655' };
+      const nex = document.createElement('div');
+      nex.className = 'dnote';
       const paint = () => {
         const sel = settings.getCabinet();
         btn.textContent = sel ? t(sel) : t('off');
         btn.style.color = sel ? COL[sel] : '#666';
         btn.style.borderColor = sel ? COL[sel] + '66' : '#1e1e38';
-        hint.textContent = sel ? t(sel + 'H') : t('cabRowH');
+        // v172: each cabinet shows its record vs the NEX DEUS requirement
+        const nfo = settings.getNexInfo();
+        hint.textContent = sel
+          ? `${t(sel + 'H')}  ${t('cabBest')} ${nfo.bests[sel] || 0}/${nfo.req[sel]}`
+          : t('cabRowH');
+        nex.textContent = nfo.unlocked
+          ? `${t('nexdeus')}: ${t('nexReadyH')}`
+          : `${t('nexdeus')}: ${t('nexLockedH')} (${nfo.progress}/5)`;
+        nex.style.color = nfo.unlocked ? '#ff44ff' : '';
       };
       paint();
       btn.addEventListener('click', () => {
@@ -514,6 +524,7 @@ export function initDesigner({ onResume, settings }) {
       row.appendChild(lbl); row.appendChild(btn);
       el.appendChild(row);
       el.appendChild(hint);
+      el.appendChild(nex);
     }
     toggleRow(t('announcer'), settings.getAnnouncer, settings.setAnnouncer,
       t('annOnH'), t('annOffH'), '#ff88dd', '#ff66cc66');

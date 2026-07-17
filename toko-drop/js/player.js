@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=125';
+import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=126';
 
 const SPEED          = 6;
 const DASH_SPEED     = 26;
