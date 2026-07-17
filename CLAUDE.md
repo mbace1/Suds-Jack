@@ -264,7 +264,8 @@ no pad is present the getters fall through to the existing mouse/keyboard/touch 
 Menus too: `input.consumeUi()` returns edge-detected d-pad/stick up-down + A/B/Start;
 `gamepadMenu()` (main.js, in `animate()` whenever not actively playing) moves a
 `gfocus` class across the overlay's buttons, A activates via synthetic `pointerdown`
-(main action when nothing focused), Start pauses mid-run, B/Start resumes.
+(main action when nothing focused), A/Start fire the main action on menu/tips/death
+(start · reveal tips · retry), Start pauses mid-run, B/Start resumes.
 `startGame()` drains stale A/B edges. Gamepad presses don't grant user-activation —
 audio needs one real click/touch first. `input.rumble()` fires dual-rumble haptics
 (DualSense/Xbox, via `buzz()` behind `opts.haptics`) on heavy kills / HYPER hits /

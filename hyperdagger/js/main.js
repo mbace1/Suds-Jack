@@ -664,7 +664,7 @@ function showMenu() {
      <button id="runKindBtn" class="opt">RUN: ${runKind === 'daily'
     ? `DAILY &mdash; everyone faces the ${todayStr()} seed`
     : 'FREE &mdash; pure random'}</button>
-     <p class="go">${bestLine()}click / tap to descend</p>`;
+     <p class="go">${bestLine()}click / tap / press &#10005; or START to descend</p>`;
   document.getElementById('modeBtn').addEventListener('pointerdown', e => {
     e.stopPropagation();
     mode = mode === 'hyper' ? 'pure' : 'hyper';
@@ -703,7 +703,7 @@ function showTips() {
      <p class="sub">never through bodies &mdash; charge the red projectiles, dodge the bone</p>
      <p class="big">&#9670; <b>gems level your daggers</b></p>
      <p class="sub">heavy kills drop them &mdash; 10 / 30 / 70 &rarr; faster &middot; homing &middot; the crimson hand</p>
-     <p class="go">click / tap to descend</p>`;
+     <p class="go">click / tap / press &#10005; to descend</p>`;
 }
 
 function hiKey() { return mode === 'hyper' ? 'hyperDaggerHiHyper' : 'hyperDaggerHi'; }
@@ -821,7 +821,7 @@ function showDeath(timedOut) {
     : `<p>${best ? 'NEW BEST' : `best ${hiScore.toFixed(1)}s`}${mode === 'hyper' ? ' &middot; hyper' : ''}</p>`}
      ${historyLine ? `<p class="history">recent: ${historyLine}</p>` : ''}
      <button id="shareBtn" class="opt">COPY RUN</button>
-     <p class="go">click / tap to retry</p>`;
+     <p class="go">click / tap / &#10005; to retry</p>`;
   document.getElementById('shareBtn').addEventListener('pointerdown', async e => {
     e.stopPropagation(); // don't let the copy tap restart the run
     const btn = e.currentTarget;
@@ -1974,7 +1974,9 @@ function gamepadMenu() {
   const resume = state === 'playing' && paused && (ui.b || ui.start);
   if (ui.a && gfocus >= 0 && btns[gfocus]) {
     btns[gfocus].dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-  } else if ((ui.a && gfocus < 0) || resume) {
+  } else if ((ui.a && gfocus < 0) || ui.start || resume) {
+    // ui.start here covers "press Start to play" from menu/tips/death —
+    // console muscle memory; while paused the resume branch means the same
     // main action: start / retry / resume — same path as a screen tap.
     // (Note: gamepad presses don't grant browser user-activation, so audio
     // stays silent until the first real click/touch — unavoidable.)
