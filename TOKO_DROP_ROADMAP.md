@@ -125,8 +125,9 @@ The cabinet row (each refined individually, in build order):
    high score, 2P.
 2. **GAUNDROP** *(Gauntlet tribute)* — v149, graphics v151, REMAKE v156
    (real tile mazes, KEY + locked exit, GHOST streams, wall-phasing WRAITH,
-   hunger drain + food economy, floor-clearing POTION). Backlog: generator
-   spawn telegraphs, treasure rooms, per-mode high score.
+   hunger drain + food economy, floor-clearing POTION); v181 generator
+   spawn telegraphs + TREASURE VAULT alcoves; per-mode high score v172.
+   Backlog: 2P.
 3. **THE BINDING OF TOKO** *(Binding of Isaac tribute, user addition)* —
    v150, graphics v151, REMAKE v157 (seeded rock layouts, in-room spawns,
    FLIT/SPITTLE/CHARGER/HOPPER roster, REAL branching doors, hearts
@@ -179,13 +180,12 @@ too, so luring is always a legal tactic).*
 
 ## M6 — Modes & meta depth
 
-- **SMASH TV floor structure**: the boss room ends a floor → palette shift,
-  tougher lattice, bonus room between floors.
-- **Daily modifiers** (seeded, rotating weekly): GLASS (1 HP, ×2 score),
-  SURGE DAY (double hazards), RICH DAY (double loot, +40% enemies) — the
-  leaderboard tags the modifier.
-- **Roguelike depth**: bigger card pool + **cursed cards** (power at a
-  price: e.g. +40% damage / −1 max HP) for build identity.
+- **SMASH TV floor structure** — SHIPPED v178 (bosses end floors, BONUS
+  room between, palette shift + tougher lattice per floor).
+- **Daily modifiers** — SHIPPED v179 (GLASS / SURGE DAY / RICH DAY on a
+  4-day date rotation; leaderboard tags the modifier).
+- **Roguelike depth** — SHIPPED v180 (pool 13 + four CURSED cards with the
+  price printed on the card).
 - **Graze-chain heat meter** if M1 data shows graze engagement.
 
 ---

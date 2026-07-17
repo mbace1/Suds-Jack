@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v181 — 2026-07-17
+**GAUNDROP backlog — generator spawn telegraphs + TREASURE VAULTS**
+- **Spawn telegraphs**: every generator now glows hot and swells for half a second before pouring, and the pour itself throws amber sparks at the spawn point — the ghost stream is dodgeable news instead of a surprise
+- **TREASURE VAULTS**: from level 2 (two from level 5), a dead-end alcove is carved off the halls — a closed cell with exactly one open neighbor becomes a gold nook holding 3 bright-gold piles (400 + 60/level each) and a 40% potion roll. Finding them is the reward; a locked door or a generator moving in on one is emergent spice
+- Roadmap: M6 arc (v178-v180) and the gaundrop backlog rows marked shipped
+- Cache-bust `?v=134` → `?v=135`; HUD label → v181
+
+---
+
 ## v180 — 2026-07-17
 **Roguelike depth (M6) — three new cards + CURSED cards; queue: M6 arc complete**
 - **Three new upgrade cards** (pool 10 → 13): **Close Shave** (grazes pay TRIPLE), **Suds Feast** (every 25 kills restores 1 HP — `THE SUDS PROVIDE`), **Long Slide** (dash carries 30% farther, stacking to +70%)
