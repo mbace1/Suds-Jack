@@ -7,6 +7,18 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v175 — 2026-07-17
+**The living arena, part 1 — gates round 2 + VAULT & ESCORT objectives (approved arc, step 4 / M5b)**
+- **GATE CHAINS**: bank a second gate within 6 s of the last and the pay climbs — `GATE CHAIN ×N! +500×N` (score-mult doubles it). Route planning is now a minigame
+- **RISK GATES** (wave 5+, ~35% of gates): the beam alternates green/red on a readable 1.6 s clock — dash on green for a **DOUBLE PRIZE**, on red it's a harmless `DUD!` (the cost is the waste, never damage)
+- **DRIFTING GATES** (wave 10+): gates wander slowly and bounce inside the walls, so the late-game route never sits still
+- **VAULT CRATE** (classic/SMASH, wave 5+, every 4th wave, never boss): an armored gold-wired box — 8 hits to crack, and **every hit pings the room**: enemies within 9 units surge at you (the SIREN mechanism). Inside: a weapon pod + a fat cash drop + a 40% score-mult roll. Loud greed, your call
+- **ESCORT BOT** (classic/SMASH, wave 6+, offset every 4th wave): a little soap-bot trundles wall to wall in ~14 s. Enemies never chase it — but stray enemy fire (2 hits) or any body that touches it kills it. Deliver it alive and it gifts a weapon pod. Protecting it is pure positioning
+- Objectives never stack with each other or boss waves; all die with the wave/run (vault, bot, and chain state clear on every spawn, run start, quest entry, and title return)
+- Cache-bust `?v=128` → `?v=129`; HUD label → v175
+
+---
+
 ## v174 — 2026-07-17
 **TWIN PRISMS — the second boss + announcer variety (approved arc, step 3 / M4)**
 - **New boss: TWIN PRISMS** (38 types) — boss waves now alternate headliners: OMEGA's lone crystal or a PAIR of sharp magenta shards orbiting in opposite directions. The twins trade tight aimed 4-fan volleys in strict turns (the rhythm is the read: one fires, you press the other) — and when one shatters, **the survivor enrages INSTANTLY**: phase-3 ring rage at 1.45× speed regardless of remaining HP, with a `THE SURVIVOR RAGES!` call

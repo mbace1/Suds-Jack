@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=128';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=128';
-import { Player, PLAYER_RADIUS } from './player.js?v=128';
+import { InputManager } from './input.js?v=129';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=129';
+import { Player, PLAYER_RADIUS } from './player.js?v=129';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=128';
-import { RetroPass } from './retro.js?v=128';
-import { audio } from './audio.js?v=128';
-import { initDesigner } from './designer.js?v=128';
-import { t, getLang, setLang, langs } from './lang.js?v=128';
-import { TUNING } from './tuning.js?v=128';
+         CABINET_STYLE, VIS } from './enemy.js?v=129';
+import { RetroPass } from './retro.js?v=129';
+import { audio } from './audio.js?v=129';
+import { initDesigner } from './designer.js?v=129';
+import { t, getLang, setLang, langs } from './lang.js?v=129';
+import { TUNING } from './tuning.js?v=129';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -803,13 +803,22 @@ class SludgeRibbon {
 }
 
 class Gate {
-  constructor(sc) {
+  // v175 (M5b gates, round 2): `risk` gates alternate green/red on a readable
+  // 1.6 s cycle — dash on green pays double, red is a harmless dud. `drift`
+  // gates wander slowly, so the late-game route keeps changing.
+  constructor(sc, risk = false, drift = false) {
     const x = (Math.random() - 0.5) * HALF_X * 1.5;
     const z = (Math.random() - 0.5) * HALF_Z * 1.5;
     const angle = Math.random() * Math.PI;
     this._x = x; this._z = z; this._angle = angle;
     this.alive = true;
     this._dmgCooldown = 0;
+    this._risk = risk;
+    this._green = true;
+    if (drift) {
+      const da = Math.random() * Math.PI * 2;
+      this._driftX = Math.cos(da) * 0.4; this._driftZ = Math.sin(da) * 0.4;
+    }
 
     const postMat = new THREE.MeshPhongMaterial({ color: 0x888899, shininess: 60 });
     const postGeo = new THREE.CylinderGeometry(0.25, 0.25, 1.8, 8);
@@ -848,6 +857,25 @@ class Gate {
     const pulse = 0.5 + 0.4 * Math.sin(t * 8);
     this._laserMat.opacity = pulse;
     this._glowMat.opacity  = 0.12 + 0.18 * pulse;
+    if (this._risk) {
+      // green/red on a strict clock — the read is the whole game
+      this._green = Math.floor(t / 1.6) % 2 === 0;
+      const col = this._green ? 0x44ff88 : 0xff4455;
+      this._laserMat.color.setHex(col);
+      this._glowMat.color.setHex(col);
+    }
+    if (this._driftX !== undefined) {
+      // slow wander, bouncing well inside the walls
+      this._x += this._driftX * dt; this._z += this._driftZ * dt;
+      if (Math.abs(this._x) > HALF_X - 3) this._driftX *= -1;
+      if (Math.abs(this._z) > HALF_Z - 3) this._driftZ *= -1;
+      const dx = Math.cos(this._angle + Math.PI / 2) * 2;
+      const dz = Math.sin(this._angle + Math.PI / 2) * 2;
+      this._p1.position.set(this._x + dx, 0.9, this._z + dz);
+      this._p2.position.set(this._x - dx, 0.9, this._z - dz);
+      this._laser.position.set(this._x, 0.9, this._z);
+      this._glow.position.set(this._x, 0.9, this._z);
+    }
     if (this._dmgCooldown > 0) this._dmgCooldown -= dt;
   }
   deactivate(sc) {
@@ -869,6 +897,89 @@ class Gate {
     const perpDist = Math.hypot(perpX, perpZ);
     return Math.abs(para) < 2.0 && perpDist < 0.2 + radius;
   }
+}
+
+// ── Living arena objectives (v175, M5b) ─────────────────────────────────────────
+// VAULT CRATE: an armored box — ~8 hits to crack, big loot inside, and every
+// hit PINGS the room: nearby enemies surge at you. Loud greed, your choice.
+class VaultCrate {
+  constructor(sc, x, z) {
+    this.x = x; this.z = z; this.hp = 8;
+    this._flashT = 0;
+    this.mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(1.5, 1.1, 1.5),
+      new THREE.MeshPhongMaterial({ color: 0x8899aa, shininess: 90 }));
+    this.mesh.position.set(x, 0.55, z);
+    this.ring = new THREE.Mesh(
+      new THREE.BoxGeometry(1.66, 1.2, 1.66),
+      new THREE.MeshBasicMaterial({ color: 0xffcc33, wireframe: true }));
+    this.ring.position.copy(this.mesh.position);
+    sc.add(this.mesh); sc.add(this.ring);
+  }
+  update(dt) {
+    this.ring.rotation.y += dt * 0.5;
+    if (this._flashT > 0) {
+      this._flashT -= dt;
+      this.mesh.material.emissive.setHex(Math.sin(performance.now() * 0.05) > 0 ? 0x664400 : 0x000000);
+    } else this.mesh.material.emissive.setHex(0x000000);
+  }
+  remove(sc) {
+    sc.remove(this.mesh); sc.remove(this.ring);
+    this.mesh.geometry.dispose(); this.mesh.material.dispose();
+    this.ring.geometry.dispose(); this.ring.material.dispose();
+  }
+}
+// ESCORT BOT: a little soap-bot trundles wall to wall; deliver it alive and
+// it gifts a weapon pod. Enemies never chase it — but stray fire and bodies
+// kill it, so protecting it is pure positioning.
+class EscortBot {
+  constructor(sc) {
+    this.hp = 2;
+    this._flashT = 0;
+    const westward = Math.random() < 0.5;
+    this.x = (westward ? 1 : -1) * (HALF_X - 1.5);
+    this.z = (Math.random() * 2 - 1) * (HALF_Z - 4);
+    this._tx = -this.x;
+    this._spd = (HALF_X * 2 - 3) / 14;     // the crossing takes ~14 s
+    this.group = new THREE.Group();
+    this._bodyMat = new THREE.MeshPhongMaterial({ color: 0xf4f7ff, shininess: 80 });
+    this._trimMat = new THREE.MeshBasicMaterial({ color: 0x44ddff });
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.4, 0.5, 10), this._bodyMat);
+    body.position.y = 0.3;
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.28, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), this._bodyMat);
+    dome.position.y = 0.55;
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 5), this._trimMat);
+    eye.position.set((this._tx > this.x ? 1 : -1) * 0.22, 0.6, 0);
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3, 5), this._trimMat);
+    mast.position.y = 0.9;
+    this.group.add(body, dome, eye, mast);
+    this.group.position.set(this.x, 0, this.z);
+    sc.add(this.group);
+  }
+  update(dt) {
+    const dir = Math.sign(this._tx - this.x);
+    this.x += dir * this._spd * dt;
+    this.group.position.set(this.x, 0.04 * Math.abs(Math.sin(performance.now() * 0.008)), this.z);
+    this.group.rotation.z = -dir * 0.06 * Math.sin(performance.now() * 0.01);
+    if (this._flashT > 0) {
+      this._flashT -= dt;
+      this._bodyMat.emissive.setHex(0x661111);
+    } else this._bodyMat.emissive.setHex(0x000000);
+    return dir > 0 ? this.x >= this._tx : this.x <= this._tx;
+  }
+  remove(sc) {
+    sc.remove(this.group);
+    for (const c of this.group.children) c.geometry.dispose();
+    this._bodyMat.dispose(); this._trimMat.dispose();
+  }
+}
+let vaultCrate = null;
+let escortBot  = null;
+let gateChainT = 0, gateChainN = 0;   // v175: dash gates back-to-back for a bonus
+function clearArenaObjectives() {
+  if (vaultCrate) { vaultCrate.remove(scene); vaultCrate = null; }
+  if (escortBot)  { escortBot.remove(scene);  escortBot  = null; }
+  gateChainT = 0; gateChainN = 0;
 }
 
 // Boss identity (v59): a flat pulsing ground ring marks the every-8th-wave boss.
@@ -3441,7 +3552,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v174', 16, uiCanvas.height - 12);
+  ctx.fillText('v175', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -4143,6 +4254,7 @@ function clearFX() {
   clearGaundropLevel();
   clearBounty();
   for (const g of gates)        g.remove(scene); gates         = [];
+  clearArenaObjectives();   // v175: vault/escort/chain die with the wave state
   for (const p of powerups)     p.remove(scene); powerups      = [];
   clearBossAuras();
   damageNumbers = [];
@@ -4220,7 +4332,8 @@ function spawnWave() {
   if (player._hasShield) player._shield = true;
   if (!inCabinet() && wave >= 3) {
     if (gates.length >= 2) { gates[0].remove(scene); gates.shift(); }
-    gates.push(new Gate(scene));
+    // v175: from wave 5 some gates run the RISK cycle; from 10 they wander
+    gates.push(new Gate(scene, wave >= 5 && rng() < 0.35, wave >= 10));
   }
 
   // GAUNDROP remake (v156): a REAL tile dungeon per level — drunkard-walk
@@ -4834,6 +4947,17 @@ function spawnWave() {
     foamZones.push(new FoamZone(scene,
       (rng() * 2 - 1) * (HALF_X - 4), (rng() * 2 - 1) * (HALF_Z - 4)));
   }
+  // v175 living-arena objectives — VAULT greed and the ESCORT errand share
+  // the classic/SMASH rotation on offset beats so they never stack.
+  clearArenaObjectives();
+  if (!inCabinet() && kind !== 'boss' && wave >= 5 && wave % 4 === 3) {
+    vaultCrate = new VaultCrate(scene,
+      (rng() * 2 - 1) * (HALF_X - 5), (rng() * 2 - 1) * (HALF_Z - 5));
+  }
+  if (!inCabinet() && kind !== 'boss' && wave >= 6 && wave % 4 === 1) {
+    escortBot = new EscortBot(scene);
+    milestoneT = 1.2; milestoneText = 'ESCORT THE BOT!';
+  }
   clusterTimer = 0;
   clusterSpawnAt = [3 + rng() * 5]; // 3-8 s into the wave — always overlaps live enemies
   if (smashMode) clusterSpawnAt.push(12 + rng() * 5);
@@ -5124,6 +5248,7 @@ function startCabQuest(mode) {
   // leftover classic-wave gates/bounty/foam don't belong inside a cabinet
   for (const g of gates) g.remove(scene);
   gates = [];
+  clearArenaObjectives();
   clearBounty();
   for (const f of foamZones) f.remove(scene);
   foamZones = [];
@@ -6623,6 +6748,85 @@ function loop() {
     }
   }
 
+  // v175 living-arena objectives: the vault takes hits and snitches; the
+  // escort bot crosses, dies to stray fire and bodies, and pays on delivery.
+  if (gateChainT > 0) { gateChainT -= dt; if (gateChainT <= 0) gateChainN = 0; }
+  if (vaultCrate && gameState === 'playing') {
+    vaultCrate.update(dt);
+    for (let bi = bullets.active.length - 1; bi >= 0; bi--) {
+      const b = bullets.active[bi];
+      if (!b.isPlayer) continue;
+      if (Math.hypot(b.mesh.position.x - vaultCrate.x, b.mesh.position.z - vaultCrate.z) < 1.15) {
+        bullets.recycleAt(bi);
+        vaultCrate.hp--;
+        vaultCrate._flashT = 0.25;
+        audio.plateTink();
+        // every hit pings the room — nearby enemies surge at YOU
+        for (const e of enemies) {
+          if (!e.alive) continue;
+          if (Math.hypot(e.position.x - vaultCrate.x, e.position.z - vaultCrate.z) < 9) {
+            e._surgeT = Math.max(e._surgeT || 0, 0.7);
+          }
+        }
+        if (vaultCrate.hp <= 0) {
+          const vx = vaultCrate.x, vz = vaultCrate.z;
+          for (let j = 0; j < 12; j++) {
+            const a = (j / 12) * Math.PI * 2;
+            chunkPool.spawn(vx, 0.8, vz, Math.cos(a) * 5, 2.5, Math.sin(a) * 5,
+              j % 2 ? 0xffcc33 : 0x8899aa, 0.12);
+          }
+          powerups.push(new Powerup(scene, vx, vz, randomWeaponPodId(wave >= 8)));
+          const cash = new Powerup(scene, vx + 1.1, vz, 'score');
+          cash._value = 800 + wave * 60;
+          powerups.push(cash);
+          if (Math.random() < 0.4) powerups.push(new Powerup(scene, vx - 1.1, vz, 'scoremult'));
+          milestoneT = 1.2; milestoneText = 'VAULT CRACKED!';
+          addShake(0.4);
+          audio.applause();
+          audio.announce('prize');
+          vaultCrate.remove(scene); vaultCrate = null;
+        }
+        break;
+      }
+    }
+  }
+  if (escortBot && gameState === 'playing') {
+    const arrived = escortBot.update(dt);
+    let botDead = false;
+    for (let bi = bullets.active.length - 1; bi >= 0; bi--) {
+      const b = bullets.active[bi];
+      if (b.isPlayer) continue;
+      if (Math.hypot(b.mesh.position.x - escortBot.x, b.mesh.position.z - escortBot.z) < 0.75) {
+        bullets.recycleAt(bi);
+        escortBot.hp--;
+        escortBot._flashT = 0.3;
+        if (escortBot.hp <= 0) botDead = true;
+        break;
+      }
+    }
+    if (!botDead) {
+      for (const e of enemies) {
+        if (!e.alive || !MELEE_TYPES.has(e.type)) continue;
+        if (Math.hypot(e.position.x - escortBot.x, e.position.z - escortBot.z) < e.radius + 0.5) {
+          botDead = true;
+          break;
+        }
+      }
+    }
+    if (botDead) {
+      gooChunkPool.spawn(escortBot.x, 0.5, escortBot.z, 0, 3, 0, 0x44ddff, 0.14);
+      milestoneT = 1.1; milestoneText = 'THE BOT IS DOWN…';
+      audio.civDown();
+      escortBot.remove(scene); escortBot = null;
+    } else if (arrived) {
+      powerups.push(new Powerup(scene, escortBot.x, escortBot.z, randomWeaponPodId(wave >= 8)));
+      milestoneT = 1.2; milestoneText = 'ESCORT DELIVERED! ENJOY THE POD';
+      audio.applause();
+      audio.announce('prize');
+      escortBot.remove(scene); escortBot = null;
+    }
+  }
+
   // Gate interactions
   if (gates.length > 0) {
     const px = player.position.x, pz = player.position.z;
@@ -6632,6 +6836,12 @@ function loop() {
         if (player.dashing) {
           if (!gateUsed) { gateUsed = true; localStorage.setItem('tokoDropGateUsed', '1'); }
           g.deactivate(scene);
+          if (g._risk && !g._green) {
+            // v175 RISK gate on red: a harmless dud — the cost is the waste
+            milestoneT = 1.0; milestoneText = 'DUD! GREEN MEANS GO';
+            audio.shieldTink();
+            break;
+          }
           // Burst of teal shards at gate centre
           for (let _gi = 0; _gi < 14; _gi++) {
             const _ga = (_gi / 14) * Math.PI * 2;
@@ -6643,6 +6853,20 @@ function loop() {
           audio.pickup();
           const gateTypes = ['hp', 'invincible', 'firerate', 'scoremult'];
           powerups.push(new Powerup(scene, g._x, g._z, gateTypes[Math.floor(Math.random() * gateTypes.length)]));
+          if (g._risk) {
+            // green on the cycle: DOUBLE prize for the read
+            powerups.push(new Powerup(scene, g._x + 1.2, g._z, gateTypes[Math.floor(Math.random() * gateTypes.length)]));
+            milestoneT = 1.1; milestoneText = 'GREEN RUSH! DOUBLE PRIZE';
+          }
+          // v175 GATE CHAIN: bank another gate within 6 s and the pay climbs
+          gateChainN = gateChainT > 0 ? gateChainN + 1 : 1;
+          gateChainT = 6.0;
+          if (gateChainN >= 2) {
+            const chainPay = 500 * gateChainN * (scoreMultT > 0 ? 2 : 1);
+            score += chainPay;
+            milestoneT = 1.1; milestoneText = `GATE CHAIN x${gateChainN}! +${chainPay}`;
+            audio.milestone();
+          }
         }
       }
       // Enemies hitting laser take damage (once per 0.5s)
@@ -6933,6 +7157,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=128').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=129').catch(() => {});
   });
 }
