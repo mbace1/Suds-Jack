@@ -88,7 +88,7 @@ class AudioSystem {
     if (!this._introVoice || this._volume <= 0) return null;
     try {
       if (!this._introEl) {
-        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=129', import.meta.url).href);
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=130', import.meta.url).href);
         this._introEl.preload = 'auto';
       }
       this._introEl.volume = this._annVolume;
@@ -274,6 +274,16 @@ class AudioSystem {
     this._tone(90, 0.35, 'sawtooth', 0.30, 45);
     this._tone(700, 0.30, 'sine', 0.16, 1600);
     this._noise(0.10, 0.22);
+  }
+  // STEAM VENT blast (v176): a hot hiss with a low kick under it.
+  ventBlast() {
+    this._noise(0.18, 0.28);
+    this._tone(130, 0.2, 'sine', 0.24, 60);
+  }
+  // SUDS SURGE (v176): the foam wall leaves its wall — a long soft whoosh.
+  surgeFoam() {
+    this._noise(0.14, 0.6);
+    this._tone(220, 0.5, 'sine', 0.12, 90);
   }
   curtainAlarm() {
     this._tone(880, 0.14, 'square', 0.22);

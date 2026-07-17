@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v176 — 2026-07-17
+**The living arena, part 2 — hazards + HAZARD/VAULT rooms (approved arc, step 5 / M5b)**
+- **STEAM VENTS**: floor grates that glow amber for a full readable second, then ERUPT — damage + knockback to ANYTHING standing on them, enemies included (luring is a legal tactic). Classic: 2-3 vents every 3rd wave from 7; SMASH HAZARD rooms are the vent venue (5-6)
+- **DRAIN**: a whirlpool with a visible swirl — gentle pull on every body (player 1.1 u/s, enemies 0.7) and it **eats any bullet that crosses it, both sides**. Cover that moves the fight. Classic every 5th wave from 9; always in HAZARD rooms
+- **SUDS SURGE** (SMASH only, wave 6+, ~40% of rooms): `SUDS SURGE INCOMING!` + alarm, then a foam wall sweeps one lane of the room — enemies brushed hard aside (and hurt), the player damaged only on a direct hit. The show's commercial-break spectacle
+- **Two new SMASH room kinds** join the lattice from wave 5: **HAZARD 2×$** (vent-heavy + drain, pays double floor loot like HEAVY) and **VAULT$** (the armored crate venue — v175's vault spawns in-room)
+- New stingers: `ventBlast` (hot hiss + low kick) and `surgeFoam` (long soft whoosh); hazards clear on every wave spawn, run start, quest entry, and title return
+- Cache-bust `?v=129` → `?v=130`; HUD label → v176
+
+---
+
 ## v175 — 2026-07-17
 **The living arena, part 1 — gates round 2 + VAULT & ESCORT objectives (approved arc, step 4 / M5b)**
 - **GATE CHAINS**: bank a second gate within 6 s of the last and the pay climbs — `GATE CHAIN ×N! +500×N` (score-mult doubles it). Route planning is now a minigame

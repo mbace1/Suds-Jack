@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=129';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=129';
-import { Player, PLAYER_RADIUS } from './player.js?v=129';
+import { InputManager } from './input.js?v=130';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=130';
+import { Player, PLAYER_RADIUS } from './player.js?v=130';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=129';
-import { RetroPass } from './retro.js?v=129';
-import { audio } from './audio.js?v=129';
-import { initDesigner } from './designer.js?v=129';
-import { t, getLang, setLang, langs } from './lang.js?v=129';
-import { TUNING } from './tuning.js?v=129';
+         CABINET_STYLE, VIS } from './enemy.js?v=130';
+import { RetroPass } from './retro.js?v=130';
+import { audio } from './audio.js?v=130';
+import { initDesigner } from './designer.js?v=130';
+import { t, getLang, setLang, langs } from './lang.js?v=130';
+import { TUNING } from './tuning.js?v=130';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -982,6 +982,116 @@ function clearArenaObjectives() {
   gateChainT = 0; gateChainN = 0;
 }
 
+// ── Living arena hazards (v176, M5b) ────────────────────────────────────────────
+// The floor is a player too — and every hazard hurts enemies as well, so
+// luring is always a legal tactic.
+// STEAM VENT: a floor grate that glows amber for ~1 s, then erupts — damage
+// + knockback to ANYTHING standing on it.
+class SteamVent {
+  constructor(sc, x, z) {
+    this.x = x; this.z = z;
+    this.state = 'idle';
+    this.t = 3 + Math.random() * 5;
+    this.justErupted = false;
+    this._grateMat = new THREE.MeshPhongMaterial({ color: 0x333940, shininess: 30 });
+    this.grate = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.95, 0.1, 12), this._grateMat);
+    this.grate.position.set(x, 0.05, z);
+    this._ringMat = new THREE.MeshBasicMaterial({ color: 0xffaa33, transparent: true, opacity: 0,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    this.ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.5, 26), this._ringMat);
+    this.ring.rotation.x = -Math.PI / 2;
+    this.ring.position.set(x, 0.03, z);
+    sc.add(this.grate); sc.add(this.ring);
+  }
+  update(dt) {
+    this.t -= dt;
+    if (this.state === 'idle') {
+      this._ringMat.opacity = 0;
+      if (this.t <= 0) { this.state = 'warm'; this.t = 1.0; }
+    } else if (this.state === 'warm') {
+      // the amber second: readable, escapable, weaponizable
+      this._ringMat.color.setHex(0xffaa33);
+      this._ringMat.opacity = 0.25 + 0.55 * Math.abs(Math.sin(performance.now() * (this.t < 0.4 ? 0.03 : 0.012)));
+      if (this.t <= 0) {
+        this.state = 'erupt'; this.t = 0.45;
+        this.justErupted = true;
+        for (let j = 0; j < 14; j++) {
+          const a = (j / 14) * Math.PI * 2;
+          gooChunkPool.spawn(this.x, 0.3, this.z,
+            Math.cos(a) * (2 + Math.random() * 2), 5 + Math.random() * 3,
+            Math.sin(a) * (2 + Math.random() * 2), 0xeef4f8, 0.10);
+        }
+        audio.ventBlast();
+      }
+    } else {
+      this._ringMat.color.setHex(0xffffff);
+      this._ringMat.opacity = 0.7 * (this.t / 0.45);
+      if (this.t <= 0) { this.state = 'idle'; this.t = 4 + Math.random() * 5; }
+    }
+  }
+  remove(sc) {
+    sc.remove(this.grate); sc.remove(this.ring);
+    this.grate.geometry.dispose(); this._grateMat.dispose();
+    this.ring.geometry.dispose(); this._ringMat.dispose();
+  }
+}
+// DRAIN: a whirlpool — visible swirl, a gentle pull on every body, and it
+// EATS any bullet that crosses it (both sides). Cover that moves the fight.
+class Drain {
+  constructor(sc, x, z) {
+    this.x = x; this.z = z; this.radius = 2.4;
+    this._discMat = new THREE.MeshBasicMaterial({ color: 0x0a1a2a, transparent: true, opacity: 0.72, depthWrite: false });
+    this.disc = new THREE.Mesh(new THREE.CircleGeometry(this.radius, 30), this._discMat);
+    this.disc.rotation.x = -Math.PI / 2;
+    this.disc.position.set(x, 0.02, z);
+    this._swirlMat = new THREE.MeshBasicMaterial({ color: 0x66ccff, transparent: true, opacity: 0.4,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    this.swirls = [];
+    for (let i = 0; i < 2; i++) {
+      const sw = new THREE.Mesh(
+        new THREE.RingGeometry(0.5 + i * 0.85, 0.75 + i * 0.85, 24, 1, 0, Math.PI * 1.35),
+        this._swirlMat);
+      sw.rotation.x = -Math.PI / 2;
+      sw.rotation.z = i * 2.2;
+      sw.position.set(x, 0.035, z);
+      sc.add(sw);
+      this.swirls.push(sw);
+    }
+    sc.add(this.disc);
+  }
+  update(dt) {
+    for (let i = 0; i < this.swirls.length; i++) this.swirls[i].rotation.z -= dt * (1.6 + i * 0.9);
+    if (Math.random() < dt * 3) {
+      bubblePool.spawn(this.x + (Math.random() - 0.5) * this.radius,
+                       this.z + (Math.random() - 0.5) * this.radius, 0x88ddff);
+    }
+  }
+  remove(sc) {
+    sc.remove(this.disc);
+    this.disc.geometry.dispose(); this._discMat.dispose();
+    for (const sw of this.swirls) { sc.remove(sw); sw.geometry.dispose(); }
+    this._swirlMat.dispose();
+  }
+}
+let steamVents = [];
+let drainZone  = null;
+// SUDS SURGE (v176, SMASH TV): the show's commercial-break spectacle — the
+// floor lights a lane, then a foam wall sweeps it: enemies brushed hard
+// aside (and hurt), the player damaged only on a direct hit.
+let sudsArmed = false, sudsAt = 0, sudsWarnT = 0;
+let sudsWall = null;   // { mesh, mat, axis, dir, pos, warnMesh }
+function clearHazards() {
+  for (const v of steamVents) v.remove(scene);
+  steamVents = [];
+  if (drainZone) { drainZone.remove(scene); drainZone = null; }
+  if (sudsWall) {
+    scene.remove(sudsWall.mesh);
+    sudsWall.mesh.geometry.dispose(); sudsWall.mat.dispose();
+    sudsWall = null;
+  }
+  sudsArmed = false; sudsWarnT = 0;
+}
+
 // Boss identity (v59): a flat pulsing ground ring marks the every-8th-wave boss.
 // It follows the enemy each frame and turns red when the boss enrages (<35% HP).
 function makeBossAura(enemy) {
@@ -1645,12 +1755,19 @@ const ROOM_KINDS = {
   prize:  { label: 'PRIZE$', color: '#ffdd44' },
   boss:   { label: 'BOSS!',  color: '#ff5566' },
   item:   { label: 'ITEM',   color: '#ff88bb' },   // Binding of Toko (v150)
+  hazard: { label: 'HAZARD 2×$', color: '#ff8866' },   // v176: vent-heavy, loot-rich
+  vault:  { label: 'VAULT$', color: '#ffcc33' },       // v176: the crate + guards
 };
 // Deterministic per-run room kind for lattice cell (x, y). The 8th room of a
 // run is always the boss (mirrors the wave rhythm), so every exit says BOSS!.
 function roomKindAt(x, y) {
   if ((wave + 1) % 8 === 0) return 'boss';
   const h = mulberry32((runSeed ^ (x * 73856093) ^ (y * 19349663)) | 0)();
+  // v176: HAZARD and VAULT venues join the show from wave 5
+  if (wave >= 5) {
+    return h < 0.38 ? 'normal' : h < 0.56 ? 'swarm' : h < 0.72 ? 'spike'
+         : h < 0.82 ? 'prize' : h < 0.92 ? 'hazard' : 'vault';
+  }
   return h < 0.45 ? 'normal' : h < 0.65 ? 'swarm' : h < 0.85 ? 'spike' : 'prize';
 }
 // door index ↔ lattice direction (matches the DOORS spawn angles):
@@ -3552,7 +3669,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v175', 16, uiCanvas.height - 12);
+  ctx.fillText('v176', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -4255,6 +4372,7 @@ function clearFX() {
   clearBounty();
   for (const g of gates)        g.remove(scene); gates         = [];
   clearArenaObjectives();   // v175: vault/escort/chain die with the wave state
+  clearHazards();           // v176: vents/drain/surge too
   for (const p of powerups)     p.remove(scene); powerups      = [];
   clearBossAuras();
   damageNumbers = [];
@@ -4958,6 +5076,29 @@ function spawnWave() {
     escortBot = new EscortBot(scene);
     milestoneT = 1.2; milestoneText = 'ESCORT THE BOT!';
   }
+  // v176 hazards: the floor joins the show. HAZARD rooms are the vent venue;
+  // classic runs get a lighter rotation. Everything hurts enemies too.
+  clearHazards();
+  const ventN = (smashMode && kind === 'hazard') ? 5 + Math.floor(rng() * 2)
+              : (!inCabinet() && !smashMode && wave >= 7 && wave % 3 === 0 && kind !== 'boss') ? 2 + Math.floor(rng() * 2)
+              : 0;
+  for (let i = 0; i < ventN; i++) {
+    steamVents.push(new SteamVent(scene,
+      (rng() * 2 - 1) * (HALF_X - 3), (rng() * 2 - 1) * (HALF_Z - 3)));
+  }
+  if (!inCabinet() && kind !== 'boss' &&
+      ((smashMode && kind === 'hazard') || (!smashMode && wave >= 9 && wave % 5 === 4))) {
+    drainZone = new Drain(scene,
+      (rng() * 2 - 1) * (HALF_X - 6), (rng() * 2 - 1) * (HALF_Z - 6));
+  }
+  if (smashMode && kind === 'vault' && !vaultCrate) {
+    vaultCrate = new VaultCrate(scene,
+      (rng() * 2 - 1) * (HALF_X - 5), (rng() * 2 - 1) * (HALF_Z - 5));
+  }
+  // SUDS SURGE: SMASH-only mid-wave spectacle, never boss rooms
+  sudsArmed = smashMode && !bindingMode && wave >= 6 && kind !== 'boss' && rng() < 0.4;
+  sudsAt    = 6 + rng() * 4;
+  sudsWarnT = 0;
   clusterTimer = 0;
   clusterSpawnAt = [3 + rng() * 5]; // 3-8 s into the wave — always overlaps live enemies
   if (smashMode) clusterSpawnAt.push(12 + rng() * 5);
@@ -4967,7 +5108,7 @@ function spawnWave() {
   // the room floor — walk over them. Rarely, a score-multiplier orb glitters
   // among them. Cleared with the room (spawnWave wipes powerups).
   if (smashMode) {
-    const heavy = kind === 'spike';                     // v120: HEAVY rooms pay 2×$
+    const heavy = kind === 'spike' || kind === 'hazard';   // v120/v176: HEAVY + HAZARD pay 2×$
     const n = 3 + Math.floor(rng() * 4) + (heavy ? 1 : 0);
     for (let i = 0; i < n; i++) {
       let vx = (rng() * 2 - 1) * (HALF_X - 3);
@@ -5249,6 +5390,7 @@ function startCabQuest(mode) {
   for (const g of gates) g.remove(scene);
   gates = [];
   clearArenaObjectives();
+  clearHazards();
   clearBounty();
   for (const f of foamZones) f.remove(scene);
   foamZones = [];
@@ -6748,6 +6890,133 @@ function loop() {
     }
   }
 
+  // v176 hazards runtime: vents cycle and erupt on everything, the drain
+  // pulls bodies and eats bullets, the suds surge sweeps its lane.
+  if ((steamVents.length || drainZone || sudsArmed || sudsWall) && gameState === 'playing') {
+    for (const v of steamVents) {
+      v.update(dt);
+      if (v.justErupted) {
+        v.justErupted = false;
+        addShake(0.18);
+        // dead-center bodies still get thrown — random direction beats zero
+        const ventKick = (px2, pz2) => {
+          let dx = px2 - v.x, dz = pz2 - v.z;
+          const d = Math.hypot(dx, dz);
+          if (d < 0.05) { const a = Math.random() * Math.PI * 2; return [Math.cos(a) * 2.2, Math.sin(a) * 2.2]; }
+          const k = 2.2 / Math.max(d, 0.3);
+          return [dx * k, dz * k];
+        };
+        for (const e of enemies) {
+          if (!e.alive) continue;
+          if (Math.hypot(e.position.x - v.x, e.position.z - v.z) < 1.7) {
+            const died = e.hit(e.position.x, e.position.z);
+            if (died) onKill(e); else audio.enemyHit();
+            const [kx, kz] = ventKick(e.position.x, e.position.z);
+            e.position.x = Math.max(-HALF_X + 1, Math.min(HALF_X - 1, e.position.x + kx));
+            e.position.z = Math.max(-HALF_Z + 1, Math.min(HALF_Z - 1, e.position.z + kz));
+          }
+        }
+        if (player.alive && !player.invincible &&
+            Math.hypot(player.position.x - v.x, player.position.z - v.z) < 1.7) {
+          const [kx, kz] = ventKick(player.position.x, player.position.z);
+          player.mesh.position.x = Math.max(-HALF_X + 1, Math.min(HALF_X - 1, player.position.x + kx));
+          player.mesh.position.z = Math.max(-HALF_Z + 1, Math.min(HALF_Z - 1, player.position.z + kz));
+          if (tryHitPlayer('vent', null)) triggerGameOver();
+        }
+      }
+    }
+    if (drainZone) {
+      drainZone.update(dt);
+      const pullR = drainZone.radius * 2.2;
+      if (player.alive) {
+        const dx = drainZone.x - player.position.x, dz = drainZone.z - player.position.z;
+        const d = Math.hypot(dx, dz);
+        if (d < pullR && d > 0.2) {
+          const pull = 1.1 * (1 - d / pullR);
+          player.mesh.position.x += (dx / d) * pull * dt;
+          player.mesh.position.z += (dz / d) * pull * dt;
+        }
+      }
+      for (const e of enemies) {
+        if (!e.alive) continue;
+        const dx = drainZone.x - e.position.x, dz = drainZone.z - e.position.z;
+        const d = Math.hypot(dx, dz);
+        if (d < pullR && d > 0.2) {
+          const pull = 0.7 * (1 - d / pullR);
+          e.position.x += (dx / d) * pull * dt;
+          e.position.z += (dz / d) * pull * dt;
+        }
+      }
+      for (let bi = bullets.active.length - 1; bi >= 0; bi--) {
+        const b = bullets.active[bi];
+        if (Math.hypot(b.mesh.position.x - drainZone.x, b.mesh.position.z - drainZone.z) < drainZone.radius) {
+          gooChunkPool.spawn(b.mesh.position.x, 0.3, b.mesh.position.z, 0, 1.5, 0, 0x66ccff, 0.06);
+          bullets.recycleAt(bi);
+        }
+      }
+    }
+    // SUDS SURGE: telegraph the lane, then sweep it. (<= 0, not === 0: a
+    // previous surge leaves the warn clock slightly negative.)
+    if (sudsArmed && player.alive) {
+      if (sudsWarnT <= 0 && waveTimer >= sudsAt) {
+        sudsWarnT = 1.2;
+        milestoneT = 1.2; milestoneText = 'SUDS SURGE INCOMING!';
+        audio.curtainAlarm();
+      } else if (sudsWarnT > 0) {
+        sudsWarnT -= dt;
+        if (sudsWarnT <= 0) {
+          sudsArmed = false;
+          const axis = rng() < 0.5 ? 'x' : 'z';
+          const dir = rng() < 0.5 ? 1 : -1;
+          const mat = new THREE.MeshBasicMaterial({ color: 0xeef6ff, transparent: true, opacity: 0.55, depthWrite: false });
+          const mesh = new THREE.Mesh(
+            axis === 'x' ? new THREE.BoxGeometry(1.2, 2.2, HALF_Z * 2) : new THREE.BoxGeometry(HALF_X * 2, 2.2, 1.2),
+            mat);
+          const start = (axis === 'x' ? HALF_X : HALF_Z) * -dir;
+          mesh.position.set(axis === 'x' ? start : 0, 1.1, axis === 'z' ? start : 0);
+          scene.add(mesh);
+          sudsWall = { mesh, mat, axis, dir, pos: start };
+          audio.surgeFoam();
+        }
+      }
+    }
+    if (sudsWall) {
+      const speed = 9;
+      sudsWall.pos += sudsWall.dir * speed * dt;
+      if (sudsWall.axis === 'x') sudsWall.mesh.position.x = sudsWall.pos;
+      else                       sudsWall.mesh.position.z = sudsWall.pos;
+      if (Math.random() < dt * 30) {
+        bubblePool.spawn(
+          sudsWall.axis === 'x' ? sudsWall.pos : (Math.random() * 2 - 1) * HALF_X,
+          sudsWall.axis === 'z' ? sudsWall.pos : (Math.random() * 2 - 1) * HALF_Z, 0xeef6ff);
+      }
+      // brush enemies hard aside (and hurt them); the player only on direct hit
+      for (const e of enemies) {
+        if (!e.alive) continue;
+        const p2 = sudsWall.axis === 'x' ? e.position.x : e.position.z;
+        if (Math.abs(p2 - sudsWall.pos) < 0.9) {
+          const died = e.hit(e.position.x, e.position.z);
+          if (died) onKill(e); else audio.enemyHit();
+          const lat = sudsWall.axis === 'x' ? 'z' : 'x';
+          const shove = (lat === 'z' ? e.position.z : e.position.x) >= 0 ? 3 : -3;
+          if (lat === 'z') e.position.z = Math.max(-HALF_Z + 1, Math.min(HALF_Z - 1, e.position.z + shove));
+          else             e.position.x = Math.max(-HALF_X + 1, Math.min(HALF_X - 1, e.position.x + shove));
+        }
+      }
+      if (player.alive && !player.invincible) {
+        const pp = sudsWall.axis === 'x' ? player.position.x : player.position.z;
+        if (Math.abs(pp - sudsWall.pos) < 0.8) {
+          if (tryHitPlayer('surge', null)) triggerGameOver();
+        }
+      }
+      if (Math.abs(sudsWall.pos) > (sudsWall.axis === 'x' ? HALF_X : HALF_Z) + 1.5) {
+        scene.remove(sudsWall.mesh);
+        sudsWall.mesh.geometry.dispose(); sudsWall.mat.dispose();
+        sudsWall = null;
+      }
+    }
+  }
+
   // v175 living-arena objectives: the vault takes hits and snitches; the
   // escort bot crosses, dies to stray fire and bodies, and pays on delivery.
   if (gateChainT > 0) { gateChainT -= dt; if (gateChainT <= 0) gateChainN = 0; }
@@ -7157,6 +7426,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=129').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=130').catch(() => {});
   });
 }
