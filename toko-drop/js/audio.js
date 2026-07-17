@@ -4,22 +4,37 @@
 // stock en-US voice the device ships, pitched down for game-show bombast.
 const ANNOUNCER_LINES = {
   start:    ['WELCOME TO TOKO DROP! GOOD LUCK — YOU\'LL NEED IT!',
-             'LADIES AND GENTLEMEN... LET\'S DROP SOME TOKO!'],
+             'LADIES AND GENTLEMEN... LET\'S DROP SOME TOKO!',
+             'THE STUDIO IS LIVE! START SCRUBBING!',
+             'CONTESTANT ON THE FLOOR! ROLL THE SUDS!'],
   wave:     ['HERE THEY COME!', 'FRESH MEAT FOR THE GRINDER!',
-             'MOP THEM UP!', 'NO MERCY! NO REFUNDS!'],
-  boss:     ['MEGA MESS INCOMING!', 'IT\'S HUGE! IT\'S HORRIBLE! I LOVE IT!'],
+             'MOP THEM UP!', 'NO MERCY! NO REFUNDS!',
+             'THE FLOOR IS FILTHY — FIX IT!', 'LOOK ALIVE OUT THERE!',
+             'SOMEBODY ORDERED CHAOS!', 'KEEP THAT MOP MOVING!'],
+  boss:     ['MEGA MESS INCOMING!', 'IT\'S HUGE! IT\'S HORRIBLE! I LOVE IT!',
+             'THE HEADLINER HAS ARRIVED!', 'BIG! ANGRY! SPARKLY! RUN!'],
   streak:   ['TOTAL CLEANUP! I LOVE IT!', 'UNSTOPPABLE!',
-             'WHAT A PLAYER!', 'THE CROWD GOES WILD!'],
-  prize:    ['BIG BUBBLES! BIG PRIZES!', 'GRAB THAT PRIZE!'],
-  money:    ['BIG MONEY!', 'CHA-CHING!'],
-  mult:     ['DOUBLE IT UP!', 'TWO FOR ONE! I LOVE IT!'],
-  ouch:     ['OOOH! THAT\'S GOTTA STING!', 'RIGHT IN THE SUDS!'],
+             'WHAT A PLAYER!', 'THE CROWD GOES WILD!',
+             'SOMEBODY STOP THIS MANIAC! NOT ME THOUGH!'],
+  prize:    ['BIG BUBBLES! BIG PRIZES!', 'GRAB THAT PRIZE!',
+             'OOOH, SHINY! TAKE IT!'],
+  money:    ['BIG MONEY!', 'CHA-CHING!', 'MONEY MONEY MONEY!'],
+  mult:     ['DOUBLE IT UP!', 'TWO FOR ONE! I LOVE IT!',
+             'EVERYTHING COUNTS TWICE!'],
+  ouch:     ['OOOH! THAT\'S GOTTA STING!', 'RIGHT IN THE SUDS!',
+             'CLEAN-UP ON AISLE YOU!'],
   gameover: ['TOTAL WIPEOUT! SEE YOU NEXT SHOW!',
-             'AND THAT\'S THE GAME! WHAT A FINISH!'],
-  clear:    ['EXCELLENT!', 'GOOD! GOOD!', 'SPOTLESS!'],
+             'AND THAT\'S THE GAME! WHAT A FINISH!',
+             'THE MOP HAS FALLEN! GOODNIGHT EVERYBODY!'],
+  clear:    ['EXCELLENT!', 'GOOD! GOOD!', 'SPOTLESS!',
+             'SQUEAKY CLEAN!', 'NOT A SPOT LEFT!'],
   exit:     ['THE DOORS ARE OPEN — MOVE!', 'PICK A DOOR! ANY DOOR!',
-             'CHOOSE YOUR NEXT ROOM!'],
-  bounty:   ['BOUNTY ON THE FIELD — TAG IT!', 'GOLD TARGET! EIGHT SECONDS!'],
+             'CHOOSE YOUR NEXT ROOM!', 'DON\'T DAWDLE — DOORS!'],
+  bounty:   ['BOUNTY ON THE FIELD — TAG IT!', 'GOLD TARGET! EIGHT SECONDS!',
+             'MARKED! MAKE IT PAY!'],
+  // v174: boss act changes get their own commentary
+  phase:    ['IT\'S FURIOUS NOW!', 'FINAL FORM?! I LOVE IT!',
+             'OH, IT REMEMBERS YOU!', 'SOMEONE WOKE IT UP PROPERLY!'],
 };
 // gameover/boss cut off whatever is mid-sentence; everything else waits its turn.
 const ANNOUNCER_URGENT = new Set(['gameover', 'boss']);
@@ -73,7 +88,7 @@ class AudioSystem {
     if (!this._introVoice || this._volume <= 0) return null;
     try {
       if (!this._introEl) {
-        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=127', import.meta.url).href);
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=128', import.meta.url).href);
         this._introEl.preload = 'auto';
       }
       this._introEl.volume = this._annVolume;

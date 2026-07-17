@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v174 — 2026-07-17
+**TWIN PRISMS — the second boss + announcer variety (approved arc, step 3 / M4)**
+- **New boss: TWIN PRISMS** (38 types) — boss waves now alternate headliners: OMEGA's lone crystal or a PAIR of sharp magenta shards orbiting in opposite directions. The twins trade tight aimed 4-fan volleys in strict turns (the rhythm is the read: one fires, you press the other) — and when one shatters, **the survivor enrages INSTANTLY**: phase-3 ring rage at 1.45× speed regardless of remaining HP, with a `THE SURVIVOR RAGES!` call
+- The run seed picks which boss opens (daily runs share the schedule); consecutive bosses within a run always differ. Escort WARDENs unchanged for both headliners
+- Each shard pre-fire strobes like OMEGA (pink flicker), carries a boss aura, and pays boss score; the pair totals a bit more HP than OMEGA but you fight it half at a time
+- **Announcer variety pass**: every line pool deepened (start/wave/boss/streak/prize/money/mult/ouch/gameover/clear/exit/bounty) + a new `phase` key — the booth now calls boss act changes ("IT'S FURIOUS NOW!")
+- Roadmap: M4 boss + announcer items marked shipped; NEX DEUS row updated to v172/v173 shipped state
+- Cache-bust `?v=127` → `?v=128`; HUD label → v174
+
+---
+
 ## v173 — 2026-07-17
 **NEX DEUS — the final cabinet (approved arc, step 2)**
 - **The sixth cabinet is real**: clear all five NEX bars (v172) and NEX DEUS joins the OPTIONS cycle — a fixed near-black arena, hard magenta rim, void-glass tiles, heavy-glow neon RetroPass profile, its own twin-voice gun hum
