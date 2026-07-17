@@ -7,113 +7,30 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v179 — 2026-07-17
-**Daily modifiers (M6) — GLASS, SURGE DAY, RICH DAY**
-- **The date picks the day's twist** (pure UTC date math — every player worldwide gets the same one, riding the same daily seed): a 4-day rotation of CLASSIC → **GLASS** (1 HP, kills pay DOUBLE) → **SURGE DAY** (vents doubled, drains every 3rd wave, curtains at 80%, suds surges at 70%) → **RICH DAY** (+40% enemy budget, floor valuables doubled, every kill-drop chance doubled)
-- The title's DAILY chip hint names the twist (`TODAY: GLASS`), and the run opens with a banner spelling out the deal (`GLASS DAY — 1 HP, KILLS PAY DOUBLE`)
-- **The leaderboard tags the modifier**: daily POSTs carry `+glass` / `+surge` / `+rich` in the mode string, so scores are comparable within a day
-- Modifiers only ever apply to DAILY runs (test/cabinet runs stay untouched; a classic day is a plain daily)
-- Cache-bust `?v=132` → `?v=133`; HUD label → v179
-
----
-
-## v178 — 2026-07-17
-**SMASH TV floor structure (M6) — bosses end floors, floors change everything**
-- **The boss room ends a FLOOR**: beat it and every exit door reads `BONUS!` — walking through advances to the next floor (`FLOOR 2!` fanfare + applause)
-- **BONUS ROOM between floors**: a pure loot festival — 8-10 cash piles and prizes (20% are 4× gold), a guaranteed weapon pod center-stage, a 50% score-mult roll, ZERO enemies, and the exit doors are open from the first second. No curtains, no objectives, no surges intrude
-- **Palette shift per floor**: the studio re-lights — floor 1 indigo (the classic look), floor 2 teal, floor 3 amber, floor 4 crimson, floor 5+ violet, then the cycle repeats. Restored on run start and title return; never touches cabinet or basement looks
-- **Tougher lattice per floor**: +12% enemy budget per floor on top of the show's +40%; wave banners carry the floor (`FLOOR 2 · WAVE 11 — SWARM`)
-- Binding (its own floors) and gauntlets (scripted rooms) are untouched
-- Cache-bust `?v=131` → `?v=132`; HUD label → v178
-
----
-
-## v177 — 2026-07-17
-**Curtain variations — crossing, shearing, and cabinet curtains (approved arc, step 6, queue complete)**
-- **CROSSING CURTAINS** (wave 10+, ~35% of curtain events): a second full sheet follows from the ADJACENT wall one beat after the first — the dodge is finding the moving intersection of two gap sets
-- **SHEARING CURTAIN** (wave 8+, ~45%): the sheet slides at a slant — a full-width wall traveling diagonally, so the gaps drift sideways as they approach
-- **Cabinet curtains**: the fixed-screen cabinets now run the event in their own colors — TOKOTRON from wave 4 (vector cyan), NEX DEUS from wave 2 (god-machine magenta), both at ~45%; scrolling cabinets skip (a 2× world sheet is unreadable)
-- Style-aware warnings (`CROSSING CURTAINS!` / `SHEARING CURTAIN!`) + the v176 `<= 0` warn-clock fix applied to the curtain too
-- This completes the approved queue: records → NEX DEUS → TWIN PRISMS → living arena ×2 → curtain variations
-- Cache-bust `?v=130` → `?v=131`; HUD label → v177
-
----
-
-## v176 — 2026-07-17
-**The living arena, part 2 — hazards + HAZARD/VAULT rooms (approved arc, step 5 / M5b)**
-- **STEAM VENTS**: floor grates that glow amber for a full readable second, then ERUPT — damage + knockback to ANYTHING standing on them, enemies included (luring is a legal tactic). Classic: 2-3 vents every 3rd wave from 7; SMASH HAZARD rooms are the vent venue (5-6)
-- **DRAIN**: a whirlpool with a visible swirl — gentle pull on every body (player 1.1 u/s, enemies 0.7) and it **eats any bullet that crosses it, both sides**. Cover that moves the fight. Classic every 5th wave from 9; always in HAZARD rooms
-- **SUDS SURGE** (SMASH only, wave 6+, ~40% of rooms): `SUDS SURGE INCOMING!` + alarm, then a foam wall sweeps one lane of the room — enemies brushed hard aside (and hurt), the player damaged only on a direct hit. The show's commercial-break spectacle
-- **Two new SMASH room kinds** join the lattice from wave 5: **HAZARD 2×$** (vent-heavy + drain, pays double floor loot like HEAVY) and **VAULT$** (the armored crate venue — v175's vault spawns in-room)
-- New stingers: `ventBlast` (hot hiss + low kick) and `surgeFoam` (long soft whoosh); hazards clear on every wave spawn, run start, quest entry, and title return
-- Cache-bust `?v=129` → `?v=130`; HUD label → v176
-
----
-
-## v175 — 2026-07-17
-**The living arena, part 1 — gates round 2 + VAULT & ESCORT objectives (approved arc, step 4 / M5b)**
-- **GATE CHAINS**: bank a second gate within 6 s of the last and the pay climbs — `GATE CHAIN ×N! +500×N` (score-mult doubles it). Route planning is now a minigame
-- **RISK GATES** (wave 5+, ~35% of gates): the beam alternates green/red on a readable 1.6 s clock — dash on green for a **DOUBLE PRIZE**, on red it's a harmless `DUD!` (the cost is the waste, never damage)
-- **DRIFTING GATES** (wave 10+): gates wander slowly and bounce inside the walls, so the late-game route never sits still
-- **VAULT CRATE** (classic/SMASH, wave 5+, every 4th wave, never boss): an armored gold-wired box — 8 hits to crack, and **every hit pings the room**: enemies within 9 units surge at you (the SIREN mechanism). Inside: a weapon pod + a fat cash drop + a 40% score-mult roll. Loud greed, your call
-- **ESCORT BOT** (classic/SMASH, wave 6+, offset every 4th wave): a little soap-bot trundles wall to wall in ~14 s. Enemies never chase it — but stray enemy fire (2 hits) or any body that touches it kills it. Deliver it alive and it gifts a weapon pod. Protecting it is pure positioning
-- Objectives never stack with each other or boss waves; all die with the wave/run (vault, bot, and chain state clear on every spawn, run start, quest entry, and title return)
-- Cache-bust `?v=128` → `?v=129`; HUD label → v175
-
----
-
-## v174 — 2026-07-17
-**TWIN PRISMS — the second boss + announcer variety (approved arc, step 3 / M4)**
-- **New boss: TWIN PRISMS** (38 types) — boss waves now alternate headliners: OMEGA's lone crystal or a PAIR of sharp magenta shards orbiting in opposite directions. The twins trade tight aimed 4-fan volleys in strict turns (the rhythm is the read: one fires, you press the other) — and when one shatters, **the survivor enrages INSTANTLY**: phase-3 ring rage at 1.45× speed regardless of remaining HP, with a `THE SURVIVOR RAGES!` call
-- The run seed picks which boss opens (daily runs share the schedule); consecutive bosses within a run always differ. Escort WARDENs unchanged for both headliners
-- Each shard pre-fire strobes like OMEGA (pink flicker), carries a boss aura, and pays boss score; the pair totals a bit more HP than OMEGA but you fight it half at a time
-- **Announcer variety pass**: every line pool deepened (start/wave/boss/streak/prize/money/mult/ouch/gameover/clear/exit/bounty) + a new `phase` key — the booth now calls boss act changes ("IT'S FURIOUS NOW!")
-- Roadmap: M4 boss + announcer items marked shipped; NEX DEUS row updated to v172/v173 shipped state
-- Cache-bust `?v=127` → `?v=128`; HUD label → v174
-
----
-
-## v173 — 2026-07-17
-**NEX DEUS — the final cabinet (approved arc, step 2)**
-- **The sixth cabinet is real**: clear all five NEX bars (v172) and NEX DEUS joins the OPTIONS cycle — a fixed near-black arena, hard magenta rim, void-glass tiles, heavy-glow neon RetroPass profile, its own twin-voice gun hum
-- **ZONE SURGES**: neon rings appear at wave start, each strobing down to ERUPT a squad drawn from ONE cabinet's roster (grunts+orbs / ghosts+wraith / flits+spittles+hoppers / troopers+turrets / thug riots) — the arena itself is the spawner; the wave holds open until every ring has fired
-- **THE DASH CUTS** (this cabinet only): dashing wipes enemy bullets along your path (+10 each) and wounds every enemy you pass through — i-frames become an offensive verb
-- **LOST PLAYERS**: humans drop in mid-wave on an 8 s countdown — the rescue halo shrinks and goes ember-red as the machine reclaims them; chained rescues pay 1500×chain and every 3rd gives +1 HP; a loss resets the chain
-- Roguelike B: **NEX DEUS COMMUNION** joins the quest deck (2 surge waves, ×3 pinball ramp) — unlocked profiles only; full runs record a `nexdeus` best like any cabinet
-- Locked profiles can never arm it: the OPTIONS cycle skips the slot and a stale save falls back to OFF
-- Cache-bust `?v=126` → `?v=127`; HUD label → v173
-
----
-
-## v172 — 2026-07-17
-**Per-cabinet records + NEX DEUS unlock tracking (approved arc, step 1)**
-- **Every cabinet now keeps a personal best** (localStorage `tokoDropCabBests`), recorded on death for FULL cabinet runs only (Roguelike B quests don't count): TOKOTRON/GAUNDROP/LOADOUT/KAIKKI record the wave/mission/level reached, BINDING records the floor
-- **NEX DEUS unlock tracking**: beat the bar in all five cabinets — TOKOTRON wave 5, GAUNDROP level 3, BINDING floor 2, LOADOUT mission 4, KAIKKI mission 3 — to unlock the final cabinet (arrives next version). OPTIONS shows each cabinet's `BEST x/req` in its hint plus a `NEX DEUS: LOCKED (n/5)` status line that flips pink when you're ready
-- Title armed-note now shows your best for the armed cabinet (`CABINET: TOKOTRON · BEST 4 · OPTIONS`)
-- Cache-bust `?v=125` → `?v=126`; HUD label → v172
-
----
-
-## v171 — 2026-07-16
-**Walls of bullets — the DRAPER and the ARENA CURTAIN (user direction)**
-- **New enemy: DRAPER, the wall-weaver** (37 types) — a violet loom slab with glowing end-spools that holds ~11 units, faces you (the loom IS the tell), strobes a 0.9 s wind-up while its spools spin, then **looms a 15-slot marching bullet CURTAIN with one 2-slot gap**. Dash the gap or dash the wall — both are answers. Classic pool from wave 7 (shooter budget); guest appearances in LOADOUT floods (mission 4+) and KAIKKI streets (mission 5+)
-- **ARENA CURTAIN event** (classic + SMASH, wave 6+, never boss waves, ~55% of eligible waves): mid-wave, a `BULLET CURTAIN!` warning + two-tone alarm, one beat later a **full arena-spanning wall of slow bullets sweeps from a random wall** with two 3-slot dash-or-weave gaps. Slow enough to read, wide enough to matter — and every bullet is grazeable
-- New stingers: `curtainAlarm` (two-tone warning) + `curtainSweep` (the wall leaves the rail)
-- Cache-bust `?v=124` → `?v=125`; HUD label → v171
-
----
-
-## v170 — 2026-07-16
-**Cabinets to OPTIONS + a difficulty and variety pass (user direction)**
-- **The cabinet picker is OPTIONS-only now** (the cycle button under SMASH TV): the title row is gone — when a cabinet is armed, the title shows a one-line colored reminder (`CABINET: TOKOTRON · OPTIONS`) so TAP TO START never launches a surprise
-- **Every cabinet got harder** (user: most are too easy): TOKOTRON comps ~25% bigger; GAUNDROP generators 2+lvl/2 (cap 6) pouring faster (0.9-1.5 s ghosts), WRAITH from level 2 (two from 5), welcome party 6+2·lvl; BINDING floors scale steeper on every room kind; LOADOUT opens with 2 turrets, purge is a real occupation force (12+3w, cap 32), trickle 1.8 s at cap 20; KAIKKI is a proper riot (14+4w, cap 46)
-- **More enemy VARIETY in every cabinet** (user: waves need it): TOKOTRON wave scripts pull guests from wave 2 (REDD_MINI packs, BOTFLY pairs, a WEEVA turret); GAUNDROP generator pool adds SLUDGE_CUBE (poison in the halls) and YELA_CUBE, WEEVA prowls from level 3; BINDING breeds classic GLOBBOs and a PURP_CUBE into its rooms; LOADOUT floods add YELA_CUBE + CLOAKER ambushers from mission 3; KAIKKI adds FANNER (m2), SPITTOR (m3), and TORO joyriders (m4)
-- VERSIONS: v161–v169 archived (decade rule)
-- Cache-bust `?v=123` → `?v=124`; HUD label → v170
+## v180 — 2026-07-17
+**Roguelike depth (M6) — three new cards + CURSED cards; queue: M6 arc complete**
+- **Three new upgrade cards** (pool 10 → 13): **Close Shave** (grazes pay TRIPLE), **Suds Feast** (every 25 kills restores 1 HP — `THE SUDS PROVIDE`), **Long Slide** (dash carries 30% farther, stacking to +70%)
+- **CURSED CARDS**: from wave 6, ~35% of card screens turn one slot PURPLE — power with the price printed on the card, never the only choice: **Berserk Oath** (+40% fire rate, −1 max HP), **Glass Cannon** (1.5× piercing shots, −1 max HP), **Lead Boots** (+2 max HP, −15% speed), **Blood Money** (kills pay DOUBLE, dash recharges slower)
+- Cursed styling is unmistakable: purple card, violet glow, a `CURSED` tag over the name; all effects localized en/ja/fi
+- Max-HP prices clamp at 1 (a curse can bruise, never kill); all new run-state resets on every run start
+- VERSIONS: v170–v179 archived (decade rule)
+- Cache-bust `?v=133` → `?v=134`; HUD label → v180
 
 ---
 
 ## Archive
+
+**v170–v179 summary (2026-07-16 – 2026-07-17)**
+- v170: Cabinets moved to OPTIONS (title shows a one-line armed reminder) + difficulty/variety pass across all five
+- v171: Walls of bullets — DRAPER the wall-weaver (curtain looms) + the ARENA CURTAIN mid-wave event
+- v172: Per-cabinet high scores (full runs only) + NEX DEUS unlock bars (`BEST x/req`, `LOCKED (n/5)` status)
+- v173: NEX DEUS — the sixth cabinet: zone-surge eruptions from all five rosters, dash-cuts-everything, timed lost-player rescues, heavy-glow neon
+- v174: TWIN PRISMS second boss (alternates with OMEGA; survivor enrages instantly) + announcer variety pass + `phase` key
+- v175: Living arena 1 — gate chains, RISK gates (green/red), drifting gates, VAULT crate (loud greed), ESCORT bot
+- v176: Living arena 2 — steam vents, DRAIN whirlpool (eats bullets), SUDS SURGE foam wall, HAZARD 2×$ + VAULT$ room kinds
+- v177: Curtain variations — crossing doubles, shearing diagonals, TOKOTRON/NEX DEUS cabinet curtains
+- v178: SMASH floor structure — bosses end floors, BONUS room between, palette shift + tougher lattice per floor
+- v179: Daily modifiers — GLASS (1 HP, ×2 kills), SURGE DAY (double hazards), RICH DAY (double loot, +40% enemies); leaderboard tags the mode
 
 **v160–v169 summary (2026-07-14 – 2026-07-15)**
 - v160: TOKOTRON character pass — robot dressing on the whole roster (visors, stepping legs, gyro rings, brain-core) + civilians as real people with rescue halos and a help-wave
