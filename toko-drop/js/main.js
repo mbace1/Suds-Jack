@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=137';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=137';
-import { Player, PLAYER_RADIUS } from './player.js?v=137';
+import { InputManager } from './input.js?v=138';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=138';
+import { Player, PLAYER_RADIUS } from './player.js?v=138';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=137';
-import { RetroPass } from './retro.js?v=137';
-import { audio } from './audio.js?v=137';
-import { initDesigner } from './designer.js?v=137';
-import { t, getLang, setLang, langs } from './lang.js?v=137';
-import { TUNING } from './tuning.js?v=137';
+         CABINET_STYLE, VIS } from './enemy.js?v=138';
+import { RetroPass } from './retro.js?v=138';
+import { audio } from './audio.js?v=138';
+import { initDesigner } from './designer.js?v=138';
+import { t, getLang, setLang, langs } from './lang.js?v=138';
+import { TUNING } from './tuning.js?v=138';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1807,6 +1807,7 @@ const ROOM_KINDS = {
   item:   { label: 'ITEM',   color: '#ff88bb' },   // Binding of Toko (v150)
   hazard: { label: 'HAZARD 2×$', color: '#ff8866' },   // v176: vent-heavy, loot-rich
   bonus:  { label: 'BONUS!', color: '#66ffaa' },       // v178: the floor's breather
+  shop:   { label: 'SHOP',   color: '#ffd700' },       // v184: the basement bazaar
   vault:  { label: 'VAULT$', color: '#ffcc33' },       // v176: the crate + guards
 };
 // Deterministic per-run room kind for lattice cell (x, y). The 8th room of a
@@ -2119,6 +2120,17 @@ class Generator {
   }
   remove(sc) { sc.remove(this.mesh); this.mesh.geometry.dispose(); this.mat.dispose(); }
 }
+// v184 (backlog): THE BINDING SHOP — an occasional lattice room with three
+// deals on pedestals, priced in what the basement trades: blood and score.
+let bdShop = [];   // { kind, x, z, mesh, mat, label, sold, _denyT }
+function clearBdShop() {
+  for (const s2 of bdShop) {
+    scene.remove(s2.mesh);
+    s2.mesh.geometry.dispose();
+    s2.mat.dispose();
+  }
+  bdShop = [];
+}
 // BINDING chasms (v163): Isaac pits — bodies can't cross, bullets fly
 // over. FLITs (flying) and mid-hop HOPPERs ignore them. Same AABB math as
 // the wall kit, separate array so bullets never interact.
@@ -2216,6 +2228,7 @@ function startBinding() {
   startGame();
 }
 function exitBinding() {
+  clearBdShop();
   bindingMode = false;
   smashMode = _bdSavedSmash;
   pixelMode = _bdSavedPixel;
@@ -3583,6 +3596,22 @@ function drawHUD() {
     ctx.restore();
   }
 
+  // v184: shop price tags float over the pedestals
+  if (bindingMode && bdShop.length && gameState === 'playing') {
+    for (const s2 of bdShop) {
+      const p = toScreen({ x: s2.x, y: 1.6, z: s2.z });
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.globalAlpha = s2.sold ? 0.35 : 0.9;
+      ctx.font = 'bold 12px monospace, sans-serif';
+      ctx.shadowColor = '#ffd700';
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = s2.sold ? '#888888' : '#ffe9a0';
+      ctx.fillText(s2.sold ? 'SOLD' : s2.label, p.x, p.y);
+      ctx.restore();
+    }
+  }
+
   // Gate teaching tag (v138): until the player has ever dashed a gate, every
   // live gate advertises the move — pulsing, dash-colored, impossible to miss.
   if (!gateUsed && gameState === 'playing') {
@@ -3757,7 +3786,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v183', 16, uiCanvas.height - 12);
+  ctx.fillText('v184', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -4782,7 +4811,7 @@ function spawnWave() {
   // the cabinet's own roster ALREADY IN THE ROOM when you walk in: FLIT
   // orbit-swarms, SPITTLE arc-spitters, lane-charging CHARGERs (floor 2+),
   // HOPPERs. Compositions scale with the floor; bosses keep the smash boss.
-  if (bindingMode && smashRoomKind !== 'item' && smashRoomKind !== 'boss') {
+  if (bindingMode && smashRoomKind !== 'item' && smashRoomKind !== 'boss' && smashRoomKind !== 'shop') {
     clearGaundropLevel();          // previous room's rocks
     // v163: CHASMS (floor 2+, ~1/3 of fight rooms) — the pit shapes the
     // room: bodies can't cross, bullets fly over. Red-rimmed voids.
@@ -4882,6 +4911,26 @@ function spawnWave() {
     clearGaundropLevel();          // item/boss rooms stay clear of rocks
   }
 
+  clearBdShop();   // v184: pedestals never survive a room swap
+  // v184 THE BINDING SHOP: no enemies — three pedestal deals, doors open.
+  // Browse, pay in blood or points, or just walk on through.
+  if (bindingMode && smashRoomKind === 'shop') {
+    bdShop = [
+      { kind: 'upgrade', x: -3.5, label: 'DEAL: 1 HP',     col: 0xcc66ff },
+      { kind: 'rare',    x: 0,    label: 'DEAL: 1 MAX HP', col: 0xffcc33 },
+      { kind: 'heal',    x: 3.5,  label: '+2 HP: 1500 PTS', col: 0xff4466 },
+    ].map(d => {
+      const mat = new THREE.MeshBasicMaterial({ color: d.col });
+      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.62, 0.7, 8), mat);
+      mesh.position.set(d.x, 0.35, -2);
+      scene.add(mesh);
+      return { ...d, z: -2, mesh, mat, sold: false, _denyT: 0 };
+    });
+    exitPhase  = true;
+    exitDoors  = pickSmashExits();
+    for (const ed of exitDoors) ed.kind = bindingKindFor(bindingRoomN + 1);
+    roomTallyT = 0;
+  }
   // BINDING OF TOKO item room (v150): no enemies — one glowing pedestal in
   // the middle, doors already open. Take the item, or don't, and move on.
   if (bindingMode && smashRoomKind === 'item') {
@@ -6285,6 +6334,45 @@ function loop() {
     }
   }
 
+  // v184 BINDING SHOP runtime: walk into a pedestal to take its deal.
+  if (bindingMode && bdShop.length && player.alive && gameState === 'playing') {
+    for (const s2 of bdShop) {
+      if (s2._denyT > 0) s2._denyT -= dt;
+      if (s2.sold) continue;
+      s2.mesh.rotation.y += dt * 0.8;
+      if (Math.hypot(player.position.x - s2.x, player.position.z - s2.z) >= 1.15) continue;
+      if (s2.kind === 'upgrade') {
+        if (player.hp <= 1) {
+          if (s2._denyT <= 0) { s2._denyT = 1.2; milestoneT = 1.0; milestoneText = 'NOT ENOUGH BLOOD'; audio.shieldTink(); }
+          continue;
+        }
+        player.hp--;
+        s2.sold = true; s2.mat.color.setHex(0x444444);
+        audio.kaChing();
+        showUpgradeCards(() => { gameState = 'playing'; });
+      } else if (s2.kind === 'rare') {
+        if (player.maxHp <= 1) {
+          if (s2._denyT <= 0) { s2._denyT = 1.2; milestoneT = 1.0; milestoneText = 'NOT ENOUGH BLOOD'; audio.shieldTink(); }
+          continue;
+        }
+        dropMaxHp(1);
+        s2.sold = true; s2.mat.color.setHex(0x444444);
+        audio.kaChing();
+        showRareCards(() => { gameState = 'playing'; });
+      } else if (s2.kind === 'heal') {
+        if (score < 1500) {
+          if (s2._denyT <= 0) { s2._denyT = 1.2; milestoneT = 1.0; milestoneText = 'NOT ENOUGH POINTS'; audio.shieldTink(); }
+          continue;
+        }
+        score -= 1500;
+        player.hp = Math.min(player.maxHp, player.hp + 2);
+        s2.sold = true; s2.mat.color.setHex(0x444444);
+        milestoneT = 1.1; milestoneText = 'PATCHED UP (+2 HP)';
+        audio.kaChing();
+      }
+    }
+  }
+
   // BINDING rocks (v157) + chasms (v163): rocks block bullets and bodies;
   // pits block ONLY bodies — bullets sail over the void.
   if (bindingMode && player.alive && (gdWalls.length || bdChasms.length)) {
@@ -7627,7 +7715,8 @@ function loop() {
         } else {
           for (const ed of exitDoors) {
             const r2 = rng();
-            ed.kind = r2 < 0.5 ? 'normal' : r2 < 0.8 ? 'swarm' : 'spike';
+            // v184: ~12% of free doors lead to the basement bazaar
+            ed.kind = r2 < 0.5 ? 'normal' : r2 < 0.72 ? 'swarm' : r2 < 0.88 ? 'spike' : 'shop';
           }
         }
         // Floor boss down (v150): the basement pays a RARE pick on the spot.
@@ -7752,6 +7841,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=137').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=138').catch(() => {});
   });
 }
