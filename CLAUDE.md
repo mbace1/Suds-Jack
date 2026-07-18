@@ -58,8 +58,15 @@ fullscreen + landscape lock on start. Onboarding
 is paced across the first ~150s (one new enemy roughly every 15-20s) and recurring spawns
 tighten over time; the death screen recaps what killed you, a kill breakdown, and your
 last 10 run times. A harmless serpent omen circles the arena rim at ~10s (`startFlyby`,
-own sprites outside the enemies array) foreshadowing the 100s debut. No build step — open `hyperdagger/index.html` (three.js via jsDelivr
-importmap, same as toko-drop). Same `gh-pages` deploy caveat as paperboy.
+own sprites outside the enemies array) foreshadowing the 100s debut. No build step — open `hyperdagger/index.html`. Three.js r167
+is **vendored** (`hyperdagger/vendor/` — `three.module.min.js` + the `jsm/postprocessing`
++ `jsm/shaders` closure) and the importmap points at it — no CDN. The game is an
+**installable PWA**: `manifest.webmanifest` (fullscreen/landscape, voxel-skull icons) +
+`sw.js` (toko-drop's worker strategy — release token from `sw.js?v=N` names the cache,
+module graph + vendor closure precached at install, tokened URLs cache-first, untokened
+network-first with cache fallback, same-origin GET only). **All module `?v=` tokens are
+normalized to the single release token** so precache URLs match page imports exactly —
+bump every token together on release. Same `gh-pages` deploy caveat as paperboy.
 
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
 Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
@@ -104,6 +111,9 @@ paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new p
     audio.js    # WebAudio bleep kit (throw/deliver/smash/pickup/crash/day-clear)
 hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel enemies
   index.html
+  manifest.webmanifest  # PWA install (fullscreen/landscape, voxel-skull icons)
+  sw.js       # Offline service worker — tokened cache-first, precached module graph
+  vendor/     # Vendored three.js r167 (module + jsm postprocessing/shaders closure)
   js/
     main.js     # Scene (grid arena, rainbow sky, afterimage/bloom/chroma), director, combat, HUD, style meter
     voxel.js    # String-art voxel models + parser, VoxelSprite (InstancedMesh), DebrisPool physics
