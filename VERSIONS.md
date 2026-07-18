@@ -7,6 +7,15 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v188 — 2026-07-18
+**CLOSE COMBAT fixes — the barricade fountain (playtest video feedback)**
+- **The gate can no longer fountain bullets**: revenge rings now answer the PLAYER only — kills by gate lasers, steam vents, and suds walls vaporize cleanly (`onKill` learned an `'env'` source tag). The video showed enemies grinding into a gate forever, each corpse spraying a ring, until the arena drowned in slow bullets farmed from cover — that whole loop is gone
+- **Drafted shooters actually press now**: the same video showed a drafted spittor parked at its old firing range doing nothing. In CLOSE COMBAT every drafted shooter gets a steady 1.6 u/s drift toward the player layered over its old habit — kiting is over, the draft means you ADVANCE
+- Normal (non-melee) runs are untouched: the env tag only gates the revenge ring, and the press-drift only exists inside CLOSE COMBAT
+- Cache-bust `?v=141` → `?v=142`; HUD label → v188
+
+---
+
 ## v187 — 2026-07-18
 **CLOSE COMBAT mode — no enemy fire, only revenge (user direction)**
 - **New OPTIONS toggle** (under SMASH TV, works with it and with roguelike/daily): a run where **no enemy ever fires a bullet** — a lab for very different waves, bigger hordes, and movement tactics

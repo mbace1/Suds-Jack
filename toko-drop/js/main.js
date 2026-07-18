@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=141';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=141';
-import { Player, PLAYER_RADIUS } from './player.js?v=141';
+import { InputManager } from './input.js?v=142';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=142';
+import { Player, PLAYER_RADIUS } from './player.js?v=142';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=141';
-import { RetroPass } from './retro.js?v=141';
-import { audio } from './audio.js?v=141';
-import { initDesigner } from './designer.js?v=141';
-import { t, getLang, setLang, langs } from './lang.js?v=141';
-import { TUNING } from './tuning.js?v=141';
+         CABINET_STYLE, VIS } from './enemy.js?v=142';
+import { RetroPass } from './retro.js?v=142';
+import { audio } from './audio.js?v=142';
+import { initDesigner } from './designer.js?v=142';
+import { t, getLang, setLang, langs } from './lang.js?v=142';
+import { TUNING } from './tuning.js?v=142';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -2726,7 +2726,7 @@ function syncAutoOrientation() {
   }
 }
 
-function onKill(e) {
+function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are marked
   // VOLATILE affix (v145): the fuse pays off — a slow 8-bullet ring from the
   // corpse. The orange strobe telegraphed it the whole time.
   if (e._affix === 'volatile') {
@@ -2739,8 +2739,10 @@ function onKill(e) {
   }
   // v187 CLOSE COMBAT: the dead shoot back — every corpse bursts into a slow,
   // grazeable REVENGE RING (the run's ONLY bullets). Capped so a mass grave
-  // can't exhaust the pool.
-  if (meleeRun && gameState === 'playing' && bullets.active.length < 240) {
+  // can't exhaust the pool. v188 (playtest video): revenge answers the PLAYER
+  // only — gate lasers, vents, and suds walls vaporize cleanly, so a
+  // barricade can never become a bullet fountain you farm from cover.
+  if (meleeRun && src !== 'env' && gameState === 'playing' && bullets.active.length < 240) {
     const nRev = e._isBoss ? 14 : e.radius > 0.75 ? 7 : 4;
     const a0 = Math.random() * Math.PI * 2;
     for (let j = 0; j < nRev; j++) {
@@ -3848,7 +3850,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v187', 16, uiCanvas.height - 12);
+  ctx.fillText('v188', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -6414,7 +6416,7 @@ function loop() {
         score += bonus;
         milestoneT = 1.2; milestoneText = `MISSION COMPLETE! +${bonus}`;
         pendingSpawns = [];
-        for (const e of enemies) if (e.alive) { e.hp = 1; e.hit(e.position.x, e.position.z); onKill(e); }
+        for (const e of enemies) if (e.alive) { e.hp = 1; e.hit(e.position.x, e.position.z); onKill(e, 'env'); }
         audio.waveClear();
         setTimeout(() => {
           if (!loadoutMode || gameState !== 'playing') return;
@@ -6924,6 +6926,20 @@ function loop() {
   for (const e of enemies) {
     // v187 CLOSE COMBAT: enemies get a dead phone instead of the trigger
     e.update(dt, player.position, meleeRun ? MUZZLED_BULLETS : bullets, HALF_X, HALF_Z);
+    // v188 (playtest video): a drafted shooter kept its old hold-range habit
+    // and just stood there — in CLOSE COMBAT the draft means you ADVANCE.
+    if (meleeRun && e.alive && RANGED_TYPES.has(e.type)) {
+      const dxp = player.position.x - e.position.x;
+      const dzp = player.position.z - e.position.z;
+      const dp = Math.hypot(dxp, dzp);
+      // the drift OVERPOWERS the old kite-away habit inside comfort range —
+      // otherwise they stall at their firing distance (the parked spittor)
+      const press = dp > 10 ? 1.6 : 2.6;
+      if (dp > 1.1) {
+        e.position.x += (dxp / dp) * press * dt;
+        e.position.z += (dzp / dp) * press * dt;
+      }
+    }
     if (e._affix === 'swift' && e.alive && Math.random() < dt * 10) {
       trailPool.spawn(e.position.x, e.fxY, e.position.z, 0x99e6ff, 0.22);
     }
@@ -7441,7 +7457,7 @@ function loop() {
           if (!e.alive) continue;
           if (Math.hypot(e.position.x - v.x, e.position.z - v.z) < 1.7) {
             const died = e.hit(e.position.x, e.position.z);
-            if (died) onKill(e); else audio.enemyHit();
+            if (died) onKill(e, 'env'); else audio.enemyHit();
             const [kx, kz] = ventKick(e.position.x, e.position.z);
             e.position.x = Math.max(-HALF_X + 1, Math.min(HALF_X - 1, e.position.x + kx));
             e.position.z = Math.max(-HALF_Z + 1, Math.min(HALF_Z - 1, e.position.z + kz));
@@ -7527,7 +7543,7 @@ function loop() {
         const p2 = sudsWall.axis === 'x' ? e.position.x : e.position.z;
         if (Math.abs(p2 - sudsWall.pos) < 0.9) {
           const died = e.hit(e.position.x, e.position.z);
-          if (died) onKill(e); else audio.enemyHit();
+          if (died) onKill(e, 'env'); else audio.enemyHit();
           const lat = sudsWall.axis === 'x' ? 'z' : 'x';
           const shove = (lat === 'z' ? e.position.z : e.position.x) >= 0 ? 3 : -3;
           if (lat === 'z') e.position.z = Math.max(-HALF_Z + 1, Math.min(HALF_Z - 1, e.position.z + shove));
@@ -7675,7 +7691,7 @@ function loop() {
           if (!e.alive) continue;
           if (g.hitsPoint(e.position.x, e.position.z, e.radius * 0.5)) {
             const died = e.hit();
-            if (died) onKill(e);
+            if (died) onKill(e, 'env');
             else audio.enemyHit();
             g._dmgCooldown = 0.5;
             break;
@@ -7981,6 +7997,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=141').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=142').catch(() => {});
   });
 }
