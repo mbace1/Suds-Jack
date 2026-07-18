@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=141';
-import { t } from './lang.js?v=141';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=141';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=142';
+import { t } from './lang.js?v=142';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=142';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
