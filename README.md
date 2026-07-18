@@ -86,6 +86,22 @@ exceed 1.0) give selective glow without washing out the bone.
 - **8× voxel density + chip damage:** every model voxel is subdivided into 8 minis (the Leviathan gets 27×), and dagger hits **knock real voxels out of the model** near the impact — HP-sponge enemies visibly erode with bullet holes before they burst; chipped voxels fly off as debris. Density steps back to 1× on the LOW perf tier
 - **Serpent omen:** ~10 s into every run a serpent silently circles just beyond the grid and departs — harmless, untargetable foreshadowing of its real arrival at 100 s
 - **Impact language:** heavy kills warp the frame with a radial **distortion ripple** and land with a ~50 ms **hit-stop**; the sky's bands accelerate with the music and its ember horizon swells with trauma (and burns while the Leviathan lives); orbs breathe menacingly and gems glint — blinking hard just before they expire
+- **Installable PWA:** add to home screen and the whole game — vendored three.js included — **works fully offline** after the first visit; fullscreen/landscape with voxel-skull icons
+- **Global daily board (optional):** deploy `hyperdagger/scripts/daily-board.gs` (below) and daily deaths post to a shared top-10 with 3-char arcade initials
+
+#### Turn on the global daily board (~3 minutes)
+The daily leaderboard ships **disabled** — the game makes zero network calls until you
+give it an endpoint. To go global:
+1. Create a Google Sheet (any name) → Extensions → Apps Script → paste
+   `hyperdagger/scripts/daily-board.gs` over the stub and save.
+2. Deploy → New deployment → type **Web app** → *Execute as: Me*, *Who has access:
+   Anyone* (players post anonymously).
+3. Copy the deployment's `/exec` URL into `BOARD_ENDPOINT` (daily-runs section of
+   `hyperdagger/js/main.js`) and ship.
+Death screens on DAILY runs then show the day's global top-10, your rank, and an
+initials box (`hyperDaggerInitials`, arcade-style 3 chars); the menu shows today's
+global best. If the endpoint is unreachable the board quietly says "board offline" —
+the run itself is never affected.
 
 ### `toko-drop/`
 Twin-stick bullet-hell arena shooter built on Three.js r167.
@@ -126,6 +142,7 @@ Twin-stick bullet-hell arena shooter built on Three.js r167.
 ## Changelog
 
 ### 2026-07
+- **hyperdagger v4.12 — global daily leaderboard (zero-cost, optional):** `hyperdagger/scripts/daily-board.gs` is a Google Apps Script web app (same pattern as toko-drop's feedback sink): `doPost` appends `{date, mode, t, name}` rows from a `text/plain` JSON body (dodges CORS preflight), `doGet ?date&mode[&t]` returns the day's top-10 + entry count + the rank a given time holds, as JSON. Client side: `BOARD_ENDPOINT` in `main.js` ships **empty = feature fully off** (verified: zero fetches, no board DOM); once a deployed `/exec` URL is pasted in, daily deaths fire-and-forget POST the run and render "GLOBAL TOP · you: #N of M today" plus a 3-char arcade **initials** box (`hyperDaggerInitials`, sanitized A-Z0-9?) on the death screen, and the menu's daily view shows today's global best. Fetch failures degrade to "board offline" without touching the run. Smoke-verified with a stubbed `fetch`: payload shape, top-10 render, rank line, initials persistence, and the all-off default
 - **hyperdagger v4.11 — installable PWA, true offline play, vendored three.js:** three.js r167 now ships inside the game (`hyperdagger/vendor/` — `three.module.min.js` plus the `jsm/postprocessing` + `jsm/shaders` closure, ~1.3 MB) and the importmap points at it, so the jsDelivr CDN dependency is gone. On top of that: `manifest.webmanifest` (fullscreen, landscape, black, voxel-skull icons 192/512 + apple-touch + favicon — rendered from the actual `MODELS.skull` front face) and `sw.js`, the same worker strategy as toko-drop's — the release token from the registration URL (`sw.js?v=N`) names the cache, the whole module graph + vendor closure is precached at install (module `?v=` tokens are now all normalized to the release token so precache URLs are byte-identical to what the page imports), tokened URLs are cache-first (immutable per release), untokened shell/vendor/icons are network-first with cache fallback, same-origin GET only, precache failures non-fatal. Verified headless: SW active, 30-entry `hyper-dagger-v28` cache, zero gaps between loaded resources and cache, and a cold boot to the menu with Playwright's network fully offline
 - **hyperdagger v4.10 — controller can actually start the game:** reproduction confirmed the report — ✕/A started a run but **Start/Options was silently ignored on the menu/tips/death screens** (`gamepadMenu()` only consulted `ui.start` in its pause-resume branch, and the A-main-action path had never been test-covered). Start now fires the main action on every non-playing screen (start / reveal tips / retry) while keeping its pause/resume roles; the menu, tips, and death prompts gained pad hints ("press ✕ or START to descend"). The smoke suite now drives the entire start flow controller-only: Start → tips card, A → playing, and Start → retry from the death screen after the input guard
 - **hyperdagger v4.9 — player-facing voxel density + perf readout:** the detail ceiling rises to 4 (64 minis per source voxel — a dread skull at ×64 is 5,824 voxels: measured ladder 91 / 728 / 2,457 / 5,824) and becomes a pause-menu option: **VOXEL AUTO / 1X / 8X / 27X / 64X** (`opts.detail`, default `auto` = the existing governor behavior — 8× normally, 1× on LOW/tier-4; explicit picks override the governor's density choice while it keeps managing render cost). New spawns adopt the setting, so the swarm re-densifies within seconds. The pause header now shows **~fps (from the governor's frame-time EMA) and the live voxel count on field**, making the menu a self-serve benchmark

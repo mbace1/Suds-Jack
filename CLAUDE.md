@@ -247,6 +247,14 @@ totem/leviathan exhale rolls (`rng.next`, the run-stream). Scoring: per-day best
 straddle), capped 30-entry all-time table `hyperDaggerDailyBest`, `gcDailyKeys()`
 merges + deletes stale keys at boot. Daily deaths never write the FREE `hiKey()`.
 Debug: `setRunKind`, `setDate`, `getRunInfo`, `lastPulsePicks`, `getDailyTable`.
+**Global board (optional):** `BOARD_ENDPOINT` in `main.js` (daily-runs section) ships
+empty = zero fetches, no board DOM; paste a deployed `scripts/daily-board.gs` `/exec`
+URL (Apps Script — `doPost` appends `{date, mode, t, name}` from a text/plain JSON
+body, `doGet ?date&mode[&t]` returns `{top, count, rank}`) and daily deaths POST the
+run then render the day's top-10 + rank into `#board`, with a 3-char initials input
+(`hyperDaggerInitials`, sanitized A-Z0-9?); `menuBoardLine()` adds today's global best
+to the menu. Failures render "board offline" — never blocks the run. Debug:
+`setBoardEndpoint(url)`, `getBoardEndpoint()`.
 
 **Modes:** menu-button toggle, persisted in `localStorage` (`hyperDaggerMode`). PURE =
 one-touch death (DD). HYPER = HYPERDEMON rules: `lifeT` drains in real time (start 30,

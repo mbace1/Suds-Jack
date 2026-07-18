@@ -5,15 +5,15 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=28';
-import { Player } from './player.js?v=28';
-import { DaggerPool } from './daggers.js?v=28';
-import { GemPool } from './gems.js?v=28';
-import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail } from './voxel.js?v=28';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=28';
-import { OrbPool } from './bullets.js?v=28';
-import { AudioKit } from './audio.js?v=28';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=28';
+import { InputManager } from './input.js?v=29';
+import { Player } from './player.js?v=29';
+import { DaggerPool } from './daggers.js?v=29';
+import { GemPool } from './gems.js?v=29';
+import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail } from './voxel.js?v=29';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=29';
+import { OrbPool } from './bullets.js?v=29';
+import { AudioKit } from './audio.js?v=29';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=29';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -649,6 +649,62 @@ function gcDailyKeys() {
 }
 gcDailyKeys();
 
+// ------------------------------------------------- global daily board
+// Optional remote leaderboard backed by scripts/daily-board.gs (Google Apps
+// Script, zero cost — deploy guide in that file's header, paste the /exec URL
+// here). Empty endpoint = feature fully off: zero fetches, no board DOM.
+let BOARD_ENDPOINT = '';
+const INITIALS_KEY = 'hyperDaggerInitials';
+
+function sanitizeInitials(v) {
+  return String(v || '').toUpperCase().replace(/[^A-Z0-9?]/g, '').slice(0, 3) || '???';
+}
+function getInitials() { return sanitizeInitials(localStorage.getItem(INITIALS_KEY)); }
+
+/** POST this daily run, then GET the day's top 10 into the death screen's
+ *  #board block. Fire-and-forget with quiet failure — never blocks the UI. */
+async function boardReport(date, m, t) {
+  if (!BOARD_ENDPOINT) return;
+  // re-query per use: a restart may have rebuilt the overlay's innerHTML
+  const board = () => document.getElementById('board');
+  try {
+    await fetch(BOARD_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' }, // dodges the CORS preflight Apps Script can't answer
+      body: JSON.stringify({ date, mode: m, t: Math.round(t * 10) / 10, name: getInitials() }),
+    });
+    const res = await fetch(
+      `${BOARD_ENDPOINT}?date=${date}&mode=${m}&t=${Math.round(t * 10) / 10}`);
+    const data = await res.json();
+    const el = board();
+    if (!el || !data || !Array.isArray(data.top)) return;
+    const rows = data.top.map((r, i) =>
+      `#${i + 1} ${sanitizeInitials(r.name)} ${Number(r.t).toFixed(1)}s`).join('<br>');
+    el.innerHTML =
+      `<p class="history">GLOBAL TOP &middot; ${date}${
+        data.rank ? ` &middot; you: #${data.rank} of ${data.count} today` : ''}</p>
+       <p class="history">${rows || 'no runs yet today — yours is first'}</p>`;
+  } catch {
+    const el = board();
+    if (el) el.innerHTML = '<p class="history">board offline</p>';
+  }
+}
+
+/** Menu extra: today's global best for the selected mode (daily view only). */
+async function menuBoardLine() {
+  if (!BOARD_ENDPOINT || runKind !== 'daily') return;
+  try {
+    const res = await fetch(`${BOARD_ENDPOINT}?date=${todayStr()}&mode=${mode}`);
+    const data = await res.json();
+    const top = data?.top?.[0];
+    const el = document.getElementById('menuBoard');
+    if (el && top && state === 'menu') {
+      el.innerHTML = `today's global best ${Number(top.t).toFixed(1)}s by ${
+        sanitizeInitials(top.name)}<br>`;
+    }
+  } catch { /* board offline — menu shows nothing extra */ }
+}
+
 function showMenu() {
   elMsg.style.display = 'block';
   const modeLine = mode === 'hyper'
@@ -664,7 +720,8 @@ function showMenu() {
      <button id="runKindBtn" class="opt">RUN: ${runKind === 'daily'
     ? `DAILY &mdash; everyone faces the ${todayStr()} seed`
     : 'FREE &mdash; pure random'}</button>
-     <p class="go">${bestLine()}click / tap / press &#10005; or START to descend</p>`;
+     <p class="go"><span id="menuBoard"></span>${bestLine()}click / tap / press &#10005; or START to descend</p>`;
+  menuBoardLine();
   document.getElementById('modeBtn').addEventListener('pointerdown', e => {
     e.stopPropagation();
     mode = mode === 'hyper' ? 'pure' : 'hyper';
@@ -783,7 +840,11 @@ function showDeath(timedOut) {
     const rank = pushDailyTable(runDate, mode, gameTime);
     dailyLines =
       `<p>${best ? 'NEW DAILY BEST' : `today's best ${dayBest.toFixed(1)}s`} &middot; ${runDate}${
-        rank <= 30 ? ` &middot; daily #${rank} all-time` : ''}</p>`;
+        rank <= 30 ? ` &middot; daily #${rank} all-time` : ''}</p>${
+        BOARD_ENDPOINT
+          ? `<div id="board"><p class="history">fetching global top&hellip;</p></div>
+             <p class="history">initials <input id="initials" maxlength="3" value="${getInitials()}"> (next run's board name)</p>`
+          : ''}`;
   } else if (gameTime > hiScore) {
     best = true;
     hiScore = gameTime;
@@ -832,6 +893,16 @@ function showDeath(timedOut) {
       btn.textContent = share; // clipboard blocked — show it for manual copy
     }
   });
+  const initialsEl = document.getElementById('initials');
+  if (initialsEl) {
+    // taps/keys in the input must not restart the run
+    initialsEl.addEventListener('pointerdown', e => e.stopPropagation());
+    initialsEl.addEventListener('input', e => {
+      const v = sanitizeInitials(e.target.value);
+      localStorage.setItem(INITIALS_KEY, v);
+    });
+  }
+  if (runKind === 'daily') boardReport(runDate, mode, gameTime);
 }
 
 function clearEnemies() {
@@ -2055,6 +2126,8 @@ window.__hd = {
     report() { return runReport(); },
     setRunKind(k) { runKind = k; localStorage.setItem('hyperDaggerRunKind', k); },
     setDate(s) { dateOverride = s; },
+    setBoardEndpoint(u) { BOARD_ENDPOINT = u || ''; },
+    getBoardEndpoint() { return BOARD_ENDPOINT; },
     getRunInfo() { return { runKind, runSeed, runDate, mode, pulseN }; },
     lastPulsePicks,
     getDailyTable() { return readDailyTable(); },
