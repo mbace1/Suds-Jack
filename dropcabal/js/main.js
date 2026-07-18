@@ -6,13 +6,13 @@
 // everything is unlit MeshBasicMaterial, NoToneMapping.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js';
-import { AudioKit } from './audio.js';
-import { InputManager } from './input.js';
-import { DebrisPool, BoomPool } from './fx.js';
-import { TracerPool, OrbPool, GrenadePool } from './shots.js';
-import { Enemy, EType, ECFG } from './enemy.js';
-import { Player, PLAYER_Z, PLAYER_X_MAX } from './player.js';
+import { PAL } from './palette.js?v=2';
+import { AudioKit } from './audio.js?v=2';
+import { InputManager, STICK_R } from './input.js?v=2';
+import { DebrisPool, BoomPool } from './fx.js?v=2';
+import { TracerPool, OrbPool, GrenadePool } from './shots.js?v=2';
+import { Enemy, EType, ECFG } from './enemy.js?v=2';
+import { Player, PLAYER_Z, PLAYER_X_MAX } from './player.js?v=2';
 
 // ---------------------------------------------------------------- constants
 const PIXEL_H = 220;          // internal render height (Cabal-era chunk)
@@ -38,6 +38,10 @@ renderer.toneMapping = THREE.NoToneMapping;
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50, 16 / 9, 0.1, 250);
 
+// full-res overlay for the touch sticks (drawn each frame, crisp above the pixel canvas)
+const ui = document.getElementById('ui');
+const uiCtx = ui.getContext('2d');
+
 function resize() {
   const a = window.innerWidth / Math.max(1, window.innerHeight);
   const ih = PIXEL_H;
@@ -45,6 +49,8 @@ function resize() {
   renderer.setSize(iw, ih, false);
   camera.aspect = iw / ih;
   camera.updateProjectionMatrix();
+  ui.width = window.innerWidth;
+  ui.height = window.innerHeight;
 }
 window.addEventListener('resize', resize);
 resize();
@@ -371,7 +377,7 @@ function showTitle() {
     'DROP CABAL<br><small>toko drop gels &times; cabal</small><br><br>' +
     '<small>MOUSE aim &middot; HOLD LMB fire &middot; A/D run<br>' +
     'SPACE roll &middot; G / RMB grenade &middot; ESC pause<br>' +
-    'touch: left drag run (tap = roll) &middot; right finger aim+fire<br><br>' +
+    'touch: dual sticks &mdash; left runs (tap = roll) &middot; right aims + fires<br><br>' +
     'CLICK / TAP TO START</small>',
   );
 }
@@ -698,6 +704,51 @@ function updatePlay(dt) {
   }
 }
 
+// ---------------------------------------------------------------- touch sticks
+const AIM_PX = 1100;          // crosshair speed at full right-stick deflection (px/s)
+const _rate = { x: 0, y: 0 };
+
+function applyTouchAim(dt) {
+  input.aimRate(_rate);
+  if (_rate.x === 0 && _rate.y === 0) return;
+  input.aim.x = Math.max(0, Math.min(window.innerWidth, input.aim.x + _rate.x * AIM_PX * dt));
+  input.aim.y = Math.max(0, Math.min(window.innerHeight, input.aim.y + _rate.y * AIM_PX * dt));
+}
+
+function drawStick(side, label, hintX, hintY) {
+  const c = uiCtx;
+  if (side.id !== -1) {
+    let dx = side.x - side.x0;
+    let dy = side.y - side.y0;
+    const len = Math.hypot(dx, dy);
+    if (len > STICK_R) { dx *= STICK_R / len; dy *= STICK_R / len; }
+    c.strokeStyle = 'rgba(255,242,216,0.55)';
+    c.fillStyle = 'rgba(255,242,216,0.08)';
+    c.lineWidth = 2;
+    c.beginPath(); c.arc(side.x0, side.y0, STICK_R, 0, 7); c.fill(); c.stroke();
+    c.fillStyle = 'rgba(255,242,216,0.4)';
+    c.beginPath(); c.arc(side.x0 + dx, side.y0 + dy, 22, 0, 7); c.fill();
+  } else {
+    c.strokeStyle = 'rgba(255,242,216,0.18)';
+    c.lineWidth = 2;
+    c.setLineDash([6, 6]);
+    c.beginPath(); c.arc(hintX, hintY, STICK_R * 0.8, 0, 7); c.stroke();
+    c.setLineDash([]);
+    c.fillStyle = 'rgba(255,242,216,0.3)';
+    c.font = 'bold 12px monospace';
+    c.textAlign = 'center';
+    c.fillText(label, hintX, hintY + 4);
+  }
+}
+
+function drawSticks() {
+  uiCtx.clearRect(0, 0, ui.width, ui.height);
+  if (!input.touchSeen) return;
+  const s = input.sticks();
+  drawStick(s.left, 'RUN', ui.width * 0.16, ui.height * 0.74);
+  drawStick(s.right, 'AIM', ui.width * 0.84, ui.height * 0.74);
+}
+
 // ---------------------------------------------------------------- loop
 const clock = new THREE.Clock();
 const camBase = new THREE.Vector3();
@@ -706,6 +757,7 @@ const camLook = new THREE.Vector3();
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(0.05, clock.getDelta());
+  applyTouchAim(dt);
 
   if (input.consumePause() && (state === 'play' || paused)) {
     paused = !paused;
@@ -757,6 +809,7 @@ function animate() {
   camera.lookAt(camLook);
 
   renderer.render(scene, camera);
+  drawSticks();
 }
 
 showTitle();
@@ -772,6 +825,7 @@ window.__dc = {
   debug: {
     state: () => state,
     score: () => score,
+    aim: () => ({ x: input.aim.x, y: input.aim.y }),
     setStage: (n) => { stage = n; startStage(); },
     addNades: (n) => { nades = Math.min(9, nades + n); updateHud(); },
     killAll: () => { while (enemies.length && state === 'play') killEnemy(enemies[0], true); },
