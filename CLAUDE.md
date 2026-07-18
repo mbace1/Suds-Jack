@@ -118,7 +118,7 @@ dropcabal/      # Drop Cabal — Cabal-style gallery shooter, toko-drop enemies,
     player.js   # Gel commando: run along strip, gun lookAt crosshair, dodge roll, mercy
     shots.js    # Pooled tracers (prev-pos segment tests), enemy orbs (lob gravity), grenades
     fx.js       # InstancedMesh debris pool + additive boom shells
-    input.js    # Mouse aim/LMB fire/A-D run/Space roll/G-RMB nade; dual-zone touch
+    input.js    # Mouse aim/LMB fire/A-D run/Space roll/G-RMB nade; dual virtual sticks (touch)
     audio.js    # WebAudio bleep kit (fire/thock/splat/boom/pew/fanfare…)
 hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel enemies
   index.html
@@ -179,6 +179,12 @@ mains alive, interval tightening with stage. `killEnemy` → gauge; quota reache
 grenade when fully levelled. Player: 3 lives, orb/mini hit costs one unless rolling
 (0.36 s, i-frames) or in 2 s mercy flicker; grenade = 0.75 s arc to the crosshair ground
 point, r 5.4 boom killing enemies/towers/orbs. Hi-score in localStorage `dropCabalHi`.
+Touch is **dual virtual sticks** drawn on a full-res `#ui` canvas overlay: left stick
+x = run, right stick is a **rate controller** (deflection = crosshair velocity, `AIM_PX`
+1100 px/s at full tilt, integrated in `applyTouchAim`) + autofire while held; a quick
+sub-250 ms / sub-12 px tap on EITHER stick = roll; idle sticks show dashed RUN/AIM
+hints once touch is seen. Module imports carry `?v=2` cache-busters (paperboy
+convention) so gh-pages picks up coherent versions.
 
 **Pixel render:** `renderer.setSize(iw, 220, false)` + CSS `image-rendering: pixelated`
 (canvas stretched to viewport) + scanline overlay div; `NearestFilter` on the sky /

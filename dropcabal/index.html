@@ -15,6 +15,9 @@
       image-rendering: pixelated;
       image-rendering: crisp-edges;
     }
+    #ui {
+      position: fixed; inset: 0; pointer-events: none; z-index: 6;
+    }
     #scan {
       position: fixed; inset: 0; pointer-events: none; z-index: 5;
       background: repeating-linear-gradient(to bottom, rgba(0,0,0,0.16) 0 1px, transparent 1px 3px);
@@ -56,6 +59,7 @@
 </head>
 <body>
   <canvas id="game"></canvas>
+  <canvas id="ui"></canvas>
   <div id="scan"></div>
   <div id="hud" class="ui">
     <div class="cell">SCORE <span id="score">0</span></div>
@@ -79,6 +83,6 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=1"></script>
+  <script type="module" src="js/main.js?v=2"></script>
 </body>
 </html>

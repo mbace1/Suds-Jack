@@ -2,7 +2,7 @@
 // aims a gun at the 3D crosshair point, dodge-rolls with i-frames, flickers on mercy.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js';
+import { PAL } from './palette.js?v=2';
 
 export const PLAYER_Z = 8;
 export const PLAYER_X_MAX = 14;
