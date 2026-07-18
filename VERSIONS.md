@@ -7,6 +7,18 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v187 — 2026-07-18
+**CLOSE COMBAT mode — no enemy fire, only revenge (user direction)**
+- **New OPTIONS toggle** (under SMASH TV, works with it and with roguelike/daily): a run where **no enemy ever fires a bullet** — a lab for very different waves, bigger hordes, and movement tactics
+- **The gun club is drafted**: shooters lose the trigger entirely (one central muzzle — enemies get a dead bullet pool) and press as chasers at +40% speed; DRAPER sits out (it IS a gun); curtain events stand down
+- **Every body hurts**: in CLOSE COMBAT all contact deals damage — wardens, sirens, magnas included. Positioning is the whole game
+- **REVENGE RINGS**: every corpse bursts into a slow, grazeable ring (4 bullets small fry / 7 big / 14 boss) — the run's ONLY bullets, so the pressure comes from where things DIE. Pool-capped so a mass grave can't flood the field
+- **Bigger hordes**: +35% budget, +50% wave caps; boss waves field **TORO the wheel** (a real melee boss) under WARDEN escort instead of the crystal gunners
+- Classic + SMASH runs only (cabinets keep their identities); run opens with `CLOSE COMBAT — NO GUNS, ONLY REVENGE`; leaderboard tags `+melee`; toggle localized en/ja/fi (`LÄHITAISTELU`)
+- Cache-bust `?v=140` → `?v=141`; HUD label → v187
+
+---
+
 ## v186 — 2026-07-18
 **NEX DEUS gets its own boss — THE CUSTODIAN (39 types)**
 - **Every 6th surge, the machine ITSELF steps in**: no rings, no lost players — a broad faceted diamond avatar with a silver SHEEN that shrugs every bullet (deflection sparks, shield telemetry)

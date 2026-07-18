@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=140';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=140';
-import { Player, PLAYER_RADIUS } from './player.js?v=140';
+import { InputManager } from './input.js?v=141';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=141';
+import { Player, PLAYER_RADIUS } from './player.js?v=141';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=140';
-import { RetroPass } from './retro.js?v=140';
-import { audio } from './audio.js?v=140';
-import { initDesigner } from './designer.js?v=140';
-import { t, getLang, setLang, langs } from './lang.js?v=140';
-import { TUNING } from './tuning.js?v=140';
+         CABINET_STYLE, VIS } from './enemy.js?v=141';
+import { RetroPass } from './retro.js?v=141';
+import { audio } from './audio.js?v=141';
+import { initDesigner } from './designer.js?v=141';
+import { t, getLang, setLang, langs } from './lang.js?v=141';
+import { TUNING } from './tuning.js?v=141';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -128,55 +128,78 @@ function getEnemySchedule(wave) {
   if (testMode) budget = Math.max(budget, 24);
   // v179: RICH DAY — bigger crowds pay for the bigger loot
   if (dailyMod === 'rich') budget = Math.floor(budget * 1.4);
+  // v187: no lanes to respect — CLOSE COMBAT floods the floor instead
+  if (meleeRun) budget = Math.floor(budget * 1.35);
 
   // Composed waves (v116): melee mobs FLOOD the arena (groups/twins — the
   // fodder you mow through), while ranged enemies are placed DELIBERATELY —
   // few of them, capped, spread apart in arrival time and position so each
   // shooter is a tactical problem to prioritise, not part of the noise.
   const SHOOTERS  = new Set([SPITTOR, FANNER, WEEVA, ORANGE_CUBE, PURP_CUBE, BAMBU, PYRA, BOTFLY, CLOAKER, DRAPER]);
-  const meleePool = available.filter(([ty]) => !SHOOTERS.has(ty));
-  const shootPool = available.filter(([ty]) =>  SHOOTERS.has(ty));
+  // v187 CLOSE COMBAT: nobody fires — the gun club joins the melee pool as
+  // chasers (muzzled + sped up at spawn); DRAPER sits out (it IS a gun).
+  const draft     = meleeRun ? available.filter(([ty]) => ty !== DRAPER) : available;
+  const meleePool = draft.filter(([ty]) => meleeRun || !SHOOTERS.has(ty));
+  const shootPool = meleeRun ? [] : draft.filter(([ty]) => SHOOTERS.has(ty));
 
   // Mob variants: swarm waves favour bodies; SMASH TV leans toward door-rush groups.
-  const VARIANTS = isSwarm
-    ? ['group', 'group', 'twin', 'normal']
-    : smashMode
-      ? ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group', 'group', 'group']
-      : ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group'];
+  const VARIANTS = meleeRun
+    ? ['group', 'group', 'group', 'twin', 'twin', 'normal', 'normal', 'elite']   // v187: horde texture
+    : isSwarm
+      ? ['group', 'group', 'twin', 'normal']
+      : smashMode
+        ? ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group', 'group', 'group']
+        : ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group'];
   const swarmPool = meleePool.filter(([, , c]) => c <= 2);
-  const drawPool  = (isSwarm && swarmPool.length) ? swarmPool : (meleePool.length ? meleePool : available);
+  // v187: the melee draw leans cheap — bodies twice as likely as heavies
+  const drawPool  = (isSwarm && swarmPool.length) ? swarmPool
+                  : meleeRun ? [...meleePool.filter(([, , c]) => c <= 3), ...meleePool]
+                  : (meleePool.length ? meleePool : available);
 
   const list = [];
   let spent = 0, t = 0;
   // Cap grows with wave number so early waves stay sparse; later waves can fill the arena.
-  const cap = isSwarm
+  let cap = isSwarm
     ? Math.min(22, 5 + Math.floor(wave * 1.4))
     : Math.min(14, 4 + wave);
+  if (meleeRun) cap = Math.floor(cap * 1.5);   // v187: the horde IS the game
 
   // Boss wave: guaranteed boss up front. OMEGA (v71) is boss-exclusive — it
   // never appears in POOL, so every boss wave gets a purpose-built enemy
   // instead of an existing regular type just scaled up.
   if (isBoss) {
-    // v174: the headliner ALTERNATES per boss cycle — OMEGA's lone crystal or
-    // the TWIN PRISMS pair (two half-size shards trading volleys; the survivor
-    // enrages instantly). The run seed picks who opens, so daily runs share a
-    // schedule and consecutive bosses in one run always differ.
-    const bossCycle = Math.floor(wave / 8);
-    if ((bossCycle + (runSeed % 2)) % 2 === 0) {
-      list.push({ type: PRISM, t: 0,   boss: true });
-      list.push({ type: PRISM, t: 0.4, boss: true });
+    // v187 CLOSE COMBAT boss: the crystals are guns — TORO the wheel is not.
+    if (meleeRun) {
+      list.push({ type: TORO, t: 0, boss: true });
+      spent += Math.ceil(4 * 2.5);
+      t = 4;
+      const escorts = Math.min(2, Math.floor(wave / 8) - 1);
+      for (let k = 0; k < escorts; k++) {
+        list.push({ type: WARDEN, t: 2.0 + k * 1.5 });
+        spent += 5;
+      }
     } else {
-      list.push({ type: OMEGA, t: 0, boss: true });
-    }
-    spent += Math.ceil(4 * 2.5);
-    t = 4;
-    // Boss escorts (v125): from the 2nd boss on, OMEGA arrives under a WARDEN
-    // umbrella (two from the 3rd) — later bosses scale in TACTICS, not just HP:
-    // break the shield line first or fight the boss unhurt-able.
-    const escorts = Math.min(2, Math.floor(wave / 8) - 1);
-    for (let k = 0; k < escorts; k++) {
-      list.push({ type: WARDEN, t: 2.0 + k * 1.5 });
-      spent += 5;
+      // v174: the headliner ALTERNATES per boss cycle — OMEGA's lone crystal
+      // or the TWIN PRISMS pair (two half-size shards trading volleys; the
+      // survivor enrages instantly). The run seed picks who opens, so daily
+      // runs share a schedule and consecutive bosses in one run always differ.
+      const bossCycle = Math.floor(wave / 8);
+      if ((bossCycle + (runSeed % 2)) % 2 === 0) {
+        list.push({ type: PRISM, t: 0,   boss: true });
+        list.push({ type: PRISM, t: 0.4, boss: true });
+      } else {
+        list.push({ type: OMEGA, t: 0, boss: true });
+      }
+      spent += Math.ceil(4 * 2.5);
+      t = 4;
+      // Boss escorts (v125): from the 2nd boss on, OMEGA arrives under a
+      // WARDEN umbrella (two from the 3rd) — later bosses scale in TACTICS,
+      // not just HP: break the shield line first or fight it unhurt-able.
+      const escorts = Math.min(2, Math.floor(wave / 8) - 1);
+      for (let k = 0; k < escorts; k++) {
+        list.push({ type: WARDEN, t: 2.0 + k * 1.5 });
+        spent += 5;
+      }
     }
   }
 
@@ -202,7 +225,9 @@ function getEnemySchedule(wave) {
   }
 
   while (spent < budget && list.length < cap) {
-    const [type, , cost] = drawPool[Math.floor(rng() * drawPool.length)];
+    const [type, , cost0] = drawPool[Math.floor(rng() * drawPool.length)];
+    // v187: a drafted shooter without its gun is just legs — priced like it
+    const cost = meleeRun && SHOOTERS.has(type) ? Math.max(1, cost0 - 2) : cost0;
     const variant = VARIANTS[Math.floor(rng() * VARIANTS.length)];
     let entry, entryCost;
     if (variant === 'elite') {
@@ -220,8 +245,9 @@ function getEnemySchedule(wave) {
     } else if (variant === 'group') {
       const cheaper = swarmPool.length ? swarmPool : meleePool;
       const pick = cheaper.length ? cheaper[Math.floor(rng() * cheaper.length)] : [type, 0, cost];
-      const cnt = 3 + Math.floor(rng() * 2);
-      entryCost = pick[2] * cnt;
+      const cnt = (meleeRun ? 4 : 3) + Math.floor(rng() * 2);   // v187: fatter packs
+      const pCost = meleeRun && SHOOTERS.has(pick[0]) ? Math.max(1, pick[2] - 2) : pick[2];
+      entryCost = pCost * cnt;
       entry = { type: pick[0], t, count: cnt };
     } else {
       entryCost = cost;
@@ -1739,6 +1765,18 @@ const QUEST_ORDER = ['gauntlet', 'tokotron', 'gaundrop', 'loadout', 'binding', '
 // SMASH TV mode (v109): enemies pour in bursts from 4 arena-edge "doors",
 // waves run bigger and burstier, and moths/convoys drop more prizes.
 let smashMode = localStorage.getItem('tokoDropSmash') === '1';
+// v187 (user direction): CLOSE COMBAT — a run option where NO enemy fires a
+// bullet. Shooters are drafted as fast chasers, EVERY body deals contact
+// damage, and the only bullets on the field are REVENGE RINGS off corpses.
+// A different lab: bigger hordes, movement tactics, pressure without lanes.
+// Classic + SMASH runs only; cabinets keep their own identities.
+let meleeOnlyMode = localStorage.getItem('tokoDropMelee') === '1';
+let meleeRun = false;                              // captured at run start
+const MUZZLED_BULLETS = { spawnDir: () => {} };    // enemies only call spawnDir
+// the classic gun club — drafted as chasers when the guns are banned
+const RANGED_TYPES = new Set([EnemyType.SPITTOR, EnemyType.FANNER, EnemyType.WEEVA,
+  EnemyType.ORANGE_CUBE, EnemyType.PURP_CUBE, EnemyType.BAMBU, EnemyType.PYRA,
+  EnemyType.BOTFLY, EnemyType.CLOAKER, EnemyType.DRAPER]);
 // v178 (M6): SMASH TV floor structure — the boss room ends a FLOOR. Each
 // floor re-lights the studio (palette shift), toughens the lattice (budget
 // scales), and opens with a BONUS ROOM: pure loot, doors already open.
@@ -2699,6 +2737,18 @@ function onKill(e) {
     }
     addShake(0.12);
   }
+  // v187 CLOSE COMBAT: the dead shoot back — every corpse bursts into a slow,
+  // grazeable REVENGE RING (the run's ONLY bullets). Capped so a mass grave
+  // can't exhaust the pool.
+  if (meleeRun && gameState === 'playing' && bullets.active.length < 240) {
+    const nRev = e._isBoss ? 14 : e.radius > 0.75 ? 7 : 4;
+    const a0 = Math.random() * Math.PI * 2;
+    for (let j = 0; j < nRev; j++) {
+      const a = a0 + (j / nRev) * Math.PI * 2;
+      bullets.spawnDir(e.position.x, e.position.z, Math.cos(a), Math.sin(a),
+        false, 0xff8866, false, e.type, false, 6, 0.6);
+    }
+  }
   streak++;
   score += 100 * streak * (scoreMultT > 0 ? 2 : 1) * (dailyMod === 'glass' ? 2 : 1)   // v179: GLASS pays double
          * killScoreMult                                                              // v180: GAMBLER's card
@@ -3223,6 +3273,11 @@ const designer = initDesigner({
     setCabinet: v => setCabinetSel(v),
     getNexInfo: () => ({ progress: nexProgress(), unlocked: nexProgress() >= 5,
                          bests: cabBestsGet(), req: NEX_REQ }),
+    getMelee: () => meleeOnlyMode,
+    setMelee: on => {
+      meleeOnlyMode = on;
+      localStorage.setItem('tokoDropMelee', on ? '1' : '0');
+    },
     getSmash: () => smashMode,
     setSmash: on => {
       smashMode = on;
@@ -3793,7 +3848,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v186', 16, uiCanvas.height - 12);
+  ctx.fillText('v187', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -4209,7 +4264,7 @@ function buildDailyLeaderboard(slot) {
       body: JSON.stringify({
         initials, score, wave, daily: _dailyRun,
         seed: runSeed.toString(16).toUpperCase().padStart(6, '0'),
-        mode: `${nexdeusMode ? 'nexdeus' : kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}${dailyMod ? '+' + dailyMod : ''}`,
+        mode: `${nexdeusMode ? 'nexdeus' : kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}${dailyMod ? '+' + dailyMod : ''}${meleeRun ? '+melee' : ''}`,
         build: new URL(import.meta.url).searchParams.get('v') ?? '?',
       }),
     }).catch(() => {});
@@ -5288,7 +5343,7 @@ function spawnWave() {
   const curtainOk = (!inCabinet() && wave >= 6) ||
                     (tokotronMode && wave >= 4) ||
                     (nexdeusMode && wave >= 2);
-  curtainArmed = curtainOk && kind !== 'boss' && kind !== 'bonus' &&
+  curtainArmed = curtainOk && kind !== 'boss' && kind !== 'bonus' && !meleeRun &&
                  rng() < (inCabinet() ? 0.45 : dailyMod === 'surge' ? 0.8 : 0.55);
   curtainStyle = (wave >= 10 && rng() < 0.35) ? 'cross'
                : (wave >= 8  && rng() < 0.45) ? 'diag' : 'wall';
@@ -5858,6 +5913,11 @@ function startGame() {
                   : dailyMod === 'surge' ? 'SURGE DAY — THE FLOOR FIGHTS HARDER'
                   : 'RICH DAY — DOUBLE LOOT, BIGGER CROWDS';
   }
+  meleeRun = meleeOnlyMode && !inCabinet();   // v187: cabinets keep their guns
+  if (meleeRun) {
+    milestoneT = 2.0;
+    milestoneText = 'CLOSE COMBAT — NO GUNS, ONLY REVENGE';
+  }
   player._magnet    = false;
   player._hasShield = false;
   player._shield    = false;
@@ -6243,6 +6303,8 @@ function loop() {
       }
       // volatile's tell is its fuse glow (enemy.js) — the pop comes in onKill
     }
+    // v187: drafted shooters press instead of kiting — pure legs now
+    if (meleeRun && RANGED_TYPES.has(en.type)) en._speedMult *= 1.4;
     // BOUNTY mark (v133): the first non-boss arrival of an armed wave carries
     // the gold ring — 8 s on the clock from the moment it steps in.
     if (bountyArm && !s.boss) {
@@ -6860,7 +6922,8 @@ function loop() {
   if (waveClearFlashT > 0) waveClearFlashT -= dt;
 
   for (const e of enemies) {
-    e.update(dt, player.position, bullets, HALF_X, HALF_Z);
+    // v187 CLOSE COMBAT: enemies get a dead phone instead of the trigger
+    e.update(dt, player.position, meleeRun ? MUZZLED_BULLETS : bullets, HALF_X, HALF_Z);
     if (e._affix === 'swift' && e.alive && Math.random() < dt * 10) {
       trailPool.spawn(e.position.x, e.fxY, e.position.z, 0x99e6ff, 0.22);
     }
@@ -7306,7 +7369,7 @@ function loop() {
   // Contact damage: melee-type enemies
   if (!player.invincible) {
     for (const e of enemies) {
-      if (!MELEE_TYPES.has(e.type) || !e.alive) continue;
+      if (!e.alive || !(MELEE_TYPES.has(e.type) || meleeRun)) continue;   // v187: every body hurts
       if (e.type === EnemyType.HOPPER && e.mesh.position.y > 0.5) continue;  // v157: airborne
       const dx = player.position.x - e.position.x;
       const dz = player.position.z - e.position.z;
@@ -7918,6 +7981,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=140').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=141').catch(() => {});
   });
 }
