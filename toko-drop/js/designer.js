@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=139';
-import { t } from './lang.js?v=139';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=139';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=140';
+import { t } from './lang.js?v=140';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=140';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -194,6 +194,7 @@ const TYPE_NAMES = {
   [EnemyType.THUG]:        'THUG (kaikki)',
   [EnemyType.DRAPER]:      'DRAPER (curtains)',
   [EnemyType.PRISM]:       'PRISM (twin boss)',
+  [EnemyType.CUSTODIAN]:   'CUSTODIAN (nex boss)',
 };
 
 const ALL_TYPES = Object.values(EnemyType);

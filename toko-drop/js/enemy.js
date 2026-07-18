@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=139';
-import { nesSnap, NEON } from './retro.js?v=139';
+import { TUNING } from './tuning.js?v=140';
+import { nesSnap, NEON } from './retro.js?v=140';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
@@ -392,6 +392,8 @@ export const EnemyType = {
   DRAPER:      36,
   // boss-exclusive pair (v174) — alternates with OMEGA on boss waves
   PRISM:       37,
+  // NEX DEUS boss (v186) — the machine's avatar, cracked only by dashes
+  CUSTODIAN:   38,
 };
 
 // WARDEN aura radius (world units) — main.js uses it for the damage-immunity
@@ -442,6 +444,7 @@ export const CFG = {
   [EnemyType.THUG]:        { color: 0x4a3c36, radius: 0.55, speed: 2.2, hp: 2, bulletColor: null,     fireInterval: null },
   [EnemyType.DRAPER]:      { color: 0x9955ff, radius: 0.8,  speed: 0.9, hp: 5, bulletColor: 0xcc88ff, fireInterval: 5.0  },
   [EnemyType.PRISM]:       { color: 0xff55cc, radius: 0.85, speed: 1.5, hp: 3, bulletColor: 0xff99ee, fireInterval: null },
+  [EnemyType.CUSTODIAN]:   { color: 0xff44ff, radius: 1.15, speed: 1.1, hp: 6, bulletColor: 0xff99ee, fireInterval: null },
 };
 
 // Scratch colors for the tinted death flash (v132) — no per-death allocation.
@@ -590,6 +593,11 @@ export class Enemy {
       // core — reads as one of a PAIR, not a small OMEGA.
       geo = new THREE.OctahedronGeometry(cfg.radius, 0);
       geo.scale(0.8, 1.35, 0.8);
+    } else if (type === EnemyType.CUSTODIAN) {
+      // v186: the god-machine's avatar — a broad faceted diamond, wider than
+      // tall: a monument that condescends to move.
+      geo = new THREE.OctahedronGeometry(cfg.radius, 1);
+      geo.scale(1.15, 0.9, 1.15);
     }
 
     const isBlob = BLOB_TYPES.has(type);
@@ -810,7 +818,7 @@ export class Enemy {
         : type === EnemyType.ORB    ? NEON.cube
         : type === EnemyType.MINDER ? NEON.brain
         : CUBE_TYPES.has(type) ? NEON.cube
-        : (type === EnemyType.TORO || type === EnemyType.OMEGA || type === EnemyType.PRISM) ? NEON.heavy
+        : (type === EnemyType.TORO || type === EnemyType.OMEGA || type === EnemyType.PRISM || type === EnemyType.CUSTODIAN) ? NEON.heavy
         : cfg.bulletColor ? NEON.ranged : NEON.blob;
       this._cabShell = new THREE.Mesh(this.mesh.geometry, new THREE.MeshBasicMaterial({
         color: neonCol, side: THREE.BackSide,
@@ -2036,6 +2044,48 @@ export class Enemy {
         break;
       }
 
+      case EnemyType.CUSTODIAN: {
+        // NEX DEUS boss (v186): a silver SHEEN shrugs bullets — only a dash
+        // THROUGH it cracks the shell open for 3 s (main.js sets _crackT).
+        // It drifts at you, then glitch-teleports on a strobing tell and
+        // fires on arrival: aimed 5-fans, radial rings when enraged.
+        if (this._crackT > 0) this._crackT -= dt;
+        this.mesh.rotation.y += (this._enraged ? 1.8 : 0.7) * dt;
+        this.mesh.rotation.x += 0.3 * dt;
+        if (this._teleWarm != null) {
+          this._teleWarm -= dt;
+          if (this._teleWarm <= 0) {
+            this._teleWarm = null;
+            this._teleT = this._enraged ? 2.4 : 3.6;
+            let tx, tz, tr = 0;
+            do {
+              tx = (Math.random() * 2 - 1) * (halfX - 2);
+              tz = (Math.random() * 2 - 1) * (halfZ - 2);
+            } while (Math.hypot(tx - playerPos.x, tz - playerPos.z) < 6 && ++tr < 20);
+            this.mesh.position.x = tx;
+            this.mesh.position.z = tz;
+            const baseA = Math.atan2(playerPos.z - tz, playerPos.x - tx);
+            if (this._enraged) {
+              this._ring(tx, tz, 10, cfg.bulletColor, bullets, this.type);
+            } else {
+              const span = Math.PI * 0.4;
+              for (let j = 0; j < 5; j++) {
+                const a = baseA - span / 2 + j * (span / 4);
+                bullets.spawnDir(tx, tz, Math.cos(a), Math.sin(a), false, cfg.bulletColor, false, this.type);
+              }
+            }
+          }
+        } else {
+          this._teleT = (this._teleT ?? 3.2) - dt;
+          if (this._teleT <= 0) this._teleWarm = 0.6;
+          else if (dist > 4) {
+            this.mesh.position.x += (ddx / dist) * spd * dt;
+            this.mesh.position.z += (ddz / dist) * spd * dt;
+          }
+        }
+        break;
+      }
+
       case EnemyType.PYRA:
         this.group.rotation.y += this._spinSpeed * dt;
         break;
@@ -2178,6 +2228,12 @@ export class Enemy {
     } else if (this.type === EnemyType.OMEGA && this._omegaFireT < 0.25) {
       const pc = this._bossPhase === 3 ? 0xaa2200 : this._bossPhase === 2 ? 0x885500 : 0x0088aa;
       this._setEmissive(Math.sin(performance.now() * 0.03) > 0 ? pc : 0x000000);
+    } else if (this.type === EnemyType.CUSTODIAN) {
+      this._setEmissive(this._teleWarm != null
+        ? (Math.sin(performance.now() * 0.06) > 0 ? 0xffffff : 0x220022)   // glitching out
+        : this._crackT > 0
+          ? (Math.sin(performance.now() * 0.02) > 0 ? 0x661122 : 0x220008)  // shell open
+          : (Math.sin(performance.now() * 0.006) > 0 ? 0x33333e : 0x1a1a22));  // the sheen
     } else if (this.type === EnemyType.PRISM && (this._prismFireT ?? 9) < 0.3) {
       const pc = this._bossPhase === 3 ? 0xaa2200 : 0x88104f;
       this._setEmissive(Math.sin(performance.now() * 0.03) > 0 ? pc : 0x000000);

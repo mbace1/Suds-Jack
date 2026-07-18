@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=139';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=139';
-import { Player, PLAYER_RADIUS } from './player.js?v=139';
+import { InputManager } from './input.js?v=140';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=140';
+import { Player, PLAYER_RADIUS } from './player.js?v=140';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=139';
-import { RetroPass } from './retro.js?v=139';
-import { audio } from './audio.js?v=139';
-import { initDesigner } from './designer.js?v=139';
-import { t, getLang, setLang, langs } from './lang.js?v=139';
-import { TUNING } from './tuning.js?v=139';
+         CABINET_STYLE, VIS } from './enemy.js?v=140';
+import { RetroPass } from './retro.js?v=140';
+import { audio } from './audio.js?v=140';
+import { initDesigner } from './designer.js?v=140';
+import { t, getLang, setLang, langs } from './lang.js?v=140';
+import { TUNING } from './tuning.js?v=140';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1381,6 +1381,7 @@ class DamageNumber {
 
 // ── Melee types ───────────────────────────────────────────────────────────────
 const MELEE_TYPES = new Set([
+  EnemyType.CUSTODIAN,   // v186: the avatar's touch
   EnemyType.GLOBBO, EnemyType.SPLITTA, EnemyType.BULWARK,
   EnemyType.YELA_CUBE, EnemyType.SLUDGE_CUBE, EnemyType.REDD_CUBE, EnemyType.PURP_CUBE,
   EnemyType.REDD_MINI, EnemyType.PURP_MINI,
@@ -3792,7 +3793,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v185', 16, uiCanvas.height - 12);
+  ctx.fillText('v186', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -5221,6 +5222,18 @@ function spawnWave() {
       } while (Math.hypot(sx3, sz3) < 6 && ++tries3 < 20);
       nxSecret = { x: sx3, z: sz3, found: false };
     }
+    // v186: every 6th surge the machine ITSELF steps in — THE CUSTODIAN.
+    // No rings, no lost players: just you, the sheen, and the dash.
+    if (wave % 6 === 0) {
+      const b = new Enemy(scene, EnemyType.CUSTODIAN, 0, -Math.max(6, HALF_Z * 0.5), speedMult, intervalMult);
+      b.hp = Math.ceil(b.hp * 3); b._hpMult = 3;
+      b.mesh.scale.multiplyScalar(1.5); b._radiusMult = 1.5;
+      b.setBoss(b.hp);
+      bossAuras.push(makeBossAura(b));
+      enemies.push(b);
+      clusterSpawnAt = [];
+      audio.bossHorn();
+    } else {
     const T = EnemyType;
     const k = 1 + (wave - 1) * 0.12;                     // per-surge escalation
     const POOLS = [
@@ -5259,6 +5272,7 @@ function spawnWave() {
     for (let i = 0; i < nH; i++) nxHumanAt.push(4 + i * 9 + rng() * 4);
     nxHumanAt.sort((a, b) => a - b);
     clusterSpawnAt = [];   // the machine ships no cargo
+    }
   }
   // Schedule cargo convoys (start mid-wave, seeded position). SMASH TV runs a
   // second prize convoy per wave — big money, big prizes.
@@ -5427,8 +5441,8 @@ function spawnWave() {
     waveIntroText  = `TOKOTRON — WAVE ${wave}`;
     waveIntroColor = '#44eeff';
   } else if (nexdeusMode) {
-    waveIntroT = waveIntroDur = 1.4;
-    waveIntroText  = `NEX DEUS — SURGE ${wave}`;
+    waveIntroT = waveIntroDur = wave % 6 === 0 ? 2.0 : 1.4;
+    waveIntroText  = wave % 6 === 0 ? 'NEX DEUS — THE CUSTODIAN' : `NEX DEUS — SURGE ${wave}`;
     waveIntroColor = '#ff44ff';
   } else if (gaundropMode) {
     waveIntroT = waveIntroDur = 1.2;
@@ -6792,6 +6806,11 @@ function loop() {
         if (Math.hypot(e.position.x - player.position.x,
                        e.position.z - player.position.z) < e.radius + PLAYER_RADIUS + 0.2) {
           e._nxHitT = 0.45;                // one cut per pass, not per frame
+          if (e.type === EnemyType.CUSTODIAN && !(e._crackT > 0)) {
+            e._crackT = 3.0;               // v186: the shell opens — unload
+            milestoneT = 1.1; milestoneText = 'SHELL CRACKED — UNLOAD!';
+            audio.phaseShift();
+          }
           const died = e.hit(e.position.x, e.position.z);
           if (died) onKill(e); else audio.enemyHit();
           addShake(0.10);
@@ -7104,6 +7123,20 @@ function loop() {
             const a2 = Math.atan2(dz, dx) + (Math.random() - 0.5) * 1.6;
             gooChunkPool.spawn(b.mesh.position.x, 0.9, b.mesh.position.z,
               Math.cos(a2) * 4, 2 + Math.random() * 2, Math.sin(a2) * 4, 0xffaa22, 0.08);
+          }
+          break;
+        }
+        // THE CUSTODIAN (v186): the sheen shrugs bullets — dash THROUGH it to
+        // crack the shell, then it takes damage like anyone for 3 s.
+        if (e.type === EnemyType.CUSTODIAN && !(e._crackT > 0)) {
+          bullets.recycleAt(i);
+          hit = true;
+          shieldBlockCount++;
+          audio.shieldTink();
+          for (let j = 0; j < 3; j++) {
+            const a2 = Math.atan2(dz, dx) + (Math.random() - 0.5) * 1.6;
+            gooChunkPool.spawn(b.mesh.position.x, e.fxY + 0.2, b.mesh.position.z,
+              Math.cos(a2) * 4, 2 + Math.random() * 2, Math.sin(a2) * 4, 0xff99ee, 0.08);
           }
           break;
         }
@@ -7885,6 +7918,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=139').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=140').catch(() => {});
   });
 }

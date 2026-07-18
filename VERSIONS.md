@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v186 — 2026-07-18
+**NEX DEUS gets its own boss — THE CUSTODIAN (39 types)**
+- **Every 6th surge, the machine ITSELF steps in**: no rings, no lost players — a broad faceted diamond avatar with a silver SHEEN that shrugs every bullet (deflection sparks, shield telemetry)
+- **The dash is the key, again**: dash THROUGH the Custodian to crack the shell (`SHELL CRACKED — UNLOAD!`) — for 3 seconds it takes damage like anyone, then the sheen reseals. The cabinet's verb opens its boss
+- **The fight**: it drifts at you, then glitch-teleports on a strobing white tell and fires an aimed 5-fan on arrival; below 33% HP it enrages — faster teleports, radial rings, the standard phase machinery (aura, phase call, announcer)
+- Its touch is melee, its emissive tells the whole story (silver sheen / white glitch strobe / open-shell red), and the glitch tile still hides on boss waves for the greedy
+- Cache-bust `?v=139` → `?v=140`; HUD label → v186
+
+---
+
 ## v185 — 2026-07-17
 **NEX DEUS backlog — CHAINED SECRETS (cabinet backlog sweep complete)**
 - **Every surge wave hides ONE glitch tile** — a faint magenta shimmer somewhere away from center. Only a **DASH through it** cracks the cache: `SECRET ×n!` paying 800×chain
