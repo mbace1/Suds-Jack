@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v189 — 2026-07-19
+**Instanced bullet rendering — the on-screen bullet ceiling comes off**
+- **Every bullet used to be three live meshes** (additive halo + white core + drop shadow), so a full 300-bullet field cost ~900 draw calls — the real ceiling under dense curtains, boss fans, and CLOSE COMBAT revenge rings. The pool now draws the **entire field in three `InstancedMesh`es** (halo / core / shadow), so a packed screen is 3 draw calls instead of hundreds
+- **This is the graphics-scaling lever**, not a WebGPU port: three.js rendering is GPU-bound either way, and collapsing draw calls is what actually lets us push denser patterns and more enemies on phones. (A WebGPU renderer is deferred — it can't run this game's custom GLSL shaders (gel-dome goo, floor, RetroPass) without a TSL port first)
+- **Zero gameplay change**: bullets look and behave identically (same halo/core/shadow sizing, same enemy-bullet pulse, same colours, same hitboxes). Each bullet keeps a scene-less `Object3D` as its `mesh` holder, so every collision reader (`b.mesh.position`) and the "bigger bullets" upgrade are untouched
+- Mirrors the death-chunk / motion-trail instancing already proven in `main.js`; matches the death-FX pooling that killed GC churn during swarm clears
+- Cache-bust `?v=142` → `?v=143`; HUD label → v189
+
+---
+
 ## v188 — 2026-07-18
 **CLOSE COMBAT fixes — the barricade fountain (playtest video feedback)**
 - **The gate can no longer fountain bullets**: revenge rings now answer the PLAYER only — kills by gate lasers, steam vents, and suds walls vaporize cleanly (`onKill` learned an `'env'` source tag). The video showed enemies grinding into a gate forever, each corpse spraying a ring, until the arena drowned in slow bullets farmed from cover — that whole loop is gone
