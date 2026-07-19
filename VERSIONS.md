@@ -7,108 +7,29 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v189 — 2026-07-19
-**Instanced bullet rendering — the on-screen bullet ceiling comes off**
-- **Every bullet used to be three live meshes** (additive halo + white core + drop shadow), so a full 300-bullet field cost ~900 draw calls — the real ceiling under dense curtains, boss fans, and CLOSE COMBAT revenge rings. The pool now draws the **entire field in three `InstancedMesh`es** (halo / core / shadow), so a packed screen is 3 draw calls instead of hundreds
-- **This is the graphics-scaling lever**, not a WebGPU port: three.js rendering is GPU-bound either way, and collapsing draw calls is what actually lets us push denser patterns and more enemies on phones. (A WebGPU renderer is deferred — it can't run this game's custom GLSL shaders (gel-dome goo, floor, RetroPass) without a TSL port first)
-- **Zero gameplay change**: bullets look and behave identically (same halo/core/shadow sizing, same enemy-bullet pulse, same colours, same hitboxes). Each bullet keeps a scene-less `Object3D` as its `mesh` holder, so every collision reader (`b.mesh.position`) and the "bigger bullets" upgrade are untouched
-- Mirrors the death-chunk / motion-trail instancing already proven in `main.js`; matches the death-FX pooling that killed GC churn during swarm clears
-- Cache-bust `?v=142` → `?v=143`; HUD label → v189
-
----
-
-## v188 — 2026-07-18
-**CLOSE COMBAT fixes — the barricade fountain (playtest video feedback)**
-- **The gate can no longer fountain bullets**: revenge rings now answer the PLAYER only — kills by gate lasers, steam vents, and suds walls vaporize cleanly (`onKill` learned an `'env'` source tag). The video showed enemies grinding into a gate forever, each corpse spraying a ring, until the arena drowned in slow bullets farmed from cover — that whole loop is gone
-- **Drafted shooters actually press now**: the same video showed a drafted spittor parked at its old firing range doing nothing. In CLOSE COMBAT every drafted shooter gets a steady 1.6 u/s drift toward the player layered over its old habit — kiting is over, the draft means you ADVANCE
-- Normal (non-melee) runs are untouched: the env tag only gates the revenge ring, and the press-drift only exists inside CLOSE COMBAT
-- Cache-bust `?v=141` → `?v=142`; HUD label → v188
-
----
-
-## v187 — 2026-07-18
-**CLOSE COMBAT mode — no enemy fire, only revenge (user direction)**
-- **New OPTIONS toggle** (under SMASH TV, works with it and with roguelike/daily): a run where **no enemy ever fires a bullet** — a lab for very different waves, bigger hordes, and movement tactics
-- **The gun club is drafted**: shooters lose the trigger entirely (one central muzzle — enemies get a dead bullet pool) and press as chasers at +40% speed; DRAPER sits out (it IS a gun); curtain events stand down
-- **Every body hurts**: in CLOSE COMBAT all contact deals damage — wardens, sirens, magnas included. Positioning is the whole game
-- **REVENGE RINGS**: every corpse bursts into a slow, grazeable ring (4 bullets small fry / 7 big / 14 boss) — the run's ONLY bullets, so the pressure comes from where things DIE. Pool-capped so a mass grave can't flood the field
-- **Bigger hordes**: +35% budget, +50% wave caps; boss waves field **TORO the wheel** (a real melee boss) under WARDEN escort instead of the crystal gunners
-- Classic + SMASH runs only (cabinets keep their identities); run opens with `CLOSE COMBAT — NO GUNS, ONLY REVENGE`; leaderboard tags `+melee`; toggle localized en/ja/fi (`LÄHITAISTELU`)
-- Cache-bust `?v=140` → `?v=141`; HUD label → v187
-
----
-
-## v186 — 2026-07-18
-**NEX DEUS gets its own boss — THE CUSTODIAN (39 types)**
-- **Every 6th surge, the machine ITSELF steps in**: no rings, no lost players — a broad faceted diamond avatar with a silver SHEEN that shrugs every bullet (deflection sparks, shield telemetry)
-- **The dash is the key, again**: dash THROUGH the Custodian to crack the shell (`SHELL CRACKED — UNLOAD!`) — for 3 seconds it takes damage like anyone, then the sheen reseals. The cabinet's verb opens its boss
-- **The fight**: it drifts at you, then glitch-teleports on a strobing white tell and fires an aimed 5-fan on arrival; below 33% HP it enrages — faster teleports, radial rings, the standard phase machinery (aura, phase call, announcer)
-- Its touch is melee, its emissive tells the whole story (silver sheen / white glitch strobe / open-shell red), and the glitch tile still hides on boss waves for the greedy
-- Cache-bust `?v=139` → `?v=140`; HUD label → v186
-
----
-
-## v185 — 2026-07-17
-**NEX DEUS backlog — CHAINED SECRETS (cabinet backlog sweep complete)**
-- **Every surge wave hides ONE glitch tile** — a faint magenta shimmer somewhere away from center. Only a **DASH through it** cracks the cache: `SECRET ×n!` paying 800×chain
-- **The chain is consecutive waves**: find it every wave and the multiplier climbs; miss a wave and the machine forgets you (chain resets silently at the next surge)
-- **Chain 3+**: `THE MACHINE WHISPERS` — a level-2 weapon pod materializes on the tile alongside the pay
-- Chain state resets per run; the tile clears with the level on every wave/exit; quest multiplier applies inside NEX DEUS COMMUNION
-- This closes the one-item-per-cabinet backlog sweep: gaundrop v181, loadout v182, kaikki v183, binding v184, nexdeus v185
-- Cache-bust `?v=138` → `?v=139`; HUD label → v185
-
----
-
-## v184 — 2026-07-17
-**BINDING backlog — THE BASEMENT SHOP**
-- **A SHOP room joins the basement lattice** (~12% of free door rolls, never overriding the item/boss cadence): no enemies, doors open from the first second, three pedestal deals priced in what the basement trades — blood and points
-- **The deals**: `DEAL: 1 HP` (pay a heart, pick an upgrade card), `DEAL: 1 MAX HP` (pay a heart container, pick a RARE), `+2 HP: 1500 PTS` (points buy a patch-up). Floating gold price tags over each pedestal; sold pedestals grey out and read `SOLD`
-- Can't afford it? A `NOT ENOUGH BLOOD` / `NOT ENOUGH POINTS` bump and the shieldTink — never a punishment, just the till saying no
-- Pedestals clear on every room swap and cabinet exit; minimap doors advertise `SHOP` in gold
-- Cache-bust `?v=137` → `?v=138`; HUD label → v184
-
----
-
-## v183 — 2026-07-17
-**KAIKKI backlog — SHOP TIER 2, the flamethrower class**
-- **Three tier-2 items appear in THE SHOP from mission 4**: **LIEKINHEITIN** (₵3000, one-time — a hose of fat fast fire: rapid-2 pod + fire rate + big rounds), **MAGNEETTI** (₵1400, one-time — cash and pickups fly to you; in the money game, that's a build), **KILPI** (₵900, restocked — a shield charge per visit)
-- Before mission 4 the shop shows only the original seven — tier 2 arrives exactly when the wallet can dream about it
-- All names stay in the cabinet's Finnish (KONEPISTOOLI energy); descriptions localized en/ja/fi
-- Cache-bust `?v=136` → `?v=137`; HUD label → v183
-
----
-
-## v182 — 2026-07-17
-**LOADOUT backlog — the RESCUE mission joins the rotation**
-- **Mission 5 of 5: RESCUE** — 2-4 hostages in soldier fatigues wander the compound yard under a TROOPER/GLOBBO guard detail. Walk up to carry each one out (`HOSTAGE SECURED`, 1000×count); any melee body that reaches one kills them (`HOSTAGE DOWN…`)
-- Mission completes when every hostage is resolved — freed or lost; a **clean extraction** (none lost) drops a bonus weapon pod on the spot
-- Hostages wander wall-clamped (the compound's own collision), the HUD objective line tracks `RESCUE — n HELD · m LOST`, and the mission banner reads `MISSION n — RESCUE`
-- Rotation is now purge → demolish → holdout → assault → rescue (kit picks every 2nd mission unchanged); hostages clear on exit and quest hand-back
-- Cache-bust `?v=135` → `?v=136`; HUD label → v182
-
----
-
-## v181 — 2026-07-17
-**GAUNDROP backlog — generator spawn telegraphs + TREASURE VAULTS**
-- **Spawn telegraphs**: every generator now glows hot and swells for half a second before pouring, and the pour itself throws amber sparks at the spawn point — the ghost stream is dodgeable news instead of a surprise
-- **TREASURE VAULTS**: from level 2 (two from level 5), a dead-end alcove is carved off the halls — a closed cell with exactly one open neighbor becomes a gold nook holding 3 bright-gold piles (400 + 60/level each) and a 40% potion roll. Finding them is the reward; a locked door or a generator moving in on one is emergent spice
-- Roadmap: M6 arc (v178-v180) and the gaundrop backlog rows marked shipped
-- Cache-bust `?v=134` → `?v=135`; HUD label → v181
-
----
-
-## v180 — 2026-07-17
-**Roguelike depth (M6) — three new cards + CURSED cards; queue: M6 arc complete**
-- **Three new upgrade cards** (pool 10 → 13): **Close Shave** (grazes pay TRIPLE), **Suds Feast** (every 25 kills restores 1 HP — `THE SUDS PROVIDE`), **Long Slide** (dash carries 30% farther, stacking to +70%)
-- **CURSED CARDS**: from wave 6, ~35% of card screens turn one slot PURPLE — power with the price printed on the card, never the only choice: **Berserk Oath** (+40% fire rate, −1 max HP), **Glass Cannon** (1.5× piercing shots, −1 max HP), **Lead Boots** (+2 max HP, −15% speed), **Blood Money** (kills pay DOUBLE, dash recharges slower)
-- Cursed styling is unmistakable: purple card, violet glow, a `CURSED` tag over the name; all effects localized en/ja/fi
-- Max-HP prices clamp at 1 (a curse can bruise, never kill); all new run-state resets on every run start
-- VERSIONS: v170–v179 archived (decade rule)
-- Cache-bust `?v=133` → `?v=134`; HUD label → v180
+## v190 — 2026-07-19
+**Instanced floor splats — blood, goo, and slime collapse to one draw call**
+- **Puddles and YELA slime trails used to be one live `Mesh` each** — a fresh `CircleGeometry` + material allocated per death — so a heavy wave clear stacked dozens of draw calls and churned GC on the exact hot path the death-chunk pool was built to protect. They now share **one `InstancedMesh`** (`SplatPool`): dozens of splats → **1 draw call**, zero per-spawn allocation
+- Alpha fade is the one thing `InstancedMesh` can't do natively, so a **tiny per-instance shader** carries colour + opacity; three injects `instanceMatrix` automatically. Follows v189's instancing and the death-chunk / motion-trail pools already proven in `main.js`
+- **Zero visual change**: same spring-splat blood, same organic slime squash + fizz bubbles, same colours and fade timings, same floor heights. `SludgeRibbon` (a single continuous ribbon, not per-splat) is untouched
+- VERSIONS: v180–v189 archived (decade rule)
+- Cache-bust `?v=143` → `?v=144`; HUD label → v190
 
 ---
 
 ## Archive
+
+**v180–v189 summary (2026-07-17 – 2026-07-19)**
+- v180: Roguelike depth (M6) — three new upgrade cards + CURSED cards (power with a printed price)
+- v181: GAUNDROP backlog — generator spawn telegraphs + TREASURE VAULT alcoves
+- v182: LOADOUT backlog — the RESCUE mission (carry hostages out; clean sweep pays a bonus pod)
+- v183: KAIKKI backlog — SHOP tier 2 from mission 4 (flamethrower / magnet / shield)
+- v184: BINDING backlog — the BASEMENT SHOP room (pedestal deals priced in blood + points)
+- v185: NEX DEUS backlog — CHAINED SECRETS (dash a hidden glitch tile every wave for a climbing multiplier)
+- v186: NEX DEUS boss — THE CUSTODIAN (sheen shrugs bullets; dash-through cracks the shell; 39 enemy types)
+- v187: CLOSE COMBAT mode — no enemy fire, shooters drafted as chasers, REVENGE RINGS on death
+- v188: CLOSE COMBAT fixes — env-kill tag stops the gate fountain; drafted shooters press instead of kiting
+- v189: Instanced bullet rendering — the whole bullet field draws in three InstancedMeshes (~900 → 3 draw calls)
 
 **v170–v179 summary (2026-07-16 – 2026-07-17)**
 - v170: Cabinets moved to OPTIONS (title shows a one-line armed reminder) + difficulty/variety pass across all five

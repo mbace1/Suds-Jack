@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=143';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=143';
-import { Player, PLAYER_RADIUS } from './player.js?v=143';
+import { InputManager } from './input.js?v=144';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=144';
+import { Player, PLAYER_RADIUS } from './player.js?v=144';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=143';
-import { RetroPass } from './retro.js?v=143';
-import { audio } from './audio.js?v=143';
-import { initDesigner } from './designer.js?v=143';
-import { t, getLang, setLang, langs } from './lang.js?v=143';
-import { TUNING } from './tuning.js?v=143';
+         CABINET_STYLE, VIS } from './enemy.js?v=144';
+import { RetroPass } from './retro.js?v=144';
+import { audio } from './audio.js?v=144';
+import { initDesigner } from './designer.js?v=144';
+import { t, getLang, setLang, langs } from './lang.js?v=144';
+import { TUNING } from './tuning.js?v=144';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -680,28 +680,121 @@ class TrailPool {
   }
 }
 
-class Puddle {
-  constructor(sc, x, z, color, radius) {
-    this._life = 5;
-    this._sq   = 0.0;
-    this._sqV  = 0.0;
-    this.mat  = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.55, depthWrite: false });
-    this.mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, 14), this.mat);
-    this.mesh.rotation.x = -Math.PI / 2;
-    this.mesh.position.set(x, 0.01, z);
-    this.mesh.scale.setScalar(0); // splat in from 0
+// Pooled floor splats (v190) — blood/goo puddles and YELA slime trails used to
+// be one live Mesh each (a fresh CircleGeometry + material per death), so a heavy
+// wave clear stacked dozens of draw calls and churned GC on the exact hot path
+// the death-chunk pool was built to protect. They now share ONE InstancedMesh.
+// Alpha fade is the one thing InstancedMesh can't do natively, so a tiny shader
+// carries per-instance colour (aColor) and opacity (aAlpha); three injects
+// instanceMatrix for the InstancedMesh automatically.
+const SPLAT_POOL = 192;
+class SplatPool {
+  constructor(sc) {
+    const geo = new THREE.CircleGeometry(1, 16);
+    geo.rotateX(-Math.PI / 2);                    // lie flat on the floor, baked in
+    this._aColor = new THREE.InstancedBufferAttribute(new Float32Array(SPLAT_POOL * 3), 3);
+    this._aAlpha = new THREE.InstancedBufferAttribute(new Float32Array(SPLAT_POOL), 1);
+    geo.setAttribute('aColor', this._aColor);
+    geo.setAttribute('aAlpha', this._aAlpha);
+    const mat = new THREE.ShaderMaterial({
+      transparent: true, depthWrite: false,
+      vertexShader: `
+        attribute vec3 aColor;
+        attribute float aAlpha;
+        varying vec3 vColor;
+        varying float vAlpha;
+        void main() {
+          vColor = aColor; vAlpha = aAlpha;
+          gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+        }`,
+      fragmentShader: `
+        varying vec3 vColor;
+        varying float vAlpha;
+        void main() {
+          if (vAlpha <= 0.0) discard;
+          gl_FragColor = vec4(vColor, vAlpha);
+        }`,
+    });
+    this.mesh = new THREE.InstancedMesh(geo, mat, SPLAT_POOL);
+    this.mesh.frustumCulled = false;
+    this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     sc.add(this.mesh);
+    // Per-instance sim state (typed arrays — no per-spawn allocation)
+    this.active  = new Uint8Array(SPLAT_POOL);
+    this.x = new Float32Array(SPLAT_POOL); this.y = new Float32Array(SPLAT_POOL); this.z = new Float32Array(SPLAT_POOL);
+    this.rot = new Float32Array(SPLAT_POOL);
+    this.sx = new Float32Array(SPLAT_POOL); this.sz = new Float32Array(SPLAT_POOL);
+    this.life = new Float32Array(SPLAT_POOL); this.maxLife = new Float32Array(SPLAT_POOL);
+    this.maxOp = new Float32Array(SPLAT_POOL);
+    this.sq = new Float32Array(SPLAT_POOL); this.sqV = new Float32Array(SPLAT_POOL);
+    this.spring  = new Uint8Array(SPLAT_POOL);   // 1 = puddle splat-in, 0 = static
+    this.bubbles = new Uint8Array(SPLAT_POOL);   // 1 = slime fizz
+    this._m = new THREE.Matrix4();
+    this._p = new THREE.Vector3(); this._q = new THREE.Quaternion(); this._s = new THREE.Vector3();
+    this._e = new THREE.Euler(); this._col = new THREE.Color();
+    for (let i = 0; i < SPLAT_POOL; i++) this._hide(i);
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+  _hide(i) { this._m.makeScale(0, 0, 0); this.mesh.setMatrixAt(i, this._m); this._aAlpha.array[i] = 0; }
+  _slot() {
+    for (let i = 0; i < SPLAT_POOL; i++) if (!this.active[i]) return i;
+    let min = 0, ml = Infinity;                  // pool full — evict the shortest-lived
+    for (let i = 0; i < SPLAT_POOL; i++) if (this.life[i] < ml) { ml = this.life[i]; min = i; }
+    return min;
+  }
+  _tint(i, color) {
+    this._col.set(color);
+    this._aColor.array[i * 3] = this._col.r; this._aColor.array[i * 3 + 1] = this._col.g; this._aColor.array[i * 3 + 2] = this._col.b;
+    this._aColor.needsUpdate = true;
+  }
+  // Blood / goo puddle: springs in from 0 with overshoot, fades over 5 s.
+  spawnPuddle(x, z, color, radius) {
+    const i = this._slot();
+    this.active[i] = 1; this.x[i] = x; this.y[i] = 0.01; this.z[i] = z; this.rot[i] = 0;
+    this.sx[i] = radius; this.sz[i] = radius;
+    this.life[i] = 5; this.maxLife[i] = 5; this.maxOp[i] = 0.55;
+    this.sq[i] = 0; this.sqV[i] = 0; this.spring[i] = 1; this.bubbles[i] = 0;
+    this._tint(i, color);
+  }
+  // YELA slime trail: static organic squash + random spin, fades over 2 s, fizzes.
+  spawnSlime(x, z, radius) {
+    const i = this._slot();
+    this.active[i] = 1; this.x[i] = x; this.y[i] = 0.013; this.z[i] = z;
+    this.rot[i] = Math.random() * Math.PI * 2;
+    this.sx[i] = radius * (0.85 + Math.random() * 0.3); this.sz[i] = radius * (0.85 + Math.random() * 0.3);
+    this.life[i] = 2; this.maxLife[i] = 2; this.maxOp[i] = 0.45;
+    this.sq[i] = 1; this.sqV[i] = 0; this.spring[i] = 0; this.bubbles[i] = 1;
+    this._tint(i, 0xddee00);
   }
   update(dt) {
-    this._life -= dt;
-    // Spring splat from 0 to 1 with overshoot
-    this._sqV = (this._sqV - (this._sq - 1.0) * 0.55) * 0.74;
-    this._sq  = Math.max(0, this._sq + this._sqV);
-    this.mesh.scale.setScalar(Math.max(0, Math.min(1.5, this._sq)));
-    this.mat.opacity = 0.55 * Math.max(0, this._life / 5);
-    return this._life > 0;
+    let dirty = false;
+    for (let i = 0; i < SPLAT_POOL; i++) {
+      if (!this.active[i]) continue;
+      dirty = true;
+      this.life[i] -= dt;
+      if (this.life[i] <= 0) { this.active[i] = 0; this._hide(i); continue; }
+      let sc = 1;
+      if (this.spring[i]) {                       // spring splat from 0 with overshoot
+        this.sqV[i] = (this.sqV[i] - (this.sq[i] - 1.0) * 0.55) * 0.74;
+        this.sq[i]  = Math.max(0, this.sq[i] + this.sqV[i]);
+        sc = Math.max(0, Math.min(1.5, this.sq[i]));
+      }
+      this._aAlpha.array[i] = this.maxOp[i] * Math.max(0, this.life[i] / this.maxLife[i]);
+      this._p.set(this.x[i], this.y[i], this.z[i]);
+      this._e.set(0, this.rot[i], 0); this._q.setFromEuler(this._e);
+      this._s.set(this.sx[i] * sc, 1, this.sz[i] * sc);
+      this._m.compose(this._p, this._q, this._s);
+      this.mesh.setMatrixAt(i, this._m);
+      if (this.bubbles[i] && this.life[i] > 0.5 && Math.random() < dt * 1.5) {
+        bubblePool.spawn(this.x[i] + (Math.random() - 0.5) * 0.6, this.z[i] + (Math.random() - 0.5) * 0.6, 0xccee66);
+      }
+    }
+    if (dirty) { this.mesh.instanceMatrix.needsUpdate = true; this._aAlpha.needsUpdate = true; }
   }
-  remove(sc) { sc.remove(this.mesh); }
+  clear() {
+    for (let i = 0; i < SPLAT_POOL; i++) { this.active[i] = 0; this._hide(i); }
+    this.mesh.instanceMatrix.needsUpdate = true; this._aAlpha.needsUpdate = true;
+  }
 }
 
 // Poison hazard (v100): pure damage data — no meshes. The SLUDGE trail is
@@ -716,37 +809,6 @@ class PoisonZone {
   get isDangerous() { return this._life > 1.0; }
   update(dt) { this._life -= dt; return this._life > 0; }
   remove(sc) {}
-}
-
-class SlimeTrail {
-  constructor(sc, x, z, radius) {
-    this._life = 2.0;
-    this.mat = new THREE.MeshBasicMaterial({
-      color: 0xddee00,
-      transparent: true,
-      opacity: 0.45,
-      depthWrite: false,
-    });
-    // v132: 18 segments (was 8 — the octagon read as a square splat) plus a
-    // slight irregular squash so pools look organic, not stamped.
-    this.mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, 18), this.mat);
-    this.mesh.rotation.x = -Math.PI / 2;
-    this.mesh.rotation.z = Math.random() * Math.PI * 2;
-    this.mesh.scale.set(0.85 + Math.random() * 0.3, 0.85 + Math.random() * 0.3, 1);
-    this.mesh.position.set(x, 0.013, z);
-    sc.add(this.mesh);
-  }
-  update(dt) {
-    this._life -= dt;
-    this.mat.opacity = 0.45 * Math.max(0, this._life / 2.0);
-    // Lazy fizz: the odd bubble rises off a live pool.
-    if (this._life > 0.5 && Math.random() < dt * 1.5) {
-      bubblePool.spawn(this.mesh.position.x + (Math.random() - 0.5) * 0.6,
-                       this.mesh.position.z + (Math.random() - 0.5) * 0.6, 0xccee66);
-    }
-    return this._life > 0;
-  }
-  remove(sc) { sc.remove(this.mesh); }
 }
 
 class SludgeRibbon {
@@ -1615,9 +1677,8 @@ class FoamZone {
 // (blobs, TORO, BAMBU, PYRA, OMEGA, pickups, moths) bursts into round goo bits.
 const chunksFor = type => CUBE_TYPES_FX.has(type) ? chunkPool : gooChunkPool;
 const trailPool  = new TrailPool(scene);
-let puddles      = [];
+const splatPool  = new SplatPool(scene);   // v190: pooled puddles + slime trails
 let poisonZones  = [];
-let slimeTrails  = [];
 let sludgeRibbons = [];
 let gates         = [];
 let powerups      = [];
@@ -2813,8 +2874,8 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
     chunksFor(e.type).spawn(cd.x, cd.y, cd.z, cd.vx, cd.vy, cd.vz, e.color, cd.size);
   }
   // v167 (KAIKKI parity): the streets remember — kills leave BLOOD, not goo.
-  puddles.push(new Puddle(scene, e.position.x, e.position.z,
-    kaikkiMode ? 0x7a0f0f : e.color, e.radius * (kaikkiMode ? 2.0 : 1.5)));
+  splatPool.spawnPuddle(e.position.x, e.position.z,
+    kaikkiMode ? 0x7a0f0f : e.color, e.radius * (kaikkiMode ? 2.0 : 1.5));
 }
 
 function onPlayerHit() {
@@ -3850,7 +3911,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v189', 16, uiCanvas.height - 12);
+  ctx.fillText('v190', 16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -4544,9 +4605,8 @@ function clearFX() {
   gooChunkPool.clear();
   bubblePool.clear();
   trailPool.clear();
-  for (const p of puddles)       p.remove(scene); puddles       = [];
+  splatPool.clear();
   for (const z of poisonZones)   z.remove(scene); poisonZones   = [];
-  for (const s of slimeTrails)   s.remove(scene); slimeTrails   = [];
   for (const r of sludgeRibbons) r.remove(scene); sludgeRibbons = [];
   for (const f of foamZones)    f.remove(scene); foamZones     = [];
   for (const r of screamRings)  r.remove(scene); screamRings   = [];
@@ -7007,14 +7067,9 @@ function loop() {
   gooChunkPool.update(dt);
   bubblePool.update(dt);
   trailPool.update(dt);
-  for (let i = puddles.length - 1; i >= 0; i--) {
-    if (!puddles[i].update(dt)) { puddles[i].remove(scene); puddles.splice(i, 1); }
-  }
+  splatPool.update(dt);
   for (let i = poisonZones.length - 1; i >= 0; i--) {
     if (!poisonZones[i].update(dt)) { poisonZones[i].remove(scene); poisonZones.splice(i, 1); }
-  }
-  for (let i = slimeTrails.length - 1; i >= 0; i--) {
-    if (!slimeTrails[i].update(dt)) { slimeTrails[i].remove(scene); slimeTrails.splice(i, 1); }
   }
   for (let i = foamZones.length - 1; i >= 0; i--) {
     if (!foamZones[i].update(dt)) { foamZones[i].remove(scene); foamZones.splice(i, 1); }
@@ -7047,7 +7102,7 @@ function loop() {
   for (const e of enemies) {
     if (!e._trailReady) continue;
     e._trailReady = false;
-    slimeTrails.push(new SlimeTrail(scene, e.position.x, e.position.z, 0.5));
+    splatPool.spawnSlime(e.position.x, e.position.z, 0.5);
   }
 
   // BOTFLY homing launch chirp (v108) — the shot was silent, so the first
@@ -7084,7 +7139,7 @@ function loop() {
         const sp = 2.5 + Math.random() * 3;
         gooChunkPool.spawn(lx, 0.4, lz, Math.cos(a) * sp, 2 + Math.random() * 3, Math.sin(a) * sp, 0xddbb44, 0.11);
       }
-      puddles.push(new Puddle(scene, lx, lz, 0xddbb44, 1.1));
+      splatPool.spawnPuddle(lx, lz, 0xddbb44, 1.1);
       addShake(0.12);
       audio.lobSplash();  // v108: the splashdown was silent
       if (!player.invincible) {
@@ -7997,6 +8052,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=143').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=144').catch(() => {});
   });
 }
