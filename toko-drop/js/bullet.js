@@ -14,38 +14,25 @@ const PLAYER_BULLET_VISUAL_BOOST = 1.3;
 export const BULLET_R     = 0.15;
 export const FAT_BULLET_R = 0.45;
 
+// ── Instanced rendering (v189) ────────────────────────────────────────────────
+// Every bullet used to be three live Meshes (additive halo + white core child +
+// drop shadow), so a full 300-bullet field cost ~900 draw calls — the ceiling
+// that capped dense curtains, boss fans and CLOSE COMBAT revenge rings. The pool
+// now draws the whole field in THREE InstancedMeshes (halo / core / shadow) and
+// each Bullet keeps a scene-less Object3D as `mesh` purely as a position+scale
+// holder, so every external reader (collision loops read `b.mesh.position`) is
+// untouched. Geometry radii are baked so a per-instance scalar of b.mesh.scale.x
+// reproduces the old parent/child sizing exactly:
+//   old halo  = SphereGeometry(0.15) at parent scale        → geo 0.15,  scale s
+//   old core  = SphereGeometry(0.15) child at 0.5×, ×parent → geo 0.075, scale s
+//   old shadow= CircleGeometry(1) at shadowR                → geo 1,     scale shadowR
 class Bullet {
-  constructor(scene) {
-    // Bullet-hell projectile: a crisp solid-white core ringed by a saturated
-    // additive halo. The hard white centre + glowing rim reads as a discrete
-    // "bullet" — visually distinct from the matte goo splatter chunks (which are
-    // opaque colour blobs that fall and squash on the floor).
-    const haloGeo = new THREE.SphereGeometry(0.15, 10, 8);
-    this.mat = new THREE.MeshBasicMaterial({
-      color: 0xffffff, transparent: true, opacity: 0.6,
-      blending: THREE.AdditiveBlending, depthWrite: false,
-    });
-    this.mesh = new THREE.Mesh(haloGeo, this.mat);
-    this.mesh.visible = false;
-    scene.add(this.mesh);
-
-    // Solid bright core — child of the halo so it inherits position + pulse.
-    this.coreMat = new THREE.MeshBasicMaterial({
-      color: 0xffffff, transparent: true, opacity: 0.96, depthWrite: false,
-    });
-    this.core = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 6), this.coreMat);
-    this.core.scale.setScalar(0.5);
-    this.mesh.add(this.core);
-
-    // Drop shadow — depth cue so bullets read as floating, not floor splatter.
-    const shadowGeo = new THREE.CircleGeometry(1, 8);
-    const shadowMat = new THREE.MeshBasicMaterial({
-      color: 0x000000, transparent: true, opacity: 0.25, depthWrite: false,
-    });
-    this.shadow = new THREE.Mesh(shadowGeo, shadowMat);
-    this.shadow.rotation.x = -Math.PI / 2;
-    this.shadow.visible = false;
-    scene.add(this.shadow);
+  constructor() {
+    // Scene-less holder: carries position + scale for the sim and for the many
+    // main.js collision loops that read `b.mesh.position.{x,z}`. Never added to
+    // the scene and never rendered on its own — the InstancedMeshes draw it.
+    this.mesh = new THREE.Object3D();
+    this.mesh.position.set(0, 0.3, 0);
 
     this.vx = 0; this.vz = 0;
     this.alive = false;
@@ -56,13 +43,49 @@ class Bullet {
     this.originType = null; // enemy type that fired this bullet (null = player / gate / dash-boom)
     this.homing = false;    // Homing pod (v70): steers toward the nearest enemy each frame
     this.turnRate = 0;
+    this._phase = 0;
+    this._baseScale = 1;
+    this._color = new THREE.Color(0xffffff); // per-bullet halo tint
   }
 }
 
 export class BulletPool {
   constructor(scene) {
-    this._pool = Array.from({ length: POOL_SIZE }, () => new Bullet(scene));
+    this._pool = Array.from({ length: POOL_SIZE }, () => new Bullet());
     this.active = [];
+
+    // Halo — saturated additive glow, per-instance colour (player cyan-green /
+    // enemy hot orange-red / event colours). Core stays pure white so every
+    // bullet keeps a crisp readable centre; shadow is the floating depth cue.
+    const haloMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff, transparent: true, opacity: 0.6,
+      blending: THREE.AdditiveBlending, depthWrite: false,
+    });
+    const coreMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff, transparent: true, opacity: 0.96, depthWrite: false,
+    });
+    const shadowMat = new THREE.MeshBasicMaterial({
+      color: 0x000000, transparent: true, opacity: 0.25, depthWrite: false,
+    });
+
+    this._halo   = new THREE.InstancedMesh(new THREE.SphereGeometry(0.15, 10, 8), haloMat, POOL_SIZE);
+    this._core   = new THREE.InstancedMesh(new THREE.SphereGeometry(0.075, 8, 6), coreMat, POOL_SIZE);
+    // Shadow disc: bake the flat orientation into the geometry so the per-instance
+    // matrix only carries position + radius (no rotation bookkeeping per frame).
+    const shadowGeo = new THREE.CircleGeometry(1, 8);
+    shadowGeo.rotateX(-Math.PI / 2);
+    this._shadow = new THREE.InstancedMesh(shadowGeo, shadowMat, POOL_SIZE);
+
+    for (const inst of [this._halo, this._core, this._shadow]) {
+      inst.frustumCulled = false;                       // bullets span the whole arena
+      inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      inst.count = 0;
+      scene.add(inst);
+    }
+    // Prime the halo's per-instance colour buffer so setColorAt is allocated.
+    this._halo.setColorAt(0, new THREE.Color(0xffffff));
+
+    this._dummy = new THREE.Object3D();
   }
 
   spawnDir(x, z, dx, dz, isPlayer, color, fat = false, originType = null, homing = false, turnRate = 6, speedMult = 1) {
@@ -75,12 +98,11 @@ export class BulletPool {
     // Saturated halo colour: player bright cyan-green, enemy hot orange-red. The
     // white core stays white so every bullet keeps a readable bright centre.
     const resolvedColor = color ?? (isPlayer ? 0x66ffcc : 0xff5533);
-    b.mat.color.set(resolvedColor);
+    b._color.set(resolvedColor);
     b.vx = dx * speed; b.vz = dz * speed;
     b.alive = true; b.isPlayer = isPlayer; b.originType = originType;
     b.homing = homing; b.turnRate = turnRate;
     b.lifetime = 4;
-    b.mesh.visible = true;
     b._phase = Math.random() * Math.PI * 2;
     // Enemy bullets run a touch larger so the threats you must dodge read clearly.
     b._baseScale = fat ? 3.0
@@ -104,20 +126,48 @@ export class BulletPool {
       const p = b.mesh.position;
       if (b.lifetime <= 0 || Math.abs(p.x) > halfSize + 2 || Math.abs(p.z) > halfSize + 2) {
         this.recycleAt(i);
-      } else {
-        // Update shadow
-        const shadowR = b.fat ? 0.5 : 0.18;
-        b.shadow.position.set(p.x, 0.02, p.z);
-        b.shadow.scale.setScalar(shadowR);
-        b.shadow.visible = true;
-
+      } else if (!b.isPlayer && !b.fat) {
         // Enemy bullets gently pulse so the threats you must dodge stay easy to track.
-        if (!b.isPlayer && !b.fat) {
-          const pulse = 1 + 0.15 * Math.sin(performance.now() * 0.012 + b._phase);
-          b.mesh.scale.setScalar(b._baseScale * pulse);
-        }
+        const pulse = 1 + 0.15 * Math.sin(performance.now() * 0.012 + b._phase);
+        b.mesh.scale.setScalar(b._baseScale * pulse);
       }
     }
+    this._render();
+  }
+
+  // Writes the whole active field into the three InstancedMeshes. count is set to
+  // the live bullet total so recycled slots never leave ghosts; every active slot
+  // is fully repainted each frame (matrix + halo colour), so no clearing needed.
+  _render() {
+    const n = this.active.length;
+    const d = this._dummy;
+    for (let i = 0; i < n; i++) {
+      const b = this.active[i];
+      const p = b.mesh.position;
+      const s = b.mesh.scale.x;
+
+      d.position.set(p.x, p.y, p.z);
+      d.scale.setScalar(s);
+      d.rotation.set(0, 0, 0);
+      d.updateMatrix();
+      this._halo.setMatrixAt(i, d.matrix);
+      this._core.setMatrixAt(i, d.matrix);
+      this._halo.setColorAt(i, b._color);
+
+      // Shadow: flat disc on the floor, sized independently of the bullet pulse.
+      const shadowR = b.fat ? 0.5 : 0.18;
+      d.position.set(p.x, 0.02, p.z);
+      d.scale.setScalar(shadowR);
+      d.updateMatrix();
+      this._shadow.setMatrixAt(i, d.matrix);
+    }
+    this._halo.count = n;
+    this._core.count = n;
+    this._shadow.count = n;
+    this._halo.instanceMatrix.needsUpdate = true;
+    this._core.instanceMatrix.needsUpdate = true;
+    this._shadow.instanceMatrix.needsUpdate = true;
+    if (this._halo.instanceColor) this._halo.instanceColor.needsUpdate = true;
   }
 
   // Rotates the bullet's velocity a fraction of the way toward the nearest
@@ -148,9 +198,7 @@ export class BulletPool {
   recycleAt(i) {
     const b = this.active[i];
     b.alive = false;
-    b.mesh.visible = false;
     b.mesh.scale.setScalar(1);
-    b.shadow.visible = false;
     b.fat = false;
     b.originType = null;
     b.homing = false;
@@ -160,5 +208,8 @@ export class BulletPool {
 
   clear() {
     while (this.active.length) this.recycleAt(0);
+    this._halo.count = 0;
+    this._core.count = 0;
+    this._shadow.count = 0;
   }
 }

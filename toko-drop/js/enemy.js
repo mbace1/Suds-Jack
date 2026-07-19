@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=142';
-import { nesSnap, NEON } from './retro.js?v=142';
+import { TUNING } from './tuning.js?v=143';
+import { nesSnap, NEON } from './retro.js?v=143';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
