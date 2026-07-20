@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=144';
-import { t } from './lang.js?v=144';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=144';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=145';
+import { t } from './lang.js?v=145';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=145';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -15,7 +15,13 @@ let tester = null;
 function ensureTester() {
   if (tester) return tester;
   const canvas = document.createElement('canvas');
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  // v191: under the WEBGPU (BETA) build there is no THREE.WebGLRenderer export —
+  // the tester follows the main renderer's kind. WebGPURenderer needs an async
+  // init, so the loop holds rendering until `ready` flips.
+  const isGpu = typeof THREE.WebGPURenderer === 'function';
+  const renderer = isGpu
+    ? new THREE.WebGPURenderer({ canvas, antialias: true, forceWebGL: true })  // same r167 WGSL caveat as main.js
+    : new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
   renderer.setSize(520, 260, false);
   const scene = new THREE.Scene();
@@ -36,6 +42,7 @@ function ensureTester() {
   camera.lookAt(0, 0.7, 0);
   tester = {
     canvas, renderer, scene, camera,
+    ready: !isGpu,   // WebGPU: rendering waits for the async backend init
     specimen: null, type: null, t: 0, respawnT: 0, running: false, last: 0,
     ghost: { x: 3, z: 0 },              // fake player the specimen reacts to
     stubBullets: { spawnDir() {} },     // firing behaviors no-op safely
@@ -43,6 +50,7 @@ function ensureTester() {
     splatDone: false,
     dropGeo: new THREE.SphereGeometry(1, 7, 5),
   };
+  if (isGpu) renderer.init().then(() => { tester.ready = true; });
   return tester;
 }
 // Goo droplet burst inside the tester scene (mirrors the in-game splatter).
@@ -125,7 +133,7 @@ function testerLoop(ts) {
     }
     if (f.life <= 0) { T.scene.remove(f.m); f.m.material.dispose(); T.fx.splice(i, 1); }
   }
-  T.renderer.render(T.scene, T.camera);
+  if (T.ready) T.renderer.render(T.scene, T.camera);
 }
 function testerStart() {
   const T = ensureTester();
@@ -546,6 +554,10 @@ export function initDesigner({ onResume, settings }) {
       t('testOnH'), t('testOffH'), '#66eeff', '#44ccff66');
     toggleRow(t('pixelMode'), settings.getPixel, settings.setPixel,
       t('pixelOnH'), t('pixelOffH'), '#ff88cc', '#ff66bb66');
+    // v191: WEBGPU (BETA) — flips the three.js build via the importmap script
+    // in index.html, so toggling reloads the page on the spot.
+    toggleRow(t('gpuMode'), settings.getGpu, settings.setGpu,
+      t('gpuOnH'), t('gpuOffH'), '#aaffee', '#66ffcc66');
 
     el.appendChild(sec('MOTION'));
     {
