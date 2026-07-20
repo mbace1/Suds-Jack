@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v191 — 2026-07-20
+**WEBGPU (BETA) — the node-pipeline renderer lands, flag-gated (graphics track step 1)**
+- **New OPTIONS → DEV toggle `WEBGPU (BETA)`**: reloads into `three.webgpu.min.js` (same vendored three@0.167.0) and drives the whole game through `WebGPURenderer` — the modern node/TSL pipeline that real WebGPU requires. **For now it runs on the renderer's WebGL2 backend** (`forceWebGL`): the spike found that r167's WGSL codegen emits a runtime-sized uniform array today's browsers reject (strict validation), which whiteouts the true WebGPU backend on real hardware — that backend unlocks in the arc's three-upgrade step. The HUD tag names the live backend (`· WEBGPU(GL)`)
+- **The importmap is now written by a boot script** (importmaps are immutable per page — the build pick happens before any module resolves; toggling reloads on the spot)
+- **First TSL ports**: the floor grid shader and the v190 splat shader run as node materials — same math, same per-instance attributes; TSL `uniform()` nodes share the `.value` interface so every uniform write site is byte-identical across paths; a `.pow(2.2)` pre-encode keeps raw-GLSL colour parity through the node pipeline's output encoding
+- **Known spike gaps** (next steps on this track): gel wobble/SSS (`onBeforeCompile` is GLSL-only — enemies render satin but still), and the retro cabinet pass (cabinets render raw under the flag). The pause-menu enemy tester follows the main renderer's kind
+- **Flag off = untouched**: the classic WebGL path resolves the same build and code it always did
+- Cache-bust `?v=144` → `?v=145`; HUD label → v191
+
+---
+
 ## v190 — 2026-07-19
 **Instanced floor splats — blood, goo, and slime collapse to one draw call**
 - **Puddles and YELA slime trails used to be one live `Mesh` each** — a fresh `CircleGeometry` + material allocated per death — so a heavy wave clear stacked dozens of draw calls and churned GC on the exact hot path the death-chunk pool was built to protect. They now share **one `InstancedMesh`** (`SplatPool`): dozens of splats → **1 draw call**, zero per-spawn allocation

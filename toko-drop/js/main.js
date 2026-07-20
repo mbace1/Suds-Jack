@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=144';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=144';
-import { Player, PLAYER_RADIUS } from './player.js?v=144';
+import { InputManager } from './input.js?v=145';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=145';
+import { Player, PLAYER_RADIUS } from './player.js?v=145';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=144';
-import { RetroPass } from './retro.js?v=144';
-import { audio } from './audio.js?v=144';
-import { initDesigner } from './designer.js?v=144';
-import { t, getLang, setLang, langs } from './lang.js?v=144';
-import { TUNING } from './tuning.js?v=144';
+         CABINET_STYLE, VIS } from './enemy.js?v=145';
+import { RetroPass } from './retro.js?v=145';
+import { audio } from './audio.js?v=145';
+import { initDesigner } from './designer.js?v=145';
+import { t, getLang, setLang, langs } from './lang.js?v=145';
+import { TUNING } from './tuning.js?v=145';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -291,10 +291,32 @@ function getEnemySchedule(wave) {
 }
 
 // ── Renderer ────────────────────────────────────────────────────────────────
-const renderer = new THREE.WebGLRenderer({
-  canvas: document.getElementById('canvas-game'),
-  antialias: true,
-});
+// v191 WEBGPU (BETA): the importmap script in index.html picks which three
+// build this module resolves — the classic WebGL build, or three.webgpu.min.js
+// (same three@0.167.0). Only the webgpu build exports WebGPURenderer, so its
+// presence IS the flag. WebGPURenderer degrades on its own: no adapter (old
+// browser, headless) → it silently runs its WebGL2 backend, so the toggle can
+// never black-screen a device. GLSL ShaderMaterials don't exist under the node
+// pipeline — every custom-shader site branches on IS_GPU (floor + splats get
+// TSL ports below; the retro cabinet pass is bypassed until its own port).
+const IS_GPU = typeof THREE.WebGPURenderer === 'function';
+const renderer = IS_GPU
+  ? new THREE.WebGPURenderer({
+      canvas: document.getElementById('canvas-game'),
+      antialias: true,
+      // r167's WGSL codegen emits a runtime-sized uniform array that today's
+      // browsers reject (strict validation: runtime-sized arrays are
+      // storage-only) — the true WebGPU backend whiteouts on REAL hardware,
+      // not just headless. The node pipeline is identical on the WebGL2
+      // backend, so the beta runs there; drop this once three is upgraded
+      // past the codegen fix.
+      forceWebGL: true,
+    })
+  : new THREE.WebGLRenderer({
+      canvas: document.getElementById('canvas-game'),
+      antialias: true,
+    });
+if (IS_GPU) await renderer.init();   // backend (webgpu or webgl2 fallback) settles here
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.setSize(innerWidth, innerHeight);
@@ -388,14 +410,41 @@ const FLOOR_FRAG = `
     gl_FragColor = vec4(col, 1.0);
   }
 `;
-const floorUniforms = {
-  uTime:  { value: 0 },
-  uGridX: { value: (HALF_X * 2) / GRID_CELL },
-  uGridZ: { value: (HALF_Z * 2) / GRID_CELL },
-};
+// v191: under WEBGPU the same three uniforms are TSL uniform() nodes — they
+// share the `.value` interface, so every write site (arena resize, per-frame
+// uTime) stays byte-identical across both paths.
+const floorUniforms = IS_GPU
+  ? {
+      uTime:  THREE.uniform(0),
+      uGridX: THREE.uniform((HALF_X * 2) / GRID_CELL),
+      uGridZ: THREE.uniform((HALF_Z * 2) / GRID_CELL),
+    }
+  : {
+      uTime:  { value: 0 },
+      uGridX: { value: (HALF_X * 2) / GRID_CELL },
+      uGridZ: { value: (HALF_Z * 2) / GRID_CELL },
+    };
+// TSL port of FLOOR_FRAG (v191): same math, node graph instead of GLSL.
+function makeFloorMat() {
+  if (!IS_GPU) {
+    return new THREE.ShaderMaterial({ vertexShader: FLOOR_VERT, fragmentShader: FLOOR_FRAG, uniforms: floorUniforms });
+  }
+  const { uv, vec3, float, mix } = THREE;
+  const m  = new THREE.MeshBasicNodeMaterial();
+  const gx = uv().x.mul(floorUniforms.uGridX).fract().sub(0.5).abs();
+  const gz = uv().y.mul(floorUniforms.uGridZ).fract().sub(0.5).abs();
+  const grid  = float(1.0).sub(gx.min(gz).mul(50.0)).max(0.0);
+  const pulse = floorUniforms.uTime.mul(1.2).sin().mul(0.3).add(0.7);
+  const gridColor = mix(vec3(0.13, 0.07, 0.38), vec3(0.0, 0.55, 0.50), grid);
+  // .pow(2.2): the GLSL original writes raw values straight to the sRGB
+  // framebuffer; the node pipeline output-encodes (linear→sRGB), so pre-decode
+  // to round-trip — without this the floor renders visibly washed out.
+  m.colorNode = mix(vec3(0.079, 0.079, 0.169), gridColor, grid.mul(pulse).mul(0.7)).pow(2.2);
+  return m;
+}
 const floor = new THREE.Mesh(
   new THREE.PlaneGeometry(HALF_X * 2, HALF_Z * 2),
-  new THREE.ShaderMaterial({ vertexShader: FLOOR_VERT, fragmentShader: FLOOR_FRAG, uniforms: floorUniforms }),
+  makeFloorMat(),
 );
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
@@ -696,25 +745,35 @@ class SplatPool {
     this._aAlpha = new THREE.InstancedBufferAttribute(new Float32Array(SPLAT_POOL), 1);
     geo.setAttribute('aColor', this._aColor);
     geo.setAttribute('aAlpha', this._aAlpha);
-    const mat = new THREE.ShaderMaterial({
-      transparent: true, depthWrite: false,
-      vertexShader: `
-        attribute vec3 aColor;
-        attribute float aAlpha;
-        varying vec3 vColor;
-        varying float vAlpha;
-        void main() {
-          vColor = aColor; vAlpha = aAlpha;
-          gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
-        }`,
-      fragmentShader: `
-        varying vec3 vColor;
-        varying float vAlpha;
-        void main() {
-          if (vAlpha <= 0.0) discard;
-          gl_FragColor = vec4(vColor, vAlpha);
-        }`,
-    });
+    // v191: under WEBGPU the same per-instance aColor/aAlpha attributes feed a
+    // node material (GLSL ShaderMaterial doesn't exist in the node pipeline).
+    let mat;
+    if (IS_GPU) {
+      mat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false });
+      // .pow(2.2): same raw-GLSL-vs-output-encoding parity trick as the floor.
+      mat.colorNode   = THREE.attribute('aColor', 'vec3').pow(2.2);
+      mat.opacityNode = THREE.attribute('aAlpha', 'float');
+    } else {
+      mat = new THREE.ShaderMaterial({
+        transparent: true, depthWrite: false,
+        vertexShader: `
+          attribute vec3 aColor;
+          attribute float aAlpha;
+          varying vec3 vColor;
+          varying float vAlpha;
+          void main() {
+            vColor = aColor; vAlpha = aAlpha;
+            gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+          }`,
+        fragmentShader: `
+          varying vec3 vColor;
+          varying float vAlpha;
+          void main() {
+            if (vAlpha <= 0.0) discard;
+            gl_FragColor = vec4(vColor, vAlpha);
+          }`,
+      });
+    }
     this.mesh = new THREE.InstancedMesh(geo, mat, SPLAT_POOL);
     this.mesh.frustumCulled = false;
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -2740,7 +2799,9 @@ function applyPerfMode() {
             : kaikkiMode   ? 'kaikki'
             : nexdeusMode  ? 'nexdeus'
             : pixelMode ? 'preview' : null;
-  retro.setCabinet(cab, renderer);
+  // v191: the retro pass is GLSL (WebGLRenderTarget + fullscreen shader) — under
+  // WEBGPU it stays idle until its own TSL port; cabinets render raw for now.
+  if (!IS_GPU) retro.setCabinet(cab, renderer);
   renderer.setPixelRatio(Math.min(devicePixelRatio, perfMode ? 1.25 : 2));
   renderer.domElement.style.imageRendering = '';
   VIS.hz = (cab && cab !== 'preview') ? 12 : 0;   // sprite-era stepped visuals
@@ -3341,6 +3402,14 @@ const designer = initDesigner({
       meleeOnlyMode = on;
       localStorage.setItem('tokoDropMelee', on ? '1' : '0');
     },
+    // v191 WEBGPU (BETA): the importmap is chosen before any module loads, so
+    // flipping the renderer requires a reload — done here, immediately, so the
+    // toggle can't show a state the page isn't actually in.
+    getGpu: () => IS_GPU,
+    setGpu: on => {
+      localStorage.setItem('tokoDropGpu', on ? '1' : '0');
+      location.reload();
+    },
     getSmash: () => smashMode,
     setSmash: on => {
       smashMode = on;
@@ -3911,7 +3980,8 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v190', 16, uiCanvas.height - 12);
+  ctx.fillText('v191' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+    16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
   if (runSeed > 0) {
@@ -8019,15 +8089,15 @@ function loop() {
   VIS.now = VIS.hz ? Math.floor(_now * VIS.hz) / VIS.hz : _now;   // v151: stepped
   GOO_TIME.value            = VIS.now;
   floorUniforms.uTime.value = VIS.now;
-  if (retro.active) retro.render(renderer, scene, camera);
-  else              renderer.render(scene, camera);
+  if (retro.active && !IS_GPU) retro.render(renderer, scene, camera);
+  else                         renderer.render(scene, camera);
   drawHUD();
 }
 
 // ── Resize ───────────────────────────────────────────────────────────────────
 function resize() {
   renderer.setSize(innerWidth, innerHeight);
-  retro.setSize(renderer);   // v151: cabinet RT tracks the drawing buffer
+  if (!IS_GPU) retro.setSize(renderer);   // v151: cabinet RT tracks the drawing buffer
   if (camera) { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
   uiCanvas.width = innerWidth; uiCanvas.height = innerHeight;
   syncAutoOrientation();  // rotation on the title re-picks the arena preset
@@ -8052,6 +8122,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=144').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=145').catch(() => {});
   });
 }
