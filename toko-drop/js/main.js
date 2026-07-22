@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=148';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=148';
-import { Player, PLAYER_RADIUS } from './player.js?v=148';
+import { InputManager } from './input.js?v=149';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=149';
+import { Player, PLAYER_RADIUS } from './player.js?v=149';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=148';
-import { RetroPass } from './retro.js?v=148';
-import { audio } from './audio.js?v=148';
-import { initDesigner } from './designer.js?v=148';
-import { t, getLang, setLang, langs } from './lang.js?v=148';
-import { TUNING } from './tuning.js?v=148';
+         CABINET_STYLE, VIS } from './enemy.js?v=149';
+import { RetroPass } from './retro.js?v=149';
+import { audio } from './audio.js?v=149';
+import { initDesigner } from './designer.js?v=149';
+import { t, getLang, setLang, langs } from './lang.js?v=149';
+import { TUNING } from './tuning.js?v=149';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -2798,9 +2798,7 @@ function applyPerfMode() {
             : kaikkiMode   ? 'kaikki'
             : nexdeusMode  ? 'nexdeus'
             : pixelMode ? 'preview' : null;
-  // v191: the retro pass is GLSL (WebGLRenderTarget + fullscreen shader) — under
-  // WEBGPU it stays idle until its own TSL port; cabinets render raw for now.
-  if (!IS_GPU) retro.setCabinet(cab, renderer);
+  retro.setCabinet(cab, renderer);   // v195: the retro pass runs under both renderers
   renderer.setPixelRatio(Math.min(devicePixelRatio, perfMode ? 1.25 : 2));
   renderer.domElement.style.imageRendering = '';
   VIS.hz = (cab && cab !== 'preview') ? 12 : 0;   // sprite-era stepped visuals
@@ -3979,7 +3977,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v194' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v195' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -8093,15 +8091,15 @@ function loop() {
   VIS.now = VIS.hz ? Math.floor(_now * VIS.hz) / VIS.hz : _now;   // v151: stepped
   GOO_TIME.value            = VIS.now;
   floorUniforms.uTime.value = VIS.now;
-  if (retro.active && !IS_GPU) retro.render(renderer, scene, camera);
-  else                         renderer.render(scene, camera);
+  if (retro.active) retro.render(renderer, scene, camera);
+  else              renderer.render(scene, camera);
   drawHUD();
 }
 
 // ── Resize ───────────────────────────────────────────────────────────────────
 function resize() {
   renderer.setSize(innerWidth, innerHeight);
-  if (!IS_GPU) retro.setSize(renderer);   // v151: cabinet RT tracks the drawing buffer
+  retro.setSize(renderer);   // v151: cabinet RT tracks the drawing buffer
   if (camera) { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
   uiCanvas.width = innerWidth; uiCanvas.height = innerHeight;
   syncAutoOrientation();  // rotation on the title re-picks the arena preset
@@ -8126,6 +8124,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=148').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=149').catch(() => {});
   });
 }

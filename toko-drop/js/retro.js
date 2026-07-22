@@ -11,6 +11,13 @@
 //   BINDING  — "paint meets 16-bit": soft pre-blur + 32-level posterize
 import * as THREE from 'three';
 
+// v195: under the WEBGPU (BETA) build the post shader runs as a TSL node graph
+// (GLSL ShaderMaterial doesn't exist in the node pipeline). Same architecture —
+// low-res render target, fullscreen triangle — same math, and the profile
+// uniforms keep the `.value` interface so setCabinet/setSize stay unified.
+const IS_GPU = typeof THREE.WebGPURenderer === 'function';
+const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
+
 // Real NES palette entries, torch-warm lean — Gaundrop's whole world snaps
 // to these 16 colors in the post pass, and nesSnap() pre-snaps materials.
 export const NES_PALETTE = [
@@ -160,30 +167,36 @@ export class RetroPass {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(
       new Float32Array([-1, -1, 0, 3, -1, 0, -1, 3, 0]), 3));
-    this._mat = new THREE.ShaderMaterial({
-      vertexShader: POST_VERT,
-      fragmentShader: POST_FRAG,
-      uniforms: {
-        tDiffuse:   { value: null },
-        uPalette:   { value: null },
-        uRes:       { value: new THREE.Vector2(1, 1) },
-        uPaletteN:  { value: 0 },
-        uPosterize: { value: 0 },
-        uScanline:  { value: 0 },
-        uGlow:      { value: 0 },
-        uGlowThresh:{ value: 0.7 },
-        uContrast:  { value: 1 },
-        uSaturate:  { value: 1 },
-        uBlur:      { value: 0 },
-      },
-      depthTest: false,
-      depthWrite: false,
-    });
+    if (IS_GPU) {
+      this._buildNodeMat();
+    } else {
+      this._mat = new THREE.ShaderMaterial({
+        vertexShader: POST_VERT,
+        fragmentShader: POST_FRAG,
+        uniforms: {
+          tDiffuse:   { value: null },
+          uPalette:   { value: null },
+          uRes:       { value: new THREE.Vector2(1, 1) },
+          uPaletteN:  { value: 0 },
+          uPosterize: { value: 0 },
+          uScanline:  { value: 0 },
+          uGlow:      { value: 0 },
+          uGlowThresh:{ value: 0.7 },
+          uContrast:  { value: 1 },
+          uSaturate:  { value: 1 },
+          uBlur:      { value: 0 },
+        },
+        depthTest: false,
+        depthWrite: false,
+      });
+      this._u = this._mat.uniforms;   // unified `.value` handles for both paths
+    }
     const mesh = new THREE.Mesh(geo, this._mat);
     mesh.frustumCulled = false;
     this._quadScene = new THREE.Scene();
     this._quadScene.add(mesh);
     this._quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    if (IS_GPU) return;   // node path needs no palette texture — unrolled in JS
     // NES palette as raw sRGB bytes — NoColorSpace so nothing re-converts it
     const data = new Uint8Array(NES_PALETTE.length * 4);
     NES_PALETTE.forEach((p, i) => {
@@ -196,14 +209,104 @@ export class RetroPass {
     this._paletteTex.needsUpdate = true;
   }
 
+  // v195: TSL translation of POST_FRAG — same taps, same grade, same quantizers.
+  // The NES nearest-color search is unrolled over the 16 fixed palette entries
+  // (no texture, no loop), and the final .pow(2.2) pre-decodes so the node
+  // pipeline's output encoding reproduces the raw GLSL write exactly.
+  // NO ConditionalNodes: every GLSL `if` becomes a step() mask + mix() blend —
+  // ConditionalNode's if/else codegen black-screened + device-lost the WebGL2
+  // backend in testing, while the pure math nodes are proven good. step/mix
+  // with exact 0/1 masks reproduce the branch semantics bit-for-bit.
+  _buildNodeMat() {
+    const { uniform, texture, varying, positionGeometry, vec2, vec3, vec4, float,
+            dot, mix, max, floor, cos, clamp, step } = TSL;
+    this._u = {
+      uRes:       uniform(new THREE.Vector2(1, 1)),
+      uPaletteN:  uniform(0),
+      uPosterize: uniform(0),
+      uScanline:  uniform(0),
+      uGlow:      uniform(0),
+      uGlowThresh:uniform(0.7),
+      uContrast:  uniform(1),
+      uSaturate:  uniform(1),
+      uBlur:      uniform(0),
+    };
+    const u = this._u;
+    // 1×1 placeholder — setSize swaps in the live RT texture via .value
+    this._texNode = texture(new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1));
+    const tap = (uvExpr) => this._texNode.sample(uvExpr).rgb;
+
+    const vUv = varying(positionGeometry.xy.mul(0.5).add(0.5));
+    const px  = vec2(1.0, 1.0).div(u.uRes);
+    const luma = c => dot(c, vec3(0.299, 0.587, 0.114));
+    const base = tap(vUv);
+
+    // paint pre-blur (Binding): 4-tap tent — blur amount 0 makes all offsets 0,
+    // so the tent degenerates to the centre tap; masked with step for exactness
+    const o = px.mul(u.uBlur);
+    const blurred = base.mul(2.0)
+      .add(tap(vUv.add(vec2(o.x, o.y)))).add(tap(vUv.add(vec2(o.x.negate(), o.y))))
+      .add(tap(vUv.add(vec2(o.x, o.y.negate())))).add(tap(vUv.add(vec2(o.x.negate(), o.y.negate()))))
+      .div(6.0);
+    let c = mix(base, blurred, step(1e-4, u.uBlur));
+
+    // bright-pass glow: 8-tap smear
+    const o1 = px.mul(1.5), o2 = px.mul(3.5);
+    const g = tap(vUv.add(vec2(o1.x, 0.0))).add(tap(vUv.sub(vec2(o1.x, 0.0))))
+      .add(tap(vUv.add(vec2(0.0, o1.y)))).add(tap(vUv.sub(vec2(0.0, o1.y))))
+      .add(tap(vUv.add(vec2(o2.x, o2.y)))).add(tap(vUv.add(vec2(o2.x.negate(), o2.y))))
+      .add(tap(vUv.add(vec2(o2.x, o2.y.negate())))).add(tap(vUv.add(vec2(o2.x.negate(), o2.y.negate()))))
+      .mul(0.125);
+    c = c.add(g.mul(step(u.uGlowThresh, luma(g))).mul(u.uGlow));
+
+    c = max(c, 0.0).pow(0.4545);                       // toSRGB
+    c = mix(vec3(luma(c)), c, u.uSaturate);            // grade
+    c = c.sub(0.5).mul(u.uContrast).add(0.5);
+
+    // NES nearest-color, unrolled over the fixed 16 entries (weights 2/3/1).
+    // `closer` = 1 exactly when dist < bd (ties keep the earlier entry, like
+    // the GLSL `if`), so mix() picks a branch exactly, never blends.
+    const pal = NES_PALETTE.map(p => vec3(((p >> 16) & 255) / 255, ((p >> 8) & 255) / 255, (p & 255) / 255));
+    let best = pal[0], bd = null;
+    {
+      const d0 = c.sub(pal[0]);
+      bd = dot(d0.mul(vec3(2.0, 3.0, 1.0)), d0);
+      for (let i = 1; i < pal.length; i++) {
+        const d = c.sub(pal[i]);
+        const dist = dot(d.mul(vec3(2.0, 3.0, 1.0)), d);
+        const closer = float(1.0).sub(step(bd, dist));
+        best = mix(best, pal[i], closer);
+        bd = mix(bd, dist, closer);
+      }
+    }
+    // 2×2 ordered dither + posterize (SNES color-depth feel). The GLSL guards
+    // this behind `if (uPosterize > 0)`; a node graph computes every branch, so
+    // the divisor must stay finite when posterize is 0 — NaN from the ÷0 would
+    // poison the mix chain into a black screen (found the hard way).
+    const safeP = max(u.uPosterize, 1.0);   // identical for real levels; finite+masked-out at 0
+    const ip = floor(vUv.mul(u.uRes));
+    const dith = ip.x.add(ip.y.mul(2.0)).mod(4.0).div(4.0).sub(0.375).div(safeP);
+    const poster = floor(c.add(dith).mul(safeP)).div(safeP);
+    const onPal    = step(0.5, u.uPaletteN);
+    const onPoster = step(0.5, u.uPosterize).mul(float(1.0).sub(onPal));
+    c = mix(mix(c, poster, onPoster), best, onPal);
+
+    // scanlines aligned to internal rows
+    c = c.mul(float(1.0).sub(u.uScanline.mul(cos(vUv.y.mul(u.uRes.y).mul(6.28318)).mul(0.5).add(0.5))));
+
+    this._mat = new THREE.MeshBasicNodeMaterial({ depthTest: false, depthWrite: false });
+    this._mat.vertexNode = vec4(positionGeometry.xy, 0.0, 1.0);
+    this._mat.colorNode  = clamp(c, 0.0, 1.0).pow(2.2);
+  }
+
   setCabinet(name, renderer) {
     const prof = name ? CABINET_PROFILES[name] : null;
     this._profile = prof || null;
     if (!prof) return;
     this._ensureQuad();
     this.setSize(renderer);
-    const u = this._mat.uniforms;
-    u.uPalette.value    = this._paletteTex;
+    const u = this._u;
+    if (!IS_GPU) u.uPalette.value = this._paletteTex;
     u.uPaletteN.value   = prof.palette === 'nes' ? NES_PALETTE.length : 0;
     u.uPosterize.value  = prof.posterize;
     u.uScanline.value   = prof.scanline;
@@ -232,18 +335,23 @@ export class RetroPass {
     if (!this._rt || this._rt.width !== iw || this._rt.height !== ih ||
         this._rt.texture.magFilter !== filt) {
       this._rt?.dispose();
-      this._rt = new THREE.WebGLRenderTarget(iw, ih, {
+      // v195: the webgpu build's target class is RenderTarget (WebGLRenderTarget
+      // is the classic build's name for the same thing)
+      const RT = IS_GPU ? (THREE.RenderTarget ?? THREE.WebGLRenderTarget) : THREE.WebGLRenderTarget;
+      this._rt = new RT(iw, ih, {
         depthBuffer: true, minFilter: filt, magFilter: filt,
       });
+      if (IS_GPU) this._texNode.value = this._rt.texture;
     }
-    this._mat.uniforms.uRes.value.set(iw, ih);
+    this._u.uRes.value.set(iw, ih);
   }
 
   render(renderer, scene, camera) {
     renderer.setRenderTarget(this._rt);
     renderer.render(scene, camera);
     renderer.setRenderTarget(null);
-    this._mat.uniforms.tDiffuse.value = this._rt.texture;
+    if (IS_GPU) this._texNode.value = this._rt.texture;
+    else        this._mat.uniforms.tDiffuse.value = this._rt.texture;
     renderer.render(this._quadScene, this._quadCam);
   }
 }

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=148';
-import { nesSnap, NEON } from './retro.js?v=148';
+import { TUNING } from './tuning.js?v=149';
+import { nesSnap, NEON } from './retro.js?v=149';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // v194: under the WEBGPU (BETA) build the goo FX run as a TSL node graph
@@ -315,7 +315,8 @@ export function makeSatinMat(color, fam, radius) {
 // that write `mat.emissive` keep their voice under the node pipeline.
 function applyGooNodes(mat, u, flat) {
   const { positionLocal, normalLocal, vec3, vec4, float, sin, dot, normalize, clamp,
-          cameraViewMatrix, positionViewDirection, transformedNormalView, materialEmissive } = TSL;
+          cameraViewMatrix, positionViewDirection, materialEmissive } = TSL;
+  const normalViewN = TSL.normalView ?? TSL.transformedNormalView;   // renamed in newer TSL
   const q = positionLocal.div(u.uRadius);
   const wave = sin(q.x.mul(3.6).add(u.uTime.mul(2.1)).add(u.uPhase))
     .add(sin(q.y.mul(4.2).add(u.uTime.mul(1.6)).add(u.uPhase.mul(1.3))))
@@ -336,7 +337,7 @@ function applyGooNodes(mat, u, flat) {
   if (flat) return;   // flat cabinets: wobble only, no SSS (mirrors the GLSL guard)
   const V = positionViewDirection;
   const L = normalize(cameraViewMatrix.mul(vec4(u.uLightDir, 0.0)).xyz);
-  const N = normalize(transformedNormalView);
+  const N = normalize(normalViewN);
   const H = normalize(L.add(N.mul(0.45)));
   const sss  = clamp(dot(V, H.negate()), 0.0, 1.0).pow(2.2).mul(u.uSSS);
   const wrap = clamp(dot(N, L).mul(0.5).add(0.5), 0.0, 1.0);
