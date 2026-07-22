@@ -7,7 +7,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { MODELS, VoxelSprite, DebrisPool, setVoxelDetail } from './voxel.js?v=33';
+import { MODELS, VoxelSprite, DebrisPool, setVoxelDetail } from './voxel.js?v=34';
 
 const canvas = document.getElementById('canvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -23,7 +23,7 @@ scene.add(grid);
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.7, 0.45, 0.6);
+const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.5, 0.4, 0.6);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
 
@@ -40,7 +40,7 @@ const debris = new DebrisPool(scene, 1600);
 
 // ------------------------------------------------------------- lab state
 let modelKey = 'skull';
-let detail = 2;
+let detail = 4;
 let sprite = null;
 let spin = true;
 let yaw = 0.6, pitch = 0.35, dist = 4;

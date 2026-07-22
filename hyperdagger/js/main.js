@@ -5,15 +5,15 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=33';
-import { Player } from './player.js?v=33';
-import { DaggerPool } from './daggers.js?v=33';
-import { GemPool } from './gems.js?v=33';
-import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=33';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=33';
-import { OrbPool } from './bullets.js?v=33';
-import { AudioKit } from './audio.js?v=33';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=33';
+import { InputManager } from './input.js?v=34';
+import { Player } from './player.js?v=34';
+import { DaggerPool } from './daggers.js?v=34';
+import { GemPool } from './gems.js?v=34';
+import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=34';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=34';
+import { OrbPool } from './bullets.js?v=34';
+import { AudioKit } from './audio.js?v=34';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=34';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -145,7 +145,7 @@ composer.addPass(new RenderPass(scene, camera));
 const afterimage = new AfterimagePass(0.72); // motion smear on everything bright
 composer.addPass(afterimage);
 const bloom = new UnrealBloomPass(
-  new THREE.Vector2(window.innerWidth, window.innerHeight), 0.7, 0.45, 0.6);
+  new THREE.Vector2(window.innerWidth, window.innerHeight), 0.5, 0.4, 0.6); // eased so voxel cells read through the glow
 composer.addPass(bloom);
 const chromaPass = new ShaderPass(ChromaShader);
 composer.addPass(chromaPass);
@@ -1088,10 +1088,11 @@ function applyOpts() {
   if (opts.perf === 'high') setPerfTier(0);
   else if (opts.perf === 'low') setPerfTier(PERF_TIERS.length - 1);
   const tier = PERF_TIERS[perfTier];
-  // voxel density: AUTO follows the perf floor (1x minis on LOW / tier 4,
-  // else 8x); an explicit VOXEL choice overrides it. Existing sprites keep
-  // their detail until they die — the swarm re-densifies within seconds.
-  const autoDetail = (opts.perf === 'low' || perfTier >= PERF_TIERS.length - 1) ? 1 : 2;
+  // voxel density: AUTO starts at the x64 design default and the governor
+  // walks it down the ladder (x27/x8/x1) as the tier degrades; an explicit
+  // VOXEL choice overrides it. Existing sprites keep their detail until they
+  // die — the swarm re-densifies within seconds.
+  const autoDetail = opts.perf === 'low' ? 1 : [4, 3, 2, 2, 1][perfTier];
   setVoxelDetail(opts.detail === 'auto' ? autoDetail : opts.detail);
   // reduced motion (opts.motion=false) and the perf tier both override the
   // individual FX toggles without rewriting them — user intent stays in opts.*
@@ -2173,7 +2174,7 @@ window.__hd = {
     getDailyTable() { return readDailyTable(); },
     pulse(n) { runPulse(n ?? ++pulseN); },
     setOpt(k, v) { opts[k] = v; saveOpts(); },
-    getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, fov: camera.fov, uRed: floorMat.uniforms.uRed.value }; },
+    getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, fov: camera.fov, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
     getVfx() { return { shadows: shadows.count, sparks: sparks.length, speedOn: speedPass.enabled, rippleT, rippleOn: ripplePass.enabled, ember: skyMat.uniforms.uEmber.value }; },
     // renderer.info auto-resets on every internal composer pass, so reading it
     // directly only ever sees the last fullscreen quad. Accumulate one whole

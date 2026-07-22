@@ -160,7 +160,8 @@ export const MODELS = {
   // late-game boss: dark god-head, glowing eyes/horns/crown, voxelSize 0.7
   leviathan: {
     voxelSize: 0.7,
-    detailBoost: 1, // the boss gets one extra subdivision tier (27x at default)
+    detailBoost: 1, // one extra subdivision tier when the global default is lower
+    wobble: 0.7,    // heaves slowly — massive, not jittery
     palette: {
       W: 0x1c1c1c, S: 0x101010, K: 0x000000,
       R: [3.0, 0.2, 0.2], V: [2.0, 0.15, 0.15], C: [2.4, 2.4, 2.4],
@@ -180,6 +181,7 @@ export const MODELS = {
   // shading to read as cubes), long HDR white blade forward (row 0)
   hand: {
     voxelSize: 0.05,
+    wobble: 0.3,
     palette: { G: 0x3a3a3a, D: 0x222222, H: 0x555555, B: [1.25, 1.25, 1.25] },
     layers: [
       ['...', '...', '...', '...', '...', '...', '...', 'DGD', 'GDG', 'DGD'],
@@ -196,6 +198,7 @@ export const MODELS = {
     return {
       voxelSize: 0.34,
       anchor: 'bottom',
+      wobble: 0.35,
       palette: { O: 0x161616, M: [2.4, 0.2, 0.2] },
       layers: [B, A, B, A, B, A, B, mouth, mouth, crown],
     };
@@ -203,9 +206,9 @@ export const MODELS = {
 };
 
 // Global voxel density: every model voxel is split into detail³ minis of the
-// same silhouette (2 → 8×, 3 → 27×). New sprites pick the current value up;
-// the perf governor drops it to 1 on weak devices (affects future spawns).
-let globalDetail = 2;
+// same silhouette. ×64 (detail 4) is the DESIGN DEFAULT — the perf governor
+// walks new spawns down the ladder (×27/×8/×1) as frame cost rises.
+let globalDetail = 4;
 export function setVoxelDetail(n) { globalDetail = Math.max(1, Math.min(4, n | 0)); }
 export function getVoxelDetail() { return globalDetail; }
 
@@ -279,6 +282,40 @@ export class VoxelSprite {
     this.size = def.voxelSize / subdivide;
     this.aliveCount = this.voxels.length;
     this.material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    // Per-voxel LIFE, all in the vertex shader so density is free: the voxel
+    // lattice breathes (~3% swell), a ripple travels across the body, and
+    // each voxel's size shimmers slightly out of phase with its neighbors —
+    // at ×64 the model reads as thousands of live cells, not one mesh.
+    // One shared program (same cache key); per-sprite uniform objects.
+    this.animT = Math.random() * 100; // desync so a swarm never pulses in unison
+    this.baseWobble = def.wobble ?? 1;
+    this.uniforms = {
+      uTime: { value: this.animT },
+      uWobble: { value: this.baseWobble },
+      uVox: { value: this.size },
+    };
+    this.material.onBeforeCompile = shader => {
+      Object.assign(shader.uniforms, this.uniforms);
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>',
+          '#include <common>\nuniform float uTime;\nuniform float uWobble;\nuniform float uVox;')
+        .replace('#include <begin_vertex>', /* glsl */`#include <begin_vertex>
+        #ifdef USE_INSTANCING
+          // instance translation = this voxel's spot in the body lattice
+          vec3 vic = instanceMatrix[3].xyz;
+          float vph = vic.x * 2.3 + vic.y * 1.7 + vic.z * 2.9;
+          // voxel size shimmer, slightly out of phase per cell
+          transformed *= 1.0 + 0.10 * uWobble * sin(uTime * 4.0 + vph * 3.1);
+          // whole-body breathe: the lattice swells around its origin
+          transformed += vic * (0.035 * uWobble * sin(uTime * 2.1));
+          // traveling ripple across the surface
+          transformed += uVox * 0.22 * uWobble * vec3(
+            sin(uTime * 3.1 + vph),
+            sin(uTime * 2.6 + vph * 1.3 + 1.7),
+            sin(uTime * 3.7 + vph * 0.8 + 3.4));
+        #endif`);
+    };
+    this.material.customProgramCacheKey = () => 'voxel-sprite-anim';
     const mesh = new THREE.InstancedMesh(
       new THREE.BoxGeometry(this.size, this.size, this.size),
       this.material,
@@ -405,6 +442,10 @@ export class VoxelSprite {
   flash(k = 1.8) { this.flashK = k; }
 
   update(dt) {
+    this.animT += dt;
+    this.uniforms.uTime.value = this.animT;
+    // a hit also shakes the lattice awake for a beat
+    this.uniforms.uWobble.value = this.baseWobble + this.flashK * 1.2;
     if (this.flashK > 0) {
       this.flashK = Math.max(0, this.flashK - dt * 7);
       this.material.color.setScalar(1 + this.flashK);
