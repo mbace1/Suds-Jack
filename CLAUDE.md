@@ -67,6 +67,25 @@ cap 9). Stage quota gauge Cabal-style; clearing pops all stragglers. No build st
 open `dropcabal/index.html` (three.js via jsDelivr importmap). Same `gh-pages` deploy
 caveat as paperboy.
 
+### The Game of Life (`gameoflife/`)
+**Mini games and interactive stories that always revert to going back to nature.**
+Minimalist pixel experiences (canvas 2D, no three.js, no build step) played from a hub;
+after every 2nd finished experience the hub *rests* and shows a nature invitation instead
+(evening 18:00–05:00 swaps outdoor prompts for a poem / look-at-art prompt). Trilingual
+fi/en/ja — every string in `js/i18n.js` (en fallback), browser-detected, persisted.
+Experiences export `{ id, start(host, ctx) }` (ctx = `{t, audio, onComplete}`, start
+returns `{destroy}`) and register in `REGISTRY` in `main.js`; current roster: `aqueduct`
+(Roman aqueduct story → rotate-stones channel puzzle, BFS flow with live partial water)
+and `forest` (branching walk → guided 4-breath finale). `pixel.js` gives a 192×128
+`PixelScreen` upscaled with `image-rendering: pixelated`; `palette.js` is the single
+colour source; `audio.js` is a quiet WebAudio kit; `storage.js` keeps completions /
+cycle counter / 1–5-leaf feedback in `localStorage` (`golState`). `window.__gol` exposes
+`{store, audio, debug: {start, showInterlude, setLang, feedback}}` for console testing.
+Pipeline: develop on `claude/*` beta branches → greenlight to `main` → copy to
+`gh-pages` to go live at `/Suds-Jack/gameoflife/` (same deploy caveat as paperboy);
+bump `?v=N` cache-busters together when shipping. See `gameoflife/README.md` for the
+roadmap of future experiences.
+
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
 Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
 
