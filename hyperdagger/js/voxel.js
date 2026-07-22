@@ -209,6 +209,25 @@ let globalDetail = 2;
 export function setVoxelDetail(n) { globalDetail = Math.max(1, Math.min(4, n | 0)); }
 export function getVoxelDetail() { return globalDetail; }
 
+// Style hue: null = the native crimson look; otherwise ACCENT colors (red-
+// dominant, i.e. the R/C/V/M glow parts of every palette) are re-hued in
+// place while bone/body greys pass through untouched. HDR magnitude is
+// preserved (max channel keeps its value) so bloom trips identically.
+let styleHue = null;
+export function setStyleHue(h) { styleHue = h; }
+export function getStyleHue() { return styleHue; }
+const _tint = new THREE.Color();
+/** Re-hue `c` in place if it reads as an accent color; returns `c`. */
+export function styleTint(c) {
+  if (styleHue === null) return c;
+  if (!(c.r > c.g * 2 && c.r > c.b * 2)) return c;
+  const i = Math.max(c.r, c.g, c.b);
+  _tint.setHSL(styleHue, 1, 0.5);
+  const m = Math.max(_tint.r, _tint.g, _tint.b, 1e-6);
+  c.copy(_tint).multiplyScalar(i / m);
+  return c;
+}
+
 /** Parse a model definition into centred local-space voxels, subdividing
  *  each source voxel into subdivide³ minis. */
 export function parseModel(def, subdivide = 1) {
@@ -268,6 +287,8 @@ export class VoxelSprite {
     mesh.frustumCulled = false;
     this.voxels.forEach((v, i) => {
       v.alive = true;
+      v.base = v.color.clone(); // pre-style color — applyStyle() re-derives from it
+      styleTint(v.color);
       mesh.setMatrixAt(i, _m.makeTranslation(v.x, v.y, v.z));
       mesh.setColorAt(i, v.color);
     });
@@ -396,8 +417,19 @@ export class VoxelSprite {
     this.voxels.forEach((v, i) => {
       const col = palette[v.key];
       if (col === undefined) return;
-      if (Array.isArray(col)) v.color.setRGB(col[0], col[1], col[2]);
-      else v.color.set(col);
+      if (Array.isArray(col)) v.base.setRGB(col[0], col[1], col[2]);
+      else v.base.set(col);
+      styleTint(v.color.copy(v.base));
+      this.mesh.setColorAt(i, v.color);
+    });
+    this.mesh.instanceColor.needsUpdate = true;
+  }
+
+  /** Re-derive every voxel color from its pre-style base under the current
+   *  style hue — lets a STYLE change restyle live sprites instantly. */
+  applyStyle() {
+    this.voxels.forEach((v, i) => {
+      styleTint(v.color.copy(v.base));
       this.mesh.setColorAt(i, v.color);
     });
     this.mesh.instanceColor.needsUpdate = true;

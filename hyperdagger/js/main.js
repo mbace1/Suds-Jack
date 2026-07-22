@@ -5,15 +5,15 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=32';
-import { Player } from './player.js?v=32';
-import { DaggerPool } from './daggers.js?v=32';
-import { GemPool } from './gems.js?v=32';
-import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail } from './voxel.js?v=32';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=32';
-import { OrbPool } from './bullets.js?v=32';
-import { AudioKit } from './audio.js?v=32';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=32';
+import { InputManager } from './input.js?v=33';
+import { Player } from './player.js?v=33';
+import { DaggerPool } from './daggers.js?v=33';
+import { GemPool } from './gems.js?v=33';
+import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=33';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=33';
+import { OrbPool } from './bullets.js?v=33';
+import { AudioKit } from './audio.js?v=33';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=33';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -34,8 +34,12 @@ const opts = Object.assign(
   // motion=false is the reduced-motion master switch (forces smear/shake/chroma/FOV
   // kicks off without touching the individual toggles); contrast=true brightens
   // orbs + telegraphs and kills the floor's red flush for readability
-  { speed: 1, fov: 80, sens: 1, smear: true, shake: true, chroma: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto' },
+  { speed: 1, fov: 80, sens: 1, smear: true, shake: true, chroma: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson' },
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
+
+// STYLE presets: hue targets for the accent recolor (null = native crimson).
+// Distilled in the Voxel Lab; bone/greys never shift, only red-dominant glow.
+const STYLE_HUES = { crimson: null, cyan: 0.5, gold: 0.11, violet: 0.77 };
 
 // ------------------------------------------------ performance governor
 // Auto-degrades render cost on weak devices (opts.perf 'auto'; 'high'/'low'
@@ -255,6 +259,7 @@ const floorMat = new THREE.ShaderMaterial({
     map: { value: makeFloorTexture() },
     uPulse: { value: 0 },
     uRed: { value: 0 },
+    uAccent: { value: new THREE.Color(2.2, 0.25, 0.25) }, // hurt-flush tint (STYLE re-aims it)
   },
   vertexShader: /* glsl */`
     varying vec2 vUv;
@@ -263,11 +268,12 @@ const floorMat = new THREE.ShaderMaterial({
     uniform sampler2D map;
     uniform float uPulse;
     uniform float uRed;
+    uniform vec3 uAccent;
     varying vec2 vUv;
     void main() {
       vec3 col = texture2D(map, vUv * 14.0).rgb;
       col *= 1.0 + uPulse * 0.9;                                  // beat glow
-      col = mix(col, col * vec3(2.2, 0.25, 0.25), clamp(uRed, 0.0, 1.0)); // hurt flush
+      col = mix(col, col * uAccent, clamp(uRed, 0.0, 1.0));       // hurt flush
       gl_FragColor = vec4(col, 1.0);
     }`,
 });
@@ -283,7 +289,11 @@ const skyMat = new THREE.ShaderMaterial({
   side: THREE.BackSide,
   depthWrite: false,
   fog: false,
-  uniforms: { uTime: { value: 0 }, uEmber: { value: 0 } },
+  uniforms: {
+    uTime: { value: 0 },
+    uEmber: { value: 0 },
+    uEmberCol: { value: new THREE.Color(0.30, 0.02, 0.02) }, // horizon glow (STYLE re-aims it)
+  },
   vertexShader: /* glsl */`
     varying vec3 vPos;
     void main() {
@@ -294,6 +304,7 @@ const skyMat = new THREE.ShaderMaterial({
     varying vec3 vPos;
     uniform float uTime;
     uniform float uEmber;
+    uniform vec3 uEmberCol;
     void main() {
       vec3 d = normalize(vPos);
       float h = d.y;
@@ -304,7 +315,7 @@ const skyMat = new THREE.ShaderMaterial({
       float horiz = 1.0 - clamp(abs(h) * 2.6, 0.0, 1.0);
       col += vec3(0.05) * (b1 * 0.6 + b2 * 0.4) * horiz;
       // ember horizon swells with trauma and while the Leviathan lives
-      col += vec3(0.30, 0.02, 0.02) * pow(max(0.0, 1.0 - abs(h) * 4.0), 3.0) * (1.0 + uEmber);
+      col += uEmberCol * pow(max(0.0, 1.0 - abs(h) * 4.0), 3.0) * (1.0 + uEmber);
       gl_FragColor = vec4(col, 1.0);
     }`,
 });
@@ -1088,8 +1099,18 @@ function applyOpts() {
   chromaPass.enabled = opts.chroma && opts.motion && tier.chroma;
   bloom.enabled = tier.bloom;
   debris.softCap = tier.debrisCap;
+  // STYLE preset: re-hue every accent surface. Hue is applied at voxel parse
+  // for new spawns; live sprites re-derive from their pre-style base colors.
+  setStyleHue(STYLE_HUES[opts.style] ?? null);
+  hand.applyStyle();
+  for (const e of enemies) e.sprite.applyStyle?.();
+  if (flyby) for (const p of flyby.parts) p.sprite.applyStyle();
   // high contrast: hotter orbs so projectiles read against the bloom
-  orbs.mat.color.setRGB(...(opts.contrast ? [3.4, 0.5, 0.5] : [2.6, 0.2, 0.2]));
+  // (intensity picked first, then the style hue re-aims it)
+  styleTint(orbs.mat.color.setRGB(...(opts.contrast ? [3.4, 0.5, 0.5] : [2.6, 0.2, 0.2])));
+  styleTint(gems.mesh.material.color.setRGB(2.4, 0.15, 0.15));
+  styleTint(floorMat.uniforms.uAccent.value.setRGB(2.2, 0.25, 0.25));
+  styleTint(skyMat.uniforms.uEmberCol.value.setRGB(0.30, 0.02, 0.02));
   player.sens = opts.sens;
   // reconcile music with the toggle live (only while a run is active)
   if (state === 'playing') {
@@ -1125,6 +1146,7 @@ function showPause() {
      ${optRow('PERF', 'perf', ['auto', 'high', 'low'], v => v.toUpperCase())}
      ${optRow('', 'haptics', [true, false], v => v ? 'HAPTICS ON' : 'HAPTICS OFF')}
      ${optRow('VOXEL', 'detail', ['auto', 1, 2, 3, 4], v => v === 'auto' ? 'AUTO' : ({ 1: '1X', 2: '8X', 3: '27X', 4: '64X' })[v])}
+     ${optRow('STYLE', 'style', ['crimson', 'cyan', 'gold', 'violet'], v => v.toUpperCase())}
      <p class="go">click / tap anywhere else to resume</p>`;
   for (const b of elMsg.querySelectorAll('button.opt')) {
     b.addEventListener('pointerdown', e => {
@@ -2173,6 +2195,21 @@ window.__hd = {
     getFlyby() { return flyby ? { t: flyby.t, parts: flyby.parts.length } : null; },
     setDetail(n) { setVoxelDetail(n); },
     getDetail() { return getVoxelDetail(); },
+    getStyleSample() {
+      // bone (must never shift) + the accent surfaces — for style smoke checks
+      const bone = hand.voxels.find(v => v.key === 'G');
+      const eye = enemies.find(e => e.sprite?.voxels.some(v => v.key === 'R'))
+        ?.sprite.voxels.find(v => v.key === 'R');
+      return {
+        style: opts.style,
+        bone: [bone.color.r, bone.color.g, bone.color.b],
+        eye: eye ? [eye.color.r, eye.color.g, eye.color.b] : null,
+        orb: [orbs.mat.color.r, orbs.mat.color.g, orbs.mat.color.b],
+        gem: [gems.mesh.material.color.r, gems.mesh.material.color.g, gems.mesh.material.color.b],
+        floor: floorMat.uniforms.uAccent.value.toArray(),
+        ember: skyMat.uniforms.uEmberCol.value.toArray(),
+      };
+    },
     buzz(s, w, ms) { buzz(s ?? 1, w ?? 1, ms ?? 100); },
     forceFrameTime(ms) { forcedFrameTime = ms; },
     getPerfTier() {

@@ -46,7 +46,10 @@ Esc = pause/options. Touch: dual on-screen sticks — left moves, right looks; *
 automatic while moving** (or while the look stick is held); **tap either stick = jump ×2,
 flick either stick = dash**; ⏸ button top-right. The pause menu carries persisted
 options (`hyperDaggerOpts`): game speed ×1/1.25/1.5, FOV 70/80/90, look sensitivity, smear/
-shake/chroma toggles, and A11Y rows — MOTION REDUCED (`opts.motion` master switch, composes
+shake/chroma toggles, STYLE accent presets (CRIMSON/CYAN/GOLD/VIOLET — `styleTint()` in
+voxel.js re-hues red-dominant colors only, preserving HDR magnitude; voxels keep `base`
+colors so `applyStyle()` restyles live sprites; floor `uAccent` + sky `uEmberCol`
+uniforms follow), and A11Y rows — MOTION REDUCED (`opts.motion` master switch, composes
 as `userToggle && motion` so individual toggles are never rewritten) and CONTRAST HIGH
 (hotter orbs/telegraphs via `OrbPool.mat`, floor red flush off), plus PERF AUTO/HIGH/LOW —
 a frame-time-EMA governor that walks a 5-tier degrade ladder (chroma→smear→pixelRatio→
