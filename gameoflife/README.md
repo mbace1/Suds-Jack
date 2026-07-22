@@ -50,7 +50,19 @@ cycle — comes for free.
 
 ## Testing loop
 
-Everything is inspectable from the console via `window.__gol`
+Two scripts live in `test/` and gate every greenlight:
+
+```sh
+node gameoflife/test/check_levels.mjs   # aqueduct levels stay solvable (no deps)
+node gameoflife/test/smoke.cjs          # 18-check headless run-through (needs playwright + its Chromium)
+```
+
+The smoke test serves the repo root itself, drives the hub in all three
+languages, plays into both experiences, forces the day and evening interludes,
+and fails on any console error. If `playwright` is installed globally, point
+`NODE_PATH` at the global `node_modules`.
+
+Everything is also inspectable from the console via `window.__gol`
 (same convention as `__dc` / `__hd` in the sibling projects):
 
 ```js
