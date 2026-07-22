@@ -5,15 +5,15 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=31';
-import { Player } from './player.js?v=31';
-import { DaggerPool } from './daggers.js?v=31';
-import { GemPool } from './gems.js?v=31';
-import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail } from './voxel.js?v=31';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=31';
-import { OrbPool } from './bullets.js?v=31';
-import { AudioKit } from './audio.js?v=31';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=31';
+import { InputManager } from './input.js?v=32';
+import { Player } from './player.js?v=32';
+import { DaggerPool } from './daggers.js?v=32';
+import { GemPool } from './gems.js?v=32';
+import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail } from './voxel.js?v=32';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=32';
+import { OrbPool } from './bullets.js?v=32';
+import { AudioKit } from './audio.js?v=32';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=32';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -1769,6 +1769,24 @@ function updateCombat(dt) {
             _seg.set(_hitDir.x * 3 + (Math.random() - 0.5) * 4, 1.5 + Math.random() * 3,
               _hitDir.z * 3 + (Math.random() - 0.5) * 4),
             e.sprite.size, 0.9);
+        }
+        // a hole can sever a whole region (jaw, crown, brow) — anything no
+        // longer connected to the body breaks away as one tumbling chunk
+        if (chips.length && e.sprite.detachIslands) {
+          for (const island of e.sprite.detachIslands()) {
+            const stride = Math.max(1, Math.ceil(island.length / 60));
+            const cvx = _hitDir.x * 2 + (Math.random() - 0.5) * 3;
+            const cvz = _hitDir.z * 2 + (Math.random() - 0.5) * 3;
+            const cvy = 2 + Math.random() * 2.5;
+            for (let k = 0; k < island.length; k += stride) {
+              // shared chunk velocity + a whisper of jitter so it reads as
+              // one piece coming off, not a spray
+              debris.spawn(island[k].pos, island[k].color,
+                _seg.set(cvx + (Math.random() - 0.5), cvy + Math.random(),
+                  cvz + (Math.random() - 0.5)),
+                e.sprite.size * Math.cbrt(stride), 1.5);
+            }
+          }
         }
       }
       for (let k = 0; k < 2; k++) {

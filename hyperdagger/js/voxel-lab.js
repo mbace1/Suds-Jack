@@ -7,7 +7,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { MODELS, VoxelSprite, DebrisPool, setVoxelDetail } from './voxel.js?v=31';
+import { MODELS, VoxelSprite, DebrisPool, setVoxelDetail } from './voxel.js?v=32';
 
 const canvas = document.getElementById('canvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -162,6 +162,15 @@ document.getElementById('chip').addEventListener('click', () => {
     debris.spawn(c.pos, c.color,
       new THREE.Vector3((Math.random() - 0.5) * 4, 2 + Math.random() * 3, (Math.random() - 0.5) * 4),
       sprite.size * 0.9, 1.2);
+  }
+  // severed islands come off as whole chunks, same as in-game
+  for (const island of sprite.detachIslands()) {
+    const cv = new THREE.Vector3((Math.random() - 0.5) * 4, 2.5, (Math.random() - 0.5) * 4);
+    for (const c of island) {
+      debris.spawn(c.pos, c.color,
+        cv.clone().add(new THREE.Vector3(Math.random() - 0.5, Math.random(), Math.random() - 0.5)),
+        sprite.size, 1.5);
+    }
   }
   stats();
 });
