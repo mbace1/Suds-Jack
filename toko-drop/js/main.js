@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=145';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=145';
-import { Player, PLAYER_RADIUS } from './player.js?v=145';
+import { InputManager } from './input.js?v=146';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=146';
+import { Player, PLAYER_RADIUS } from './player.js?v=146';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=145';
-import { RetroPass } from './retro.js?v=145';
-import { audio } from './audio.js?v=145';
-import { initDesigner } from './designer.js?v=145';
-import { t, getLang, setLang, langs } from './lang.js?v=145';
-import { TUNING } from './tuning.js?v=145';
+         CABINET_STYLE, VIS } from './enemy.js?v=146';
+import { RetroPass } from './retro.js?v=146';
+import { audio } from './audio.js?v=146';
+import { initDesigner } from './designer.js?v=146';
+import { t, getLang, setLang, langs } from './lang.js?v=146';
+import { TUNING } from './tuning.js?v=146';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -300,17 +300,16 @@ function getEnemySchedule(wave) {
 // pipeline — every custom-shader site branches on IS_GPU (floor + splats get
 // TSL ports below; the retro cabinet pass is bypassed until its own port).
 const IS_GPU = typeof THREE.WebGPURenderer === 'function';
+// v192: the flag build is three r180 (classic stays r167) — r180 fixes the WGSL
+// codegen that v191 found invalid under strict validation, so the true WebGPU
+// backend is now allowed: the renderer takes a real adapter when the browser
+// grants one and falls back to its WebGL2 backend on its own when not. TSL
+// moved into a THREE.TSL namespace in newer builds — the shim covers both.
+const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 const renderer = IS_GPU
   ? new THREE.WebGPURenderer({
       canvas: document.getElementById('canvas-game'),
       antialias: true,
-      // r167's WGSL codegen emits a runtime-sized uniform array that today's
-      // browsers reject (strict validation: runtime-sized arrays are
-      // storage-only) — the true WebGPU backend whiteouts on REAL hardware,
-      // not just headless. The node pipeline is identical on the WebGL2
-      // backend, so the beta runs there; drop this once three is upgraded
-      // past the codegen fix.
-      forceWebGL: true,
     })
   : new THREE.WebGLRenderer({
       canvas: document.getElementById('canvas-game'),
@@ -415,9 +414,9 @@ const FLOOR_FRAG = `
 // uTime) stays byte-identical across both paths.
 const floorUniforms = IS_GPU
   ? {
-      uTime:  THREE.uniform(0),
-      uGridX: THREE.uniform((HALF_X * 2) / GRID_CELL),
-      uGridZ: THREE.uniform((HALF_Z * 2) / GRID_CELL),
+      uTime:  TSL.uniform(0),
+      uGridX: TSL.uniform((HALF_X * 2) / GRID_CELL),
+      uGridZ: TSL.uniform((HALF_Z * 2) / GRID_CELL),
     }
   : {
       uTime:  { value: 0 },
@@ -429,7 +428,7 @@ function makeFloorMat() {
   if (!IS_GPU) {
     return new THREE.ShaderMaterial({ vertexShader: FLOOR_VERT, fragmentShader: FLOOR_FRAG, uniforms: floorUniforms });
   }
-  const { uv, vec3, float, mix } = THREE;
+  const { uv, vec3, float, mix } = TSL;
   const m  = new THREE.MeshBasicNodeMaterial();
   const gx = uv().x.mul(floorUniforms.uGridX).fract().sub(0.5).abs();
   const gz = uv().y.mul(floorUniforms.uGridZ).fract().sub(0.5).abs();
@@ -751,8 +750,8 @@ class SplatPool {
     if (IS_GPU) {
       mat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false });
       // .pow(2.2): same raw-GLSL-vs-output-encoding parity trick as the floor.
-      mat.colorNode   = THREE.attribute('aColor', 'vec3').pow(2.2);
-      mat.opacityNode = THREE.attribute('aAlpha', 'float');
+      mat.colorNode   = TSL.attribute('aColor', 'vec3').pow(2.2);
+      mat.opacityNode = TSL.attribute('aAlpha', 'float');
     } else {
       mat = new THREE.ShaderMaterial({
         transparent: true, depthWrite: false,
@@ -3980,7 +3979,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v191' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v192' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -8122,6 +8121,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=145').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=146').catch(() => {});
   });
 }

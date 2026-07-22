@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=145';
-import { t } from './lang.js?v=145';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=145';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=146';
+import { t } from './lang.js?v=146';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=146';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -20,7 +20,7 @@ function ensureTester() {
   // init, so the loop holds rendering until `ready` flips.
   const isGpu = typeof THREE.WebGPURenderer === 'function';
   const renderer = isGpu
-    ? new THREE.WebGPURenderer({ canvas, antialias: true, forceWebGL: true })  // same r167 WGSL caveat as main.js
+    ? new THREE.WebGPURenderer({ canvas, antialias: true })  // v192: adaptive backend, same as main.js
     : new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
   renderer.setSize(520, 260, false);
