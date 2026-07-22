@@ -27,6 +27,24 @@
     }
     .lang-btn.active { color: #141311; background: #8faf6a; border-color: #8faf6a; }
 
+    /* the cycle, made visible: two breaths of play, then a rest */
+    .cycle-dots { display: flex; gap: 12px; justify-content: center; margin-bottom: 22px; }
+    .dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      border: 1px solid #6e654f; display: inline-block;
+    }
+    .dot.full { background: #8faf6a; border-color: #8faf6a; }
+    .dot.rest {
+      border-radius: 0; border: none; width: auto; height: auto;
+      color: #6e654f; font-size: 13px; line-height: 10px;
+    }
+    .dot.rest.full { color: #c9a84c; background: none; }
+
+    .offering { max-width: 420px; margin: 0 auto; text-align: center; }
+    .offer-note { font-size: 11px !important; letter-spacing: 2px; color: #6e654f !important;
+                  text-transform: lowercase; margin-bottom: 8px; }
+    .another-btn { margin: 14px auto 0; text-align: center; }
+
     .cards { display: flex; flex-direction: column; gap: 16px; }
     .card {
       border: 2px solid #4a4438; padding: 16px 18px; background: #1c1a16;
@@ -101,6 +119,6 @@
 </head>
 <body>
   <div id="app"></div>
-  <script type="module" src="js/main.js?v=1"></script>
+  <script type="module" src="js/main.js?v=2"></script>
 </body>
 </html>

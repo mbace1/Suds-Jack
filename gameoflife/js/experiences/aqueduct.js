@@ -2,8 +2,8 @@
 // stones channel puzzle. Water flows by connectivity from spring to fountain;
 // partial flow is shown live so every turn of a stone gives feedback.
 
-import { PixelScreen } from '../pixel.js?v=1';
-import { PAL } from '../palette.js?v=1';
+import { PixelScreen } from '../pixel.js?v=2';
+import { PAL } from '../palette.js?v=2';
 
 // dirs: 0=N 1=E 2=S 3=W
 const OPP = d => (d + 2) % 4;
@@ -41,6 +41,7 @@ const TILE = 20;
 
 export const aqueduct = {
   id: 'aqueduct',
+  kind: 'game',   // 70/20/10 offering mix: story / game / wisdom
 
   start(host, ctx) {
     const { t, audio, onComplete } = ctx;

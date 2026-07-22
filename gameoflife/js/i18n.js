@@ -31,6 +31,11 @@ const STR = {
     'hub.feedback': 'Leave a thought',
     'hub.cycle.hint': 'After a game or two, the games will rest — and point you somewhere real.',
     'hub.rested': 'The games are resting. The world outside is open.',
+    'hub.offer': 'offered to you, now',
+    'hub.another': 'something else, perhaps',
+    'kind.story': 'a story',
+    'kind.game': 'a game',
+    'kind.wisdom': 'a kernel of wisdom',
 
     'exp.aqueduct.name': 'The Stone River',
     'exp.aqueduct.desc': 'How Rome invited water downhill — then turn the stones yourself.',
@@ -70,9 +75,6 @@ const STR = {
     'nat.eve.2': 'It is evening. Find one painting — in a book, on a wall — and look at it until it looks back.',
     'nat.eve.art': 'Suggestion: look for landscape painters — Caspar David Friedrich, Hiroshige, or Finland’s own Pekka Halonen.',
 
-    'poem.title': 'from “My Heart Leaps Up” — William Wordsworth',
-    'poem.body': 'My heart leaps up when I behold\nA rainbow in the sky:\nSo was it when my life began;\nSo is it now I am a man.',
-
     'fb.title': 'A quick thought?',
     'fb.q': 'How did this feel?',
     'fb.placeholder': 'Anything to tell the gardeners of this game… (optional)',
@@ -96,6 +98,11 @@ const STR = {
     'hub.feedback': 'Jätä ajatus',
     'hub.cycle.hint': 'Parin pelin jälkeen pelit lepäävät — ja osoittavat jonnekin todelliseen.',
     'hub.rested': 'Pelit lepäävät. Maailma ulkona on auki.',
+    'hub.offer': 'tarjolla sinulle, nyt',
+    'hub.another': 'ehkä jokin muu',
+    'kind.story': 'tarina',
+    'kind.game': 'peli',
+    'kind.wisdom': 'viisaudenjyvä',
 
     'exp.aqueduct.name': 'Kivinen joki',
     'exp.aqueduct.desc': 'Miten Rooma kutsui veden alamäkeen — käännä sitten kivet itse.',
@@ -135,9 +142,6 @@ const STR = {
     'nat.eve.2': 'On ilta. Etsi yksi maalaus — kirjasta, seinältä — ja katso sitä kunnes se katsoo takaisin.',
     'nat.eve.art': 'Ehdotus: katso maisemamaalareita — Caspar David Friedrich, Hiroshige tai oma Pekka Halosemme.',
 
-    'poem.title': 'Nocturne (katkelma) — Eino Leino',
-    'poem.body': 'Ruislinnun laulu korvissani,\ntähkäpäiden päällä täysi kuu;\nkesäyön on onni omanani,\nkaskisavuun laaksot verhouu.',
-
     'fb.title': 'Nopea ajatus?',
     'fb.q': 'Miltä tämä tuntui?',
     'fb.placeholder': 'Kerrottavaa tämän pelin puutarhureille… (vapaaehtoinen)',
@@ -161,6 +165,11 @@ const STR = {
     'hub.feedback': 'ひとこと残す',
     'hub.cycle.hint': 'ひとつふたつ遊ぶと、ゲームはひと休みして、本物の世界を指さします。',
     'hub.rested': 'ゲームは休んでいます。外の世界が開いています。',
+    'hub.offer': 'いまのあなたに',
+    'hub.another': 'べつのものを',
+    'kind.story': 'ものがたり',
+    'kind.game': 'あそび',
+    'kind.wisdom': 'ことばのたね',
 
     'exp.aqueduct.name': '石の川',
     'exp.aqueduct.desc': 'ローマが水を坂の下へ招いた方法 — そのあと自分で石を回してみよう。',
@@ -199,9 +208,6 @@ const STR = {
     'nat.eve.1': '夜です。詩をひとつ、ゆっくり、二度読もう。まずはこの一句から:',
     'nat.eve.2': '夜です。絵をひとつ見つけて — 本の中でも、壁の上でも — 絵がこちらを見返すまで眺めよう。',
     'nat.eve.art': 'おすすめ: 風景画家を探してみて — カスパー・ダーヴィト・フリードリヒ、広重、フィンランドのペッカ・ハロネン。',
-
-    'poem.title': '芭蕉',
-    'poem.body': '古池や\n蛙飛びこむ\n水の音',
 
     'fb.title': 'ひとこと、いかが?',
     'fb.q': 'どんな気持ちでしたか?',
