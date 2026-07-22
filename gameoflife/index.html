@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Game of Life</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23141311'/%3E%3Cpath d='M8 13C8 8 10 4 14 3 13 8 11 11 8 13Z' fill='%238faf6a'/%3E%3Cpath d='M8 13C8 10 6 7 3 6 4 10 6 12 8 13Z' fill='%235f7a4a'/%3E%3C/svg%3E">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: #141311; min-height: 100%; }
+    body {
+      font-family: 'Courier New', monospace;
+      color: #efe6d0;
+      display: flex; justify-content: center;
+      padding: 24px 16px 48px;
+    }
+    #app { width: 100%; max-width: 560px; }
+
+    /* ── hub ─────────────────────────────────────────── */
+    .hub-header { text-align: center; margin-bottom: 28px; }
+    .hub-header h1 { font-size: 28px; letter-spacing: 3px; color: #efe6d0; }
+    .tagline { margin-top: 8px; color: #a89b7f; font-size: 14px; }
+    .lang-row { margin-top: 14px; display: flex; gap: 8px; justify-content: center; }
+    .lang-btn {
+      font-family: inherit; font-size: 12px; padding: 4px 10px; cursor: pointer;
+      background: none; color: #a89b7f; border: 1px solid #4a4438;
+    }
+    .lang-btn.active { color: #141311; background: #8faf6a; border-color: #8faf6a; }
+
+    .cards { display: flex; flex-direction: column; gap: 16px; }
+    .card {
+      border: 2px solid #4a4438; padding: 16px 18px; background: #1c1a16;
+      box-shadow: 4px 4px 0 #0a0908;
+    }
+    .card h2 { font-size: 17px; letter-spacing: 1px; color: #c9a84c; }
+    .card p { margin-top: 6px; font-size: 13px; color: #c9bda1; line-height: 1.5; }
+    .played-note { color: #8faf6a !important; font-size: 12px !important; }
+
+    .btn {
+      font-family: inherit; font-size: 14px; letter-spacing: 1px; cursor: pointer;
+      margin-top: 12px; padding: 8px 20px;
+      background: #5f7a4a; color: #efe6d0; border: none;
+      box-shadow: 3px 3px 0 #2c3a22;
+    }
+    .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #2c3a22; }
+    .link-btn {
+      font-family: inherit; font-size: 12px; cursor: pointer; margin-top: 20px;
+      background: none; border: none; color: #a89b7f; text-decoration: underline;
+      display: block;
+    }
+    .cycle-hint { margin-top: 24px; text-align: center; font-size: 12px; color: #6e654f; font-style: italic; }
+
+    /* ── experiences ─────────────────────────────────── */
+    .exp { display: flex; flex-direction: column; align-items: center; }
+    .screen-wrap { width: 100%; }
+    .pixel-screen {
+      display: block; width: 100%; aspect-ratio: 3 / 2;
+      image-rendering: pixelated; image-rendering: crisp-edges;
+      border: 2px solid #4a4438; box-shadow: 4px 4px 0 #0a0908;
+      touch-action: manipulation;
+    }
+    .exp-text {
+      margin-top: 18px; font-size: 15px; line-height: 1.7; color: #e6dcc2;
+      min-height: 72px; width: 100%; white-space: pre-line;
+    }
+    .exp-text p + p { margin-top: 10px; }
+    .exp-buttons { margin-top: 14px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+    .back-btn { margin-top: 26px; }
+    .nature-note { color: #8faf6a; font-style: italic; }
+
+    /* ── panels / overlay ────────────────────────────── */
+    .panel {
+      border: 2px solid #4a4438; background: #1c1a16; padding: 22px;
+      box-shadow: 4px 4px 0 #0a0908;
+    }
+    .panel h2 { color: #c9a84c; font-size: 17px; letter-spacing: 1px; }
+    .panel p { margin-top: 10px; font-size: 14px; line-height: 1.6; color: #e6dcc2; }
+    .overlay {
+      position: fixed; inset: 0; z-index: 40;
+      background: rgba(10, 9, 8, 0.88);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .interlude { max-width: 460px; border-color: #5f7a4a; }
+    .poem { margin-top: 14px; border-left: 3px solid #5f7a4a; padding-left: 14px; }
+    .poem-body { white-space: pre-line; color: #efe6d0 !important; }
+    .poem-title { font-size: 12px !important; color: #a89b7f !important; }
+
+    /* ── feedback ────────────────────────────────────── */
+    .leaf-row { margin-top: 12px; display: flex; gap: 6px; }
+    .leaf-btn {
+      font-size: 22px; background: none; border: none; cursor: pointer;
+      filter: grayscale(1) brightness(0.6); padding: 2px;
+    }
+    .leaf-btn.lit { filter: none; }
+    .fb-text {
+      margin-top: 14px; width: 100%; min-height: 64px; resize: vertical;
+      font-family: inherit; font-size: 13px; padding: 8px;
+      background: #141311; color: #efe6d0; border: 1px solid #4a4438;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module" src="js/main.js?v=1"></script>
+</body>
+</html>
