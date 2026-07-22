@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#000000">
   <title>Hyper Dagger</title>
-  <link rel="manifest" href="manifest.webmanifest?v=30">
+  <link rel="manifest" href="manifest.webmanifest?v=31">
   <link rel="icon" href="favicon.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <style>
@@ -209,12 +209,12 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=30"></script>
+  <script type="module" src="js/main.js?v=31"></script>
   <script>
     // Offline install: same ?v= discipline as the modules — the token flows
     // into the worker and names its cache, so each release rotates cleanly.
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js?v=30').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=31').catch(() => {});
     }
   </script>
 </body>

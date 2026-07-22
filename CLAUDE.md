@@ -111,6 +111,7 @@ paperboy/       # Paper Route — Dawn Run (Paperboy clone, toko-drop art, new p
     audio.js    # WebAudio bleep kit (throw/deliver/smash/pickup/crash/day-clear)
 hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel enemies
   index.html
+  voxel-lab.html        # Model/style workbench — real VoxelSprite code, palette+layer editor
   manifest.webmanifest  # PWA install (fullscreen/landscape, voxel-skull icons)
   sw.js       # Offline service worker — tokened cache-first, precached module graph
   vendor/     # Vendored three.js r167 (module + jsm postprocessing/shaders closure)
@@ -298,6 +299,16 @@ fleeting and demand a continuous chain. The tier drives a HUD badge (`#style` ra
 alongside threat count and run progress), and only **S+** rank-ups toast/flourish so
 lower crossings never clobber an enemy-debut announcement. `stylePeakIdx` is the
 run-end "peak rank" recap line. Debug: `__hd.debug.addStyle(n)` / `getStyle()`.
+
+**Voxel Lab (`voxel-lab.html` + `js/voxel-lab.js`):** standalone workbench importing
+the real `voxel.js` (never fork it) — model picker over `MODELS`, detail ladder,
+per-key palette editor (`{hex, glow}` UI pairs; `glow > 1` emits the HDR `[r,g,b]`
+array form, all in linear space to round-trip `paletteEntryToUi`/`uiToPaletteEntry`
+exactly), CHIP/BURST/FLASH tests against live `VoxelSprite`/`DebrisPool`, a LAYERS
+textarea (unknown letters auto-add white palette rows), and COPY MODEL JSON exporting
+a `MODELS`-ready def. `window.__lab` exposes `{sprite, debris, setModel, setDetail,
+getState}` for tests. Not precached by the SW (dev tool); its assets carry the same
+release `?v=` token as the game.
 
 **Instanced projectiles (toko-drop v189 pattern):** `OrbPool`/`DaggerPool`/`GemPool`
 each render as ONE `InstancedMesh` (1 draw call per pool vs up to 530 individual
