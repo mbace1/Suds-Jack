@@ -5,15 +5,15 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=30';
-import { Player } from './player.js?v=30';
-import { DaggerPool } from './daggers.js?v=30';
-import { GemPool } from './gems.js?v=30';
-import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail } from './voxel.js?v=30';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=30';
-import { OrbPool } from './bullets.js?v=30';
-import { AudioKit } from './audio.js?v=30';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=30';
+import { InputManager } from './input.js?v=31';
+import { Player } from './player.js?v=31';
+import { DaggerPool } from './daggers.js?v=31';
+import { GemPool } from './gems.js?v=31';
+import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail } from './voxel.js?v=31';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=31';
+import { OrbPool } from './bullets.js?v=31';
+import { AudioKit } from './audio.js?v=31';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=31';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
