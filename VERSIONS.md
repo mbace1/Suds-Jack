@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v195 — 2026-07-22
+**Cabinets get their looks back under WEBGPU — RetroPass TSL port (M7 parity complete)**
+- **The last beta parity gap closes**: the retro cabinet pass (palette quantization, posterize + paint blur, bright-pass glow, scanlines, contrast/saturation) now runs under the flag as a TSL node graph — same low-res render target, same fullscreen triangle, same math. The v191 bypass guards are gone; cabinets look like cabinets on both renderers
+- **The NES palette search is unrolled in JS** over the fixed 16 entries — no palette texture, no shader loop needed under the node pipeline
+- **Two hard-won debugging lessons baked in**: (1) a node graph computes every branch, so the posterize divisor must stay finite when `posterize` is 0 — the GLSL's `if` guard hid a ÷0 that NaN-poisoned the whole pass black; (2) TSL `ConditionalNode` (`select`) black-screened and device-lost the WebGL2 backend, so the graph uses **zero conditionals** — every GLSL `if` is a `step()` mask + `mix()` blend with exact 0/1 semantics
+- Also: v194's `transformedNormalView` deprecation resolved via a `normalView` shim
+- Verified headless: full graph renders on preview/gaundrop/tokotron profiles (pixel-verified against classic: flag TOKOTRON 2.65 avg vs classic 2.9); TOKOTRON + GAUNDROP cabinet runs live under flag AND classic with RT sized, 16-entry palette armed, 0 errors
+- Cache-bust `?v=148` → `?v=149`; HUD label → v195
+
+---
+
 ## v194 — 2026-07-22
 **The gels wobble under WEBGPU — full TSL port of the goo FX (M7 gel push, part 1)**
 - **The biggest beta gap closes**: enemies and the player were satin-but-still under the flag because the goo FX live in `onBeforeCompile` GLSL, which the node pipeline ignores. The whole displacement family — ambient wobble, directional **hit ripple**, pre-death **tear**, dash **squash-stretch** — now also exists as a TSL `positionNode` graph, and the satin **SSS glow** as an `emissiveNode` term

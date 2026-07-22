@@ -9,7 +9,7 @@
   <title>Toko Drop</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="manifest" href="manifest.webmanifest?v=148">
+  <link rel="manifest" href="manifest.webmanifest?v=149">
   <meta property="og:title" content="TOKO DROP">
   <meta property="og:description" content="Twin-stick bullet-hell survival — dodge the goo, mow the mobs. Big bubbles! Big prizes!">
   <meta property="og:image" content="https://mbace1.github.io/Suds-Jack/toko-drop/logo.png">
@@ -98,17 +98,17 @@
     (function () {
       var gpu = false;
       try { gpu = localStorage.getItem('tokoDropGpu') === '1'; } catch (e) {}
-      var three = gpu ? './vendor/three.webgpu.min.js?v=148'
-                      : './vendor/three.module.min.js?v=148';
+      var three = gpu ? './vendor/three.webgpu.min.js?v=149'
+                      : './vendor/three.module.min.js?v=149';
       document.write('<script type="importmap">' + JSON.stringify({
         imports: {
           'three': three,
-          'three/addons/geometries/RoundedBoxGeometry.js': './vendor/jsm/geometries/RoundedBoxGeometry.js?v=148',
+          'three/addons/geometries/RoundedBoxGeometry.js': './vendor/jsm/geometries/RoundedBoxGeometry.js?v=149',
           'three/addons/': './vendor/jsm/'
         }
       }) + '<\/script>');
     })();
   </script>
-  <script type="module" src="js/main.js?v=148"></script>
+  <script type="module" src="js/main.js?v=149"></script>
 </body>
 </html>
