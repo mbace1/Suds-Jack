@@ -1,14 +1,15 @@
 // The Forest Path — a short branching walk in pixel scenes, ending with a
 // guided four-breath pause. The interactivity is choice, the reward is calm.
 
-import { PixelScreen } from '../pixel.js?v=1';
-import { PAL } from '../palette.js?v=1';
+import { PixelScreen } from '../pixel.js?v=2';
+import { PAL } from '../palette.js?v=2';
 
 const BREATHS = 4;
 const BREATH_SEC = 4;   // per half: 4 s in, 4 s out
 
 export const forest = {
   id: 'forest',
+  kind: 'story',
 
   start(host, ctx) {
     const { t, audio, onComplete } = ctx;

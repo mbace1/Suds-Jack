@@ -9,6 +9,17 @@ minute, and in the evening (18:00–05:00 local) read a poem or look at a
 painting rather than go out in the dark. Accepting the invitation resets the
 cycle; declining leaves it standing for the next visit.
 
+**The hub is zen.** It never shows a menu — it offers ONE experience at a
+time, drawn from the registry by the content mix (**70% stories / 20% games /
+10% kernels of wisdom**, preferring things not yet visited today), with a
+quiet "something else, perhaps" link for a single redraw. A three-dot row
+makes the cycle visible: two breaths of play, then the `~` rest.
+
+**Content crosses cultures.** `js/poems.js` is a pool of public-domain poems
+— Bashō, Issa, Eino Leino, Wordsworth — each carried in all three languages,
+so a Japanese haiku can arrive in Finnish and a Finnish nocturne in Japanese.
+Evening invitations rotate through the pool regardless of source culture.
+
 ## Playing
 
 No build step. Open `gameoflife/index.html` in a browser, or serve the repo
@@ -20,10 +31,12 @@ switchable in the hub, persisted in `localStorage`.
 
 ## Current experiences
 
-| id | name | shape |
-|----|------|-------|
-| `aqueduct` | The Stone River | Visual story of Roman aqueducts → rotate-the-stones channel puzzle (3 levels) → *go find real water flowing downhill* |
-| `forest` | The Forest Path | Branching pixel walk → guided four-breath pause → *take the walk for real* |
+| id | kind | name | shape |
+|----|------|------|-------|
+| `aqueduct` | game | The Stone River | Visual story of Roman aqueducts → rotate-the-stones channel puzzle (3 levels) → *go find real water flowing downhill* |
+| `forest` | story | The Forest Path | Branching pixel walk → guided four-breath pause → *take the walk for real* |
+
+New content should keep the registry near the 70/20/10 story/game/wisdom mix.
 
 ## Architecture (what a new experience needs)
 
@@ -31,8 +44,9 @@ switchable in the hub, persisted in `localStorage`.
 gameoflife/
   index.html            shell + all CSS
   js/
-    main.js             hub, routing, rest-cycle, feedback + interlude overlays
+    main.js             zen hub (one weighted offering), routing, rest-cycle, overlays
     i18n.js             every user-facing string, fi/en/ja (en is the fallback)
+    poems.js            cross-cultural public-domain poem pool, all three languages
     palette.js          single source of truth for all colours
     pixel.js            PixelScreen: 192×128 canvas upscaled with hard pixels
     storage.js          localStorage state: completions, cycle counter, feedback
@@ -43,10 +57,11 @@ gameoflife/
       forest.js         ctx = { t, audio, onComplete }; start returns { destroy }
 ```
 
-Adding an experience is three edits: a module in `js/experiences/`, one entry
-in `REGISTRY` in `main.js`, and its strings (all three languages) in
-`i18n.js`. Everything else — cards, completion tracking, feedback, the rest
-cycle — comes for free.
+Adding an experience is three edits: a module in `js/experiences/` (exporting
+`id` and a `kind` of `story`/`game`/`wisdom`), one entry in `REGISTRY` in
+`main.js`, and its strings (all three languages) in `i18n.js`. Everything
+else — the offering draw, completion tracking, feedback, the rest cycle —
+comes for free.
 
 ## Testing loop
 

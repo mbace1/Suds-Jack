@@ -1,20 +1,38 @@
 // The Game of Life — hub, routing, and the rest-cycle.
 // Flow: hub → experience → feedback → (every 2nd finish: nature interlude) → hub.
+// The hub is zen: it offers ONE experience at a time, drawn from the registry
+// by the content mix (70% story / 20% game / 10% wisdom), preferring things
+// not yet visited today. A quiet "something else" link redraws once per mood.
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
-// + its strings in i18n.js. Nothing else changes.
+// (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=1';
-import { PAL } from './palette.js?v=1';
-import * as store from './storage.js?v=1';
-import * as audio from './audio.js?v=1';
-import { pickInterlude, isEvening } from './nature.js?v=1';
-import { aqueduct } from './experiences/aqueduct.js?v=1';
-import { forest } from './experiences/forest.js?v=1';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=2';
+import { PAL } from './palette.js?v=2';
+import * as store from './storage.js?v=2';
+import * as audio from './audio.js?v=2';
+import { pickInterlude, isEvening } from './nature.js?v=2';
+import { aqueduct } from './experiences/aqueduct.js?v=2';
+import { forest } from './experiences/forest.js?v=2';
 
 const REGISTRY = [aqueduct, forest];
+const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
 
 const app = document.getElementById('app');
-let current = null;   // active experience handle
+let current = null;    // active experience handle
+let offering = null;   // the experience currently offered by the hub
+
+// weighted draw over the kinds actually present, preferring unvisited-today;
+// `not` excludes the current offering so "something else" always changes
+function drawOffering(not = null) {
+  const fresh = REGISTRY.filter(e => store.timesPlayedToday(e.id) === 0 && e !== not);
+  const pool = fresh.length ? fresh : REGISTRY.filter(e => e !== not);
+  if (!pool.length) return not;
+  let total = 0;
+  const weights = pool.map(e => { const w = KIND_WEIGHT[e.kind] ?? 0.1; total += w; return w; });
+  let r = Math.random() * total;
+  for (let i = 0; i < pool.length; i++) { r -= weights[i]; if (r <= 0) return pool[i]; }
+  return pool[pool.length - 1];
+}
 
 // language: stored pref → browser hint → English
 {
@@ -49,21 +67,34 @@ function showHub() {
   app.appendChild(header);
 
   const resting = store.interludeDue();
-  const cards = el('div', 'cards');
-  for (const exp of REGISTRY) {
-    const card = el('div', 'card');
-    const today = store.timesPlayedToday(exp.id);
-    card.append(
-      el('h2', '', t(`exp.${exp.id}.name`)),
-      el('p', '', t(`exp.${exp.id}.desc`)),
-    );
-    if (today > 0) card.appendChild(el('p', 'played-note', `✓ ${t('hub.done.today')}`));
-    const b = el('button', 'btn', store.timesPlayed(exp.id) ? t('hub.again') : t('hub.play'));
-    b.onclick = () => startExperience(exp);
-    card.appendChild(b);
-    cards.appendChild(card);
+
+  // the cycle, made visible: two breaths of play, then a rest
+  const dots = el('div', 'cycle-dots');
+  const done = Math.min(2, store.getState().sinceInterlude);
+  for (let i = 0; i < 2; i++) dots.appendChild(el('span', 'dot' + (i < done ? ' full' : '')));
+  dots.appendChild(el('span', 'dot rest' + (resting ? ' full' : ''), '~'));
+  app.appendChild(dots);
+
+  // one offering, not a menu
+  if (!offering) offering = drawOffering();
+  const exp = offering;
+  const card = el('div', 'card offering');
+  card.append(
+    el('p', 'offer-note', `${t('hub.offer')} · ${t(`kind.${exp.kind}`)}`),
+    el('h2', '', t(`exp.${exp.id}.name`)),
+    el('p', '', t(`exp.${exp.id}.desc`)),
+  );
+  if (store.timesPlayedToday(exp.id) > 0) card.appendChild(el('p', 'played-note', `✓ ${t('hub.done.today')}`));
+  const b = el('button', 'btn', store.timesPlayed(exp.id) ? t('hub.again') : t('hub.play'));
+  b.onclick = () => startExperience(exp);
+  card.appendChild(b);
+  app.appendChild(card);
+
+  if (REGISTRY.length > 1) {
+    const other = el('button', 'link-btn another-btn', t('hub.another'));
+    other.onclick = () => { audio.step(); offering = drawOffering(exp); showHub(); };
+    app.appendChild(other);
   }
-  app.appendChild(cards);
 
   app.appendChild(el('p', 'cycle-hint', resting ? t('hub.rested') : t('hub.cycle.hint')));
 
@@ -90,6 +121,7 @@ function startExperience(exp) {
     audio,
     onComplete() {
       store.recordCompletion(exp.id);
+      offering = null;   // the hub offers something fresh next time
       showFeedback(exp.id, showHub);
     },
   });
@@ -148,7 +180,11 @@ function showInterlude() {
   );
   if (pick.poem) {
     const po = el('div', 'poem');
-    po.append(el('p', 'poem-body', t('poem.body')), el('p', 'poem-title', t('poem.title')));
+    const body = pick.poem.body[getLang()] ?? pick.poem.body.en;
+    po.append(
+      el('p', 'poem-body', body),
+      el('p', 'poem-title', `— ${pick.poem.author}, ${pick.poem.year}`),
+    );
     box.appendChild(po);
   }
   if (pick.artNote) box.appendChild(el('p', 'nature-note', t('nat.eve.art')));

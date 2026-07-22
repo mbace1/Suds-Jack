@@ -69,14 +69,20 @@ caveat as paperboy.
 
 ### The Game of Life (`gameoflife/`)
 **Mini games and interactive stories that always revert to going back to nature.**
-Minimalist pixel experiences (canvas 2D, no three.js, no build step) played from a hub;
-after every 2nd finished experience the hub *rests* and shows a nature invitation instead
-(evening 18:00–05:00 swaps outdoor prompts for a poem / look-at-art prompt). Trilingual
-fi/en/ja — every string in `js/i18n.js` (en fallback), browser-detected, persisted.
-Experiences export `{ id, start(host, ctx) }` (ctx = `{t, audio, onComplete}`, start
-returns `{destroy}`) and register in `REGISTRY` in `main.js`; current roster: `aqueduct`
-(Roman aqueduct story → rotate-stones channel puzzle, BFS flow with live partial water)
-and `forest` (branching walk → guided 4-breath finale). `pixel.js` gives a 192×128
+Minimalist pixel experiences (canvas 2D, no three.js, no build step). The hub is **zen**:
+never a menu — ONE offering at a time, drawn weighted by the content mix (**70% story /
+20% game / 10% wisdom**, preferring unvisited-today; "something else, perhaps" redraws),
+with a 3-dot row (two breaths of play, then `~` rest). After every 2nd finished
+experience the hub *rests* and shows a nature invitation instead (evening 18:00–05:00
+swaps outdoor prompts for a poem / look-at-art prompt). Evening poems come from
+`js/poems.js`, a **cross-cultural pool** (Bashō/Issa/Leino/Wordsworth, each in all three
+languages — a haiku can arrive in Finnish). Trilingual fi/en/ja — every string in
+`js/i18n.js` (en fallback), browser-detected, persisted. Experiences export
+`{ id, kind, start(host, ctx) }` (kind = story|game|wisdom; ctx = `{t, audio,
+onComplete}`, start returns `{destroy}`) and register in `REGISTRY` in `main.js`;
+current roster: `aqueduct` (game — Roman aqueduct story → rotate-stones channel puzzle,
+BFS flow with live partial water) and `forest` (story — branching walk → guided
+4-breath finale). `pixel.js` gives a 192×128
 `PixelScreen` upscaled with `image-rendering: pixelated`; `palette.js` is the single
 colour source; `audio.js` is a quiet WebAudio kit; `storage.js` keeps completions /
 cycle counter / 1–5-leaf feedback in `localStorage` (`golState`). `window.__gol` exposes
