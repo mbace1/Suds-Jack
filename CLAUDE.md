@@ -156,10 +156,16 @@ hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel
 are hex ints, or `[r,g,b]` arrays with components > 1 for **HDR glow voxels** (eyes,
 totem veins) that trip the bloom threshold while bone/body stays matte. `VoxelSprite`
 bakes a model into one `InstancedMesh` (per-voxel `setColorAt`; hit-flash brightens
-`material.color`, which multiplies every instance). `parseModel(def, subdivide)` splits
-each source voxel into subdivide³ minis — global detail 2 (×8) by default via
-`setVoxelDetail` (ceiling 4 = ×64), `detailBoost: 1` on the Leviathan, ×1 on the LOW
-perf tier (future spawns only). Player override: pause row VOXEL AUTO/1X/8X/27X/64X
+`material.color`, which multiplies every instance) and injects a **living-lattice
+vertex shader** (onBeforeCompile, shared program via `customProgramCacheKey`,
+per-sprite `uniforms`): body breathe ~3%, traveling surface ripple, per-voxel size
+shimmer — amplitude = per-model `def.wobble` (totem 0.35, hand 0.3, leviathan 0.7,
+default 1) + `flashK` kick on hits; `update(dt)` advances `animT`. Zero-scale (dead)
+voxels stay dead — offsets multiply through the instance matrix.
+`parseModel(def, subdivide)` splits
+each source voxel into subdivide³ minis — **global detail 4 (×64) is the design
+default** via `setVoxelDetail`; the governor ladder hands AUTO spawns
+[×64, ×27, ×8, ×8, ×1] by perf tier, `detailBoost: 1` on the Leviathan. Player override: pause row VOXEL AUTO/1X/8X/27X/64X
 (`opts.detail`); the pause header shows ~fps + live voxel count as a benchmark. `VoxelSprite.chip(worldPoint, n)` scales the n nearest alive
 voxels to zero (chip damage / bullet holes; ≥4 voxels always survive) and returns them
 for debris; `worldVoxels()` excludes dead voxels so death bursts throw only what's
@@ -329,7 +335,7 @@ FULL composer frame (async, one rAF): `renderer.info` auto-resets on every inter
 pass, so a naive read only sees the final output quad.
 
 **Render / feel:** ACES tone mapping + `EffectComposer` (`RenderPass` →
-`AfterimagePass` 0.72 (HYPERDEMON motion smear) → `UnrealBloomPass` 0.7/0.45/0.6 →
+`AfterimagePass` 0.72 (HYPERDEMON motion smear) → `UnrealBloomPass` 0.5/0.4/0.6 (eased so voxel cells read) →
 chromatic-aberration `ShaderPass` → dash-speedlines `ShaderPass` (radial spokes driven
 by `dashK`) → impact-ripple `ShaderPass` (damped radial UV wave via `triggerRipple(amp)`
 on heavy kills / HYPER hits / death; both passes gated `opts.motion && tier.smear`) →
