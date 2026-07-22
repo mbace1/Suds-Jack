@@ -190,6 +190,24 @@ too, so luring is always a legal tactic).*
   price printed on the card).
 - **Graze-chain heat meter** if M1 data shows graze engagement.
 
+## M7 — Graphics track (WebGPU arc)
+
+Shipped so far: v189 instanced bullets, v190 instanced splats, v191 node
+pipeline behind the `WEBGPU (BETA)` toggle, v192 real adaptive backend on
+three r180 (classic stays r167), v193 motion trails off under the flag
+(field feedback: "the trails look off").
+
+- **Promotion criterion (user, 2026-07-22): WEBGPU stays experimental until
+  the flag path really pushes the gelation look and explosion splatter** —
+  "not a huge leap" otherwise. The slime-fizz bubbling is a keeper in both
+  paths ("great visual for simplistic communication").
+- Remaining arc steps, in order:
+  1. **Gel parity + push**: TSL port of the goo wobble/SSS (`onBeforeCompile`
+     is GLSL-only) — then go PAST parity: thicker transmission, wobblier
+     domes, juicier explosion splatter under the flag.
+  2. **RetroPass TSL port** (cabinets render raw under the flag today).
+  3. Revisit promotion once 1–2 land and the field test says the look wins.
+
 ---
 
 *Maintained alongside `GDD.md` (design truths) and `VERSIONS.md` (what
