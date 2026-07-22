@@ -275,6 +275,74 @@ export class VoxelSprite {
     mesh.instanceColor.needsUpdate = true;
     this.mesh = mesh;
     this.flashK = 0;
+
+    // Integer grid coords + lookup map for connectivity (chunk detachment).
+    // All voxel coords sit on one ms-lattice, so offsets from the min corner
+    // round to clean integers; +1 margin keeps neighbor keys non-negative.
+    let mx = Infinity, my = Infinity, mz = Infinity;
+    for (const v of this.voxels) {
+      mx = Math.min(mx, v.x); my = Math.min(my, v.y); mz = Math.min(mz, v.z);
+    }
+    const inv = 1 / this.size;
+    this.grid = new Map();
+    this.voxels.forEach((v, i) => {
+      v.gx = Math.round((v.x - mx) * inv) + 1;
+      v.gy = Math.round((v.y - my) * inv) + 1;
+      v.gz = Math.round((v.z - mz) * inv) + 1;
+      this.grid.set(v.gx + v.gy * 1024 + v.gz * 1048576, i);
+    });
+  }
+
+  /** After chips carve the model, voxel islands no longer 6-connected to the
+   *  main body break away: they die here and are returned as CLUSTERS of
+   *  {pos, color} world voxels so the caller can throw each one as a chunk
+   *  of debris with a shared impulse. The largest component always stays. */
+  detachIslands() {
+    if (this.aliveCount <= 4) return [];
+    const comp = new Int32Array(this.voxels.length).fill(-1);
+    const sizes = [];
+    const stack = [];
+    for (let i = 0; i < this.voxels.length; i++) {
+      if (!this.voxels[i].alive || comp[i] !== -1) continue;
+      const c = sizes.length;
+      sizes.push(0);
+      comp[i] = c;
+      stack.push(i);
+      while (stack.length) {
+        const j = stack.pop();
+        sizes[c]++;
+        const v = this.voxels[j];
+        for (let n = 0; n < 6; n++) {
+          const k = v.gx + (n === 0) - (n === 1)
+            + (v.gy + (n === 2) - (n === 3)) * 1024
+            + (v.gz + (n === 4) - (n === 5)) * 1048576;
+          const m = this.grid.get(k);
+          if (m !== undefined && this.voxels[m].alive && comp[m] === -1) {
+            comp[m] = c;
+            stack.push(m);
+          }
+        }
+      }
+    }
+    if (sizes.length <= 1) return [];
+    let best = 0;
+    for (let c = 1; c < sizes.length; c++) if (sizes[c] > sizes[best]) best = c;
+    if (sizes[best] < 4) return []; // never detach the body down past the chip floor
+    this.mesh.updateWorldMatrix(true, false);
+    const clusters = sizes.map(() => []);
+    for (let i = 0; i < this.voxels.length; i++) {
+      if (comp[i] === -1 || comp[i] === best) continue;
+      const v = this.voxels[i];
+      v.alive = false;
+      this.aliveCount--;
+      clusters[comp[i]].push({
+        pos: _s.set(v.x, v.y, v.z).applyMatrix4(this.mesh.matrixWorld).clone(),
+        color: v.color,
+      });
+      this.mesh.setMatrixAt(i, _m.makeScale(0, 0, 0));
+    }
+    this.mesh.instanceMatrix.needsUpdate = true;
+    return clusters.filter(c => c.length);
   }
 
   /** Knock out up to n alive voxels nearest to worldPoint (a dagger impact),

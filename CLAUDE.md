@@ -160,7 +160,12 @@ perf tier (future spawns only). Player override: pause row VOXEL AUTO/1X/8X/27X/
 (`opts.detail`); the pause header shows ~fps + live voxel count as a benchmark. `VoxelSprite.chip(worldPoint, n)` scales the n nearest alive
 voxels to zero (chip damage / bullet holes; ≥4 voxels always survive) and returns them
 for debris; `worldVoxels()` excludes dead voxels so death bursts throw only what's
-left. `DebrisPool.burst` stride-samples inputs to ~170 gibs (size ×∛stride). `DebrisPool` is a single 1600-cube
+left. Sprites keep an integer voxel grid (`gx/gy/gz` + Map, +1 margin so neighbor keys
+stay non-negative); `detachIslands()` (called after in-game chips and the lab's CHIP)
+flood-fills 6-connected alive components — every island except the largest dies and is
+returned as clusters of world voxels the caller throws as whole chunks (shared impulse,
+stride-cap 60, size ×∛stride); the largest component < 4 aborts detachment so the chip
+floor holds. `DebrisPool.burst` stride-samples inputs to ~170 gibs (size ×∛stride). `DebrisPool` is a single 1600-cube
 `InstancedMesh`: gravity −28, floor bounce ×−0.38 with friction, Euler tumble, shrink-out
 over the last 0.3 s; `burst(worldVoxels, …)` explodes a dead enemy's actual voxels
 outward from their centroid plus the killing dagger's impulse.
