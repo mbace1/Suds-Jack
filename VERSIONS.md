@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v192 — 2026-07-22
+**WEBGPU (BETA) goes real — the flag build jumps to three r180, adaptive backend (user: "try webGPU")**
+- **The true WebGPU backend is unlocked**: v191 pinned `forceWebGL` because r167's WGSL codegen fails today's strict validation. The flag path now ships **three@0.180.0** (newest that fits current Chromium — r185 already wants a newer browser API), where the codegen is fixed: `WebGPURenderer` takes a **real adapter when the browser grants one** and falls back to its WebGL2 backend on its own when not. The HUD tag reports which (`· WEBGPU` / `· WEBGPU(GL)`)
+- **Classic stays r167** — flag off is byte-identical, as always. Version skew only ever exists behind the beta toggle
+- **r180's split build**: `three.webgpu.min.js` + `three.core.min.js` both vendored; the internal relative import is patched with a `?v=` token (the v118/v119 tokenless-new-path CDN trap) and `bump-version.sh` now rotates it with the rest of the graph; both precached in `sw.js`
+- **TSL namespace shim** (`THREE.TSL ?? THREE`): newer builds moved the TSL functions off the root export — the floor + splat node ports read through the shim so both r167 and r180+ resolve
+- Verified headless: classic untouched; r180's node pipeline renders the full game correctly on the WebGL2 backend (pixel-checked); the real-WebGPU path runs the full game at 59 FPS with **zero WGSL/validation errors** — the test rig's software WebGPU caps buffers at ~3.6 KB so most meshes can't upload there (only rig noise; real adapters allow hundreds of MB), making real hardware the field test for final pixels
+- Cache-bust `?v=145` → `?v=146`; HUD label → v192
+
+---
+
 ## v191 — 2026-07-20
 **WEBGPU (BETA) — the node-pipeline renderer lands, flag-gated (graphics track step 1)**
 - **New OPTIONS → DEV toggle `WEBGPU (BETA)`**: reloads into `three.webgpu.min.js` (same vendored three@0.167.0) and drives the whole game through `WebGPURenderer` — the modern node/TSL pipeline that real WebGPU requires. **For now it runs on the renderer's WebGL2 backend** (`forceWebGL`): the spike found that r167's WGSL codegen emits a runtime-sized uniform array today's browsers reject (strict validation), which whiteouts the true WebGPU backend on real hardware — that backend unlocks in the arc's three-upgrade step. The HUD tag names the live backend (`· WEBGPU(GL)`)
