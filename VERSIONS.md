@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v193 — 2026-07-22
+**WEBGPU beta field feedback — motion trails off under the flag**
+- **User field test of v192**: real WebGPU runs ("things look good. not a huge leap"), but **"the trails look off"** — the motion-trail afterimage ghosts behind fast movers read wrong under the node pipeline. They're now **off under the WEBGPU flag**; classic keeps them exactly as before
+- Sparse trail FX that are gameplay TELLS stay on in both paths: SWIFT elite ribbons, the NEX secret shimmer, vault pings, magnet sparkles
+- The slime-fizz bubbling is confirmed a keeper in both paths ("a great visual for simplistic communication") — untouched
+- **Roadmap: new M7 graphics-track section** records the promotion criterion — WEBGPU stays experimental until the flag path really pushes the **gelation look and explosion splatter** (TSL goo wobble/SSS port and beyond)
+- Cache-bust `?v=146` → `?v=147`; HUD label → v193
+
+---
+
 ## v192 — 2026-07-22
 **WEBGPU (BETA) goes real — the flag build jumps to three r180, adaptive backend (user: "try webGPU")**
 - **The true WebGPU backend is unlocked**: v191 pinned `forceWebGL` because r167's WGSL codegen fails today's strict validation. The flag path now ships **three@0.180.0** (newest that fits current Chromium — r185 already wants a newer browser API), where the codegen is fixed: `WebGPURenderer` takes a **real adapter when the browser grants one** and falls back to its WebGL2 backend on its own when not. The HUD tag reports which (`· WEBGPU` / `· WEBGPU(GL)`)

@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=146';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=146';
-import { Player, PLAYER_RADIUS } from './player.js?v=146';
+import { InputManager } from './input.js?v=147';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=147';
+import { Player, PLAYER_RADIUS } from './player.js?v=147';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=146';
-import { RetroPass } from './retro.js?v=146';
-import { audio } from './audio.js?v=146';
-import { initDesigner } from './designer.js?v=146';
-import { t, getLang, setLang, langs } from './lang.js?v=146';
-import { TUNING } from './tuning.js?v=146';
+         CABINET_STYLE, VIS } from './enemy.js?v=147';
+import { RetroPass } from './retro.js?v=147';
+import { audio } from './audio.js?v=147';
+import { initDesigner } from './designer.js?v=147';
+import { t, getLang, setLang, langs } from './lang.js?v=147';
+import { TUNING } from './tuning.js?v=147';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -3979,7 +3979,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v192' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v193' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -7186,6 +7186,11 @@ function loop() {
   for (const e of enemies) {
     if (!e._motionTrailReady) continue;
     e._motionTrailReady = false;
+    // v193 (field feedback): under the WEBGPU beta the afterimage ghosts read
+    // wrong ("the trails look off") — off entirely there; classic untouched.
+    // Sparse trail FX that are gameplay TELLS (SWIFT ribbons, NEX secret
+    // shimmer, vault pings) stay on in both paths.
+    if (IS_GPU) continue;
     // Spawn one body-radius behind the mover along its velocity (v100) — at
     // the mover's own position the ghost was hidden inside/under the body.
     const p  = e.position;
@@ -8121,6 +8126,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=146').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=147').catch(() => {});
   });
 }
