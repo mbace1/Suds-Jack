@@ -45,8 +45,15 @@ function check(name, cond) {
 
   await page.goto(URL, { waitUntil: 'networkidle' });
 
-  check('hub renders 2 cards', await page.locator('.card').count() === 2);
+  // zen hub: ONE offering at a time, cycle dots, a quiet redraw link
+  check('hub offers exactly 1 card', await page.locator('.card').count() === 1);
+  check('offering is labeled', (await page.locator('.offer-note').textContent()).includes('offered'));
+  check('cycle dots visible', await page.locator('.cycle-dots .dot').count() === 3);
   check('hub title present', (await page.locator('h1').textContent()) === 'The Game of Life');
+  const firstOffer = await page.locator('.card h2').textContent();
+  await page.locator('.another-btn').click();
+  check('"something else" swaps the offering',
+    (await page.locator('.card h2').textContent()) !== firstOffer);
 
   // language switching
   await page.locator('.lang-btn', { hasText: 'Suomi' }).click();
@@ -55,8 +62,9 @@ function check(name, cond) {
   check('japanese title', (await page.locator('h1').textContent()) === '人生のゲーム');
   await page.locator('.lang-btn', { hasText: 'English' }).click();
 
-  // aqueduct: 3 story panels then puzzle
-  await page.locator('.card', { hasText: 'The Stone River' }).locator('.btn').click();
+  // aqueduct: 3 story panels then puzzle (entered via debug handle — the
+  // offering draw is random, so tests navigate deterministically)
+  await page.evaluate(() => __gol.debug.start('aqueduct'));
   for (let i = 0; i < 3; i++) {
     check(`aqueduct story panel ${i + 1} has text`, (await page.locator('.exp-text').textContent()).length > 20);
     await page.locator('.exp-buttons .btn').click();
@@ -72,7 +80,7 @@ function check(name, cond) {
   await page.locator('.back-btn').click();
 
   // forest: choice -> choice -> continue -> breathing starts
-  await page.locator('.card', { hasText: 'The Forest Path' }).locator('.btn').click();
+  await page.evaluate(() => __gol.debug.start('forest'));
   await page.locator('.exp-buttons .btn', { hasText: 'Follow the sound' }).click();
   check('forest scene 2 shown', (await page.locator('.exp-text').textContent()).includes('heron'));
   await page.locator('.exp-buttons .btn').first().click();
@@ -98,7 +106,8 @@ function check(name, cond) {
   const since = await page.evaluate(() => JSON.parse(localStorage.getItem('golState')).sinceInterlude);
   check('cycle counter reset', since === 0);
 
-  // evening variant: poem should be embedded
+  // evening variant: a poem from the cross-cultural pool, in the UI language
+  // (natureIdx 0 -> Bashō's frog haiku, served in English)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState'));
     s.sinceInterlude = 2; s.natureIdx = 0;
@@ -107,7 +116,19 @@ function check(name, cond) {
   await page.clock.install({ time: new Date('2026-07-22T21:00:00') });
   await page.reload({ waitUntil: 'networkidle' });
   const eveTxt = await page.locator('.interlude').textContent();
-  check('evening interlude has poem', eveTxt.includes('rainbow') || eveTxt.includes('Wordsworth'));
+  check('evening poem crosses cultures (Bashō in English)',
+    eveTxt.includes('frog') && eveTxt.includes('Bashō'));
+
+  // same poem, same rest, Finnish UI -> the haiku appears suomeksi
+  await page.locator('.overlay .btn').click();
+  await page.evaluate(() => {
+    const s = __gol.store.getState();   // mutate live state, not localStorage
+    s.sinceInterlude = 2; s.natureIdx = 0;
+    __gol.debug.setLang('fi');          // re-renders the hub; the due interlude reopens
+  });
+  const fiTxt = await page.locator('.interlude').textContent();
+  check('evening poem crosses cultures (Bashō in Finnish)', fiTxt.includes('sammakko'));
+  await page.evaluate(() => __gol.debug.setLang('en'));
 
   // debug handle + feedback store
   await page.locator('.overlay .btn').click();
