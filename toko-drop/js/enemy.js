@@ -1,11 +1,17 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=147';
-import { nesSnap, NEON } from './retro.js?v=147';
+import { TUNING } from './tuning.js?v=148';
+import { nesSnap, NEON } from './retro.js?v=148';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
+// v194: under the WEBGPU (BETA) build the goo FX run as a TSL node graph
+// instead of onBeforeCompile GLSL (which the node pipeline ignores) — same
+// displacement + SSS math, and every uniform is a TSL uniform() node so the
+// FX writers (`gooU.*.value = …`) stay byte-identical across both paths.
+const IS_GPU = typeof THREE.WebGPURenderer === 'function';
+const TSL = IS_GPU ? (THREE.TSL ?? THREE) : null;
 // Shared time uniform — updated once per frame in main.js, propagates to all goo mats.
-export const GOO_TIME = { value: 0 };
+export const GOO_TIME = IS_GPU ? TSL.uniform(0) : { value: 0 };
 // Cabinet graphics pass (v151): which tribute look new materials should take.
 // null = the normal satin pipeline, byte-identical to before.
 export const CABINET_STYLE = { mode: null };
@@ -187,30 +193,35 @@ export function makeSatinMat(color, fam, radius) {
   const M = TUNING.material, famOv = M.families[fam] || {};
   const mode = CABINET_STYLE.mode;
   const col = new THREE.Color(color);
+  // v194: plain materials ignore positionNode/emissiveNode, so the WEBGPU
+  // build constructs the node classes; classic keeps the exact old classes.
+  const LambertMat  = IS_GPU ? THREE.MeshLambertNodeMaterial  : THREE.MeshLambertMaterial;
+  const PhysicalMat = IS_GPU ? THREE.MeshPhysicalNodeMaterial : THREE.MeshPhysicalMaterial;
+  const flat = mode === 'tokotron' || mode === 'loadout' || mode === 'kaikki' || mode === 'gaundrop';
   let mat;
   if (mode === 'tokotron') {
     // Vector-monitor: near-black faces — the neon comes from the inverted-hull
     // shell + the post pass glow. Lambert (not Basic) because the strobe/flash
     // adapters write mat.emissive.
-    mat = new THREE.MeshLambertMaterial({ color: NEON.face, emissive: 0x000000 });
+    mat = new LambertMat({ color: NEON.face, emissive: 0x000000 });
   } else if (mode === 'loadout') {
     // Gunmetal: dark, desaturated flat shading — heavy-industry palette; the
     // posterize in the post pass bands what little gradient Lambert leaves.
     const hsl = { h: 0, s: 0, l: 0 };
     col.getHSL(hsl);
     col.setHSL(hsl.h, hsl.s * 0.6, hsl.l * 0.85);
-    mat = new THREE.MeshLambertMaterial({ color: col, emissive: 0x000000 });
+    mat = new LambertMat({ color: col, emissive: 0x000000 });
   } else if (mode === 'kaikki') {
     // KAIKKI IRTI 3 (v159): grim DOS-VGA street tones — hard desaturate,
     // darker, flat Lambert. The carnage supplies the color.
     const hsl = { h: 0, s: 0, l: 0 };
     col.getHSL(hsl);
     col.setHSL(hsl.h, hsl.s * 0.45, hsl.l * 0.7);
-    mat = new THREE.MeshLambertMaterial({ color: col, emissive: 0x000000 });
+    mat = new LambertMat({ color: col, emissive: 0x000000 });
   } else if (mode === 'gaundrop') {
     // NES: flat color snapped to the 16-entry palette; the post pass snaps
     // everything else (lighting falloff, FX) to the same table.
-    mat = new THREE.MeshLambertMaterial({ color: nesSnap(color), emissive: 0x000000 });
+    mat = new LambertMat({ color: nesSnap(color), emissive: 0x000000 });
   } else {
     if (mode === 'binding') {
       // paint-meets-16bit: desaturate + a lean toward flesh; the posterize in
@@ -220,7 +231,7 @@ export function makeSatinMat(color, fam, radius) {
       col.setHSL(hsl.h, hsl.s * 0.75, hsl.l);
       col.lerp(new THREE.Color(0xb08070), 0.15);
     }
-    mat = new THREE.MeshPhysicalMaterial({
+    mat = new PhysicalMat({
       color: col, metalness: 0,
       roughness: famOv.roughness ?? M.roughness,
       clearcoat: M.clearcoat, clearcoatRoughness: M.clearcoatRoughness,
@@ -232,21 +243,24 @@ export function makeSatinMat(color, fam, radius) {
       attenuationColor: col, attenuationDistance: 1.2,
     });
   }
+  // v194: TSL uniform() nodes share the `{ value }` interface, so under the
+  // WEBGPU build every FX writer (`gooU.*.value = …`) works unchanged.
+  const U = v => IS_GPU ? TSL.uniform(v) : { value: v };
   const u = {
     uTime:   GOO_TIME,
-    uPhase:  { value: Math.random() * Math.PI * 2 },
-    uWobble: { value: fam === 'blob' ? 1.0 : 0.35 },
-    uRadius: { value: radius },
-    uHit:    { value: 0 },
-    uHitDir: { value: new THREE.Vector2(0, 0) },
-    uTear:   { value: 0 },
+    uPhase:  U(Math.random() * Math.PI * 2),
+    uWobble: U(fam === 'blob' ? 1.0 : 0.35),
+    uRadius: U(radius),
+    uHit:    U(0),
+    uHitDir: U(new THREE.Vector2(0, 0)),
+    uTear:   U(0),
     // Directional squash-stretch (v107): unused by enemies (their smear is a
     // scale transform) but the player's dash/walk lunge drives these.
-    uStretch:    { value: 0 },
-    uStretchDir: { value: new THREE.Vector2(0, 0) },
-    uSSS:    { value: M.sss },
-    uSSSColor: { value: col.clone().lerp(new THREE.Color(0xffffff), 0.25) },
-    uLightDir: { value: SUN_DIR.clone() },
+    uStretch:    U(0),
+    uStretchDir: U(new THREE.Vector2(0, 0)),
+    uSSS:    U(M.sss),
+    uSSSColor: U(col.clone().lerp(new THREE.Color(0xffffff), 0.25)),
+    uLightDir: U(SUN_DIR.clone()),
   };
   mat.gooU = u;     // FX uniform access for enemy.js (physical mats have no .uniforms)
   mat.gooFam = fam; // family for applySatinValues overrides
@@ -290,8 +304,43 @@ export function makeSatinMat(color, fam, radius) {
           totalEmissiveRadiance += uSSSColor * (sss + wrap * 0.18 * uSSS);
         }`);
   };
-  if (!mat.isMeshLambertMaterial) SATIN_MATS.add(mat);
+  if (IS_GPU) applyGooNodes(mat, u, flat);
+  if (!flat) SATIN_MATS.add(mat);
   return mat;
+}
+
+// v194: TSL port of the goo FX for the WEBGPU build — the exact GOO_VERT
+// displacement family as a positionNode graph, and the satin SSS glow as an
+// emissiveNode term ADDED to materialEmissive, so the strobe/flash adapters
+// that write `mat.emissive` keep their voice under the node pipeline.
+function applyGooNodes(mat, u, flat) {
+  const { positionLocal, normalLocal, vec3, vec4, float, sin, dot, normalize, clamp,
+          cameraViewMatrix, positionViewDirection, transformedNormalView, materialEmissive } = TSL;
+  const q = positionLocal.div(u.uRadius);
+  const wave = sin(q.x.mul(3.6).add(u.uTime.mul(2.1)).add(u.uPhase))
+    .add(sin(q.y.mul(4.2).add(u.uTime.mul(1.6)).add(u.uPhase.mul(1.3))))
+    .add(sin(q.z.mul(4.8).add(u.uTime.mul(2.5)).add(u.uPhase.mul(0.7))))
+    .mul(0.3333);
+  let p = positionLocal.add(normalLocal.mul(wave).mul(u.uRadius.mul(u.uWobble).mul(0.13)));
+  const hd = dot(normalize(q), vec3(u.uHitDir.x, 0.0, u.uHitDir.y));
+  p = p.add(normalLocal.mul(sin(hd.mul(9.0).sub(float(1.0).sub(u.uHit).mul(16.0))))
+    .mul(u.uHit).mul(0.11).mul(u.uRadius));
+  const te = sin(q.x.mul(15.0).add(u.uTime.mul(34.0)))
+    .add(sin(q.y.mul(17.0).sub(u.uTime.mul(29.0))))
+    .add(sin(q.z.mul(13.0).add(u.uTime.mul(38.0))))
+    .mul(0.3333);
+  p = p.add(normalLocal.mul(te).mul(u.uRadius.mul(u.uTear).mul(0.22)));
+  const sdir = vec3(u.uStretchDir.x, 0.0, u.uStretchDir.y);
+  p = p.add(sdir.mul(dot(p, sdir)).mul(u.uStretch));
+  mat.positionNode = vec3(p.x, p.y.mul(float(1.0).sub(u.uStretch.mul(0.4))), p.z);
+  if (flat) return;   // flat cabinets: wobble only, no SSS (mirrors the GLSL guard)
+  const V = positionViewDirection;
+  const L = normalize(cameraViewMatrix.mul(vec4(u.uLightDir, 0.0)).xyz);
+  const N = normalize(transformedNormalView);
+  const H = normalize(L.add(N.mul(0.45)));
+  const sss  = clamp(dot(V, H.negate()), 0.0, 1.0).pow(2.2).mul(u.uSSS);
+  const wrap = clamp(dot(N, L).mul(0.5).add(0.5), 0.0, 1.0);
+  mat.emissiveNode = materialEmissive.add(u.uSSSColor.mul(sss.add(wrap.mul(0.18).mul(u.uSSS))));
 }
 
 export const EnemyType = {

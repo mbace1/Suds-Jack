@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v194 — 2026-07-22
+**The gels wobble under WEBGPU — full TSL port of the goo FX (M7 gel push, part 1)**
+- **The biggest beta gap closes**: enemies and the player were satin-but-still under the flag because the goo FX live in `onBeforeCompile` GLSL, which the node pipeline ignores. The whole displacement family — ambient wobble, directional **hit ripple**, pre-death **tear**, dash **squash-stretch** — now also exists as a TSL `positionNode` graph, and the satin **SSS glow** as an `emissiveNode` term
+- **Same math, twice**: the node graph is a line-for-line translation of the GLSL; under the flag `makeSatinMat` builds node material classes and every `gooU` uniform is a TSL `uniform()` node sharing the `{ value }` interface — so ALL FX writers (hit ripples, tears, player stretch, designer SSS slider) work unchanged in both paths. `GOO_TIME` follows the same trick
+- The SSS term **adds to `materialEmissive`**, so the strobe/flash adapters that write `mat.emissive` (CUSTODIAN sheen, VOLATILE fuse, teleport strobes) keep their voice under the node pipeline
+- Flat cabinet materials (tokotron/gaundrop/loadout/kaikki lamberts) wobble but skip SSS — mirroring the GLSL guard; `makeGooMat` was confirmed dead code (zero call sites)
+- Verified headless under the flag: gels carry both nodes, the **full 39-type roster + a tokotron lambert** compile and render with 0 errors, frames differ under a static scene (wobble is alive), ripple uniform writes flow clean; classic control renders the same roster with no node graph attached
+- Cache-bust `?v=147` → `?v=148`; HUD label → v194
+
+---
+
 ## v193 — 2026-07-22
 **WEBGPU beta field feedback — motion trails off under the flag**
 - **User field test of v192**: real WebGPU runs ("things look good. not a huge leap"), but **"the trails look off"** — the motion-trail afterimage ghosts behind fast movers read wrong under the node pipeline. They're now **off under the WEBGPU flag**; classic keeps them exactly as before
