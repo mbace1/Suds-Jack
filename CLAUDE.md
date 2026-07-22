@@ -118,8 +118,8 @@ hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel
     main.js     # Scene (grid arena, rainbow sky, afterimage/bloom/chroma), director, combat, HUD, style meter
     voxel.js    # String-art voxel models + parser, VoxelSprite (InstancedMesh), DebrisPool physics
     enemy.js    # Skull/Wraith, Brute, Totem (spawner), Serpent (chain), Spider (thief), Leviathan
-    daggers.js  # Object-pooled dagger projectiles; homing steer at LV 3; segment hit tests
-    gems.js     # DD-style gem drops: ballistic scatter, hover, player magnet, collect
+    daggers.js  # Instanced dagger stream (1 draw call); homing steer at LV 3; segment hit tests
+    gems.js     # DD-style gem drops: ballistic scatter, hover, magnet — one InstancedMesh
     player.js   # First-person controller: yaw/pitch, WASD/stick strafe, jump, dash, head-bob
     input.js    # Pointer-lock mouse+WASD, gamepad (sticks/RT/A/B), or dual touch sticks; tap-vs-hold fire
     audio.js    # WebAudio synth kit (fire/hit/gib/gem/levelup/dash/roar/death + drone + intensity music)
@@ -298,6 +298,16 @@ fleeting and demand a continuous chain. The tier drives a HUD badge (`#style` ra
 alongside threat count and run progress), and only **S+** rank-ups toast/flourish so
 lower crossings never clobber an enemy-debut announcement. `stylePeakIdx` is the
 run-end "peak rank" recap line. Debug: `__hd.debug.addStyle(n)` / `getStyle()`.
+
+**Instanced projectiles (toko-drop v189 pattern):** `OrbPool`/`DaggerPool`/`GemPool`
+each render as ONE `InstancedMesh` (1 draw call per pool vs up to 530 individual
+meshes). Pool items are scene-less `Object3D` dummies — every external
+`.m.position`/lookAt/segment contract is unchanged — with matrices committed per
+frame; `recycle()` re-commits immediately so impacts never leave a one-frame ghost,
+and the gem expiry blink writes a zero-scale matrix. `OrbPool.mat` is still the
+shared material the contrast option retints. `__hd.debug.countDrawCalls()` counts a
+FULL composer frame (async, one rAF): `renderer.info` auto-resets on every internal
+pass, so a naive read only sees the final output quad.
 
 **Render / feel:** ACES tone mapping + `EffectComposer` (`RenderPass` →
 `AfterimagePass` 0.72 (HYPERDEMON motion smear) → `UnrealBloomPass` 0.7/0.45/0.6 →

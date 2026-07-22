@@ -5,15 +5,15 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=29';
-import { Player } from './player.js?v=29';
-import { DaggerPool } from './daggers.js?v=29';
-import { GemPool } from './gems.js?v=29';
-import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail } from './voxel.js?v=29';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=29';
-import { OrbPool } from './bullets.js?v=29';
-import { AudioKit } from './audio.js?v=29';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=29';
+import { InputManager } from './input.js?v=30';
+import { Player } from './player.js?v=30';
+import { DaggerPool } from './daggers.js?v=30';
+import { GemPool } from './gems.js?v=30';
+import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail } from './voxel.js?v=30';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=30';
+import { OrbPool } from './bullets.js?v=30';
+import { AudioKit } from './audio.js?v=30';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=30';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -2135,6 +2135,21 @@ window.__hd = {
     setOpt(k, v) { opts[k] = v; saveOpts(); },
     getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, fov: camera.fov, uRed: floorMat.uniforms.uRed.value }; },
     getVfx() { return { shadows: shadows.count, sparks: sparks.length, speedOn: speedPass.enabled, rippleT, rippleOn: ripplePass.enabled, ember: skyMat.uniforms.uEmber.value }; },
+    // renderer.info auto-resets on every internal composer pass, so reading it
+    // directly only ever sees the last fullscreen quad. Accumulate one whole
+    // frame instead: animate() re-registers its rAF first, so a callback queued
+    // here runs right after the next full composer render.
+    countDrawCalls() {
+      return new Promise(resolve => {
+        renderer.info.autoReset = false;
+        renderer.info.reset();
+        requestAnimationFrame(() => {
+          const calls = renderer.info.render.calls;
+          renderer.info.autoReset = true;
+          resolve(calls);
+        });
+      });
+    },
     ripple(amp) { triggerRipple(amp ?? 1); },
     flyby() { startFlyby(); },
     getFlyby() { return flyby ? { t: flyby.t, parts: flyby.parts.length } : null; },
