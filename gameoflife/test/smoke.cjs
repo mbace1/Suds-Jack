@@ -129,6 +129,20 @@ function check(name, cond) {
     (await page.locator('.exp-text').textContent()).includes('Jokamiehenoikeus'));
   await page.locator('.back-btn').click();
 
+  // stars: trace the Dipper star by star, then find Polaris (coords mirror
+  // DIPPER/POLARIS in experiences/stars.js — 192x128 canvas space)
+  await page.evaluate(() => __gol.debug.start('stars'));
+  check('stars intro shown', (await page.locator('.exp-text').textContent()).includes('seven stars'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Continue' }).click();
+  const sbox = await page.locator('.pixel-screen').boundingBox();
+  const tapPx = (x, y) => page.mouse.click(sbox.x + (x + 0.5) / 192 * sbox.width, sbox.y + (y + 0.5) / 128 * sbox.height);
+  for (const [x, y] of [[26, 46], [44, 36], [60, 34], [74, 38], [78, 58], [102, 62], [100, 38]]) await tapPx(x, y);
+  check('dipper traced (Otava named)', (await page.locator('.exp-text').textContent()).includes('Otava'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Continue' }).click();
+  await tapPx(52, 22);
+  check('Polaris found', (await page.locator('.exp-text').textContent()).includes('Polaris'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');
