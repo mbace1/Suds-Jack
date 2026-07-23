@@ -13,7 +13,9 @@ cycle; declining leaves it standing for the next visit.
 time, drawn from the registry by the content mix (**70% stories / 20% games /
 10% kernels of wisdom**, preferring things not yet visited today), with a
 quiet "something else, perhaps" link for a single redraw. A three-dot row
-makes the cycle visible: two breaths of play, then the `~` rest.
+makes the cycle visible: two breaths of play, then the `~` rest. A living
+pixel sky above the title follows the real hour — dawn, noon sun, dusk,
+stars — so the app itself keeps the day-rhythm it points you toward.
 
 **Content crosses cultures.** `js/poems.js` is a pool of public-domain poems
 — Bashō, Issa, Eino Leino, Wordsworth — each carried in all three languages,
