@@ -90,6 +90,30 @@ function check(name, cond) {
   check('breathing started', /breathe|circle/i.test(breatheTxt));
   await page.locator('.back-btn').click();
 
+  // tern: story advances through a choice
+  await page.evaluate(() => __gol.debug.start('tern'));
+  check('tern scene 1 shown', (await page.locator('.exp-text').textContent()).includes('Arctic'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Leave with the flock' }).click();
+  check('tern choice advances', (await page.locator('.exp-text').textContent()).includes('river of wings'));
+  await page.locator('.back-btn').click();
+
+  // cup: pour until it overflows, then empty it — the wisdom kernel loop
+  await page.evaluate(() => __gol.debug.start('cup'));
+  check('cup scene shown', (await page.locator('.exp-text').textContent()).includes('Nan-in'));
+  for (let i = 0; i < 20; i++) {   // pour until the overflow swaps the button away
+    const pourBtn = page.locator('.exp-buttons .btn', { hasText: 'Pour' });
+    if (await pourBtn.count() === 0) break;
+    await pourBtn.click();
+  }
+  check('cup overflows into the teaching',
+    (await page.locator('.exp-text').textContent()).includes('empty your cup'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Empty the cup' }).click();
+  await page.waitForTimeout(1600);
+  check('cup outro shown', (await page.locator('.exp-text').textContent()).includes('room'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Continue' }).click();
+  check('completion leads to feedback', await page.locator('.leaf-row').count() === 1);
+  await page.locator('.link-btn', { hasText: 'Skip' }).click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');

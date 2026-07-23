@@ -81,8 +81,9 @@ languages — a haiku can arrive in Finnish). Trilingual fi/en/ja — every stri
 `{ id, kind, start(host, ctx) }` (kind = story|game|wisdom; ctx = `{t, audio,
 onComplete}`, start returns `{destroy}`) and register in `REGISTRY` in `main.js`;
 current roster: `aqueduct` (game — Roman aqueduct story → rotate-stones channel puzzle,
-BFS flow with live partial water) and `forest` (story — branching walk → guided
-4-breath finale). `pixel.js` gives a 192×128
+BFS flow with live partial water), `forest` (story — branching walk → guided 4-breath
+finale), `tern` (story — arctic tern migration pole to pole, 2 choices), and `cup`
+(wisdom — Nan-in's overflowing teacup; the player pours until it spills). `pixel.js` gives a 192×128
 `PixelScreen` upscaled with `image-rendering: pixelated`; `palette.js` is the single
 colour source; `audio.js` is a quiet WebAudio kit; `storage.js` keeps completions /
 cycle counter / 1–5-leaf feedback in `localStorage` (`golState`). `window.__gol` exposes

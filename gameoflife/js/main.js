@@ -6,15 +6,17 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=2';
-import { PAL } from './palette.js?v=2';
-import * as store from './storage.js?v=2';
-import * as audio from './audio.js?v=2';
-import { pickInterlude, isEvening } from './nature.js?v=2';
-import { aqueduct } from './experiences/aqueduct.js?v=2';
-import { forest } from './experiences/forest.js?v=2';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=3';
+import { PAL } from './palette.js?v=3';
+import * as store from './storage.js?v=3';
+import * as audio from './audio.js?v=3';
+import { pickInterlude, isEvening } from './nature.js?v=3';
+import { aqueduct } from './experiences/aqueduct.js?v=3';
+import { forest } from './experiences/forest.js?v=3';
+import { tern } from './experiences/tern.js?v=3';
+import { cup } from './experiences/cup.js?v=3';
 
-const REGISTRY = [aqueduct, forest];
+const REGISTRY = [aqueduct, forest, tern, cup];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
 
 const app = document.getElementById('app');
