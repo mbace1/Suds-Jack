@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=150';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=150';
-import { Player, PLAYER_RADIUS } from './player.js?v=150';
+import { InputManager } from './input.js?v=151';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=151';
+import { Player, PLAYER_RADIUS } from './player.js?v=151';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=150';
-import { RetroPass } from './retro.js?v=150';
-import { audio } from './audio.js?v=150';
-import { initDesigner } from './designer.js?v=150';
-import { t, getLang, setLang, langs } from './lang.js?v=150';
-import { TUNING } from './tuning.js?v=150';
+         CABINET_STYLE, VIS } from './enemy.js?v=151';
+import { RetroPass } from './retro.js?v=151';
+import { audio } from './audio.js?v=151';
+import { initDesigner } from './designer.js?v=151';
+import { t, getLang, setLang, langs } from './lang.js?v=151';
+import { TUNING } from './tuning.js?v=151';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1907,6 +1907,11 @@ const RANGED_TYPES = new Set([EnemyType.SPITTOR, EnemyType.FANNER, EnemyType.WEE
 // COMBAT for the pure movement lab. Classic + SMASH runs only, like melee.
 let fluidMode = localStorage.getItem('tokoDropFluid') === '1';
 let fluidRun = false;                              // captured at run start
+// v197: every FLUID wave rolls a movement ARCHETYPE — a shared current that
+// shapes how the whole school moves. Deterministic from (wave + runSeed) so
+// daily runs replay identically and the shared rng stream is untouched.
+const FLUID_ARCHS = ['stream', 'ring', 'pincer'];
+let fluidArch = null;
 // v178 (M6): SMASH TV floor structure — the boss room ends a FLOOR. Each
 // floor re-lights the studio (palette shift), toughens the lattice (budget
 // scales), and opens with a BONUS ROOM: pure loot, doors already open.
@@ -4011,7 +4016,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v196' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v197' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -4740,6 +4745,14 @@ function spawnWave() {
   clearBossAuras();
   for (const p of powerups) p.remove(scene); powerups = [];
   wave++;
+  // v197 FLUID archetypes: name the wave's current so the lab stays legible.
+  if (fluidRun) {
+    fluidArch = FLUID_ARCHS[(wave + runSeed) % 3];
+    milestoneT = 1.2;
+    milestoneText = fluidArch === 'stream' ? 'THE STREAM — RIDE THE CURRENT'
+                  : fluidArch === 'ring'   ? 'THE RING — IT CONTRACTS'
+                  : 'THE PINCER — THEY CUT YOU OFF';
+  } else fluidArch = null;
   const { speedMult, intervalMult } = getWaveScale(wave);
   // Binding fight rooms use the cabinet's own roster (v157) — only BOSS
   // rooms keep the smash schedule (tokotron/gaundrop build their own floods).
@@ -7138,6 +7151,35 @@ function loop() {
         e.position.x += ((cx / gl) * 0.5 + (vx / n) * 0.25) * dt;
         e.position.z += ((cz / gl) * 0.5 + (vz / n) * 0.25) * dt;
       }
+      // ── v197 wave archetype: the shared current that shapes the school ─────
+      if (fluidArch === 'stream') {
+        // one slowly-rotating current the whole wave rides — a river of fish
+        // strafing past you instead of a straight march
+        const ca = wave * 0.9 + VIS.now * 0.15;
+        e.position.x += Math.cos(ca) * 1.2 * dt;
+        e.position.z += Math.sin(ca) * 1.2 * dt;
+      } else if (fluidArch === 'ring') {
+        // shared orbit + their own chase = a spiral that contracts on you
+        const dx = e.position.x - player.position.x;
+        const dz = e.position.z - player.position.z;
+        const d = Math.hypot(dx, dz) || 1;
+        const sgn = wave % 2 === 0 ? 1 : -1;
+        e.position.x += (-dz / d) * sgn * 1.1 * dt;
+        e.position.z += ( dx / d) * sgn * 1.1 * dt;
+      } else if (fluidArch === 'pincer') {
+        // two flanks steer for the points BESIDE you, reading your travel axis —
+        // they want your escape routes, not your back
+        const pvx = player._velX ?? 0, pvz = player._velZ ?? 0;
+        const pm = Math.hypot(pvx, pvz);
+        const ax = pm > 0.5 ? pvx / pm : 1, az = pm > 0.5 ? pvz / pm : 0;
+        const side = (e._fluidSide ??= (Math.random() < 0.5 ? 1 : -1));
+        const tx = player.position.x - az * side * 6;
+        const tz = player.position.z + ax * side * 6;
+        const dx = tx - e.position.x, dz = tz - e.position.z;
+        const d = Math.hypot(dx, dz) || 1;
+        e.position.x += (dx / d) * 1.0 * dt;
+        e.position.z += (dz / d) * 1.0 * dt;
+      }
     }
   }
   for (const e of enemies) {
@@ -8214,6 +8256,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=150').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=151').catch(() => {});
   });
 }

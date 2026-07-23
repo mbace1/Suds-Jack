@@ -7,6 +7,18 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v197 — 2026-07-23
+**FLUID wave archetypes — every wave rolls a movement CURRENT (roadmap follow-up)**
+- **Every FLUID wave now announces its shape**: `THE STREAM — RIDE THE CURRENT` / `THE RING — IT CONTRACTS` / `THE PINCER — THEY CUT YOU OFF`. Deterministic from `(wave + runSeed) % 3`, so daily runs replay identically and the shared rng stream is untouched
+- **STREAM**: the whole school rides one slowly-rotating current — a river of fish strafing past you instead of a straight march
+- **RING**: a shared orbit (direction alternates per wave) layered on their own chase — the wave becomes a spiral that contracts on you
+- **PINCER**: each body picks a flank and steers for the point BESIDE you, reading your travel axis — they hunt your escape routes, not your back
+- Archetype currents stack with v196's dodge/school/split; classic and non-FLUID runs are untouched (`fluidArch` stays null)
+- Verified headless: wave 1 rolls and banners an archetype; STREAM drift measured parallel (dot 1.00); RING motion is purely tangential (0.33u orbit vs 0.00u radial); PINCER flanks split both ways around a still player
+- Cache-bust `?v=150` → `?v=151`; HUD label → v197
+
+---
+
 ## v196 — 2026-07-23
 **FLUID MODE — the movement lab (user direction: a secondary branch about enemy MOTION)**
 - **New OPTIONS toggle `FLUID MODE`** (beside CLOSE COMBAT; stacks with it): a lab where the challenge is how enemies MOVE, not what they shoot
