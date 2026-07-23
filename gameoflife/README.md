@@ -38,7 +38,7 @@ switchable in the hub, persisted in `localStorage`.
 | `tern` | story | The Longest Summer | An arctic tern's pole-to-pole migration, two choices, one astonishing true fact → *follow a real bird out of sight* |
 | `cup` | wisdom | A Cup of Tea | Nan-in's overflowing cup — you do the pouring, the point makes itself → *empty a moment under the sky* |
 | `hanami` | story | Under the Blossoms | Hanami from Emperor Saga's court to Edo's riverbanks; mono no aware is the learning → *find one thing on a tree that will be gone in two weeks* |
-| `berry` | story | The Right to Roam | A Finnish bilberry summer teaching jokamiehenoikeus, rights and their quiet duties → *carry one thing out of your nearest everyone's-place* |
+| `berry` | story | The Right to Roam | A Finnish blueberry summer teaching jokamiehenoikeus, rights and their quiet duties → *carry one thing out of your nearest everyone's-place* |
 
 New content should keep the registry near the 70/20/10 story/game/wisdom mix.
 

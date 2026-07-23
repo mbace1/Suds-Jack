@@ -1,9 +1,9 @@
 // The Right to Roam — jokamiehenoikeus, taught the way it is actually
-// learned: a July bilberry walk with grandmother through somebody else's
+// learned: a July blueberry walk with grandmother through somebody else's
 // forest, which is also everyone's. Ends with the quiet fee the right asks.
 
-import { PixelScreen } from '../pixel.js?v=5';
-import { PAL } from '../palette.js?v=5';
+import { PixelScreen } from '../pixel.js?v=6';
+import { PAL } from '../palette.js?v=6';
 
 const BILBERRY = '#4a3a6b', BILBERRY_LIT = '#6b5a9b', BUCKET = '#c9502e';
 
@@ -63,7 +63,7 @@ export const berry = {
 
     function understory(ground, withBerries, now) {
       scr.px(0, ground, scr.w, 128 - ground, PAL.MOSS_DEEP);
-      for (let i = 0; i < 26; i++) {                    // bilberry shrubs
+      for (let i = 0; i < 26; i++) {                    // blueberry shrubs
         const x = (i * 23) % 190, y = ground + 4 + (i * 11) % (120 - ground);
         scr.px(x, y, 4, 2, PAL.MOSS);
         if (withBerries) scr.px(x + 1, y - 1, 2, 2, i % 3 ? BILBERRY : BILBERRY_LIT);
