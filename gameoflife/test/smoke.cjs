@@ -114,6 +114,13 @@ function check(name, cond) {
   check('completion leads to feedback', await page.locator('.leaf-row').count() === 1);
   await page.locator('.link-btn', { hasText: 'Skip' }).click();
 
+  // hanami: the history story advances through a choice
+  await page.evaluate(() => __gol.debug.start('hanami'));
+  check('hanami scene 1 shown', (await page.locator('.exp-text').textContent()).includes('812'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Sit with the poets' }).click();
+  check('hanami choice advances', (await page.locator('.exp-text').textContent()).includes('poem'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');
@@ -123,6 +130,7 @@ function check(name, cond) {
   await page.clock.install({ time: new Date('2026-07-22T12:00:00') });
   await page.reload({ waitUntil: 'networkidle' });
   check('interlude overlay shown (day)', await page.locator('.overlay').count() === 1);
+  check('hub greets by hour (noon)', (await page.locator('.greet').textContent()) === 'The light is high.');
   const dayTxt = await page.locator('.interlude').textContent();
   check('day prompt is outdoor', dayTxt.includes('wind'));
   await page.locator('.overlay .btn').click();   // "I will" -> consumes interlude

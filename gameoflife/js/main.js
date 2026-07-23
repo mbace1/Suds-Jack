@@ -6,17 +6,18 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=3';
-import { PAL } from './palette.js?v=3';
-import * as store from './storage.js?v=3';
-import * as audio from './audio.js?v=3';
-import { pickInterlude, isEvening } from './nature.js?v=3';
-import { aqueduct } from './experiences/aqueduct.js?v=3';
-import { forest } from './experiences/forest.js?v=3';
-import { tern } from './experiences/tern.js?v=3';
-import { cup } from './experiences/cup.js?v=3';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=4';
+import { PAL } from './palette.js?v=4';
+import * as store from './storage.js?v=4';
+import * as audio from './audio.js?v=4';
+import { pickInterlude, isEvening } from './nature.js?v=4';
+import { aqueduct } from './experiences/aqueduct.js?v=4';
+import { forest } from './experiences/forest.js?v=4';
+import { tern } from './experiences/tern.js?v=4';
+import { cup } from './experiences/cup.js?v=4';
+import { hanami } from './experiences/hanami.js?v=4';
 
-const REGISTRY = [aqueduct, forest, tern, cup];
+const REGISTRY = [aqueduct, forest, tern, cup, hanami];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
 
 const app = document.getElementById('app');
@@ -57,6 +58,7 @@ function showHub() {
   header.append(
     el('h1', '', t('hub.title')),
     el('p', 'tagline', t('hub.tagline')),
+    el('p', 'greet', t(`hub.greet.${daySlot()}`)),
   );
 
   const langRow = el('div', 'lang-row');
@@ -200,6 +202,14 @@ function showInterlude() {
   box.appendChild(actions);
   ov.appendChild(box);
   document.body.appendChild(ov);
+}
+
+// the hub's mood follows the hour, like the invitations do
+function daySlot(h = new Date().getHours()) {
+  if (h >= 5 && h < 11) return 'morning';
+  if (h >= 11 && h < 17) return 'day';
+  if (h >= 17 && h < 22) return 'evening';
+  return 'night';
 }
 
 function el(tag, cls = '', text = '') {

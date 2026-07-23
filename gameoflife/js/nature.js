@@ -3,7 +3,7 @@
 // send you outdoors, evening prompts hand you a poem or a painting instead.
 // Poems come from the cross-cultural pool — any culture, in the UI language.
 
-import { pickPoem } from './poems.js?v=3';
+import { pickPoem } from './poems.js?v=4';
 
 const DAY_PROMPTS = ['nat.day.1', 'nat.day.2', 'nat.day.3'];
 const EVE_PROMPTS = ['nat.eve.1', 'nat.eve.2'];
