@@ -24,9 +24,16 @@ pixel sky above the title follows the real hour — dawn, noon sun, dusk,
 stars — so the app itself keeps the day-rhythm it points you toward.
 
 **Content crosses cultures.** `js/poems.js` is a pool of public-domain poems
-— Bashō, Issa, Eino Leino, Wordsworth — each carried in all three languages,
-so a Japanese haiku can arrive in Finnish and a Finnish nocturne in Japanese.
-Evening invitations rotate through the pool regardless of source culture.
+— Bashō, Issa, Shiki, Eino Leino, Wordsworth — each carried in all three
+languages, so a Japanese haiku can arrive in Finnish and a Finnish nocturne
+in Japanese. Evening invitations rotate through the pool regardless of
+source culture.
+
+**The invitations know the season.** `nature.js` reads the month
+(meteorological seasons, northern hemisphere for now): winter days suggest
+frost and bare-tree silhouettes, spring days buds and birdsong, summer days
+barefoot grass and working shade, autumn days leaf-catching. Evening poems
+prefer the current season's verses.
 
 ## Playing
 

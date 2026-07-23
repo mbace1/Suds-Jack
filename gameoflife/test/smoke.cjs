@@ -162,26 +162,26 @@ function check(name, cond) {
   check('hub greets by hour (noon)', (await page.locator('.greet').textContent()) === 'The light is high.');
   check('living hub scene present', await page.locator('.hub-canvas').count() === 1);
   const dayTxt = await page.locator('.interlude').textContent();
-  check('day prompt is outdoor', dayTxt.includes('wind'));
+  check('day prompt is seasonal (July -> barefoot grass)', dayTxt.includes('grass'));
   await page.locator('.overlay .btn').click();   // "I will" -> consumes interlude
   check('interlude consumed', await page.locator('.overlay').count() === 0);
   const since = await page.evaluate(() => JSON.parse(localStorage.getItem('golState')).sinceInterlude);
   check('cycle counter reset', since === 0);
 
-  // evening variant: a poem from the cross-cultural pool, in the UI language
-  // (natureIdx 0 -> Bashō's frog haiku, served in English)
+  // evening variant: a season-matched poem from the cross-cultural pool, in
+  // the UI language (October + natureIdx 0 -> Wordsworth's rainbow)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState'));
     s.sinceInterlude = 2; s.natureIdx = 0;
     localStorage.setItem('golState', JSON.stringify(s));
   });
-  await page.clock.install({ time: new Date('2026-07-22T21:00:00') });
+  await page.clock.install({ time: new Date('2026-10-22T21:00:00') });
   await page.reload({ waitUntil: 'networkidle' });
   const eveTxt = await page.locator('.interlude').textContent();
-  check('evening poem crosses cultures (Bashō in English)',
-    eveTxt.includes('frog') && eveTxt.includes('Bashō'));
+  check('evening poem is season-aware (autumn pool)',
+    eveTxt.includes('rainbow') && eveTxt.includes('Wordsworth'));
 
-  // same poem, same rest, Finnish UI -> the haiku appears suomeksi
+  // same poem, same rest, Finnish UI -> Wordsworth arrives suomeksi
   await page.locator('.overlay .btn').click();
   await page.evaluate(() => {
     const s = __gol.store.getState();   // mutate live state, not localStorage
@@ -189,7 +189,7 @@ function check(name, cond) {
     __gol.debug.setLang('fi');          // re-renders the hub; the due interlude reopens
   });
   const fiTxt = await page.locator('.interlude').textContent();
-  check('evening poem crosses cultures (Bashō in Finnish)', fiTxt.includes('sammakko'));
+  check('evening poem crosses cultures (Wordsworth in Finnish)', fiTxt.includes('sateenkaaren'));
   await page.evaluate(() => __gol.debug.setLang('en'));
 
   // debug handle + feedback store

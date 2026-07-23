@@ -8,6 +8,7 @@ export const POEMS = [
   {
     id: 'basho-frog',
     source: 'ja',
+    season: 'spring',
     author: 'Matsuo Bashō',
     year: '1686',
     body: {
@@ -19,6 +20,7 @@ export const POEMS = [
   {
     id: 'leino-nocturne',
     source: 'fi',
+    season: 'summer',
     author: 'Eino Leino',
     year: '1903',
     body: {
@@ -30,6 +32,7 @@ export const POEMS = [
   {
     id: 'wordsworth-rainbow',
     source: 'en',
+    season: 'any',
     author: 'William Wordsworth',
     year: '1802',
     body: {
@@ -41,6 +44,7 @@ export const POEMS = [
   {
     id: 'issa-snail',
     source: 'ja',
+    season: 'summer',
     author: 'Kobayashi Issa',
     year: '1820',
     body: {
@@ -49,9 +53,49 @@ export const POEMS = [
       fi: 'Pieni etana,\nkiipeä Fuji-vuorelle —\nmutta hitaasti, hitaasti.',
     },
   },
+  {
+    id: 'issa-snowmelt',
+    source: 'ja',
+    season: 'spring',
+    author: 'Kobayashi Issa',
+    year: '1814',
+    body: {
+      ja: '雪とけて\n村いっぱいの\n子どもかな',
+      en: 'The snow is melting —\nand the village is flooded\nwith children.',
+      fi: 'Lumi sulaa —\nja kylä on yhtäkkiä\ntäynnä lapsia.',
+    },
+  },
+  {
+    id: 'shiki-persimmon',
+    source: 'ja',
+    season: 'autumn',
+    author: 'Masaoka Shiki',
+    year: '1895',
+    body: {
+      ja: '柿くへば\n鐘が鳴るなり\n法隆寺',
+      en: 'Biting a persimmon —\na temple bell tolls:\nHōryū-ji.',
+      fi: 'Puraisen persimonia —\ntemppelinkello kumahtaa:\nHōryū-ji.',
+    },
+  },
+  {
+    id: 'basho-firstsnow',
+    source: 'ja',
+    season: 'winter',
+    author: 'Matsuo Bashō',
+    year: '1686',
+    body: {
+      ja: '初雪や\n水仙の葉の\nたわむまで',
+      en: 'First snow —\njust enough to bend\nthe narcissus leaves.',
+      fi: 'Ensilumi —\njuuri sen verran, että\nnarsissin lehdet taipuvat.',
+    },
+  },
 ];
 
-// rotates through the pool; a different poem each rest, all cultures mixed
-export function pickPoem(idx) {
-  return POEMS[idx % POEMS.length];
+// rotates through the pool, all cultures mixed; given a season, prefers
+// poems of that season (plus the season-less ones) so the verse matches
+// the world outside the window
+export function pickPoem(idx, s) {
+  const pool = s ? POEMS.filter(p => p.season === s || p.season === 'any') : POEMS;
+  const list = pool.length ? pool : POEMS;
+  return list[idx % list.length];
 }
