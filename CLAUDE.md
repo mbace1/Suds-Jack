@@ -74,9 +74,12 @@ never a menu — ONE offering at a time, drawn weighted by the content mix (**70
 20% game / 10% wisdom**, preferring unvisited-today; "something else, perhaps" redraws),
 with a 3-dot row (two breaths of play, then `~` rest). After every 2nd finished
 experience the hub *rests* and shows a nature invitation instead (evening 18:00–05:00
-swaps outdoor prompts for a poem / look-at-art prompt). Evening poems come from
-`js/poems.js`, a **cross-cultural pool** (Bashō/Issa/Leino/Wordsworth, each in all three
-languages — a haiku can arrive in Finnish). Trilingual fi/en/ja — every string in
+swaps outdoor prompts for a poem / look-at-art prompt). Invitations are **seasonal**:
+`nature.js`'s `season()` (month-based, N hemisphere) puts two per-season prompts ahead
+of the generic pool (winter frost / spring buds / summer barefoot grass / autumn
+leaf-catching). Evening poems come from `js/poems.js`, a **cross-cultural pool**
+(Bashō/Issa/Shiki/Leino/Wordsworth, each in all three languages — a haiku can arrive
+in Finnish), filtered to the current season via per-poem `season` tags ('any' floats). Trilingual fi/en/ja — every string in
 `js/i18n.js` (en fallback), browser-detected, persisted. Experiences export
 `{ id, kind, start(host, ctx) }` (kind = story|game|wisdom; ctx = `{t, audio,
 onComplete}`, start returns `{destroy}`) and register in `REGISTRY` in `main.js`;
