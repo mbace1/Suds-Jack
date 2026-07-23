@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v198 — 2026-07-23
+**The movement game becomes THE game — CLOSE COMBAT + FLUID on by default (user direction)**
+- **Every player now lands in the new mode**: no enemy guns, revenge rings, dodging/schooling/splitting swarms, and a named current every wave. An absent settings key now means ON — only an explicit OFF in OPTIONS returns the classic arsenal
+- **Nobody's choice is overridden**: players who already toggled either mode OFF stay off; players who opted in stay in. Only the untouched default changed
+- **Banner fix (v197 regression caught by the default-path test)**: wave 1's archetype call was stomping the mode-intro banner the moment the run started — new players would never have seen the mode name. Wave 1 now keeps `FLUID MODE — THE SWARM READS YOUR MOVES`; archetype calls start at wave 2 (the wave-1 current still applies, just unannounced)
+- Leaderboard tags (`+melee+fluid`) keep default-mode scores separate from classic opt-out scores, as before
+- Verified headless: fresh profile → both modes armed, correct intro banner, archetype live; explicit opt-out → classic run; prior opt-in → unchanged
+- Cache-bust `?v=151` → `?v=152`; HUD label → v198
+
+---
+
 ## v197 — 2026-07-23
 **FLUID wave archetypes — every wave rolls a movement CURRENT (roadmap follow-up)**
 - **Every FLUID wave now announces its shape**: `THE STREAM — RIDE THE CURRENT` / `THE RING — IT CONTRACTS` / `THE PINCER — THEY CUT YOU OFF`. Deterministic from `(wave + runSeed) % 3`, so daily runs replay identically and the shared rng stream is untouched
