@@ -2,8 +2,8 @@
 // short story with two small choices and one astonishing true fact; it ends
 // by pointing the player at the birds over their own head.
 
-import { PixelScreen } from '../pixel.js?v=8';
-import { PAL } from '../palette.js?v=8';
+import { PixelScreen } from '../pixel.js?v=9';
+import { PAL } from '../palette.js?v=9';
 
 export const tern = {
   id: 'tern',

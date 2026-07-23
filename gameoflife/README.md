@@ -48,6 +48,7 @@ switchable in the hub, persisted in `localStorage`.
 | `hanami` | story | Under the Blossoms | Hanami from Emperor Saga's court to Edo's riverbanks; mono no aware is the learning → *find one thing on a tree that will be gone in two weeks* |
 | `berry` | story | The Right to Roam | A Finnish blueberry summer teaching jokamiehenoikeus, rights and their quiet duties → *carry one thing out of your nearest everyone's-place* |
 | `stars` | game | The Night Compass | Trace the Big Dipper (Otava / 北斗七星) star by star, then follow its pointers to Polaris → *go find one real star tonight* |
+| `maple` | story | The Year of the Old Maple | One tree through four seasons — spring unpacks, autumn reveals, winter waits ready → *adopt a tree and visit it once per season* |
 
 New content should keep the registry near the 70/20/10 story/game/wisdom mix.
 
