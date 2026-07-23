@@ -121,6 +121,14 @@ function check(name, cond) {
   check('hanami choice advances', (await page.locator('.exp-text').textContent()).includes('poem'));
   await page.locator('.back-btn').click();
 
+  // berry: the Finnish everyman's-right story advances through a choice
+  await page.evaluate(() => __gol.debug.start('berry'));
+  check('berry scene 1 shown', (await page.locator('.exp-text').textContent()).includes('everyone'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Ask what she means' }).click();
+  check('berry choice teaches the right',
+    (await page.locator('.exp-text').textContent()).includes('Jokamiehenoikeus'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');
