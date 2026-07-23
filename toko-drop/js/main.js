@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=151';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=151';
-import { Player, PLAYER_RADIUS } from './player.js?v=151';
+import { InputManager } from './input.js?v=152';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=152';
+import { Player, PLAYER_RADIUS } from './player.js?v=152';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=151';
-import { RetroPass } from './retro.js?v=151';
-import { audio } from './audio.js?v=151';
-import { initDesigner } from './designer.js?v=151';
-import { t, getLang, setLang, langs } from './lang.js?v=151';
-import { TUNING } from './tuning.js?v=151';
+         CABINET_STYLE, VIS } from './enemy.js?v=152';
+import { RetroPass } from './retro.js?v=152';
+import { audio } from './audio.js?v=152';
+import { initDesigner } from './designer.js?v=152';
+import { t, getLang, setLang, langs } from './lang.js?v=152';
+import { TUNING } from './tuning.js?v=152';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1892,7 +1892,10 @@ let smashMode = localStorage.getItem('tokoDropSmash') === '1';
 // damage, and the only bullets on the field are REVENGE RINGS off corpses.
 // A different lab: bigger hordes, movement tactics, pressure without lanes.
 // Classic + SMASH runs only; cabinets keep their own identities.
-let meleeOnlyMode = localStorage.getItem('tokoDropMelee') === '1';
+// v198 (user direction): CLOSE COMBAT + FLUID are the DEFAULT experience —
+// absent key means ON, so every new player lands in the movement game; only
+// an explicit OFF ('0') in OPTIONS opts back into the classic arsenal.
+let meleeOnlyMode = localStorage.getItem('tokoDropMelee') !== '0';
 let meleeRun = false;                              // captured at run start
 const MUZZLED_BULLETS = { spawnDir: () => {} };    // enemies only call spawnDir
 // the classic gun club — drafted as chasers when the guns are banned
@@ -1905,7 +1908,7 @@ const RANGED_TYPES = new Set([EnemyType.SPITTOR, EnemyType.FANNER, EnemyType.WEE
 // cohesion + alignment over the engine's existing separation), and SPLIT when
 // they die — one big blob becomes a fast school of minnows. Stacks with CLOSE
 // COMBAT for the pure movement lab. Classic + SMASH runs only, like melee.
-let fluidMode = localStorage.getItem('tokoDropFluid') === '1';
+let fluidMode = localStorage.getItem('tokoDropFluid') !== '0';   // v198: default ON (see melee note)
 let fluidRun = false;                              // captured at run start
 // v197: every FLUID wave rolls a movement ARCHETYPE — a shared current that
 // shapes how the whole school moves. Deterministic from (wave + runSeed) so
@@ -4016,7 +4019,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v197' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v198' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -4748,10 +4751,14 @@ function spawnWave() {
   // v197 FLUID archetypes: name the wave's current so the lab stays legible.
   if (fluidRun) {
     fluidArch = FLUID_ARCHS[(wave + runSeed) % 3];
-    milestoneT = 1.2;
-    milestoneText = fluidArch === 'stream' ? 'THE STREAM — RIDE THE CURRENT'
-                  : fluidArch === 'ring'   ? 'THE RING — IT CONTRACTS'
-                  : 'THE PINCER — THEY CUT YOU OFF';
+    // v198: wave 1 keeps the mode-intro banner (it's the DEFAULT experience
+    // now — new players must see the mode name); archetype calls start wave 2.
+    if (wave > 1) {
+      milestoneT = 1.2;
+      milestoneText = fluidArch === 'stream' ? 'THE STREAM — RIDE THE CURRENT'
+                    : fluidArch === 'ring'   ? 'THE RING — IT CONTRACTS'
+                    : 'THE PINCER — THEY CUT YOU OFF';
+    }
   } else fluidArch = null;
   const { speedMult, intervalMult } = getWaveScale(wave);
   // Binding fight rooms use the cabinet's own roster (v157) — only BOSS
@@ -8256,6 +8263,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=151').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=152').catch(() => {});
   });
 }
