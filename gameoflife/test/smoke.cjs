@@ -153,6 +153,7 @@ function check(name, cond) {
   await page.reload({ waitUntil: 'networkidle' });
   check('interlude overlay shown (day)', await page.locator('.overlay').count() === 1);
   check('hub greets by hour (noon)', (await page.locator('.greet').textContent()) === 'The light is high.');
+  check('living hub scene present', await page.locator('.hub-canvas').count() === 1);
   const dayTxt = await page.locator('.interlude').textContent();
   check('day prompt is outdoor', dayTxt.includes('wind'));
   await page.locator('.overlay .btn').click();   // "I will" -> consumes interlude
