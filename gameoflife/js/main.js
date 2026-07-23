@@ -6,18 +6,19 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=4';
-import { PAL } from './palette.js?v=4';
-import * as store from './storage.js?v=4';
-import * as audio from './audio.js?v=4';
-import { pickInterlude, isEvening } from './nature.js?v=4';
-import { aqueduct } from './experiences/aqueduct.js?v=4';
-import { forest } from './experiences/forest.js?v=4';
-import { tern } from './experiences/tern.js?v=4';
-import { cup } from './experiences/cup.js?v=4';
-import { hanami } from './experiences/hanami.js?v=4';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=5';
+import { PAL } from './palette.js?v=5';
+import * as store from './storage.js?v=5';
+import * as audio from './audio.js?v=5';
+import { pickInterlude, isEvening } from './nature.js?v=5';
+import { aqueduct } from './experiences/aqueduct.js?v=5';
+import { forest } from './experiences/forest.js?v=5';
+import { tern } from './experiences/tern.js?v=5';
+import { cup } from './experiences/cup.js?v=5';
+import { hanami } from './experiences/hanami.js?v=5';
+import { berry } from './experiences/berry.js?v=5';
 
-const REGISTRY = [aqueduct, forest, tern, cup, hanami];
+const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
 
 const app = document.getElementById('app');
@@ -100,7 +101,9 @@ function showHub() {
     app.appendChild(other);
   }
 
-  app.appendChild(el('p', 'cycle-hint', resting ? t('hub.rested') : t('hub.cycle.hint')));
+  // the explanatory hint fades once the rhythm is known — less text, more zen
+  if (resting) app.appendChild(el('p', 'cycle-hint', t('hub.rested')));
+  else if (store.getState().completions.length < 2) app.appendChild(el('p', 'cycle-hint', t('hub.cycle.hint')));
 
   const fb = el('button', 'link-btn', t('hub.feedback'));
   fb.onclick = () => showFeedback('hub', showHub);
