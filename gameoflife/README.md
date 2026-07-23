@@ -35,6 +35,8 @@ switchable in the hub, persisted in `localStorage`.
 |----|------|------|-------|
 | `aqueduct` | game | The Stone River | Visual story of Roman aqueducts → rotate-the-stones channel puzzle (3 levels) → *go find real water flowing downhill* |
 | `forest` | story | The Forest Path | Branching pixel walk → guided four-breath pause → *take the walk for real* |
+| `tern` | story | The Longest Summer | An arctic tern's pole-to-pole migration, two choices, one astonishing true fact → *follow a real bird out of sight* |
+| `cup` | wisdom | A Cup of Tea | Nan-in's overflowing cup — you do the pouring, the point makes itself → *empty a moment under the sky* |
 
 New content should keep the registry near the 70/20/10 story/game/wisdom mix.
 
