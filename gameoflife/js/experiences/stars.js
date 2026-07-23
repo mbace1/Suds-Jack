@@ -2,8 +2,8 @@
 // Big Dipper (Otava / 北斗七星), then walk its pointer stars to Polaris, the
 // one star that never moves. The oldest navigation lesson there is.
 
-import { PixelScreen } from '../pixel.js?v=8';
-import { PAL } from '../palette.js?v=8';
+import { PixelScreen } from '../pixel.js?v=9';
+import { PAL } from '../palette.js?v=9';
 
 // the Dipper as a traceable chain: handle first, then around the bowl.
 // the closing bowl edge (Dubhe -> Megrez) draws itself on completion.
