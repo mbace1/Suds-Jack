@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=149';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=149';
-import { Player, PLAYER_RADIUS } from './player.js?v=149';
+import { InputManager } from './input.js?v=150';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=150';
+import { Player, PLAYER_RADIUS } from './player.js?v=150';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=149';
-import { RetroPass } from './retro.js?v=149';
-import { audio } from './audio.js?v=149';
-import { initDesigner } from './designer.js?v=149';
-import { t, getLang, setLang, langs } from './lang.js?v=149';
-import { TUNING } from './tuning.js?v=149';
+         CABINET_STYLE, VIS } from './enemy.js?v=150';
+import { RetroPass } from './retro.js?v=150';
+import { audio } from './audio.js?v=150';
+import { initDesigner } from './designer.js?v=150';
+import { t, getLang, setLang, langs } from './lang.js?v=150';
+import { TUNING } from './tuning.js?v=150';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -130,6 +130,9 @@ function getEnemySchedule(wave) {
   if (dailyMod === 'rich') budget = Math.floor(budget * 1.4);
   // v187: no lanes to respect — CLOSE COMBAT floods the floor instead
   if (meleeRun) budget = Math.floor(budget * 1.35);
+  // v196: splitting roughly doubles the bodies a wave produces — pull the
+  // schedule back so FLUID waves stay dodgeable, not wall-to-wall.
+  if (fluidRun) budget = Math.floor(budget * 0.85);
 
   // Composed waves (v116): melee mobs FLOOD the arena (groups/twins — the
   // fodder you mow through), while ranged enemies are placed DELIBERATELY —
@@ -1896,6 +1899,14 @@ const MUZZLED_BULLETS = { spawnDir: () => {} };    // enemies only call spawnDir
 const RANGED_TYPES = new Set([EnemyType.SPITTOR, EnemyType.FANNER, EnemyType.WEEVA,
   EnemyType.ORANGE_CUBE, EnemyType.PURP_CUBE, EnemyType.BAMBU, EnemyType.PYRA,
   EnemyType.BOTFLY, EnemyType.CLOAKER, EnemyType.DRAPER]);
+// v196 FLUID MODE (user direction): the movement lab — a secondary branch of
+// the arcade build where the challenge is enemy MOTION. Enemies read your gun
+// (sidestep incoming bullet lanes on a cooldown), school like fish (boids-lite
+// cohesion + alignment over the engine's existing separation), and SPLIT when
+// they die — one big blob becomes a fast school of minnows. Stacks with CLOSE
+// COMBAT for the pure movement lab. Classic + SMASH runs only, like melee.
+let fluidMode = localStorage.getItem('tokoDropFluid') === '1';
+let fluidRun = false;                              // captured at run start
 // v178 (M6): SMASH TV floor structure — the boss room ends a FLOOR. Each
 // floor re-lights the studio (palette shift), toughens the lattice (budget
 // scales), and opens with a BONUS ROOM: pure loot, doors already open.
@@ -2861,6 +2872,24 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
   // can't exhaust the pool. v188 (playtest video): revenge answers the PLAYER
   // only — gate lasers, vents, and suds walls vaporize cleanly, so a
   // barricade can never become a bullet fountain you farm from cover.
+  // v196 FLUID MODE: big bodies SPLIT — one blob becomes a fast school of
+  // minnows. Children are half-size, fragile (1 hp), 35% quicker, and never
+  // re-split; capped so a chain clear can't flood the arena.
+  if (fluidRun && src !== 'env' && gameState === 'playing' &&
+      !e._fluidChild && !e._isBoss && e.radius >= 0.5 &&
+      enemies.filter(x => x.alive).length < 70) {
+    for (let k = 0; k < 2; k++) {
+      const a = Math.random() * Math.PI * 2;
+      const c = new Enemy(scene, e.type,
+        e.position.x + Math.cos(a) * 0.7, e.position.z + Math.sin(a) * 0.7,
+        (e._speedMult ?? 1) * 1.35, 1);
+      c.mesh.scale.multiplyScalar(0.55);
+      c._radiusMult = (e._radiusMult ?? 1) * 0.55;
+      c.hp = 1;
+      c._fluidChild = true;
+      enemies.push(c);
+    }
+  }
   if (meleeRun && src !== 'env' && gameState === 'playing' && bullets.active.length < 240) {
     const nRev = e._isBoss ? 14 : e.radius > 0.75 ? 7 : 4;
     const a0 = Math.random() * Math.PI * 2;
@@ -3402,6 +3431,11 @@ const designer = initDesigner({
     // v191 WEBGPU (BETA): the importmap is chosen before any module loads, so
     // flipping the renderer requires a reload — done here, immediately, so the
     // toggle can't show a state the page isn't actually in.
+    getFluid: () => fluidMode,
+    setFluid: on => {
+      fluidMode = on;
+      localStorage.setItem('tokoDropFluid', on ? '1' : '0');
+    },
     getGpu: () => IS_GPU,
     setGpu: on => {
       localStorage.setItem('tokoDropGpu', on ? '1' : '0');
@@ -3977,7 +4011,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v195' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v196' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -4394,7 +4428,7 @@ function buildDailyLeaderboard(slot) {
       body: JSON.stringify({
         initials, score, wave, daily: _dailyRun,
         seed: runSeed.toString(16).toUpperCase().padStart(6, '0'),
-        mode: `${nexdeusMode ? 'nexdeus' : kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}${dailyMod ? '+' + dailyMod : ''}${meleeRun ? '+melee' : ''}`,
+        mode: `${nexdeusMode ? 'nexdeus' : kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}${dailyMod ? '+' + dailyMod : ''}${meleeRun ? '+melee' : ''}${fluidRun ? '+fluid' : ''}`,
         build: new URL(import.meta.url).searchParams.get('v') ?? '?',
       }),
     }).catch(() => {});
@@ -6047,6 +6081,12 @@ function startGame() {
     milestoneT = 2.0;
     milestoneText = 'CLOSE COMBAT — NO GUNS, ONLY REVENGE';
   }
+  fluidRun = fluidMode && !inCabinet();       // v196: cabinets keep their choreography
+  if (fluidRun) {
+    milestoneT = 2.0;
+    milestoneText = meleeRun ? 'FLUID MODE — THE SWARM READS YOUR MOVES'
+                             : 'FLUID MODE — THE SWARM READS YOUR GUN';
+  }
   player._magnet    = false;
   player._hasShield = false;
   player._shield    = false;
@@ -7050,6 +7090,56 @@ function loop() {
   if (_hitFlashT > 0) _hitFlashT -= dt;
   if (waveClearFlashT > 0) waveClearFlashT -= dt;
 
+  // v196 FLUID MODE: the swarm reads your gun and schools like fish.
+  if (fluidRun) {
+    for (const e of enemies) {
+      if (!e.alive || e._isBoss) continue;
+      // ── dodge: sidestep an incoming player-bullet lane, on a cooldown ──────
+      // The cooldown is the counterplay: sustained or spread fire still lands;
+      // a single aimed lane gets read. Heavies don't dance (mass fantasy).
+      e._fdCd = (e._fdCd ?? 0) - dt;
+      if (e._fdT > 0) {                        // decaying sidestep impulse
+        e._fdT -= dt;
+        e.position.x += e._fdVx * dt;
+        e.position.z += e._fdVz * dt;
+        const k = Math.max(0, 1 - dt * 5);
+        e._fdVx *= k; e._fdVz *= k;
+      }
+      if (e._fdCd <= 0 && e.radius <= 1.1) {
+        for (const b of bullets.active) {
+          if (!b.isPlayer) continue;
+          const dx = e.position.x - b.mesh.position.x;
+          const dz = e.position.z - b.mesh.position.z;
+          const sp = Math.hypot(b.vx, b.vz) || 1;
+          const fx = b.vx / sp, fz = b.vz / sp;
+          const ahead = dx * fx + dz * fz;               // distance along the lane
+          if (ahead < 0.5 || ahead > 7) continue;        // approach window
+          const s = dx * -fz + dz * fx;                  // signed lateral offset
+          if (Math.abs(s) > e.radius + 1.0) continue;    // lane misses anyway
+          const side = s >= 0 ? 1 : -1;                  // dodge AWAY from the lane
+          e._fdVx = -fz * side * 12;
+          e._fdVz =  fx * side * 12;
+          e._fdT  = 0.3;
+          e._fdCd = 0.8 + Math.random() * 0.7;
+          break;
+        }
+      }
+      // ── flock: boids-lite cohesion + alignment with nearby schoolmates ─────
+      // (separation already lives in the engine's crowd solver)
+      let cx = 0, cz = 0, vx = 0, vz = 0, n = 0;
+      for (const o of enemies) {
+        if (o === e || !o.alive || o._isBoss) continue;
+        const dx = o.position.x - e.position.x, dz = o.position.z - e.position.z;
+        if (dx * dx + dz * dz > 16) continue;
+        cx += dx; cz += dz; vx += (o._velX ?? 0); vz += (o._velZ ?? 0); n++;
+      }
+      if (n) {
+        const gl = Math.hypot(cx, cz) || 1;
+        e.position.x += ((cx / gl) * 0.5 + (vx / n) * 0.25) * dt;
+        e.position.z += ((cz / gl) * 0.5 + (vz / n) * 0.25) * dt;
+      }
+    }
+  }
   for (const e of enemies) {
     // v187 CLOSE COMBAT: enemies get a dead phone instead of the trigger
     e.update(dt, player.position, meleeRun ? MUZZLED_BULLETS : bullets, HALF_X, HALF_Z);
@@ -8124,6 +8214,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=149').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=150').catch(() => {});
   });
 }

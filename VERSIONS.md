@@ -7,6 +7,18 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v196 — 2026-07-23
+**FLUID MODE — the movement lab (user direction: a secondary branch about enemy MOTION)**
+- **New OPTIONS toggle `FLUID MODE`** (beside CLOSE COMBAT; stacks with it): a lab where the challenge is how enemies MOVE, not what they shoot
+- **The swarm reads your gun**: enemies sidestep an incoming player-bullet lane with a real dodge impulse — on a cooldown (0.8–1.5 s), so sustained or spread fire still lands; a single aimed lane gets read. Heavies (radius > 1.1) and bosses don't dance
+- **Bodies SPLIT on death**: any non-boss body of radius ≥ 0.5 bursts into **two half-size, 1-hp, 35%-faster minnows** — one big blob becomes a fast school. Children never re-split; capped at 70 live bodies so chain clears can't flood the arena; wave budget pulled to ×0.85 to compensate
+- **Boids-lite schooling**: cohesion + alignment with neighbors within 4 units layered over the engine's existing separation — packs flow like fish instead of marching columns
+- Run opens with `FLUID MODE — THE SWARM READS YOUR GUN` (`…YOUR MOVES` when stacked with CLOSE COMBAT); leaderboard tags `+fluid`; localized en/ja/fi; classic + SMASH runs only (cabinets keep their choreography)
+- Verified headless: lone enemy dodges a fired lane by 1.4u; a GLOBBO splits into exactly 2 fragile minnows that die clean; schoolmates drift together; classic control shows no dodge and no splitting
+- Cache-bust `?v=149` → `?v=150`; HUD label → v196
+
+---
+
 ## v195 — 2026-07-22
 **Cabinets get their looks back under WEBGPU — RetroPass TSL port (M7 parity complete)**
 - **The last beta parity gap closes**: the retro cabinet pass (palette quantization, posterize + paint blur, bright-pass glow, scanlines, contrast/saturation) now runs under the flag as a TSL node graph — same low-res render target, same fullscreen triangle, same math. The v191 bypass guards are gone; cabinets look like cabinets on both renderers

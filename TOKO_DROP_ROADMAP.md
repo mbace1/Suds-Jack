@@ -189,6 +189,9 @@ too, so luring is always a legal tactic).*
 - **Roguelike depth** — SHIPPED v180 (pool 13 + four CURSED cards with the
   price printed on the card).
 - **Graze-chain heat meter** if M1 data shows graze engagement.
+- **FLUID MODE follow-ups** (movement lab shipped v196: dodge/school/split):
+  wave archetype tables — STREAMS that flow around fire, RINGS that
+  contract, PINCERS that read the dash direction; tune from field feedback.
 
 ## M7 — Graphics track (WebGPU arc)
 
