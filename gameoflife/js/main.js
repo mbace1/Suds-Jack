@@ -6,18 +6,19 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=7';
-import { PAL } from './palette.js?v=7';
-import * as store from './storage.js?v=7';
-import * as audio from './audio.js?v=7';
-import { pickInterlude, isEvening } from './nature.js?v=7';
-import { aqueduct } from './experiences/aqueduct.js?v=7';
-import { forest } from './experiences/forest.js?v=7';
-import { tern } from './experiences/tern.js?v=7';
-import { cup } from './experiences/cup.js?v=7';
-import { hanami } from './experiences/hanami.js?v=7';
-import { berry } from './experiences/berry.js?v=7';
-import { stars } from './experiences/stars.js?v=7';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=8';
+import { PAL } from './palette.js?v=8';
+import { PixelScreen } from './pixel.js?v=8';
+import * as store from './storage.js?v=8';
+import * as audio from './audio.js?v=8';
+import { pickInterlude, isEvening } from './nature.js?v=8';
+import { aqueduct } from './experiences/aqueduct.js?v=8';
+import { forest } from './experiences/forest.js?v=8';
+import { tern } from './experiences/tern.js?v=8';
+import { cup } from './experiences/cup.js?v=8';
+import { hanami } from './experiences/hanami.js?v=8';
+import { berry } from './experiences/berry.js?v=8';
+import { stars } from './experiences/stars.js?v=8';
 
 const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
@@ -25,6 +26,59 @@ const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
 const app = document.getElementById('app');
 let current = null;    // active experience handle
 let offering = null;   // the experience currently offered by the hub
+let hubScene = null;   // the living header scene's raf handle
+
+// ── the living header: a quiet pixel sky that follows the hour ─────
+function startHubScene(parent) {
+  const scr = new PixelScreen(parent, 192, 44);
+  scr.canvas.classList.add('hub-canvas');
+  let raf = 0, dead = false;
+
+  function draw(now) {
+    if (dead) return;
+    const slot = daySlot();
+    const W = scr.w, H = scr.h;
+    if (slot === 'morning') {
+      scr.bands(0, 0, W, H, [PAL.SKY_DAWN_TOP, '#8a6a80', '#c98f7a', PAL.SKY_DAWN_LOW]);
+      scr.disc(148, 34, 7, PAL.SUN);                      // sun climbing
+      scr.px(0, 26 + Math.sin(now / 1600) * 2, 60, 2, '#d9b49a');   // low mist
+      scr.px(90, 20, 30, 1, '#c9a48a');
+    } else if (slot === 'day') {
+      scr.bands(0, 0, W, H, [PAL.SKY_DAY_TOP, '#93bfdd', '#a9cde2', PAL.SKY_DAY_LOW]);
+      scr.disc(96, 12, 7, PAL.SUN);                       // sun high
+      const cx = (now / 300) % (W + 40) - 20;             // one slow cloud
+      scr.px(cx, 18, 22, 4, '#e8f2f4');
+      scr.px(cx + 5, 15, 12, 3, '#e8f2f4');
+    } else if (slot === 'evening') {
+      scr.bands(0, 0, W, H, [PAL.SKY_DUSK_TOP, '#5a4258', '#8a5d6d', PAL.SKY_DUSK_LOW]);
+      scr.disc(36, 32, 7, '#e8a86c');                     // sun going down
+      scr.px(80, 16, 30, 2, '#7a5468');                   // dusk bar cloud
+    } else {
+      scr.bands(0, 0, W, H, ['#0a0c18', '#0e1220', '#131828', '#181e30']);
+      scr.disc(150, 12, 5, PAL.PAPER_DIM);                // moon
+      scr.px(147, 9, 4, 4, '#181e30');                    // its crescent bite
+      const tw = Math.floor(now / 450) % 2 === 0;
+      for (let i = 0; i < 12; i++) {                      // twinkling field
+        const x = (i * 31 + 9) % 188, y = (i * 17 + 3) % 30;
+        if (i % 3 !== (tw ? 0 : 1)) scr.px(x, y, 1, 1, '#8a90a8');
+      }
+      // a tiny Otava, for those who played The Night Compass
+      for (const [x, y] of [[18, 22], [24, 19], [30, 18], [35, 20], [36, 26], [44, 27], [43, 20]]) scr.px(x, y, 1, 1, PAL.FOAM);
+    }
+    // the constant: a dark treeline that belongs to every hour
+    for (let x = 0; x < W; x += 8) {
+      const h = 4 + ((x * 7) % 7);
+      scr.px(x, H - h, 8, h, slot === 'night' ? '#05060c' : PAL.MOSS_DEEP);
+      scr.px(x + 3, H - h - 3, 2, 3, slot === 'night' ? '#05060c' : PAL.MOSS_DEEP);
+    }
+    raf = requestAnimationFrame(draw);
+  }
+  raf = requestAnimationFrame(draw);
+
+  return { destroy() { dead = true; cancelAnimationFrame(raf); scr.destroy(); } };
+}
+
+function stopHubScene() { if (hubScene) { hubScene.destroy(); hubScene = null; } }
 
 // weighted draw over the kinds actually present, preferring unvisited-today;
 // `not` excludes the current offering so "something else" always changes
@@ -54,10 +108,14 @@ document.addEventListener('pointerdown', audio.init, { once: true });
 // ── hub ────────────────────────────────────────────────────────────
 function showHub() {
   if (current) { current.destroy(); current = null; }
+  stopHubScene();
   app.innerHTML = '';
 
   const header = el('header', 'hub-header');
+  const sceneWrap = el('div', 'hub-scene');
+  hubScene = startHubScene(sceneWrap);
   header.append(
+    sceneWrap,
     el('h1', '', t('hub.title')),
     el('p', 'tagline', t('hub.tagline')),
     el('p', 'greet', t(`hub.greet.${daySlot()}`)),
@@ -117,6 +175,7 @@ function showHub() {
 
 // ── experience routing ─────────────────────────────────────────────
 function startExperience(exp) {
+  stopHubScene();
   app.innerHTML = '';
   const host = el('div', 'exp');
   app.appendChild(host);
@@ -138,6 +197,7 @@ function startExperience(exp) {
 // ── feedback (leaves 1–5 + optional words, kept in localStorage) ───
 function showFeedback(expId, done) {
   if (current) { current.destroy(); current = null; }
+  stopHubScene();
   app.innerHTML = '';
   const box = el('div', 'panel');
   box.append(el('h2', '', t('fb.title')), el('p', '', t('fb.q')));

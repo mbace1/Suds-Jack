@@ -88,8 +88,11 @@ finale), `tern` (story — arctic tern migration pole to pole, 2 choices), `cup`
 `berry` (story — a Finnish blueberry summer teaching jokamiehenoikeus), and `stars`
 (game — trace the Big Dipper star by star, then follow its pointer stars to Polaris;
 tap-order chain + tap-the-right-star hit tests). The hub
-greeting follows the hour (`daySlot()`: morning/day/evening/night); the explanatory
-cycle-hint hides after 2 lifetime completions. `pixel.js` gives a 192×128
+greeting follows the hour (`daySlot()`: morning/day/evening/night) and a **living
+header scene** (192×44 `PixelScreen`, `startHubScene` in `main.js`) paints the same
+hour — dawn mist / noon sun + cloud / dusk / starry night with a tiny Otava — over a
+constant treeline; it must be `stopHubScene()`d wherever the app re-renders. The
+explanatory cycle-hint hides after 2 lifetime completions. `pixel.js` gives a 192×128
 `PixelScreen` upscaled with `image-rendering: pixelated`; `palette.js` is the single
 colour source; `audio.js` is a quiet WebAudio kit; `storage.js` keeps completions /
 cycle counter / 1–5-leaf feedback in `localStorage` (`golState`). `window.__gol` exposes
