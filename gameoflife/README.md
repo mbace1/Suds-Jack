@@ -3,6 +3,12 @@
 Mini games and interactive stories that always revert to the notion of going
 back to nature. Play a small thing on a screen; be handed something real.
 
+> **Share it:** *Small pixel games and stories that always send you back
+> outside. Two minutes each — a Roman aqueduct, an arctic tern, a zen teacup,
+> a constellation — and after every second one, the game itself rests and
+> invites you out to real water, real birds, or a poem in the evening.
+> Free, no install, EN/FI/JA:* `https://mbace1.github.io/Suds-Jack/gameoflife/`
+
 **The cycle is the design.** After every second finished experience the hub
 rests and opens an *invitation* instead: find moving water, watch wind for a
 minute, and in the evening (18:00–05:00 local) read a poem or look at a
@@ -98,6 +104,22 @@ __gol.store.getState()          // raw persisted state
 Feedback is deliberately minimal: 1–5 leaves + optional free text, stored
 locally under `golState.feedback`. Reviewing a playtest = ask the tester to
 paste `__gol.debug.feedback()`.
+
+## Contributing ideas (stories, games, graphics)
+
+`ideas/TEMPLATE.md` holds fill-in templates for the four content types —
+story, game/puzzle, wisdom kernel, and graphics/scene notes — matched to the
+70/20/10 mix. Two ways to deliver an idea:
+
+1. **Paste it into a Claude session** — a filled template, a fragment, or
+   three loose sentences; any of the three languages.
+2. **Commit a markdown file to `gameoflife/ideas/`** on any branch and
+   mention it in a session.
+
+Rules of thumb: every idea needs its *nature revert* (the real-world thing it
+sends the player to do); wisdom sources and poems must be public domain;
+graphics are described in words or mood references — everything is drawn in
+code at 192×128 from `palette.js`, no image assets.
 
 ## Content pipeline (beta → main → live)
 
