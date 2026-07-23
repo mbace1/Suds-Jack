@@ -39,6 +39,7 @@ switchable in the hub, persisted in `localStorage`.
 | `cup` | wisdom | A Cup of Tea | Nan-in's overflowing cup — you do the pouring, the point makes itself → *empty a moment under the sky* |
 | `hanami` | story | Under the Blossoms | Hanami from Emperor Saga's court to Edo's riverbanks; mono no aware is the learning → *find one thing on a tree that will be gone in two weeks* |
 | `berry` | story | The Right to Roam | A Finnish blueberry summer teaching jokamiehenoikeus, rights and their quiet duties → *carry one thing out of your nearest everyone's-place* |
+| `stars` | game | The Night Compass | Trace the Big Dipper (Otava / 北斗七星) star by star, then follow its pointers to Polaris → *go find one real star tonight* |
 
 New content should keep the registry near the 70/20/10 story/game/wisdom mix.
 
