@@ -85,7 +85,7 @@ BFS flow with live partial water), `forest` (story — branching walk → guided
 finale), `tern` (story — arctic tern migration pole to pole, 2 choices), `cup`
 (wisdom — Nan-in's overflowing teacup; the player pours until it spills), `hanami`
 (story — 12 centuries of hanami, Heian court → Edo riverbanks, mono no aware), and
-`berry` (story — a Finnish bilberry summer teaching jokamiehenoikeus). The hub
+`berry` (story — a Finnish blueberry summer teaching jokamiehenoikeus). The hub
 greeting follows the hour (`daySlot()`: morning/day/evening/night); the explanatory
 cycle-hint hides after 2 lifetime completions. `pixel.js` gives a 192×128
 `PixelScreen` upscaled with `image-rendering: pixelated`; `palette.js` is the single
