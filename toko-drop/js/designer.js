@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=149';
-import { t } from './lang.js?v=149';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=149';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=150';
+import { t } from './lang.js?v=150';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=150';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -498,6 +498,9 @@ export function initDesigner({ onResume, settings }) {
     // v187 (user direction): CLOSE COMBAT — no enemy fire, only revenge rings
     toggleRow(t('meleeMode'), settings.getMelee, settings.setMelee,
       t('meleeOnH'), t('meleeOffH'), '#ff8866', '#ff885566');
+    // v196 (user direction): FLUID MODE — the movement lab
+    toggleRow(t('fluidMode'), settings.getFluid, settings.setFluid,
+      t('fluidOnH'), t('fluidOffH'), '#66ddff', '#44bbee66');
     // ARCADE CABINET (v153): single-select cycle — the tribute cabinets are
     // mods like SMASH TV, but only one can be armed at a time.
     {
