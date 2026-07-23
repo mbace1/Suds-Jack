@@ -47,6 +47,18 @@ const STR = {
     'exp.cup.desc': 'An old zen story you pour yourself.',
     'exp.hanami.name': 'Under the Blossoms',
     'exp.hanami.desc': 'Twelve centuries of watching cherry trees — and why it only works because it ends.',
+    'exp.stars.name': 'The Night Compass',
+    'exp.stars.desc': 'Seven stars, and one that never moves — learn the oldest map there is.',
+
+    'st.intro': 'Before maps, before compasses, the sky did the pointing. Sailors, herders, and the arctic tern all read the same seven stars.',
+    'st.hint1': 'Trace the Great Bear: tap its seven stars, starting from the tip of the handle. The next one glimmers.',
+    'st.done1': 'Every people named it. In Finland it is Otava, the salmon net. In Japan, 北斗七星 — the Northern Dipper. In English, the Big Dipper, or the Plough. The same seven stars over all of them.',
+    'st.hint2': 'Now the trick sailors taught their children: the two front stars of the bowl are pointers. Follow their line upward and tap the star that never moves.',
+    'st.wrong2': 'That one wanders with the night. Follow the pointer stars a little farther.',
+    'st.done2': 'Polaris — Pohjantähti, 北極星. The whole sky wheels around it while it stands still. Find it, and you have found north.',
+    'st.outro': 'For thousands of years, this was enough to cross oceans.',
+    'st.nature': 'Tonight, step outside and find one real star — in city light, the brightest will do. If you can find the seven, follow the pointers with your own eyes. No screen between you and the oldest map.',
+
     'exp.berry.name': 'The Right to Roam',
     'exp.berry.desc': 'A blueberry summer in Finland, and the old freedom that makes every forest yours to walk.',
 
@@ -177,6 +189,18 @@ const STR = {
     'exp.cup.desc': 'Vanha zen-tarina, jonka kaadat itse.',
     'exp.hanami.name': 'Kukkien alla',
     'exp.hanami.desc': 'Kaksitoista vuosisataa kirsikkapuiden katselua — ja miksi se toimii vain siksi, että se loppuu.',
+    'exp.stars.name': 'Yökompassi',
+    'exp.stars.desc': 'Seitsemän tähteä ja yksi, joka ei koskaan liiku — opi vanhin kartta mitä on.',
+
+    'st.intro': 'Ennen karttoja, ennen kompasseja, taivas näytti suunnan. Merenkulkijat, paimenet ja lapintiirakin lukivat samoja seitsemää tähteä.',
+    'st.hint1': 'Piirrä Otava: napauta sen seitsemän tähteä, alkaen kädensijan kärjestä. Seuraava tuikkii.',
+    'st.done1': 'Jokainen kansa nimesi sen. Suomessa se on Otava, lohiverkko. Japanissa 北斗七星 — Pohjoinen kauha. Englanniksi Big Dipper, iso kauha. Samat seitsemän tähteä kaikkien yllä.',
+    'st.hint2': 'Nyt temppu, jonka merimiehet opettivat lapsilleen: kauhan kaksi etutähteä ovat osoittimia. Seuraa niiden linjaa ylöspäin ja napauta tähteä, joka ei koskaan liiku.',
+    'st.wrong2': 'Tuo vaeltaa yön mukana. Seuraa osoitintähtiä vielä vähän pidemmälle.',
+    'st.done2': 'Pohjantähti — Polaris, 北極星. Koko taivas pyörii sen ympäri sen pysyessä paikallaan. Kun löydät sen, olet löytänyt pohjoisen.',
+    'st.outro': 'Tuhansien vuosien ajan tämä riitti valtamerten ylittämiseen.',
+    'st.nature': 'Astu tänä iltana ulos ja etsi yksi oikea tähti — kaupungin valoissa kirkkain kelpaa. Jos löydät ne seitsemän, seuraa osoittimia omin silmin. Ei ruutua sinun ja vanhimman kartan väliin.',
+
     'exp.berry.name': 'Jokamiehenoikeus',
     'exp.berry.desc': 'Mustikkakesä ja vanha vapaus, joka tekee jokaisesta metsästä sinun kävellä.',
 
@@ -307,6 +331,18 @@ const STR = {
     'exp.cup.desc': '自分の手で注ぐ、古い禅の話。',
     'exp.hanami.name': '花の下で',
     'exp.hanami.desc': '桜を見つめてきた千二百年 — 終わるからこそ、成り立つこと。',
+    'exp.stars.name': '夜の羅針盤',
+    'exp.stars.desc': '七つの星と、決して動かないひとつの星 — いちばん古い地図をおぼえよう。',
+
+    'st.intro': '地図よりも、羅針盤よりも前から、空が方角を教えていた。船乗りも、羊飼いも、キョクアジサシも、同じ七つの星を読んできた。',
+    'st.hint1': '北斗七星をなぞろう: 柄のいちばん先から、七つの星を順にタップ。次の星がまたたいている。',
+    'st.done1': 'どの民族もこの星に名前をつけた。フィンランドではオタヴァ、鮭の網。日本では北斗七星。英語ではビッグ・ディッパー、大きな柄杓。みんなの上に、同じ七つの星。',
+    'st.hint2': '船乗りが子どもに教えた技: 柄杓の先のふたつの星が指極星。その線を上へたどって、決して動かない星をタップしよう。',
+    'st.wrong2': 'それは夜とともにさまよう星。指極星の線を、もう少し先へ。',
+    'st.done2': '北極星 — ポラリス、Pohjantähti。空ぜんぶがその周りを回り、それだけが止まっている。見つけたら、北を見つけたということ。',
+    'st.outro': '何千年ものあいだ、これだけで海を渡れた。',
+    'st.nature': '今夜、外に出て本物の星をひとつ見つけよう — 街の明かりの中なら、いちばん明るい星でいい。七つ見つけられたら、自分の目で指極星をたどってみて。あなたと最古の地図のあいだに、画面はいらない。',
+
     'exp.berry.name': '歩く自由',
     'exp.berry.desc': 'フィンランドのブルーベリーの夏と、どの森もあなたの歩く場所にする古い自由。',
 
