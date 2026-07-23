@@ -143,6 +143,13 @@ function check(name, cond) {
   check('Polaris found', (await page.locator('.exp-text').textContent()).includes('Polaris'));
   await page.locator('.back-btn').click();
 
+  // maple: the four-seasons story advances through the bud choice
+  await page.evaluate(() => __gol.debug.start('maple'));
+  check('maple scene 1 shown', (await page.locator('.exp-text').textContent()).includes('April'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Open a bud' }).click();
+  check('maple bud teaches unpacking', (await page.locator('.exp-text').textContent()).includes('unpacking'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');

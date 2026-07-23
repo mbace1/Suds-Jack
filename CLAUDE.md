@@ -87,7 +87,8 @@ finale), `tern` (story — arctic tern migration pole to pole, 2 choices), `cup`
 (story — 12 centuries of hanami, Heian court → Edo riverbanks, mono no aware), and
 `berry` (story — a Finnish blueberry summer teaching jokamiehenoikeus), and `stars`
 (game — trace the Big Dipper star by star, then follow its pointer stars to Polaris;
-tap-order chain + tap-the-right-star hit tests). The hub
+tap-order chain + tap-the-right-star hit tests), and `maple` (story — one tree through
+four seasons on the same hill; phenology: spring unpacks, autumn reveals). The hub
 greeting follows the hour (`daySlot()`: morning/day/evening/night) and a **living
 header scene** (192×44 `PixelScreen`, `startHubScene` in `main.js`) paints the same
 hour — dawn mist / noon sun + cloud / dusk / starry night with a tiny Otava — over a
