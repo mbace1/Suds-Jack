@@ -29,7 +29,9 @@ Source: project owner, via idea-form exchange. Reference art in `ref/`
       a running animal.
 - [ ] **The Tether** — Paris 1783, first free balloon flight. → look down
       from the highest walkable point.
-- [ ] **The Cloudberry Patch** — Finnish marsh, bear tracks. *Not everything
+- [x] **The Cloudberry Patch** (shipped as `cloud`) — a midnight-sun aapa mire;
+      a bear's fresh track leads to your patch, and at the mire's heart the finest
+      cluster asks to be left (branching walk, companion to `berry`). *Not everything
       beautiful is meant for you.* → leave a beautiful thing where it is.
 - [x] **The Golden Seam** — kintsugi. *Scars are proof of survival.* → trace
       a repaired object's damage for one minute. (ref: kintsugi-overflow.png) (v12)

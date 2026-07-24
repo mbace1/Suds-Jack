@@ -5,8 +5,8 @@
 // a dithered Raku glaze with a full tonal ramp, a dusty vignette halo, gold
 // veins with a bright core, amber tea, and a glowing cyan pour.
 
-import { PixelScreen, shade, bayer, rampDither } from '../pixel.js?v=18';
-import { PAL } from '../palette.js?v=18';
+import { PixelScreen, shade, bayer, rampDither } from '../pixel.js?v=19';
+import { PAL } from '../palette.js?v=19';
 
 // hit-testing geometry — unchanged so the flow/coords stay stable
 const CX = 96;
