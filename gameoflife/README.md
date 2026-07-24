@@ -67,6 +67,7 @@ switchable in the hub, persisted in `localStorage`.
 | `wait` | wisdom | Stand and Wait | A misted hillside: press once, then stand while the fog thins and an old pine resolves, fireflies lifting into the void — you cannot hurry it → *stand at a tree's base for three minutes* |
 | `lichen` | wisdom | The Lichen | A bare stone greens over with dithered sage lichen if you leave it alone; touch it and the growth recoils — glowing spores lift into the void → *press a hand to moss for thirty seconds* |
 | `cloud` | story | The Cloudberry Patch | A midnight-sun mire, ripe lakka, and a bear's track leading to your patch; the finest cluster asks to be left — companion to The Right to Roam → *leave a beautiful thing where it is* |
+| `ice` | story | The Ice Core | Drill down through banded glacier ice, reading each layer as a year of trapped sky (soot, ash, ancient air that glows cyan and breaks the frame) → *imagine your square of earth 100 years ago* |
 
 ## Visual standard (2026-07 master doc)
 

@@ -230,6 +230,20 @@ function check(name, cond) {
   check('cloud teaches to leave beauty', (await page.locator('.exp-text').textContent()).includes('do not have to keep it'));
   await page.locator('.back-btn').click();
 
+  // ice: drill down through the layers to the ancient air, then read the truth
+  await page.evaluate(() => __gol.debug.start('ice'));
+  check('ice intro shown', (await page.locator('.exp-text').textContent()).includes('arctic station'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Lower the drill' }).click();
+  for (let i = 0; i < 6; i++) {
+    const d = page.locator('.exp-buttons .btn', { hasText: 'Deeper' });
+    if (await d.count() === 0) break;
+    await d.click();
+  }
+  check('ice reaches the ice age', (await page.locator('.exp-text').textContent()).includes('twenty thousand years'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Read the trapped air' }).click();
+  check('ice truth shown', (await page.locator('.exp-text').textContent()).includes('museums of atmosphere'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');
