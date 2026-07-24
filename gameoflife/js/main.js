@@ -6,24 +6,25 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=12';
-import { PAL } from './palette.js?v=12';
-import { PixelScreen } from './pixel.js?v=12';
-import * as store from './storage.js?v=12';
-import * as audio from './audio.js?v=12';
-import { pickInterlude, isEvening } from './nature.js?v=12';
-import { aqueduct } from './experiences/aqueduct.js?v=12';
-import { forest } from './experiences/forest.js?v=12';
-import { tern } from './experiences/tern.js?v=12';
-import { cup } from './experiences/cup.js?v=12';
-import { hanami } from './experiences/hanami.js?v=12';
-import { berry } from './experiences/berry.js?v=12';
-import { stars } from './experiences/stars.js?v=12';
-import { maple } from './experiences/maple.js?v=12';
-import { plate } from './experiences/plate.js?v=12';
-import { seam } from './experiences/seam.js?v=12';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=13';
+import { PAL } from './palette.js?v=13';
+import { PixelScreen, shade } from './pixel.js?v=13';
+import * as store from './storage.js?v=13';
+import * as audio from './audio.js?v=13';
+import { pickInterlude, isEvening } from './nature.js?v=13';
+import { aqueduct } from './experiences/aqueduct.js?v=13';
+import { forest } from './experiences/forest.js?v=13';
+import { tern } from './experiences/tern.js?v=13';
+import { cup } from './experiences/cup.js?v=13';
+import { hanami } from './experiences/hanami.js?v=13';
+import { berry } from './experiences/berry.js?v=13';
+import { stars } from './experiences/stars.js?v=13';
+import { maple } from './experiences/maple.js?v=13';
+import { plate } from './experiences/plate.js?v=13';
+import { seam } from './experiences/seam.js?v=13';
+import { dots } from './experiences/dots.js?v=13';
 
-const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam];
+const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
 
 const app = document.getElementById('app');
@@ -43,22 +44,24 @@ function startHubScene(parent) {
     const W = scr.w, H = scr.h;
     if (slot === 'morning') {
       scr.bands(0, 0, W, H, [PAL.SKY_DAWN_TOP, '#8a6a80', '#c98f7a', PAL.SKY_DAWN_LOW]);
-      scr.disc(148, 34, 7, PAL.SUN);                      // sun climbing
+      scr.disc(148, 34, 8, PAL.EMBER);                    // ember halo behind the sun
+      scr.disc(148, 34, 7, PAL.SUN, PAL.EMBER);           // sun climbing, warm rim
       scr.px(0, 26 + Math.sin(now / 1600) * 2, 60, 2, '#d9b49a');   // low mist
       scr.px(90, 20, 30, 1, '#c9a48a');
     } else if (slot === 'day') {
       scr.bands(0, 0, W, H, [PAL.SKY_DAY_TOP, '#93bfdd', '#a9cde2', PAL.SKY_DAY_LOW]);
-      scr.disc(96, 12, 7, PAL.SUN);                       // sun high
+      scr.disc(96, 12, 7, PAL.SUN, true);                 // sun high, crisp rim
       const cx = (now / 300) % (W + 40) - 20;             // one slow cloud
-      scr.px(cx, 18, 22, 4, '#e8f2f4');
+      scr.rect(cx, 18, 22, 4, '#e8f2f4', shade('#e8f2f4', 0.86));
       scr.px(cx + 5, 15, 12, 3, '#e8f2f4');
     } else if (slot === 'evening') {
       scr.bands(0, 0, W, H, [PAL.SKY_DUSK_TOP, '#5a4258', '#8a5d6d', PAL.SKY_DUSK_LOW]);
-      scr.disc(36, 32, 7, '#e8a86c');                     // sun going down
+      scr.disc(36, 33, 8, PAL.EMBER);                     // the sinking sun's ember bleed
+      scr.disc(36, 32, 7, '#e8a86c', PAL.DANGER);         // sun going down
       scr.px(80, 16, 30, 2, '#7a5468');                   // dusk bar cloud
     } else {
       scr.bands(0, 0, W, H, ['#0a0c18', '#0e1220', '#131828', '#181e30']);
-      scr.disc(150, 12, 5, PAL.PAPER_DIM);                // moon
+      scr.disc(150, 12, 5, PAL.PAPER_DIM, true);          // moon, crisp rim
       scr.px(147, 9, 4, 4, '#181e30');                    // its crescent bite
       const tw = Math.floor(now / 450) % 2 === 0;
       for (let i = 0; i < 12; i++) {                      // twinkling field

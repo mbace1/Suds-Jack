@@ -2,8 +2,8 @@
 // as a story: spring unpacks, summer works, autumn reveals, winter waits
 // with everything ready. Ends by giving the player a tree of their own.
 
-import { PixelScreen } from '../pixel.js?v=12';
-import { PAL } from '../palette.js?v=12';
+import { PixelScreen } from '../pixel.js?v=13';
+import { PAL } from '../palette.js?v=13';
 
 const SPRING_LEAF = '#a8c97a', SUMMER_LEAF = '#5f7a4a', SUMMER_DEEP = '#3d5232';
 const AUTUMN_RED = '#c9573a', AUTUMN_GOLD = '#d9a13c', SNOW = '#e8eef2';
@@ -70,11 +70,12 @@ export const maple = {
       scr.px(104, 36, 4, 3, PAL.BARK);
     }
 
-    function crown(colors, density, r = 20) {
-      // cluster of discs around the trunk top; density 0..1 thins the canopy
+    function crown(colors, density, r = 20, edge) {
+      // cluster of discs around the trunk top; density 0..1 thins the canopy.
+      // an edge tint gives the canopy defined, readable lobes
       const spots = [[95, 26, r * 0.8], [82, 32, r * 0.6], [108, 30, r * 0.65], [95, 16, r * 0.55], [88, 22, r * 0.5], [104, 20, r * 0.5]];
       spots.forEach(([x, y, rr], i) => {
-        if (i / spots.length < density) scr.disc(x, y, rr, colors[i % colors.length]);
+        if (i / spots.length < density) scr.disc(x, y, rr, colors[i % colors.length], edge);
       });
     }
 
@@ -90,7 +91,7 @@ export const maple = {
       if (scene === 's1' || scene === 's2a' || scene === 's2b') {
         // April: bare twigs, dark fists of buds; s2 variants add their focus
         hillAndTrunk([PAL.SKY_DAWN_TOP, '#8a7a92', '#c9a48a', PAL.SKY_DAY_LOW], PAL.MOSS, PAL.MOSS_DEEP);
-        crown([SPRING_LEAF, '#c2d69a'], scene === 's1' ? 0.35 : 0.6, 16);
+        crown([SPRING_LEAF, '#c2d69a'], scene === 's1' ? 0.35 : 0.6, 16, '#6f8a4a');
         for (let i = 0; i < 8; i++) {                   // bud fists on the twig tips
           const [bx, by] = [[78, 30], [88, 18], [100, 12], [112, 22], [116, 32], [84, 24], [108, 16], [94, 10]][i];
           scr.px(bx, by, 2, 3, '#4a3a3a');
@@ -114,8 +115,9 @@ export const maple = {
       } else if (scene === 's3' || scene === 's4a' || scene === 's4b') {
         // high summer: full green country
         hillAndTrunk([PAL.SKY_DAY_TOP, '#93bfdd', '#a9cde2', PAL.SKY_DAY_LOW], PAL.MOSS, PAL.MOSS_DEEP);
-        scr.disc(160, 14, 8, PAL.SUN);
-        crown([SUMMER_LEAF, SUMMER_DEEP, '#6f8a5a'], 1, 22);
+        scr.disc(160, 15, 9, PAL.EMBER);                  // warm halo
+        scr.disc(160, 14, 8, PAL.SUN, PAL.EMBER);
+        crown([SUMMER_LEAF, SUMMER_DEEP, '#6f8a5a'], 1, 22, PAL.FOREST_FAR);
         if (scene === 's4a') {                          // the pool of shade, someone in it
           scr.px(76, 66, 42, 8, SUMMER_DEEP);
           scr.px(96, 60, 4, 8, '#5d7a8a');              // the sitter
@@ -133,7 +135,7 @@ export const maple = {
       } else if (scene === 's5') {
         // October: the reveal
         hillAndTrunk(['#8a7aa0', '#b08a7a', '#d9a97c', '#e8c9a0'], '#8a8a5a', '#6b6b46');
-        crown([AUTUMN_RED, AUTUMN_GOLD, '#b8763a'], 0.9, 21);
+        crown([AUTUMN_RED, AUTUMN_GOLD, '#b8763a'], 0.9, 21, '#7a3a24');
         fallingBits(now, 14, [AUTUMN_RED, AUTUMN_GOLD]);
         scr.px(70, 70, 50, 3, AUTUMN_GOLD);             // the ground gaining what the tree gives
       } else {

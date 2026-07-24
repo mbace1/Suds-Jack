@@ -41,6 +41,11 @@ export const PAL = {
   GOLD:      '#c9a84c',
   DANGER:    '#a05040',
 
+  // contrast accent + outline ink — the muted palette needed one warm pop and
+  // a near-black edge colour so shapes read as defined pixel sections
+  EMBER:     '#e8703a',
+  EDGE:      '#1a1712',
+
   // the new visual standard (2026-07 master doc): vignettes float in a pure
   // black void; interactive elements glow in luminescent cyan / gold and
   // break the frame

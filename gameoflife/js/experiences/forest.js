@@ -1,8 +1,8 @@
 // The Forest Path — a short branching walk in pixel scenes, ending with a
 // guided four-breath pause. The interactivity is choice, the reward is calm.
 
-import { PixelScreen } from '../pixel.js?v=12';
-import { PAL } from '../palette.js?v=12';
+import { PixelScreen } from '../pixel.js?v=13';
+import { PAL } from '../palette.js?v=13';
 
 const BREATHS = 4;
 const BREATH_SEC = 4;   // per half: 4 s in, 4 s out
@@ -70,7 +70,8 @@ export const forest = {
         const x = ((seed * 31 + i * 41) % 188);
         const h = 26 + ((seed * 7 + i * 13) % 22);
         scr.px(x, ground - h, 3, h, PAL.BARK);
-        scr.disc(x + 1, ground - h - 4, 6 + (i % 3), i % 2 ? PAL.MOSS : PAL.MOSS_DEEP);
+        // each crown gets a crisp dark rim so the canopy reads as defined shapes
+        scr.disc(x + 1, ground - h - 4, 6 + (i % 3), i % 2 ? PAL.MOSS : PAL.MOSS_DEEP, PAL.FOREST_FAR);
       }
     }
 
@@ -95,7 +96,8 @@ export const forest = {
         scr.px(124, 79, 5, 2, PAL.GOLD);                  // beak
       } else if (scene === 's2b') {
         scr.bands(0, 0, scr.w, 70, [PAL.SKY_DAY_TOP, '#93bfdd', PAL.SKY_DAY_LOW]);
-        scr.disc(150, 20, 8, PAL.SUN);
+        scr.disc(150, 21, 9, PAL.EMBER);                  // warm halo
+        scr.disc(150, 20, 8, PAL.SUN, PAL.EMBER);
         scr.px(0, 110, scr.w, 18, PAL.MOSS_DEEP);         // forest far below
         scr.px(0, 70, scr.w, 40, PAL.MOSS);               // the ridge
         for (let i = 0; i < 6; i++) {                     // leaning pines
@@ -108,7 +110,7 @@ export const forest = {
         scr.px(0, 60, scr.w, 68, PAL.MOSS);
         scr.px(0, 92, scr.w, 36, PAL.MOSS_DEEP);
         trees(11, 92);
-        scr.disc(96, 100, 12, PAL.STONE);                 // the stone
+        scr.disc(96, 100, 12, PAL.STONE, PAL.STONE_LINE); // the stone, defined rim
         scr.px(86, 92, 20, 4, PAL.MOSS);                  // its moss cushion
         if (scene === 'breathe') drawBreath();
       }

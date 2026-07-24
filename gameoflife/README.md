@@ -58,6 +58,7 @@ switchable in the hub, persisted in `localStorage`.
 | `maple` | story | The Year of the Old Maple | One tree through four seasons — spring unpacks, autumn reveals, winter waits ready → *adopt a tree and visit it once per season* |
 | `plate` | story | The Silver Plate | Paris 1838: run the exposure, watch the crowd erase itself, meet the first human ever photographed → *sit still two minutes in a busy place* |
 | `seam` | story | The Golden Seam | Gather a shattered tea bowl from the void, then honor the break in glowing kintsugi gold → *trace a repaired object's history for a minute* |
+| `dots` | story | The Four Dots | Padua 1610: pass the nights watching four specks beside Jupiter refuse to hold still, then meet the first moons of another world → *find the brightest non-Moon light tonight* |
 
 ## Visual standard (2026-07 master doc)
 
@@ -66,7 +67,11 @@ New experiences follow the owner's art direction (see
 scenes floating in a pure black void as **irregular jagged vignettes** (or
 letterboxed widescreen), muted graphic-novel environment tones, and
 luminescent **cyan/gold** for interactive elements that **break the frame**
-into the void. `plate` is the pilot; existing experiences migrate gradually.
+into the void. `plate`/`seam`/`dots` are the pilots; existing experiences migrate
+gradually. Shared `pixel.js` now gives every scene **crisp defined sections** (a 1px
+darker seam between `bands()` colours) and optional **outline edges** on `disc`/`rect`
+(a defined rim), plus a warm `EMBER` contrast accent and `EDGE` ink in the palette —
+so suns, moons, and foliage read as defined pixel shapes with a colour pop.
 
 New content should keep the registry near the 70/20/10 story/game/wisdom mix.
 

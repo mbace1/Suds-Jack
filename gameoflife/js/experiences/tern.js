@@ -2,8 +2,8 @@
 // short story with two small choices and one astonishing true fact; it ends
 // by pointing the player at the birds over their own head.
 
-import { PixelScreen } from '../pixel.js?v=12';
-import { PAL } from '../palette.js?v=12';
+import { PixelScreen } from '../pixel.js?v=13';
+import { PAL } from '../palette.js?v=13';
 
 export const tern = {
   id: 'tern',
@@ -76,7 +76,8 @@ export const tern = {
       if (scene === 's1') {
         // arctic tundra, midnight sun skimming the horizon
         scr.bands(0, 0, scr.w, 70, [PAL.SKY_DAWN_TOP, '#7a6a8a', '#c98f7a', PAL.SKY_DAWN_LOW]);
-        scr.disc(96, 66, 10, PAL.SUN);            // the sun that will not set
+        scr.disc(96, 66, 11, PAL.EMBER);          // ember halo of the midnight sun
+        scr.disc(96, 66, 10, PAL.SUN, PAL.EMBER); // the sun that will not set
         scr.px(0, 70, scr.w, 58, PAL.MOSS_DEEP);  // tundra
         for (let i = 0; i < 14; i++) scr.px((i * 29) % 190, 76 + (i * 13) % 44, 3, 2, PAL.STONE);
         scr.px(0, 70, scr.w, 2, PAL.MOSS);
@@ -111,7 +112,8 @@ export const tern = {
       } else {
         // the second summer: antarctic pack ice under a second unsetting sun
         scr.bands(0, 0, scr.w, 70, ['#4a5a8a', '#8a7aa0', '#d9a97c', PAL.SKY_DAWN_LOW]);
-        scr.disc(96, 64, 10, PAL.SUN);
+        scr.disc(96, 64, 11, PAL.EMBER);
+        scr.disc(96, 64, 10, PAL.SUN, PAL.EMBER);
         scr.px(0, 70, scr.w, 58, PAL.FOAM);       // ice to the horizon
         scr.px(0, 70, scr.w, 2, '#d8e8f0');
         for (let i = 0; i < 8; i++) scr.px((i * 47) % 180, 84 + (i * 19) % 36, 8, 2, '#c8dce8');
