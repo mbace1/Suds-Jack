@@ -103,8 +103,11 @@ frame proves all four hooves airborne, then a zoetrope revives the stills; debut
 cinematic-letterbox format), and `wait` (wisdom — Stand and Wait: press once then
 stand while a dithered halftone fog burns off over ~9s to reveal an old pine,
 green `LEAF_LUX` fireflies drifting past the frame; tapping only earns "the mist
-keeps its own time"; built to `horizon-pine-vignette.png`). `plate` pilots the
-**2026-07 visual standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
+keeps its own time"; built to `horizon-pine-vignette.png`), and `lichen` (wisdom —
+The Lichen: leave the bare dithered stone alone ~14s and a stippled sage bloom
+colonises it; *touching it makes the growth recoil*; luminescent `LEAF_LUX`
+apothecia + rising spores break into the void — the interaction that teaches is
+non-interaction). `plate` pilots the **2026-07 visual standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
 jagged 16-bit vignettes in a pure-black void, muted environments, luminescent cyan/gold
 interactive elements that break the frame (`PAL.VOID/CYAN_LUX/GOLD_LUX`, plus
 `PAL.LEAF_LUX` — a luminescent green for nature-scene glow like fireflies). Shared `pixel.js`

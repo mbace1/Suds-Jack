@@ -55,9 +55,11 @@ Source: project owner, via idea-form exchange. Reference art in `ref/`
       void, tapping only earns "the mist keeps its own time." *Patience doesn't
       end; it deepens.* (ref: horizon-pine-vignette.png; reference-grade dithered
       fog + vignette) → stand at a tree's base for three minutes.
-- [ ] **The Lichen** — leave the controls alone for 15 s and lichen blooms.
-      *Growth happens when you stop forcing it.* → press a hand to moss for
-      thirty seconds.
+- [x] **The Lichen** (shipped as `lichen`) — leave the bare stone alone for ~14 s
+      and a dithered sage bloom colonises it; *touching it* makes the growth recoil
+      ("lichen will not be hurried"). Luminescent green apothecia + rising spores
+      break into the void. *Growth happens when you stop forcing it.* → press a
+      hand to moss for thirty seconds.
 
 ## Parked (Claude's pre-existing pick, superseded by this queue)
 - The Living Wall — English hedgerows + Hooper's rule (one woody species per
