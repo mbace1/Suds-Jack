@@ -106,7 +106,10 @@ jagged 16-bit vignettes in a pure-black void, muted environments, luminescent cy
 interactive elements that break the frame (`PAL.VOID/CYAN_LUX/GOLD_LUX`). Shared `pixel.js`
 gives all art crisp **defined sections** (1px darker seam between `bands()` colours) and
 opt-in outline **edges** on `disc(cx,cy,r,color,edge)`/`rect(...,edge)` via `shade()`, plus a
-warm `PAL.EMBER` contrast accent + `PAL.EDGE` ink. The owner's
+warm `PAL.EMBER` contrast accent + `PAL.EDGE` ink; and for reference-grade scenes
+**halftone dithering** (`bayer`/`rampDither` — stippled tonal ramps) + `softDisc`
+(feathered vignette halos). `seam` is rebuilt to full `kintsugi-overflow.png` fidelity
+(dithered Raku glaze ramp, gold veins with bright core, glowing cyan overflow). The owner's
 idea queue in that doc takes priority over Claude's roadmap picks. The hub
 greeting follows the hour (`daySlot()`: morning/day/evening/night) and a **living
 header scene** (192×44 `PixelScreen`, `startHubScene` in `main.js`) paints the same
