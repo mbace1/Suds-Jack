@@ -109,13 +109,19 @@ opt-in outline **edges** on `disc(cx,cy,r,color,edge)`/`rect(...,edge)` via `sha
 warm `PAL.EMBER` contrast accent + `PAL.EDGE` ink; and for reference-grade scenes
 **halftone dithering** (`bayer`/`rampDither` — stippled tonal ramps) + `softDisc`
 (feathered vignette halos). `seam` is rebuilt to full `kintsugi-overflow.png` fidelity
-(dithered Raku glaze ramp, gold veins with bright core, glowing cyan overflow). The owner's
-idea queue in that doc takes priority over Claude's roadmap picks. The hub
-greeting follows the hour (`daySlot()`: morning/day/evening/night) and a **living
-header scene** (192×44 `PixelScreen`, `startHubScene` in `main.js`) paints the same
-hour — dawn mist / noon sun + cloud / dusk / starry night with a tiny Otava — over a
-constant treeline; it must be `stopHubScene()`d wherever the app re-renders. The
-explanatory cycle-hint hides after 2 lifetime completions. `pixel.js` gives a 192×128
+(dithered Raku glaze ramp, gold veins with bright core, glowing cyan overflow); `plate`
+and `dots` now share the toolkit too — a soft dusty/cool halo floats each vignette in
+the void, `plate` gets a dithered light-film as the silver darkens + a gold breakout
+halo, `dots` a dithered glass interior in the lens + a cyan wash under the escaping
+orbits. The owner's idea queue in that doc takes priority over Claude's roadmap picks.
+The hub greeting follows the hour (`daySlot()`: morning/day/evening/night) and a
+**living header scene** (192×44 `PixelScreen`, `startHubScene` in `main.js`) paints the
+same hour — dawn mist / noon sun + cloud / dusk / starry night with a tiny Otava — over
+a constant treeline; it must be `stopHubScene()`d wherever the app re-renders. Zen
+chrome-trimming: the set-once controls (language, feedback) sit in ONE quiet
+`.hub-footer` below a divider, out of the main column; the explanatory tagline and
+cycle-hint only show for newcomers (< 2 lifetime completions), so returners land on a
+clean header with the offering as the single focus. `pixel.js` gives a 192×128
 `PixelScreen` upscaled with `image-rendering: pixelated`; `palette.js` is the single
 colour source; `audio.js` is a quiet WebAudio kit; `storage.js` keeps completions /
 cycle counter / 1–5-leaf feedback in `localStorage` (`golState`). `window.__gol` exposes
