@@ -71,8 +71,11 @@ luminescent **cyan/gold** for interactive elements that **break the frame**
 into the void. `plate`/`seam`/`dots` are the pilots; existing experiences migrate
 gradually. Shared `pixel.js` now gives every scene **crisp defined sections** (a 1px
 darker seam between `bands()` colours) and optional **outline edges** on `disc`/`rect`
-(a defined rim), plus a warm `EMBER` contrast accent and `EDGE` ink in the palette —
-so suns, moons, and foliage read as defined pixel shapes with a colour pop.
+(a defined rim), plus a warm `EMBER` contrast accent and `EDGE` ink in the palette.
+For reference-grade scenes it also provides **halftone dithering** (`bayer` +
+`rampDither` for stippled tonal ramps) and `softDisc` (feathered vignette halos) —
+`seam` is the first scene rebuilt to full reference fidelity (dithered Raku glaze,
+gold veins, cyan overflow), matching `ideas/ref/kintsugi-overflow.png`.
 
 New content should keep the registry near the 70/20/10 story/game/wisdom mix.
 

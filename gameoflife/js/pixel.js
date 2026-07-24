@@ -11,6 +11,20 @@ export function shade(hex, f) {
   return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
 }
 
+// 4×4 ordered (Bayer) matrix, normalised to a 0..1 threshold per pixel — the
+// basis for halftone dithering: smooth tonal ramps and soft glows without
+// leaving the flat-fill pixel-art promise (the reference art's texture)
+const BAYER4 = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
+export function bayer(x, y) { return (BAYER4[(y & 3)][(x & 3)] + 0.5) / 16; }
+
+// pick a colour from a ramp (dark→light array) at position u (0..1), dithered
+// at pixel (x,y) so adjacent tones stipple into each other instead of banding
+export function rampDither(ramp, u, x, y) {
+  const f = Math.max(0, Math.min(1, u)) * (ramp.length - 1);
+  const i = Math.min(ramp.length - 1, Math.floor(f + bayer(x, y)));
+  return ramp[i];
+}
+
 export class PixelScreen {
   constructor(parent, w = 192, h = 128) {
     this.w = w; this.h = h;
@@ -54,6 +68,22 @@ export class PixelScreen {
       this.px(x, y + i * bh, w, Math.ceil(bh), c);
       if (seam && i < colors.length - 1) this.px(x, y + (i + 1) * bh - 1, w, 1, shade(c, 0.82));
     });
+  }
+
+  // a soft-edged disc: solid core, then a dithered feather band that fades
+  // into whatever is behind — the reference art's atmospheric vignette halo.
+  // Painted in 2px cells to stay cheap and keep the chunky-pixel texture.
+  softDisc(cx, cy, r, color, feather = 10) {
+    const inner = r - feather;
+    for (let dy = -r; dy <= r; dy += 2) {
+      for (let dx = -r; dx <= r; dx += 2) {
+        const d = Math.hypot(dx, dy);
+        if (d > r) continue;
+        if (d <= inner || bayer(cx + dx, cy + dy) < (r - d) / feather) {
+          this.px(cx + dx, cy + dy, 2, 2, color);
+        }
+      }
+    }
   }
 
   disc(cx, cy, r, color, edge) {
