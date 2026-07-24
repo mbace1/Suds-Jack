@@ -88,7 +88,7 @@ class AudioSystem {
     if (!this._introVoice || this._volume <= 0) return null;
     try {
       if (!this._introEl) {
-        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=154', import.meta.url).href);
+        this._introEl = new Audio(new URL('../audio/announcer-intro.mp3?v=155', import.meta.url).href);
         this._introEl.preload = 'auto';
       }
       this._introEl.volume = this._annVolume;
@@ -291,6 +291,38 @@ class AudioSystem {
     setTimeout(() => this._tone(880, 0.14, 'square', 0.20), 340);
   }
   curtainSweep() { this._tone(300, 0.5, 'sawtooth', 0.22, 90); this._noise(0.16, 0.45); }
+  // ── v201: the swarm game's voice ───────────────────────────────────────────
+  // A body splits into minnows — a wet double pop, pitching up (one → two).
+  splitPop() {
+    this._tone(220, 0.08, 'sine', 0.2, 330);
+    setTimeout(() => this._tone(330, 0.07, 'sine', 0.16, 470), 70);
+  }
+  // Big death shockwave — a deep thump under the splatter.
+  shockThump() {
+    this._tone(70, 0.22, 'sine', 0.3, 40);
+    this._noise(0.1, 0.12);
+  }
+  // An enemy reads your lane and sidesteps — a tiny whip (caller rate-limits).
+  dodgeWhip() {
+    this._tone(900, 0.05, 'triangle', 0.07, 1400);
+  }
+  // Wave archetype calls — three short signatures under the banner.
+  archStinger(kind) {
+    if (kind === 'stream') {           // flowing rise
+      this._tone(300, 0.12, 'sine', 0.16, 520);
+      setTimeout(() => this._tone(390, 0.12, 'sine', 0.14, 610), 110);
+    } else if (kind === 'ring') {      // the circle closes: descending pair
+      this._tone(520, 0.12, 'triangle', 0.16, 380);
+      setTimeout(() => this._tone(470, 0.14, 'triangle', 0.15, 300), 120);
+    } else {                           // pincer: two hard stabs
+      this._tone(620, 0.07, 'square', 0.14);
+      setTimeout(() => this._tone(620, 0.07, 'square', 0.14), 90);
+    }
+  }
+  // Streak heat hits max — a quick sawtooth riser under the carnage.
+  heatMax() {
+    this._tone(200, 0.3, 'sawtooth', 0.16, 800);
+  }
   playerHit() { this._tone(100, 0.32, 'sawtooth', 0.38); this._noise(0.22, 0.18); }
   playerDie() { this._tone(65,  0.70, 'sawtooth', 0.50); this._noise(0.42, 0.60); }
   pickup() {
