@@ -175,6 +175,20 @@ function check(name, cond) {
   check('kintsugi outro shown', (await page.locator('.exp-text').textContent()).includes('Scars'));
   await page.locator('.back-btn').click();
 
+  // dots: Galileo — pass the nights until the choice appears, pick "circle Jupiter"
+  await page.evaluate(() => __gol.debug.start('dots'));
+  check('dots intro shown', (await page.locator('.exp-text').textContent()).includes('Galileo'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Look through the glass' }).click();
+  for (let i = 0; i < 6; i++) {
+    const nextBtn = page.locator('.exp-buttons .btn', { hasText: 'The next night' });
+    if (await nextBtn.count() === 0) break;
+    await nextBtn.click();
+  }
+  check('dots reaches the choice', await page.locator('.exp-buttons .btn', { hasText: 'circle Jupiter' }).count() === 1);
+  await page.locator('.exp-buttons .btn', { hasText: 'circle Jupiter' }).click();
+  check('dots truth shown', (await page.locator('.exp-text').textContent()).includes('Four moons'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');

@@ -2,8 +2,8 @@
 // stones channel puzzle. Water flows by connectivity from spring to fountain;
 // partial flow is shown live so every turn of a stone gives feedback.
 
-import { PixelScreen } from '../pixel.js?v=12';
-import { PAL } from '../palette.js?v=12';
+import { PixelScreen } from '../pixel.js?v=13';
+import { PAL } from '../palette.js?v=13';
 
 // dirs: 0=N 1=E 2=S 3=W
 const OPP = d => (d + 2) % 4;
@@ -185,7 +185,8 @@ export const aqueduct = {
     function drawPuzzle(dt) {
       if (solved) fillT += dt * 6;   // tiles-per-second fill speed
       scr.bands(0, 0, scr.w, 60, [PAL.SKY_DAY_TOP, '#93bfdd', '#a9cde2', PAL.SKY_DAY_LOW]);
-      scr.disc(168, 16, 8, PAL.SUN);
+      scr.disc(168, 17, 9, PAL.EMBER);                 // warm halo
+      scr.disc(168, 16, 8, PAL.SUN, PAL.EMBER);
       scr.px(0, 60, scr.w, scr.h - 60, PAL.MOSS);      // valley floor under the arches
       scr.px(0, 104, scr.w, 24, PAL.MOSS_DEEP);
       // distant hills, spring side higher than city side: water walks downhill
@@ -273,7 +274,7 @@ function drawStory(scr, panel) {
   if (panel === 0) {
     // thirsty city under a warm sky, springs in the far hills
     scr.bands(0, 0, scr.w, 70, [PAL.SKY_DAWN_TOP, '#6b5a78', '#b07a70', PAL.SKY_DAWN_LOW]);
-    scr.disc(30, 22, 9, PAL.SUN);
+    scr.disc(30, 22, 10, PAL.EMBER); scr.disc(30, 22, 9, PAL.SUN, PAL.EMBER);
     scr.px(0, 58, 90, 14, PAL.MOSS_DEEP);
     scr.px(20, 52, 40, 8, PAL.MOSS);
     scr.px(34, 50, 4, 6, PAL.FOAM);           // the spring, small and far
@@ -300,7 +301,7 @@ function drawStory(scr, panel) {
   } else {
     // the finished aqueduct striding across a valley
     scr.bands(0, 0, scr.w, 78, [PAL.SKY_DAY_TOP, '#93bfdd', '#a9cde2', PAL.SKY_DAY_LOW]);
-    scr.disc(160, 18, 8, PAL.SUN);
+    scr.disc(160, 18, 9, PAL.EMBER); scr.disc(160, 18, 8, PAL.SUN, PAL.EMBER);
     scr.px(0, 66, scr.w, 62, PAL.MOSS);
     scr.px(0, 100, scr.w, 28, PAL.MOSS_DEEP);
     scr.px(0, 44, scr.w, 6, PAL.STONE_DARK);   // channel

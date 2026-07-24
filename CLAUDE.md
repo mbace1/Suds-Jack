@@ -95,10 +95,15 @@ four seasons on the same hill; phenology: spring unpacks, autumn reveals), and `
 (story — Boulevard du Temple 1838; a timed exposure erases the moving crowd, the still
 man remains: the first photographed human), and `seam` (story — kintsugi: gather five
 shards from the void, choose clay or gold, seams gild in GOLD_LUX with a frame-breaking
-glow; `cup`'s overflow is now CYAN_LUX and runs off the table). `plate` pilots the **2026-07 visual
+glow; `cup`'s overflow is now CYAN_LUX and runs off the table), and `dots` (story —
+Galileo, Padua 1610: pass the nights, the four Galilean moons swing around Jupiter on
+their real periods; a lens-vignette in the void with a notebook strip). `plate` pilots the **2026-07 visual
 standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
 jagged 16-bit vignettes in a pure-black void, muted environments, luminescent cyan/gold
-interactive elements that break the frame (`PAL.VOID/CYAN_LUX/GOLD_LUX`); the owner's
+interactive elements that break the frame (`PAL.VOID/CYAN_LUX/GOLD_LUX`). Shared `pixel.js`
+gives all art crisp **defined sections** (1px darker seam between `bands()` colours) and
+opt-in outline **edges** on `disc(cx,cy,r,color,edge)`/`rect(...,edge)` via `shade()`, plus a
+warm `PAL.EMBER` contrast accent + `PAL.EDGE` ink. The owner's
 idea queue in that doc takes priority over Claude's roadmap picks. The hub
 greeting follows the hour (`daySlot()`: morning/day/evening/night) and a **living
 header scene** (192×44 `PixelScreen`, `startHubScene` in `main.js`) paints the same

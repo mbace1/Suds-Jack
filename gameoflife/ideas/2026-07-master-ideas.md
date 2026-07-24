@@ -23,7 +23,7 @@ Source: project owner, via idea-form exchange. Reference art in `ref/`
 ### Stories
 - [x] **The Silver Plate** — Paris 1838, first photo of a human. *History
       only remembers what stands still.* → sit still 2 min in a busy place. (v11)
-- [ ] **The Four Dots** — Padua 1610, Galileo + Jupiter's moons. → find the
+- [x] **The Four Dots** — Padua 1610, Galileo + Jupiter's moons. → find the (v13)
       brightest non-moon light tonight.
 - [ ] **The Glass Plate** — Palo Alto 1878, Muybridge's horse. → blink-freeze
       a running animal.

@@ -2,8 +2,8 @@
 // party, Edo's riverbank picnics, and the lesson underneath it all —
 // mono no aware, the gathering that exists because the bloom will end.
 
-import { PixelScreen } from '../pixel.js?v=12';
-import { PAL } from '../palette.js?v=12';
+import { PixelScreen } from '../pixel.js?v=13';
+import { PAL } from '../palette.js?v=13';
 
 const PINK = '#e8a8b8', PINK_DEEP = '#c97f95', PINK_PALE = '#f2cdd6';
 
@@ -53,11 +53,11 @@ export const hanami = {
       button(t('ui.continue'), () => onComplete());
     }
 
-    // a blossoming crown: overlapping pink discs
+    // a blossoming crown: overlapping pink discs with a defined deep-pink rim
     function sakura(cx, cy, r) {
-      scr.disc(cx - r * 0.6, cy, r * 0.7, PINK);
-      scr.disc(cx + r * 0.6, cy + 1, r * 0.7, PINK_DEEP);
-      scr.disc(cx, cy - r * 0.5, r * 0.8, PINK);
+      scr.disc(cx - r * 0.6, cy, r * 0.7, PINK, '#a85f75');
+      scr.disc(cx + r * 0.6, cy + 1, r * 0.7, PINK_DEEP, '#a85f75');
+      scr.disc(cx, cy - r * 0.5, r * 0.8, PINK, '#a85f75');
       scr.disc(cx + r * 0.2, cy + r * 0.3, r * 0.6, PINK_PALE);
     }
 

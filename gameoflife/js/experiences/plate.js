@@ -6,8 +6,8 @@
 // black void, muted graphic-novel tones, and a luminescent gold breakout
 // when the plate finally fixes.
 
-import { PixelScreen } from '../pixel.js?v=12';
-import { PAL } from '../palette.js?v=12';
+import { PixelScreen } from '../pixel.js?v=13';
+import { PAL } from '../palette.js?v=13';
 
 // the vignette: scene lives in this window, edges eaten by deterministic jags
 const VX = 22, VY = 12, VW = 148, VH = 100;
