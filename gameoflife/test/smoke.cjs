@@ -210,6 +210,16 @@ function check(name, cond) {
   check('wait begins to clear', (await page.locator('.exp-text').textContent()).includes('mist'));
   await page.locator('.back-btn').click();
 
+  // lichen: leave it be starts the bloom; a tap makes it recoil (the whole point)
+  await page.evaluate(() => __gol.debug.start('lichen'));
+  check('lichen intro shown', (await page.locator('.exp-text').textContent()).includes('stone'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Leave it be' }).click();
+  check('lichen begins to grow', (await page.locator('.exp-text').textContent()).includes('growing'));
+  const lbox = await page.locator('.pixel-screen').boundingBox();
+  await page.mouse.click(lbox.x + lbox.width * 0.5, lbox.y + lbox.height * 0.6);
+  check('lichen recoils when touched', (await page.locator('.exp-text').textContent()).includes('recoils'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');

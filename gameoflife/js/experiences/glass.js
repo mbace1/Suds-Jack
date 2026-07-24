@@ -8,8 +8,8 @@
 // widescreen scene band framed by hard black bars in the void, with a gold
 // breakout on the frame that proves the suspension.
 
-import { PixelScreen, shade } from '../pixel.js?v=17';
-import { PAL } from '../palette.js?v=17';
+import { PixelScreen, shade } from '../pixel.js?v=18';
+import { PAL } from '../palette.js?v=18';
 
 const SCENE_Y = 20, SCENE_H = 60, GROUND_Y = 74;   // the letterbox scene band
 const STRIP_Y = 92;                                 // the developing filmstrip
