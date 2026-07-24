@@ -21,7 +21,11 @@ time, drawn from the registry by the content mix (**70% stories / 20% games /
 quiet "something else, perhaps" link for a single redraw. A three-dot row
 makes the cycle visible: two breaths of play, then the `~` rest. A living
 pixel sky above the title follows the real hour — dawn, noon sun, dusk,
-stars — so the app itself keeps the day-rhythm it points you toward.
+stars — so the app itself keeps the day-rhythm it points you toward. The
+set-once controls (language, "leave a thought" feedback) live in one quiet
+footer below a divider, out of the main column; the explanatory tagline only
+greets newcomers (fewer than two lifetime completions), so returning visitors
+land on a cleaner header with the offering as the single thing in focus.
 
 **Content crosses cultures.** `js/poems.js` is a pool of public-domain poems
 — Bashō, Issa, Shiki, Eino Leino, Wordsworth — each carried in all three
@@ -73,9 +77,12 @@ gradually. Shared `pixel.js` now gives every scene **crisp defined sections** (a
 darker seam between `bands()` colours) and optional **outline edges** on `disc`/`rect`
 (a defined rim), plus a warm `EMBER` contrast accent and `EDGE` ink in the palette.
 For reference-grade scenes it also provides **halftone dithering** (`bayer` +
-`rampDither` for stippled tonal ramps) and `softDisc` (feathered vignette halos) —
-`seam` is the first scene rebuilt to full reference fidelity (dithered Raku glaze,
-gold veins, cyan overflow), matching `ideas/ref/kintsugi-overflow.png`.
+`rampDither` for stippled tonal ramps) and `softDisc` (feathered vignette halos).
+`seam` was rebuilt first to full reference fidelity (dithered Raku glaze, gold
+veins, cyan overflow, matching `ideas/ref/kintsugi-overflow.png`); `plate` and
+`dots` now carry the same toolkit — soft dusty/cool halos that let the vignette
+float in the void, a dithered light-film on the darkening plate, a dithered glass
+interior in the lens, and luminous gold/cyan washes under the breakout elements.
 
 New content should keep the registry near the 70/20/10 story/game/wisdom mix.
 
