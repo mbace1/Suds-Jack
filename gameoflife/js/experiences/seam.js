@@ -3,8 +3,8 @@
 // it, and watches the seams draw themselves in luminescent gold.
 // Owner's design (2026-07 master doc); reference: ideas/ref/kintsugi-overflow.png.
 
-import { PixelScreen } from '../pixel.js?v=13';
-import { PAL } from '../palette.js?v=13';
+import { PixelScreen } from '../pixel.js?v=14';
+import { PAL } from '../palette.js?v=14';
 
 const CX = 96, RIM_Y = 54, BASE_Y = 90, HALF_W = 32;
 const GLAZE = '#3a3230', GLAZE_LIT = '#5a4e46', RIM = '#8a6f52', TEA = '#7a4f2e';

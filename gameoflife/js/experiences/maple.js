@@ -2,8 +2,8 @@
 // as a story: spring unpacks, summer works, autumn reveals, winter waits
 // with everything ready. Ends by giving the player a tree of their own.
 
-import { PixelScreen } from '../pixel.js?v=13';
-import { PAL } from '../palette.js?v=13';
+import { PixelScreen } from '../pixel.js?v=14';
+import { PAL } from '../palette.js?v=14';
 
 const SPRING_LEAF = '#a8c97a', SUMMER_LEAF = '#5f7a4a', SUMMER_DEEP = '#3d5232';
 const AUTUMN_RED = '#c9573a', AUTUMN_GOLD = '#d9a13c', SNOW = '#e8eef2';

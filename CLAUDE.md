@@ -97,7 +97,10 @@ man remains: the first photographed human), and `seam` (story — kintsugi: gath
 shards from the void, choose clay or gold, seams gild in GOLD_LUX with a frame-breaking
 glow; `cup`'s overflow is now CYAN_LUX and runs off the table), and `dots` (story —
 Galileo, Padua 1610: pass the nights, the four Galilean moons swing around Jupiter on
-their real periods; a lens-vignette in the void with a notebook strip). `plate` pilots the **2026-07 visual
+their real periods; a lens-vignette in the void with a notebook strip), and `glass`
+(game — Muybridge, Palo Alto 1878: release the horse, tripwires fire 12 cameras, one
+frame proves all four hooves airborne, then a zoetrope revives the stills; debuts the
+cinematic-letterbox format). `plate` pilots the **2026-07 visual
 standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
 jagged 16-bit vignettes in a pure-black void, muted environments, luminescent cyan/gold
 interactive elements that break the frame (`PAL.VOID/CYAN_LUX/GOLD_LUX`). Shared `pixel.js`
