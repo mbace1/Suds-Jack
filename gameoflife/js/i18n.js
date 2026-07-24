@@ -47,6 +47,19 @@ const STR = {
     'exp.cup.desc': 'An old zen story you pour yourself.',
     'exp.hanami.name': 'Under the Blossoms',
     'exp.hanami.desc': 'Twelve centuries of watching cherry trees — and why it only works because it ends.',
+    'exp.seam.name': 'The Golden Seam',
+    'exp.seam.desc': 'A broken tea bowl, five pieces, and the Japanese art of honoring the break.',
+
+    'se.s1': 'A quiet workshop, late. On the cloth lies a treasured tea bowl — five pieces now, after one careless second. Gather it back: tap each piece adrift in the dark.',
+    'se.s2': 'The pieces remember their places. Now — in this workshop there are two ways to mend.',
+    'se.choice.a': 'Hide the break with matching clay',
+    'se.choice.b': 'Honor the break with gold',
+    'se.clay': 'The seams vanish. The bowl looks as if nothing ever happened — and something did. The mender turns it in the light, unconvinced. Years later, the hairlines surface anyway: a bowl does not forget.',
+    'se.gild': 'Gild the seams',
+    'se.gold': '金継ぎ — kintsugi, golden joinery: lacquer mixed with gold, drawn along every scar. The bowl is not restored to what it was. It becomes more than it was — its history made precious, and visible.',
+    'se.outro': 'Scars are proof of survival, not signs of failure.',
+    'se.nature': 'Find an object in your home that is scratched, dented, or repaired. Spend one minute tracing the damage with your finger, and appreciate the history it proves.',
+
     'exp.plate.name': 'The Silver Plate',
     'exp.plate.desc': 'Paris, 1838 — the busiest street in the world records as empty, except for one still man.',
 
@@ -229,6 +242,19 @@ const STR = {
     'exp.cup.desc': 'Vanha zen-tarina, jonka kaadat itse.',
     'exp.hanami.name': 'Kukkien alla',
     'exp.hanami.desc': 'Kaksitoista vuosisataa kirsikkapuiden katselua — ja miksi se toimii vain siksi, että se loppuu.',
+    'exp.seam.name': 'Kultainen sauma',
+    'exp.seam.desc': 'Särkynyt teekuppi, viisi palaa ja japanilainen taito kunnioittaa murtumaa.',
+
+    'se.s1': 'Hiljainen verstas, myöhä ilta. Liinalla lepää rakas teekulho — nyt viitenä palana, yhden varomattoman hetken jälkeen. Kokoa se takaisin: napauta jokaista pimeässä ajelehtivaa palaa.',
+    'se.s2': 'Palat muistavat paikkansa. Nyt — tässä verstaassa on kaksi tapaa korjata.',
+    'se.choice.a': 'Piilota murtuma sävytetyllä savella',
+    'se.choice.b': 'Kunnioita murtumaa kullalla',
+    'se.clay': 'Saumat katoavat. Kulho näyttää siltä kuin mitään ei olisi tapahtunut — ja jotain tapahtui. Korjaaja kääntelee sitä valossa, vakuuttumatta. Vuosia myöhemmin hiusviivat nousevat kuitenkin esiin: kulho ei unohda.',
+    'se.gild': 'Kultaa saumat',
+    'se.gold': '金継ぎ — kintsugi, kultainen liitos: lakkaa ja kultaa, vedettynä jokaista arpea pitkin. Kulhoa ei palauteta entiselleen. Siitä tulee enemmän kuin se oli — sen historia tehdään kallisarvoiseksi ja näkyväksi.',
+    'se.outro': 'Arvet ovat todiste selviytymisestä, eivät merkki epäonnistumisesta.',
+    'se.nature': 'Etsi kotoasi esine, joka on naarmuuntunut, kolhiintunut tai korjattu. Kuljeta sormea sen vaurioita pitkin minuutin ajan ja arvosta historiaa, jonka ne todistavat.',
+
     'exp.plate.name': 'Hopealevy',
     'exp.plate.desc': 'Pariisi 1838 — maailman vilkkain katu tallentuu tyhjänä, paitsi yksi liikkumaton mies.',
 
@@ -411,6 +437,19 @@ const STR = {
     'exp.cup.desc': '自分の手で注ぐ、古い禅の話。',
     'exp.hanami.name': '花の下で',
     'exp.hanami.desc': '桜を見つめてきた千二百年 — 終わるからこそ、成り立つこと。',
+    'exp.seam.name': '金の継ぎ目',
+    'exp.seam.desc': '割れた茶碗、五つのかけら、そして割れ目を敬う日本の技。',
+
+    'se.s1': '静かな工房、夜ふけ。布の上に、大切にされてきた茶碗 — 不注意な一瞬のあとの、五つのかけら。集めなおそう: 闇に漂うかけらを、ひとつずつタップ。',
+    'se.s2': 'かけらは自分の場所を覚えている。さて — この工房には、直しかたがふたつある。',
+    'se.choice.a': '同じ色の土で割れ目を隠す',
+    'se.choice.b': '金で割れ目を敬う',
+    'se.clay': '継ぎ目は消えた。何もなかったかのような茶碗 — でも、何かはあったのだ。直し手は光にかざして、納得しない。何年かのち、細い線はやはり浮かびあがってくる: 茶碗は忘れない。',
+    'se.gild': '継ぎ目に金を入れる',
+    'se.gold': '金継ぎ — 漆に金を混ぜ、すべての傷あとに沿って引く。茶碗は元どおりに戻るのではない。元より豊かなものになる — その歴史が、尊く、見えるものになって。',
+    'se.outro': '傷あとは生きのびた証であって、失敗のしるしではない。',
+    'se.nature': '家の中から、傷ついたり、へこんだり、直されたりしたものをひとつ見つけよう。一分間、指でその傷をなぞって、それが証明している歴史をいとおしんでみて。',
+
     'exp.plate.name': '銀の板',
     'exp.plate.desc': 'パリ、1838年 — 世界一にぎやかな通りが空っぽに写り、動かないひとりの男だけが残った。',
 

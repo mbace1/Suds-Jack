@@ -31,8 +31,8 @@ Source: project owner, via idea-form exchange. Reference art in `ref/`
       from the highest walkable point.
 - [ ] **The Cloudberry Patch** — Finnish marsh, bear tracks. *Not everything
       beautiful is meant for you.* → leave a beautiful thing where it is.
-- [ ] **The Golden Seam** — kintsugi. *Scars are proof of survival.* → trace
-      a repaired object's damage for one minute. (ref: kintsugi-overflow.png)
+- [x] **The Golden Seam** — kintsugi. *Scars are proof of survival.* → trace
+      a repaired object's damage for one minute. (ref: kintsugi-overflow.png) (v12)
 - [ ] **The Ice Core** — arctic station, layers of memory. → imagine your
       square of earth 100 years ago.
 
@@ -41,7 +41,7 @@ Source: project owner, via idea-form exchange. Reference art in `ref/`
       the trickle runs; the water breaks the frame).
 - [ ] **The Bronze Gears** — Antikythera; rotate gears until they clank into
       an eclipse. → watch a second hand make one full circle.
-- [ ] **Empty Your Cup v2** — hold-to-pour Raku bowl; cyan overflow breaks
+- [x] **Empty Your Cup v2** — cyan overflow breaks (v12; hold-to-pour + Raku still open)
       the vignette. (upgrade of `cup`; ref: kintsugi-overflow.png)
 - [ ] **The Cairn** — balance three irregular stones. *Gravity is infinitely
       patient.* → balance two real rocks, leave them.

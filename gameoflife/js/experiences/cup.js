@@ -2,8 +2,8 @@
 // through the hands: the player keeps pouring, the cup overflows, and the
 // point makes itself. Interactivity IS the teaching.
 
-import { PixelScreen } from '../pixel.js?v=11';
-import { PAL } from '../palette.js?v=11';
+import { PixelScreen } from '../pixel.js?v=12';
+import { PAL } from '../palette.js?v=12';
 
 const CUP_X = 88, CUP_Y = 78, CUP_W = 22, CUP_H = 18;
 const FULL_AT = 1.0, OVERFLOW_AT = 1.9;   // keep pouring past full to learn
@@ -87,9 +87,15 @@ export const cup = {
 
       const spill = Math.max(0, fill - FULL_AT);
       if (spill > 0 && phase !== 'empty' && phase !== 'outro') {
-        const r = Math.min(50, spill * 60);        // tea creeping across the table
-        scr.px(CUP_X + CUP_W / 2 - r, CUP_Y + CUP_H + 1, r * 2, 3, PAL.EARTH);
-        scr.px(CUP_X + CUP_W / 2 - r * 0.7, CUP_Y + CUP_H + 4, r * 1.4, 2, PAL.EARTH);
+        // the overflow glows luminescent cyan and runs past the table edge —
+        // the excess breaks the frame (2026-07 visual standard)
+        const r = Math.min(50, spill * 60);
+        scr.px(CUP_X + CUP_W / 2 - r, CUP_Y + CUP_H + 1, r * 2, 3, PAL.CYAN_LUX);
+        scr.px(CUP_X + CUP_W / 2 - r * 0.7, CUP_Y + CUP_H + 4, r * 1.4, 2, '#8af2e8');
+        if (r > 24) for (let i = 0; i < 5; i++) {   // runnels dripping off the world
+          const dx = CUP_X - 20 + i * 14;
+          scr.px(dx, CUP_Y + CUP_H + 6 + ((now / 24 + i * 17) % (128 - CUP_Y - CUP_H - 6)), 2, 4, i % 2 ? PAL.CYAN_LUX : '#8af2e8');
+        }
       }
 
       if (phase === 'empty' || phase === 'outro') {

@@ -6,23 +6,24 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=11';
-import { PAL } from './palette.js?v=11';
-import { PixelScreen } from './pixel.js?v=11';
-import * as store from './storage.js?v=11';
-import * as audio from './audio.js?v=11';
-import { pickInterlude, isEvening } from './nature.js?v=11';
-import { aqueduct } from './experiences/aqueduct.js?v=11';
-import { forest } from './experiences/forest.js?v=11';
-import { tern } from './experiences/tern.js?v=11';
-import { cup } from './experiences/cup.js?v=11';
-import { hanami } from './experiences/hanami.js?v=11';
-import { berry } from './experiences/berry.js?v=11';
-import { stars } from './experiences/stars.js?v=11';
-import { maple } from './experiences/maple.js?v=11';
-import { plate } from './experiences/plate.js?v=11';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=12';
+import { PAL } from './palette.js?v=12';
+import { PixelScreen } from './pixel.js?v=12';
+import * as store from './storage.js?v=12';
+import * as audio from './audio.js?v=12';
+import { pickInterlude, isEvening } from './nature.js?v=12';
+import { aqueduct } from './experiences/aqueduct.js?v=12';
+import { forest } from './experiences/forest.js?v=12';
+import { tern } from './experiences/tern.js?v=12';
+import { cup } from './experiences/cup.js?v=12';
+import { hanami } from './experiences/hanami.js?v=12';
+import { berry } from './experiences/berry.js?v=12';
+import { stars } from './experiences/stars.js?v=12';
+import { maple } from './experiences/maple.js?v=12';
+import { plate } from './experiences/plate.js?v=12';
+import { seam } from './experiences/seam.js?v=12';
 
-const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate];
+const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
 
 const app = document.getElementById('app');

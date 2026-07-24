@@ -161,6 +161,20 @@ function check(name, cond) {
   check('plate reflect shown', (await page.locator('.exp-text').textContent()).includes('first human being'));
   await page.locator('.back-btn').click();
 
+  // seam: gather the five shards (coords mirror BOUNDS/SCATTER in seam.js),
+  // choose gold, watch the seams gild into the outro
+  await page.evaluate(() => __gol.debug.start('seam'));
+  check('seam intro shown', (await page.locator('.exp-text').textContent()).includes('five pieces'));
+  const kbox = await page.locator('.pixel-screen').boundingBox();
+  const ktap = (x, y) => page.mouse.click(kbox.x + (x + 0.5) / 192 * kbox.width, kbox.y + (y + 0.5) / 128 * kbox.height);
+  for (const [x, y] of [[34, 54], [62, 98], [107, 38], [141, 94], [166, 64]]) await ktap(x, y);
+  await page.waitForTimeout(700);
+  check('seam assembled into the choice', (await page.locator('.exp-text').textContent()).includes('two ways'));
+  await page.locator('.exp-buttons .btn', { hasText: 'gold' }).click();
+  await page.waitForTimeout(2600);
+  check('kintsugi outro shown', (await page.locator('.exp-text').textContent()).includes('Scars'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');
