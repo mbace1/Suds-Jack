@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=152';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=152';
-import { Player, PLAYER_RADIUS } from './player.js?v=152';
+import { InputManager } from './input.js?v=153';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=153';
+import { Player, PLAYER_RADIUS } from './player.js?v=153';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=152';
-import { RetroPass } from './retro.js?v=152';
-import { audio } from './audio.js?v=152';
-import { initDesigner } from './designer.js?v=152';
-import { t, getLang, setLang, langs } from './lang.js?v=152';
-import { TUNING } from './tuning.js?v=152';
+         CABINET_STYLE, VIS } from './enemy.js?v=153';
+import { RetroPass } from './retro.js?v=153';
+import { audio } from './audio.js?v=153';
+import { initDesigner } from './designer.js?v=153';
+import { t, getLang, setLang, langs } from './lang.js?v=153';
+import { TUNING } from './tuning.js?v=153';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -4019,7 +4019,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v198' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v199' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -8263,6 +8263,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=152').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=153').catch(() => {});
   });
 }

@@ -9,7 +9,7 @@
 
 const STRINGS = {
   en: {
-    subtitle: 'TWIN-STICK BULLET-HELL',
+    subtitle: 'TWIN-STICK SWARM SURVIVAL',   // v199: the movement game is the game
     best: 'BEST', pts: 'PTS', wave: 'WAVE',
     tapStart: 'TAP OR PRESS SPACE TO START',
     ctrlMove: 'Move',        ctrlMoveH: 'left stick / WASD',
@@ -176,7 +176,7 @@ const STRINGS = {
     c_x_gambler: 'Blood Money',     c_x_gambler_d: 'Kills pay DOUBLE — but dash recharges slower.',
   },
   ja: {
-    subtitle: 'ツインスティック弾幕',
+    subtitle: 'ツインスティック群れサバイバル',
     best: 'ベスト', pts: '点', wave: 'ウェーブ',
     tapStart: 'タップまたはスペースでスタート',
     ctrlMove: '移動',          ctrlMoveH: '左スティック / WASD',
@@ -343,7 +343,7 @@ const STRINGS = {
     c_x_gambler: '血の報酬',      c_x_gambler_d: 'キルの報酬が2倍 — ただしダッシュの回復が遅くなる',
   },
   fi: {
-    subtitle: 'KAKSITIKKU-LUOTIHELVETTI',
+    subtitle: 'KAKSITIKKU-PARVISELVIYTYMINEN',
     best: 'PARAS', pts: 'PIST.', wave: 'AALTO',
     tapStart: 'NAPAUTA TAI PAINA VÄLILYÖNTIÄ',
     ctrlMove: 'Liiku',          ctrlMoveH: 'vasen tatti / WASD',

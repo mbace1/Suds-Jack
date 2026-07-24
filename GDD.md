@@ -7,12 +7,16 @@
 
 ## 1. Concept *(v1)*
 
-**Genre:** Twin-stick bullet-hell arena shooter  
+**Genre:** Twin-stick swarm-survival arena shooter *(v198: the movement
+game — CLOSE COMBAT + FLUID — is the default; the classic bullet-hell
+arsenal is the OPTIONS opt-out)*  
 **Platform:** Browser (Three.js + Web Audio) — portrait mobile primary, keyboard/mouse desktop secondary  
 **Session length:** 10–25 minutes  
 **Tone:** Arcade-kinetic. No story. Satisfying movement, readable chaos, escalating pressure.
 
-**One-line pitch:** Survive wave after wave of goo blobs and hostile cubes while picking upgrades that let you bend the rules.
+**One-line pitch:** Survive waves of goo swarms that dodge your gun, school
+like fish, and burst into revenge rings when they die — picking upgrades
+that let you bend the rules.
 
 ---
 
