@@ -65,6 +65,7 @@ switchable in the hub, persisted in `localStorage`.
 | `dots` | story | The Four Dots | Padua 1610: pass the nights watching four specks beside Jupiter refuse to hold still, then meet the first moons of another world → *find the brightest non-Moon light tonight* |
 | `glass` | game | The Glass Plate | Palo Alto 1878: release Muybridge's horse, the tripwires fire twelve cameras, one frame proves all four hooves airborne — then spin the stills into a zoetrope → *blink-freeze a running animal* |
 | `wait` | wisdom | Stand and Wait | A misted hillside: press once, then stand while the fog thins and an old pine resolves, fireflies lifting into the void — you cannot hurry it → *stand at a tree's base for three minutes* |
+| `lichen` | wisdom | The Lichen | A bare stone greens over with dithered sage lichen if you leave it alone; touch it and the growth recoils — glowing spores lift into the void → *press a hand to moss for thirty seconds* |
 
 ## Visual standard (2026-07 master doc)
 

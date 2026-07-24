@@ -99,6 +99,16 @@ const STR = {
     'wa.outro': 'What is worth seeing rarely arrives on your schedule.',
     'wa.nature': 'Find a tree and stand at its base for three whole minutes. Do nothing else. Let it become the most interesting thing you have looked at all day.',
 
+    'exp.lichen.name': 'The Lichen',
+    'exp.lichen.desc': 'A bare stone that only greens over if you can leave it alone.',
+    'li.s1': 'A bare grey stone. On it, invisibly, lichen is waiting to grow — but lichen grows a hair a year, and only in peace. Here it will grow faster, on one condition: that you do not touch it. Begin, and then simply let it be.',
+    'li.begin': 'Leave it be',
+    'li.hint': 'It is growing. Do nothing…',
+    'li.disturb': 'You touched it. Lichen will not be hurried — it recoils, and begins the slow work again.',
+    'li.wisdom': 'Left alone, it covered the stone. Lichen is a fungus and an alga that gave up competing, an age ago, and chose to live as one thing. Growth is not force. It is the patience to let things combine.',
+    'li.outro': 'The best things grow while you are looking away.',
+    'li.nature': 'Find lichen or moss on a stone or a tree. Press one hand flat against it for thirty seconds. Do not pick it. Just let it be older than you.',
+
     'exp.plate.name': 'The Silver Plate',
     'exp.plate.desc': 'Paris, 1838 — the busiest street in the world records as empty, except for one still man.',
 
@@ -333,6 +343,16 @@ const STR = {
     'wa.outro': 'Se mitä kannattaa nähdä, saapuu harvoin sinun aikataulussasi.',
     'wa.nature': 'Etsi puu ja seiso sen juurella kolme kokonaista minuuttia. Älä tee mitään muuta. Anna sen olla kiinnostavin asia, jota olet koko päivänä katsonut.',
 
+    'exp.lichen.name': 'Jäkälä',
+    'exp.lichen.desc': 'Paljas kivi, joka vihertyy vain jos malttaa jättää sen rauhaan.',
+    'li.s1': 'Paljas harmaa kivi. Sillä, näkymättä, jäkälä odottaa kasvuaan — mutta jäkälä kasvaa hiuksen verran vuodessa, ja vain rauhassa. Täällä se kasvaa nopeammin, yhdellä ehdolla: ettet koske siihen. Aloita, ja anna sen sitten vain olla.',
+    'li.begin': 'Jätä se rauhaan',
+    'li.hint': 'Se kasvaa. Älä tee mitään…',
+    'li.disturb': 'Kosketit sitä. Jäkälää ei voi hoputtaa — se vetäytyy ja aloittaa hitaan työnsä alusta.',
+    'li.wisdom': 'Rauhaan jätettynä se peitti kiven. Jäkälä on sieni ja levä, jotka aikoja sitten luopuivat kilpailusta ja päättivät elää yhtenä. Kasvu ei ole pakottamista. Se on malttia antaa asioiden yhdistyä.',
+    'li.outro': 'Parhaat asiat kasvavat silloin kun katsot muualle.',
+    'li.nature': 'Etsi jäkälää tai sammalta kiveltä tai puulta. Paina toinen kämmen sitä vasten kolmenkymmenen sekunnin ajan. Älä poimi sitä. Anna sen vain olla sinua vanhempi.',
+
     'exp.plate.name': 'Hopealevy',
     'exp.plate.desc': 'Pariisi 1838 — maailman vilkkain katu tallentuu tyhjänä, paitsi yksi liikkumaton mies.',
 
@@ -566,6 +586,16 @@ const STR = {
     'wa.wisdom': 'そこにいた — 百の冬にかがめられ、なお緑。松は急がず、あなたも急げなかった。辛抱とは、何かが終わるのを待つことではない。それが深まっていく間、立っていることだ。',
     'wa.outro': '見る価値のあるものは、めったにあなたの都合には現れない。',
     'wa.nature': '木を一本見つけて、その根元に丸三分間立ってみよう。ほかには何もしない。今日いちばん見入ったものにしてしまおう。',
+
+    'exp.lichen.name': '地衣',
+    'exp.lichen.desc': 'そっとしておけたときだけ緑に覆われる、裸の石。',
+    'li.s1': '裸の灰色の石。その上で、目に見えないまま、地衣がのびるのを待っている — けれど地衣は一年に髪一本ぶん、しかも安らぎの中でしか育たない。ここではもっと速く育つ。ただしひとつ条件がある。触れないこと。始めて、あとはただそのままにしておこう。',
+    'li.begin': 'そのままにする',
+    'li.hint': '育っている。何もしないで…',
+    'li.disturb': '触れてしまった。地衣は急かされない — 縮こまり、また、ゆっくりした仕事を最初からやり直す。',
+    'li.wisdom': 'そっとしておくと、石を覆った。地衣は、はるか昔に競い合うのをやめ、ひとつとして生きることを選んだ菌と藻だ。成長とは力ずくではない。ものが結びつくのを待つ辛抱だ。',
+    'li.outro': 'いちばんよいものは、あなたがよそを見ているあいだに育つ。',
+    'li.nature': '石や木の上の地衣か苔を見つけよう。片手を三十秒、そっと押し当ててみて。摘み取らないこと。ただ、自分より年上のものとして、そのままにしておこう。',
 
     'exp.plate.name': '銀の板',
     'exp.plate.desc': 'パリ、1838年 — 世界一にぎやかな通りが空っぽに写り、動かないひとりの男だけが残った。',
