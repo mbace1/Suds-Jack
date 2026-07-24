@@ -93,7 +93,9 @@ finale), `tern` (story — arctic tern migration pole to pole, 2 choices), `cup`
 tap-order chain + tap-the-right-star hit tests), `maple` (story — one tree through
 four seasons on the same hill; phenology: spring unpacks, autumn reveals), and `plate`
 (story — Boulevard du Temple 1838; a timed exposure erases the moving crowd, the still
-man remains: the first photographed human). `plate` pilots the **2026-07 visual
+man remains: the first photographed human), and `seam` (story — kintsugi: gather five
+shards from the void, choose clay or gold, seams gild in GOLD_LUX with a frame-breaking
+glow; `cup`'s overflow is now CYAN_LUX and runs off the table). `plate` pilots the **2026-07 visual
 standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
 jagged 16-bit vignettes in a pure-black void, muted environments, luminescent cyan/gold
 interactive elements that break the frame (`PAL.VOID/CYAN_LUX/GOLD_LUX`); the owner's
