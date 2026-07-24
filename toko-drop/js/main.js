@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=154';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=154';
-import { Player, PLAYER_RADIUS } from './player.js?v=154';
+import { InputManager } from './input.js?v=155';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=155';
+import { Player, PLAYER_RADIUS } from './player.js?v=155';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=154';
-import { RetroPass } from './retro.js?v=154';
-import { audio } from './audio.js?v=154';
-import { initDesigner } from './designer.js?v=154';
-import { t, getLang, setLang, langs } from './lang.js?v=154';
-import { TUNING } from './tuning.js?v=154';
+         CABINET_STYLE, VIS } from './enemy.js?v=155';
+import { RetroPass } from './retro.js?v=155';
+import { audio } from './audio.js?v=155';
+import { initDesigner } from './designer.js?v=155';
+import { t, getLang, setLang, langs } from './lang.js?v=155';
+import { TUNING } from './tuning.js?v=155';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1919,6 +1919,8 @@ let fluidArch = null;
 // kill, decays fast; scales extra chunk counts and satellite splats so the
 // 10th kill of a chain detonates louder than the 1st. Pure FX, no gameplay.
 let juiceHeat = 0;
+let _heatPeaked = false;    // v201: heat-max riser fires once per streak
+let _dodgeWhipAt = 0;       // v201: dodge whips rate-limited (they're frequent)
 // v178 (M6): SMASH TV floor structure — the boss room ends a FLOOR. Each
 // floor re-lights the studio (palette shift), toughens the lattice (budget
 // scales), and opens with a BONUS ROOM: pure loot, doors already open.
@@ -2901,6 +2903,7 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
       c._fluidChild = true;
       enemies.push(c);
     }
+    audio.splitPop();   // v201: the split has a voice
   }
   if (meleeRun && src !== 'env' && gameState === 'playing' && bullets.active.length < 240) {
     const nRev = e._isBoss ? 14 : e.radius > 0.75 ? 7 : 4;
@@ -2979,7 +2982,9 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
   juiceHeat = Math.min(1, juiceHeat + 0.18);
   const big = e._isBoss || e.radius >= 0.75;
   // extra droplet burst on top of the enemy's own chunk set, scaled by heat
-  const nExtra = Math.round((e._isBoss ? 14 : big ? 8 : 4) * (1 + juiceHeat));
+  // v201: PERFORMANCE MODE halves the extra burst — weak phones keep the beat
+  // without the particle bill
+  const nExtra = Math.round((e._isBoss ? 14 : big ? 8 : 4) * (1 + juiceHeat) * (perfMode ? 0.5 : 1));
   for (let j = 0; j < nExtra; j++) {
     const a = Math.random() * Math.PI * 2;
     const sp = 2 + Math.random() * 4 * (1 + juiceHeat * 0.5);
@@ -2988,7 +2993,7 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
       e.color, 0.09 + Math.random() * 0.09);
   }
   // satellite splats — the floor gets painted, not just stamped
-  const nSat = big ? 3 : juiceHeat > 0.5 ? 2 : 1;
+  const nSat = perfMode ? 1 : big ? 3 : juiceHeat > 0.5 ? 2 : 1;
   for (let j = 0; j < nSat; j++) {
     const a = Math.random() * Math.PI * 2;
     const r = 0.6 + Math.random() * 0.9;
@@ -3006,7 +3011,10 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
       n._sqV -= 0.55;
     }
     addShake(0.1 + 0.12 * juiceHeat);
+    audio.shockThump();   // v201
   }
+  // v201: heat maxing out gets a riser — once per streak (re-arms below 0.5)
+  if (juiceHeat >= 1 && !_heatPeaked) { _heatPeaked = true; audio.heatMax(); }
 }
 
 function onPlayerHit() {
@@ -4055,7 +4063,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v200' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v201' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -4794,6 +4802,7 @@ function spawnWave() {
       milestoneText = fluidArch === 'stream' ? 'THE STREAM — RIDE THE CURRENT'
                     : fluidArch === 'ring'   ? 'THE RING — IT CONTRACTS'
                     : 'THE PINCER — THEY CUT YOU OFF';
+      audio.archStinger(fluidArch);   // v201: each current has a signature
     }
   } else fluidArch = null;
   const { speedMult, intervalMult } = getWaveScale(wave);
@@ -7146,6 +7155,7 @@ function loop() {
   if (_hitFlashT > 0) _hitFlashT -= dt;
   if (waveClearFlashT > 0) waveClearFlashT -= dt;
   if (juiceHeat > 0) juiceHeat = Math.max(0, juiceHeat - dt * 0.35);   // v200: streak heat cools
+  if (juiceHeat < 0.5) _heatPeaked = false;                            // v201: riser re-arms
 
   // v196 FLUID MODE: the swarm reads your gun and schools like fish.
   if (fluidRun) {
@@ -7178,6 +7188,10 @@ function loop() {
           e._fdVz =  fx * side * 12;
           e._fdT  = 0.3;
           e._fdCd = 0.8 + Math.random() * 0.7;
+          // v201: the sidestep whips — rate-limited so a schooling wave
+          // doesn't turn into a whip chorus
+          const nowMs = performance.now();
+          if (nowMs - _dodgeWhipAt > 350) { _dodgeWhipAt = nowMs; audio.dodgeWhip(); }
           break;
         }
       }
@@ -8300,6 +8314,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=154').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=155').catch(() => {});
   });
 }

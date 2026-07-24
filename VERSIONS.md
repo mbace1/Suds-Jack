@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v201 — 2026-07-24
+**The swarm gets a voice — sound pass for every new mechanic + perf juice guard**
+- **Every v196–v200 mechanic was silent** — against the game's own audio identity rule (every event gets a synth stinger). Now: **splits** pop wet and pitch up (one body → two), **big-death shockwaves** thump low under the splatter, **dodges** whip (rate-limited to one per 350 ms so a schooling wave isn't a whip chorus), each **wave archetype** call has its own signature under the banner (stream rise / ring descent / pincer stabs), and **maxing streak heat** fires a sawtooth riser — once per streak, re-arming when heat cools below half
+- **PERFORMANCE MODE juice guard**: weak phones keep the beat without the particle bill — extra death-burst chunks halved, satellite splats capped at 1
+- All synth one-shots — no clips, no loops (GDD §10)
+- Verified headless (stinger counter monkeypatch, the v164 pattern): splits ×8 across a chain, shock thump + heat riser fire, dodge whips, wave 2 stings with its archetype (and wave 1 stays silent for the mode intro); perf guard cuts a kill burst from 14 chunks to 9
+- Cache-bust `?v=154` → `?v=155`; HUD label → v201
+
+---
+
 ## v200 — 2026-07-24
 **THE JUICE PASS — every death detonates (option A, for everyone)**
 - **Extra droplet burst on every kill**: 4 extra chunks for small fry, 8 for big bodies, 14 for bosses, on top of the enemy's own chunk set — spending the instancing headroom v189/v190 built (chunk pools 256 → 384 slots)
