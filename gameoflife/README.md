@@ -79,10 +79,11 @@ darker seam between `bands()` colours) and optional **outline edges** on `disc`/
 For reference-grade scenes it also provides **halftone dithering** (`bayer` +
 `rampDither` for stippled tonal ramps) and `softDisc` (feathered vignette halos).
 `seam` was rebuilt first to full reference fidelity (dithered Raku glaze, gold
-veins, cyan overflow, matching `ideas/ref/kintsugi-overflow.png`); `plate` and
-`dots` now carry the same toolkit — soft dusty/cool halos that let the vignette
-float in the void, a dithered light-film on the darkening plate, a dithered glass
-interior in the lens, and luminous gold/cyan washes under the breakout elements.
+veins, cyan overflow, matching `ideas/ref/kintsugi-overflow.png`); `dots` also
+carries the toolkit — a cool halo behind the eyepiece, a dithered glass interior
+in the lens, and a luminous cyan wash under the escaping orbits. (`plate` keeps
+its original clean jagged vignette — the halo/dither pass muddied it, so it was
+reverted; the toolkit is opt-in per scene, not automatic.)
 
 New content should keep the registry near the 70/20/10 story/game/wisdom mix.
 
