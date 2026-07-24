@@ -35,8 +35,12 @@ Source: project owner, via idea-form exchange. Reference art in `ref/`
       beautiful is meant for you.* → leave a beautiful thing where it is.
 - [x] **The Golden Seam** — kintsugi. *Scars are proof of survival.* → trace
       a repaired object's damage for one minute. (ref: kintsugi-overflow.png) (v12)
-- [ ] **The Ice Core** — arctic station, layers of memory. → imagine your
-      square of earth 100 years ago.
+- [x] **The Ice Core** (shipped as `ice`) — an arctic station; drill down through
+      dithered annual ice bands, reading each era (wildfire soot → lead/fallout →
+      Tambora's ash → little ice age → 20,000-year-old air); the trapped ancient
+      air glows cyan and breaks the frame. Reference-grade void-vignette build.
+      *The world keeps a record far longer than we do.* → imagine your square of
+      earth 100 years ago.
 
 ### Games
 - [ ] **Water Downhill** — TILT variant of the aqueduct (angle a stone until

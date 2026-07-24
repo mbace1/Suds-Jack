@@ -110,7 +110,10 @@ apothecia + rising spores break into the void — the interaction that teaches i
 non-interaction), and `cloud` (story — The Cloudberry Patch: a midnight-sun aapa
 mire, ripe lakka, a bear's track to your patch; the finest cluster asks to be left
 — branching companion to `berry`, full-scene Finnish-nature family, not the void
-vignette). `plate` pilots the **2026-07 visual standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
+vignette), and `ice` (story — The Ice Core: an arctic drill descending through
+dithered annual ice bands, reading each era from wildfire soot to 20,000-year-old
+air that glows `CYAN_LUX` and breaks the frame; reference-grade void-vignette
+build). `plate` pilots the **2026-07 visual standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
 jagged 16-bit vignettes in a pure-black void, muted environments, luminescent cyan/gold
 interactive elements that break the frame (`PAL.VOID/CYAN_LUX/GOLD_LUX`, plus
 `PAL.LEAF_LUX` — a luminescent green for nature-scene glow like fireflies). Shared `pixel.js`
