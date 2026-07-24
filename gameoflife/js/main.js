@@ -6,24 +6,24 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=14';
-import { PAL } from './palette.js?v=14';
-import { PixelScreen, shade } from './pixel.js?v=14';
-import * as store from './storage.js?v=14';
-import * as audio from './audio.js?v=14';
-import { pickInterlude, isEvening } from './nature.js?v=14';
-import { aqueduct } from './experiences/aqueduct.js?v=14';
-import { forest } from './experiences/forest.js?v=14';
-import { tern } from './experiences/tern.js?v=14';
-import { cup } from './experiences/cup.js?v=14';
-import { hanami } from './experiences/hanami.js?v=14';
-import { berry } from './experiences/berry.js?v=14';
-import { stars } from './experiences/stars.js?v=14';
-import { maple } from './experiences/maple.js?v=14';
-import { plate } from './experiences/plate.js?v=14';
-import { seam } from './experiences/seam.js?v=14';
-import { dots } from './experiences/dots.js?v=14';
-import { glass } from './experiences/glass.js?v=14';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=15';
+import { PAL } from './palette.js?v=15';
+import { PixelScreen, shade } from './pixel.js?v=15';
+import * as store from './storage.js?v=15';
+import * as audio from './audio.js?v=15';
+import { pickInterlude, isEvening } from './nature.js?v=15';
+import { aqueduct } from './experiences/aqueduct.js?v=15';
+import { forest } from './experiences/forest.js?v=15';
+import { tern } from './experiences/tern.js?v=15';
+import { cup } from './experiences/cup.js?v=15';
+import { hanami } from './experiences/hanami.js?v=15';
+import { berry } from './experiences/berry.js?v=15';
+import { stars } from './experiences/stars.js?v=15';
+import { maple } from './experiences/maple.js?v=15';
+import { plate } from './experiences/plate.js?v=15';
+import { seam } from './experiences/seam.js?v=15';
+import { dots } from './experiences/dots.js?v=15';
+import { glass } from './experiences/glass.js?v=15';
 
 const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };

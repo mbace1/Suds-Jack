@@ -2,8 +2,8 @@
 // through the hands: the player keeps pouring, the cup overflows, and the
 // point makes itself. Interactivity IS the teaching.
 
-import { PixelScreen } from '../pixel.js?v=14';
-import { PAL } from '../palette.js?v=14';
+import { PixelScreen } from '../pixel.js?v=15';
+import { PAL } from '../palette.js?v=15';
 
 const CUP_X = 88, CUP_Y = 78, CUP_W = 22, CUP_H = 18;
 const FULL_AT = 1.0, OVERFLOW_AT = 1.9;   // keep pouring past full to learn
