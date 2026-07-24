@@ -1,7 +1,7 @@
 {
   "name": "Toko Drop",
   "short_name": "Toko Drop",
-  "description": "Twin-stick bullet-hell survival — dodge the goo, mow the mobs. Big bubbles! Big prizes!",
+  "description": "Twin-stick swarm survival — the swarm reads your gun and corpses bite back. Big bubbles! Big prizes!",
   "start_url": ".",
   "display": "fullscreen",
   "orientation": "any",

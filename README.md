@@ -1,6 +1,10 @@
-# Toko Drop — v198
+# Toko Drop — v199
 
-Twin-stick bullet-hell arena shooter built with Three.js and Web Audio.
+Twin-stick swarm-survival arena game built with Three.js and Web Audio.
+The default mode is the MOVEMENT game (v198): enemies never shoot — they
+dodge your bullet lanes, school like fish, split into minnows when they
+die, and every corpse bursts into a revenge ring. The classic bullet-hell
+arsenal lives one toggle away in OPTIONS.
 
 ## Play
 

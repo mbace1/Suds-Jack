@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v199 — 2026-07-24
+**Identity pass — the branding catches up with the default game**
+- **Title subtitle**: `TWIN-STICK BULLET-HELL` → **`TWIN-STICK SWARM SURVIVAL`** (en/ja/fi) — with v198's defaults, the game a new player meets has no enemy bullets except the ones corpses throw
+- **OG + PWA manifest description**: "the swarm reads your gun and corpses bite back. Big bubbles! Big prizes!" (catchphrase preserved)
+- **README + GDD §1**: genre updated to swarm-survival with the default-mode explanation; the classic bullet-hell arsenal is documented as the OPTIONS opt-out; one-line pitch now describes the dodging/schooling/splitting swarm
+- No gameplay changes — copy and docs only
+- Verified headless: title screen renders the new subtitle, old one gone
+- Cache-bust `?v=152` → `?v=153`; HUD label → v199
+
+---
+
 ## v198 — 2026-07-23
 **The movement game becomes THE game — CLOSE COMBAT + FLUID on by default (user direction)**
 - **Every player now lands in the new mode**: no enemy guns, revenge rings, dodging/schooling/splitting swarms, and a named current every wave. An absent settings key now means ON — only an explicit OFF in OPTIONS returns the classic arsenal
