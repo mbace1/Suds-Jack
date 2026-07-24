@@ -7,117 +7,31 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v199 — 2026-07-24
-**Identity pass — the branding catches up with the default game**
-- **Title subtitle**: `TWIN-STICK BULLET-HELL` → **`TWIN-STICK SWARM SURVIVAL`** (en/ja/fi) — with v198's defaults, the game a new player meets has no enemy bullets except the ones corpses throw
-- **OG + PWA manifest description**: "the swarm reads your gun and corpses bite back. Big bubbles! Big prizes!" (catchphrase preserved)
-- **README + GDD §1**: genre updated to swarm-survival with the default-mode explanation; the classic bullet-hell arsenal is documented as the OPTIONS opt-out; one-line pitch now describes the dodging/schooling/splitting swarm
-- No gameplay changes — copy and docs only
-- Verified headless: title screen renders the new subtitle, old one gone
-- Cache-bust `?v=152` → `?v=153`; HUD label → v199
-
----
-
-## v198 — 2026-07-23
-**The movement game becomes THE game — CLOSE COMBAT + FLUID on by default (user direction)**
-- **Every player now lands in the new mode**: no enemy guns, revenge rings, dodging/schooling/splitting swarms, and a named current every wave. An absent settings key now means ON — only an explicit OFF in OPTIONS returns the classic arsenal
-- **Nobody's choice is overridden**: players who already toggled either mode OFF stay off; players who opted in stay in. Only the untouched default changed
-- **Banner fix (v197 regression caught by the default-path test)**: wave 1's archetype call was stomping the mode-intro banner the moment the run started — new players would never have seen the mode name. Wave 1 now keeps `FLUID MODE — THE SWARM READS YOUR MOVES`; archetype calls start at wave 2 (the wave-1 current still applies, just unannounced)
-- Leaderboard tags (`+melee+fluid`) keep default-mode scores separate from classic opt-out scores, as before
-- Verified headless: fresh profile → both modes armed, correct intro banner, archetype live; explicit opt-out → classic run; prior opt-in → unchanged
-- Cache-bust `?v=151` → `?v=152`; HUD label → v198
-
----
-
-## v197 — 2026-07-23
-**FLUID wave archetypes — every wave rolls a movement CURRENT (roadmap follow-up)**
-- **Every FLUID wave now announces its shape**: `THE STREAM — RIDE THE CURRENT` / `THE RING — IT CONTRACTS` / `THE PINCER — THEY CUT YOU OFF`. Deterministic from `(wave + runSeed) % 3`, so daily runs replay identically and the shared rng stream is untouched
-- **STREAM**: the whole school rides one slowly-rotating current — a river of fish strafing past you instead of a straight march
-- **RING**: a shared orbit (direction alternates per wave) layered on their own chase — the wave becomes a spiral that contracts on you
-- **PINCER**: each body picks a flank and steers for the point BESIDE you, reading your travel axis — they hunt your escape routes, not your back
-- Archetype currents stack with v196's dodge/school/split; classic and non-FLUID runs are untouched (`fluidArch` stays null)
-- Verified headless: wave 1 rolls and banners an archetype; STREAM drift measured parallel (dot 1.00); RING motion is purely tangential (0.33u orbit vs 0.00u radial); PINCER flanks split both ways around a still player
-- Cache-bust `?v=150` → `?v=151`; HUD label → v197
-
----
-
-## v196 — 2026-07-23
-**FLUID MODE — the movement lab (user direction: a secondary branch about enemy MOTION)**
-- **New OPTIONS toggle `FLUID MODE`** (beside CLOSE COMBAT; stacks with it): a lab where the challenge is how enemies MOVE, not what they shoot
-- **The swarm reads your gun**: enemies sidestep an incoming player-bullet lane with a real dodge impulse — on a cooldown (0.8–1.5 s), so sustained or spread fire still lands; a single aimed lane gets read. Heavies (radius > 1.1) and bosses don't dance
-- **Bodies SPLIT on death**: any non-boss body of radius ≥ 0.5 bursts into **two half-size, 1-hp, 35%-faster minnows** — one big blob becomes a fast school. Children never re-split; capped at 70 live bodies so chain clears can't flood the arena; wave budget pulled to ×0.85 to compensate
-- **Boids-lite schooling**: cohesion + alignment with neighbors within 4 units layered over the engine's existing separation — packs flow like fish instead of marching columns
-- Run opens with `FLUID MODE — THE SWARM READS YOUR GUN` (`…YOUR MOVES` when stacked with CLOSE COMBAT); leaderboard tags `+fluid`; localized en/ja/fi; classic + SMASH runs only (cabinets keep their choreography)
-- Verified headless: lone enemy dodges a fired lane by 1.4u; a GLOBBO splits into exactly 2 fragile minnows that die clean; schoolmates drift together; classic control shows no dodge and no splitting
-- Cache-bust `?v=149` → `?v=150`; HUD label → v196
-
----
-
-## v195 — 2026-07-22
-**Cabinets get their looks back under WEBGPU — RetroPass TSL port (M7 parity complete)**
-- **The last beta parity gap closes**: the retro cabinet pass (palette quantization, posterize + paint blur, bright-pass glow, scanlines, contrast/saturation) now runs under the flag as a TSL node graph — same low-res render target, same fullscreen triangle, same math. The v191 bypass guards are gone; cabinets look like cabinets on both renderers
-- **The NES palette search is unrolled in JS** over the fixed 16 entries — no palette texture, no shader loop needed under the node pipeline
-- **Two hard-won debugging lessons baked in**: (1) a node graph computes every branch, so the posterize divisor must stay finite when `posterize` is 0 — the GLSL's `if` guard hid a ÷0 that NaN-poisoned the whole pass black; (2) TSL `ConditionalNode` (`select`) black-screened and device-lost the WebGL2 backend, so the graph uses **zero conditionals** — every GLSL `if` is a `step()` mask + `mix()` blend with exact 0/1 semantics
-- Also: v194's `transformedNormalView` deprecation resolved via a `normalView` shim
-- Verified headless: full graph renders on preview/gaundrop/tokotron profiles (pixel-verified against classic: flag TOKOTRON 2.65 avg vs classic 2.9); TOKOTRON + GAUNDROP cabinet runs live under flag AND classic with RT sized, 16-entry palette armed, 0 errors
-- Cache-bust `?v=148` → `?v=149`; HUD label → v195
-
----
-
-## v194 — 2026-07-22
-**The gels wobble under WEBGPU — full TSL port of the goo FX (M7 gel push, part 1)**
-- **The biggest beta gap closes**: enemies and the player were satin-but-still under the flag because the goo FX live in `onBeforeCompile` GLSL, which the node pipeline ignores. The whole displacement family — ambient wobble, directional **hit ripple**, pre-death **tear**, dash **squash-stretch** — now also exists as a TSL `positionNode` graph, and the satin **SSS glow** as an `emissiveNode` term
-- **Same math, twice**: the node graph is a line-for-line translation of the GLSL; under the flag `makeSatinMat` builds node material classes and every `gooU` uniform is a TSL `uniform()` node sharing the `{ value }` interface — so ALL FX writers (hit ripples, tears, player stretch, designer SSS slider) work unchanged in both paths. `GOO_TIME` follows the same trick
-- The SSS term **adds to `materialEmissive`**, so the strobe/flash adapters that write `mat.emissive` (CUSTODIAN sheen, VOLATILE fuse, teleport strobes) keep their voice under the node pipeline
-- Flat cabinet materials (tokotron/gaundrop/loadout/kaikki lamberts) wobble but skip SSS — mirroring the GLSL guard; `makeGooMat` was confirmed dead code (zero call sites)
-- Verified headless under the flag: gels carry both nodes, the **full 39-type roster + a tokotron lambert** compile and render with 0 errors, frames differ under a static scene (wobble is alive), ripple uniform writes flow clean; classic control renders the same roster with no node graph attached
-- Cache-bust `?v=147` → `?v=148`; HUD label → v194
-
----
-
-## v193 — 2026-07-22
-**WEBGPU beta field feedback — motion trails off under the flag**
-- **User field test of v192**: real WebGPU runs ("things look good. not a huge leap"), but **"the trails look off"** — the motion-trail afterimage ghosts behind fast movers read wrong under the node pipeline. They're now **off under the WEBGPU flag**; classic keeps them exactly as before
-- Sparse trail FX that are gameplay TELLS stay on in both paths: SWIFT elite ribbons, the NEX secret shimmer, vault pings, magnet sparkles
-- The slime-fizz bubbling is confirmed a keeper in both paths ("a great visual for simplistic communication") — untouched
-- **Roadmap: new M7 graphics-track section** records the promotion criterion — WEBGPU stays experimental until the flag path really pushes the **gelation look and explosion splatter** (TSL goo wobble/SSS port and beyond)
-- Cache-bust `?v=146` → `?v=147`; HUD label → v193
-
----
-
-## v192 — 2026-07-22
-**WEBGPU (BETA) goes real — the flag build jumps to three r180, adaptive backend (user: "try webGPU")**
-- **The true WebGPU backend is unlocked**: v191 pinned `forceWebGL` because r167's WGSL codegen fails today's strict validation. The flag path now ships **three@0.180.0** (newest that fits current Chromium — r185 already wants a newer browser API), where the codegen is fixed: `WebGPURenderer` takes a **real adapter when the browser grants one** and falls back to its WebGL2 backend on its own when not. The HUD tag reports which (`· WEBGPU` / `· WEBGPU(GL)`)
-- **Classic stays r167** — flag off is byte-identical, as always. Version skew only ever exists behind the beta toggle
-- **r180's split build**: `three.webgpu.min.js` + `three.core.min.js` both vendored; the internal relative import is patched with a `?v=` token (the v118/v119 tokenless-new-path CDN trap) and `bump-version.sh` now rotates it with the rest of the graph; both precached in `sw.js`
-- **TSL namespace shim** (`THREE.TSL ?? THREE`): newer builds moved the TSL functions off the root export — the floor + splat node ports read through the shim so both r167 and r180+ resolve
-- Verified headless: classic untouched; r180's node pipeline renders the full game correctly on the WebGL2 backend (pixel-checked); the real-WebGPU path runs the full game at 59 FPS with **zero WGSL/validation errors** — the test rig's software WebGPU caps buffers at ~3.6 KB so most meshes can't upload there (only rig noise; real adapters allow hundreds of MB), making real hardware the field test for final pixels
-- Cache-bust `?v=145` → `?v=146`; HUD label → v192
-
----
-
-## v191 — 2026-07-20
-**WEBGPU (BETA) — the node-pipeline renderer lands, flag-gated (graphics track step 1)**
-- **New OPTIONS → DEV toggle `WEBGPU (BETA)`**: reloads into `three.webgpu.min.js` (same vendored three@0.167.0) and drives the whole game through `WebGPURenderer` — the modern node/TSL pipeline that real WebGPU requires. **For now it runs on the renderer's WebGL2 backend** (`forceWebGL`): the spike found that r167's WGSL codegen emits a runtime-sized uniform array today's browsers reject (strict validation), which whiteouts the true WebGPU backend on real hardware — that backend unlocks in the arc's three-upgrade step. The HUD tag names the live backend (`· WEBGPU(GL)`)
-- **The importmap is now written by a boot script** (importmaps are immutable per page — the build pick happens before any module resolves; toggling reloads on the spot)
-- **First TSL ports**: the floor grid shader and the v190 splat shader run as node materials — same math, same per-instance attributes; TSL `uniform()` nodes share the `.value` interface so every uniform write site is byte-identical across paths; a `.pow(2.2)` pre-encode keeps raw-GLSL colour parity through the node pipeline's output encoding
-- **Known spike gaps** (next steps on this track): gel wobble/SSS (`onBeforeCompile` is GLSL-only — enemies render satin but still), and the retro cabinet pass (cabinets render raw under the flag). The pause-menu enemy tester follows the main renderer's kind
-- **Flag off = untouched**: the classic WebGL path resolves the same build and code it always did
-- Cache-bust `?v=144` → `?v=145`; HUD label → v191
-
----
-
-## v190 — 2026-07-19
-**Instanced floor splats — blood, goo, and slime collapse to one draw call**
-- **Puddles and YELA slime trails used to be one live `Mesh` each** — a fresh `CircleGeometry` + material allocated per death — so a heavy wave clear stacked dozens of draw calls and churned GC on the exact hot path the death-chunk pool was built to protect. They now share **one `InstancedMesh`** (`SplatPool`): dozens of splats → **1 draw call**, zero per-spawn allocation
-- Alpha fade is the one thing `InstancedMesh` can't do natively, so a **tiny per-instance shader** carries colour + opacity; three injects `instanceMatrix` automatically. Follows v189's instancing and the death-chunk / motion-trail pools already proven in `main.js`
-- **Zero visual change**: same spring-splat blood, same organic slime squash + fizz bubbles, same colours and fade timings, same floor heights. `SludgeRibbon` (a single continuous ribbon, not per-splat) is untouched
-- VERSIONS: v180–v189 archived (decade rule)
-- Cache-bust `?v=143` → `?v=144`; HUD label → v190
+## v200 — 2026-07-24
+**THE JUICE PASS — every death detonates (option A, for everyone)**
+- **Extra droplet burst on every kill**: 4 extra chunks for small fry, 8 for big bodies, 14 for bosses, on top of the enemy's own chunk set — spending the instancing headroom v189/v190 built (chunk pools 256 → 384 slots)
+- **Kill-streak HEAT**: rapid kills escalate the splatter — heat rises per kill and cools fast, scaling chunk counts, droplet velocity, satellite splats, and shake, so the 10th kill of a chain detonates louder than the 1st. Pure FX, zero gameplay
+- **The floor gets painted**: 1–3 satellite splats scatter around the main death puddle (3 for big bodies) — a fight leaves a Jackson-Pollock record
+- **Shockwave through the school**: big deaths ripple + squash every gel within 3.5u, reusing the existing hit-ripple and spring-squash systems — hitboxes untouched, works in both renderers (v194 ported those systems to TSL)
+- Applies to ALL modes, classic and default alike
+- VERSIONS: v190–v199 archived (decade rule)
+- Cache-bust `?v=153` → `?v=154`; HUD label → v200
 
 ---
 
 ## Archive
+
+**v190–v199 summary (2026-07-19 – 2026-07-24)**
+- v190: Instanced floor splats — puddles + slime trails share one InstancedMesh (dozens of draw calls → 1)
+- v191: WEBGPU (BETA) toggle — node-pipeline renderer flag-gated; floor + splat TSL ports; boot-script importmap
+- v192: Real WebGPU backend — flag build jumps to three r180 (classic stays r167); adaptive adapter with WebGL2 fallback
+- v193: Field feedback — motion-trail afterimages off under the flag; slime fizz confirmed keeper; M7 promotion criterion recorded
+- v194: Gels wobble under WEBGPU — full TSL port of the goo FX (positionNode displacement + emissiveNode SSS)
+- v195: RetroPass TSL port — cabinets keep palette/scanline/glow looks under the flag (zero ConditionalNodes; ÷0 NaN lesson)
+- v196: FLUID MODE — the movement lab: dodge bullet lanes, boids schooling, split-on-death minnows
+- v197: FLUID wave archetypes — STREAM / RING / PINCER currents, deterministic per wave, bannered
+- v198: CLOSE COMBAT + FLUID become the DEFAULT for all players (absent key = ON; saved choices respected)
+- v199: Identity pass — TWIN-STICK SWARM SURVIVAL branding across title/OG/manifest/README/GDD
 
 **v180–v189 summary (2026-07-17 – 2026-07-19)**
 - v180: Roguelike depth (M6) — three new upgrade cards + CURSED cards (power with a printed price)
