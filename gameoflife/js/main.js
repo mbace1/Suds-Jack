@@ -6,24 +6,24 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=15';
-import { PAL } from './palette.js?v=15';
-import { PixelScreen, shade } from './pixel.js?v=15';
-import * as store from './storage.js?v=15';
-import * as audio from './audio.js?v=15';
-import { pickInterlude, isEvening } from './nature.js?v=15';
-import { aqueduct } from './experiences/aqueduct.js?v=15';
-import { forest } from './experiences/forest.js?v=15';
-import { tern } from './experiences/tern.js?v=15';
-import { cup } from './experiences/cup.js?v=15';
-import { hanami } from './experiences/hanami.js?v=15';
-import { berry } from './experiences/berry.js?v=15';
-import { stars } from './experiences/stars.js?v=15';
-import { maple } from './experiences/maple.js?v=15';
-import { plate } from './experiences/plate.js?v=15';
-import { seam } from './experiences/seam.js?v=15';
-import { dots } from './experiences/dots.js?v=15';
-import { glass } from './experiences/glass.js?v=15';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=16';
+import { PAL } from './palette.js?v=16';
+import { PixelScreen, shade } from './pixel.js?v=16';
+import * as store from './storage.js?v=16';
+import * as audio from './audio.js?v=16';
+import { pickInterlude, isEvening } from './nature.js?v=16';
+import { aqueduct } from './experiences/aqueduct.js?v=16';
+import { forest } from './experiences/forest.js?v=16';
+import { tern } from './experiences/tern.js?v=16';
+import { cup } from './experiences/cup.js?v=16';
+import { hanami } from './experiences/hanami.js?v=16';
+import { berry } from './experiences/berry.js?v=16';
+import { stars } from './experiences/stars.js?v=16';
+import { maple } from './experiences/maple.js?v=16';
+import { plate } from './experiences/plate.js?v=16';
+import { seam } from './experiences/seam.js?v=16';
+import { dots } from './experiences/dots.js?v=16';
+import { glass } from './experiences/glass.js?v=16';
 
 const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
@@ -118,23 +118,15 @@ function showHub() {
   stopHubScene();
   app.innerHTML = '';
 
+  const newcomer = store.getState().completions.length < 2;
+
   const header = el('header', 'hub-header');
   const sceneWrap = el('div', 'hub-scene');
   hubScene = startHubScene(sceneWrap);
-  header.append(
-    sceneWrap,
-    el('h1', '', t('hub.title')),
-    el('p', 'tagline', t('hub.tagline')),
-    el('p', 'greet', t(`hub.greet.${daySlot()}`)),
-  );
-
-  const langRow = el('div', 'lang-row');
-  for (const { code, label } of LANGS) {
-    const b = el('button', 'lang-btn' + (getLang() === code ? ' active' : ''), label);
-    b.onclick = () => { setLang(code); store.setLangPref(code); showHub(); };
-    langRow.appendChild(b);
-  }
-  header.appendChild(langRow);
+  header.append(sceneWrap, el('h1', '', t('hub.title')));
+  // the tagline only greets newcomers — returning visitors keep the quiet
+  if (newcomer) header.appendChild(el('p', 'tagline', t('hub.tagline')));
+  header.appendChild(el('p', 'greet', t(`hub.greet.${daySlot()}`)));
   app.appendChild(header);
 
   const resting = store.interludeDue();
@@ -169,11 +161,22 @@ function showHub() {
 
   // the explanatory hint fades once the rhythm is known — less text, more zen
   if (resting) app.appendChild(el('p', 'cycle-hint', t('hub.rested')));
-  else if (store.getState().completions.length < 2) app.appendChild(el('p', 'cycle-hint', t('hub.cycle.hint')));
+  else if (newcomer) app.appendChild(el('p', 'cycle-hint', t('hub.cycle.hint')));
 
-  const fb = el('button', 'link-btn', t('hub.feedback'));
+  // a single quiet footer carries the set-once controls (language, feedback)
+  // out of the main column, so the offering stays the one thing in focus
+  const footer = el('div', 'hub-footer');
+  const langRow = el('div', 'lang-row');
+  for (const { code, label } of LANGS) {
+    const b = el('button', 'lang-btn' + (getLang() === code ? ' active' : ''), label);
+    b.onclick = () => { setLang(code); store.setLangPref(code); showHub(); };
+    langRow.appendChild(b);
+  }
+  footer.appendChild(langRow);
+  const fb = el('button', 'link-btn footer-link', t('hub.feedback'));
   fb.onclick = () => showFeedback('hub', showHub);
-  app.appendChild(fb);
+  footer.appendChild(fb);
+  app.appendChild(footer);
 
   // the cycle: if two experiences have been finished, the hub opens
   // straight onto the invitation before anything else can be played

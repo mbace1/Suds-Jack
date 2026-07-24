@@ -6,8 +6,8 @@
 // black void, muted graphic-novel tones, and a luminescent gold breakout
 // when the plate finally fixes.
 
-import { PixelScreen } from '../pixel.js?v=15';
-import { PAL } from '../palette.js?v=15';
+import { PixelScreen, rampDither, bayer } from '../pixel.js?v=16';
+import { PAL } from '../palette.js?v=16';
 
 // the vignette: scene lives in this window, edges eaten by deterministic jags
 const VX = 22, VY = 12, VW = 148, VH = 100;
@@ -147,6 +147,11 @@ export const plate = {
 
     function draw(now, dt) {
       scr.clear(PAL.VOID);
+      // the vignette floats on a soft dusty halo in the void — a warm silver
+      // bleed at the plate stage, cool daylight while the street is still live
+      const warm = phase === 'street' || phase === 'expose' ? 0 : 1;
+      scr.softDisc(VX + VW / 2, VY + VH / 2 + 2, 96, warm ? '#181210' : '#12131a', 28);
+      scr.softDisc(VX + VW / 2 - 6, VY + VH / 2 - 4, 68, warm ? '#281d16' : '#1c1e28', 22);
       if (phase === 'street') {
         street(now, 0);
         crowds(now, 0);
@@ -159,10 +164,13 @@ export const plate = {
         street(now, k);
         crowds(now, k);
         stillMan(k);
-        // the plate drinking light: a faint gold film rising
-        if (k > 0.5) for (let i = 0; i < 30; i++) {
+        // the plate drinking light: a dithered gold film rising as the silver
+        // salts darken — denser toward the end of the exposure (halftone ramp)
+        const FILM = ['#7a6e52', '#9a8a68', '#c9b88a', '#e8d8a8'];
+        if (k > 0.4) for (let i = 0; i < 46; i++) {
           const x = VX + (i * 37) % VW, y = VY + (i * 53) % VH;
-          if ((Math.floor(now / 160) + i) % 3 === 0) scr.px(x, y, 1, 1, '#c9b88a');
+          if (bayer(x, y) < (k - 0.4) * 0.9 && (Math.floor(now / 200) + i) % 2 === 0)
+            scr.px(x, y, 1, 1, rampDither(FILM, 0.3 + k * 0.6, x, y));
         }
         if (exposeT >= EXPOSURE_SEC) { audio.water(); showChoice(); }
       } else {
@@ -171,6 +179,8 @@ export const plate = {
         if (phase === 'outro') {
           // the fix: luminescent gold light breaking the vignette into the void
           glowT += dt;
+          // a warm halo bleeds first, then the bright ring rides on top of it
+          scr.softDisc(VX + 61, VY + VH - 18, 18 + Math.min(40, glowT * 26), '#3a2c12', 18);
           const R = 12 + Math.min(40, glowT * 26);
           for (let i = 0; i < 40; i++) {
             const th = i / 40 * Math.PI * 2;

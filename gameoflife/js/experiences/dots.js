@@ -4,8 +4,8 @@
 // mean. Owner's design (2026-07 master doc). The moons run on the real
 // Galilean periods (1.8 / 3.6 / 7.2 / 16.7 days).
 
-import { PixelScreen } from '../pixel.js?v=15';
-import { PAL } from '../palette.js?v=15';
+import { PixelScreen, rampDither } from '../pixel.js?v=16';
+import { PAL } from '../palette.js?v=16';
 
 const CX = 96, CY = 56, LENS_R = 50;
 const JUP = ['#d9c9a0', '#b8926a', '#d0b088', '#a87f5c', '#c9ab80'];   // cloud bands
@@ -97,9 +97,19 @@ export const dots = {
 
     // ── drawing ──────────────────────────────────────────────────
     function lens(now) {
-      // the eyepiece: a circle of night sky floating in the void
-      scr.disc(CX, CY, LENS_R, '#0c1020');
-      scr.disc(CX - 6, CY - 5, LENS_R - 4, '#101628');
+      // the eyepiece floats on a faint cool halo — the instrument's gathered
+      // light bleeding into the void (reference-standard vignette)
+      scr.softDisc(CX, CY, LENS_R + 18, '#0a0e1a', 20);
+      // a circle of night sky, its interior dithered dark→less-dark toward the
+      // polished edge so the glass reads as depth, not a flat fill
+      const SKY = ['#080b16', '#0c1020', '#101628', '#141c30'];
+      for (let dy = -LENS_R; dy <= LENS_R; dy++) {
+        const dx = Math.floor(Math.sqrt(LENS_R * LENS_R - dy * dy));
+        for (let x = -dx; x <= dx; x += 1) {
+          const d = Math.hypot(x, dy);
+          scr.px(CX + x, CY + dy, 1, 1, rampDither(SKY, d / LENS_R, CX + x, CY + dy));
+        }
+      }
       for (let i = 0; i < 26; i++) {                       // faint field stars
         const a = i * 2.39997, rr = 8 + (i * 17) % (LENS_R - 10);
         const x = CX + Math.cos(a) * rr, y = CY + Math.sin(a) * rr;
@@ -175,8 +185,12 @@ export const dots = {
         for (let i = 0; i < 14; i++) scr.px((i * 41 + 7) % 190, (i * 23 + 5) % 90, 1, 1, '#3a4258');
       } else {
         lens(now);
+        const luxe = phase === 'truth' || phase === 'outro';
+        // a cool luminous wash under the orbit lines, behind Jupiter, growing
+        // as the orbits extend — drawn first so the planet rides on top of it
+        if (luxe) scr.softDisc(CX, CY + 22, 16 + Math.min(24, glowT * 22), '#08201e', 14);
         jupiter(now);
-        moons(night, phase === 'truth' || phase === 'outro');
+        moons(night, luxe);
         if (journal.length && phase !== 'intro') notebook();
       }
     }
