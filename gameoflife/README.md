@@ -59,13 +59,14 @@ switchable in the hub, persisted in `localStorage`.
 | `plate` | story | The Silver Plate | Paris 1838: run the exposure, watch the crowd erase itself, meet the first human ever photographed → *sit still two minutes in a busy place* |
 | `seam` | story | The Golden Seam | Gather a shattered tea bowl from the void, then honor the break in glowing kintsugi gold → *trace a repaired object's history for a minute* |
 | `dots` | story | The Four Dots | Padua 1610: pass the nights watching four specks beside Jupiter refuse to hold still, then meet the first moons of another world → *find the brightest non-Moon light tonight* |
+| `glass` | game | The Glass Plate | Palo Alto 1878: release Muybridge's horse, the tripwires fire twelve cameras, one frame proves all four hooves airborne — then spin the stills into a zoetrope → *blink-freeze a running animal* |
 
 ## Visual standard (2026-07 master doc)
 
 New experiences follow the owner's art direction (see
 `ideas/2026-07-master-ideas.md` + reference art in `ideas/ref/`): 16-bit
-scenes floating in a pure black void as **irregular jagged vignettes** (or
-letterboxed widescreen), muted graphic-novel environment tones, and
+scenes floating in a pure black void as **irregular jagged vignettes** (`plate`/`seam`/`dots`) or **cinematic
+letterboxed widescreen** (`glass`), muted graphic-novel environment tones, and
 luminescent **cyan/gold** for interactive elements that **break the frame**
 into the void. `plate`/`seam`/`dots` are the pilots; existing experiences migrate
 gradually. Shared `pixel.js` now gives every scene **crisp defined sections** (a 1px

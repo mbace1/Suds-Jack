@@ -189,6 +189,19 @@ function check(name, cond) {
   check('dots truth shown', (await page.locator('.exp-text').textContent()).includes('Four moons'));
   await page.locator('.back-btn').click();
 
+  // glass: Muybridge — release the horse, wires fire, choose the zoetrope
+  await page.evaluate(() => __gol.debug.start('glass'));
+  check('glass intro shown', (await page.locator('.exp-text').textContent()).includes('Muybridge'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Release the horse' }).click();
+  await page.waitForSelector('.exp-buttons .btn:has-text("zoetrope")', { timeout: 6000 });
+  check('glass reveal caught the suspension',
+    (await page.locator('.exp-text').textContent()).includes('four hooves'));
+  await page.locator('.exp-buttons .btn', { hasText: 'zoetrope' }).click();
+  check('glass zoetrope revives the horse', (await page.locator('.exp-text').textContent()).includes('cinema'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Continue' }).click();
+  check('glass outro shown', (await page.locator('.exp-text').textContent()).includes('still moments'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');

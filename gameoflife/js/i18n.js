@@ -47,6 +47,20 @@ const STR = {
     'exp.cup.desc': 'An old zen story you pour yourself.',
     'exp.hanami.name': 'Under the Blossoms',
     'exp.hanami.desc': 'Twelve centuries of watching cherry trees — and why it only works because it ends.',
+    'exp.glass.name': 'The Glass Plate',
+    'exp.glass.desc': 'Palo Alto, 1878 — twelve tripwires settle a bet no eye could: are all four hooves ever airborne at once?',
+
+    'gl.s1': 'Palo Alto, 1878. A railroad baron bets a horse, at full gallop, has all four hooves off the ground at once — and no eye is quick enough to prove it. Eadweard Muybridge strings twelve tripwires across the track, each rigged to a camera. Release the horse.',
+    'gl.release': 'Release the horse',
+    'gl.running': 'The horse runs — and one by one the wires fire the cameras…',
+    'gl.reveal': 'Twelve stills, developed. And there, in one frame the eye alone could never hold: all four hooves gathered in the air, touching nothing. The bet is won by a machine.',
+    'gl.examine': 'Study the frozen frames',
+    'gl.spin': 'Spin them in a zoetrope',
+    'gl.examined': 'Frozen, the horse is impossible — legs folded, floating, a shape no one had ever truly seen. The truth of motion was always hiding between the moments we can catch.',
+    'gl.spun': 'Spun fast, the dead stills quicken: the horse gallops again, alive, reborn from a row of still moments. This became the flip-book, the film reel, the cinema.',
+    'gl.outro': 'Movement is only a series of still moments, shown quickly enough to fool the eye.',
+    'gl.nature': 'Watch an animal or a person running. Try to blink fast enough to catch a single frozen frame of their movement — and feel how much your eye smooths over.',
+
     'exp.dots.name': 'The Four Dots',
     'exp.dots.desc': 'Padua, 1610 — four specks beside Jupiter that refuse to hold still.',
 
@@ -257,6 +271,20 @@ const STR = {
     'exp.cup.desc': 'Vanha zen-tarina, jonka kaadat itse.',
     'exp.hanami.name': 'Kukkien alla',
     'exp.hanami.desc': 'Kaksitoista vuosisataa kirsikkapuiden katselua — ja miksi se toimii vain siksi, että se loppuu.',
+    'exp.glass.name': 'Lasilevy',
+    'exp.glass.desc': 'Palo Alto, 1878 — kaksitoista laukaisulankaa ratkaisee vedon, jota silmä ei voinut: ovatko kaikki neljä kaviota koskaan ilmassa yhtä aikaa?',
+
+    'gl.s1': 'Palo Alto, 1878. Rautatiepohatta lyö vetoa, että täydessä laukassa hevosella ovat kaikki neljä kaviota irti maasta yhtä aikaa — eikä yksikään silmä ole kyllin nopea todistamaan sitä. Eadweard Muybridge pingottaa radan yli kaksitoista laukaisulankaa, kukin kytkettynä kameraan. Päästä hevonen.',
+    'gl.release': 'Päästä hevonen',
+    'gl.running': 'Hevonen juoksee — ja yksi kerrallaan langat laukaisevat kamerat…',
+    'gl.reveal': 'Kaksitoista pysäytyskuvaa, kehitettynä. Ja siinä, yhdessä ruudussa jota silmä yksin ei koskaan voisi pitää: kaikki neljä kaviota koottuina ilmaan, mihinkään koskematta. Vedon voittaa kone.',
+    'gl.examine': 'Tutki pysäytyskuvia',
+    'gl.spin': 'Pyöritä niitä zoetroopissa',
+    'gl.examined': 'Pysäytettynä hevonen on mahdoton — jalat koukussa, leijuen, muoto jota kukaan ei ollut oikeasti nähnyt. Liikkeen totuus piileskeli aina niiden hetkien välissä, jotka voimme napata.',
+    'gl.spun': 'Nopeasti pyöritettynä kuolleet kuvat heräävät: hevonen laukkaa taas, elävänä, syntyneenä uudelleen rivistä pysähtyneitä hetkiä. Tästä tuli kääntökirja, filminauha, elokuva.',
+    'gl.outro': 'Liike on vain sarja pysähtyneitä hetkiä, näytettynä kyllin nopeasti huijaamaan silmää.',
+    'gl.nature': 'Katso juoksevaa eläintä tai ihmistä. Yritä räpäyttää kyllin nopeasti napataksesi yhden pysähtyneen ruudun heidän liikkeestään — ja tunne, kuinka paljon silmäsi tasoittaa pois.',
+
     'exp.dots.name': 'Neljä pistettä',
     'exp.dots.desc': 'Padova, 1610 — neljä pistettä Jupiterin vierellä, jotka eivät suostu pysymään paikoillaan.',
 
@@ -467,6 +495,20 @@ const STR = {
     'exp.cup.desc': '自分の手で注ぐ、古い禅の話。',
     'exp.hanami.name': '花の下で',
     'exp.hanami.desc': '桜を見つめてきた千二百年 — 終わるからこそ、成り立つこと。',
+    'exp.glass.name': 'ガラス板',
+    'exp.glass.desc': 'パロアルト、1878年 — 十二本の引き金線が、目には解けない賭けを決める: 疾走する馬の四本の蹄は、同時に宙に浮くのか?',
+
+    'gl.s1': 'パロアルト、1878年。鉄道王が賭ける — 全速力の馬は四本の蹄が同時に地を離れる、そしてどんな目もそれを証明するほど速くはない、と。エドワード・マイブリッジは走路に十二本の引き金線を張り、それぞれをカメラにつなぐ。馬を放とう。',
+    'gl.release': '馬を放つ',
+    'gl.running': '馬が走る — 一本ずつ、線がカメラを切っていく…',
+    'gl.reveal': '十二枚の静止画、現像された。そしてそこに、目だけでは決してとらえられない一コマ: 四本の蹄が宙に集められ、何にも触れていない。賭けは、機械が勝った。',
+    'gl.examine': '止まった一コマを調べる',
+    'gl.spin': 'ゾートロープで回す',
+    'gl.examined': '止められると、馬はありえない姿だ — 脚を折りたたみ、浮かび、誰も本当には見たことのない形。動きの真実は、いつも、とらえられる瞬間と瞬間のあいだに隠れていた。',
+    'gl.spun': '速く回すと、死んだ静止画がよみがえる: 馬はふたたび疾走し、生きて、止まった瞬間の列から生まれ変わる。これがパラパラ漫画になり、フィルムになり、映画になった。',
+    'gl.outro': '動きとは、目をだますほど速く見せられた、止まった瞬間の連なりにすぎない。',
+    'gl.nature': '走る動物か人を見てみよう。まばたきで、その動きの一コマを止めてつかまえられるか試して — そして、あなたの目がどれほど多くをなめらかにならしているかを感じて。',
+
     'exp.dots.name': '四つの点',
     'exp.dots.desc': 'パドヴァ、1610年 — 木星のそばで、じっとしていない四つの光の点。',
 

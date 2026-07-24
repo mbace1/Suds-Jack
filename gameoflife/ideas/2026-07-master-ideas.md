@@ -25,7 +25,7 @@ Source: project owner, via idea-form exchange. Reference art in `ref/`
       only remembers what stands still.* → sit still 2 min in a busy place. (v11)
 - [x] **The Four Dots** — Padua 1610, Galileo + Jupiter's moons. → find the (v13)
       brightest non-moon light tonight.
-- [ ] **The Glass Plate** — Palo Alto 1878, Muybridge's horse. → blink-freeze
+- [x] **The Glass Plate** — Palo Alto 1878, Muybridge's horse. → blink-freeze (v14)
       a running animal.
 - [ ] **The Tether** — Paris 1783, first free balloon flight. → look down
       from the highest walkable point.
