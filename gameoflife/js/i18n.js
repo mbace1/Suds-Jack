@@ -47,6 +47,19 @@ const STR = {
     'exp.cup.desc': 'An old zen story you pour yourself.',
     'exp.hanami.name': 'Under the Blossoms',
     'exp.hanami.desc': 'Twelve centuries of watching cherry trees — and why it only works because it ends.',
+    'exp.plate.name': 'The Silver Plate',
+    'exp.plate.desc': 'Paris, 1838 — the busiest street in the world records as empty, except for one still man.',
+
+    'pl.s1': 'Paris, spring 1838. Louis Daguerre opens the window above the Boulevard du Temple and uncaps his lens. The street below boils with life — carriages, criers, dogs, crowds. His silver plate needs long minutes of light to see anything at all.',
+    'pl.begin': 'Begin the exposure',
+    'pl.s2': 'Minutes pass in one held breath. Everything that moved has vanished — the plate cannot hold hurry, and the busiest street in Paris records as empty. Except: one figure remains, lower left. A man having his boots shined.',
+    'pl.s2.a': 'Study the emptied boulevard',
+    'pl.s2.b': 'Study the still man',
+    'pl.s3a': 'Thousands of people passed through this exposure, and not one of them exists on it. Their hurry made them invisible. The plate kept only what stayed.',
+    'pl.s3b': 'He never learned what he became: the first human being in any photograph. He stood still long enough to exist.',
+    'pl.outro': 'History only remembers what stands still.',
+    'pl.nature': 'Go to a busy place. Sit perfectly still for two minutes, and watch everything around you busily erasing itself.',
+
     'exp.maple.name': 'The Year of the Old Maple',
     'exp.maple.desc': 'One tree, four seasons — spring unpacks, autumn reveals, winter waits ready.',
 
@@ -216,6 +229,19 @@ const STR = {
     'exp.cup.desc': 'Vanha zen-tarina, jonka kaadat itse.',
     'exp.hanami.name': 'Kukkien alla',
     'exp.hanami.desc': 'Kaksitoista vuosisataa kirsikkapuiden katselua — ja miksi se toimii vain siksi, että se loppuu.',
+    'exp.plate.name': 'Hopealevy',
+    'exp.plate.desc': 'Pariisi 1838 — maailman vilkkain katu tallentuu tyhjänä, paitsi yksi liikkumaton mies.',
+
+    'pl.s1': 'Pariisi, kevät 1838. Louis Daguerre avaa ikkunan Boulevard du Templen yllä ja paljastaa linssinsä. Katu kuohuu elämää — vaunuja, kaupustelijoita, koiria, väkijoukkoja. Hänen hopealevynsä tarvitsee pitkiä minuutteja valoa nähdäkseen yhtään mitään.',
+    'pl.begin': 'Aloita valotus',
+    'pl.s2': 'Minuutit kuluvat yhdessä pidätetyssä hengityksessä. Kaikki mikä liikkui on kadonnut — levy ei voi pitää kiirettä, ja Pariisin vilkkain katu tallentuu tyhjänä. Paitsi: yksi hahmo jää, vasempaan alakulmaan. Mies, jonka kenkiä kiillotetaan.',
+    'pl.s2.a': 'Tutki tyhjentynyttä bulevardia',
+    'pl.s2.b': 'Tutki liikkumatonta miestä',
+    'pl.s3a': 'Tuhannet ihmiset kulkivat tämän valotuksen läpi, eikä yksikään heistä ole olemassa sillä. Kiire teki heistä näkymättömiä. Levy piti vain sen, mikä pysyi.',
+    'pl.s3b': 'Hän ei koskaan saanut tietää, miksi hänestä tuli: ensimmäinen ihminen missään valokuvassa. Hän seisoi paikallaan tarpeeksi kauan ollakseen olemassa.',
+    'pl.outro': 'Historia muistaa vain sen, mikä pysyy paikallaan.',
+    'pl.nature': 'Mene vilkkaaseen paikkaan. Istu täysin liikkumatta kaksi minuuttia ja katso, kuinka kaikki ympärilläsi kiireisesti pyyhkii itsensä pois.',
+
     'exp.maple.name': 'Vanhan vaahteran vuosi',
     'exp.maple.desc': 'Yksi puu, neljä vuodenaikaa — kevät purkaa pakkauksen, syksy paljastaa, talvi odottaa valmiina.',
 
@@ -385,6 +411,19 @@ const STR = {
     'exp.cup.desc': '自分の手で注ぐ、古い禅の話。',
     'exp.hanami.name': '花の下で',
     'exp.hanami.desc': '桜を見つめてきた千二百年 — 終わるからこそ、成り立つこと。',
+    'exp.plate.name': '銀の板',
+    'exp.plate.desc': 'パリ、1838年 — 世界一にぎやかな通りが空っぽに写り、動かないひとりの男だけが残った。',
+
+    'pl.s1': 'パリ、1838年の春。ルイ・ダゲールはタンプル大通りを見おろす窓を開け、レンズの蓋をはずす。眼下の通りは命であふれている — 馬車、呼び売り、犬、群衆。彼の銀板が何かを見るためには、長い長い数分の光が要る。',
+    'pl.begin': '露光をはじめる',
+    'pl.s2': 'ひとつの息をとめている間に、数分が過ぎる。動いていたものはすべて消えた — 板は急ぎを写せない。パリでいちばんにぎやかな通りが、空っぽとして記録される。ただし: 左下に、ひとりだけ残っている。靴を磨かせている男。',
+    'pl.s2.a': '空になった大通りを見つめる',
+    'pl.s2.b': '動かない男を見つめる',
+    'pl.s3a': '何千人もの人がこの露光の中を通り過ぎ、そのひとりもここには存在しない。急いだことが、彼らを見えなくした。板は、とどまったものだけを残した。',
+    'pl.s3b': '彼は自分が何になったのかを知らないままだった: 写真に写った、人類で最初のひとり。存在するのに足りるだけ、じっと立っていた。',
+    'pl.outro': '歴史は、じっとしていたものだけを覚えている。',
+    'pl.nature': 'にぎやかな場所へ行こう。二分間、完全にじっと座って、まわりのすべてが忙しく自分を消していくのを眺めてみて。',
+
     'exp.maple.name': '老いた楓の一年',
     'exp.maple.desc': '一本の木、四つの季節 — 春はほどき、秋はあらわし、冬は支度をして待つ。',
 
