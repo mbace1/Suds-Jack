@@ -202,6 +202,14 @@ function check(name, cond) {
   check('glass outro shown', (await page.locator('.exp-text').textContent()).includes('still moments'));
   await page.locator('.back-btn').click();
 
+  // wait: Stand and Wait — intro, then "stand and wait" starts the mist thinning
+  // (checked at the hint, like forest's breathing, so the test needn't wait it out)
+  await page.evaluate(() => __gol.debug.start('wait'));
+  check('wait intro shown', (await page.locator('.exp-text').textContent()).includes('pine'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Stand and wait' }).click();
+  check('wait begins to clear', (await page.locator('.exp-text').textContent()).includes('mist'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');

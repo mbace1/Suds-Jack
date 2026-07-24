@@ -52,4 +52,7 @@ export const PAL = {
   VOID:      '#000000',
   CYAN_LUX:  '#35e8d8',
   GOLD_LUX:  '#ffd75a',
+  // a living luminescent green — fireflies, glow-moss, the breakout accent for
+  // nature scenes where cyan/gold would read as artificial light
+  LEAF_LUX:  '#a6e85a',
 };

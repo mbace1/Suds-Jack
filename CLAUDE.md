@@ -100,10 +100,14 @@ Galileo, Padua 1610: pass the nights, the four Galilean moons swing around Jupit
 their real periods; a lens-vignette in the void with a notebook strip), and `glass`
 (game — Muybridge, Palo Alto 1878: release the horse, tripwires fire 12 cameras, one
 frame proves all four hooves airborne, then a zoetrope revives the stills; debuts the
-cinematic-letterbox format). `plate` pilots the **2026-07 visual
-standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
+cinematic-letterbox format), and `wait` (wisdom — Stand and Wait: press once then
+stand while a dithered halftone fog burns off over ~9s to reveal an old pine,
+green `LEAF_LUX` fireflies drifting past the frame; tapping only earns "the mist
+keeps its own time"; built to `horizon-pine-vignette.png`). `plate` pilots the
+**2026-07 visual standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
 jagged 16-bit vignettes in a pure-black void, muted environments, luminescent cyan/gold
-interactive elements that break the frame (`PAL.VOID/CYAN_LUX/GOLD_LUX`). Shared `pixel.js`
+interactive elements that break the frame (`PAL.VOID/CYAN_LUX/GOLD_LUX`, plus
+`PAL.LEAF_LUX` — a luminescent green for nature-scene glow like fireflies). Shared `pixel.js`
 gives all art crisp **defined sections** (1px darker seam between `bands()` colours) and
 opt-in outline **edges** on `disc(cx,cy,r,color,edge)`/`rect(...,edge)` via `shade()`, plus a
 warm `PAL.EMBER` contrast accent + `PAL.EDGE` ink; and for reference-grade scenes
