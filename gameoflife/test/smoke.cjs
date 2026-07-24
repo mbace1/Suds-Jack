@@ -220,6 +220,16 @@ function check(name, cond) {
   check('lichen recoils when touched', (await page.locator('.exp-text').textContent()).includes('recoils'));
   await page.locator('.back-btn').click();
 
+  // cloud: the cloudberry story branches, and "leave them" teaches the fee of roaming
+  await page.evaluate(() => __gol.debug.start('cloud'));
+  check('cloud scene 1 shown', (await page.locator('.exp-text').textContent()).includes('cloudberries'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Read the tracks' }).click();
+  check('cloud choice advances', (await page.locator('.exp-text').textContent()).includes('bear'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Continue' }).click();
+  await page.locator('.exp-buttons .btn', { hasText: 'Leave them standing' }).click();
+  check('cloud teaches to leave beauty', (await page.locator('.exp-text').textContent()).includes('do not have to keep it'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');

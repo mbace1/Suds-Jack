@@ -6,28 +6,29 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=18';
-import { PAL } from './palette.js?v=18';
-import { PixelScreen, shade } from './pixel.js?v=18';
-import * as store from './storage.js?v=18';
-import * as audio from './audio.js?v=18';
-import { pickInterlude, isEvening } from './nature.js?v=18';
-import { aqueduct } from './experiences/aqueduct.js?v=18';
-import { forest } from './experiences/forest.js?v=18';
-import { tern } from './experiences/tern.js?v=18';
-import { cup } from './experiences/cup.js?v=18';
-import { hanami } from './experiences/hanami.js?v=18';
-import { berry } from './experiences/berry.js?v=18';
-import { stars } from './experiences/stars.js?v=18';
-import { maple } from './experiences/maple.js?v=18';
-import { plate } from './experiences/plate.js?v=18';
-import { seam } from './experiences/seam.js?v=18';
-import { dots } from './experiences/dots.js?v=18';
-import { glass } from './experiences/glass.js?v=18';
-import { wait } from './experiences/wait.js?v=18';
-import { lichen } from './experiences/lichen.js?v=18';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=19';
+import { PAL } from './palette.js?v=19';
+import { PixelScreen, shade } from './pixel.js?v=19';
+import * as store from './storage.js?v=19';
+import * as audio from './audio.js?v=19';
+import { pickInterlude, isEvening } from './nature.js?v=19';
+import { aqueduct } from './experiences/aqueduct.js?v=19';
+import { forest } from './experiences/forest.js?v=19';
+import { tern } from './experiences/tern.js?v=19';
+import { cup } from './experiences/cup.js?v=19';
+import { hanami } from './experiences/hanami.js?v=19';
+import { berry } from './experiences/berry.js?v=19';
+import { stars } from './experiences/stars.js?v=19';
+import { maple } from './experiences/maple.js?v=19';
+import { plate } from './experiences/plate.js?v=19';
+import { seam } from './experiences/seam.js?v=19';
+import { dots } from './experiences/dots.js?v=19';
+import { glass } from './experiences/glass.js?v=19';
+import { wait } from './experiences/wait.js?v=19';
+import { lichen } from './experiences/lichen.js?v=19';
+import { cloud } from './experiences/cloud.js?v=19';
 
-const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen];
+const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
 
 const app = document.getElementById('app');

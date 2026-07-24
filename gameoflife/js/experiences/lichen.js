@@ -4,8 +4,8 @@
 // you stop forcing it." Dithered crustose bloom in muted sage, a few spots
 // glowing luminescent green and lifting spores into the void (the breakout).
 
-import { PixelScreen, shade, bayer, rampDither } from '../pixel.js?v=18';
-import { PAL } from '../palette.js?v=18';
+import { PixelScreen, shade, bayer, rampDither } from '../pixel.js?v=19';
+import { PAL } from '../palette.js?v=19';
 
 const BLOOM_SEC = 14;               // untouched time to fully colonise the stone
 const SCX = 96, SCY = 82, SRX = 46, SRY = 30;   // the stone
