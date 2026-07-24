@@ -64,6 +64,7 @@ switchable in the hub, persisted in `localStorage`.
 | `seam` | story | The Golden Seam | Gather a shattered tea bowl from the void, then honor the break in glowing kintsugi gold → *trace a repaired object's history for a minute* |
 | `dots` | story | The Four Dots | Padua 1610: pass the nights watching four specks beside Jupiter refuse to hold still, then meet the first moons of another world → *find the brightest non-Moon light tonight* |
 | `glass` | game | The Glass Plate | Palo Alto 1878: release Muybridge's horse, the tripwires fire twelve cameras, one frame proves all four hooves airborne — then spin the stills into a zoetrope → *blink-freeze a running animal* |
+| `wait` | wisdom | Stand and Wait | A misted hillside: press once, then stand while the fog thins and an old pine resolves, fireflies lifting into the void — you cannot hurry it → *stand at a tree's base for three minutes* |
 
 ## Visual standard (2026-07 master doc)
 
@@ -81,9 +82,12 @@ For reference-grade scenes it also provides **halftone dithering** (`bayer` +
 `seam` was rebuilt first to full reference fidelity (dithered Raku glaze, gold
 veins, cyan overflow, matching `ideas/ref/kintsugi-overflow.png`); `dots` also
 carries the toolkit — a cool halo behind the eyepiece, a dithered glass interior
-in the lens, and a luminous cyan wash under the escaping orbits. (`plate` keeps
-its original clean jagged vignette — the halo/dither pass muddied it, so it was
-reverted; the toolkit is opt-in per scene, not automatic.)
+in the lens, and a luminous cyan wash under the escaping orbits; and `wait` is
+built to `ideas/ref/horizon-pine-vignette.png` — a dithered blue vignette on the
+void, a pale halftone fog that burns off to reveal the pine, and green fireflies
+that drift past the frame. (`plate` keeps its original clean jagged vignette —
+the halo/dither pass muddied it, so it was reverted; the toolkit is opt-in per
+scene, not automatic.)
 
 New content should keep the registry near the 70/20/10 story/game/wisdom mix.
 
