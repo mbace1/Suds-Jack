@@ -89,6 +89,16 @@ const STR = {
     'se.outro': 'Scars are proof of survival, not signs of failure.',
     'se.nature': 'Find an object in your home that is scratched, dented, or repaired. Spend one minute tracing the damage with your finger, and appreciate the history it proves.',
 
+    'exp.wait.name': 'Stand and Wait',
+    'exp.wait.desc': 'A misted hillside, an old pine, and the patience to let it appear.',
+    'wa.s1': 'A hillside at dusk, lost in mist. Somewhere inside it stands an old pine that has waited here longer than your language has been spoken. You cannot hurry the mist. You can only stand — and wait — and let it thin.',
+    'wa.begin': 'Stand and wait',
+    'wa.hint': 'The mist thins, slowly…',
+    'wa.hurry': 'The mist keeps its own time. Just stand.',
+    'wa.wisdom': 'There it is — bent by a hundred winters, still green. It did not hurry, and neither could you. Patience is not waiting for a thing to end; it is standing while it deepens.',
+    'wa.outro': 'What is worth seeing rarely arrives on your schedule.',
+    'wa.nature': 'Find a tree and stand at its base for three whole minutes. Do nothing else. Let it become the most interesting thing you have looked at all day.',
+
     'exp.plate.name': 'The Silver Plate',
     'exp.plate.desc': 'Paris, 1838 — the busiest street in the world records as empty, except for one still man.',
 
@@ -313,6 +323,16 @@ const STR = {
     'se.outro': 'Arvet ovat todiste selviytymisestä, eivät merkki epäonnistumisesta.',
     'se.nature': 'Etsi kotoasi esine, joka on naarmuuntunut, kolhiintunut tai korjattu. Kuljeta sormea sen vaurioita pitkin minuutin ajan ja arvosta historiaa, jonka ne todistavat.',
 
+    'exp.wait.name': 'Seiso ja odota',
+    'exp.wait.desc': 'Sumun peittämä rinne, vanha mänty ja kärsivällisyys antaa sen ilmestyä.',
+    'wa.s1': 'Rinne hämärässä, sumuun kadonnut. Jossain sen sisällä seisoo vanha mänty, joka on odottanut täällä kauemmin kuin kieltäsi on puhuttu. Sumua ei voi hoputtaa. Voit vain seistä — ja odottaa — ja antaa sen ohentua.',
+    'wa.begin': 'Seiso ja odota',
+    'wa.hint': 'Sumu ohenee, hitaasti…',
+    'wa.hurry': 'Sumulla on oma aikansa. Seiso vain.',
+    'wa.wisdom': 'Siinä se on — sadan talven taivuttama, yhä vihreä. Se ei kiirehtinyt, etkä sinäkään voinut. Kärsivällisyys ei ole odottamista, että jokin päättyy; se on seisomista sillä aikaa kun se syvenee.',
+    'wa.outro': 'Se mitä kannattaa nähdä, saapuu harvoin sinun aikataulussasi.',
+    'wa.nature': 'Etsi puu ja seiso sen juurella kolme kokonaista minuuttia. Älä tee mitään muuta. Anna sen olla kiinnostavin asia, jota olet koko päivänä katsonut.',
+
     'exp.plate.name': 'Hopealevy',
     'exp.plate.desc': 'Pariisi 1838 — maailman vilkkain katu tallentuu tyhjänä, paitsi yksi liikkumaton mies.',
 
@@ -536,6 +556,16 @@ const STR = {
     'se.gold': '金継ぎ — 漆に金を混ぜ、すべての傷あとに沿って引く。茶碗は元どおりに戻るのではない。元より豊かなものになる — その歴史が、尊く、見えるものになって。',
     'se.outro': '傷あとは生きのびた証であって、失敗のしるしではない。',
     'se.nature': '家の中から、傷ついたり、へこんだり、直されたりしたものをひとつ見つけよう。一分間、指でその傷をなぞって、それが証明している歴史をいとおしんでみて。',
+
+    'exp.wait.name': '立って、待つ',
+    'exp.wait.desc': '霧に沈む丘、一本の老松、そしてそれが現れるのを待つ辛抱。',
+    'wa.s1': '夕暮れの丘、霧に沈んでいる。その奥のどこかに、あなたの言葉が話されるよりも長くここで待ってきた老松が立っている。霧は急かせない。ただ立って — 待って — 薄れていくのに任せるだけ。',
+    'wa.begin': '立って待つ',
+    'wa.hint': '霧が、ゆっくりと薄れていく…',
+    'wa.hurry': '霧には霧の時間がある。ただ立っていよう。',
+    'wa.wisdom': 'そこにいた — 百の冬にかがめられ、なお緑。松は急がず、あなたも急げなかった。辛抱とは、何かが終わるのを待つことではない。それが深まっていく間、立っていることだ。',
+    'wa.outro': '見る価値のあるものは、めったにあなたの都合には現れない。',
+    'wa.nature': '木を一本見つけて、その根元に丸三分間立ってみよう。ほかには何もしない。今日いちばん見入ったものにしてしまおう。',
 
     'exp.plate.name': '銀の板',
     'exp.plate.desc': 'パリ、1838年 — 世界一にぎやかな通りが空っぽに写り、動かないひとりの男だけが残った。',

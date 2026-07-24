@@ -4,8 +4,8 @@
 // mean. Owner's design (2026-07 master doc). The moons run on the real
 // Galilean periods (1.8 / 3.6 / 7.2 / 16.7 days).
 
-import { PixelScreen, rampDither } from '../pixel.js?v=16';
-import { PAL } from '../palette.js?v=16';
+import { PixelScreen, rampDither } from '../pixel.js?v=17';
+import { PAL } from '../palette.js?v=17';
 
 const CX = 96, CY = 56, LENS_R = 50;
 const JUP = ['#d9c9a0', '#b8926a', '#d0b088', '#a87f5c', '#c9ab80'];   // cloud bands

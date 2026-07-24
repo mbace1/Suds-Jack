@@ -50,9 +50,11 @@ Source: project owner, via idea-form exchange. Reference art in `ref/`
       → find and name your own star pattern.
 
 ### Wisdom
-- [ ] **Stand and Wait** — clear mist to reveal the horizon pine. *Patience
-      doesn't end; it deepens.* (ref: horizon-pine-vignette.png) → stand at
-      a tree's base for three minutes.
+- [x] **Stand and Wait** (shipped as `wait`) — press once, then stand while the
+      mist thins over ~9 s and the horizon pine resolves; fireflies lift into the
+      void, tapping only earns "the mist keeps its own time." *Patience doesn't
+      end; it deepens.* (ref: horizon-pine-vignette.png; reference-grade dithered
+      fog + vignette) → stand at a tree's base for three minutes.
 - [ ] **The Lichen** — leave the controls alone for 15 s and lichen blooms.
       *Growth happens when you stop forcing it.* → press a hand to moss for
       thirty seconds.
