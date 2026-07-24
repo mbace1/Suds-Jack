@@ -56,6 +56,16 @@ switchable in the hub, persisted in `localStorage`.
 | `berry` | story | The Right to Roam | A Finnish blueberry summer teaching jokamiehenoikeus, rights and their quiet duties → *carry one thing out of your nearest everyone's-place* |
 | `stars` | game | The Night Compass | Trace the Big Dipper (Otava / 北斗七星) star by star, then follow its pointers to Polaris → *go find one real star tonight* |
 | `maple` | story | The Year of the Old Maple | One tree through four seasons — spring unpacks, autumn reveals, winter waits ready → *adopt a tree and visit it once per season* |
+| `plate` | story | The Silver Plate | Paris 1838: run the exposure, watch the crowd erase itself, meet the first human ever photographed → *sit still two minutes in a busy place* |
+
+## Visual standard (2026-07 master doc)
+
+New experiences follow the owner's art direction (see
+`ideas/2026-07-master-ideas.md` + reference art in `ideas/ref/`): 16-bit
+scenes floating in a pure black void as **irregular jagged vignettes** (or
+letterboxed widescreen), muted graphic-novel environment tones, and
+luminescent **cyan/gold** for interactive elements that **break the frame**
+into the void. `plate` is the pilot; existing experiences migrate gradually.
 
 New content should keep the registry near the 70/20/10 story/game/wisdom mix.
 

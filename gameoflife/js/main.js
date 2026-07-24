@@ -6,22 +6,23 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=10';
-import { PAL } from './palette.js?v=10';
-import { PixelScreen } from './pixel.js?v=10';
-import * as store from './storage.js?v=10';
-import * as audio from './audio.js?v=10';
-import { pickInterlude, isEvening } from './nature.js?v=10';
-import { aqueduct } from './experiences/aqueduct.js?v=10';
-import { forest } from './experiences/forest.js?v=10';
-import { tern } from './experiences/tern.js?v=10';
-import { cup } from './experiences/cup.js?v=10';
-import { hanami } from './experiences/hanami.js?v=10';
-import { berry } from './experiences/berry.js?v=10';
-import { stars } from './experiences/stars.js?v=10';
-import { maple } from './experiences/maple.js?v=10';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=11';
+import { PAL } from './palette.js?v=11';
+import { PixelScreen } from './pixel.js?v=11';
+import * as store from './storage.js?v=11';
+import * as audio from './audio.js?v=11';
+import { pickInterlude, isEvening } from './nature.js?v=11';
+import { aqueduct } from './experiences/aqueduct.js?v=11';
+import { forest } from './experiences/forest.js?v=11';
+import { tern } from './experiences/tern.js?v=11';
+import { cup } from './experiences/cup.js?v=11';
+import { hanami } from './experiences/hanami.js?v=11';
+import { berry } from './experiences/berry.js?v=11';
+import { stars } from './experiences/stars.js?v=11';
+import { maple } from './experiences/maple.js?v=11';
+import { plate } from './experiences/plate.js?v=11';
 
-const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple];
+const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
 
 const app = document.getElementById('app');

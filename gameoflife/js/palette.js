@@ -40,4 +40,11 @@ export const PAL = {
   // ui
   GOLD:      '#c9a84c',
   DANGER:    '#a05040',
+
+  // the new visual standard (2026-07 master doc): vignettes float in a pure
+  // black void; interactive elements glow in luminescent cyan / gold and
+  // break the frame
+  VOID:      '#000000',
+  CYAN_LUX:  '#35e8d8',
+  GOLD_LUX:  '#ffd75a',
 };

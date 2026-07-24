@@ -150,6 +150,17 @@ function check(name, cond) {
   check('maple bud teaches unpacking', (await page.locator('.exp-text').textContent()).includes('unpacking'));
   await page.locator('.back-btn').click();
 
+  // plate: the exposure runs (~4s), the crowd erases itself, the choice lands
+  await page.evaluate(() => __gol.debug.start('plate'));
+  check('plate scene 1 shown', (await page.locator('.exp-text').textContent()).includes('Daguerre'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Begin the exposure' }).click();
+  await page.waitForTimeout(4800);
+  check('plate exposure finishes into choice',
+    (await page.locator('.exp-text').textContent()).includes('boots shined'));
+  await page.locator('.exp-buttons .btn', { hasText: 'still man' }).click();
+  check('plate reflect shown', (await page.locator('.exp-text').textContent()).includes('first human being'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');

@@ -2,8 +2,8 @@
 // learned: a July blueberry walk with grandmother through somebody else's
 // forest, which is also everyone's. Ends with the quiet fee the right asks.
 
-import { PixelScreen } from '../pixel.js?v=10';
-import { PAL } from '../palette.js?v=10';
+import { PixelScreen } from '../pixel.js?v=11';
+import { PAL } from '../palette.js?v=11';
 
 const BILBERRY = '#4a3a6b', BILBERRY_LIT = '#6b5a9b', BUCKET = '#c9502e';
 
