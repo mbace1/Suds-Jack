@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=153';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=153';
-import { Player, PLAYER_RADIUS } from './player.js?v=153';
+import { InputManager } from './input.js?v=154';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=154';
+import { Player, PLAYER_RADIUS } from './player.js?v=154';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=153';
-import { RetroPass } from './retro.js?v=153';
-import { audio } from './audio.js?v=153';
-import { initDesigner } from './designer.js?v=153';
-import { t, getLang, setLang, langs } from './lang.js?v=153';
-import { TUNING } from './tuning.js?v=153';
+         CABINET_STYLE, VIS } from './enemy.js?v=154';
+import { RetroPass } from './retro.js?v=154';
+import { audio } from './audio.js?v=154';
+import { initDesigner } from './designer.js?v=154';
+import { t, getLang, setLang, langs } from './lang.js?v=154';
+import { TUNING } from './tuning.js?v=154';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -588,7 +588,7 @@ function applyArenaMode(landscape) {
 // ── Death FX: chunks + puddles ────────────────────────────────────────────────
 // Pooled death chunks — one InstancedMesh (1 draw call, zero per-spawn alloc).
 // Replaces the old per-chunk Mesh churn that spiked GC during dense swarm clears.
-const CHUNK_POOL = 256;
+const CHUNK_POOL = 384;   // v200: the juice pass spends the instancing headroom
 class ChunkPool {
   // Default geometry is the deliberately low-poly (5×3) sphere — it reads as an
   // angular nugget, right for cube-family debris and hard shards. Pass a denser
@@ -1915,6 +1915,10 @@ let fluidRun = false;                              // captured at run start
 // daily runs replay identically and the shared rng stream is untouched.
 const FLUID_ARCHS = ['stream', 'ring', 'pincer'];
 let fluidArch = null;
+// v200 JUICE: kill-streak heat — rapid kills escalate the splatter. Rises per
+// kill, decays fast; scales extra chunk counts and satellite splats so the
+// 10th kill of a chain detonates louder than the 1st. Pure FX, no gameplay.
+let juiceHeat = 0;
 // v178 (M6): SMASH TV floor structure — the boss room ends a FLOOR. Each
 // floor re-lights the studio (palette shift), toughens the lattice (budget
 // scales), and opens with a BONUS ROOM: pure loot, doors already open.
@@ -2971,6 +2975,38 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
   // v167 (KAIKKI parity): the streets remember — kills leave BLOOD, not goo.
   splatPool.spawnPuddle(e.position.x, e.position.z,
     kaikkiMode ? 0x7a0f0f : e.color, e.radius * (kaikkiMode ? 2.0 : 1.5));
+  // ── v200 JUICE: every death detonates ───────────────────────────────────────
+  juiceHeat = Math.min(1, juiceHeat + 0.18);
+  const big = e._isBoss || e.radius >= 0.75;
+  // extra droplet burst on top of the enemy's own chunk set, scaled by heat
+  const nExtra = Math.round((e._isBoss ? 14 : big ? 8 : 4) * (1 + juiceHeat));
+  for (let j = 0; j < nExtra; j++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 2 + Math.random() * 4 * (1 + juiceHeat * 0.5);
+    chunksFor(e.type).spawn(e.position.x, e.fxY + 0.2, e.position.z,
+      Math.cos(a) * sp, 2.5 + Math.random() * 4, Math.sin(a) * sp,
+      e.color, 0.09 + Math.random() * 0.09);
+  }
+  // satellite splats — the floor gets painted, not just stamped
+  const nSat = big ? 3 : juiceHeat > 0.5 ? 2 : 1;
+  for (let j = 0; j < nSat; j++) {
+    const a = Math.random() * Math.PI * 2;
+    const r = 0.6 + Math.random() * 0.9;
+    splatPool.spawnPuddle(e.position.x + Math.cos(a) * r, e.position.z + Math.sin(a) * r,
+      kaikkiMode ? 0x7a0f0f : e.color, e.radius * (0.4 + Math.random() * 0.3));
+  }
+  // shockwave: big deaths ripple + squash the gels around them (pure visual —
+  // reuses the spring squash + hit-ripple systems, hitboxes untouched)
+  if (big && gameState === 'playing') {
+    for (const n of enemies) {
+      if (!n.alive || n === e) continue;
+      const dx = n.position.x - e.position.x, dz = n.position.z - e.position.z;
+      if (dx * dx + dz * dz > 12.25) continue;   // 3.5u radius
+      n._hitRipple = Math.max(n._hitRipple || 0, 0.75);
+      n._sqV -= 0.55;
+    }
+    addShake(0.1 + 0.12 * juiceHeat);
+  }
 }
 
 function onPlayerHit() {
@@ -4019,7 +4055,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v199' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v200' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -7109,6 +7145,7 @@ function loop() {
   _prevDashing = player.dashing;
   if (_hitFlashT > 0) _hitFlashT -= dt;
   if (waveClearFlashT > 0) waveClearFlashT -= dt;
+  if (juiceHeat > 0) juiceHeat = Math.max(0, juiceHeat - dt * 0.35);   // v200: streak heat cools
 
   // v196 FLUID MODE: the swarm reads your gun and schools like fish.
   if (fluidRun) {
@@ -8263,6 +8300,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=153').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=154').catch(() => {});
   });
 }
