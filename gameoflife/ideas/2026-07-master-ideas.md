@@ -52,8 +52,11 @@ Source: project owner, via idea-form exchange. Reference art in `ref/`
       one full circle.
 - [x] **Empty Your Cup v2** — cyan overflow breaks (v12; hold-to-pour + Raku still open)
       the vignette. (upgrade of `cup`; ref: kintsugi-overflow.png)
-- [ ] **The Cairn** — balance three irregular stones. *Gravity is infinitely
-      patient.* → balance two real rocks, leave them.
+- [x] **The Cairn** (shipped as `cairn`) — tap where each of three irregular
+      dithered stones should rest on a dusk fell; land it near the balance line and
+      it holds, off and it topples (no failure, only retries). The crowning stone
+      catches the last light. *Gravity is infinitely patient.* → balance two real
+      rocks, leave them.
 - [x] **Trace the Chaos** (shipped as `trace`) — tap star-to-star to draw your
       own constellation from a scattered field; a dithered purple nebula blooms
       around what you connect, then you name it and learn the sky was never

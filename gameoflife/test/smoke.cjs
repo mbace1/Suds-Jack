@@ -269,6 +269,19 @@ function check(name, cond) {
   check('gears reaches the eclipse', (await page.locator('.exp-text').textContent()).includes('eclipse'));
   await page.locator('.back-btn').click();
 
+  // cairn: stack three stones on the base at the balance line (x=96), each
+  // dropped after the previous settles
+  await page.evaluate(() => __gol.debug.start('cairn'));
+  check('cairn intro shown', (await page.locator('.exp-text').textContent()).includes('cairn'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Begin' }).click();
+  const cabox = await page.locator('.pixel-screen').boundingBox();
+  for (let i = 0; i < 3; i++) {
+    await page.mouse.click(cabox.x + 0.5 * cabox.width, cabox.y + 0.25 * cabox.height);
+    await page.waitForTimeout(700);
+  }
+  check('cairn stands', (await page.locator('.exp-text').textContent()).includes('It stands'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');

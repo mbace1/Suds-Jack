@@ -119,7 +119,10 @@ what you connect in glowing `GOLD_LUX`, then name it and learn the sky was never
 arranged; extends `stars`, built to `constellation-nebula.png`), and `gears`
 (game — The Bronze Gears: crank the Antikythera mechanism's meshed bronze gears
 through the lunar months until the Sun/Moon hands meet the node and it predicts
-an eclipse, a `GOLD_LUX` corona breaking the frame; void-vignette bronze build).
+an eclipse, a `GOLD_LUX` corona breaking the frame; void-vignette bronze build),
+and `cairn` (game — The Cairn: tap where each of three irregular dithered stones
+should rest on a dusk fell; near the balance line it holds, off it topples and you
+retry — gravity is patient; the crowning stone catches the last light).
 `plate` pilots the **2026-07 visual standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
 jagged 16-bit vignettes in a pure-black void, muted environments, luminescent cyan/gold
 interactive elements that break the frame (`PAL.VOID/CYAN_LUX/GOLD_LUX`, plus
