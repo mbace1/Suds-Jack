@@ -65,6 +65,7 @@ Two rules keep the app from nagging:
   every fifth (`store.feedbackDue()`). Anyone with something to say in between
   has the always-present *leave a thought* link in the footer. Submitting an
   empty form records nothing and does not thank you for it.
+  See **Where feedback goes** below for making those notes actually arrive.
 - **"Not yet" means not this visit.** Putting off a nature invitation holds
   until the next finish, so a language switch or a redraw cannot put the same
   invitation back in your face. Esc or a click outside the panel does the same
@@ -90,6 +91,40 @@ canvas is `aria-hidden` because the text is the channel that can actually be
 followed; the tab title names the experience you are in. `prefers-reduced-motion`
 stills the decorative hub header — one frame of the current hour, held — while
 the experiences keep animating, since there the movement *is* the content.
+
+## Where feedback goes
+
+**One line of setup, and it is not done yet.** Create a form at
+[formspree.io](https://formspree.io) (or anything that takes a JSON `POST` and
+answers with CORS headers) and paste its URL into `ENDPOINT` at the top of
+`js/feedback.js`:
+
+```js
+let ENDPOINT = 'https://formspree.io/f/xxxxxxxx';
+```
+
+That is the whole configuration. Until it is set, the app behaves exactly as it
+always did — notes are kept in the visitor's own `localStorage`, nothing is
+sent, and **no promise of delivery is shown to anyone**, because making one
+would be a lie.
+
+Once set:
+
+- The panel gains one quiet line saying where the note goes. Telling someone
+  before they write is the minimum this app owes them.
+- A note that cannot be delivered — endpoint down, rate-limited, offline — is
+  **kept in an outbox**, the player is told it will go later rather than
+  thanked, and `flush()` drains it on the next visit, one at a time so a
+  still-broken endpoint costs one request rather than a burst.
+- Every note is *also* kept locally regardless, so `__gol.debug.feedback()`
+  stays the complete record.
+
+Console handles for trying it without deploying: `__gol.debug.setEndpoint(url)`,
+`__gol.debug.outbox()`, `__gol.debug.flush()`.
+
+A Google Form would need its per-question `entry.NNNN` field ids and cannot
+confirm delivery — Google sends no CORS headers, so the browser can only fire
+the request blind. Formspree is the easier fit.
 
 ## Current experiences
 

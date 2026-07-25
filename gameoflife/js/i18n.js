@@ -373,6 +373,9 @@ const STR = {
     'fb.skip': 'Skip',
     'fb.thanks': 'Thank you. It is kept.',
     'fb.leaves': 'leaves',
+    'fb.dest': 'Your note is sent to the gardeners of this game.',
+    'fb.sending': 'Carrying it over…',
+    'fb.queued': 'Kept for now. It will go the next time you visit.',
 
     'ui.continue': 'Continue',
     'ui.back': 'Back to the hub',
@@ -732,6 +735,9 @@ const STR = {
     'fb.skip': 'Ohita',
     'fb.thanks': 'Kiitos. Se on tallessa.',
     'fb.leaves': 'lehteä',
+    'fb.dest': 'Viestisi lähetetään tämän pelin puutarhureille.',
+    'fb.sending': 'Viedään perille…',
+    'fb.queued': 'Tallessa toistaiseksi. Se lähtee seuraavalla käynnilläsi.',
 
     'ui.continue': 'Jatka',
     'ui.back': 'Takaisin aulaan',
@@ -1091,6 +1097,9 @@ const STR = {
     'fb.skip': 'とばす',
     'fb.thanks': 'ありがとう。たしかに受け取りました。',
     'fb.leaves': '枚の葉',
+    'fb.dest': 'いただいた言葉は、この庭の手入れをする者に届きます。',
+    'fb.sending': 'お届けしています…',
+    'fb.queued': 'いまはお預かりします。次にお越しのときにお届けします。',
 
     'ui.continue': 'つづける',
     'ui.back': 'ロビーへもどる',

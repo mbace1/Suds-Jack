@@ -179,7 +179,13 @@ every 5th; the footer's *leave a thought* link is always there, and an empty
 submission records nothing rather than thanking you for silence), and
 **"not yet" on a nature invitation holds for the visit** (`invitationPut` in
 `main.js`, reset by the next finish) so a redraw or a language switch cannot
-re-ask; Esc / a click on the backdrop is the same as *not yet*. A fragment
+re-ask; Esc / a click on the backdrop is the same as *not yet*. Feedback
+**leaves the browser** via `js/feedback.js`: paste a Formspree-style JSON
+endpoint into its one `ENDPOINT` constant and notes POST there — unset, the app
+sends nothing and *shows no delivery promise* (`fb.dest` only renders when
+`outbound.configured()`); undeliverable notes go to a `store.outbox()` and
+`flush()` drains them on the next visit one at a time, and every note is kept
+locally either way. A fragment
 deep-links one experience (`/gameoflife/#tether` → `openFromHash()`; `setHash()`
 uses `replaceState` so it never fires the `hashchange` handler back at itself,
 and the hub is always the plain address) — that is what makes a link shareable
