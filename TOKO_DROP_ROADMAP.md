@@ -140,8 +140,9 @@ The cabinet row (each refined individually, in build order):
 5. **KAIKKI IRTI 3** *(Tapan Kaikki 3 tribute)* — SHIPPED v159 (DOS-VGA
    streets, money from everything, crates, THE SHOP with the bought arsenal
    — the sanctioned big-weapon exception); v183 shop tier 2; v206 civilians
-   as WITNESSES (watched = half cash, dash to scatter them). Backlog:
-   mission variety.
+   as WITNESSES (watched = half cash, dash to scatter them); v208 STREET
+   JOBS on rotation (PURGE / PAYDAY quota / THE MARK / SHAKEDOWN, none
+   failable). Backlog: —
 6. **NEX DEUS** *(Nex Machina inspired — the final unlockable)* — SHIPPED
    v172 (per-cabinet records + unlock bars) + v173 (the cabinet: zone-surge
    eruptions from all five rosters, dash-cuts-everything, timed lost-player
