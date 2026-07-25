@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=160';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=160';
-import { Player, PLAYER_RADIUS } from './player.js?v=160';
+import { InputManager } from './input.js?v=161';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=161';
+import { Player, PLAYER_RADIUS } from './player.js?v=161';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS } from './enemy.js?v=160';
-import { RetroPass } from './retro.js?v=160';
-import { audio } from './audio.js?v=160';
-import { initDesigner } from './designer.js?v=160';
-import { t, getLang, setLang, langs } from './lang.js?v=160';
-import { TUNING } from './tuning.js?v=160';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS } from './enemy.js?v=161';
+import { RetroPass } from './retro.js?v=161';
+import { audio } from './audio.js?v=161';
+import { initDesigner } from './designer.js?v=161';
+import { t, getLang, setLang, langs } from './lang.js?v=161';
+import { TUNING } from './tuning.js?v=161';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1981,6 +1981,7 @@ let roomFadeT  = 0;         // v120: black dip while walking through an exit doo
 let _roomSwap  = null;      // exit taken, waiting for the fade peak to swap rooms
 let _entryDoor = null;      // door index the player enters the NEXT room through
 let _cameFromDoor = null;   // wall the player entered THIS room through (no backtracking)
+let _doorGraceT = 0;        // v207: brief deafness to door touches after a swap
 // Risk-priced room kinds (v120): the exit choice is a trade, not a freebie —
 // HEAVY rooms pay double floor loot (+1 item), PRIZE$ rooms drop fewer weapon
 // pods from moths (loot-rich but firepower-poor), SWARM feeds kill streaks.
@@ -2386,6 +2387,43 @@ let bindingMode = false;
 let bindingRoomN = 1;    // rooms entered this run
 let bindingFloor = 1;
 let _bdSavedPixel = null, _bdSavedSmash = null;
+// v207 (backlog): ROOM REVISITS. The basement is a MAP, not a corridor. Every
+// cell you set foot in is remembered — its kind, its doors, its layout, and
+// the fact that you emptied it — so the wall you came in through stays a door
+// and walking back returns you to the room you left, exactly as you left it.
+// Progression (room count, item/boss cadence, quest beats) measures NEW
+// ground only, so backtracking is routing, never farming.
+let bdSeen = new Map();   // "x,y" -> { kind, exits }
+let bdRevisit = false;    // the room spawnWave() is about to build is old ground
+const bdKey = (x, y) => `${x},${y}`;
+const bdCellSeed = (x, y) => (runSeed ^ (x * 0x1f1f1f1f) ^ (y * 0x27d4eb2d)) | 0;
+// Open the current room's doors. A remembered room keeps the doors it had; a
+// fresh one rolls them once and keeps them from then on. Any neighbour you
+// have already walked is ALWAYS a door and advertises what is actually there.
+function bdOpenExits() {
+  const cell  = bdSeen.get(bdKey(roomX, roomY));
+  const fresh = !cell?.exits;
+  const doors = fresh ? pickSmashExits() : cell.exits.map(e => ({ ...e }));
+  for (let d = 0; d < 4; d++) {
+    if (doors.some(e => e.door === d)) continue;
+    if (bdSeen.has(bdKey(roomX + DOOR_DX[d], roomY + DOOR_DY[d]))) doors.push({ door: d, kind: 'normal' });
+  }
+  // The item/boss beat is a run counter, not a property of a wall — doors into
+  // unwalked ground re-read it every time they open.
+  const cad = bindingKindFor(bindingRoomN + 1);
+  for (const ed of doors) {
+    const seen = bdSeen.get(bdKey(roomX + DOOR_DX[ed.door], roomY + DOOR_DY[ed.door]));
+    ed.back = !!seen;
+    if (seen) ed.kind = seen.kind;
+    else if (cad === 'item' || cad === 'boss') ed.kind = cad;
+    else if (fresh) {
+      const r2 = rng();   // v184: ~12% of free doors lead to the basement bazaar
+      ed.kind = r2 < 0.5 ? 'normal' : r2 < 0.72 ? 'swarm' : r2 < 0.88 ? 'spike' : 'shop';
+    }
+  }
+  if (cell) cell.exits = doors.map(e => ({ ...e }));
+  return doors;
+}
 function bindingKindFor(n) {
   if (n % 6 === 0) return 'boss';
   if (n % 3 === 0) return 'item';
@@ -3634,14 +3672,16 @@ function drawSmashMinimap() {
       const key  = `${roomX + dx},${roomY + dy}`;
       if (exit) {
         const k = ROOM_KINDS[exit.kind];
-        ctx.strokeStyle = '#33ff88';
+        // v207: a door back into a cleared room is blue and ✓-marked, so the
+        // map never sells old ground as a fresh choice.
+        ctx.strokeStyle = exit.back ? '#55bbff' : '#33ff88';
         ctx.lineWidth = 1.5;
         ctx.strokeRect(cx + o, cy + o, w, w);
-        ctx.fillStyle = k.color;
+        ctx.fillStyle = exit.back ? 'rgba(170,200,230,0.85)' : k.color;
         ctx.font = `bold ${Math.floor(cell * 0.2)}px monospace, sans-serif`;
-        ctx.fillText(k.label, cx + cell / 2, cy + cell / 2 + 4);
+        ctx.fillText(exit.back ? `✓ ${k.label}` : k.label, cx + cell / 2, cy + cell / 2 + 4);
         // doorway notch between this cell and the center cell
-        ctx.fillStyle = '#33ff88';
+        ctx.fillStyle = exit.back ? '#55bbff' : '#33ff88';
         const nx = cx + cell / 2 - dx * (cell / 2 - 1), ny = cy + cell / 2 - dy * (cell / 2 - 1);
         ctx.fillRect(nx - (dy !== 0 ? 5 : 2), ny - (dx !== 0 ? 5 : 2), dy !== 0 ? 10 : 4, dx !== 0 ? 10 : 4);
       } else if (visitedRooms.has(key)) {
@@ -3777,13 +3817,13 @@ function drawHUD() {
     for (const ed of exitDoors) {
       const [dx, dz] = smashDoorPos(ed.door);
       const p = toScreen({ x: dx, y: 2.9, z: dz });
-      ctx.shadowColor = '#33ff88';
+      ctx.shadowColor = ed.back ? '#55bbff' : '#33ff88';   // v207: blue = walked
       ctx.shadowBlur = 12;
-      ctx.fillStyle = '#aaffcc';
-      ctx.fillText('EXIT', p.x, p.y);
+      ctx.fillStyle = ed.back ? '#bbe4ff' : '#aaffcc';
+      ctx.fillText(ed.back ? t('bdBack') : 'EXIT', p.x, p.y);
       ctx.shadowBlur = 0;
       ctx.font = 'bold 11px monospace, sans-serif';
-      ctx.fillStyle = ROOM_KINDS[ed.kind].color;
+      ctx.fillStyle = ed.back ? 'rgba(170,190,215,0.9)' : ROOM_KINDS[ed.kind].color;
       ctx.fillText(ROOM_KINDS[ed.kind].label, p.x, p.y + 14);
       ctx.font = 'bold 15px monospace, sans-serif';
     }
@@ -4103,7 +4143,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v206' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v207' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -4770,9 +4810,11 @@ function updateSmashDoors() {
     let target = 0.10, color = 0xff3366;
     if (exitPhase) {
       // Cleared room: EXIT doors glow inviting green; the rest go dark.
-      const isExit = exitDoors.some(ed => ed.door === i);
-      color  = isExit ? 0x33ff88 : 0xff3366;
-      target = isExit ? pulse : 0.04;
+      // v207: a door back into ground you've already walked glows COOL BLUE —
+      // at a glance, green is new floor and blue is the way you came.
+      const ex = exitDoors.find(ed => ed.door === i);
+      color  = !ex ? 0xff3366 : ex.back ? 0x55bbff : 0x33ff88;
+      target = ex ? pulse : 0.04;
     } else if (soon[i]) {
       target = pulse;  // spawn telegraph: this wall is about to pour
     }
@@ -4794,6 +4836,7 @@ function clearFX() {
   _roomSwap  = false;
   exitPhase  = false;
   exitDoors  = [];
+  _doorGraceT = 0;
   chunkPool.clear();
   gooChunkPool.clear();
   bubblePool.clear();
@@ -4850,7 +4893,7 @@ function spawnWave() {
   // rooms keep the smash schedule (tokotron/gaundrop build their own floods).
   const list = (tokotronMode || gaundropMode || loadoutMode || kaikkiMode || nexdeusMode ||
                 (smashMode && smashRoomKind === 'bonus') ||     // v178: pure loot, no fight
-                (bindingMode && smashRoomKind !== 'boss')) ? [] : getEnemySchedule(wave);
+                (bindingMode && (smashRoomKind !== 'boss' || bdRevisit))) ? [] : getEnemySchedule(wave);
   waveDuration = ROUND_DUR;
   waveTimer    = 0;
   const total  = list.length;
@@ -5143,9 +5186,13 @@ function spawnWave() {
   // HOPPERs. Compositions scale with the floor; bosses keep the smash boss.
   if (bindingMode && smashRoomKind !== 'item' && smashRoomKind !== 'boss' && smashRoomKind !== 'shop') {
     clearGaundropLevel();          // previous room's rocks
+    // v207: the LAYOUT belongs to the cell, not to the moment it was first
+    // entered — a revisited room has the same pits and the same rocks it had
+    // when you walked out of it.
+    const brng = mulberry32(bdCellSeed(roomX, roomY));
     // v163: CHASMS (floor 2+, ~1/3 of fight rooms) — the pit shapes the
     // room: bodies can't cross, bullets fly over. Red-rimmed voids.
-    if (bindingFloor >= 2 && rng() < 0.38) {
+    if (bindingFloor >= 2 && brng() < 0.38) {
       const pit = (x, z, hx, hz) => {
         const mesh = new THREE.Mesh(new THREE.PlaneGeometry(hx * 2, hz * 2),
           new THREE.MeshBasicMaterial({ color: 0x030103 }));
@@ -5159,7 +5206,7 @@ function spawnWave() {
         scene.add(mesh, rim);
         bdChasms.push({ mesh, rim, x, z, hx, hz });
       };
-      const cp = Math.floor(rng() * 3);
+      const cp = Math.floor(brng() * 3);
       if (cp === 0) {
         pit(0, 0, 3.4, 2.4);                       // the center void
       } else if (cp === 1) {
@@ -5174,22 +5221,22 @@ function spawnWave() {
     const rock = (x, z, hx = 0.9, hz = 0.9) => {
       // v161: rocks read ORGANIC — jittered footprint, height, tilt, and a
       // two-tone flesh-stone palette (collision stays axis-aligned).
-      hx *= 0.85 + rng() * 0.35;
-      hz *= 0.85 + rng() * 0.35;
+      hx *= 0.85 + brng() * 0.35;
+      hz *= 0.85 + brng() * 0.35;
       // v163: pits are placed first — no rocks hovering in the void
       for (const c of bdChasms) {
         if (Math.abs(x - c.x) < c.hx + hx && Math.abs(z - c.z) < c.hz + hz) return;
       }
-      const h = 0.6 + rng() * 0.55;
+      const h = 0.6 + brng() * 0.55;
       const mesh = new THREE.Mesh(new THREE.BoxGeometry(hx * 2, h, hz * 2),
-        new THREE.MeshBasicMaterial({ color: rng() < 0.5 ? 0x5a3a44 : 0x6a4a50 }));
+        new THREE.MeshBasicMaterial({ color: brng() < 0.5 ? 0x5a3a44 : 0x6a4a50 }));
       mesh.position.set(x, h / 2, z);
-      mesh.rotation.y = (rng() - 0.5) * 0.5;
+      mesh.rotation.y = (brng() - 0.5) * 0.5;
       scene.add(mesh);
       gdWalls.push({ mesh, x, z, hx, hz });
     };
     const mx = HALF_X * 0.45, mz = HALF_Z * 0.45;
-    const pat = Math.floor(rng() * 5);
+    const pat = Math.floor(brng() * 5);
     if (pat === 0) {               // four pillars
       rock(-mx, -mz); rock(mx, -mz); rock(-mx, mz); rock(mx, mz);
     } else if (pat === 1) {        // center cross
@@ -5205,8 +5252,8 @@ function spawnWave() {
       for (let i = 0; i < 5; i++) {
         let bx2, bz2, tr = 0;
         do {
-          bx2 = (rng() * 2 - 1) * (HALF_X - 3.5);
-          bz2 = (rng() * 2 - 1) * (HALF_Z - 3.5);
+          bx2 = (brng() * 2 - 1) * (HALF_X - 3.5);
+          bz2 = (brng() * 2 - 1) * (HALF_Z - 3.5);
         } while ((Math.hypot(bx2, bz2) < 3 ||
                   (Math.abs(bx2) > HALF_X - 4 && Math.abs(bz2) < 2.5) ||
                   (Math.abs(bz2) > HALF_Z - 4 && Math.abs(bx2) < 2.5)) && ++tr < 20);
@@ -5223,7 +5270,9 @@ function spawnWave() {
       : kind === 'spike'
       ? { [T.CHARGER]: 2 + Math.floor(f / 2) + 1, [T.SPITTLE]: 4, [T.HOPPER]: 3, [T.PURP_CUBE]: f >= 2 ? 1 : 0 }
       : { [T.FLIT]: 5 + f * 2, [T.SPITTLE]: 2 + Math.floor(f / 2), [T.CHARGER]: f >= 1 ? 1 : 0, [T.HOPPER]: 2, [T.GLOBBO]: f >= 2 ? 2 : 0 };
-    for (const [tyStr, n] of Object.entries(comp)) {
+    // v207: a room you already emptied STAYS empty — the residents are part of
+    // what you cleared, not scenery that respawns behind you.
+    for (const [tyStr, n] of Object.entries(bdRevisit ? {} : comp)) {
       const ty = +tyStr;
       for (let i = 0; i < n; i++) {
         let px, pz, tries = 0;
@@ -5245,31 +5294,36 @@ function spawnWave() {
   // v184 THE BINDING SHOP: no enemies — three pedestal deals, doors open.
   // Browse, pay in blood or points, or just walk on through.
   if (bindingMode && smashRoomKind === 'shop') {
+    // v207: the STOCK belongs to the room. A deal you couldn't afford is still
+    // on its pedestal when you walk back in; one you bought stays bought.
+    const shopCell = bdSeen.get(bdKey(roomX, roomY));
+    if (shopCell && !shopCell.sold) shopCell.sold = [false, false, false];
+    const sold = shopCell?.sold ?? [false, false, false];
     bdShop = [
       { kind: 'upgrade', x: -3.5, label: 'DEAL: 1 HP',     col: 0xcc66ff },
       { kind: 'rare',    x: 0,    label: 'DEAL: 1 MAX HP', col: 0xffcc33 },
       { kind: 'heal',    x: 3.5,  label: '+2 HP: 1500 PTS', col: 0xff4466 },
-    ].map(d => {
-      const mat = new THREE.MeshBasicMaterial({ color: d.col });
+    ].map((d, i) => {
+      const mat = new THREE.MeshBasicMaterial({ color: sold[i] ? 0x444444 : d.col });
       const mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.62, 0.7, 8), mat);
       mesh.position.set(d.x, 0.35, -2);
       scene.add(mesh);
-      return { ...d, z: -2, mesh, mat, sold: false, _denyT: 0 };
+      return { ...d, z: -2, mesh, mat, sold: sold[i], slot: i, _denyT: 0 };
     });
-    exitPhase  = true;
-    exitDoors  = pickSmashExits();
-    for (const ed of exitDoors) ed.kind = bindingKindFor(bindingRoomN + 1);
-    roomTallyT = 0;
   }
   // BINDING OF TOKO item room (v150): no enemies — one glowing pedestal in
   // the middle, doors already open. Take the item, or don't, and move on.
-  if (bindingMode && smashRoomKind === 'item') {
+  // v207: the pedestal is gone once you've been here; the room isn't.
+  if (bindingMode && smashRoomKind === 'item' && !bdRevisit) {
     const pu = new Powerup(scene, 0, 0, 'item');
     pu._life = 999;
     powerups.push(pu);
+  }
+  // v207: every doorless-fight BINDING room — shop, item, and any room you've
+  // already emptied — opens its doors the moment you walk in.
+  if (bindingMode && (bdRevisit || smashRoomKind === 'item' || smashRoomKind === 'shop')) {
     exitPhase  = true;
-    exitDoors  = pickSmashExits();
-    for (const ed of exitDoors) ed.kind = bindingKindFor(bindingRoomN + 1);
+    exitDoors  = bdOpenExits();
     roomTallyT = 0;
   }
 
@@ -5754,8 +5808,22 @@ function spawnWave() {
   if (bindingMode) {
     const k = ROOM_KINDS[smashRoomKind ?? 'normal'] ?? ROOM_KINDS.normal;
     waveIntroT     = waveIntroDur = 1.3;
-    waveIntroText  = `BINDING — FLOOR ${bindingFloor}` + (smashRoomKind && smashRoomKind !== 'normal' ? ` · ${k.label}` : '');
-    waveIntroColor = '#ff88bb';
+    // v207: a revisited room says so — the banner is the tell that nothing
+    // here is going to jump you and nothing here is left to take.
+    waveIntroText  = bdRevisit
+      ? `BINDING — FLOOR ${bindingFloor} · ${t('bdCleared')}`
+      : `BINDING — FLOOR ${bindingFloor}` + (smashRoomKind && smashRoomKind !== 'normal' ? ` · ${k.label}` : '');
+    waveIntroColor = bdRevisit ? '#88a0c0' : '#ff88bb';
+    // v207: step INTO the room, clear of the doorway. A cleared room opens its
+    // doors the instant you arrive, so being left standing in the door you
+    // walked through would bounce you straight back out of it.
+    if (_entryDoor != null) {
+      const [gx, gz] = smashDoorPos(_entryDoor);
+      const gl = Math.hypot(gx, gz) || 1;
+      player.mesh.position.set(gx - (gx / gl) * 3.4, PLAYER_RADIUS, gz - (gz / gl) * 3.4);
+      player.grantInvincibility(1.0);
+      _entryDoor = null;
+    }
   } else if (smashMode) {
     // SMASH TV: game-show room intro card, named + colored by room kind.
     // v178: floors get named once you're off the ground floor.
@@ -6142,6 +6210,8 @@ function startCabQuest(mode) {
     roomX = 0; roomY = 0;
     visitedRooms = new Set(['0,0']);
     smashRoomKind = bindingKindFor(1);
+    bdSeen = new Map(); bdRevisit = false;       // v207: fresh remembered floor
+    bdSeen.set('0,0', { kind: smashRoomKind, exits: null });
     _entryDoor = null; _cameFromDoor = null;
     buildSmashDoors();
   }
@@ -6254,6 +6324,9 @@ function startGame() {
   roomX = 0; roomY = 0;
   visitedRooms = new Set(['0,0']);
   smashRoomKind = null;
+  // v207: BINDING's remembered floor starts empty but for the room you're in
+  bdSeen = new Map(); bdRevisit = false;
+  if (bindingMode) bdSeen.set('0,0', { kind: smashRoomKind ?? 'normal', exits: null });
   smashFloor = 1;               // v178: every run starts on studio floor 1
   applySmashFloorLook();
   _entryDoor = null; _cameFromDoor = null;
@@ -6752,6 +6825,13 @@ function loop() {
 
   // v184 BINDING SHOP runtime: walk into a pedestal to take its deal.
   if (bindingMode && bdShop.length && player.alive && gameState === 'playing') {
+    // v207: the sale is recorded on the ROOM, so it survives leaving and
+    // coming back — a bought pedestal is grey and dead forever after.
+    const bdSell = s2 => {
+      s2.sold = true; s2.mat.color.setHex(0x444444);
+      const cell = bdSeen.get(bdKey(roomX, roomY));
+      if (cell?.sold) cell.sold[s2.slot] = true;
+    };
     for (const s2 of bdShop) {
       if (s2._denyT > 0) s2._denyT -= dt;
       if (s2.sold) continue;
@@ -6763,7 +6843,7 @@ function loop() {
           continue;
         }
         player.hp--;
-        s2.sold = true; s2.mat.color.setHex(0x444444);
+        bdSell(s2);
         audio.kaChing();
         showUpgradeCards(() => { gameState = 'playing'; });
       } else if (s2.kind === 'rare') {
@@ -6772,7 +6852,7 @@ function loop() {
           continue;
         }
         dropMaxHp(1);
-        s2.sold = true; s2.mat.color.setHex(0x444444);
+        bdSell(s2);
         audio.kaChing();
         showRareCards(() => { gameState = 'playing'; });
       } else if (s2.kind === 'heal') {
@@ -6782,7 +6862,7 @@ function loop() {
         }
         score -= 1500;
         player.hp = Math.min(player.maxHp, player.hp + 2);
-        s2.sold = true; s2.mat.color.setHex(0x444444);
+        bdSell(s2);
         milestoneT = 1.1; milestoneText = 'PATCHED UP (+2 HP)';
         audio.kaChing();
       }
@@ -8336,16 +8416,9 @@ function loop() {
       if (bindingMode) {
         // v157: REAL branching — the item/boss cadence still rules those
         // beats, but between them each door rolls its own room kind.
-        const cadence = bindingKindFor(bindingRoomN + 1);
-        if (cadence === 'item' || cadence === 'boss') {
-          for (const ed of exitDoors) ed.kind = cadence;
-        } else {
-          for (const ed of exitDoors) {
-            const r2 = rng();
-            // v184: ~12% of free doors lead to the basement bazaar
-            ed.kind = r2 < 0.5 ? 'normal' : r2 < 0.72 ? 'swarm' : r2 < 0.88 ? 'spike' : 'shop';
-          }
-        }
+        // v207: bdOpenExits() owns that roll now, and adds the walked-ground
+        // doors that make the floor a map you can move back through.
+        exitDoors = bdOpenExits();
         // Floor boss down (v150): the basement pays a RARE pick on the spot.
         if (smashRoomKind === 'boss') showRareCards(() => { gameState = 'playing'; });
       }
@@ -8378,11 +8451,13 @@ function loop() {
   // The swap happens under a quick black dip (v120) so traversal reads as
   // walking THROUGH the door, not a teleport. (Upgrade-card rooms skip the
   // fade — the card panel is its own transition.)
-  if (exitPhase && gameState === 'playing') {
+  if (_doorGraceT > 0) _doorGraceT -= dt;
+  if (exitPhase && gameState === 'playing' && _doorGraceT <= 0) {
     for (const ed of exitDoors) {
       const [dx, dz] = smashDoorPos(ed.door);
       if (Math.hypot(player.position.x - dx, player.position.z - dz) < 2.2) {
         exitPhase = false; roomTallyT = 0;
+        const _leftKind = smashRoomKind;    // v207: the room being walked out of
         roomX += DOOR_DX[ed.door]; roomY += DOOR_DY[ed.door];
         visitedRooms.add(`${roomX},${roomY}`);
         smashRoomKind = ed.kind;
@@ -8397,22 +8472,32 @@ function loop() {
           smashRoomKind = gauntlet.rooms[gauntlet.roomIdx];
         }
         if (bindingMode) {                   // v150: the basement script
-          if (smashRoomKind !== undefined && bindingKindFor(bindingRoomN) === 'boss') {
-            bindingFloor++;                  // leaving a boss room = next floor
-          }
-          bindingRoomN++;
-          // v157: the door's advertised kind IS the choice; only the
-          // item/boss cadence overrides it.
-          const cad = bindingKindFor(bindingRoomN);
-          if (cad === 'item' || cad === 'boss') smashRoomKind = cad;
-          if (cabQuest) {                    // v154: each room walked out of
-            cabQuest.done++;                 // is a quest beat
-            if (cabQuest.done >= cabQuest.goal) { finishCabQuest(); break; }
-            cabQuest.mult++;
+          // v207: is this ground we've already walked? Then it is exactly the
+          // room we left, and NOTHING about the run's progression moves — the
+          // room count, the item/boss cadence, the floor and the quest beat
+          // all measure new ground, so backtracking can't be farmed.
+          const _bdPrev = bdSeen.get(bdKey(roomX, roomY));
+          bdRevisit = !!_bdPrev;
+          if (_bdPrev) {
+            smashRoomKind = _bdPrev.kind;
+          } else {
+            if (_leftKind === 'boss') bindingFloor++;   // leaving a boss room = next floor
+            bindingRoomN++;
+            // v157: the door's advertised kind IS the choice; only the
+            // item/boss cadence overrides it.
+            const cad = bindingKindFor(bindingRoomN);
+            if (cad === 'item' || cad === 'boss') smashRoomKind = cad;
+            bdSeen.set(bdKey(roomX, roomY), { kind: smashRoomKind ?? 'normal', exits: null });
+            if (cabQuest) {                  // v154: each NEW room walked into
+              cabQuest.done++;               // is a quest beat
+              if (cabQuest.done >= cabQuest.goal) { finishCabQuest(); break; }
+              cabQuest.mult++;
+            }
           }
         }
         _entryDoor    = (ed.door + 2) % 4;
         _cameFromDoor = _entryDoor;
+        _doorGraceT   = 0.4;   // v207: never chain two door touches on one walk
         if (!gauntlet && !bindingMode && roguelikeMode && wave % 3 === 0) {
           showUpgradeCards();
         } else {
@@ -8468,6 +8553,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=160').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=161').catch(() => {});
   });
 }

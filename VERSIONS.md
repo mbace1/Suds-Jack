@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v207 — 2026-07-25
+**BINDING: room revisits — the basement is a map, not a corridor**
+- **The wall you came in through stays a door.** Every cell you set foot in is remembered — its kind, its doors, its rock/pit layout and the fact that you emptied it — so you can walk back through the floor and take the exit you passed up. Doors into ground you've already walked glow **cool blue** and read `BACK` instead of green `EXIT`; the minimap marks them `✓`. Green is new floor, blue is the way you came
+- **A cleared room stays cleared**: no residents respawn behind you, the doors open the moment you step in, and the banner says `CLEARED`. The layout is the *cell's* now, not the moment's — a revisited room has the exact pits and boulders you left it with
+- **Backtracking is routing, never farming.** The room counter, the item/boss cadence, the floor number and the cabinet-quest beat all measure NEW ground only, so pacing back and forth advances nothing
+- **The shop is part of the room.** A deal you couldn't afford is still on its pedestal when you come back with the blood or the points; one you bought stays grey and dead. Item-room pedestals don't restock either
+- **Fix (found building this):** BINDING never repositioned you on room entry — it borrowed SMASH's lattice but not its door-mouth placement. With revisit doors opening instantly, that left you standing *in* the door you arrived through and bounced you straight back out. You now step 3.4 units into the room, with a 0.4 s deafness to door touches so one walk can never chain two rooms
+- Cache-bust `?v=160` → `?v=161`; HUD label → v207
+
+---
+
 ## v206 — 2026-07-25
 **KAIKKI: civilians as WITNESSES — you can't loot in front of an audience**
 - The street now has **2–4 bystanders** wandering it, and while any of them is still out there, **every payout is HALVED** — kill money and floor cash alike. The HUD says why (`WITNESSES: 2 — CASH HALVED`), so the wallet never drops silently
