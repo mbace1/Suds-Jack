@@ -257,6 +257,18 @@ function check(name, cond) {
   check('trace truth shown', (await page.locator('.exp-text').textContent()).includes('no lion up there'));
   await page.locator('.back-btn').click();
 
+  // gears: crank the Antikythera mechanism through the months to the eclipse
+  await page.evaluate(() => __gol.debug.start('gears'));
+  check('gears intro shown', (await page.locator('.exp-text').textContent()).includes('Antikythera'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Turn the crank' }).click();
+  for (let i = 0; i < 16; i++) {
+    const c = page.locator('.exp-buttons .btn', { hasText: 'Turn again' });
+    if (await c.count() === 0) break;
+    await c.click();
+  }
+  check('gears reaches the eclipse', (await page.locator('.exp-text').textContent()).includes('eclipse'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');
