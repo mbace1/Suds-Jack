@@ -42,6 +42,37 @@ export class PixelScreen {
     this.ctx.fillRect(0, 0, this.w, this.h);
   }
 
+  // Draw a layer ONCE and blit it every frame afterwards.
+  //
+  // Most scenes spend their whole frame budget repainting art that has not
+  // changed — a dithered sky, a stone, a gear body. `cached` runs drawFn into an
+  // offscreen canvas and re-runs it only when `key` changes, so the per-frame
+  // cost of a static layer collapses to a single drawImage. Inside drawFn every
+  // normal helper (px/disc/bands/rect/softDisc) works unchanged, because the
+  // context is simply retargeted for the duration.
+  //
+  //   scr.cached('base', () => { ...expensive static art... });
+  //
+  // Give the key any state the layer depends on (quantised, so it changes a
+  // handful of times rather than every frame).
+  cached(key, drawFn) {
+    if (this._cacheKey !== key) {
+      if (!this._off) {
+        this._off = document.createElement('canvas');
+        this._off.width = this.w;
+        this._off.height = this.h;
+        this._offCtx = this._off.getContext('2d');
+        this._offCtx.imageSmoothingEnabled = false;
+      }
+      this._offCtx.clearRect(0, 0, this.w, this.h);
+      const live = this.ctx;
+      this.ctx = this._offCtx;      // helpers draw into the cache
+      try { drawFn(); } finally { this.ctx = live; }
+      this._cacheKey = key;
+    }
+    this.ctx.drawImage(this._off, 0, 0);
+  }
+
   px(x, y, w, h, color) {
     this.ctx.fillStyle = color;
     this.ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));

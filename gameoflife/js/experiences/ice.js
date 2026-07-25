@@ -6,8 +6,8 @@
 // frame. Built to the 2026-07 void-vignette standard, dithered ice ramps.
 // Revert: imagine your own square of earth a hundred years ago.
 
-import { PixelScreen, bayer, rampDither } from '../pixel.js?v=29';
-import { PAL } from '../palette.js?v=29';
+import { PixelScreen, bayer, rampDither } from '../pixel.js?v=33';
+import { PAL } from '../palette.js?v=33';
 
 // the core column, a rounded cylinder floating in the void
 const COX = 96, COW = 34, COT = 10, COB = 120;   // centre-x, width, top, bottom
@@ -170,10 +170,14 @@ export const ice = {
       scroll += (target - scroll) * Math.min(1, dt * 4);   // ease toward the stop
       if (phase === 'truth' || phase === 'outro') glowT += dt;
 
-      scr.clear(PAL.VOID);
-      scr.softDisc(COX, 64, 40, '#0a1a20', 20);      // cold cabinet light in the void
-      drill();
-      core(now);
+      // the core only changes while the scroll is easing to the next stop, so
+      // key the cached layer on the settled scroll position
+      scr.cached(`core:${stop}:${Math.round(scroll)}`, () => {
+        scr.clear(PAL.VOID);
+        scr.softDisc(COX, 64, 40, '#0a1a20', 20);    // cold cabinet light in the void
+        drill();
+        core(now);
+      });
       airBubble(now);
     }
 

@@ -7,8 +7,8 @@
 // with a dithered glaze (shared toolkit with `seam`, ideas/ref/kintsugi-overflow.png).
 // The overflow already glowed luminescent cyan and broke the frame; it stays.
 
-import { PixelScreen, shade, rampDither } from '../pixel.js?v=29';
-import { PAL } from '../palette.js?v=29';
+import { PixelScreen, shade, rampDither } from '../pixel.js?v=33';
+import { PAL } from '../palette.js?v=33';
 
 const FULL_AT = 1.0, OVERFLOW_AT = 1.9;   // keep pouring past full to learn
 const PRESS = 0.16;                        // a press always counts this much

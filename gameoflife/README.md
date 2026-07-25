@@ -107,6 +107,42 @@ scene, not automatic.)
 
 New content should keep the registry near the 70/20/10 story/game/wisdom mix.
 
+## Performance: cache the static layer
+
+Dithered art is expensive — a full-screen `rampDither` pass is one `fillRect` per
+pixel, and a reference-grade scene can paint ~18k of them. Repainting that every
+frame drops a mid-range phone into single-digit fps, and almost none of it changes
+between frames.
+
+`PixelScreen.cached(key, drawFn)` is the fix: it runs `drawFn` into an offscreen
+canvas once, then blits it every frame until `key` changes. Helpers work unchanged
+inside the callback (`cached` retargets `this.ctx` for the duration), so caching a
+scene is a matter of wrapping its static art and keying on whatever actually
+changes:
+
+```js
+scr.cached(`base:${found.size}`, () => { lane(); hedge(); tally(); });
+marker(now);          // only the live layer runs per frame
+```
+
+Scenes that use it: `wait`, `gears`, `lichen`, `hedge`, `seam`, `ice`. Two rules
+learned the hard way:
+
+- **Split static from animated properly.** Anything that moves has to come out of
+  the cached callback (`gears` keeps the radially symmetric gear *bodies* cached and
+  redraws only teeth and spokes; `lichen` caches the crust and keeps the pulsing
+  apothecia live).
+- **Sample `bayer()` at the cell index, not the pixel.** Drawing in 2px cells while
+  calling `bayer(x, y)` at even coordinates only ever reaches 4 of its 16 threshold
+  values — all low — which collapses a stipple into hard-edged blobs. Use
+  `bayer(x >> 1, y >> 1)`.
+
+Profiling recipe: Playwright + CDP `Emulation.setCPUThrottlingRate(4)` (≈ a
+mid-range phone), a phone viewport, and a wrapped
+`CanvasRenderingContext2D.prototype.fillRect` counting calls per frame. Use a
+**fresh page per scene** — a leaked rAF loop from a previous scene silently inflates
+every number after it.
+
 ## Architecture (what a new experience needs)
 
 ```
