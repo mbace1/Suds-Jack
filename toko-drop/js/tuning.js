@@ -73,6 +73,56 @@ export const TUNING = {
     landingRing: { inner: 0.55, outer: 0.95, telegraphFlashHz: 22, flightFlashHz: 40 },
   },
 
+  // v210 MOVEMENT PROFILES (field feedback: "the movement of enemies is now
+  // unnatural, they should have unique patterns but not all just dodge").
+  //
+  // FLUID (the default since v198) bolted the SAME four forces onto every
+  // non-boss body — dodge, flock, wave current, shepherd pull — so a charging
+  // TORO, a stationary TURRET, a lobbing BAMBU and a FLIT all moved like the
+  // same fish and each type's own behaviour got averaged away. Every type now
+  // declares how much of the shared movement it takes; 0 means "this body
+  // does its own thing", which is what makes the roster read as 40 species
+  // again instead of one school.
+  //
+  //   dodge   — reads an incoming bullet lane and sidesteps it
+  //   flock   — boids cohesion/alignment, and ONLY with other flockers
+  //   current — how hard the wave archetype (stream/ring/pincer) pushes it
+  //   weave   — its own serpentine approach: personality without a school
+  movement: {
+    roles: {
+      SCHOOL : { dodge: 0.9, flock: 1.0,  current: 1.0,  weave: 0    },  // the fish
+      DARTER : { dodge: 1.0, flock: 0.5,  current: 0.9,  weave: 0.5  },  // quick, reads your gun
+      DRIFTER: { dodge: 0.3, flock: 0.6,  current: 1.0,  weave: 0.25 },  // ordinary bodies
+      HUNTER : { dodge: 0.4, flock: 0,    current: 0.5,  weave: 0.8  },  // solo stalkers: weave, never school
+      HOLDER : { dodge: 0,   flock: 0,    current: 0.25, weave: 0    },  // ranged — holds its ground
+      COMMIT : { dodge: 0,   flock: 0,    current: 0.15, weave: 0    },  // chargers are committed to the line
+      MASS   : { dodge: 0,   flock: 0,    current: 0.10, weave: 0    },  // heavies plough through
+      FIXED  : { dodge: 0,   flock: 0,    current: 0,    weave: 0    },  // does not move under its own power
+      SUPPORT: { dodge: 0.5, flock: 0.3,  current: 0.6,  weave: 0.3  },  // has a job to do
+      HERDER : { dodge: 0.6, flock: 0,    current: 0.3,  weave: 0.2  },  // SHEPHERD holds a pocket, never schools
+    },
+    // EnemyType name -> role. Anything unlisted falls back to DRIFTER.
+    byType: {
+      GLOBBO: 'DRIFTER', SPITTOR: 'HOLDER',  FANNER: 'HOLDER',   WEEVA: 'HOLDER',
+      SPLITTA: 'SCHOOL',
+      YELA_CUBE: 'DRIFTER', ORANGE_CUBE: 'DRIFTER', SLUDGE_CUBE: 'MASS',
+      REDD_CUBE: 'DRIFTER', PURP_CUBE: 'DRIFTER',
+      REDD_MINI: 'SCHOOL',  PURP_MINI: 'SCHOOL',
+      TORO: 'COMMIT', BAMBU: 'HOLDER', PYRA: 'HUNTER', OMEGA: 'MASS',
+      BOTFLY: 'HOLDER', WARDEN: 'SUPPORT', BULWARK: 'MASS', SIREN: 'SUPPORT',
+      CLOAKER: 'HUNTER', MAGNA: 'SUPPORT',
+      GRUNT: 'SCHOOL', BRUTE: 'MASS', ORB: 'SUPPORT', PROG: 'DARTER', MINDER: 'SUPPORT',
+      GHOST: 'SCHOOL', WRAITH: 'COMMIT',
+      FLIT: 'SCHOOL', SPITTLE: 'HOLDER', CHARGER: 'COMMIT', HOPPER: 'DARTER',
+      TURRET: 'FIXED', TROOPER: 'HOLDER',
+      THUG: 'DRIFTER', DRAPER: 'HOLDER',
+      PRISM: 'MASS', CUSTODIAN: 'MASS', SHEPHERD: 'HERDER',
+    },
+    fallback: 'DRIFTER',
+    weaveSpeed: 1.7,     // rad/s of the serpentine
+    weaveGain: 1.6,      // u/s at full weave
+  },
+
   fx: {
     hitDroplets: 8, killDroplets: 22, killChunks: 5,
     splatLife: 20,

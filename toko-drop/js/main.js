@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=163';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=163';
-import { Player, PLAYER_RADIUS } from './player.js?v=163';
+import { InputManager } from './input.js?v=164';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=164';
+import { Player, PLAYER_RADIUS } from './player.js?v=164';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS } from './enemy.js?v=163';
-import { RetroPass } from './retro.js?v=163';
-import { audio } from './audio.js?v=163';
-import { initDesigner } from './designer.js?v=163';
-import { t, getLang, setLang, langs } from './lang.js?v=163';
-import { TUNING } from './tuning.js?v=163';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS } from './enemy.js?v=164';
+import { RetroPass } from './retro.js?v=164';
+import { audio } from './audio.js?v=164';
+import { initDesigner } from './designer.js?v=164';
+import { t, getLang, setLang, langs } from './lang.js?v=164';
+import { TUNING } from './tuning.js?v=164';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1918,6 +1918,26 @@ let fluidRun = false;                              // captured at run start
 // daily runs replay identically and the shared rng stream is untouched.
 const FLUID_ARCHS = ['stream', 'ring', 'pincer'];
 let fluidArch = null;
+// v210 MOVEMENT PROFILES: resolve TUNING.movement's name→role→traits table
+// into a flat array indexed by EnemyType, once at boot. Every FLUID force is
+// scaled by the moving body's own profile, so the roster reads as 40 species
+// instead of one school (see the tuning.js block for the full rationale).
+// v210 (user direction): the pre-profile behaviour stays one click away —
+// MOVEMENT PROFILES off restores the v196–v209 feel where every body took the
+// full share of every force. Kept as a real toggle, not a dead code path, so
+// the two can be compared back-to-back in the field.
+let mvProfiles = localStorage.getItem('tokoDropMvProf') !== '0';   // default ON
+const MV_UNIFORM = { dodge: 1, flock: 1, current: 1, weave: 0 };
+const MV = TUNING.movement;
+const MV_BY_TYPE = (() => {
+  const fb = MV.roles[MV.fallback];
+  const out = [];
+  for (const [name, id] of Object.entries(EnemyType)) {
+    out[id] = MV.roles[MV.byType[name]] ?? fb;
+  }
+  return out;
+})();
+const mvOf = e => mvProfiles ? (MV_BY_TYPE[e.type] ?? MV.roles[MV.fallback]) : MV_UNIFORM;
 // v200 JUICE: kill-streak heat — rapid kills escalate the splatter. Rises per
 // kill, decays fast; scales extra chunk counts and satellite splats so the
 // 10th kill of a chain detonates louder than the 1st. Pure FX, no gameplay.
@@ -3598,6 +3618,12 @@ const designer = initDesigner({
       fluidMode = on;
       localStorage.setItem('tokoDropFluid', on ? '1' : '0');
     },
+    // v210: per-type movement profiles vs the original uniform behaviour
+    getMvProf: () => mvProfiles,
+    setMvProf: on => {
+      mvProfiles = on;
+      localStorage.setItem('tokoDropMvProf', on ? '1' : '0');
+    },
     getGpu: () => IS_GPU,
     setGpu: on => {
       localStorage.setItem('tokoDropGpu', on ? '1' : '0');
@@ -4198,7 +4224,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v209' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v210' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -7626,8 +7652,12 @@ function loop() {
     // flockmate inside a herd ring gets dragged toward the player, so the
     // school knots up around you until you kill the shepherd.
     const shepherds = enemies.filter(s => s.alive && s.type === EnemyType.SHEPHERD);
+    // v210: only actual flockers school, and they school only WITH each other —
+    // gathered once per frame so the boids loop never walks turrets and heavies.
+    const flockers = enemies.filter(o => o.alive && !o._isBoss && mvOf(o).flock > 0);
     for (const e of enemies) {
       if (!e.alive || e._isBoss) continue;
+      const mv = mvOf(e);      // v210: this body's share of the shared movement
       if (shepherds.length && e.type !== EnemyType.SHEPHERD) {
         for (const s of shepherds) {
           const sx = e.position.x - s.position.x, sz = e.position.z - s.position.z;
@@ -7657,7 +7687,7 @@ function loop() {
         const k = Math.max(0, 1 - dt * 5);
         e._fdVx *= k; e._fdVz *= k;
       }
-      if (e._fdCd <= 0 && e.radius <= 1.1) {
+      if (e._fdCd <= 0 && e.radius <= 1.1 && mv.dodge > 0) {
         for (const b of bullets.active) {
           if (!b.isPlayer) continue;
           const dx = e.position.x - b.mesh.position.x;
@@ -7669,8 +7699,8 @@ function loop() {
           const s = dx * -fz + dz * fx;                  // signed lateral offset
           if (Math.abs(s) > e.radius + 1.0) continue;    // lane misses anyway
           const side = s >= 0 ? 1 : -1;                  // dodge AWAY from the lane
-          e._fdVx = -fz * side * 12;
-          e._fdVz =  fx * side * 12;
+          e._fdVx = -fz * side * 12 * mv.dodge;          // v210: per-type gain
+          e._fdVz =  fx * side * 12 * mv.dodge;
           e._fdT  = 0.3;
           e._fdCd = 0.8 + Math.random() * 0.7;
           // v201: the sidestep whips — rate-limited so a schooling wave
@@ -7684,33 +7714,53 @@ function loop() {
       }
       // ── flock: boids-lite cohesion + alignment with nearby schoolmates ─────
       // (separation already lives in the engine's crowd solver)
-      let cx = 0, cz = 0, vx = 0, vz = 0, n = 0;
-      for (const o of enemies) {
-        if (o === e || !o.alive || o._isBoss) continue;
-        const dx = o.position.x - e.position.x, dz = o.position.z - e.position.z;
-        if (dx * dx + dz * dz > 16) continue;
-        cx += dx; cz += dz; vx += (o._velX ?? 0); vz += (o._velZ ?? 0); n++;
+      // v210: fish school with fish. Non-flockers skip this entirely — both
+      // because a turret drifting toward a crowd looked wrong, and because it
+      // spares them the O(n²) neighbour walk.
+      if (mv.flock > 0) {
+        let cx = 0, cz = 0, vx = 0, vz = 0, n = 0;
+        for (const o of flockers) {
+          if (o === e) continue;
+          const dx = o.position.x - e.position.x, dz = o.position.z - e.position.z;
+          if (dx * dx + dz * dz > 16) continue;
+          cx += dx; cz += dz; vx += (o._velX ?? 0); vz += (o._velZ ?? 0); n++;
+        }
+        if (n) {
+          const gl = Math.hypot(cx, cz) || 1;
+          e.position.x += ((cx / gl) * 0.5 + (vx / n) * 0.25) * mv.flock * dt;
+          e.position.z += ((cz / gl) * 0.5 + (vz / n) * 0.25) * mv.flock * dt;
+        }
       }
-      if (n) {
-        const gl = Math.hypot(cx, cz) || 1;
-        e.position.x += ((cx / gl) * 0.5 + (vx / n) * 0.25) * dt;
-        e.position.z += ((cz / gl) * 0.5 + (vz / n) * 0.25) * dt;
+      // ── v210 WEAVE: a solo body's own serpentine approach. Hunters get a
+      // path with personality without borrowing the school's motion — this is
+      // what replaces "everything schools" for the loners.
+      if (mv.weave > 0) {
+        const ph = (e._mvPhase ??= Math.random() * Math.PI * 2);
+        const wdx = player.position.x - e.position.x, wdz = player.position.z - e.position.z;
+        const wd = Math.hypot(wdx, wdz) || 1;
+        const s = Math.sin(VIS.now * MV.weaveSpeed + ph) * MV.weaveGain * mv.weave;
+        e.position.x += (-wdz / wd) * s * dt;
+        e.position.z += ( wdx / wd) * s * dt;
       }
       // ── v197 wave archetype: the shared current that shapes the school ─────
-      if (fluidArch === 'stream') {
+      // v210: scaled per type — light bodies ride the current, heavies barely
+      // feel it, and a turret is not moved by weather at all.
+      const cg = mv.current;
+      if (cg <= 0) { /* v210: this body ignores the wave current entirely */ }
+      else if (fluidArch === 'stream') {
         // one slowly-rotating current the whole wave rides — a river of fish
         // strafing past you instead of a straight march
         const ca = wave * 0.9 + VIS.now * 0.15;
-        e.position.x += Math.cos(ca) * 1.2 * dt;
-        e.position.z += Math.sin(ca) * 1.2 * dt;
+        e.position.x += Math.cos(ca) * 1.2 * cg * dt;
+        e.position.z += Math.sin(ca) * 1.2 * cg * dt;
       } else if (fluidArch === 'ring') {
         // shared orbit + their own chase = a spiral that contracts on you
         const dx = e.position.x - player.position.x;
         const dz = e.position.z - player.position.z;
         const d = Math.hypot(dx, dz) || 1;
         const sgn = wave % 2 === 0 ? 1 : -1;
-        e.position.x += (-dz / d) * sgn * 1.1 * dt;
-        e.position.z += ( dx / d) * sgn * 1.1 * dt;
+        e.position.x += (-dz / d) * sgn * 1.1 * cg * dt;
+        e.position.z += ( dx / d) * sgn * 1.1 * cg * dt;
       } else if (fluidArch === 'pincer') {
         // two flanks steer for the points BESIDE you, reading your travel axis —
         // they want your escape routes, not your back
@@ -7722,8 +7772,8 @@ function loop() {
         const tz = player.position.z + ax * side * 6;
         const dx = tx - e.position.x, dz = tz - e.position.z;
         const d = Math.hypot(dx, dz) || 1;
-        e.position.x += (dx / d) * 1.0 * dt;
-        e.position.z += (dz / d) * 1.0 * dt;
+        e.position.x += (dx / d) * 1.0 * cg * dt;
+        e.position.z += (dz / d) * 1.0 * cg * dt;
       }
     }
   }
@@ -8810,6 +8860,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=163').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=164').catch(() => {});
   });
 }
