@@ -129,7 +129,11 @@ ledges to flip their slope until a trickle chains down and pours off the frame i
 `CYAN_LUX`), and `tether` (story — The Tether: Paris 1783, cut the rope and the
 ground lets go; Paris compresses into a map as you climb, embers eat the linen, and
 the brazier flare throws `GOLD_LUX` sparks past the letterbox bars into the void —
-cinematic-widescreen like `glass`). `plate` pilots the **2026-07 visual standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
+cinematic-widescreen like `glass`), and `hedge` (story — The Living Wall: tap the
+shrubs along thirty paces of an English hedge to count woody *species*; tapping a
+repeat teaches that it is kinds you count, and Hooper's rule then dates the hedge
+at ~700 years, older than the church behind it; a botanist's tally strip fills as
+you go — full-scene English-lane build). `plate` pilots the **2026-07 visual standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
 jagged 16-bit vignettes in a pure-black void, muted environments, luminescent cyan/gold
 interactive elements that break the frame (`PAL.VOID/CYAN_LUX/GOLD_LUX`, plus
 `PAL.LEAF_LUX` — a luminescent green for nature-scene glow like fireflies). Shared `pixel.js`

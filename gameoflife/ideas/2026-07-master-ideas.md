@@ -85,6 +85,9 @@ Source: project owner, via idea-form exchange. Reference art in `ref/`
       break into the void. *Growth happens when you stop forcing it.* → press a
       hand to moss for thirty seconds.
 
-## Parked (Claude's pre-existing pick, superseded by this queue)
-- The Living Wall — English hedgerows + Hooper's rule (one woody species per
-  century in thirty paces). → read the oldest living boundary near you.
+## Revived after this queue was cleared
+- [x] **The Living Wall** (shipped as `hedge`) — an English lane; tap the shrubs
+  along thirty paces to count the woody *species* (repeats teach the method), and
+  Hooper's rule dates the hedge at ~700 years — older than the church behind it.
+  A botanist's tally strip fills as you go. → read the oldest living boundary
+  near you.
