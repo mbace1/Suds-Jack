@@ -7,7 +7,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { MODELS, VoxelSprite, DebrisPool, setVoxelDetail } from './voxel.js?v=35';
+import { MODELS, VoxelSprite, DebrisPool, setVoxelDetail } from './voxel.js?v=36';
 
 const canvas = document.getElementById('canvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -179,6 +179,12 @@ document.getElementById('burst').addEventListener('click', () => {
   debris.burst(sprite.worldVoxels(), sprite.size, new THREE.Vector3(0, 2, 0), 1.2);
   sprite.mesh.visible = false;
   setTimeout(() => rebuild(false), 900); // respawn fresh, DD-style
+});
+
+// blast the loose gib field outward from the model's centre — the same call
+// heavy-kill shockwaves and the player's dash make in-game
+document.getElementById('shove').addEventListener('click', () => {
+  debris.shove(0, 0.4, 0, 7, 11);
 });
 
 document.getElementById('flash').addEventListener('click', () => sprite.flash(2.2));

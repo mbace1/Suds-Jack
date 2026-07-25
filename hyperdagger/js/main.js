@@ -5,15 +5,15 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=35';
-import { Player } from './player.js?v=35';
-import { DaggerPool } from './daggers.js?v=35';
-import { GemPool } from './gems.js?v=35';
-import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=35';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=35';
-import { OrbPool } from './bullets.js?v=35';
-import { AudioKit } from './audio.js?v=35';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=35';
+import { InputManager } from './input.js?v=36';
+import { Player } from './player.js?v=36';
+import { DaggerPool } from './daggers.js?v=36';
+import { GemPool } from './gems.js?v=36';
+import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=36';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=36';
+import { OrbPool } from './bullets.js?v=36';
+import { AudioKit } from './audio.js?v=36';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=36';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -436,6 +436,8 @@ function spawnShockwave(pos) {
   scene.add(m);
   m.position.set(pos.x, 0.05, pos.z);
   sparks.push({ m, t: 0.45, max: 0.45, big: true, ring: true });
+  // the ring isn't just a decal — it blasts the surrounding gib field outward
+  debris.shove(pos.x, 0.4, pos.z, 7, 11);
 }
 
 function updateSparks(dt) {
@@ -1926,6 +1928,13 @@ function step(dt) {
     player.justDashed = false;
     audio.dash();
     trauma = Math.max(trauma, 0.15);
+  }
+  // dashing wades through the carnage — a moving sweep, dt-scaled so the kick
+  // is the same at any frame rate, biased along the dash so gibs get shoved
+  // ahead and aside rather than blown radially
+  if (player.dashK > 0) {
+    debris.shove(player.feet.x, player.feet.y + 0.5, player.feet.z,
+      2.4, 26 * dt, player.dashDir.x, player.dashDir.z);
   }
   if (player.justJumped) {
     player.justJumped = false;

@@ -586,6 +586,28 @@ export class DebrisPool {
     }
   }
 
+  /** Push nearby debris around so the gib field belongs to the fight instead
+   *  of lying inert under it: heavy-kill shockwaves blast it outward, and a
+   *  dashing player wades through it. Settled pieces wake up and get a little
+   *  life back, so a kicked gib arcs instead of popping out mid-flight.
+   *  A (dirX, dirZ) bias makes a sweep read as "shoved along", not "exploded". */
+  shove(x, y, z, radius, power, dirX = 0, dirZ = 0) {
+    const r2 = radius * radius;
+    for (const d of this.items) {
+      const dx = d.px - x, dy = d.py - y, dz = d.pz - z;
+      const dist2 = dx * dx + dy * dy + dz * dz;
+      if (dist2 > r2) continue;
+      const dist = Math.sqrt(dist2) || 1e-3;
+      const k = power * (1 - dist / radius); // linear falloff to the rim
+      d.vx += (dx / dist) * k + dirX * k * 0.8;
+      d.vz += (dz / dist) * k + dirZ * k * 0.8;
+      d.vy += (0.35 + Math.random() * 0.5) * k; // lift, so it tumbles not slides
+      d.wx += (Math.random() - 0.5) * k * 2.5;
+      d.wz += (Math.random() - 0.5) * k * 2.5;
+      if (d.life < 0.5) d.life = 0.5;
+    }
+  }
+
   update(dt) {
     const G = -28;
     for (let k = this.items.length - 1; k >= 0; k--) {
