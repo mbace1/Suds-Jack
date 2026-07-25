@@ -3,10 +3,33 @@
 // left in a garden, not an arcade.
 
 let ctx = null;
+let master = null;      // every voice goes through here, so silence has ONE switch
+let isMuted = false;
 
 export function init() {
   if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (!master) {
+    master = ctx.createGain();
+    master.gain.value = isMuted ? 0 : 1;
+    master.connect(ctx.destination);   // the ONLY connection to the speakers
+  }
   if (ctx.state === 'suspended') ctx.resume();
+}
+
+// the one output. Nothing may connect straight to ctx.destination — routing
+// everything through master is what makes the mute total rather than a list of
+// sounds somebody remembered to silence.
+function out() { return master || ctx.destination; }
+
+export function muted() { return isMuted; }
+
+export function setMuted(b) {
+  isMuted = !!b;
+  if (!master) return;
+  const t = ctx.currentTime;
+  master.gain.cancelScheduledValues(t);
+  master.gain.setValueAtTime(master.gain.value, t);
+  master.gain.linearRampToValueAtTime(isMuted ? 0 : 1, t + 0.12);   // no click
 }
 
 function tone(freq, dur, type = 'sine', gain = 0.12, when = 0) {
@@ -19,7 +42,7 @@ function tone(freq, dur, type = 'sine', gain = 0.12, when = 0) {
   g.gain.setValueAtTime(0, t);
   g.gain.linearRampToValueAtTime(gain, t + 0.015);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.connect(g).connect(ctx.destination);
+  o.connect(g).connect(out());
   o.start(t);
   o.stop(t + dur + 0.05);
 }
@@ -55,7 +78,7 @@ export function water() {
   const g = ctx.createGain();
   g.gain.setValueAtTime(0.16, t);
   g.gain.exponentialRampToValueAtTime(0.001, t + len);
-  src.connect(f).connect(g).connect(ctx.destination);
+  src.connect(f).connect(g).connect(out());
   src.start(t);
 }
 
@@ -76,7 +99,7 @@ function drone(freq, gain, detune = 0) {
   o.detune.value = detune;
   g.gain.setValueAtTime(0, t);
   g.gain.linearRampToValueAtTime(gain, t + 3.5);        // fades in, never startles
-  o.connect(g).connect(ctx.destination);
+  o.connect(g).connect(out());
   o.start(t);
   return { o, g };
 }
@@ -135,7 +158,7 @@ export function breath(inhale) {
   g.gain.setValueAtTime(0.0001, t);
   g.gain.linearRampToValueAtTime(0.05, t + 1.8);
   g.gain.linearRampToValueAtTime(0.0001, t + 3.8);
-  o.connect(g).connect(ctx.destination);
+  o.connect(g).connect(out());
   o.start(t);
   o.stop(t + 4);
 }

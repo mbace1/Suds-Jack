@@ -36,33 +36,41 @@
     .pixel-screen.hub-canvas { aspect-ratio: 48 / 11; }
     .hub-header h1 { font-size: 28px; letter-spacing: 3px; color: #efe6d0; }
     .tagline { margin-top: 8px; color: #a89b7f; font-size: 14px; }
-    .greet { margin-top: 10px; color: #6e654f; font-size: 12px; font-style: italic; }
+    .greet { margin-top: 10px; color: #8d8165; font-size: 12px; font-style: italic; }
 
     /* a quiet footer holds the set-once controls out of the main column */
     .hub-footer {
       margin-top: 40px; padding-top: 18px; border-top: 1px solid #2a2620;
       display: flex; flex-direction: column; align-items: center; gap: 10px;
     }
-    .lang-row { display: flex; gap: 16px; justify-content: center; }
+    .lang-row { display: flex; gap: 10px; justify-content: center; margin: -10px 0; }
     .lang-btn {
-      font-family: inherit; font-size: 12px; padding: 2px 2px; cursor: pointer;
-      background: none; color: #6e654f; border: none; letter-spacing: 1px;
+      font-family: inherit; font-size: 12px; cursor: pointer;
+      background: none; color: #8d8165; border: none; letter-spacing: 1px;
+      /* was 45x21: a 12px word is a fine thing to read and a poor thing to hit.
+         The padding grows the target, the negative row margin keeps the footer
+         looking exactly as tight as it did. */
+      padding: 12px 8px; min-height: 44px; min-width: 44px;
     }
     .lang-btn:hover { color: #a89b7f; }
-    .lang-btn.active { color: #8faf6a; border-bottom: 1px solid #8faf6a; }
-    .footer-link { margin-top: 0 !important; color: #6e654f; }
-    /* which hemisphere's seasons the invitations follow */
-    .hemi-row { align-items: center; gap: 10px; }
-    .hemi-label { font-size: 11px; color: #4a4438; letter-spacing: 1px; }
+        /* underline the WORD, not the button box — with a 44px target the border
+       edge sits well below the text and reads as a stray rule */
+    .lang-btn.active {
+      color: #8faf6a; text-decoration: underline; text-underline-offset: 4px;
+    }
+    .footer-link { margin-top: 0 !important; color: #8d8165; }
+    /* the set-once option rows: hemisphere, sound */
+    .opt-row { align-items: center; gap: 10px; }
+    .hemi-label { font-size: 11px; color: #877c66; letter-spacing: 1px; }
 
     /* the sound garden: a quiet meter of what going outside has earned */
     .garden-note {
-      font-size: 11px; letter-spacing: 3px; color: #5f7a4a;
+      font-size: 11px; letter-spacing: 3px; color: #7c9e60;
       text-transform: lowercase;
     }
     .garden-note.grew { color: #8faf6a; }
     .garden-grew {
-      font-size: 11px; color: #6e654f; font-style: italic;
+      font-size: 11px; color: #8d8165; font-style: italic;
       text-align: center; max-width: 320px;
     }
 
@@ -75,14 +83,14 @@
     .dot.full { background: #8faf6a; border-color: #8faf6a; }
     .dot.rest {
       border-radius: 0; border: none; width: auto; height: auto;
-      color: #6e654f; font-size: 13px; line-height: 10px;
+      color: #8d8165; font-size: 13px; line-height: 10px;
     }
     .dot.rest.full { color: #c9a84c; background: none; }
 
     .offering { max-width: 420px; margin: 0 auto; text-align: center; }
-    .offer-note { font-size: 11px !important; letter-spacing: 2px; color: #6e654f !important;
+    .offer-note { font-size: 11px !important; letter-spacing: 2px; color: #8d8165 !important;
                   text-transform: lowercase; margin-bottom: 8px; }
-    .another-btn { margin: 14px auto 0; text-align: center; }
+    .another-btn { margin: 2px auto 0; text-align: center; }
 
     .card {
       border: 2px solid #4a4438; padding: 16px 18px; background: #1c1a16;
@@ -94,17 +102,17 @@
 
     .btn {
       font-family: inherit; font-size: 14px; letter-spacing: 1px; cursor: pointer;
-      margin-top: 12px; padding: 8px 20px;
-      background: #5f7a4a; color: #efe6d0; border: none;
+      margin-top: 12px; padding: 14px 20px;
+      background: #4e6839; color: #efe6d0; border: none;
       box-shadow: 3px 3px 0 #2c3a22;
     }
     .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #2c3a22; }
     .link-btn {
-      font-family: inherit; font-size: 12px; cursor: pointer; margin-top: 20px;
+      font-family: inherit; font-size: 12px; cursor: pointer; margin-top: 8px;
       background: none; border: none; color: #a89b7f; text-decoration: underline;
-      display: block;
+      display: block; padding: 15px 8px; min-height: 44px;
     }
-    .cycle-hint { margin-top: 24px; text-align: center; font-size: 12px; color: #6e654f; font-style: italic; }
+    .cycle-hint { margin-top: 24px; text-align: center; font-size: 12px; color: #8d8165; font-style: italic; }
 
     /* ── experiences ─────────────────────────────────── */
     .exp { display: flex; flex-direction: column; align-items: center; }
@@ -126,7 +134,7 @@
     }
     .exp-text p + p { margin-top: 10px; }
     .exp-buttons { margin-top: 14px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
-    .back-btn { margin-top: 26px; }
+    .back-btn { margin-top: 14px; }
     .nature-note { color: #8faf6a; font-style: italic; }
 
     /* ── panels / overlay ────────────────────────────── */
@@ -166,13 +174,16 @@
     /* At 360px tall the 3:2 canvas alone was 373px — taller than the screen —
        and the choices sat 150px below the fold. Cap the scene so picture, text
        and buttons all fit without scrolling. */
+    /* Touch targets stay 44px here — a phone is exactly where they matter — so
+       the room comes out of the scene and the gaps instead. */
     @media (max-height: 560px) {
-      body { padding: 10px 12px 20px; }
+      body { padding: 6px 12px 12px; }
       .screen-wrap { display: flex; justify-content: center; }
-      .pixel-screen { width: auto; max-width: 100%; max-height: 46vh; }
-      .exp-text { margin-top: 10px; min-height: 5.1em; font-size: 14px; }
-      .exp-buttons { margin-top: 10px; }
-      .back-btn { margin-top: 14px; }
+      .pixel-screen { width: auto; max-width: 100%; max-height: 38vh; }
+      .exp-text { margin-top: 6px; min-height: 4.4em; font-size: 13px; line-height: 1.5; }
+      .exp-buttons { margin-top: 4px; gap: 10px; }
+      .btn { margin-top: 4px; padding: 12px 16px; }
+      .back-btn { margin-top: 2px; padding: 10px 8px; min-height: 40px; }
       .hub-scene { max-width: 300px; margin-bottom: 10px; }
       .hub-header { margin-bottom: 16px; }
       .hub-header h1 { font-size: 22px; }
@@ -186,6 +197,6 @@
 </head>
 <body>
   <main id="app"></main>
-  <script type="module" src="js/main.js?v=36"></script>
+  <script type="module" src="js/main.js?v=37"></script>
 </body>
 </html>

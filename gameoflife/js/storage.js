@@ -19,6 +19,7 @@ const DEFAULTS = {
   natureIdx: 0,
   accepted: 0,
   hemi: null,          // null until set, so main.js can seed the timezone guess
+  sound: true,         // false = muted, remembered across visits
   feedback: [],
   outbox: [],
 };
@@ -40,6 +41,11 @@ function save() {
 export function getState() { return state; }
 
 export function setLangPref(l) { state.lang = l; save(); }
+
+// sound. An app that makes noise must let you stop it — and remember that you
+// said so, because being asked to mute it again every visit is its own nag.
+export function soundOn() { return state.sound !== false; }
+export function setSoundOn(b) { state.sound = !!b; save(); }
 
 // which hemisphere's seasons the invitations should follow
 export function getHemi() { return state.hemi === 's' ? 's' : 'n'; }
