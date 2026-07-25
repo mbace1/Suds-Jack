@@ -117,7 +117,12 @@
     }
     .exp-text {
       margin-top: 18px; font-size: 15px; line-height: 1.7; color: #e6dcc2;
-      min-height: 72px; width: 100%; white-space: pre-line;
+      /* six lines held open. Beats vary from ~90 to ~340 characters, and sizing
+         this to the short ones made the Continue button walk up to 190px up and
+         down the screen between taps — you had to re-aim every time. Reserving
+         the room costs some empty space on short beats and buys a layout that
+         holds still, which is the whole feel of the thing. */
+      min-height: 10.2em; width: 100%; white-space: pre-line;
     }
     .exp-text p + p { margin-top: 10px; }
     .exp-buttons { margin-top: 14px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
@@ -155,10 +160,31 @@
       font-family: inherit; font-size: 13px; padding: 8px;
       background: #141311; color: #efe6d0; border: 1px solid #4a4438;
     }
+
+    /* ── a phone held sideways ────────────────────────── */
+    /* At 360px tall the 3:2 canvas alone was 373px — taller than the screen —
+       and the choices sat 150px below the fold. Cap the scene so picture, text
+       and buttons all fit without scrolling. */
+    @media (max-height: 560px) {
+      body { padding: 10px 12px 20px; }
+      .screen-wrap { display: flex; justify-content: center; }
+      .pixel-screen { width: auto; max-width: 100%; max-height: 46vh; }
+      .exp-text { margin-top: 10px; min-height: 5.1em; font-size: 14px; }
+      .exp-buttons { margin-top: 10px; }
+      .back-btn { margin-top: 14px; }
+      .hub-scene { max-width: 300px; margin-bottom: 10px; }
+      .hub-header { margin-bottom: 16px; }
+      .hub-header h1 { font-size: 22px; }
+    }
+
+    /* less motion asked for: hold the tap feedback still too */
+    @media (prefers-reduced-motion: reduce) {
+      .btn:active { transform: none; box-shadow: 3px 3px 0 #2c3a22; }
+    }
   </style>
 </head>
 <body>
-  <div id="app"></div>
-  <script type="module" src="js/main.js?v=34"></script>
+  <main id="app"></main>
+  <script type="module" src="js/main.js?v=35"></script>
 </body>
 </html>

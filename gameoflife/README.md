@@ -75,6 +75,22 @@ action after a view swap (for keyboard users only, so a tap never raises a ring
 out of nowhere), and the five rating leaves are 44 px targets with per-leaf
 `aria-label`s instead of five identical glyphs.
 
+**The layout holds still.** Story beats run from ~90 to ~340 characters, and
+sizing `.exp-text` to the short ones made the Continue button walk up to 190 px
+up and down the screen between taps — you had to re-aim every time. Six lines
+are now held open, so the action row stays put. A short viewport (a phone held
+sideways) gets its own rules: the 3:2 scene alone used to be *taller* than a
+360 px-high screen with the choices 150 px below the fold, so under
+`max-height: 560px` the scene is capped at `46vh` and everything fits unscrolled.
+
+**Accessibility floor.** `#app` is a `<main>`; `.exp-text` is an
+`aria-live="polite"` region (marked centrally in `startExperience`, not in 22
+modules) so a screen reader is told when the story says something new; the scene
+canvas is `aria-hidden` because the text is the channel that can actually be
+followed; the tab title names the experience you are in. `prefers-reduced-motion`
+stills the decorative hub header — one frame of the current hour, held — while
+the experiences keep animating, since there the movement *is* the content.
+
 ## Current experiences
 
 | id | kind | name | shape |
