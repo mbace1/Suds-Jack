@@ -7,6 +7,18 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v203 — 2026-07-25
+**THE SHEPHERD — the first enemy designed FOR the swarm game (40 types)**
+- Every enemy predated the movement game; the roster had no citizen of it. The SHEPHERD is one mechanic, the WARDEN standard: **it herds**. A faint teal ring (7.5u) marks its flock — every body inside is dragged toward YOU at 2.8 u/s, knotting the school around you until you kill the conductor
+- **It is never a body to bump**: a slim tapered spire that holds a 9u pocket — closing in when too far, backing off when you crowd it, circling when it's in position. Fragile (3 hp, no attack of its own) because the threat is what it does to the OTHERS
+- **The ring IS the tell** (pulses with the pull), and killing it releases the herd instantly
+- **It exists only where its mechanic does**: scheduled from wave 4 in FLUID runs (the default), absent from classic opt-out runs
+- **Bug caught in test**: the shepherd was inheriting FLUID's split-on-death, so killing it handed you TWO live herders — silently breaking the promise its ring makes. Shepherds never split now
+- Verified headless: the ring tell exists; a flockmate is dragged inward under a pure-orbit archetype (which has no radial drift of its own); a dead shepherd leaves zero herders; the approach rate collapses to ~0 the moment it dies; a full-speed shepherd retreats 3.0 → 6.1u toward its pocket; and it never appears in a classic schedule
+- Cache-bust `?v=156` → `?v=157`; HUD label → v203
+
+---
+
 ## v202 — 2026-07-24
 **The roguelike learns the swarm's language — three swarm-native cards**
 - The upgrade pool predated the default flip, so no card spoke to dodging, schooling, or splitting. Three do now (pool 13 → 16):

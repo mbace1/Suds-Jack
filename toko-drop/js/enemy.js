@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=156';
-import { nesSnap, NEON } from './retro.js?v=156';
+import { TUNING } from './tuning.js?v=157';
+import { nesSnap, NEON } from './retro.js?v=157';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // v194: under the WEBGPU (BETA) build the goo FX run as a TSL node graph
@@ -444,7 +444,14 @@ export const EnemyType = {
   PRISM:       37,
   // NEX DEUS boss (v186) — the machine's avatar, cracked only by dashes
   CUSTODIAN:   38,
+  // v203: the first enemy DESIGNED for the swarm game. One mechanic: it HERDS.
+  // Never touches you — it drags its schoolmates into a tight knot around you
+  // (main.js applies the pull). Kill the shepherd and the knot loosens.
+  SHEPHERD:    39,
 };
+// SHEPHERD herd radius (world units) — main.js pulls flockmates inside it,
+// enemy.js draws the ring, so the rule and the tell can't drift.
+export const SHEPHERD_RADIUS = 7.5;
 
 // WARDEN aura radius (world units) — main.js uses it for the damage-immunity
 // check, enemy.js for the ring visual, so the read and the rule can't drift.
@@ -495,6 +502,9 @@ export const CFG = {
   [EnemyType.DRAPER]:      { color: 0x9955ff, radius: 0.8,  speed: 0.9, hp: 5, bulletColor: 0xcc88ff, fireInterval: 5.0  },
   [EnemyType.PRISM]:       { color: 0xff55cc, radius: 0.85, speed: 1.5, hp: 3, bulletColor: 0xff99ee, fireInterval: null },
   [EnemyType.CUSTODIAN]:   { color: 0xff44ff, radius: 1.15, speed: 1.1, hp: 6, bulletColor: 0xff99ee, fireInterval: null },
+  // v203: fragile, slow, keeps its distance — the threat is what it does to
+  // the OTHERS, so it must be killable the moment you read the ring.
+  [EnemyType.SHEPHERD]:    { color: 0x66ffcc, radius: 0.6, speed: 1.6, hp: 3, bulletColor: null, fireInterval: null },
 };
 
 // Scratch colors for the tinted death flash (v132) — no per-death allocation.
@@ -648,6 +658,10 @@ export class Enemy {
       // tall: a monument that condescends to move.
       geo = new THREE.OctahedronGeometry(cfg.radius, 1);
       geo.scale(1.15, 0.9, 1.15);
+    } else if (type === EnemyType.SHEPHERD) {
+      // v203: a slim tapered spire — reads as a CONDUCTOR, not a body to
+      // bump into. Nothing else in the roster is tall-and-thin.
+      geo = new THREE.ConeGeometry(cfg.radius * 0.75, cfg.radius * 2.6, 6);
     }
 
     const isBlob = BLOB_TYPES.has(type);
@@ -985,6 +999,21 @@ export class Enemy {
       this._auraRing.rotation.x = -Math.PI / 2;
       this._auraRing.position.set(x, 0.06, z);
       scene.add(this._auraRing);
+    }
+
+    // SHEPHERD (v203): the herd ring IS the tell — everything inside it is
+    // being dragged toward you. Faint by design (it's a big circle), and it
+    // pulses with the pull so the effect reads as active, not decorative.
+    if (type === EnemyType.SHEPHERD) {
+      this._herdRing = new THREE.Mesh(
+        new THREE.RingGeometry(SHEPHERD_RADIUS - 0.14, SHEPHERD_RADIUS, 64),
+        new THREE.MeshBasicMaterial({
+          color: 0x66ffcc, transparent: true, opacity: 0.18,
+          blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+        }));
+      this._herdRing.rotation.x = -Math.PI / 2;
+      this._herdRing.position.set(x, 0.05, z);
+      scene.add(this._herdRing);
     }
 
     // BULWARK (v140): the shield plate — a steel slab hovering on its front
@@ -1392,6 +1421,30 @@ export class Enemy {
         if (this._auraRing) {
           this._auraRing.position.set(this.mesh.position.x, 0.06, this.mesh.position.z);
           this._auraRing.material.opacity = 0.30 + 0.13 * Math.sin(this._wobbleT * 3.1 + this._phase);
+        }
+        break;
+      }
+
+      case EnemyType.SHEPHERD: {
+        // v203 — the swarm game's own enemy. It never attacks and never
+        // closes: it HOLDS a herding distance and drags every flockmate
+        // inside its ring toward you (main.js applies the pull, using the
+        // shared SHEPHERD_RADIUS). Kill it and the knot loosens.
+        const hold = 9;
+        if (dist > hold + 1) {          // too far to herd — close in
+          this.mesh.position.x += (ddx / dist) * spd * dt;
+          this.mesh.position.z += (ddz / dist) * spd * dt;
+        } else if (dist < hold - 1) {   // too close — back off, it's not a body
+          this.mesh.position.x -= (ddx / dist) * spd * 1.15 * dt;
+          this.mesh.position.z -= (ddz / dist) * spd * 1.15 * dt;
+        } else {                        // in the pocket: circle, conducting
+          this.mesh.position.x += (-ddz / dist) * spd * 0.8 * dt;
+          this.mesh.position.z += ( ddx / dist) * spd * 0.8 * dt;
+        }
+        this.mesh.rotation.y += 2.2 * dt;   // spinning conductor's baton
+        if (this._herdRing) {
+          this._herdRing.position.set(this.mesh.position.x, 0.05, this.mesh.position.z);
+          this._herdRing.material.opacity = 0.16 + 0.10 * Math.sin(this._wobbleT * 4.0 + this._phase);
         }
         break;
       }
@@ -2614,6 +2667,7 @@ export class Enemy {
     this._dying  = true;
     this._deathT = 0.28;
     if (this._auraRing) this._auraRing.visible = false;  // shield drops with the warden
+    if (this._herdRing) this._herdRing.visible = false;  // v203: the herd is released
     if (this._plate) this._plate.visible = false;         // plate falls with the bulwark
     if (this._tether) this._tether.visible = false;       // pull dies with the magna
     this._sq     = 1.0;
@@ -2721,6 +2775,11 @@ export class Enemy {
       scene.remove(this._auraRing);
       this._auraRing.geometry.dispose();
       this._auraRing.material.dispose();
+    }
+    if (this._herdRing) {
+      scene.remove(this._herdRing);
+      this._herdRing.geometry.dispose();
+      this._herdRing.material.dispose();
     }
     if (this._robotBits) {
       for (const b of this._robotBits) b.geometry.dispose();
