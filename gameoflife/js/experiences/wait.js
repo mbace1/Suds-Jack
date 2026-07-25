@@ -6,8 +6,8 @@
 // a dithered blue vignette halo on pure black, a gnarled silver pine, glowing
 // green fireflies that break the frame, and a lone star out in the dark.
 
-import { PixelScreen, bayer, rampDither } from '../pixel.js?v=29';
-import { PAL } from '../palette.js?v=29';
+import { PixelScreen, bayer, rampDither } from '../pixel.js?v=33';
+import { PAL } from '../palette.js?v=33';
 
 const WAIT_SEC = 9;                 // how long the mist takes to thin
 // the vignette the scene floats in (soft organic blob, not jagged teeth)
@@ -174,14 +174,19 @@ export const wait = {
     function mist(now) {
       const cover = 1 - rev;                 // 1 hidden → 0 revealed
       if (cover > 0.015) {
-        for (let y = VCY - VRY; y <= VCY + VRY; y++) {
-          for (let x = VCX - VRX; x <= VCX + VRX; x++) {
+        // 2px cells: a quarter of the fill calls, and the chunkier grain suits
+        // the project's pixel idiom anyway. NOTE the threshold is sampled at the
+        // CELL index (x>>1, y>>1), not the pixel — sampling bayer() at even
+        // coordinates only ever reaches 4 of its 16 values, all low, which
+        // collapses the stipple into hard-edged blobs.
+        for (let y = VCY - VRY; y <= VCY + VRY; y += 2) {
+          for (let x = VCX - VRX; x <= VCX + VRX; x += 2) {
             if (!inVignette(x, y)) continue;
             // slow rolling banks so the fog has body and drifts as it thins
             const band = 0.62 + 0.38 * Math.sin(y * 0.06 + now / 1700 + Math.sin(x * 0.03));
-            if (bayer(x, y) < cover * band * 1.2) {
+            if (bayer(x >> 1, y >> 1) < cover * band * 1.2) {
               const u = (y - (VCY - VRY)) / (2 * VRY);
-              scr.px(x, y, 1, 1, u > 0.6 ? '#c2d8e2' : '#9fbccb');
+              scr.px(x, y, 2, 2, u > 0.6 ? '#c2d8e2' : '#9fbccb');
             }
           }
         }
@@ -192,7 +197,7 @@ export const wait = {
         for (let y = 98; y <= VCY + VRY; y += 2) {
           if (!inVignette(x, y)) continue;
           const drift = 0.5 + 0.5 * Math.sin(x * 0.05 + now / 1000);
-          if (bayer(x + 1, y) < lowD * drift * ((y - 98) / 22)) scr.px(x, y, 2, 2, '#aecbd8');
+          if (bayer((x >> 1) + 1, y >> 1) < lowD * drift * ((y - 98) / 22)) scr.px(x, y, 2, 2, '#aecbd8');
         }
       }
     }
@@ -232,11 +237,15 @@ export const wait = {
         rev = 1;
       }
 
-      scr.clear(PAL.VOID);
-      // the soft atmospheric halo the vignette feathers out of
-      scr.softDisc(VCX, VCY + 2, VRX + 6, '#06111c', 22);
-      skyFill();
-      pine();
+      // the halo, sky and pine never change — paint them once and blit after.
+      // Without this the scene repaints ~18k pixels of static art every frame
+      // and drops to single-digit fps on a mid-range phone.
+      scr.cached('base', () => {
+        scr.clear(PAL.VOID);
+        scr.softDisc(VCX, VCY + 2, VRX + 6, '#06111c', 22);
+        skyFill();
+        pine();
+      });
       mist(now);
       fireflies(now);
       voidStar(now);

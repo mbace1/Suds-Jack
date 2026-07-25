@@ -6,34 +6,34 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=29';
-import { PAL } from './palette.js?v=29';
-import { PixelScreen, shade } from './pixel.js?v=29';
-import * as store from './storage.js?v=29';
-import * as audio from './audio.js?v=29';
-import { pickInterlude, isEvening, guessHemisphere } from './nature.js?v=29';
-import { aqueduct } from './experiences/aqueduct.js?v=29';
-import { forest } from './experiences/forest.js?v=29';
-import { tern } from './experiences/tern.js?v=29';
-import { cup } from './experiences/cup.js?v=29';
-import { hanami } from './experiences/hanami.js?v=29';
-import { berry } from './experiences/berry.js?v=29';
-import { stars } from './experiences/stars.js?v=29';
-import { maple } from './experiences/maple.js?v=29';
-import { plate } from './experiences/plate.js?v=29';
-import { seam } from './experiences/seam.js?v=29';
-import { dots } from './experiences/dots.js?v=29';
-import { glass } from './experiences/glass.js?v=29';
-import { wait } from './experiences/wait.js?v=29';
-import { lichen } from './experiences/lichen.js?v=29';
-import { cloud } from './experiences/cloud.js?v=29';
-import { ice } from './experiences/ice.js?v=29';
-import { trace } from './experiences/trace.js?v=29';
-import { gears } from './experiences/gears.js?v=29';
-import { cairn } from './experiences/cairn.js?v=29';
-import { downhill } from './experiences/downhill.js?v=29';
-import { tether } from './experiences/tether.js?v=29';
-import { hedge } from './experiences/hedge.js?v=29';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=33';
+import { PAL } from './palette.js?v=33';
+import { PixelScreen, shade } from './pixel.js?v=33';
+import * as store from './storage.js?v=33';
+import * as audio from './audio.js?v=33';
+import { pickInterlude, isEvening, guessHemisphere } from './nature.js?v=33';
+import { aqueduct } from './experiences/aqueduct.js?v=33';
+import { forest } from './experiences/forest.js?v=33';
+import { tern } from './experiences/tern.js?v=33';
+import { cup } from './experiences/cup.js?v=33';
+import { hanami } from './experiences/hanami.js?v=33';
+import { berry } from './experiences/berry.js?v=33';
+import { stars } from './experiences/stars.js?v=33';
+import { maple } from './experiences/maple.js?v=33';
+import { plate } from './experiences/plate.js?v=33';
+import { seam } from './experiences/seam.js?v=33';
+import { dots } from './experiences/dots.js?v=33';
+import { glass } from './experiences/glass.js?v=33';
+import { wait } from './experiences/wait.js?v=33';
+import { lichen } from './experiences/lichen.js?v=33';
+import { cloud } from './experiences/cloud.js?v=33';
+import { ice } from './experiences/ice.js?v=33';
+import { trace } from './experiences/trace.js?v=33';
+import { gears } from './experiences/gears.js?v=33';
+import { cairn } from './experiences/cairn.js?v=33';
+import { downhill } from './experiences/downhill.js?v=33';
+import { tether } from './experiences/tether.js?v=33';
+import { hedge } from './experiences/hedge.js?v=33';
 
 const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice, trace, gears, cairn, downhill, tether, hedge];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
@@ -227,6 +227,10 @@ function showHub() {
 
 // ── experience routing ─────────────────────────────────────────────
 function startExperience(exp) {
+  // never leave the previous experience's raf loop running against a detached
+  // canvas — the hub normally destroys it on the way through, but going straight
+  // from one experience to another (as __gol.debug.start does) would leak a loop
+  if (current) { current.destroy(); current = null; }
   stopHubScene();
   audio.gardenStop();          // the garden belongs to the hub, not to play
   app.innerHTML = '';

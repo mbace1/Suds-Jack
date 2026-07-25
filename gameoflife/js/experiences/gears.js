@@ -5,8 +5,8 @@
 // eclipse — a gold corona breaking the frame. Void-vignette bronze build.
 // Revert: watch a real second hand make one full circle.
 
-import { PixelScreen, rampDither } from '../pixel.js?v=29';
-import { PAL } from '../palette.js?v=29';
+import { PixelScreen, rampDither } from '../pixel.js?v=33';
+import { PAL } from '../palette.js?v=33';
 
 const DCX = 96, DCY = 60, DR = 40;   // the front dial
 const TARGET = 12;                    // cranks (lunations) until the alignment
@@ -88,8 +88,11 @@ export const gears = {
     const polar = (cx, cy, deg, len) => [cx + Math.sin(deg * Math.PI / 180) * len, cy - Math.cos(deg * Math.PI / 180) * len];
 
     // ── rendering ────────────────────────────────────────────────
-    // a bronze gear: dithered body, teeth around the rim, a hubbed centre
-    function gear(cx, cy, r, teeth, ang, dir) {
+    // a gear body: dithered bronze. The shading is keyed to absolute position,
+    // and a disc is radially symmetric, so a spinning gear's BODY never actually
+    // changes on screen — only its teeth and spokes do. So the bodies live in the
+    // cached layer and only the moving parts are redrawn.
+    function gearBody(cx, cy, r) {
       for (let dy = -r; dy <= r; dy++) {
         const dxm = Math.floor(Math.sqrt(Math.max(0, r * r - dy * dy)));
         for (let dx = -dxm; dx <= dxm; dx++) {
@@ -97,12 +100,16 @@ export const gears = {
           scr.px(cx + dx, cy + dy, 1, 1, rampDither(BRONZE, 0.7 - d / r * 0.5 - dx / r * 0.15, cx + dx, cy + dy));
         }
       }
+      scr.disc(cx, cy, Math.max(2, r * 0.28), BRONZE[1]);   // hub
+    }
+
+    // the parts that genuinely turn
+    function gear(cx, cy, r, teeth, ang, dir) {
       for (let k = 0; k < teeth; k++) {
         const a = ang * dir + k / teeth * Math.PI * 2;
         const tx = cx + Math.cos(a) * (r + 1), ty = cy + Math.sin(a) * (r + 1);
         scr.px(tx - 1, ty - 1, 2, 2, BRONZE[3]);
       }
-      scr.disc(cx, cy, Math.max(2, r * 0.28), BRONZE[1]);   // hub
       for (let k = 0; k < 4; k++) {                          // spokes
         const a = ang * dir + k / 4 * Math.PI * 2;
         scr.px(cx + Math.cos(a) * r * 0.5, cy + Math.sin(a) * r * 0.5, 1, 1, VERD);
@@ -136,15 +143,22 @@ export const gears = {
       spin += (target - spin) * Math.min(1, dt * 3);
       if (phase === 'eclipse' || phase === 'outro') glowT += dt;
 
-      scr.clear(PAL.VOID);
-      scr.softDisc(DCX, DCY, DR + 22, '#1a1206', 22);   // warm cabinet glow in the void
+      // everything that does not turn: the cabinet glow, the gear bodies, the dial
+      scr.cached('base', () => {
+        scr.clear(PAL.VOID);
+        scr.softDisc(DCX, DCY, DR + 22, '#1a1206', 22);   // warm cabinet glow
+        gearBody(48, 96, 16);
+        gearBody(78, 104, 11);
+        gearBody(140, 98, 18);
+        gearBody(150, 66, 10);
+        dial();
+      });
 
-      // the gear train behind the dial, meshing (alternating spin direction)
+      // and the parts that do: teeth and spokes, meshing in alternate directions
       gear(48, 96, 16, 12, spin, 1);
       gear(78, 104, 11, 9, spin, -1);
       gear(140, 98, 18, 14, spin, 1);
       gear(150, 66, 10, 8, spin, -1);
-      dial();
 
       // interpolated hand positions for smooth travel between cranks
       const tt = Math.min(TARGET, spin / 0.9);

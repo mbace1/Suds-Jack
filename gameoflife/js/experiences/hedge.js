@@ -5,8 +5,8 @@
 // (it is species you count, not plants). Revert: read the oldest living boundary
 // near you. Full-scene build (the English-lane family, not the void vignette).
 
-import { PixelScreen, bayer, rampDither } from '../pixel.js?v=29';
-import { PAL } from '../palette.js?v=29';
+import { PixelScreen, bayer, rampDither } from '../pixel.js?v=33';
+import { PAL } from '../palette.js?v=33';
 
 const HEDGE_Y = 66, LANE_Y = 92;
 
@@ -136,7 +136,7 @@ export const hedge = {
     }
 
     // one clump of foliage: dithered leaves in its species' green, plus fruit
-    function clump(c, isFound, isLast, now) {
+    function clump(c, isFound) {
       const sp = SPECIES[c.sp];
       const cy = HEDGE_Y - Math.round(c.r * 0.3);
       for (let dy = -c.r; dy <= c.r + 6; dy++) {
@@ -152,13 +152,18 @@ export const hedge = {
         const a = (i / 4) * Math.PI * 2 + c.sp;
         scr.px(c.x + Math.cos(a) * c.r * 0.55, cy + Math.sin(a) * c.r * 0.42, 2, 2, sp.fruit);
       }
-      // a counted clump gets a small pale tick; the newest one pulses
+      // a counted clump gets a small pale tick
       if (isFound) scr.px(c.x - 1, cy - c.r - 3, 3, 1, '#e8e0cc');
-      if (isLast && Math.floor(now / 300) % 2 === 0) {
-        for (let i = 0; i < 10; i++) {
-          const a = i / 10 * Math.PI * 2;
-          scr.px(c.x + Math.cos(a) * (c.r + 3), cy + Math.sin(a) * (c.r + 3) * 0.8, 1, 1, '#e8e0cc');
-        }
+    }
+
+    // the ring round the clump you just tapped blinks, so it stays live on top
+    function marker(now) {
+      if (lastTapped < 0 || phase !== 'count') return;
+      if (Math.floor(now / 300) % 2 !== 0) return;
+      const c = CLUMPS[lastTapped], cy = HEDGE_Y - Math.round(c.r * 0.3);
+      for (let i = 0; i < 10; i++) {
+        const a = i / 10 * Math.PI * 2;
+        scr.px(c.x + Math.cos(a) * (c.r + 3), cy + Math.sin(a) * (c.r + 3) * 0.8, 1, 1, '#e8e0cc');
       }
     }
 
@@ -181,13 +186,14 @@ export const hedge = {
 
     function draw(now, dt) {
       if (phase === 'truth' || phase === 'outro') glowT += dt;
-      lane(now);
-      // draw back-to-front by x so the hedge reads as one continuous wall
-      [...CLUMPS].sort((a, b) => a.r - b.r).forEach(c => {
-        const i = CLUMPS.indexOf(c);
-        clump(c, found.has(c.sp), i === lastTapped && phase === 'count', now);
+      // the lane, the hedge and the tally only change when a species is counted
+      scr.cached(`base:${found.size}`, () => {
+        lane(now);
+        // draw back-to-front by radius so the hedge reads as one continuous wall
+        [...CLUMPS].sort((a, b) => a.r - b.r).forEach(c => clump(c, found.has(c.sp)));
+        tally();
       });
-      tally();
+      marker(now);
       // the reveal: eight centuries of quiet standing, lit along the hedge top
       if (phase === 'truth' || phase === 'outro') {
         const k = Math.min(1, glowT * 0.8);

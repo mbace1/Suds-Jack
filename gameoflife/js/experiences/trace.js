@@ -5,8 +5,8 @@
 // is yours: the sky was never arranged, we arranged it. Extends `stars`; built
 // to ideas/ref/constellation-nebula.png. Revert: name your own star pattern.
 
-import { PixelScreen, bayer, rampDither } from '../pixel.js?v=29';
-import { PAL } from '../palette.js?v=29';
+import { PixelScreen, bayer, rampDither } from '../pixel.js?v=33';
+import { PAL } from '../palette.js?v=33';
 
 // a scattered field of connectable stars (the bright gold nodes)
 const STARS = [
