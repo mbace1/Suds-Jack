@@ -2,8 +2,8 @@
 // stones channel puzzle. Water flows by connectivity from spring to fountain;
 // partial flow is shown live so every turn of a stone gives feedback.
 
-import { PixelScreen } from '../pixel.js?v=24';
-import { PAL } from '../palette.js?v=24';
+import { PixelScreen } from '../pixel.js?v=25';
+import { PAL } from '../palette.js?v=25';
 
 // dirs: 0=N 1=E 2=S 3=W
 const OPP = d => (d + 2) % 4;

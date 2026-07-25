@@ -55,7 +55,7 @@ switchable in the hub, persisted in `localStorage`.
 | `aqueduct` | game | The Stone River | Visual story of Roman aqueducts → rotate-the-stones channel puzzle (3 levels) → *go find real water flowing downhill* |
 | `forest` | story | The Forest Path | Branching pixel walk → guided four-breath pause → *take the walk for real* |
 | `tern` | story | The Longest Summer | An arctic tern's pole-to-pole migration, two choices, one astonishing true fact → *follow a real bird out of sight* |
-| `cup` | wisdom | A Cup of Tea | Nan-in's overflowing cup — you do the pouring, the point makes itself → *empty a moment under the sky* |
+| `cup` | wisdom | A Cup of Tea | Nan-in's overflowing bowl — press and *hold* to pour a dithered Raku chawan past full, the cyan excess cascading over the lip and off the table → *empty a moment under the sky* |
 | `hanami` | story | Under the Blossoms | Hanami from Emperor Saga's court to Edo's riverbanks; mono no aware is the learning → *find one thing on a tree that will be gone in two weeks* |
 | `berry` | story | The Right to Roam | A Finnish blueberry summer teaching jokamiehenoikeus, rights and their quiet duties → *carry one thing out of your nearest everyone's-place* |
 | `stars` | game | The Night Compass | Trace the Big Dipper (Otava / 北斗七星) star by star, then follow its pointers to Polaris → *go find one real star tonight* |
