@@ -152,6 +152,17 @@ const STR = {
     'st.outro': 'For thousands of years, this was enough to cross oceans.',
     'st.nature': 'Tonight, step outside and find one real star — in city light, the brightest will do. If you can find the seven, follow the pointers with your own eyes. No screen between you and the oldest map.',
 
+    'exp.trace.name': 'Trace the Chaos',
+    'exp.trace.desc': 'Draw your own constellation from a field of stars — the sky was never arranged.',
+    'tr.s1': 'The stars do not come joined. Every constellation anyone ever saw, someone drew — reaching across light-years to link stars that have nothing to do with each other. Here is a field of them. Draw your own.',
+    'tr.begin': 'Begin',
+    'tr.hint': 'Tap a star, then another, and trace whatever you see. Connect as many as you like.',
+    'tr.enough': 'Something is taking shape. Keep going, or name it when it is yours.',
+    'tr.name': 'This is my constellation',
+    'tr.truth': 'There is no lion up there, no bear, no hunter. The stars are unimaginable distances apart — not touching, not arranged. The figure is yours: your mind reaching across the dark and joining the dots into something it can hold. Every culture drew different lines on the same stars.',
+    'tr.outro': 'The constellations were never in the stars. They were in the people who looked up.',
+    'tr.nature': 'Go out under a real night sky, pick any few stars, and connect them into your own shape. Name it. It is exactly as real as the old ones — which is to say, real because someone made it.',
+
     'exp.berry.name': 'The Right to Roam',
     'exp.berry.desc': 'A blueberry summer in Finland, and the old freedom that makes every forest yours to walk.',
 
@@ -428,6 +439,17 @@ const STR = {
     'st.outro': 'Tuhansien vuosien ajan tämä riitti valtamerten ylittämiseen.',
     'st.nature': 'Astu tänä iltana ulos ja etsi yksi oikea tähti — kaupungin valoissa kirkkain kelpaa. Jos löydät ne seitsemän, seuraa osoittimia omin silmin. Ei ruutua sinun ja vanhimman kartan väliin.',
 
+    'exp.trace.name': 'Piirrä kaaokseen',
+    'exp.trace.desc': 'Piirrä oma tähtikuviosi tähtien joukosta — taivasta ei koskaan ollut järjestetty.',
+    'tr.s1': 'Tähdet eivät tule valmiiksi yhdistettyinä. Jokaisen tähtikuvion jonka kukaan on nähnyt, joku piirsi — kurottaen valovuosien yli yhdistämään tähtiä joilla ei ole toistensa kanssa mitään tekemistä. Tässä on niitä joukko. Piirrä omasi.',
+    'tr.begin': 'Aloita',
+    'tr.hint': 'Napauta tähteä, sitten toista, ja piirrä mitä näet. Yhdistä niin monta kuin haluat.',
+    'tr.enough': 'Jokin alkaa hahmottua. Jatka, tai anna sille nimi kun se on sinun.',
+    'tr.name': 'Tämä on minun tähtikuvioni',
+    'tr.truth': 'Tuolla ei ole leijonaa, ei karhua, ei metsästäjää. Tähdet ovat käsittämättömien etäisyyksien päässä toisistaan — ei kosketuksissa, ei järjestyksessä. Kuvio on sinun: mielesi kurottaa pimeän yli ja yhdistää pisteet joksikin mitä se voi pitää. Jokainen kulttuuri piirsi eri viivat samoihin tähtiin.',
+    'tr.outro': 'Tähtikuviot eivät koskaan olleet tähdissä. Ne olivat ihmisissä jotka katsoivat ylös.',
+    'tr.nature': 'Mene ulos oikean yötaivaan alle, valitse mitkä tahansa muutama tähti ja yhdistä ne omaksi kuvioksesi. Anna sille nimi. Se on täsmälleen yhtä todellinen kuin vanhat — eli todellinen siksi, että joku teki sen.',
+
     'exp.berry.name': 'Jokamiehenoikeus',
     'exp.berry.desc': 'Mustikkakesä ja vanha vapaus, joka tekee jokaisesta metsästä sinun kävellä.',
 
@@ -703,6 +725,17 @@ const STR = {
     'st.done2': '北極星 — ポラリス、Pohjantähti。空ぜんぶがその周りを回り、それだけが止まっている。見つけたら、北を見つけたということ。',
     'st.outro': '何千年ものあいだ、これだけで海を渡れた。',
     'st.nature': '今夜、外に出て本物の星をひとつ見つけよう — 街の明かりの中なら、いちばん明るい星でいい。七つ見つけられたら、自分の目で指極星をたどってみて。あなたと最古の地図のあいだに、画面はいらない。',
+
+    'exp.trace.name': '混沌をなぞる',
+    'exp.trace.desc': '星の原っぱから自分だけの星座を描こう — 空は、はじめから並んでなどいなかった。',
+    'tr.s1': '星は、つながって現れはしない。だれかが見たすべての星座は、だれかが描いたもの — 光年の彼方をまたいで、たがいに何の関係もない星を結んだのだ。ここにその原っぱがある。自分の星座を描こう。',
+    'tr.begin': 'はじめる',
+    'tr.hint': '星をタップし、次の星をタップして、見えるものをなぞろう。好きなだけ結んでいい。',
+    'tr.enough': '何かが形になりはじめた。続けても、これが自分のものだと思ったら名づけてもいい。',
+    'tr.name': 'これが私の星座',
+    'tr.truth': 'あそこに獅子はいない。熊も、狩人もいない。星々は想像を絶する距離で隔たっている — 触れ合わず、並んでもいない。その図はあなたのもの: 心が闇をまたいで、点を、抱えられる何かへと結んだのだ。どの文化も、同じ星に別々の線を引いた。',
+    'tr.outro': '星座は、けっして星の中にはなかった。見上げた人々の中にあった。',
+    'tr.nature': '本物の夜空の下に出て、どれでも数個の星を選び、自分だけの形に結んでみよう。名前をつけて。それは古い星座とまったく同じだけ本物だ — つまり、だれかが作ったからこそ本物なのだ。',
 
     'exp.berry.name': '歩く自由',
     'exp.berry.desc': 'フィンランドのブルーベリーの夏と、どの森もあなたの歩く場所にする古い自由。',

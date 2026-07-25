@@ -113,7 +113,11 @@ mire, ripe lakka, a bear's track to your patch; the finest cluster asks to be le
 vignette), and `ice` (story — The Ice Core: an arctic drill descending through
 dithered annual ice bands, reading each era from wildfire soot to 20,000-year-old
 air that glows `CYAN_LUX` and breaks the frame; reference-grade void-vignette
-build). `plate` pilots the **2026-07 visual standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
+build), and `trace` (game — Trace the Chaos: tap star-to-star to draw your own
+constellation from a scattered field, a dithered purple nebula blooming around
+what you connect in glowing `GOLD_LUX`, then name it and learn the sky was never
+arranged; extends `stars`, built to `constellation-nebula.png`). `plate` pilots
+the **2026-07 visual standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
 jagged 16-bit vignettes in a pure-black void, muted environments, luminescent cyan/gold
 interactive elements that break the frame (`PAL.VOID/CYAN_LUX/GOLD_LUX`, plus
 `PAL.LEAF_LUX` — a luminescent green for nature-scene glow like fireflies). Shared `pixel.js`
