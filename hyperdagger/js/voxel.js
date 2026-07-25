@@ -506,9 +506,13 @@ export class VoxelSprite {
  * tumbling, and a shrink-out at end of life. One InstancedMesh for everything.
  */
 export class DebrisPool {
-  constructor(scene, cap = 1600) {
+  constructor(scene, cap = 4000) {
     this.cap = cap;
     this.softCap = cap; // perf governor lowers this; pool stays preallocated
+    // How many gibs ONE death may throw. At the ×64 design default a dread
+    // skull is 5,824 voxels — sampling to ~170 chunky gibs threw away the very
+    // density you came to see, so the budget scales with the perf tier.
+    this.gibTarget = 520;
     this.mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
     this.mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), this.mat, cap);
     this.mesh.frustumCulled = false;
@@ -520,6 +524,19 @@ export class DebrisPool {
       this.free.push(i);
     }
     scene.add(this.mesh);
+  }
+
+  /** Free the n oldest gibs (items[] is in spawn order) so a fresh burst can
+   *  land. Cheap: one splice, only ever hit when the field is saturated. */
+  _retireOldest(n) {
+    n = Math.min(n, this.items.length);
+    if (n <= 0) return;
+    for (let k = 0; k < n; k++) {
+      this.mesh.setMatrixAt(this.items[k].i, _m.makeScale(0, 0, 0));
+      this.free.push(this.items[k].i);
+    }
+    this.items.splice(0, n);
+    this.mesh.instanceMatrix.needsUpdate = true;
   }
 
   spawn(pos, color, vel, size, life = 1.6) {
@@ -537,11 +554,20 @@ export class DebrisPool {
   }
 
   /** Explode a set of world voxels outward from their centroid, plus an
-   *  impulse. High-detail models can carry thousands of voxels — stride-sample
-   *  down to ~170 so one death can't drain the shared pool. */
+   *  impulse. Dense models carry thousands of voxels — stride-sample down to
+   *  `gibTarget` so one death can't drain the shared pool, keeping apparent
+   *  volume by scaling gib size with ∛stride. */
   burst(worldVoxels, size, impulse, power = 1) {
     if (!worldVoxels.length) return;
-    const stride = Math.max(1, Math.ceil(worldVoxels.length / 170));
+    // A death must ALWAYS visibly gib. When the field is saturated `spawn()`
+    // would silently drop every piece, so retire the oldest (already settled,
+    // shrinking) debris to guarantee this kill some room of its own.
+    const room = Math.min(this.softCap - this.items.length, this.free.length);
+    const want = Math.min(this.gibTarget, Math.max(64, Math.floor(this.softCap * 0.15)));
+    if (room < want) this._retireOldest(want - room);
+    const budget = Math.max(1, Math.min(this.gibTarget,
+      Math.min(this.softCap - this.items.length, this.free.length)));
+    const stride = Math.max(1, Math.ceil(worldVoxels.length / budget));
     if (stride > 1) {
       worldVoxels = worldVoxels.filter((_, i) => i % stride === 0);
       size *= Math.cbrt(stride); // conserve apparent gib volume

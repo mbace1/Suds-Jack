@@ -5,15 +5,15 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=34';
-import { Player } from './player.js?v=34';
-import { DaggerPool } from './daggers.js?v=34';
-import { GemPool } from './gems.js?v=34';
-import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=34';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=34';
-import { OrbPool } from './bullets.js?v=34';
-import { AudioKit } from './audio.js?v=34';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=34';
+import { InputManager } from './input.js?v=35';
+import { Player } from './player.js?v=35';
+import { DaggerPool } from './daggers.js?v=35';
+import { GemPool } from './gems.js?v=35';
+import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=35';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=35';
+import { OrbPool } from './bullets.js?v=35';
+import { AudioKit } from './audio.js?v=35';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=35';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -48,12 +48,19 @@ const STYLE_HUES = { crimson: null, cyan: 0.5, gold: 0.11, violet: 0.77 };
 // menu keeps showing user intent and a step-up can't resurrect a toggle the
 // user turned off.
 const BASE_PR = Math.min(window.devicePixelRatio, 2);
+// Phones open at ×27, not the ×64 desktop default: the governor needs a few
+// seconds of frame samples to react, and a mid-range phone spending those
+// seconds at the ceiling stutters through the opening spawn. An explicit
+// VOXEL pick still reaches ×64 on any device.
+const AUTO_DETAIL_CEIL = window.matchMedia?.('(pointer: coarse)').matches ? 3 : 4;
 const PERF_TIERS = [
-  { chroma: true,  smear: true,  pr: BASE_PR,                bloom: true,  debrisCap: 1600 }, // T0 full
-  { chroma: false, smear: true,  pr: BASE_PR,                bloom: true,  debrisCap: 1600 }, // T1
-  { chroma: false, smear: false, pr: BASE_PR,                bloom: true,  debrisCap: 1600 }, // T2
-  { chroma: false, smear: false, pr: Math.min(BASE_PR, 1.5), bloom: true,  debrisCap: 1600 }, // T3
-  { chroma: false, smear: false, pr: 1,                      bloom: false, debrisCap: 800  }, // T4 floor
+  // gibs = how many pieces ONE death throws (scales with the voxel density
+  // ladder below, so a ×64 enemy actually shatters instead of chunking)
+  { chroma: true,  smear: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 520 }, // T0 full
+  { chroma: false, smear: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 420 }, // T1
+  { chroma: false, smear: false, pr: BASE_PR,                bloom: true,  debrisCap: 3000, gibs: 300 }, // T2
+  { chroma: false, smear: false, pr: Math.min(BASE_PR, 1.5), bloom: true,  debrisCap: 2000, gibs: 220 }, // T3
+  { chroma: false, smear: false, pr: 1,                      bloom: false, debrisCap: 800,  gibs: 110 }, // T4 floor
 ];
 // mutable so headless tests can shrink the timescales
 const perfTuning = { downMs: 40, upMs: 22, settleMs: 2000, stableMs: 15000, downHoldMs: 1500, emaAlpha: 0.08 };
@@ -1092,7 +1099,8 @@ function applyOpts() {
   // walks it down the ladder (x27/x8/x1) as the tier degrades; an explicit
   // VOXEL choice overrides it. Existing sprites keep their detail until they
   // die — the swarm re-densifies within seconds.
-  const autoDetail = opts.perf === 'low' ? 1 : [4, 3, 2, 2, 1][perfTier];
+  const autoDetail = opts.perf === 'low' ? 1
+    : Math.min(AUTO_DETAIL_CEIL, [4, 3, 2, 2, 1][perfTier]);
   setVoxelDetail(opts.detail === 'auto' ? autoDetail : opts.detail);
   // reduced motion (opts.motion=false) and the perf tier both override the
   // individual FX toggles without rewriting them — user intent stays in opts.*
@@ -1100,6 +1108,7 @@ function applyOpts() {
   chromaPass.enabled = opts.chroma && opts.motion && tier.chroma;
   bloom.enabled = tier.bloom;
   debris.softCap = tier.debrisCap;
+  debris.gibTarget = tier.gibs;
   // STYLE preset: re-hue every accent surface. Hue is applied at voxel parse
   // for new spawns; live sprites re-derive from their pre-style base colors.
   setStyleHue(STYLE_HUES[opts.style] ?? null);
