@@ -50,7 +50,30 @@ root with any static server. Live URL (once deployed to `gh-pages`):
 `/Suds-Jack/gameoflife/`.
 
 Languages: **suomi / English / 日本語** — auto-picked from the browser,
-switchable in the hub, persisted in `localStorage`.
+switchable in the hub, persisted in `localStorage`, and mirrored onto
+`<html lang>` so screen readers switch voice and Japanese gets its own glyph
+forms.
+
+A fragment names an experience: **`/Suds-Jack/gameoflife/#tether`** opens The
+Tether directly, so a link is worth sending to someone. Returning to the hub
+clears the fragment again, and it works whether the link is opened cold or
+pasted into a tab that is already on the hub. An unknown id just opens the hub.
+
+Two rules keep the app from nagging:
+
+- **Rating is occasional.** The panel appears after the first finish, then only
+  every fifth (`store.feedbackDue()`). Anyone with something to say in between
+  has the always-present *leave a thought* link in the footer. Submitting an
+  empty form records nothing and does not thank you for it.
+- **"Not yet" means not this visit.** Putting off a nature invitation holds
+  until the next finish, so a language switch or a redraw cannot put the same
+  invitation back in your face. Esc or a click outside the panel does the same
+  as *not yet*.
+
+Keyboard and touch: a visible `:focus-visible` ring, focus moves to the primary
+action after a view swap (for keyboard users only, so a tap never raises a ring
+out of nowhere), and the five rating leaves are 44 px targets with per-leaf
+`aria-label`s instead of five identical glyphs.
 
 ## Current experiences
 

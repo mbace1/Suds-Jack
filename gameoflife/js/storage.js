@@ -75,6 +75,16 @@ export function timesPlayed(id) {
   return state.completions.filter(c => c.id === id).length;
 }
 
+// Being asked to rate every single experience is the least zen thing the app
+// could do — and 22 nagged ratings are worth less than a handful of willing
+// ones. Ask after the first finish (which also shows the panel exists), then
+// only every fifth. The footer link is always there for anyone with something
+// to say in between.
+export function feedbackDue() {
+  const n = state.completions.length;
+  return n === 1 || (n > 0 && n % 5 === 0);
+}
+
 export function recordFeedback(entry) {
   state.feedback.push({ ...entry, ts: Date.now() });
   save();

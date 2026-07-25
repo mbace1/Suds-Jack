@@ -1,39 +1,40 @@
 // The Game of Life — hub, routing, and the rest-cycle.
-// Flow: hub → experience → feedback → (every 2nd finish: nature interlude) → hub.
+// Flow: hub → experience → (occasionally: feedback) → (every 2nd finish: nature
+// interlude) → hub. An address like #tether opens that experience directly.
 // The hub is zen: it offers ONE experience at a time, drawn from the registry
 // by the content mix (70% story / 20% game / 10% wisdom), preferring things
 // not yet visited today. A quiet "something else" link redraws once per mood.
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=33';
-import { PAL } from './palette.js?v=33';
-import { PixelScreen, shade } from './pixel.js?v=33';
-import * as store from './storage.js?v=33';
-import * as audio from './audio.js?v=33';
-import { pickInterlude, isEvening, guessHemisphere } from './nature.js?v=33';
-import { aqueduct } from './experiences/aqueduct.js?v=33';
-import { forest } from './experiences/forest.js?v=33';
-import { tern } from './experiences/tern.js?v=33';
-import { cup } from './experiences/cup.js?v=33';
-import { hanami } from './experiences/hanami.js?v=33';
-import { berry } from './experiences/berry.js?v=33';
-import { stars } from './experiences/stars.js?v=33';
-import { maple } from './experiences/maple.js?v=33';
-import { plate } from './experiences/plate.js?v=33';
-import { seam } from './experiences/seam.js?v=33';
-import { dots } from './experiences/dots.js?v=33';
-import { glass } from './experiences/glass.js?v=33';
-import { wait } from './experiences/wait.js?v=33';
-import { lichen } from './experiences/lichen.js?v=33';
-import { cloud } from './experiences/cloud.js?v=33';
-import { ice } from './experiences/ice.js?v=33';
-import { trace } from './experiences/trace.js?v=33';
-import { gears } from './experiences/gears.js?v=33';
-import { cairn } from './experiences/cairn.js?v=33';
-import { downhill } from './experiences/downhill.js?v=33';
-import { tether } from './experiences/tether.js?v=33';
-import { hedge } from './experiences/hedge.js?v=33';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=34';
+import { PAL } from './palette.js?v=34';
+import { PixelScreen, shade } from './pixel.js?v=34';
+import * as store from './storage.js?v=34';
+import * as audio from './audio.js?v=34';
+import { pickInterlude, isEvening, guessHemisphere } from './nature.js?v=34';
+import { aqueduct } from './experiences/aqueduct.js?v=34';
+import { forest } from './experiences/forest.js?v=34';
+import { tern } from './experiences/tern.js?v=34';
+import { cup } from './experiences/cup.js?v=34';
+import { hanami } from './experiences/hanami.js?v=34';
+import { berry } from './experiences/berry.js?v=34';
+import { stars } from './experiences/stars.js?v=34';
+import { maple } from './experiences/maple.js?v=34';
+import { plate } from './experiences/plate.js?v=34';
+import { seam } from './experiences/seam.js?v=34';
+import { dots } from './experiences/dots.js?v=34';
+import { glass } from './experiences/glass.js?v=34';
+import { wait } from './experiences/wait.js?v=34';
+import { lichen } from './experiences/lichen.js?v=34';
+import { cloud } from './experiences/cloud.js?v=34';
+import { ice } from './experiences/ice.js?v=34';
+import { trace } from './experiences/trace.js?v=34';
+import { gears } from './experiences/gears.js?v=34';
+import { cairn } from './experiences/cairn.js?v=34';
+import { downhill } from './experiences/downhill.js?v=34';
+import { tether } from './experiences/tether.js?v=34';
+import { hedge } from './experiences/hedge.js?v=34';
 
 const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice, trace, gears, cairn, downhill, tether, hedge];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
@@ -43,6 +44,8 @@ let current = null;    // active experience handle
 let offering = null;   // the experience currently offered by the hub
 let hubScene = null;   // the living header scene's raf handle
 let justGrew = false;  // the sound garden gained a voice on this return to the hub
+let invitationPut = false;  // "not yet" holds until the next finish, not until the next repaint
+let byKeyboard = false;     // the last input was a key — only then do we move focus
 
 // ── the living header: a quiet pixel sky that follows the hour ─────
 function startHubScene(parent) {
@@ -111,13 +114,16 @@ function drawOffering(not = null) {
   return pool[pool.length - 1];
 }
 
-// language: stored pref → browser hint → English
+// language: stored pref → browser hint → English. Mirror it onto <html lang>
+// too, so screen readers switch voice and the browser picks the right CJK
+// glyph forms for Japanese instead of guessing.
+function useLang(l) { setLang(l); document.documentElement.lang = l; }
 {
   const pref = store.getState().lang;
-  if (pref) setLang(pref);
+  if (pref) useLang(pref);
   else {
     const nav = (navigator.language || 'en').slice(0, 2);
-    setLang(['fi', 'ja'].includes(nav) ? nav : 'en');
+    useLang(['fi', 'ja'].includes(nav) ? nav : 'en');
   }
 }
 
@@ -126,12 +132,26 @@ function drawOffering(not = null) {
 if (!store.hemiSet()) store.setHemi(guessHemisphere());
 
 document.addEventListener('pointerdown', audio.init, { once: true });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Tab' || e.key === 'Enter' || e.key === ' ') byKeyboard = true;
+}, true);
+document.addEventListener('pointerdown', () => { byKeyboard = false; }, true);
+
+// after a view swap the old focus is gone and Tab restarts from the top of the
+// page. Put the keyboard back on the thing you came here to press — but only
+// for keyboard users, so a tap never raises a focus ring out of nowhere.
+function focusPrimary(scope) {
+  if (!byKeyboard) return;
+  const b = scope.querySelector('.btn') || scope.querySelector('button');
+  if (b) b.focus({ preventScroll: true });
+}
 
 // ── hub ────────────────────────────────────────────────────────────
 function showHub() {
   if (current) { current.destroy(); current = null; }
   stopHubScene();
   app.innerHTML = '';
+  setHash('');   // the hub is the plain address; only an experience deep-links
 
   const newcomer = store.getState().completions.length < 2;
 
@@ -184,7 +204,7 @@ function showHub() {
   const langRow = el('div', 'lang-row');
   for (const { code, label } of LANGS) {
     const b = el('button', 'lang-btn' + (getLang() === code ? ' active' : ''), label);
-    b.onclick = () => { setLang(code); store.setLangPref(code); showHub(); };
+    b.onclick = () => { useLang(code); store.setLangPref(code); showHub(); };
     langRow.appendChild(b);
   }
   // the sound garden: one voice per invitation actually accepted. Shown as
@@ -219,10 +239,13 @@ function showHub() {
 
   // the ambient bed plays on the hub only — it is the reward for going outside
   audio.gardenStart(voices);
+  focusPrimary(card);
 
   // the cycle: if two experiences have been finished, the hub opens
-  // straight onto the invitation before anything else can be played
-  if (resting) showInterlude();
+  // straight onto the invitation before anything else can be played.
+  // "Not yet" means not this visit — a language switch or a redraw must not
+  // put the same invitation back in your face.
+  if (resting && !invitationPut) showInterlude();
 }
 
 // ── experience routing ─────────────────────────────────────────────
@@ -239,16 +262,42 @@ function startExperience(exp) {
   const back = el('button', 'link-btn back-btn', t('ui.back'));
   back.onclick = showHub;
   app.appendChild(back);
+  setHash(exp.id);       // so the address bar is worth sharing
 
   current = exp.start(host, {
     t,
     audio,
     onComplete() {
       store.recordCompletion(exp.id);
-      offering = null;   // the hub offers something fresh next time
-      showFeedback(exp.id, showHub);
+      offering = null;          // the hub offers something fresh next time
+      invitationPut = false;    // a new finish earns a fresh invitation
+      // asked occasionally, not every time — see store.feedbackDue()
+      if (store.feedbackDue()) showFeedback(exp.id, showHub);
+      else showHub();
     },
   });
+  focusPrimary(host);
+}
+
+// one experience per address: /gameoflife/#tether opens it directly, which is
+// what makes a link worth sending to someone. replaceState, not push — the
+// back button should still leave the page rather than walk a fake history.
+function setHash(id) {
+  const url = location.pathname + location.search + (id ? `#${id}` : '');
+  try { history.replaceState(null, '', url); } catch { /* file:// etc. */ }
+}
+
+// a fragment can also arrive without a reload — pasted into an already-open
+// tab, or reached with the back button. setHash uses replaceState, which does
+// not fire this event, so there is no loop between the two.
+window.addEventListener('hashchange', () => { if (!openFromHash()) showHub(); });
+
+function openFromHash() {
+  const id = decodeURIComponent(location.hash.replace(/^#/, ''));
+  const exp = id && REGISTRY.find(e => e.id === id);
+  if (!exp) return false;
+  startExperience(exp);
+  return true;
 }
 
 // ── feedback (leaves 1–5 + optional words, kept in localStorage) ───
@@ -265,9 +314,15 @@ function showFeedback(expId, done) {
   const btns = [];
   for (let i = 1; i <= 5; i++) {
     const b = el('button', 'leaf-btn', '🌿');
+    // five identical leaf glyphs are meaningless to a screen reader, so each
+    // one says which rating it is
+    b.setAttribute('aria-label', `${i} / 5 ${t('fb.leaves')}`);
     b.onclick = () => {
       leaves = i;
-      btns.forEach((x, j) => x.classList.toggle('lit', j < i));
+      btns.forEach((x, j) => {
+        x.classList.toggle('lit', j < i);
+        x.setAttribute('aria-pressed', String(j < i));
+      });
     };
     btns.push(b);
     row.appendChild(b);
@@ -282,7 +337,11 @@ function showFeedback(expId, done) {
   const actions = el('div', 'exp-buttons');
   const send = el('button', 'btn', t('fb.send'));
   send.onclick = () => {
-    store.recordFeedback({ id: expId, leaves, text: ta.value.trim(), lang: getLang() });
+    const text = ta.value.trim();
+    // pressing "leave it" having said nothing used to store an empty entry and
+    // thank you for it — that is a lie to the player and noise in the data
+    if (!leaves && !text) { done(); return; }
+    store.recordFeedback({ id: expId, leaves, text, lang: getLang() });
     box.innerHTML = '';
     box.appendChild(el('p', '', t('fb.thanks')));
     setTimeout(done, 900);
@@ -292,6 +351,7 @@ function showFeedback(expId, done) {
   actions.append(send, skip);
   box.appendChild(actions);
   app.appendChild(box);
+  focusPrimary(row);
 }
 
 // ── nature interlude overlay ───────────────────────────────────────
@@ -318,13 +378,23 @@ function showInterlude() {
   const actions = el('div', 'exp-buttons');
   const go = el('button', 'btn', t('nat.accept'));
   // accepting is the only thing that grows the sound garden
-  go.onclick = () => { audio.chime(); store.consumeInterlude(); justGrew = true; ov.remove(); showHub(); };
+  go.onclick = () => { audio.chime(); store.consumeInterlude(); justGrew = true; close(); showHub(); };
   const later = el('button', 'link-btn', t('nat.later'));
-  later.onclick = () => ov.remove();   // counter stays: the invitation returns next visit
+  // counter stays, so the invitation returns after the next finish — but not
+  // again during this visit
+  later.onclick = () => { invitationPut = true; close(); };
   actions.append(go, later);
   box.appendChild(actions);
   ov.appendChild(box);
+
+  // a modal should close the ways a modal closes: Esc, or the dark outside it
+  function onKey(e) { if (e.key === 'Escape') later.onclick(); }
+  function close() { document.removeEventListener('keydown', onKey); ov.remove(); }
+  document.addEventListener('keydown', onKey);
+  ov.onpointerdown = e => { if (e.target === ov) later.onclick(); };
+
   document.body.appendChild(ov);
+  focusPrimary(actions);
 }
 
 // the hub's mood follows the hour, like the invitations do
@@ -348,11 +418,12 @@ window.__gol = {
   debug: {
     showHub, showInterlude,
     start: id => { const e = REGISTRY.find(x => x.id === id); if (e) startExperience(e); },
-    setLang: l => { setLang(l); store.setLangPref(l); showHub(); },
+    setLang: l => { useLang(l); store.setLangPref(l); showHub(); },
     feedback: () => JSON.parse(store.exportFeedback()),
   },
 };
 
 document.title = t('hub.title');
 document.body.style.background = PAL.BG;
-showHub();
+// a shared link lands on the thing it names; everything else opens the hub
+if (!openFromHash()) showHub();

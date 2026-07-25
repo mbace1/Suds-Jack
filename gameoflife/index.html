@@ -4,17 +4,31 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>The Game of Life</title>
+  <meta name="description" content="Small games and stories that always lead back outside. Play one, then go out and find the real thing.">
+  <meta name="color-scheme" content="dark">
+  <!-- so a pasted link reads as something made on purpose -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="The Game of Life">
+  <meta property="og:description" content="Small games and stories that always lead back outside. Play one, then go out and find the real thing.">
+  <meta property="og:url" content="https://mbace1.github.io/Suds-Jack/gameoflife/">
+  <meta name="twitter:card" content="summary">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23141311'/%3E%3Cpath d='M8 13C8 8 10 4 14 3 13 8 11 11 8 13Z' fill='%238faf6a'/%3E%3Cpath d='M8 13C8 10 6 7 3 6 4 10 6 12 8 13Z' fill='%235f7a4a'/%3E%3C/svg%3E">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { background: #141311; min-height: 100%; }
     body {
-      font-family: 'Courier New', monospace;
+      /* Courier New carries no CJK, so name the fallbacks rather than let each
+         platform guess a face for the Japanese */
+      font-family: 'Courier New', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP',
+                   'Yu Gothic', 'MS Gothic', monospace;
       color: #efe6d0;
       display: flex; justify-content: center;
       padding: 24px 16px 48px;
     }
     #app { width: 100%; max-width: 560px; }
+    /* keyboard players need to see where they are; the UA ring is too faint
+       against this background */
+    :focus-visible { outline: 2px solid #8faf6a; outline-offset: 3px; }
 
     /* ── hub ─────────────────────────────────────────── */
     .hub-header { text-align: center; margin-bottom: 28px; }
@@ -70,7 +84,6 @@
                   text-transform: lowercase; margin-bottom: 8px; }
     .another-btn { margin: 14px auto 0; text-align: center; }
 
-    .cards { display: flex; flex-direction: column; gap: 16px; }
     .card {
       border: 2px solid #4a4438; padding: 16px 18px; background: #1c1a16;
       box-shadow: 4px 4px 0 #0a0908;
@@ -129,10 +142,12 @@
     .poem-title { font-size: 12px !important; color: #a89b7f !important; }
 
     /* ── feedback ────────────────────────────────────── */
-    .leaf-row { margin-top: 12px; display: flex; gap: 6px; }
+    .leaf-row { margin-top: 12px; display: flex; gap: 4px; }
+    /* a thumb-sized target — five 26px glyphs in a row was a game of darts */
     .leaf-btn {
       font-size: 22px; background: none; border: none; cursor: pointer;
-      filter: grayscale(1) brightness(0.6); padding: 2px;
+      filter: grayscale(1) brightness(0.6);
+      min-width: 44px; min-height: 44px; padding: 2px;
     }
     .leaf-btn.lit { filter: none; }
     .fb-text {
@@ -144,6 +159,6 @@
 </head>
 <body>
   <div id="app"></div>
-  <script type="module" src="js/main.js?v=33"></script>
+  <script type="module" src="js/main.js?v=34"></script>
 </body>
 </html>
