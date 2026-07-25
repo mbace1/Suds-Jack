@@ -5,15 +5,15 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=38';
-import { Player } from './player.js?v=38';
-import { DaggerPool } from './daggers.js?v=38';
-import { GemPool } from './gems.js?v=38';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=38';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=38';
-import { OrbPool } from './bullets.js?v=38';
-import { AudioKit } from './audio.js?v=38';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=38';
+import { InputManager } from './input.js?v=39';
+import { Player } from './player.js?v=39';
+import { DaggerPool } from './daggers.js?v=39';
+import { GemPool } from './gems.js?v=39';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=39';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=39';
+import { OrbPool } from './bullets.js?v=39';
+import { AudioKit } from './audio.js?v=39';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=39';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -983,6 +983,7 @@ function resetRun() {
   musicI = 0;
   applyGauntlet(1);
   announced = {};
+  debuted = {};
   trauma = 0;
   fovKick = 0;
   slowmo = 0;
@@ -1482,6 +1483,7 @@ function pulseEligible([key, unlock]) {
  *  telegraph callbacks capture it, and staggers are monotonic within a pulse,
  *  so draw order stays deterministic even though spawns resolve later. */
 function spawnPick(key, stagger, draw = rng.next) {
+  debuted[key] = true;
   const delay = 0.7 + stagger;
   if (key === 'serpent') { spawnSerpent(); return; } // its own sky entrance
   audio.spawn();
@@ -1534,6 +1536,13 @@ function spawnPick(key, stagger, draw = rng.next) {
   }
 }
 
+// Which pool keys the player has actually MET this run. The rhythm+budget
+// lottery can otherwise delay a debut far past its unlock (measured: spiders
+// unlock at 75s but first appeared at a median of 139s, watchers as late as
+// 139s), which silently breaks the documented one-mechanic-at-a-time
+// onboarding — so an undebuted, unlocked type jumps the queue.
+let debuted = {};
+
 const lastPulsePicks = []; // debug: {n, kind, picks[]} per pulse, capped
 
 function runPulse(n) {
@@ -1544,6 +1553,18 @@ function runPulse(n) {
   let budget = pulseBudget(n, kind);
   let stagger = 0;
   const picks = [];
+  // DEBUT GUARANTEE: the earliest-unlocked type the player hasn't met yet
+  // spawns regardless of this pulse's kind or budget, so unlock times are
+  // real introduction times. PULSE_POOL is ordered by unlock, so `find`
+  // already yields the right one; it's deterministic (pulse fire times and
+  // `debuted` don't depend on random draws), which also makes daily runs
+  // MORE comparable, not less.
+  const debut = PULSE_POOL.find(e => !debuted[e[0]] && pulseEligible(e));
+  if (debut) {
+    spawnPick(debut[0], 0, draw);
+    budget -= debut[2];
+    picks.push(debut[0] + '*'); // starred in the debug log = forced debut
+  }
   // heavy pulses open with a guaranteed centrepiece
   if (kind === 'heavy') {
     if (gameTime >= 100 && serpents.length < SERPENT_CAP) { spawnPick('serpent', 0, draw); budget -= 8; picks.push('serpent'); }
