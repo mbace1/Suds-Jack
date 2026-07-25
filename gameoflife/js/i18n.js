@@ -185,6 +185,15 @@ const STR = {
     'ca.outro': 'Some things stay up only because someone took the care to balance them.',
     'ca.nature': 'Find two or three flat stones and balance them, one on another, somewhere outside. It may take many tries. When it stands, leave it for the next person to find.',
 
+    'exp.downhill.name': 'Water Downhill',
+    'exp.downhill.desc': 'Tilt stone ledges so a trickle finds its way all the way down.',
+    'wd.s1': 'Water always knows the way down — it only needs one to be open. Here are four stone ledges and a trickle from above. Tilt the ledges until the water runs all the way down and off the edge of the world.',
+    'wd.begin': 'Open the water',
+    'wd.hint': 'Tap a ledge to tilt it. Send the water all the way to the bottom.',
+    'wd.truth': 'There. The water did not push and did not hurry — it took the first opening you gave it, and found the bottom by falling. Every river on Earth is only this: water, and down, and time. It never has to be told twice.',
+    'wd.outro': 'Water wins by yielding. It goes around, and arrives anyway.',
+    'wd.nature': 'Pour a little water on a slope — a path, a rock, a windowpane in the rain — and watch it choose its way down. It has been solving that maze since before there were eyes to watch.',
+
     'exp.berry.name': 'The Right to Roam',
     'exp.berry.desc': 'A blueberry summer in Finland, and the old freedom that makes every forest yours to walk.',
 
@@ -494,6 +503,15 @@ const STR = {
     'ca.outro': 'Jotkin asiat pysyvät pystyssä vain siksi, että joku näki vaivan tasapainottaa ne.',
     'ca.nature': 'Etsi kaksi tai kolme litteää kiveä ja tasapainota ne toistensa päälle jonnekin ulos. Se voi vaatia monta yritystä. Kun se seisoo, jätä se seuraavan löytäjän iloksi.',
 
+    'exp.downhill.name': 'Vesi alamäkeen',
+    'exp.downhill.desc': 'Kallista kivihyllyjä niin että puro löytää tiensä aina alas asti.',
+    'wd.s1': 'Vesi tietää aina tien alas — sen tarvitsee vain löytää yksi auki oleva. Tässä on neljä kivihyllyä ja puro ylhäältä. Kallista hyllyjä, kunnes vesi juoksee koko matkan alas ja maailman reunan yli.',
+    'wd.begin': 'Avaa vesi',
+    'wd.hint': 'Napauta hyllyä kallistaaksesi sitä. Ohjaa vesi aivan pohjalle asti.',
+    'wd.truth': 'Kas noin. Vesi ei työntänyt eikä kiirehtinyt — se otti ensimmäisen antamasi aukon ja löysi pohjan putoamalla. Jokainen joki maan päällä on vain tätä: vettä, ja alaspäin, ja aikaa. Sille ei koskaan tarvitse sanoa kahdesti.',
+    'wd.outro': 'Vesi voittaa antamalla myöten. Se kiertää, ja saapuu kuitenkin perille.',
+    'wd.nature': 'Kaada vähän vettä rinteeseen — polulle, kivelle, sateiselle ikkunalasille — ja katso kun se valitsee tiensä alas. Se on ratkonut tuota sokkeloa jo ennen kuin oli silmiä katsomaan.',
+
     'exp.berry.name': 'Jokamiehenoikeus',
     'exp.berry.desc': 'Mustikkakesä ja vanha vapaus, joka tekee jokaisesta metsästä sinun kävellä.',
 
@@ -802,6 +820,15 @@ const STR = {
     'ca.wisdom': '立った。それを支えるのは、自らの釣り合いと、重力の辛抱だけ。重力は、あるかぎりの時間をすべて持ち、一度も目をそらさない。ケルンは、人と大地とのささやかな約束だ — 私はここにいた、道は続く。',
     'ca.outro': 'あるものが立っていられるのは、だれかが手間をかけて釣り合わせたからにすぎない。',
     'ca.nature': '平たい石を二つか三つ見つけて、外のどこかで積み重ねてみよう。何度もやり直すかもしれない。立ったら、次に見つける人のために残しておこう。',
+
+    'exp.downhill.name': '水は下へ',
+    'exp.downhill.desc': '石の棚を傾けて、ひとすじの水を下まで導こう。',
+    'wd.s1': '水はいつも下への道を知っている — ただ、ひとつ開いていればいい。ここに四つの石の棚と、上から落ちるひとすじの水がある。棚を傾けて、水が下まで走り、世界の縁からこぼれ落ちるようにしよう。',
+    'wd.begin': '水を通す',
+    'wd.hint': '棚をタップして傾けよう。水をいちばん下まで導いて。',
+    'wd.truth': 'そう。水は押しもせず、急ぎもしなかった — あなたが与えた最初の隙間を取り、落ちることで底に至った。地上のどんな川も、これだけのこと: 水と、下と、時間。二度言う必要は、けっしてない。',
+    'wd.outro': '水は、ゆずることで勝つ。まわり道をして、それでも辿り着く。',
+    'wd.nature': '坂に少し水を注いでみよう — 小道、岩、雨の窓ガラス — そして下への道を選ぶさまを見てみて。見る目がまだなかったころから、水はその迷路を解きつづけてきた。',
 
     'exp.berry.name': '歩く自由',
     'exp.berry.desc': 'フィンランドのブルーベリーの夏と、どの森もあなたの歩く場所にする古い自由。',
