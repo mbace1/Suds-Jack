@@ -22,8 +22,8 @@ quiet "something else, perhaps" link for a single redraw. A three-dot row
 makes the cycle visible: two breaths of play, then the `~` rest. A living
 pixel sky above the title follows the real hour — dawn, noon sun, dusk,
 stars — so the app itself keeps the day-rhythm it points you toward. The
-set-once controls (language, "leave a thought" feedback) live in one quiet
-footer below a divider, out of the main column; the explanatory tagline only
+set-once controls (language, hemisphere, "leave a thought" feedback) live in one
+quiet footer below a divider, out of the main column; the explanatory tagline only
 greets newcomers (fewer than two lifetime completions), so returning visitors
 land on a cleaner header with the offering as the single thing in focus.
 
@@ -33,11 +33,15 @@ languages, so a Japanese haiku can arrive in Finnish and a Finnish nocturne
 in Japanese. Evening invitations rotate through the pool regardless of
 source culture.
 
-**The invitations know the season.** `nature.js` reads the month
-(meteorological seasons, northern hemisphere for now): winter days suggest
-frost and bare-tree silhouettes, spring days buds and birdsong, summer days
-barefoot grass and working shade, autumn days leaf-catching. Evening poems
-prefer the current season's verses.
+**The invitations know the season — in both hemispheres.** `nature.js` reads the
+month (meteorological seasons): winter days suggest frost and bare-tree
+silhouettes, spring days buds and birdsong, summer days barefoot grass and
+working shade, autumn days leaf-catching. Evening poems prefer the current
+season's verses. `season(date, hemi)` shifts the year half a turn for `'s'`, so
+a July visitor in Melbourne is sent to look for frost, not barefoot grass. The
+first run seeds the guess from the browser's IANA timezone
+(`guessHemisphere()` — a hint, never a claim) and a quiet `seasons north|south`
+toggle in the hub footer corrects it for good.
 
 ## Playing
 
@@ -192,7 +196,7 @@ The owner's 2026-07 master idea queue is **fully shipped** (see
 as its own small versioned addition:
 
 - ✅ **Seasonal awareness**: invitations that know winter from summer — done,
-  `nature.js` `season()` (northern hemisphere; configurable is still open).
+  `nature.js` `season()`, and now **hemisphere-aware** (see below).
 - ✅ **A day-shape**: done — `daySlot()` greeting + the living hub sky follow the
   hour, and evening swaps the invitation for a poem.
 - ✅ **Sound garden**: done — the hub's ambient bed grows one voice per *accepted*
@@ -201,7 +205,7 @@ as its own small versioned addition:
   mycelium maze. (The hedgerow/Hooper's-rule idea shipped as `hedge`.)
 - **Shared feedback**: opt-in export of feedback to an issue/form endpoint,
   replacing the copy-paste loop.
-- **Configurable hemisphere** so `season()` is right south of the equator.
+
 
 ### The sound garden
 

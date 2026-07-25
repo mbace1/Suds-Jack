@@ -6,34 +6,34 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=28';
-import { PAL } from './palette.js?v=28';
-import { PixelScreen, shade } from './pixel.js?v=28';
-import * as store from './storage.js?v=28';
-import * as audio from './audio.js?v=28';
-import { pickInterlude, isEvening } from './nature.js?v=28';
-import { aqueduct } from './experiences/aqueduct.js?v=28';
-import { forest } from './experiences/forest.js?v=28';
-import { tern } from './experiences/tern.js?v=28';
-import { cup } from './experiences/cup.js?v=28';
-import { hanami } from './experiences/hanami.js?v=28';
-import { berry } from './experiences/berry.js?v=28';
-import { stars } from './experiences/stars.js?v=28';
-import { maple } from './experiences/maple.js?v=28';
-import { plate } from './experiences/plate.js?v=28';
-import { seam } from './experiences/seam.js?v=28';
-import { dots } from './experiences/dots.js?v=28';
-import { glass } from './experiences/glass.js?v=28';
-import { wait } from './experiences/wait.js?v=28';
-import { lichen } from './experiences/lichen.js?v=28';
-import { cloud } from './experiences/cloud.js?v=28';
-import { ice } from './experiences/ice.js?v=28';
-import { trace } from './experiences/trace.js?v=28';
-import { gears } from './experiences/gears.js?v=28';
-import { cairn } from './experiences/cairn.js?v=28';
-import { downhill } from './experiences/downhill.js?v=28';
-import { tether } from './experiences/tether.js?v=28';
-import { hedge } from './experiences/hedge.js?v=28';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=29';
+import { PAL } from './palette.js?v=29';
+import { PixelScreen, shade } from './pixel.js?v=29';
+import * as store from './storage.js?v=29';
+import * as audio from './audio.js?v=29';
+import { pickInterlude, isEvening, guessHemisphere } from './nature.js?v=29';
+import { aqueduct } from './experiences/aqueduct.js?v=29';
+import { forest } from './experiences/forest.js?v=29';
+import { tern } from './experiences/tern.js?v=29';
+import { cup } from './experiences/cup.js?v=29';
+import { hanami } from './experiences/hanami.js?v=29';
+import { berry } from './experiences/berry.js?v=29';
+import { stars } from './experiences/stars.js?v=29';
+import { maple } from './experiences/maple.js?v=29';
+import { plate } from './experiences/plate.js?v=29';
+import { seam } from './experiences/seam.js?v=29';
+import { dots } from './experiences/dots.js?v=29';
+import { glass } from './experiences/glass.js?v=29';
+import { wait } from './experiences/wait.js?v=29';
+import { lichen } from './experiences/lichen.js?v=29';
+import { cloud } from './experiences/cloud.js?v=29';
+import { ice } from './experiences/ice.js?v=29';
+import { trace } from './experiences/trace.js?v=29';
+import { gears } from './experiences/gears.js?v=29';
+import { cairn } from './experiences/cairn.js?v=29';
+import { downhill } from './experiences/downhill.js?v=29';
+import { tether } from './experiences/tether.js?v=29';
+import { hedge } from './experiences/hedge.js?v=29';
 
 const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice, trace, gears, cairn, downhill, tether, hedge];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
@@ -121,6 +121,10 @@ function drawOffering(not = null) {
   }
 }
 
+// hemisphere: seed once from the timezone so southern visitors are not told to
+// look for frost in January. It is only a guess; the hub footer can flip it.
+if (!store.hemiSet()) store.setHemi(guessHemisphere());
+
 document.addEventListener('pointerdown', audio.init, { once: true });
 
 // ── hub ────────────────────────────────────────────────────────────
@@ -197,6 +201,17 @@ function showHub() {
   justGrew = false;
 
   footer.appendChild(langRow);
+
+  // which hemisphere's seasons the invitations follow — set once, then forgotten
+  const hemiRow = el('div', 'lang-row hemi-row');
+  hemiRow.appendChild(el('span', 'hemi-label', t('hemi.label')));
+  for (const h of ['n', 's']) {
+    const b = el('button', 'lang-btn' + (store.getHemi() === h ? ' active' : ''), t(`hemi.${h}`));
+    b.onclick = () => { store.setHemi(h); showHub(); };
+    hemiRow.appendChild(b);
+  }
+  footer.appendChild(hemiRow);
+
   const fb = el('button', 'link-btn footer-link', t('hub.feedback'));
   fb.onclick = () => showFeedback('hub', showHub);
   footer.appendChild(fb);
@@ -278,7 +293,7 @@ function showFeedback(expId, done) {
 // ── nature interlude overlay ───────────────────────────────────────
 function showInterlude() {
   if (document.querySelector('.overlay')) return;   // hub re-renders must not stack invitations
-  const pick = pickInterlude(store.getState().natureIdx);
+  const pick = pickInterlude(store.getState().natureIdx, new Date(), store.getHemi());
   const ov = el('div', 'overlay');
   const box = el('div', 'panel interlude');
   box.append(
