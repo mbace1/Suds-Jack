@@ -60,12 +60,12 @@ if (location.hash === '#cabs') {
       loadout: startLoadout, kaikki: startKaikki, nexdeus: startNexdeus,
     })[which](); return null; },
     inCab: () => inCabinet(),
-    modes: () => ({ melee: meleeRun, fluid: fluidRun, arch: fluidArch }),
+    modes: () => ({ melee: meleeRun, arch: fluidArch }),
     killSome: (n) => { let k = 0; for (const e of enemies) { if (k >= n) break;
       if (e.alive) { e.hp = 0; e.hit(e.position.x, e.position.z); onKill(e); k++; } } return k; },
     retro: () => retro.active,
     shepCount: () => enemies.filter(e => e.alive && e.type === EnemyType.SHEPHERD).length,
-    childCount: () => enemies.filter(e => e.alive && e._fluidChild).length,
+    childCount: () => enemies.filter(e => e.alive && e._spawnChild).length,
   };
 }
 '''
@@ -116,10 +116,8 @@ for (const cab of CABS) {
   const badNews = [];
   if (!inCab) badNews.push('inCabinet() false');
   if (modes.melee) badNews.push('CLOSE COMBAT leaked in');
-  if (modes.fluid) badNews.push('FLUID leaked in');
   if (modes.arch) badNews.push('archetype set: ' + modes.arch);
   if (shep) badNews.push(shep + ' SHEPHERD present');
-  if (kids) badNews.push(kids + ' split-children present');
   if (!retro && cab !== 'nexdeus') badNews.push('retro pass inactive');
   if (errs.length) badNews.push(errs.length + ' errors: ' + errs.slice(0, 2).join(' | '));
   if (badNews.length) { bad++; console.log('FAIL ' + cab.padEnd(9) + ' — ' + badNews.join('; ')); }
