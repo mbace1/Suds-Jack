@@ -7,6 +7,20 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v205 — 2026-07-25
+**BINDING item pools — the basement changes character as you descend**
+- The pedestal handed out the same generic pool on every floor, so descending changed the danger but never the OFFER. Each basement floor now draws from its **own themed pool**, and the card screen names it:
+- **THE BLOOD OFFERS** (floor 1): max HP, Suds Feast, shield, graze — survive first
+- **THE IRON OFFERS** (floor 2): fire rate, piercing, big bullets, nuke — the weapon floor
+- **THE QUICK OFFERS** (floor 3): speed, dash cooldown, Long Slide, magnet — mobility
+- **THE DEEP OFFERS** (floor 4+): dash-boom, Ripple Rounds, graze, Suds Feast — the compounding floor; pools cycle from here
+- A themed pedestal is never hijacked by the cursed-card slot — the basement already prices its own deals in blood (v184 shop)
+- Pool names localized en/ja/fi; the generic card screen and every other mode are untouched (`showUpgradeCards` takes the pool as an optional argument)
+- Verified headless: four distinct pools cycling correctly at floor 5, and each floor's pedestal draws only its own ids under its own banner; `cabinets.sh` green on all six
+- Cache-bust `?v=158` → `?v=159`; HUD label → v205
+
+---
+
 ## v204 — 2026-07-25
 **Cabinet audit + the gate that keeps them honest — and LOADOUT gets its briefings**
 - **Audited all six cabinets** after eight releases of mode-wide systems (FLUID, defaults, juice, sound, cards, SHEPHERD) landed without a cabinet check. Result: **structurally clean** — no mode leaks, no errors, retro passes armed. LOADOUT's stop at its kit-pick panel is by design (v152), not a fault

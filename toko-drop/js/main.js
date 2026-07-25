@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=158';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=158';
-import { Player, PLAYER_RADIUS } from './player.js?v=158';
+import { InputManager } from './input.js?v=159';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=159';
+import { Player, PLAYER_RADIUS } from './player.js?v=159';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS } from './enemy.js?v=158';
-import { RetroPass } from './retro.js?v=158';
-import { audio } from './audio.js?v=158';
-import { initDesigner } from './designer.js?v=158';
-import { t, getLang, setLang, langs } from './lang.js?v=158';
-import { TUNING } from './tuning.js?v=158';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS } from './enemy.js?v=159';
+import { RetroPass } from './retro.js?v=159';
+import { audio } from './audio.js?v=159';
+import { initDesigner } from './designer.js?v=159';
+import { t, getLang, setLang, langs } from './lang.js?v=159';
+import { TUNING } from './tuning.js?v=159';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -4083,7 +4083,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v204' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v205' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -5869,18 +5869,35 @@ function applyUpgrade(id) {
   }
 }
 
-function showUpgradeCards(afterPick = null) {
+// v205 (backlog): BINDING ITEM POOLS. The basement's soul is that DESCENDING
+// changes what you find — a floor has a character, and you learn to read it.
+// Each floor draws its pedestal picks from a themed pool (cycling past 4), and
+// the card screen names the pool so the floor's identity is legible.
+const BD_POOLS = [
+  { key: 'blood', ids: ['hp', 'vampire', 'shield', 'graze'] },          // floor 1
+  { key: 'iron',  ids: ['firerate', 'pierce', 'bigbullets', 'nuke'] },  // floor 2
+  { key: 'quick', ids: ['speed', 'dashcd', 'longdash', 'magnet'] },     // floor 3
+  { key: 'deep',  ids: ['dashboom', 'ripple', 'graze', 'vampire'] },    // floor 4+
+];
+const bdPoolFor = floor => BD_POOLS[(Math.max(1, floor) - 1) % BD_POOLS.length];
+
+function showUpgradeCards(afterPick = null, poolIds = null) {
   // afterPick (v150): item-room pedestals hand out a FREE pick mid-room —
   // the caller decides what happens after (default: classic wave chaining).
+  // poolIds (v205): restrict the draw to a themed set (BINDING floor pools).
   gameState = 'upgrade';
   overlay.style.display = 'none';
 
   // Roguelike B (v146): 2 regular mods + 1 rare gauntlet invitation.
-  const pool = UPGRADE_POOL.filter(c => fluidRun || !SWARM_CARDS.has(c.id))
-    .sort(() => Math.random() - 0.5).slice(0, rogueB ? 2 : 3);
+  const source = poolIds
+    ? UPGRADE_POOL.filter(c => poolIds.includes(c.id))
+    : UPGRADE_POOL.filter(c => fluidRun || !SWARM_CARDS.has(c.id));
+  const pool = [...source].sort(() => Math.random() - 0.5).slice(0, rogueB ? 2 : 3);
   // v180: from wave 6, ~35% of card screens turn one slot PURPLE — a cursed
   // trade with the price printed on the card. Never the only choice.
-  if (wave >= 6 && Math.random() < 0.35) {
+  // v205: a themed floor pool is the whole point of the pedestal — no cursed
+  // slot hijacking it (the basement already prices its own deals in blood).
+  if (!poolIds && wave >= 6 && Math.random() < 0.35) {
     pool[pool.length - 1] = {
       ...CURSED_POOL[Math.floor(Math.random() * CURSED_POOL.length)],
       cursed: true,
@@ -5892,7 +5909,9 @@ function showUpgradeCards(afterPick = null) {
 
   const title = document.createElement('div');
   title.style.cssText = 'font-size:24px;font-weight:bold;margin-bottom:24px;text-shadow:0 0 20px #aa00ff;';
-  title.textContent = t('chooseUpgrade');
+  title.textContent = poolIds && bindingMode
+    ? `${t('bdPool_' + bdPoolFor(bindingFloor).key)}`   // v205: name the floor's character
+    : t('chooseUpgrade');
   panel.appendChild(title);
 
   const row = document.createElement('div');
@@ -8148,7 +8167,10 @@ function loop() {
         audio.announce('mult');
       } else if (pu._type === 'item') {
         // Binding pedestal (v150): a free pick, then back to the same room.
-        showUpgradeCards(() => { gameState = 'playing'; });
+        // v205: the pick comes from THIS floor's themed pool — descending
+        // changes what the basement offers.
+        showUpgradeCards(() => { gameState = 'playing'; },
+          bindingMode ? bdPoolFor(bindingFloor).ids : null);
       }
       audio.pickup();
       // Collection pop: radial burst of goo bits in the pickup's colour
@@ -8379,6 +8401,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=158').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=159').catch(() => {});
   });
 }

@@ -131,7 +131,8 @@ The cabinet row (each refined individually, in build order):
 3. **THE BINDING OF TOKO** *(Binding of Isaac tribute, user addition)* —
    v150, graphics v151, REMAKE v157 (seeded rock layouts, in-room spawns,
    FLIT/SPITTLE/CHARGER/HOPPER roster, REAL branching doors, hearts
-   economy). Backlog: shops, item pools per floor, revisits.
+   economy); v184 basement SHOP; v205 per-floor item pools. Backlog: room
+   revisits.
 4. **LOADOUT** *(Re-Loaded tribute)* — v152, REMAKE v158 (THE COMPOUND
    walled base, TURRET + TROOPER, ASSAULT command-post mission, heavier
    weapon feel); v182 RESCUE mission; v204 mission briefings. Backlog: —
