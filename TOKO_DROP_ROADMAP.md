@@ -134,7 +134,7 @@ The cabinet row (each refined individually, in build order):
    economy). Backlog: shops, item pools per floor, revisits.
 4. **LOADOUT** *(Re-Loaded tribute)* — v152, REMAKE v158 (THE COMPOUND
    walled base, TURRET + TROOPER, ASSAULT command-post mission, heavier
-   weapon feel). Backlog: rescue-the-hostage mission, mission briefings.
+   weapon feel); v182 RESCUE mission; v204 mission briefings. Backlog: —
 5. **KAIKKI IRTI 3** *(Tapan Kaikki 3 tribute)* — SHIPPED v159 (DOS-VGA
    streets, money from everything, crates, THE SHOP with the bought arsenal
    — the sanctioned big-weapon exception). Backlog: more shop tiers

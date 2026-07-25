@@ -7,6 +7,16 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v204 — 2026-07-25
+**Cabinet audit + the gate that keeps them honest — and LOADOUT gets its briefings**
+- **Audited all six cabinets** after eight releases of mode-wide systems (FLUID, defaults, juice, sound, cards, SHEPHERD) landed without a cabinet check. Result: **structurally clean** — no mode leaks, no errors, retro passes armed. LOADOUT's stop at its kit-pick panel is by design (v152), not a fault
+- **New permanent gate `scripts/cabinets.sh`**: boots ALL SIX cabinets, clears LOADOUT's kit door, plays and kills through each, and FAILS on a cabinet that never reaches play, on CLOSE COMBAT / FLUID / archetypes / SHEPHERD / split-children leaking in, on the retro pass not arming, or on any page/console error. `smoke.sh` proves the roster survives a release; this proves the cabinets do — the leaks it catches are invisible until someone opens that cabinet
+- **LOADOUT MISSION BRIEFINGS** (roadmap backlog): every op now opens with its radio callout — `MISSION 3 — HOLD THE LINE` — so the compound reads like a deployment instead of a wave number. All five objectives (purge / demolish / hold / assault / rescue), localized en/ja/fi
+- Verified: the sweep passes all six cabinets; all five briefings render with the objective they belong to
+- Cache-bust `?v=157` → `?v=158`; HUD label → v204
+
+---
+
 ## v203 — 2026-07-25
 **THE SHEPHERD — the first enemy designed FOR the swarm game (40 types)**
 - Every enemy predated the movement game; the roster had no citizen of it. The SHEPHERD is one mechanic, the WARDEN standard: **it herds**. A faint teal ring (7.5u) marks its flock — every body inside is dragged toward YOU at 2.8 u/s, knotting the school around you until you kill the conductor
