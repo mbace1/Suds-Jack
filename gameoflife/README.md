@@ -72,13 +72,14 @@ switchable in the hub, persisted in `localStorage`.
 | `gears` | game | The Bronze Gears | Crank the 2,000-year-old Antikythera mechanism through the months until the Sun and Moon hands meet the lunar node and it predicts an eclipse → *watch a second hand make one full circle* |
 | `cairn` | game | The Cairn | Balance three irregular stones into a trail marker on a dusk fell — land each near the balance line or it topples, patiently, until it stands → *balance two real rocks and leave them* |
 | `downhill` | game | Water Downhill | Tilt four stone ledges so a trickle chains all the way down and pours off the frame in cyan — water takes the first opening you give it → *pour water on a real slope and watch it choose* |
+| `tether` | story | The Tether | Paris 1783: cut the rope and the ground lets go — Paris turns into a map, embers eat the linen, and the brazier throws sparks past the frame; the first humans ever to fly free → *look down from the highest place you can walk to* |
 
 ## Visual standard (2026-07 master doc)
 
 New experiences follow the owner's art direction (see
 `ideas/2026-07-master-ideas.md` + reference art in `ideas/ref/`): 16-bit
 scenes floating in a pure black void as **irregular jagged vignettes** (`plate`/`seam`/`dots`) or **cinematic
-letterboxed widescreen** (`glass`), muted graphic-novel environment tones, and
+letterboxed widescreen** (`glass`/`tether`), muted graphic-novel environment tones, and
 luminescent **cyan/gold** for interactive elements that **break the frame**
 into the void. `plate`/`seam`/`dots` are the pilots; existing experiences migrate
 gradually. Shared `pixel.js` now gives every scene **crisp defined sections** (a 1px

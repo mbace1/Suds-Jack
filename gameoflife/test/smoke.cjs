@@ -305,6 +305,19 @@ function check(name, cond) {
   check('downhill water reaches the bottom', (await page.locator('.exp-text').textContent()).includes('found the bottom'));
   await page.locator('.back-btn').click();
 
+  // tether: cut the rope, climb, sponge the sparks, reach the truth
+  await page.evaluate(() => __gol.debug.start('tether'));
+  check('tether intro shown', (await page.locator('.exp-text').textContent()).includes('1783'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Cut the tether' }).click();
+  check('tether lets go of the ground', (await page.locator('.exp-text').textContent()).includes('let go'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Look down' }).click();
+  await page.locator('.exp-buttons .btn', { hasText: 'Continue' }).click();
+  check('tether sparks threaten the linen', (await page.locator('.exp-text').textContent()).includes('ember'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Sponge the sparks' }).click();
+  await page.locator('.exp-buttons .btn', { hasText: 'Continue' }).click();
+  check('tether truth shown', (await page.locator('.exp-text').textContent()).includes('newborn baby'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');

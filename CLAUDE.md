@@ -126,7 +126,10 @@ should rest on a dusk fell; near the balance line it holds, off it topples and y
 retry — gravity is patient; the crowning stone catches the last light), and
 `downhill` (game — Water Downhill: a tilt cousin of `aqueduct`; tap four stone
 ledges to flip their slope until a trickle chains down and pours off the frame in
-`CYAN_LUX`). `plate` pilots the **2026-07 visual standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
+`CYAN_LUX`), and `tether` (story — The Tether: Paris 1783, cut the rope and the
+ground lets go; Paris compresses into a map as you climb, embers eat the linen, and
+the brazier flare throws `GOLD_LUX` sparks past the letterbox bars into the void —
+cinematic-widescreen like `glass`). `plate` pilots the **2026-07 visual standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
 jagged 16-bit vignettes in a pure-black void, muted environments, luminescent cyan/gold
 interactive elements that break the frame (`PAL.VOID/CYAN_LUX/GOLD_LUX`, plus
 `PAL.LEAF_LUX` — a luminescent green for nature-scene glow like fireflies). Shared `pixel.js`
