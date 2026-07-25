@@ -18,8 +18,28 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');   // repo root
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.md': 'text/plain' };
 
+// a stand-in for the form endpoint: /collect records what the page posts, and
+// /collect-broken always fails, so the outbox path can be exercised too
+const collected = [];
+let collectOpen = true;
+
 const server = http.createServer((req, res) => {
   const url = req.url.split('?')[0];
+  if (url === '/collect' || url === '/collect-broken') {
+    let body = '';
+    req.on('data', c => { body += c; });
+    req.on('end', () => {
+      const ok = url === '/collect' && collectOpen;
+      if (ok) { try { collected.push(JSON.parse(body)); } catch { /* ignore */ } }
+      res.writeHead(ok ? 200 : 500, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': '*',
+      });
+      res.end('{}');
+    });
+    return;
+  }
   const p = path.join(ROOT, url === '/' ? 'index.html' : url);
   fs.readFile(p, (err, data) => {
     if (err) { res.writeHead(404); res.end(); return; }
@@ -40,7 +60,10 @@ function check(name, cond) {
   const browser = await chromium.launch();
   const page = await browser.newPage();
   const errors = [];
-  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  // /collect-broken is failed on purpose to exercise the outbox, so the 500 the
+  // browser logs for it is expected noise rather than a defect
+  const expected = t => /collect-broken|Failed to load resource.*500/.test(t);
+  page.on('console', m => { if (m.type() === 'error' && !expected(m.text())) errors.push(m.text()); });
   page.on('pageerror', e => errors.push(String(e)));
 
   await page.goto(URL, { waitUntil: 'networkidle' });
@@ -494,10 +517,51 @@ function check(name, cond) {
   check('an empty thought returns to the hub without thanks',
     await page.locator('.card').count() === 1);
 
+  // ── the feedback actually leaves the browser ──────────────────────
+  // with no endpoint configured, nothing is promised and nothing is sent
+  const sentBefore = collected.length;
+  await page.locator('.footer-link').click();
+  check('unconfigured panel makes no delivery claim', await page.locator('.fb-dest').count() === 0);
+  await page.locator('.leaf-btn').nth(2).click();
+  await page.locator('.btn', { hasText: 'Leave it' }).click();
+  await page.waitForTimeout(400);
+  check('nothing is posted without an endpoint', collected.length === sentBefore);
+
+  // configured and reachable: the note lands on the endpoint
+  const base = `http://localhost:${server.address().port}`;
+  await page.evaluate(u => __gol.debug.setEndpoint(u), `${base}/collect`);
+  await page.locator('.footer-link').click();
+  check('a configured panel says where the note goes', await page.locator('.fb-dest').count() === 1);
+  await page.locator('.leaf-btn').nth(4).click();
+  await page.locator('.fb-text').fill('the pine one made me go outside');
+  await page.locator('.btn', { hasText: 'Leave it' }).click();
+  await page.waitForTimeout(700);
+  check('the note reaches the endpoint', collected.length === sentBefore + 1);
+  check('it carries the words, rating and language',
+    collected.at(-1)?.text === 'the pine one made me go outside'
+    && collected.at(-1)?.leaves === 5 && collected.at(-1)?.lang === 'en');
+
+  // endpoint down: the note is kept, not lost, and goes out on the retry
+  await page.evaluate(u => __gol.debug.setEndpoint(u), `${base}/collect-broken`);
+  await page.locator('.footer-link').click();
+  await page.locator('.fb-text').fill('written while the line was down');
+  await page.locator('.btn', { hasText: 'Leave it' }).click();
+  await page.waitForTimeout(700);
+  const queued = await page.evaluate(() => __gol.debug.outbox());
+  check('an undeliverable note is kept, not lost', queued.length === 1);
+  check('and the player is told so, not thanked',
+    queued[0].text === 'written while the line was down');
+  await page.evaluate(u => __gol.debug.setEndpoint(u), `${base}/collect`);
+  const flushed = await page.evaluate(() => __gol.debug.flush());
+  check('the outbox drains once the endpoint answers again', flushed === 1);
+  check('the held note arrives too',
+    collected.at(-1)?.text === 'written while the line was down');
+  check('and it leaves the outbox', (await page.evaluate(() => __gol.debug.outbox())).length === 0);
+
   // debug handle + feedback store
-  await page.evaluate(() => __gol.store.recordFeedback({ id: 'smoke', leaves: 5, text: 'test', lang: 'en' }));
+  await page.evaluate(() => __gol.debug.setEndpoint(''));
   const fb = await page.evaluate(() => __gol.debug.feedback());
-  check('feedback recorded via __gol', fb.length === 1 && fb[0].leaves === 5);
+  check('every note is also kept locally', fb.length === 3 && fb[0].leaves === 3);
 
   check('zero console/page errors overall', errors.length === 0);
   if (errors.length) console.log(errors.join('\n'));
