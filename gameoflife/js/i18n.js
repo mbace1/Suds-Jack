@@ -275,7 +275,7 @@ const STR = {
     'te.outro': 'She carries no map. Sun, stars, and the Earth’s magnetic field — she reads a compass no one taught her.',
     'te.nature': 'Birds cross over you every day. Step out, find one, and follow it with your eyes until it disappears. Wonder, honestly: where will it sleep tonight?',
 
-    'cu.s1': 'A professor came to the master Nan-in to ask about zen. Nan-in set out a cup and began to pour the tea. Help him pour.',
+    'cu.s1': 'A professor came to the master Nan-in to ask about zen. Nan-in set out a bowl and began to pour the tea. Help him pour — press and hold, and keep holding.',
     'cu.pour': 'Pour',
     'cu.brims': 'The cup brims. Nan-in keeps pouring.',
     'cu.full': '“The cup is full! No more will go in!”',
@@ -593,7 +593,7 @@ const STR = {
     'te.outro': 'Hänellä ei ole karttaa. Aurinko, tähdet ja Maan magneettikenttä — hän lukee kompassia, jota kukaan ei opettanut.',
     'te.nature': 'Lintuja ylittää sinut joka päivä. Astu ulos, valitse yksi ja seuraa sitä katseellasi kunnes se katoaa. Ihmettele ihan tosissasi: missä se nukkuu tänä yönä?',
 
-    'cu.s1': 'Professori tuli mestari Nan-inin luo kysymään zenistä. Nan-in asetti kupin ja alkoi kaataa teetä. Auta häntä kaatamaan.',
+    'cu.s1': 'Professori tuli mestari Nan-inin luo kysymään zenistä. Nan-in asetti kulhon ja alkoi kaataa teetä. Auta häntä kaatamaan — paina pohjaan ja pidä painettuna.',
     'cu.pour': 'Kaada',
     'cu.brims': 'Kuppi on piripinnassa. Nan-in jatkaa kaatamista.',
     'cu.full': '”Kuppi on täynnä! Enempää ei mahdu!”',
@@ -911,7 +911,7 @@ const STR = {
     'te.outro': '地図は持っていない。太陽と星と、地球の磁場 — 誰にも教わらなかった羅針盤を読む。',
     'te.nature': '鳥は毎日あなたの上を渡ってゆく。外に出て、一羽をえらび、見えなくなるまで目で追ってみよう。そして本気で不思議がろう: あの鳥は今夜、どこで眠るのだろう?',
 
-    'cu.s1': 'ある教授が禅を問いに南隠禅師を訪ねた。南隠は茶碗を出し、茶を注ぎはじめた。注ぐのを手伝おう。',
+    'cu.s1': 'ある教授が禅を問いに南隠禅師を訪ねた。南隠は茶碗を出し、茶を注ぎはじめた。注ぐのを手伝おう — 押したまま、長押しで。',
     'cu.pour': '注ぐ',
     'cu.brims': '茶碗はなみなみ。南隠はまだ注ぐ。',
     'cu.full': '「いっぱいです! もう入りません!」',

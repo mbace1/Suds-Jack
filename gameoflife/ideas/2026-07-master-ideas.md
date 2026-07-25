@@ -53,7 +53,10 @@ Source: project owner, via idea-form exchange. Reference art in `ref/`
       hands close on the node and the machine predicts an eclipse (a gold corona
       breaks the frame). Void-vignette bronze build. → watch a second hand make
       one full circle.
-- [x] **Empty Your Cup v2** — cyan overflow breaks (v12; hold-to-pour + Raku still open)
+- [x] **Empty Your Cup v2** — COMPLETE. Cyan overflow breaks the frame (v12), and
+      now hold-to-pour (press and keep holding; the excess is something you have to
+      keep choosing) + a reference-grade dithered Raku chawan sharing `seam`'s glaze
+      ramp, with the spill cascading over the front lip and down the outer wall.
       the vignette. (upgrade of `cup`; ref: kintsugi-overflow.png)
 - [x] **The Cairn** (shipped as `cairn`) — tap where each of three irregular
       dithered stones should rest on a dusk fell; land it near the balance line and
