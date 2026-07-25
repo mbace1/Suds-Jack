@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=155';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=155';
-import { Player, PLAYER_RADIUS } from './player.js?v=155';
+import { InputManager } from './input.js?v=156';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=156';
+import { Player, PLAYER_RADIUS } from './player.js?v=156';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=155';
-import { RetroPass } from './retro.js?v=155';
-import { audio } from './audio.js?v=155';
-import { initDesigner } from './designer.js?v=155';
-import { t, getLang, setLang, langs } from './lang.js?v=155';
-import { TUNING } from './tuning.js?v=155';
+         CABINET_STYLE, VIS } from './enemy.js?v=156';
+import { RetroPass } from './retro.js?v=156';
+import { audio } from './audio.js?v=156';
+import { initDesigner } from './designer.js?v=156';
+import { t, getLang, setLang, langs } from './lang.js?v=156';
+import { TUNING } from './tuning.js?v=156';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -2917,6 +2917,7 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
   streak++;
   score += 100 * streak * (scoreMultT > 0 ? 2 : 1) * (dailyMod === 'glass' ? 2 : 1)   // v179: GLASS pays double
          * killScoreMult                                                              // v180: GAMBLER's card
+         * (minnowBounty && e._fluidChild ? 3 : 1)                                    // v202: MINNOW BOUNTY
          * (gauntlet ? gauntlet.mult : cabQuest ? cabQuest.mult : 1);
   if (vampireOn && ++vampireKills % 25 === 0 && player.hp < player.maxHp) {
     player.hp++;                                     // v180: the suds provide
@@ -3003,15 +3004,27 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
   // shockwave: big deaths ripple + squash the gels around them (pure visual —
   // reuses the spring squash + hit-ripple systems, hitboxes untouched)
   if (big && gameState === 'playing') {
+    // Snapshot the rattled set BEFORE any damage: RIPPLE ROUNDS deaths can
+    // push split-children into `enemies` mid-loop, and newborn minnows must
+    // not be vaporized by the shockwave that birthed them.
+    const rattled = [];
     for (const n of enemies) {
       if (!n.alive || n === e) continue;
       const dx = n.position.x - e.position.x, dz = n.position.z - e.position.z;
       if (dx * dx + dz * dz > 12.25) continue;   // 3.5u radius
       n._hitRipple = Math.max(n._hitRipple || 0, 0.75);
       n._sqV -= 0.55;
+      rattled.push(n);
     }
     addShake(0.1 + 0.12 * juiceHeat);
     audio.shockThump();   // v201
+    // v202 RIPPLE ROUNDS: the shockwave carries your damage — chain reactions
+    // when a rattled big body dies and detonates its own wave.
+    if (rippleRounds) {
+      for (const n of rattled) {
+        if (n.alive && n.hit(n.position.x, n.position.z)) onKill(n);
+      }
+    }
   }
   // v201: heat maxing out gets a riser — once per streak (re-arms below 0.5)
   if (juiceHeat >= 1 && !_heatPeaked) { _heatPeaked = true; audio.heatMax(); }
@@ -4063,7 +4076,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v201' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v202' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -5763,7 +5776,12 @@ const UPGRADE_POOL = [
   { id: 'shield' }, { id: 'dashboom' },
   // v180 (M6): three new builds to chase
   { id: 'graze' }, { id: 'vampire' }, { id: 'longdash' },
+  // v202: the roguelike learns the swarm game's language
+  { id: 'ripple' }, { id: 'tiredlegs' }, { id: 'minnow' },
 ];
+// v202: cards that only mean something when the swarm mechanics are live —
+// filtered out of draws in classic opt-out runs so nobody gets a dead card.
+const SWARM_CARDS = new Set(['tiredlegs', 'minnow']);
 // v180 CURSED CARDS: power at a price, plainly printed. From wave 6 one card
 // slot sometimes turns purple — never forced, always a real trade.
 const CURSED_POOL = [
@@ -5776,6 +5794,8 @@ const CURSED_POOL = [
 let grazeMult = 1;
 let vampireOn = false, vampireKills = 0;
 let killScoreMult = 1;
+// v202 swarm-card run-state (reset every startGame)
+let rippleRounds = false, tiredLegs = false, minnowBounty = false;
 const dropMaxHp = n => {
   player.maxHp = Math.max(1, player.maxHp - n);
   player.hp = Math.min(player.hp, player.maxHp);
@@ -5813,6 +5833,12 @@ function applyUpgrade(id) {
     vampireOn = true;                                // v180: every 25 kills = +1 HP
   } else if (id === 'longdash') {
     player._dashDurMult = Math.min(1.7, (player._dashDurMult ?? 1) * 1.3);
+  } else if (id === 'ripple') {
+    rippleRounds = true;    // v202: big-kill shockwaves damage what they rattle
+  } else if (id === 'tiredlegs') {
+    tiredLegs = true;       // v202: every dodge costs the dodger 1 hp
+  } else if (id === 'minnow') {
+    minnowBounty = true;    // v202: split-children pay triple
   } else if (id === 'x_berserk') {
     player._fireRateMult *= 0.7;
     dropMaxHp(1);
@@ -5837,7 +5863,8 @@ function showUpgradeCards(afterPick = null) {
   overlay.style.display = 'none';
 
   // Roguelike B (v146): 2 regular mods + 1 rare gauntlet invitation.
-  const pool = [...UPGRADE_POOL].sort(() => Math.random() - 0.5).slice(0, rogueB ? 2 : 3);
+  const pool = UPGRADE_POOL.filter(c => fluidRun || !SWARM_CARDS.has(c.id))
+    .sort(() => Math.random() - 0.5).slice(0, rogueB ? 2 : 3);
   // v180: from wave 6, ~35% of card screens turn one slot PURPLE — a cursed
   // trade with the price printed on the card. Never the only choice.
   if (wave >= 6 && Math.random() < 0.35) {
@@ -6116,6 +6143,7 @@ function startGame() {
   gauntlet = null; gauntletTier = 1; cabQuest = null; _lastQuestOffer = null;
   collectedUpgrades = []; hitEventLog = []; _lastHitTime = -1; _lbPosted = false;
   grazeMult = 1; vampireOn = false; vampireKills = 0; killScoreMult = 1;   // v180
+  rippleRounds = false; tiredLegs = false; minnowBounty = false;           // v202
   nxSecretChain = 0;   // v185: the machine forgets between runs
   scheduleTutorialHints();
   BULLET_CONFIG.playerBulletScale  = 1.0;
@@ -7192,6 +7220,8 @@ function loop() {
           // doesn't turn into a whip chorus
           const nowMs = performance.now();
           if (nowMs - _dodgeWhipAt > 350) { _dodgeWhipAt = nowMs; audio.dodgeWhip(); }
+          // v202 TIRED LEGS: reading your gun costs them — each dodge is 1 hp
+          if (tiredLegs && e.hit(e.position.x, e.position.z)) onKill(e);
           break;
         }
       }
@@ -8314,6 +8344,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=155').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=156').catch(() => {});
   });
 }

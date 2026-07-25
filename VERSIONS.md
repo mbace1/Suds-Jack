@@ -7,6 +7,18 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v202 — 2026-07-24
+**The roguelike learns the swarm's language — three swarm-native cards**
+- The upgrade pool predated the default flip, so no card spoke to dodging, schooling, or splitting. Three do now (pool 13 → 16):
+- **RIPPLE ROUNDS**: big-kill shockwaves now DAMAGE everything they rattle — and a rattled big body that dies detonates its own wave, so a packed school can chain-clear itself. (The rattled set is snapshotted before damage, so minnows born mid-chain can't be vaporized by the blast that created them)
+- **TIRED LEGS**: every dodge costs the dodger 1 HP — the swarm reading your gun becomes the way you kill it. Fire lanes to train them to death
+- **MINNOW BOUNTY**: split-spawned minnows pay TRIPLE — the splitting mechanic turns from a nuisance into an economy
+- **No dead cards in classic**: the two swarm-only cards are filtered out of draws when FLUID is off; RIPPLE ROUNDS stays (shockwaves exist in every mode). Localized en/ja/fi
+- Verified headless in both configurations: shockwave kills a 1-hp neighbor, a dodge drops the dodger 3 → 2 hp, a minnow pays exactly 3× base, and the classic pool offers neither swarm-only card
+- Cache-bust `?v=155` → `?v=156`; HUD label → v202
+
+---
+
 ## v201 — 2026-07-24
 **The swarm gets a voice — sound pass for every new mechanic + perf juice guard**
 - **Every v196–v200 mechanic was silent** — against the game's own audio identity rule (every event gets a synth stinger). Now: **splits** pop wet and pitch up (one body → two), **big-death shockwaves** thump low under the splatter, **dodges** whip (rate-limited to one per 350 ms so a schooling wave isn't a whip chorus), each **wave archetype** call has its own signature under the banner (stream rise / ring descent / pincer stabs), and **maxing streak heat** fires a sawtooth riser — once per streak, re-arming when heat cools below half
