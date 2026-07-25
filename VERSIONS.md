@@ -7,6 +7,21 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v208 — 2026-07-25
+**KAIKKI street jobs — the order changes, not just the wave number**
+- Every level of the streets was the same order — *kill everything* — so KAIKKI never asked anything of you but aim. The job now **rotates across four orders**, announced like a call-out the way LOADOUT briefs its ops (v204), and the HUD names tonight's job and tracks its own progress:
+- **PURGE** — kill everything on the block. The original order, unchanged
+- **PAYDAY** — bank a quota (₵400 + 250/level); kills and crates both pay. Clearing the street does *not* finish it, so the block keeps sending bodies — you can never run it dry and get stranded
+- **THE MARK** — one named body in the crowd, ringed in red and running. It flees at a speed you can just about match and the street corners it, so it can't be lost, only chased. Everything else out there is optional money. Pays **double**
+- **SHAKEDOWN** — crack every gold-banded crate. They're nailed shut twice as hard (4 hp) and keep their gold while they stand, so the damage tell brightens rather than washes the marking off. Pays **1.5×**
+- **No job can be failed.** This is a money cabinet, not a mission sim — a job that goes badly costs you time and cash, never the run. A SHAKEDOWN crate that couldn't find open street is dropped rather than left unshootable behind a building
+- **Edge case fixed in test:** a mark standing exactly on the player had a 0/0 escape vector and froze. It now breaks the tie outward from the middle of the street
+- Job names, briefings and HUD strings localized en/ja/fi
+- Verified headless (20/20): the four orders rotate on the level number; each job completes on **its own** finish line and refuses the other three's (an empty street doesn't finish PAYDAY or SHAKEDOWN, wiping the crowd doesn't finish THE MARK); PAYDAY's trickle keeps the street stocked; the mark opens the gap from both a dead-on overlap and a normal 2u approach and never leaves the arena; its ring lights and dies with it; every SHAKEDOWN crate is gold, 4 hp, and reachable. `smoke.sh` and `cabinets.sh` green on all six
+- Cache-bust `?v=161` → `?v=162`; HUD label → v208
+
+---
+
 ## v207 — 2026-07-25
 **BINDING: room revisits — the basement is a map, not a corridor**
 - **The wall you came in through stays a door.** Every cell you set foot in is remembered — its kind, its doors, its rock/pit layout and the fact that you emptied it — so you can walk back through the floor and take the exit you passed up. Doors into ground you've already walked glow **cool blue** and read `BACK` instead of green `EXIT`; the minimap marks them `✓`. Green is new floor, blue is the way you came

@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=161';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=161';
-import { Player, PLAYER_RADIUS } from './player.js?v=161';
+import { InputManager } from './input.js?v=162';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=162';
+import { Player, PLAYER_RADIUS } from './player.js?v=162';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS } from './enemy.js?v=161';
-import { RetroPass } from './retro.js?v=161';
-import { audio } from './audio.js?v=161';
-import { initDesigner } from './designer.js?v=161';
-import { t, getLang, setLang, langs } from './lang.js?v=161';
-import { TUNING } from './tuning.js?v=161';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS } from './enemy.js?v=162';
+import { RetroPass } from './retro.js?v=162';
+import { audio } from './audio.js?v=162';
+import { initDesigner } from './designer.js?v=162';
+import { t, getLang, setLang, langs } from './lang.js?v=162';
+import { TUNING } from './tuning.js?v=162';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -2568,6 +2568,16 @@ let kkWitnesses = [];
 const KK_WITNESS_SEE = 3.2;      // dash this close and they bolt
 const kkPayRate = () => (kaikkiMode && kkWitnesses.length ? 0.5 : 1);
 let kkDone = false;      // mission cleared, shop pending
+// v208 (backlog): STREET JOBS. Every level used to be the same order — kill
+// everything — so the streets never asked anything of you but aim. The job
+// now rotates, one mechanic each, and none of them can be FAILED: this is a
+// money cabinet, not a mission sim, so a job that goes badly costs you time
+// and cash, never the run.
+let kkJob = null;        // 'purge' | 'payday' | 'mark' | 'shakedown'
+let kkQuota = 0, kkQuotaAt = 0;   // payday: target, and the wallet when it started
+let kkTrickleT = 0;      // payday: the street keeps sending bodies until you're paid
+let kkMark = null;       // mark: the flagged runner
+let kkMarkRing = null;   // …and the ring that makes it findable in a riot
 let kkCrates = [];
 let kkBought = new Set(); // weapons already owned this run (one purchase each)
 let _kkSavedSmash = null, _kkSavedPixel = null;
@@ -2584,7 +2594,10 @@ class KkCrate {
   }
   hit() {
     this.hp--;
-    this.mat.color.setHex(this.hp > 0 ? 0x8a6a44 : 0x6b5233);
+    // v208: a SHAKEDOWN crate keeps its gold band while it's still standing —
+    // the damage tell brightens it instead of washing the marking off.
+    this.mat.color.setHex(this._job ? (this.hp > 0 ? 0xffd066 : 0xc8a03c)
+                                    : (this.hp > 0 ? 0x8a6a44 : 0x6b5233));
     if (this.hp <= 0) {
       this.alive = false;
       const pu = new Powerup(scene, this.x, this.z, 'score');
@@ -2608,6 +2621,12 @@ function clearKaikkiLevel() {
   kkCrates = [];
   for (const w of kkWitnesses) w.remove(scene);   // v206
   kkWitnesses = [];
+  if (kkMarkRing) {                                // v208
+    scene.remove(kkMarkRing);
+    kkMarkRing.geometry.dispose(); kkMarkRing.material.dispose();
+    kkMarkRing = null;
+  }
+  kkMark = null;
 }
 function setKaikkiLook(on) {
   setCabGround(on ? 'kaikki' : null);   // v167: the reference has GROUND
@@ -4013,8 +4032,14 @@ function drawHUD() {
     ctx.shadowBlur = 10;
     ctx.fillStyle = '#ff6655';
     const left = enemies.reduce((n2, e) => n2 + (e.alive ? 1 : 0), 0) + pendingSpawns.length;
-    ctx.fillText(kkDone ? 'STREETS CLEARED' : `KILL EVERYTHING — ${left} LEFT`,
-      uiCanvas.width / 2, 26);
+    // v208: the line names TONIGHT'S job and shows its own progress, so the
+    // order is legible at a glance the way the wallet always was.
+    const jobTxt = kkDone ? t('kkJobClear')
+      : kkJob === 'payday'    ? `${t('kkJ_payday')} — ₵${Math.max(0, kkCash - kkQuotaAt)} / ₵${kkQuota}`
+      : kkJob === 'mark'      ? `${t('kkJ_mark')} — ${t('kkMarkRuns')}`
+      : kkJob === 'shakedown' ? `${t('kkJ_shakedown')} — ${kkCrates.length} ${t('kkCratesLeft')}`
+      : `${t('kkJ_purge')} — ${left} ${t('kkLeft')}`;
+    ctx.fillText(jobTxt, uiCanvas.width / 2, 26);
     // v206: the witness tell — why the wallet is earning half right now
     if (kkWitnesses.length) {
       ctx.save();
@@ -4143,7 +4168,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v207' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v208' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -5452,6 +5477,12 @@ function spawnWave() {
     clearGaundropLevel();
     clearKaikkiLevel();
     kkDone = false;
+    // v208: tonight's job. Four orders on rotation, announced like a call-out
+    // the way LOADOUT briefs its ops (v204) — the streets read as work now.
+    kkJob = ['purge', 'payday', 'mark', 'shakedown'][(wave - 1) % 4];
+    kkQuota = 400 + wave * 250; kkQuotaAt = kkCash; kkTrickleT = 3.0;
+    milestoneT = 2.0;
+    milestoneText = `${t('kkJob')} ${wave} — ${t('kkBrief_' + kkJob)}`;
     // v206: the street has WITNESSES — 2-4 bystanders who drift for the edges.
     // While any of them is still out there watching, every payout is halved.
     const nWit = 2 + Math.floor(rng() * 3);
@@ -5496,7 +5527,14 @@ function spawnWave() {
         cx2 = (rng() * 2 - 1) * (HALF_X - 2);
         cz2 = (rng() * 2 - 1) * (HALF_Z - 2);
       } while (gdInsideWall(cx2, cz2, 1.0) && ++tries < 20);
-      kkCrates.push(new KkCrate(scene, cx2, cz2));
+      // v208: on SHAKEDOWN a crate the walls swallow would be unshootable and
+      // the job unfinishable — if the placement never found open street, drop it.
+      if (kkJob === 'shakedown' && gdInsideWall(cx2, cz2, 1.0)) continue;
+      const cr = new KkCrate(scene, cx2, cz2);
+      // v208 SHAKEDOWN: the crates ARE the job — banded gold so they read as
+      // targets across the street, and nailed shut twice as hard.
+      if (kkJob === 'shakedown') { cr.hp = 4; cr.mat.color.setHex(0xc8a03c); cr._job = true; }
+      kkCrates.push(cr);
     }
     // you, at the south end of the street
     player.mesh.position.set(0, player.mesh.position.y, HALF_Z - 2.2);
@@ -5524,6 +5562,27 @@ function spawnWave() {
         angle: 0, shooter: false, clusterOffset: null, speedMult, intervalMult });
     }
     clusterSpawnAt = [];
+    // v208 THE MARK: one named body in the crowd, ringed in red and running.
+    // It never leaves the street — the arena corners it — so the job can't be
+    // failed, only chased. Everything else out here is optional money.
+    if (kkJob === 'mark') {
+      let mx2, mz2, tr2 = 0;
+      do {
+        mx2 = (rng() * 2 - 1) * (HALF_X - 2.5);
+        mz2 = (rng() * 2 - 1) * (HALF_Z - 2.5);
+      } while ((gdInsideWall(mx2, mz2, 1.0) ||
+                Math.hypot(mx2 - player.position.x, mz2 - player.position.z) < 9) && ++tr2 < 25);
+      kkMark = new Enemy(scene, EnemyType.THUG, mx2, mz2, speedMult * 1.15, intervalMult);
+      kkMark.hp += 4 + wave;                 // it takes a beating, it isn't a wall
+      kkMark._kkMark = true;
+      enemies.push(kkMark);
+      kkMarkRing = new THREE.Mesh(
+        new THREE.RingGeometry(1.05, 1.35, 24),
+        new THREE.MeshBasicMaterial({ color: 0xff3344, transparent: true, opacity: 0.85, side: THREE.DoubleSide }));
+      kkMarkRing.rotation.x = -Math.PI / 2;
+      kkMarkRing.position.set(mx2, 0.06, mz2);
+      scene.add(kkMarkRing);
+    }
   }
 
   // TOKOTRON remake (v155): full Robotron pacing — the ENTIRE wave
@@ -5857,7 +5916,7 @@ function spawnWave() {
     waveIntroColor = '#ffaa44';
   } else if (kaikkiMode) {
     waveIntroT = waveIntroDur = 1.3;
-    waveIntroText  = `KAIKKI IRTI — MISSION ${wave}`;
+    waveIntroText  = `KAIKKI IRTI — ${t('kkJob')} ${wave}`;   // v208: it's a job, not a wave
     waveIntroColor = '#ff5544';
   } else if (loadoutMode) {
     waveIntroT = waveIntroDur = 1.4;
@@ -6919,14 +6978,66 @@ function loop() {
       const c = gdResolveWalls(e.position.x, e.position.z, e.radius * 0.8);
       e.position.x = c.x; e.position.z = c.z;
     }
+    // v208 THE MARK: it runs from you at a speed you can just about match, and
+    // the street clamps it — cornered, never gone. The ring rides along so you
+    // can pick it out of a riot.
+    if (kkMark && kkMark.alive && !kkDone) {
+      let ux = kkMark.position.x - player.position.x;
+      let uz = kkMark.position.z - player.position.z;
+      let d2 = Math.hypot(ux, uz);
+      if (d2 < 0.01) {
+        // Dead-on overlap has no escape vector — break the tie outward from
+        // the middle of the street so a body standing IN you still bolts.
+        ux = kkMark.position.x; uz = kkMark.position.z;
+        d2 = Math.hypot(ux, uz);
+        if (d2 < 0.01) { ux = 1; uz = 0; d2 = 1; }
+      }
+      const flee = 4.6 * dt;
+      kkMark.position.x = Math.max(-HALF_X + 1, Math.min(HALF_X - 1, kkMark.position.x + (ux / d2) * flee));
+      kkMark.position.z = Math.max(-HALF_Z + 1, Math.min(HALF_Z - 1, kkMark.position.z + (uz / d2) * flee));
+    }
+    if (kkMarkRing) {
+      kkMarkRing.visible = !!(kkMark && kkMark.alive);
+      if (kkMarkRing.visible) {
+        kkMarkRing.position.set(kkMark.position.x, 0.06, kkMark.position.z);
+        kkMarkRing.rotation.z += dt * 2.2;
+        kkMarkRing.material.opacity = 0.6 + 0.3 * Math.sin(performance.now() * 0.006);
+      }
+    }
+    // v208 PAYDAY: the quota is the job, so the street keeps sending bodies
+    // until you're paid — you can't run the block dry and get stranded.
+    if (kkJob === 'payday' && !kkDone) {
+      kkTrickleT -= dt;
+      if (kkTrickleT <= 0 && enemies.filter(e => e.alive).length < 30) {
+        kkTrickleT = 2.6;
+        for (let i = 0; i < 2; i++) {
+          let px2, pz2, tr3 = 0;
+          do {
+            px2 = (Math.random() * 2 - 1) * (HALF_X - 1.5);
+            pz2 = (Math.random() * 2 - 1) * (HALF_Z - 1.5);
+          } while ((gdInsideWall(px2, pz2, 0.8) ||
+                    Math.hypot(px2 - player.position.x, pz2 - player.position.z) < 7) && ++tr3 < 20);
+          const sc2 = getWaveScale(wave);
+          enemies.push(new Enemy(scene, Math.random() < 0.4 ? EnemyType.THUG : EnemyType.GLOBBO,
+            px2, pz2, sc2.speedMult, sc2.intervalMult));
+        }
+      }
+    }
     if (!kkDone) {
       const alive = enemies.some(e => e.alive) || pendingSpawns.length > 0;
-      if (!alive && enemies.length > 0) {
+      // v208: each job has its own finish line; PURGE keeps the old one.
+      const met = kkJob === 'payday'    ? (kkCash - kkQuotaAt) >= kkQuota
+                : kkJob === 'mark'      ? (kkMark && !kkMark.alive)
+                : kkJob === 'shakedown' ? kkCrates.length === 0
+                : (!alive && enemies.length > 0);
+      if (met) {
         kkDone = true;
-        const bonus = 300 + 150 * wave;
+        // The nastier the order, the better it pays.
+        const bonus = Math.round((300 + 150 * wave) *
+          (kkJob === 'mark' ? 2.0 : kkJob === 'shakedown' ? 1.5 : kkJob === 'payday' ? 1.25 : 1));
         kkCash += bonus;
         score += bonus;
-        milestoneT = 1.4; milestoneText = `MISSION CLEAR! +₵${bonus}`;
+        milestoneT = 1.4; milestoneText = `${t('kkJobDone')} +₵${bonus}`;
         audio.waveClear();
         setTimeout(() => {
           if (!kaikkiMode || gameState !== 'playing') return;
@@ -8553,6 +8664,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=161').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=162').catch(() => {});
   });
 }
