@@ -6,8 +6,8 @@
 // frame. Built to the 2026-07 void-vignette standard, dithered ice ramps.
 // Revert: imagine your own square of earth a hundred years ago.
 
-import { PixelScreen, bayer, rampDither } from '../pixel.js?v=33';
-import { PAL } from '../palette.js?v=33';
+import { PixelScreen, bayer, rampDither } from '../pixel.js?v=34';
+import { PAL } from '../palette.js?v=34';
 
 // the core column, a rounded cylinder floating in the void
 const COX = 96, COW = 34, COT = 10, COB = 120;   // centre-x, width, top, bottom
