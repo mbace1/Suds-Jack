@@ -7,34 +7,35 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=35';
-import { PAL } from './palette.js?v=35';
-import { PixelScreen, shade } from './pixel.js?v=35';
-import * as store from './storage.js?v=35';
-import * as audio from './audio.js?v=35';
-import { pickInterlude, isEvening, guessHemisphere } from './nature.js?v=35';
-import { aqueduct } from './experiences/aqueduct.js?v=35';
-import { forest } from './experiences/forest.js?v=35';
-import { tern } from './experiences/tern.js?v=35';
-import { cup } from './experiences/cup.js?v=35';
-import { hanami } from './experiences/hanami.js?v=35';
-import { berry } from './experiences/berry.js?v=35';
-import { stars } from './experiences/stars.js?v=35';
-import { maple } from './experiences/maple.js?v=35';
-import { plate } from './experiences/plate.js?v=35';
-import { seam } from './experiences/seam.js?v=35';
-import { dots } from './experiences/dots.js?v=35';
-import { glass } from './experiences/glass.js?v=35';
-import { wait } from './experiences/wait.js?v=35';
-import { lichen } from './experiences/lichen.js?v=35';
-import { cloud } from './experiences/cloud.js?v=35';
-import { ice } from './experiences/ice.js?v=35';
-import { trace } from './experiences/trace.js?v=35';
-import { gears } from './experiences/gears.js?v=35';
-import { cairn } from './experiences/cairn.js?v=35';
-import { downhill } from './experiences/downhill.js?v=35';
-import { tether } from './experiences/tether.js?v=35';
-import { hedge } from './experiences/hedge.js?v=35';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=36';
+import { PAL } from './palette.js?v=36';
+import { PixelScreen, shade } from './pixel.js?v=36';
+import * as store from './storage.js?v=36';
+import * as audio from './audio.js?v=36';
+import { pickInterlude, isEvening, guessHemisphere } from './nature.js?v=36';
+import * as outbound from './feedback.js?v=36';
+import { aqueduct } from './experiences/aqueduct.js?v=36';
+import { forest } from './experiences/forest.js?v=36';
+import { tern } from './experiences/tern.js?v=36';
+import { cup } from './experiences/cup.js?v=36';
+import { hanami } from './experiences/hanami.js?v=36';
+import { berry } from './experiences/berry.js?v=36';
+import { stars } from './experiences/stars.js?v=36';
+import { maple } from './experiences/maple.js?v=36';
+import { plate } from './experiences/plate.js?v=36';
+import { seam } from './experiences/seam.js?v=36';
+import { dots } from './experiences/dots.js?v=36';
+import { glass } from './experiences/glass.js?v=36';
+import { wait } from './experiences/wait.js?v=36';
+import { lichen } from './experiences/lichen.js?v=36';
+import { cloud } from './experiences/cloud.js?v=36';
+import { ice } from './experiences/ice.js?v=36';
+import { trace } from './experiences/trace.js?v=36';
+import { gears } from './experiences/gears.js?v=36';
+import { cairn } from './experiences/cairn.js?v=36';
+import { downhill } from './experiences/downhill.js?v=36';
+import { tether } from './experiences/tether.js?v=36';
+import { hedge } from './experiences/hedge.js?v=36';
 
 const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice, trace, gears, cairn, downhill, tether, hedge];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
@@ -349,17 +350,26 @@ function showFeedback(expId, done) {
   ta.placeholder = t('fb.placeholder');
   box.appendChild(ta);
 
+  // say where it goes before it goes — but only when it actually goes anywhere
+  if (outbound.configured()) box.appendChild(el('p', 'fb-dest', t('fb.dest')));
+
   const actions = el('div', 'exp-buttons');
   const send = el('button', 'btn', t('fb.send'));
-  send.onclick = () => {
+  send.onclick = async () => {
     const text = ta.value.trim();
     // pressing "leave it" having said nothing used to store an empty entry and
     // thank you for it — that is a lie to the player and noise in the data
     if (!leaves && !text) { done(); return; }
-    store.recordFeedback({ id: expId, leaves, text, lang: getLang() });
+    const entry = { id: expId, leaves, text, lang: getLang(), ts: Date.now() };
+    store.recordFeedback(entry);          // the local record, kept regardless
     box.innerHTML = '';
-    box.appendChild(el('p', '', t('fb.thanks')));
-    setTimeout(done, 900);
+    box.appendChild(el('p', '', t('fb.sending')));
+    // 'sent' | 'queued' (endpoint unreachable — kept for the next visit) |
+    // 'off' (no endpoint configured, so nothing was promised)
+    const how = await outbound.send(entry);
+    box.innerHTML = '';
+    box.appendChild(el('p', '', t(how === 'queued' ? 'fb.queued' : 'fb.thanks')));
+    setTimeout(done, how === 'queued' ? 1600 : 900);
   };
   const skip = el('button', 'link-btn', t('fb.skip'));
   skip.onclick = done;
@@ -429,14 +439,20 @@ function el(tag, cls = '', text = '') {
 
 // console / smoke-test handle, same convention as __dc / __hd
 window.__gol = {
-  store, audio,
+  store, audio, outbound,
   debug: {
     showHub, showInterlude,
     start: id => { const e = REGISTRY.find(x => x.id === id); if (e) startExperience(e); },
     setLang: l => { useLang(l); store.setLangPref(l); showHub(); },
     feedback: () => JSON.parse(store.exportFeedback()),
+    outbox: () => store.outbox(),
+    setEndpoint: u => outbound.setEndpoint(u),
+    flush: () => outbound.flush(),
   },
 };
+
+// anything written while the endpoint was unreachable goes out now, quietly
+outbound.flush();
 
 document.title = t('hub.title');
 document.body.style.background = PAL.BG;

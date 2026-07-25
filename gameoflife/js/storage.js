@@ -6,7 +6,8 @@
 //   natureIdx       int                    rotates through the interlude prompts
 //   accepted        int                    invitations the player actually took
 //   hemi            'n' | 's' | null       which hemisphere's seasons to use
-//   feedback        [{ id, leaves, text, lang, ts }]
+//   feedback        [{ id, leaves, text, lang, ts }]   everything ever said, locally
+//   outbox          [{ ... }]                          notes not yet delivered
 
 const KEY = 'golState';
 const GARDEN_MAX = 5;
@@ -19,6 +20,7 @@ const DEFAULTS = {
   accepted: 0,
   hemi: null,          // null until set, so main.js can seed the timezone guess
   feedback: [],
+  outbox: [],
 };
 
 let state = load();
@@ -87,6 +89,21 @@ export function feedbackDue() {
 
 export function recordFeedback(entry) {
   state.feedback.push({ ...entry, ts: Date.now() });
+  save();
+}
+
+// the outbox: notes written while the endpoint was unreachable. Kept apart
+// from `feedback` (which is the local record of everything ever said) so a
+// retry can drain one without disturbing the other.
+export function outbox() { return [...(state.outbox || [])]; }
+
+export function queueFeedback(entry) {
+  state.outbox = [...(state.outbox || []), entry].slice(-50);   // don't grow forever
+  save();
+}
+
+export function unqueueFeedback(entry) {
+  state.outbox = (state.outbox || []).filter(e => e.ts !== entry.ts);
   save();
 }
 
