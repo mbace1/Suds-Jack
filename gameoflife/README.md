@@ -73,6 +73,7 @@ switchable in the hub, persisted in `localStorage`.
 | `cairn` | game | The Cairn | Balance three irregular stones into a trail marker on a dusk fell — land each near the balance line or it topples, patiently, until it stands → *balance two real rocks and leave them* |
 | `downhill` | game | Water Downhill | Tilt four stone ledges so a trickle chains all the way down and pours off the frame in cyan — water takes the first opening you give it → *pour water on a real slope and watch it choose* |
 | `tether` | story | The Tether | Paris 1783: cut the rope and the ground lets go — Paris turns into a map, embers eat the linen, and the brazier throws sparks past the frame; the first humans ever to fly free → *look down from the highest place you can walk to* |
+| `hedge` | story | The Living Wall | Count the woody species along thirty paces of an English hedge (repeats teach that it's *kinds* you count) — Hooper's rule dates it at ~700 years, older than the church behind it → *read the oldest living boundary near you* |
 
 ## Visual standard (2026-07 master doc)
 
@@ -197,7 +198,7 @@ as its own small versioned addition:
 - ✅ **Sound garden**: done — the hub's ambient bed grows one voice per *accepted*
   invitation (see below). Screen time never earns one.
 - **More experiences**: seed-to-tree patience garden; a tide/moon rhythm toy; a
-  mycelium maze; the parked hedgerow idea (Hooper's rule).
+  mycelium maze. (The hedgerow/Hooper's-rule idea shipped as `hedge`.)
 - **Shared feedback**: opt-in export of feedback to an issue/form endpoint,
   replacing the copy-paste loop.
 - **Configurable hemisphere** so `season()` is right south of the equator.

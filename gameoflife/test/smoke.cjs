@@ -318,6 +318,22 @@ function check(name, cond) {
   check('tether truth shown', (await page.locator('.exp-text').textContent()).includes('newborn baby'));
   await page.locator('.back-btn').click();
 
+  // hedge: tap the clumps (coords mirror CLUMPS in hedge.js). Tapping a species
+  // twice must teach that it is kinds you count, not bushes; all seven -> truth.
+  await page.evaluate(() => __gol.debug.start('hedge'));
+  check('hedge intro shown', (await page.locator('.exp-text').textContent()).includes('hedge is older'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Walk the thirty paces' }).click();
+  const hbox = await page.locator('.pixel-screen').boundingBox();
+  const hTap = (x, y) => page.mouse.click(hbox.x + (x + 0.5) / 192 * hbox.width, hbox.y + (y + 0.5) / 128 * hbox.height);
+  await hTap(14, 62);    // hawthorn (sp 0)
+  await hTap(58, 63);    // hawthorn again -> the lesson
+  check('hedge counts kinds, not bushes', (await page.locator('.exp-text').textContent()).includes('already counted'));
+  for (const [x, y] of [[38, 62], [76, 62], [96, 62], [114, 63], [132, 62], [166, 62]]) await hTap(x, y);
+  await page.waitForTimeout(900);
+  check('hedge dates itself by Hooper’s rule',
+    (await page.locator('.exp-text').textContent()).includes('seven hundred years'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');
