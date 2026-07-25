@@ -75,9 +75,11 @@ never a menu — ONE offering at a time, drawn weighted by the content mix (**70
 with a 3-dot row (two breaths of play, then `~` rest). After every 2nd finished
 experience the hub *rests* and shows a nature invitation instead (evening 18:00–05:00
 swaps outdoor prompts for a poem / look-at-art prompt). Invitations are **seasonal**:
-`nature.js`'s `season()` (month-based, N hemisphere) puts two per-season prompts ahead
+`nature.js`'s `season(date, hemi)` puts two per-season prompts ahead
 of the generic pool (winter frost / spring buds / summer barefoot grass / autumn
-leaf-catching). Evening poems come from `js/poems.js`, a **cross-cultural pool**
+leaf-catching); it is **hemisphere-aware** — `'s'` shifts the year six months, seeded
+once from the IANA timezone (`guessHemisphere()`) and flippable via a quiet
+`seasons north|south` toggle in `.hub-footer` (`store.getHemi/setHemi`). Evening poems come from `js/poems.js`, a **cross-cultural pool**
 (Bashō/Issa/Shiki/Leino/Wordsworth, each in all three languages — a haiku can arrive
 in Finnish), filtered to the current season via per-poem `season` tags ('any' floats). Trilingual fi/en/ja — every string in
 `js/i18n.js` (en fallback), browser-detected, persisted. Experiences export
@@ -153,7 +155,8 @@ The hub greeting follows the hour (`daySlot()`: morning/day/evening/night) and a
 same hour — dawn mist / noon sun + cloud / dusk / starry night with a tiny Otava — over
 a constant treeline; it must be `stopHubScene()`d wherever the app re-renders. Zen
 chrome-trimming: the set-once controls (language, feedback) sit in ONE quiet
-`.hub-footer` below a divider, out of the main column; the explanatory tagline and
+`.hub-footer` below a divider (language, hemisphere, feedback), out of the main
+column; the explanatory tagline and
 cycle-hint only show for newcomers (< 2 lifetime completions), so returners land on a
 clean header with the offering as the single focus. `pixel.js` gives a 192×128
 `PixelScreen` upscaled with `image-rendering: pixelated`; `palette.js` is the single

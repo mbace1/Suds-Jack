@@ -347,6 +347,17 @@ function check(name, cond) {
   check('living hub scene present', await page.locator('.hub-canvas').count() === 1);
   const dayTxt = await page.locator('.interlude').textContent();
   check('day prompt is seasonal (July -> barefoot grass)', dayTxt.includes('grass'));
+
+  // the same July, read from the southern hemisphere, must be winter instead
+  await page.evaluate(() => { __gol.store.setHemi('s'); });
+  await page.reload({ waitUntil: 'networkidle' });
+  const southTxt = await page.locator('.interlude').textContent();
+  check('southern July is winter, not summer', southTxt.includes('frost') || southTxt.includes('bare tree'));
+  check('hemisphere toggle offered in the footer', await page.locator('.hemi-row .lang-btn').count() === 2);
+  await page.evaluate(() => { __gol.store.setHemi('n'); });
+  await page.reload({ waitUntil: 'networkidle' });
+  check('flipping back restores the northern reading',
+    (await page.locator('.interlude').textContent()).includes('grass'));
   await page.locator('.overlay .btn').click();   // "I will" -> consumes interlude
   check('interlude consumed', await page.locator('.overlay').count() === 0);
   const since = await page.evaluate(() => JSON.parse(localStorage.getItem('golState')).sinceInterlude);
