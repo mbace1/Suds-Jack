@@ -7,7 +7,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { MODELS, VoxelSprite, DebrisPool, setVoxelDetail } from './voxel.js?v=36';
+import { MODELS, VoxelSprite, DebrisPool, LitterField, setVoxelDetail } from './voxel.js?v=37';
 
 const canvas = document.getElementById('canvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -37,6 +37,9 @@ addEventListener('resize', resize);
 resize();
 
 const debris = new DebrisPool(scene, 1600);
+// settled gibs pile up in the bone-yard, exactly as in-game
+const litter = new LitterField(scene, 2500);
+debris.litter = litter;
 
 // ------------------------------------------------------------- lab state
 let modelKey = 'skull';
@@ -105,7 +108,8 @@ function stats() {
   document.getElementById('stats').innerHTML =
     `${modelKey} &middot; detail &times;${detail ** 3} &middot; ` +
     `<b>${sprite.aliveCount}</b>/${sprite.voxels.length} voxels alive &middot; ` +
-    `voxelSize ${MODELS[modelKey].voxelSize}`;
+    `voxelSize ${MODELS[modelKey].voxelSize} &middot; ` +
+    `${debris.items.length} gibs / ${litter.count} bones`;
 }
 
 // ------------------------------------------------------------------- UI
@@ -185,6 +189,7 @@ document.getElementById('burst').addEventListener('click', () => {
 // heavy-kill shockwaves and the player's dash make in-game
 document.getElementById('shove').addEventListener('click', () => {
   debris.shove(0, 0.4, 0, 7, 11);
+  litter.shove(debris, 0, 0.4, 0, 7, 9); // settled bones leap back up
 });
 
 document.getElementById('flash').addEventListener('click', () => sprite.flash(2.2));
@@ -255,6 +260,7 @@ function animate() {
   if (spin && sprite) sprite.mesh.rotation.y += dt * 0.5;
   if (sprite) sprite.update(dt);
   debris.update(dt);
+  if (debris.items.length) stats(); // live gib/bone readout while things move
   camera.position.set(
     target.x + Math.sin(yaw) * Math.cos(pitch) * dist,
     target.y + Math.sin(pitch) * dist,
@@ -271,6 +277,7 @@ animate();
 window.__lab = {
   get sprite() { return sprite; },
   debris,
+  litter,
   setModel: k => { elModel.value = k; loadModel(k); },
   setDetail: n => { detail = Math.max(1, Math.min(4, n)); rebuild(false); },
   getState: () => ({ modelKey, detail, alive: sprite.aliveCount, total: sprite.voxels.length }),

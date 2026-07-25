@@ -220,6 +220,7 @@ let styleHue = null;
 export function setStyleHue(h) { styleHue = h; }
 export function getStyleHue() { return styleHue; }
 const _tint = new THREE.Color();
+const _tint2 = new THREE.Color(); // litter re-tint scratch (keeps _tint free for styleTint itself)
 /** Re-hue `c` in place if it reads as an accent color; returns `c`. */
 export function styleTint(c) {
   if (styleHue === null) return c;
@@ -395,7 +396,7 @@ export class VoxelSprite {
       this.aliveCount--;
       clusters[comp[i]].push({
         pos: _s.set(v.x, v.y, v.z).applyMatrix4(this.mesh.matrixWorld).clone(),
-        color: v.color,
+        color: v.color, base: v.base,
       });
       this.mesh.setMatrixAt(i, _m.makeScale(0, 0, 0));
     }
@@ -430,7 +431,7 @@ export class VoxelSprite {
       this.aliveCount--;
       out.push({
         pos: _s.set(vx.x, vx.y, vx.z).applyMatrix4(this.mesh.matrixWorld).clone(),
-        color: vx.color,
+        color: vx.color, base: vx.base,
       });
       this.mesh.setMatrixAt(i, _m.makeScale(0, 0, 0));
     }
@@ -489,7 +490,7 @@ export class VoxelSprite {
       if (!v.alive) continue;
       out.push({
         pos: _v.set(v.x, v.y, v.z).applyMatrix4(this.mesh.matrixWorld).clone(),
-        color: v.color,
+        color: v.color, base: v.base,
       });
     }
     return out;
@@ -539,7 +540,9 @@ export class DebrisPool {
     this.mesh.instanceMatrix.needsUpdate = true;
   }
 
-  spawn(pos, color, vel, size, life = 1.6) {
+  /** `base` is the voxel's PRE-STYLE color; litter keeps it so a STYLE change
+   *  can re-hue the bone-yard along with everything else. Defaults to `color`. */
+  spawn(pos, color, vel, size, life = 1.6, base = color) {
     if (!this.free.length || this.items.length >= this.softCap) return;
     const i = this.free.pop();
     this.items.push({
@@ -548,6 +551,7 @@ export class DebrisPool {
       vx: vel.x, vy: vel.y, vz: vel.z,
       rx: Math.random() * 6.28, ry: Math.random() * 6.28, rz: 0,
       wx: (Math.random() - 0.5) * 14, wy: (Math.random() - 0.5) * 14, wz: (Math.random() - 0.5) * 14,
+      br: base.r, bg: base.g, bb: base.b,
     });
     this.mesh.setColorAt(i, color);
     this.mesh.instanceColor.needsUpdate = true;
@@ -582,7 +586,7 @@ export class DebrisPool {
       _s.x += impulse.x + (Math.random() - 0.5) * 2;
       _s.y += impulse.y + 2 + Math.random() * 5;
       _s.z += impulse.z + (Math.random() - 0.5) * 2;
-      this.spawn(v.pos, v.color, _s, size, 1.1 + Math.random() * 0.9);
+      this.spawn(v.pos, v.color, _s, size, 1.1 + Math.random() * 0.9, v.base ?? v.color);
     }
   }
 
@@ -627,6 +631,17 @@ export class DebrisPool {
         d.vy *= -0.38;
         d.vx *= 0.72; d.vz *= 0.72;
         d.wx *= 0.6; d.wy *= 0.6; d.wz *= 0.6;
+        // Come to rest on the floor → hand the piece to the litter field and
+        // free this slot NOW. Litter is a static mesh (no per-frame physics),
+        // so a run's carnage accumulates for free and the active pool — the
+        // only part that costs CPU — stays small.
+        if (this.litter && Math.abs(d.vy) < 1.1 && Math.hypot(d.vx, d.vz) < 1.3) {
+          this.litter.add(d);
+          this.mesh.setMatrixAt(d.i, _m.makeScale(0, 0, 0));
+          this.free.push(d.i);
+          this.items.splice(k, 1);
+          continue;
+        }
       }
       d.rx += d.wx * dt; d.ry += d.wy * dt; d.rz += d.wz * dt;
       const sc = d.size * Math.min(1, d.life / 0.3);
@@ -646,6 +661,112 @@ export class DebrisPool {
       this.free.push(d.i);
     }
     this.items.length = 0;
+    this.mesh.instanceMatrix.needsUpdate = true;
+  }
+}
+
+/**
+ * The bone-yard: debris that has come to rest. One InstancedMesh whose
+ * matrices are written ONCE on arrival and never touched again — no gravity,
+ * no tumble, no per-frame cost — so a run's carnage can pile up on the floor
+ * for the price of a single draw call. A ring buffer, so the oldest bones
+ * quietly make way for the newest.
+ *
+ * `shove()` promotes pieces back into the live DebrisPool, which is what lets
+ * a shockwave or a dash kick a settled pile back into the air.
+ */
+export class LitterField {
+  constructor(scene, cap = 2500) {
+    this.cap = cap;
+    this.mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    this.mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), this.mat, cap);
+    this.mesh.frustumCulled = false;
+    this.mesh.count = 0;
+    this.items = new Array(cap).fill(null);
+    this.cursor = 0;
+    this.filled = 0;
+    scene.add(this.mesh);
+  }
+
+  /** Take a settled debris item. Keeps its resting pose and both its current
+   *  and pre-style colors (the latter so a STYLE change can re-hue the pile). */
+  add(d) {
+    if (this.cap <= 0) return;
+    const i = this.cursor;
+    this.cursor = (this.cursor + 1) % this.cap;
+    this.filled = Math.min(this.filled + 1, this.cap);
+    this.items[i] = {
+      px: d.px, py: d.py, pz: d.pz,
+      rx: d.rx, ry: d.ry, rz: d.rz,
+      size: d.size, br: d.br, bg: d.bg, bb: d.bb,
+    };
+    _m.compose(
+      _v.set(d.px, d.py, d.pz),
+      _q.setFromEuler(_e.set(d.rx, d.ry, d.rz)),
+      _s.setScalar(d.size),
+    );
+    this.mesh.setMatrixAt(i, _m);
+    _tint2.setRGB(d.br, d.bg, d.bb);
+    this.mesh.setColorAt(i, styleTint(_tint2));
+    this.mesh.count = this.filled;
+    this.mesh.instanceMatrix.needsUpdate = true;
+    this.mesh.instanceColor.needsUpdate = true;
+  }
+
+  /** Wake settled bones inside the radius: they leave the field and re-enter
+   *  `pool` as live debris flung outward (plus an optional direction bias). */
+  shove(pool, x, y, z, radius, power, dirX = 0, dirZ = 0) {
+    const r2 = radius * radius;
+    let woke = 0;
+    for (let i = 0; i < this.cap; i++) {
+      const it = this.items[i];
+      if (!it) continue;
+      const dx = it.px - x, dy = it.py - y, dz = it.pz - z;
+      const dist2 = dx * dx + dy * dy + dz * dz;
+      if (dist2 > r2) continue;
+      const dist = Math.sqrt(dist2) || 1e-3;
+      const k = power * (1 - dist / radius);
+      _v.set(it.px, it.py, it.pz);
+      _tint2.setRGB(it.br, it.bg, it.bb);
+      const styled = styleTint(_tint2.clone());
+      pool.spawn(_v, styled,
+        _s.set((dx / dist) * k + dirX * k * 0.8,
+          (0.5 + Math.random() * 0.6) * k,
+          (dz / dist) * k + dirZ * k * 0.8),
+        it.size, 1.1 + Math.random() * 0.6, _tint2);
+      this.items[i] = null;
+      this.mesh.setMatrixAt(i, _m.makeScale(0, 0, 0));
+      woke++;
+    }
+    if (woke) this.mesh.instanceMatrix.needsUpdate = true;
+    return woke;
+  }
+
+  /** Re-hue the whole pile under the current style (cheap, only on a change). */
+  applyStyle() {
+    for (let i = 0; i < this.cap; i++) {
+      const it = this.items[i];
+      if (!it) continue;
+      _tint2.setRGB(it.br, it.bg, it.bb);
+      this.mesh.setColorAt(i, styleTint(_tint2));
+    }
+    if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
+  }
+
+  get count() {
+    let n = 0;
+    for (let i = 0; i < this.cap; i++) if (this.items[i]) n++;
+    return n;
+  }
+
+  reset() {
+    for (let i = 0; i < this.cap; i++) {
+      if (this.items[i]) this.mesh.setMatrixAt(i, _m.makeScale(0, 0, 0));
+      this.items[i] = null;
+    }
+    this.cursor = 0;
+    this.filled = 0;
+    this.mesh.count = 0;
     this.mesh.instanceMatrix.needsUpdate = true;
   }
 }

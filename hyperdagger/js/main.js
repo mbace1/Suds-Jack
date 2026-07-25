@@ -5,15 +5,15 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=36';
-import { Player } from './player.js?v=36';
-import { DaggerPool } from './daggers.js?v=36';
-import { GemPool } from './gems.js?v=36';
-import { DebrisPool, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=36';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=36';
-import { OrbPool } from './bullets.js?v=36';
-import { AudioKit } from './audio.js?v=36';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=36';
+import { InputManager } from './input.js?v=37';
+import { Player } from './player.js?v=37';
+import { DaggerPool } from './daggers.js?v=37';
+import { GemPool } from './gems.js?v=37';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=37';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=37';
+import { OrbPool } from './bullets.js?v=37';
+import { AudioKit } from './audio.js?v=37';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=37';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -56,11 +56,11 @@ const AUTO_DETAIL_CEIL = window.matchMedia?.('(pointer: coarse)').matches ? 3 : 
 const PERF_TIERS = [
   // gibs = how many pieces ONE death throws (scales with the voxel density
   // ladder below, so a ×64 enemy actually shatters instead of chunking)
-  { chroma: true,  smear: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 520 }, // T0 full
-  { chroma: false, smear: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 420 }, // T1
-  { chroma: false, smear: false, pr: BASE_PR,                bloom: true,  debrisCap: 3000, gibs: 300 }, // T2
-  { chroma: false, smear: false, pr: Math.min(BASE_PR, 1.5), bloom: true,  debrisCap: 2000, gibs: 220 }, // T3
-  { chroma: false, smear: false, pr: 1,                      bloom: false, debrisCap: 800,  gibs: 110 }, // T4 floor
+  { chroma: true,  smear: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 520, litter: 2500 }, // T0 full
+  { chroma: false, smear: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 420, litter: 2000 }, // T1
+  { chroma: false, smear: false, pr: BASE_PR,                bloom: true,  debrisCap: 3000, gibs: 300, litter: 1200 }, // T2
+  { chroma: false, smear: false, pr: Math.min(BASE_PR, 1.5), bloom: true,  debrisCap: 2000, gibs: 220, litter: 600 }, // T3
+  { chroma: false, smear: false, pr: 1,                      bloom: false, debrisCap: 800,  gibs: 110, litter: 0 }, // T4 floor
 ];
 // mutable so headless tests can shrink the timescales
 const perfTuning = { downMs: 40, upMs: 22, settleMs: 2000, stableMs: 15000, downHoldMs: 1500, emaAlpha: 0.08 };
@@ -355,6 +355,10 @@ const input = new InputManager();
 const player = new Player(camera, input, ARENA_R);
 const daggers = new DaggerPool(scene);
 const debris = new DebrisPool(scene);
+// settled gibs retire into the bone-yard: a static instanced mesh with no
+// per-frame physics, so a run's carnage accumulates for one draw call
+const litter = new LitterField(scene, 2500);
+debris.litter = litter;
 const gems = new GemPool(scene);
 const orbs = new OrbPool(scene);
 const audio = new AudioKit();
@@ -438,6 +442,7 @@ function spawnShockwave(pos) {
   sparks.push({ m, t: 0.45, max: 0.45, big: true, ring: true });
   // the ring isn't just a decal — it blasts the surrounding gib field outward
   debris.shove(pos.x, 0.4, pos.z, 7, 11);
+  litter.shove(debris, pos.x, 0.4, pos.z, 7, 9); // bones leap back into the air
 }
 
 function updateSparks(dt) {
@@ -944,6 +949,7 @@ function resetRun() {
   clearPending();
   daggers.reset();
   debris.reset();
+  litter.reset();
   gems.reset();
   orbs.reset();
   clearThorns();
@@ -1111,10 +1117,14 @@ function applyOpts() {
   bloom.enabled = tier.bloom;
   debris.softCap = tier.debrisCap;
   debris.gibTarget = tier.gibs;
+  // LOW tier turns the bone-yard off; settled gibs fall back to expiring
+  debris.litter = tier.litter > 0 ? litter : null;
+  if (tier.litter <= 0) litter.reset();
   // STYLE preset: re-hue every accent surface. Hue is applied at voxel parse
   // for new spawns; live sprites re-derive from their pre-style base colors.
   setStyleHue(STYLE_HUES[opts.style] ?? null);
   hand.applyStyle();
+  litter.applyStyle();
   for (const e of enemies) e.sprite.applyStyle?.();
   if (flyby) for (const p of flyby.parts) p.sprite.applyStyle();
   // high contrast: hotter orbs so projectiles read against the bloom
@@ -1935,6 +1945,8 @@ function step(dt) {
   if (player.dashK > 0) {
     debris.shove(player.feet.x, player.feet.y + 0.5, player.feet.z,
       2.4, 26 * dt, player.dashDir.x, player.dashDir.z);
+    litter.shove(debris, player.feet.x, player.feet.y + 0.5, player.feet.z,
+      1.9, 9, player.dashDir.x, player.dashDir.z); // kick bones up as you pass
   }
   if (player.justJumped) {
     player.justJumped = false;
@@ -2165,7 +2177,7 @@ animate();
 
 // tiny debug handle (console tinkering + automated smoke tests)
 window.__hd = {
-  enemies, player, debris, daggers, gems, serpents, orbs, thorns, audio,
+  enemies, player, debris, litter, daggers, gems, serpents, orbs, thorns, audio,
   debug: {
     addGems(n) { onGemsCollected(n); },
     addStyle(n) { addStyle(n); },
