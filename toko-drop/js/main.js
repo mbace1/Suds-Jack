@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=159';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=159';
-import { Player, PLAYER_RADIUS } from './player.js?v=159';
+import { InputManager } from './input.js?v=160';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=160';
+import { Player, PLAYER_RADIUS } from './player.js?v=160';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS } from './enemy.js?v=159';
-import { RetroPass } from './retro.js?v=159';
-import { audio } from './audio.js?v=159';
-import { initDesigner } from './designer.js?v=159';
-import { t, getLang, setLang, langs } from './lang.js?v=159';
-import { TUNING } from './tuning.js?v=159';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS } from './enemy.js?v=160';
+import { RetroPass } from './retro.js?v=160';
+import { audio } from './audio.js?v=160';
+import { initDesigner } from './designer.js?v=160';
+import { t, getLang, setLang, langs } from './lang.js?v=160';
+import { TUNING } from './tuning.js?v=160';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -2521,6 +2521,14 @@ function showLoadoutPicks() {
 // buy bigger, repeat.
 let kaikkiMode = false;
 let kkCash = 0;          // the wallet — separate from score, spent in THE SHOP
+// v206 (backlog): CIVILIANS AS WITNESSES. The street has bystanders, and while
+// any of them is still watching, you can't loot in the open — every payout is
+// HALVED. They drift for the edges on their own; DASH near one and they panic
+// and bolt, so clearing the street is a real verb you already own. Nobody is
+// ever hurt by this system: witnesses can't be killed and never block a shot.
+let kkWitnesses = [];
+const KK_WITNESS_SEE = 3.2;      // dash this close and they bolt
+const kkPayRate = () => (kaikkiMode && kkWitnesses.length ? 0.5 : 1);
 let kkDone = false;      // mission cleared, shop pending
 let kkCrates = [];
 let kkBought = new Set(); // weapons already owned this run (one purchase each)
@@ -2560,6 +2568,8 @@ class KkCrate {
 function clearKaikkiLevel() {
   for (const c of kkCrates) c.remove(scene);
   kkCrates = [];
+  for (const w of kkWitnesses) w.remove(scene);   // v206
+  kkWitnesses = [];
 }
 function setKaikkiLook(on) {
   setCabGround(on ? 'kaikki' : null);   // v167: the reference has GROUND
@@ -2971,7 +2981,8 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
     pu._life = 6.0;
     powerups.push(pu);
   }
-  if (kaikkiMode) kkCash += Math.round(10 + e.radius * 20);   // v159: every body pays
+  // v159: every body pays — v206: unless the street is WATCHING (see kkWitnesses)
+  if (kaikkiMode) kkCash += Math.round((10 + e.radius * 20) * kkPayRate());
   streakFlashT = STREAK_FLASH_DUR;
   addShake(0.07 + e.radius * 0.13);  // heavier enemies kick the camera harder
   const _cat = BLOB_TYPES.has(e.type) || e.type === EnemyType.BOTFLY ? 'blob'
@@ -3964,6 +3975,15 @@ function drawHUD() {
     const left = enemies.reduce((n2, e) => n2 + (e.alive ? 1 : 0), 0) + pendingSpawns.length;
     ctx.fillText(kkDone ? 'STREETS CLEARED' : `KILL EVERYTHING — ${left} LEFT`,
       uiCanvas.width / 2, 26);
+    // v206: the witness tell — why the wallet is earning half right now
+    if (kkWitnesses.length) {
+      ctx.save();
+      ctx.font = 'bold 12px monospace, sans-serif';
+      ctx.fillStyle = '#ffcc55';
+      ctx.fillText(`${t('kkWatched')} ${kkWitnesses.length} — ${t('kkHalf')}`,
+        uiCanvas.width / 2, 62);
+      ctx.restore();
+    }
     ctx.font = 'bold 13px monospace, sans-serif';
     ctx.shadowColor = '#336622';
     ctx.fillStyle = '#99ee66';
@@ -4083,7 +4103,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v205' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v206' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -5378,6 +5398,16 @@ function spawnWave() {
     clearGaundropLevel();
     clearKaikkiLevel();
     kkDone = false;
+    // v206: the street has WITNESSES — 2-4 bystanders who drift for the edges.
+    // While any of them is still out there watching, every payout is halved.
+    const nWit = 2 + Math.floor(rng() * 3);
+    for (let i = 0; i < nWit; i++) {
+      const wx = (rng() * 2 - 1) * (HALF_X - 3);
+      const wz = (rng() * 2 - 1) * (HALF_Z - 3);
+      const w = new Civilian(scene, wx, wz, i % 3);
+      w._fleeing = false;
+      kkWitnesses.push(w);
+    }
     // city blocks: two loose rows of buildings, streets between
     const wallMat = () => new THREE.MeshBasicMaterial({ color: 0x2a2a2e });
     const nBld = 5 + Math.floor(rng() * 3);   // v162: a scrolled city has blocks
@@ -6934,6 +6964,42 @@ function loop() {
     }
   }
 
+  // v206 KAIKKI WITNESSES: bystanders drifting off the street. While any are
+  // still out there, the wallet earns half (kkPayRate). They head for the
+  // nearest edge on their own; DASH within 3.2u and they panic and bolt, so
+  // clearing the street is the dash verb you already own. They cannot be hurt
+  // and never block a shot — the cost is patience, never blood.
+  if (kaikkiMode && gameState === 'playing') {
+    for (let i = kkWitnesses.length - 1; i >= 0; i--) {
+      const w = kkWitnesses[i];
+      if (w._halo) w._halo.visible = false;   // not a rescue — no gold halo tell
+      // steer toward whichever edge is closest
+      const toX = (w.x >= 0 ? HALF_X : -HALF_X) - w.x;
+      const toZ = (w.z >= 0 ? HALF_Z : -HALF_Z) - w.z;
+      w._dir = Math.abs(toX) < Math.abs(toZ) ? (toX >= 0 ? 0 : Math.PI)
+                                            : (toZ >= 0 ? Math.PI / 2 : -Math.PI / 2);
+      w._turnT = 1;      // hold the heading (base update re-randomizes otherwise)
+      w._waveT = 9e9;    // a fleeing bystander does not stop to wave for help
+      if (!w._fleeing && player._dashTime > 0 &&
+          Math.hypot(player.position.x - w.x, player.position.z - w.z) < KK_WITNESS_SEE) {
+        w._fleeing = true;
+        w._speed *= 2.6;               // panic sprint
+        audio.dodgeWhip?.();
+      }
+      w.update(dt);
+      // the base update clamps to the arena, so touching the bound IS the exit
+      if (Math.abs(w.x) > HALF_X - 0.75 || Math.abs(w.z) > HALF_Z - 0.75) {
+        w.remove(scene);
+        kkWitnesses.splice(i, 1);
+        if (!kkWitnesses.length) {
+          milestoneT = 1.1;
+          milestoneText = t('kkClear');
+          audio.kaChing?.();
+        }
+      }
+    }
+  }
+
   // TOKOTRON civilians (v148): wander, get rescued by touch (chain pays
   // 1000 × chain, Robotron-style), or die to any enemy that reaches them.
   if (tokotronMode && player.alive) {
@@ -8158,7 +8224,8 @@ function loop() {
         // value: small cash piles, big prizes.
         const gained = (pu._value ?? (250 + wave * 25)) * (scoreMultT > 0 ? 2 : 1) * (gauntlet ? gauntlet.mult : cabQuest ? cabQuest.mult : 1);
         score += gained;
-        if (kaikkiMode) { kkCash += gained; audio.kaChing(); }   // v159/v164: money is money, and it RINGS
+        // v159/v164: money is money, and it RINGS — v206: halved while watched
+        if (kaikkiMode) { kkCash += Math.round(gained * kkPayRate()); audio.kaChing(); }
         damageNumbers.push(new DamageNumber(pu.x, 1.2, pu.z, `+${gained}`, '255,221,68'));
         audio.announce('money');
       } else if (pu._type === 'scoremult') {
@@ -8401,6 +8468,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=159').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=160').catch(() => {});
   });
 }
