@@ -7,34 +7,34 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=34';
-import { PAL } from './palette.js?v=34';
-import { PixelScreen, shade } from './pixel.js?v=34';
-import * as store from './storage.js?v=34';
-import * as audio from './audio.js?v=34';
-import { pickInterlude, isEvening, guessHemisphere } from './nature.js?v=34';
-import { aqueduct } from './experiences/aqueduct.js?v=34';
-import { forest } from './experiences/forest.js?v=34';
-import { tern } from './experiences/tern.js?v=34';
-import { cup } from './experiences/cup.js?v=34';
-import { hanami } from './experiences/hanami.js?v=34';
-import { berry } from './experiences/berry.js?v=34';
-import { stars } from './experiences/stars.js?v=34';
-import { maple } from './experiences/maple.js?v=34';
-import { plate } from './experiences/plate.js?v=34';
-import { seam } from './experiences/seam.js?v=34';
-import { dots } from './experiences/dots.js?v=34';
-import { glass } from './experiences/glass.js?v=34';
-import { wait } from './experiences/wait.js?v=34';
-import { lichen } from './experiences/lichen.js?v=34';
-import { cloud } from './experiences/cloud.js?v=34';
-import { ice } from './experiences/ice.js?v=34';
-import { trace } from './experiences/trace.js?v=34';
-import { gears } from './experiences/gears.js?v=34';
-import { cairn } from './experiences/cairn.js?v=34';
-import { downhill } from './experiences/downhill.js?v=34';
-import { tether } from './experiences/tether.js?v=34';
-import { hedge } from './experiences/hedge.js?v=34';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=35';
+import { PAL } from './palette.js?v=35';
+import { PixelScreen, shade } from './pixel.js?v=35';
+import * as store from './storage.js?v=35';
+import * as audio from './audio.js?v=35';
+import { pickInterlude, isEvening, guessHemisphere } from './nature.js?v=35';
+import { aqueduct } from './experiences/aqueduct.js?v=35';
+import { forest } from './experiences/forest.js?v=35';
+import { tern } from './experiences/tern.js?v=35';
+import { cup } from './experiences/cup.js?v=35';
+import { hanami } from './experiences/hanami.js?v=35';
+import { berry } from './experiences/berry.js?v=35';
+import { stars } from './experiences/stars.js?v=35';
+import { maple } from './experiences/maple.js?v=35';
+import { plate } from './experiences/plate.js?v=35';
+import { seam } from './experiences/seam.js?v=35';
+import { dots } from './experiences/dots.js?v=35';
+import { glass } from './experiences/glass.js?v=35';
+import { wait } from './experiences/wait.js?v=35';
+import { lichen } from './experiences/lichen.js?v=35';
+import { cloud } from './experiences/cloud.js?v=35';
+import { ice } from './experiences/ice.js?v=35';
+import { trace } from './experiences/trace.js?v=35';
+import { gears } from './experiences/gears.js?v=35';
+import { cairn } from './experiences/cairn.js?v=35';
+import { downhill } from './experiences/downhill.js?v=35';
+import { tether } from './experiences/tether.js?v=35';
+import { hedge } from './experiences/hedge.js?v=35';
 
 const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice, trace, gears, cairn, downhill, tether, hedge];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
@@ -92,12 +92,17 @@ function startHubScene(parent) {
       scr.px(x, H - h, 8, h, slot === 'night' ? '#05060c' : PAL.MOSS_DEEP);
       scr.px(x + 3, H - h - 3, 2, 3, slot === 'night' ? '#05060c' : PAL.MOSS_DEEP);
     }
-    raf = requestAnimationFrame(draw);
+    // the header is decoration, not content — for anyone who has asked the
+    // system for less motion, paint the hour once and hold it there. (The
+    // experiences keep animating: there the movement IS the thing.)
+    if (!stillness()) raf = requestAnimationFrame(draw);
   }
   raf = requestAnimationFrame(draw);
 
   return { destroy() { dead = true; cancelAnimationFrame(raf); scr.destroy(); } };
 }
+
+const stillness = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function stopHubScene() { if (hubScene) { hubScene.destroy(); hubScene = null; } }
 
@@ -152,6 +157,7 @@ function showHub() {
   stopHubScene();
   app.innerHTML = '';
   setHash('');   // the hub is the plain address; only an experience deep-links
+  document.title = t('hub.title');
 
   const newcomer = store.getState().completions.length < 2;
 
@@ -264,6 +270,9 @@ function startExperience(exp) {
   app.appendChild(back);
   setHash(exp.id);       // so the address bar is worth sharing
 
+  // the tab (and the history entry behind a shared link) should say which one
+  document.title = `${t(`exp.${exp.id}.name`)} — ${t('hub.title')}`;
+
   current = exp.start(host, {
     t,
     audio,
@@ -276,6 +285,12 @@ function startExperience(exp) {
       else showHub();
     },
   });
+
+  // every experience builds its own .exp-text, so mark it here rather than in
+  // 22 modules: it is where each new beat of the story appears, and without a
+  // live region a screen reader is never told the page said something new
+  const said = host.querySelector('.exp-text');
+  if (said) { said.setAttribute('aria-live', 'polite'); said.setAttribute('aria-atomic', 'true'); }
   focusPrimary(host);
 }
 
