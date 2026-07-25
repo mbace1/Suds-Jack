@@ -175,6 +175,16 @@ const STR = {
     'ge.outro': 'We have wanted to know what comes next for a very, very long time.',
     'ge.nature': 'Find a clock with a second hand and watch it go all the way around, once — sixty seconds, doing nothing else. Feel how patiently the oldest machines counted the sky.',
 
+    'exp.cairn.name': 'The Cairn',
+    'exp.cairn.desc': 'Balance three irregular stones into a trail marker on a dusk fell.',
+    'ca.s1': 'On a bare fell at dusk, at a fork with no signpost, people have marked the way for centuries the same way — by balancing one stone on another. A cairn. No mortar, no tools, only patience and the pull of the earth. Build one.',
+    'ca.begin': 'Begin',
+    'ca.hint': 'Tap where the next stone should rest. Aim for the balance line.',
+    'ca.topple': 'It toppled. No harm done — the stones are patient, and so are you. Try again.',
+    'ca.wisdom': 'It stands. Nothing holds it up but its own balance and the patience of gravity, which has all the time there is and never once looks away. A cairn is a small agreement between a person and the earth: I was here, the way goes on.',
+    'ca.outro': 'Some things stay up only because someone took the care to balance them.',
+    'ca.nature': 'Find two or three flat stones and balance them, one on another, somewhere outside. It may take many tries. When it stands, leave it for the next person to find.',
+
     'exp.berry.name': 'The Right to Roam',
     'exp.berry.desc': 'A blueberry summer in Finland, and the old freedom that makes every forest yours to walk.',
 
@@ -474,6 +484,16 @@ const STR = {
     'ge.outro': 'Olemme halunneet tietää mitä seuraavaksi tulee hyvin, hyvin pitkään.',
     'ge.nature': 'Etsi kello jossa on sekuntiviisari ja katso kun se kiertää kokonaan ympäri, kerran — kuusikymmentä sekuntia, tekemättä mitään muuta. Tunne kuinka kärsivällisesti vanhimmat koneet laskivat taivasta.',
 
+    'exp.cairn.name': 'Kiviröykkiö',
+    'exp.cairn.desc': 'Tasapainota kolme epäsäännöllistä kiveä polkumerkiksi hämärällä tunturilla.',
+    'ca.s1': 'Paljaalla tunturilla hämärässä, risteyksessä ilman viittaa, ihmiset ovat merkinneet reitin vuosisatoja samalla tavalla — tasapainottamalla kiven toisen päälle. Röykkiö. Ei laastia, ei työkaluja, vain malttia ja maan vetovoima. Rakenna sellainen.',
+    'ca.begin': 'Aloita',
+    'ca.hint': 'Napauta mihin seuraava kivi asettuu. Tähtää tasapainoviivaan.',
+    'ca.topple': 'Se kaatui. Ei hätää — kivet ovat kärsivällisiä, ja niin olet sinäkin. Yritä uudelleen.',
+    'ca.wisdom': 'Se seisoo. Mikään ei kannattele sitä paitsi oma tasapainonsa ja painovoiman malttavaisuus, jolla on kaikki aika mikä on eikä se kertaakaan käännä katsettaan pois. Röykkiö on pieni sopimus ihmisen ja maan välillä: minä olin täällä, tie jatkuu.',
+    'ca.outro': 'Jotkin asiat pysyvät pystyssä vain siksi, että joku näki vaivan tasapainottaa ne.',
+    'ca.nature': 'Etsi kaksi tai kolme litteää kiveä ja tasapainota ne toistensa päälle jonnekin ulos. Se voi vaatia monta yritystä. Kun se seisoo, jätä se seuraavan löytäjän iloksi.',
+
     'exp.berry.name': 'Jokamiehenoikeus',
     'exp.berry.desc': 'Mustikkakesä ja vanha vapaus, joka tekee jokaisesta metsästä sinun kävellä.',
 
@@ -772,6 +792,16 @@ const STR = {
     'ge.truth': '太陽と月、そして月の通り道の交点がひとつの線に並ぶ — そして機械は告げる: 日食、と。ギリシャ人は空を止められなかったが、予言はできた。青銅の歯ひとつずつ、何世紀も先まで。地球で知られるいちばん古い計算機。そして、それは二千年のあいだ失われていた。',
     'ge.outro': '私たちは、次に何が来るかを、とてもとても長いあいだ知りたがってきた。',
     'ge.nature': '秒針のある時計を見つけて、それがぐるりと一周するのを、一度だけ見てみよう — 六十秒、ほかには何もせずに。いちばん古い機械が、どれほど辛抱づよく空を数えたかを感じてみて。',
+
+    'exp.cairn.name': 'ケルン',
+    'exp.cairn.desc': '夕暮れの山で、いびつな石を三つ積んで道しるべにしよう。',
+    'ca.s1': '夕暮れの裸の山、道標のない分かれ道で、人々は何世紀も同じやり方で道を示してきた — 石を石の上に、そっと釣り合わせて。ケルンだ。モルタルも道具もなく、あるのは辛抱と、大地の引力だけ。ひとつ、積んでみよう。',
+    'ca.begin': 'はじめる',
+    'ca.hint': '次の石を置く場所をタップ。釣り合いの線をねらって。',
+    'ca.topple': '崩れた。かまわない — 石は辛抱づよく、あなたもそうだ。もう一度。',
+    'ca.wisdom': '立った。それを支えるのは、自らの釣り合いと、重力の辛抱だけ。重力は、あるかぎりの時間をすべて持ち、一度も目をそらさない。ケルンは、人と大地とのささやかな約束だ — 私はここにいた、道は続く。',
+    'ca.outro': 'あるものが立っていられるのは、だれかが手間をかけて釣り合わせたからにすぎない。',
+    'ca.nature': '平たい石を二つか三つ見つけて、外のどこかで積み重ねてみよう。何度もやり直すかもしれない。立ったら、次に見つける人のために残しておこう。',
 
     'exp.berry.name': '歩く自由',
     'exp.berry.desc': 'フィンランドのブルーベリーの夏と、どの森もあなたの歩く場所にする古い自由。',
