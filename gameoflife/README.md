@@ -71,6 +71,7 @@ switchable in the hub, persisted in `localStorage`.
 | `trace` | game | Trace the Chaos | Draw your own constellation from a field of stars; a dithered purple nebula blooms around what you connect, then you name it — the sky was never arranged → *find and name your own star pattern* |
 | `gears` | game | The Bronze Gears | Crank the 2,000-year-old Antikythera mechanism through the months until the Sun and Moon hands meet the lunar node and it predicts an eclipse → *watch a second hand make one full circle* |
 | `cairn` | game | The Cairn | Balance three irregular stones into a trail marker on a dusk fell — land each near the balance line or it topples, patiently, until it stands → *balance two real rocks and leave them* |
+| `downhill` | game | Water Downhill | Tilt four stone ledges so a trickle chains all the way down and pours off the frame in cyan — water takes the first opening you give it → *pour water on a real slope and watch it choose* |
 
 ## Visual standard (2026-07 master doc)
 

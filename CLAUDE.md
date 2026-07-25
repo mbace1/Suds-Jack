@@ -122,8 +122,10 @@ through the lunar months until the Sun/Moon hands meet the node and it predicts
 an eclipse, a `GOLD_LUX` corona breaking the frame; void-vignette bronze build),
 and `cairn` (game — The Cairn: tap where each of three irregular dithered stones
 should rest on a dusk fell; near the balance line it holds, off it topples and you
-retry — gravity is patient; the crowning stone catches the last light).
-`plate` pilots the **2026-07 visual standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
+retry — gravity is patient; the crowning stone catches the last light), and
+`downhill` (game — Water Downhill: a tilt cousin of `aqueduct`; tap four stone
+ledges to flip their slope until a trickle chains down and pours off the frame in
+`CYAN_LUX`). `plate` pilots the **2026-07 visual standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
 jagged 16-bit vignettes in a pure-black void, muted environments, luminescent cyan/gold
 interactive elements that break the frame (`PAL.VOID/CYAN_LUX/GOLD_LUX`, plus
 `PAL.LEAF_LUX` — a luminescent green for nature-scene glow like fireflies). Shared `pixel.js`

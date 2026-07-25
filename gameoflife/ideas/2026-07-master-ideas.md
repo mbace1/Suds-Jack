@@ -43,8 +43,11 @@ Source: project owner, via idea-form exchange. Reference art in `ref/`
       earth 100 years ago.
 
 ### Games
-- [ ] **Water Downhill** — TILT variant of the aqueduct (angle a stone until
-      the trickle runs; the water breaks the frame).
+- [x] **Water Downhill** (shipped as `downhill`) — a tilt puzzle, small cousin of
+      the aqueduct: tap four stone ledges to flip which way they slope until a
+      trickle chains all the way down and pours off the frame in cyan (breaks the
+      frame). *Water wins by yielding.* → pour water on a real slope and watch it
+      choose its way down.
 - [x] **The Bronze Gears** (shipped as `gears`) — the Antikythera mechanism;
       crank meshed bronze gears through the lunar months until the Sun and Moon
       hands close on the node and the machine predicts an eclipse (a gold corona
