@@ -177,6 +177,29 @@ export const MODELS = {
       ['V.......V', '.........', '.........'],
     ],
   },
+  // THE HUSK — armored slab whose shell fully ENCLOSES an HDR core, so the
+  // core is invisible until dagger chips carve a hole through the plating.
+  // The armor is checkerboarded (A/B) because unlit same-colour voxels read
+  // as one flat polygon; at ×64 the plates erode into a convincing crater.
+  husk: {
+    voxelSize: 0.42,
+    wobble: 0.45, // heavy plating barely stirs
+    palette: {
+      A: 0x2e2e2e, B: 0x1a1a1a,
+      C: [3.0, 0.25, 0.25], // core — only visible once the shell is breached
+      E: [2.8, 0.2, 0.2],
+    },
+    layers: [
+      ['.ABA.', 'BABAB', '.ABA.'],
+      ['ABABA', 'BCCCB', 'ABABA'],
+      ['BABAB', 'ACCCA', 'BABAB'],
+      ['ABABA', 'BCCCB', 'ABABA'],
+      ['.BAB.', 'ABABA', '.BAB.'],
+      // eye on the FRONT face (row 0) — a first-person player meets it at
+      // eye level, so a top-face eye would never be seen
+      ['.AEA.', '.ABA.', '..A..'],
+    ],
+  },
   // first-person gauntlet: checkerboarded glove (unlit voxels need baked
   // shading to read as cubes), long HDR white blade forward (row 0)
   hand: {

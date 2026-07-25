@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=37';
+import { VoxelSprite, MODELS } from './voxel.js?v=38';
 
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();
@@ -74,6 +74,70 @@ export class Skull extends VoxelEnemy {
     this.vel.addScaledVector(dir, this.knock);
   }
 }
+
+/**
+ * THE HUSK — the enemy where the voxel physics ARE the mechanic. Its shell
+ * encloses a glowing core, and daggers barely dent plating: you have to chew
+ * a hole through it (chip damage erodes a crater, chunk detachment sheds the
+ * severed plates) until the core is bared, and only then does it take real
+ * damage. Slow, heavy, and it never flinches — a positioning fight, not a
+ * reflex one.
+ */
+export class Husk extends VoxelEnemy {
+  constructor(scene, pos, speedBoost = 0) {
+    super(scene, MODELS.husk, pos);
+    this.type = 'husk';
+    this.hp = 16;
+    this.maxHp = 16; // set up front so the chip-per-hit rate is right from hit 1
+    this.radius = 1.45;
+    this.score = 7;
+    this.vel = new THREE.Vector3();
+    this.maxSpeed = 3.2 + speedBoost;
+    this.accel = 8;
+    this.knock = 1.5; // an armored slab barely flinches
+    this.shellTotal = this.sprite.voxels.length;
+    this.cracked = false;
+    this.bobT = Math.random() * Math.PI * 2;
+  }
+
+  /** Fraction of the shell chipped away. */
+  get exposure() { return 1 - this.sprite.aliveCount / this.shellTotal; }
+  get coreExposed() { return this.exposure >= CORE_AT; }
+
+  /** True exactly once, on the hit that first bares the core — the caller
+   *  turns that into the stinger + shockwave. Checked AFTER chipping, so the
+   *  moment lines up with the hole actually opening. */
+  checkCrack() {
+    if (this.cracked || !this.coreExposed) return false;
+    this.cracked = true;
+    this.sprite.retint({ C: [4.2, 0.35, 0.35] }); // the bared core ignites
+    return true;
+  }
+
+  update(dt, playerEye) {
+    this.baseUpdate(dt);
+    this.bobT += dt * 1.6;
+    _dir.copy(playerEye).sub(this.pos);
+    _dir.y = 0; // it walks — no bobbing float, it should read as heavy
+    _dir.normalize();
+    this.vel.addScaledVector(_dir, this.accel * dt);
+    const sp = this.vel.length();
+    if (sp > this.maxSpeed) this.vel.multiplyScalar(this.maxSpeed / sp);
+    this.pos.addScaledVector(this.vel, dt);
+    this.pos.y = 1.35 + Math.sin(this.bobT) * 0.06; // a heavy plod
+    this.group.lookAt(playerEye.x, this.pos.y, playerEye.z);
+  }
+
+  hit(dmg, dir) {
+    // plating shrugs off daggers; a bared core takes double
+    this.hp -= this.coreExposed ? dmg * 2 : dmg * 0.2;
+    this.sprite.flash();
+    this.vel.addScaledVector(dir, this.knock);
+  }
+}
+
+/** How much of the shell must be gone before the core counts as exposed. */
+const CORE_AT = 0.32;
 
 /** Gilded skull — faster, 2 HP, appears later in a run. */
 export class Wraith extends Skull {

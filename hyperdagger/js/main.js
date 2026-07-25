@@ -5,15 +5,15 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=37';
-import { Player } from './player.js?v=37';
-import { DaggerPool } from './daggers.js?v=37';
-import { GemPool } from './gems.js?v=37';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=37';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=37';
-import { OrbPool } from './bullets.js?v=37';
-import { AudioKit } from './audio.js?v=37';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=37';
+import { InputManager } from './input.js?v=38';
+import { Player } from './player.js?v=38';
+import { DaggerPool } from './daggers.js?v=38';
+import { GemPool } from './gems.js?v=38';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=38';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=38';
+import { OrbPool } from './bullets.js?v=38';
+import { AudioKit } from './audio.js?v=38';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=38';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -26,6 +26,7 @@ const ENEMY_NAMES = {
   skull: 'a skull', brute: 'a brute', serpent: 'the serpent', spider: 'a spider',
   watcher: 'a watcher', blinker: 'a blinker', leviathan: 'THE LEVIATHAN',
   thorn: 'a thorn spike', orb: 'an orb', totem: 'a totem', dread: 'the DREAD SKULL',
+  husk: 'a husk',
 };
 
 // player-tunable options (pause menu), persisted across sessions
@@ -80,7 +81,7 @@ const WEAPON = [
   { stream: 18, homing: true },
   { stream: 26, homing: true }, // LV4 — the crimson hand (DD's fourth tier)
 ];
-const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10, watcher: 1, blinker: 1, dread: 3 };
+const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10, watcher: 1, blinker: 1, dread: 3, husk: 4 };
 
 // The gauntlet itself evolves with the weapon (DD's hand upgrades): knuckle
 // glow at LV2, red veins at LV3, full crimson-and-fire at LV4. Keys are the
@@ -111,7 +112,7 @@ const STYLE_CAP = 150;
 // style awarded per kill by enemy type (dash-through orbs + gems add their own)
 const STYLE_GAIN = {
   skull: 3, brute: 6, serpent: 5, spider: 5, watcher: 5,
-  blinker: 5, leviathan: 30, thorn: 0, dread: 8,
+  blinker: 5, leviathan: 30, thorn: 0, dread: 8, husk: 9,
 };
 
 // ---------------------------------------------------------------- renderer
@@ -1430,15 +1431,16 @@ const PULSE_POOL = [
   // [key, unlockTime, cost]
   ['skulls', 20, 2], // pack of 3 direct chasers — the swarm fodder
   ['watcher', 25, 3],
+  ['husk', 35, 5],  // armored grind — teaches 'chew the shell' while it's calm
   ['brute', 45, 3],
   ['spider', 75, 4],
   ['blinker', 90, 3],
   ['serpent', 100, 8],
   ['dread', 120, 6],
 ];
-const PULSE_CAPS = { watcher: 3, blinker: 3, spider: 2, dread: 2 };
+const PULSE_CAPS = { watcher: 3, blinker: 3, spider: 2, dread: 2, husk: 2 };
 const SWARM_KEYS = new Set(['skulls', 'blinker']);
-const SPIKE_KEYS = new Set(['brute', 'dread', 'spider']);
+const SPIKE_KEYS = new Set(['brute', 'dread', 'spider', 'husk']);
 
 function pulseKind(n) {
   if (n < 1) return 'normal'; // so pulse 1 isn't judged a post-"spike 0" breather
@@ -1499,6 +1501,13 @@ function spawnPick(key, stagger, draw = rng.next) {
     const at = ringSpot(12, draw).clone();
     at.y = 2.2;
     telegraph(at, [2.0, 0.15, 0.15], delay, () => enemies.push(new Watcher(scene, at, ARENA_R - 1)));
+  } else if (key === 'husk') {
+    announce('husk', 'THE HUSKS &mdash; BREAK THE SHELL');
+    const at = ringSpot(13, draw).clone();
+    telegraph(at, [2.2, 0.18, 0.18], delay + 0.15, () => {
+      at.y = 1.35;
+      enemies.push(new Husk(scene, at, Math.min(1.2, (gameTime - 30) * 0.008)));
+    });
   } else if (key === 'brute') {
     announce('brute', 'THE BRUTES');
     const at = ringSpot(14, draw).clone();
@@ -1838,6 +1847,15 @@ function updateCombat(dt) {
           _seg.set((Math.random() - 0.5) * 5, 2 + Math.random() * 3, (Math.random() - 0.5) * 5),
           0.12, 0.6);
       }
+      // the shell giving way is its own beat — stinger, ripple, shockwave
+      if (e.checkCrack?.()) {
+        audio.stinger();
+        triggerRipple(0.55);
+        spawnShockwave(_c);
+        toast('SHELL BREACHED', 1100);
+        trauma = Math.max(trauma, 0.3);
+        buzz(0.6, 0.3, 80);
+      }
       if (e.hp <= 0) killEnemy(e, _hitDir);
       daggers.recycle(i);
       break;
@@ -1907,7 +1925,7 @@ function playerStruck(sx, sz, killerType, killer = null) {
 }
 
 // skulls shove each other apart so the swarm doesn't stack into one voxel blob
-const SEPARATES = new Set(['skull', 'brute', 'dread']);
+const SEPARATES = new Set(['skull', 'brute', 'dread', 'husk']);
 
 function separateSkulls() {
   for (let i = 0; i < enemies.length; i++) {
@@ -2188,6 +2206,7 @@ window.__hd = {
     spawnSplitter() { const p = ringSpot(8).clone(); p.y = 1.2; enemies.push(new Splitter(scene, p)); },
     spawnThorn() { spawnThorn(player.feet.x, player.feet.z); },
     spawnBlinker() { const p = ringSpot(8).clone(); p.y = 1.2; enemies.push(new Blinker(scene, p, ARENA_R - 1)); },
+    spawnHusk() { const p = ringSpot(9).clone(); p.y = 1.35; const h = new Husk(scene, p); enemies.push(h); return h; },
     spawnDread() { const p = ringSpot(8).clone(); p.y = 1.5; enemies.push(new DreadSkull(scene, p)); },
     spawnGhostSerpent() { spawnSerpent(true); },
     spawnLeviathan() { enemies.push(new Leviathan(scene, 5)); },
