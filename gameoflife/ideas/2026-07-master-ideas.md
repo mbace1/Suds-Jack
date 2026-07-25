@@ -51,9 +51,11 @@ Source: project owner, via idea-form exchange. Reference art in `ref/`
       the vignette. (upgrade of `cup`; ref: kintsugi-overflow.png)
 - [ ] **The Cairn** — balance three irregular stones. *Gravity is infinitely
       patient.* → balance two real rocks, leave them.
-- [ ] **Trace the Chaos** — free-form constellation drawing; connecting stars
-      reveals nebula dust. (extends `stars`; ref: constellation-nebula.png)
-      → find and name your own star pattern.
+- [x] **Trace the Chaos** (shipped as `trace`) — tap star-to-star to draw your
+      own constellation from a scattered field; a dithered purple nebula blooms
+      around what you connect, then you name it and learn the sky was never
+      arranged. Reference-grade gold-on-nebula void build. (extends `stars`; ref:
+      constellation-nebula.png) → find and name your own star pattern.
 
 ### Wisdom
 - [x] **Stand and Wait** (shipped as `wait`) — press once, then stand while the

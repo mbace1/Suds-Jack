@@ -244,6 +244,19 @@ function check(name, cond) {
   check('ice truth shown', (await page.locator('.exp-text').textContent()).includes('museums of atmosphere'));
   await page.locator('.back-btn').click();
 
+  // trace: draw a free-form constellation (coords mirror STARS in trace.js),
+  // 6 stars chained = 5 segments, then name it
+  await page.evaluate(() => __gol.debug.start('trace'));
+  check('trace intro shown', (await page.locator('.exp-text').textContent()).includes('do not come joined'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Begin' }).click();
+  const trbox = await page.locator('.pixel-screen').boundingBox();
+  const trTap = (x, y) => page.mouse.click(trbox.x + (x + 0.5) / 192 * trbox.width, trbox.y + (y + 0.5) / 128 * trbox.height);
+  for (const [x, y] of [[40, 84], [58, 70], [82, 64], [104, 62], [128, 56], [152, 46]]) await trTap(x, y);
+  check('trace offers to name it', await page.locator('.exp-buttons .btn', { hasText: 'my constellation' }).count() === 1);
+  await page.locator('.exp-buttons .btn', { hasText: 'my constellation' }).click();
+  check('trace truth shown', (await page.locator('.exp-text').textContent()).includes('no lion up there'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');
