@@ -5,15 +5,15 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=39';
-import { Player } from './player.js?v=39';
-import { DaggerPool } from './daggers.js?v=39';
-import { GemPool } from './gems.js?v=39';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=39';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=39';
-import { OrbPool } from './bullets.js?v=39';
-import { AudioKit } from './audio.js?v=39';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=39';
+import { InputManager } from './input.js?v=40';
+import { Player } from './player.js?v=40';
+import { DaggerPool } from './daggers.js?v=40';
+import { GemPool } from './gems.js?v=40';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=40';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=40';
+import { OrbPool } from './bullets.js?v=40';
+import { AudioKit } from './audio.js?v=40';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=40';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -2246,6 +2246,23 @@ window.__hd = {
     setOpt(k, v) { opts[k] = v; saveOpts(); },
     getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, fov: camera.fov, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
     getVfx() { return { shadows: shadows.count, sparks: sparks.length, speedOn: speedPass.enabled, rippleT, rippleOn: ripplePass.enabled, ember: skyMat.uniforms.uEmber.value }; },
+    /** Everything that could leak over a long run: pool occupancy, scene graph
+     *  size, and GPU resource counts. A survival game lives or dies on the
+     *  30-minute run, so these must plateau rather than climb. */
+    getHealth() {
+      return {
+        t: +gameTime.toFixed(1),
+        enemies: enemies.length, serpents: serpents.length,
+        debris: debris.items.length, litter: litter.count,
+        daggers: daggers.active.length, orbs: orbs.active.length,
+        gems: gems.active.length, thorns: thorns.length,
+        pending: pending.length, sparks: sparks.length,
+        sceneChildren: scene.children.length,
+        geometries: renderer.info.memory.geometries,
+        textures: renderer.info.memory.textures,
+        programs: renderer.info.programs?.length ?? -1,
+      };
+    },
     // renderer.info auto-resets on every internal composer pass, so reading it
     // directly only ever sees the last fullscreen quad. Accumulate one whole
     // frame instead: animate() re-registers its rAF first, so a callback queued
