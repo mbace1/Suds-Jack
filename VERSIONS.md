@@ -7,6 +7,19 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v209 — 2026-07-25
+**NEX DEUS: the surge is the arena tearing open** *(crown-jewel pass 1 of 2)*
+- The final cabinet played like the others with a neon filter on: a surge was a ring that faded, strobed, and popped. It now has **three beats you can read from anywhere on screen** —
+- **CHARGE** — the ring breathes, nothing else. A real breath before the alarm: the first surge of a wave used to start at 2.2 s, *inside* its own alarm window, so every wave opened mid-panic. It opens at 3.0 s now
+- **LOCK** — a light column in the pool's colour stands up out of the ring and the floor **cracks outward** from it. Deliberately the same 1.6 s window the ring already strobed in, so the column and the strobe are ONE "stand clear" beat rather than two competing ones. The column grows linearly, not on an ease — it has to be legible from the far corner the moment it starts, so opacity and spin carry the urgency instead
+- **ERUPT** — the column slams down, a shockwave sweeps the floor, the screen blooms white, and **magnitude scales with the squad**: a five-pool wave throws more debris, shakes harder and blooms brighter than a one-pool wave, before a single body lands
+- **THE CUSTODIAN gets an act break.** The machine no longer just spawns. The arena goes **dark and completely empty** for a beat and a column stands where it will land; then it arrives on a 26-unit shockwave, a heavy bloom and 0.7 shake, and the void snaps back. It's the cabinet's one big moment and it finally reads as one
+- Respects `reduceMotion` (bloom sits out alongside the shake it accompanies) and `perfMode` (floor cracks skipped; the column, the key tell, always draws)
+- Verified headless (24/24): all three beats fire in order with the column down and the cracks dark during CHARGE and both lit during LOCK; the shockwave launches, expands and disposes itself; the squad lands; the CUSTODIAN wave opens on an empty dark arena and the boss appears only at the end of the hush, blooming harder than any surge; the void restores exactly to `0x020006`; no scene-graph leak across six wave rebuilds. `smoke.sh` and `cabinets.sh` green on all six
+- Cache-bust `?v=162` → `?v=163`; HUD label → v209
+
+---
+
 ## v208 — 2026-07-25
 **KAIKKI street jobs — the order changes, not just the wave number**
 - Every level of the streets was the same order — *kill everything* — so KAIKKI never asked anything of you but aim. The job now **rotates across four orders**, announced like a call-out the way LOADOUT briefs its ops (v204), and the HUD names tonight's job and tracks its own progress:
