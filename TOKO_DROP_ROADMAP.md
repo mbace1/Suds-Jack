@@ -162,8 +162,10 @@ The cabinet row (each refined individually, in build order):
   price printed on the card).
 - **Graze-chain heat meter** if M1 data shows graze engagement.
 - **FLUID MODE** (movement lab): v196 dodge/school/split + v197 wave
-  archetypes (STREAM/RING/PINCER) shipped — next tuning pass waits on
-  field feedback (dodge cooldown, split cap, current strengths).
+  archetypes (STREAM/RING/PINCER) + v210 per-type MOVEMENT PROFILES (the
+  shared forces are scaled per species; the uniform original is a toggle).
+  Open: role assignments want a field pass — which species should dodge,
+  weave, or school is a taste call the table now makes cheap to change.
 
 ## M7 — Graphics track (WebGPU arc)
 

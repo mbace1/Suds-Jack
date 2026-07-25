@@ -7,127 +7,41 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v209 — 2026-07-25
-**NEX DEUS: the surge is the arena tearing open** *(crown-jewel pass 1 of 2)*
-- The final cabinet played like the others with a neon filter on: a surge was a ring that faded, strobed, and popped. It now has **three beats you can read from anywhere on screen** —
-- **CHARGE** — the ring breathes, nothing else. A real breath before the alarm: the first surge of a wave used to start at 2.2 s, *inside* its own alarm window, so every wave opened mid-panic. It opens at 3.0 s now
-- **LOCK** — a light column in the pool's colour stands up out of the ring and the floor **cracks outward** from it. Deliberately the same 1.6 s window the ring already strobed in, so the column and the strobe are ONE "stand clear" beat rather than two competing ones. The column grows linearly, not on an ease — it has to be legible from the far corner the moment it starts, so opacity and spin carry the urgency instead
-- **ERUPT** — the column slams down, a shockwave sweeps the floor, the screen blooms white, and **magnitude scales with the squad**: a five-pool wave throws more debris, shakes harder and blooms brighter than a one-pool wave, before a single body lands
-- **THE CUSTODIAN gets an act break.** The machine no longer just spawns. The arena goes **dark and completely empty** for a beat and a column stands where it will land; then it arrives on a 26-unit shockwave, a heavy bloom and 0.7 shake, and the void snaps back. It's the cabinet's one big moment and it finally reads as one
-- Respects `reduceMotion` (bloom sits out alongside the shake it accompanies) and `perfMode` (floor cracks skipped; the column, the key tell, always draws)
-- Verified headless (24/24): all three beats fire in order with the column down and the cracks dark during CHARGE and both lit during LOCK; the shockwave launches, expands and disposes itself; the squad lands; the CUSTODIAN wave opens on an empty dark arena and the boss appears only at the end of the hush, blooming harder than any surge; the void restores exactly to `0x020006`; no scene-graph leak across six wave rebuilds. `smoke.sh` and `cabinets.sh` green on all six
-- Cache-bust `?v=162` → `?v=163`; HUD label → v209
-
----
-
-## v208 — 2026-07-25
-**KAIKKI street jobs — the order changes, not just the wave number**
-- Every level of the streets was the same order — *kill everything* — so KAIKKI never asked anything of you but aim. The job now **rotates across four orders**, announced like a call-out the way LOADOUT briefs its ops (v204), and the HUD names tonight's job and tracks its own progress:
-- **PURGE** — kill everything on the block. The original order, unchanged
-- **PAYDAY** — bank a quota (₵400 + 250/level); kills and crates both pay. Clearing the street does *not* finish it, so the block keeps sending bodies — you can never run it dry and get stranded
-- **THE MARK** — one named body in the crowd, ringed in red and running. It flees at a speed you can just about match and the street corners it, so it can't be lost, only chased. Everything else out there is optional money. Pays **double**
-- **SHAKEDOWN** — crack every gold-banded crate. They're nailed shut twice as hard (4 hp) and keep their gold while they stand, so the damage tell brightens rather than washes the marking off. Pays **1.5×**
-- **No job can be failed.** This is a money cabinet, not a mission sim — a job that goes badly costs you time and cash, never the run. A SHAKEDOWN crate that couldn't find open street is dropped rather than left unshootable behind a building
-- **Edge case fixed in test:** a mark standing exactly on the player had a 0/0 escape vector and froze. It now breaks the tie outward from the middle of the street
-- Job names, briefings and HUD strings localized en/ja/fi
-- Verified headless (20/20): the four orders rotate on the level number; each job completes on **its own** finish line and refuses the other three's (an empty street doesn't finish PAYDAY or SHAKEDOWN, wiping the crowd doesn't finish THE MARK); PAYDAY's trickle keeps the street stocked; the mark opens the gap from both a dead-on overlap and a normal 2u approach and never leaves the arena; its ring lights and dies with it; every SHAKEDOWN crate is gold, 4 hp, and reachable. `smoke.sh` and `cabinets.sh` green on all six
-- Cache-bust `?v=161` → `?v=162`; HUD label → v208
-
----
-
-## v207 — 2026-07-25
-**BINDING: room revisits — the basement is a map, not a corridor**
-- **The wall you came in through stays a door.** Every cell you set foot in is remembered — its kind, its doors, its rock/pit layout and the fact that you emptied it — so you can walk back through the floor and take the exit you passed up. Doors into ground you've already walked glow **cool blue** and read `BACK` instead of green `EXIT`; the minimap marks them `✓`. Green is new floor, blue is the way you came
-- **A cleared room stays cleared**: no residents respawn behind you, the doors open the moment you step in, and the banner says `CLEARED`. The layout is the *cell's* now, not the moment's — a revisited room has the exact pits and boulders you left it with
-- **Backtracking is routing, never farming.** The room counter, the item/boss cadence, the floor number and the cabinet-quest beat all measure NEW ground only, so pacing back and forth advances nothing
-- **The shop is part of the room.** A deal you couldn't afford is still on its pedestal when you come back with the blood or the points; one you bought stays grey and dead. Item-room pedestals don't restock either
-- **Fix (found building this):** BINDING never repositioned you on room entry — it borrowed SMASH's lattice but not its door-mouth placement. With revisit doors opening instantly, that left you standing *in* the door you arrived through and bounced you straight back out. You now step 3.4 units into the room, with a 0.4 s deafness to door touches so one walk can never chain two rooms
-- Cache-bust `?v=160` → `?v=161`; HUD label → v207
-
----
-
-## v206 — 2026-07-25
-**KAIKKI: civilians as WITNESSES — you can't loot in front of an audience**
-- The street now has **2–4 bystanders** wandering it, and while any of them is still out there, **every payout is HALVED** — kill money and floor cash alike. The HUD says why (`WITNESSES: 2 — CASH HALVED`), so the wallet never drops silently
-- **The dash is your answer**: pass within ~3 units of a witness and they panic and sprint for the nearest edge. Clearing the street pays `STREET CLEAR — FULL CASH` and restores the full rate. Left alone they drift off on their own — the cost of ignoring them is patience, never a penalty you can't see coming
-- **Nobody gets hurt**: witnesses can't be damaged, don't block shots, and never carry the gold rescue halo (that tell belongs to TOKOTRON's rescues — reusing it here would have promised a rescue that doesn't exist). The carnage economy gets an audience, not a body count
-- Localized en/ja/fi; cleared with the level like every other street prop
-- Verified headless: the street opens with witnesses at pay-rate 0.5 and no rescue-halo miscue; **an identical body pays 11 while watched and exactly 21 once the street clears**; a dash provably panics a witness and it bolts. `cabinets.sh` green on all six
-- Cache-bust `?v=159` → `?v=160`; HUD label → v206
-
----
-
-## v205 — 2026-07-25
-**BINDING item pools — the basement changes character as you descend**
-- The pedestal handed out the same generic pool on every floor, so descending changed the danger but never the OFFER. Each basement floor now draws from its **own themed pool**, and the card screen names it:
-- **THE BLOOD OFFERS** (floor 1): max HP, Suds Feast, shield, graze — survive first
-- **THE IRON OFFERS** (floor 2): fire rate, piercing, big bullets, nuke — the weapon floor
-- **THE QUICK OFFERS** (floor 3): speed, dash cooldown, Long Slide, magnet — mobility
-- **THE DEEP OFFERS** (floor 4+): dash-boom, Ripple Rounds, graze, Suds Feast — the compounding floor; pools cycle from here
-- A themed pedestal is never hijacked by the cursed-card slot — the basement already prices its own deals in blood (v184 shop)
-- Pool names localized en/ja/fi; the generic card screen and every other mode are untouched (`showUpgradeCards` takes the pool as an optional argument)
-- Verified headless: four distinct pools cycling correctly at floor 5, and each floor's pedestal draws only its own ids under its own banner; `cabinets.sh` green on all six
-- Cache-bust `?v=158` → `?v=159`; HUD label → v205
-
----
-
-## v204 — 2026-07-25
-**Cabinet audit + the gate that keeps them honest — and LOADOUT gets its briefings**
-- **Audited all six cabinets** after eight releases of mode-wide systems (FLUID, defaults, juice, sound, cards, SHEPHERD) landed without a cabinet check. Result: **structurally clean** — no mode leaks, no errors, retro passes armed. LOADOUT's stop at its kit-pick panel is by design (v152), not a fault
-- **New permanent gate `scripts/cabinets.sh`**: boots ALL SIX cabinets, clears LOADOUT's kit door, plays and kills through each, and FAILS on a cabinet that never reaches play, on CLOSE COMBAT / FLUID / archetypes / SHEPHERD / split-children leaking in, on the retro pass not arming, or on any page/console error. `smoke.sh` proves the roster survives a release; this proves the cabinets do — the leaks it catches are invisible until someone opens that cabinet
-- **LOADOUT MISSION BRIEFINGS** (roadmap backlog): every op now opens with its radio callout — `MISSION 3 — HOLD THE LINE` — so the compound reads like a deployment instead of a wave number. All five objectives (purge / demolish / hold / assault / rescue), localized en/ja/fi
-- Verified: the sweep passes all six cabinets; all five briefings render with the objective they belong to
-- Cache-bust `?v=157` → `?v=158`; HUD label → v204
-
----
-
-## v203 — 2026-07-25
-**THE SHEPHERD — the first enemy designed FOR the swarm game (40 types)**
-- Every enemy predated the movement game; the roster had no citizen of it. The SHEPHERD is one mechanic, the WARDEN standard: **it herds**. A faint teal ring (7.5u) marks its flock — every body inside is dragged toward YOU at 2.8 u/s, knotting the school around you until you kill the conductor
-- **It is never a body to bump**: a slim tapered spire that holds a 9u pocket — closing in when too far, backing off when you crowd it, circling when it's in position. Fragile (3 hp, no attack of its own) because the threat is what it does to the OTHERS
-- **The ring IS the tell** (pulses with the pull), and killing it releases the herd instantly
-- **It exists only where its mechanic does**: scheduled from wave 4 in FLUID runs (the default), absent from classic opt-out runs
-- **Bug caught in test**: the shepherd was inheriting FLUID's split-on-death, so killing it handed you TWO live herders — silently breaking the promise its ring makes. Shepherds never split now
-- Verified headless: the ring tell exists; a flockmate is dragged inward under a pure-orbit archetype (which has no radial drift of its own); a dead shepherd leaves zero herders; the approach rate collapses to ~0 the moment it dies; a full-speed shepherd retreats 3.0 → 6.1u toward its pocket; and it never appears in a classic schedule
-- Cache-bust `?v=156` → `?v=157`; HUD label → v203
-
----
-
-## v202 — 2026-07-24
-**The roguelike learns the swarm's language — three swarm-native cards**
-- The upgrade pool predated the default flip, so no card spoke to dodging, schooling, or splitting. Three do now (pool 13 → 16):
-- **RIPPLE ROUNDS**: big-kill shockwaves now DAMAGE everything they rattle — and a rattled big body that dies detonates its own wave, so a packed school can chain-clear itself. (The rattled set is snapshotted before damage, so minnows born mid-chain can't be vaporized by the blast that created them)
-- **TIRED LEGS**: every dodge costs the dodger 1 HP — the swarm reading your gun becomes the way you kill it. Fire lanes to train them to death
-- **MINNOW BOUNTY**: split-spawned minnows pay TRIPLE — the splitting mechanic turns from a nuisance into an economy
-- **No dead cards in classic**: the two swarm-only cards are filtered out of draws when FLUID is off; RIPPLE ROUNDS stays (shockwaves exist in every mode). Localized en/ja/fi
-- Verified headless in both configurations: shockwave kills a 1-hp neighbor, a dodge drops the dodger 3 → 2 hp, a minnow pays exactly 3× base, and the classic pool offers neither swarm-only card
-- Cache-bust `?v=155` → `?v=156`; HUD label → v202
-
----
-
-## v201 — 2026-07-24
-**The swarm gets a voice — sound pass for every new mechanic + perf juice guard**
-- **Every v196–v200 mechanic was silent** — against the game's own audio identity rule (every event gets a synth stinger). Now: **splits** pop wet and pitch up (one body → two), **big-death shockwaves** thump low under the splatter, **dodges** whip (rate-limited to one per 350 ms so a schooling wave isn't a whip chorus), each **wave archetype** call has its own signature under the banner (stream rise / ring descent / pincer stabs), and **maxing streak heat** fires a sawtooth riser — once per streak, re-arming when heat cools below half
-- **PERFORMANCE MODE juice guard**: weak phones keep the beat without the particle bill — extra death-burst chunks halved, satellite splats capped at 1
-- All synth one-shots — no clips, no loops (GDD §10)
-- Verified headless (stinger counter monkeypatch, the v164 pattern): splits ×8 across a chain, shock thump + heat riser fire, dodge whips, wave 2 stings with its archetype (and wave 1 stays silent for the mode intro); perf guard cuts a kill burst from 14 chunks to 9
-- Cache-bust `?v=154` → `?v=155`; HUD label → v201
-
----
-
-## v200 — 2026-07-24
-**THE JUICE PASS — every death detonates (option A, for everyone)**
-- **Extra droplet burst on every kill**: 4 extra chunks for small fry, 8 for big bodies, 14 for bosses, on top of the enemy's own chunk set — spending the instancing headroom v189/v190 built (chunk pools 256 → 384 slots)
-- **Kill-streak HEAT**: rapid kills escalate the splatter — heat rises per kill and cools fast, scaling chunk counts, droplet velocity, satellite splats, and shake, so the 10th kill of a chain detonates louder than the 1st. Pure FX, zero gameplay
-- **The floor gets painted**: 1–3 satellite splats scatter around the main death puddle (3 for big bodies) — a fight leaves a Jackson-Pollock record
-- **Shockwave through the school**: big deaths ripple + squash every gel within 3.5u, reusing the existing hit-ripple and spring-squash systems — hitboxes untouched, works in both renderers (v194 ported those systems to TSL)
-- Applies to ALL modes, classic and default alike
-- VERSIONS: v190–v199 archived (decade rule)
-- Cache-bust `?v=153` → `?v=154`; HUD label → v200
+## v210 — 2026-07-25
+**MOVEMENT PROFILES — 40 species again, instead of one school**
+- Field feedback: *"the movement of enemies is now unnatural, they should have unique patterns but not all just dodge [shots]."* Correct, and the cause was structural: FLUID (the default since v198) bolted the **same four forces onto every non-boss body** — dodge, flock, wave current, shepherd pull — so a charging TORO, a stationary TURRET, a lobbing BAMBU and a FLIT all moved like the same fish and each type's own behaviour got averaged away
+- Every enemy type now declares **how much of the shared movement it takes**, in `js/tuning.js` where enemy feel belongs. Ten roles across all 40 types:
+- **SCHOOL** (FLIT, GRUNT, GHOST, SPLITTA, minis) — the fish: full flock, full current, they dodge
+- **DARTER** (HOPPER, PROG) — quick bodies that genuinely read your gun
+- **DRIFTER** (GLOBBO, THUG, most cubes) — ordinary bodies, light schooling
+- **HUNTER** (CLOAKER, PYRA) — solo stalkers: they **weave**, and never school
+- **HOLDER** (SPITTOR, FANNER, WEEVA, BAMBU, BOTFLY, SPITTLE, TROOPER, DRAPER) — ranged, holds its ground: **no dodge, no schooling**
+- **COMMIT** (TORO, CHARGER, WRAITH) — a charger is committed to its line; sidestepping mid-charge was the most unnatural thing in the build
+- **MASS** (BRUTE, BULWARK, SLUDGE_CUBE, bosses) — heavies plough through
+- **FIXED** (TURRET) — moved by nothing. It was previously being drifted around by schooling and by the wave current, which is simply a bug
+- **SUPPORT** / **HERDER** — bodies with a job; the SHEPHERD never joins the school it herds
+- **WEAVE is new**: a per-body serpentine approach with its own phase, so solo hunters have a path with personality without borrowing the school's motion
+- **Fish now school only with fish.** The boids loop walks a per-frame list of actual flockers, so a turret is never pulled toward a crowd — and heavies/holders skip the O(n²) neighbour walk entirely, which is a free perf win
+- **The original movement is one click away** (user direction): `MOVEMENT PROFILES` in OPTIONS, default ON. Off restores the exact v196–v209 behaviour where every body took the full share of every force — kept as a real toggle, not a dead code path, so the two can be compared back-to-back in the field. Localized en/ja/fi
+- Verified headless (18/18): the role table resolves for all 40 types with no unknown roles; a FLIT sidesteps (impulse 10.8) while TORO, TURRET and SPITTOR never sidestep at all (exactly 0); a school of FLITs tightens up while a bank of TURRETs holds formation; a STREAM current moves a TURRET zero units; and the toggle round-trips — profiles OFF makes a TORO dodge again (12), back ON returns it to 0. `smoke.sh` and `cabinets.sh` green on all six
+- Archived v200–v209 into the Archive section (decade rule)
+- Cache-bust `?v=163` → `?v=164`; HUD label → v210
 
 ---
 
 ## Archive
+
+**v200–v209 summary (2026-07-24 – 2026-07-25)**
+- v200: THE JUICE PASS — every death detonates (option A, for everyone)
+- v201: The swarm gets a voice — sound pass for every new mechanic + perf juice guard
+- v202: The roguelike learns the swarm's language — three swarm-native cards
+- v203: THE SHEPHERD — the first enemy designed FOR the swarm game (40 types)
+- v204: Cabinet audit + the gate that keeps them honest — and LOADOUT gets its briefings
+- v205: BINDING item pools — the basement changes character as you descend
+- v206: KAIKKI: civilians as WITNESSES — you can't loot in front of an audience
+- v207: BINDING: room revisits — the basement is a map, not a corridor
+- v208: KAIKKI street jobs — the order changes, not just the wave number
+- v209: NEX DEUS: the surge is the arena tearing open
 
 **v190–v199 summary (2026-07-19 – 2026-07-24)**
 - v190: Instanced floor splats — puddles + slime trails share one InstancedMesh (dozens of draw calls → 1)
