@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=157';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=157';
-import { Player, PLAYER_RADIUS } from './player.js?v=157';
+import { InputManager } from './input.js?v=158';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=158';
+import { Player, PLAYER_RADIUS } from './player.js?v=158';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS } from './enemy.js?v=157';
-import { RetroPass } from './retro.js?v=157';
-import { audio } from './audio.js?v=157';
-import { initDesigner } from './designer.js?v=157';
-import { t, getLang, setLang, langs } from './lang.js?v=157';
-import { TUNING } from './tuning.js?v=157';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS } from './enemy.js?v=158';
+import { RetroPass } from './retro.js?v=158';
+import { audio } from './audio.js?v=158';
+import { initDesigner } from './designer.js?v=158';
+import { t, getLang, setLang, langs } from './lang.js?v=158';
+import { TUNING } from './tuning.js?v=158';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -4083,7 +4083,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v203' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v204' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -5266,6 +5266,12 @@ function spawnWave() {
     loTrickleT = 2.0;
     const objs = ['purge', 'demolish', 'holdout', 'assault', 'rescue'];   // v182
     loObjective = objs[(wave - 1) % 5];
+    // v204 (backlog): MISSION BRIEFINGS. The objective HUD line told you the
+    // rule but never the ORDER — every op now opens with its radio callout,
+    // so the compound reads like a deployment instead of a wave number.
+    milestoneT = 2.0;
+    milestoneText = `${t('loMsn')} ${loMission} — ${t('loBrief_' + loObjective)}`;
+    audio.waveZap?.();
     const wallMat = () => new THREE.MeshBasicMaterial({ color: 0x39422e });
     const seg = (x, z, hx, hz) => {
       const mesh = new THREE.Mesh(new THREE.BoxGeometry(hx * 2, 1.15, hz * 2), wallMat());
@@ -8373,6 +8379,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=157').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=158').catch(() => {});
   });
 }
