@@ -191,8 +191,12 @@ uses `replaceState` so it never fires the `hashchange` handler back at itself,
 and the hub is always the plain address) — that is what makes a link shareable
 for playtesting. `useLang()` mirrors the language onto `<html lang>`. Keyboard/
 touch floor: a `:focus-visible` ring, `focusPrimary()` moving focus after a view
-swap **only when the last input was a key** (so a tap never raises a ring), 44px
-rating-leaf targets with per-leaf `aria-label`s, `#app` as a `<main>`, `.exp-text`
+swap **only when the last input was a key** (so a tap never raises a ring), a
+**44px minimum on every control** and **WCAG AA on every text colour** — both
+measured in the smoke gate, because the muted-on-dark palette had drifted to
+1.92:1 on the seasons label and both regressed twice while being fixed (text
+greys are `#8d8165`, the primary button `#4e6839`; hierarchy comes from size,
+never from being unreadable) — per-leaf rating `aria-label`s, `#app` as a `<main>`, `.exp-text`
 marked `aria-live="polite"` centrally in `startExperience` (not in 22 modules)
 with the scene canvas `aria-hidden` in `PixelScreen` — the text is the followable
 channel — and `document.title` naming the current experience. The layout must
@@ -202,7 +206,10 @@ sizing it to short beats walked the Continue button ~190px between taps, and a
 without scrolling. `prefers-reduced-motion` freezes the decorative hub header
 (one frame of the hour) while experiences keep animating. `pixel.js` gives a 192×128
 `PixelScreen` upscaled with `image-rendering: pixelated`; `palette.js` is the single
-colour source; `audio.js` is a quiet WebAudio kit; `storage.js` keeps completions /
+colour source; `audio.js` is a quiet WebAudio kit routing **every** voice through one
+master gain (nothing connects to `ctx.destination` directly) so the footer's
+`sound on/off` toggle — persisted via `store.soundOn()` — mutes the app totally
+and any sound added later inherits it; `storage.js` keeps completions /
 cycle counter / 1–5-leaf feedback in `localStorage` (`golState`).
 The **sound garden** is the reward loop's teeth: the hub's near-inaudible ambient
 bed grows one voice per *accepted* invitation only (`accepted` in storage →

@@ -6,8 +6,8 @@
 // the brazier flame as the GOLD_LUX breakout through the bars.
 // Revert: look down from the highest place you can walk to.
 
-import { PixelScreen, shade, rampDither } from '../pixel.js?v=36';
-import { PAL } from '../palette.js?v=36';
+import { PixelScreen, shade, rampDither } from '../pixel.js?v=37';
+import { PAL } from '../palette.js?v=37';
 
 // the widescreen band; the void above and below is the letterbox
 const BY0 = 12, BY1 = 104;

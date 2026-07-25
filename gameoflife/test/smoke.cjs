@@ -471,6 +471,58 @@ function check(name, cond) {
   check('html lang tracks the language', await page.evaluate(() => document.documentElement.lang) === 'ja');
   await page.evaluate(() => __gol.debug.setLang('en'));
 
+  // Legibility, measured rather than eyeballed. The muted-on-dark palette is
+  // the house style and it drifted into genuinely unreadable (1.92:1 on the
+  // seasons label); tap targets had the same slow slide. Both regressed twice
+  // while being fixed, so they are gated from here on.
+  const a11y = await page.evaluate(() => {
+    const lum = (c) => {
+      const [r, g, b] = c.map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const parse = (s) => (s.match(/\d+/g) || [0, 0, 0]).slice(0, 3).map(Number);
+    const bgOf = (el) => {
+      for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
+        const b = getComputedStyle(n).backgroundColor;
+        if (b && !/rgba\(0, 0, 0, 0\)|transparent/.test(b)) return parse(b);
+      }
+      return [20, 19, 17];
+    };
+    const ratio = (a, b) => {
+      const [l1, l2] = [lum(a), lum(b)].sort((x, y) => y - x);
+      return (l1 + 0.05) / (l2 + 0.05);
+    };
+    const dim = [], small = [];
+    for (const el of document.querySelectorAll('#app *, .overlay *')) {
+      const cs = getComputedStyle(el);
+      if ([...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) {
+        const size = parseFloat(cs.fontSize);
+        const large = size >= 24 || (size >= 18.66 && parseInt(cs.fontWeight, 10) >= 700);
+        const r = ratio(parse(cs.color), bgOf(el));
+        if (r < (large ? 3 : 4.5)) dim.push(`${el.className || el.tagName} ${r.toFixed(2)}:1`);
+      }
+      if (el.matches('button, a, input, textarea')) {
+        const b = el.getBoundingClientRect();
+        if (b.width < 44 || b.height < 44) small.push(`${el.className || el.tagName} ${Math.round(b.width)}x${Math.round(b.height)}`);
+      }
+    }
+    return { dim, small };
+  });
+  check(`every text colour clears WCAG AA${a11y.dim.length ? ' — ' + a11y.dim.join(', ') : ''}`, a11y.dim.length === 0);
+  check(`every control is a 44px target${a11y.small.length ? ' — ' + a11y.small.join(', ') : ''}`, a11y.small.length === 0);
+
+  // sound has an off switch, and it is remembered. An app that makes noise on
+  // its own must let a person on a quiet train stop it.
+  check('sound can be turned off from the footer',
+    await page.locator('.lang-btn', { hasText: 'off' }).count() === 1);
+  await page.locator('.lang-btn', { hasText: 'off' }).click();
+  check('the app knows it is muted', await page.evaluate(() => __gol.audio.muted()) === true);
+  check('and it is remembered', await page.evaluate(() => __gol.store.soundOn()) === false);
+  await page.reload({ waitUntil: 'networkidle' });
+  check('the mute survives a visit', await page.evaluate(() => __gol.audio.muted()) === true);
+  await page.locator('.lang-btn', { hasText: 'on' }).click();
+  check('and it can be turned back on', await page.evaluate(() => __gol.audio.muted()) === false);
+
   // screen-reader wiring: one landmark, the story text announces each new beat,
   // and the canvas keeps quiet (the text is the channel that can be followed)
   check('the app is a main landmark', await page.locator('main#app').count() === 1);
