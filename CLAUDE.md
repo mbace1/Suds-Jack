@@ -186,7 +186,15 @@ and the hub is always the plain address) — that is what makes a link shareable
 for playtesting. `useLang()` mirrors the language onto `<html lang>`. Keyboard/
 touch floor: a `:focus-visible` ring, `focusPrimary()` moving focus after a view
 swap **only when the last input was a key** (so a tap never raises a ring), 44px
-rating-leaf targets with per-leaf `aria-label`s. `pixel.js` gives a 192×128
+rating-leaf targets with per-leaf `aria-label`s, `#app` as a `<main>`, `.exp-text`
+marked `aria-live="polite"` centrally in `startExperience` (not in 22 modules)
+with the scene canvas `aria-hidden` in `PixelScreen` — the text is the followable
+channel — and `document.title` naming the current experience. The layout must
+**hold still**: `.exp-text` holds six lines open (`min-height: 10.2em`) because
+sizing it to short beats walked the Continue button ~190px between taps, and a
+`max-height: 560px` block caps the scene at `46vh` so a phone held sideways fits
+without scrolling. `prefers-reduced-motion` freezes the decorative hub header
+(one frame of the hour) while experiences keep animating. `pixel.js` gives a 192×128
 `PixelScreen` upscaled with `image-rendering: pixelated`; `palette.js` is the single
 colour source; `audio.js` is a quiet WebAudio kit; `storage.js` keeps completions /
 cycle counter / 1–5-leaf feedback in `localStorage` (`golState`).

@@ -448,6 +448,43 @@ function check(name, cond) {
   check('html lang tracks the language', await page.evaluate(() => document.documentElement.lang) === 'ja');
   await page.evaluate(() => __gol.debug.setLang('en'));
 
+  // screen-reader wiring: one landmark, the story text announces each new beat,
+  // and the canvas keeps quiet (the text is the channel that can be followed)
+  check('the app is a main landmark', await page.locator('main#app').count() === 1);
+  await page.goto(URL + '#tern', { waitUntil: 'networkidle' });
+  check('the story text is a live region',
+    await page.locator('.exp-text').getAttribute('aria-live') === 'polite');
+  check('the scene canvas is not announced',
+    await page.locator('.pixel-screen').getAttribute('aria-hidden') === 'true');
+  check('the tab names the experience', (await page.title()).startsWith('The Longest Summer'));
+  await page.locator('.back-btn').click();
+  check('the hub takes its plain title back', await page.title() === 'The Game of Life');
+
+  // a phone held sideways: scene, text and choices must fit without scrolling
+  await page.setViewportSize({ width: 740, height: 360 });
+  await page.goto(URL + '#tern', { waitUntil: 'networkidle' });
+  const land = await page.evaluate(() => ({
+    fits: document.body.scrollHeight <= innerHeight,
+    btnVisible: document.querySelector('.exp-buttons .btn').getBoundingClientRect().bottom <= innerHeight,
+  }));
+  check('landscape fits without scrolling', land.fits);
+  check('landscape keeps the choices on screen', land.btnVisible);
+  await page.setViewportSize({ width: 1280, height: 720 });
+
+  // asking the system for less motion stills the decorative header
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto(URL, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(400);
+  const stillHeader = await page.evaluate(async () => {
+    const c = document.querySelector('.hub-canvas');
+    const a = c.toDataURL();
+    await new Promise(r => setTimeout(r, 600));
+    return c.toDataURL() === a;
+  });
+  check('reduced motion stills the hub header', stillHeader);
+  await page.emulateMedia({ reducedMotion: null });
+  await page.goto(URL, { waitUntil: 'networkidle' });
+
   // saying nothing must not be recorded as feedback, nor thanked for
   const before = await page.evaluate(() => __gol.debug.feedback().length);
   await page.locator('.footer-link').click();

@@ -32,6 +32,10 @@ export class PixelScreen {
     this.canvas.width = w;
     this.canvas.height = h;
     this.canvas.className = 'pixel-screen';
+    // the scene is the picture, but the story is in .exp-text — which is the
+    // channel a screen reader can actually follow, so don't announce an
+    // unlabelled canvas alongside it
+    this.canvas.setAttribute('aria-hidden', 'true');
     parent.appendChild(this.canvas);
     this.ctx = this.canvas.getContext('2d');
     this.ctx.imageSmoothingEnabled = false;
