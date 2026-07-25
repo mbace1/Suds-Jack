@@ -7,6 +7,17 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v206 — 2026-07-25
+**KAIKKI: civilians as WITNESSES — you can't loot in front of an audience**
+- The street now has **2–4 bystanders** wandering it, and while any of them is still out there, **every payout is HALVED** — kill money and floor cash alike. The HUD says why (`WITNESSES: 2 — CASH HALVED`), so the wallet never drops silently
+- **The dash is your answer**: pass within ~3 units of a witness and they panic and sprint for the nearest edge. Clearing the street pays `STREET CLEAR — FULL CASH` and restores the full rate. Left alone they drift off on their own — the cost of ignoring them is patience, never a penalty you can't see coming
+- **Nobody gets hurt**: witnesses can't be damaged, don't block shots, and never carry the gold rescue halo (that tell belongs to TOKOTRON's rescues — reusing it here would have promised a rescue that doesn't exist). The carnage economy gets an audience, not a body count
+- Localized en/ja/fi; cleared with the level like every other street prop
+- Verified headless: the street opens with witnesses at pay-rate 0.5 and no rescue-halo miscue; **an identical body pays 11 while watched and exactly 21 once the street clears**; a dash provably panics a witness and it bolts. `cabinets.sh` green on all six
+- Cache-bust `?v=159` → `?v=160`; HUD label → v206
+
+---
+
 ## v205 — 2026-07-25
 **BINDING item pools — the basement changes character as you descend**
 - The pedestal handed out the same generic pool on every floor, so descending changed the danger but never the OFFER. Each basement floor now draws from its **own themed pool**, and the card screen names it:
