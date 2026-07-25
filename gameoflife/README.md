@@ -186,14 +186,30 @@ to `gh-pages` so clients pick up coherent versions.
 
 ## Roadmap — an expanding experience
 
-Ideas queue, roughly in order; each lands as its own small versioned addition:
+The owner's 2026-07 master idea queue is **fully shipped** (see
+`ideas/2026-07-master-ideas.md`). Remaining ideas, roughly in order; each lands
+as its own small versioned addition:
 
-- **More experiences**: seed-to-tree patience garden; star-map tracing that
-  ends with "go find one real star"; a tide/moon rhythm toy; a mycelium maze.
-- **Seasonal awareness**: invitations that know winter from summer (northern
-  hemisphere first, then configurable).
-- **A day-shape**: morning/evening hub moods beyond the current evening check.
+- ✅ **Seasonal awareness**: invitations that know winter from summer — done,
+  `nature.js` `season()` (northern hemisphere; configurable is still open).
+- ✅ **A day-shape**: done — `daySlot()` greeting + the living hub sky follow the
+  hour, and evening swaps the invitation for a poem.
+- ✅ **Sound garden**: done — the hub's ambient bed grows one voice per *accepted*
+  invitation (see below). Screen time never earns one.
+- **More experiences**: seed-to-tree patience garden; a tide/moon rhythm toy; a
+  mycelium maze; the parked hedgerow idea (Hooper's rule).
 - **Shared feedback**: opt-in export of feedback to an issue/form endpoint,
   replacing the copy-paste loop.
-- **Sound garden**: let the ambient kit grow one instrument per accepted
-  invitation.
+- **Configurable hemisphere** so `season()` is right south of the equator.
+
+### The sound garden
+
+The hub plays a near-inaudible ambient bed that **grows only when the player
+actually goes outside**. Accepting a nature invitation (`consumeInterlude()`)
+increments `accepted` in storage; `gardenVoices()` caps it at five, and
+`audio.gardenStart(n)` layers that many voices: a ground note, a fifth, sparse
+pentatonic chimes, an octave pad, and an occasional two-note bird figure. It
+plays on the hub only — `gardenStop()` runs when an experience or the feedback
+panel opens, so play is silent and the reward stays attached to the real world.
+The footer shows it as `♪` glyphs (no plural rules in three languages), and the
+one-time acknowledgement appears on the return to the hub.
