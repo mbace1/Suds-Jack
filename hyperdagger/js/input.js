@@ -18,6 +18,7 @@ const FLICK_PX = 40;       // min travel within that window to count as a flick
 export class InputManager {
   constructor() {
     this.keys = {};
+    this._reap = false;
     this.mouseDown = false;
     this.touchMode = false;
     this.gamepad = false; // a controller is connected + active
@@ -40,6 +41,7 @@ export class InputManager {
       this.keys[e.code] = true;
       if (e.code === 'Space' && !e.repeat) this._jump = true;
       if ((e.code === 'ShiftLeft' || e.code === 'ShiftRight') && !e.repeat) this._dash = true;
+      if ((e.code === 'KeyR' || e.code === 'KeyE') && !e.repeat) this._reap = true;
     });
     window.addEventListener('keyup', e => { this.keys[e.code] = false; });
 
@@ -175,8 +177,11 @@ export class InputManager {
     this._pad.firing = btn(7) || btn(5); // RT / RB hold to fire
     const jumpNow = btn(0);              // A = jump / double jump
     const dashNow = btn(1) || btn(6);    // B / LT = dash
+    const reapNow = btn(2) || btn(4);    // X / LB = reap
     if (jumpNow && !this._padPrev.jump) this._jump = true;
     if (dashNow && !this._padPrev.dash) this._dash = true;
+    if (reapNow && !this._padPrev.reap) this._reap = true;
+    this._padPrev.reap = reapNow;
     this._padPrev.jump = jumpNow;
     this._padPrev.dash = dashNow;
     // menu-facing edges: d-pad (12/13) or left-stick Y past ±0.55 moves focus,
@@ -269,6 +274,13 @@ export class InputManager {
     const d = this._dash;
     this._dash = false;
     return d;
+  }
+
+  /** REAP — spend the bone-yard. Edge-triggered like jump/dash. */
+  consumeReap() {
+    const r = this._reap;
+    this._reap = false;
+    return r;
   }
 
   consumeDashFlick() {

@@ -5,15 +5,15 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=42';
-import { Player } from './player.js?v=42';
-import { DaggerPool } from './daggers.js?v=42';
-import { GemPool } from './gems.js?v=42';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=42';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=42';
-import { OrbPool } from './bullets.js?v=42';
-import { AudioKit } from './audio.js?v=42';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=42';
+import { InputManager } from './input.js?v=43';
+import { Player } from './player.js?v=43';
+import { DaggerPool } from './daggers.js?v=43';
+import { GemPool } from './gems.js?v=43';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=43';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=43';
+import { OrbPool } from './bullets.js?v=43';
+import { AudioKit } from './audio.js?v=43';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=43';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -741,7 +741,7 @@ function showMenu() {
     `<h1>HYPER DAGGER</h1>
      <p class="sub">a Devil Daggers &times; HYPERDEMON homage</p>
      <p>survive the swarm &mdash; time is your only score</p>
-     <p class="keys">mouse look + <b>WASD</b> &middot; <b>SPACE</b> jump &times;2 &middot; <b>SHIFT</b> dash &middot; <b>ESC</b> options<br>
+     <p class="keys">mouse look + <b>WASD</b> &middot; <b>SPACE</b> jump &times;2 &middot; <b>SHIFT</b> dash &middot; <b>R</b> reap &middot; <b>ESC</b> options<br>
      gamepad &mdash; sticks &middot; <b>A/&#10005;</b> jump &middot; <b>B/&#9675;</b> dash &nbsp;|&nbsp; touch &mdash; dual sticks &middot; <b>tap = jump</b> &middot; <b>flick = dash</b></p>
      <button id="modeBtn">MODE: ${modeLine}</button>
      <button id="runKindBtn" class="opt">RUN: ${runKind === 'daily'
@@ -979,6 +979,7 @@ function resetRun() {
   nextThornAt = 60;
   nextLevAt = 150;
   nextRevenantAt = 110;
+  reapCool = 0;
   nextPulseAt = 20;
   pulseN = 0;
   serpentsSpawned = 0;
@@ -1968,6 +1969,50 @@ function playerStruck(sx, sz, killerType, killer = null) {
   return false;
 }
 
+// ------------------------------------------------------------------ REAP
+// The bone-yard is the only resource in the game, and this is how you spend
+// it. Standing carnage is simultaneously a THREAT (revenants rise from dense
+// piles) and a RESERVE — reaping clears the threat and converts the bones into
+// a damaging pulse, but you can only do it where you have already killed, and
+// once spent the field is empty when the next serpent lands on you.
+// Deliberately has no HUD meter: the resource is the floor, in plain sight.
+const REAP_R = 7;        // radius searched and blasted
+const REAP_MIN = 30;     // fewer bones than this and it simply doesn't fire
+const REAP_COOL = 3.0;
+let reapCool = 0;
+
+function tryReap() {
+  if (reapCool > 0) { audio.clink(); return false; }
+  const px = player.feet.x, pz = player.feet.z;
+  const taken = litter.consume(px, pz, REAP_R, 900);
+  if (taken < REAP_MIN) {
+    // nothing worth reaping — give the miss a voice so it doesn't feel broken
+    audio.clink();
+    return false;
+  }
+  reapCool = REAP_COOL;
+  // power scales with the pile you spent, capped so a huge yard isn't a nuke
+  const power = Math.min(1, taken / 300);
+  const dmg = 1 + Math.round(power * 5);
+  for (const e of enemies) {
+    if (!e.alive || e.type === 'totem') continue;
+    e.center(_c);
+    const d = Math.hypot(_c.x - px, _c.z - pz);
+    if (d > REAP_R) continue;
+    e.hit(dmg * (1 - d / REAP_R * 0.5), _hitDir.set(_c.x - px, 0, _c.z - pz).normalize());
+    if (e.hp <= 0) killEnemy(e, _hitDir);
+  }
+  debris.shove(px, 0.5, pz, REAP_R, 14);
+  spawnShockwave(_sv.set(px, 0, pz));
+  triggerRipple(0.8);
+  addStyle(Math.round(4 + power * 10));
+  audio.reap();
+  buzz(0.8, 0.5, 140);
+  trauma = Math.max(trauma, 0.45);
+  toast(`REAPED ${taken}`, 900);
+  return true;
+}
+
 // skulls shove each other apart so the swarm doesn't stack into one voxel blob
 const SEPARATES = new Set(['skull', 'brute', 'dread', 'husk', 'revenant']);
 
@@ -2014,6 +2059,8 @@ function step(dt) {
     player.justJumped = false;
     audio.jump();
   }
+  if (reapCool > 0) reapCool = Math.max(0, reapCool - dt);
+  if (input.consumeReap()) tryReap();
   director(dt);
   for (const e of enemies) {
     e.update(dt, camera.position, gems);
@@ -2250,6 +2297,8 @@ window.__hd = {
     spawnSplitter() { const p = ringSpot(8).clone(); p.y = 1.2; enemies.push(new Splitter(scene, p)); },
     spawnThorn() { spawnThorn(player.feet.x, player.feet.z); },
     spawnBlinker() { const p = ringSpot(8).clone(); p.y = 1.2; enemies.push(new Blinker(scene, p, ARENA_R - 1)); },
+    reap() { return tryReap(); },
+    getReap() { return { cool: +reapCool.toFixed(2), bones: litter.count }; },
     spawnRevenant() {
       const p = ringSpot(8).clone(); p.y = -0.6;
       const r = new Revenant(scene, p); enemies.push(r); return r;

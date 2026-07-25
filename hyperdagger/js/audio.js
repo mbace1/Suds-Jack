@@ -182,6 +182,17 @@ export class AudioKit {
     this._tone('sine', 70, 180, 0.6, 0.18, t + 0.12);
   }
 
+  /** REAP — the bone-yard drawn in and spent: a sucking inhale that turns
+   *  over into a hard downbeat. Distinct from a gib or a shockwave. */
+  reap(power = 1) {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this._noise(0.22, 'bandpass', 500, 1.2, 0.3, t);          // the intake
+    this._tone('sawtooth', 70, 260, 0.22, 0.2, t);            // rising pull
+    this._tone('square', 200, 40, 0.34, 0.34 * power, t + 0.2); // the spend
+    this._noise(0.4, 'lowpass', 700, 0.6, 0.4 * power, t + 0.2);
+  }
+
   clink() {
     if (!this.ctx) return;
     this._tone('triangle', 1600, 1200, 0.06, 0.15);
