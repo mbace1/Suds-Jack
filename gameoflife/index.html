@@ -38,6 +38,17 @@
     .lang-btn.active { color: #8faf6a; border-bottom: 1px solid #8faf6a; }
     .footer-link { margin-top: 0 !important; color: #6e654f; }
 
+    /* the sound garden: a quiet meter of what going outside has earned */
+    .garden-note {
+      font-size: 11px; letter-spacing: 3px; color: #5f7a4a;
+      text-transform: lowercase;
+    }
+    .garden-note.grew { color: #8faf6a; }
+    .garden-grew {
+      font-size: 11px; color: #6e654f; font-style: italic;
+      text-align: center; max-width: 320px;
+    }
+
     /* the cycle, made visible: two breaths of play, then a rest */
     .cycle-dots { display: flex; gap: 12px; justify-content: center; margin-bottom: 22px; }
     .dot {
@@ -130,6 +141,6 @@
 </head>
 <body>
   <div id="app"></div>
-  <script type="module" src="js/main.js?v=26"></script>
+  <script type="module" src="js/main.js?v=27"></script>
 </body>
 </html>

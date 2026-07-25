@@ -6,33 +6,33 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=26';
-import { PAL } from './palette.js?v=26';
-import { PixelScreen, shade } from './pixel.js?v=26';
-import * as store from './storage.js?v=26';
-import * as audio from './audio.js?v=26';
-import { pickInterlude, isEvening } from './nature.js?v=26';
-import { aqueduct } from './experiences/aqueduct.js?v=26';
-import { forest } from './experiences/forest.js?v=26';
-import { tern } from './experiences/tern.js?v=26';
-import { cup } from './experiences/cup.js?v=26';
-import { hanami } from './experiences/hanami.js?v=26';
-import { berry } from './experiences/berry.js?v=26';
-import { stars } from './experiences/stars.js?v=26';
-import { maple } from './experiences/maple.js?v=26';
-import { plate } from './experiences/plate.js?v=26';
-import { seam } from './experiences/seam.js?v=26';
-import { dots } from './experiences/dots.js?v=26';
-import { glass } from './experiences/glass.js?v=26';
-import { wait } from './experiences/wait.js?v=26';
-import { lichen } from './experiences/lichen.js?v=26';
-import { cloud } from './experiences/cloud.js?v=26';
-import { ice } from './experiences/ice.js?v=26';
-import { trace } from './experiences/trace.js?v=26';
-import { gears } from './experiences/gears.js?v=26';
-import { cairn } from './experiences/cairn.js?v=26';
-import { downhill } from './experiences/downhill.js?v=26';
-import { tether } from './experiences/tether.js?v=26';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=27';
+import { PAL } from './palette.js?v=27';
+import { PixelScreen, shade } from './pixel.js?v=27';
+import * as store from './storage.js?v=27';
+import * as audio from './audio.js?v=27';
+import { pickInterlude, isEvening } from './nature.js?v=27';
+import { aqueduct } from './experiences/aqueduct.js?v=27';
+import { forest } from './experiences/forest.js?v=27';
+import { tern } from './experiences/tern.js?v=27';
+import { cup } from './experiences/cup.js?v=27';
+import { hanami } from './experiences/hanami.js?v=27';
+import { berry } from './experiences/berry.js?v=27';
+import { stars } from './experiences/stars.js?v=27';
+import { maple } from './experiences/maple.js?v=27';
+import { plate } from './experiences/plate.js?v=27';
+import { seam } from './experiences/seam.js?v=27';
+import { dots } from './experiences/dots.js?v=27';
+import { glass } from './experiences/glass.js?v=27';
+import { wait } from './experiences/wait.js?v=27';
+import { lichen } from './experiences/lichen.js?v=27';
+import { cloud } from './experiences/cloud.js?v=27';
+import { ice } from './experiences/ice.js?v=27';
+import { trace } from './experiences/trace.js?v=27';
+import { gears } from './experiences/gears.js?v=27';
+import { cairn } from './experiences/cairn.js?v=27';
+import { downhill } from './experiences/downhill.js?v=27';
+import { tether } from './experiences/tether.js?v=27';
 
 const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice, trace, gears, cairn, downhill, tether];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
@@ -41,6 +41,7 @@ const app = document.getElementById('app');
 let current = null;    // active experience handle
 let offering = null;   // the experience currently offered by the hub
 let hubScene = null;   // the living header scene's raf handle
+let justGrew = false;  // the sound garden gained a voice on this return to the hub
 
 // ── the living header: a quiet pixel sky that follows the hour ─────
 function startHubScene(parent) {
@@ -181,11 +182,27 @@ function showHub() {
     b.onclick = () => { setLang(code); store.setLangPref(code); showHub(); };
     langRow.appendChild(b);
   }
+  // the sound garden: one voice per invitation actually accepted. Shown as
+  // glyphs so it needs no plural rules, and only once there is something to show.
+  const voices = store.gardenVoices();
+  if (voices > 0) {
+    const filled = '♪ '.repeat(voices).trim();
+    const rest = ' ·'.repeat(audio.gardenMax() - voices);
+    const g = el('p', 'garden-note', `${t('gd.label')}  ${filled}${rest}`);
+    if (justGrew) g.classList.add('grew');
+    footer.appendChild(g);
+    if (justGrew) footer.appendChild(el('p', 'garden-grew', t(store.gardenFull() ? 'gd.full' : 'gd.grew')));
+  }
+  justGrew = false;
+
   footer.appendChild(langRow);
   const fb = el('button', 'link-btn footer-link', t('hub.feedback'));
   fb.onclick = () => showFeedback('hub', showHub);
   footer.appendChild(fb);
   app.appendChild(footer);
+
+  // the ambient bed plays on the hub only — it is the reward for going outside
+  audio.gardenStart(voices);
 
   // the cycle: if two experiences have been finished, the hub opens
   // straight onto the invitation before anything else can be played
@@ -195,6 +212,7 @@ function showHub() {
 // ── experience routing ─────────────────────────────────────────────
 function startExperience(exp) {
   stopHubScene();
+  audio.gardenStop();          // the garden belongs to the hub, not to play
   app.innerHTML = '';
   const host = el('div', 'exp');
   app.appendChild(host);
@@ -217,6 +235,7 @@ function startExperience(exp) {
 function showFeedback(expId, done) {
   if (current) { current.destroy(); current = null; }
   stopHubScene();
+  audio.gardenStop();
   app.innerHTML = '';
   const box = el('div', 'panel');
   box.append(el('h2', '', t('fb.title')), el('p', '', t('fb.q')));
@@ -278,7 +297,8 @@ function showInterlude() {
 
   const actions = el('div', 'exp-buttons');
   const go = el('button', 'btn', t('nat.accept'));
-  go.onclick = () => { audio.chime(); store.consumeInterlude(); ov.remove(); showHub(); };
+  // accepting is the only thing that grows the sound garden
+  go.onclick = () => { audio.chime(); store.consumeInterlude(); justGrew = true; ov.remove(); showHub(); };
   const later = el('button', 'link-btn', t('nat.later'));
   later.onclick = () => ov.remove();   // counter stays: the invitation returns next visit
   actions.append(go, later);

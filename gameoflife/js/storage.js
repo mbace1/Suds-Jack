@@ -4,15 +4,18 @@
 //   completions     [{ id, ts }]           every finished experience, ever
 //   sinceInterlude  int                    finishes since the last nature interlude
 //   natureIdx       int                    rotates through the interlude prompts
+//   accepted        int                    invitations the player actually took
 //   feedback        [{ id, leaves, text, lang, ts }]
 
 const KEY = 'golState';
+const GARDEN_MAX = 5;
 
 const DEFAULTS = {
   lang: null,
   completions: [],
   sinceInterlude: 0,
   natureIdx: 0,
+  accepted: 0,
   feedback: [],
 };
 
@@ -47,8 +50,14 @@ export function interludeDue() { return state.sinceInterlude >= 2; }
 export function consumeInterlude() {
   state.sinceInterlude = 0;
   state.natureIdx += 1;
+  state.accepted += 1;
   save();
 }
+
+// the sound garden grows one voice per accepted invitation — screen time never
+// earns a voice, only going outside does
+export function gardenVoices() { return Math.min(GARDEN_MAX, state.accepted || 0); }
+export function gardenFull() { return gardenVoices() >= GARDEN_MAX; }
 
 export function timesPlayedToday(id) {
   const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
