@@ -27,8 +27,12 @@ Source: project owner, via idea-form exchange. Reference art in `ref/`
       brightest non-moon light tonight.
 - [x] **The Glass Plate** — Palo Alto 1878, Muybridge's horse. → blink-freeze (v14)
       a running animal.
-- [ ] **The Tether** — Paris 1783, first free balloon flight. → look down
-      from the highest walkable point.
+- [x] **The Tether** (shipped as `tether`) — Paris 1783, the first free balloon
+      flight: cut the rope over the Château de la Muette and the ground *lets go*;
+      Paris compresses into a map, embers eat holes in the linen (the Marquis's wet
+      sponge), and the brazier flare throws sparks past the letterbox bars into the
+      void. Cinematic-widescreen like `glass`; ends on Franklin's "What use is a
+      newborn baby?" → look down from the highest walkable point.
 - [x] **The Cloudberry Patch** (shipped as `cloud`) — a midnight-sun aapa mire;
       a bear's fresh track leads to your patch, and at the mire's heart the finest
       cluster asks to be left (branching walk, companion to `berry`). *Not everything
