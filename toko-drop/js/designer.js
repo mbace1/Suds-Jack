@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=164';
-import { t } from './lang.js?v=164';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=164';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=165';
+import { t } from './lang.js?v=165';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=165';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -499,12 +499,6 @@ export function initDesigner({ onResume, settings }) {
     // v187 (user direction): CLOSE COMBAT — no enemy fire, only revenge rings
     toggleRow(t('meleeMode'), settings.getMelee, settings.setMelee,
       t('meleeOnH'), t('meleeOffH'), '#ff8866', '#ff885566');
-    // v196 (user direction): FLUID MODE — the movement lab
-    toggleRow(t('fluidMode'), settings.getFluid, settings.setFluid,
-      t('fluidOnH'), t('fluidOffH'), '#66ddff', '#44bbee66');
-    // v210 (field feedback): per-type movement, or the original uniform feel
-    toggleRow(t('mvProfMode'), settings.getMvProf, settings.setMvProf,
-      t('mvProfOnH'), t('mvProfOffH'), '#aaff88', '#88dd6666');
     // ARCADE CABINET (v153): single-select cycle — the tribute cabinets are
     // mods like SMASH TV, but only one can be armed at a time.
     {
@@ -673,6 +667,22 @@ export function initDesigner({ onResume, settings }) {
     el.appendChild(cfgSlider('Health (hits to kill)', 1, 20, 1, 'hp'));
     if (cfg.fireInterval !== null) {
       el.appendChild(cfgSlider('Seconds between attacks', 0.05, 10, 0.05, 'fireInterval'));
+    }
+    // v211: BEHAVIOUR belongs to the species, so it is tuned per species here
+    // rather than through any mode toggle. Each slider is that enemy's share of
+    // a shared movement force; 0 means it simply does its own thing.
+    const mv = settings.getMv(selectedType);
+    if (mv) {
+      el.appendChild(sec(`HOW THIS ENEMY MOVES — ${mv.role}`));
+      const mvSlider = (label, key, hint) => {
+        el.appendChild(slider(label, 0, 1, 0.05, mv[key],
+          v => settings.setMv(selectedType, key, v)));
+        el.appendChild(note(hint));
+      };
+      mvSlider('Dodges your shots', 'dodge', 'sidesteps an incoming bullet lane — 0 never reads your gun');
+      mvSlider('Schools with its own kind', 'flock', 'draws toward nearby enemies that also school');
+      mvSlider('Rides the wave current', 'current', 'how hard the wave-wide drift pushes it');
+      mvSlider('Weaves on approach', 'weave', 'its own serpentine path — personality without a school');
     }
     el.appendChild(note('changes apply to the real game too — RESET (top) restores everything'));
 

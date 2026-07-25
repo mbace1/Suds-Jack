@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=164';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=164';
-import { Player, PLAYER_RADIUS } from './player.js?v=164';
+import { InputManager } from './input.js?v=165';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=165';
+import { Player, PLAYER_RADIUS } from './player.js?v=165';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS } from './enemy.js?v=164';
-import { RetroPass } from './retro.js?v=164';
-import { audio } from './audio.js?v=164';
-import { initDesigner } from './designer.js?v=164';
-import { t, getLang, setLang, langs } from './lang.js?v=164';
-import { TUNING } from './tuning.js?v=164';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS } from './enemy.js?v=165';
+import { RetroPass } from './retro.js?v=165';
+import { audio } from './audio.js?v=165';
+import { initDesigner } from './designer.js?v=165';
+import { t, getLang, setLang, langs } from './lang.js?v=165';
+import { TUNING } from './tuning.js?v=165';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -95,9 +95,9 @@ function getEnemySchedule(wave) {
     [MAGNA,      10, 5],  // v144: magnet — pulls you off your line, dash breaks it
     [DRAPER,      7, 5],  // v171: wall-weaver — looms marching bullet curtains
   ];
-  // v203: THE SHEPHERD only exists where its mechanic does — it herds the
-  // flock, so it rides with FLUID runs (the default) and sits out classic.
-  if (fluidRun) POOL.push([SHEPHERD, 4, 4]);
+  // v203: THE SHEPHERD herds the flock. v211: it is simply a roster entry —
+  // its mechanic is its own identity, not a mode that has to be switched on.
+  POOL.push([SHEPHERD, 4, 4]);
   // TEST MODE (v142): every enemy type is unlocked from wave 1 so new
   // designs can be met within seconds of pressing start.
   const available = POOL.filter(([, min]) => testMode || wave >= min);
@@ -133,9 +133,6 @@ function getEnemySchedule(wave) {
   if (dailyMod === 'rich') budget = Math.floor(budget * 1.4);
   // v187: no lanes to respect — CLOSE COMBAT floods the floor instead
   if (meleeRun) budget = Math.floor(budget * 1.35);
-  // v196: splitting roughly doubles the bodies a wave produces — pull the
-  // schedule back so FLUID waves stay dodgeable, not wall-to-wall.
-  if (fluidRun) budget = Math.floor(budget * 0.85);
 
   // Composed waves (v116): melee mobs FLOOD the arena (groups/twins — the
   // fodder you mow through), while ranged enemies are placed DELIBERATELY —
@@ -1911,8 +1908,6 @@ const RANGED_TYPES = new Set([EnemyType.SPITTOR, EnemyType.FANNER, EnemyType.WEE
 // cohesion + alignment over the engine's existing separation), and SPLIT when
 // they die — one big blob becomes a fast school of minnows. Stacks with CLOSE
 // COMBAT for the pure movement lab. Classic + SMASH runs only, like melee.
-let fluidMode = localStorage.getItem('tokoDropFluid') !== '0';   // v198: default ON (see melee note)
-let fluidRun = false;                              // captured at run start
 // v197: every FLUID wave rolls a movement ARCHETYPE — a shared current that
 // shapes how the whole school moves. Deterministic from (wave + runSeed) so
 // daily runs replay identically and the shared rng stream is untouched.
@@ -1922,22 +1917,18 @@ let fluidArch = null;
 // into a flat array indexed by EnemyType, once at boot. Every FLUID force is
 // scaled by the moving body's own profile, so the roster reads as 40 species
 // instead of one school (see the tuning.js block for the full rationale).
-// v210 (user direction): the pre-profile behaviour stays one click away —
-// MOVEMENT PROFILES off restores the v196–v209 feel where every body took the
-// full share of every force. Kept as a real toggle, not a dead code path, so
-// the two can be compared back-to-back in the field.
-let mvProfiles = localStorage.getItem('tokoDropMvProf') !== '0';   // default ON
-const MV_UNIFORM = { dodge: 1, flock: 1, current: 1, weave: 0 };
 const MV = TUNING.movement;
 const MV_BY_TYPE = (() => {
   const fb = MV.roles[MV.fallback];
   const out = [];
   for (const [name, id] of Object.entries(EnemyType)) {
-    out[id] = MV.roles[MV.byType[name]] ?? fb;
+    // per-type COPY, never the shared role object: the enemy tuner edits one
+    // species at a time and must not drag every other type sharing its role.
+    out[id] = { ...(MV.roles[MV.byType[name]] ?? fb), role: MV.byType[name] ?? MV.fallback };
   }
   return out;
 })();
-const mvOf = e => mvProfiles ? (MV_BY_TYPE[e.type] ?? MV.roles[MV.fallback]) : MV_UNIFORM;
+const mvOf = e => MV_BY_TYPE[e.type] ?? MV.roles[MV.fallback];
 // v200 JUICE: kill-streak heat — rapid kills escalate the splatter. Rises per
 // kill, decays fast; scales extra chunk counts and satellite splats so the
 // 10th kill of a chain detonates louder than the 1st. Pure FX, no gameplay.
@@ -2998,29 +2989,11 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
   // can't exhaust the pool. v188 (playtest video): revenge answers the PLAYER
   // only — gate lasers, vents, and suds walls vaporize cleanly, so a
   // barricade can never become a bullet fountain you farm from cover.
-  // v196 FLUID MODE: big bodies SPLIT — one blob becomes a fast school of
-  // minnows. Children are half-size, fragile (1 hp), 35% quicker, and never
-  // re-split; capped so a chain clear can't flood the arena.
-  if (fluidRun && src !== 'env' && gameState === 'playing' &&
-      !e._fluidChild && !e._isBoss && e.radius >= 0.5 &&
-      // v203: the SHEPHERD must never split — its whole contract is "kill it
-      // and the herd is released". Splitting handed you TWO live herders and
-      // silently broke the promise its ring makes.
-      e.type !== EnemyType.SHEPHERD &&
-      enemies.filter(x => x.alive).length < 70) {
-    for (let k = 0; k < 2; k++) {
-      const a = Math.random() * Math.PI * 2;
-      const c = new Enemy(scene, e.type,
-        e.position.x + Math.cos(a) * 0.7, e.position.z + Math.sin(a) * 0.7,
-        (e._speedMult ?? 1) * 1.35, 1);
-      c.mesh.scale.multiplyScalar(0.55);
-      c._radiusMult = (e._radiusMult ?? 1) * 0.55;
-      c.hp = 1;
-      c._fluidChild = true;
-      enemies.push(c);
-    }
-    audio.splitPop();   // v201: the split has a voice
-  }
+  // v211: big bodies no longer split as a global rule. Splitting was already
+  // SPECIES identity — SPLITTA, REDD_CUBE and PURP_CUBE spawn their own
+  // children from enemy.js, each with its own telegraph — so the mode-wide
+  // version was a duplicate bolted over a mechanic that already existed, and
+  // it turned every large corpse into a minnow factory regardless of what died.
   if (meleeRun && src !== 'env' && gameState === 'playing' && bullets.active.length < 240) {
     const nRev = e._isBoss ? 14 : e.radius > 0.75 ? 7 : 4;
     const a0 = Math.random() * Math.PI * 2;
@@ -3033,7 +3006,7 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
   streak++;
   score += 100 * streak * (scoreMultT > 0 ? 2 : 1) * (dailyMod === 'glass' ? 2 : 1)   // v179: GLASS pays double
          * killScoreMult                                                              // v180: GAMBLER's card
-         * (minnowBounty && e._fluidChild ? 3 : 1)                                    // v202: MINNOW BOUNTY
+         * (minnowBounty && e._spawnChild ? 3 : 1)                                    // v202: MINNOW BOUNTY
          * (gauntlet ? gauntlet.mult : cabQuest ? cabQuest.mult : 1);
   if (vampireOn && ++vampireKills % 25 === 0 && player.hp < player.maxHp) {
     player.hp++;                                     // v180: the suds provide
@@ -3613,21 +3586,18 @@ const designer = initDesigner({
     // v191 WEBGPU (BETA): the importmap is chosen before any module loads, so
     // flipping the renderer requires a reload — done here, immediately, so the
     // toggle can't show a state the page isn't actually in.
-    getFluid: () => fluidMode,
-    setFluid: on => {
-      fluidMode = on;
-      localStorage.setItem('tokoDropFluid', on ? '1' : '0');
-    },
-    // v210: per-type movement profiles vs the original uniform behaviour
-    getMvProf: () => mvProfiles,
-    setMvProf: on => {
-      mvProfiles = on;
-      localStorage.setItem('tokoDropMvProf', on ? '1' : '0');
-    },
     getGpu: () => IS_GPU,
     setGpu: on => {
       localStorage.setItem('tokoDropGpu', on ? '1' : '0');
       location.reload();
+    },
+    // v211: per-enemy behaviour — the enemy tuner edits ONE species at a time,
+    // which is where experimenting with movement belongs now that there is no
+    // mode that rewrites the whole roster at once.
+    getMv: type => (typeof type === 'number' ? MV_BY_TYPE[type] : null),
+    setMv: (type, key, v) => {
+      const m = MV_BY_TYPE[type];
+      if (m) m[key] = v;
     },
     getSmash: () => smashMode,
     setSmash: on => {
@@ -4224,7 +4194,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v210' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v211' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -4641,7 +4611,7 @@ function buildDailyLeaderboard(slot) {
       body: JSON.stringify({
         initials, score, wave, daily: _dailyRun,
         seed: runSeed.toString(16).toUpperCase().padStart(6, '0'),
-        mode: `${nexdeusMode ? 'nexdeus' : kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}${dailyMod ? '+' + dailyMod : ''}${meleeRun ? '+melee' : ''}${fluidRun ? '+fluid' : ''}`,
+        mode: `${nexdeusMode ? 'nexdeus' : kaikkiMode ? 'kaikki' : loadoutMode ? 'loadout' : bindingMode ? 'binding' : gaundropMode ? 'gaundrop' : tokotronMode ? 'tokotron' : roguelikeMode ? 'roguelike' : 'arcade'}${smashMode ? '+smash' : ''}${dailyMod ? '+' + dailyMod : ''}${meleeRun ? '+melee' : ''}`,
         build: new URL(import.meta.url).searchParams.get('v') ?? '?',
       }),
     }).catch(() => {});
@@ -4957,7 +4927,12 @@ function spawnWave() {
   for (const p of powerups) p.remove(scene); powerups = [];
   wave++;
   // v197 FLUID archetypes: name the wave's current so the lab stays legible.
-  if (fluidRun) {
+  // v211: the wave CURRENT is arena choreography, not species identity — so it
+  // belongs to classic waves and sits out the cabinets, which each script their
+  // own pacing. (The per-species traits below apply everywhere: a FLIT is a
+  // FLIT in the basement too.)
+  fluidArch = null;
+  if (!inCabinet()) {
     fluidArch = FLUID_ARCHS[(wave + runSeed) % 3];
     // v198: wave 1 keeps the mode-intro banner (it's the DEFAULT experience
     // now — new players must see the mode name); archetype calls start wave 2.
@@ -4968,7 +4943,7 @@ function spawnWave() {
                     : 'THE PINCER — THEY CUT YOU OFF';
       audio.archStinger(fluidArch);   // v201: each current has a signature
     }
-  } else fluidArch = null;
+  }
   const { speedMult, intervalMult } = getWaveScale(wave);
   // Binding fight rooms use the cabinet's own roster (v157) — only BOSS
   // rooms keep the smash schedule (tokotron/gaundrop build their own floods).
@@ -6140,7 +6115,7 @@ function showUpgradeCards(afterPick = null, poolIds = null) {
   // Roguelike B (v146): 2 regular mods + 1 rare gauntlet invitation.
   const source = poolIds
     ? UPGRADE_POOL.filter(c => poolIds.includes(c.id))
-    : UPGRADE_POOL.filter(c => fluidRun || !SWARM_CARDS.has(c.id));
+    : UPGRADE_POOL.slice();   // v211: swarm cards are always live (see SWARM_CARDS)
   const pool = [...source].sort(() => Math.random() - 0.5).slice(0, rogueB ? 2 : 3);
   // v180: from wave 6, ~35% of card screens turn one slot PURPLE — a cursed
   // trade with the price printed on the card. Never the only choice.
@@ -6456,12 +6431,6 @@ function startGame() {
   if (meleeRun) {
     milestoneT = 2.0;
     milestoneText = 'CLOSE COMBAT — NO GUNS, ONLY REVENGE';
-  }
-  fluidRun = fluidMode && !inCabinet();       // v196: cabinets keep their choreography
-  if (fluidRun) {
-    milestoneT = 2.0;
-    milestoneText = meleeRun ? 'FLUID MODE — THE SWARM READS YOUR MOVES'
-                             : 'FLUID MODE — THE SWARM READS YOUR GUN';
   }
   player._magnet    = false;
   player._hasShield = false;
@@ -7647,7 +7616,7 @@ function loop() {
   if (juiceHeat < 0.5) _heatPeaked = false;                            // v201: riser re-arms
 
   // v196 FLUID MODE: the swarm reads your gun and schools like fish.
-  if (fluidRun) {
+  {
     // v203 THE SHEPHERD: collect the live conductors once per frame — every
     // flockmate inside a herd ring gets dragged toward the player, so the
     // school knots up around you until you kill the shepherd.
@@ -7767,7 +7736,7 @@ function loop() {
         const pvx = player._velX ?? 0, pvz = player._velZ ?? 0;
         const pm = Math.hypot(pvx, pvz);
         const ax = pm > 0.5 ? pvx / pm : 1, az = pm > 0.5 ? pvz / pm : 0;
-        const side = (e._fluidSide ??= (Math.random() < 0.5 ? 1 : -1));
+        const side = (e._mvSide ??= (Math.random() < 0.5 ? 1 : -1));
         const tx = player.position.x - az * side * 6;
         const tz = player.position.z + ax * side * 6;
         const dx = tx - e.position.x, dz = tz - e.position.z;
@@ -8027,7 +7996,9 @@ function loop() {
     }
   }
   for (const s of toSpawn) {
-    enemies.push(new Enemy(scene, s.type, s.x, s.z, s.sm, s.im));
+    const c = new Enemy(scene, s.type, s.x, s.z, s.sm, s.im);
+    c._spawnChild = true;   // v211: marks a body born from a parent (MINNOW BOUNTY)
+    enemies.push(c);
   }
 
   // Collision: player bullets → enemies
@@ -8860,6 +8831,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=164').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=165').catch(() => {});
   });
 }

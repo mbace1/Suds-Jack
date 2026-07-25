@@ -7,6 +7,20 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v211 — 2026-07-25
+**FLUID is retired — behaviour belongs to the species, not to a mode**
+- User direction: *"fluid is problematic and should not exist. each enemy can have options for behavior to test what works, but there should never be a toggle like the one we had with fluid mode, since that breaks the game."* A global switch that rewrites how all 40 species move is the wrong shape, and that includes the v210 `MOVEMENT PROFILES` toggle — same mistake, one release younger. Both are gone
+- **`FLUID MODE` and `MOVEMENT PROFILES` deleted from OPTIONS**, along with `fluidMode`/`fluidRun`/`mvProfiles` and every branch they gated. Movement traits (dodge / flock / current / weave) are simply how each species moves, always
+- **The global split-on-death is deleted.** Splitting was *already* species identity — SPLITTA, REDD_CUBE and PURP_CUBE spawn their own children from `enemy.js`, each with its own telegraph — so the mode-wide version was a duplicate bolted over a mechanic that already existed properly, and it turned every large corpse into a minnow factory regardless of what died
+- **THE SHEPHERD is just a roster entry** now, not a mode's mascot; the mode's `×0.85` wave-budget compensation goes with the mode; the swarm cards are always in the pool; the `+fluid` leaderboard tag is gone
+- **Experimenting moved to where it belongs**: the pause-menu enemy tester gains a `HOW THIS ENEMY MOVES` section — four sliders on the selected species, watched up close, one at a time. Profiles are per-type copies, so tuning a TORO never drags the CHARGER that shares its role
+- **One judgment call worth naming**: the wave CURRENT (STREAM/RING/PINCER) is *arena* choreography rather than species identity, so it stays with classic waves and sits out the cabinets, which script their own pacing. The per-species traits do apply inside cabinets — a FLIT is a FLIT in the basement too
+- `scripts/cabinets.sh` updated: the FLUID-leak probe is retired, and native splitters spawning children inside a cabinet is no longer flagged (that's identity, not a leak)
+- Verified headless (15/15): `fluidMode`, `fluidRun` and `mvProfiles` are all undefined; a FLIT still dodges (impulse 10.8) with no mode enabling it and a TORO still never does; tuning TORO's dodge to 1.0 makes it dodge in the real game (12) **without** changing CHARGER; killing an ordinary big body spawns no minnows while REDD_CUBE still spawns 4 children and PURP_CUBE 5. `smoke.sh` and `cabinets.sh` green on all six
+- Cache-bust `?v=164` → `?v=165`; HUD label → v211
+
+---
+
 ## v210 — 2026-07-25
 **MOVEMENT PROFILES — 40 species again, instead of one school**
 - Field feedback: *"the movement of enemies is now unnatural, they should have unique patterns but not all just dodge [shots]."* Correct, and the cause was structural: FLUID (the default since v198) bolted the **same four forces onto every non-boss body** — dodge, flock, wave current, shepherd pull — so a charging TORO, a stationary TURRET, a lobbing BAMBU and a FLIT all moved like the same fish and each type's own behaviour got averaged away
