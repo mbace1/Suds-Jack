@@ -7,35 +7,35 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=36';
-import { PAL } from './palette.js?v=36';
-import { PixelScreen, shade } from './pixel.js?v=36';
-import * as store from './storage.js?v=36';
-import * as audio from './audio.js?v=36';
-import { pickInterlude, isEvening, guessHemisphere } from './nature.js?v=36';
-import * as outbound from './feedback.js?v=36';
-import { aqueduct } from './experiences/aqueduct.js?v=36';
-import { forest } from './experiences/forest.js?v=36';
-import { tern } from './experiences/tern.js?v=36';
-import { cup } from './experiences/cup.js?v=36';
-import { hanami } from './experiences/hanami.js?v=36';
-import { berry } from './experiences/berry.js?v=36';
-import { stars } from './experiences/stars.js?v=36';
-import { maple } from './experiences/maple.js?v=36';
-import { plate } from './experiences/plate.js?v=36';
-import { seam } from './experiences/seam.js?v=36';
-import { dots } from './experiences/dots.js?v=36';
-import { glass } from './experiences/glass.js?v=36';
-import { wait } from './experiences/wait.js?v=36';
-import { lichen } from './experiences/lichen.js?v=36';
-import { cloud } from './experiences/cloud.js?v=36';
-import { ice } from './experiences/ice.js?v=36';
-import { trace } from './experiences/trace.js?v=36';
-import { gears } from './experiences/gears.js?v=36';
-import { cairn } from './experiences/cairn.js?v=36';
-import { downhill } from './experiences/downhill.js?v=36';
-import { tether } from './experiences/tether.js?v=36';
-import { hedge } from './experiences/hedge.js?v=36';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=37';
+import { PAL } from './palette.js?v=37';
+import { PixelScreen, shade } from './pixel.js?v=37';
+import * as store from './storage.js?v=37';
+import * as audio from './audio.js?v=37';
+import { pickInterlude, isEvening, guessHemisphere } from './nature.js?v=37';
+import * as outbound from './feedback.js?v=37';
+import { aqueduct } from './experiences/aqueduct.js?v=37';
+import { forest } from './experiences/forest.js?v=37';
+import { tern } from './experiences/tern.js?v=37';
+import { cup } from './experiences/cup.js?v=37';
+import { hanami } from './experiences/hanami.js?v=37';
+import { berry } from './experiences/berry.js?v=37';
+import { stars } from './experiences/stars.js?v=37';
+import { maple } from './experiences/maple.js?v=37';
+import { plate } from './experiences/plate.js?v=37';
+import { seam } from './experiences/seam.js?v=37';
+import { dots } from './experiences/dots.js?v=37';
+import { glass } from './experiences/glass.js?v=37';
+import { wait } from './experiences/wait.js?v=37';
+import { lichen } from './experiences/lichen.js?v=37';
+import { cloud } from './experiences/cloud.js?v=37';
+import { ice } from './experiences/ice.js?v=37';
+import { trace } from './experiences/trace.js?v=37';
+import { gears } from './experiences/gears.js?v=37';
+import { cairn } from './experiences/cairn.js?v=37';
+import { downhill } from './experiences/downhill.js?v=37';
+import { tether } from './experiences/tether.js?v=37';
+import { hedge } from './experiences/hedge.js?v=37';
 
 const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice, trace, gears, cairn, downhill, tether, hedge];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
@@ -137,6 +137,8 @@ function useLang(l) { setLang(l); document.documentElement.lang = l; }
 // look for frost in January. It is only a guess; the hub footer can flip it.
 if (!store.hemiSet()) store.setHemi(guessHemisphere());
 
+// the remembered mute has to be in force before the first note can play
+audio.setMuted(!store.soundOn());
 document.addEventListener('pointerdown', audio.init, { once: true });
 document.addEventListener('keydown', e => {
   if (e.key === 'Tab' || e.key === 'Enter' || e.key === ' ') byKeyboard = true;
@@ -230,7 +232,7 @@ function showHub() {
   footer.appendChild(langRow);
 
   // which hemisphere's seasons the invitations follow — set once, then forgotten
-  const hemiRow = el('div', 'lang-row hemi-row');
+  const hemiRow = el('div', 'lang-row opt-row hemi-row');
   hemiRow.appendChild(el('span', 'hemi-label', t('hemi.label')));
   for (const h of ['n', 's']) {
     const b = el('button', 'lang-btn' + (store.getHemi() === h ? ' active' : ''), t(`hemi.${h}`));
@@ -238,6 +240,23 @@ function showHub() {
     hemiRow.appendChild(b);
   }
   footer.appendChild(hemiRow);
+
+  // sound, with an off switch — the garden and the chimes are lovely and a
+  // person on a quiet train still needs to be able to stop them
+  const soundRow = el('div', 'lang-row opt-row sound-row');
+  soundRow.appendChild(el('span', 'hemi-label', t('snd.label')));
+  for (const on of [true, false]) {
+    const b = el('button', 'lang-btn' + (store.soundOn() === on ? ' active' : ''), t(on ? 'snd.on' : 'snd.off'));
+    b.onclick = () => {
+      store.setSoundOn(on);
+      audio.init();                 // this click is the gesture that unlocks audio
+      audio.setMuted(!on);
+      if (on) audio.step();         // let them hear that it came back
+      showHub();
+    };
+    soundRow.appendChild(b);
+  }
+  footer.appendChild(soundRow);
 
   const fb = el('button', 'link-btn footer-link', t('hub.feedback'));
   fb.onclick = () => showFeedback('hub', showHub);

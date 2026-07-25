@@ -73,8 +73,23 @@ Two rules keep the app from nagging:
 
 Keyboard and touch: a visible `:focus-visible` ring, focus moves to the primary
 action after a view swap (for keyboard users only, so a tap never raises a ring
-out of nowhere), and the five rating leaves are 44 px targets with per-leaf
-`aria-label`s instead of five identical glyphs.
+out of nowhere), and **every** interactive element is a 44 px target — the
+rating leaves were 26 px and the footer links 14 px tall, which is a word to
+read rather than a thing to hit.
+
+**Sound has an off switch.** The chimes and the ambient garden are lovely and a
+person on a quiet train still needs to be able to stop them. The footer carries
+a `sound on/off` toggle, persisted (`store.soundOn()`). It works by routing every
+voice through a single master gain in `audio.js` — nothing may connect straight
+to `ctx.destination` — so the mute is total rather than a list of sounds someone
+remembered to silence, and any sound added later inherits it for free.
+
+**Contrast meets WCAG AA.** The muted-on-dark palette had nine failures, the
+worst being the seasons label at **1.92:1** — effectively invisible to a lot of
+eyes. Text greys moved to `#8d8165` and the primary button to `#4e6839`
+(cream-on-green was 3.87:1, now 5.02:1). The hierarchy that used to come from
+making things nearly unreadable now comes from size. Contrast and target size
+are both measured in the smoke gate, so a future re-tint cannot quietly undo it.
 
 **The layout holds still.** Story beats run from ~90 to ~340 characters, and
 sizing `.exp-text` to the short ones made the Continue button walk up to 190 px
