@@ -68,6 +68,7 @@ switchable in the hub, persisted in `localStorage`.
 | `lichen` | wisdom | The Lichen | A bare stone greens over with dithered sage lichen if you leave it alone; touch it and the growth recoils — glowing spores lift into the void → *press a hand to moss for thirty seconds* |
 | `cloud` | story | The Cloudberry Patch | A midnight-sun mire, ripe lakka, and a bear's track leading to your patch; the finest cluster asks to be left — companion to The Right to Roam → *leave a beautiful thing where it is* |
 | `ice` | story | The Ice Core | Drill down through banded glacier ice, reading each layer as a year of trapped sky (soot, ash, ancient air that glows cyan and breaks the frame) → *imagine your square of earth 100 years ago* |
+| `trace` | game | Trace the Chaos | Draw your own constellation from a field of stars; a dithered purple nebula blooms around what you connect, then you name it — the sky was never arranged → *find and name your own star pattern* |
 
 ## Visual standard (2026-07 master doc)
 
@@ -85,10 +86,13 @@ For reference-grade scenes it also provides **halftone dithering** (`bayer` +
 `seam` was rebuilt first to full reference fidelity (dithered Raku glaze, gold
 veins, cyan overflow, matching `ideas/ref/kintsugi-overflow.png`); `dots` also
 carries the toolkit — a cool halo behind the eyepiece, a dithered glass interior
-in the lens, and a luminous cyan wash under the escaping orbits; and `wait` is
+in the lens, and a luminous cyan wash under the escaping orbits; `wait` is
 built to `ideas/ref/horizon-pine-vignette.png` — a dithered blue vignette on the
 void, a pale halftone fog that burns off to reveal the pine, and green fireflies
-that drift past the frame. (`plate` keeps its original clean jagged vignette —
+that drift past the frame; `ice` reads a dithered ice cylinder whose ancient air
+glows cyan; and `trace` is built to `ideas/ref/constellation-nebula.png` — a
+gold constellation you draw yourself over a dithered purple nebula that blooms
+around it. (`plate` keeps its original clean jagged vignette —
 the halo/dither pass muddied it, so it was reverted; the toolkit is opt-in per
 scene, not automatic.)
 

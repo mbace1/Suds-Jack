@@ -6,30 +6,31 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=20';
-import { PAL } from './palette.js?v=20';
-import { PixelScreen, shade } from './pixel.js?v=20';
-import * as store from './storage.js?v=20';
-import * as audio from './audio.js?v=20';
-import { pickInterlude, isEvening } from './nature.js?v=20';
-import { aqueduct } from './experiences/aqueduct.js?v=20';
-import { forest } from './experiences/forest.js?v=20';
-import { tern } from './experiences/tern.js?v=20';
-import { cup } from './experiences/cup.js?v=20';
-import { hanami } from './experiences/hanami.js?v=20';
-import { berry } from './experiences/berry.js?v=20';
-import { stars } from './experiences/stars.js?v=20';
-import { maple } from './experiences/maple.js?v=20';
-import { plate } from './experiences/plate.js?v=20';
-import { seam } from './experiences/seam.js?v=20';
-import { dots } from './experiences/dots.js?v=20';
-import { glass } from './experiences/glass.js?v=20';
-import { wait } from './experiences/wait.js?v=20';
-import { lichen } from './experiences/lichen.js?v=20';
-import { cloud } from './experiences/cloud.js?v=20';
-import { ice } from './experiences/ice.js?v=20';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=21';
+import { PAL } from './palette.js?v=21';
+import { PixelScreen, shade } from './pixel.js?v=21';
+import * as store from './storage.js?v=21';
+import * as audio from './audio.js?v=21';
+import { pickInterlude, isEvening } from './nature.js?v=21';
+import { aqueduct } from './experiences/aqueduct.js?v=21';
+import { forest } from './experiences/forest.js?v=21';
+import { tern } from './experiences/tern.js?v=21';
+import { cup } from './experiences/cup.js?v=21';
+import { hanami } from './experiences/hanami.js?v=21';
+import { berry } from './experiences/berry.js?v=21';
+import { stars } from './experiences/stars.js?v=21';
+import { maple } from './experiences/maple.js?v=21';
+import { plate } from './experiences/plate.js?v=21';
+import { seam } from './experiences/seam.js?v=21';
+import { dots } from './experiences/dots.js?v=21';
+import { glass } from './experiences/glass.js?v=21';
+import { wait } from './experiences/wait.js?v=21';
+import { lichen } from './experiences/lichen.js?v=21';
+import { cloud } from './experiences/cloud.js?v=21';
+import { ice } from './experiences/ice.js?v=21';
+import { trace } from './experiences/trace.js?v=21';
 
-const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice];
+const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice, trace];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
 
 const app = document.getElementById('app');
