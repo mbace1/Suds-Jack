@@ -177,6 +177,23 @@ export const MODELS = {
       ['V.......V', '.........', '.........'],
     ],
   },
+  // THE REVENANT — assembled out of the player's own bone-yard: dirty bone,
+  // hollow ribcage, two burning eyes. Deliberately lankier than a skull so it
+  // reads as a standing figure the moment it claws out of the floor.
+  revenant: {
+    voxelSize: 0.3,
+    wobble: 1.15, // loose-jointed, more alive than the plated husk
+    palette: { B: 0xdedede, S: 0x9a9a9a, R: [2.8, 0.2, 0.2] },
+    layers: [
+      ['.B.B.', '.....', '.....'],
+      ['.S.S.', '.....', '.....'],
+      ['BSBSB', '.SBS.', '.....'],
+      ['B.S.B', '.BSB.', '.....'],
+      ['S.B.S', '.SBS.', '.....'],
+      ['BSBSB', 'SBSBS', '.....'],
+      ['.RBR.', '.SBS.', '.....'],
+    ],
+  },
   // THE HUSK — armored slab whose shell fully ENCLOSES an HDR core, so the
   // core is invisible until dagger chips carve a hole through the plating.
   // The armor is checkerboarded (A/B) because unlit same-colour voxels read
@@ -763,6 +780,46 @@ export class LitterField {
     }
     if (woke) this.mesh.instanceMatrix.needsUpdate = true;
     return woke;
+  }
+
+  /** Densest patch of bones: samples live entries and returns the one with the
+   *  most neighbours inside `radius`, or null if nothing reaches `minCount`.
+   *  This is what lets the bone-yard become a spawn condition rather than
+   *  decoration — no corpses, no revenant. */
+  densestSpot(minCount, radius, samples = 40) {
+    const live = [];
+    for (let i = 0; i < this.cap; i++) if (this.items[i]) live.push(this.items[i]);
+    if (live.length < minCount) return null;
+    const r2 = radius * radius;
+    let best = null;
+    for (let s = 0; s < samples; s++) {
+      const a = live[(Math.random() * live.length) | 0];
+      let n = 0;
+      for (const b of live) {
+        const dx = b.px - a.px, dz = b.pz - a.pz;
+        if (dx * dx + dz * dz <= r2) n++;
+      }
+      if (!best || n > best.count) best = { x: a.px, z: a.pz, count: n };
+    }
+    return best && best.count >= minCount ? best : null;
+  }
+
+  /** Devour up to `max` bones inside the radius — the pile visibly drains as
+   *  whatever rose from it takes shape. Returns how many were taken. */
+  consume(x, z, radius, max) {
+    const r2 = radius * radius;
+    let taken = 0;
+    for (let i = 0; i < this.cap && taken < max; i++) {
+      const it = this.items[i];
+      if (!it) continue;
+      const dx = it.px - x, dz = it.pz - z;
+      if (dx * dx + dz * dz > r2) continue;
+      this.items[i] = null;
+      this.mesh.setMatrixAt(i, _m.makeScale(0, 0, 0));
+      taken++;
+    }
+    if (taken) this.mesh.instanceMatrix.needsUpdate = true;
+    return taken;
   }
 
   /** Re-hue the whole pile under the current style (cheap, only on a change). */

@@ -5,15 +5,15 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=40';
-import { Player } from './player.js?v=40';
-import { DaggerPool } from './daggers.js?v=40';
-import { GemPool } from './gems.js?v=40';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=40';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=40';
-import { OrbPool } from './bullets.js?v=40';
-import { AudioKit } from './audio.js?v=40';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=40';
+import { InputManager } from './input.js?v=41';
+import { Player } from './player.js?v=41';
+import { DaggerPool } from './daggers.js?v=41';
+import { GemPool } from './gems.js?v=41';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=41';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=41';
+import { OrbPool } from './bullets.js?v=41';
+import { AudioKit } from './audio.js?v=41';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=41';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -26,7 +26,7 @@ const ENEMY_NAMES = {
   skull: 'a skull', brute: 'a brute', serpent: 'the serpent', spider: 'a spider',
   watcher: 'a watcher', blinker: 'a blinker', leviathan: 'THE LEVIATHAN',
   thorn: 'a thorn spike', orb: 'an orb', totem: 'a totem', dread: 'the DREAD SKULL',
-  husk: 'a husk',
+  husk: 'a husk', revenant: 'a revenant',
 };
 
 // player-tunable options (pause menu), persisted across sessions
@@ -81,7 +81,7 @@ const WEAPON = [
   { stream: 18, homing: true },
   { stream: 26, homing: true }, // LV4 — the crimson hand (DD's fourth tier)
 ];
-const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10, watcher: 1, blinker: 1, dread: 3, husk: 4 };
+const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10, watcher: 1, blinker: 1, dread: 3, husk: 4, revenant: 2 };
 
 // The gauntlet itself evolves with the weapon (DD's hand upgrades): knuckle
 // glow at LV2, red veins at LV3, full crimson-and-fire at LV4. Keys are the
@@ -112,7 +112,7 @@ const STYLE_CAP = 150;
 // style awarded per kill by enemy type (dash-through orbs + gems add their own)
 const STYLE_GAIN = {
   skull: 3, brute: 6, serpent: 5, spider: 5, watcher: 5,
-  blinker: 5, leviathan: 30, thorn: 0, dread: 8, husk: 9,
+  blinker: 5, leviathan: 30, thorn: 0, dread: 8, husk: 9, revenant: 6,
 };
 
 // ---------------------------------------------------------------- renderer
@@ -605,6 +605,7 @@ let stylePeakIdx = 0;  // best tier reached this run (for the death recap)
 let nextTotemAt = 0;
 let nextLevAt = 0;
 let nextThornAt = 0;
+let nextRevenantAt = 110; // the dead only rise once there are dead
 let nextPulseAt = 0; // budgeted pressure pulses (toko-drop's wave system, adapted)
 let pulseN = 0;
 let serpentsSpawned = 0;
@@ -977,6 +978,7 @@ function resetRun() {
   nextTotemAt = 0;
   nextThornAt = 60;
   nextLevAt = 150;
+  nextRevenantAt = 110;
   nextPulseAt = 20;
   pulseN = 0;
   serpentsSpawned = 0;
@@ -1601,6 +1603,25 @@ function director(dt) {
     // cadence tightens from every 24s down to every 16s as the run goes on
     nextTotemAt = gameTime + Math.max(16, 24 - gameTime * 0.03);
   }
+  // THE REVENANT rises out of the player's own bone-yard — it needs a dense
+  // patch of corpses, devours it, and claws up on the spot. No carnage, no
+  // revenant: the spawn is gated on the litter field, not just the clock.
+  if (gameTime >= nextRevenantAt && enemyCount('revenant') < 3) {
+    const spot = litter.densestSpot(45, 4.5);
+    if (spot) {
+      announce('revenant', 'THE DEAD RISE');
+      litter.consume(spot.x, spot.z, 4.5, 160);
+      _sv.set(spot.x, 0.6, spot.z);
+      audio.spawn();
+      telegraph(_sv, [2.2, 0.2, 0.2], 0.7, () => {
+        _sv.set(spot.x, -0.6, spot.z);
+        enemies.push(new Revenant(scene, _sv, Math.min(1.5, (gameTime - 110) * 0.006)));
+      });
+      nextRevenantAt = gameTime + Math.max(13, 24 - gameTime * 0.02);
+    } else {
+      nextRevenantAt = gameTime + 5; // no pile yet — look again shortly
+    }
+  }
   if (gameTime >= nextPulseAt) {
     pulseN++;
     runPulse(pulseN);
@@ -1946,7 +1967,7 @@ function playerStruck(sx, sz, killerType, killer = null) {
 }
 
 // skulls shove each other apart so the swarm doesn't stack into one voxel blob
-const SEPARATES = new Set(['skull', 'brute', 'dread', 'husk']);
+const SEPARATES = new Set(['skull', 'brute', 'dread', 'husk', 'revenant']);
 
 function separateSkulls() {
   for (let i = 0; i < enemies.length; i++) {
@@ -2227,6 +2248,10 @@ window.__hd = {
     spawnSplitter() { const p = ringSpot(8).clone(); p.y = 1.2; enemies.push(new Splitter(scene, p)); },
     spawnThorn() { spawnThorn(player.feet.x, player.feet.z); },
     spawnBlinker() { const p = ringSpot(8).clone(); p.y = 1.2; enemies.push(new Blinker(scene, p, ARENA_R - 1)); },
+    spawnRevenant() {
+      const p = ringSpot(8).clone(); p.y = -0.6;
+      const r = new Revenant(scene, p); enemies.push(r); return r;
+    },
     spawnHusk() { const p = ringSpot(9).clone(); p.y = 1.35; const h = new Husk(scene, p); enemies.push(h); return h; },
     spawnDread() { const p = ringSpot(8).clone(); p.y = 1.5; enemies.push(new DreadSkull(scene, p)); },
     spawnGhostSerpent() { spawnSerpent(true); },
