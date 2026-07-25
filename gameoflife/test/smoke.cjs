@@ -97,6 +97,16 @@ function check(name, cond) {
   check('tern choice advances', (await page.locator('.exp-text').textContent()).includes('river of wings'));
   await page.locator('.back-btn').click();
 
+  // cup v2: HOLDING the pour button keeps the tea coming — one sustained press
+  // overflows the bowl on its own (PRESS 0.16 + RATE 0.55/s past OVERFLOW_AT 1.9)
+  await page.evaluate(() => __gol.debug.start('cup'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Pour' }).hover();
+  await page.mouse.down();
+  await page.waitForTimeout(3600);
+  await page.mouse.up();
+  check('cup overflows from one long hold',
+    (await page.locator('.exp-text').textContent()).includes('empty your cup'));
+
   // cup: pour until it overflows, then empty it — the wisdom kernel loop
   await page.evaluate(() => __gol.debug.start('cup'));
   check('cup scene shown', (await page.locator('.exp-text').textContent()).includes('Nan-in'));

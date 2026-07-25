@@ -86,7 +86,8 @@ onComplete}`, start returns `{destroy}`) and register in `REGISTRY` in `main.js`
 current roster: `aqueduct` (game — Roman aqueduct story → rotate-stones channel puzzle,
 BFS flow with live partial water), `forest` (story — branching walk → guided 4-breath
 finale), `tern` (story — arctic tern migration pole to pole, 2 choices), `cup`
-(wisdom — Nan-in's overflowing teacup; the player pours until it spills), `hanami`
+(wisdom — Nan-in's overflowing teacup; **hold** to pour a dithered Raku chawan past
+full, the cyan excess cascading over the lip and off the table), `hanami`
 (story — 12 centuries of hanami, Heian court → Edo riverbanks, mono no aware), and
 `berry` (story — a Finnish blueberry summer teaching jokamiehenoikeus), and `stars`
 (game — trace the Big Dipper star by star, then follow its pointer stars to Polaris;
