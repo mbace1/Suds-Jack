@@ -336,6 +336,14 @@ function check(name, cond) {
   const since = await page.evaluate(() => JSON.parse(localStorage.getItem('golState')).sinceInterlude);
   check('cycle counter reset', since === 0);
 
+  // the sound garden only grows by accepting an invitation, never by playing
+  check('accepting grew the sound garden', await page.evaluate(() => __gol.store.gardenVoices()) >= 1);
+  check('sound garden shown in the footer', await page.locator('.garden-note').count() === 1);
+  check('garden note counts one voice', (await page.locator('.garden-note').textContent()).includes('♪'));
+  check('growth is acknowledged once', await page.locator('.garden-grew').count() === 1);
+  await page.evaluate(() => __gol.debug.showHub());
+  check('the acknowledgement does not repeat', await page.locator('.garden-grew').count() === 0);
+
   // evening variant: a season-matched poem from the cross-cultural pool, in
   // the UI language (October + natureIdx 0 -> Wordsworth's rainbow)
   await page.evaluate(() => {

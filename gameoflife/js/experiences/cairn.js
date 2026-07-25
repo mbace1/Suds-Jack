@@ -4,8 +4,8 @@
 // "Gravity is infinitely patient." Revert: balance two real rocks, then leave
 // them. Dithered stones (pixel.js toolkit) on a muted graphic-novel fell.
 
-import { PixelScreen, bayer, rampDither } from '../pixel.js?v=26';
-import { PAL } from '../palette.js?v=26';
+import { PixelScreen, bayer, rampDither } from '../pixel.js?v=27';
+import { PAL } from '../palette.js?v=27';
 
 const GROUND = 112, CX = 96;
 const TOL = 11;                    // how near the balance line a stone must land

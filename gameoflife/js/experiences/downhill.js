@@ -4,8 +4,8 @@
 // luminescent cyan (the breakout). Water never pushes — it takes the first
 // opening you give it. Revert: pour water on a real slope and watch it choose.
 
-import { PixelScreen, rampDither } from '../pixel.js?v=26';
-import { PAL } from '../palette.js?v=26';
+import { PixelScreen, rampDither } from '../pixel.js?v=27';
+import { PAL } from '../palette.js?v=27';
 
 const INLET = 92;
 const STONE = ['#2c2a26', '#433f37', '#5e594d', '#7c7565', '#9c9482'];

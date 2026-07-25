@@ -2,8 +2,8 @@
 // party, Edo's riverbank picnics, and the lesson underneath it all —
 // mono no aware, the gathering that exists because the bloom will end.
 
-import { PixelScreen } from '../pixel.js?v=26';
-import { PAL } from '../palette.js?v=26';
+import { PixelScreen } from '../pixel.js?v=27';
+import { PAL } from '../palette.js?v=27';
 
 const PINK = '#e8a8b8', PINK_DEEP = '#c97f95', PINK_PALE = '#f2cdd6';
 

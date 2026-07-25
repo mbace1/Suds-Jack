@@ -5,8 +5,8 @@
 // eclipse — a gold corona breaking the frame. Void-vignette bronze build.
 // Revert: watch a real second hand make one full circle.
 
-import { PixelScreen, rampDither } from '../pixel.js?v=26';
-import { PAL } from '../palette.js?v=26';
+import { PixelScreen, rampDither } from '../pixel.js?v=27';
+import { PAL } from '../palette.js?v=27';
 
 const DCX = 96, DCY = 60, DR = 40;   // the front dial
 const TARGET = 12;                    // cranks (lunations) until the alignment

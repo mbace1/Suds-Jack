@@ -154,7 +154,14 @@ cycle-hint only show for newcomers (< 2 lifetime completions), so returners land
 clean header with the offering as the single focus. `pixel.js` gives a 192×128
 `PixelScreen` upscaled with `image-rendering: pixelated`; `palette.js` is the single
 colour source; `audio.js` is a quiet WebAudio kit; `storage.js` keeps completions /
-cycle counter / 1–5-leaf feedback in `localStorage` (`golState`). `window.__gol` exposes
+cycle counter / 1–5-leaf feedback in `localStorage` (`golState`).
+The **sound garden** is the reward loop's teeth: the hub's near-inaudible ambient
+bed grows one voice per *accepted* invitation only (`accepted` in storage →
+`gardenVoices()` capped at 5 → `audio.gardenStart(n)` layering ground note /
+fifth / sparse pentatonic chimes / octave pad / bird figure). Screen time never
+earns a voice; `gardenStop()` fires on entering an experience or the feedback
+panel, so it plays on the hub alone. Shown in `.hub-footer` as `♪` glyphs
+(plural-free across fi/en/ja) with a one-time "you went outside" acknowledgement. `window.__gol` exposes
 `{store, audio, debug: {start, showInterlude, setLang, feedback}}` for console testing.
 Pipeline: develop on `claude/*` beta branches → greenlight to `main` → copy to
 `gh-pages` to go live at `/Suds-Jack/gameoflife/` (same deploy caveat as paperboy);
