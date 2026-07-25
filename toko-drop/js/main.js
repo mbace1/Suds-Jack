@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=156';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=156';
-import { Player, PLAYER_RADIUS } from './player.js?v=156';
+import { InputManager } from './input.js?v=157';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=157';
+import { Player, PLAYER_RADIUS } from './player.js?v=157';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         CABINET_STYLE, VIS } from './enemy.js?v=156';
-import { RetroPass } from './retro.js?v=156';
-import { audio } from './audio.js?v=156';
-import { initDesigner } from './designer.js?v=156';
-import { t, getLang, setLang, langs } from './lang.js?v=156';
-import { TUNING } from './tuning.js?v=156';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS } from './enemy.js?v=157';
+import { RetroPass } from './retro.js?v=157';
+import { audio } from './audio.js?v=157';
+import { initDesigner } from './designer.js?v=157';
+import { t, getLang, setLang, langs } from './lang.js?v=157';
+import { TUNING } from './tuning.js?v=157';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -78,7 +78,7 @@ function waveKind(w) {
 // getEnemySchedule uses rng (seeded per run) so every run plays differently.
 function getEnemySchedule(wave) {
   const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
-          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY, WARDEN, BULWARK, SIREN, CLOAKER, MAGNA, DRAPER, PRISM } = EnemyType;
+          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY, WARDEN, BULWARK, SIREN, CLOAKER, MAGNA, DRAPER, PRISM, SHEPHERD } = EnemyType;
   const AFFIXES = ['volatile', 'swift', 'anchored'];
   const POOL = [
     // [type, minWave, cost]
@@ -95,6 +95,9 @@ function getEnemySchedule(wave) {
     [MAGNA,      10, 5],  // v144: magnet — pulls you off your line, dash breaks it
     [DRAPER,      7, 5],  // v171: wall-weaver — looms marching bullet curtains
   ];
+  // v203: THE SHEPHERD only exists where its mechanic does — it herds the
+  // flock, so it rides with FLUID runs (the default) and sits out classic.
+  if (fluidRun) POOL.push([SHEPHERD, 4, 4]);
   // TEST MODE (v142): every enemy type is unlocked from wave 1 so new
   // designs can be met within seconds of pressing start.
   const available = POOL.filter(([, min]) => testMode || wave >= min);
@@ -2891,6 +2894,10 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
   // re-split; capped so a chain clear can't flood the arena.
   if (fluidRun && src !== 'env' && gameState === 'playing' &&
       !e._fluidChild && !e._isBoss && e.radius >= 0.5 &&
+      // v203: the SHEPHERD must never split — its whole contract is "kill it
+      // and the herd is released". Splitting handed you TWO live herders and
+      // silently broke the promise its ring makes.
+      e.type !== EnemyType.SHEPHERD &&
       enemies.filter(x => x.alive).length < 70) {
     for (let k = 0; k < 2; k++) {
       const a = Math.random() * Math.PI * 2;
@@ -4076,7 +4083,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v202' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v203' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -7187,8 +7194,30 @@ function loop() {
 
   // v196 FLUID MODE: the swarm reads your gun and schools like fish.
   if (fluidRun) {
+    // v203 THE SHEPHERD: collect the live conductors once per frame — every
+    // flockmate inside a herd ring gets dragged toward the player, so the
+    // school knots up around you until you kill the shepherd.
+    const shepherds = enemies.filter(s => s.alive && s.type === EnemyType.SHEPHERD);
     for (const e of enemies) {
       if (!e.alive || e._isBoss) continue;
+      if (shepherds.length && e.type !== EnemyType.SHEPHERD) {
+        for (const s of shepherds) {
+          const sx = e.position.x - s.position.x, sz = e.position.z - s.position.z;
+          if (sx * sx + sz * sz > SHEPHERD_RADIUS * SHEPHERD_RADIUS) continue;
+          const px = player.position.x - e.position.x, pz = player.position.z - e.position.z;
+          const pd = Math.hypot(px, pz);
+          if (pd > 1.2) {
+            // 2.8 u/s — matched to GLOBBO's own speed: fast enough to beat the
+            // competing forces (cohesion pulls flockmates back toward the
+            // shepherd, the wave current pushes them sideways) so the herding
+            // clearly reads, but never faster than a body moves under its own
+            // power, so it looks driven rather than teleported.
+            e.position.x += (px / pd) * 2.8 * dt;
+            e.position.z += (pz / pd) * 2.8 * dt;
+          }
+          break;   // one shepherd's pull is enough; they don't stack
+        }
+      }
       // ── dodge: sidestep an incoming player-bullet lane, on a cooldown ──────
       // The cooldown is the counterplay: sustained or spread fire still lands;
       // a single aimed lane gets read. Heavies don't dance (mass fantasy).
@@ -8344,6 +8373,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=156').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=157').catch(() => {});
   });
 }
