@@ -5,8 +5,8 @@
 // a dithered Raku glaze with a full tonal ramp, a dusty vignette halo, gold
 // veins with a bright core, amber tea, and a glowing cyan pour.
 
-import { PixelScreen, shade, bayer, rampDither } from '../pixel.js?v=29';
-import { PAL } from '../palette.js?v=29';
+import { PixelScreen, shade, bayer, rampDither } from '../pixel.js?v=33';
+import { PAL } from '../palette.js?v=33';
 
 // hit-testing geometry — unchanged so the flow/coords stay stable
 const CX = 96;
@@ -198,17 +198,21 @@ export const seam = {
     }
 
     function draw(now, dt) {
-      scr.clear(PAL.VOID);
-      // the dusty vignette halo the bowl floats in
-      scr.softDisc(CX - 4, 64, 58, '#3e3038', 18);
-      scr.softDisc(CX - 6, 62, 40, '#544452', 14);
+      // the halo, the shards and the tea only change when a shard is placed —
+      // the gold veins and the cyan pour animate on top of the cached layer
+      scr.cached(`bowl:${placed.map(p => (p ? 1 : 0)).join('')}`, () => {
+        scr.clear(PAL.VOID);
+        // the dusty vignette halo the bowl floats in
+        scr.softDisc(CX - 4, 64, 58, '#3e3038', 18);
+        scr.softDisc(CX - 6, 62, 40, '#544452', 14);
 
-      // outer wall, per slice (unplaced shards drift with their scatter offset)
-      for (let i = 0; i < 5; i++) {
-        const off = placed[i] ? [0, 0] : SCATTER[i];
-        for (let lx = BOUNDS[i]; lx < BOUNDS[i + 1]; lx++) bodyCol(lx, off[0], off[1]);
-      }
-      if (allPlaced()) interior();
+        // outer wall, per slice (unplaced shards drift with their scatter offset)
+        for (let i = 0; i < 5; i++) {
+          const off = placed[i] ? [0, 0] : SCATTER[i];
+          for (let lx = BOUNDS[i]; lx < BOUNDS[i + 1]; lx++) bodyCol(lx, off[0], off[1]);
+        }
+        if (allPlaced()) interior();
+      });
 
       if (phase === 'clay') {
         goldWalk((x, y) => { if (Math.floor(y) % 3 === 0) scr.px(x, y, 1, 1, shade(glaze(x - CX, y, RIM_CY, RIM_CY + H), 0.7)); });

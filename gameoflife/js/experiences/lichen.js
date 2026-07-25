@@ -4,8 +4,8 @@
 // you stop forcing it." Dithered crustose bloom in muted sage, a few spots
 // glowing luminescent green and lifting spores into the void (the breakout).
 
-import { PixelScreen, shade, bayer, rampDither } from '../pixel.js?v=29';
-import { PAL } from '../palette.js?v=29';
+import { PixelScreen, shade, bayer, rampDither } from '../pixel.js?v=33';
+import { PAL } from '../palette.js?v=33';
 
 const BLOOM_SEC = 14;               // untouched time to fully colonise the stone
 const SCX = 96, SCY = 82, SRX = 46, SRY = 30;   // the stone
@@ -108,9 +108,10 @@ export const lichen = {
       }
     }
 
-    // lichen patches expanding from each seed as bloom climbs 0→1
-    function crust(now) {
-      SEEDS.forEach(([lx, ly, maxR], si) => {
+    // lichen patches expanding from each seed as bloom climbs 0→1. Static for a
+    // given bloom, so this lives in the cached layer.
+    function crustBase() {
+      SEEDS.forEach(([lx, ly, maxR]) => {
         const gr = bloom * maxR;
         if (gr < 1) return;
         for (let dy = -gr; dy <= gr; dy++) {
@@ -126,13 +127,17 @@ export const lichen = {
             }
           }
         }
-        // a luminescent apothecium at each mature patch (the breakout accent)
-        if (bloom > 0.75) {
-          const x = SCX + lx, y = SCY + ly, pulse = 0.5 + 0.5 * Math.sin(now / 500 + si);
-          scr.softDisc(x, y, 3, '#2e5a1e', 3);
-          scr.px(x, y, 1, 1, GLOW);
-          if (pulse > 0.6) scr.px(x, y, 1, 1, GLOW_CORE);
-        }
+      });
+    }
+
+    // the luminescent apothecia pulse, so they stay live on top of the cache
+    function apothecia(now) {
+      if (bloom <= 0.75) return;
+      SEEDS.forEach(([lx, ly], si) => {
+        const x = SCX + lx, y = SCY + ly, pulse = 0.5 + 0.5 * Math.sin(now / 500 + si);
+        scr.softDisc(x, y, 3, '#2e5a1e', 3);
+        scr.px(x, y, 1, 1, GLOW);
+        if (pulse > 0.6) scr.px(x, y, 1, 1, GLOW_CORE);
       });
     }
 
@@ -157,11 +162,17 @@ export const lichen = {
         bloom = 1;
       }
 
-      scr.clear(PAL.VOID);
-      scr.softDisc(SCX, SCY, SRX + 16, '#141a10', 20);   // earthy halo in the void
-      scr.px(SCX - SRX - 6, SCY + SRY - 4, (SRX + 6) * 2, 10, PAL.MOSS_DEEP);  // moss it rests on
-      stone();
-      crust(now);
+      // the halo, the moss and the bare stone never change — cache them. The
+      // lichen itself only redraws when the bloom has visibly advanced, so a
+      // 14-second growth costs ~40 repaints instead of ~840.
+      scr.cached(`base:${Math.round(bloom * 40)}`, () => {
+        scr.clear(PAL.VOID);
+        scr.softDisc(SCX, SCY, SRX + 16, '#141a10', 20);   // earthy halo in the void
+        scr.px(SCX - SRX - 6, SCY + SRY - 4, (SRX + 6) * 2, 10, PAL.MOSS_DEEP);  // moss it rests on
+        stone();
+        crustBase();
+      });
+      apothecia(now);
       if (bloom > 0.6) spores(now);
     }
 

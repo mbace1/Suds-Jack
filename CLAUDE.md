@@ -150,6 +150,21 @@ the lens + a cyan wash under the escaping orbits. (`plate` was given the same pa
 the halo/dither muddied its clean vignette, so it was reverted to its original art — the
 toolkit is opt-in per scene, not a blanket restyle.) The owner's idea queue in that doc
 takes priority over Claude's roadmap picks.
+Dithering is expensive — one `fillRect` per pixel — so any scene whose art is mostly
+static wraps it in **`scr.cached(key, drawFn)`** (`pixel.js`): `drawFn` paints into an
+offscreen canvas once and is blitted each frame until `key` changes (`cached` retargets
+`this.ctx`, so every helper works unchanged inside it). Used by `wait`/`gears`/`lichen`/
+`hedge`/`seam`/`ice`; the discipline is to key on what actually changes
+(`base:${found.size}`, `core:${stop}:${Math.round(scroll)}`) and lift every moving part
+out of the callback — `gears` caches the radially symmetric gear bodies and redraws only
+teeth/spokes, `lichen` caches the crust and keeps the pulsing apothecia live. When
+drawing dither in 2px cells sample `bayer(x >> 1, y >> 1)` (the **cell** index): sampling
+at even pixel coordinates only reaches 4 of the matrix's 16 values, all low, and the
+stipple collapses into blobs. `startExperience` in `main.js` destroys `current` before
+starting the next one — going experience→experience (as `__gol.debug.start` does) used to
+leak the previous rAF loop against a detached canvas. Profile with Playwright + CDP
+`Emulation.setCPUThrottlingRate(4)` and a wrapped `fillRect` counter, **one fresh page per
+scene** or leaked loops inflate the counts.
 The hub greeting follows the hour (`daySlot()`: morning/day/evening/night) and a
 **living header scene** (192×44 `PixelScreen`, `startHubScene` in `main.js`) paints the
 same hour — dawn mist / noon sun + cloud / dusk / starry night with a tiny Otava — over
