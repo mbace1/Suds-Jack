@@ -149,40 +149,8 @@ The cabinet row (each refined individually, in build order):
    rescues, heavy-glow neon profile; quest deck entry on unlocked profiles).
    v185 CHAINED SECRETS (dash-through glitch tiles, consecutive-wave
    multiplier); v186 THE CUSTODIAN (its own boss — dash-crackable sheen,
-   glitch teleports). Backlog: polish to crown-jewel level.
-
-## M5b — The living arena (objectives & hazards)
-
-*Theme: the floor is a player too. Objectives you chase, hazards you route
-around — every one telegraphs before it matters (and hazards hurt enemies
-too, so luring is always a legal tactic).*
-
-**Gates, round 2:**
-- **Gate chains** — detonating a gate within ~6 s of the previous one pays a
-  chain multiplier (×2, ×3…): a route-planning minigame across the arena.
-- **RISK gate** — the beam alternates green/red on a readable cycle; dashing
-  through on green doubles the reward, on red it's a dud (never harmful —
-  the risk is wasting it).
-- **Drifting gates** — late waves, gates slowly wander, so the route keeps
-  changing.
-
-**New objectives (GDD §9b family):**
-- **VAULT crate** — armored box, ~8 hits to crack, drops big loot; every hit
-  pings nearby enemies toward you. Loud greed.
-- **ESCORT bot** — a little soap-bot trundles wall-to-wall; if it arrives
-  alive it gifts a pod. Enemies ignore it unless it's between them and you —
-  protecting it is pure positioning.
-
-**Hazards (non-enemy, arena features — the poison-trail counterpart):**
-- **STEAM VENTS** — floor tiles glow amber for ~1 s, then erupt (damage +
-  knockback, enemies included). Area denial that skilled players weaponize.
-- **DRAIN** — a whirlpool zone with visible swirl: gentle pull + eats any
-  bullet that crosses it (both sides). Cover that moves the fight.
-- **SUDS SURGE** (SMASH TV) — a foam wall sweeps one lane of the room after
-  the floor lights its path; brushes enemies away and stuns them, damages
-  the player only on direct hit. The show's "commercial break" spectacle.
-- **New SMASH TV room kinds**: HAZARD room (vent-heavy, loot-rich) and
-  VAULT room (the crate + guards) join the lattice.
+   glitch teleports); v209 the surge as a three-beat arena tear + the
+   CUSTODIAN act break. Backlog: the cabinet's own reward loop (v210).
 
 ## M6 — Modes & meta depth
 

@@ -1,14 +1,14 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=162';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=162';
-import { Player, PLAYER_RADIUS } from './player.js?v=162';
+import { InputManager } from './input.js?v=163';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=163';
+import { Player, PLAYER_RADIUS } from './player.js?v=163';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS } from './enemy.js?v=162';
-import { RetroPass } from './retro.js?v=162';
-import { audio } from './audio.js?v=162';
-import { initDesigner } from './designer.js?v=162';
-import { t, getLang, setLang, langs } from './lang.js?v=162';
-import { TUNING } from './tuning.js?v=162';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS } from './enemy.js?v=163';
+import { RetroPass } from './retro.js?v=163';
+import { audio } from './audio.js?v=163';
+import { initDesigner } from './designer.js?v=163';
+import { t, getLang, setLang, langs } from './lang.js?v=163';
+import { TUNING } from './tuning.js?v=163';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -2755,14 +2755,36 @@ let nxChain = 0;
 // waves and the chain multiplies. Miss a wave and the machine forgets you.
 let nxSecret = null;        // { x, z, found }
 let nxSecretChain = 0;
+// v209 (backlog, crown-jewel pass): the surge is the ARENA TEARING OPEN, not a
+// ring that fades. Three beats you can read from anywhere on screen — CHARGE
+// (the ring breathes), LOCK (a light column stands up out of it and the floor
+// cracks outward), ERUPT (the column slams down, a shockwave sweeps the floor,
+// the screen blooms). Magnitude scales with the squad, so a five-pool wave
+// looks like five-pool trouble before a single body lands.
+let nxWaves  = [];        // expanding eruption rings { mesh, t, life, r0, r1 }
+let nxFlashT = 0;         // white bloom, drawn over the HUD
+let nxHush   = null;      // CUSTODIAN act break — dark, empty, then it lands
+// LOCK is deliberately the SAME 1.6 s window the ring already strobes in: the
+// column and the strobe are one "stand clear" beat, not two competing ones.
+const NX_LOCK = 1.6;
 let _nxSavedSmash = null, _nxSavedPixel = null;
+function nxDrop(o) {      // v209: meshes here are all geometry+material owned
+  if (!o) return;
+  scene.remove(o);
+  o.geometry.dispose();
+  o.material.dispose();
+}
 function clearNexLevel() {
   for (const su of nxSurges) {
-    scene.remove(su.ring);
-    su.ring.geometry.dispose();
-    su.ring.material.dispose();
+    nxDrop(su.ring);
+    nxDrop(su.column);    // v209
+    nxDrop(su.cracks);
   }
   nxSurges = [];
+  for (const w of nxWaves) nxDrop(w.mesh);   // v209
+  nxWaves = [];
+  nxFlashT = 0;
+  if (nxHush) { nxDrop(nxHush.column); nxHush = null; }
   for (const h of nxHumans) h.civ.remove(scene);
   nxHumans = [];
   nxHumanAt = [];
@@ -3729,6 +3751,14 @@ function drawSmashMinimap() {
 function drawHUD() {
   ctx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
 
+  // v209 NEX DEUS eruption bloom: the instant the arena tears open, the screen
+  // whites out for a frame or two. Magnitude-scaled, and reduce-motion sits it
+  // out along with the shake it accompanies.
+  if (nxFlashT > 0 && !reduceMotion) {
+    ctx.fillStyle = `rgba(255,225,255,${Math.min(0.5, nxFlashT * 2).toFixed(3)})`;
+    ctx.fillRect(0, 0, uiCanvas.width, uiCanvas.height);
+  }
+
   // Hit-damage vignette
   if (_hitFlashT > 0) {
     const alpha = (_hitFlashT / 0.32) * 0.55;
@@ -4168,7 +4198,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v208' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v209' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -5677,12 +5707,18 @@ function spawnWave() {
     // v186: every 6th surge the machine ITSELF steps in — THE CUSTODIAN.
     // No rings, no lost players: just you, the sheen, and the dash.
     if (wave % 6 === 0) {
-      const b = new Enemy(scene, EnemyType.CUSTODIAN, 0, -Math.max(6, HALF_Z * 0.5), speedMult, intervalMult);
-      b.hp = Math.ceil(b.hp * 3); b._hpMult = 3;
-      b.mesh.scale.multiplyScalar(1.5); b._radiusMult = 1.5;
-      b.setBoss(b.hp);
-      bossAuras.push(makeBossAura(b));
-      enemies.push(b);
+      // v209 ACT BREAK: the machine does not merely spawn. The arena goes
+      // dark and completely empty for a beat, a column stands where it will
+      // land, and THEN it arrives. Nothing else is on screen — this is the
+      // cabinet's one big moment, and it should read as one.
+      const bz = -Math.max(6, HALF_Z * 0.5);
+      const col = new THREE.Mesh(
+        new THREE.CylinderGeometry(3.4, 4.2, 22, 22, 1, true),
+        new THREE.MeshBasicMaterial({ color: 0xff44ff, transparent: true, opacity: 0,
+          blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+      col.position.set(0, 11, bz);
+      scene.add(col);
+      nxHush = { t: 1.5, tMax: 1.5, z: bz, column: col, spd: speedMult, itv: intervalMult };
       clusterSpawnAt = [];
       audio.bossHorn();
     } else {
@@ -5716,8 +5752,38 @@ function spawnWave() {
         const n = Math.round(n0 * k);
         for (let j = 0; j < n; j++) squad.push(ty);
       }
-      nxSurges.push({ x: sx, z: sz, t: 2.2 + i * 7.5, ring, list: squad, col: pool.col,
-                      spd: speedMult, itv: intervalMult });
+      // v209 LOCK BEAT: a light column stands up out of the ring in the last
+      // NX_LOCK seconds. It's the tell that survives a busy screen — you can
+      // see a surge coming from the far corner without hunting for its ring.
+      const column = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.5, 3.0, 16, 18, 1, true),
+        new THREE.MeshBasicMaterial({ color: pool.col, transparent: true, opacity: 0,
+          blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+      column.position.set(sx, 8, sz);
+      column.scale.y = 0.01;
+      scene.add(column);
+      // …and the floor gives first: fracture lines snap outward from the ring.
+      let cracks = null;
+      if (!perfMode) {
+        const pts = [];
+        for (let c = 0; c < 9; c++) {
+          const ca = (c / 9) * Math.PI * 2 + rng() * 0.4;
+          const r0 = 2.8, r1 = r0 + 1.8 + rng() * 2.6;
+          pts.push(Math.cos(ca) * r0, 0, Math.sin(ca) * r0,
+                   Math.cos(ca) * r1, 0, Math.sin(ca) * r1);
+        }
+        const cg = new THREE.BufferGeometry();
+        cg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+        cracks = new THREE.LineSegments(cg,
+          new THREE.LineBasicMaterial({ color: pool.col, transparent: true, opacity: 0 }));
+        cracks.position.set(sx, 0.05, sz);
+        scene.add(cracks);
+      }
+      // v209: 3.0 rather than 2.2 for the opener — the first surge of a wave
+      // was landing inside its own LOCK window, so it never got a CHARGE beat
+      // and the wave opened mid-alarm.
+      nxSurges.push({ x: sx, z: sz, t: 3.0 + i * 7.5, ring, column, cracks,
+                      list: squad, col: pool.col, spd: speedMult, itv: intervalMult });
     }
     nxHumanAt = [];
     const nH = 2 + (wave % 2);
@@ -7318,6 +7384,20 @@ function loop() {
         ? (Math.floor(su.t * 10) % 2 ? 0.15 : 0.85)      // strobe: stand clear
         : 0.25 + 0.2 * Math.abs(Math.sin(performance.now() * 0.004));
       su.ring.rotation.z += dt * (urgent ? 2.6 : 0.7);
+      // v209 LOCK: the column rises and the floor cracks as the clock runs out.
+      const lock = Math.max(0, Math.min(1, 1 - su.t / NX_LOCK));
+      if (su.column) {
+        // Linear height on purpose: the column has to be READABLE from across
+        // the arena the moment it starts, so it grows steadily and lets
+        // opacity and spin carry the urgency instead.
+        su.column.scale.y = 0.05 + lock * 0.95;
+        su.column.material.opacity = 0.42 * lock;
+        su.column.rotation.y += dt * (0.8 + lock * 3.4);
+      }
+      if (su.cracks) {
+        su.cracks.material.opacity = 0.75 * lock;
+        su.cracks.scale.setScalar(0.6 + lock * 0.5);
+      }
       if (su.t <= 0) {
         for (const ty of su.list) {
           const a = rng() * Math.PI * 2, r = 0.4 + rng() * 2.2;
@@ -7325,17 +7405,83 @@ function loop() {
           const ez = Math.max(-HALF_Z + 1, Math.min(HALF_Z - 1, su.z + Math.sin(a) * r));
           enemies.push(new Enemy(scene, ty, ex, ez, su.spd, su.itv));
         }
-        for (let j = 0; j < 10; j++) {
-          const a = (j / 10) * Math.PI * 2;
-          chunkPool.spawn(su.x, 0.5, su.z, Math.cos(a) * 6, 3.5, Math.sin(a) * 6, su.col, 0.12);
+        // v209 ERUPT: magnitude follows the squad — a big pool hits harder,
+        // throws more, and blooms brighter than a small one.
+        const mag = Math.max(0.5, Math.min(1.8, su.list.length / 12));
+        for (let j = 0; j < Math.round(10 * mag); j++) {
+          const a = (j / Math.round(10 * mag)) * Math.PI * 2;
+          chunkPool.spawn(su.x, 0.5, su.z, Math.cos(a) * 6 * mag, 3.5 + mag, Math.sin(a) * 6 * mag,
+            su.col, 0.12);
         }
-        addShake(0.35);
+        // the floor shockwave — the column's weight coming down and out
+        const sw = new THREE.Mesh(
+          new THREE.RingGeometry(1, 1.25, 44),
+          new THREE.MeshBasicMaterial({ color: su.col, transparent: true, opacity: 0.9,
+            blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+        sw.rotation.x = -Math.PI / 2;
+        sw.position.set(su.x, 0.06, su.z);
+        scene.add(sw);
+        nxWaves.push({ mesh: sw, t: 0, life: 0.55, r0: 2.2, r1: 9 + 5 * mag });
+        nxFlashT = Math.max(nxFlashT, 0.16 * mag);
+        addShake(0.28 * mag);
         audio.nexSurge();
         milestoneT = 0.9; milestoneText = 'SURGE!';
-        scene.remove(su.ring);
-        su.ring.geometry.dispose();
-        su.ring.material.dispose();
+        nxDrop(su.ring);
+        nxDrop(su.column);      // v209
+        nxDrop(su.cracks);
         nxSurges.splice(i, 1);
+      }
+    }
+    // v209: eruption shockwaves sweep the floor and fade; the bloom decays.
+    for (let i = nxWaves.length - 1; i >= 0; i--) {
+      const w = nxWaves[i];
+      w.t += dt;
+      const f = w.t / w.life;
+      if (f >= 1) { nxDrop(w.mesh); nxWaves.splice(i, 1); continue; }
+      const r = w.r0 + (w.r1 - w.r0) * (1 - (1 - f) * (1 - f));   // fast out, easing
+      w.mesh.scale.setScalar(r);
+      w.mesh.material.opacity = 0.9 * (1 - f) * (1 - f);
+    }
+    if (nxFlashT > 0) nxFlashT = Math.max(0, nxFlashT - dt);
+    // v209 CUSTODIAN ACT BREAK: hold the empty dark, wind the column up, and
+    // land the machine at the end of it. (The wave-clear check needs
+    // `enemies.length > 0`, so an empty arena here can't false-fire a clear.)
+    if (nxHush) {
+      nxHush.t -= dt;
+      const f = Math.max(0, Math.min(1, 1 - nxHush.t / nxHush.tMax));
+      nxHush.column.scale.y = 0.02 + f * f * 0.98;
+      nxHush.column.material.opacity = 0.5 * f;
+      nxHush.column.rotation.y += dt * (1 + f * 5);
+      // the void deepens as it approaches, then snaps back on arrival
+      const dim = 1 - 0.75 * f;
+      _FOG.color.setRGB(0.0078 * dim, 0, 0.0235 * dim);
+      scene.background.copy(_FOG.color);
+      if (nxHush.t <= 0) {
+        const b = new Enemy(scene, EnemyType.CUSTODIAN, 0, nxHush.z, nxHush.spd, nxHush.itv);
+        b.hp = Math.ceil(b.hp * 3); b._hpMult = 3;
+        b.mesh.scale.multiplyScalar(1.5); b._radiusMult = 1.5;
+        b.setBoss(b.hp);
+        bossAuras.push(makeBossAura(b));
+        enemies.push(b);
+        const sw = new THREE.Mesh(
+          new THREE.RingGeometry(1, 1.3, 48),
+          new THREE.MeshBasicMaterial({ color: 0xff44ff, transparent: true, opacity: 0.95,
+            blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+        sw.rotation.x = -Math.PI / 2;
+        sw.position.set(0, 0.06, nxHush.z);
+        scene.add(sw);
+        nxWaves.push({ mesh: sw, t: 0, life: 0.8, r0: 3, r1: 26 });
+        for (let j = 0; j < 22; j++) {
+          const a = (j / 22) * Math.PI * 2;
+          chunkPool.spawn(0, 0.5, nxHush.z, Math.cos(a) * 11, 5, Math.sin(a) * 11, 0xff44ff, 0.14);
+        }
+        nxFlashT = 0.34;
+        addShake(0.7);
+        audio.nexSurge();
+        milestoneT = 1.4; milestoneText = 'THE CUSTODIAN';
+        nxDrop(nxHush.column);
+        nxHush = null;
+        setNexdeusLook(true);          // restore the void to its normal depth
       }
     }
     // LOST PLAYERS: drop in on schedule; the rescue halo IS the timer — it
@@ -8664,6 +8810,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=162').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=163').catch(() => {});
   });
 }
