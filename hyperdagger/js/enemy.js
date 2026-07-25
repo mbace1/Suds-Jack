@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=41';
+import { VoxelSprite, MODELS } from './voxel.js?v=42';
 
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();
@@ -99,6 +99,10 @@ export class Husk extends VoxelEnemy {
     this.cracked = false;
     this.bobT = Math.random() * Math.PI * 2;
   }
+
+  /** Which AudioKit voice a dagger hit should use — plating swallows the
+   *  strike, a bared core rings like anything else. */
+  get hitSound() { return this.coreExposed ? 'hit' : 'plate'; }
 
   /** Fraction of the shell chipped away. */
   get exposure() { return 1 - this.sprite.aliveCount / this.shellTotal; }

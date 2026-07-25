@@ -154,6 +154,34 @@ export class AudioKit {
     this._tone('square', 900, 200, 0.12, 0.15);
   }
 
+  /** A dagger burying itself in husk plating: dull, dead, no ring — this is
+   *  the sound of damage NOT happening, so it must not read like a hit. */
+  plate() {
+    if (!this.ctx) return;
+    const v = 0.9 + Math.random() * 0.2;
+    this._noise(0.07, 'bandpass', 320 * v, 2.5, 0.22);
+    this._tone('triangle', 130 * v, 60, 0.09, 0.16);
+  }
+
+  /** SHELL BREACHED: a dry crack, then the bared core swelling up under it. */
+  breach() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this._noise(0.18, 'highpass', 1800, 0.9, 0.35, t);
+    this._tone('square', 90, 420, 0.35, 0.3, t);
+    this._tone('sawtooth', 300, 120, 0.5, 0.22, t + 0.06);
+  }
+
+  /** The revenant hauling itself up through the floor — a scraping swell,
+   *  deliberately not the bright spawn chirp everything else uses. */
+  rise() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this._noise(0.7, 'lowpass', 260, 0.6, 0.3, t);
+    this._tone('sawtooth', 48, 130, 0.75, 0.26, t);
+    this._tone('sine', 70, 180, 0.6, 0.18, t + 0.12);
+  }
+
   clink() {
     if (!this.ctx) return;
     this._tone('triangle', 1600, 1200, 0.06, 0.15);

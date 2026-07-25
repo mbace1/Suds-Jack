@@ -5,15 +5,15 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=41';
-import { Player } from './player.js?v=41';
-import { DaggerPool } from './daggers.js?v=41';
-import { GemPool } from './gems.js?v=41';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=41';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=41';
-import { OrbPool } from './bullets.js?v=41';
-import { AudioKit } from './audio.js?v=41';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=41';
+import { InputManager } from './input.js?v=42';
+import { Player } from './player.js?v=42';
+import { DaggerPool } from './daggers.js?v=42';
+import { GemPool } from './gems.js?v=42';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=42';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=42';
+import { OrbPool } from './bullets.js?v=42';
+import { AudioKit } from './audio.js?v=42';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=42';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -1615,6 +1615,7 @@ function director(dt) {
       audio.spawn();
       telegraph(_sv, [2.2, 0.2, 0.2], 0.7, () => {
         _sv.set(spot.x, -0.6, spot.z);
+        audio.rise();
         enemies.push(new Revenant(scene, _sv, Math.min(1.5, (gameTime - 110) * 0.006)));
       });
       nextRevenantAt = gameTime + Math.max(13, 24 - gameTime * 0.02);
@@ -1852,7 +1853,8 @@ function updateCombat(dt) {
       }
       e.maxHp ??= e.hp + 1; // captured on first hit (hp already decremented)
       e.hit(1, _hitDir);
-      audio.hit();
+      // enemies may name their own hit voice (husk plating swallows daggers)
+      audio[e.hitSound && audio[e.hitSound] ? e.hitSound : 'hit']();
       spawnSpark(d.m.position, e.hp <= 0);
       // chip real voxels out of the model near the impact — bullet holes.
       // Sized so an enemy is ~85% eroded by its final hit.
@@ -1891,7 +1893,7 @@ function updateCombat(dt) {
       }
       // the shell giving way is its own beat — stinger, ripple, shockwave
       if (e.checkCrack?.()) {
-        audio.stinger();
+        audio.breach();
         triggerRipple(0.55);
         spawnShockwave(_c);
         toast('SHELL BREACHED', 1100);
