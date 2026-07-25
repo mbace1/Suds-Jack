@@ -282,6 +282,19 @@ function check(name, cond) {
   check('cairn stands', (await page.locator('.exp-text').textContent()).includes('It stands'));
   await page.locator('.back-btn').click();
 
+  // downhill: tilt ledge 0 and ledge 2 (coords mirror LED in downhill.js) to
+  // route the water down; the flow then resolves to the truth after ~1.1s
+  await page.evaluate(() => __gol.debug.start('downhill'));
+  check('downhill intro shown', (await page.locator('.exp-text').textContent()).includes('way down'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Open the water' }).click();
+  const dbox = await page.locator('.pixel-screen').boundingBox();
+  const dTap = (x, y) => page.mouse.click(dbox.x + (x + 0.5) / 192 * dbox.width, dbox.y + (y + 0.5) / 128 * dbox.height);
+  await dTap(92, 34);    // ledge 0 R->L
+  await dTap(118, 82);   // ledge 2 R->L
+  await page.waitForTimeout(1600);
+  check('downhill water reaches the bottom', (await page.locator('.exp-text').textContent()).includes('found the bottom'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');
