@@ -163,6 +163,18 @@ const STR = {
     'tr.outro': 'The constellations were never in the stars. They were in the people who looked up.',
     'tr.nature': 'Go out under a real night sky, pick any few stars, and connect them into your own shape. Name it. It is exactly as real as the old ones — which is to say, real because someone made it.',
 
+    'exp.gears.name': 'The Bronze Gears',
+    'exp.gears.desc': 'Crank a 2,000-year-old machine until it predicts an eclipse.',
+    'ge.s1': 'A sponge-diver brought up a shoebox of corroded bronze from a shipwreck off Antikythera. Inside, impossibly, were gears — dozens of them, cut by hand two thousand years ago. It is a computer for the sky. Turn the crank, and let the months run.',
+    'ge.begin': 'Turn the crank',
+    'ge.turn': 'Turn again',
+    'ge.gain': 'the moon gains on the sun.',
+    'ge.near': 'they are closing on the dragon’s node…',
+    'ge.month': 'Month',
+    'ge.truth': 'Sun, Moon, and the node of the Moon’s path fall into one line — and the machine says: eclipse. The Greeks could not stop the sky, but they could predict it, tooth by bronze tooth, centuries ahead. It is the oldest known computer on Earth, and then it was lost for two thousand years.',
+    'ge.outro': 'We have wanted to know what comes next for a very, very long time.',
+    'ge.nature': 'Find a clock with a second hand and watch it go all the way around, once — sixty seconds, doing nothing else. Feel how patiently the oldest machines counted the sky.',
+
     'exp.berry.name': 'The Right to Roam',
     'exp.berry.desc': 'A blueberry summer in Finland, and the old freedom that makes every forest yours to walk.',
 
@@ -450,6 +462,18 @@ const STR = {
     'tr.outro': 'Tähtikuviot eivät koskaan olleet tähdissä. Ne olivat ihmisissä jotka katsoivat ylös.',
     'tr.nature': 'Mene ulos oikean yötaivaan alle, valitse mitkä tahansa muutama tähti ja yhdistä ne omaksi kuvioksesi. Anna sille nimi. Se on täsmälleen yhtä todellinen kuin vanhat — eli todellinen siksi, että joku teki sen.',
 
+    'exp.gears.name': 'Pronssirattaat',
+    'exp.gears.desc': 'Väännä kahdentuhannen vuoden ikäistä konetta, kunnes se ennustaa pimennyksen.',
+    'ge.s1': 'Sienisukeltaja nosti Antikytheran edustan hylystä kengänlaatikollisen ruostunutta pronssia. Sisällä oli, uskomatonta kyllä, rattaita — kymmeniä, käsin leikattuja kaksituhatta vuotta sitten. Se on tietokone taivasta varten. Väännä kammesta ja anna kuukausien juosta.',
+    'ge.begin': 'Väännä kammesta',
+    'ge.turn': 'Väännä lisää',
+    'ge.gain': 'kuu saavuttaa aurinkoa.',
+    'ge.near': 'ne lähestyvät lohikäärmeen solmua…',
+    'ge.month': 'Kuukausi',
+    'ge.truth': 'Aurinko, Kuu ja Kuun radan solmu asettuvat yhdelle linjalle — ja kone sanoo: pimennys. Kreikkalaiset eivät voineet pysäyttää taivasta, mutta he saattoivat ennustaa sen, pronssihammas hampaalta, vuosisatoja etukäteen. Se on Maan vanhin tunnettu tietokone, ja sitten se katosi kahdeksi tuhanneksi vuodeksi.',
+    'ge.outro': 'Olemme halunneet tietää mitä seuraavaksi tulee hyvin, hyvin pitkään.',
+    'ge.nature': 'Etsi kello jossa on sekuntiviisari ja katso kun se kiertää kokonaan ympäri, kerran — kuusikymmentä sekuntia, tekemättä mitään muuta. Tunne kuinka kärsivällisesti vanhimmat koneet laskivat taivasta.',
+
     'exp.berry.name': 'Jokamiehenoikeus',
     'exp.berry.desc': 'Mustikkakesä ja vanha vapaus, joka tekee jokaisesta metsästä sinun kävellä.',
 
@@ -736,6 +760,18 @@ const STR = {
     'tr.truth': 'あそこに獅子はいない。熊も、狩人もいない。星々は想像を絶する距離で隔たっている — 触れ合わず、並んでもいない。その図はあなたのもの: 心が闇をまたいで、点を、抱えられる何かへと結んだのだ。どの文化も、同じ星に別々の線を引いた。',
     'tr.outro': '星座は、けっして星の中にはなかった。見上げた人々の中にあった。',
     'tr.nature': '本物の夜空の下に出て、どれでも数個の星を選び、自分だけの形に結んでみよう。名前をつけて。それは古い星座とまったく同じだけ本物だ — つまり、だれかが作ったからこそ本物なのだ。',
+
+    'exp.gears.name': '青銅の歯車',
+    'exp.gears.desc': '二千年前の機械を回して、日食を予言させよう。',
+    'ge.s1': '海綿採りの潜水士が、アンティキティラ沖の沈没船から、腐食した青銅の靴箱ひとつを引き上げた。中には、信じがたいことに歯車が — 数十枚、二千年前に手で切られたものが入っていた。それは空のための計算機だ。ハンドルを回し、月々を走らせよう。',
+    'ge.begin': 'ハンドルを回す',
+    'ge.turn': 'さらに回す',
+    'ge.gain': '月が太陽に追いついていく。',
+    'ge.near': '龍の交点に近づいている…',
+    'ge.month': '第',
+    'ge.truth': '太陽と月、そして月の通り道の交点がひとつの線に並ぶ — そして機械は告げる: 日食、と。ギリシャ人は空を止められなかったが、予言はできた。青銅の歯ひとつずつ、何世紀も先まで。地球で知られるいちばん古い計算機。そして、それは二千年のあいだ失われていた。',
+    'ge.outro': '私たちは、次に何が来るかを、とてもとても長いあいだ知りたがってきた。',
+    'ge.nature': '秒針のある時計を見つけて、それがぐるりと一周するのを、一度だけ見てみよう — 六十秒、ほかには何もせずに。いちばん古い機械が、どれほど辛抱づよく空を数えたかを感じてみて。',
 
     'exp.berry.name': '歩く自由',
     'exp.berry.desc': 'フィンランドのブルーベリーの夏と、どの森もあなたの歩く場所にする古い自由。',

@@ -45,8 +45,11 @@ Source: project owner, via idea-form exchange. Reference art in `ref/`
 ### Games
 - [ ] **Water Downhill** — TILT variant of the aqueduct (angle a stone until
       the trickle runs; the water breaks the frame).
-- [ ] **The Bronze Gears** — Antikythera; rotate gears until they clank into
-      an eclipse. → watch a second hand make one full circle.
+- [x] **The Bronze Gears** (shipped as `gears`) — the Antikythera mechanism;
+      crank meshed bronze gears through the lunar months until the Sun and Moon
+      hands close on the node and the machine predicts an eclipse (a gold corona
+      breaks the frame). Void-vignette bronze build. → watch a second hand make
+      one full circle.
 - [x] **Empty Your Cup v2** — cyan overflow breaks (v12; hold-to-pour + Raku still open)
       the vignette. (upgrade of `cup`; ref: kintsugi-overflow.png)
 - [ ] **The Cairn** — balance three irregular stones. *Gravity is infinitely

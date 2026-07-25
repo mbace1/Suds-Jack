@@ -69,6 +69,7 @@ switchable in the hub, persisted in `localStorage`.
 | `cloud` | story | The Cloudberry Patch | A midnight-sun mire, ripe lakka, and a bear's track leading to your patch; the finest cluster asks to be left — companion to The Right to Roam → *leave a beautiful thing where it is* |
 | `ice` | story | The Ice Core | Drill down through banded glacier ice, reading each layer as a year of trapped sky (soot, ash, ancient air that glows cyan and breaks the frame) → *imagine your square of earth 100 years ago* |
 | `trace` | game | Trace the Chaos | Draw your own constellation from a field of stars; a dithered purple nebula blooms around what you connect, then you name it — the sky was never arranged → *find and name your own star pattern* |
+| `gears` | game | The Bronze Gears | Crank the 2,000-year-old Antikythera mechanism through the months until the Sun and Moon hands meet the lunar node and it predicts an eclipse → *watch a second hand make one full circle* |
 
 ## Visual standard (2026-07 master doc)
 
