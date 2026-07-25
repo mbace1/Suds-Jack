@@ -173,7 +173,20 @@ chrome-trimming: the set-once controls (language, feedback) sit in ONE quiet
 `.hub-footer` below a divider (language, hemisphere, feedback), out of the main
 column; the explanatory tagline and
 cycle-hint only show for newcomers (< 2 lifetime completions), so returners land on a
-clean header with the offering as the single focus. `pixel.js` gives a 192×128
+clean header with the offering as the single focus. The app must never nag:
+**rating is occasional** (`store.feedbackDue()` — after the 1st finish, then
+every 5th; the footer's *leave a thought* link is always there, and an empty
+submission records nothing rather than thanking you for silence), and
+**"not yet" on a nature invitation holds for the visit** (`invitationPut` in
+`main.js`, reset by the next finish) so a redraw or a language switch cannot
+re-ask; Esc / a click on the backdrop is the same as *not yet*. A fragment
+deep-links one experience (`/gameoflife/#tether` → `openFromHash()`; `setHash()`
+uses `replaceState` so it never fires the `hashchange` handler back at itself,
+and the hub is always the plain address) — that is what makes a link shareable
+for playtesting. `useLang()` mirrors the language onto `<html lang>`. Keyboard/
+touch floor: a `:focus-visible` ring, `focusPrimary()` moving focus after a view
+swap **only when the last input was a key** (so a tap never raises a ring), 44px
+rating-leaf targets with per-leaf `aria-label`s. `pixel.js` gives a 192×128
 `PixelScreen` upscaled with `image-rendering: pixelated`; `palette.js` is the single
 colour source; `audio.js` is a quiet WebAudio kit; `storage.js` keeps completions /
 cycle counter / 1–5-leaf feedback in `localStorage` (`golState`).

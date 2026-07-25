@@ -124,6 +124,25 @@ function check(name, cond) {
   check('completion leads to feedback', await page.locator('.leaf-row').count() === 1);
   await page.locator('.link-btn', { hasText: 'Skip' }).click();
 
+  // ...but only the first finish, and then every fifth. The second one goes
+  // straight back to the hub — 22 nagged ratings are worth less than a few
+  // willing ones.
+  await page.evaluate(() => __gol.debug.start('cup'));
+  for (let i = 0; i < 20; i++) {
+    const pourBtn = page.locator('.exp-buttons .btn', { hasText: 'Pour' });
+    if (await pourBtn.count() === 0) break;
+    await pourBtn.click();
+  }
+  await page.locator('.exp-buttons .btn', { hasText: 'Empty the cup' }).click();
+  await page.waitForTimeout(1600);
+  await page.locator('.exp-buttons .btn', { hasText: 'Continue' }).click();
+  check('the second finish is not asked to rate', await page.locator('.leaf-row').count() === 0);
+  check('it returns straight to the hub', await page.locator('.card').count() === 1);
+  // two finishes = the rest is due, so the invitation opens over the hub here.
+  // Put it off, which also keeps the rest of this run's hub clear.
+  check('two finishes bring the rest', await page.locator('.overlay').count() === 1);
+  await page.locator('.overlay .link-btn').click();
+
   // hanami: the history story advances through a choice
   await page.evaluate(() => __gol.debug.start('hanami'));
   check('hanami scene 1 shown', (await page.locator('.exp-text').textContent()).includes('812'));
@@ -395,8 +414,50 @@ function check(name, cond) {
   check('evening poem crosses cultures (Wordsworth in Finnish)', fiTxt.includes('sateenkaaren'));
   await page.evaluate(() => __gol.debug.setLang('en'));
 
-  // debug handle + feedback store
+  // "Not yet" means not this visit — the same invitation must not come back on
+  // the next repaint, and Esc / the dark outside the panel close it too
   await page.locator('.overlay .btn').click();
+  await page.clock.install({ time: new Date('2026-07-22T12:00:00') });
+  await page.evaluate(() => {
+    const s = JSON.parse(localStorage.getItem('golState'));
+    s.sinceInterlude = 2;
+    localStorage.setItem('golState', JSON.stringify(s));
+  });
+  await page.reload({ waitUntil: 'networkidle' });
+  check('the invitation is due again', await page.locator('.overlay').count() === 1);
+  await page.keyboard.press('Escape');
+  check('Escape closes the invitation', await page.locator('.overlay').count() === 0);
+  await page.locator('.another-btn').click();          // any hub repaint
+  check('"not yet" is not re-asked on a repaint', await page.locator('.overlay').count() === 0);
+  await page.reload({ waitUntil: 'networkidle' });     // a new visit asks again
+  check('a fresh visit asks once more', await page.locator('.overlay').count() === 1);
+  await page.locator('.overlay .btn').click();
+
+  // an address that names an experience opens it; the hub is the plain address
+  await page.goto(URL + '#tether', { waitUntil: 'networkidle' });
+  check('#id deep-links straight into the experience',
+    await page.locator('.pixel-screen').count() === 1 && await page.locator('.card').count() === 0);
+  check('the shared address is kept', await page.evaluate(() => location.hash) === '#tether');
+  await page.locator('.back-btn').click();
+  check('returning to the hub clears the address', await page.evaluate(() => location.hash) === '');
+  await page.goto(URL + '#not-a-real-id', { waitUntil: 'networkidle' });
+  check('an unknown #id just opens the hub', await page.locator('.card').count() === 1);
+
+  // <html lang> follows the UI language, for screen readers and CJK glyph choice
+  await page.evaluate(() => __gol.debug.setLang('ja'));
+  check('html lang tracks the language', await page.evaluate(() => document.documentElement.lang) === 'ja');
+  await page.evaluate(() => __gol.debug.setLang('en'));
+
+  // saying nothing must not be recorded as feedback, nor thanked for
+  const before = await page.evaluate(() => __gol.debug.feedback().length);
+  await page.locator('.footer-link').click();
+  await page.locator('.btn', { hasText: 'Leave it' }).click();
+  check('an empty thought is not stored',
+    await page.evaluate(() => __gol.debug.feedback().length) === before);
+  check('an empty thought returns to the hub without thanks',
+    await page.locator('.card').count() === 1);
+
+  // debug handle + feedback store
   await page.evaluate(() => __gol.store.recordFeedback({ id: 'smoke', leaves: 5, text: 'test', lang: 'en' }));
   const fb = await page.evaluate(() => __gol.debug.feedback());
   check('feedback recorded via __gol', fb.length === 1 && fb[0].leaves === 5);

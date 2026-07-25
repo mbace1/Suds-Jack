@@ -372,6 +372,7 @@ const STR = {
     'fb.send': 'Leave it',
     'fb.skip': 'Skip',
     'fb.thanks': 'Thank you. It is kept.',
+    'fb.leaves': 'leaves',
 
     'ui.continue': 'Continue',
     'ui.back': 'Back to the hub',
@@ -730,6 +731,7 @@ const STR = {
     'fb.send': 'Jätä se',
     'fb.skip': 'Ohita',
     'fb.thanks': 'Kiitos. Se on tallessa.',
+    'fb.leaves': 'lehteä',
 
     'ui.continue': 'Jatka',
     'ui.back': 'Takaisin aulaan',
@@ -1088,6 +1090,7 @@ const STR = {
     'fb.send': '残す',
     'fb.skip': 'とばす',
     'fb.thanks': 'ありがとう。たしかに受け取りました。',
+    'fb.leaves': '枚の葉',
 
     'ui.continue': 'つづける',
     'ui.back': 'ロビーへもどる',
