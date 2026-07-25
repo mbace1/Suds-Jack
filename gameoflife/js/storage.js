@@ -5,6 +5,7 @@
 //   sinceInterlude  int                    finishes since the last nature interlude
 //   natureIdx       int                    rotates through the interlude prompts
 //   accepted        int                    invitations the player actually took
+//   hemi            'n' | 's' | null       which hemisphere's seasons to use
 //   feedback        [{ id, leaves, text, lang, ts }]
 
 const KEY = 'golState';
@@ -16,6 +17,7 @@ const DEFAULTS = {
   sinceInterlude: 0,
   natureIdx: 0,
   accepted: 0,
+  hemi: null,          // null until set, so main.js can seed the timezone guess
   feedback: [],
 };
 
@@ -36,6 +38,11 @@ function save() {
 export function getState() { return state; }
 
 export function setLangPref(l) { state.lang = l; save(); }
+
+// which hemisphere's seasons the invitations should follow
+export function getHemi() { return state.hemi === 's' ? 's' : 'n'; }
+export function hemiSet() { return state.hemi === 'n' || state.hemi === 's'; }
+export function setHemi(h) { state.hemi = h === 's' ? 's' : 'n'; save(); }
 
 export function recordCompletion(id) {
   state.completions.push({ id, ts: Date.now() });
