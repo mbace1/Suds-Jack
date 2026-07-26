@@ -71,6 +71,30 @@ function sliceAt(d) {
   };
 }
 
+// ─── Tunnel row variation ─────────────────────────────────────────────────────
+// Each world "ring" (voxel row of the half-pipe) gets a deterministic profile so
+// the tunnel reads as built out of stacked voxel rows rather than a smooth cone.
+// hash → 0..1, stable per ring index, so the variation scrolls with the world.
+function hash1(n) {
+  const s = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+// Profile for ring r: how many wall rows are present, and whether it's a marker.
+// rows  : 1..NR   — wall height in voxel rows (creates dips and towers)
+// marker: true    — a red accent ring (Suda 51 punctuation every so often)
+// gate  : true    — narrowed ring, walls pushed inward
+function ringProfile(r) {
+  const h = hash1(r);
+  let rows = NR;
+  if (h < 0.16)      rows = 2;             // dip
+  else if (h < 0.30) rows = 3;
+  else if (h > 0.92) rows = NR + 1;        // tower
+  const marker = (r % 8) === 0;
+  const gate   = hash1(r * 1.7 + 5) > 0.90;
+  return { rows, marker, gate };
+}
+
 // World-space enemy/bullet → screen position
 // wx: -1..+1 (tunnel width), wy: 0=floor (voxel rows), wz: 0..1 (0=near)
 function w2s(wx, wy, wz) {
@@ -89,7 +113,8 @@ let score  = 0;
 let hi     = 0;
 let lives  = 3;
 let frame  = 0;
-let scroll = 0;
+let scroll = 0;   // 0..1 floor checker phase
+let ringOff = 0;  // monotonic ring counter — drives tunnel row variation
 let camX   = 0;
 let camT   = 0;
 
@@ -190,7 +215,8 @@ function tryZap() {
 }
 
 function startGame() {
-  score = 0; lives = 3; frame = 0; scroll = 0; camT = 0;
+  score = 0; lives = 3; frame = 0; scroll = 0; ringOff = 0; camT = 0;
+  flashCol = null; flashAlpha = 0;
   enemies.length = 0; bullets.length = 0; particles.length = 0; bumps.length = 0;
   Object.assign(PL, { x:0, y:0, vx:0, vy:0, onGround:true, boosts:0, inv:0, zapCD:0 });
   fireCD = 0;
@@ -199,34 +225,61 @@ function startGame() {
 }
 
 // ─── Spawning ─────────────────────────────────────────────────────────────────
+// Tempest-style lanes: enemies ride discrete lanes down the tube rather than
+// arbitrary positions, so approach reads clearly and shots line up.
+const LANES = 8;
+function laneX(i) { return ((i + 0.5) / LANES) * 2 - 1; }   // -0.875 .. 0.875
+
+// 0 GRUNT  — straight down its lane
+// 1 FLIPPER— hops lanes on a timer (the Tempest signature)
+// 2 TANKER — slow, 2 HP, splits into two grunts on death
 const ETYPES = [
-  { col: C.E1, speed: 0.009, hp: 1, pts: 100 },
-  { col: C.E2, speed: 0.007, hp: 1, pts: 150 },
-  { col: C.E3, speed: 0.005, hp: 2, pts: 350 },
+  { kind: 'grunt',   col: C.E1, speed: 0.009, hp: 1, pts: 100 },
+  { kind: 'flipper', col: C.E2, speed: 0.007, hp: 1, pts: 150 },
+  { kind: 'tanker',  col: C.E3, speed: 0.005, hp: 2, pts: 350 },
 ];
+
+function makeEnemy(kind, lane, z, lvl) {
+  const et = ETYPES.find(e => e.kind === kind);
+  return {
+    kind:    et.kind,
+    lane,
+    x:       laneX(lane),
+    tx:      laneX(lane),         // target x while flipping between lanes
+    y:       0,
+    z,
+    speed:   et.speed * (1 + Math.random() * 0.3 + lvl * 0.12),
+    col:     et.col,
+    hp:      et.hp,
+    pts:     et.pts,
+    flipCD:  600 + Math.random() * 700,   // ms until next lane hop
+    dir:     Math.random() < 0.5 ? -1 : 1,
+  };
+}
 
 function spawnWave() {
   const lvl   = Math.floor(frame / 1800);
   const count = 2 + Math.min(lvl, 5);
+
+  // Pick distinct lanes so a wave spreads across the tube
+  const pool = [];
+  for (let i = 0; i < LANES; i++) pool.push(i);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+
   for (let i = 0; i < count; i++) {
-    const ti = Math.min(Math.floor(Math.random() * (1.5 + lvl * 0.4)), 2);
-    const et = ETYPES[ti];
-    enemies.push({
-      x:     (Math.random() * 2 - 1) * 0.78,
-      y:     Math.random() < 0.7 ? 0 : Math.random() * 1.5,
-      z:     0.88 + Math.random() * 0.12,
-      speed: et.speed * (1 + Math.random() * 0.3 + lvl * 0.12),
-      col:   et.col,
-      hp:    et.hp,
-      pts:   et.pts,
-    });
+    const roll = Math.random() * (1.5 + lvl * 0.4);
+    const kind = roll < 1 ? 'grunt' : roll < 2 ? 'flipper' : 'tanker';
+    enemies.push(makeEnemy(kind, pool[i % LANES], 0.88 + Math.random() * 0.12, lvl));
   }
 }
 
 function spawnBumps() {
   bumps.length = 0;
   for (let i = 0; i < 6; i++) {
-    bumps.push({ x: (Math.random() * 2 - 1) * 0.7, z: 0.15 + i * 0.14 });
+    bumps.push({ x: laneX(Math.floor(Math.random() * LANES)), z: 0.15 + i * 0.14 });
   }
 }
 
@@ -269,6 +322,7 @@ function burst(e, n) {
 function zapVfx() {
   flashCol   = '#ffffff';
   flashAlpha = 0.82;
+  // Debris cloud from all killed enemies is already handled by burst() calls
   // Extra floor voxel columns
   for (let i = 0; i < 8; i++) {
     const sx = 10 + i * (LW / 8);
@@ -334,8 +388,10 @@ function update(dt) {
   camT += dt * 0.00065;
   camX = Math.sin(camT) * 7 + Math.sin(camT * 2.3) * 2.5;
 
-  // Scroll (floor animation)
-  scroll = (scroll + dt * 0.006) % 1;
+  // Scroll (floor animation) + ring advance for tunnel row variation
+  const adv = dt * 0.006;
+  scroll  = (scroll + adv) % 1;
+  ringOff += adv;
 
   // ── Player horizontal ──
   const mx = (keys['ArrowLeft']  || keys['KeyA'] || T.left  ? -1 : 0)
@@ -368,7 +424,8 @@ function update(dt) {
     const py = Math.round(NY);
     if (PL.vy > 4 && Math.abs(PL.vx) > 0.04) {
       // Speed-bump landing → Bomb Jack launch
-      PL.vy = -(PL.vy * 0.45 + Math.abs(PL.vx) * 18);      PL.boosts = 3;
+      PL.vy = -(PL.vy * 0.45 + Math.abs(PL.vx) * 18);
+      PL.boosts = 3;
       PL.onGround = false;
       dustVfx(px, py);
     } else {
@@ -409,7 +466,21 @@ function update(dt) {
       const e = enemies[j];
       if (Math.abs(e.z - b.z) < 0.055 && Math.abs(e.x - b.x) < 0.22) {
         e.hp--;
-        if (e.hp <= 0) { burst(e, 12); score += e.pts; enemies.splice(j, 1); }
+        if (e.hp <= 0) {
+          burst(e, 12);
+          score += e.pts;
+          // Tankers split into two grunts on adjacent lanes (Tempest behaviour)
+          if (e.kind === 'tanker') {
+            const lvl = Math.floor(frame / 1800);
+            for (const off of [-1, 1]) {
+              const nl = Math.max(0, Math.min(LANES - 1, e.lane + off));
+              const child = makeEnemy('grunt', nl, e.z, lvl);
+              child.x = e.x;               // spawn at parent, slide into lane
+              enemies.push(child);
+            }
+          }
+          enemies.splice(j, 1);
+        }
         bullets.splice(i, 1);
         hit = true; break;
       }
@@ -421,6 +492,21 @@ function update(dt) {
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
     e.z -= e.speed * (dt / 16);
+
+    // Flippers hop lanes on a timer — Tempest signature movement
+    if (e.kind === 'flipper') {
+      e.flipCD -= dt;
+      if (e.flipCD <= 0) {
+        let nl = e.lane + e.dir;
+        if (nl < 0 || nl >= LANES) { e.dir *= -1; nl = e.lane + e.dir; }
+        e.lane = nl;
+        e.tx   = laneX(nl);
+        e.flipCD = 500 + Math.random() * 600;
+      }
+    }
+    // Ease toward target lane (snappy but visible — reads as a flip)
+    e.x += (e.tx - e.x) * Math.min(1, 0.22 * (dt / 16));
+
     if (e.z <= 0.02) {
       if (Math.abs(e.x - PL.x) < 0.28 && PL.inv <= 0) {
         lives--;
@@ -452,7 +538,7 @@ function update(dt) {
 
   // ── Recycle bumps ──
   for (let i = bumps.length - 1; i >= 0; i--) {
-    if (bumps[i].z <= 0) bumps[i] = { x: (Math.random()*2-1)*0.7, z: 0.95 };
+    if (bumps[i].z <= 0) bumps[i] = { x: laneX(Math.floor(Math.random() * LANES)), z: 0.95 };
     bumps[i].z -= 0.007 * (dt / 16);
   }
 }
@@ -470,8 +556,15 @@ function drawTunnel() {
     const near = sliceAt(d - 1);
     if (cur.hw < 1) continue;
 
-    const lx  = Math.round(VPX + camX - cur.hw);
-    const rx  = Math.round(VPX + camX + cur.hw);
+    // World ring index for this slice — advances as the tunnel scrolls
+    const ring = Math.floor(ND - d + ringOff);
+    const prof = ringProfile(ring);
+
+    // Gate rings pull the walls inward for a pinch-point
+    const hw  = prof.gate ? cur.hw * 0.76 : cur.hw;
+
+    const lx  = Math.round(VPX + camX - hw);
+    const rx  = Math.round(VPX + camX + hw);
     const sw  = Math.max(2, rx - lx);
     const sy  = Math.round(cur.y);
     const ny  = Math.round(near.y);
@@ -489,26 +582,34 @@ function drawTunnel() {
       if (c > 0) { g.fillStyle = C.FG; g.fillRect(fx, sy, 1, fh); }
     }
 
-    // ── Wall strips (left & right) ──
-    for (let r = 0; r < NR; r++) {
+    // Marker rings: red band across the floor (Suda 51 punctuation)
+    if (prof.marker) {
+      g.fillStyle = '#2a0008';
+      g.fillRect(lx, sy, sw, Math.max(1, Math.round(fh * 0.5)));
+    }
+
+    // ── Wall strips (left & right) — height varies per ring ──
+    const rows = prof.rows;
+    for (let r = 0; r < rows; r++) {
       const wy = Math.round(sy - (r + 1) * cur.wh / NR);
       const rh = Math.max(1, Math.round(cur.wh / NR));
-      const isTop = r === NR - 1;
+      const isTop = r === rows - 1;
       g.fillStyle = isTop ? C.TB : C.TA;
       g.fillRect(lx,      wy, tw, rh);
       g.fillRect(rx - tw, wy, tw, rh);
-      // Cyan rim on top edge
+      // Rim light on the top voxel of each column
       if (isTop) {
-        g.fillStyle = C.RIM;
+        g.fillStyle = prof.marker ? C.PL : C.RIM;
         g.fillRect(lx,      wy, tw, 1);
         g.fillRect(rx - tw, wy, tw, 1);
       }
     }
 
     // ── Vertical edges ──
-    const ey = Math.round(sy - cur.wh);
-    const eh = Math.round(cur.wh + fh);
-    g.fillStyle = (d % 5 === 0) ? C.RIM : C.RDIM;
+    const wallH = cur.wh * rows / NR;
+    const ey = Math.round(sy - wallH);
+    const eh = Math.round(wallH + fh);
+    g.fillStyle = prof.marker ? C.PL : (prof.gate ? C.RIM : C.RDIM);
     g.fillRect(lx,     ey, 1, eh);
     g.fillRect(rx - 1, ey, 1, eh);
   }
@@ -590,8 +691,9 @@ function drawEnemies() {
   // Sort far to near
   enemies.slice().sort((a, b) => b.z - a.z).forEach(e => {
     const p = w2s(e.x, e.y, e.z);
-    const ew = Math.max(2, Math.round(14 * p.sc));
-    const eh = Math.max(2, Math.round(14 * p.sc));
+    const base = e.kind === 'tanker' ? 18 : 14;
+    const ew = Math.max(2, Math.round(base * p.sc));
+    const eh = Math.max(2, Math.round(base * p.sc));
 
     g.fillStyle = e.col;
     g.fillRect(p.x - ew / 2, p.y - eh, ew, eh);
@@ -603,6 +705,21 @@ function drawEnemies() {
     // Right shadow
     g.fillStyle = 'rgba(0,0,0,0.4)';
     g.fillRect(p.x + ew / 2 - 2, p.y - eh + 1, 2, eh - 1);
+
+    // Flipper wings — side voxels that lean the way it's travelling
+    if (e.kind === 'flipper' && ew >= 5) {
+      const wg = Math.max(1, Math.round(ew * 0.3));
+      g.fillStyle = e.col;
+      g.fillRect(p.x - ew / 2 - wg, p.y - eh + wg, wg, Math.max(1, eh - wg * 2));
+      g.fillRect(p.x + ew / 2,      p.y - eh + wg, wg, Math.max(1, eh - wg * 2));
+    }
+
+    // Tanker: dark core so it reads as armoured
+    if (e.kind === 'tanker' && ew >= 6) {
+      const ci = Math.max(2, Math.round(ew * 0.35));
+      g.fillStyle = '#440044';
+      g.fillRect(p.x - ci / 2, p.y - eh / 2 - ci / 2, ci, ci);
+    }
 
     // HP pip for tankers
     if (e.hp > 1) {
