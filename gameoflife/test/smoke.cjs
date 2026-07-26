@@ -552,10 +552,15 @@ async function tapPixel(page, x, y) {
       return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     };
     const parse = (s) => (s.match(/\d+/g) || [0, 0, 0]).slice(0, 3).map(Number);
+    // A translucent wash — the hover highlight — is not a background: it lets
+    // what is behind it through, and reading it as opaque white made a hovered
+    // button look like grey-on-white and fail. Only near-opaque layers count.
     const bgOf = (el) => {
       for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
         const b = getComputedStyle(n).backgroundColor;
-        if (b && !/rgba\(0, 0, 0, 0\)|transparent/.test(b)) return parse(b);
+        if (!b || /transparent/.test(b)) continue;
+        const a = b.startsWith('rgba') ? parseFloat(b.split(',')[3]) : 1;
+        if (a >= 0.5) return parse(b);
       }
       return [20, 19, 17];
     };

@@ -13,7 +13,11 @@ Live preview: https://mbace1.github.io/Suds-Jack/
 One page that carries **every playable thing in the workshop**, each cabinet
 with a **Play** button and a **Feedback** button. No build step, no framework,
 no image assets: each game's marquee is a 128×72 pixel canvas drawn in code
-(`hub/art.js`) and tinted from that game's own palette.
+(`hub/art.js`) and tinted from that game's own palette — and seen through the
+same curved, scanlined glass the Game of Life terminal uses, baked once at load
+rather than run every frame. The page itself is that terminal: monospace, `>`
+carets, `[ PLAY ]` brackets, and a status line with a three-colour screen
+accent that tints the chrome while each cabinet keeps its own colour.
 
 Adding a game is **two edits**: an entry in `hub/games.js` and a draw function
 in `hub/art.js`. Nothing else in the hub knows any game exists.

@@ -166,7 +166,7 @@ function check(name, cond) {
   await page.mouse.click(20, 20);        // the dark outside it
   check('the backdrop closes the panel', await page.locator('.scrim').count() === 0);
   check('and the keyboard goes back where it was',
-    await page.evaluate(() => document.activeElement?.textContent === 'Feedback'));
+    await page.evaluate(() => document.activeElement?.textContent.includes('Feedback')));
 
   // ── the floor everything else in this repo holds ──
   await page.locator('.cab').first().locator('.btn.ghost').click();
@@ -176,10 +176,15 @@ function check(name, cond) {
       return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     };
     const parse = (s) => (s.match(/\d+/g) || [0, 0, 0]).slice(0, 3).map(Number);
+    // A translucent wash — the hover highlight — is not a background: it lets
+    // what is behind it through, and reading it as opaque white made a hovered
+    // button look like grey-on-white and fail. Only near-opaque layers count.
     const bgOf = (el) => {
       for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
         const b = getComputedStyle(n).backgroundColor;
-        if (b && !/rgba\(0, 0, 0, 0\)|transparent/.test(b)) return parse(b);
+        if (!b || /transparent/.test(b)) continue;
+        const a = b.startsWith('rgba') ? parseFloat(b.split(',')[3]) : 1;
+        if (a >= 0.5) return parse(b);
       }
       return [11, 11, 15];
     };
@@ -195,7 +200,7 @@ function check(name, cond) {
         const size = parseFloat(cs.fontSize);
         const large = size >= 24 || (size >= 18.66 && parseInt(cs.fontWeight, 10) >= 700);
         const r = ratio(parse(cs.color), bgOf(el));
-        if (r < (large ? 3 : 4.5)) dim.push(`${el.className || el.tagName} ${r.toFixed(2)}:1`);
+        if (r < (large ? 3 : 4.5)) dim.push(`${el.className || el.tagName} "${el.textContent.trim().slice(0, 16)}" ${r.toFixed(2)}:1`);
       }
       if (el.matches('button, a, input, textarea')) {
         const b = el.getBoundingClientRect();

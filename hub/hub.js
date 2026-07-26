@@ -6,9 +6,9 @@
 // art.js and a cabinet appears. Feedback is the same panel everywhere, tagged
 // with which game it came from, and goes out through hub/feedback.js.
 
-import { GAMES, SKETCHES } from './games.js?v=1';
-import { drawMarquee } from './art.js?v=1';
-import * as feedback from './feedback.js?v=1';
+import { GAMES, SKETCHES } from './games.js?v=2';
+import { drawMarquee } from './art.js?v=2';
+import * as feedback from './feedback.js?v=2';
 
 const el = (tag, cls = '', text = '') => {
   const e = document.createElement(tag);
@@ -20,7 +20,7 @@ const el = (tag, cls = '', text = '') => {
 // ── cabinets ───────────────────────────────────────────────────────
 function cabinet(game) {
   const card = el('article', 'cab');
-  card.style.setProperty('--accent', game.accent);
+  card.style.setProperty('--cab', game.accent);   // the cabinet's own colour
 
   const play = el('a', 'marquee');
   play.href = game.path;
@@ -34,9 +34,8 @@ function cabinet(game) {
 
   const body = el('div', 'cab-body');
   const head = el('div', 'cab-head');
-  head.append(el('h3', '', game.title), el('span', 'lineage', game.lineage));
-  body.appendChild(head);
-  body.appendChild(el('p', 'tagline', game.tagline));
+  head.append(el('span', 'caret', '>'), el('h3', '', game.title));
+  body.append(head, el('p', 'lineage', game.lineage), el('p', 'tagline', game.tagline));
 
   const tags = el('ul', 'tags');
   for (const tg of game.tags) tags.appendChild(el('li', '', tg));
@@ -45,9 +44,9 @@ function cabinet(game) {
   body.appendChild(el('p', 'controls', game.controls));
 
   const actions = el('div', 'actions');
-  const go = el('a', 'btn play', 'Play');
+  const go = el('a', 'btn play', '[ Play ]');
   go.href = game.path;
-  const fb = el('button', 'btn ghost', 'Feedback');
+  const fb = el('button', 'btn ghost', '[ Feedback ]');
   fb.onclick = () => openFeedback(game.title, game.id, game.accent);
   actions.append(go, fb);
   body.appendChild(actions);
@@ -74,12 +73,12 @@ function openFeedback(title, gameId, accent) {
   const scrim = el('div', 'scrim');
   const sheet = el('div', 'sheet');
   // the panel wears the colour of the cabinet it was opened from
-  if (accent) sheet.style.setProperty('--accent', accent);
+  if (accent) sheet.style.setProperty('--accent', accent);   // the cabinet's colour
   sheet.setAttribute('role', 'dialog');
   sheet.setAttribute('aria-modal', 'true');
   sheet.setAttribute('aria-labelledby', 'fb-title');
 
-  const h = el('h2', '', `Feedback — ${title}`);
+  const h = el('h2', '', `Feedback: ${title}`);
   h.id = 'fb-title';
   sheet.append(h, el('p', 'fb-q', 'How was it?'));
 
@@ -87,7 +86,7 @@ function openFeedback(title, gameId, accent) {
   const row = el('div', 'rate-row');
   const pips = [];
   for (let i = 1; i <= 5; i++) {
-    const b = el('button', 'pip', '◆');
+    const b = el('button', 'pip', '#');
     b.setAttribute('aria-label', `${i} out of 5`);
     b.setAttribute('aria-pressed', 'false');
     b.onclick = () => {
@@ -115,8 +114,8 @@ function openFeedback(title, gameId, accent) {
     : 'Kept on this device — no inbox is configured yet.'));
 
   const actions = el('div', 'actions');
-  const send = el('button', 'btn play', 'Send');
-  const cancel = el('button', 'btn ghost', 'Not now');
+  const send = el('button', 'btn play', '[ Send ]');
+  const cancel = el('button', 'btn ghost', '[ Not now ]');
   actions.append(send, cancel);
   sheet.appendChild(actions);
 
@@ -139,7 +138,7 @@ function openFeedback(title, gameId, accent) {
     sheet.insertBefore(saying, actions);
     const how = await feedback.send({ game: gameId, rating, text, ts: Date.now() });
     saying.textContent = SAID[how] ?? SAID.off;
-    cancel.textContent = 'Close';
+    cancel.textContent = '[ Close ]';
     cancel.disabled = false;
     cancel.focus();
     send.remove();
@@ -174,6 +173,45 @@ function openFeedback(title, gameId, accent) {
   pips[0].focus();
 }
 
+// ── the screen's phosphor ──────────────────────────────────────────
+// The terminal's own colour, the same three as gameoflife's. It tints the
+// chrome only — carets, rules, the status line, focus rings. Each cabinet
+// keeps its own accent inside its frame, because that is the game's colour.
+const ACCENTS = {
+  cyan:  ['#35e8d8', '#7fd8d0'],
+  green: ['#5ce87a', '#8fd89a'],
+  white: ['#cfe4ea', '#b6c8ce'],
+};
+const ACCENT_KEY = 'sudsJackHubAccent';
+
+function readAccent() {
+  try { return ACCENTS[localStorage.getItem(ACCENT_KEY)] ? localStorage.getItem(ACCENT_KEY) : 'cyan'; }
+  catch { return 'cyan'; }
+}
+
+function useAccent(name) {
+  const [hex, dim] = ACCENTS[name] ?? ACCENTS.cyan;
+  document.documentElement.style.setProperty('--accent', hex);
+  document.documentElement.style.setProperty('--accent-dim', dim);
+  try { localStorage.setItem(ACCENT_KEY, name); } catch { /* private mode */ }
+  document.querySelectorAll('.accent-row .opt-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.accent === name);
+    b.setAttribute('aria-pressed', String(b.dataset.accent === name));
+  });
+}
+
+function accentRow() {
+  const row = el('div', 'status-row accent-row');
+  row.appendChild(el('span', 'status-label', 'screen:'));
+  for (const name of Object.keys(ACCENTS)) {
+    const b = el('button', 'opt-btn', name);
+    b.dataset.accent = name;
+    b.onclick = () => useAccent(name);
+    row.appendChild(b);
+  }
+  return row;
+}
+
 // ── build the page ─────────────────────────────────────────────────
 const rack = document.getElementById('cabinets');
 for (const g of GAMES) rack.appendChild(cabinet(g));
@@ -181,10 +219,16 @@ for (const g of GAMES) rack.appendChild(cabinet(g));
 const shelfList = document.getElementById('sketches');
 for (const s of SKETCHES) shelfList.appendChild(shelf(s));
 
+document.getElementById('status').prepend(accentRow());
+useAccent(readAccent());
+
 document.getElementById('hub-feedback').onclick = () => openFeedback('the arcade itself', 'hub');
 
 // anything written while an endpoint was unreachable goes out now, quietly
 feedback.flush();
 
 // console handle, same convention as the games
-window.__hub = { games: GAMES, sketches: SKETCHES, feedback, debug: { open: openFeedback } };
+window.__hub = {
+  games: GAMES, sketches: SKETCHES, feedback,
+  debug: { open: openFeedback, accent: readAccent, setAccent: useAccent },
+};

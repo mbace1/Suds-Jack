@@ -8,7 +8,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 The landing page: **every playable thing in the repo on one page**, each cabinet with a
 **Play** link and a **Feedback** button. Vanilla ES modules, no build step, no image
 assets — every marquee is a 128×72 pixel canvas drawn in code (`hub/art.js`) and tinted
-from that game's own accent. Adding a game is **two edits**: an entry in `hub/games.js`
+from that game's own accent.
+It wears **the same terminal as `gameoflife/`** (see the locked visual plan there): cold
+near-black, monospace, `>` carets, `[ PLAY ]` brackets, rules instead of card borders,
+and a status line carrying the same three-colour **screen accent** (persisted under
+`sudsJackHubAccent`). The accent tints the *chrome* only — each cabinet keeps its own
+colour on its caret, its Play button and its bezel, because that is the game's colour and
+not the terminal's. Every marquee is seen **through the same curved glass**: `throughGlass`
+in `art.js` bakes barrel distortion + one scanline per source row + a corner vignette into
+a 256×144 remap **once at load** (a marquee never moves, so nine cabinets cost nine passes
+total — no WebGL, no per-frame cost, unlike the live version in `gameoflife/js/crt.js`). Adding a game is **two edits**: an entry in `hub/games.js`
 (title, tagline, lineage, tags, controls, `path`, `accent`, `art`, `inRepo`) and a draw
 function in `hub/art.js`; `hub/hub.js` knows about no game in particular.
 `hub/feedback.js` reuses the transport the games already ship (`scripts/feedback-sheet.gs`

@@ -173,11 +173,52 @@ export const ART = {
   },
 };
 
-// paint one marquee into a canvas element
+// ── the glass ──────────────────────────────────────────────────────
+// Every marquee is seen through the same curved screen the experiences in
+// gameoflife use — barrel distortion, one scanline per source row, a corner
+// vignette. That one runs in WebGL because it presents a moving picture; a
+// marquee never changes, so this is a single pixel remap done once at load and
+// never touched again. Nine cabinets cost nine 256×144 passes, total, forever.
+const CURVE = 0.075;
+const NORM = 1 / (1 + CURVE);          // overscan, so the art still fills the frame
+const SCALE = 2;
+
+function throughGlass(src, dst) {
+  const dw = W * SCALE, dh = H * SCALE;
+  dst.width = dw; dst.height = dh;
+  const sctx = src.getContext('2d');
+  const dctx = dst.getContext('2d');
+  const s = sctx.getImageData(0, 0, W, H).data;
+  const out = dctx.createImageData(dw, dh);
+  const o = out.data;
+
+  for (let y = 0; y < dh; y++) {
+    for (let x = 0; x < dw; x++) {
+      const cx = (x + 0.5) / dw * 2 - 1, cy = (y + 0.5) / dh * 2 - 1;
+      const k = (1 + CURVE * (cx * cx + cy * cy)) * NORM;
+      const u = (cx * k) * 0.5 + 0.5, v = (cy * k) * 0.5 + 0.5;
+      const d = (y * dw + x) * 4;
+      o[d + 3] = 255;
+      if (u < 0 || u > 1 || v < 0 || v > 1) continue;      // past the glass: black
+      const si = ((Math.min(H - 1, v * H) | 0) * W + (Math.min(W - 1, u * W) | 0)) * 4;
+      // one dark line per source row, and the corners falling away
+      const scan = 1 - 0.1 * (0.5 + 0.5 * Math.cos(v * H * Math.PI * 2));
+      const r2 = cx * cx + cy * cy;
+      const f = scan * (1 - 0.24 * r2 * r2);
+      o[d] = s[si] * f;
+      o[d + 1] = s[si + 1] * f;
+      o[d + 2] = s[si + 2] * f;
+    }
+  }
+  dctx.putImageData(out, 0, 0);
+}
+
+// paint one marquee into a canvas element, through the glass
 export function drawMarquee(canvas, key, accent) {
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d');
+  const src = document.createElement('canvas');
+  src.width = W; src.height = H;
+  const ctx = src.getContext('2d');
   ctx.imageSmoothingEnabled = false;
-  const g = pen(ctx);
-  (ART[key] ?? ART.gel)(g, accent);
+  (ART[key] ?? ART.gel)(pen(ctx), accent);
+  throughGlass(src, canvas);
 }
