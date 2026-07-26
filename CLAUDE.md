@@ -6,8 +6,14 @@ Two games plus an agent pipeline.
 |---------------|---------------------|------------|-----------------------------------------------|
 | `game/`       | Suds Jack           | Canvas 2D  | `mbace1.github.io/Suds-Jack/sudz/`            |
 | `game/voxel/` | Suds Jack — Voxel   | Canvas 2D  | `mbace1.github.io/Suds-Jack/voxel/`           |
-| `toko-drop/`  | Toko Drop           | Three.js   | —                                             |
 | `agents/`     | Claude agent pipeline (`orchestrator.py`) | Python | — |
+
+**Toko Drop lives in a different repo.** Its source is not checked in here,
+but `agents/toko_playtester.py` reads `toko-drop/index.html` and
+`toko-drop/js/*.js` relative to this repo root — so those reads currently
+return `[not found]` placeholders and the playtester reviews nothing. Either
+vendor the source in, point `TOKO_FILES` at a real path, or run that agent
+from the Toko Drop checkout.
 
 ## Input support — required
 
@@ -16,6 +22,10 @@ Two games plus an agent pipeline.
 1. **Keyboard** — arrows/WASD, Space, Enter
 2. **Touch** — screen zones, with on-canvas button hints on touch devices
 3. **Gamepad** — Gamepad API, polled once per frame at the top of the main loop
+
+The mapping below is for single-stick games. Twin-stick games (Toko Drop)
+use axes 0/1 to move and axes 2/3 to aim, with the right stick past the
+deadzone acting as fire.
 
 ### Gamepad conventions used in this repo
 
