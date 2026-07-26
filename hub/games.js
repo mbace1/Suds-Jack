@@ -4,6 +4,10 @@
 //          still playable, listed further down, and not competing for
 //          attention with the live work). One word to move a game between
 //          the two; nothing else changes.
+// `live`   omit for anything playable. `live: false` means the cabinet is
+//          listed but there is nothing to open yet — the Play button renders
+//          dead and dimmed instead of pointing at a 404, and `note` says why.
+//          Not every button has to work for a game to be worth listing.
 // `path`   what Play opens, relative to the hub page.
 // `inRepo` true when the folder lives on this branch too. The site (gh-pages)
 //          is a curated root that carries a few games `main` does not, so the
@@ -70,6 +74,8 @@ export const GAMES = [
   {
     id: 'paperboy',
     status: 'archived',
+    live: false,
+    note: 'taken off the site in June — the code is still in the repo',
     title: 'Paper Route — Dawn Run',
     tagline: 'Deliver to the subscribers, smash the windows of everyone else, survive three crashes.',
     lineage: 'Paperboy (1985)',

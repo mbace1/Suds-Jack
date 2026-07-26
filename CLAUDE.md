@@ -20,6 +20,10 @@ a 256×144 remap **once at load** (a marquee never moves, so nine cabinets cost 
 total — no WebGL, no per-frame cost, unlike the live version in `gameoflife/js/crt.js`). Adding a game is **two edits**: an entry in `hub/games.js`
 (title, tagline, lineage, tags, controls, `path`, `accent`, `art`, `inRepo`, `status`) and
 a draw function in `hub/art.js`; `hub/hub.js` knows about no game in particular.
+**`live: false`** marks a cabinet with nothing behind it: the marquee goes unlit and
+un-linked, Play becomes a dead `[ NOT UP ]`, and the `note` field replaces the controls
+line with why. Not every button has to work for a game to be worth listing — and a
+button that says so beats one that 404s. Feedback stays open on those cabinets.
 **`status`** splits the page in two: `active` gets the top of the page, `archived` sits
 under its own heading with dimmed marquees — still listed, still playable, not competing
 with the live work. One word moves a game between them. The default split was drawn on

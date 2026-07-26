@@ -172,6 +172,13 @@ h1 .amp { color: var(--accent); }
 .btn:hover { background: rgba(255, 255, 255, .045); }
 
 .btn:disabled { opacity: .5; cursor: default; }
+.btn.dead { color: var(--ink-dim); }
+.btn.dead:hover { background: none; }
+
+/* a cabinet with nothing behind it: the marquee stays (it is still the game's
+   face) but reads as unlit rather than inviting a click */
+.cab.dark .marquee { opacity: .45; }
+.cab.dark .art { filter: saturate(.5); }
 
 /* the archived floor: present, playable, and not asking for attention. The
    marquees keep their colour but stop competing with the live work. */

@@ -90,23 +90,43 @@ function check(name, cond) {
   check('the live floor holds only what is being worked on',
     await page.locator('#cabinets .cab').count() === active.length && active.length > 0);
   check('the archive holds the rest', await page.locator('#archived .cab').count() === archived.length);
-  check('the archive is still playable, not hidden',
-    await page.locator('#archived .btn.play').count() === archived.length);
+  check('the archive is still playable, not hidden — bar anything not up',
+    await page.locator('#archived .btn.play').count()
+      === archived.filter(g => g.live !== false).length);
   check('the archive names itself',
     (await page.locator('#archive-block .count').textContent()).toLowerCase().includes('archived'));
-  check('every cabinet offers Play', await page.locator('.cab .btn.play').count() === games.length);
+  check('every cabinet that has something behind it offers Play',
+    await page.locator('.cab .btn.play').count() === games.filter(g => g.live !== false).length);
   check('every cabinet offers Feedback', await page.locator('.cab .btn.ghost').count() === games.length);
   check('the sketch shelf is there too', await page.locator('.shelf .sketch-link').count() === sketches.length);
   check('the page names itself', (await page.title()).includes('Suds Jack'));
 
-  // every Play button points at its catalogue path, in catalogue order
+  // every Play button points at its catalogue path, in the order rendered
   const hrefs = await page.locator('.cab .btn.play').evaluateAll(ns => ns.map(n => n.getAttribute('href')));
-  check('Play opens the game it is under', hrefs.join() === games.map(g => g.path).join());
+  check('Play opens the game it is under',
+    hrefs.join() === games.filter(g => g.live !== false).map(g => g.path).join());
+
+  // not every button has to work yet — but a button that cannot work must say
+  // so rather than pointing at a 404
+  const notUp = games.filter(g => g.live === false);
+  check('a cabinet with nothing behind it has no Play link',
+    await page.locator('.cab .btn.play').count() === games.length - notUp.length);
+  check('it shows a dead button instead', await page.locator('.cab .btn.dead').count() === notUp.length);
+  check('and that button cannot be pressed',
+    await page.locator('.cab .btn.dead[disabled]').count() === notUp.length);
+  check('its marquee is not a link either',
+    await page.locator('.cab.dark a.marquee').count() === 0);
+  check('but feedback on it is still open',
+    await page.locator('.cab.dark .btn.ghost').count() === notUp.length);
+  if (notUp.length) {
+    check('and it says why it is not up',
+      (await page.locator('.cab.dark .controls').first().textContent()).length > 8);
+  }
 
   // and the ones this branch carries actually resolve — a hub whose buttons
   // 404 is worse than no hub. (Entries with inRepo:false live only on the
   // deployed site root; see README.)
-  const local = [...games, ...sketches].filter(g => g.inRepo);
+  const local = [...games, ...sketches].filter(g => g.inRepo && g.live !== false);
   const dead = [];
   for (const g of local) {
     const r = await page.request.get(`${base}/${g.path}`);

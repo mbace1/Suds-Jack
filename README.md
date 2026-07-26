@@ -25,6 +25,10 @@ carries a **`status`** — `active` games get the top of the page, `archived`
 ones sit under their own heading, dimmed but still playable. One word moves a
 game between the two.
 
+An entry can also carry **`live: false`** — the cabinet is listed but there
+is nothing to open yet, so Play renders as a dead `[ NOT UP ]` with a note
+saying why instead of pointing at a 404. Feedback still works on it.
+
 Also served at the short URL **https://mbace1.github.io/Suds-Jack/AnotherHUB**
 — the same page with a `<base>` pointing at the site root.
 

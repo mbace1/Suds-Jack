@@ -22,15 +22,20 @@ function cabinet(game) {
   const card = el('article', 'cab');
   card.style.setProperty('--cab', game.accent);   // the cabinet's own colour
 
-  const play = el('a', 'marquee');
-  play.href = game.path;
-  play.setAttribute('aria-label', `Play ${game.title}`);
-  play.tabIndex = -1;                    // the Play button below is the real target
+  // a cabinet with nothing behind it yet is a frame, not a link
+  const playable = game.live !== false;
+  if (!playable) card.classList.add('dark');
+  const frame = el(playable ? 'a' : 'div', 'marquee');
+  if (playable) {
+    frame.href = game.path;
+    frame.setAttribute('aria-label', `Play ${game.title}`);
+    frame.tabIndex = -1;                 // the Play button below is the real target
+  }
   const canvas = el('canvas', 'art');
   canvas.setAttribute('aria-hidden', 'true');
   drawMarquee(canvas, game.art, game.accent);
-  play.appendChild(canvas);
-  card.appendChild(play);
+  frame.appendChild(canvas);
+  card.appendChild(frame);
 
   const body = el('div', 'cab-body');
   const head = el('div', 'cab-head');
@@ -41,11 +46,19 @@ function cabinet(game) {
   for (const tg of game.tags) tags.appendChild(el('li', '', tg));
   body.appendChild(tags);
 
-  body.appendChild(el('p', 'controls', game.controls));
+  body.appendChild(el('p', 'controls', playable ? game.controls : (game.note ?? 'not up yet')));
 
   const actions = el('div', 'actions');
-  const go = el('a', 'btn play', '[ Play ]');
-  go.href = game.path;
+  let go;
+  if (playable) {
+    go = el('a', 'btn play', '[ Play ]');
+    go.href = game.path;
+  } else {
+    // a dead button that says so beats a live one that 404s
+    go = el('button', 'btn dead', '[ Not up ]');
+    go.disabled = true;
+  }
+  // feedback stays open either way — "put this one back" is worth hearing
   const fb = el('button', 'btn ghost', '[ Feedback ]');
   fb.onclick = () => openFeedback(game.title, game.id, game.accent);
   actions.append(go, fb);
