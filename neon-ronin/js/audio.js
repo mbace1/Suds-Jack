@@ -61,6 +61,7 @@ class AudioKit {
   dash()    { this._tone(300, 0.12, { type: 'sine', vol: 0.3, slide: 500 }); }
   jump()    { this._tone(380, 0.1, { type: 'sine', vol: 0.28, slide: 260 }); }
   swap()    { this._tone(440, 0.14, { type: 'triangle', vol: 0.35 }); this._tone(660, 0.14, { type: 'triangle', vol: 0.3, delay: 0.03 }); }
+  rally()   { this._tone(294, 0.2, { type: 'square', vol: 0.3 }); this._tone(392, 0.24, { type: 'square', vol: 0.3, delay: 0.1 }); this._tone(587, 0.3, { type: 'square', vol: 0.25, delay: 0.2 }); }
   shot()    { this._tone(700, 0.06, { vol: 0.22, slide: -350 }); }
   slam()    { this._tone(55, 0.45, { type: 'sine', vol: 0.6, slide: -25 }); this._noise(0.3, 400, 0.4); }
   deflect() { this._tone(900, 0.06, { type: 'triangle', vol: 0.3, slide: 300 }); }

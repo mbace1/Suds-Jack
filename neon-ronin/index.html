@@ -18,6 +18,8 @@
     #dashpips { display: flex; gap: 6px; margin-top: 6px; }
     #dashpips span { width: 26px; height: 6px; background: #0a1a22; border: 1px solid #2ee6ff44; transform: skewX(-28deg); transition: background 0.15s, box-shadow 0.15s; }
     #dashpips span.on { background: #00f0ff; box-shadow: 0 0 10px #00f0ffaa; }
+    #allychip { display: none; margin-top: 8px; font-size: 11px; letter-spacing: 2px;
+      color: #cfe4ff; text-shadow: 0 0 8px #9ac7ff; }
     #stats { top: 18px; right: 18px; text-align: right; font-size: 14px; line-height: 1.6; }
     #stats .dim { opacity: 0.55; font-size: 11px; letter-spacing: 2px; }
     #multlbl { color: #ffd24d; text-shadow: 0 0 10px #fa0; }
@@ -53,7 +55,15 @@
       padding: 12px 18px; border-radius: 4px; text-shadow: 0 0 8px #0af;
     }
     #modebtn.ranged { border-color: #ffaa4d; color: #ffe0b0; text-shadow: 0 0 8px #fa0; }
-    body.touch #modebtn { display: block; }
+    #cmdbtn {
+      position: fixed; right: 26px; bottom: 275px; z-index: 4; display: none;
+      font-family: monospace; font-size: 14px; letter-spacing: 2px;
+      color: #cfe4ff; background: #060b14dd; border: 1px solid #9ac7ff88;
+      padding: 12px 18px; border-radius: 4px; text-shadow: 0 0 8px #9ac7ff;
+      transition: opacity 0.2s;
+    }
+    #cmdbtn.has-squad { box-shadow: 0 0 14px #9ac7ff44; }
+    body.touch #modebtn, body.touch #cmdbtn { display: block; }
     body.touch #forms { bottom: 156px; }
 
     /* ── Overlays ── */
@@ -113,6 +123,7 @@
     <div class="label">INTEGRITY</div>
     <div id="hpbar"><div id="hpfill"></div></div>
     <div id="dashpips"><span></span><span></span></div>
+    <div id="allychip"></div>
   </div>
   <div id="stats" class="hud">
     <div><span class="dim">ROOM</span> <span id="roomlbl">1</span></div>
@@ -129,6 +140,7 @@
   <div id="stickL" class="stick"><div class="nub"></div></div>
   <div id="stickR" class="stick"><div class="nub"></div></div>
   <button id="modebtn"></button>
+  <button id="cmdbtn">⚑ CHARGE</button>
 
   <div id="start" class="overlay">
     <h1>NEON RONIN</h1>
@@ -136,7 +148,7 @@
       three frames. one soul. endless caves.<br><br>
       WASD move &nbsp;·&nbsp; MOUSE camera &nbsp;·&nbsp; LMB attack (chain combos)<br>
       SHIFT / SPACE dash ×2 (invincible) &nbsp;·&nbsp; 1 2 3 or Q swap frame<br>
-      swapping detonates a burst — weave it into your combos<br>
+      E orders recruited ronin to CHARGE &nbsp;·&nbsp; swapping detonates a burst<br>
       clear each cave, pick an upgrade, descend deeper<br><br>
       TOUCH: left stick move — flick it any direction to dash (×2 charges)<br>
       right stick camera (tap/lift = jump, again mid-air = double jump)<br>

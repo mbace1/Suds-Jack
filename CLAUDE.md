@@ -61,7 +61,25 @@ unchanged.
 **Enemies (`js/enemy.js`):** SLASHER (crimson katana, telegraphed slash — blade glow
 ramps during windup), GUNNER (violet rifle, holds a ~9 u ring while strafing, 3-bolt
 bursts from the pooled `BoltPool`), BRUTE (ember cleaver hulk, ground-slam AoE with an
-expanding telegraph ring). Every 4th room is a brute room.
+expanding telegraph ring), DRONE (mob-tier swarmer, no telegraph, lunge-bite). Every
+4th room is a brute room. Drones use a **separate cheap rig** — `buildMob` in
+`robots.js`, 6 meshes with geometry *and* materials shared per accent (no per-rig
+clones; flash swaps `chest.material` via `setMobFlash`) — so horde rooms stay cheap.
+They arrive as **flood packs** (one shared spawn beam on the pack lead, scattered
+around a shared center); live enemies are capped at 70 with overflow held in `pending`.
+
+**Squad allies (`js/ally.js`):** the repeatable RONIN BANNER card recruits steel-blue
+ally ronin (cap 6). They hold ring-formation slots around the player, auto-engage
+anything within ~4 u, and die without ending the run — fallen allies stand back up at
+the start of the next room (`Ally.revive`). **CHARGE** (`E` / the ⚑ touch button, 10 s
+cooldown) sends the squad hunting anything in the room with +50% damage and +40% speed
+for 4 s. Because allies are also valid prey, enemy AI targets a generalized
+`ctx.targets` list (player + live allies, each `{pos, radius, isPlayer, ref}`);
+`Enemy._pickTarget` chooses the nearest each frame and all enemy damage dispatches
+through `combat.hurtTarget` (which routes to `hurtPlayer`, preserving aerial dodge and
+SECOND CORE, or to `Ally.hurt`). Ally melee runs through `combat.allyStrike`, reusing
+the same sector test as the player's `meleeStrike`, and its kills flow through
+`combat.onKill` so score, streak, lifesteal and CHAIN ARC all apply.
 
 **Run loop (`js/main.js`):** clear the room's pending+live spawns → +100×room bonus →
 pick 1 of 3 cards → next room with the next neon hue and a bigger spawn budget
@@ -134,8 +152,9 @@ neon-ronin/     # Neon Ronin (character-swap action roguelike, low-poly samurai 
     player.js   # 3 swappable frames, combo melee, dash i-frames, swap burst, run stats
     enemy.js    # SLASHER/GUNNER/BRUTE state machines + pooled neon BoltPool
     effects.js  # Transient VFX (slash arcs, telegraph/shock rings, sparks, shards, spawn beams)
-    input.js    # Pointer-lock mouse + WASD; buffered attack/dash/swap one-shots
-    audio.js    # WebAudio bleep kit (slash/hit/kill/hurt/dash/swap/slam/upgrade/…)
+    ally.js     # Squad ronin — formation follow, auto-engage, CHARGE order
+    input.js    # Pointer-lock mouse + WASD + touch sticks; buffered one-shots
+    audio.js    # WebAudio bleep kit (slash/hit/kill/hurt/dash/swap/slam/rally/…)
 ```
 
 ## Toko Drop — Architecture Notes

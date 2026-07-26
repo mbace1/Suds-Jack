@@ -248,6 +248,60 @@ export function buildSamurai({ body = 0x23262e, accent = 0x00f0ff, weapon = 'kat
   return rig;
 }
 
+// ── Mob tier: 6-mesh drone for horde rooms ────────────────────────────────────
+// Shared geometry AND shared materials per accent (no per-rig clones) so 50+
+// of these stay cheap. Hit flash swaps the chest material to one shared white.
+const _mobMats = {};
+const _mobFlash = new THREE.MeshStandardMaterial({
+  color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.8, flatShading: true,
+});
+
+export function buildMob({ accent = 0xff5560 } = {}) {
+  let mats = _mobMats[accent];
+  if (!mats) mats = _mobMats[accent] = { body: bodyMat(0x181b23), neon: neonMat(accent, 1.7) };
+
+  const group = new THREE.Group();
+  const torso = new THREE.Group();
+  torso.position.y = 0.6;
+  group.add(torso);
+  const chest = new THREE.Mesh(box(0.34, 0.4, 0.26), mats.body);
+  torso.add(chest);
+  const visor = new THREE.Mesh(box(0.24, 0.07, 0.03), mats.neon);
+  visor.position.set(0, 0.13, 0.14);
+  torso.add(visor);
+  // spine strip: gives the silhouette a readable body instead of a floating blade
+  const spine = new THREE.Mesh(box(0.05, 0.24, 0.02), mats.neon);
+  spine.position.set(0, -0.06, 0.14);
+  torso.add(spine);
+  const blade = new THREE.Mesh(box(0.045, 0.4, 0.02), mats.neon);
+  blade.position.set(0.21, -0.05, 0.14);
+  blade.rotation.x = -1;
+  torso.add(blade);
+  const legL = new THREE.Mesh(box(0.09, 0.4, 0.11), mats.body);
+  legL.position.set(-0.1, 0.2, 0);
+  group.add(legL);
+  const legR = new THREE.Mesh(box(0.09, 0.4, 0.11), mats.body);
+  legR.position.set(0.1, 0.2, 0);
+  group.add(legR);
+
+  return { group, torso, chest, blade, legL, legR, mats, mob: true };
+}
+
+// scurry: fast leg scissor + torso bob/tilt; k>0 leans into a bite lunge
+export function poseScurry(rig, phase, biteK = 0) {
+  const s = Math.sin(phase);
+  rig.legL.rotation.x = s * 0.7;
+  rig.legR.rotation.x = -s * 0.7;
+  rig.torso.position.y = 0.6 + Math.abs(Math.cos(phase)) * 0.05;
+  rig.torso.rotation.x = 0.18 + biteK * 0.5;
+  rig.torso.rotation.z = s * 0.08;
+  rig.blade.rotation.x = -1 + biteK * 1.6;
+}
+
+export function setMobFlash(rig, on) {
+  rig.chest.material = on ? _mobFlash : rig.mats.body;
+}
+
 // ── Procedural posing (stateless: call every frame, sets absolute rotations) ──
 const lerp = (a, b, t) => a + (b - a) * Math.min(Math.max(t, 0), 1);
 const easeOut = (t) => 1 - Math.pow(1 - Math.min(Math.max(t, 0), 1), 3);
@@ -330,6 +384,8 @@ export function setGlow(rig, boost) {
 export function setFlash(rig, on) {
   for (const m of rig.bodyMats) {
     m.emissive.setHex(on ? 0xffffff : 0x000000);
-    m.emissiveIntensity = on ? 0.7 : 0;
+    // kept low: bloom turns anything brighter into a white blob, and in horde
+    // rooms several rigs flash at once
+    m.emissiveIntensity = on ? 0.35 : 0;
   }
 }
