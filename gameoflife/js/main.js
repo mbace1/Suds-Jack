@@ -383,7 +383,7 @@ function showFeedback(expId, done) {
     const entry = { id: expId, leaves, text, lang: getLang(), ts: Date.now() };
     store.recordFeedback(entry);          // the local record, kept regardless
     box.innerHTML = '';
-    box.appendChild(el('p', '', t('fb.sending'));
+    box.appendChild(el('p', '', t('fb.sending')));
     // 'sent' | 'queued' (endpoint unreachable — kept for the next visit) |
     // 'off' (no endpoint configured, so nothing was promised)
     const how = await outbound.send(entry);
