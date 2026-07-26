@@ -19,7 +19,10 @@ in `art.js` bakes barrel distortion + one scanline per source row + a corner vig
 a 256×144 remap **once at load** (a marquee never moves, so nine cabinets cost nine passes
 total — no WebGL, no per-frame cost, unlike the live version in `gameoflife/js/crt.js`). Adding a game is **two edits**: an entry in `hub/games.js`
 (title, tagline, lineage, tags, controls, `path`, `accent`, `art`, `inRepo`, `status`) and
-a draw function in `hub/art.js`; `hub/hub.js` knows about no game in particular.
+a draw function in `hub/art.js`; `hub/hub.js` knows about no game in particular. The rack is **two cabinets to a row**
+(one on a phone under 660px): three fitted more on screen but shrank every marquee to a
+thumbnail, and the marquee is the thing worth looking at — the pair sits side by side,
+their text under them, then the next pair.
 **`live: false`** marks a cabinet with nothing behind it: the marquee goes unlit and
 un-linked, Play becomes a dead `[ NOT UP ]`, and the `note` field replaces the controls
 line with why. Not every button has to work for a game to be worth listing — and a

@@ -258,9 +258,16 @@ function check(name, cond) {
   check(`every control is a 44px target${a11y.small.length ? ' — ' + a11y.small.join(', ') : ''}`, a11y.small.length === 0);
   await page.keyboard.press('Escape');
 
+  // two cabinets to a row on a desktop, one on a phone — the marquee is the
+  // thing worth looking at, and three-up shrank it to a thumbnail
+  const cols = w => page.evaluate(() =>
+    getComputedStyle(document.getElementById('cabinets')).gridTemplateColumns.split(' ').length);
+  check('the floor is two cabinets wide', await cols() === 2);
+
   // a phone, held upright: the cabinets stack and nothing runs off the side
   await page.setViewportSize({ width: 390, height: 780 });
   await page.waitForTimeout(120);
+  check('and one cabinet wide on a phone', await cols() === 1);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   check(`nothing overflows a phone (${overflow}px)`, overflow <= 0);
 
