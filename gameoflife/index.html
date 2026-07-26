@@ -14,102 +14,141 @@
   <meta name="twitter:card" content="summary">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23141311'/%3E%3Cpath d='M8 13C8 8 10 4 14 3 13 8 11 11 8 13Z' fill='%238faf6a'/%3E%3Cpath d='M8 13C8 10 6 7 3 6 4 10 6 12 8 13Z' fill='%235f7a4a'/%3E%3C/svg%3E">
   <style>
-    /* A quiet research terminal: cold, sparse, monospace, with the picture seen
-       through a slightly curved screen (js/crt.js). One phosphor colour carries
-       every live element — set from the status line, stored in --accent. */
-    :root { --accent: #35e8d8; --accent-dim: #7fd8d0; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { background: #06070a; min-height: 100%; }
+    html, body { background: #141311; min-height: 100%; }
     body {
       /* Courier New carries no CJK, so name the fallbacks rather than let each
          platform guess a face for the Japanese */
       font-family: 'Courier New', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP',
                    'Yu Gothic', 'MS Gothic', monospace;
-      color: #d6d9dd;
+      color: #efe6d0;
       display: flex; justify-content: center;
-      padding: 40px 16px 48px;
+      padding: 24px 16px 24px;
     }
-    #app { width: 100%; max-width: 560px; }
+    #app {
+      width: 100%; max-width: 560px;
+      /* the page is a column the height of the screen, so the content below the
+         title can float to the middle instead of packing against the top */
+      min-height: calc(100vh - 48px);
+      display: flex; flex-direction: column;
+    }
+    /* hub: header stays at the top, the offering group centres below it */
+    .cycle-dots { margin-top: auto; }
+    .hub-footer { margin-bottom: auto; }
+    /* An experience: the scene should land JUST above the vertical midpoint,
+       with the words below it. Centring the whole block left the canvas ~100px
+       too high, so the top gap is computed instead: the canvas is width-bound
+       (3:2, capped at the 560px column), so its height is known from the
+       viewport and the gap is whatever puts its bottom edge a hair above 50vh.
+       max(0px, …) collapses it on screens too short for the arithmetic. */
+    .exp { margin-top: 0; }
+    .back-btn { margin-bottom: auto; }
+    /* Only where there is room for it: on a 667px phone this placement costs a
+       scroll, and fitting on screen beats hitting the midline. */
+    @media (min-height: 700px) {
+      .exp {
+        margin-top: max(0px, calc(50vh - min(100vw - 32px, 560px) * 0.667 - 36px));
+      }
+    }
     /* keyboard players need to see where they are; the UA ring is too faint
        against this background */
-    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    :focus-visible { outline: 2px solid #8faf6a; outline-offset: 3px; }
 
-    /* ── hub: a terminal readout, not a menu ─────────── */
-    .hub-header { margin-bottom: 14px; }
-    .hub-header h1 {
-      font-size: 19px; letter-spacing: 5px; font-weight: 400;
-      color: #e8ecef; text-transform: uppercase;
-    }
-    .tagline { margin-top: 10px; color: #8b949c; font-size: 12.5px; line-height: 1.6; }
-    /* the rules that bracket the offering — a real terminal's only ornament */
-    .rule { height: 1px; background: #232a30; margin: 14px 0; }
+    /* ── hub ─────────────────────────────────────────── */
+    .hub-header { text-align: center; margin-bottom: 28px; }
+    .hub-scene { max-width: 420px; margin: 0 auto 18px; }
+    .pixel-screen.hub-canvas { aspect-ratio: 48 / 11; }
+    .hub-header h1 { font-size: 28px; letter-spacing: 3px; color: #efe6d0; }
+    .tagline { margin-top: 8px; color: #a89b7f; font-size: 14px; }
+    .greet { margin-top: 10px; color: #8d8165; font-size: 12px; font-style: italic; }
 
-    .offer { padding: 12px 0 6px; }
-    .offer-name {
-      font-size: 17px; letter-spacing: 3px; color: #e8ecef;
-      text-transform: uppercase; display: flex; gap: 12px;
+    /* a quiet footer holds the set-once controls out of the main column */
+    .hub-footer {
+      margin-top: 40px; padding-top: 18px; border-top: 1px solid #2a2620;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
     }
-    .caret { color: var(--accent); }
-    .offer-kind { margin-top: 8px; margin-left: 26px; color: #8b949c; font-size: 13px; }
-    .played-note { margin-top: 6px; margin-left: 26px; color: var(--accent-dim); font-size: 12px; }
-    .another-btn { margin-left: 18px; }
-
-    .btn {
-      font-family: inherit; font-size: 14px; letter-spacing: 2px; cursor: pointer;
-      padding: 14px 16px; min-height: 44px; text-transform: uppercase;
-      background: none; color: var(--accent); border: none;
-    }
-    .btn:hover { background: rgba(255, 255, 255, .04); }
-    .link-btn {
-      font-family: inherit; font-size: 12.5px; cursor: pointer;
-      background: none; border: none; color: #99a2a9;
-      display: block; padding: 15px 8px; min-height: 44px; text-align: left;
-    }
-    .link-btn:hover { color: var(--accent-dim); }
-    .cycle-hint { margin-top: 14px; font-size: 12px; color: #8b949c; line-height: 1.6; }
-
-    /* the status line: every set-once switch, in two dim rows */
-    .hub-footer { display: flex; flex-direction: column; gap: 2px; }
-    .status { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px; }
-    .lang-row { display: flex; gap: 2px; align-items: center; }
+    .lang-row { display: flex; gap: 10px; justify-content: center; margin: -10px 0; }
     .lang-btn {
       font-family: inherit; font-size: 12px; cursor: pointer;
-      background: none; color: #99a2a9; border: none; letter-spacing: 1px;
-      /* a 12px word is a fine thing to read and a poor thing to hit — the
-         padding grows the target without changing how tight the row looks */
-      padding: 12px 7px; min-height: 44px; min-width: 44px;
+      background: none; color: #8d8165; border: none; letter-spacing: 1px;
+      /* was 45x21: a 12px word is a fine thing to read and a poor thing to hit.
+         The padding grows the target, the negative row margin keeps the footer
+         looking exactly as tight as it did. */
+      padding: 12px 8px; min-height: 44px; min-width: 44px;
     }
-    .lang-btn:hover { color: #c8cfd4; }
-    .lang-btn.active { color: var(--accent); }
-    .footer-link { margin-top: 0 !important; padding-left: 0; }
-    .opt-row { align-items: center; }
-    .hemi-label { font-size: 11px; color: #8b949c; letter-spacing: 1px; }
+    .lang-btn:hover { color: #a89b7f; }
+        /* underline the WORD, not the button box — with a 44px target the border
+       edge sits well below the text and reads as a stray rule */
+    .lang-btn.active {
+      color: #8faf6a; text-decoration: underline; text-underline-offset: 4px;
+    }
+    .footer-link { margin-top: 0 !important; color: #8d8165; }
+    /* the set-once option rows: hemisphere, sound */
+    .opt-row { align-items: center; gap: 10px; }
+    .hemi-label { font-size: 11px; color: #877c66; letter-spacing: 1px; }
 
     /* the sound garden: a quiet meter of what going outside has earned */
-    .garden-note { font-size: 12px; letter-spacing: 4px; color: var(--accent-dim); padding: 6px 0; }
-    .garden-note.grew { color: var(--accent); }
-    .garden-grew { font-size: 11.5px; color: #8b949c; line-height: 1.6; }
+    .garden-note {
+      font-size: 11px; letter-spacing: 3px; color: #7c9e60;
+      text-transform: lowercase;
+    }
+    .garden-note.grew { color: #8faf6a; }
+    .garden-grew {
+      font-size: 11px; color: #8d8165; font-style: italic;
+      text-align: center; max-width: 320px;
+    }
+
+    /* the cycle, made visible: two breaths of play, then a rest */
+    .cycle-dots { display: flex; gap: 12px; justify-content: center; margin-bottom: 22px; }
+    .dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      border: 1px solid #6e654f; display: inline-block;
+    }
+    .dot.full { background: #8faf6a; border-color: #8faf6a; }
+    .dot.rest {
+      border-radius: 0; border: none; width: auto; height: auto;
+      color: #8d8165; font-size: 13px; line-height: 10px;
+    }
+    .dot.rest.full { color: #8faf6a; background: none; }
+
+    .offering { max-width: 420px; margin: 0 auto; text-align: center; }
+    .offer-note { font-size: 11px !important; letter-spacing: 2px; color: #8d8165 !important;
+                  text-transform: lowercase; margin-bottom: 8px; }
+    .another-btn { margin: 2px auto 0; text-align: center; }
+
+    .card {
+      border: 2px solid #4a4438; padding: 16px 18px; background: #1c1a16;
+      box-shadow: 4px 4px 0 #0a0908;
+    }
+    .card h2 { font-size: 17px; letter-spacing: 1px; color: #8faf6a; }
+    .card p { margin-top: 6px; font-size: 13px; color: #c9bda1; line-height: 1.5; }
+    .played-note { color: #8faf6a !important; font-size: 12px !important; }
+
+    .btn {
+      font-family: inherit; font-size: 14px; letter-spacing: 1px; cursor: pointer;
+      margin-top: 12px; padding: 14px 20px;
+      background: #4e6839; color: #efe6d0; border: none;
+      box-shadow: 3px 3px 0 #2c3a22;
+    }
+    .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #2c3a22; }
+    .link-btn {
+      font-family: inherit; font-size: 12px; cursor: pointer; margin-top: 8px;
+      background: none; border: none; color: #a89b7f; text-decoration: underline;
+      display: block; padding: 12px 8px; min-height: 44px;
+    }
+    .cycle-hint { margin-top: 24px; text-align: center; font-size: 12px; color: #8d8165; font-style: italic; }
 
     /* ── experiences ─────────────────────────────────── */
     .exp { display: flex; flex-direction: column; align-items: center; }
-    /* the bezel: a physical monitor set into the page, the screen inside it */
-    .screen-wrap {
-      width: 100%; padding: 9px; border-radius: 14px;
-      background: linear-gradient(#15181c, #0a0c0f);
-      border: 1px solid #262c33;
-      box-shadow: 0 1px 0 #2e353c inset, 0 10px 24px rgba(0, 0, 0, .6);
-    }
+    .screen-wrap { width: 100%; }
     .pixel-screen {
       display: block; width: 100%; aspect-ratio: 3 / 2;
       image-rendering: pixelated; image-rendering: crisp-edges;
-      border-radius: 7px; background: #000;
+      border: 2px solid #4a4438; box-shadow: 4px 4px 0 #0a0908;
       touch-action: manipulation;
     }
-    /* the CRT canvas is already at device resolution — the shader draws the
-       pixels, so leave the browser's scaling alone */
-    .pixel-screen.crt { image-rendering: auto; }
     .exp-text {
-      margin-top: 18px; font-size: 15px; line-height: 1.7; color: #d6d9dd;
+      margin-top: 14px; font-size: 15px; line-height: 1.7; color: #e6dcc2;
       /* six lines held open. Beats vary from ~90 to ~340 characters, and sizing
          this to the short ones made the Continue button walk up to 190px up and
          down the screen between taps — you had to re-aim every time. Reserving
@@ -120,25 +159,24 @@
     .exp-text p + p { margin-top: 10px; }
     .exp-buttons { margin-top: 14px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
     .back-btn { margin-top: 14px; }
+    .nature-note { color: #8faf6a; font-style: italic; }
 
     /* ── panels / overlay ────────────────────────────── */
     .panel {
-      border: 1px solid #262c33; background: #0c0e12; padding: 22px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, .7);
+      border: 2px solid #4a4438; background: #1c1a16; padding: 22px;
+      box-shadow: 4px 4px 0 #0a0908;
     }
-    .panel h2 {
-      color: #e8ecef; font-size: 14px; letter-spacing: 3px; text-transform: uppercase;
-    }
-    .panel p { margin-top: 10px; font-size: 14px; line-height: 1.6; color: #d6d9dd; }
+    .panel h2 { color: #8faf6a; font-size: 17px; letter-spacing: 1px; }
+    .panel p { margin-top: 10px; font-size: 14px; line-height: 1.6; color: #e6dcc2; }
     .overlay {
       position: fixed; inset: 0; z-index: 40;
-      background: rgba(4, 5, 7, 0.9);
+      background: rgba(10, 9, 8, 0.88);
       display: flex; align-items: center; justify-content: center; padding: 20px;
     }
-    .interlude { max-width: 460px; border-color: #33454a; }
-    .poem { margin-top: 14px; border-left: 2px solid var(--accent); padding-left: 14px; }
-    .poem-body { white-space: pre-line; color: #e8ecef !important; }
-    .poem-title { font-size: 12px !important; color: #8b949c !important; }
+    .interlude { max-width: 460px; border-color: #5f7a4a; }
+    .poem { margin-top: 14px; border-left: 3px solid #5f7a4a; padding-left: 14px; }
+    .poem-body { white-space: pre-line; color: #efe6d0 !important; }
+    .poem-title { font-size: 12px !important; color: #a89b7f !important; }
 
     /* ── feedback ────────────────────────────────────── */
     .leaf-row { margin-top: 12px; display: flex; gap: 4px; }
@@ -149,11 +187,11 @@
       min-width: 44px; min-height: 44px; padding: 2px;
     }
     .leaf-btn.lit { filter: none; }
-    .fb-dest { font-size: 11.5px !important; color: #8b949c !important; }
+    .fb-dest { font-size: 11px !important; color: #6e654f !important; font-style: italic; }
     .fb-text {
       margin-top: 14px; width: 100%; min-height: 64px; resize: vertical;
       font-family: inherit; font-size: 13px; padding: 8px;
-      background: #06070a; color: #e8ecef; border: 1px solid #262c33;
+      background: #141311; color: #efe6d0; border: 1px solid #4a4438;
     }
 
     /* ── a phone held sideways ────────────────────────── */
@@ -164,33 +202,28 @@
        the room comes out of the scene and the gaps instead. */
     @media (max-height: 560px) {
       body { padding: 6px 12px 12px; }
+      #app { min-height: 0; }
+      .exp { margin-top: 0; }
+      .cycle-dots, .hub-footer { margin-top: 0; margin-bottom: 0; }
       .screen-wrap { display: flex; justify-content: center; }
       .pixel-screen { width: auto; max-width: 100%; max-height: 38vh; }
       .exp-text { margin-top: 6px; min-height: 4.4em; font-size: 13px; line-height: 1.5; }
       .exp-buttons { margin-top: 4px; gap: 10px; }
       .btn { margin-top: 4px; padding: 12px 16px; }
       .back-btn { margin-top: 2px; padding: 10px 8px; min-height: 40px; }
-      .screen-wrap { padding: 6px; }
-      .hub-header { margin-bottom: 10px; }
-      .rule { margin: 8px 0; }
+      .hub-scene { max-width: 300px; margin-bottom: 10px; }
+      .hub-header { margin-bottom: 16px; }
+      .hub-header h1 { font-size: 22px; }
     }
 
-    /* the nature-note inside an experience keeps its living green: it is the
-       one line that points away from the screen, so it should not look like
-       part of the terminal */
-    .nature-note { color: #a6e85a; }
-
-    /* a view arrives the way a terminal draws one: quickly, and once. Short
-       enough to feel like a redraw rather than an animation. */
-    @keyframes term-in { from { opacity: 0 } to { opacity: 1 } }
-    .offer, .exp, .panel { animation: term-in .16s ease-out both; }
+    /* less motion asked for: hold the tap feedback still too */
     @media (prefers-reduced-motion: reduce) {
-      .offer, .exp, .panel { animation: none; }
+      .btn:active { transform: none; box-shadow: 3px 3px 0 #2c3a22; }
     }
   </style>
 </head>
 <body>
   <main id="app"></main>
-  <script type="module" src="js/main.js?v=39"></script>
+  <script type="module" src="js/main.js?v=38"></script>
 </body>
 </html>

@@ -2,8 +2,8 @@
 // learned: a July blueberry walk with grandmother through somebody else's
 // forest, which is also everyone's. Ends with the quiet fee the right asks.
 
-import { PixelScreen } from '../pixel.js?v=39';
-import { PAL } from '../palette.js?v=39';
+import { PixelScreen } from '../pixel.js?v=38';
+import { PAL } from '../palette.js?v=38';
 
 const BILBERRY = '#4a3a6b', BILBERRY_LIT = '#6b5a9b', BUCKET = '#c9502e';
 
@@ -90,6 +90,14 @@ export const berry = {
         person(60, 104, 12, '#5d7a8a');                 // grandmother
         person(78, 104, 8, BUCKET);                     // the child, berry-red anorak
         bucket(52, 100); bucket(86, 101);
+        // a July afternoon is never still: midges in the slanted light, and the
+        // sun flickering through the crowns
+        for (let i = 0; i < 7; i++) {
+          const mx = 30 + (i * 27) % 140 + Math.sin(now / 400 + i * 1.9) * 5;
+          const my = 60 + (i * 13) % 26 + Math.cos(now / 330 + i * 2.4) * 4;
+          scr.px(mx, my, 1, 1, i % 2 ? '#e8f0c8' : '#cfe0a8');
+        }
+        if (Math.floor(now / 260) % 3) scr.px(120, 52, 3, 3, PAL.SUN);
       } else if (scene === 's2b' || scene === 's3') {
         // deep in the patch: berries everywhere, fingers already purple
         scr.bands(0, 0, scr.w, 40, ['#a9cde2', PAL.SKY_DAY_LOW]);

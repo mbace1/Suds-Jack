@@ -5,8 +5,8 @@
 // eclipse — a gold corona breaking the frame. Void-vignette bronze build.
 // Revert: watch a real second hand make one full circle.
 
-import { PixelScreen, rampDither } from '../pixel.js?v=39';
-import { PAL } from '../palette.js?v=39';
+import { PixelScreen, rampDither } from '../pixel.js?v=38';
+import { PAL } from '../palette.js?v=38';
 
 const DCX = 96, DCY = 60, DR = 40;   // the front dial
 const TARGET = 12;                    // cranks (lunations) until the alignment
@@ -159,6 +159,15 @@ export const gears = {
       gear(78, 104, 11, 9, spin, -1);
       gear(140, 98, 18, 14, spin, 1);
       gear(150, 66, 10, 8, spin, -1);
+
+      // the cabinet is lit by something with a flame in it — dust turning in
+      // the warm glow, so the mechanism waits rather than sits dead
+      for (let i = 0; i < 8; i++) {
+        const a = now / 4200 + i * 0.79;
+        scr.px(DCX + Math.cos(a) * (18 + (i * 11) % 30),
+               DCY + Math.sin(a) * (14 + (i * 7) % 22), 1, 1,
+               i % 3 ? '#4a3a16' : '#6a5424');
+      }
 
       // interpolated hand positions for smooth travel between cranks
       const tt = Math.min(TARGET, spin / 0.9);

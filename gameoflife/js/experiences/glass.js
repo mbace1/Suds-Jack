@@ -8,8 +8,8 @@
 // widescreen scene band framed by hard black bars in the void, with a gold
 // breakout on the frame that proves the suspension.
 
-import { PixelScreen, shade } from '../pixel.js?v=39';
-import { PAL } from '../palette.js?v=39';
+import { PixelScreen, shade } from '../pixel.js?v=38';
+import { PAL } from '../palette.js?v=38';
 
 const SCENE_Y = 20, SCENE_H = 60, GROUND_Y = 74;   // the letterbox scene band
 const STRIP_Y = 92;                                 // the developing filmstrip
@@ -155,7 +155,15 @@ export const glass = {
       }
 
       if (phase === 'intro') {
-        horse(96, GROUND_Y, 0, '#3a2e22', '#2e241a', '#241c14');
+        // the horse is standing, not frozen — it shifts its weight and the Palo
+        // Alto dust drifts across the track while you read
+        const shift = Math.sin(now / 1100) > 0.7 ? 1 : 0;
+        horse(96 + shift, GROUND_Y, 0, '#3a2e22', '#2e241a', '#241c14');
+        for (let i = 0; i < 5; i++) {
+          const dx = ((now / (58 + i * 11)) + i * 44) % 220 - 12;
+          scr.px(dx, GROUND_Y - 3 - (i % 3), 3, 1, '#c2ab82');
+        }
+        scr.px(96 + shift + 9, GROUND_Y - 15 + (Math.floor(now / 420) % 2), 2, 5, '#2e241a');  // tail flick
       } else if (phase === 'run') {
         horseX += dt * 150;
         const pose = Math.floor((now / 90)) % N;

@@ -1,8 +1,8 @@
 // The Forest Path — a short branching walk in pixel scenes, ending with a
 // guided four-breath pause. The interactivity is choice, the reward is calm.
 
-import { PixelScreen } from '../pixel.js?v=39';
-import { PAL } from '../palette.js?v=39';
+import { PixelScreen } from '../pixel.js?v=38';
+import { PAL } from '../palette.js?v=38';
 
 const BREATHS = 4;
 const BREATH_SEC = 4;   // per half: 4 s in, 4 s out
@@ -84,6 +84,15 @@ export const forest = {
         scr.px(0, 88, scr.w, 8, PAL.EARTH);               // the road you leave
         trees(3, 96);
         scr.px(20 + sway, 60, 2, 2, PAL.SUN);             // early light through trunks
+        // dawn is a moving thing: mist crossing the trunks, one early bird
+        for (let i = 0; i < 3; i++) {
+          const mx = ((now / (90 + i * 40)) + i * 70) % 240 - 30;
+          scr.px(mx, 74 + i * 7, 34 + i * 8, 2, i % 2 ? '#6e7f76' : '#7d8e84');
+        }
+        const fbx = (now / 52) % 230 - 20;
+        const flap = Math.sin(now / 140) > 0 ? 1 : 2;
+        scr.px(fbx, 30 + Math.sin(now / 800) * 3, 3, flap, PAL.INK_SOFT);
+        scr.px(fbx + 3, 29 + Math.sin(now / 800) * 3, 3, flap, PAL.INK_SOFT);
       } else if (scene === 's2a') {
         scr.bands(0, 0, scr.w, 56, [PAL.SKY_DAY_TOP, PAL.SKY_DAY_LOW]);
         scr.px(0, 56, scr.w, 72, PAL.MOSS);

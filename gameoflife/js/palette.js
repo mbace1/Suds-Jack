@@ -50,41 +50,9 @@ export const PAL = {
   // black void; interactive elements glow in luminescent cyan / gold and
   // break the frame
   VOID:      '#000000',
-  // the phosphor. This one entry is NOT constant: the screen's accent (see
-  // ACCENTS below) writes to it, so every interactive glow drawn from
-  // PAL.CYAN_LUX follows the colour the terminal is set to. Read it at draw
-  // time — a module-level `const C = PAL.CYAN_LUX` freezes at import and stops
-  // following.
   CYAN_LUX:  '#35e8d8',
   GOLD_LUX:  '#ffd75a',
   // a living luminescent green — fireflies, glow-moss, the breakout accent for
   // nature scenes where cyan/gold would read as artificial light
   LEAF_LUX:  '#a6e85a',
 };
-
-// ── the screen's accent ────────────────────────────────────────────
-// The terminal is monochrome-ish by design: one phosphor colour carries every
-// interactive element, on the screen and in the chrome around it. Three to
-// choose from, because a phosphor colour is a taste and cyan is only the
-// default one. `hex` tints the UI and PAL.CYAN_LUX; `rgb` (0..1) tints the
-// CRT's phosphor bleed; `dim` is the readable, non-glowing version for text.
-export const ACCENTS = {
-  cyan:  { hex: '#35e8d8', dim: '#7fd8d0', rgb: [0.21, 0.91, 0.85] },
-  green: { hex: '#5ce87a', dim: '#8fd89a', rgb: [0.36, 0.91, 0.48] },
-  white: { hex: '#cfe4ea', dim: '#b6c8ce', rgb: [0.81, 0.89, 0.92] },
-};
-
-let current = 'cyan';
-
-export function accentName() { return current; }
-export function accentHex() { return ACCENTS[current].hex; }
-export function accentDim() { return ACCENTS[current].dim; }
-export function accentRgb() { return ACCENTS[current].rgb; }
-
-export function setAccent(name) {
-  if (!ACCENTS[name]) return;
-  current = name;
-  PAL.CYAN_LUX = ACCENTS[name].hex;          // the in-scene glow follows too
-  document.documentElement.style.setProperty('--accent', ACCENTS[name].hex);
-  document.documentElement.style.setProperty('--accent-dim', ACCENTS[name].dim);
-}

@@ -18,13 +18,6 @@ export function t(key) {
   return v ?? key;
 }
 
-// The catalogue, for the testing loop only (test/check_strings.mjs imports this
-// file directly — it has no dependencies, so plain node can read it). A missing
-// key is invisible at runtime: t() quietly returns the key itself and the
-// player is shown 'sd.s1' instead of a sentence. So it is checked instead.
-export function keysOf(l) { return Object.keys(STR[l] ?? {}); }
-export function has(l, key) { return STR[l]?.[key] !== undefined; }
-
 const STR = {
 
   // ──────────────────────────────────────────────── English
@@ -68,10 +61,6 @@ const STR = {
     'kind.story': 'a story',
     'kind.game': 'a game',
     'kind.wisdom': 'a kernel of wisdom',
-    'acc.label': 'screen',
-    'acc.cyan': 'cyan',
-    'acc.green': 'green',
-    'acc.white': 'white',
 
     'exp.aqueduct.name': 'The Stone River',
     'exp.aqueduct.desc': 'How Rome invited water downhill — then turn the stones yourself.',
@@ -146,21 +135,17 @@ const STR = {
     'li.nature': 'Find lichen or moss on a stone or a tree. Press one hand flat against it for thirty seconds. Do not pick it. Just let it be older than you.',
 
     'exp.seed.name': 'The Seed',
-    'exp.seed.desc': 'Four days of bare soil, and the growing you were never allowed to watch.',
-    'sd.s1': 'A seed the size of a lentil, a bed of soil, and no way at all to hurry either of them. There is nothing clever to do here. Plant it, then let four days and nights go past.',
+    'exp.seed.desc': 'Plant one seed and wait. Growth will not be hurried.',
+    'sd.s1': 'You hold a single seed. The soil is dark and ready. Plant it.',
     'sd.plant': 'Plant the seed',
-    'sd.planted': 'Buried a thumb deep, in the dark, on its own. From here the seed does the work and you do the waiting — and the waiting is the harder of the two.',
-    'sd.wait': 'Let the days pass',
-    'sd.day1': 'First morning. Bare soil. Exactly as you left it.',
-    'sd.day2': 'Second morning. Bare soil. A beetle has crossed it, which is the only news.',
-    'sd.day3': 'Third morning. Bare soil. It would be quite reasonable, now, to decide that nothing is happening.',
-    'sd.day4': 'Fourth morning — a thread of green, no taller than a fingernail. That is what four days bought you.',
-    'sd.water': 'Give it water',
-    'sd.watered': 'It takes one mouthful and lets the rest drain away. A seed cannot be hurried by generosity.',
-    'sd.cut': 'Now cut the soil away, and see what those four days were actually for.',
-    'sd.wisdom': 'A fingernail of stem, and a hand-span of root — running past the edge of the picture, out of the light, into ground you never saw. Every morning when nothing was happening, this was what was happening.',
-    'sd.outro': 'Nothing that grows will show you its work.',
-    'sd.nature': 'Plant one real thing this week — a bean in a jar of earth, an acorn in a pot on the windowsill, a handful of seeds in a corner of ground. Then leave it alone for seven days. The waiting is not the part before the growing. It is the growing.',
+    'sd.planted': 'It is in the dark now. Nothing shows. You can only wait.',
+    'sd.wait': 'Wait',
+    'sd.growing': 'Day and night pass. The seed is working where you cannot see.',
+    'sd.water': 'Give it a little water',
+    'sd.watered': 'A little is enough. The rest is patience.',
+    'sd.wisdom': 'It broke the surface. Not because you watched, but because you let it alone long enough.',
+    'sd.outro': 'What grows in the dark does not need your hurry.',
+    'sd.nature': 'Plant something living — a bean in a cup, a seed in soil — and check on it once a day for a week without trying to speed it.',
 
     'exp.plate.name': 'The Silver Plate',
     'exp.plate.desc': 'Paris, 1838 — the busiest street in the world records as empty, except for one still man.',
@@ -327,6 +312,10 @@ const STR = {
     'ha.outro': 'Hanami was never about the flowers staying. Full bloom lasts barely a week; the falling — mono no aware, the gentle ache of passing things — is the point. People gather precisely because it will end.',
     'ha.nature': 'Find one tree today, and on it one thing that will be gone in two weeks — a bud, a flower, a leaf mid-turn. Say goodbye to it properly.',
 
+    'hub.greet.morning': 'The day is new.',
+    'hub.greet.day': 'The light is high.',
+    'hub.greet.evening': 'The day is folding.',
+    'hub.greet.night': 'The world is quiet.',
 
     'te.s1': 'In the endless daylight of the Arctic summer, a tern no heavier than an apple learns to fly. The colony grows restless: the light is turning.',
     'te.s1.a': 'Leave with the flock',
@@ -450,10 +439,6 @@ const STR = {
     'kind.story': 'tarina',
     'kind.game': 'peli',
     'kind.wisdom': 'viisaudenjyvä',
-    'acc.label': 'ruutu',
-    'acc.cyan': 'syaani',
-    'acc.green': 'vihreä',
-    'acc.white': 'valkoinen',
 
     'exp.aqueduct.name': 'Kivinen joki',
     'exp.aqueduct.desc': 'Miten Rooma kutsui veden alamäkeen — käännä sitten kivet itse.',
@@ -528,21 +513,17 @@ const STR = {
     'li.nature': 'Etsi jäkälää tai sammalta kiveltä tai puulta. Paina toinen kämmen sitä vasten kolmenkymmenen sekunnin ajan. Älä poimi sitä. Anna sen vain olla sinua vanhempi.',
 
     'exp.seed.name': 'Siemen',
-    'exp.seed.desc': 'Neljä päivää paljasta multaa — ja kasvu, jota sinun ei annettu katsoa.',
-    'sd.s1': 'Linssin kokoinen siemen, multapenkki, eikä mitään keinoa hoputtaa kumpaakaan. Täällä ei ole mitään nokkelaa tehtävää. Kylvä se, ja anna neljän päivän ja yön kulua.',
-    'sd.plant': 'Kylvä siemen',
-    'sd.planted': 'Peukalon syvyydessä, pimeässä, omillaan. Tästä eteenpäin siemen tekee työn ja sinä odotat — ja odottaminen on näistä kahdesta vaikeampi.',
-    'sd.wait': 'Anna päivien kulua',
-    'sd.day1': 'Ensimmäinen aamu. Paljasta multaa. Täsmälleen niin kuin jätit sen.',
-    'sd.day2': 'Toinen aamu. Paljasta multaa. Kuoriainen on kävellyt sen yli; se on päivän ainoa uutinen.',
-    'sd.day3': 'Kolmas aamu. Paljasta multaa. Nyt olisi aivan järkevää päätellä, ettei mitään tapahdu.',
-    'sd.day4': 'Neljäs aamu — vihreä lanka, kynnenpään korkuinen. Sen neljä päivää sinulle ostivat.',
-    'sd.water': 'Kastele se',
-    'sd.watered': 'Se ottaa yhden kulauksen ja antaa lopun valua maahan. Siementä ei voi hoputtaa anteliaisuudella.',
-    'sd.cut': 'Leikkaa nyt multa auki ja katso, mihin ne neljä päivää oikeasti menivät.',
-    'sd.wisdom': 'Kynnenpään verran vartta, kämmenen mitta juurta — kuvan reunan ohi, pois valosta, maahan jota et nähnyt. Kaikkina niinä aamuina, joina ei tapahtunut mitään, juuri tämä tapahtui.',
-    'sd.outro': 'Mikään kasvava ei näytä sinulle työtään.',
-    'sd.nature': 'Kylvä tällä viikolla yksi oikea asia — papu lasipurkilliseen multaa, tammenterho ruukkuun ikkunalaudalle, kourallinen siemeniä maan nurkkaan. Jätä se sitten rauhaan seitsemäksi päiväksi. Odotus ei ole kasvamista edeltävä osa. Se on se kasvaminen.',
+    'exp.seed.desc': 'Istuta yksi siemen ja odota. Kasvua ei voi hoputtaa.',
+    'sd.s1': 'Kädessäsi on yksi siemen. Maa on tummaa ja valmista. Istuta se.',
+    'sd.plant': 'Istuta siemen',
+    'sd.planted': 'Se on nyt pimeässä. Mitään ei näy. Voit vain odottaa.',
+    'sd.wait': 'Odota',
+    'sd.growing': 'Päivä ja yö vaihtuvat. Siemen tekee työtään siellä missä et näe.',
+    'sd.water': 'Anna sille vähän vettä',
+    'sd.watered': 'Vähän riittää. Loput on malttia.',
+    'sd.wisdom': 'Se rikkoi pinnan. Ei siksi että katsoit, vaan siksi että annoit sen olla rauhassa tarpeeksi kauan.',
+    'sd.outro': 'Se mikä kasvaa pimeässä ei tarvitse sinun kiirettäsi.',
+    'sd.nature': 'Istuta jotain elävää — papu kuppiin, siemen maahan — ja katso sitä kerran päivässä viikon ajan yrittämättä nopeuttaa sitä.',
 
     'exp.plate.name': 'Hopealevy',
     'exp.plate.desc': 'Pariisi 1838 — maailman vilkkain katu tallentuu tyhjänä, paitsi yksi liikkumaton mies.',
@@ -709,6 +690,10 @@ const STR = {
     'ha.outro': 'Hanamissa ei koskaan ollut kyse siitä, että kukat pysyisivät. Täysi kukinta kestää tuskin viikon; putoaminen — mono no aware, katoavien asioiden lempeä kipu — on itse asia. Ihmiset kokoontuvat juuri siksi, että se loppuu.',
     'ha.nature': 'Etsi tänään yksi puu, ja siitä yksi asia, joka on poissa kahden viikon päästä — silmu, kukka, kääntymässä oleva lehti. Hyvästele se kunnolla.',
 
+    'hub.greet.morning': 'Päivä on uusi.',
+    'hub.greet.day': 'Valo on korkealla.',
+    'hub.greet.evening': 'Päivä taittuu.',
+    'hub.greet.night': 'Maailma on hiljaa.',
 
     'te.s1': 'Arktisen kesän päättymättömässä valossa tiira, joka ei paina omenaa enempää, opettelee lentämään. Yhdyskunta käy levottomaksi: valo on kääntymässä.',
     'te.s1.a': 'Lähde parven mukana',
@@ -832,10 +817,6 @@ const STR = {
     'kind.story': 'ものがたり',
     'kind.game': 'あそび',
     'kind.wisdom': 'ことばのたね',
-    'acc.label': '画面',
-    'acc.cyan': 'シアン',
-    'acc.green': '緑',
-    'acc.white': '白',
 
     'exp.aqueduct.name': '石の川',
     'exp.aqueduct.desc': 'ローマが水を坂の下へ招いた方法 — そのあと自分で石を回してみよう。',
@@ -909,22 +890,18 @@ const STR = {
     'li.outro': 'いちばんよいものは、あなたがよそを見ているあいだに育つ。',
     'li.nature': '石や木の上の地衣か苔を見つけよう。片手を三十秒、そっと押し当ててみて。摘み取らないこと。ただ、自分より年上のものとして、そのままにしておこう。',
 
-    'exp.seed.name': '種',
-    'exp.seed.desc': '四日間のむき出しの土と、見せてもらえなかった成長。',
-    'sd.s1': 'レンズ豆ほどの種と、土の床。どちらも急がせる方法はない。ここに気の利いた操作はない。蒔いて、四日と四夜が過ぎるのにまかせよう。',
-    'sd.plant': '種を蒔く',
-    'sd.planted': '親指ひとつぶんの深さ、暗がりの中、ひとりきり。ここから先は種が働き、あなたは待つ — そして待つほうが難しい。',
-    'sd.wait': '日が過ぎるのにまかせる',
-    'sd.day1': '一日目の朝。むき出しの土。置いたときのまま。',
-    'sd.day2': '二日目の朝。むき出しの土。甲虫が横切った跡だけが、その日の便り。',
-    'sd.day3': '三日目の朝。むき出しの土。何も起きていない、と結論しても無理はない。',
-    'sd.day4': '四日目の朝 — 爪の先ほどの、緑の糸が一本。四日かけて買えたのは、それだけ。',
-    'sd.water': '水をやる',
-    'sd.watered': 'ひと口だけ飲んで、あとは流れるにまかせる。種は気前のよさでは急がない。',
-    'sd.cut': '土を切り開いて、その四日がほんとうは何に使われていたのか見てみよう。',
-    'sd.wisdom': '爪の先ほどの茎に対して、手のひらの長さの根 — 絵の外へ、光の届かないところへ、あなたの見なかった土の中へ。何も起きていなかったあの朝ごとに、起きていたのはこれだった。',
-    'sd.outro': '育つものは、その仕事を見せてはくれない。',
-    'sd.nature': '今週、ほんものをひとつ蒔いてみよう — 土を入れた瓶に豆をひとつ、窓辺の鉢にどんぐりをひとつ、地面の隅に種をひとつかみ。そして七日間、そっとしておこう。待つことは、育つ前の時間ではない。それが、育つということ。',
+    'exp.seed.name': 'たね',
+    'exp.seed.desc': 'ひとつの種を植えて、待つ。成長は急がせない。',
+    'sd.s1': 'ひとつの種を持っている。土は暗く、準備ができている。植えよう。',
+    'sd.plant': '種を植える',
+    'sd.planted': 'いまは闇の中だ。何も見えない。ただ待つしかない。',
+    'sd.wait': '待つ',
+    'sd.growing': '昼と夜が過ぎる。種は、見えないところで働いている。',
+    'sd.water': '少し水をやる',
+    'sd.watered': '少しでいい。あとは辛抱だ。',
+    'sd.wisdom': '地表を破った。見つめていたからではない。長く放っておいたからだ。',
+    'sd.outro': '闇の中で育つものに、あなたの急ぎは要らない。',
+    'sd.nature': '何か生きているものを植えよう — カップに豆を、土に種を — そして一週間、一日に一度だけ様子を見て、急かさないで。',
 
     'exp.plate.name': '銀の板',
     'exp.plate.desc': 'パリ、1838年 — 世界一にぎやかな通りが空っぽに写り、動かないひとりの男だけが残った。',
@@ -1091,6 +1068,10 @@ const STR = {
     'ha.outro': '花見は、花がとどまることを願う行事ではなかった。満開はせいぜい一週間。散ること — もののあはれ、過ぎゆくものへのやわらかな痛み — こそが本体だ。終わるからこそ、人は集まる。',
     'ha.nature': '今日、一本の木を見つけて、そのなかに二週間後には消えているものをひとつ探そう — つぼみ、花、色づきかけの葉。それに、きちんとさよならを言おう。',
 
+    'hub.greet.morning': '一日のはじまり。',
+    'hub.greet.day': '陽は高く。',
+    'hub.greet.evening': '一日がたたまれてゆく。',
+    'hub.greet.night': '世界はしずか。',
 
     'te.s1': '沈まぬ太陽の北極の夏、リンゴほどの重さもないアジサシが飛びかたをおぼえる。光が傾きはじめ、コロニーはそわそわしだす。',
     'te.s1.a': '群れとともに発つ',

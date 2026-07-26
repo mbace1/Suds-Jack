@@ -7,48 +7,107 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=39';
-import { PAL, setAccent, accentRgb } from './palette.js?v=39';
-import { setAccentAll, unwarp, liveCount } from './crt.js?v=39';
-import * as store from './storage.js?v=39';
-import * as audio from './audio.js?v=39';
-import { pickInterlude, isEvening, guessHemisphere } from './nature.js?v=39';
-import * as outbound from './feedback.js?v=39';
-import { aqueduct } from './experiences/aqueduct.js?v=39';
-import { forest } from './experiences/forest.js?v=39';
-import { tern } from './experiences/tern.js?v=39';
-import { cup } from './experiences/cup.js?v=39';
-import { hanami } from './experiences/hanami.js?v=39';
-import { berry } from './experiences/berry.js?v=39';
-import { stars } from './experiences/stars.js?v=39';
-import { maple } from './experiences/maple.js?v=39';
-import { plate } from './experiences/plate.js?v=39';
-import { seam } from './experiences/seam.js?v=39';
-import { dots } from './experiences/dots.js?v=39';
-import { glass } from './experiences/glass.js?v=39';
-import { wait } from './experiences/wait.js?v=39';
-import { lichen } from './experiences/lichen.js?v=39';
-import { cloud } from './experiences/cloud.js?v=39';
-import { ice } from './experiences/ice.js?v=39';
-import { trace } from './experiences/trace.js?v=39';
-import { gears } from './experiences/gears.js?v=39';
-import { cairn } from './experiences/cairn.js?v=39';
-import { downhill } from './experiences/downhill.js?v=39';
-import { tether } from './experiences/tether.js?v=39';
-import { hedge } from './experiences/hedge.js?v=39';
-import { seed } from './experiences/seed.js?v=39';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=38';
+import { PAL } from './palette.js?v=38';
+import { PixelScreen, shade } from './pixel.js?v=38';
+import * as store from './storage.js?v=38';
+import * as audio from './audio.js?v=38';
+import { pickInterlude, isEvening, guessHemisphere } from './nature.js?v=38';
+import * as outbound from './feedback.js?v=38';
+import { aqueduct } from './experiences/aqueduct.js?v=38';
+import { forest } from './experiences/forest.js?v=38';
+import { tern } from './experiences/tern.js?v=38';
+import { cup } from './experiences/cup.js?v=38';
+import { hanami } from './experiences/hanami.js?v=38';
+import { berry } from './experiences/berry.js?v=38';
+import { stars } from './experiences/stars.js?v=38';
+import { maple } from './experiences/maple.js?v=38';
+import { plate } from './experiences/plate.js?v=38';
+import { seam } from './experiences/seam.js?v=38';
+import { dots } from './experiences/dots.js?v=38';
+import { glass } from './experiences/glass.js?v=38';
+import { wait } from './experiences/wait.js?v=38';
+import { lichen } from './experiences/lichen.js?v=38';
+import { cloud } from './experiences/cloud.js?v=38';
+import { ice } from './experiences/ice.js?v=38';
+import { trace } from './experiences/trace.js?v=38';
+import { gears } from './experiences/gears.js?v=38';
+import { cairn } from './experiences/cairn.js?v=38';
+import { downhill } from './experiences/downhill.js?v=38';
+import { tether } from './experiences/tether.js?v=38';
+import { hedge } from './experiences/hedge.js?v=38';
+import { seed } from './experiences/seed.js?v=38';
+import { lightning } from './experiences/lightning.js?v=38';
 
-const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice, trace, gears, cairn, downhill, tether, hedge, seed];
+const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice, trace, gears, cairn, downhill, tether, hedge, seed, lightning];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
 
 const app = document.getElementById('app');
 let current = null;    // active experience handle
 let offering = null;   // the experience currently offered by the hub
+let hubScene = null;   // the living header scene's raf handle
 let justGrew = false;  // the sound garden gained a voice on this return to the hub
 let invitationPut = false;  // "not yet" holds until the next finish, not until the next repaint
 let byKeyboard = false;     // the last input was a key — only then do we move focus
 
+// ── the living header: a quiet pixel sky that follows the hour ─────
+function startHubScene(parent) {
+  const scr = new PixelScreen(parent, 192, 44);
+  scr.canvas.classList.add('hub-canvas');
+  let raf = 0, dead = false;
+
+  function draw(now) {
+    if (dead) return;
+    const slot = daySlot();
+    const W = scr.w, H = scr.h;
+    if (slot === 'morning') {
+      scr.bands(0, 0, W, H, [PAL.SKY_DAWN_TOP, '#8a6a80', '#c98f7a', PAL.SKY_DAWN_LOW]);
+      scr.disc(148, 34, 8, PAL.EMBER);                    // ember halo behind the sun
+      scr.disc(148, 34, 7, PAL.SUN, PAL.EMBER);           // sun climbing, warm rim
+      scr.px(0, 26 + Math.sin(now / 1600) * 2, 60, 2, '#d9b49a');   // low mist
+      scr.px(90, 20, 30, 1, '#c9a48a');
+    } else if (slot === 'day') {
+      scr.bands(0, 0, W, H, [PAL.SKY_DAY_TOP, '#93bfdd', '#a9cde2', PAL.SKY_DAY_LOW]);
+      scr.disc(96, 12, 7, PAL.SUN, true);                 // sun high, crisp rim
+      const cx = (now / 300) % (W + 40) - 20;             // one slow cloud
+      scr.rect(cx, 18, 22, 4, '#e8f2f4', shade('#e8f2f4', 0.86));
+      scr.px(cx + 5, 15, 12, 3, '#e8f2f4');
+    } else if (slot === 'evening') {
+      scr.bands(0, 0, W, H, [PAL.SKY_DUSK_TOP, '#5a4258', '#8a5d6d', PAL.SKY_DUSK_LOW]);
+      scr.disc(36, 33, 8, PAL.EMBER);                     // the sinking sun's ember bleed
+      scr.disc(36, 32, 7, '#e8a86c', PAL.DANGER);         // sun going down
+      scr.px(80, 16, 30, 2, '#7a5468');                   // dusk bar cloud
+    } else {
+      scr.bands(0, 0, W, H, ['#0a0c18', '#0e1220', '#131828', '#181e30']);
+      scr.disc(150, 12, 5, PAL.PAPER_DIM, true);          // moon, crisp rim
+      scr.px(147, 9, 4, 4, '#181e30');                    // its crescent bite
+      const tw = Math.floor(now / 450) % 2 === 0;
+      for (let i = 0; i < 12; i++) {                      // twinkling field
+        const x = (i * 31 + 9) % 188, y = (i * 17 + 3) % 30;
+        if (i % 3 !== (tw ? 0 : 1)) scr.px(x, y, 1, 1, '#8a90a8');
+      }
+      // a tiny Otava, for those who played The Night Compass
+      for (const [x, y] of [[18, 22], [24, 19], [30, 18], [35, 20], [36, 26], [44, 27], [43, 20]]) scr.px(x, y, 1, 1, PAL.FOAM);
+    }
+    // the constant: a dark treeline that belongs to every hour
+    for (let x = 0; x < W; x += 8) {
+      const h = 4 + ((x * 7) % 7);
+      scr.px(x, H - h, 8, h, slot === 'night' ? '#05060c' : PAL.MOSS_DEEP);
+      scr.px(x + 3, H - h - 3, 2, 3, slot === 'night' ? '#05060c' : PAL.MOSS_DEEP);
+    }
+    // the header is decoration, not content — for anyone who has asked the
+    // system for less motion, paint the hour once and hold it there. (The
+    // experiences keep animating: there the movement IS the thing.)
+    if (!stillness()) raf = requestAnimationFrame(draw);
+  }
+  raf = requestAnimationFrame(draw);
+
+  return { destroy() { dead = true; cancelAnimationFrame(raf); scr.destroy(); } };
+}
+
 const stillness = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function stopHubScene() { if (hubScene) { hubScene.destroy(); hubScene = null; } }
 
 // weighted draw over the kinds actually present, preferring unvisited-today;
 // `not` excludes the current offering so "something else" always changes
@@ -76,17 +135,6 @@ function useLang(l) { setLang(l); document.documentElement.lang = l; }
   }
 }
 
-// the screen's accent: one phosphor colour for the chrome, the CRT's glow and
-// every interactive element inside the scenes. Applied before the first paint
-// so nothing flashes cyan on the way to green.
-const ACCENT_ORDER = ['cyan', 'green', 'white'];
-function useAccent(a) {
-  store.setAccent(a);
-  setAccent(a);              // palette: chrome variables + PAL.CYAN_LUX
-  setAccentAll(accentRgb()); // any screen already on the page
-}
-useAccent(store.getAccent());
-
 // hemisphere: seed once from the timezone so southern visitors are not told to
 // look for frost in January. It is only a guess; the hub footer can flip it.
 if (!store.hemiSet()) store.setHemi(guessHemisphere());
@@ -109,113 +157,108 @@ function focusPrimary(scope) {
 }
 
 // ── hub ────────────────────────────────────────────────────────────
-// A ship's terminal, not a menu: a title, a rule, one offering behind a caret,
-// and a status line. Everything decorative is gone — no sky, no cards, no
-// chrome that is not either the offering or a switch someone might need.
 function showHub() {
   if (current) { current.destroy(); current = null; }
+  stopHubScene();
   app.innerHTML = '';
   setHash('');   // the hub is the plain address; only an experience deep-links
   document.title = t('hub.title');
 
   const newcomer = store.getState().completions.length < 2;
-  const resting = store.interludeDue();
 
   const header = el('header', 'hub-header');
-  header.appendChild(el('h1', '', t('hub.title')));
-  // one dim line of orientation for a first-timer; returners get the quiet
+  const sceneWrap = el('div', 'hub-scene');
+  hubScene = startHubScene(sceneWrap);
+  header.append(sceneWrap, el('h1', '', t('hub.title')));
+  // the tagline only greets newcomers — returning visitors keep the quiet
   if (newcomer) header.appendChild(el('p', 'tagline', t('hub.tagline')));
+  header.appendChild(el('p', 'greet', t(`hub.greet.${daySlot()}`)));
   app.appendChild(header);
-  app.appendChild(el('div', 'rule'));
+
+  const resting = store.interludeDue();
+
+  // the cycle, made visible: two breaths of play, then a rest
+  const dots = el('div', 'cycle-dots');
+  const done = Math.min(2, store.getState().sinceInterlude);
+  for (let i = 0; i < 2; i++) dots.appendChild(el('span', 'dot' + (i < done ? ' full' : '')));
+  dots.appendChild(el('span', 'dot rest' + (resting ? ' full' : ''), '~'));
+  app.appendChild(dots);
 
   // one offering, not a menu
   if (!offering) offering = drawOffering();
   const exp = offering;
-  const card = el('div', 'offer');
-  const name = el('p', 'offer-name');
-  name.append(el('span', 'caret', '>'), document.createTextNode(t(`exp.${exp.id}.name`)));
-  card.append(name, el('p', 'offer-kind', t(`kind.${exp.kind}`)));
-  if (store.timesPlayedToday(exp.id) > 0) card.appendChild(el('p', 'played-note', `· ${t('hub.done.today')}`));
-
-  const acts = el('div', 'exp-buttons');
-  const b = el('button', 'btn', `[ ${store.timesPlayed(exp.id) ? t('hub.again') : t('hub.play')} ]`);
+  const card = el('div', 'card offering');
+  card.append(
+    el('p', 'offer-note', `${t('hub.offer')} · ${t(`kind.${exp.kind}`)}`),
+    el('h2', '', t(`exp.${exp.id}.name`)),
+    el('p', '', t(`exp.${exp.id}.desc`)),
+  );
+  if (store.timesPlayedToday(exp.id) > 0) card.appendChild(el('p', 'played-note', `✓ ${t('hub.done.today')}`));
+  const b = el('button', 'btn', store.timesPlayed(exp.id) ? t('hub.again') : t('hub.play'));
   b.onclick = () => startExperience(exp);
-  acts.appendChild(b);
-  card.appendChild(acts);
+  card.appendChild(b);
+  app.appendChild(card);
 
   if (REGISTRY.length > 1) {
-    const other = el('button', 'link-btn another-btn', `${t('hub.another')}...`);
+    const other = el('button', 'link-btn another-btn', t('hub.another'));
     other.onclick = () => { audio.step(); offering = drawOffering(exp); showHub(); };
-    card.appendChild(other);
+    app.appendChild(other);
   }
-  app.appendChild(card);
 
   // the explanatory hint fades once the rhythm is known — less text, more zen
   if (resting) app.appendChild(el('p', 'cycle-hint', t('hub.rested')));
   else if (newcomer) app.appendChild(el('p', 'cycle-hint', t('hub.cycle.hint')));
 
-  app.appendChild(el('div', 'rule'));
-
-  // ── the status line: every set-once switch, in one terminal readout ──
+  // a single quiet footer carries the set-once controls (language, feedback)
+  // out of the main column, so the offering stays the one thing in focus
   const footer = el('div', 'hub-footer');
-
-  const optRow = (cls, label, items) => {
-    const row = el('div', 'lang-row opt-row ' + cls);
-    if (label) row.appendChild(el('span', 'hemi-label', `${label}:`));
-    for (const it of items) {
-      const btn = el('button', 'lang-btn' + (it.on ? ' active' : ''), it.text);
-      if (it.aria) btn.setAttribute('aria-label', it.aria);
-      btn.setAttribute('aria-pressed', String(!!it.on));
-      btn.onclick = it.act;
-      row.appendChild(btn);
-    }
-    return row;
-  };
-
-  const top = el('div', 'status');
-  // languages by their own codes — this is a terminal, and 'fi en ja' is how a
-  // terminal would say it. The full name stays as the accessible name.
-  top.appendChild(optRow('', '', LANGS.map(({ code, label }) => ({
-    text: code, aria: label, on: getLang() === code,
-    act: () => { useLang(code); store.setLangPref(code); showHub(); },
-  }))));
-  top.appendChild(optRow('accent-row', t('acc.label'), ACCENT_ORDER.map(a => ({
-    text: t(`acc.${a}`), on: store.getAccent() === a,
-    act: () => { useAccent(a); showHub(); },
-  }))));
-  footer.appendChild(top);
-
-  const bottom = el('div', 'status');
-  bottom.appendChild(optRow('sound-row', t('snd.label'), [true, false].map(on => ({
-    text: t(on ? 'snd.on' : 'snd.off'), on: store.soundOn() === on,
-    act: () => {
-      store.setSoundOn(on);
-      audio.init();                 // this click is the gesture that unlocks audio
-      audio.setMuted(!on);
-      if (on) audio.step();         // let them hear that it came back
-      showHub();
-    },
-  }))));
-  // which hemisphere's seasons the invitations follow — set once, then forgotten
-  bottom.appendChild(optRow('hemi-row', t('hemi.label'), ['n', 's'].map(h => ({
-    text: t(`hemi.${h}`), on: store.getHemi() === h,
-    act: () => { store.setHemi(h); showHub(); },
-  }))));
-  footer.appendChild(bottom);
-
+  const langRow = el('div', 'lang-row');
+  for (const { code, label } of LANGS) {
+    const b = el('button', 'lang-btn' + (getLang() === code ? ' active' : ''), label);
+    b.onclick = () => { useLang(code); store.setLangPref(code); showHub(); };
+    langRow.appendChild(b);
+  }
   // the sound garden: one voice per invitation actually accepted. Shown as
   // glyphs so it needs no plural rules, and only once there is something to show.
   const voices = store.gardenVoices();
   if (voices > 0) {
     const filled = '♪ '.repeat(voices).trim();
     const rest = ' ·'.repeat(audio.gardenMax() - voices);
-    const g = el('p', 'garden-note', `${filled}${rest}`);
-    g.setAttribute('aria-label', `${t('gd.label')}: ${voices}/${audio.gardenMax()}`);
+    const g = el('p', 'garden-note', `${t('gd.label')}  ${filled}${rest}`);
     if (justGrew) g.classList.add('grew');
     footer.appendChild(g);
     if (justGrew) footer.appendChild(el('p', 'garden-grew', t(store.gardenFull() ? 'gd.full' : 'gd.grew')));
   }
   justGrew = false;
+
+  footer.appendChild(langRow);
+
+  // which hemisphere's seasons the invitations follow — set once, then forgotten
+  const hemiRow = el('div', 'lang-row opt-row hemi-row');
+  hemiRow.appendChild(el('span', 'hemi-label', t('hemi.label')));
+  for (const h of ['n', 's']) {
+    const b = el('button', 'lang-btn' + (store.getHemi() === h ? ' active' : ''), t(`hemi.${h}`));
+    b.onclick = () => { store.setHemi(h); showHub(); };
+    hemiRow.appendChild(b);
+  }
+  footer.appendChild(hemiRow);
+
+  // sound, with an off switch — the garden and the chimes are lovely and a
+  // person on a quiet train still needs to be able to stop them
+  const soundRow = el('div', 'lang-row opt-row sound-row');
+  soundRow.appendChild(el('span', 'hemi-label', t('snd.label')));
+  for (const on of [true, false]) {
+    const b = el('button', 'lang-btn' + (store.soundOn() === on ? ' active' : ''), t(on ? 'snd.on' : 'snd.off'));
+    b.onclick = () => {
+      store.setSoundOn(on);
+      audio.init();                 // this click is the gesture that unlocks audio
+      audio.setMuted(!on);
+      if (on) audio.step();         // let them hear that it came back
+      showHub();
+    };
+    soundRow.appendChild(b);
+  }
+  footer.appendChild(soundRow);
 
   const fb = el('button', 'link-btn footer-link', t('hub.feedback'));
   fb.onclick = () => showFeedback('hub', showHub);
@@ -239,11 +282,12 @@ function startExperience(exp) {
   // canvas — the hub normally destroys it on the way through, but going straight
   // from one experience to another (as __gol.debug.start does) would leak a loop
   if (current) { current.destroy(); current = null; }
+  stopHubScene();
   audio.gardenStop();          // the garden belongs to the hub, not to play
   app.innerHTML = '';
   const host = el('div', 'exp');
   app.appendChild(host);
-  const back = el('button', 'link-btn back-btn', `< ${t('ui.back')}`);
+  const back = el('button', 'link-btn back-btn', t('ui.back'));
   back.onclick = showHub;
   app.appendChild(back);
   setHash(exp.id);       // so the address bar is worth sharing
@@ -296,6 +340,7 @@ function openFromHash() {
 // ── feedback (leaves 1–5 + optional words, kept in localStorage) ───
 function showFeedback(expId, done) {
   if (current) { current.destroy(); current = null; }
+  stopHubScene();
   audio.gardenStop();
   app.innerHTML = '';
   const box = el('div', 'panel');
@@ -398,6 +443,14 @@ function showInterlude() {
   focusPrimary(actions);
 }
 
+// the hub's mood follows the hour, like the invitations do
+function daySlot(h = new Date().getHours()) {
+  if (h >= 5 && h < 11) return 'morning';
+  if (h >= 11 && h < 17) return 'day';
+  if (h >= 17 && h < 22) return 'evening';
+  return 'night';
+}
+
 function el(tag, cls = '', text = '') {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -409,23 +462,15 @@ function el(tag, cls = '', text = '') {
 window.__gol = {
   store, audio, outbound,
   debug: {
-    showHub, showInterlude, t,
-    // what the hub can actually offer — the testing loop walks this, so a new
-    // experience cannot reach a player without its strings and its intro
-    ids: () => REGISTRY.map(e => ({ id: e.id, kind: e.kind })),
+    showHub, showInterlude,
     start: id => { const e = REGISTRY.find(x => x.id === id); if (e) startExperience(e); },
+    // the roster, so tests cover whatever is registered rather than a list
+    // someone has to remember to update
+    ids: () => REGISTRY.map(e => e.id),
     setLang: l => { useLang(l); store.setLangPref(l); showHub(); },
     feedback: () => JSON.parse(store.exportFeedback()),
     outbox: () => store.outbox(),
     setEndpoint: u => outbound.setEndpoint(u),
-    setAccent: a => { useAccent(a); showHub(); },
-    // picture coords (0..1) -> where they land on the curved glass; the test
-    // loop taps by what a scene drew, not by where the CRT put it
-    unwarp,
-    getAccent: () => store.getAccent(),
-    // what the scenes are drawing their live elements with, right now
-    accentInScene: () => PAL.CYAN_LUX,
-    screensLive: liveCount,
     flush: () => outbound.flush(),
   },
 };
@@ -434,5 +479,6 @@ window.__gol = {
 outbound.flush();
 
 document.title = t('hub.title');
+document.body.style.background = PAL.BG;
 // a shared link lands on the thing it names; everything else opens the hub
 if (!openFromHash()) showHub();

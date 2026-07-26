@@ -4,8 +4,8 @@
 // you stop forcing it." Dithered crustose bloom in muted sage, a few spots
 // glowing luminescent green and lifting spores into the void (the breakout).
 
-import { PixelScreen, shade, bayer, rampDither } from '../pixel.js?v=39';
-import { PAL } from '../palette.js?v=39';
+import { PixelScreen, shade, bayer, rampDither } from '../pixel.js?v=38';
+import { PAL } from '../palette.js?v=38';
 
 const BLOOM_SEC = 14;               // untouched time to fully colonise the stone
 const SCX = 96, SCY = 82, SRX = 46, SRY = 30;   // the stone
@@ -172,6 +172,13 @@ export const lichen = {
         stone();
         crustBase();
       });
+      // even doing nothing, the scene is alive: motes drifting past the stone
+      // and the halo breathing. Live layer — the cached crust is untouched.
+      for (let i = 0; i < 7; i++) {
+        const dx = ((now / (70 + i * 13)) + i * 31) % 210 - 10;
+        const dy = 30 + (i * 19) % 70 + Math.sin(now / 700 + i) * 3;
+        scr.px(dx, dy, 1, 1, i % 2 ? '#2c3826' : '#3a4a30');
+      }
       apothecia(now);
       if (bloom > 0.6) spores(now);
     }
