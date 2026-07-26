@@ -134,6 +134,13 @@ h1 .amp { color: var(--accent); }
 
 .tagline { color: #c4cbd0; font-size: 13px; margin-left: 20px; }
 
+.note {
+  color: var(--cab);
+  font-size: 12px;
+  margin-left: 20px;
+  opacity: .9;
+}
+
 .tags { display: flex; flex-wrap: wrap; gap: 10px; list-style: none; margin-left: 20px; }
 
 .tags li { font-size: 11.5px; color: var(--ink-dim); }

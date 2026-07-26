@@ -55,9 +55,19 @@ root's orphaned `game.js`/`style.css`/`levels.json` were removed. `paperboy/` an
 held them, and four of the hub's links pointed at them.
 
 ### Suds Jack
-HTML5 demo built with **Three.js / WebGL**.
-Concept: "Bomb Jack x Suds 51 x Tempest 2000" — floating bomb-collection gameplay, soap/bubble aesthetic, Tempest 2000 psychedelic tube-shooter energy.
-Build tooling: TBD — update this file once chosen and add dev/build commands.
+Concept: "Bomb Jack x Suds 51 x Tempest 2000" — floating bomb-collection gameplay, soap/bubble
+aesthetic, Tempest 2000 psychedelic tube-shooter energy.
+**Two things share the name.** The playable one is the **original canvas vector build**, live
+at `sudz/` on `gh-pages` (a tube shooter: ← → move, Space fire, Z superzapper; it has the
+mobile touch controls the old site-root copy never got). The one being **started next** is a
+rebuild that takes **`hyperdagger/` as its baseline** rather than starting from an empty
+scene — so it inherits that project's whole spine: Three.js r167 with no build step (jsDelivr
+importmap), the string-art **voxel pipeline** in `voxel.js` (`VoxelSprite` instanced meshes,
+`DebrisPool` physical gibs), the ACES + `EffectComposer` render stack, the telegraphed spawn
+director, the three-way input path (pointer-lock / gamepad / dual touch sticks), and the
+all-synth `audio.js`. Read `hyperdagger/`'s architecture notes below before starting: what
+changes is the game, not the engine underneath it.
+Build tooling: none — same no-build rule as every other demo here.
 
 ### Paper Route — Dawn Run (`paperboy/`)
 A **Paperboy clone** built on Three.js r167 with an **isometric, flat-shaded homage to

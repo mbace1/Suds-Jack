@@ -95,6 +95,16 @@ function check(name, cond) {
       === archived.filter(g => g.live !== false).length);
   check('the archive names itself',
     (await page.locator('#archive-block .count').textContent()).toLowerCase().includes('archived'));
+  // the archive holds things that were set down as well as things that were
+  // finished, and not all of them are still up — the heading must not promise
+  // a Play button that the not-up state deliberately removed
+  const archiveHead = await page.locator('#archive-block .count').textContent();
+  check('and does not promise every archived cabinet is playable',
+    archived.every(g => g.live !== false) || !/still playable/i.test(archiveHead));
+  // a cabinet can say where it stands without losing its Play button
+  const noted = games.filter(g => g.note && g.live !== false);
+  check('a playable cabinet can still carry a state note',
+    await page.locator('.cab .note').count() === noted.length);
   check('every cabinet that has something behind it offers Play',
     await page.locator('.cab .btn.play').count() === games.filter(g => g.live !== false).length);
   check('every cabinet offers Feedback', await page.locator('.cab .btn.ghost').count() === games.length);
