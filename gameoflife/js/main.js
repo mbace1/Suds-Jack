@@ -36,8 +36,10 @@ import { cairn } from './experiences/cairn.js?v=38';
 import { downhill } from './experiences/downhill.js?v=38';
 import { tether } from './experiences/tether.js?v=38';
 import { hedge } from './experiences/hedge.js?v=38';
+import { seed } from './experiences/seed.js?v=38';
+import { lightning } from './experiences/lightning.js?v=38';
 
-const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice, trace, gears, cairn, downhill, tether, hedge];
+const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice, trace, gears, cairn, downhill, tether, hedge, seed, lightning];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
 
 const app = document.getElementById('app');
@@ -462,6 +464,9 @@ window.__gol = {
   debug: {
     showHub, showInterlude,
     start: id => { const e = REGISTRY.find(x => x.id === id); if (e) startExperience(e); },
+    // the roster, so tests cover whatever is registered rather than a list
+    // someone has to remember to update
+    ids: () => REGISTRY.map(e => e.id),
     setLang: l => { useLang(l); store.setLangPref(l); showHub(); },
     feedback: () => JSON.parse(store.exportFeedback()),
     outbox: () => store.outbox(),

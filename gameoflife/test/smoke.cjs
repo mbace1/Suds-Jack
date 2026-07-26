@@ -476,9 +476,9 @@ function check(name, cond) {
   // twenty-two used to open frozen. This is easy to undo by accident (wrapping
   // a scene in scr.cached without lifting the live layer out), so it is gated.
   const frozen = [];
-  for (const id of ['aqueduct','forest','tern','cup','hanami','berry','stars','maple',
-                    'plate','seam','dots','glass','wait','lichen','cloud','ice','trace',
-                    'gears','cairn','downhill','tether','hedge']) {
+  const roster = await page.evaluate(() => __gol.debug.ids());
+  check('the roster is reachable for testing', roster.length >= 22);
+  for (const id of roster) {
     await page.evaluate(i => __gol.debug.start(i), id);
     await page.waitForTimeout(120);
     const a = await page.evaluate(() => document.querySelector('.pixel-screen').toDataURL());
