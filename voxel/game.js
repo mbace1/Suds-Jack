@@ -193,6 +193,42 @@ canvas.addEventListener('touchend', e => {
   }
 }, { passive: false });
 
+// ─── Gamepad ──────────────────────────────────────────────────────────────────
+// Standard mapping: 0=A 1=B 2=X 3=Y 4/5=bumpers 6/7=triggers 9=start
+// 12/13/14/15 = dpad up/down/left/right. Axis 0 = left stick X.
+const PAD = { on: false, left: false, right: false, jump: false, prev: [] };
+const PAD_DZ = 0.30;   // stick deadzone
+
+function pollPad() {
+  const list = navigator.getGamepads ? navigator.getGamepads() : [];
+  let gp = null;
+  for (const p of list) if (p && p.connected) { gp = p; break; }
+
+  PAD.on = !!gp;
+  if (!gp) { PAD.left = PAD.right = PAD.jump = false; PAD.prev = []; return; }
+
+  const down = i => !!(gp.buttons[i] && gp.buttons[i].pressed);
+  const hit  = i => down(i) && !PAD.prev[i];          // edge-triggered
+  const ax   = gp.axes[0] || 0;
+
+  // Held states — feed straight into movement / float
+  PAD.left  = ax < -PAD_DZ || down(14);
+  PAD.right = ax >  PAD_DZ || down(15);
+  PAD.jump  = down(0) || down(12);
+
+  if (state === 'playing') {
+    if (hit(0) || hit(12)) tryJump();                          // A / dpad-up
+    if (hit(1) || hit(2) || hit(5) || hit(7)) tryZap();        // B / X / RB / RT
+  } else if (hit(0) || hit(9)) {
+    startGame();                                                // A / Start
+  }
+
+  PAD.prev = gp.buttons.map(b => b.pressed);
+}
+
+window.addEventListener('gamepadconnected',    () => { PAD.on = true;  });
+window.addEventListener('gamepaddisconnected', () => { PAD.on = false; PAD.prev = []; });
+
 // ─── Game actions ─────────────────────────────────────────────────────────────
 function tryJump() {
   if (PL.onGround) {
@@ -394,8 +430,8 @@ function update(dt) {
   ringOff += adv;
 
   // ── Player horizontal ──
-  const mx = (keys['ArrowLeft']  || keys['KeyA'] || T.left  ? -1 : 0)
-           + (keys['ArrowRight'] || keys['KeyD'] || T.right ?  1 : 0);
+  const mx = (keys['ArrowLeft']  || keys['KeyA'] || T.left  || PAD.left  ? -1 : 0)
+           + (keys['ArrowRight'] || keys['KeyD'] || T.right || PAD.right ?  1 : 0);
   PL.vx += mx * P_SPD * (dt / 16);
   PL.vx *= Math.pow(P_FRIC, dt / 16);
   PL.vx = Math.max(-0.14, Math.min(0.14, PL.vx));
@@ -404,7 +440,7 @@ function update(dt) {
   if (!PL.onGround) {
     PL.vy += GRAV * (dt / 16);
     // Bomb Jack float: hold jump to slow fall
-    const holdingJump = keys['Space'] || keys['ArrowUp'] || keys['KeyW'] || T.jump;
+    const holdingJump = keys['Space'] || keys['ArrowUp'] || keys['KeyW'] || T.jump || PAD.jump;
     if (holdingJump && PL.vy > 0.5) PL.vy *= 0.93;
   }
 
@@ -813,6 +849,16 @@ function drawHUD() {
   g.font = 'bold 7px monospace';
   g.fillText('Z:ZAP ' + (zapReady ? '[RDY]' : `[${Math.ceil(PL.zapCD / 1000)}s]`), 6, LH - 12);
 
+  // Controller connected indicator
+  if (PAD.on) {
+    g.fillStyle = 'rgba(0,0,0,0.6)';
+    g.fillRect(LW - 44, LH - 14, 41, 11);
+    g.fillStyle = C.HC;
+    g.textAlign = 'right';
+    g.font = 'bold 7px monospace';
+    g.fillText('◎ PAD', LW - 6, LH - 12);
+  }
+
   // Mobile hints
   if ('ontouchstart' in window) {
     g.fillStyle = 'rgba(0,0,0,0.5)';
@@ -862,12 +908,16 @@ function drawTitle() {
   // Blink start
   if (Math.floor(Date.now() / 550) % 2 === 0) {
     g.fillStyle = C.HW;
-    g.fillText('— PRESS ENTER  OR  TAP —', LW / 2, LH / 2 + 16);
+    g.fillText(PAD.on ? '— PRESS  A  OR  START —' : '— PRESS ENTER  OR  TAP —',
+               LW / 2, LH / 2 + 16);
   }
 
   // Controls footer
   g.fillStyle = '#444444';
   g.fillText('A/D:MOVE   SPACE/W:JUMP+FLOAT   Z:SUPERZAP', LW / 2, LH / 2 + 36);
+  g.fillStyle = PAD.on ? C.HC : '#333333';
+  g.fillText(PAD.on ? '◎ PAD: STICK/DPAD  ·  A:JUMP  ·  B:ZAP'
+                    : 'GAMEPAD SUPPORTED — PRESS ANY BUTTON', LW / 2, LH / 2 + 46);
 
   // HI score
   if (hi > 0) {
@@ -905,7 +955,8 @@ function drawGameOver() {
 
   if (Math.floor(Date.now() / 550) % 2 === 0) {
     g.fillStyle = C.HW;
-    g.fillText('— ENTER TO RETRY —', LW / 2, LH / 2 + 18);
+    g.fillText(PAD.on ? '— A  OR  START TO RETRY —' : '— ENTER TO RETRY —',
+               LW / 2, LH / 2 + 18);
   }
 
   g.textBaseline = 'alphabetic';
@@ -955,6 +1006,7 @@ function render() {
 function loop(ts) {
   const dt = Math.min(ts - lastTS, 50);
   lastTS = ts;
+  pollPad();
   update(dt);
   render();
   requestAnimationFrame(loop);
