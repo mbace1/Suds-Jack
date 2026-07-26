@@ -6,6 +6,7 @@
 //   natureIdx       int                    rotates through the interlude prompts
 //   accepted        int                    invitations the player actually took
 //   hemi            'n' | 's' | null       which hemisphere's seasons to use
+//   accent          'cyan'|'green'|'white'  the screen's phosphor colour
 //   feedback        [{ id, leaves, text, lang, ts }]   everything ever said, locally
 //   outbox          [{ ... }]                          notes not yet delivered
 
@@ -20,6 +21,7 @@ const DEFAULTS = {
   accepted: 0,
   hemi: null,          // null until set, so main.js can seed the timezone guess
   sound: true,         // false = muted, remembered across visits
+  accent: 'cyan',      // the terminal's phosphor colour
   feedback: [],
   outbox: [],
 };
@@ -46,6 +48,10 @@ export function setLangPref(l) { state.lang = l; save(); }
 // said so, because being asked to mute it again every visit is its own nag.
 export function soundOn() { return state.sound !== false; }
 export function setSoundOn(b) { state.sound = !!b; save(); }
+
+// the screen's phosphor colour — a taste, so it is remembered
+export function getAccent() { return state.accent || 'cyan'; }
+export function setAccent(a) { state.accent = a; save(); }
 
 // which hemisphere's seasons the invitations should follow
 export function getHemi() { return state.hemi === 's' ? 's' : 'n'; }

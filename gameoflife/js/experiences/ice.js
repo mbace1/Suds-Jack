@@ -6,8 +6,8 @@
 // frame. Built to the 2026-07 void-vignette standard, dithered ice ramps.
 // Revert: imagine your own square of earth a hundred years ago.
 
-import { PixelScreen, bayer, rampDither } from '../pixel.js?v=37';
-import { PAL } from '../palette.js?v=37';
+import { PixelScreen, bayer, rampDither } from '../pixel.js?v=39';
+import { PAL } from '../palette.js?v=39';
 
 // the core column, a rounded cylinder floating in the void
 const COX = 96, COW = 34, COT = 10, COB = 120;   // centre-x, width, top, bottom
@@ -15,7 +15,7 @@ const WIN_Y = 62;                                 // the reading window (core ce
 
 // the ice itself, dark-teal deep → bright rime, stippled by rampDither
 const ICE = ['#2e4c58', '#436d7c', '#6b9aa8', '#9cc8d4', '#d8f0f6'];
-const CYAN = PAL.CYAN_LUX, CYAN_HI = '#c8fbf4';
+const CYAN_HI = '#c8fbf4';   // the accent is read live: PAL.CYAN_LUX follows the screen
 
 // each descent stop: the year, its signature layer type, its story key
 const STOPS = [
@@ -154,13 +154,13 @@ export const ice = {
       const grow = phase === 'truth' || phase === 'outro' ? Math.min(1, glowT * 0.6) : 0.3;
       const r = 3 + grow * 9;
       scr.softDisc(COX + 6, WIN_Y, 8 + grow * 22, '#0f3a3a', 16);   // glow halo
-      scr.disc(COX + 6, WIN_Y, r, CYAN);
+      scr.disc(COX + 6, WIN_Y, r, PAL.CYAN_LUX);
       scr.disc(COX + 6, WIN_Y, Math.max(1, r - 2), CYAN_HI);
       if (grow > 0.4) {                              // it lifts free, past the frame
         for (let i = 0; i < 7; i++) {
           const rise = ((now / 30 + i * 40) % 80);
           const bx = COX + 6 + Math.sin(now / 400 + i) * 6;
-          scr.disc(bx, WIN_Y - 10 - rise, i % 2 ? 2 : 1, i % 3 ? CYAN : CYAN_HI);
+          scr.disc(bx, WIN_Y - 10 - rise, i % 2 ? 2 : 1, i % 3 ? PAL.CYAN_LUX : CYAN_HI);
         }
       }
     }

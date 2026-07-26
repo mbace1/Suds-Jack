@@ -1,0 +1,130 @@
+// The arcade catalogue — one entry per playable thing on the site.
+//
+// `path`   what Play opens, relative to the hub page.
+// `inRepo` true when the folder lives on this branch too. The site (gh-pages)
+//          is a curated root that carries a few games `main` does not, so the
+//          local test loop only checks the links it can actually see.
+// `accent` the card's neon; taken from the game's own palette so the row of
+//          cards reads as the row of cabinets it is meant to be.
+// `art`    the key of a draw function in art.js (each cabinet gets a marquee).
+//
+// Adding a game is one entry here plus one draw function in art.js.
+
+export const GAMES = [
+  {
+    id: 'sudsjack',
+    title: 'Suds Jack',
+    tagline: 'A vector tube shooter down a neon well — the namesake.',
+    lineage: 'Tempest 2000 × Bomb Jack',
+    tags: ['shooter', 'vector', 'canvas'],
+    controls: '← → / A D move · Space fire · Z superzapper',
+    path: 'sudz/',
+    inRepo: false,
+    accent: '#22e0e8',
+    art: 'tube',
+  },
+  {
+    id: 'tokodrop',
+    title: 'Toko Drop',
+    tagline: 'Twin-stick swarm survival. The gels dodge your lanes, school like fish, and burst into revenge rings.',
+    lineage: 'bullet-hell / arena',
+    tags: ['twin-stick', 'three.js', 'gamepad'],
+    controls: 'WASD + hold LMB · Space dash · dual sticks on touch',
+    path: 'toko-drop/',
+    inRepo: true,
+    accent: '#5ad1a8',
+    art: 'gel',
+  },
+  {
+    id: 'hyperdagger',
+    title: 'Hyper Dagger',
+    tagline: 'Survive a swarm of voxel skulls on a disc in the void. Survival time is the only score.',
+    lineage: 'Devil Daggers × HYPERDEMON',
+    tags: ['fps', 'three.js', 'gamepad'],
+    controls: 'WASD + mouse · Space ×2 jump · Shift dash · Esc pause',
+    path: 'hyperdagger/',
+    inRepo: true,
+    accent: '#d8412f',
+    art: 'skull',
+  },
+  {
+    id: 'dropcabal',
+    title: 'Drop Cabal',
+    tagline: 'A gallery shooter with layered depth — near gels eat the shots you aimed at far ones.',
+    lineage: 'Cabal (1988)',
+    tags: ['shooter', 'pixel', 'three.js'],
+    controls: 'A D run · mouse aim + LMB · Space roll · G grenade',
+    path: 'dropcabal/',
+    inRepo: true,
+    accent: '#e8913a',
+    art: 'cabal',
+  },
+  {
+    id: 'paperboy',
+    title: 'Paper Route — Dawn Run',
+    tagline: 'Deliver to the subscribers, smash the windows of everyone else, survive three crashes.',
+    lineage: 'Paperboy (1985)',
+    tags: ['arcade', 'isometric', 'three.js'],
+    controls: 'A D steer · W S throttle · Z X throw · Esc pause',
+    path: 'paperboy/',
+    inRepo: true,
+    accent: '#6fc7e8',
+    art: 'route',
+  },
+  {
+    id: 'skltr',
+    title: 'SKLTR',
+    tagline: 'A neon survival roguelike — hold out, level up, and see how far the run goes.',
+    lineage: 'Risk of Rain lineage',
+    tags: ['roguelike', 'survival', 'canvas'],
+    controls: 'WASD move · fires on its own',
+    path: 'Skltr/',
+    inRepo: false,
+    accent: '#3ce85a',
+    art: 'bones',
+  },
+  {
+    id: 'neonronin',
+    title: 'Neon Ronin',
+    tagline: 'Chain sword combos through a neon skyline. The fighting is automatic; the movement is yours.',
+    lineage: 'character action',
+    tags: ['action', 'three.js', 'combo'],
+    controls: 'WASD + mouse · LMB chains · tap stick to jump ×2',
+    path: 'neon-ronin/',
+    inRepo: false,
+    accent: '#e83ca8',
+    art: 'slash',
+  },
+  {
+    id: 'gameoflife',
+    title: 'The Game of Life',
+    tagline: 'Small stories and games that always hand you back to the outdoors. Finnish, English, Japanese.',
+    lineage: 'a quiet one',
+    tags: ['stories', 'pixel', 'fi / en / ja'],
+    controls: 'tap or click — that is all of it',
+    path: 'gameoflife/',
+    inRepo: true,
+    accent: '#8faf6a',
+    art: 'treeline',
+  },
+  {
+    id: 'eyetest',
+    title: '20/20',
+    tagline: 'An eyesight test that keeps score. Endless rounds, streak scoring, three lives.',
+    lineage: 'optometry, arcade-fied',
+    tags: ['puzzle', 'canvas', 'landscape'],
+    controls: 'tap a picture · or ← →',
+    path: 'eye-test/',
+    inRepo: false,
+    accent: '#e8d24a',
+    art: 'optotype',
+  },
+];
+
+// The shader studies the games were built out of — playable, but they are
+// experiments, so they get a quieter shelf of their own.
+export const SKETCHES = [
+  { id: 'goo-surface', title: 'Goo Surface', tagline: 'SPH-lite goop, 64 particles, metaball pass. Poke it.', path: 'goo-surface.html', inRepo: true },
+  { id: 'goo-flop', title: 'Goo Flop', tagline: 'One gel cube that tips onto its side when you swipe.', path: 'goo-flop.html', inRepo: true },
+  { id: 'goo-snowman', title: 'Goo Snowman', tagline: 'Ray-marched SDF snowman — where the goo look started.', path: 'goo-snowman.html', inRepo: true },
+];
