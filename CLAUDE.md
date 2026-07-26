@@ -4,6 +4,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Projects
 
+### The arcade — `index.html` + `hub/`
+The landing page: **every playable thing in the repo on one page**, each cabinet with a
+**Play** link and a **Feedback** button. Vanilla ES modules, no build step, no image
+assets — every marquee is a 128×72 pixel canvas drawn in code (`hub/art.js`) and tinted
+from that game's own accent. Adding a game is **two edits**: an entry in `hub/games.js`
+(title, tagline, lineage, tags, controls, `path`, `accent`, `art`, `inRepo`) and a draw
+function in `hub/art.js`; `hub/hub.js` knows about no game in particular.
+`hub/feedback.js` reuses the transport the games already ship (`scripts/feedback-sheet.gs`
+on `gh-pages`): a `SHEET_ENDPOINT` Apps Script if pasted in — unlimited, but `no-cors`, so
+its answer cannot be read and that path reports **`sent-blind`**, never `sent` — otherwise
+the Formspree endpoint `toko-drop` already uses. Every note lands in `localStorage` first;
+undeliverable ones queue in an outbox drained one at a time on the next visit; Send with
+nothing said records nothing. `window.__hub` exposes `{games, sketches, feedback, debug}`
+(`feedback.setEndpoint(url, blind)` points it at a stub for tests).
+`node test/hub-smoke.cjs` = 31 checks: a cabinet per catalogue entry, every in-repo link
+resolving 200, every marquee actually painted, the full feedback path (empty / sent /
+queued / drained), modal behaviour (Esc, backdrop, focus returned), WCAG AA, 44px targets,
+no horizontal overflow on a phone.
+**`inRepo`** marks which games this branch carries: the `gh-pages` site root is a curated
+tree holding games `main` does not (Suds Jack itself at `sudz/`, `Skltr/`, `neon-ronin/`,
+`eye-test/`), so the test loop only checks links it can see. **Deploy caveat, sharper than
+the others:** the `gh-pages` root `index.html` *is the Suds Jack game* — refresh `sudz/`
+from the root build before letting the hub take the root, or the newest Suds Jack is lost.
+
 ### Suds Jack
 HTML5 demo built with **Three.js / WebGL**.
 Concept: "Bomb Jack x Suds 51 x Tempest 2000" — floating bomb-collection gameplay, soap/bubble aesthetic, Tempest 2000 psychedelic tube-shooter energy.
@@ -246,7 +270,16 @@ Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4
 ## Repository Structure
 
 ```
-suds-jack/      # (not yet scaffolded)
+index.html      # the arcade: every game on one page, Play + Feedback each
+hub/
+  games.js      # the catalogue — one entry per playable thing (path, accent, art, inRepo)
+  art.js        # a 128×72 pixel marquee per game, drawn in code (no image assets)
+  feedback.js   # SHEET_ENDPOINT (no-cors) → Formspree → local archive + retried outbox
+  hub.js        # renders the cabinets, runs the feedback panel (modal, focus, Esc)
+  hub.css       # the dark room; AA contrast + 44px controls are load-bearing here
+test/
+  hub-smoke.cjs # 31 headless checks over the hub
+suds-jack/      # (not yet scaffolded — the game itself lives at sudz/ on gh-pages)
 toko-drop/
   index.html
   js/

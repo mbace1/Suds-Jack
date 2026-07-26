@@ -8,6 +8,45 @@ Live preview: https://mbace1.github.io/Suds-Jack/
 
 ---
 
+## The arcade — `index.html` + `hub/`
+
+One page that carries **every playable thing in the workshop**, each cabinet
+with a **Play** button and a **Feedback** button. No build step, no framework,
+no image assets: each game's marquee is a 128×72 pixel canvas drawn in code
+(`hub/art.js`) and tinted from that game's own palette.
+
+Adding a game is **two edits**: an entry in `hub/games.js` and a draw function
+in `hub/art.js`. Nothing else in the hub knows any game exists.
+
+**Feedback** (`hub/feedback.js`) is the same panel everywhere — 1–5 diamonds
+plus optional words, tagged with which cabinet it came from. It reuses the
+transport the games already ship (see `scripts/feedback-sheet.gs` on
+`gh-pages`): a Google Apps Script `SHEET_ENDPOINT` if one is pasted in
+(unlimited, but `no-cors`, so the answer cannot be read — that path reports
+*sent-blind*, never *sent*), otherwise the Formspree form already in use by
+`toko-drop`. Every note is written to `localStorage` first whatever happens;
+an undeliverable one goes to an outbox and is retried on the next visit, one
+at a time. Pressing Send having said nothing records nothing.
+
+```sh
+node test/hub-smoke.cjs      # 31 checks (needs playwright + its Chromium)
+```
+
+> **Catalogue entries carry `inRepo`.** The live site root (`gh-pages`) is a
+> curated tree that holds a few games `main` does not — Suds Jack itself
+> (`sudz/`), `Skltr/`, `neon-ronin/`, `eye-test/`. Those are marked
+> `inRepo: false`, and the test loop only checks the links it can actually
+> see, so a local run does not fail on games that only exist once deployed.
+
+> **Deploying it.** The `gh-pages` root `index.html` is *currently the Suds
+> Jack game itself*, so putting the hub there needs the game to keep a home
+> of its own: `sudz/` already holds a copy two commits behind the root build,
+> so refresh `sudz/` from the root `game.js` / `style.css` / `levels.json`
+> first, then copy `index.html` + `hub/` over. Same deploy caveat as every
+> other demo here — `main` is not what is served.
+
+---
+
 ## Demos
 
 ### `goo-snowman.html`

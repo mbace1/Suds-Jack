@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Suds Jack — the arcade</title>
+  <meta name="description" content="Every game in the Suds Jack workshop on one page — vector tube shooters, gelatin bullet hell, voxel first-person survival, a paper route, and quiet stories that send you back outside." />
+  <meta name="theme-color" content="#0b0b0f" />
+  <link rel="stylesheet" href="hub/hub.css?v=1" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%230b0b0f'/><circle cx='8' cy='8' r='4' fill='%2322e0e8'/></svg>" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Suds <span class="amp">Jack</span></h1>
+      <p class="sub">A workshop of browser games. Nothing to install, nothing to sign up for — pick a cabinet and press Play.</p>
+      <p class="count" id="count">The floor</p>
+    </header>
+
+    <main>
+      <h2 class="sr-only">Games</h2>
+      <div class="rack" id="cabinets"></div>
+
+      <h2 class="shelf-head">Shader sketches — where the look came from</h2>
+      <ul class="shelf" id="sketches"></ul>
+    </main>
+
+    <footer>
+      <span>Built in the open.</span>
+      <a href="https://github.com/mbace1/Suds-Jack">Source on GitHub</a>
+      <span>·</span>
+      <button class="link-btn" id="hub-feedback">Tell us about the arcade itself</button>
+    </footer>
+  </div>
+
+  <style>
+    /* the only rule that has to live here: it labels the rack for screen
+       readers without putting a second heading on the screen */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+    }
+  </style>
+
+  <script type="module" src="hub/hub.js?v=1"></script>
+</body>
+</html>
