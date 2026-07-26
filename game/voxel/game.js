@@ -113,7 +113,10 @@ let   fireCD   = 0;
 
 const bullets   = [];
 const enemies   = [];
-const particles = [];
+const particles = []; // {x,y,vx,vy,life,col,sz,dsz,grav}
+
+// Screen-flash overlay (zap / player hit)
+let flashCol = null, flashAlpha = 0;
 
 // Terrain bumps: array of {x, z, active} — glow tiles on floor that launch player
 const bumps = [];
@@ -183,6 +186,7 @@ function tryZap() {
   enemies.forEach(e => burst(e, 14));
   score += enemies.length * 150;
   enemies.length = 0;
+  zapVfx();
 }
 
 function startGame() {
@@ -226,18 +230,97 @@ function spawnBumps() {
   }
 }
 
+// Spawn a single voxel chunk particle
+function spawnChunk(x, y, vx, vy, col, sz, life) {
+  particles.push({ x, y, vx, vy, life, col, sz, dsz: -sz / life, grav: 0.18 });
+}
+
+// Spawn a spark particle (small, fast)
+function spawnSpark(x, y, vx, vy, col, life) {
+  particles.push({ x, y, vx, vy, life, col, sz: 2, dsz: -2 / life, grav: 0.22 });
+}
+
+// Enemy kill burst: chunky voxel explosion
 function burst(e, n) {
   const p = w2s(e.x, e.y, e.z);
-  for (let i = 0; i < n; i++) {
-    const a = (i / n) * Math.PI * 2;
-    const sp = 0.8 + Math.random() * 2;
-    particles.push({
-      x: p.x, y: p.y,
-      vx: Math.cos(a) * sp,
-      vy: Math.sin(a) * sp - 1,
-      life: 18 + Math.random() * 16,
-      col: e.col,
-    });
+  const scale = Math.max(0.4, p.sc);
+  // Big voxel chunks
+  const chunks = Math.max(4, Math.round(n * 0.5));
+  for (let i = 0; i < chunks; i++) {
+    const a  = (i / chunks) * Math.PI * 2 + Math.random() * 0.5;
+    const sp = 1.2 + Math.random() * 2.5;
+    const sz = Math.round((4 + Math.random() * 4) * Math.min(1.6, scale + 0.6));
+    spawnChunk(p.x, p.y, Math.cos(a) * sp, Math.sin(a) * sp - 1.5,
+               e.col, sz, 22 + Math.random() * 14);
+  }
+  // Spark shower
+  const sparks = Math.max(6, Math.round(n * 0.7));
+  for (let i = 0; i < sparks; i++) {
+    const a  = Math.random() * Math.PI * 2;
+    const sp = 0.5 + Math.random() * 3.5;
+    spawnSpark(p.x + (Math.random() - 0.5) * 4, p.y,
+               Math.cos(a) * sp, Math.sin(a) * sp - 2,
+               Math.random() < 0.5 ? e.col : '#ffffff',
+               12 + Math.random() * 10);
+  }
+}
+
+// Zap flash + mass voxel debris
+function zapVfx() {
+  flashCol   = '#ffffff';
+  flashAlpha = 0.82;
+  // Debris cloud from all killed enemies is already handled by burst() calls
+  // Extra floor voxel columns
+  for (let i = 0; i < 8; i++) {
+    const sx = 10 + i * (LW / 8);
+    const sy = NY + 4;
+    for (let r = 0; r < 5; r++) {
+      spawnChunk(sx + (Math.random() - 0.5) * 8, sy,
+                 (Math.random() - 0.5) * 2,
+                 -(2.5 + Math.random() * 4),
+                 Math.random() < 0.5 ? C.HC : C.HY,
+                 Math.round(4 + Math.random() * 4),
+                 20 + Math.random() * 20);
+    }
+  }
+}
+
+// Player hit: red voxel burst from player screen pos
+function playerHitVfx() {
+  flashCol   = '#ff0000';
+  flashAlpha = 0.45;
+  const px = Math.round(VPX + camX + PL.x * NW);
+  const py = Math.round(NY - PL.y * (NY - VPY) * WHF / NR);
+  for (let i = 0; i < 16; i++) {
+    const a  = (i / 16) * Math.PI * 2;
+    const sp = 1 + Math.random() * 3;
+    spawnChunk(px, py, Math.cos(a) * sp, Math.sin(a) * sp - 2,
+               Math.random() < 0.6 ? C.PL : C.PLH,
+               Math.round(4 + Math.random() * 6), 20 + Math.random() * 12);
+  }
+}
+
+// Jump/land dust puffs from floor
+function dustVfx(screenX, screenY) {
+  for (let i = 0; i < 6; i++) {
+    const side = (Math.random() - 0.5) * 12;
+    spawnChunk(screenX + side, screenY,
+               side * 0.3 + (Math.random() - 0.5),
+               -(0.4 + Math.random() * 1.2),
+               Math.random() < 0.5 ? '#333355' : '#1a1a33',
+               Math.round(2 + Math.random() * 3), 10 + Math.random() * 8);
+  }
+}
+
+// Bump launch: orange voxel spray
+function bumpVfx(screenX, screenY) {
+  for (let i = 0; i < 10; i++) {
+    const a  = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI;
+    const sp = 2 + Math.random() * 4;
+    spawnChunk(screenX + (Math.random() - 0.5) * 8, screenY,
+               Math.cos(a) * sp, Math.sin(a) * sp,
+               Math.random() < 0.6 ? C.BUMP : '#ffcc44',
+               Math.round(3 + Math.random() * 5), 16 + Math.random() * 12);
   }
 }
 
@@ -282,12 +365,16 @@ function update(dt) {
 
   // Floor landing
   if (PL.y <= 0) {
+    const px = Math.round(VPX + camX + PL.x * NW);
+    const py = Math.round(NY);
     if (PL.vy > 4 && Math.abs(PL.vx) > 0.04) {
       // Speed-bump landing → Bomb Jack launch
       PL.vy = -(PL.vy * 0.45 + Math.abs(PL.vx) * 18);
       PL.boosts = 3;
       PL.onGround = false;
+      dustVfx(px, py);
     } else {
+      if (!PL.onGround && PL.vy > 1) dustVfx(px, py);
       PL.y = 0; PL.vy = 0; PL.onGround = true; PL.boosts = 2;
     }
   }
@@ -298,6 +385,8 @@ function update(dt) {
       PL.vy = J_VEL * 1.1;
       PL.onGround = false;
       PL.boosts = 3;
+      const bsp = w2s(b.x, 0, b.z);
+      bumpVfx(bsp.x, bsp.y);
     }
   }
 
@@ -338,17 +427,25 @@ function update(dt) {
       if (Math.abs(e.x - PL.x) < 0.28 && PL.inv <= 0) {
         lives--;
         PL.inv = 2200;
+        playerHitVfx();
         if (lives <= 0) { hi = Math.max(hi, score); state = 'gameover'; }
       }
       enemies.splice(i, 1);
     }
   }
 
+  // ── Flash decay ──
+  if (flashAlpha > 0) flashAlpha = Math.max(0, flashAlpha - dt * 0.004);
+
   // ── Particles ──
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
-    p.x += p.vx; p.y += p.vy; p.vy += 0.12; p.life--;
-    if (p.life <= 0) particles.splice(i, 1);
+    p.x  += p.vx * (dt / 16);
+    p.y  += p.vy * (dt / 16);
+    p.vy += (p.grav || 0.12) * (dt / 16);
+    p.sz  = Math.max(0, p.sz + p.dsz * (dt / 16));
+    p.life -= dt / 16;
+    if (p.life <= 0 || p.sz <= 0) particles.splice(i, 1);
   }
 
   // ── Wave spawning ──
@@ -535,12 +632,21 @@ function drawBullets() {
 // ─── Drawing: Particles ───────────────────────────────────────────────────────
 function drawParticles() {
   for (const p of particles) {
-    const sz = Math.max(1, Math.round(3 * (p.life / 34)));
+    const sz = Math.max(1, Math.round(p.sz));
+    const alp = Math.min(1, p.life / 10);
+    g.globalAlpha = alp;
+    // Top-lit voxel: brighter top strip
     g.fillStyle = p.col;
-    g.globalAlpha = Math.min(1, p.life / 18);
-    g.fillRect(Math.round(p.x) - sz / 2, Math.round(p.y) - sz / 2, sz, sz);
+    g.fillRect(Math.round(p.x - sz / 2), Math.round(p.y - sz / 2), sz, sz);
+    if (sz >= 4) {
+      g.fillStyle = '#ffffff';
+      g.globalAlpha = alp * 0.35;
+      g.fillRect(Math.round(p.x - sz / 2), Math.round(p.y - sz / 2), sz, Math.max(1, Math.round(sz / 3)));
+      g.fillStyle = 'rgba(0,0,0,0.4)';
+      g.fillRect(Math.round(p.x + sz / 2 - Math.max(1, Math.round(sz / 3))), Math.round(p.y - sz / 2), Math.max(1, Math.round(sz / 3)), sz);
+    }
+    g.globalAlpha = 1;
   }
-  g.globalAlpha = 1;
 }
 
 // ─── Drawing: HUD ─────────────────────────────────────────────────────────────
@@ -707,6 +813,14 @@ function render() {
     drawPlayer();
     drawParticles();
     drawHUD();
+  }
+
+  // Screen flash overlay (zap / player hit)
+  if (flashAlpha > 0 && flashCol) {
+    g.globalAlpha = flashAlpha;
+    g.fillStyle = flashCol;
+    g.fillRect(0, 0, LW, LH);
+    g.globalAlpha = 1;
   }
 
   // CRT scanlines (every 2 rows, Suda 51 TV feel)
