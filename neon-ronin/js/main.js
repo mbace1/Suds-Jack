@@ -6,6 +6,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { InputManager } from './input.js';
 import { Player, FORMS, PLAYER_RADIUS } from './player.js';
 import { Enemy, EnemyType, BoltPool } from './enemy.js';
+import { Ally, ALLY_ACCENT, ALLY_RADIUS } from './ally.js';
 import { Effects } from './effects.js';
 import { audio } from './audio.js';
 
@@ -134,9 +135,13 @@ function setRoomHue(room) {
 const input = new InputManager(canvas);
 const effects = new Effects(scene);
 const player = new Player(scene);
-const bolts = new BoltPool(scene);        // enemy fire
+const bolts = new BoltPool(scene, 100);   // enemy fire
 const pBolts = new BoltPool(scene, 60);   // player ranged-mode fire
 let enemies = [];
+let allies = [];
+const ALLY_CAP = 6;
+const LIVE_CAP = 70;    // max simultaneous enemies; overflow waits in pending
+let cmdCd = 0;          // CHARGE order cooldown
 
 // neon glow that follows the active form — kept soft and above the rig so
 // the kasa/skirt surfaces don't blow out into a bloom blob at point-blank
@@ -172,6 +177,7 @@ function updateCamera(dt) {
 const $ = (id) => document.getElementById(id);
 const hud = {
   hpfill: $('hpfill'), dashpips: [...document.querySelectorAll('#dashpips span')],
+  allychip: $('allychip'), cmdbtn: $('cmdbtn'),
   room: $('roomlbl'), score: $('scorelbl'), hi: $('hilbl'),
   mult: $('multlbl'), chips: [$('chip0'), $('chip1'), $('chip2')],
   announce: $('announce'), vignette: $('vignette'),
@@ -259,8 +265,33 @@ const combat = {
     if (hitAny) { audio.hit(); this.shake(0.08); }
   },
 
+  // squad melee: same sector test as the player's, no bolt work / no shake
+  allyStrike(pos, yaw, range, arcDeg, dmg) {
+    const half = (arcDeg / 2) * (Math.PI / 180);
+    for (const e of enemies) {
+      if (e.dead) continue;
+      const dx = e.pos.x - pos.x, dz = e.pos.z - pos.z;
+      const d = Math.hypot(dx, dz);
+      if (d > range + e.radius) continue;
+      let da = Math.atan2(dx, dz) - yaw;
+      while (da > Math.PI) da -= Math.PI * 2;
+      while (da < -Math.PI) da += Math.PI * 2;
+      if (Math.abs(da) > half && d > 1.1) continue;
+      const died = e.hit(dmg, pos);
+      _tmp.set(e.pos.x, 1.2, e.pos.z);
+      effects.sparks(_tmp, ALLY_ACCENT, 3);
+      if (died) this.onKill(e);
+    }
+  },
+
+  // enemies deal damage through this so allies soak hits too
+  hurtTarget(t, dmg, fromPos, knock = 4) {
+    if (t.isPlayer) this.hurtPlayer(dmg, fromPos, knock);
+    else t.ref.hurt(dmg, fromPos);
+  },
+
   onKill(e) {
-    effects.shards(e.pos, e.conf.accent, e.type === EnemyType.BRUTE ? 20 : 12);
+    effects.shards(e.pos, e.conf.accent, e.type === EnemyType.DRONE ? 4 : e.type === EnemyType.BRUTE ? 20 : 12);
     score += Math.round(e.score * streakMult());
     streak++;
     kills++;
@@ -307,31 +338,51 @@ const combat = {
 function rollSpawns(n) {
   const list = [];
   const bruteRoom = n % 4 === 0;
-  // double-length rooms: twice the old budget before an upgrade choice comes up
-  const budget = Math.min(8 + n * 4, 40);
-  let spent = 0, i = 0;
+  let budget = Math.min(8 + n * 4, 48);
+  let i = 0;
   if (bruteRoom) {
     const brutes = Math.min(1 + Math.floor(n / 6), 3);
-    for (let b = 0; b < brutes; b++) { list.push({ type: EnemyType.BRUTE, delay: 0.4 + b * 1.5 }); spent += 4; }
+    for (let b = 0; b < brutes; b++) { list.push({ type: EnemyType.BRUTE, delay: 0.4 + b * 1.5 }); budget -= 4; }
   }
-  while (spent < budget) {
+  // drone flood packs: one beam per pack, scattered around a shared center
+  const packs = Math.min(1 + Math.floor(n / 3), 3);
+  for (let p = 0; p < packs && budget > 3; p++) {
+    const size = 6 + Math.min(n, 6);
+    const delay = 1 + p * 6 + Math.random();
+    for (let d = 0; d < size; d++) {
+      list.push({ type: EnemyType.DRONE, delay: delay + d * 0.08, pack: p, packLead: d === 0 });
+    }
+    budget -= Math.ceil(size * 0.5);
+  }
+  while (budget > 0) {
     const roll = Math.random();
     let type = EnemyType.SLASHER, cost = 1;
     if (n >= 3 && roll > 0.85 && !bruteRoom) { type = EnemyType.BRUTE; cost = 4; }
     else if (n >= 2 && roll > 0.6) { type = EnemyType.GUNNER; cost = 2; }
     list.push({ type, delay: 0.4 + Math.floor(i / 4) * 2 + Math.random() * 0.8 });
-    spent += cost;
+    budget -= cost;
     i++;
   }
-  // spawn positions: ring around the arena, away from the player
+  // spawn positions: ring around the arena, away from the player; a pack
+  // shares one center (and one beam, on its lead member) with scatter
+  const packCenters = {};
   for (const s of list) {
-    let a, x, z;
-    do {
-      a = Math.random() * Math.PI * 2;
-      x = Math.cos(a) * ARENA_R * 0.72;
-      z = Math.sin(a) * ARENA_R * 0.72;
-    } while (Math.hypot(x - player.pos.x, z - player.pos.z) < 8);
-    s.x = x; s.z = z; s.beamed = false;
+    let x, z;
+    if (s.pack !== undefined && packCenters[s.pack]) {
+      const c = packCenters[s.pack];
+      x = c.x + (Math.random() - 0.5) * 3;
+      z = c.z + (Math.random() - 0.5) * 3;
+    } else {
+      let a;
+      do {
+        a = Math.random() * Math.PI * 2;
+        x = Math.cos(a) * ARENA_R * 0.72;
+        z = Math.sin(a) * ARENA_R * 0.72;
+      } while (Math.hypot(x - player.pos.x, z - player.pos.z) < 8);
+      if (s.pack !== undefined) packCenters[s.pack] = { x, z };
+    }
+    s.x = x; s.z = z;
+    s.beamed = s.pack !== undefined ? !s.packLead : false;
   }
   return list;
 }
@@ -341,6 +392,14 @@ function startRoom(n) {
   setRoomHue(n);
   pending = rollSpawns(n);
   player.reviveUsed = false;    // SECOND CORE recharges each room
+  // fallen squad members stand back up between rooms
+  for (const a of allies) {
+    if (a.dead) {
+      const ang = Math.random() * Math.PI * 2;
+      a.revive(player.pos.x + Math.sin(ang) * 2, player.pos.z + Math.cos(ang) * 2);
+      effects.spawnBeam(a.pos, ALLY_ACCENT, 0.5);
+    }
+  }
   state = 'fight';
   announce(`ROOM ${n}`, n % 4 === 0 ? 'heavy signatures detected' : '');
 }
@@ -348,6 +407,9 @@ function startRoom(n) {
 function resetRun() {
   for (const e of enemies) scene.remove(e.mesh);
   enemies = [];
+  for (const a of allies) scene.remove(a.mesh);
+  allies = [];
+  cmdCd = 0;
   bolts.clear();
   pBolts.clear();
   player.reset();
@@ -379,7 +441,20 @@ const UPGRADES = [
   { n: 'COOLANT FLUSH', d: '+25 max integrity<br>full repair', a: (s) => { s.maxHp += 25; player.hp = s.maxHp; } },
   { n: 'VAMPIRIC NANITES', d: '+2 integrity per kill', a: (s) => { s.lifesteal += 2; } },
   { n: 'REACTIVE PLATING', d: '-15% damage taken', a: (s) => { s.dmgTakenMul *= 0.85; } },
+  {
+    n: 'RONIN BANNER', d: 'recruit 2 ally ronin<br>(E / ⚑ orders a charge)',
+    avail: () => allies.length < ALLY_CAP,
+    a: () => recruitAllies(2),
+  },
 ];
+
+function recruitAllies(n) {
+  for (let i = 0; i < n && allies.length < ALLY_CAP; i++) {
+    const a = (Math.random() - 0.5) * Math.PI;
+    allies.push(new Ally(scene,
+      player.pos.x + Math.sin(a) * 2, player.pos.z + Math.cos(a) * 2));
+  }
+}
 
 const MODS = [
   { n: 'STATIC WAKE', mod: 'wake', d: 'dashing leaves a damaging trail' },
@@ -400,11 +475,16 @@ for (const m of MODS) {
 }
 
 let offered = [];
+let cardArmT = 0;    // brief guard so a combat click doesn't insta-pick a card
 function showUpgrades() {
   state = 'upgrade';
+  cardArmT = performance.now() + 400;
   document.exitPointerLock?.();
   // modifiers only offered while not yet owned; stat upgrades repeat freely
-  const pool = [...UPGRADES, ...MODS.filter((m) => !player.stats.mods[m.mod])];
+  const pool = [
+    ...UPGRADES.filter((u) => !u.avail || u.avail()),
+    ...MODS.filter((m) => !player.stats.mods[m.mod]),
+  ];
   offered = pool.sort(() => Math.random() - 0.5).slice(0, 3);
   for (let i = 0; i < 3; i++) {
     const o = offered[i];
@@ -417,7 +497,7 @@ function showUpgrades() {
 }
 hud.cards.forEach((card, i) => {
   card.addEventListener('click', () => {
-    if (state !== 'upgrade') return;
+    if (state !== 'upgrade' || performance.now() < cardArmT) return;
     offered[i].a(player.stats);
     audio.upgrade();
     hud.upgrade.style.display = 'none';
@@ -471,10 +551,24 @@ hud.chips.forEach((chip, i) => {
   chip.addEventListener('click', () => { input.swapQueued = i; });
 });
 
+// CHARGE button (touch) mirrors the E key
+for (const ev of ['click', 'touchstart']) {
+  hud.cmdbtn.addEventListener(ev, (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    input.commandQueued = true;
+  }, { passive: false });
+}
+
 // ── HUD refresh ───────────────────────────────────────────────────────────────
 function updateHud(dt) {
   hud.hpfill.style.width = `${(player.hp / player.stats.maxHp) * 100}%`;
   hud.dashpips.forEach((pip, i) => pip.classList.toggle('on', player.dashCharges > i));
+  const liveAllies = allies.filter((a) => !a.dead).length;
+  hud.allychip.style.display = allies.length ? 'block' : 'none';
+  hud.allychip.textContent = `⚑ RONIN ×${liveAllies}`;
+  hud.cmdbtn.classList.toggle('has-squad', liveAllies > 0);
+  hud.cmdbtn.style.opacity = liveAllies === 0 ? 0.25 : cmdCd > 0 ? 0.4 : 1;
   hud.room.textContent = room;
   hud.score.textContent = score;
   hud.hi.textContent = hi;
@@ -512,12 +606,41 @@ function frame(now) {
 }
 
 // debug/testing hook
-window.__nr = { player, getEnemies: () => enemies, getScore: () => score, input };
+window.__nr = {
+  player, input,
+  getEnemies: () => enemies, getScore: () => score,
+  getAllies: () => allies, recruitAllies,
+};
 
 function simulate(dt) {
-  const ctx = { input, camYaw, dt, t, combat, effects, audio, bolts, pBolts, enemies, arenaR: ARENA_R, playerPos: player.pos };
+  // enemies pick their nearest target from the player + living allies
+  const targets = [{ pos: player.pos, radius: PLAYER_RADIUS, isPlayer: true, ref: player }];
+  for (const a of allies) {
+    if (!a.dead) targets.push({ pos: a.pos, radius: ALLY_RADIUS, isPlayer: false, ref: a });
+  }
+  const ctx = { input, camYaw, dt, t, combat, effects, audio, bolts, pBolts, enemies, allies, targets, arenaR: ARENA_R, playerPos: player.pos };
 
   player.update(ctx);
+
+  // CHARGE order: squad hunts with a damage/speed boost
+  cmdCd = Math.max(0, cmdCd - dt);
+  if (input.consumeCommand() && cmdCd <= 0 && allies.some((a) => !a.dead)) {
+    cmdCd = 10;
+    for (const a of allies) if (!a.dead) a.charge();
+    effects.ring(player.pos, 3, 0.35, ALLY_ACCENT, true);
+    audio.rally();
+  }
+
+  // squad update + casualty sweep
+  let slot = 0;
+  const liveAllies = allies.filter((a) => !a.dead);
+  for (const a of liveAllies) a.update(ctx, slot++, liveAllies.length);
+  for (const a of allies) {
+    if (a.dead && a.mesh.parent) {
+      effects.shards(a.pos, ALLY_ACCENT, 8);
+      scene.remove(a.mesh);
+    }
+  }
   playerLight.position.set(player.pos.x, player.pos.y + 2.6, player.pos.z);
   playerLight.color.setHex(player.conf.accent);
 
@@ -530,6 +653,7 @@ function simulate(dt) {
       effects.spawnBeam(s, HUES[(room - 1) % HUES.length]);
     }
     if (s.delay <= 0) {
+      if (enemies.length >= LIVE_CAP) { s.delay = 0.4; continue; }   // hold overflow
       enemies.push(new Enemy(scene, s.type, s.x, s.z, 1 + room * 0.08));
       pending.splice(i, 1);
     }
@@ -545,16 +669,26 @@ function simulate(dt) {
     }
   }
 
-  // enemy bolts vs player (jumping clears them)
+  // enemy bolts vs player (jumping clears them) and vs allies
   bolts.update(dt, ARENA_R + 2);
-  if (!player.invincible && player.pos.y < 0.9) {
-    for (let i = bolts.active.length - 1; i >= 0; i--) {
-      const b = bolts.active[i].mesh.position;
+  for (let i = bolts.active.length - 1; i >= 0; i--) {
+    const b = bolts.active[i].mesh.position;
+    if (!player.invincible && player.pos.y < 0.9) {
       const dx = b.x - player.pos.x, dz = b.z - player.pos.z;
       if (dx * dx + dz * dz < (PLAYER_RADIUS + BOLT_R) ** 2) {
         bolts.recycleAt(i);
         combat.hurtPlayer(10, null);
         if (player.dead) break;
+        continue;
+      }
+    }
+    for (const a of allies) {
+      if (a.dead) continue;
+      const dx = b.x - a.pos.x, dz = b.z - a.pos.z;
+      if (dx * dx + dz * dz < (ALLY_RADIUS + BOLT_R) ** 2) {
+        bolts.recycleAt(i);
+        a.hurt(10, null);
+        break;
       }
     }
   }

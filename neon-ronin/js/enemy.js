@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { buildSamurai, poseStance, poseWalk, poseIdle, poseSwing, poseAim, setGlow, setFlash } from './robots.js';
+import { buildSamurai, buildMob, poseStance, poseWalk, poseIdle, poseSwing, poseAim, poseScurry, setGlow, setFlash, setMobFlash } from './robots.js';
 
 export const ENEMY_RADIUS = 0.55;
 
@@ -7,12 +7,14 @@ export const EnemyType = {
   SLASHER: 'slasher',   // crimson katana bot — closes in, telegraphed slash
   GUNNER:  'gunner',    // violet rifle bot — keeps range, strafes, 3-bolt bursts
   BRUTE:   'brute',     // ember cleaver hulk — slow, ground-slam AoE
+  DRONE:   'drone',     // mob-tier swarmer — no telegraph, lunge-bite, dies fast
 };
 
 const CONF = {
   slasher: { hp: 60,  speed: 3.4, score: 100, accent: 0xff3040, body: 0x2a2026, weapon: 'katana',  scale: 1 },
   gunner:  { hp: 40,  speed: 2.6, score: 150, accent: 0xb04dff, body: 0x241f30, weapon: 'rifle',   scale: 0.95 },
   brute:   { hp: 230, speed: 1.5, score: 400, accent: 0xff7300, body: 0x30241c, weapon: 'cleaver', scale: 1.55 },
+  drone:   { hp: 15,  speed: 4.3, score: 25,  accent: 0xff5560, scale: 1, mob: true },
 };
 
 const _v = new THREE.Vector3();
@@ -69,7 +71,9 @@ export class BoltPool {
 }
 
 // ── Enemy ─────────────────────────────────────────────────────────────────────
-// ctx per frame: { playerPos, dt, t, combat, effects, audio, bolts, enemies, arenaR }
+// ctx per frame: { targets, playerPos, dt, t, combat, effects, audio, bolts,
+// enemies, arenaR } — targets is [{ pos, radius, isPlayer, ref }] (player +
+// live allies); every enemy picks its nearest target each frame.
 export class Enemy {
   constructor(scene, type, x, z, diff = 1) {
     this.type = type;
@@ -79,8 +83,8 @@ export class Enemy {
     this.maxHp = this.hp;
     this.speed = c.speed * (0.9 + 0.1 * diff);
     this.score = c.score;
-    this.radius = ENEMY_RADIUS * c.scale;
-    this.rig = buildSamurai(c);
+    this.radius = c.mob ? 0.35 : ENEMY_RADIUS * c.scale;
+    this.rig = c.mob ? buildMob(c) : buildSamurai(c);
     this.mesh = this.rig.group;
     this.mesh.position.set(x, 0, z);
     scene.add(this.mesh);
@@ -93,6 +97,8 @@ export class Enemy {
     this.strafeDir = Math.random() < 0.5 ? -1 : 1;
     this.strafeT = 1 + Math.random() * 2;
     this.shootT = 1 + Math.random() * 1.5;
+    this.biteT = Math.random() * 0.5;
+    this.biteAnim = 0;
     this.struck = false;
     this.dead = false;
   }
@@ -103,7 +109,7 @@ export class Enemy {
     if (this.dead) return false;
     this.hp -= dmg;
     this.flashT = 0.1;
-    setFlash(this.rig, true);
+    this.rig.mob ? setMobFlash(this.rig, true) : setFlash(this.rig, true);
     _v.subVectors(this.pos, fromPos).setY(0).normalize();
     this.knock.addScaledVector(_v, this.type === 'brute' ? 1.5 : 4);
     if (this.hp <= 0) { this.dead = true; return true; }
@@ -118,25 +124,37 @@ export class Enemy {
     this.mesh.rotation.y += d * Math.min(1, rate * dt);
   }
 
+  _pickTarget(ctx) {
+    let best = ctx.targets[0], bestD = Infinity;
+    for (const t of ctx.targets) {
+      const d = Math.hypot(t.pos.x - this.pos.x, t.pos.z - this.pos.z);
+      if (d < bestD) { bestD = d; best = t; }
+    }
+    this.targetDist = bestD;
+    return best;
+  }
+
   update(ctx) {
-    const { dt, playerPos } = ctx;
+    const { dt } = ctx;
     this.stateT += dt;
 
     if (this.flashT > 0) {
       this.flashT -= dt;
-      if (this.flashT <= 0) setFlash(this.rig, false);
+      if (this.flashT <= 0) this.rig.mob ? setMobFlash(this.rig, false) : setFlash(this.rig, false);
     }
 
     // knockback decay
     this.pos.addScaledVector(this.knock, dt);
     this.knock.multiplyScalar(Math.max(0, 1 - 9 * dt));
 
-    const dist = Math.hypot(playerPos.x - this.pos.x, playerPos.z - this.pos.z);
-    poseStance(this.rig);
+    const target = this._pickTarget(ctx);
+    const dist = this.targetDist;
+    if (!this.rig.mob) poseStance(this.rig);
 
-    if (this.type === EnemyType.SLASHER) this._slasher(ctx, dist);
-    else if (this.type === EnemyType.GUNNER) this._gunner(ctx, dist);
-    else this._brute(ctx, dist);
+    if (this.type === EnemyType.SLASHER) this._slasher(ctx, dist, target);
+    else if (this.type === EnemyType.GUNNER) this._gunner(ctx, dist, target);
+    else if (this.type === EnemyType.BRUTE) this._brute(ctx, dist, target);
+    else this._drone(ctx, dist, target);
 
     // separation from other enemies
     for (const e of ctx.enemies) {
@@ -162,16 +180,17 @@ export class Enemy {
     poseWalk(this.rig, this.walkPhase, 0.5);
   }
 
-  _slasher(ctx, dist) {
-    const { playerPos, dt } = ctx;
+  _slasher(ctx, dist, target) {
+    const { dt } = ctx;
+    const tp = target.pos;
     if (this.state === 'seek') {
-      this._faceTowards(playerPos, dt);
+      this._faceTowards(tp, dt);
       if (dist > 2.1) {
-        _v.subVectors(playerPos, this.pos).setY(0).normalize();
+        _v.subVectors(tp, this.pos).setY(0).normalize();
         this._move(ctx, _v.x, _v.z);
       } else { this.state = 'windup'; this.stateT = 0; }
     } else if (this.state === 'windup') {
-      this._faceTowards(playerPos, dt, 4);
+      this._faceTowards(tp, dt, 4);
       setGlow(this.rig, 1 + this.stateT * 4);
       poseSwing(this.rig, (this.stateT / 0.55) * 0.4);
       if (this.stateT >= 0.55) { this.state = 'strike'; this.stateT = 0; this.struck = false; ctx.audio.slash(); }
@@ -184,11 +203,11 @@ export class Enemy {
         const yaw = this.mesh.rotation.y;
         ctx.effects.slashArc(this.pos, yaw, 2.6, 110, this.conf.accent);
         if (dist < 2.6) {
-          const ang = Math.atan2(playerPos.x - this.pos.x, playerPos.z - this.pos.z);
+          const ang = Math.atan2(tp.x - this.pos.x, tp.z - this.pos.z);
           let d = ang - yaw;
           while (d > Math.PI) d -= Math.PI * 2;
           while (d < -Math.PI) d += Math.PI * 2;
-          if (Math.abs(d) < (110 / 2) * (Math.PI / 180)) ctx.combat.hurtPlayer(12, this.pos);
+          if (Math.abs(d) < (110 / 2) * (Math.PI / 180)) ctx.combat.hurtTarget(target, 12, this.pos);
         }
       }
       if (this.stateT >= 0.18) { this.state = 'recover'; this.stateT = 0; }
@@ -198,14 +217,36 @@ export class Enemy {
     }
   }
 
-  _gunner(ctx, dist) {
-    const { playerPos, dt } = ctx;
-    this._faceTowards(playerPos, dt);
+  _drone(ctx, dist, target) {
+    const { dt } = ctx;
+    const tp = target.pos;
+    this.biteT -= dt;
+    this.biteAnim = Math.max(0, this.biteAnim - dt * 4);
+    this._faceTowards(tp, dt, 8);
+    if (dist > 0.75 + target.radius) {
+      _v.subVectors(tp, this.pos).setY(0).normalize();
+      const sp = this.speed;
+      this.pos.x += _v.x * sp * dt;
+      this.pos.z += _v.z * sp * dt;
+      this.walkPhase += dt * sp * 3.4;
+    }
+    if (dist < 1 + target.radius && this.biteT <= 0) {
+      this.biteT = 0.9;
+      this.biteAnim = 1;
+      ctx.combat.hurtTarget(target, 6, this.pos, 2);
+    }
+    poseScurry(this.rig, this.walkPhase, this.biteAnim);
+  }
+
+  _gunner(ctx, dist, target) {
+    const { dt } = ctx;
+    const tp = target.pos;
+    this._faceTowards(tp, dt);
     this.strafeT -= dt;
     if (this.strafeT <= 0) { this.strafeDir *= -1; this.strafeT = 1.5 + Math.random() * 2.5; }
 
     if (this.state === 'seek') {
-      _v.subVectors(playerPos, this.pos).setY(0).normalize();
+      _v.subVectors(tp, this.pos).setY(0).normalize();
       // hold a ~9u ring, strafing sideways
       const radial = dist > 11 ? 1 : dist < 7 ? -1 : 0;
       const sx = -_v.z * this.strafeDir, sz = _v.x * this.strafeDir;
@@ -224,7 +265,7 @@ export class Enemy {
       if (this.burst > 0 && this.burstT <= 0) {
         this.burst--;
         this.burstT = 0.13;
-        _v.subVectors(playerPos, this.pos).setY(0).normalize();
+        _v.subVectors(tp, this.pos).setY(0).normalize();
         const a = (Math.random() - 0.5) * 0.14;
         const dx = _v.x * Math.cos(a) - _v.z * Math.sin(a);
         const dz = _v.x * Math.sin(a) + _v.z * Math.cos(a);
@@ -239,12 +280,13 @@ export class Enemy {
     }
   }
 
-  _brute(ctx, dist) {
-    const { playerPos, dt } = ctx;
+  _brute(ctx, dist, target) {
+    const { dt } = ctx;
+    const tp = target.pos;
     if (this.state === 'seek') {
-      this._faceTowards(playerPos, dt, 5);
+      this._faceTowards(tp, dt, 5);
       if (dist > 2.9) {
-        _v.subVectors(playerPos, this.pos).setY(0).normalize();
+        _v.subVectors(tp, this.pos).setY(0).normalize();
         this._move(ctx, _v.x, _v.z);
       } else {
         this.state = 'windup'; this.stateT = 0;
@@ -265,7 +307,11 @@ export class Enemy {
         ctx.effects.ring(this.pos, 3.7, 0.35, 0xffffff, true);
         ctx.effects.sparks({ x: this.pos.x, y: 0.3, z: this.pos.z }, this.conf.accent, 12, 6);
         ctx.combat.shake(0.35);
-        if (dist < 3.7) ctx.combat.hurtPlayer(25, this.pos, 9);
+        // the slam is an AoE: every target in the ring takes it
+        for (const t of ctx.targets) {
+          const d = Math.hypot(t.pos.x - this.pos.x, t.pos.z - this.pos.z);
+          if (d < 3.7) ctx.combat.hurtTarget(t, 25, this.pos, 9);
+        }
       }
       if (this.stateT >= 0.16) { this.state = 'recover'; this.stateT = 0; }
     } else if (this.state === 'recover') {

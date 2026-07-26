@@ -1,4 +1,34 @@
-# Neon Ronin — HD Model & Physical Animation Roadmap
+# Neon Ronin — Roadmap
+
+## Direction: Morbid Metal × Tears of Metal
+
+The design target is Morbid Metal's character-swap arena combat blended with Tears of
+Metal's horde-scale battles and commandable battalion. Co-op is deliberately out of
+scope — squad allies deliver that fantasy single-player.
+
+- **M1 — Hordes + squad allies — DONE.** Mob-tier DRONE swarmers on a cheap shared-material
+  rig arriving in flood packs (live cap 70); recruitable ally ronin (RONIN BANNER card,
+  cap 6) with ring formation, auto-engage, per-room revive, and the CHARGE order
+  (`E` / ⚑ button). Enemy AI generalized to target the player *or* any ally.
+- **M2 — Combat verbs.** Heavy attack (hold / RMB), parry (timed block window that
+  deflects melee and reflects bolts, replacing the passive slash-deflect), and per-frame
+  ultimates on a kill-charged meter: KIRI dash-through iaijutsu line, GORO ground quake,
+  SAYA shadow-clone flurry. Touch: parry button beside CHARGE; ultimates fire from the
+  form chips once charged.
+- **M3 — Run structure + meta.** Per-room objective variants (KILL ALL / SURVIVE /
+  DESTROY 3 pylons / PROTECT the shrine bot) paying bonus "salvage"; salvage persists in
+  `localStorage` and buys permanent upgrades in a between-run FORGE screen (+max
+  integrity, +ally cap, a starting modifier slot, a 4th unlockable frame).
+- **M4 — Bosses + elites.** Every 4th room becomes a boss arena (SHOGUN PRIME — scaled
+  fancy rig that phase-swaps its own stance and weapon mid-fight, telegraphed sweeps plus
+  bolt novas); elite variants of existing enemies carrying one aura modifier each
+  (shielded / frenzied / splitting).
+- **M5 — Presentation juice.** Hit-stop on heavy hits, blade trail ribbons, dash smear,
+  kill-streak-driven WebAudio music layering. Merges with Phase 3/4 below.
+
+---
+
+# HD Model & Physical Animation Roadmap
 
 Goal: evolve the player (first) and enemies (later) from box-primitive rigs with
 stateless posing into a **much higher-fidelity model with physically-grounded

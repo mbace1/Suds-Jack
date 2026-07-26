@@ -21,6 +21,14 @@ export class Effects {
   }
 
   _push(fx) {
+    // soft cap: in horde rooms, drop new transients rather than drown the GPU
+    if (this.live.length > 80) {
+      for (const m of fx.meshes) {
+        if (fx.ownGeo) m.geometry?.dispose();
+        m.material?.dispose();
+      }
+      return;
+    }
     for (const m of fx.meshes) this.scene.add(m);
     this.live.push(fx);
   }

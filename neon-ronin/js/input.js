@@ -23,6 +23,7 @@ export class InputManager {
     this.attackQueued = false;
     this.dashQueued = null;    // true (keyboard) or {x, y} flick vector (touch)
     this.jumpQueued = false;
+    this.commandQueued = false;   // CHARGE order for the ally squad
     this.swapQueued = -1;      // -1 none, 0..2 form index, 3 = cycle
     this.mode = 'melee';       // 'melee' | 'ranged' (touch auto-combat style)
     this.touch = false;        // flips true on first touch and stays on
@@ -37,6 +38,7 @@ export class InputManager {
       if (e.code === 'Digit2') this.swapQueued = 1;
       if (e.code === 'Digit3') this.swapQueued = 2;
       if (e.code === 'KeyQ') this.swapQueued = 3;
+      if (e.code === 'KeyE') this.commandQueued = true;
       if (e.code === 'Space') e.preventDefault();
     });
     addEventListener('keyup', (e) => this.keys.delete(e.code));
@@ -188,8 +190,9 @@ export class InputManager {
     return d;
   }
 
-  consumeAttack() { const q = this.attackQueued; this.attackQueued = false; return q; }
-  consumeDash()   { const q = this.dashQueued;   this.dashQueued = null;    return q; }
-  consumeJump()   { const q = this.jumpQueued;   this.jumpQueued = false;   return q; }
-  consumeSwap()   { const q = this.swapQueued;   this.swapQueued = -1;      return q; }
+  consumeAttack()  { const q = this.attackQueued;  this.attackQueued = false;  return q; }
+  consumeDash()    { const q = this.dashQueued;    this.dashQueued = null;     return q; }
+  consumeJump()    { const q = this.jumpQueued;    this.jumpQueued = false;    return q; }
+  consumeSwap()    { const q = this.swapQueued;    this.swapQueued = -1;       return q; }
+  consumeCommand() { const q = this.commandQueued; this.commandQueued = false; return q; }
 }
