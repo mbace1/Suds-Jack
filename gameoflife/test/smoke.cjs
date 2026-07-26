@@ -376,6 +376,58 @@ function check(name, cond) {
     (await page.locator('.exp-text').textContent()).includes('seven hundred years'));
   await page.locator('.back-btn').click();
 
+  // seed: four mornings pass on the clock and nothing the player does (or fails
+  // to do) can stall them — watering is optional, and the reveal must arrive on
+  // its own. This is the dead-end guard: the first version could only finish if
+  // you happened to press "water", and otherwise waited forever.
+  await page.evaluate(() => __gol.debug.start('seed'));
+  check('seed intro shown', (await page.locator('.exp-text').textContent()).includes('hurry'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Plant the seed' }).click();
+  await page.locator('.exp-buttons .btn', { hasText: 'Let the days pass' }).click();
+  check('seed first morning shows bare soil', (await page.locator('.exp-text').textContent()).includes('First morning'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Give it water' }).click();
+  check('seed drinks a mouthful and no more', (await page.locator('.exp-text').textContent()).includes('one mouthful'));
+  check('the water is offered only once', await page.locator('.exp-buttons .btn').count() === 0);
+  // from here the player has nothing left to press — the days must arrive anyway
+  await page.waitForFunction(
+    () => document.querySelector('.exp-text').textContent.includes('hand-span of root'),
+    null, { timeout: 30000 });
+  check('the days pass without input, and the soil is cut away', true);
+  await page.locator('.exp-buttons .btn', { hasText: 'Continue' }).click();
+  check('seed sends the player out to plant something', await page.locator('.nature-note').count() === 1);
+  await page.locator('.back-btn').click();
+
+  // the hub can only offer what has its strings: a registered experience with a
+  // missing catalogue entry renders its key ('sd.s1') at the player instead of a
+  // sentence, and nothing at runtime complains. (test/check_strings.mjs is the
+  // static half of this gate; this is the one that actually looks at the screen.)
+  const ids = await page.evaluate(() => __gol.debug.ids());
+  check('every experience is registered with a kind', ids.length > 20 && ids.every(e => ['story', 'game', 'wisdom'].includes(e.kind)));
+  const nameGaps = await page.evaluate(() => {
+    const out = [];
+    for (const l of ['fi', 'en', 'ja']) {
+      __gol.debug.setLang(l);
+      for (const { id } of __gol.debug.ids()) {
+        for (const k of [`exp.${id}.name`, `exp.${id}.desc`]) if (__gol.debug.t(k) === k) out.push(`${l}:${k}`);
+      }
+    }
+    __gol.debug.setLang('en');
+    return out;
+  });
+  check(`every offering is named in all three languages${nameGaps.length ? ` (${nameGaps.slice(0, 6)})` : ''}`, nameGaps.length === 0);
+
+  // (a button is not required to open: seam and hedge start on a canvas tap)
+  const keyLike = /^[a-z]{2,4}\.[a-z0-9.]+$/;
+  const mute = [];
+  for (const { id } of ids) {
+    await page.evaluate(i => __gol.debug.start(i), id);
+    await page.waitForTimeout(50);
+    const said = (await page.locator('.exp-text').textContent()).trim();
+    if (said.length < 12 || keyLike.test(said)) mute.push(`${id}("${said.slice(0, 16)}")`);
+  }
+  check(`every experience opens with words, not a string key${mute.length ? ` — ${mute}` : ''}`, mute.length === 0);
+  await page.evaluate(() => __gol.debug.showHub());
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');

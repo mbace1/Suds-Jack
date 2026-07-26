@@ -18,6 +18,13 @@ export function t(key) {
   return v ?? key;
 }
 
+// The catalogue, for the testing loop only (test/check_strings.mjs imports this
+// file directly — it has no dependencies, so plain node can read it). A missing
+// key is invisible at runtime: t() quietly returns the key itself and the
+// player is shown 'sd.s1' instead of a sentence. So it is checked instead.
+export function keysOf(l) { return Object.keys(STR[l] ?? {}); }
+export function has(l, key) { return STR[l]?.[key] !== undefined; }
+
 const STR = {
 
   // ──────────────────────────────────────────────── English
@@ -133,6 +140,23 @@ const STR = {
     'li.wisdom': 'Left alone, it covered the stone. Lichen is a fungus and an alga that gave up competing, an age ago, and chose to live as one thing. Growth is not force. It is the patience to let things combine.',
     'li.outro': 'The best things grow while you are looking away.',
     'li.nature': 'Find lichen or moss on a stone or a tree. Press one hand flat against it for thirty seconds. Do not pick it. Just let it be older than you.',
+
+    'exp.seed.name': 'The Seed',
+    'exp.seed.desc': 'Four days of bare soil, and the growing you were never allowed to watch.',
+    'sd.s1': 'A seed the size of a lentil, a bed of soil, and no way at all to hurry either of them. There is nothing clever to do here. Plant it, then let four days and nights go past.',
+    'sd.plant': 'Plant the seed',
+    'sd.planted': 'Buried a thumb deep, in the dark, on its own. From here the seed does the work and you do the waiting — and the waiting is the harder of the two.',
+    'sd.wait': 'Let the days pass',
+    'sd.day1': 'First morning. Bare soil. Exactly as you left it.',
+    'sd.day2': 'Second morning. Bare soil. A beetle has crossed it, which is the only news.',
+    'sd.day3': 'Third morning. Bare soil. It would be quite reasonable, now, to decide that nothing is happening.',
+    'sd.day4': 'Fourth morning — a thread of green, no taller than a fingernail. That is what four days bought you.',
+    'sd.water': 'Give it water',
+    'sd.watered': 'It takes one mouthful and lets the rest drain away. A seed cannot be hurried by generosity.',
+    'sd.cut': 'Now cut the soil away, and see what those four days were actually for.',
+    'sd.wisdom': 'A fingernail of stem, and a hand-span of root — running past the edge of the picture, out of the light, into ground you never saw. Every morning when nothing was happening, this was what was happening.',
+    'sd.outro': 'Nothing that grows will show you its work.',
+    'sd.nature': 'Plant one real thing this week — a bean in a jar of earth, an acorn in a pot on the windowsill, a handful of seeds in a corner of ground. Then leave it alone for seven days. The waiting is not the part before the growing. It is the growing.',
 
     'exp.plate.name': 'The Silver Plate',
     'exp.plate.desc': 'Paris, 1838 — the busiest street in the world records as empty, except for one still man.',
@@ -499,6 +523,23 @@ const STR = {
     'li.outro': 'Parhaat asiat kasvavat silloin kun katsot muualle.',
     'li.nature': 'Etsi jäkälää tai sammalta kiveltä tai puulta. Paina toinen kämmen sitä vasten kolmenkymmenen sekunnin ajan. Älä poimi sitä. Anna sen vain olla sinua vanhempi.',
 
+    'exp.seed.name': 'Siemen',
+    'exp.seed.desc': 'Neljä päivää paljasta multaa — ja kasvu, jota sinun ei annettu katsoa.',
+    'sd.s1': 'Linssin kokoinen siemen, multapenkki, eikä mitään keinoa hoputtaa kumpaakaan. Täällä ei ole mitään nokkelaa tehtävää. Kylvä se, ja anna neljän päivän ja yön kulua.',
+    'sd.plant': 'Kylvä siemen',
+    'sd.planted': 'Peukalon syvyydessä, pimeässä, omillaan. Tästä eteenpäin siemen tekee työn ja sinä odotat — ja odottaminen on näistä kahdesta vaikeampi.',
+    'sd.wait': 'Anna päivien kulua',
+    'sd.day1': 'Ensimmäinen aamu. Paljasta multaa. Täsmälleen niin kuin jätit sen.',
+    'sd.day2': 'Toinen aamu. Paljasta multaa. Kuoriainen on kävellyt sen yli; se on päivän ainoa uutinen.',
+    'sd.day3': 'Kolmas aamu. Paljasta multaa. Nyt olisi aivan järkevää päätellä, ettei mitään tapahdu.',
+    'sd.day4': 'Neljäs aamu — vihreä lanka, kynnenpään korkuinen. Sen neljä päivää sinulle ostivat.',
+    'sd.water': 'Kastele se',
+    'sd.watered': 'Se ottaa yhden kulauksen ja antaa lopun valua maahan. Siementä ei voi hoputtaa anteliaisuudella.',
+    'sd.cut': 'Leikkaa nyt multa auki ja katso, mihin ne neljä päivää oikeasti menivät.',
+    'sd.wisdom': 'Kynnenpään verran vartta, kämmenen mitta juurta — kuvan reunan ohi, pois valosta, maahan jota et nähnyt. Kaikkina niinä aamuina, joina ei tapahtunut mitään, juuri tämä tapahtui.',
+    'sd.outro': 'Mikään kasvava ei näytä sinulle työtään.',
+    'sd.nature': 'Kylvä tällä viikolla yksi oikea asia — papu lasipurkilliseen multaa, tammenterho ruukkuun ikkunalaudalle, kourallinen siemeniä maan nurkkaan. Jätä se sitten rauhaan seitsemäksi päiväksi. Odotus ei ole kasvamista edeltävä osa. Se on se kasvaminen.',
+
     'exp.plate.name': 'Hopealevy',
     'exp.plate.desc': 'Pariisi 1838 — maailman vilkkain katu tallentuu tyhjänä, paitsi yksi liikkumaton mies.',
 
@@ -863,6 +904,23 @@ const STR = {
     'li.wisdom': 'そっとしておくと、石を覆った。地衣は、はるか昔に競い合うのをやめ、ひとつとして生きることを選んだ菌と藻だ。成長とは力ずくではない。ものが結びつくのを待つ辛抱だ。',
     'li.outro': 'いちばんよいものは、あなたがよそを見ているあいだに育つ。',
     'li.nature': '石や木の上の地衣か苔を見つけよう。片手を三十秒、そっと押し当ててみて。摘み取らないこと。ただ、自分より年上のものとして、そのままにしておこう。',
+
+    'exp.seed.name': '種',
+    'exp.seed.desc': '四日間のむき出しの土と、見せてもらえなかった成長。',
+    'sd.s1': 'レンズ豆ほどの種と、土の床。どちらも急がせる方法はない。ここに気の利いた操作はない。蒔いて、四日と四夜が過ぎるのにまかせよう。',
+    'sd.plant': '種を蒔く',
+    'sd.planted': '親指ひとつぶんの深さ、暗がりの中、ひとりきり。ここから先は種が働き、あなたは待つ — そして待つほうが難しい。',
+    'sd.wait': '日が過ぎるのにまかせる',
+    'sd.day1': '一日目の朝。むき出しの土。置いたときのまま。',
+    'sd.day2': '二日目の朝。むき出しの土。甲虫が横切った跡だけが、その日の便り。',
+    'sd.day3': '三日目の朝。むき出しの土。何も起きていない、と結論しても無理はない。',
+    'sd.day4': '四日目の朝 — 爪の先ほどの、緑の糸が一本。四日かけて買えたのは、それだけ。',
+    'sd.water': '水をやる',
+    'sd.watered': 'ひと口だけ飲んで、あとは流れるにまかせる。種は気前のよさでは急がない。',
+    'sd.cut': '土を切り開いて、その四日がほんとうは何に使われていたのか見てみよう。',
+    'sd.wisdom': '爪の先ほどの茎に対して、手のひらの長さの根 — 絵の外へ、光の届かないところへ、あなたの見なかった土の中へ。何も起きていなかったあの朝ごとに、起きていたのはこれだった。',
+    'sd.outro': '育つものは、その仕事を見せてはくれない。',
+    'sd.nature': '今週、ほんものをひとつ蒔いてみよう — 土を入れた瓶に豆をひとつ、窓辺の鉢にどんぐりをひとつ、地面の隅に種をひとつかみ。そして七日間、そっとしておこう。待つことは、育つ前の時間ではない。それが、育つということ。',
 
     'exp.plate.name': '銀の板',
     'exp.plate.desc': 'パリ、1838年 — 世界一にぎやかな通りが空っぽに写り、動かないひとりの男だけが残った。',
