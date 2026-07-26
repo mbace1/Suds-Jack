@@ -18,8 +18,17 @@ not the terminal's. Every marquee is seen **through the same curved glass**: `th
 in `art.js` bakes barrel distortion + one scanline per source row + a corner vignette into
 a 256×144 remap **once at load** (a marquee never moves, so nine cabinets cost nine passes
 total — no WebGL, no per-frame cost, unlike the live version in `gameoflife/js/crt.js`). Adding a game is **two edits**: an entry in `hub/games.js`
-(title, tagline, lineage, tags, controls, `path`, `accent`, `art`, `inRepo`) and a draw
-function in `hub/art.js`; `hub/hub.js` knows about no game in particular.
+(title, tagline, lineage, tags, controls, `path`, `accent`, `art`, `inRepo`, `status`) and
+a draw function in `hub/art.js`; `hub/hub.js` knows about no game in particular.
+**`status`** splits the page in two: `active` gets the top of the page, `archived` sits
+under its own heading with dimmed marquees — still listed, still playable, not competing
+with the live work. One word moves a game between them. The default split was drawn on
+last-commit dates (July = active; the June ones — Suds Jack, Paper Route, 20/20 and the
+goo sketches — archived).
+The short URL **`/AnotherHUB`** (`AnotherHUB/index.html`) is the same page one level down
+with a `<base href="../">` so every relative link still resolves against the site root;
+the smoke test asserts the two files are byte-identical apart from that tag, because two
+copies of a page drift.
 `hub/feedback.js` reuses the transport the games already ship (`scripts/feedback-sheet.gs`
 on `gh-pages`): a `SHEET_ENDPOINT` Apps Script if pasted in — unlimited, but `no-cors`, so
 its answer cannot be read and that path reports **`sent-blind`**, never `sent` — otherwise

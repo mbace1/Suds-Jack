@@ -1,5 +1,9 @@
 // The arcade catalogue — one entry per playable thing on the site.
 //
+// `status` 'active' (being worked on) or 'archived' (finished or set down —
+//          still playable, listed further down, and not competing for
+//          attention with the live work). One word to move a game between
+//          the two; nothing else changes.
 // `path`   what Play opens, relative to the hub page.
 // `inRepo` true when the folder lives on this branch too. The site (gh-pages)
 //          is a curated root that carries a few games `main` does not, so the
@@ -13,6 +17,7 @@
 export const GAMES = [
   {
     id: 'sudsjack',
+    status: 'archived',
     title: 'Suds Jack',
     tagline: 'A vector tube shooter down a neon well — the namesake.',
     lineage: 'Tempest 2000 × Bomb Jack',
@@ -25,6 +30,7 @@ export const GAMES = [
   },
   {
     id: 'tokodrop',
+    status: 'active',
     title: 'Toko Drop',
     tagline: 'Twin-stick swarm survival. The gels dodge your lanes, school like fish, and burst into revenge rings.',
     lineage: 'bullet-hell / arena',
@@ -37,6 +43,7 @@ export const GAMES = [
   },
   {
     id: 'hyperdagger',
+    status: 'active',
     title: 'Hyper Dagger',
     tagline: 'Survive a swarm of voxel skulls on a disc in the void. Survival time is the only score.',
     lineage: 'Devil Daggers × HYPERDEMON',
@@ -49,6 +56,7 @@ export const GAMES = [
   },
   {
     id: 'dropcabal',
+    status: 'active',
     title: 'Drop Cabal',
     tagline: 'A gallery shooter with layered depth — near gels eat the shots you aimed at far ones.',
     lineage: 'Cabal (1988)',
@@ -61,6 +69,7 @@ export const GAMES = [
   },
   {
     id: 'paperboy',
+    status: 'archived',
     title: 'Paper Route — Dawn Run',
     tagline: 'Deliver to the subscribers, smash the windows of everyone else, survive three crashes.',
     lineage: 'Paperboy (1985)',
@@ -73,6 +82,7 @@ export const GAMES = [
   },
   {
     id: 'skltr',
+    status: 'active',
     title: 'SKLTR',
     tagline: 'A neon survival roguelike — hold out, level up, and see how far the run goes.',
     lineage: 'Risk of Rain lineage',
@@ -85,6 +95,7 @@ export const GAMES = [
   },
   {
     id: 'neonronin',
+    status: 'active',
     title: 'Neon Ronin',
     tagline: 'Chain sword combos through a neon skyline. The fighting is automatic; the movement is yours.',
     lineage: 'character action',
@@ -97,6 +108,7 @@ export const GAMES = [
   },
   {
     id: 'gameoflife',
+    status: 'active',
     title: 'The Game of Life',
     tagline: 'Small stories and games that always hand you back to the outdoors. Finnish, English, Japanese.',
     lineage: 'a quiet one',
@@ -109,6 +121,7 @@ export const GAMES = [
   },
   {
     id: 'eyetest',
+    status: 'archived',
     title: '20/20',
     tagline: 'An eyesight test that keeps score. Endless rounds, streak scoring, three lives.',
     lineage: 'optometry, arcade-fied',

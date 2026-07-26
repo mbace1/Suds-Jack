@@ -213,11 +213,24 @@ function accentRow() {
 }
 
 // ── build the page ─────────────────────────────────────────────────
+// Two floors. The active one is what is being worked on right now and gets
+// the top of the page to itself; everything finished or set down is still
+// here, still playable, one section further down. A game moves between them
+// by one word in games.js.
+const active = GAMES.filter(g => g.status !== 'archived');
+const archived = GAMES.filter(g => g.status === 'archived');
+
 const rack = document.getElementById('cabinets');
-for (const g of GAMES) rack.appendChild(cabinet(g));
+for (const g of active) rack.appendChild(cabinet(g));
+
+const oldRack = document.getElementById('archived');
+for (const g of archived) oldRack.appendChild(cabinet(g));
 
 const shelfList = document.getElementById('sketches');
 for (const s of SKETCHES) shelfList.appendChild(shelf(s));
+
+// the archive is only worth a heading if there is something in it
+if (!archived.length) document.getElementById('archive-block').hidden = true;
 
 document.getElementById('status').prepend(accentRow());
 useAccent(readAccent());
@@ -229,6 +242,6 @@ feedback.flush();
 
 // console handle, same convention as the games
 window.__hub = {
-  games: GAMES, sketches: SKETCHES, feedback,
+  games: GAMES, active, archived, sketches: SKETCHES, feedback,
   debug: { open: openFeedback, accent: readAccent, setAccent: useAccent },
 };

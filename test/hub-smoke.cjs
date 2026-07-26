@@ -75,10 +75,25 @@ function check(name, cond) {
   await page.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
 
   // ── the floor ──
-  const games = await page.evaluate(() => __hub.games);
+  const catalogue = await page.evaluate(() => __hub.games);
+  const active = await page.evaluate(() => __hub.active);
+  const archived = await page.evaluate(() => __hub.archived);
   const sketches = await page.evaluate(() => __hub.sketches);
+  // the page renders the live floor first, then the archive — so that, not the
+  // catalogue order, is the order the cabinets appear in
+  const games = [...active, ...archived];
   check('the catalogue is not empty', games.length >= 8);
+  check('every entry declares a status',
+    catalogue.every(g => ['active', 'archived'].includes(g.status)));
+  check('active and archived account for the whole catalogue', games.length === catalogue.length);
   check('one cabinet per game', await page.locator('.cab').count() === games.length);
+  check('the live floor holds only what is being worked on',
+    await page.locator('#cabinets .cab').count() === active.length && active.length > 0);
+  check('the archive holds the rest', await page.locator('#archived .cab').count() === archived.length);
+  check('the archive is still playable, not hidden',
+    await page.locator('#archived .btn.play').count() === archived.length);
+  check('the archive names itself',
+    (await page.locator('#archive-block .count').textContent()).toLowerCase().includes('archived'));
   check('every cabinet offers Play', await page.locator('.cab .btn.play').count() === games.length);
   check('every cabinet offers Feedback', await page.locator('.cab .btn.ghost').count() === games.length);
   check('the sketch shelf is there too', await page.locator('.shelf .sketch-link').count() === sketches.length);
@@ -218,6 +233,30 @@ function check(name, cond) {
   await page.waitForTimeout(120);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   check(`nothing overflows a phone (${overflow}px)`, overflow <= 0);
+
+  // ── the short URL ──
+  // AnotherHUB/ is the same page one level down, kept identical apart from a
+  // <base> so its relative links still resolve against the site root. Two
+  // copies of a page drift; this fails loudly the moment they do.
+  const rootHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const shortHtml = fs.readFileSync(path.join(ROOT, 'AnotherHUB', 'index.html'), 'utf8');
+  check('the short URL carries a <base> to the site root', /<base href="\.\.\/"/.test(shortHtml));
+  check('and is otherwise the same page (no drift)',
+    shortHtml.replace(/ {2}<!-- the short URL[\s\S]*?<base href="\.\.\/" \/>\n/, '') === rootHtml);
+
+  await page.goto(`${base}/AnotherHUB/`, { waitUntil: 'networkidle' });
+  check('the short URL renders the same floor',
+    await page.locator('#cabinets .cab').count() === active.length);
+  const shortHrefs = await page.locator('.cab .btn.play').evaluateAll(ns => ns.map(n => n.href));
+  check('and its Play links point back up at the games, not into itself',
+    shortHrefs.every(h => !h.includes('/AnotherHUB/')));
+  const deadShort = [];
+  for (const g of local) {
+    const r = await page.request.get(shortHrefs.find(h => h.endsWith(g.path)) ?? `${base}/${g.path}`);
+    if (!r.ok()) deadShort.push(g.id);
+  }
+  check(`every link resolves from the short URL too${deadShort.length ? ` — ${deadShort}` : ''}`,
+    deadShort.length === 0);
 
   check(`zero console/page errors overall${errors.length ? ` — ${errors[0]}` : ''}`, errors.length === 0);
 

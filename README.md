@@ -20,7 +20,13 @@ carets, `[ PLAY ]` brackets, and a status line with a three-colour screen
 accent that tints the chrome while each cabinet keeps its own colour.
 
 Adding a game is **two edits**: an entry in `hub/games.js` and a draw function
-in `hub/art.js`. Nothing else in the hub knows any game exists.
+in `hub/art.js`. Nothing else in the hub knows any game exists. Each entry
+carries a **`status`** — `active` games get the top of the page, `archived`
+ones sit under their own heading, dimmed but still playable. One word moves a
+game between the two.
+
+Also served at the short URL **https://mbace1.github.io/Suds-Jack/AnotherHUB**
+— the same page with a `<base>` pointing at the site root.
 
 **Feedback** (`hub/feedback.js`) is the same panel everywhere — 1–5 diamonds
 plus optional words, tagged with which cabinet it came from. It reuses the
