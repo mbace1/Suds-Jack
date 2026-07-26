@@ -1,14 +1,15 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=165';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=165';
-import { Player, PLAYER_RADIUS } from './player.js?v=165';
+import { InputManager } from './input.js?v=166';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=166';
+import { Player, PLAYER_RADIUS } from './player.js?v=166';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS } from './enemy.js?v=165';
-import { RetroPass } from './retro.js?v=165';
-import { audio } from './audio.js?v=165';
-import { initDesigner } from './designer.js?v=165';
-import { t, getLang, setLang, langs } from './lang.js?v=165';
-import { TUNING } from './tuning.js?v=165';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=166';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=166';
+import { audio } from './audio.js?v=166';
+import { initDesigner } from './designer.js?v=166';
+import { createSpecimen } from './specimen.js?v=166';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=166';
+import { TUNING } from './tuning.js?v=166';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -3140,7 +3141,57 @@ function tryHitPlayer(source = 'bullet', attackerType = null) {
   if (player.alive) audio.announce('ouch');  // death gets the gameover line instead
   onPlayerHit();
   recordHitEvent(source, hpBefore, attackerType);
+  // v212: remember what landed the fatal blow — the death screen shows it and
+  // asks about it, so the question is about something you just lived through.
+  if (!player.alive) _killedBy = { source, type: attackerType };
   return !player.alive;
+}
+
+// v212 CONTEXTUAL FEEDBACK: what killed you, and the question deck the death
+// screen draws from. The generic "what went wrong?" form asks every player the
+// same thing forever; this asks about the body you just lost to, shows it, and
+// rotates so repeat runs don't get the same prompt twice.
+let _killedBy = null;             // { source, type } from the fatal hit
+let _fbSpecimen = null;           // live portrait on the death screen, if any
+function disposeFbSpecimen() { if (_fbSpecimen) { _fbSpecimen.dispose(); _fbSpecimen = null; } }
+const FB_ASKED_KEY = 'tokoDropAsked';
+// Each entry: { id, when(ctx) -> bool, q -> lang key, shows(ctx) -> EnemyType|null }
+// Ordered most-specific first; the first match that hasn't been asked recently
+// wins, so the deck naturally works through its variety.
+const FB_DECK = [
+  { id: 'killer_read',
+    when: c => c.type != null && c.source === 'melee',
+    q: 'fbq_killerRead', shows: c => c.type },
+  { id: 'killer_shot',
+    when: c => c.type != null && c.source === 'bullet',
+    q: 'fbq_killerShot', shows: c => c.type },
+  { id: 'killer_lob',
+    when: c => c.source === 'lob' || c.source === 'poison',
+    q: 'fbq_killerLob', shows: c => c.type },
+  { id: 'hazard',
+    when: c => ['vent', 'surge', 'electrode', 'starve'].includes(c.source),
+    q: 'fbq_hazard', shows: () => null },
+  { id: 'swarm_read',
+    when: c => c.aliveAtDeath >= 14,
+    q: 'fbq_swarmRead', shows: c => c.type },
+  { id: 'movement',
+    when: c => c.type != null,
+    q: 'fbq_movement', shows: c => c.type },
+  { id: 'general',
+    when: () => true,
+    q: 'fbq_general', shows: () => null },
+];
+function fbPickQuestion(ctx) {
+  let asked = [];
+  try { asked = JSON.parse(localStorage.getItem(FB_ASKED_KEY) || '[]'); } catch (_) {}
+  const fresh = FB_DECK.filter(d => d.when(ctx) && !asked.includes(d.id));
+  const pool  = fresh.length ? fresh : FB_DECK.filter(d => d.when(ctx));
+  const pick  = pool[0];
+  if (!pick) return null;
+  asked.unshift(pick.id);
+  if (asked.length > 4) asked.length = 4;   // remember only the recent few
+  try { localStorage.setItem(FB_ASKED_KEY, JSON.stringify(asked)); } catch (_) {}
+  return pick;
 }
 
 // v41: capture a snapshot of game state at the moment player takes HP damage.
@@ -3440,8 +3491,9 @@ function postFeedback(record) {
 
 // Persist one feedback entry. Stored under tokoDropFeedback (last 100), with a
 // compact run summary so it's useful even without the full hit log.
-function saveFeedback(selectedIds, selectedLabels, comment, likedIds = [], likedLabels = []) {
-  if (!selectedIds.length && !likedIds.length && !comment) return;
+function saveFeedback(selectedIds, selectedLabels, comment, likedIds = [], likedLabels = [],
+                      askedId = null, askedAnswer = '') {
+  if (!selectedIds.length && !likedIds.length && !comment && !askedAnswer) return;
   const KEY = 'tokoDropFeedback';
   const list = JSON.parse(localStorage.getItem(KEY) || '[]');
   const atk = {};
@@ -3461,6 +3513,11 @@ function saveFeedback(selectedIds, selectedLabels, comment, likedIds = [], liked
     daily: _dailyRun,
     test: testMode,
     topAttacker: Object.entries(atk).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null,
+    // v212: which contextual question was asked, what was answered, and what
+    // actually landed the killing blow — so answers are attributable
+    askedId, askedAnswer,
+    killedBy: _killedBy ? { source: _killedBy.source,
+                            type: _killedBy.type != null ? _ET_NAMES[_killedBy.type] : null } : null,
   });
   if (list.length > 100) list.length = 100;
   localStorage.setItem(KEY, JSON.stringify(list));
@@ -4194,7 +4251,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v211' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v212' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -4636,10 +4693,11 @@ function buildFeedbackPanel(slot) {
   // v139: one button instead of three — its label says whether continuing
   // will send ("SEND & CONTINUE" once anything is picked/typed, else
   // "CONTINUE"), so there's never doubt about whether feedback went out.
-  let sendBtn = null, boxRef = null;
+  let sendBtn = null, boxRef = null, askBox = null, askedId = null;
   const refreshSendLabel = () => {
     if (!sendBtn) return;
-    const dirty = liked.size || selected.size || (boxRef && boxRef.value.trim());
+    const dirty = liked.size || selected.size || (boxRef && boxRef.value.trim())
+                  || (askBox && askBox.value.trim());
     sendBtn.textContent = dirty ? t('fbSend') : t('fbContinue');
   };
 
@@ -4683,6 +4741,56 @@ function buildFeedbackPanel(slot) {
     slot.appendChild(row);
   };
 
+  // v212 CONTEXTUAL PROMPT: a question about the run you just had, with the
+  // body that ended it rendered live beside it. Only from wave 2 — a wave-1
+  // death hasn't seen enough of the game to have an opinion worth asking for.
+  if (wave >= 2) {
+    const ctx = {
+      source: _killedBy?.source ?? null,
+      type: _killedBy?.type ?? null,
+      aliveAtDeath: enemies.reduce((n, e) => n + (e.alive ? 1 : 0), 0),
+    };
+    const pick = fbPickQuestion(ctx);
+    if (pick) {
+      askedId = pick.id;
+      const card = document.createElement('div');
+      card.style.cssText =
+        'display:flex;gap:14px;align-items:center;justify-content:center;flex-wrap:wrap;' +
+        'max-width:460px;margin:0 auto 16px;padding:12px;border-radius:12px;' +
+        'border:1.5px solid #3a4a6a;background:rgba(20,26,48,0.55)';
+      const showType = pick.shows(ctx);
+      if (showType != null && CFG[showType]) {
+        try {
+          const view = createSpecimen({ width: 150, height: 120 });
+          view.show(showType);
+          view.start();
+          _fbSpecimen = view;         // disposed when the screen closes
+          card.appendChild(view.canvas);
+        } catch (_) { /* a portrait is a bonus, never a blocker */ }
+      }
+      const right = document.createElement('div');
+      right.style.cssText = 'flex:1 1 200px;min-width:190px;text-align:left';
+      const qh = document.createElement('div');
+      qh.style.cssText = 'font-size:13px;line-height:1.35;color:#dfe6ff;margin-bottom:8px';
+      qh.textContent = (showType != null && ENEMY_LABEL[showType])
+        ? t(pick.q, ENEMY_LABEL[showType].toUpperCase())
+        : t(pick.q, '');
+      right.appendChild(qh);
+      askBox = document.createElement('textarea');
+      askBox.rows = 2;
+      askBox.placeholder = t('fbqPlaceholder');
+      askBox.style.cssText =
+        'pointer-events:auto;user-select:text;display:block;width:100%;' +
+        'background:rgba(0,0,0,0.4);border:1.5px solid #445;border-radius:8px;color:#ccd;' +
+        'font-family:monospace,sans-serif;font-size:12px;padding:6px 8px;resize:none;outline:none';
+      askBox.addEventListener('keydown', e => e.stopPropagation());
+      askBox.addEventListener('input', () => refreshSendLabel());
+      right.appendChild(askBox);
+      card.appendChild(right);
+      slot.appendChild(card);
+    }
+  }
+
   addChipRow(t('fbEnjoy'), buildPositiveReasons(), liked, 'pos');
   addChipRow(t('fbWrong'), buildFeedbackReasons(), selected, 'neg');
 
@@ -4720,6 +4828,7 @@ function buildFeedbackPanel(slot) {
     saveFeedback(
       [...selected], [...selected].map(id => labelById[id]), box.value.trim(),
       [...liked],    [...liked].map(id => labelById[id]),
+      askedId, askBox ? askBox.value.trim() : '',
     );
     returnToTitle();
   });
@@ -6438,6 +6547,7 @@ function startGame() {
   player._dashBoom  = false;
   _prevDashing  = false;
   _hitFlashT    = 0;
+  _killedBy     = null;   // v212: the contextual question is about THIS run
   bullets.clear();
   clearFX();
   // SMASH TV room lattice: every run starts a fresh studio floor at (0,0).
@@ -6468,6 +6578,7 @@ function startGame() {
 // player has time to leave feedback) and by Space / Start as a quick skip.
 function returnToTitle() {
   if (gameState !== 'gameover') return;
+  disposeFbSpecimen();   // v212: stop the portrait's own rAF loop
   if (tokotronMode) exitTokotron();   // v148: give back the borrowed toggles
   if (gaundropMode) exitGaundrop();   // v149: same deal for the dungeon
   if (bindingMode) exitBinding();     // v150: and the basement
@@ -8831,6 +8942,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=165').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=166').catch(() => {});
   });
 }

@@ -21,9 +21,33 @@ Browser bullet-hell survival game (three.js, ES modules, no build step).
 ## Versioning & release discipline
 
 - **`scripts/cabinets.sh` is the cabinet gate** (v204): boots all six cabinets,
-  plays each, and fails on mode leaks (FLUID/CLOSE COMBAT/SHEPHERD reaching a
+  plays each, and fails on mode leaks (CLOSE COMBAT/SHEPHERD reaching a
   cabinet), a dead retro pass, or any page error. Run it alongside `smoke.sh`
   whenever a release touches mode-wide systems or `inCabinet()`.
+
+## Showing, not describing (v211)
+
+`scripts/enemy-loop.mjs` records a **looping GIF of an enemy behaving**, driven
+by the real game code, so movement/feel questions get answered with a moving
+picture instead of a paragraph. Use it whenever the question is "does this read
+right?" — attach the loop to the reply.
+
+```
+node scripts/enemy-loop.mjs                    # every scenario
+node scripts/enemy-loop.mjs dodge charge       # named ones
+node scripts/enemy-loop.mjs --out /tmp/g --frames 26
+```
+
+Scenarios live in a `SCENARIOS` map at the top of the script — add one rather
+than hand-rolling a capture. Notes that cost time to learn:
+- It stages a **throwaway copy** of `toko-drop/` with a capture harness appended
+  to `main.js`; nothing test-only ever reaches the shipped tree.
+- **Never `waitUntil: 'networkidle'`** — the service worker keeps the network
+  warm, so `goto()` never resolves.
+- Screenshots under swiftshader run ~1.5 s each, so a 26-frame loop takes about
+  a minute per scenario. Run it in the background and wait on the output file.
+- Dev-only deps (`gifenc`, `pngjs`) are NOT vendored into the game; install them
+  in a scratch dir and run with `NODE_PATH` pointing at it.
 - **Every commit touching game files needs a `## vN` entry at the top of
   `VERSIONS.md`** (pre-commit hook enforces; install via
   `cp scripts/pre-commit .git/hooks/pre-commit`). At every multiple of 10,
