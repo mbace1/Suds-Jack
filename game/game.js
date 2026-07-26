@@ -85,6 +85,40 @@
     }
   }
 
+  // ─── Gamepad Input ───────────────────────────────────────────────────────────
+  // Standard mapping: 0=A 1=B 2=X 3=Y 4/5=bumpers 6/7=triggers 9=start
+  // 12/13/14/15 = dpad up/down/left/right. Axis 0 = left stick X.
+  const pad = { on: false, left: false, right: false, fire: false, prev: [] };
+  const PAD_DEADZONE = 0.30;
+
+  function pollGamepad() {
+    const list = navigator.getGamepads ? navigator.getGamepads() : [];
+    let gp = null;
+    for (const p of list) if (p && p.connected) { gp = p; break; }
+
+    pad.on = !!gp;
+    if (!gp) { pad.left = pad.right = pad.fire = false; pad.prev = []; return; }
+
+    const down = i => !!(gp.buttons[i] && gp.buttons[i].pressed);
+    const hit  = i => down(i) && !pad.prev[i];      // edge-triggered
+    const ax   = gp.axes[0] || 0;
+
+    pad.left  = ax < -PAD_DEADZONE || down(14);
+    pad.right = ax >  PAD_DEADZONE || down(15);
+    pad.fire  = down(0) || down(7);                 // A / right trigger held
+
+    if (state === 'playing') {
+      if (hit(1) || hit(2) || hit(5)) trySuperzapper();   // B / X / RB
+    } else if (hit(0) || hit(9)) {
+      startGame();                                        // A / Start
+    }
+
+    pad.prev = gp.buttons.map(b => b.pressed);
+  }
+
+  window.addEventListener('gamepadconnected',    () => { pad.on = true; });
+  window.addEventListener('gamepaddisconnected', () => { pad.on = false; pad.prev = []; });
+
   // ─── Touch Input ─────────────────────────────────────────────────────────────
   const touch = { left: false, right: false, zap: false };
 
@@ -552,19 +586,20 @@
       if (superzapperTimer <= 0) superzapperActive = false;
     }
 
-    // Player movement (keyboard + touch)
+    // Player movement (keyboard + touch + gamepad)
     if (playerMoveCD <= 0) {
-      if (keys['ArrowLeft'] || keys['KeyA'] || touch.left) {
+      if (keys['ArrowLeft'] || keys['KeyA'] || touch.left || pad.left) {
         playerSpoke = (playerSpoke - 1 + NUM_SPOKES) % NUM_SPOKES;
         playerMoveCD = 120;
-      } else if (keys['ArrowRight'] || keys['KeyD'] || touch.right) {
+      } else if (keys['ArrowRight'] || keys['KeyD'] || touch.right || pad.right) {
         playerSpoke = (playerSpoke + 1) % NUM_SPOKES;
         playerMoveCD = 120;
       }
     }
 
-    // Auto-shoot: keyboard hold OR always on mobile (touch device)
-    if (keys['Space'] || touch.left || touch.right || ('ontouchstart' in window)) tryShoot();
+    // Auto-shoot: keyboard hold, gamepad fire/move, OR always on mobile
+    if (keys['Space'] || pad.fire || pad.left || pad.right ||
+        touch.left || touch.right || ('ontouchstart' in window)) tryShoot();
 
     // Wave spawning
     const lv = currentLevel();
@@ -820,7 +855,19 @@
       ctx.fillStyle = zapReady ? '#0ff' : '#444';
       ctx.shadowColor = '#0ff';
       ctx.shadowBlur = zapReady ? 10 : 0;
-      ctx.fillText('Z: SUPERZAPPER' + (zapReady ? ' [READY]' : ` [${Math.ceil(superzapperCD / 1000)}s]`), 20, canvas.height - 20);
+      const zapKey = pad.on ? 'B: SUPERZAPPER' : 'Z: SUPERZAPPER';
+      ctx.fillText(zapKey + (zapReady ? ' [READY]' : ` [${Math.ceil(superzapperCD / 1000)}s]`), 20, canvas.height - 20);
+      ctx.shadowBlur = 0;
+    }
+
+    // Controller connected indicator
+    if (pad.on) {
+      ctx.font = '14px Courier New';
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#0ff';
+      ctx.shadowColor = '#0ff';
+      ctx.shadowBlur = 8;
+      ctx.fillText('◎ GAMEPAD', canvas.width - 20, canvas.height - 20);
       ctx.shadowBlur = 0;
     }
 
@@ -838,6 +885,7 @@
     lastTime = timestamp;
     frameTime = timestamp;
 
+    pollGamepad();
     update(dt);
     render();
 
