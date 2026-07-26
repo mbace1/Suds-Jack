@@ -7,8 +7,8 @@
 // with a dithered glaze (shared toolkit with `seam`, ideas/ref/kintsugi-overflow.png).
 // The overflow already glowed luminescent cyan and broke the frame; it stays.
 
-import { PixelScreen, shade, rampDither } from '../pixel.js?v=37';
-import { PAL } from '../palette.js?v=37';
+import { PixelScreen, shade, rampDither } from '../pixel.js?v=38';
+import { PAL } from '../palette.js?v=38';
 
 const FULL_AT = 1.0, OVERFLOW_AT = 1.9;   // keep pouring past full to learn
 const PRESS = 0.16;                        // a press always counts this much
@@ -241,6 +241,14 @@ export const cup = {
       scr.disc(44, 20, 5, PAL.SUN);                // moon in the pane
       scr.px(0, 70, scr.w, 58, PAL.BARK);          // table
       scr.px(0, 70, scr.w, 3, '#7a5d46');
+      // the room breathes from the first frame: steam off the waiting tea, and
+      // one slow curl of it crossing the moon
+      for (let i = 0; i < 3; i++) {
+        const sy = 62 - ((now / 90 + i * 12) % 26);
+        scr.px(CX - 5 + i * 5 + Math.sin(now / 520 + i * 1.7) * 2, sy, 1, 3,
+          i % 2 ? '#6a6078' : '#7a7088');
+      }
+      scr.px(30 + ((now / 260) % 40), 17, 9, 2, '#8a80a0');   // mist across the pane
 
       const spill = Math.max(0, fill - FULL_AT);
       if (spill > 0 && phase !== 'empty' && phase !== 'outro') {

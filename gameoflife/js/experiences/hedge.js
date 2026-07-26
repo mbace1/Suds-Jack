@@ -5,8 +5,8 @@
 // (it is species you count, not plants). Revert: read the oldest living boundary
 // near you. Full-scene build (the English-lane family, not the void vignette).
 
-import { PixelScreen, bayer, rampDither } from '../pixel.js?v=37';
-import { PAL } from '../palette.js?v=37';
+import { PixelScreen, bayer, rampDither } from '../pixel.js?v=38';
+import { PAL } from '../palette.js?v=38';
 
 const HEDGE_Y = 66, LANE_Y = 92;
 
@@ -193,6 +193,17 @@ export const hedge = {
         [...CLUMPS].sort((a, b) => a.r - b.r).forEach(c => clump(c, found.has(c.sp)));
         tally();
       });
+      // the lane is windy and inhabited before you tap anything: the hedge top
+      // stirs and something crosses the field behind it. Live over the cache.
+      for (let i = 0; i < 22; i++) {
+        const lx = (i * 9 + 3) % 190;
+        const ly = HEDGE_Y - 14 - (i % 4) * 2 + Math.sin(now / 420 + i * 0.6) * 1.6;
+        scr.px(lx, ly, 2, 2, i % 3 ? '#3d5f33' : '#4d6a2c');
+      }
+      const bx = (now / 60) % 230 - 20;
+      const flap = Math.sin(now / 130) > 0 ? 1 : 2;
+      scr.px(bx, 34 + Math.sin(now / 760) * 3, 3, flap, '#4a4a44');
+      scr.px(bx + 3, 33 + Math.sin(now / 760) * 3, 3, flap, '#4a4a44');
       marker(now);
       // the reveal: eight centuries of quiet standing, lit along the hedge top
       if (phase === 'truth' || phase === 'outro') {

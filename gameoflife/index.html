@@ -23,9 +23,33 @@
                    'Yu Gothic', 'MS Gothic', monospace;
       color: #efe6d0;
       display: flex; justify-content: center;
-      padding: 24px 16px 48px;
+      padding: 24px 16px 24px;
     }
-    #app { width: 100%; max-width: 560px; }
+    #app {
+      width: 100%; max-width: 560px;
+      /* the page is a column the height of the screen, so the content below the
+         title can float to the middle instead of packing against the top */
+      min-height: calc(100vh - 48px);
+      display: flex; flex-direction: column;
+    }
+    /* hub: header stays at the top, the offering group centres below it */
+    .cycle-dots { margin-top: auto; }
+    .hub-footer { margin-bottom: auto; }
+    /* An experience: the scene should land JUST above the vertical midpoint,
+       with the words below it. Centring the whole block left the canvas ~100px
+       too high, so the top gap is computed instead: the canvas is width-bound
+       (3:2, capped at the 560px column), so its height is known from the
+       viewport and the gap is whatever puts its bottom edge a hair above 50vh.
+       max(0px, …) collapses it on screens too short for the arithmetic. */
+    .exp { margin-top: 0; }
+    .back-btn { margin-bottom: auto; }
+    /* Only where there is room for it: on a 667px phone this placement costs a
+       scroll, and fitting on screen beats hitting the midline. */
+    @media (min-height: 700px) {
+      .exp {
+        margin-top: max(0px, calc(50vh - min(100vw - 32px, 560px) * 0.667 - 36px));
+      }
+    }
     /* keyboard players need to see where they are; the UA ring is too faint
        against this background */
     :focus-visible { outline: 2px solid #8faf6a; outline-offset: 3px; }
@@ -85,7 +109,7 @@
       border-radius: 0; border: none; width: auto; height: auto;
       color: #8d8165; font-size: 13px; line-height: 10px;
     }
-    .dot.rest.full { color: #c9a84c; background: none; }
+    .dot.rest.full { color: #8faf6a; background: none; }
 
     .offering { max-width: 420px; margin: 0 auto; text-align: center; }
     .offer-note { font-size: 11px !important; letter-spacing: 2px; color: #8d8165 !important;
@@ -96,7 +120,7 @@
       border: 2px solid #4a4438; padding: 16px 18px; background: #1c1a16;
       box-shadow: 4px 4px 0 #0a0908;
     }
-    .card h2 { font-size: 17px; letter-spacing: 1px; color: #c9a84c; }
+    .card h2 { font-size: 17px; letter-spacing: 1px; color: #8faf6a; }
     .card p { margin-top: 6px; font-size: 13px; color: #c9bda1; line-height: 1.5; }
     .played-note { color: #8faf6a !important; font-size: 12px !important; }
 
@@ -110,7 +134,7 @@
     .link-btn {
       font-family: inherit; font-size: 12px; cursor: pointer; margin-top: 8px;
       background: none; border: none; color: #a89b7f; text-decoration: underline;
-      display: block; padding: 15px 8px; min-height: 44px;
+      display: block; padding: 12px 8px; min-height: 44px;
     }
     .cycle-hint { margin-top: 24px; text-align: center; font-size: 12px; color: #8d8165; font-style: italic; }
 
@@ -124,7 +148,7 @@
       touch-action: manipulation;
     }
     .exp-text {
-      margin-top: 18px; font-size: 15px; line-height: 1.7; color: #e6dcc2;
+      margin-top: 14px; font-size: 15px; line-height: 1.7; color: #e6dcc2;
       /* six lines held open. Beats vary from ~90 to ~340 characters, and sizing
          this to the short ones made the Continue button walk up to 190px up and
          down the screen between taps — you had to re-aim every time. Reserving
@@ -142,7 +166,7 @@
       border: 2px solid #4a4438; background: #1c1a16; padding: 22px;
       box-shadow: 4px 4px 0 #0a0908;
     }
-    .panel h2 { color: #c9a84c; font-size: 17px; letter-spacing: 1px; }
+    .panel h2 { color: #8faf6a; font-size: 17px; letter-spacing: 1px; }
     .panel p { margin-top: 10px; font-size: 14px; line-height: 1.6; color: #e6dcc2; }
     .overlay {
       position: fixed; inset: 0; z-index: 40;
@@ -178,6 +202,9 @@
        the room comes out of the scene and the gaps instead. */
     @media (max-height: 560px) {
       body { padding: 6px 12px 12px; }
+      #app { min-height: 0; }
+      .exp { margin-top: 0; }
+      .cycle-dots, .hub-footer { margin-top: 0; margin-bottom: 0; }
       .screen-wrap { display: flex; justify-content: center; }
       .pixel-screen { width: auto; max-width: 100%; max-height: 38vh; }
       .exp-text { margin-top: 6px; min-height: 4.4em; font-size: 13px; line-height: 1.5; }
@@ -197,6 +224,6 @@
 </head>
 <body>
   <main id="app"></main>
-  <script type="module" src="js/main.js?v=37"></script>
+  <script type="module" src="js/main.js?v=38"></script>
 </body>
 </html>

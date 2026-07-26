@@ -6,8 +6,8 @@
 // frame. Built to the 2026-07 void-vignette standard, dithered ice ramps.
 // Revert: imagine your own square of earth a hundred years ago.
 
-import { PixelScreen, bayer, rampDither } from '../pixel.js?v=37';
-import { PAL } from '../palette.js?v=37';
+import { PixelScreen, bayer, rampDither } from '../pixel.js?v=38';
+import { PAL } from '../palette.js?v=38';
 
 // the core column, a rounded cylinder floating in the void
 const COX = 96, COW = 34, COT = 10, COB = 120;   // centre-x, width, top, bottom
@@ -178,6 +178,14 @@ export const ice = {
         drill();
         core(now);
       });
+      // the station is cold and working from the first frame: frost drifting in
+      // the cabinet light, and a slow bead of meltwater running the core
+      for (let i = 0; i < 8; i++) {
+        const fx = 40 + (i * 27) % 120 + Math.sin(now / 800 + i * 1.6) * 4;
+        const fy = ((now / 40 + i * 22) % 130);
+        scr.px(fx, fy, 1, 1, i % 3 ? '#2c4a54' : '#3e6470');
+      }
+      scr.px(COX + 9, 20 + ((now / 55) % 96), 1, 3, '#7fb4c2');
       airBubble(now);
     }
 

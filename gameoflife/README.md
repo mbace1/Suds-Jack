@@ -91,13 +91,37 @@ eyes. Text greys moved to `#8d8165` and the primary button to `#4e6839`
 making things nearly unreadable now comes from size. Contrast and target size
 are both measured in the smoke gate, so a future re-tint cannot quietly undo it.
 
+**Nothing opens frozen.** Every experience is already moving on its first
+screen — dawn mist crossing the trunks in `forest`, steam off the waiting tea in
+`cup`, midges in the July light in `berry`, dust turning in the void in `seam`
+and `gears`, the hedge stirring in `hedge`. Thirteen of the twenty-two used to
+open on a still picture, which reads as a broken page while you are deciding
+whether to stay. For the `cached()` scenes the motion is a **live layer drawn
+after the blit**, so the performance work is untouched — wrapping a scene in
+`cached()` without lifting its moving parts out is exactly how this regresses,
+so the smoke gate now samples each first screen twice and fails on any that
+does not change.
+
+**The page centres on the middle.** The title stays anchored at the top and
+everything below it floats to the centre. In an experience the scene lands
+**just above the vertical midpoint** with the words beneath it: the gap above is
+computed rather than centred (`50vh − canvas height − 36px`), because centring
+the whole block left the canvas ~100px too high. It is gated behind
+`min-height: 700px` — on a 667px phone that placement costs a scroll, and fitting
+on screen beats hitting the midline.
+
+**Green is the accent.** Headings and highlights are `#8faf6a` rather than the
+old gold; this is an app about going back outside and the identity colour should
+say so. Gold remains where it belongs — inside scene art.
+
 **The layout holds still.** Story beats run from ~90 to ~340 characters, and
 sizing `.exp-text` to the short ones made the Continue button walk up to 190 px
 up and down the screen between taps — you had to re-aim every time. Six lines
 are now held open, so the action row stays put. A short viewport (a phone held
 sideways) gets its own rules: the 3:2 scene alone used to be *taller* than a
 360 px-high screen with the choices 150 px below the fold, so under
-`max-height: 560px` the scene is capped at `46vh` and everything fits unscrolled.
+`max-height: 560px` the scene is capped at `38vh` and everything fits unscrolled
+(it pays for the 44px touch targets rather than shrinking them).
 
 **Accessibility floor.** `#app` is a `<main>`; `.exp-text` is an
 `aria-live="polite"` region (marked centrally in `startExperience`, not in 22

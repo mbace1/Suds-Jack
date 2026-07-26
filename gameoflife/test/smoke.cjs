@@ -471,6 +471,25 @@ function check(name, cond) {
   check('html lang tracks the language', await page.evaluate(() => document.documentElement.lang) === 'ja');
   await page.evaluate(() => __gol.debug.setLang('en'));
 
+  // Every experience must be moving on its FIRST screen — a still picture reads
+  // as a broken page while you decide whether to stay. Thirteen of the
+  // twenty-two used to open frozen. This is easy to undo by accident (wrapping
+  // a scene in scr.cached without lifting the live layer out), so it is gated.
+  const frozen = [];
+  for (const id of ['aqueduct','forest','tern','cup','hanami','berry','stars','maple',
+                    'plate','seam','dots','glass','wait','lichen','cloud','ice','trace',
+                    'gears','cairn','downhill','tether','hedge']) {
+    await page.evaluate(i => __gol.debug.start(i), id);
+    await page.waitForTimeout(120);
+    const a = await page.evaluate(() => document.querySelector('.pixel-screen').toDataURL());
+    await page.waitForTimeout(620);
+    const b2 = await page.evaluate(() => document.querySelector('.pixel-screen').toDataURL());
+    if (a === b2) frozen.push(id);
+  }
+  check(`every first screen is alive${frozen.length ? ' — frozen: ' + frozen.join(' ') : ''}`,
+    frozen.length === 0);
+  await page.evaluate(() => __gol.debug.showHub());
+
   // Legibility, measured rather than eyeballed. The muted-on-dark palette is
   // the house style and it drifted into genuinely unreadable (1.92:1 on the
   // seasons label); tap targets had the same slow slide. Both regressed twice
