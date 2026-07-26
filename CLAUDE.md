@@ -33,9 +33,13 @@ queued / drained), modal behaviour (Esc, backdrop, focus returned), WCAG AA, 44p
 no horizontal overflow on a phone.
 **`inRepo`** marks which games this branch carries: the `gh-pages` site root is a curated
 tree holding games `main` does not (Suds Jack itself at `sudz/`, `Skltr/`, `neon-ronin/`,
-`eye-test/`), so the test loop only checks links it can see. **Deploy caveat, sharper than
-the others:** the `gh-pages` root `index.html` *is the Suds Jack game* — refresh `sudz/`
-from the root build before letting the hub take the root, or the newest Suds Jack is lost.
+`eye-test/`), so the test loop only checks links it can see. **Deployed** to the `gh-pages`
+root on 2026-07-26 (live at `/Suds-Jack/`), which took the place of the Suds Jack game
+that used to be the root page. Check which copy is newer before "refreshing" anything:
+`sudz/` was ahead of the old root build, not behind it, so it was left untouched and the
+root's orphaned `game.js`/`style.css`/`levels.json` were removed. `paperboy/` and the
+`goo-*.html` sketches had to be carried onto `gh-pages` with the hub — the site had never
+held them, and four of the hub's links pointed at them.
 
 ### Suds Jack
 HTML5 demo built with **Three.js / WebGL**.

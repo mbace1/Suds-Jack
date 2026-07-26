@@ -42,12 +42,14 @@ node test/hub-smoke.cjs      # 31 checks (needs playwright + its Chromium)
 > `inRepo: false`, and the test loop only checks the links it can actually
 > see, so a local run does not fail on games that only exist once deployed.
 
-> **Deploying it.** The `gh-pages` root `index.html` is *currently the Suds
-> Jack game itself*, so putting the hub there needs the game to keep a home
-> of its own: `sudz/` already holds a copy two commits behind the root build,
-> so refresh `sudz/` from the root `game.js` / `style.css` / `levels.json`
-> first, then copy `index.html` + `hub/` over. Same deploy caveat as every
-> other demo here — `main` is not what is served.
+> **Deployed.** Live at https://mbace1.github.io/Suds-Jack/ — the arcade is
+> the site root as of 2026-07-26. The root used to be the Suds Jack game
+> itself; that game lives at `sudz/`, which was already the **newer** of the
+> two builds (the root copy predated the mobile touch controls), so it was
+> left alone and the stale root assets were removed. `paperboy/` and the
+> `goo-*.html` sketches had never been on `gh-pages` and were carried over
+> with the hub, or four of its links would have 404'd. Remember `main` is
+> not what is served: deploying means copying onto `gh-pages`.
 
 ---
 
