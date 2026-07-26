@@ -2,8 +2,8 @@
 // stones channel puzzle. Water flows by connectivity from spring to fountain;
 // partial flow is shown live so every turn of a stone gives feedback.
 
-import { PixelScreen } from '../pixel.js?v=37';
-import { PAL } from '../palette.js?v=37';
+import { PixelScreen } from '../pixel.js?v=38';
+import { PAL } from '../palette.js?v=38';
 
 // dirs: 0=N 1=E 2=S 3=W
 const OPP = d => (d + 2) % 4;
@@ -76,7 +76,7 @@ export const aqueduct = {
 
     // ── story panels ─────────────────────────────────────────────
     function showStory() {
-      drawStory(scr, phase);
+      drawStory(scr, phase, performance.now());
       textEl.textContent = t(`aq.p${phase + 1}`);
       btnRow.innerHTML = '';
       button(t('ui.continue'), () => {
@@ -250,8 +250,8 @@ export const aqueduct = {
       if (dead) return;
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
       if (phase === 3) drawPuzzle(dt);
-      else if (phase < 3) drawStory(scr, phase);
-      else drawStory(scr, 2); // outro keeps the arches on screen
+      else if (phase < 3) drawStory(scr, phase, now);
+      else drawStory(scr, 2, now); // outro keeps the arches on screen
       raf = requestAnimationFrame(loop);
     }
     raf = requestAnimationFrame(loop);
@@ -270,7 +270,7 @@ export const aqueduct = {
 };
 
 // three static illustrations for the story panels
-function drawStory(scr, panel) {
+function drawStory(scr, panel, now = 0) {
   if (panel === 0) {
     // thirsty city under a warm sky, springs in the far hills
     scr.bands(0, 0, scr.w, 70, [PAL.SKY_DAWN_TOP, '#6b5a78', '#b07a70', PAL.SKY_DAWN_LOW]);
@@ -278,7 +278,12 @@ function drawStory(scr, panel) {
     scr.px(0, 58, 90, 14, PAL.MOSS_DEEP);
     scr.px(20, 52, 40, 8, PAL.MOSS);
     scr.px(34, 50, 4, 6, PAL.FOAM);           // the spring, small and far
+    scr.px(34, 49 - (Math.floor(now / 340) % 2), 4, 1, '#eaf6ff');   // its glint
     scr.px(0, 70, scr.w, 58, PAL.EARTH);
+    const bx = (now / 46) % 220 - 14;         // a bird crossing the warm sky
+    const bw = Math.sin(now / 150) > 0 ? 1 : 2;
+    scr.px(bx, 26 + Math.sin(now / 900) * 3, 3, bw, PAL.INK_SOFT);
+    scr.px(bx + 3, 25 + Math.sin(now / 900) * 3, 3, bw, PAL.INK_SOFT);
     for (let i = 0; i < 9; i++) {              // the city, close and crowded
       const h = 18 + ((i * 37) % 26);
       scr.px(96 + i * 10, 128 - h, 9, h, i % 2 ? PAL.STONE : PAL.STONE_DARK);
@@ -294,6 +299,7 @@ function drawStory(scr, panel) {
     }
     scr.px(38, 42, 4, 12, PAL.BARK);           // groma staff
     scr.px(34, 40, 12, 2, PAL.BARK);
+    scr.px(40 + Math.sin(now / 700) * 1.5, 42, 1, 9, PAL.INK_SOFT);   // plumb line, swinging
     scr.px(30, 54, 6, 10, PAL.INK);            // the surveyor, small on the land
     scr.px(31, 50, 4, 4, '#d8b48f');
     scr.px(120, 84, 6, 10, PAL.INK);           // assistant downslope
@@ -306,6 +312,9 @@ function drawStory(scr, panel) {
     scr.px(0, 100, scr.w, 28, PAL.MOSS_DEEP);
     scr.px(0, 44, scr.w, 6, PAL.STONE_DARK);   // channel
     scr.px(0, 42, scr.w, 2, PAL.WATER);        // water riding the top
+    for (let i = 0; i < 6; i++) {              // and it MOVES — the whole point
+      scr.px(((now / 22) + i * 34) % 200 - 4, 42, 6, 1, PAL.FOAM);
+    }
     for (let i = 0; i < 8; i++) {              // arch piers
       scr.px(6 + i * 24, 50, 8, 78, PAL.STONE);
       scr.px(12 + i * 24, 50, 2, 78, PAL.STONE_DARK);

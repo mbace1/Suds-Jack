@@ -4,8 +4,8 @@
 // companion to `berry` (jokamiehenoikeus): the right to roam carries the quiet
 // duty to leave some behind. "Not everything beautiful is meant for you."
 
-import { PixelScreen } from '../pixel.js?v=37';
-import { PAL } from '../palette.js?v=37';
+import { PixelScreen } from '../pixel.js?v=38';
+import { PAL } from '../palette.js?v=38';
 
 const CLOUD = '#f0b64a', CLOUD_LIT = '#ffd77a', CLOUD_RAW = '#c9502e';
 const BEAR = '#33291f', PEAT = '#4a4030', BOG = '#3a5a66';

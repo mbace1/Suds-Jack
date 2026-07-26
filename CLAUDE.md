@@ -202,8 +202,16 @@ with the scene canvas `aria-hidden` in `PixelScreen` — the text is the followa
 channel — and `document.title` naming the current experience. The layout must
 **hold still**: `.exp-text` holds six lines open (`min-height: 10.2em`) because
 sizing it to short beats walked the Continue button ~190px between taps, and a
-`max-height: 560px` block caps the scene at `46vh` so a phone held sideways fits
-without scrolling. `prefers-reduced-motion` freezes the decorative hub header
+`max-height: 560px` block caps the scene at `38vh` so a phone held sideways fits
+without scrolling. In portrait the title stays at the top and everything below it
+floats to the middle (paired `auto` margins), with the scene placed **just above
+the vertical midpoint** by a computed gap (`50vh − canvas height − 36px`, gated
+behind `min-height: 700px` because on a 667px phone it costs a scroll). The UI
+accent is **green** `#8faf6a` (headings, active toggles); gold stays inside scene
+art only. **Every experience must be animated on its first screen** — a still
+opening reads as a broken page — and for `cached()` scenes that motion is a live
+layer drawn *after* the blit; the smoke gate samples each first screen twice and
+names any that is frozen. `prefers-reduced-motion` freezes the decorative hub header
 (one frame of the hour) while experiences keep animating. `pixel.js` gives a 192×128
 `PixelScreen` upscaled with `image-rendering: pixelated`; `palette.js` is the single
 colour source; `audio.js` is a quiet WebAudio kit routing **every** voice through one
