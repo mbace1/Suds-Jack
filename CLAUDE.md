@@ -9,6 +9,20 @@ HTML5 demo built with **Three.js / WebGL**.
 Concept: "Bomb Jack x Suds 51 x Tempest 2000" — floating bomb-collection gameplay, soap/bubble aesthetic, Tempest 2000 psychedelic tube-shooter energy.
 Build tooling: TBD — update this file once chosen and add dev/build commands.
 
+### Tiny Hawk (`tinyhawk/`) — DESIGN STAGE, no code yet
+A **skate story / Tony Hawk clone** in flat-shaded low-poly with inverted-hull ink
+outlines (vector-*looking* 3D, same no-lights `MeshBasicMaterial` rule as paperboy and
+dropcabal). Forward-committed line rather than a free-roam park: the skater always rolls
+forward across a ~3-lane ribbon, so the daily seed is comparable and courses can be built
+from a shuffled **segment deck**. THPS trick vocabulary (ollie charge, four flick trick
+families, hold-to-spin, auto-lock grinds, manuals as combo glue) with one rule — the
+multiplier only pays when you land. Two modes: **Daily Line** (UTC-seeded 45s course,
+three tries, text share card, no backend) and **The Part** (Slay-the-Spire node map,
+a pool of 5 "film" tries shared across the whole tour, goals gating phase/district
+transitions, board parts + trick unlocks as the build, story beats between nodes).
+The full plan, build order, and open decisions live in `tinyhawk/DESIGN.md` — read it
+before writing any Tiny Hawk code.
+
 ### Paper Route — Dawn Run (`paperboy/`)
 A **Paperboy clone** built on Three.js r167 with an **isometric, flat-shaded homage to
 the original Paperboy art** — orthographic 3/4 camera, bright sunny-day palette (sky-blue
