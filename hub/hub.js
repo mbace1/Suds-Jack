@@ -46,6 +46,9 @@ function cabinet(game) {
   for (const tg of game.tags) tags.appendChild(el('li', '', tg));
   body.appendChild(tags);
 
+  // where a cabinet stands right now: its own line while it is playable, and
+  // in place of the controls once there is nothing to press
+  if (game.note && playable) body.appendChild(el('p', 'note', game.note));
   body.appendChild(el('p', 'controls', playable ? game.controls : (game.note ?? 'not up yet')));
 
   const actions = el('div', 'actions');

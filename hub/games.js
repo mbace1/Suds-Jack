@@ -4,6 +4,9 @@
 //          still playable, listed further down, and not competing for
 //          attention with the live work). One word to move a game between
 //          the two; nothing else changes.
+// `note`   a line of current state — what is starting, or why a cabinet is
+//          dark. Shown under the tagline when the game is playable, and in
+//          place of the controls line when it is not.
 // `live`   omit for anything playable. `live: false` means the cabinet is
 //          listed but there is nothing to open yet — the Play button renders
 //          dead and dimmed instead of pointing at a 404, and `note` says why.
@@ -21,9 +24,10 @@
 export const GAMES = [
   {
     id: 'sudsjack',
-    status: 'archived',
+    status: 'active',
+    note: 'the playable build is the original vector one — a rebuild on the Hyper Dagger baseline starts next',
     title: 'Suds Jack',
-    tagline: 'A vector tube shooter down a neon well — the namesake.',
+    tagline: 'A vector tube shooter down a neon well — the namesake, and the next thing being built.',
     lineage: 'Tempest 2000 × Bomb Jack',
     tags: ['shooter', 'vector', 'canvas'],
     controls: '← → / A D move · Space fire · Z superzapper',
@@ -75,7 +79,7 @@ export const GAMES = [
     id: 'paperboy',
     status: 'archived',
     live: false,
-    note: 'taken off the site in June — the code is still in the repo',
+    note: 'taken off the site in June and not being picked back up — the code is still in the repo',
     title: 'Paper Route — Dawn Run',
     tagline: 'Deliver to the subscribers, smash the windows of everyone else, survive three crashes.',
     lineage: 'Paperboy (1985)',
