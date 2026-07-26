@@ -68,6 +68,10 @@ const STR = {
     'kind.story': 'a story',
     'kind.game': 'a game',
     'kind.wisdom': 'a kernel of wisdom',
+    'acc.label': 'screen',
+    'acc.cyan': 'cyan',
+    'acc.green': 'green',
+    'acc.white': 'white',
 
     'exp.aqueduct.name': 'The Stone River',
     'exp.aqueduct.desc': 'How Rome invited water downhill — then turn the stones yourself.',
@@ -323,10 +327,6 @@ const STR = {
     'ha.outro': 'Hanami was never about the flowers staying. Full bloom lasts barely a week; the falling — mono no aware, the gentle ache of passing things — is the point. People gather precisely because it will end.',
     'ha.nature': 'Find one tree today, and on it one thing that will be gone in two weeks — a bud, a flower, a leaf mid-turn. Say goodbye to it properly.',
 
-    'hub.greet.morning': 'The day is new.',
-    'hub.greet.day': 'The light is high.',
-    'hub.greet.evening': 'The day is folding.',
-    'hub.greet.night': 'The world is quiet.',
 
     'te.s1': 'In the endless daylight of the Arctic summer, a tern no heavier than an apple learns to fly. The colony grows restless: the light is turning.',
     'te.s1.a': 'Leave with the flock',
@@ -450,6 +450,10 @@ const STR = {
     'kind.story': 'tarina',
     'kind.game': 'peli',
     'kind.wisdom': 'viisaudenjyvä',
+    'acc.label': 'ruutu',
+    'acc.cyan': 'syaani',
+    'acc.green': 'vihreä',
+    'acc.white': 'valkoinen',
 
     'exp.aqueduct.name': 'Kivinen joki',
     'exp.aqueduct.desc': 'Miten Rooma kutsui veden alamäkeen — käännä sitten kivet itse.',
@@ -705,10 +709,6 @@ const STR = {
     'ha.outro': 'Hanamissa ei koskaan ollut kyse siitä, että kukat pysyisivät. Täysi kukinta kestää tuskin viikon; putoaminen — mono no aware, katoavien asioiden lempeä kipu — on itse asia. Ihmiset kokoontuvat juuri siksi, että se loppuu.',
     'ha.nature': 'Etsi tänään yksi puu, ja siitä yksi asia, joka on poissa kahden viikon päästä — silmu, kukka, kääntymässä oleva lehti. Hyvästele se kunnolla.',
 
-    'hub.greet.morning': 'Päivä on uusi.',
-    'hub.greet.day': 'Valo on korkealla.',
-    'hub.greet.evening': 'Päivä taittuu.',
-    'hub.greet.night': 'Maailma on hiljaa.',
 
     'te.s1': 'Arktisen kesän päättymättömässä valossa tiira, joka ei paina omenaa enempää, opettelee lentämään. Yhdyskunta käy levottomaksi: valo on kääntymässä.',
     'te.s1.a': 'Lähde parven mukana',
@@ -832,6 +832,10 @@ const STR = {
     'kind.story': 'ものがたり',
     'kind.game': 'あそび',
     'kind.wisdom': 'ことばのたね',
+    'acc.label': '画面',
+    'acc.cyan': 'シアン',
+    'acc.green': '緑',
+    'acc.white': '白',
 
     'exp.aqueduct.name': '石の川',
     'exp.aqueduct.desc': 'ローマが水を坂の下へ招いた方法 — そのあと自分で石を回してみよう。',
@@ -1087,10 +1091,6 @@ const STR = {
     'ha.outro': '花見は、花がとどまることを願う行事ではなかった。満開はせいぜい一週間。散ること — もののあはれ、過ぎゆくものへのやわらかな痛み — こそが本体だ。終わるからこそ、人は集まる。',
     'ha.nature': '今日、一本の木を見つけて、そのなかに二週間後には消えているものをひとつ探そう — つぼみ、花、色づきかけの葉。それに、きちんとさよならを言おう。',
 
-    'hub.greet.morning': '一日のはじまり。',
-    'hub.greet.day': '陽は高く。',
-    'hub.greet.evening': '一日がたたまれてゆく。',
-    'hub.greet.night': '世界はしずか。',
 
     'te.s1': '沈まぬ太陽の北極の夏、リンゴほどの重さもないアジサシが飛びかたをおぼえる。光が傾きはじめ、コロニーはそわそわしだす。',
     'te.s1.a': '群れとともに発つ',

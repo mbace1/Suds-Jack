@@ -5,8 +5,8 @@
 // a dithered Raku glaze with a full tonal ramp, a dusty vignette halo, gold
 // veins with a bright core, amber tea, and a glowing cyan pour.
 
-import { PixelScreen, shade, bayer, rampDither } from '../pixel.js?v=38';
-import { PAL } from '../palette.js?v=38';
+import { PixelScreen, shade, bayer, rampDither } from '../pixel.js?v=39';
+import { PAL } from '../palette.js?v=39';
 
 // hit-testing geometry — unchanged so the flow/coords stay stable
 const CX = 96;
@@ -24,7 +24,7 @@ const RIMR  = ['#5a3f26', '#8a6640', '#b8905c', '#e4cfa0'];
 const TEA   = ['#7a3410', '#a8551a', '#cf7a26', '#ecab4c'];
 const INNER = '#201711';
 const GOLD = PAL.GOLD_LUX, GOLD_CORE = '#fff2c0', GOLD_DARK = '#5a3a10';
-const CYAN = PAL.CYAN_LUX, CYAN_HI = '#b8f8f0';
+const CYAN_HI = '#b8f8f0';   // the accent is read live: PAL.CYAN_LUX follows the screen
 
 const ell = (lx, rx) => Math.sqrt(Math.max(0, 1 - (lx / rx) ** 2));
 
@@ -180,20 +180,20 @@ export const seam = {
     function cyanOverflow(now, k) {
       const px = CX + 8;
       // glow halo behind the stream
-      scr.softDisc(px + 2, 96, 26 + k * 6, shade(CYAN, 0.5), 16);
+      scr.softDisc(px + 2, 96, 26 + k * 6, shade(PAL.CYAN_LUX, 0.5), 16);
       // the stream: a wavering column from the rim, past the base, off-screen
       for (let y = TCY; y < 128; y++) {
         if (y > TCY + (128 - TCY) * k) break;
         const w = 3 + Math.round(Math.sin(y * 0.3 + now / 120) * 1.5) + (y > 100 ? 1 : 0);
         const x = px + Math.round(Math.sin(y * 0.12 + now / 200) * 2);
-        scr.px(x - w, y, w * 2, 1, CYAN);
+        scr.px(x - w, y, w * 2, 1, PAL.CYAN_LUX);
         scr.px(x - 1, y, 2, 1, CYAN_HI);                 // bright core
         if ((y + Math.floor(now / 80)) % 3 === 0) scr.px(x + w - 1, y, 1, 1, CYAN_HI);
       }
       // splash where it meets the tea
       for (let i = 0; i < 6; i++) {
         const a = i / 6 * Math.PI - Math.PI / 2, r = 5 + (Math.floor(now / 90) + i) % 5;
-        scr.px(px + Math.cos(a) * r, TCY + Math.sin(a) * r * 0.6, 1, 1, i % 2 ? CYAN : CYAN_HI);
+        scr.px(px + Math.cos(a) * r, TCY + Math.sin(a) * r * 0.6, 1, 1, i % 2 ? PAL.CYAN_LUX : CYAN_HI);
       }
     }
 

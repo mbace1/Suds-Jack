@@ -93,10 +93,10 @@ caveat as paperboy.
 
 ### The Game of Life (`gameoflife/`)
 **Mini games and interactive stories that always revert to going back to nature.**
-Minimalist pixel experiences (canvas 2D, no three.js, no build step). The hub is **zen**:
+Minimalist pixel experiences (canvas 2D, no three.js, no build step), presented as a
+retro-futurist ship terminal (see the locked visual plan below). The hub is **zen**:
 never a menu — ONE offering at a time, drawn weighted by the content mix (**70% story /
-20% game / 10% wisdom**, preferring unvisited-today; "something else, perhaps" redraws),
-with a 3-dot row (two breaths of play, then `~` rest). After every 2nd finished
+20% game / 10% wisdom**, preferring unvisited-today; "something else, perhaps" redraws). After every 2nd finished
 experience the hub *rests* and shows a nature invitation instead (evening 18:00–05:00
 swaps outdoor prompts for a poem / look-at-art prompt). Invitations are **seasonal**:
 `nature.js`'s `season(date, hemi)` puts two per-season prompts ahead
@@ -189,15 +189,35 @@ starting the next one — going experience→experience (as `__gol.debug.start` 
 leak the previous rAF loop against a detached canvas. Profile with Playwright + CDP
 `Emulation.setCPUThrottlingRate(4)` and a wrapped `fillRect` counter, **one fresh page per
 scene** or leaked loops inflate the counts.
-The hub greeting follows the hour (`daySlot()`: morning/day/evening/night) and a
-**living header scene** (192×44 `PixelScreen`, `startHubScene` in `main.js`) paints the
-same hour — dawn mist / noon sun + cloud / dusk / starry night with a tiny Otava — over
-a constant treeline; it must be `stopHubScene()`d wherever the app re-renders. Zen
-chrome-trimming: the set-once controls (language, feedback) sit in ONE quiet
-`.hub-footer` below a divider (language, hemisphere, feedback), out of the main
-column; the explanatory tagline and
-cycle-hint only show for newcomers (< 2 lifetime completions), so returners land on a
-clean header with the offering as the single focus. The app must never nag:
+**The 2026-07 terminal (locked visual plan).** The app is a quiet retro-futurist ship
+terminal — Aliens computer screens crossed with zen. Two halves:
+**(1) The CRT viewport** (`js/crt.js`). Experiences still draw into a flat 192×128 2D
+canvas; what reaches the page is that canvas presented through a WebGL quad with a gentle
+**barrel distortion** (`CURVE` 0.075) **overscanned** by `1/(1+CURVE)` so the picture
+fills the bezel and only the corners round off (without it, black bands frame every
+scene), **one scanline per source row**, a **phosphor bleed** off bright pixels tinted
+toward the accent, and a corner vignette. No heavy bloom, no RGB separation. The bezel
+itself is CSS on `.screen-wrap`. `PixelScreen` owns this: `this.ctx` still draws flat,
+`this.canvas` is whatever is really on screen (the GL canvas, or the 2D one if WebGL is
+missing — the fallback is silent and everything still works), and **`toPixel` runs the
+same `warp()` the shader does**, or every hit test in every tappable scene drifts toward
+the edges. `unwarp()` inverts it (4 fixed-point rounds, < 0.03 px) so the test loop can
+tap by picture coordinates — `tapPixel(page, x, y)` in `smoke.cjs`. All live screens are
+presented from ONE shared rAF; `liveCount()` is asserted to return to 0 on leaving a
+scene, because a CRT still drawing on a destroyed scene is the leaked-rAF bug this
+project has had before.
+**(2) The terminal hub.** No living sky, no cards, no time-of-day greeting — a title, a
+rule, one offering behind a `>` caret with its kind under it, `[ BEGIN ]`, `something
+else...`, a rule, and a **status line** carrying every set-once switch: languages by code
+(`fi en ja`, full name kept as the accessible name), the **screen accent**, sound,
+hemisphere, the sound-garden `♪` glyphs, and the feedback link. The explanatory tagline
+and cycle-hint still only show for newcomers (< 2 lifetime completions).
+**The accent** (`ACCENTS` in `palette.js`, persisted as `accent`) is one phosphor colour
+— cyan / green / white — driving the CSS `--accent`, the CRT's bleed tint, *and*
+`PAL.CYAN_LUX`, so every in-scene interactive glow follows it. That last one means
+**`PAL.CYAN_LUX` is not a constant**: read it at draw time, never `const C =
+PAL.CYAN_LUX` at module level (that freezes at import — `ice`/`seam`/`downhill` had to be
+converted). The app must never nag:
 **rating is occasional** (`store.feedbackDue()` — after the 1st finish, then
 every 5th; the footer's *leave a thought* link is always there, and an empty
 submission records nothing rather than thanking you for silence), and
