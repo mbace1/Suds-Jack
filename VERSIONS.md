@@ -7,6 +7,23 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v212 — 2026-07-26
+**The death screen asks about what just killed you — and shows it**
+- The feedback form asked every player the same two questions forever, so every submission came back the same shape. The death screen now opens with a **question chosen from the run you just had**, with the body that ended it **rendered live** beside it
+- **A seven-entry question deck**, matched most-specific-first: melee killer ("could you read what it was about to do?"), shooter ("did you see the shot coming?"), lobber ("was there enough warning on the ground?"), hazard ("the arena killed you, not an enemy"), death-in-a-crowd ("could you still tell a FLIT apart?"), movement ("did it behave like its own creature?"), and a general fallback
+- **It rotates.** The last four asked ids are remembered, so a second death to the same body asks something new — the same TORO gets *"could you read it?"* once and *"how did it MOVE?"* next time. Different entry, different question, different visual
+- **`js/specimen.js` is a new reusable module**: a passive "one enemy, up close" portrait any screen can mount. Deliberately separate from the pause-menu enemy tester, which is wired to menu state, HIT/KILL buttons and live CFG editing. It follows the main renderer's kind, so it works under the WEBGPU flag too
+- **Only from wave 2** — a wave-1 death hasn't seen enough of the game to have an opinion worth asking for. Hazard deaths show no portrait, because there's no creature to show
+- The answer, the question's id, and what actually landed the killing blow all ride along in the feedback payload, so answers are attributable rather than free-floating text
+- Groundwork for the hub feedback button: the deck and the portrait are the reusable half
+- New file carries `?v=` tokens from day one and is registered in **both** `bump-version.sh`'s file loop and `sw.js`'s precache list (the v118/v119 lesson)
+- **Bug caught by the test**: the panel guarded the portrait with `CFG[showType]`, but `CFG` was never imported into `main.js` — every death after wave 1 would have thrown. Now imported
+- Verified headless (12/12): the fatal blow is recorded; the question names the killer and a live portrait mounts; the portrait is disposed when the screen closes (its rAF loop with it); a repeat death asks a different question; a hazard death asks the hazard question with no portrait; a wave-1 death is not quizzed. `smoke.sh` and `cabinets.sh` green on all six
+- Localized en/ja/fi
+- Cache-bust `?v=165` → `?v=166`; HUD label → v212
+
+---
+
 ## v211 — 2026-07-25
 **FLUID is retired — behaviour belongs to the species, not to a mode**
 - User direction: *"fluid is problematic and should not exist. each enemy can have options for behavior to test what works, but there should never be a toggle like the one we had with fluid mode, since that breaks the game."* A global switch that rewrites how all 40 species move is the wrong shape, and that includes the v210 `MOVEMENT PROFILES` toggle — same mistake, one release younger. Both are gone
