@@ -173,6 +173,14 @@ h1 .amp { color: var(--accent); }
 
 .btn:disabled { opacity: .5; cursor: default; }
 
+/* the archived floor: present, playable, and not asking for attention. The
+   marquees keep their colour but stop competing with the live work. */
+.rack.archived .marquee { opacity: .72; }
+.rack.archived .cab:hover .marquee,
+.rack.archived .cab:focus-within .marquee { opacity: 1; }
+
+#archive-block .count { margin-bottom: 4px; display: block; }
+
 /* ── the sketch shelf ── */
 .shelf-head {
   font-size: 11.5px;
