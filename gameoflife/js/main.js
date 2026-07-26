@@ -36,8 +36,9 @@ import { cairn } from './experiences/cairn.js?v=37';
 import { downhill } from './experiences/downhill.js?v=37';
 import { tether } from './experiences/tether.js?v=37';
 import { hedge } from './experiences/hedge.js?v=37';
+import { seed } from './experiences/seed.js?v=37';
 
-const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice, trace, gears, cairn, downhill, tether, hedge];
+const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice, trace, gears, cairn, downhill, tether, hedge, seed];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
 
 const app = document.getElementById('app');
@@ -382,7 +383,7 @@ function showFeedback(expId, done) {
     const entry = { id: expId, leaves, text, lang: getLang(), ts: Date.now() };
     store.recordFeedback(entry);          // the local record, kept regardless
     box.innerHTML = '';
-    box.appendChild(el('p', '', t('fb.sending')));
+    box.appendChild(el('p', '', t('fb.sending'));
     // 'sent' | 'queued' (endpoint unreachable — kept for the next visit) |
     // 'off' (no endpoint configured, so nothing was promised)
     const how = await outbound.send(entry);
