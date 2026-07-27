@@ -207,6 +207,8 @@ the request blind. Formspree is the easier fit.
 | `lightning` | story | First Lightning | Philadelphia 1882: open the shutter on a storm roof and wait; the plate keeps what the eye cannot, and lightning turns out to be shaped like a river → *watch the next storm from a window and count to the thunder* |
 | `whale` | story | The Whale Fall | Ride a forty-tonne body three kilometres down into water that has never been lit, and stay fifty years while it becomes a town of a hundred species → *look under something fallen and see what is already eating it* |
 | `pando` | story | The Trembling Giant | Pick out four separate aspens on a Utah hillside, then watch the ground light up: one root system, 47,000 stems, one tree → *find two trees that might be one* |
+| `murmur` | story | The Murmuration | Pick one starling out of a winter roost and hold it while a peregrine turns the flock inside out — no leader, just each bird matching its nearest seven → *find a dusk roost and watch it instead of filming it* |
+| `eel` | story | The Eel | Aristotle said mud, Freud dissected four hundred, a Danish ship followed the larvae to the Sargasso — and the middle of the story is still blank → *look into the nearest ditch and let it stay unexplained* |
 
 ## Visual standard (2026-07 master doc)
 
@@ -296,6 +298,12 @@ Adding an experience is three edits: a module in `js/experiences/` (exporting
 `main.js`, and its strings (all three languages) in `i18n.js`. Everything
 else — the offering draw, completion tracking, feedback, the rest cycle —
 comes for free.
+
+**Read [`EXPERIENCES.md`](EXPERIENCES.md) first**, and copy
+`js/experiences/_template.js`. It is the bar an experience has to clear —
+trilingual strings, an animated first screen, a real-world revert in the outro,
+a deterministic smoke block — most of which the gate enforces, and the gate is
+not a nice place to find out.
 
 ## Testing loop
 
