@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { buildSamurai, poseStance, poseRun, poseIdle, poseSwing, poseAim, setGlow } from './robots.js';
+import { buildSamurai, poseStance, poseRun, poseIdle, poseSwing, poseHeavy, poseParry, poseAim, setGlow } from './robots.js';
 
 export const PLAYER_RADIUS = 0.55;
 
@@ -34,6 +34,13 @@ const HURT_IFRAMES = 0.6;
 const RUN_WINDUP = 5.5;     // how fast the run cycle winds up / back down
 const RUN_WINDDOWN = 7;
 const TURN_RATE = 13;
+
+const HEAVY_DUR = 0.78;     // slow, committed — the tradeoff for the damage
+const HEAVY_MULT = 2.8;
+const PARRY_DUR = 0.45;     // whole animation
+const PARRY_ACTIVE = 0.24;  // window that actually deflects
+const PARRY_CD = 0.75;
+export const ULT_MAX = 100;
 
 const JUMP_V = 10;
 const DOUBLE_JUMP_V = 8.8;
@@ -74,6 +81,14 @@ export class Player {
     this.swingIdx = 0;
     this.struck = false;
     this.chainBuffered = false;
+    this.heavyT = -1;       // heavy attack timer
+    this.parryT = -1;       // parry animation timer
+    this.parryCd = 0;
+    this.parriedThis = false;
+    this.ult = 0;           // 0..ULT_MAX, filled by kills
+    this.ultT = -1;         // active ultimate timer
+    this.ultStep = 0;
+    this.autoSwings = 0;
 
     this.dashT = -1;
     this.dashCharges = DASH_CHARGES;
@@ -90,7 +105,12 @@ export class Player {
   get pos() { return this.group.position; }
   get conf() { return FORMS[this.form]; }
   get rig() { return this.rigs[this.form]; }
-  get invincible() { return this.dashT >= 0 || this.iframes > 0; }
+  get invincible() { return this.dashT >= 0 || this.iframes > 0 || this.ultT >= 0; }
+  // active parry frames: incoming melee is negated, bolts bounce back
+  get parrying() { return this.parryT >= 0 && this.parryT <= PARRY_ACTIVE; }
+  get ultReady() { return this.ult >= ULT_MAX; }
+
+  addUlt(n) { this.ult = Math.min(ULT_MAX, this.ult + n); }
 
   reset() {
     this.stats = {
@@ -100,6 +120,11 @@ export class Player {
     this.echoCount = 0;
     this.wakeT = 0;
     this.reviveUsed = false;
+    this.heavyT = -1;
+    this.parryT = -1;
+    this.parryCd = 0;
+    this.ult = 0;
+    this.ultT = -1;
     this.hp = this.stats.maxHp;
     this.pos.set(0, 0, 0);
     this.yaw = Math.PI;
@@ -123,6 +148,8 @@ export class Player {
     poseStance(this.rig);
     this.rig.group.visible = true;
     this.attackT = -1;
+    this.heavyT = -1;
+    this.parryT = -1;
     this.chainBuffered = false;
   }
 
@@ -149,6 +176,7 @@ export class Player {
 
     this.swapCd = Math.max(0, this.swapCd - dt);
     this.iframes = Math.max(0, this.iframes - dt);
+    this.parryCd = Math.max(0, this.parryCd - dt);
 
     // dash charges refill one at a time
     const dashCdFull = DASH_CD * c.dashCdMult * this.stats.dashCdMul;
@@ -186,6 +214,45 @@ export class Player {
         }
         ctx.audio.swap();
       }
+    }
+
+    // ── ultimate: kill-charged, one per frame, i-frames while it runs ──
+    if (input.consumeUlt() && this.ultReady && this.ultT < 0 && !this.dead) {
+      this.ult = 0;
+      this.ultT = 0;
+      this.ultStep = 0;
+      this.attackT = -1;
+      this.heavyT = -1;
+      this.parryT = -1;
+      ctx.audio.rally();
+      ctx.effects.ring(this.pos, 5, 0.5, c.accent, true);
+      ctx.combat.shake(0.4);
+    }
+    if (this.ultT >= 0) {
+      this.ultT += dt;
+      this._runUlt(ctx);
+      if (this.ultT >= 0.9) this.ultT = -1;
+      this.group.rotation.y = this.yaw;
+      return;                      // ult owns the frame
+    }
+
+    // ── parry: short active window that eats melee and bounces bolts ──
+    if (input.consumeParry() && this.parryT < 0 && this.parryCd <= 0 && this.dashT < 0 && !this.dead) {
+      this.parryT = 0;
+      this.parryCd = PARRY_CD;
+      this.parriedThis = false;
+      this.attackT = -1;
+      this.heavyT = -1;
+    }
+    if (this.parryT >= 0) {
+      this.parryT += dt;
+      poseStance(this.rig);
+      poseParry(this.rig);
+      setGlow(this.rig, this.parrying ? 2.2 : 1);
+      this.speedK = Math.max(0, this.speedK - 8 * dt);
+      if (this.parryT >= PARRY_DUR) { this.parryT = -1; setGlow(this.rig, 1); }
+      this.group.rotation.y = this.yaw;
+      return;                      // parry roots you: the risk half of the trade
     }
 
     // ── movement input (camera-relative) ──
@@ -237,6 +304,30 @@ export class Player {
       this.speedK = Math.min(1, this.speedK + 4 * dt);   // exit dashes at speed
       poseStance(this.rig);
       this.rig.torso.rotation.x = 0.5;
+    } else if (this.heavyT >= 0) {
+      // ── heavy attack: slow, committed, big damage + knockback ──
+      this.heavyT += dt;
+      const dur = HEAVY_DUR * this.stats.atkSpdMul;
+      const k = Math.min(this.heavyT / dur, 1);
+      this.speedK = Math.max(0, this.speedK - 6 * dt);
+      poseStance(this.rig);
+      poseHeavy(this.rig, k);
+      setGlow(this.rig, k < 0.55 ? 1 + k * 3 : 1);
+      if (k > 0.55 && k < 0.72) {           // step into the drop
+        this.pos.x += Math.sin(this.yaw) * 5 * dt;
+        this.pos.z += Math.cos(this.yaw) * 5 * dt;
+      }
+      if (!this.struck && k >= 0.62) {
+        this.struck = true;
+        const dmg = c.dmg * HEAVY_MULT * this.dmgMul();
+        ctx.combat.meleeStrike(this.pos, this.yaw, c.range + 0.6, Math.min(c.arc + 30, 360),
+          dmg, c.knock * 2.4, c.accent);
+        ctx.effects.slashArc(this.pos, this.yaw, c.range + 0.6, Math.min(c.arc + 30, 360), c.accent);
+        ctx.effects.ring(this.pos, 2.4, 0.28, c.accent, true);
+        ctx.combat.shake(0.22);
+        ctx.audio.heavy();
+      }
+      if (k >= 1) { this.heavyT = -1; setGlow(this.rig, 1); }
     } else if (this.attackT >= 0) {
       // ── attacking ──
       const dur = c.swings[this.swingIdx] * this.stats.atkSpdMul;
@@ -302,14 +393,20 @@ export class Player {
       } else {
         poseIdle(this.rig, t);
       }
-      if (input.consumeAttack()) {
+      if (input.consumeHeavy()) {
+        this._startHeavy(ctx);
+      } else if (input.consumeAttack()) {
         this.swingIdx = 0;
         this._startSwing(ctx);
       } else if (input.autoCombat) {
         // touch auto-fight: swing when something wanders into reach,
         // or pepper the nearest target in ranged mode
         if (input.mode === 'melee') {
-          if (this._nearest(ctx, c.range + 1.2)) { this.swingIdx = 0; this._startSwing(ctx); }
+          // auto-fight mixes in a heavy every 4th opening for variety
+          if (this._nearest(ctx, c.range + 1.2)) {
+            if (++this.autoSwings % 4 === 0) this._startHeavy(ctx);
+            else { this.swingIdx = 0; this._startSwing(ctx); }
+          }
         } else {
           this._autoShoot(ctx);
         }
@@ -370,11 +467,64 @@ export class Player {
     ctx.audio.shot();
   }
 
-  _startSwing(ctx) {
-    this.attackT = 0;
+  _startHeavy(ctx) {
+    this.heavyT = 0;
     this.struck = false;
-    this.chainBuffered = false;
-    // soft-aim: snap to the nearest live enemy in front-ish range
+    this.attackT = -1;
+    this._faceNearest(ctx);
+  }
+
+  // Ultimates, one signature per frame. i-frames run for the whole duration.
+  _runUlt(ctx) {
+    const c = this.conf;
+    const k = this.ultT / 0.9;
+    poseStance(this.rig);
+    setGlow(this.rig, 2.6);
+
+    if (this.form === 0) {
+      // KIRI — IAIJUTSU: blink forward, cutting everything along the line.
+      // Damage lands on fixed ticks so a fast pass-through still connects
+      // regardless of framerate.
+      poseSwing(this.rig, Math.min(0.4 + k, 1));
+      const step = 19 * ctx.dt;
+      this.pos.x += Math.sin(this.yaw) * step;
+      this.pos.z += Math.cos(this.yaw) * step;
+      const tick = Math.floor(this.ultT / 0.06);
+      if (tick > this.ultStep) {
+        this.ultStep = tick;
+        ctx.combat.meleeStrike(this.pos, this.yaw, 3.4, 360, 45 * this.dmgMul(), 5, c.accent);
+        ctx.effects.slashArc(this.pos, this.yaw, 3.4, 260, c.accent);
+        ctx.effects.sparks(this.pos, c.accent, 3, 4);
+      }
+    } else if (this.form === 1) {
+      // GORO — TECTONIC: three expanding quake rings
+      poseHeavy(this.rig, Math.min(k * 1.2, 1));
+      const stage = Math.floor(this.ultT / 0.28);
+      if (stage > this.ultStep && stage <= 3) {
+        this.ultStep = stage;
+        const r = 3 + stage * 2.6;
+        ctx.combat.meleeStrike(this.pos, this.yaw, r, 360, 55 * this.dmgMul(), 9, c.accent);
+        ctx.effects.ring(this.pos, r, 0.3, c.accent, true);
+        ctx.effects.sparks({ x: this.pos.x, y: 0.3, z: this.pos.z }, c.accent, 10, 7);
+        ctx.combat.shake(0.35);
+        ctx.audio.slam();
+      }
+    } else {
+      // SAYA — THOUSAND CUTS: rapid 360° flurry around the player
+      this.yaw += 22 * ctx.dt;
+      poseSwing(this.rig, (this.ultT * 6) % 1);
+      const step = Math.floor(this.ultT / 0.09);
+      if (step > this.ultStep) {
+        this.ultStep = step;
+        ctx.combat.meleeStrike(this.pos, this.yaw, 3.4, 360, 20 * this.dmgMul(), 2, c.accent);
+        ctx.effects.slashArc(this.pos, this.yaw, 3.4, 200, c.accent);
+        ctx.audio.slash();
+      }
+    }
+    if (this.ultT >= 0.85) setGlow(this.rig, 1);
+  }
+
+  _faceNearest(ctx) {
     let best = null, bestD = 7;
     for (const e of ctx.enemies) {
       if (e.dead) continue;
@@ -382,5 +532,12 @@ export class Player {
       if (d < bestD) { bestD = d; best = e; }
     }
     if (best) this.yaw = Math.atan2(best.pos.x - this.pos.x, best.pos.z - this.pos.z);
+  }
+
+  _startSwing(ctx) {
+    this.attackT = 0;
+    this.struck = false;
+    this.chainBuffered = false;
+    this._faceNearest(ctx);   // soft-aim onto the nearest live enemy
   }
 }

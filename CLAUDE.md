@@ -40,6 +40,18 @@ balanced 3-hit combo) · GORO (magenta cleaver, slow 2-hit, huge arc + knockback
 i-frames, and cancels the current swing — weaving swaps into combos is the core
 mechanic. LMB chains combos (input-buffered), Shift/Space dashes with i-frames (**2
 charges**, refilling one at a time), and slashes deflect enemy bolts caught in the arc.
+
+**Combat verbs:** **RMB = heavy** (`poseHeavy`, 0.78 s, ×2.8 damage, wider arc, heavy
+knockback + shake — slow and committed). **F = parry** (`poseParry`): a 0.45 s stance
+whose first 0.24 s are active (`player.parrying`) and root you in place; active frames
+negate incoming melee inside `combat.hurtPlayer`, stagger the attacker, and reflect any
+bolt within 2.4 u back at the nearest enemy as a white `pBolts` shot. **R = ultimate**,
+gated on a kill-charged meter (`player.ult`/`ULT_MAX`, +4 drone / +10 normal / +25
+brute, +10 on parry): KIRI IAIJUTSU blinks forward cutting a line, GORO TECTONIC drops
+three expanding quake rings, SAYA THOUSAND CUTS spins a rapid 360° flurry. Ults grant
+i-frames for their whole duration and damage on fixed ticks (framerate-independent).
+Touch gets ⛨ PARRY and ★ ULT buttons on the left; auto-combat mixes in a heavy every
+4th opening.
 Player frames use the `fancy` rig dressing (kasa hat, rope obi + scabbards, hakama
 skirt, piston shins); enemies keep the leaner V-crest silhouette. The run cycle winds
 up/down via `player.speedK` (stride, footfall bounce and forward lean all scale with

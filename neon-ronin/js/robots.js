@@ -371,6 +371,40 @@ export function poseSwing(rig, k, twoHanded = false) {
   if (twoHanded) rig.armL.rotation.set(armX, 0, -armZ);
 }
 
+// Guard stance: blade brought across the body, weight back. k 0..1 = how far
+// into the parry window (used to flash the blade on the active frames).
+export function poseParry(rig, k = 1) {
+  rig.armR.rotation.set(-1.15, 0, -0.85);
+  rig.armL.rotation.set(-0.95, 0, 0.7);
+  rig.torso.rotation.set(-0.08, 0.45, 0);
+  rig.hips.position.y = rig.hipsBaseY - 0.06;
+  rig.head.rotation.y = -0.3;
+}
+
+// Overhead two-handed heavy: bigger windup, harder drop than poseSwing.
+export function poseHeavy(rig, k) {
+  let armX, twist;
+  if (k < 0.55) {                      // long windup, blade goes way back
+    const e = k / 0.55;
+    armX = lerp(-0.15, -2.9, e);
+    twist = lerp(0, 0.85, e);
+    rig.hips.position.y = rig.hipsBaseY + e * 0.08;
+  } else if (k < 0.75) {               // the drop
+    const e = easeOut((k - 0.55) / 0.2);
+    armX = lerp(-2.9, 1.5, e);
+    twist = lerp(0.85, -0.5, e);
+    rig.hips.position.y = rig.hipsBaseY - e * 0.14;
+  } else {                             // heavy recovery
+    const e = (k - 0.75) / 0.25;
+    armX = lerp(1.5, -0.15, e);
+    twist = lerp(-0.5, 0, e);
+    rig.hips.position.y = rig.hipsBaseY - (1 - e) * 0.14;
+  }
+  rig.armR.rotation.set(armX, 0, 0.2);
+  rig.armL.rotation.set(armX, 0, -0.2);
+  rig.torso.rotation.set(k < 0.55 ? -0.2 * (k / 0.55) : 0.35, twist, 0);
+}
+
 export function poseAim(rig, lift = 1.45) {
   rig.armR.rotation.set(-lift, 0, 0);
   rig.torso.rotation.y = -0.25;
