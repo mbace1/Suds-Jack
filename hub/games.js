@@ -29,6 +29,16 @@
 export const GAMES = [
   {
     id: 'sudsjack',
+    fi: {
+      tagline: 'Vektorinen putkiräiskintä alas neonkaivoon — nimikkopeli, ja seuraavaksi rakennettava.',
+      controls: '← → / A D liiku · Väli ampuu · Z superzapper',
+      note: 'pelattava versio on alkuperäinen vektoriversio — uusintaversio Hyper Daggerin pohjalta alkaa seuraavaksi',
+    },
+    ja: {
+      tagline: 'ネオンの井戸を落ちていくベクター筒シューター — 名前の由来であり、次に作るもの。',
+      controls: '← → / A D 移動 · スペース 発射 · Z スーパーザッパー',
+      note: '遊べるのは元のベクター版 — Hyper Dagger を土台にした作り直しが次に始まる',
+    },
     pad: 'native',
     status: 'active',
     note: 'the playable build is the original vector one — a rebuild on the Hyper Dagger baseline starts next',
@@ -44,6 +54,16 @@ export const GAMES = [
   },
   {
     id: 'tokodrop',
+    fi: {
+      tagline: 'Kahden tatin laumaselviytyminen. Geelit väistävät linjojasi, parveilevat kuin kalat ja räjähtävät kostorenkaiksi.',
+      lineage: 'luotihelvetti / areena',
+      controls: 'WASD + pidä hiiren ykköstä · Väli syöksy · kosketuksella kaksi tattia',
+    },
+    ja: {
+      tagline: 'ツインスティックの群れ生存戦。ゼリーは弾道をよけ、魚のように群れ、死ぬと復讐のリングを撒く。',
+      lineage: '弾幕 / アリーナ',
+      controls: 'WASD + 左クリック長押し · スペース ダッシュ · タッチでは二本スティック',
+    },
     pad: 'native',
     status: 'active',
     title: 'Toko Drop',
@@ -58,6 +78,16 @@ export const GAMES = [
   },
   {
     id: 'hyperdagger',
+    fi: {
+      tagline: 'Selviydy vokselikallojen laumasta kiekolla tyhjyydessä. Selviytymisaika on ainoa pistemäärä.',
+      lineage: 'Devil Daggers × HYPERDEMON',
+      controls: 'WASD + hiiri · Väli ×2 hyppy · Vaihto syöksy · Esc tauko',
+    },
+    ja: {
+      tagline: '虚空に浮かぶ円盤で、ボクセルの髑髏の群れを生き延びる。生存時間だけがスコア。',
+      lineage: 'Devil Daggers × HYPERDEMON',
+      controls: 'WASD + マウス · スペース ×2 ジャンプ · Shift ダッシュ · Esc 一時停止',
+    },
     pad: 'native',
     status: 'active',
     title: 'Hyper Dagger',
@@ -72,6 +102,16 @@ export const GAMES = [
   },
   {
     id: 'dropcabal',
+    fi: {
+      tagline: 'Syvyyssuuntaan kerrostuva galleriaräiskintä — lähellä olevat geelit syövät laukaukset, jotka tähtäsit kauas.',
+      lineage: 'Cabal (1988)',
+      controls: 'A D juokse · hiiri tähtää + ykkönen · Väli kierähdys · G kranaatti',
+    },
+    ja: {
+      tagline: '奥行きが層になるギャラリーシューター — 手前のゼリーが、奥へ撃った弾を食べてしまう。',
+      lineage: 'Cabal (1988)',
+      controls: 'A D 走る · マウスで照準 + 左クリック · スペース ローリング · G 手榴弾',
+    },
     pad: { keys: { left: 'KeyA', right: 'KeyD', b0: 'Space', b1: 'KeyG' } },   // aim stays on the mouse
     status: 'active',
     title: 'Drop Cabal',
@@ -86,6 +126,18 @@ export const GAMES = [
   },
   {
     id: 'powder',
+    fi: {
+      tagline: 'Raskas leijukelkka kaivertaa pohjatonta laskua. Sukella ladulta syvään puuteriin latatakseen palon, ja polta se takaisin siihen.',
+      lineage: 'Jet Moto × MotorStorm × lumilautailu',
+      controls: 'A D kaarra · W kyyry · S jarruta · Väli palo · kosketuksella kaksi tattia',
+      note: 'tuore prototyyppi — tuntuma ja ilme ovat paikallaan, kenttä kaipaa vielä tasapainotusta',
+    },
+    ja: {
+      tagline: '重いホバースレッドが底なしの斜面を刻む。踏み跡を外して深雪へ飛び込みバーンを溜め、また深雪で使い切る。',
+      lineage: 'Jet Moto × MotorStorm × スノーボード',
+      controls: 'A D カービング · W タック · S スクラブ · スペース バーン · タッチでは二本スティック',
+      note: 'できたてのプロトタイプ — 操作感と見た目は入った、コースはまだ調整が要る',
+    },
     pad: { keys: { left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS', b0: 'Space' } },
     status: 'active',
     note: 'a fresh prototype — the handling and the look are in, the field still needs balancing',
@@ -101,6 +153,18 @@ export const GAMES = [
   },
   {
     id: 'paperboy',
+    fi: {
+      tagline: 'Toimita tilaajille, riko kaikkien muiden ikkunat, selviä kolmesta kolarista.',
+      lineage: 'Paperboy (1985)',
+      controls: 'A D ohjaa · W S kaasu · Z X heitä · Esc tauko',
+      note: 'otettiin sivustolta pois kesäkuussa eikä sitä jatketa — koodi on yhä repossa',
+    },
+    ja: {
+      tagline: '購読者には配り、それ以外の窓は割り、三回の転倒までは生き延びる。',
+      lineage: 'Paperboy (1985)',
+      controls: 'A D ハンドル · W S アクセル · Z X 投げる · Esc 一時停止',
+      note: '6 月にサイトから外して以来そのまま — コードはリポジトリに残っている',
+    },
     status: 'archived',
     live: false,
     note: 'taken off the site in June and not being picked back up — the code is still in the repo',
@@ -116,6 +180,16 @@ export const GAMES = [
   },
   {
     id: 'skltr',
+    fi: {
+      tagline: 'Neonvärinen selviytymisroguelike — kestä, kehity ja katso kuinka pitkälle pääset.',
+      lineage: 'Risk of Rain -sukua',
+      controls: 'WASD liiku · ampuu itsestään',
+    },
+    ja: {
+      tagline: 'ネオンのサバイバル・ローグライク — 耐えて、強くなって、どこまで行けるか試す。',
+      lineage: 'Risk of Rain の系譜',
+      controls: 'WASD 移動 · 攻撃は自動',
+    },
     pad: 'native',
     status: 'active',
     title: 'SKLTR',
@@ -130,6 +204,16 @@ export const GAMES = [
   },
   {
     id: 'neonronin',
+    fi: {
+      tagline: 'Ketjuta miekkasarjoja neonhorisontin halki. Taistelu hoituu itsestään; liike on sinun.',
+      lineage: 'character action',
+      controls: 'WASD + hiiri · ykkönen ketjuttaa · napauta tattia = hyppy ×2',
+    },
+    ja: {
+      tagline: 'ネオンの街並みで剣のコンボをつなぐ。斬るのは自動、動くのは自分。',
+      lineage: 'キャラクターアクション',
+      controls: 'WASD + マウス · 左クリックでコンボ · スティックを弾くと二段ジャンプ',
+    },
     // isDown('KeyA'/'KeyD'/'KeyW'/'KeyS') for movement, Space to dash, KeyE for
     // the command; the camera stays on the mouse
     pad: { keys: { left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS', b0: 'Space', b2: 'KeyE' } },
@@ -146,6 +230,16 @@ export const GAMES = [
   },
   {
     id: 'gameoflife',
+    fi: {
+      tagline: 'Pieniä tarinoita ja pelejä, jotka palauttavat sinut aina ulos. Suomeksi, englanniksi ja japaniksi.',
+      lineage: 'hiljainen',
+      controls: 'napauta tai klikkaa — siinä kaikki',
+    },
+    ja: {
+      tagline: 'いつも外へ返してくれる、小さな物語とゲーム。フィンランド語・英語・日本語。',
+      lineage: '静かなもの',
+      controls: 'タップかクリック — それだけ',
+    },
     pad: { ui: true },
     status: 'active',
     title: 'The Game of Life',
@@ -160,6 +254,16 @@ export const GAMES = [
   },
   {
     id: 'radiofree',
+    fi: {
+      tagline: 'Piraattiuutisvirta Tokon lukemana. Jokainen tiedote on keksitty; DECODE näyttää mitä sanamuoto oikeasti teki.',
+      lineage: 'Metal Gearin kodekki × puhelimen syöte',
+      controls: 'vieritä tai pyyhkäise · ⧉ purkaa tiedotteen · ← → vaihtaa taajuutta',
+    },
+    ja: {
+      tagline: 'トコが読み上げる海賊放送のニュース。どの速報も作りもの。DECODE がその言い回しの仕掛けを見せる。',
+      lineage: 'メタルギアの無線 × スマホのフィード',
+      controls: 'スクロールかスワイプ · ⧉ で速報を解読 · ← → で周波数',
+    },
     pad: { ui: true },
     status: 'active',
     title: 'Radio Free Helsinki',
@@ -174,6 +278,18 @@ export const GAMES = [
   },
   {
     id: 'tinyhawk',
+    fi: {
+      tagline: 'Skeittiosuus kuvattuna lähes mustassa puistossa. Lataa tatti, napsauta se ja pidä ketju kasassa.',
+      lineage: 'Skate Story × Tony Hawk',
+      controls: 'lataa ↓ ja napsauta ↑ · vasen tatti ohjaa · WASD + Väli + Q E F C',
+      note: 'P0 — puisto, ohjaus, grindit ja manuaalit ovat sisällä; tavoitteet ja solmukartta eivät',
+    },
+    ja: {
+      tagline: 'ほぼ真っ暗な公園で撮るスケートパート。スティックを溜め、弾き、つなぎを切らさない。',
+      lineage: 'Skate Story × Tony Hawk',
+      controls: '↓ で溜めて ↑ で弾く · 左スティックで舵 · WASD + スペース + Q E F C',
+      note: 'P0 — 公園・操作・グラインド・マニュアルは入った、目標とノードマップはまだ',
+    },
     pad: 'native',
     status: 'active',
     note: 'P0 — the park, the controls, grinds and manuals are in; goals and the node map are not',
@@ -189,6 +305,16 @@ export const GAMES = [
   },
   {
     id: 'tiny2d',
+    fi: {
+      tagline: 'Yksi nappi. Paina rinteeseen, päästä irti harjalla ja laskeudu seuraavaa pitkin — älä siihen.',
+      lineage: 'Tiny Wings, rullalaudalla',
+      controls: 'pidä pohjassa · päästä harjalla · napsauta ylös temppuun',
+    },
+    ja: {
+      tagline: 'ボタンひとつ。斜面に押しつけ、頂で放し、次の斜面に沿って降りる — ぶつけるのではなく。',
+      lineage: 'Tiny Wings、スケートボードで',
+      controls: 'どこでも長押し · 頂で離す · 上に弾いてトリック',
+    },
     // its own keys, not a synthetic tap: PRESS_KEYS is held to press into the
     // hill and released at the lip, and TRICK_KEYS flicks
     pad: { keys: { down: 'KeyS', up: 'KeyW', b0: 'Space', b3: 'KeyW' } },
@@ -207,6 +333,16 @@ export const GAMES = [
   },
   {
     id: 'eyetest',
+    fi: {
+      tagline: 'Näöntarkastus, joka pitää pisteitä. Loputtomat kierrokset, putkipisteytys, kolme elämää.',
+      lineage: 'optikko, pelillistettynä',
+      controls: 'napauta kuvaa · tai ← →',
+    },
+    ja: {
+      tagline: '点数のつく視力検査。無限ラウンド、連続正解スコア、ライフは三つ。',
+      lineage: '検眼をアーケードに',
+      controls: '絵をタップ · または ← →',
+    },
     status: 'archived',
     title: '20/20',
     tagline: 'An eyesight test that keeps score. Endless rounds, streak scoring, three lives.',
@@ -223,7 +359,7 @@ export const GAMES = [
 // The shader studies the games were built out of — playable, but they are
 // experiments, so they get a quieter shelf of their own.
 export const SKETCHES = [
-  { id: 'goo-surface', title: 'Goo Surface', tagline: 'SPH-lite goop, 64 particles, metaball pass. Poke it.', path: 'goo-surface.html', inRepo: true },
-  { id: 'goo-flop', title: 'Goo Flop', tagline: 'One gel cube that tips onto its side when you swipe.', path: 'goo-flop.html', inRepo: true },
-  { id: 'goo-snowman', title: 'Goo Snowman', tagline: 'Ray-marched SDF snowman — where the goo look started.', path: 'goo-snowman.html', inRepo: true },
+  { id: 'goo-surface', fi: { tagline: 'SPH-kevyt möykky, 64 hiukkasta, metapallopassi. Tökkää sitä.' }, ja: { tagline: '軽量 SPH のどろどろ、粒子 64、メタボール処理。つついてみて。' }, title: 'Goo Surface', tagline: 'SPH-lite goop, 64 particles, metaball pass. Poke it.', path: 'goo-surface.html', inRepo: true },
+  { id: 'goo-flop', fi: { tagline: 'Yksi geelikuutio, joka kaatuu kyljelleen kun pyyhkäiset.' }, ja: { tagline: 'スワイプすると横に倒れるゼリーの立方体ひとつ。' }, title: 'Goo Flop', tagline: 'One gel cube that tips onto its side when you swipe.', path: 'goo-flop.html', inRepo: true },
+  { id: 'goo-snowman', fi: { tagline: 'Säteenmarssitettu SDF-lumiukko — täältä geelin ilme alkoi.' }, ja: { tagline: 'レイマーチング SDF の雪だるま — この見た目の始まり。' }, title: 'Goo Snowman', tagline: 'Ray-marched SDF snowman — where the goo look started.', path: 'goo-snowman.html', inRepo: true },
 ];

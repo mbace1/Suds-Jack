@@ -6,10 +6,11 @@
 // art.js and a cabinet appears. Feedback is the same panel everywhere, tagged
 // with which game it came from, and goes out through hub/feedback.js.
 
-import { GAMES, SKETCHES } from './games.js?v=9';
+import { GAMES, SKETCHES } from './games.js?v=10';
 import { drawMarquee } from './art.js?v=9';
 import * as feedback from './feedback.js?v=10';
-import * as topics from './topics.js?v=1';
+import * as topics from './topics.js?v=2';
+import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=1';
 import { watchPad, padPresent } from './pad.js?v=9';
 
 const el = (tag, cls = '', text = '') => {
@@ -30,7 +31,7 @@ function cabinet(game) {
   const frame = el(playable ? 'a' : 'div', 'marquee');
   if (playable) {
     frame.href = game.path;
-    frame.setAttribute('aria-label', `Play ${game.title}`);
+    frame.setAttribute('aria-label', t('play.aria', { x: game.title }));
     frame.tabIndex = -1;                 // the Play button below is the real target
   }
   const canvas = el('canvas', 'art');
@@ -47,7 +48,8 @@ function cabinet(game) {
   const ver = el('span', 'ver');
   ver.dataset.game = game.id;
   head.appendChild(ver);
-  body.append(head, el('p', 'lineage', game.lineage), el('p', 'tagline', game.tagline));
+  body.append(head, el('p', 'lineage', gameText(game, 'lineage')),
+    el('p', 'tagline', gameText(game, 'tagline')));
 
   const tags = el('ul', 'tags');
   for (const tg of game.tags) tags.appendChild(el('li', '', tg));
@@ -55,21 +57,23 @@ function cabinet(game) {
 
   // where a cabinet stands right now: its own line while it is playable, and
   // in place of the controls once there is nothing to press
-  if (game.note && playable) body.appendChild(el('p', 'note', game.note));
-  body.appendChild(el('p', 'controls', playable ? game.controls : (game.note ?? 'not up yet')));
+  const note = gameText(game, 'note');
+  if (note && playable) body.appendChild(el('p', 'note', note));
+  body.appendChild(el('p', 'controls',
+    playable ? gameText(game, 'controls') : (note || t('notup.yet'))));
 
   const actions = el('div', 'actions');
   let go;
   if (playable) {
-    go = el('a', 'btn play', '[ Play ]');
+    go = el('a', 'btn play', `[ ${t('play')} ]`);
     go.href = game.path;
   } else {
     // a dead button that says so beats a live one that 404s
-    go = el('button', 'btn dead', '[ Not up ]');
+    go = el('button', 'btn dead', `[ ${t('notup')} ]`);
     go.disabled = true;
   }
   // feedback stays open either way — "put this one back" is worth hearing
-  const fb = el('button', 'btn ghost', '[ Feedback ]');
+  const fb = el('button', 'btn ghost', `[ ${t('feedback')} ]`);
   fb.onclick = () => openFeedback(game.title, game.id, game.accent);
   actions.append(go, fb);
   body.appendChild(actions);
@@ -82,7 +86,7 @@ function shelf(sketch) {
   const row = el('li', 'sketch');
   const a = el('a', 'sketch-link', sketch.title);
   a.href = sketch.path;
-  row.append(a, el('span', 'sketch-note', sketch.tagline));
+  row.append(a, el('span', 'sketch-note', gameText(sketch, 'tagline')));
   return row;
 }
 
@@ -101,9 +105,9 @@ function openFeedback(title, gameId, accent) {
   sheet.setAttribute('aria-modal', 'true');
   sheet.setAttribute('aria-labelledby', 'fb-title');
 
-  const h = el('h2', '', `Feedback: ${title}`);
+  const h = el('h2', '', t('fb.title', { x: title }));
   h.id = 'fb-title';
-  sheet.append(h, el('p', 'fb-q', 'What kind of note is this?'));
+  sheet.append(h, el('p', 'fb-q', t('fb.q')));
 
   // The kind row, ordered by what this project is actually asking about
   // (topics.js). Nothing is gated behind it — pick one and the suggestions
@@ -112,7 +116,7 @@ function openFeedback(title, gameId, accent) {
   // an extra tap, which is the wrong trade for the one channel players use.
   let kind = '';
   const kindRow = el('div', 'kind-row');
-  const kindBtns = topics.kindsFor(gameId).map(k => {
+  const kindBtns = topics.kindsFor(gameId, getLang()).map(k => {
     const b = el('button', 'kind', k.label);
     b.type = 'button';
     b.title = k.hint ?? '';
@@ -137,7 +141,7 @@ function openFeedback(title, gameId, accent) {
   const pips = [];
   for (let i = 1; i <= 5; i++) {
     const b = el('button', 'pip', '#');
-    b.setAttribute('aria-label', `${i} out of 5`);
+    b.setAttribute('aria-label', t('fb.rate', { n: i }));
     b.setAttribute('aria-pressed', 'false');
     b.onclick = () => {
       rating = i;
@@ -154,8 +158,8 @@ function openFeedback(title, gameId, accent) {
   const ta = document.createElement('textarea');
   ta.className = 'fb-text';
   ta.rows = 4;
-  ta.placeholder = 'What would you change? What did you like? (optional)';
-  ta.setAttribute('aria-label', 'Your note');
+  ta.placeholder = t('fb.placeholder');
+  ta.setAttribute('aria-label', t('fb.note'));
   sheet.appendChild(ta);
 
   // Suggestions, and they FILL THE BOX rather than submit. A one-tap answer you
@@ -167,7 +171,7 @@ function openFeedback(title, gameId, accent) {
   function renderChips() {
     chipRow.textContent = '';
     if (!kind) return;
-    for (const s of topics.chipsFor(gameId, kind)) {
+    for (const s of topics.chipsFor(gameId, kind, getLang())) {
       const c = el('button', 'chip', s);
       c.type = 'button';
       c.onclick = () => {
@@ -180,22 +184,17 @@ function openFeedback(title, gameId, accent) {
   }
 
   // only claim delivery if there is somewhere for it to go
-  sheet.appendChild(el('p', 'fb-dest', feedback.configured()
-    ? 'Goes straight to the people building these. No account, no tracking.'
-    : 'Kept on this device — no inbox is configured yet.'));
+  sheet.appendChild(el('p', 'fb-dest', t(feedback.configured() ? 'fb.dest.on' : 'fb.dest.off')));
 
   const actions = el('div', 'actions');
-  const send = el('button', 'btn play', '[ Send ]');
-  const cancel = el('button', 'btn ghost', '[ Not now ]');
+  const send = el('button', 'btn play', `[ ${t('fb.send')} ]`);
+  const cancel = el('button', 'btn ghost', `[ ${t('fb.notnow')} ]`);
   actions.append(send, cancel);
   sheet.appendChild(actions);
 
+  // an opaque no-cors POST cannot be confirmed; say only what is true
   const SAID = {
-    sent: 'Got it — thank you. That went straight to the workshop.',
-    // an opaque no-cors POST cannot be confirmed; say only what is true
-    'sent-blind': 'Sent. That form does not answer back, so that is as much as we know.',
-    queued: 'Held for now — the inbox did not answer. It will go out next time you visit.',
-    off: 'Kept on this device.',
+    sent: 'fb.sent', 'sent-blind': 'fb.sent.blind', queued: 'fb.queued', off: 'fb.off',
   };
 
   send.onclick = async () => {
@@ -205,11 +204,11 @@ function openFeedback(title, gameId, accent) {
     if (!rating && !text && !kind) { close(); return; }
     send.disabled = true; cancel.disabled = true;
     sheet.querySelectorAll('.rate-row, .fb-text, .fb-dest, .fb-q, .kind-row, .chip-row').forEach(n => n.remove());
-    const saying = el('p', 'fb-said', 'Sending…');
+    const saying = el('p', 'fb-said', t('fb.sending'));
     sheet.insertBefore(saying, actions);
     const how = await feedback.send({ game: gameId, kind, rating, text, ts: Date.now() });
-    saying.textContent = SAID[how] ?? SAID.off;
-    cancel.textContent = '[ Close ]';
+    saying.textContent = t(SAID[how] ?? SAID.off);
+    cancel.textContent = `[ ${t('fb.close')} ]`;
     cancel.disabled = false;
     cancel.focus();
     send.remove();
@@ -265,7 +264,7 @@ async function showVersions() {
     const v = versions[slot.dataset.game];
     if (!v) continue;
     slot.textContent = `v${v.v}`;
-    slot.title = `version from ${v.from}`;
+    slot.title = t('ver.from', { x: v.from });
   }
   window.__hub.versions = versions;
 }
@@ -348,16 +347,23 @@ function ratingFromDir(dx) {
   return padRating;
 }
 
-// a line in the status bar, but only once a pad has actually shown up
-function padHint() {
-  if (document.getElementById('pad-hint')) return;
-  const row = el('span', 'status-row pad-hint');
-  row.id = 'pad-hint';
-  row.textContent = 'pad: ✕ play · △ feedback · hold ☰ for hub';
-  document.getElementById('status').appendChild(row);
-  if (sel < 0) select(0, false);
+// a line in the status bar, but only once a pad has actually shown up. It is
+// re-called on a language switch, so it relabels an existing hint rather than
+// insisting it has already been added.
+let padSeen = false;
+function padHint(fromPad = true) {
+  if (fromPad) padSeen = true;
+  if (!padSeen) return;
+  let row = document.getElementById('pad-hint');
+  if (!row) {
+    row = el('span', 'status-row pad-hint');
+    row.id = 'pad-hint';
+    document.getElementById('status').appendChild(row);
+    if (sel < 0) select(0, false);
+  }
+  row.textContent = t('pad.hint');
 }
-addEventListener('gamepadconnected', padHint);
+addEventListener('gamepadconnected', () => padHint());
 if (padPresent()) padHint();
 
 // ── the screen's phosphor ──────────────────────────────────────────
@@ -389,14 +395,45 @@ function useAccent(name) {
 
 function accentRow() {
   const row = el('div', 'status-row accent-row');
-  row.appendChild(el('span', 'status-label', 'screen:'));
+  row.appendChild(el('span', 'status-label', t('screen')));
   for (const name of Object.keys(ACCENTS)) {
-    const b = el('button', 'opt-btn', name);
+    const b = el('button', 'opt-btn', t(`accent.${name}`));
     b.dataset.accent = name;
     b.onclick = () => useAccent(name);
     row.appendChild(b);
   }
   return row;
+}
+
+// ── the language row ───────────────────────────────────────────────
+// Three languages, at the top, by their own codes — the same three the whole
+// workshop uses. Codes rather than flags or full names: this is a terminal, the
+// row has to survive at the top of a phone screen, and a flag is a country
+// rather than a language. The full name is still the accessible name.
+function langRow() {
+  const row = el('nav', 'lang-row');
+  row.setAttribute('aria-label', t('lang'));
+  for (const l of LANGS) {
+    const b = el('button', 'lang-btn', l.code);
+    b.type = 'button';
+    b.dataset.lang = l.code;
+    b.setAttribute('aria-label', l.label);
+    b.onclick = () => useLang(l.code);
+    row.appendChild(b);
+  }
+  return row;
+}
+
+// Everything the page says is built from t() and gameText(), so switching is a
+// rebuild rather than a reload: the accent, the scroll position and any pad
+// selection all survive it, and there is no flash of the old language.
+function useLang(code) {
+  setLang(code);
+  remember(code);
+  // a page that says lang="en" while showing Japanese is lying to every screen
+  // reader and translation tool that asks it
+  document.documentElement.lang = code;
+  render();
 }
 
 // ── build the page ─────────────────────────────────────────────────
@@ -407,23 +444,59 @@ function accentRow() {
 const active = GAMES.filter(g => g.status !== 'archived');
 const archived = GAMES.filter(g => g.status === 'archived');
 
-const rack = document.getElementById('cabinets');
-for (const g of active) rack.appendChild(cabinet(g));
+const setText = (sel, key) => {
+  const n = document.querySelector(sel);
+  if (n) n.textContent = t(key);
+};
 
-const oldRack = document.getElementById('archived');
-for (const g of archived) oldRack.appendChild(cabinet(g));
+function render() {
+  // the static copy in index.html is the no-JS fallback; this is the real one
+  setText('.sub', 'sub');
+  setText('#floor-head', 'floor');
+  setText('#floor-sr', 'floor.sr');
+  setText('#archive-head', 'archive');
+  setText('#sketch-head', 'sketches');
+  setText('#source-link', 'source');
+  setText('#hub-feedback', 'tell.hub');
 
-const shelfList = document.getElementById('sketches');
-for (const s of SKETCHES) shelfList.appendChild(shelf(s));
+  const rack = document.getElementById('cabinets');
+  rack.textContent = '';
+  for (const g of active) rack.appendChild(cabinet(g));
 
-// the archive is only worth a heading if there is something in it
-if (!archived.length) document.getElementById('archive-block').hidden = true;
+  const oldRack = document.getElementById('archived');
+  oldRack.textContent = '';
+  for (const g of archived) oldRack.appendChild(cabinet(g));
 
-document.getElementById('status').prepend(accentRow());
-useAccent(readAccent());
+  const shelfList = document.getElementById('sketches');
+  shelfList.textContent = '';
+  for (const s of SKETCHES) shelfList.appendChild(shelf(s));
 
-document.getElementById('hub-feedback').onclick = () => openFeedback('the arcade itself', 'hub');
-showVersions();
+  // the archive is only worth a heading if there is something in it
+  document.getElementById('archive-block').hidden = !archived.length;
+
+  document.querySelectorAll('.lang-row .lang-btn').forEach(b => {
+    const on = b.dataset.lang === getLang();
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', String(on));
+  });
+
+  // the accent row carries words too, so it is rebuilt with everything else
+  document.querySelector('.accent-row')?.remove();
+  document.getElementById('status').prepend(accentRow());
+  useAccent(readAccent());
+
+  padHint(false);
+  showVersions();
+  // a rebuild threw away the elements the selection pointed at
+  sel = -1;
+}
+
+document.querySelector('header').prepend(langRow());
+setLang(preferred());
+document.documentElement.lang = getLang();
+render();
+
+document.getElementById('hub-feedback').onclick = () => openFeedback(t('hub.self'), 'hub');
 
 // anything written while an endpoint was unreachable goes out now, quietly
 feedback.flush();
@@ -435,8 +508,10 @@ feedback.flush();
 // configuration, which is a bug that only shows up after the next token bump.
 window.__hub = {
   games: GAMES, active, archived, sketches: SKETCHES, feedback, topics,
+  t, lang: getLang,
   debug: {
     open: openFeedback, accent: readAccent, setAccent: useAccent,
     select, move, padHint, selected: () => sel,
+    lang: getLang, setLang: useLang, langs: LANGS, render,
   },
 };

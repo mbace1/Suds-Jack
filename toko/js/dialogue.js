@@ -117,10 +117,11 @@ export const TOPICS = [
     // says; this is the one thing the counter is FOR — the person on the other
     // side of it gets to talk back. chat.js takes it over after the reply: the
     // next menu is which project, then what kind of note, then the words.
+    // the one line here that is UI rather than voice: chat.js replaces both the
+    // question and the reply with the reader's language before showing them
     id: 'feedback', q: 'I HAVE SOMETHING TO TELL YOU.', mode: 'feedback',
-    a: [
-      'GO ON. WHICH ONE.',
-    ],
+    key: 'counter.q',
+    a: ['GO ON. WHICH ONE.'],
   },
   {
     id: 'bye', q: 'NOTHING. I AM GOING TO GO MAKE SOMETHING.', end: true,

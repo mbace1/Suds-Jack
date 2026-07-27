@@ -351,11 +351,11 @@ export function mountChat(anchor, opts = {}) {
     root.classList.remove('is-writing');
     list.hidden = false;
     list.textContent = '';
-    hint.textContent = '1–9 PICK · ENTER SKIP · ESC LEAVE';
+    hint.textContent = branch ? word('counter.menu') : '1–9 PICK · ENTER SKIP · ESC LEAVE';
     // A branch takes the menu over — same list, different question. Everything
     // beyond the ninth still clicks; only the number shortcut runs out.
     const items = branch ? branchItems()
-      : menu(unlocked, asked).map(t => ({ q: t.q, go: () => ask(t) }));
+      : menu(unlocked, asked).map(t => ({ q: t.key ? shout(word(t.key)) : t.q, go: () => ask(t) }));
     items.forEach((it, i) => {
       const b = el('button');
       b.type = 'button';
@@ -368,7 +368,7 @@ export function mountChat(anchor, opts = {}) {
 
   function ask(t) {
     if (typing) { finishTyping(); return; }
-    line('tc-you', t.q);
+    line('tc-you', t.key ? shout(word(t.key)) : t.q);
     asked.add(t.id);
     if (t.opens) t.opens.forEach(id => unlocked.add(id));
     list.hidden = true;
@@ -390,6 +390,30 @@ export function mountChat(anchor, opts = {}) {
   // Loaded on demand and allowed to fail: this file is meant to be droppable on
   // any page in the workshop, so a missing hub folder should cost the feedback
   // branch and not the whole counter.
+  // the counter's own copy of the feedback-branch words, for when it is dropped
+  // on a page that has no hub to ask
+  const EN = {
+    'counter.q': 'I HAVE SOMETHING TO TELL YOU.',
+    'counter.ask': 'GO ON. WHICH ONE.', 'counter.kind': '{x}. WHAT KIND OF NOTE?',
+    'counter.words': 'IN YOUR OWN WORDS.', 'counter.never': 'NEVER MIND.',
+    'counter.send': 'SEND', 'counter.type': 'TYPE IT HERE',
+    'counter.local': 'KEPT ON THIS DEVICE', 'counter.hint': 'CTRL+ENTER SEND · ESC BACK',
+    'counter.menu': '1-9 PICK · ENTER SKIP · ESC LEAVE',
+    'counter.sent': 'GOT IT. THAT IS IN THE WORKSHOP NOW.',
+    'counter.blind': 'IT LEFT. THAT FORM DOES NOT ANSWER BACK, SO THAT IS ALL I CAN HONESTLY TELL YOU.',
+    'counter.queued': 'THE INBOX DID NOT ANSWER. I AM HOLDING IT. IT GOES OUT NEXT TIME YOU COME IN.',
+    'counter.off': 'KEPT ON THIS DEVICE. NO INBOX IS SET YET.',
+    'counter.thin': 'WORDS WOULD HAVE HELPED MORE.',
+    'counter.gone': 'THE BOOK IS NOT ON THE COUNTER RIGHT NOW.',
+    'hub.self': 'The arcade itself',
+  };
+  // The menu label is drawn before anyone picks the feedback branch, so this
+  // cannot wait for loadKit() — ask the page directly if it is there.
+  const word = (k, v) => {
+    const T = kit?.t ?? window.__hub?.t;
+    return T ? T(k, v) : (EN[k] ?? k);
+  };
+
   let kit = null;
   let branch = null;                 // { step: 'project'|'kind'|'write', game, kind }
 
@@ -402,7 +426,12 @@ export function mountChat(anchor, opts = {}) {
     // instances it is using on window.__hub; use those.
     const hub = window.__hub;
     if (hub?.feedback && hub?.topics && hub?.games) {
-      kit = { topics: hub.topics, post: hub.feedback, games: hub.games };
+      // and its language with them. Toko's own topics are written in one voice
+      // and stay as written — but the feedback branch is UI, and UI follows the
+      // reader. hub.t/hub.lang are read on every call rather than captured, so
+      // switching the page's language mid-conversation is picked up.
+      kit = { topics: hub.topics, post: hub.feedback, games: hub.games,
+        t: (k, v) => hub.t(k, v), lang: () => hub.lang() };
       return kit;
     }
     // and off the arcade, load our own — untokened, so there is nothing to
@@ -413,47 +442,50 @@ export function mountChat(anchor, opts = {}) {
         import('../../hub/feedback.js'),
         import('../../hub/games.js'),
       ]);
-      kit = { topics, post, games: cat.GAMES };
+      kit = { topics, post, games: cat.GAMES, t: k => EN[k] ?? k, lang: () => 'en' };
     } catch {
       kit = { broken: true };
     }
     return kit;
   }
 
-  const NEVER = { q: 'NEVER MIND.', go: () => cancelBranch() };
+  // Japanese has no case, so uppercasing is a no-op there and a mangling
+  // nowhere — toUpperCase is safe to keep for the Sierra look
+  const shout = s => s.toUpperCase();
 
   function branchItems() {
+    const never = { q: shout(word('counter.never')), go: () => cancelBranch() };
     if (branch.step === 'project') {
-      return [...kit.topics.projectChoices(kit.games).map(p => ({
-        q: p.label.toUpperCase(),
+      return [...kit.topics.projectChoices(kit.games, word('hub.self')).map(p => ({
+        q: shout(p.label),
         go: () => pickProject(p),
-      })), NEVER];
+      })), never];
     }
-    return [...kit.topics.kindsFor(branch.game).map(k => ({
-      q: k.label.toUpperCase(),
+    return [...kit.topics.kindsFor(branch.game, kit.lang()).map(k => ({
+      q: shout(k.label),
       go: () => pickKind(k),
-    })), NEVER];
+    })), never];
   }
 
   async function startFeedback(t) {
     await loadKit();
-    if (kit.broken) { type(['THE BOOK IS NOT ON THE COUNTER RIGHT NOW.']); return; }
+    if (kit.broken) { type([word('counter.gone')]); return; }
     branch = { step: 'project' };
-    type(t.a);
+    type([word('counter.ask')]);
   }
 
   function pickProject(p) {
-    line('tc-you', p.label.toUpperCase());
+    line('tc-you', shout(p.label));
     branch = { step: 'kind', game: p.id, label: p.label };
     list.hidden = true;
-    type([`${p.label.toUpperCase()}. WHAT KIND OF NOTE?`]);
+    type([shout(word('counter.kind', { x: p.label }))]);
   }
 
   function pickKind(k) {
-    line('tc-you', k.label.toUpperCase());
+    line('tc-you', shout(k.label));
     branch = { ...branch, step: 'write', kind: k.id, kindLabel: k.label };
     list.hidden = true;
-    type(['IN YOUR OWN WORDS.'], openComposer);
+    type([shout(word('counter.words'))], openComposer);
   }
 
   function openComposer() {
@@ -463,18 +495,18 @@ export function mountChat(anchor, opts = {}) {
     // the log just got shorter under it; keep the last thing Toko said in view
     log.scrollTop = log.scrollHeight;
     write.textContent = '';
-    hint.textContent = 'CTRL+ENTER SEND · ESC BACK';
+    hint.textContent = word('counter.hint');
 
     const ta = el('textarea');
     ta.rows = 3;
-    ta.placeholder = 'TYPE IT HERE';
+    ta.placeholder = word('counter.type');
     ta.setAttribute('aria-label', `Your note about ${branch.label}`);
 
     // The suggestions FILL THE BOX rather than send. A one-tap answer you
     // cannot then argue with is a leading question, and the argument is the
     // part worth reading.
     const chips = el('div', 'tc-chips');
-    for (const s of kit.topics.chipsFor(branch.game, branch.kind)) {
+    for (const s of kit.topics.chipsFor(branch.game, branch.kind, kit.lang())) {
       const c = el('button', null, s);
       c.type = 'button';
       c.addEventListener('click', () => {
@@ -486,12 +518,12 @@ export function mountChat(anchor, opts = {}) {
     }
 
     const row = el('div', 'tc-send-row');
-    const send = el('button', 'tc-primary', 'SEND');
+    const send = el('button', 'tc-primary', shout(word('counter.send')));
     send.type = 'button';
-    const back = el('button', null, 'NEVER MIND');
+    const back = el('button', null, shout(word('counter.never')));
     back.type = 'button';
     row.append(send, back);
-    if (!kit.post.configured()) row.appendChild(el('span', null, 'KEPT ON THIS DEVICE'));
+    if (!kit.post.configured()) row.appendChild(el('span', null, word('counter.local')));
     write.append(ta, chips, row);
 
     send.addEventListener('click', () => sendNote(ta.value.trim(), send));
@@ -502,13 +534,9 @@ export function mountChat(anchor, opts = {}) {
     if (lastInputWasKey) ta.focus();
   }
 
-  const SAID = {
-    sent: ['GOT IT. THAT IS IN THE WORKSHOP NOW.'],
-    // an opaque no-cors POST cannot be confirmed; say only what is true
-    'sent-blind': ['IT LEFT. THAT FORM DOES NOT ANSWER BACK,', 'SO THAT IS ALL I CAN HONESTLY TELL YOU.'],
-    queued: ['THE INBOX DID NOT ANSWER. I AM HOLDING IT.', 'IT GOES OUT NEXT TIME YOU COME IN.'],
-    off: ['KEPT ON THIS DEVICE. NO INBOX IS SET YET.'],
-  };
+  // an opaque no-cors POST cannot be confirmed; say only what is true
+  const SAID = { sent: 'counter.sent', 'sent-blind': 'counter.blind',
+    queued: 'counter.queued', off: 'counter.off' };
 
   async function sendNote(text, send) {
     send.disabled = true;
@@ -520,8 +548,8 @@ export function mountChat(anchor, opts = {}) {
     root.classList.remove('is-writing');
     branch = null;
     const how = await kit.post.send({ game, kind, text, ts: Date.now(), source: 'counter' });
-    type(text ? (SAID[how] ?? SAID.off)
-      : [...(SAID[how] ?? SAID.off), 'WORDS WOULD HAVE HELPED MORE.']);
+    const said = word(SAID[how] ?? SAID.off);
+    type(text ? [said] : [said, word('counter.thin')]);
   }
 
   function cancelBranch() {
