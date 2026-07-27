@@ -65,22 +65,100 @@ export const ART = {
     g.p(52, 22, 6, 3, '#c9fbe8');           // gel highlight
   },
 
-  // Hyper Dagger: voxel skull, red eyes, one white dagger incoming
+  // Hyper Dagger: the shot HYPERDEMON puts on its own front — a huge skull
+  // hanging over the disc in the void, seen from behind the hand that is
+  // feeding daggers into it, with the whole sky burning behind its head.
+  //
+  // Drawn in the Atari idiom rather than the modern one. HYPERDEMON's searing
+  // backlight is a hundred blown-out gradients and a 2600 could not do one of
+  // them — what it COULD do was change the colour once per scanline, so a sky
+  // is a stack of flat horizontal bars with hard edges between them. That one
+  // constraint carries the whole picture, and it suits the game's own rule:
+  // black and bone, with dark red the only colour allowed in.
   skull(g, a) {
-    g.p(0, 0, W, H, '#08070a');
-    for (let i = 0; i < 9; i++) g.p(8 + i * 15, 4, 1, H - 8, '#1b1a20');
-    g.p(46, 16, 36, 32, '#d8d3c8');
-    g.p(46, 16, 36, 3, '#f2eee6');
-    g.p(50, 48, 28, 8, '#c2bcb0');
-    g.p(53, 26, 9, 9, '#12070a');
-    g.p(67, 26, 9, 9, '#12070a');
-    g.p(55, 28, 5, 5, a);
-    g.p(69, 28, 5, 5, a);
-    g.p(60, 40, 8, 5, '#12070a');
-    for (let i = 0; i < 4; i++) g.p(52 + i * 8, 48, 3, 10, '#c2bcb0');
-    g.line(8, 62, 40, 40, '#ffffff');       // the dagger
-    g.line(9, 63, 41, 41, '#8fb8ff');
-    g.p(38, 38, 5, 5, '#ffffff');
+    const INK = '#08070a', BONE = '#e6dfd0', DIM = '#8e857a', GREY = '#5f574e';
+    g.p(0, 0, W, H, INK);
+
+    // the burn behind the head, a bar at a time, bleeding off both edges
+    for (let y = 0; y < 58; y++) {
+      const dy = y - 30;
+      if (Math.abs(dy) > 31) continue;
+      const dx = Math.floor(Math.sqrt(31 * 31 - dy * dy) * 1.9);
+      const k = (dy + 31) / 62;
+      const c = k < 0.55 ? mix('#1c0503', a, (k / 0.55) * 0.9)
+        : mix(a, '#f9dfc8', ((k - 0.55) / 0.45) * 0.8);
+      g.p(64 - dx, y, dx * 2 + 1, 1, c);
+    }
+    // the bars STOP, they do not blend — that seam is the whole tell
+    for (let y = 3; y < 58; y += 6) g.p(0, y, W, 1, 'rgba(8,7,10,0.34)');
+
+    // The arena, and it has to read as a DISC with an edge — the whole game is
+    // that there is nowhere else to stand. So the grid is clipped to a wedge
+    // that opens toward the viewer rather than run out to the frame, which is
+    // what made an earlier pass look like shelving.
+    const VX = 64, VY = 53;
+    const reach = y => Math.min(66, (y - VY) * 7.5);
+    for (const y of [57, 60, 64, 71]) {
+      const r = reach(y);
+      g.p(VX - r, y, r * 2, 1, mix(GREY, '#cbc2b6', (y - 57) / 14));
+    }
+    for (let i = -5; i <= 5; i++) {
+      g.line(VX + i * 1.6, VY + 2, VX + i * (reach(H) / 5.2), H, i === 0 ? '#8e857a' : GREY);
+    }
+
+    // The head. A Master System sprite is a flat fill inside a hard black line
+    // — so the shape has to be in the SILHOUETTE, because there is no shading
+    // to put it in. Cranium tapers to temples, cheeks pull in, jaw hangs.
+    const half = y => {
+      if (y < 12) return 13 + (y - 6) * 1.2;          // crown
+      if (y < 30) return 20;                          // temples, widest
+      if (y < 36) return 20 - (y - 30) * 0.9;         // cheeks pulling in
+      return 14 - (y - 36) * 0.25;                    // and the jaw tapering off
+    };
+    for (let y = 6; y <= 50; y++) {
+      const w = Math.round(half(y));
+      g.p(64 - w - 1, y, w * 2 + 3, 1, INK);          // the hard line
+      g.p(64 - w, y, w * 2 + 1, 1, y < 36 ? BONE : DIM);
+    }
+    g.p(64 - 13, 6, 27, 3, '#f7f2e8');                // one lit plane, flat
+    g.p(64 - 20, 36, 41, 1, INK);                     // where the jaw hangs off
+    for (let i = 0; i < 5; i++) {                     // teeth
+      g.p(51 + i * 6, 44, 5, 9, INK);
+      g.p(52 + i * 6, 44, 3, 8, BONE);
+    }
+
+    g.p(48, 17, 13, 13, INK);                         // sockets, cut clean
+    g.p(67, 17, 13, 13, INK);
+    g.p(51, 20, 7, 7, a);                             // and what looks out
+    g.p(70, 20, 7, 7, a);
+    g.p(52, 21, 3, 3, '#ffd9cf');
+    g.p(71, 21, 3, 3, '#ffd9cf');
+    g.p(59, 30, 10, 7, INK);                          // nose
+    g.p(46, 15, 36, 2, mix(BONE, INK, 0.45));         // brow
+
+    // two more of them, further out and further back
+    for (const [cx, cy] of [[13, 26], [111, 34]]) {
+      for (let i = 0; i < 11; i++) {                  // same taper, one tenth up
+        const w = i < 2 ? 4 : i < 8 ? 5 : 3;
+        g.p(cx - w - 1, cy + i, w * 2 + 3, 1, INK);
+        g.p(cx - w, cy + i, w * 2 + 1, 1, DIM);
+      }
+      g.p(cx - 4, cy + 3, 3, 4, INK); g.p(cx + 2, cy + 3, 3, 4, INK);
+      g.p(cx - 4, cy + 4, 2, 2, a); g.p(cx + 2, cy + 4, 2, 2, a);
+      for (let i = 0; i < 3; i++) g.p(cx - 4 + i * 3, cy + 11, 2, 3, DIM);
+    }
+
+    // The daggers, entering from the corner nearest the player. There was a
+    // first-person gauntlet down here for a while and it was wrong: at 128x72
+    // a hand is four white bricks, and it took the frame away from the head —
+    // which on the real cover is the whole picture. The stream says the same
+    // thing (someone is throwing these) in a tenth of the pixels.
+    for (let i = 0; i < 6; i++) {
+      const t = i / 6, x = 116 - t * 46, y = 69 - t * 24;
+      g.p(x - 1, y - 1, 9, 4, INK);
+      g.p(x, y, 7, 2, '#ffffff');
+      g.p(x + 7, y, 4, 1, a);                         // the tail
+    }
   },
 
   // Drop Cabal: sunset rows, sandbags, one little commando
@@ -307,38 +385,6 @@ export const ART = {
     g.p(0, H - 10, W, 10, '#2a3423');
     g.p(58, H - 26, 3, 14, '#6b4f3a');      // one tree apart from the rest
     g.disc(59, H - 30, 8, a);
-  },
-
-  // Radio Free Helsinki: the codec screen — Toko in the portrait frame, the
-  // story panel above her, and one amber word showing through the green
-  codec(g, a) {
-    g.p(0, 0, W, H, '#04070a');
-    g.p(0, 0, W, H, '#081218');
-    // the story panel, with a truncated chart in it
-    g.p(8, 5, 60, 40, '#0a1a1e');
-    [7, 6, 9, 14, 20, 26, 33].forEach((h, i) => g.p(13 + i * 7, 43 - h, 5, h, i > 4 ? '#c9ffe0' : a));
-    for (const [x, y, w, h] of [[7, 4, 62, 1], [7, 45, 62, 1], [7, 4, 1, 42], [68, 4, 1, 42]]) g.p(x, y, w, h, '#1c4a38');
-    // the portrait frame: the gel with a headset, mouth open mid-word
-    g.p(8, 50, 34, 20, '#0d2229');
-    g.disc(24, 62, 9, '#00806b');
-    g.disc(24, 61, 8, '#00ccaa');
-    g.p(21, 58, 2, 3, '#08110f');
-    g.p(27, 58, 2, 3, '#08110f');
-    g.p(22, 65, 5, 3, '#3a1005');
-    g.p(19, 54, 3, 2, '#ffffff');
-    g.p(33, 57, 2, 6, '#33474d');          // ear cup
-    // the data column and the waveform
-    g.p(46, 50, 10, 20, '#061114');
-    for (let i = 0; i < 5; i++) g.p(48, 53 + i * 4, 6, 2, i > 2 ? '#1c4a38' : a);
-    for (let i = 0; i < 22; i++) {
-      const v = 1 + ((i * 5) % 7);
-      g.p(60 + i * 3, 60 - v, 2, v * 2, a);
-    }
-    // one decoded word, because that is what the app is
-    g.p(74, 12, 46, 3, '#ffb43a');
-    g.p(74, 20, 34, 3, '#3f9a6e');
-    g.p(74, 28, 42, 3, '#ffb43a');
-    g.p(74, 36, 28, 3, '#3f9a6e');
   },
 
   // Tiny Hawk: the prism skater on a lit rail, in the near-black park
