@@ -93,6 +93,48 @@ exceed 1.0) give selective glow without washing out the bone.
 - **Style meter:** a Returnal/DMC-style rank (D → SSS) fed by fast kills, dash-through-orb dodges and gem pickups; idling bleeds it out faster at the top tiers, so holding **S+** means never stopping. The rank drives a HUD badge + fill bar and swells the music; your peak rank is on the death recap
 - **Gamepad:** plug in a controller — left stick moves, right stick looks, RT/RB fire, A jumps (×2), B/LT dashes — feeding the same input paths as mouse/keyboard/touch
 
+### `radiofree/`
+**Radio Free Helsinki.** A pirate news broadcast that looks like **half a Metal
+Gear codec screen** — one portrait frame with **Toko** (the teal gel from Toko
+Drop) reading the day's wire, and where the second portrait would be, a small
+animated picture per story. Below it, a feed you swipe through like Shorts.
+Canvas 2D pixel art, no build step, no assets, no CDN: every pixel — Toko's
+face, all twelve panels — is drawn in code.
+
+Three channels on the dial, four bulletins each: **87.60 KAIKU** (games /
+studios), **104.40 VERKKO** (tech / industry), **141.12 VARTIO** (defence /
+signal) — Helsinki as what it actually is, a games town wired into a tech
+industry sitting next to a defence band.
+
+> **Every bulletin is fiction** — invented studios, ministries and ports, no real
+> company or country described or accused of anything. The *language* is not
+> invented: each item is written the way this kind of story really gets written.
+
+**Controls:** swipe up/down (or ↑ ↓ / Space / **NEXT**) pages the feed · swipe
+left/right (or ← → / the **◀ ▶** dial) changes channel · **DECODE** or `D` ·
+tap the copy to skip the read · ♪ mutes
+
+#### DECODE
+The whole point. Press it and the bulletin re-reads itself in plain language —
+the broadcast wording stays on screen struck through, and the plain reading
+grows in beside it in amber (~~Ninety-two roles were affected~~ → **The board
+voted to fire ninety-two people**). A drawer names the technique (agentless
+passive, missing denominator, source laundering, category drift, pre-emptive
+frame…), explains what it did, and gives a **TELL** — the question that catches
+it next time in the wild.
+
+**The pictures decode too:** the truncated bar chart re-bases to zero and the
+mountain becomes a bump, the valuation tower goes hollow except for the 6%
+actually sold, the full auditorium empties to the four people who were on the
+stage, and nine hundred accounts around a topic collapse into a fan spoked to
+the one node that made them. The last bulletin on the defence band turns the
+frame on the station reading it.
+
+Toko is **lip-synced, not flapping** — the typewriter hands the face a mouth
+amplitude per character (vowels open it, spaces close it) — and goes amber and
+starts tearing under DECODE. Thirty-check smoke gate in `radiofree/test/`,
+including WCAG AA on every text colour.
+
 ### `toko-drop/`
 Twin-stick bullet-hell arena shooter built on Three.js r167.
 
@@ -132,6 +174,7 @@ Twin-stick bullet-hell arena shooter built on Three.js r167.
 ## Changelog
 
 ### 2026-07
+- **`radiofree/` — Radio Free Helsinki:** new app (not a game) — a fictional pirate news broadcast styled as half a Metal Gear codec screen, with **Toko** reading the day's wire from the portrait frame and an animated story panel where the second portrait would be. Three channels (games / industry / defence), twelve bulletins, swipeable like a stories feed. Canvas 2D pixel art drawn entirely in code (no assets, no CDN, no build step); WebAudio codec kit — blips per typed character, tuning sweeps, an idle carrier hiss that ducks under the read — all through one master gain so the ♪ mute is total. The mechanic is **DECODE**: every bulletin re-reads itself in plain language inline (broadcast wording struck, plain reading in amber), a drawer names the technique and gives a TELL, and *the picture decodes with it* — truncated axes re-base to zero, a valuation goes hollow, a packed auditorium empties to the four on stage, a crowd of accounts collapses into a fan spoked to the node that spawned it. Toko is lip-synced off the typewriter's per-character amplitude. 30-check smoke gate (animation, decode, paging, tuning, 44px targets, WCAG AA with translucent backgrounds properly composited)
 - **hyperdagger v3.6 — style meter + gamepad:** a Returnal/DMC-flavoured rank system (`STYLE_TIERS` D→SSS, cap 150) rewards chaining — kills add by type, a dash *through* an orb adds +4 (credited once per orb via `o.phased`), gem pickups top it up; `step()` bleeds the meter at `6 + styleVal·0.05`/s so the top tiers stay fleeting. The tier shows as a HUD badge + `×mult` + fill bar (`#style`), folds into the music-intensity signal (0.35 weight), and its run peak is a new death-recap line; only S-and-above rank-ups toast so lower crossings never clobber an enemy-debut announcement. **Gamepad support:** `input.pollGamepad()` runs each frame and feeds the existing `getMove`/`getLookRate`/`firing` getters (left stick move, right stick look-rate, RT/RB fire, A = jump ×2, B/LT = dash, deadzoned + edge-detected) so a controller needs no other plumbing
 - **hyperdagger v3.5 — adaptive music layer:** an all-synth A1 minor-pentatonic arpeggio on a lookahead scheduler (16th notes queued ~0.15 s ahead so it never stutters, resyncs after a pause instead of bursting) plays over the drone. Voices layer in with a run-intensity signal (live-threat count + run progress): bass always, arp above ~0.25, hi-hat tick above ~0.5, a lead counter-melody above ~0.75 — so the soundtrack thickens as the swarm builds and thins when you clear it. New MUSIC on/off toggle in the pause menu (`opts.music`, persisted, reconciles live)
 - **hyperdagger v3.4 — milestone announcements:** every enemy debut now gets an authored first-encounter moment — a 2.2 s named toast (THE WATCHERS / THE BRUTES / THORNS BENEATH / THE THIEVES / THE BLINKERS / THE SERPENT / THE PALE SERPENT / CROWNED SKULLS / THE SPLITTERS) plus a low two-note dread stinger and a trauma pulse; THE LEVIATHAN RISES re-announces on every boss respawn. One-per-run keyed in `announced{}`; new `debug.setTime()` warp for testing the schedule

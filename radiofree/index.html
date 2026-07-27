@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#04070a">
+<meta name="description" content="Radio Free Helsinki — a fictional pirate news broadcast. Toko reads the day's wire from a codec screen; DECODE shows you what the wording was doing.">
+<title>Radio Free Helsinki</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --void: #04070a;
+    --shell: #081218;
+    --green: #7dffb2;
+    --green-dim: #3f9a6e;
+    --green-lo: #1c4a38;
+    /* the quietest text tone that still clears WCAG AA on the void — hierarchy
+       comes from size, never from being too dim to read */
+    --text-dim: #5a8872;
+    --amber: #ffb43a;
+    --amber-hot: #ffe2a8;
+    --gaming: #54d6ff;
+    --industry: #8fe36a;
+    --defence: #ff6b6b;
+    --accent: var(--gaming);
+    --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, 'Courier New', monospace;
+  }
+
+  html, body { height: 100%; background: var(--void); }
+  body {
+    font-family: var(--mono);
+    color: var(--green);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  /* the tube: scanlines and a corner vignette over the whole app */
+  body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 60; pointer-events: none;
+    background:
+      repeating-linear-gradient(to bottom, rgba(0,0,0,.28) 0 1px, transparent 1px 3px),
+      radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%);
+  }
+
+  #app {
+    max-width: 620px;
+    margin: 0 auto;
+    padding: 10px 14px 28px;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* ── masthead ─────────────────────────────────────────── */
+  .mast {
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid var(--green-lo);
+    padding-bottom: 8px;
+  }
+  .logo {
+    font-size: 13px; letter-spacing: .16em; font-weight: 700;
+    text-transform: uppercase; white-space: nowrap;
+  }
+  .logo b { color: var(--amber); font-weight: 700; }
+  .mast .date { margin-left: auto; font-size: 11px; color: var(--green-dim); letter-spacing: .1em; }
+  .icon-btn {
+    flex: none;
+    min-width: 44px; min-height: 44px;
+    background: none; border: 1px solid var(--green-lo); border-radius: 3px;
+    color: var(--green); font-family: var(--mono); font-size: 15px;
+    cursor: pointer;
+  }
+  .icon-btn:hover { border-color: var(--green-dim); }
+  .icon-btn[aria-pressed="false"] { color: var(--green-lo); }
+
+  /* ── the dial ─────────────────────────────────────────── */
+  .dial {
+    display: flex; align-items: stretch; gap: 8px;
+    border: 1px solid var(--green-lo); border-radius: 3px;
+    background: var(--shell);
+    padding: 4px;
+  }
+  .dial button {
+    min-width: 44px; min-height: 44px;
+    background: none; border: 0; color: var(--green-dim);
+    font-family: var(--mono); font-size: 17px; cursor: pointer;
+  }
+  .dial button:hover { color: var(--green); }
+  .dial .read {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px;
+    border-left: 1px solid var(--green-lo); border-right: 1px solid var(--green-lo);
+  }
+  .dial .freq {
+    font-size: 22px; font-weight: 700; letter-spacing: .06em;
+    color: var(--accent);
+    text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+  .dial .call { font-size: 11px; letter-spacing: .22em; color: var(--green-dim); }
+
+  /* ── codec screen ─────────────────────────────────────── */
+  .codec {
+    background: var(--shell);
+    border: 1px solid var(--green-lo);
+    border-radius: 3px;
+    padding: 6px;
+    line-height: 0;
+  }
+  .codec canvas {
+    width: 100%; height: auto; display: block;
+    image-rendering: pixelated; image-rendering: crisp-edges;
+  }
+  .strip {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--green-dim);
+    margin-top: -4px;
+  }
+  .strip .rec { color: var(--defence); }
+  .strip .rec::before {
+    content: '●'; margin-right: 5px; animation: blink 1.6s steps(1) infinite;
+  }
+  @keyframes blink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: .15; } }
+  .strip .slug { margin-left: auto; color: var(--accent); }
+
+  /* ── the bulletin ─────────────────────────────────────── */
+  .card { flex: 1; }
+  .tag {
+    font-size: 10px; letter-spacing: .2em; color: var(--accent);
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+  .head {
+    font-size: 19px; line-height: 1.25; letter-spacing: .01em;
+    color: var(--green); margin-bottom: 10px; font-weight: 700;
+  }
+  .bulletin { font-size: 14px; color: #b7e8cd; min-height: 9.5em; }
+  .bulletin-line + .bulletin-line { margin-top: 9px; }
+  .bulletin-line::before { content: '> '; color: var(--green-lo); }
+
+  .spun { transition: color .25s, opacity .25s; }
+  .spun.struck { color: var(--text-dim); text-decoration: line-through; opacity: .7; }
+  .plain { color: var(--amber); }
+  .plain::before { content: ' → '; color: var(--amber-hot); }
+
+  /* ── decode drawer ────────────────────────────────────── */
+  .decode-box {
+    border: 1px solid var(--amber); border-left-width: 3px;
+    background: rgba(255,180,58,.05);
+    padding: 10px 12px; margin-top: 14px;
+  }
+  .decode-box[hidden] { display: none; }
+  .technique {
+    font-size: 11px; letter-spacing: .18em; color: var(--amber-hot);
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+  .note { font-size: 13px; color: #e8cfa2; }
+  .tell {
+    font-size: 13px; color: var(--amber); margin-top: 8px;
+    border-top: 1px dashed rgba(255,180,58,.3); padding-top: 8px;
+  }
+  .tell::before { content: 'TELL: '; color: var(--amber-hot); letter-spacing: .1em; }
+
+  /* ── actions ──────────────────────────────────────────── */
+  .actions { display: flex; gap: 8px; }
+  .btn {
+    flex: 1; min-height: 48px;
+    background: var(--shell); border: 1px solid var(--green-dim); border-radius: 3px;
+    color: var(--green); font-family: var(--mono);
+    font-size: 13px; letter-spacing: .16em; text-transform: uppercase;
+    cursor: pointer; transition: background .15s, border-color .15s, color .15s;
+  }
+  .btn:hover { background: #0d2028; }
+  .btn.on { border-color: var(--amber); color: var(--amber); background: rgba(255,180,58,.08); }
+  .btn:focus-visible, .icon-btn:focus-visible, .dial button:focus-visible {
+    outline: 2px solid var(--amber); outline-offset: 2px;
+  }
+
+  .progress { display: flex; gap: 5px; justify-content: center; }
+  .progress i {
+    display: block; height: 3px; flex: 1; max-width: 34px;
+    background: var(--green-lo); border-radius: 2px;
+  }
+  .progress i.seen { background: var(--green-dim); }
+  .progress i.at { background: var(--accent); }
+
+  .fiction {
+    font-size: 10px; letter-spacing: .1em; color: var(--text-dim);
+    text-align: center; text-transform: uppercase; line-height: 1.6;
+  }
+  .hint { font-size: 10px; letter-spacing: .1em; color: var(--text-dim); text-align: center; }
+
+  /* ── the tune-in gate ─────────────────────────────────── */
+  #gate {
+    position: fixed; inset: 0; z-index: 70;
+    background: var(--void);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 18px; padding: 24px; text-align: center;
+  }
+  #gate.gone { display: none; }
+  #gate h1 { font-size: 22px; letter-spacing: .2em; text-transform: uppercase; }
+  #gate h1 b { color: var(--amber); }
+  #gate p { font-size: 12px; color: var(--green-dim); max-width: 34em; letter-spacing: .06em; }
+  #gate .btn { flex: none; min-width: 220px; }
+  #gate .noise { width: 100%; max-width: 300px; height: 46px; image-rendering: pixelated; }
+
+  @media (max-width: 420px) {
+    .head { font-size: 17px; }
+    .logo { font-size: 11px; letter-spacing: .1em; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .strip .rec::before { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <h1>Radio <b>Free</b> Helsinki</h1>
+  <canvas class="noise" width="150" height="23" aria-hidden="true"></canvas>
+  <p>Pirate wire out of the capital. Games, industry, and the defence band —
+     read by Toko, who has never been asked to be impartial.</p>
+  <p>Every bulletin is invented. Every technique in them is not.</p>
+  <button class="btn" id="tuneIn">▶ Tune in</button>
+</div>
+
+<div id="app" hidden>
+  <header class="mast">
+    <span class="logo">Radio <b>Free</b> Helsinki</span>
+    <span class="date" id="date"></span>
+    <button class="icon-btn" id="sound" aria-pressed="true" aria-label="Sound on or off">♪</button>
+  </header>
+
+  <div class="dial">
+    <button id="chDown" aria-label="Previous channel">◀</button>
+    <div class="read">
+      <span class="freq" id="freq">87.60</span>
+      <span class="call" id="call">KAIKU</span>
+    </div>
+    <button id="chUp" aria-label="Next channel">▶</button>
+  </div>
+
+  <div class="codec" id="codec"></div>
+  <div class="strip">
+    <span class="rec">On air</span>
+    <span class="sector" id="sector"></span>
+    <span class="slug" id="slug"></span>
+  </div>
+
+  <main class="card">
+    <p class="tag" id="tag"></p>
+    <h1 class="head" id="head"></h1>
+    <div class="bulletin" id="bulletin" aria-live="polite" aria-atomic="false"></div>
+    <div class="decode-box" id="decodeBox" hidden>
+      <p class="technique" id="technique"></p>
+      <p class="note" id="note"></p>
+      <p class="tell" id="tell"></p>
+    </div>
+  </main>
+
+  <div class="actions">
+    <button class="btn" id="decode">Decode</button>
+    <button class="btn" id="next">Next ▼</button>
+  </div>
+  <div class="progress" id="progress"></div>
+  <p class="hint" id="hint">swipe / ↑ ↓ to page &nbsp;·&nbsp; D to decode</p>
+  <p class="fiction">Fictional broadcast · invented studios, ministries and ports · real techniques</p>
+</div>
+
+<script type="module" src="js/main.js?v=1"></script>
+</body>
+</html>

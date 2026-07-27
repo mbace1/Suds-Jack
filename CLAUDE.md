@@ -245,6 +245,82 @@ Pipeline: develop on `claude/*` beta branches → greenlight to `main` → copy 
 bump `?v=N` cache-busters together when shipping. See `gameoflife/README.md` for the
 roadmap of future experiences.
 
+### Radio Free Helsinki (`radiofree/`)
+A **fictional pirate news broadcast** — an app, not a game. Looks like **half a Metal
+Gear codec screen**: one portrait frame with **Toko** (the teal gel from toko-drop,
+`#00ccaa`, dark eyes, white specular) reading the day's wire, and where the codec's
+second portrait would be, an animated story panel — the half that behaves like a
+feed. Below, a swipeable bulletin card (Shorts/stories paging). **Canvas 2D pixel art,
+no three.js, no build step, no assets, no CDN** — every pixel is drawn in code, so it
+works offline. Three channels on the dial (`SECTORS` in `stories.js`): **87.60 KAIKU**
+games/studios, **104.40 VERKKO** tech/industry, **141.12 VARTIO** defence/signal —
+Helsinki as a games town wired into a tech industry next to a defence band. Four
+bulletins each; running off the end of a channel sweeps to the next, so NEXT alone
+walks all twelve.
+
+**Everything on the wire is invented** — fictional studios, ministries, ports and
+operators; no real company, agency or country is described or accused of anything.
+What is real is the *language*: each bulletin is written the way that kind of story
+actually gets written, and **DECODE** names the move. That is the app's whole payload
+and the reason the propaganda subject is safe to build — it teaches recognition, it
+does not manufacture claims. The masthead and the tune-in gate both say so on screen.
+
+**DECODE is the mechanic.** Copy is marked up `{{as broadcast|what that means}}`
+(`parseLine`/`flatten` in `stories.js`); pressing DECODE strikes the broadcast wording
+in place and grows the plain reading beside it in amber, then opens a drawer with the
+technique (`AGENTLESS PASSIVE`, `MISSING DENOMINATOR`, `SOURCE LAUNDERING`,
+`CATEGORY DRIFT`, `PRE-EMPTIVE FRAME`…), what it did, and a **TELL** — the question
+that catches it in the wild. **The panels decode too**, because the framing is never
+only in the words: the truncated bar chart re-bases to zero (mountain → bump), the
+valuation tower goes hollow but for the 6% actually sold, the packed auditorium empties
+to the four people on the stage, 900 accounts collapse into a fan spoked to the one node
+that made them. The last bulletin on the defence band turns the frame on this station.
+
+**Amber has exactly one job** — "the spin is showing" — and never appears before DECODE;
+sector colours (cyan/green/red) carry the channel, green is the default phosphor.
+Adding amber anywhere else costs the app its one piece of taught colour vocabulary.
+
+**Toko is lip-synced, not flapping:** `Reader.update()` returns a mouth amplitude from
+the character it just typed (vowels open, consonants part, spaces close) and that value
+drives `Toko.update()`. Change how text is revealed and the amplitude has to keep
+coming or the face goes dead. The gel wobbles with rx/ry breathing in opposite phase
+(volume conserved = jelly), blinks on a timer, and under DECODE goes amber and tears
+(`getImageData` band displacement). Two traps already paid for: teal lerped only
+part-way to amber lands on **olive** and reads as a rendering fault (tint at 0.92, not
+0.55), and the mic capsule parked over the mouth reads as a **tongue** and kills the
+lip-sync — it lives below-right of the mouth.
+
+**Both frames are ONE canvas.** `codec.js` draws the portrait (96×96) and the story
+panel (128×96) into *detached* `PixelScreen` buffers and blits them into a single
+248×124 screen with a shared waveform band, so the frames cannot drift apart when CSS
+scales the page. `PixelScreen(null, w, h)` is the detached mode. Idle waveform samples
+sit on a breathing carrier — with noise alone an open channel quantised to 1px and read
+as a broken dotted line.
+
+**Audio** (`audio.js`) is all-synth: per-character blips, ring/connect pips, tuning
+sweeps, a falling saw for DECODE, and a looping band-passed **carrier hiss** that ducks
+while a bulletin is read. Everything routes through one master gain — nothing connects
+to `ctx.destination` — so the ♪ mute is total and anything added later inherits it.
+Mute persists in `localStorage` (`rfhSound`).
+
+**Traps:** `drawVisual` falls back to the bar chart on an unknown key, which would ship
+the wrong picture beside the right words in silence — `PANEL_KEYS` is exported and the
+gate checks every story against it. Dither in 2px cells must sample `bayer(x >> 1, y >> 1)`
+(the cell index) or the stipple collapses into a dot grid — the gulf water column did.
+`field(scr, decode, false)` turns the graticule off for scenes with their own full-frame
+texture (`sea`, `engine`); a grid under a wireframe terrain is noise on noise.
+
+**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 30
+checks: zero console errors, the codec actually animates (not a still frame), the reader
+types and can be skipped, DECODE grows plain readings and re-folds, paging/tuning/mute,
+all twelve bulletins carrying a full read *and* a decode, every visual key real, 44px
+targets, and **WCAG AA on every text colour** — with translucent backgrounds properly
+composited up the tree (taking the first non-transparent colour reads
+`rgba(255,180,58,.05)` as solid amber and fails the decode box by 4x).
+`window.__rfh` exposes `{audio, state, debug: {open, channel, go, tuneChannel,
+toggleDecode, finishRead, stories, tuneIn}}`. Same `gh-pages` deploy caveat as the
+other demos; bump the `?v=N` cache-busters together.
+
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
 Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
 
@@ -298,6 +374,19 @@ dropcabal/      # Drop Cabal — Cabal-style gallery shooter, toko-drop enemies,
     fx.js       # InstancedMesh debris pool + additive boom shells
     input.js    # Mouse aim/LMB fire/A-D run/Space roll/G-RMB nade; dual virtual sticks (touch)
     audio.js    # WebAudio bleep kit (fire/thock/splat/boom/pew/fanfare…)
+radiofree/      # Radio Free Helsinki — MGS-codec news broadcast, Toko anchors, DECODE
+  index.html
+  js/
+    main.js     # boot + tune-in gate, paging/tuning, decode toggle, the loop
+    codec.js    # both codec frames in ONE canvas + waveform; Reader (typewriter → mouth)
+    toko.js     # the anchor: gel wobble, blink, lip-sync, amber decode tear
+    visuals.js  # 12 story panels, each re-drawing itself under decode; PANEL_KEYS
+    stories.js  # the wire: copy with {{spun|plain}} markup, techniques, tells
+    screen.js   # PixelScreen (detachable), shade/mix/bayer, scanlines
+    audio.js    # synth codec kit + carrier hiss, one master gain (total mute)
+    palette.js
+  test/
+    smoke.cjs   # 30-check headless gate
 hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel enemies
   index.html
   js/
