@@ -1,10 +1,10 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=7';
-import { Post, Reader } from './codec.js?v=7';
-import { SECTORS, STORIES, storyCopy, parseLine } from './stories.js?v=7';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=7';
-import * as audio from './audio.js?v=7';
+import { PAL, SECTOR_COLOR } from './palette.js?v=8';
+import { Post, Reader } from './codec.js?v=8';
+import { SECTORS, STORIES, storyCopy, parseLine } from './stories.js?v=8';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=8';
+import * as audio from './audio.js?v=8';
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
