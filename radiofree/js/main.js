@@ -14,11 +14,11 @@
 // same decode states — because every word on screen, bulletins included, comes
 // from the language blocks.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=3';
-import { Post, Reader } from './codec.js?v=3';
-import { SECTORS, STORIES, storyCopy, parseLine } from './stories.js?v=3';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=3';
-import * as audio from './audio.js?v=3';
+import { PAL, SECTOR_COLOR } from './palette.js?v=4';
+import { Post, Reader } from './codec.js?v=4';
+import { SECTORS, STORIES, storyCopy, parseLine } from './stories.js?v=4';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=4';
+import * as audio from './audio.js?v=4';
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
@@ -146,7 +146,11 @@ function boot() {
   buildFeed();
   watchScroll();
   bindControls();
-  setActive(0, true);
+  // a shared link lands on the bulletin it names; everything else starts at
+  // the top of the wire
+  const deep = indexFromHash();
+  if (deep > 0) scrollToPost(deep, true);
+  else setActive(0, true);
   last = performance.now();
   raf = requestAnimationFrame(loop);
 }
@@ -282,6 +286,7 @@ function setActive(i, first = false) {
   $('freq').textContent = p.sector.freq;
   $('call').textContent = p.sector.call;
   document.title = `${p.copy.head} — Radio Free Helsinki`;
+  setHash(p.story.id);
 
   const lines = p.copy.lines.map(parseLine);
   reader.play(p.els.bulletin, lines, p.decoded);
@@ -289,6 +294,31 @@ function setActive(i, first = false) {
   else { p.read = true; audio.carrierDuck(true); }
   if (!first) audio.page();
 }
+
+// ── the address is the bulletin ────────────────────────────────────
+// A feed you scroll past twelve stories in is worth sending someone, and a
+// link that lands them on the top of the pile is not the same link. The
+// address follows the scroll, and an incoming #id opens that post.
+//
+// replaceState, not push: the back button should leave the page rather than
+// walk twelve fake history entries, and — the trap — replaceState does NOT
+// fire hashchange, so the handler below cannot be triggered by our own writes.
+function setHash(id) {
+  const url = location.pathname + location.search + (id ? `#${id}` : '');
+  try { history.replaceState(null, '', url); } catch { /* file:// etc. */ }
+}
+
+function indexFromHash() {
+  const id = decodeURIComponent(location.hash.replace(/^#/, ''));
+  return id ? posts.findIndex(p => p.story.id === id) : -1;
+}
+
+// a fragment can also arrive without a reload — pasted into an open tab, or
+// reached with the back button
+window.addEventListener('hashchange', () => {
+  const i = indexFromHash();
+  if (i >= 0 && i !== active) scrollToPost(i, true);
+});
 
 // ── navigation ─────────────────────────────────────────────────────
 function scrollToPost(i, instant = false) {

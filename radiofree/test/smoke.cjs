@@ -15,6 +15,9 @@
 //  - scrolling, the NEXT rail button, keyboard, channel tuning, sound
 //  - fi / en / ja: every string and every bulletin present in all three,
 //    switching rewrites the feed in place and keeps your position
+//  - the address follows the scroll, and a #id link opens that bulletin
+//  - the offline shell: the precache names every file, versions agree, and the
+//    app really boots with the network cut
 //  - 44px targets and WCAG AA on every text colour
 
 const { chromium } = require('playwright');
@@ -23,7 +26,10 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const MIME = { '.html': 'text/html', '.js': 'text/javascript' };
+const MIME = {
+  '.html': 'text/html', '.js': 'text/javascript', '.png': 'image/png',
+  '.webmanifest': 'application/manifest+json',
+};
 
 const server = http.createServer((req, res) => {
   const p = path.join(ROOT, req.url.split('?')[0]);
@@ -179,7 +185,7 @@ const contrast = (a, b) => {
   check('the dial jumps to another channel', freqAfter !== freqBefore);
   // the dial is a readout of where the scroll put you, not a separate state
   check('the masthead reports the live post’s channel', await page.evaluate(async () => {
-    const { SECTORS } = await import('./js/stories.js?v=3');
+    const { SECTORS } = await import('./js/stories.js?v=4');
     const want = SECTORS.find(s => s.id === __rfh.state.channel);
     return document.getElementById('freq').textContent === want.freq
       && document.getElementById('call').textContent === want.call;
@@ -201,7 +207,7 @@ const contrast = (a, b) => {
   // agree instead of waiting to notice 'rail.decode' on a button.
   const langGaps = await page.evaluate(async () => {
     const [{ _STR, UI_KEYS, UI_LANGS }, { COPY, STORIES }] = await Promise.all([
-      import('./js/i18n.js?v=3'), import('./js/stories.js?v=3'),
+      import('./js/i18n.js?v=4'), import('./js/stories.js?v=4'),
     ]);
     const gaps = [];
     for (const l of UI_LANGS) {
@@ -259,7 +265,7 @@ const contrast = (a, b) => {
   // picture ships next to the right words — check the keys against the panels
   const badVisuals = await page.evaluate(async () => {
     const [{ STORIES }, { PANEL_KEYS }] = await Promise.all([
-      import('./js/stories.js?v=3'), import('./js/visuals.js?v=3'),
+      import('./js/stories.js?v=4'), import('./js/visuals.js?v=4'),
     ]);
     return STORIES.filter(s => !PANEL_KEYS.includes(s.visual)).map(s => `${s.id}:${s.visual}`);
   });
@@ -286,6 +292,74 @@ const contrast = (a, b) => {
   }
   check(`every bulletin carries a full read and a decode${incomplete.length ? ' — ' + incomplete.join(', ') : ''}`,
     incomplete.length === 0);
+
+  // ── the address is the bulletin ──────────────────────────────────
+  await page.evaluate(() => __rfh.debug.open('synthetic-env'));
+  await page.waitForTimeout(200);
+  check('the address follows the scroll',
+    await page.evaluate(() => location.hash) === '#synthetic-env');
+  // replaceState must not walk a fake history: one back should leave, not
+  // step through twelve bulletins
+  const entries = await page.evaluate(() => history.length);
+  await page.evaluate(() => __rfh.debug.open('round-b'));
+  await page.waitForTimeout(150);
+  check('paging does not push history entries',
+    await page.evaluate(() => history.length) === entries);
+
+  // a shared link opens on the bulletin it names
+  const deep = await browser.newPage({ viewport: { width: 430, height: 900 } });
+  const deepErrors = [];
+  deep.on('console', m => { if (m.type() === 'error') deepErrors.push(m.text()); });
+  deep.on('pageerror', e => deepErrors.push(String(e)));
+  await deep.addInitScript(() => localStorage.setItem('rfhLang', 'en'));
+  await deep.goto(URL + '#seabed', { waitUntil: 'networkidle' });
+  await deep.locator('#tuneIn').click();
+  await deep.waitForTimeout(600);
+  check('a #id link opens that bulletin',
+    await deep.evaluate(() => __rfh.state.id) === 'seabed');
+  check('the deep link is not merely scrolled to, it is live',
+    (await deep.locator('.post.live .tag').textContent()).includes('09/12'));
+  check('a shared link boots clean', deepErrors.length === 0);
+  await deep.close();
+
+  // ── the offline shell ────────────────────────────────────────────
+  // Static first: the worker names every file by hand (there is no build
+  // step), which is exactly the kind of list that goes stale in silence.
+  const swSrc = fs.readFileSync(path.join(ROOT, 'radiofree', 'sw.js'), 'utf8');
+  const pageSrc = fs.readFileSync(path.join(ROOT, 'radiofree', 'index.html'), 'utf8');
+  const jsFiles = fs.readdirSync(path.join(ROOT, 'radiofree', 'js')).filter(f => f.endsWith('.js'));
+  const notCached = jsFiles.filter(f => !swSrc.includes(`'${f.replace(/\.js$/, '')}'`));
+  check(`the precache names every module${notCached.length ? ' — ' + notCached.join(', ') : ''}`,
+    notCached.length === 0);
+  const pageV = (pageSrc.match(/main\.js\?v=(\d+)/) || [])[1];
+  const swV = (swSrc.match(/const V = `\?v=(\d+)`/) || [])[1];
+  const swVersion = (swSrc.match(/const VERSION = 'v(\d+)'/) || [])[1];
+  check(`the worker caches the version the page asks for (page v${pageV}, sw v${swV}/${swVersion})`,
+    pageV && pageV === swV && pageV === swVersion);
+
+  // Then for real: register with ?sw=1, cut the network, and drive it.
+  const off = await browser.newPage({ viewport: { width: 430, height: 900 } });
+  const offErrors = [];
+  off.on('pageerror', e => offErrors.push(String(e)));
+  await off.addInitScript(() => localStorage.setItem('rfhLang', 'en'));
+  await off.goto(URL + '?sw=1', { waitUntil: 'networkidle' });
+  await off.waitForFunction(() => navigator.serviceWorker.controller !== null, null, { timeout: 15000 })
+    .catch(() => {});
+  await off.waitForTimeout(1200);                     // let the precache settle
+  check('the worker takes control', await off.evaluate(() => !!navigator.serviceWorker.controller));
+
+  await off.context().setOffline(true);
+  await off.reload({ waitUntil: 'domcontentloaded' });
+  await off.locator('#tuneIn').click();
+  await off.waitForTimeout(900);
+  check('the feed opens with the network cut', await off.locator('.post').count() === 12);
+  check('a bulletin still reads offline',
+    (await off.locator('.post.live .bulletin').textContent()).trim().length > 40);
+  check('the picture still draws offline',
+    await off.locator('.post.live .media-slot canvas').isVisible());
+  check('nothing threw offline', offErrors.length === 0);
+  await off.context().setOffline(false);
+  await off.close();
 
   // ── targets and contrast ─────────────────────────────────────────
   await page.evaluate(() => __rfh.debug.toggleDecode());   // decode box visible for its colours

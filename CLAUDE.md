@@ -339,6 +339,20 @@ while a bulletin is read. Everything routes through one master gain — nothing 
 to `ctx.destination` — so the ♪ mute is total and anything added later inherits it.
 Mute persists in `localStorage` (`rfhSound`).
 
+A fragment deep-links one bulletin (`/radiofree/#seabed` → the address follows
+the scroll, so a link is worth sending); `setHash()` uses `replaceState` so the
+back button leaves the page instead of walking twelve fake entries — and, the
+part that matters, `replaceState` does **not** fire `hashchange`, so the handler
+catching pasted links can never be triggered by the app's own writes. The app is
+**offline-first**: `sw.js` precaches the shell cache-first and
+`manifest.webmanifest` makes it installable — it is read on a metro, so it has to
+work where the signal stops. The worker registers on **https only** (or `?sw=1`)
+so dev and the smoke gate never get a stale shell; the precache list must name
+every file (no build step), and the gate checks it against `js/`, checks
+`sw.js`'s `VERSION`/`V` against the page's `?v=N`, then registers the worker,
+cuts the network and reads a bulletin. **Bump `sw.js` with the other tokens.**
+Both app icons are drawn in code at 48px and baked to PNG — redraw, don't edit.
+
 **Traps:** `drawVisual` falls back to the bar chart on an unknown key, which would ship
 the wrong picture beside the right words in silence — `PANEL_KEYS` is exported and the
 gate checks every story against it. Dither in 2px cells must sample `bayer(x >> 1, y >> 1)`
@@ -349,14 +363,15 @@ the target and run to the guard limit, which drew two long rays across the
 account graph. `field(scr, decode, false)` turns the graticule off for scenes with their own full-frame
 texture (`sea`, `engine`); a grid under a wireframe terrain is noise on noise.
 
-**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 49
+**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 61
 checks: zero console errors, the feed is vertical (one post per screen, snapping, media
 portrait in the buffer *and* on screen), the live codec animates while neighbours hold
 their painted frame and unread posts sit on standby, the reader types and can be
 skipped, DECODE grows plain readings / re-folds / stays per-post, scroll+rail+keyboard
 +dial all move the feed, all twelve bulletins carrying a full read *and* a decode,
 every visual key real, fi/en/ja complete with a language switch that keeps your
-place, 44px targets, and **WCAG AA on every text colour** — with translucent backgrounds properly
+place, a `#id` deep link that opens its bulletin without pushing history, a
+precache that names every module, a real run with the network cut, 44px targets, and **WCAG AA on every text colour** — with translucent backgrounds properly
 composited up the tree (taking the first non-transparent colour reads
 `rgba(255,180,58,.05)` as solid amber and fails the decode box by 4x).
 `window.__rfh` exposes `{audio, state, debug: {open, channel, go, tuneChannel,
@@ -428,8 +443,9 @@ radiofree/      # Radio Free Helsinki — MGS-codec news broadcast, Toko anchors
     screen.js   # PixelScreen (detachable), shade/mix/bayer, scanlines
     audio.js    # synth codec kit + carrier hiss, one master gain (total mute)
     palette.js
+  sw.js         # offline shell; manifest.webmanifest + icons drawn in code
   test/
-    smoke.cjs   # 49-check headless gate
+    smoke.cjs   # 61-check headless gate
 hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel enemies
   index.html
   js/

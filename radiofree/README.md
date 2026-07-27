@@ -24,8 +24,12 @@ screen and cropped in.
 notes and their tells, not just the chrome — exists in all three. Browser-
 detected, switchable from the masthead, persisted.
 
+**Offline-first and installable.** It is a news feed you read on a phone, which
+means it gets read on a metro — so the shell is precached and the whole thing
+runs with no network.
+
 No build step, no assets, no CDN — open `radiofree/index.html`. Every pixel
-(Toko's face, all twelve panels) is drawn in code.
+(Toko's face, all twelve panels, both app icons) is drawn in code.
 
 ## Playing
 
@@ -47,6 +51,34 @@ frame they were painted with, so scrolling shows real pictures instead of blank
 boxes and nothing off-screen burns a frame budget. A post you have not reached
 yet holds its headline and a standby line where the copy will be — you cannot
 hear a station you have not tuned to.
+
+## Sharing a bulletin
+
+The address follows the scroll — `#seabed` while you are on the seabed story —
+and a link that names a bulletin opens on it. That is what makes a post worth
+sending someone; a link that lands them at the top of a twelve-story pile is a
+different link.
+
+It is `replaceState`, not `push`: the back button leaves the page instead of
+walking twelve fake history entries. The trap that buys — and the reason it has
+to be `replaceState` — is that it does **not** fire `hashchange`, so the handler
+that catches pasted links can never be triggered by the app's own writes.
+
+## Offline
+
+`sw.js` precaches the shell cache-first and `manifest.webmanifest` makes it
+installable. The worker registers **over https only** (or with `?sw=1`), so
+local dev and the smoke gate are never handed a stale shell by a worker they
+did not ask for.
+
+There is no build step, so the precache list names every file by hand — exactly
+the kind of list that goes stale in silence. The gate checks it against what is
+actually in `js/`, checks that `sw.js`'s version agrees with the `?v=N` the page
+requests, and then proves the point the hard way: it registers the worker, cuts
+the network, reloads, and reads a bulletin.
+
+**Bump `sw.js`'s `VERSION` and `V` with the rest of the `?v=N` tokens.** A new
+deploy has to be a new cache name or the old shell simply stays.
 
 ## DECODE — the point of the thing
 
@@ -123,6 +155,10 @@ radiofree/
     screen.js     PixelScreen: small canvas, hard-pixel upscale, dither helpers
     audio.js      synth codec kit + the carrier hiss, all through one master gain
     palette.js    single source of truth for colour
+  sw.js           the offline shell (precaches every file by name)
+  manifest.webmanifest
+  icon-192.png    drawn in code and baked — see the note below
+  icon-512.png
   test/
     smoke.cjs     the gate (see below)
 ```
@@ -163,6 +199,10 @@ gate checks that all three blocks carry every interface key and every field of
 every bulletin — including that each language's lines still contain `{{…|…}}`
 markup, since a bulletin with nothing marked has nothing to decode.
 
+**The icons are drawn, not authored.** A 48px pixel Toko in a codec frame,
+nearest-neighbour upscaled and baked to PNG by a throwaway script — the same
+rule as everything else here. Redraw them rather than editing the PNGs.
+
 **Sample `bayer()` at the cell index.** Drawing in 2px cells while calling
 `bayer(x, y)` only ever reaches four of its sixteen thresholds and the stipple
 collapses into a regular dot grid — the gulf water column did exactly that. Use
@@ -174,7 +214,7 @@ collapses into a regular dot grid — the gulf water column did exactly that. Us
 NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs
 ```
 
-Forty-nine checks in a real browser: zero console errors; the feed is vertical (one
+Sixty-one checks in a real browser: zero console errors; the feed is vertical (one
 post per screen, snapping, media portrait both in the buffer and on screen); the
 live codec animates while its neighbours hold their painted frame and unread
 posts sit on standby; the reader types and can be skipped; DECODE grows the
@@ -183,7 +223,10 @@ and the dial all move the feed; every one of the twelve bulletins carries a full
 read *and* a decode; every visual key is a real panel; **fi/en/ja are complete**
 (every interface key and every field of every bulletin, with markup to decode)
 and switching language keeps your place and your open drawer; every control is
-44px; and **WCAG AA on every text colour** — measured with the translucent decode-box
+44px; the address follows the scroll and a `#id` link opens that bulletin
+without pushing history; the precache names every module and agrees with the
+page's version; the app **really boots with the network cut**; and **WCAG AA on
+every text colour** — measured with the translucent decode-box
 background properly composited, which is what a first pass got wrong by a factor
 of four.
 
