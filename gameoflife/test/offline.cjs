@@ -62,8 +62,8 @@ const server = http.createServer((req,res)=>{
   await pg.reload({waitUntil:'load'});
   const hub = await pg.evaluate(()=>({
     title: document.querySelector('h1')?.textContent ?? null,
-    // the offering markup is .offer/.offer-name (it was .card/h2 before the
-    // terminal restyle) — keep this in step or the check passes on a blank page
+    // the terminal hub offers exactly one thing, behind a caret — the old
+    // card markup is gone
     card: document.querySelector('.offer-name')?.textContent ?? null,
     offering: document.querySelectorAll('.offer').length,
   }));

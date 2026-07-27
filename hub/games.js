@@ -178,6 +178,8 @@ export const GAMES = [
     // its own keys, not a synthetic tap: PRESS_KEYS is held to press into the
     // hill and released at the lip, and TRICK_KEYS flicks
     pad: { keys: { down: 'KeyS', up: 'KeyW', b0: 'Space', b3: 'KeyW' } },
+    // one button IS the game, and under a thumb nothing says the screen is it
+    touch: { label: 'Hold', sub: 'let go at the lip', key: 'Space' },
     status: 'active',
     title: 'Tiny 2D',
     tagline: 'One button. Press into the hill, let go at the lip, and land along the next one — not into it.',

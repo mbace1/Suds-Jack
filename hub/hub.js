@@ -7,7 +7,7 @@
 // with which game it came from, and goes out through hub/feedback.js.
 
 import { GAMES, SKETCHES } from './games.js?v=5';
-import { drawMarquee } from './art.js?v=5';
+import { drawMarquee } from './art.js?v=6';
 import * as feedback from './feedback.js?v=5';
 import { watchPad, padPresent } from './pad.js?v=5';
 

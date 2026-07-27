@@ -29,6 +29,7 @@ const SHELL = [
   `./js/i18n.js${V}`,
   `./js/palette.js${V}`,
   `./js/pixel.js${V}`,
+  `./js/crt.js${V}`,
   `./js/storage.js${V}`,
   `./js/audio.js${V}`,
   `./js/nature.js${V}`,
