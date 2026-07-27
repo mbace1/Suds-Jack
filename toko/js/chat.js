@@ -24,7 +24,7 @@ import { Surface } from './surface.js';
 import { TOKO, VOICE } from './palette.js';
 import { drawHead, drawBadge } from './face.js';
 import { pulse } from './util.js';
-import { GREETING, TOPICS, menu } from './dialogue.js';
+import { greeting, ui, TOPICS, menu, topicQ, topicA } from './dialogue.js';
 
 const STYLE_ID = 'toko-chat-style';
 const CSS = `
@@ -189,13 +189,21 @@ const el = (tag, cls, txt) => {
   return n;
 };
 
+// Which language the counter is speaking. It asks the page every time rather
+// than capturing a value, so switching the arcade's language mid-conversation
+// is picked up on the next line — and off the arcade it still works, because
+// <html lang> is the same answer written down somewhere every page has.
+const curLang = () =>
+  window.__hub?.lang?.() ?? (document.documentElement.lang || 'en').slice(0, 2);
+
 export function mountChat(anchor, opts = {}) {
   const {
     where = 'after',           // 'after' the anchor, or 'in' it
-    cue = 'TOKO IS AT THE COUNTER',
+    cue = null,                // null = whatever the counter's own words say
     speed = 18,                // ms per character
     openOnLoad = false,
   } = opts;
+  const say = (k, v) => ui(k, curLang(), v);
 
   injectStyle();
 
@@ -211,9 +219,11 @@ export function mountChat(anchor, opts = {}) {
   bar.setAttribute('aria-expanded', 'false');
   const barArt = el('span');
   bar.appendChild(barArt);
-  const say = el('span', 'tc-say');
-  say.append(cue + ' — ', Object.assign(el('span', 'tc-cue'), { textContent: 'TALK' }));
-  bar.appendChild(say);
+  const cueEl = el('span', 'tc-say');
+  const cueText = document.createTextNode('');
+  const cueTalk = el('span', 'tc-cue');
+  cueEl.append(cueText, cueTalk);
+  bar.appendChild(cueEl);
   bar.appendChild(el('span', 'tc-blip'));
   root.appendChild(bar);
 
@@ -228,8 +238,8 @@ export function mountChat(anchor, opts = {}) {
   const write = el('div', 'tc-write');
   write.hidden = true;
   const foot = el('div', 'tc-foot');
-  const hint = el('span', null, '1–9 PICK · ENTER SKIP · ESC LEAVE');
-  const leave = el('button', null, 'LEAVE');
+  const hint = el('span');
+  const leave = el('button');
   leave.type = 'button';
   foot.append(hint, leave);
   body.append(log, list, write, foot);
@@ -237,6 +247,17 @@ export function mountChat(anchor, opts = {}) {
   root.appendChild(panel);
 
   portrait.appendChild(el('span', 'tc-name', VOICE.artist));
+
+  // every label the counter wears, re-read in the current language
+  function relabel() {
+    cueText.nodeValue = `${cue ?? say('cue')} — `;
+    cueTalk.textContent = say('talk');
+    leave.textContent = say('leave');
+    // the composer's hint belongs to the composer: while the branch is still
+    // walking menus, 1-9 is what you press
+    hint.textContent = write.hidden ? say('hint') : say('fb.hint');
+    root.setAttribute('aria-label', `${say('talk')} — ${VOICE.artistRomaji}`);
+  }
 
   if (where === 'in') anchor.appendChild(root);
   else anchor.insertAdjacentElement('afterend', root);
@@ -351,11 +372,11 @@ export function mountChat(anchor, opts = {}) {
     root.classList.remove('is-writing');
     list.hidden = false;
     list.textContent = '';
-    hint.textContent = branch ? word('counter.menu') : '1–9 PICK · ENTER SKIP · ESC LEAVE';
+    relabel();
     // A branch takes the menu over — same list, different question. Everything
     // beyond the ninth still clicks; only the number shortcut runs out.
     const items = branch ? branchItems()
-      : menu(unlocked, asked).map(t => ({ q: t.key ? shout(word(t.key)) : t.q, go: () => ask(t) }));
+      : menu(unlocked, asked).map(t => ({ q: topicQ(t, curLang()), go: () => ask(t) }));
     items.forEach((it, i) => {
       const b = el('button');
       b.type = 'button';
@@ -368,12 +389,12 @@ export function mountChat(anchor, opts = {}) {
 
   function ask(t) {
     if (typing) { finishTyping(); return; }
-    line('tc-you', t.key ? shout(word(t.key)) : t.q);
+    line('tc-you', topicQ(t, curLang()));
     asked.add(t.id);
     if (t.opens) t.opens.forEach(id => unlocked.add(id));
     list.hidden = true;
     if (t.mode === 'feedback') { startFeedback(t); return; }
-    type(t.a, t.end ? () => setTimeout(close, 900) : null);
+    type(topicA(t, curLang()), t.end ? () => setTimeout(close, 900) : null);
   }
 
   // ── talking back ───────────────────────────────────────────────────────
@@ -390,30 +411,6 @@ export function mountChat(anchor, opts = {}) {
   // Loaded on demand and allowed to fail: this file is meant to be droppable on
   // any page in the workshop, so a missing hub folder should cost the feedback
   // branch and not the whole counter.
-  // the counter's own copy of the feedback-branch words, for when it is dropped
-  // on a page that has no hub to ask
-  const EN = {
-    'counter.q': 'I HAVE SOMETHING TO TELL YOU.',
-    'counter.ask': 'GO ON. WHICH ONE.', 'counter.kind': '{x}. WHAT KIND OF NOTE?',
-    'counter.words': 'IN YOUR OWN WORDS.', 'counter.never': 'NEVER MIND.',
-    'counter.send': 'SEND', 'counter.type': 'TYPE IT HERE',
-    'counter.local': 'KEPT ON THIS DEVICE', 'counter.hint': 'CTRL+ENTER SEND · ESC BACK',
-    'counter.menu': '1-9 PICK · ENTER SKIP · ESC LEAVE',
-    'counter.sent': 'GOT IT. THAT IS IN THE WORKSHOP NOW.',
-    'counter.blind': 'IT LEFT. THAT FORM DOES NOT ANSWER BACK, SO THAT IS ALL I CAN HONESTLY TELL YOU.',
-    'counter.queued': 'THE INBOX DID NOT ANSWER. I AM HOLDING IT. IT GOES OUT NEXT TIME YOU COME IN.',
-    'counter.off': 'KEPT ON THIS DEVICE. NO INBOX IS SET YET.',
-    'counter.thin': 'WORDS WOULD HAVE HELPED MORE.',
-    'counter.gone': 'THE BOOK IS NOT ON THE COUNTER RIGHT NOW.',
-    'hub.self': 'The arcade itself',
-  };
-  // The menu label is drawn before anyone picks the feedback branch, so this
-  // cannot wait for loadKit() — ask the page directly if it is there.
-  const word = (k, v) => {
-    const T = kit?.t ?? window.__hub?.t;
-    return T ? T(k, v) : (EN[k] ?? k);
-  };
-
   let kit = null;
   let branch = null;                 // { step: 'project'|'kind'|'write', game, kind }
 
@@ -430,8 +427,7 @@ export function mountChat(anchor, opts = {}) {
       // and stay as written — but the feedback branch is UI, and UI follows the
       // reader. hub.t/hub.lang are read on every call rather than captured, so
       // switching the page's language mid-conversation is picked up.
-      kit = { topics: hub.topics, post: hub.feedback, games: hub.games,
-        t: (k, v) => hub.t(k, v), lang: () => hub.lang() };
+      kit = { topics: hub.topics, post: hub.feedback, games: hub.games, lang: curLang };
       return kit;
     }
     // and off the arcade, load our own — untokened, so there is nothing to
@@ -442,7 +438,7 @@ export function mountChat(anchor, opts = {}) {
         import('../../hub/feedback.js'),
         import('../../hub/games.js'),
       ]);
-      kit = { topics, post, games: cat.GAMES, t: k => EN[k] ?? k, lang: () => 'en' };
+      kit = { topics, post, games: cat.GAMES, lang: curLang };
     } catch {
       kit = { broken: true };
     }
@@ -454,9 +450,9 @@ export function mountChat(anchor, opts = {}) {
   const shout = s => s.toUpperCase();
 
   function branchItems() {
-    const never = { q: shout(word('counter.never')), go: () => cancelBranch() };
+    const never = { q: shout(say('fb.never')), go: () => cancelBranch() };
     if (branch.step === 'project') {
-      return [...kit.topics.projectChoices(kit.games, word('hub.self')).map(p => ({
+      return [...kit.topics.projectChoices(kit.games, say('fb.self')).map(p => ({
         q: shout(p.label),
         go: () => pickProject(p),
       })), never];
@@ -469,23 +465,23 @@ export function mountChat(anchor, opts = {}) {
 
   async function startFeedback(t) {
     await loadKit();
-    if (kit.broken) { type([word('counter.gone')]); return; }
+    if (kit.broken) { type([say('fb.gone')]); return; }
     branch = { step: 'project' };
-    type([word('counter.ask')]);
+    type(topicA(t, curLang()));
   }
 
   function pickProject(p) {
     line('tc-you', shout(p.label));
     branch = { step: 'kind', game: p.id, label: p.label };
     list.hidden = true;
-    type([shout(word('counter.kind', { x: p.label }))]);
+    type([shout(say('fb.kind', { x: p.label }))]);
   }
 
   function pickKind(k) {
     line('tc-you', shout(k.label));
     branch = { ...branch, step: 'write', kind: k.id, kindLabel: k.label };
     list.hidden = true;
-    type([shout(word('counter.words'))], openComposer);
+    type([shout(say('fb.words'))], openComposer);
   }
 
   function openComposer() {
@@ -495,11 +491,11 @@ export function mountChat(anchor, opts = {}) {
     // the log just got shorter under it; keep the last thing Toko said in view
     log.scrollTop = log.scrollHeight;
     write.textContent = '';
-    hint.textContent = word('counter.hint');
+    hint.textContent = say('fb.hint');
 
     const ta = el('textarea');
     ta.rows = 3;
-    ta.placeholder = word('counter.type');
+    ta.placeholder = say('fb.type');
     ta.setAttribute('aria-label', `Your note about ${branch.label}`);
 
     // The suggestions FILL THE BOX rather than send. A one-tap answer you
@@ -518,12 +514,12 @@ export function mountChat(anchor, opts = {}) {
     }
 
     const row = el('div', 'tc-send-row');
-    const send = el('button', 'tc-primary', shout(word('counter.send')));
+    const send = el('button', 'tc-primary', shout(say('fb.send')));
     send.type = 'button';
-    const back = el('button', null, shout(word('counter.never')));
+    const back = el('button', null, shout(say('fb.never')));
     back.type = 'button';
     row.append(send, back);
-    if (!kit.post.configured()) row.appendChild(el('span', null, word('counter.local')));
+    if (!kit.post.configured()) row.appendChild(el('span', null, say('fb.local')));
     write.append(ta, chips, row);
 
     send.addEventListener('click', () => sendNote(ta.value.trim(), send));
@@ -535,8 +531,8 @@ export function mountChat(anchor, opts = {}) {
   }
 
   // an opaque no-cors POST cannot be confirmed; say only what is true
-  const SAID = { sent: 'counter.sent', 'sent-blind': 'counter.blind',
-    queued: 'counter.queued', off: 'counter.off' };
+  const SAID = { sent: 'fb.sent', 'sent-blind': 'fb.blind',
+    queued: 'fb.queued', off: 'fb.off' };
 
   async function sendNote(text, send) {
     send.disabled = true;
@@ -548,8 +544,8 @@ export function mountChat(anchor, opts = {}) {
     root.classList.remove('is-writing');
     branch = null;
     const how = await kit.post.send({ game, kind, text, ts: Date.now(), source: 'counter' });
-    const said = word(SAID[how] ?? SAID.off);
-    type(text ? [said] : [said, word('counter.thin')]);
+    const said = say(SAID[how] ?? SAID.off);
+    type(text ? [said] : [said, say('fb.thin')]);
   }
 
   function cancelBranch() {
@@ -567,7 +563,8 @@ export function mountChat(anchor, opts = {}) {
     bar.setAttribute('aria-expanded', 'true');
     badge.stop();
     startHead();
-    if (!log.childElementCount) type(GREETING);
+    relabel();
+    if (!log.childElementCount) type(greeting(curLang()));
     else renderMenu();
     addEventListener('keydown', onKey);
     // move focus into the room, but only for keyboard users — a tap should
@@ -621,6 +618,17 @@ export function mountChat(anchor, opts = {}) {
   // sting follows: never make somebody wait for an animation
   log.addEventListener('click', () => { if (typing) finishTyping(); });
 
+  // The closed bar carries words too, so it is labelled the moment it exists —
+  // and it follows the page from then on. <html lang> is the one signal every
+  // page already publishes, so watching it couples the counter to nothing: the
+  // arcade's language row moves that attribute, and the counter hears it.
+  relabel();
+  const langWatch = new MutationObserver(() => {
+    relabel();
+    if (open && !branch && write.hidden && !typing) renderMenu();
+  });
+  langWatch.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+
   if (openOnLoad) openChat();
 
   return {
@@ -633,6 +641,7 @@ export function mountChat(anchor, opts = {}) {
       removeEventListener('keydown', onKey);
       removeEventListener('keydown', sawKey, true);
       removeEventListener('pointerdown', sawTap, true);
+      langWatch.disconnect();
       badge.destroy(); head.destroy(); root.remove();
     },
   };
