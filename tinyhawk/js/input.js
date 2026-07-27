@@ -38,6 +38,11 @@ const SHUV_SPEED = 3.4;      // sideways speed that turns a load into a shuvit
 // analog gesture stops meaning anything.
 const FULL_SPEED = 14.0;
 const GESTURE_COOL = 0.12;   // one gesture, one action
+// Re-arming an airborne trick: the stick must come back inside this radius, or
+// slow to this fraction of the pop threshold. Holding the stick out at full
+// deflection must NOT keep firing.
+const REARM_MAG = 0.45;
+const REARM_SPEED = 0.35;
 
 export const SCHEMES = ['skate', 'thps'];
 
@@ -55,27 +60,42 @@ class FlickIt {
     this.depth = 0;
     this.px = 0; this.py = 0;
     this.cool = 0;
+    this.armed = true;     // one gesture, one trick — see the airborne branch
     this.primed = false;   // visual: crouching
   }
 
   // x, y in stick units (y positive = down). Returns an action or null.
   sample(x, y, dt, airborne) {
-    if (this.cool > 0) {
-      this.cool -= dt;
-      this.px = x; this.py = y;
-      return null;
-    }
     const vx = (x - this.px) / Math.max(dt, 1 / 240);
     const vy = (y - this.py) / Math.max(dt, 1 / 240);
     this.px = x; this.py = y;
+
+    const cooling = this.cool > 0;
+    if (cooling) this.cool -= dt;
+
+    // RE-ARMING RUNS EVEN WHILE COOLING. The return stroke of a flick lands
+    // inside the cooldown window, so gating it behind the cooldown leaves the
+    // gesture permanently disarmed and the second flick of a left-right pair
+    // never fires.
+    if (airborne && !this.armed) {
+      if (Math.hypot(x, y) < REARM_MAG
+          || Math.hypot(vx, vy) < POP_SPEED * REARM_SPEED) this.armed = true;
+    }
+    if (cooling) return null;
+
     let act = null;
 
     if (airborne) {
       // Once you are off the ground there is nothing left to load against, so
-      // any committed flick is a trick.
+      // any committed flick is a trick — but it has to be ONE trick per
+      // gesture. The stick has to come back toward centre (or stop moving)
+      // before it can fire again, otherwise holding a flick out registers a
+      // fresh trick every time the cooldown lapses.
       const speed = Math.hypot(vx, vy);
-      if (speed >= POP_SPEED && Math.hypot(x, y) > 0.35) {
+      const mag = Math.hypot(x, y);
+      if (this.armed && speed >= POP_SPEED && mag > 0.35) {
         act = { dir: dominant(vx, vy), power: power(speed, 1) };
+        this.armed = false;
       }
     } else if (!this.loaded) {
       if (y > LOAD_Y) { this.loaded = true; this.depth = y; }

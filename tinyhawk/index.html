@@ -96,6 +96,18 @@
       gap: 16px; padding: 24px;
       background: rgba(5, 6, 10, 0.82);
       text-align: center;
+      overflow-y: auto;
+    }
+    /* A landscape phone is ~390px tall. Without this the menu overflows and the
+       start button ends up off-screen, i.e. the game cannot be started at all. */
+    @media (max-height: 560px) {
+      .overlay { gap: 9px; padding: 12px; justify-content: flex-start; }
+      h1 { font-size: 28px; letter-spacing: 2px; }
+      h1 small { display: none; }
+      button { min-height: 40px; padding: 8px 16px; font-size: 12px; }
+      table.keys { font-size: 10px; }
+      table.keys td { padding: 1px 8px 1px 0; }
+      .note { display: none; }
     }
     h1 { font-size: clamp(38px, 11vw, 66px); letter-spacing: 3px; line-height: 0.95; }
     h1 small {

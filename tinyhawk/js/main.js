@@ -293,6 +293,19 @@ function handleEvents(events) {
 }
 
 // ── Camera ─────────────────────────────────────────────────────────────────
+// three.js' `fov` is the VERTICAL angle, so a fixed value crops the sides on a
+// narrow screen: an iPad at 4:3 sees ~86° across where a 16:9 desktop sees
+// ~102°, and the tighter one reads as "zoomed in". This keeps a horizontal
+// MINIMUM instead — wide screens are unchanged, narrow ones open the vertical
+// angle up rather than losing the world at the edges.
+const V_BASE = 70;                            // vertical fov on a wide screen
+const H_MIN = 96 * (Math.PI / 180);           // never show less than this across
+function baseFov() {
+  const aspect = innerWidth / innerHeight;
+  const fromH = 2 * Math.atan(Math.tan(H_MIN / 2) / aspect) * (180 / Math.PI);
+  return clamp(Math.max(V_BASE, fromH), 60, 100);
+}
+
 function updateCamera(dt) {
   // A rate, not a delta — the right stick under the THPS scheme and the
   // bumpers under Skate both report deflection, and neither is pixels.
@@ -318,19 +331,19 @@ function updateCamera(dt) {
   }
 
   camTarget.lerp(skater.pos, 1 - Math.pow(0.0009, dt));
-  // Skate Story's camera sits low and RIGHT behind the board, wide, almost on
-  // the deck. The distance barely opens with speed — the smear does that work.
-  const dist = 5.6 + skater.speed * 0.12;
+  // Skate Story's camera sits low and behind the board. Close, but not so close
+  // that the skater fills the frame and you cannot read the park ahead of you.
+  const dist = 7.6 + skater.speed * 0.17;
   const cp = Math.cos(camPitch), sp = Math.sin(camPitch);
   const cx = camTarget.x - Math.sin(camYaw) * cp * dist;
   const cz = camTarget.z - Math.cos(camYaw) * cp * dist;
-  const cy = camTarget.y + sp * dist + 0.95;
+  const cy = camTarget.y + sp * dist + 1.2;
   // Never let the camera sink into a transition.
   const floor = park.height(cx, cz) + 0.9;
   camera.position.set(cx, Math.max(cy, floor), cz);
   camera.lookAt(camTarget.x, camTarget.y + 0.95, camTarget.z);
 
-  const wantFov = 70 + clamp(skater.airTime, 0, 1) * 8 + skater.speed * 0.3;
+  const wantFov = baseFov() + clamp(skater.airTime, 0, 1) * 8 + skater.speed * 0.3;
   camera.fov = lerp(camera.fov, wantFov, 1 - Math.pow(0.02, dt));
   camera.updateProjectionMatrix();
 }
@@ -345,6 +358,7 @@ function resize() {
   canvasUI.width = w * dpr; canvasUI.height = h * dpr;
   canvasUI.style.width = w + 'px'; canvasUI.style.height = h + 'px';
   camera.aspect = w / h;
+  camera.fov = baseFov();   // snap on resize; the loop only lerps from here
   camera.updateProjectionMatrix();
 }
 addEventListener('resize', resize);
