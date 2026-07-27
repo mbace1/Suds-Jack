@@ -73,7 +73,13 @@ function frame(scr, t, W, H) {
   const pe = ease((t - T.eyes) / (T.eyesEnd - T.eyes));
   if (pe > 0) {
     const drop = (1 - pe) * -18;
-    const blink = t >= T.blink && t < T.blink + 0.14 ? 0.08 : 1;
+    // the same heavy lid as everywhere else — eased, not snapped. The sting's
+    // TIMELINE stays brisk (it is an event, and an event you cannot skip is an
+    // ad), but the blink inside it is Toko's own.
+    const bt = (t - T.blink) / 0.52;
+    const lid = bt < 0 || bt > 1 ? 0
+      : (bt < 0.32 ? bt / 0.32 : 1 - (bt - 0.32) / 0.68);
+    const blink = 1 - Math.max(0, Math.min(1, lid * lid * (3 - 2 * lid))) * 0.92;
     for (const side of [-1, 1]) {
       const cx = 50 + side * e.dx;
       ctx.save();

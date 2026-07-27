@@ -76,6 +76,27 @@ export const TOPICS = [
     ],
   },
   {
+    // The house tempo has a name and this is where it says so — without
+    // quoting a word of it. The song is somebody else's; the mood is Toko's.
+    id: 'music', q: 'WHAT ARE YOU LISTENING TO?', once: true,
+    a: [
+      'SOMETHING LONG.',
+      'IT IS MOSTLY QUIET, AND THEN IT IS NOT.',
+      'I PUT IT ON TO DRAW TO AND I NEVER',
+      'NOTICE IT END.',
+    ],
+    opens: ['faraway'],
+  },
+  {
+    id: 'faraway', q: 'YOU SEEM FAR AWAY.', once: true, locked: true,
+    a: [
+      'I AM HERE.',
+      'I JUST DO NOT SEE THE POINT IN HURRYING.',
+      'THE WORK TAKES AS LONG AS IT TAKES.',
+      'SO DOES THE SOLO.',
+    ],
+  },
+  {
     id: 'start', q: 'HOW DO I START?',
     a: [
       'OPEN THE SOURCE. BREAK IT.',

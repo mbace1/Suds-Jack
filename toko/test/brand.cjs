@@ -192,6 +192,51 @@ function serve() {
   });
   ok('the lab is animating', moved);
 
+  // ── the tempo ──────────────────────────────────────────────────────────
+  // The house note is Comfortably Numb: heavy-lidded and unhurried. That is a
+  // brand rule with numbers in it (BRAND.md §7), so it gets measured — left
+  // untested, a "just a touch snappier" would walk it back one commit at a
+  // time until Toko is blinking like a cursor.
+  console.log('\nthe tempo');
+  const tempo = await page.evaluate(async () => {
+    const u = await import('/toko/js/util.js');
+    const S = 2000, span = 8;
+    let shut = 0, peak = 0, firstFull = -1, lastFull = -1;
+    for (let i = 0; i < S; i++) {
+      const t = i / S * span;
+      const v = u.blink(t, { every: span, offset: 0, longEvery: 0 });
+      peak = Math.max(peak, v);
+      if (v > 0.999) { shut++; if (firstFull < 0) firstFull = t; lastFull = t; }
+    }
+    // where does it start closing, and where has it finished opening?
+    let open0 = -1, open1 = -1;
+    for (let i = 0; i < S; i++) {
+      const t = i / S * span;
+      const v = u.blink(t, { every: span, offset: 0, longEvery: 0 });
+      if (open0 < 0 && v > 0.001) open0 = t;
+      if (v > 0.001) open1 = t;
+    }
+    return {
+      peak,
+      dwell: lastFull - firstFull,
+      closing: firstFull - open0,
+      opening: open1 - lastFull,
+      drift: Math.abs(u.drift(0)) < 0.001 && Math.abs(u.drift(2.25) - 1) < 0.01,
+    };
+  });
+  ok('the eyes actually close', tempo.peak > 0.999, tempo.peak.toFixed(3));
+  ok('the lid dwells shut', tempo.dwell > 0.08, tempo.dwell.toFixed(3) + 's');
+  ok('it opens slower than it closes', tempo.opening > tempo.closing * 1.5,
+    `close ${tempo.closing.toFixed(2)}s / open ${tempo.opening.toFixed(2)}s`);
+  ok('the drift is a slow breath', tempo.drift);
+
+  ok('the chat types unhurriedly',
+    await page.evaluate(async () => {
+      const r = await fetch('/toko/js/chat.js').then(x => x.text());
+      const m = r.match(/speed\s*=\s*(\d+)/);
+      return m && +m[1] >= 30;
+    }));
+
   // ── the counter ────────────────────────────────────────────────────────
   // The failure this guards against: the goodbye topic closes the panel from a
   // callback hung off the end of the typing animation, so SKIPPING the typing

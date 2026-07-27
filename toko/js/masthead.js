@@ -13,14 +13,14 @@ import { Surface } from './surface.js';
 import { TOKO, VOICE } from './palette.js';
 import { drawFace, bounds, GEO } from './face.js';
 import { drawLogotype } from './lockup.js';
-import { pulse } from './util.js';
+import { blink, drift } from './util.js';
 
 export function startMasthead(parent, opts = {}) {
   const {
     w = 560, h = 150,
     ink = TOKO.PAPER,
     ground = TOKO.INK,
-    blink = 6.0,
+    blinkEvery = 7.5,
     tagline = VOICE.cry,
     fluid = true,
   } = opts;
@@ -42,13 +42,13 @@ export function startMasthead(parent, opts = {}) {
     const faceW = boxW * (b.w / GEO.box);
     const x = h * 0.14, y = (h - faceH) / 2;
 
-    // one blink, and — because the mouth is a stroked arc and nothing else —
-    // a breath of a grin that rides under it
-    const k = pulse(t, { every: blink, len: 0.16, offset: 1.4 });
+    // one slow blink, and — because the mouth is a stroked arc and nothing
+    // else — a breath of a grin riding under it on a nine-second period
+    const k = blink(t, { every: blinkEvery, offset: 1.4 });
     drawFace(ctx, x - (b.x / GEO.box) * boxW, y - (b.y / GEO.box) * boxW, boxW, {
       color: ink,
       squash: 1 - k * 0.92,
-      grin: 1 + Math.sin(t * 0.8) * 0.006,
+      grin: 1 + drift(t) * 0.007,
     });
 
     const size = faceH / 2.95;

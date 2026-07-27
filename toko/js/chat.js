@@ -23,7 +23,7 @@
 import { Surface } from './surface.js';
 import { TOKO, VOICE } from './palette.js';
 import { drawHead, drawBadge } from './face.js';
-import { pulse } from './util.js';
+import { blink, drift } from './util.js';
 import { GREETING, TOPICS, menu } from './dialogue.js';
 
 const STYLE_ID = 'toko-chat-style';
@@ -154,7 +154,10 @@ export function mountChat(anchor, opts = {}) {
   const {
     where = 'after',           // 'after' the anchor, or 'in' it
     cue = 'TOKO IS AT THE COUNTER',
-    speed = 18,                // ms per character
+    // The tempo (see BRAND.md §7): Toko is never in a hurry. 34ms a character
+    // with a long beat between lines, and a longer one before the first —
+    // he has to come back from wherever he was before he answers you.
+    speed = 34,                // ms per character
     openOnLoad = false,
   } = opts;
 
@@ -210,7 +213,7 @@ export function mountChat(anchor, opts = {}) {
 
   const startBadge = () => badge.loop((t) => {
     badge.clear();
-    const k = pulse(t, { every: 5.5, len: 0.16, offset: 1.3 });
+    const k = blink(t, { every: 7.5, offset: 1.3 });
     drawBadge(badge.ctx, 20, 20, 20, {
       ground: TOKO.MAGENTA, ink: TOKO.PAPER, face: { squash: 1 - k * 0.92 },
     });
@@ -219,14 +222,16 @@ export function mountChat(anchor, opts = {}) {
 
   const startHead = () => head.loop((t) => {
     head.clear();
-    // blinking at rest; while a line is being typed the mouth works — the
-    // mouth is a stroked arc, so "talking" is just its radius breathing
-    const k = speaking ? 0 : pulse(t, { every: 5, len: 0.16, offset: 0.7 });
+    // Blinking at rest; while a line is being typed the mouth works — the
+    // mouth is a stroked arc, so "talking" is just its radius breathing.
+    // Slowly: at 22 rad/s it chattered like a puppet. Toko talks the way he
+    // does everything else, and even between sentences he is still floating.
+    const k = speaking ? 0 : blink(t, { every: 7.5, offset: 0.7 });
     drawHead(head.ctx, 6, 4, 108, {
       ground: TOKO.MAGENTA, ink: TOKO.PAPER,
       faceOpts: {
         squash: 1 - k * 0.92,
-        grin: speaking ? 1 + Math.sin(t * 22) * 0.055 : 1,
+        grin: 1 + (speaking ? Math.sin(t * 11) * 0.05 : drift(t) * 0.012),
       },
     });
   });
@@ -282,10 +287,10 @@ export function mountChat(anchor, opts = {}) {
     }
 
     const schedule = [];
-    let due = speed * 4;               // a beat before Toko starts
+    let due = speed * 9;               // a long beat before Toko starts at all
     lines.forEach((l, li) => {
       for (let ci = 1; ci <= l.length; ci++) schedule.push({ li, ci, due: (due += speed) });
-      due += speed * 10;               // and a beat at the end of each line
+      due += speed * 13;               // and a long one at the end of each line
     });
 
     speaking = true;
