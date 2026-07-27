@@ -7,8 +7,8 @@
 // timer. In DECODE the picture goes amber and starts tearing: the anchor has
 // stopped reading the official copy.
 
-import { PAL } from './palette.js?v=4';
-import { bayer, mix, shade } from './screen.js?v=4';
+import { PAL } from './palette.js?v=5';
+import { bayer, mix, shade } from './screen.js?v=5';
 
 const CX = 48, CY = 52, R = 26;
 
@@ -62,11 +62,30 @@ export class Toko {
       const dx = Math.floor(rx * Math.sqrt(k));
       scr.px(CX - dx + 1, cy + dy, 3, 1, rim);
     }
+    // the screen is the key light: a cold rim along the underside of the head,
+    // and its spill up from the bottom of the frame. In the reference the room
+    // is dark and the laptop is doing all the work on the face.
+    const screenLit = mix('#7fd8ea', PAL.AMBER_HOT, g * 0.85);
+    for (let dy = Math.floor(ry * 0.4); dy <= ry; dy++) {
+      const k = 1 - (dy * dy) / (ry * ry);
+      if (k <= 0) continue;
+      const dx = Math.floor(rx * Math.sqrt(k));
+      scr.px(CX + dx - 2, cy + dy, 2, 1, shade(screenLit, 0.55));
+      scr.px(CX - dx, cy + dy, 2, 1, shade(screenLit, 0.4));
+    }
     scr.ellipse(CX - 9, cy - 11, 4, 3, PAL.SPECULAR);   // the specular dot
     scr.px(CX - 3, cy - 15, 2, 2, PAL.SPECULAR);
 
     this.face(scr, cy, g);
     this.mic(scr, cy);
+    for (let y = scr.h - 10; y < scr.h; y++) {          // screen spill, off-frame
+      const up = (scr.h - y) / 10;
+      for (let x = 0; x < scr.w; x += 2) {
+        if (bayer(x >> 1, y >> 1) < (1 - up) * 0.5) {
+          scr.px(x, y, 2, 1, shade(mix('#5aa0b4', PAL.AMBER_DIM, g * 0.8), 0.8));
+        }
+      }
+    }
 
     // video treatment: grain, then the codec's slow sweep, then scanlines
     this.grain(scr, signal, g);
@@ -75,24 +94,47 @@ export class Toko {
     if (g > 0.05) this.tear(scr, g);
   }
 
-  // a suggestion of a broadcast booth behind the anchor: foam wall squares and
-  // a mast light, dark enough to stay background
+  // Not a studio — a flat after dark.
+  //
+  // The reference for this station is one person on a sofa with a laptop and a
+  // handheld, warm bulbs strung across the ceiling and a kitchen behind them.
+  // That room is what makes it pirate: a newsroom would mean somebody signs off
+  // on the copy. It was acoustic foam before, which told the opposite story.
   booth(scr, g) {
-    const back = mix('#0d2229', '#241a0e', g * 0.85);
+    const back = mix('#0a1418', '#1a1208', g * 0.85);
     scr.px(0, 0, scr.w, scr.h, back);
-    // acoustic foam: wide, low-contrast wedges. An earlier pass used 6px tiles
-    // at high contrast and the wall read as static rather than as a room.
-    const tile = shade(back, 1.14);
-    for (let y = 2; y < 76; y += 12) {
-      for (let x = 2; x < scr.w - 2; x += 12) {
-        if (((x / 12 | 0) + (y / 12 | 0)) % 2) scr.px(x, y, 10, 10, tile);
-      }
+
+    // the kitchen behind: upper cabinets, then the counter under them
+    const unit = mix('#101d21', '#1d150b', g * 0.8);
+    for (let x = 0; x < scr.w; x += 16) {
+      scr.px(x, 26, 15, 22, unit);
+      scr.px(x, 26, 15, 1, shade(unit, 1.4));
     }
-    scr.px(0, 76, scr.w, 1, shade(back, 1.4));            // the desk edge behind
-    // the on-air lamp, breathing
-    const on = 0.6 + 0.4 * Math.sin(this.t * 2.2);
-    scr.px(scr.w - 12, 6, 8, 4, mix('#331111', PAL.DEFENCE, on));
-    scr.px(scr.w - 12, 10, 8, 1, '#220c0c');
+    // the one real light back there: the cool strip under the cabinets, and
+    // its spill down onto the worktop
+    const strip = mix('#9fd8e0', '#d8c08a', g * 0.6);
+    scr.px(4, 49, scr.w - 8, 1, strip);
+    for (let x = 4; x < scr.w - 4; x += 2) {
+      if (bayer(x >> 1, 12) < 0.5) scr.px(x, 50, 2, 3, shade(strip, 0.3));
+    }
+    scr.px(0, 54, scr.w, 16, shade(unit, 0.7));
+    scr.px(0, 54, scr.w, 1, shade(unit, 1.15));
+
+    // The bulb string. This is the only warm light in the app that is not the
+    // decode, so it is kept dim and low-saturation on purpose — amber has one
+    // job here and it is not "room lighting".
+    const bulbs = [[10, 15], [30, 21], [52, 17], [72, 23], [90, 13]];
+    let prev = [0, 9];
+    for (const [bx, by] of [...bulbs, [scr.w - 1, 11]]) {
+      scr.line(prev[0], prev[1], bx, by, '#241f16');
+      prev = [bx, by];
+    }
+    for (const [bx, by] of bulbs) {
+      const k = 0.55 + 0.45 * Math.sin(this.t * 1.4 + bx * 0.3);
+      const warm = mix('#5c3f1e', '#8a6533', k);
+      scr.px(bx, by, 2, 3, warm);
+      scr.px(bx - 1, by + 3, 4, 1, shade(warm, 0.5));
+    }
   }
 
   face(scr, cy, g) {

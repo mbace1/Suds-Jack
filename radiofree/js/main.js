@@ -14,11 +14,11 @@
 // same decode states — because every word on screen, bulletins included, comes
 // from the language blocks.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=4';
-import { Post, Reader } from './codec.js?v=4';
-import { SECTORS, STORIES, storyCopy, parseLine } from './stories.js?v=4';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=4';
-import * as audio from './audio.js?v=4';
+import { PAL, SECTOR_COLOR } from './palette.js?v=5';
+import { Post, Reader } from './codec.js?v=5';
+import { SECTORS, STORIES, storyCopy, parseLine } from './stories.js?v=5';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=5';
+import * as audio from './audio.js?v=5';
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
@@ -259,7 +259,8 @@ function buildSignOff(i, date) {
   const tag = el('p', 'tag');
   tag.innerHTML = `<span class="rec">${t('off.tag')}</span> · ${date}`;
   const body = el('div', 'bulletin');
-  body.append(el('p', 'bulletin-line', t('off.p1')), el('p', 'bulletin-line', t('off.p2')));
+  body.append(el('p', 'bulletin-line', t('off.p1').replace('{n}', String(STORIES.length))),
+              el('p', 'bulletin-line', t('off.p2')));
   const tally = el('div', 'tally');
   cap.append(tag, el('h2', 'head', t('off.head')), body, tally,
     el('p', 'fiction', t('fiction')));
@@ -294,7 +295,9 @@ function paintTally(p) {
   }
   const n = decodedIds.size;
   wrap.appendChild(el('p', 'tally-note',
-    n === 0 ? t('off.none') : n >= STORIES.length ? t('off.all') : t('off.some')));
+    n === 0 ? t('off.none')
+      : n >= STORIES.length ? t('off.all').replace('{n}', String(STORIES.length))
+      : t('off.some')));
 }
 
 // swapping language re-writes every word on screen, so the feed is rebuilt —

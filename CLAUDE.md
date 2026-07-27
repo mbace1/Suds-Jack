@@ -306,7 +306,11 @@ that made them. The last bulletin on the defence band turns the frame on this st
 sector colours (cyan/green/red) carry the channel, green is the default phosphor.
 Adding amber anywhere else costs the app its one piece of taught colour vocabulary.
 
-**Toko is lip-synced, not flapping:** `Reader.update()` returns a mouth amplitude from
+**Toko broadcasts from a flat, not a studio** (owner's reference photo): the
+booth is a night kitchen, a slack bulb string and a cold laptop lighting the face
+from below. Those bulbs are the only warm light that is NOT the decode — dim and
+desaturated on purpose, because amber has one job. **Toko is lip-synced, not
+flapping:** `Reader.update()` returns a mouth amplitude from
 the character it just typed (vowels open, consonants part, spaces close) and that value
 drives `Toko.update()`. Change how text is revealed and the amplitude has to keep
 coming or the face goes dead. The gel wobbles with rx/ry breathing in opposite phase
@@ -372,12 +376,12 @@ the target and run to the guard limit, which drew two long rays across the
 account graph. `field(scr, decode, false)` turns the graticule off for scenes with their own full-frame
 texture (`sea`, `engine`); a grid under a wireframe terrain is noise on noise.
 
-**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 71
+**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 72
 checks: zero console errors, the feed is vertical (one post per screen, snapping, media
 portrait in the buffer *and* on screen), the live codec animates while neighbours hold
 their painted frame and unread posts sit on standby, the reader types and can be
 skipped, DECODE grows plain readings / re-folds / stays per-post, scroll+rail+keyboard
-+dial all move the feed, all twelve bulletins carrying a full read *and* a decode,
++dial all move the feed, every bulletin carrying a full read *and* a decode,
 every visual key real, fi/en/ja complete with a language switch that keeps your
 place, a sign-off that closes the feed and marks what you decoded, a `#id` deep link
 that opens its bulletin without pushing history, a
@@ -447,7 +451,7 @@ radiofree/      # Radio Free Helsinki — MGS-codec news broadcast, Toko anchors
     main.js     # boot + tune-in gate, the vertical snap feed, tuning, decode, the loop
     codec.js    # one post: both codec frames in ONE canvas; Reader (typewriter → mouth)
     toko.js     # the anchor: gel wobble, blink, lip-sync, amber decode tear
-    visuals.js  # 12 portrait story panels + the sign-off test card; PANEL_KEYS
+    visuals.js  # portrait story panels + the sign-off test card; PANEL_KEYS
     stories.js  # the wire: copy with {{spun|plain}} markup, techniques, tells (fi/en/ja)
     i18n.js     # every other string, all three languages
     screen.js   # PixelScreen (detachable), shade/mix/bayer, scanlines
@@ -455,7 +459,7 @@ radiofree/      # Radio Free Helsinki — MGS-codec news broadcast, Toko anchors
     palette.js
   sw.js         # offline shell; manifest.webmanifest + icons drawn in code
   test/
-    smoke.cjs   # 71-check headless gate
+    smoke.cjs   # 72-check headless gate
 hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel enemies
   index.html
   js/

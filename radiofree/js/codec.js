@@ -13,10 +13,10 @@
 // every frame — so Toko is lip-synced to the text on screen instead of flapping
 // on a timer. Vowels open the mouth, consonants part it, spaces close it.
 
-import { PixelScreen, shade, mix } from './screen.js?v=4';
-import { PAL, SECTOR_COLOR } from './palette.js?v=4';
-import { Toko } from './toko.js?v=4';
-import { drawVisual, PANEL_W, PANEL_H, num } from './visuals.js?v=4';
+import { PixelScreen, shade, mix } from './screen.js?v=5';
+import { PAL, SECTOR_COLOR } from './palette.js?v=5';
+import { Toko } from './toko.js?v=5';
+import { drawVisual, PANEL_W, PANEL_H, num } from './visuals.js?v=5';
 
 export const POST_W = 144, POST_H = 276;
 const VF = { x: 8, y: 6, w: PANEL_W, h: PANEL_H };     // the story frame

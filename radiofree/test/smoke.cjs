@@ -85,7 +85,7 @@ const contrast = (a, b) => {
 
   // ── the feed is vertical ─────────────────────────────────────────
   check('every bulletin is its own post',
-    await page.locator('.post:not(.sign-off)').count() === 12);
+    await page.locator('.post:not(.sign-off)').count() === 13);
   check('the feed ends with a sign-off rather than just stopping',
     await page.locator('.post.sign-off').count() === 1);
   const geom = await page.evaluate(() => {
@@ -169,7 +169,7 @@ const contrast = (a, b) => {
 
   await page.keyboard.press('ArrowDown');
   await page.waitForTimeout(700);
-  check('arrow keys move the feed', (await live('.tag').textContent()).includes('03/12'));
+  check('arrow keys move the feed', (await live('.tag').textContent()).includes('03/13'));
 
   // scrolling itself is the primary control — drive the container directly
   await page.evaluate(() => {
@@ -178,7 +178,7 @@ const contrast = (a, b) => {
   });
   await page.waitForTimeout(500);
   check('scrolling changes which post is live',
-    (await live('.tag').textContent()).includes('06/12'));
+    (await live('.tag').textContent()).includes('06/13'));
   check('exactly one post is live at a time', await page.locator('.post.live').count() === 1);
 
   // ── the dial ─────────────────────────────────────────────────────
@@ -189,7 +189,7 @@ const contrast = (a, b) => {
   check('the dial jumps to another channel', freqAfter !== freqBefore);
   // the dial is a readout of where the scroll put you, not a separate state
   check('the masthead reports the live post’s channel', await page.evaluate(async () => {
-    const { SECTORS } = await import('./js/stories.js?v=4');
+    const { SECTORS } = await import('./js/stories.js?v=5');
     const want = SECTORS.find(s => s.id === __rfh.state.channel);
     return document.getElementById('freq').textContent === want.freq
       && document.getElementById('call').textContent === want.call;
@@ -211,7 +211,7 @@ const contrast = (a, b) => {
   // agree instead of waiting to notice 'rail.decode' on a button.
   const langGaps = await page.evaluate(async () => {
     const [{ _STR, UI_KEYS, UI_LANGS }, { COPY, STORIES }] = await Promise.all([
-      import('./js/i18n.js?v=4'), import('./js/stories.js?v=4'),
+      import('./js/i18n.js?v=5'), import('./js/stories.js?v=5'),
     ]);
     const gaps = [];
     for (const l of UI_LANGS) {
@@ -263,13 +263,13 @@ const contrast = (a, b) => {
 
   // ── every bulletin ───────────────────────────────────────────────
   const ids = await page.evaluate(() => __rfh.debug.stories());
-  check('twelve bulletins on the wire', ids.length === 12);
+  check('every bulletin on the wire is registered', ids.length === 13);
 
   // a mistyped visual key silently falls back to the bar chart, so the wrong
   // picture ships next to the right words — check the keys against the panels
   const badVisuals = await page.evaluate(async () => {
     const [{ STORIES }, { PANEL_KEYS }] = await Promise.all([
-      import('./js/stories.js?v=4'), import('./js/visuals.js?v=4'),
+      import('./js/stories.js?v=5'), import('./js/visuals.js?v=5'),
     ]);
     return STORIES.filter(s => !PANEL_KEYS.includes(s.visual)).map(s => `${s.id}:${s.visual}`);
   });
@@ -313,12 +313,14 @@ const contrast = (a, b) => {
   check('scrolling past the last bulletin reaches the sign-off',
     await page.evaluate(() => !!(__rfh.state && __rfh.state.signoff)));
   check('the sign-off lists every technique',
-    await page.locator('.post.sign-off .tally-row').count() === 12);
+    await page.locator('.post.sign-off .tally-row').count() === 13);
   check('it marks the one you decoded',
     await page.locator('.post.sign-off .tally-row.got').count() === 1);
   check('and prints that technique’s tell back at you',
     (await page.locator('.post.sign-off .tally-row.got .tally-tell').textContent()).length > 20);
-  check('the count is shown', (await page.locator('.tally-head').textContent()).includes('1/12'));
+  check('the count is shown', (await page.locator('.tally-head').textContent()).includes('1/13'));
+  check('the sign-off counts the roster, not a hardcoded twelve',
+    (await page.locator('.post.sign-off .bulletin').textContent()).includes('13 stories'));
   check('the sign-off is not a bulletin — nothing to decode',
     await page.locator('.post.sign-off .decode-btn').count() === 0);
   check('the masthead drops the frequency when the station is off air',
@@ -371,7 +373,7 @@ const contrast = (a, b) => {
   check('a #id link opens that bulletin',
     await deep.evaluate(() => __rfh.state.id) === 'seabed');
   check('the deep link is not merely scrolled to, it is live',
-    (await deep.locator('.post.live .tag').textContent()).includes('09/12'));
+    (await deep.locator('.post.live .tag').textContent()).includes('09/13'));
   check('a shared link boots clean', deepErrors.length === 0);
   await deep.close();
 
@@ -406,7 +408,7 @@ const contrast = (a, b) => {
   await off.locator('#tuneIn').click();
   await off.waitForTimeout(900);
   check('the feed opens with the network cut',
-    await off.locator('.post:not(.sign-off)').count() === 12);
+    await off.locator('.post:not(.sign-off)').count() === 13);
   check('a bulletin still reads offline',
     (await off.locator('.post.live .bulletin').textContent()).trim().length > 40);
   check('the picture still draws offline',
