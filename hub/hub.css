@@ -153,6 +153,79 @@ h1 .amp { color: var(--accent); }
   .rack { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px 22px; }
 }
 
+/* ── the other two shapes ──
+   The rack above is one opinion about how big a cover should be. These are the
+   other two, so the question can be settled by looking rather than arguing —
+   and every note records which one was in force when it was written. */
+
+/* WIDE — one cabinet per row, the marquee at the full width of the wrap. This
+   is the pixel art at 10× or more; whether that reads as a banner or as a
+   blown-up thumbnail is exactly the thing worth finding out. */
+html[data-layout="wide"] .rack {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 40px;
+}
+html[data-layout="wide"] .cab-body {
+  /* the text stops where a line is still readable, even though the picture
+     above it does not — 90 characters is a wall */
+  max-width: 72ch;
+}
+@media (min-width: 900px) {
+  /* past this width the marquee is tall enough that its own text scrolls off
+     under it, so the two sit side by side instead */
+  html[data-layout="wide"] .cab {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 28px;
+    align-items: start;
+  }
+  html[data-layout="wide"] .cab-body { padding-top: 0; }
+}
+
+/* LIST — no picture at all. One line per game: caret, title, version, tagline,
+   and the two buttons. For anyone who already knows the floor and came here to
+   get somewhere, which is most people after the first visit. */
+html[data-layout="list"] .rack {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+html[data-layout="list"] .marquee { display: none; }
+html[data-layout="list"] .cab {
+  border-bottom: 1px solid var(--line);
+  padding: 0;
+}
+html[data-layout="list"] .cab-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 16px;
+  padding: 6px 2px;
+}
+html[data-layout="list"] .cab-head { grid-column: 1; }
+html[data-layout="list"] .tagline {
+  grid-column: 1;
+  margin-left: 20px;
+  /* one line, cut cleanly — the whole point of this shape is the scan */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html[data-layout="list"] .actions {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  margin-left: 0;
+}
+html[data-layout="list"] .lineage,
+html[data-layout="list"] .tags,
+html[data-layout="list"] .controls,
+html[data-layout="list"] .note { display: none; }
+html[data-layout="list"] .cab.dark { opacity: .55; }
+
+/* the shape changes under you; let it move rather than jump */
+@media (prefers-reduced-motion: no-preference) {
+  .cab { transition: opacity .18s ease-out; }
+}
+
 .cab {
   display: flex;
   flex-direction: column;
@@ -197,6 +270,19 @@ h1 .amp { color: var(--accent); }
   letter-spacing: .16em;
   font-weight: 400;
   text-transform: uppercase;
+}
+
+/* what moved since you were last here. Loud enough to find while scanning,
+   quiet enough that twelve of them would not be a wall of shouting. */
+.fresh {
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--cab);
+  padding: 2px 5px;
+  margin-left: 6px;
+  align-self: center;
 }
 
 /* the version sits with the title, quiet — it is provenance, not a headline */

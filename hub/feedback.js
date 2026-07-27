@@ -31,6 +31,13 @@ let ENDPOINT = SHEET_ENDPOINT || FORMSPREE_ENDPOINT;
 let blind = !!SHEET_ENDPOINT;
 
 export function setEndpoint(url, isBlind = false) { ENDPOINT = url || ''; blind = isBlind; }
+
+// What was on screen when the note was written — the layout, the language.
+// Supplied by the page rather than guessed at here, because this module has no
+// business knowing what a layout is; it just has to make sure the answer
+// travels with the note. Every surface that posts through here gets it.
+let context = () => ({});
+export function setContext(fn) { context = typeof fn === 'function' ? fn : () => ({}); }
 export function configured() { return !!ENDPOINT; }
 
 // ── the local record ───────────────────────────────────────────────
@@ -64,7 +71,10 @@ async function post(entry) {
   // `source` says which surface it was left on — a cabinet's panel or the
   // counter — because "where people actually leave notes" is worth knowing and
   // costs one field. `kind` rides along from topics.js the same way.
-  const body = JSON.stringify({ source: 'hub', ...entry, ua: navigator.userAgent, screen: `${innerWidth}x${innerHeight}` });
+  const body = JSON.stringify({
+    source: 'hub', ...context(), ...entry,
+    ua: navigator.userAgent, screen: `${innerWidth}x${innerHeight}`,
+  });
   if (blind) {
     // no-cors: the browser will not let us read the answer, so this is the one
     // path where "it left" is the strongest thing that can honestly be said
