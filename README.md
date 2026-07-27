@@ -137,6 +137,12 @@ translations of each other's tricks: Finnish reaches for its true agentless
 passive, Japanese for 〜される and the polite noun, so the technique on display is
 one a reader of that language would actually meet.
 
+**It ends properly.** After the twelfth bulletin the station signs off — a test
+card, the carrier gone — and hands back all twelve techniques, marking the ones
+you actually decoded and printing their tells at you. The ones you skipped stay
+dim. The last bulletin turns the frame on the station; the sign-off makes that
+specific to the person holding the phone.
+
 **Shareable and offline.** The address follows the scroll (`#seabed`), so a link
 opens on the bulletin it names rather than the top of the pile, and a precached
 shell plus a web manifest mean the whole thing installs and runs with no
@@ -145,7 +151,7 @@ network — it is a feed you read on a metro.
 Toko is **lip-synced, not flapping** — the typewriter hands the face a mouth
 amplitude per character (vowels open it, spaces close it; a kana counts as a
 whole syllable, because Japanese is mora-timed) — and goes amber and starts
-tearing under DECODE. Sixty-one-check smoke gate in `radiofree/test/`, including the
+tearing under DECODE. Seventy-one-check smoke gate in `radiofree/test/`, including the
 vertical-feed geometry, trilingual completeness, a real boot with the network
 cut, and WCAG AA on every text colour.
 
@@ -188,6 +194,7 @@ Twin-stick bullet-hell arena shooter built on Three.js r167.
 ## Changelog
 
 ### 2026-07
+- **radiofree v5 — the sign-off:** the feed no longer just stops after the twelfth bulletin. A thirteenth post signs the station off — a pixel test card, the carrier flatlined, `--.--` on the dial — and hands back all twelve techniques, marking the ones *you* opened and printing those tells back at you while the skipped ones stay dim and say so. The last bulletin on the defence band turns the frame on this station; this is the same move made specific to whoever is holding the phone, which is why the count is honest rather than congratulatory. What you decoded persists (`rfhDecoded`), so a technique found once is still credited next visit. The sign-off carries no story, so everything that reads `p.story` — channel tuning, the hash router, decode, the language rebuild, the frame loop — steps over it. Gate at 71
 - **radiofree v4 — shareable, and it survives the metro:** the address now follows the scroll (`#seabed`), so a link opens on the bulletin it names instead of the top of a twelve-story pile — `replaceState`, so the back button leaves the page rather than walking twelve fake entries, and (the reason it must be `replaceState`) so the app's own writes can never re-trigger the `hashchange` handler that catches pasted links. Plus an offline shell: `sw.js` precaches everything cache-first and `manifest.webmanifest` makes it installable, with both icons drawn in code at 48px and baked to PNG like every other pixel in the app. The worker registers over https only (or `?sw=1`) so dev and the gate never get a stale shell. The gate grew to 61 checks — the precache list is verified against what is actually in `js/`, `sw.js`'s version against the one the page requests, and then it registers the worker, cuts the network, reloads and reads a bulletin
 - **radiofree v3 — fi / en / ja:** the app is now trilingual down to the copy — all twelve bulletins, their decode notes and their tells, not just the chrome (`COPY[lang]` in `stories.js`; everything else in a new `i18n.js`). The three versions are deliberately **not translations of each other's tricks**: each language spins its bulletin the way that language really does it, so the Finnish redundancy story leans on the true agentless *passiivi* (`AGENTITON PASSIIVI`) and the Japanese port-automation story on 〜される and the polite noun (名詞化). Browser-detected, switchable from the masthead, persisted; switching **rebuilds the feed in place** — same post, same decode states, same scroll position — and `<html lang>` follows. The reader adapts per script: Japanese types at 26 cps against 72 for Latin, and a kana counts as a full mouth opening rather than a consonant, since a mora-timed language read letter-by-letter leaves Toko's face shut. Also fixed a real drawing bug found by the Japanese render — `PixelScreen.line()` computed its slope from unrounded endpoints while stepping from rounded ones, so Bresenham could miss its target and run to the guard limit, drawing two long rays across the account-network panel
 - **radiofree v2 — vertical feed:** the feed is now TikTok-shaped and that is the primary format, not a mode. All twelve bulletins live in one `scroll-snap` column, one post per screen; each post is the codec **stood on end** (portrait story panel on top, Toko below with a freq/REC/level data column and a waveform) plus a right rail (⧉ DECODE, ▼ NEXT). Every story panel was redrawn portrait (128×152) — a landscape card inside a vertical post reads as something shot for another screen and cropped in — and several are better for it (the mast, the valuation stack, the gulf cross-section, the interference cone). Scrolling is the control; the masthead dial became a readout of where the scroll put you plus a channel jump. Only the live post animates: neighbours hold the single frame `renderStatic()` painted, and posts you have not reached show a standby line instead of their copy. Two fixes worth remembering: the live post is read off `scrollTop` rather than an IntersectionObserver (whose async callback overrode every programmatic jump a frame later), and `scrollTo({behavior:'auto'})` means *defer to CSS* — with `scroll-behavior: smooth` on the container it animates; `'instant'` is the one that lands

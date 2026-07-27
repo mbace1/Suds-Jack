@@ -205,6 +205,27 @@
     border-top: 1px dashed rgba(255,180,58,.3); padding-top: 8px;
   }
 
+  /* ── the sign-off tally ───────────────────────────────── */
+  .tally { margin-top: 14px; border-top: 1px solid var(--green-lo); padding-top: 10px; }
+  .tally-head {
+    font-size: 10px; letter-spacing: .2em; color: var(--green-dim);
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .tally-row {
+    display: grid; grid-template-columns: 14px 1fr; gap: 2px 6px;
+    font-size: 11px; letter-spacing: .1em; color: var(--text-dim);
+    text-transform: uppercase; margin-bottom: 5px;
+  }
+  .tally-row.got { color: var(--amber); }
+  .tally-mark { text-align: center; }
+  .tally-tell {
+    grid-column: 2; font-size: 12px; letter-spacing: 0; text-transform: none;
+    color: #e8cfa2; margin-bottom: 4px;
+  }
+  .tally-note { font-size: 12px; color: #b7e8cd; margin-top: 10px; }
+  .sign-off .tag .rec { color: var(--green-dim); }
+  .sign-off .tag .rec::before { content: '■ '; }
+
   .fiction {
     font-size: 9px; letter-spacing: .1em; color: var(--text-dim);
     text-transform: uppercase; margin: 14px 0 4px; line-height: 1.6;

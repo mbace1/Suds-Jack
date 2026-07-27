@@ -108,6 +108,19 @@ function useLang(code) {
   paintGateLang();
 }
 
+// ── what you have taken apart ──────────────────────────────────────
+// Kept because the sign-off hands it back to you, and because a technique you
+// found once is worth still being credited with on the next visit.
+const DECODED_KEY = 'rfhDecoded';
+let decodedIds = new Set();
+try { decodedIds = new Set(JSON.parse(localStorage.getItem(DECODED_KEY) || '[]')); }
+catch { /* private mode, or something else wrote there */ }
+function rememberDecoded(id) {
+  if (decodedIds.has(id)) return;
+  decodedIds.add(id);
+  try { localStorage.setItem(DECODED_KEY, JSON.stringify([...decodedIds])); } catch { /* ignore */ }
+}
+
 // ── sound ──────────────────────────────────────────────────────────
 const SOUND_KEY = 'rfhSound';
 let soundOn = localStorage.getItem(SOUND_KEY) !== '0';
@@ -217,19 +230,83 @@ function buildFeed() {
     posts.push({ story, sector, copy, post, decoded: false, read: false,
       els: { art, bulletin, box, decodeBtn } });
   });
+  buildSignOff(STORIES.length, date);
   measure();
+}
+
+// The end of the feed is not "nothing else loaded". Twelve bulletins in, the
+// station signs off — a test card, the carrier gone — and hands back the twelve
+// tells, marking the ones you actually opened. The last bulletin turns the
+// frame on this station; this is the same move, made specific to you.
+function buildSignOff(i, date) {
+  const art = el('article', 'post sign-off');
+  art.dataset.id = 'sign-off';
+  art.dataset.index = String(i);
+  art.style.setProperty('--accent', PAL.GREEN);
+
+  const media = el('div', 'post-media');
+  const slot = el('div', 'media-slot');
+  media.appendChild(slot);
+  const rail = el('div', 'rail');
+  const topBtn = el('button', 'rail-btn top-btn');
+  topBtn.innerHTML = `<span class="glyph" aria-hidden="true">▲</span><span class="lbl">${t('rail.top')}</span>`;
+  topBtn.setAttribute('aria-label', t('off.back'));
+  topBtn.onclick = () => scrollToPost(0);
+  rail.appendChild(topBtn);
+  media.appendChild(rail);
+
+  const cap = el('div', 'post-caption');
+  const tag = el('p', 'tag');
+  tag.innerHTML = `<span class="rec">${t('off.tag')}</span> · ${date}`;
+  const body = el('div', 'bulletin');
+  body.append(el('p', 'bulletin-line', t('off.p1')), el('p', 'bulletin-line', t('off.p2')));
+  const tally = el('div', 'tally');
+  cap.append(tag, el('h2', 'head', t('off.head')), body, tally,
+    el('p', 'fiction', t('fiction')));
+
+  art.append(media, cap);
+  feed.appendChild(art);
+
+  const post = new Post(slot, { visual: 'signoff', sector: 'GAMING' },
+    { freq: '--.--' }, i);
+  post.silent = true;                    // the carrier stops with the broadcast
+  post.accent = PAL.GREEN;
+  post.renderStatic();
+  posts.push({ signoff: true, post, els: { art, tally }, decoded: false, read: true });
+}
+
+// the tally is rendered on arrival rather than at build time, so it reflects
+// what you decoded on the way down
+function paintTally(p) {
+  const wrap = p.els.tally;
+  wrap.innerHTML = '';
+  wrap.appendChild(el('p', 'tally-head', `${t('off.tally')} ${decodedIds.size}/${STORIES.length}`));
+  for (const story of STORIES) {
+    const copy = storyCopy(story.id, getLang());
+    const got = decodedIds.has(story.id);
+    const row = el('div', 'tally-row' + (got ? ' got' : ''));
+    row.append(
+      el('span', 'tally-mark', got ? '✓' : '·'),
+      el('span', 'tally-tech', copy.technique),
+    );
+    if (got) row.appendChild(el('span', 'tally-tell', copy.tell));
+    wrap.appendChild(row);
+  }
+  const n = decodedIds.size;
+  wrap.appendChild(el('p', 'tally-note',
+    n === 0 ? t('off.none') : n >= STORIES.length ? t('off.all') : t('off.some')));
 }
 
 // swapping language re-writes every word on screen, so the feed is rebuilt —
 // but the reader's place in it should not move: same post, same decode states
 function rebuildFeed() {
-  const keep = posts.map(p => ({ decoded: p.decoded, read: p.read }));
+  const keep = posts.map(p => ({ decoded: p.decoded, read: p.read, signoff: !!p.signoff }));
   const at = Math.max(0, active);
   for (const p of posts) p.post.destroy();
   active = -1;
   buildFeed();
   posts.forEach((p, i) => {
-    if (!keep[i]) return;
+    if (!keep[i] || keep[i].signoff || p.signoff) return;
     p.decoded = keep[i].decoded;
     p.read = keep[i].read;
     p.post.decoded = p.decoded;
@@ -281,6 +358,18 @@ function setActive(i, first = false) {
   p.post.goLive();
   p.els.art.classList.add('live');
 
+  if (p.signoff) {
+    document.documentElement.style.setProperty('--accent', PAL.GREEN);
+    $('freq').textContent = '--.--';
+    $('call').textContent = t('off.tag');
+    document.title = `${t('off.head')} — Radio Free Helsinki`;
+    setHash('');                 // the sign-off is the plain address, not a link
+    paintTally(p);
+    audio.carrierDuck(false);
+    if (!first) audio.recode();  // the falling tone: the station going off air
+    return;
+  }
+
   // the masthead reports where the scroll put you
   document.documentElement.style.setProperty('--accent', SECTOR_COLOR[p.story.sector]);
   $('freq').textContent = p.sector.freq;
@@ -310,7 +399,7 @@ function setHash(id) {
 
 function indexFromHash() {
   const id = decodeURIComponent(location.hash.replace(/^#/, ''));
-  return id ? posts.findIndex(p => p.story.id === id) : -1;
+  return id ? posts.findIndex(p => !p.signoff && p.story.id === id) : -1;
 }
 
 // a fragment can also arrive without a reload — pasted into an open tab, or
@@ -331,7 +420,11 @@ function scrollToPost(i, instant = false) {
   if (instant) setActive(n);
 }
 
-function channelOf(i) { return SECTORS.findIndex(s => s.id === posts[i].story.sector); }
+// -1 on the sign-off, which has no band: tuning from there goes to the first
+function channelOf(i) {
+  const p = posts[i];
+  return p && !p.signoff ? SECTORS.findIndex(s => s.id === p.story.sector) : -1;
+}
 
 // the dial jumps between channels: the first post of the previous/next band
 function tuneChannel(delta) {
@@ -345,10 +438,11 @@ function tuneChannel(delta) {
 
 function toggleDecode(i) {
   const p = posts[i];
-  if (!p) return;
+  if (!p || p.signoff) return;
   if (i !== active) { scrollToPost(i); return; }
   p.decoded = !p.decoded;
   p.post.decoded = p.decoded;
+  if (p.decoded) rememberDecoded(p.story.id);
   // a bulletin still being read jumps to the end first — you cannot decode
   // half a sentence
   if (!reader.done) reader.finish();
@@ -392,8 +486,8 @@ function loop(now) {
   last = now;
   const p = posts[active];
   if (p) {
-    const mouth = reader.update(dt, getLang());
-    if (reader.done) audio.carrierDuck(false);
+    const mouth = p.signoff ? 0 : reader.update(dt, getLang());
+    if (!p.signoff && reader.done) audio.carrierDuck(false);
     p.post.update(dt, mouth);
     p.post.draw();
   }
@@ -405,8 +499,10 @@ window.__rfh = {
   audio,
   get state() {
     const p = posts[active];
-    return p ? { channel: p.story.sector, index: active, decoded: p.decoded,
-                 id: p.story.id, lang: getLang() } : null;
+    if (!p) return null;
+    if (p.signoff) return { signoff: true, index: active, decodedCount: decodedIds.size, lang: getLang() };
+    return { channel: p.story.sector, index: active, decoded: p.decoded,
+             id: p.story.id, lang: getLang() };
   },
   debug: {
     tuneIn: () => $('tuneIn').click(),
@@ -414,18 +510,20 @@ window.__rfh = {
     tuneChannel,
     toggleDecode: () => toggleDecode(active),
     finishRead: () => reader.finish(),
-    stories: () => posts.map(p => p.story.id),
+    stories: () => posts.filter(p => !p.signoff).map(p => p.story.id),
+    decoded: () => [...decodedIds],
+    forgetDecoded: () => { decodedIds.clear(); try { localStorage.removeItem(DECODED_KEY); } catch {} },
     setLang: useLang,
     // tests and deep links need to land on a post without waiting for a smooth
     // scroll to finish, so jump instantly and set the active post directly
     open: id => {
-      const i = posts.findIndex(p => p.story.id === id);
+      const i = posts.findIndex(p => !p.signoff && p.story.id === id);
       if (i < 0) return false;
       scrollToPost(i, true);
       return true;
     },
     channel: cid => {
-      const i = posts.findIndex(p => p.story.sector === cid);
+      const i = posts.findIndex(p => !p.signoff && p.story.sector === cid);
       if (i < 0) return false;
       scrollToPost(i, true);
       return true;

@@ -382,7 +382,40 @@ function crowd2(scr, t, d) {
   num(scr, W - 22, 8, d > 0.4 ? '500' : '900', ink(d));
 }
 
-const PANELS = { chart, chart2, mesh, crowd, heat, crane, tower, coin, sea, sat, engine, crowd2 };
+
+// The sign-off: a test card. Not a bulletin — the picture a station leaves up
+// when it stops broadcasting, which is the honest end for a feed that has just
+// spent twelve posts telling you to watch who is choosing.
+function signoff(scr, t, d) {
+  field(scr, 0, false);
+  const bars = [PAL.GREEN, PAL.GAMING, PAL.INDUSTRY, PAL.DEFENCE, PAL.AMBER, PAL.GREEN_DIM];
+  const bw = W / bars.length;
+  bars.forEach((c, i) => scr.px(i * bw, 8, Math.ceil(bw), 44, c));
+  scr.px(0, 52, W, 1, PAL.PANEL_LO);
+
+  // the classic circle and crosshair
+  const cx = 64, cy = 86, r = 26;
+  for (let a = 0; a < Math.PI * 2; a += 0.03) {
+    scr.px(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 1, 1, PAL.GREEN_DIM);
+    scr.px(cx + Math.cos(a) * (r - 8), cy + Math.sin(a) * (r - 8), 1, 1, PAL.GREEN_LO);
+  }
+  scr.px(cx - r - 6, cy, r * 2 + 12, 1, PAL.GREEN_LO);
+  scr.px(cx, cy - r - 6, 1, r * 2 + 12, PAL.GREEN_LO);
+
+  // the three bands, listed one last time
+  ['87.60', '104.40', '141.12'].forEach((f, i) => {
+    num(scr, 44, 122 + i * 8, f, i === 2 ? PAL.DEFENCE : PAL.GREEN_DIM);
+  });
+
+  // one scan bar still moving: a station that has signed off is not a page
+  // that failed to load, and the difference has to be visible
+  const y = (t * 18) % (H + 20) - 10;
+  scr.ctx.globalAlpha = 0.14;
+  scr.px(0, y, W, 7, PAL.GREEN_HOT);
+  scr.ctx.globalAlpha = 1;
+}
+
+const PANELS = { signoff, chart, chart2, mesh, crowd, heat, crane, tower, coin, sea, sat, engine, crowd2 };
 
 // drawVisual falls back rather than throwing, so a mistyped key would ship the
 // wrong picture beside the right words in total silence. The key list is

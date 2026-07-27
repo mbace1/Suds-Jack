@@ -339,6 +339,15 @@ while a bulletin is read. Everything routes through one master gain — nothing 
 to `ctx.destination` — so the ♪ mute is total and anything added later inherits it.
 Mute persists in `localStorage` (`rfhSound`).
 
+**The feed ends, it does not stop.** A thirteenth post signs the station off — a
+test card, `post.silent` flatlining the carrier, `--.--` on the dial — and hands
+back all twelve techniques, marking the ones the listener actually decoded and
+printing those tells back at them (dim + `·` for the ones skipped). The decoded
+set persists in `rfhDecoded`. It is the last bulletin's move (turning the frame
+on this station) made specific to you. The sign-off post has no `story`/`copy`,
+so `channelOf`, `indexFromHash`, `toggleDecode`, `rebuildFeed` and the loop all
+step over `p.signoff` — anything new that reads `p.story` must too.
+
 A fragment deep-links one bulletin (`/radiofree/#seabed` → the address follows
 the scroll, so a link is worth sending); `setHash()` uses `replaceState` so the
 back button leaves the page instead of walking twelve fake entries — and, the
@@ -363,14 +372,15 @@ the target and run to the guard limit, which drew two long rays across the
 account graph. `field(scr, decode, false)` turns the graticule off for scenes with their own full-frame
 texture (`sea`, `engine`); a grid under a wireframe terrain is noise on noise.
 
-**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 61
+**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 71
 checks: zero console errors, the feed is vertical (one post per screen, snapping, media
 portrait in the buffer *and* on screen), the live codec animates while neighbours hold
 their painted frame and unread posts sit on standby, the reader types and can be
 skipped, DECODE grows plain readings / re-folds / stays per-post, scroll+rail+keyboard
 +dial all move the feed, all twelve bulletins carrying a full read *and* a decode,
 every visual key real, fi/en/ja complete with a language switch that keeps your
-place, a `#id` deep link that opens its bulletin without pushing history, a
+place, a sign-off that closes the feed and marks what you decoded, a `#id` deep link
+that opens its bulletin without pushing history, a
 precache that names every module, a real run with the network cut, 44px targets, and **WCAG AA on every text colour** — with translucent backgrounds properly
 composited up the tree (taking the first non-transparent colour reads
 `rgba(255,180,58,.05)` as solid amber and fails the decode box by 4x).
@@ -437,7 +447,7 @@ radiofree/      # Radio Free Helsinki — MGS-codec news broadcast, Toko anchors
     main.js     # boot + tune-in gate, the vertical snap feed, tuning, decode, the loop
     codec.js    # one post: both codec frames in ONE canvas; Reader (typewriter → mouth)
     toko.js     # the anchor: gel wobble, blink, lip-sync, amber decode tear
-    visuals.js  # 12 portrait story panels, each re-drawing under decode; PANEL_KEYS
+    visuals.js  # 12 portrait story panels + the sign-off test card; PANEL_KEYS
     stories.js  # the wire: copy with {{spun|plain}} markup, techniques, tells (fi/en/ja)
     i18n.js     # every other string, all three languages
     screen.js   # PixelScreen (detachable), shade/mix/bayer, scanlines
@@ -445,7 +455,7 @@ radiofree/      # Radio Free Helsinki — MGS-codec news broadcast, Toko anchors
     palette.js
   sw.js         # offline shell; manifest.webmanifest + icons drawn in code
   test/
-    smoke.cjs   # 61-check headless gate
+    smoke.cjs   # 71-check headless gate
 hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel enemies
   index.html
   js/

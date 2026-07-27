@@ -15,6 +15,7 @@
 //  - scrolling, the NEXT rail button, keyboard, channel tuning, sound
 //  - fi / en / ja: every string and every bulletin present in all three,
 //    switching rewrites the feed in place and keeps your position
+//  - the sign-off closes the feed and hands back the tells you decoded
 //  - the address follows the scroll, and a #id link opens that bulletin
 //  - the offline shell: the precache names every file, versions agree, and the
 //    app really boots with the network cut
@@ -83,7 +84,10 @@ const contrast = (a, b) => {
   check('tuning in reveals the receiver', await live('.media-slot canvas').isVisible());
 
   // ── the feed is vertical ─────────────────────────────────────────
-  check('every bulletin is its own post', await page.locator('.post').count() === 12);
+  check('every bulletin is its own post',
+    await page.locator('.post:not(.sign-off)').count() === 12);
+  check('the feed ends with a sign-off rather than just stopping',
+    await page.locator('.post.sign-off').count() === 1);
   const geom = await page.evaluate(() => {
     const f = document.getElementById('feed');
     const p = document.querySelector('.post');
@@ -293,6 +297,55 @@ const contrast = (a, b) => {
   check(`every bulletin carries a full read and a decode${incomplete.length ? ' — ' + incomplete.join(', ') : ''}`,
     incomplete.length === 0);
 
+  // ── the sign-off ─────────────────────────────────────────────────
+  // The end of a feed that has spent twelve posts teaching you to catch a
+  // technique should hand the techniques back, and say which ones YOU opened.
+  await page.evaluate(() => __rfh.debug.forgetDecoded());
+  await page.evaluate(() => __rfh.debug.open('kaiku-restructure'));
+  await page.waitForTimeout(120);
+  await page.evaluate(() => { __rfh.debug.finishRead(); __rfh.debug.toggleDecode(); });
+  await page.waitForTimeout(200);
+  await page.evaluate(() => {
+    const f = document.getElementById('feed');
+    f.scrollTo({ top: f.scrollHeight, behavior: 'instant' });
+  });
+  await page.waitForTimeout(500);
+  check('scrolling past the last bulletin reaches the sign-off',
+    await page.evaluate(() => !!(__rfh.state && __rfh.state.signoff)));
+  check('the sign-off lists every technique',
+    await page.locator('.post.sign-off .tally-row').count() === 12);
+  check('it marks the one you decoded',
+    await page.locator('.post.sign-off .tally-row.got').count() === 1);
+  check('and prints that technique’s tell back at you',
+    (await page.locator('.post.sign-off .tally-row.got .tally-tell').textContent()).length > 20);
+  check('the count is shown', (await page.locator('.tally-head').textContent()).includes('1/12'));
+  check('the sign-off is not a bulletin — nothing to decode',
+    await page.locator('.post.sign-off .decode-btn').count() === 0);
+  check('the masthead drops the frequency when the station is off air',
+    (await page.locator('#freq').textContent()).includes('--'));
+
+  // it is the last screen anyone sees; it must not be a frozen one
+  const soA = await page.evaluate(() => document.querySelector('.post.sign-off canvas').toDataURL().slice(-96));
+  await page.waitForTimeout(300);
+  const soB = await page.evaluate(() => document.querySelector('.post.sign-off canvas').toDataURL().slice(-96));
+  check('the sign-off card is still moving', soA !== soB);
+
+  check('the tally survives a language switch', await page.evaluate(async () => {
+    const before = document.querySelector('.tally-note').textContent;
+    __rfh.debug.setLang('ja');
+    await new Promise(r => setTimeout(r, 300));
+    const f = document.getElementById('feed');
+    f.scrollTo({ top: f.scrollHeight, behavior: 'instant' });
+    await new Promise(r => setTimeout(r, 400));
+    const after = document.querySelector('.tally-note').textContent;
+    const rows = document.querySelectorAll('.post.sign-off .tally-row.got').length;
+    __rfh.debug.setLang('en');
+    await new Promise(r => setTimeout(r, 300));
+    return before !== after && rows === 1;
+  }));
+  await page.evaluate(() => __rfh.debug.open('kaiku-restructure'));
+  await page.waitForTimeout(200);
+
   // ── the address is the bulletin ──────────────────────────────────
   await page.evaluate(() => __rfh.debug.open('synthetic-env'));
   await page.waitForTimeout(200);
@@ -352,7 +405,8 @@ const contrast = (a, b) => {
   await off.reload({ waitUntil: 'domcontentloaded' });
   await off.locator('#tuneIn').click();
   await off.waitForTimeout(900);
-  check('the feed opens with the network cut', await off.locator('.post').count() === 12);
+  check('the feed opens with the network cut',
+    await off.locator('.post:not(.sign-off)').count() === 12);
   check('a bulletin still reads offline',
     (await off.locator('.post.live .bulletin').textContent()).trim().length > 40);
   check('the picture still draws offline',
