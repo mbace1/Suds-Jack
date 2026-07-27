@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=168';
-import { nesSnap, NEON } from './retro.js?v=168';
+import { TUNING } from './tuning.js?v=169';
+import { nesSnap, NEON } from './retro.js?v=169';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // v194: under the WEBGPU (BETA) build the goo FX run as a TSL node graph

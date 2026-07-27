@@ -1,15 +1,15 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=168';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=168';
-import { Player, PLAYER_RADIUS } from './player.js?v=168';
+import { InputManager } from './input.js?v=169';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=169';
+import { Player, PLAYER_RADIUS } from './player.js?v=169';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=168';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=168';
-import { audio } from './audio.js?v=168';
-import { initDesigner } from './designer.js?v=168';
-import { createSpecimen } from './specimen.js?v=168';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=168';
-import { TUNING } from './tuning.js?v=168';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=169';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=169';
+import { audio } from './audio.js?v=169';
+import { initDesigner } from './designer.js?v=169';
+import { createSpecimen } from './specimen.js?v=169';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=169';
+import { TUNING } from './tuning.js?v=169';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -1316,8 +1316,14 @@ function equipWeapon(podId) {
 
 // Floor valuables (v118): shared geometries so swapping a Powerup's look
 // leaks nothing — cash reads as a flat bill stack, prizes as a gift box.
-const CASH_GEO  = new THREE.BoxGeometry(0.55, 0.2, 0.4);
-const PRIZE_GEO = new THREE.BoxGeometry(0.62, 0.62, 0.62);
+// v215 (field feedback: "we need better pickup indicators"): valuables were
+// two anonymous boxes. They are ARCADE FRUIT now — a cherry pair for the
+// common bonus, a banana bunch for the fat one — because a silhouette reads
+// across a busy floor in a way a rotating cube never did, and fruit is the
+// oldest "this is points" vocabulary an arcade has. Defined below the
+// mergeGeos helper; declared here so the disposal guard can see them.
+let CHERRY_GEO = null, STRAW_GEO = null, ORANGE_GEO = null,
+    APPLE_GEO = null, PEAR_GEO = null, BANANA_GEO = null;
 // v169 parity: SHAPED pickups — a key that looks like a key, a flask that
 // looks like a flask, a haunch of suds-meat. Tiny hand-merged geometries
 // (positions/normals/uvs concatenated; no external utils).
@@ -1360,6 +1366,99 @@ const FOOD_GEO = mergeGeos([
   { geo: new THREE.SphereGeometry(0.06, 6, 5), x: -0.32, z: 0.045 },       // knuckle
   { geo: new THREE.SphereGeometry(0.06, 6, 5), x: -0.32, z: -0.045 },
 ]);
+// v215 ARCADE FRUIT — the valuables vocabulary (declared above, built here so
+// mergeGeos exists). Single-material like every other shaped pickup, so each
+// fruit is one bold colour and the SILHOUETTE does the identifying.
+CHERRY_GEO = mergeGeos([
+  { geo: new THREE.SphereGeometry(0.19, 10, 8), x: -0.15, y: -0.06 },      // fruit
+  { geo: new THREE.SphereGeometry(0.19, 10, 8), x:  0.15, y: -0.11 },
+  { geo: new THREE.CylinderGeometry(0.028, 0.028, 0.40, 5),
+    x: -0.10, y: 0.16, rz:  0.55 },                                        // stems, meeting
+  { geo: new THREE.CylinderGeometry(0.028, 0.028, 0.34, 5),
+    x:  0.10, y: 0.14, rz: -0.45 },
+  { geo: new THREE.SphereGeometry(0.05, 6, 5), y: 0.34 },                  // the join
+]);
+// A bunch: three tapered fingers fanned off a stubby crown.
+// Each finger is two segments angled slightly against each other, which is
+// what sells the CURVE — straight cones fanned wide just read as a wishbone.
+const _nana = (x, y, rz, len) => ([
+  { geo: new THREE.CylinderGeometry(0.075, 0.105, len, 7), x, y, rz },
+  { geo: new THREE.CylinderGeometry(0.048, 0.078, len * 0.55, 7),
+    x: x - Math.sin(rz) * len * 0.62, y: y - Math.cos(rz) * len * 0.62, rz: rz * 2.1 },
+]);
+BANANA_GEO = mergeGeos([
+  ..._nana(-0.13, 0.02,  0.40, 0.46),
+  ..._nana( 0.00, 0.05,  0.06, 0.52),
+  ..._nana( 0.13, 0.02, -0.40, 0.46),
+  { geo: new THREE.CylinderGeometry(0.085, 0.060, 0.17, 6), y: 0.30 },     // crown
+]);
+
+// Dress a valuable as fruit. Shape and colour travel together — a green
+// cherry or a red banana would undo the whole point of the silhouette.
+STRAW_GEO = mergeGeos([
+  { geo: new THREE.ConeGeometry(0.21, 0.42, 9), y: -0.06, rz: Math.PI },   // point down
+  { geo: new THREE.SphereGeometry(0.20, 10, 6), y: 0.13 },                 // shoulders
+  { geo: new THREE.ConeGeometry(0.14, 0.10, 6), y: 0.30 },                 // hull
+  { geo: new THREE.CylinderGeometry(0.022, 0.022, 0.14, 5), y: 0.39 },     // stem
+]);
+ORANGE_GEO = mergeGeos([
+  { geo: new THREE.SphereGeometry(0.245, 12, 9) },
+  { geo: new THREE.CylinderGeometry(0.030, 0.030, 0.12, 5), y: 0.27 },
+  { geo: new THREE.SphereGeometry(0.055, 6, 5), x: 0.10, y: 0.30, rz: 0.5 },   // leaf nub
+]);
+APPLE_GEO = mergeGeos([
+  { geo: new THREE.SphereGeometry(0.235, 12, 9), y: -0.02, s: 1 },
+  { geo: new THREE.SphereGeometry(0.115, 8, 6), x: -0.10, y: 0.10 },       // lobes
+  { geo: new THREE.SphereGeometry(0.115, 8, 6), x:  0.10, y: 0.10 },
+  { geo: new THREE.CylinderGeometry(0.026, 0.026, 0.16, 5), y: 0.26 },     // stem
+  { geo: new THREE.SphereGeometry(0.07, 6, 5), x: 0.11, y: 0.31, rz: 0.6 },// leaf
+]);
+PEAR_GEO = mergeGeos([
+  { geo: new THREE.SphereGeometry(0.215, 11, 9), y: -0.09 },               // belly
+  { geo: new THREE.SphereGeometry(0.140, 9, 7), y:  0.12 },                // neck
+  { geo: new THREE.CylinderGeometry(0.024, 0.024, 0.15, 5), y: 0.29 },
+  { geo: new THREE.SphereGeometry(0.065, 6, 5), x: 0.09, y: 0.33, rz: 0.6 },
+]);
+
+// THE FRUIT LADDER. The reference cabinets don't use one bonus item, they use
+// a SERIES: the item changes as you go deeper and each rung has a learnable
+// value, so the fruit tells you how far in you are AND what it is worth before
+// you read a number. Ordered cheapest to dearest.
+//
+// Scales are deliberately generous: the first pass rendered fruit smaller than
+// the glyph floating above it, which is the opposite of an indicator.
+const FRUIT_LADDER = [
+  { id: 'cherry',     geo: () => CHERRY_GEO, color: 0xff2e4d, mult: 1.0, scale: 1.55 },
+  { id: 'strawberry', geo: () => STRAW_GEO,  color: 0xf5325b, mult: 1.4, scale: 1.50 },
+  { id: 'orange',     geo: () => ORANGE_GEO, color: 0xff9a1f, mult: 1.9, scale: 1.50 },
+  { id: 'apple',      geo: () => APPLE_GEO,  color: 0xe33127, mult: 2.5, scale: 1.50 },
+  { id: 'pear',       geo: () => PEAR_GEO,   color: 0xbcd94a, mult: 3.2, scale: 1.55 },
+  { id: 'banana',     geo: () => BANANA_GEO, color: 0xffd23f, mult: 4.0, scale: 1.70 },
+];
+const FRUIT_BY_ID = Object.fromEntries(FRUIT_LADDER.map(f => [f.id, f]));
+const FRUIT_GEOS = () => FRUIT_LADDER.map(f => f.geo());
+// Two waves per rung, then it sits on the top fruit — deep runs keep the
+// dearest item rather than wrapping back to cherries.
+function fruitForDepth(w = wave) {
+  return FRUIT_LADDER[Math.min(FRUIT_LADDER.length - 1, Math.max(0, Math.floor((w - 1) / 2)))];
+}
+// kind: a ladder id, or 'auto' to take the rung this depth has earned.
+function wearFruit(pu, kind = 'auto') {
+  const f = kind === 'auto' ? fruitForDepth() : (FRUIT_BY_ID[kind] ?? FRUIT_LADDER[0]);
+  if (!FRUIT_GEOS().includes(pu.mesh.geometry)) pu.mesh.geometry.dispose();
+  pu.mesh.geometry = f.geo();
+  pu.mat.color.setHex(f.color);
+  pu.mat.opacity = 1;              // fruit reads as solid, not as a ghostly orb
+  pu.mesh.scale.setScalar(f.scale);
+  pu._fruit = f.id;
+  // The rung is worth what the rung is worth — that is what makes the item
+  // itself informative rather than decorative.
+  if (pu._value) pu._value = Math.round(pu._value * f.mult);
+  // The SHAPE is the indicator now, so drop the '$' badge — it was larger than
+  // the fruit and competed with the silhouette it was supposed to label.
+  if (pu._sprite) { pu._sprite.visible = false; pu._noBadge = true; }
+}
+
 // v132: glyph badges for the non-weapon pickups (weapon pods show their id).
 const NON_WEAPON_GLYPHS = {
   hp: '+', invincible: '★', firerate: '»', scoremult: '×2', score: '$', item: '?', key: 'K', potion: '✦',
@@ -1407,13 +1506,14 @@ class Powerup {
     const y = 0.6 + Math.sin(t * 3) * 0.15;
     this.mesh.position.set(this.x, y, this.z);
     this.mesh.rotation.y += dt * 1.6;  // slow spin — sells boxes/prizes, invisible on orbs
-    this.mat.opacity = 0.5 + 0.4 * Math.sin(t * 5);
+    this.mat.opacity = this._noBadge ? (0.85 + 0.15 * Math.sin(t * 5))   // v215: fruit stays solid
+                                     : (0.5 + 0.4 * Math.sin(t * 5));
     // v135: expiry warning — the last 2.5 s blink hard so "grab it or lose
     // it" reads at a glance. Room-long floor loot (_life 999) never blinks.
     let blink = 1;
     if (this._life < 2.5) blink = Math.sin(this._life * 16) > 0 ? 1 : 0.12;
     this.mat.opacity *= blink;
-    if (this._sprite) {
+    if (this._sprite && !this._noBadge) {
       this._sprite.position.set(this.x, y + this._spriteLift, this.z);
       this._sprite.material.opacity = blink;
     }
@@ -1424,7 +1524,7 @@ class Powerup {
     // v129: the per-instance sphere + material leaked GPU-side on every pod
     // collected/expired. Valuables swap in the SHARED cash/prize geometries —
     // those must survive; everything per-instance gets disposed.
-    if (this.mesh.geometry !== CASH_GEO && this.mesh.geometry !== PRIZE_GEO) {
+    if (!FRUIT_GEOS().includes(this.mesh.geometry)) {
       this.mesh.geometry.dispose();
     }
     this.mat.dispose();
@@ -2646,9 +2746,7 @@ class KkCrate {
       const pu = new Powerup(scene, this.x, this.z, 'score');
       pu._life = 12;
       pu._value = 100 + wave * 20;
-      pu.mesh.geometry.dispose();
-      pu.mesh.geometry = CASH_GEO;
-      pu.mat.color.setHex(0x99ee66);
+      wearFruit(pu, 'auto');
       powerups.push(pu);
       for (let j = 0; j < 6; j++) {
         const a = (j / 6) * Math.PI * 2;
@@ -4301,7 +4399,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v214' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v215' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -5348,7 +5446,7 @@ function spawnWave() {
       const [lx, lz] = pickCell(4);
       const pu = new Powerup(scene, lx, lz, rng() < 0.5 ? 'hp' : 'score');
       pu._life = 999;
-      if (pu._type === 'score') { pu._value = 200 + lvl * 40; pu.mesh.geometry.dispose(); pu.mesh.geometry = CASH_GEO; pu.mat.color.setHex(0xffcc44); }
+      if (pu._type === 'score') { pu._value = 200 + lvl * 40; wearFruit(pu, 'auto'); }
       else { pu.mesh.geometry.dispose(); pu.mesh.geometry = FOOD_GEO; pu.mat.color.setHex(0xcc8855); }   // v169: suds-meat
       powerups.push(pu);
     }
@@ -5367,9 +5465,7 @@ function spawnWave() {
           cX(ti) + (rng() - 0.5) * cw * 0.5, cZ(tj) + (rng() - 0.5) * ch * 0.5, 'score');
         pu._life = 999;
         pu._value = 400 + lvl * 60;
-        pu.mesh.geometry.dispose();
-        pu.mesh.geometry = CASH_GEO;
-        pu.mat.color.setHex(0xffdd33);
+        wearFruit(pu, 'auto');
         powerups.push(pu);
       }
       if (rng() < 0.4) {
@@ -6061,13 +6157,10 @@ function spawnWave() {
         if (isPrizeItem) {
           // Big prize — a TV, a toaster, a golden duck. Gift-box mesh, worth more.
           pu._value = (1000 + wave * 50) * (heavy ? 2 : 1);
-          pu.mesh.geometry = PRIZE_GEO;
-          pu.mat.color.setHex(0xffcc33);
-          pu.mesh.scale.setScalar(1.25);
+          wearFruit(pu, 'banana');
         } else {
-          pu._value = (150 + wave * 10) * (heavy ? 2 : 1);  // everyday cash pile
-          pu.mesh.geometry = CASH_GEO;
-          pu.mat.color.setHex(0x99ee66);
+          pu._value = (150 + wave * 10) * (heavy ? 2 : 1);  // everyday cherry
+          wearFruit(pu, 'auto');
         }
       }
       powerups.push(pu);
@@ -6084,9 +6177,7 @@ function spawnWave() {
       const pu = new Powerup(scene, vx, vz, 'score');
       pu._life = 999;
       pu._value = (250 + wave * 15) * (rng() < 0.2 ? 4 : 1);
-      pu.mesh.geometry.dispose();
-      pu.mesh.geometry = rng() < 0.2 ? PRIZE_GEO : CASH_GEO;
-      pu.mat.color.setHex(rng() < 0.2 ? 0xffcc33 : 0x99ee66);
+      wearFruit(pu, rng() < 0.2 ? 'banana' : 'auto');
       powerups.push(pu);
     }
     const pod = new Powerup(scene, 0, 0, randomWeaponPodId(wave >= 8));
@@ -9014,6 +9105,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=168').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=169').catch(() => {});
   });
 }
