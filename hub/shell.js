@@ -13,7 +13,9 @@
 // takes you back — long enough that it cannot be hit by accident mid-run,
 // short enough that you do not have to wonder whether it is working.
 
-import { watchPad } from './pad.js?v=1';
+import { watchPad } from './pad.js?v=5';
+import { GAMES } from './games.js?v=5';
+import { attachPad } from './padkeys.js?v=5';
 
 const HOLD_MS = 750;
 const START = 9, BACK = 8;
@@ -92,6 +94,14 @@ watchPad({
   },
 });
 
+// ── the pad, for games that never learned to read one ──────────────
+// Which cabinet is this? The catalogue already knows every game's folder, so
+// match on the path rather than making each page declare itself.
+const here = location.pathname.replace(/\/index\.html$/, '/').replace(/([^/])$/, '$1/');
+const entry = GAMES.find(g => here.endsWith(`/${g.path}`));
+const padCfg = entry && entry.pad !== 'native' ? entry.pad : null;
+const bridged = attachPad(padCfg);
+
 // let a game know the shell is there, in case it wants to hide it during a
 // cutscene or move it out of the way of its own HUD
-window.__arcadeShell = { home, HOME };
+window.__arcadeShell = { home, HOME, game: entry?.id ?? null, pad: padCfg ?? null, bridged };

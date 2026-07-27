@@ -18,12 +18,18 @@
 // `accent` the card's neon; taken from the game's own palette so the row of
 //          cards reads as the row of cabinets it is meant to be.
 // `art`    the key of a draw function in art.js (each cabinet gets a marquee).
+// `pad`    how a controller drives this game. 'native' means the game reads a
+//          pad itself and nothing should be layered on top. Otherwise
+//          hub/padkeys.js bridges one: {keys:{...}} feeds its keyboard,
+//          {pointer:true} feeds its one-button surface, {ui:true} walks its
+//          on-screen buttons. Omit for anything not worth playing on a pad.
 //
 // Adding a game is one entry here plus one draw function in art.js.
 
 export const GAMES = [
   {
     id: 'sudsjack',
+    pad: 'native',
     status: 'active',
     note: 'the playable build is the original vector one — a rebuild on the Hyper Dagger baseline starts next',
     title: 'Suds Jack',
@@ -38,6 +44,7 @@ export const GAMES = [
   },
   {
     id: 'tokodrop',
+    pad: 'native',
     status: 'active',
     title: 'Toko Drop',
     tagline: 'Twin-stick swarm survival. The gels dodge your lanes, school like fish, and burst into revenge rings.',
@@ -51,6 +58,7 @@ export const GAMES = [
   },
   {
     id: 'hyperdagger',
+    pad: 'native',
     status: 'active',
     title: 'Hyper Dagger',
     tagline: 'Survive a swarm of voxel skulls on a disc in the void. Survival time is the only score.',
@@ -64,6 +72,7 @@ export const GAMES = [
   },
   {
     id: 'dropcabal',
+    pad: { keys: { left: 'KeyA', right: 'KeyD', b0: 'Space', b1: 'KeyG' } },   // aim stays on the mouse
     status: 'active',
     title: 'Drop Cabal',
     tagline: 'A gallery shooter with layered depth — near gels eat the shots you aimed at far ones.',
@@ -77,6 +86,7 @@ export const GAMES = [
   },
   {
     id: 'powder',
+    pad: { keys: { left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS', b0: 'Space' } },
     status: 'active',
     note: 'a fresh prototype — the handling and the look are in, the field still needs balancing',
     title: 'Powder',
@@ -106,6 +116,7 @@ export const GAMES = [
   },
   {
     id: 'skltr',
+    pad: 'native',
     status: 'active',
     title: 'SKLTR',
     tagline: 'A neon survival roguelike — hold out, level up, and see how far the run goes.',
@@ -119,6 +130,7 @@ export const GAMES = [
   },
   {
     id: 'neonronin',
+    pad: { keys: { left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS' } },   // camera stays on the mouse
     status: 'active',
     title: 'Neon Ronin',
     tagline: 'Chain sword combos through a neon skyline. The fighting is automatic; the movement is yours.',
@@ -132,6 +144,7 @@ export const GAMES = [
   },
   {
     id: 'gameoflife',
+    pad: { ui: true },
     status: 'active',
     title: 'The Game of Life',
     tagline: 'Small stories and games that always hand you back to the outdoors. Finnish, English, Japanese.',
@@ -145,6 +158,7 @@ export const GAMES = [
   },
   {
     id: 'tinyhawk',
+    pad: 'native',
     status: 'active',
     note: 'P0 — the park, the controls, grinds and manuals are in; goals and the node map are not',
     title: 'Tiny Hawk',
@@ -159,6 +173,7 @@ export const GAMES = [
   },
   {
     id: 'tiny2d',
+    pad: { pointer: true },
     status: 'active',
     title: 'Tiny 2D',
     tagline: 'One button. Press into the hill, let go at the lip, and land along the next one — not into it.',

@@ -133,6 +133,14 @@ h1 .amp { color: var(--accent); }
   text-transform: uppercase;
 }
 
+/* the version sits with the title, quiet — it is provenance, not a headline */
+.ver {
+  font-size: 11px;
+  letter-spacing: .08em;
+  color: var(--ink-dim);
+  margin-left: auto;
+}
+
 .lineage {
   color: var(--ink-dim);
   font-size: 11px;
