@@ -1,0 +1,207 @@
+/* TOKO MIDORI — the brand's stylesheet.
+   Two jobs: publish the palette as custom properties so plain HTML quotes the
+   same hex the canvas marks do, and carry the handful of CSS-only brand
+   effects (the glitch text, the rules, the stamp block).
+
+   The board itself is styled in the arcade's language — near-black, one
+   monospace, hairline rules, uppercase letterspaced heads — because Toko is
+   the workshop the arcade is in, not a separate company with its own website.
+
+   Every text colour here clears WCAG AA on its own background. Vermilion is
+   4.6:1 on the void: legal, but it is a STAMP colour, not a body colour. */
+
+:root {
+  --toko-void:   #05070a;
+  --toko-panel:  #0c1113;
+  --toko-line:   #1d2725;
+  --toko-midori: #4ce08a;   /* 11.4:1 on void */
+  --toko-deep:   #146b46;
+  --toko-moss:   #0d241a;
+  --toko-lux:    #a6e85a;
+  --toko-phos:   #35e8d8;
+  --toko-verm:   #e5372c;   /* 4.6:1 — stamps and large type only */
+  --toko-bone:   #ece5d5;   /* 15.3:1 */
+  --toko-ash:    #96a29a;   /*  7.7:1 */
+  --toko-ink:    #07090b;
+}
+
+/* ── the board ─────────────────────────────────────────────────────────── */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  background: var(--toko-void);
+  color: var(--toko-bone);
+  font: 14px/1.65 'Courier New', ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 0 16px 80px;
+}
+
+a { color: var(--toko-midori); }
+a:hover { color: var(--toko-lux); }
+
+:focus-visible { outline: 2px solid var(--toko-midori); outline-offset: 3px; }
+
+.wrap { max-width: 940px; margin: 0 auto; }
+
+header.mast { padding: 44px 0 0; }
+header.mast .head-canvas { margin-bottom: 18px; }
+
+h1 {
+  font-size: clamp(21px, 5vw, 32px);
+  letter-spacing: .32em;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+h1 .g { color: var(--toko-midori); }
+
+h2 {
+  font-size: 12px;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: var(--toko-ash);
+  margin: 0 0 16px;
+}
+
+h3 {
+  font-size: 13px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: var(--toko-bone);
+  margin: 0 0 8px;
+}
+
+p { max-width: 68ch; }
+p + p { margin-top: 12px; }
+
+.dim { color: var(--toko-ash); }
+.rule { height: 1px; background: var(--toko-line); margin: 34px 0 22px; }
+section { margin-top: 8px; }
+
+.kanji {
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', serif;
+  font-size: 30px;
+  color: var(--toko-midori);
+  letter-spacing: .1em;
+  line-height: 1;
+}
+
+/* the manifesto: hung off a green rule, set at reading size */
+.creed {
+  border-left: 2px solid var(--toko-deep);
+  padding-left: 18px;
+  margin: 18px 0;
+}
+.creed p { margin-bottom: 10px; }
+.creed p:last-child { margin-bottom: 0; color: var(--toko-midori); }
+
+/* ── card grids ────────────────────────────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 18px;
+}
+.card {
+  background: var(--toko-panel);
+  border: 1px solid var(--toko-line);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+.card .meta { font-size: 11.5px; color: var(--toko-ash); letter-spacing: .1em; }
+.card .shot { background: var(--toko-void); padding: 10px; align-self: stretch; display: grid; place-items: center; min-height: 96px; }
+
+/* ── swatches ──────────────────────────────────────────────────────────── */
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.sw { border: 1px solid var(--toko-line); }
+.sw .chip { height: 54px; }
+.sw .name { padding: 7px 9px 8px; font-size: 11px; letter-spacing: .12em; }
+.sw .name b { display: block; font-weight: 400; color: var(--toko-bone); }
+.sw .name span { color: var(--toko-ash); }
+
+/* ── controls ──────────────────────────────────────────────────────────── */
+button, .btn {
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--toko-bone);
+  background: transparent;
+  border: 1px solid var(--toko-deep);
+  padding: 0 16px;
+  min-height: 44px;              /* the tap-target floor, everywhere */
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+button:hover, .btn:hover { border-color: var(--toko-midori); color: var(--toko-midori); }
+
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+
+label.slider {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--toko-ash);
+  min-height: 44px;
+}
+label.slider input { width: 150px; accent-color: var(--toko-midori); }
+label.slider output { color: var(--toko-midori); min-width: 3ch; }
+
+/* ── the CSS-only glitch, for HTML type ────────────────────────────────── */
+/* Use on a heading that carries its text in data-text. It is the same idea
+   as glitch.js's split+tear, done in two pseudo-elements so a page can wear
+   the brand without loading a canvas. */
+.toko-glitch { position: relative; display: inline-block; }
+.toko-glitch::before,
+.toko-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  background: var(--toko-void);
+  overflow: hidden;
+  pointer-events: none;
+}
+.toko-glitch::before { color: var(--toko-verm); animation: toko-slip-a 6.5s steps(1) infinite; }
+.toko-glitch::after  { color: var(--toko-phos); animation: toko-slip-b 6.5s steps(1) infinite; }
+
+@keyframes toko-slip-a {
+  0%, 92%   { clip-path: inset(100% 0 0 0); transform: none; }
+  93%       { clip-path: inset(18% 0 62% 0); transform: translate(-3px, 0); }
+  95%       { clip-path: inset(62% 0 12% 0); transform: translate(2px, 0); }
+  97%       { clip-path: inset(34% 0 46% 0); transform: translate(-2px, 1px); }
+  99%, 100% { clip-path: inset(100% 0 0 0); transform: none; }
+}
+@keyframes toko-slip-b {
+  0%, 92%   { clip-path: inset(100% 0 0 0); transform: none; }
+  93%       { clip-path: inset(54% 0 24% 0); transform: translate(3px, 0); }
+  95%       { clip-path: inset(10% 0 74% 0); transform: translate(-2px, 0); }
+  97%       { clip-path: inset(70% 0 8% 0);  transform: translate(2px, -1px); }
+  99%, 100% { clip-path: inset(100% 0 0 0); transform: none; }
+}
+
+/* a brand that will not hold still is unusable — and for some readers it is
+   worse than unusable */
+@media (prefers-reduced-motion: reduce) {
+  .toko-glitch::before, .toko-glitch::after { animation: none; clip-path: inset(100% 0 0 0); }
+}
+
+/* ── the stamp block: name + seal, for a credits line ──────────────────── */
+.toko-credit {
+  display: inline-flex; align-items: center; gap: 12px;
+  font-size: 11px; letter-spacing: .22em; text-transform: uppercase;
+  color: var(--toko-ash);
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+footer { margin-top: 40px; color: var(--toko-ash); font-size: 12px; }
+footer a { margin-right: 18px; }

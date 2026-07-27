@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Toko Midori — the brand</title>
+  <meta name="description" content="The identity of Toko Midori, the masked artist behind the Suds Jack workshop: the mask, the seal, the hand-cut alphabet, the glitch toolkit and the boot sting — all painted in code, no image assets." />
+  <meta name="theme-color" content="#05070a" />
+  <meta name="color-scheme" content="dark" />
+  <link rel="stylesheet" href="toko.css?v=1" />
+  <link rel="icon" id="favicon" href="data:," />
+</head>
+<body>
+<div class="wrap">
+
+  <header class="mast">
+    <div class="head-canvas" id="masthead"></div>
+    <h1>TOKO <span class="g">MIDORI</span></h1>
+    <p class="dim" style="margin-top:12px">
+      <span class="kanji">常緑</span><br />
+      <em>tokomidori</em> — evergreen. The green that does not drop.
+    </p>
+  </header>
+
+  <div class="rule"></div>
+
+  <section>
+    <h2>Who is signing this</h2>
+    <div class="creed">
+      <p>Toko Midori is the masked artist behind the look of every cabinet in this
+      workshop. The mask is not a gimmick — it is the terms. You do not get a
+      face, a founder story or a personal brand to buy into. You get the work,
+      and the work is free, in a browser, with no account.</p>
+
+      <p>Toko is not against the machine. Toko is holding one — these games are
+      built with AI, out loud, on purpose, and nobody is pretending otherwise.
+      What Toko is against is the machine becoming the audience: a world where
+      everything is generated and nothing is <em>made</em>, where people scroll
+      output instead of cutting their own.</p>
+
+      <p>So the identity shows its seams on purpose. Every mark here is painted
+      in code — there is not one image asset in this brand — and every mark is
+      allowed to tear, drop out and lose the signal, because a thing that is
+      obviously constructed is a thing you can obviously build yourself.</p>
+
+      <p>Use the tools. Take the source. GO MAKE YOUR OWN.</p>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <section>
+    <h2>The marks</h2>
+    <p class="dim">One 24×24 grid, three deliverables: the screen mark, the SVG
+    logo file, and a 16×16 reduction that is redrawn rather than resampled. The
+    SVG is generated from the same string art the canvas draws, so the file you
+    hand someone can never drift from the thing on screen.</p>
+    <div class="grid" id="marks" style="margin-top:18px"></div>
+  </section>
+
+  <div class="rule"></div>
+
+  <section>
+    <h2>Registers</h2>
+    <p class="dim">A mark is drawn in exactly one of four. LIVE is the default.
+    STAMP is the signature. GHOST is for 16px and print. RIOT only ever exists
+    on the frame a hit lands on — it is never a resting state.</p>
+    <div class="grid" id="registers" style="margin-top:18px"></div>
+  </section>
+
+  <div class="rule"></div>
+
+  <section>
+    <h2>The palette</h2>
+    <p class="dim">One green held against a near-black void, a hanko red for the
+    signature, and the two phosphors the games already speak in — borrowed, and
+    never used as Toko's own colour. If a mark needs a sixth colour, the mark is
+    wrong.</p>
+    <div class="swatches" id="swatches" style="margin-top:18px"></div>
+  </section>
+
+  <div class="rule"></div>
+
+  <section>
+    <h2>The alphabet</h2>
+    <p class="dim">5×7, cut by hand. The brand owns its letterforms outright:
+    no font file to license, to load, or to fail to load. Anything the identity
+    ever needs to say, it says in these.</p>
+    <div class="card" style="margin-top:18px; align-items:center">
+      <div class="shot" id="specimen"></div>
+      <p class="meta">A–Z · 0–9 · . , ! ? - : ' / · ×</p>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <section>
+    <h2>The glitch</h2>
+    <p class="dim">Seeded, so the same hit lands the same way twice — a glitch
+    you cannot reproduce is a bug wearing a costume. Below about 0.25 the mark
+    should read clean: the glitch is an event that happens <em>to</em> the mark,
+    so most of the time it is not happening.</p>
+
+    <div class="grid" style="margin-top:18px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr))">
+      <div class="card">
+        <h3>The lab</h3>
+        <div class="shot" id="lab"></div>
+        <div class="row" style="flex-direction:column; align-items:stretch; gap:0">
+          <label class="slider">INTENSITY <input id="s-int" type="range" min="0" max="100" value="45" /><output id="o-int">0.45</output></label>
+          <label class="slider">TEAR      <input id="s-tear" type="range" min="0" max="10" value="0" /><output id="o-tear">0</output></label>
+          <label class="slider">SPLIT     <input id="s-split" type="range" min="0" max="6" value="0" /><output id="o-split">0</output></label>
+          <label class="slider">DROPOUT   <input id="s-drop" type="range" min="0" max="10" value="0" /><output id="o-drop">0</output></label>
+          <label class="slider">SEED      <input id="s-seed" type="range" min="1" max="24" value="1" /><output id="o-seed">1</output></label>
+        </div>
+        <div class="row">
+          <button id="b-pulse" aria-pressed="false">Resting pulse</button>
+          <button id="b-copy">Copy the call</button>
+        </div>
+        <pre class="meta" id="lab-code" style="white-space:pre-wrap"></pre>
+      </div>
+
+      <div class="card">
+        <h3>How it rests</h3>
+        <div class="shot" id="rest"></div>
+        <p class="meta">What a signed page actually looks like: still, then a
+        third of a second of stutter roughly every eight seconds. This is the
+        default behaviour of every Toko mark in the wild.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <section>
+    <h2>The sting</h2>
+    <p class="dim">Three seconds of signal finding a face — noise resolves into
+    the mask, the mask takes a hit, the seal comes down, the name types itself
+    out. Skippable on any input from the first frame: a sting you cannot skip
+    is an ad, and Toko does not run ads.</p>
+    <div class="row" style="margin-top:18px">
+      <button id="b-sting">Play the sting</button>
+      <span class="meta">tap or press any key to skip</span>
+    </div>
+  </section>
+
+  <div class="rule"></div>
+
+  <section>
+    <h2>Lockups</h2>
+    <p class="dim">How Toko sits beside a cabinet: the mask, a hairline, the
+    name, and the game underneath it in the <em>game's</em> own colour. Toko
+    never takes the game's accent and the game never takes the green.</p>
+    <div class="grid" id="lockups" style="margin-top:18px"></div>
+  </section>
+
+  <div class="rule"></div>
+
+  <section>
+    <h2>Signing a page</h2>
+    <p class="dim">One import. It stamps the seal into a corner, sits under the
+    HUD, never takes input unless you give it an <code>href</code>, holds a 44px
+    tap target when you do, and paints a single still frame for anyone who has
+    asked for reduced motion.</p>
+<pre class="meta" style="margin-top:14px; background:var(--toko-panel); border:1px solid var(--toko-line); padding:14px; overflow-x:auto">&lt;script type="module"&gt;
+  import { sign } from '../toko/js/signature.js';
+  sign();                                  // bottom-left, non-interactive
+  // sign({ corner: 'bottom-right', href: '../toko/' });
+&lt;/script&gt;</pre>
+    <p class="dim" style="margin-top:16px">Everything on this page is in
+    <code>toko/js/</code>: <code>palette.js</code> (colour and voice),
+    <code>pixel.js</code> (surface and alphabet), <code>mark.js</code> (the
+    marks, canvas and SVG), <code>glitch.js</code> (the toolkit),
+    <code>sting.js</code>, <code>signature.js</code> and
+    <code>masthead.js</code>. The rules are written down in
+    <a href="BRAND.md">BRAND.md</a>.</p>
+  </section>
+
+  <div class="rule"></div>
+
+  <footer>
+    <span class="toko-credit"><span id="credit-seal"></span> PAINTED IN CODE · NO IMAGE ASSETS</span>
+    <p style="margin-top:14px">
+      <a href="../AnotherHUB/">The arcade</a>
+      <a href="https://github.com/mbace1/Suds-Jack">Source</a>
+      <a href="BRAND.md">The rules</a>
+    </p>
+  </footer>
+
+</div>
+
+<script type="module" src="js/board.js?v=1"></script>
+</body>
+</html>

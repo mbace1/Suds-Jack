@@ -42,5 +42,14 @@
   }
   </script>
   <script type="module" src="js/main.js?v=4"></script>
+
+  <!-- signed by Toko Midori — the seal in the corner, under the HUD, no input.
+       See ../toko/BRAND.md -->
+  <script type="module">
+    import { sign } from '../toko/js/signature.js?v=1';
+    // the bright sunny-day sky washes a 62%-opacity stamp out, and the
+    // knock-out inside the seal takes the route's dark ink rather than the void
+    sign({ corner: 'bottom-left', bg: '#14324a', opacity: 0.85 });
+  </script>
 </body>
 </html>

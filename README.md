@@ -8,6 +8,39 @@ Live preview: https://mbace1.github.io/Suds-Jack/
 
 ---
 
+## `toko/` — Toko Midori, the brand
+
+**常緑 · tokomidori · "evergreen".** The identity of the masked artist behind the
+look of every cabinet here. Open **`toko/index.html`** for the brand board:
+every mark running live, the four registers, the palette, the 5×7 type
+specimen, a glitch lab with sliders, the boot sting, per-game lockups, and SVG
+downloads.
+
+There is **no image asset in this brand** — every mark is painted in code, and
+the SVG logo files are generated from the same string art the canvas draws, so a
+handed-over file can never drift from what is on screen. No build step, no
+dependencies: copy `toko/` next to a game and it works.
+
+- **The mask** — a 24×24 pixel grid with a hand-plotted, off-centre crack that
+  was never repaired. A 16×16 reduction (redrawn, not resampled) is the favicon.
+- **The seal** — a chipped hanko, in vermilion. This is the signature.
+- **The alphabet** — 5×7, cut by hand. No font file to license, load, or fail to
+  load.
+- **The glitch** — seeded and reproducible, and an *event* rather than a state:
+  still, a third of a second of stutter, still again, roughly every eight
+  seconds.
+- **The signature** — one import (`sign()`) puts the seal in a game's corner,
+  under the HUD, taking no input. `toko-drop`, `paperboy`, `dropcabal` and
+  `hyperdagger` are signed; `gameoflife` deliberately is not — it is the room
+  where Toko takes the mask off.
+
+Rules and construction notes: **`toko/BRAND.md`**. Gate:
+`node toko/test/brand.cjs` (Playwright).
+
+> **GO MAKE YOUR OWN.**
+
+---
+
 ## Demos
 
 ### `goo-snowman.html`

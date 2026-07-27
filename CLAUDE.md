@@ -245,6 +245,60 @@ Pipeline: develop on `claude/*` beta branches → greenlight to `main` → copy 
 bump `?v=N` cache-busters together when shipping. See `gameoflife/README.md` for the
 roadmap of future experiences.
 
+### Toko Midori — the brand (`toko/`)
+The identity of **Toko Midori** (常緑, *tokomidori* — "evergreen"), the masked
+artist behind the look of every cabinet here: anarchist, retro, pure-gameplay,
+art-first, using AI out loud while shouting at you to **GO MAKE YOUR OWN**.
+Zero dependencies, no build step, and — a brand rule, not an implementation
+detail — **no image assets at all**: every mark is painted in code, and the SVG
+logo files are *generated* from the same string art the canvas draws so a
+handed-over file can never drift from what's on screen.
+The mark is a **24×24 pixel mask** written as string art (same idiom as
+hyperdagger's voxel `MODELS`): dark shell brows over black slits over a dark
+mouth, one vermilion nick, a lacquer highlight angled down the upper left, and a
+hand-plotted **off-centre crack** that is never repaired (down the midline it
+reads as a manufacturing seam). A separate **16×16 is redrawn, not resampled**
+(it drops the crack and the highlight, keeps the brows — without them it reads
+as a smiley) and is the favicon. The signature is a chipped **hanko seal**
+(22×22, vermilion field, mask knocked out, seeded chips). Type is a hand-cut
+**5×7 alphabet** in `pixel.js` — the brand owns its letterforms, no font file to
+load or fail to load. Four **registers** (`REGISTER` in `palette.js`): LIVE
+(green on void, the default) / STAMP (hanko red, signing) / GHOST (one colour,
+16px + print) / RIOT (**one frame only** — never a resting state).
+Palette is one green (`MIDORI #4ce08a`) on the arcade's near-black void plus
+`VERMILION` for the stamp and two *borrowed* phosphors (the hub's cyan, the
+Game of Life's leaf/gold) that are the machine's colours and never Toko's; every
+text pairing clears WCAG AA and vermilion is a stamp colour, not body copy.
+`glitch.js` is the seam-showing toolkit — `tear` / `split` / `dropout` /
+`shuffle` / `scanlines` / `carrier` / `noise`, plus `hit(ctx,w,h,intensity)` and
+`pulse(t)`. **Seeded** (a glitch you can't reproduce is a bug in a costume), an
+**event not a state** (below ~0.25 the mark reads clean; `pulse` = still, ~0.3s
+of stutter, still, every ~8s), always on **whole art pixels**, and **no
+scanlines below ~48 art px** — one line lands on every other logo pixel and
+stripes the mark instead of glassing it.
+`signature.js` is the one-line drop-in a game imports (`sign()`): seal in a
+corner, `z-index 4` so it sits **under** the HUD, `pointer-events: none` unless
+given an `href` (then a 44px tap target), safe-area insets, one still frame
+under `prefers-reduced-motion`. Signed on `main`: `toko-drop/`, `paperboy/`,
+`dropcabal/`, `hyperdagger/`. **`gameoflife/` is deliberately unsigned** — it is
+the room where Toko takes the mask off (a stuttering stamp would undo a zen app
+built to send you outdoors), and its service worker precaches an exact list
+scoped to `/gameoflife/` with `test/offline.cjs` asserting **zero** network
+requests, so a cross-directory import would break the offline promise.
+`sting.js` is a 3s boot animation (noise → mask → hit → seal → the name types →
+the cry), skippable on any input from frame one. `masthead.js` is the animated
+header for the arcade hub — `stop()` it wherever the page re-renders or the loop
+leaks against a detached canvas. `toko/index.html` is the **brand board**: every
+mark live, registers, swatches, the type specimen, a glitch lab with sliders and
+a copyable call, a sting replay, per-game lockups in each cabinet's own accent,
+and SVG downloads. `toko/test/brand.cjs` is the gate (Playwright, like
+`gameoflife/test/smoke.cjs`): grid widths, **every ink in the rendered mask
+checked against the permitted list**, SVG well-formedness, the sting mounting
+and skipping, and each signed game's seal (attached / inked / ≥44px / z-index 4
+/ no input / on screen / no `toko/` errors). Rules live in `toko/BRAND.md`.
+Same `gh-pages` deploy caveat as paperboy — `toko/` and the signed game
+`index.html`s both have to be copied over to go live.
+
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
 Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
 
@@ -268,6 +322,21 @@ Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4
 
 ```
 suds-jack/      # (not yet scaffolded)
+toko/           # Toko Midori — the brand (marks, glitch, sting, signature)
+  BRAND.md      # the rules: the creed, construction notes, palette, do/don't
+  index.html    # the brand board — every mark live, glitch lab, SVG downloads
+  toko.css      # palette as CSS custom properties + the CSS-only glitch text
+  js/
+    palette.js  # TOKO colours, the four REGISTERs, VOICE (the fixed wording)
+    pixel.js    # Screen (pixel canvas + cache + rAF), pen, hand-cut 5×7 font, RNG
+    mark.js     # mask 24 / mask 16 / seal / wordmark / stack / lockup + SVG export
+    glitch.js   # tear, split, dropout, shuffle, scanlines, carrier, noise, hit, pulse
+    sting.js    # the 3s boot sting (skippable on any input)
+    signature.js# sign() — the drop-in corner seal a game imports
+    masthead.js # the animated brand header for the arcade hub
+    board.js    # wires toko/index.html out of the shipping modules
+  test/
+    brand.cjs   # Playwright gate: grids, inks, SVG, sting, every signed game
 toko-drop/
   index.html
   js/

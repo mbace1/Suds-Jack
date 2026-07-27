@@ -84,5 +84,12 @@
   }
   </script>
   <script type="module" src="js/main.js?v=2"></script>
+
+  <!-- signed by Toko Midori — the seal in the corner, under the HUD, no input.
+       See ../toko/BRAND.md -->
+  <script type="module">
+    import { sign } from '../toko/js/signature.js?v=1';
+    sign({ corner: 'bottom-left' });
+  </script>
 </body>
 </html>
