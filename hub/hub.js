@@ -9,7 +9,7 @@
 import { GAMES, SKETCHES } from './games.js?v=5';
 import { drawMarquee } from './art.js?v=6';
 import * as feedback from './feedback.js?v=5';
-import { kindsFor, chipsFor } from './topics.js?v=1';
+import * as topics from './topics.js?v=1';
 import { watchPad, padPresent } from './pad.js?v=5';
 
 const el = (tag, cls = '', text = '') => {
@@ -112,7 +112,7 @@ function openFeedback(title, gameId, accent) {
   // an extra tap, which is the wrong trade for the one channel players use.
   let kind = '';
   const kindRow = el('div', 'kind-row');
-  const kindBtns = kindsFor(gameId).map(k => {
+  const kindBtns = topics.kindsFor(gameId).map(k => {
     const b = el('button', 'kind', k.label);
     b.type = 'button';
     b.title = k.hint ?? '';
@@ -167,7 +167,7 @@ function openFeedback(title, gameId, accent) {
   function renderChips() {
     chipRow.textContent = '';
     if (!kind) return;
-    for (const s of chipsFor(gameId, kind)) {
+    for (const s of topics.chipsFor(gameId, kind)) {
       const c = el('button', 'chip', s);
       c.type = 'button';
       c.onclick = () => {
@@ -428,9 +428,13 @@ showVersions();
 // anything written while an endpoint was unreachable goes out now, quietly
 feedback.flush();
 
-// console handle, same convention as the games
+// Console handle, same convention as the games — and the seam the counter
+// reaches through. `topics` and `feedback` are published here so anything else
+// on the page uses THESE module instances rather than importing its own copy at
+// its own ?v= token: a second instance of feedback.js has its own endpoint
+// configuration, which is a bug that only shows up after the next token bump.
 window.__hub = {
-  games: GAMES, active, archived, sketches: SKETCHES, feedback,
+  games: GAMES, active, archived, sketches: SKETCHES, feedback, topics,
   debug: {
     open: openFeedback, accent: readAccent, setAccent: useAccent,
     select, move, padHint, selected: () => sel,
