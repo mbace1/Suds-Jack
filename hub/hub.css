@@ -582,6 +582,38 @@ footer {
 
 .sheet .actions { margin-left: 0; }
 
+/* ── the notes you have already left ── */
+.note-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 52vh;
+  overflow-y: auto;
+}
+
+.note-row {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.note-row:last-child { border-bottom: 0; }
+
+.note-head { display: flex; align-items: baseline; gap: 10px; }
+.note-what { font-size: 12.5px; letter-spacing: .08em; text-transform: uppercase; }
+
+/* delivered is the quiet state and held is the loud one, because held is the
+   only one you might want to do something about */
+.note-state {
+  margin-left: auto;
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.note-state.held { color: var(--bg); background: var(--accent); padding: 2px 5px; }
+
+.note-meta { font-size: 11px; color: var(--ink-dim); margin-top: 3px; }
+.note-text { font-size: 13px; color: #c4cbd0; margin-top: 5px; white-space: pre-wrap; }
+
 /* a view arrives the way a terminal draws one: quickly, and once */
 @keyframes term-in { from { opacity: 0 } to { opacity: 1 } }
 .sheet { animation: term-in .16s ease-out both; }

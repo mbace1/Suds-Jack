@@ -8,9 +8,9 @@
 
 import { GAMES, SKETCHES } from './games.js?v=10';
 import { drawMarquee } from './art.js?v=10';
-import * as feedback from './feedback.js?v=11';
+import * as feedback from './feedback.js?v=12';
 import * as topics from './topics.js?v=2';
-import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=3';
+import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=4';
 import { watchPad, padPresent } from './pad.js?v=9';
 
 const el = (tag, cls = '', text = '') => {
@@ -207,6 +207,7 @@ function openFeedback(title, gameId, accent) {
     const saying = el('p', 'fb-said', t('fb.sending'));
     sheet.insertBefore(saying, actions);
     const how = await feedback.send({ game: gameId, kind, rating, text, ts: Date.now() });
+    notesLink();
     saying.textContent = t(SAID[how] ?? SAID.off);
     cancel.textContent = `[ ${t('fb.close')} ]`;
     cancel.disabled = false;
@@ -246,6 +247,138 @@ function openFeedback(title, gameId, accent) {
     send: () => send.isConnected && !send.disabled && send.click(),
   };
   pips[0].focus();
+}
+
+// ── what you have already said ─────────────────────────────────────
+// Every note is written to this device before anything else happens to it, and
+// until now that record was invisible: you pressed Send, got a sentence back,
+// and had no way to know whether it went, what you had already said, or whether
+// you were about to repeat yourself. A feedback channel you cannot read back is
+// a suggestion box nailed shut.
+//
+// So: the archive, newest first, with what each note was about, which shape of
+// the floor you were looking at, and — honestly — whether it actually left.
+// Held notes can be pushed again from here rather than waiting for the next
+// visit, and the whole record can be thrown away, which is the other half of
+// keeping something on someone's machine.
+function openNotes() {
+  if (openPanel) return;
+  const returnTo = document.activeElement;
+  const scrim = el('div', 'scrim');
+  const sheet = el('div', 'sheet');
+  sheet.setAttribute('role', 'dialog');
+  sheet.setAttribute('aria-modal', 'true');
+  sheet.setAttribute('aria-labelledby', 'notes-title');
+
+  const h = el('h2', '', t('notes.title'));
+  h.id = 'notes-title';
+  sheet.appendChild(h);
+
+  const list = el('div', 'note-list');
+  sheet.appendChild(list);
+
+  const actions = el('div', 'actions');
+  const retry = el('button', 'btn play', `[ ${t('notes.retry')} ]`);
+  const forget = el('button', 'btn ghost', `[ ${t('notes.forget')} ]`);
+  const close = el('button', 'btn ghost', `[ ${t('fb.close')} ]`);
+  actions.append(retry, forget, close);
+  sheet.appendChild(actions);
+
+  const titleOf = id => GAMES.find(g => g.id === id)?.title ?? t('hub.self');
+  const kindOf = id => topics.kinds(getLang()).find(k => k.id === id)?.label ?? '';
+
+  function draw() {
+    const notes = feedback.archive();
+    list.textContent = '';
+    if (!notes.length) {
+      list.appendChild(el('p', 'fb-dest', t('notes.none')));
+      retry.hidden = true; forget.hidden = true;
+      return;
+    }
+    let holding = 0;
+    for (const n of notes.slice(0, 40)) {
+      const row = el('div', 'note-row');
+      const head = el('div', 'note-head');
+      head.appendChild(el('span', 'note-what',
+        [titleOf(n.game), kindOf(n.kind)].filter(Boolean).join(' · ')));
+      const isHeld = feedback.held(n);
+      if (isHeld) holding++;
+      const state = el('span', `note-state${isHeld ? ' held' : ''}`,
+        t(isHeld ? 'notes.held' : 'notes.gone'));
+      head.appendChild(state);
+      row.appendChild(head);
+      // the date only — a timestamp to the second says "we are watching", and
+      // the useful question is "was that the one I left last week"
+      const when = new Date(n.ts).toLocaleDateString(getLang());
+      const bits = [when, n.rating ? `${n.rating}/5` : '', n.layout ?? ''].filter(Boolean);
+      row.appendChild(el('p', 'note-meta', bits.join(' · ')));
+      if (n.text) row.appendChild(el('p', 'note-text', n.text));
+      list.appendChild(row);
+    }
+    retry.hidden = !holding || !feedback.configured();
+    forget.hidden = false;
+  }
+
+  retry.onclick = async () => {
+    retry.disabled = true;
+    retry.textContent = `[ ${t('fb.sending')} ]`;
+    await feedback.flush();
+    retry.disabled = false;
+    retry.textContent = `[ ${t('notes.retry')} ]`;
+    draw();
+    notesLink();
+  };
+  // two presses, not a confirm dialog: the second press is the confirmation and
+  // it says so on the button
+  let armed = false;
+  forget.onclick = () => {
+    if (!armed) { armed = true; forget.textContent = `[ ${t('notes.sure')} ]`; return; }
+    feedback.forget();
+    armed = false;
+    forget.textContent = `[ ${t('notes.forget')} ]`;
+    draw();
+    notesLink();
+  };
+  close.onclick = shut;
+
+  function onKey(e) {
+    if (e.key === 'Escape') { shut(); return; }
+    if (e.key !== 'Tab') return;
+    const stops = [...sheet.querySelectorAll('button:not([disabled]):not([hidden])')];
+    if (!stops.length) return;
+    const first = stops[0], last = stops[stops.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+  function shut() {
+    document.removeEventListener('keydown', onKey);
+    scrim.remove();
+    openPanel = null;
+    if (returnTo && returnTo.isConnected) returnTo.focus();
+  }
+
+  scrim.onclick = e => { if (e.target === scrim) shut(); };
+  document.addEventListener('keydown', onKey);
+  scrim.appendChild(sheet);
+  document.body.appendChild(scrim);
+  draw();
+  openPanel = { close: shut, rate: () => {}, send: () => {} };
+  close.focus();
+}
+
+// the link only exists once there is something behind it — an empty archive is
+// not worth a word in the status line
+function notesLink() {
+  const n = feedback.archive().length;
+  let link = document.getElementById('notes-link');
+  if (!n) { link?.remove(); return; }
+  if (!link) {
+    link = el('button', 'link-btn');
+    link.id = 'notes-link';
+    link.onclick = openNotes;
+    document.getElementById('status').appendChild(link);
+  }
+  link.textContent = t('notes.link', { n });
 }
 
 // ── the version each project is on ─────────────────────────────────
@@ -588,6 +721,7 @@ function render() {
   useLayout(readLayout());
 
   padHint(false);
+  notesLink();
   showVersions();
   // a rebuild threw away the elements the selection pointed at
   sel = -1;
@@ -622,6 +756,7 @@ window.__hub = {
     select, move, padHint, selected: () => sel, columns,
     lang: getLang, setLang: useLang, langs: LANGS, render,
     layout: readLayout, setLayout: useLayout, layouts: LAYOUTS,
+    notes: openNotes, notesLink,
     seen: readSeen, markSeen: () => {
       try { localStorage.setItem(SEEN_KEY, JSON.stringify(pendingSeen ?? {})); } catch { /* */ }
     },

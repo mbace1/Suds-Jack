@@ -24,7 +24,7 @@ import { Surface } from './surface.js';
 import { TOKO, VOICE } from './palette.js';
 import { drawHead, drawBadge } from './face.js';
 import { glance, drift } from './util.js';
-import { GREETING, TOPICS, menu } from './dialogue.js';
+import { greeting, ui, TOPICS, menu, topicQ, topicA } from './dialogue.js';
 
 const STYLE_ID = 'toko-chat-style';
 const CSS = `
@@ -110,6 +110,45 @@ const CSS = `
 .toko-chat .tc-menu button:focus-visible { color: var(--tc-ink); background: #ffffff12; }
 .toko-chat .tc-menu button b { color: var(--tc-hot); font-weight: bold; }
 .toko-chat .tc-menu[hidden] { display: none; }
+/* the feedback branch lists every project, which is more than the seven topics
+   this menu was sized for — let it scroll rather than push the cabinets down */
+.toko-chat .tc-menu { max-height: 236px; overflow-y: auto; }
+
+/* The composer is the tallest thing this panel ever holds, and the panel is
+   capped at 520px because it sits ABOVE the cabinets — going taller pushes the
+   games below the fold, which is the one thing this component must not do. So
+   the room comes out of the log instead: while you are writing, the transcript
+   shrinks to its floor and scrolls. */
+.toko-chat.is-writing .tc-log { max-height: 132px; }
+
+/* ── the composer: where you talk back ── */
+.toko-chat .tc-write {
+  border-top: 2px solid var(--tc-line); padding: 10px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toko-chat .tc-write[hidden] { display: none; }
+.toko-chat .tc-write textarea {
+  font: inherit; width: 100%; min-height: 68px; resize: vertical;
+  background: #000; color: var(--tc-ink);
+  border: 2px solid var(--tc-line); padding: 8px;
+}
+.toko-chat .tc-write textarea:focus { border-color: var(--tc-hot); outline: none; }
+.toko-chat .tc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.toko-chat .tc-chips button {
+  font: inherit; font-size: 11.5px; letter-spacing: .04em;
+  background: none; border: 1px solid var(--tc-line); color: var(--tc-dim);
+  cursor: pointer; min-height: 44px; padding: 0 10px; text-align: left;
+}
+.toko-chat .tc-chips button:hover { color: var(--tc-ink); border-color: var(--tc-hot); }
+.toko-chat .tc-chips button::before { content: '+ '; color: var(--tc-hot); }
+.toko-chat .tc-write .tc-send-row { display: flex; gap: 8px; align-items: center; }
+.toko-chat .tc-write .tc-send-row button {
+  font: inherit; letter-spacing: .16em; background: none; cursor: pointer;
+  border: 2px solid var(--tc-line); color: var(--tc-dim);
+  min-height: 44px; padding: 0 14px;
+}
+.toko-chat .tc-write .tc-send-row .tc-primary { border-color: var(--tc-hot); color: var(--tc-ink); }
+.toko-chat .tc-write .tc-send-row button:hover { border-color: var(--tc-hot); color: var(--tc-ink); }
 
 .toko-chat .tc-foot {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -150,16 +189,24 @@ const el = (tag, cls, txt) => {
   return n;
 };
 
+// Which language the counter is speaking. It asks the page every time rather
+// than capturing a value, so switching the arcade's language mid-conversation
+// is picked up on the next line — and off the arcade it still works, because
+// <html lang> is the same answer written down somewhere every page has.
+const curLang = () =>
+  window.__hub?.lang?.() ?? (document.documentElement.lang || 'en').slice(0, 2);
+
 export function mountChat(anchor, opts = {}) {
   const {
     where = 'after',           // 'after' the anchor, or 'in' it
-    cue = 'TOKO IS AT THE COUNTER',
+    cue = null,                // null = whatever the counter's own words say
     // The tempo (see BRAND.md §7): Toko is never in a hurry. 34ms a character
     // with a long beat between lines, and a longer one before the first —
     // he has to come back from wherever he was before he answers you.
     speed = 34,                // ms per character
     openOnLoad = false,
   } = opts;
+  const say = (k, v) => ui(k, curLang(), v);
 
   injectStyle();
 
@@ -175,9 +222,11 @@ export function mountChat(anchor, opts = {}) {
   bar.setAttribute('aria-expanded', 'false');
   const barArt = el('span');
   bar.appendChild(barArt);
-  const say = el('span', 'tc-say');
-  say.append(cue + ' — ', Object.assign(el('span', 'tc-cue'), { textContent: 'TALK' }));
-  bar.appendChild(say);
+  const cueEl = el('span', 'tc-say');
+  const cueText = document.createTextNode('');
+  const cueTalk = el('span', 'tc-cue');
+  cueEl.append(cueText, cueTalk);
+  bar.appendChild(cueEl);
   bar.appendChild(el('span', 'tc-blip'));
   root.appendChild(bar);
 
@@ -189,16 +238,29 @@ export function mountChat(anchor, opts = {}) {
   log.setAttribute('role', 'log');
   log.setAttribute('aria-live', 'polite');
   const list = el('div', 'tc-menu');
+  const write = el('div', 'tc-write');
+  write.hidden = true;
   const foot = el('div', 'tc-foot');
-  const hint = el('span', null, '1–9 PICK · ENTER SKIP · ESC LEAVE');
-  const leave = el('button', null, 'LEAVE');
+  const hint = el('span');
+  const leave = el('button');
   leave.type = 'button';
   foot.append(hint, leave);
-  body.append(log, list, foot);
+  body.append(log, list, write, foot);
   panel.append(portrait, body);
   root.appendChild(panel);
 
   portrait.appendChild(el('span', 'tc-name', VOICE.artist));
+
+  // every label the counter wears, re-read in the current language
+  function relabel() {
+    cueText.nodeValue = `${cue ?? say('cue')} — `;
+    cueTalk.textContent = say('talk');
+    leave.textContent = say('leave');
+    // the composer's hint belongs to the composer: while the branch is still
+    // walking menus, 1-9 is what you press
+    hint.textContent = write.hidden ? say('hint') : say('fb.hint');
+    root.setAttribute('aria-label', `${say('talk')} — ${VOICE.artistRomaji}`);
+  }
 
   if (where === 'in') anchor.appendChild(root);
   else anchor.insertAdjacentElement('afterend', root);
@@ -213,23 +275,24 @@ export function mountChat(anchor, opts = {}) {
 
   const startBadge = () => badge.loop((t) => {
     badge.clear();
-    const k = glance(t, { every: 11, offset: 1.3 });
+    const k = glance(t, { every: 7.5, offset: 1.3 });
     drawBadge(badge.ctx, 20, 20, 20, {
-      ground: TOKO.MAGENTA, ink: TOKO.PAPER, face: { open: k },
+      ground: TOKO.MAGENTA, ink: TOKO.PAPER, face: { squash: 1 - k * 0.92 },
     });
   });
   startBadge();
 
   const startHead = () => head.loop((t) => {
     head.clear();
-    // Eyes shut and smiling at rest; OPEN while he is answering you, because
-    // that is the one moment he is actually looking at somebody. The mouth is
-    // a stroked arc, so "talking" is just its radius breathing — slowly. At
-    // 22 rad/s it chattered like a puppet.
+    // Blinking at rest; while a line is being typed the mouth works — the
+    // mouth is a stroked arc, so "talking" is just its radius breathing.
+    // Slowly: at 22 rad/s it chattered like a puppet. Toko talks the way he
+    // does everything else, and even between sentences he is still floating.
+    const k = speaking ? 0 : glance(t, { every: 7.5, offset: 0.7 });
     drawHead(head.ctx, 6, 4, 108, {
       ground: TOKO.MAGENTA, ink: TOKO.PAPER,
       faceOpts: {
-        open: speaking ? 1 : glance(t, { every: 11, offset: 0.7 }),
+        squash: 1 - k * 0.92,
         grin: 1 + (speaking ? Math.sin(t * 11) * 0.05 : drift(t) * 0.012),
       },
     });
@@ -310,26 +373,191 @@ export function mountChat(anchor, opts = {}) {
   }
 
   function renderMenu() {
+    write.hidden = true;
+    root.classList.remove('is-writing');
     list.hidden = false;
     list.textContent = '';
-    const items = menu(unlocked, asked);
-    items.slice(0, 9).forEach((t, i) => {
+    relabel();
+    // A branch takes the menu over — same list, different question. Everything
+    // beyond the ninth still clicks; only the number shortcut runs out.
+    const items = branch ? branchItems()
+      : menu(unlocked, asked).map(t => ({ q: topicQ(t, curLang()), go: () => ask(t) }));
+    items.forEach((it, i) => {
       const b = el('button');
       b.type = 'button';
-      b.appendChild(Object.assign(el('b'), { textContent: (i + 1) + '. ' }));
-      b.appendChild(document.createTextNode(t.q));
-      b.addEventListener('click', () => ask(t));
+      if (i < 9) b.appendChild(Object.assign(el('b'), { textContent: (i + 1) + '. ' }));
+      b.appendChild(document.createTextNode(it.q));
+      b.addEventListener('click', it.go);
       list.appendChild(b);
     });
   }
 
   function ask(t) {
     if (typing) { finishTyping(); return; }
-    line('tc-you', t.q);
+    line('tc-you', topicQ(t, curLang()));
     asked.add(t.id);
     if (t.opens) t.opens.forEach(id => unlocked.add(id));
     list.hidden = true;
-    type(t.a, t.end ? () => setTimeout(close, 900) : null);
+    if (t.mode === 'feedback') { startFeedback(t); return; }
+    type(topicA(t, curLang()), t.end ? () => setTimeout(close, 900) : null);
+  }
+
+  // ── talking back ───────────────────────────────────────────────────────
+  // The counter's actual job. Everything else on the menu is a thing Toko says;
+  // this is the one where the person on the other side gets to say something,
+  // and it takes the menu over rather than opening a box on top of the
+  // conversation: which project, then what kind of note, then the words.
+  //
+  // The categories and their per-project ordering come from the SAME
+  // hub/topics.js the panel under each cover art uses. That is the whole reason
+  // to do it here at all — a note left at the counter and a note left under a
+  // cabinet have to be the same shape or they cannot be counted together.
+  //
+  // Loaded on demand and allowed to fail: this file is meant to be droppable on
+  // any page in the workshop, so a missing hub folder should cost the feedback
+  // branch and not the whole counter.
+  let kit = null;
+  let branch = null;                 // { step: 'project'|'kind'|'write', game, kind }
+
+  async function loadKit() {
+    if (kit) return kit;
+    // Prefer what the arcade has already loaded. Importing a second copy at a
+    // pinned ?v= token gives a SEPARATE module instance with its own endpoint
+    // configuration — which is precisely what happened the first time the hub
+    // bumped its tokens and this file did not follow. The page publishes the
+    // instances it is using on window.__hub; use those.
+    const hub = window.__hub;
+    if (hub?.feedback && hub?.topics && hub?.games) {
+      // and its language with them. Toko's own topics are written in one voice
+      // and stay as written — but the feedback branch is UI, and UI follows the
+      // reader. hub.t/hub.lang are read on every call rather than captured, so
+      // switching the page's language mid-conversation is picked up.
+      kit = { topics: hub.topics, post: hub.feedback, games: hub.games, lang: curLang };
+      return kit;
+    }
+    // and off the arcade, load our own — untokened, so there is nothing to
+    // drift out of step with
+    try {
+      const [topics, post, cat] = await Promise.all([
+        import('../../hub/topics.js'),
+        import('../../hub/feedback.js'),
+        import('../../hub/games.js'),
+      ]);
+      kit = { topics, post, games: cat.GAMES, lang: curLang };
+    } catch {
+      kit = { broken: true };
+    }
+    return kit;
+  }
+
+  // Japanese has no case, so uppercasing is a no-op there and a mangling
+  // nowhere — toUpperCase is safe to keep for the Sierra look
+  const shout = s => s.toUpperCase();
+
+  function branchItems() {
+    const never = { q: shout(say('fb.never')), go: () => cancelBranch() };
+    if (branch.step === 'project') {
+      return [...kit.topics.projectChoices(kit.games, say('fb.self')).map(p => ({
+        q: shout(p.label),
+        go: () => pickProject(p),
+      })), never];
+    }
+    return [...kit.topics.kindsFor(branch.game, kit.lang()).map(k => ({
+      q: shout(k.label),
+      go: () => pickKind(k),
+    })), never];
+  }
+
+  async function startFeedback(t) {
+    await loadKit();
+    if (kit.broken) { type([say('fb.gone')]); return; }
+    branch = { step: 'project' };
+    type(topicA(t, curLang()));
+  }
+
+  function pickProject(p) {
+    line('tc-you', shout(p.label));
+    branch = { step: 'kind', game: p.id, label: p.label };
+    list.hidden = true;
+    type([shout(say('fb.kind', { x: p.label }))]);
+  }
+
+  function pickKind(k) {
+    line('tc-you', shout(k.label));
+    branch = { ...branch, step: 'write', kind: k.id, kindLabel: k.label };
+    list.hidden = true;
+    type([shout(say('fb.words'))], openComposer);
+  }
+
+  function openComposer() {
+    list.hidden = true;
+    write.hidden = false;
+    root.classList.add('is-writing');
+    // the log just got shorter under it; keep the last thing Toko said in view
+    log.scrollTop = log.scrollHeight;
+    write.textContent = '';
+    hint.textContent = say('fb.hint');
+
+    const ta = el('textarea');
+    ta.rows = 3;
+    ta.placeholder = say('fb.type');
+    ta.setAttribute('aria-label', `Your note about ${branch.label}`);
+
+    // The suggestions FILL THE BOX rather than send. A one-tap answer you
+    // cannot then argue with is a leading question, and the argument is the
+    // part worth reading.
+    const chips = el('div', 'tc-chips');
+    for (const s of kit.topics.chipsFor(branch.game, branch.kind, kit.lang())) {
+      const c = el('button', null, s);
+      c.type = 'button';
+      c.addEventListener('click', () => {
+        ta.value = ta.value.trim() ? `${ta.value.replace(/\s+$/, '')} ${s}` : s;
+        ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length);
+      });
+      chips.appendChild(c);
+    }
+
+    const row = el('div', 'tc-send-row');
+    const send = el('button', 'tc-primary', shout(say('fb.send')));
+    send.type = 'button';
+    const back = el('button', null, shout(say('fb.never')));
+    back.type = 'button';
+    row.append(send, back);
+    if (!kit.post.configured()) row.appendChild(el('span', null, say('fb.local')));
+    write.append(ta, chips, row);
+
+    send.addEventListener('click', () => sendNote(ta.value.trim(), send));
+    back.addEventListener('click', () => cancelBranch());
+    ta.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send.click(); }
+    });
+    if (lastInputWasKey) ta.focus();
+  }
+
+  // an opaque no-cors POST cannot be confirmed; say only what is true
+  const SAID = { sent: 'fb.sent', 'sent-blind': 'fb.blind',
+    queued: 'fb.queued', off: 'fb.off' };
+
+  async function sendNote(text, send) {
+    send.disabled = true;
+    const { game, kind, label, kindLabel } = branch;
+    // Words are not required — the category alone says which project and which
+    // area, which is real signal. But it is worth saying that it is thinner.
+    line('tc-you', text ? text.toUpperCase() : `${label} — ${kindLabel}`.toUpperCase());
+    write.hidden = true;
+    root.classList.remove('is-writing');
+    branch = null;
+    const how = await kit.post.send({ game, kind, text, ts: Date.now(), source: 'counter' });
+    const said = say(SAID[how] ?? SAID.off);
+    type(text ? [said] : [said, say('fb.thin')]);
+  }
+
+  function cancelBranch() {
+    branch = null;
+    write.hidden = true;
+    root.classList.remove('is-writing');
+    renderMenu();
   }
 
   // ── open / close ───────────────────────────────────────────────────────
@@ -340,7 +568,8 @@ export function mountChat(anchor, opts = {}) {
     bar.setAttribute('aria-expanded', 'true');
     badge.stop();
     startHead();
-    if (!log.childElementCount) type(GREETING);
+    relabel();
+    if (!log.childElementCount) type(greeting(curLang()));
     else renderMenu();
     addEventListener('keydown', onKey);
     // move focus into the room, but only for keyboard users — a tap should
@@ -352,6 +581,9 @@ export function mountChat(anchor, opts = {}) {
   function close() {
     if (!open) return;
     open = false;
+    branch = null;
+    write.hidden = true;
+    root.classList.remove('is-writing');
     root.classList.remove('is-open');
     bar.setAttribute('aria-expanded', 'false');
     if (typing) { typing.after = null; finishTyping(); }
@@ -368,7 +600,16 @@ export function mountChat(anchor, opts = {}) {
   addEventListener('pointerdown', sawTap, true);
 
   function onKey(e) {
-    if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+    // Esc backs out of the feedback branch before it leaves the counter — one
+    // key, one step, the way a Sierra menu behaves
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      if (branch || !write.hidden) { cancelBranch(); return; }
+      close();
+      return;
+    }
+    // while the composer has the caret, digits are words
+    if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') return;
     if (e.key === 'Enter' && typing) { e.preventDefault(); finishTyping(); return; }
     if (/^[1-9]$/.test(e.key)) {
       const b = list.querySelectorAll('button')[+e.key - 1];
@@ -382,6 +623,17 @@ export function mountChat(anchor, opts = {}) {
   // sting follows: never make somebody wait for an animation
   log.addEventListener('click', () => { if (typing) finishTyping(); });
 
+  // The closed bar carries words too, so it is labelled the moment it exists —
+  // and it follows the page from then on. <html lang> is the one signal every
+  // page already publishes, so watching it couples the counter to nothing: the
+  // arcade's language row moves that attribute, and the counter hears it.
+  relabel();
+  const langWatch = new MutationObserver(() => {
+    relabel();
+    if (open && !branch && write.hidden && !typing) renderMenu();
+  });
+  langWatch.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+
   if (openOnLoad) openChat();
 
   return {
@@ -394,6 +646,7 @@ export function mountChat(anchor, opts = {}) {
       removeEventListener('keydown', onKey);
       removeEventListener('keydown', sawKey, true);
       removeEventListener('pointerdown', sawTap, true);
+      langWatch.disconnect();
       badge.destroy(); head.destroy(); root.remove();
     },
   };
