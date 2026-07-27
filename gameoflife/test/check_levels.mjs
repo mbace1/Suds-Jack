@@ -90,6 +90,8 @@ const expDir = new URL('../js/experiences/', import.meta.url);
 const used = new Map();      // key -> file that wants it
 for (const f of readdirSync(expDir)) {
   if (!f.endsWith('.js')) continue;
+  if (f.startsWith('_')) continue;      // _template.js and friends: not real experiences
+
   const src = readFileSync(new URL(f, expDir), 'utf8');
   for (const m of src.matchAll(/\bt\(\s*'([a-z0-9]+\.[a-zA-Z0-9._]+)'\s*\)/g)) {
     if (!used.has(m[1])) used.set(m[1], f);

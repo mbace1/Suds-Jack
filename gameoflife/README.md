@@ -299,6 +299,12 @@ Adding an experience is three edits: a module in `js/experiences/` (exporting
 else — the offering draw, completion tracking, feedback, the rest cycle —
 comes for free.
 
+**Read [`EXPERIENCES.md`](EXPERIENCES.md) first**, and copy
+`js/experiences/_template.js`. It is the bar an experience has to clear —
+trilingual strings, an animated first screen, a real-world revert in the outro,
+a deterministic smoke block — most of which the gate enforces, and the gate is
+not a nice place to find out.
+
 ## Testing loop
 
 Two scripts live in `test/` and gate every greenlight:

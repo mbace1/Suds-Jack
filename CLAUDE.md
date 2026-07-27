@@ -227,6 +227,11 @@ earns a voice; `gardenStop()` fires on entering an experience or the feedback
 panel, so it plays on the hub alone. Shown in `.hub-footer` as `♪` glyphs
 (plural-free across fi/en/ja) with a one-time "you went outside" acknowledgement. `window.__gol` exposes
 `{store, audio, debug: {start, showInterlude, setLang, feedback}}` for console testing.
+**Before adding an experience read `gameoflife/EXPERIENCES.md`** and copy
+`js/experiences/_template.js` — it states the bar (all three languages, an
+animated first screen, a real revert in the outro, a deterministic smoke block)
+and the two art traps (dithering is opt-in; sample `bayer()` at the cell index).
+Files under `js/experiences/` starting with `_` are skipped by the i18n scan.
 Pipeline: develop on `claude/*` beta branches → greenlight to `main` → copy to
 `gh-pages` to go live at `/Suds-Jack/gameoflife/` (same deploy caveat as paperboy);
 bump `?v=N` cache-busters together when shipping. See `gameoflife/README.md` for the
