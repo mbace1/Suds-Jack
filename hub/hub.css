@@ -127,22 +127,25 @@ h1 .amp { color: var(--accent); }
 }
 
 /* ── the cabinets ── */
-/* The row grows with the screen, but never past the point where the marquee
-   stops reading — that is the whole reason the cabinets exist. The ladder is
-   set on the marquee's rendered width rather than on device names: each step
-   up only happens once there is room to keep it around 340px or better.
-   1 on a phone · 2 on a tablet held upright or a small laptop ·
-   3 on a wide iPad or an ordinary desktop · 4 on a large desktop. */
+/* The row grows with the screen. The ladder is set on the marquee's rendered
+   width rather than on device names:
+   2 on a phone · 2 on a tablet held upright or a small laptop ·
+   3 on a wide iPad or an ordinary desktop · 4 on a large desktop.
+   A phone gets two because one cabinet to a screen turns the floor into a
+   scroll — you cannot compare two games you cannot see at once, and comparing
+   is what a floor is FOR. The cost is a ~165px marquee, which the pixel art
+   survives; what it does not survive is the body text at full size, so that
+   tightens below. */
 .rack {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 22px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 12px;
   margin-top: 18px;
   list-style: none;
 }
 
 @media (min-width: 660px) {
-  .rack { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 24px; }
+  .rack { gap: 26px 24px; }
 }
 
 @media (min-width: 1100px) {
@@ -450,6 +453,42 @@ footer {
 
 .link-btn::before, footer a::before { content: '>\00a0'; color: var(--accent); }
 .link-btn:hover, footer a:hover { color: var(--accent); }
+
+/* Two to a row on a phone puts each column at about 155px, and at 155px a
+   cabinet has to be a poster rather than a datasheet. The first pass kept
+   every line and the tagline alone wrapped to six — two covers visible and the
+   Play buttons a screen and a half down, which is worse than the one-up it
+   replaced.
+   So the phone cabinet is cut to what actually chooses a game: the cover, the
+   name, what it is in a sentence, where it stands, and the two buttons. The
+   lineage, the tag list and the keyboard controls are all still in the DOM for
+   anything reading it aloud — they are just not what a thumb is scanning for,
+   and the keyboard controls in particular are the one line on the card that a
+   phone player cannot use. The 44px floor is untouched: this is exactly where
+   it matters. */
+@media (max-width: 659px) {
+  .cab-body { padding: 10px 0 0; gap: 6px; }
+  .cab h3 { font-size: 13px; letter-spacing: .1em; }
+  .lineage, .tags, .controls { display: none; }
+
+  /* three lines of tagline, two of state — enough to know what it is, capped
+     so the two columns stay in step with each other */
+  .tagline, .note {
+    margin-left: 10px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .tagline { font-size: 12px; line-height: 1.45; -webkit-line-clamp: 3; }
+  .note { font-size: 11px; line-height: 1.4; -webkit-line-clamp: 2; }
+
+  /* and the buttons sit on the floor of the cell, so the two columns line up
+     however tall their text came out */
+  .actions { margin-left: 2px; margin-top: auto; padding-top: 8px; gap: 0; }
+  .btn { font-size: 12.5px; letter-spacing: .08em; padding: 12px 8px; }
+  .marquee { padding: 5px; border-radius: 9px; }
+}
+
 
 /* ── feedback panel ── */
 .scrim {
