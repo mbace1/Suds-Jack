@@ -115,6 +115,11 @@ function serve() {
       legsDrop: e.legs.y - e.cy,
 
       symmetric: G.mouth.cx === 50,
+      // The eyes and the mouth share an outer edge. In the master artwork the
+      // pair of eyes is exactly as wide as the smile under it — off by a few
+      // units either way and the face reads as a wobble rather than a decision.
+      eyeEdge: e.dx + e.outer.r + G.stroke / 2,
+      mouthEdge: G.mouth.outer.r + G.stroke / 2,
       bounds: b,
       arcCount: f.arcs().length,
     };
@@ -126,6 +131,8 @@ function serve() {
   ok('the eye crown is a clean semicircle', geo.sweep === 180, geo.sweep + '°');
   ok('the legs actually drop', geo.legsDrop > 4, geo.legsDrop.toFixed(2));
   ok('the mark is symmetric', geo.symmetric);
+  ok('the eyes are flush with the mouth', Math.abs(geo.eyeEdge - geo.mouthEdge) < 0.5,
+    geo.eyeEdge.toFixed(2) + ' vs ' + geo.mouthEdge.toFixed(2));
   // 2 mouth arcs + per eye (1 crown + 2 legs) × 2
   ok('eight strokes closed: two mouth arcs, two crowns, four legs',
     geo.arcCount === 8, String(geo.arcCount));
