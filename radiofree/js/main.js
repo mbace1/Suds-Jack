@@ -14,11 +14,11 @@
 // same decode states — because every word on screen, bulletins included, comes
 // from the language blocks.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=5';
-import { Post, Reader } from './codec.js?v=5';
-import { SECTORS, STORIES, storyCopy, parseLine } from './stories.js?v=5';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=5';
-import * as audio from './audio.js?v=5';
+import { PAL, SECTOR_COLOR } from './palette.js?v=6';
+import { Post, Reader } from './codec.js?v=6';
+import { SECTORS, STORIES, storyCopy, parseLine } from './stories.js?v=6';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=6';
+import * as audio from './audio.js?v=6';
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
