@@ -35,6 +35,7 @@ const SHELL = [
   `./js/nature.js${V}`,
   `./js/poems.js${V}`,
   `./js/feedback.js${V}`,
+  `./js/crt.js${V}`,
   ...['aqueduct', 'forest', 'tern', 'cup', 'hanami', 'berry', 'stars', 'maple',
       'plate', 'seam', 'dots', 'glass', 'wait', 'lichen', 'cloud', 'ice',
       'trace', 'gears', 'cairn', 'downhill', 'tether', 'hedge', 'seed',

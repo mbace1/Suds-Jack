@@ -11,6 +11,7 @@ import { t, setLang, getLang, LANGS } from './i18n.js?v=40';
 import { PAL, setAccent, accentRgb } from './palette.js?v=40';
 import { setAccentAll, unwarp, liveCount } from './crt.js?v=40';
 import * as store from './storage.js?v=40';
+import * as crt from './crt.js?v=40';
 import * as audio from './audio.js?v=40';
 import { pickInterlude, isEvening, guessHemisphere } from './nature.js?v=40';
 import * as outbound from './feedback.js?v=40';
@@ -98,6 +99,10 @@ if (!store.hemiSet()) store.setHemi(guessHemisphere());
 
 // the remembered mute has to be in force before the first note can play
 audio.setMuted(!store.soundOn());
+
+// whether the picture is shown through the curved screen at all. Set before
+// anything builds a PixelScreen; toggling re-renders, which rebuilds them.
+crt.setEnabled(store.crtOn());
 document.addEventListener('pointerdown', audio.init, { once: true });
 document.addEventListener('keydown', e => {
   if (e.key === 'Tab' || e.key === 'Enter' || e.key === ' ') byKeyboard = true;
@@ -187,6 +192,12 @@ function showHub() {
   top.appendChild(optRow('accent-row', t('acc.label'), ACCENT_ORDER.map(a => ({
     text: t(`acc.${a}`), on: store.getAccent() === a,
     act: () => { useAccent(a); showHub(); },
+  }))));
+  // the screen itself, switchable — it is a filter over 1px dithered art, and
+  // some scenes (whale, ice, seam, lichen, eel) are cleaner without it
+  top.appendChild(optRow('crt-row', t('crt.label'), [true, false].map(on => ({
+    text: t(on ? 'crt.on' : 'crt.off'), on: store.crtOn() === on,
+    act: () => { store.setCrtOn(on); crt.setEnabled(on); audio.step(); showHub(); },
   }))));
   footer.appendChild(top);
 

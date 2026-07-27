@@ -16,6 +16,15 @@
 
 export const CURVE = 0.075;          // barrel strength; the whole look hangs off this
 
+// The screen is the house look, but it is still a filter over art that is
+// deliberately high-frequency — the ordered-dither scenes are 1px stipple, and
+// some people will want to see it flat. main.js sets this from the stored
+// preference before the first PixelScreen is built; makeCrt then behaves
+// exactly as it does on a machine with no WebGL.
+let enabled = true;
+export function setEnabled(on) { enabled = !!on; }
+export function isEnabled() { return enabled; }
+
 // Overscan. Barrel distortion alone pushes the picture inward and leaves black
 // bands down every side. Dividing by the bulge at the edge midpoints puts those
 // back at the frame edge — so the picture fills the bezel, nothing is lost along
@@ -132,6 +141,7 @@ export function makeCrt(source, parent, accent = [0.21, 0.91, 0.85]) {
   // .pixel-screen with toDataURL, and a WebGL canvas without this returns an
   // empty buffer once the frame is composited — which reported every scene as
   // frozen. Cheap at this size, and it keeps screenshots working too.
+  if (!enabled) return null;           // asked for the flat picture
   const opts = { alpha: false, antialias: false, depth: false, preserveDrawingBuffer: true };
   const gl = canvas.getContext('webgl', opts) || canvas.getContext('experimental-webgl', opts);
   if (!gl) return null;
