@@ -20,6 +20,13 @@
     #dashpips span.on { background: #00f0ff; box-shadow: 0 0 10px #00f0ffaa; }
     #allychip { display: none; margin-top: 8px; font-size: 11px; letter-spacing: 2px;
       color: #cfe4ff; text-shadow: 0 0 8px #9ac7ff; }
+    #ultwrap { margin-top: 8px; }
+    #ultwrap .label { font-size: 9px; letter-spacing: 3px; opacity: 0.6; margin-bottom: 3px; }
+    #ultbar { height: 7px; border: 1px solid #ffd24d55; background: #1a1405; }
+    #ultfill { height: 100%; width: 0%; background: linear-gradient(90deg, #ff9a2e, #ffd24d); transition: width 0.2s; }
+    #ultwrap.ready #ultbar { border-color: #ffd24d; box-shadow: 0 0 14px #ffd24daa; }
+    #ultwrap.ready .label { opacity: 1; color: #ffd24d; text-shadow: 0 0 10px #fa0; }
+    #ultwrap.ready .label::after { content: ' — READY (R)'; }
     #stats { top: 18px; right: 18px; text-align: right; font-size: 14px; line-height: 1.6; }
     #stats .dim { opacity: 0.55; font-size: 11px; letter-spacing: 2px; }
     #multlbl { color: #ffd24d; text-shadow: 0 0 10px #fa0; }
@@ -63,7 +70,16 @@
       transition: opacity 0.2s;
     }
     #cmdbtn.has-squad { box-shadow: 0 0 14px #9ac7ff44; }
-    body.touch #modebtn, body.touch #cmdbtn { display: block; }
+    #parrybtn, #ultbtn {
+      position: fixed; z-index: 4; display: none;
+      font-family: monospace; font-size: 14px; letter-spacing: 2px;
+      background: #060b14dd; padding: 12px 18px; border-radius: 4px;
+      transition: opacity 0.2s;
+    }
+    #parrybtn { left: 26px; bottom: 215px; color: #cfe6ff; border: 1px solid #2ee6ff88; text-shadow: 0 0 8px #0af; }
+    #ultbtn { left: 26px; bottom: 275px; color: #ffe7b0; border: 1px solid #ffd24d88; text-shadow: 0 0 8px #fa0; }
+    body.touch #modebtn, body.touch #cmdbtn,
+    body.touch #parrybtn, body.touch #ultbtn { display: block; }
     body.touch #forms { bottom: 156px; }
 
     /* ── Overlays ── */
@@ -123,6 +139,10 @@
     <div class="label">INTEGRITY</div>
     <div id="hpbar"><div id="hpfill"></div></div>
     <div id="dashpips"><span></span><span></span></div>
+    <div id="ultwrap">
+      <div class="label">ULTIMATE</div>
+      <div id="ultbar"><div id="ultfill"></div></div>
+    </div>
     <div id="allychip"></div>
   </div>
   <div id="stats" class="hud">
@@ -141,12 +161,15 @@
   <div id="stickR" class="stick"><div class="nub"></div></div>
   <button id="modebtn"></button>
   <button id="cmdbtn">⚑ CHARGE</button>
+  <button id="parrybtn">⛨ PARRY</button>
+  <button id="ultbtn">★ ULT</button>
 
   <div id="start" class="overlay">
     <h1>NEON RONIN</h1>
     <p>
       three frames. one soul. endless caves.<br><br>
-      WASD move &nbsp;·&nbsp; MOUSE camera &nbsp;·&nbsp; LMB attack (chain combos)<br>
+      WASD move &nbsp;·&nbsp; MOUSE camera &nbsp;·&nbsp; LMB combo &nbsp;·&nbsp; RMB heavy<br>
+      F parries (deflects melee, reflects bolts) &nbsp;·&nbsp; R fires your ULTIMATE<br>
       SHIFT / SPACE dash ×2 (invincible) &nbsp;·&nbsp; 1 2 3 or Q swap frame<br>
       E orders recruited ronin to CHARGE &nbsp;·&nbsp; swapping detonates a burst<br>
       clear each cave, pick an upgrade, descend deeper<br><br>

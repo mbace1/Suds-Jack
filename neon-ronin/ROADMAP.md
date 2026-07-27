@@ -10,11 +10,11 @@ scope — squad allies deliver that fantasy single-player.
   rig arriving in flood packs (live cap 70); recruitable ally ronin (RONIN BANNER card,
   cap 6) with ring formation, auto-engage, per-room revive, and the CHARGE order
   (`E` / ⚑ button). Enemy AI generalized to target the player *or* any ally.
-- **M2 — Combat verbs.** Heavy attack (hold / RMB), parry (timed block window that
-  deflects melee and reflects bolts, replacing the passive slash-deflect), and per-frame
-  ultimates on a kill-charged meter: KIRI dash-through iaijutsu line, GORO ground quake,
-  SAYA shadow-clone flurry. Touch: parry button beside CHARGE; ultimates fire from the
-  form chips once charged.
+- **M2 — Combat verbs — DONE.** Heavy attack (RMB, ×2.8 damage, committed 0.78 s),
+  timed parry (F — 0.24 s active window that negates melee, staggers the attacker and
+  reflects bolts, and pays 10 ult charge), and per-frame ultimates on a kill-charged
+  meter (R): KIRI IAIJUTSU line-blink, GORO TECTONIC quake rings, SAYA THOUSAND CUTS
+  flurry. Touch gets ⛨ PARRY / ★ ULT buttons; auto-combat mixes heavies in.
 - **M3 — Run structure + meta.** Per-room objective variants (KILL ALL / SURVIVE /
   DESTROY 3 pylons / PROTECT the shrine bot) paying bonus "salvage"; salvage persists in
   `localStorage` and buys permanent upgrades in a between-run FORGE screen (+max
