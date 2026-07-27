@@ -376,6 +376,40 @@ function check(name, cond) {
     (await page.locator('.exp-text').textContent()).includes('seven hundred years'));
   await page.locator('.back-btn').click();
 
+  // whale: ride the body down through five stages, then the choice
+  await page.evaluate(() => __gol.debug.start('whale'));
+  check('whale intro shown', (await page.locator('.exp-text').textContent()).includes('grey whale'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Follow it down' }).click();
+  for (let i = 0; i < 4; i++) {
+    const stay = page.locator('.exp-buttons .btn', { hasText: 'Stay' });
+    if (await stay.count() === 0) break;
+    await stay.click();
+  }
+  check('whale reaches the bone farmers',
+    (await page.locator('.exp-text').textContent()).includes('Osedax'));
+  await page.locator('.exp-buttons .btn', { hasText: 'It is a beginning' }).click();
+  check('whale truth is that it is both',
+    (await page.locator('.exp-text').textContent()).includes('fifty years'));
+  await page.locator('.back-btn').click();
+
+  // pando: pick four trees that look separate; the ground disagrees
+  await page.evaluate(() => __gol.debug.start('pando'));
+  check('pando intro shown', (await page.locator('.exp-text').textContent()).includes('Fishlake'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Walk in' }).click();
+  const pbox = await page.locator('.pixel-screen').boundingBox();
+  const pTap = (x, y) => page.mouse.click(pbox.x + (x + 0.5) / 192 * pbox.width,
+                                          pbox.y + (y + 0.5) / 128 * pbox.height);
+  // coordinates mirror TREES in experiences/pando.js (x, base = 84 + d*26)
+  await pTap(17, 75);                                   // tree 0, mid-trunk
+  check('pando counts the first tree', (await page.locator('.exp-text').textContent()).includes('1/4'));
+  await pTap(17, 75);
+  check('pando notices a repeat', (await page.locator('.exp-text').textContent()).includes('already chose'));
+  for (const [x, y] of [[35, 70], [53, 90], [71, 60]]) await pTap(x, y);
+  await page.waitForTimeout(1100);
+  check('pando reveals one organism',
+    (await page.locator('.exp-text').textContent()).includes('one tree'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');
@@ -481,10 +515,14 @@ function check(name, cond) {
   for (const id of roster) {
     await page.evaluate(i => __gol.debug.start(i), id);
     await page.waitForTimeout(120);
-    const a = await page.evaluate(() => document.querySelector('.pixel-screen').toDataURL());
-    await page.waitForTimeout(620);
-    const b2 = await page.evaluate(() => document.querySelector('.pixel-screen').toDataURL());
-    if (a === b2) frozen.push(id);
+    // three samples at IRREGULAR gaps: two evenly spaced samples can land on
+    // the same phase of a slow periodic motion and call a live scene frozen
+    const shots = [];
+    for (const gap of [0, 270, 610]) {
+      if (gap) await page.waitForTimeout(gap);
+      shots.push(await page.evaluate(() => document.querySelector('.pixel-screen').toDataURL()));
+    }
+    if (shots[0] === shots[1] && shots[1] === shots[2]) frozen.push(id);
   }
   check(`every first screen is alive${frozen.length ? ' — frozen: ' + frozen.join(' ') : ''}`,
     frozen.length === 0);
