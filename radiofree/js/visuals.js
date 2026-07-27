@@ -2,11 +2,11 @@
 //
 // Portrait panels. Two kinds:
 //   GRAPHICS — charts / diagrams that DECODE mutates
-//   B-ROLL   — low-poly Helsinki news footage (Esplanadi drones, Kamppi, …)
+//   B-ROLL   — low-poly Helsinki news footage
 // Face shots are handled in codec.js (large masked Toko), not here.
 
-import { PAL } from './palette.js?v=5';
-import { mix, shade, bayer } from './screen.js?v=5';
+import { PAL } from './palette.js?v=6';
+import { mix, shade, bayer } from './screen.js?v=6';
 
 export const PANEL_W = 128, PANEL_H = 152;
 const W = PANEL_W, H = PANEL_H;
@@ -398,26 +398,19 @@ function border(scr, t, d) {
 
 // ── Helsinki B-roll (low-poly news footage) ─────────────────────────
 
-// Esplanadi: boulevard, trees, soft traffic, drones overhead.
-// Decode tags the drones and drops a count.
 function esplanadi(scr, t, d) {
   field(scr, d, false);
-  // sky
   scr.bands(0, 0, W, 70, [mix('#0c1820', '#1a1408', d), mix('#122430', '#241a0c', d)]);
-  // tree canopy line
   for (let x = 0; x < W; x += 6) {
     const h = 18 + ((x * 5) % 11);
     scr.px(x, 70 - h, 6, h, mix('#0e2818', '#2a1c08', d));
   }
-  // boulevard
   scr.px(0, 88, W, H - 88, mix('#121820', '#1e160c', d));
-  scr.px(20, 88, W - 40, 2, inkLo(d)); // kerb line
-  // traffic dots
+  scr.px(20, 88, W - 40, 2, inkLo(d));
   for (let i = 0; i < 5; i++) {
     const x = ((t * 18 + i * 28) % (W + 20)) - 10;
     scr.px(x, 100 + (i % 3) * 8, 8, 3, mix(PAL.GREEN_DIM, PAL.AMBER_DIM, d * 0.4));
   }
-  // drones
   const drones = [
     [30 + Math.sin(t * 0.7) * 20, 28 + Math.cos(t * 0.9) * 6],
     [70 + Math.cos(t * 0.5) * 16, 22 + Math.sin(t * 1.1) * 5],
@@ -434,11 +427,9 @@ function esplanadi(scr, t, d) {
   if (d > 0.4) num(scr, 4, H - 10, '3', PAL.AMBER_HOT);
 }
 
-// Kamppi plaza at night — glass, lights, crowd dots.
 function kamppi(scr, t, d) {
   field(scr, d, false);
   scr.px(0, 0, W, H, mix('#060a10', '#140e06', d));
-  // glass tower blocks
   for (let i = 0; i < 4; i++) {
     const x = 8 + i * 30, h = 50 + (i % 3) * 18;
     scr.rect(x, H - 20 - h, 24, h, mix('#0c1820', '#1e160a', d), inkLo(d));
@@ -448,9 +439,7 @@ function kamppi(scr, t, d) {
       scr.px(x + 14, H - 20 - h + 6 + wy, 4, 3, on ? inkLo(d) : shade(inkLo(d), 0.4));
     }
   }
-  // plaza floor
   scr.px(0, H - 20, W, 20, mix('#0a1218', '#1a1208', d));
-  // crowd dots
   for (let i = 0; i < 18; i++) {
     const x = 6 + (i * 17 + Math.floor(t * 8)) % (W - 12);
     const y = H - 16 + (i % 3) * 4;
@@ -460,60 +449,201 @@ function kamppi(scr, t, d) {
   if (d > 0.4) num(scr, 4, 8, d > 0.5 ? '12' : '90', ink(d));
 }
 
-// Vuosaari harbour as footage (not the diagram crane).
 function harbour(scr, t, d) {
   field(scr, d, false);
   scr.bands(0, 0, W, 60, [mix('#0a1820', '#1a1208', d), mix('#0e2430', '#22180c', d)]);
-  // water
   for (let y = 90; y < H; y += 2) {
     for (let x = 0; x < W; x += 2) {
       if (bayer(x >> 1, y >> 1) < 0.45 + Math.sin(x * 0.1 + t) * 0.08)
         scr.px(x, y, 2, 2, mix('#0c2838', '#2a1c0a', d));
     }
   }
-  // quay
   scr.px(0, 80, W, 12, mix('#121820', '#1e160c', d));
-  // containers
   for (let i = 0; i < 5; i++) {
     const x = 6 + i * 24;
     scr.rect(x, 62, 20, 18, inkLo(d), ink(d * 0.5));
   }
-  // ship silhouette
   const sx = 40 + Math.sin(t * 0.3) * 4;
   scr.px(sx, 70, 50, 8, ink(d));
   scr.px(sx + 10, 58, 30, 12, inkLo(d));
   if (d > 0.35) {
-    // remote ops badge
     scr.rect(8, 8, 40, 14, PAL.PANEL_LO, PAL.AMBER);
     num(scr, 12, 12, 'REM', PAL.AMBER_HOT);
   }
 }
 
-// Gulf shore looking toward city edge.
 function gulf(scr, t, d) {
   field(scr, d, false);
   scr.bands(0, 0, W, 55, [mix('#08141c', '#181008', d), mix('#0c2030', '#22180c', d)]);
-  // distant city
   for (let i = 0; i < 12; i++) {
     const x = 4 + i * 10;
     const h = 8 + ((i * 7) % 14);
     scr.px(x, 55 - h, 8, h, mix('#0e1c24', '#1e160a', d));
     if ((Math.floor(t) + i) % 4 === 0) scr.px(x + 2, 55 - h + 3, 2, 2, inkLo(d));
   }
-  // water
   for (let y = 70; y < H; y += 2) {
     for (let x = 0; x < W; x += 2) {
       if (bayer(x >> 1, y >> 1) < 0.5 + Math.sin(x * 0.08 + t * 1.2) * 0.1)
         scr.px(x, y, 2, 2, mix('#0a2838', '#281c0a', d));
     }
   }
-  // shore rocks
   scr.px(0, 64, W, 8, mix('#121820', '#1e160c', d));
   if (d > 0.3) {
-    // cable marker
     scr.px(50, 100, W - 50, 2, PAL.AMBER);
     num(scr, 54, 108, 'CAB', PAL.AMBER_HOT);
   }
+}
+
+// Tuomiokirkko / Senate Square (approved)
+function cathedral(scr, t, d) {
+  field(scr, d, false);
+  scr.bands(0, 0, W, 52, [mix('#0c1820', '#1a1408', d), mix('#122430', '#241a0c', d)]);
+  const cx = 64;
+  scr.ellipse(cx, 36, 30, 18, mix('#d0d8dc', '#c0a068', d));
+  scr.ellipse(cx, 34, 26, 14, mix('#e0e8ec', '#d0b078', d));
+  scr.ellipse(cx - 22, 42, 8, 6, mix('#c8d0d4', '#b89860', d));
+  scr.ellipse(cx + 22, 42, 8, 6, mix('#c8d0d4', '#b89860', d));
+  for (let i = -3; i <= 3; i++) {
+    const x = cx + i * 9;
+    scr.px(x - 1, 50, 3, 32, mix('#c0c8cc', '#b09058', d));
+  }
+  scr.px(cx - 32, 50, 64, 4, mix('#a8b0b4', '#a08050', d));
+  for (let s = 0; s < 6; s++) {
+    const y = 84 + s * 5;
+    const w = 72 + s * 7;
+    scr.px(cx - w / 2, y, w, 4, mix('#9898a0', '#907040', d));
+  }
+  scr.px(0, 114, W, H - 114, mix('#101820', '#1c160c', d));
+  for (let i = 0; i < 10; i++) {
+    const x = 12 + ((t * 11 + i * 19) % (W - 24));
+    const y = 118 + (i % 3) * 5;
+    if (d < 0.4 || i % 3 === 0) scr.px(x, y, 2, 3, ink(d * 0.5));
+  }
+  scr.px(18, 22, 2, 20, inkLo(d));
+  const fy = 20 + Math.sin(t * 2.1) * 2;
+  scr.px(20, fy, 11, 7, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d));
+  if (d > 0.35) {
+    scr.rect(4, 4, 34, 11, PAL.PANEL_LO, PAL.AMBER);
+    num(scr, 8, 6, 'OBS', PAL.AMBER_HOT);
+  }
+}
+
+// Narrower street tram (first approved tram, renamed)
+function katu(scr, t, d) {
+  field(scr, d, false);
+  scr.bands(0, 0, W, 38, [mix('#0a141c', '#181008', d), mix('#101c28', '#20160c', d)]);
+  for (let i = 0; i < 6; i++) {
+    const x = i * 22;
+    const h = 26 + ((i * 13) % 16);
+    scr.px(x, 38 - h, 20, h, mix('#0e1c24', '#1e160a', d));
+    for (let wy = 0; wy < h - 6; wy += 7) {
+      const on = ((Math.floor(t * 1.7) + i + wy) % 4) !== 0;
+      scr.px(x + 4, 38 - h + 4 + wy, 3, 3, on ? inkLo(d) : shade(inkLo(d), 0.35));
+      scr.px(x + 12, 38 - h + 4 + wy, 3, 3, on ? shade(inkLo(d), 0.65) : shade(inkLo(d), 0.3));
+    }
+  }
+  scr.px(0, 86, W, H - 86, mix('#101418', '#1a140c', d));
+  scr.px(0, 94, W, 2, inkLo(d));
+  const tx = ((t * 20) % (W + 55)) - 28;
+  scr.px(tx, 76, 40, 13, mix(PAL.GREEN_DIM, PAL.AMBER_DIM, d * 0.45));
+  scr.px(tx + 3, 70, 11, 6, mix(PAL.GREEN, PAL.AMBER, d * 0.35));
+  scr.px(tx + 2, 80, 7, 5, mix('#1a282c', '#2a1e10', d));
+  scr.px(tx + 13, 80, 7, 5, mix('#1a282c', '#2a1e10', d));
+  scr.px(tx + 24, 80, 7, 5, mix('#1a282c', '#2a1e10', d));
+  for (let i = 0; i < 3; i++) {
+    const cx = ((t * 14 + i * 48) % (W + 28)) - 14;
+    scr.px(cx, 106 + (i % 2) * 9, 13, 5, mix(PAL.GREEN_LO, PAL.AMBER_DIM, d * 0.3));
+  }
+  for (let i = 0; i < 4; i++) {
+    const lx = 14 + i * 32;
+    scr.px(lx, 48, 2, 36, inkLo(d));
+    const pulse = 0.55 + 0.45 * Math.sin(t * 2.8 + i);
+    scr.px(lx - 2, 46, 6, 3, mix(shade(PAL.GREEN_HOT, pulse), PAL.AMBER_HOT, d));
+  }
+  if (d > 0.35) num(scr, 4, 6, '4T', PAL.AMBER_HOT);
+}
+
+// Wide Mannerheimintie boulevard tram (second approved)
+function mannerheim(scr, t, d) {
+  field(scr, d, false);
+  // deep night sky
+  scr.bands(0, 0, W, 30, [mix('#060e14', '#140e08', d), mix('#0a1620', '#1a120a', d)]);
+  // tall buildings set further back for wide avenue feel
+  for (let i = 0; i < 5; i++) {
+    const x = i * 28 - 4;
+    const h = 40 + ((i * 17) % 22);
+    scr.px(x, 30 - h, 26, h, mix('#0c1a22', '#1c140a', d));
+    for (let wy = 0; wy < h - 8; wy += 9) {
+      for (let wx = 4; wx < 22; wx += 8) {
+        const on = ((Math.floor(t * 1.5) + i + wy + wx) % 5) !== 0;
+        scr.px(x + wx, 30 - h + 6 + wy, 4, 4, on ? inkLo(d) : shade(inkLo(d), 0.3));
+      }
+    }
+  }
+  // wide multi-lane street
+  scr.px(0, 78, W, H - 78, mix('#0e1418', '#1a140c', d));
+  // tram tracks (double)
+  scr.px(52, 78, 2, H - 78, inkLo(d));
+  scr.px(74, 78, 2, H - 78, inkLo(d));
+  // tram coming toward camera
+  const ty = 90 + Math.sin(t * 0.8) * 2;
+  const tw = 28 + Math.sin(t * 0.4) * 2;
+  scr.px(64 - tw / 2, ty, tw, 18, mix(PAL.GREEN_DIM, PAL.AMBER_DIM, d * 0.4));
+  scr.px(64 - tw / 2 + 4, ty + 4, tw - 8, 8, mix('#1a282c', '#2a1e10', d));
+  scr.px(62, ty - 4, 4, 4, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d)); // headlight
+  // distant traffic dots
+  for (let i = 0; i < 6; i++) {
+    const x = 10 + ((t * 12 + i * 30) % (W - 20));
+    const y = 110 + (i % 3) * 8;
+    scr.px(x, y, 10, 4, mix(PAL.GREEN_LO, PAL.AMBER_DIM, d * 0.25));
+  }
+  // street lights along both sides
+  for (let i = 0; i < 5; i++) {
+    const lx = 8 + i * 28;
+    scr.px(lx, 40, 2, 38, inkLo(d));
+    const pulse = 0.5 + 0.5 * Math.sin(t * 2.5 + i);
+    scr.px(lx - 3, 38, 8, 3, mix(shade(PAL.GREEN_HOT, pulse), PAL.AMBER_HOT, d));
+    const rx = W - 10 - i * 28;
+    scr.px(rx, 40, 2, 38, inkLo(d));
+    scr.px(rx - 3, 38, 8, 3, mix(shade(PAL.GREEN_HOT, pulse), PAL.AMBER_HOT, d));
+  }
+  if (d > 0.35) {
+    num(scr, 4, 6, 'M10', PAL.AMBER_HOT);
+  }
+}
+
+// Central Station (original approved style)
+function station(scr, t, d) {
+  field(scr, d, false);
+  scr.bands(0, 0, W, 28, [mix('#08141c', '#181008', d), mix('#0c1c28', '#20160c', d)]);
+  const tx = 64;
+  scr.px(tx - 11, 6, 22, 56, mix('#1a282c', '#2a1e10', d));
+  scr.px(tx - 13, 4, 26, 4, mix('#2a383c', '#3a2e18', d));
+  scr.disc(tx, 26, 9, mix('#d0d8dc', '#c8a870', d));
+  scr.disc(tx, 26, 7, mix('#e8f0f4', '#d8b880', d));
+  const ang = (t * 0.12) % (Math.PI * 2);
+  scr.px(tx, 26, 1, -6, ink(d));
+  scr.px(tx, 26, Math.round(Math.cos(ang) * 5), Math.round(Math.sin(ang) * 5), inkLo(d));
+  scr.px(6, 38, 42, 28, mix('#121e22', '#1e160c', d));
+  scr.px(80, 38, 42, 28, mix('#121e22', '#1e160c', d));
+  for (const side of [10, 84]) {
+    for (let wy = 0; wy < 20; wy += 8) {
+      for (let wx = 0; wx < 34; wx += 10) {
+        const on = ((Math.floor(t * 1.4) + wy + wx) % 5) !== 0;
+        scr.px(side + wx, 44 + wy, 5, 4, on ? inkLo(d) : shade(inkLo(d), 0.35));
+      }
+    }
+  }
+  scr.px(0, 68, W, H - 68, mix('#0e1418', '#1a1208', d));
+  for (let i = 0; i < 12; i++) {
+    const x = 8 + ((t * 9 + i * 15) % (W - 16));
+    const y = 76 + (i % 4) * 6;
+    if (d < 0.35 || i % 3 === 0) scr.px(x, y, 2, 3, ink(d * 0.5));
+  }
+  const tr = ((t * 7) % (W + 36)) - 18;
+  scr.px(tr, 128, 34, 7, mix(PAL.GREEN_LO, PAL.AMBER_DIM, d * 0.35));
+  scr.px(tr + 3, 124, 8, 4, inkLo(d));
+  if (d > 0.35) num(scr, 4, 6, d > 0.5 ? 'LATE' : 'ON', ink(d));
 }
 
 const PANELS = {
@@ -521,9 +651,14 @@ const PANELS = {
   sea, sat, engine, crowd2,
   // B-roll
   esplanadi, kamppi, harbour, gulf,
+  cathedral, katu, mannerheim, station,
 };
 
 export const PANEL_KEYS = Object.keys(PANELS);
+export const BROLL_KEYS = [
+  'esplanadi', 'kamppi', 'harbour', 'gulf',
+  'cathedral', 'katu', 'mannerheim', 'station',
+];
 
 export function drawVisual(key, scr, t, decode) {
   const fn = PANELS[key] || chart;
