@@ -323,9 +323,16 @@ emits exactly the canvas's arcs at the shipping stroke weight, the sting
 mounting/skipping, and each signed game's badge.
 Two honest caveats recorded in `BRAND.md`: the face geometry is **measured off
 the master artwork**, not lifted from the original vector file (replace `GEO` if
-that file surfaces), and the logotype face is substituted. Same `gh-pages`
-deploy caveat as paperboy — `toko/` and the signed game `index.html`s both have
-to be copied over.
+that file surfaces), and the logotype face is substituted.
+**Deployed:** `toko/` is live on `gh-pages` and the counter is mounted at the top
+of BOTH hub entry points (`index.html` and `AnotherHUB/index.html`) with one
+module import after `</header>`; the chat picks up hub.css's `--panel`/`--line`
+so it sits inside the terminal's own chrome while keeping magenta for Toko. The
+gh-pages copy omits `test/` (that branch ships docs but no test dirs). The game
+**signatures are NOT on gh-pages yet** — `toko-drop/` and `hyperdagger/` there
+carry offline service workers with exact precache lists, so signing them means
+adding `../toko/js/*` to those lists in the same change, or their offline boot
+silently starts hitting the network.
 
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
 Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
