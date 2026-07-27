@@ -48,6 +48,8 @@ Grinds, manuals, goals, the node map and the story are **not built** — see
 decisions. Read that doc before writing any Tiny Hawk code.
 
 ### Tiny 2D (`tiny2d/`)
+Shares tinyhawk's **Skate Story** art direction — near-black cold world, the lit lip of the
+hill as the one HDR/blooming element, ACES + `EffectComposer` with speed-driven smear.
 A **one-button momentum skater** — Tiny Wings' verb on a skateboard, side-on. Spun out of
 the Tiny Hawk design work when Tiny Hawk went third-person 3D. Hold to press into a hill
 face (gravity ×2.7), release at the lip to pop, hold in the air to dive; landing is graded

@@ -11,6 +11,11 @@
 // 3D, and this side-on one-button idea was too good to throw away with it.
 
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { COL } from './palette.js?v=1';
 import { Terrain } from './terrain.js?v=1';
 import { Skater } from './skater.js?v=1';
@@ -33,12 +38,24 @@ const PHYS_STEP    = 1 / 120;
 const canvas = document.getElementById('canvas-game');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.toneMapping = THREE.NoToneMapping;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
 const scene = new THREE.Scene();
 let zoom = ZOOM_MIN;
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 400);
+
+// Same stack as tinyhawk and hyperdagger: ACES + a composer, with SELECTIVE
+// bloom via HDR colour. The bloom threshold stays high so only the lit lip of
+// the hill blooms — drop it and the matte ground blooms too, which greys out
+// the near-black world the whole look depends on.
+const composer = new EffectComposer(renderer);
+const afterimage = new AfterimagePass(0.5);
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.7, 0.5, 0.9);
 scene.add(camera);   // the sky and sun are camera children
+composer.addPass(new RenderPass(scene, camera));
+composer.addPass(afterimage);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
 
 // Sky: a gradient plane parented to the camera, so it is always behind
 // everything and never needs culling thought.
@@ -287,6 +304,8 @@ function applyZoom() {
 
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
+  composer.setSize(innerWidth, innerHeight);
+  bloom.setSize(innerWidth, innerHeight);
   applyZoom();
 }
 addEventListener('resize', resize);
@@ -361,7 +380,9 @@ function animate(now) {
     el.toast.style.transform = `translate(-50%, ${(1 - k) * -18}px) scale(${0.9 + k * 0.25})`;
   }
 
-  renderer.render(scene, camera);
+  // Smear rides speed, as in tinyhawk.
+  afterimage.uniforms.damp.value = 0.42 + clamp((skater.speed - 10) / 45, 0, 1) * 0.22;
+  composer.render();
 }
 
 // ── Shell wiring ───────────────────────────────────────────────────────────

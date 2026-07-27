@@ -16,7 +16,7 @@
 // sidesteps a whole class of spawn/cull bugs.
 
 import * as THREE from 'three';
-import { COL } from './palette.js?v=1';
+import { COL, GLOW } from './palette.js?v=1';
 import { mulberry32, lerp, clamp } from './rng.js?v=1';
 
 const DX      = 0.45;   // ribbon sample spacing (world units)
@@ -24,7 +24,7 @@ const SPAN    = 130;    // world units of ribbon kept alive around the camera
 const BEHIND  = 34;     // how much of that sits behind the camera
 const SAMPLES = Math.ceil(SPAN / DX);
 const HALF_W  = 7;      // ribbon half-width in z (gives the top face its read)
-const LIP     = 1.2;    // height of the mid-tone band under the front edge
+const LIP     = 0.5;    // height of the mid-tone band under the front edge
 const BODY_D  = 170;    // how far the dark mass hangs below the surface
 
 // Average downhill gradient. Tiny Wings' islands fall away under you, and they
@@ -36,7 +36,7 @@ const DESCENT = 0.115;
 // Difficulty ramp: hills get taller and tighter the further you get.
 const RAMP_DIST = 3200;
 
-function makeStrip(color) {
+function makeStrip(color, hdr) {
   const geo = new THREE.BufferGeometry();
   const pos = new Float32Array(SAMPLES * 2 * 3);
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -46,7 +46,8 @@ function makeStrip(color) {
     idx.push(a, b, d, a, d, c);
   }
   geo.setIndex(idx);
-  const mat = new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide });
+  const mat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+  if (hdr) mat.color.setRGB(hdr[0], hdr[1], hdr[2]); else mat.color.setHex(color);
   return { mesh: new THREE.Mesh(geo, mat), pos, mat };
 }
 
@@ -62,7 +63,8 @@ export class Terrain {
     this.ensure(200);
 
     this.top  = makeStrip(COL.groundTop);
-    this.lip  = makeStrip(COL.groundLip);
+    // The lip is the one HDR thing in the scene — the lit edge of the hill.
+    this.lip  = makeStrip(null, GLOW.edge);
     this.body = makeStrip(COL.groundBody);
     // Draw back-to-front so the dark mass never z-fights the lip band.
     this.body.mesh.renderOrder = 0;

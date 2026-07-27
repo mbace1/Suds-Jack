@@ -3,6 +3,12 @@
 A one-button momentum skater. **Tiny Wings' verb on a skateboard**, side-on, low-poly,
 no build step — open `index.html`.
 
+Art direction matches `tinyhawk/`: **Skate Story**. A near-black cold world, the lit lip of
+the hill glowing neon, and bloom + smear doing the work — ACES with an `EffectComposer`,
+**selective bloom via HDR colour** (only the lip's `GLOW.edge` is over 1.0). The bloom
+threshold stays high on purpose: drop it and the matte ground blooms too, which greys out
+the near-black the whole look depends on.
+
 Spun out of the Tiny Hawk design work. Tiny Hawk itself went third-person 3D; this
 side-on idea was too good to throw away with it, so it lives here as its own thing.
 
@@ -45,9 +51,9 @@ The sun sets in real time; every 200 m buys 7 s of daylight back.
 * `main.js` — ortho camera that leads by speed and zooms out as you go faster; three
   parallax hill layers anchored to a *smoothed* camera height (the world descends forever,
   so anything anchored to absolute height eventually floods the screen).
-* Art rules are the house ones: `MeshBasicMaterial`, `NoToneMapping`, **no lights, no
-  shadows, no fog**. Volume comes from three explicit tones per surface. All colour in
-  `palette.js`.
+* Still unlit — no lights, no shadows, no fog. Volume comes from three explicit tones per
+  surface; the difference is that the lip tone is HDR and blooms. All colour in
+  `palette.js`, glow values in `GLOW`.
 
 `window.__t2` exposes `{skater, terrain, audio, input, debug}` for console tinkering and
 the headless smoke test.
