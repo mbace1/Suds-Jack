@@ -4,7 +4,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { InputManager } from './input.js';
-import { Player, FORMS, PLAYER_RADIUS } from './player.js';
+import { Player, FORMS, PLAYER_RADIUS, ULT_MAX } from './player.js';
 import { Enemy, EnemyType, BoltPool } from './enemy.js';
 import { Ally, ALLY_ACCENT, ALLY_RADIUS } from './ally.js';
 import { Effects } from './effects.js';
@@ -178,6 +178,8 @@ const $ = (id) => document.getElementById(id);
 const hud = {
   hpfill: $('hpfill'), dashpips: [...document.querySelectorAll('#dashpips span')],
   allychip: $('allychip'), cmdbtn: $('cmdbtn'),
+  ultfill: $('ultfill'), ultwrap: $('ultwrap'),
+  parrybtn: $('parrybtn'), ultbtn: $('ultbtn'),
   room: $('roomlbl'), score: $('scorelbl'), hi: $('hilbl'),
   mult: $('multlbl'), chips: [$('chip0'), $('chip1'), $('chip2')],
   announce: $('announce'), vignette: $('vignette'),
@@ -295,6 +297,7 @@ const combat = {
     score += Math.round(e.score * streakMult());
     streak++;
     kills++;
+    player.addUlt(e.type === EnemyType.DRONE ? 4 : e.type === EnemyType.BRUTE ? 25 : 10);
     if (player.stats.lifesteal) player.heal(player.stats.lifesteal);
     audio.kill();
     this.shake(e.type === EnemyType.BRUTE ? 0.3 : 0.12);
@@ -311,6 +314,28 @@ const combat = {
 
   hurtPlayer(dmg, fromPos, knock = 4) {
     if (player.pos.y > 0.9) return;   // jumped clear of the strike
+    // PARRY: negate the hit, stagger the attacker, refund ult charge
+    if (player.parrying) {
+      player.parriedThis = true;
+      player.addUlt(10);
+      player.iframes = Math.max(player.iframes, 0.25);
+      effects.ring(player.pos, 2.6, 0.25, 0xffffff, true);
+      effects.sparks(player.pos, 0xffffff, 8, 5);
+      audio.deflect();
+      this.shake(0.18);
+      if (fromPos) {   // shove whoever swung at you
+        for (const e of enemies) {
+          if (e.dead) continue;
+          if (Math.hypot(e.pos.x - fromPos.x, e.pos.z - fromPos.z) < 0.6) {
+            _tmp.subVectors(e.pos, player.pos).setY(0).normalize();
+            e.knock.addScaledVector(_tmp, 9);
+            e.state = 'recover';
+            e.stateT = 0;
+          }
+        }
+      }
+      return;
+    }
     if (!player.hurt(dmg)) return;
     streak = 0;
     vignetteT = 0.5;
@@ -551,19 +576,25 @@ hud.chips.forEach((chip, i) => {
   chip.addEventListener('click', () => { input.swapQueued = i; });
 });
 
-// CHARGE button (touch) mirrors the E key
-for (const ev of ['click', 'touchstart']) {
-  hud.cmdbtn.addEventListener(ev, (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    input.commandQueued = true;
-  }, { passive: false });
+// touch action buttons mirror their keys
+for (const [btn, field] of [[hud.cmdbtn, 'commandQueued'], [hud.parrybtn, 'parryQueued'], [hud.ultbtn, 'ultQueued']]) {
+  for (const ev of ['click', 'touchstart']) {
+    btn.addEventListener(ev, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      input[field] = true;
+    }, { passive: false });
+  }
 }
 
 // ── HUD refresh ───────────────────────────────────────────────────────────────
 function updateHud(dt) {
   hud.hpfill.style.width = `${(player.hp / player.stats.maxHp) * 100}%`;
   hud.dashpips.forEach((pip, i) => pip.classList.toggle('on', player.dashCharges > i));
+  hud.ultfill.style.width = `${(player.ult / ULT_MAX) * 100}%`;
+  hud.ultwrap.classList.toggle('ready', player.ultReady);
+  hud.ultbtn.style.opacity = player.ultReady ? 1 : 0.3;
+  hud.parrybtn.style.opacity = player.parryCd > 0 ? 0.4 : 1;
   const liveAllies = allies.filter((a) => !a.dead).length;
   hud.allychip.style.display = allies.length ? 'block' : 'none';
   hud.allychip.textContent = `⚑ RONIN ×${liveAllies}`;
@@ -610,6 +641,24 @@ window.__nr = {
   player, input,
   getEnemies: () => enemies, getScore: () => score,
   getAllies: () => allies, recruitAllies,
+  hurtPlayerTest: (dmg) => combat.hurtPlayer(dmg, null),
+  spawnTestDrone: (i, n = 6) => {
+    const a = (i / n) * Math.PI * 2;
+    enemies.push(new Enemy(scene, EnemyType.DRONE,
+      player.pos.x + Math.sin(a) * 2.2, player.pos.z + Math.cos(a) * 2.2, 1));
+  },
+  // clears the field but parks one inert enemy far away so the room does not
+  // read as "cleared" and freeze the sim behind the upgrade overlay
+  clearFieldTest: () => {
+    for (const e of enemies) scene.remove(e.mesh);
+    enemies.length = 0;
+    pending.length = 0;
+    bolts.clear();
+    const keeper = new Enemy(scene, EnemyType.SLASHER, 0, ARENA_R - 2, 1);
+    keeper.speed = 0;
+    keeper.hp = 1e9;
+    enemies.push(keeper);
+  },
 };
 
 function simulate(dt) {
@@ -673,6 +722,24 @@ function simulate(dt) {
   bolts.update(dt, ARENA_R + 2);
   for (let i = bolts.active.length - 1; i >= 0; i--) {
     const b = bolts.active[i].mesh.position;
+    // parry catches bolts in a wide bubble and sends them back
+    if (player.parrying && Math.hypot(b.x - player.pos.x, b.z - player.pos.z) < 2.4) {
+      let tgt = null, td = 99;
+      for (const e of enemies) {
+        if (e.dead) continue;
+        const d = Math.hypot(e.pos.x - b.x, e.pos.z - b.z);
+        if (d < td) { td = d; tgt = e; }
+      }
+      _tmp.set(tgt ? tgt.pos.x - b.x : Math.sin(player.yaw), 0,
+               tgt ? tgt.pos.z - b.z : Math.cos(player.yaw));
+      pBolts.spawn(b, _tmp, 20, 0xffffff, 28 * player.stats.dmgMul);
+      effects.sparks(b.clone(), 0xffffff, 4, 4);
+      bolts.recycleAt(i);
+      player.addUlt(4);
+      score += 15;
+      audio.deflect();
+      continue;
+    }
     if (!player.invincible && player.pos.y < 0.9) {
       const dx = b.x - player.pos.x, dz = b.z - player.pos.z;
       if (dx * dx + dz * dz < (PLAYER_RADIUS + BOLT_R) ** 2) {

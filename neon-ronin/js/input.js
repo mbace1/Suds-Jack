@@ -21,6 +21,9 @@ export class InputManager {
     this._dx = 0;
     this._dy = 0;
     this.attackQueued = false;
+    this.heavyQueued = false;     // RMB / auto-mixed on touch
+    this.parryQueued = false;     // F / touch button — timed block window
+    this.ultQueued = false;       // R / charged form chip
     this.dashQueued = null;    // true (keyboard) or {x, y} flick vector (touch)
     this.jumpQueued = false;
     this.commandQueued = false;   // CHARGE order for the ally squad
@@ -39,14 +42,19 @@ export class InputManager {
       if (e.code === 'Digit3') this.swapQueued = 2;
       if (e.code === 'KeyQ') this.swapQueued = 3;
       if (e.code === 'KeyE') this.commandQueued = true;
+      if (e.code === 'KeyF') this.parryQueued = true;
+      if (e.code === 'KeyR') this.ultQueued = true;
       if (e.code === 'Space') e.preventDefault();
     });
     addEventListener('keyup', (e) => this.keys.delete(e.code));
     addEventListener('blur', () => this.keys.clear());
 
     addEventListener('mousedown', (e) => {
-      if (this.locked && e.button === 0) this.attackQueued = true;
+      if (!this.locked) return;
+      if (e.button === 0) this.attackQueued = true;
+      if (e.button === 2) this.heavyQueued = true;
     });
+    addEventListener('contextmenu', (e) => { if (this.locked) e.preventDefault(); });
     addEventListener('mousemove', (e) => {
       if (!this.locked) return;
       this._dx += e.movementX;
@@ -191,6 +199,9 @@ export class InputManager {
   }
 
   consumeAttack()  { const q = this.attackQueued;  this.attackQueued = false;  return q; }
+  consumeHeavy()   { const q = this.heavyQueued;   this.heavyQueued = false;   return q; }
+  consumeParry()   { const q = this.parryQueued;   this.parryQueued = false;   return q; }
+  consumeUlt()     { const q = this.ultQueued;     this.ultQueued = false;     return q; }
   consumeDash()    { const q = this.dashQueued;    this.dashQueued = null;     return q; }
   consumeJump()    { const q = this.jumpQueued;    this.jumpQueued = false;    return q; }
   consumeSwap()    { const q = this.swapQueued;    this.swapQueued = -1;       return q; }
