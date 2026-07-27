@@ -135,7 +135,7 @@ cinematic-widescreen like `glass`), and `hedge` (story — The Living Wall: tap 
 shrubs along thirty paces of an English hedge to count woody *species*; tapping a
 repeat teaches that it is kinds you count, and Hooper's rule then dates the hedge
 at ~700 years, older than the church behind it; a botanist's tally strip fills as
-you go — full-scene English-lane build). `plate` pilots the **2026-07 visual standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
+you go — full-scene English-lane build), and `seed` (wisdom — plant one and wait out the day/night cycle), `lightning` (story — Philadelphia 1882, Jennings holds a dry-plate open on a storm roof; the plate proves lightning is shaped like a river, not a zigzag), `whale` (story — a forty-tonne body sinks three km into unlit water and becomes a town of a hundred species over fifty years; per-pixel dithered water column in `cached()`, bioluminescence breaking the frame), and `pando` (story — pick four separate Utah aspens, then the ground goes transparent on one GOLD_LUX root system feeding all 47,000 stems). `plate` pilots the **2026-07 visual standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
 jagged 16-bit vignettes in a pure-black void, muted environments, luminescent cyan/gold
 interactive elements that break the frame (`PAL.VOID/CYAN_LUX/GOLD_LUX`, plus
 `PAL.LEAF_LUX` — a luminescent green for nature-scene glow like fireflies). Shared `pixel.js`
