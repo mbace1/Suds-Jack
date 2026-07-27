@@ -10,9 +10,9 @@
 // DECODE) the amber wash go over the top. Bright daylight inside a dark green
 // receiver is exactly how a broadcast monitor looks in a dark room.
 
-import { PAL } from './palette.js?v=6';
-import { mix, shade } from './screen.js?v=6';
-import { render, box, project } from './poly.js?v=6';
+import { PAL } from './palette.js?v=7';
+import { mix, shade } from './screen.js?v=7';
+import { render, box, project } from './poly.js?v=7';
 
 // a muted northern daylight. Every ramp is dark→light; a face picks its step
 // from how it faces the sun.

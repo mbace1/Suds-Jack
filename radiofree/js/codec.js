@@ -21,12 +21,12 @@
 // every frame — so Toko is lip-synced to the text on screen instead of flapping
 // on a timer. Vowels open the mouth, consonants part it, spaces close it.
 
-import { PixelScreen, shade, mix } from './screen.js?v=6';
-import { PAL, SECTOR_COLOR } from './palette.js?v=6';
-import { Toko } from './toko.js?v=6';
-import { drawVisual, PANEL_W, PANEL_H, num } from './visuals.js?v=6';
-import { drawBroll } from './broll.js?v=6';
-import { drawWide } from './toko.js?v=6';
+import { PixelScreen, shade, mix } from './screen.js?v=7';
+import { PAL, SECTOR_COLOR } from './palette.js?v=7';
+import { Toko } from './toko.js?v=7';
+import { drawVisual, PANEL_W, PANEL_H, num } from './visuals.js?v=7';
+import { drawBroll } from './broll.js?v=7';
+import { drawWide } from './toko.js?v=7';
 
 export const POST_W = 144, POST_H = 276;
 const SHOT_SECS = 3.6;                 // how long the edit holds a shot

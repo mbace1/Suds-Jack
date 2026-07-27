@@ -14,11 +14,11 @@
 // same decode states — because every word on screen, bulletins included, comes
 // from the language blocks.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=6';
-import { Post, Reader } from './codec.js?v=6';
-import { SECTORS, STORIES, storyCopy, parseLine } from './stories.js?v=6';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=6';
-import * as audio from './audio.js?v=6';
+import { PAL, SECTOR_COLOR } from './palette.js?v=7';
+import { Post, Reader } from './codec.js?v=7';
+import { SECTORS, STORIES, COPY, storyCopy, parseLine, loadWire, WIRE_INFO } from './stories.js?v=7';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=7';
+import * as audio from './audio.js?v=7';
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
@@ -140,13 +140,18 @@ $('sound').onclick = () => {
 };
 
 // ── tune in ────────────────────────────────────────────────────────
-$('tuneIn').onclick = () => {
+$('tuneIn').onclick = async () => {
   audio.init();
   audio.setMuted(!soundOn);
   audio.ring();
   gate.classList.add('gone');
   app.hidden = false;
   setTimeout(() => { audio.connect(); audio.carrierStart(); }, 780);
+  // The wire is fetched, so tuning in is genuinely tuning in: the dial sweeps
+  // while it arrives. Nothing is built until it has, and loadWire() always
+  // resolves — with the day's bulletins or with the off-air post — so there is
+  // no branch here where the feed simply never appears.
+  await loadWire();
   boot();
 };
 
@@ -515,6 +520,14 @@ window.__rfh = {
     toggleDecode: () => toggleDecode(active),
     finishRead: () => reader.finish(),
     stories: () => posts.filter(p => !p.signoff).map(p => p.story.id),
+    // What the feed is actually reading, and where it came from. Anything
+    // inspecting the wire must come through here: `stories.js` holds it in
+    // live bindings filled once by loadWire(), so a second `import()` of that
+    // module — a test, a console — gets a fresh, EMPTY copy. That cost the
+    // gate a crash the first time.
+    wire: () => ({ ...WIRE_INFO }),
+    wireData: () => ({ sectors: SECTORS, stories: STORIES, copy: COPY }),
+    reload: async () => { await loadWire(); rebuildFeed(); return { ...WIRE_INFO }; },
     decoded: () => [...decodedIds],
     forgetDecoded: () => { decodedIds.clear(); try { localStorage.removeItem(DECODED_KEY); } catch {} },
     setLang: useLang,

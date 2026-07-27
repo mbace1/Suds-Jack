@@ -1,24 +1,45 @@
 # Adding a bulletin
 
-Everything the station needs is four edits. This page is the bar a bulletin has
-to clear — most of it is enforced by the gate, and the gate is not a nice place
-to find out.
+**A bulletin is a JSON edit.** The wire lives in `wire.json` — not in a module,
+not in a build. Add a block, run the validator, publish the file. The app picks
+it up on the next load with no deploy, no cache-token bump, and no rebuild.
 
-The template at the bottom is a copy-paste of all four.
+```
+node radiofree/tools/validate-wire.mjs        # exit 0 = safe to publish
+```
 
-## The four edits
+That is the whole loop. The rest of this page is the bar the content has to
+clear, and the two places where a JSON edit still touches code.
 
-1. **The roster** — one line in `STORIES` in `js/stories.js`:
-   `{ id, sector, visual, broll }`. `sector` is `GAMING` / `INDUSTRY` /
-   `DEFENCE`; the feed is ordered by channel, so the line goes with its band.
-2. **The copy** — one block in **each** of `EN`, `FI`, `JA` in the same file:
-   `slug`, `head`, `lines`, `technique`, `decodeNote`, `tell`.
-3. **The picture** — a panel function in `js/visuals.js`, added to `PANELS`.
-   `broll` picks the footage the package cuts to from `BROLL_KEYS` in
-   `js/broll.js` — reuse one, a fourth plate is a bigger job than a bulletin.
-4. **The cache** — bump `?v=N` in `index.html`, every `js/*.js` import, and
-   **`sw.js`'s `VERSION` and `V` with them**. There is no build step; the gate
-   checks the tokens agree and that `sw.js` precaches every module by name.
+## The two edits
+
+1. **The roster** — one object in `wire.json`'s `stories`:
+   `{ "id", "sector", "visual", "broll" }`. Order does not matter; the app
+   sorts by channel at load, so a new line can go at the end of the array.
+2. **The copy** — one block under **each** of `copy.en`, `copy.fi`, `copy.ja`,
+   keyed by the same id: `slug`, `head`, `lines`, `technique`, `decodeNote`,
+   `tell`.
+
+`updated` is a free-text date shown to nobody but useful to you; bump it so you
+can tell at a glance which wire a listener is on (`__rfh.debug.wire()`).
+
+## The one thing JSON cannot add
+
+**`visual` and `broll` name art that is drawn in code.** An external edit can
+only pick from what the build already has — `PANEL_KEYS` in `js/visuals.js`
+(the story panel, which decodes) and `BROLL_KEYS` in `js/broll.js` (the footage
+the package cuts to). The validator prints the legal keys when you get one
+wrong. Reusing a panel is normal and costs nothing; a *new* panel is a code
+change and a deploy, and it is the only part of a bulletin that is.
+
+If you want new art, add a function to `PANELS` in `js/visuals.js`:
+
+```js
+function myPanel(scr, t, d) {           // d = decode, 0..1 — animate the reveal
+  field(scr, d);                        // graticule; pass `false` for full-frame art
+  // draw the framing at d = 0, and the honest version at d = 1
+}
+```
 
 ## The bar
 
@@ -31,13 +52,20 @@ of this app into the thing the app is about. On the defence band the actors stay
 unnamed on purpose: "the alliance", "a neighbouring state", "the eastern
 border". That is also how careful reporting on those subjects actually reads.
 
+This matters more now than it did when the wire was a module. **The content is
+publishable by anyone with write access to one file**, so the rule has to live
+in the author's head — the validator can check that a bulletin decodes, but it
+cannot check that a defamation is fictional.
+
 **What is real is the language.** Each bulletin is written the way that kind of
 story actually gets written, and DECODE names the move. If you cannot say which
 technique a bulletin teaches in two words, it is not a bulletin yet.
 
-**One technique per bulletin, and it must be new.** Sixteen are taken (grep
-`technique:`). The sign-off hands all of them back at the end and marks the
-ones the listener caught, so a duplicate costs a slot and teaches nothing.
+**One technique per bulletin, and it must be new.** Sixteen are taken. The
+sign-off hands all of them back at the end and marks the ones the listener
+caught, so a duplicate costs a slot and teaches nothing twice — the validator
+*warns* on a repeat rather than failing, because a deliberate second angle on
+the same move is a judgement call and not a defect.
 
 **Register: The Onion, not a sketch.** The deadpan is total. The joke — and
 there should be one — is in the *fact*, never in the wording: no winking
@@ -60,62 +88,65 @@ agentless `passiivi`, Japanese for 〜される and the polite noun (再編、�
 the technique on display is the one a reader of that language would actually
 meet. Translating the English spin word-for-word produces Finnish that no
 Finnish newsroom would print, and the bulletin stops teaching in that language.
-`t()` returns the key when a string is missing and a raw key is still a
-non-empty string, so nothing throws — the gate checks every field of every
-bulletin in all three blocks, **including** that the lines still carry `{{…|…}}`
-markup, since a bulletin with nothing marked has nothing to decode.
 
 **The panel decodes too.** The framing is never only in the words. A panel that
 just illustrates the headline is a wasted half of the post: the truncated bar
 chart re-bases to zero, the valuation tower goes hollow but for the 6 % actually
 sold, the packed auditorium empties to the four people on the stage. Decide what
-the picture is lying about before you draw it. Amber has exactly one job — "the
+the picture is lying about before you pick it. Amber has exactly one job — "the
 spin is showing" — and never appears before DECODE.
 
-**The panel is portrait and it must be legible at 128×152.** Two panels shipped
-as unreadable scribble and had to be rebuilt around one clear idea each (spokes
-to a hub, a grid with a single vanishing point). Draw the idea, not the texture.
+## What the validator enforces
+
+`js/wire.js` is the single implementation; `tools/validate-wire.mjs` runs it
+over a file and the app runs it over the download, so a wire that passes in a
+terminal cannot then be rejected in a browser for a reason you never saw. It
+fails on:
+
+- a `version` this build does not know, or a missing/duplicate/reserved id
+- a channel that has no accent colour in the build
+- a `visual` or `broll` the build cannot draw — **the silent one.** Both fall
+  back in the renderer (to the bar chart, to the first footage plate), so a typo
+  ships the wrong picture beside the right words and nothing anywhere complains
+- a bulletin missing from any of en / fi / ja, or missing any field
+- `lines` empty, or a line that is empty
+- malformed `{{…|…}}` markup, or a pair with an empty half
+- **no markup at all in a bulletin** — nothing to decode is the one failure that
+  makes a bulletin pointless rather than broken
+
+It warns (does not fail) on copy for a bulletin that is not on the roster, and
+on a repeated technique.
+
+## When it goes wrong on air
+
+The app never shows an empty feed. If the wire 404s, times out, is unparseable
+or fails validation, `stories.js` installs a baked-in **station identification**
+post instead — one bulletin, in all three languages, that says the copy did not
+arrive. It carries markup and decodes like any other, because a dead DECODE
+button would be the app failing at the one thing it does. `__rfh.debug.wire()`
+reports `source: 'off-air'` and the validation errors.
+
+## Caching, and why the wire is not versioned
+
+The shell is **cache-first** (a new deploy is a new `?v=N` and a new cache), and
+`wire.json` is **network-first** (`sw.js`). That split is the whole arrangement:
+the app loads instantly off disk and the *content* is never stale. If you make
+the wire cache-first to save a request, a listener is pinned to whatever
+bulletins they first downloaded and the file stops being externally updatable —
+which is the failure this format exists to prevent, and it fails silently.
+
+Offline, the worker serves the last wire that listener actually received. That
+is deliberately not the wire that shipped with the build.
 
 ## The gate
-
-From the repo root:
 
 ```
 NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs
 ```
 
-77 checks. The ones a new bulletin runs into first: every story's `visual` is a
-real panel key and its `broll` a real footage key (a mistyped key falls back
-silently to the bar chart / to Esplanadi and ships the wrong picture beside the
-right words); every bulletin carries a full read *and* a decode in all three
-languages; the sign-off counts the roster rather than a hardcoded number; every
-text colour clears WCAG AA with translucent backgrounds composited up the tree.
-
-## The template
-
-```js
-// 1 — js/stories.js, in STORIES, on its channel
-  { id: 'my-bulletin', sector: 'GAMING', visual: 'myPanel', broll: 'esplanadi' },
-
-// 2 — js/stories.js, the same block in EN, FI and JA
-  'my-bulletin': {
-    slug: 'KALLIO',                       // the dateline: a Helsinki place
-    head: 'The headline, straight, as a wire would file it',
-    lines: [
-      'First paragraph, with {{the spun wording|what a plain reading would have said}} in it.',
-      'Second paragraph. Two lines is the shape — a third is a feature, not filler.',
-    ],
-    technique: 'THE MOVE, IN TWO WORDS',
-    decodeNote: 'What the move did here, in three or four sentences. Name the ' +
-      'mechanism, not the vibe. If the panel is lying too, say what it was ' +
-      'lying about — this is the only place that gets explained.',
-    tell: 'The question that catches this in the wild. One sentence, portable, ' +
-      'usable on a story that has nothing to do with Helsinki.',
-  },
-
-// 3 — js/visuals.js, then add `myPanel` to PANELS
-function myPanel(scr, t, d) {           // d = decode, 0..1 — animate the reveal
-  field(scr, d);                        // graticule; pass `false` for full-frame art
-  // draw the framing at d = 0, and the honest version at d = 1
-}
-```
+89 checks. Beyond the content rules above it proves the update path itself: the
+feed is reading a *fetched* wire rather than a baked-in one; the CLI validator
+catches a bad art key, a missing language and a bulletin with nothing to decode;
+a broken wire degrades to the station identification without throwing; a cached
+shell still picks up an edited wire on the next load; and offline reads the last
+wire that arrived.

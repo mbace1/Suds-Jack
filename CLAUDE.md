@@ -278,10 +278,24 @@ strips together in x). `cam.hz` slides the horizon off centre. Video grain must
 **not** come from `bayer()` — the low cells are the same cells every frame, so
 it sits still and reads as a perforated screen.
 
-**Adding a bulletin is four edits and `radiofree/STORIES.md` is the bar**: the
-roster line (`visual` + `broll`, both gate-checked against `PANEL_KEYS` /
-`BROLL_KEYS`), the copy block in all three languages, the panel, the cache
-tokens. Register is **The Onion** — total deadpan, the joke in the fact and
+**The wire is DATA, not code — `wire.json`, fetched at boot.** Adding a bulletin
+is a JSON edit (a roster entry + a copy block in each of en/fi/ja) plus
+`node radiofree/tools/validate-wire.mjs`; no build, no deploy, no cache-token
+bump. `radiofree/STORIES.md` is the bar. Three things follow and all three are
+load-bearing: the wire is **validated before a word reaches the screen**
+(`js/wire.js`, the same function the CLI runs, so a wire that passes locally
+cannot fail in the browser for an unseen reason); `wire.json` is served
+**network-first while the shell stays cache-first** (`sw.js`) — cache-first for
+the wire would pin a listener to whatever they downloaded first and silently
+undo the whole arrangement; and a wire that 404s, times out or fails validation
+falls back to a baked-in **station-identification post** in all three languages
+that still decodes, never an empty feed. `visual`/`broll` name art drawn in
+code, so they are the one thing a JSON edit cannot add — and they fall back
+silently in the renderer, which is why the validator checks them against
+`PANEL_KEYS`/`BROLL_KEYS`. **Never `import()` `stories.js` twice to read the
+wire**: it holds it in live bindings filled once by `loadWire()`, so a second
+import gets an empty copy (this crashed the gate) — go through
+`__rfh.debug.wireData()`. Register is **The Onion** — total deadpan, the joke in the fact and
 never in the wording — one new technique per bulletin, and every plain reading
 specific ("a way to protect this quarter's margin", not "something bad").
 
@@ -400,7 +414,7 @@ the target and run to the guard limit, which drew two long rays across the
 account graph. `field(scr, decode, false)` turns the graticule off for scenes with their own full-frame
 texture (`sea`, `engine`); a grid under a wireframe terrain is noise on noise.
 
-**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 77
+**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 89
 checks (roster counts are read off `__rfh.debug.stories()`, never hardcoded — that
 number went stale twice): zero console errors, the feed is vertical (one post per screen, snapping, media
 portrait in the buffer *and* on screen), the live codec animates while neighbours hold
@@ -411,7 +425,11 @@ every visual and footage key real, the program frame really cutting
 between graphic/B-roll/wide with DECODE holding the graphic, fi/en/ja complete with a language switch that keeps your
 place, a sign-off that closes the feed and marks what you decoded, a `#id` deep link
 that opens its bulletin without pushing history, a
-precache that names every module, a real run with the network cut, 44px targets, and **WCAG AA on every text colour** — with translucent backgrounds properly
+precache that names every module, a real run with the network cut, a fetched
+(not baked-in) wire, a CLI validator that catches a bad art key / a missing
+language / a bulletin with nothing to decode, a broken wire degrading to the
+station identification without throwing, a cached shell still picking up an
+edited wire, offline reading the last wire that arrived, 44px targets, and **WCAG AA on every text colour** — with translucent backgrounds properly
 composited up the tree (taking the first non-transparent colour reads
 `rgba(255,180,58,.05)` as solid amber and fails the decode box by 4x).
 `window.__rfh` exposes `{audio, state, debug: {open, channel, go, tuneChannel,
@@ -480,12 +498,16 @@ radiofree/      # Radio Free Helsinki — MGS-codec news broadcast, Toko anchors
     visuals.js  # portrait story panels + the sign-off test card; PANEL_KEYS
     broll.js    # low-poly Helsinki footage plates; BROLL_KEYS
     poly.js     # the tiny flat-shaded 3D renderer under the footage
-    stories.js  # the wire: copy with {{spun|plain}} markup, techniques, tells (fi/en/ja)
+    stories.js  # fetches/validates/installs wire.json; the off-air fallback post
+    wire.js     # the wire format: validator, channel sort, {{spun|plain}} parser
     i18n.js     # every other string, all three languages
     screen.js   # PixelScreen (detachable), shade/mix/bayer, scanlines
     audio.js    # synth codec kit + carrier hiss, one master gain (total mute)
     palette.js
-  sw.js         # offline shell; manifest.webmanifest + icons drawn in code
+  wire.json     # THE BULLETINS — data, updatable with no build
+  tools/
+    validate-wire.mjs  # same validator as the app, in a terminal
+  sw.js         # cache-first shell + network-first wire; manifest + icons in code
   test/
     smoke.cjs   # 72-check headless gate
 hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel enemies

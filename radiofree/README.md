@@ -92,6 +92,15 @@ the network, reloads, and reads a bulletin.
 **Bump `sw.js`'s `VERSION` and `V` with the rest of the `?v=N` tokens.** A new
 deploy has to be a new cache name or the old shell simply stays.
 
+**The wire is the exception, and it is deliberate.** `wire.json` is served
+**network-first** while the shell stays cache-first. That split is the whole
+external-update arrangement: the app comes off disk instantly and the *content*
+is never stale. Making the wire cache-first to save one request would pin a
+listener to whatever bulletins they happened to download first — the app would
+keep updating on version bumps and the news never would, silently. Offline, the
+worker serves the last wire that listener actually received, which is
+deliberately not the one that shipped with the build.
+
 ## DECODE — the point of the thing
 
 Press it and the bulletin re-reads itself in plain language. The broadcast
@@ -171,6 +180,7 @@ app into the thing the app is about.
 ```
 radiofree/
   index.html      shell + all CSS (codec chrome, CRT scanlines, feed layout)
+  wire.json       THE BULLETINS — data, fetched at boot, updatable without a build
   STORIES.md      how to add a bulletin — read this first
   js/
     main.js       boot, the tune-in gate, the feed, tuning, decode, the loop
@@ -179,7 +189,8 @@ radiofree/
     visuals.js    the story panels + the sign-off test card
     broll.js      the Helsinki footage plates the package cuts to
     poly.js       the small flat-shaded 3D renderer the footage is built on
-    stories.js    the wire — copy, decode readings, techniques, tells (fi/en/ja)
+    stories.js    fetches, validates and installs wire.json (+ the off-air post)
+    wire.js       the wire format: the validator, the sort, the markup parser
     i18n.js       every other string, in all three languages
     screen.js     PixelScreen: small canvas, hard-pixel upscale, dither helpers
     audio.js      synth codec kit + the carrier hiss, all through one master gain
@@ -188,15 +199,30 @@ radiofree/
   manifest.webmanifest
   icon-192.png    drawn in code and baked — see the note below
   icon-512.png
+  tools/
+    validate-wire.mjs   check a wire without a browser (exit 1 = do not publish)
   test/
     smoke.cjs     the gate (see below)
 ```
 
 ## Adding a bulletin
 
-Four edits, and **`STORIES.md` is the bar** — the roster line, the copy block in
-all three languages, the panel, and the cache tokens. Two things from it worth
-having in your head before you start:
+**A bulletin is a JSON edit.** The wire lives in `wire.json` — add a roster
+entry and a copy block in each of en/fi/ja, run the validator, publish the file.
+No build, no deploy, no cache-token bump:
+
+```
+node radiofree/tools/validate-wire.mjs      # exit 0 = safe to publish
+```
+
+**`STORIES.md` is the bar.** Three things from it worth having in your head:
+
+**The art is the one thing JSON cannot add.** `visual` and `broll` name panels
+and footage that are drawn in code, and both fall back *silently* in the
+renderer — a typo ships the wrong picture beside the right words and nothing
+complains. That is why the wire is validated before a word of it reaches the
+screen, by the same validator the CLI runs. Reusing a panel costs nothing; a
+new one is a code change and a deploy, and it is the only part that is.
 
 **Register: The Onion, not a sketch.** The deadpan is total and the joke is in
 the *fact*, never in the wording. A bulletin that sounds like it is being funny
@@ -272,6 +298,21 @@ in a 128×152 portrait frame a horizon at the halfway mark is half a picture.
 same cells every frame, so a bayer-gated grain sat perfectly still and read as a
 perforated screen rather than as a signal. Plain `Math.random()` positions.
 
+**The wire is data, and data from outside the build cannot be trusted.**
+`wire.json` is fetched at boot and put through `validateWire` before a word of
+it reaches the screen — the same function `tools/validate-wire.mjs` runs in a
+terminal, so a wire that passes locally cannot then fail in a browser for a
+reason the author never saw. If it 404s, times out, is unparseable or fails
+validation, the feed shows a baked-in **station identification** post instead of
+nothing; it carries markup and decodes like any bulletin, because a dead DECODE
+button would be the app failing at the one thing it does.
+
+**Never `import()` `stories.js` a second time to read the wire.** It holds the
+wire in *live bindings* that `loadWire()` fills once, so a second import — a
+test, a console, a lazily-loaded module — gets a fresh and **empty** copy. That
+crashed the gate the first time. Everything inspecting the wire goes through
+`__rfh.debug.wireData()`.
+
 **A mistyped visual or footage key falls back silently** — to the bar chart, or
 to Esplanadi — which would ship the wrong picture beside the right words.
 `PANEL_KEYS` and `BROLL_KEYS` are exported from `visuals.js` and `broll.js` and
@@ -298,7 +339,7 @@ collapses into a regular dot grid — the gulf water column did exactly that. Us
 NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs
 ```
 
-Seventy-seven checks in a real browser: zero console errors; the feed is vertical (one
+Eighty-nine checks in a real browser: zero console errors; the feed is vertical (one
 post per screen, snapping, media portrait both in the buffer and on screen); the
 live codec animates while its neighbours hold their painted frame and unread
 posts sit on standby; the program frame really cuts between the graphic, the
@@ -312,7 +353,12 @@ panel and every `broll` key real footage; roster counts are read off
 and switching language keeps your place and your open drawer; every control is
 44px; the sign-off closes the feed, lists every technique and marks the ones
 you decoded (in every language); the address follows the scroll and a `#id`
-link opens that bulletin
+link opens that bulletin; and the whole external-update path — the feed is
+reading a *fetched* wire rather than a baked-in one, the CLI validator catches a
+bad art key, a missing language and a bulletin with nothing to decode, a broken
+wire degrades to the station identification without throwing, a cached shell
+still picks up an edited wire on the next load, and offline reads the last wire
+that arrived
 without pushing history; the precache names every module and agrees with the
 page's version; the app **really boots with the network cut**; and **WCAG AA on
 every text colour** — measured with the translucent decode-box

@@ -29,11 +29,21 @@ const path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
 const MIME = {
   '.html': 'text/html', '.js': 'text/javascript', '.png': 'image/png',
-  '.webmanifest': 'application/manifest+json',
+  '.webmanifest': 'application/manifest+json', '.json': 'application/json',
 };
 
+// The wire is the one file that is meant to change without a deploy, so the
+// gate has to be able to change it — served from here, not from disk, whenever
+// an override is set. Nothing in the repo is written to.
+let wireOverride = null;
 const server = http.createServer((req, res) => {
-  const p = path.join(ROOT, req.url.split('?')[0]);
+  const clean = req.url.split('?')[0];
+  if (wireOverride !== null && clean.endsWith('/wire.json')) {
+    res.writeHead(wireOverride.status || 200, { 'Content-Type': 'application/json' });
+    res.end(wireOverride.body);
+    return;
+  }
+  const p = path.join(ROOT, clean);
   fs.readFile(p, (err, data) => {
     if (err) { res.writeHead(404); res.end(); return; }
     res.writeHead(200, { 'Content-Type': MIME[path.extname(p)] || 'application/octet-stream' });
@@ -214,9 +224,12 @@ const contrast = (a, b) => {
   const freqAfter = await page.locator('#freq').textContent();
   check('the dial jumps to another channel', freqAfter !== freqBefore);
   // the dial is a readout of where the scroll put you, not a separate state
+  // Read the wire off the running app, never by importing stories.js again:
+  // it holds the wire in live bindings that loadWire() fills once, so a second
+  // import of that module gets a fresh and EMPTY copy.
   check('the masthead reports the live post’s channel', await page.evaluate(async () => {
-    const { SECTORS } = await import('./js/stories.js?v=5');
-    const want = SECTORS.find(s => s.id === __rfh.state.channel);
+    const { sectors } = __rfh.debug.wireData();
+    const want = sectors.find(s => s.id === __rfh.state.channel);
     return document.getElementById('freq').textContent === want.freq
       && document.getElementById('call').textContent === want.call;
   }));
@@ -236,9 +249,8 @@ const contrast = (a, b) => {
   // is still a non-empty string, so it would ship quietly. Check the blocks
   // agree instead of waiting to notice 'rail.decode' on a button.
   const langGaps = await page.evaluate(async () => {
-    const [{ _STR, UI_KEYS, UI_LANGS }, { COPY, STORIES }] = await Promise.all([
-      import('./js/i18n.js?v=5'), import('./js/stories.js?v=5'),
-    ]);
+    const { _STR, UI_KEYS, UI_LANGS } = await import('./js/i18n.js');
+    const { copy: COPY, stories: STORIES } = __rfh.debug.wireData();
     const gaps = [];
     for (const l of UI_LANGS) {
       for (const k of UI_KEYS) if (!_STR[l][k]) gaps.push(`ui ${l}:${k}`);
@@ -413,6 +425,78 @@ const contrast = (a, b) => {
   check('a shared link boots clean', deepErrors.length === 0);
   await deep.close();
 
+  // ── the wire arrives from outside the build ──────────────────────
+  // This is the point of the format: bulletins are a file, not a module, so a
+  // new day's wire reaches a listener without anyone shipping a build. Each of
+  // these is a way that can silently stop being true.
+  const wireInfo = await page.evaluate(() => __rfh.debug.wire());
+  check('the feed is reading a fetched wire, not a baked-in one',
+    wireInfo.source === 'network' && wireInfo.count === N);
+  check('the wire says when it was filed', !!wireInfo.updated);
+
+  // The validator the app runs on the download is the validator an author runs
+  // in a terminal — if the CLI can bless a wire the app rejects, the whole
+  // arrangement is a trap. Drive the real tool over a real bad file.
+  const cp = require('child_process');
+  const os = require('os');
+  const tmp = path.join(os.tmpdir(), `rfh-wire-${process.pid}.json`);
+  const good = JSON.parse(fs.readFileSync(path.join(ROOT, 'radiofree/wire.json'), 'utf8'));
+  const runCli = (obj) => {
+    fs.writeFileSync(tmp, JSON.stringify(obj));
+    try {
+      cp.execFileSync(process.execPath, [path.join(ROOT, 'radiofree/tools/validate-wire.mjs'), tmp],
+        { stdio: 'pipe' });
+      return { code: 0, out: '' };
+    } catch (e) {
+      return { code: e.status, out: String(e.stderr) };
+    }
+  };
+  check('the validator passes the wire that ships', runCli(good).code === 0);
+
+  const badArt = JSON.parse(JSON.stringify(good));
+  badArt.stories[0].visual = 'nosuchpanel';
+  const artRun = runCli(badArt);
+  check('the validator catches an art key the build cannot draw',
+    artRun.code === 1 && artRun.out.includes('nosuchpanel'));
+
+  const badLang = JSON.parse(JSON.stringify(good));
+  delete badLang.copy.ja[good.stories[1].id];
+  const langRun = runCli(badLang);
+  check('the validator catches a bulletin missing a language',
+    langRun.code === 1 && langRun.out.includes(`copy.ja.${good.stories[1].id}`));
+
+  const badMarkup = JSON.parse(JSON.stringify(good));
+  badMarkup.copy.en[good.stories[2].id].lines =
+    badMarkup.copy.en[good.stories[2].id].lines.map(l => l.replace(/\{\{([^|}]*)\|[^}]*\}\}/g, '$1'));
+  const markRun = runCli(badMarkup);
+  check('the validator catches a bulletin with nothing to decode',
+    markRun.code === 1 && markRun.out.includes('nothing to decode'));
+  fs.unlinkSync(tmp);
+
+  // A wire can be updated from outside, which means it can be BROKEN from
+  // outside. The feed must degrade to the station-identification post rather
+  // than to an empty column or a white screen.
+  wireOverride = { body: '{"version":1,"stories":"not an array"}' };
+  const brk = await browser.newPage({ viewport: { width: 430, height: 900 } });
+  const brkErrors = [];
+  brk.on('pageerror', e => brkErrors.push(String(e)));
+  await brk.addInitScript(() => localStorage.setItem('rfhLang', 'en'));
+  await brk.goto(URL, { waitUntil: 'networkidle' });
+  await brk.locator('#tuneIn').click();
+  await brk.waitForTimeout(700);
+  check('a broken wire falls back to a station identification, not an empty feed',
+    await brk.locator('.post:not(.sign-off)').count() === 1
+    && await brk.evaluate(() => __rfh.debug.wire().source) === 'off-air');
+  check('the off-air post still decodes', await brk.evaluate(async () => {
+    __rfh.debug.finishRead();
+    __rfh.debug.toggleDecode();
+    await new Promise(r => setTimeout(r, 250));
+    return document.querySelectorAll('.post.live .plain').length > 0;
+  }));
+  check('a broken wire throws nothing at the page', brkErrors.length === 0);
+  await brk.close();
+  wireOverride = null;
+
   // ── the offline shell ────────────────────────────────────────────
   // Static first: the worker names every file by hand (there is no build
   // step), which is exactly the kind of list that goes stale in silence.
@@ -439,6 +523,23 @@ const contrast = (a, b) => {
   await off.waitForTimeout(1200);                     // let the precache settle
   check('the worker takes control', await off.evaluate(() => !!navigator.serviceWorker.controller));
 
+  // The crux. The shell is cached and must stay cached — but a bulletin edited
+  // on the server has to reach this listener on the very next load, with no
+  // version bump and no new build. Cache-first for the wire would pin them to
+  // whatever they happened to download first and quietly undo the entire
+  // arrangement: the app would keep updating and the news never would.
+  const later = JSON.parse(JSON.stringify(good));
+  later.updated = '2099-01-01';
+  later.copy.en[later.stories[0].id].head = 'A later edition of this bulletin';
+  wireOverride = { body: JSON.stringify(later) };
+  await off.reload({ waitUntil: 'domcontentloaded' });
+  await off.locator('#tuneIn').click();
+  await off.waitForTimeout(900);
+  check('a cached shell still fetches a fresh wire',
+    await off.evaluate(() => __rfh.debug.wire().updated) === '2099-01-01');
+  check('the newer copy is what actually renders',
+    await off.locator('.post .head', { hasText: 'A later edition' }).count() === 1);
+
   await off.context().setOffline(true);
   await off.reload({ waitUntil: 'domcontentloaded' });
   await off.locator('#tuneIn').click();
@@ -450,6 +551,10 @@ const contrast = (a, b) => {
   check('the picture still draws offline',
     await off.locator('.post.live .media-slot canvas').isVisible());
   check('nothing threw offline', offErrors.length === 0);
+  // and the copy that survives the tunnel is the last one actually received,
+  // not the one that shipped with the build
+  check('offline reads the last wire that arrived',
+    await off.evaluate(() => __rfh.debug.wire().updated) === '2099-01-01');
   await off.context().setOffline(false);
   await off.close();
 
