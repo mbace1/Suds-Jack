@@ -111,6 +111,38 @@ export const ART = {
     for (let i = 0; i < 5; i++) g.p(58 + i * 8, 40 - i * (4 - i * 0.7), 3, 3, '#f2f2e8');   // the throw
   },
 
+  // Powder: the racer, its plume, and the blown-out sun the plates always have
+  powder(g, a) {
+    g.bands(['#8d9aad', '#b0b4b0', '#e6ddc6']);
+    g.p(0, 30, W, H - 30, '#efe7d2');            // the field
+    g.disc(100, 12, 8, '#fffdf4');               // sun, no colour left in it
+    for (let i = 0; i < 8; i++) {
+      const t = i / 8 * Math.PI * 2;
+      g.line(100 + Math.cos(t) * 10, 12 + Math.sin(t) * 10,
+        100 + Math.cos(t) * 15, 12 + Math.sin(t) * 15, a);
+    }
+    for (let y = 30; y < H; y++) {               // the packed line, running away
+      g.p(20 - (y - 30) * 0.9, y, 6 + (y - 30) * 2.2, 1, '#d8cba8');
+    }
+    g.p(18, 33, 5, 2, '#4a4753');                // boulders out on the field
+    g.p(104, 42, 6, 3, '#4a4753');
+    g.p(6, 50, 4, 2, '#4a4753');
+    for (let i = 0; i < 7; i++) {                // plume off the inside edge
+      g.disc(74 + i * 7, 44 - i * 2, Math.max(2, 6 - i), i & 1 ? '#f6f0e0' : '#d5c9ae');
+    }
+    g.disc(50, 60, 12, '#cfc6ae');               // hard blob shadow, close under
+    g.p(34, 51, 30, 5, '#e8dfc6');               // cream fuselage
+    g.p(27, 52, 8, 3, '#e8dfc6');
+    g.p(22, 53, 5, 1, '#b9bec7');                // needle probe
+    g.p(48, 51, 6, 5, '#6b3550');                // the one accent panel
+    g.p(39, 48, 9, 3, '#2b3340');                // canopy
+    g.p(56, 48, 12, 4, '#b9bec7');               // chrome cans
+    g.p(56, 55, 12, 4, '#b9bec7');
+    g.p(67, 48, 2, 4, '#14141a');                // black intake mouths
+    g.p(67, 55, 2, 4, '#14141a');
+    g.p(60, 44, 3, 5, '#e8dfc6');                // fin
+  },
+
   // SKLTR: green bones in the dark
   bones(g, a) {
     g.p(0, 0, W, H, '#04070a');
