@@ -1,13 +1,15 @@
 // Radio Free Helsinki — one post's screen, and the voice that drives it.
 // Vertical codec: story panel on top, Toko portrait below. While live, a cut
 // sequencer cycles weighted-random shots:
-//   ~30% face / ~20% graphic / ~50% broll
+//   ~20% face / ~15% graphic / ~65% broll
 // DECODE still mutates whichever shot is showing.
+// Idle/static frames prefer story.broll so the new Helsinki art is visible
+// while scrolling — not only during live cuts.
 
-import { PixelScreen, shade, mix } from './screen.js?v=8';
-import { PAL, SECTOR_COLOR } from './palette.js?v=8';
-import { Toko } from './toko.js?v=8';
-import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=8';
+import { PixelScreen, shade, mix } from './screen.js?v=9';
+import { PAL, SECTOR_COLOR } from './palette.js?v=9';
+import { Toko } from './toko.js?v=9';
+import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=9';
 
 export const POST_W = 144, POST_H = 276;
 const VF = { x: 8, y: 6, w: PANEL_W, h: PANEL_H };
@@ -15,11 +17,11 @@ const PF = { x: 8, y: 166, w: 96, h: 96 };
 const DATA = { x: 110, y: 166, w: 26, h: 96 };
 const WAVE = { x: 8, y: 266, w: 128, h: 8 };
 
-const WEIGHTS = { face: 0.30, graphic: 0.20, broll: 0.50 };
+const WEIGHTS = { face: 0.20, graphic: 0.15, broll: 0.65 };
 const CUT_MIN = 3.2, CUT_MAX = 5.5;
 
 function pickBroll(story) {
-  if (story.broll && Math.random() < 0.85) return story.broll;
+  if (story.broll) return story.broll;
   const pool = BROLL_KEYS || ['esplanadi', 'kamppi', 'harbour', 'gulf', 'cathedral', 'katu', 'mannerheim', 'station', 'suomenlinna', 'katajanokka'];
   return pool[Math.floor(Math.random() * pool.length)];
 }
@@ -49,7 +51,10 @@ export class Post {
     this.wave = new Array(31).fill(0.2);
     this.live = false;
     this.silent = false;
-    this.shot = { type: 'graphic' };
+    // Prefer B-roll so idle cards show Helsinki footage, not only charts
+    this.shot = story.broll
+      ? { type: 'broll', key: story.broll }
+      : { type: 'graphic' };
     this.cutT = 0;
     this.nextCut = CUT_MIN + Math.random() * (CUT_MAX - CUT_MIN);
   }
@@ -57,7 +62,10 @@ export class Post {
   goLive() {
     this.live = true;
     this.signal = 0;
-    this.shot = pickShot(this.story);
+    // Always open on preferred B-roll when the story has one — guaranteed first look
+    this.shot = this.story.broll
+      ? { type: 'broll', key: this.story.broll }
+      : pickShot(this.story);
     this.cutT = 0;
     this.nextCut = CUT_MIN + Math.random() * (CUT_MAX - CUT_MIN);
   }
@@ -86,7 +94,12 @@ export class Post {
 
   renderStatic() {
     this.toko.update(0.016, 0, this.decoded);
-    this.shot = { type: 'graphic' };
+    // Keep preferred B-roll on idle so scrolling the feed shows the new art
+    if (this.story.broll) {
+      this.shot = { type: 'broll', key: this.story.broll };
+    } else {
+      this.shot = { type: 'graphic' };
+    }
     this.draw();
   }
 
@@ -97,7 +110,7 @@ export class Post {
     const faceShot = this.live && this.shot.type === 'face';
     let visualKey = this.story.visual;
     if (this.shot.type === 'broll') {
-      visualKey = this.shot.key || this.story.broll || 'esplanadi';
+      visualKey = this.shot.key || this.story.broll || 'cathedral';
     }
 
     if (faceShot) {
