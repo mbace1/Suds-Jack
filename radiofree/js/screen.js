@@ -55,6 +55,24 @@ export class PixelScreen {
     this.ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
   }
 
+  // Horizontal sky / ground gradient used by Helsinki B-roll panels.
+  // colors is an array of 2+ hex stops; fills [x,y,w,h] top→bottom.
+  bands(x, y, w, h, colors) {
+    if (!colors || colors.length === 0) return;
+    if (colors.length === 1) {
+      this.px(x, y, w, h, colors[0]);
+      return;
+    }
+    const n = colors.length - 1;
+    for (let row = 0; row < h; row++) {
+      const t = row / Math.max(1, h - 1);
+      const i = Math.min(n - 1, Math.floor(t * n));
+      const local = (t * n) - i;
+      const c = mix(colors[i], colors[i + 1], local);
+      this.px(x, y + row, w, 1, c);
+    }
+  }
+
   rect(x, y, w, h, color, edge) {
     this.px(x, y, w, h, color);
     if (edge === undefined) return;
