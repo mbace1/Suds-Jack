@@ -119,6 +119,20 @@ const LINES = [
 const LINE_STEP = 0.7;   // resample spacing along a polyline
 const LINE_LIFT = 0.07;  // above the surface, or it z-fights the ground
 
+// Rails and ledges are NOT part of the heightfield (design doc §5) — a grind is
+// a lock onto a line, not a surface you roll on, and modelling them as terrain
+// would mean the skater could stand on a 4cm bar. Each is a straight segment in
+// xz that sits `lift` above the surface at both ends.
+const RAILS = [
+  { a: [-24, -3], b: [-8, -3], lift: 0.95 },                 // flat bar, centre
+  { a: [2, -6], b: [16, -6], lift: 0.1, ledge: true },        // funbox ledges
+  { a: [2, 6], b: [16, 6], lift: 0.1, ledge: true },
+  { a: [10, -26], b: [24, -26], lift: 0.9 },                  // off the bank
+  { a: [-30, 22], b: [-16, 22], lift: 0.9 },
+  { a: [-26, -13], b: [-6, -13], lift: 0.15, ledge: true },   // quarterpipe coping
+];
+const RAIL_R = 0.11;
+
 const GRID = 1.15;   // heightfield mesh sampling step
 
 export class Park {
@@ -128,6 +142,55 @@ export class Park {
     scene.add(this.mesh);
     this.lines = this.buildLines();
     scene.add(this.lines);
+    this.rails = this.buildRails(scene);
+  }
+
+  // World-space segments for the physics, plus the glowing bar you see. A rail
+  // follows the ground under it, so one laid across a transition slopes.
+  buildRails(scene) {
+    const out = [];
+    const c = new THREE.Color().setRGB(GLOW.coping[0], GLOW.coping[1], GLOW.coping[2]);
+    const led = new THREE.Color().setRGB(GLOW.line[0], GLOW.line[1], GLOW.line[2]);
+    for (const R of RAILS) {
+      const ay = this.height(R.a[0], R.a[1]) + R.lift;
+      const by = this.height(R.b[0], R.b[1]) + R.lift;
+      const A = new THREE.Vector3(R.a[0], ay, R.a[1]);
+      const B = new THREE.Vector3(R.b[0], by, R.b[1]);
+      const dir = new THREE.Vector3().subVectors(B, A);
+      const len = dir.length();
+      dir.normalize();
+      out.push({ a: A, b: B, dir, len, ledge: !!R.ledge });
+
+      const geo = new THREE.BoxGeometry(R.ledge ? 0.5 : RAIL_R * 2, RAIL_R * 2, len);
+      const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+        color: R.ledge ? led : c,
+      }));
+      mesh.position.copy(A).addScaledVector(dir, len / 2);
+      mesh.lookAt(B);
+      scene.add(mesh);
+    }
+    return out;
+  }
+
+  // Closest point on any rail to p, if it is within reach. Returns
+  // { rail, point, t } where t is 0..1 along the rail.
+  nearestRail(p, maxXZ, maxY) {
+    let best = null;
+    for (const r of this.rails) {
+      const t = Math.max(0, Math.min(1,
+        ((p.x - r.a.x) * r.dir.x + (p.y - r.a.y) * r.dir.y + (p.z - r.a.z) * r.dir.z) / r.len));
+      const px = r.a.x + r.dir.x * r.len * t;
+      const py = r.a.y + r.dir.y * r.len * t;
+      const pz = r.a.z + r.dir.z * r.len * t;
+      const dxz = Math.hypot(p.x - px, p.z - pz);
+      const dy = p.y - py;
+      if (dxz > maxXZ || dy < -maxY * 0.5 || dy > maxY) continue;
+      const score = dxz + Math.abs(dy) * 0.5;
+      if (!best || score < best.score) {
+        best = { rail: r, t, score, point: new THREE.Vector3(px, py, pz) };
+      }
+    }
+    return best;
   }
 
   // Resampled onto the surface so a line follows a transition rather than

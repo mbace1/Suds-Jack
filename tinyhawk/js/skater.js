@@ -28,6 +28,21 @@ const BAIL_TIME  = 1.0;
 const MAX_SPEED  = 34;
 const LAND_TOL   = 0.72;  // radians (~41°) of heading error still counted clean
 
+// ── Grinds and manuals ─────────────────────────────────────────────────────
+// Both are UNSTABLE EQUILIBRIA: balance accelerates away from centre on its
+// own, and the stick is the only thing holding it. That is the whole mechanic —
+// a grind you can hold forever is not a skill, it is a corridor.
+const GRIND_LOCK_XZ = 1.25;   // how close to a rail counts as catching it
+const GRIND_LOCK_Y  = 1.1;
+const GRIND_MIN_SPD = 4;      // slower than this and you just fall off it
+const GRIND_FRIC    = 0.55;   // rails are slow; that is the trade for the score
+const GRIND_INSTAB  = 3.4;    // how hard balance runs away
+const GRIND_CORRECT = 3.6;    // how hard the stick pulls it back
+const GRIND_POP     = 7.5;    // ollie out of a grind
+const MANUAL_INSTAB = 2.6;
+const MANUAL_CORRECT= 3.2;
+const MANUAL_MIN_SPD= 3.5;
+
 const _g = new THREE.Vector3(0, -G, 0);
 const _n = new THREE.Vector3();
 const _hv = new THREE.Vector3();
@@ -131,10 +146,15 @@ export class Skater {
     this.airTricks = [];
     this.bailT = 0;
     this.fakie = false;
+    this.grind = null;    // { rail, t, dir, balance, balVel, time, name }
+    this.manual = null;   // { balance, balVel, time }
+    this.loading = false;
   }
 
   get speed() { return this.vel.length(); }
   get bailing() { return this.bailT > 0; }
+  /** True whenever a combo should stay open: airborne, grinding or manualling. */
+  get chaining() { return !this.grounded || !!this.grind || !!this.manual; }
 
   update(dt, input, camYaw) {
     const ev = [];
@@ -155,14 +175,28 @@ export class Skater {
     // ── Actions ─────────────────────────────────────────────────────────
     for (const a of input.consumeActions()) {
       if (locked) continue;
-      if (this.grounded) {
+      if (this.grind) {
+        // Ollie out of a grind: keep the speed you carried down the rail.
         if (a.dir === 'up') {
+          this.vel.y += GRIND_POP * a.power;
+          ev.push(this.endGrind('popped'));
+          this.grounded = false;
+        }
+      } else if (this.grounded) {
+        if (a.dir === 'down' && this.speed > MANUAL_MIN_SPD) {
+          if (this.manual) { ev.push(this.endManual()); }
+          else {
+            this.manual = { balance: (Math.random() - 0.5) * 0.2, balVel: 0, time: 0 };
+            ev.push({ type: 'manualStart' });
+          }
+        } else if (a.dir === 'up') {
           park.normal(this.pos.x, this.pos.z, _n);
           this.vel.addScaledVector(_n, POP * a.power);
           this.grounded = false;
           this.airTime = 0;
           this.spinAccum = 0;
           this.airTricks = [];
+          if (this.manual) ev.push(this.endManual());
           ev.push({ type: 'ollie', power: a.power });
         }
       } else if (!this.trick) {
@@ -179,9 +213,64 @@ export class Skater {
       if (this.trick.t >= TRICK_DUR) { this.trick = null; this.trickPhase = 0; }
     }
 
+    if (this.grind) {
+      // ── Grinding ──────────────────────────────────────────────────────
+      const g = this.grind, r = g.rail;
+      g.time += dt;
+      // Rails are slow, and they tilt you down their own slope.
+      g.vAlong *= Math.exp(-GRIND_FRIC * dt);
+      g.vAlong += -G * r.dir.y * dt;
+      g.t += (g.vAlong * dt) / r.len;
+
+      // Balance runs away from centre; the stick is all that holds it.
+      g.balVel += g.balance * GRIND_INSTAB * dt;
+      g.balVel -= mv.x * GRIND_CORRECT * dt;
+      g.balVel *= Math.exp(-1.6 * dt);
+      g.balance += g.balVel * dt;
+
+      this.pos.copy(r.a).addScaledVector(r.dir, r.len * g.t);
+      this.vel.copy(r.dir).multiplyScalar(g.vAlong);
+      this.up.lerp(_UP, 1 - Math.pow(0.02, dt));
+
+      if (Math.abs(g.balance) > 1) {
+        ev.push(this.endGrind('lost'));
+        this.bailT = BAIL_TIME;
+        this.vel.multiplyScalar(0.3);
+        ev.push({ type: 'bail', cause: 'balance' });
+      } else if (g.t <= 0 || g.t >= 1) {
+        g.t = Math.max(0, Math.min(1, g.t));
+        ev.push(this.endGrind('end'));
+        this.grounded = false;
+      } else if (Math.abs(g.vAlong) < GRIND_MIN_SPD * 0.5) {
+        ev.push(this.endGrind('stalled'));
+        this.grounded = false;
+      }
+      this.loading = false;
+      this.present(dt);
+      return ev;
+    }
+
     if (this.grounded) {
       // ── Rolling ───────────────────────────────────────────────────────
       park.normal(this.pos.x, this.pos.z, _n);
+
+      // ── Manual ────────────────────────────────────────────────────────
+      if (this.manual) {
+        const m = this.manual;
+        m.time += dt;
+        m.balVel += m.balance * MANUAL_INSTAB * dt;
+        m.balVel -= mv.y * MANUAL_CORRECT * dt;
+        m.balVel *= Math.exp(-1.7 * dt);
+        m.balance += m.balVel * dt;
+        if (Math.abs(m.balance) > 1) {
+          ev.push(this.endManual());
+          this.bailT = BAIL_TIME;
+          this.vel.multiplyScalar(0.35);
+          ev.push({ type: 'bail', cause: 'manual' });
+        } else if (this.speed < MANUAL_MIN_SPD) {
+          ev.push(this.endManual());   // just set it down, no penalty
+        }
+      }
 
       if (mag > 0.12 && !locked) {
         const want = Math.atan2(wantX, wantZ);
@@ -236,6 +325,29 @@ export class Skater {
       if (into < 0) this.vel.addScaledVector(_n, -into);
     } else if (this.pos.y > h + 0.06) {
       this.grounded = false;
+    }
+
+    // ── Catching a rail ─────────────────────────────────────────────────
+    // Airborne only: you have to ollie onto it, which is both correct skating
+    // and stops a rail sitting on the floor from grabbing you as you roll past.
+    if (!this.grind && !this.grounded && !locked) {
+      const hit = park.nearestRail(this.pos, GRIND_LOCK_XZ, GRIND_LOCK_Y);
+      if (hit) {
+        const vAlong = this.vel.dot(hit.rail.dir);
+        if (Math.abs(vAlong) > GRIND_MIN_SPD) {
+          const along = Math.abs(Math.sin(this.yaw) * hit.rail.dir.x
+                              + Math.cos(this.yaw) * hit.rail.dir.z);
+          this.grind = {
+            rail: hit.rail, t: hit.t, vAlong,
+            balance: (Math.random() - 0.5) * 0.25, balVel: 0, time: 0,
+            name: along > 0.8 ? '50-50' : along < 0.4 ? 'Boardslide' : 'Crooked',
+          };
+          this.airTime = 0;
+          this.trick = null;
+          this.trickPhase = 0;
+          ev.push({ type: 'grindStart', name: this.grind.name });
+        }
+      }
     }
 
     // The rim should send you back in; this is only the backstop for clearing it.
@@ -297,6 +409,18 @@ export class Skater {
     return info;
   }
 
+  endGrind(why) {
+    const g = this.grind;
+    this.grind = null;
+    return { type: 'grindEnd', name: g.name, time: g.time, why };
+  }
+
+  endManual() {
+    const m = this.manual;
+    this.manual = null;
+    return { type: 'manualEnd', time: m.time };
+  }
+
   // ── Present ───────────────────────────────────────────────────────────────
   present(dt) {
     // Drift the hue with speed — the crystal catches more light the faster it
@@ -319,6 +443,10 @@ export class Skater {
     );
     // Crouching while the pop is loaded is the whole tell for the two-phase
     // flick-it gesture — without it the player cannot see the load happen.
+    // A manual is a wheelie: pitch the whole board by the balance value, so the
+    // meter on the HUD and the thing on screen are the same information.
+    if (this.manual) this.body.rotation.x += 0.5 + this.manual.balance * 0.22;
+    if (this.grind) this.body.rotation.z += this.grind.balance * 0.3;
     const crouch = this.bailing ? 0.6 : this.loading ? 0.66 : d === 'up' ? 0.82 : 1;
     this.body.scale.y += (crouch - this.body.scale.y) * (1 - Math.pow(0.002, dt));
   }

@@ -37,7 +37,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 const scene = new THREE.Scene();
 const ZONE = ZONES.arena;
 scene.background = new THREE.Color(ZONE.sky);
-const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 900);
+const camera = new THREE.PerspectiveCamera(70, 1, 0.1, 900);
 
 // Pinpoint lights in a black sky — stadium rigs, distant windows, embers. HDR
 // so bloom turns each one into a soft flare, which is most of the atmosphere in
@@ -130,14 +130,16 @@ const $ = (id) => document.getElementById(id);
 const el = {
   mphNum: $('mphNum'), mphArrows: $('mphArrows'), mphFill: $('mphFill'),
   score: $('score'), mult: $('mult'), trick: $('trick'), breakdown: $('breakdown'),
-  objName: $('objName'), objFill: $('objFill'),
+  objName: $('objName'), objFill: $('objFill'), goals: $('goals'),
+  balance: $('balance'), balMark: $('balMark'),
+  over: $('over'), overStats: $('overStats'),
   toast: $('toast'), hud: $('hud'), menu: $('menu'), sound: $('btnSound'),
 };
 const OBJ_TARGET = 25000;   // what the top banner is a progress bar toward
 
 let state = 'menu';
-let score = 0, combo = 0, bestCombo = 0;
-let camYaw = 0, camPitch = 0.22, lookIdle = 0;
+let score = 0;
+let camYaw = 0, camPitch = 0.13, lookIdle = 0;
 let best = 0;
 try { best = parseInt(localStorage.getItem('tinyHawkP0Best') || '0', 10) || 0; } catch (e) { /* ignore */ }
 
@@ -154,7 +156,56 @@ function toast(text, color) {
 // the HUD is the one place the game talks to you.
 const TRICK_NAME = { up: 'Grab', down: 'Pop Shuvit', left: 'Kickflip', right: 'Heelflip' };
 
-let line = [];   // the trick string being built this air
+// ── The combo chain ────────────────────────────────────────────────────────
+// This is what grinds and manuals are FOR. A chain stays open while you are in
+// the air, on a rail, or on the back wheels, and only banks when you finally
+// roll away clean — so a manual across the flat between two features is worth
+// more than the two features apart. Bail and the whole pending total is gone.
+const GRIND_PPS = 90;    // points per second on a rail
+const MANUAL_PPS = 45;
+const BANK_GRACE = 0.28; // seconds rolling clean before a chain closes
+
+let chain = { open: false, pending: 0, parts: [], grace: 0 };
+
+function chainOpen(part) {
+  if (!chain.open) { chain = { open: true, pending: 0, parts: [], grace: 0 }; }
+  if (part) chain.parts.push(part);
+  chain.grace = 0;
+  showLine();
+}
+
+function chainAdd(pts) { if (chain.open) chain.pending += pts; }
+
+function chainBank() {
+  if (!chain.open) return;
+  const mult = Math.max(1, chain.parts.length);
+  const total = Math.round(chain.pending * mult);
+  if (total > 0) {
+    score += total;
+    bestChain = Math.max(bestChain, mult);
+    goalCombo = Math.max(goalCombo, mult);
+    toast(chain.parts.join(' + '), UI_CLEAN);
+    el.breakdown.textContent = `${Math.round(chain.pending)} × ${mult} = ${total.toLocaleString()}`;
+    el.breakdown.style.opacity = '1';
+    audio.land(true);
+    if (score > best) { best = Math.floor(score); try { localStorage.setItem('tinyHawkP0Best', String(best)); } catch (e) { /* ignore */ } }
+  }
+  chain = { open: false, pending: 0, parts: [], grace: 0 };
+  showLine();
+}
+
+function chainLose() {
+  chain = { open: false, pending: 0, parts: [], grace: 0 };
+  showLine();
+  el.breakdown.style.opacity = '0';
+}
+
+const UI_CLEAN = '#8fe6d8';
+
+function showLine() {
+  el.trick.textContent = chain.parts.join(' + ');
+  el.trick.style.opacity = chain.parts.length ? '1' : '0';
+}
 
 function updateHud() {
   const kmh = Math.round(skater.speed * 2.4);
@@ -162,66 +213,81 @@ function updateHud() {
   el.mphArrows.textContent = '>'.repeat(clamp(Math.round(kmh / 9), 0, 7));
   el.mphFill.style.width = clamp(kmh / 80, 0, 1) * 100 + '%';
   el.score.textContent = Math.floor(score).toLocaleString();
-  el.mult.textContent = '×' + Math.max(1, combo);
-  el.objFill.style.width = clamp(score / OBJ_TARGET, 0, 1) * 100 + '%';
+  el.mult.textContent = '×' + Math.max(1, chain.parts.length);
+
+  // Balance meter — only up while something is actually balancing.
+  const bal = skater.grind ? skater.grind.balance : skater.manual ? skater.manual.balance : null;
+  if (bal === null) {
+    el.balance.style.opacity = '0';
+  } else {
+    el.balance.style.opacity = '1';
+    el.balMark.style.left = (50 + clamp(bal, -1, 1) * 50) + '%';
+    el.balMark.style.background = Math.abs(bal) > 0.66 ? '#ff6a5a' : UI_CLEAN;
+  }
+
+  if (mode === 'run') {
+    const left = Math.max(0, RUN_TIME - runT);
+    el.objName.textContent = `Run — ${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}`;
+    el.objFill.style.width = clamp(1 - left / RUN_TIME, 0, 1) * 100 + '%';
+    el.goals.innerHTML = GOALS.map(g => {
+      const done = g.done();
+      return `<span class="${done ? 'got' : ''}">${done ? '✓' : '·'} ${g.label()}</span>`;
+    }).join('');
+  } else {
+    el.objName.textContent = 'Endless';
+    el.objFill.style.width = clamp(score / 25000, 0, 1) * 100 + '%';
+    el.goals.innerHTML = `<span>best chain ×${bestChain}</span>`;
+  }
 }
 
-function showLine() {
-  el.trick.textContent = line.join(' + ');
-  el.trick.style.opacity = line.length ? '1' : '0';
-}
+// ── Modes ──────────────────────────────────────────────────────────────────
+const RUN_TIME = 120;
+let mode = 'run', runT = 0, bestChain = 1;
+let goalCombo = 1, goalGrind = 0;
+
+const GOALS = [
+  { label: () => `${Math.min(Math.floor(score), 12000).toLocaleString()} / 12,000 pts`,
+    done: () => score >= 12000 },
+  { label: () => `grind ${goalGrind.toFixed(1)} / 2.5s`, done: () => goalGrind >= 2.5 },
+  { label: () => `chain ×${goalCombo} / ×5`, done: () => goalCombo >= 5 },
+];
 
 // ── Scoring ────────────────────────────────────────────────────────────────
 function handleEvents(events) {
   for (const e of events) {
     if (e.type === 'ollie') {
       audio.pop(e.power);
-      line = ['Ollie'];
-      showLine();
-      el.breakdown.style.opacity = '0';
+      chainOpen('Ollie');
     } else if (e.type === 'trick') {
       audio.trick();
-      line.push(TRICK_NAME[e.dir]);
-      showLine();
+      chainOpen(TRICK_NAME[e.dir]);
+      chainAdd(260);
+    } else if (e.type === 'grindStart') {
+      audio.trick();
+      chainOpen(e.name);
+    } else if (e.type === 'grindEnd') {
+      goalGrind = Math.max(goalGrind, e.time);
+    } else if (e.type === 'manualStart') {
+      chainOpen('Manual');
+    } else if (e.type === 'bail') {
+      audio.bail();
+      toast('Bail', '#ff6a5a');
+      chainLose();
     } else if (e.type === 'land') {
       const spins = Math.floor(e.spin / (Math.PI * 0.95));
       if (e.quality === 'bail') {
-        combo = 0;
         audio.bail();
         toast('Bail', '#ff6a5a');
-        line = [];
-        showLine();
-        el.breakdown.style.opacity = '0';
+        chainLose();
       } else {
-        // Everything banks on the landing, never before it (design doc §3).
-        const airPts = Math.round(e.airTime * 220);
-        const trickPts = e.tricks.length * 260;
-        const spinPts = spins * 150;
-        const gradeK = e.quality === 'clean' ? 1 : e.quality === 'sketchy' ? 0.6 : 0.3;
-        let pts = (60 + airPts + trickPts + spinPts) * (e.fakie ? 1.3 : 1) * gradeK;
-        if (pts > 40) {
-          combo++;
-          bestCombo = Math.max(bestCombo, combo);
-          score += pts * combo;
-          if (e.fakie) line.push('to Fakie');
-          showLine();
-          // The itemised line under the trick name, straight off the reference.
-          const bits = [];
-          if (airPts) bits.push('AIR +' + airPts);
-          if (trickPts) bits.push('TRICKS +' + trickPts);
-          if (spinPts) bits.push('SPIN +' + spinPts);
-          if (e.fakie) bits.push('FAKIE ×1.3');
-          if (e.quality !== 'clean') bits.push(e.quality.toUpperCase() + ' ×' + gradeK);
-          bits.push('LAND +' + Math.round(pts * combo));
-          el.breakdown.textContent = bits.join('  ');
-          el.breakdown.style.opacity = '1';
-          audio.land(e.quality === 'clean');
-        } else {
-          line = [];
+        if (chain.open) {
+          chainAdd(Math.round(e.airTime * 220) + spins * 150 + 60);
+          if (spins) chain.parts.push(spins * 180 + '°');
+          if (e.fakie) chain.parts.push('Fakie');
           showLine();
         }
+        audio.land(e.quality === 'clean');
       }
-      if (score > best) { best = Math.floor(score); try { localStorage.setItem('tinyHawkP0Best', String(best)); } catch (err) { /* ignore */ } }
     }
   }
 }
@@ -251,18 +317,20 @@ function updateCamera(dt) {
     camYaw += d * (1 - Math.pow(0.12, dt));
   }
 
-  camTarget.lerp(skater.pos, 1 - Math.pow(0.0006, dt));
-  const dist = 9.5 + skater.speed * 0.24;
+  camTarget.lerp(skater.pos, 1 - Math.pow(0.0009, dt));
+  // Skate Story's camera sits low and RIGHT behind the board, wide, almost on
+  // the deck. The distance barely opens with speed — the smear does that work.
+  const dist = 5.6 + skater.speed * 0.12;
   const cp = Math.cos(camPitch), sp = Math.sin(camPitch);
   const cx = camTarget.x - Math.sin(camYaw) * cp * dist;
   const cz = camTarget.z - Math.cos(camYaw) * cp * dist;
-  const cy = camTarget.y + sp * dist + 1.6;
+  const cy = camTarget.y + sp * dist + 0.95;
   // Never let the camera sink into a transition.
-  const floor = park.height(cx, cz) + 1.4;
+  const floor = park.height(cx, cz) + 0.9;
   camera.position.set(cx, Math.max(cy, floor), cz);
-  camera.lookAt(camTarget.x, camTarget.y + 1.3, camTarget.z);
+  camera.lookAt(camTarget.x, camTarget.y + 0.95, camTarget.z);
 
-  const wantFov = 62 + clamp(skater.airTime, 0, 1) * 7 + skater.speed * 0.18;
+  const wantFov = 70 + clamp(skater.airTime, 0, 1) * 8 + skater.speed * 0.3;
   camera.fov = lerp(camera.fov, wantFov, 1 - Math.pow(0.02, dt));
   camera.updateProjectionMatrix();
 }
@@ -302,6 +370,22 @@ function animate(now) {
       acc -= h;
     }
     handleEvents(events);
+
+    // Grinds and manuals earn while they last, and hold the chain open.
+    if (skater.grind) chainAdd(GRIND_PPS * dt);
+    if (skater.manual) chainAdd(MANUAL_PPS * dt);
+    if (chain.open) {
+      if (skater.chaining) chain.grace = 0;
+      else {
+        chain.grace += dt;
+        if (chain.grace >= BANK_GRACE) chainBank();
+      }
+    }
+
+    if (mode === 'run') {
+      runT += dt;
+      if (runT >= RUN_TIME) endRun();
+    }
     updateHud();
   }
 
@@ -314,7 +398,7 @@ function animate(now) {
 
   // Smear and aberration ride speed, so going fast *looks* like going fast.
   const sp = clamp((skater.speed - 6) / 26, 0, 1);
-  afterimage.uniforms.damp.value = 0.55 + sp * 0.2;
+  afterimage.uniforms.damp.value = 0.48 + sp * 0.18;
   chromaPass.uniforms.uAmount.value = 0.0012 + sp * 0.009;
 
   const g = canvasUI.getContext('2d');
@@ -328,11 +412,26 @@ function animate(now) {
 }
 
 // ── Shell ──────────────────────────────────────────────────────────────────
-function startSkate() {
+function endRun() {
+  state = 'over';
+  input.enabled = false;
+  chainLose();
+  const got = GOALS.filter(g => g.done()).length;
+  el.overStats.innerHTML = `
+    <div class="big">${Math.floor(score).toLocaleString()}</div>
+    <div class="sub">${got} / ${GOALS.length} objectives · best chain ×${bestChain}</div>
+    <div class="sub">${GOALS.map(g => (g.done() ? '✓ ' : '· ') + g.label()).join('<br>')}</div>`;
+  el.over.classList.remove('hidden');
+  el.hud.classList.add('hidden');
+}
+
+function startSkate(m) {
+  if (m) mode = m;
   audio.init();
   audio.resume();
   skater.reset();
-  score = 0; combo = 0; bestCombo = 0; line = [];
+  score = 0; runT = 0; bestChain = 1; goalCombo = 1; goalGrind = 0;
+  chain = { open: false, pending: 0, parts: [], grace: 0 };
   el.trick.style.opacity = '0'; el.breakdown.style.opacity = '0';
   camTarget.copy(skater.pos);
   camYaw = skater.yaw;
@@ -340,11 +439,20 @@ function startSkate() {
   input.enabled = true;
   state = 'play';
   el.menu.classList.add('hidden');
+  el.over.classList.add('hidden');
   el.hud.classList.remove('hidden');
   updateHud();
 }
 
-$('btnSkate').addEventListener('click', startSkate);
+$('btnRun').addEventListener('click', () => startSkate('run'));
+$('btnEndless').addEventListener('click', () => startSkate('endless'));
+$('btnAgain').addEventListener('click', () => startSkate());
+$('btnMenu').addEventListener('click', () => {
+  state = 'menu';
+  input.enabled = false;
+  el.over.classList.add('hidden');
+  el.menu.classList.remove('hidden');
+});
 el.sound.addEventListener('click', () => {
   audio.init();
   audio.setMuted(audio.on);
@@ -377,7 +485,14 @@ window.__th = {
   debug: {
     state: () => state,
     start: startSkate,
-    stats: () => ({ score, combo, bestCombo, speed: skater.speed, grounded: skater.grounded }),
+    stats: () => ({ score: Math.round(score), mode, runT: +runT.toFixed(1),
+      chain: chain.parts.length, pending: Math.round(chain.pending), bestChain,
+      goalGrind: +goalGrind.toFixed(2), goalCombo,
+      speed: +skater.speed.toFixed(1), grounded: skater.grounded,
+      grind: skater.grind ? skater.grind.name : null,
+      manual: !!skater.manual }),
+    setMode: (m) => { mode = m; },
+    endRun: () => endRun(),
     // The number the whole control scheme rests on (design doc §4, §11).
     scheme: () => input.scheme,
     setScheme: (s) => { input.setScheme(s); paintScheme(); },

@@ -64,6 +64,24 @@
       border: 1px solid rgba(232,201,138,0.55);
     }
     #objFill { height: 100%; width: 0%; background: rgba(232,201,138,0.7); transition: width 0.2s; }
+    #goals {
+      margin-top: 6px; font-size: 11px; letter-spacing: 1px;
+      display: flex; gap: 14px; justify-content: center;
+      color: rgba(239,231,210,0.5);
+    }
+    #goals .got { color: #8fe6d8; }
+    #balance {
+      position: relative; width: 190px; height: 10px; margin: 10px auto 0;
+      opacity: 0; transition: opacity 0.15s;
+    }
+    #balTrack {
+      position: absolute; top: 4px; left: 0; right: 0; height: 2px;
+      background: rgba(239,231,210,0.22);
+    }
+    #balMark {
+      position: absolute; top: 0; left: 50%; width: 3px; height: 10px;
+      margin-left: -1.5px; background: #8fe6d8;
+    }
     #toast {
       position: absolute; left: 50%; top: 30%;
       transform: translateX(-50%);
@@ -99,6 +117,8 @@
     table.keys td { padding: 3px 10px 3px 0; vertical-align: top; }
     table.keys td:first-child { color: #6ff0d0; white-space: nowrap; }
     table.keys b { color: #ffd166; }
+    #overStats .big { font-size: 50px; font-style: italic; }
+    #overStats .sub { font-size: 12px; opacity: 0.65; margin-top: 6px; line-height: 1.7; }
     .note { font-size: 11px; opacity: 0.45; max-width: 420px; line-height: 1.6; }
     #btnSound {
       position: fixed; right: 12px; bottom: 12px;
@@ -113,8 +133,9 @@
 
   <div id="hud" class="hidden">
     <div id="objective">
-      <div id="objName">Floodlit Park</div>
+      <div id="objName">Run</div>
       <div id="objBar"><div id="objFill"></div></div>
+      <div id="goals"></div>
     </div>
     <div id="mph">
       <span id="mphNum">0</span> km/h<span class="arrows" id="mphArrows"></span>
@@ -126,18 +147,22 @@
       <div id="rule"></div>
       <div id="trick"></div>
       <div id="breakdown"></div>
+      <div id="balance"><div id="balTrack"></div><div id="balMark"></div></div>
     </div>
   </div>
 
   <div id="menu" class="overlay">
     <h1>TINY HAWK<small>P0 · CONTROL PROTOTYPE</small></h1>
-    <button id="btnSkate" class="primary">SKATE</button>
+    <button id="btnRun" class="primary">RUN — 2 MIN, 3 OBJECTIVES</button>
+    <button id="btnEndless">ENDLESS — NO CLOCK</button>
     <button id="btnScheme">CONTROLS: SKATE (flick-it)</button>
     <table class="keys">
       <tr><td>left stick</td><td>push and steer — in the air, spin and flip</td></tr>
       <tr><td>right stick ↓ then ↑</td><td><b>load, then flick</b> — that is the ollie. Flick harder to go higher</td></tr>
       <tr><td>flick ↑ / ↖ / ↗</td><td>ollie · kickflip · heelflip</td></tr>
       <tr><td>flick sideways</td><td>shuvit</td></tr>
+      <tr><td>flick ↓ on the ground</td><td><b>manual</b> — hold it with the left stick, it keeps the chain open</td></tr>
+      <tr><td>ollie onto a rail</td><td><b>grind</b> — hold balance with the left stick, flick ↑ to pop off</td></tr>
       <tr><td>in the air</td><td>any committed flick is a trick</td></tr>
       <tr><td>Tony Hawk mode</td><td>A holds to charge the ollie, X/B/Y/LB are the tricks, right stick is the camera</td></tr>
       <tr><td>no pad?</td><td>drag the on-screen sticks with the mouse, or WASD + Space + Q E F C</td></tr>
@@ -149,6 +174,12 @@
       (fakie) counts and scores more, landing mid-trick is a bail.
       Grinds, manuals and goals are not in this build.
     </p>
+  </div>
+
+  <div id="over" class="overlay hidden">
+    <div id="overStats"></div>
+    <button id="btnAgain" class="primary">AGAIN</button>
+    <button id="btnMenu">MENU</button>
   </div>
 
   <button id="btnSound">♪ on</button>
