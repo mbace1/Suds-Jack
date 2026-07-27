@@ -28,11 +28,29 @@ const ROOT = path.resolve(process.argv[2] ?? path.join(HERE, '..'));
 
 const { GAMES } = await import(pathToFileURL(path.join(ROOT, 'hub', 'games.js')).href);
 
-function fromLog(dir) {
-  const f = path.join(dir, 'VERSIONS.md');
+function topOf(file) {
+  if (!existsSync(file)) return null;
+  const m = readFileSync(file, 'utf8').match(/^##\s*v(\d+)/m);
+  return m ? Number(m[1]) : null;
+}
+
+// Toko Drop's log lives at the site root rather than inside its folder — it
+// was there before there was a floor to be one of. Rather than move a file
+// another release process writes to, read the root log's own H1 and give it to
+// the project it names.
+function rootLogOwner() {
+  const f = path.join(ROOT, 'VERSIONS.md');
   if (!existsSync(f)) return null;
-  const m = readFileSync(f, 'utf8').match(/^##\s*v(\d+)/m);
-  return m ? { v: Number(m[1]), from: 'VERSIONS.md' } : null;
+  const h1 = readFileSync(f, 'utf8').match(/^#\s*(.+?)\s*(?:—|-|$)/m);
+  if (!h1) return null;
+  const norm = t => t.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const owner = GAMES.find(g => norm(g.title) === norm(h1[1]));
+  return owner ? { id: owner.id, v: topOf(f) } : null;
+}
+
+function fromLog(dir) {
+  const v = topOf(path.join(dir, 'VERSIONS.md'));
+  return v ? { v, from: 'VERSIONS.md' } : null;
 }
 
 function fromToken(dir) {
@@ -45,12 +63,15 @@ function fromToken(dir) {
   return { v: Math.max(...tokens), from: 'cache token' };
 }
 
+const rootLog = rootLogOwner();
 const out = {};
 const missing = [];
 for (const g of GAMES) {
   const dir = path.join(ROOT, g.path);
   if (!existsSync(dir) || !statSync(dir).isDirectory()) { missing.push(`${g.id} (not here)`); continue; }
-  const found = fromLog(dir) ?? fromToken(dir);
+  const owned = rootLog && rootLog.id === g.id && rootLog.v
+    ? { v: rootLog.v, from: 'VERSIONS.md' } : null;
+  const found = owned ?? fromLog(dir) ?? fromToken(dir);
   if (!found) { missing.push(`${g.id} (no log, no token)`); continue; }
   out[g.id] = found;
 }
