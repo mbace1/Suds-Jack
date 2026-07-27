@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=166';
+import { makeSatinMat, CABINET_STYLE, VIS } from './enemy.js?v=167';
 
 const SPEED          = 6;
 const DASH_SPEED     = 26;
@@ -106,6 +106,7 @@ export class Player {
   setCabinetStyle(mode) {
     if (!this._satinMat) this._satinMat = this.mat;   // first call: remember home
     if (this._cabShell) { this.mesh.remove(this._cabShell); this._cabShell.material.dispose(); this._cabShell = null; }
+    if (this._cabCore) { this.mesh.remove(this._cabCore); this._cabCore.material.dispose(); this._cabCore = null; }
     if (!mode) {
       this.mat = this._satinMat;
     } else {
@@ -115,6 +116,16 @@ export class Player {
           : mode === 'nexdeus' ? 0xf6eaff : 0xf0e0d8,
         'blob', PLAYER_RADIUS);
       if (mode === 'tokotron') {
+        // v213 (field feedback: "the protagonist graphics cut out"): the body
+        // was a transmissive satin gel plus this additive rim. PERFORMANCE MODE
+        // strips the gel, leaving only the rim — a thin arc you cannot find in
+        // a busy room. A solid unlit CORE goes underneath so the player always
+        // reads, whatever the renderer is allowed to do.
+        this._cabCore = new THREE.Mesh(this.mesh.geometry, new THREE.MeshBasicMaterial({
+          color: 0x2ad8ff,
+        }));
+        this._cabCore.scale.setScalar(0.94);
+        this.mesh.add(this._cabCore);
         this._cabShell = new THREE.Mesh(this.mesh.geometry, new THREE.MeshBasicMaterial({
           color: 0x00ffff, side: THREE.BackSide,
           blending: THREE.AdditiveBlending, depthWrite: false,

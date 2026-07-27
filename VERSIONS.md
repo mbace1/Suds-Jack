@@ -7,6 +7,20 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v213 — 2026-07-27
+**TOKOTRON: the floor stops filling with slime — and you can see yourself again**
+- Field report: *"tokotron gets stuck after wave 2… the protagonist graphics cut out."* Diagnosed by screenshotting the cabinet across four waves rather than reading code. The wave logic was innocent — a probe clears waves 1→7 cleanly. **The floor was the problem**
+- **Root cause**: goo puddles have a 20 s life and are only cleared by `clearFX()` at run start — never between waves. TOKOTRON kills 17–25 bodies per wave on instant full-wave spawns, and v200's juice adds satellite splats per kill, so within two waves the 192-instance pool was saturated with overlapping transparent quads. The wave-3 screenshot is a red carpet with the game hidden underneath. Overdraw collapses the framerate, `PERF MODE AUTO-ON` fires, and perf mode strips the player's transmissive gel material — leaving only a thin additive rim. That is the "graphics cut out", and at that framerate the cabinet feels stuck
+- **TOKOTRON bodies no longer bleed.** Its roster is machines: they shatter into shards, never slime. Puddles and satellite splats are skipped in this cabinet — right for the reference, and it removes the overdraw at source
+- **Each wave is a fresh room**: splats and trails clear at wave build, so nothing accumulates across a run
+- **The player has a solid core.** A `MeshBasicMaterial` disc sits under the gel, so the protagonist reads whatever the renderer is allowed to do — perf mode can no longer erase them
+- **A thin vector grid** (field request): built by hand rather than `GridHelper`, because the arena is a rectangle and a square helper either spills past the bounds or stretches its cells. ~1.8u spacing, 30% opacity, bounded exactly to the arena. This revises the v151 art note "dark background, no grid"
+- Verified: four-wave screenshot sweep shows the red carpet gone, the grid matching the arena footprint, and the player as a clearly visible disc. `smoke.sh` and `cabinets.sh` green on all six
+- **Not claimed**: this container renders under swiftshader at ~14 FPS regardless, so the framerate recovery is inferred from removing the overdraw, not measured on real hardware
+- Cache-bust `?v=166` → `?v=167`; HUD label → v213
+
+---
+
 ## v212 — 2026-07-26
 **The death screen asks about what just killed you — and shows it**
 - The feedback form asked every player the same two questions forever, so every submission came back the same shape. The death screen now opens with a **question chosen from the run you just had**, with the body that ended it **rendered live** beside it
