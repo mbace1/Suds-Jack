@@ -16,6 +16,7 @@ import { hit, tear, split, scanlines, carrier } from './glitch.js';
 import { pulse } from './util.js';
 import { playSting } from './sting.js';
 import { startMasthead } from './masthead.js';
+import { mountChat } from './chat.js';
 
 const $ = s => document.querySelector(s);
 const el = (tag, cls, txt) => {
@@ -275,6 +276,11 @@ function faceIn(ctx, x, y, w, h, opts) {
     });
   });
 }
+
+// ── the counter ──────────────────────────────────────────────────────────
+// mounted INSIDE its slot rather than after it, because on this page the
+// anchor is the demo box itself
+mountChat($('#chat-demo'), { where: 'in' });
 
 // ── the sting ────────────────────────────────────────────────────────────
 $('#b-sting').addEventListener('click', () => { playSting(); });

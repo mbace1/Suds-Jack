@@ -294,6 +294,21 @@ badge would undo a zen app built to send you outdoors), and its service worker
 precaches a list scoped to `/gameoflife/` with `test/offline.cjs` asserting
 **zero** network requests, so a cross-directory import would break the offline
 promise anyway.
+`chat.js` is **the counter** — a slim bar for the top of the arcade hub that
+animates open into a Sierra/Police-Quest-style conversation: Toko's head as a
+portrait (blinking at rest, mouth working while speaking), a typewriter
+transcript, and a numbered topic menu (1-9 pick / ENTER skip / ESC leave). It is
+a **hand-written dialogue tree in `dialogue.js`, not a language model** — no
+network call, so the offline-first promise holds; topics `opens:` others so the
+tree grows as you dig. Self-contained (injects its own scoped CSS, reads the
+brand custom properties with literal fallbacks), so it drops onto any page. Three
+things it got wrong first and now guards: the typewriter was a `setTimeout` chain
+and drifted to ~2.6s for a 1s line (timer resolution per character — it is now
+time-driven off one rAF walking a precomputed schedule); the goodbye topic closed
+the panel from a callback hung off the end of the typing, so **skipping** the
+typing left the counter open forever (`after` now fires from `finishTyping`); and
+stacked at the 44px tap floor the menu made a ~600px panel that pushed the
+cabinets below the fold (two columns where there is room).
 `sting.js` is a ~3s sting where the face **draws itself** (arcs revealed by
 dash-offset so they grow along their own path: mouth sweeps open → eyes drop in
 → blink → logotype lands), skippable on any input from frame one. `masthead.js`
@@ -347,6 +362,8 @@ toko/           # Toko Midori Games — the brand (face, lockups, sting, signatu
     glitch.js   # tear, split, dropout, shuffle, scanlines, carrier, noise, hit
     util.js     # seeded RNG + pulse() (the resting blink)
     sting.js    # the ~3s sting, the face drawing itself (skippable frame one)
+    chat.js     # the counter — Sierra-style conversation panel for the hub
+    dialogue.js # what Toko says: the hand-written topic tree
     signature.js# sign() — the drop-in corner badge a game imports
     masthead.js # the animated lockup for the arcade hub
     board.js    # wires toko/index.html out of the shipping modules

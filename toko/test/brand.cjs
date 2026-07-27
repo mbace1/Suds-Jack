@@ -192,6 +192,69 @@ function serve() {
   });
   ok('the lab is animating', moved);
 
+  // ── the counter ────────────────────────────────────────────────────────
+  // The failure this guards against: the goodbye topic closes the panel from a
+  // callback hung off the end of the typing animation, so SKIPPING the typing
+  // used to leave the counter open forever.
+  console.log('\nthe counter');
+  ok('the bar is there and closed',
+    await page.evaluate(() => {
+      const b = document.querySelector('.toko-chat .tc-bar');
+      return !!b && b.getAttribute('aria-expanded') === 'false';
+    }));
+  ok('the bar clears 44px',
+    await page.evaluate(() => document.querySelector('.toko-chat .tc-bar').getBoundingClientRect().height >= 44));
+
+  await page.click('.toko-chat .tc-bar');
+  // wait for the menu rather than a fixed sleep — a fixed sleep here would
+  // pass or fail on how fast the machine happens to be
+  await page.waitForSelector('.toko-chat .tc-menu button', { timeout: 4000 });
+  const chat = await page.evaluate(() => ({
+    open: document.querySelector('.toko-chat').classList.contains('is-open'),
+    greeted: document.querySelector('.toko-chat .tc-log').textContent.trim().length > 10,
+    topics: document.querySelectorAll('.toko-chat .tc-menu button').length,
+    tall: document.querySelector('.toko-chat .tc-panel').getBoundingClientRect().height > 200,
+    taps: [...document.querySelectorAll('.toko-chat .tc-menu button')]
+      .every(b => b.getBoundingClientRect().height >= 44),
+  }));
+  ok('it opens', chat.open);
+  ok('it grows into a panel', chat.tall);
+  ok('Toko says something first', chat.greeted);
+  ok('the topic menu is populated', chat.topics >= 4, String(chat.topics));
+  ok('every topic clears 44px', chat.taps);
+
+  // pressing 1 asks the first topic; asking WHO ARE YOU unlocks two more
+  const before = chat.topics;
+  await page.keyboard.press('1');
+  await page.waitForTimeout(120);
+  await page.keyboard.press('Enter');            // skip the typing
+  await page.waitForSelector('.toko-chat .tc-menu button', { timeout: 4000 });
+  const after = await page.evaluate(() => ({
+    topics: document.querySelectorAll('.toko-chat .tc-menu button').length,
+    asked: document.querySelectorAll('.toko-chat .tc-log .tc-you').length,
+    answered: document.querySelectorAll('.toko-chat .tc-log .tc-me').length,
+    menuBack: !document.querySelector('.toko-chat .tc-menu').hidden,
+  }));
+  ok('a number key asks a topic', after.asked === 1, String(after.asked));
+  ok('enter skips the typing and the menu returns', after.menuBack);
+  ok('Toko answered', after.answered >= 2, String(after.answered));
+  ok('the tree opened up', after.topics > before - 1, `${before} → ${after.topics}`);
+
+  // the goodbye topic must close the counter even when its typing is skipped
+  await page.evaluate(() => {
+    const b = [...document.querySelectorAll('.toko-chat .tc-menu button')]
+      .find(x => /GO MAKE SOMETHING/.test(x.textContent));
+    b.click();
+  });
+  await page.waitForTimeout(80);
+  await page.evaluate(() => document.querySelector('.toko-chat .tc-log').click());
+  await page.waitForTimeout(1200);
+  ok('goodbye closes the counter even when skipped',
+    await page.evaluate(() => !document.querySelector('.toko-chat').classList.contains('is-open')));
+
+  await page.keyboard.press('Escape');
+  ok('board still clean after the counter', page.__errs.length === 0, page.__errs.join(' | '));
+
   // ── the sting ──────────────────────────────────────────────────────────
   console.log('\nthe sting');
   await page.click('#b-sting');

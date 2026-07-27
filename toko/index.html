@@ -135,6 +135,28 @@
   <div class="rule"></div>
 
   <section>
+    <h2>The counter</h2>
+    <p>A slim bar that sits at the top of the arcade and opens into a
+    conversation with Toko in the old Sierra idiom — a portrait, text that
+    types itself out, and a numbered list of things you are allowed to say.
+    Police Quest at the front desk.</p>
+    <p>It is a <strong>hand-written dialogue tree</strong>, not a language
+    model. No network call, ever: the kit is offline-first and zero-dependency,
+    and a workshop whose whole position is <em>go make your own</em> should not
+    answer you with rented autocomplete. Toko says what Toko wrote — in
+    <code>js/dialogue.js</code>, which is the file to edit.</p>
+    <div id="chat-demo" style="margin-top:20px"></div>
+    <p class="meta" style="margin-top:10px">1–9 pick a topic · ENTER skips the
+    typing · ESC leaves. Asking some things unlocks others.</p>
+<pre class="meta" style="margin-top:14px;background:var(--toko-panel);border:2px solid var(--toko-line);padding:16px;overflow-x:auto">&lt;script type="module"&gt;
+  import { mountChat } from './toko/js/chat.js';
+  mountChat(document.querySelector('header'));   // inserted after it
+&lt;/script&gt;</pre>
+  </section>
+
+  <div class="rule"></div>
+
+  <section>
     <h2>The glitch</h2>
     <p>Seeded, so the same hit lands the same way twice — a glitch you cannot
     reproduce is a bug wearing a costume. And an <em>event</em>, not a state:

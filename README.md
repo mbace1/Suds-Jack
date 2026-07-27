@@ -30,6 +30,10 @@ and it works.
   palette.
 - **The lockup** — face, gap, three lines, ™. The logotype stands the same
   height as the face; that relationship *is* the lockup.
+- **The counter** — a slim bar for the top of the arcade that opens into a
+  conversation with Toko in the old Sierra idiom: portrait, typewriter text, a
+  numbered list of things you can say (`mountChat()`). A hand-written dialogue
+  tree in `toko/js/dialogue.js`, not a language model — no network call, ever.
 - **The signature** — one import (`sign()`) puts the badge in a game's corner,
   under the HUD, taking no input. `toko-drop`, `paperboy`, `dropcabal` and
   `hyperdagger` are signed; `gameoflife` deliberately is not — it is the room

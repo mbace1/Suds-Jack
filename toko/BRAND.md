@@ -184,6 +184,44 @@ That relationship *is* the lockup; nothing else about it is adjustable.
 
 ---
 
+## 5b. The counter
+
+A slim bar that sits at the top of the arcade and opens into a conversation with
+Toko in the old Sierra idiom — a portrait, text that types itself out, and a
+numbered list of things you are allowed to say. Police Quest at the front desk.
+
+```html
+<script type="module">
+  import { mountChat } from './toko/js/chat.js';
+  mountChat(document.querySelector('header'));   // inserted after it
+</script>
+```
+
+**It is a hand-written dialogue tree, not a language model.** There is no network
+call here and there never will be: the kit is offline-first and zero-dependency,
+and a workshop whose whole position is *go make your own* should not answer you
+with rented autocomplete. Toko says what Toko wrote — in
+[`js/dialogue.js`](js/dialogue.js), which is the file to edit. Asking some things
+unlocks others, so the conversation grows as you dig.
+
+Rules it holds:
+
+- **1–9 picks, ENTER skips the typing, ESC leaves.** Keyboard-first, like the
+  games under it. Nothing traps you and no animation has to be watched to the
+  end.
+- **It must not push the games below the fold.** It sits *above* the cabinets,
+  so the topic menu runs two columns where there is room; stacked, seven topics
+  at the 44px tap floor made a panel nearly 600px tall.
+- **The typing is time-driven, not a chain of timeouts.** A `setTimeout` per
+  character pays the timer's minimum resolution every time, and an
+  18ms-per-character line measured out at nearly 70 — the greeting took 2.6
+  seconds to say eleven words. Every character gets a due time up front and one
+  rAF walks the schedule.
+- **Reduced motion prints the line whole.** No typing, no blink, no growth
+  animation.
+
+---
+
 ## 6. Signing a page
 
 ```html
@@ -263,6 +301,8 @@ toko/
     glitch.js     tear / split / dropout / shuffle / scanlines / carrier / hit
     util.js       seeded RNG + the resting pulse
     sting.js      the three-second sting (skippable from frame one)
+    chat.js       the counter — the conversation panel, self-contained
+    dialogue.js   what Toko says. Edit THIS to change the conversation
     signature.js  sign() — the drop-in corner badge
     masthead.js   the animated lockup for the arcade hub
     board.js      wires the board out of the shipping modules
