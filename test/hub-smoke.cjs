@@ -256,6 +256,52 @@ function check(name, cond) {
   await page.locator('.lang-btn[data-lang="en"]').click();
   check('and back to English', (await page.locator('#floor-head').textContent()) === before);
 
+  // ── the floor's shape, and whether a note knows which one it saw ──
+  check('the status line offers three shapes',
+    await page.locator('.layout-row .opt-btn').count() === 3);
+  check('and each is a 44px target', (await page.$$eval('.layout-row .opt-btn', bs =>
+    bs.map(b => b.getBoundingClientRect()))).every(r => r.width >= 44 && r.height >= 44));
+
+  const rackCols = await page.evaluate(() => __hub.debug.columns());
+  check(`the rack puts several across at this width (${rackCols})`, rackCols > 1);
+
+  await page.locator('.layout-row .opt-btn[data-layout="wide"]').click();
+  const wide = await page.evaluate(() => ({
+    cols: __hub.debug.columns(),
+    art: !!document.querySelector('.cab .art')?.getBoundingClientRect().width,
+    w: Math.round(document.querySelector('.cab .art').getBoundingClientRect().width),
+  }));
+  check(`wide gives the cover the row to itself (${wide.w}px)`, wide.cols === 1 && wide.w > 380);
+
+  await page.locator('.layout-row .opt-btn[data-layout="list"]').click();
+  const list = await page.evaluate(() => ({
+    cols: __hub.debug.columns(),
+    marquee: document.querySelector('.cab .marquee')?.getBoundingClientRect().height ?? 0,
+    plays: document.querySelectorAll('.cab .btn.play').length,
+    tall: Math.round(document.getElementById('cabinets').getBoundingClientRect().height),
+  }));
+  check(`list drops the covers entirely and keeps every Play (${list.plays})`,
+    list.marquee === 0 && list.plays > 0);
+  check(`and fits the whole floor in a screen or so (${list.tall}px)`, list.tall < 900);
+
+  await page.reload({ waitUntil: 'networkidle' });
+  check('the shape survives a reload',
+    await page.evaluate(() => document.documentElement.dataset.layout) === 'list');
+
+  // and the note carries it. A note about a layout nobody can tell you was in
+  // force is a note about nothing.
+  await page.evaluate(u => __hub.feedback.setEndpoint(u), `${base}/collect`);
+  await page.locator('.cab').first().locator('.btn.ghost').click();
+  await page.locator('.fb-text').fill('the covers are the reason I came');
+  await page.locator('.sheet .btn.play').click();
+  await page.waitForFunction(() => document.querySelector('.fb-said'), null, { timeout: 5000 });
+  const ctx = collected[collected.length - 1];
+  check(`a note records the shape and language it was written in (${ctx?.layout}/${ctx?.lang})`,
+    ctx?.layout === 'list' && ctx?.lang === 'en');
+  await page.locator('.sheet .btn.ghost').click();
+  collected.length = 0;
+  await page.evaluate(() => { __hub.debug.setLayout('rack'); localStorage.removeItem('sudsJackHub'); });
+
   // ── feedback: what the note is ABOUT ──
   // The kinds are ordered per project, and that ordering is the question each
   // project is asking — so it has to survive, not quietly fall back to a fixed
@@ -463,6 +509,37 @@ function check(name, cond) {
     shown.every(([id, text]) => text === `v${versions[id].v}`));
   check('a project with a VERSIONS.md reports its release number, not its token',
     versions.gameoflife.from === 'VERSIONS.md');
+
+  // ── what moved since you were last here ──
+  // A first visit has nothing to compare against, and marking all twelve as new
+  // would say nothing while looking like it said something.
+  check('a first visit is not told everything is new',
+    await page.locator('.fresh').count() === 0);
+
+  // A visitor who was here when the numbers were lower. The snapshot is planted
+  // by an init script rather than by evaluate(): navigating away fires
+  // pagehide, which is exactly when the page writes its OWN snapshot, so an
+  // evaluate-then-reload would be clobbered by the code under test.
+  const older = { tokodrop: 1, hyperdagger: 1, gameoflife: 1 };
+  const back = await browser.newContext({ viewport: { width: 1100, height: 900 } });
+  await back.addInitScript(seed => {
+    try { localStorage.setItem('sudsJackHubSeen', seed); } catch { /* private mode */ }
+  }, JSON.stringify(older));
+  const rp = await back.newPage();
+  await rp.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+  await rp.waitForFunction(() => document.querySelectorAll('.ver').length
+    && [...document.querySelectorAll('.ver')].some(v => v.textContent), null, { timeout: 5000 });
+  const marks = await rp.$$eval('.fresh', ns =>
+    ns.map(n => [n.closest('.cab').querySelector('.ver').dataset.game, n.textContent]));
+  const ids = marks.map(m => m[0]);
+  check(`coming back marks what moved (${ids.length}: ${ids.slice(0, 4)})`, ids.length > 0);
+  check('the three it had already seen at a lower number are among them',
+    Object.keys(older).every(id => !versions[id] || ids.includes(id)));
+  check('and a project it had never seen reads as new, not updated',
+    marks.every(([id, label]) => (id in older) ? label !== 'new' : label === 'new'));
+  const head = await rp.locator('#floor-head').textContent();
+  check(`the heading says how many (${head.split('·')[1]?.trim()})`, head.includes(String(ids.length)));
+  await back.close();
 
   // ── a controller ──
   // No real pad in a headless browser, so stand one in front of the Gamepad
