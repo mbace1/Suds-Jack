@@ -63,6 +63,52 @@ node test/hub-smoke.cjs      # 31 checks (needs playwright + its Chromium)
 
 ---
 
+## `toko/` — Toko Midori Games™, the brand
+
+The identity of the workshop. Open **`toko/index.html`** for the brand board:
+every mark running live, the lockups, the sticker sheet, a glitch lab, the
+sting, and SVG downloads.
+
+Everything is **drawn in code from one geometry table** — there is no image
+asset in this folder, and the SVG logo files are generated from the same arcs
+the canvas strokes, so the file you hand a printer and the thing on screen
+cannot drift apart. No build step, no dependencies: copy `toko/` next to a game
+and it works.
+
+- **The face** — four fat round-capped arcs and two stems. The mouth is two
+  nested arcs opening up; each eye is one arc opening down with a stem dropped
+  from the inside of its crown, and that stem is what cuts the two slots that
+  make an eye an eye. Minimum size 44px, below which the slots close.
+- **Two colours** — black `RGB(0,0,0)` and magenta `RGB(240,2,127)` / `#F0027F`.
+  Both process primaries, so it prints anywhere with nothing to match. White is
+  the paper, not a colour. The nine-colour sticker sheet is a print run, not a
+  palette.
+- **The lockup** — face, gap, three lines, ™. The logotype stands the same
+  height as the face; that relationship *is* the lockup.
+- **The counter** — a slim bar for the top of the arcade that opens into a
+  conversation with Toko in the old Sierra idiom: portrait, typewriter text, a
+  numbered list of things you can say (`mountChat()`). A hand-written dialogue
+  tree in `toko/js/dialogue.js`, not a language model — no network call, ever.
+- **The signature** — one import (`sign()`) puts the badge in a game's corner,
+  under the HUD, taking no input. `toko-drop`, `paperboy`, `dropcabal` and
+  `hyperdagger` are signed; `gameoflife` deliberately is not — it is the room
+  where Toko takes the mask off.
+
+Created by **美鳥十湖** — *Toko Midori*, The Game Creator.
+
+Two caveats worth knowing: the face geometry is measured off the master artwork
+rather than lifted from the original vector file, and **the logotype typeface is
+the owner's licence and is not in this repo** — register it as the family
+`Toko Grotesk` and every lockup picks it up. The board says so out loud until
+you do.
+
+Rules and construction notes: **`toko/BRAND.md`**. Gate:
+`node toko/test/brand.cjs` (Playwright).
+
+> **GO MAKE YOUR OWN.**
+
+---
+
 ## Demos
 
 ### `goo-snowman.html`
