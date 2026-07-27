@@ -374,6 +374,52 @@ export const ART = {
   },
 
   // The Game of Life: its own treeline, under its own sun
+  // Radio Free Helsinki: half a codec screen. Toko's gel on the left reading
+  // the wire, the feed itself on the right, and ONE amber line where a
+  // bulletin has been decoded — amber is the only warm colour on the dial, and
+  // it never shows up until the listener asks what the wording was doing.
+  codec(g, a) {
+    g.p(0, 0, W, H, '#04070a');
+    g.p(4, 5, 120, 62, '#081218');
+
+    // the portrait frame, with codec corner brackets
+    g.p(8, 9, 38, 54, '#0a1a1e');
+    for (const [x, y, w, h] of [[8, 9, 38, 1], [8, 62, 38, 1], [8, 9, 1, 54], [45, 9, 1, 54]])
+      g.p(x, y, w, h, '#1c4a38');
+    for (const [x, y] of [[8, 9], [42, 9], [8, 59], [42, 59]]) {
+      g.p(x, y, 4, 1, '#7dffb2'); g.p(x === 8 ? x : x + 3, y, 1, 4, '#7dffb2');
+    }
+
+    // Toko's gel — the teal blob from toko-drop, sat in the frame
+    g.disc(27, 34, 13, '#00806b');
+    g.disc(27, 33, 12, '#00ccaa');
+    g.p(22, 30, 3, 5, '#08110f');
+    g.p(30, 30, 3, 5, '#08110f');
+    g.p(23, 28, 2, 2, '#7ff0dd');
+    g.p(20, 44, 15, 15, '#00806b');           // shoulders, joined to the head
+
+    // the feed: one line a bulletin, scrolling past
+    const runs = [30, 22, 34, 26, 31, 19];
+    runs.forEach((w, i) => {
+      const y = 11 + i * 8;
+      const decoded = i === 2;
+      g.p(51, y, 2, 4, decoded ? '#ffb43a' : '#3f9a6e');
+      g.p(55, y, w, 2, decoded ? '#ffb43a' : '#7dffb2');
+      g.p(55, y + 3, Math.round(w * 0.6), 1, '#1c4a38');
+    });
+
+    // the band, in the cabinet's own colour
+    let py = 61;
+    for (let x = 52; x < 121; x += 2) {
+      const y = 61 + Math.round(Math.sin(x * 0.5) * Math.sin(x * 0.13) * 4);
+      g.line(x - 2, py, x, y, a);
+      py = y;
+    }
+
+    // the glass
+    for (let y = 5; y < 67; y += 2) g.p(4, y, 120, 1, 'rgba(4,7,10,0.34)');
+  },
+
   treeline(g, a) {
     g.bands(['#7fb2d9', '#93bfdd', '#cfe3ea', '#cfe3ea']);
     g.disc(96, 18, 9, '#f2d98c');
