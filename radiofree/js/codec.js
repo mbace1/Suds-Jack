@@ -4,7 +4,7 @@
 // sequencer cycles weighted-random shots:
 //   ~30% face   — large masked Toko fills the upper frame
 //   ~20% graphic — the story's chart / diagram
-//   ~50% broll  — low-poly Helsinki footage (random from 8 panels)
+//   ~50% broll  — low-poly Helsinki footage (prefers story.broll)
 // DECODE still mutates whichever shot is showing.
 
 import { PixelScreen, shade, mix } from './screen.js?v=6';
@@ -23,9 +23,9 @@ const WEIGHTS = { face: 0.30, graphic: 0.20, broll: 0.50 };
 const CUT_MIN = 2.4, CUT_MAX = 4.0;
 
 function pickBroll(story) {
-  // prefer story.broll 40% of the time, otherwise random from full pool
-  if (story.broll && Math.random() < 0.4) return story.broll;
-  const pool = BROLL_KEYS || ['esplanadi', 'kamppi', 'harbour', 'gulf'];
+  // Prefer the story's assigned panel most of the time so new art is visible
+  if (story.broll && Math.random() < 0.85) return story.broll;
+  const pool = BROLL_KEYS || ['esplanadi', 'kamppi', 'harbour', 'gulf', 'cathedral', 'katu', 'mannerheim', 'station'];
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
@@ -54,7 +54,6 @@ export class Post {
     this.wave = new Array(31).fill(0.2);
     this.live = false;
     this.silent = false;
-    // cut state
     this.shot = { type: 'graphic' };
     this.cutT = 0;
     this.nextCut = CUT_MIN + Math.random() * (CUT_MAX - CUT_MIN);
@@ -107,10 +106,8 @@ export class Post {
     }
 
     if (faceShot) {
-      // large masked Toko fills the upper frame
       this.toko.draw(this.panel, this.signal, true);
       s.ctx.drawImage(this.panel.canvas, VF.x, VF.y);
-      // small portrait still present but dimmed
       this.toko.draw(this.portrait, this.signal * 0.55, false);
       s.ctx.globalAlpha = 0.45;
       s.ctx.drawImage(this.portrait.canvas, PF.x, PF.y);
