@@ -21,6 +21,15 @@ function pen(ctx) {
   return { p, disc, line, bands };
 }
 
+// Blend two hex colours. Box-art skies are ramps, not bands, and a neon edge is
+// a colour walking toward its accent — both want this rather than a palette.
+const mix = (c1, c2, t) => {
+  const k = Math.max(0, Math.min(1, t));
+  const ch = (c, i) => parseInt(c.slice(1 + i * 2, 3 + i * 2), 16);
+  const v = i => Math.round(ch(c1, i) + (ch(c2, i) - ch(c1, i)) * k).toString(16).padStart(2, '0');
+  return `#${v(0)}${v(1)}${v(2)}`;
+};
+
 export const ART = {
   // Suds Jack: the well, in vectors, seen straight down
   tube(g, a) {
@@ -157,18 +166,133 @@ export const ART = {
     g.p(28, 40, 4, 8, a); g.p(96, 46, 4, 8, a);
   },
 
-  // Neon Ronin: the arc of a cut
+  // Neon Ronin: the box-art shot. A gate framing a stair that climbs away in
+  // one-point perspective to whoever is waiting at the top, the ronin at the
+  // foot of it with his back to us, a planet sitting low behind the whole
+  // thing — Phantasy Star III's composition, lit in neon instead of oils.
   slash(g, a) {
-    g.p(0, 0, W, H, '#0a0616');
-    for (let x = 0; x < W; x += 6) g.p(x, 48 + (x % 12 ? 0 : -4), 4, H - 48, '#1b1030');
-    for (let i = 0; i < 26; i++) {
-      const t = -0.5 + i / 26 * 2.2;
-      g.p(64 + Math.cos(t) * 46, 34 + Math.sin(t) * 30, 3, 3, i % 3 ? a : '#ffd6f2');
+    const VX = 64, VY = 21;                       // the vanishing point
+    const yAt = t => VY + 3 + 46 * Math.pow(t, 1.45);
+    const halfAt = t => 6 + 36 * Math.pow(t, 1.25);
+
+    // sky: violet overhead ramping to hot magenta down at the horizon
+    for (let y = 0; y < H; y++) g.p(0, y, W, 1, mix('#120726', '#5e1150', Math.pow(y / H, 1.4)));
+    for (let i = 0; i < 34; i++) {                // stars, and one thing falling
+      g.p((i * 47) % W, (i * 29) % 40, 1, 1, i % 5 ? '#6a4a86' : '#e8d9f2');
     }
-    g.p(52, 22, 6, 26, '#2ae8e0');          // the ronin
-    g.p(53, 16, 5, 5, '#f2f2e8');
-    g.line(58, 26, 88, 12, '#ffffff');
-    for (const [x, y] of [[100, 20], [18, 30], [104, 52]]) g.p(x, y, 6, 6, '#e8e05a');
+    g.line(103, 5, 116, 15, '#c9a8e8');
+    g.p(116, 15, 2, 2, '#f2e4ff');
+
+    // the planet, huge and low, most of it out of frame
+    g.disc(12, 46, 25, '#341856');
+    for (let dy = -25; dy <= 25; dy++) {          // one lit limb, facing the glow
+      g.p(12 + Math.floor(Math.sqrt(625 - dy * dy)) - 2, 46 + dy, 2, 1, '#a84c96');
+    }
+
+    // the glow at the head of the stair — wide and shallow, so it sits on the
+    // horizon rather than reading as a moon behind the figure
+    for (let r = 20; r > 0; r--) {
+      const c = mix('#5e1150', a, 0.05 + (20 - r) * 0.021);
+      for (let dy = -r; dy <= r; dy++) {
+        const dx = Math.floor(Math.sqrt(r * r - dy * dy) * 1.5);
+        g.p(VX - dx, VY + dy * 0.8, dx * 2 + 1, 1, c);
+      }
+    }
+
+    // the stair as one solid mass, then every riser lit along its front edge
+    for (let y = VY + 3; y < H; y++) {
+      const hw = halfAt(Math.pow((y - VY - 3) / 46, 1 / 1.45));
+      g.p(VX - hw, y, hw * 2, 1, '#150a26');
+    }
+    for (let i = 1; i <= 12; i++) {
+      const t = i / 12, y = yAt(t), hw = halfAt(t);
+      g.p(VX - hw, y, hw * 2, 1, mix('#3a1440', a, 0.22 + t * 0.62));
+      if (t > 0.4) g.p(VX - hw, y + 1, hw * 2, 1, '#280e2e');
+    }
+    // two thin beams down the rails. The box art fans light down the stair;
+    // at this size anything thicker than a pixel stops being light and starts
+    // being a second staircase.
+    for (const s of [-1, 1]) {
+      for (let i = 0; i <= 40; i++) {
+        const t = i / 40, y = yAt(t), x = VX + s * halfAt(t);
+        g.p(x, y, 1, 1, mix('#2ae8e0', '#0e4a52', t));
+      }
+      g.p(VX + s * halfAt(0.5), yAt(0.5), 2, 2, '#bffff8');
+    }
+
+    // whoever is waiting up there, and the ring of orbs hanging over them
+    g.p(VX - 2, VY - 7, 4, 9, '#bff6f0');
+    g.p(VX - 5, VY - 5, 3, 1, '#7ff2ea');
+    g.p(VX + 4, VY - 5, 3, 1, '#7ff2ea');
+    g.p(VX - 1, VY - 10, 2, 3, '#eafffd');
+    for (let i = 0; i < 5; i++) g.p(VX - 8 + i * 4, VY - 15 - (i % 2 ? 2 : 0), 3, 3, i % 2 ? a : '#ff8fd8');
+
+    // The ronin, back to us, at the foot of the stair. The temptation is to
+    // make him a black silhouette, and that is exactly what does not work: the
+    // stair behind him is already dark, so he disappears into it. The box art
+    // gets round this by LIGHTING the cloak — a pale mass against dark steps —
+    // so this does the same in violet, with his own colour down one edge and
+    // the gate's cyan down the other.
+    // He is cropped by the bottom of the frame, and that crop is doing real
+    // work: a figure standing fully inside a converging staircase just reads as
+    // a runner laid down the middle of it. Cut off at the shoulders' height he
+    // is unmistakably in front of the scene, the stair stays whole behind him,
+    // and the shape left to read is only head-notch-shoulders — which is the
+    // part a person recognises anyway.
+    const cx = 58, RIM = mix('#553492', a, 0.95), COLD = '#8ff0f6';
+    for (let i = 0; i < 14; i++) {                             // the cloak
+      const y = 58 + i, w = 26 + i * 1.1, x0 = cx - w / 2;
+      g.p(x0, y, w, 1, mix('#4d2f85', '#2b1a4e', i / 13));     // falling into shadow
+
+      g.p(x0 + w * 0.28, y, 1, 1, '#33205c');                  // two folds hanging
+      g.p(x0 + w * 0.7, y, 1, 1, '#33205c');
+      g.p(x0, y, 2, 1, RIM);
+      g.p(x0 + w - 2, y, 2, 1, '#5fd4de');
+    }
+    g.p(cx - 12, 54, 24, 4, '#4d2f85');                        // shoulders, narrower
+    g.p(cx - 11, 53, 22, 1, RIM);                              // the step that reads
+    g.p(cx - 12, 54, 2, 4, RIM);
+    g.p(cx + 10, 54, 2, 4, '#5fd4de');
+    g.p(cx - 3, 52, 6, 2, '#160c2c');                          // neck
+    g.p(cx - 4, 44, 8, 8, '#160c2c');                          // head
+    g.p(cx - 3, 43, 6, 1, '#160c2c');                           // crown, rounded off
+    g.p(cx - 3, 42, 6, 1, RIM);
+    g.p(cx - 4, 43, 1, 1, RIM);
+    g.p(cx + 3, 43, 1, 1, COLD);
+    g.p(cx - 5, 44, 1, 8, RIM);
+    g.p(cx + 4, 44, 1, 8, COLD);
+    g.p(cx - 1, 40, 3, 3, '#160c2c');                          // the knot
+    g.p(cx - 1, 39, 3, 1, RIM);
+    g.line(cx + 10, 55, cx + 19, 48, '#3b2368');               // the sword arm
+    g.line(cx + 10, 54, cx + 19, 47, COLD);
+    g.p(cx + 19, 46, 3, 3, '#eafffd');                         // the hand on it
+    g.line(cx + 21, 47, 106, 13, '#1a8f96');                   // the raised blade
+    g.line(cx + 21, 46, 106, 12, '#eafffd');
+    g.p(105, 10, 3, 3, '#ffffff');
+
+    // the gate, last, so it frames everything: two piers and the span, with the
+    // neon on the inside edge where the light would actually spill from
+    for (let y = 0; y < H; y++) {
+      // stone, and it has to be lighter than the sky or the gate is just a
+      // cyan outline floating in the dark
+      const stone = y % 8 === 0 ? '#3d2452' : (y % 8 === 7 ? '#150b22' : '#26153a');
+      g.p(0, y, 13, 1, stone);
+      g.p(115, y, 13, 1, stone);
+      g.p(6, y, 1, 1, y % 16 < 8 ? '#150b22' : '#26153a');     // a course, offset
+      g.p(121, y, 1, 1, y % 16 < 8 ? '#26153a' : '#150b22');
+      g.p(13, y, 1, 1, '#2ae8e0');
+      g.p(114, y, 1, 1, '#2ae8e0');
+      g.p(14, y, 1, 1, '#0d3038');
+      g.p(113, y, 1, 1, '#0d3038');
+    }
+    for (let x = 13; x < 115; x++) {
+      const ay = 4 + 16 * Math.pow((x - 64) / 51, 2);
+      for (let y = 0; y < ay; y++) {
+        g.p(x, y, 1, 1, (x + Math.round(ay)) % 9 === 0 ? '#3d2452' : '#26153a');
+      }
+      g.p(x, ay, 1, 1, '#2ae8e0');
+      g.p(x, ay + 1, 1, 1, '#0d3038');
+    }
   },
 
   // The Game of Life: its own treeline, under its own sun
