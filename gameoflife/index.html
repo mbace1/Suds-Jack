@@ -12,6 +12,8 @@
   <meta property="og:description" content="Small games and stories that always lead back outside. Play one, then go out and find the real thing.">
   <meta property="og:url" content="https://mbace1.github.io/Suds-Jack/gameoflife/">
   <meta name="twitter:card" content="summary">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23141311'/%3E%3Cpath d='M8 13C8 8 10 4 14 3 13 8 11 11 8 13Z' fill='%238faf6a'/%3E%3Cpath d='M8 13C8 10 6 7 3 6 4 10 6 12 8 13Z' fill='%235f7a4a'/%3E%3C/svg%3E">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -225,5 +227,14 @@
 <body>
   <main id="app"></main>
   <script type="module" src="js/main.js?v=38"></script>
+  <script>
+    // Offline matters more here than in most apps: this one sends you outdoors,
+    // and outdoors is where the signal stops. Registered on https only (or with
+    // ?sw=1) so local dev and the smoke gate never get a stale shell.
+    if ('serviceWorker' in navigator
+        && (location.protocol === 'https:' || location.search.includes('sw=1'))) {
+      addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
 </body>
 </html>

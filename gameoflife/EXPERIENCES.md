@@ -83,6 +83,14 @@ inventing a look. Two rules worth knowing before you spend an afternoon:
   collapses into blobs or dashes. Use `bayer(x >> 1, y >> 1)` — or just dither
   per pixel inside a `cached()` layer, where it is free.
 
+## Don't forget the worker
+
+`sw.js` precaches every file by name so the app works offline. Add your id to
+its `SHELL` list, and bump its `VERSION`/`V` with the rest of the `?v=N`
+cache-busters. `check_levels.mjs` fails if you forget — but forgetting means
+your experience is the one thing that does not work on a trail, which is the
+opposite of the point.
+
 ## Shipping
 
 Develop on a `claude/*` branch → gate → merge to `main` → re-gate → copy
