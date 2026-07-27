@@ -8,8 +8,8 @@
 // flattering way are all part of the same job, and decoding the text without
 // decoding the chart would teach half the lesson.
 
-import { PAL } from './palette.js?v=3';
-import { mix, shade, bayer } from './screen.js?v=3';
+import { PAL } from './palette.js?v=4';
+import { mix, shade, bayer } from './screen.js?v=4';
 
 // portrait: the post is 9:16-ish and this fills its upper two thirds
 export const PANEL_W = 128, PANEL_H = 152;
