@@ -32,7 +32,7 @@ export function pulse(t, { every = 7, len = 0.3, offset = 0 } = {}) {
 // cadence and stays square and harsh; these two are the resting body of the
 // mark and they are smooth.
 
-const smooth = (p) => p * p * (3 - 2 * p);
+export const smooth = (p) => p * p * (3 - 2 * p);
 
 // The blink. It closes, DWELLS shut, and opens slower than it closed — that
 // asymmetry is the whole thing: a symmetrical blink reads awake and a fast one
@@ -53,4 +53,18 @@ export function blink(t, opts = {}) {
 // ever perfectly still, and nothing in one is ever quick either.
 export function drift(t, { period = 9, phase = 0 } = {}) {
   return Math.sin((t / period + phase) * Math.PI * 2);
+}
+
+// The eyes OPENING. Toko's logo is the anime closed eye — smiling with them
+// shut — so the resting face is closed and this is the event: every so often
+// he looks up, holds it a moment, and closes them again. It is `blink`'s
+// mirror image and it keeps the same unhurried shape, opening slower than it
+// shuts because that is the direction the weight falls.
+export function glance(t, opts = {}) {
+  const { every = 11, open = 0.42, hold = 0.9, shut = 0.3, offset = 0 } = opts;
+  const u = (((t + offset) % every) + every) % every;
+  if (u >= open + hold + shut) return 0;
+  if (u < open) return smooth(u / open);
+  if (u < open + hold) return 1;
+  return 1 - smooth((u - open - hold) / shut);
 }

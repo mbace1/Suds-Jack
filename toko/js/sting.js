@@ -87,10 +87,12 @@ function frame(scr, t, W, H) {
       ctx.scale(1, blink);
       growArc(ctx, 0, 0, e.outer.r, e.outer.a0, e.outer.a1, pe);
       ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.moveTo(0, e.stem.y0 - e.cy);
-      ctx.lineTo(0, (e.stem.y0 + (e.stem.y1 - e.stem.y0) * clamp((pe - 0.4) / 0.6)) - e.cy);
-      ctx.stroke();
+      for (const s2 of [-1, 1]) {               // the legs grow after the crown
+        ctx.beginPath();
+        ctx.moveTo(s2 * e.outer.r, 0);
+        ctx.lineTo(s2 * e.outer.r, (e.legs.y - e.cy) * clamp((pe - 0.4) / 0.6));
+        ctx.stroke();
+      }
       ctx.restore();
     }
   }

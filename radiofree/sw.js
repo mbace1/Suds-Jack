@@ -23,7 +23,7 @@ const SHELL = [
   // The Toko signature. It is a cross-directory import, so it has to be named
   // here or the badge becomes a network request on an offline boot — only the
   // entry URL carries the token, the rest are plain relative imports.
-  '../toko/js/signature.js?v=1',
+  '../toko/js/signature.js?v=2',
   ...['surface', 'palette', 'face', 'util', 'glitch'].map(m => `../toko/js/${m}.js`),
   './',
   './index.html',
