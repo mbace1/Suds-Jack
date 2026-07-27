@@ -12,6 +12,8 @@
   <meta property="og:description" content="Small games and stories that always lead back outside. Play one, then go out and find the real thing.">
   <meta property="og:url" content="https://mbace1.github.io/Suds-Jack/gameoflife/">
   <meta name="twitter:card" content="summary">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23141311'/%3E%3Cpath d='M8 13C8 8 10 4 14 3 13 8 11 11 8 13Z' fill='%238faf6a'/%3E%3Cpath d='M8 13C8 10 6 7 3 6 4 10 6 12 8 13Z' fill='%235f7a4a'/%3E%3C/svg%3E">
   <style>
     /* A quiet research terminal: cold, sparse, monospace, with the picture seen
@@ -29,7 +31,19 @@
       display: flex; justify-content: center;
       padding: 40px 16px 48px;
     }
-    #app { width: 100%; max-width: 560px; }
+    #app {
+      width: 100%; max-width: 560px;
+      /* the page is a column the height of the screen, so the content below
+         the title floats to the middle instead of packing against the top
+         (main's iteration-33 centring, re-hung on the terminal's own markup:
+         the offering group floats, the status line holds the bottom) */
+      min-height: calc(100vh - 88px);
+      display: flex; flex-direction: column;
+    }
+    .offer { margin-top: auto; }
+    .hub-footer { margin-bottom: auto; }
+    .exp { margin-top: 0; }
+    .back-btn { margin-bottom: auto; }
     /* keyboard players need to see where they are; the UA ring is too faint
        against this background */
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
@@ -193,6 +207,6 @@
   <main id="app"></main>
   <!-- the arcade shell: a home button and a controller way back -->
   <script type="module" src="../hub/shell.js?v=6"></script>
-  <script type="module" src="js/main.js?v=39"></script>
+  <script type="module" src="js/main.js?v=40"></script>
 </body>
 </html>

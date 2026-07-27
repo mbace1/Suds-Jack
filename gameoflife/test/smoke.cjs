@@ -449,6 +449,75 @@ async function tapPixel(page, x, y) {
   check(`every experience opens with words, not a string key${mute.length ? ` — ${mute}` : ''}`, mute.length === 0);
   await page.evaluate(() => __gol.debug.showHub());
 
+  // whale: ride the body down through five stages, then the choice
+  await page.evaluate(() => __gol.debug.start('whale'));
+  check('whale intro shown', (await page.locator('.exp-text').textContent()).includes('grey whale'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Follow it down' }).click();
+  for (let i = 0; i < 4; i++) {
+    const stay = page.locator('.exp-buttons .btn', { hasText: 'Stay' });
+    if (await stay.count() === 0) break;
+    await stay.click();
+  }
+  check('whale reaches the bone farmers',
+    (await page.locator('.exp-text').textContent()).includes('Osedax'));
+  await page.locator('.exp-buttons .btn', { hasText: 'It is a beginning' }).click();
+  check('whale truth is that it is both',
+    (await page.locator('.exp-text').textContent()).includes('fifty years'));
+  await page.locator('.back-btn').click();
+
+  // pando: pick four trees that look separate; the ground disagrees
+  await page.evaluate(() => __gol.debug.start('pando'));
+  check('pando intro shown', (await page.locator('.exp-text').textContent()).includes('Fishlake'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Walk in' }).click();
+  const pbox = await page.locator('.pixel-screen').boundingBox();
+  const pTap = (x, y) => page.mouse.click(pbox.x + (x + 0.5) / 192 * pbox.width,
+                                          pbox.y + (y + 0.5) / 128 * pbox.height);
+  // coordinates mirror TREES in experiences/pando.js (x, base = 84 + d*26)
+  await pTap(17, 75);                                   // tree 0, mid-trunk
+  check('pando counts the first tree', (await page.locator('.exp-text').textContent()).includes('1/4'));
+  await pTap(17, 75);
+  check('pando notices a repeat', (await page.locator('.exp-text').textContent()).includes('already chose'));
+  for (const [x, y] of [[35, 70], [53, 90], [71, 60]]) await pTap(x, y);
+  await page.waitForTimeout(1100);
+  check('pando reveals one organism',
+    (await page.locator('.exp-text').textContent()).includes('one tree'));
+  await page.locator('.back-btn').click();
+
+  // murmur: the flock is a live simulation, so grabbing a bird takes a few
+  // tries by design — tap around the roost until one is caught
+  await page.evaluate(() => __gol.debug.start('murmur'));
+  check('murmur intro shown', (await page.locator('.exp-text').textContent()).includes('reedbed'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Watch' }).click();
+  const mbox = await page.locator('.pixel-screen').boundingBox();
+  await page.mouse.click(mbox.x + mbox.width * 0.04, mbox.y + mbox.height * 0.95);   // nowhere near
+  check('murmur says the flock will not hold still',
+    (await page.locator('.exp-text').textContent()).includes('will not hold still'));
+  let caught = false;
+  for (let i = 0; i < 14 && !caught; i++) {
+    await page.mouse.click(mbox.x + mbox.width * (0.42 + (i % 4) * 0.05),
+                           mbox.y + mbox.height * (0.34 + (i % 3) * 0.07));
+    caught = (await page.locator('.exp-text').textContent()).includes('You have it');
+    if (!caught) await page.waitForTimeout(120);
+  }
+  check('murmur lets you hold one bird', caught);
+  await page.locator('.back-btn').click();
+
+  // eel: five stops from Aristotle's mud to the Sargasso, then the blank
+  await page.evaluate(() => __gol.debug.start('eel'));
+  check('eel intro shown', (await page.locator('.exp-text').textContent()).includes('ditch'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Look closer' }).click();
+  for (let i = 0; i < 5; i++) {
+    const go = page.locator('.exp-buttons .btn', { hasText: 'Go on' });
+    if (await go.count() === 0) break;
+    await go.click();
+  }
+  check('eel reaches the silver migration',
+    (await page.locator('.exp-text').textContent()).includes('turns silver'));
+  await page.locator('.exp-buttons .btn', { hasText: 'And then?' }).click();
+  check('eel truth is that nobody has seen it',
+    (await page.locator('.exp-text').textContent()).includes('has ever found an egg'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');
@@ -541,6 +610,29 @@ async function tapPixel(page, x, y) {
   await page.evaluate(() => __gol.debug.setLang('ja'));
   check('html lang tracks the language', await page.evaluate(() => document.documentElement.lang) === 'ja');
   await page.evaluate(() => __gol.debug.setLang('en'));
+
+  // Every experience must be moving on its FIRST screen — a still picture reads
+  // as a broken page while you decide whether to stay. Thirteen of the
+  // twenty-two used to open frozen. This is easy to undo by accident (wrapping
+  // a scene in scr.cached without lifting the live layer out), so it is gated.
+  const frozen = [];
+  const roster = (await page.evaluate(() => __gol.debug.ids())).map(e => e.id ?? e);
+  check('the roster is reachable for testing', roster.length >= 22);
+  for (const id of roster) {
+    await page.evaluate(i => __gol.debug.start(i), id);
+    await page.waitForTimeout(120);
+    // three samples at IRREGULAR gaps: two evenly spaced samples can land on
+    // the same phase of a slow periodic motion and call a live scene frozen
+    const shots = [];
+    for (const gap of [0, 270, 610]) {
+      if (gap) await page.waitForTimeout(gap);
+      shots.push(await page.evaluate(() => document.querySelector('.pixel-screen').toDataURL()));
+    }
+    if (shots[0] === shots[1] && shots[1] === shots[2]) frozen.push(id);
+  }
+  check(`every first screen is alive${frozen.length ? ' — frozen: ' + frozen.join(' ') : ''}`,
+    frozen.length === 0);
+  await page.evaluate(() => __gol.debug.showHub());
 
   // Legibility, measured rather than eyeballed. The muted-on-dark palette is
   // the house style and it drifted into genuinely unreadable (1.92:1 on the

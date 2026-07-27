@@ -44,7 +44,11 @@ for (const code of CODES) {
 const main = readFileSync(path.join(JS, 'main.js'), 'utf8');
 const registry = (main.match(/const REGISTRY = \[([^\]]+)\]/) ?? [, ''])[1]
   .split(',').map(s => s.trim()).filter(Boolean);
-const files = readdirSync(path.join(JS, 'experiences')).filter(f => f.endsWith('.js'));
+// `_name.js` is the convention for a file in here that is NOT an experience —
+// main added `_template.js` as the starting point for writing one. It is
+// deliberately unregistered and has no strings, so it is not held to either.
+const files = readdirSync(path.join(JS, 'experiences'))
+  .filter(f => f.endsWith('.js') && !f.startsWith('_'));
 
 const experiences = files.map(f => {
   const src = readFileSync(path.join(JS, 'experiences', f), 'utf8');

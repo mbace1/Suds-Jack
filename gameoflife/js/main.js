@@ -7,38 +7,43 @@
 // Adding an experience = one module in js/experiences/ + one REGISTRY entry
 // (with a `kind`) + its strings in i18n.js. Nothing else changes.
 
-import { t, setLang, getLang, LANGS } from './i18n.js?v=39';
-import { PAL, setAccent, accentRgb } from './palette.js?v=39';
-import { setAccentAll, unwarp, liveCount } from './crt.js?v=39';
-import * as store from './storage.js?v=39';
-import * as audio from './audio.js?v=39';
-import { pickInterlude, isEvening, guessHemisphere } from './nature.js?v=39';
-import * as outbound from './feedback.js?v=39';
-import { aqueduct } from './experiences/aqueduct.js?v=39';
-import { forest } from './experiences/forest.js?v=39';
-import { tern } from './experiences/tern.js?v=39';
-import { cup } from './experiences/cup.js?v=39';
-import { hanami } from './experiences/hanami.js?v=39';
-import { berry } from './experiences/berry.js?v=39';
-import { stars } from './experiences/stars.js?v=39';
-import { maple } from './experiences/maple.js?v=39';
-import { plate } from './experiences/plate.js?v=39';
-import { seam } from './experiences/seam.js?v=39';
-import { dots } from './experiences/dots.js?v=39';
-import { glass } from './experiences/glass.js?v=39';
-import { wait } from './experiences/wait.js?v=39';
-import { lichen } from './experiences/lichen.js?v=39';
-import { cloud } from './experiences/cloud.js?v=39';
-import { ice } from './experiences/ice.js?v=39';
-import { trace } from './experiences/trace.js?v=39';
-import { gears } from './experiences/gears.js?v=39';
-import { cairn } from './experiences/cairn.js?v=39';
-import { downhill } from './experiences/downhill.js?v=39';
-import { tether } from './experiences/tether.js?v=39';
-import { hedge } from './experiences/hedge.js?v=39';
-import { seed } from './experiences/seed.js?v=39';
+import { t, setLang, getLang, LANGS } from './i18n.js?v=40';
+import { PAL, setAccent, accentRgb } from './palette.js?v=40';
+import { setAccentAll, unwarp, liveCount } from './crt.js?v=40';
+import * as store from './storage.js?v=40';
+import * as audio from './audio.js?v=40';
+import { pickInterlude, isEvening, guessHemisphere } from './nature.js?v=40';
+import * as outbound from './feedback.js?v=40';
+import { aqueduct } from './experiences/aqueduct.js?v=40';
+import { forest } from './experiences/forest.js?v=40';
+import { tern } from './experiences/tern.js?v=40';
+import { cup } from './experiences/cup.js?v=40';
+import { hanami } from './experiences/hanami.js?v=40';
+import { berry } from './experiences/berry.js?v=40';
+import { stars } from './experiences/stars.js?v=40';
+import { maple } from './experiences/maple.js?v=40';
+import { plate } from './experiences/plate.js?v=40';
+import { seam } from './experiences/seam.js?v=40';
+import { dots } from './experiences/dots.js?v=40';
+import { glass } from './experiences/glass.js?v=40';
+import { wait } from './experiences/wait.js?v=40';
+import { lichen } from './experiences/lichen.js?v=40';
+import { cloud } from './experiences/cloud.js?v=40';
+import { ice } from './experiences/ice.js?v=40';
+import { trace } from './experiences/trace.js?v=40';
+import { gears } from './experiences/gears.js?v=40';
+import { cairn } from './experiences/cairn.js?v=40';
+import { downhill } from './experiences/downhill.js?v=40';
+import { tether } from './experiences/tether.js?v=40';
+import { hedge } from './experiences/hedge.js?v=40';
+import { seed } from './experiences/seed.js?v=40';
+import { lightning } from './experiences/lightning.js?v=40';
+import { whale } from './experiences/whale.js?v=40';
+import { pando } from './experiences/pando.js?v=40';
+import { murmur } from './experiences/murmur.js?v=40';
+import { eel } from './experiences/eel.js?v=40';
 
-const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice, trace, gears, cairn, downhill, tether, hedge, seed];
+const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice, trace, gears, cairn, downhill, tether, hedge, seed, lightning, whale, pando, murmur, eel];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
 
 const app = document.getElementById('app');
@@ -412,6 +417,9 @@ window.__gol = {
     showHub, showInterlude, t,
     // what the hub can actually offer — the testing loop walks this, so a new
     // experience cannot reach a player without its strings and its intro
+    // the roster, so tests cover whatever is registered rather than a list
+    // someone has to remember to update. Entries carry their kind too; the
+    // walk in smoke.cjs reads `.id`, the catalogue gate reads both.
     ids: () => REGISTRY.map(e => ({ id: e.id, kind: e.kind })),
     start: id => { const e = REGISTRY.find(x => x.id === id); if (e) startExperience(e); },
     setLang: l => { useLang(l); store.setLangPref(l); showHub(); },

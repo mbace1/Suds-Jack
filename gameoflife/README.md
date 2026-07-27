@@ -84,6 +84,32 @@ voice through a single master gain in `audio.js` — nothing may connect straigh
 to `ctx.destination` — so the mute is total rather than a list of sounds someone
 remembered to silence, and any sound added later inherits it for free.
 
+**It works with no signal.** This app exists to send you outdoors, and outdoors
+is exactly where the network stops — the nature invitations are the thing you
+most want in your pocket on a trail, and they were the first thing to break.
+`sw.js` precaches the whole shell (41 files: the page, every module, every
+experience, the icons) and serves cache-first; `manifest.webmanifest` makes it
+installable to a home screen. Verified end to end by `test/offline.cjs`, which
+loads the app, waits for the worker to take control, **kills the server and sets
+the browser offline**, then reloads and drives a whole experience plus a deep
+link — asserting that exactly zero requests reach the network.
+
+The worker registers on **https only** (or with `?sw=1`), so local development
+and the smoke gate are never served a stale shell. Its precache list has to name
+every file, since there is no build step to generate one — which makes it the
+same kind of hardcoded list that silently went stale in the animation check, so
+`check_levels.mjs` fails if the list misses a registered experience, misses a
+shared module, or drifts from the `?v=N` the page actually requests. All three
+failure modes were tested by breaking them on purpose.
+
+**Strings are gated too.** `check_levels.mjs` scans every `t('…')` an
+experience asks for, plus the `exp.<id>.name/desc` each registry entry needs,
+and fails if any is missing from **en, fi or ja** — it also checks the three
+language blocks agree with each other. This exists because First Lightning
+reached production rendering `lt.s1` as its story text and `lt.wait` as its
+button: `t()` falls back to returning the key, and a raw key is still a
+non-empty string, so nothing downstream noticed.
+
 **Contrast meets WCAG AA.** The muted-on-dark palette had nine failures, the
 worst being the seasons label at **1.92:1** — effectively invisible to a lot of
 eyes. Text greys moved to `#8d8165` and the primary button to `#4e6839`
@@ -91,13 +117,41 @@ eyes. Text greys moved to `#8d8165` and the primary button to `#4e6839`
 making things nearly unreadable now comes from size. Contrast and target size
 are both measured in the smoke gate, so a future re-tint cannot quietly undo it.
 
+**Nothing opens frozen.** Every experience is already moving on its first
+screen — dawn mist crossing the trunks in `forest`, steam off the waiting tea in
+`cup`, midges in the July light in `berry`, dust turning in the void in `seam`
+and `gears`, the hedge stirring in `hedge`. Thirteen of the twenty-two used to
+open on a still picture, which reads as a broken page while you are deciding
+whether to stay. For the `cached()` scenes the motion is a **live layer drawn
+after the blit**, so the performance work is untouched — wrapping a scene in
+`cached()` without lifting its moving parts out is exactly how this regresses,
+so the smoke gate samples each first screen and fails on any that does not
+change. It iterates `__gol.debug.ids()` (the live registry, never a hardcoded
+list — a hardcoded one silently skipped two new experiences and both were
+frozen) and takes **three samples at irregular gaps**, because two evenly
+spaced samples can land on the same phase of a slow motion and call a live
+scene dead.
+
+**The page centres on the middle.** The title stays anchored at the top and
+everything below it floats to the centre. In an experience the scene lands
+**just above the vertical midpoint** with the words beneath it: the gap above is
+computed rather than centred (`50vh − canvas height − 36px`), because centring
+the whole block left the canvas ~100px too high. It is gated behind
+`min-height: 700px` — on a 667px phone that placement costs a scroll, and fitting
+on screen beats hitting the midline.
+
+**Green is the accent.** Headings and highlights are `#8faf6a` rather than the
+old gold; this is an app about going back outside and the identity colour should
+say so. Gold remains where it belongs — inside scene art.
+
 **The layout holds still.** Story beats run from ~90 to ~340 characters, and
 sizing `.exp-text` to the short ones made the Continue button walk up to 190 px
 up and down the screen between taps — you had to re-aim every time. Six lines
 are now held open, so the action row stays put. A short viewport (a phone held
 sideways) gets its own rules: the 3:2 scene alone used to be *taller* than a
 360 px-high screen with the choices 150 px below the fold, so under
-`max-height: 560px` the scene is capped at `46vh` and everything fits unscrolled.
+`max-height: 560px` the scene is capped at `38vh` and everything fits unscrolled
+(it pays for the 44px touch targets rather than shrinking them).
 
 **Accessibility floor.** `#app` is a `<main>`; `.exp-text` is an
 `aria-live="polite"` region (marked centrally in `startExperience`, not in 22
@@ -167,6 +221,12 @@ the request blind. Formspree is the easier fit.
 | `downhill` | game | Water Downhill | Tilt four stone ledges so a trickle chains all the way down and pours off the frame in cyan — water takes the first opening you give it → *pour water on a real slope and watch it choose* |
 | `tether` | story | The Tether | Paris 1783: cut the rope and the ground lets go — Paris turns into a map, embers eat the linen, and the brazier throws sparks past the frame; the first humans ever to fly free → *look down from the highest place you can walk to* |
 | `hedge` | story | The Living Wall | Count the woody species along thirty paces of an English hedge (repeats teach that it's *kinds* you count) — Hooper's rule dates it at ~700 years, older than the church behind it → *read the oldest living boundary near you* |
+| `seed` | wisdom | The Seed | Plant one seed and wait through the day/night cycle — growth cannot be hurried → *plant something and let it take its own time* |
+| `lightning` | story | First Lightning | Philadelphia 1882: open the shutter on a storm roof and wait; the plate keeps what the eye cannot, and lightning turns out to be shaped like a river → *watch the next storm from a window and count to the thunder* |
+| `whale` | story | The Whale Fall | Ride a forty-tonne body three kilometres down into water that has never been lit, and stay fifty years while it becomes a town of a hundred species → *look under something fallen and see what is already eating it* |
+| `pando` | story | The Trembling Giant | Pick out four separate aspens on a Utah hillside, then watch the ground light up: one root system, 47,000 stems, one tree → *find two trees that might be one* |
+| `murmur` | story | The Murmuration | Pick one starling out of a winter roost and hold it while a peregrine turns the flock inside out — no leader, just each bird matching its nearest seven → *find a dusk roost and watch it instead of filming it* |
+| `eel` | story | The Eel | Aristotle said mud, Freud dissected four hundred, a Danish ship followed the larvae to the Sargasso — and the middle of the story is still blank → *look into the nearest ditch and let it stay unexplained* |
 
 ## Visual standard (2026-07 master doc)
 
@@ -256,6 +316,12 @@ Adding an experience is three edits: a module in `js/experiences/` (exporting
 `main.js`, and its strings (all three languages) in `i18n.js`. Everything
 else — the offering draw, completion tracking, feedback, the rest cycle —
 comes for free.
+
+**Read [`EXPERIENCES.md`](EXPERIENCES.md) first**, and copy
+`js/experiences/_template.js`. It is the bar an experience has to clear —
+trilingual strings, an animated first screen, a real-world revert in the outro,
+a deterministic smoke block — most of which the gate enforces, and the gate is
+not a nice place to find out.
 
 ## Testing loop
 

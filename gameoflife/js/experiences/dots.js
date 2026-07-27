@@ -4,8 +4,8 @@
 // mean. Owner's design (2026-07 master doc). The moons run on the real
 // Galilean periods (1.8 / 3.6 / 7.2 / 16.7 days).
 
-import { PixelScreen, rampDither } from '../pixel.js?v=39';
-import { PAL } from '../palette.js?v=39';
+import { PixelScreen, rampDither } from '../pixel.js?v=40';
+import { PAL } from '../palette.js?v=40';
 
 const CX = 96, CY = 56, LENS_R = 50;
 const JUP = ['#d9c9a0', '#b8926a', '#d0b088', '#a87f5c', '#c9ab80'];   // cloud bands
@@ -182,7 +182,14 @@ export const dots = {
         scr.px(64, 64, 8, 6, '#4a3e30');
         scr.px(150, 20, 3, 3, PAL.FOAM);                   // Jupiter, naked-eye bright
         scr.px(151, 21, 1, 1, '#ffffff');
-        for (let i = 0; i < 14; i++) scr.px((i * 41 + 7) % 190, (i * 23 + 5) % 90, 1, 1, '#3a4258');
+        // a night sky that is already turning: the field twinkles, Jupiter
+        // steady among it (which is the whole lesson, before a word is read)
+        for (let i = 0; i < 14; i++) {
+          const tw = Math.sin(now / 480 + i * 2.3);
+          if (tw < -0.55) continue;                        // some stars blink out
+          scr.px((i * 41 + 7) % 190, (i * 23 + 5) % 90, 1, 1, tw > 0.6 ? '#5a6480' : '#3a4258');
+        }
+        scr.px(151, 19 - (Math.floor(now / 700) % 2), 1, 1, '#dfe8ff');
       } else {
         lens(now);
         const luxe = phase === 'truth' || phase === 'outro';

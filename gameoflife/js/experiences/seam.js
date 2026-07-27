@@ -5,8 +5,8 @@
 // a dithered Raku glaze with a full tonal ramp, a dusty vignette halo, gold
 // veins with a bright core, amber tea, and a glowing cyan pour.
 
-import { PixelScreen, shade, bayer, rampDither } from '../pixel.js?v=39';
-import { PAL } from '../palette.js?v=39';
+import { PixelScreen, shade, bayer, rampDither } from '../pixel.js?v=40';
+import { PAL } from '../palette.js?v=40';
 
 // hit-testing geometry — unchanged so the flow/coords stay stable
 const CX = 96;
@@ -213,6 +213,15 @@ export const seam = {
         }
         if (allPlaced()) interior();
       });
+
+      // the void is not empty: dust turns slowly in the vignette's light from
+      // the first frame. Drawn OUTSIDE the cached bowl so the cache still holds.
+      for (let i = 0; i < 9; i++) {
+        const a = now / 3400 + i * 0.7;
+        const rr = 26 + (i * 17) % 44;
+        scr.px(CX - 4 + Math.cos(a) * rr, 64 + Math.sin(a) * rr * 0.55, 1, 1,
+          i % 3 ? '#5a4a58' : '#6e5c6a');
+      }
 
       if (phase === 'clay') {
         goldWalk((x, y) => { if (Math.floor(y) % 3 === 0) scr.px(x, y, 1, 1, shade(glaze(x - CX, y, RIM_CY, RIM_CY + H), 0.7)); });

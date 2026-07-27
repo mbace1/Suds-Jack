@@ -223,7 +223,7 @@ cinematic-widescreen like `glass`), and `hedge` (story — The Living Wall: tap 
 shrubs along thirty paces of an English hedge to count woody *species*; tapping a
 repeat teaches that it is kinds you count, and Hooper's rule then dates the hedge
 at ~700 years, older than the church behind it; a botanist's tally strip fills as
-you go — full-scene English-lane build). `plate` pilots the **2026-07 visual standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
+you go — full-scene English-lane build), and `seed` (wisdom — plant one and wait out the day/night cycle), `lightning` (story — Philadelphia 1882, Jennings holds a dry-plate open on a storm roof; the plate proves lightning is shaped like a river, not a zigzag), `whale` (story — a forty-tonne body sinks three km into unlit water and becomes a town of a hundred species over fifty years; per-pixel dithered water column in `cached()`, bioluminescence breaking the frame), and `pando` (story — pick four separate Utah aspens, then the ground goes transparent on one GOLD_LUX root system feeding all 47,000 stems). `plate` pilots the **2026-07 visual standard** (owner's master doc in `gameoflife/ideas/`, reference art in `ideas/ref/`):
 jagged 16-bit vignettes in a pure-black void, muted environments, luminescent cyan/gold
 interactive elements that break the frame (`PAL.VOID/CYAN_LUX/GOLD_LUX`, plus
 `PAL.LEAF_LUX` — a luminescent green for nature-scene glow like fireflies). Shared `pixel.js`
@@ -310,8 +310,16 @@ with the scene canvas `aria-hidden` in `PixelScreen` — the text is the followa
 channel — and `document.title` naming the current experience. The layout must
 **hold still**: `.exp-text` holds six lines open (`min-height: 10.2em`) because
 sizing it to short beats walked the Continue button ~190px between taps, and a
-`max-height: 560px` block caps the scene at `46vh` so a phone held sideways fits
-without scrolling. `prefers-reduced-motion` freezes the decorative hub header
+`max-height: 560px` block caps the scene at `38vh` so a phone held sideways fits
+without scrolling. In portrait the title stays at the top and everything below it
+floats to the middle (paired `auto` margins), with the scene placed **just above
+the vertical midpoint** by a computed gap (`50vh − canvas height − 36px`, gated
+behind `min-height: 700px` because on a 667px phone it costs a scroll). The UI
+accent is **green** `#8faf6a` (headings, active toggles); gold stays inside scene
+art only. **Every experience must be animated on its first screen** — a still
+opening reads as a broken page — and for `cached()` scenes that motion is a live
+layer drawn *after* the blit; the smoke gate samples each first screen twice and
+names any that is frozen. `prefers-reduced-motion` freezes the decorative hub header
 (one frame of the hour) while experiences keep animating. `pixel.js` gives a 192×128
 `PixelScreen` upscaled with `image-rendering: pixelated`; `palette.js` is the single
 colour source; `audio.js` is a quiet WebAudio kit routing **every** voice through one
@@ -327,6 +335,19 @@ earns a voice; `gardenStop()` fires on entering an experience or the feedback
 panel, so it plays on the hub alone. Shown in `.hub-footer` as `♪` glyphs
 (plural-free across fi/en/ja) with a one-time "you went outside" acknowledgement. `window.__gol` exposes
 `{store, audio, debug: {start, showInterlude, setLang, feedback}}` for console testing.
+The app is **offline-first**: `sw.js` precaches the shell cache-first and
+`manifest.webmanifest` makes it installable — it sends you outdoors, so it has to
+work where the signal stops. The worker registers on **https only** (or `?sw=1`)
+so dev and the smoke gate never get a stale shell; `test/offline.cjs` kills the
+server, goes offline and drives a whole experience, asserting zero network
+requests. Its precache list must name every file (no build step), so
+`check_levels.mjs` fails on a missing experience, a missing shared module, or
+`?v=N` drift between `sw.js` and `index.html` — **bump the version in sw.js too**.
+**Before adding an experience read `gameoflife/EXPERIENCES.md`** and copy
+`js/experiences/_template.js` — it states the bar (all three languages, an
+animated first screen, a real revert in the outro, a deterministic smoke block)
+and the two art traps (dithering is opt-in; sample `bayer()` at the cell index).
+Files under `js/experiences/` starting with `_` are skipped by the i18n scan.
 Pipeline: develop on `claude/*` beta branches → greenlight to `main` → copy to
 `gh-pages` to go live at `/Suds-Jack/gameoflife/` (same deploy caveat as paperboy);
 bump `?v=N` cache-busters together when shipping. See `gameoflife/README.md` for the

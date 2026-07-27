@@ -2,8 +2,8 @@
 // as a story: spring unpacks, summer works, autumn reveals, winter waits
 // with everything ready. Ends by giving the player a tree of their own.
 
-import { PixelScreen } from '../pixel.js?v=39';
-import { PAL } from '../palette.js?v=39';
+import { PixelScreen } from '../pixel.js?v=40';
+import { PAL } from '../palette.js?v=40';
 
 const SPRING_LEAF = '#a8c97a', SUMMER_LEAF = '#5f7a4a', SUMMER_DEEP = '#3d5232';
 const AUTUMN_RED = '#c9573a', AUTUMN_GOLD = '#d9a13c', SNOW = '#e8eef2';
@@ -94,7 +94,15 @@ export const maple = {
         crown([SPRING_LEAF, '#c2d69a'], scene === 's1' ? 0.35 : 0.6, 16, '#6f8a4a');
         for (let i = 0; i < 8; i++) {                   // bud fists on the twig tips
           const [bx, by] = [[78, 30], [88, 18], [100, 12], [112, 22], [116, 32], [84, 24], [108, 16], [94, 10]][i];
-          scr.px(bx, by, 2, 3, '#4a3a3a');
+          scr.px(bx + Math.sin(now / 620 + i) * 1.2, by, 2, 3, '#4a3a3a');   // April wind in the twigs
+        }
+        // the first thing you see is a tree in weather, not a diagram of one:
+        // cloud crossing the dawn and a few early seeds spinning down
+        scr.px((now / 190) % 230 - 34, 16, 30, 3, '#c9b4c0');
+        scr.px((now / 150) % 250 - 50, 24, 20, 2, '#b8a4b4');
+        for (let i = 0; i < 3; i++) {
+          const sy = 34 + ((now / 34 + i * 30) % 74);
+          scr.px(70 + i * 22 + Math.sin(now / 260 + i * 2) * 6, sy, 2, 1, '#8f9a6a');
         }
         if (scene === 's2a') {                          // inset: the bud opened like a letter
           scr.px(16, 14, 52, 44, PAL.INK);

@@ -127,8 +127,13 @@ export function makeCrt(source, parent, accent = [0.21, 0.91, 0.85]) {
   canvas.className = 'pixel-screen crt';
   canvas.setAttribute('aria-hidden', 'true');
 
-  const gl = canvas.getContext('webgl', { alpha: false, antialias: false, depth: false })
-    || canvas.getContext('experimental-webgl', { alpha: false, antialias: false, depth: false });
+  // preserveDrawingBuffer, because the canvas on the page is now this one and
+  // it has to stay readable: main's "nothing opens frozen" gate samples
+  // .pixel-screen with toDataURL, and a WebGL canvas without this returns an
+  // empty buffer once the frame is composited — which reported every scene as
+  // frozen. Cheap at this size, and it keeps screenshots working too.
+  const opts = { alpha: false, antialias: false, depth: false, preserveDrawingBuffer: true };
+  const gl = canvas.getContext('webgl', opts) || canvas.getContext('experimental-webgl', opts);
   if (!gl) return null;
 
   let prog;

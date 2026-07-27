@@ -10,8 +10,8 @@
 // clears): here the growth was never hidden by weather or spoiled by hands. It
 // was simply underground, which is where growth usually is.
 
-import { PixelScreen, shade, bayer, rampDither } from '../pixel.js?v=39';
-import { PAL } from '../palette.js?v=39';
+import { PixelScreen, shade, bayer, rampDither } from '../pixel.js?v=40';
+import { PAL } from '../palette.js?v=40';
 
 const DAYS = 4, DAY_SEC = 3.4;            // four day/night cycles ≈ 13.6 s
 const VX = 20, VW = 152;                  // the vignette floating in the void
@@ -174,6 +174,24 @@ export const seed = {
       scr.px(VX, GROUND - 1, VW, 1, shade('#8d7052', 0.7));
     }
 
+    // Nothing here opens frozen (main's iteration-33 bar): before anything is
+    // planted the picture is a seed on bare soil, which was perfectly still and
+    // read as a broken page. The day goes on while you decide — one slow cloud
+    // and dust turning in the light, both clipped to the vignette.
+    function weather(now) {
+      const x0 = VX + 3, x1 = VX + VW - 3;
+      const cx = VX - 30 + ((now / 90) % (VW + 60));
+      for (const [dx, dy, w, h, c] of [[0, 26, 18, 3, '#b9d6e6'], [5, 23, 10, 3, '#cfe3ea']]) {
+        const a = Math.max(x0, cx + dx), b = Math.min(x1, cx + dx + w);
+        if (b > a) scr.px(a, dy, b - a, h, c);
+      }
+      for (let i = 0; i < 6; i++) {
+        const x = x0 + ((i * 37 + now / 260) % (x1 - x0));
+        const y = 40 + Math.sin(now / 900 + i * 1.7) * 6 + i * 2;
+        scr.px(x, y, 1, 1, i % 2 ? '#d8cba8' : '#c4b696');
+      }
+    }
+
     function sky(dayPhase) {
       const night = dayPhase > 0.55;
       if (!night) {
@@ -257,7 +275,9 @@ export const seed = {
         scr.softDisc(96, 68, 92, '#0e0b08', 22);      // earthy halo in the void
         soil();
       });
-      sky((waitT / DAY_SEC) % 1);
+      const dayPhase = (waitT / DAY_SEC) % 1;
+      sky(dayPhase);
+      if (dayPhase <= 0.55) weather(now);      // daylight only
       seedPx();
       root(now);
       shoot(now);

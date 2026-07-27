@@ -4,8 +4,8 @@
 // "Gravity is infinitely patient." Revert: balance two real rocks, then leave
 // them. Dithered stones (pixel.js toolkit) on a muted graphic-novel fell.
 
-import { PixelScreen, bayer, rampDither } from '../pixel.js?v=39';
-import { PAL } from '../palette.js?v=39';
+import { PixelScreen, bayer, rampDither } from '../pixel.js?v=40';
+import { PAL } from '../palette.js?v=40';
 
 const GROUND = 112, CX = 96;
 const TOL = 11;                    // how near the balance line a stone must land
@@ -137,8 +137,16 @@ export const cairn = {
         const h = 12 + Math.round(8 * Math.sin(x * 0.05) + 4 * Math.sin(x * 0.13));
         scr.px(x, GROUND - h, 4, h, '#20222e');
       }
+      // dusk cloud drifting over the sun, and the hill grass moving in it —
+      // gravity is patient but the weather is not
+      scr.px((now / 240) % 250 - 50, GROUND - 26, 40, 3, '#4a4258');
+      scr.px((now / 310) % 260 - 60, GROUND - 18, 26, 2, '#564a62');
       scr.px(0, GROUND, scr.w, 128 - GROUND, '#1c1a16');   // the near ground
       scr.px(0, GROUND, scr.w, 2, '#2a2620');
+      for (let i = 0; i < 16; i++) {                        // wind-combed grass
+        const gx = (i * 13 + 4) % 190;
+        scr.px(gx + Math.sin(now / 380 + i * 0.8) * 1.4, GROUND + 2 + (i % 3), 1, 3, '#2e3128');
+      }
     }
 
     function draw(now, dt) {
