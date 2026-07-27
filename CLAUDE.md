@@ -11,13 +11,23 @@ Build tooling: TBD — update this file once chosen and add dev/build commands.
 
 ### Tiny Hawk (`tinyhawk/`) — P0 control prototype
 A **third-person low-poly skate game** (Tony Hawk vocabulary, Slay-the-Spire map) on
-Three.js r167, no build step. The ground is a **heightfield** — `h(x,z)` is the max over
+Three.js r167, no build step. **Art direction is Skate Story** (Sam Eng): a near-black
+world washed in one hue, glowing line-work doing all the describing, and a skater who is a
+**faceted prism** — hue from the face normal, so facets catch different colours as the body
+turns (iridescence with no lights, no env map), with a fresnel rim pushed past 1.0 for
+bloom to grab. This deliberately breaks the flat-unlit paperboy/dropcabal rule and follows
+**hyperdagger** instead: ACES + `EffectComposer` (Render → Afterimage → Bloom → chroma →
+Output), smear and aberration both riding speed. **Selective bloom via HDR colour** — the
+threshold is 0.92 and `GLOW` values sit only just over 1.0; pushed higher the spill lifts
+the whole frame and the near-black world turns grey. HUD is centred serif italic: score,
+×N, hairline rule, trick name, itemised breakdown. The ground is a **heightfield** — `h(x,z)` is the max over
 analytic features (rim/quarterpipe/bank/funbox/pyramid) in `park.js`, normals from finite
 differences — so a park is a list of placements and the physics is *ballistic integrate,
 then project velocity onto the surface tangent* (lifted from `tiny2d/`, which is where
 that approach was validated in 2D). Flat-shaded and unlit: each triangle takes one of
-three tones by its normal via vertex colours, inverted-hull ink outlines on the skater,
-no lights/shadows/fog (same rule as paperboy and dropcabal). **Note the winding trap** —
+three tones by its normal via vertex colours; line-work is HDR polylines resampled onto
+the surface so they hug transitions.
+**Note the winding trap** —
 walking a heightfield grid in the obvious order emits every triangle facing *down*, which
 back-face culls the whole park; `park.js` swaps the last two vertices per triangle.
 

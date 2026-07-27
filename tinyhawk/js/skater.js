@@ -12,7 +12,6 @@
 //   • fakie — landing at ~180° is legal and worth more, not a bail
 
 import * as THREE from 'three';
-import { COL } from './palette.js?v=1';
 import { PARK_EXTENT } from './park.js?v=1';
 
 const G          = 26;
@@ -38,34 +37,68 @@ const _right = new THREE.Vector3();
 const _fwd = new THREE.Vector3();
 const _m = new THREE.Matrix4();
 
-function part(group, w, h, d, color, x, y, z) {
-  const geo = new THREE.BoxGeometry(w, h, d);
-  const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color }));
-  mesh.position.set(x, y, z);
-  group.add(mesh);
-  const T = 0.1;
-  const out = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
-    color: COL.ink, side: THREE.BackSide,
-  }));
-  out.scale.set(1 + T / w, 1 + T / h, 1 + T / d);
-  mesh.add(out);
-  return mesh;
+// ── The prism ──────────────────────────────────────────────────────────────
+// The skater is a faceted crystal, not a painted figure. Hue is driven by the
+// FACE NORMAL, so every facet catches a different colour as the body turns —
+// iridescence with no lights and no environment map. The fresnel rim is pushed
+// past 1.0 so the composer's bloom grabs the edges and nothing else.
+export function prismMaterial() {
+  return new THREE.ShaderMaterial({
+    uniforms: { uPhase: { value: 0 }, uWash: { value: new THREE.Vector3(1, 1, 1) } },
+    vertexShader: /* glsl */`
+      varying vec3 vN; varying vec3 vV;
+      void main() {
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        vN = normalize(normalMatrix * normal);
+        vV = normalize(-mv.xyz);
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: /* glsl */`
+      uniform float uPhase; uniform vec3 uWash;
+      varying vec3 vN; varying vec3 vV;
+      void main() {
+        float f = 1.0 - max(dot(normalize(vN), normalize(vV)), 0.0);
+        vec3 hue = 0.5 + 0.5 * cos(6.28318 * (vN * 1.15 + vec3(0.0, 0.33, 0.67)) + uPhase);
+        // Mostly dark: the colour lives at glancing angles, so the body reads
+        // as smoked glass catching light rather than as painted plastic.
+        vec3 col = hue * (0.16 + 0.95 * f);
+        col += vec3(1.0, 0.96, 0.9) * pow(f, 4.0) * 1.5;
+        gl_FragColor = vec4(col * uWash, 1.0);
+      }`,
+  });
+}
+
+// Flat facets: split the geometry so every triangle owns its vertices, then
+// recompute normals. Without this an icosahedron shades smooth and the whole
+// crystal read collapses.
+function facet(geo) {
+  // Octahedron/Icosahedron already come non-indexed; only box-likes need it.
+  const g = geo.index ? geo.toNonIndexed() : geo;
+  g.computeVertexNormals();
+  return g;
+}
+
+function piece(group, geo, mat, x, y, z, sx = 1, sy = 1, sz = 1) {
+  const m = new THREE.Mesh(facet(geo), mat);
+  m.position.set(x, y, z);
+  m.scale.set(sx, sy, sz);
+  group.add(m);
+  return m;
 }
 
 // Built facing +Z, so world heading is (sin yaw, 0, cos yaw) and Object3D's own
 // Y rotation convention applies without a correction anywhere.
-function buildSkater() {
+function buildSkater(mat) {
   const g = new THREE.Group();
-  part(g, 0.72, 0.14, 2.4, COL.board, 0, 0.2, 0);
-  part(g, 0.84, 0.3, 0.3, COL.wheels, 0, 0.08, 0.75);
-  part(g, 0.84, 0.3, 0.3, COL.wheels, 0, 0.08, -0.75);
-  part(g, 0.38, 0.8, 0.42, COL.pants, 0, 0.68, 0.42);
-  part(g, 0.38, 0.8, 0.42, COL.pants, 0, 0.68, -0.42);
-  part(g, 0.62, 0.9, 0.86, COL.shirt, 0, 1.52, 0);
-  part(g, 0.26, 0.66, 0.26, COL.skin, 0.42, 1.6, 0.3);
-  part(g, 0.26, 0.66, 0.26, COL.skin, -0.42, 1.66, -0.24);
-  part(g, 0.52, 0.5, 0.5, COL.skin, 0, 2.25, 0.02);
-  part(g, 0.62, 0.3, 0.6, COL.helmet, 0, 2.56, 0);
+  piece(g, new THREE.BoxGeometry(0.72, 0.1, 2.4), mat, 0, 0.2, 0);
+  piece(g, new THREE.BoxGeometry(0.84, 0.22, 0.22), mat, 0, 0.09, 0.75);
+  piece(g, new THREE.BoxGeometry(0.84, 0.22, 0.22), mat, 0, 0.09, -0.75);
+  piece(g, new THREE.OctahedronGeometry(0.42, 0), mat, 0, 0.72, 0.4, 0.8, 1.9, 0.9);
+  piece(g, new THREE.OctahedronGeometry(0.42, 0), mat, 0, 0.72, -0.4, 0.8, 1.9, 0.9);
+  piece(g, new THREE.IcosahedronGeometry(0.62, 0), mat, 0, 1.52, 0, 1, 1.15, 1.25);
+  piece(g, new THREE.OctahedronGeometry(0.3, 0), mat, 0.44, 1.58, 0.28, 0.7, 2.1, 0.7);
+  piece(g, new THREE.OctahedronGeometry(0.3, 0), mat, -0.44, 1.64, -0.22, 0.7, 2.1, 0.7);
+  piece(g, new THREE.IcosahedronGeometry(0.34, 0), mat, 0, 2.28, 0.02, 1, 1.15, 1);
   return g;
 }
 
@@ -73,7 +106,8 @@ export class Skater {
   constructor(scene, park) {
     this.park = park;
     this.root = new THREE.Group();      // position + orientation
-    this.body = buildSkater();          // trick rotations live here
+    this.mat = prismMaterial();
+    this.body = buildSkater(this.mat);  // trick rotations live here
     this.root.add(this.body);
     scene.add(this.root);
     this.pos = new THREE.Vector3();
@@ -265,6 +299,9 @@ export class Skater {
 
   // ── Present ───────────────────────────────────────────────────────────────
   present(dt) {
+    // Drift the hue with speed — the crystal catches more light the faster it
+    // is going, which is most of how the reference sells motion.
+    this.mat.uniforms.uPhase.value += dt * (0.6 + this.speed * 0.05);
     this.root.position.copy(this.pos);
     _hv.set(Math.sin(this.yaw), 0, Math.cos(this.yaw));
     _right.crossVectors(this.up, _hv).normalize();

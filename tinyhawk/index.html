@@ -7,7 +7,7 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      background: #14161c;
+      background: #05060a;
       overflow: hidden;
       touch-action: none;
       font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
@@ -18,34 +18,57 @@
     #canvas-ui { position: fixed; top: 0; left: 0; pointer-events: none; }
     .hidden { display: none !important; }
 
+    /* HUD — Skate Story's layout: everything that matters is centred at the
+       bottom in serif italic, and the world is left alone above it. */
     #hud {
       position: fixed; inset: 0;
       pointer-events: none;
-      padding: max(12px, env(safe-area-inset-top)) 14px 14px;
-      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
     }
-    #hudTop { display: flex; justify-content: space-between; align-items: flex-start; }
-    #speed { font-size: 15px; opacity: 0.8; }
-    #scoreWrap { text-align: right; }
-    #score { font-size: 26px; font-weight: bold; line-height: 1; }
-    #best { font-size: 11px; opacity: 0.55; margin-top: 3px; }
-    #combo {
-      position: absolute; left: 50%; top: 12%;
+    #mph {
+      position: absolute; left: 18px; bottom: 20px;
+      font-size: 13px; letter-spacing: 1px; color: rgba(239,231,210,0.75);
+      font-family: ui-monospace, monospace;
+    }
+    #mph .arrows { color: #8fe6d8; letter-spacing: 2px; margin-left: 6px; }
+    #mphBar { width: 96px; height: 3px; margin-top: 4px; background: rgba(239,231,210,0.16); }
+    #mphFill { height: 100%; width: 0%; background: #8fe6d8; transition: width 0.1s linear; }
+
+    #centre {
+      position: absolute; left: 50%; bottom: 26px;
       transform: translateX(-50%);
-      font-size: 15px; letter-spacing: 2px; color: #ffd166;
-      opacity: 0; transition: opacity 0.2s;
+      text-align: center; width: min(90vw, 620px);
     }
+    #scoreRow {
+      display: flex; align-items: baseline; justify-content: center; gap: 14px;
+    }
+    #score { font-size: 30px; font-style: italic; color: #efe7d2; }
+    #mult { font-size: 17px; color: rgba(239,231,210,0.8); }
+    #rule { height: 1px; background: rgba(239,231,210,0.45); margin: 4px auto 6px; width: 100%; }
+    #trick {
+      font-size: 20px; color: #e8c98a; min-height: 1.3em;
+      opacity: 0; transition: opacity 0.18s;
+    }
+    #breakdown {
+      font-size: 11px; letter-spacing: 1px; color: rgba(232,201,138,0.85);
+      margin-top: 3px; min-height: 1.3em; opacity: 0; transition: opacity 0.18s;
+    }
+    #objective {
+      position: absolute; left: 50%; top: 22px;
+      transform: translateX(-50%); text-align: center;
+    }
+    #objName { font-size: 17px; color: #e8c98a; letter-spacing: 1px; }
+    #objBar {
+      width: 260px; height: 6px; margin: 5px auto 0;
+      border: 1px solid rgba(232,201,138,0.55);
+    }
+    #objFill { height: 100%; width: 0%; background: rgba(232,201,138,0.7); transition: width 0.2s; }
     #toast {
-      position: absolute; left: 50%; top: 24%;
+      position: absolute; left: 50%; top: 30%;
       transform: translateX(-50%);
-      font-size: 21px; font-weight: bold; letter-spacing: 1px;
-      opacity: 0; white-space: nowrap;
-    }
-    #line {
-      position: absolute; left: 50%; bottom: 16%;
-      transform: translateX(-50%);
-      font-size: 14px; letter-spacing: 1px; opacity: 0;
-      transition: opacity 0.15s; color: #6ff0d0;
+      font-size: 22px; font-style: italic; letter-spacing: 1px;
+      opacity: 0; white-space: nowrap; color: #efe7d2;
     }
 
     .overlay {
@@ -53,7 +76,7 @@
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       gap: 16px; padding: 24px;
-      background: rgba(20, 22, 28, 0.74);
+      background: rgba(5, 6, 10, 0.82);
       text-align: center;
     }
     h1 { font-size: clamp(38px, 11vw, 66px); letter-spacing: 3px; line-height: 0.95; }
@@ -89,16 +112,21 @@
   <canvas id="canvas-ui"></canvas>
 
   <div id="hud" class="hidden">
-    <div id="hudTop">
-      <div id="speed">0 km/h</div>
-      <div id="scoreWrap">
-        <div id="score">0</div>
-        <div id="best"></div>
-      </div>
+    <div id="objective">
+      <div id="objName">Floodlit Park</div>
+      <div id="objBar"><div id="objFill"></div></div>
     </div>
-    <div id="combo"></div>
+    <div id="mph">
+      <span id="mphNum">0</span> km/h<span class="arrows" id="mphArrows"></span>
+      <div id="mphBar"><div id="mphFill"></div></div>
+    </div>
     <div id="toast"></div>
-    <div id="line"></div>
+    <div id="centre">
+      <div id="scoreRow"><span id="score">0</span><span id="mult">×1</span></div>
+      <div id="rule"></div>
+      <div id="trick"></div>
+      <div id="breakdown"></div>
+    </div>
   </div>
 
   <div id="menu" class="overlay">

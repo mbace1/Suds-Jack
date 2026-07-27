@@ -13,7 +13,7 @@
 // affordable later.
 
 import * as THREE from 'three';
-import { COL } from './palette.js?v=1';
+import { COL, GLOW } from './palette.js?v=1';
 
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const smooth = (t) => t * t * (3 - 2 * t);
@@ -104,12 +104,20 @@ const FEATURES = [
   pyramid({ cx: 20, cz: 20, half: 9, h: 3.2 }),
 ];
 
-// Painted patches — flat colour by footprint, the only decoration in the park.
-const PAINT = [
-  { x0: 2, x1: 16, z0: -6, z1: 6, color: COL.paintA },     // funbox top
-  { x0: 20 - 9, x1: 20 + 9, z0: 20 - 9, z1: 20 + 9, color: COL.paintB },
-  { x0: -26, x1: -6, z0: -3, z1: 3, color: COL.paintC },   // a line between the quarters
+// Glowing line-work. In the reference the ground is a silhouette and the LINES
+// do all the describing — coping on a quarterpipe lip, edges on a box, road
+// markings. Each entry is a polyline in xz; it is resampled onto the surface at
+// draw time so it hugs a transition instead of cutting through it.
+const LINES = [
+  { pts: [[-26, -20], [-6, -20]], glow: 'coping' },          // quarterpipe lips
+  { pts: [[-26, 20], [-6, 20]], glow: 'coping' },
+  { pts: [[2, -6], [16, -6], [16, 6], [2, 6], [2, -6]], glow: 'line' },   // funbox
+  { pts: [[-40, 0], [40, 0]], glow: 'line' },                // the long stripe
+  { pts: [[0, -40], [0, 40]], glow: 'line' },
+  { pts: [[11, 11], [29, 11], [29, 29], [11, 29], [11, 11]], glow: 'line' },
 ];
+const LINE_STEP = 0.7;   // resample spacing along a polyline
+const LINE_LIFT = 0.07;  // above the surface, or it z-fights the ground
 
 const GRID = 1.15;   // heightfield mesh sampling step
 
@@ -118,6 +126,39 @@ export class Park {
     this.features = FEATURES;
     this.mesh = this.build();
     scene.add(this.mesh);
+    this.lines = this.buildLines();
+    scene.add(this.lines);
+  }
+
+  // Resampled onto the surface so a line follows a transition rather than
+  // cutting a chord through it. HDR colour, so only these bloom.
+  buildLines() {
+    const pos = [], col = [];
+    const c = new THREE.Color();
+    for (const L of LINES) {
+      const g = GLOW[L.glow] || GLOW.line;
+      c.setRGB(g[0], g[1], g[2]);
+      for (let i = 0; i < L.pts.length - 1; i++) {
+        const [x0, z0] = L.pts[i], [x1, z1] = L.pts[i + 1];
+        const len = Math.hypot(x1 - x0, z1 - z0);
+        const n = Math.max(2, Math.ceil(len / LINE_STEP));
+        let px = x0, pz = z0, py = this.height(x0, z0) + LINE_LIFT;
+        for (let k = 1; k <= n; k++) {
+          const t = k / n;
+          const x = x0 + (x1 - x0) * t, z = z0 + (z1 - z0) * t;
+          const y = this.height(x, z) + LINE_LIFT;
+          pos.push(px, py, pz, x, y, z);
+          col.push(c.r, c.g, c.b, c.r, c.g, c.b);
+          px = x; py = y; pz = z;
+        }
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    const mesh = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ vertexColors: true }));
+    mesh.frustumCulled = false;
+    return mesh;
   }
 
   height(x, z) {
@@ -139,13 +180,6 @@ export class Park {
     return out.set(-dx, 1, -dz).normalize();
   }
 
-  paintAt(x, z) {
-    for (const p of PAINT) {
-      if (x >= p.x0 && x <= p.x1 && z >= p.z0 && z <= p.z1) return p.color;
-    }
-    return null;
-  }
-
   // ── Mesh ─────────────────────────────────────────────────────────────────
   // Non-indexed so each triangle can take a flat tone from its own normal —
   // the three-tone rule from the design doc, done with vertex colours and no
@@ -158,10 +192,7 @@ export class Park {
     const ab = new THREE.Vector3(), ac = new THREE.Vector3(), nrm = new THREE.Vector3();
     const tint = new THREE.Color();
 
-    // cx/cz are the CELL centre, not the triangle centroid: classifying paint
-    // per triangle splits a cell across a colour boundary and the edge comes
-    // out as a sawtooth.
-    const push = (p0, p1, p2, cx, cz) => {
+    const push = (p0, p1, p2) => {
       ab.subVectors(p1, p0); ac.subVectors(p2, p0);
       nrm.crossVectors(ab, ac).normalize();
       // The grid walk emits triangles wound so the normal points down, which
@@ -170,17 +201,7 @@ export class Park {
       // heightfield is free performance we should keep.
       let v1 = p1, v2 = p2;
       if (nrm.y < 0) { nrm.negate(); v1 = p2; v2 = p1; }
-      const painted = this.paintAt(cx, cz);
-      let base = nrm.y > 0.93 ? COL.groundUp : nrm.y > 0.55 ? COL.groundMid : COL.groundLow;
-      if (painted) {
-        // Painted areas still take the tone step, so a painted bank still reads
-        // as sloped rather than going flat.
-        tint.setHex(painted);
-        const k = nrm.y > 0.93 ? 1 : nrm.y > 0.55 ? 0.78 : 0.58;
-        tint.multiplyScalar(k);
-      } else {
-        tint.setHex(base);
-      }
+      tint.setHex(nrm.y > 0.93 ? COL.groundUp : nrm.y > 0.55 ? COL.groundMid : COL.groundLow);
       for (const p of [p0, v1, v2]) {
         pos.push(p.x, p.y, p.z);
         col.push(tint.r, tint.g, tint.b);
@@ -197,9 +218,8 @@ export class Park {
     for (let i = 0; i < n; i++) {
       for (let j = 0; j < n; j++) {
         at(i, j, p00); at(i + 1, j, p10); at(i, j + 1, p01); at(i + 1, j + 1, p11);
-        const cx = -S + (i + 0.5) * GRID, cz = -S + (j + 0.5) * GRID;
-        a.copy(p00); b.copy(p10); c.copy(p11); push(a, b, c, cx, cz);
-        a.copy(p00); b.copy(p11); c.copy(p01); push(a, b, c, cx, cz);
+        a.copy(p00); b.copy(p10); c.copy(p11); push(a, b, c);
+        a.copy(p00); b.copy(p11); c.copy(p01); push(a, b, c);
       }
     }
 

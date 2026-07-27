@@ -1,49 +1,51 @@
 // ── Palette ────────────────────────────────────────────────────────────────
-// Flat-shaded low-poly read as vector poster art. No lights anywhere — volume
-// comes from three explicit tones per surface, picked by face normal, so every
-// colour decision lives here and the whole game re-tints in one edit.
+// Art direction: Skate Story. A near-black world washed in ONE dominant hue,
+// everything reading as silhouette, and the only bright things are glowing
+// line-work and the skater — who is a faceted prism, not a painted figure.
+//
+// This deliberately breaks the flat-unlit rule that paperboy and dropcabal
+// follow. It follows hyperdagger instead: ACES tone mapping and an
+// EffectComposer, with **selective bloom via HDR colours** — anything with a
+// channel over 1.0 blows out and smears, everything else stays matte. That is
+// why the glow colours below are float triples rather than hex.
+
 export const COL = {
-  sky:       0x8fb8d8,   // pale afternoon
-  skyLow:    0xe8dcc4,   // haze at the horizon
-  fogBand:   0xbcc9d4,
+  void:       0x05060a,   // the sky, and the bottom of everything
+  horizon:    0x0d1420,
 
-  // Park surface, three tones by normal (up / sloped / near-vertical)
-  groundUp:  0x9aa3ad,   // flat concrete, catching the light
-  groundMid: 0x7c848f,   // transitions and banks
-  groundLow: 0x5c636d,   // walls, the underside of things
-  groundEdge:0x474d56,   // the 1-unit seam that defines a section
+  // Park surface, three tones by face normal. Almost black on purpose — in the
+  // reference the ground is a silhouette and the LINES do all the describing.
+  groundUp:   0x2b3247,
+  groundMid:  0x1d2231,
+  groundLow:  0x0f121b,
 
-  // Painted zones — coping, flat bank faces, the odd bit of colour in a park
-  coping:    0xf0e9d8,
-  paintA:    0x4fbf9f,
-  paintB:    0xe06a5a,
-  paintC:    0xf0c14b,
-
-  rail:      0xd8d2c4,
-  ledge:     0xb9b2a2,
-
-  // Skater
-  skin:      0xffcf9e,
-  shirt:     0xe0483f,
-  pants:     0x39415c,
-  helmet:    0xf5d13f,
-  board:     0xf2f0e6,
-  wheels:    0x2a2833,
-  ink:       0x14161c,   // inverted-hull outline
-
-  // Feedback
-  clean:     0x6ff0d0,
-  fakie:     0xb69cff,
-  bail:      0xff5a4d,
-  combo:     0xffd166,
-  hudInk:    0xf4f1e8,
+  ink:        0x05060a,
 };
 
-// Zone tints for Run mode districts (design doc §7 — the phase change re-tints
-// the same geometry).
+// HDR glow values. Over 1.0 on any channel = picked up by bloom.
+// Kept only just over 1.0. Pushed higher, the bloom spill lifts the whole
+// frame and the near-black world — the entire point of the look — turns grey.
+export const GLOW = {
+  line:    [0.9, 1.35, 1.6],   // ground markings, cool white
+  coping:  [1.6, 1.25, 0.7],   // warm metal on a quarterpipe lip
+  lampWarm:[1.7, 1.15, 0.55],
+  lampCool:[0.7, 1.25, 1.7],
+  accent:  [1.7, 0.35, 0.45],  // the one red thing in frame
+};
+
+// Per-district washes (design doc §7 — a phase change re-tints one park).
+// `wash` tints the whole scene, `sky` the dome, `dots` the pinpoint lights.
 export const ZONES = {
-  plaza:    { groundUp: 0x9aa3ad, groundMid: 0x7c848f, groundLow: 0x5c636d },
-  docks:    { groundUp: 0x8fa8b8, groundMid: 0x6c828f, groundLow: 0x47555e },
-  downtown: { groundUp: 0xa8a0b8, groundMid: 0x847c94, groundLow: 0x5a5468 },
-  dusk:     { groundUp: 0x8d7f96, groundMid: 0x6b5f74, groundLow: 0x453d4c },
+  arena: { wash: [0.62, 0.86, 1.0], sky: 0x080d16, dots: 'lampCool', line: 'line' },
+  hell:  { wash: [1.0, 0.42, 0.36], sky: 0x140508, dots: 'accent',   line: 'coping' },
+  rust:  { wash: [1.0, 0.72, 0.52], sky: 0x0e0a08, dots: 'lampWarm', line: 'coping' },
+};
+
+export const UI = {
+  ink:   '#efe7d2',
+  gold:  '#e8c98a',
+  dim:   'rgba(239,231,210,0.5)',
+  clean: '#8fe6d8',
+  fakie: '#c3a7ff',
+  bail:  '#ff6a5a',
 };

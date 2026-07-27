@@ -137,11 +137,38 @@ rails and ledges as explicit segments (not part of the field). A park is a list 
 placements. Authoring a new park is arranging a dozen entries, which is what makes §7's
 node-per-spot structure affordable.
 
-Rendering: sample the field on a grid, assign each face one of **three tones** by its
-normal, and draw it unlit with vertex colours. Inverted-hull ink outlines on the skater and
-on rails. No lights, no shadows, no fog — the house rule from `paperboy` and `dropcabal`.
+Rendering follows §4b, not the flat-unlit rule.
 
 ---
+
+## 4b. Art direction — Skate Story
+
+Reference: **Skate Story** (Sam Eng). Not the flat poster look of `paperboy` and
+`dropcabal`; this follows **hyperdagger** instead — ACES tone mapping and an
+`EffectComposer`.
+
+* **A near-black world washed in one hue.** The ground is almost silhouette. Per-district
+  washes in `ZONES` re-tint the whole scene, which is the §7 phase change for free.
+* **The line-work describes the world, not the surface.** Coping on a quarterpipe lip, box
+  edges, road markings — polylines resampled onto the heightfield so they hug a transition
+  instead of cutting a chord through it.
+* **Selective bloom via HDR colour.** Only values over 1.0 blow out. The bloom threshold is
+  **0.92** and the glow colours sit just over 1.0 — pushed higher, spill lifts the whole
+  frame and the near-black world (the entire point) turns grey. This was the first thing
+  that went wrong and it went *very* wrong.
+* **The skater is a faceted prism.** Hue comes from the **face normal**, so every facet
+  catches a different colour as the body turns — iridescence with no lights and no
+  environment map. A fresnel rim pushed past 1.0 is what bloom grabs. Geometry is
+  octahedra and icosahedra, split non-indexed so the facets stay flat.
+* **Motion is sold by post, not geometry.** Afterimage smear and chromatic aberration both
+  ride speed. Ink outlines are gone — glow replaces them.
+* **HUD**: centred at the bottom in serif italic — score, `×N`, a hairline rule, the trick
+  name in gold, then an itemised breakdown (`AIR +460  TRICKS +520  SPIN +150`). Speed
+  bottom-left, objective and progress bar top-centre.
+
+---
+
+## 6. Modes---
 
 ## 6. Modes
 
