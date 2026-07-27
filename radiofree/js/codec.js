@@ -4,13 +4,13 @@
 // sequencer cycles weighted-random shots:
 //   ~30% face   — large masked Toko fills the upper frame
 //   ~20% graphic — the story's chart / diagram
-//   ~50% broll  — low-poly Helsinki footage
+//   ~50% broll  — low-poly Helsinki footage (random from 8 panels)
 // DECODE still mutates whichever shot is showing.
 
-import { PixelScreen, shade, mix } from './screen.js?v=5';
-import { PAL, SECTOR_COLOR } from './palette.js?v=5';
-import { Toko } from './toko.js?v=5';
-import { drawVisual, PANEL_W, PANEL_H, num } from './visuals.js?v=5';
+import { PixelScreen, shade, mix } from './screen.js?v=6';
+import { PAL, SECTOR_COLOR } from './palette.js?v=6';
+import { Toko } from './toko.js?v=6';
+import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=6';
 
 export const POST_W = 144, POST_H = 276;
 const VF = { x: 8, y: 6, w: PANEL_W, h: PANEL_H };
@@ -22,11 +22,18 @@ const WAVE = { x: 8, y: 266, w: 128, h: 8 };
 const WEIGHTS = { face: 0.30, graphic: 0.20, broll: 0.50 };
 const CUT_MIN = 2.4, CUT_MAX = 4.0;
 
+function pickBroll(story) {
+  // prefer story.broll 40% of the time, otherwise random from full pool
+  if (story.broll && Math.random() < 0.4) return story.broll;
+  const pool = BROLL_KEYS || ['esplanadi', 'kamppi', 'harbour', 'gulf'];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 function pickShot(story) {
   const r = Math.random();
-  if (r < WEIGHTS.face) return 'face';
-  if (r < WEIGHTS.face + WEIGHTS.graphic) return 'graphic';
-  return story.broll ? 'broll' : 'graphic';
+  if (r < WEIGHTS.face) return { type: 'face' };
+  if (r < WEIGHTS.face + WEIGHTS.graphic) return { type: 'graphic' };
+  return { type: 'broll', key: pickBroll(story) };
 }
 
 export class Post {
@@ -48,7 +55,7 @@ export class Post {
     this.live = false;
     this.silent = false;
     // cut state
-    this.shot = 'graphic';
+    this.shot = { type: 'graphic' };
     this.cutT = 0;
     this.nextCut = CUT_MIN + Math.random() * (CUT_MAX - CUT_MIN);
   }
@@ -85,7 +92,7 @@ export class Post {
 
   renderStatic() {
     this.toko.update(0.016, 0, this.decoded);
-    this.shot = 'graphic';
+    this.shot = { type: 'graphic' };
     this.draw();
   }
 
@@ -93,10 +100,11 @@ export class Post {
     const s = this.scr;
     s.clear(PAL.SHELL);
 
-    const faceShot = this.live && this.shot === 'face';
-    const visualKey = this.shot === 'broll' && this.story.broll
-      ? this.story.broll
-      : this.story.visual;
+    const faceShot = this.live && this.shot.type === 'face';
+    let visualKey = this.story.visual;
+    if (this.shot.type === 'broll') {
+      visualKey = this.shot.key || this.story.broll || 'esplanadi';
+    }
 
     if (faceShot) {
       // large masked Toko fills the upper frame
