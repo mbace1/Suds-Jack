@@ -370,6 +370,56 @@ function check(name, cond) {
   check('and the player is told so, not thanked', true);
   await page.locator('.sheet .btn.ghost').click();
 
+  // ── reading back what you have already said ──
+  // Two notes on the device now: one delivered, one stuck. A feedback channel
+  // you cannot read back is a suggestion box nailed shut, so the archive is
+  // visible, and it has to be HONEST about which of the two is which.
+  check('the status line offers the notes once there are any',
+    await page.locator('#notes-link').count() === 1);
+  check('and says how many', /2/.test(await page.locator('#notes-link').textContent()));
+  await page.locator('#notes-link').click();
+  await page.waitForSelector('.note-list');
+  const rows = await page.$$eval('.note-row', ns => ns.map(n => ({
+    what: n.querySelector('.note-what').textContent,
+    state: n.querySelector('.note-state').textContent,
+    held: n.querySelector('.note-state').classList.contains('held'),
+    text: n.querySelector('.note-text')?.textContent ?? '',
+    meta: n.querySelector('.note-meta').textContent,
+  })));
+  check(`both notes are listed, newest first (${rows.length})`,
+    rows.length === 2 && rows[0].text === 'held note');
+  check('the stuck one is marked held and the sent one is not',
+    rows[0].held === true && rows[1].held === false);
+  check(`each says what it was about (${rows[1].what})`, rows.every(r => r.what.trim().length > 2));
+  check(`and which shape of the floor it was written in (${rows[0].meta})`,
+    rows.every(r => /rack|wide|list/.test(r.meta)));
+
+  // the held one can be pushed from here rather than waiting for a next visit
+  await page.evaluate(u => __hub.feedback.setEndpoint(u), `${base}/collect`);
+  await page.locator('.sheet .btn.play').click();
+  await page.waitForFunction(() => !document.querySelector('.note-state.held'), null, { timeout: 5000 });
+  check('sending the held ones from here clears them', collected.length === 2);
+  check('and the panel says so without a reload',
+    await page.locator('.note-state.held').count() === 0);
+
+  // and the whole record can be thrown away — the other half of keeping
+  // something on somebody's machine. Two presses, the second is the confirm.
+  const forget = page.locator('.sheet .btn.ghost').first();
+  await forget.click();
+  check('forgetting asks once', /again|uudestaan|もう一度/.test(await forget.textContent()));
+  await forget.click();
+  check('and then does it', (await page.evaluate(() => __hub.feedback.archive())).length === 0);
+  check('the link goes away with the last note',
+    await page.locator('#notes-link').count() === 0);
+  await page.locator('.sheet .btn.ghost').last().click();
+
+  // put the two back so the rest of the suite still has its fixtures
+  collected.length = 0;
+  await page.evaluate(u => __hub.feedback.setEndpoint(u), `${base}/collect`);
+  await page.evaluate(() => __hub.feedback.send({ game: 'tokodrop', kind: 'balance', rating: 4, text: 'the second wave is a wall', ts: Date.now() }));
+  await page.evaluate(u => __hub.feedback.setEndpoint(u), `${base}/collect-broken`);
+  await page.evaluate(() => __hub.feedback.send({ game: 'hyperdagger', kind: 'bug', rating: 1, text: 'held note', ts: Date.now() + 1 }));
+
   // the outbox drains once something answers again
   await page.evaluate(u => __hub.feedback.setEndpoint(u), `${base}/collect`);
   const drained = await page.evaluate(() => __hub.feedback.flush());
