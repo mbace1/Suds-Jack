@@ -11,7 +11,7 @@ import * as THREE from 'three';
 import { COL } from './palette.js?v=1';
 import { Park, PARK_EXTENT } from './park.js?v=1';
 import { Skater } from './skater.js?v=1';
-import { Input } from './input.js?v=1';
+import { InputManager, SCHEMES } from './input.js?v=1';
 import { Audio } from './audio.js?v=1';
 
 const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
@@ -75,7 +75,7 @@ const park = new Park(scene);
 }
 
 const skater = new Skater(scene, park);
-const input = new Input(canvasUI);
+const input = new InputManager();
 const audio = new Audio();
 
 // ── HUD ────────────────────────────────────────────────────────────────────
@@ -156,10 +156,12 @@ function handleEvents(events) {
 
 // ── Camera ─────────────────────────────────────────────────────────────────
 function updateCamera(dt) {
-  const look = input.consumeLook();
-  if (Math.abs(look.x) > 1e-4 || Math.abs(look.y) > 1e-4) {
-    camYaw -= look.x;
-    camPitch = clamp(camPitch + look.y, CAM_PITCH_MIN, CAM_PITCH_MAX);
+  // A rate, not a delta — the right stick under the THPS scheme and the
+  // bumpers under Skate both report deflection, and neither is pixels.
+  const rate = input.getLookRate();
+  if (Math.abs(rate.x) > 1e-4 || Math.abs(rate.y) > 1e-4) {
+    camYaw -= rate.x * dt;
+    camPitch = clamp(camPitch + rate.y * dt, CAM_PITCH_MIN, CAM_PITCH_MAX);
     lookIdle = 0;
   } else {
     lookIdle += dt;
@@ -213,6 +215,8 @@ function animate(now) {
   if (!(dt > 0)) return;
   dt = Math.min(dt, 1 / 20);
 
+  input.pollGamepad(dt);
+  input.setAirborne(!skater.grounded);
   input.update(dt);
 
   if (state === 'play') {
@@ -234,7 +238,13 @@ function animate(now) {
     el.toast.style.opacity = String(clamp(toastT, 0, 1));
   }
 
-  input.draw();
+  const g = canvasUI.getContext('2d');
+  const dpr = canvasUI.width / innerWidth;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, canvasUI.width, canvasUI.height);
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  input.drawTouchUI(g);
+
   renderer.render(scene, camera);
 }
 
@@ -262,12 +272,17 @@ el.sound.addEventListener('click', () => {
 });
 el.sound.textContent = audio.on ? '♪ on' : '♪ off';
 
-// Desktop look is pointer-lock; touch never needs it.
-canvas.addEventListener('click', () => {
-  if (state === 'play' && !input.pointerLocked && matchMedia('(pointer: fine)').matches) {
-    canvas.requestPointerLock();
-  }
+const btnScheme = $('btnScheme');
+function paintScheme() {
+  btnScheme.textContent = input.scheme === 'skate'
+    ? 'CONTROLS: SKATE (flick-it)'
+    : 'CONTROLS: TONY HAWK (buttons)';
+}
+btnScheme.addEventListener('click', () => {
+  input.setScheme(input.scheme === 'skate' ? 'thps' : 'skate');
+  paintScheme();
 });
+paintScheme();
 
 addEventListener('keydown', (e) => {
   if (e.code === 'KeyR' && state === 'play') startSkate();
@@ -284,8 +299,9 @@ window.__th = {
     start: startSkate,
     stats: () => ({ score, combo, bestCombo, speed: skater.speed, grounded: skater.grounded }),
     // The number the whole control scheme rests on (design doc §4, §11).
-    getFlick: () => ({ speed: input.flickSpeed, full: input.flickFull }),
-    setFlick: (s, f) => { input.flickSpeed = s; if (f) input.flickFull = f; },
+    scheme: () => input.scheme,
+    setScheme: (s) => { input.setScheme(s); paintScheme(); },
+    schemes: SCHEMES,
     act: (dir, power = 1) => input.actions.push({ dir, power }),
     setCam: (yaw, pitch) => { camYaw = yaw; if (pitch != null) camPitch = pitch; },
     getCam: () => ({ yaw: camYaw, pitch: camPitch }),

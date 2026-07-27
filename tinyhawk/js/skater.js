@@ -107,7 +107,7 @@ export class Skater {
     const park = this.park;
     if (this.bailT > 0) this.bailT = Math.max(0, this.bailT - dt);
 
-    const mv = input.move;
+    const mv = input.getMove();
     const mag = Math.hypot(mv.x, mv.y);
     const locked = this.bailing;
 
@@ -211,6 +211,7 @@ export class Skater {
       if (this.pos[ax] < -lim) { this.pos[ax] = -lim; if (this.vel[ax] < 0) this.vel[ax] *= -0.3; }
     }
 
+    this.loading = !!input.loading && this.grounded && !locked;
     this.present(dt);
     return ev;
   }
@@ -279,7 +280,9 @@ export class Skater {
       d === 'down' ? p : 0,
       d === 'left' ? -p : d === 'right' ? p : 0
     );
-    const crouch = this.bailing ? 0.6 : d === 'up' ? 0.82 : 1;
+    // Crouching while the pop is loaded is the whole tell for the two-phase
+    // flick-it gesture — without it the player cannot see the load happen.
+    const crouch = this.bailing ? 0.6 : this.loading ? 0.66 : d === 'up' ? 0.82 : 1;
     this.body.scale.y += (crouch - this.body.scale.y) * (1 - Math.pow(0.002, dt));
   }
 }

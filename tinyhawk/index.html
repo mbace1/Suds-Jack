@@ -75,6 +75,7 @@
     }
     table.keys td { padding: 3px 10px 3px 0; vertical-align: top; }
     table.keys td:first-child { color: #6ff0d0; white-space: nowrap; }
+    table.keys b { color: #ffd166; }
     .note { font-size: 11px; opacity: 0.45; max-width: 420px; line-height: 1.6; }
     #btnSound {
       position: fixed; right: 12px; bottom: 12px;
@@ -103,16 +104,21 @@
   <div id="menu" class="overlay">
     <h1>TINY HAWK<small>P0 · CONTROL PROTOTYPE</small></h1>
     <button id="btnSkate" class="primary">SKATE</button>
+    <button id="btnScheme">CONTROLS: SKATE (flick-it)</button>
     <table class="keys">
-      <tr><td>left stick / WASD</td><td>steer and push — in the air, spin and flip</td></tr>
-      <tr><td>right stick, slow</td><td>orbit the camera</td></tr>
-      <tr><td>right stick, flick ↑</td><td>ollie — flick harder to go higher</td></tr>
-      <tr><td>right stick, flick</td><td>in the air: ↑ grab · ←→ flip · ↓ shuv</td></tr>
-      <tr><td>desktop</td><td>mouse look, Space (hold = higher), Q E F C tricks</td></tr>
+      <tr><td>left stick</td><td>push and steer — in the air, spin and flip</td></tr>
+      <tr><td>right stick ↓ then ↑</td><td><b>load, then flick</b> — that is the ollie. Flick harder to go higher</td></tr>
+      <tr><td>flick ↑ / ↖ / ↗</td><td>ollie · kickflip · heelflip</td></tr>
+      <tr><td>flick sideways</td><td>shuvit</td></tr>
+      <tr><td>in the air</td><td>any committed flick is a trick</td></tr>
+      <tr><td>Tony Hawk mode</td><td>A holds to charge the ollie, X/B/Y/LB are the tricks, right stick is the camera</td></tr>
+      <tr><td>no pad?</td><td>drag the on-screen sticks with the mouse, or WASD + Space + Q E F C</td></tr>
     </table>
     <p class="note">
-      Land with the board pointing where you are actually going. Backwards
-      (fakie) counts and scores more. Landing mid-trick is a bail.
+      Touch is always Skate-style flick-it; the toggle above switches what a
+      <b>controller</b> does, so the two schemes can be compared on the same park.
+      Land with the board pointing where you are actually going — backwards
+      (fakie) counts and scores more, landing mid-trick is a bail.
       Grinds, manuals and goals are not in this build.
     </p>
   </div>
