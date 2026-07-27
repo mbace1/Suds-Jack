@@ -15,8 +15,12 @@
     "v": 4,
     "from": "cache token"
   },
+  "flashprince": {
+    "v": 1,
+    "from": "VERSIONS.md"
+  },
   "gameoflife": {
-    "v": 39,
+    "v": 40,
     "from": "VERSIONS.md"
   }
 }
