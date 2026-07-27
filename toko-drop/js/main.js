@@ -1,15 +1,15 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=166';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=166';
-import { Player, PLAYER_RADIUS } from './player.js?v=166';
+import { InputManager } from './input.js?v=167';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=167';
+import { Player, PLAYER_RADIUS } from './player.js?v=167';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=166';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=166';
-import { audio } from './audio.js?v=166';
-import { initDesigner } from './designer.js?v=166';
-import { createSpecimen } from './specimen.js?v=166';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=166';
-import { TUNING } from './tuning.js?v=166';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=167';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=167';
+import { audio } from './audio.js?v=167';
+import { initDesigner } from './designer.js?v=167';
+import { createSpecimen } from './specimen.js?v=167';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=167';
+import { TUNING } from './tuning.js?v=167';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -2065,9 +2065,38 @@ function clearElectrodes() {
   tkElectrodes = [];
 }
 let _tkSavedPixel = null, _tkSavedSmash = null;
+// v213 (field feedback): the vector room was a bare black void, which read as
+// flat and made distances hard to judge. A very thin, very dim grid gives the
+// floor a sense of scale without becoming scenery. (This revises the v151 art
+// note "dark background, no grid" — the grid is the field's own correction.)
+let _tkGrid = null;
+function ensureTokotronGrid() {
+  if (_tkGrid) return _tkGrid;
+  // Built by hand rather than GridHelper: the arena is a RECTANGLE, and a
+  // square helper either spills past the bounds or gives stretched cells.
+  // ~1.8u spacing keeps the cells square and the count low.
+  const STEP = 1.8, pts = [];
+  for (let x = -Math.floor(HALF_X / STEP) * STEP; x <= HALF_X; x += STEP) {
+    pts.push(x, 0, -HALF_Z, x, 0, HALF_Z);
+  }
+  for (let z = -Math.floor(HALF_Z / STEP) * STEP; z <= HALF_Z; z += STEP) {
+    pts.push(-HALF_X, 0, z, HALF_X, 0, z);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  const g = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({
+    color: 0x1c8ea3, transparent: true, opacity: 0.30, depthWrite: false,
+  }));
+  g.position.y = 0.012;
+  g.visible = false;
+  scene.add(g);
+  _tkGrid = g;
+  return g;
+}
 function setTokotronLook(on) {
   scene.background.setHex(on ? 0x030309 : 0x0d0d1a);
-  floor.visible = !on;                                   // dark void, no grid
+  floor.visible = !on;                                   // the animated grid stays off
+  ensureTokotronGrid().visible = on;                     // v213: thin vector grid instead
   border.material.color.setHex(on ? 0x44eeff : 0x5555cc); // shiny vector bounds
   scene.fog = on ? null : _FOG;                          // vector black runs deep
   CABINET_STYLE.mode = on ? 'tokotron' : null;
@@ -3068,8 +3097,13 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
     chunksFor(e.type).spawn(cd.x, cd.y, cd.z, cd.vx, cd.vy, cd.vz, e.color, cd.size);
   }
   // v167 (KAIKKI parity): the streets remember — kills leave BLOOD, not goo.
-  splatPool.spawnPuddle(e.position.x, e.position.z,
-    kaikkiMode ? 0x7a0f0f : e.color, e.radius * (kaikkiMode ? 2.0 : 1.5));
+  // v213: TOKOTRON's roster is machines — they shatter, they don't bleed. No
+  // puddles there, which is both the right look and the fix for the floor
+  // filling with transparent quads until the framerate collapsed.
+  if (!tokotronMode) {
+    splatPool.spawnPuddle(e.position.x, e.position.z,
+      kaikkiMode ? 0x7a0f0f : e.color, e.radius * (kaikkiMode ? 2.0 : 1.5));
+  }
   // ── v200 JUICE: every death detonates ───────────────────────────────────────
   juiceHeat = Math.min(1, juiceHeat + 0.18);
   const big = e._isBoss || e.radius >= 0.75;
@@ -3089,6 +3123,7 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
   for (let j = 0; j < nSat; j++) {
     const a = Math.random() * Math.PI * 2;
     const r = 0.6 + Math.random() * 0.9;
+    if (tokotronMode) continue;   // v213: no satellite slime in the vector room
     splatPool.spawnPuddle(e.position.x + Math.cos(a) * r, e.position.z + Math.sin(a) * r,
       kaikkiMode ? 0x7a0f0f : e.color, e.radius * (0.4 + Math.random() * 0.3));
   }
@@ -4251,7 +4286,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v212' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v213' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -5748,6 +5783,10 @@ function spawnWave() {
       { [T.GRUNT]: 13, [T.ORB]: 4, [T.ORANGE_CUBE]: 5, [T.BOTFLY]: 2, civ: 4 },
       { [T.GRUNT]: 19, [T.BRUTE]: 3, [T.MINDER]: 2, [T.ORB]: 3, [T.WEEVA]: 1, civ: 6 },
     ][wi];
+    // v213: each wave is a FRESH room — clear the floor of the last one's
+    // debris rather than letting it accumulate across the whole run.
+    splatPool.clear();
+    trailPool.clear();
     // Robotron opening: you appear center-room; the wave appears around you.
     player.mesh.position.set(0, player.mesh.position.y, 0);
     player.grantInvincibility(1.4);
@@ -8942,6 +8981,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=166').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=167').catch(() => {});
   });
 }
