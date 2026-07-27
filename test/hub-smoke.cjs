@@ -440,28 +440,38 @@ function check(name, cond) {
     getComputedStyle(document.getElementById('cabinets')).gridTemplateColumns.split(' ').length);
   const marqueeWidth = () => page.evaluate(() =>
     document.querySelector('.cab .art').getBoundingClientRect().width);
+  // 2 / 2 / 3 / 4. A phone gets two rather than one because one cabinet to a
+  // screen turns the floor into a scroll, and comparing two games you cannot
+  // see at once is not comparing. The floor a marquee must clear is therefore
+  // per step, not one number: a phone's 157px is small and legible, and a
+  // desktop shrinking to that would mean the ladder had gone wrong.
   const ladder = [
-    [390, 1, 'a phone'], [800, 2, 'a tablet upright'],
-    [1180, 3, 'a wide iPad'], [1600, 4, 'a large desktop'],
+    [390, 2, 150, 'a phone'], [800, 2, 300, 'a tablet upright'],
+    [1180, 3, 300, 'a wide iPad'], [1600, 4, 300, 'a large desktop'],
   ];
   const wrong = [], thumbs = [];
-  for (const [w, want, what] of ladder) {
+  for (const [w, want, floor, what] of ladder) {
     await page.setViewportSize({ width: w, height: 900 });
     await page.waitForTimeout(80);
     const got = await cols();
     if (got !== want) wrong.push(`${what} ${w}px: ${got} not ${want}`);
     const mw = await marqueeWidth();
-    if (mw < 300) thumbs.push(`${what} ${Math.round(mw)}px`);
+    if (mw < floor) thumbs.push(`${what} ${Math.round(mw)}px < ${floor}`);
   }
-  check(`the row grows 1-2-3-4 with the screen${wrong.length ? ` — ${wrong}` : ''}`, wrong.length === 0);
-  check(`and no step shrinks the marquee to a thumbnail${thumbs.length ? ` — ${thumbs}` : ''}`,
+  check(`the row grows 2-2-3-4 with the screen${wrong.length ? ` — ${wrong}` : ''}`, wrong.length === 0);
+  check(`and no step shrinks the marquee past what it can carry${thumbs.length ? ` — ${thumbs}` : ''}`,
     thumbs.length === 0);
   await page.setViewportSize({ width: 1100, height: 900 });
 
-  // a phone, held upright: the cabinets stack and nothing runs off the side
+  // a phone, held upright: two to a row, and nothing runs off the side. Two
+  // rather than one because one cabinet to a screen turns the floor into a
+  // scroll, and you cannot compare two games you cannot see at once.
   await page.setViewportSize({ width: 390, height: 780 });
   await page.waitForTimeout(120);
-  check('and one cabinet wide on a phone', await cols() === 1);
+  check('and two cabinets to a row on a phone', await cols() === 2);
+  const phoneArt = await page.evaluate(() =>
+    Math.round(document.querySelector('.cab .art').getBoundingClientRect().width));
+  check(`the marquee is still big enough to read (${phoneArt}px)`, phoneArt >= 150);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   check(`nothing overflows a phone (${overflow}px)`, overflow <= 0);
 
