@@ -84,6 +84,24 @@ voice through a single master gain in `audio.js` — nothing may connect straigh
 to `ctx.destination` — so the mute is total rather than a list of sounds someone
 remembered to silence, and any sound added later inherits it for free.
 
+**It works with no signal.** This app exists to send you outdoors, and outdoors
+is exactly where the network stops — the nature invitations are the thing you
+most want in your pocket on a trail, and they were the first thing to break.
+`sw.js` precaches the whole shell (41 files: the page, every module, every
+experience, the icons) and serves cache-first; `manifest.webmanifest` makes it
+installable to a home screen. Verified end to end by `test/offline.cjs`, which
+loads the app, waits for the worker to take control, **kills the server and sets
+the browser offline**, then reloads and drives a whole experience plus a deep
+link — asserting that exactly zero requests reach the network.
+
+The worker registers on **https only** (or with `?sw=1`), so local development
+and the smoke gate are never served a stale shell. Its precache list has to name
+every file, since there is no build step to generate one — which makes it the
+same kind of hardcoded list that silently went stale in the animation check, so
+`check_levels.mjs` fails if the list misses a registered experience, misses a
+shared module, or drifts from the `?v=N` the page actually requests. All three
+failure modes were tested by breaking them on purpose.
+
 **Strings are gated too.** `check_levels.mjs` scans every `t('…')` an
 experience asks for, plus the `exp.<id>.name/desc` each registry entry needs,
 and fails if any is missing from **en, fi or ja** — it also checks the three
