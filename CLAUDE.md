@@ -19,7 +19,21 @@ in `art.js` bakes barrel distortion + one scanline per source row + a corner vig
 a 256×144 remap **once at load** (a marquee never moves, so nine cabinets cost nine passes
 total — no WebGL, no per-frame cost, unlike the live version in `gameoflife/js/crt.js`). Adding a game is **two edits**: an entry in `hub/games.js`
 (title, tagline, lineage, tags, controls, `path`, `accent`, `art`, `inRepo`, `status`) and
-a draw function in `hub/art.js`; `hub/hub.js` knows about no game in particular. The rack **grows with the screen — 1 / 2 / 3 / 4** at 660 / 1100 / 1480px, inside a
+a draw function in `hub/art.js`; `hub/hub.js` knows about no game in particular.
+**The marquees are covers, not icons** (owner's direction, 2026-07). A cover is a
+*composition* that says what the game is before you read a word: a framing device, a
+subject with somewhere to be, depth, and one thing happening. The house register is
+**Atari and Master System** — meaning the constraints, not nostalgia. A 2600 changed
+colour **once per scanline**, so a burning sky is a stack of flat horizontal bars with
+hard seams (`skull`); a Master System sprite is a **flat fill inside a hard black line**,
+so the shape has to live in the *silhouette* because there is no shading to put it in.
+`mix()` in `art.js` is for those ramps. Per-cover references are the owner's to give —
+Neon Ronin is the Phantasy Star III box (gate, receding stair, hero cropped by the
+frame), Hyper Dagger is **HYPERDEMON × Bone Dust**. Three things were learned building
+those two and hold generally: a hero cannot be a black silhouette against a dark scene
+(light it, or rim it in two colours); **cropping** a foreground figure at the frame is
+what makes it read as foreground; and a framing device has to be **lighter** than the
+sky behind it or it is just an outline floating in the void. The rack **grows with the screen — 1 / 2 / 3 / 4** at 660 / 1100 / 1480px, inside a
 1520px wrap. The ladder is set by what the *marquee* gets, not by device names: every
 step keeps it near 350px, which is the width at which the pixel art still reads. Each
 row's cabinets sit side by side with their text under them, then the next row.
