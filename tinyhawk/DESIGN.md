@@ -314,6 +314,15 @@ Traps worth remembering, both found by testing:
   the whole park back-face culls and you see its underside.
 * A stick that only binds when its slot is free leaves half the screen permanently dead if
   a `pointerup` is ever missed. Always re-claim the half on a new press.
+* **`preventDefault` on `touchend` kills every DOM button.** Cancelling touchmove/touchend
+  unconditionally suppresses the click the browser would otherwise synthesise, so the menu
+  was unstartable on a phone — the game booted fine, the tap just never became a click.
+  Only ever cancel a touch you actually claimed on `touchstart`.
+* **Stick rest positions must come off the short edge.** `h - 130` puts the rings in the
+  middle of a 342px-tall landscape phone, on top of the HUD and nowhere near a thumb.
+* The stick RADIUS, by contrast, stays a fixed number of CSS pixels: the flick threshold is
+  in stick units per second, so scaling the radius per screen would make the same physical
+  flick cross the threshold on one device and not another.
 
 ---
 

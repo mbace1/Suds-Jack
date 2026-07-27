@@ -177,10 +177,18 @@ export class InputManager {
     try { localStorage.setItem('tinyHawkScheme', s); } catch (e) { /* ignore */ }
   }
 
+  // Sticks live in the bottom corners, under where the thumbs already are. Both
+  // the radius and the rest position come off the SHORT edge: a landscape phone
+  // is ~340px tall, and a fixed `h - 130` puts the rings in the middle of the
+  // screen, on top of the HUD, nowhere near a thumb.
+  // STICK_R stays a FIXED number of CSS pixels on every device, because the
+  // flick threshold is measured in stick units per second and a stick unit is
+  // STICK_R of thumb travel — scale the radius per screen and the same physical
+  // flick crosses the threshold on one phone and not on another.
   layout() {
-    const w = innerWidth, h = innerHeight;
-    this.restL = { x: w * 0.17, y: h - 130 };
-    this.restR = { x: w * 0.83, y: h - 130 };
+    const m = STICK_R + 16;
+    this.restL = { x: m, y: innerHeight - m };
+    this.restR = { x: innerWidth - m, y: innerHeight - m };
   }
 
   fire(dir, powerV) {
@@ -212,15 +220,31 @@ export class InputManager {
       this.left.active = this.right.active = false;
     });
 
+    // Only ever preventDefault a touch WE claimed. Cancelling touchmove or
+    // touchend unconditionally suppresses the click the browser would otherwise
+    // synthesise, which kills every DOM button under a thumb — the menu is then
+    // unstartable on a phone even though the game booted fine.
     const opt = { passive: false };
     addEventListener('touchstart', (e) => {
-      if (this._uiTouch(e)) return;   // let DOM buttons work
+      // Even a tap on the menu tells us this is a touch device, so the sticks
+      // are already drawn the moment the run starts.
+      this.touchMode = true;
+      if (!this.enabled || this._uiTouch(e)) return;   // let DOM controls work
       e.preventDefault();
       this._touchStart(e);
     }, opt);
-    addEventListener('touchmove', (e) => { e.preventDefault(); this._touchMove(e); }, opt);
-    addEventListener('touchend', (e) => { e.preventDefault(); this._touchEnd(e); }, opt);
-    addEventListener('touchcancel', (e) => { e.preventDefault(); this._touchEnd(e); }, opt);
+    addEventListener('touchmove', (e) => {
+      if (!this._claimed(e)) return;
+      e.preventDefault();
+      this._touchMove(e);
+    }, opt);
+    const end = (e) => {
+      if (!this._claimed(e)) return;
+      e.preventDefault();
+      this._touchEnd(e);
+    };
+    addEventListener('touchend', end, opt);
+    addEventListener('touchcancel', end, opt);
 
     // Mouse drives the same on-screen sticks, so the touch scheme is usable and
     // testable in a desktop browser without a touchscreen.
@@ -245,8 +269,17 @@ export class InputManager {
     });
   }
 
-  _uiTarget(t) { return !!(t && t.closest && t.closest('button, a, .ui-click')); }
+  // `.arcade-home` is the hub button the site shell injects into every game.
+  _uiTarget(t) { return !!(t && t.closest && t.closest('button, a, .ui-click, .arcade-home')); }
   _uiTouch(e) { return this._uiTarget(e.target); }
+
+  /** True when this event carries a touch we took ownership of on touchstart. */
+  _claimed(e) {
+    for (const t of e.changedTouches) {
+      if (this._touchMap.has(t.identifier)) return true;
+    }
+    return false;
+  }
 
   _touchStart(e) {
     this.touchMode = true;
@@ -462,7 +495,10 @@ export class InputManager {
         ctx.fillStyle = `rgba(${ink},0.32)`;
         ctx.font = '600 10px ui-monospace, monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(side === 'left' ? 'PUSH · STEER' : 'LOAD ↓ FLICK ↑', bx, by + STICK_R + 17);
+        // Above the ring when there is no room beneath it.
+        const below = by + STICK_R + 17;
+        ctx.fillText(side === 'left' ? 'PUSH · STEER' : 'LOAD ↓ FLICK ↑',
+          bx, below > innerHeight - 4 ? by - STICK_R - 9 : below);
       }
     }
   }
