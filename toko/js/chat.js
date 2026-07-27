@@ -395,11 +395,23 @@ export function mountChat(anchor, opts = {}) {
 
   async function loadKit() {
     if (kit) return kit;
+    // Prefer what the arcade has already loaded. Importing a second copy at a
+    // pinned ?v= token gives a SEPARATE module instance with its own endpoint
+    // configuration — which is precisely what happened the first time the hub
+    // bumped its tokens and this file did not follow. The page publishes the
+    // instances it is using on window.__hub; use those.
+    const hub = window.__hub;
+    if (hub?.feedback && hub?.topics && hub?.games) {
+      kit = { topics: hub.topics, post: hub.feedback, games: hub.games };
+      return kit;
+    }
+    // and off the arcade, load our own — untokened, so there is nothing to
+    // drift out of step with
     try {
       const [topics, post, cat] = await Promise.all([
-        import('../../hub/topics.js?v=1'),
-        import('../../hub/feedback.js?v=5'),
-        import('../../hub/games.js?v=8'),
+        import('../../hub/topics.js'),
+        import('../../hub/feedback.js'),
+        import('../../hub/games.js'),
       ]);
       kit = { topics, post, games: cat.GAMES };
     } catch {

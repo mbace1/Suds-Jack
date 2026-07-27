@@ -23,13 +23,13 @@
     "v": 12,
     "from": "cache token"
   },
-  "neonronin": {
-    "v": 1,
-    "from": "VERSIONS.md"
-  },
   "gameoflife": {
     "v": 40,
-    "from": "VERSIONS.md"
+    "from": "cache token"
+  },
+  "radiofree": {
+    "v": 3,
+    "from": "cache token"
   },
   "tinyhawk": {
     "v": 1,
