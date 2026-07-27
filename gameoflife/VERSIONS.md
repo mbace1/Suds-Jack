@@ -8,6 +8,17 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v40 — 2026-07-27
+**Offline again**
+- The terminal rewrite had dropped the service-worker registration, so the app
+  quietly stopped working with no signal. Restored.
+- `sw.js` was still declaring v38 against a page asking for v40, and `crt.js`
+  was never added to the precache list — a stale shell with no screen to draw
+  through. Both fixed.
+- The offline gate hung instead of failing when there was no worker to wait
+  for, and still looked for the old card markup; it names the terminal's own
+  now.
+
 ## v39 — 2026-07-27
 **The log starts here**
 - The retro-futurist terminal: the CRT viewport, the sparse hub and the screen accent.
