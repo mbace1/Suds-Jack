@@ -13,12 +13,12 @@
 // Registered from index.html over https only (or with ?sw=1), so local dev and
 // the smoke gate are never served a stale shell.
 
-const VERSION = 'v4';
+const VERSION = 'v5';
 const CACHE = `rfh-${VERSION}`;
 
 // the shell: everything needed to open the feed and read every bulletin. The
 // query strings matter — these are the URLs the page actually requests.
-const V = `?v=4`;
+const V = `?v=5`;
 const SHELL = [
   './',
   './index.html',

@@ -6,7 +6,7 @@ screen** stood on end — the story's picture on top, **Toko** (the teal gel fro
 Toko Drop) reading the wire below it with a data column and a waveform — plus a
 right-hand rail and the copy underneath.
 
-All twelve bulletins live in one column, ordered by channel. It covers what
+All thirteen bulletins live in one column, ordered by channel. It covers what
 Helsinki actually is — a games town wired into a tech industry, sitting next to a
 defence band — and every bulletin has a **DECODE** button.
 
@@ -20,7 +20,7 @@ screen and cropped in.
 > way this kind of story really gets written, and DECODE names the move it is
 > pulling. The propaganda is the subject, not the payload.
 
-**Trilingual: fi / en / ja.** Every word — the twelve bulletins, their decode
+**Trilingual: fi / en / ja.** Every word — the bulletins, their decode
 notes and their tells, not just the chrome — exists in all three. Browser-
 detected, switchable from the masthead, persisted.
 
@@ -29,7 +29,7 @@ means it gets read on a metro — so the shell is precached and the whole thing
 runs with no network.
 
 No build step, no assets, no CDN — open `radiofree/index.html`. Every pixel
-(Toko's face, all twelve panels, both app icons) is drawn in code.
+(Toko's face, every panel, both app icons) is drawn in code.
 
 ## Playing
 
@@ -51,6 +51,18 @@ frame they were painted with, so scrolling shows real pictures instead of blank
 boxes and nothing off-screen burns a frame budget. A post you have not reached
 yet holds its headline and a standby line where the copy will be — you cannot
 hear a station you have not tuned to.
+
+## The sign-off
+
+The feed does not just stop after the twelfth bulletin. The station signs off:
+a test card, the carrier gone, `--.--` on the dial — and it hands back the
+twelve techniques, marking the ones **you** actually opened and printing their
+tells at you. The ones you skipped stay dim, and say so.
+
+The last bulletin on the defence band turns the frame on this station; the
+sign-off is the same move made specific to you, which is why the count is real
+rather than flattering. What you decoded persists (`rfhDecoded`), so a
+technique found once is still credited on the next visit.
 
 ## Sharing a bulletin
 
@@ -94,11 +106,13 @@ did, and gives a **TELL** — the question that catches it next time, in the wil
 > *When you cannot answer "who did this?" from the sentence, that was the
 > sentence's job.*
 
-The twelve techniques: agentless passive, missing denominator, euphemism,
-manufactured consensus, selective baseline, nominalization, source laundering,
-numbers as atmosphere, category drift, anonymous authority, procurement dialect,
-and — last on the defence band, pointed back at this station — the pre-emptive
-frame.
+The techniques: agentless passive, missing denominator, euphemism, manufactured
+consensus, selective baseline, nominalization, source laundering, numbers as
+atmosphere, category drift, anonymous authority, procurement dialect,
+**speculation as reporting** (the hedge stack — could, may, is emerging, cannot
+be ruled out, none of which claims anything and which together build a whole
+theatre), and — last on the defence band, pointed back at this station — the
+pre-emptive frame.
 
 **The pictures decode too.** The framing is never only in the words, so every
 panel changes under DECODE: the truncated bar chart re-bases to zero and the
@@ -140,6 +154,14 @@ bulletin.
 | `104.40` | VERKKO | tech / industry |
 | `141.12` | VARTIO | defence / signal |
 
+The defence band carries five: the seabed cable, the positioning interference,
+the studios moving into simulation work, the coordinated amplification, and the
+border. **The actors on that band are deliberately unnamed** — "the alliance",
+"a neighbouring state", "the eastern border". That is how the app keeps its
+footer honest, and it is also how careful reporting on those subjects actually
+reads; naming real states in a fake dateline would make a screenshot of this
+app into the thing the app is about.
+
 ## Files
 
 ```
@@ -149,7 +171,7 @@ radiofree/
     main.js       boot, the tune-in gate, the feed, tuning, decode, the loop
     codec.js      one post's screen (both frames in ONE canvas) + the Reader
     toko.js       the anchor: gel wobble, blink, lip-sync, decode tear
-    visuals.js    the twelve story panels, each of which changes under decode
+    visuals.js    the story panels + the sign-off test card
     stories.js    the wire — copy, decode readings, techniques, tells (fi/en/ja)
     i18n.js       every other string, in all three languages
     screen.js     PixelScreen: small canvas, hard-pixel upscale, dither helpers
@@ -164,6 +186,13 @@ radiofree/
 ```
 
 ## Notes for anyone editing it
+
+**Toko broadcasts from a flat, not a studio.** The booth behind her is a
+kitchen at night, a slack string of warm bulbs and a cold laptop lighting her
+face from below — one person on a sofa, which is the whole reason the station is
+pirate. A newsroom would mean somebody signs off on the copy. Those bulbs are
+the only warm light in the app that is *not* the decode, so they are kept dim
+and desaturated on purpose: amber has one job here and it is not room lighting.
 
 **Toko is lip-synced, not flapping.** `Reader.update()` returns a mouth
 amplitude per frame from the character it just typed — vowels open it, spaces
@@ -214,7 +243,7 @@ collapses into a regular dot grid — the gulf water column did exactly that. Us
 NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs
 ```
 
-Sixty-one checks in a real browser: zero console errors; the feed is vertical (one
+Seventy-two checks in a real browser: zero console errors; the feed is vertical (one
 post per screen, snapping, media portrait both in the buffer and on screen); the
 live codec animates while its neighbours hold their painted frame and unread
 posts sit on standby; the reader types and can be skipped; DECODE grows the
@@ -223,7 +252,9 @@ and the dial all move the feed; every one of the twelve bulletins carries a full
 read *and* a decode; every visual key is a real panel; **fi/en/ja are complete**
 (every interface key and every field of every bulletin, with markup to decode)
 and switching language keeps your place and your open drawer; every control is
-44px; the address follows the scroll and a `#id` link opens that bulletin
+44px; the sign-off closes the feed, lists every technique and marks the ones
+you decoded (in every language); the address follows the scroll and a `#id`
+link opens that bulletin
 without pushing history; the precache names every module and agrees with the
 page's version; the app **really boots with the network cut**; and **WCAG AA on
 every text colour** — measured with the translucent decode-box

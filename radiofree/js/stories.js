@@ -36,10 +36,22 @@ export const STORIES = [
   { id: 'interference',       sector: 'DEFENCE',  visual: 'sat'    },
   { id: 'synthetic-env',      sector: 'DEFENCE',  visual: 'engine' },
   { id: 'amplification',      sector: 'DEFENCE',  visual: 'crowd2' },
+  { id: 'border-lab',         sector: 'DEFENCE',  visual: 'border' },
 ];
 
 // ── English ────────────────────────────────────────────────────────
 const EN = {
+  'border-lab': {
+    slug: 'THE EASTERN BORDER',
+    head: 'Border tech could make the capital the alliance’s proving ground',
+    lines: [
+      'Studios in the capital region {{could see|nobody has said they will see}} a wave of alliance-linked simulation contracts, in what one analysis {{describes as|was commissioned to describe as}} a shift from entertainment to defence work.',
+      'The eastern border, meanwhile, {{is emerging as ground zero|was called that once, in one briefing, by someone not named}} for counter-drone and cyber operations, and studios here {{may find themselves choosing a side|are being sold a reason to choose one}}. {{The possibility cannot be ruled out|Nothing in this bulletin has been ruled in}}.',
+    ],
+    technique: 'SPECULATION AS REPORTING',
+    decodeNote: 'Count the hedges: could, describes as, is emerging, may, cannot be ruled out. Not one of them claims anything, and together they build a whole theatre of conflict you will remember afterwards as something that was reported. The work is done by the *shape* of the sentence — subject, verb, consequence — while every verb stays conditional. It is the standard grammar of a defence-procurement story, and it is also how a real risk and an imagined one are made to look identical on the page.',
+    tell: 'Strike every modal — could, may, might, is emerging, cannot be ruled out — and read what is left. If nothing is left, nothing was reported.',
+  },
   'kaiku-restructure': {
     slug: 'KAMPPI',
     head: 'Kaiku Interactive announces studio realignment',
@@ -178,6 +190,17 @@ const EN = {
 // Finnish has a real agentless passive (tehtiin, oli kohteena), so the
 // bulletins lean on it exactly where an institution would.
 const FI = {
+  'border-lab': {
+    slug: 'ITÄRAJA',
+    head: 'Rajateknologia voisi tehdä pääkaupungista liittokunnan koekentän',
+    lines: [
+      'Pääkaupunkiseudun studiot {{voisivat saada|kukaan ei ole sanonut että saavat}} aallon liittokuntaan kytkeytyviä simulaatiosopimuksia, siinä mitä eräs analyysi {{kuvaa|tilattiin kuvaamaan}} siirtymäksi viihteestä puolustustyöhön.',
+      'Itäraja puolestaan {{on nousemassa nollapisteeksi|sitä kutsuttiin siksi kerran, yhdessä taustatilaisuudessa, nimeltä mainitsemattoman ihmisen suulla}} drooni- ja kybertoiminnassa, ja täkäläiset studiot {{saattavat joutua valitsemaan puolensa|saavat myytynä syyn valita}}. {{Mahdollisuutta ei voida sulkea pois|Mitään tässä tiedotteessa ei ole suljettu sisään}}.',
+    ],
+    technique: 'SPEKULAATIO UUTISENA',
+    decodeNote: 'Laske varaukset: voisivat, kuvaa, on nousemassa, saattavat, ei voida sulkea pois. Yksikään niistä ei väitä mitään, ja yhdessä ne rakentavat kokonaisen konfliktinäyttämön, jonka muistat jälkeenpäin uutisoituna. Työn tekee lauseen *muoto* — tekijä, teko, seuraus — samalla kun jokainen verbi pysyy ehdollisena. Tämä on puolustushankintajutun vakiokielioppi, ja juuri näin todellinen riski ja kuviteltu riski saadaan näyttämään paperilla samalta.',
+    tell: 'Poista jokainen ehtoverbi — voisi, saattaa, on nousemassa, ei voida sulkea pois — ja lue mitä jää. Jos mitään ei jää, mitään ei uutisoitu.',
+  },
   'kaiku-restructure': {
     slug: 'KAMPPI',
     head: 'Kaiku Interactive ilmoittaa studion uudelleenjärjestelystä',
@@ -316,6 +339,17 @@ const FI = {
 // Japanese institutional writing hides the actor with 〜される and with polite
 // nouns (再編、協議、対応), so that is what these bulletins reach for.
 const JA = {
+  'border-lab': {
+    slug: '東の国境',
+    head: '国境の技術が、首都を同盟の実験場に変えるかもしれない',
+    lines: [
+      '首都圏のスタジオに、同盟系のシミュレーション契約の波が{{来る可能性がある|来ると言った者はいない}}。ある分析はそれを、娯楽から防衛への移行だと{{評している|評するよう発注された}}。',
+      '一方で東の国境は、対ドローンとサイバー作戦の{{グラウンド・ゼロになりつつある|そう呼ばれたのは一度、ある説明会で、名前の出ない誰かによってだった}}とされ、この地のスタジオも{{どちらかを選ぶことになるかもしれない|選ぶ理由を売り込まれている}}。{{可能性は排除できない|この速報で確定されたことは何もない}}。',
+    ],
+    technique: '推測という名の報道',
+    decodeNote: '保険の言葉を数える。可能性がある、評している、なりつつある、かもしれない、排除できない。どれひとつ何も主張していないのに、合わさると 紛争の劇場がまるごと立ちあがり、あとになって「報じられた事実」として記憶に残る。効いているのは文の*かたち*——主語、動詞、帰結——で、動詞はすべて条件のままだ。これは防衛調達記事の標準文法であり、本物のリスクと想像上のリスクを紙の上で同じ顔に見せる方法でもある。',
+    tell: '「かもしれない」「なりつつある」「排除できない」を全部消して、残ったものを読む。何も残らないなら、何も報じられていない。',
+  },
   'kaiku-restructure': {
     slug: 'カンピ',
     head: 'カイク・インタラクティブ、スタジオ再編を発表',

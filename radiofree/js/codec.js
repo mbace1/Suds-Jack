@@ -13,10 +13,10 @@
 // every frame — so Toko is lip-synced to the text on screen instead of flapping
 // on a timer. Vowels open the mouth, consonants part it, spaces close it.
 
-import { PixelScreen, shade, mix } from './screen.js?v=4';
-import { PAL, SECTOR_COLOR } from './palette.js?v=4';
-import { Toko } from './toko.js?v=4';
-import { drawVisual, PANEL_W, PANEL_H, num } from './visuals.js?v=4';
+import { PixelScreen, shade, mix } from './screen.js?v=5';
+import { PAL, SECTOR_COLOR } from './palette.js?v=5';
+import { Toko } from './toko.js?v=5';
+import { drawVisual, PANEL_W, PANEL_H, num } from './visuals.js?v=5';
 
 export const POST_W = 144, POST_H = 276;
 const VF = { x: 8, y: 6, w: PANEL_W, h: PANEL_H };     // the story frame
@@ -41,6 +41,7 @@ export class Post {
     this.mouth = 0;
     this.wave = new Array(31).fill(0.2);
     this.live = false;
+    this.silent = false;               // the sign-off: the carrier is gone
   }
 
   // a post that scrolls into view re-tunes: the picture fades up out of noise
@@ -57,7 +58,7 @@ export class Post {
     // breathing carrier — with noise alone, an idle channel quantised to 1px
     // and the band read as a broken dotted line instead of an open mic.
     this.wave.shift();
-    const carrier = 0.3 + Math.sin(this.t * 3.1) * 0.13 + Math.random() * 0.1;
+    const carrier = this.silent ? 0 : 0.3 + Math.sin(this.t * 3.1) * 0.13 + Math.random() * 0.1;
     this.wave.push(Math.min(1, mouth * 0.82 + carrier));
   }
 

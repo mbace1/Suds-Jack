@@ -8,8 +8,8 @@
 // flattering way are all part of the same job, and decoding the text without
 // decoding the chart would teach half the lesson.
 
-import { PAL } from './palette.js?v=4';
-import { mix, shade, bayer } from './screen.js?v=4';
+import { PAL } from './palette.js?v=5';
+import { mix, shade, bayer } from './screen.js?v=5';
 
 // portrait: the post is 9:16-ish and this fills its upper two thirds
 export const PANEL_W = 128, PANEL_H = 152;
@@ -382,7 +382,100 @@ function crowd2(scr, t, d) {
   num(scr, W - 22, 8, d > 0.4 ? '500' : '900', ink(d));
 }
 
-const PANELS = { chart, chart2, mesh, crowd, heat, crane, tower, coin, sea, sat, engine, crowd2 };
+
+// The sign-off: a test card. Not a bulletin — the picture a station leaves up
+// when it stops broadcasting, which is the honest end for a feed that has just
+// spent twelve posts telling you to watch who is choosing.
+function signoff(scr, t, d) {
+  field(scr, 0, false);
+  const bars = [PAL.GREEN, PAL.GAMING, PAL.INDUSTRY, PAL.DEFENCE, PAL.AMBER, PAL.GREEN_DIM];
+  const bw = W / bars.length;
+  bars.forEach((c, i) => scr.px(i * bw, 8, Math.ceil(bw), 44, c));
+  scr.px(0, 52, W, 1, PAL.PANEL_LO);
+
+  // the classic circle and crosshair
+  const cx = 64, cy = 86, r = 26;
+  for (let a = 0; a < Math.PI * 2; a += 0.03) {
+    scr.px(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 1, 1, PAL.GREEN_DIM);
+    scr.px(cx + Math.cos(a) * (r - 8), cy + Math.sin(a) * (r - 8), 1, 1, PAL.GREEN_LO);
+  }
+  scr.px(cx - r - 6, cy, r * 2 + 12, 1, PAL.GREEN_LO);
+  scr.px(cx, cy - r - 6, 1, r * 2 + 12, PAL.GREEN_LO);
+
+  // the three bands, listed one last time
+  ['87.60', '104.40', '141.12'].forEach((f, i) => {
+    num(scr, 44, 122 + i * 8, f, i === 2 ? PAL.DEFENCE : PAL.GREEN_DIM);
+  });
+
+  // one scan bar still moving: a station that has signed off is not a page
+  // that failed to load, and the difference has to be visible
+  const y = (t * 18) % (H + 20) - 10;
+  scr.ctx.globalAlpha = 0.14;
+  scr.px(0, y, W, 7, PAL.GREEN_HOT);
+  scr.ctx.globalAlpha = 1;
+}
+
+
+// The border, as a map. Drawn the way the bulletin talks: tracks everywhere,
+// cones, contacts, a whole theatre. Decode strips the speculative overlay and
+// leaves what was actually observed — two marks and a lot of empty country.
+// The picture is doing the same job as the hedges, and it has to come apart
+// the same way.
+function border(scr, t, d) {
+  field(scr, d, false);
+  const spec = 1 - Math.min(1, d * 1.6);          // how much of the theatre is left
+
+  // the land: city side west, dark country east, the line between them
+  scr.px(0, 0, 74, H, mix('#0b1a1c', '#1d1508', d));
+  scr.px(80, 0, W - 80, H, mix('#080f12', '#150f06', d));
+  for (let y = 0; y < H; y += 6) {                // the border itself
+    scr.px(76, y, 2, 4, mix(PAL.GREEN_DIM, PAL.AMBER, d));
+  }
+
+  // the studios, west side: the thing the story says is being reshaped
+  for (let i = 0; i < 4; i++) {
+    const x = 10 + (i % 2) * 26, y = 22 + i * 30;
+    scr.rect(x, y, 20, 14, mix(PAL.PANEL_LO, '#241a08', d), ink(d * 0.6));
+    const on = ((Math.floor(t * 2) + i) % 4) !== 0;
+    scr.px(x + 3, y + 4, 5, 3, on ? ink(d) : inkLo(d));
+    scr.px(x + 11, y + 4, 5, 3, on ? inkLo(d) : ink(d));
+  }
+
+  // the overlay: tracks crossing the line, cones, contacts. All of it fades
+  // out under the decode except the two that were really seen.
+  if (spec > 0.02) {
+    for (let i = 0; i < 7; i++) {                 // drone tracks
+      const y0 = 14 + i * 19, sway = Math.sin(t * 1.2 + i) * 5;
+      for (let x = 120; x > 20; x -= 5) {
+        const y = y0 + (120 - x) * 0.12 + sway;
+        if (bayer(x >> 1, y >> 1) < spec * 0.9) scr.px(x, y, 3, 1, PAL.GREEN_LO);
+      }
+      scr.px(20, y0 + 12 + sway, 3, 3, shade(PAL.GREEN, spec));
+    }
+    for (let i = 0; i < 2; i++) {                 // jamming cones off the line
+      const ox = 78, oy = 40 + i * 66;
+      for (let k = 0; k < 40; k += 3) {
+        const spread = k * 0.5;
+        for (let j = -spread; j < spread; j += 4) {
+          if (bayer(k >> 1, j >> 1) < spec * 0.4) scr.px(ox - k, oy + j, 2, 2, PAL.GREEN_LO);
+        }
+      }
+    }
+  }
+
+  // the contacts: five claimed, two confirmed. The three that go are the story.
+  const marks = [[52, 30, 1], [96, 58, 0], [38, 78, 0], [104, 104, 1], [64, 132, 0]];
+  for (const [x, y, real] of marks) {
+    if (!real && spec < 0.35) continue;
+    const c = real ? mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d) : shade(PAL.GREEN_DIM, spec);
+    scr.px(x - 3, y, 7, 1, c);
+    scr.px(x, y - 3, 1, 7, c);
+    if (real && d > 0.3) scr.disc(x, y, 2, PAL.AMBER_HOT);
+  }
+  num(scr, 6, H - 10, d > 0.4 ? '2' : '5', ink(d));
+}
+
+const PANELS = { signoff, border, chart, chart2, mesh, crowd, heat, crane, tower, coin, sea, sat, engine, crowd2 };
 
 // drawVisual falls back rather than throwing, so a mistyped key would ship the
 // wrong picture beside the right words in total silence. The key list is
