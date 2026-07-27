@@ -10,7 +10,7 @@
   <meta name="description" content="Every game in the Suds Jack workshop on one page — vector tube shooters, gelatin bullet hell, voxel first-person survival, a paper route, and quiet stories that send you back outside." />
   <meta name="theme-color" content="#06070a" />
   <meta name="color-scheme" content="dark" />
-  <link rel="stylesheet" href="hub/hub.css?v=7" />
+  <link rel="stylesheet" href="hub/hub.css?v=8" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%2306070a'/><circle cx='8' cy='8' r='4' fill='%2335e8d8'/></svg>" />
 </head>
 <body>
@@ -21,27 +21,27 @@
     </header>
 
     <div class="rule"></div>
-    <p class="count">The floor — in development</p>
+    <p class="count" id="floor-head">The floor — in development</p>
 
     <main>
-      <h2 class="sr-only">Games in development</h2>
+      <h2 class="sr-only" id="floor-sr">Games in development</h2>
       <div class="rack" id="cabinets"></div>
 
       <div id="archive-block">
         <div class="rule"></div>
-        <h2 class="count">Archived — finished or set down</h2>
+        <h2 class="count" id="archive-head">Archived — finished or set down</h2>
         <div class="rack archived" id="archived"></div>
       </div>
 
       <div class="rule"></div>
-      <h2 class="shelf-head">Shader sketches — where the look came from</h2>
+      <h2 class="shelf-head" id="sketch-head">Shader sketches — where the look came from</h2>
       <ul class="shelf" id="sketches"></ul>
     </main>
 
     <div class="rule"></div>
 
     <footer id="status">
-      <a href="https://github.com/mbace1/Suds-Jack">Source on GitHub</a>
+      <a href="https://github.com/mbace1/Suds-Jack" id="source-link">Source on GitHub</a>
       <button class="link-btn" id="hub-feedback">Tell us about the arcade itself</button>
     </footer>
   </div>
@@ -55,6 +55,6 @@
     }
   </style>
 
-  <script type="module" src="hub/hub.js?v=8"></script>
+  <script type="module" src="hub/hub.js?v=9"></script>
 </body>
 </html>

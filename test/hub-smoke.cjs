@@ -190,6 +190,72 @@ function check(name, cond) {
   check('an empty note closes without ceremony', await page.locator('.scrim').count() === 0);
   check('and nothing is recorded for it', (await page.evaluate(() => __hub.feedback.archive())).length === 0);
 
+  // ── three languages, at the top ──
+  const lang = await page.evaluate(async () => {
+    const i = await import('./hub/i18n.js?v=1');
+    const en = i.keysOf('en');
+    const missing = {};
+    for (const l of ['fi', 'ja']) {
+      const have = new Set(i.keysOf(l));
+      missing[l] = en.filter(k => !have.has(k));
+    }
+    // a game's own copy lives in the catalogue, so check it the same way: every
+    // field it says in English it should say in the other two
+    const FIELDS = ['tagline', 'lineage', 'controls', 'note'];
+    const thin = [];
+    for (const g of [...__hub.games, ...__hub.sketches]) {
+      for (const l of ['fi', 'ja']) {
+        for (const f of FIELDS) {
+          // lineage is mostly proper nouns and may legitimately not translate
+          if (g[f] && f !== 'lineage' && !g[l]?.[f]) thin.push(`${g.id}.${l}.${f}`);
+        }
+      }
+    }
+    return { count: en.length, missing, thin };
+  });
+  check(`the hub says ${lang.count} things, and says them in Finnish${lang.missing.fi.length ? ` — missing ${lang.missing.fi.slice(0, 3)}` : ''}`,
+    lang.missing.fi.length === 0);
+  check(`and in Japanese${lang.missing.ja.length ? ` — missing ${lang.missing.ja.slice(0, 3)}` : ''}`,
+    lang.missing.ja.length === 0);
+  check(`every cabinet carries its own words in all three${lang.thin.length ? ` — ${lang.thin.slice(0, 3)}` : ''}`,
+    lang.thin.length === 0);
+
+  check('the language row is at the top of the page',
+    await page.locator('header .lang-row .lang-btn').count() === 3);
+  const langBoxes = await page.$$eval('.lang-btn', bs => bs.map(b => {
+    const r = b.getBoundingClientRect();
+    return { code: b.textContent, w: Math.round(r.width), h: Math.round(r.height), name: b.getAttribute('aria-label') };
+  }));
+  check(`by code, with the full name kept as the accessible name (${langBoxes.map(b => b.name)})`,
+    langBoxes.every(b => b.code.length === 2 && b.name && b.name.length > 2));
+  check('and each is a 44px target', langBoxes.every(b => b.w >= 44 && b.h >= 44));
+
+  const before = await page.locator('#floor-head').textContent();
+  await page.locator('.lang-btn[data-lang="fi"]').click();
+  const fi = await page.evaluate(() => ({
+    head: document.getElementById('floor-head').textContent,
+    lang: document.documentElement.lang,
+    play: document.querySelector('.cab .btn.play')?.textContent,
+    tagline: document.querySelector('.cab .tagline')?.textContent,
+    active: document.querySelector('.lang-btn.active')?.dataset.lang,
+  }));
+  check(`switching relabels the page's own words ("${fi.head}")`, fi.head !== before && fi.head.length > 0);
+  check(`and the cabinets' words with them ("${fi.play?.trim()}")`, /PELAA|Pelaa/i.test(fi.play ?? ''));
+  check('and the games\' own copy', /paja|Vektorinen|Selain/i.test(fi.tagline ?? ''));
+  // a page claiming lang="en" while showing Finnish lies to every screen reader
+  // and translation tool that asks it
+  check('<html lang> follows', fi.lang === 'fi');
+  check('and the row marks which one is on', fi.active === 'fi');
+
+  await page.reload({ waitUntil: 'networkidle' });
+  check('the choice survives a reload',
+    await page.evaluate(() => document.documentElement.lang) === 'fi');
+  await page.locator('.lang-btn[data-lang="ja"]').click();
+  check('and Japanese is there too',
+    /プレイ/.test(await page.locator('.cab .btn.play').first().textContent()));
+  await page.locator('.lang-btn[data-lang="en"]').click();
+  check('and back to English', (await page.locator('#floor-head').textContent()) === before);
+
   // ── feedback: what the note is ABOUT ──
   // The kinds are ordered per project, and that ordering is the question each
   // project is asking — so it has to survive, not quietly fall back to a fixed

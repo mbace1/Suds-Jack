@@ -27,7 +27,11 @@ html { -webkit-text-size-adjust: 100%; }
 body {
   background: var(--bg);
   color: var(--ink);
-  font: 14px/1.6 'Courier New', ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Courier New carries no CJK at all, so name the Japanese faces rather than
+     let each platform pick one — otherwise the ja page falls back to whatever
+     the browser has and the line rhythm changes under you */
+  font: 14px/1.6 'Courier New', ui-monospace, SFMono-Regular, Menlo,
+        'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic', 'MS Gothic', monospace;
   padding: 0 16px 64px;
 }
 
@@ -43,7 +47,36 @@ a { color: inherit; }
 .wrap { max-width: 1520px; margin: 0 auto; }
 
 /* ── masthead ── */
-header { padding: 48px 0 0; }
+/* the language row sits above the title, hard right — it is the first thing a
+   Finnish or Japanese reader needs and the last thing anyone else looks at, so
+   it goes where the eye lands first without taking any of the title's room */
+header { padding: 18px 0 0; }
+
+.lang-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.lang-btn {
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  background: none;
+  border: none;
+  color: var(--ink-dim);
+  cursor: pointer;
+  /* a two-letter code is a fine thing to read and a poor thing to hit; the
+     padding grows the target without loosening the row */
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 8px;
+}
+
+.lang-btn:hover { color: var(--ink); }
+.lang-btn.active { color: var(--accent); }
 
 h1 {
   font-size: clamp(20px, 4.4vw, 30px);
@@ -60,6 +93,28 @@ h1 .amp { color: var(--accent); }
   font-size: 13px;
   max-width: 62ch;
 }
+
+/* Letter-spacing is what makes the Latin chrome read as a terminal, and it is
+   what makes kana read as broken: Japanese is already spaced by its own glyph
+   widths, so tracking it apart just loosens the line. Tighten it back for ja
+   only — the terminal look survives on the Latin that is left (SUDS JACK, the
+   tags, the version numbers). */
+:root:lang(ja) .count,
+:root:lang(ja) .btn,
+:root:lang(ja) .lineage,
+:root:lang(ja) .shelf-head,
+:root:lang(ja) .status-label,
+:root:lang(ja) .opt-btn { letter-spacing: .04em; }
+
+/* the title and the game names are the same Latin in all three languages —
+   they keep the tracking that makes them a marquee */
+:root:lang(ja) h1, :root:lang(ja) .cab h3 { letter-spacing: .34em; }
+:root:lang(ja) .cab h3 { letter-spacing: .16em; }
+
+/* `ch` is the width of a zero, so a 62ch measure is about 31 full-width
+   characters — narrow enough that the tagline broke to a two-word second line.
+   CJK carries more per character; give it the room. */
+:root:lang(ja) .sub { max-width: 92ch; }
 
 /* the rules that bracket every block — a terminal's only ornament */
 .rule { height: 1px; background: var(--line); margin: 18px 0; }
