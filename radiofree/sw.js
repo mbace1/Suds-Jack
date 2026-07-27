@@ -13,19 +13,19 @@
 // Registered from index.html over https only (or with ?sw=1), so local dev and
 // the smoke gate are never served a stale shell.
 
-const VERSION = 'v5';
+const VERSION = 'v6';
 const CACHE = `rfh-${VERSION}`;
 
 // the shell: everything needed to open the feed and read every bulletin. The
 // query strings matter — these are the URLs the page actually requests.
-const V = `?v=5`;
+const V = `?v=6`;
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png',
-  ...['main', 'codec', 'toko', 'visuals', 'stories', 'i18n', 'screen', 'audio', 'palette']
+  ...['main', 'codec', 'toko', 'visuals', 'broll', 'poly', 'stories', 'i18n', 'screen', 'audio', 'palette']
     .map(m => `./js/${m}.js${V}`),
 ];
 

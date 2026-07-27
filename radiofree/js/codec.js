@@ -8,17 +8,28 @@
 // Both frames are drawn into detached buffers and blitted into ONE canvas, so
 // they cannot drift apart when CSS scales the post to the viewport.
 //
+// The top frame is a PROGRAM FEED and it cuts: the graphic, then footage from
+// the city, then a wide master of the anchor, then footage again — the way a
+// news package is actually assembled. Toko's close portrait stays put below it
+// as the constant, so a cut to the wide shot reads as a second camera on the
+// same person rather than the same picture twice. Under DECODE the cutting
+// STOPS and holds on the graphic: the pace is part of the persuasion, and
+// taking a story apart means being allowed to look at one thing.
+//
 // The Reader is the other half of the illusion: it types the bulletin one
 // character at a time, blips per character, and hands back a mouth amplitude
 // every frame — so Toko is lip-synced to the text on screen instead of flapping
 // on a timer. Vowels open the mouth, consonants part it, spaces close it.
 
-import { PixelScreen, shade, mix } from './screen.js?v=5';
-import { PAL, SECTOR_COLOR } from './palette.js?v=5';
-import { Toko } from './toko.js?v=5';
-import { drawVisual, PANEL_W, PANEL_H, num } from './visuals.js?v=5';
+import { PixelScreen, shade, mix } from './screen.js?v=6';
+import { PAL, SECTOR_COLOR } from './palette.js?v=6';
+import { Toko } from './toko.js?v=6';
+import { drawVisual, PANEL_W, PANEL_H, num } from './visuals.js?v=6';
+import { drawBroll } from './broll.js?v=6';
+import { drawWide } from './toko.js?v=6';
 
 export const POST_W = 144, POST_H = 276;
+const SHOT_SECS = 3.6;                 // how long the edit holds a shot
 const VF = { x: 8, y: 6, w: PANEL_W, h: PANEL_H };     // the story frame
 const PF = { x: 8, y: 166, w: 96, h: 96 };             // the portrait frame
 const DATA = { x: 110, y: 166, w: 26, h: 96 };         // freq / rec / level
@@ -42,14 +53,25 @@ export class Post {
     this.wave = new Array(31).fill(0.2);
     this.live = false;
     this.silent = false;               // the sign-off: the carrier is gone
+    this.broll = story.broll || 'esplanadi';
+    this.shots = story.visual === 'signoff'
+      ? ['graphic']                    // a test card does not cut to anything
+      : ['graphic', 'broll', 'wide', 'broll'];
+    this.shot = 0;                     // 0 is always the graphic
+    this.shotT = 0;
+    this.flash = 0;
   }
 
   // a post that scrolls into view re-tunes: the picture fades up out of noise
-  goLive() { this.live = true; this.signal = 0; }
+  // A post that comes back to camera starts on the graphic, not halfway through
+  // an edit it was running when you scrolled off it — the story panel is what
+  // the bulletin is about, so it is what you land on.
+  goLive() { this.live = true; this.signal = 0; this.shot = 0; this.shotT = 0; this.flash = 0; }
   goIdle() { this.live = false; }
 
   update(dt, mouth) {
     this.t += dt;
+    this.cutting(dt);
     this.mouth = mouth;
     this.signal += (1 - this.signal) * Math.min(1, dt * 1.6);
     this.decode += ((this.decoded ? 1 : 0) - this.decode) * Math.min(1, dt * 4.5);
@@ -62,6 +84,25 @@ export class Post {
     this.wave.push(Math.min(1, mouth * 0.82 + carrier));
   }
 
+  // the edit. Holds on the graphic while decoding, otherwise cuts on a beat.
+  cutting(dt) {
+    // the flash decays on its own clock — it has to keep falling in the decoded
+    // branch too, or the cut back to the graphic leaves the panel washed out
+    if (this.flash > 0) this.flash = Math.max(0, this.flash - dt * 7);
+    if (this.shots.length < 2) return;
+    if (this.decoded) {
+      // decoding is reading: cut home to the graphic (it decodes too) and stay
+      if (this.shots[this.shot] !== 'graphic') { this.shot = 0; this.shotT = 0; this.flash = 1; }
+      return;
+    }
+    this.shotT += dt;
+    if (this.shotT >= SHOT_SECS) {
+      this.shotT = 0;
+      this.shot = (this.shot + 1) % this.shots.length;
+      this.flash = 1;
+    }
+  }
+
   // one frame for a post nobody is looking at yet: no reader, no motion
   renderStatic() {
     this.toko.update(0.016, 0, this.decoded);
@@ -72,7 +113,13 @@ export class Post {
     const s = this.scr;
     s.clear(PAL.SHELL);
     this.toko.draw(this.portrait, this.signal);
-    drawVisual(this.story.visual, this.panel, this.t, this.decode);
+
+    // whichever shot the edit is on, into the one program buffer
+    const shot = this.shots[this.shot];
+    if (shot === 'broll') drawBroll(this.broll, this.panel, this.t, this.decode);
+    else if (shot === 'wide') drawWide(this.panel, this.toko, this.signal);
+    else drawVisual(this.story.visual, this.panel, this.t, this.decode);
+    if (this.flash > 0.02) this.cutFlash();
 
     s.ctx.drawImage(this.panel.canvas, VF.x, VF.y);
     s.ctx.drawImage(this.portrait.canvas, PF.x, PF.y);
@@ -85,6 +132,21 @@ export class Post {
 
     s.px(0, 0, POST_W, 1, shade(PAL.SHELL, 1.9));
     s.px(0, POST_H - 1, POST_W, 1, shade(PAL.SHELL, 0.4));
+  }
+
+  // the snap on a cut: one bright band and a couple of displaced rows, gone in
+  // a tenth of a second. Without it the shots simply replace each other and the
+  // frame reads as a channel change rather than an edit.
+  cutFlash() {
+    const p = this.panel, k = this.flash;
+    p.ctx.globalAlpha = k * 0.5;
+    p.px(0, 0, p.w, p.h, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, this.decode));
+    p.ctx.globalAlpha = 1;
+    for (let i = 0; i < 3; i++) {
+      const y = Math.floor((i * 47 + this.t * 90) % (p.h - 6));
+      const img = p.ctx.getImageData(0, y, p.w, 4);
+      p.ctx.putImageData(img, Math.round((i % 2 ? 1 : -1) * k * 9), y);
+    }
   }
 
   // corner brackets, not a full box — the codec's frames are implied
@@ -118,8 +180,18 @@ export class Post {
     s.px(DATA.x + 4, DATA.y + 16, 4, 4, on ? PAL.DEFENCE : shade(PAL.DEFENCE, 0.3));
     s.px(DATA.x + 11, DATA.y + 17, 9, 2, shade(c, 0.7));
 
+    // which camera the edit is on: three marks, the live one lit
+    if (this.shots.length > 1) {
+      const names = ['graphic', 'broll', 'wide'];
+      const live = this.shots[this.shot];
+      names.forEach((n, i) => {
+        const on = n === live;
+        s.px(DATA.x + 4 + i * 7, DATA.y + 88, 5, 4, on ? c : shade(PAL.PANEL, 1.7));
+      });
+    }
+
     // a vertical level meter driven by the same mouth value as the face
-    const segs = 12, top = DATA.y + 26;
+    const segs = 11, top = DATA.y + 26;
     const lit = Math.round(this.mouth * segs);
     for (let i = 0; i < segs; i++) {
       const y = top + (segs - 1 - i) * 5;

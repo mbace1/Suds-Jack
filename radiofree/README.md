@@ -172,6 +172,8 @@ radiofree/
     codec.js      one post's screen (both frames in ONE canvas) + the Reader
     toko.js       the anchor: gel wobble, blink, lip-sync, decode tear
     visuals.js    the story panels + the sign-off test card
+    broll.js      the Helsinki footage plates the package cuts to
+    poly.js       the small flat-shaded 3D renderer the footage is built on
     stories.js    the wire — copy, decode readings, techniques, tells (fi/en/ja)
     i18n.js       every other string, in all three languages
     screen.js     PixelScreen: small canvas, hard-pixel upscale, dither helpers
@@ -218,9 +220,41 @@ before DECODE. Sector colours (cyan/green/red) carry the channel; green is the
 default phosphor. Adding an amber accent anywhere else costs the app the one
 piece of colour vocabulary it teaches.
 
-**A mistyped visual key falls back silently** to the bar chart, which would ship
-the wrong picture beside the right words. `PANEL_KEYS` is exported from
-`visuals.js` and the gate checks every story's key against it.
+**The top frame is an edit, not a picture.** Every bulletin cuts on a 3.6 s beat
+between three shots: the story **graphic** (`visuals.js`), **B-roll** of a
+low-poly Helsinki (`broll.js` — the Esplanadi with drones over it, the container
+harbour, the eastern treeline), and a **wide** of the booth (`drawWide` in
+`toko.js`). The three are deliberately different registers — a flat phosphor
+chart, daylight footage with depth in it, and a second camera on the same
+person — because that contrast is what makes a post read as a cut package
+rather than as two fixed frames. The director lives in `Post.cutting()`; a cut
+snaps with one bright band and a couple of displaced rows, or it reads as a
+channel change rather than an edit. **DECODE holds the graphic**: it is the only
+shot that decodes, so pressing it cuts home and stays there.
+
+**Only the live post runs the edit.** Neighbours hold the single frame
+`renderStatic()` painted, and `goLive()` resets a post to shot 0 — you always
+land on the graphic, never halfway through an edit the post was running when
+you scrolled off it.
+
+**Footage is 3D, and `poly.js` is a painter's-algorithm renderer with no
+clipper.** Two traps it has already paid for. A polygon that reaches behind the
+near plane is dropped *whole* — the first ground planes ran from z −4 with the
+camera at z −3, so every one of them silently vanished and the shot was bare
+sky. And sorting is by average depth, so two full-length ground planes stacked
+on each other (a road laid over the lawns) have the *same* average depth and the
+sort is a coin toss: butt the strips together in x instead, and it cannot
+matter. `cam.hz` slides the horizon off centre — the renderer has no pitch, and
+in a 128×152 portrait frame a horizon at the halfway mark is half a picture.
+
+**Video grain must not come from `bayer()`.** The low cells of the matrix are the
+same cells every frame, so a bayer-gated grain sat perfectly still and read as a
+perforated screen rather than as a signal. Plain `Math.random()` positions.
+
+**A mistyped visual or footage key falls back silently** — to the bar chart, or
+to Esplanadi — which would ship the wrong picture beside the right words.
+`PANEL_KEYS` and `BROLL_KEYS` are exported from `visuals.js` and `broll.js` and
+the gate checks every story's `visual` and `broll` against them.
 
 **A missing string does not throw.** `t()` returns the key, and a raw key is
 still a non-empty string, so `rail.decode` would ship quietly on a button. The

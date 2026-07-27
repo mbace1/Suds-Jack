@@ -22,21 +22,28 @@ export const SECTORS = [
   { id: 'DEFENCE',  freq: '141.12', call: 'VARTIO' },
 ];
 
-// structure only — every word of these lives in the language blocks below
+// Structure only — every word of these lives in the language blocks below.
+//
+// `visual` is the graphic panel (a chart, a diagram — the thing that decodes).
+// `broll` is the footage the package cuts to: a low-poly Helsinki plate from
+// broll.js. They are different registers on purpose — a flat green chart and a
+// daylight street one cut apart is what makes this read as an edited package
+// rather than a two-frame codec. Both keys are checked by the gate, because a
+// wrong one falls back silently to the default and ships the wrong picture.
 export const STORIES = [
-  { id: 'kaiku-restructure',  sector: 'GAMING',   visual: 'chart'  },
-  { id: 'season-zero',        sector: 'GAMING',   visual: 'chart2' },
-  { id: 'foundry-deal',       sector: 'GAMING',   visual: 'mesh'   },
-  { id: 'summit-consensus',   sector: 'GAMING',   visual: 'crowd'  },
-  { id: 'heat-recovery',      sector: 'INDUSTRY', visual: 'heat'   },
-  { id: 'vuosaari-automation',sector: 'INDUSTRY', visual: 'crane'  },
-  { id: 'sixth-generation',   sector: 'INDUSTRY', visual: 'tower'  },
-  { id: 'round-b',            sector: 'INDUSTRY', visual: 'coin'   },
-  { id: 'seabed',             sector: 'DEFENCE',  visual: 'sea'    },
-  { id: 'interference',       sector: 'DEFENCE',  visual: 'sat'    },
-  { id: 'synthetic-env',      sector: 'DEFENCE',  visual: 'engine' },
-  { id: 'amplification',      sector: 'DEFENCE',  visual: 'crowd2' },
-  { id: 'border-lab',         sector: 'DEFENCE',  visual: 'border' },
+  { id: 'kaiku-restructure',  sector: 'GAMING',   visual: 'chart',  broll: 'esplanadi' },
+  { id: 'season-zero',        sector: 'GAMING',   visual: 'chart2', broll: 'esplanadi' },
+  { id: 'foundry-deal',       sector: 'GAMING',   visual: 'mesh',   broll: 'esplanadi' },
+  { id: 'summit-consensus',   sector: 'GAMING',   visual: 'crowd',  broll: 'esplanadi' },
+  { id: 'heat-recovery',      sector: 'INDUSTRY', visual: 'heat',   broll: 'harbour'   },
+  { id: 'vuosaari-automation',sector: 'INDUSTRY', visual: 'crane',  broll: 'harbour'   },
+  { id: 'sixth-generation',   sector: 'INDUSTRY', visual: 'tower',  broll: 'treeline'  },
+  { id: 'round-b',            sector: 'INDUSTRY', visual: 'coin',   broll: 'esplanadi' },
+  { id: 'seabed',             sector: 'DEFENCE',  visual: 'sea',    broll: 'harbour'   },
+  { id: 'interference',       sector: 'DEFENCE',  visual: 'sat',    broll: 'treeline'  },
+  { id: 'synthetic-env',      sector: 'DEFENCE',  visual: 'engine', broll: 'treeline'  },
+  { id: 'amplification',      sector: 'DEFENCE',  visual: 'crowd2', broll: 'treeline'  },
+  { id: 'border-lab',         sector: 'DEFENCE',  visual: 'border', broll: 'esplanadi' },
 ];
 
 // ── English ────────────────────────────────────────────────────────

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#04070a">
-<link rel="manifest" href="manifest.webmanifest?v=5">
+<link rel="manifest" href="manifest.webmanifest?v=6">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="description" content="Radio Free Helsinki — a fictional pirate news broadcast. Toko reads the day's wire from a codec screen; DECODE shows you what the wording was doing.">
@@ -310,14 +310,14 @@
   <main id="feed" tabindex="-1"></main>
 </div>
 
-<script type="module" src="js/main.js?v=5"></script>
+<script type="module" src="js/main.js?v=6"></script>
 <script>
   // The worker registers over https only (or with ?sw=1). A station you read
   // on a train has to work with no signal — but local dev and the smoke gate
   // must never be handed a stale shell by a worker they did not ask for.
   if ('serviceWorker' in navigator &&
       (location.protocol === 'https:' || new URLSearchParams(location.search).has('sw'))) {
-    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=5').catch(() => {}));
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=6').catch(() => {}));
   }
 </script>
 </body>

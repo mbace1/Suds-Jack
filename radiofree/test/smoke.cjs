@@ -160,6 +160,27 @@ const contrast = (a, b) => {
   check('decode is per-post, not global',
     await page.locator('.post').nth(2).locator('.decode-box:visible').count() === 0);
 
+  // ── the edit ─────────────────────────────────────────────────────
+  // The package cuts between the story graphic, the Helsinki footage and the
+  // wide of the booth. If the director ever wedges, the post silently becomes
+  // the old static two-frame codec again — so watch it actually cut, and watch
+  // DECODE bring it home to the graphic (the only shot that decodes).
+  const seen = new Set();
+  for (let i = 0; i < 34; i++) {
+    seen.add(await page.evaluate(() => __rfh.state.shot));
+    await page.waitForTimeout(260);
+  }
+  check(`the program frame cuts between shots (${[...seen].join('/')})`, seen.size >= 2);
+  check('the edit cuts to the Helsinki footage', seen.has('broll'));
+  check('the edit cuts to the wide of the booth', seen.has('wide'));
+
+  await live('.decode-btn').click();
+  await page.waitForTimeout(400);
+  check('decoding holds the graphic — the shot that decodes',
+    await page.evaluate(() => __rfh.state.shot) === 'graphic');
+  await live('.decode-btn').click();
+  await page.waitForTimeout(220);
+
   // ── moving through the feed ──────────────────────────────────────
   const head0 = await live('.head').textContent();
   await live('.next-btn').click();
@@ -265,16 +286,26 @@ const contrast = (a, b) => {
   const ids = await page.evaluate(() => __rfh.debug.stories());
   check('every bulletin on the wire is registered', ids.length === 13);
 
-  // a mistyped visual key silently falls back to the bar chart, so the wrong
-  // picture ships next to the right words — check the keys against the panels
-  const badVisuals = await page.evaluate(async () => {
-    const [{ STORIES }, { PANEL_KEYS }] = await Promise.all([
-      import('./js/stories.js?v=5'), import('./js/visuals.js?v=5'),
+  // A mistyped visual or broll key silently falls back to the bar chart / to
+  // Esplanadi, so the wrong picture ships next to the right words — check both
+  // key sets against what the modules actually export. The cache token is read
+  // off the page rather than hardcoded, so this never drifts on a version bump
+  // (and never loads a second copy of the module at a stale query string).
+  const badKeys = await page.evaluate(async () => {
+    const src = document.querySelector('script[type=module]').getAttribute('src');
+    const v = (src.match(/\?v=\d+/) || [''])[0];
+    const [{ STORIES }, { PANEL_KEYS }, { BROLL_KEYS }] = await Promise.all([
+      import(`./js/stories.js${v}`), import(`./js/visuals.js${v}`), import(`./js/broll.js${v}`),
     ]);
-    return STORIES.filter(s => !PANEL_KEYS.includes(s.visual)).map(s => `${s.id}:${s.visual}`);
+    return {
+      visual: STORIES.filter(s => !PANEL_KEYS.includes(s.visual)).map(s => `${s.id}:${s.visual}`),
+      broll: STORIES.filter(s => !BROLL_KEYS.includes(s.broll)).map(s => `${s.id}:${s.broll}`),
+    };
   });
-  check(`every story has a real panel${badVisuals.length ? ' — ' + badVisuals.join(', ') : ''}`,
-    badVisuals.length === 0);
+  check(`every story has a real panel${badKeys.visual.length ? ' — ' + badKeys.visual.join(', ') : ''}`,
+    badKeys.visual.length === 0);
+  check(`every story has real footage${badKeys.broll.length ? ' — ' + badKeys.broll.join(', ') : ''}`,
+    badKeys.broll.length === 0);
 
   const incomplete = [];
   for (const id of ids) {

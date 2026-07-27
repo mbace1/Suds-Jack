@@ -7,8 +7,8 @@
 // timer. In DECODE the picture goes amber and starts tearing: the anchor has
 // stopped reading the official copy.
 
-import { PAL } from './palette.js?v=5';
-import { bayer, mix, shade } from './screen.js?v=5';
+import { PAL } from './palette.js?v=6';
+import { bayer, mix, shade } from './screen.js?v=6';
 
 const CX = 48, CY = 52, R = 26;
 
@@ -213,4 +213,98 @@ export class Toko {
       scr.ctx.putImageData(img, dx, y);
     }
   }
+}
+
+// ── the wide shot ──────────────────────────────────────────────────
+// The master. Same room, camera pulled back: the desk, the laptop she is
+// reading off, the bulb string, her small in the frame. Cutting to this from
+// the close portrait is what makes the post read as an edited package rather
+// than a fixed two-frame codec — it is a different shot of the same person,
+// not the same shot twice.
+export function drawWide(scr, toko, signal = 1) {
+  const g = toko.glitch;
+  const body = mix(PAL.GEL, PAL.AMBER, g * 0.92);
+  const deep = mix(PAL.GEL_DEEP, PAL.AMBER_DIM, g * 0.92);
+  const back = mix('#0a1418', '#1a1208', g * 0.85);
+  const W = scr.w, H = scr.h;
+
+  scr.clear(back);
+
+  // the kitchen along the back wall, further away than in the close-up
+  const unit = mix('#101d21', '#1d150b', g * 0.8);
+  for (let x = 0; x < W; x += 20) {
+    scr.px(x, 40, 19, 26, unit);
+    scr.px(x, 40, 19, 1, shade(unit, 1.4));
+  }
+  const strip = mix('#9fd8e0', '#d8c08a', g * 0.6);
+  scr.px(6, 67, W - 12, 1, strip);
+  for (let x = 6; x < W - 6; x += 2) {
+    if (bayer(x >> 1, 20) < 0.5) scr.px(x, 68, 2, 3, shade(strip, 0.28));
+  }
+  scr.px(0, 72, W, 14, shade(unit, 0.7));
+
+  // the bulb string, wider and slacker at this distance
+  const bulbs = [[14, 18], [42, 26], [70, 20], [98, 27], [120, 16]];
+  let prev = [0, 12];
+  for (const [bx, by] of [...bulbs, [W - 1, 14]]) {
+    scr.line(prev[0], prev[1], bx, by, '#241f16');
+    prev = [bx, by];
+  }
+  for (const [bx, by] of bulbs) {
+    const k = 0.55 + 0.45 * Math.sin(toko.t * 1.4 + bx * 0.3);
+    const warm = mix('#5c3f1e', '#8a6533', k);
+    scr.px(bx, by, 2, 3, warm);
+    scr.px(bx - 1, by + 3, 4, 1, shade(warm, 0.5));
+  }
+
+  // her, small, behind the table
+  const cx = 54, cy = 96, r = 15;
+  const w = Math.sin(toko.t * 2.1) * 0.05;
+  scr.ellipse(cx, cy + 20, 15, 8, deep);                    // shoulders
+  scr.ellipse(cx, cy, r * (1 + w), r * (1 - w), deep);
+  scr.ellipse(cx, cy + 1, r * (1 + w) - 1, r * (1 - w) - 1, body);
+  const shut = toko.blink > 0;
+  for (const sx of [-1, 1]) {
+    if (shut) scr.px(cx + sx * 5 - 2, cy - 2, 4, 1, PAL.GEL_EYE);
+    else scr.ellipse(cx + sx * 5, cy - 2, 2, 2, PAL.GEL_EYE);
+  }
+  const open = Math.max(0, toko.mouth);
+  scr.ellipse(cx, cy + 6, 3 + open * 2, 1 + open * 3, mix(PAL.GEL_EYE, '#3a1005', g * 0.6));
+  scr.px(cx - 5, cy - 7, 2, 2, PAL.SPECULAR);
+  scr.px(cx + 14, cy - 3, 3, 7, '#1d2a2e');                  // the headset, at range
+
+  // the table, and the laptop she is reading off — the key light in the room
+  scr.px(0, 118, W, 34, shade(back, 0.55));
+  scr.px(0, 118, W, 1, shade(back, 1.7));
+  const lidX = cx + 4;
+  scr.px(lidX - 16, 104, 32, 15, '#161d21');                 // the open lid, from behind
+  scr.px(lidX - 14, 106, 28, 11, mix('#2a4a52', PAL.AMBER_DIM, g * 0.7));
+  scr.px(lidX - 18, 119, 38, 3, '#1d262a');                  // the keyboard deck
+  // What is on the table. The wide has to say "flat, not studio" in one look,
+  // and the room alone cannot — a bare surface reads as a set. A mug, a tangle
+  // of cable and a face-down phone do it, sitting in silhouette against the
+  // laptop so they cost nothing but an outline.
+  const prop = shade(back, 0.3), lip = shade(back, 1.5);
+  scr.px(18, 124, 9, 10, prop); scr.px(18, 124, 9, 1, lip);   // the mug
+  scr.px(27, 127, 3, 4, prop);                                 // its handle
+  scr.px(96, 130, 16, 5, prop); scr.px(96, 130, 16, 1, lip);   // the phone, face down
+  scr.line(38, 138, 60, 133, prop);                            // cable, coiled off the deck
+  scr.line(60, 133, 78, 140, prop);
+  scr.px(0, 143, W, 9, shade(back, 0.18));                     // the near edge, in shadow
+
+  // its glow, up onto her and out across the table
+  for (let y = 96; y < 122; y++) {
+    const up = 1 - (122 - y) / 26;
+    for (let x = lidX - 26; x < lidX + 26; x += 2) {
+      if (bayer(x >> 1, y >> 1) < up * 0.34) {
+        scr.px(x, y, 2, 1, shade(mix('#5aa0b4', PAL.AMBER_DIM, g * 0.8), 0.7));
+      }
+    }
+  }
+
+  // the same video treatment as the close-up, so the cut stays inside one feed
+  toko.grain(scr, signal, g);
+  toko.sweep(scr);
+  scr.scanlines(PAL.INK, 3);
+  if (g > 0.05) toko.tear(scr, g);
 }
