@@ -13,9 +13,9 @@
 // takes you back — long enough that it cannot be hit by accident mid-run,
 // short enough that you do not have to wonder whether it is working.
 
-import { watchPad } from './pad.js?v=7';
-import { GAMES } from './games.js?v=7';
-import { attachPad } from './padkeys.js?v=7';
+import { watchPad } from './pad.js?v=8';
+import { GAMES } from './games.js?v=8';
+import { attachPad, holdKey } from './padkeys.js?v=8';
 
 const HOLD_MS = 750;
 const START = 9, BACK = 8;
@@ -63,6 +63,40 @@ style.textContent = `
 }
 .arcade-home.holding { opacity: 1; border-color: #35e8d8; }
 @media print { .arcade-home { display: none; } }
+
+/* The on-screen action button. Only on a touchscreen: a game that says "hold
+   anywhere" is discoverable with a mouse the moment you click, but under a
+   thumb there is nothing to tell you the screen is the button. It sits in the
+   bottom-right where a thumb already is, and it is deliberately large — this
+   is the whole control, not a corner affordance. */
+.arcade-touch {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: 2147482999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 2px;
+  width: 92px; height: 92px;
+  border-radius: 50%;
+  border: 2px solid rgba(180, 200, 210, .45);
+  background: rgba(6, 7, 10, .42);
+  color: #e8ecef;
+  font: 13px/1 'Courier New', ui-monospace, Menlo, monospace;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  user-select: none;
+}
+.arcade-touch .sub { font-size: 9px; opacity: .7; letter-spacing: .06em; }
+.arcade-touch.down { background: rgba(53, 232, 216, .3); border-color: #35e8d8; }
+/* coarse pointer AND no hover: a touchscreen, not a laptop trackpad */
+@media (hover: none) and (pointer: coarse) {
+  .arcade-touch.on { display: flex; }
+}
 `;
 document.head.appendChild(style);
 
@@ -126,6 +160,36 @@ const entry = GAMES.find(g => here.endsWith(`/${g.path}`));
 const padCfg = entry && entry.pad !== 'native' ? entry.pad : null;
 const bridged = attachPad(padCfg);
 
+// ── the on-screen button, for games whose whole control is one press ───
+// Declared per game in the catalogue as `touch: { label, key, sub }`. It holds
+// the same key the pad's A button holds, so the thumb and the controller are
+// the same code path. CSS decides whether it is ever seen: touchscreens only.
+let touchBtn = null;
+if (entry?.touch?.key) {
+  touchBtn = document.createElement('button');
+  touchBtn.className = 'arcade-touch on';
+  touchBtn.type = 'button';
+  touchBtn.setAttribute('aria-label', entry.touch.label ?? 'Hold');
+  touchBtn.innerHTML = `<span>${entry.touch.label ?? 'Hold'}</span>` +
+    (entry.touch.sub ? `<span class="sub">${entry.touch.sub}</span>` : '');
+
+  const set = down => {
+    touchBtn.classList.toggle('down', down);
+    holdKey(entry.touch.key, down);
+  };
+  // the button is the control, so it must not ALSO reach the game's canvas
+  const grab = e => { e.preventDefault(); e.stopPropagation(); set(true); };
+  const drop = e => { e.preventDefault(); e.stopPropagation(); set(false); };
+  touchBtn.addEventListener('pointerdown', grab);
+  touchBtn.addEventListener('touchstart', grab, { passive: false });
+  for (const t of ['pointerup', 'pointercancel', 'pointerleave', 'touchend', 'touchcancel']) {
+    touchBtn.addEventListener(t, drop, { passive: false });
+  }
+  const putBtn = () => document.body.appendChild(touchBtn);
+  if (document.body) putBtn();
+  else document.addEventListener('DOMContentLoaded', putBtn, { once: true });
+}
+
 // let a game know the shell is there, in case it wants to hide it during a
 // cutscene or move it out of the way of its own HUD
-window.__arcadeShell = { home, HOME, game: entry?.id ?? null, pad: padCfg ?? null, bridged };
+window.__arcadeShell = { home, HOME, game: entry?.id ?? null, pad: padCfg ?? null, bridged, touchBtn };

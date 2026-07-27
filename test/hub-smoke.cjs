@@ -27,6 +27,9 @@ const MIME = {
 // stand-ins for the form endpoint: /collect takes the note, /collect-broken
 // always fails, so the outbox path can be exercised too
 const collected = [];
+// paths the server should answer with a stand-in game page (filled in from the
+// catalogue once it has been read — see the on-screen button check)
+const STUB = new Set();
 const server = http.createServer((req, res) => {
   const url = req.url.split('?')[0];
   if (url === '/collect' || url === '/collect-broken') {
@@ -42,6 +45,18 @@ const server = http.createServer((req, res) => {
       });
       res.end('{}');
     });
+    return;
+  }
+  // A stand-in for a game that lives only on the deployed site. Half the
+  // catalogue is not on this branch, so the only way to test the shell against
+  // one of them is to serve a page the shape of one: a canvas, and the single
+  // script tag that is the whole integration.
+  if (STUB.has(url)) {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(`<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1">
+<style>html,body{margin:0;height:100%;background:#000}canvas{width:100%;height:100%;display:block}</style>
+</head><body><canvas></canvas>
+<script type="module" src="../hub/shell.js?v=8"></script></body></html>`);
     return;
   }
   let p = path.join(ROOT, url === '/' ? 'index.html' : url);
@@ -454,6 +469,60 @@ function check(name, cond) {
   check('a tap gets home even when the game swallows touches',
     new URL(tp.url()).pathname === '/' || tp.url().endsWith('/index.html'));
   await touch.close();
+
+  // ── the on-screen button, for one-button games ──
+  // Tiny 2D's entire control is a held press. With a mouse that is discoverable
+  // the moment you click; under a thumb there is nothing to say the screen is
+  // the button. The catalogue's `touch` entry puts one on screen — and it must
+  // hold the SAME key the pad holds, so a thumb and a controller are one code
+  // path rather than two.
+  const oneBtn = catalogue.filter(g => g.touch?.key);
+  check(`the catalogue declares an on-screen button somewhere (${oneBtn.map(g => g.id)})`,
+    oneBtn.length > 0);
+  for (const g of oneBtn) {
+    STUB.add(`/${g.path}`);
+    const tctx = await browser.newContext({
+      viewport: { width: 420, height: 780 }, hasTouch: true, isMobile: true,
+    });
+    const gp = await tctx.newPage();
+    await gp.goto(`${base}/${g.path}`, { waitUntil: 'domcontentloaded' });
+    await gp.waitForSelector('.arcade-touch');
+    // the game listens on window for its own keys; record what actually arrives
+    await gp.evaluate(() => {
+      window.__keys = [];
+      addEventListener('keydown', e => window.__keys.push(`down:${e.code}`));
+      addEventListener('keyup', e => window.__keys.push(`up:${e.code}`));
+    });
+    const btn = gp.locator('.arcade-touch');
+    check(`${g.id}: the button is on screen under a thumb`, await btn.isVisible());
+    const b = await btn.boundingBox();
+    check(`${g.id}: and it is a thumb-sized target (${Math.round(b.width)}px)`, b.width >= 64 && b.height >= 64);
+    check(`${g.id}: and it sits where a thumb already is`,
+      b.x + b.width > 420 * 0.5 && b.y + b.height > 780 * 0.6);
+
+    // a real touch hold, not a synthesised click: press, stay down, let go
+    const cdp = await tctx.newCDPSession(gp);
+    const pt = [{ x: b.x + b.width / 2, y: b.y + b.height / 2, radiusX: 12, radiusY: 12, force: 1 }];
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pt });
+    await gp.waitForTimeout(120);
+    const during = await gp.evaluate(() => window.__keys.slice());
+    check(`${g.id}: holding it holds ${g.touch.key} down`, during.join() === `down:${g.touch.key}`);
+    check(`${g.id}: and the button reads as pressed`,
+      await gp.locator('.arcade-touch.down').count() === 1);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await gp.waitForTimeout(120);
+    const after = await gp.evaluate(() => window.__keys.slice());
+    check(`${g.id}: letting go releases it, once`,
+      after.join() === `down:${g.touch.key},up:${g.touch.key}`);
+    await tctx.close();
+
+    // and it stays out of the way of anyone with a mouse, who found the
+    // control by clicking on their first attempt
+    await page.goto(`${base}/${g.path}`, { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('.arcade-touch', { state: 'attached' });
+    check(`${g.id}: and a mouse never sees it`,
+      await page.locator('.arcade-touch').isVisible() === false);
+  }
 
   // holding Start on a game page walks back to the arcade
   await page.goto(`${base}/${shelled[0].path}`, { waitUntil: 'networkidle' });
