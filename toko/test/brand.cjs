@@ -103,17 +103,17 @@ function serve() {
       slot: wallX - G.stroke / 2,
       stemInsideCrown: (e.stem.y0 - G.stroke / 2) >= (e.cy - e.outer.r - G.stroke / 2) - 0.01,
       stemMergesCrown: (e.stem.y0 - G.stroke / 2) <= (e.cy - e.outer.r + G.stroke / 2) + 0.01,
-      // derive the leg end from the table rather than assuming a sweep — the
-      // sweep is exactly the thing that gets tuned
       eyesClearMouth: (G.mouth.cy + G.mouth.outer.r * Math.sin(G.mouth.outer.a0 * Math.PI / 180)
-        - G.stroke / 2)
-        - (e.cy + e.outer.r * Math.sin(e.outer.a0 * Math.PI / 180) + G.stroke / 2),
-      // an ARCH, not a ring: past ~220° the legs curl under far enough that the
-      // eye closes into a circle and reads as an eyeball stuck on the face
+        - G.stroke / 2) - (e.legs.y + G.stroke / 2),
+      // a CROWN, not a ring: swept past 180° the arc curls under and closes the
+      // eye into a circle — an eyeball stuck on the face
       sweep: e.outer.a1 - e.outer.a0,
-      // the legs and the stem finish level, the way the artwork finishes them
-      legsLevelWithStem: Math.abs(
-        (e.cy + e.outer.r * Math.sin(e.outer.a0 * Math.PI / 180)) - e.stem.y1) < 0.4,
+      // and the legs are straight and PARALLEL, dropped from the crown's ends.
+      // One arc cannot do both jobs: past 180° it curls, short of 180° the legs
+      // never come down at all.
+      legsDrop: e.legs.y - e.cy,
+      // the stem hangs from inside the crown but stops SHORT of the legs
+      stemInsideLegs: e.stem.y1 < e.legs.y && e.stem.y1 > e.cy,
       symmetric: G.mouth.cx === 50,
       bounds: b,
       arcCount: f.arcs().length,
@@ -122,10 +122,13 @@ function serve() {
   ok('the eye slots stay open', geo.slot > 1.5, 'slot = ' + geo.slot.toFixed(2));
   ok('the stem starts inside the crown', geo.stemInsideCrown && geo.stemMergesCrown);
   ok('the mouth clears the eye legs', geo.eyesClearMouth > 1, geo.eyesClearMouth.toFixed(2));
-  ok('the eye is an arch, not a ring', geo.sweep <= 210, geo.sweep + '°');
-  ok('the legs finish level with the stem', geo.legsLevelWithStem);
+  ok('the eye crown is a clean semicircle', geo.sweep === 180, geo.sweep + '°');
+  ok('the legs actually drop', geo.legsDrop > 4, geo.legsDrop.toFixed(2));
+  ok('the stem stops short of the legs', geo.stemInsideLegs);
   ok('the mark is symmetric', geo.symmetric);
-  ok('four arcs and two stems', geo.arcCount === 6, String(geo.arcCount));
+  // 2 mouth arcs + per eye (1 crown + 2 legs + 1 stem) × 2
+  ok('ten strokes: two mouth arcs, two crowns, four legs, two stems',
+    geo.arcCount === 10, String(geo.arcCount));
   ok('the ink is wider than it is tall', geo.bounds.w > geo.bounds.h);
 
   // ── the ink ─────────────────────────────────────────────────────────────

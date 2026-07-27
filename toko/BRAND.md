@@ -50,23 +50,27 @@ colours, because it is as fixed as the colours are.
 
 ## 2. The face
 
-Four fat round-capped arcs and two stems:
+Ten round-capped strokes:
 
 - **The mouth** is two arcs opening up, nested and concentric. Both stop
   *short* of a semicircle, so the tips stand up straight instead of hooking
   outward — that is what keeps a clear band of air between the mouth and the
   eyes above it.
-- **Each eye** is one arc opening down, its legs running about 30° past
-  horizontal, with a **stem dropped from the inside of its crown**. The stem is
+- **Each eye** is a semicircle **crown**, two straight parallel **legs**
+  dropped from its ends, and a shorter **stem** hanging inside it. The stem is
   what cuts the two slots, and the two slots are what make an eye an eye.
 
-One stroke weight throughout. No fills, no corners, no straight lines except
-those two stems.
+One stroke weight throughout. No fills, no corners.
 
-> The stems were arcs at first, on the theory that the whole mark was one move
-> repeated at three scales. It is not. A small arc cannot both merge with the
-> crown and hang as far as the artwork hangs it, and forcing it left a detached
-> dot floating inside the arch. The artwork was right and the theory was wrong.
+> **The eye took three goes, and each wrong answer is worth keeping.**
+> The stem was a small nested arc first — it cannot both merge with the crown
+> and hang as far as the artwork hangs it, and forcing it left a dot floating
+> inside the arch. Then the crown and legs were one arc swept 240°, which curls
+> under and closes the eye into a ring, so it read as an eyeball stuck on the
+> face. Then the same arc stopped at 200° — no curl, but the legs never came
+> down and it was a shallow dome floating too far above the mouth.
+> A crown and legs are separate strokes because they *are* separate strokes,
+> and the legs are parallel because everything else in this face is flat-sided.
 
 **The stroke weight is the most sensitive number in the brand.** Too heavy and
 the eye's slots close up and the arch renders as a blob with hairline cracks in
@@ -151,14 +155,26 @@ tracking, a clipped corner on the *G*, splayed *M*. Set in three lines that
 stack almost solid, flush left, with the ™ at the foot of *Games*. A one-line
 setting exists for anywhere too short to stack.
 
-**The real typeface is the owner's licence and is not in this repo.** Register it
-under the family name **`Toko Grotesk`** — a `@font-face` rule, a `local()`
-lookup, anything — and every lockup in this kit, canvas and HTML alike, picks it
-up with no other change. There is a commented-out block ready for it at the top
-of [`toko.css`](toko.css).
+**The logotype is DRAWN, not set** — [`js/wordmark.js`](js/wordmark.js). It only
+ever says three words, so those three words are outlines: no font file to
+licence, to load, or to fail to load, which is the same rule the face already
+keeps. The letterforms are drawn *after* the owner's face, by eye. They are
+close, and they are ours.
 
-Until it is installed, `substituted()` returns true and the brand board says so
-out loud in a banner rather than quietly shipping the wrong letterforms.
+Twelve glyphs exist, and only twelve — the letters `Toko Midori Games` needs.
+That is deliberate. An alphabet would be a typeface, and a typeface is not ours
+to redraw; a logotype is a drawing of three particular words.
+
+Each glyph is a set of **solids** unioned together and a set of **holes**
+punched out afterwards. The first cut filled them with `evenodd`, and wherever
+two solids overlapped — a *d*'s stem crossing its bowl, an *s*'s bars meeting
+its spines — the overlap cancelled and cut a white notch through the letter.
+
+Leading is **1.06 × cap height**. The drawn glyphs fill 0…cap exactly, so the
+size *is* the cap height; the 0.92 that suits a font (whose em box is taller
+than its caps) laps the three lines over each other.
+
+If the original vector artwork surfaces, its outlines belong in `GLYPHS`.
 
 ### The lockup
 

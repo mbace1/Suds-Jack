@@ -29,9 +29,8 @@ const el = (tag, cls, txt) => {
 cssVars();
 $('#favicon').href = faviconHref();
 
-// say it out loud when the licensed face is not installed, rather than quietly
-// shipping the wrong letterforms
-if (substituted()) $('#font-warn').hidden = false;
+// the note about the letterforms stays up permanently now — they are drawn,
+// and that is worth saying rather than hiding
 
 startMasthead($('#masthead'), { w: 620, h: 168 });
 
@@ -160,7 +159,7 @@ function faceIn(ctx, x, y, w, h, opts) {
       const boxW = h * (GEO.box / b.h);
       drawFace(s.ctx, 16 - (b.x / GEO.box) * boxW, 22 - (b.y / GEO.box) * boxW, boxW,
         { color: ink, squash: 1 - k * 0.92 });
-      drawLogotype(s.ctx, 16 + boxW * (b.w / GEO.box) + 12, 22, h / 2.95, { color: ink });
+      drawLogotype(s.ctx, 16 + boxW * (b.w / GEO.box) + 12, 22, h / 3.2, { color: ink });
     });
   }
   // the one-liner

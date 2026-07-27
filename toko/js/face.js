@@ -1,14 +1,18 @@
 // TOKO MIDORI GAMES — the face.
 //
-// Four fat round-capped arcs and two stems. The mouth is two arcs opening up,
-// nested. Each eye is one arc opening down with a stem dropped from the inside
-// of its crown, which is what cuts the two slots that make the eye an eye.
-// One stroke weight throughout, no fills, no corners.
+// The mouth is two round-capped arcs opening up, nested. Each eye is a
+// semicircle CROWN with two straight parallel LEGS dropped from its ends, and
+// a shorter STEM hanging inside it — the stem is what cuts the two slots, and
+// the slots are what make an eye an eye. One stroke weight throughout.
 //
-// (The stems were arcs at first, on the theory that the whole mark was one
-// move repeated. It is not: a small arc cannot both merge with the crown and
-// hang as far as the artwork hangs it, and forcing it left a detached dot
-// floating inside the arch. The artwork is right and the theory was wrong.)
+// The eye took three goes and each wrong answer is worth keeping:
+//   · the stem as a small nested arc — it cannot both merge with the crown and
+//     hang as far as the artwork hangs it, and left a dot floating in the arch
+//   · one arc swept 240° for crown AND legs — it curls under and closes into a
+//     ring, so the eye reads as an eyeball stuck on the face
+//   · the same arc stopped at 200° — no curl, but the legs never come down and
+//     it is a shallow dome floating too far above the mouth
+// A crown and legs are separate strokes because they are separate strokes.
 //
 // It is drawn from ONE geometry table below. `drawFace` strokes it onto a
 // canvas and `svgFace` emits the same arcs as SVG path data, so the file you
@@ -34,15 +38,18 @@ export const GEO = {
   eye: {
     dx: 30.05,         // from the centre line — the eyes sit a shade wider than the mouth
     cy: 20.20,
-    // An ARCH, not a ring. At a 240° sweep the legs curl so far under that the
-    // arch closes on itself and the eye reads as a circle with a bar through
-    // it — an eyeball stuck on top of the face. 200° keeps it an arch: the
-    // legs come down, stop level with the stem, and the two slots stay open at
-    // the bottom where they belong.
-    outer: { r: 15.98, a0: 170, a1: 370 },
-    // the stem, as centre-line y: starts just inside the crown so the cap
-    // merges instead of bumping, and ends level with the legs
-    stem: { y0: 5.20, y1: 22.97 },
+    // A CROWN plus two STRAIGHT LEGS — not one arc doing both jobs.
+    //
+    // A single arc cannot make this shape. Swept past 180° it curls inward and
+    // closes into a ring, and the eye reads as an eyeball stuck on the face.
+    // Stopped short of 180° the legs never come down and it is a shallow dome
+    // sitting too far from the mouth. The artwork has a clean semicircle with
+    // parallel sides dropping out of it, which is also what "flat-sided" means
+    // everywhere else in this face.
+    outer: { r: 15.98, a0: 180, a1: 360 },
+    legs: { y: 28.10 },        // centre-line y the legs drop to
+    // the stem hangs from inside the crown to just short of the legs
+    stem: { y0: 5.20, y1: 25.40 },
   },
 
   mouth: {
@@ -76,6 +83,8 @@ export function arcs() {
   for (const side of [-1, 1]) {
     const cx = 50 + side * e.dx;
     out.push({ cx, cy: e.cy, r: e.outer.r, a0: e.outer.a0, a1: e.outer.a1 });
+    for (const s2 of [-1, 1])
+      out.push({ stem: true, x: cx + s2 * e.outer.r, y0: e.cy, y1: e.legs.y });
     out.push({ stem: true, x: cx, y0: e.stem.y0, y1: e.stem.y1 });
   }
   out.push({ cx: m.cx, cy: m.cy, r: m.outer.r, a0: m.outer.a0, a1: m.outer.a1 });
@@ -111,6 +120,12 @@ export function drawFace(ctx, x, y, size, opts = {}) {
     ctx.beginPath();
     ctx.arc(0, 0, e.outer.r, e.outer.a0 * D, e.outer.a1 * D);
     ctx.stroke();
+    for (const s2 of [-1, 1]) {                 // the legs, straight and parallel
+      ctx.beginPath();
+      ctx.moveTo(s2 * e.outer.r, 0);
+      ctx.lineTo(s2 * e.outer.r, e.legs.y - e.cy);
+      ctx.stroke();
+    }
     ctx.beginPath();
     ctx.moveTo(0, e.stem.y0 - e.cy);
     ctx.lineTo(0, e.stem.y1 - e.cy);

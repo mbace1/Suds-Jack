@@ -51,7 +51,7 @@ export function startMasthead(parent, opts = {}) {
       grin: 1 + drift(t) * 0.007,
     });
 
-    const size = faceH / 2.95;
+    const size = faceH / 3.2;
     const tx = x + faceW + h * 0.13;
     drawLogotype(ctx, tx, y, size, { color: ink });
 
