@@ -170,6 +170,9 @@ export class Enemy {
     // arena bound
     const r = Math.hypot(this.pos.x, this.pos.z), maxR = ctx.arenaR - 1;
     if (r > maxR) { this.pos.x *= maxR / r; this.pos.z *= maxR / r; }
+    // stand on the terrain (stairs / dais), easing down drops
+    const g = ctx.groundY(this.pos.x, this.pos.z);
+    this.pos.y = this.pos.y < g ? g : Math.max(g, this.pos.y - 12 * dt);
   }
 
   _move(ctx, dirX, dirZ, mult = 1) {
@@ -269,7 +272,8 @@ export class Enemy {
         const a = (Math.random() - 0.5) * 0.14;
         const dx = _v.x * Math.cos(a) - _v.z * Math.sin(a);
         const dz = _v.x * Math.sin(a) + _v.z * Math.cos(a);
-        ctx.bolts.spawn(_v2.set(this.pos.x, 1.25, this.pos.z), _v.set(dx, 0, dz), 9.5, this.conf.accent);
+        ctx.bolts.spawn(_v2.set(this.pos.x, this.pos.y + 1.25, this.pos.z),
+          _v.set(dx, 0, dz), 9.5, this.conf.accent);
         ctx.audio.shot();
       }
       if (this.burst <= 0) {

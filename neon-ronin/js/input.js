@@ -9,6 +9,23 @@
 
 const STICK_R = 56;        // px deflection that maps to full stick throw
 const DEAD = 0.18;
+const PAD_DEAD = 0.22;     // gamepad stick deadzone
+
+// Standard-mapping gamepad buttons → actions. Combat stays MANUAL on a pad
+// (unlike touch): there are plenty of buttons, so auto-combat isn't needed.
+const PAD = {
+  JUMP: 0,        // A / cross
+  DASH: 1,        // B / circle
+  ATTACK: 2,      // X / square
+  HEAVY: 3,       // Y / triangle
+  PARRY: 4,       // LB
+  ULT: 5,         // RB
+  CHARGE: 6,      // LT
+  SWAP_CYCLE: 7,  // RT
+  FORM0: 14,      // D-pad left
+  FORM1: 12,      // D-pad up
+  FORM2: 15,      // D-pad right
+};
 const FLICK_WINDOW = 90;   // ms of stick history a flick is measured over
 const FLICK_PX = 30;       // displacement inside the window that reads as a flick
 const FLICK_RESET = 12;    // stick must settle below this before the next flick
@@ -30,8 +47,17 @@ export class InputManager {
     this.swapQueued = -1;      // -1 none, 0..2 form index, 3 = cycle
     this.mode = 'melee';       // 'melee' | 'ranged' (touch auto-combat style)
     this.touch = false;        // flips true on first touch and stays on
+    this.pad = false;          // a gamepad has been seen this session
+    this._padPrev = [];
+    this._padL = { x: 0, y: 0 };
+    this._padR = { x: 0, y: 0 };
     this._sticks = { L: null, R: null };
     this._stickEls = null;
+
+    addEventListener('gamepadconnected', () => { this.pad = true; this.onPadChange?.(true); });
+    addEventListener('gamepaddisconnected', () => {
+      if (!navigator.getGamepads?.().some((g) => g)) { this.pad = false; this.onPadChange?.(false); }
+    });
 
     addEventListener('keydown', (e) => {
       if (e.repeat) return;
@@ -166,6 +192,43 @@ export class InputManager {
     }
   }
 
+  // Polled once per frame from main. Writes into the same buffered one-shot
+  // fields the keyboard uses, so player.js / main.js need no pad-specific code.
+  pollPad() {
+    const pads = navigator.getGamepads?.();
+    if (!pads) return;
+    let g = null;
+    for (const p of pads) if (p && p.connected) { g = p; break; }
+    if (!g) { this._padL.x = this._padL.y = this._padR.x = this._padR.y = 0; return; }
+    this.pad = true;
+
+    const dz = (v) => (Math.abs(v) < PAD_DEAD ? 0 : (v - Math.sign(v) * PAD_DEAD) / (1 - PAD_DEAD));
+    this._padL.x = dz(g.axes[0] ?? 0);
+    this._padL.y = dz(g.axes[1] ?? 0);
+    this._padR.x = dz(g.axes[2] ?? 0);
+    this._padR.y = dz(g.axes[3] ?? 0);
+
+    const down = (i) => !!g.buttons[i]?.pressed;
+    const hit = (i) => {                 // edge-triggered: fires once per press
+      const now = down(i), was = this._padPrev[i];
+      this._padPrev[i] = now;
+      return now && !was;
+    };
+    for (let i = 0; i < g.buttons.length; i++) if (this._padPrev[i] === undefined) this._padPrev[i] = false;
+
+    if (hit(PAD.ATTACK)) this.attackQueued = true;
+    if (hit(PAD.HEAVY)) this.heavyQueued = true;
+    if (hit(PAD.PARRY)) this.parryQueued = true;
+    if (hit(PAD.ULT)) this.ultQueued = true;
+    if (hit(PAD.JUMP)) this.jumpQueued = true;
+    if (hit(PAD.CHARGE)) this.commandQueued = true;
+    if (hit(PAD.DASH)) this.dashQueued = true;
+    if (hit(PAD.SWAP_CYCLE)) this.swapQueued = 3;
+    if (hit(PAD.FORM0)) this.swapQueued = 0;
+    if (hit(PAD.FORM1)) this.swapQueued = 1;
+    if (hit(PAD.FORM2)) this.swapQueued = 2;
+  }
+
   requestLock() {
     if (this.touch || this.locked) return;
     this.canvas.requestPointerLock?.();
@@ -175,7 +238,12 @@ export class InputManager {
 
   stick(side) {
     const s = this._sticks[side];
-    if (!s) return { x: 0, y: 0, active: false };
+    if (!s) {
+      // no touch stick down: fall through to the gamepad's equivalent stick
+      const p = side === 'L' ? this._padL : this._padR;
+      if (p.x || p.y) return { x: p.x, y: p.y, active: true, pad: true };
+      return { x: 0, y: 0, active: false };
+    }
     const x = s.dx / STICK_R, y = s.dy / STICK_R;
     if (Math.hypot(x, y) < DEAD) return { x: 0, y: 0, active: true };
     return { x, y, active: true };

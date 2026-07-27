@@ -8,6 +8,7 @@ import { InputManager } from './input.js';
 import { Player, FORMS, PLAYER_RADIUS, ULT_MAX } from './player.js';
 import { Enemy, EnemyType, BoltPool } from './enemy.js';
 import { Ally, ALLY_ACCENT, ALLY_RADIUS } from './ally.js';
+import { Arena } from './arena.js';
 import { Effects } from './effects.js';
 import { audio } from './audio.js';
 
@@ -106,26 +107,12 @@ scene.add(new THREE.HemisphereLight(0x36405a, 0x07080c, 1.4));
 const _hueMats = [];    // recolored every room
 const _hueLights = [];
 
+// Floor + stairs + platforms live in the Arena module (rebuilt per room).
+const arena = new Arena(scene, ARENA_R);
+const groundY = (x, z) => arena.heightAt(x, z);
+arena.build(1);          // so the start screen has a floor behind it
+
 {
-  const floor = new THREE.Mesh(
-    new THREE.CircleGeometry(ARENA_R + 1.5, 48),
-    new THREE.MeshStandardMaterial({ color: 0x11141b, roughness: 0.9, metalness: 0.1 }));
-  floor.rotation.x = -Math.PI / 2;
-  scene.add(floor);
-
-  // glowing floor rings
-  for (const r of [5, 10, 15, ARENA_R]) {
-    const mat = new THREE.MeshBasicMaterial({
-      color: HUES[0], transparent: true, opacity: r === ARENA_R ? 0.7 : 0.22,
-      side: THREE.DoubleSide, depthWrite: false,
-    });
-    const ring = new THREE.Mesh(new THREE.RingGeometry(r - 0.06, r, 64), mat);
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.y = 0.02;
-    scene.add(ring);
-    _hueMats.push(mat);
-  }
-
   // rock walls: jagged low-poly chunks ringing the arena
   const rockMat = new THREE.MeshStandardMaterial({ color: 0x181c25, flatShading: true, roughness: 0.95 });
   const rockGeo = new THREE.IcosahedronGeometry(1, 0);
@@ -228,6 +215,9 @@ function setRoomHue(room) {
   const hue = HUES[(room - 1) % HUES.length];
   for (const m of _hueMats) (m.emissive ?? m.color).setHex(hue);
   for (const l of _hueLights) l.color.setHex(hue);
+  // stair nosings take the complementary hue so treads stay readable
+  const alt = HUES[(room + 1) % HUES.length];
+  for (const m of arena.hueMats) m.color.setHex(m._alt ? alt : hue);
 }
 
 // ── Actors ────────────────────────────────────────────────────────────────────
@@ -255,6 +245,12 @@ let glitchAmp = 0;      // CRT tearing burst, punched by kills / heavy impacts
 const CAM_DIST = 9.5;
 
 function updateCamera(dt) {
+  if (window.__nr?.freeCam) {          // debug: wide architecture framing
+    camera.position.set(0, 17, 34);
+    camera.lookAt(0, 2, 0);
+    crtPass.uniforms.uTime.value = t;
+    return;
+  }
   const { dx, dy } = input.consumeMouse();
   glitchAmp = Math.max(0, glitchAmp - dt * 2.6);
   crtPass.uniforms.uTime.value = t;
@@ -271,8 +267,11 @@ function updateCamera(dt) {
   const cp = Math.cos(camPitch), sp = Math.sin(camPitch);
   camera.position.set(
     p.x + Math.sin(camYaw) * cp * CAM_DIST + (Math.random() - 0.5) * shakeAmp,
-    1.5 + sp * CAM_DIST + (Math.random() - 0.5) * shakeAmp,
+    p.y + 1.5 + sp * CAM_DIST + (Math.random() - 0.5) * shakeAmp,
     p.z + Math.cos(camYaw) * cp * CAM_DIST + (Math.random() - 0.5) * shakeAmp);
+  // never let the lens sink into a stair or the dais
+  const camFloor = groundY(camera.position.x, camera.position.z) + 1;
+  if (camera.position.y < camFloor) camera.position.y = camFloor;
   camera.lookAt(p.x, p.y + 1.4, p.z);
 }
 
@@ -332,6 +331,7 @@ const combat = {
       const dx = e.pos.x - pos.x, dz = e.pos.z - pos.z;
       const d = Math.hypot(dx, dz);
       if (d > range + e.radius) continue;
+      if (Math.abs(e.pos.y - pos.y) > 2.2) continue;   // different tier
       let da = Math.atan2(dx, dz) - yaw;
       while (da > Math.PI) da -= Math.PI * 2;
       while (da < -Math.PI) da += Math.PI * 2;
@@ -379,6 +379,7 @@ const combat = {
       const dx = e.pos.x - pos.x, dz = e.pos.z - pos.z;
       const d = Math.hypot(dx, dz);
       if (d > range + e.radius) continue;
+      if (Math.abs(e.pos.y - pos.y) > 2.2) continue;   // different tier
       let da = Math.atan2(dx, dz) - yaw;
       while (da > Math.PI) da -= Math.PI * 2;
       while (da < -Math.PI) da += Math.PI * 2;
@@ -418,7 +419,7 @@ const combat = {
   },
 
   hurtPlayer(dmg, fromPos, knock = 4) {
-    if (player.pos.y > 0.9) return;   // jumped clear of the strike
+    if (player.airH > 0.9) return;    // jumped clear of the strike
     // PARRY: negate the hit, stagger the attacker, refund ult charge
     if (player.parrying) {
       player.parriedThis = true;
@@ -520,6 +521,7 @@ function rollSpawns(n) {
 
 function startRoom(n) {
   room = n;
+  const layout = arena.build(n);
   setRoomHue(n);
   pending = rollSpawns(n);
   player.reviveUsed = false;    // SECOND CORE recharges each room
@@ -532,7 +534,10 @@ function startRoom(n) {
     }
   }
   state = 'fight';
-  announce(`ROOM ${n}`, n % 4 === 0 ? 'heavy signatures detected' : '');
+  const sub = layout === 'ziggurat' ? 'the high ziggurat'
+    : layout === 'temple' ? 'ascend the temple stair'
+    : n % 4 === 0 ? 'heavy signatures detected' : '';
+  announce(`ROOM ${n}`, sub);
 }
 
 function resetRun() {
@@ -733,6 +738,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min((now - last) / 1000, 0.05);
   last = now;
+  input.pollPad();
   if (state === 'fight' && !paused) {
     t += dt;
     simulate(dt);
@@ -748,7 +754,8 @@ window.__nr = {
   player, input,
   getEnemies: () => enemies, getScore: () => score,
   getAllies: () => allies, recruitAllies,
-  effects,
+  effects, arena,
+  jumpToRoom: (n) => startRoom(n),
   hurtPlayerTest: (dmg) => combat.hurtPlayer(dmg, null),
   spawnTestDrone: (i, n = 6) => {
     const a = (i / n) * Math.PI * 2;
@@ -775,7 +782,7 @@ function simulate(dt) {
   for (const a of allies) {
     if (!a.dead) targets.push({ pos: a.pos, radius: ALLY_RADIUS, isPlayer: false, ref: a });
   }
-  const ctx = { input, camYaw, dt, t, combat, effects, audio, bolts, pBolts, enemies, allies, targets, arenaR: ARENA_R, playerPos: player.pos };
+  const ctx = { input, camYaw, dt, t, combat, effects, audio, bolts, pBolts, enemies, allies, targets, arenaR: ARENA_R, playerPos: player.pos, groundY };
 
   player.update(ctx);
 
@@ -848,9 +855,10 @@ function simulate(dt) {
       audio.deflect();
       continue;
     }
-    if (!player.invincible && player.pos.y < 0.9) {
+    if (!player.invincible && player.airH < 0.9) {
       const dx = b.x - player.pos.x, dz = b.z - player.pos.z;
-      if (dx * dx + dz * dz < (PLAYER_RADIUS + BOLT_R) ** 2) {
+      if (dx * dx + dz * dz < (PLAYER_RADIUS + BOLT_R) ** 2
+          && Math.abs(b.y - player.pos.y - 1.1) < 1.4) {
         bolts.recycleAt(i);
         combat.hurtPlayer(10, null);
         if (player.dead) break;

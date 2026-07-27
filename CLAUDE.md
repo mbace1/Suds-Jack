@@ -58,6 +58,24 @@ up/down via `player.speedK` (stride, footfall bounce and forward lean all scale 
 it — max lean at full speed, `poseRun` in `robots.js`), and heading banks at
 `TURN_RATE` instead of snapping.
 
+**Arena (`js/arena.js`):** rooms are no longer a flat disc — the module owns both the
+level geometry and `heightAt(x, z)`, and every actor samples it so it stands on whatever
+it walks over. Layouts tier with room number: `pit` (1–3, flat), `temple` (4–7, central
+dais + 2 flanking staircases) and `ziggurat` (8+, outer ring terrace + high dais + 4
+staircases). Platforms are circles and stairs are radial ramps quantised into steps, so
+`heightAt` is a handful of comparisons rather than raycasts. Walking off a ledge is a
+real gravity fall; melee ignores targets more than 2.2 u above/below you so you can't hit
+across tiers, and the camera is clamped above the local floor so it never sinks into the
+dais. Stone is deliberately mid-tone (not near-black) — pure-dark stone under this
+lighting reads as floating neon outlines with no volume.
+
+**Controller:** standard-mapping gamepads are polled once per frame (`input.pollPad`)
+and write into the *same* buffered one-shot fields the keyboard uses, so no gameplay code
+is pad-aware. Sticks move/aim (the right stick reuses the touch rate-control path), X
+light · Y heavy · A jump · B dash · LB parry · RB ultimate · LT squad charge · RT cycle
+frame · D-pad picks a frame. Combat stays **manual** on a pad — auto-combat is a touch
+affordance only.
+
 **Touch controls:** floating dual sticks — left stick moves, **flicking it in any
 direction dashes that way** (flick = ≥30 px of stick travel inside 90 ms; the stick
 must settle before the next flick registers), right stick orbits the camera as a rate
@@ -178,6 +196,7 @@ neon-ronin/     # Neon Ronin (character-swap action roguelike, low-poly samurai 
     player.js   # 3 swappable frames, combo melee, dash i-frames, swap burst, run stats
     enemy.js    # SLASHER/GUNNER/BRUTE state machines + pooled neon BoltPool
     effects.js  # Transient VFX (slash arcs, telegraph/shock rings, sparks, shards, spawn beams)
+    arena.js    # Tiered level geometry (pit/temple/ziggurat) + heightAt() terrain
     ally.js     # Squad ronin — formation follow, auto-engage, CHARGE order
     input.js    # Pointer-lock mouse + WASD + touch sticks; buffered one-shots
     audio.js    # WebAudio bleep kit (slash/hit/kill/hurt/dash/swap/slam/rally/…)
