@@ -13,7 +13,7 @@ import {
 } from './face.js';
 import { drawLockup, drawLogotype, drawSheet, drawCredit, substituted } from './lockup.js';
 import { hit, tear, split, scanlines, carrier } from './glitch.js';
-import { pulse } from './util.js';
+import { pulse, blink } from './util.js';
 import { playSting } from './sting.js';
 import { startMasthead } from './masthead.js';
 import { mountChat } from './chat.js';
@@ -79,7 +79,7 @@ function faceIn(ctx, x, y, w, h, opts) {
     const s = new Surface(shot, 230, 150, { label: 'The Toko Midori Games face' });
     s.loop((t) => {
       s.clear(TOKO.PAPER);
-      const k = pulse(t, { every: 6, len: 0.16, offset: 1.2 });
+      const k = blink(t, { every: 6, offset: 1.2 });
       faceIn(s.ctx, 12, 12, 206, 126, { color: TOKO.INK, squash: 1 - k * 0.92 });
     });
     const row = el('div', 'row'); c.appendChild(row);
@@ -92,7 +92,7 @@ function faceIn(ctx, x, y, w, h, opts) {
     const s = new Surface(shot, 230, 150, { label: 'The face reversed out of black' });
     s.loop((t) => {
       s.clear(TOKO.INK);
-      const k = pulse(t, { every: 6, len: 0.16, offset: 3.4 });
+      const k = blink(t, { every: 6, offset: 3.4 });
       faceIn(s.ctx, 12, 12, 206, 126, { color: TOKO.PAPER, squash: 1 - k * 0.92 });
     });
     const row = el('div', 'row'); c.appendChild(row);
@@ -104,7 +104,7 @@ function faceIn(ctx, x, y, w, h, opts) {
     const s = new Surface(shot, 230, 150, { label: 'The Toko Midori Games badge' });
     s.loop((t) => {
       s.clear(TOKO.INK);
-      const k = pulse(t, { every: 5.5, len: 0.16, offset: 0.6 });
+      const k = blink(t, { every: 5.5, offset: 0.6 });
       drawBadge(s.ctx, 78, 75, 60, { ground: TOKO.MAGENTA, ink: TOKO.PAPER, face: { squash: 1 - k * 0.92 } });
       drawBadge(s.ctx, 176, 75, 38, { ground: TOKO.PAPER, ink: TOKO.INK, face: { squash: 1 - k * 0.92 } });
     });
@@ -154,7 +154,7 @@ function faceIn(ctx, x, y, w, h, opts) {
     const s = new Surface(shot, 300, 120, { fluid: true, label: `Toko Midori Games lockup — ${name}` });
     s.loop((t) => {
       s.clear(ground);
-      const k = pulse(t, { every: 7 + name.length * 0.4, len: 0.16 });
+      const k = blink(t, { every: 7.5 + name.length * 0.3 });
       const b = bounds();
       const h = 74;
       const boxW = h * (GEO.box / b.h);
@@ -178,7 +178,7 @@ function faceIn(ctx, x, y, w, h, opts) {
   const s = new Surface($('#heads'), W, H, { fluid: true, label: 'Toko Midori: the one, the clusters, the members' });
   s.loop((t) => {
     s.clear(TOKO.PAPER);
-    const k = pulse(t, { every: 6.5, len: 0.16, offset: 1.1 });
+    const k = blink(t, { every: 6.5, offset: 1.1 });
     const M = TOKO.MAGENTA;
     drawHead(s.ctx, 14, 20, 140, { ground: M, ink: TOKO.PAPER, faceOpts: { squash: 1 - k * 0.92 } });
     drawCluster(s.ctx, 172, 20, 140, { ground: M, ink: TOKO.PAPER,
@@ -199,7 +199,7 @@ function faceIn(ctx, x, y, w, h, opts) {
   const s = new Surface($('#carriers'), W, H, { fluid: true, label: 'The face on its carriers' });
   s.loop((t) => {
     s.clear(TOKO.PAPER);
-    const k = pulse(t, { every: 6, len: 0.16, offset: 0.9 });
+    const k = blink(t, { every: 6, offset: 0.9 });
     USE.forEach((c, i) => {
       const x = 22 + i * (S + 44);
       drawIcon(s.ctx, x, 8, S, { ground: c, ink: TOKO.PAPER });
@@ -270,7 +270,7 @@ function faceIn(ctx, x, y, w, h, opts) {
   const s = new Surface($('#rest'), 200, 130, { label: 'A signed game at rest' });
   s.loop((t) => {
     s.clear(TOKO.INK);
-    const k = pulse(t, { every: 6.5, len: 0.16, offset: 2.1 });
+    const k = blink(t, { every: 6.5, offset: 2.1 });
     drawBadge(s.ctx, 100, 65, 30, {
       ground: TOKO.MAGENTA, ink: TOKO.PAPER, face: { squash: 1 - k * 0.92 },
     });
@@ -290,7 +290,7 @@ $('#b-sting').addEventListener('click', () => { playSting(); });
   const s = new Surface($('#credit-badge'), 30, 30, { label: 'Signed: Toko Midori Games' });
   s.loop((t) => {
     s.clear();
-    const k = pulse(t, { every: 6.5, len: 0.16, offset: 2.1 });
+    const k = blink(t, { every: 6.5, offset: 2.1 });
     drawBadge(s.ctx, 15, 15, 15, { ground: TOKO.MAGENTA, ink: TOKO.PAPER, face: { squash: 1 - k * 0.92 } });
   });
 }

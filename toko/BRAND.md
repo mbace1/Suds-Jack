@@ -222,6 +222,42 @@ Rules it holds:
 
 ---
 
+## 5c. The tempo
+
+**Toko is always listening to Comfortably Numb.** That is the house note, and it
+is a rule with numbers in it rather than a mood board: heavy-lidded, floating, a
+long way from eager — and with a solo in it, so the calm is never the same thing
+as flat.
+
+It lives in `blink()` and `drift()` in [`js/util.js`](js/util.js), and every
+resting mark in the kit keeps the same time.
+
+- **The blink closes, DWELLS shut, and opens slower than it closed.** That
+  asymmetry is the whole thing. A symmetrical blink reads awake; a fast one
+  reads nervous. Roughly 0.17s down, 0.12s held shut, 0.36s back up, every
+  7.5s — and **every fourth is a long one**, where the eyes stay shut a beat
+  past comfortable.
+- **Nothing is ever perfectly still, and nothing is ever quick.** `drift()` is
+  a nine-second breath under the mouth; the amplitude is under 1%, which is the
+  point.
+- **The counter types at 34ms a character**, with a long beat between lines and
+  a longer one before the first — Toko has to come back from wherever he was
+  before he answers you.
+- **The mouth talks slowly.** At 22 rad/s it chattered like a puppet; it runs
+  at 11.
+
+Two things this rule does **not** cover. `pulse()` — the glitch cadence — stays
+square and harsh, because the glitch is the machine and not Toko. And the
+sting's *timeline* stays brisk: it is an event, and an event you cannot skip is
+an ad. Only the blink inside it slowed down.
+
+`test/brand.cjs` measures the curve — that it fully closes, that it dwells, and
+that opening takes over 1.5× the time closing does. Untested, a "just a touch
+snappier" walks it back one commit at a time until Toko is blinking like a
+cursor.
+
+---
+
 ## 6. Signing a page
 
 ```html
