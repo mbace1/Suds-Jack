@@ -190,6 +190,14 @@ speed, then bloom), and **selective bloom via HDR colour** — only the lit lip'
 is over 1.0, and the threshold stays high on purpose because dropping it blooms the matte
 ground and greys out the near-black the look depends on. Still unlit: no lights, shadows or
 fog; volume comes from three explicit tones per surface. Colours in `js/palette.js`.
+The ortho view is anchored on its **width** — 60 world units across at a standstill,
+89 flat out — and the height falls out of the aspect, clamped 34–78. Anchoring on
+*height* (which it did until v2) makes the visible width a function of the screen: a
+phone held upright got 16 units across, less than one terrain segment, and filled with
+featureless dark mass. Anything framed in world units has to follow the width for the
+same reason — the sun's radius and the camera's forward lead both did not, and swelled
+into a moon / pinned the skater to the left edge on a phone. A 16:9 desktop is
+unaffected by any of it (34 × 16/9 = 60 was always the real number).
 It is **its own game, not a Tiny Hawk mode** — spun out of that project's design work when
 Tiny Hawk went third-person 3D, and it shares nothing with it at runtime (its own
 `tiny2dHi` / `tiny2dSound` keys). What travelled the other way is physics: `tinyhawk`'s

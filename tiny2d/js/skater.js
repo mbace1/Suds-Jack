@@ -17,8 +17,8 @@
 //   hold in the air     → dive, to get down onto the next downslope sooner
 
 import * as THREE from 'three';
-import { COL } from './palette.js?v=1';
-import { clamp, lerp } from './rng.js?v=1';
+import { COL } from './palette.js?v=2';
+import { clamp, lerp } from './rng.js?v=2';
 
 const G          = 34;    // base gravity
 const PRESS_G    = 2.7;   // gravity multiplier while pressing

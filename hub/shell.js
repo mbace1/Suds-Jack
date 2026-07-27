@@ -79,7 +79,12 @@ style.textContent = `
   justify-content: center;
   flex-direction: column;
   gap: 2px;
+  /* this is injected into twelve pages that style their own buttons, and a
+     bare button rule in the host page (min-width: 190px, in tiny2d) turned
+     this circle into an ellipse. State the box completely, inherit nothing. */
+  box-sizing: border-box;
   width: 92px; height: 92px;
+  min-width: 0; min-height: 0; padding: 0; margin: 0;
   border-radius: 50%;
   border: 2px solid rgba(180, 200, 210, .45);
   background: rgba(6, 7, 10, .42);
