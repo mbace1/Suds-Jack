@@ -13,12 +13,12 @@
 // Registered from index.html over https only (or with ?sw=1), so local dev and
 // the smoke gate are never served a stale shell.
 
-const VERSION = 'v5';
+const VERSION = 'v6';
 const CACHE = `rfh-${VERSION}`;
 
 // the shell: everything needed to open the feed and read every bulletin. The
 // query strings matter — these are the URLs the page actually requests.
-const V = `?v=5`;
+const V = `?v=6`;
 const SHELL = [
   // The Toko signature. It is a cross-directory import, so it has to be named
   // here or the badge becomes a network request on an offline boot — only the
