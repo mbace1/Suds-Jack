@@ -25,12 +25,55 @@ resize();
 window.addEventListener('resize', resize);
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
+// Six art directions from the study set. `trough`/`ridge` drive the terrain
+// ramp, `sky` is what distance fogs toward — swap with P (or Y on a pad).
+const PALETTES = [
+  { name:'SUDA BLOOD',  sky:'#050000', trough:[20,0,11],  ridge:[92,0,34],
+    rim:'#ff0033', pl:'#ff0000', plh:'#ff6666', pld:'#5a0000',
+    blt:'#ffffff', e1:'#ffffff', e2:'#00ffff', e3:'#ff44ff', hud:'#ff0033' },
+  { name:'NEON WEB',    sky:'#01010a', trough:[10,18,48], ridge:[26,52,132],
+    rim:'#00e5ff', pl:'#ff2bd6', plh:'#ff8ae8', pld:'#5c0049',
+    blt:'#ffee00', e1:'#ffffff', e2:'#00ffff', e3:'#ff44ff', hud:'#00e5ff' },
+  { name:'CHROME VOID', sky:'#05060a', trough:[26,30,38], ridge:[86,98,120],
+    rim:'#e6edf7', pl:'#ff3b30', plh:'#ff8a80', pld:'#5c0f0a',
+    blt:'#ffffff', e1:'#8fa1b8', e2:'#e6edf7', e3:'#ff3b30', hud:'#e6edf7' },
+  { name:'VAPOR DECK',  sky:'#150a2a', trough:[44,17,84], ridge:[132,54,180],
+    rim:'#ff7ad9', pl:'#ffb457', plh:'#ffd9a3', pld:'#6b3a00',
+    blt:'#56f0ff', e1:'#ffffff', e2:'#56f0ff', e3:'#ff7ad9', hud:'#ff7ad9' },
+  { name:'DEEP SIGNAL', sky:'#00060a', trough:[4,33,46],  ridge:[16,110,132],
+    rim:'#22ffd5', pl:'#eaffff', plh:'#ffffff', pld:'#0a4a44',
+    blt:'#0affc8', e1:'#eaffff', e2:'#22ffd5', e3:'#0affc8', hud:'#22ffd5' },
+  { name:'SOLAR',       sky:'#0d0500', trough:[61,21,0],  ridge:[168,74,8],
+    rim:'#ffd166', pl:'#ff5f1f', plh:'#ffa06b', pld:'#6b1f00',
+    blt:'#fff6e5', e1:'#fff6e5', e2:'#ffd166', e3:'#ff5f1f', hud:'#ffd166' },
+];
+let palIdx = 0;
+try { palIdx = Math.min(PALETTES.length - 1, Math.max(0, +localStorage.getItem('sj_pal') || 0)); }
+catch (e) { palIdx = 0; }
+
+// Live colours — repopulated by applyPalette()
 const C = {
   BG:'#000000', SKY:'#05000c',
   RIM:'#00d4ff', PL:'#ff0000', PLH:'#ff6666', PLD:'#660000',
   BLT:'#ffee00', E1:'#ffffff', E2:'#00ffff', E3:'#ff44ff',
   HW:'#ffffff', HR:'#ff0000', HC:'#00ffff', HY:'#ffff00', DIM:'#222222',
 };
+
+function applyPalette(i) {
+  palIdx = (i + PALETTES.length) % PALETTES.length;
+  const p = PALETTES[palIdx];
+  C.SKY = p.sky;  C.RIM = p.rim;
+  C.PL  = p.pl;   C.PLH = p.plh;  C.PLD = p.pld;
+  C.BLT = p.blt;  C.E1  = p.e1;   C.E2  = p.e2;  C.E3 = p.e3;
+  C.HC  = p.hud;  C.HR  = p.pl;
+  buildLUT(p);
+  // Re-tint anything already on screen so a swap never leaves stale colours
+  for (const e of enemies) {
+    e.col = e.kind === 'grunt' ? C.E1 : e.kind === 'flipper' ? C.E2 : C.E3;
+  }
+  try { localStorage.setItem('sj_pal', String(palIdx)); } catch (e) {}
+}
+function cyclePalette(d) { applyPalette(palIdx + d); }
 
 // ─── World: 5 half-pipes side by side ─────────────────────────────────────────
 // Terrain height depends on X only, so the ridges run straight into the
@@ -105,12 +148,14 @@ window.addEventListener('keydown', e => {
 window.addEventListener('keyup', e => { keys[e.code] = false; });
 
 function onKey(code) {
+  if (code === 'KeyP') { cyclePalette(1); palToast = 1600; return; }   // any state
   if ((state === 'title' || state === 'gameover') && code === 'Enter') return startGame();
   if (state === 'playing') {
     if (code === 'Space' || code === 'ArrowUp' || code === 'KeyW') tryJump();
     if (code === 'KeyZ') tryZap();
   }
 }
+let palToast = 0;   // ms remaining on the "palette name" flash
 
 const T = { left:false, right:false, jump:false };
 canvas.addEventListener('touchstart', e => {
@@ -153,6 +198,7 @@ function pollPad() {
   PAD.ax   = ax;
   PAD.jump = down(0) || down(12);
 
+  if (hit(3)) { cyclePalette(1); palToast = 1600; }        // Y / triangle
   if (state === 'playing') {
     if (hit(0) || hit(12)) tryJump();
     if (hit(1) || hit(2) || hit(5) || hit(7)) tryZap();
@@ -418,24 +464,35 @@ function update(dt) {
 // Precomputed so the column march never builds strings.
 const SHADES = 6, FOGS = 5;
 const LUT = [];
-(function buildLUT() {
+
+// Ramp trough → ridge, then fog toward the palette's sky. Precomputed so the
+// per-column march never builds a colour string.
+function buildLUT(p) {
+  const sky = [parseInt(p.sky.slice(1,3),16),
+               parseInt(p.sky.slice(3,5),16),
+               parseInt(p.sky.slice(5,7),16)];
   for (let s = 0; s < SHADES; s++) {
     LUT[s] = [];
     const t = s / (SHADES - 1);                       // 0 trough → 1 ridge
     for (let fg = 0; fg < FOGS; fg++) {
-      const fog = 1 - fg / (FOGS - 1);                // 1 near → 0 far
+      const near = 1 - fg / (FOGS - 1);               // 1 near → 0 far
       LUT[s][fg] = [];
       for (let st = 0; st < 2; st++) {
-        // Deep violet trough rising to a colder lit ridge
-        let r = 14 + t * 52 + st * 7;
-        let gg =  4 + t * 16 + st * 5;
-        let b  = 30 + t * 92 + st * 12;
-        const k = 0.22 + fog * 0.78;                  // fog toward black
-        LUT[s][fg][st] = `rgb(${Math.round(r*k)},${Math.round(gg*k)},${Math.round(b*k)})`;
+        const stripe = st * 9;                        // scrolling band contrast
+        const out = [];
+        for (let ch = 0; ch < 3; ch++) {
+          const base = p.trough[ch] + (p.ridge[ch] - p.trough[ch]) * t + stripe;
+          // Distance pulls the surface toward the sky colour, not toward black,
+          // so warm directions stay warm at range.
+          out[ch] = Math.round(Math.max(0, Math.min(255,
+            sky[ch] + (base - sky[ch]) * (0.16 + near * 0.84))));
+        }
+        LUT[s][fg][st] = `rgb(${out[0]},${out[1]},${out[2]})`;
       }
     }
   }
-})();
+}
+applyPalette(palIdx);
 
 // ─── Draw: voxel terrain (Comanche column march, far → near) ──────────────────
 const COLW = 2;
@@ -603,7 +660,31 @@ function drawHUD() {
     g.fillStyle = 'rgba(0,0,0,0.6)'; g.fillRect(LW - 44, LH - 14, 41, 11);
     g.fillStyle = C.HC; g.textAlign = 'right'; g.fillText('◎ PAD', LW - 6, LH - 12);
   }
+  drawPalToast();
   g.textBaseline = 'alphabetic';
+}
+
+// Flash the palette name after a swap, with its own swatch strip
+function drawPalToast() {
+  if (palToast <= 0) return;
+  const p = PALETTES[palIdx];
+  const a = Math.min(1, palToast / 400);
+  g.globalAlpha = a;
+  g.fillStyle = 'rgba(0,0,0,0.72)';
+  g.fillRect(LW / 2 - 52, LH - 32, 104, 17);
+  g.fillStyle = C.RIM;
+  g.fillRect(LW / 2 - 52, LH - 32, 104, 1);
+  g.textAlign = 'center'; g.font = 'bold 7px monospace';
+  g.fillStyle = C.HW;
+  g.fillText(`${palIdx + 1}/${PALETTES.length}  ${p.name}`, LW / 2, LH - 29);
+  const sw = ['#'+((p.trough[0]<<16|p.trough[1]<<8|p.trough[2])>>>0).toString(16).padStart(6,'0'),
+              '#'+((p.ridge[0]<<16|p.ridge[1]<<8|p.ridge[2])>>>0).toString(16).padStart(6,'0'),
+              p.rim, p.pl, p.blt];
+  for (let i = 0; i < sw.length; i++) {
+    g.fillStyle = sw[i];
+    g.fillRect(LW / 2 - 25 + i * 10, LH - 21, 9, 4);
+  }
+  g.globalAlpha = 1;
 }
 
 // ─── Title / Game over ────────────────────────────────────────────────────────
@@ -627,6 +708,9 @@ function drawTitle() {
   g.fillStyle = PAD.on ? C.HC : '#444444';
   g.fillText(PAD.on ? '◎ LEFT STICK: CARVE   ·   A: JUMP / FLOAT'
                     : 'A/D OR STICK: CARVE   ·   SPACE: JUMP / FLOAT', LW / 2, LH / 2 + 40);
+  g.fillStyle = '#555555';
+  g.fillText(`${PAD.on ? 'Y' : 'P'}: PALETTE  —  ${PALETTES[palIdx].name}`, LW / 2, LH / 2 + 50);
+  drawPalToast();
   g.textBaseline = 'alphabetic';
 }
 
@@ -693,6 +777,7 @@ function render() {
 function loop(ts) {
   const dt = Math.min(ts - lastTS, 50);
   lastTS = ts;
+  if (palToast > 0) palToast -= dt;   // ticks in every state, not just play
   pollPad();
   update(dt);
   render();
