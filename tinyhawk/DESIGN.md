@@ -2,7 +2,8 @@
 
 > A tiny skate story. Third-person low-poly, twin-stick, Tony Hawk's vocabulary,
 > Slay the Spire's map.
-> Three.js r167, no build step, same house rules as `paperboy/` and `dropcabal/`.
+> Three.js r167, no build step. Art direction follows **Skate Story** (§4b) and the
+> hyperdagger render stack, *not* the flat-unlit paperboy/dropcabal rule.
 
 Status: **design + control prototype.** The side-on one-button experiment that came out of
 the first draft of this doc now lives on its own as [`tiny2d/`](../tiny2d/) — it is a
@@ -93,31 +94,42 @@ bank    += pending × chainLength    // on clean landing only
 
 ## 4. Controls — the centrepiece
 
-Twin on-screen sticks. The idea that makes it work on a phone: **the right stick
-discriminates by gesture speed.** Slow is camera, fast is action. One stick, two jobs, no
-mode button.
+Reference: **Skate**'s flick-it. The primitive is two-phase — **LOAD** the right stick down
+(the skater visibly crouches), then **FLICK** it out. That is what makes it feel like Skate
+rather than like a jump button, and the crouch is the only tell that the gesture has two
+phases at all.
 
-| input | grounded | airborne |
-|---|---|---|
-| **left stick** | steer + push (camera-relative) | ←/→ spin, ↑/↓ flip |
-| **right stick, slow drag** | orbit the camera | orbit the camera |
-| **right stick, flick ↑** | **ollie** (magnitude = height) | grab |
-| **right stick, flick ←/→** | — | flip trick |
-| **right stick, flick ↓** | manual (P1) | shuv |
+| gesture | result |
+|---|---|
+| load ↓ then flick **↑** | ollie — load depth × flick speed sets the height |
+| load ↓ then flick **↖ / ↗** | kickflip / heelflip |
+| load ↓ then fast **sideways** | shuvit |
+| airborne, any committed flick | that trick |
+| left stick | push and steer; in the air ←/→ spin, ↑/↓ flip |
 
-Desktop mirrors it: WASD skate, mouse look, Space ollie (hold = higher), Q/E/F/C tricks,
-Shift manual.
+The pop must cross **above centre** to count. Without that rule a gamepad stick springing
+back to neutral fires an ollie every time you crouch, which is the single thing most likely
+to make the scheme feel broken.
 
-The threshold between "drag" and "flick" is the single most important number in the game,
-and it is exposed in `__th.debug` from day one. Too low and the camera jumps every time you
-look around; too high and tricks feel unresponsive. It is measured in **stick units per
-second**, not pixels, so it behaves the same on every screen size.
+**Touch is always flick-it.** Both sticks are drawn on screen, activate anywhere in their
+half, and accept mouse input too, so the touch scheme is testable in a desktop browser. The
+camera follows on its own — the right stick is busy being the board.
+
+**A controller can run either scheme**, so the two can be compared on one park:
+
+* `skate` — right stick is the board (as above), camera auto-follows, bumpers nudge it
+* `thps` — A holds to charge the ollie, X/B/Y/LB are tricks, right stick is the camera
+
+Keyboard works in both: WASD, Space (hold = higher), Q/E/F/C.
+
+Input follows the house `InputManager` shape from `hyperdagger/js/input.js` — getters with
+touch → keyboard → gamepad fallthrough so nothing downstream knows which is in use,
+`pollGamepad()` once per frame, `drawTouchUI()` on the overlay canvas.
 
 ### Camera
-Chase cam, low and behind. It springs back behind your direction of travel when you stop
-dragging, so you never have to fight it, and pulls out with speed. It is the thing most
-likely to be quietly wrong — a skate camera that fights the player ruins a game that is
-otherwise fine.
+Chase cam, low and behind, springing back behind the direction of travel once the player
+stops steering it. It is the thing most likely to be quietly wrong — a skate camera that
+fights the player ruins a game that is otherwise fine.
 
 ---
 
@@ -275,34 +287,33 @@ ragdoll, audio kit, touch tuned on a real phone.
 
 ## 10b. What P0 actually measured
 
-Numbers from the built prototype, so the P1 feel pass starts from evidence rather
-than from the guesses in §3.
-
 | thing | value | note |
 |---|---|---|
-| full-power ollie | **0.78 s** air, 2.05 u peak | on flat, `POP` 10.5 along the surface normal, `G` 26 |
-| trick duration | 0.34 s | so a full ollie holds **two** tricks, an easy one holds one |
-| flick threshold | 4.6 stick units/s | a 31 px thumb move over 150 ms reads as a drag (3.3), over 60 ms as a flick (8.3) |
-| full-power flick | 11 units/s | a hard 50 px flick lands at 17.8 and clamps |
-| camera drag gain | 1.4 rad per stick unit | ≈78° of orbit for a 62 px drag |
+| full-power ollie | **0.78 s** air, 2.05 u peak | `POP` 10.5 along the surface normal, `G` 26 |
+| trick duration | 0.34 s | a full ollie holds **two** tricks, an easy one holds one |
+| load threshold | 0.42 stick units down | below this the gesture is not armed |
+| pop threshold | must cross **above** −0.2 | this is what rejects a gamepad spring-back |
+| full-power flick | 14 stick units/s | a real thumb flick crosses in 50–80 ms; a lazy one lands near 5 |
+| bloom threshold | 0.92, glow values ≤ 1.7 | at 0.35 / 3.4 the spill turned the whole frame white |
 
-Verified: all four flick directions classify correctly; a fast **return stroke** fires
-nothing and does not move the camera; a fast 12 px twitch is a drag, not a trick; slow
-drags orbit and re-arm.
+The flick-it gesture is a pure state machine asserted over 13 cases with exact timings:
+all four directions fire correctly, load depth and flick speed both move the power
+(0.57 lazy → 1.0 deep-and-hard), and **a stick springing back to centre fires nothing**.
 
-Two things are **not** verified and need a device:
+Still needs a device:
 
-* **Two flicks inside one air.** Driving it headlessly is not possible here — the test
-  harness's own event latency (~40–150 ms per synthesized touch) is the same order as a
-  real flick, so the same gesture lands on either side of the threshold run to run. The
-  classification logic is unit-tested with exact timings instead; the end-to-end path is
-  only known to work for a single flick.
-* **A fast small twitch still orbits the camera** by ~16°. It is correctly not a trick,
-  but it may want to be dead rather than a drag. That is a feel call.
+* **Two flicks inside one air.** Synthesized touch cannot test it — the harness's own event
+  latency (~40–150 ms) is the same order as a real flick, so the same gesture lands on
+  either side of the threshold run to run. Hence the pure state machine.
+* **Whether flick-it or the THPS button scheme is actually better on a pad.** That is what
+  the toggle exists to answer, and it is a hands question, not a test question.
 
-The winding bug found here is worth remembering: a heightfield grid walked in the obvious
-order emits every triangle facing **down**, so the entire park back-face culls and you
-see its underside. `park.js` swaps the last two vertices rather than going `DoubleSide`.
+Traps worth remembering, both found by testing:
+
+* A heightfield grid walked in the obvious order emits every triangle facing **down**, so
+  the whole park back-face culls and you see its underside.
+* A stick that only binds when its slot is free leaves half the screen permanently dead if
+  a `pointerup` is ever missed. Always re-claim the half on a new press.
 
 ---
 
