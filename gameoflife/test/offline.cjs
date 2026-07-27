@@ -32,13 +32,19 @@ const server = http.createServer((req,res)=>{
 
   await pg.goto(URL,{waitUntil:'networkidle'});
   // wait for the worker to install and take control
-  const controlled = await pg.evaluate(async () => {
-    const reg = await navigator.serviceWorker.ready;
+  // a bounded wait: if registration is missing entirely (a merge dropped the
+  // script once) this used to hang forever instead of reporting anything
+  const controlled = await Promise.race([
+    pg.evaluate(async () => {
+      const reg = await navigator.serviceWorker.ready;
     for (let i = 0; i < 60 && !navigator.serviceWorker.controller; i++) {
       await new Promise(r => setTimeout(r, 100));
     }
-    return { scope: reg.scope, controlled: !!navigator.serviceWorker.controller };
-  });
+      return { scope: reg.scope, controlled: !!navigator.serviceWorker.controller };
+    }),
+    new Promise(r => setTimeout(() => r({ scope: null, controlled: false, timedOut: true }), 15000)),
+  ]);
+  if (controlled.timedOut) console.log('  (no service worker after 15s — is it registered in index.html?)');
   console.log('worker:', JSON.stringify(controlled));
   const cached = await pg.evaluate(async () => {
     const names = await caches.keys();
@@ -56,8 +62,10 @@ const server = http.createServer((req,res)=>{
   await pg.reload({waitUntil:'load'});
   const hub = await pg.evaluate(()=>({
     title: document.querySelector('h1')?.textContent ?? null,
-    card: document.querySelector('.card h2')?.textContent ?? null,
-    offering: document.querySelectorAll('.card').length,
+    // the offering markup is .offer/.offer-name (it was .card/h2 before the
+    // terminal restyle) — keep this in step or the check passes on a blank page
+    card: document.querySelector('.offer-name')?.textContent ?? null,
+    offering: document.querySelectorAll('.offer').length,
   }));
   console.log('OFFLINE hub:', JSON.stringify(hub));
 

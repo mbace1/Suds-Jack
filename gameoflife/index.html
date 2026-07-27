@@ -207,6 +207,16 @@
   <main id="app"></main>
   <!-- the arcade shell: a home button and a controller way back -->
   <script type="module" src="../hub/shell.js?v=7"></script>
+  <script>
+    // Offline matters more here than in most apps: this one sends you outdoors,
+    // and outdoors is where the signal stops. Registered on https only (or with
+    // ?sw=1) so local dev and the smoke gate never get a stale shell.
+    // (Lost once to a merge — test/offline.cjs is what noticed.)
+    if ('serviceWorker' in navigator
+        && (location.protocol === 'https:' || location.search.includes('sw=1'))) {
+      addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
   <script type="module" src="js/main.js?v=40"></script>
 </body>
 </html>

@@ -84,6 +84,20 @@ voice through a single master gain in `audio.js` — nothing may connect straigh
 to `ctx.destination` — so the mute is total rather than a list of sounds someone
 remembered to silence, and any sound added later inherits it for free.
 
+**The old-screen look is there if you want it.** A `crt on/off` toggle in the
+footer (persisted, **off by default**) puts scanlines and a little tube bloom
+over every scene and the hub header. It is offered rather than imposed because
+it genuinely suits only half the roster: flat scenes like `tern` and `hanami`
+gain texture from it, while the ordered-dither scenes — `whale`, `ice`, `seam`,
+`lichen`, `eel` — are high-frequency detail that a scanline overlay fights.
+
+The one implementation detail that matters: the scanline period is locked to
+the **source pixel grid**, `background-size: 100% calc(100% / 64)`, giving one
+dark line per two of the canvas's 128 rows at any display size. A fixed
+CSS-pixel period (3px, as the arcade siblings use) lands at roughly 1.1 lines
+per source row here — the exact beat frequency — and turns the dithered scenes
+to moiré. Grid-locking is also what a real tube did.
+
 **It works with no signal.** This app exists to send you outdoors, and outdoors
 is exactly where the network stops — the nature invitations are the thing you
 most want in your pocket on a trail, and they were the first thing to break.
