@@ -71,6 +71,11 @@
     .logo-full { display: none; }
     .logo-short { display: inline; }
   }
+  /* On the arcade site the shell parks a fixed HUB button in the top-left
+     corner, exactly where the masthead's own wordmark sits. Give the corner to
+     the way out and drop our logo: the station is named on the tune-in gate and
+     in the tab title, and squeezing both in cost the dial its room. */
+  body:has(.arcade-home) .logo { display: none; }
   #lang { font-size: 11px; letter-spacing: .1em; }
 
   /* the dial lives in the masthead: what you are tuned to, and a way to jump */
