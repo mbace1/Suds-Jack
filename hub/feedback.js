@@ -61,7 +61,10 @@ function unqueue(entry) {
 
 // ── the wire ───────────────────────────────────────────────────────
 async function post(entry) {
-  const body = JSON.stringify({ ...entry, source: 'hub', ua: navigator.userAgent, screen: `${innerWidth}x${innerHeight}` });
+  // `source` says which surface it was left on — a cabinet's panel or the
+  // counter — because "where people actually leave notes" is worth knowing and
+  // costs one field. `kind` rides along from topics.js the same way.
+  const body = JSON.stringify({ source: 'hub', ...entry, ua: navigator.userAgent, screen: `${innerWidth}x${innerHeight}` });
   if (blind) {
     // no-cors: the browser will not let us read the answer, so this is the one
     // path where "it left" is the strongest thing that can honestly be said

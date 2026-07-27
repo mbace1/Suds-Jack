@@ -190,9 +190,45 @@ function check(name, cond) {
   check('an empty note closes without ceremony', await page.locator('.scrim').count() === 0);
   check('and nothing is recorded for it', (await page.evaluate(() => __hub.feedback.archive())).length === 0);
 
+  // ── feedback: what the note is ABOUT ──
+  // The kinds are ordered per project, and that ordering is the question each
+  // project is asking — so it has to survive, not quietly fall back to a fixed
+  // list the day someone renames an id.
+  const taxo = await page.evaluate(async () => {
+    const t = await import('./hub/topics.js?v=1');
+    const bare = t.KINDS.map(k => k.id).join();
+    const led = Object.fromEntries(__hub.games.map(g => [g.id, t.kindsFor(g.id).map(k => k.id)]));
+    const gaps = [];
+    for (const g of __hub.games) {
+      for (const k of t.KINDS) if (!t.chipsFor(g.id, k.id).length) gaps.push(`${g.id}:${k.id}`);
+    }
+    return { bare, led, gaps, moved: Object.values(led).filter(o => o.join() !== bare).length };
+  });
+  check(`every project gets a full set of kinds`,
+    Object.values(taxo.led).every(o => o.length === taxo.bare.split(',').length));
+  check(`and most of them lead with their own question (${taxo.moved} of ${games.length})`,
+    taxo.moved >= games.length - 1);
+  check(`every project-and-kind pair offers a suggestion${taxo.gaps.length ? ` — ${taxo.gaps.slice(0, 3)}` : ''}`,
+    taxo.gaps.length === 0);
+
   // ── feedback: a real note, to a working endpoint ──
   await page.evaluate(u => __hub.feedback.setEndpoint(u), `${base}/collect`);
   await page.locator('.cab').nth(1).locator('.btn.ghost').click();
+  const kindLabels = await page.$$eval('.kind', bs => bs.map(b => b.textContent));
+  const wanted = await page.evaluate(async id => {
+    const t = await import('./hub/topics.js?v=1');
+    return t.kindsFor(id).map(k => k.label);
+  }, games[1].id);
+  check(`the panel offers the kinds in this cabinet's order (${kindLabels[0]})`,
+    kindLabels.join() === wanted.join());
+  await page.locator('.kind').first().click();
+  check('picking one brings up its suggestions', await page.locator('.chip').count() > 0);
+  const chipText = await page.locator('.chip').first().textContent();
+  await page.locator('.chip').first().click();
+  // a suggestion is a starting point, not a vote: it must land in the box and
+  // leave the sending to you
+  check(`a suggestion fills the box rather than sending ("${chipText}")`,
+    (await page.inputValue('.fb-text')) === chipText && collected.length === 0);
   await page.locator('.pip').nth(3).click();
   await page.locator('.fb-text').fill('the second wave is a wall');
   await page.locator('.sheet .btn.play').click();
@@ -202,6 +238,11 @@ function check(name, cond) {
   check('it carries the game, the rating and the words',
     collected[0].game === games[1].id && collected[0].rating === 4 &&
     collected[0].text.includes('wall') && collected[0].source === 'hub');
+  check(`and what it is about, so it can be sorted (${collected[0].kind})`,
+    collected[0].kind === (await page.evaluate(async id => {
+      const t = await import('./hub/topics.js?v=1');
+      return t.kindsFor(id)[0].id;
+    }, games[1].id)));
   check('and it is kept locally too', (await page.evaluate(() => __hub.feedback.archive())).length === 1);
   await page.locator('.sheet .btn.ghost').click();
   check('the panel closes when it is done', await page.locator('.scrim').count() === 0);
