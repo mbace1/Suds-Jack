@@ -106,7 +106,8 @@ readable enemy orbs fly *out* at your strip and have to be dodged.
 
 **Controls:** MOUSE aim · hold LMB fire · A/D run · SPACE dodge roll (i-frames) ·
 G / RMB / SHIFT grenade · ESC pause
-**Mobile:** dual virtual sticks — left stick runs, right stick steers the crosshair + autofires · quick tap either stick = roll · ✸ button grenade
+**Mobile:** dual virtual sticks — left stick runs, right stick steers the crosshair + autofires · quick tap either stick = roll · ✸ button grenade  
+**Controller:** left stick runs · right stick aims · R2 / R1 / A fire · B roll · X bomb · START opens the pause menu (aim speed, scanlines); hold START for the hub
 
 #### Gameplay
 - Fill the stage quota gauge Cabal-style; clearing pops the stragglers, banks a stage

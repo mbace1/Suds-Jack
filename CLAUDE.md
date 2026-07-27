@@ -49,12 +49,14 @@ the capture phase cancels the pointer stream too, so the element gets `pointerca
 never `pointerup`. `touchend` survives both. That is why the button worked with a mouse
 and did nothing under a thumb. `hub/padkeys.js` gives a pad
 to games that never grew one, driven by `pad` in the catalogue: `'native'` = the game
-reads a pad itself and nothing is layered on it (Hyper Dagger, Toko Drop, SKLTR, Tiny
-Hawk, sudz, voxel); `{keys:{…}}` dispatches the key events the game already listens for
-(Drop Cabal, Powder, Neon Ronin); `{pointer:true}` feeds a one-button surface (Tiny 2D);
+reads a pad itself and nothing is layered on it (Hyper Dagger, Toko Drop, Drop Cabal,
+SKLTR, Tiny Hawk, sudz, voxel); `{keys:{…}}` dispatches the key events the game already
+listens for (Powder, Neon Ronin); `{pointer:true}` feeds a one-button surface (Tiny 2D);
 `{ui:true}` walks the page's own buttons (The Game of Life). Honest limits: synthetic key
 events are untrusted, and mouse-**aimed** games get movement and keyed actions from the
-pad but not aim — that needs their own code. On the arcade itself a direction moves the
+pad but not aim — that needs their own code, which is exactly why Drop Cabal left the
+bridge and grew a reader of its own. No keys-bridged game lives in this repo any more, so
+the smoke test drives `attachPad` with a stub binding on a page that bridges nothing. On the arcade itself a direction moves the
 selection, A plays, Y leaves a note, B backs out, and in the note panel left/right sets
 the rating and A sends; selection is real DOM focus with its own ring, since a pad user
 may never trigger `:focus-visible`.
@@ -483,8 +485,19 @@ Touch is **dual virtual sticks** drawn on a full-res `#ui` canvas overlay: left 
 x = run, right stick is a **rate controller** (deflection = crosshair velocity, `AIM_PX`
 1100 px/s at full tilt, integrated in `applyTouchAim`) + autofire while held; a quick
 sub-250 ms / sub-12 px tap on EITHER stick = roll; idle sticks show dashed RUN/AIM
-hints once touch is seen. Module imports carry `?v=2` cache-busters (paperboy
+hints once touch is seen. Module imports carry `?v=N` cache-busters (paperboy
 convention) so gh-pages picks up coherent versions.
+**Gamepad** is read natively in `input.pollGamepad()` (once per frame from `animate()`,
+since the Gamepad API is polled) and feeds the SAME `moveX` / `firing` / `aimRate`
+getters as mouse and touch: left stick runs, **right stick is the same rate controller
+the touch stick drives** (squared magnitude, so small pushes stay small), R2/R1/A fire,
+B/L1 roll, X/L2 bomb. Fire sits on three buttons because R2 is the one some browsers
+and controller firmwares spend on their own UI first, and a polled API has no event to
+cancel. **Start** pauses on RELEASE and only under 750 ms — held, it is the arcade
+shell's way home, and pausing on the way there would freeze the game behind the hub.
+The pause menu (aim speed, scanlines; persisted in `dropCabalOpts`) takes its steps from
+`consumeMenu()`, which both the keyboard and the pad feed; entering the menu drains those
+edges first, or the A that was firing the gun answers the menu on the frame it opens.
 
 **Pixel render:** `renderer.setSize(iw, 220, false)` + CSS `image-rendering: pixelated`
 (canvas stretched to viewport) + scanline overlay div; `NearestFilter` on the sky /
