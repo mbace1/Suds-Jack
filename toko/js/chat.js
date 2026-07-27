@@ -110,6 +110,45 @@ const CSS = `
 .toko-chat .tc-menu button:focus-visible { color: var(--tc-ink); background: #ffffff12; }
 .toko-chat .tc-menu button b { color: var(--tc-hot); font-weight: bold; }
 .toko-chat .tc-menu[hidden] { display: none; }
+/* the feedback branch lists every project, which is more than the seven topics
+   this menu was sized for — let it scroll rather than push the cabinets down */
+.toko-chat .tc-menu { max-height: 236px; overflow-y: auto; }
+
+/* The composer is the tallest thing this panel ever holds, and the panel is
+   capped at 520px because it sits ABOVE the cabinets — going taller pushes the
+   games below the fold, which is the one thing this component must not do. So
+   the room comes out of the log instead: while you are writing, the transcript
+   shrinks to its floor and scrolls. */
+.toko-chat.is-writing .tc-log { max-height: 132px; }
+
+/* ── the composer: where you talk back ── */
+.toko-chat .tc-write {
+  border-top: 2px solid var(--tc-line); padding: 10px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toko-chat .tc-write[hidden] { display: none; }
+.toko-chat .tc-write textarea {
+  font: inherit; width: 100%; min-height: 68px; resize: vertical;
+  background: #000; color: var(--tc-ink);
+  border: 2px solid var(--tc-line); padding: 8px;
+}
+.toko-chat .tc-write textarea:focus { border-color: var(--tc-hot); outline: none; }
+.toko-chat .tc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.toko-chat .tc-chips button {
+  font: inherit; font-size: 11.5px; letter-spacing: .04em;
+  background: none; border: 1px solid var(--tc-line); color: var(--tc-dim);
+  cursor: pointer; min-height: 44px; padding: 0 10px; text-align: left;
+}
+.toko-chat .tc-chips button:hover { color: var(--tc-ink); border-color: var(--tc-hot); }
+.toko-chat .tc-chips button::before { content: '+ '; color: var(--tc-hot); }
+.toko-chat .tc-write .tc-send-row { display: flex; gap: 8px; align-items: center; }
+.toko-chat .tc-write .tc-send-row button {
+  font: inherit; letter-spacing: .16em; background: none; cursor: pointer;
+  border: 2px solid var(--tc-line); color: var(--tc-dim);
+  min-height: 44px; padding: 0 14px;
+}
+.toko-chat .tc-write .tc-send-row .tc-primary { border-color: var(--tc-hot); color: var(--tc-ink); }
+.toko-chat .tc-write .tc-send-row button:hover { border-color: var(--tc-hot); color: var(--tc-ink); }
 
 .toko-chat .tc-foot {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -186,12 +225,14 @@ export function mountChat(anchor, opts = {}) {
   log.setAttribute('role', 'log');
   log.setAttribute('aria-live', 'polite');
   const list = el('div', 'tc-menu');
+  const write = el('div', 'tc-write');
+  write.hidden = true;
   const foot = el('div', 'tc-foot');
   const hint = el('span', null, '1–9 PICK · ENTER SKIP · ESC LEAVE');
   const leave = el('button', null, 'LEAVE');
   leave.type = 'button';
   foot.append(hint, leave);
-  body.append(log, list, foot);
+  body.append(log, list, write, foot);
   panel.append(portrait, body);
   root.appendChild(panel);
 
@@ -306,15 +347,21 @@ export function mountChat(anchor, opts = {}) {
   }
 
   function renderMenu() {
+    write.hidden = true;
+    root.classList.remove('is-writing');
     list.hidden = false;
     list.textContent = '';
-    const items = menu(unlocked, asked);
-    items.slice(0, 9).forEach((t, i) => {
+    hint.textContent = '1–9 PICK · ENTER SKIP · ESC LEAVE';
+    // A branch takes the menu over — same list, different question. Everything
+    // beyond the ninth still clicks; only the number shortcut runs out.
+    const items = branch ? branchItems()
+      : menu(unlocked, asked).map(t => ({ q: t.q, go: () => ask(t) }));
+    items.forEach((it, i) => {
       const b = el('button');
       b.type = 'button';
-      b.appendChild(Object.assign(el('b'), { textContent: (i + 1) + '. ' }));
-      b.appendChild(document.createTextNode(t.q));
-      b.addEventListener('click', () => ask(t));
+      if (i < 9) b.appendChild(Object.assign(el('b'), { textContent: (i + 1) + '. ' }));
+      b.appendChild(document.createTextNode(it.q));
+      b.addEventListener('click', it.go);
       list.appendChild(b);
     });
   }
@@ -325,7 +372,151 @@ export function mountChat(anchor, opts = {}) {
     asked.add(t.id);
     if (t.opens) t.opens.forEach(id => unlocked.add(id));
     list.hidden = true;
+    if (t.mode === 'feedback') { startFeedback(t); return; }
     type(t.a, t.end ? () => setTimeout(close, 900) : null);
+  }
+
+  // ── talking back ───────────────────────────────────────────────────────
+  // The counter's actual job. Everything else on the menu is a thing Toko says;
+  // this is the one where the person on the other side gets to say something,
+  // and it takes the menu over rather than opening a box on top of the
+  // conversation: which project, then what kind of note, then the words.
+  //
+  // The categories and their per-project ordering come from the SAME
+  // hub/topics.js the panel under each cover art uses. That is the whole reason
+  // to do it here at all — a note left at the counter and a note left under a
+  // cabinet have to be the same shape or they cannot be counted together.
+  //
+  // Loaded on demand and allowed to fail: this file is meant to be droppable on
+  // any page in the workshop, so a missing hub folder should cost the feedback
+  // branch and not the whole counter.
+  let kit = null;
+  let branch = null;                 // { step: 'project'|'kind'|'write', game, kind }
+
+  async function loadKit() {
+    if (kit) return kit;
+    try {
+      const [topics, post, cat] = await Promise.all([
+        import('../../hub/topics.js?v=1'),
+        import('../../hub/feedback.js?v=5'),
+        import('../../hub/games.js?v=8'),
+      ]);
+      kit = { topics, post, games: cat.GAMES };
+    } catch {
+      kit = { broken: true };
+    }
+    return kit;
+  }
+
+  const NEVER = { q: 'NEVER MIND.', go: () => cancelBranch() };
+
+  function branchItems() {
+    if (branch.step === 'project') {
+      return [...kit.topics.projectChoices(kit.games).map(p => ({
+        q: p.label.toUpperCase(),
+        go: () => pickProject(p),
+      })), NEVER];
+    }
+    return [...kit.topics.kindsFor(branch.game).map(k => ({
+      q: k.label.toUpperCase(),
+      go: () => pickKind(k),
+    })), NEVER];
+  }
+
+  async function startFeedback(t) {
+    await loadKit();
+    if (kit.broken) { type(['THE BOOK IS NOT ON THE COUNTER RIGHT NOW.']); return; }
+    branch = { step: 'project' };
+    type(t.a);
+  }
+
+  function pickProject(p) {
+    line('tc-you', p.label.toUpperCase());
+    branch = { step: 'kind', game: p.id, label: p.label };
+    list.hidden = true;
+    type([`${p.label.toUpperCase()}. WHAT KIND OF NOTE?`]);
+  }
+
+  function pickKind(k) {
+    line('tc-you', k.label.toUpperCase());
+    branch = { ...branch, step: 'write', kind: k.id, kindLabel: k.label };
+    list.hidden = true;
+    type(['IN YOUR OWN WORDS.'], openComposer);
+  }
+
+  function openComposer() {
+    list.hidden = true;
+    write.hidden = false;
+    root.classList.add('is-writing');
+    // the log just got shorter under it; keep the last thing Toko said in view
+    log.scrollTop = log.scrollHeight;
+    write.textContent = '';
+    hint.textContent = 'CTRL+ENTER SEND · ESC BACK';
+
+    const ta = el('textarea');
+    ta.rows = 3;
+    ta.placeholder = 'TYPE IT HERE';
+    ta.setAttribute('aria-label', `Your note about ${branch.label}`);
+
+    // The suggestions FILL THE BOX rather than send. A one-tap answer you
+    // cannot then argue with is a leading question, and the argument is the
+    // part worth reading.
+    const chips = el('div', 'tc-chips');
+    for (const s of kit.topics.chipsFor(branch.game, branch.kind)) {
+      const c = el('button', null, s);
+      c.type = 'button';
+      c.addEventListener('click', () => {
+        ta.value = ta.value.trim() ? `${ta.value.replace(/\s+$/, '')} ${s}` : s;
+        ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length);
+      });
+      chips.appendChild(c);
+    }
+
+    const row = el('div', 'tc-send-row');
+    const send = el('button', 'tc-primary', 'SEND');
+    send.type = 'button';
+    const back = el('button', null, 'NEVER MIND');
+    back.type = 'button';
+    row.append(send, back);
+    if (!kit.post.configured()) row.appendChild(el('span', null, 'KEPT ON THIS DEVICE'));
+    write.append(ta, chips, row);
+
+    send.addEventListener('click', () => sendNote(ta.value.trim(), send));
+    back.addEventListener('click', () => cancelBranch());
+    ta.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send.click(); }
+    });
+    if (lastInputWasKey) ta.focus();
+  }
+
+  const SAID = {
+    sent: ['GOT IT. THAT IS IN THE WORKSHOP NOW.'],
+    // an opaque no-cors POST cannot be confirmed; say only what is true
+    'sent-blind': ['IT LEFT. THAT FORM DOES NOT ANSWER BACK,', 'SO THAT IS ALL I CAN HONESTLY TELL YOU.'],
+    queued: ['THE INBOX DID NOT ANSWER. I AM HOLDING IT.', 'IT GOES OUT NEXT TIME YOU COME IN.'],
+    off: ['KEPT ON THIS DEVICE. NO INBOX IS SET YET.'],
+  };
+
+  async function sendNote(text, send) {
+    send.disabled = true;
+    const { game, kind, label, kindLabel } = branch;
+    // Words are not required — the category alone says which project and which
+    // area, which is real signal. But it is worth saying that it is thinner.
+    line('tc-you', text ? text.toUpperCase() : `${label} — ${kindLabel}`.toUpperCase());
+    write.hidden = true;
+    root.classList.remove('is-writing');
+    branch = null;
+    const how = await kit.post.send({ game, kind, text, ts: Date.now(), source: 'counter' });
+    type(text ? (SAID[how] ?? SAID.off)
+      : [...(SAID[how] ?? SAID.off), 'WORDS WOULD HAVE HELPED MORE.']);
+  }
+
+  function cancelBranch() {
+    branch = null;
+    write.hidden = true;
+    root.classList.remove('is-writing');
+    renderMenu();
   }
 
   // ── open / close ───────────────────────────────────────────────────────
@@ -348,6 +539,9 @@ export function mountChat(anchor, opts = {}) {
   function close() {
     if (!open) return;
     open = false;
+    branch = null;
+    write.hidden = true;
+    root.classList.remove('is-writing');
     root.classList.remove('is-open');
     bar.setAttribute('aria-expanded', 'false');
     if (typing) { typing.after = null; finishTyping(); }
@@ -364,7 +558,16 @@ export function mountChat(anchor, opts = {}) {
   addEventListener('pointerdown', sawTap, true);
 
   function onKey(e) {
-    if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+    // Esc backs out of the feedback branch before it leaves the counter — one
+    // key, one step, the way a Sierra menu behaves
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      if (branch || !write.hidden) { cancelBranch(); return; }
+      close();
+      return;
+    }
+    // while the composer has the caret, digits are words
+    if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') return;
     if (e.key === 'Enter' && typing) { e.preventDefault(); finishTyping(); return; }
     if (/^[1-9]$/.test(e.key)) {
       const b = list.querySelectorAll('button')[+e.key - 1];

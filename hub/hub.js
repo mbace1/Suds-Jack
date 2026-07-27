@@ -8,7 +8,8 @@
 
 import { GAMES, SKETCHES } from './games.js?v=9';
 import { drawMarquee } from './art.js?v=9';
-import * as feedback from './feedback.js?v=9';
+import * as feedback from './feedback.js?v=10';
+import { kindsFor, chipsFor } from './topics.js?v=1';
 import { watchPad, padPresent } from './pad.js?v=9';
 
 const el = (tag, cls = '', text = '') => {
@@ -102,7 +103,34 @@ function openFeedback(title, gameId, accent) {
 
   const h = el('h2', '', `Feedback: ${title}`);
   h.id = 'fb-title';
-  sheet.append(h, el('p', 'fb-q', 'How was it?'));
+  sheet.append(h, el('p', 'fb-q', 'What kind of note is this?'));
+
+  // The kind row, ordered by what this project is actually asking about
+  // (topics.js). Nothing is gated behind it — pick one and the suggestions
+  // under the box change; ignore it and you can still just type. Making it a
+  // required first step would buy tidier data by charging every casual player
+  // an extra tap, which is the wrong trade for the one channel players use.
+  let kind = '';
+  const kindRow = el('div', 'kind-row');
+  const kindBtns = kindsFor(gameId).map(k => {
+    const b = el('button', 'kind', k.label);
+    b.type = 'button';
+    b.title = k.hint ?? '';
+    b.setAttribute('aria-pressed', 'false');
+    b.onclick = () => {
+      kind = kind === k.id ? '' : k.id;
+      kindBtns.forEach(o => {
+        const on = o.dataset.kind === kind;
+        o.classList.toggle('on', on);
+        o.setAttribute('aria-pressed', String(on));
+      });
+      renderChips();
+    };
+    b.dataset.kind = k.id;
+    kindRow.appendChild(b);
+    return b;
+  });
+  sheet.appendChild(kindRow);
 
   let rating = 0;
   const row = el('div', 'rate-row');
@@ -130,6 +158,27 @@ function openFeedback(title, gameId, accent) {
   ta.setAttribute('aria-label', 'Your note');
   sheet.appendChild(ta);
 
+  // Suggestions, and they FILL THE BOX rather than submit. A one-tap answer you
+  // cannot then argue with is a leading question, and the argument is the part
+  // worth having — so tapping one puts the words in the box with the cursor
+  // after them, ready to be finished, cut or contradicted.
+  const chipRow = el('div', 'chip-row');
+  sheet.appendChild(chipRow);
+  function renderChips() {
+    chipRow.textContent = '';
+    if (!kind) return;
+    for (const s of chipsFor(gameId, kind)) {
+      const c = el('button', 'chip', s);
+      c.type = 'button';
+      c.onclick = () => {
+        ta.value = ta.value.trim() ? `${ta.value.replace(/\s+$/, '')} ${s}` : s;
+        ta.focus();
+        ta.setSelectionRange(ta.value.length, ta.value.length);
+      };
+      chipRow.appendChild(c);
+    }
+  }
+
   // only claim delivery if there is somewhere for it to go
   sheet.appendChild(el('p', 'fb-dest', feedback.configured()
     ? 'Goes straight to the people building these. No account, no tracking.'
@@ -153,12 +202,12 @@ function openFeedback(title, gameId, accent) {
     const text = ta.value.trim();
     // saying nothing and pressing send should record nothing — an empty entry
     // is noise in the data and a lie to the person who sent it
-    if (!rating && !text) { close(); return; }
+    if (!rating && !text && !kind) { close(); return; }
     send.disabled = true; cancel.disabled = true;
-    sheet.querySelectorAll('.rate-row, .fb-text, .fb-dest, .fb-q').forEach(n => n.remove());
+    sheet.querySelectorAll('.rate-row, .fb-text, .fb-dest, .fb-q, .kind-row, .chip-row').forEach(n => n.remove());
     const saying = el('p', 'fb-said', 'Sending…');
     sheet.insertBefore(saying, actions);
-    const how = await feedback.send({ game: gameId, rating, text, ts: Date.now() });
+    const how = await feedback.send({ game: gameId, kind, rating, text, ts: Date.now() });
     saying.textContent = SAID[how] ?? SAID.off;
     cancel.textContent = '[ Close ]';
     cancel.disabled = false;

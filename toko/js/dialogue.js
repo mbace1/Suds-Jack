@@ -113,6 +113,16 @@ export const TOPICS = [
     ],
   },
   {
+    // Always on the menu, never spent. Everything else here is a thing Toko
+    // says; this is the one thing the counter is FOR — the person on the other
+    // side of it gets to talk back. chat.js takes it over after the reply: the
+    // next menu is which project, then what kind of note, then the words.
+    id: 'feedback', q: 'I HAVE SOMETHING TO TELL YOU.', mode: 'feedback',
+    a: [
+      'GO ON. WHICH ONE.',
+    ],
+  },
+  {
     id: 'bye', q: 'NOTHING. I AM GOING TO GO MAKE SOMETHING.', end: true,
     a: [
       'GOOD.',
@@ -122,9 +132,13 @@ export const TOPICS = [
 ];
 
 // the topics on the menu at any moment: everything unlocked, minus what has
-// been asked and spent, with GOODBYE always last
+// been asked and spent, with FEEDBACK second-to-last and GOODBYE last. Those
+// two hold their places on purpose — the way out and the way to talk back
+// should be where you left them, not shuffled by what you happened to ask.
 export function menu(unlocked, asked) {
   const live = TOPICS.filter(t =>
     (!t.locked || unlocked.has(t.id)) && !(t.once && asked.has(t.id)));
-  return [...live.filter(t => !t.end), ...live.filter(t => t.end)];
+  const tail = t => (t.end ? 2 : t.mode === 'feedback' ? 1 : 0);
+  return [...live.filter(t => !tail(t)), ...live.filter(t => tail(t) === 1),
+    ...live.filter(t => tail(t) === 2)];
 }

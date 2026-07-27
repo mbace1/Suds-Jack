@@ -344,6 +344,32 @@ footer {
 
 .fb-q { color: var(--ink-dim); font-size: 13px; }
 
+/* What the note is about, most-likely-for-this-project first. A wrapping row
+   rather than a select: on a phone a native picker hides every option but the
+   one showing, and the whole point of the ordering is that you can SEE which
+   question this project is asking. */
+.kind-row, .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.kind, .chip {
+  font: inherit;
+  font-size: 12.5px;
+  min-height: 44px;
+  padding: 0 12px;
+  background: var(--panel-hi);
+  color: var(--ink-dim);
+  border: 1px solid var(--line);
+  cursor: pointer;
+  text-align: left;
+}
+
+.kind:hover, .chip:hover { color: var(--ink); border-color: var(--ink-dim); }
+.kind.on { color: var(--accent); border-color: var(--accent); }
+
+/* suggestions read as quieter than the kinds — they are optional twice over */
+.chip { font-size: 12px; background: none; }
+.chip::before { content: '+ '; color: var(--accent); }
+.chip-row:empty { display: none; }
+
 .rate-row { display: flex; gap: 6px; }
 
 .pip {
