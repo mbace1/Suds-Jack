@@ -68,12 +68,8 @@ function unqueue(entry) {
 
 // ── the wire ───────────────────────────────────────────────────────
 async function post(entry) {
-  // `source` says which surface it was left on — a cabinet's panel or the
-  // counter — because "where people actually leave notes" is worth knowing and
-  // costs one field. `kind` rides along from topics.js the same way.
   const body = JSON.stringify({
-    source: 'hub', ...context(), ...entry,
-    ua: navigator.userAgent, screen: `${innerWidth}x${innerHeight}`,
+    ...entry, ua: navigator.userAgent, screen: `${innerWidth}x${innerHeight}`,
   });
   if (blind) {
     // no-cors: the browser will not let us read the answer, so this is the one
@@ -97,12 +93,19 @@ async function post(entry) {
 // 'sent' | 'sent-blind' | 'queued' | 'off' — never throws, because a note a
 // player has already written must not be lost to a flaky network
 export async function send(entry) {
-  keep(entry);
+  // The context is folded in HERE rather than at the wire, so the copy kept on
+  // the device is the same object that goes out. It was applied in post() at
+  // first, which meant the archive the player can read back had no idea which
+  // layout or language produced it — the one place that fact is worth showing.
+  // `source` says which surface it was left on; `kind` rides along from
+  // topics.js the same way.
+  const full = { source: 'hub', ...context(), ...entry };
+  keep(full);
   if (!configured()) return 'off';
   try {
-    return await post(entry);
+    return await post(full);
   } catch {
-    queue(entry);
+    queue(full);
     return 'queued';
   }
 }
@@ -124,5 +127,20 @@ export async function flush() {
   return sent;
 }
 
+// A note is held if it is still in the outbox — matched the same way unqueue()
+// matches, so the two never disagree about what "delivered" means.
+export function held(entry) {
+  return outbox().some(e => e.ts === entry.ts && e.game === entry.game);
+}
+
+// Everything kept on this device, gone. Local only: anything already delivered
+// is out of our hands and this does not pretend otherwise.
+export function forget() {
+  const s = read();
+  delete s.feedback;
+  delete s.outbox;
+  write(s);
+}
+
 // console handle, same convention as the games (__dc / __hd / __gol)
-export const debug = { archive, outbox, flush, configured, setEndpoint, endpoint: () => ENDPOINT };
+export const debug = { archive, outbox, flush, configured, setEndpoint, endpoint: () => ENDPOINT, forget };

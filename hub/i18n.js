@@ -106,6 +106,14 @@ const STR = {
     'fb.sent.blind': 'Sent. That form does not answer back, so that is as much as we know.',
     'fb.queued': 'Held for now — the inbox did not answer. It will go out next time you visit.',
     'fb.off': 'Kept on this device.',
+    'notes.link': 'your notes ({n})',
+    'notes.title': 'What you have told us',
+    'notes.none': 'Nothing yet.',
+    'notes.held': 'held',
+    'notes.gone': 'sent',
+    'notes.retry': 'Send the held ones',
+    'notes.forget': 'Forget these',
+    'notes.sure': 'Sure? Press again',
   },
 
   fi: {
@@ -155,6 +163,14 @@ const STR = {
     'fb.sent.blind': 'Lähti. Tuo lomake ei vastaa mitään, joten enempää emme tiedä.',
     'fb.queued': 'Jäi odottamaan — postilaatikko ei vastannut. Lähtee ensi käynnillä.',
     'fb.off': 'Tallessa tällä laitteella.',
+    'notes.link': 'omat viestisi ({n})',
+    'notes.title': 'Mitä olet kertonut',
+    'notes.none': 'Ei vielä mitään.',
+    'notes.held': 'odottaa',
+    'notes.gone': 'lähetetty',
+    'notes.retry': 'Lähetä odottavat',
+    'notes.forget': 'Unohda nämä',
+    'notes.sure': 'Varmastiko? Paina uudestaan',
   },
 
   ja: {
@@ -204,5 +220,13 @@ const STR = {
     'fb.sent.blind': '送信しました。あのフォームは返事をしないので、分かるのはここまでです。',
     'fb.queued': '預かりました — 受信先が応答しませんでした。次回の訪問時に送ります。',
     'fb.off': 'この端末に保存しました。',
+    'notes.link': 'あなたのメモ ({n})',
+    'notes.title': 'あなたが伝えたこと',
+    'notes.none': 'まだ何もありません。',
+    'notes.held': '保留',
+    'notes.gone': '送信済み',
+    'notes.retry': '保留分を送る',
+    'notes.forget': 'これらを消す',
+    'notes.sure': '本当に？もう一度押す',
   },
 };
