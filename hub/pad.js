@@ -19,10 +19,11 @@ export function padPresent() {
   return [...pads].some(p => p && p.connected);
 }
 
-// handlers: { dir(dx, dy), press(index), hold(index, ms) }
+// handlers: { dir(dx, dy), press(index), release(index), hold(index, ms) }
 // `hold` fires once when a button has been held for `holdMs`; `press` fires on
-// the way down for everything else.
-export function watchPad({ dir, press, hold, holdMs = 700, holdButtons = [] } = {}) {
+// the way down and `release` on the way back up, because anything standing in
+// for a key has to let go of it — a held button is a held key.
+export function watchPad({ dir, press, release, hold, holdMs = 700, holdButtons = [] } = {}) {
   let raf = 0, dead = false;
   const wasDown = new Map();
   const heldSince = new Map();
@@ -53,6 +54,7 @@ export function watchPad({ dir, press, hold, holdMs = 700, holdButtons = [] } = 
       if (!down && before) {
         // a hold button that was released early counts as a plain press
         if (holdButtons.includes(i) && !fired.has(i)) press?.(i);
+        release?.(i);
         heldSince.delete(i);
         fired.delete(i);
       }

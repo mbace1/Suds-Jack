@@ -13,9 +13,9 @@
 // takes you back — long enough that it cannot be hit by accident mid-run,
 // short enough that you do not have to wonder whether it is working.
 
-import { watchPad } from './pad.js?v=6';
-import { GAMES } from './games.js?v=6';
-import { attachPad } from './padkeys.js?v=6';
+import { watchPad } from './pad.js?v=7';
+import { GAMES } from './games.js?v=7';
+import { attachPad } from './padkeys.js?v=7';
 
 const HOLD_MS = 750;
 const START = 9, BACK = 8;

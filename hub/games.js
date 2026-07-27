@@ -130,7 +130,9 @@ export const GAMES = [
   },
   {
     id: 'neonronin',
-    pad: { keys: { left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS' } },   // camera stays on the mouse
+    // isDown('KeyA'/'KeyD'/'KeyW'/'KeyS') for movement, Space to dash, KeyE for
+    // the command; the camera stays on the mouse
+    pad: { keys: { left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS', b0: 'Space', b2: 'KeyE' } },
     status: 'active',
     title: 'Neon Ronin',
     tagline: 'Chain sword combos through a neon skyline. The fighting is automatic; the movement is yours.',
@@ -173,7 +175,9 @@ export const GAMES = [
   },
   {
     id: 'tiny2d',
-    pad: { pointer: true },
+    // its own keys, not a synthetic tap: PRESS_KEYS is held to press into the
+    // hill and released at the lip, and TRICK_KEYS flicks
+    pad: { keys: { down: 'KeyS', up: 'KeyW', b0: 'Space', b3: 'KeyW' } },
     status: 'active',
     title: 'Tiny 2D',
     tagline: 'One button. Press into the hill, let go at the lip, and land along the next one — not into it.',

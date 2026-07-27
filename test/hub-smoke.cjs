@@ -503,6 +503,13 @@ function check(name, cond) {
     seen.includes('down:KeyD'));
   check('and releases it when the stick comes back', seen.includes('up:KeyD'));
   check('A presses the roll key the game documents', seen.includes('down:Space'));
+  // a face button is a key, so it must let go of it — Tiny 2D's whole game is
+  // holding the press into the hill and releasing at the lip, which a button
+  // that tapped and released a frame later could not play
+  check('and lets go of it when the button comes up', seen.includes('up:Space'));
+  const order = seen.filter(e => e.endsWith('Space'));
+  check(`in that order, and once each (${order.join(' ')})`,
+    order.join() === 'down:Space,up:Space');
 
   check(`zero console/page errors overall${errors.length ? ` — ${errors[0]}` : ''}`, errors.length === 0);
 
