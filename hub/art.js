@@ -111,6 +111,38 @@ export const ART = {
     for (let i = 0; i < 5; i++) g.p(58 + i * 8, 40 - i * (4 - i * 0.7), 3, 3, '#f2f2e8');   // the throw
   },
 
+  // Powder: the racer, its plume, and the blown-out sun the plates always have
+  powder(g, a) {
+    g.bands(['#8d9aad', '#b0b4b0', '#e6ddc6']);
+    g.p(0, 30, W, H - 30, '#efe7d2');            // the field
+    g.disc(100, 12, 8, '#fffdf4');               // sun, no colour left in it
+    for (let i = 0; i < 8; i++) {
+      const t = i / 8 * Math.PI * 2;
+      g.line(100 + Math.cos(t) * 10, 12 + Math.sin(t) * 10,
+        100 + Math.cos(t) * 15, 12 + Math.sin(t) * 15, a);
+    }
+    for (let y = 30; y < H; y++) {               // the packed line, running away
+      g.p(20 - (y - 30) * 0.9, y, 6 + (y - 30) * 2.2, 1, '#d8cba8');
+    }
+    g.p(18, 33, 5, 2, '#4a4753');                // boulders out on the field
+    g.p(104, 42, 6, 3, '#4a4753');
+    g.p(6, 50, 4, 2, '#4a4753');
+    for (let i = 0; i < 7; i++) {                // plume off the inside edge
+      g.disc(74 + i * 7, 44 - i * 2, Math.max(2, 6 - i), i & 1 ? '#f6f0e0' : '#d5c9ae');
+    }
+    g.disc(50, 60, 12, '#cfc6ae');               // hard blob shadow, close under
+    g.p(34, 51, 30, 5, '#e8dfc6');               // cream fuselage
+    g.p(27, 52, 8, 3, '#e8dfc6');
+    g.p(22, 53, 5, 1, '#b9bec7');                // needle probe
+    g.p(48, 51, 6, 5, '#6b3550');                // the one accent panel
+    g.p(39, 48, 9, 3, '#2b3340');                // canopy
+    g.p(56, 48, 12, 4, '#b9bec7');               // chrome cans
+    g.p(56, 55, 12, 4, '#b9bec7');
+    g.p(67, 48, 2, 4, '#14141a');                // black intake mouths
+    g.p(67, 55, 2, 4, '#14141a');
+    g.p(60, 44, 3, 5, '#e8dfc6');                // fin
+  },
+
   // SKLTR: green bones in the dark
   bones(g, a) {
     g.p(0, 0, W, H, '#04070a');
@@ -151,6 +183,43 @@ export const ART = {
     g.p(0, H - 10, W, 10, '#2a3423');
     g.p(58, H - 26, 3, 14, '#6b4f3a');      // one tree apart from the rest
     g.disc(59, H - 30, 8, a);
+  },
+
+  // Tiny Hawk: the prism skater on a lit rail, in the near-black park
+  prism(g, a) {
+    g.p(0, 0, W, H, '#03060c');
+    g.p(0, 40, W, 32, '#0e1a28');                       // the flat, barely there
+    for (let i = 0; i < 26; i++) {                      // pinpoint lights
+      const x = (i * 37) % W, y = (i * 13) % 34;
+      g.p(x, y, 1, 1, i % 4 ? '#7fd8ea' : '#e8d9b0');
+    }
+    g.line(4, 46, 124, 38, a);                          // the rail, glowing
+    g.line(4, 47, 124, 39, '#2b6d7a');
+    g.line(0, 60, W, 56, '#1b4a5a');                    // a ground marking
+    const cx = 60, cy = 34;                             // faceted body
+    g.p(cx - 4, cy + 6, 14, 2, '#dff6ff');              // board
+    g.p(cx - 2, cy - 2, 5, 8, '#4fd0e0');
+    g.p(cx + 3, cy - 4, 5, 9, '#b06ce0');
+    g.p(cx + 1, cy - 9, 5, 5, '#e0e06c');
+    g.p(cx + 5, cy + 2, 4, 6, '#6ce09a');
+    g.p(cx - 1, cy + 3, 4, 5, '#e06c8a');
+  },
+
+  // Tiny 2D: the lit lip of the hill, and the one skater on it
+  lip(g, a) {
+    g.bands(['#03060c', '#071522', '#0a2030', '#0a2030']);
+    g.disc(102, 16, 7, '#9fd8e8');                      // moon
+    const hill = (x) => 42 + Math.sin(x / 26) * 13 + Math.sin(x / 9) * 3;
+    for (let x = 0; x < W; x++) {
+      const y = hill(x);
+      g.p(x, y, 1, H - y, '#061019');                   // the dark mass
+      g.p(x, y, 1, 2, a);                               // the glowing lip
+      g.p(x, y + 2, 1, 1, '#2b6d7a');
+    }
+    const sx = 44, sy = hill(44) - 6;
+    g.p(sx - 4, sy + 5, 9, 2, '#dff6ff');               // board
+    g.p(sx - 1, sy, 4, 6, '#e0483f');                   // rider
+    g.p(sx, sy - 4, 3, 4, '#f5d13f');
   },
 
   // 20/20: the chart, getting away from you

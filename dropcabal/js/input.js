@@ -54,7 +54,7 @@ export class InputManager {
     window.addEventListener('touchstart', (e) => {
       this.touchSeen = true;
       for (const t of e.changedTouches) {
-        if (t.target && t.target.closest && t.target.closest('button')) continue;
+        if (t.target && t.target.closest && t.target.closest('button, .arcade-home')) continue;
         e.preventDefault();
         this._anyEdge = true;
         const side = t.clientX < window.innerWidth * 0.5 ? this._left : this._right;

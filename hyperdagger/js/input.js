@@ -67,7 +67,7 @@ export class InputManager {
   /** True when the touch began on an interactive DOM control. */
   _uiTouch(e) {
     const t = e.target;
-    return !!(t && t.closest && t.closest('button, #pauseBtn'));
+    return !!(t && t.closest && t.closest('button, #pauseBtn, .arcade-home'));
   }
 
   _touchStart(e) {
