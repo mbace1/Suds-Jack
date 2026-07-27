@@ -13,7 +13,7 @@
 //   DEEP    off the line: slow, but it bites, and it charges the afterburner
 //   CRUST   wind-scoured sheets: fastest, almost no grip
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=1';
+import { PAL } from './palette.js?v=2';
 
 export const STEP = 6;                 // metres between course nodes
 const ROWS = 10;                       // rows of quads per terrain chunk
@@ -30,7 +30,7 @@ const BEHIND = 1;
 export const PACKED = 0, POWDER = 1, ICE = 2, ROCK = 3;
 export const SURF = [
   { name: 'PACKED', speed: 1.00, grip: 1.00 },
-  { name: 'DEEP',   speed: 0.74, grip: 1.20 },
+  { name: 'DEEP',   speed: 0.84, grip: 1.20 },
   { name: 'CRUST',  speed: 1.20, grip: 0.46 },
   { name: 'ROCK',   speed: 0.40, grip: 0.80 },
 ];
@@ -75,8 +75,11 @@ export class Track {
       // Always descending; the pitch rolls between a cruise and a proper chute.
       const pitch = 0.215 + 0.075 * Math.sin(s * 0.0017 + 2.4)
                           + 0.035 * Math.sin(s * 0.0062 + 5.1);
-      // Half-width of the packed run: bowls open to 34 m, chutes squeeze to 18.
-      const w = 26 + 8 * Math.sin(s * 0.0043 + 3.3);
+      // Half-width of the packed line. Deliberately a RIBBON, not a road: a
+      // wide run put the deep snow 35 m away, so the dive-to-charge loop spent
+      // all its time in transit and lost to just cruising the line. Narrow, and
+      // the deep stuff is a lean away — which is also the fantasy.
+      const w = 15 + 5 * Math.sin(s * 0.0043 + 3.3);
       const tilt = -curv * 44;   // dh/dn — banks the turn into its inside edge
       let x, y, z, head;
       if (i === 0) { x = 0; y = 0; z = 0; head = 0; }

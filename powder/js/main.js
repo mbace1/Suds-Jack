@@ -3,14 +3,14 @@
 // like Jet Moto; elbows out against a field, like MotorStorm. Scene, race
 // loop, camera, HUD.
 import * as THREE from 'three';
-import { PAL, SUN_DIR } from './palette.js?v=1';
-import { Track, ICE, ROCK } from './track.js?v=1';
-import { Craft } from './craft.js?v=1';
-import { SprayPool, ScarField } from './snow.js?v=1';
-import { InputManager, STICK_R } from './input.js?v=1';
-import { AudioKit } from './audio.js?v=1';
-import { makeSky } from './sky.js?v=1';
-import { patchAll } from './retro.js?v=1';
+import { PAL, SUN_DIR } from './palette.js?v=2';
+import { Track, ICE, ROCK } from './track.js?v=2';
+import { Craft } from './craft.js?v=2';
+import { SprayPool, ScarField } from './snow.js?v=2';
+import { InputManager, STICK_R } from './input.js?v=2';
+import { AudioKit } from './audio.js?v=2';
+import { makeSky } from './sky.js?v=2';
+import { patchAll } from './retro.js?v=2';
 
 const RES_H = 288;              // internal render height — upscaled with hard pixels
 const FOG_NEAR = 170, FOG_FAR = 610;
@@ -478,7 +478,7 @@ patchAll(scene);
 animate();
 
 window.__pw = {
-  THREE, scene, camera, renderer, track, state, spray, scars, audio, sky,
+  THREE, scene, camera, renderer, track, state, spray, scars, audio, sky, input,
   get player() { return player; },
   get field() { return field; },
   debug: {

@@ -6,7 +6,7 @@
 // quads laid on the snow that fade by lerping back toward the surface colour
 // (no alpha, no sorting cost), pitched to sit flush on a slope.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=1';
+import { PAL } from './palette.js?v=2';
 
 const PUFF_MAX = 1000;
 const SCAR_MAX = 640;

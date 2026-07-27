@@ -2,7 +2,7 @@
 // sun with a few thin rays, and a ring of distant ranges dissolving into the
 // haze. All of it rides with the camera, so the descent never runs out of world.
 import * as THREE from 'three';
-import { PAL, SUN_DIR } from './palette.js?v=1';
+import { PAL, SUN_DIR } from './palette.js?v=2';
 
 function gradientTexture() {
   const c = document.createElement('canvas');

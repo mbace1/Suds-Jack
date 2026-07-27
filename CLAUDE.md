@@ -107,6 +107,19 @@ burn, x = counter-steer trim at half authority, which is also the spin axis in t
   and the launch physics are the same shape by construction.
 - **Terrain streams as pooled chunks** (10×24 quads per 60 m slab), recycled front to
   back, vertex-coloured by surface type.
+- **The burn economy is measured, not guessed** (`scripts/` has no harness for it yet;
+  it was a Playwright autopilot that overrode `input.read()` and compared metres per
+  *sim* second across scripted lines). The first build was decisively broken — the
+  dive-and-spend loop ran 36% SLOWER than never touching the mechanic. Three causes,
+  all now fixed: DEEP paid the surface penalty *and* the carve scrub stacked (holding a
+  line off-piste needs constant steering), so the scrub is now scaled by grip; a full
+  tank bought under 3 s of burn; and, the structural one, **the packed line used to be
+  so wide that reaching deep snow meant crossing 35 m of it twice per cycle** — the loop
+  spent all its time in transit. Narrowing the line to a ribbon (`w` 26±8 → 15±5) fixed
+  what no amount of number-tuning could. Two counter-intuitive results worth keeping:
+  charging FASTER made the loop worse (it just buys more round trips), and the harness
+  noise floor on the transition-heavy line is ~15%, so anything smaller than that is
+  not measurable this way and needs a human.
 - **Launch test:** you stay on the ground until the ground drops away faster than gravity
   can pull you down (`rate > 4.5 && yFree > surfNext`) — which is exactly what a lip does,
   and which does not false-trigger on the descent or on rollers.
