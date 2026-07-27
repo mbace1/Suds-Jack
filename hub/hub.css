@@ -204,6 +204,16 @@ h1 .amp { color: var(--accent); }
 
 #archive-block .count { margin-bottom: 4px; display: block; }
 
+/* the controller's cursor. It has to be visible on its own — a pad user is
+   not necessarily a keyboard user, so :focus-visible may never fire for them */
+.cab.sel, .sketch.sel {
+  outline: 2px solid var(--accent);
+  outline-offset: 8px;
+  border-radius: 3px;
+}
+
+.pad-hint { color: var(--accent-dim); letter-spacing: .06em; }
+
 /* ── the sketch shelf ── */
 .shelf-head {
   font-size: 11.5px;

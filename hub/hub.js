@@ -6,9 +6,10 @@
 // art.js and a cabinet appears. Feedback is the same panel everywhere, tagged
 // with which game it came from, and goes out through hub/feedback.js.
 
-import { GAMES, SKETCHES } from './games.js?v=3';
-import { drawMarquee } from './art.js?v=3';
-import * as feedback from './feedback.js?v=3';
+import { GAMES, SKETCHES } from './games.js?v=4';
+import { drawMarquee } from './art.js?v=4';
+import * as feedback from './feedback.js?v=4';
+import { watchPad, padPresent } from './pad.js?v=4';
 
 const el = (tag, cls = '', text = '') => {
   const e = document.createElement(tag);
@@ -185,9 +186,103 @@ function openFeedback(title, gameId, accent) {
   document.addEventListener('keydown', onKey);
   scrim.appendChild(sheet);
   document.body.appendChild(scrim);
-  openPanel = { close };
+  openPanel = {
+    close,
+    // so a controller can work the panel too: d-pad sets the rating, A sends
+    rate: n => pips[Math.max(0, Math.min(4, n - 1))].click(),
+    send: () => send.isConnected && !send.disabled && send.click(),
+  };
   pips[0].focus();
 }
+
+// ── moving around with a controller (and with the arrow keys) ──────
+// The arcade is a wall of cabinets, so a pad should walk it like one: a
+// direction moves the selection, A plays, Y leaves a note. Selection is real
+// DOM focus, so the keyboard, a screen reader and the pad are all looking at
+// the same thing rather than at three parallel ideas of "current".
+const A = 0, B = 1, X = 2, Y = 3;
+
+function navigables() {
+  return [
+    ...document.querySelectorAll('.cab'),
+    ...document.querySelectorAll('.sketch'),
+  ];
+}
+
+// what a cabinet's direction key actually lands on: Play if there is
+// something to play, otherwise the Feedback button, which is always there
+const target = row =>
+  row.querySelector('.btn.play') || row.querySelector('.sketch-link') || row.querySelector('.btn.ghost');
+
+let sel = -1;
+
+function select(i, scroll = true) {
+  const rows = navigables();
+  if (!rows.length) return;
+  sel = (i + rows.length) % rows.length;
+  rows.forEach((r, n) => r.classList.toggle('sel', n === sel));
+  const el = target(rows[sel]);
+  if (el) el.focus({ preventScroll: true });
+  if (scroll) rows[sel].scrollIntoView({ block: 'nearest' });
+}
+
+// the rack is a grid, so up/down should cross a row rather than step one card
+function columns() {
+  const rack = document.getElementById('cabinets');
+  return rack ? getComputedStyle(rack).gridTemplateColumns.split(' ').length : 1;
+}
+
+function move(dx, dy) {
+  const step = dx + dy * columns();
+  select(sel < 0 ? 0 : sel + step);
+}
+
+// keyboard parity, for anyone who would rather not reach for the mouse. Arrow
+// keys inside the note field belong to the note field.
+document.addEventListener('keydown', e => {
+  if (e.target.matches('textarea, input')) return;
+  const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+  if (!d) return;
+  e.preventDefault();
+  move(...d);
+});
+
+watchPad({
+  dir(dx, dy) {
+    if (openPanel) { if (dx) openPanel.rate(ratingFromDir(dx)); return; }
+    move(dx, dy);
+  },
+  press(i) {
+    if (openPanel) {
+      if (i === A) openPanel.send();
+      if (i === B) openPanel.close();
+      return;
+    }
+    const row = navigables()[sel];
+    if (i === A) (row ? target(row) : navigables()[0] && target(navigables()[0]))?.click();
+    if (i === Y || i === X) row?.querySelector('.btn.ghost')?.click();
+    if (i === B) select(0);
+  },
+});
+
+// stepping the rating with left/right: remember where it was and nudge
+let padRating = 0;
+function ratingFromDir(dx) {
+  padRating = Math.max(1, Math.min(5, (padRating || 3) + dx));
+  return padRating;
+}
+
+// a line in the status bar, but only once a pad has actually shown up
+function padHint() {
+  if (document.getElementById('pad-hint')) return;
+  const row = el('span', 'status-row pad-hint');
+  row.id = 'pad-hint';
+  row.textContent = 'pad: ✕ play · △ feedback · hold ☰ for hub';
+  document.getElementById('status').appendChild(row);
+  if (sel < 0) select(0, false);
+}
+addEventListener('gamepadconnected', padHint);
+if (padPresent()) padHint();
 
 // ── the screen's phosphor ──────────────────────────────────────────
 // The terminal's own colour, the same three as gameoflife's. It tints the
@@ -259,5 +354,8 @@ feedback.flush();
 // console handle, same convention as the games
 window.__hub = {
   games: GAMES, active, archived, sketches: SKETCHES, feedback,
-  debug: { open: openFeedback, accent: readAccent, setAccent: useAccent },
+  debug: {
+    open: openFeedback, accent: readAccent, setAccent: useAccent,
+    select, move, padHint, selected: () => sel,
+  },
 };
