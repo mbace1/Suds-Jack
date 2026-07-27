@@ -126,14 +126,65 @@ export class Effects {
     });
   }
 
-  // Death burst: body panels fly apart.
+  // Blade trail ribbon: samples the weapon tip/base each frame and extrudes a
+  // fading quad strip behind the swing (ref: electrified katana arc).
+  trail(rig, color, dur = 0.34, maxSeg = 14) {
+    const geo = new THREE.BufferGeometry();
+    const verts = new Float32Array(maxSeg * 6 * 3);
+    geo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+    geo.setDrawRange(0, 0);
+    const mesh = new THREE.Mesh(geo, addMat(color, 0.75));
+    mesh.frustumCulled = false;
+    const tips = [];
+    const bases = [];
+    const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3();
+    let t = 0;
+    this._push({
+      meshes: [mesh],
+      ownGeo: true,
+      update: (dt) => {
+        t += dt;
+        if (t < dur && rig.tip && rig.base) {
+          rig.tip.getWorldPosition(tmpA);
+          rig.base.getWorldPosition(tmpB);
+          tips.push(tmpA.clone());
+          bases.push(tmpB.clone());
+          if (tips.length > maxSeg) { tips.shift(); bases.shift(); }
+        } else if (tips.length) {
+          tips.shift(); bases.shift();          // drain the tail after the swing
+        }
+        let v = 0;
+        for (let i = 0; i < tips.length - 1; i++) {
+          const t0 = tips[i], t1 = tips[i + 1], b0 = bases[i], b1 = bases[i + 1];
+          verts[v++] = b0.x; verts[v++] = b0.y; verts[v++] = b0.z;
+          verts[v++] = t0.x; verts[v++] = t0.y; verts[v++] = t0.z;
+          verts[v++] = t1.x; verts[v++] = t1.y; verts[v++] = t1.z;
+          verts[v++] = b0.x; verts[v++] = b0.y; verts[v++] = b0.z;
+          verts[v++] = t1.x; verts[v++] = t1.y; verts[v++] = t1.z;
+          verts[v++] = b1.x; verts[v++] = b1.y; verts[v++] = b1.z;
+        }
+        geo.attributes.position.needsUpdate = true;
+        geo.setDrawRange(0, Math.max(0, (tips.length - 1) * 6));
+        mesh.material.opacity = 0.75 * Math.min(1, Math.max(0, 1 - (t - dur) / 0.18));
+        // stay alive while still sampling, then while the tail drains — the
+        // first frame only has one sample and must not end the effect
+        return t < dur || tips.length > 1;
+      },
+    });
+  }
+
+  // Death burst: body panels fly apart as blocky glitch cubes (ref: datamosh).
   shards(pos, color, n = 12) {
     const mat = addMat(color, 1);
     const meshes = [];
     const vels = [];
     const spins = [];
+    const GLITCH = [0x00f0ff, 0xff2fd6, 0x7cff00];
     for (let i = 0; i < n; i++) {
-      const m = new THREE.Mesh(_shard, mat);
+      // every 3rd chunk pops in a clashing glitch hue
+      const m = new THREE.Mesh(_shard, i % 3 === 2
+        ? addMat(GLITCH[(i / 3 | 0) % 3], 1) : mat);
+      m.scale.setScalar(0.6 + Math.random() * 1.6);
       m.position.set(pos.x, 0.4 + Math.random() * 1.2, pos.z);
       const a = Math.random() * Math.PI * 2;
       const sp = 2 + Math.random() * 5;
@@ -154,8 +205,13 @@ export class Effects {
           if (m.position.y < 0.08) { m.position.y = 0.08; vels[i].y *= -0.35; vels[i].x *= 0.7; vels[i].z *= 0.7; }
           m.rotation.x += spins[i] * dt;
           m.rotation.y += spins[i] * 0.7 * dt;
+          // glitch chunks jitter on the spot instead of tumbling smoothly
+          if (m.material !== mat) {
+            m.position.x += (Math.random() - 0.5) * 0.06;
+            m.position.z += (Math.random() - 0.5) * 0.06;
+          }
+          m.material.opacity = 1 - t / 0.9;   // per-mesh: glitch mats differ
         }
-        mat.opacity = 1 - t / 0.9;
         return t < 0.9;
       },
     });

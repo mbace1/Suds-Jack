@@ -54,7 +54,7 @@ export class Player {
     this.group = new THREE.Group();
     scene.add(this.group);
     this.rigs = FORMS.map((f) => {
-      const rig = buildSamurai(f);
+      const rig = buildSamurai({ ...f, wire: true });
       rig.group.visible = false;
       this.group.add(rig.group);
       return rig;
@@ -472,6 +472,7 @@ export class Player {
     this.struck = false;
     this.attackT = -1;
     this._faceNearest(ctx);
+    ctx.effects.trail(this.rig, this.conf.accent, HEAVY_DUR * this.stats.atkSpdMul * 0.8);
   }
 
   // Ultimates, one signature per frame. i-frames run for the whole duration.
@@ -539,5 +540,7 @@ export class Player {
     this.struck = false;
     this.chainBuffered = false;
     this._faceNearest(ctx);   // soft-aim onto the nearest live enemy
+    ctx.effects.trail(this.rig, this.conf.accent,
+      this.conf.swings[this.swingIdx] * this.stats.atkSpdMul * 0.9);
   }
 }

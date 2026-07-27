@@ -25,6 +25,22 @@ function bodyMat(color) {
     color, flatShading: true, roughness: 0.55, metalness: 0.45,
   });
 }
+
+// Glowing wireframe overlay (ref: low-poly wireframe figure). Applied to the
+// player frames only — one LineSegments per mesh, so it stays off the horde.
+function addWireframe(root, color) {
+  const mat = new THREE.LineBasicMaterial({
+    color, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const targets = [];
+  root.traverse((o) => { if (o.isMesh) targets.push(o); });
+  for (const m of targets) {
+    const key = `w${m.geometry.uuid}`;
+    const eg = _geoCache[key] || (_geoCache[key] = new THREE.EdgesGeometry(m.geometry, 30));
+    m.add(new THREE.LineSegments(eg, mat));
+  }
+  return mat;
+}
 function neonMat(color, intensity = 1.6) {
   return new THREE.MeshStandardMaterial({
     color: 0x0a0a0a, emissive: color, emissiveIntensity: intensity,
@@ -36,7 +52,7 @@ function neonMat(color, intensity = 1.6) {
 // fancy: full ronin dressing — kasa hat, rope obi + scabbards, hakama skirt,
 // puffy pants over piston shins, split-toe feet (player frames use this;
 // enemies keep the leaner crested silhouette so they read differently).
-export function buildSamurai({ body = 0x23262e, accent = 0x00f0ff, weapon = 'katana', scale = 1, fancy = false } = {}) {
+export function buildSamurai({ body = 0x23262e, accent = 0x00f0ff, weapon = 'katana', scale = 1, fancy = false, wire = false } = {}) {
   const group = new THREE.Group();
   const bMat  = bodyMat(body);
   const dark  = bodyMat(0x14161c);
@@ -101,6 +117,15 @@ export function buildSamurai({ body = 0x23262e, accent = 0x00f0ff, weapon = 'kat
   const chestSlit = new THREE.Mesh(box(0.06, 0.3, 0.02), neon);
   chestSlit.position.set(0, 0.4, 0.17);
   torso.add(chestSlit);
+  if (fancy) {   // ribcage circuit tracery (ref 2)
+    for (const s of [-1, 1]) {
+      for (let i = 0; i < 2; i++) {
+        const rib = new THREE.Mesh(box(0.13, 0.018, 0.02), trim);
+        rib.position.set(s * 0.15, 0.3 + i * 0.13, 0.17);
+        torso.add(rib);
+      }
+    }
+  }
 
   // shoulder pads (sode)
   for (const s of [-1, 1]) {
@@ -115,12 +140,19 @@ export function buildSamurai({ body = 0x23262e, accent = 0x00f0ff, weapon = 'kat
   head.position.y = 0.78;
   torso.add(head);
   rig.head = head;
-  const skull = new THREE.Mesh(box(0.3, 0.28, 0.3), bMat);
+  // pale hard-edged cube skull with a glowing triangle emblem (ref 1)
+  const skull = new THREE.Mesh(box(0.32, 0.32, 0.3), fancy ? bodyMat(0xd8dbe2) : bMat);
   skull.position.y = 0.12;
   head.add(skull);
   const visor = new THREE.Mesh(box(0.26, 0.05, 0.02), blade);
-  visor.position.set(0, 0.13, 0.16);
+  visor.position.set(0, 0.17, 0.16);
   head.add(visor);
+  if (fancy) {
+    const emblem = new THREE.Mesh(cone(0.075, 0.11, 3), neonMat(0xff2f4a, 1.5));
+    emblem.position.set(0, 0.03, 0.16);
+    emblem.rotation.x = Math.PI / 2;
+    head.add(emblem);
+  }
   if (fancy) {
     // wide kasa hat with a glowing rim
     const kasa = new THREE.Mesh(cone(0.46, 0.2, 8), dark);
@@ -149,6 +181,11 @@ export function buildSamurai({ body = 0x23262e, accent = 0x00f0ff, weapon = 'kat
     const fore = new THREE.Mesh(box(0.12, 0.36, 0.12), dark);
     fore.position.y = -0.56;
     arm.add(fore);
+    if (fancy) {   // circuit tracery running down the arm (ref 2)
+      const line = new THREE.Mesh(box(0.02, 0.62, 0.02), trim);
+      line.position.set(side * 0.08, -0.36, 0.06);
+      arm.add(line);
+    }
     return arm;
   };
   rig.armL = mkArm(-1);
@@ -210,6 +247,12 @@ export function buildSamurai({ body = 0x23262e, accent = 0x00f0ff, weapon = 'kat
     const bl = new THREE.Mesh(box(0.045, 0.95, 0.015), blade);
     bl.position.y = 0.62;
     weaponGrp.add(bl);
+    rig.tip = new THREE.Object3D();
+    rig.tip.position.y = 1.1;
+    weaponGrp.add(rig.tip);
+    rig.base = new THREE.Object3D();
+    rig.base.position.y = 0.2;
+    weaponGrp.add(rig.base);
     weaponGrp.rotation.x = -1.35;      // blade carried forward at rest
   } else if (weapon === 'cleaver') {
     const hilt = new THREE.Mesh(cyl(0.04, 0.045, 0.4), dark);
@@ -220,6 +263,12 @@ export function buildSamurai({ body = 0x23262e, accent = 0x00f0ff, weapon = 'kat
     const edge = new THREE.Mesh(box(0.06, 0.95, 0.055), blade);
     edge.position.set(0.17, 0.75, 0);
     weaponGrp.add(edge);
+    rig.tip = new THREE.Object3D();
+    rig.tip.position.set(0.17, 1.25, 0);
+    weaponGrp.add(rig.tip);
+    rig.base = new THREE.Object3D();
+    rig.base.position.set(0.17, 0.3, 0);
+    weaponGrp.add(rig.base);
     weaponGrp.rotation.x = -1.2;
   } else if (weapon === 'daggers') {
     for (const arm of [rig.armR, rig.armL]) {
@@ -228,6 +277,14 @@ export function buildSamurai({ body = 0x23262e, accent = 0x00f0ff, weapon = 'kat
       const bl = new THREE.Mesh(box(0.035, 0.5, 0.012), blade);
       bl.position.y = 0.3;
       g.add(bl);
+      if (arm === rig.armR) {
+        rig.tip = new THREE.Object3D();
+        rig.tip.position.y = 0.58;
+        g.add(rig.tip);
+        rig.base = new THREE.Object3D();
+        rig.base.position.y = 0.1;
+        g.add(rig.base);
+      }
       g.rotation.x = -1.5;
     }
   } else if (weapon === 'rifle') {
@@ -244,6 +301,7 @@ export function buildSamurai({ body = 0x23262e, accent = 0x00f0ff, weapon = 'kat
     rig.muzzle = tip;
   }
 
+  if (wire) rig.wireMat = addWireframe(group, accent);
   group.scale.setScalar(scale);
   return rig;
 }
