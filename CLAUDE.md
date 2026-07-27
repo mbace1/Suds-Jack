@@ -246,17 +246,27 @@ bump `?v=N` cache-busters together when shipping. See `gameoflife/README.md` for
 roadmap of future experiences.
 
 ### Radio Free Helsinki (`radiofree/`)
-A **fictional pirate news broadcast** — an app, not a game. Looks like **half a Metal
-Gear codec screen**: one portrait frame with **Toko** (the teal gel from toko-drop,
-`#00ccaa`, dark eyes, white specular) reading the day's wire, and where the codec's
-second portrait would be, an animated story panel — the half that behaves like a
-feed. Below, a swipeable bulletin card (Shorts/stories paging). **Canvas 2D pixel art,
-no three.js, no build step, no assets, no CDN** — every pixel is drawn in code, so it
-works offline. Three channels on the dial (`SECTORS` in `stories.js`): **87.60 KAIKU**
-games/studios, **104.40 VERKKO** tech/industry, **141.12 VARTIO** defence/signal —
-Helsinki as a games town wired into a tech industry next to a defence band. Four
-bulletins each; running off the end of a channel sweeps to the next, so NEXT alone
-walks all twelve.
+A **fictional pirate news broadcast** — an app, not a game. **The feed is vertical
+and that is the format, not a mode**: one bulletin per screen in a `scroll-snap`
+column (TikTok-shaped), all twelve in one feed ordered by channel. Each post is
+**half a Metal Gear codec screen stood on end** — the story's **portrait** picture
+panel on top, **Toko** (the teal gel from toko-drop, `#00ccaa`, dark eyes, white
+specular) reading the wire below it with a freq/REC/level data column beside her and
+a waveform across the bottom — plus a TikTok-style right rail (⧉ DECODE, ▼ NEXT) and
+the copy underneath. Panels are drawn portrait (`PANEL_W/PANEL_H` = 128×152) because
+a landscape card inside a vertical post reads as something shot for another screen
+and cropped in. **Canvas 2D pixel art, no three.js, no build step, no assets, no
+CDN** — every pixel is drawn in code, so it works offline. Three channels
+(`SECTORS` in `stories.js`): **87.60 KAIKU** games/studios, **104.40 VERKKO**
+tech/industry, **141.12 VARTIO** defence/signal — Helsinki as a games town wired
+into a tech industry next to a defence band. Four bulletins each.
+
+**Scrolling is the primary control**; the masthead dial is a *readout* of which
+channel the scroll landed on plus a jump between bands. **Only the live post
+animates** — it re-tunes (picture up out of noise), types, and drives the lip-sync;
+neighbours hold the single frame `renderStatic()` painted (so scrolling shows real
+pictures, and twelve canvases stay cheap), and posts not yet reached show a standby
+line instead of their copy. Decode state is per post.
 
 **Everything on the wire is invented** — fictional studios, ministries, ports and
 operators; no real company, agency or country is described or accused of anything.
@@ -291,11 +301,21 @@ part-way to amber lands on **olive** and reads as a rendering fault (tint at 0.9
 lip-sync — it lives below-right of the mouth.
 
 **Both frames are ONE canvas.** `codec.js` draws the portrait (96×96) and the story
-panel (128×96) into *detached* `PixelScreen` buffers and blits them into a single
-248×124 screen with a shared waveform band, so the frames cannot drift apart when CSS
-scales the page. `PixelScreen(null, w, h)` is the detached mode. Idle waveform samples
-sit on a breathing carrier — with noise alone an open channel quantised to 1px and read
-as a broken dotted line.
+panel (128×152) into *detached* `PixelScreen` buffers and blits them into a single
+144×276 post screen with the data column and waveform band, so the frames cannot drift
+apart when CSS scales the post. `PixelScreen(null, w, h)` is the detached mode. Idle
+waveform samples sit on a breathing carrier — with noise alone an open channel
+quantised to 1px and read as a broken dotted line.
+
+**Which post is live is read off `feed.scrollTop`**, not from an IntersectionObserver.
+The observer version could not be trusted: its callback is async, so a jump (deep
+link, channel change) landed correctly and was then overridden a frame later by a
+queued entry from where the feed used to be — every post is the same height, so the
+answer is one division, and it agrees with a programmatic jump immediately. The
+handover only fires within 0.2 of a snap point so a slow drag cannot start and
+abandon two reads. **`behavior: 'auto'` is not "jump"** — in `scrollTo`/
+`scrollIntoView` it means *defer to CSS*, and the feed is `scroll-behavior: smooth`,
+so `'auto'` politely animates; `'instant'` is the one that lands.
 
 **Audio** (`audio.js`) is all-synth: per-character blips, ring/connect pips, tuning
 sweeps, a falling saw for DECODE, and a looping band-passed **carrier hiss** that ducks
@@ -310,11 +330,13 @@ gate checks every story against it. Dither in 2px cells must sample `bayer(x >> 
 `field(scr, decode, false)` turns the graticule off for scenes with their own full-frame
 texture (`sea`, `engine`); a grid under a wireframe terrain is noise on noise.
 
-**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 30
-checks: zero console errors, the codec actually animates (not a still frame), the reader
-types and can be skipped, DECODE grows plain readings and re-folds, paging/tuning/mute,
-all twelve bulletins carrying a full read *and* a decode, every visual key real, 44px
-targets, and **WCAG AA on every text colour** — with translucent backgrounds properly
+**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 40
+checks: zero console errors, the feed is vertical (one post per screen, snapping, media
+portrait in the buffer *and* on screen), the live codec animates while neighbours hold
+their painted frame and unread posts sit on standby, the reader types and can be
+skipped, DECODE grows plain readings / re-folds / stays per-post, scroll+rail+keyboard
++dial all move the feed, all twelve bulletins carrying a full read *and* a decode,
+every visual key real, 44px targets, and **WCAG AA on every text colour** — with translucent backgrounds properly
 composited up the tree (taking the first non-transparent colour reads
 `rgba(255,180,58,.05)` as solid amber and fails the decode box by 4x).
 `window.__rfh` exposes `{audio, state, debug: {open, channel, go, tuneChannel,
@@ -377,16 +399,16 @@ dropcabal/      # Drop Cabal — Cabal-style gallery shooter, toko-drop enemies,
 radiofree/      # Radio Free Helsinki — MGS-codec news broadcast, Toko anchors, DECODE
   index.html
   js/
-    main.js     # boot + tune-in gate, paging/tuning, decode toggle, the loop
-    codec.js    # both codec frames in ONE canvas + waveform; Reader (typewriter → mouth)
+    main.js     # boot + tune-in gate, the vertical snap feed, tuning, decode, the loop
+    codec.js    # one post: both codec frames in ONE canvas; Reader (typewriter → mouth)
     toko.js     # the anchor: gel wobble, blink, lip-sync, amber decode tear
-    visuals.js  # 12 story panels, each re-drawing itself under decode; PANEL_KEYS
+    visuals.js  # 12 portrait story panels, each re-drawing under decode; PANEL_KEYS
     stories.js  # the wire: copy with {{spun|plain}} markup, techniques, tells
     screen.js   # PixelScreen (detachable), shade/mix/bayer, scanlines
     audio.js    # synth codec kit + carrier hiss, one master gain (total mute)
     palette.js
   test/
-    smoke.cjs   # 30-check headless gate
+    smoke.cjs   # 40-check headless gate
 hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel enemies
   index.html
   js/

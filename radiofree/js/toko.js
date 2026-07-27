@@ -7,8 +7,8 @@
 // timer. In DECODE the picture goes amber and starts tearing: the anchor has
 // stopped reading the official copy.
 
-import { PAL } from './palette.js?v=1';
-import { bayer, mix, shade } from './screen.js?v=1';
+import { PAL } from './palette.js?v=2';
+import { bayer, mix, shade } from './screen.js?v=2';
 
 const CX = 48, CY = 52, R = 26;
 

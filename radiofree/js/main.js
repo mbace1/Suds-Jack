@@ -1,26 +1,27 @@
 // Radio Free Helsinki — the receiver.
 //
-// Boot → tune-in gate (which is also the gesture that unlocks WebAudio) →
-// codec connects → Toko reads the day's wire. Three channels on the dial, four
-// bulletins each; page with a swipe, the arrow keys, or NEXT. DECODE is the
-// point of the whole thing: it re-reads the bulletin in plain language, names
-// the technique, and re-draws the picture without the flattering framing.
+// The feed is vertical and snaps one post per screen, the way a phone feed
+// works: all twelve bulletins in one column, ordered by channel. Scrolling is
+// the primary control — the dial in the masthead reports which channel you have
+// scrolled into, and jumps you between them.
+//
+// Only the post you are actually on is live: it re-tunes (the picture fades up
+// out of noise), types its bulletin, and drives Toko's lip-sync. Neighbours are
+// painted once and held, so scrolling shows real pictures rather than blank
+// boxes, and nothing off-screen burns a frame budget.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=1';
-import { Codec, Reader } from './codec.js?v=1';
-import { SECTORS, storiesFor, parseLine } from './stories.js?v=1';
-import * as audio from './audio.js?v=1';
+import { PAL, SECTOR_COLOR } from './palette.js?v=2';
+import { Post, Reader } from './codec.js?v=2';
+import { SECTORS, STORIES, parseLine } from './stories.js?v=2';
+import * as audio from './audio.js?v=2';
 
 const $ = id => document.getElementById(id);
-const app = $('app'), gate = $('gate');
+const app = $('app'), gate = $('gate'), feed = $('feed');
 
-let codec = null, reader = null;
-let sectorIdx = 0, storyIdx = 0, decoded = false;
+const posts = [];          // { story, sector, post, els, decoded, read }
+let active = -1;
+let reader = null;
 let raf = 0, last = performance.now();
-
-const channel = () => SECTORS[sectorIdx];
-const list = () => storiesFor(channel().id);
-const story = () => list()[Math.min(storyIdx, list().length - 1)];
 
 // ── the static on the gate ─────────────────────────────────────────
 // The app's first frame has to be moving: a dead screen behind a "tune in"
@@ -43,7 +44,6 @@ const story = () => list()[Math.min(storyIdx, list().length - 1)];
         }
       }
     }
-    // a carrier trying to come through the noise
     g.fillStyle = PAL.GREEN_DIM;
     for (let x = 0; x < c.width; x++) {
       const v = Math.sin((x + gt) * 0.19) * Math.sin(gt * 0.03) * 6;
@@ -83,178 +83,251 @@ $('tuneIn').onclick = () => {
   boot();
 };
 
+function el(tag, cls = '', text = '') {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text) e.textContent = text;
+  return e;
+}
+
 function boot() {
-  const d = new Date();
-  const pad = n => String(n).padStart(2, '0');
-  $('date').textContent = `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
   paintSound();
-
-  codec = new Codec($('codec'));
-  reader = new Reader($('bulletin'), n => { if (n % 2 === 0) audio.blip(n); });
-
-  showStory(true);
+  reader = new Reader(n => { if (n % 2 === 0) audio.blip(n); });
+  buildFeed();
+  watchScroll();
   bindControls();
+  setActive(0, true);
   last = performance.now();
   raf = requestAnimationFrame(loop);
 }
 
-// ── rendering the current bulletin ─────────────────────────────────
-function showStory(fresh) {
-  const s = story();
-  document.documentElement.style.setProperty('--accent', SECTOR_COLOR[s.sector]);
+// ── the feed ───────────────────────────────────────────────────────
+function buildFeed() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const date = `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
 
-  $('freq').textContent = channel().freq;
-  $('call').textContent = channel().call;
-  $('sector').textContent = channel().label;
-  $('slug').textContent = s.slug;
-  $('tag').textContent = `${s.sector} · ${String(storyIdx + 1).padStart(2, '0')} / ${String(list().length).padStart(2, '0')}`;
-  $('head').textContent = s.head;
+  STORIES.forEach((story, i) => {
+    const sector = SECTORS.find(s => s.id === story.sector);
+    const art = el('article', 'post');
+    art.dataset.id = story.id;
+    art.dataset.index = String(i);
+    // the accent is per-post, not global: while two posts are on screen mid
+    // scroll they must keep their own channel colour
+    art.style.setProperty('--accent', SECTOR_COLOR[story.sector]);
 
-  decoded = false;
-  paintDecode();
-  $('technique').textContent = s.technique;
-  $('note').textContent = s.decodeNote;
-  $('tell').textContent = s.tell;
+    const media = el('div', 'post-media');
+    const slot = el('div', 'media-slot');
+    media.appendChild(slot);
 
-  codec.setStory(s);
-  if (fresh) codec.signal = 0;
-  reader.play(s.lines.map(parseLine), false);
-  audio.carrierDuck(true);
-  paintProgress();
-  document.title = `${s.head} — Radio Free Helsinki`;
-}
+    const rail = el('div', 'rail');
+    const decodeBtn = el('button', 'rail-btn decode-btn');
+    decodeBtn.innerHTML = '<span class="glyph" aria-hidden="true">⧉</span><span class="lbl">DECODE</span>';
+    decodeBtn.setAttribute('aria-expanded', 'false');
+    decodeBtn.onclick = () => toggleDecode(i);
+    const nextBtn = el('button', 'rail-btn next-btn');
+    nextBtn.innerHTML = '<span class="glyph" aria-hidden="true">▼</span><span class="lbl">NEXT</span>';
+    nextBtn.setAttribute('aria-label', 'Next bulletin');
+    nextBtn.onclick = () => scrollToPost(i + 1);
+    rail.append(decodeBtn, nextBtn);
+    media.appendChild(rail);
+    if (i === 0) media.appendChild(el('div', 'swipe-hint', 'swipe up for the next bulletin'));
 
-function paintDecode() {
-  $('decodeBox').hidden = !decoded;
-  const b = $('decode');
-  b.classList.toggle('on', decoded);
-  b.textContent = decoded ? 'Re-fold' : 'Decode';
-  b.setAttribute('aria-expanded', String(decoded));
-}
+    const cap = el('div', 'post-caption');
+    // the dial already says which channel you are on, so the tag carries what
+    // it does not: position in the feed, dateline, date. Naming the sector here
+    // too pushed it onto a second line on every phone.
+    const tag = el('p', 'tag');
+    tag.innerHTML = `<span class="rec">ON AIR</span> ${pad(i + 1)}/${STORIES.length} · ${story.slug} · ${date}`;
+    const head = el('h2', 'head', story.head);
+    const bulletin = el('div', 'bulletin');
+    bulletin.setAttribute('aria-live', 'polite');
+    bulletin.appendChild(el('p', 'standby', 'awaiting transmission'));
 
-function paintProgress() {
-  const wrap = $('progress');
-  wrap.innerHTML = '';
-  list().forEach((_, i) => {
-    const bar = document.createElement('i');
-    if (i < storyIdx) bar.className = 'seen';
-    if (i === storyIdx) bar.className = 'at';
-    wrap.appendChild(bar);
+    const box = el('div', 'decode-box');
+    box.hidden = true;
+    box.append(
+      el('p', 'technique', story.technique),
+      el('p', 'note', story.decodeNote),
+      el('p', 'tell', story.tell),
+    );
+    cap.append(tag, head, bulletin, box,
+      el('p', 'fiction', 'Fictional broadcast · invented studios, ministries and ports · real techniques'));
+
+    art.append(media, cap);
+    feed.appendChild(art);
+
+    const post = new Post(slot, story, sector, i);
+    post.renderStatic();
+    posts.push({ story, sector, post, decoded: false, read: false,
+      els: { art, bulletin, box, decodeBtn } });
   });
 }
 
-// ── navigation ─────────────────────────────────────────────────────
-function go(delta) {
-  const n = list().length;
-  let i = storyIdx + delta;
-  if (i >= n) { tuneChannel(1, true); return; }          // sweep on past the end
-  if (i < 0) {
-    tuneChannel(-1, true);
-    storyIdx = list().length - 1;
-    showStory(true);
-    return;
+// Which post the viewport is on, read straight off the scroll position.
+//
+// This was an IntersectionObserver first, and it could not be trusted: its
+// callback arrives asynchronously, so a jump (a deep link, a channel change)
+// would land correctly and then be overridden a frame later by a queued entry
+// from where the feed used to be. Every post is the same height, so the answer
+// is one division — and it agrees with a programmatic jump immediately.
+let stride = 0;
+const measure = () => { stride = feed.scrollHeight / Math.max(1, posts.length); };
+
+function indexAt() { return feed.scrollTop / (stride || 1); }
+
+function watchScroll() {
+  measure();
+  feed.addEventListener('scroll', () => {
+    const f = indexAt();
+    const i = Math.round(f);
+    // only hand over once the post is most of the way into place, so a slow
+    // drag does not start and abandon two reads on the way past
+    if (Math.abs(f - i) < 0.2 && i !== active && posts[i]) setActive(i);
+  }, { passive: true });
+  window.addEventListener('resize', measure);
+}
+
+function setActive(i, first = false) {
+  if (i === active || !posts[i]) return;
+  const prev = posts[active];
+  if (prev) {
+    prev.post.goIdle();
+    prev.els.art.classList.remove('live');
+    if (!reader.done) reader.finish();     // never leave a half-typed bulletin
   }
-  storyIdx = i;
-  audio.page();
-  showStory(false);
+  active = i;
+  const p = posts[i];
+  p.post.goLive();
+  p.els.art.classList.add('live');
+
+  // the masthead reports where the scroll put you
+  document.documentElement.style.setProperty('--accent', SECTOR_COLOR[p.story.sector]);
+  $('freq').textContent = p.sector.freq;
+  $('call').textContent = p.sector.call;
+  document.title = `${p.story.head} — Radio Free Helsinki`;
+
+  if (!p.read) {
+    p.read = true;
+    reader.play(p.els.bulletin, p.story.lines.map(parseLine), p.decoded);
+    audio.carrierDuck(true);
+    if (!first) audio.page();
+  } else {
+    // already heard: show it whole rather than retyping on every scroll past
+    reader.play(p.els.bulletin, p.story.lines.map(parseLine), p.decoded);
+    reader.finish();
+    if (!first) audio.page();
+  }
 }
 
-function tuneChannel(delta, quiet) {
-  sectorIdx = (sectorIdx + delta + SECTORS.length) % SECTORS.length;
-  storyIdx = 0;
+// ── navigation ─────────────────────────────────────────────────────
+function scrollToPost(i, instant = false) {
+  const n = Math.max(0, Math.min(posts.length - 1, i));
+  if (!stride) measure();
+  // 'instant' is the one that actually jumps: scrollTo's default behavior
+  // 'auto' means "defer to CSS", and the feed's CSS is scroll-behavior: smooth,
+  // so asking for 'auto' politely animates instead of landing
+  feed.scrollTo(instant ? { top: n * stride, behavior: 'instant' } : { top: n * stride });
+  if (instant) setActive(n);
+}
+
+function channelOf(i) { return SECTORS.findIndex(s => s.id === posts[i].story.sector); }
+
+// the dial jumps between channels: the first post of the previous/next band
+function tuneChannel(delta) {
+  const here = channelOf(active);
+  const want = (here + delta + SECTORS.length) % SECTORS.length;
+  const target = posts.findIndex(p => p.story.sector === SECTORS[want].id);
+  if (target < 0) return;
   audio.tune(true);
-  if (!quiet) audio.page();
-  showStory(true);
+  scrollToPost(target);
 }
 
-function toggleDecode() {
-  decoded = !decoded;
+function toggleDecode(i) {
+  const p = posts[i];
+  if (!p) return;
+  if (i !== active) { scrollToPost(i); return; }
+  p.decoded = !p.decoded;
+  p.post.decoded = p.decoded;
   // a bulletin still being read jumps to the end first — you cannot decode
   // half a sentence
   if (!reader.done) reader.finish();
-  reader.setDecoded(decoded);
-  paintDecode();
-  decoded ? audio.decode() : audio.recode();
+  reader.setDecoded(p.decoded);
+  p.els.box.hidden = !p.decoded;
+  p.els.decodeBtn.classList.toggle('on', p.decoded);
+  p.els.decodeBtn.setAttribute('aria-expanded', String(p.decoded));
+  p.els.decodeBtn.querySelector('.lbl').textContent = p.decoded ? 'RE-FOLD' : 'DECODE';
+  p.decoded ? audio.decode() : audio.recode();
 }
 
 function bindControls() {
-  $('next').onclick = () => go(1);
-  $('decode').onclick = toggleDecode;
   $('chUp').onclick = () => tuneChannel(1);
   $('chDown').onclick = () => tuneChannel(-1);
 
   // tapping the copy skips the typing — the reader is a flourish, not a gate
-  $('bulletin').onclick = () => { if (!reader.done) { reader.finish(); audio.blip(2); } };
+  feed.addEventListener('click', e => {
+    if (e.target.closest('button')) return;
+    if (!e.target.closest('.bulletin')) return;
+    if (!reader.done) { reader.finish(); audio.blip(2); }
+  });
 
   document.addEventListener('keydown', e => {
     if (e.target.tagName === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return;
     switch (e.key) {
-      case 'ArrowDown': case 'PageDown': case ' ': e.preventDefault(); go(1); break;
-      case 'ArrowUp': case 'PageUp': e.preventDefault(); go(-1); break;
+      case 'ArrowDown': case 'PageDown': case ' ': e.preventDefault(); scrollToPost(active + 1); break;
+      case 'ArrowUp': case 'PageUp': e.preventDefault(); scrollToPost(active - 1); break;
       case 'ArrowRight': tuneChannel(1); break;
       case 'ArrowLeft': tuneChannel(-1); break;
-      case 'd': case 'D': toggleDecode(); break;
+      case 'd': case 'D': toggleDecode(active); break;
       default: break;
     }
   });
-
-  // vertical swipe pages the feed, the way the shape of the thing promises
-  let sy = 0, sx = 0, tracking = false;
-  const surface = app;
-  surface.addEventListener('pointerdown', e => {
-    if (e.target.closest('button')) return;
-    tracking = true; sy = e.clientY; sx = e.clientX;
-  });
-  surface.addEventListener('pointerup', e => {
-    if (!tracking) return;
-    tracking = false;
-    const dy = e.clientY - sy, dx = e.clientX - sx;
-    if (Math.abs(dy) > 55 && Math.abs(dy) > Math.abs(dx)) go(dy < 0 ? 1 : -1);
-    else if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy)) tuneChannel(dx < 0 ? 1 : -1);
-  });
-
-  let wheelLock = 0;
-  surface.addEventListener('wheel', e => {
-    const now = performance.now();
-    if (now < wheelLock || Math.abs(e.deltaY) < 12) return;
-    wheelLock = now + 480;
-    go(e.deltaY > 0 ? 1 : -1);
-  }, { passive: true });
 }
 
 // ── the loop ───────────────────────────────────────────────────────
+// Only the live post animates. The rest keep the frame they were painted with,
+// which is what makes a twelve-canvas feed cheap.
 function loop(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
-  const mouth = reader.update(dt);
-  if (reader.done) audio.carrierDuck(false);
-  codec.update(dt, mouth, decoded);
-  codec.draw();
+  const p = posts[active];
+  if (p) {
+    const mouth = reader.update(dt);
+    if (reader.done) audio.carrierDuck(false);
+    p.post.update(dt, mouth);
+    p.post.draw();
+  }
   raf = requestAnimationFrame(loop);
 }
 
 // console handle, same convention as __dc / __hd / __gol in the sibling demos
 window.__rfh = {
   audio,
-  get state() { return { channel: channel().id, storyIdx, decoded, id: story().id }; },
+  get state() {
+    const p = posts[active];
+    return p ? { channel: p.story.sector, index: active, decoded: p.decoded, id: p.story.id } : null;
+  },
   debug: {
     tuneIn: () => $('tuneIn').click(),
-    go, tuneChannel, toggleDecode,
-    channel: id => {
-      const i = SECTORS.findIndex(s => s.id === id);
+    go: d => scrollToPost(active + d),
+    tuneChannel,
+    toggleDecode: () => toggleDecode(active),
+    finishRead: () => reader.finish(),
+    stories: () => posts.map(p => p.story.id),
+    // tests and deep links need to land on a post without waiting for a smooth
+    // scroll to finish, so jump instantly and set the active post directly
+    open: id => {
+      const i = posts.findIndex(p => p.story.id === id);
       if (i < 0) return false;
-      sectorIdx = i; storyIdx = 0; showStory(true);
+      scrollToPost(i, true);
       return true;
     },
-    open: id => {
-      for (let si = 0; si < SECTORS.length; si++) {
-        const idx = storiesFor(SECTORS[si].id).findIndex(s => s.id === id);
-        if (idx >= 0) { sectorIdx = si; storyIdx = idx; showStory(true); return true; }
-      }
-      return false;
+    channel: cid => {
+      const i = posts.findIndex(p => p.story.sector === cid);
+      if (i < 0) return false;
+      scrollToPost(i, true);
+      return true;
     },
-    finishRead: () => reader.finish(),
-    stories: () => storiesFor('ALL').map(s => s.id),
   },
 };
 

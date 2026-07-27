@@ -24,18 +24,18 @@
     --industry: #8fe36a;
     --defence: #ff6b6b;
     --accent: var(--gaming);
+    --mast-h: 54px;
+    --col: 480px;
     --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, 'Courier New', monospace;
   }
 
-  html, body { height: 100%; background: var(--void); }
+  html, body { height: 100%; background: var(--void); overflow: hidden; }
   body {
     font-family: var(--mono);
     color: var(--green);
     font-size: 15px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
 
   /* the tube: scanlines and a corner vignette over the whole app */
@@ -47,100 +47,127 @@
       radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%);
   }
 
-  #app {
-    max-width: 620px;
-    margin: 0 auto;
-    padding: 10px 14px 28px;
-    min-height: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  /* ── masthead ─────────────────────────────────────────── */
+  /* ── masthead (fixed over the feed) ───────────────────── */
   .mast {
-    display: flex; align-items: center; gap: 10px;
-    border-bottom: 1px solid var(--green-lo);
-    padding-bottom: 8px;
+    position: fixed; z-index: 40; top: 0; left: 0; right: 0;
+    height: calc(var(--mast-h) + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+    background: linear-gradient(to bottom, rgba(4,7,10,.96) 60%, rgba(4,7,10,0));
+  }
+  /* the chrome tracks the post column: on a wide window a dial pinned to the
+     far right belongs to nothing */
+  .mast-inner {
+    max-width: var(--col); margin: 0 auto; height: 100%;
+    padding: 0 10px;
+    display: flex; align-items: center; gap: 8px;
   }
   .logo {
-    font-size: 13px; letter-spacing: .16em; font-weight: 700;
+    font-size: 11px; letter-spacing: .14em; font-weight: 700;
     text-transform: uppercase; white-space: nowrap;
   }
   .logo b { color: var(--amber); font-weight: 700; }
-  .mast .date { margin-left: auto; font-size: 11px; color: var(--green-dim); letter-spacing: .1em; }
-  .icon-btn {
-    flex: none;
-    min-width: 44px; min-height: 44px;
-    background: none; border: 1px solid var(--green-lo); border-radius: 3px;
-    color: var(--green); font-family: var(--mono); font-size: 15px;
-    cursor: pointer;
-  }
-  .icon-btn:hover { border-color: var(--green-dim); }
-  .icon-btn[aria-pressed="false"] { color: var(--green-lo); }
 
-  /* ── the dial ─────────────────────────────────────────── */
-  .dial {
-    display: flex; align-items: stretch; gap: 8px;
-    border: 1px solid var(--green-lo); border-radius: 3px;
-    background: var(--shell);
-    padding: 4px;
-  }
+  /* the dial lives in the masthead: what you are tuned to, and a way to jump */
+  .dial { margin-left: auto; display: flex; align-items: center; gap: 2px; }
   .dial button {
     min-width: 44px; min-height: 44px;
     background: none; border: 0; color: var(--green-dim);
-    font-family: var(--mono); font-size: 17px; cursor: pointer;
+    font-family: var(--mono); font-size: 15px; cursor: pointer;
   }
   .dial button:hover { color: var(--green); }
-  .dial .read {
-    flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px;
-    border-left: 1px solid var(--green-lo); border-right: 1px solid var(--green-lo);
-  }
+  .dial .read { text-align: center; min-width: 86px; line-height: 1.1; }
   .dial .freq {
-    font-size: 22px; font-weight: 700; letter-spacing: .06em;
+    display: block; font-size: 17px; font-weight: 700; letter-spacing: .04em;
     color: var(--accent);
-    text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 55%, transparent);
   }
-  .dial .call { font-size: 11px; letter-spacing: .22em; color: var(--green-dim); }
+  .dial .call { display: block; font-size: 9px; letter-spacing: .2em; color: var(--green-dim); }
+  .icon-btn {
+    flex: none; min-width: 44px; min-height: 44px;
+    background: none; border: 1px solid var(--green-lo); border-radius: 3px;
+    color: var(--green); font-family: var(--mono); font-size: 15px; cursor: pointer;
+  }
+  .icon-btn[aria-pressed="false"] { color: var(--text-dim); }
 
-  /* ── codec screen ─────────────────────────────────────── */
-  .codec {
-    background: var(--shell);
-    border: 1px solid var(--green-lo);
-    border-radius: 3px;
-    padding: 6px;
-    line-height: 0;
+  /* ── the feed: one post per screen, snapping ──────────── */
+  #feed {
+    height: 100vh; height: 100dvh;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+    overscroll-behavior-y: contain;
+    scrollbar-width: none;
   }
-  .codec canvas {
-    width: 100%; height: auto; display: block;
+  #feed::-webkit-scrollbar { display: none; }
+  @media (prefers-reduced-motion: reduce) { #feed { scroll-behavior: auto; } }
+
+  .post {
+    height: 100vh; height: 100dvh;
+    scroll-snap-align: start; scroll-snap-stop: always;
+    display: flex; flex-direction: column;
+    padding: calc(var(--mast-h) + env(safe-area-inset-top) + 4px) 0
+             calc(8px + env(safe-area-inset-bottom));
+    max-width: var(--col); margin: 0 auto;
+  }
+
+  /* the media: portrait, as tall as the post can spare */
+  .post-media {
+    position: relative;
+    flex: 0 0 auto;
+    height: min(58vh, 520px);
+    display: flex; justify-content: center;
+  }
+  .media-slot { height: 100%; line-height: 0; }
+  .media-slot canvas {
+    height: 100%; width: auto; display: block;
     image-rendering: pixelated; image-rendering: crisp-edges;
   }
-  .strip {
-    display: flex; align-items: center; gap: 10px;
-    font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
-    color: var(--green-dim);
-    margin-top: -4px;
-  }
-  .strip .rec { color: var(--defence); }
-  .strip .rec::before {
-    content: '●'; margin-right: 5px; animation: blink 1.6s steps(1) infinite;
-  }
-  @keyframes blink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: .15; } }
-  .strip .slug { margin-left: auto; color: var(--accent); }
 
-  /* ── the bulletin ─────────────────────────────────────── */
-  .card { flex: 1; }
+  /* ── the right rail (the TikTok column) ───────────────── */
+  .rail {
+    position: absolute; right: 6px; bottom: 0;
+    display: flex; flex-direction: column; gap: 10px; align-items: center;
+  }
+  .rail-btn {
+    width: 52px; min-height: 52px; padding: 5px 0 3px;
+    background: rgba(8,18,24,.72); border: 1px solid var(--green-lo); border-radius: 6px;
+    color: var(--green); font-family: var(--mono); cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .rail-btn .glyph { font-size: 17px; line-height: 1; }
+  .rail-btn .lbl { font-size: 8px; letter-spacing: .1em; }
+  .rail-btn:hover { border-color: var(--green-dim); }
+  .rail-btn.on {
+    border-color: var(--amber); color: var(--amber); background: rgba(255,180,58,.12);
+  }
+  .rail-btn:focus-visible, .icon-btn:focus-visible, .dial button:focus-visible {
+    outline: 2px solid var(--amber); outline-offset: 2px;
+  }
+
+  /* ── the caption ──────────────────────────────────────── */
+  .post-caption {
+    flex: 1 1 auto; min-height: 0;
+    overflow-y: auto; overscroll-behavior: contain;
+    padding: 12px 14px 0;
+    scrollbar-width: none;
+  }
+  .post-caption::-webkit-scrollbar { display: none; }
   .tag {
-    font-size: 10px; letter-spacing: .2em; color: var(--accent);
-    text-transform: uppercase; margin-bottom: 6px;
+    font-size: 10px; letter-spacing: .18em; color: var(--accent);
+    text-transform: uppercase; margin-bottom: 5px;
   }
+  .tag .rec { color: var(--defence); }
+  .tag .rec::before { content: '● '; }
+  .post.live .tag .rec::before { animation: blink 1.6s steps(1) infinite; }
+  @keyframes blink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: .15; } }
   .head {
-    font-size: 19px; line-height: 1.25; letter-spacing: .01em;
-    color: var(--green); margin-bottom: 10px; font-weight: 700;
+    font-size: 18px; line-height: 1.25; color: var(--green);
+    margin-bottom: 9px; font-weight: 700;
   }
-  .bulletin { font-size: 14px; color: #b7e8cd; min-height: 9.5em; }
+  .bulletin { font-size: 14px; color: #b7e8cd; }
   .bulletin-line + .bulletin-line { margin-top: 9px; }
   .bulletin-line::before { content: '> '; color: var(--green-lo); }
+  .standby { font-size: 13px; color: var(--text-dim); letter-spacing: .1em; }
+  .standby::after { content: '▮'; animation: blink 1s steps(1) infinite; }
 
   .spun { transition: color .25s, opacity .25s; }
   .spun.struck { color: var(--text-dim); text-decoration: line-through; opacity: .7; }
@@ -151,7 +178,7 @@
   .decode-box {
     border: 1px solid var(--amber); border-left-width: 3px;
     background: rgba(255,180,58,.05);
-    padding: 10px 12px; margin-top: 14px;
+    padding: 10px 12px; margin-top: 12px;
   }
   .decode-box[hidden] { display: none; }
   .technique {
@@ -165,34 +192,23 @@
   }
   .tell::before { content: 'TELL: '; color: var(--amber-hot); letter-spacing: .1em; }
 
-  /* ── actions ──────────────────────────────────────────── */
-  .actions { display: flex; gap: 8px; }
-  .btn {
-    flex: 1; min-height: 48px;
-    background: var(--shell); border: 1px solid var(--green-dim); border-radius: 3px;
-    color: var(--green); font-family: var(--mono);
-    font-size: 13px; letter-spacing: .16em; text-transform: uppercase;
-    cursor: pointer; transition: background .15s, border-color .15s, color .15s;
-  }
-  .btn:hover { background: #0d2028; }
-  .btn.on { border-color: var(--amber); color: var(--amber); background: rgba(255,180,58,.08); }
-  .btn:focus-visible, .icon-btn:focus-visible, .dial button:focus-visible {
-    outline: 2px solid var(--amber); outline-offset: 2px;
-  }
-
-  .progress { display: flex; gap: 5px; justify-content: center; }
-  .progress i {
-    display: block; height: 3px; flex: 1; max-width: 34px;
-    background: var(--green-lo); border-radius: 2px;
-  }
-  .progress i.seen { background: var(--green-dim); }
-  .progress i.at { background: var(--accent); }
-
   .fiction {
-    font-size: 10px; letter-spacing: .1em; color: var(--text-dim);
-    text-align: center; text-transform: uppercase; line-height: 1.6;
+    font-size: 9px; letter-spacing: .1em; color: var(--text-dim);
+    text-transform: uppercase; margin: 14px 0 4px; line-height: 1.6;
   }
-  .hint { font-size: 10px; letter-spacing: .1em; color: var(--text-dim); text-align: center; }
+
+  /* the scroll affordance, on the first post only */
+  .post:first-child .post-media { padding-bottom: 18px; }
+  .swipe-hint {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    text-align: center; font-size: 9px; letter-spacing: .16em;
+    color: var(--text-dim); text-transform: uppercase;
+    animation: nudge 2.2s ease-in-out infinite;
+  }
+  @keyframes nudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+  @media (prefers-reduced-motion: reduce) {
+    .swipe-hint, .standby::after, .post.live .tag .rec::before { animation: none; }
+  }
 
   /* ── the tune-in gate ─────────────────────────────────── */
   #gate {
@@ -202,18 +218,24 @@
     gap: 18px; padding: 24px; text-align: center;
   }
   #gate.gone { display: none; }
-  #gate h1 { font-size: 22px; letter-spacing: .2em; text-transform: uppercase; }
+  #gate h1 { font-size: 21px; letter-spacing: .18em; text-transform: uppercase; }
   #gate h1 b { color: var(--amber); }
   #gate p { font-size: 12px; color: var(--green-dim); max-width: 34em; letter-spacing: .06em; }
-  #gate .btn { flex: none; min-width: 220px; }
   #gate .noise { width: 100%; max-width: 300px; height: 46px; image-rendering: pixelated; }
-
-  @media (max-width: 420px) {
-    .head { font-size: 17px; }
-    .logo { font-size: 11px; letter-spacing: .1em; }
+  #gate button {
+    min-width: 220px; min-height: 48px;
+    background: var(--shell); border: 1px solid var(--green-dim); border-radius: 3px;
+    color: var(--green); font-family: var(--mono);
+    font-size: 13px; letter-spacing: .16em; text-transform: uppercase; cursor: pointer;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .strip .rec::before { animation: none; }
+  #gate button:hover { background: #0d2028; }
+  #gate button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+  /* a short viewport (a phone on its side) gives the picture less room so the
+     words still fit without the caption becoming a letterbox */
+  @media (max-height: 620px) {
+    .post-media { height: 44vh; }
+    .head { font-size: 16px; }
   }
 </style>
 </head>
@@ -225,52 +247,28 @@
   <p>Pirate wire out of the capital. Games, industry, and the defence band —
      read by Toko, who has never been asked to be impartial.</p>
   <p>Every bulletin is invented. Every technique in them is not.</p>
-  <button class="btn" id="tuneIn">▶ Tune in</button>
+  <button id="tuneIn">▶ Tune in</button>
 </div>
 
 <div id="app" hidden>
   <header class="mast">
+   <div class="mast-inner">
     <span class="logo">Radio <b>Free</b> Helsinki</span>
-    <span class="date" id="date"></span>
+    <div class="dial">
+      <button id="chDown" aria-label="Previous channel">◀</button>
+      <span class="read">
+        <span class="freq" id="freq">87.60</span>
+        <span class="call" id="call">KAIKU</span>
+      </span>
+      <button id="chUp" aria-label="Next channel">▶</button>
+    </div>
     <button class="icon-btn" id="sound" aria-pressed="true" aria-label="Sound on or off">♪</button>
+   </div>
   </header>
 
-  <div class="dial">
-    <button id="chDown" aria-label="Previous channel">◀</button>
-    <div class="read">
-      <span class="freq" id="freq">87.60</span>
-      <span class="call" id="call">KAIKU</span>
-    </div>
-    <button id="chUp" aria-label="Next channel">▶</button>
-  </div>
-
-  <div class="codec" id="codec"></div>
-  <div class="strip">
-    <span class="rec">On air</span>
-    <span class="sector" id="sector"></span>
-    <span class="slug" id="slug"></span>
-  </div>
-
-  <main class="card">
-    <p class="tag" id="tag"></p>
-    <h1 class="head" id="head"></h1>
-    <div class="bulletin" id="bulletin" aria-live="polite" aria-atomic="false"></div>
-    <div class="decode-box" id="decodeBox" hidden>
-      <p class="technique" id="technique"></p>
-      <p class="note" id="note"></p>
-      <p class="tell" id="tell"></p>
-    </div>
-  </main>
-
-  <div class="actions">
-    <button class="btn" id="decode">Decode</button>
-    <button class="btn" id="next">Next ▼</button>
-  </div>
-  <div class="progress" id="progress"></div>
-  <p class="hint" id="hint">swipe / ↑ ↓ to page &nbsp;·&nbsp; D to decode</p>
-  <p class="fiction">Fictional broadcast · invented studios, ministries and ports · real techniques</p>
+  <main id="feed" tabindex="-1"></main>
 </div>
 
-<script type="module" src="js/main.js?v=1"></script>
+<script type="module" src="js/main.js?v=2"></script>
 </body>
 </html>

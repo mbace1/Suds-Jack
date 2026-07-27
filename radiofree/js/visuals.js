@@ -1,16 +1,19 @@
-// Radio Free Helsinki — the other half of the screen.
+// Radio Free Helsinki — the picture half of a post.
 //
-// Where MGS puts the second portrait, this puts the picture: a small animated
-// panel per bulletin, drawn in code. Every one of them takes `decode` and
-// changes under it, because the framing is never only in the words — the
-// truncated axis, the friendly unit, the arrow pointing the flattering way are
-// all part of the same job. Decoding the text without decoding the chart would
-// teach half the lesson.
+// The feed is vertical (TikTok-shaped), so these panels are **portrait**: a
+// horizontal card inside a vertical post reads as something filmed for another
+// format and cropped in. Each bulletin gets one, drawn in code, and every one of
+// them takes `decode` and changes under it — because the framing is never only
+// in the words. The truncated axis, the friendly unit, the arrow pointing the
+// flattering way are all part of the same job, and decoding the text without
+// decoding the chart would teach half the lesson.
 
-import { PAL } from './palette.js?v=1';
-import { mix, shade, bayer } from './screen.js?v=1';
+import { PAL } from './palette.js?v=2';
+import { mix, shade, bayer } from './screen.js?v=2';
 
-const W = 128, H = 96;
+// portrait: the post is 9:16-ish and this fills its upper two thirds
+export const PANEL_W = 128, PANEL_H = 152;
+const W = PANEL_W, H = PANEL_H;
 
 // shared: the panel these all sit in. `grid` is off for the scenes that fill
 // the frame with their own texture — a graticule under a dithered water column
@@ -55,21 +58,20 @@ export function num(scr, x, y, text, color) {
 // 92 of 260 dots go dark. The number in the headline, made countable.
 function chart(scr, t, d) {
   field(scr, d);
-  const cols = 20, rows = 13, cut = 92;
+  const cols = 13, rows = 20, cut = 92;
   const lit = ink(d * 0.2), gone = mix(PAL.GREEN_LO, PAL.AMBER, d);
   for (let i = 0; i < cols * rows; i++) {
-    const x = 6 + (i % cols) * 6, y = 5 + Math.floor(i / cols) * 6;
+    const x = 9 + (i % cols) * 9, y = 6 + Math.floor(i / cols) * 7;
     const isCut = i >= cols * rows - cut;
-    // before the decode they are all just staff; after it, the last 92 empty
     const wave = Math.sin(t * 2 + i * 0.4) * 0.5 + 0.5;
     if (isCut && d > 0.15) {
-      if (wave > 0.75 - d * 0.5) scr.px(x, y, 3, 3, shade(gone, 0.4));
+      if (wave > 0.75 - d * 0.5) scr.px(x, y, 4, 4, shade(gone, 0.4));
       else scr.px(x + 1, y + 1, 1, 1, gone);
     } else {
-      scr.px(x, y, 3, 3, wave > 0.8 ? PAL.GREEN_HOT : lit);
+      scr.px(x, y, 4, 4, wave > 0.8 ? PAL.GREEN_HOT : lit);
     }
   }
-  num(scr, 6, H - 8, d > 0.4 ? '-92' : '260', ink(d));
+  num(scr, 9, H - 9, d > 0.4 ? '-92' : '260', ink(d));
 }
 
 // the truncated axis. Decode drops the baseline to zero and the mountain
@@ -79,58 +81,58 @@ function chart2(scr, t, d) {
   const vals = [72, 70, 69, 71, 74, 78, 82, 88, 94, 99];
   const base = 68 - d * 68;                     // 68 -> 0 as it decodes
   const top = 104;
-  const bw = 9, x0 = 14, floor = H - 14;
-  scr.px(x0 - 4, 10, 1, floor - 10, inkLo(d));   // y axis
-  scr.px(x0 - 4, floor, W - x0, 1, inkLo(d));    // x axis
+  const bw = 10, x0 = 18, floor = H - 18, ceil = 22;
+  scr.px(x0 - 5, ceil - 6, 1, floor - ceil + 6, inkLo(d));   // y axis
+  scr.px(x0 - 5, floor, W - x0, 1, inkLo(d));                // x axis
   vals.forEach((v, i) => {
     const k = (v - base) / (top - base);
-    const h = Math.max(1, Math.round(k * (floor - 14)));
+    const h = Math.max(1, Math.round(k * (floor - ceil)));
     const grow = Math.min(1, Math.max(0, t * 1.6 - i * 0.08));
     const hh = Math.round(h * grow);
     const c = i === vals.length - 1 ? mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d) : ink(d * 0.85);
-    scr.px(x0 + i * bw, floor - hh, bw - 2, hh, c);
-    scr.px(x0 + i * bw, floor - hh, bw - 2, 1, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d));
+    scr.px(x0 + i * bw, floor - hh, bw - 3, hh, c);
+    scr.px(x0 + i * bw, floor - hh, bw - 3, 1, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d));
   });
-  num(scr, 2, floor - 4, d > 0.5 ? '0' : '68', inkLo(d));
-  num(scr, 2, 12, '99', inkLo(d));
-  num(scr, W - 26, 6, d > 0.5 ? '+4%' : '+40%', ink(d));
+  num(scr, 3, floor - 4, d > 0.5 ? '0' : '68', inkLo(d));
+  num(scr, 3, ceil - 2, '99', inkLo(d));
+  num(scr, W - 30, 8, d > 0.5 ? '+4%' : '+40%', ink(d));
 }
 
-// two organisations and an arrow. Decode points the arrow.
+// two organisations, stacked. Decode points the arrow and one eats the other.
 function mesh(scr, t, d) {
   field(scr, d);
-  const a = { x: 34, y: 44, r: 13 }, b = { x: 94, y: 44, r: 20 };
+  const a = { x: 64, y: 42, r: 14 }, b = { x: 64, y: 110, r: 22 };
   const pulse = Math.sin(t * 3) * 0.5 + 0.5;
   scr.disc(b.x, b.y, b.r - Math.round(d * 2), mix(PAL.GREEN_LO, PAL.AMBER_DIM, d), ink(d));
-  scr.disc(a.x, a.y, Math.max(3, a.r - Math.round(d * 7)), mix(PAL.GREEN_LO, PAL.AMBER_DIM, d * 0.4), ink(d * 0.4));
-  // the link: a neutral line until decode, then an arrow eating leftward
-  for (let x = a.x + a.r; x < b.x - b.r; x += 3) {
-    const on = ((x + Math.floor(t * 22)) % 9) < 5;
-    scr.px(x, a.y, 2, 1, on ? ink(d) : inkLo(d));
+  scr.disc(a.x, a.y, Math.max(3, a.r - Math.round(d * 8)), mix(PAL.GREEN_LO, PAL.AMBER_DIM, d * 0.4), ink(d * 0.4));
+  for (let y = a.y + a.r; y < b.y - b.r; y += 3) {          // the link
+    const on = ((y + Math.floor(t * 22)) % 9) < 5;
+    scr.px(a.x, y, 1, 2, on ? ink(d) : inkLo(d));
   }
-  if (d > 0.25) {
-    const tipx = b.x - b.r - 4 - pulse * 3;
-    scr.line(tipx, a.y, tipx + 6, a.y - 4, PAL.AMBER_HOT);
-    scr.line(tipx, a.y, tipx + 6, a.y + 4, PAL.AMBER_HOT);
+  if (d > 0.25) {                                          // which way it goes
+    const tipy = b.y - b.r - 4 - pulse * 3;
+    scr.line(a.x, tipy, a.x - 4, tipy + 6, PAL.AMBER_HOT);
+    scr.line(a.x, tipy, a.x + 4, tipy + 6, PAL.AMBER_HOT);
   }
-  num(scr, a.x - 10, a.y + 26, '41', ink(d));
-  num(scr, b.x - 6, b.y + 26, d > 0.4 ? '100%' : '50%', ink(d));
+  num(scr, a.x + a.r + 6, a.y - 2, '41', ink(d));
+  num(scr, b.x + b.r + 4, b.y - 2, d > 0.4 ? '100%' : '50%', ink(d));
 }
 
-// an auditorium. Decode empties it down to the four people on the stage.
+// an auditorium, seen from the back. Decode empties it down to the four
+// people who were on the stage.
 function crowd(scr, t, d) {
   field(scr, d);
-  scr.px(20, 12, 88, 3, inkLo(d));                       // the screen behind them
+  scr.px(22, 12, 84, 3, inkLo(d));                       // the screen behind them
   for (let i = 0; i < 4; i++) {                          // the stage
-    const x = 32 + i * 18, bob = Math.sin(t * 2 + i) * 1;
-    scr.disc(x, 26 + bob, 3, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d));
-    scr.px(x - 3, 30 + bob, 7, 7, ink(d));
+    const x = 34 + i * 20, bob = Math.sin(t * 2 + i) * 1;
+    scr.disc(x, 28 + bob, 3, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d));
+    scr.px(x - 3, 32 + bob, 7, 8, ink(d));
   }
-  scr.px(8, 40, W - 16, 1, inkLo(d));
-  for (let r = 0; r < 5; r++) {                          // the room
-    for (let c = 0; c < 14; c++) {
-      const x = 10 + c * 8, y = 48 + r * 9;
-      const seatOn = d < 0.3 || ((r * 14 + c) % 17 === 0);
+  scr.px(8, 46, W - 16, 1, inkLo(d));
+  for (let r = 0; r < 9; r++) {                          // the room
+    for (let c = 0; c < 11; c++) {
+      const x = 12 + c * 10, y = 56 + r * 10;
+      const seatOn = d < 0.3 || ((r * 11 + c) % 19 === 0);
       if (seatOn) {
         scr.disc(x, y, 2, ink(d * 0.5));
         scr.px(x - 2, y + 3, 5, 4, inkLo(d));
@@ -139,166 +141,170 @@ function crowd(scr, t, d) {
       }
     }
   }
-  num(scr, 4, H - 8, d > 0.4 ? '4' : '900', ink(d));
+  num(scr, 6, H - 9, d > 0.4 ? '4' : '900', ink(d));
 }
 
-// the data hall and what it gives back. Decode draws the intake next to it.
+// the data hall and what it gives back. Decode draws the intake beside it.
 function heat(scr, t, d) {
   field(scr, d);
-  scr.rect(8, 30, 40, 40, mix(PAL.GREEN_LO, PAL.AMBER_DIM, d * 0.6), ink(d));
+  scr.rect(14, 16, 56, 52, mix(PAL.GREEN_LO, PAL.AMBER_DIM, d * 0.6), ink(d));
   for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) {   // racks blinking
     const on = ((Math.floor(t * 3) + r * 3 + c) % 5) !== 0;
-    scr.px(13 + c * 12, 35 + r * 9, 8, 5, on ? ink(d) : inkLo(d));
+    scr.px(20 + c * 16, 22 + r * 12, 11, 7, on ? ink(d) : inkLo(d));
   }
-  for (let i = 0; i < 5; i++) {                                // the heat pipe
-    const x = 50 + i * 12, off = Math.sin(t * 4 - i * 0.8) * 2;
-    scr.px(x, 48 + off, 10, 3, mix(PAL.GAMING, PAL.AMBER_HOT, d));
+  for (let i = 0; i < 6; i++) {                                // the heat pipe
+    const y = 74 + i * 10, off = Math.sin(t * 4 - i * 0.8) * 2;
+    scr.px(40 + off, y, 3, 8, mix(PAL.GAMING, PAL.AMBER_HOT, d));
   }
   for (let i = 0; i < 3; i++) {                                // the homes
-    scr.rect(96 + (i % 2) * 14, 40 + i * 12, 12, 10, inkLo(d), ink(d * 0.6));
+    scr.rect(66 + (i % 2) * 20, 108 + i * 14, 16, 12, inkLo(d), ink(d * 0.6));
   }
   if (d > 0.2) {                                               // what it draws
-    const drawH = Math.round(d * 26);
-    scr.px(4, 28 - drawH, 3, drawH, PAL.AMBER_HOT);
-    num(scr, 2, H - 8, '96%', PAL.AMBER_HOT);
-    num(scr, 100, H - 8, '4%', PAL.AMBER);
+    const drawH = Math.round(d * 60);
+    scr.px(94, 68 - drawH, 5, drawH, PAL.AMBER_HOT);
+    num(scr, 90, 74, '96%', PAL.AMBER_HOT);
+    num(scr, 40, H - 9, '4%', PAL.AMBER);
   }
 }
 
-// gantry cranes. Decode empties the cabins and lights a console.
+// a gantry crane. Decode empties the cabin and lights a remote console.
 function crane(scr, t, d) {
   field(scr, d);
-  scr.px(0, 74, W, 2, inkLo(d));
-  for (let i = 0; i < 2; i++) {
-    const bx = 20 + i * 52;
-    scr.px(bx, 20, 2, 54, ink(d)); scr.px(bx + 34, 20, 2, 54, ink(d));
-    scr.px(bx - 4, 18, 44, 3, ink(d));
-    const tx = bx + 4 + ((t * 14 + i * 20) % 30);
-    scr.px(tx, 21, 3, 8, ink(d));                       // trolley + load
-    const drop = 30 + Math.sin(t * 1.6 + i) * 8;
-    scr.px(tx - 1, 29, 1, drop - 29, inkLo(d));
-    scr.px(tx - 4, drop, 9, 6, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d));
-    // the cabin: a lit operator, or empty after the decode
-    scr.rect(bx + 2, 34, 8, 7, PAL.PANEL_LO, ink(d));
-    if (d < 0.35) scr.px(bx + 5, 36, 3, 3, PAL.GREEN_HOT);
+  scr.px(0, 108, W, 2, inkLo(d));
+  const bx = 26;
+  scr.px(bx, 26, 3, 82, ink(d)); scr.px(bx + 62, 26, 3, 82, ink(d));
+  scr.px(bx - 6, 22, 78, 4, ink(d));
+  const tx = bx + 8 + ((t * 16) % 48);
+  scr.px(tx, 26, 4, 10, ink(d));                         // trolley
+  const drop = 52 + Math.sin(t * 1.6) * 14;
+  scr.px(tx + 1, 36, 1, drop - 36, inkLo(d));
+  scr.px(tx - 5, drop, 12, 8, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d));
+  scr.rect(bx + 4, 44, 11, 10, PAL.PANEL_LO, ink(d));    // the cabin
+  if (d < 0.35) scr.px(bx + 8, 47, 4, 4, PAL.GREEN_HOT);
+  for (let i = 0; i < 4; i++) {                          // stacked boxes
+    scr.rect(14 + i * 26, 96, 22, 12, inkLo(d), ink(d * 0.5));
   }
   if (d > 0.35) {                                        // the remote console
-    scr.rect(46, 80, 36, 12, PAL.PANEL_LO, PAL.AMBER);
-    for (let i = 0; i < 5; i++) {
+    scr.rect(30, 122, 68, 20, PAL.PANEL_LO, PAL.AMBER);
+    for (let i = 0; i < 6; i++) {
       const on = ((Math.floor(t * 4) + i) % 4) !== 0;
-      scr.px(50 + i * 6, 84, 4, 4, on ? PAL.AMBER_HOT : PAL.AMBER_DIM);
+      scr.px(36 + i * 10, 130, 6, 6, on ? PAL.AMBER_HOT : PAL.AMBER_DIM);
     }
   }
 }
 
-// a mast throwing rings. Decode replaces the rings with the money chain.
+// a mast throwing rings — the panel the vertical format suits best.
+// Decode replaces the broadcast with the chain the claim came down.
 function tower(scr, t, d) {
   field(scr, d);
-  const mx = 30;
-  scr.line(mx, 78, mx - 8, 20, ink(d));
-  scr.line(mx, 78, mx + 8, 20, ink(d));
-  for (let y = 24; y < 78; y += 8) scr.px(mx - 7 + (y - 20) * 0.02, y, 14, 1, inkLo(d));
-  scr.px(mx - 2, 14, 4, 8, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d));
+  const mx = 42, apex = 18, base = 136;
   if (d < 0.3) {
     for (let i = 0; i < 3; i++) {                        // broadcast rings
-      const r = ((t * 20 + i * 22) % 66);
-      const c = shade(PAL.GREEN, 1 - r / 80);
-      scr.disc(mx, 18, r, PAL.PANEL);                    // erase inside first
-      for (let a = -1.2; a < 1.2; a += 0.06) {
-        scr.px(mx + Math.cos(a) * r, 18 + Math.sin(a) * r, 1, 1, c);
+      const r = ((t * 22 + i * 26) % 78);
+      const c = shade(PAL.GREEN, 1 - r / 92);
+      for (let a = -1.25; a < 1.25; a += 0.05) {
+        scr.px(mx + Math.cos(a) * r, apex + 4 + Math.sin(a) * r, 1, 1, c);
       }
     }
-  } else {
-    // the chain the claim came down: three operators pay one consultancy,
-    // which publishes one report, which becomes the news
+  }
+  scr.line(mx, base, mx - 12, apex, ink(d));
+  scr.line(mx, base, mx + 12, apex, ink(d));
+  for (let y = apex + 6; y < base; y += 10) {
+    const half = 12 * (y - apex) / (base - apex);
+    scr.px(mx - half, y, half * 2, 1, inkLo(d));
+  }
+  scr.px(mx - 2, apex - 8, 4, 10, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d));
+  if (d >= 0.3) {
+    // three operators pay one consultancy, which publishes one report
     const steps = ['3', '1', '1'];
     for (let i = 0; i < 3; i++) {
-      const y = 22 + i * 22;
-      scr.rect(62, y, 44, 14, PAL.PANEL_LO, PAL.AMBER);
-      num(scr, 68, y + 5, steps[i], PAL.AMBER_HOT);
-      for (let b = 0; b < +steps[i]; b++) scr.px(80 + b * 6, y + 5, 4, 5, PAL.AMBER_DIM);
+      const y = 28 + i * 40;
+      scr.rect(68, y, 52, 18, PAL.PANEL_LO, PAL.AMBER);
+      num(scr, 74, y + 7, steps[i], PAL.AMBER_HOT);
+      for (let b = 0; b < +steps[i]; b++) scr.px(88 + b * 8, y + 6, 5, 6, PAL.AMBER_DIM);
       if (i < 2) {
-        const k = (t * 26 + i * 14) % 8;
-        scr.px(84, y + 14 + k, 1, 3, PAL.AMBER_HOT);
-        scr.px(83, y + 20, 3, 1, PAL.AMBER_DIM);
+        const k = (t * 26 + i * 14) % 14;
+        scr.px(94, y + 18 + k, 1, 4, PAL.AMBER_HOT);
+        scr.px(93, y + 36, 3, 1, PAL.AMBER_DIM);
       }
     }
   }
 }
 
-// a valuation. Decode shows how much of the tower was actually bought.
+// a valuation, stacked. Decode hollows out everything that was not sold.
 function coin(scr, t, d) {
   field(scr, d);
-  const cx = 64, rows = 12;
+  const cx = 64, rows = 18;
   for (let i = 0; i < rows; i++) {
-    const y = H - 12 - i * 6;
-    const grow = Math.min(1, Math.max(0, t * 2 - i * 0.12));
+    const y = H - 14 - i * 7;
+    const grow = Math.min(1, Math.max(0, t * 2 - i * 0.1));
     if (grow <= 0) continue;
-    const w = Math.round(38 * grow);
+    const w = Math.round(52 * grow);
     const paid = i === 0;                                 // the slice really sold
     const c = paid ? mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d)
                    : (d > 0.3 ? shade(PAL.AMBER_DIM, 0.7) : PAL.GREEN_DIM);
     if (d > 0.3 && !paid) {
-      scr.rect(cx - w / 2, y, w, 5, PAL.PANEL, c);        // hollow: not real money
+      scr.rect(cx - w / 2, y, w, 6, PAL.PANEL, c);        // hollow: not real money
     } else {
-      scr.rect(cx - w / 2, y, w, 5, c, shade(c, 0.6));
+      scr.rect(cx - w / 2, y, w, 6, c, shade(c, 0.6));
     }
   }
-  num(scr, 8, 10, d > 0.4 ? '24' : '400', ink(d));
-  num(scr, 8, 18, d > 0.4 ? '6%' : '100%', inkLo(d));
+  num(scr, 10, 12, d > 0.4 ? '24' : '400', ink(d));
+  num(scr, 10, 20, d > 0.4 ? '6%' : '100%', inkLo(d));
 }
 
-// the gulf in cross-section: a hull above, a cable below, an anchor track.
+// the gulf in cross-section: a hull on top, a cable on the floor, and — once
+// decoded — the anchor track that crossed it. Vertical suits this one.
 function sea(scr, t, d) {
   field(scr, d, false);
-  for (let y = 14; y < 70; y += 2) {                      // dithered water column
+  for (let y = 22; y < 116; y += 2) {                     // dithered water column
     for (let x = 0; x < W; x += 2) {
-      const u = (y - 14) / 56 + Math.sin(x * 0.06 + t) * 0.04;
+      const u = (y - 22) / 94 + Math.sin(x * 0.06 + t) * 0.04;
       // sampled at the CELL index: at even pixel coordinates the 4x4 matrix
       // only ever offers four of its sixteen thresholds and the stipple
       // collapses into a regular dot grid
       if (bayer(x >> 1, y >> 1) < 0.62 - u * 0.5) scr.px(x, y, 2, 2, mix('#0d3242', '#2a1f0d', d));
     }
   }
-  const hx = 20 + ((t * 9) % 100);
-  scr.px(hx - 12, 10, 24, 5, ink(d));                     // the vessel
-  scr.px(hx - 3, 5, 5, 5, inkLo(d));
-  scr.px(0, 70, W, 26, mix('#123033', '#302408', d));     // the seabed
-  for (let x = 0; x < W; x += 4) scr.px(x, 70 + (x % 8 === 0 ? 1 : 0), 4, 1, inkLo(d));
-  scr.px(0, 76, W, 2, mix(PAL.GAMING, PAL.AMBER_HOT, d)); // the cable
+  const hx = 24 + ((t * 9) % 92);
+  scr.px(hx - 14, 12, 28, 6, ink(d));                     // the vessel
+  scr.px(hx - 4, 6, 6, 6, inkLo(d));
+  scr.px(0, 116, W, H - 116, mix('#123033', '#302408', d));   // the seabed
+  for (let x = 0; x < W; x += 4) scr.px(x, 116 + (x % 8 === 0 ? 1 : 0), 4, 1, inkLo(d));
+  scr.px(0, 124, W, 3, mix(PAL.GAMING, PAL.AMBER_HOT, d));    // the cable
   if (d > 0.2) {                                          // the drag
-    scr.line(hx, 15, hx - 26, 74, PAL.AMBER_DIM);
-    for (let x = hx - 30; x < hx - 6; x += 3) scr.px(x, 74 + Math.sin(x) * 1, 2, 2, PAL.AMBER_HOT);
-    scr.px(hx - 30, 74, 30, 1, PAL.AMBER);
+    scr.line(hx, 18, hx - 30, 120, PAL.AMBER_DIM);
+    for (let x = hx - 34; x < hx - 6; x += 3) scr.px(x, 120 + Math.sin(x) * 1, 2, 2, PAL.AMBER_HOT);
+    scr.px(hx - 34, 120, 34, 1, PAL.AMBER);
   } else {
-    scr.px(56, 74, 14, 4, PAL.PANEL_LO);                  // "damage", unexplained
-    num(scr, 60, 84, '?', PAL.GREEN);
+    scr.px(54, 121, 18, 6, PAL.PANEL_LO);                 // "damage", unexplained
+    num(scr, 60, 134, '?', PAL.GREEN);
   }
 }
 
-// satellites, an aircraft, and a cone of interference from somewhere.
+// satellites above, ground below, and a cone of interference between them.
 function sat(scr, t, d) {
   field(scr, d);
   for (let i = 0; i < 3; i++) {                           // the constellation
     const a = t * 0.4 + i * 2.1;
-    const x = 64 + Math.cos(a) * 44, y = 20 + Math.sin(a) * 8;
-    scr.px(x - 3, y, 7, 3, ink(d)); scr.px(x - 1, y - 2, 3, 7, inkLo(d));
+    const x = 64 + Math.cos(a) * 46, y = 22 + Math.sin(a) * 10;
+    scr.px(x - 4, y, 9, 3, ink(d)); scr.px(x - 1, y - 3, 3, 9, inkLo(d));
   }
-  const px_ = 16 + ((t * 12) % 100);                      // the aircraft
-  scr.px(px_, 46, 10, 2, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d));
-  scr.px(px_ + 4, 43, 2, 8, ink(d));
-  scr.px(0, 84, W, 12, mix('#10281f', '#2a1d08', d));     // ground
-  // the cone: unattributed green haze, or an amber source on the ground
-  const sx = d > 0.3 ? 100 : 64;
-  for (let y = 84; y > 30; y -= 3) {
-    const spread = (84 - y) * 0.5;
+  const px_ = 14 + ((t * 12) % 104);                      // the aircraft
+  scr.px(px_, 66, 12, 3, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d));
+  scr.px(px_ + 5, 62, 2, 10, ink(d));
+  scr.px(0, 134, W, H - 134, mix('#10281f', '#2a1d08', d));   // ground
+  // the cone: unattributed haze, or an amber source somebody could name
+  const sx = d > 0.3 ? 98 : 64;
+  for (let y = 134; y > 40; y -= 3) {
+    const spread = (134 - y) * 0.42;
     for (let x = sx - spread; x < sx + spread; x += 4) {
       if (bayer(x >> 1, y >> 1) < 0.35 + Math.sin(t * 5 + y) * 0.1) {
         scr.px(x, y, 2, 2, d > 0.3 ? PAL.AMBER : PAL.GREEN_LO);
       }
     }
   }
-  if (d > 0.3) { scr.px(sx - 4, 82, 9, 4, PAL.AMBER_HOT); num(scr, sx - 2, 88, '?', PAL.AMBER_HOT); }
+  if (d > 0.3) { scr.px(sx - 5, 131, 11, 5, PAL.AMBER_HOT); num(scr, sx - 2, 140, '?', PAL.AMBER_HOT); }
 }
 
 // a game engine's terrain, seen the way an engine shows it: a perspective grid
@@ -309,35 +315,32 @@ function sat(scr, t, d) {
 // there was nothing for the eye to read as ground.
 function engine(scr, t, d) {
   field(scr, d, false);
-  const HZ = 34;                                   // horizon
+  const HZ = 54;                                   // horizon
   const VX = 64;                                   // vanishing point
   scr.px(0, HZ, W, 1, inkLo(d));
-  // depth lines: spacing grows toward the viewer, scrolling forward
   const scroll = (t * 0.55) % 1;
-  for (let r = 0; r < 9; r++) {
+  for (let r = 0; r < 10; r++) {                   // depth lines, spacing grows
     const z = r + scroll;
-    const y = HZ + 2 + (H - HZ - 6) * (z / 9) ** 2.1;
+    const y = HZ + 2 + (H - HZ - 6) * (z / 10) ** 2.1;
     if (y > H - 2) continue;
     const near = (y - HZ) / (H - HZ);
     scr.px(0, y, W, 1, near > 0.45 ? ink(d) : inkLo(d));
   }
-  // rails converging on the vanishing point
-  for (let i = -7; i <= 7; i++) {
+  for (let i = -7; i <= 7; i++) {                  // rails converging
     const spread = i * 30;
     scr.line(VX + spread * 0.06, HZ + 2, VX + spread, H, i === 0 ? ink(d) : inkLo(d));
   }
-  // a low ridge on the horizon, so it is terrain rather than graph paper
-  for (let x = 0; x < W; x += 2) {
-    const h = 3 + Math.sin(x * 0.09) * 2 + Math.sin(x * 0.31 + 1.7) * 1.5;
+  for (let x = 0; x < W; x += 2) {                 // a ridge, so it is terrain
+    const h = 5 + Math.sin(x * 0.09) * 3 + Math.sin(x * 0.31 + 1.7) * 2;
     scr.px(x, HZ - h, 2, h, mix(PAL.PANEL_LO, '#241a08', d));
     scr.px(x, HZ - h, 2, 1, inkLo(d));
   }
-  if (d > 0.25) {                                          // the overlay
-    const bx = 40 + Math.sin(t * 0.9) * 22, by = 52 + Math.cos(t * 1.3) * 10;
-    scr.px(bx - 8, by - 8, 17, 1, PAL.AMBER_HOT); scr.px(bx - 8, by + 8, 17, 1, PAL.AMBER_HOT);
-    scr.px(bx - 8, by - 8, 1, 17, PAL.AMBER_HOT); scr.px(bx + 8, by - 8, 1, 17, PAL.AMBER_HOT);
-    scr.px(bx - 12, by, 6, 1, PAL.AMBER); scr.px(bx + 7, by, 6, 1, PAL.AMBER);
-    num(scr, bx + 12, by - 4, '1', PAL.AMBER_HOT);
+  if (d > 0.25) {                                  // the overlay
+    const bx = 44 + Math.sin(t * 0.9) * 24, by = 92 + Math.cos(t * 1.3) * 16;
+    scr.px(bx - 9, by - 9, 19, 1, PAL.AMBER_HOT); scr.px(bx - 9, by + 9, 19, 1, PAL.AMBER_HOT);
+    scr.px(bx - 9, by - 9, 1, 19, PAL.AMBER_HOT); scr.px(bx + 9, by - 9, 1, 19, PAL.AMBER_HOT);
+    scr.px(bx - 14, by, 7, 1, PAL.AMBER); scr.px(bx + 8, by, 7, 1, PAL.AMBER);
+    num(scr, bx + 13, by - 4, '1', PAL.AMBER_HOT);
   }
 }
 
@@ -348,36 +351,35 @@ function engine(scr, t, d) {
 // the source: it read as random pixels moving, not as a network with a shape.
 function crowd2(scr, t, d) {
   field(scr, d);
-  const N = 44, TX = 74, TY = 38;                     // the topic
-  const NX = 26, NY = 74;                             // the nursery
+  const N = 44, TX = 70, TY = 48;                     // the topic
+  const NX = 40, NY = 116;                            // the nursery
   for (let i = 0; i < N; i++) {
     const a = i * 2.399 + t * 0.16;
     const bot = i % 4 !== 0;                          // three in four are new
-    const rad = 20 + (i % 5) * 5;
-    const ox = TX + Math.cos(a) * rad * 1.25;
-    const oy = TY + Math.sin(a) * rad * 0.78;
+    const rad = 20 + (i % 5) * 6;
+    const ox = TX + Math.cos(a) * rad * 0.95;
+    const oy = TY + Math.sin(a) * rad * 0.95;
     const pull = bot ? Math.min(1, d * 1.4) : 0;
     // pulled to a ring around the nursery, not onto it — a pile on top of the
     // source hides the source
     const ringA = i * 1.7;
-    const nx = NX + Math.cos(ringA) * (9 + (i % 3) * 4);
-    const ny = NY + Math.sin(ringA) * (7 + (i % 3) * 3);
+    const nx = NX + Math.cos(ringA) * (11 + (i % 3) * 5);
+    const ny = NY + Math.sin(ringA) * (9 + (i % 3) * 4);
     const x = ox + (nx - ox) * pull, y = oy + (ny - oy) * pull;
     const c = pull > 0.4 ? PAL.AMBER : ink(d * 0.3);
-    // the spoke: to the topic, or (once decoded) back to whatever made it
     if (pull > 0.4) scr.line(x, y, NX, NY, shade(PAL.AMBER_DIM, 0.85));
     else scr.line(x, y, TX, TY, shade(inkLo(d), 0.9));
     scr.px(x - 1, y - 1, 3, 3, c);
   }
   const pulse = 0.5 + 0.5 * Math.sin(t * 3);
-  scr.disc(TX, TY, 7, mix(PAL.GREEN_LO, PAL.AMBER_DIM, d));
-  scr.disc(TX, TY, 4 + pulse * 2, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d));
+  scr.disc(TX, TY, 8, mix(PAL.GREEN_LO, PAL.AMBER_DIM, d));
+  scr.disc(TX, TY, 5 + pulse * 2, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d));
   if (d > 0.4) {
-    scr.disc(NX, NY, 5, PAL.AMBER_DIM);
-    scr.disc(NX, NY, 3, PAL.AMBER_HOT);
-    num(scr, NX - 7, NY + 14, '400', PAL.AMBER_HOT);
+    scr.disc(NX, NY, 6, PAL.AMBER_DIM);
+    scr.disc(NX, NY, 4, PAL.AMBER_HOT);
+    num(scr, NX - 7, NY + 16, '400', PAL.AMBER_HOT);
   }
-  num(scr, W - 20, 6, d > 0.4 ? '500' : '900', ink(d));
+  num(scr, W - 22, 8, d > 0.4 ? '500' : '900', ink(d));
 }
 
 const PANELS = { chart, chart2, mesh, crowd, heat, crane, tower, coin, sea, sat, engine, crowd2 };

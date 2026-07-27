@@ -5,12 +5,14 @@
 //
 // Covers:
 //  - loads with zero console/page errors, gate opens the broadcast
-//  - the codec animates, and Toko's picture is not a still frame
+//  - the feed is vertical: one post per screen, snapping, media in portrait
+//  - only the post you are on is live; its neighbours hold a painted frame
+//  - the live codec animates, and Toko's picture is not a still frame
 //  - the reader types, and tapping the copy skips to the end
 //  - DECODE grows the plain reading inline, names a technique, and re-folds
 //  - every registered story renders, in both states, with complete copy
 //  - every story's visual key is a real panel (a typo silently falls back)
-//  - paging, channel tuning, keyboard, and the sound toggle
+//  - scrolling, the NEXT rail button, keyboard, channel tuning, sound
 //  - 44px targets and WCAG AA on every text colour
 
 const { chromium } = require('playwright');
@@ -58,84 +60,129 @@ const contrast = (a, b) => {
 
   await page.goto(URL, { waitUntil: 'networkidle' });
 
+  // live-post shorthands: everything in the feed is per-post, so the selectors
+  // have to follow whichever post the scroll is currently on
+  const live = (sel) => page.locator(`.post.live ${sel}`);
+
   // ── the gate ─────────────────────────────────────────────────────
-  check('gate shown before anything plays', await page.locator('#gate .btn').isVisible());
+  check('gate shown before anything plays', await page.locator('#tuneIn').isVisible());
   check('the fiction is declared up front',
     (await page.locator('#gate').textContent()).includes('Every bulletin is invented'));
   await page.locator('#tuneIn').click();
   await page.waitForTimeout(500);
-  check('tuning in reveals the receiver', await page.locator('#codec canvas').isVisible());
-  check('codec canvas is not announced to screen readers',
-    await page.locator('#codec canvas').getAttribute('aria-hidden') === 'true');
-  check('bulletin is a live region',
-    await page.locator('#bulletin').getAttribute('aria-live') === 'polite');
+  check('tuning in reveals the receiver', await live('.media-slot canvas').isVisible());
 
-  // ── the picture moves ────────────────────────────────────────────
-  const frameHash = () => page.evaluate(() => {
-    const c = document.querySelector('#codec canvas');
-    return c.getContext('2d').getImageData(0, 0, c.width, c.height).data.join(',').length
-      + ':' + c.toDataURL().slice(-64);
+  // ── the feed is vertical ─────────────────────────────────────────
+  check('every bulletin is its own post', await page.locator('.post').count() === 12);
+  const geom = await page.evaluate(() => {
+    const f = document.getElementById('feed');
+    const p = document.querySelector('.post');
+    const c = document.querySelector('.post .media-slot canvas');
+    return {
+      snap: getComputedStyle(f).scrollSnapType,
+      align: getComputedStyle(p).scrollSnapAlign,
+      postH: Math.round(p.getBoundingClientRect().height),
+      viewH: window.innerHeight,
+      cw: c.width, ch: c.height,
+      rectW: c.getBoundingClientRect().width, rectH: c.getBoundingClientRect().height,
+    };
   });
-  const f1 = await frameHash();
-  await page.waitForTimeout(260);
-  const f2 = await frameHash();
-  check('the codec is animating, not a still frame', f1 !== f2);
+  check('the feed snaps vertically', geom.snap.startsWith('y') && geom.align === 'start');
+  check('one post fills the screen', Math.abs(geom.postH - geom.viewH) <= 2);
+  check('the media buffer is portrait', geom.ch > geom.cw);
+  check('the media renders portrait on screen', geom.rectH > geom.rectW * 1.4);
+
+  check('the scene canvas is not announced to screen readers',
+    await live('.media-slot canvas').getAttribute('aria-hidden') === 'true');
+  check('the bulletin is a live region',
+    await live('.bulletin').getAttribute('aria-live') === 'polite');
+
+  // ── the picture moves, and only where it should ──────────────────
+  const hashOf = (n) => page.evaluate((i) => {
+    const c = document.querySelectorAll('.post .media-slot canvas')[i];
+    return c.toDataURL().slice(-96);
+  }, n);
+  const liveA = await hashOf(0), idleA = await hashOf(3);
+  await page.waitForTimeout(300);
+  const liveB = await hashOf(0), idleB = await hashOf(3);
+  check('the live codec is animating, not a still frame', liveA !== liveB);
+  check('posts you are not on hold their painted frame', idleA === idleB);
+  check('an idle post still shows a picture (not an empty box)',
+    await page.evaluate(() => {
+      const c = document.querySelectorAll('.post .media-slot canvas')[3];
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      let onPixels = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] > 90) onPixels++;
+      return onPixels > 2000;
+    }));
 
   // ── the reader ───────────────────────────────────────────────────
-  const typed1 = (await page.locator('#bulletin').textContent()).length;
-  await page.waitForTimeout(450);
-  const typed2 = (await page.locator('#bulletin').textContent()).length;
+  const typed1 = (await live('.bulletin').textContent()).length;
+  await page.waitForTimeout(420);
+  const typed2 = (await live('.bulletin').textContent()).length;
   check('the bulletin types itself in', typed2 > typed1);
-  await page.locator('#bulletin').click();
+  check('a post you have not reached yet is on standby',
+    await page.locator('.post').nth(4).locator('.standby').count() === 1);
+
+  await live('.bulletin').click();
   await page.waitForTimeout(120);
-  const typed3 = (await page.locator('#bulletin').textContent()).length;
+  const typed3 = (await live('.bulletin').textContent()).length;
   await page.waitForTimeout(220);
   check('tapping the copy skips to the end of the read',
-    (await page.locator('#bulletin').textContent()).length === typed3);
+    (await live('.bulletin').textContent()).length === typed3);
 
   // ── decode ───────────────────────────────────────────────────────
-  check('nothing is amber before decode', await page.locator('#bulletin .plain:visible').count() === 0);
-  await page.locator('#decode').click();
-  await page.waitForTimeout(200);
-  check('decode grows plain readings inline', await page.locator('#bulletin .plain:visible').count() > 0);
-  check('decode strikes the broadcast wording', await page.locator('#bulletin .spun.struck').count() > 0);
-  check('decode box names a technique',
-    (await page.locator('#technique').textContent()).trim().length > 3);
-  check('decode box is shown', await page.locator('#decodeBox').isVisible());
-  check('the button offers the way back', (await page.locator('#decode').textContent()).includes('Re-fold'));
-  await page.locator('#decode').click();
-  await page.waitForTimeout(200);
-  check('re-folding hides the plain readings again',
-    await page.locator('#bulletin .plain:visible').count() === 0);
+  check('nothing is amber before decode', await live('.plain:visible').count() === 0);
+  await live('.decode-btn').click();
+  await page.waitForTimeout(220);
+  check('decode grows plain readings inline', await live('.plain:visible').count() > 0);
+  check('decode strikes the broadcast wording', await live('.spun.struck').count() > 0);
+  check('decode box names a technique', (await live('.technique').textContent()).trim().length > 3);
+  check('decode box is shown', await live('.decode-box').isVisible());
+  check('the rail offers the way back', (await live('.decode-btn').textContent()).includes('RE-FOLD'));
+  await live('.decode-btn').click();
+  await page.waitForTimeout(220);
+  check('re-folding hides the plain readings again', await live('.plain:visible').count() === 0);
+  check('decode is per-post, not global',
+    await page.locator('.post').nth(2).locator('.decode-box:visible').count() === 0);
 
-  // ── paging and tuning ────────────────────────────────────────────
-  const freq0 = await page.locator('#freq').textContent();
-  const head0 = await page.locator('#head').textContent();
-  await page.locator('#next').click();
-  await page.waitForTimeout(150);
-  check('NEXT pages to another bulletin', (await page.locator('#head').textContent()) !== head0);
-  check('paging stays on the channel', (await page.locator('#freq').textContent()) === freq0);
+  // ── moving through the feed ──────────────────────────────────────
+  const head0 = await live('.head').textContent();
+  await live('.next-btn').click();
+  await page.waitForTimeout(700);
+  check('the NEXT rail button goes to the next post',
+    (await live('.head').textContent()) !== head0);
 
   await page.keyboard.press('ArrowDown');
-  await page.waitForTimeout(120);
-  check('arrow keys page too', (await page.locator('.tag').textContent()).includes('03'));
+  await page.waitForTimeout(700);
+  check('arrow keys move the feed', (await live('.tag').textContent()).includes('03/12'));
 
-  // past the end of a channel the dial sweeps on to the next one
-  await page.locator('#next').click();
-  await page.waitForTimeout(120);
-  await page.locator('#next').click();
-  await page.waitForTimeout(150);
-  check('running off the end sweeps to the next channel',
-    (await page.locator('#freq').textContent()) !== freq0);
-  check('the new channel starts at its first bulletin',
-    (await page.locator('.tag').textContent()).includes('01'));
+  // scrolling itself is the primary control — drive the container directly
+  await page.evaluate(() => {
+    const f = document.getElementById('feed');
+    f.scrollTo({ top: f.clientHeight * 5, behavior: 'instant' });
+  });
+  await page.waitForTimeout(500);
+  check('scrolling changes which post is live',
+    (await live('.tag').textContent()).includes('06/12'));
+  check('exactly one post is live at a time', await page.locator('.post.live').count() === 1);
 
+  // ── the dial ─────────────────────────────────────────────────────
+  const freqBefore = await page.locator('#freq').textContent();
   await page.locator('#chUp').click();
-  await page.waitForTimeout(120);
-  const call = await page.locator('#call').textContent();
+  await page.waitForTimeout(800);
+  const freqAfter = await page.locator('#freq').textContent();
+  check('the dial jumps to another channel', freqAfter !== freqBefore);
+  // the dial is a readout of where the scroll put you, not a separate state
+  check('the masthead reports the live post’s channel', await page.evaluate(async () => {
+    const { SECTORS } = await import('./js/stories.js?v=2');
+    const want = SECTORS.find(s => s.id === __rfh.state.channel);
+    return document.getElementById('freq').textContent === want.freq
+      && document.getElementById('call').textContent === want.call;
+  }));
   await page.locator('#chDown').click();
-  await page.waitForTimeout(120);
-  check('the dial goes both ways', (await page.locator('#call').textContent()) !== call);
+  await page.waitForTimeout(800);
+  check('the dial goes both ways', (await page.locator('#freq').textContent()) !== freqAfter);
 
   // ── sound ────────────────────────────────────────────────────────
   check('sound starts on', await page.locator('#sound').getAttribute('aria-pressed') === 'true');
@@ -152,7 +199,7 @@ const contrast = (a, b) => {
   // picture ships next to the right words — check the keys against the panels
   const badVisuals = await page.evaluate(async () => {
     const [{ STORIES }, { PANEL_KEYS }] = await Promise.all([
-      import('./js/stories.js?v=1'), import('./js/visuals.js?v=1'),
+      import('./js/stories.js?v=2'), import('./js/visuals.js?v=2'),
     ]);
     return STORIES.filter(s => !PANEL_KEYS.includes(s.visual)).map(s => `${s.id}:${s.visual}`);
   });
@@ -164,19 +211,17 @@ const contrast = (a, b) => {
     await page.evaluate(i => __rfh.debug.open(i), id);
     await page.waitForTimeout(90);
     await page.evaluate(() => __rfh.debug.finishRead());
-    const copy = await page.evaluate(() => ({
-      head: document.getElementById('head').textContent.trim(),
-      body: document.getElementById('bulletin').textContent.trim(),
-      tech: document.getElementById('technique').textContent.trim(),
-      note: document.getElementById('note').textContent.trim(),
-      tell: document.getElementById('tell').textContent.trim(),
-    }));
+    const copy = await page.evaluate(() => {
+      const p = document.querySelector('.post.live');
+      const g = s => (p.querySelector(s)?.textContent || '').trim();
+      return { head: g('.head'), body: g('.bulletin'), tech: g('.technique'),
+               note: g('.note'), tell: g('.tell') };
+    });
     if (copy.head.length < 12 || copy.body.length < 120 || copy.tech.length < 4
         || copy.note.length < 60 || copy.tell.length < 20) incomplete.push(id);
     await page.evaluate(() => __rfh.debug.toggleDecode());
     await page.waitForTimeout(60);
-    const plain = await page.locator('#bulletin .plain:visible').count();
-    if (plain === 0) incomplete.push(`${id}:no-decode`);
+    if (await live('.plain:visible').count() === 0) incomplete.push(`${id}:no-decode`);
     await page.evaluate(() => __rfh.debug.toggleDecode());
   }
   check(`every bulletin carries a full read and a decode${incomplete.length ? ' — ' + incomplete.join(', ') : ''}`,
@@ -184,22 +229,25 @@ const contrast = (a, b) => {
 
   // ── targets and contrast ─────────────────────────────────────────
   await page.evaluate(() => __rfh.debug.toggleDecode());   // decode box visible for its colours
-  await page.waitForTimeout(120);
+  await page.waitForTimeout(150);
   const small = await page.evaluate(() => {
     const bad = [];
-    for (const b of document.querySelectorAll('button')) {
+    const scope = document.querySelector('.post.live').parentElement.parentElement;
+    for (const b of scope.querySelectorAll('button')) {
       const r = b.getBoundingClientRect();
       if (r.width === 0) continue;
-      if (r.width < 44 || r.height < 44) bad.push(`${b.id || b.className}:${Math.round(r.width)}x${Math.round(r.height)}`);
+      if (r.width < 44 || r.height < 44) bad.push(`${b.className}:${Math.round(r.width)}x${Math.round(r.height)}`);
     }
     return bad;
   });
   check(`every control is at least 44px${small.length ? ' — ' + small.join(', ') : ''}`, small.length === 0);
 
   const colours = await page.evaluate(() => {
-    const sel = ['.logo', '.mast .date', '.dial .freq', '.dial .call', '.strip', '.strip .slug',
-                 '.tag', '.head', '.bulletin', '.spun.struck', '.plain', '.technique',
-                 '.note', '.tell', '.hint', '.fiction', '#next'];
+    const sel = ['.logo', '.dial .freq', '.dial .call', '.post.live .tag',
+                 '.post.live .head', '.post.live .bulletin', '.post.live .spun.struck',
+                 '.post.live .plain', '.post.live .technique', '.post.live .note',
+                 '.post.live .tell', '.post.live .fiction', '.post.live .next-btn',
+                 '.post .standby'];
     const out = [];
     // the effective background: collect every translucent layer up the tree and
     // composite them. Taking the first non-transparent colour instead reads
@@ -216,17 +264,17 @@ const contrast = (a, b) => {
         if (a === 1) break;
       }
       layers.push({ r: 4, g: 7, b: 10, a: 1 });
-      let out = layers[layers.length - 1];
+      let out2 = layers[layers.length - 1];
       for (let i = layers.length - 2; i >= 0; i--) {
         const t = layers[i];
-        out = {
-          r: t.r * t.a + out.r * (1 - t.a),
-          g: t.g * t.a + out.g * (1 - t.a),
-          b: t.b * t.a + out.b * (1 - t.a),
+        out2 = {
+          r: t.r * t.a + out2.r * (1 - t.a),
+          g: t.g * t.a + out2.g * (1 - t.a),
+          b: t.b * t.a + out2.b * (1 - t.a),
           a: 1,
         };
       }
-      return `rgb(${out.r}, ${out.g}, ${out.b})`;
+      return `rgb(${out2.r}, ${out2.g}, ${out2.b})`;
     };
     for (const s of sel) {
       const el = document.querySelector(s);

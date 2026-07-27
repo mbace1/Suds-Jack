@@ -94,12 +94,13 @@ exceed 1.0) give selective glow without washing out the bone.
 - **Gamepad:** plug in a controller — left stick moves, right stick looks, RT/RB fire, A jumps (×2), B/LT dashes — feeding the same input paths as mouse/keyboard/touch
 
 ### `radiofree/`
-**Radio Free Helsinki.** A pirate news broadcast that looks like **half a Metal
-Gear codec screen** — one portrait frame with **Toko** (the teal gel from Toko
-Drop) reading the day's wire, and where the second portrait would be, a small
-animated picture per story. Below it, a feed you swipe through like Shorts.
-Canvas 2D pixel art, no build step, no assets, no CDN: every pixel — Toko's
-face, all twelve panels — is drawn in code.
+**Radio Free Helsinki.** A pirate news broadcast in a **vertical feed** — one
+bulletin per screen, snapping as you scroll, the way a phone feed works. Each
+post is **half a Metal Gear codec screen stood on end**: the story's portrait
+picture on top, **Toko** (the teal gel from Toko Drop) reading the wire below it
+with a data column and a waveform, a TikTok-style right rail, and the copy
+underneath. Canvas 2D pixel art, no build step, no assets, no CDN: every
+pixel — Toko's face, all twelve panels — is drawn in code.
 
 Three channels on the dial, four bulletins each: **87.60 KAIKU** (games /
 studios), **104.40 VERKKO** (tech / industry), **141.12 VARTIO** (defence /
@@ -110,9 +111,10 @@ industry sitting next to a defence band.
 > company or country described or accused of anything. The *language* is not
 > invented: each item is written the way this kind of story really gets written.
 
-**Controls:** swipe up/down (or ↑ ↓ / Space / **NEXT**) pages the feed · swipe
-left/right (or ← → / the **◀ ▶** dial) changes channel · **DECODE** or `D` ·
-tap the copy to skip the read · ♪ mutes
+**Controls:** scroll / swipe (or ↑ ↓ / Space / the **▼ NEXT** rail) moves the
+feed · ← → or the **◀ ▶** dial jumps channel · **⧉ DECODE** or `D` · tap the copy
+to skip the read · ♪ mutes. Only the post you are on is live — it re-tunes,
+types, and drives the lip-sync; its neighbours hold a painted frame.
 
 #### DECODE
 The whole point. Press it and the bulletin re-reads itself in plain language —
@@ -132,8 +134,8 @@ frame on the station reading it.
 
 Toko is **lip-synced, not flapping** — the typewriter hands the face a mouth
 amplitude per character (vowels open it, spaces close it) — and goes amber and
-starts tearing under DECODE. Thirty-check smoke gate in `radiofree/test/`,
-including WCAG AA on every text colour.
+starts tearing under DECODE. Forty-check smoke gate in `radiofree/test/`,
+including the vertical-feed geometry and WCAG AA on every text colour.
 
 ### `toko-drop/`
 Twin-stick bullet-hell arena shooter built on Three.js r167.
@@ -174,6 +176,7 @@ Twin-stick bullet-hell arena shooter built on Three.js r167.
 ## Changelog
 
 ### 2026-07
+- **radiofree v2 — vertical feed:** the feed is now TikTok-shaped and that is the primary format, not a mode. All twelve bulletins live in one `scroll-snap` column, one post per screen; each post is the codec **stood on end** (portrait story panel on top, Toko below with a freq/REC/level data column and a waveform) plus a right rail (⧉ DECODE, ▼ NEXT). Every story panel was redrawn portrait (128×152) — a landscape card inside a vertical post reads as something shot for another screen and cropped in — and several are better for it (the mast, the valuation stack, the gulf cross-section, the interference cone). Scrolling is the control; the masthead dial became a readout of where the scroll put you plus a channel jump. Only the live post animates: neighbours hold the single frame `renderStatic()` painted, and posts you have not reached show a standby line instead of their copy. Two fixes worth remembering: the live post is read off `scrollTop` rather than an IntersectionObserver (whose async callback overrode every programmatic jump a frame later), and `scrollTo({behavior:'auto'})` means *defer to CSS* — with `scroll-behavior: smooth` on the container it animates; `'instant'` is the one that lands
 - **`radiofree/` — Radio Free Helsinki:** new app (not a game) — a fictional pirate news broadcast styled as half a Metal Gear codec screen, with **Toko** reading the day's wire from the portrait frame and an animated story panel where the second portrait would be. Three channels (games / industry / defence), twelve bulletins, swipeable like a stories feed. Canvas 2D pixel art drawn entirely in code (no assets, no CDN, no build step); WebAudio codec kit — blips per typed character, tuning sweeps, an idle carrier hiss that ducks under the read — all through one master gain so the ♪ mute is total. The mechanic is **DECODE**: every bulletin re-reads itself in plain language inline (broadcast wording struck, plain reading in amber), a drawer names the technique and gives a TELL, and *the picture decodes with it* — truncated axes re-base to zero, a valuation goes hollow, a packed auditorium empties to the four on stage, a crowd of accounts collapses into a fan spoked to the node that spawned it. Toko is lip-synced off the typewriter's per-character amplitude. 30-check smoke gate (animation, decode, paging, tuning, 44px targets, WCAG AA with translucent backgrounds properly composited)
 - **hyperdagger v3.6 — style meter + gamepad:** a Returnal/DMC-flavoured rank system (`STYLE_TIERS` D→SSS, cap 150) rewards chaining — kills add by type, a dash *through* an orb adds +4 (credited once per orb via `o.phased`), gem pickups top it up; `step()` bleeds the meter at `6 + styleVal·0.05`/s so the top tiers stay fleeting. The tier shows as a HUD badge + `×mult` + fill bar (`#style`), folds into the music-intensity signal (0.35 weight), and its run peak is a new death-recap line; only S-and-above rank-ups toast so lower crossings never clobber an enemy-debut announcement. **Gamepad support:** `input.pollGamepad()` runs each frame and feeds the existing `getMove`/`getLookRate`/`firing` getters (left stick move, right stick look-rate, RT/RB fire, A = jump ×2, B/LT = dash, deadzoned + edge-detected) so a controller needs no other plumbing
 - **hyperdagger v3.5 — adaptive music layer:** an all-synth A1 minor-pentatonic arpeggio on a lookahead scheduler (16th notes queued ~0.15 s ahead so it never stutters, resyncs after a pause instead of bursting) plays over the drone. Voices layer in with a run-intensity signal (live-threat count + run progress): bass always, arp above ~0.25, hi-hat tick above ~0.5, a lead counter-melody above ~0.75 — so the soundtrack thickens as the swarm builds and thins when you clear it. New MUSIC on/off toggle in the pause menu (`opts.music`, persisted, reconciles live)
