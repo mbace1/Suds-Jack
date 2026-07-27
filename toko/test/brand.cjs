@@ -90,19 +90,20 @@ function serve() {
 
   // ── the geometry ────────────────────────────────────────────────────────
   console.log('\nthe geometry');
+  const G_MIN = 12;                    // the eye must stay this far open
   const geo = await page.evaluate(async () => {
     const f = await import('/toko/js/face.js');
     const G = f.GEO, b = f.bounds(), e = G.eye;
-    // the slot: the gap between the stem and the arch's inner wall, measured
-    // at the stem's lowest point. This is the number that goes to zero when
-    // somebody fattens the stroke, and when it does the eye stops being an eye.
-    const dy = e.stem.y1 - e.cy;
-    const innerR = e.outer.r - G.stroke / 2;
-    const wallX = Math.sqrt(Math.max(0, innerR * innerR - dy * dy));
+    // The eye is an upside-down U with NOTHING inside it, so the number that
+    // matters is the clear opening between its two legs. Fatten the stroke far
+    // enough and that closes, and the arch renders as a solid blob.
+    const opening = (e.outer.r - G.stroke / 2) * 2;
     return {
-      slot: wallX - G.stroke / 2,
-      stemInsideCrown: (e.stem.y0 - G.stroke / 2) >= (e.cy - e.outer.r - G.stroke / 2) - 0.01,
-      stemMergesCrown: (e.stem.y0 - G.stroke / 2) <= (e.cy - e.outer.r + G.stroke / 2) + 0.01,
+      opening,
+      // CLOSED is the default and the logo: nothing between the legs.
+      closedIsDefault: f.arcs().length === 8,
+      // OPEN adds the pupil — one more stroke an eye, and no more than that
+      openAddsPupil: f.arcs({ open: 1 }).length === 10,
       eyesClearMouth: (G.mouth.cy + G.mouth.outer.r * Math.sin(G.mouth.outer.a0 * Math.PI / 180)
         - G.stroke / 2) - (e.legs.y + G.stroke / 2),
       // a CROWN, not a ring: swept past 180° the arc curls under and closes the
@@ -112,23 +113,22 @@ function serve() {
       // One arc cannot do both jobs: past 180° it curls, short of 180° the legs
       // never come down at all.
       legsDrop: e.legs.y - e.cy,
-      // the stem hangs from inside the crown but stops SHORT of the legs
-      stemInsideLegs: e.stem.y1 < e.legs.y && e.stem.y1 > e.cy,
+
       symmetric: G.mouth.cx === 50,
       bounds: b,
       arcCount: f.arcs().length,
     };
   });
-  ok('the eye slots stay open', geo.slot > 1.5, 'slot = ' + geo.slot.toFixed(2));
-  ok('the stem starts inside the crown', geo.stemInsideCrown && geo.stemMergesCrown);
+  ok('the eye stays open', geo.opening > G_MIN, 'opening = ' + geo.opening.toFixed(2));
+  ok('the logo eye is closed — nothing inside it', geo.closedIsDefault);
+  ok('opening the eyes adds a pupil and nothing else', geo.openAddsPupil);
   ok('the mouth clears the eye legs', geo.eyesClearMouth > 1, geo.eyesClearMouth.toFixed(2));
   ok('the eye crown is a clean semicircle', geo.sweep === 180, geo.sweep + '°');
   ok('the legs actually drop', geo.legsDrop > 4, geo.legsDrop.toFixed(2));
-  ok('the stem stops short of the legs', geo.stemInsideLegs);
   ok('the mark is symmetric', geo.symmetric);
-  // 2 mouth arcs + per eye (1 crown + 2 legs + 1 stem) × 2
-  ok('ten strokes: two mouth arcs, two crowns, four legs, two stems',
-    geo.arcCount === 10, String(geo.arcCount));
+  // 2 mouth arcs + per eye (1 crown + 2 legs) × 2
+  ok('eight strokes closed: two mouth arcs, two crowns, four legs',
+    geo.arcCount === 8, String(geo.arcCount));
   ok('the ink is wider than it is tall', geo.bounds.w > geo.bounds.h);
 
   // ── the ink ─────────────────────────────────────────────────────────────
@@ -225,6 +225,9 @@ function serve() {
       closing: firstFull - open0,
       opening: open1 - lastFull,
       drift: Math.abs(u.drift(0)) < 0.001 && Math.abs(u.drift(2.25) - 1) < 0.01,
+      // the glance: mostly shut, opening slower than it closes again
+      glanceRests: u.glance(9.5, { every: 11 }) === 0,
+      glanceOpens: u.glance(1.2, { every: 11 }) === 1,
     };
   });
   ok('the eyes actually close', tempo.peak > 0.999, tempo.peak.toFixed(3));
@@ -232,6 +235,8 @@ function serve() {
   ok('it opens slower than it closes', tempo.opening > tempo.closing * 1.5,
     `close ${tempo.closing.toFixed(2)}s / open ${tempo.opening.toFixed(2)}s`);
   ok('the drift is a slow breath', tempo.drift);
+  ok('the eyes rest shut', tempo.glanceRests);
+  ok('and do open', tempo.glanceOpens);
 
   ok('the chat types unhurriedly',
     await page.evaluate(async () => {

@@ -1,18 +1,24 @@
 // TOKO MIDORI GAMES — the face.
 //
-// The mouth is two round-capped arcs opening up, nested. Each eye is a
-// semicircle CROWN with two straight parallel LEGS dropped from its ends, and
-// a shorter STEM hanging inside it — the stem is what cuts the two slots, and
-// the slots are what make an eye an eye. One stroke weight throughout.
+// The mouth is two round-capped arcs opening up, nested.
 //
-// The eye took three goes and each wrong answer is worth keeping:
-//   · the stem as a small nested arc — it cannot both merge with the crown and
-//     hang as far as the artwork hangs it, and left a dot floating in the arch
-//   · one arc swept 240° for crown AND legs — it curls under and closes into a
-//     ring, so the eye reads as an eyeball stuck on the face
-//   · the same arc stopped at 200° — no curl, but the legs never come down and
-//     it is a shallow dome floating too far above the mouth
-// A crown and legs are separate strokes because they are separate strokes.
+// THE EYE HAS TWO STATES, and the logo is the closed one.
+//
+//   CLOSED (open: 0) — an upside-down U. A semicircle crown, two straight
+//     parallel legs, and NOTHING between them. This is the anime happy eye,
+//     smiling with the eyes shut, and it is the logo. It is the default and
+//     it is what every resting mark wears.
+//   OPEN (open: 1) — the same U with a pupil line down the middle of it.
+//
+// Getting here took four wrong answers, all of them the same mistake — leaving
+// something in the middle of a face that is meant to be smiling with its eyes
+// closed: a small arc nested inside (a dot floating in the arch), a stem that
+// made the eye read as an "m", one arc swept 240° for crown and legs together
+// (it curls under and closes into a ring — an eyeball stuck on the face), and
+// that arc stopped at 200° (no ring, but the legs never come down).
+//
+// The crown and the legs are separate strokes because a single arc can be a
+// ring or a dome but never an arch.
 //
 // It is drawn from ONE geometry table below. `drawFace` strokes it onto a
 // canvas and `svgFace` emits the same arcs as SVG path data, so the file you
@@ -38,18 +44,16 @@ export const GEO = {
   eye: {
     dx: 30.05,         // from the centre line — the eyes sit a shade wider than the mouth
     cy: 20.20,
-    // A CROWN plus two STRAIGHT LEGS — not one arc doing both jobs.
+    // A CROWN plus two STRAIGHT LEGS, and nothing between them.
     //
-    // A single arc cannot make this shape. Swept past 180° it curls inward and
-    // closes into a ring, and the eye reads as an eyeball stuck on the face.
-    // Stopped short of 180° the legs never come down and it is a shallow dome
-    // sitting too far from the mouth. The artwork has a clean semicircle with
-    // parallel sides dropping out of it, which is also what "flat-sided" means
-    // everywhere else in this face.
+    // A single arc cannot make this shape: swept past 180° it curls inward and
+    // closes into a ring, stopped short of 180° the legs never come down. The
+    // sides are parallel because everything else in this face is flat-sided.
     outer: { r: 15.98, a0: 180, a1: 360 },
     legs: { y: 28.10 },        // centre-line y the legs drop to
-    // the stem hangs from inside the crown to just short of the legs
-    stem: { y0: 5.20, y1: 25.40 },
+    // the pupil, drawn ONLY when the eyes are open. Measured off the artwork,
+    // which is why it hangs from inside the crown rather than floating.
+    pupil: { y0: 5.20, y1: 25.40 },
   },
 
   mouth: {
@@ -77,15 +81,16 @@ export function bounds() {
 
 // ── the arcs ─────────────────────────────────────────────────────────────
 // One list, used by the canvas painter and the SVG emitter alike.
-export function arcs() {
+export function arcs({ open = 0 } = {}) {
   const e = GEO.eye, m = GEO.mouth;
   const out = [];
   for (const side of [-1, 1]) {
     const cx = 50 + side * e.dx;
     out.push({ cx, cy: e.cy, r: e.outer.r, a0: e.outer.a0, a1: e.outer.a1 });
     for (const s2 of [-1, 1])
-      out.push({ stem: true, x: cx + s2 * e.outer.r, y0: e.cy, y1: e.legs.y });
-    out.push({ stem: true, x: cx, y0: e.stem.y0, y1: e.stem.y1 });
+      out.push({ line: true, x: cx + s2 * e.outer.r, y0: e.cy, y1: e.legs.y });
+    if (open > 0) out.push({ line: true, x: cx, y0: e.pupil.y0,
+      y1: e.pupil.y0 + (e.pupil.y1 - e.pupil.y0) * Math.min(1, open) });
   }
   out.push({ cx: m.cx, cy: m.cy, r: m.outer.r, a0: m.outer.a0, a1: m.outer.a1 });
   out.push({ cx: m.cx, cy: m.cy, r: m.inner.r, a0: m.inner.a0, a1: m.inner.a1 });
@@ -99,7 +104,9 @@ export function arcs() {
 // `grin` scales the mouth radius. Both are how the mark comes alive without
 // ever leaving its own geometry.
 export function drawFace(ctx, x, y, size, opts = {}) {
-  const { color = '#000', squash = 1, grin = 1, stroke = GEO.stroke } = opts;
+  // `open` 0..1 lifts the lids: 0 is the logo (eyes shut, smiling), 1 draws
+  // the pupil. `squash` is separate — that is a lid actually closing.
+  const { color = '#000', squash = 1, grin = 1, open = 0, stroke = GEO.stroke } = opts;
   const s = size / GEO.box;
 
   ctx.save();
@@ -126,10 +133,12 @@ export function drawFace(ctx, x, y, size, opts = {}) {
       ctx.lineTo(s2 * e.outer.r, e.legs.y - e.cy);
       ctx.stroke();
     }
-    ctx.beginPath();
-    ctx.moveTo(0, e.stem.y0 - e.cy);
-    ctx.lineTo(0, e.stem.y1 - e.cy);
-    ctx.stroke();
+    if (open > 0.001) {                         // the pupil, when he looks up
+      ctx.beginPath();
+      ctx.moveTo(0, e.pupil.y0 - e.cy);
+      ctx.lineTo(0, (e.pupil.y0 + (e.pupil.y1 - e.pupil.y0) * Math.min(1, open)) - e.cy);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -180,7 +189,7 @@ export function drawBadge(ctx, cx, cy, r, opts = {}) {
 
 // ── SVG ──────────────────────────────────────────────────────────────────
 function arcPath(a) {
-  if (a.stem) return `M${a.x} ${a.y0}L${a.x} ${a.y1}`;
+  if (a.line) return `M${a.x} ${a.y0}L${a.x} ${a.y1}`;
   const p = (deg) => [
     (a.cx + Math.cos(deg * D) * a.r).toFixed(3),
     (a.cy + Math.sin(deg * D) * a.r).toFixed(3),
@@ -200,7 +209,7 @@ function arcPath(a) {
   return `M${x0} ${y0}A${a.r} ${a.r} 0 ${large} ${sweep} ${x1} ${y1}`;
 }
 
-export function facePaths() { return arcs().map(arcPath); }
+export function facePaths(opts) { return arcs(opts).map(arcPath); }
 
 export function svgFace({ color = '#000', px = 4, ground = null, pad = 4 } = {}) {
   const b = bounds();

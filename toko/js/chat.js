@@ -23,7 +23,7 @@
 import { Surface } from './surface.js';
 import { TOKO, VOICE } from './palette.js';
 import { drawHead, drawBadge } from './face.js';
-import { blink, drift } from './util.js';
+import { glance, drift } from './util.js';
 import { GREETING, TOPICS, menu } from './dialogue.js';
 
 const STYLE_ID = 'toko-chat-style';
@@ -213,24 +213,23 @@ export function mountChat(anchor, opts = {}) {
 
   const startBadge = () => badge.loop((t) => {
     badge.clear();
-    const k = blink(t, { every: 7.5, offset: 1.3 });
+    const k = glance(t, { every: 11, offset: 1.3 });
     drawBadge(badge.ctx, 20, 20, 20, {
-      ground: TOKO.MAGENTA, ink: TOKO.PAPER, face: { squash: 1 - k * 0.92 },
+      ground: TOKO.MAGENTA, ink: TOKO.PAPER, face: { open: k },
     });
   });
   startBadge();
 
   const startHead = () => head.loop((t) => {
     head.clear();
-    // Blinking at rest; while a line is being typed the mouth works — the
-    // mouth is a stroked arc, so "talking" is just its radius breathing.
-    // Slowly: at 22 rad/s it chattered like a puppet. Toko talks the way he
-    // does everything else, and even between sentences he is still floating.
-    const k = speaking ? 0 : blink(t, { every: 7.5, offset: 0.7 });
+    // Eyes shut and smiling at rest; OPEN while he is answering you, because
+    // that is the one moment he is actually looking at somebody. The mouth is
+    // a stroked arc, so "talking" is just its radius breathing — slowly. At
+    // 22 rad/s it chattered like a puppet.
     drawHead(head.ctx, 6, 4, 108, {
       ground: TOKO.MAGENTA, ink: TOKO.PAPER,
       faceOpts: {
-        squash: 1 - k * 0.92,
+        open: speaking ? 1 : glance(t, { every: 11, offset: 0.7 }),
         grin: 1 + (speaking ? Math.sin(t * 11) * 0.05 : drift(t) * 0.012),
       },
     });

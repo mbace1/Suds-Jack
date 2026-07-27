@@ -13,7 +13,7 @@ import { Surface } from './surface.js';
 import { TOKO, VOICE } from './palette.js';
 import { drawFace, bounds, GEO } from './face.js';
 import { drawLogotype } from './lockup.js';
-import { blink, drift } from './util.js';
+import { glance, drift } from './util.js';
 
 export function startMasthead(parent, opts = {}) {
   const {
@@ -42,12 +42,11 @@ export function startMasthead(parent, opts = {}) {
     const faceW = boxW * (b.w / GEO.box);
     const x = h * 0.14, y = (h - faceH) / 2;
 
-    // one slow blink, and — because the mouth is a stroked arc and nothing
-    // else — a breath of a grin riding under it on a nine-second period
-    const k = blink(t, { every: blinkEvery, offset: 1.4 });
+    // eyes shut and smiling, opening now and then — and, because the mouth is
+    // a stroked arc and nothing else, a breath of a grin under it
     drawFace(ctx, x - (b.x / GEO.box) * boxW, y - (b.y / GEO.box) * boxW, boxW, {
       color: ink,
-      squash: 1 - k * 0.92,
+      open: glance(t, { every: blinkEvery + 3.5, offset: 1.4 }),
       grin: 1 + drift(t) * 0.007,
     });
 

@@ -50,27 +50,39 @@ colours, because it is as fixed as the colours are.
 
 ## 2. The face
 
-Ten round-capped strokes:
+Round-capped strokes, one weight throughout, no fills and no corners.
 
 - **The mouth** is two arcs opening up, nested and concentric. Both stop
   *short* of a semicircle, so the tips stand up straight instead of hooking
   outward — that is what keeps a clear band of air between the mouth and the
   eyes above it.
-- **Each eye** is a semicircle **crown**, two straight parallel **legs**
-  dropped from its ends, and a shorter **stem** hanging inside it. The stem is
-  what cuts the two slots, and the two slots are what make an eye an eye.
+- **Each eye** is a semicircle **crown** with two straight parallel **legs**
+  dropped from its ends.
 
-One stroke weight throughout. No fills, no corners.
+### The eye has two states, and the logo is the closed one
 
-> **The eye took three goes, and each wrong answer is worth keeping.**
-> The stem was a small nested arc first — it cannot both merge with the crown
-> and hang as far as the artwork hangs it, and forcing it left a dot floating
-> inside the arch. Then the crown and legs were one arc swept 240°, which curls
-> under and closes the eye into a ring, so it read as an eyeball stuck on the
-> face. Then the same arc stopped at 200° — no curl, but the legs never came
-> down and it was a shallow dome floating too far above the mouth.
-> A crown and legs are separate strokes because they *are* separate strokes,
-> and the legs are parallel because everything else in this face is flat-sided.
+| | | |
+|---|---|---|
+| **Closed** | `open: 0` | An upside-down U with **nothing between the legs**. The anime happy eye — smiling with the eyes shut. **This is the logo**, the default, and what every resting mark wears. |
+| **Open** | `open: 1` | The same U with a **pupil** line down the middle. He is looking at you. |
+
+Closed is the resting face. Open is an event: `glance()` in `util.js` lifts the
+lids every eleven seconds or so, holds a moment, and shuts them again. In the
+counter he opens them for as long as he is answering you, because that is the
+one moment he is actually looking at somebody.
+
+> **Four wrong answers got to this, and all of them were the same mistake:**
+> leaving something in the middle of a face that is meant to be smiling with
+> its eyes closed. A small arc nested inside (a dot floating in the arch). A
+> stem hanging permanently from the crown (the eye read as an "m"). One arc
+> swept 240° doing crown and legs together (it curls under and closes into a
+> ring — an eyeball stuck on the face). That arc stopped at 200° (no ring, but
+> the legs never come down and it is a shallow dome floating above the mouth).
+>
+> The crown and the legs are separate strokes because a single arc can be a
+> ring or a dome but never an arch. The legs are parallel because everything
+> else in this face is flat-sided. And the middle is empty because he is
+> smiling.
 
 **The stroke weight is the most sensitive number in the brand.** Too heavy and
 the eye's slots close up and the arch renders as a blob with hairline cracks in
