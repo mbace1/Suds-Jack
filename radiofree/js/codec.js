@@ -4,10 +4,10 @@
 //   ~30% face / ~20% graphic / ~50% broll
 // DECODE still mutates whichever shot is showing.
 
-import { PixelScreen, shade, mix } from './screen.js?v=7';
-import { PAL, SECTOR_COLOR } from './palette.js?v=7';
-import { Toko } from './toko.js?v=7';
-import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=7';
+import { PixelScreen, shade, mix } from './screen.js?v=8';
+import { PAL, SECTOR_COLOR } from './palette.js?v=8';
+import { Toko } from './toko.js?v=8';
+import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=8';
 
 export const POST_W = 144, POST_H = 276;
 const VF = { x: 8, y: 6, w: PANEL_W, h: PANEL_H };
@@ -16,11 +16,11 @@ const DATA = { x: 110, y: 166, w: 26, h: 96 };
 const WAVE = { x: 8, y: 266, w: 128, h: 8 };
 
 const WEIGHTS = { face: 0.30, graphic: 0.20, broll: 0.50 };
-const CUT_MIN = 2.4, CUT_MAX = 4.0;
+const CUT_MIN = 3.2, CUT_MAX = 5.5;
 
 function pickBroll(story) {
   if (story.broll && Math.random() < 0.85) return story.broll;
-  const pool = BROLL_KEYS || ['esplanadi', 'kamppi', 'harbour', 'gulf', 'cathedral', 'katu', 'mannerheim', 'station'];
+  const pool = BROLL_KEYS || ['esplanadi', 'kamppi', 'harbour', 'gulf', 'cathedral', 'katu', 'mannerheim', 'station', 'suomenlinna', 'katajanokka'];
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
