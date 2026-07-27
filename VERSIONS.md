@@ -7,6 +7,20 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v215 — 2026-07-27
+**THE FRUIT LADDER — pickups you can read across the floor**
+- Field feedback: *"we need better pickup indicators… cherries and a banana bunch"*, then *"look at classic arcade games for references"*. The second note changed the design: in the reference cabinets the bonus item isn't decoration, it's a **LADDER** — the item changes as you go deeper and each rung has a learnable value, so the fruit tells you how far in you are AND what it's worth before you read a number
+- Valuables were two anonymous boxes (`CASH_GEO`, `PRIZE_GEO`). They are now **six fruits, cheapest to dearest**: cherry pair → strawberry → orange → apple → pear → banana bunch, each a hand-merged silhouette in the same style as the existing key/potion/food pickups
+- **The rung carries the value**: ×1.0 / ×1.4 / ×1.9 / ×2.5 / ×3.2 / ×4.0. A 500-point drop pays 500 as a cherry and 2000 as a bananas
+- **The rung follows depth** — one step every two waves, then it holds at banana rather than wrapping, so a deep run keeps the dearest item. The rare big prize always takes the top rung, so a jackpot always reads as one
+- **The badge is gone from fruit.** Every pickup used to float a glyph; at play distance the `$` was *larger than the pickup it labelled* and competed with the silhouette. The shape is the indicator now, and fruit stays solid rather than pulsing toward invisible
+- **Two visual iterations, both from looking rather than reasoning**: the first pass rendered fruit smaller than its own badge, and the first banana read as a wishbone — the fingers are two segments angled against each other now, which is what sells the curve
+- Replacing the two shared geometries upgraded **every** valuables site at once; a `wearFruit()` helper keeps shape, colour, scale and value multiplier from ever drifting apart
+- Verified: all six rungs render distinctly in one frame; the ladder reports `cherry 500 → banana 2000` and steps cherry/strawberry/orange/apple/pear/banana across waves 1–11, holding at banana by wave 20. `smoke.sh` and `cabinets.sh` green on all six
+- Cache-bust `?v=168` → `?v=169`; HUD label → v215
+
+---
+
 ## v214 — 2026-07-27
 **TOKOTRON steps closer to the reference — rescue curve, the extra man, no pickups**
 - Middle-ground pass (user direction: *"we have lives and one kill is easy but not necessary now… take steps closer"*). One-hit-kill is deliberately NOT adopted; these are the reference rules that are cheap with what the cabinet already has
