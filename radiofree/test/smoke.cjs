@@ -13,6 +13,8 @@
 //  - every registered story renders, in both states, with complete copy
 //  - every story's visual key is a real panel (a typo silently falls back)
 //  - scrolling, the NEXT rail button, keyboard, channel tuning, sound
+//  - fi / en / ja: every string and every bulletin present in all three,
+//    switching rewrites the feed in place and keeps your position
 //  - 44px targets and WCAG AA on every text colour
 
 const { chromium } = require('playwright');
@@ -58,6 +60,8 @@ const contrast = (a, b) => {
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   page.on('pageerror', e => errors.push(String(e)));
 
+  // the language is browser-detected and persisted, so pin it for determinism
+  await page.addInitScript(() => localStorage.setItem('rfhLang', 'en'));
   await page.goto(URL, { waitUntil: 'networkidle' });
 
   // live-post shorthands: everything in the feed is per-post, so the selectors
@@ -175,7 +179,7 @@ const contrast = (a, b) => {
   check('the dial jumps to another channel', freqAfter !== freqBefore);
   // the dial is a readout of where the scroll put you, not a separate state
   check('the masthead reports the live post’s channel', await page.evaluate(async () => {
-    const { SECTORS } = await import('./js/stories.js?v=2');
+    const { SECTORS } = await import('./js/stories.js?v=3');
     const want = SECTORS.find(s => s.id === __rfh.state.channel);
     return document.getElementById('freq').textContent === want.freq
       && document.getElementById('call').textContent === want.call;
@@ -191,6 +195,62 @@ const contrast = (a, b) => {
   check('the mute is remembered', await page.evaluate(() => localStorage.getItem('rfhSound')) === '0');
   await page.locator('#sound').click();
 
+  // ── languages ────────────────────────────────────────────────────
+  // A missing string is not an exception — t() returns the key, and a raw key
+  // is still a non-empty string, so it would ship quietly. Check the blocks
+  // agree instead of waiting to notice 'rail.decode' on a button.
+  const langGaps = await page.evaluate(async () => {
+    const [{ _STR, UI_KEYS, UI_LANGS }, { COPY, STORIES }] = await Promise.all([
+      import('./js/i18n.js?v=3'), import('./js/stories.js?v=3'),
+    ]);
+    const gaps = [];
+    for (const l of UI_LANGS) {
+      for (const k of UI_KEYS) if (!_STR[l][k]) gaps.push(`ui ${l}:${k}`);
+    }
+    for (const l of UI_LANGS) {
+      for (const st of STORIES) {
+        const c = COPY[l] && COPY[l][st.id];
+        if (!c) { gaps.push(`copy ${l}:${st.id}`); continue; }
+        for (const f of ['slug', 'head', 'technique', 'decodeNote', 'tell']) {
+          if (!c[f] || !String(c[f]).trim()) gaps.push(`copy ${l}:${st.id}.${f}`);
+        }
+        if (!Array.isArray(c.lines) || c.lines.length < 2) gaps.push(`copy ${l}:${st.id}.lines`);
+        // a bulletin with nothing marked up has nothing to decode
+        else if (!c.lines.some(x => /\{\{[^|}]+\|[^}]+\}\}/.test(x))) gaps.push(`copy ${l}:${st.id}.markup`);
+      }
+    }
+    return gaps;
+  });
+  check(`fi/en/ja are complete${langGaps.length ? ' — ' + langGaps.slice(0, 6).join(', ') : ''}`,
+    langGaps.length === 0);
+
+  // switching language rewrites every word, so it rebuilds the feed — and must
+  // put you back on the same post, with the same decode state
+  await page.evaluate(() => __rfh.debug.open('seabed'));
+  await page.evaluate(() => __rfh.debug.toggleDecode());
+  await page.waitForTimeout(200);
+  const enHead = await live('.head').textContent();
+  await page.evaluate(() => __rfh.debug.setLang('fi'));
+  await page.waitForTimeout(400);
+  check('switching to Finnish rewrites the bulletin',
+    (await live('.head').textContent()) !== enHead);
+  check('Finnish really is Finnish',
+    (await live('.head').textContent()).includes('Suomenlahdella'));
+  check('the language switch keeps your place', await page.evaluate(() => __rfh.state.id) === 'seabed');
+  check('the language switch keeps the decode open', await live('.decode-box').isVisible());
+  check('the rail is translated', (await live('.decode-btn').textContent()).includes('TAITA'));
+  check('html lang follows', await page.evaluate(() => document.documentElement.lang) === 'fi');
+
+  await page.evaluate(() => __rfh.debug.setLang('ja'));
+  await page.waitForTimeout(400);
+  check('Japanese really is Japanese',
+    /[\u3040-\u30ff\u4e00-\u9faf]/.test(await live('.head').textContent()));
+  check('the standby line is translated too',
+    (await page.locator('.post').nth(0).locator('.standby, .bulletin').first().textContent()).length > 0);
+  await page.evaluate(() => __rfh.debug.setLang('en'));
+  await page.evaluate(() => __rfh.debug.toggleDecode());
+  await page.waitForTimeout(300);
+
   // ── every bulletin ───────────────────────────────────────────────
   const ids = await page.evaluate(() => __rfh.debug.stories());
   check('twelve bulletins on the wire', ids.length === 12);
@@ -199,7 +259,7 @@ const contrast = (a, b) => {
   // picture ships next to the right words — check the keys against the panels
   const badVisuals = await page.evaluate(async () => {
     const [{ STORIES }, { PANEL_KEYS }] = await Promise.all([
-      import('./js/stories.js?v=2'), import('./js/visuals.js?v=2'),
+      import('./js/stories.js?v=3'), import('./js/visuals.js?v=3'),
     ]);
     return STORIES.filter(s => !PANEL_KEYS.includes(s.visual)).map(s => `${s.id}:${s.visual}`);
   });

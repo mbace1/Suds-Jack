@@ -20,6 +20,10 @@ screen and cropped in.
 > way this kind of story really gets written, and DECODE names the move it is
 > pulling. The propaganda is the subject, not the payload.
 
+**Trilingual: fi / en / ja.** Every word — the twelve bulletins, their decode
+notes and their tells, not just the chrome — exists in all three. Browser-
+detected, switchable from the masthead, persisted.
+
 No build step, no assets, no CDN — open `radiofree/index.html`. Every pixel
 (Toko's face, all twelve panels) is drawn in code.
 
@@ -31,6 +35,7 @@ No build step, no assets, no CDN — open `radiofree/index.html`. Every pixel
 | jump between channels | ← → · the **◀ ▶** dial buttons |
 | decode | the **⧉ DECODE** rail button · `D` |
 | skip the read | tap the bulletin copy |
+| language | the **EN / FI / JA** button in the masthead (cycles; `rfhLang`) |
 | mute | ♪ in the masthead (persisted in `localStorage` as `rfhSound`) |
 
 Scrolling is the primary control; the dial in the masthead is a *readout* of
@@ -71,6 +76,30 @@ were on the stage, and the nine hundred accounts around a topic collapse into a
 fan spoked to the one node that made them. Decoding the text without decoding
 the chart would teach half the lesson.
 
+## Languages
+
+The three versions are **not translations of each other's tricks**. Each one
+spins its bulletin the way that language really does it, so the technique on
+display is one a reader of that language would actually meet:
+
+- **Finnish** has a true agentless passive, so `kaiku-restructure` reaches for
+  it directly — *"Yhdeksänkymmentäkaksi tehtävää oli sopeutusten kohteena"* —
+  and the decode is `AGENTITON PASSIIVI`.
+- **Japanese** hides the actor in 〜される and in the polite noun (再編、協議、
+  対応), which is what `vuosaari-automation` leans on; its technique is 名詞化.
+- **English** keeps the -ation nouns and "sources close to".
+
+Switching language rebuilds the feed in place: same post, same decode states,
+same scroll position. `<html lang>` follows, so a screen reader changes voice
+and the browser picks Japanese glyph forms instead of guessing.
+
+Two things the reader does per language: Japanese types at **26 characters per
+second** against 72 for the Latin scripts (a kanji carries far more than a
+letter, and the same rate flashes a bulletin past unread), and a **kana counts
+as a full mouth opening** rather than a consonant — Japanese is mora-timed, so
+letter-by-letter amplitude would leave Toko's face nearly shut through a whole
+bulletin.
+
 ## The channels
 
 | freq | call | band |
@@ -89,7 +118,8 @@ radiofree/
     codec.js      one post's screen (both frames in ONE canvas) + the Reader
     toko.js       the anchor: gel wobble, blink, lip-sync, decode tear
     visuals.js    the twelve story panels, each of which changes under decode
-    stories.js    the wire — copy, decode readings, techniques, tells
+    stories.js    the wire — copy, decode readings, techniques, tells (fi/en/ja)
+    i18n.js       every other string, in all three languages
     screen.js     PixelScreen: small canvas, hard-pixel upscale, dither helpers
     audio.js      synth codec kit + the carrier hiss, all through one master gain
     palette.js    single source of truth for colour
@@ -127,6 +157,12 @@ piece of colour vocabulary it teaches.
 the wrong picture beside the right words. `PANEL_KEYS` is exported from
 `visuals.js` and the gate checks every story's key against it.
 
+**A missing string does not throw.** `t()` returns the key, and a raw key is
+still a non-empty string, so `rail.decode` would ship quietly on a button. The
+gate checks that all three blocks carry every interface key and every field of
+every bulletin — including that each language's lines still contain `{{…|…}}`
+markup, since a bulletin with nothing marked has nothing to decode.
+
 **Sample `bayer()` at the cell index.** Drawing in 2px cells while calling
 `bayer(x, y)` only ever reaches four of its sixteen thresholds and the stipple
 collapses into a regular dot grid — the gulf water column did exactly that. Use
@@ -138,14 +174,16 @@ collapses into a regular dot grid — the gulf water column did exactly that. Us
 NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs
 ```
 
-Forty checks in a real browser: zero console errors; the feed is vertical (one
+Forty-nine checks in a real browser: zero console errors; the feed is vertical (one
 post per screen, snapping, media portrait both in the buffer and on screen); the
 live codec animates while its neighbours hold their painted frame and unread
 posts sit on standby; the reader types and can be skipped; DECODE grows the
 plain readings, re-folds, and stays per-post; scrolling, the rail, the keyboard
 and the dial all move the feed; every one of the twelve bulletins carries a full
-read *and* a decode; every visual key is a real panel; every control is 44px;
-and **WCAG AA on every text colour** — measured with the translucent decode-box
+read *and* a decode; every visual key is a real panel; **fi/en/ja are complete**
+(every interface key and every field of every bulletin, with markup to decode)
+and switching language keeps your place and your open drawer; every control is
+44px; and **WCAG AA on every text colour** — measured with the translucent decode-box
 background properly composited, which is what a first pass got wrong by a factor
 of four.
 
@@ -157,6 +195,7 @@ __rfh.debug.open('amplification')   // jump to a bulletin (instantly)
 __rfh.debug.channel('DEFENCE')      // jump to a channel
 __rfh.debug.go(1)                   // scroll a post
 __rfh.debug.toggleDecode()
+__rfh.debug.setLang('ja')           // rebuilds the feed in place
 __rfh.debug.stories()               // every id on the wire
 __rfh.state                         // { channel, index, decoded, id }
 ```

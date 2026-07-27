@@ -9,19 +9,27 @@
 // out of noise), types its bulletin, and drives Toko's lip-sync. Neighbours are
 // painted once and held, so scrolling shows real pictures rather than blank
 // boxes, and nothing off-screen burns a frame budget.
+//
+// Three languages. Changing one rebuilds the feed in place — same position,
+// same decode states — because every word on screen, bulletins included, comes
+// from the language blocks.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=2';
-import { Post, Reader } from './codec.js?v=2';
-import { SECTORS, STORIES, parseLine } from './stories.js?v=2';
-import * as audio from './audio.js?v=2';
+import { PAL, SECTOR_COLOR } from './palette.js?v=3';
+import { Post, Reader } from './codec.js?v=3';
+import { SECTORS, STORIES, storyCopy, parseLine } from './stories.js?v=3';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=3';
+import * as audio from './audio.js?v=3';
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
 
-const posts = [];          // { story, sector, post, els, decoded, read }
+let posts = [];            // { story, sector, copy, post, els, decoded, read }
 let active = -1;
 let reader = null;
 let raf = 0, last = performance.now();
+let booted = false;
+
+initLang();
 
 // ── the static on the gate ─────────────────────────────────────────
 // The app's first frame has to be moving: a dead screen behind a "tune in"
@@ -53,6 +61,53 @@ let raf = 0, last = performance.now();
   })();
 }
 
+function el(tag, cls = '', text = '') {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text) e.textContent = text;
+  return e;
+}
+
+// ── language ───────────────────────────────────────────────────────
+function paintGateLang() {
+  $('gateBlurb').textContent = t('gate.blurb');
+  $('gateFiction').textContent = t('gate.fiction');
+  $('tuneIn').textContent = t('gate.btn');
+  for (const b of gate.querySelectorAll('.gate-lang button')) {
+    b.classList.toggle('active', b.dataset.lang === getLang());
+    b.setAttribute('aria-pressed', String(b.dataset.lang === getLang()));
+  }
+}
+
+function paintMastLang() {
+  const b = $('lang');
+  b.textContent = LANGS.find(l => l.code === getLang()).label;
+  b.setAttribute('aria-label', t('a11y.lang'));
+  $('chDown').setAttribute('aria-label', t('a11y.prevChannel'));
+  $('chUp').setAttribute('aria-label', t('a11y.nextChannel'));
+  $('sound').setAttribute('aria-label', t('a11y.sound'));
+}
+
+function useLang(code) {
+  setLang(code);
+  paintGateLang();
+  if (!booted) return;
+  paintMastLang();
+  rebuildFeed();
+}
+
+{
+  const row = el('div', 'gate-lang');
+  for (const l of LANGS) {
+    const b = el('button', '', l.label);
+    b.dataset.lang = l.code;
+    b.onclick = () => useLang(l.code);
+    row.appendChild(b);
+  }
+  gate.appendChild(row);
+  paintGateLang();
+}
+
 // ── sound ──────────────────────────────────────────────────────────
 const SOUND_KEY = 'rfhSound';
 let soundOn = localStorage.getItem(SOUND_KEY) !== '0';
@@ -61,7 +116,6 @@ function paintSound() {
   const b = $('sound');
   b.textContent = soundOn ? '♪' : '♪̸';
   b.setAttribute('aria-pressed', String(soundOn));
-  b.title = soundOn ? 'Sound on' : 'Sound off';
 }
 
 $('sound').onclick = () => {
@@ -83,15 +137,11 @@ $('tuneIn').onclick = () => {
   boot();
 };
 
-function el(tag, cls = '', text = '') {
-  const e = document.createElement(tag);
-  if (cls) e.className = cls;
-  if (text) e.textContent = text;
-  return e;
-}
-
 function boot() {
+  booted = true;
   paintSound();
+  paintMastLang();
+  $('lang').onclick = () => useLang(nextLang());
   reader = new Reader(n => { if (n % 2 === 0) audio.blip(n); });
   buildFeed();
   watchScroll();
@@ -103,12 +153,14 @@ function boot() {
 
 // ── the feed ───────────────────────────────────────────────────────
 function buildFeed() {
-  const d = new Date();
+  const date = formatDate(new Date());
   const pad = n => String(n).padStart(2, '0');
-  const date = `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
+  feed.innerHTML = '';
+  posts = [];
 
   STORIES.forEach((story, i) => {
     const sector = SECTORS.find(s => s.id === story.sector);
+    const copy = storyCopy(story.id, getLang());
     const art = el('article', 'post');
     art.dataset.id = story.id;
     art.dataset.index = String(i);
@@ -122,46 +174,70 @@ function buildFeed() {
 
     const rail = el('div', 'rail');
     const decodeBtn = el('button', 'rail-btn decode-btn');
-    decodeBtn.innerHTML = '<span class="glyph" aria-hidden="true">⧉</span><span class="lbl">DECODE</span>';
+    decodeBtn.innerHTML = `<span class="glyph" aria-hidden="true">⧉</span><span class="lbl">${t('rail.decode')}</span>`;
     decodeBtn.setAttribute('aria-expanded', 'false');
     decodeBtn.onclick = () => toggleDecode(i);
     const nextBtn = el('button', 'rail-btn next-btn');
-    nextBtn.innerHTML = '<span class="glyph" aria-hidden="true">▼</span><span class="lbl">NEXT</span>';
-    nextBtn.setAttribute('aria-label', 'Next bulletin');
+    nextBtn.innerHTML = `<span class="glyph" aria-hidden="true">▼</span><span class="lbl">${t('rail.next')}</span>`;
+    nextBtn.setAttribute('aria-label', t('a11y.nextPost'));
     nextBtn.onclick = () => scrollToPost(i + 1);
     rail.append(decodeBtn, nextBtn);
     media.appendChild(rail);
-    if (i === 0) media.appendChild(el('div', 'swipe-hint', 'swipe up for the next bulletin'));
+    if (i === 0) media.appendChild(el('div', 'swipe-hint', t('hint.swipe')));
 
     const cap = el('div', 'post-caption');
     // the dial already says which channel you are on, so the tag carries what
     // it does not: position in the feed, dateline, date. Naming the sector here
     // too pushed it onto a second line on every phone.
     const tag = el('p', 'tag');
-    tag.innerHTML = `<span class="rec">ON AIR</span> ${pad(i + 1)}/${STORIES.length} · ${story.slug} · ${date}`;
-    const head = el('h2', 'head', story.head);
+    tag.innerHTML = `<span class="rec">${t('tag.onair')}</span> ${pad(i + 1)}/${STORIES.length} · ${copy.slug} · ${date}`;
+    const head = el('h2', 'head', copy.head);
     const bulletin = el('div', 'bulletin');
     bulletin.setAttribute('aria-live', 'polite');
-    bulletin.appendChild(el('p', 'standby', 'awaiting transmission'));
+    bulletin.appendChild(el('p', 'standby', t('standby')));
 
     const box = el('div', 'decode-box');
     box.hidden = true;
     box.append(
-      el('p', 'technique', story.technique),
-      el('p', 'note', story.decodeNote),
-      el('p', 'tell', story.tell),
+      el('p', 'technique', copy.technique),
+      el('p', 'note', copy.decodeNote),
+      el('p', 'tell', t('tell.prefix') + copy.tell),
     );
-    cap.append(tag, head, bulletin, box,
-      el('p', 'fiction', 'Fictional broadcast · invented studios, ministries and ports · real techniques'));
+    cap.append(tag, head, bulletin, box, el('p', 'fiction', t('fiction')));
 
     art.append(media, cap);
     feed.appendChild(art);
 
     const post = new Post(slot, story, sector, i);
     post.renderStatic();
-    posts.push({ story, sector, post, decoded: false, read: false,
+    posts.push({ story, sector, copy, post, decoded: false, read: false,
       els: { art, bulletin, box, decodeBtn } });
   });
+  measure();
+}
+
+// swapping language re-writes every word on screen, so the feed is rebuilt —
+// but the reader's place in it should not move: same post, same decode states
+function rebuildFeed() {
+  const keep = posts.map(p => ({ decoded: p.decoded, read: p.read }));
+  const at = Math.max(0, active);
+  for (const p of posts) p.post.destroy();
+  active = -1;
+  buildFeed();
+  posts.forEach((p, i) => {
+    if (!keep[i]) return;
+    p.decoded = keep[i].decoded;
+    p.read = keep[i].read;
+    p.post.decoded = p.decoded;
+    if (p.decoded) {
+      p.els.box.hidden = false;
+      p.els.decodeBtn.classList.add('on');
+      p.els.decodeBtn.setAttribute('aria-expanded', 'true');
+      p.els.decodeBtn.querySelector('.lbl').textContent = t('rail.refold');
+    }
+    p.post.renderStatic();
+  });
+  scrollToPost(at, true);
 }
 
 // Which post the viewport is on, read straight off the scroll position.
@@ -205,19 +281,13 @@ function setActive(i, first = false) {
   document.documentElement.style.setProperty('--accent', SECTOR_COLOR[p.story.sector]);
   $('freq').textContent = p.sector.freq;
   $('call').textContent = p.sector.call;
-  document.title = `${p.story.head} — Radio Free Helsinki`;
+  document.title = `${p.copy.head} — Radio Free Helsinki`;
 
-  if (!p.read) {
-    p.read = true;
-    reader.play(p.els.bulletin, p.story.lines.map(parseLine), p.decoded);
-    audio.carrierDuck(true);
-    if (!first) audio.page();
-  } else {
-    // already heard: show it whole rather than retyping on every scroll past
-    reader.play(p.els.bulletin, p.story.lines.map(parseLine), p.decoded);
-    reader.finish();
-    if (!first) audio.page();
-  }
+  const lines = p.copy.lines.map(parseLine);
+  reader.play(p.els.bulletin, lines, p.decoded);
+  if (p.read) reader.finish();   // already heard: show it whole, do not retype
+  else { p.read = true; audio.carrierDuck(true); }
+  if (!first) audio.page();
 }
 
 // ── navigation ─────────────────────────────────────────────────────
@@ -256,7 +326,7 @@ function toggleDecode(i) {
   p.els.box.hidden = !p.decoded;
   p.els.decodeBtn.classList.toggle('on', p.decoded);
   p.els.decodeBtn.setAttribute('aria-expanded', String(p.decoded));
-  p.els.decodeBtn.querySelector('.lbl').textContent = p.decoded ? 'RE-FOLD' : 'DECODE';
+  p.els.decodeBtn.querySelector('.lbl').textContent = t(p.decoded ? 'rail.refold' : 'rail.decode');
   p.decoded ? audio.decode() : audio.recode();
 }
 
@@ -292,7 +362,7 @@ function loop(now) {
   last = now;
   const p = posts[active];
   if (p) {
-    const mouth = reader.update(dt);
+    const mouth = reader.update(dt, getLang());
     if (reader.done) audio.carrierDuck(false);
     p.post.update(dt, mouth);
     p.post.draw();
@@ -305,7 +375,8 @@ window.__rfh = {
   audio,
   get state() {
     const p = posts[active];
-    return p ? { channel: p.story.sector, index: active, decoded: p.decoded, id: p.story.id } : null;
+    return p ? { channel: p.story.sector, index: active, decoded: p.decoded,
+                 id: p.story.id, lang: getLang() } : null;
   },
   debug: {
     tuneIn: () => $('tuneIn').click(),
@@ -314,6 +385,7 @@ window.__rfh = {
     toggleDecode: () => toggleDecode(active),
     finishRead: () => reader.finish(),
     stories: () => posts.map(p => p.story.id),
+    setLang: useLang,
     // tests and deep links need to land on a post without waiting for a smooth
     // scroll to finish, so jump instantly and set the active post directly
     open: id => {

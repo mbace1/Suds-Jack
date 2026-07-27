@@ -66,6 +66,12 @@
     text-transform: uppercase; white-space: nowrap;
   }
   .logo b { color: var(--amber); font-weight: 700; }
+  .logo-short { display: none; }
+  @media (max-width: 470px) {
+    .logo-full { display: none; }
+    .logo-short { display: inline; }
+  }
+  #lang { font-size: 11px; letter-spacing: .1em; }
 
   /* the dial lives in the masthead: what you are tuned to, and a way to jump */
   .dial { margin-left: auto; display: flex; align-items: center; gap: 2px; }
@@ -75,7 +81,7 @@
     font-family: var(--mono); font-size: 15px; cursor: pointer;
   }
   .dial button:hover { color: var(--green); }
-  .dial .read { text-align: center; min-width: 86px; line-height: 1.1; }
+  .dial .read { text-align: center; min-width: 78px; line-height: 1.1; }
   .dial .freq {
     display: block; font-size: 17px; font-weight: 700; letter-spacing: .04em;
     color: var(--accent);
@@ -190,7 +196,6 @@
     font-size: 13px; color: var(--amber); margin-top: 8px;
     border-top: 1px dashed rgba(255,180,58,.3); padding-top: 8px;
   }
-  .tell::before { content: 'TELL: '; color: var(--amber-hot); letter-spacing: .1em; }
 
   .fiction {
     font-size: 9px; letter-spacing: .1em; color: var(--text-dim);
@@ -230,6 +235,13 @@
   }
   #gate button:hover { background: #0d2028; }
   #gate button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .gate-lang { display: flex; gap: 6px; }
+  .gate-lang button {
+    min-width: 52px; min-height: 44px;
+    font-size: 11px; letter-spacing: .12em;
+    background: none; border: 1px solid var(--green-lo); color: var(--text-dim);
+  }
+  .gate-lang button.active { color: var(--green); border-color: var(--green-dim); }
 
   /* a short viewport (a phone on its side) gives the picture less room so the
      words still fit without the caption becoming a letterbox */
@@ -244,16 +256,15 @@
 <div id="gate">
   <h1>Radio <b>Free</b> Helsinki</h1>
   <canvas class="noise" width="150" height="23" aria-hidden="true"></canvas>
-  <p>Pirate wire out of the capital. Games, industry, and the defence band —
-     read by Toko, who has never been asked to be impartial.</p>
-  <p>Every bulletin is invented. Every technique in them is not.</p>
-  <button id="tuneIn">▶ Tune in</button>
+  <p id="gateBlurb"></p>
+  <p id="gateFiction"></p>
+  <button id="tuneIn">▶</button>
 </div>
 
 <div id="app" hidden>
   <header class="mast">
    <div class="mast-inner">
-    <span class="logo">Radio <b>Free</b> Helsinki</span>
+    <span class="logo"><span class="logo-full">Radio <b>Free</b> Helsinki</span><span class="logo-short">R<b>F</b>H</span></span>
     <div class="dial">
       <button id="chDown" aria-label="Previous channel">◀</button>
       <span class="read">
@@ -262,6 +273,7 @@
       </span>
       <button id="chUp" aria-label="Next channel">▶</button>
     </div>
+    <button class="icon-btn" id="lang" aria-label="Language">EN</button>
     <button class="icon-btn" id="sound" aria-pressed="true" aria-label="Sound on or off">♪</button>
    </div>
   </header>
@@ -269,6 +281,6 @@
   <main id="feed" tabindex="-1"></main>
 </div>
 
-<script type="module" src="js/main.js?v=2"></script>
+<script type="module" src="js/main.js?v=3"></script>
 </body>
 </html>

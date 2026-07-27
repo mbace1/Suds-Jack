@@ -13,10 +13,10 @@
 // every frame — so Toko is lip-synced to the text on screen instead of flapping
 // on a timer. Vowels open the mouth, consonants part it, spaces close it.
 
-import { PixelScreen, shade, mix } from './screen.js?v=2';
-import { PAL, SECTOR_COLOR } from './palette.js?v=2';
-import { Toko } from './toko.js?v=2';
-import { drawVisual, PANEL_W, PANEL_H, num } from './visuals.js?v=2';
+import { PixelScreen, shade, mix } from './screen.js?v=3';
+import { PAL, SECTOR_COLOR } from './palette.js?v=3';
+import { Toko } from './toko.js?v=3';
+import { drawVisual, PANEL_W, PANEL_H, num } from './visuals.js?v=3';
 
 export const POST_W = 144, POST_H = 276;
 const VF = { x: 8, y: 6, w: PANEL_W, h: PANEL_H };     // the story frame
@@ -149,6 +149,24 @@ export class Post {
 // without retyping the whole bulletin.
 
 const VOWELS = 'aeiouyäöAEIOUYÄÖ';
+const PUNCT = ',.;:—、。「」『』・…!?！？';
+
+// how far the mouth opens on the character just typed. Latin script is read
+// letter by letter, but Japanese is mora-timed: a kana IS a mouth opening, so
+// treating it as one consonant would leave the face nearly shut through a whole
+// bulletin.
+function amplitudeOf(ch) {
+  if (ch === ' ' || ch === '\n' || ch === '　') return 0;
+  if (PUNCT.includes(ch)) return 0.1;
+  const code = ch.codePointAt(0);
+  if (code > 0x2e80) return (code >= 0x3040 && code <= 0x30ff) ? 0.92 : 0.7;
+  if (VOWELS.includes(ch)) return 0.95;
+  return 0.5;
+}
+
+// characters per second, per script. Japanese carries far more meaning per
+// character, so the same rate would flash a bulletin past unread.
+const CPS = { en: 72, fi: 72, ja: 26 };
 
 export class Reader {
   constructor(onBlip) {
@@ -224,9 +242,9 @@ export class Reader {
   }
 
   // returns the mouth amplitude for this frame
-  update(dt, cps = 72) {
+  update(dt, lang = 'en') {
     if (this.done) { this.amp *= 0.86; return this.amp; }
-    this.acc += dt * cps;
+    this.acc += dt * (CPS[lang] ?? CPS.en);
     let typed = 0;
     while (this.acc >= 1 && this.at < this.queue.length) {
       this.acc -= 1;
@@ -238,10 +256,7 @@ export class Reader {
       item.node.textContent = item.text.slice(0, item.i);
       typed++;
       this.chars++;
-      if (ch === ' ' || ch === '\n') this.amp = 0;
-      else if (VOWELS.includes(ch)) this.amp = 0.95;
-      else if (',.;:—'.includes(ch)) this.amp = 0.1;
-      else this.amp = 0.5;
+      this.amp = amplitudeOf(ch);
       if (this.chars % 3 === 0 && ch !== ' ') this.onBlip(this.chars);
     }
     if (this.at >= this.queue.length) { this.done = true; this.amp = 0; }

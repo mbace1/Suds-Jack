@@ -94,13 +94,19 @@ export class PixelScreen {
     }
   }
 
+  // Bresenham. The endpoints are rounded FIRST: stepping from rounded
+  // coordinates while computing the slope from unrounded ones lets the walk
+  // miss its target entirely and run on to the guard limit, which is how the
+  // account graph grew two long rays across the whole panel.
   line(x0, y0, x1, y1, color) {
-    const dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
-    const sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
-    let err = dx - dy, x = Math.round(x0), y = Math.round(y0);
-    for (let guard = 0; guard < 4096; guard++) {
+    let x = Math.round(x0), y = Math.round(y0);
+    const ex = Math.round(x1), ey = Math.round(y1);
+    const dx = Math.abs(ex - x), dy = Math.abs(ey - y);
+    const sx = x < ex ? 1 : -1, sy = y < ey ? 1 : -1;
+    let err = dx - dy;
+    for (let guard = 0; guard <= dx + dy + 1; guard++) {
       this.px(x, y, 1, 1, color);
-      if (x === Math.round(x1) && y === Math.round(y1)) break;
+      if (x === ex && y === ey) break;
       const e2 = 2 * err;
       if (e2 > -dy) { err -= dy; x += sx; }
       if (e2 < dx) { err += dx; y += sy; }

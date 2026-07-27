@@ -268,6 +268,22 @@ neighbours hold the single frame `renderStatic()` painted (so scrolling shows re
 pictures, and twelve canvases stay cheap), and posts not yet reached show a standby
 line instead of their copy. Decode state is per post.
 
+**Trilingual fi/en/ja** — and not translations of each other's tricks: each
+language spins its bulletin the way that language really does it, so Finnish
+reaches for the true agentless passiivi and Japanese for 〜される and the polite
+noun (再編、協議). All twelve bulletins, their decode notes and their tells live in
+`stories.js`'s `COPY[lang]`; every other string is in `i18n.js`. Language is
+browser-detected, switchable from the masthead, persisted (`rfhLang`), and
+switching **rebuilds the feed in place** — same post, same decode states, same
+scroll position — with `<html lang>` following. The reader adapts per script:
+Japanese types at 26 cps against 72 for Latin (a kanji carries far more than a
+letter), and a **kana counts as a full mouth opening** rather than a consonant,
+because Japanese is mora-timed and letter-by-letter amplitude leaves the face
+shut. `t()` returns the key when a string is missing and a raw key is still a
+non-empty string, so the gate checks all three blocks for every interface key
+*and* every field of every bulletin, including that the lines still carry
+`{{…|…}}` markup.
+
 **Everything on the wire is invented** — fictional studios, ministries, ports and
 operators; no real company, agency or country is described or accused of anything.
 What is real is the *language*: each bulletin is written the way that kind of story
@@ -327,16 +343,20 @@ Mute persists in `localStorage` (`rfhSound`).
 the wrong picture beside the right words in silence — `PANEL_KEYS` is exported and the
 gate checks every story against it. Dither in 2px cells must sample `bayer(x >> 1, y >> 1)`
 (the cell index) or the stipple collapses into a dot grid — the gulf water column did.
-`field(scr, decode, false)` turns the graticule off for scenes with their own full-frame
+`PixelScreen.line()` must round its endpoints *before* computing the slope —
+stepping from rounded coordinates with an unrounded slope lets Bresenham miss
+the target and run to the guard limit, which drew two long rays across the
+account graph. `field(scr, decode, false)` turns the graticule off for scenes with their own full-frame
 texture (`sea`, `engine`); a grid under a wireframe terrain is noise on noise.
 
-**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 40
+**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 49
 checks: zero console errors, the feed is vertical (one post per screen, snapping, media
 portrait in the buffer *and* on screen), the live codec animates while neighbours hold
 their painted frame and unread posts sit on standby, the reader types and can be
 skipped, DECODE grows plain readings / re-folds / stays per-post, scroll+rail+keyboard
 +dial all move the feed, all twelve bulletins carrying a full read *and* a decode,
-every visual key real, 44px targets, and **WCAG AA on every text colour** — with translucent backgrounds properly
+every visual key real, fi/en/ja complete with a language switch that keeps your
+place, 44px targets, and **WCAG AA on every text colour** — with translucent backgrounds properly
 composited up the tree (taking the first non-transparent colour reads
 `rgba(255,180,58,.05)` as solid amber and fails the decode box by 4x).
 `window.__rfh` exposes `{audio, state, debug: {open, channel, go, tuneChannel,
@@ -403,12 +423,13 @@ radiofree/      # Radio Free Helsinki — MGS-codec news broadcast, Toko anchors
     codec.js    # one post: both codec frames in ONE canvas; Reader (typewriter → mouth)
     toko.js     # the anchor: gel wobble, blink, lip-sync, amber decode tear
     visuals.js  # 12 portrait story panels, each re-drawing under decode; PANEL_KEYS
-    stories.js  # the wire: copy with {{spun|plain}} markup, techniques, tells
+    stories.js  # the wire: copy with {{spun|plain}} markup, techniques, tells (fi/en/ja)
+    i18n.js     # every other string, all three languages
     screen.js   # PixelScreen (detachable), shade/mix/bayer, scanlines
     audio.js    # synth codec kit + carrier hiss, one master gain (total mute)
     palette.js
   test/
-    smoke.cjs   # 40-check headless gate
+    smoke.cjs   # 49-check headless gate
 hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel enemies
   index.html
   js/
