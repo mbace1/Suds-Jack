@@ -56,8 +56,10 @@ const server = http.createServer((req,res)=>{
   await pg.reload({waitUntil:'load'});
   const hub = await pg.evaluate(()=>({
     title: document.querySelector('h1')?.textContent ?? null,
-    card: document.querySelector('.card h2')?.textContent ?? null,
-    offering: document.querySelectorAll('.card').length,
+    // the terminal hub offers exactly one thing, behind a caret — the old
+    // card markup is gone
+    card: document.querySelector('.offer-name')?.textContent ?? null,
+    offering: document.querySelectorAll('.offer').length,
   }));
   console.log('OFFLINE hub:', JSON.stringify(hub));
 
