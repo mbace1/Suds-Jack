@@ -42,7 +42,12 @@ deadzoned sticks, d-pad-or-stick direction and hold-repeat. It reports the stick
 **returning to centre** as `dir(0,0)`, which menus ignore and the key bridge depends on.
 `hub/shell.js` is one line in a game's `index.html`: a HOME button top-left plus a
 **hold** on Start/Back (750 ms, the button fills as confirmation — a press would collide
-with the pause button several of these games bind to Start). `hub/padkeys.js` gives a pad
+with the pause button several of these games bind to Start). It navigates on **`pointerup`
+AND `touchend`**, never on `click`: ten of the twelve games `preventDefault` every touch
+outside their own UI, which kills the synthesised click — and cancelling `touchstart` in
+the capture phase cancels the pointer stream too, so the element gets `pointercancel` and
+never `pointerup`. `touchend` survives both. That is why the button worked with a mouse
+and did nothing under a thumb. `hub/padkeys.js` gives a pad
 to games that never grew one, driven by `pad` in the catalogue: `'native'` = the game
 reads a pad itself and nothing is layered on it (Hyper Dagger, Toko Drop, SKLTR, Tiny
 Hawk, sudz, voxel); `{keys:{…}}` dispatches the key events the game already listens for

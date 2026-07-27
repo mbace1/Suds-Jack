@@ -437,8 +437,15 @@ function check(name, cond) {
   const tp = await touch.newPage();
   await tp.goto(`${base}/${shelled[0].path}`, { waitUntil: 'domcontentloaded' });
   await tp.evaluate(() => {
-    // stand in for the game: swallow every touch that is not in its own UI
-    addEventListener('touchstart', e => { if (!e.target.closest('#overlay')) e.preventDefault(); }, { passive: false });
+    // Stand in for the game, faithfully: toko-drop swallows every touch that is
+    // not in its own UI, in the CAPTURE phase and non-passive. That detail
+    // matters — cancelling touchstart there also cancels the pointer stream, so
+    // the element gets pointercancel and never pointerup. An earlier version of
+    // this stub bubbled, which let a pointerup-only fix pass here and still fail
+    // on the real page.
+    addEventListener('touchstart', e => {
+      if (!e.target.closest('#overlay')) e.preventDefault();
+    }, { passive: false, capture: true });
   });
   await tp.waitForSelector('.arcade-home');
   const box = await tp.locator('.arcade-home').boundingBox();

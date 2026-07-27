@@ -81,13 +81,19 @@ home.innerHTML = '<span class="fill"></span><span class="glyph" aria-hidden="tru
 // Pointer events are a separate stream and survive that, so navigate on
 // pointerup over the button rather than waiting for a click. The href stays:
 // it is still a link, so middle-click and open-in-new-tab keep working.
+// Cancelling touchstart does not merely suppress the click: the pointer stream
+// is cancelled with it, so the element gets pointercancel and never pointerup.
+// touchend still arrives, so listen for both and take whichever comes.
 let leaving = false;
-home.addEventListener('pointerup', e => {
-  if (e.button > 0) return;                // middle/right belong to the browser
+function goHome(e) {
+  if (leaving) return;
+  if (e.type === 'pointerup' && e.button > 0) return;   // middle/right are the browser's
   leaving = true;
   e.preventDefault();
   location.href = HOME;
-});
+}
+home.addEventListener('pointerup', goHome);
+home.addEventListener('touchend', goHome);
 home.addEventListener('click', e => { if (leaving) e.preventDefault(); });
 
 const put = () => document.body.appendChild(home);
