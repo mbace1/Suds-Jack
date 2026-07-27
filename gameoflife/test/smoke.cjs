@@ -606,14 +606,37 @@ function check(name, cond) {
   // sound has an off switch, and it is remembered. An app that makes noise on
   // its own must let a person on a quiet train stop it.
   check('sound can be turned off from the footer',
-    await page.locator('.lang-btn', { hasText: 'off' }).count() === 1);
-  await page.locator('.lang-btn', { hasText: 'off' }).click();
+    await page.locator('.sound-row .lang-btn', { hasText: 'off' }).count() === 1);
+  await page.locator('.sound-row .lang-btn', { hasText: 'off' }).click();
   check('the app knows it is muted', await page.evaluate(() => __gol.audio.muted()) === true);
   check('and it is remembered', await page.evaluate(() => __gol.store.soundOn()) === false);
   await page.reload({ waitUntil: 'networkidle' });
   check('the mute survives a visit', await page.evaluate(() => __gol.audio.muted()) === true);
-  await page.locator('.lang-btn', { hasText: 'on' }).click();
+  await page.locator('.sound-row .lang-btn', { hasText: 'on' }).click();
   check('and it can be turned back on', await page.evaluate(() => __gol.audio.muted()) === false);
+
+  // the CRT look: opt-in, remembered, and applied as one class so it covers the
+  // hub header and every scene without any experience knowing about it
+  check('the old-screen look is off by default',
+    await page.evaluate(() => document.documentElement.classList.contains('crt')) === false);
+  await page.locator('.crt-row .lang-btn', { hasText: 'on' }).click();
+  check('turning it on marks the document',
+    await page.evaluate(() => document.documentElement.classList.contains('crt')) === true);
+  check('and it is remembered', await page.evaluate(() => __gol.store.crtOn()) === true);
+  await page.reload({ waitUntil: 'networkidle' });
+  check('the look survives a visit',
+    await page.evaluate(() => document.documentElement.classList.contains('crt')) === true);
+  // the scanline period is locked to the SOURCE grid (100%/64 = one dark line
+  // per two of the canvas's 128 rows), not to a fixed pixel count that would
+  // beat against the dithered scenes into moiré
+  const period = await page.evaluate(() => {
+    const el = document.querySelector('.hub-scene');
+    return getComputedStyle(el, '::after').backgroundSize;
+  });
+  check(`scanlines scale with the element (${period})`, /%|calc/.test(period) || period !== 'auto');
+  await page.locator('.crt-row .lang-btn', { hasText: 'off' }).click();
+  check('and it can be turned back off',
+    await page.evaluate(() => document.documentElement.classList.contains('crt')) === false);
 
   // screen-reader wiring: one landmark, the story text announces each new beat,
   // and the canvas keeps quiet (the text is the channel that can be followed)

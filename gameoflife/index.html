@@ -163,6 +163,33 @@
     .back-btn { margin-top: 14px; }
     .nature-note { color: #8faf6a; font-style: italic; }
 
+    /* ── the CRT look (opt-in, off by default) ───────── */
+    /* The period is locked to the SOURCE pixel grid, not to CSS pixels. The
+       canvas is 128 rows upscaled to whatever width allows, so a fixed 3px
+       scanline (what the arcade siblings use) lands at ~1.1 lines per source
+       row — the exact beat frequency, and the ordered-dither scenes turn to
+       moiré. Sizing the tile to 100%/64 puts one dark line every two source
+       rows at any scale, which is also what a real tube did. */
+    .crt .screen-wrap { position: relative; }
+    .crt .screen-wrap::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background-image: linear-gradient(to bottom, rgba(0,0,0,0.20) 0 50%, transparent 50% 100%);
+      background-size: 100% calc(100% / 64);
+    }
+    /* the tube: a little colour bloom and a darkened rim */
+    .crt .pixel-screen { filter: saturate(1.18) contrast(1.04); }
+    .crt .screen-wrap::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+      box-shadow: inset 0 0 26px rgba(0,0,0,0.42);
+    }
+    /* the hub's header scene gets it too, so the look is the whole app */
+    .crt .hub-scene { position: relative; }
+    .crt .hub-scene::after {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background-image: linear-gradient(to bottom, rgba(0,0,0,0.20) 0 50%, transparent 50% 100%);
+      background-size: 100% calc(100% / 22);
+    }
+
     /* ── panels / overlay ────────────────────────────── */
     .panel {
       border: 2px solid #4a4438; background: #1c1a16; padding: 22px;

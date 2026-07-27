@@ -227,6 +227,12 @@ earns a voice; `gardenStop()` fires on entering an experience or the feedback
 panel, so it plays on the hub alone. Shown in `.hub-footer` as `♪` glyphs
 (plural-free across fi/en/ja) with a one-time "you went outside" acknowledgement. `window.__gol` exposes
 `{store, audio, debug: {start, showInterlude, setLang, feedback}}` for console testing.
+An opt-in **CRT look** (`crt on/off` in the footer, `store.crtOn()`, default OFF)
+adds scanlines + tube bloom via a `.crt` class on `<html>`. Its period is locked to
+the **source grid** (`background-size: 100% calc(100% / 64)` = one line per two of
+the 128 canvas rows) — a fixed 3px period like dropcabal's beats against the
+ordered dither and turns `whale`/`ice`/`seam`/`lichen`/`eel` to moiré. It is a
+preference, not the house style: it flatters flat scenes and fights dithered ones.
 The app is **offline-first**: `sw.js` precaches the shell cache-first and
 `manifest.webmanifest` makes it installable — it sends you outdoors, so it has to
 work where the signal stops. The worker registers on **https only** (or `?sw=1`)

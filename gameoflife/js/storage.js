@@ -20,6 +20,7 @@ const DEFAULTS = {
   accepted: 0,
   hemi: null,          // null until set, so main.js can seed the timezone guess
   sound: true,         // false = muted, remembered across visits
+  crt: false,          // the opt-in scanline look
   feedback: [],
   outbox: [],
 };
@@ -46,6 +47,12 @@ export function setLangPref(l) { state.lang = l; save(); }
 // said so, because being asked to mute it again every visit is its own nag.
 export function soundOn() { return state.sound !== false; }
 export function setSoundOn(b) { state.sound = !!b; save(); }
+
+// the CRT look: scanlines and a little tube bloom over the scene. Off by
+// default — it flatters the flat scenes and fights the dithered ones, so it is
+// a preference rather than a house style.
+export function crtOn() { return state.crt === true; }
+export function setCrtOn(b) { state.crt = !!b; save(); }
 
 // which hemisphere's seasons the invitations should follow
 export function getHemi() { return state.hemi === 's' ? 's' : 'n'; }

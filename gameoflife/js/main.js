@@ -145,6 +145,11 @@ if (!store.hemiSet()) store.setHemi(guessHemisphere());
 
 // the remembered mute has to be in force before the first note can play
 audio.setMuted(!store.soundOn());
+
+// the CRT look is a class on <html>, so it covers the hub header and every
+// scene without any experience knowing about it
+function useCrt(on) { document.documentElement.classList.toggle('crt', !!on); }
+useCrt(store.crtOn());
 document.addEventListener('pointerdown', audio.init, { once: true });
 document.addEventListener('keydown', e => {
   if (e.key === 'Tab' || e.key === 'Enter' || e.key === ' ') byKeyboard = true;
@@ -263,6 +268,18 @@ function showHub() {
     soundRow.appendChild(b);
   }
   footer.appendChild(soundRow);
+
+  // the CRT look: scanlines locked to the source pixel grid. Off by default —
+  // it flatters the flat scenes and fights the dithered ones, so it is offered
+  // rather than imposed.
+  const crtRow = el('div', 'lang-row opt-row crt-row');
+  crtRow.appendChild(el('span', 'hemi-label', t('crt.label')));
+  for (const on of [true, false]) {
+    const b = el('button', 'lang-btn' + (store.crtOn() === on ? ' active' : ''), t(on ? 'crt.on' : 'crt.off'));
+    b.onclick = () => { store.setCrtOn(on); useCrt(on); audio.step(); showHub(); };
+    crtRow.appendChild(b);
+  }
+  footer.appendChild(crtRow);
 
   const fb = el('button', 'link-btn footer-link', t('hub.feedback'));
   fb.onclick = () => showFeedback('hub', showHub);
