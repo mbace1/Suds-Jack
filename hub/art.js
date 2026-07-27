@@ -309,6 +309,38 @@ export const ART = {
     g.disc(59, H - 30, 8, a);
   },
 
+  // Radio Free Helsinki: the codec screen — Toko in the portrait frame, the
+  // story panel above her, and one amber word showing through the green
+  codec(g, a) {
+    g.p(0, 0, W, H, '#04070a');
+    g.p(0, 0, W, H, '#081218');
+    // the story panel, with a truncated chart in it
+    g.p(8, 5, 60, 40, '#0a1a1e');
+    [7, 6, 9, 14, 20, 26, 33].forEach((h, i) => g.p(13 + i * 7, 43 - h, 5, h, i > 4 ? '#c9ffe0' : a));
+    for (const [x, y, w, h] of [[7, 4, 62, 1], [7, 45, 62, 1], [7, 4, 1, 42], [68, 4, 1, 42]]) g.p(x, y, w, h, '#1c4a38');
+    // the portrait frame: the gel with a headset, mouth open mid-word
+    g.p(8, 50, 34, 20, '#0d2229');
+    g.disc(24, 62, 9, '#00806b');
+    g.disc(24, 61, 8, '#00ccaa');
+    g.p(21, 58, 2, 3, '#08110f');
+    g.p(27, 58, 2, 3, '#08110f');
+    g.p(22, 65, 5, 3, '#3a1005');
+    g.p(19, 54, 3, 2, '#ffffff');
+    g.p(33, 57, 2, 6, '#33474d');          // ear cup
+    // the data column and the waveform
+    g.p(46, 50, 10, 20, '#061114');
+    for (let i = 0; i < 5; i++) g.p(48, 53 + i * 4, 6, 2, i > 2 ? '#1c4a38' : a);
+    for (let i = 0; i < 22; i++) {
+      const v = 1 + ((i * 5) % 7);
+      g.p(60 + i * 3, 60 - v, 2, v * 2, a);
+    }
+    // one decoded word, because that is what the app is
+    g.p(74, 12, 46, 3, '#ffb43a');
+    g.p(74, 20, 34, 3, '#3f9a6e');
+    g.p(74, 28, 42, 3, '#ffb43a');
+    g.p(74, 36, 28, 3, '#3f9a6e');
+  },
+
   // Tiny Hawk: the prism skater on a lit rail, in the near-black park
   prism(g, a) {
     g.p(0, 0, W, H, '#03060c');

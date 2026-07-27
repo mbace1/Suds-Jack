@@ -6,10 +6,10 @@
 // art.js and a cabinet appears. Feedback is the same panel everywhere, tagged
 // with which game it came from, and goes out through hub/feedback.js.
 
-import { GAMES, SKETCHES } from './games.js?v=5';
-import { drawMarquee } from './art.js?v=6';
-import * as feedback from './feedback.js?v=5';
-import { watchPad, padPresent } from './pad.js?v=5';
+import { GAMES, SKETCHES } from './games.js?v=9';
+import { drawMarquee } from './art.js?v=9';
+import * as feedback from './feedback.js?v=9';
+import { watchPad, padPresent } from './pad.js?v=9';
 
 const el = (tag, cls = '', text = '') => {
   const e = document.createElement(tag);
