@@ -259,7 +259,31 @@ and cropped in. **Canvas 2D pixel art, no three.js, no build step, no assets, no
 CDN** — every pixel is drawn in code, so it works offline. Three channels
 (`SECTORS` in `stories.js`): **87.60 KAIKU** games/studios, **104.40 VERKKO**
 tech/industry, **141.12 VARTIO** defence/signal — Helsinki as a games town wired
-into a tech industry next to a defence band. Four bulletins each.
+into a tech industry next to a defence band. Sixteen bulletins, ordered by band.
+
+**The top frame is an edit, not a picture.** Every bulletin cuts on a 3.6 s beat
+between the story **graphic** (`visuals.js`), **B-roll** of a low-poly Helsinki
+(`broll.js` — drones over the Esplanadi, the container harbour, the eastern
+treeline) and a **wide** of the booth (`drawWide` in `toko.js`). The three are
+deliberately different registers; that contrast is what makes a post read as a
+cut package rather than two fixed frames. `Post.cutting()` is the director, a
+cut snaps with a bright band + displaced rows, `goLive()` resets to shot 0, and
+**DECODE cuts home to the graphic and holds** — it is the only shot that
+decodes. `poly.js` is the renderer: painter's algorithm, banded lambert, no
+z-buffer and no clipper. Its two paid-for traps — a polygon reaching behind the
+near plane is dropped **whole** (the first ground planes started behind the
+camera and the shot was bare sky), and two full-length ground planes stacked on
+each other have the *same* average depth so the sort is a coin toss (butt the
+strips together in x). `cam.hz` slides the horizon off centre. Video grain must
+**not** come from `bayer()` — the low cells are the same cells every frame, so
+it sits still and reads as a perforated screen.
+
+**Adding a bulletin is four edits and `radiofree/STORIES.md` is the bar**: the
+roster line (`visual` + `broll`, both gate-checked against `PANEL_KEYS` /
+`BROLL_KEYS`), the copy block in all three languages, the panel, the cache
+tokens. Register is **The Onion** — total deadpan, the joke in the fact and
+never in the wording — one new technique per bulletin, and every plain reading
+specific ("a way to protect this quarter's margin", not "something bad").
 
 **Scrolling is the primary control**; the masthead dial is a *readout* of which
 channel the scroll landed on plus a jump between bands. **Only the live post
@@ -376,13 +400,15 @@ the target and run to the guard limit, which drew two long rays across the
 account graph. `field(scr, decode, false)` turns the graticule off for scenes with their own full-frame
 texture (`sea`, `engine`); a grid under a wireframe terrain is noise on noise.
 
-**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 72
-checks: zero console errors, the feed is vertical (one post per screen, snapping, media
+**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 77
+checks (roster counts are read off `__rfh.debug.stories()`, never hardcoded — that
+number went stale twice): zero console errors, the feed is vertical (one post per screen, snapping, media
 portrait in the buffer *and* on screen), the live codec animates while neighbours hold
 their painted frame and unread posts sit on standby, the reader types and can be
 skipped, DECODE grows plain readings / re-folds / stays per-post, scroll+rail+keyboard
 +dial all move the feed, every bulletin carrying a full read *and* a decode,
-every visual key real, fi/en/ja complete with a language switch that keeps your
+every visual and footage key real, the program frame really cutting
+between graphic/B-roll/wide with DECODE holding the graphic, fi/en/ja complete with a language switch that keeps your
 place, a sign-off that closes the feed and marks what you decoded, a `#id` deep link
 that opens its bulletin without pushing history, a
 precache that names every module, a real run with the network cut, 44px targets, and **WCAG AA on every text colour** — with translucent backgrounds properly
@@ -452,6 +478,8 @@ radiofree/      # Radio Free Helsinki — MGS-codec news broadcast, Toko anchors
     codec.js    # one post: both codec frames in ONE canvas; Reader (typewriter → mouth)
     toko.js     # the anchor: gel wobble, blink, lip-sync, amber decode tear
     visuals.js  # portrait story panels + the sign-off test card; PANEL_KEYS
+    broll.js    # low-poly Helsinki footage plates; BROLL_KEYS
+    poly.js     # the tiny flat-shaded 3D renderer under the footage
     stories.js  # the wire: copy with {{spun|plain}} markup, techniques, tells (fi/en/ja)
     i18n.js     # every other string, all three languages
     screen.js   # PixelScreen (detachable), shade/mix/bayer, scanlines

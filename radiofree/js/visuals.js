@@ -475,7 +475,104 @@ function border(scr, t, d) {
   num(scr, 6, H - 10, d > 0.4 ? '2' : '5', ink(d));
 }
 
-const PANELS = { signoff, border, chart, chart2, mesh, crowd, heat, crane, tower, coin, sea, sat, engine, crowd2 };
+// The same crate twice. At broadcast one is struck out and the other is new;
+// decoded, both lids come up on identical contents at an identical price and
+// an equals sign lands between them. The reform is the plate on the front.
+function bundle(scr, t, d) {
+  field(scr, d);
+  const c = ink(d), lo = inkLo(d);
+  const open = Math.min(1, Math.max(0, (d - 0.2) / 0.5));
+  for (let s = 0; s < 2; s++) {
+    const cx = 34 + s * 60;
+    const y = Math.round(58 + Math.sin(t * 1.6 + s * 2.2) * 1.5);
+    const face = (!s && d < 0.2) ? lo : c;               // the removed one is dim
+    scr.rect(cx - 21, y, 42, 46, PAL.PANEL, face);
+    if (open < 0.15) {                                   // shut: a lid and slats
+      scr.px(cx - 21, y, 42, 5, shade(face, 0.45));
+      for (let k = -1; k <= 1; k++) scr.px(cx + k * 11, y + 7, 1, 26, shade(face, 0.35));
+    } else {
+      scr.line(cx - 21, y - open * 13, cx + 21, y - open * 6, face);   // hinged up
+    }
+    scr.px(cx - 15, y + 36, 30, 6, shade(face, 0.6));    // the name plate
+    if (!s && d < 0.2) scr.line(cx - 18, y + 44, cx + 18, y + 30, c);   // struck out
+    if (s && d < 0.2) {                                  // and the new one, sparkling
+      const k = 0.5 + 0.5 * Math.sin(t * 5);
+      scr.px(cx + 16, y - 6, 2, 2, mix(PAL.GREEN_DIM, PAL.GREEN_HOT, k));
+      scr.px(cx + 20, y - 2, 1, 1, mix(PAL.GREEN_DIM, PAL.GREEN_HOT, 1 - k));
+    }
+    if (open > 0.15) {                                   // the contents, identical
+      for (let r = 0; r < 3; r++) for (let k = 0; k < 3; k++) {
+        scr.px(cx - 16 + k * 11, y + 6 + r * 9, 7, 7,
+          (r * 3 + k) % 4 === 0 ? mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d) : shade(c, 0.6));
+      }
+    }
+    if (d > 0.45) num(scr, cx - 8, y + 52, '4.99', PAL.AMBER_HOT);
+  }
+  if (open > 0.6) { scr.px(58, 76, 12, 3, ink(d)); scr.px(58, 84, 12, 3, ink(d)); }
+}
+
+// "Up to ten." The column stands at the ceiling until it is decoded, then
+// collapses to the median and every reading drops to where it actually fell —
+// with the one lonely dot at the top ringed: the measurement that made the
+// advertisement legal.
+function speed(scr, t, d) {
+  field(scr, d);
+  const c = ink(d), lo = inkLo(d);
+  const x = 40, w = 40, top = 26, bot = 132, span = bot - top;
+  for (let i = 0; i <= 10; i++) scr.px(x - 7, bot - (i / 10) * span, 5, 1, shade(lo, 0.8));
+
+  const fillK = 1 + (0.14 - 1) * Math.min(1, d * 1.2);
+  const fy = Math.round(bot - fillK * span);
+  if (d > 0.12) {                                        // the ghost of the claim
+    for (let y = top; y < fy; y += 4) scr.px(x, y, w, 1, shade(lo, 0.55));
+    scr.px(x, top, w, 1, lo);
+    scr.px(x, top, 1, fy - top, lo);
+    scr.px(x + w - 1, top, 1, fy - top, lo);
+  }
+  scr.rect(x, fy, w, bot - fy, mix(PAL.GREEN_DIM, PAL.AMBER_DIM, d), c);
+  const scan = top + ((t * 34) % (bot - top));           // the meter, still measuring
+  if (scan > fy) scr.px(x + 1, Math.round(scan), w - 2, 1, shade(c, 1.5));
+
+  if (d > 0.28) {
+    for (let i = 0; i < 34; i++) {                       // where the readings fell
+      const k = Math.pow(((i * 37) % 100) / 100, 3) * 0.32 + 0.03;
+      scr.px(x + 4 + ((i * 13) % (w - 8)), Math.round(bot - k * span), 2, 2,
+        mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d));
+    }
+    scr.ellipse(x + w / 2, top + 5, 6, 6, PAL.PANEL, PAL.AMBER_HOT);
+    scr.px(x + w / 2 - 1, top + 4, 2, 2, PAL.AMBER_HOT);
+  }
+  num(scr, 92, top - 4, d > 0.45 ? '1.4' : '10', c);
+}
+
+// The statement. Six lines of it, a seal, a caret still blinking at the end —
+// and under DECODE every line strikes through in turn, because the number of
+// claims it refuses is the number printed underneath.
+function denial(scr, t, d) {
+  field(scr, d);
+  const c = ink(d), lo = inkLo(d);
+  scr.rect(18, 22, 92, 106, shade(PAL.PANEL, 1.3), lo);
+  scr.ellipse(64, 36, 9, 9, PAL.PANEL, c);               // the seal
+  scr.ellipse(64, 36, 4, 4, shade(c, 0.5 + 0.25 * Math.sin(t * 2)));
+
+  const widths = [64, 44, 72, 52, 68, 38];
+  widths.forEach((wd, i) => {
+    const y = 54 + i * 11;
+    scr.px(26, y, wd, 5, d > 0.25 ? shade(lo, 0.5) : shade(c, 0.7));
+    const k = Math.min(1, Math.max(0, (d - 0.1 - i * 0.09) * 5));
+    if (k > 0) scr.px(26, y + 2, Math.round(wd * k), 1, PAL.AMBER_HOT);
+  });
+  const last = 54 + 5 * 11;                              // the caret, still going
+  if (d < 0.2 && Math.floor(t * 1.8) % 2 === 0) scr.px(66, last, 2, 5, c);
+
+  if (d > 0.55) {
+    num(scr, 26, 122, '0', PAL.AMBER_HOT);               // denials issued
+    scr.px(33, 126, 44, 1, shade(PAL.AMBER_DIM, 0.8));
+  }
+}
+
+const PANELS = { signoff, border, chart, chart2, mesh, crowd, heat, crane, tower, coin, sea, sat,
+                 engine, crowd2, bundle, speed, denial };
 
 // drawVisual falls back rather than throwing, so a mistyped key would ship the
 // wrong picture beside the right words in total silence. The key list is

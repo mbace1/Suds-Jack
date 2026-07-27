@@ -6,7 +6,7 @@ screen** stood on end — the story's picture on top, **Toko** (the teal gel fro
 Toko Drop) reading the wire below it with a data column and a waveform — plus a
 right-hand rail and the copy underneath.
 
-All thirteen bulletins live in one column, ordered by channel. It covers what
+All sixteen bulletins live in one column, ordered by channel. It covers what
 Helsinki actually is — a games town wired into a tech industry, sitting next to a
 defence band — and every bulletin has a **DECODE** button.
 
@@ -54,10 +54,10 @@ hear a station you have not tuned to.
 
 ## The sign-off
 
-The feed does not just stop after the twelfth bulletin. The station signs off:
-a test card, the carrier gone, `--.--` on the dial — and it hands back the
-twelve techniques, marking the ones **you** actually opened and printing their
-tells at you. The ones you skipped stay dim, and say so.
+The feed does not just stop after the last bulletin. The station signs off:
+a test card, the carrier gone, `--.--` on the dial — and it hands back every
+technique on the wire, marking the ones **you** actually opened and printing
+their tells at you. The ones you skipped stay dim, and say so.
 
 The last bulletin on the defence band turns the frame on this station; the
 sign-off is the same move made specific to you, which is why the count is real
@@ -68,11 +68,11 @@ technique found once is still credited on the next visit.
 
 The address follows the scroll — `#seabed` while you are on the seabed story —
 and a link that names a bulletin opens on it. That is what makes a post worth
-sending someone; a link that lands them at the top of a twelve-story pile is a
+sending someone; a link that lands them at the top of the whole pile is a
 different link.
 
 It is `replaceState`, not `push`: the back button leaves the page instead of
-walking twelve fake history entries. The trap that buys — and the reason it has
+walking a dozen-odd fake history entries. The trap that buys — and the reason it has
 to be `replaceState` — is that it does **not** fire `hashchange`, so the handler
 that catches pasted links can never be triggered by the app's own writes.
 
@@ -109,6 +109,10 @@ did, and gives a **TELL** — the question that catches it next time, in the wil
 The techniques: agentless passive, missing denominator, euphemism, manufactured
 consensus, selective baseline, nominalization, source laundering, numbers as
 atmosphere, category drift, anonymous authority, procurement dialect,
+**renaming as reform** (a reform announced entirely in the vocabulary of the
+thing it replaces — the price and the odds come through the sentence intact),
+**the unbounded range** ("up to" names a ceiling and hands the reader the job
+of supplying a typical value), **the non-denial denial**,
 **speculation as reporting** (the hedge stack — could, may, is emerging, cannot
 be ruled out, none of which claims anything and which together build a whole
 theatre), and — last on the defence band, pointed back at this station — the
@@ -167,6 +171,7 @@ app into the thing the app is about.
 ```
 radiofree/
   index.html      shell + all CSS (codec chrome, CRT scanlines, feed layout)
+  STORIES.md      how to add a bulletin — read this first
   js/
     main.js       boot, the tune-in gate, the feed, tuning, decode, the loop
     codec.js      one post's screen (both frames in ONE canvas) + the Reader
@@ -186,6 +191,22 @@ radiofree/
   test/
     smoke.cjs     the gate (see below)
 ```
+
+## Adding a bulletin
+
+Four edits, and **`STORIES.md` is the bar** — the roster line, the copy block in
+all three languages, the panel, and the cache tokens. Two things from it worth
+having in your head before you start:
+
+**Register: The Onion, not a sketch.** The deadpan is total and the joke is in
+the *fact*, never in the wording. A bulletin that sounds like it is being funny
+has stopped being able to teach, because the whole claim is that this is exactly
+how the real ones sound.
+
+**The plain reading has to be specific.** "A difficult but necessary step" →
+"a way to protect this quarter's margin", not "something bad". A decode that
+only says "this is spin" has told the listener nothing they did not press the
+button already knowing.
 
 ## Notes for anyone editing it
 
@@ -277,13 +298,16 @@ collapses into a regular dot grid — the gulf water column did exactly that. Us
 NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs
 ```
 
-Seventy-two checks in a real browser: zero console errors; the feed is vertical (one
+Seventy-seven checks in a real browser: zero console errors; the feed is vertical (one
 post per screen, snapping, media portrait both in the buffer and on screen); the
 live codec animates while its neighbours hold their painted frame and unread
-posts sit on standby; the reader types and can be skipped; DECODE grows the
-plain readings, re-folds, and stays per-post; scrolling, the rail, the keyboard
-and the dial all move the feed; every one of the twelve bulletins carries a full
-read *and* a decode; every visual key is a real panel; **fi/en/ja are complete**
+posts sit on standby; the program frame really cuts between the graphic, the
+footage and the wide, and DECODE holds the graphic; the reader types and can be
+skipped; DECODE grows the plain readings, re-folds, and stays per-post;
+scrolling, the rail, the keyboard and the dial all move the feed; every one of
+the bulletins carries a full read *and* a decode; every visual key is a real
+panel and every `broll` key real footage; roster counts are read off
+`__rfh.debug.stories()` rather than hardcoded — that number went stale twice; **fi/en/ja are complete**
 (every interface key and every field of every bulletin, with markup to decode)
 and switching language keeps your place and your open drawer; every control is
 44px; the sign-off closes the feed, lists every technique and marks the ones

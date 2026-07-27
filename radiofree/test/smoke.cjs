@@ -84,8 +84,13 @@ const contrast = (a, b) => {
   check('tuning in reveals the receiver', await live('.media-slot canvas').isVisible());
 
   // ── the feed is vertical ─────────────────────────────────────────
+  // The roster grows. Read its size once and derive every count and every
+  // NN/NN tag from it — the hardcoded number went stale twice, and a gate that
+  // has to be edited to add a bulletin is a gate people learn to edit.
+  const N = await page.evaluate(() => __rfh.debug.stories().length);
+  const tag = (n) => `${String(n).padStart(2, '0')}/${N}`;
   check('every bulletin is its own post',
-    await page.locator('.post:not(.sign-off)').count() === 13);
+    await page.locator('.post:not(.sign-off)').count() === N);
   check('the feed ends with a sign-off rather than just stopping',
     await page.locator('.post.sign-off').count() === 1);
   const geom = await page.evaluate(() => {
@@ -190,7 +195,7 @@ const contrast = (a, b) => {
 
   await page.keyboard.press('ArrowDown');
   await page.waitForTimeout(700);
-  check('arrow keys move the feed', (await live('.tag').textContent()).includes('03/13'));
+  check('arrow keys move the feed', (await live('.tag').textContent()).includes(tag(3)));
 
   // scrolling itself is the primary control — drive the container directly
   await page.evaluate(() => {
@@ -199,7 +204,7 @@ const contrast = (a, b) => {
   });
   await page.waitForTimeout(500);
   check('scrolling changes which post is live',
-    (await live('.tag').textContent()).includes('06/13'));
+    (await live('.tag').textContent()).includes(tag(6)));
   check('exactly one post is live at a time', await page.locator('.post.live').count() === 1);
 
   // ── the dial ─────────────────────────────────────────────────────
@@ -284,7 +289,7 @@ const contrast = (a, b) => {
 
   // ── every bulletin ───────────────────────────────────────────────
   const ids = await page.evaluate(() => __rfh.debug.stories());
-  check('every bulletin on the wire is registered', ids.length === 13);
+  check('every bulletin on the wire is registered', ids.length === N);
 
   // A mistyped visual or broll key silently falls back to the bar chart / to
   // Esplanadi, so the wrong picture ships next to the right words — check both
@@ -344,14 +349,14 @@ const contrast = (a, b) => {
   check('scrolling past the last bulletin reaches the sign-off',
     await page.evaluate(() => !!(__rfh.state && __rfh.state.signoff)));
   check('the sign-off lists every technique',
-    await page.locator('.post.sign-off .tally-row').count() === 13);
+    await page.locator('.post.sign-off .tally-row').count() === N);
   check('it marks the one you decoded',
     await page.locator('.post.sign-off .tally-row.got').count() === 1);
   check('and prints that technique’s tell back at you',
     (await page.locator('.post.sign-off .tally-row.got .tally-tell').textContent()).length > 20);
-  check('the count is shown', (await page.locator('.tally-head').textContent()).includes('1/13'));
+  check('the count is shown', (await page.locator('.tally-head').textContent()).includes(`1/${N}`));
   check('the sign-off counts the roster, not a hardcoded twelve',
-    (await page.locator('.post.sign-off .bulletin').textContent()).includes('13 stories'));
+    (await page.locator('.post.sign-off .bulletin').textContent()).includes(`${N} stories`));
   check('the sign-off is not a bulletin — nothing to decode',
     await page.locator('.post.sign-off .decode-btn').count() === 0);
   check('the masthead drops the frequency when the station is off air',
@@ -404,7 +409,7 @@ const contrast = (a, b) => {
   check('a #id link opens that bulletin',
     await deep.evaluate(() => __rfh.state.id) === 'seabed');
   check('the deep link is not merely scrolled to, it is live',
-    (await deep.locator('.post.live .tag').textContent()).includes('09/13'));
+    (await deep.locator('.post.live .tag').textContent()).includes(tag(11)));
   check('a shared link boots clean', deepErrors.length === 0);
   await deep.close();
 
@@ -439,7 +444,7 @@ const contrast = (a, b) => {
   await off.locator('#tuneIn').click();
   await off.waitForTimeout(900);
   check('the feed opens with the network cut',
-    await off.locator('.post:not(.sign-off)').count() === 13);
+    await off.locator('.post:not(.sign-off)').count() === N);
   check('a bulletin still reads offline',
     (await off.locator('.post.live .bulletin').textContent()).trim().length > 40);
   check('the picture still draws offline',

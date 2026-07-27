@@ -35,14 +35,17 @@ export const STORIES = [
   { id: 'season-zero',        sector: 'GAMING',   visual: 'chart2', broll: 'esplanadi' },
   { id: 'foundry-deal',       sector: 'GAMING',   visual: 'mesh',   broll: 'esplanadi' },
   { id: 'summit-consensus',   sector: 'GAMING',   visual: 'crowd',  broll: 'esplanadi' },
+  { id: 'surprise-bundle',    sector: 'GAMING',   visual: 'bundle', broll: 'esplanadi' },
   { id: 'heat-recovery',      sector: 'INDUSTRY', visual: 'heat',   broll: 'harbour'   },
   { id: 'vuosaari-automation',sector: 'INDUSTRY', visual: 'crane',  broll: 'harbour'   },
   { id: 'sixth-generation',   sector: 'INDUSTRY', visual: 'tower',  broll: 'treeline'  },
   { id: 'round-b',            sector: 'INDUSTRY', visual: 'coin',   broll: 'esplanadi' },
+  { id: 'up-to-ten',          sector: 'INDUSTRY', visual: 'speed',  broll: 'treeline'  },
   { id: 'seabed',             sector: 'DEFENCE',  visual: 'sea',    broll: 'harbour'   },
   { id: 'interference',       sector: 'DEFENCE',  visual: 'sat',    broll: 'treeline'  },
   { id: 'synthetic-env',      sector: 'DEFENCE',  visual: 'engine', broll: 'treeline'  },
   { id: 'amplification',      sector: 'DEFENCE',  visual: 'crowd2', broll: 'treeline'  },
+  { id: 'no-comment',         sector: 'DEFENCE',  visual: 'denial', broll: 'harbour'   },
   { id: 'border-lab',         sector: 'DEFENCE',  visual: 'border', broll: 'esplanadi' },
 ];
 
@@ -188,8 +191,41 @@ const EN = {
       'Analysts warn that {{audiences should be alert to manipulation|you are, right now, listening to one station’s selection of one day’s events, read by a gel with a microphone}}.',
     ],
     technique: 'PRE-EMPTIVE FRAME',
-    decodeNote: 'The most effective move is not a lie in the text — it is the assumption in front of it. Calling something "the debate" makes the debate real and hands both sides to whoever named it. And yes: this broadcast picks twelve stories out of a day and reads them in an order. That is a frame too. It is the last thing this station will tell you, and the most useful.',
+    decodeNote: 'The most effective move is not a lie in the text — it is the assumption in front of it. Calling something "the debate" makes the debate real and hands both sides to whoever named it. And yes: this broadcast picks a handful of stories out of a day and reads them in an order. That is a frame too. It is the last thing this station will tell you, and the most useful.',
     tell: 'Ask who decided this was the question. Including here.',
+  },
+  'surprise-bundle': {
+    slug: 'RUOHOLAHTI',
+    head: 'Lumipeli removes loot boxes from Season Zero',
+    lines: [
+      'Lumipeli has {{removed loot boxes|renamed loot boxes}} from Season Zero, replacing them with what the studio calls {{Surprise Reward Bundles|loot boxes}}. The change {{follows extensive player feedback|follows a draft bill in two markets}}.',
+      'The studio said the new bundles {{put the player in control|cost 4.99 and contain the same items at the same odds}}, and that it was {{proud to lead the industry here|the first to be asked}}.',
+    ],
+    technique: 'RENAMING AS REFORM',
+    decodeNote: 'Nothing was removed; a noun was. Watch for a reform announced entirely in the vocabulary of the thing it replaces — the mechanism, the price and the odds all come through the sentence intact, and the only measurable change is what the item is called. The panel is the same crate twice. "Follows player feedback" is doing a separate job: it dates the decision to the complaints rather than to the legislation, so the studio gets to have chosen.',
+    tell: 'Ask what a customer can now do that they could not do last week. If the answer is "read a different word", nothing was reformed.',
+  },
+  'up-to-ten': {
+    slug: 'PITÄJÄNMÄKI',
+    head: 'Verkkovoima launches home speeds of up to ten gigabits',
+    lines: [
+      'Verkkovoima has opened a residential tier running at {{speeds of up to ten gigabits|a figure reached once, inside the exchange building, at four in the morning}}. The operator says this makes it {{the fastest connection in the country|the largest number printed on a Finnish advertisement}}.',
+      'The company said {{customers can expect a transformative experience|the median line it measured ran at one point four}} and that {{speeds may vary by property|the number in the advertisement was measured in a building with nobody living in it}}.',
+    ],
+    technique: 'THE UNBOUNDED RANGE',
+    decodeNote: '"Up to" has no floor. It names a ceiling and leaves the reader to supply a typical value, which is a job the sentence has quietly handed over. The only number in it anybody is promising is zero. The panel is the same measurement set twice — decode it and the column collapses to the median, every reading drops to where it actually fell, and the one lonely dot at the top is left ringed. That is the measurement that made the advertisement legal.',
+    tell: 'Read it as "at least nothing, and at most". If it still sounds like an offer, it was not one.',
+  },
+  'no-comment': {
+    slug: 'KATAJANOKKA',
+    head: 'Ministry responds to reports of a new interception capability',
+    lines: [
+      'Asked about reports of a new interception capability, the ministry said it {{does not comment on capabilities it does not possess|did not say it does not possess this one}}, and that {{the reports are speculative|the reports are correct in every particular the ministry chose not to address}}.',
+      'A spokesperson added that {{no such programme has been approved in the form described|the form described is not the form}} and that {{the ministry has nothing further to add at this time|the ministry has three further things to add, in October}}.',
+    ],
+    technique: 'NON-DENIAL DENIAL',
+    decodeNote: 'Every clause is true and none of them is a denial. "Does not comment on capabilities it does not possess" is a sentence about policy wearing the clothes of a sentence about fact, and "in the form described" moves the denial onto the description rather than the thing. Count the denials in the panel: the statement runs to six lines and the number of claims it refuses is zero.',
+    tell: 'Write down the exact sentence you wanted denied, then look for it, word for word, inside a "no". If it is not in there, it was not denied.',
   },
 };
 
@@ -337,8 +373,41 @@ const FI = {
       'Analyytikot varoittavat, että {{yleisön tulisi olla valppaana manipulaation varalta|kuuntelet juuri nyt yhden aseman valikoimaa yhden päivän tapahtumista, luettuna hyytelön suulla mikrofonin ääressä}}.',
     ],
     technique: 'ENNAKOIVA KEHYS',
-    decodeNote: 'Tehokkain temppu ei ole valhe tekstissä vaan oletus sen edessä. Kun jokin nimetään "keskusteluksi", keskustelusta tulee totta ja molemmat puolet siirtyvät sille joka sen nimesi. Ja kyllä: tämä lähetys poimii kaksitoista juttua yhdestä päivästä ja lukee ne tietyssä järjestyksessä. Sekin on kehys. Se on viimeinen asia jonka tämä asema kertoo sinulle, ja hyödyllisin.',
+    decodeNote: 'Tehokkain temppu ei ole valhe tekstissä vaan oletus sen edessä. Kun jokin nimetään "keskusteluksi", keskustelusta tulee totta ja molemmat puolet siirtyvät sille joka sen nimesi. Ja kyllä: tämä lähetys poimii kourallisen juttuja yhdestä päivästä ja lukee ne tietyssä järjestyksessä. Sekin on kehys. Se on viimeinen asia jonka tämä asema kertoo sinulle, ja hyödyllisin.',
     tell: 'Kysy kuka päätti, että tämä on se kysymys. Myös tässä.',
+  },
+  'surprise-bundle': {
+    slug: 'RUOHOLAHTI',
+    head: 'Lumipeli poistaa lootboxit Season Zerosta',
+    lines: [
+      'Lumipeli on {{poistanut lootboxit|nimennyt lootboxit uudelleen}} Season Zerosta ja korvannut ne sillä, mitä studio kutsuu {{yllätyspalkintopaketeiksi|lootboxeiksi}}. Muutos {{tehtiin pelaajapalautteen pohjalta|tehtiin kahdessa maassa vireillä olevan lakiesityksen pohjalta}}.',
+      'Studion mukaan uudet paketit {{antavat pelaajalle hallinnan|maksavat 4,99 ja sisältävät samat esineet samoilla todennäköisyyksillä}}, ja studio {{on ylpeä voidessaan näyttää suuntaa|ehti ensimmäisenä kysyttäväksi}}.',
+    ],
+    technique: 'UUDELLEENNIMEÄMINEN UUDISTUKSENA',
+    decodeNote: 'Mitään ei poistettu — substantiivi poistettiin. Suomessa temppu piiloutuu yhdyssanaan: "yllätyspalkintopaketti" on yksi sana, ja yksi sana kuulostaa yhdeltä asialta, jolloin kukaan ei pura sitä osiin ja kysy, mikä osa siitä on muuttunut. Mekanismi, hinta ja todennäköisyydet selviävät lauseesta koskemattomina. Kuvassa on sama laatikko kahdesti. "Pelaajapalautteen pohjalta" tekee oman erillisen työnsä: se ajoittaa päätöksen valituksiin eikä lakiesitykseen, jolloin studio saa näyttää valinneen itse.',
+    tell: 'Kysy, mitä asiakas pystyy nyt tekemään, mitä hän ei pystynyt viime viikolla. Jos vastaus on "lukemaan eri sanan", mitään ei uudistettu.',
+  },
+  'up-to-ten': {
+    slug: 'PITÄJÄNMÄKI',
+    head: 'Verkkovoima tuo koteihin jopa kymmenen gigabitin nopeudet',
+    lines: [
+      'Verkkovoima on avannut kuluttajaliittymän, jonka nopeus on {{jopa kymmenen gigabittiä|kerran mitattu luku, keskuksen omassa talossa, neljältä aamuyöllä}}. Operaattorin mukaan kyseessä on {{maan nopein liittymä|maan suurin mainokseen painettu luku}}.',
+      'Yhtiö kertoi, että {{asiakkaat voivat odottaa aivan uudenlaista kokemusta|sen itse mittaama mediaaniyhteys kulki 1,4:ssä}} ja että {{nopeus voi vaihdella kiinteistökohtaisesti|mainoksen luku mitattiin talossa, jossa ei asu ketään}}.',
+    ],
+    technique: 'RAJATON VAIHTELUVÄLI',
+    decodeNote: '"Jopa" ei tunne alarajaa. Sana nimeää katon ja jättää lukijan täyttämään tyypillisen arvon itse — työn, jonka lause on hiljaa siirtänyt hänelle. Ainoa luku, jonka lause todella lupaa, on nolla. Suomessa temppu on erityisen huomaamaton, koska "jopa" kuulostaa innostuneelta eikä varovaiselta: se on kehumisen sana, ei varauksen. Kuvassa on sama mittausaineisto kahdesti — pura se, ja palkki romahtaa mediaaniin, mittaukset asettuvat sinne minne ne osuivat, ja ylin yksinäinen piste jää renkaaseen. Se on se, jonka ansiosta mainos on laillinen.',
+    tell: 'Lue se muodossa "vähintään ei mitään, enintään". Jos se kuulostaa yhä tarjoukselta, se ei ollut tarjous.',
+  },
+  'no-comment': {
+    slug: 'KATAJANOKKA',
+    head: 'Ministeriö vastaa tietoihin uudesta sieppauskyvystä',
+    lines: [
+      'Uudesta sieppauskyvystä kysyttäessä ministeriö totesi, ettei se {{kommentoi kykyjä, joita sillä ei ole|sanonut, ettei sillä ole tätä}}, ja että {{tiedot ovat spekulatiivisia|tiedot pitävät paikkansa jokaisessa kohdassa, jota ministeriö ei valinnut käsitellä}}.',
+      'Tiedottaja lisäsi, ettei {{tällaista ohjelmaa ole hyväksytty kuvatussa muodossa|kuvattu muoto ole se muoto}} ja ettei {{ministeriöllä ole tässä vaiheessa lisättävää|ministeriöllä ole lisättävää ennen lokakuuta, jolloin sillä on kolme asiaa}}.',
+    ],
+    technique: 'KIELTO JOKA EI KIELLÄ',
+    decodeNote: 'Jokainen lause on tosi eikä yksikään ole kielto. "Ei kommentoi kykyjä, joita sillä ei ole" on linjausta koskeva lause pukeutuneena tosiasiaa koskevaksi lauseeksi, ja "kuvatussa muodossa" siirtää kiellon kuvaukseen eikä itse asiaan. Suomessa muoto tekee tempusta vielä sileämmän: kieltoverbi tulee ensin ja pääverbi kaukana perässä, joten korva kuulee "ei" mutta ei ehdi tarkistaa mihin se osui. Laske kuvasta kiellot: lausunto on kuusirivinen ja sen kiistämien väitteiden määrä on nolla.',
+    tell: 'Kirjoita ylös se lause, jonka halusit kiistetyksi, ja etsi se sanasta sanaan jonkin "ei"-lauseen sisältä. Jos sitä ei ole siellä, sitä ei kiistetty.',
   },
 };
 
@@ -486,8 +555,41 @@ const JA = {
       'アナリストは{{視聴者は操作に警戒すべきだ|あなたはいま、ある一局が一日の出来事から選んだものを、マイクの前のゼリーの声で聞いている}}と警告する。',
     ],
     technique: '先回りのフレーム',
-    decodeNote: '最も効くのは本文の嘘ではなく、その手前に置かれた前提だ。何かを「議論」と呼べば議論は実在してしまい、賛否の両方が、それを名づけた者の手に渡る。そして——この放送も一日から十二本を選び、ある順番で読んでいる。それもフレームだ。それがこの局の最後の話であり、いちばん役に立つ話でもある。',
+    decodeNote: '最も効くのは本文の嘘ではなく、その手前に置かれた前提だ。何かを「議論」と呼べば議論は実在してしまい、賛否の両方が、それを名づけた者の手に渡る。そして——この放送も一日から何本かを選び、ある順番で読んでいる。それもフレームだ。それがこの局の最後の話であり、いちばん役に立つ話でもある。',
     tell: 'これが問いだと誰が決めたのかを訊く。ここについても。',
+  },
+  'surprise-bundle': {
+    slug: 'ルオホラハティ',
+    head: 'ルミペリ、シーズン・ゼロからルートボックスを撤去',
+    lines: [
+      'ルミペリはシーズン・ゼロからルートボックスを{{撤去した|名前を変えた}}と発表し、代わりにスタジオが{{サプライズ報酬パック|ルートボックス}}と呼ぶものを導入した。変更は{{プレイヤーの声を受けたもの|二つの市場で審議中の法案を受けたもの}}だという。',
+      'スタジオによれば新しいパックは{{プレイヤーに主導権を渡す|4.99で、同じ品を同じ確率で含む}}ものであり、{{この分野で先頭に立てたことを誇りに思う|最初に問われた側になった}}としている。',
+    ],
+    technique: '改名という改革',
+    decodeNote: '撤去されたのは仕組みではなく名詞ひとつだ。置き換えたはずのものの語彙だけで語られる改革に気をつけたい——仕掛けも価格も確率も文のなかを無傷で通り抜け、測れる変化は呼び名だけ。日本語ではカタカナに置き換えるだけで新しさの見た目が出るので、この手はいっそう安く済む。図は同じ箱を二度映している。「プレイヤーの声を受けた」も別の仕事をしていて、決定の日付を法案ではなく苦情のほうに寄せ、スタジオが自分で選んだことにしている。',
+    tell: '先週できなかった何が、今週から客にできるようになったのかを訊く。答えが「違う単語を読むこと」なら、改革されたものはない。',
+  },
+  'up-to-ten': {
+    slug: 'ピタヤンマキ',
+    head: 'ヴェルッコヴォイマ、家庭向けに最大10ギガの回線',
+    lines: [
+      'ヴェルッコヴォイマが家庭向け回線を開始した。速度は{{最大10ギガビット|交換局の建物の中で、午前四時に、一度だけ出た数字}}で、同社によればこれは{{国内最速の接続|フィンランドの広告に印刷された数字としては最大}}だという。',
+      '同社は{{これまでにない体験が期待できる|自社が測った回線の中央値は1.4だった}}とし、{{速度は建物により変動する場合がある|広告の数字は、住人のいない建物で測られた}}と述べた。',
+    ],
+    technique: '上限だけの幅',
+    decodeNote: '「最大」に下限はない。天井の数字だけを示し、ふつうはどのくらいかは読み手に埋めさせる——文が黙って渡した仕事だ。この文が本当に約束している数字はゼロひとつだけ。日本語では数字の前に二字を置くだけで済むぶん、いっそう軽く通り過ぎていく。図は同じ測定結果を二度見せている。解くと柱は中央値まで崩れ、測定値はそれぞれ落ちた場所に散らばり、いちばん上の孤立した点だけが丸で囲まれる——その広告を合法にした一点だ。',
+    tell: '「最低ゼロ、最高で」と読み替えてみる。それでも売り文句に聞こえるなら、売り文句ではなかった。',
+  },
+  'no-comment': {
+    slug: 'カタヤノッカ',
+    head: '省、新たな傍受能力をめぐる報道に応じる',
+    lines: [
+      '新たな傍受能力についての報道を問われ、省は{{保有していない能力については論評しない|保有していないとは言っていない}}とし、{{報道は憶測である|報道は、省があえて触れなかったすべての点で正しい}}と述べた。',
+      '報道官はさらに、{{記述されたかたちでの計画は承認されていない|記述されたかたちが、そのかたちではない}}とし、{{現時点で付け加えることはない|付け加えることは三つあり、それは十月になる}}と語った。',
+    ],
+    technique: '否定しない否定',
+    decodeNote: 'どの節も真で、どれひとつ否定ではない。「保有していない能力については論評しない」は方針の話が事実の話の服を着たもので、「記述されたかたちでは」は否定の矛先を中身から記述のほうへ移している。日本語では否定が文末に来るぶん、聞き手は最後まで待たされ、待った先で否定されたのが何だったのかを確かめる余裕がない。図の否定を数えてほしい——六行の声明が退けた主張は、ゼロだ。',
+    tell: '否定してほしかった一文をそのまま書き出し、どれかの「〜ない」の中に一語一句そのまま入っているか探す。無ければ、否定されていない。',
   },
 };
 
