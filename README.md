@@ -148,6 +148,38 @@ exceed 1.0) give selective glow without washing out the bone.
 - **Style meter:** a Returnal/DMC-style rank (D → SSS) fed by fast kills, dash-through-orb dodges and gem pickups; idling bleeds it out faster at the top tiers, so holding **S+** means never stopping. The rank drives a HUD badge + fill bar and swells the music; your peak rank is on the death recap
 - **Gamepad:** plug in a controller — left stick moves, right stick looks, RT/RB fire, A jumps (×2), B/LT dashes — feeding the same input paths as mouse/keyboard/touch
 
+### `tiny2d/`
+**Tiny 2D.** A **one-button momentum skater** built on Three.js r167 — **Tiny Wings'
+verb on a skateboard**, side-on. Near-black Skate Story art: ACES + an `EffectComposer`
+with speed-driven afterimage smear and **selective bloom via HDR colour**, so only the
+lit lip of the hill glows and the matte ground stays black. Unlit otherwise — no lights,
+shadows or fog; all colour in `js/palette.js`.
+
+Its own game, not a Tiny Hawk mode: it was spun out of the Tiny Hawk design work when
+that project went third-person 3D, and what carried over is the physics (Tiny Hawk's
+skater lifted this model into 3D), not the code.
+
+**Controls:** hold SPACE / ↓ / S to press into the hill · release at the lip to pop ·
+hold in the air to dive · ↑ / W / X flick for a trick · R restart · ENTER start
+**Mobile:** hold anywhere · release at the lip · flick up (or tap with a second finger) to trick
+
+#### Gameplay
+- Endless chain of crests and troughs joined by **raised-cosine** curves, so the slope is
+  exactly zero at every extreme and every hill is poppable; the chain descends on average,
+  because without a net drop one bad climb parks you forever
+- Wholly **ballistic**: integrate under gravity, then snap to the surface and project
+  velocity onto the slope tangent — cresting a hill launches you with no jump check, and
+  landing quality is just how much of your speed was **perpendicular** at contact
+- **perfect** (keep your speed +6 %, fever +1) · **ok** (lose a slice) · **hard** (45 % of
+  your speed, fever halved) · **bail** (landed mid-trick — a third of your speed, fever
+  reset, −3 s daylight)
+- Air time and tricks bank **only on a clean touchdown**, multiplied by fever (cap ×8)
+- The sun sets in real time and the light bar is your clock; every 200 m buys 7 s back
+- Ortho camera leads by speed and zooms out as you go faster, over three parallax hill
+  layers anchored to a *smoothed* camera height (the world falls forever, so anything
+  anchored to absolute height eventually floods the screen)
+- Hi-score in localStorage; `window.__t2` exposes `{skater, terrain, audio, input, debug}`
+
 ### `toko-drop/`
 Twin-stick bullet-hell arena shooter built on Three.js r167.
 
@@ -187,6 +219,7 @@ Twin-stick bullet-hell arena shooter built on Three.js r167.
 ## Changelog
 
 ### 2026-07
+- **tiny2d comes onto the branch as its own project:** Tiny 2D had been living only on the deployed site, catalogued `inRepo: false`. It is a separate game — spun out of the Tiny Hawk design work, sharing no code, no storage keys and no page with it — so it now sits in the repo like any other: `tiny2d/` with its own `VERSIONS.md` (v1, numbered from the `?v=1` token it already carried), its cabinet flipped to `inRepo: true` so the smoke test checks its link and `hub/versions.json` reports its number, and its own sections here and in `CLAUDE.md`
 - **hyperdagger v3.6 — style meter + gamepad:** a Returnal/DMC-flavoured rank system (`STYLE_TIERS` D→SSS, cap 150) rewards chaining — kills add by type, a dash *through* an orb adds +4 (credited once per orb via `o.phased`), gem pickups top it up; `step()` bleeds the meter at `6 + styleVal·0.05`/s so the top tiers stay fleeting. The tier shows as a HUD badge + `×mult` + fill bar (`#style`), folds into the music-intensity signal (0.35 weight), and its run peak is a new death-recap line; only S-and-above rank-ups toast so lower crossings never clobber an enemy-debut announcement. **Gamepad support:** `input.pollGamepad()` runs each frame and feeds the existing `getMove`/`getLookRate`/`firing` getters (left stick move, right stick look-rate, RT/RB fire, A = jump ×2, B/LT = dash, deadzoned + edge-detected) so a controller needs no other plumbing
 - **hyperdagger v3.5 — adaptive music layer:** an all-synth A1 minor-pentatonic arpeggio on a lookahead scheduler (16th notes queued ~0.15 s ahead so it never stutters, resyncs after a pause instead of bursting) plays over the drone. Voices layer in with a run-intensity signal (live-threat count + run progress): bass always, arp above ~0.25, hi-hat tick above ~0.5, a lead counter-melody above ~0.75 — so the soundtrack thickens as the swarm builds and thins when you clear it. New MUSIC on/off toggle in the pause menu (`opts.music`, persisted, reconciles live)
 - **hyperdagger v3.4 — milestone announcements:** every enemy debut now gets an authored first-encounter moment — a 2.2 s named toast (THE WATCHERS / THE BRUTES / THORNS BENEATH / THE THIEVES / THE BLINKERS / THE SERPENT / THE PALE SERPENT / CROWNED SKULLS / THE SPLITTERS) plus a low two-note dread stinger and a trauma pulse; THE LEVIATHAN RISES re-announces on every boss respawn. One-per-run keyed in `announced{}`; new `debug.setTime()` warp for testing the schedule

@@ -16,7 +16,11 @@
     "from": "cache token"
   },
   "gameoflife": {
-    "v": 39,
+    "v": 40,
+    "from": "VERSIONS.md"
+  },
+  "tiny2d": {
+    "v": 1,
     "from": "VERSIONS.md"
   }
 }

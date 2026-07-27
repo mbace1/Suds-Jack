@@ -303,7 +303,7 @@ export const GAMES = [
     tags: ['one-button', 'three.js', 'endless'],
     controls: 'hold anywhere · release at the lip · flick up to trick',
     path: 'tiny2d/',
-    inRepo: false,
+    inRepo: true,
     accent: '#4fd0e0',
     art: 'lip',
   },

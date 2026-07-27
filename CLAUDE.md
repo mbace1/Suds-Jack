@@ -174,6 +174,30 @@ cap 9). Stage quota gauge Cabal-style; clearing pops all stragglers. No build st
 open `dropcabal/index.html` (three.js via jsDelivr importmap). Same `gh-pages` deploy
 caveat as paperboy.
 
+### Tiny 2D (`tiny2d/`)
+A **one-button momentum skater** on Three.js r167 — **Tiny Wings' verb on a skateboard**,
+side-on. Hold to press into the face of a hill (gravity ×2.7), release at the lip to pop
+(charge caps at 0.4 s), hold again in the air to dive onto the next downslope. The whole
+simulation is **ballistic**: integrate under gravity, then ask the terrain whether you
+ended up underground and if so snap to the surface and project velocity onto the slope
+tangent — so cresting a hill launches you for free with no jump check anywhere, and
+**landing quality is just the perpendicular component** (`< 0.17` perfect / `< 0.44` ok /
+else hard / mid-trick = bail). Perfects step a **fever** multiplier (cap ×8), air time and
+tricks bank **only on a clean touchdown**, and a **daylight clock** is the timer — it
+drains in real time and every 200 m buys 7 s back. Art direction is Tiny Hawk's **Skate
+Story** read: a near-black cold world, ACES + `EffectComposer` (afterimage smear riding
+speed, then bloom), and **selective bloom via HDR colour** — only the lit lip's `GLOW.edge`
+is over 1.0, and the threshold stays high on purpose because dropping it blooms the matte
+ground and greys out the near-black the look depends on. Still unlit: no lights, shadows or
+fog; volume comes from three explicit tones per surface. Colours in `js/palette.js`.
+It is **its own game, not a Tiny Hawk mode** — spun out of that project's design work when
+Tiny Hawk went third-person 3D, and it shares nothing with it at runtime (its own
+`tiny2dHi` / `tiny2dSound` keys). What travelled the other way is physics: `tinyhawk`'s
+`skater.js`/`park.js` say in as many words that they lifted this ballistic-then-project
+model into 3D. No build step — open `tiny2d/index.html` (three.js via jsDelivr importmap).
+Same `gh-pages` deploy caveat as paperboy; catalogued `inRepo: true` since 2026-07-27, when
+the game was carried onto this branch from the deployed site.
+
 ### The Game of Life (`gameoflife/`)
 **Mini games and interactive stories that always revert to going back to nature.**
 Minimalist pixel experiences (canvas 2D, no three.js, no build step), presented as a
@@ -451,6 +475,17 @@ hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel
     player.js   # First-person controller: yaw/pitch, WASD/stick strafe, jump, dash, head-bob
     input.js    # Pointer-lock mouse+WASD, gamepad (sticks/RT/A/B), or dual touch sticks; tap-vs-hold fire
     audio.js    # WebAudio synth kit (fire/hit/gib/gem/levelup/dash/roar/death + drone + intensity music)
+tiny2d/         # Tiny 2D — one-button side-on momentum skater (Tiny Wings on a board)
+  index.html
+  VERSIONS.md   # ## vN release log — scripts/versions.mjs reads the top entry
+  js/
+    main.js     # Ortho camera + parallax layers, ACES/afterimage/bloom stack, scoring, HUD, states
+    terrain.js  # Raised-cosine crest/trough chain with a net descent; fixed-vertex sliding ribbon
+    skater.js   # Ballistic integrate → snap to surface → project onto tangent; pop/dive/trick/bail
+    input.js    # One button anywhere: hold = press, release = pop; up-flick or 2nd finger = trick
+    palette.js  # Near-black Skate Story palette + GLOW (only the lip is HDR)
+    rng.js      # mulberry32 seeded RNG — a seed fully determines a hill chain
+    audio.js    # WebAudio synth kit (pop/launch/trick/land/bail/checkpoint), one master gain
 ```
 
 ## Toko Drop — Architecture Notes
