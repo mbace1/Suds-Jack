@@ -3,12 +3,13 @@
 //
 // The handling model is arcade-honest rather than simulated: the craft carries
 // a yaw offset from the fall line, and its velocity follows its nose. Carving
-// hard therefore trades speed down the hill for speed across it, which is what
-// makes powder worth diving into — POWDER bites (grip 1.2) and charges the
-// afterburner, ICE is fast but washes out, PACKED is the balanced line.
+// hard therefore trades speed down the hill for speed across it — DEEP bites
+// (grip 1.2) and charges the afterburner, CRUST is fast but washes out, PACKED
+// is the balanced line. The numbers here are measured against that loop, not
+// guessed; see the burn-economy note in CLAUDE.md before retuning any of them.
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=1';
-import { SURF, POWDER, ROCK, EDGE } from './track.js?v=1';
+import { PAL } from './palette.js?v=2';
+import { SURF, POWDER, ROCK, EDGE } from './track.js?v=2';
 
 const G = 38;                 // arcade gravity — big air, short hang time
 const WALL = EDGE + 2;
@@ -97,13 +98,17 @@ export class Craft {
 
     // ---- afterburner: powder carving is what fills the tank
     if (!this.air && !crashed) {
+      // Measured: filling FASTER makes the loop worse, not better. The cost of
+      // the dive is dominated by the travel out to the deep stuff and back, so
+      // a quicker fill just buys more round trips. Leave it slow enough that
+      // one committed carve is worth a full tank.
       this.charge = Math.min(100, this.charge
         + (this.depth * 22 + this.carve * this.depth * 26 + this.carve * 3) * dt);
     } else if (this.air) {
       this.charge = Math.min(100, this.charge + 9 * dt);
     }
     if (ctl.boost && this.charge > 4 && !crashed) {
-      this.charge = Math.max(0, this.charge - 34 * dt);
+      this.charge = Math.max(0, this.charge - 22 * dt);
       this.boostT = 0.18;
     }
 
@@ -111,8 +116,13 @@ export class Craft {
     let vMax = 96 * surf.speed * this.power;
     if (ctl.tuck) vMax *= 1.10;
     if (ctl.brake) vMax *= 0.42;
-    vMax *= 1 - 0.34 * this.carve;
-    if (this.boosting) vMax *= 1.42;
+    // Carving scrubs speed — but scale it by grip, or the deep stuff is paying
+    // twice. Holding a line off-piste needs constant steering, so a flat scrub
+    // stacked on the surface penalty made DEEP half speed and the whole
+    // dive-to-charge loop cost more than the burn ever returned. Grippy snow
+    // carves clean; sliding sideways on CRUST is what should bleed.
+    vMax *= 1 - 0.34 * this.carve * (2 - Math.min(1.5, surf.grip));
+    if (this.boosting) vMax *= 1.70;
     if (crashed) vMax *= 0.22;
     if (this.air) vMax = this.speed * 0.999;      // no thrust off the ground
     const k = this.speed < vMax ? 0.55 : (ctl.brake ? 2.6 : 1.1);
