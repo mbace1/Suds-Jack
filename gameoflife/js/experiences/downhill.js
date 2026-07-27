@@ -4,12 +4,12 @@
 // luminescent cyan (the breakout). Water never pushes — it takes the first
 // opening you give it. Revert: pour water on a real slope and watch it choose.
 
-import { PixelScreen, rampDither } from '../pixel.js?v=38';
-import { PAL } from '../palette.js?v=38';
+import { PixelScreen, rampDither } from '../pixel.js?v=40';
+import { PAL } from '../palette.js?v=40';
 
 const INLET = 92;
 const STONE = ['#2c2a26', '#433f37', '#5e594d', '#7c7565', '#9c9482'];
-const CY = PAL.CYAN_LUX, CY_HI = '#c8fbf4';
+const CY_HI = '#c8fbf4';   // the accent is read live: PAL.CYAN_LUX follows the screen
 
 // each ledge: a diagonal bar spanning [lo,hi] at height y (thickness h); tilt
 // 'L' slopes down to the left (low end = lo), 'R' down to the right (= hi).
@@ -146,22 +146,22 @@ export const downhill = {
         return pts[pts.length - 1];
       };
       // the thin channel of water, then bright droplets running down it
-      for (let d = 0; d < total; d += 2) { const [x, y] = at(d); scr.px(x, y, 1, 1, CY); }
+      for (let d = 0; d < total; d += 2) { const [x, y] = at(d); scr.px(x, y, 1, 1, PAL.CYAN_LUX); }
       for (let k = 0; k < 7; k++) {
         const dist = ((now / 5 + k * (total / 7)) % total);
         const [x, y] = at(dist);
-        scr.px(x, y, 1, 1, CY_HI); scr.px(x, y + 1, 1, 1, CY);
+        scr.px(x, y, 1, 1, CY_HI); scr.px(x, y + 1, 1, 1, PAL.CYAN_LUX);
       }
       if (!solved) {                                   // a dead trickle drips and fades
         const [ex, ey] = pts[pts.length - 1];
         for (let i = 0; i < 4; i++) {
           const yy = ey + ((now / 8 + i * 9) % 16);
-          if (yy < 128) scr.px(ex, yy, 1, 1, i % 2 ? CY : '#2a6a68');
+          if (yy < 128) scr.px(ex, yy, 1, 1, i % 2 ? PAL.CYAN_LUX : '#2a6a68');
         }
       } else {                                         // it pours off the world — breakout
         const [ex] = pts[pts.length - 1];
         scr.softDisc(ex, 126, 10 + Math.min(20, glowT * 20), '#0a2e2c', 14);
-        for (let i = 0; i < 6; i++) scr.px(ex - 3 + i, 122 + (i % 3), 1, 4, i % 2 ? CY : CY_HI);
+        for (let i = 0; i < 6; i++) scr.px(ex - 3 + i, 122 + (i % 3), 1, 4, i % 2 ? PAL.CYAN_LUX : CY_HI);
       }
     }
 

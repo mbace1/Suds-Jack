@@ -1,6 +1,12 @@
 // The Game of Life — low-res pixel canvas helper.
 // Draws into a small offscreen-resolution canvas that CSS upscales with hard
 // pixels (image-rendering: pixelated), same trick as dropcabal's 220px render.
+// What reaches the page is that canvas presented through the CRT in crt.js —
+// curved, scanlined, and faintly glowing. Nothing that draws had to change for
+// it: the drawing surface is still a flat 192×128 2D context.
+
+import { makeCrt, warp } from './crt.js?v=40';
+import { accentRgb } from './palette.js?v=40';
 
 // darken (f<1) or lighten (f>1) a #rrggbb hex — used for crisp section seams
 // and outline edges so shapes read as defined pixel blocks, not soft washes
@@ -28,17 +34,25 @@ export function rampDither(ramp, u, x, y) {
 export class PixelScreen {
   constructor(parent, w = 192, h = 128) {
     this.w = w; this.h = h;
-    this.canvas = document.createElement('canvas');
-    this.canvas.width = w;
-    this.canvas.height = h;
-    this.canvas.className = 'pixel-screen';
+    const source = document.createElement('canvas');
+    source.width = w;
+    source.height = h;
+    source.className = 'pixel-screen';
     // the scene is the picture, but the story is in .exp-text — which is the
     // channel a screen reader can actually follow, so don't announce an
     // unlabelled canvas alongside it
-    this.canvas.setAttribute('aria-hidden', 'true');
-    parent.appendChild(this.canvas);
-    this.ctx = this.canvas.getContext('2d');
+    source.setAttribute('aria-hidden', 'true');
+    this.source = source;
+    this.ctx = source.getContext('2d');
     this.ctx.imageSmoothingEnabled = false;
+
+    // Everything above is unchanged: experiences draw into a flat 192×128 2D
+    // canvas. What reaches the page is that canvas seen through the CRT (see
+    // crt.js) — so `this.canvas` is whichever element is actually on screen and
+    // taking taps, and toPixel below knows which one it got.
+    this.crt = makeCrt(source, parent, accentRgb());
+    this.canvas = this.crt ? this.crt.canvas : source;
+    if (!this.crt) parent.appendChild(source);      // no WebGL: the flat screen
   }
 
   clear(color) {
@@ -139,13 +153,19 @@ export class PixelScreen {
   }
 
   // pointer event → pixel coordinates in canvas space
+  // pointer event → pixel coordinates in canvas space. Through the CRT the
+  // picture is curved, so the same warp the shader uses is applied here — a tap
+  // near the edge lands on the pixel the player is actually looking at.
   toPixel(e) {
     const r = this.canvas.getBoundingClientRect();
-    return {
-      x: (e.clientX - r.left) / r.width * this.w,
-      y: (e.clientY - r.top) / r.height * this.h,
-    };
+    let u = (e.clientX - r.left) / r.width;
+    let v = (e.clientY - r.top) / r.height;
+    if (this.crt) [u, v] = warp(u, v);
+    return { x: u * this.w, y: v * this.h };
   }
 
-  destroy() { this.canvas.remove(); }
+  destroy() {
+    if (this.crt) this.crt.destroy();
+    this.source.remove();
+  }
 }

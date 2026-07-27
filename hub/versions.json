@@ -4,7 +4,7 @@
     "from": "VERSIONS.md"
   },
   "tokodrop": {
-    "v": 214,
+    "v": 215,
     "from": "VERSIONS.md"
   },
   "hyperdagger": {
@@ -28,7 +28,7 @@
     "from": "VERSIONS.md"
   },
   "gameoflife": {
-    "v": 39,
+    "v": 40,
     "from": "VERSIONS.md"
   },
   "tinyhawk": {

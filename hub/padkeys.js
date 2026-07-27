@@ -19,7 +19,7 @@
 // games — Drop Cabal's crosshair, Neon Ronin's camera — get movement and their
 // keyed actions from the pad, not aim. Aiming needs the game's own code.
 
-import { watchPad } from './pad.js?v=7';
+import { watchPad } from './pad.js?v=8';
 
 const KEY_LABEL = { Space: ' ', Escape: 'Escape', Enter: 'Enter' };
 const keyOf = code => KEY_LABEL[code] ?? (code.startsWith('Key') ? code.slice(3).toLowerCase() : code);
@@ -37,6 +37,16 @@ function sendKey(type, code) {
   // per keydown, so a flick scored two). The event bubbles, so dispatching it
   // on the focused element reaches document and window listeners as well.
   (document.activeElement ?? document.body).dispatchEvent(ev);
+}
+
+// hold (or release) one key on the game's behalf. The on-screen button in
+// shell.js presses the same key the pad does, so a thumb and a controller are
+// doing the identical thing rather than two parallel implementations.
+const heldByHand = new Set();
+export function holdKey(code, down) {
+  if (!code) return;
+  if (down && !heldByHand.has(code)) { heldByHand.add(code); sendKey('keydown', code); }
+  else if (!down && heldByHand.has(code)) { heldByHand.delete(code); sendKey('keyup', code); }
 }
 
 // held state, so a stick pushed and kept there reads as a key held down

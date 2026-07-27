@@ -7,8 +7,8 @@
 // checks more than you might expect (all three languages, an animated first
 // screen, contrast, 44px targets).
 
-import { PixelScreen } from '../pixel.js?v=38';
-import { PAL } from '../palette.js?v=38';
+import { PixelScreen } from '../pixel.js?v=40';
+import { PAL } from '../palette.js?v=40';
 
 export const TEMPLATE_ID = {          // rename to your id, e.g. `export const eel =`
   id: 'template',                     // must match the filename and the i18n prefix
