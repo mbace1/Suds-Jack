@@ -321,5 +321,12 @@
     addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=5').catch(() => {}));
   }
 </script>
+
+  <!-- signed by Toko Midori Games — the badge in the corner, under the HUD,
+       taking no input. See ../toko/BRAND.md -->
+  <script type="module">
+    import { sign } from '../toko/js/signature.js?v=1';
+    sign({ corner: 'bottom-left' });
+  </script>
 </body>
 </html>

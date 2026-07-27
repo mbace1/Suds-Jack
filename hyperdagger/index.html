@@ -214,10 +214,17 @@
     // Offline install: same ?v= discipline as the modules — the token flows
     // into the worker and names its cache, so each release rotates cleanly.
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js?v=43').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=44').catch(() => {});
     }
   </script>
   <!-- the arcade shell: a home button and a controller way back -->
   <script type="module" src="../hub/shell.js?v=9"></script>
+
+  <!-- signed by Toko Midori Games — the badge in the corner, under the HUD,
+       taking no input. See ../toko/BRAND.md -->
+  <script type="module">
+    import { sign } from '../toko/js/signature.js?v=1';
+    sign({ corner: 'bottom-left' });
+  </script>
 </body>
 </html>

@@ -16,6 +16,11 @@ const TOKEN = new URL(self.location.href).searchParams.get('v') ?? '0';
 const CACHE = `hyper-dagger-v${TOKEN}`;
 
 const PRECACHE = [
+  // The Toko signature. It is a cross-directory import, so it has to be named
+  // here or the badge becomes a network request on an offline boot — only the
+  // entry URL carries the token, the rest are plain relative imports.
+  '../toko/js/signature.js?v=1',
+  ...['surface', 'palette', 'face', 'util', 'glitch'].map(m => `../toko/js/${m}.js`),
   './', './index.html',
   // Module tokens are all normalized to the release token, so these precache
   // entries are byte-identical to the URLs the page actually imports.

@@ -9105,6 +9105,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=169').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=170').catch(() => {});
   });
 }
