@@ -206,3 +206,17 @@ Same caveat as the sibling demos: the published site is served from the
 **`gh-pages` branch**, not `main`. Copy `radiofree/` (minus `test/`) onto
 `gh-pages` to go live at `/Suds-Jack/radiofree/`, and bump the `?v=N`
 cache-busters in `index.html` and every import together when you do.
+
+**Shipped** — it is on the arcade floor as a cabinet (`hub/games.js` +
+a `codec` marquee in `hub/art.js`), and its page carries
+`<script type="module" src="../hub/shell.js?v=9">` like every other game, which
+is what puts the HUB button in the corner. Two things that bit on the first
+deploy:
+
+- **Bump every hub token together.** `games.js` was being reached at `?v=5`
+  from `hub.js` and `?v=8` from `shell.js`; a new cabinet stays invisible to
+  anyone holding either cached copy, so both — and every game page's
+  `shell.js?v=` — moved to 9 in one go.
+- **The shell owns the top-left corner.** Its HUB button is fixed there, which
+  is where this app's own wordmark sat. `body:has(.arcade-home) .logo` now
+  hides ours; anything else new should check that corner before using it.
