@@ -40,8 +40,10 @@ import { seed } from './experiences/seed.js?v=38';
 import { lightning } from './experiences/lightning.js?v=38';
 import { whale } from './experiences/whale.js?v=38';
 import { pando } from './experiences/pando.js?v=38';
+import { murmur } from './experiences/murmur.js?v=38';
+import { eel } from './experiences/eel.js?v=38';
 
-const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice, trace, gears, cairn, downhill, tether, hedge, seed, lightning, whale, pando];
+const REGISTRY = [aqueduct, forest, tern, cup, hanami, berry, stars, maple, plate, seam, dots, glass, wait, lichen, cloud, ice, trace, gears, cairn, downhill, tether, hedge, seed, lightning, whale, pando, murmur, eel];
 const KIND_WEIGHT = { story: 0.7, game: 0.2, wisdom: 0.1 };
 
 const app = document.getElementById('app');

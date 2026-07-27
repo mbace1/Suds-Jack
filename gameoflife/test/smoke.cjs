@@ -410,6 +410,41 @@ function check(name, cond) {
     (await page.locator('.exp-text').textContent()).includes('one tree'));
   await page.locator('.back-btn').click();
 
+  // murmur: the flock is a live simulation, so grabbing a bird takes a few
+  // tries by design — tap around the roost until one is caught
+  await page.evaluate(() => __gol.debug.start('murmur'));
+  check('murmur intro shown', (await page.locator('.exp-text').textContent()).includes('reedbed'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Watch' }).click();
+  const mbox = await page.locator('.pixel-screen').boundingBox();
+  await page.mouse.click(mbox.x + mbox.width * 0.04, mbox.y + mbox.height * 0.95);   // nowhere near
+  check('murmur says the flock will not hold still',
+    (await page.locator('.exp-text').textContent()).includes('will not hold still'));
+  let caught = false;
+  for (let i = 0; i < 14 && !caught; i++) {
+    await page.mouse.click(mbox.x + mbox.width * (0.42 + (i % 4) * 0.05),
+                           mbox.y + mbox.height * (0.34 + (i % 3) * 0.07));
+    caught = (await page.locator('.exp-text').textContent()).includes('You have it');
+    if (!caught) await page.waitForTimeout(120);
+  }
+  check('murmur lets you hold one bird', caught);
+  await page.locator('.back-btn').click();
+
+  // eel: five stops from Aristotle's mud to the Sargasso, then the blank
+  await page.evaluate(() => __gol.debug.start('eel'));
+  check('eel intro shown', (await page.locator('.exp-text').textContent()).includes('ditch'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Look closer' }).click();
+  for (let i = 0; i < 5; i++) {
+    const go = page.locator('.exp-buttons .btn', { hasText: 'Go on' });
+    if (await go.count() === 0) break;
+    await go.click();
+  }
+  check('eel reaches the silver migration',
+    (await page.locator('.exp-text').textContent()).includes('turns silver'));
+  await page.locator('.exp-buttons .btn', { hasText: 'And then?' }).click();
+  check('eel truth is that nobody has seen it',
+    (await page.locator('.exp-text').textContent()).includes('has ever found an egg'));
+  await page.locator('.back-btn').click();
+
   // interlude: force the cycle counter, reload — overlay must appear (daytime prompt)
   await page.evaluate(() => {
     const s = JSON.parse(localStorage.getItem('golState') || '{}');
