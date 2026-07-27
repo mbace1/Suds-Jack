@@ -19,7 +19,7 @@
 // games — Drop Cabal's crosshair, Neon Ronin's camera — get movement and their
 // keyed actions from the pad, not aim. Aiming needs the game's own code.
 
-import { watchPad } from './pad.js?v=5';
+import { watchPad } from './pad.js?v=6';
 
 const KEY_LABEL = { Space: ' ', Escape: 'Escape', Enter: 'Enter' };
 const keyOf = code => KEY_LABEL[code] ?? (code.startsWith('Key') ? code.slice(3).toLowerCase() : code);

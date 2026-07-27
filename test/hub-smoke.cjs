@@ -426,6 +426,28 @@ function check(name, cond) {
   check(`and it points at the hub${badHref.length ? ` — ${badHref}` : ''}`, badHref.length === 0);
   check(`and it is a 44px target${small.length ? ` — ${small}` : ''}`, small.length === 0);
 
+  // A tap, not a click. Several games preventDefault touchstart outside their
+  // own UI so a stray thumb never nudges the ship — toko-drop does, and a
+  // defaultPrevented touchstart means the browser never synthesises the click a
+  // tap would produce. The button worked with a mouse and did nothing under a
+  // thumb, which is exactly the shape of bug a headless click test misses.
+  const touch = await browser.newContext({
+    viewport: { width: 420, height: 780 }, hasTouch: true, isMobile: true,
+  });
+  const tp = await touch.newPage();
+  await tp.goto(`${base}/${shelled[0].path}`, { waitUntil: 'domcontentloaded' });
+  await tp.evaluate(() => {
+    // stand in for the game: swallow every touch that is not in its own UI
+    addEventListener('touchstart', e => { if (!e.target.closest('#overlay')) e.preventDefault(); }, { passive: false });
+  });
+  await tp.waitForSelector('.arcade-home');
+  const box = await tp.locator('.arcade-home').boundingBox();
+  await tp.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+  await tp.waitForTimeout(700);
+  check('a tap gets home even when the game swallows touches',
+    new URL(tp.url()).pathname === '/' || tp.url().endsWith('/index.html'));
+  await touch.close();
+
   // holding Start on a game page walks back to the arcade
   await page.goto(`${base}/${shelled[0].path}`, { waitUntil: 'networkidle' });
   await page.evaluate(() => {
