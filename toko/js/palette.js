@@ -27,17 +27,21 @@ export const TOKO = {
   SMOKE: '#9a9aa2',     // 7.4:1 on COAL — dim copy
 };
 
-// ── the exception ────────────────────────────────────────────────────────
-// The sticker sheet: the face on a white disc in a colour, and on a colour
-// disc in white, run through a rotating set. It is merch — badges, pins, vinyl
-// — and it is the ONLY place the brand leaves black-and-magenta. It is not a
-// palette; it is a print run. Nothing digital should reach for it.
+// ── the carriers ─────────────────────────────────────────────────────────
+// The face also runs in a rotating set of flats: the mark in a colour on
+// white, and reversed out of a full-bleed colour tile. That is how the icons
+// and the stickers work — one face, many carriers.
+//
+// This does NOT make them brand colours. Black and magenta are the identity;
+// these are what the mark is CARRIED on, one flat at a time, never mixed and
+// never inside a single mark. A carrier is a whole surface or it is nothing.
 export const STICKER = {
   GREEN: '#12783a', RED: '#e0141b', SKY: '#4cb7e2', ORANGE: '#f07d12',
   BLUE: '#1149a6', YELLOW: '#f5c400', PURPLE: '#7c1d96', LIME: '#8dc21f',
   PINK: '#ec1a7c',
 };
 
+// the sheet: every carrier, both ways round
 export const SHEET = [
   { bg: TOKO.PAPER, ink: TOKO.INK },
   { bg: TOKO.INK,   ink: TOKO.PAPER },

@@ -34,10 +34,15 @@ export const GEO = {
   eye: {
     dx: 30.05,         // from the centre line — the eyes sit a shade wider than the mouth
     cy: 20.20,
-    outer: { r: 15.98, a0: 150, a1: 390 },   // opens downward, legs ~30° past horizontal
+    // An ARCH, not a ring. At a 240° sweep the legs curl so far under that the
+    // arch closes on itself and the eye reads as a circle with a bar through
+    // it — an eyeball stuck on top of the face. 200° keeps it an arch: the
+    // legs come down, stop level with the stem, and the two slots stay open at
+    // the bottom where they belong.
+    outer: { r: 15.98, a0: 170, a1: 370 },
     // the stem, as centre-line y: starts just inside the crown so the cap
-    // merges instead of bumping, and hangs to just above the leg ends
-    stem: { y0: 5.20, y1: 27.20 },
+    // merges instead of bumping, and ends level with the legs
+    stem: { y0: 5.20, y1: 22.97 },
   },
 
   mouth: {
@@ -216,4 +221,113 @@ export function svgBadge({ ground = '#f0027f', ink = '#fff', px = 4 } = {}) {
 // the favicon: the badge, as a data URI, no file on disk
 export function faviconHref(ground = '#f0027f', ink = '#fff') {
   return 'data:image/svg+xml,' + encodeURIComponent(svgBadge({ ground, ink }));
+}
+
+// ── the head ─────────────────────────────────────────────────────────────
+// "TOKO MIDORI is the one, the person." The face reversed out of a bust — a
+// rounded head on a short neck. This is the character, as opposed to the mark:
+// it is what goes on a sign, a sticker, a pin, a stage.
+//
+// A 100 × 132 silhouette. The face sits high in the head, on the crown's
+// centre, not on the silhouette's centre — the neck is not part of the face.
+export const HEAD = { w: 100, h: 132, faceW: 0.70, faceCy: 46 };
+
+function headPath(ctx, x, y, w) {
+  const s = w / HEAD.w;
+  const P = (px, py) => [x + px * s, y + py * s];
+  const to = (a, b, c, d, e, f) => ctx.bezierCurveTo(...P(a, b), ...P(c, d), ...P(e, f));
+  ctx.beginPath();
+  ctx.moveTo(...P(0, 48));
+  to(0, 21, 22, 0, 50, 0);          // over the crown
+  to(78, 0, 100, 21, 100, 48);
+  // The neck is a SHORT, WIDE stand that flares out at the foot, not a stem.
+  // Drawn narrow it reads as a lightbulb; drawn like this it reads as
+  // shoulders, and the silhouette stays a person.
+  to(100, 72, 94, 88, 84, 94);      // right side, curving in to the shoulder
+  to(78, 97, 72, 100, 72, 106);     // into the neck
+  ctx.lineTo(...P(74, 120));
+  ctx.quadraticCurveTo(...P(75, 130), ...P(64, 130));
+  ctx.lineTo(...P(36, 130));
+  ctx.quadraticCurveTo(...P(25, 130), ...P(26, 120));
+  ctx.lineTo(...P(28, 106));
+  to(28, 100, 22, 97, 16, 94);
+  to(6, 88, 0, 72, 0, 48);
+  ctx.closePath();
+}
+
+export function drawHead(ctx, x, y, w, opts = {}) {
+  const { ground = '#f0027f', ink = '#fff', face = true, fill = true } = opts;
+  if (fill) {
+    ctx.save();
+    ctx.fillStyle = ground;
+    headPath(ctx, x, y, w);
+    ctx.fill();
+    ctx.restore();
+  }
+  if (face) {
+    const b = bounds();
+    const fw = w * HEAD.faceW;
+    const boxW = fw * (GEO.box / b.w);
+    drawFace(ctx,
+      x + (w - fw) / 2 - (b.x / GEO.box) * boxW,
+      y + (HEAD.faceCy / HEAD.w) * w - ((b.y + b.h / 2) / GEO.box) * boxW,
+      boxW, { color: ink, ...opts.faceOpts });
+  }
+  return { w, h: w * (HEAD.h / HEAD.w) };
+}
+
+// "But also TOKO MIDORI is clusters." The same head, packed with small heads —
+// Toko, the members, the ex-members, the members who have not arrived yet, and
+// the players. One person and a crowd, drawn with the same stamp.
+//
+// The big face still reads on top: the crowd is what the person is MADE of, so
+// it must never win the silhouette.
+export function drawCluster(ctx, x, y, w, opts = {}) {
+  // finer than it looks like it should be: the crowd has to stay a TEXTURE.
+  // At a coarser cell the little faces start competing with the big one and
+  // the silhouette stops reading as a person at all.
+  const { ground = '#f0027f', ink = '#fff', cell = 0.062 } = opts;
+  const cw = w * cell;
+  const ch = cw * (HEAD.h / HEAD.w);
+
+  ctx.save();
+  headPath(ctx, x, y, w);
+  ctx.clip();
+  ctx.fillStyle = ink;
+  ctx.fillRect(x, y, w, w * (HEAD.h / HEAD.w));
+  for (let row = 0, gy = y; gy < y + w * (HEAD.h / HEAD.w) + ch; row++, gy += ch * 0.86) {
+    const off = (row % 2) * cw * 0.5;
+    for (let gx = x - cw; gx < x + w + cw; gx += cw * 1.02) {
+      drawHead(ctx, gx + off, gy, cw, { ground, ink, faceOpts: { stroke: GEO.stroke * 1.5 } });
+    }
+  }
+  ctx.restore();
+
+  // the person, over the crowd — heavier than the standard weight, because it
+  // is competing with texture rather than sitting on a flat
+  drawHead(ctx, x, y, w, {
+    fill: false, ink,
+    ...opts.big,
+    faceOpts: { stroke: GEO.stroke * 1.25, ...(opts.big && opts.big.faceOpts) },
+  });
+  return { w, h: w * (HEAD.h / HEAD.w) };
+}
+
+export function svgHead({ ground = '#f0027f', ink = '#fff', px = 4 } = {}) {
+  const b = bounds();
+  const fw = HEAD.w * HEAD.faceW;
+  const s = (fw * (GEO.box / b.w)) / GEO.box;
+  const ox = (HEAD.w - fw) / 2 - b.x * s;
+  const oy = HEAD.faceCy - (b.y + b.h / 2) * s;
+  const d = 'M0 48C0 21 22 0 50 0C78 0 100 21 100 48C100 72 94 88 84 94'
+    + 'C78 97 72 100 72 106L74 120Q75 130 64 130L36 130Q25 130 26 120L28 106'
+    + 'C28 100 22 97 16 94C6 88 0 72 0 48Z';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${HEAD.w} ${HEAD.h}" `
+    + `width="${HEAD.w * px / 4}" height="${HEAD.h * px / 4}" role="img" `
+    + `aria-label="Toko Midori"><title>Toko Midori</title>`
+    + `<path d="${d}" fill="${ground}"/>`
+    + `<g transform="translate(${ox.toFixed(3)} ${oy.toFixed(3)}) scale(${s.toFixed(5)})" `
+    + `fill="none" stroke="${ink}" stroke-width="${GEO.stroke}" `
+    + `stroke-linecap="round" stroke-linejoin="round">`
+    + facePaths().map(p => `<path d="${p}"/>`).join('') + `</g></svg>`;
 }

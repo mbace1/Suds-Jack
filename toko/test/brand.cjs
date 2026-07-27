@@ -103,8 +103,17 @@ function serve() {
       slot: wallX - G.stroke / 2,
       stemInsideCrown: (e.stem.y0 - G.stroke / 2) >= (e.cy - e.outer.r - G.stroke / 2) - 0.01,
       stemMergesCrown: (e.stem.y0 - G.stroke / 2) <= (e.cy - e.outer.r + G.stroke / 2) + 0.01,
+      // derive the leg end from the table rather than assuming a sweep — the
+      // sweep is exactly the thing that gets tuned
       eyesClearMouth: (G.mouth.cy + G.mouth.outer.r * Math.sin(G.mouth.outer.a0 * Math.PI / 180)
-        - G.stroke / 2) - (e.cy + e.outer.r * Math.sin(30 * Math.PI / 180) + G.stroke / 2),
+        - G.stroke / 2)
+        - (e.cy + e.outer.r * Math.sin(e.outer.a0 * Math.PI / 180) + G.stroke / 2),
+      // an ARCH, not a ring: past ~220° the legs curl under far enough that the
+      // eye closes into a circle and reads as an eyeball stuck on the face
+      sweep: e.outer.a1 - e.outer.a0,
+      // the legs and the stem finish level, the way the artwork finishes them
+      legsLevelWithStem: Math.abs(
+        (e.cy + e.outer.r * Math.sin(e.outer.a0 * Math.PI / 180)) - e.stem.y1) < 0.4,
       symmetric: G.mouth.cx === 50,
       bounds: b,
       arcCount: f.arcs().length,
@@ -113,6 +122,8 @@ function serve() {
   ok('the eye slots stay open', geo.slot > 1.5, 'slot = ' + geo.slot.toFixed(2));
   ok('the stem starts inside the crown', geo.stemInsideCrown && geo.stemMergesCrown);
   ok('the mouth clears the eye legs', geo.eyesClearMouth > 1, geo.eyesClearMouth.toFixed(2));
+  ok('the eye is an arch, not a ring', geo.sweep <= 210, geo.sweep + '°');
+  ok('the legs finish level with the stem', geo.legsLevelWithStem);
   ok('the mark is symmetric', geo.symmetric);
   ok('four arcs and two stems', geo.arcCount === 6, String(geo.arcCount));
   ok('the ink is wider than it is tall', geo.bounds.w > geo.bounds.h);

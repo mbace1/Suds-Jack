@@ -91,6 +91,28 @@ own design box — align to `bounds()`, never to the box.
 
 ---
 
+## 2b. The one, and the clusters
+
+Beyond the mark there is the **character**: the face reversed out of a bust — a
+rounded head on a short, wide stand. `drawHead` / `svgHead`.
+
+> **Toko Midori is the one, the person.**
+> **But also Toko Midori is clusters.**
+
+The same head, packed with small heads — Toko, the members, the ex-members, the
+members who have not arrived yet, and the players. One person and a crowd, drawn
+with the same stamp. `drawCluster`.
+
+Two rules come out of that, and they are the reason the cluster exists at all:
+
+- **The crowd never wins the silhouette.** It is what the person is *made of*,
+  so the big face is drawn over it at a heavier weight and must still read at a
+  glance. If you cannot see the face, the cell is too coarse.
+- **The stand is short and wide.** Drawn narrow it reads as a lightbulb; drawn
+  like this it reads as shoulders, and the silhouette stays a person.
+
+---
+
 ## 3. Two colours
 
 ```
@@ -106,13 +128,19 @@ Magenta is **4.0:1 on black**. It is a *mark* colour and a large-display colour.
 **It is never body copy.** Body copy is white, or `--toko-smoke` (7.4:1) when it
 needs to sit back.
 
-### The one exception: the sticker sheet
+### The carriers
 
-The face on a white disc in a colour, and on a colour disc in white, through a
-rotating set of nine flats. It is a **print run** — badges, pins, vinyl — not a
-palette. Nothing digital reaches for it, and several of those pairings are
-nowhere near a text contrast ratio, so they are not permitted to carry type.
-`SHEET` in `palette.js`.
+The face also runs in a rotating set of nine flats — the mark in a colour on
+white, and reversed out of a full-bleed colour tile. That is how the icons and
+the stickers work: **one face, many carriers.**
+
+This does not make them brand colours. Black and magenta are the identity;
+these are what the mark is *carried on*, **one flat at a time**, never mixed and
+never two inside a single mark. A carrier is a whole surface or it is nothing.
+
+Several of those pairings — white on yellow especially — are nowhere near a text
+contrast ratio. They carry the **mark** and never type. `STICKER` and `SHEET` in
+`palette.js`.
 
 ---
 

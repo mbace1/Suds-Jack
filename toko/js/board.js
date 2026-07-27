@@ -6,10 +6,10 @@
 // out of the shipping code instead of screenshots.
 
 import { Surface } from './surface.js';
-import { TOKO, VOICE, SHEET, cssVars } from './palette.js';
+import { TOKO, VOICE, SHEET, STICKER, cssVars } from './palette.js';
 import {
-  drawFace, drawIcon, drawBadge, bounds, GEO,
-  svgFace, svgBadge, faviconHref,
+  drawFace, drawIcon, drawBadge, drawHead, drawCluster, bounds, GEO,
+  svgFace, svgBadge, svgHead, faviconHref,
 } from './face.js';
 import { drawLockup, drawLogotype, drawSheet, drawCredit, substituted } from './lockup.js';
 import { hit, tear, split, scanlines, carrier } from './glitch.js';
@@ -168,6 +168,43 @@ function faceIn(ctx, x, y, w, h, opts) {
   s.loop(() => {
     s.clear(TOKO.PAPER);
     drawLogotype(s.ctx, 14, 22, 26, { color: TOKO.INK, lines: [VOICE.company] });
+  });
+}
+
+// ── the one, and the clusters ────────────────────────────────────────────
+{
+  const W = 460, H = 250;
+  const s = new Surface($('#heads'), W, H, { fluid: true, label: 'Toko Midori: the one, the clusters, the members' });
+  s.loop((t) => {
+    s.clear(TOKO.PAPER);
+    const k = pulse(t, { every: 6.5, len: 0.16, offset: 1.1 });
+    const M = TOKO.MAGENTA;
+    drawHead(s.ctx, 14, 20, 140, { ground: M, ink: TOKO.PAPER, faceOpts: { squash: 1 - k * 0.92 } });
+    drawCluster(s.ctx, 172, 20, 140, { ground: M, ink: TOKO.PAPER,
+      big: { faceOpts: { squash: 1 - k * 0.92 } } });
+    // the members: one stamp, nine times — and the ninth has not arrived yet
+    for (let i = 0; i < 9; i++) {
+      drawHead(s.ctx, 336 + (i % 3) * 42, 34 + Math.floor(i / 3) * 62, 38,
+        { ground: M, ink: TOKO.PAPER });
+    }
+  });
+}
+
+// ── the carriers, at icon size ───────────────────────────────────────────
+{
+  // the three the owner's reference sheet actually shows in use
+  const USE = [STICKER.PINK, STICKER.YELLOW, STICKER.SKY];
+  const W = 420, H = 200, S = 88;
+  const s = new Surface($('#carriers'), W, H, { fluid: true, label: 'The face on its carriers' });
+  s.loop((t) => {
+    s.clear(TOKO.PAPER);
+    const k = pulse(t, { every: 6, len: 0.16, offset: 0.9 });
+    USE.forEach((c, i) => {
+      const x = 22 + i * (S + 44);
+      drawIcon(s.ctx, x, 8, S, { ground: c, ink: TOKO.PAPER });
+      // and the same mark, in the carrier's colour, on the paper
+      faceIn(s.ctx, x, S + 24, S, S * 0.72, { color: c, squash: 1 - k * 0.92 });
+    });
   });
 }
 
