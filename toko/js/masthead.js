@@ -1,66 +1,69 @@
-// TOKO MIDORI — the masthead.
+// TOKO MIDORI GAMES — the masthead.
 //
-// The living header for the arcade hub: the mask on the left, the name and
-// the cry stacked to the right of it, a carrier band rolling down the glass,
-// and every eight seconds the whole thing loses its grip for a third of a
-// second. Same idiom as the Game of Life's hub scene — a small painted canvas
-// that tells you the place is switched on.
-//
-// Drop-in, from anywhere on the site:
+// The primary lockup, alive: face, three lines, ™. It blinks every few
+// seconds and does nothing else. The restraint is the point — this sits at the
+// top of the arcade, above the games, and the games are the thing moving.
 //
 //   import { startMasthead } from '../toko/js/masthead.js';
 //   const head = startMasthead(document.querySelector('header'));
 //   // head.stop() wherever the page re-renders — otherwise the loop leaks
 //   // against a detached canvas (a bug the Game of Life hub already paid for)
 
-import { Screen, textWidth } from './pixel.js';
+import { Surface } from './surface.js';
 import { TOKO, VOICE } from './palette.js';
-import { drawMask, drawWordmark } from './mark.js';
-import { hit, pulse, scanlines, carrier } from './glitch.js';
-
-const AW = 224, AH = 56;
+import { drawFace, bounds, GEO } from './face.js';
+import { drawLogotype } from './lockup.js';
+import { pulse } from './util.js';
 
 export function startMasthead(parent, opts = {}) {
   const {
-    scale = 3,
-    accent = TOKO.MIDORI,
-    tag = VOICE.cry,
-    sub = VOICE.terse,
-    every = 8.5,
-    bg = TOKO.VOID,
+    w = 560, h = 150,
+    ink = TOKO.PAPER,
+    ground = TOKO.INK,
+    blink = 6.0,
+    tagline = VOICE.cry,
     fluid = true,
   } = opts;
 
-  const scr = new Screen(parent, AW, AH, scale, {
+  const scr = new Surface(parent, w, h, {
     fluid,
-    label: `${VOICE.name} — ${VOICE.gloss}. ${tag}`,
+    label: `${VOICE.company} — ${VOICE.cry}`,
   });
 
-  const maskS = 2, maskX = 6, maskY = 4;   // 48×48 — the mask has to hold the
-  const tx = maskX + 24 * maskS + 12;      // left of the block against 150px
-                                           // of wordmark, so it is drawn big
+  const b = bounds();
 
-  const paint = (t) => {
-    const { g } = scr;
-    g.p(0, 0, AW, AH, bg);
+  scr.loop((t) => {
+    const ctx = scr.ctx;
+    ctx.fillStyle = ground;
+    ctx.fillRect(0, 0, w, h);
 
-    // a slow field of vertical rules behind everything — the workshop wall
-    for (let x = (t * 6) % 14; x < AW; x += 14) g.p(x, 0, 1, AH, TOKO.LINE);
+    const faceH = h * 0.62;
+    const boxW = faceH * (GEO.box / b.h);
+    const faceW = boxW * (b.w / GEO.box);
+    const x = h * 0.14, y = (h - faceH) / 2;
 
-    drawMask(g, maskX, maskY, { scale: maskS, reg: 'LIVE' });
+    // one blink, and — because the mouth is a stroked arc and nothing else —
+    // a breath of a grin that rides under it
+    const k = pulse(t, { every: blink, len: 0.16, offset: 1.4 });
+    drawFace(ctx, x - (b.x / GEO.box) * boxW, y - (b.y / GEO.box) * boxW, boxW, {
+      color: ink,
+      squash: 1 - k * 0.92,
+      grin: 1 + Math.sin(t * 0.8) * 0.006,
+    });
 
-    drawWordmark(g, tx, 12, { scale: 2, color: TOKO.BONE, track: 2 });
-    g.p(tx, 28, textWidth(VOICE.name, 2, 2), 1, accent);
-    drawWordmark(g, tx, 32, { scale: 1, color: accent, text: tag, track: 1 });
-    drawWordmark(g, tx, 42, { scale: 1, color: TOKO.ASH, text: sub, track: 1 });
+    const size = faceH / 2.95;
+    const tx = x + faceW + h * 0.13;
+    drawLogotype(ctx, tx, y, size, { color: ink });
 
-    const k = pulse(t, { every, len: 0.36 });
-    if (k > 0) hit(scr.ctx, AW, AH, k, { seed: 3, t, scan: false });
+    if (tagline) {
+      ctx.save();
+      ctx.fillStyle = TOKO.MAGENTA;
+      ctx.font = `700 ${size * 0.36}px ${getComputedStyle(document.documentElement)
+        .getPropertyValue('--toko-type') || 'sans-serif'}`;
+      ctx.fillText(tagline, tx, y + faceH + size * 0.42);
+      ctx.restore();
+    }
+  });
 
-    carrier(scr.ctx, AW, AH, { y: (t * 26) % (AH + 10), height: 2, alpha: 0.13 });
-    scanlines(scr.ctx, AW, AH, { darkness: 0.10, gap: 2, phase: t * 7 });
-  };
-
-  scr.loop(paint);
-  return { screen: scr, stop: () => scr.stop(), destroy: () => scr.destroy() };
+  return { surface: scr, stop: () => scr.stop(), destroy: () => scr.destroy() };
 }

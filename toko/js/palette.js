@@ -1,74 +1,101 @@
-// TOKO MIDORI — the single colour source for the brand.
+// TOKO MIDORI GAMES — colour, name, and the fixed wording.
 //
-// 常緑 (tokomidori) is an old Japanese word for evergreen: the green that
-// does not drop. So the identity is built on one green, held against a
-// near-black void, with a hanko red for the signature and the two phosphors
-// the games already speak in (the arcade's cyan, the Game of Life's leaf).
+// TWO COLOURS. Black and magenta. That is the identity, off the owner's own
+// guideline sheet:
 //
-// Nothing else. If a mark needs a sixth colour, the mark is wrong.
+//     RGB (0, 0, 0)        CMYK (0, 0, 0, 100)
+//     RGB (240, 2, 127)    CMYK (0, 100, 0, 0)
+//
+// Both are process primaries — 100% K and 100% M — which is the whole idea:
+// the brand prints anywhere, on any press, at no cost, with nothing to match.
+// White is the paper, not a colour.
+//
+// There are no tints, shades, gradients, or drop shadows. If a mark needs a
+// third colour it is not this brand — with exactly one documented exception,
+// the sticker sheet (see STICKER below).
 
 export const TOKO = {
-  // ── the void ──────────────────────────────────────────────────────────
-  // near-black, not black: #06070a is the arcade hub's background, so a
-  // Toko mark dropped on the hub sits on its own colour and disappears
-  // into the page instead of floating in a box.
-  VOID:   '#05070a',
-  PITCH:  '#000000',     // true black — only inside a mark's own eye slits
-  PANEL:  '#0c1113',     // one step up, for cards on the brand board
-  LINE:   '#1d2725',     // hairline rules
+  INK:     '#000000',   // RGB(0,0,0) · CMYK(0,0,0,100)
+  MAGENTA: '#f0027f',   // RGB(240,2,127) · CMYK(0,100,0,0)
+  PAPER:   '#ffffff',   // the paper. Not a brand colour — the absence of ink.
 
-  // ── the green ─────────────────────────────────────────────────────────
-  MIDORI:      '#4ce08a',   // THE colour. 11.4:1 on VOID — safe as text.
-  MIDORI_DEEP: '#146b46',   // shell, seams, the shadow side of the mask
-  MOSS:        '#0d241a',   // the fill behind a mark; almost void
-  LUX:         '#a6e85a',   // the luminescent leaf (== gameoflife PAL.LEAF_LUX)
-
-  // ── borrowed phosphors: the machine's colours, never Toko's ───────────
-  PHOSPHOR: '#35e8d8',      // the arcade terminal (== hub --accent, gol CYAN_LUX)
-  GOLD:     '#ffd75a',      // (== gameoflife GOLD_LUX) reward, not identity
-
-  // ── the stamp ─────────────────────────────────────────────────────────
-  // A hanko is always red. Toko's is chipped.
-  VERMILION: '#e5372c',
-  VERM_DEEP: '#7d1a14',
-
-  // ── ink & paper ───────────────────────────────────────────────────────
-  BONE: '#ece5d5',          // 15.3:1 on VOID — body copy
-  ASH:  '#96a29a',          //  7.7:1 on VOID — dim copy, still AA at 14px
-  INK:  '#07090b',          // type knocked out of a light mark
+  // page furniture for screens, where "paper" is a lie and pure black eats
+  // every edge. Never inside a mark.
+  COAL:  '#0c0c0e',
+  PANEL: '#151518',
+  LINE:  '#2a2a30',
+  SMOKE: '#9a9aa2',     // 7.4:1 on COAL — dim copy
 };
 
-// Toko's registers. A mark is drawn in exactly one of these.
+// ── the exception ────────────────────────────────────────────────────────
+// The sticker sheet: the face on a white disc in a colour, and on a colour
+// disc in white, run through a rotating set. It is merch — badges, pins, vinyl
+// — and it is the ONLY place the brand leaves black-and-magenta. It is not a
+// palette; it is a print run. Nothing digital should reach for it.
+export const STICKER = {
+  GREEN: '#12783a', RED: '#e0141b', SKY: '#4cb7e2', ORANGE: '#f07d12',
+  BLUE: '#1149a6', YELLOW: '#f5c400', PURPLE: '#7c1d96', LIME: '#8dc21f',
+  PINK: '#ec1a7c',
+};
+
+export const SHEET = [
+  { bg: TOKO.PAPER, ink: TOKO.INK },
+  { bg: TOKO.INK,   ink: TOKO.PAPER },
+  ...Object.values(STICKER).flatMap(c => [
+    { bg: TOKO.PAPER, ink: c },
+    { bg: c,          ink: TOKO.PAPER },
+  ]),
+];
+
+// ── the two ways round ───────────────────────────────────────────────────
+// A mark is drawn in one of these. That is the entire system.
+export const WAYS = {
+  INK:     { ink: TOKO.INK,     ground: TOKO.PAPER },   // black on paper
+  REVERSE: { ink: TOKO.PAPER,   ground: TOKO.INK },     // paper on black
+  HOT:     { ink: TOKO.MAGENTA, ground: TOKO.INK },     // magenta on black
+  SIGN:    { ink: TOKO.PAPER,   ground: TOKO.MAGENTA }, // paper on magenta
+};
+
+// ── the type ─────────────────────────────────────────────────────────────
+// The logotype is set in a CONDENSED SQUARISH GROTESQUE: flat-sided bowls,
+// square counters, tight tracking, a clipped corner on the G and splayed M.
 //
-//   LIVE   — the default: green on void. Screens, marquees, in-game.
-//   STAMP  — the signature: hanko red. Corners, credits, the seal.
-//   GHOST  — pressed flat: one colour, no depth. Favicons, 16px, print.
-//   RIOT   — the glitch register: green torn by red. Never resting state,
-//            only the frame a hit lands on.
-export const REGISTER = {
-  LIVE:  { shell: TOKO.MIDORI_DEEP, face: TOKO.MIDORI, lux: TOKO.LUX,   eye: TOKO.PITCH, mark: TOKO.VERMILION, bg: TOKO.VOID },
-  STAMP: { shell: TOKO.VERM_DEEP,   face: TOKO.VERMILION, lux: TOKO.VERMILION, eye: TOKO.VOID, mark: TOKO.BONE, bg: 'transparent' },
-  GHOST: { shell: TOKO.BONE,        face: TOKO.BONE,   lux: TOKO.BONE,  eye: TOKO.VOID,  mark: TOKO.BONE,     bg: 'transparent' },
-  RIOT:  { shell: TOKO.VERMILION,   face: TOKO.MIDORI, lux: TOKO.PHOSPHOR, eye: TOKO.PITCH, mark: TOKO.BONE, bg: TOKO.VOID },
+// The real face is the owner's licensed font and is NOT redistributed here.
+// Register it under the family name `Toko Grotesk` — a @font-face rule, a
+// local() lookup, anything — and every lockup in this kit picks it up with no
+// other change. Until then the stack falls through to the closest thing the
+// machine already has, and the lockups are marked as substituted.
+export const TYPE = {
+  family: `'Toko Grotesk', 'Chakra Petch', 'Rajdhani', 'Saira Condensed', 'Oswald', 'Arial Narrow', 'Helvetica Neue', sans-serif`,
+  weight: 700,
+  stretch: 'condensed',
+  tracking: -0.005,          // the logotype is set tight, never loose
+  lineHeight: 0.92,          // the 3-line lockup stacks almost solid
+  // has the real face actually been installed?
+  loaded() {
+    try { return document.fonts.check(`700 32px 'Toko Grotesk'`); }
+    catch { return false; }
+  },
 };
 
-// The words. Kept here, next to the colours, because they are as fixed as
-// the colours are — a lockup that reworded itself would not be a brand.
+// ── the words ────────────────────────────────────────────────────────────
 export const VOICE = {
-  name:     'TOKO MIDORI',
-  kanji:    '常緑',
-  reading:  'tokomidori',
-  gloss:    'evergreen — the green that does not drop',
-  cry:      'GO MAKE YOUR OWN',                       // the primary tagline
-  terms:    'NO PUBLISHER · NO LAUNCHER · NO ACCOUNT', // the secondary
-  terse:    'NO ACCOUNT · NO LAUNCHER',                 // …where it has to fit
-  hand:     'PAINTED IN CODE · NO IMAGE ASSETS',       // the workshop note
+  company:  'Toko Midori Games',
+  lines:    ['Toko', 'Midori', 'Games'],    // the 3-line lockup
+  tm:       '™',
+  artist:   '美鳥十湖',                      // Toko Midori
+  artistRomaji: 'Toko Midori',
+  role:     'The Game Creator',
+  cry:      'GO MAKE YOUR OWN',
+  terms:    'NO PUBLISHER · NO LAUNCHER · NO ACCOUNT',
+  terse:    'NO ACCOUNT · NO LAUNCHER',
 };
 
-// Paint the palette onto an element as CSS custom properties, so plain HTML
-// and the canvas marks are guaranteed to be quoting the same hex.
-export function cssVars(el = document.documentElement, pal = TOKO) {
-  for (const [k, v] of Object.entries(pal)) {
-    el.style.setProperty('--toko-' + k.toLowerCase().replace(/_/g, '-'), v);
+// Publish the palette as CSS custom properties so plain HTML quotes the same
+// hex the canvas does.
+export function cssVars(el = document.documentElement) {
+  for (const [k, v] of Object.entries(TOKO)) {
+    el.style.setProperty('--toko-' + k.toLowerCase(), v);
   }
+  el.style.setProperty('--toko-type', TYPE.family);
 }

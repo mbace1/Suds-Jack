@@ -9,13 +9,14 @@
 // Covers the things that have actually gone wrong, or would be silent if they
 // did:
 //   · the brand board loads with zero console / page errors
-//   · every string-art grid is square and the right width (a short row silently
-//     shears the mask)
-//   · every mark actually puts pixels down, in the palette's own colours
-//   · the SVG exporter emits well-formed SVG for mask / seal / wordmark
+//   · the face geometry is self-consistent: the eye's slots stay OPEN at the
+//     shipping stroke weight (over-weighting it is the failure that actually
+//     happened, and it silently turns the eyes into blobs)
+//   · every mark puts ink down, and only ever in the two brand colours
+//   · the SVG exporter emits well-formed SVG for the face and the badge
 //   · the sting runs and removes itself, and skips on input
-//   · the signature stamps a 44px-clean mark on EVERY signed game, and the
-//     game still boots clean with it attached
+//   · the signature puts a 44px-clean badge on EVERY signed game, and the game
+//     still boots clean with it attached
 //   · nothing on the board is frozen on its first screen
 
 const { chromium } = require('playwright');
@@ -73,109 +74,100 @@ function serve() {
 
   const counts = await page.evaluate(() => ({
     marks: document.querySelectorAll('#marks canvas').length,
-    registers: document.querySelectorAll('#registers canvas').length,
-    swatches: document.querySelectorAll('#swatches .sw').length,
     lockups: document.querySelectorAll('#lockups canvas').length,
     masthead: document.querySelectorAll('#masthead canvas').length,
+    sheet: document.querySelectorAll('#sheet canvas').length,
+    duo: [...document.querySelectorAll('.duo > div')]
+      .map(d => getComputedStyle(d).backgroundColor),
   }));
-  ok('six marks rendered', counts.marks === 6, JSON.stringify(counts));
-  ok('four registers rendered', counts.registers === 4, String(counts.registers));
-  ok('twelve swatches rendered', counts.swatches === 12, String(counts.swatches));
-  ok('eight lockups rendered', counts.lockups === 8, String(counts.lockups));
+  ok('six mark cards rendered', counts.marks === 6, JSON.stringify(counts.marks));
+  ok('five lockups rendered', counts.lockups === 5, String(counts.lockups));
   ok('masthead rendered', counts.masthead === 1);
+  ok('the sticker sheet rendered', counts.sheet === 1);
+  ok('the two colours are the two colours',
+    counts.duo[0] === 'rgb(0, 0, 0)' && counts.duo[1] === 'rgb(240, 2, 127)',
+    counts.duo.join(' / '));
 
-  // ── the grids ──────────────────────────────────────────────────────────
-  console.log('\nthe grids');
-  const grids = await page.evaluate(async () => {
-    const m = await import('/toko/js/mark.js');
-    const bad = [];
-    m.MASK24.forEach((r, i) => { if (r.length !== 24) bad.push(`MASK24[${i}] = ${r.length}`); });
-    m.MASK16.forEach((r, i) => { if (r.length !== 16) bad.push(`MASK16[${i}] = ${r.length}`); });
-    return { bad, h24: m.MASK24.length, h16: m.MASK16.length, seal: m.SEAL };
-  });
-  ok('every mask row is the right width', grids.bad.length === 0, grids.bad.join(', '));
-  ok('the mask is square', grids.h24 === 24 && grids.h16 === 16, `${grids.h24}/${grids.h16}`);
-  ok('the seal is 22', grids.seal === 22);
-
-  // ── the marks put pixels down, in the brand's colours ──────────────────
-  console.log('\nthe marks');
-  const ink = await page.evaluate(async () => {
-    const [{ TOKO }, m] = await Promise.all([
-      import('/toko/js/palette.js'), import('/toko/js/mark.js'),
-    ]);
-    const hex = (r, g, b) => '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
-    const shoot = (w, h, draw) => {
-      const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
-      const ctx = cv.getContext('2d');
-      const g = {
-        p: (x, y, ww, hh, c) => { ctx.fillStyle = c; ctx.fillRect(x | 0, y | 0, ww | 0, hh | 0); },
-        art: (rows, ax, ay, map, s) => {
-          for (let r = 0; r < rows.length; r++) for (let c = 0; c < rows[r].length; c++) {
-            const col = map[rows[r][c]];
-            if (col) g.p(ax + c * s, ay + r * s, s, s, col);
-          }
-        },
-        text: () => 0, frame: () => {}, disc: () => {}, line: () => {}, ctx,
-      };
-      draw(g);
-      const d = ctx.getImageData(0, 0, w, h).data;
-      const seen = new Set();
-      for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 0) seen.add(hex(d[i], d[i + 1], d[i + 2]));
-      return seen;
-    };
-    const { shade } = await import('/toko/js/pixel.js');
-    const mask = shoot(24, 24, g => m.drawMask(g, 0, 0, { scale: 1 }));
-    const seal = shoot(22, 22, g => m.drawSeal(g, 0, 0, { scale: 1 }));
-    // the whole permitted ink list for the mask: four palette tokens, the
-    // black of the slits, and ONE derived shade for the crack. Anything else
-    // in there means a colour has been smuggled into the identity.
-    const allowed = new Set([
-      TOKO.MIDORI, TOKO.MIDORI_DEEP, TOKO.LUX, TOKO.VERMILION, TOKO.PITCH,
-      shade(TOKO.MIDORI, 0.45),
-    ]);
+  // ── the geometry ────────────────────────────────────────────────────────
+  console.log('\nthe geometry');
+  const geo = await page.evaluate(async () => {
+    const f = await import('/toko/js/face.js');
+    const G = f.GEO, b = f.bounds(), e = G.eye;
+    // the slot: the gap between the stem and the arch's inner wall, measured
+    // at the stem's lowest point. This is the number that goes to zero when
+    // somebody fattens the stroke, and when it does the eye stops being an eye.
+    const dy = e.stem.y1 - e.cy;
+    const innerR = e.outer.r - G.stroke / 2;
+    const wallX = Math.sqrt(Math.max(0, innerR * innerR - dy * dy));
     return {
-      maskGreen: mask.has(TOKO.MIDORI),
-      maskShell: mask.has(TOKO.MIDORI_DEEP),
-      maskLux: mask.has(TOKO.LUX),
-      maskNick: mask.has(TOKO.VERMILION),
-      strays: [...mask].filter(c => !allowed.has(c)),
-      sealRed: seal.has(TOKO.VERMILION),
+      slot: wallX - G.stroke / 2,
+      stemInsideCrown: (e.stem.y0 - G.stroke / 2) >= (e.cy - e.outer.r - G.stroke / 2) - 0.01,
+      stemMergesCrown: (e.stem.y0 - G.stroke / 2) <= (e.cy - e.outer.r + G.stroke / 2) + 0.01,
+      eyesClearMouth: (G.mouth.cy + G.mouth.outer.r * Math.sin(G.mouth.outer.a0 * Math.PI / 180)
+        - G.stroke / 2) - (e.cy + e.outer.r * Math.sin(30 * Math.PI / 180) + G.stroke / 2),
+      symmetric: G.mouth.cx === 50,
+      bounds: b,
+      arcCount: f.arcs().length,
     };
   });
-  ok('the mask is green', ink.maskGreen);
-  ok('the mask has a shell', ink.maskShell);
-  ok('the mask catches the crown light', ink.maskLux);
-  ok('the mask carries the vermilion nick', ink.maskNick);
-  ok('the mask uses no ink outside the identity', ink.strays.length === 0, ink.strays.join(', '));
-  ok('the seal is red', ink.sealRed);
+  ok('the eye slots stay open', geo.slot > 1.5, 'slot = ' + geo.slot.toFixed(2));
+  ok('the stem starts inside the crown', geo.stemInsideCrown && geo.stemMergesCrown);
+  ok('the mouth clears the eye legs', geo.eyesClearMouth > 1, geo.eyesClearMouth.toFixed(2));
+  ok('the mark is symmetric', geo.symmetric);
+  ok('four arcs and two stems', geo.arcCount === 6, String(geo.arcCount));
+  ok('the ink is wider than it is tall', geo.bounds.w > geo.bounds.h);
 
-  // ── SVG export ─────────────────────────────────────────────────────────
+  // ── the ink ─────────────────────────────────────────────────────────────
+  console.log('\nthe ink');
+  const ink = await page.evaluate(async () => {
+    const [{ TOKO }, f] = await Promise.all([
+      import('/toko/js/palette.js'), import('/toko/js/face.js'),
+    ]);
+    const cv = document.createElement('canvas');
+    cv.width = 400; cv.height = 300;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = TOKO.INK; ctx.fillRect(0, 0, 400, 300);
+    f.drawFace(ctx, 20, 20, 360, { color: TOKO.MAGENTA });
+    const d = ctx.getImageData(0, 0, 400, 300).data;
+    let inked = 0, stray = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      // antialiased edges blend the two, so only count pixels that are neither
+      // endpoint nor a blend along the straight line between them
+      const [r, g, bl] = [d[i], d[i + 1], d[i + 2]];
+      if (r > 8 || g > 8 || bl > 8) inked++;
+      const u = r / 240;
+      if (u > 0.06 && (Math.abs(g - 2 * u) > 12 || Math.abs(bl - 127 * u) > 14)) stray++;
+    }
+    return { inked, stray };
+  });
+  ok('the face puts ink down', ink.inked > 4000, String(ink.inked));
+  ok('no colour outside the two', ink.stray === 0, String(ink.stray));
+
+  // ── SVG export ──────────────────────────────────────────────────────────
   console.log('\nthe svg exports');
   const svg = await page.evaluate(async () => {
-    const m = await import('/toko/js/mark.js');
-    const out = {
-      mask: m.svgMask({ px: 8 }),
-      mask16: m.svgMask({ px: 8, small: true }),
-      seal: m.svgSeal({ px: 8 }),
-      word: m.svgWordmark({ px: 8 }),
-      favicon: m.faviconHref(),
+    const f = await import('/toko/js/face.js');
+    const parse = (str) => {
+      const doc = new DOMParser().parseFromString(str, 'image/svg+xml');
+      if (doc.querySelector('parsererror')) return -1;
+      return doc.querySelectorAll('path').length;
     };
-    const parse = (s) => {
-      const d = new DOMParser().parseFromString(s, 'image/svg+xml');
-      return !d.querySelector('parsererror') && d.querySelectorAll('rect').length;
-    };
+    const face = f.svgFace({});
     return {
-      mask: parse(out.mask), mask16: parse(out.mask16),
-      seal: parse(out.seal), word: parse(out.word),
-      maskBox: /viewBox="0 0 192 192"/.test(out.mask),
-      favicon: out.favicon.startsWith('data:image/svg+xml,'),
+      face: parse(face),
+      badge: parse(f.svgBadge({})),
+      // the canvas and the SVG must be emitting the SAME six subpaths
+      matchesArcs: (face.match(/<path/g) || []).length === f.arcs().length,
+      hasRoundCaps: /stroke-linecap="round"/.test(face),
+      strokeMatches: face.includes(`stroke-width="${f.GEO.stroke}"`),
+      favicon: f.faviconHref().startsWith('data:image/svg+xml,'),
     };
   });
-  ok('mask svg parses and has rects', svg.mask > 20, String(svg.mask));
-  ok('mask svg is 24 grid cells at px 8', svg.maskBox);
-  ok('16px mask svg parses', svg.mask16 > 8, String(svg.mask16));
-  ok('seal svg parses', svg.seal > 4, String(svg.seal));
-  ok('wordmark svg parses', svg.word > 20, String(svg.word));
+  ok('face svg parses', svg.face > 0, String(svg.face));
+  ok('badge svg parses', svg.badge > 0, String(svg.badge));
+  ok('svg emits exactly the canvas arcs', svg.matchesArcs);
+  ok('svg keeps the round caps', svg.hasRoundCaps);
+  ok('svg keeps the shipping stroke weight', svg.strokeMatches);
   ok('favicon is a data uri', svg.favicon);
 
   // ── nothing frozen on its first screen ─────────────────────────────────
@@ -232,7 +224,7 @@ function serve() {
     });
     ok('the signature is attached', !!sig);
     if (sig) {
-      ok('the seal has ink', sig.inked > 100, String(sig.inked));
+      ok('the badge has ink', sig.inked > 100, String(sig.inked));
       ok('it is at least 44px', Math.min(sig.w, sig.h) >= 44, `${sig.w}×${sig.h}`);
       ok('it sits under the HUD', sig.z === '4', sig.z);
       ok('it takes no input', sig.pe === 'none', sig.pe);

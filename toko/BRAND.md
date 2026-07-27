@@ -1,23 +1,32 @@
-# TOKO MIDORI — 常緑
+# TOKO MIDORI GAMES™
 
-**The masked artist behind the Suds Jack workshop.** This folder is the whole
-identity: the marks, the colour, the letterforms, the glitch, the sting, and the
-one-line signature a game imports to be signed by it.
+**The identity of the workshop.** The face, the two colours, the lockups, the
+sticker sheet, the sting, and the one-line signature a game imports to be signed
+by it.
 
-Everything here is **painted in code**. There is not one image asset in this
-brand — no PNG, no font file, no SVG on disk. The SVG logo files are *generated*
-from the same string art the canvas draws, so the file you hand someone can
-never drift from the thing on screen. Open
+Everything is **drawn in code from one geometry table**. There is not one image
+asset in this folder — the SVG logo files are *generated* from the same arcs the
+canvas strokes, so the file you hand a printer and the thing on screen cannot
+drift apart. No build step, no dependencies, no CDN. Open
 [`index.html`](index.html) to see all of it running.
+
+> **Two things in here are reconstructions, not originals, and you should know
+> which:**
+> 1. **The face geometry** in `js/face.js` was measured off the master artwork.
+>    It is accurate to about a pixel at logo size, but if the original vector
+>    file exists, its numbers belong in `GEO` — replace them and everything
+>    downstream updates.
+> 2. **The logotype typeface** is the owner's licence and is *not* redistributed
+>    here. See §4.
 
 ---
 
 ## 1. Who is signing this
 
-Toko Midori is the artist behind the look of every cabinet in this workshop. The
-mask is not a gimmick — it is the terms. You do not get a face, a founder story
-or a personal brand to buy into. You get the work, and the work is free, in a
-browser, with no account.
+Toko Midori is the masked artist behind the look of every cabinet in this
+workshop. The mask is not a gimmick — it is the terms. You do not get a face, a
+founder story or a personal brand to buy into. You get the work, and the work is
+free, in a browser, with no account.
 
 Toko is not against the machine. Toko is holding one — these games are built
 with AI, out loud, on purpose, and nobody is pretending otherwise. What Toko is
@@ -25,169 +34,142 @@ against is the machine becoming the *audience*: a world where everything is
 generated and nothing is **made**, where people scroll output instead of cutting
 their own.
 
-So the identity shows its seams on purpose. Every mark is allowed to tear, drop
-out and lose the signal, because a thing that is obviously constructed is a
-thing you can obviously build yourself.
-
 **Use the tools. Take the source. GO MAKE YOUR OWN.**
-
-### The name
-
-**常緑** — *tokomidori*, an old Japanese reading of the word for **evergreen**:
-the green that does not drop. It is the right name for a workshop whose other
-project spends its whole runtime sending you back outside, and it is the reason
-the identity is built on exactly one green.
-
-### The voice
 
 | | |
 |---|---|
-| Primary cry | `GO MAKE YOUR OWN` |
-| Secondary | `NO PUBLISHER · NO LAUNCHER · NO ACCOUNT` |
-| Where it has to fit | `NO ACCOUNT · NO LAUNCHER` |
-| Workshop note | `PAINTED IN CODE · NO IMAGE ASSETS` |
+| Company | **Toko Midori Games**™ |
+| Creator | **美鳥十湖** — *Toko Midori*, The Game Creator |
+| Cry | `GO MAKE YOUR OWN` |
+| Terms | `NO PUBLISHER · NO LAUNCHER · NO ACCOUNT` |
 
-All four live in `VOICE` in [`js/palette.js`](js/palette.js) — next to the
-colours, because they are as fixed as the colours are. Short, imperative,
-uppercase, no exclamation marks. Toko does not sell, apologise, or say *we*.
-
----
-
-## 2. The marks
-
-One **24 × 24** grid, written as string art in [`js/mark.js`](js/mark.js) — the
-same idiom hyperdagger builds its voxel enemies from, so the logo is legible as
-source code, editable in a text editor, and impossible to lose to a missing
-binary.
-
-| Mark | Grid | Where |
-|---|---|---|
-| **The mask** | 24 × 24 | the primary. Screens, marquees, mastheads, anywhere ≥ 48px |
-| **The reduction** | 16 × 16 | favicons, credits lines, anywhere the 24 would turn to mud |
-| **The seal** | 22 × 22 | the *signature* — corners, stamps, credits |
-| **The wordmark** | 5×7 type | the name, letterspaced hard |
-| **The stack** | — | name / rule / cry, for a title screen |
-| **The lockup** | — | mask + name + a game, in the game's colour |
-
-Construction notes that matter, because they are the difference between the mask
-and a face with features drawn on it:
-
-- **The brows are the shell colour, not the light.** Dark brow over dark slit
-  over dark mouth is what makes a mask read as a mask.
-- **The one light is a streak angled down the upper left** — lacquer catching a
-  room. It was a band across the whole crown first and read as a *headband*.
-  Light has a direction or it is a hat.
-- **The crack runs off centre.** It is plotted by hand (`CRACK` in `mark.js`) so
-  it is the same break every time — a signature, not a random fracture. Down the
-  midline it would read as a manufacturing seam, which is the opposite of what
-  it is saying.
-- **The reduction is redrawn, not resampled.** It drops the crown light and the
-  crack and keeps the brow; without the brow it stops being a mask and starts
-  being a smiley.
-- **The seal is a hanko, and a hanko is always red.** Toko's is chipped, on a
-  press that was never serviced. The chips are seeded, so every impression is
-  the same impression.
-
-### Registers
-
-A mark is drawn in exactly one of four (`REGISTER` in `js/palette.js`):
-
-- **LIVE** — green on void. The default: screens, marquees, in-game.
-- **STAMP** — hanko red. Anywhere Toko is *signing* rather than speaking.
-- **GHOST** — one colour, no depth. 16px, print, any surface that cannot hold
-  the green.
-- **RIOT** — green torn by red, phosphor in the highlights. **Only ever exists
-  on the frame a hit lands on.** It is not a resting state and must never be
-  used as one.
+All of it lives in `VOICE` in [`js/palette.js`](js/palette.js), next to the
+colours, because it is as fixed as the colours are.
 
 ---
 
-## 3. The palette
+## 2. The face
 
-One green held against a near-black void, a hanko red for the signature, and two
-phosphors *borrowed* from the games. **If a mark needs a colour that is not in
-this table, the mark is wrong.**
+Four fat round-capped arcs and two stems:
 
-The mask is allowed exactly six inks: `MIDORI`, `MIDORI_DEEP`, `LUX`,
-`VERMILION`, black for the slits, and **one** derived shade —
-`shade(MIDORI, 0.45)` for the crack. `toko/test/brand.cjs` reads the rendered
-mask back pixel by pixel and fails on anything else, so a colour cannot be
-smuggled into the identity by accident.
+- **The mouth** is two arcs opening up, nested and concentric. Both stop
+  *short* of a semicircle, so the tips stand up straight instead of hooking
+  outward — that is what keeps a clear band of air between the mouth and the
+  eyes above it.
+- **Each eye** is one arc opening down, its legs running about 30° past
+  horizontal, with a **stem dropped from the inside of its crown**. The stem is
+  what cuts the two slots, and the two slots are what make an eye an eye.
 
-| Token | Hex | On the void | Use |
-|---|---|---|---|
-| `MIDORI` | `#4ce08a` | 11.4:1 | **the** colour. Safe as text at any size |
-| `MIDORI_DEEP` | `#146b46` | — | shell, brows, seams |
-| `MOSS` | `#0d241a` | — | the fill behind a mark |
-| `LUX` | `#a6e85a` | — | the crown light (= Game of Life `LEAF_LUX`) |
-| `VERMILION` | `#e5372c` | 4.6:1 | **the stamp.** Legal as text, but it is a stamp colour — do not set body copy in it |
-| `VERM_DEEP` | `#7d1a14` | — | the press |
-| `PHOSPHOR` | `#35e8d8` | — | *borrowed:* the arcade terminal. The machine's colour, never Toko's |
-| `GOLD` | `#ffd75a` | — | *borrowed:* reward, not identity |
-| `BONE` | `#ece5d5` | 15.3:1 | body copy |
-| `ASH` | `#96a29a` | 7.7:1 | dim copy |
-| `VOID` | `#05070a` | — | the ground (= the arcade hub's background) |
+One stroke weight throughout. No fills, no corners, no straight lines except
+those two stems.
 
-The void is deliberately the hub's `#06070a` neighbourhood so a Toko mark
-dropped onto the arcade sits on its own colour instead of floating in a box.
+> The stems were arcs at first, on the theory that the whole mark was one move
+> repeated at three scales. It is not. A small arc cannot both merge with the
+> crown and hang as far as the artwork hangs it, and forcing it left a detached
+> dot floating inside the arch. The artwork was right and the theory was wrong.
 
-Every text pairing above clears **WCAG AA**. That is a brand rule here for the
-same reason it is one in `gameoflife/` and `hub/`: hierarchy comes from size and
-space, never from being unreadable.
+**The stroke weight is the most sensitive number in the brand.** Too heavy and
+the eye's slots close up and the arch renders as a blob with hairline cracks in
+it. In the master artwork a leg, a slot and a stem are roughly equal widths,
+which puts the stroke at about a fifth of the mouth's outer radius. It is
+`GEO.stroke` and it is not a taste question.
+
+### The carriers
+
+| | |
+|---|---|
+| **The mark** | the bare face. Primary; anything printed |
+| **Reversed** | paper on black. The screen default |
+| **The badge** | the face on a disc. Stickers, pins, the favicon, the in-game signature |
+| **The icon** | full bleed on a rounded square. App icons, cartridge labels |
+
+**Minimum size: 44px.** Below that the slots start to close and the eyes go
+solid. `sign()` clamps to it rather than letting a caller ship mud.
+
+**Clear space:** one eye-radius on every side. The face already hangs low in its
+own design box — align to `bounds()`, never to the box.
 
 ---
 
-## 4. The alphabet
+## 3. Two colours
 
-**5 × 7, cut by hand** (`FONT` in [`js/pixel.js`](js/pixel.js)): A–Z, 0–9 and
-`. , ! ? - : ' / · ×`. One pixel of air between glyphs; the wordmark tracks at
-two.
+```
+RGB (0, 0, 0)       CMYK (0, 0, 0, 100)     #000000
+RGB (240, 2, 127)   CMYK (0, 100, 0, 0)     #F0027F
+```
 
-The brand owns its letterforms outright — there is no font file to license, to
-load, or to fail to load. Anything the identity ever needs to say, it says in
-these. `textRows()` lays a string out as string art, which is what the SVG
-exporter eats, so the wordmark that ships as a logo file is byte-for-byte the
-letterforms the canvas draws.
+Both are process primaries — 100% K and 100% M. That is the whole idea: it
+prints anywhere, on any press, at no cost, with nothing to match. **White is the
+paper, not a colour.** No tints, no shades, no gradients, no drop shadows.
+
+Magenta is **4.0:1 on black**. It is a *mark* colour and a large-display colour.
+**It is never body copy.** Body copy is white, or `--toko-smoke` (7.4:1) when it
+needs to sit back.
+
+### The one exception: the sticker sheet
+
+The face on a white disc in a colour, and on a colour disc in white, through a
+rotating set of nine flats. It is a **print run** — badges, pins, vinyl — not a
+palette. Nothing digital reaches for it, and several of those pairings are
+nowhere near a text contrast ratio, so they are not permitted to carry type.
+`SHEET` in `palette.js`.
+
+---
+
+## 4. The logotype
+
+A **condensed squarish grotesque**: flat-sided bowls, square counters, tight
+tracking, a clipped corner on the *G*, splayed *M*. Set in three lines that
+stack almost solid, flush left, with the ™ at the foot of *Games*. A one-line
+setting exists for anywhere too short to stack.
+
+**The real typeface is the owner's licence and is not in this repo.** Register it
+under the family name **`Toko Grotesk`** — a `@font-face` rule, a `local()`
+lookup, anything — and every lockup in this kit, canvas and HTML alike, picks it
+up with no other change. There is a commented-out block ready for it at the top
+of [`toko.css`](toko.css).
+
+Until it is installed, `substituted()` returns true and the brand board says so
+out loud in a banner rather than quietly shipping the wrong letterforms.
+
+### The lockup
+
+Face, gap, three lines, ™. **The logotype stands the same height as the face.**
+That relationship *is* the lockup; nothing else about it is adjustable.
 
 ---
 
 ## 5. The glitch
 
 [`js/glitch.js`](js/glitch.js): `tear`, `split`, `dropout`, `shuffle`,
-`scanlines`, `carrier`, `noise`, and the two calls that matter —
-
-```js
-hit(ctx, w, h, intensity, { seed, t })   // everything above, on one 0..1 dial
-pulse(t, { every: 6.5, len: 0.34 })      // the resting behaviour of every mark
-```
-
-Four rules:
+`scanlines`, `carrier`, `noise`, plus `hit(ctx, w, h, intensity)` and
+`pulse(t)`.
 
 1. **Seeded.** A glitch you cannot reproduce is a bug wearing a costume.
-2. **It is an event, not a state.** Below ~0.25 the mark reads clean. A logo
-   that is permanently broken reads as a *rendering fault*, and nobody trusts a
-   rendering fault. `pulse()` is the shape: still, a third of a second of
-   stutter, still again — roughly every eight seconds.
-3. **Whole art pixels only.** Glitch the small canvas, never the upscaled one,
-   so a tear is always a whole number of fat pixels.
-4. **No scanlines on a small mark.** Below ~48 art pixels one scanline lands on
-   every *other* logo pixel and stripes the mark instead of glassing it.
+2. **An event, not a state.** Below ~0.25 the mark reads clean. A logo that is
+   permanently broken reads as a *rendering fault*, and nobody trusts a
+   rendering fault.
+3. **Off by default.** The resting animation of a Toko mark is a **blink** —
+   the eyes squash shut for a beat every few seconds. That is the whole thing.
+   The glitch is for stings, transitions and title cards; `sign()` takes
+   `glitch: true` and does not assume it.
 
 ---
 
 ## 6. Signing a page
 
-One import. It stamps the seal into a corner, sits under the HUD, never takes
-input unless you give it an `href`, holds a 44px tap target when you do, and
-paints a single still frame for anyone who has asked for reduced motion.
-
 ```html
 <script type="module">
   import { sign } from '../toko/js/signature.js';
-  sign();                                        // bottom-left, non-interactive
+  sign();                                     // bottom-left, non-interactive
   // sign({ corner: 'bottom-right', href: '../toko/' });
 </script>
 ```
+
+The badge goes in a corner at `z-index: 4` — **under** the game's HUD, over the
+game canvas — takes no input unless you give it an `href` (then it holds a 44px
+tap target), honours the safe-area insets, and paints one still frame for anyone
+who has asked for reduced motion.
 
 Signed on `main`: `toko-drop/`, `paperboy/`, `dropcabal/`, `hyperdagger/`.
 
@@ -195,24 +177,24 @@ Other entry points:
 
 ```js
 import { playSting, playStingOnce } from '../toko/js/sting.js';
-import { startMasthead }           from '../toko/js/masthead.js';
-import { paintSignature }          from '../toko/js/signature.js';  // into your own canvas
-import { svgMask, svgSeal, svgWordmark, faviconHref } from '../toko/js/mark.js';
+import { startMasthead }            from '../toko/js/masthead.js';
+import { paintSignature }           from '../toko/js/signature.js';   // your own canvas
+import { drawLockup, drawSheet }    from '../toko/js/lockup.js';
+import { svgFace, svgBadge, faviconHref } from '../toko/js/face.js';
 ```
 
-`startMasthead(el)` is the arcade hub's header — remember to `stop()` it
-wherever the page re-renders, or the loop leaks against a detached canvas (a bug
-the Game of Life hub has already paid for once).
+`startMasthead(el)` — `stop()` it wherever the page re-renders, or the loop
+leaks against a detached canvas (a bug the Game of Life hub has already paid for
+once).
 
 ### `gameoflife/` is deliberately unsigned
 
-The Game of Life is the one room where Toko takes the mask off. It is a zen
-app whose entire job is to be quiet and send you outdoors; a stuttering
-vermilion stamp in its corner would undo the thing it exists to do. There is
-also a hard technical reason: its service worker precaches an exact file list
-scoped to `/gameoflife/`, and `test/offline.cjs` asserts **zero** network
-requests during a whole experience — a cross-directory import would break the
-offline promise. It stays unsigned in both senses.
+It is the one room where Toko takes the mask off — a zen app whose entire job is
+to be quiet and send you outdoors, and a magenta badge in its corner would undo
+the thing it exists to do. There is a hard technical reason too: its service
+worker precaches an exact file list scoped to `/gameoflife/`, and
+`test/offline.cjs` asserts **zero** network requests during a whole experience,
+so a cross-directory import would break the offline promise either way.
 
 ---
 
@@ -220,21 +202,21 @@ offline promise. It stays unsigned in both senses.
 
 **Do**
 
-- Draw the mask at whole-number scales. It is a pixel grid; 1.5× is not a size.
-- Give it air: at least 3 mask-pixels of clear space on every side.
-- Use LIVE by default, STAMP to sign, GHOST when the surface cannot hold green.
-- Let the game keep its own accent in a lockup. Toko is the green; the cabinet
-  is its own colour.
-- Let it hold still. `pulse()` already knows when to break.
+- Draw the face from `GEO`. Every number there was measured; there is no
+  "roughly".
+- Align to `bounds()` — the ink — not to the design box.
+- Keep the two colours, and let the paper be the paper.
+- Let it blink. That is the animation.
+- Say when the typeface is substituted.
 
 **Don't**
 
-- Don't recolour the mask outside the four registers.
-- Don't leave RIOT on screen. It is one frame, not a look.
-- Don't set body copy in vermilion, and never in vermilion on green.
-- Don't resample the 24 down to 16 — there is a 16 for that.
-- Don't add a sixth colour, a drop shadow, a gradient, or a rounded corner.
-- Don't put a mark on a photograph. There are no photographs here.
+- Don't re-weight the stroke. It closes the eyes.
+- Don't outline, gradient, bevel, shadow, or rotate the face.
+- Don't set body copy in magenta.
+- Don't take the sticker colours into anything on a screen.
+- Don't stretch the lockup — the logotype is the face's height, always.
+- Don't put the mark below 44px, and don't put it on a photograph.
 
 ---
 
@@ -242,25 +224,24 @@ offline promise. It stays unsigned in both senses.
 
 ```
 toko/
-  BRAND.md          this
-  index.html        the brand board — every mark, live, with SVG downloads
-  toko.css          the palette as CSS custom properties + the CSS-only glitch
+  BRAND.md        this
+  index.html      the brand board — every mark live, with SVG downloads
+  toko.css        the palette as custom properties + the CSS-only glitch
   js/
-    palette.js      colour, registers, voice
-    pixel.js        the surface, the 5×7 alphabet, the pen, seeded RNG
-    mark.js         the marks — canvas AND SVG, from one grid
-    glitch.js       tear / split / dropout / shuffle / scanlines / carrier / hit / pulse
-    sting.js        the three-second boot sting
-    signature.js    the drop-in corner signature
-    masthead.js     the animated header for the arcade hub
-    board.js        wires the brand board (imports nothing the games don't)
+    palette.js    the two colours, the sticker sheet, the type spec, the words
+    face.js       THE MARK — one geometry table, canvas and SVG out of it
+    lockup.js     the logotype, the lockups, the sticker sheet, the credit line
+    surface.js    a device-pixel-ratio canvas with a reduced-motion-safe loop
+    glitch.js     tear / split / dropout / shuffle / scanlines / carrier / hit
+    util.js       seeded RNG + the resting pulse
+    sting.js      the three-second sting (skippable from frame one)
+    signature.js  sign() — the drop-in corner badge
+    masthead.js   the animated lockup for the arcade hub
+    board.js      wires the board out of the shipping modules
   test/
-    brand.cjs       headless gate: marks draw, SVG emits, signed games stay clean
+    brand.cjs     the gate: geometry, SVG, sting, every signed game
 ```
 
-No build step, no dependencies, no CDN. Copy `toko/` next to a game and it
-works.
-
-> **Deploy:** the live site is served from the **`gh-pages`** branch, not `main`.
-> `toko/` has to be copied there — together with the game `index.html` files
-> that import it — to go live at `/Suds-Jack/toko/`.
+> **Deploy:** the live site serves from the **`gh-pages`** branch, not `main`.
+> `toko/` and the signed game `index.html` files both have to be copied there to
+> go live at `/Suds-Jack/toko/`.

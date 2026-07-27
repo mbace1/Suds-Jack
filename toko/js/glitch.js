@@ -10,7 +10,7 @@
 // Everything operates on ART pixels (the small canvas), never on the upscaled
 // one, so a tear is always a whole number of fat pixels.
 
-import { rng } from './pixel.js';
+import { rng } from './util.js';
 import { TOKO } from './palette.js';
 
 // one scratch surface for the whole kit — glitching runs every frame and
@@ -120,7 +120,7 @@ export function scanlines(ctx, w, h, opts = {}) {
 // One bright band rolling down the frame — a head sweep. Give it the
 // phosphor, never the green: it belongs to the machine, not to Toko.
 export function carrier(ctx, w, h, opts = {}) {
-  const { y = 0, height = 2, color = TOKO.PHOSPHOR, alpha = 0.35 } = opts;
+  const { y = 0, height = 2, color = TOKO.MAGENTA, alpha = 0.35 } = opts;
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.globalCompositeOperation = 'lighter';
@@ -131,7 +131,7 @@ export function carrier(ctx, w, h, opts = {}) {
 
 // ── noise ────────────────────────────────────────────────────────────────
 export function noise(ctx, w, h, opts = {}) {
-  const { density = 0.08, seed = 4, colors = [TOKO.MIDORI, TOKO.BONE, TOKO.VERMILION] } = opts;
+  const { density = 0.08, seed = 4, colors = [TOKO.MAGENTA, TOKO.PAPER, TOKO.INK] } = opts;
   const r = rng(seed);
   const n = Math.round(w * h * density);
   for (let i = 0; i < n; i++) {
@@ -162,18 +162,5 @@ export function hit(ctx, w, h, intensity = 0, opts = {}) {
   if (opts.scan !== false) scanlines(ctx, w, h, { darkness: 0.1 + k * 0.16, phase: t * 14 });
 }
 
-// ── the pulse ────────────────────────────────────────────────────────────
-// The resting behaviour of every Toko mark on a page: still, then a fast
-// stutter, then still again. Returns 0..1 for a given time.
-//
-// `every` seconds between hits, `len` seconds of hit. The stutter inside the
-// hit is a square wave, not a fade — CRTs do not ease.
-export function pulse(t, { every = 6.5, len = 0.34, offset = 0 } = {}) {
-  const u = ((t + offset) % every) / every;
-  const win = len / every;
-  if (u > win) return 0;
-  const p = u / win;                      // 0..1 across the hit
-  const env = 1 - p * p;                  // decays fast
-  const stutter = Math.floor(p * 7) % 2 === 0 ? 1 : 0.35;
-  return env * stutter;
-}
+// the resting pulse lives in util.js, next to the RNG it belongs with
+export { pulse } from './util.js';

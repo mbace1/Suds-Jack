@@ -1,201 +1,137 @@
-/* TOKO MIDORI — the brand's stylesheet.
-   Two jobs: publish the palette as custom properties so plain HTML quotes the
-   same hex the canvas marks do, and carry the handful of CSS-only brand
-   effects (the glitch text, the rules, the stamp block).
+/* TOKO MIDORI GAMES — the brand's stylesheet.
+   Publishes the palette as custom properties so plain HTML quotes the same hex
+   the canvas does, carries the CSS-only glitch, and styles the board.
 
-   The board itself is styled in the arcade's language — near-black, one
-   monospace, hairline rules, uppercase letterspaced heads — because Toko is
-   the workshop the arcade is in, not a separate company with its own website.
-
-   Every text colour here clears WCAG AA on its own background. Vermilion is
-   4.6:1 on the void: legal, but it is a STAMP colour, not a body colour. */
+   Two colours: black and magenta. White is the paper.
+   Magenta is 4.0:1 on black — it is a MARK colour and a large-display colour,
+   not a body-copy colour. Body copy is white or --toko-smoke. */
 
 :root {
-  --toko-void:   #05070a;
-  --toko-panel:  #0c1113;
-  --toko-line:   #1d2725;
-  --toko-midori: #4ce08a;   /* 11.4:1 on void */
-  --toko-deep:   #146b46;
-  --toko-moss:   #0d241a;
-  --toko-lux:    #a6e85a;
-  --toko-phos:   #35e8d8;
-  --toko-verm:   #e5372c;   /* 4.6:1 — stamps and large type only */
-  --toko-bone:   #ece5d5;   /* 15.3:1 */
-  --toko-ash:    #96a29a;   /*  7.7:1 */
-  --toko-ink:    #07090b;
+  --toko-ink:     #000000;
+  --toko-magenta: #f0027f;
+  --toko-paper:   #ffffff;
+  --toko-coal:    #0c0c0e;
+  --toko-panel:   #151518;
+  --toko-line:    #2a2a30;
+  --toko-smoke:   #9a9aa2;   /* 7.4:1 on coal */
+  --toko-type: 'Toko Grotesk', 'Chakra Petch', 'Rajdhani', 'Saira Condensed',
+               'Oswald', 'Arial Narrow', 'Helvetica Neue', sans-serif;
 }
 
-/* ── the board ─────────────────────────────────────────────────────────── */
+/* Drop the real licensed face in here — a @font-face rule or a local() lookup
+   under the family name `Toko Grotesk` — and every lockup on every page, canvas
+   and HTML alike, picks it up with no other change.
+
+@font-face {
+  font-family: 'Toko Grotesk';
+  src: local('...'), url('...') format('woff2');
+  font-weight: 700;
+  font-display: block;
+}
+*/
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 
 body {
-  background: var(--toko-void);
-  color: var(--toko-bone);
-  font: 14px/1.65 'Courier New', ui-monospace, SFMono-Regular, Menlo, monospace;
-  padding: 0 16px 80px;
+  background: var(--toko-coal);
+  color: var(--toko-paper);
+  font: 15px/1.6 var(--toko-type);
+  padding: 0 20px 96px;
 }
 
-a { color: var(--toko-midori); }
-a:hover { color: var(--toko-lux); }
+a { color: var(--toko-magenta); }
+a:hover { color: var(--toko-paper); }
+:focus-visible { outline: 3px solid var(--toko-magenta); outline-offset: 3px; }
 
-:focus-visible { outline: 2px solid var(--toko-midori); outline-offset: 3px; }
+.wrap { max-width: 980px; margin: 0 auto; }
 
-.wrap { max-width: 940px; margin: 0 auto; }
+header.mast { padding: 40px 0 0; }
+header.mast .head { margin-bottom: 22px; }
 
-header.mast { padding: 44px 0 0; }
-header.mast .head-canvas { margin-bottom: 18px; }
-
-h1 {
-  font-size: clamp(21px, 5vw, 32px);
-  letter-spacing: .32em;
-  font-weight: 400;
-  text-transform: uppercase;
-}
-h1 .g { color: var(--toko-midori); }
+h1 { font-size: clamp(28px, 6vw, 46px); font-weight: 700; letter-spacing: -0.01em; line-height: 0.98; }
+h1 .tm { font-size: 0.3em; vertical-align: super; }
 
 h2 {
-  font-size: 12px;
-  letter-spacing: .3em;
-  text-transform: uppercase;
-  font-weight: 400;
-  color: var(--toko-ash);
-  margin: 0 0 16px;
+  font-size: 12px; letter-spacing: .32em; text-transform: uppercase;
+  font-weight: 700; color: var(--toko-magenta); margin: 0 0 14px;
 }
+h3 { font-size: 15px; font-weight: 700; margin: 0 0 6px; }
 
-h3 {
-  font-size: 13px;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  font-weight: 400;
-  color: var(--toko-bone);
-  margin: 0 0 8px;
-}
-
-p { max-width: 68ch; }
+p { max-width: 66ch; color: var(--toko-smoke); }
 p + p { margin-top: 12px; }
+p strong, p b { color: var(--toko-paper); font-weight: 700; }
 
-.dim { color: var(--toko-ash); }
-.rule { height: 1px; background: var(--toko-line); margin: 34px 0 22px; }
-section { margin-top: 8px; }
+.rule { height: 2px; background: var(--toko-line); margin: 40px 0 24px; }
+.rule.hot { background: var(--toko-magenta); }
 
-.kanji {
-  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', serif;
-  font-size: 30px;
-  color: var(--toko-midori);
-  letter-spacing: .1em;
-  line-height: 1;
-}
+/* the creed, hung off a magenta bar */
+.creed { border-left: 4px solid var(--toko-magenta); padding-left: 20px; margin: 20px 0; }
+.creed p:last-child { color: var(--toko-paper); font-weight: 700; }
 
-/* the manifesto: hung off a green rule, set at reading size */
-.creed {
-  border-left: 2px solid var(--toko-deep);
-  padding-left: 18px;
-  margin: 18px 0;
-}
-.creed p { margin-bottom: 10px; }
-.creed p:last-child { margin-bottom: 0; color: var(--toko-midori); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 20px; }
+.card { background: var(--toko-panel); border: 2px solid var(--toko-line); padding: 18px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.card .shot { align-self: stretch; display: grid; place-items: center; padding: 14px; background: var(--toko-ink); min-height: 120px; }
+.card .shot.paper { background: var(--toko-paper); }
+.card .meta { font-size: 13px; color: var(--toko-smoke); }
 
-/* ── card grids ────────────────────────────────────────────────────────── */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 18px;
-}
-.card {
-  background: var(--toko-panel);
-  border: 1px solid var(--toko-line);
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: flex-start;
-}
-.card .meta { font-size: 11.5px; color: var(--toko-ash); letter-spacing: .1em; }
-.card .shot { background: var(--toko-void); padding: 10px; align-self: stretch; display: grid; place-items: center; min-height: 96px; }
+/* the two colours, at full size — this brand does not do little chips */
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 2px solid var(--toko-line); }
+.duo > div { padding: 26px 22px; min-height: 128px; display: flex; flex-direction: column; justify-content: flex-end; }
+.duo .k { background: #000; color: #fff; }
+.duo .m { background: #f0027f; color: #fff; }
+.duo b { display: block; font-size: 17px; }
+.duo span { font-size: 13px; opacity: .85; }
 
-/* ── swatches ──────────────────────────────────────────────────────────── */
-.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-.sw { border: 1px solid var(--toko-line); }
-.sw .chip { height: 54px; }
-.sw .name { padding: 7px 9px 8px; font-size: 11px; letter-spacing: .12em; }
-.sw .name b { display: block; font-weight: 400; color: var(--toko-bone); }
-.sw .name span { color: var(--toko-ash); }
-
-/* ── controls ──────────────────────────────────────────────────────────── */
 button, .btn {
-  font: inherit;
-  font-size: 12px;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  color: var(--toko-bone);
-  background: transparent;
-  border: 1px solid var(--toko-deep);
-  padding: 0 16px;
-  min-height: 44px;              /* the tap-target floor, everywhere */
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  font: inherit; font-weight: 700; font-size: 13px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--toko-paper); background: transparent;
+  border: 2px solid var(--toko-magenta); padding: 0 18px; min-height: 44px;
+  cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
 }
-button:hover, .btn:hover { border-color: var(--toko-midori); color: var(--toko-midori); }
+button:hover, .btn:hover { background: var(--toko-magenta); color: var(--toko-paper); }
 
 .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 
 label.slider {
-  display: flex; align-items: center; gap: 10px;
-  font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--toko-ash);
-  min-height: 44px;
+  display: flex; align-items: center; gap: 10px; min-height: 44px;
+  font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--toko-smoke);
 }
-label.slider input { width: 150px; accent-color: var(--toko-midori); }
-label.slider output { color: var(--toko-midori); min-width: 3ch; }
+label.slider input { width: 150px; accent-color: var(--toko-magenta); }
+label.slider output { color: var(--toko-magenta); min-width: 3.5ch; font-weight: 700; }
 
-/* ── the CSS-only glitch, for HTML type ────────────────────────────────── */
-/* Use on a heading that carries its text in data-text. It is the same idea
-   as glitch.js's split+tear, done in two pseudo-elements so a page can wear
-   the brand without loading a canvas. */
+.warn {
+  border: 2px solid var(--toko-magenta); padding: 14px 16px; margin: 18px 0;
+  font-size: 13px; color: var(--toko-paper);
+}
+.warn b { color: var(--toko-magenta); }
+
+/* ── the CSS-only glitch, for HTML type ─────────────────────────────────── */
 .toko-glitch { position: relative; display: inline-block; }
-.toko-glitch::before,
-.toko-glitch::after {
-  content: attr(data-text);
-  position: absolute;
-  inset: 0;
-  background: var(--toko-void);
-  overflow: hidden;
-  pointer-events: none;
+.toko-glitch::before, .toko-glitch::after {
+  content: attr(data-text); position: absolute; inset: 0;
+  background: var(--toko-coal); overflow: hidden; pointer-events: none;
 }
-.toko-glitch::before { color: var(--toko-verm); animation: toko-slip-a 6.5s steps(1) infinite; }
-.toko-glitch::after  { color: var(--toko-phos); animation: toko-slip-b 6.5s steps(1) infinite; }
+.toko-glitch::before { color: var(--toko-magenta); animation: toko-a 6.5s steps(1) infinite; }
+.toko-glitch::after  { color: var(--toko-paper);   animation: toko-b 6.5s steps(1) infinite; }
 
-@keyframes toko-slip-a {
-  0%, 92%   { clip-path: inset(100% 0 0 0); transform: none; }
-  93%       { clip-path: inset(18% 0 62% 0); transform: translate(-3px, 0); }
-  95%       { clip-path: inset(62% 0 12% 0); transform: translate(2px, 0); }
-  97%       { clip-path: inset(34% 0 46% 0); transform: translate(-2px, 1px); }
+@keyframes toko-a {
+  0%, 92% { clip-path: inset(100% 0 0 0); transform: none; }
+  93% { clip-path: inset(18% 0 62% 0); transform: translateX(-4px); }
+  95% { clip-path: inset(62% 0 12% 0); transform: translateX(3px); }
+  97% { clip-path: inset(34% 0 46% 0); transform: translate(-2px, 1px); }
   99%, 100% { clip-path: inset(100% 0 0 0); transform: none; }
 }
-@keyframes toko-slip-b {
-  0%, 92%   { clip-path: inset(100% 0 0 0); transform: none; }
-  93%       { clip-path: inset(54% 0 24% 0); transform: translate(3px, 0); }
-  95%       { clip-path: inset(10% 0 74% 0); transform: translate(-2px, 0); }
-  97%       { clip-path: inset(70% 0 8% 0);  transform: translate(2px, -1px); }
+@keyframes toko-b {
+  0%, 92% { clip-path: inset(100% 0 0 0); transform: none; }
+  93% { clip-path: inset(54% 0 24% 0); transform: translateX(4px); }
+  95% { clip-path: inset(10% 0 74% 0); transform: translateX(-3px); }
+  97% { clip-path: inset(70% 0 8% 0);  transform: translate(2px, -1px); }
   99%, 100% { clip-path: inset(100% 0 0 0); transform: none; }
 }
 
-/* a brand that will not hold still is unusable — and for some readers it is
-   worse than unusable */
 @media (prefers-reduced-motion: reduce) {
   .toko-glitch::before, .toko-glitch::after { animation: none; clip-path: inset(100% 0 0 0); }
-}
-
-/* ── the stamp block: name + seal, for a credits line ──────────────────── */
-.toko-credit {
-  display: inline-flex; align-items: center; gap: 12px;
-  font-size: 11px; letter-spacing: .22em; text-transform: uppercase;
-  color: var(--toko-ash);
 }
 
 .sr-only {
@@ -203,5 +139,5 @@ label.slider output { color: var(--toko-midori); min-width: 3ch; }
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 
-footer { margin-top: 40px; color: var(--toko-ash); font-size: 12px; }
-footer a { margin-right: 18px; }
+footer { margin-top: 48px; color: var(--toko-smoke); font-size: 13px; }
+footer a { margin-right: 20px; }

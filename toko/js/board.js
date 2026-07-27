@@ -1,17 +1,19 @@
-// TOKO MIDORI — the brand board.
+// TOKO MIDORI GAMES — the brand board.
 //
-// Everything on this page is drawn by the same modules a game imports; nothing
-// here is a picture of the brand, it IS the brand, running. If a mark looks
-// wrong on this page it is wrong everywhere, which is the point of building
-// the board out of the shipping code instead of screenshots.
+// Everything here is drawn by the same modules a game imports; nothing on this
+// page is a picture of the brand, it IS the brand, running. If a mark looks
+// wrong here it is wrong everywhere — which is the point of building the board
+// out of the shipping code instead of screenshots.
 
-import { Screen, textWidth } from './pixel.js';
-import { TOKO, VOICE, REGISTER } from './palette.js';
+import { Surface } from './surface.js';
+import { TOKO, VOICE, SHEET, cssVars } from './palette.js';
 import {
-  drawMask, drawSeal, drawWordmark, drawStack, drawLockup,
-  svgMask, svgSeal, svgWordmark, faviconHref, SEAL,
-} from './mark.js';
-import { hit, pulse, scanlines, carrier, tear, split, dropout } from './glitch.js';
+  drawFace, drawIcon, drawBadge, bounds, GEO,
+  svgFace, svgBadge, faviconHref,
+} from './face.js';
+import { drawLockup, drawLogotype, drawSheet, drawCredit, substituted } from './lockup.js';
+import { hit, tear, split, scanlines, carrier } from './glitch.js';
+import { pulse } from './util.js';
 import { playSting } from './sting.js';
 import { startMasthead } from './masthead.js';
 
@@ -23,17 +25,19 @@ const el = (tag, cls, txt) => {
   return n;
 };
 
-// ── the favicon is the 16×16 mask, generated, not a file ─────────────────
+cssVars();
 $('#favicon').href = faviconHref();
 
-// ── masthead ─────────────────────────────────────────────────────────────
-startMasthead($('#masthead'), { scale: 3 });
+// say it out loud when the licensed face is not installed, rather than quietly
+// shipping the wrong letterforms
+if (substituted()) $('#font-warn').hidden = false;
 
-// ── a card: a title, a live shot, a note, and whatever buttons ───────────
-function card(parent, title, note) {
+startMasthead($('#masthead'), { w: 620, h: 168 });
+
+function card(parent, title, note, paper) {
   const c = el('div', 'card');
   c.appendChild(el('h3', null, title));
-  const shot = el('div', 'shot');
+  const shot = el('div', 'shot' + (paper ? ' paper' : ''));
   c.appendChild(shot);
   if (note) c.appendChild(el('p', 'meta', note));
   parent.appendChild(c);
@@ -53,205 +57,161 @@ function svgButton(parent, label, file, make) {
   const b = el('button', null, label);
   b.addEventListener('click', () => download(file, make()));
   parent.appendChild(b);
-  return b;
 }
 
-// paint helper: cache the still art, glitch only on the pulse frames
-// On a canvas this small one scanline lands on every OTHER logo pixel, which
-// stripes the mark instead of glassing it — so the still marks get no scan
-// unless the surface is big enough for a scanline to read as a scanline.
-function restless(scr, drawBase, opts = {}) {
-  const { every = 7, key = 'base', seed = 5, scan = (scr.h >= 48 ? 0.12 : 0) } = opts;
-  scr.loop((t) => {
-    scr.cached(key, drawBase);
-    const k = pulse(t, { every, len: 0.32, offset: opts.offset ?? 0 });
-    if (k > 0) hit(scr.ctx, scr.w, scr.h, k, { seed, t, scan: false });
-    if (scan) scanlines(scr.ctx, scr.w, scr.h, { darkness: scan, gap: 2, phase: t * 8 });
-  });
-  return scr;
+// place the face's INK inside a box — the mark hangs low in its own design box
+function faceIn(ctx, x, y, w, h, opts) {
+  const b = bounds();
+  const boxW = Math.min(w / (b.w / GEO.box), h / (b.h / GEO.box) * (GEO.box / GEO.box));
+  const scale = Math.min(w / b.w, h / b.h);
+  const bw = GEO.box * scale;
+  drawFace(ctx, x + (w - b.w * scale) / 2 - b.x * scale,
+    y + (h - b.h * scale) / 2 - b.y * scale, bw, opts);
 }
 
-// ── the marks ────────────────────────────────────────────────────────────
+// ── the face ─────────────────────────────────────────────────────────────
 {
   const g = $('#marks');
 
-  // the mask
   {
-    const { card: c, shot } = card(g, 'The mask', '24 × 24. The crack is plotted by hand — the same break every time, because it is a signature and not a random fracture.');
-    const s = new Screen(shot, 28, 28, 5, { label: 'The Toko Midori mask' });
-    restless(s, (sc) => { sc.g.p(0, 0, 28, 28, TOKO.VOID); drawMask(sc.g, 2, 2, { scale: 1 }); }, { seed: 5 });
-    const row = el('div', 'row'); c.appendChild(row);
-    svgButton(row, 'SVG', 'toko-mask.svg', () => svgMask({ px: 8 }));
-    svgButton(row, 'SVG on void', 'toko-mask-void.svg', () => svgMask({ px: 8, bg: TOKO.VOID }));
-  }
-
-  // the reduction
-  {
-    const { card: c, shot } = card(g, 'The reduction', '16 × 16, redrawn rather than resampled. This is the favicon on the tab of this page.');
-    const s = new Screen(shot, 16, 16, 5, { label: 'The mask at 16 pixels' });
-    s.loop(() => { s.g.p(0, 0, 16, 16, TOKO.VOID); drawMask(s.g, 0, 0, { small: true }); });
-    const row = el('div', 'row'); c.appendChild(row);
-    svgButton(row, 'SVG', 'toko-mask-16.svg', () => svgMask({ px: 8, small: true }));
-  }
-
-  // the seal
-  {
-    const { card: c, shot } = card(g, 'The seal', 'The signature. A hanko is always red; Toko’s is chipped, on a press that was never serviced.');
-    const s = new Screen(shot, SEAL + 4, SEAL + 4, 5, { label: 'The Toko Midori seal' });
-    restless(s, (sc) => {
-      sc.g.p(0, 0, SEAL + 4, SEAL + 4, TOKO.VOID);
-      drawSeal(sc.g, 2, 2, { scale: 1 });
-    }, { seed: 9, offset: 2.4 });
-    const row = el('div', 'row'); c.appendChild(row);
-    svgButton(row, 'SVG', 'toko-seal.svg', () => svgSeal({ px: 8 }));
-  }
-
-  // the wordmark
-  {
-    const W = textWidth(VOICE.name, 1, 2) + 4;
-    const { card: c, shot } = card(g, 'The wordmark', 'Letterspaced hard. A name stencilled onto a crate, not a logotype drawn to be liked.');
-    const s = new Screen(shot, W, 11, 3, { fluid: true, label: 'Toko Midori wordmark' });
+    const { card: c, shot } = card(g, 'The mark', 'Black on paper. The primary, and the one that goes on anything printed.', true);
+    const s = new Surface(shot, 230, 150, { label: 'The Toko Midori Games face' });
     s.loop((t) => {
-      s.g.p(0, 0, W, 11, TOKO.VOID);
-      drawWordmark(s.g, 2, 2, { color: TOKO.BONE, track: 2 });
+      s.clear(TOKO.PAPER);
+      const k = pulse(t, { every: 6, len: 0.16, offset: 1.2 });
+      faceIn(s.ctx, 12, 12, 206, 126, { color: TOKO.INK, squash: 1 - k * 0.92 });
     });
     const row = el('div', 'row'); c.appendChild(row);
-    svgButton(row, 'SVG', 'toko-wordmark.svg', () => svgWordmark({ px: 8 }));
-    svgButton(row, 'Cry', 'toko-cry.svg', () => svgWordmark({ text: VOICE.cry, color: TOKO.MIDORI, px: 8, track: 1 }));
+    svgButton(row, 'SVG', 'toko-face.svg', () => svgFace({ color: TOKO.INK }));
+    svgButton(row, 'Reversed', 'toko-face-reverse.svg', () => svgFace({ color: TOKO.PAPER, ground: TOKO.INK }));
   }
 
-  // the stack
   {
-    const W = textWidth(VOICE.cry, 1, 1) + 4;
-    const { shot } = card(g, 'The stack', 'Name, rule, cry. The block that goes on a title screen — and the last thing the sting leaves on the glass.');
-    const s = new Screen(shot, W, 22, 3, { fluid: true, label: 'Toko Midori — go make your own' });
-    restless(s, (sc) => {
-      sc.g.p(0, 0, W, 22, TOKO.VOID);
-      drawStack(sc.g, 2, 2, { scale: 1 });
-    }, { seed: 13, offset: 4.1 });
+    const { card: c, shot } = card(g, 'Reversed', 'Paper on black. The screen default — the arcade, the games, this page.');
+    const s = new Surface(shot, 230, 150, { label: 'The face reversed out of black' });
+    s.loop((t) => {
+      s.clear(TOKO.INK);
+      const k = pulse(t, { every: 6, len: 0.16, offset: 3.4 });
+      faceIn(s.ctx, 12, 12, 206, 126, { color: TOKO.PAPER, squash: 1 - k * 0.92 });
+    });
+    const row = el('div', 'row'); c.appendChild(row);
+    svgButton(row, 'SVG', 'toko-face-hot.svg', () => svgFace({ color: TOKO.MAGENTA, ground: TOKO.INK }));
   }
 
-  // actual size
   {
-    const { shot } = card(g, 'Actual size', 'The 16 × 16 at one screen pixel per art pixel, next to the seal at 22. If it does not survive here it does not ship.');
-    const s = new Screen(shot, 48, 24, 3, { label: 'The mask and seal at true size' });
+    const { card: c, shot } = card(g, 'The badge', 'The face on a disc. The sticker, the pin, the favicon, and the signature a game wears in its corner.');
+    const s = new Surface(shot, 230, 150, { label: 'The Toko Midori Games badge' });
+    s.loop((t) => {
+      s.clear(TOKO.INK);
+      const k = pulse(t, { every: 5.5, len: 0.16, offset: 0.6 });
+      drawBadge(s.ctx, 78, 75, 60, { ground: TOKO.MAGENTA, ink: TOKO.PAPER, face: { squash: 1 - k * 0.92 } });
+      drawBadge(s.ctx, 176, 75, 38, { ground: TOKO.PAPER, ink: TOKO.INK, face: { squash: 1 - k * 0.92 } });
+    });
+    const row = el('div', 'row'); c.appendChild(row);
+    svgButton(row, 'SVG', 'toko-badge.svg', () => svgBadge({}));
+  }
+
+  {
+    const { shot } = card(g, 'The icon', 'Full bleed on a rounded square. App icons, cartridge labels, anywhere the mark has to fill a slot.');
+    const s = new Surface(shot, 230, 150, { label: 'The app icon' });
     s.loop(() => {
-      s.g.p(0, 0, 48, 24, TOKO.VOID);
-      drawMask(s.g, 3, 4, { small: true });
-      drawSeal(s.g, 23, 1, { scale: 1 });
+      s.clear(TOKO.INK);
+      drawIcon(s.ctx, 20, 12, 126, { ground: TOKO.MAGENTA, ink: TOKO.PAPER });
+      drawIcon(s.ctx, 158, 48, 54, { ground: TOKO.INK, ink: TOKO.PAPER });
     });
   }
-}
 
-// ── registers ────────────────────────────────────────────────────────────
-{
-  const g = $('#registers');
-  const notes = {
-    LIVE:  'Green on void. Screens, marquees, in-game. The default.',
-    STAMP: 'Hanko red. Corners, credits, the seal — anywhere Toko is signing rather than speaking.',
-    GHOST: 'One colour, no depth. 16px, print, and any surface that cannot hold the green.',
-    RIOT:  'Green torn by red, phosphor in the highlights. Only on the frame a hit lands on.',
-  };
-  for (const name of ['LIVE', 'STAMP', 'GHOST', 'RIOT']) {
-    const { shot } = card(g, name, notes[name]);
-    const bg = REGISTER[name].bg === 'transparent' ? TOKO.PANEL : REGISTER[name].bg;
-    const s = new Screen(shot, 28, 28, 4, { label: `The mask in the ${name} register` });
-    if (name === 'RIOT') {
-      // RIOT is not a resting state, so the board never shows it resting
-      s.loop((t) => {
-        s.g.p(0, 0, 28, 28, bg);
-        drawMask(s.g, 2, 2, { reg: 'RIOT' });
-        hit(s.ctx, 28, 28, 0.55 + 0.35 * Math.abs(Math.sin(t * 3)), { seed: 2 + ((t * 12) | 0), t, scan: false });
-      });
-    } else {
-      s.loop(() => { s.g.p(0, 0, 28, 28, bg); drawMask(s.g, 2, 2, { reg: name }); });
-    }
+  {
+    const { shot } = card(g, 'At size', 'The badge at 44, 28 and 16 pixels. Below 44 the two slots start to close and the eyes go solid — that is the floor, and it is why the signature clamps to it.');
+    const s = new Surface(shot, 230, 90, { label: 'The badge at 44, 28 and 16 pixels' });
+    s.loop(() => {
+      s.clear(TOKO.INK);
+      drawBadge(s.ctx, 40, 45, 22, { ground: TOKO.MAGENTA, ink: TOKO.PAPER });
+      drawBadge(s.ctx, 100, 45, 14, { ground: TOKO.MAGENTA, ink: TOKO.PAPER });
+      drawBadge(s.ctx, 145, 45, 8, { ground: TOKO.MAGENTA, ink: TOKO.PAPER });
+    });
+  }
+
+  {
+    const { shot } = card(g, 'The creator', 'How the artist signs: 美鳥十湖, with the role above it and the reading below.', true);
+    const s = new Surface(shot, 230, 120, { label: 'Toko Midori, The Game Creator' });
+    s.loop(() => { s.clear(TOKO.PAPER); drawCredit(s.ctx, 16, 34, 30, { color: TOKO.INK }); });
   }
 }
 
-// ── palette ──────────────────────────────────────────────────────────────
+// ── lockups ──────────────────────────────────────────────────────────────
 {
-  const g = $('#swatches');
-  const shown = [
-    ['MIDORI', 'the colour · 11.4:1'], ['MIDORI_DEEP', 'shell, seams'],
-    ['MOSS', 'the fill behind a mark'], ['LUX', 'luminescent leaf'],
-    ['VERMILION', 'the stamp · 4.6:1'], ['VERM_DEEP', 'the press'],
-    ['PHOSPHOR', 'borrowed: the arcade'], ['GOLD', 'borrowed: reward'],
-    ['BONE', 'body copy · 15.3:1'], ['ASH', 'dim copy · 7.7:1'],
-    ['VOID', 'the ground'], ['PANEL', 'a card on the ground'],
+  const g = $('#lockups');
+  const shots = [
+    ['Primary', TOKO.INK, TOKO.PAPER, true],
+    ['Reversed', TOKO.PAPER, TOKO.INK, false],
+    ['Hot', TOKO.MAGENTA, TOKO.INK, false],
+    ['On magenta', TOKO.PAPER, TOKO.MAGENTA, false],
   ];
-  for (const [key, note] of shown) {
-    const sw = el('div', 'sw');
-    const chip = el('div', 'chip');
-    chip.style.background = TOKO[key];
-    sw.appendChild(chip);
-    const name = el('div', 'name');
-    name.appendChild(el('b', null, key));
-    name.appendChild(el('span', null, `${TOKO[key]} · ${note}`));
-    sw.appendChild(name);
-    g.appendChild(sw);
+  for (const [name, ink, ground, paper] of shots) {
+    const { shot } = card(g, name, null, paper);
+    const s = new Surface(shot, 300, 120, { fluid: true, label: `Toko Midori Games lockup — ${name}` });
+    s.loop((t) => {
+      s.clear(ground);
+      const k = pulse(t, { every: 7 + name.length * 0.4, len: 0.16 });
+      const b = bounds();
+      const h = 74;
+      const boxW = h * (GEO.box / b.h);
+      drawFace(s.ctx, 16 - (b.x / GEO.box) * boxW, 22 - (b.y / GEO.box) * boxW, boxW,
+        { color: ink, squash: 1 - k * 0.92 });
+      drawLogotype(s.ctx, 16 + boxW * (b.w / GEO.box) + 12, 22, h / 2.95, { color: ink });
+    });
   }
+  // the one-liner
+  const { shot } = card(g, 'One line', 'For anywhere too short to stack.', true);
+  const s = new Surface(shot, 300, 70, { fluid: true, label: 'Toko Midori Games, one line' });
+  s.loop(() => {
+    s.clear(TOKO.PAPER);
+    drawLogotype(s.ctx, 14, 22, 26, { color: TOKO.INK, lines: [VOICE.company] });
+  });
 }
 
-// ── the alphabet ─────────────────────────────────────────────────────────
+// ── the sticker sheet ────────────────────────────────────────────────────
 {
-  const S = 2, W = 170, H = 92;
-  const s = new Screen($('#specimen'), W, H, 2, { fluid: true, label: 'The 5 by 7 alphabet: A to Z, 0 to 9, punctuation' });
-  s.loop((t) => {
-    s.g.p(0, 0, W, H, TOKO.VOID);
-    s.g.text('ABCDEFGHIJKLM', 6, 6, TOKO.BONE, S, 1);
-    s.g.text('NOPQRSTUVWXYZ', 6, 28, TOKO.BONE, S, 1);
-    s.g.text('0123456789', 6, 50, TOKO.MIDORI, S, 1);
-    s.g.text(".,!?-:'/·×", 6, 72, TOKO.ASH, S, 1);
-    scanlines(s.ctx, W, H, { darkness: 0.1, gap: 2, phase: t * 6 });
-  });
+  const cols = 4, r = 30, gap = 16;
+  const rows = Math.ceil(SHEET.length / cols);
+  const w = cols * (r * 2 + gap) + gap, h = rows * (r * 2 + gap) + gap;
+  const s = new Surface($('#sheet'), w, h, { fluid: true, label: 'The Toko Midori Games sticker sheet' });
+  s.loop(() => { s.clear('#3a3f47'); drawSheet(s.ctx, gap, gap, cols, r, gap); });
 }
 
 // ── the lab ──────────────────────────────────────────────────────────────
 {
-  const AW = 32, AH = 32;
-  const s = new Screen($('#lab'), AW, AH, 6, { label: 'The glitch toolkit, live' });
-  const ui = {
-    int: $('#s-int'), tear: $('#s-tear'), split: $('#s-split'),
-    drop: $('#s-drop'), seed: $('#s-seed'),
-  };
-  const out = {
-    int: $('#o-int'), tear: $('#o-tear'), split: $('#o-split'),
-    drop: $('#o-drop'), seed: $('#o-seed'),
-  };
+  const W = 200, H = 130;
+  const s = new Surface($('#lab'), W, H, { label: 'The glitch toolkit, live' });
+  const ui = { int: $('#s-int'), tear: $('#s-tear'), split: $('#s-split'), seed: $('#s-seed') };
+  const out = { int: $('#o-int'), tear: $('#o-tear'), split: $('#o-split'), seed: $('#o-seed') };
   const code = $('#lab-code');
   let resting = false;
 
-  const readout = (k, seed) => {
-    const lines = [`hit(ctx, ${AW}, ${AH}, ${k.toFixed(2)}, { seed: ${seed}, t });`];
-    if (+ui.tear.value) lines.push(`tear(ctx, ${AW}, ${AH}, { bands: 4, amount: ${ui.tear.value}, seed: ${seed} });`);
-    if (+ui.split.value) lines.push(`split(ctx, ${AW}, ${AH}, { dx: ${ui.split.value} });`);
-    if (+ui.drop.value) lines.push(`dropout(ctx, ${AW}, ${AH}, { n: ${ui.drop.value}, seed: ${seed} });`);
+  const readout = (kLabel, seed) => {
+    const lines = [`hit(ctx, ${W}, ${H}, ${kLabel}, { seed: ${seed}, t });`];
+    if (+ui.tear.value) lines.push(`tear(ctx, ${W}, ${H}, { bands: 4, amount: ${ui.tear.value}, seed: ${seed} });`);
+    if (+ui.split.value) lines.push(`split(ctx, ${W}, ${H}, { dx: ${ui.split.value} });`);
     return lines.join('\n');
   };
 
   s.loop((t) => {
-    s.cached('mask', (sc) => {
-      sc.g.p(0, 0, AW, AH, TOKO.VOID);
-      drawMask(sc.g, 4, 4, { scale: 1 });
-    });
+    s.clear(TOKO.INK);
+    faceIn(s.ctx, 12, 10, W - 24, H - 20, { color: TOKO.PAPER });
     const seed = +ui.seed.value;
     const k = resting ? pulse(t, { every: 6.5, len: 0.34 }) : (+ui.int.value / 100);
-    if (k > 0) hit(s.ctx, AW, AH, k, { seed, t, scan: false });
-    if (+ui.tear.value) tear(s.ctx, AW, AH, { bands: 4, amount: +ui.tear.value, seed });
-    if (+ui.split.value) split(s.ctx, AW, AH, { dx: +ui.split.value });
-    if (+ui.drop.value) dropout(s.ctx, AW, AH, { n: +ui.drop.value, seed, color: TOKO.VOID });
-    carrier(s.ctx, AW, AH, { y: (t * 22) % (AH + 6), height: 2, alpha: 0.14 });
-    scanlines(s.ctx, AW, AH, { darkness: 0.10, gap: 2, phase: t * 8 });
+    if (k > 0) hit(s.ctx, W, H, k, { seed, t, scan: false });
+    if (+ui.tear.value) tear(s.ctx, W, H, { bands: 4, amount: +ui.tear.value, seed });
+    if (+ui.split.value) split(s.ctx, W, H, { dx: +ui.split.value });
+    carrier(s.ctx, W, H, { y: (t * 60) % (H + 8), height: 3, alpha: 0.2 });
+    scanlines(s.ctx, W, H, { darkness: 0.12, gap: 3, phase: t * 20 });
 
-    out.int.value = (resting ? k : +ui.int.value / 100).toFixed(2);
+    out.int.value = k.toFixed(2);
     out.tear.value = ui.tear.value;
     out.split.value = ui.split.value;
-    out.drop.value = ui.drop.value;
     out.seed.value = ui.seed.value;
-    code.textContent = resting
-      ? readout(k, seed).replace(/^hit\(ctx, \d+, \d+, [\d.]+/, `hit(ctx, ${AW}, ${AH}, pulse(t)`)
-      : readout(k, seed);
+    code.textContent = readout(resting ? 'pulse(t)' : (+ui.int.value / 100).toFixed(2), seed);
   });
 
   $('#b-pulse').addEventListener('click', (e) => {
@@ -269,42 +229,25 @@ function restless(scr, drawBase, opts = {}) {
 
 // ── how it rests ─────────────────────────────────────────────────────────
 {
-  const s = new Screen($('#rest'), 32, 32, 4, { label: 'A signed page at rest' });
-  restless(s, (sc) => { sc.g.p(0, 0, 32, 32, TOKO.VOID); drawSeal(sc.g, 5, 5, { scale: 1 }); },
-    { every: 8, seed: 17, scan: 0.12 });
+  const s = new Surface($('#rest'), 200, 130, { label: 'A signed game at rest' });
+  s.loop((t) => {
+    s.clear(TOKO.INK);
+    const k = pulse(t, { every: 6.5, len: 0.16, offset: 2.1 });
+    drawBadge(s.ctx, 100, 65, 30, {
+      ground: TOKO.MAGENTA, ink: TOKO.PAPER, face: { squash: 1 - k * 0.92 },
+    });
+  });
 }
 
 // ── the sting ────────────────────────────────────────────────────────────
 $('#b-sting').addEventListener('click', () => { playSting(); });
 
-// ── lockups ──────────────────────────────────────────────────────────────
+// ── the footer badge ─────────────────────────────────────────────────────
 {
-  // the accents are the cabinets' own, lifted from the arcade's game list so
-  // a lockup on this page and a card on the hub cannot disagree
-  const GAMES = [
-    ['SUDS JACK', '#22e0e8'],
-    ['TOKO DROP', '#5ad1a8'],
-    ['HYPER DAGGER', '#d8412f'],
-    ['DROP CABAL', '#e8913a'],
-    ['PAPER ROUTE', '#6fc7e8'],
-    ['GAME OF LIFE', '#8faf6a'],
-    ['NEON RONIN', '#e83ca8'],
-    ['SKLTR', '#3ce85a'],
-  ];
-  const g = $('#lockups');
-  const W = 112, H = 26;
-  for (const [name, accent] of GAMES) {
-    const { shot } = card(g, name, null);
-    const s = new Screen(shot, W, H, 3, { fluid: true, label: `Toko Midori × ${name}` });
-    restless(s, (sc) => {
-      sc.g.p(0, 0, W, H, TOKO.VOID);
-      drawLockup(sc.g, 3, 1, { scale: 1, game: name, accent });
-    }, { every: 9 + Math.random() * 4, seed: name.length + 7 });
-  }
-}
-
-// ── the credit line in the footer ────────────────────────────────────────
-{
-  const s = new Screen($('#credit-seal'), SEAL, SEAL, 1, { label: 'Signed: Toko Midori' });
-  s.loop(() => { s.clear(); drawSeal(s.g, 0, 0, { scale: 1 }); });
+  const s = new Surface($('#credit-badge'), 30, 30, { label: 'Signed: Toko Midori Games' });
+  s.loop((t) => {
+    s.clear();
+    const k = pulse(t, { every: 6.5, len: 0.16, offset: 2.1 });
+    drawBadge(s.ctx, 15, 15, 15, { ground: TOKO.MAGENTA, ink: TOKO.PAPER, face: { squash: 1 - k * 0.92 } });
+  });
 }

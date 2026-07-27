@@ -8,31 +8,40 @@ Live preview: https://mbace1.github.io/Suds-Jack/
 
 ---
 
-## `toko/` — Toko Midori, the brand
+## `toko/` — Toko Midori Games™, the brand
 
-**常緑 · tokomidori · "evergreen".** The identity of the masked artist behind the
-look of every cabinet here. Open **`toko/index.html`** for the brand board:
-every mark running live, the four registers, the palette, the 5×7 type
-specimen, a glitch lab with sliders, the boot sting, per-game lockups, and SVG
-downloads.
+The identity of the workshop. Open **`toko/index.html`** for the brand board:
+every mark running live, the lockups, the sticker sheet, a glitch lab, the
+sting, and SVG downloads.
 
-There is **no image asset in this brand** — every mark is painted in code, and
-the SVG logo files are generated from the same string art the canvas draws, so a
-handed-over file can never drift from what is on screen. No build step, no
-dependencies: copy `toko/` next to a game and it works.
+Everything is **drawn in code from one geometry table** — there is no image
+asset in this folder, and the SVG logo files are generated from the same arcs
+the canvas strokes, so the file you hand a printer and the thing on screen
+cannot drift apart. No build step, no dependencies: copy `toko/` next to a game
+and it works.
 
-- **The mask** — a 24×24 pixel grid with a hand-plotted, off-centre crack that
-  was never repaired. A 16×16 reduction (redrawn, not resampled) is the favicon.
-- **The seal** — a chipped hanko, in vermilion. This is the signature.
-- **The alphabet** — 5×7, cut by hand. No font file to license, load, or fail to
-  load.
-- **The glitch** — seeded and reproducible, and an *event* rather than a state:
-  still, a third of a second of stutter, still again, roughly every eight
-  seconds.
-- **The signature** — one import (`sign()`) puts the seal in a game's corner,
+- **The face** — four fat round-capped arcs and two stems. The mouth is two
+  nested arcs opening up; each eye is one arc opening down with a stem dropped
+  from the inside of its crown, and that stem is what cuts the two slots that
+  make an eye an eye. Minimum size 44px, below which the slots close.
+- **Two colours** — black `RGB(0,0,0)` and magenta `RGB(240,2,127)` / `#F0027F`.
+  Both process primaries, so it prints anywhere with nothing to match. White is
+  the paper, not a colour. The nine-colour sticker sheet is a print run, not a
+  palette.
+- **The lockup** — face, gap, three lines, ™. The logotype stands the same
+  height as the face; that relationship *is* the lockup.
+- **The signature** — one import (`sign()`) puts the badge in a game's corner,
   under the HUD, taking no input. `toko-drop`, `paperboy`, `dropcabal` and
   `hyperdagger` are signed; `gameoflife` deliberately is not — it is the room
   where Toko takes the mask off.
+
+Created by **美鳥十湖** — *Toko Midori*, The Game Creator.
+
+Two caveats worth knowing: the face geometry is measured off the master artwork
+rather than lifted from the original vector file, and **the logotype typeface is
+the owner's licence and is not in this repo** — register it as the family
+`Toko Grotesk` and every lockup picks it up. The board says so out loud until
+you do.
 
 Rules and construction notes: **`toko/BRAND.md`**. Gate:
 `node toko/test/brand.cjs` (Playwright).
