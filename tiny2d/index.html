@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Tiny 2D</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0b0a14;
+      overflow: hidden;
+      touch-action: none;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      color: #f4f1e8;
+      -webkit-user-select: none; user-select: none;
+    }
+    #canvas-game { display: block; }
+    .hidden { display: none !important; }
+
+    /* ── HUD ─────────────────────────────────────────────────────────── */
+    #hud {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      padding: max(12px, env(safe-area-inset-top)) 14px 14px;
+    }
+    #hudTop { display: flex; justify-content: space-between; align-items: flex-start; }
+    #dist { font-size: 30px; font-weight: bold; line-height: 1; }
+    #speed { font-size: 12px; opacity: 0.7; margin-top: 3px; }
+    #scoreWrap { text-align: right; }
+    #score { font-size: 24px; font-weight: bold; line-height: 1; }
+    #hi { font-size: 11px; opacity: 0.55; margin-top: 3px; }
+
+    #lightBar {
+      position: absolute;
+      left: 50%; transform: translateX(-50%);
+      top: max(14px, env(safe-area-inset-top));
+      width: min(38vw, 190px); height: 6px;
+      background: rgba(255, 255, 255, 0.14);
+      border-radius: 3px; overflow: hidden;
+    }
+    #lightFill {
+      height: 100%; width: 100%;
+      background: linear-gradient(90deg, #ff9a4e, #ffd98a);
+      transition: width 0.12s linear;
+    }
+    #lightLabel {
+      position: absolute; left: 50%; transform: translateX(-50%);
+      top: calc(max(14px, env(safe-area-inset-top)) + 10px);
+      font-size: 9px; letter-spacing: 2px; opacity: 0.5;
+    }
+
+    #fever {
+      position: absolute; left: 50%; top: 20%;
+      transform: translateX(-50%);
+      font-size: 46px; font-weight: bold; color: #ffd166;
+      opacity: 0; transition: opacity 0.2s;
+      text-shadow: 0 0 20px rgba(255, 209, 102, 0.55);
+    }
+    #toast {
+      position: absolute; left: 50%; top: 45%;
+      transform: translate(-50%, 0);
+      font-size: 22px; font-weight: bold; letter-spacing: 2px;
+      opacity: 0;
+    }
+
+    /* ── Overlays ────────────────────────────────────────────────────── */
+    .overlay {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 18px; padding: 24px;
+      background: rgba(11, 10, 20, 0.72);
+      text-align: center;
+    }
+    h1 {
+      font-size: clamp(38px, 11vw, 66px);
+      letter-spacing: 3px;
+      line-height: 0.95;
+    }
+    h1 small {
+      display: block; font-size: 12px; letter-spacing: 5px;
+      opacity: 0.55; margin-top: 8px; font-weight: normal;
+    }
+    button {
+      font: inherit; font-weight: bold; letter-spacing: 2px;
+      min-height: 46px; min-width: 190px;
+      padding: 12px 22px;
+      border: 2px solid #f4f1e8; border-radius: 4px;
+      background: transparent; color: #f4f1e8;
+      cursor: pointer;
+    }
+    button.primary { background: #ff5a5f; border-color: #ff5a5f; }
+    button.ghost { opacity: 0.45; min-width: 190px; }
+    button:focus-visible { outline: 3px solid #ffd166; outline-offset: 3px; }
+    .hint { font-size: 12px; line-height: 1.7; opacity: 0.6; max-width: 430px; }
+    .hint b { color: #8dfff0; }
+    #menuBest, .sub { font-size: 12px; opacity: 0.6; }
+    #overStats .big { font-size: 52px; font-weight: bold; }
+    #overStats .sub { margin-top: 5px; }
+    #overStats .best { color: #ffd166; opacity: 0.9; margin-top: 10px; }
+    #btnSound {
+      position: fixed; right: 12px; bottom: 12px;
+      min-width: 0; min-height: 44px; padding: 8px 14px;
+      font-size: 12px; border-width: 1px; opacity: 0.5;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas-game"></canvas>
+
+  <div id="hud" class="hidden">
+    <div id="hudTop">
+      <div>
+        <div id="dist">0m</div>
+        <div id="speed">0 km/h</div>
+      </div>
+      <div id="scoreWrap">
+        <div id="score">0</div>
+        <div id="hi"></div>
+      </div>
+    </div>
+    <div id="lightBar"><div id="lightFill"></div></div>
+    <div id="lightLabel">DAYLIGHT</div>
+    <div id="fever">×1</div>
+    <div id="toast"></div>
+  </div>
+
+  <div id="menu" class="overlay">
+    <h1>TINY 2D<small>HOLD · POP · LAND ALONG</small></h1>
+    <button id="btnEndless" class="primary">SKATE</button>
+    <div id="menuBest"></div>
+    <p class="hint">
+      <b>Hold</b> to press into the hill — you speed up going down.<br>
+      <b>Let go at the lip</b> to pop. Hold again in the air to dive.<br>
+      Land <b>along</b> the next slope, not into it.<br>
+      <span style="opacity:.7">flick up / second tap / X = trick · space or tap = press</span>
+    </p>
+  </div>
+
+  <div id="over" class="overlay hidden">
+    <div id="overStats"></div>
+    <button id="btnAgain" class="primary">AGAIN</button>
+    <button id="btnMenu">MENU</button>
+  </div>
+
+  <button id="btnSound">♪ on</button>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="js/main.js?v=1"></script>
+</body>
+</html>
