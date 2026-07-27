@@ -144,7 +144,7 @@ is deliberately not the wire that shipped with the build.
 NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs
 ```
 
-89 checks. Beyond the content rules above it proves the update path itself: the
+91 checks. Beyond the content rules above it proves the update path itself: the
 feed is reading a *fetched* wire rather than a baked-in one; the CLI validator
 catches a bad art key, a missing language and a bulletin with nothing to decode;
 a broken wire degrades to the station identification without throwing; a cached

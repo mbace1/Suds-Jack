@@ -269,7 +269,19 @@ deliberately different registers; that contrast is what makes a post read as a
 cut package rather than two fixed frames. `Post.cutting()` is the director, a
 cut snaps with a bright band + displaced rows, `goLive()` resets to shot 0, and
 **DECODE cuts home to the graphic and holds** — it is the only shot that
-decodes. `poly.js` is the renderer: painter's algorithm, banded lambert, no
+decodes. The footage pool is **nine plates in two registers** and they must sit in one
+hour: three rendered (`esplanadi` + drones, `harbour`, `treeline`) and six
+painted in phosphor at night (`cathedral`, `katu`, `mannerheim`, `station`,
+`kamppi`, `gulf` — these came over from the deployed branch, where they had been
+written into `visuals.js` as story panels, and keep their approved names). The
+poly ramps were pulled from midday down to dusk when the sets met; lit windows
+are phosphor, never warm. A post's own plate leads and the second footage beat
+comes from the rest of the pool (seeded off the post index, not `Math.random()`,
+so scrolling back shows the same cut). **The gate draws every `BROLL_KEYS` entry
+on purpose** — a plate is only drawn when a post reaches that beat, so a broken
+one ships in silence, and did: four approved plates called `PixelScreen.bands()`
+which did not exist on their branch and threw the instant the edit cut to them.
+`poly.js` is the renderer: painter's algorithm, banded lambert, no
 z-buffer and no clipper. Its two paid-for traps — a polygon reaching behind the
 near plane is dropped **whole** (the first ground planes started behind the
 camera and the shot was bare sky), and two full-length ground planes stacked on
@@ -414,7 +426,7 @@ the target and run to the guard limit, which drew two long rays across the
 account graph. `field(scr, decode, false)` turns the graticule off for scenes with their own full-frame
 texture (`sea`, `engine`); a grid under a wireframe terrain is noise on noise.
 
-**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 89
+**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 91
 checks (roster counts are read off `__rfh.debug.stories()`, never hardcoded — that
 number went stale twice): zero console errors, the feed is vertical (one post per screen, snapping, media
 portrait in the buffer *and* on screen), the live codec animates while neighbours hold

@@ -511,7 +511,8 @@ window.__rfh = {
     if (p.signoff) return { signoff: true, index: active, decodedCount: decodedIds.size, lang: getLang() };
     return { channel: p.story.sector, index: active, decoded: p.decoded,
              id: p.story.id, lang: getLang(),
-             shot: p.post.shots[p.post.shot], broll: p.post.broll };
+             shot: p.post.shots[p.post.shot], broll: p.post.brollNow(),
+             brollPool: p.post.brollPool };
   },
   debug: {
     tuneIn: () => $('tuneIn').click(),

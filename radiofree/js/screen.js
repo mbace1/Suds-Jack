@@ -121,5 +121,13 @@ export class PixelScreen {
     this.ctx.globalAlpha = 1;
   }
 
+  // A rect filled with equal horizontal bands — a stepped gradient, which is
+  // the only kind this app has: a smooth one would dither itself into noise at
+  // this resolution. Every night-shot sky in the footage is one of these.
+  bands(x, y, w, h, colors) {
+    const bh = h / colors.length;
+    colors.forEach((c, i) => this.px(x, y + i * bh, w, Math.ceil(bh), c));
+  }
+
   destroy() { this.canvas.remove(); }
 }

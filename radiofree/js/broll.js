@@ -11,21 +11,32 @@
 // receiver is exactly how a broadcast monitor looks in a dark room.
 
 import { PAL } from './palette.js?v=7';
-import { mix, shade } from './screen.js?v=7';
+import { mix, shade, bayer } from './screen.js?v=7';
 import { render, box, project } from './poly.js?v=7';
+// `num` only: the 3x5 glyph renderer, which is furniture rather than register.
+// `field`/`ink`/`inkLo` are deliberately re-declared below instead of imported —
+// the footage must not depend on the graphics module it is meant to cut against.
+import { num } from './visuals.js?v=7';
 
-// a muted northern daylight. Every ramp is dark→light; a face picks its step
-// from how it faces the sun.
-const STONE  = ['#6b6558', '#8a8375', '#a49c8c', '#bdb5a3'];
-const STONE2 = ['#5e5a52', '#7b7669', '#928c7d', '#a8a192'];
-const ROOF   = ['#33393d', '#454c50', '#576065', '#69737a'];
-const LEAF   = ['#22331f', '#31492b', '#3f5c36', '#4d7042'];
-const TRUNK  = ['#3a2f26', '#4a3c30', '#5a493a', '#6a5745'];
-const ASPH   = ['#3c3e42', '#4a4d51', '#585c61', '#666a70'];
-const DRONE  = ['#15181c', '#22272c', '#30363d', '#3e454d'];
-const TRAM   = ['#1d4a3f', '#2a6455', '#357a68', '#40907b'];
-const WATER  = ['#2b4654', '#38596a', '#456c80', '#527f96'];
-const HULL   = ['#4a4238', '#5f564a', '#74695b', '#897c6c'];
+// A northern DUSK. Every ramp is dark→light; a face picks its step from how it
+// faces what is left of the sun.
+//
+// These were a bright midday when the poly plates were the only footage. The
+// approved city plates below are painted at night, and a rotation that cuts
+// from noon to midnight and back is a rotation the eye catches every time —
+// so the whole poly set was pulled down to the same hour. Nothing else about
+// them changed; the ramps are the light.
+const STONE  = ['#3a3730', '#4e4a41', '#625d51', '#767063'];
+const STONE2 = ['#33312c', '#454239', '#565246', '#676255'];
+const ROOF   = ['#1d2124', '#282d31', '#33393d', '#3e4549'];
+const LEAF   = ['#141d13', '#1d2a1a', '#263622', '#2f432a'];
+const TRUNK  = ['#221c17', '#2c241d', '#362c23', '#403429'];
+const ASPH   = ['#222426', '#2b2d30', '#34373a', '#3d4044'];
+const DRONE  = ['#0b0d10', '#141719', '#1d2124', '#262b2f'];
+const TRAM   = ['#123029', '#1a4038', '#215046', '#286055'];
+const WATER  = ['#1a2b34', '#233742', '#2c4350', '#354f5e'];
+const LIT    = ['#16302b', '#20463e', '#2b5c51', '#357264'];   // lit windows
+const HULL   = ['#2e2923', '#3c352d', '#4a4237', '#584e41'];
 
 // The sky, drawn as bands behind everything. It stops a few pixels BELOW the
 // horizon rather than at the middle of the frame — the ground planes cover the
@@ -63,7 +74,7 @@ function drone(cx, cy, cz, tilt, t, i) {
 // camera dollies slowly up the promenade, which is how this shot is always
 // filmed.
 function esplanadi(scr, t, d) {
-  sky(scr, '#5c7385', '#9fb2bd', 0.42);
+  sky(scr, '#141d2a', '#425360', 0.42);
   const faces = [];
   const roll = (t * 1.5) % 12;                     // the dolly, looped
   const cam = { x: 0, y: 2.4, z: -3, yaw: Math.sin(t * 0.16) * 0.045, f: 105, hz: 0.42 };
@@ -109,7 +120,7 @@ function esplanadi(scr, t, d) {
         faces.push({
           pts: [[sx * 8.95, 2 + w * 2.2, z - 2], [sx * 8.95, 2 + w * 2.2, z + 2],
                 [sx * 8.95, 3.1 + w * 2.2, z + 2], [sx * 8.95, 3.1 + w * 2.2, z - 2]],
-          ramp: ROOF, flat: 0.35,
+          ramp: LIT, flat: 0.62,
         });
       }
     }
@@ -155,7 +166,7 @@ function esplanadi(scr, t, d) {
 // ── THE HARBOUR ────────────────────────────────────────────────────
 // Container cranes over the water, for anything about the port or the sea.
 function harbour(scr, t, d) {
-  sky(scr, '#4e6675', '#93a8b4', 0.4);
+  sky(scr, '#111a26', '#3c4c59', 0.4);
   const faces = [];
   const drift = (t * 0.8) % 14;
 
@@ -187,7 +198,7 @@ function harbour(scr, t, d) {
 // Forest, a cut line, a mast. For the defence band: the shot every bulletin
 // about the border uses, because there is nothing else to point a camera at.
 function treeline(scr, t, d) {
-  sky(scr, '#54677a', '#a8b3ba', 0.4);
+  sky(scr, '#131c28', '#414f5c', 0.4);
   const faces = [];
   const roll = (t * 1.1) % 9;
 
@@ -224,7 +235,228 @@ function treeline(scr, t, d) {
   }
 }
 
-const PLATES = { esplanadi, harbour, treeline };
+// ── THE APPROVED CITY PLATES ───────────────────────────────────────
+// Six shots painted rather than rendered — the cathedral, two trams, the
+// station, Kamppi and the gulf. They came from the deployed line, where they
+// had been written straight into `visuals.js` as story panels; they are
+// footage, so they live here now, and they keep their approved names.
+//
+// They are painted in phosphor at night while the poly plates above are lit
+// daylight, which is why every plate in this file goes out through the same
+// `drawBroll()` treatment and why the poly skies were pulled down to dusk: a
+// rotation that cuts from noon to midnight and back is a rotation you notice.
+//
+// `field`, `ink` and `inkLo` are local copies of the three helpers these were
+// written against in visuals.js — see the note on the import at the top.
+const W = 128, H = 152;
+function field(scr, decode, grid = true) {
+  scr.clear(mix(PAL.PANEL, '#1a1206', decode * 0.5));
+  if (!grid) return;
+  const g = mix(PAL.GREEN_LO, PAL.AMBER_DIM, decode * 0.7);
+  for (let x = 0; x < W; x += 8) scr.px(x, 0, 1, H, shade(g, 0.5));
+  for (let y = 0; y < H; y += 8) scr.px(0, y, W, 1, shade(g, 0.5));
+}
+const ink = (d) => mix(PAL.GREEN, PAL.AMBER, d);
+const inkLo = (d) => mix(PAL.GREEN_DIM, PAL.AMBER_DIM, d);
+
+// Tuomiokirkko / Senate Square (approved)
+function cathedral(scr, t, d) {
+  field(scr, d, false);
+  scr.bands(0, 0, W, 52, [mix('#0c1820', '#1a1408', d), mix('#122430', '#241a0c', d)]);
+  const cx = 64;
+  scr.ellipse(cx, 36, 30, 18, mix('#d0d8dc', '#c0a068', d));
+  scr.ellipse(cx, 34, 26, 14, mix('#e0e8ec', '#d0b078', d));
+  scr.ellipse(cx - 22, 42, 8, 6, mix('#c8d0d4', '#b89860', d));
+  scr.ellipse(cx + 22, 42, 8, 6, mix('#c8d0d4', '#b89860', d));
+  for (let i = -3; i <= 3; i++) {
+    const x = cx + i * 9;
+    scr.px(x - 1, 50, 3, 32, mix('#c0c8cc', '#b09058', d));
+  }
+  scr.px(cx - 32, 50, 64, 4, mix('#a8b0b4', '#a08050', d));
+  for (let s = 0; s < 6; s++) {
+    const y = 84 + s * 5;
+    const w = 72 + s * 7;
+    scr.px(cx - w / 2, y, w, 4, mix('#9898a0', '#907040', d));
+  }
+  scr.px(0, 114, W, H - 114, mix('#101820', '#1c160c', d));
+  for (let i = 0; i < 10; i++) {
+    const x = 12 + ((t * 11 + i * 19) % (W - 24));
+    const y = 118 + (i % 3) * 5;
+    if (d < 0.4 || i % 3 === 0) scr.px(x, y, 2, 3, ink(d * 0.5));
+  }
+  scr.px(18, 22, 2, 20, inkLo(d));
+  const fy = 20 + Math.sin(t * 2.1) * 2;
+  scr.px(20, fy, 11, 7, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d));
+  if (d > 0.35) {
+    scr.rect(4, 4, 34, 11, PAL.PANEL_LO, PAL.AMBER);
+    num(scr, 8, 6, 'OBS', PAL.AMBER_HOT);
+  }
+}
+
+// Narrower street tram (first approved tram, renamed)
+function katu(scr, t, d) {
+  field(scr, d, false);
+  scr.bands(0, 0, W, 38, [mix('#0a141c', '#181008', d), mix('#101c28', '#20160c', d)]);
+  for (let i = 0; i < 6; i++) {
+    const x = i * 22;
+    const h = 26 + ((i * 13) % 16);
+    scr.px(x, 38 - h, 20, h, mix('#0e1c24', '#1e160a', d));
+    for (let wy = 0; wy < h - 6; wy += 7) {
+      const on = ((Math.floor(t * 1.7) + i + wy) % 4) !== 0;
+      scr.px(x + 4, 38 - h + 4 + wy, 3, 3, on ? inkLo(d) : shade(inkLo(d), 0.35));
+      scr.px(x + 12, 38 - h + 4 + wy, 3, 3, on ? shade(inkLo(d), 0.65) : shade(inkLo(d), 0.3));
+    }
+  }
+  scr.px(0, 86, W, H - 86, mix('#101418', '#1a140c', d));
+  scr.px(0, 94, W, 2, inkLo(d));
+  const tx = ((t * 20) % (W + 55)) - 28;
+  scr.px(tx, 76, 40, 13, mix(PAL.GREEN_DIM, PAL.AMBER_DIM, d * 0.45));
+  scr.px(tx + 3, 70, 11, 6, mix(PAL.GREEN, PAL.AMBER, d * 0.35));
+  scr.px(tx + 2, 80, 7, 5, mix('#1a282c', '#2a1e10', d));
+  scr.px(tx + 13, 80, 7, 5, mix('#1a282c', '#2a1e10', d));
+  scr.px(tx + 24, 80, 7, 5, mix('#1a282c', '#2a1e10', d));
+  for (let i = 0; i < 3; i++) {
+    const cx = ((t * 14 + i * 48) % (W + 28)) - 14;
+    scr.px(cx, 106 + (i % 2) * 9, 13, 5, mix(PAL.GREEN_LO, PAL.AMBER_DIM, d * 0.3));
+  }
+  for (let i = 0; i < 4; i++) {
+    const lx = 14 + i * 32;
+    scr.px(lx, 48, 2, 36, inkLo(d));
+    const pulse = 0.55 + 0.45 * Math.sin(t * 2.8 + i);
+    scr.px(lx - 2, 46, 6, 3, mix(shade(PAL.GREEN_HOT, pulse), PAL.AMBER_HOT, d));
+  }
+  if (d > 0.35) num(scr, 4, 6, '4T', PAL.AMBER_HOT);
+}
+
+// Wide Mannerheimintie boulevard tram (second approved)
+function mannerheim(scr, t, d) {
+  field(scr, d, false);
+  // deep night sky
+  scr.bands(0, 0, W, 30, [mix('#060e14', '#140e08', d), mix('#0a1620', '#1a120a', d)]);
+  // tall buildings set further back for wide avenue feel
+  for (let i = 0; i < 5; i++) {
+    const x = i * 28 - 4;
+    const h = 40 + ((i * 17) % 22);
+    scr.px(x, 30 - h, 26, h, mix('#0c1a22', '#1c140a', d));
+    for (let wy = 0; wy < h - 8; wy += 9) {
+      for (let wx = 4; wx < 22; wx += 8) {
+        const on = ((Math.floor(t * 1.5) + i + wy + wx) % 5) !== 0;
+        scr.px(x + wx, 30 - h + 6 + wy, 4, 4, on ? inkLo(d) : shade(inkLo(d), 0.3));
+      }
+    }
+  }
+  // wide multi-lane street
+  scr.px(0, 78, W, H - 78, mix('#0e1418', '#1a140c', d));
+  // tram tracks (double)
+  scr.px(52, 78, 2, H - 78, inkLo(d));
+  scr.px(74, 78, 2, H - 78, inkLo(d));
+  // tram coming toward camera
+  const ty = 90 + Math.sin(t * 0.8) * 2;
+  const tw = 28 + Math.sin(t * 0.4) * 2;
+  scr.px(64 - tw / 2, ty, tw, 18, mix(PAL.GREEN_DIM, PAL.AMBER_DIM, d * 0.4));
+  scr.px(64 - tw / 2 + 4, ty + 4, tw - 8, 8, mix('#1a282c', '#2a1e10', d));
+  scr.px(62, ty - 4, 4, 4, mix(PAL.GREEN_HOT, PAL.AMBER_HOT, d)); // headlight
+  // distant traffic dots
+  for (let i = 0; i < 6; i++) {
+    const x = 10 + ((t * 12 + i * 30) % (W - 20));
+    const y = 110 + (i % 3) * 8;
+    scr.px(x, y, 10, 4, mix(PAL.GREEN_LO, PAL.AMBER_DIM, d * 0.25));
+  }
+  // street lights along both sides
+  for (let i = 0; i < 5; i++) {
+    const lx = 8 + i * 28;
+    scr.px(lx, 40, 2, 38, inkLo(d));
+    const pulse = 0.5 + 0.5 * Math.sin(t * 2.5 + i);
+    scr.px(lx - 3, 38, 8, 3, mix(shade(PAL.GREEN_HOT, pulse), PAL.AMBER_HOT, d));
+    const rx = W - 10 - i * 28;
+    scr.px(rx, 40, 2, 38, inkLo(d));
+    scr.px(rx - 3, 38, 8, 3, mix(shade(PAL.GREEN_HOT, pulse), PAL.AMBER_HOT, d));
+  }
+  if (d > 0.35) {
+    num(scr, 4, 6, 'M10', PAL.AMBER_HOT);
+  }
+}
+
+// Central Station (original approved style)
+function station(scr, t, d) {
+  field(scr, d, false);
+  scr.bands(0, 0, W, 28, [mix('#08141c', '#181008', d), mix('#0c1c28', '#20160c', d)]);
+  const tx = 64;
+  scr.px(tx - 11, 6, 22, 56, mix('#1a282c', '#2a1e10', d));
+  scr.px(tx - 13, 4, 26, 4, mix('#2a383c', '#3a2e18', d));
+  scr.disc(tx, 26, 9, mix('#d0d8dc', '#c8a870', d));
+  scr.disc(tx, 26, 7, mix('#e8f0f4', '#d8b880', d));
+  const ang = (t * 0.12) % (Math.PI * 2);
+  scr.px(tx, 26, 1, -6, ink(d));
+  scr.px(tx, 26, Math.round(Math.cos(ang) * 5), Math.round(Math.sin(ang) * 5), inkLo(d));
+  scr.px(6, 38, 42, 28, mix('#121e22', '#1e160c', d));
+  scr.px(80, 38, 42, 28, mix('#121e22', '#1e160c', d));
+  for (const side of [10, 84]) {
+    for (let wy = 0; wy < 20; wy += 8) {
+      for (let wx = 0; wx < 34; wx += 10) {
+        const on = ((Math.floor(t * 1.4) + wy + wx) % 5) !== 0;
+        scr.px(side + wx, 44 + wy, 5, 4, on ? inkLo(d) : shade(inkLo(d), 0.35));
+      }
+    }
+  }
+  scr.px(0, 68, W, H - 68, mix('#0e1418', '#1a1208', d));
+  for (let i = 0; i < 12; i++) {
+    const x = 8 + ((t * 9 + i * 15) % (W - 16));
+    const y = 76 + (i % 4) * 6;
+    if (d < 0.35 || i % 3 === 0) scr.px(x, y, 2, 3, ink(d * 0.5));
+  }
+  const tr = ((t * 7) % (W + 36)) - 18;
+  scr.px(tr, 128, 34, 7, mix(PAL.GREEN_LO, PAL.AMBER_DIM, d * 0.35));
+  scr.px(tr + 3, 124, 8, 4, inkLo(d));
+  if (d > 0.35) num(scr, 4, 6, d > 0.5 ? 'LATE' : 'ON', ink(d));
+}
+
+function kamppi(scr, t, d) {
+  field(scr, d, false);
+  scr.px(0, 0, W, H, mix('#060a10', '#140e06', d));
+  for (let i = 0; i < 4; i++) {
+    const x = 8 + i * 30, h = 50 + (i % 3) * 18;
+    scr.rect(x, H - 20 - h, 24, h, mix('#0c1820', '#1e160a', d), inkLo(d));
+    for (let wy = 0; wy < h - 8; wy += 8) {
+      const on = ((Math.floor(t * 2) + i + wy) % 5) !== 0;
+      scr.px(x + 4, H - 20 - h + 6 + wy, 4, 3, on ? ink(d * 0.6) : shade(inkLo(d), 0.5));
+      scr.px(x + 14, H - 20 - h + 6 + wy, 4, 3, on ? inkLo(d) : shade(inkLo(d), 0.4));
+    }
+  }
+  scr.px(0, H - 20, W, 20, mix('#0a1218', '#1a1208', d));
+  for (let i = 0; i < 18; i++) {
+    const x = 6 + (i * 17 + Math.floor(t * 8)) % (W - 12);
+    const y = H - 16 + (i % 3) * 4;
+    const keep = d < 0.35 || i % 5 === 0;
+    if (keep) scr.px(x, y, 2, 3, ink(d * 0.5));
+  }
+  if (d > 0.4) num(scr, 4, 8, d > 0.5 ? '12' : '90', ink(d));
+}
+
+function gulf(scr, t, d) {
+  field(scr, d, false);
+  scr.bands(0, 0, W, 55, [mix('#08141c', '#181008', d), mix('#0c2030', '#22180c', d)]);
+  for (let i = 0; i < 12; i++) {
+    const x = 4 + i * 10;
+    const h = 8 + ((i * 7) % 14);
+    scr.px(x, 55 - h, 8, h, mix('#0e1c24', '#1e160a', d));
+    if ((Math.floor(t) + i) % 4 === 0) scr.px(x + 2, 55 - h + 3, 2, 2, inkLo(d));
+  }
+  for (let y = 70; y < H; y += 2) {
+    for (let x = 0; x < W; x += 2) {
+      if (bayer(x >> 1, y >> 1) < 0.5 + Math.sin(x * 0.08 + t * 1.2) * 0.1)
+        scr.px(x, y, 2, 2, mix('#0a2838', '#281c0a', d));
+    }
+  }
+  scr.px(0, 64, W, 8, mix('#121820', '#1e160c', d));
+  if (d > 0.3) {
+    scr.px(50, 100, W - 50, 2, PAL.AMBER);
+    num(scr, 54, 108, 'CAB', PAL.AMBER_HOT);
+  }
+}
+
+const PLATES = { esplanadi, harbour, treeline,
+                 cathedral, katu, mannerheim, station, kamppi, gulf };
 export const BROLL_KEYS = Object.keys(PLATES);
 
 // Footage arrives through the receiver, not straight onto the page: a green

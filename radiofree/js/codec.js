@@ -25,7 +25,7 @@ import { PixelScreen, shade, mix } from './screen.js?v=7';
 import { PAL, SECTOR_COLOR } from './palette.js?v=7';
 import { Toko } from './toko.js?v=7';
 import { drawVisual, PANEL_W, PANEL_H, num } from './visuals.js?v=7';
-import { drawBroll } from './broll.js?v=7';
+import { drawBroll, BROLL_KEYS } from './broll.js?v=7';
 import { drawWide } from './toko.js?v=7';
 
 export const POST_W = 144, POST_H = 276;
@@ -53,7 +53,18 @@ export class Post {
     this.wave = new Array(31).fill(0.2);
     this.live = false;
     this.silent = false;               // the sign-off: the carrier is gone
-    this.broll = story.broll || 'esplanadi';
+    // The rotation. The story's own plate leads — it is the shot the wire chose
+    // for this dateline — and the second footage beat comes from the rest of
+    // the pool, so the two B-roll slots in one package are two different
+    // streets rather than the same street twice. Seeded off the post's index
+    // rather than Math.random(), so scrolling back to a post shows the same
+    // cut you saw the first time, and the gate can assert on it.
+    const own = BROLL_KEYS.includes(story.broll) ? story.broll : BROLL_KEYS[0];
+    const rest = BROLL_KEYS.filter(k => k !== own);
+    this.brollPool = rest.length
+      ? [own, rest[seed % rest.length], own, rest[(seed + 3) % rest.length]]
+      : [own];
+    this.brollAt = -1;
     this.shots = story.visual === 'signoff'
       ? ['graphic']                    // a test card does not cut to anything
       : ['graphic', 'broll', 'wide', 'broll'];
@@ -66,7 +77,10 @@ export class Post {
   // A post that comes back to camera starts on the graphic, not halfway through
   // an edit it was running when you scrolled off it — the story panel is what
   // the bulletin is about, so it is what you land on.
-  goLive() { this.live = true; this.signal = 0; this.shot = 0; this.shotT = 0; this.flash = 0; }
+  goLive() {
+    this.live = true; this.signal = 0;
+    this.shot = 0; this.shotT = 0; this.flash = 0; this.brollAt = -1;
+  }
   goIdle() { this.live = false; }
 
   update(dt, mouth) {
@@ -99,6 +113,7 @@ export class Post {
     if (this.shotT >= SHOT_SECS) {
       this.shotT = 0;
       this.shot = (this.shot + 1) % this.shots.length;
+      if (this.shots[this.shot] === 'broll') this.brollAt++;
       this.flash = 1;
     }
   }
@@ -116,7 +131,7 @@ export class Post {
 
     // whichever shot the edit is on, into the one program buffer
     const shot = this.shots[this.shot];
-    if (shot === 'broll') drawBroll(this.broll, this.panel, this.t, this.decode);
+    if (shot === 'broll') drawBroll(this.brollNow(), this.panel, this.t, this.decode);
     else if (shot === 'wide') drawWide(this.panel, this.toko, this.signal);
     else drawVisual(this.story.visual, this.panel, this.t, this.decode);
     if (this.flash > 0.02) this.cutFlash();
@@ -133,6 +148,9 @@ export class Post {
     s.px(0, 0, POST_W, 1, shade(PAL.SHELL, 1.9));
     s.px(0, POST_H - 1, POST_W, 1, shade(PAL.SHELL, 0.4));
   }
+
+  // which plate the current footage beat is on
+  brollNow() { return this.brollPool[Math.max(0, this.brollAt) % this.brollPool.length]; }
 
   // the snap on a cut: one bright band and a couple of displaced rows, gone in
   // a tenth of a second. Without it the shots simply replace each other and the

@@ -180,14 +180,47 @@ const contrast = (a, b) => {
   // wide of the booth. If the director ever wedges, the post silently becomes
   // the old static two-frame codec again — so watch it actually cut, and watch
   // DECODE bring it home to the graphic (the only shot that decodes).
-  const seen = new Set();
+  const seen = new Set(), plates = new Set();
   for (let i = 0; i < 34; i++) {
-    seen.add(await page.evaluate(() => __rfh.state.shot));
+    const st = await page.evaluate(() => __rfh.state);
+    seen.add(st.shot);
+    if (st.shot === 'broll') plates.add(st.broll);
     await page.waitForTimeout(260);
   }
   check(`the program frame cuts between shots (${[...seen].join('/')})`, seen.size >= 2);
   check('the edit cuts to the Helsinki footage', seen.has('broll'));
   check('the edit cuts to the wide of the booth', seen.has('wide'));
+  // Read the post's pool rather than waiting out a whole 14 s cut cycle to see
+  // both footage beats — the pool is the design, and it is deterministic.
+  const pool = await page.evaluate(() => __rfh.state.brollPool);
+  check(`the footage rotates rather than repeating one street (${pool.join('/')})`,
+    new Set(pool).size >= 2 && plates.size >= 1);
+
+  // The bug the deployed build shipped: four footage plates called a PixelScreen
+  // helper that did not exist, so every one of them threw the moment the edit
+  // cut to it — and nothing anywhere noticed, because a plate is only drawn
+  // when a post happens to reach that beat. Draw all of them, on purpose.
+  const plateTrouble = await page.evaluate(async () => {
+    const src = document.querySelector('script[type=module]').getAttribute('src');
+    const v = (src.match(/\?v=\d+/) || [''])[0];
+    const [{ PixelScreen }, { drawBroll, BROLL_KEYS }] = await Promise.all([
+      import(`./js/screen.js${v}`), import(`./js/broll.js${v}`),
+    ]);
+    const bad = [];
+    for (const k of BROLL_KEYS) {
+      for (const d of [0, 1]) {
+        const scr = new PixelScreen(null, 128, 152);
+        try { drawBroll(k, scr, 2.5, d); } catch (e) { bad.push(`${k}: ${e.message}`); continue; }
+        const px = scr.ctx.getImageData(0, 0, 128, 152).data;
+        let on = 0;
+        for (let i = 0; i < px.length; i += 4) if (px[i] + px[i + 1] + px[i + 2] > 60) on++;
+        if (on < 500) bad.push(`${k}: draws almost nothing (${on}px)`);
+      }
+    }
+    return bad;
+  });
+  check(`every footage plate actually draws${plateTrouble.length ? ' — ' + plateTrouble.join('; ') : ''}`,
+    plateTrouble.length === 0);
 
   await live('.decode-btn').click();
   await page.waitForTimeout(400);

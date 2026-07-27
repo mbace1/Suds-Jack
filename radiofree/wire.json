@@ -24,37 +24,37 @@
       "id": "kaiku-restructure",
       "sector": "GAMING",
       "visual": "chart",
-      "broll": "esplanadi"
+      "broll": "kamppi"
     },
     {
       "id": "season-zero",
       "sector": "GAMING",
       "visual": "chart2",
-      "broll": "esplanadi"
+      "broll": "katu"
     },
     {
       "id": "foundry-deal",
       "sector": "GAMING",
       "visual": "mesh",
-      "broll": "esplanadi"
+      "broll": "station"
     },
     {
       "id": "summit-consensus",
       "sector": "GAMING",
       "visual": "crowd",
-      "broll": "esplanadi"
+      "broll": "mannerheim"
     },
     {
       "id": "surprise-bundle",
       "sector": "GAMING",
       "visual": "bundle",
-      "broll": "esplanadi"
+      "broll": "katu"
     },
     {
       "id": "heat-recovery",
       "sector": "INDUSTRY",
       "visual": "heat",
-      "broll": "harbour"
+      "broll": "kamppi"
     },
     {
       "id": "vuosaari-automation",
@@ -66,25 +66,25 @@
       "id": "sixth-generation",
       "sector": "INDUSTRY",
       "visual": "tower",
-      "broll": "treeline"
+      "broll": "mannerheim"
     },
     {
       "id": "round-b",
       "sector": "INDUSTRY",
       "visual": "coin",
-      "broll": "esplanadi"
+      "broll": "cathedral"
     },
     {
       "id": "up-to-ten",
       "sector": "INDUSTRY",
       "visual": "speed",
-      "broll": "treeline"
+      "broll": "katu"
     },
     {
       "id": "seabed",
       "sector": "DEFENCE",
       "visual": "sea",
-      "broll": "harbour"
+      "broll": "gulf"
     },
     {
       "id": "interference",
@@ -102,13 +102,13 @@
       "id": "amplification",
       "sector": "DEFENCE",
       "visual": "crowd2",
-      "broll": "treeline"
+      "broll": "mannerheim"
     },
     {
       "id": "no-comment",
       "sector": "DEFENCE",
       "visual": "denial",
-      "broll": "harbour"
+      "broll": "cathedral"
     },
     {
       "id": "border-lab",

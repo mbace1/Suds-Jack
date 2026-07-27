@@ -187,7 +187,7 @@ radiofree/
     codec.js      one post's screen (both frames in ONE canvas) + the Reader
     toko.js       the anchor: gel wobble, blink, lip-sync, decode tear
     visuals.js    the story panels + the sign-off test card
-    broll.js      the Helsinki footage plates the package cuts to
+    broll.js      the Helsinki footage pool — nine plates, two registers
     poly.js       the small flat-shaded 3D renderer the footage is built on
     stories.js    fetches, validates and installs wire.json (+ the off-air post)
     wire.js       the wire format: the validator, the sort, the markup parser
@@ -294,6 +294,25 @@ sort is a coin toss: butt the strips together in x instead, and it cannot
 matter. `cam.hz` slides the horizon off centre — the renderer has no pitch, and
 in a 128×152 portrait frame a horizon at the halfway mark is half a picture.
 
+**The footage pool is nine plates in two registers**, and they have to sit in
+one hour of the day. Three are rendered (`esplanadi` with its drone formation,
+`harbour`, `treeline` — poly.js, over the dusk ramps at the top of `broll.js`)
+and six are painted in phosphor at night (`cathedral`, `katu`, `mannerheim`,
+`station`, `kamppi`, `gulf`). The painted ones arrived from the deployed branch,
+where they had been written into `visuals.js` as story panels; they are footage,
+so they live in `broll.js` now and keep their approved names. The rendered ones
+were a bright midday until the two sets met — a rotation that cuts from noon to
+midnight and back is a rotation the eye catches every time, so the poly ramps
+were pulled down to the same hour. Lit windows in those plates are phosphor,
+never warm: amber has one job.
+
+**Every plate must be drawn by the gate, on purpose.** A plate is only drawn
+when a post happens to reach that beat, so a broken one ships silently — and
+did: four of the approved plates called `PixelScreen.bands()`, which did not
+exist on the branch they were written on, and threw the instant the edit cut to
+them. The gate now draws every key in `BROLL_KEYS` in both states and fails on a
+throw or a near-empty frame.
+
 **Video grain must not come from `bayer()`.** The low cells of the matrix are the
 same cells every frame, so a bayer-gated grain sat perfectly still and read as a
 perforated screen rather than as a signal. Plain `Math.random()` positions.
@@ -339,7 +358,7 @@ collapses into a regular dot grid — the gulf water column did exactly that. Us
 NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs
 ```
 
-Eighty-nine checks in a real browser: zero console errors; the feed is vertical (one
+Ninety-one checks in a real browser: zero console errors; the feed is vertical (one
 post per screen, snapping, media portrait both in the buffer and on screen); the
 live codec animates while its neighbours hold their painted frame and unread
 posts sit on standby; the program frame really cuts between the graphic, the
