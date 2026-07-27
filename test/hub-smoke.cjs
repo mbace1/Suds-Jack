@@ -265,11 +265,30 @@ function check(name, cond) {
   check(`every control is a 44px target${a11y.small.length ? ' — ' + a11y.small.join(', ') : ''}`, a11y.small.length === 0);
   await page.keyboard.press('Escape');
 
-  // two cabinets to a row on a desktop, one on a phone — the marquee is the
-  // thing worth looking at, and three-up shrank it to a thumbnail
-  const cols = w => page.evaluate(() =>
+  // The row grows with the screen, but the marquee is the thing worth looking
+  // at, so each step up is only allowed where it still renders large. Both are
+  // measured: the column count AND the width a marquee actually gets.
+  const cols = () => page.evaluate(() =>
     getComputedStyle(document.getElementById('cabinets')).gridTemplateColumns.split(' ').length);
-  check('the floor is two cabinets wide', await cols() === 2);
+  const marqueeWidth = () => page.evaluate(() =>
+    document.querySelector('.cab .art').getBoundingClientRect().width);
+  const ladder = [
+    [390, 1, 'a phone'], [800, 2, 'a tablet upright'],
+    [1180, 3, 'a wide iPad'], [1600, 4, 'a large desktop'],
+  ];
+  const wrong = [], thumbs = [];
+  for (const [w, want, what] of ladder) {
+    await page.setViewportSize({ width: w, height: 900 });
+    await page.waitForTimeout(80);
+    const got = await cols();
+    if (got !== want) wrong.push(`${what} ${w}px: ${got} not ${want}`);
+    const mw = await marqueeWidth();
+    if (mw < 300) thumbs.push(`${what} ${Math.round(mw)}px`);
+  }
+  check(`the row grows 1-2-3-4 with the screen${wrong.length ? ` — ${wrong}` : ''}`, wrong.length === 0);
+  check(`and no step shrinks the marquee to a thumbnail${thumbs.length ? ` — ${thumbs}` : ''}`,
+    thumbs.length === 0);
+  await page.setViewportSize({ width: 1100, height: 900 });
 
   // a phone, held upright: the cabinets stack and nothing runs off the side
   await page.setViewportSize({ width: 390, height: 780 });
@@ -357,11 +376,12 @@ function check(name, cond) {
   check('and takes the first cabinet', await page.evaluate(() => __hub.debug.selected()) === 0);
   await push(1, 0);
   check('right moves one cabinet along', await page.evaluate(() => __hub.debug.selected()) === 1);
+  const liveCols = await cols();
   await push(0, 1);
-  check('down crosses a whole row, not one card',
-    await page.evaluate(() => __hub.debug.selected()) === 3);
+  check(`down crosses a whole row of ${liveCols}, not one card`,
+    await page.evaluate(() => __hub.debug.selected()) === 1 + liveCols);
   await push(-1, 0);
-  check('left comes back', await page.evaluate(() => __hub.debug.selected()) === 2);
+  check('left comes back', await page.evaluate(() => __hub.debug.selected()) === liveCols);
   check('the selection is real focus, so the keyboard agrees',
     await page.evaluate(() => document.activeElement.closest('.cab') === document.querySelectorAll('.cab')[__hub.debug.selected()]));
   check('and it is visible without a mouse',

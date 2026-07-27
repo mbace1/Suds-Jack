@@ -38,7 +38,9 @@ a { color: inherit; }
   outline-offset: 3px;
 }
 
-.wrap { max-width: 1000px; margin: 0 auto; }
+/* wide enough that three and four cabinets to a row still leave the marquee
+   worth looking at — at 1000px, four-up was a row of thumbnails */
+.wrap { max-width: 1520px; margin: 0 auto; }
 
 /* ── masthead ── */
 header { padding: 48px 0 0; }
@@ -70,21 +72,30 @@ h1 .amp { color: var(--accent); }
 }
 
 /* ── the cabinets ── */
-/* Two to a row, always. Three fitted more on screen but shrank every marquee
-   to a thumbnail, and the marquee is the thing worth looking at — at two-up it
-   is nearly twice as wide and the pixel art actually reads. The pair sits side
-   by side, their text under them, then the next pair. */
+/* The row grows with the screen, but never past the point where the marquee
+   stops reading — that is the whole reason the cabinets exist. The ladder is
+   set on the marquee's rendered width rather than on device names: each step
+   up only happens once there is room to keep it around 340px or better.
+   1 on a phone · 2 on a tablet held upright or a small laptop ·
+   3 on a wide iPad or an ordinary desktop · 4 on a large desktop. */
 .rack {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 26px 24px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px;
   margin-top: 18px;
   list-style: none;
 }
 
-/* on a phone there is only ever room for one */
-@media (max-width: 660px) {
-  .rack { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+@media (min-width: 660px) {
+  .rack { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 24px; }
+}
+
+@media (min-width: 1100px) {
+  .rack { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1480px) {
+  .rack { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px 22px; }
 }
 
 .cab {
