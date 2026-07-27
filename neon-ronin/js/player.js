@@ -98,6 +98,7 @@ export class Player {
     this.iframes = 0;
     this.vy = 0;
     this.jumps = 0;
+    this.airH = 0;      // height above the local floor (terrain-aware)
     this.fireT = 0;
     this.dead = false;
   }
@@ -232,6 +233,7 @@ export class Player {
       this.ultT += dt;
       this._runUlt(ctx);
       if (this.ultT >= 0.9) this.ultT = -1;
+      this._snapGround(ctx);       // ults can travel onto stairs/platforms
       this.group.rotation.y = this.yaw;
       return;                      // ult owns the frame
     }
@@ -251,6 +253,7 @@ export class Player {
       setGlow(this.rig, this.parrying ? 2.2 : 1);
       this.speedK = Math.max(0, this.speedK - 8 * dt);
       if (this.parryT >= PARRY_DUR) { this.parryT = -1; setGlow(this.rig, 1); }
+      this._snapGround(ctx);
       this.group.rotation.y = this.yaw;
       return;                      // parry roots you: the risk half of the trade
     }
@@ -413,30 +416,38 @@ export class Player {
       }
     }
 
-    // ── vertical physics: right-stick tap = jump, again mid-air = double ──
+    // arena bound (before ground sampling, so we never sample outside)
+    const r = Math.hypot(this.pos.x, this.pos.z), maxR = ctx.arenaR - 0.9;
+    if (r > maxR) { this.pos.x *= maxR / r; this.pos.z *= maxR / r; }
+
+    // ── vertical physics over terrain: stairs and platforms raise the floor ──
+    const ground = ctx.groundY(this.pos.x, this.pos.z);
     if (input.consumeJump() && this.jumps < 2 && !this.dead) {
       this.vy = this.jumps === 0 ? JUMP_V : DOUBLE_JUMP_V;
       this.jumps++;
       ctx.audio.jump();
-      ctx.effects.sparks({ x: this.pos.x, y: 0.25, z: this.pos.z }, c.accent, 5, 3);
+      ctx.effects.sparks({ x: this.pos.x, y: ground + 0.25, z: this.pos.z }, c.accent, 5, 3);
     }
-    if (this.pos.y > 0 || this.vy > 0) {
+    const airborne = this.pos.y > ground + 0.02 || this.vy > 0;
+    if (airborne) {
       this.vy -= GRAVITY * dt;
       this.pos.y += this.vy * dt;
-      if (this.pos.y <= 0) {
-        this.pos.y = 0;
+      if (this.pos.y <= ground) {
+        this.pos.y = ground;
         this.vy = 0;
         this.jumps = 0;
-        ctx.effects.sparks({ x: this.pos.x, y: 0.2, z: this.pos.z }, c.accent, 3, 2);
+        ctx.effects.sparks({ x: this.pos.x, y: ground + 0.2, z: this.pos.z }, c.accent, 3, 2);
       }
-      // tucked legs while airborne
-      this.rig.legL.rotation.x = 0.55;
+      this.rig.legL.rotation.x = 0.55;   // tucked legs while airborne
       this.rig.legR.rotation.x = 0.2;
+    } else {
+      // walking: step up instantly, ease down so stairs don't jitter
+      this.pos.y = this.pos.y < ground ? ground : Math.max(ground, this.pos.y - 14 * dt);
+      this.vy = 0;
+      this.jumps = 0;
     }
-
-    // arena bound
-    const r = Math.hypot(this.pos.x, this.pos.z), maxR = ctx.arenaR - 0.9;
-    if (r > maxR) { this.pos.x *= maxR / r; this.pos.z *= maxR / r; }
+    // height above the local floor — used for aerial dodges
+    this.airH = this.pos.y - ground;
 
     this.group.rotation.y = this.yaw;
   }
@@ -523,6 +534,15 @@ export class Player {
       }
     }
     if (this.ultT >= 0.85) setGlow(this.rig, 1);
+  }
+
+  // clamp inside the arena and settle onto the local floor height
+  _snapGround(ctx) {
+    const r = Math.hypot(this.pos.x, this.pos.z), maxR = ctx.arenaR - 0.9;
+    if (r > maxR) { this.pos.x *= maxR / r; this.pos.z *= maxR / r; }
+    const g = ctx.groundY(this.pos.x, this.pos.z);
+    this.pos.y = g;
+    this.airH = 0;
   }
 
   _faceNearest(ctx) {

@@ -160,5 +160,7 @@ export class Ally {
 
     const r = Math.hypot(this.pos.x, this.pos.z), maxR = ctx.arenaR - 1;
     if (r > maxR) { this.pos.x *= maxR / r; this.pos.z *= maxR / r; }
+    const g = ctx.groundY(this.pos.x, this.pos.z);
+    this.pos.y = this.pos.y < g ? g : Math.max(g, this.pos.y - 12 * dt);
   }
 }
