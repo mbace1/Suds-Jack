@@ -116,3 +116,39 @@ if (orphans.length) {
 } else {
   console.log(`i18n: ${used.size} keys used, all present in ${LANGS.join('/')}`);
 }
+
+// ── the service worker's precache list ─────────────────────────────
+// sw.js has to name every file it caches — there is no build step to generate
+// the list. That makes it exactly the kind of hardcoded list that goes stale
+// silently: add an experience, forget the worker, and that one story is the only
+// thing that does not work on a trail. So the list is checked against the
+// registry and against the version the page actually requests.
+const sw = readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
+const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+
+const pageV = (indexHtml.match(/main\.js\?v=(\d+)/) || [])[1];
+const swV = (sw.match(/const V = `\?v=(\d+)`/) || [])[1];
+const swVersion = (sw.match(/const VERSION = 'v(\d+)'/) || [])[1];
+if (pageV !== swV || pageV !== swVersion) {
+  console.log(`sw: version drift — index.html asks for v${pageV}, sw.js caches v${swV} under 'v${swVersion}'`);
+  process.exitCode = 1;
+}
+
+// every registered experience must be in the precache list
+const swMissing = registry.filter(id => !sw.includes(`'${id}'`));
+if (swMissing.length) {
+  console.log(`sw: not precached, so these break offline: ${swMissing.join(', ')}`);
+  process.exitCode = 1;
+}
+// …and every js module on disk, so a new shared module is not forgotten either
+const jsDir = new URL('../js/', import.meta.url);
+const modMissing = readdirSync(jsDir)
+  .filter(f => f.endsWith('.js'))
+  .filter(f => !sw.includes(`./js/${f}`));
+if (modMissing.length) {
+  console.log(`sw: shared modules missing from the precache list: ${modMissing.join(', ')}`);
+  process.exitCode = 1;
+}
+if (!swMissing.length && !modMissing.length && pageV === swV) {
+  console.log(`sw: precache covers ${registry.length} experiences at v${swV}`);
+}

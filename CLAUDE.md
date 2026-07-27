@@ -227,6 +227,14 @@ earns a voice; `gardenStop()` fires on entering an experience or the feedback
 panel, so it plays on the hub alone. Shown in `.hub-footer` as `♪` glyphs
 (plural-free across fi/en/ja) with a one-time "you went outside" acknowledgement. `window.__gol` exposes
 `{store, audio, debug: {start, showInterlude, setLang, feedback}}` for console testing.
+The app is **offline-first**: `sw.js` precaches the shell cache-first and
+`manifest.webmanifest` makes it installable — it sends you outdoors, so it has to
+work where the signal stops. The worker registers on **https only** (or `?sw=1`)
+so dev and the smoke gate never get a stale shell; `test/offline.cjs` kills the
+server, goes offline and drives a whole experience, asserting zero network
+requests. Its precache list must name every file (no build step), so
+`check_levels.mjs` fails on a missing experience, a missing shared module, or
+`?v=N` drift between `sw.js` and `index.html` — **bump the version in sw.js too**.
 **Before adding an experience read `gameoflife/EXPERIENCES.md`** and copy
 `js/experiences/_template.js` — it states the bar (all three languages, an
 animated first screen, a real revert in the outro, a deterministic smoke block)
