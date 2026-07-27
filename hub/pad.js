@@ -73,7 +73,13 @@ export function watchPad({ dir, press, hold, holdMs = 700, holdButtons = [] } = 
     if (!dy && Math.abs(ax[1] ?? 0) > DEAD) dy = Math.sign(ax[1]);
 
     const key = `${dx},${dy}`;
-    if (!dx && !dy) { dirHeld = null; }
+    // Releasing has to be reported too. A menu only cares about the moment a
+    // direction is pushed, but anything holding a key down on the game's
+    // behalf needs to hear the stick come back to centre — without this a
+    // bridged run key stays down for the rest of the run.
+    if (!dx && !dy) {
+      if (dirHeld) { dirHeld = null; dir?.(0, 0); }
+    }
     else if (dirHeld !== key) {
       dirHeld = key; dirAt = now; dirNext = now + REPEAT_FIRST;
       dir?.(dx, dy);

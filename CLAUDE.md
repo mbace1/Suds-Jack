@@ -36,6 +36,31 @@ The short URL **`/AnotherHUB`** (`AnotherHUB/index.html`) is the same page one l
 with a `<base href="../">` so every relative link still resolves against the site root;
 the smoke test asserts the two files are byte-identical apart from that tag, because two
 copies of a page drift.
+**Controllers.** `hub/pad.js` is the one gamepad reader the site shares — the Gamepad
+API has no press events, so it is a single rAF poller doing edge-detected buttons,
+deadzoned sticks, d-pad-or-stick direction and hold-repeat. It reports the stick
+**returning to centre** as `dir(0,0)`, which menus ignore and the key bridge depends on.
+`hub/shell.js` is one line in a game's `index.html`: a HOME button top-left plus a
+**hold** on Start/Back (750 ms, the button fills as confirmation — a press would collide
+with the pause button several of these games bind to Start). `hub/padkeys.js` gives a pad
+to games that never grew one, driven by `pad` in the catalogue: `'native'` = the game
+reads a pad itself and nothing is layered on it (Hyper Dagger, Toko Drop, SKLTR, Tiny
+Hawk, sudz, voxel); `{keys:{…}}` dispatches the key events the game already listens for
+(Drop Cabal, Powder, Neon Ronin); `{pointer:true}` feeds a one-button surface (Tiny 2D);
+`{ui:true}` walks the page's own buttons (The Game of Life). Honest limits: synthetic key
+events are untrusted, and mouse-**aimed** games get movement and keyed actions from the
+pad but not aim — that needs their own code. On the arcade itself a direction moves the
+selection, A plays, Y leaves a note, B backs out, and in the note panel left/right sets
+the rating and A sends; selection is real DOM focus with its own ring, since a pad user
+may never trigger `:focus-visible`.
+**Versions.** Toko Drop's system (a `VERSIONS.md` log with `## vN` entries plus a `?v=N`
+module token, moved together by `scripts/bump-version.sh`) now covers the whole floor.
+`node scripts/versions.mjs [siteRoot]` writes `hub/versions.json` by reading each
+project's `VERSIONS.md` first and falling back to its `?v=` token, so a project gets a
+number before anyone starts logging for it and switches to the release number the moment
+they do. The cabinets fetch that file, so shipping one game does not mean redeploying the
+arcade. **Run it at deploy time** — against the deployed tree, which is the only place
+every project exists.
 `hub/feedback.js` reuses the transport the games already ship (`scripts/feedback-sheet.gs`
 on `gh-pages`): a `SHEET_ENDPOINT` Apps Script if pasted in — unlimited, but `no-cors`, so
 its answer cannot be read and that path reports **`sent-blind`**, never `sent` — otherwise

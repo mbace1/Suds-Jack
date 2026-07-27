@@ -302,6 +302,27 @@ function check(name, cond) {
   check(`every link resolves from the short URL too${deadShort.length ? ` — ${deadShort}` : ''}`,
     deadShort.length === 0);
 
+  // ── the version each project is on ──
+  const versions = JSON.parse(fs.readFileSync(path.join(ROOT, 'hub', 'versions.json'), 'utf8'));
+  check('versions.json covers the projects this branch carries',
+    games.filter(g => g.inRepo).every(g => versions[g.id]));
+  check('every version came from a log or a real cache token',
+    Object.values(versions).every(v => Number.isInteger(v.v) && v.v > 0
+      && ['VERSIONS.md', 'cache token'].includes(v.from)));
+  await page.reload({ waitUntil: 'networkidle' });
+  // not every cabinet has a number — the first one is a game that lives only
+  // on the deployed site — so wait for any of them to fill, not for the first
+  await page.waitForFunction(
+    () => [...document.querySelectorAll('.ver')].some(n => n.textContent), null, { timeout: 5000 });
+  const shown = await page.locator('.cab .ver').evaluateAll(ns =>
+    ns.map(n => [n.dataset.game, n.textContent]).filter(([, t]) => t));
+  check(`the cabinets show a version (${shown.length} of ${games.length})`,
+    shown.length === Object.keys(versions).length);
+  check('and it is the number the generator found',
+    shown.every(([id, text]) => text === `v${versions[id].v}`));
+  check('a project with a VERSIONS.md reports its release number, not its token',
+    versions.gameoflife.from === 'VERSIONS.md');
+
   // ── a controller ──
   // No real pad in a headless browser, so stand one in front of the Gamepad
   // API and drive it. This is the whole point of pad.js being one module: the
@@ -397,6 +418,49 @@ function check(name, cond) {
   check('holding Start starts filling the home button', filled > 0);
   await page.waitForFunction(() => location.pathname === '/' || location.pathname.endsWith('/index.html'), null, { timeout: 4000 });
   check('and holding it long enough goes back to the arcade', true);
+
+  // ── the pad bridge, for games with no pad code of their own ──
+  const bridged = catalogue.filter(g => g.pad && g.pad !== 'native' && g.inRepo);
+  for (const g of bridged) {
+    await page.goto(`${base}/${g.path}`, { waitUntil: 'domcontentloaded' });
+    const wired = await page.evaluate(() => !!window.__arcadeShell?.bridged);
+    check(`${g.id} gets a pad bridged onto it`, wired);
+    check(`${g.id} is matched to its own catalogue entry`,
+      await page.evaluate(() => window.__arcadeShell.game) === g.id);
+  }
+  // and a game that reads a pad itself is left completely alone
+  const native = catalogue.find(g => g.pad === 'native' && g.inRepo);
+  if (native) {
+    await page.goto(`${base}/${native.path}`, { waitUntil: 'domcontentloaded' });
+    check(`${native.id} reads its own pad, so nothing is layered on it`,
+      await page.evaluate(() => window.__arcadeShell.bridged) === null);
+  }
+
+  // the key bridge actually produces the key the game listens for
+  const cabal = catalogue.find(g => g.id === 'dropcabal');
+  await page.goto(`${base}/${cabal.path}`, { waitUntil: 'domcontentloaded' });
+  await page.evaluate(() => {
+    window.__seen = [];
+    addEventListener('keydown', e => window.__seen.push('down:' + e.code), true);
+    addEventListener('keyup', e => window.__seen.push('up:' + e.code), true);
+    window.__pad = { buttons: Array.from({ length: 16 }, () => ({ pressed: false, value: 0 })), axes: [0, 0, 0, 0], connected: true };
+    navigator.getGamepads = () => [window.__pad];
+  });
+  await page.evaluate(async () => {
+    window.__pad.axes = [1, 0, 0, 0];                      // stick right
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    window.__pad.axes = [0, 0, 0, 0];                      // let go
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    window.__pad.buttons[0].pressed = true;                // A
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    window.__pad.buttons[0].pressed = false;
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  });
+  const seen = await page.evaluate(() => window.__seen);
+  check(`the stick presses the game's own run key (${seen.filter(s => s.includes('KeyD')).length} events)`,
+    seen.includes('down:KeyD'));
+  check('and releases it when the stick comes back', seen.includes('up:KeyD'));
+  check('A presses the roll key the game documents', seen.includes('down:Space'));
 
   check(`zero console/page errors overall${errors.length ? ` — ${errors[0]}` : ''}`, errors.length === 0);
 
