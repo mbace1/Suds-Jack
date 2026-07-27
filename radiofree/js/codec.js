@@ -1,16 +1,13 @@
 // Radio Free Helsinki — one post's screen, and the voice that drives it.
-//
 // Vertical codec: story panel on top, Toko portrait below. While live, a cut
 // sequencer cycles weighted-random shots:
-//   ~30% face   — large masked Toko fills the upper frame
-//   ~20% graphic — the story's chart / diagram
-//   ~50% broll  — low-poly Helsinki footage (prefers story.broll)
+//   ~30% face / ~20% graphic / ~50% broll
 // DECODE still mutates whichever shot is showing.
 
-import { PixelScreen, shade, mix } from './screen.js?v=6';
-import { PAL, SECTOR_COLOR } from './palette.js?v=6';
-import { Toko } from './toko.js?v=6';
-import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=6';
+import { PixelScreen, shade, mix } from './screen.js?v=7';
+import { PAL, SECTOR_COLOR } from './palette.js?v=7';
+import { Toko } from './toko.js?v=7';
+import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=7';
 
 export const POST_W = 144, POST_H = 276;
 const VF = { x: 8, y: 6, w: PANEL_W, h: PANEL_H };
@@ -18,12 +15,10 @@ const PF = { x: 8, y: 166, w: 96, h: 96 };
 const DATA = { x: 110, y: 166, w: 26, h: 96 };
 const WAVE = { x: 8, y: 266, w: 128, h: 8 };
 
-// 30 / 20 / 50
 const WEIGHTS = { face: 0.30, graphic: 0.20, broll: 0.50 };
 const CUT_MIN = 2.4, CUT_MAX = 4.0;
 
 function pickBroll(story) {
-  // Prefer the story's assigned panel most of the time so new art is visible
   if (story.broll && Math.random() < 0.85) return story.broll;
   const pool = BROLL_KEYS || ['esplanadi', 'kamppi', 'harbour', 'gulf', 'cathedral', 'katu', 'mannerheim', 'station'];
   return pool[Math.floor(Math.random() * pool.length)];
