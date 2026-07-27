@@ -34,6 +34,12 @@ fi
 # 2) Fresh copy of the game with the importmap pointed at the local three
 rm -rf "$WORK/testbed"
 cp -r toko-drop "$WORK/testbed"
+# The live site serves from the REPO ROOT, so index.html can reference siblings
+# like ../hub/shell.js (the arcade shell's home button). Mirror any such sibling
+# into the served root, or every cabinet 404s on a file that is fine in
+# production and the gate reports a break that does not exist.
+rm -rf "$WORK/hub"
+[ -d hub ] && cp -r hub "$WORK/hub"
 python3 - "$WORK/testbed/index.html" <<'EOF'
 import sys
 p = sys.argv[1]
