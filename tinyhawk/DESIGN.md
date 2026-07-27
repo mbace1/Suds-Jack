@@ -246,6 +246,39 @@ ragdoll, audio kit, touch tuned on a real phone.
 
 ---
 
+## 10b. What P0 actually measured
+
+Numbers from the built prototype, so the P1 feel pass starts from evidence rather
+than from the guesses in §3.
+
+| thing | value | note |
+|---|---|---|
+| full-power ollie | **0.78 s** air, 2.05 u peak | on flat, `POP` 10.5 along the surface normal, `G` 26 |
+| trick duration | 0.34 s | so a full ollie holds **two** tricks, an easy one holds one |
+| flick threshold | 4.6 stick units/s | a 31 px thumb move over 150 ms reads as a drag (3.3), over 60 ms as a flick (8.3) |
+| full-power flick | 11 units/s | a hard 50 px flick lands at 17.8 and clamps |
+| camera drag gain | 1.4 rad per stick unit | ≈78° of orbit for a 62 px drag |
+
+Verified: all four flick directions classify correctly; a fast **return stroke** fires
+nothing and does not move the camera; a fast 12 px twitch is a drag, not a trick; slow
+drags orbit and re-arm.
+
+Two things are **not** verified and need a device:
+
+* **Two flicks inside one air.** Driving it headlessly is not possible here — the test
+  harness's own event latency (~40–150 ms per synthesized touch) is the same order as a
+  real flick, so the same gesture lands on either side of the threshold run to run. The
+  classification logic is unit-tested with exact timings instead; the end-to-end path is
+  only known to work for a single flick.
+* **A fast small twitch still orbits the camera** by ~16°. It is correctly not a trick,
+  but it may want to be dead rather than a drag. That is a feel call.
+
+The winding bug found here is worth remembering: a heightfield grid walked in the obvious
+order emits every triangle facing **down**, so the entire park back-face culls and you
+see its underside. `park.js` swaps the last two vertices rather than going `DoubleSide`.
+
+---
+
 ## 11. Risks
 
 1. **The camera.** Biggest risk in the design now that it is third-person. A skate camera

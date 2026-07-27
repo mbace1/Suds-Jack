@@ -9,19 +9,44 @@ HTML5 demo built with **Three.js / WebGL**.
 Concept: "Bomb Jack x Suds 51 x Tempest 2000" — floating bomb-collection gameplay, soap/bubble aesthetic, Tempest 2000 psychedelic tube-shooter energy.
 Build tooling: TBD — update this file once chosen and add dev/build commands.
 
-### Tiny Hawk (`tinyhawk/`) — DESIGN STAGE, no code yet
-A **skate story / Tony Hawk clone** in flat-shaded low-poly with inverted-hull ink
-outlines (vector-*looking* 3D, same no-lights `MeshBasicMaterial` rule as paperboy and
-dropcabal). Forward-committed line rather than a free-roam park: the skater always rolls
-forward across a ~3-lane ribbon, so the daily seed is comparable and courses can be built
-from a shuffled **segment deck**. THPS trick vocabulary (ollie charge, four flick trick
-families, hold-to-spin, auto-lock grinds, manuals as combo glue) with one rule — the
-multiplier only pays when you land. Two modes: **Daily Line** (UTC-seeded 45s course,
-three tries, text share card, no backend) and **The Part** (Slay-the-Spire node map,
-a pool of 5 "film" tries shared across the whole tour, goals gating phase/district
-transitions, board parts + trick unlocks as the build, story beats between nodes).
-The full plan, build order, and open decisions live in `tinyhawk/DESIGN.md` — read it
-before writing any Tiny Hawk code.
+### Tiny Hawk (`tinyhawk/`) — P0 control prototype
+A **third-person low-poly skate game** (Tony Hawk vocabulary, Slay-the-Spire map) on
+Three.js r167, no build step. The ground is a **heightfield** — `h(x,z)` is the max over
+analytic features (rim/quarterpipe/bank/funbox/pyramid) in `park.js`, normals from finite
+differences — so a park is a list of placements and the physics is *ballistic integrate,
+then project velocity onto the surface tangent* (lifted from `tiny2d/`, which is where
+that approach was validated in 2D). Flat-shaded and unlit: each triangle takes one of
+three tones by its normal via vertex colours, inverted-hull ink outlines on the skater,
+no lights/shadows/fog (same rule as paperboy and dropcabal). **Note the winding trap** —
+walking a heightfield grid in the obvious order emits every triangle facing *down*, which
+back-face culls the whole park; `park.js` swaps the last two vertices per triangle.
+
+The centrepiece is the control scheme: twin sticks where **the right stick discriminates
+by gesture speed** — a slow drag orbits the camera, a fast flick is an action, and flick
+*magnitude* sets ollie height (so no hold-to-charge fighting the camera for the same
+stick). Left stick is the body (steer on the ground, spin/flip in the air), right stick is
+the camera and the hands. That split lives in `input.classify(dx, dy, dt, armed, cooling)`,
+kept a **pure function** so the thresholds can be asserted with exact timings — synthesized
+touch events can't test it, because harness event latency is the same order as a real
+flick. Re-arming is on the stick *slowing down*, not a timer: a cooldown long enough to
+stop a return stroke also deadens the first quarter of every air. Landing is judged twice
+(board heading vs travel heading, and how much velocity went into the surface); ~180° is a
+**fakie**, legal and worth more, not a bail. `window.__th` exposes
+`{skater, park, input, debug}` incl. `getFlick/setFlick`.
+Grinds, manuals, goals, the node map and the story are **not built** — see
+`tinyhawk/DESIGN.md` for the full plan, the measured P0 numbers (§10b), and the open
+decisions. Read that doc before writing any Tiny Hawk code.
+
+### Tiny 2D (`tiny2d/`)
+A **one-button momentum skater** — Tiny Wings' verb on a skateboard, side-on. Spun out of
+the Tiny Hawk design work when Tiny Hawk went third-person 3D. Hold to press into a hill
+face (gravity ×2.7), release at the lip to pop, hold in the air to dive; landing is graded
+on how much velocity was *perpendicular* to the slope, and air time and tricks only bank
+on a clean touchdown (fever multiplier, cap ×8). Hills are raised-cosine curves between
+alternating crests and troughs with a **net descent** — without it the chain is a closed
+energy system and one bad climb parks you forever. Ortho camera that leads by speed;
+parallax layers anchor to a *smoothed* camera height because the world descends forever.
+See `tiny2d/README.md`. `window.__t2` for console access.
 
 ### Paper Route — Dawn Run (`paperboy/`)
 A **Paperboy clone** built on Three.js r167 with an **isometric, flat-shaded homage to
