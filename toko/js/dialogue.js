@@ -116,6 +116,16 @@ export const TOPICS = [
     ],
   },
   {
+    // `pick` tells the counter to follow the answer with a real cabinet and a
+    // real link. Toko does not list the floor at you; he picks one.
+    id: 'play', q: 'WHAT SHOULD I PLAY?', pick: true,
+    a: [
+      'TODAY? THIS ONE.',
+      'I DO NOT PICK A NEW ONE EVERY TIME YOU ASK.',
+      'THAT IS A SHOP. THIS IS A COUNTER.',
+    ],
+  },
+  {
     id: 'floor', q: 'WHAT IS ON THE FLOOR?',
     a: [
       'GEL BULLET HELL. A VOXEL SURVIVAL PIT.',

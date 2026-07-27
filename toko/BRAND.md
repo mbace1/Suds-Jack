@@ -232,6 +232,19 @@ with rented autocomplete. Toko says what Toko wrote — in
 [`js/dialogue.js`](js/dialogue.js), which is the file to edit. Asking some things
 unlocks others, so the conversation grows as you dig.
 
+What it does beyond talking:
+
+- **He picks a cabinet.** `WHAT SHOULD I PLAY?` reads the arcade's own
+  catalogue (`window.__hub`) and answers with one game and a real link — the
+  same one all day, which is the line he says while giving it. Dropped on a
+  page with no catalogue he says he cannot see the floor, rather than throwing.
+- **He remembers you came back.** Two things persist and nothing else: how many
+  times you have opened the counter, and whether you asked for the tick. No
+  identity, no profile, no account — the workshop is built on not having one.
+- **A typing tick**, off until you ask for it, remembered after you do. The
+  AudioContext is built lazily on that first gesture, because one created
+  before a gesture just sits suspended and logs a warning for its trouble.
+
 Rules it holds:
 
 - **1–9 picks, ENTER skips the typing, ESC leaves.** Keyboard-first, like the

@@ -26,6 +26,21 @@ import { drawHead, drawBadge } from './face.js';
 import { glance, drift } from './util.js';
 import { GREETING, TOPICS, menu } from './dialogue.js';
 
+// He keeps two things between visits and nothing else: how many times you have
+// come to the counter, and whether you asked for the tick. No identity, no
+// profile, no account — the whole workshop is built on not having one.
+const KEY = 'tokoCounter';
+const store = {
+  read() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } },
+  write(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch { /* private mode */ } },
+};
+
+const RETURNING = [
+  ['YOU CAME BACK.', 'ASK ME SOMETHING.'],
+  ['AGAIN.', 'GO ON THEN.'],
+  ['YOU KNOW WHERE I AM.', 'ASK.'],
+];
+
 const STYLE_ID = 'toko-chat-style';
 const CSS = `
 .toko-chat {
@@ -111,8 +126,16 @@ const CSS = `
 .toko-chat .tc-menu button b { color: var(--tc-hot); font-weight: bold; }
 .toko-chat .tc-menu[hidden] { display: none; }
 
+/* the cabinet he picks, as a real link in the transcript */
+.toko-chat .tc-log .tc-go {
+  color: var(--tc-hot); font-weight: bold; text-decoration: none;
+  border-bottom: 2px solid var(--tc-hot);
+}
+.toko-chat .tc-log .tc-go:hover { color: var(--tc-ink); border-color: var(--tc-ink); }
+
+.toko-chat .tc-spacer { flex: 1; }
 .toko-chat .tc-foot {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  display: flex; align-items: center; gap: 10px;
   border-top: 2px solid var(--tc-line); padding: 6px 10px;
   font-size: 10.5px; letter-spacing: .18em; color: var(--tc-dim);
 }
@@ -134,6 +157,29 @@ const CSS = `
   .toko-chat .tc-blip, .toko-chat .tc-caret::after { animation: none; }
 }
 `;
+
+// A tick per character — the one sound the counter makes, and it is off until
+// somebody asks for it. Lazily built, because an AudioContext created before a
+// gesture just sits there suspended and logs a warning for its trouble.
+function makeTick() {
+  let ctx = null, last = 0;
+  return () => {
+    try {
+      if (!ctx) ctx = new (globalThis.AudioContext || globalThis.webkitAudioContext)();
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      if (now - last < 0.02) return;          // never stack on a fast line
+      last = now;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'square';
+      o.frequency.value = 1180 + Math.random() * 90;
+      g.gain.setValueAtTime(0.035, now);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.02);
+      o.connect(g).connect(ctx.destination);
+      o.start(now); o.stop(now + 0.025);
+    } catch { /* no audio here; the counter is not worth an error */ }
+  };
+}
 
 function injectStyle() {
   if (document.getElementById(STYLE_ID)) return;
@@ -191,9 +237,11 @@ export function mountChat(anchor, opts = {}) {
   const list = el('div', 'tc-menu');
   const foot = el('div', 'tc-foot');
   const hint = el('span', null, '1–9 PICK · ENTER SKIP · ESC LEAVE');
+  const sound = el('button', 'tc-snd');
+  sound.type = 'button';
   const leave = el('button', null, 'LEAVE');
   leave.type = 'button';
-  foot.append(hint, leave);
+  foot.append(hint, el('span', 'tc-spacer'), sound, leave);
   body.append(log, list, foot);
   panel.append(portrait, body);
   root.appendChild(panel);
@@ -302,6 +350,7 @@ export function mountChat(anchor, opts = {}) {
       while (typing.i < schedule.length && t >= schedule[typing.i].due) typing.i++;
       if (typing.i >= schedule.length) { finishTyping(); return; }
       const { li, ci } = schedule[Math.max(0, typing.i - 1)];
+      if (ticking && typing.i !== typing.lastI) { tick(); typing.lastI = typing.i; }
       node.textContent = lines.slice(0, li).concat(lines[li].slice(0, ci)).join('\n');
       log.scrollTop = log.scrollHeight;
       typing.raf = requestAnimationFrame(step);
@@ -323,13 +372,48 @@ export function mountChat(anchor, opts = {}) {
     });
   }
 
+  // The floor, if the page happens to be the arcade. The counter never
+  // requires it — dropped on a game page there is no catalogue and the topic
+  // simply says so rather than erroring.
+  function pickGame() {
+    const hub = globalThis.__hub;
+    const all = (hub && (hub.active || hub.games)) || [];
+    const live = all.filter(g => g && g.path && g.live !== false && g.status !== 'archived');
+    if (!live.length) return null;
+    // stable for the day: asking twice in a minute gets the same answer, which
+    // is the point of the line he says while giving it
+    const day = Math.floor(Date.now() / 864e5);
+    return live[day % live.length];
+  }
+
   function ask(t) {
     if (typing) { finishTyping(); return; }
     line('tc-you', t.q);
     asked.add(t.id);
     if (t.opens) t.opens.forEach(id => unlocked.add(id));
     list.hidden = true;
-    type(t.a, t.end ? () => setTimeout(close, 900) : null);
+
+    let after = t.end ? () => setTimeout(close, 900) : null;
+    if (t.pick) {
+      const g = pickGame();
+      const prev = after;
+      after = () => {
+        const p = el('p', 'tc-me');
+        if (g) {
+          const a = el('a', 'tc-go');
+          a.href = g.path;
+          a.textContent = '▸ ' + (g.title || g.id).toUpperCase();
+          p.appendChild(a);
+          if (g.lineage) p.appendChild(document.createTextNode('  — ' + g.lineage));
+        } else {
+          p.textContent = 'THOUGH FROM HERE I CANNOT SEE THE FLOOR.';
+        }
+        log.appendChild(p);
+        log.scrollTop = log.scrollHeight;
+        if (prev) prev();
+      };
+    }
+    type(t.a, after);
   }
 
   // ── open / close ───────────────────────────────────────────────────────
@@ -340,7 +424,12 @@ export function mountChat(anchor, opts = {}) {
     bar.setAttribute('aria-expanded', 'true');
     badge.stop();
     startHead();
-    if (!log.childElementCount) type(GREETING);
+    if (!log.childElementCount) {
+      const st = store.read();
+      const visits = (st.visits || 0) + 1;
+      store.write({ ...st, visits });
+      type(visits <= 1 ? GREETING : RETURNING[(visits - 2) % RETURNING.length]);
+    }
     else renderMenu();
     addEventListener('keydown', onKey);
     // move focus into the room, but only for keyboard users — a tap should
@@ -375,6 +464,22 @@ export function mountChat(anchor, opts = {}) {
       if (b && !list.hidden) { e.preventDefault(); b.click(); }
     }
   }
+
+  // the tick, remembered between visits
+  const tick = makeTick();
+  let ticking = !!store.read().tick;
+  const paintSound = () => {
+    sound.textContent = ticking ? '♪ ON' : '♪ OFF';
+    sound.setAttribute('aria-pressed', String(ticking));
+    sound.setAttribute('aria-label', ticking ? 'Typing sound on' : 'Typing sound off');
+  };
+  paintSound();
+  sound.addEventListener('click', () => {
+    ticking = !ticking;
+    store.write({ ...store.read(), tick: ticking });
+    paintSound();
+    if (ticking) tick();                       // and prove it, on the gesture
+  });
 
   bar.addEventListener('click', openChat);
   leave.addEventListener('click', close);

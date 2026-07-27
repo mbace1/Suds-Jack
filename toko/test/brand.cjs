@@ -293,6 +293,34 @@ function serve() {
   ok('Toko answered', after.answered >= 2, String(after.answered));
   ok('the tree opened up', after.topics > before - 1, `${before} → ${after.topics}`);
 
+  // The recommendation. The board is NOT the arcade, so there is no catalogue
+  // here — which is the case worth testing: it has to say so rather than throw.
+  await page.evaluate(() => {
+    const b = [...document.querySelectorAll('.toko-chat .tc-menu button')]
+      .find(x => /SHOULD I PLAY/.test(x.textContent));
+    if (b) b.click();
+  });
+  await page.waitForTimeout(120);
+  await page.keyboard.press('Enter');
+  await page.waitForSelector('.toko-chat .tc-menu button', { timeout: 4000 });
+  await page.waitForTimeout(200);
+  ok('with no catalogue he says so instead of throwing',
+    await page.evaluate(() => /CANNOT SEE THE FLOOR/.test(
+      document.querySelector('.toko-chat .tc-log').textContent)));
+
+  // the tick: off until asked for, and remembered
+  const snd = await page.evaluate(() => {
+    const b = document.querySelector('.toko-chat .tc-snd');
+    const before = b.textContent;
+    b.click();
+    return { before, after: b.textContent, pressed: b.getAttribute('aria-pressed'),
+             stored: JSON.parse(localStorage.getItem('tokoCounter') || '{}').tick };
+  });
+  ok('the typing tick is off by default', /OFF/.test(snd.before), snd.before);
+  ok('and can be switched on', /ON/.test(snd.after) && snd.pressed === 'true');
+  ok('and is remembered', snd.stored === true);
+  await page.evaluate(() => document.querySelector('.toko-chat .tc-snd').click());
+
   // the goodbye topic must close the counter even when its typing is skipped
   await page.evaluate(() => {
     const b = [...document.querySelectorAll('.toko-chat .tc-menu button')]
