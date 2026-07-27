@@ -8,6 +8,61 @@ Live preview: https://mbace1.github.io/Suds-Jack/
 
 ---
 
+## The arcade — `index.html` + `hub/`
+
+One page that carries **every playable thing in the workshop**, each cabinet
+with a **Play** button and a **Feedback** button. No build step, no framework,
+no image assets: each game's marquee is a 128×72 pixel canvas drawn in code
+(`hub/art.js`) and tinted from that game's own palette — and seen through the
+same curved, scanlined glass the Game of Life terminal uses, baked once at load
+rather than run every frame. The page itself is that terminal: monospace, `>`
+carets, `[ PLAY ]` brackets, and a status line with a three-colour screen
+accent that tints the chrome while each cabinet keeps its own colour.
+
+Adding a game is **two edits**: an entry in `hub/games.js` and a draw function
+in `hub/art.js`. Nothing else in the hub knows any game exists. Each entry
+carries a **`status`** — `active` games get the top of the page, `archived`
+ones sit under their own heading, dimmed but still playable. One word moves a
+game between the two.
+
+An entry can also carry **`live: false`** — the cabinet is listed but there
+is nothing to open yet, so Play renders as a dead `[ NOT UP ]` with a note
+saying why instead of pointing at a 404. Feedback still works on it.
+
+Also served at the short URL **https://mbace1.github.io/Suds-Jack/AnotherHUB**
+— the same page with a `<base>` pointing at the site root.
+
+**Feedback** (`hub/feedback.js`) is the same panel everywhere — 1–5 diamonds
+plus optional words, tagged with which cabinet it came from. It reuses the
+transport the games already ship (see `scripts/feedback-sheet.gs` on
+`gh-pages`): a Google Apps Script `SHEET_ENDPOINT` if one is pasted in
+(unlimited, but `no-cors`, so the answer cannot be read — that path reports
+*sent-blind*, never *sent*), otherwise the Formspree form already in use by
+`toko-drop`. Every note is written to `localStorage` first whatever happens;
+an undeliverable one goes to an outbox and is retried on the next visit, one
+at a time. Pressing Send having said nothing records nothing.
+
+```sh
+node test/hub-smoke.cjs      # 31 checks (needs playwright + its Chromium)
+```
+
+> **Catalogue entries carry `inRepo`.** The live site root (`gh-pages`) is a
+> curated tree that holds a few games `main` does not — Suds Jack itself
+> (`sudz/`), `Skltr/`, `neon-ronin/`, `eye-test/`. Those are marked
+> `inRepo: false`, and the test loop only checks the links it can actually
+> see, so a local run does not fail on games that only exist once deployed.
+
+> **Deployed.** Live at https://mbace1.github.io/Suds-Jack/ — the arcade is
+> the site root as of 2026-07-26. The root used to be the Suds Jack game
+> itself; that game lives at `sudz/`, which was already the **newer** of the
+> two builds (the root copy predated the mobile touch controls), so it was
+> left alone and the stale root assets were removed. `paperboy/` and the
+> `goo-*.html` sketches had never been on `gh-pages` and were carried over
+> with the hub, or four of its links would have 404'd. Remember `main` is
+> not what is served: deploying means copying onto `gh-pages`.
+
+---
+
 ## `toko/` — Toko Midori Games™, the brand
 
 The identity of the workshop. Open **`toko/index.html`** for the brand board:

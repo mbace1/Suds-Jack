@@ -1,0 +1,22 @@
+{
+  "tokodrop": {
+    "v": 2,
+    "from": "cache token"
+  },
+  "hyperdagger": {
+    "v": 13,
+    "from": "VERSIONS.md"
+  },
+  "dropcabal": {
+    "v": 2,
+    "from": "VERSIONS.md"
+  },
+  "paperboy": {
+    "v": 4,
+    "from": "cache token"
+  },
+  "gameoflife": {
+    "v": 39,
+    "from": "VERSIONS.md"
+  }
+}

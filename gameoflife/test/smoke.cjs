@@ -5,7 +5,8 @@
 //
 // Covers:
 //  - page loads with zero console/page errors
-//  - hub renders both cards, in all three languages
+//  - the terminal hub: one offering, the status line, all three languages,
+//    all three phosphor accents
 //  - aqueduct: story advances, puzzle canvas survives interaction
 //  - forest: choices advance scenes, breathing finale starts
 //  - nature interlude fires at sinceInterlude >= 2 (day + evening variants)
@@ -54,6 +55,17 @@ function check(name, cond) {
   if (!cond) failures++;
 }
 
+// Tap a pixel of the PICTURE. The screen is curved (js/crt.js), so the place a
+// flat canvas would have put that pixel is not where it is — the miss grows
+// toward the edges, which is exactly where the tappable things tend to be.
+// Ask the page where the CRT actually put it.
+async function tapPixel(page, x, y) {
+  const box = await page.locator('.pixel-screen').boundingBox();
+  const [u, v] = await page.evaluate(
+    ([px, py]) => __gol.debug.unwarp((px + 0.5) / 192, (py + 0.5) / 128), [x, y]);
+  await page.mouse.click(box.x + u * box.width, box.y + v * box.height);
+}
+
 (async () => {
   await new Promise(r => server.listen(0, r));
   const URL = `http://localhost:${server.address().port}/gameoflife/index.html`;
@@ -68,22 +80,40 @@ function check(name, cond) {
 
   await page.goto(URL, { waitUntil: 'networkidle' });
 
-  // zen hub: ONE offering at a time, cycle dots, a quiet redraw link
-  check('hub offers exactly 1 card', await page.locator('.card').count() === 1);
-  check('offering is labeled', (await page.locator('.offer-note').textContent()).includes('offered'));
-  check('cycle dots visible', await page.locator('.cycle-dots .dot').count() === 3);
+  // the terminal hub: ONE offering behind a caret, a redraw link, a status line
+  check('hub offers exactly 1 thing', await page.locator('.offer').count() === 1);
+  check('the offering names its kind', (await page.locator('.offer-kind').textContent()).length > 3);
+  check('the offering sits behind a caret', (await page.locator('.caret').textContent()) === '>');
+  check('the begin button is bracketed', /^\[ .+ \]$/.test(await page.locator('.offer .btn').textContent()));
+  check('nothing decorative is left on the hub',
+    await page.locator('.hub-canvas, .cycle-dots, .greet').count() === 0);
   check('hub title present', (await page.locator('h1').textContent()) === 'The Game of Life');
-  const firstOffer = await page.locator('.card h2').textContent();
+  const firstOffer = await page.locator('.offer-name').textContent();
   await page.locator('.another-btn').click();
   check('"something else" swaps the offering',
-    (await page.locator('.card h2').textContent()) !== firstOffer);
+    (await page.locator('.offer-name').textContent()) !== firstOffer);
 
-  // language switching
-  await page.locator('.lang-btn', { hasText: 'Suomi' }).click();
+  // language switching — the terminal labels them by code, and says the full
+  // name only to a screen reader
+  await page.locator('.lang-btn[aria-label="Suomi"]').click();
   check('finnish title', (await page.locator('h1').textContent()) === 'Elämän peli');
-  await page.locator('.lang-btn', { hasText: '日本語' }).click();
+  check('languages are shown as codes', (await page.locator('.lang-btn[aria-label="Suomi"]').textContent()) === 'fi');
+  await page.locator('.lang-btn[aria-label="日本語"]').click();
   check('japanese title', (await page.locator('h1').textContent()) === '人生のゲーム');
-  await page.locator('.lang-btn', { hasText: 'English' }).click();
+  await page.locator('.lang-btn[aria-label="English"]').click();
+
+  // the screen's accent: one phosphor colour for the chrome, the CRT and every
+  // interactive element inside the scenes
+  check('three phosphor colours offered', await page.locator('.accent-row .lang-btn').count() === 3);
+  await page.locator('.accent-row .lang-btn', { hasText: 'green' }).click();
+  check('the accent is taken', await page.evaluate(() => __gol.debug.getAccent()) === 'green');
+  check('the chrome follows the accent', await page.evaluate(
+    () => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()) === '#5ce87a');
+  check('the in-scene glow follows it too', await page.evaluate(
+    () => __gol.debug.accentInScene()) === '#5ce87a');
+  await page.reload({ waitUntil: 'networkidle' });
+  check('and it is remembered', await page.evaluate(() => __gol.debug.getAccent()) === 'green');
+  await page.locator('.accent-row .lang-btn', { hasText: 'cyan' }).click();
 
   // aqueduct: 3 story panels then puzzle (entered via debug handle — the
   // offering draw is random, so tests navigate deterministically)
@@ -95,10 +125,7 @@ function check(name, cond) {
   const hint = await page.locator('.exp-text').textContent();
   check('puzzle hint shown', hint.includes('Channel 1'));
   // click around the canvas — must not throw, tiles rotate silently
-  const box = await page.locator('.pixel-screen').boundingBox();
-  for (let i = 0; i < 8; i++) {
-    await page.mouse.click(box.x + box.width * (0.2 + 0.08 * i), box.y + box.height * 0.45);
-  }
+  for (let i = 0; i < 8; i++) await tapPixel(page, 38 + i * 15, 58);
   check('puzzle interaction survives clicks', errors.length === 0);
   await page.locator('.back-btn').click();
 
@@ -160,7 +187,7 @@ function check(name, cond) {
   await page.waitForTimeout(1600);
   await page.locator('.exp-buttons .btn', { hasText: 'Continue' }).click();
   check('the second finish is not asked to rate', await page.locator('.leaf-row').count() === 0);
-  check('it returns straight to the hub', await page.locator('.card').count() === 1);
+  check('it returns straight to the hub', await page.locator('.offer').count() === 1);
   // two finishes = the rest is due, so the invitation opens over the hub here.
   // Put it off, which also keeps the rest of this run's hub clear.
   check('two finishes bring the rest', await page.locator('.overlay').count() === 1);
@@ -186,8 +213,7 @@ function check(name, cond) {
   await page.evaluate(() => __gol.debug.start('stars'));
   check('stars intro shown', (await page.locator('.exp-text').textContent()).includes('seven stars'));
   await page.locator('.exp-buttons .btn', { hasText: 'Continue' }).click();
-  const sbox = await page.locator('.pixel-screen').boundingBox();
-  const tapPx = (x, y) => page.mouse.click(sbox.x + (x + 0.5) / 192 * sbox.width, sbox.y + (y + 0.5) / 128 * sbox.height);
+  const tapPx = (x, y) => tapPixel(page, x, y);
   for (const [x, y] of [[26, 46], [44, 36], [60, 34], [74, 38], [78, 58], [102, 62], [100, 38]]) await tapPx(x, y);
   check('dipper traced (Otava named)', (await page.locator('.exp-text').textContent()).includes('Otava'));
   await page.locator('.exp-buttons .btn', { hasText: 'Continue' }).click();
@@ -217,8 +243,7 @@ function check(name, cond) {
   // choose gold, watch the seams gild into the outro
   await page.evaluate(() => __gol.debug.start('seam'));
   check('seam intro shown', (await page.locator('.exp-text').textContent()).includes('five pieces'));
-  const kbox = await page.locator('.pixel-screen').boundingBox();
-  const ktap = (x, y) => page.mouse.click(kbox.x + (x + 0.5) / 192 * kbox.width, kbox.y + (y + 0.5) / 128 * kbox.height);
+  const ktap = (x, y) => tapPixel(page, x, y);
   for (const [x, y] of [[34, 54], [62, 98], [107, 38], [141, 94], [166, 64]]) await ktap(x, y);
   await page.waitForTimeout(700);
   check('seam assembled into the choice', (await page.locator('.exp-text').textContent()).includes('two ways'));
@@ -267,8 +292,7 @@ function check(name, cond) {
   check('lichen intro shown', (await page.locator('.exp-text').textContent()).includes('stone'));
   await page.locator('.exp-buttons .btn', { hasText: 'Leave it be' }).click();
   check('lichen begins to grow', (await page.locator('.exp-text').textContent()).includes('growing'));
-  const lbox = await page.locator('.pixel-screen').boundingBox();
-  await page.mouse.click(lbox.x + lbox.width * 0.5, lbox.y + lbox.height * 0.6);
+  await tapPixel(page, 96, 77);
   check('lichen recoils when touched', (await page.locator('.exp-text').textContent()).includes('recoils'));
   await page.locator('.back-btn').click();
 
@@ -301,8 +325,7 @@ function check(name, cond) {
   await page.evaluate(() => __gol.debug.start('trace'));
   check('trace intro shown', (await page.locator('.exp-text').textContent()).includes('do not come joined'));
   await page.locator('.exp-buttons .btn', { hasText: 'Begin' }).click();
-  const trbox = await page.locator('.pixel-screen').boundingBox();
-  const trTap = (x, y) => page.mouse.click(trbox.x + (x + 0.5) / 192 * trbox.width, trbox.y + (y + 0.5) / 128 * trbox.height);
+  const trTap = (x, y) => tapPixel(page, x, y);
   for (const [x, y] of [[40, 84], [58, 70], [82, 64], [104, 62], [128, 56], [152, 46]]) await trTap(x, y);
   check('trace offers to name it', await page.locator('.exp-buttons .btn', { hasText: 'my constellation' }).count() === 1);
   await page.locator('.exp-buttons .btn', { hasText: 'my constellation' }).click();
@@ -326,9 +349,9 @@ function check(name, cond) {
   await page.evaluate(() => __gol.debug.start('cairn'));
   check('cairn intro shown', (await page.locator('.exp-text').textContent()).includes('cairn'));
   await page.locator('.exp-buttons .btn', { hasText: 'Begin' }).click();
-  const cabox = await page.locator('.pixel-screen').boundingBox();
+
   for (let i = 0; i < 3; i++) {
-    await page.mouse.click(cabox.x + 0.5 * cabox.width, cabox.y + 0.25 * cabox.height);
+    await tapPixel(page, 96, 32);
     await page.waitForTimeout(700);
   }
   check('cairn stands', (await page.locator('.exp-text').textContent()).includes('It stands'));
@@ -339,8 +362,7 @@ function check(name, cond) {
   await page.evaluate(() => __gol.debug.start('downhill'));
   check('downhill intro shown', (await page.locator('.exp-text').textContent()).includes('way down'));
   await page.locator('.exp-buttons .btn', { hasText: 'Open the water' }).click();
-  const dbox = await page.locator('.pixel-screen').boundingBox();
-  const dTap = (x, y) => page.mouse.click(dbox.x + (x + 0.5) / 192 * dbox.width, dbox.y + (y + 0.5) / 128 * dbox.height);
+  const dTap = (x, y) => tapPixel(page, x, y);
   await dTap(92, 34);    // ledge 0 R->L
   await dTap(118, 82);   // ledge 2 R->L
   await page.waitForTimeout(1600);
@@ -365,8 +387,7 @@ function check(name, cond) {
   await page.evaluate(() => __gol.debug.start('hedge'));
   check('hedge intro shown', (await page.locator('.exp-text').textContent()).includes('hedge is older'));
   await page.locator('.exp-buttons .btn', { hasText: 'Walk the thirty paces' }).click();
-  const hbox = await page.locator('.pixel-screen').boundingBox();
-  const hTap = (x, y) => page.mouse.click(hbox.x + (x + 0.5) / 192 * hbox.width, hbox.y + (y + 0.5) / 128 * hbox.height);
+  const hTap = (x, y) => tapPixel(page, x, y);
   await hTap(14, 62);    // hawthorn (sp 0)
   await hTap(58, 63);    // hawthorn again -> the lesson
   check('hedge counts kinds, not bushes', (await page.locator('.exp-text').textContent()).includes('already counted'));
@@ -375,6 +396,58 @@ function check(name, cond) {
   check('hedge dates itself by Hooper’s rule',
     (await page.locator('.exp-text').textContent()).includes('seven hundred years'));
   await page.locator('.back-btn').click();
+
+  // seed: four mornings pass on the clock and nothing the player does (or fails
+  // to do) can stall them — watering is optional, and the reveal must arrive on
+  // its own. This is the dead-end guard: the first version could only finish if
+  // you happened to press "water", and otherwise waited forever.
+  await page.evaluate(() => __gol.debug.start('seed'));
+  check('seed intro shown', (await page.locator('.exp-text').textContent()).includes('hurry'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Plant the seed' }).click();
+  await page.locator('.exp-buttons .btn', { hasText: 'Let the days pass' }).click();
+  check('seed first morning shows bare soil', (await page.locator('.exp-text').textContent()).includes('First morning'));
+  await page.locator('.exp-buttons .btn', { hasText: 'Give it water' }).click();
+  check('seed drinks a mouthful and no more', (await page.locator('.exp-text').textContent()).includes('one mouthful'));
+  check('the water is offered only once', await page.locator('.exp-buttons .btn').count() === 0);
+  // from here the player has nothing left to press — the days must arrive anyway
+  await page.waitForFunction(
+    () => document.querySelector('.exp-text').textContent.includes('hand-span of root'),
+    null, { timeout: 30000 });
+  check('the days pass without input, and the soil is cut away', true);
+  await page.locator('.exp-buttons .btn', { hasText: 'Continue' }).click();
+  check('seed sends the player out to plant something', await page.locator('.nature-note').count() === 1);
+  await page.locator('.back-btn').click();
+
+  // the hub can only offer what has its strings: a registered experience with a
+  // missing catalogue entry renders its key ('sd.s1') at the player instead of a
+  // sentence, and nothing at runtime complains. (test/check_strings.mjs is the
+  // static half of this gate; this is the one that actually looks at the screen.)
+  const ids = await page.evaluate(() => __gol.debug.ids());
+  check('every experience is registered with a kind', ids.length > 20 && ids.every(e => ['story', 'game', 'wisdom'].includes(e.kind)));
+  const nameGaps = await page.evaluate(() => {
+    const out = [];
+    for (const l of ['fi', 'en', 'ja']) {
+      __gol.debug.setLang(l);
+      for (const { id } of __gol.debug.ids()) {
+        for (const k of [`exp.${id}.name`, `exp.${id}.desc`]) if (__gol.debug.t(k) === k) out.push(`${l}:${k}`);
+      }
+    }
+    __gol.debug.setLang('en');
+    return out;
+  });
+  check(`every offering is named in all three languages${nameGaps.length ? ` (${nameGaps.slice(0, 6)})` : ''}`, nameGaps.length === 0);
+
+  // (a button is not required to open: seam and hedge start on a canvas tap)
+  const keyLike = /^[a-z]{2,4}\.[a-z0-9.]+$/;
+  const mute = [];
+  for (const { id } of ids) {
+    await page.evaluate(i => __gol.debug.start(i), id);
+    await page.waitForTimeout(50);
+    const said = (await page.locator('.exp-text').textContent()).trim();
+    if (said.length < 12 || keyLike.test(said)) mute.push(`${id}("${said.slice(0, 16)}")`);
+  }
+  check(`every experience opens with words, not a string key${mute.length ? ` — ${mute}` : ''}`, mute.length === 0);
+  await page.evaluate(() => __gol.debug.showHub());
 
   // whale: ride the body down through five stages, then the choice
   await page.evaluate(() => __gol.debug.start('whale'));
@@ -454,8 +527,6 @@ function check(name, cond) {
   await page.clock.install({ time: new Date('2026-07-22T12:00:00') });
   await page.reload({ waitUntil: 'networkidle' });
   check('interlude overlay shown (day)', await page.locator('.overlay').count() === 1);
-  check('hub greets by hour (noon)', (await page.locator('.greet').textContent()) === 'The light is high.');
-  check('living hub scene present', await page.locator('.hub-canvas').count() === 1);
   const dayTxt = await page.locator('.interlude').textContent();
   check('day prompt is seasonal (July -> barefoot grass)', dayTxt.includes('grass'));
 
@@ -528,12 +599,12 @@ function check(name, cond) {
   // an address that names an experience opens it; the hub is the plain address
   await page.goto(URL + '#tether', { waitUntil: 'networkidle' });
   check('#id deep-links straight into the experience',
-    await page.locator('.pixel-screen').count() === 1 && await page.locator('.card').count() === 0);
+    await page.locator('.pixel-screen').count() === 1 && await page.locator('.offer').count() === 0);
   check('the shared address is kept', await page.evaluate(() => location.hash) === '#tether');
   await page.locator('.back-btn').click();
   check('returning to the hub clears the address', await page.evaluate(() => location.hash) === '');
   await page.goto(URL + '#not-a-real-id', { waitUntil: 'networkidle' });
-  check('an unknown #id just opens the hub', await page.locator('.card').count() === 1);
+  check('an unknown #id just opens the hub', await page.locator('.offer').count() === 1);
 
   // <html lang> follows the UI language, for screen readers and CJK glyph choice
   await page.evaluate(() => __gol.debug.setLang('ja'));
@@ -545,7 +616,7 @@ function check(name, cond) {
   // twenty-two used to open frozen. This is easy to undo by accident (wrapping
   // a scene in scr.cached without lifting the live layer out), so it is gated.
   const frozen = [];
-  const roster = await page.evaluate(() => __gol.debug.ids());
+  const roster = (await page.evaluate(() => __gol.debug.ids())).map(e => e.id ?? e);
   check('the roster is reachable for testing', roster.length >= 22);
   for (const id of roster) {
     await page.evaluate(i => __gol.debug.start(i), id);
@@ -573,10 +644,15 @@ function check(name, cond) {
       return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     };
     const parse = (s) => (s.match(/\d+/g) || [0, 0, 0]).slice(0, 3).map(Number);
+    // A translucent wash — the hover highlight — is not a background: it lets
+    // what is behind it through, and reading it as opaque white made a hovered
+    // button look like grey-on-white and fail. Only near-opaque layers count.
     const bgOf = (el) => {
       for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
         const b = getComputedStyle(n).backgroundColor;
-        if (b && !/rgba\(0, 0, 0, 0\)|transparent/.test(b)) return parse(b);
+        if (!b || /transparent/.test(b)) continue;
+        const a = b.startsWith('rgba') ? parseFloat(b.split(',')[3]) : 1;
+        if (a >= 0.5) return parse(b);
       }
       return [20, 19, 17];
     };
@@ -606,14 +682,37 @@ function check(name, cond) {
   // sound has an off switch, and it is remembered. An app that makes noise on
   // its own must let a person on a quiet train stop it.
   check('sound can be turned off from the footer',
-    await page.locator('.lang-btn', { hasText: 'off' }).count() === 1);
-  await page.locator('.lang-btn', { hasText: 'off' }).click();
+    await page.locator('.sound-row .lang-btn', { hasText: 'off' }).count() === 1);
+  await page.locator('.sound-row .lang-btn', { hasText: 'off' }).click();
   check('the app knows it is muted', await page.evaluate(() => __gol.audio.muted()) === true);
   check('and it is remembered', await page.evaluate(() => __gol.store.soundOn()) === false);
   await page.reload({ waitUntil: 'networkidle' });
   check('the mute survives a visit', await page.evaluate(() => __gol.audio.muted()) === true);
-  await page.locator('.lang-btn', { hasText: 'on' }).click();
+  await page.locator('.sound-row .lang-btn', { hasText: 'on' }).click();
   check('and it can be turned back on', await page.evaluate(() => __gol.audio.muted()) === false);
+
+  // The curved screen (js/crt.js) is the house look and is ON by default, but
+  // it is a filter over deliberately high-frequency dithered art, so it has an
+  // off switch. On: PixelScreen shows the WebGL canvas. Off: the flat one, and
+  // everything still works — which is also the no-WebGL fallback path.
+  await page.evaluate(() => __gol.debug.start('tern'));
+  check('the screen is on by default', await page.evaluate(() => __gol.store.crtOn()) === true);
+  check('and the picture comes through it',
+    await page.locator('canvas.pixel-screen.crt').count() === 1);
+  await page.locator('.back-btn').click();
+  await page.locator('.crt-row .lang-btn', { hasText: 'off' }).click();
+  check('it can be switched off', await page.evaluate(() => __gol.store.crtOn()) === false);
+  await page.evaluate(() => __gol.debug.start('tern'));
+  check('and then the picture is flat',
+    await page.locator('canvas.pixel-screen').count() === 1
+    && await page.locator('canvas.pixel-screen.crt').count() === 0);
+  check('a scene still runs without the screen',
+    (await page.locator('.exp-text').textContent()).includes('Arctic'));
+  await page.locator('.back-btn').click();
+  await page.reload({ waitUntil: 'networkidle' });
+  check('the choice survives a visit', await page.evaluate(() => __gol.store.crtOn()) === false);
+  await page.locator('.crt-row .lang-btn', { hasText: 'on' }).click();
+  check('and it comes back', await page.evaluate(() => __gol.store.crtOn()) === true);
 
   // screen-reader wiring: one landmark, the story text announces each new beat,
   // and the canvas keeps quiet (the text is the channel that can be followed)
@@ -638,19 +737,18 @@ function check(name, cond) {
   check('landscape keeps the choices on screen', land.btnVisible);
   await page.setViewportSize({ width: 1280, height: 720 });
 
-  // asking the system for less motion stills the decorative header
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto(URL, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(400);
-  const stillHeader = await page.evaluate(async () => {
-    const c = document.querySelector('.hub-canvas');
-    const a = c.toDataURL();
-    await new Promise(r => setTimeout(r, 600));
-    return c.toDataURL() === a;
-  });
-  check('reduced motion stills the hub header', stillHeader);
-  await page.emulateMedia({ reducedMotion: null });
-  await page.goto(URL, { waitUntil: 'networkidle' });
+  // the hub no longer has anything to still: it is text and rules, and the only
+  // thing that ever moves is inside an experience, where the movement IS the
+  // thing. What has to be proven instead is that the screen stops when it goes.
+  await page.goto(URL, { waitUntil: 'networkidle' });   // back to the hub first
+  check('the hub paints nothing at all', await page.locator('canvas').count() === 0);
+  check('no screen is being presented on the hub', await page.evaluate(() => __gol.debug.screensLive()) === 0);
+  await page.evaluate(() => __gol.debug.start('ice'));
+  await page.waitForTimeout(200);
+  check('an experience brings its screen up', await page.evaluate(() => __gol.debug.screensLive()) === 1);
+  await page.locator('.back-btn').click();
+  check('and leaving takes it down again — no CRT left running on a dead scene',
+    await page.evaluate(() => __gol.debug.screensLive()) === 0);
 
   // saying nothing must not be recorded as feedback, nor thanked for
   const before = await page.evaluate(() => __gol.debug.feedback().length);
@@ -659,7 +757,7 @@ function check(name, cond) {
   check('an empty thought is not stored',
     await page.evaluate(() => __gol.debug.feedback().length) === before);
   check('an empty thought returns to the hub without thanks',
-    await page.locator('.card').count() === 1);
+    await page.locator('.offer').count() === 1);
 
   // ── the feedback actually leaves the browser ──────────────────────
   // with no endpoint configured, nothing is promised and nothing is sent

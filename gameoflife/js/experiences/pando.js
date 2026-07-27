@@ -10,8 +10,8 @@
 // frame because it does not end where the picture does.
 // Revert: find two trees that might be one.
 
-import { PixelScreen, rampDither, shade } from '../pixel.js?v=38';
-import { PAL } from '../palette.js?v=38';
+import { PixelScreen, rampDither, shade } from '../pixel.js?v=40';
+import { PAL } from '../palette.js?v=40';
 
 const SKY = ['#5a7fa8', '#7ba0c2', '#9dc0d8', '#c2dae8'];
 const BARK = ['#cfd6cf', '#e2e8df', '#f0f4ec'];    // aspen white, faintly green

@@ -4,10 +4,117 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Projects
 
+### The arcade — `index.html` + `hub/`
+The landing page: **every playable thing in the repo on one page**, each cabinet with a
+**Play** link and a **Feedback** button. Vanilla ES modules, no build step, no image
+assets — every marquee is a 128×72 pixel canvas drawn in code (`hub/art.js`) and tinted
+from that game's own accent.
+It wears **the same terminal as `gameoflife/`** (see the locked visual plan there): cold
+near-black, monospace, `>` carets, `[ PLAY ]` brackets, rules instead of card borders,
+and a status line carrying the same three-colour **screen accent** (persisted under
+`sudsJackHubAccent`). The accent tints the *chrome* only — each cabinet keeps its own
+colour on its caret, its Play button and its bezel, because that is the game's colour and
+not the terminal's. Every marquee is seen **through the same curved glass**: `throughGlass`
+in `art.js` bakes barrel distortion + one scanline per source row + a corner vignette into
+a 256×144 remap **once at load** (a marquee never moves, so nine cabinets cost nine passes
+total — no WebGL, no per-frame cost, unlike the live version in `gameoflife/js/crt.js`). Adding a game is **two edits**: an entry in `hub/games.js`
+(title, tagline, lineage, tags, controls, `path`, `accent`, `art`, `inRepo`, `status`) and
+a draw function in `hub/art.js`; `hub/hub.js` knows about no game in particular.
+**The marquees are covers, not icons** (owner's direction, 2026-07). A cover is a
+*composition* that says what the game is before you read a word: a framing device, a
+subject with somewhere to be, depth, and one thing happening. The house register is
+**Atari and Master System** — meaning the constraints, not nostalgia. A 2600 changed
+colour **once per scanline**, so a burning sky is a stack of flat horizontal bars with
+hard seams (`skull`); a Master System sprite is a **flat fill inside a hard black line**,
+so the shape has to live in the *silhouette* because there is no shading to put it in.
+`mix()` in `art.js` is for those ramps. Per-cover references are the owner's to give —
+Neon Ronin is the Phantasy Star III box (gate, receding stair, hero cropped by the
+frame), Hyper Dagger is **HYPERDEMON × Bone Dust**. Three things were learned building
+those two and hold generally: a hero cannot be a black silhouette against a dark scene
+(light it, or rim it in two colours); **cropping** a foreground figure at the frame is
+what makes it read as foreground; and a framing device has to be **lighter** than the
+sky behind it or it is just an outline floating in the void. The rack **grows with the screen — 1 / 2 / 3 / 4** at 660 / 1100 / 1480px, inside a
+1520px wrap. The ladder is set by what the *marquee* gets, not by device names: every
+step keeps it near 350px, which is the width at which the pixel art still reads. Each
+row's cabinets sit side by side with their text under them, then the next row.
+**`live: false`** marks a cabinet with nothing behind it: the marquee goes unlit and
+un-linked, Play becomes a dead `[ NOT UP ]`, and the `note` field replaces the controls
+line with why. Not every button has to work for a game to be worth listing — and a
+button that says so beats one that 404s. Feedback stays open on those cabinets.
+**`status`** splits the page in two: `active` gets the top of the page, `archived` sits
+under its own heading with dimmed marquees — still listed, still playable, not competing
+with the live work. One word moves a game between them. The default split was drawn on
+last-commit dates (July = active; the June ones — Suds Jack, Paper Route, 20/20 and the
+goo sketches — archived).
+The short URL **`/AnotherHUB`** (`AnotherHUB/index.html`) is the same page one level down
+with a `<base href="../">` so every relative link still resolves against the site root;
+the smoke test asserts the two files are byte-identical apart from that tag, because two
+copies of a page drift.
+**Controllers.** `hub/pad.js` is the one gamepad reader the site shares — the Gamepad
+API has no press events, so it is a single rAF poller doing edge-detected buttons,
+deadzoned sticks, d-pad-or-stick direction and hold-repeat. It reports the stick
+**returning to centre** as `dir(0,0)`, which menus ignore and the key bridge depends on.
+`hub/shell.js` is one line in a game's `index.html`: a HOME button top-left plus a
+**hold** on Start/Back (750 ms, the button fills as confirmation — a press would collide
+with the pause button several of these games bind to Start). It navigates on **`pointerup`
+AND `touchend`**, never on `click`: ten of the twelve games `preventDefault` every touch
+outside their own UI, which kills the synthesised click — and cancelling `touchstart` in
+the capture phase cancels the pointer stream too, so the element gets `pointercancel` and
+never `pointerup`. `touchend` survives both. That is why the button worked with a mouse
+and did nothing under a thumb. `hub/padkeys.js` gives a pad
+to games that never grew one, driven by `pad` in the catalogue: `'native'` = the game
+reads a pad itself and nothing is layered on it (Hyper Dagger, Toko Drop, SKLTR, Tiny
+Hawk, sudz, voxel); `{keys:{…}}` dispatches the key events the game already listens for
+(Drop Cabal, Powder, Neon Ronin); `{pointer:true}` feeds a one-button surface (Tiny 2D);
+`{ui:true}` walks the page's own buttons (The Game of Life). Honest limits: synthetic key
+events are untrusted, and mouse-**aimed** games get movement and keyed actions from the
+pad but not aim — that needs their own code. On the arcade itself a direction moves the
+selection, A plays, Y leaves a note, B backs out, and in the note panel left/right sets
+the rating and A sends; selection is real DOM focus with its own ring, since a pad user
+may never trigger `:focus-visible`.
+**Versions.** Toko Drop's system (a `VERSIONS.md` log with `## vN` entries plus a `?v=N`
+module token, moved together by `scripts/bump-version.sh`) now covers the whole floor.
+`node scripts/versions.mjs [siteRoot]` writes `hub/versions.json` by reading each
+project's `VERSIONS.md` first and falling back to its `?v=` token, so a project gets a
+number before anyone starts logging for it and switches to the release number the moment
+they do. The cabinets fetch that file, so shipping one game does not mean redeploying the
+arcade. **Run it at deploy time** — against the deployed tree, which is the only place
+every project exists.
+`hub/feedback.js` reuses the transport the games already ship (`scripts/feedback-sheet.gs`
+on `gh-pages`): a `SHEET_ENDPOINT` Apps Script if pasted in — unlimited, but `no-cors`, so
+its answer cannot be read and that path reports **`sent-blind`**, never `sent` — otherwise
+the Formspree endpoint `toko-drop` already uses. Every note lands in `localStorage` first;
+undeliverable ones queue in an outbox drained one at a time on the next visit; Send with
+nothing said records nothing. `window.__hub` exposes `{games, sketches, feedback, debug}`
+(`feedback.setEndpoint(url, blind)` points it at a stub for tests).
+`node test/hub-smoke.cjs` = 31 checks: a cabinet per catalogue entry, every in-repo link
+resolving 200, every marquee actually painted, the full feedback path (empty / sent /
+queued / drained), modal behaviour (Esc, backdrop, focus returned), WCAG AA, 44px targets,
+no horizontal overflow on a phone.
+**`inRepo`** marks which games this branch carries: the `gh-pages` site root is a curated
+tree holding games `main` does not (Suds Jack itself at `sudz/`, `Skltr/`, `neon-ronin/`,
+`eye-test/`), so the test loop only checks links it can see. **Deployed** to the `gh-pages`
+root on 2026-07-26 (live at `/Suds-Jack/`), which took the place of the Suds Jack game
+that used to be the root page. Check which copy is newer before "refreshing" anything:
+`sudz/` was ahead of the old root build, not behind it, so it was left untouched and the
+root's orphaned `game.js`/`style.css`/`levels.json` were removed. `paperboy/` and the
+`goo-*.html` sketches had to be carried onto `gh-pages` with the hub — the site had never
+held them, and four of the hub's links pointed at them.
+
 ### Suds Jack
-HTML5 demo built with **Three.js / WebGL**.
-Concept: "Bomb Jack x Suds 51 x Tempest 2000" — floating bomb-collection gameplay, soap/bubble aesthetic, Tempest 2000 psychedelic tube-shooter energy.
-Build tooling: TBD — update this file once chosen and add dev/build commands.
+Concept: "Bomb Jack x Suds 51 x Tempest 2000" — floating bomb-collection gameplay, soap/bubble
+aesthetic, Tempest 2000 psychedelic tube-shooter energy.
+**Two things share the name.** The playable one is the **original canvas vector build**, live
+at `sudz/` on `gh-pages` (a tube shooter: ← → move, Space fire, Z superzapper; it has the
+mobile touch controls the old site-root copy never got). The one being **started next** is a
+rebuild that takes **`hyperdagger/` as its baseline** rather than starting from an empty
+scene — so it inherits that project's whole spine: Three.js r167 with no build step (jsDelivr
+importmap), the string-art **voxel pipeline** in `voxel.js` (`VoxelSprite` instanced meshes,
+`DebrisPool` physical gibs), the ACES + `EffectComposer` render stack, the telegraphed spawn
+director, the three-way input path (pointer-lock / gamepad / dual touch sticks), and the
+all-synth `audio.js`. Read `hyperdagger/`'s architecture notes below before starting: what
+changes is the game, not the engine underneath it.
+Build tooling: none — same no-build rule as every other demo here.
 
 ### Paper Route — Dawn Run (`paperboy/`)
 A **Paperboy clone** built on Three.js r167 with an **isometric, flat-shaded homage to
@@ -69,10 +176,10 @@ caveat as paperboy.
 
 ### The Game of Life (`gameoflife/`)
 **Mini games and interactive stories that always revert to going back to nature.**
-Minimalist pixel experiences (canvas 2D, no three.js, no build step). The hub is **zen**:
+Minimalist pixel experiences (canvas 2D, no three.js, no build step), presented as a
+retro-futurist ship terminal (see the locked visual plan below). The hub is **zen**:
 never a menu — ONE offering at a time, drawn weighted by the content mix (**70% story /
-20% game / 10% wisdom**, preferring unvisited-today; "something else, perhaps" redraws),
-with a 3-dot row (two breaths of play, then `~` rest). After every 2nd finished
+20% game / 10% wisdom**, preferring unvisited-today; "something else, perhaps" redraws). After every 2nd finished
 experience the hub *rests* and shows a nature invitation instead (evening 18:00–05:00
 swaps outdoor prompts for a poem / look-at-art prompt). Invitations are **seasonal**:
 `nature.js`'s `season(date, hemi)` puts two per-season prompts ahead
@@ -165,15 +272,35 @@ starting the next one — going experience→experience (as `__gol.debug.start` 
 leak the previous rAF loop against a detached canvas. Profile with Playwright + CDP
 `Emulation.setCPUThrottlingRate(4)` and a wrapped `fillRect` counter, **one fresh page per
 scene** or leaked loops inflate the counts.
-The hub greeting follows the hour (`daySlot()`: morning/day/evening/night) and a
-**living header scene** (192×44 `PixelScreen`, `startHubScene` in `main.js`) paints the
-same hour — dawn mist / noon sun + cloud / dusk / starry night with a tiny Otava — over
-a constant treeline; it must be `stopHubScene()`d wherever the app re-renders. Zen
-chrome-trimming: the set-once controls (language, feedback) sit in ONE quiet
-`.hub-footer` below a divider (language, hemisphere, feedback), out of the main
-column; the explanatory tagline and
-cycle-hint only show for newcomers (< 2 lifetime completions), so returners land on a
-clean header with the offering as the single focus. The app must never nag:
+**The 2026-07 terminal (locked visual plan).** The app is a quiet retro-futurist ship
+terminal — Aliens computer screens crossed with zen. Two halves:
+**(1) The CRT viewport** (`js/crt.js`). Experiences still draw into a flat 192×128 2D
+canvas; what reaches the page is that canvas presented through a WebGL quad with a gentle
+**barrel distortion** (`CURVE` 0.075) **overscanned** by `1/(1+CURVE)` so the picture
+fills the bezel and only the corners round off (without it, black bands frame every
+scene), **one scanline per source row**, a **phosphor bleed** off bright pixels tinted
+toward the accent, and a corner vignette. No heavy bloom, no RGB separation. The bezel
+itself is CSS on `.screen-wrap`. `PixelScreen` owns this: `this.ctx` still draws flat,
+`this.canvas` is whatever is really on screen (the GL canvas, or the 2D one if WebGL is
+missing — the fallback is silent and everything still works), and **`toPixel` runs the
+same `warp()` the shader does**, or every hit test in every tappable scene drifts toward
+the edges. `unwarp()` inverts it (4 fixed-point rounds, < 0.03 px) so the test loop can
+tap by picture coordinates — `tapPixel(page, x, y)` in `smoke.cjs`. All live screens are
+presented from ONE shared rAF; `liveCount()` is asserted to return to 0 on leaving a
+scene, because a CRT still drawing on a destroyed scene is the leaked-rAF bug this
+project has had before.
+**(2) The terminal hub.** No living sky, no cards, no time-of-day greeting — a title, a
+rule, one offering behind a `>` caret with its kind under it, `[ BEGIN ]`, `something
+else...`, a rule, and a **status line** carrying every set-once switch: languages by code
+(`fi en ja`, full name kept as the accessible name), the **screen accent**, sound,
+hemisphere, the sound-garden `♪` glyphs, and the feedback link. The explanatory tagline
+and cycle-hint still only show for newcomers (< 2 lifetime completions).
+**The accent** (`ACCENTS` in `palette.js`, persisted as `accent`) is one phosphor colour
+— cyan / green / white — driving the CSS `--accent`, the CRT's bleed tint, *and*
+`PAL.CYAN_LUX`, so every in-scene interactive glow follows it. That last one means
+**`PAL.CYAN_LUX` is not a constant**: read it at draw time, never `const C =
+PAL.CYAN_LUX` at module level (that freezes at import — `ice`/`seam`/`downhill` had to be
+converted). The app must never nag:
 **rating is occasional** (`store.feedbackDue()` — after the 1st finish, then
 every 5th; the footer's *leave a thought* link is always there, and an empty
 submission records nothing rather than thanking you for silence), and
@@ -227,6 +354,12 @@ earns a voice; `gardenStop()` fires on entering an experience or the feedback
 panel, so it plays on the hub alone. Shown in `.hub-footer` as `♪` glyphs
 (plural-free across fi/en/ja) with a one-time "you went outside" acknowledgement. `window.__gol` exposes
 `{store, audio, debug: {start, showInterlude, setLang, feedback}}` for console testing.
+An opt-in **CRT look** (`crt on/off` in the footer, `store.crtOn()`, default OFF)
+adds scanlines + tube bloom via a `.crt` class on `<html>`. Its period is locked to
+the **source grid** (`background-size: 100% calc(100% / 64)` = one line per two of
+the 128 canvas rows) — a fixed 3px period like dropcabal's beats against the
+ordered dither and turns `whale`/`ice`/`seam`/`lichen`/`eel` to moiré. It is a
+preference, not the house style: it flatters flat scenes and fights dithered ones.
 The app is **offline-first**: `sw.js` precaches the shell cache-first and
 `manifest.webmanifest` makes it installable — it sends you outdoors, so it has to
 work where the signal stops. The worker registers on **https only** (or `?sw=1`)
@@ -356,7 +489,16 @@ Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4
 ## Repository Structure
 
 ```
-suds-jack/      # (not yet scaffolded)
+suds-jack/      # (not yet scaffolded — the game itself lives at sudz/ on gh-pages)
+index.html      # the arcade: every game on one page, Play + Feedback each
+hub/
+  games.js      # the catalogue — one entry per playable thing (path, accent, art, inRepo)
+  art.js        # a 128×72 pixel marquee per game, drawn in code (no image assets)
+  feedback.js   # SHEET_ENDPOINT (no-cors) → Formspree → local archive + retried outbox
+  hub.js        # renders the cabinets, runs the feedback panel (modal, focus, Esc)
+  hub.css       # the dark room; AA contrast + 44px controls are load-bearing here
+test/
+  hub-smoke.cjs # 31 headless checks over the hub
 toko/           # Toko Midori Games — the brand (face, lockups, sting, signature)
   BRAND.md      # the rules: the creed, construction notes, the two colours, do/don't
   index.html    # the brand board — every mark live, glitch lab, SVG downloads

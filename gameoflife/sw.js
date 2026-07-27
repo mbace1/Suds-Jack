@@ -13,12 +13,12 @@
 // Registered from index.html only over https (or with ?sw=1), so local dev and
 // the smoke gate are never served a stale shell.
 
-const VERSION = 'v38';
+const VERSION = 'v40';
 const CACHE = `gol-${VERSION}`;
 
 // the shell: everything needed to open the hub and run any experience. The
 // query strings matter — these are the URLs the page actually requests.
-const V = `?v=38`;
+const V = `?v=40`;
 const SHELL = [
   './',
   './index.html',
@@ -29,11 +29,13 @@ const SHELL = [
   `./js/i18n.js${V}`,
   `./js/palette.js${V}`,
   `./js/pixel.js${V}`,
+  `./js/crt.js${V}`,
   `./js/storage.js${V}`,
   `./js/audio.js${V}`,
   `./js/nature.js${V}`,
   `./js/poems.js${V}`,
   `./js/feedback.js${V}`,
+  `./js/crt.js${V}`,
   ...['aqueduct', 'forest', 'tern', 'cup', 'hanami', 'berry', 'stars', 'maple',
       'plate', 'seam', 'dots', 'glass', 'wait', 'lichen', 'cloud', 'ice',
       'trace', 'gears', 'cairn', 'downhill', 'tether', 'hedge', 'seed',
