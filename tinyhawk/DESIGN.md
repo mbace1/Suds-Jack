@@ -1,10 +1,12 @@
 # Tiny Hawk — design doc
 
-> A tiny skate story. Tony Hawk's vocabulary, OlliOlli's commitment, Slay the Spire's map.
+> A tiny skate story. Third-person low-poly, twin-stick, Tony Hawk's vocabulary,
+> Slay the Spire's map.
 > Three.js r167, no build step, same house rules as `paperboy/` and `dropcabal/`.
 
-Status: **design only — nothing implemented yet.** This doc is the plan to argue with
-before any code lands.
+Status: **design + control prototype.** The side-on one-button experiment that came out of
+the first draft of this doc now lives on its own as [`tiny2d/`](../tiny2d/) — it is a
+finished small game, not a Tiny Hawk mode.
 
 ---
 
@@ -14,333 +16,252 @@ You are a nobody with a camcorder and not enough film. Every spot you skate, you
 handful of tries to land the clip. Land the goals, the part moves to the next district.
 Run out of film, the part is what it is.
 
-Two ways in:
-
-* **Daily Line** — one seeded 45-second course, everybody gets the same one, three tries,
-  best run counts. Two minutes of your day.
-* **The Part** (roguelike) — a branching tour through the city, a shared pool of tries
-  across the whole run, goals that gate progress, board parts and learned tricks as the
-  build.
-
-The story is not a cutscene layer. It is the roguelike's connective tissue: sponsors,
-busted spots, a rival's line, a knee that costs you film.
+Third-person, behind the skater, in a low-poly park you can actually roam. The story is
+not a cutscene layer — it is the roguelike's connective tissue: sponsors, busted spots, a
+rival's line, a knee that costs you film.
 
 ---
 
-## 2. Core question, answered up front
+## 2. Resolved: third-person park, not a forward line
 
-**Free-roam park (THPS) or forward-committed line (OlliOlli)?**
+The first draft of this doc recommended a forward-committed line (OlliOlli in 3D) and
+flagged the choice as the one open decision. **It is now decided the other way**: free
+roam, third-person, low-poly 3D.
 
-Recommendation: **forward-committed line, rendered in 3D.** The skater always rolls
-forward; you steer across a ~3-lane-wide ribbon and choose routes *within* a segment, but
-you never turn around.
+What that costs, honestly, and what pays for it:
 
-Why this and not a park:
-
-| | free-roam park | forward line |
+| | cost | how it is paid |
 |---|---|---|
-| daily seed comparability | weak — everyone skates a different route | strong — same course, same 45 s |
-| touch controls | needs a full analog + camera | steer is one axis, the rest is gestures |
-| roguelike content unit | a whole park per node (expensive) | a **segment**, shufflable (cheap) |
-| session length | open-ended | naturally 30–60 s |
-| authoring cost | very high | hand-author ~30 chunks, combine forever |
+| daily-seed comparability | everyone skates a different route | the daily is a **goal set** on a fixed park, not a fixed route — same objectives, your own line |
+| content unit | a park is much more to author than a segment | parks are **assembled from a primitives kit** (§5), so authoring is arrangement |
+| touch controls | needs real analog plus a camera | §4 — that is what the twin-stick scheme is for, and it is the most interesting part of the design |
+| session length | open-ended | the film/goal structure bounds it, not the geometry |
 
-The freedom you keep: lateral lane choice, side quarterpipes for wall airs, high/low
-routes (grind the rail *over* the gap, or drop in and pump the bowl beneath it). It should
-feel like a **line**, not a tunnel.
-
-This is the single biggest fork in the doc. If the answer is "no, I want a park," most of
-§5 (course deck) is rewritten and §7 (map) survives intact.
+What it buys is the thing a line can never have: a spot you *learn*. Route choice, a line
+you invent rather than execute, and a reason to go back to a node you already cleared.
 
 ---
 
 ## 3. Feel: the trick system
 
-Everything hangs off one rule: **the multiplier only pays when you land.**
+One rule underneath everything: **the multiplier only pays when you land.**
 
-### Roll
-Constant forward drive, modulated by terrain. Pumping a transition (crouch at the bottom
-of a curve) adds speed; a sloppy landing (off-axis, too flat) sheds it. Speed is not a
-score, it is the budget you spend on gaps.
+### Roll and push
+The left stick is camera-relative movement. Push forward to accelerate, ease off to coast,
+pull back to brake. Turning is a rate, not a snap — the board carves, and carving across a
+transition is how you pump for speed.
 
-### Ollie
-Hold to crouch — a visible squat, up to ~0.5 s of charge — release to pop. Charge sets
-height. Holding also slows you slightly, so charging a big pop into a big gap costs you
-approach speed. That tension is the whole ollie.
+### Ollie — flick, don't charge
+Flick the right stick **up**. The flick's **magnitude sets the pop height**, so the analog
+gesture does the job a hold-to-charge would, without a charge that would fight the camera
+drag for the same stick (§4). Flick harder, go higher.
 
-### Air tricks — four families, one gesture each
-While airborne, a flick (or key) in each of four directions:
+### Air tricks
+While airborne, flick the right stick in a direction; each direction is a trick family
+(↑ grab, ←/→ flip, ↓ shuv). Each flick appends to the combo string, and **repeating a
+trick inside one combo scores progressively less** — that is what makes an unlocked trick
+vocabulary a real build upgrade rather than a cosmetic one.
 
-| gesture | family | example |
-|---|---|---|
-| ← / → | flip | kickflip, heelflip |
-| ↑ | grab | indy, melon |
-| ↓ | shuv | pop shuv-it, 360 shuv |
+### Spin and flip
+Hold the **left** stick left/right in the air to spin (yaw); up/down for front/back
+rotation. So: **left stick is the body, right stick is the camera and the hands.** That
+split keeps both thumbs busy without either one overloaded.
 
-Each flick appends a trick to the combo string. **Repeating a trick inside one combo
-scores progressively less** (the THPS rule) — that is what makes an unlocked trick
-vocabulary a real build upgrade rather than a cosmetic.
+### Landing
+Compare board heading to velocity heading on touchdown:
 
-### Spin
-Hold left/right in the air to yaw. 180 / 360 / 540 each add. You must land within roughly
-±35° of travel or you bail — so spin is the highest-value, highest-risk modifier, and it
-fights with the flick gesture for the same input axis. **Resolution: flicks are impulses
-(short, released), spins are holds.** Needs prototype confirmation; it is the riskiest
-control decision in the doc.
+* within ~40° — clean, bank the combo
+* near 180° — **fakie**, also clean, and worth more
+* anything else, or still mid-trick — **bail**
 
-### Grind
-Land within a small window of a rail/ledge → auto-lock. The direction held on approach
-picks the grind type (50-50 / boardslide / crooked). A balance meter drifts; correct with
-left/right. Grinds tick score per second and drift harder the longer you hold. Auto-lock
-generosity is a **tuning constant with a difficulty curve**, not a fixed value.
+Plus the surface-normal check inherited from `tiny2d`: how much of your velocity was
+perpendicular to the ground decides whether you keep your speed.
 
-### Manual
-Tap-tap (or hold) on landing → manual, own balance meter. This is the glue: manuals are
-how a combo survives the flat between two features. Cheap to build, and it is the single
-mechanic that turns "three tricks" into "a line." Do not cut it.
-
-### Land / bail
-Clean landing **banks** `combo points × trick count`. A bail zeroes the pending combo,
-costs speed, and — in The Part — costs a try. Bails are theatrical: the board tumbles as
-loose debris (the `DebrisPool` pattern from `hyperdagger/js/voxel.js` ports directly).
+### Grind and manual
+Rails and ledges auto-lock within a window; approach direction picks the grind type; a
+balance meter drifts and is corrected left/right. Manuals (flick right stick down on
+landing) are the glue between features — the mechanic that turns "three tricks" into "a
+line." Both are **P1**, not P0.
 
 ### Scoring shape
 ```
 pending += trickBase × styleBonus × (repeat penalty)
 bank    += pending × chainLength    // on clean landing only
 ```
-Landing early is safe and small. One more manual is always tempting. That is the game.
 
 ---
 
-## 4. Art direction: vector-looking, not vector
+## 4. Controls — the centrepiece
 
-"Vector graphics" in 3D reads best as **flat-shaded low-poly with a hard ink outline** —
-Jet Set Radio / Art of Rally / Golf Club Wasteland territory.
+Twin on-screen sticks. The idea that makes it work on a phone: **the right stick
+discriminates by gesture speed.** Slow is camera, fast is action. One stick, two jobs, no
+mode button.
 
-House rules already established in `paperboy/` and `dropcabal/`, kept here:
+| input | grounded | airborne |
+|---|---|---|
+| **left stick** | steer + push (camera-relative) | ←/→ spin, ↑/↓ flip |
+| **right stick, slow drag** | orbit the camera | orbit the camera |
+| **right stick, flick ↑** | **ollie** (magnitude = height) | grab |
+| **right stick, flick ←/→** | — | flip trick |
+| **right stick, flick ↓** | manual (P1) | shuv |
 
-* `MeshBasicMaterial`, `NoToneMapping`, **no lights, no shadows, no fog.**
-* Shading comes from **baked vertex colors** — three tones per object (lit face / side
-  face / shadow face) assigned by face normal at build time. Gives volume with zero
-  lighting cost and a deliberately posterised read.
-* **Outline via inverted hull**: duplicate mesh, `BackSide`, scaled ~1.02, flat ink. No
-  post-process pass, no build step, works on a phone. (An `EdgeDetect` post pass is the
-  fallback if hulls get fiddly on thin geometry like rails.)
-* One `palette.js` as the sole colour source (`paperboy` convention) — with **per-district
-  palettes**, so the roguelike's phase change is a full re-tint of the same geometry. Free
-  visual variety.
-* Sky is a flat two-stop gradient plane, not a skybox. Silhouette over detail.
+Desktop mirrors it: WASD skate, mouse look, Space ollie (hold = higher), Q/E/F/C tricks,
+Shift manual.
 
-Skater is a chunky low-poly figure, ~200 tris, readable purely by silhouette and by which
-way the board is pointing. Board contact with rails must be legible at a glance or grinds
-feel arbitrary.
+The threshold between "drag" and "flick" is the single most important number in the game,
+and it is exposed in `__th.debug` from day one. Too low and the camera jumps every time you
+look around; too high and tricks feel unresponsive. It is measured in **stick units per
+second**, not pixels, so it behaves the same on every screen size.
 
----
-
-## 5. Course generation: the segment deck
-
-**The key architectural idea, and what lets both modes share one system.**
-
-A course is an ordered list of **segments** — hand-authored chunks ~20–40 m long, each a
-small JSON-ish description of features (rails, kickers, stair sets, bowls, gaps, hazards).
-Every segment declares:
-
-```js
-{ id: 'rail-block-a',
-  length: 28,
-  entrySpeed: [0.6, 1.0],   // speed band it is skateable at
-  exitSpeed:  0.9,
-  lanes: 3,
-  tags: ['rail', 'gap', 'street'],
-  district: ['downtown', 'docks'],
-  build(scene, z) { ... } }
-```
-
-Generation = draw segments whose `entrySpeed` band accepts the previous segment's
-`exitSpeed`. That constraint alone means **any shuffle is skateable** — no unwinnable
-daily. Difficulty rises by biasing the draw toward narrower entry bands and longer gaps.
-
-Streaming and culling follow `paperboy/js/world.js` exactly: segments spawn ahead of the
-skater on a z-cursor, get disposed well behind. The world is effectively infinite; the
-geometry never moves.
-
-~30 authored segments gives an enormous shuffle space. Segments are the unit of content:
-adding one improves every mode at once.
+### Camera
+Chase cam, low and behind. It springs back behind your direction of travel when you stop
+dragging, so you never have to fight it, and pulls out with speed. It is the thing most
+likely to be quietly wrong — a skate camera that fights the player ruins a game that is
+otherwise fine.
 
 ---
 
-## 6. Daily Line
+## 5. The park: a heightfield plus a kit
 
-* Seed = UTC date string → `mulberry32` in `js/rng.js`. Everyone gets the same course.
-* ~45 s of segments, plus a fixed goal triple drawn from the same seed.
-* **Three tries**, best score counts. After the third, the run locks and the share card
-  unlocks.
-* No backend (house rule). Results live in `localStorage`; sharing is a **text card**:
+The ground is a **heightfield** — `h(x, z)` combined from a list of analytic features by
+`max()`, so a ramp rises out of flat ground with no seam work. Surface normals come from
+finite differences of `h`.
 
-```
-Tiny Hawk · 2026-07-26
-148,200 · rank S · 🛹🛹⚫
-best line: kickflip→50-50→manual→360 melon
-```
+This is the payoff from the `tiny2d` detour: the physics there was *ballistic integrate,
+then project onto the surface tangent*, and that generalises to 3D unchanged — the only
+difference is that the normal comes from a gradient instead of a scalar slope. The
+validated feel carries over.
 
-* A local history strip (last 10 days) mirrors `hyperdagger`'s recent-runs list.
+The kit: **flat, bank, quarterpipe, halfpipe, bowl, funbox, pyramid, stair set**, plus
+rails and ledges as explicit segments (not part of the field). A park is a list of
+placements. Authoring a new park is arranging a dozen entries, which is what makes §7's
+node-per-spot structure affordable.
 
-Daily is the retention hook and the tutorial-by-repetition. It must load and be playable
-in under five seconds.
+Rendering: sample the field on a grid, assign each face one of **three tones** by its
+normal, and draw it unlit with vertex colours. Inverted-hull ink outlines on the skater and
+on rails. No lights, no shadows, no fog — the house rule from `paperboy` and `dropcabal`.
+
+---
+
+## 6. Modes
+
+* **Free Skate** — no timer, no goals. Learn the park. This is where the controls are
+  taught, by having nothing at stake.
+* **Daily** — one park, one UTC-seeded goal set, three tries, best counts. Local-only
+  scores and a text share card (no backend, house rule).
+* **The Part** — the roguelike, §7.
 
 ---
 
 ## 7. The Part — roguelike mode
 
 ### The map
-Slay the Spire structure: ~13 rows, 6 columns, branching and re-converging paths, you see
-the whole map and commit one node at a time. Rendered as a **DOM overlay**, not in the 3D
-scene — cheaper, sharper, and trivially scrollable on a phone.
-
-Node types:
+Slay the Spire structure: ~13 rows, branching and re-converging, whole map visible, commit
+one node at a time. Rendered as a **DOM overlay**, not in the 3D scene.
 
 | node | what happens |
 |---|---|
-| **Spot** | standard segment run, 2–3 goals shown, clear any 2 to pass |
-| **Session** (elite) | longer course, harsher goals, guaranteed board part |
+| **Spot** | a park section, 2–3 goals shown, clear any 2 to pass |
+| **Session** (elite) | bigger park, harsher goals, guaranteed board part |
 | **Shop** | spend footage-cash on parts and trick unlocks |
-| **Event** | story beat with a choice (see §8) |
-| **Rest** | +2 film, or practice a trick permanently, not both |
-| **Boss** | a rival's line — beat a target score on their course |
+| **Event** | story beat with a choice |
+| **Rest** | +2 film, or practise a trick permanently, not both |
+| **Boss** | a rival's line — beat a target score on their spot |
 
 ### Film — the run resource
-You carry **5 tries ("film") for the entire tour**, not per node. Bail out of a node's
-goals and it costs one, and you may retry the node immediately. Rest nodes refill 2. Zero
-film ends the run and you get whatever part you shot.
+**5 tries for the entire tour**, not per node. Bail out of a node's goals and it costs one,
+and you may retry the node immediately. Rest nodes refill 2. Zero film ends the run.
 
-This is exactly the "limited runs, easily repeatable to a certain try amount" shape: a
-single spot is endlessly retryable in the moment, but every retry is drawn from a pool
-that has to last fifteen nodes. Retrying is *allowed* and *expensive* — the good tension.
+A single spot is endlessly retryable in the moment, but every retry is drawn from a pool
+that has to last fifteen nodes. Retrying is *allowed* and *expensive*.
 
 ### Goals and phases
-Each node shows 2–3 objectives; clearing the required count passes the node. Goal kinds:
+Score thresholds; **multiplier events** ("hit ×5 in a single combo"); feature sweeps
+("grind all four rails"); trick-specific; survival. Clearing a row band advances the
+phase — new district, full palette re-tint, new feature vocabulary.
 
-* score threshold in one line
-* **multiplier events** — "hit ×5 in a single combo", "bank 30 k without touching flat"
-* feature sweeps — "grind all four rails on the block"
-* trick-specific — "land a 360 flip over the gap"
-* survival — "no bails for the whole segment"
-
-Clearing a **row band** advances the phase: new district, full palette re-tint, new
-feature vocabulary (street → plaza → docks → downtown → the vert park), and a tightening
-of the segment draw.
-
-### Build: parts and tricks
-Relics as **board parts** — each a plain stat modifier with a real trade-off:
-
-| part | effect |
-|---|---|
-| soft wheels | +20 % grind balance, −5 % speed |
-| hollow trucks | +manual balance, −landing tolerance |
-| steezy grip | repeat-trick penalty halved |
-| insurance clip | first bail per node keeps half the pending combo |
-| longer lens | goals show one extra option to choose from |
-
-And **trick unlocks**, which expand the vocabulary so combos can stay varied and dodge the
-repeat penalty. Vocabulary breadth *is* the scaling curve — a nice fit, because it makes
-the build feel like getting better at skating rather than getting bigger numbers.
+### Build
+Board parts as relics, each with a real trade-off (soft wheels: +20 % grind balance, −5 %
+speed; steezy grip: repeat-trick penalty halved; insurance clip: first bail per node keeps
+half the pending combo). Trick unlocks widen the vocabulary, which is the scaling curve —
+the build makes you feel like a better skater, not a bigger number.
 
 ---
 
 ## 8. The story
 
-Short text beats between nodes, zine/VHS typography. Minimal, in the register of
-`gameoflife/` — a few lines, one choice, real consequences:
+Short text beats between nodes, zine/VHS typography, in the register of `gameoflife/` — a
+few lines, one choice, real consequences: a sponsor offers flow (accept and take a goal
+quota on every node); the plaza gets skate-stoppers (that spot gains a permanent hazard); a
+rival posts a clip (a boss target rises, and so does its payout); your knee goes (−1 max
+film for three nodes, or sit out a node to heal).
 
-* a sponsor offers flow — accept and take a goal quota on every node, or stay independent
-* the plaza gets skate-stoppers — that segment gains a permanent hazard for the rest of
-  the run
-* a rival posts a clip — a boss node's target score rises, but so does its payout
-* your knee goes — −1 max film for three nodes, or sit out a node to heal
-
-The arc is small and unheroic: you are trying to finish a part. Districts are chapters.
-The ending is a "part" recap — your best banked line from each district played back as a
-list, with a rank. No triumph, just the tape you actually shot.
+The arc is small and unheroic. The ending is a "part" recap: your best line from each
+district, played back as a list, with a rank. No triumph, just the tape you shot.
 
 ---
 
-## 9. Proposed file layout
-
-Follows the `dropcabal`/`hyperdagger` convention: ES modules, jsDelivr importmap for
-three.js r167, `?v=N` cache-busters, no build step.
+## 9. File layout
 
 ```
 tinyhawk/
   index.html
   DESIGN.md
   js/
-    main.js      # scene, render + outline, loop, state machine, HUD
-    palette.js   # per-district colour schemes, single source of truth
-    rng.js       # mulberry32, daily seed, seeded draw helpers
-    course.js    # segment deck, constraint draw, streaming + cull
-    segments.js  # the ~30 authored segment builders
-    skater.js    # roll, ollie, air, landing, grind lock, manual, balance
-    tricks.js    # trick table, combo string, scoring, bank/bail
-    input.js     # touch flick/hold gestures + keyboard fallback
-    map.js       # node graph gen + DOM map overlay
-    meta.js      # run state, film, goals, parts, localStorage
-    story.js     # events, choices, district text
-    audio.js     # WebAudio kit: pop, grind loop, land, bail, bank
+    main.js     # scene, render, loop, camera rig, HUD, state machine
+    palette.js  # single colour source, per-district zones
+    park.js     # heightfield features + mesh build; rails and ledges
+    skater.js   # 3D physics: roll, carve, ollie, air, spin, land/bail
+    tricks.js   # trick table, combo string, scoring, bank/bail
+    input.js    # twin sticks with the drag/flick discriminator; mouse+keys
+    map.js      # node graph + DOM map overlay           (P4)
+    meta.js     # run state, film, goals, parts, storage (P4)
+    story.js    # events, choices, district text          (P5)
+    audio.js    # WebAudio kit
 ```
 
-`window.__th` exposes `{skater, course, meta, debug}` for console tinkering and headless
-smoke tests, matching `__hd` / `__dc`.
+`window.__th` exposes `{skater, park, input, debug}`, matching `__hd` / `__dc` / `__t2`.
 
 ---
 
 ## 10. Build order
 
-Each phase ends at something playable — no phase is pure plumbing.
+**P0 — the controls.** Park heightfield, chase camera, twin sticks with the drag/flick
+split, ollie, air spin, trick registration, land/bail, combo readout. No grinds, no goals.
+*The gate: if the flick threshold and the camera do not feel right here, nothing later
+saves it.*
 
-**P0 — does it feel good?** (the gate)
-Flat ground, capsule skater, roll + ollie + land/bail. One hand-built segment. No score,
-no art. *If the ollie does not feel good here, nothing later saves it.* Tune, then commit.
+**P1 — the combo.** Rails and ledges, grind lock and balance, manuals, the full trick table
+with the repeat penalty, proper combo banking and HUD.
 
-**P1 — the combo.** Air trick families, spin, grind lock, manual, balance meters, combo
-string + banking, HUD. Still ugly. This is where the game exists or doesn't.
+**P2 — a park worth learning.** The primitives kit filled out, one hand-arranged park with
+real lines through it, Free Skate and Daily. **Shippable milestone.**
 
-**P2 — the course.** Segment deck, constraint draw, streaming, ~12 segments authored.
-Daily Line mode end to end: seed, three tries, score, share card, history.
-**Shippable milestone — this alone is a good little game.**
+**P3 — the look.** Three-tone vertex shading, ink outlines, palette, skater model, bail
+ragdoll, audio kit, touch tuned on a real phone.
 
-**P3 — the look.** Vertex-colour tones, inverted-hull outlines, palette, skater model,
-sky, bail debris, audio kit. Touch controls finalised on a real phone.
+**P4 — The Part.** Map, node types, film economy, goals, parts, trick unlocks, districts.
 
-**P4 — The Part.** Map generation + DOM overlay, node types, film economy, goals,
-board parts, trick unlocks, phase/district transitions.
-
-**P5 — story and polish.** Events and choices, district text, part recap, rank, options,
-`gh-pages` deploy at `/Suds-Jack/tinyhawk/`.
+**P5 — story and polish.** Events, part recap, rank, options, `gh-pages` deploy.
 
 ---
 
-## 11. Risks, named honestly
+## 11. Risks
 
-1. **The flick-vs-spin input collision** (§3) is the highest risk in the design. If
-   impulse-vs-hold doesn't separate cleanly under thumb, the fallback is spin-on-a-second-
-   finger (touch) / shoulder-keys (desktop). Prototype this in P1, not P4.
-2. **Grind auto-lock generosity** decides whether grinds feel like skill or like luck. It
-   needs a tuning pass with a visible debug volume, and probably a difficulty ramp.
-3. **Landing tolerance** is the difficulty dial for the whole game. Expose it in
-   `__th.debug` from P0 so it can be felt, not guessed.
-4. **Segment authoring is the real cost.** Thirty good chunks is a lot of hand work.
-   Mitigation: build segments from a small parts kit (rail, kicker, bank, stair, gap) so
-   authoring is arrangement, not modelling.
+1. **The camera.** Biggest risk in the design now that it is third-person. A skate camera
+   that fights the player ruins everything upstream of it.
+2. **The drag/flick threshold.** The whole control scheme rests on one number. Exposed in
+   debug from P0, and it needs a human pass, not a bot pass.
+3. **Landing tolerance in 3D** is now two checks (heading and normal) instead of one. Two
+   dials that interact are much harder to tune than one.
+4. **Park authoring cost** — mitigated by the primitives kit, not eliminated.
 5. **Scope.** P0–P2 is a complete game. P4–P5 is a second game on top. Ship P2 first.
 
 ---
 
 ## 12. Open decisions
 
-* **§2 — line vs park.** The one that changes everything downstream.
-* Daily: three tries, or one and done?
-* Film pool of 5 for the whole tour — or per-district refills? (Playtest number.)
-* Does story ride only in The Part, or does the Daily carry a one-line beat too?
-* First-person camera is out; but chase-cam distance and how much it leads the skater is
-  a feel decision that belongs in P0.
+* Does Free Skate have any scoring at all, or is it genuinely idle?
+* Daily on a fixed park with rotating goals, or a rotating park too?
+* Fakie landings score more — do they also *keep* the combo, or open a new one?
+* Film pool of 5 for the whole tour, or per-district refills? (Playtest number.)
