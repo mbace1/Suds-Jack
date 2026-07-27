@@ -682,14 +682,37 @@ async function tapPixel(page, x, y) {
   // sound has an off switch, and it is remembered. An app that makes noise on
   // its own must let a person on a quiet train stop it.
   check('sound can be turned off from the footer',
-    await page.locator('.lang-btn', { hasText: 'off' }).count() === 1);
-  await page.locator('.lang-btn', { hasText: 'off' }).click();
+    await page.locator('.sound-row .lang-btn', { hasText: 'off' }).count() === 1);
+  await page.locator('.sound-row .lang-btn', { hasText: 'off' }).click();
   check('the app knows it is muted', await page.evaluate(() => __gol.audio.muted()) === true);
   check('and it is remembered', await page.evaluate(() => __gol.store.soundOn()) === false);
   await page.reload({ waitUntil: 'networkidle' });
   check('the mute survives a visit', await page.evaluate(() => __gol.audio.muted()) === true);
-  await page.locator('.lang-btn', { hasText: 'on' }).click();
+  await page.locator('.sound-row .lang-btn', { hasText: 'on' }).click();
   check('and it can be turned back on', await page.evaluate(() => __gol.audio.muted()) === false);
+
+  // The curved screen (js/crt.js) is the house look and is ON by default, but
+  // it is a filter over deliberately high-frequency dithered art, so it has an
+  // off switch. On: PixelScreen shows the WebGL canvas. Off: the flat one, and
+  // everything still works — which is also the no-WebGL fallback path.
+  await page.evaluate(() => __gol.debug.start('tern'));
+  check('the screen is on by default', await page.evaluate(() => __gol.store.crtOn()) === true);
+  check('and the picture comes through it',
+    await page.locator('canvas.pixel-screen.crt').count() === 1);
+  await page.locator('.back-btn').click();
+  await page.locator('.crt-row .lang-btn', { hasText: 'off' }).click();
+  check('it can be switched off', await page.evaluate(() => __gol.store.crtOn()) === false);
+  await page.evaluate(() => __gol.debug.start('tern'));
+  check('and then the picture is flat',
+    await page.locator('canvas.pixel-screen').count() === 1
+    && await page.locator('canvas.pixel-screen.crt').count() === 0);
+  check('a scene still runs without the screen',
+    (await page.locator('.exp-text').textContent()).includes('Arctic'));
+  await page.locator('.back-btn').click();
+  await page.reload({ waitUntil: 'networkidle' });
+  check('the choice survives a visit', await page.evaluate(() => __gol.store.crtOn()) === false);
+  await page.locator('.crt-row .lang-btn', { hasText: 'on' }).click();
+  check('and it comes back', await page.evaluate(() => __gol.store.crtOn()) === true);
 
   // screen-reader wiring: one landmark, the story text announces each new beat,
   // and the canvas keeps quiet (the text is the channel that can be followed)
