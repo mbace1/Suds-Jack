@@ -19,7 +19,7 @@
 // games — Drop Cabal's crosshair, Neon Ronin's camera — get movement and their
 // keyed actions from the pad, not aim. Aiming needs the game's own code.
 
-import { watchPad } from './pad.js?v=5';
+import { watchPad } from './pad.js?v=7';
 
 const KEY_LABEL = { Space: ' ', Escape: 'Escape', Enter: 'Enter' };
 const keyOf = code => KEY_LABEL[code] ?? (code.startsWith('Key') ? code.slice(3).toLowerCase() : code);
@@ -31,8 +31,12 @@ function sendKey(type, code) {
     // an older listener looks at
     keyCode: code.startsWith('Key') ? code.charCodeAt(3) : (code === 'Space' ? 32 : 0),
   });
+  // ONE dispatch. It used to go to the focused element and to window, so a
+  // listener on window heard every key twice — harmless for a held-keys map,
+  // wrong for anything that counts presses (Tiny 2D's trick queue increments
+  // per keydown, so a flick scored two). The event bubbles, so dispatching it
+  // on the focused element reaches document and window listeners as well.
   (document.activeElement ?? document.body).dispatchEvent(ev);
-  window.dispatchEvent(ev);
 }
 
 // held state, so a stick pushed and kept there reads as a key held down
@@ -97,15 +101,21 @@ export function attachPad(cfg) {
         return;
       }
       if (cfg.pointer) {
-        if (i === 0) { held = !held; sendPointer(held ? 'pointerdown' : 'pointerup', surface()); }
+        if (i === 0 && !held) { held = true; sendPointer('pointerdown', surface()); }
         return;
       }
-      const code = cfg.keys?.[`b${i}`];
-      if (!code) return;
-      // a face button is a tap: press and release on the next frame, which is
-      // what a game watching for keydown/keyup expects
-      sendKey('keydown', code);
-      requestAnimationFrame(() => sendKey('keyup', code));
+      // A face button stands in for a key, so it behaves like one: down while
+      // it is held, up when it is let go. Tiny 2D's whole game is holding the
+      // press into the hill and letting go at the lip — a button that tapped
+      // and released a frame later could not play it at all.
+      bridge?.set(cfg.keys?.[`b${i}`], true);
+    },
+    release(i) {
+      if (cfg.pointer) {
+        if (i === 0 && held) { held = false; sendPointer('pointerup', surface()); }
+        return;
+      }
+      bridge?.set(cfg.keys?.[`b${i}`], false);
     },
   });
 }

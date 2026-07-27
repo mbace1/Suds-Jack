@@ -13,9 +13,9 @@
 // takes you back — long enough that it cannot be hit by accident mid-run,
 // short enough that you do not have to wonder whether it is working.
 
-import { watchPad } from './pad.js?v=5';
-import { GAMES } from './games.js?v=5';
-import { attachPad } from './padkeys.js?v=5';
+import { watchPad } from './pad.js?v=7';
+import { GAMES } from './games.js?v=7';
+import { attachPad } from './padkeys.js?v=7';
 
 const HOLD_MS = 750;
 const START = 9, BACK = 8;
@@ -71,6 +71,30 @@ home.className = 'arcade-home';
 home.href = HOME;
 home.setAttribute('aria-label', 'Back to the arcade');
 home.innerHTML = '<span class="fill"></span><span class="glyph" aria-hidden="true">⌂</span><span>Hub</span>';
+
+// Some games swallow every touch that is not in their own UI — toko-drop
+// preventDefaults touchstart outside #overlay so a stray thumb never nudges
+// the ship — and a defaultPrevented touchstart means the browser never
+// synthesises the click a tap would normally produce. The button worked with a
+// mouse and did nothing under a thumb.
+//
+// Pointer events are a separate stream and survive that, so navigate on
+// pointerup over the button rather than waiting for a click. The href stays:
+// it is still a link, so middle-click and open-in-new-tab keep working.
+// Cancelling touchstart does not merely suppress the click: the pointer stream
+// is cancelled with it, so the element gets pointercancel and never pointerup.
+// touchend still arrives, so listen for both and take whichever comes.
+let leaving = false;
+function goHome(e) {
+  if (leaving) return;
+  if (e.type === 'pointerup' && e.button > 0) return;   // middle/right are the browser's
+  leaving = true;
+  e.preventDefault();
+  location.href = HOME;
+}
+home.addEventListener('pointerup', goHome);
+home.addEventListener('touchend', goHome);
+home.addEventListener('click', e => { if (leaving) e.preventDefault(); });
 
 const put = () => document.body.appendChild(home);
 if (document.body) put();
