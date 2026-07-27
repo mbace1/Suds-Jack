@@ -13,7 +13,7 @@
 //   view.start();                // begins its own rAF loop
 //   view.dispose();              // ALWAYS call when the host screen closes
 import * as THREE from 'three';
-import { CFG, Enemy, GOO_TIME } from './enemy.js?v=167';
+import { CFG, Enemy, GOO_TIME } from './enemy.js?v=168';
 
 export function createSpecimen({ width = 220, height = 170, bg = 0x07071a } = {}) {
   const canvas = document.createElement('canvas');

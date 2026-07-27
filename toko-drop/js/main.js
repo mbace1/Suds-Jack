@@ -1,15 +1,15 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=167';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=167';
-import { Player, PLAYER_RADIUS } from './player.js?v=167';
+import { InputManager } from './input.js?v=168';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=168';
+import { Player, PLAYER_RADIUS } from './player.js?v=168';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=167';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=167';
-import { audio } from './audio.js?v=167';
-import { initDesigner } from './designer.js?v=167';
-import { createSpecimen } from './specimen.js?v=167';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=167';
-import { TUNING } from './tuning.js?v=167';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=168';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=168';
+import { audio } from './audio.js?v=168';
+import { initDesigner } from './designer.js?v=168';
+import { createSpecimen } from './specimen.js?v=168';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=168';
+import { TUNING } from './tuning.js?v=168';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -2052,6 +2052,8 @@ audio.setAnnouncer(announcerOn);
 let tokotronMode = false;
 let civilians = [];
 let rescueChain = 0;
+let tkSaved = 0;          // v214: humans brought home in the current room
+let tkNextMan = 25000;    // v214: the reference's extra man, on a score mark
 // v168 (Robotron parity): ELECTRODES — the reference's static furniture.
 // One shot destroys them (+25), grunts that touch them die, the player
 // takes a hit. BRUTEs bulldoze them for free.
@@ -3154,6 +3156,19 @@ function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are ma
   }
   // v201: heat maxing out gets a riser — once per streak (re-arms below 0.5)
   if (juiceHeat >= 1 && !_heatPeaked) { _heatPeaked = true; audio.heatMax(); }
+}
+
+// v214: THE EXTRA MAN. The reference hands one out on a score threshold, and
+// the HUD dots here already read as lives, so the award tops one up. TOKOTRON
+// only — the other cabinets have their own economies.
+function tkCheckExtraMan() {
+  if (!tokotronMode || score < tkNextMan) return;
+  tkNextMan += 25000;
+  if (player.hp < player.maxHp) player.hp++;
+  else player.maxHp++;
+  milestoneT = 1.4;
+  milestoneText = 'EXTRA MAN!';
+  audio.applause();
 }
 
 function onPlayerHit() {
@@ -4286,7 +4301,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v213' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v214' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -5787,6 +5802,17 @@ function spawnWave() {
     // debris rather than letting it accumulate across the whole run.
     splatPool.clear();
     trailPool.clear();
+    // v214: the reference has NO pickups at all. Nothing spawns them in this
+    // cabinet today, but guaranteeing it here means a future shared drop can
+    // never quietly leak one into the vector room.
+    for (const pu of powerups) pu.remove(scene);
+    powerups = [];
+    // v214: report the last room's rescues, then reset the tally
+    if (wave > 1) {
+      milestoneT = 1.3;
+      milestoneText = tkSaved ? `${tkSaved} SAVED` : 'NONE SAVED';
+    }
+    tkSaved = 0;
     // Robotron opening: you appear center-room; the wave appears around you.
     player.mesh.position.set(0, player.mesh.position.y, 0);
     player.grantInvincibility(1.4);
@@ -6587,6 +6613,8 @@ function startGame() {
   _prevDashing  = false;
   _hitFlashT    = 0;
   _killedBy     = null;   // v212: the contextual question is about THIS run
+  tkSaved       = 0;      // v214
+  tkNextMan     = 25000;
   bullets.clear();
   clearFX();
   // SMASH TV room lattice: every run starts a fresh studio floor at (0,0).
@@ -7405,6 +7433,7 @@ function loop() {
   // TOKOTRON civilians (v148): wander, get rescued by touch (chain pays
   // 1000 × chain, Robotron-style), or die to any enemy that reaches them.
   if (tokotronMode && player.alive) {
+    tkCheckExtraMan();   // v214: the reference's extra man on a score mark
     // v168 ELECTRODES: shot → destroyed (+25); grunt touch → grunt dies;
     // BRUTE touch → electrode dies; player touch → a hit + the electrode.
     for (let i = tkElectrodes.length - 1; i >= 0; i--) {
@@ -7495,7 +7524,11 @@ function loop() {
       c.update(dt);
       if (Math.hypot(c.x - player.position.x, c.z - player.position.z) < PLAYER_RADIUS + 0.5) {
         rescueChain++;
-        const pay = 1000 * rescueChain * (scoreMultT > 0 ? 2 : 1);
+        // v214: the reference curve — 1000/2000/3000/4000/5000, then flat.
+        // Uncapped, an 8-human wave paid 8000 for the last one and the chain
+        // stopped being a decision.
+        tkSaved++;
+        const pay = 1000 * Math.min(rescueChain, 5) * (scoreMultT > 0 ? 2 : 1);
         score += pay;
         damageNumbers.push(new DamageNumber(c.x, 1.0, c.z, `+${pay}`, '255,238,136'));
         audio.pickup();
@@ -8981,6 +9014,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=167').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=168').catch(() => {});
   });
 }

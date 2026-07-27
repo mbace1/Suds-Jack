@@ -7,6 +7,21 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v214 — 2026-07-27
+**TOKOTRON steps closer to the reference — rescue curve, the extra man, no pickups**
+- Middle-ground pass (user direction: *"we have lives and one kill is easy but not necessary now… take steps closer"*). One-hit-kill is deliberately NOT adopted; these are the reference rules that are cheap with what the cabinet already has
+- **The rescue curve is the reference's**: 1000 / 2000 / 3000 / 4000 / 5000, then **flat at 5000**, resetting each room. It was uncapped, so an eight-human wave paid 8000 for the last one and the chain stopped being a decision — now the fifth save is the ceiling and the pressure is on saving *many*, not on saving one more
+- **THE EXTRA MAN.** Every 25,000 points tops a life dot back up (or raises the cap if you're full), announced with `EXTRA MAN!` — the reference's extra-man rule, using the HP dots that already read as lives. Fires once per mark, and the mark climbs
+- **The cabinet is guaranteed pickup-free.** Nothing spawns pods there today, but the wave build now clears `powerups` outright so a future shared drop can't quietly leak one into the vector room
+- **A rescue tally per room**: leaving a room reports `n SAVED` (or `NONE SAVED`), so the family is scored out loud instead of silently
+- **Already faithful, confirmed while auditing rather than rebuilt**: electrodes fry grunts that blunder into them, Hulks are unkillable and shove when shot, MINDERs convert humans instead of killing them, ORBs brood, and the whole wave materialises around a recentred player
+- Verified headless (8/8): the payout series measured at the rescue site reads **1000, 2000, 3000, 4000, 5000, 5000, 5000, 5000** across a planted family of eight; crossing the score mark awards a man exactly once and pushes the mark up 25,000; a deliberately planted pickup is gone when the next room builds; the tally resets per room. `smoke.sh` and `cabinets.sh` green on all six
+- **Test-method note**: the first attempt measured payouts as a score delta, which also caught kills landing in the same window and produced impossible values (7000, 10000). Measuring the payout at its own site was the fix — the code was right, the ruler wasn't
+- **Gate fix (found rebasing onto a concurrent push)**: the arcade shell added `../hub/shell.js` to every game's index. The live site serves from the repo root so that resolves fine, but `cabinets.sh` copies only `toko-drop/` into its work dir — so all six cabinets 404'd and the gate reported six breaks that did not exist. It now mirrors sibling `hub/` into the served root
+- Cache-bust `?v=167` → `?v=168`; HUD label → v214
+
+---
+
 ## v213 — 2026-07-27
 **TOKOTRON: the floor stops filling with slime — and you can see yourself again**
 - Field report: *"tokotron gets stuck after wave 2… the protagonist graphics cut out."* Diagnosed by screenshotting the cabinet across four waves rather than reading code. The wave logic was innocent — a probe clears waves 1→7 cleanly. **The floor was the problem**
