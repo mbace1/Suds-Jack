@@ -70,6 +70,20 @@ tap-to-swap buttons. Touch mode flips on at the first `touchstart` anywhere (win
 listener) so pointer lock is never requested on phones; desktop keyboard/mouse is
 unchanged.
 
+**Art direction (reference-driven):** hard-edged flat forms under neon, styled from a
+reference set — pale **cube head with a red triangle emblem**, **circuit tracery** strips
+on arms and ribcage, and a **glowing wireframe overlay** (`addWireframe` in `robots.js`,
+one `LineSegments` per mesh via cached `EdgesGeometry`) applied to the **player frames
+only** (`wire: true`) so the horde stays cheap. Swings drag an **electrified blade trail**
+— `effects.trail(rig, …)` samples `rig.tip`/`rig.base` anchors each frame and extrudes a
+fading quad ribbon. Deaths burst into **blocky glitch chunks** (every 3rd shard pops in a
+clashing cyan/magenta/lime hue and jitters). Overhead, ~26 **neon wireframe solids** drift
+and bob as background ambience — deliberately kept above y 11 because the camera orbits
+at 2.6–10 u and anything lower drifts between the lens and the player. Everything is
+finished by a **CRT `ShaderPass`** (scanlines, chromatic split, vignette, signal grain)
+whose `uGlitch` uniform is punched by kills and damage (`combat.glitch`) for blocky
+horizontal tearing on impact.
+
 **Enemies (`js/enemy.js`):** SLASHER (crimson katana, telegraphed slash — blade glow
 ramps during windup), GUNNER (violet rifle, holds a ~9 u ring while strafing, 3-bolt
 bursts from the pooled `BoltPool`), BRUTE (ember cleaver hulk, ground-slam AoE with an

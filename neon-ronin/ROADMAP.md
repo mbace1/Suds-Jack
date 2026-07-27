@@ -23,8 +23,11 @@ scope — squad allies deliver that fantasy single-player.
   fancy rig that phase-swaps its own stance and weapon mid-fight, telegraphed sweeps plus
   bolt novas); elite variants of existing enemies carrying one aura modifier each
   (shielded / frenzied / splitting).
-- **M5 — Presentation juice.** Hit-stop on heavy hits, blade trail ribbons, dash smear,
-  kill-streak-driven WebAudio music layering. Merges with Phase 3/4 below.
+- **M5 — Presentation juice — PARTLY DONE.** Shipped: reference art pass — cube head +
+  emblem, circuit tracery, wireframe overlay on player frames, electrified blade trail
+  ribbons, glitch-block deaths, drifting neon solids, and a CRT scanline/chromatic
+  /vignette pass with impact-driven tearing. Still open: hit-stop on heavy hits, dash
+  smear, kill-streak-driven WebAudio music layering.
 
 ---
 

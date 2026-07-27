@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { InputManager } from './input.js';
 import { Player, FORMS, PLAYER_RADIUS, ULT_MAX } from './player.js';
@@ -35,6 +36,60 @@ const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.9, 0.55, 0.25);
 composer.addPass(bloom);
+
+// ── CRT pass: scanlines, RGB split, vignette + a glitch burst on impact ───────
+// (ref: datamosh / broadcast-signal look). `uGlitch` is punched up by hits.
+const CRTShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    uTime:    { value: 0 },
+    uGlitch:  { value: 0 },
+    uRes:     { value: new THREE.Vector2(innerWidth, innerHeight) },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform float uTime;
+    uniform float uGlitch;
+    uniform vec2 uRes;
+    varying vec2 vUv;
+
+    float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
+    void main() {
+      vec2 uv = vUv;
+
+      // blocky horizontal tearing while a glitch burst decays
+      if (uGlitch > 0.001) {
+        float band = floor(uv.y * 26.0);
+        float r = hash(vec2(band, floor(uTime * 22.0)));
+        if (r > 1.0 - uGlitch * 0.5) uv.x += (r - 0.5) * 0.06 * uGlitch;
+      }
+
+      // chromatic split, stronger toward the edges
+      float d = length(uv - 0.5);
+      vec2 off = (uv - 0.5) * (0.0016 + uGlitch * 0.01);
+      vec3 col;
+      col.r = texture2D(tDiffuse, uv + off).r;
+      col.g = texture2D(tDiffuse, uv).g;
+      col.b = texture2D(tDiffuse, uv - off).b;
+
+      // scanlines + faint rolling bright bar
+      float scan = 0.92 + 0.08 * sin(uv.y * uRes.y * 1.6);
+      float roll = 0.985 + 0.015 * sin(uv.y * 5.0 - uTime * 0.7);
+      col *= scan * roll;
+
+      col *= 1.0 - d * d * 0.55;                    // vignette
+      col += hash(uv * uRes + uTime) * 0.018;       // signal grain
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `,
+};
+const crtPass = new ShaderPass(CRTShader);
+composer.addPass(crtPass);
 composer.addPass(new OutputPass());
 
 addEventListener('resize', () => {
@@ -42,6 +97,7 @@ addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
   composer.setSize(innerWidth, innerHeight);
+  crtPass.uniforms.uRes.value.set(innerWidth, innerHeight);
 });
 
 // ── Cave arena ────────────────────────────────────────────────────────────────
@@ -125,6 +181,49 @@ const _hueLights = [];
   }
 }
 
+// ── Floating neon solids: glowing wireframe cubes/tetras drifting overhead ────
+// (ref: low-poly figure in a field of neon platonics)
+const drifters = [];
+{
+  const shapes = [new THREE.BoxGeometry(1, 1, 1), new THREE.TetrahedronGeometry(0.8)];
+  const edges = shapes.map((g) => new THREE.EdgesGeometry(g));
+  const hues = [0xff2f7a, 0x7cff9a, 0x4d7dff, 0x00e5ff];
+  for (let i = 0; i < 26; i++) {
+    const pick = i % 2;
+    const color = hues[i % hues.length];
+    const grp = new THREE.Group();
+    const solid = new THREE.Mesh(shapes[pick], new THREE.MeshBasicMaterial({
+      color, transparent: true, opacity: 0.13, depthWrite: false,
+    }));
+    const wire = new THREE.LineSegments(edges[pick], new THREE.LineBasicMaterial({
+      color, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false,
+    }));
+    grp.add(solid, wire);
+    // kept high overhead: the camera orbits at ~2.6-10 u, so anything lower
+    // drifts between the lens and the player and eats the screen
+    const a = Math.random() * Math.PI * 2;
+    const rr = 5 + Math.random() * (ARENA_R + 10);
+    grp.position.set(Math.cos(a) * rr, 11 + Math.random() * 12, Math.sin(a) * rr);
+    const s = 0.4 + Math.random() * 1.3;
+    grp.scale.setScalar(s);
+    scene.add(grp);
+    drifters.push({
+      grp, baseY: grp.position.y,
+      spin: (Math.random() - 0.5) * 0.5,
+      bob: 0.5 + Math.random() * 1.2,
+      phase: Math.random() * Math.PI * 2,
+    });
+  }
+}
+
+function updateDrifters(t) {
+  for (const d of drifters) {
+    d.grp.rotation.x += d.spin * 0.004;
+    d.grp.rotation.y += d.spin * 0.006;
+    d.grp.position.y = d.baseY + Math.sin(t * 0.5 + d.phase) * d.bob;
+  }
+}
+
 function setRoomHue(room) {
   const hue = HUES[(room - 1) % HUES.length];
   for (const m of _hueMats) (m.emissive ?? m.color).setHex(hue);
@@ -152,10 +251,14 @@ scene.add(playerLight);
 let camYaw = 0;
 let camPitch = 0.42;
 let shakeAmp = 0;
+let glitchAmp = 0;      // CRT tearing burst, punched by kills / heavy impacts
 const CAM_DIST = 9.5;
 
 function updateCamera(dt) {
   const { dx, dy } = input.consumeMouse();
+  glitchAmp = Math.max(0, glitchAmp - dt * 2.6);
+  crtPass.uniforms.uTime.value = t;
+  crtPass.uniforms.uGlitch.value = glitchAmp;
   camYaw -= dx * 0.0026;
   camPitch += dy * 0.0022;
   // touch: right stick deflection = orbit rate
@@ -218,6 +321,7 @@ const streakMult = () => Math.min(3, 1 + streak * 0.05);
 const _tmp = new THREE.Vector3();
 const combat = {
   shake(a) { shakeAmp = Math.max(shakeAmp, a); },
+  glitch(a) { glitchAmp = Math.min(1, Math.max(glitchAmp, a)); },
 
   // player melee: damage enemies in the arc, deflect bolts caught in it
   meleeStrike(pos, yaw, range, arcDeg, dmg, knock, color) {
@@ -301,6 +405,7 @@ const combat = {
     if (player.stats.lifesteal) player.heal(player.stats.lifesteal);
     audio.kill();
     this.shake(e.type === EnemyType.BRUTE ? 0.3 : 0.12);
+    this.glitch(e.type === EnemyType.BRUTE ? 0.75 : e.type === EnemyType.DRONE ? 0.12 : 0.3);
     // CHAIN ARC: the kill detonates and can cascade
     if (player.stats.mods.chain) {
       effects.ring(e.pos, 2.6, 0.25, e.conf.accent, true);
@@ -341,6 +446,7 @@ const combat = {
     vignetteT = 0.5;
     audio.hurt();
     this.shake(0.25);
+    this.glitch(0.55);
     if (fromPos) {
       _tmp.subVectors(player.pos, fromPos).setY(0).normalize();
       player.pos.addScaledVector(_tmp, knock * 0.25);
@@ -632,6 +738,7 @@ function frame(now) {
     simulate(dt);
   }
   updateCamera(paused || state !== 'fight' ? 0 : dt);
+  updateDrifters(now / 1000);
   updateHud(dt);
   composer.render();
 }
@@ -641,6 +748,7 @@ window.__nr = {
   player, input,
   getEnemies: () => enemies, getScore: () => score,
   getAllies: () => allies, recruitAllies,
+  effects,
   hurtPlayerTest: (dmg) => combat.hurtPlayer(dmg, null),
   spawnTestDrone: (i, n = 6) => {
     const a = (i / n) * Math.PI * 2;
