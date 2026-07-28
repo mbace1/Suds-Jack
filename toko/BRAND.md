@@ -90,6 +90,13 @@ it. In the master artwork a leg, a slot and a stem are roughly equal widths,
 which puts the stroke at about a fifth of the mouth's outer radius. It is
 `GEO.stroke` and it is not a taste question.
 
+**The eyes are exactly as wide as the smile.** In the master artwork the outer
+edge of the left eye, the outer edge of the right eye and the two tips of the
+mouth all sit on the same two vertical lines — `GEO.eye.dx + eye.r` equals
+`GEO.mouth.outer.r`, caps included. The face was shipped once with the eyes
+3.7 units proud of the mouth on each side and it read as a wobble rather than a
+decision. `test/brand.cjs` asserts the two edges to within half a unit.
+
 ### The carriers
 
 | | |
@@ -355,6 +362,7 @@ so a cross-directory import would break the offline promise either way.
 **Don't**
 
 - Don't re-weight the stroke. It closes the eyes.
+- Don't move the eyes apart. They line up with the mouth's tips.
 - Don't outline, gradient, bevel, shadow, or rotate the face.
 - Don't set body copy in magenta.
 - Don't take the sticker colours into anything on a screen.

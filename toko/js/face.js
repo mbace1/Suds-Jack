@@ -42,7 +42,11 @@ export const GEO = {
   stroke: 8.46,
 
   eye: {
-    dx: 30.05,         // from the centre line — the eyes sit a shade wider than the mouth
+    // From the centre line. Set so the eye's OUTER edge lands flush with the
+    // mouth's outer edge: dx + r + stroke/2 == mouthR + stroke/2. They were
+    // 3.7 units wider than the mouth on each side, which reads as a wobble
+    // rather than a decision.
+    dx: 26.32,
     cy: 20.20,
     // A CROWN plus two STRAIGHT LEGS, and nothing between them.
     //
