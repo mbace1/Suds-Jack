@@ -25,12 +25,12 @@
 //      languages, and the feed shows that rather than nothing. An app that can
 //      be updated from outside is an app that can be broken from outside.
 
-import { PANEL_KEYS, BROLL_KEYS } from './visuals.js?v=21';
+import { PANEL_KEYS, BROLL_KEYS } from './visuals.js?v=22';
 
-import { SECTOR_COLOR } from './palette.js?v=21';
-import { validateWire, orderByChannel, pickCopy } from './wire.js?v=21';
+import { SECTOR_COLOR } from './palette.js?v=22';
+import { validateWire, orderByChannel, pickCopy } from './wire.js?v=22';
 
-export { parseLine, flatten } from './wire.js?v=21';
+export { parseLine, flatten } from './wire.js?v=22';
 
 export const WIRE_URL = 'wire.json';
 

@@ -110,3 +110,44 @@ fine. Rule #8 is unchanged for the defence band, where the actors stay unnamed.
 Also off the open list: **`katajanokka` airs.** It is the `no-comment`
 bulletin's own plate now, so it opens that post every time rather than waiting
 on the random tail.
+
+---
+
+## Next up (owner's direction, 2026-07-28) — not built yet
+
+Three things asked for. One is done, two are the next real piece of work.
+
+**Done: the typewriter is off.** Copy is set, not typed, and the per-character
+blips are silenced with it. Carrier hiss and the decode sting stay.
+*If you turn it back on:* the Reader's per-character amplitude is what drove
+Toko's lip-sync. Nothing depends on it today because the anchor is not in
+frame, but a scene with Toko in it needs that value coming again or the face
+sits dead.
+
+**Not built — newest first, and archiving from the bottom.** New posts should
+enter at the TOP of the rotation and old ones eventually retire off the end, so
+the look and feel can be developed on live content without the feed growing
+forever. The wire already makes this a data problem rather than a code one:
+`wire.json` carries the roster, `orderByChannel()` currently sorts it by band.
+That sort is the thing to change — a `filed` date per bulletin, newest first,
+plus a retired/archived flag the loader filters out. Worth deciding whether
+channel grouping survives it; those two orderings fight each other.
+
+**Not built — MULTI-SCENE POSTS. This is the real target.** A bulletin becomes
+a short package that cuts: B-roll → Toko as news anchor → a schematic or logo
+card → B-roll. Longer than a bulletin is now, and closer to the final goal.
+
+Most of the parts exist and are not currently wired together:
+- `codec.js` already has a weighted cut sequencer with face/graphic/broll shot
+  types — it is what the pre-photo build used.
+- `toko.js` still draws the masked anchor, including the `full` face-shot mode.
+- `visuals.js` still has the decoding graphic panels.
+- `photo.js` / `plates.js` are the footage.
+What is missing is a per-bulletin SCENE LIST — an ordered set of shots with
+durations — instead of the current weighted-random pick, and the copy timed to
+the scene rather than to a single caption. That probably wants to live in
+`wire.json` beside the copy, which would keep it a data edit.
+
+Two constraints to carry in: DECODE has to keep working on every shot type
+(rule #5), and B-roll still carries no faces (rule #3) — the anchor belongs in
+the anchor scene.

@@ -1,13 +1,13 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=21';
-import { Post, Reader } from './codec.js?v=21';
-import { Photo } from './photo.js?v=21';
-import { SECTORS, STORIES, COPY, storyCopy, parseLine, loadWire, WIRE_INFO } from './stories.js?v=21';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=21';
-import * as audio from './audio.js?v=21';
-import { PixelScreen } from './screen.js?v=21';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=21';
+import { PAL, SECTOR_COLOR } from './palette.js?v=22';
+import { Post, Reader } from './codec.js?v=22';
+import { Photo } from './photo.js?v=22';
+import { SECTORS, STORIES, COPY, storyCopy, parseLine, loadWire, WIRE_INFO } from './stories.js?v=22';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=22';
+import * as audio from './audio.js?v=22';
+import { PixelScreen } from './screen.js?v=22';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=22';
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
@@ -139,7 +139,16 @@ function boot() {
   paintSound();
   paintMastLang();
   $('lang').onclick = () => useLang(nextLang());
-  reader = new Reader(n => { if (n % 2 === 0) audio.blip(n); });
+  // TYPEWRITER OFF. The copy is set, not typed, and the per-character blips
+  // are silenced with it — owner's call, the bulletins read better as text
+  // than as an effect. The carrier hiss and the decode sting stay.
+  //
+  // Worth knowing before turning it back on: the Reader's per-character
+  // amplitude is what drove Toko's lip-sync. Nothing depends on it today
+  // because the anchor is not in frame — the post is full-bleed footage — but
+  // if Toko returns in a scene, the mouth needs that value coming again or the
+  // face sits dead.
+  reader = new Reader(() => {});
   buildFeed();
   watchScroll();
   bindControls();
@@ -341,8 +350,8 @@ function setActive(i, first = false) {
 
   const lines = p.copy.lines.map(parseLine);
   reader.play(p.els.bulletin, lines, p.decoded);
-  if (p.read) reader.finish();
-  else { p.read = true; audio.carrierDuck(true); }
+  reader.finish();                     // set, not typed
+  p.read = true;
   if (!first) audio.page();
 }
 
