@@ -19,7 +19,7 @@ export const STORIES = [
   { id: 'vuosaari-automation', sector: 'INDUSTRY', visual: 'crane',   broll: 'harbour' },
   { id: 'sixth-generation',    sector: 'INDUSTRY', visual: 'tower',   broll: 'mannerheim' },
   { id: 'round-b',             sector: 'INDUSTRY', visual: 'coin',    broll: 'katu' },
-  { id: 'ram-discipline',      sector: 'INDUSTRY', visual: 'wafer',   broll: 'harbour' },
+  { id: 'ram-discipline',      sector: 'INDUSTRY', visual: 'coin',    broll: 'harbour' },
   { id: 'seabed',              sector: 'DEFENCE',  visual: 'sea',     broll: 'gulf' },
   { id: 'interference',        sector: 'DEFENCE',  visual: 'sat',     broll: 'station' },
   { id: 'synthetic-env',       sector: 'DEFENCE',  visual: 'engine',  broll: 'cathedral' },
@@ -184,7 +184,6 @@ const EN = {
   },
 };
 
-// Full FI / JA for every id. storyCopy falls back to EN only if a key is missing.
 const FI = {
   ...Object.fromEntries(Object.keys(EN).map(k => [k, EN[k]])),
   'ram-discipline': {
