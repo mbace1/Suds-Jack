@@ -121,6 +121,20 @@
       "sector": "DEFENCE",
       "visual": "border",
       "broll": "cathedral"
+    },
+    {
+      "id": "four-hundred",
+      "sector": "INDUSTRY",
+      "visual": "crane",
+      "broll": "kamppi",
+      "filed": "2026-07-28"
+    },
+    {
+      "id": "airspace-responds",
+      "sector": "DEFENCE",
+      "visual": "sat",
+      "broll": "gulf",
+      "filed": "2026-07-28"
     }
   ],
   "copy": {
@@ -311,6 +325,28 @@
         "technique": "NON-DENIAL DENIAL",
         "decodeNote": "Every clause is true and none of them is a denial. \"Does not comment on capabilities it does not possess\" is a sentence about policy wearing the clothes of a sentence about fact, and \"in the form described\" moves the denial onto the description rather than the thing. Count the denials in the panel: the statement runs to six lines and the number of claims it refuses is zero.",
         "tell": "Write down the exact sentence you wanted denied, then look for it, word for word, inside a \"no\". If it is not in there, it was not denied."
+      },
+      "four-hundred": {
+        "slug": "KAMPPI",
+        "head": "Biggies & Birds Inc opens office that has already created four hundred jobs",
+        "lines": [
+          "Biggies & Birds Inc {{cut the ribbon on its Kamppi campus this morning|opened a floor with eleven desks on it}}, a site the company says {{has created four hundred jobs|will create four hundred jobs, at some point, if things go the way it hopes}}.",
+          "The figure {{appears in the impact section of the press pack|is written in the past tense inside a document about the future}}, alongside a note that it {{will be reviewed in due course|will not be reviewed}}."
+        ],
+        "technique": "FUTURE TENSE AS FACT",
+        "decodeNote": "A forecast, written in the grammar of a thing that already happened. The tense does the entire job: nobody asks for evidence of an event that has, apparently, occurred. It is not a lie — the four hundred may yet arrive — it is a bet reported as a result, and by the time the bet settles the story has scrolled.",
+        "tell": "Has this happened, or is it scheduled to have happened? Say the sentence out loud in the past tense and see whether it survives."
+      },
+      "airspace-responds": {
+        "slug": "EASTERN AIRSPACE",
+        "head": "Eastern airspace responds to object it declines to name",
+        "lines": [
+          "{{The eastern surveillance sector responded to an unidentified object|A duty officer whose name is on a roster gave an order}} on Tuesday, according to a ministry statement in which {{procedures were followed|not one human being appears}}.",
+          "{{The alliance considers the response proportionate|Officers from four countries were in a room and three of them would have waited}}. Ka-Boom Nordics Oy, {{whose systems were involved|which sells the systems}}, {{declined to comment on operational matters|declined}}."
+        ],
+        "technique": "INSTITUTION AS PERSON",
+        "decodeNote": "A sector of airspace cannot respond to anything. Give a building, a border or an alliance a will, and every decision made inside it stops having an author — which is the point. The sentence is grammatical, it is sourced, and it is completely unanswerable. It is a cousin of the agentless passive and a sneakier one: here there IS a subject. It is simply not anybody.",
+        "tell": "Which person, with a name, did this? If the subject of the sentence cannot hold a pen, somebody has been left out."
       }
     },
     "fi": {
@@ -500,6 +536,28 @@
         "technique": "KIELTO JOKA EI KIELLÄ",
         "decodeNote": "Jokainen lause on tosi eikä yksikään ole kielto. \"Ei kommentoi kykyjä, joita sillä ei ole\" on linjausta koskeva lause pukeutuneena tosiasiaa koskevaksi lauseeksi, ja \"kuvatussa muodossa\" siirtää kiellon kuvaukseen eikä itse asiaan. Suomessa muoto tekee tempusta vielä sileämmän: kieltoverbi tulee ensin ja pääverbi kaukana perässä, joten korva kuulee \"ei\" mutta ei ehdi tarkistaa mihin se osui. Laske kuvasta kiellot: lausunto on kuusirivinen ja sen kiistämien väitteiden määrä on nolla.",
         "tell": "Kirjoita ylös se lause, jonka halusit kiistetyksi, ja etsi se sanasta sanaan jonkin \"ei\"-lauseen sisältä. Jos sitä ei ole siellä, sitä ei kiistetty."
+      },
+      "four-hundred": {
+        "slug": "KAMPPI",
+        "head": "Biggies & Birds Inc avasi toimiston, joka on jo luonut neljäsataa työpaikkaa",
+        "lines": [
+          "Biggies & Birds Inc {{leikkasi tänä aamuna nauhan Kampin kampuksellaan|avasi kerroksen, jossa on yksitoista työpöytää}}, ja yhtiön mukaan kohde {{on luonut neljäsataa työpaikkaa|luo neljäsataa työpaikkaa joskus, jos asiat menevät toivotulla tavalla}}.",
+          "Luku {{esiintyy tiedotepaketin vaikuttavuusosiossa|on kirjoitettu menneessä aikamuodossa asiakirjaan, joka käsittelee tulevaisuutta}}, ja sen vieressä lukee, että se {{tarkistetaan aikanaan|jää tarkistamatta}}."
+        ],
+        "technique": "TULEVA AIKA FAKTANA",
+        "decodeNote": "Ennuste kirjoitettuna sen kieliopilla, joka on jo tapahtunut. Aikamuoto tekee koko työn: kukaan ei vaadi todisteita asiasta, joka ilmeisesti on jo käynyt toteen. Suomessa temppu on erityisen helppo, koska preesens kelpaa myös futuuriin — «luo» voi tarkoittaa «luo nyt» tai «luo joskus», eikä lause kerro kumpaa. Kyse ei ole valheesta. Se neljäsataa voi vielä tulla. Kyse on vedosta, joka raportoidaan tuloksena, ja siihen mennessä kun veto ratkeaa, juttu on jo vieritetty ohi.",
+        "tell": "Onko tämä tapahtunut, vai onko sen määrä tapahtua? Sano lause ääneen menneessä aikamuodossa ja katso kestääkö se."
+      },
+      "airspace-responds": {
+        "slug": "ITÄINEN ILMATILA",
+        "head": "Itäinen ilmatila vastasi kohteeseen, jota se ei nimeä",
+        "lines": [
+          "{{Itäinen valvontasektori vastasi tunnistamattomaan kohteeseen|Päivystävä upseeri, jonka nimi on vuorolistalla, antoi käskyn}} tiistaina, kertoo ministeriön tiedote, jossa {{menettelyjä noudatettiin|ei esiinny yhtäkään ihmistä}}.",
+          "{{Liittouma pitää vastausta oikeasuhtaisena|Neljän maan upseerit olivat samassa huoneessa ja kolme heistä olisi odottanut}}. Ka-Boom Nordics Oy, {{jonka järjestelmät olivat mukana|joka myy järjestelmät}}, {{ei kommentoi operatiivisia asioita|ei kommentoi}}."
+        ],
+        "technique": "LAITOS HENKILÖNÄ",
+        "decodeNote": "Ilmatilan sektori ei voi vastata mihinkään. Kun rakennukselle, rajalle tai liittoumalle annetaan tahto, jokainen sen sisällä tehty päätös lakkaa olemasta jonkun tekemä — ja juuri se on tarkoitus. Lause on kieliopillinen, sillä on lähde, eikä siihen voi vastata. Tämä on tekijättömän passiivin serkku ja ovelampi versio: tässä on subjekti. Se ei vain ole kukaan.",
+        "tell": "Kuka ihminen, nimeltä, teki tämän? Jos lauseen subjekti ei voi pitää kynää kädessä, joku on jätetty pois."
       }
     },
     "ja": {
@@ -689,6 +747,28 @@
         "technique": "否定しない否定",
         "decodeNote": "どの節も真で、どれひとつ否定ではない。「保有していない能力については論評しない」は方針の話が事実の話の服を着たもので、「記述されたかたちでは」は否定の矛先を中身から記述のほうへ移している。日本語では否定が文末に来るぶん、聞き手は最後まで待たされ、待った先で否定されたのが何だったのかを確かめる余裕がない。図の否定を数えてほしい——六行の声明が退けた主張は、ゼロだ。",
         "tell": "否定してほしかった一文をそのまま書き出し、どれかの「〜ない」の中に一語一句そのまま入っているか探す。無ければ、否定されていない。"
+      },
+      "four-hundred": {
+        "slug": "カンピ",
+        "head": "Biggies & Birds Inc、すでに四百人の雇用を生んだ拠点を開設",
+        "lines": [
+          "Biggies & Birds Inc は今朝、{{カンピのキャンパスで開所式を行った|机が十一台ある一フロアを開けた}}。同社によれば、この拠点は{{四百人の雇用を生んでいる|うまくいけばいずれ四百人の雇用を生む}}という。",
+          "この数字は{{発表資料の「実績」欄に記載されている|未来についての文書に、完了した出来事として書かれている}}。その横には{{追って検証される予定|検証されない}}と添えられている。"
+        ],
+        "technique": "未来形の既成事実化",
+        "decodeNote": "予測を、すでに起きたことの文法で書く。日本語ではこれがさらに楽で、「〜している」は進行にも完了にも読めるため、「生んでいる」が今のことなのかこれからのことなのかを文が決めてくれない。時制が仕事のすべてをする——すでに起きたらしいことに、証拠を求める人はいない。嘘ではない。四百人はいずれ来るかもしれない。賭けが結果として報じられ、賭けの決着がつく頃には記事はもう流れ去っている、というだけである。",
+        "tell": "それは起きたのか、起きる予定なのか。文を過去形にして声に出し、成立するか確かめる。"
+      },
+      "airspace-responds": {
+        "slug": "東部空域",
+        "head": "東部空域、名を明かさない物体に対応",
+        "lines": [
+          "{{東部の監視セクターが火曜日、識別不明の物体に対応した|勤務表に名前の載っている当直士官が、命令を出した}}。省の発表では{{手順は遵守された|その文書に人間が一人も出てこない}}とされている。",
+          "{{同盟は対応を適切と評価している|四か国の士官が同じ部屋におり、うち三人は待つべきだと考えていた}}。システムを{{提供した|売っている}} Ka-Boom Nordics Oy は{{運用に関する事項についてコメントを控えた|コメントを控えた}}。"
+        ],
+        "technique": "組織を人にする",
+        "decodeNote": "空域のセクターが何かに「対応」することはできない。建物や国境や同盟に意思を与えると、その内側で下された決定はすべて「誰かがした」ことでなくなる——それが狙いである。文は文法的で、出典もあり、そして問い返しようがない。行為者を消す受動態の親戚だが、こちらのほうが巧妙だ。主語はちゃんとある。ただ、それが誰でもないだけである。",
+        "tell": "名前のあるどの人間がこれをしたのか。文の主語がペンを握れないなら、誰かが抜け落ちている。"
       }
     }
   }
