@@ -366,6 +366,130 @@ function serve() {
     /<svg/.test(gift.svg) && /<circle/.test(gift.svg) && /#F0027F/i.test(gift.svg));
   ok('the sticker link clears 44px', gift.tall);
 
+  // Skip until he has actually finished. Every `after` hook — the note box,
+  // the scoreboard, the sticker — hangs off the END of the typing, and one
+  // click only skips the line in flight.
+  const settle = async (pg = page) => {
+    for (let i = 0; i < 10; i++) {
+      await pg.waitForTimeout(90);
+      await pg.evaluate(() => globalThis.__tokoChat.skip());
+      await pg.waitForTimeout(90);
+      if (!await pg.evaluate(() => globalThis.__tokoChat.busy())) break;
+    }
+    await pg.waitForTimeout(120);
+  };
+
+  // ── the parser ─────────────────────────────────────────────────────────
+  // You can TYPE at him, which is the reason this thing is shaped like Police
+  // Quest. Still not a language model — word overlap against a lookup — so
+  // the thing worth guarding is that a MISS admits the miss instead of
+  // confidently answering the wrong question.
+  const typeAt = async (text) => {
+    await page.fill('.toko-chat .tc-say-row input', text);
+    await page.press('.toko-chat .tc-say-row input', 'Enter');
+    await settle();
+  };
+  const logText = () => page.evaluate(() =>
+    document.querySelector('.toko-chat .tc-log').textContent);
+
+  await typeAt('why do you wear a mask');
+  ok('typing at him reaches the right topic', /LOOK AT THE WORK/.test(await logText()));
+  await typeAt('xyzzy plugh frobnicate');
+  ok('and a miss says so rather than guessing',
+    /DO NOT KNOW THAT ONE|SAY IT ANOTHER WAY|NOT A THING I HAVE|ON THE LIST/.test(await logText()));
+  await typeAt('go make your own');
+  ok('he answers the cry', /THERE IT IS/.test(await logText()));
+  ok('the parser line clears 44px',
+    await page.evaluate(() =>
+      document.querySelector('.toko-chat .tc-say-row input').getBoundingClientRect().height >= 44));
+  // the number keys must not fire while you are writing in a field, or
+  // "3 CRASHES" picks topic three and throws the sentence away
+  ok('number keys do not fire while you are typing',
+    await page.evaluate(async () => {
+      const i = document.querySelector('.toko-chat .tc-say-row input');
+      i.focus(); i.value = '';
+      const before = document.querySelectorAll('.toko-chat .tc-log .tc-you').length;
+      i.dispatchEvent(new KeyboardEvent('keydown', { key: '1', bubbles: true }));
+      await new Promise(r => setTimeout(r, 60));
+      return document.querySelectorAll('.toko-chat .tc-log .tc-you').length === before;
+    }));
+  await page.evaluate(() => document.querySelector('.toko-chat .tc-say-row input').blur());
+
+  // ── what the cabinets left on this machine ─────────────────────────────
+  await page.evaluate(() => {
+    localStorage.setItem('hyperDaggerHi', '41.7');
+    localStorage.setItem('dropCabalHi', '128400');
+  });
+  await page.evaluate(() => globalThis.__tokoChat.say('seen'));
+  await settle();
+  const scores = await page.evaluate(() =>
+    [...document.querySelectorAll('.toko-chat .tc-score')].map(n => n.textContent));
+  ok('he reads the scores the games left here', scores.length === 2, scores.join(' | '));
+  ok('and reads them right', /41\.7s/.test(scores[0] || '') && /128,400/.test(scores[1] || ''),
+    scores.join(' | '));
+
+  // ── the note you leave him ─────────────────────────────────────────────
+  // The counter's whole reason for existing. Two rules matter: saying nothing
+  // must record NOTHING, and he must never claim a delivery that did not
+  // happen — so each transport status gets its own line.
+  await page.evaluate(() => {
+    globalThis.__hub = globalThis.__hub || {};
+    globalThis.__hub.feedback = { sent: [], status: 'sent', send(e) { this.sent.push(e); return this.status; } };
+  });
+  await page.evaluate(() => globalThis.__tokoChat.say('note'));
+  await settle();
+  await page.waitForSelector('.toko-chat .tc-note textarea', { timeout: 4000 });
+  ok('the note box clears 44px on its send',
+    await page.evaluate(() =>
+      document.querySelector('.toko-chat .tc-note button').getBoundingClientRect().height >= 44));
+  await page.click('.toko-chat .tc-note button');            // empty
+  await settle();
+  ok('saying nothing records nothing',
+    await page.evaluate(() => globalThis.__hub.feedback.sent.length === 0
+      && /WROTE NOTHING DOWN/.test(document.querySelector('.toko-chat .tc-log').textContent)));
+
+  await page.evaluate(() => globalThis.__tokoChat.say('note'));
+  await settle();
+  await page.waitForSelector('.toko-chat .tc-note textarea', { timeout: 4000 });
+  await page.fill('.toko-chat .tc-note textarea', 'the eyes look right now');
+  await page.click('.toko-chat .tc-note button');
+  await settle();
+  const note = await page.evaluate(() => ({
+    sent: globalThis.__hub.feedback.sent,
+    said: document.querySelector('.toko-chat .tc-log').textContent,
+    noted: JSON.parse(localStorage.getItem('tokoCounter') || '{}').noted,
+  }));
+  ok('a real note goes down the hub\'s own transport',
+    note.sent.length === 1 && note.sent[0].note === 'the eyes look right now'
+    && note.sent[0].game === 'toko-counter', JSON.stringify(note.sent));
+  ok('and he says it landed', /IT LANDED/.test(note.said));
+  ok('and remembers to mention it next time', note.noted === true);
+
+  // an opaque no-cors POST is 'sent-blind', and he must NOT say it landed
+  await page.evaluate(() => { globalThis.__hub.feedback.status = 'sent-blind'; });
+  await page.evaluate(() => globalThis.__tokoChat.say('note'));
+  await settle();
+  await page.waitForSelector('.toko-chat .tc-note textarea', { timeout: 4000 });
+  await page.fill('.toko-chat .tc-note textarea', 'second one');
+  await page.click('.toko-chat .tc-note button');
+  await settle();
+  ok('a blind send is not reported as a landing',
+    await page.evaluate(() => {
+      const t = document.querySelector('.toko-chat .tc-log').textContent;
+      return /CANNOT SEE THE OTHER END/.test(t) && !/IT LANDED[\s\S]*$/.test(t.split('SECOND ONE')[1] || '');
+    }));
+
+  // and with no hub at all it still writes it down rather than throwing
+  await page.evaluate(() => { delete globalThis.__hub.feedback; });
+  await page.evaluate(() => globalThis.__tokoChat.say('note'));
+  await settle();
+  await page.waitForSelector('.toko-chat .tc-note textarea', { timeout: 4000 });
+  await page.fill('.toko-chat .tc-note textarea', 'third one');
+  await page.click('.toko-chat .tc-note button');
+  await settle();
+  ok('with nowhere to send it he says exactly that',
+    /WRITTEN DOWN ON YOUR MACHINE/.test(await logText()));
+
   // ── the hour, and the menu it gates ────────────────────────────────────
   const clock = await page.evaluate(async () => {
     const d = await import('/toko/js/dialogue.js');
@@ -425,6 +549,19 @@ function serve() {
 
   await page.keyboard.press('Escape');
   ok('board still clean after the counter', page.__errs.length === 0, page.__errs.join(' | '));
+
+  // ── the deep link ──────────────────────────────────────────────────────
+  // `#toko` opens the counter, so a link can point at the conversation and
+  // not just the page it sits on.
+  {
+    const dl = await newPage();
+    await dl.goto(base + '/toko/index.html#toko', { waitUntil: 'networkidle' });
+    await dl.waitForTimeout(500);
+    ok('#toko opens the counter',
+      await dl.evaluate(() => document.querySelector('.toko-chat').classList.contains('is-open')));
+    ok('and nothing errored on the way in', dl.__errs.length === 0, dl.__errs.join(' | '));
+    await dl.close();
+  }
 
   // ── the counter on a phone ─────────────────────────────────────────────
   // The panel is capped and clips, and an AUTO grid row sizes to its content
