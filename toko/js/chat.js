@@ -28,6 +28,7 @@ import { hit } from './glitch.js';
 import {
   TOPICS, CRY, SCOREBOARD, L, u, say, sayOption, setLang, getLang,
   menu, greeting, find, nameWords, askedWords,
+  FAVOURITES, FAVE_UNKNOWN,
 } from './dialogue.js';
 
 // He keeps four things between visits and nothing else: how many times you
@@ -600,6 +601,38 @@ export function mountChat(anchor, opts = {}) {
     return score >= 2 ? best : null;
   }
 
+  // The games he did not make. Same shape as the cabinet rack, minus the
+  // link — there is nowhere on this floor to send you for somebody else's
+  // game, and pretending otherwise would be a shop move.
+  function faves() {
+    const p = L('FAVOURITES');
+    return Array.isArray(p) && p.length ? p : FAVOURITES;
+  }
+
+  function matchFave(text) {
+    const said = new Set(nameWords(text));
+    if (!said.size) return null;
+    const common = askedWords();
+    let best = null, score = 0;
+    for (const f of faves()) {
+      let s = 0;
+      for (const w of nameWords(f.name)) if (said.has(w)) s += common.has(w) ? 1 : 2;
+      if (said.has(String(f.id || '').toUpperCase())) s += 3;
+      if (s > score) { score = s; best = f; }
+    }
+    return score >= 2 ? best : null;
+  }
+
+  function talkFave(f) {
+    lastTopic = 'fave:' + f.id;
+    const said = f.a && f.a.length ? f.a : FAVE_UNKNOWN;
+    type(said, () => {
+      if (!f.when) return;
+      log.appendChild(el('p', 'tc-score', '  ' + f.when));
+      log.scrollTop = log.scrollHeight;
+    });
+  }
+
   // His line about one cabinet, followed by the way in. Written per game in
   // GAME_NOTES; a cabinet with no line yet falls back to the catalogue's own
   // tagline, so one added tomorrow can still be asked about tonight.
@@ -822,6 +855,8 @@ export function mountChat(anchor, opts = {}) {
     // get the cabinet, not the general TELL ME ABOUT ONE OF THEM.
     const g = matchGame(raw);
     if (g) { line('tc-you', raw.toUpperCase()); list.hidden = true; talkAbout(g); return; }
+    const f = matchFave(raw);
+    if (f) { line('tc-you', raw.toUpperCase()); list.hidden = true; talkFave(f); return; }
     const t = find(raw);
     if (t) { unlocked.add(t.id); ask(t, raw.toUpperCase()); return; }
     line('tc-you', raw.toUpperCase());
@@ -841,6 +876,7 @@ export function mountChat(anchor, opts = {}) {
     if (o.opens) { fresh = new Set(o.opens); o.opens.forEach(id => unlocked.add(id)); }
     list.hidden = true;
     if (o.game) { talkAbout(o.game); return; }
+    if (o.fave) { talkFave(o.fave); return; }
     type(o.a);
   }
 
@@ -880,6 +916,12 @@ export function mountChat(anchor, opts = {}) {
     if (t.changed) {
       const prev = after;
       after = () => { readChanged(); if (prev) prev(); };
+    }
+    if (t.askFaves) {
+      const rack = faves().slice(0, 8)
+        .map(f => ({ id: 'f:' + f.id, q: f.name, fave: f }));
+      const prev = after;
+      after = () => { pending = rack; renderMenu(); if (prev) prev(); };
     }
     if (t.askGames) {
       // the rack: eight at most, because the menu has nine slots and one of
