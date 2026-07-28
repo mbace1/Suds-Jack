@@ -321,6 +321,34 @@ What it does beyond talking:
   AudioContext is built lazily on that first gesture, because one created
   before a gesture just sits suspended and logs a warning for its trouble.
 
+**Three languages.** The arcade is fi/en/ja and so is the counter. **English is
+the source** — it lives inline in `dialogue.js` — and `dialogue.fi.js` /
+`dialogue.ja.js` are pure string packs that override it by topic id. A key a
+pack has not translated falls through to English rather than blanking, the same
+rule `hub/i18n.js` follows and for the same reason: a missing line should read
+wrong, not read empty.
+
+Toko's register does not survive a literal translation. English is clipped and
+shouted in caps; Finnish takes the caps but not the article-dropping, so the
+flatness comes from short declaratives and dropped pronouns. **Japanese has no
+caps at all** — it comes from plain form (だ・である, never です・ます), no
+softeners, and lines kept to about *twenty* characters because the glyphs are
+full-width and a line translated at English length wraps mid-word.
+
+The counter follows the PAGE: `__hub.lang()` on the arcade, then `<html lang>`,
+then English. It **does not re-type the transcript** — a conversation you
+already had happened in the language you had it in, and rewriting somebody's own
+past questions under them reads like a machine correcting them. The menu, the
+greeting and everything from here on follow; what is above the fold stays.
+
+> Both packs are **drafts written by the machine**, and the file headers say so.
+> Finnish wants a read-aloud pass on the mantra — those lines are meant to be
+> shoutable across a room. Japanese has not been checked by a native speaker at
+> all; the jokes are the likely casualties. The **parser is English-and-Finnish
+> only**: its tokeniser splits on spaces, which Japanese does not use, so the
+> Japanese `KEYS` table is deliberately empty and the menu is the path there.
+> That limit is written down in the pack rather than hidden.
+
 Rules it holds:
 
 - **1–9 picks, ENTER skips the typing, ESC leaves.** Keyboard-first, like the

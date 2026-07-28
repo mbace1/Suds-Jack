@@ -26,8 +26,7 @@ import { drawHead, drawBadge, svgBadge } from './face.js';
 import { glance, drift } from './util.js';
 import { hit } from './glitch.js';
 import {
-  TOPICS, ASIDES, MISSES, CRY, SCOREBOARD, SEEN_NOTHING, SEEN_SOMETHING,
-  GAME_NOTES, ABOUT_UNKNOWN, CHANGED, CHANGED_NONE, CHANGED_YOURS,
+  TOPICS, CRY, SCOREBOARD, L, u, say, sayOption, setLang, getLang,
   menu, greeting, find, nameWords,
 } from './dialogue.js';
 
@@ -277,7 +276,7 @@ const el = (tag, cls, txt) => {
 export function mountChat(anchor, opts = {}) {
   const {
     where = 'after',           // 'after' the anchor, or 'in' it
-    cue = 'TOKO IS AT THE COUNTER',
+    cue = null,                // null = the pack's own line
     // The tempo (see BRAND.md §7): Toko is never in a hurry. 34ms a character
     // with a long beat between lines, and a longer one before the first —
     // he has to come back from wherever he was before he answers you.
@@ -291,7 +290,7 @@ export function mountChat(anchor, opts = {}) {
     && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const root = el('div', 'toko-chat');
-  root.setAttribute('aria-label', `Talk to ${VOICE.artistRomaji}`);
+  root.setAttribute('aria-label', u('TALK_TO', { x: VOICE.artistRomaji }));
 
   // ── the closed bar ─────────────────────────────────────────────────────
   const bar = el('button', 'tc-bar');
@@ -299,9 +298,11 @@ export function mountChat(anchor, opts = {}) {
   bar.setAttribute('aria-expanded', 'false');
   const barArt = el('span');
   bar.appendChild(barArt);
-  const say = el('span', 'tc-say');
-  say.append(cue + ' — ', Object.assign(el('span', 'tc-cue'), { textContent: 'TALK' }));
-  bar.appendChild(say);
+  // NOT named `say`: that shadowed the imported say() this whole file now
+  // calls to get a topic's words, and shadowing it turns every topic into a
+  // "say is not a function".
+  const cueEl = el('span', 'tc-say');
+  bar.appendChild(cueEl);
   bar.appendChild(el('span', 'tc-blip'));
   root.appendChild(bar);
 
@@ -320,16 +321,15 @@ export function mountChat(anchor, opts = {}) {
   const sayRow = el('div', 'tc-say-row');
   const parse = el('input');
   parse.type = 'text';
-  parse.placeholder = 'or type something…';
-  parse.setAttribute('aria-label', `Say something to ${VOICE.artistRomaji}`);
+  parse.setAttribute('aria-label', u('SAY_TO', { x: VOICE.artistRomaji }));
   parse.autocomplete = 'off';
   sayRow.append(Object.assign(el('span', 'tc-prompt'), { textContent: '>' }), parse);
 
   const foot = el('div', 'tc-foot');
-  const hint = el('span', null, '1–9 PICK · TYPE TO TALK · ESC LEAVE');
+  const hint = el('span');
   const sound = el('button', 'tc-snd');
   sound.type = 'button';
-  const leave = el('button', null, 'LEAVE');
+  const leave = el('button');
   leave.type = 'button';
   foot.append(hint, el('span', 'tc-spacer'), sound, leave);
   body.append(log, list, sayRow, foot);
@@ -337,6 +337,22 @@ export function mountChat(anchor, opts = {}) {
   root.appendChild(panel);
 
   portrait.appendChild(el('span', 'tc-name', VOICE.artist));
+
+  // Every string that is not in the transcript, repainted on a language
+  // change. `cue` overrides the default when a page passes one, so a host
+  // that supplied its own line keeps it in every language.
+  function paintBar() {
+    cueEl.textContent = '';
+    cueEl.append((cue || u('CUE')) + ' \u2014 ',
+      Object.assign(el('span', 'tc-cue'), { textContent: u('TALK') }));
+    parse.placeholder = u('PARSE_PH');
+    parse.setAttribute('aria-label', u('SAY_TO', { x: VOICE.artistRomaji }));
+    hint.textContent = u('HINT');
+    leave.textContent = u('LEAVE');
+    root.setAttribute('aria-label', u('TALK_TO', { x: VOICE.artistRomaji }));
+    if (painted) paintSound();   // the tick block is wired further down
+  }
+  let painted = false;
 
   if (where === 'in') anchor.appendChild(root);
   else anchor.insertAdjacentElement('afterend', root);
@@ -402,6 +418,35 @@ export function mountChat(anchor, opts = {}) {
   // The hour where the reader is, not where a server is. It gates one topic
   // and one greeting, and it is the only thing here that looks at a clock.
   const hour = () => new Date().getHours();
+
+  // ── the language ───────────────────────────────────────────────────────
+  // The counter follows the PAGE. On the arcade that is `__hub.lang()`, which
+  // the language buttons in the header already drive; on a page that has no
+  // opinion it falls back to <html lang>, and then to English.
+  //
+  // What it does NOT do is re-type the transcript. A conversation you already
+  // had happened in the language you had it in, and rewriting somebody's own
+  // past questions under them reads like a machine correcting them. The menu,
+  // the greeting and everything said from here on follow the switch; what is
+  // above the fold stays as it was said.
+  function pageLang() {
+    const hub = globalThis.__hub;
+    try { if (hub && typeof hub.lang === 'function') return hub.lang(); } catch { /* */ }
+    return (document.documentElement.lang || 'en').slice(0, 2);
+  }
+  setLang(pageLang());
+
+  function syncLang() {
+    const want = pageLang();
+    if (want === getLang()) return;
+    setLang(want);
+    paintBar();
+    if (open && !typing && !list.hidden) renderMenu();
+  }
+  // The hub re-renders on a language change rather than firing an event, so
+  // this watches the one thing that is guaranteed to move: <html lang>.
+  const langWatch = new MutationObserver(syncLang);
+  langWatch.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
 
   const line = (cls, text = '') => {
     const p = el('p', cls, text);
@@ -488,7 +533,7 @@ export function mountChat(anchor, opts = {}) {
       const b = el('button');
       b.type = 'button';
       b.appendChild(Object.assign(el('b'), { textContent: (i + 1) + '. ' }));
-      b.appendChild(document.createTextNode(t.q));
+      b.appendChild(document.createTextNode(pending ? t.q : say(t).q));
       b.addEventListener('click', () => (pending ? answer(t) : ask(t)));
       list.appendChild(b);
     });
@@ -504,7 +549,8 @@ export function mountChat(anchor, opts = {}) {
     if (still || asides >= 3 || !open) return;
     idle = setTimeout(() => {
       if (typing || !open || list.hidden) return;
-      type(ASIDES[asides % ASIDES.length]);
+      const a = L('ASIDES');
+      type(a[asides % a.length]);
       asides++;
     }, 24000);
   }
@@ -550,8 +596,8 @@ export function mountChat(anchor, opts = {}) {
   // GAME_NOTES; a cabinet with no line yet falls back to the catalogue's own
   // tagline, so one added tomorrow can still be asked about tonight.
   function talkAbout(g) {
-    const said = GAME_NOTES[g.id]
-      || (g.tagline ? [String(g.tagline).toUpperCase()] : ABOUT_UNKNOWN);
+    const said = L('GAME_NOTES')[g.id]
+      || (g.tagline ? [String(g.tagline).toUpperCase()] : L('ABOUT_UNKNOWN'));
     lastTopic = 'about:' + g.id;
     type(said, () => {
       const p = el('p', 'tc-me');
@@ -566,7 +612,7 @@ export function mountChat(anchor, opts = {}) {
       // files under that game rather than under "the counter".
       const tell = el('button', 'tc-tell');
       tell.type = 'button';
-      tell.textContent = '▸ TELL HIM ABOUT THIS ONE';
+      tell.textContent = u('TELL');
       tell.addEventListener('click', () => { tell.remove(); takeNote(g); });
       const q = el('p');
       q.appendChild(tell);
@@ -583,7 +629,7 @@ export function mountChat(anchor, opts = {}) {
     let all = [];
     try { all = (fb && fb.archive && fb.archive()) || []; } catch { all = []; }
     const mine = all.filter(n => n && n.note);
-    if (!mine.length) { type(['NOTHING YET. THE BOX IS EMPTY.']); return; }
+    if (!mine.length) { type(u('EMPTY_BOX')); return; }
     for (const n of mine.slice(0, 5)) {
       const p = el('p', 'tc-score');
       const when = n.ts ? new Date(n.ts).toISOString().slice(0, 10) : '';
@@ -591,7 +637,7 @@ export function mountChat(anchor, opts = {}) {
         Object.assign(el('b'), { textContent: String(n.note) }));
       log.appendChild(p);
     }
-    if (mine.length > 5) log.appendChild(el('p', 'tc-score', `  …AND ${mine.length - 5} MORE.`));
+    if (mine.length > 5) log.appendChild(el('p', 'tc-score', u('MORE', { n: mine.length - 5 })));
     log.scrollTop = log.scrollHeight;
   }
 
@@ -613,7 +659,8 @@ export function mountChat(anchor, opts = {}) {
   }
 
   function readChanged() {
-    if (!CHANGED.length) { type(CHANGED_NONE); return; }
+    const entries = L('CHANGED');
+    if (!entries.length) { type(L('CHANGED_NONE')); return; }
     const mine = myGames();
     const games = cabinets();
     const titleOf = id => {
@@ -624,7 +671,7 @@ export function mountChat(anchor, opts = {}) {
     // stops being an acknowledgement and turns into flattery, which is the
     // one register this counter is not for.
     const flagged = new Set();
-    for (const e of CHANGED.slice(0, 6)) {
+    for (const e of entries.slice(0, 6)) {
       const head = el('p', 'tc-score');
       head.append(document.createTextNode('  ' + (e.when || '') + '  '),
         Object.assign(el('b'), { textContent: e.game === 'hub' ? 'THE ARCADE' : titleOf(e.game) }));
@@ -632,7 +679,7 @@ export function mountChat(anchor, opts = {}) {
       for (const l of e.what) log.appendChild(el('p', 'tc-me', '    ' + l));
       if (mine.has(e.game) && !flagged.has(e.game)) {
         flagged.add(e.game);
-        log.appendChild(el('p', 'tc-you-quiet', '    ' + CHANGED_YOURS));
+        log.appendChild(el('p', 'tc-you-quiet', '    ' + L('CHANGED_YOURS')));
       }
     }
     log.scrollTop = log.scrollHeight;
@@ -651,7 +698,7 @@ export function mountChat(anchor, opts = {}) {
     const img = el('img');
     img.src = href;
     img.alt = '';
-    a.append(img, document.createTextNode('TAKE THE STICKER'));
+    a.append(img, document.createTextNode(u('STICKER')));
     const p = el('p');
     p.appendChild(a);
     log.appendChild(p);
@@ -668,13 +715,10 @@ export function mountChat(anchor, opts = {}) {
   // still written down locally and he says exactly that. What he must never
   // do is claim a delivery that did not happen: an opaque no-cors POST
   // reports 'sent-blind', and the line he says for it is different.
-  const SAID = {
-    sent: ['IT LANDED. THANK YOU.'],
-    'sent-blind': ['IT LEFT.', 'I CANNOT SEE THE OTHER END FROM HERE,',
-      'SO THAT IS ALL I CAN HONESTLY TELL YOU.'],
-    queued: ['THE NETWORK SAID NO.', 'IT IS IN THE OUTBOX. IT GOES NEXT TIME.'],
-    off: ['THERE IS NOWHERE TO SEND IT TODAY,', 'SO IT IS WRITTEN DOWN ON YOUR MACHINE.'],
-  };
+  const SAID = () => ({
+    sent: u('SENT'), 'sent-blind': u('SENT_BLIND'),
+    queued: u('QUEUED'), off: u('OFF'),
+  });
 
   // `about` is a cabinet, when the note is about one. It is what turns a pile
   // of notes into something you can act on: `game` is the field every other
@@ -685,12 +729,11 @@ export function mountChat(anchor, opts = {}) {
     const wrap = el('div', 'tc-note');
     const box = el('textarea');
     const who = about ? (about.title || about.id).toUpperCase() : null;
-    box.setAttribute('aria-label', who ? `Your note about ${who}` : 'Your note to Toko');
-    box.placeholder = who
-      ? `about ${who.toLowerCase()} — broken, boring, wrong, all useful`
-      : 'broken, boring, wrong — all useful';
+    box.setAttribute('aria-label',
+      who ? u('NOTE_LABEL_ABOUT', { x: who }) : u('NOTE_LABEL'));
+    box.placeholder = who ? u('NOTE_PH_ABOUT', { x: who.toLowerCase() }) : u('NOTE_PH');
     box.maxLength = 2000;
-    const send = el('button', null, 'SEND');
+    const send = el('button', null, u('SEND'));
     send.type = 'button';
     wrap.append(box, send);
     log.appendChild(wrap);
@@ -702,7 +745,7 @@ export function mountChat(anchor, opts = {}) {
       wrap.remove();
       // Saying nothing records nothing. The hub holds the same rule, and it
       // is the difference between asking for feedback and harvesting it.
-      if (!text) { type(['YOU SAID NOTHING, SO I WROTE NOTHING DOWN.']); return; }
+      if (!text) { type(u('NOTHING_SAID')); return; }
       line('tc-you', text.toUpperCase());
       send.disabled = true;
       let status = 'off';
@@ -728,7 +771,8 @@ export function mountChat(anchor, opts = {}) {
       } catch { status = 'off'; }
       // he brings it up next time, once
       store.write({ ...store.read(), noted: true });
-      type(SAID[status] || SAID.off);
+      const s = SAID();
+      type(s[status] || s.off);
     });
   }
 
@@ -744,8 +788,8 @@ export function mountChat(anchor, opts = {}) {
       if (v == null || v === '' || +v === 0 || Number.isNaN(+v)) continue;
       found.push([name, fmt(v)]);
     }
-    if (!found.length) { type(SEEN_NOTHING); return; }
-    type(SEEN_SOMETHING, () => {
+    if (!found.length) { type(L('SEEN_NOTHING')); return; }
+    type(L('SEEN_SOMETHING'), () => {
       for (const [name, val] of found) {
         const p = el('p', 'tc-score');
         p.append(document.createTextNode('  ' + name + '  '),
@@ -765,7 +809,7 @@ export function mountChat(anchor, opts = {}) {
     if (!raw) return;
     parse.value = '';
     if (typing) finishTyping();
-    if (CRY.test(raw)) { line('tc-you', raw.toUpperCase()); type(CRY.a); return; }
+    if (CRY.test(raw)) { line('tc-you', raw.toUpperCase()); type(L('CRY_A')); return; }
     // A cabinet by name beats a topic. "TELL ME ABOUT HYPER DAGGER" should
     // get the cabinet, not the general TELL ME ABOUT ONE OF THEM.
     const g = matchGame(raw);
@@ -774,7 +818,8 @@ export function mountChat(anchor, opts = {}) {
     if (t) { unlocked.add(t.id); ask(t, raw.toUpperCase()); return; }
     line('tc-you', raw.toUpperCase());
     list.hidden = true;
-    type(MISSES[misses++ % MISSES.length]);
+    const m = L('MISSES');
+    type(m[misses++ % m.length]);
   }
   let misses = 0;
 
@@ -796,7 +841,7 @@ export function mountChat(anchor, opts = {}) {
   // reads like a machine correcting them.
   function ask(t, asWritten) {
     if (typing) { finishTyping(); return; }
-    line('tc-you', asWritten || t.q);
+    line('tc-you', asWritten || say(t).q);
     asked.add(t.id);
     fresh = t.opens ? new Set(t.opens) : null;
     if (t.opens) t.opens.forEach(id => unlocked.add(id));
@@ -835,7 +880,7 @@ export function mountChat(anchor, opts = {}) {
         .map(g => ({ id: 'g:' + g.id, q: (g.title || g.id).toUpperCase(), game: g }));
       const prev = after;
       after = () => {
-        if (!rack.length) { type(['THOUGH FROM HERE I CANNOT SEE THE FLOOR.']); return; }
+        if (!rack.length) { type([u('NO_FLOOR')]); return; }
         pending = rack;
         renderMenu();
         if (prev) prev();
@@ -843,7 +888,13 @@ export function mountChat(anchor, opts = {}) {
     }
     if (t.asks) {
       const prev = after;
-      after = () => { pending = t.asks; renderMenu(); if (prev) prev(); };
+      after = () => {
+        // localised HERE rather than at draw time, so an option carries its
+        // own words the same way a cabinet on the rack does
+        pending = t.asks.map((o, i) => ({ ...o, ...sayOption(t, i) }));
+        renderMenu();
+        if (prev) prev();
+      };
     }
     if (t.pick) {
       const g = pickGame();
@@ -857,14 +908,14 @@ export function mountChat(anchor, opts = {}) {
           p.appendChild(a);
           if (g.lineage) p.appendChild(document.createTextNode('  — ' + g.lineage));
         } else {
-          p.textContent = 'THOUGH FROM HERE I CANNOT SEE THE FLOOR.';
+          p.textContent = u('NO_FLOOR');
         }
         log.appendChild(p);
         log.scrollTop = log.scrollHeight;
         if (prev) prev();
       };
     }
-    type(t.a, after);
+    type(say(t).a, after);
   }
 
   // ── open / close ───────────────────────────────────────────────────────
@@ -945,11 +996,12 @@ export function mountChat(anchor, opts = {}) {
   const tick = makeTick();
   let ticking = !!store.read().tick;
   const paintSound = () => {
-    sound.textContent = ticking ? '♪ ON' : '♪ OFF';
+    sound.textContent = ticking ? u('SND_ON') : u('SND_OFF');
     sound.setAttribute('aria-pressed', String(ticking));
-    sound.setAttribute('aria-label', ticking ? 'Typing sound on' : 'Typing sound off');
+    sound.setAttribute('aria-label', ticking ? u('SND_LABEL_ON') : u('SND_LABEL_OFF'));
   };
-  paintSound();
+  painted = true;
+  paintBar();
   sound.addEventListener('click', () => {
     ticking = !ticking;
     store.write({ ...store.read(), tick: ticking });
