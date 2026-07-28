@@ -148,16 +148,27 @@ export function noise(ctx, w, h, opts = {}) {
 // permanently broken reads as a rendering fault, and nobody trusts a rendering
 // fault. The glitch is an event that happens TO the mark, so most of the time
 // it is not happening.
+//
+// `scale` exists because every displacement below is in PIXELS, tuned against
+// the ~44px hard-pixel canvas this kit was written for. Handed a 240px
+// device-pixel portrait, a six-pixel tear is a hairline nobody sees. Pass
+// `scale: w / 44` and the same intensity reads the same at any size.
 export function hit(ctx, w, h, intensity = 0, opts = {}) {
   const k = Math.max(0, Math.min(1, intensity));
   if (k <= 0.001) return;
   const seed = (opts.seed ?? 1) | 0;
   const t = opts.t ?? 0;
+  const s = Math.max(1, opts.scale ?? 1);
+  const px = n => Math.round(n * s);
 
-  split(ctx, w, h, { dx: Math.round(k * 3), dy: k > 0.75 ? 1 : 0 });
-  tear(ctx, w, h, { bands: Math.round(1 + k * 5), amount: Math.round(1 + k * 6), seed: seed + 11 });
-  if (k > 0.35) shuffle(ctx, w, h, { n: Math.round(k * 3), seed: seed + 23, dist: Math.round(k * 5) });
-  if (k > 0.2) dropout(ctx, w, h, { n: Math.round(k * 4), seed: seed + 37, color: opts.hole ?? null });
+  split(ctx, w, h, { dx: px(k * 3), dy: k > 0.75 ? px(1) : 0 });
+  tear(ctx, w, h, { bands: Math.round(1 + k * 5), amount: px(1 + k * 6), seed: seed + 11 });
+  if (k > 0.35) shuffle(ctx, w, h, { n: Math.round(k * 3), seed: seed + 23, dist: px(k * 5) });
+  if (k > 0.2) {
+    dropout(ctx, w, h, {
+      n: Math.round(k * 4), seed: seed + 37, color: opts.hole ?? null, max: px(6),
+    });
+  }
   if (k > 0.6) noise(ctx, w, h, { density: (k - 0.6) * 0.22, seed: seed + 53 });
   if (opts.scan !== false) scanlines(ctx, w, h, { darkness: 0.1 + k * 0.16, phase: t * 14 });
 }

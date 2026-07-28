@@ -17,6 +17,10 @@
 //   asks   HE asks YOU: the menu becomes your possible answers
 //   after  hours (0–23) this topic exists in at all
 //   needs  how many things you must have asked before it appears
+//   keys   words the typed parser matches on, over and above the question
+//   note   follow the reply with a box to write him one
+//   scores follow the reply with whatever the games left on THIS machine
+//   torn   the portrait tears while he answers — a glitch is an event
 
 export const GREETING = [
   'YOU FOUND THE COUNTER.',
@@ -249,6 +253,19 @@ export const TOPICS = [
     ],
   },
 
+  // ── you say something back ─────────────────────────────────────────────
+  {
+    // The counter's whole reason for existing, really. Everything else is
+    // Toko talking; this is the one place the traffic runs the other way and
+    // ends up somewhere a person reads it.
+    id: 'note', q: 'I HAVE SOMETHING TO SAY.', note: true,
+    a: [
+      'THEN SAY IT. I AM LISTENING.',
+      'BROKEN, BORING, WRONG — ALL USEFUL.',
+      'I WILL NOT ARGUE WITH YOU ABOUT IT.',
+    ],
+  },
+
   // ── he asks you ────────────────────────────────────────────────────────
   {
     // The one topic that runs the other way. `asks` turns the menu into YOUR
@@ -336,6 +353,20 @@ export const TOPICS = [
     ],
   },
 
+  // ── what he can see from here ──────────────────────────────────────────
+  {
+    // Read off YOUR machine, by the games themselves, and never sent
+    // anywhere. He says so, because a workshop that claims not to profile
+    // you should be able to explain exactly what it just looked at.
+    id: 'seen', q: 'HAVE YOU SEEN ME PLAY?', once: true, scores: true,
+    a: [
+      'ONLY WHAT THE CABINETS WROTE DOWN',
+      'ON YOUR OWN MACHINE.',
+      'IT NEVER LEAVES IT, AND I COULD NOT',
+      'READ IT FROM ANYWHERE ELSE IF I WANTED TO.',
+    ],
+  },
+
   // ── the back of the shop ───────────────────────────────────────────────
   {
     // Not unlockable by any single topic — it appears once you have actually
@@ -362,6 +393,95 @@ export const TOPICS = [
   },
 ];
 
+// The portrait tears while he answers these. A glitch is an EVENT, not a
+// state (BRAND.md §5), and the events worth having one are the moments the
+// seam is what he is talking about.
+for (const id of ['ai', 'scroll', 'hypocrite', 'seam']) {
+  const t = TOPICS.find(x => x.id === id);
+  if (t) t.torn = true;
+}
+
+// ── the parser ───────────────────────────────────────────────────────────
+// You can also just TYPE at him, which is the whole reason this thing is
+// shaped like Police Quest. Still no language model: it is word overlap
+// against a lookup table, and when it misses it says so in his voice rather
+// than inventing an answer.
+//
+// Kept as one table rather than sprinkled through the topics above, because
+// it is a lookup and it reads better as a lookup.
+const KEYS = {
+  who: ['WHO', 'TOKO', 'MIDORI', 'ARTIST', 'MAKER', 'HELLO', 'HI'],
+  mask: ['MASK', 'FACE', 'HIDE', 'HIDDEN', 'ANONYMOUS', 'IDENTITY'],
+  name: ['MIDORI', 'GREEN', 'JAPANESE', 'MEAN', 'MEANING'],
+  clusters: ['ELSE', 'EVERYONE', 'OTHERS', 'TEAM', 'CLUSTER', 'HEADS'],
+  ai: ['AI', 'MACHINE', 'MODEL', 'ROBOT', 'GENERATED', 'LLM', 'CLAUDE'],
+  scroll: ['SCROLL', 'SLOP', 'AUDIENCE', 'FEED', 'CONTENT'],
+  hypocrite: ['HYPOCRITE', 'HYPOCRISY', 'CHEAT', 'CHEATING', 'FAKE', 'LAZY'],
+  seam: ['SEAM', 'GLITCH', 'BROKEN', 'SHOW', 'POLISH'],
+  music: ['MUSIC', 'LISTENING', 'SONG', 'RECORD', 'FLOYD', 'PINK', 'NUMB'],
+  faraway: ['FAR', 'AWAY', 'SLOW', 'TIRED', 'STONED', 'DREAMING'],
+  late: ['LATE', 'NIGHT', 'SLEEP', 'BED', 'HOUR', 'TIME'],
+  start: ['START', 'BEGIN', 'HOW', 'LEARN', 'MAKE', 'FIRST'],
+  bad: ['BAD', 'TERRIBLE', 'FAIL', 'SUCK', 'MISTAKE', 'AFRAID'],
+  tools: ['TOOLS', 'TOOL', 'USE', 'ENGINE', 'UNITY', 'GODOT', 'EDITOR', 'STACK'],
+  build: ['BUILD', 'COMPILE', 'BUNDLER', 'NPM', 'WEBPACK', 'STEP'],
+  play: ['PLAY', 'RECOMMEND', 'SUGGEST', 'PICK', 'WHICH', 'BEST'],
+  floor: ['FLOOR', 'GAMES', 'LIST', 'CATALOGUE', 'WHAT', 'ARCADE'],
+  quiet: ['QUIET', 'LIFE', 'CALM', 'ZEN', 'NATURE', 'OUTSIDE'],
+  dead: ['DEAD', 'ARCHIVE', 'ARCHIVED', 'OLD', 'ABANDONED', 'DYING'],
+  me: ['ASK', 'YOU', 'INSTEAD', 'TURN', 'QUESTION'],
+  cost: ['COST', 'PRICE', 'MONEY', 'PAY', 'FREE', 'BUY', 'ADS'],
+  steal: ['STEAL', 'TAKE', 'COPY', 'FORK', 'LICENCE', 'LICENSE', 'SOURCE', 'CODE'],
+  gift: ['GIFT', 'STICKER', 'GIVE', 'SOMETHING', 'FREE', 'DOWNLOAD', 'SVG'],
+  note: ['NOTE', 'SAY', 'FEEDBACK', 'TELL', 'BUG', 'IDEA', 'THANKS', 'HATE', 'LOVE'],
+  seen: ['SEEN', 'SCORE', 'SCORES', 'HIGH', 'RECORD', 'PLAYED', 'STATS'],
+  back: ['BACK', 'MORE', 'DEEPER', 'SECRET'],
+  bye: ['BYE', 'GOODBYE', 'LEAVE', 'EXIT', 'QUIT', 'NOTHING', 'THANKS'],
+};
+for (const t of TOPICS) t.keys = KEYS[t.id] || [];
+
+// words that carry no signal, so matching on them would make every sentence
+// match every topic
+const STOP = new Set(['THE', 'A', 'AN', 'IS', 'ARE', 'WAS', 'DO', 'DOES', 'DID',
+  'I', 'ME', 'MY', 'IT', 'THAT', 'THIS', 'TO', 'OF', 'IN', 'ON', 'AND', 'OR',
+  'FOR', 'AM', 'BE', 'CAN', 'WILL', 'YOUR', 'HAVE', 'HAS', 'NOT', 'SO', 'AT']);
+
+const words = s => (s.toUpperCase().match(/[A-Z']+/g) || []).filter(w => !STOP.has(w));
+
+// He hears the cry and answers it, whatever else is in the sentence.
+export const CRY = {
+  test: s => /GO\s+MAKE\s+(YOUR\s+)?OWN/i.test(s),
+  a: ['THERE IT IS.', 'NOW STOP TYPING AT ME AND GO.'],
+};
+
+// What he says when the parser misses. It admits the miss rather than
+// guessing — a counter that pretends to understand is worse than one that
+// shrugs.
+export const MISSES = [
+  ['I DO NOT KNOW THAT ONE.', 'TRY THE LIST.'],
+  ['SAY IT ANOTHER WAY.'],
+  ['NO. ASK ME SOMETHING ON THE LIST,', 'OR TELL ME I AM WRONG ABOUT SOMETHING.'],
+  ['THAT IS NOT A THING I HAVE AN ANSWER FOR.'],
+];
+
+// Best word overlap over keys and the topic's own question, keys counting
+// double. Under two points it returns null and he shrugs — a low bar here
+// would have him confidently answering the wrong question, which is exactly
+// the failure the whole workshop is against.
+export function find(text) {
+  const said = words(text || '');
+  if (!said.length) return null;
+  let best = null, score = 0;
+  for (const t of TOPICS) {
+    const keys = new Set(t.keys);
+    const own = new Set(words(t.q));
+    let s = 0;
+    for (const w of new Set(said)) s += keys.has(w) ? 2 : (own.has(w) ? 1 : 0);
+    if (s > score) { score = s; best = t; }
+  }
+  return score >= 2 ? best : null;
+}
+
 const byId = new Map(TOPICS.map(t => [t.id, t]));
 export const topic = id => byId.get(id);
 
@@ -375,7 +495,10 @@ const RETURNING = [
   ['YOU KNOW WHERE I AM.', 'ASK.'],
 ];
 
-export function greeting({ visits = 1, hour = 12, last = null } = {}) {
+export function greeting({ visits = 1, hour = 12, last = null, noted = false } = {}) {
+  // A note outranks everything: somebody took the trouble to write, and the
+  // least the counter can do is show it registered.
+  if (noted) return ['I GOT YOUR NOTE.', 'I READ ALL OF THEM. ASK ME SOMETHING.'];
   const t = last && byId.get(last);
   if (visits > 1 && t) {
     return ['LAST TIME YOU ASKED ABOUT ' + tail(t.q), 'ASK ME SOMETHING ELSE.'];
@@ -384,6 +507,25 @@ export function greeting({ visits = 1, hour = 12, last = null } = {}) {
   if (visits <= 1) return GREETING.slice();
   return RETURNING[(visits - 2) % RETURNING.length].slice();
 }
+
+// ── what the cabinets left on your machine ───────────────────────────────
+// Read locally, shown once, sent nowhere. Each entry is the key a game
+// actually writes; unknown keys are simply absent, which is why a machine
+// that has played nothing gets an honest "nothing here" rather than a guess.
+export const SCOREBOARD = [
+  ['hyperDaggerHi', 'HYPER DAGGER', s => `${(+s).toFixed(1)}s SURVIVED`],
+  ['hyperDaggerHiHyper', 'HYPER DAGGER (HYPER)', s => `${(+s).toFixed(1)}s`],
+  ['dropCabalHi', 'DROP CABAL', s => `${(+s).toLocaleString()} POINTS`],
+  ['paperRouteHi', 'PAPER ROUTE', s => `${(+s).toLocaleString()} POINTS`],
+  ['tokoDropHi', 'TOKO DROP', s => `WAVE ${s}`],
+];
+
+export const SEEN_NOTHING = [
+  'NOTHING. EITHER YOU ARE NEW OR YOU CLEARED',
+  'IT, AND BOTH ARE FINE BY ME.',
+  'GO PUT A NUMBER ON SOMETHING.',
+];
+export const SEEN_SOMETHING = ['SO FAR:'];
 
 // "WHY THE MASK?" → "THE MASK." — the player's own words handed back, minus
 // the question. Cheap, and it reads like memory rather than telemetry.

@@ -241,6 +241,26 @@ unlocks others, so the conversation grows as you dig.
 
 What it does beyond talking:
 
+- **You can type at him.** A `>` line under the menu takes a sentence and
+  matches it against a keyword table — still no language model, just word
+  overlap, and when it misses it *says so* rather than confidently answering
+  the wrong question. Typing reaches **locked** topics, which is the reward
+  for using your own words instead of the list. `GO MAKE YOUR OWN` is heard
+  wherever it appears in the sentence.
+- **You can leave him a note, and it leaves the browser.** The counter reuses
+  the **arcade's own transport** (`window.__hub.feedback`) rather than
+  shipping a second one — same endpoint, same local archive, same outbox
+  retried on the next visit. Two rules are load-bearing and both are in the
+  gate: **saying nothing records nothing**, and he never claims a delivery
+  that did not happen — an opaque no-cors POST is `sent-blind` and gets its
+  own line, a queued one says it is queued, and dropped on a page with no hub
+  he says it is written down on your machine and nothing more. He mentions a
+  note **once** on your next visit; twice would be a receipt.
+- **He reads what the cabinets left on your machine.** `HAVE YOU SEEN ME
+  PLAY?` reads the games' own `localStorage` hi-scores, shows them, and sends
+  them nowhere. He says as much while doing it — a workshop that claims not
+  to profile you should be able to explain exactly what it just looked at,
+  and the claim is only worth making because the code is that short.
 - **He picks a cabinet.** `WHAT SHOULD I PLAY?` reads the arcade's own
   catalogue (`window.__hub`) and answers with one game and a real link — the
   same one all day, which is the line he says while giving it. Dropped on a
@@ -269,6 +289,12 @@ What it does beyond talking:
 - **The back of the shop.** One topic has `needs:` rather than an unlock, so it
   appears only once you have actually dug. The reward for exhausting a tree
   should be more tree.
+- **The portrait tears** while he answers the topics that are *about* the seam
+  — the machine, the slop, the hypocrisy question. A glitch is an **event**
+  (§5), so it decays over its own window instead of sitting there as texture.
+- **`#toko` opens it**, so a link can point at the conversation rather than
+  the page it sits on. It only ever opens; the hash is never written back,
+  because the arcade's own address stays the plain one.
 - **A typing tick**, off until you ask for it, remembered after you do. The
   AudioContext is built lazily on that first gesture, because one created
   before a gesture just sits suspended and logs a warning for its trouble.
@@ -277,7 +303,9 @@ Rules it holds:
 
 - **1–9 picks, ENTER skips the typing, ESC leaves.** Keyboard-first, like the
   games under it. Nothing traps you and no animation has to be watched to the
-  end.
+  end. **A field owns its own keys**: the number shortcuts are dead while you
+  are writing, or typing "3 CRASHES ON LOAD" picks topic three and throws the
+  sentence away. Esc steps out of the field first, then out of the counter.
 - **It must not push the games below the fold.** It sits *above* the cabinets,
   so the topic menu runs two columns where there is room; stacked, seven topics
   at the 44px tap floor made a panel nearly 600px tall.
