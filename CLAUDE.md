@@ -442,6 +442,25 @@ the panel from a callback hung off the end of the typing, so **skipping** the
 typing left the counter open forever (`after` now fires from `finishTyping`); and
 stacked at the 44px tap floor the menu made a ~600px panel that pushed the
 cabinets below the fold (two columns where there is room).
+**It runs both ways.** A `>` **parser** line takes a typed sentence and matches it
+by word overlap against a keyword table (`find()` — still no model, and a miss
+*says so* rather than answering the wrong question; typing reaches `locked` topics,
+which is the reward for using your own words). **`note: true`** opens a box and
+posts through the **arcade's own** `window.__hub.feedback` rather than a second
+transport — saying nothing records nothing, and he never claims a delivery that
+did not happen (`sent-blind` / `queued` / no-hub each get their own line).
+**`scores: true`** reads the games' `localStorage` hi-scores off *your* machine,
+shows them and sends them nowhere. `asks:` turns the menu into your mouth for a
+turn; `gift:` hands over the badge as an SVG data URI; `torn:` tears the portrait
+while he answers (a glitch is an event, so it decays); `after:`/`needs:` gate a
+topic by hour and by how far you have dug. `#toko` opens the counter. Traps found
+building it: **`end` topics need a reserved slot** or goodbye falls off the
+nine-item menu; a **field owns its own keys** (typing "3 CRASHES" used to pick
+topic three); the panel's grid rows must be `minmax(0, 1fr)` or an `auto` row
+overflows the clipped cap and hides the bottom of the menu on a phone; **no
+back-ticks in the CSS template literal**; and `glitch.js` works through
+`getImageData`, so a DPR `Surface` must pass **device** pixels plus a
+`scale` (its displacements are tuned for a 44px mark).
 `sting.js` is a ~3s sting where the face **draws itself** (arcs revealed by
 dash-offset so they grow along their own path: mouth sweeps open → eyes drop in
 → blink → logotype lands), skippable on any input from frame one. `masthead.js`
@@ -449,7 +468,7 @@ is the animated lockup for the arcade hub — `stop()` it wherever the page
 re-renders or the loop leaks against a detached canvas. `surface.js` is the
 DPR-aware smooth canvas (the mark is curves, so antialiasing stays ON).
 `toko/index.html` is the **brand board**, built out of the shipping modules.
-`toko/test/brand.cjs` is the gate (Playwright, 52 checks): geometry invariants
+`toko/test/brand.cjs` is the gate (Playwright, 113 checks): geometry invariants
 (slot width, stem/crown merge, mouth-clears-eyes, symmetry), **every rendered
 pixel checked against the two-colour system**, SVG well-formedness + that it
 emits exactly the canvas's arcs at the shipping stroke weight, the sting
@@ -459,7 +478,9 @@ the master artwork**, not lifted from the original vector file (replace `GEO` if
 that file surfaces), and the logotype face is substituted.
 **Deployed:** `toko/` is live on `gh-pages` and the counter is mounted at the top
 of BOTH hub entry points (`index.html` and `AnotherHUB/index.html`) with one
-module import after `</header>`; the chat picks up hub.css's `--panel`/`--line`
+module import that must sit **after `hub/hub.js`** — hub.js assigns
+`window.__hub` wholesale, so a handle hung on before it is thrown away
+(`window.__hub.chat`); the chat picks up hub.css's `--panel`/`--line`
 so it sits inside the terminal's own chrome while keeping magenta for Toko. The
 gh-pages copy omits `test/` (that branch ships docs but no test dirs). The game
 **signatures are NOT on gh-pages yet** — `toko-drop/` and `hyperdagger/` there
