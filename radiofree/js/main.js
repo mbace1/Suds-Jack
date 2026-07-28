@@ -1,13 +1,13 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=23';
-import { Post, Reader } from './codec.js?v=23';
-import { Package } from './package.js?v=23';
-import { SECTORS, STORIES, COPY, storyCopy, parseLine, loadWire, WIRE_INFO } from './stories.js?v=23';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=23';
-import * as audio from './audio.js?v=23';
-import { PixelScreen } from './screen.js?v=23';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=23';
+import { PAL, SECTOR_COLOR } from './palette.js?v=24';
+import { Post, Reader } from './codec.js?v=24';
+import { Package } from './package.js?v=24';
+import { SECTORS, STORIES, COPY, storyCopy, parseLine, loadWire, WIRE_INFO } from './stories.js?v=24';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=24';
+import * as audio from './audio.js?v=24';
+import { PixelScreen } from './screen.js?v=24';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=24';
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
@@ -512,6 +512,14 @@ window.__rfh = {
     beat: () => {
       const p = posts[active];
       return p && !p.signoff && p.post.beat !== undefined ? p.post.beat : null;
+    },
+    // the anchor's mouth. A gate has to be able to prove the face is not dead,
+    // and it cannot do that off the pixels — the blink and the sway move that
+    // band too.
+    mouth: () => {
+      const p = posts[active];
+      const a = p && p.post && p.post.anchor;
+      return a ? a.mouthSmooth : null;
     },
     cutTo: shot => {
       const p = posts[active];

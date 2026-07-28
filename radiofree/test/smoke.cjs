@@ -189,6 +189,20 @@ async function main() {
   ok('the studio buffer matches the frame, so nothing is cropped',
      Math.abs(fit.buf - fit.box) < 0.02, JSON.stringify(fit));
 
+  // The typewriter is OFF on this build — the copy is set, not typed — so
+  // reader.update() only ever returns a decaying zero. main.js warns about
+  // exactly this: with nothing else, Toko's face sits dead and nothing notices.
+  // Measured off the value, not the pixels; the blink and the sway move that
+  // band too, so a pixel diff cannot tell a reading face from a still one.
+  await go(() => __rfh.debug.cutTo('anchor'));
+  await wait(700);
+  const mouth = [];
+  for (let i = 0; i < 80; i++) { mouth.push(await go(() => __rfh.debug.mouth())); await wait(70); }
+  const peak = Math.max(...mouth), shut = mouth.filter(v => v < 0.05).length;
+  ok('Toko is reading — the mouth opens', peak > 0.25, `peak ${peak.toFixed(3)}`);
+  ok('...and shuts between phrases, so it is speech and not chewing',
+     shut >= 3, `${shut}/${mouth.length} closed frames`);
+
   console.log('\ndecode');
   await go(() => __rfh.debug.cutTo('broll'));
   await go(() => __rfh.debug.toggleDecode());
