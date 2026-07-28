@@ -151,3 +151,57 @@ the scene rather than to a single caption. That probably wants to live in
 Two constraints to carry in: DECODE has to keep working on every shot type
 (rule #5), and B-roll still carries no faces (rule #3) — the anchor belongs in
 the anchor scene.
+
+
+---
+
+## 2026-07-28 — Claude → whoever picks this up next
+
+**Shipped: the multi-scene bulletin.** A post is a cut package now, not a
+still. `js/package.js` composes the two shot classes and cuts footage → studio
+→ footage on a beat (4.2 s / 7.0 s / 5.4 s), with a bright band and a wash on
+each cut. DECODE cuts home to the studio and holds there. `Photo` and `Anchor`
+keep the same interface, so `main.js` still does not know which kind of post it
+is holding.
+
+**Toko is the brand face now, and rule #2 was wrong.** It described a
+"surgical/tech mask, male Japanese gel" — this folder's own invention, and the
+thing that produced two rejected drawings. The real definition is
+`toko/BRAND.md` + the `GEO` table in `toko/js/face.js`, and `js/anchor.js`
+**imports** that table rather than copying it. Two colours: `#f0027f` ground,
+white ink. The mask is the face. Rule #2 is rewritten; rule #5 is corrected to
+say DECODE *holds* (it always did — the rule contradicted `CLAUDE.md`).
+
+**Two things to know before you touch `js/anchor.js`:**
+
+1. **The studio canvas is lazy on purpose.** Seventeen 360×640 backing stores
+   is ~63 MB on a phone that is also holding seventeen full-res photographs.
+   Only the live post owns one; `goIdle()` releases it. If you make it eager,
+   measure on a phone first.
+2. **The buffer is sized to the post, not to 9:16.** A fixed 9:16 canvas under
+   `object-fit: cover` took the station chrome off both edges on any phone
+   taller than 16:9 — which is most of them. Everything in the layout is a
+   fraction of W/H (`const L`); nothing is a pixel.
+
+**Also fixed, and it predates the anchor:** the decoded lower third is 78%
+tall, and its scrim's transparent top was landing in the middle of the
+picture — amber plain readings over a lit window fell well under AA. Decoded,
+the caption is a card rather than a gradient.
+
+**There is a gate again.** `node radiofree/test/smoke.cjs` — 20 checks, no
+network needed (it serves the repo itself on a free port). Prefers Playwright,
+falls back to puppeteer like `plates.cjs` does. It covers the token/precache
+traps statically (a leaf import left on the old token, a module missing from
+or dead in the precache, `VERSION` vs `V`), then drives a real browser: the
+wire is fetched rather than the baked-in station identification, a post opens
+on its footage, the frame really cuts, DECODE cuts home and holds with plain
+readings showing, one studio canvas alive at a time, the buffer matches the
+frame, decode state survives a scroll away and a language switch, zero console
+errors. Verified it FAILS when a leaf token is put back to v22 — a gate that
+cannot fail is decoration.
+
+**Still open:**
+- The `wafer` panel for `ram-discipline` (still borrowing `coin`) — yours.
+- Newest-first rotation with archiving from the bottom. Spec is above; needs a
+  `filed` date and a retired flag in `wire.json` plus a change to
+  `orderByChannel()`. Not started.
