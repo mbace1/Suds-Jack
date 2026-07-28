@@ -730,17 +730,135 @@ export const MISSES = [
   ['THAT IS NOT A THING I HAVE AN ANSWER FOR.'],
 ];
 
+// ── the chrome ───────────────────────────────────────────────────────────
+// Everything the counter says that is not Toko talking: the bar, the hint
+// line, the buttons, the placeholders, and the four honest answers about
+// where a note went. Kept here rather than in chat.js so a language pack is
+// one file and not two.
+export const UI = {
+  CUE: 'TOKO IS AT THE COUNTER',
+  TALK: 'TALK',
+  HINT: '1-9 PICK \u00b7 TYPE TO TALK \u00b7 ESC LEAVE',
+  LEAVE: 'LEAVE',
+  SEND: 'SEND',
+  PARSE_PH: 'or type something\u2026',
+  NOTE_PH: 'broken, boring, wrong \u2014 all useful',
+  NOTE_PH_ABOUT: 'about {x} \u2014 broken, boring, wrong, all useful',
+  NOTE_LABEL: 'Your note to Toko',
+  NOTE_LABEL_ABOUT: 'Your note about {x}',
+  TELL: '\u25b8 TELL HIM ABOUT THIS ONE',
+  STICKER: 'TAKE THE STICKER',
+  NOTHING_SAID: ['YOU SAID NOTHING, SO I WROTE NOTHING DOWN.'],
+  EMPTY_BOX: ['NOTHING YET. THE BOX IS EMPTY.'],
+  MORE: '  \u2026AND {n} MORE.',
+  NO_FLOOR: 'THOUGH FROM HERE I CANNOT SEE THE FLOOR.',
+  SND_ON: '\u266a ON',
+  SND_OFF: '\u266a OFF',
+  SND_LABEL_ON: 'Typing sound on',
+  SND_LABEL_OFF: 'Typing sound off',
+  TALK_TO: 'Talk to {x}',
+  SAY_TO: 'Say something to {x}',
+  // Where a note actually went. Four answers because there are four truths,
+  // and the counter must never give the first one for the second.
+  SENT: ['IT LANDED. THANK YOU.'],
+  SENT_BLIND: ['IT LEFT.', 'I CANNOT SEE THE OTHER END FROM HERE,',
+    'SO THAT IS ALL I CAN HONESTLY TELL YOU.'],
+  QUEUED: ['THE NETWORK SAID NO.', 'IT IS IN THE OUTBOX. IT GOES NEXT TIME.'],
+  OFF: ['THERE IS NOWHERE TO SEND IT TODAY,',
+    'SO IT IS WRITTEN DOWN ON YOUR MACHINE.'],
+};
+
+// ── three languages ──────────────────────────────────────────────────────
+// The arcade is fi/en/ja, so the counter is too. ENGLISH IS THE SOURCE: it
+// lives inline in TOPICS above and in the blocks around it, and a pack is a
+// pure string table that overrides it by topic id. Anything a pack has not
+// translated falls through to English rather than blanking — the same rule
+// hub/i18n.js follows, and the same reason: a missing line should read wrong,
+// not read empty.
+//
+// Toko's register does not survive a literal translation. English is clipped
+// and shouted in caps; Finnish takes the caps but not the article-less
+// clipping; Japanese has no caps at all, so the flatness has to come from
+// short plain-form sentences instead. The packs are written, not converted.
+import { FI } from './dialogue.fi.js';
+import { JA } from './dialogue.ja.js';
+
+const PACKS = { fi: FI, ja: JA };
+export const CODES = ['fi', 'en', 'ja'];
+
+let lang = 'en';
+export function setLang(code) { lang = PACKS[code] ? code : 'en'; return lang; }
+export function getLang() { return lang; }
+const pack = () => PACKS[lang] || null;
+
+// One topic's words, in the language now selected.
+export function say(t) {
+  const o = pack() && pack().T && pack().T[t.id];
+  return { q: (o && o.q) || t.q, a: (o && o.a) || t.a };
+}
+
+// One of HIS question's answer options — keyed by position, because the
+// options are a written set and their order is part of the writing.
+export function sayOption(t, i) {
+  const o = pack() && pack().T && pack().T[t.id];
+  const alt = o && o.asks && o.asks[i];
+  return { q: (alt && alt.q) || t.asks[i].q, a: (alt && alt.a) || t.asks[i].a };
+}
+
+// The blocks that are not topics — greetings, asides, misses, the log. Every
+// lookup falls back to the English constant of the same name.
+//
+// Built on FIRST USE, not at module load: several of the constants it names
+// are declared further down this file, and naming a `const` before its line
+// runs is a temporal-dead-zone throw, not an undefined.
+let EN_BLOCKS = null;
+export function L(key) {
+  if (!EN_BLOCKS) {
+    EN_BLOCKS = {
+      GREETING, LATE, ASIDES, MISSES, RETURNING, NOTED, REMEMBERED,
+      CRY_A: CRY.a, SEEN_NOTHING, SEEN_SOMETHING, UI,
+      CHANGED_NONE, CHANGED_YOURS, ABOUT_UNKNOWN, GAME_NOTES, CHANGED,
+    };
+  }
+  // `p ? p[key] : undefined`, NOT `p && p[key]` — the second yields null when
+  // there is no pack, and null is not undefined, so English fell through as
+  // null and the greeting died on .slice().
+  const p = pack();
+  const v = p ? p[key] : undefined;
+  return v === undefined ? EN_BLOCKS[key] : v;
+}
+
+// One piece of chrome, in the current language, with `{x}` filled in.
+//
+// PER KEY, unlike L(): a pack that translates half the buttons should show
+// the other half in English, not lose them. L() hands back a whole block, so
+// a partial UI object there would blank every key it did not name.
+export function u(key, vars) {
+  const p = pack();
+  let v = (p && p.UI && p.UI[key] !== undefined) ? p.UI[key] : UI[key];
+  if (vars && typeof v === 'string') {
+    for (const [k, val] of Object.entries(vars)) v = v.replaceAll(`{${k}}`, val);
+  }
+  return v;
+}
+
 // Best word overlap over keys and the topic's own question, keys counting
 // double. Under two points it returns null and he shrugs — a low bar here
 // would have him confidently answering the wrong question, which is exactly
 // the failure the whole workshop is against.
+//
+// It matches in the CURRENT language: a pack brings its own KEYS and its own
+// questions, so somebody typing Finnish at a Finnish counter is understood by
+// the Finnish table, not by an English one wearing a translation.
 export function find(text) {
+  const p = pack();
   const said = words(text || '');
   if (!said.length) return null;
   let best = null, score = 0;
   for (const t of TOPICS) {
-    const keys = new Set(t.keys);
-    const own = new Set(words(t.q));
+    const local = p && p.T && p.T[t.id];
+    const keys = new Set((p && p.KEYS && p.KEYS[t.id]) || t.keys);
+    const own = new Set(words((local && local.q) || t.q));
     let s = 0;
     for (const w of new Set(said)) s += keys.has(w) ? 2 : (own.has(w) ? 1 : 0);
     if (s > score) { score = s; best = t; }
@@ -760,18 +878,24 @@ const RETURNING = [
   ['AGAIN.', 'GO ON THEN.'],
   ['YOU KNOW WHERE I AM.', 'ASK.'],
 ];
+const NOTED = ['I GOT YOUR NOTE.', 'I READ ALL OF THEM. ASK ME SOMETHING.'];
+// `{x}` is the last thing you asked about, handed back. The same
+// interpolation mark hub/i18n.js uses, so the two tables read the same way.
+const REMEMBERED = ['LAST TIME YOU ASKED ABOUT {x}', 'ASK ME SOMETHING ELSE.'];
 
 export function greeting({ visits = 1, hour = 12, last = null, noted = false } = {}) {
   // A note outranks everything: somebody took the trouble to write, and the
   // least the counter can do is show it registered.
-  if (noted) return ['I GOT YOUR NOTE.', 'I READ ALL OF THEM. ASK ME SOMETHING.'];
+  if (noted) return L('NOTED').slice();
   const t = last && byId.get(last);
   if (visits > 1 && t) {
-    return ['LAST TIME YOU ASKED ABOUT ' + tail(t.q), 'ASK ME SOMETHING ELSE.'];
+    const x = tail(say(t).q);
+    return L('REMEMBERED').map(l => l.replaceAll('{x}', x));
   }
-  if (hour < 5) return LATE.slice();
-  if (visits <= 1) return GREETING.slice();
-  return RETURNING[(visits - 2) % RETURNING.length].slice();
+  if (hour < 5) return L('LATE').slice();
+  if (visits <= 1) return L('GREETING').slice();
+  const r = L('RETURNING');
+  return r[(visits - 2) % r.length].slice();
 }
 
 // ── what the cabinets left on your machine ───────────────────────────────
@@ -795,9 +919,14 @@ export const SEEN_SOMETHING = ['SO FAR:'];
 
 // "WHY THE MASK?" → "THE MASK." — the player's own words handed back, minus
 // the question. Cheap, and it reads like memory rather than telemetry.
+// Word-splitting is a space-separated-language trick, so Japanese (which does
+// not space its words) hands the question back whole, minus its mark. Two
+// characters of a Japanese sentence is not a subject, it is a fragment.
 function tail(q) {
-  const words = q.replace(/[?.]$/, '').split(' ');
-  return words.slice(Math.max(0, words.length - 2)).join(' ') + '.';
+  const clean = String(q).replace(/[?.。？]$/, '');
+  if (!/\s/.test(clean)) return clean + '。';
+  const w = clean.split(/\s+/);
+  return w.slice(Math.max(0, w.length - 2)).join(' ') + '.';
 }
 
 // The topics on the menu at any moment: everything unlocked and in season,

@@ -667,6 +667,67 @@ function serve() {
   await page.keyboard.press('Escape');
   ok('board still clean after the counter', page.__errs.length === 0, page.__errs.join(' | '));
 
+  // ── three languages ────────────────────────────────────────────────────
+  // The arcade is fi/en/ja, so the counter is. English is the source and a
+  // pack overrides it by topic id; the two things worth guarding are that
+  // NOTHING is left untranslated (a pack that half-lands reads worse than no
+  // pack) and that a missing key falls back to English rather than blanking.
+  const langs = await page.evaluate(async () => {
+    const d = await import('/toko/js/dialogue.js');
+    const out = {};
+    for (const code of ['fi', 'ja']) {
+      d.setLang(code);
+      out[code] = {
+        sameQ: d.TOPICS.filter(t => d.say(t).q === t.q).map(t => t.id),
+        sameA: d.TOPICS.filter(t => d.say(t).a === t.a).map(t => t.id),
+        greet: d.greeting({ visits: 1, hour: 13 }).join(' '),
+        hint: d.u('HINT'),
+        // his question's options come from the pack too
+        opt: (() => {
+          const me = d.TOPICS.find(t => t.id === 'me');
+          return d.sayOption(me, 0).q !== me.asks[0].q;
+        })(),
+        // a key the pack does not define must fall back, not blank
+        fallback: d.L('SCOREBOARD_MISSING_ON_PURPOSE') === undefined,
+      };
+    }
+    d.setLang('en');
+    out.en = { greet: d.greeting({ visits: 1, hour: 13 }).join(' '), hint: d.u('HINT') };
+    return out;
+  });
+  for (const code of ['fi', 'ja']) {
+    ok(`${code}: every topic is translated`,
+      langs[code].sameQ.length === 0 && langs[code].sameA.length === 0,
+      'q: ' + langs[code].sameQ.join(',') + ' a: ' + langs[code].sameA.join(','));
+    ok(`${code}: the greeting and the chrome follow`,
+      langs[code].greet !== langs.en.greet && langs[code].hint !== langs.en.hint);
+    ok(`${code}: his own question's options follow`, langs[code].opt);
+  }
+  // and the switch actually reaches the live counter, driven the way the hub
+  // drives it — by putting the code on <html lang>
+  // Compared before/against/after rather than matched against particular
+  // Finnish words: by this point in the run most `once` topics are spent, so
+  // WHICH topics are on the menu is not knowable from here — only that they
+  // are no longer the same words.
+  const menuText = () => page.evaluate(() =>
+    [...document.querySelectorAll('.toko-chat .tc-menu button')].map(b => b.textContent).join('|'));
+  // the goodbye test just closed it, and a closed counter deliberately does
+  // NOT repaint on a language change — there is nothing on screen to repaint
+  await page.evaluate(() => globalThis.__tokoChat.open());
+  await page.waitForTimeout(250);
+  const beforeLang = await menuText();
+  await page.evaluate(() => { document.documentElement.lang = 'fi'; });
+  await page.waitForTimeout(250);
+  const afterLang = await menuText();
+  ok('changing <html lang> repaints the menu',
+    afterLang !== beforeLang && afterLang.length > 0, afterLang.slice(0, 60));
+  ok('and the transcript is NOT rewritten under you',
+    await page.evaluate(() =>
+      /WHO ARE YOU\?|SO YOU ARE A HYPOCRITE/.test(
+        document.querySelector('.toko-chat .tc-log').textContent)));
+  await page.evaluate(() => { document.documentElement.lang = 'en'; });
+  await page.waitForTimeout(200);
+
   // ── the deep link ──────────────────────────────────────────────────────
   // `#toko` opens the counter, so a link can point at the conversation and
   // not just the page it sits on.

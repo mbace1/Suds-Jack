@@ -499,6 +499,13 @@ the panel from a callback hung off the end of the typing, so **skipping** the
 typing left the counter open forever (`after` now fires from `finishTyping`); and
 stacked at the 44px tap floor the menu made a ~600px panel that pushed the
 cabinets below the fold (two columns where there is room).
+**Trilingual** like the arcade: English is the source inline in `dialogue.js`,
+`dialogue.fi.js`/`dialogue.ja.js` are pure string packs overriding by topic id
+with per-key English fallback, and the counter follows `__hub.lang()` → `<html
+lang>` → en (watched with a `MutationObserver`, since hub.js re-renders rather
+than firing an event). It never re-types the transcript. Both packs are drafts;
+the **parser is en/fi only** — its tokeniser splits on spaces, so the Japanese
+KEYS table is deliberately empty and the menu is the path there.
 **It runs both ways.** A `>` **parser** line takes a typed sentence and matches it
 by word overlap against a keyword table (`find()` — still no model, and a miss
 *says so* rather than answering the wrong question; typing reaches `locked` topics,
@@ -534,7 +541,7 @@ is the animated lockup for the arcade hub — `stop()` it wherever the page
 re-renders or the loop leaks against a detached canvas. `surface.js` is the
 DPR-aware smooth canvas (the mark is curves, so antialiasing stays ON).
 `toko/index.html` is the **brand board**, built out of the shipping modules.
-`toko/test/brand.cjs` is the gate (Playwright, 126 checks): geometry invariants
+`toko/test/brand.cjs` is the gate (Playwright, 134 checks): geometry invariants
 (slot width, stem/crown merge, mouth-clears-eyes, symmetry), **every rendered
 pixel checked against the two-colour system**, SVG well-formedness + that it
 emits exactly the canvas's arcs at the shipping stroke weight, the sting
