@@ -640,6 +640,11 @@ export const GAME_NOTES = {
   tinyhawk: ['SMALL BIRD. LONG DROP.'],
   tiny2d: ['ONE BUTTON. THAT IS THE WHOLE INSTRUMENT.'],
   eyetest: ['NOT REALLY A GAME. LOOK ANYWAY.'],
+  radiofree: ['A PIRATE FEED, AND I READ IT.',
+    'EVERY BULLETIN IS INVENTED. THAT IS THE POINT —',
+    'DECODE PULLS ONE APART AND SHOWS YOU WHAT',
+    'THE WORDING WAS DOING TO YOU.',
+    'THEN GO READ A REAL ONE THE SAME WAY.'],
 };
 
 export const ABOUT_UNKNOWN = ['I DO NOT HAVE A LINE ABOUT THAT ONE YET.'];
@@ -699,12 +704,27 @@ const KEYS = {
 for (const t of TOPICS) t.keys = KEYS[t.id] || [];
 
 // words that carry no signal, so matching on them would make every sentence
-// match every topic
-const STOP = new Set(['THE', 'A', 'AN', 'IS', 'ARE', 'WAS', 'DO', 'DOES', 'DID',
+// match every topic. Per language, because the English list does nothing for
+// a Finnish sentence: without ON/EI/JA/SE in it, two ordinary function words
+// were enough to score a match and hand back a confident wrong answer.
+const STOP_EN = ['THE', 'A', 'AN', 'IS', 'ARE', 'WAS', 'DO', 'DOES', 'DID',
   'I', 'ME', 'MY', 'IT', 'THAT', 'THIS', 'TO', 'OF', 'IN', 'ON', 'AND', 'OR',
-  'FOR', 'AM', 'BE', 'CAN', 'WILL', 'YOUR', 'HAVE', 'HAS', 'NOT', 'SO', 'AT']);
+  'FOR', 'AM', 'BE', 'CAN', 'WILL', 'YOUR', 'HAVE', 'HAS', 'NOT', 'SO', 'AT'];
+const STOP = new Set(STOP_EN);
+const stops = () => {
+  const p = pack();
+  return (p && p.STOP) ? new Set([...STOP_EN, ...p.STOP]) : STOP;
+};
 
-const words = s => (s.toUpperCase().match(/[A-Z']+/g) || []).filter(w => !STOP.has(w));
+// UNICODE, not [A-Z]. The tokeniser used to match /[A-Z']+/ against the
+// uppercased text, which does not contain Ä or Ö — so "TIEDÄ" tokenised to
+// ["TIED"] and "MITÄÄN" to ["MIT", "N"]. Every Finnish key with an umlaut in
+// it was unmatchable, and the fragments left behind collided with unrelated
+// topics: "en tiedä mitään" confidently reached HOW DO I KNOW IF IT IS ANY
+// GOOD. Letters are \p{L} wherever you are.
+const RUN = /[\p{L}\p{N}']+/gu;
+const words = (s, stop = stops()) =>
+  (String(s).toUpperCase().match(RUN) || []).filter(w => !stop.has(w));
 
 // The same filter for CABINET TITLES, which keep their digits ("Tiny 2D",
 // "20/20"). Without the stop list "SAY THE WHOLE THING" scored a hit on
@@ -712,7 +732,7 @@ const words = s => (s.toUpperCase().match(/[A-Z']+/g) || []).filter(w => !STOP.h
 // thing entirely — with total confidence, which is the one failure this
 // parser is not allowed to have.
 export const nameWords = s =>
-  (String(s).toUpperCase().match(/[A-Z0-9]+/g) || []).filter(w => !STOP.has(w));
+  (String(s).toUpperCase().match(RUN) || []).filter(w => !stops().has(w));
 
 // He hears the cry and answers it, whatever else is in the sentence.
 export const CRY = {
@@ -850,15 +870,46 @@ export function u(key, vars) {
 // It matches in the CURRENT language: a pack brings its own KEYS and its own
 // questions, so somebody typing Finnish at a Finnish counter is understood by
 // the Finnish table, not by an English one wearing a translation.
+// ── the parser, where words have no spaces ───────────────────────────────
+// Japanese does not space its words, so a whitespace tokeniser sees one long
+// run and matches nothing. The fix is not a better word list, it is a
+// different question: instead of asking "which of my keys are in your list of
+// words", ask "which of my keys APPEAR IN what you typed".
+//
+// Substring matching is a blunter instrument and it is scored as one: a hit
+// is worth its own LENGTH rather than a flat point, so 「ビルド」 beating 「本」
+// is not a coin toss — a longer agreement is a stronger one. The floor is
+// raised to match, because a single one-character key inside a long sentence
+// means almost nothing.
+function findBySubstring(text, p) {
+  const said = String(text).toUpperCase();
+  if (!said) return null;
+  let best = null, score = 0;
+  for (const t of TOPICS) {
+    const keys = (p.KEYS && p.KEYS[t.id]) || [];
+    const local = p.T && p.T[t.id];
+    let s = 0;
+    for (const k of keys) if (k && said.includes(k.toUpperCase())) s += k.length * 2;
+    // the question's own words count too, but only whole ones: a question is
+    // a sentence, and half of one appearing is not agreement
+    const q = String((local && local.q) || t.q).toUpperCase().replace(/[?？。]/g, '');
+    if (q && said.includes(q)) s += q.length * 2;
+    if (s > score) { score = s; best = t; }
+  }
+  return score >= 4 ? best : null;
+}
+
 export function find(text) {
   const p = pack();
-  const said = words(text || '');
+  if (p && p.substring) return findBySubstring(text || '', p);
+  const stop = stops();
+  const said = words(text || '', stop);
   if (!said.length) return null;
   let best = null, score = 0;
   for (const t of TOPICS) {
     const local = p && p.T && p.T[t.id];
     const keys = new Set((p && p.KEYS && p.KEYS[t.id]) || t.keys);
-    const own = new Set(words((local && local.q) || t.q));
+    const own = new Set(words((local && local.q) || t.q, stop));
     let s = 0;
     for (const w of new Set(said)) s += keys.has(w) ? 2 : (own.has(w) ? 1 : 0);
     if (s > score) { score = s; best = t; }

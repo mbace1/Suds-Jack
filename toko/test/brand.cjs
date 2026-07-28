@@ -703,6 +703,88 @@ function serve() {
       langs[code].greet !== langs.en.greet && langs[code].hint !== langs.en.hint);
     ok(`${code}: his own question's options follow`, langs[code].opt);
   }
+  // The parser has to actually work in the language it claims to. Two things
+  // went wrong here and both were silent:
+  //   · the tokeniser matched /[A-Z']+/, which has no Ä or Ö in it, so
+  //     "TIEDÄ" became "TIED" and every Finnish key with an umlaut was
+  //     unmatchable — while the fragments left behind collided with unrelated
+  //     topics and answered them confidently.
+  //   · a KEYS entry with a space in it can never match a whitespace
+  //     tokeniser, so it is dead weight that reads like coverage.
+  const fi = await page.evaluate(async () => {
+    const d = await import('/toko/js/dialogue.js');
+    const { FI } = await import('/toko/js/dialogue.fi.js');
+    d.setLang('fi');
+    const hit = q => (d.find(q) || {}).id || null;
+    const out = {
+      multiword: Object.entries(FI.KEYS)
+        .flatMap(([id, ws]) => ws.filter(w => /\s/.test(w)).map(w => id + ':' + w)),
+      umlaut: hit('käytätkö tekoälyä'),
+      mask: hit('miksi naamio'),
+      mantra: hit('mikä tekee hyvän pelin'),
+      // ordinary Finnish function words must NOT be enough to score a match
+      noise: hit('en tiedä mitään'),
+      noise2: hit('se on minun'),
+    };
+    d.setLang('en');
+    return out;
+  });
+  ok('fi: no key has a space in it', fi.multiword.length === 0, fi.multiword.join(', '));
+  ok('fi: umlauts survive the tokeniser', fi.umlaut === 'ai', String(fi.umlaut));
+  ok('fi: it reaches the right topic', fi.mask === 'mask' && fi.mantra === 'mantra',
+    `${fi.mask} / ${fi.mantra}`);
+  ok('fi: function words alone do not score a match',
+    fi.noise === null && fi.noise2 === null, `${fi.noise} / ${fi.noise2}`);
+
+  // Every cabinet he has a line for must have it in ALL THREE, or a Finnish
+  // player gets an English paragraph in the middle of a Finnish answer. A
+  // cabinet with NO line anywhere is fine — that falls back to its tagline
+  // by design — but a half-translated one is not.
+  const notes = await page.evaluate(async () => {
+    const d = await import('/toko/js/dialogue.js');
+    const seen = {};
+    for (const code of ['en', 'fi', 'ja']) { d.setLang(code); seen[code] = Object.keys(d.L('GAME_NOTES')); }
+    d.setLang('en');
+    return {
+      missing: seen.en.filter(id => !seen.fi.includes(id) || !seen.ja.includes(id)),
+      extra: [...seen.fi, ...seen.ja].filter(id => !seen.en.includes(id)),
+      count: seen.en.length,
+    };
+  });
+  ok('every cabinet line exists in all three languages',
+    notes.missing.length === 0, notes.missing.join(', '));
+  ok('and no pack invents a cabinet English does not have',
+    notes.extra.length === 0, notes.extra.join(', '));
+
+  // Japanese does not space its words, so the whitespace tokeniser sees one
+  // long run and matches nothing. That pack sets `substring: true` and the
+  // parser asks a different question — does this key APPEAR in what you
+  // typed. The risk flips with it: a blunt matcher will happily answer
+  // ANYTHING, so what is guarded here is that it still SAYS NO.
+  const ja = await page.evaluate(async () => {
+    const d = await import('/toko/js/dialogue.js');
+    d.setLang('ja');
+    const hit = q => (d.find(q) || {}).id || null;
+    const out = {
+      mask: hit('なぜ仮面をつけてるんだ'),
+      mantra: hit('良いゲームとは何だ'),
+      note: hit('言いたいことがある'),
+      steal: hit('コードをもらってもいいか'),
+      // unrelated Japanese, and a single character, must both come back empty
+      weather: hit('今日はいい天気だ'),
+      one: hit('あ'),
+      empty: hit(''),
+    };
+    d.setLang('en');
+    return out;
+  });
+  ok('ja: the parser reaches the right topic',
+    ja.mask === 'mask' && ja.mantra === 'mantra' && ja.note === 'note' && ja.steal === 'steal',
+    `${ja.mask} ${ja.mantra} ${ja.note} ${ja.steal}`);
+  ok('ja: and still says no to what it does not know',
+    ja.weather === null && ja.one === null && ja.empty === null,
+    `${ja.weather} / ${ja.one} / ${ja.empty}`);
+
   // and the switch actually reaches the live counter, driven the way the hub
   // drives it — by putting the code on <html lang>
   // Compared before/against/after rather than matched against particular

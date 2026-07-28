@@ -15,10 +15,15 @@
 // twenty. A line translated at English length wraps mid-word and the typing
 // animation stutters over the break.
 //
+// お前 throughout is deliberate and consistent: it is the blunt, familiar
+// second person, which is the closest Japanese gets to Toko's English. It is
+// also rough enough to be a choice somebody should sign off on.
+//
 // DRAFT: written by the machine and NOT checked by a native speaker. Treat
-// every line as a proposal. The ones most likely to be wrong are the jokes —
-// 「メフはウソをつく」 for "juice is a liar" is an English idiom wearing a
-// kimono, and a Japanese player may just find it odd.
+// every line as a proposal. The likeliest casualties are the jokes —
+// 「悪い動詞の上の演出は嘘つきだ」 for "juice on a bad verb is a liar" is an
+// English idiom wearing a kimono, and a Japanese player may just find it odd
+// rather than funny.
 
 export const JA = {
   GREETING: [
@@ -107,16 +112,70 @@ export const JA = {
     tinyhawk: ['小さい鳥。長い落下。'],
     tiny2d: ['ボタン一つ。それが全部の楽器だ。'],
     eyetest: ['ゲームとは言えない。それでも見ろ。'],
+    radiofree: ['海賊放送だ。俺が読み上げてる。',
+      'どの速報も作りものだ。それが狙いだ —',
+      'DECODEが一つ分解して、その言い回しが',
+      'お前に何をしていたかを見せる。',
+      '次は本物のニュースを同じ目で読め。'],
   },
 
-  // What the parser matches on. Japanese does not space its words, so the
-  // tokeniser in dialogue.js — which splits on [A-Z'] runs — will not find
-  // these in a Japanese sentence. That is a KNOWN LIMIT and it is written
-  // down rather than hidden: the menu is the path in Japanese, and the parser
-  // still answers Latin-script input (game names, GO MAKE YOUR OWN) because
-  // those are Latin wherever you are. Making it match kana properly needs a
-  // substring pass, not a word list, and that is its own job.
-  KEYS: {},
+  // `substring: true` switches the parser from "is this key one of your
+  // words" to "does this key APPEAR in what you typed", because Japanese does
+  // not space its words and a whitespace tokeniser sees one long run.
+  //
+  // That makes the keys a different kind of thing. They are STEMS, not words:
+  // 「作」 catches 作る・作った・作りたい, 「難し」 catches 難しい・難しかった.
+  // A hit scores its own length, so a long agreement beats a short one and a
+  // stray single character cannot carry a match on its own.
+  //
+  // Keep them SPECIFIC. 「game」-level generality in a substring matcher is how
+  // every sentence starts matching every topic; if a stem appears in ordinary
+  // speech, it does not belong here.
+  substring: true,
+  KEYS: {
+    who: ['誰', 'トーコ', 'ミドリ', '何者', '正体'],
+    mask: ['仮面', 'マスク', '素顔', '隠し', '匿名'],
+    name: ['ミドリ', '名前', '緑', '意味'],
+    clusters: ['他に誰', 'みんな', 'チーム', '仲間'],
+    ai: ['AI', 'エーアイ', '機械', '生成', 'ロボット'],
+    scroll: ['スクロール', '観客', 'フィード', 'コンテンツ'],
+    hypocrite: ['偽善', 'ずるい', 'ズル', '矛盾', 'インチキ'],
+    seam: ['継ぎ目', 'グリッチ', '裂け目', '磨'],
+    music: ['音楽', '聴い', '曲', 'レコード', 'フロイド'],
+    faraway: ['遠く', '眠', '疲れ', 'ぼんやり'],
+    late: ['夜', '遅く', '寝ろ', '時間'],
+    mantra: ['良いゲーム', '動詞', 'マントラ', '哲学', 'design', '設計'],
+    thirty: ['チュートリアル', '教え', '30秒', '最初の'],
+    feel: ['手触り', '操作', '感触', 'レスポンス', '入力'],
+    juice: ['演出', 'ジュース', 'エフェクト', '派手'],
+    hard: ['難し', '厳し', '理不尽', '簡単'],
+    loop: ['もう一回', 'リプレイ', '中毒', '繰り返'],
+    creed: ['全部言', '信条', 'マニフェスト'],
+    retro: ['レトロ', '郷愁', 'ピクセル', 'アタリ', '2600'],
+    anarchy: ['アナーキ', '政治', 'パンク', '無政府'],
+    browser: ['ブラウザ', 'ウェブ', 'STEAM', 'インストール', 'ストア'],
+    start: ['始め', '入門', '学び'],
+    bad: ['下手', 'ダメ', '失敗', '怖い'],
+    tools: ['道具', 'ツール', 'エンジン', 'UNITY', 'GODOT', 'エディタ'],
+    build: ['ビルド', 'コンパイル', 'NPM', 'WEBPACK'],
+    finish: ['終わら', '完成', '詰ま', 'スコープ'],
+    test: ['テスト', 'プレイテスト', '試し'],
+    play: ['遊べ', '遊ぶ', 'おすすめ', 'どれが'],
+    floor: ['何がある', 'ここには', '一覧', 'アーケード'],
+    quiet: ['静か', '自然', 'ゼン', '外'],
+    dead: ['死ん', 'アーカイブ', '古い', '放置'],
+    about: ['について', '教えて', '筐体'],
+    me: ['逆に', '聞け', 'お前が'],
+    note: ['言いたい', '伝え', 'フィードバック', 'バグ', 'アイデア', '感想'],
+    mine: ['伝えた', '書いた', '送った', '履歴'],
+    changed: ['変わ', '直っ', '直し', '意味はあ'],
+    seen: ['見た', 'スコア', '記録', '成績'],
+    cost: ['いくら', '値段', '金', '無料', '広告'],
+    steal: ['もらって', 'コピー', 'ライセンス', 'ソース', 'コード', '盗'],
+    gift: ['ステッカー', 'くれ', 'ちょうだい', 'ダウンロード'],
+    back: ['奥', 'もっと', '秘密'],
+    bye: ['さよなら', 'じゃあな', '帰る', 'もういい'],
+  },
 
   UI: {
     CUE: '\u30c8\u30fc\u30b3\u306f\u30ab\u30a6\u30f3\u30bf\u30fc\u306b\u3044\u308b',
