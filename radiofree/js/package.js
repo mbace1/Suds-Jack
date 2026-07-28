@@ -23,8 +23,8 @@
 // footage — which is what an idle post should be showing anyway — costs an
 // <img> that was already there.
 
-import { Photo } from './photo.js?v=14';
-import { Anchor } from './anchor.js?v=14';
+import { Photo } from './photo.js?v=24';
+import { Anchor } from './anchor.js?v=24';
 
 // The beat. Footage leads because the story is about somewhere; the studio
 // gets the longest single hold because that is where the words are.
@@ -87,6 +87,9 @@ export class Package {
     if (this.anchor) return this.anchor;
     this.anchor = new Anchor(this.layers.anchor, this.story, this.sector, this.seed);
     this.anchor.decoded = this._decoded;
+    // it is created mid-package, so it has to be told the post is on air —
+    // the anchor only reads aloud while it is live
+    if (this.live) this.anchor.goLive();
     this.anchor.paint();
     return this.anchor;
   }

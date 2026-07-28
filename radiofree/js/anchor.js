@@ -18,8 +18,8 @@
 import { drawHead, HEAD } from '../../toko/js/face.js';
 import { TOKO } from '../../toko/js/palette.js';
 import { glance, drift, blink } from '../../toko/js/util.js';
-import { PAL, SECTOR_COLOR } from './palette.js?v=14';
-import { shade, mix } from './screen.js?v=14';
+import { PAL, SECTOR_COLOR } from './palette.js?v=24';
+import { shade, mix } from './screen.js?v=24';
 
 // The canvas is sized to the POST, not to a fixed 9:16. A phone post is
 // taller than 9:16 and `object-fit: cover` crops the sides off a fixed frame —
@@ -63,6 +63,7 @@ export class Anchor {
     this.t = seed * 1.37;        // every anchor shot breathes out of phase
     this.mouth = 0;
     this.mouthSmooth = 0;
+    this.extAt = -99;   // last time a real reader amplitude arrived
     this.accent = SECTOR_COLOR[story && story.sector] || PAL.GREEN;
 
     host.innerHTML = '';
@@ -116,11 +117,36 @@ export class Anchor {
   // Toko's mouth is a stroked arc, so "talking" is its radius breathing — the
   // amplitude is smoothed because a raw per-character step chatters like a
   // puppet at 60fps.
+  //
+  // BUT THE TYPEWRITER IS OFF on this build — the copy is set, not typed
+  // (owner's call), so `reader.finish()` runs immediately and `update()` only
+  // ever returns a decaying zero. main.js says so in a comment and it is
+  // right: with nothing else, the face sits dead. Text arriving instantly does
+  // not mean Toko stopped reading it aloud, so when no external amplitude has
+  // arrived recently he drives his own mouth off `speech()` below. If the
+  // typewriter ever comes back, the real per-character value wins on arrival.
   update(dt, mouth = 0) {
     this.t += dt;
     this.mouth = mouth;
+    if (mouth > 0.001) this.extAt = this.t;
+    const external = this.t - this.extAt < 0.6;
+    const target = external ? mouth : (this.live ? this.speech(this.t) : 0);
     const k = Math.min(1, dt * 14);
-    this.mouthSmooth += (mouth - this.mouthSmooth) * k;
+    this.mouthSmooth += (target - this.mouthSmooth) * k;
+  }
+
+  // A read-aloud envelope: syllables inside phrases, and a breath between
+  // them. A plain sine at one rate reads as chewing — the mouth has to stop
+  // sometimes, and the openings have to be uneven, or it is a puppet.
+  speech(t) {
+    const PHRASE = 3.75;
+    const u = (t % PHRASE) / PHRASE;
+    if (u > 0.86) return 0;                     // the breath between phrases
+    const SYL = 5.6;                            // syllables per second
+    const n = Math.floor(t * SYL);
+    const f = t * SYL - n;
+    const open = Math.sin(f * Math.PI);
+    return open * open * (0.45 + rnd(n) * 0.55);
   }
 
   draw() { this.paint(); }

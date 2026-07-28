@@ -1,13 +1,13 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=14';
-import { Post, Reader } from './codec.js?v=14';
-import { Package } from './package.js?v=14';
-import { SECTORS, STORIES, storyCopy, parseLine } from './stories.js?v=14';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=14';
-import * as audio from './audio.js?v=14';
-import { PixelScreen } from './screen.js?v=14';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=14';
+import { PAL, SECTOR_COLOR } from './palette.js?v=24';
+import { Post, Reader } from './codec.js?v=24';
+import { Package } from './package.js?v=24';
+import { SECTORS, STORIES, COPY, storyCopy, parseLine, loadWire, WIRE_INFO } from './stories.js?v=24';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=24';
+import * as audio from './audio.js?v=24';
+import { PixelScreen } from './screen.js?v=24';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=24';
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
@@ -120,13 +120,17 @@ $('sound').onclick = () => {
   if (soundOn) audio.blip(1);
 };
 
-$('tuneIn').onclick = () => {
+$('tuneIn').onclick = async () => {
   audio.init();
   audio.setMuted(!soundOn);
   audio.ring();
   gate.classList.add('gone');
   app.hidden = false;
   setTimeout(() => { audio.connect(); audio.carrierStart(); }, 780);
+  // The wire is fetched now, so tuning in is genuinely tuning in. loadWire()
+  // always resolves — with the day's bulletins or with the off-air post — so
+  // there is no branch here where the feed never appears.
+  await loadWire();
   boot();
 };
 
@@ -135,7 +139,16 @@ function boot() {
   paintSound();
   paintMastLang();
   $('lang').onclick = () => useLang(nextLang());
-  reader = new Reader(n => { if (n % 2 === 0) audio.blip(n); });
+  // TYPEWRITER OFF. The copy is set, not typed, and the per-character blips
+  // are silenced with it — owner's call, the bulletins read better as text
+  // than as an effect. The carrier hiss and the decode sting stay.
+  //
+  // Worth knowing before turning it back on: the Reader's per-character
+  // amplitude is what drove Toko's lip-sync. Nothing depends on it today
+  // because the anchor is not in frame — the post is full-bleed footage — but
+  // if Toko returns in a scene, the mouth needs that value coming again or the
+  // face sits dead.
+  reader = new Reader(() => {});
   buildFeed();
   watchScroll();
   bindControls();
@@ -337,8 +350,8 @@ function setActive(i, first = false) {
 
   const lines = p.copy.lines.map(parseLine);
   reader.play(p.els.bulletin, lines, p.decoded);
-  if (p.read) reader.finish();
-  else { p.read = true; audio.carrierDuck(true); }
+  reader.finish();                     // set, not typed
+  p.read = true;
   if (!first) audio.page();
 }
 
@@ -480,9 +493,14 @@ window.__rfh = {
     toggleDecode: () => toggleDecode(active),
     finishRead: () => reader.finish(),
     stories: () => posts.filter(p => !p.signoff).map(p => p.story.id),
-    // codec posts hold a shot OBJECT, packages hold a shot NAME — the gate
-    // reads this to prove the program frame really is cutting, so it has to
-    // answer for both kinds without the caller knowing which it asked
+    // Anything inspecting the wire comes through here. stories.js holds it in
+    // live bindings filled once by loadWire(), so a second import() of that
+    // module gets a fresh and EMPTY copy — that crashed the gate once.
+    wire: () => ({ ...WIRE_INFO }),
+    wireData: () => ({ sectors: SECTORS, stories: STORIES, copy: COPY }),
+    // codec posts hold a shot OBJECT, packages hold a shot NAME — a gate reads
+    // this to prove the program frame really is cutting, so it has to answer
+    // for both kinds without the caller knowing which it asked
     shot: () => {
       const p = posts[active];
       if (!p || p.signoff) return null;
@@ -494,6 +512,14 @@ window.__rfh = {
     beat: () => {
       const p = posts[active];
       return p && !p.signoff && p.post.beat !== undefined ? p.post.beat : null;
+    },
+    // the anchor's mouth. A gate has to be able to prove the face is not dead,
+    // and it cannot do that off the pixels — the blink and the sway move that
+    // band too.
+    mouth: () => {
+      const p = posts[active];
+      const a = p && p.post && p.post.anchor;
+      return a ? a.mouthSmooth : null;
     },
     cutTo: shot => {
       const p = posts[active];

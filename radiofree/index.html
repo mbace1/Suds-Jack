@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#04070a">
-<link rel="manifest" href="manifest.webmanifest?v=14">
+<link rel="manifest" href="manifest.webmanifest?v=24">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="description" content="Radio Free Helsinki — a fictional pirate news broadcast. Toko reads the day's wire from a codec screen; DECODE shows you what the wording was doing.">
@@ -258,7 +258,6 @@
     .post-media { height: 44vh; }
     .head { font-size: 16px; }
   }
-
   /* ── the footage, as pictures (Grok's frames, used as is) ──────── */
   /* The picture IS the post now: full bleed, with the copy as a lower
      third over it. Text sits on a scrim rather than in a column below,
@@ -278,9 +277,46 @@
     image-rendering: pixelated;
     animation: kenburns 26s ease-in-out infinite alternate;
   }
+  /* a drawn plate is already 144x276 and already moving — no cover crop, no
+     Ken Burns. Stretching it to the post is the whole point of pixel art. */
+  .photo.drawn { object-fit: fill; animation: none; }
+
   @keyframes kenburns {
-    from { transform: scale(1.00); }
-    to   { transform: scale(1.09); }
+    /* never sits at 1.00: the frames carry their own camera HUD along the top
+       edge, and at no zoom the full height shows, so that strip lands under
+       the masthead. cover crops width here, not height, so object-position
+       cannot hide it — a permanent slight push can. The translate makes it
+       drift as well as push, so the move reads as a camera rather than a zoom. */
+    from { transform: scale(1.07) translate(-1.6%, 0.9%); }
+    to   { transform: scale(1.17) translate(1.6%, -1.3%); }
+  }
+  /* CRT flicker: on the grade, not the image — .photo's filter belongs to
+     DECODE and an animation on it would win and kill the amber grade */
+  .photo-grade { animation: crtflick 6.5s steps(1) infinite; }
+  @keyframes crtflick {
+    0%, 95%, 100% { opacity: 1; }
+    96% { opacity: .82; }
+    98% { opacity: .93; }
+  }
+  /* the signal tears now and then, briefly */
+  .photo-wrap { animation: tearx 13s steps(1) infinite; }
+  @keyframes tearx {
+    0%, 94%, 100% { transform: translateX(0); }
+    95% { transform: translateX(-3px); }
+    96% { transform: translateX(2px); }
+  }
+  /* moving grain — a still photograph in a feed still reads as a still */
+  .photo-wrap::after {
+    content: ''; position: absolute; inset: -2px; pointer-events: none; opacity: .065;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(255,255,255,.55) 0 1px, transparent 1px 2px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.4) 0 1px, transparent 1px 3px);
+    animation: grain .85s steps(3) infinite;
+  }
+  @keyframes grain {
+    0%   { transform: translate(0, 0); }
+    33%  { transform: translate(-1px, 1px); }
+    66%  { transform: translate(1px, -1px); }
   }
   /* phosphor grade + CRT lines, so a photograph still arrives through the
      receiver rather than sitting on the page like a stock image */
@@ -307,8 +343,9 @@
     animation-duration: 2.4s;
   }
   @media (prefers-reduced-motion: reduce) {
-    .photo, .photo-sweep { animation: none; }
+    .photo, .photo-sweep, .photo-grade, .photo-wrap, .photo-wrap::after { animation: none; }
   }
+
   /* the studio shot is a live canvas, so its motion is drawn, not CSS —
      ken-burns on top of a redrawing frame is two pushes at once. Its decode
      is drawn too (amber furniture + a band tear), so the sepia grade the
@@ -339,7 +376,7 @@
   /* ── the lower third ───────────────────────────────────────────── */
   .post-caption {
     position: absolute; left: 0; right: 0; bottom: 0;
-    padding: 0 14px calc(14px + env(safe-area-inset-bottom));
+    padding: 0 14px calc(13% + env(safe-area-inset-bottom));
     background: linear-gradient(to top,
       rgba(3,10,8,.94) 0%, rgba(3,10,8,.86) 45%, rgba(3,10,8,0) 100%);
     padding-top: 46px;
@@ -372,8 +409,8 @@
   .rail { z-index: 3; bottom: auto; top: 58%; }
   .post-caption { z-index: 2; }
   /* the signature badge lives bottom-left, so keep the copy out of its corner */
-  .post-caption .bulletin, .post-caption .head { padding-left: 46px; }
-  .post-caption .tag { padding-left: 46px; }
+  /* the copy used to be indented past the signature badge in the corner;
+     raising it off the bottom clears the badge on its own */
   .swipe-hint { display: none; }
 </style>
 </head>
@@ -407,12 +444,12 @@
   <main id="feed" tabindex="-1"></main>
 </div>
 
-<script type="module" src="js/main.js?v=14"></script>
-<script type="module" src="../hub/shell.js?v=14"></script>
+<script type="module" src="js/main.js?v=24"></script>
+<script type="module" src="../hub/shell.js?v=13"></script>
 <script>
   if ('serviceWorker' in navigator &&
       (location.protocol === 'https:' || new URLSearchParams(location.search).has('sw'))) {
-    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=14').catch(() => {}));
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=24').catch(() => {}));
   }
 </script>
 

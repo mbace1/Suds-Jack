@@ -1,7 +1,7 @@
 // Radio Free Helsinki — offline.
-const VERSION = 'v14';
+const VERSION = 'v24';
 const CACHE = `rfh-${VERSION}`;
-const V = `?v=14`;
+const V = `?v=24`;
 const SHELL = [
   '../toko/js/signature.js?v=2',
   ...['surface', 'palette', 'face', 'util', 'glitch'].map(m => `../toko/js/${m}.js`),
@@ -11,9 +11,10 @@ const SHELL = [
   './img/cathedral.jpg',
   './img/katu.jpg',
   './img/mannerheim.jpg',
+  './wire.json',
   './icon-192.png',
   './icon-512.png',
-  ...['main', 'codec', 'package', 'anchor', 'photo', 'toko', 'visuals', 'stories', 'i18n', 'screen', 'audio', 'palette']
+  ...['main', 'codec', 'package', 'anchor', 'photo', 'plates', 'wire', 'toko', 'visuals', 'stories', 'i18n', 'screen', 'audio', 'palette']
     .map(m => `./js/${m}.js${V}`),
 ];
 
@@ -32,6 +33,22 @@ self.addEventListener('activate', (e) => {
   })());
 });
 
+// The wire is NETWORK-FIRST while the shell stays cache-first. Cache-first for
+// content would pin a listener to whatever bulletins they downloaded first —
+// the app would keep updating on token bumps and the news never would.
+const isWire = (u) => u.pathname.endsWith('/wire.json');
+async function wireFirst(req) {
+  try {
+    const res = await fetch(req, { cache: 'no-store' });
+    if (res && res.ok) { (await caches.open(CACHE)).put('./wire.json', res.clone()); return res; }
+    throw new Error('HTTP ' + (res && res.status));
+  } catch {
+    const c = await caches.match('./wire.json') || await caches.match(req, { ignoreSearch: true });
+    if (c) return c;
+    return new Response('{}', { status: 503, headers: { 'Content-Type': 'application/json' } });
+  }
+}
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
@@ -39,6 +56,8 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== location.origin) return;
 
   e.respondWith((async () => {
+    if (isWire(url)) return wireFirst(req);
+
     const cached = await caches.match(req, { ignoreSearch: false });
     if (cached) return cached;
     try {

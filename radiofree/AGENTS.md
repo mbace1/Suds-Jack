@@ -56,17 +56,17 @@ note it in the commit and here.
 
 1. **Trilingual always** — fi / en / ja for every bulletin field and UI string. **No `{...EN}` spreads** that leave FI/JA as English with a different button label. Non-empty English under FI/JA is a silent rule-#1 break.
 2. **Toko is the brand mark, and the mask IS the face.** Corrected 2026-07-28
-   by the owner — the "surgical mask / male Japanese gel" wording below was a
-   local invention of this folder and was drawn wrong twice. The real
-   definition is `toko/BRAND.md` and the measured geometry table `GEO` in
-   `toko/js/face.js`: a rounded head with round-capped arcs reversed out of it,
-   **magenta `#f0027f` ground, paper-white ink, two colours and nothing else**.
-   The eye is a semicircle crown plus two straight parallel legs, closed at
-   rest (that closed arch is the logo) and gaining a pupil line only when he is
-   looking at you. **Import the geometry, never copy it** — `BRAND.md` records
-   four wrong answers already paid for on the eye alone. The news anchor
-   (`js/anchor.js`) does this; the teal gel in `js/toko.js` is the older codec
-   portrait and is not the brand.
+   by the owner — the "surgical mask / male Japanese gel" wording this rule used
+   to carry was a local invention of this folder, and two drawings made from it
+   were rejected. The real definition is `toko/BRAND.md` and the measured
+   geometry table `GEO` in `toko/js/face.js`: a rounded head with round-capped
+   arcs reversed out of it, **magenta `#f0027f` ground, paper-white ink, two
+   colours and nothing else**. The eye is a semicircle crown plus two straight
+   parallel legs, closed at rest (that closed arch is the logo) and gaining a
+   pupil line only when he is looking at you. **Import the geometry, never copy
+   it** — `BRAND.md` records four wrong answers already paid for on the eye
+   alone. The news anchor (`js/anchor.js`) does this; the teal gel in
+   `js/toko.js` is the older codec portrait and is not the brand.
 3. **Face shots vs B-roll** — faces only on face shots. **B-roll: no faces, portraits, or character heads.**
 4. ~~**No image assets** — every pixel is drawn in code.~~ **DISMISSED
    2026-07-28 by the owner.** Footage is now photographic — see *Submitting
@@ -81,6 +81,41 @@ note it in the commit and here.
 8. **Fiction footer stays honest** — defence-band actors unnamed; prefer invented Helsinki entities over real geographies/industries when possible (flag edge cases for the human).
 9. **Do not wipe `stories.js` language blocks** — EN / FI / JA must stay complete and **distinct**.
 10. **Helsinki accuracy** — `mannerheim` = wide boulevard; `katu` = narrow street; station = Central Station clock tower; cathedral = Tuomiokirkko / Senate Square.
+
+---
+
+## Adding a bulletin — it is a JSON edit now
+
+The wire lives in **`wire.json`**, fetched at boot. Adding a bulletin is a
+roster entry plus a copy block in each of `copy.en` / `copy.fi` / `copy.ja`,
+then:
+
+```
+node radiofree/tools/validate-wire.mjs      # exit 0 = safe to publish
+```
+
+**No build, no deploy, no cache-token bump.** The app picks it up on the next
+load, because `wire.json` is served network-first while the shell stays
+cache-first (`sw.js`). Making the wire cache-first to save a request would pin
+a listener to whatever bulletins they downloaded first and quietly undo the
+whole arrangement.
+
+`js/wire.js` is the validator — the same function the CLI runs and the app runs
+on the download, so a wire that passes in a terminal cannot be rejected in a
+browser for a reason you never saw. It fails on a missing language, a missing
+field, malformed `{{…|…}}`, a bulletin with no markup at all, and the silent
+one: a `visual` or `broll` this build cannot draw.
+
+If the wire 404s, times out or fails validation, the feed shows a baked-in
+**station identification** post in all three languages that still decodes —
+never an empty column. `__rfh.debug.wire()` reports `source` and the errors.
+
+**Never `import()` `stories.js` twice to read the wire.** It holds it in live
+bindings filled once by `loadWire()`, so a second import gets an EMPTY copy.
+Go through `__rfh.debug.wireData()`.
+
+`radiofree/STORIES.md` is the content bar: The Onion register, one new
+technique per bulletin, every plain reading specific.
 
 ---
 

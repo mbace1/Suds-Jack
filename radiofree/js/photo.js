@@ -1,3 +1,5 @@
+import { PixelScreen } from './screen.js?v=24';
+import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=24';
 // Radio Free Helsinki — the footage, as pictures.
 //
 // The plates used to be drawn in code at 144×276. These are Grok's finished
@@ -20,13 +22,29 @@
 // Three frames for ten footage keys. Each key goes to the nearest of them
 // rather than to a default, so no post shows a picture that contradicts its
 // dateline while the rest of the set is drawn.
+// Ten footage keys, six sources: three photographic frames and three drawn
+// plates. The three that have photographs use them; the seven that would
+// otherwise borrow one get a DRAWN plate in the nearest register instead, so
+// every key has its own picture rather than a duplicate of somebody else's.
+//
+// The trade is deliberate and visible: a drawn plate is thinner than a
+// photograph, but its motion is intrinsic — the tram actually closes on the
+// camera, the traffic actually flows — where a photograph gets a Ken Burns
+// push over a frozen moment. Richness against life, one each way.
 const FOR_KEY = {
-  cathedral: 'cathedral', katajanokka: 'cathedral', suomenlinna: 'cathedral',
-  katu: 'katu', esplanadi: 'katu', kamppi: 'katu', station: 'katu',
-  mannerheim: 'mannerheim', harbour: 'mannerheim', gulf: 'mannerheim',
+  cathedral:   { img: 'cathedral' },
+  katu:        { img: 'katu' },
+  mannerheim:  { img: 'mannerheim' },
+  esplanadi:   { draw: 'esplanadi' },
+  kamppi:      { draw: 'kamppi' },
+  station:     { draw: 'station' },
+  harbour:     { draw: 'harbour' },
+  gulf:        { draw: 'gulf' },
+  suomenlinna: { draw: 'suomenlinna' },
+  katajanokka: { draw: 'katajanokka' },
 };
-export const PHOTO_KEYS = [...new Set(Object.values(FOR_KEY))];
-export const photoFor = (broll) => FOR_KEY[broll] || 'cathedral';
+export const PHOTO_KEYS = Object.keys(FOR_KEY);
+export const sourceFor = (broll) => FOR_KEY[broll] || FOR_KEY.cathedral;
 
 export class Photo {
   constructor(host, story, sector, seed = 0) {
@@ -38,11 +56,25 @@ export class Photo {
     const wrap = document.createElement('div');
     wrap.className = 'photo-wrap';
 
-    const img = document.createElement('img');
-    img.className = 'photo';
-    img.alt = '';                       // decorative: the bulletin is the channel
-    img.decoding = 'async';
-    img.src = `img/${photoFor(story.broll)}.jpg`;
+    const src = sourceFor(story.broll);
+    this.plate = src.draw || null;
+    this.t = seed * 1.9;
+    this.d = 0;
+
+    let img;
+    if (this.plate) {
+      // drawn: a PixelScreen the loop repaints, scaled up by CSS
+      this.scr = new PixelScreen(null, PLATE_W, PLATE_H);
+      img = this.scr.canvas;
+      img.className = 'photo drawn';
+      drawPlate(this.plate, this.scr, this.t, 0);
+    } else {
+      img = document.createElement('img');
+      img.className = 'photo';
+      img.alt = '';                     // decorative: the bulletin is the channel
+      img.decoding = 'async';
+      img.src = `img/${src.img}.jpg`;
+    }
     // The pan is per post and always slightly different, so scrolling the feed
     // does not look like the same shot pushed in three times.
     img.style.animationDelay = `${-(seed * 3.7) % 24}s`;
@@ -63,9 +95,18 @@ export class Photo {
 
   // Nothing to integrate — the motion is CSS, which keeps running whether or
   // not the rAF loop is on this post, and costs no main-thread time.
-  update() { this.sync(); }
+  update(dt = 0.016) {
+    this.sync();
+    if (!this.plate) return;            // a photograph has nothing to repaint
+    this.t += dt;
+    this.d += ((this.decoded ? 1 : 0) - this.d) * Math.min(1, dt * 4.5);
+    drawPlate(this.plate, this.scr, this.t, this.d);
+  }
   draw() {}
-  renderStatic() { this.sync(); }
+  renderStatic() {
+    this.sync();
+    if (this.plate) drawPlate(this.plate, this.scr, this.t, this.decoded ? 1 : 0);
+  }
 
   sync() { this.wrap.classList.toggle('decoded', !!this.decoded); }
 

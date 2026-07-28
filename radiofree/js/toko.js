@@ -6,8 +6,8 @@
 // flapping on a timer. The mask never comes off. In DECODE the picture goes
 // amber and starts tearing: the anchor has stopped reading the official copy.
 
-import { PAL } from './palette.js?v=14';
-import { bayer, mix, shade } from './screen.js?v=14';
+import { PAL } from './palette.js?v=24';
+import { bayer, mix, shade } from './screen.js?v=24';
 
 const CX = 48, CY = 52, R = 26;
 

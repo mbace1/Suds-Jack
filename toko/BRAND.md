@@ -241,6 +241,48 @@ unlocks others, so the conversation grows as you dig.
 
 What it does beyond talking:
 
+- **You can type at him.** A `>` line under the menu takes a sentence and
+  matches it against a keyword table — still no language model, just word
+  overlap, and when it misses it *says so* rather than confidently answering
+  the wrong question. Typing reaches **locked** topics, which is the reward
+  for using your own words instead of the list. `GO MAKE YOUR OWN` is heard
+  wherever it appears in the sentence.
+- **You can leave him a note, and it leaves the browser.** The counter reuses
+  the **arcade's own transport** (`window.__hub.feedback`) rather than
+  shipping a second one — same endpoint, same local archive, same outbox
+  retried on the next visit. Two rules are load-bearing and both are in the
+  gate: **saying nothing records nothing**, and he never claims a delivery
+  that did not happen — an opaque no-cors POST is `sent-blind` and gets its
+  own line, a queued one says it is queued, and dropped on a page with no hub
+  he says it is written down on your machine and nothing more. He mentions a
+  note **once** on your next visit; twice would be a receipt.
+- **He talks about one cabinet at a time.** `askGames` is the his-question
+  mechanic with the **live catalogue** as the options, so a cabinet added
+  tomorrow is on the rack tonight. His line per game lives in `GAME_NOTES`;
+  one with nothing written yet falls back to the catalogue's own tagline
+  rather than going missing. Naming a game at the parser gets it directly.
+- **A note can be *about* something.** Standing in front of one cabinet is the
+  moment a player actually has something to say about it, so his line about a
+  game is followed by *tell him about this one* — and a note taken there files
+  under **that game's id**, the same `game` field every other feedback surface
+  in the workshop already uses, plus the topic he was on when you wrote it. A
+  note that says "this is broken" is worth nothing without that.
+- **You can read your own notes back.** Feedback you cannot see again is a
+  suggestion box with a lock on it, so `WHAT HAVE I TOLD YOU?` prints the
+  archive off your machine — the same one the hub keeps.
+- **And he tells you what changed.** `DID ANY OF IT MATTER?` reads out
+  `CHANGED` in `dialogue.js` — a **hand-kept** log of what actually got fixed.
+  Nothing generates it, because the whole point is that a person read the
+  notes and did something; add an entry when you ship the fix. It never says
+  *you asked for this*, because most entries nobody asked for and a counter
+  that flatters you is back to being a shop. It does check whether you left a
+  note about that same cabinet and say so **once** — that claim is true and
+  checkable, which is the only kind worth making.
+- **He reads what the cabinets left on your machine.** `HAVE YOU SEEN ME
+  PLAY?` reads the games' own `localStorage` hi-scores, shows them, and sends
+  them nowhere. He says as much while doing it — a workshop that claims not
+  to profile you should be able to explain exactly what it just looked at,
+  and the claim is only worth making because the code is that short.
 - **He picks a cabinet.** `WHAT SHOULD I PLAY?` reads the arcade's own
   catalogue (`window.__hub`) and answers with one game and a real link — the
   same one all day, which is the line he says while giving it. Dropped on a
@@ -269,15 +311,51 @@ What it does beyond talking:
 - **The back of the shop.** One topic has `needs:` rather than an unlock, so it
   appears only once you have actually dug. The reward for exhausting a tree
   should be more tree.
+- **The portrait tears** while he answers the topics that are *about* the seam
+  — the machine, the slop, the hypocrisy question. A glitch is an **event**
+  (§5), so it decays over its own window instead of sitting there as texture.
+- **`#toko` opens it**, so a link can point at the conversation rather than
+  the page it sits on. It only ever opens; the hash is never written back,
+  because the arcade's own address stays the plain one.
 - **A typing tick**, off until you ask for it, remembered after you do. The
   AudioContext is built lazily on that first gesture, because one created
   before a gesture just sits suspended and logs a warning for its trouble.
+
+**Three languages.** The arcade is fi/en/ja and so is the counter. **English is
+the source** — it lives inline in `dialogue.js` — and `dialogue.fi.js` /
+`dialogue.ja.js` are pure string packs that override it by topic id. A key a
+pack has not translated falls through to English rather than blanking, the same
+rule `hub/i18n.js` follows and for the same reason: a missing line should read
+wrong, not read empty.
+
+Toko's register does not survive a literal translation. English is clipped and
+shouted in caps; Finnish takes the caps but not the article-dropping, so the
+flatness comes from short declaratives and dropped pronouns. **Japanese has no
+caps at all** — it comes from plain form (だ・である, never です・ます), no
+softeners, and lines kept to about *twenty* characters because the glyphs are
+full-width and a line translated at English length wraps mid-word.
+
+The counter follows the PAGE: `__hub.lang()` on the arcade, then `<html lang>`,
+then English. It **does not re-type the transcript** — a conversation you
+already had happened in the language you had it in, and rewriting somebody's own
+past questions under them reads like a machine correcting them. The menu, the
+greeting and everything from here on follow; what is above the fold stays.
+
+> Both packs are **drafts written by the machine**, and the file headers say so.
+> Finnish wants a read-aloud pass on the mantra — those lines are meant to be
+> shoutable across a room. Japanese has not been checked by a native speaker at
+> all; the jokes are the likely casualties. The **parser is English-and-Finnish
+> only**: its tokeniser splits on spaces, which Japanese does not use, so the
+> Japanese `KEYS` table is deliberately empty and the menu is the path there.
+> That limit is written down in the pack rather than hidden.
 
 Rules it holds:
 
 - **1–9 picks, ENTER skips the typing, ESC leaves.** Keyboard-first, like the
   games under it. Nothing traps you and no animation has to be watched to the
-  end.
+  end. **A field owns its own keys**: the number shortcuts are dead while you
+  are writing, or typing "3 CRASHES ON LOAD" picks topic three and throws the
+  sentence away. Esc steps out of the field first, then out of the counter.
 - **It must not push the games below the fold.** It sits *above* the cabinets,
   so the topic menu runs two columns where there is room; stacked, seven topics
   at the 44px tap floor made a panel nearly 600px tall.

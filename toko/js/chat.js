@@ -24,12 +24,17 @@ import { Surface } from './surface.js';
 import { TOKO, VOICE } from './palette.js';
 import { drawHead, drawBadge, svgBadge } from './face.js';
 import { glance, drift } from './util.js';
-import { TOPICS, ASIDES, menu, greeting } from './dialogue.js';
+import { hit } from './glitch.js';
+import {
+  TOPICS, CRY, SCOREBOARD, L, u, say, sayOption, setLang, getLang,
+  menu, greeting, find, nameWords,
+} from './dialogue.js';
 
-// He keeps three things between visits and nothing else: how many times you
-// have come to the counter, the last thing you asked, and whether you wanted
-// the tick. No identity, no profile, no account — the whole workshop is built
-// on not having one, and all three fit in a sentence you could read aloud.
+// He keeps four things between visits and nothing else: how many times you
+// have come to the counter, the last thing you asked, whether you left him a
+// note he has not acknowledged yet, and whether you wanted the tick. No
+// identity, no profile, no account — the whole workshop is built on not
+// having one, and all four fit in a sentence you could read aloud.
 const KEY = 'tokoCounter';
 const store = {
   read() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } },
@@ -151,6 +156,47 @@ const CSS = `
 .toko-chat .tc-log .tc-gift:hover { background: var(--tc-hot); color: #000; }
 .toko-chat .tc-log .tc-gift img { width: 28px; height: 28px; display: block; }
 
+/* the note you write him, and the scoreboard he reads back */
+.toko-chat .tc-note { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+.toko-chat .tc-note textarea {
+  flex: 1 1 220px; min-height: 66px; resize: vertical;
+  font: inherit; color: var(--tc-ink); background: #00000060;
+  border: 2px solid var(--tc-line); padding: 8px 10px;
+}
+.toko-chat .tc-note textarea:focus { border-color: var(--tc-hot); outline: none; }
+.toko-chat .tc-note button {
+  font: inherit; letter-spacing: .14em; min-height: 44px; padding: 0 16px;
+  background: none; border: 2px solid var(--tc-hot); color: var(--tc-hot); cursor: pointer;
+}
+.toko-chat .tc-note button:hover { background: var(--tc-hot); color: #000; }
+.toko-chat .tc-note button[disabled] { opacity: .45; cursor: default; }
+.toko-chat .tc-log .tc-tell {
+  font: inherit; letter-spacing: .1em; margin-top: 8px;
+  min-height: 44px; padding: 0 12px; cursor: pointer;
+  background: none; border: 2px solid var(--tc-line); color: var(--tc-dim);
+}
+.toko-chat .tc-log .tc-tell:hover { border-color: var(--tc-hot); color: var(--tc-ink); }
+.toko-chat .tc-log .tc-score { color: var(--tc-dim); }
+.toko-chat .tc-log .tc-you-quiet { color: var(--tc-hot); }
+.toko-chat .tc-log .tc-score b { color: var(--tc-ink); font-weight: normal; }
+
+/* the parser: the reason this thing is shaped like Police Quest */
+.toko-chat .tc-say-row {
+  display: flex; align-items: stretch; gap: 0;
+  border-top: 2px solid var(--tc-line);
+}
+.toko-chat .tc-say-row .tc-prompt {
+  display: flex; align-items: center; padding: 0 4px 0 12px;
+  color: var(--tc-hot); font-weight: bold;
+}
+.toko-chat .tc-say-row input {
+  flex: 1; min-width: 0; min-height: 44px; padding: 0 10px;
+  font: inherit; letter-spacing: .06em; text-transform: uppercase;
+  background: none; border: 0; color: var(--tc-ink); outline: none;
+}
+.toko-chat .tc-say-row input::placeholder { color: var(--tc-dim); text-transform: none; letter-spacing: .04em; }
+.toko-chat .tc-say-row input:focus { background: #ffffff0a; }
+
 /* when HE is asking, the menu is your mouth, not his */
 .toko-chat .tc-menu.is-yours button { color: var(--tc-ink); }
 .toko-chat .tc-menu.is-yours button b { color: var(--tc-ink); }
@@ -230,7 +276,7 @@ const el = (tag, cls, txt) => {
 export function mountChat(anchor, opts = {}) {
   const {
     where = 'after',           // 'after' the anchor, or 'in' it
-    cue = 'TOKO IS AT THE COUNTER',
+    cue = null,                // null = the pack's own line
     // The tempo (see BRAND.md §7): Toko is never in a hurry. 34ms a character
     // with a long beat between lines, and a longer one before the first —
     // he has to come back from wherever he was before he answers you.
@@ -244,7 +290,7 @@ export function mountChat(anchor, opts = {}) {
     && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const root = el('div', 'toko-chat');
-  root.setAttribute('aria-label', `Talk to ${VOICE.artistRomaji}`);
+  root.setAttribute('aria-label', u('TALK_TO', { x: VOICE.artistRomaji }));
 
   // ── the closed bar ─────────────────────────────────────────────────────
   const bar = el('button', 'tc-bar');
@@ -252,9 +298,11 @@ export function mountChat(anchor, opts = {}) {
   bar.setAttribute('aria-expanded', 'false');
   const barArt = el('span');
   bar.appendChild(barArt);
-  const say = el('span', 'tc-say');
-  say.append(cue + ' — ', Object.assign(el('span', 'tc-cue'), { textContent: 'TALK' }));
-  bar.appendChild(say);
+  // NOT named `say`: that shadowed the imported say() this whole file now
+  // calls to get a topic's words, and shadowing it turns every topic into a
+  // "say is not a function".
+  const cueEl = el('span', 'tc-say');
+  bar.appendChild(cueEl);
   bar.appendChild(el('span', 'tc-blip'));
   root.appendChild(bar);
 
@@ -266,18 +314,45 @@ export function mountChat(anchor, opts = {}) {
   log.setAttribute('role', 'log');
   log.setAttribute('aria-live', 'polite');
   const list = el('div', 'tc-menu');
+
+  // The parser line. The menu is the safe path; this is the one that makes it
+  // a Sierra game — you can type at him, and he answers or admits he did not
+  // understand. Still no language model: word overlap against a lookup.
+  const sayRow = el('div', 'tc-say-row');
+  const parse = el('input');
+  parse.type = 'text';
+  parse.setAttribute('aria-label', u('SAY_TO', { x: VOICE.artistRomaji }));
+  parse.autocomplete = 'off';
+  sayRow.append(Object.assign(el('span', 'tc-prompt'), { textContent: '>' }), parse);
+
   const foot = el('div', 'tc-foot');
-  const hint = el('span', null, '1–9 PICK · ENTER SKIP · ESC LEAVE');
+  const hint = el('span');
   const sound = el('button', 'tc-snd');
   sound.type = 'button';
-  const leave = el('button', null, 'LEAVE');
+  const leave = el('button');
   leave.type = 'button';
   foot.append(hint, el('span', 'tc-spacer'), sound, leave);
-  body.append(log, list, foot);
+  body.append(log, list, sayRow, foot);
   panel.append(portrait, body);
   root.appendChild(panel);
 
   portrait.appendChild(el('span', 'tc-name', VOICE.artist));
+
+  // Every string that is not in the transcript, repainted on a language
+  // change. `cue` overrides the default when a page passes one, so a host
+  // that supplied its own line keeps it in every language.
+  function paintBar() {
+    cueEl.textContent = '';
+    cueEl.append((cue || u('CUE')) + ' \u2014 ',
+      Object.assign(el('span', 'tc-cue'), { textContent: u('TALK') }));
+    parse.placeholder = u('PARSE_PH');
+    parse.setAttribute('aria-label', u('SAY_TO', { x: VOICE.artistRomaji }));
+    hint.textContent = u('HINT');
+    leave.textContent = u('LEAVE');
+    root.setAttribute('aria-label', u('TALK_TO', { x: VOICE.artistRomaji }));
+    if (painted) paintSound();   // the tick block is wired further down
+  }
+  let painted = false;
 
   if (where === 'in') anchor.appendChild(root);
   else anchor.insertAdjacentElement('afterend', root);
@@ -289,6 +364,7 @@ export function mountChat(anchor, opts = {}) {
   portrait.insertBefore(head.canvas, portrait.firstChild);
 
   let speaking = false;
+  let tornUntil = 0;            // wall-clock end of the current tear
 
   const startBadge = () => badge.loop((t) => {
     badge.clear();
@@ -312,6 +388,20 @@ export function mountChat(anchor, opts = {}) {
         grin: 1 + (speaking ? Math.sin(t * 11) * 0.05 : drift(t) * 0.012),
       },
     });
+    // A glitch is an EVENT, not a state: it runs while he answers the topics
+    // that are ABOUT the seam, and it fades out over its own window rather
+    // than sitting on the portrait as a permanent texture.
+    if (!still && tornUntil) {
+      const left = (tornUntil - performance.now()) / 1400;
+      if (left <= 0) { tornUntil = 0; return; }
+      // DEVICE pixels, not CSS ones. The glitch kit works through
+      // getImageData, which ignores the context transform — handed this
+      // Surface's CSS size it tore a quarter of the portrait at half scale
+      // and read as a hairline down the middle.
+      hit(head.ctx, head.canvas.width, head.canvas.height,
+        Math.min(0.9, left * 0.8),
+        { seed: 7, t, hole: TOKO.INK, scan: false, scale: head.canvas.width / 44 });
+    }
   });
 
   // ── state ──────────────────────────────────────────────────────────────
@@ -323,10 +413,40 @@ export function mountChat(anchor, opts = {}) {
   let pending = null;           // HIS question: the menu is your answers now
   let asides = 0;               // unprompted lines spent this visit
   let idle = 0;                 // the timer that produces them
+  let lastTopic = null;         // what he was talking about — rides on a note
 
   // The hour where the reader is, not where a server is. It gates one topic
   // and one greeting, and it is the only thing here that looks at a clock.
   const hour = () => new Date().getHours();
+
+  // ── the language ───────────────────────────────────────────────────────
+  // The counter follows the PAGE. On the arcade that is `__hub.lang()`, which
+  // the language buttons in the header already drive; on a page that has no
+  // opinion it falls back to <html lang>, and then to English.
+  //
+  // What it does NOT do is re-type the transcript. A conversation you already
+  // had happened in the language you had it in, and rewriting somebody's own
+  // past questions under them reads like a machine correcting them. The menu,
+  // the greeting and everything said from here on follow the switch; what is
+  // above the fold stays as it was said.
+  function pageLang() {
+    const hub = globalThis.__hub;
+    try { if (hub && typeof hub.lang === 'function') return hub.lang(); } catch { /* */ }
+    return (document.documentElement.lang || 'en').slice(0, 2);
+  }
+  setLang(pageLang());
+
+  function syncLang() {
+    const want = pageLang();
+    if (want === getLang()) return;
+    setLang(want);
+    paintBar();
+    if (open && !typing && !list.hidden) renderMenu();
+  }
+  // The hub re-renders on a language change rather than firing an event, so
+  // this watches the one thing that is guaranteed to move: <html lang>.
+  const langWatch = new MutationObserver(syncLang);
+  langWatch.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
 
   const line = (cls, text = '') => {
     const p = el('p', cls, text);
@@ -413,7 +533,7 @@ export function mountChat(anchor, opts = {}) {
       const b = el('button');
       b.type = 'button';
       b.appendChild(Object.assign(el('b'), { textContent: (i + 1) + '. ' }));
-      b.appendChild(document.createTextNode(t.q));
+      b.appendChild(document.createTextNode(pending ? t.q : say(t).q));
       b.addEventListener('click', () => (pending ? answer(t) : ask(t)));
       list.appendChild(b);
     });
@@ -429,7 +549,8 @@ export function mountChat(anchor, opts = {}) {
     if (still || asides >= 3 || !open) return;
     idle = setTimeout(() => {
       if (typing || !open || list.hidden) return;
-      type(ASIDES[asides % ASIDES.length]);
+      const a = L('ASIDES');
+      type(a[asides % a.length]);
       asides++;
     }, 24000);
   }
@@ -448,6 +569,122 @@ export function mountChat(anchor, opts = {}) {
     return live[day % live.length];
   }
 
+  // Every live cabinet, for the topics that turn the menu into a rack.
+  function cabinets() {
+    const hub = globalThis.__hub;
+    const all = (hub && (hub.games || hub.active)) || [];
+    return all.filter(g => g && g.path && g.live !== false);
+  }
+
+  // A cabinet by name, for the parser: "tell me about hyper dagger". Matched
+  // on the id and on the title's words, so "DAGGER" alone is enough and a
+  // one-word title cannot be hit by a single stray word of a longer sentence.
+  function matchGame(text) {
+    const said = new Set(nameWords(text));
+    if (!said.size) return null;
+    let best = null, score = 0;
+    for (const g of cabinets()) {
+      let s = 0;
+      for (const w of nameWords(g.title || g.id || '')) if (said.has(w)) s++;
+      if (said.has(String(g.id || '').toUpperCase())) s += 2;
+      if (s > score) { score = s; best = g; }
+    }
+    return score >= 1 ? best : null;
+  }
+
+  // His line about one cabinet, followed by the way in. Written per game in
+  // GAME_NOTES; a cabinet with no line yet falls back to the catalogue's own
+  // tagline, so one added tomorrow can still be asked about tonight.
+  function talkAbout(g) {
+    const said = L('GAME_NOTES')[g.id]
+      || (g.tagline ? [String(g.tagline).toUpperCase()] : L('ABOUT_UNKNOWN'));
+    lastTopic = 'about:' + g.id;
+    type(said, () => {
+      const p = el('p', 'tc-me');
+      const a = el('a', 'tc-go');
+      a.href = g.path;
+      a.textContent = '▸ ' + (g.title || g.id).toUpperCase();
+      p.appendChild(a);
+      if (g.lineage) p.appendChild(document.createTextNode('  — ' + g.lineage));
+      log.appendChild(p);
+      // The routing step. Standing in front of one cabinet is the moment a
+      // player actually has something to say about it, and a note taken here
+      // files under that game rather than under "the counter".
+      const tell = el('button', 'tc-tell');
+      tell.type = 'button';
+      tell.textContent = u('TELL');
+      tell.addEventListener('click', () => { tell.remove(); takeNote(g); });
+      const q = el('p');
+      q.appendChild(tell);
+      log.append(q);
+      log.scrollTop = log.scrollHeight;
+    });
+  }
+
+  // ── what you have already told him ─────────────────────────────────────
+  // Read back off your own machine. Feedback you cannot see again is a
+  // suggestion box with a lock on it.
+  function readNotes() {
+    const fb = globalThis.__hub && globalThis.__hub.feedback;
+    let all = [];
+    try { all = (fb && fb.archive && fb.archive()) || []; } catch { all = []; }
+    const mine = all.filter(n => n && n.note);
+    if (!mine.length) { type(u('EMPTY_BOX')); return; }
+    for (const n of mine.slice(0, 5)) {
+      const p = el('p', 'tc-score');
+      const when = n.ts ? new Date(n.ts).toISOString().slice(0, 10) : '';
+      p.append(document.createTextNode('  ' + when + '  '),
+        Object.assign(el('b'), { textContent: String(n.note) }));
+      log.appendChild(p);
+    }
+    if (mine.length > 5) log.appendChild(el('p', 'tc-score', u('MORE', { n: mine.length - 5 })));
+    log.scrollTop = log.scrollHeight;
+  }
+
+  // ── what changed ───────────────────────────────────────────────────────
+  // The other half of the note box. A suggestion box nobody ever answers
+  // stops getting used, so this reads out the hand-kept log of what actually
+  // got fixed — and, where you left a note about that same cabinet, says so.
+  //
+  // That last part is the only claim it makes about you, and it is checkable:
+  // it compares the `game` on the log entry against the `game` on the notes
+  // already on your machine. The log itself never says "you asked for this",
+  // because most entries nobody asked for and a counter that flatters you is
+  // back to being a shop.
+  function myGames() {
+    const fb = globalThis.__hub && globalThis.__hub.feedback;
+    let all = [];
+    try { all = (fb && fb.archive && fb.archive()) || []; } catch { all = []; }
+    return new Set(all.filter(n => n && n.note && n.game).map(n => n.game));
+  }
+
+  function readChanged() {
+    const entries = L('CHANGED');
+    if (!entries.length) { type(L('CHANGED_NONE')); return; }
+    const mine = myGames();
+    const games = cabinets();
+    const titleOf = id => {
+      const g = games.find(x => x.id === id);
+      return (g && (g.title || g.id) || id).toUpperCase();
+    };
+    // ONCE per game, on its most recent entry. Said against every line it
+    // stops being an acknowledgement and turns into flattery, which is the
+    // one register this counter is not for.
+    const flagged = new Set();
+    for (const e of entries.slice(0, 6)) {
+      const head = el('p', 'tc-score');
+      head.append(document.createTextNode('  ' + (e.when || '') + '  '),
+        Object.assign(el('b'), { textContent: e.game === 'hub' ? 'THE ARCADE' : titleOf(e.game) }));
+      log.appendChild(head);
+      for (const l of e.what) log.appendChild(el('p', 'tc-me', '    ' + l));
+      if (mine.has(e.game) && !flagged.has(e.game)) {
+        flagged.add(e.game);
+        log.appendChild(el('p', 'tc-you-quiet', '    ' + L('CHANGED_YOURS')));
+      }
+    }
+    log.scrollTop = log.scrollHeight;
+  }
+
   // The sticker. Not a link to a file — there is no file, and there is no
   // image asset anywhere in this brand. `svgBadge` emits the same arcs the
   // canvas strokes, so what he hands you and what you are looking at are the
@@ -461,30 +698,156 @@ export function mountChat(anchor, opts = {}) {
     const img = el('img');
     img.src = href;
     img.alt = '';
-    a.append(img, document.createTextNode('TAKE THE STICKER'));
+    a.append(img, document.createTextNode(u('STICKER')));
     const p = el('p');
     p.appendChild(a);
     log.appendChild(p);
     log.scrollTop = log.scrollHeight;
   }
 
-  // Your half of the one topic that runs the other way.
+  // ── the note you leave him ─────────────────────────────────────────────
+  // The counter's whole reason for existing: everything else is Toko talking,
+  // and this is the one place the traffic runs the other way.
+  //
+  // It reuses the ARCADE's transport (`window.__hub.feedback`) rather than
+  // shipping a second one — same endpoint, same local archive, same outbox
+  // retried on the next visit. Dropped on a page that has no hub, the note is
+  // still written down locally and he says exactly that. What he must never
+  // do is claim a delivery that did not happen: an opaque no-cors POST
+  // reports 'sent-blind', and the line he says for it is different.
+  const SAID = () => ({
+    sent: u('SENT'), 'sent-blind': u('SENT_BLIND'),
+    queued: u('QUEUED'), off: u('OFF'),
+  });
+
+  // `about` is a cabinet, when the note is about one. It is what turns a pile
+  // of notes into something you can act on: `game` is the field every other
+  // feedback surface in this workshop already files under, so a note left at
+  // the counter about Hyper Dagger lands in the same bucket as one left on
+  // Hyper Dagger's own form.
+  function takeNote(about) {
+    const wrap = el('div', 'tc-note');
+    const box = el('textarea');
+    const who = about ? (about.title || about.id).toUpperCase() : null;
+    box.setAttribute('aria-label',
+      who ? u('NOTE_LABEL_ABOUT', { x: who }) : u('NOTE_LABEL'));
+    box.placeholder = who ? u('NOTE_PH_ABOUT', { x: who.toLowerCase() }) : u('NOTE_PH');
+    box.maxLength = 2000;
+    const send = el('button', null, u('SEND'));
+    send.type = 'button';
+    wrap.append(box, send);
+    log.appendChild(wrap);
+    log.scrollTop = log.scrollHeight;
+    if (lastInputWasKey) box.focus();
+
+    send.addEventListener('click', async () => {
+      const text = box.value.trim();
+      wrap.remove();
+      // Saying nothing records nothing. The hub holds the same rule, and it
+      // is the difference between asking for feedback and harvesting it.
+      if (!text) { type(u('NOTHING_SAID')); return; }
+      line('tc-you', text.toUpperCase());
+      send.disabled = true;
+      let status = 'off';
+      try {
+        const fb = globalThis.__hub && globalThis.__hub.feedback;
+        status = fb && fb.send
+          ? await fb.send({
+            // filed under the cabinet when there is one, so it sorts with
+            // everything else said about that game
+            game: about ? about.id : 'toko-counter',
+            kind: 'counter',
+            note: text,
+            // what he was talking about when you wrote it. A note that says
+            // "this is broken" is worth nothing without it.
+            // from the CABINET when there is one. `lastTopic` drifts: a
+            // TELL button stays in the transcript, so clicking one from
+            // further up is legitimate and must not be labelled with
+            // whatever he happens to be talking about now.
+            topic: about ? 'about:' + about.id : (lastTopic || null),
+            ts: Date.now(),
+          })
+          : 'off';
+      } catch { status = 'off'; }
+      // he brings it up next time, once
+      store.write({ ...store.read(), noted: true });
+      const s = SAID();
+      type(s[status] || s.off);
+    });
+  }
+
+  // ── what the cabinets left on this machine ─────────────────────────────
+  // Read locally, shown once, sent nowhere — which is exactly what the topic
+  // he says over it claims, and the claim is only worth making because the
+  // code is this short.
+  function readScores() {
+    const found = [];
+    for (const [key, name, fmt] of SCOREBOARD) {
+      let v = null;
+      try { v = localStorage.getItem(key); } catch { /* private mode */ }
+      if (v == null || v === '' || +v === 0 || Number.isNaN(+v)) continue;
+      found.push([name, fmt(v)]);
+    }
+    if (!found.length) { type(L('SEEN_NOTHING')); return; }
+    type(L('SEEN_SOMETHING'), () => {
+      for (const [name, val] of found) {
+        const p = el('p', 'tc-score');
+        p.append(document.createTextNode('  ' + name + '  '),
+          Object.assign(el('b'), { textContent: val }));
+        log.appendChild(p);
+      }
+      log.scrollTop = log.scrollHeight;
+    });
+  }
+
+  // ── the parser ─────────────────────────────────────────────────────────
+  // Type at him and he answers, or admits he did not understand. It can reach
+  // LOCKED topics, which is the reward for typing rather than picking: ask
+  // about the mask before anybody offers it and he takes the question.
+  function said(text) {
+    const raw = text.trim();
+    if (!raw) return;
+    parse.value = '';
+    if (typing) finishTyping();
+    if (CRY.test(raw)) { line('tc-you', raw.toUpperCase()); type(L('CRY_A')); return; }
+    // A cabinet by name beats a topic. "TELL ME ABOUT HYPER DAGGER" should
+    // get the cabinet, not the general TELL ME ABOUT ONE OF THEM.
+    const g = matchGame(raw);
+    if (g) { line('tc-you', raw.toUpperCase()); list.hidden = true; talkAbout(g); return; }
+    const t = find(raw);
+    if (t) { unlocked.add(t.id); ask(t, raw.toUpperCase()); return; }
+    line('tc-you', raw.toUpperCase());
+    list.hidden = true;
+    const m = L('MISSES');
+    type(m[misses++ % m.length]);
+  }
+  let misses = 0;
+
+  // Your half of the topics that run the other way — his question, and the
+  // cabinet rack. An option carrying a `game` is a cabinet; everything else
+  // is a written answer.
   function answer(o) {
     if (typing) { finishTyping(); return; }
     pending = null;
     line('tc-you', o.q);
     if (o.opens) { fresh = new Set(o.opens); o.opens.forEach(id => unlocked.add(id)); }
     list.hidden = true;
+    if (o.game) { talkAbout(o.game); return; }
     type(o.a);
   }
 
-  function ask(t) {
+  // `asWritten` is what the player actually typed, when they typed it —
+  // echoing the menu's wording back at somebody who used their own words
+  // reads like a machine correcting them.
+  function ask(t, asWritten) {
     if (typing) { finishTyping(); return; }
-    line('tc-you', t.q);
+    line('tc-you', asWritten || say(t).q);
     asked.add(t.id);
     fresh = t.opens ? new Set(t.opens) : null;
     if (t.opens) t.opens.forEach(id => unlocked.add(id));
     list.hidden = true;
+    if (t.torn) tornUntil = performance.now() + 1400;
+    lastTopic = t.id;
     // what he greets you with next time — the last thing you were curious
     // about, and nothing else about you
     store.write({ ...store.read(), last: t.id });
@@ -494,9 +857,44 @@ export function mountChat(anchor, opts = {}) {
       const prev = after;
       after = () => { giveSticker(); if (prev) prev(); };
     }
+    if (t.note) {
+      const prev = after;
+      after = () => { takeNote(); if (prev) prev(); };
+    }
+    if (t.scores) {
+      const prev = after;
+      after = () => { readScores(); if (prev) prev(); };
+    }
+    if (t.notes) {
+      const prev = after;
+      after = () => { readNotes(); if (prev) prev(); };
+    }
+    if (t.changed) {
+      const prev = after;
+      after = () => { readChanged(); if (prev) prev(); };
+    }
+    if (t.askGames) {
+      // the rack: eight at most, because the menu has nine slots and one of
+      // them is always the way out
+      const rack = cabinets().slice(0, 8)
+        .map(g => ({ id: 'g:' + g.id, q: (g.title || g.id).toUpperCase(), game: g }));
+      const prev = after;
+      after = () => {
+        if (!rack.length) { type([u('NO_FLOOR')]); return; }
+        pending = rack;
+        renderMenu();
+        if (prev) prev();
+      };
+    }
     if (t.asks) {
       const prev = after;
-      after = () => { pending = t.asks; renderMenu(); if (prev) prev(); };
+      after = () => {
+        // localised HERE rather than at draw time, so an option carries its
+        // own words the same way a cabinet on the rack does
+        pending = t.asks.map((o, i) => ({ ...o, ...sayOption(t, i) }));
+        renderMenu();
+        if (prev) prev();
+      };
     }
     if (t.pick) {
       const g = pickGame();
@@ -510,14 +908,14 @@ export function mountChat(anchor, opts = {}) {
           p.appendChild(a);
           if (g.lineage) p.appendChild(document.createTextNode('  — ' + g.lineage));
         } else {
-          p.textContent = 'THOUGH FROM HERE I CANNOT SEE THE FLOOR.';
+          p.textContent = u('NO_FLOOR');
         }
         log.appendChild(p);
         log.scrollTop = log.scrollHeight;
         if (prev) prev();
       };
     }
-    type(t.a, after);
+    type(say(t).a, after);
   }
 
   // ── open / close ───────────────────────────────────────────────────────
@@ -531,8 +929,11 @@ export function mountChat(anchor, opts = {}) {
     if (!log.childElementCount) {
       const st = store.read();
       const visits = (st.visits || 0) + 1;
-      store.write({ ...st, visits });
-      type(greeting({ visits, hour: hour(), last: st.last }));
+      // `noted` is spent as it is read: he acknowledges a note ONCE, because
+      // the second time it stops being an acknowledgement and starts being
+      // a receipt.
+      store.write({ ...st, visits, noted: false });
+      type(greeting({ visits, hour: hour(), last: st.last, noted: !!st.noted }));
     }
     else renderMenu();
     addEventListener('keydown', onKey);
@@ -561,8 +962,23 @@ export function mountChat(anchor, opts = {}) {
   addEventListener('keydown', sawKey, true);
   addEventListener('pointerdown', sawTap, true);
 
+  // Anything the player is typing INTO owns its own keys. Without this the
+  // number shortcuts fire while you are writing him a note, so typing "3
+  // CRASHES" picks topic three and throws the sentence away.
+  const isTyping = () => {
+    const a = document.activeElement;
+    return a && (a === parse || a.tagName === 'TEXTAREA' || a.tagName === 'INPUT');
+  };
+
   function onKey(e) {
-    if (e.key === 'Escape') { e.preventDefault(); close(); return; }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      // one Escape steps out of the field, the next one leaves the counter
+      if (isTyping()) { e.target.blur(); return; }
+      close();
+      return;
+    }
+    if (isTyping()) return;
     if (e.key === 'Enter' && typing) { e.preventDefault(); finishTyping(); return; }
     if (/^[1-9]$/.test(e.key)) {
       const b = list.querySelectorAll('button')[+e.key - 1];
@@ -570,15 +986,22 @@ export function mountChat(anchor, opts = {}) {
     }
   }
 
+  parse.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    said(parse.value);
+  });
+
   // the tick, remembered between visits
   const tick = makeTick();
   let ticking = !!store.read().tick;
   const paintSound = () => {
-    sound.textContent = ticking ? '♪ ON' : '♪ OFF';
+    sound.textContent = ticking ? u('SND_ON') : u('SND_OFF');
     sound.setAttribute('aria-pressed', String(ticking));
-    sound.setAttribute('aria-label', ticking ? 'Typing sound on' : 'Typing sound off');
+    sound.setAttribute('aria-label', ticking ? u('SND_LABEL_ON') : u('SND_LABEL_OFF'));
   };
-  paintSound();
+  painted = true;
+  paintBar();
   sound.addEventListener('click', () => {
     ticking = !ticking;
     store.write({ ...store.read(), tick: ticking });
@@ -590,7 +1013,21 @@ export function mountChat(anchor, opts = {}) {
   leave.addEventListener('click', close);
   // clicking the text while it types skips to the end — the same rule the
   // sting follows: never make somebody wait for an animation
-  log.addEventListener('click', () => { if (typing) finishTyping(); });
+  log.addEventListener('click', (e) => {
+    // not while you are aiming at something in the transcript — the sticker
+    // link and the note box both live in there
+    if (e.target.closest('a, button, textarea, input')) return;
+    if (typing) finishTyping();
+  });
+
+  // `#toko` opens the counter, so a link can point at the conversation and
+  // not just the page it sits on. It only ever OPENS: the hash is not written
+  // back, because the arcade's own address should stay the plain one.
+  const fromHash = () => {
+    if (location.hash.toLowerCase() === '#toko') openChat();
+  };
+  addEventListener('hashchange', fromHash);
+  fromHash();
 
   if (openOnLoad) openChat();
 
@@ -601,18 +1038,26 @@ export function mountChat(anchor, opts = {}) {
     isOpen: () => open,
     // For tests and for anyone poking at it from a console. `say` walks the
     // tree by id the way a click does, so a gate can dig to the back of the
-    // shop without twenty-four clicks and a stopwatch.
+    // shop without twenty-four clicks and a stopwatch; `type` puts words in
+    // the parser the way a keyboard does.
     say(id) {
       const t = TOPICS.find(x => x.id === id);
       if (t) ask(t);
       return !!t;
     },
+    type(text) { said(text); },
     menu: () => menu(unlocked, asked, { hour: hour(), fresh }).map(t => t.id),
     asking: () => !!pending,
+    // still mid-sentence. A caller that picks a topic while he is talking
+    // only skips the typing (that is the rule for players too), so a test
+    // driving the tree has to wait this out or skip on purpose.
+    busy: () => !!typing,
+    skip: () => finishTyping(),
     destroy() {
       if (typing) { typing.after = null; finishTyping(); }
       clearTimeout(idle);
       removeEventListener('keydown', onKey);
+      removeEventListener('hashchange', fromHash);
       removeEventListener('keydown', sawKey, true);
       removeEventListener('pointerdown', sawTap, true);
       badge.destroy(); head.destroy(); root.remove();
