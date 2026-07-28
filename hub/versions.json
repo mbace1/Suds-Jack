@@ -19,16 +19,24 @@
     "v": 2,
     "from": "cache token"
   },
+  "paperboy": {
+    "v": 4,
+    "from": "cache token"
+  },
   "skltr": {
     "v": 12,
     "from": "cache token"
+  },
+  "flashprince": {
+    "v": 2,
+    "from": "VERSIONS.md"
   },
   "gameoflife": {
     "v": 40,
     "from": "cache token"
   },
   "radiofree": {
-    "v": 22,
+    "v": 25,
     "from": "cache token"
   },
   "tinyhawk": {

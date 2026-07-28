@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Paper Route — Dawn Run</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #9bd7ff; overflow: hidden; touch-action: none; }
+    #canvas-game { display: block; }
+    #canvas-ui {
+      position: fixed;
+      top: 0; left: 0;
+      pointer-events: none;
+    }
+    #overlay {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: #14324a;                 /* dark ink, reads on the bright sky */
+      font-family: monospace;
+      text-align: center;
+      pointer-events: none;
+      text-shadow: 0 2px 0 #fff, 0 0 18px rgba(255,255,255,0.8);
+      display: none;
+      line-height: 1.3;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas-game"></canvas>
+  <canvas id="canvas-ui"></canvas>
+  <div id="overlay"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+    }
+  }
+  </script>
+  <!-- the arcade shell: a home button and a controller way back -->
+  <script type="module" src="../hub/shell.js?v=8"></script>
+  <script type="module" src="js/main.js?v=4"></script>
+
+  <!-- signed by Toko Midori Games — the badge in the corner, under the HUD,
+       taking no input. See ../toko/BRAND.md -->
+  <script type="module">
+    import { sign } from '../toko/js/signature.js?v=1';
+    // the badge goes black-on-white here: a magenta disc on the bright
+    // sunny-day sky fights the route's own palette for attention
+    sign({ corner: 'bottom-left', ground: '#ffffff', ink: '#000000' });
+  </script>
+</body>
+</html>
