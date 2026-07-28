@@ -5,19 +5,47 @@
 // dependency, and a workshop whose entire position is "go make your own" should
 // not be answering you with rented autocomplete. Toko says what Toko wrote.
 //
-// A topic is { id, q, a, opens?, once?, end? }
-//   q     what the player picks, in the player's mouth
-//   a     Toko's reply, one array entry per typed line
-//   opens ids unlocked by asking it — the conversation grows as you dig
+// A topic is { id, q, a, ... }
+//   q      what the player picks, in the player's mouth
+//   a      Toko's reply, one array entry per typed line
+//   opens  ids unlocked by asking it — the conversation grows as you dig
 //   once   drop the topic from the menu after it has been asked
+//   locked start hidden; something else has to `opens` it
 //   end    close the counter after the reply finishes
+//   pick   follow the reply with a real cabinet and a real link
+//   gift   follow the reply with a sticker he generates on the spot
+//   asks   HE asks YOU: the menu becomes your possible answers
+//   after  hours (0–23) this topic exists in at all
+//   needs  how many things you must have asked before it appears
 
 export const GREETING = [
   'YOU FOUND THE COUNTER.',
   'ASK ME SOMETHING.',
 ];
 
+// 00:00–04:59. He is still up, and so are you, and he is not going to
+// pretend that is normal.
+// Two lines, not three. He is unhurried, not slow: at 34ms a character a
+// third line puts four seconds between opening the counter and being allowed
+// to say anything, and that is a wait, not a mood.
+export const LATE = [
+  'IT IS YOU, AT THIS HOUR.',
+  'THE RECORD IS STILL GOING. ASK.',
+];
+
+// He came back on his own. Fires when you sit at the counter and pick
+// nothing — Sierra front desks were never silent either. Capped per visit,
+// because a counter that talks at you is a shop.
+export const ASIDES = [
+  ['TAKE YOUR TIME.'],
+  ['I AM NOT GOING ANYWHERE.'],
+  ['THE SOLO IS ABOUT TO START AGAIN.'],
+  ['YOU CAN ALSO JUST GO AND PLAY ONE.'],
+  ['I DO NOT MIND THE QUIET.'],
+];
+
 export const TOPICS = [
+  // ── who ────────────────────────────────────────────────────────────────
   {
     id: 'who', q: 'WHO ARE YOU?', once: true,
     a: [
@@ -54,6 +82,8 @@ export const TOPICS = [
       'THE HEAD IS FULL OF SMALLER HEADS.',
     ],
   },
+
+  // ── the machine ────────────────────────────────────────────────────────
   {
     id: 'ai', q: 'YOU USE AI?', once: true,
     a: [
@@ -63,7 +93,7 @@ export const TOPICS = [
       'WHAT I WILL NOT DO IS LET THE MACHINE',
       'BE THE AUDIENCE.',
     ],
-    opens: ['scroll'],
+    opens: ['scroll', 'hypocrite'],
   },
   {
     id: 'scroll', q: 'WHAT DOES THAT MEAN?', once: true, locked: true,
@@ -75,6 +105,33 @@ export const TOPICS = [
       'DO NOT BE THE AUDIENCE FOR THAT.',
     ],
   },
+  {
+    // The hardest question anyone can ask this workshop. He takes it flat on
+    // rather than dodging — a brand that will not hear its own objection is
+    // an advertisement.
+    id: 'hypocrite', q: 'SO YOU ARE A HYPOCRITE.', once: true, locked: true,
+    a: [
+      'PROBABLY. SIT DOWN.',
+      'I DO NOT THINK THE TOOL IS THE PROBLEM.',
+      'A SAMPLER WAS NOT THE PROBLEM EITHER.',
+      'THE PROBLEM IS HANDING SOMEBODY ELSE',
+      'THE DECIDING.',
+      'I STILL DECIDE. THAT IS THE WHOLE LINE.',
+    ],
+    opens: ['seam'],
+  },
+  {
+    id: 'seam', q: 'WHAT IS A SEAM?', once: true, locked: true,
+    a: [
+      'THE PLACE THE MAKING SHOWS.',
+      'A TEAR IN THE LOGO. A GLITCH THAT REPEATS',
+      'BECAUSE IT IS SEEDED AND NOT RANDOM.',
+      'POLISH HIDES THE HAND.',
+      'I WANT YOU TO SEE THE HAND.',
+    ],
+  },
+
+  // ── the tempo ──────────────────────────────────────────────────────────
   {
     // The house tempo has a name and this is where it says so — without
     // quoting a word of it. The song is somebody else's; the mood is Toko's.
@@ -97,13 +154,26 @@ export const TOPICS = [
     ],
   },
   {
+    // Only on the menu between midnight and five. He is not going to mention
+    // the hour at two in the afternoon.
+    id: 'late', q: 'YOU ARE UP LATE.', once: true, after: [0, 5],
+    a: [
+      'THIS IS THE GOOD PART OF THE DAY.',
+      'NOBODY IS AWAKE TO HAVE AN OPINION.',
+      'THE WORK GOES SIDEWAYS AND I LET IT.',
+      'GO TO BED AFTER ONE MORE.',
+    ],
+  },
+
+  // ── go make your own ───────────────────────────────────────────────────
+  {
     id: 'start', q: 'HOW DO I START?',
     a: [
       'OPEN THE SOURCE. BREAK IT.',
       'SHIP THE BROKEN ONE.',
       'NOBODY IS COMING TO GIVE YOU PERMISSION.',
     ],
-    opens: ['bad'],
+    opens: ['bad', 'tools'],
   },
   {
     id: 'bad', q: 'WHAT IF I AM BAD AT IT?', once: true, locked: true,
@@ -115,6 +185,28 @@ export const TOPICS = [
       'I DID NOT DELETE IT. I FIXED IT.',
     ],
   },
+  {
+    id: 'tools', q: 'WHAT DO YOU USE?', once: true, locked: true,
+    a: [
+      'A TEXT EDITOR AND A BROWSER.',
+      'NO ENGINE. NO LAUNCHER. NO ACCOUNT.',
+      'THE LOGO YOU ARE LOOKING AT IS SIX ARCS',
+      'AND A TABLE OF NUMBERS.',
+      'THERE IS NO IMAGE FILE ANYWHERE IN HERE.',
+    ],
+    opens: ['build'],
+  },
+  {
+    id: 'build', q: 'NO BUILD STEP?', once: true, locked: true,
+    a: [
+      'NONE. YOU OPEN THE FILE AND IT RUNS.',
+      'A BUILD STEP IS A DOOR WITH A LOCK ON IT',
+      'BETWEEN A KID AND THE SOURCE.',
+      'I REMEMBER BEING THAT KID.',
+    ],
+  },
+
+  // ── the floor ──────────────────────────────────────────────────────────
   {
     // `pick` tells the counter to follow the answer with a real cabinet and a
     // real link. Toko does not list the floor at you; he picks one.
@@ -133,7 +225,81 @@ export const TOPICS = [
       'AND A QUIET ONE THAT SENDS YOU OUTSIDE.',
       'PICK A CABINET. PRESS PLAY.',
     ],
+    opens: ['quiet', 'dead'],
   },
+  {
+    id: 'quiet', q: 'THE QUIET ONE?', once: true, locked: true,
+    a: [
+      'IT IS CALLED THE GAME OF LIFE.',
+      'IT ENDS BY ASKING YOU TO GO OUTSIDE,',
+      'AND IT MEANS IT — IT WORKS WITH THE',
+      'SIGNAL OFF.',
+      'THAT IS THE ONE ROOM I DO NOT SIGN.',
+      'A LOGO IN THERE WOULD UNDO IT.',
+    ],
+  },
+  {
+    id: 'dead', q: 'IS ANYTHING HERE DEAD?', once: true, locked: true,
+    a: [
+      'YES. AND IT STAYS ON THE FLOOR.',
+      'THE ARCHIVE IS NOT A GRAVEYARD, IT IS',
+      'A SHELF.',
+      'A BUTTON THAT SAYS "NOT UP" IS HONEST.',
+      'A BUTTON THAT 404s IS NOT.',
+    ],
+  },
+
+  // ── he asks you ────────────────────────────────────────────────────────
+  {
+    // The one topic that runs the other way. `asks` turns the menu into YOUR
+    // possible answers for one turn — the counter stops being a vending
+    // machine for lore and becomes a conversation.
+    id: 'me', q: 'ASK ME SOMETHING INSTEAD.', once: true,
+    a: [
+      'ALL RIGHT. FAIR.',
+      'WHY ARE YOU STANDING AT A COUNTER',
+      'IN A GAME YOU DID NOT MAKE?',
+    ],
+    asks: [
+      {
+        q: 'I WANT SOMETHING TO PLAY.',
+        a: [
+          'HONEST. GO ON THEN — PICK A CABINET.',
+          'COME BACK AND TELL ME IF IT IS BAD.',
+          'I WILL BELIEVE YOU.',
+        ],
+      },
+      {
+        q: 'I WANT TO MAKE ONE OF THESE.',
+        a: [
+          'THEN YOU ARE IN THE RIGHT ROOM AND',
+          'THE WRONG PART OF IT.',
+          'THE SOURCE IS ONE MENU AWAY.',
+          'STOP TALKING TO ME.',
+        ],
+        opens: ['start', 'tools'],
+      },
+      {
+        q: 'I AM AVOIDING WORK.',
+        a: [
+          'SO AM I. THIS COUNTER IS PROCRASTINATION',
+          'WITH A LOGO ON IT.',
+          'STAY AS LONG AS YOU LIKE.',
+        ],
+      },
+      {
+        q: 'I DO NOT KNOW.',
+        a: [
+          'THAT IS THE BEST ANSWER ANYONE GIVES ME.',
+          'MOST OF WHAT IS ON THIS FLOOR STARTED',
+          'AT EXACTLY THAT.',
+        ],
+        opens: ['start'],
+      },
+    ],
+  },
+
+  // ── the money ──────────────────────────────────────────────────────────
   {
     id: 'cost', q: 'WHAT DOES IT COST?',
     a: [
@@ -142,7 +308,51 @@ export const TOPICS = [
       'IF THAT SOUNDS LIKE A CATCH,',
       'READ THE SOURCE. IT IS RIGHT THERE.',
     ],
+    opens: ['steal'],
   },
+  {
+    id: 'steal', q: 'CAN I TAKE YOUR CODE?', once: true, locked: true,
+    a: [
+      'TAKE IT. THAT IS WHAT IT IS FOR.',
+      'DO NOT TAKE THE FACE — THAT ONE IS MINE',
+      'AND YOU SHOULD WANT YOUR OWN ANYWAY.',
+      'EVERYTHING ELSE: YOURS.',
+      'PUT YOUR NAME ON IT AND MAKE IT WORSE.',
+    ],
+    opens: ['gift'],
+  },
+
+  // ── he hands you something ─────────────────────────────────────────────
+  {
+    // Not a link to a file — there are no files. The counter draws the sticker
+    // out of the same arcs the mark is made of and hands it to you as SVG.
+    id: 'gift', q: 'GIVE ME SOMETHING, THEN.', once: true, locked: true, gift: true,
+    a: [
+      'HERE. I DREW IT WHILE YOU WERE ASKING.',
+      'IT IS VECTOR, SO IT IS ANY SIZE YOU LIKE.',
+      'PRINT IT. PUT IT ON A LAPTOP.',
+      'PUT IT SOMEWHERE IT IS NOT SUPPOSED',
+      'TO BE.',
+    ],
+  },
+
+  // ── the back of the shop ───────────────────────────────────────────────
+  {
+    // Not unlockable by any single topic — it appears once you have actually
+    // dug. The reward for exhausting a tree should be more tree.
+    id: 'back', q: 'YOU HAVE BEEN TALKING A WHILE.', once: true, needs: 9,
+    a: [
+      'I HAVE. NOBODY USUALLY GETS THIS FAR.',
+      'SO: THE MASK IS NOT MYSTERY, IT IS',
+      'A DOOR HELD OPEN.',
+      'ANY OF YOU COULD BE STANDING HERE.',
+      'THAT IS THE WHOLE JOKE AND IT IS ALSO',
+      'THE WHOLE PLAN.',
+      'GO MAKE YOUR OWN.',
+    ],
+    opens: ['gift'],
+  },
+
   {
     id: 'bye', q: 'NOTHING. I AM GOING TO GO MAKE SOMETHING.', end: true,
     a: [
@@ -152,10 +362,49 @@ export const TOPICS = [
   },
 ];
 
-// the topics on the menu at any moment: everything unlocked, minus what has
-// been asked and spent, with GOODBYE always last
-export function menu(unlocked, asked) {
+const byId = new Map(TOPICS.map(t => [t.id, t]));
+export const topic = id => byId.get(id);
+
+// What Toko opens with. Three inputs and no profile: how many times you have
+// been here, what hour it is where you are, and the last thing you asked —
+// which is remembered so that coming back feels like coming back, not like
+// being recognised by a system.
+const RETURNING = [
+  ['YOU CAME BACK.', 'ASK ME SOMETHING.'],
+  ['AGAIN.', 'GO ON THEN.'],
+  ['YOU KNOW WHERE I AM.', 'ASK.'],
+];
+
+export function greeting({ visits = 1, hour = 12, last = null } = {}) {
+  const t = last && byId.get(last);
+  if (visits > 1 && t) {
+    return ['LAST TIME YOU ASKED ABOUT ' + tail(t.q), 'ASK ME SOMETHING ELSE.'];
+  }
+  if (hour < 5) return LATE.slice();
+  if (visits <= 1) return GREETING.slice();
+  return RETURNING[(visits - 2) % RETURNING.length].slice();
+}
+
+// "WHY THE MASK?" → "THE MASK." — the player's own words handed back, minus
+// the question. Cheap, and it reads like memory rather than telemetry.
+function tail(q) {
+  const words = q.replace(/[?.]$/, '').split(' ');
+  return words.slice(Math.max(0, words.length - 2)).join(' ') + '.';
+}
+
+// The topics on the menu at any moment: everything unlocked and in season,
+// minus what has been asked and spent, with GOODBYE always last.
+//
+// `fresh` (ids unlocked by the last thing you asked) float to the top. The
+// menu shows nine at most, so without this a branch you just opened could be
+// pushed off the bottom of the list that opened it.
+export function menu(unlocked, asked, { hour = 12, fresh = null } = {}) {
   const live = TOPICS.filter(t =>
-    (!t.locked || unlocked.has(t.id)) && !(t.once && asked.has(t.id)));
-  return [...live.filter(t => !t.end), ...live.filter(t => t.end)];
+    (!t.locked || unlocked.has(t.id))
+    && !(t.once && asked.has(t.id))
+    && (!t.needs || asked.size >= t.needs)
+    && (!t.after || (hour >= t.after[0] && hour < t.after[1])));
+  const rank = t => (fresh && fresh.has(t.id) ? 0 : 1);
+  const body = live.filter(t => !t.end).sort((a, b) => rank(a) - rank(b));
+  return [...body, ...live.filter(t => t.end)];
 }

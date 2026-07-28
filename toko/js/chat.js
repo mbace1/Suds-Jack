@@ -22,24 +22,19 @@
 
 import { Surface } from './surface.js';
 import { TOKO, VOICE } from './palette.js';
-import { drawHead, drawBadge } from './face.js';
+import { drawHead, drawBadge, svgBadge } from './face.js';
 import { glance, drift } from './util.js';
-import { GREETING, TOPICS, menu } from './dialogue.js';
+import { TOPICS, ASIDES, menu, greeting } from './dialogue.js';
 
-// He keeps two things between visits and nothing else: how many times you have
-// come to the counter, and whether you asked for the tick. No identity, no
-// profile, no account — the whole workshop is built on not having one.
+// He keeps three things between visits and nothing else: how many times you
+// have come to the counter, the last thing you asked, and whether you wanted
+// the tick. No identity, no profile, no account — the whole workshop is built
+// on not having one, and all three fit in a sentence you could read aloud.
 const KEY = 'tokoCounter';
 const store = {
   read() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } },
   write(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch { /* private mode */ } },
 };
-
-const RETURNING = [
-  ['YOU CAME BACK.', 'ASK ME SOMETHING.'],
-  ['AGAIN.', 'GO ON THEN.'],
-  ['YOU KNOW WHERE I AM.', 'ASK.'],
-];
 
 const STYLE_ID = 'toko-chat-style';
 const CSS = `
@@ -77,6 +72,10 @@ const CSS = `
   border: 2px solid var(--tc-hot); background: var(--tc-bg);
   overflow: hidden;
   display: grid; grid-template-columns: auto 1fr;
+  /* minmax(0, 1fr), not 1fr: an auto grid row sizes to its content and then
+     overflows a max-height container rather than letting the child scroll,
+     which is what clipped the bottom of the menu on a phone */
+  grid-template-rows: minmax(0, 1fr);
   /* the animation: the counter grows into a room */
   max-height: 0; opacity: 0; transform: scaleY(.86); transform-origin: top;
   transition: max-height .32s cubic-bezier(.2,.7,.3,1), opacity .2s linear,
@@ -93,7 +92,12 @@ const CSS = `
 .toko-chat .tc-portrait .tc-name {
   font-size: 10px; letter-spacing: .26em; color: var(--tc-hot);
 }
-.toko-chat .tc-body { display: flex; flex-direction: column; min-width: 0; }
+/* min-height 0 on both, or the flex children refuse to shrink below their
+   content and the menu spills straight out through the panel's clipped edge —
+   which on a phone hid the bottom four topics AND the way out.
+   (No back-ticks in this block, ever: the whole sheet is a template literal
+   and one of them ends the string mid-rule.) */
+.toko-chat .tc-body { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 
 .toko-chat .tc-log {
   padding: 16px; min-height: 132px; max-height: 232px; overflow-y: auto;
@@ -115,7 +119,11 @@ const CSS = `
   border-top: 2px solid var(--tc-line); padding: 10px 10px 12px;
   display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 2px 10px; align-content: start;
+  /* it scrolls rather than squashing: the 44px floor is not negotiable, and a
+     menu that runs past the bottom of a phone still has to be reachable */
+  min-height: 0; overflow-y: auto; overscroll-behavior: contain;
 }
+.toko-chat .tc-foot { flex: none; }
 .toko-chat .tc-menu button {
   font: inherit; text-align: left; background: none; border: 0;
   color: var(--tc-dim); cursor: pointer; padding: 7px 8px;
@@ -133,6 +141,20 @@ const CSS = `
 }
 .toko-chat .tc-log .tc-go:hover { color: var(--tc-ink); border-color: var(--tc-ink); }
 
+/* the sticker he draws for you, handed over as a real download */
+.toko-chat .tc-log .tc-gift {
+  display: inline-flex; align-items: center; gap: 10px;
+  margin-top: 10px; padding: 8px 14px 8px 8px; min-height: 44px;
+  border: 2px solid var(--tc-hot); color: var(--tc-hot);
+  text-decoration: none; letter-spacing: .12em;
+}
+.toko-chat .tc-log .tc-gift:hover { background: var(--tc-hot); color: #000; }
+.toko-chat .tc-log .tc-gift img { width: 28px; height: 28px; display: block; }
+
+/* when HE is asking, the menu is your mouth, not his */
+.toko-chat .tc-menu.is-yours button { color: var(--tc-ink); }
+.toko-chat .tc-menu.is-yours button b { color: var(--tc-ink); }
+
 .toko-chat .tc-spacer { flex: 1; }
 .toko-chat .tc-foot {
   display: flex; align-items: center; gap: 10px;
@@ -149,8 +171,17 @@ const CSS = `
 .toko-chat :focus-visible { outline: 2px solid var(--tc-hot); outline-offset: 2px; }
 
 @media (max-width: 560px) {
-  .toko-chat .tc-panel { grid-template-columns: 1fr; }
-  .toko-chat .tc-portrait { flex-direction: row; border-right: 0; border-bottom: 2px solid var(--tc-line); }
+  .toko-chat .tc-panel { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+  .toko-chat .tc-portrait { flex-direction: row; border-right: 0; border-bottom: 2px solid var(--tc-line); padding: 8px 16px; }
+  /* The head is a canvas laid out at 120x158 — on a phone that is a third of
+     the panel spent on a portrait, so it comes down and the menu gets it.
+     !important because Surface sizes its canvas with an INLINE style, which
+     a plain rule here loses to. */
+  .toko-chat .tc-portrait canvas { width: 74px !important; height: 97px !important; }
+  /* one column means nine topics is 400px of menu, so the transcript gives
+     way first — you can scroll back through what he said, but you cannot
+     scroll to a topic you cannot see */
+  .toko-chat .tc-log { min-height: 92px; max-height: 150px; overflow-y: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   .toko-chat .tc-panel { transition: none; }
@@ -288,6 +319,14 @@ export function mountChat(anchor, opts = {}) {
   const asked = new Set();
   let typing = null;            // { lines, li, ci, node, done }
   let open = false;
+  let fresh = null;             // ids the last answer opened — they sort first
+  let pending = null;           // HIS question: the menu is your answers now
+  let asides = 0;               // unprompted lines spent this visit
+  let idle = 0;                 // the timer that produces them
+
+  // The hour where the reader is, not where a server is. It gates one topic
+  // and one greeting, and it is the only thing here that looks at a clock.
+  const hour = () => new Date().getHours();
 
   const line = (cls, text = '') => {
     const p = el('p', cls, text);
@@ -361,15 +400,38 @@ export function mountChat(anchor, opts = {}) {
   function renderMenu() {
     list.hidden = false;
     list.textContent = '';
-    const items = menu(unlocked, asked);
-    items.slice(0, 9).forEach((t, i) => {
+    // `pending` means Toko asked YOU something and the menu is your mouth for
+    // one turn. Same keys, same nine slots — only the direction changes.
+    const all = pending || menu(unlocked, asked, { hour: hour(), fresh });
+    list.classList.toggle('is-yours', !!pending);
+    // Nine slots, because the keys are 1–9. The way out gets one of them
+    // reserved: the tree outgrew the menu and goodbye fell off the bottom,
+    // which turns a counter you can walk away from into one you cannot.
+    const outs = all.filter(t => t.end);
+    const items = [...all.filter(t => !t.end).slice(0, 9 - outs.length), ...outs];
+    items.forEach((t, i) => {
       const b = el('button');
       b.type = 'button';
       b.appendChild(Object.assign(el('b'), { textContent: (i + 1) + '. ' }));
       b.appendChild(document.createTextNode(t.q));
-      b.addEventListener('click', () => ask(t));
+      b.addEventListener('click', () => (pending ? answer(t) : ask(t)));
       list.appendChild(b);
     });
+    armIdle();
+  }
+
+  // ── he says something unprompted ───────────────────────────────────────
+  // A Sierra front desk was never silent. He gets a few of these a visit and
+  // then he lets it be quiet, because a counter that keeps talking at you is
+  // a shop.
+  function armIdle() {
+    clearTimeout(idle);
+    if (still || asides >= 3 || !open) return;
+    idle = setTimeout(() => {
+      if (typing || !open || list.hidden) return;
+      type(ASIDES[asides % ASIDES.length]);
+      asides++;
+    }, 24000);
   }
 
   // The floor, if the page happens to be the arcade. The counter never
@@ -386,14 +448,56 @@ export function mountChat(anchor, opts = {}) {
     return live[day % live.length];
   }
 
+  // The sticker. Not a link to a file — there is no file, and there is no
+  // image asset anywhere in this brand. `svgBadge` emits the same arcs the
+  // canvas strokes, so what he hands you and what you are looking at are the
+  // same object. Built on the spot, handed over as a data URI.
+  function giveSticker() {
+    const svg = svgBadge({ ground: TOKO.MAGENTA, ink: TOKO.PAPER, px: 20 });
+    const href = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    const a = el('a', 'tc-gift');
+    a.href = href;
+    a.download = 'toko-midori.svg';
+    const img = el('img');
+    img.src = href;
+    img.alt = '';
+    a.append(img, document.createTextNode('TAKE THE STICKER'));
+    const p = el('p');
+    p.appendChild(a);
+    log.appendChild(p);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  // Your half of the one topic that runs the other way.
+  function answer(o) {
+    if (typing) { finishTyping(); return; }
+    pending = null;
+    line('tc-you', o.q);
+    if (o.opens) { fresh = new Set(o.opens); o.opens.forEach(id => unlocked.add(id)); }
+    list.hidden = true;
+    type(o.a);
+  }
+
   function ask(t) {
     if (typing) { finishTyping(); return; }
     line('tc-you', t.q);
     asked.add(t.id);
+    fresh = t.opens ? new Set(t.opens) : null;
     if (t.opens) t.opens.forEach(id => unlocked.add(id));
     list.hidden = true;
+    // what he greets you with next time — the last thing you were curious
+    // about, and nothing else about you
+    store.write({ ...store.read(), last: t.id });
 
     let after = t.end ? () => setTimeout(close, 900) : null;
+    if (t.gift) {
+      const prev = after;
+      after = () => { giveSticker(); if (prev) prev(); };
+    }
+    if (t.asks) {
+      const prev = after;
+      after = () => { pending = t.asks; renderMenu(); if (prev) prev(); };
+    }
     if (t.pick) {
       const g = pickGame();
       const prev = after;
@@ -428,7 +532,7 @@ export function mountChat(anchor, opts = {}) {
       const st = store.read();
       const visits = (st.visits || 0) + 1;
       store.write({ ...st, visits });
-      type(visits <= 1 ? GREETING : RETURNING[(visits - 2) % RETURNING.length]);
+      type(greeting({ visits, hour: hour(), last: st.last }));
     }
     else renderMenu();
     addEventListener('keydown', onKey);
@@ -444,6 +548,7 @@ export function mountChat(anchor, opts = {}) {
     root.classList.remove('is-open');
     bar.setAttribute('aria-expanded', 'false');
     if (typing) { typing.after = null; finishTyping(); }
+    clearTimeout(idle);
     head.stop();
     startBadge();
     removeEventListener('keydown', onKey);
@@ -494,8 +599,19 @@ export function mountChat(anchor, opts = {}) {
     open: openChat,
     close,
     isOpen: () => open,
+    // For tests and for anyone poking at it from a console. `say` walks the
+    // tree by id the way a click does, so a gate can dig to the back of the
+    // shop without twenty-four clicks and a stopwatch.
+    say(id) {
+      const t = TOPICS.find(x => x.id === id);
+      if (t) ask(t);
+      return !!t;
+    },
+    menu: () => menu(unlocked, asked, { hour: hour(), fresh }).map(t => t.id),
+    asking: () => !!pending,
     destroy() {
       if (typing) { typing.after = null; finishTyping(); }
+      clearTimeout(idle);
       removeEventListener('keydown', onKey);
       removeEventListener('keydown', sawKey, true);
       removeEventListener('pointerdown', sawTap, true);

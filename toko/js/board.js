@@ -279,7 +279,9 @@ function faceIn(ctx, x, y, w, h, opts) {
 // ── the counter ──────────────────────────────────────────────────────────
 // mounted INSIDE its slot rather than after it, because on this page the
 // anchor is the demo box itself
-mountChat($('#chat-demo'), { where: 'in' });
+// exposed so the gate (and a console) can walk the tree by topic id rather
+// than by hunting for buttons by their wording
+globalThis.__tokoChat = mountChat($('#chat-demo'), { where: 'in' });
 
 // ── the sting ────────────────────────────────────────────────────────────
 $('#b-sting').addEventListener('click', () => { playSting(); });
