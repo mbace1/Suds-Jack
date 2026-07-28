@@ -173,9 +173,11 @@ const CSS = `
 @media (max-width: 560px) {
   .toko-chat .tc-panel { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
   .toko-chat .tc-portrait { flex-direction: row; border-right: 0; border-bottom: 2px solid var(--tc-line); padding: 8px 16px; }
-  /* the head is a canvas laid out at 120x158 — on a phone that is a third of
-     the panel spent on a portrait, so it comes down and the menu gets it */
-  .toko-chat .tc-portrait canvas { width: 74px; height: 97px; }
+  /* The head is a canvas laid out at 120x158 — on a phone that is a third of
+     the panel spent on a portrait, so it comes down and the menu gets it.
+     !important because Surface sizes its canvas with an INLINE style, which
+     a plain rule here loses to. */
+  .toko-chat .tc-portrait canvas { width: 74px !important; height: 97px !important; }
   /* one column means nine topics is 400px of menu, so the transcript gives
      way first — you can scroll back through what he said, but you cannot
      scroll to a topic you cannot see */
