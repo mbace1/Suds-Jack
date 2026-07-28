@@ -2,6 +2,7 @@
 
 import { PAL, SECTOR_COLOR } from './palette.js?v=13';
 import { Post, Reader } from './codec.js?v=13';
+import { Photo } from './photo.js?v=13';
 import { SECTORS, STORIES, storyCopy, parseLine } from './stories.js?v=13';
 import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=13';
 import * as audio from './audio.js?v=13';
@@ -196,7 +197,7 @@ function buildFeed() {
     art.append(media, cap);
     feed.appendChild(art);
 
-    const post = new Post(slot, story, sector, i);
+    const post = new Photo(slot, story, sector, i);
     post.renderStatic();
     posts.push({ story, sector, copy, post, decoded: false, read: false,
       els: { art, bulletin, box, decodeBtn } });
@@ -277,6 +278,7 @@ function rebuildFeed() {
     p.read = keep[i].read;
     p.post.decoded = p.decoded;
     if (p.decoded) {
+      p.els.art.classList.add('is-decoded');
       p.els.box.hidden = false;
       p.els.decodeBtn.classList.add('on');
       p.els.decodeBtn.setAttribute('aria-expanded', 'true');
@@ -385,6 +387,7 @@ function toggleDecode(i) {
   if (p.decoded) rememberDecoded(p.story.id);
   if (!reader.done) reader.finish();
   reader.setDecoded(p.decoded);
+  p.els.art.classList.toggle('is-decoded', p.decoded);
   p.els.box.hidden = !p.decoded;
   p.els.decodeBtn.classList.toggle('on', p.decoded);
   p.els.decodeBtn.setAttribute('aria-expanded', String(p.decoded));

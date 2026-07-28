@@ -8,9 +8,12 @@ const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
+  './img/cathedral.jpg',
+  './img/katu.jpg',
+  './img/mannerheim.jpg',
   './icon-192.png',
   './icon-512.png',
-  ...['main', 'codec', 'toko', 'visuals', 'stories', 'i18n', 'screen', 'audio', 'palette']
+  ...['main', 'codec', 'photo', 'toko', 'visuals', 'stories', 'i18n', 'screen', 'audio', 'palette']
     .map(m => `./js/${m}.js${V}`),
 ];
 
