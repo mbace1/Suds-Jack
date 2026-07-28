@@ -705,10 +705,14 @@ export const FAVOURITES = [
       'YOU TELL PEOPLE ABOUT FOR YEARS.'],
   },
   {
+    // Deliberately NOT pinned to one title. The line is about the jump,
+    // which is the same jump in the 1983 cabinet and in everything after it,
+    // so it does not matter which Mario you had.
     id: 'mariobros', name: 'MARIO BROS.', when: '1983',
-    a: ['ONE SCREEN. HIT THE FLOOR FROM UNDERNEATH.',
-      'THE VERB IS THE WHOLE DESIGN AND IT WAS',
-      'FINISHED THE DAY THEY THOUGHT OF IT.'],
+    a: ['THE JUMP. NOBODY HAS IMPROVED ON IT.',
+      'YOU STEER IN THE AIR AND IT STILL FEELS',
+      'LIKE WEIGHT. EVERYBODY COPIES IT.',
+      'ALMOST NOBODY LANDS IT.'],
   },
   {
     // Suds Jack's own concept line names these two, so they are on the list
