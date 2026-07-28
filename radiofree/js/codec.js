@@ -6,10 +6,10 @@
 // Idle/static frames prefer story.broll so the new Helsinki art is visible
 // while scrolling — not only during live cuts.
 
-import { PixelScreen, shade, mix } from './screen.js?v=12';
-import { PAL, SECTOR_COLOR } from './palette.js?v=12';
-import { Toko } from './toko.js?v=12';
-import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=12';
+import { PixelScreen, shade, mix } from './screen.js?v=13';
+import { PAL, SECTOR_COLOR } from './palette.js?v=13';
+import { Toko } from './toko.js?v=13';
+import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=13';
 
 export const POST_W = 144, POST_H = 276;
 const VF = { x: 8, y: 6, w: PANEL_W, h: PANEL_H };
@@ -20,15 +20,6 @@ const WAVE = { x: 8, y: 266, w: 128, h: 8 };
 const WEIGHTS = { face: 0.20, graphic: 0.15, broll: 0.65 };
 const CUT_MIN = 3.2, CUT_MAX = 5.5;
 
-// The rotation. AGENTS.md documents this as "story.broll preferred ~85%, else
-// random from BROLL_KEYS" — the code had drifted to returning story.broll
-// 100% of the time, and since every story sets one, esplanadi, suomenlinna and
-// katajanokka never reached the air at all. Worse, every broll cut inside a
-// post was the same still, so 65% of the sequencer was one held frame.
-//
-// So: the story's own plate leads and stays the likeliest shot, but never twice
-// running. Two identical broll cuts in a row read as the picture having frozen,
-// which is the opposite of what a cut is for.
 function pickBroll(story, lastKey) {
   const pool = (BROLL_KEYS && BROLL_KEYS.length) ? BROLL_KEYS
     : ['esplanadi', 'kamppi', 'harbour', 'gulf', 'cathedral', 'katu', 'mannerheim', 'station', 'suomenlinna', 'katajanokka'];
@@ -63,7 +54,6 @@ export class Post {
     this.wave = new Array(31).fill(0.2);
     this.live = false;
     this.silent = false;
-    // Prefer B-roll so idle cards show Helsinki footage, not only charts
     this.shot = story.broll
       ? { type: 'broll', key: story.broll }
       : { type: 'graphic' };
@@ -75,7 +65,6 @@ export class Post {
   goLive() {
     this.live = true;
     this.signal = 0;
-    // Always open on preferred B-roll when the story has one — guaranteed first look
     this.shot = this.story.broll
       ? { type: 'broll', key: this.story.broll }
       : pickShot(this.story, this.lastBroll);
@@ -85,7 +74,6 @@ export class Post {
   }
   goIdle() { this.live = false; }
 
-  // what the last footage beat showed, so the next one can differ
   noteShot() { if (this.shot && this.shot.type === 'broll' && this.shot.key) this.lastBroll = this.shot.key; }
 
   update(dt, mouth) {
@@ -112,7 +100,6 @@ export class Post {
 
   renderStatic() {
     this.toko.update(0.016, 0, this.decoded);
-    // Keep preferred B-roll on idle so scrolling the feed shows the new art
     if (this.story.broll) {
       this.shot = { type: 'broll', key: this.story.broll };
     } else {
