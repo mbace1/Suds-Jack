@@ -351,6 +351,13 @@ Finnish key with an umlaut was unmatchable, and the fragments left over collided
 with unrelated topics. A key with a **space** in it can never match either — the
 gate fails on both.
 
+**Naming a cabinet takes more than one common word.** A cabinet beats a topic
+in the parser, so that "TELL ME ABOUT HYPER DAGGER" gets the cabinet — but a
+single title word used to be enough, and `WHAT MAKES A GOOD GAME?` was answered
+with *The Game of Life*. What counts as "too common" is asked of the corpus
+rather than hand-listed: **a word Toko already uses in a question of his own
+needs a second word to agree.** GAME does; POWDER and SKLTR do not.
+
 Japanese does not space its words, so that pack sets `substring: true` and the
 parser asks a different question: not *is this key one of your words* but *does
 this key appear in what you typed*. The keys become **stems** (「作」 catches

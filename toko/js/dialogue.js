@@ -734,6 +734,24 @@ const words = (s, stop = stops()) =>
 export const nameWords = s =>
   (String(s).toUpperCase().match(RUN) || []).filter(w => !stops().has(w));
 
+// Words that appear in Toko's OWN questions, in the language now selected.
+//
+// This is what stops a cabinet being named by one ordinary word. "WHAT MAKES
+// A GOOD GAME?" was answered with the cabinet *The Game of Life*, because
+// GAME is in its title and one title word was enough. Rather than keep a
+// hand-list of words that are "too common", ask the corpus: if Toko already
+// uses the word in a question of his own, it is not distinctive enough to
+// name a cabinet on its own — a second word, or the id, has to agree.
+export function askedWords() {
+  const p = pack();
+  const out = new Set();
+  for (const t of TOPICS) {
+    const local = p && p.T && p.T[t.id];
+    for (const w of nameWords((local && local.q) || t.q)) out.add(w);
+  }
+  return out;
+}
+
 // He hears the cry and answers it, whatever else is in the sentence.
 export const CRY = {
   test: s => /GO\s+MAKE\s+(YOUR\s+)?OWN/i.test(s),

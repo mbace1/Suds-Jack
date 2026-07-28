@@ -542,6 +542,22 @@ function serve() {
   ok('a stop word does not match a cabinet',
     /THE VERB FIRST[\s\S]*GO MAKE YOUR OWN/.test(await logText()));
 
+  // Same failure one layer up, and it survived the stop-list fix: GAME is not
+  // a stop word, so "WHAT MAKES A GOOD GAME?" was answered with the CABINET
+  // The Game of Life. One ordinary title word is not a cabinet name — and
+  // "ordinary" is asked of the corpus rather than hand-listed: a word Toko
+  // already uses in a question of his own needs a second word to agree.
+  await page.evaluate(() => globalThis.__tokoChat.type('what makes a good game'));
+  await settle();
+  ok('one common title word does not name a cabinet',
+    /THE VERB\.?\s*$|RUN\. FIRE\./m.test(await logText())
+    && !/▸ THE GAME OF LIFE[\s\S]*$/.test((await logText()).split('WHAT MAKES A GOOD GAME').pop()));
+  // but a real name still gets there in one go
+  await page.evaluate(() => globalThis.__tokoChat.type('the game of life'));
+  await settle();
+  ok('and a real cabinet name still does',
+    /THE QUIET ONE|SENDING YOU|SIGNAL OFF|DO NOT SIGN/.test(await logText()));
+
   // The routing step, and the reason the counter can be the front door for
   // all of it: a note taken in front of a cabinet files under THAT GAME —
   // the same `game` field every other feedback surface here uses — and
