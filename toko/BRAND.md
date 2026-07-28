@@ -256,6 +256,14 @@ What it does beyond talking:
   own line, a queued one says it is queued, and dropped on a page with no hub
   he says it is written down on your machine and nothing more. He mentions a
   note **once** on your next visit; twice would be a receipt.
+- **He talks about one cabinet at a time.** `askGames` is the his-question
+  mechanic with the **live catalogue** as the options, so a cabinet added
+  tomorrow is on the rack tonight. His line per game lives in `GAME_NOTES`;
+  one with nothing written yet falls back to the catalogue's own tagline
+  rather than going missing. Naming a game at the parser gets it directly.
+- **You can read your own notes back.** Feedback you cannot see again is a
+  suggestion box with a lock on it, so `WHAT HAVE I TOLD YOU?` prints the
+  archive off your machine — the same one the hub keeps.
 - **He reads what the cabinets left on your machine.** `HAVE YOU SEEN ME
   PLAY?` reads the games' own `localStorage` hi-scores, shows them, and sends
   them nowhere. He says as much while doing it — a workshop that claims not

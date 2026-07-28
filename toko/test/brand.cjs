@@ -490,6 +490,63 @@ function serve() {
   ok('with nowhere to send it he says exactly that',
     /WRITTEN DOWN ON YOUR MACHINE/.test(await logText()));
 
+  // ── one cabinet at a time ──────────────────────────────────────────────
+  // `askGames` is the his-question mechanic with the LIVE catalogue as the
+  // options, so a cabinet added tomorrow is on the rack tonight — and one
+  // with no line written for it yet falls back to its own tagline rather
+  // than going missing.
+  await page.evaluate(() => {
+    globalThis.__hub = globalThis.__hub || {};
+    globalThis.__hub.games = [
+      { id: 'hyperdagger', title: 'Hyper Dagger', path: 'hyperdagger/', lineage: 'Devil Daggers × HYPERDEMON' },
+      { id: 'newthing', title: 'New Thing', path: 'newthing/', tagline: 'a cabinet with no line written yet' },
+    ];
+  });
+  await page.evaluate(() => globalThis.__tokoChat.say('about'));
+  await settle();
+  const rack = await page.evaluate(() =>
+    [...document.querySelectorAll('.toko-chat .tc-menu.is-yours button')].map(b => b.textContent));
+  ok('the rack is built from the live catalogue', rack.length === 2, rack.join(' | '));
+  await page.keyboard.press('1');
+  await settle();
+  ok('picking one gets his line and a real link',
+    await page.evaluate(() => {
+      const t = document.querySelector('.toko-chat .tc-log').textContent;
+      const a = [...document.querySelectorAll('.toko-chat .tc-go')].pop();
+      return /SURVIVAL TIME IS THE ONLY SCORE/.test(t) && a.getAttribute('href') === 'hyperdagger/';
+    }));
+  ok('and the rack hands the menu back', await page.evaluate(() =>
+    !globalThis.__tokoChat.asking()
+    && document.querySelectorAll('.toko-chat .tc-menu button').length > 0));
+  await page.evaluate(() => globalThis.__tokoChat.type('tell me about new thing'));
+  await settle();
+  ok('a cabinet with no line falls back to its tagline',
+    /NO LINE WRITTEN YET/.test(await logText()));
+  await page.evaluate(() => globalThis.__tokoChat.type('what about hyper dagger'));
+  await settle();
+  ok('a cabinet can be named straight at the parser',
+    /SURVIVAL TIME IS THE ONLY SCORE/.test(await logText()));
+
+  // ── reading your own notes back ────────────────────────────────────────
+  // Feedback you cannot see again is a suggestion box with a lock on it.
+  await page.evaluate(() => {
+    globalThis.__hub.feedback = {
+      archive: () => [{ ts: Date.parse('2026-07-20'), note: 'the eyes look right now' }],
+      send: () => 'sent',
+    };
+  });
+  await page.evaluate(() => globalThis.__tokoChat.say('mine'));
+  await settle();
+  ok('he reads your own notes back to you',
+    await page.evaluate(() => {
+      const rows = [...document.querySelectorAll('.toko-chat .tc-score')].map(n => n.textContent);
+      return rows.some(r => /2026-07-20/.test(r) && /eyes look right now/.test(r));
+    }));
+  await page.evaluate(() => { globalThis.__hub.feedback = { archive: () => [], send: () => 'sent' }; });
+  await page.evaluate(() => globalThis.__tokoChat.say('mine'));
+  await settle();
+  ok('and says so when there are none', /THE BOX IS EMPTY/.test(await logText()));
+
   // ── the hour, and the menu it gates ────────────────────────────────────
   const clock = await page.evaluate(async () => {
     const d = await import('/toko/js/dialogue.js');
