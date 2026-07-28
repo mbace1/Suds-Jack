@@ -31,3 +31,31 @@ screens with a hard cut between them.
   `localStorage` under `flashPrinceBest`.
 - Keyboard, gamepad and an on-screen pad on touch. The arcade shell for the way
   back to the hub.
+
+## v2 — 2026-07-28
+
+The first act stops being one long screen.
+
+Laid out side by side, screens 0–4 were the same composition five times: palms
+at the edges, two suns, a ridge. Every screen was distinct in LAYOUT — which is
+what you die on — but not one of them was somewhere you could name afterwards,
+and five identical pictures is the fastest way to make a hand-authored world
+feel generated.
+
+- **`scene`** — a new optional field on a room. The biome still decides the
+  sixteen colours and which shapes are allowed; `scene` decides where in that
+  biome you are standing, and hangs one thing in the frame you remember the
+  room by. It changes the trunks (count, height, girth, lean) and adds that
+  screen's own furniture.
+- `pod` — the capsule that put him here, half-buried at the end of the furrow
+  it cut, hatch blown off, still venting
+- `chasm` — no far side: mist all the way down with something lit at the
+  bottom of it, which is the only reason you can tell it is far
+- `understory` — down among it, a ceiling of leaves overhead and undergrowth
+  at your feet, the sky only a rumour
+- `canopy` — above it, the mist now a sea below you with the tops of the trees
+  coming up through it
+- `firstStone` — the first thing anybody built, seen through the last trees
+- `colonnade` — two near columns in black across screen 9, which is what tells
+  it apart from screen 8: both are cut block with glyphs, and at a glance they
+  were the same picture

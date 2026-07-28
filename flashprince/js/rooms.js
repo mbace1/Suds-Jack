@@ -24,13 +24,21 @@
 //   S  where he wakes up      G  the pistol       h  a medical cell
 //   b  something that lives here          g  a sentry        d  a drone
 //   T  a light
+//
+// `scene` is the one thing a screen has that no other screen has. The biome
+// decides the sixteen colours and which shapes are allowed; this decides where
+// in that biome you are STANDING — down in the understory, up in the canopy
+// above the mist, on the lip of a chasm — and hangs one piece of furniture in
+// the frame you will remember the room by. Without it the first five screens
+// were the same composition five times, which is the fastest way to make a
+// hand-authored world feel generated.
 
 export const RW = 20, RH = 12, TILE = 16;
 export const ROOM_W = RW * TILE, ROOM_H = RH * TILE;
 
 export const ROOMS = [
   { // 0 — he wakes in the clearing. Nothing here can hurt him; that is the point.
-    t: 0.00, beat: 'wake',
+    t: 0.00, beat: 'wake', scene: 'pod',
     map: [
       '                    ',
       '                    ',
@@ -47,7 +55,7 @@ export const ROOMS = [
     ],
   },
   { // 1 — the first hole in the floor of the world
-    t: 0.25,
+    t: 0.25, scene: 'chasm',
     map: [
       '                    ',
       '                    ',
@@ -64,7 +72,7 @@ export const ROOMS = [
     ],
   },
   { // 2 — and the first thing that lives here. Exits one storey up.
-    t: 0.50,
+    t: 0.50, scene: 'understory',
     map: [
       '                    ',
       '                    ',
@@ -82,7 +90,7 @@ export const ROOMS = [
   },
   { // 3 — the high road. A three-tile gap over nothing, which is exactly as far
     //     as a running jump goes.
-    t: 0.75,
+    t: 0.75, scene: 'canopy',
     map: [
       '                    ',
       '                    ',
@@ -99,7 +107,7 @@ export const ROOMS = [
     ],
   },
   { // 4 — somebody else came down here first, and did not get up again
-    t: 1.00, beat: 'gun',
+    t: 1.00, beat: 'gun', scene: 'firstStone',
     map: [
       '                    ',
       '                    ',
@@ -184,7 +192,7 @@ export const ROOMS = [
     ],
   },
   { // 9 — the long hall, and two of them in it
-    t: 2.80,
+    t: 2.80, scene: 'colonnade',
     map: [
       '                    ',
       '                    ',

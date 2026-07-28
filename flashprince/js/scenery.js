@@ -82,11 +82,24 @@ export function paintBack(scr, room, index) {
   }
 
   // MID — the middle distance: trunks, columns, machine, arches
+  //
+  // The jungle used to draw the same five-trunks-and-two-suns arrangement on
+  // every screen it covered, and laid out side by side the whole first act read
+  // as one long screen. So a room can name a SCENE (see rooms.js) and the
+  // trunks answer to it: down in the understory they are close, few and
+  // enormous; up in the canopy they are far, many and thin, with the mist sea
+  // under them. Same biome, same sixteen colours, different place to be.
+  const scene = room.scene;
   if (w.jungle > 0.08) {
-    const n = Math.round(3 + w.jungle * 4);
-    for (let i = 0; i < n; i++) {
-      const x = 16 + r() * (W - 32), lean = (r() - 0.5) * 22;
-      trunk(scr, x, horizon + 24, 96 + r() * 46, 5 + r() * 5, lean, C.NEAR);
+    const spec = {
+      understory: { n: 4, base: 40, h: 190, wd: 11, lean: 8 },
+      canopy: { n: 9, base: -6, h: 130, wd: 4, lean: 26 },
+      chasm: { n: 3, base: 10, h: 150, wd: 7, lean: 14 },
+      firstStone: { n: 3, base: 24, h: 104, wd: 5, lean: 20 },
+    }[scene] ?? { n: Math.round(3 + w.jungle * 4), base: 24, h: 96, wd: 5, lean: 22 };
+    for (let i = 0; i < spec.n; i++) {
+      const x = 16 + r() * (W - 32), lean = (r() - 0.5) * spec.lean;
+      trunk(scr, x, horizon + spec.base, spec.h + r() * 46, spec.wd + r() * 5, lean, C.NEAR);
     }
   }
   if (w.ruin > 0.1) {
@@ -125,8 +138,72 @@ export function paintBack(scr, room, index) {
     }
   }
 
+  // ── the one thing this screen has that no other screen has ─────────
+  // A composition needs a subject, and five screens of undifferentiated jungle
+  // have four. These are cheap — a dozen polygons each — and they are what
+  // makes a screen a place you can name afterwards.
+  if (scene === 'pod') {
+    // The capsule that put him here, half-buried, still steaming, with the
+    // furrow it cut running back to the horizon behind it.
+    const px = 214, py = horizon + 30;
+    scr.poly([60, py + 4, 178, py - 12, 196, py + 2, 96, py + 10], C.DARK);   // the scar
+    scr.poly([px - 30, py, px - 8, py - 26, px + 26, py - 22, px + 34, py + 2], C.SOLID);
+    scr.poly([px - 30, py, px - 8, py - 26, px - 2, py - 24, px - 20, py + 1], C.EDGE);
+    scr.poly([px - 4, py - 22, px + 14, py - 20, px + 12, py - 8, px - 6, py - 10], C.VOID);
+    scr.poly([px - 2, py - 20, px + 10, py - 18, px + 9, py - 11, px - 4, py - 12], C.LUX);
+    scr.rect(px + 26, py - 18, 12, 4, C.DARK);                                // the hatch, off
+    scr.poly([px + 30, py - 16, px + 46, py - 22, px + 48, py - 12, px + 32, py - 8], C.SOLID);
+    for (let i = 0; i < 5; i++) {                                            // and it is still venting
+      scr.disc(px + 2 + i * 5, py - 32 - i * 6 + Math.sin(i) * 3, 5 - i * 0.7, C.NEAR);
+    }
+  }
+  if (scene === 'chasm') {
+    // There is no far side. The mist goes all the way down and something is
+    // lit at the bottom of it, which is the only reason you can tell it is far.
+    for (let i = 0; i < 6; i++) {
+      const y = horizon + 6 + i * 13;
+      scr.veil([0, y, W, y - 5, W, y + 11, 0, y + 15], C.NEAR, 0.42);
+    }
+    scr.poly([0, H - 14, 88, H - 22, 150, H - 10, 232, H - 24, W, H - 16, W, H, 0, H], C.DARK);
+    scr.poly([104, H - 9, 168, H - 15, 214, H - 7, 150, H - 3], C.LUX);
+  }
+  if (scene === 'understory') {
+    // Down among it: a ceiling of leaves overhead, so the sky is only a rumour.
+    for (let i = 0; i < 16; i++) {
+      const x = -10 + i * 22 + (r() - 0.5) * 14;
+      frond(scr, x, -6 + r() * 10, 0.45 + r() * 0.5, 34 + r() * 24, C.NEAR, 0.7, 5.5);
+    }
+    scr.rect(0, 0, W, 10, C.NEAR);
+    for (let i = 0; i < 22; i++) {                                           // undergrowth
+      const x = r() * W, hh = 10 + r() * 16;
+      frond(scr, x, horizon + 62, -1.35 + (r() - 0.5) * 0.7, hh, C.DARK, 0.25, 2.2);
+    }
+  }
+  if (scene === 'canopy') {
+    // Above it. The mist you were standing under two screens ago is now a sea
+    // below you, and the tops of the trees come up through it.
+    for (let i = 0; i < 4; i++) {
+      scr.veil([0, horizon + 20 + i * 9, W, horizon + 12 + i * 9, W, H, 0, H], C.NEAR, 0.4);
+    }
+    for (let i = 0; i < 9; i++) {
+      const x = 8 + i * 36 + (r() - 0.5) * 18, y = horizon + 22 + r() * 16;
+      scr.disc(x, y, 7 + r() * 6, C.MID);
+    }
+  }
+  if (scene === 'firstStone') {
+    // The first thing anybody built, seen through the last of the trees.
+    for (const [x, hh, ww] of [[36, 96, 20], [206, 118, 24], [264, 74, 16]]) {
+      scr.poly([x, horizon + 34, x + ww, horizon + 34, x + ww - 3, horizon + 34 - hh, x + 3, horizon + 34 - hh], C.SOLID);
+      scr.poly([x, horizon + 34, x + 5, horizon + 34, x + 6, horizon + 34 - hh, x + 3, horizon + 34 - hh], C.EDGE);
+      scr.rect(x - 6, horizon + 28 - hh, ww + 12, 7, C.SOLID);
+      scr.rect(x - 6, horizon + 28 - hh, ww + 12, 2, C.EDGE);
+      for (let k = 0; k < 3; k++) scr.rect(x + 4, horizon + 16 - hh + k * 22, ww - 8, 2, C.DARK);
+    }
+    scr.poly([148, horizon + 34, 196, horizon + 34, 192, horizon + 18, 152, horizon + 20], C.SOLID);
+  }
+
   // NEAR-ish ground haze: one flat veil that pushes everything behind it back
-  scr.veil([0, horizon - 6, W, horizon - 22, W, H, 0, H], C.NEAR, 0.35);
+  if (scene !== 'chasm') scr.veil([0, horizon - 6, W, horizon - 22, W, H, 0, H], C.NEAR, 0.35);
 }
 
 // Marks cut into the wall. Called by the tile painter rather than the backdrop
@@ -225,6 +302,18 @@ export function drawAir(scr, room, clock) {
 // distance seen past something enormous and unlit in the corner.
 export function drawFore(scr, room, index) {
   const t = room.t, w = weights(t), r = rand(index * 7481 + 3);
+  if (room.scene === 'colonnade') {
+    // Two columns standing between you and the room. The hall and the gate
+    // screen either side of it are both cut block with glyphs on it, and at a
+    // glance they were the same picture; putting the near colonnade in front
+    // of this one is what tells them apart before you have read anything.
+    for (const x of [52, 268]) {
+      scr.poly([x - 13, H, x + 13, H, x + 10, 26, x - 10, 26], C.VOID);
+      scr.poly([x - 18, 26, x + 18, 26, x + 18, 34, x - 18, 34], C.VOID);
+      scr.poly([x - 16, 12, x + 16, 12, x + 13, 26, x - 13, 26], C.VOID);
+    }
+    scr.rect(0, 0, W, 14, C.VOID);
+  }
   if (w.jungle > 0.25) {
     for (const side of [0, 1]) {
       const x = side ? W + 10 : -10, s = side ? -1 : 1;
