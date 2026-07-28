@@ -229,6 +229,33 @@ export const GAMES = [
     art: 'slash',
   },
   {
+    id: 'flashprince',
+    fi: {
+      tagline: 'Jokainen liike viedään loppuun. Riipu, kiipeä ja vedä ase esiin ennen kuin hän ehtii.',
+      lineage: 'Another World × Flashback × Prince of Persia',
+      controls: '← → kävele (pidä = juoksu) · ↑ hyppy ja kiipeäminen · ↓ kyykky · E ase · X ammu',
+      note: 'neljätoista ruutua viidakosta hautakammioon ja takaisin — monikielisyys ja äänet vielä kesken',
+    },
+    ja: {
+      tagline: '始めた動きは必ず終わる。ぶら下がり、よじ登り、相手より先に銃を抜く。',
+      lineage: 'Another World × Flashback × Prince of Persia',
+      controls: '← → 歩く（長押しで走る）· ↑ ジャンプ／よじ登り · ↓ しゃがむ · E 銃 · X 撃つ',
+      note: 'ジャングルから墓所へ、そしてまた戻る十四画面 — 多言語と音はまだこれから',
+    },
+    pad: 'native',
+    status: 'active',
+    note: 'fourteen screens from the jungle to the tomb and back — new, and still being tuned',
+    title: 'Flash Prince',
+    tagline: 'Every move you start, you finish. Hang, climb, and draw before he does.',
+    lineage: 'Another World × Flashback × Prince of Persia',
+    tags: ['cinematic', 'polygon', 'canvas'],
+    controls: '← → walk (hold to run) · ↑ jump & climb · ↓ crouch · E pistol · X fire',
+    path: 'flashprince/',
+    inRepo: true,
+    accent: '#c8ee5a',
+    art: 'ledge',
+  },
+  {
     id: 'gameoflife',
     fi: {
       tagline: 'Pieniä tarinoita ja pelejä, jotka palauttavat sinut aina ulos. Suomeksi, englanniksi ja japaniksi.',

@@ -90,6 +90,13 @@ it. In the master artwork a leg, a slot and a stem are roughly equal widths,
 which puts the stroke at about a fifth of the mouth's outer radius. It is
 `GEO.stroke` and it is not a taste question.
 
+**The eyes are exactly as wide as the smile.** In the master artwork the outer
+edge of the left eye, the outer edge of the right eye and the two tips of the
+mouth all sit on the same two vertical lines — `GEO.eye.dx + eye.r` equals
+`GEO.mouth.outer.r`, caps included. The face was shipped once with the eyes
+3.7 units proud of the mouth on each side and it read as a wobble rather than a
+decision. `test/brand.cjs` asserts the two edges to within half a unit.
+
 ### The carriers
 
 | | |
@@ -232,14 +239,167 @@ with rented autocomplete. Toko says what Toko wrote — in
 [`js/dialogue.js`](js/dialogue.js), which is the file to edit. Asking some things
 unlocks others, so the conversation grows as you dig.
 
+What it does beyond talking:
+
+- **You can type at him.** A `>` line under the menu takes a sentence and
+  matches it against a keyword table — still no language model, just word
+  overlap, and when it misses it *says so* rather than confidently answering
+  the wrong question. Typing reaches **locked** topics, which is the reward
+  for using your own words instead of the list. `GO MAKE YOUR OWN` is heard
+  wherever it appears in the sentence.
+- **You can leave him a note, and it leaves the browser.** The counter reuses
+  the **arcade's own transport** (`window.__hub.feedback`) rather than
+  shipping a second one — same endpoint, same local archive, same outbox
+  retried on the next visit. Two rules are load-bearing and both are in the
+  gate: **saying nothing records nothing**, and he never claims a delivery
+  that did not happen — an opaque no-cors POST is `sent-blind` and gets its
+  own line, a queued one says it is queued, and dropped on a page with no hub
+  he says it is written down on your machine and nothing more. He mentions a
+  note **once** on your next visit; twice would be a receipt.
+- **He talks about the games he did NOT make.** `WHAT DO YOU PLAY?` racks up
+  `FAVOURITES` — Rygar, Sin and Punishment 2, Chrono Trigger, Nex Machina,
+  The Binding of Isaac, Mario Bros., plus the two Suds Jack's own concept line
+  names. This is where the mantra stops being an opinion and turns into
+  receipts: every rule §5b shouts came off one of these. Three lines each, and
+  **no Play link** — there is nowhere on this floor to send you for somebody
+  else's game, and a button that went somewhere would be a shop move.
+- **He talks about one cabinet at a time.** `askGames` is the his-question
+  mechanic with the **live catalogue** as the options, so a cabinet added
+  tomorrow is on the rack tonight. His line per game lives in `GAME_NOTES`;
+  one with nothing written yet falls back to the catalogue's own tagline
+  rather than going missing. Naming a game at the parser gets it directly.
+- **A note can be *about* something.** Standing in front of one cabinet is the
+  moment a player actually has something to say about it, so his line about a
+  game is followed by *tell him about this one* — and a note taken there files
+  under **that game's id**, the same `game` field every other feedback surface
+  in the workshop already uses, plus the topic he was on when you wrote it. A
+  note that says "this is broken" is worth nothing without that.
+- **You can read your own notes back.** Feedback you cannot see again is a
+  suggestion box with a lock on it, so `WHAT HAVE I TOLD YOU?` prints the
+  archive off your machine — the same one the hub keeps.
+- **And he tells you what changed.** `DID ANY OF IT MATTER?` reads out
+  `CHANGED` in `dialogue.js` — a **hand-kept** log of what actually got fixed.
+  Nothing generates it, because the whole point is that a person read the
+  notes and did something; add an entry when you ship the fix. It never says
+  *you asked for this*, because most entries nobody asked for and a counter
+  that flatters you is back to being a shop. It does check whether you left a
+  note about that same cabinet and say so **once** — that claim is true and
+  checkable, which is the only kind worth making.
+- **He reads what the cabinets left on your machine.** `HAVE YOU SEEN ME
+  PLAY?` reads the games' own `localStorage` hi-scores, shows them, and sends
+  them nowhere. He says as much while doing it — a workshop that claims not
+  to profile you should be able to explain exactly what it just looked at,
+  and the claim is only worth making because the code is that short.
+- **He picks a cabinet.** `WHAT SHOULD I PLAY?` reads the arcade's own
+  catalogue (`window.__hub`) and answers with one game and a real link — the
+  same one all day, which is the line he says while giving it. Dropped on a
+  page with no catalogue he says he cannot see the floor, rather than throwing.
+- **He asks YOU something.** One topic (`asks:`) runs the other way: the menu
+  becomes your mouth for a turn, and what you answer can open branches. Same
+  nine slots, same number keys — only the direction changes, and the menu is
+  handed straight back. A conversation stuck in answer mode is a dead end with
+  a caret in it, so the gate checks for the hand-back.
+- **He gives you a sticker.** `gift:` hands over the badge as a real download —
+  built on the spot from `svgBadge()`, which is the same arcs the canvas
+  strokes. There is no file behind it because there is no image asset anywhere
+  in this brand; it is a data URI he draws while you are asking.
+- **He says things unprompted.** Sit at the counter without picking anything
+  and after 24 seconds he offers a line. Three a visit, then he lets it be
+  quiet — a Sierra front desk was never silent, but a counter that keeps
+  talking at you is a shop.
+- **He knows the hour.** Between midnight and five he opens differently and one
+  topic exists that does not exist at two in the afternoon. It reads the
+  reader's own clock; nothing is sent anywhere.
+- **He remembers you came back.** Three things persist and nothing else: how
+  many times you have opened the counter, the last thing you asked (he opens
+  with it next time), and whether you wanted the tick. No identity, no profile,
+  no account — the workshop is built on not having one, and all three fit in a
+  sentence you could read aloud.
+- **The back of the shop.** One topic has `needs:` rather than an unlock, so it
+  appears only once you have actually dug. The reward for exhausting a tree
+  should be more tree.
+- **The portrait tears** while he answers the topics that are *about* the seam
+  — the machine, the slop, the hypocrisy question. A glitch is an **event**
+  (§5), so it decays over its own window instead of sitting there as texture.
+- **`#toko` opens it**, so a link can point at the conversation rather than
+  the page it sits on. It only ever opens; the hash is never written back,
+  because the arcade's own address stays the plain one.
+- **A typing tick**, off until you ask for it, remembered after you do. The
+  AudioContext is built lazily on that first gesture, because one created
+  before a gesture just sits suspended and logs a warning for its trouble.
+
+**Three languages.** The arcade is fi/en/ja and so is the counter. **English is
+the source** — it lives inline in `dialogue.js` — and `dialogue.fi.js` /
+`dialogue.ja.js` are pure string packs that override it by topic id. A key a
+pack has not translated falls through to English rather than blanking, the same
+rule `hub/i18n.js` follows and for the same reason: a missing line should read
+wrong, not read empty.
+
+Toko's register does not survive a literal translation. English is clipped and
+shouted in caps; Finnish takes the caps but not the article-dropping, so the
+flatness comes from short declaratives and dropped pronouns. **Japanese has no
+caps at all** — it comes from plain form (だ・である, never です・ます), no
+softeners, and lines kept to about *twenty* characters because the glyphs are
+full-width and a line translated at English length wraps mid-word.
+
+The counter follows the PAGE: `__hub.lang()` on the arcade, then `<html lang>`,
+then English. It **does not re-type the transcript** — a conversation you
+already had happened in the language you had it in, and rewriting somebody's own
+past questions under them reads like a machine correcting them. The menu, the
+greeting and everything from here on follow; what is above the fold stays.
+
+**The parser works in all three, by two different methods.** English and
+Finnish tokenise on whitespace and match word-for-word, with a **per-language
+stop list** — the English one does nothing for a Finnish sentence, and without
+ON/EI/JA/SE in it two ordinary function words were enough to score a match and
+hand back a confident wrong answer. The tokeniser is `\p{L}` and not `[A-Z]`,
+because the uppercased text has no Ä in it: `TIEDÄ` used to become `TIED`, every
+Finnish key with an umlaut was unmatchable, and the fragments left over collided
+with unrelated topics. A key with a **space** in it can never match either — the
+gate fails on both.
+
+**Naming a cabinet takes more than one common word.** A cabinet beats a topic
+in the parser, so that "TELL ME ABOUT HYPER DAGGER" gets the cabinet — but a
+single title word used to be enough, and `WHAT MAKES A GOOD GAME?` was answered
+with *The Game of Life*. What counts as "too common" is asked of the corpus
+rather than hand-listed: **a word Toko already uses in a question of his own
+needs a second word to agree.** GAME does; POWDER and SKLTR do not.
+
+Japanese does not space its words, so that pack sets `substring: true` and the
+parser asks a different question: not *is this key one of your words* but *does
+this key appear in what you typed*. The keys become **stems** (「作」 catches
+作る・作った・作りたい), a hit scores its own **length** so a long agreement beats a
+short one, and the floor rises to match. A blunt matcher will answer anything,
+so the gate checks that it still **says no** to a sentence about the weather.
+
+> Both packs are **drafts written by the machine**, and the file headers say so.
+> Finnish wants a read-aloud pass on the mantra — those lines are meant to be
+> shoutable across a room. Japanese has not been checked by a native speaker at
+> all; the jokes are the likely casualties, and the blunt 「お前」 running through
+> it is a choice somebody should sign off on.
+
 Rules it holds:
 
 - **1–9 picks, ENTER skips the typing, ESC leaves.** Keyboard-first, like the
   games under it. Nothing traps you and no animation has to be watched to the
-  end.
+  end. **A field owns its own keys**: the number shortcuts are dead while you
+  are writing, or typing "3 CRASHES ON LOAD" picks topic three and throws the
+  sentence away. Esc steps out of the field first, then out of the counter.
 - **It must not push the games below the fold.** It sits *above* the cabinets,
   so the topic menu runs two columns where there is room; stacked, seven topics
   at the 44px tap floor made a panel nearly 600px tall.
+- **Nine slots, and one of them is the way out.** The keys are 1–9, so the menu
+  shows nine. The tree outgrew that and goodbye fell off the bottom, which
+  turns a counter you can walk away from into one you cannot; `end` topics now
+  get a reserved slot. For the same reason, whatever the last answer *opened*
+  sorts to the top — a branch pushed off the bottom of the list that opened it
+  is a branch nobody finds.
+- **Nothing in it may depend on the wall clock to pass.** The hour changes what
+  he says, so the gate skips his typing rather than waiting it out — a fixed
+  wait passed all day and failed after midnight, when the late greeting is
+  longer. For the same reason the late greeting is two lines: at 34ms a
+  character a third puts four seconds between opening the counter and being
+  allowed to speak, and that is a wait, not a mood.
 - **The typing is time-driven, not a chain of timeouts.** A `setTimeout` per
   character pays the timer's minimum resolution every time, and an
   18ms-per-character line measured out at nearly 70 — the greeting took 2.6
@@ -247,6 +407,14 @@ Rules it holds:
   rAF walks the schedule.
 - **Reduced motion prints the line whole.** No typing, no blink, no growth
   animation.
+- **It has to survive a 390px screen.** The panel is capped and clips, so its
+  grid rows are `minmax(0, 1fr)` and the menu scrolls inside them — an `auto`
+  row sizes to its content and overflows the cap instead, which hid the bottom
+  four topics *and* the way out on a phone while looking perfect on a laptop.
+  The gate opens the counter at phone size for exactly this.
+- **No back-ticks in the stylesheet.** It is a template literal, and one
+  back-tick in a CSS comment ends the string mid-rule and takes the whole
+  module down with it.
 
 ---
 
@@ -342,6 +510,7 @@ so a cross-directory import would break the offline promise either way.
 **Don't**
 
 - Don't re-weight the stroke. It closes the eyes.
+- Don't move the eyes apart. They line up with the mouth's tips.
 - Don't outline, gradient, bevel, shadow, or rotate the face.
 - Don't set body copy in magenta.
 - Don't take the sticker colours into anything on a screen.
@@ -366,7 +535,8 @@ toko/
     util.js       seeded RNG + the resting pulse
     sting.js      the three-second sting (skippable from frame one)
     chat.js       the counter — the conversation panel, self-contained
-    dialogue.js   what Toko says. Edit THIS to change the conversation
+    dialogue.js   what Toko says — topics, his question, the greetings,
+                  the asides. Edit THIS to change the conversation
     signature.js  sign() — the drop-in corner badge
     masthead.js   the animated lockup for the arcade hub
     board.js      wires the board out of the shipping modules

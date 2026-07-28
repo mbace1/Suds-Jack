@@ -28,11 +28,19 @@ export function endpoint() { return ENDPOINT; }
 export function configured() { return !!ENDPOINT; }
 export function setEndpoint(url) { ENDPOINT = url || ''; }   // tests + console
 
+// This room keeps its OWN endpoint and its own outbox on purpose — it is the
+// offline-first one, its service worker precaches an exact list scoped to
+// /gameoflife/, and importing the hub's transport would break that promise.
+// What it does share is the one thing that makes a sheet sortable: the same
+// `game` key the arcade catalogue uses for this cabinet. Point ENDPOINT at
+// the same Apps Script and its rows sit with everything else.
+const GAME_ID = 'gameoflife';
+
 async function post(entry) {
   const res = await fetch(ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify(entry),
+    body: JSON.stringify({ game: GAME_ID, source: 'gameoflife', ...entry }),
   });
   if (!res.ok) throw new Error(`endpoint answered ${res.status}`);
 }

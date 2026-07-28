@@ -87,7 +87,7 @@ the Formspree endpoint `toko-drop` already uses. Every note lands in `localStora
 undeliverable ones queue in an outbox drained one at a time on the next visit; Send with
 nothing said records nothing. `window.__hub` exposes `{games, sketches, feedback, debug}`
 (`feedback.setEndpoint(url, blind)` points it at a stub for tests).
-`node test/hub-smoke.cjs` = 31 checks: a cabinet per catalogue entry, every in-repo link
+`node test/hub-smoke.cjs` = 141 checks: a cabinet per catalogue entry, every in-repo link
 resolving 200, every marquee actually painted, the full feedback path (empty / sent /
 queued / drained), modal behaviour (Esc, backdrop, focus returned), WCAG AA, 44px targets,
 no horizontal overflow on a phone.
@@ -173,6 +173,63 @@ i-frame roll. Grenades lob to the crosshair point (start 3, +1 per stage / bonus
 cap 9). Stage quota gauge Cabal-style; clearing pops all stragglers. No build step —
 open `dropcabal/index.html` (three.js via jsDelivr importmap). Same `gh-pages` deploy
 caveat as paperboy.
+
+### Flash Prince (`flashprince/`)
+A **cinematic platformer** — *Another World* × *Flashback* × the original *Prince of
+Persia* — in canvas 2D with no build step and no image assets. The owner's direction was
+to follow **Another World's art and animation formula as closely as possible**, and that
+is a technical instruction, not a mood board: AW has no sprites in it at all. Every frame,
+background and character alike, is a list of **filled polygons** rasterised into a 320×192
+buffer. So `js/screen.js` draws polygons and then takes the antialiasing back out —
+a final pass snaps every pixel to the nearest of the room's **sixteen** colours through a
+lazily-filled RGB555 lookup (an entry costs sixteen distance tests once and a typed-array
+read forever after). Edges go hard, the grey halo along a frond disappears, and the
+framebuffer is genuinely 16-colour rather than merely painted with sixteen colours.
+`palette.js` holds the sixteen as fixed **roles** (VOID / SKY / FAR / MID / NEAR / EDGE /
+SOLID / DARK / LUX / LUX2 + four locked hero slots), so nothing that draws knows which
+biome it is in — a frond and a colonnade both fill with MID, they are just different
+colours by the time you reach them. `paletteAt(t)` walks that set continuously along the
+whole run, which is how "the jungle blends into Egypt" is done: **the palette fades, the
+shapes overlap, and no screen ever announces a change**. `scenery.js` gives every element
+type a WIDE window of `t` it exists in — fronds are still hanging in the first tomb, the
+first columns are already standing in the last jungle.
+**Animation is a rotoscope, not a sheet.** `figure.js`: a pose is **thirteen joint angles**
+(`[hipN,kneeN, hipF,kneeF, shN,elN, shF,elF, lean, head, py, px, rot]`, degrees from
+straight down, positive swinging *forward* so the same numbers work facing either way), a
+frame is those angles turned into eleven polygons, a clip is `[[pose, holdFrames], …]`.
+That is what lets a run hold its contact pose for three frames and blur through the pass
+in one — rotoscope timing, which a constant-rate sprite loop cannot do. The far limbs draw
+a shade down; that one cheat is the only depth a flat figure gets and it is why the run
+reads as a run.
+**The design rule is commitment.** `hero.js` — a step is 22 frames and carries 12px, a
+turn is 18, a mantle is 40, and until a move reaches the frame it declares `open` the
+stick is not connected to anything. Nothing accelerates freely. Tap a direction for one
+step, hold and the step runs on into a run (Flashback's rule). Grounded moves are
+scripted displacement; jumps are ballistic off a scripted gather. **Every distance in the
+level is measured off two numbers**: a standing jump rises 27px and his hands reach 26
+above his feet, so he catches a lip 53px up — a storey is 3 tiles = 48 — and a running
+jump carries 3.7 tiles, so a 3-tile gap goes and a 4-tile gap does not. Falls are PoP's
+ladder: one storey free, two hurt, three kill. Walking off an edge **catches** it
+(`ledgeBehind`); holding toward a lip in the air catches it (`ledgeAhead`).
+**The duel** is the same clock on both sides: a sentry is 68 frames from seeing you to
+firing (spot 26 → draw 26 → aim 16), drawing the pistol costs you 21, **crouching puts
+his shot over your head and rolling puts you under it**. Take the wind-up away and it is
+a reflex test; leave it in and it is a reading test.
+**Fourteen screens**, `rooms.js`, 20×12 tiles of ASCII each, laid side by side with a
+**hard cut** — no scrolling, no camera, because a screen you learn and die on is a
+composition you remember. Jungle → dig → tomb → reactor → palace → overgrown. Traps:
+spike cycles, ceiling slabs, tiles that will not hold, a plate-and-gate on a timer,
+pulsing force fields. `scr.cached(key, fn)` paints the static half of a room once and
+blits it after that (same discipline as `gameoflife/`); the palette changing throws the
+cache, which is correct because it happens once a screen.
+Two traps for anyone editing it: **`tryX`/`tryY` must move floor(|d|) whole pixels then
+the remainder** — an off-by-one loop there silently scaled the run from 1.62px/frame to
+2.62 and turned a three-tile gap into a five-tile one; and **the wall tiles are painted
+after the backdrop**, so anything meant to sit on a wall (the glyphs) has to be drawn from
+`level.js`, not `scenery.js`, or it gets buried. `window.__fp` exposes `{game, hero(),
+world(), debug: {room, give, state, pure}}`. **Signed** by Toko Midori (bottom-left, so it
+clears the health marks top-right and the way home top-left) and named in `SIGNED` in
+`toko/test/brand.cjs`. Same `gh-pages` deploy caveat as paperboy.
 
 ### The Game of Life (`gameoflife/`)
 **Mini games and interactive stories that always revert to going back to nature.**
@@ -442,6 +499,43 @@ the panel from a callback hung off the end of the typing, so **skipping** the
 typing left the counter open forever (`after` now fires from `finishTyping`); and
 stacked at the 44px tap floor the menu made a ~600px panel that pushed the
 cabinets below the fold (two columns where there is room).
+**Trilingual** like the arcade: English is the source inline in `dialogue.js`,
+`dialogue.fi.js`/`dialogue.ja.js` are pure string packs overriding by topic id
+with per-key English fallback, and the counter follows `__hub.lang()` → `<html
+lang>` → en (watched with a `MutationObserver`, since hub.js re-renders rather
+than firing an event). It never re-types the transcript. Both packs are drafts;
+the **parser is en/fi only** — its tokeniser splits on spaces, so the Japanese
+KEYS table is deliberately empty and the menu is the path there.
+**It runs both ways.** A `>` **parser** line takes a typed sentence and matches it
+by word overlap against a keyword table (`find()` — still no model, and a miss
+*says so* rather than answering the wrong question; typing reaches `locked` topics,
+which is the reward for using your own words). **`note: true`** opens a box and
+posts through the **arcade's own** `window.__hub.feedback` rather than a second
+transport — saying nothing records nothing, and he never claims a delivery that
+did not happen (`sent-blind` / `queued` / no-hub each get their own line).
+**`scores: true`** reads the games' `localStorage` hi-scores off *your* machine,
+shows them and sends them nowhere; **`notes: true`** reads your own past notes
+back out of the archive and **`changed: true`** reads out `CHANGED` — a
+*hand-kept* log of what actually got fixed, which is what stops a suggestion
+box going stale (it never claims you asked; it does flag a cabinet you noted
+about, once); a note taken in front of a cabinet **files under that
+game's id** (plus the topic he was on), which is what makes the counter usable
+as the single front door for feedback rather than a fourth inbox; **`askFaves: true`** racks up `FAVOURITES` — the games he did NOT
+make, which is where the mantra turns into receipts (no Play link on those:
+there is nowhere to send you). **`askGames: true`** turns the menu into a rack
+of the **live** catalogue and he says his piece about whichever cabinet you point at
+(`GAME_NOTES` per id, falling back to that game's tagline, so one added tomorrow
+is answerable tonight — and naming it at the parser gets it directly). `asks:` turns the menu into your mouth for a
+turn; `gift:` hands over the badge as an SVG data URI; `torn:` tears the portrait
+while he answers (a glitch is an event, so it decays); `after:`/`needs:` gate a
+topic by hour and by how far you have dug. `#toko` opens the counter. Traps found
+building it: **`end` topics need a reserved slot** or goodbye falls off the
+nine-item menu; a **field owns its own keys** (typing "3 CRASHES" used to pick
+topic three); the panel's grid rows must be `minmax(0, 1fr)` or an `auto` row
+overflows the clipped cap and hides the bottom of the menu on a phone; **no
+back-ticks in the CSS template literal**; and `glitch.js` works through
+`getImageData`, so a DPR `Surface` must pass **device** pixels plus a
+`scale` (its displacements are tuned for a 44px mark).
 `sting.js` is a ~3s sting where the face **draws itself** (arcs revealed by
 dash-offset so they grow along their own path: mouth sweeps open → eyes drop in
 → blink → logotype lands), skippable on any input from frame one. `masthead.js`
@@ -449,7 +543,7 @@ is the animated lockup for the arcade hub — `stop()` it wherever the page
 re-renders or the loop leaks against a detached canvas. `surface.js` is the
 DPR-aware smooth canvas (the mark is curves, so antialiasing stays ON).
 `toko/index.html` is the **brand board**, built out of the shipping modules.
-`toko/test/brand.cjs` is the gate (Playwright, 52 checks): geometry invariants
+`toko/test/brand.cjs` is the gate (Playwright, 150 checks): geometry invariants
 (slot width, stem/crown merge, mouth-clears-eyes, symmetry), **every rendered
 pixel checked against the two-colour system**, SVG well-formedness + that it
 emits exactly the canvas's arcs at the shipping stroke weight, the sting
@@ -459,7 +553,9 @@ the master artwork**, not lifted from the original vector file (replace `GEO` if
 that file surfaces), and the logotype face is substituted.
 **Deployed:** `toko/` is live on `gh-pages` and the counter is mounted at the top
 of BOTH hub entry points (`index.html` and `AnotherHUB/index.html`) with one
-module import after `</header>`; the chat picks up hub.css's `--panel`/`--line`
+module import that must sit **after `hub/hub.js`** — hub.js assigns
+`window.__hub` wholesale, so a handle hung on before it is thrown away
+(`window.__hub.chat`); the chat picks up hub.css's `--panel`/`--line`
 so it sits inside the terminal's own chrome while keeping magenta for Toko. The
 gh-pages copy omits `test/` (that branch ships docs but no test dirs). The game
 **signatures are NOT on gh-pages yet** — `toko-drop/` and `hyperdagger/` there
@@ -498,7 +594,7 @@ hub/
   hub.js        # renders the cabinets, runs the feedback panel (modal, focus, Esc)
   hub.css       # the dark room; AA contrast + 44px controls are load-bearing here
 test/
-  hub-smoke.cjs # 31 headless checks over the hub
+  hub-smoke.cjs # headless checks over the hub
 toko/           # Toko Midori Games — the brand (face, lockups, sting, signature)
   BRAND.md      # the rules: the creed, construction notes, the two colours, do/don't
   index.html    # the brand board — every mark live, glitch lab, SVG downloads
@@ -559,6 +655,21 @@ hyperdagger/    # Hyper Dagger — FPS Devil Daggers × HYPERDEMON homage, voxel
     player.js   # First-person controller: yaw/pitch, WASD/stick strafe, jump, dash, head-bob
     input.js    # Pointer-lock mouse+WASD, gamepad (sticks/RT/A/B), or dual touch sticks; tap-vs-hold fire
     audio.js    # WebAudio synth kit (fire/hit/gib/gem/levelup/dash/roar/death + drone + intensity music)
+flashprince/    # Flash Prince — cinematic platformer, Another World × Flashback × PoP
+  index.html
+  VERSIONS.md
+  js/
+    screen.js   # 320×192 polygon buffer + the pass that quantises it to 16 colours; cached()
+    palette.js  # the sixteen as ROLES, six biome sets, and the continuous fade between them
+    figure.js   # 13-angle poses → eleven polygons; the pose library and clip sampler
+    hero.js     # the move table: scripted lengths, ledges, mantles, falls, the pistol
+    enemy.js    # Sentry (spot→draw→aim→fire on the same clock you are on), Beast, Drone
+    rooms.js    # fourteen 20×12 ASCII screens + the one line of text each act gets
+    level.js    # tiles, collision, ledge finding, traps, and turning the grid into masses
+    scenery.js  # flat polygon backdrops with overlapping biome windows; fronds, glyphs
+    fx.js       # debris, shots, shake, flash
+    input.js    # keys (up is also jump), gamepad, on-screen cross; direction HOLD counting
+    audio.js    # one held drone tuned by biome + one envelope per event, nothing looping
 ```
 
 ## Toko Drop — Architecture Notes

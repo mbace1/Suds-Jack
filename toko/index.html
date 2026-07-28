@@ -145,9 +145,17 @@
     and a workshop whose whole position is <em>go make your own</em> should not
     answer you with rented autocomplete. Toko says what Toko wrote — in
     <code>js/dialogue.js</code>, which is the file to edit.</p>
+    <p>It runs both ways. You can <strong>type</strong> at him on the
+    <code>&gt;</code> line — word overlap against a lookup, and a miss says so
+    rather than answering the wrong question. You can <strong>leave him a
+    note</strong>, which goes out through the arcade's own transport and is
+    never reported as delivered when it was not. He can ask <em>you</em>
+    something, hand you a sticker he draws on the spot, read back the scores
+    the cabinets left on your machine, and talk about one cabinet at a time.</p>
     <div id="chat-demo" style="margin-top:20px"></div>
-    <p class="meta" style="margin-top:10px">1–9 pick a topic · ENTER skips the
-    typing · ESC leaves. Asking some things unlocks others.</p>
+    <p class="meta" style="margin-top:10px">1–9 pick a topic · type to talk ·
+    ESC leaves. Asking some things unlocks others. On this page there is no
+    catalogue behind it, so the cabinet answers say so rather than throwing.</p>
 <pre class="meta" style="margin-top:14px;background:var(--toko-panel);border:2px solid var(--toko-line);padding:16px;overflow-x:auto">&lt;script type="module"&gt;
   import { mountChat } from './toko/js/chat.js';
   mountChat(document.querySelector('header'));   // inserted after it

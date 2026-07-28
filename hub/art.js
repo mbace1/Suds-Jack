@@ -373,6 +373,96 @@ export const ART = {
     }
   },
 
+  // Flash Prince: the cover shot, which is a man on the wrong side of a lip.
+  //
+  // Every one of these games has the same photograph on its box in some form —
+  // a small figure with his back to you, dwarfed by somewhere he should not be
+  // — so this is that, with the two things the game is doing said at once. The
+  // sky blends ACROSS as well as down (jungle violet on the left, sandstone on
+  // the right) because the world changing biome under you is the whole idea;
+  // and the man is hanging off the front edge with the frame cutting him at the
+  // knees, because a figure cropped by the frame is in front of the picture
+  // rather than in it. He is lit — pale shirt against black rock. A silhouette
+  // here would have vanished into the ledge he is hanging from, which is the
+  // mistake Neon Ronin's first pass made.
+  ledge(g, a) {
+    const INK = '#05060a', BONE = '#c2cede', SUIT = '#2f3d5e', SKIN = '#c89878';
+    const STONE = '#c89a58', DEEP = '#1a1008';
+
+    const L = ['#181038', '#2c1442', '#4a1c4e', '#63264a', '#123043'];
+    const R = ['#20182c', '#3c2230', '#6e4030', '#9a5a34', '#4a3626'];
+    for (let i = 0; i < 5; i++) {
+      for (let x = 0; x < W; x += 8) g.p(x, i * 8, 8, 8, mix(L[i], R[i], x / 120));
+    }
+    g.disc(46, 12, 6, '#d6ff78');                 // the two suns, low and close
+    g.disc(60, 19, 3, '#d6ff78');
+
+    // a ridge, and the ground the pylon is standing on
+    for (let x = 0; x < W; x++) {
+      const y = 38 - Math.round(Math.sin(x * 0.05) * 4 + Math.sin(x * 0.13) * 2);
+      g.p(x, y, 1, 46 - y, mix('#0c3040', '#33241a', x / 120));
+    }
+
+    // The pylon. It has to be LIGHTER than the sky behind it or it is an
+    // outline floating in the dark — the rule Neon Ronin's gate taught. And it
+    // has to be TALL: the first pass sat it low and wide and it read as a shed.
+    // Egyptian batter, so the wall leans in the whole way up.
+    for (let y = 8; y < 47; y++) {
+      const xl = 76 + Math.round((47 - y) * 0.2);
+      g.p(xl, y, W - xl, 1, STONE);
+      g.p(xl, y, 2, 1, mix(STONE, DEEP, 0.5));
+      if (y % 8 === 0) g.p(xl + 2, y, W - xl - 2, 1, mix(STONE, DEEP, 0.3));
+    }
+    g.p(72, 3, W - 72, 6, mix(STONE, '#ffffff', 0.22));        // the lintel
+    g.p(72, 9, W - 72, 1, mix(STONE, DEEP, 0.55));
+    for (let i = 0; i < 6; i++) g.p(85 + i * 7, 13, 3, 5, mix(STONE, DEEP, 0.62));
+
+    // the doorway, and the light coming out of it that is not firelight
+    g.p(92, 21, 26, 26, DEEP);
+    for (let y = 24; y < 47; y++) g.p(95, y, 20, 1, mix('#46f0ff', '#0a2c38', (y - 24) / 26));
+    g.p(102, 24, 6, 23, '#d6f8ff');
+
+    // the ledge he is over the front of. Not flat black — a couple of lit
+    // faces far down in it, so the drop reads as a drop and not as a border.
+    g.p(0, 46, W, 26, INK);
+    g.p(0, 46, W, 2, mix('#7a5330', '#c89a58', 0.55));
+    for (let x = 0; x < W; x += 9) g.p(x + (x % 18 ? 1 : 4), 48, 4, 1, '#2a1c12');
+    g.p(8, 62, 20, 1, '#241a14');
+    g.p(58, 68, 26, 1, '#241a14');
+    g.p(96, 58, 14, 1, '#241a14');
+
+    // And the man. Hands over the lip, arms straight and taking the weight,
+    // legs going out of frame at the bottom — the crop is what says he is in
+    // front of the picture rather than standing somewhere in it.
+    const cx = 38;
+    g.p(cx - 10, 43, 5, 5, SKIN);                // the two hands, over the lip
+    g.p(cx + 5, 43, 5, 5, SKIN);
+    g.p(cx - 9, 47, 4, 10, BONE);                // arms, straight, holding on
+    g.p(cx + 5, 47, 4, 10, BONE);
+    g.p(cx - 9, 47, 1, 10, mix(BONE, INK, 0.45));
+    g.p(cx - 6, 55, 13, 12, BONE);               // the pale shirt: the one lit
+    g.p(cx - 6, 55, 13, 2, mix(BONE, '#ffffff', 0.55));  // thing in this corner
+    g.p(cx - 6, 55, 2, 12, mix(BONE, INK, 0.4));
+    g.p(cx - 5, 66, 12, 6, SUIT);                // and the legs, going off frame
+    g.p(cx - 5, 66, 4, 6, mix(SUIT, INK, 0.45));
+    g.p(cx - 4, 46, 8, 9, SKIN);                 // head, tipped back to look up
+    g.p(cx - 5, 44, 9, 4, '#0d0d14');
+    g.p(cx - 5, 46, 2, 5, '#0d0d14');
+    g.p(cx + 3, 50, 2, 2, mix(SKIN, INK, 0.35));
+
+    // one frond in from the corner, solid, so the jungle is still in the shot
+    g.p(0, 0, 8, 40, INK);
+    for (let i = 0; i < 4; i++) {
+      const a2 = 0.02 + i * 0.36;
+      const len = 36 - i * 4;
+      for (let k = 0; k <= 34; k++) {
+        const t = k / 34, r = len * t;
+        g.disc(3 + Math.cos(a2) * r, -1 + Math.sin(a2) * r + 14 * t * t,
+          Math.max(1.3, 3.6 - t * 2.4), INK);
+      }
+    }
+  },
+
   // The Game of Life: its own treeline, under its own sun
   treeline(g, a) {
     g.bands(['#7fb2d9', '#93bfdd', '#cfe3ea', '#cfe3ea']);
