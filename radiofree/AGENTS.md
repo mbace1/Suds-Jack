@@ -13,12 +13,12 @@ Human-facing overview: `README.md`. Parallel-branch notes: [`AGENTS-INBOX.md`](A
 | Surface | Owner |
 |---------|--------|
 | **Art / B-roll plates / visuals.js** | **Grok on `gh-pages`** — only these plates ship |
-| **Cache `?v=N` cadence** | **Grok on `gh-pages`** — bump worker + all module imports in the same commit |
-| Plumbing verify, inbox notes, branch experiments | Claude on `claude/radio-free-helsinki-pvtsw5` (standing down on art and tokens) |
+| **Cache `?v=N` cadence** | **Grok on `gh-pages`** — bump worker + **all** module imports (including leaf) in the same commit |
+| Plumbing verify, FI/JA restore, inbox notes | Claude may land non-art fixes; stands down on art and choosing new token numbers |
 
 Claude’s poly/3D plates stay on the branch only — **not for merge** unless the human asks for a fresh 3D decision.
 
-**Do not both edit `gh-pages` blind.** Announce in the commit message if live (e.g. `agent: grok live on visuals`).
+**Do not both edit `gh-pages` blind.** Announce in the commit message if live.
 
 **Do not port `wire.json` without explicit human approval.**
 
@@ -30,9 +30,9 @@ Claude’s poly/3D plates stay on the branch only — **not for merge** unless t
 |---|---|---|
 | Toko | **masked** male gel, `full` face-shot mode | unmasked — **violates hard rule #2** |
 | Cuts | weighted-random face/graphic/broll | fixed cycle |
-| DECODE | mutates whichever shot is up (**rule #5**); cuts continue | holds graphic — **violates #5** |
-| B-roll | `visuals.js`, 10 plates — **only ones that ship** | branch-only art, not canonical |
-| Bulletins | `stories.js` (trilingual COPY) | `wire.json` (human gate) |
+| DECODE | mutates whichever shot is up; cuts continue | holds graphic — **violates #5** |
+| B-roll | `visuals.js`, 10 plates — **only ones that ship** | branch-only |
+| Bulletins | `stories.js`, **14** (trilingual COPY) | `wire.json` (human gate) |
 
 **Where the branches disagree, this file wins.**
 
@@ -48,34 +48,28 @@ Feel: half Metal Gear codec, half TikTok feed, phosphor green, offline-first, **
 
 ## Hard rules (do not violate)
 
-1. **Trilingual always** — fi / en / ja for every bulletin field and UI string.
+1. **Trilingual always** — fi / en / ja for every bulletin field and UI string. **No `{...EN}` spreads** that leave FI/JA as English with a different button label. Non-empty English under FI/JA is a silent rule-#1 break.
 2. **Toko is always masked** — surgical/tech mask. Male Japanese gel. Never remove the mask.
-3. **Face shots vs B-roll** — faces only on face shots. **B-roll: no faces, portraits, or character heads.** Pure Helsinki locations only.
+3. **Face shots vs B-roll** — faces only on face shots. **B-roll: no faces, portraits, or character heads.**
 4. **No image assets** — every pixel is drawn in code (`PixelScreen`).
-5. **DECODE works on every shot type** — face, graphic, and broll. Cuts **continue** under DECODE.
+5. **DECODE works on every shot type** — cuts **continue** under DECODE.
 6. **Amber means spin only** — never decorative UI before DECODE.
 7. **Offline PWA** — bump cache version when shipping JS (see Cache).
-8. **Fiction footer stays honest** — defence-band actors unnamed.
-9. **Do not wipe `stories.js` language blocks** — EN / FI / JA must stay complete.
+8. **Fiction footer stays honest** — defence-band actors unnamed; prefer invented Helsinki entities over real geographies/industries when possible (flag edge cases for the human).
+9. **Do not wipe `stories.js` language blocks** — EN / FI / JA must stay complete and **distinct**.
 10. **Helsinki accuracy** — `mannerheim` = wide boulevard; `katu` = narrow street; station = Central Station clock tower; cathedral = Tuomiokirkko / Senate Square.
 
 ---
 
 ## Shot system (`codec.js`)
 
-Live weighted-random cut sequencer:
-
 | Shot | Weight | What draws |
 |------|--------|------------|
-| face | 0.20 | Large masked Toko (`toko.draw(..., full=true)`) |
+| face | 0.20 | Large masked Toko |
 | graphic | 0.15 | Story chart (`story.visual`) |
 | broll | 0.65 | Helsinki footage |
 
-**B-roll rotation (`pickBroll`):**
-- Story’s own `story.broll` leads at **~60%** and opens every live post (guaranteed first look).
-- Never the same broll key twice in a row.
-- Otherwise uniform over `BROLL_KEYS` minus last key.
-- Idle/static cards prefer `story.broll` so the feed shows Helsinki art while scrolling.
+**B-roll rotation:** story’s own plate leads ~60% and opens every live post; never the same key twice in a row; else uniform over `BROLL_KEYS` minus last. Idle cards prefer `story.broll`.
 
 Cut window: **3.2–5.5 s**. Canvas: **144×276**. Panel: **128×152**.
 
@@ -83,24 +77,13 @@ Cut window: **3.2–5.5 s**. Canvas: **144×276**. Panel: **128×152**.
 
 ## B-roll panels (`visuals.js`)
 
-`BROLL_KEYS` is the **source of truth** for what exists (keep it exported — other tools/validators read it):
+`BROLL_KEYS` is the **source of truth** (keep exported):
 
-| Key | Location |
-|-----|----------|
-| esplanadi | Esplanadi + drones |
-| kamppi | Kamppi plaza night |
-| harbour | South harbour / ships |
-| gulf | Gulf waterfront |
-| cathedral | Tuomiokirkko / Senate Square |
-| katu | Narrow street tram |
-| mannerheim | Wide Mannerheimintie tram (approaching) |
-| station | Central Station clock tower |
-| suomenlinna | Fortress islands + ferry |
-| katajanokka | Waterfront + Uspenski silhouette |
+esplanadi, kamppi, harbour, gulf, cathedral, katu, mannerheim, station, suomenlinna, katajanokka.
 
-**Adding a panel:** pure location fn → register in `PANELS` + `BROLL_KEYS` → optional `story.broll` → `drawAllPlates` → bump cache (one commit, all tokens).
+**Adding a panel:** pure location fn → `PANELS` + `BROLL_KEYS` → optional `story.broll` → `drawAllPlates` → **one** cache bump covering **every** import including leaves (`toko.js`, `visuals.js` → `palette`/`screen`).
 
-`scr.bands(...)` must exist on `PixelScreen` (`screen.js`).
+`scr.bands(...)` must exist on `PixelScreen`.
 
 ---
 
@@ -123,31 +106,32 @@ Cut window: **3.2–5.5 s**. Canvas: **144×276**. Panel: **128×152**.
 
 ---
 
-## Cache protocol (mandatory — Grok owns this)
+## Cache protocol (mandatory — Grok owns cadence)
 
-1. Bump `sw.js` → `VERSION = 'vN'` and `V = '?v=N'`.
-2. Bump `index.html` → `main.js?v=N`, `sw.js?v=N`, manifest.
-3. Bump **every** `import '...?v='` to the **same** N in one commit.
-4. Check: `grep -o "?v=[0-9]*" index.html sw.js js/*.js | sort -u` → one value.
+**One commit. One token. Every file.**
 
-Current token: **v12** (confirm in `sw.js` before assuming).
+1. `sw.js` → `VERSION = 'vN'` and `V = '?v=N'`.
+2. `index.html` → `main.js?v=N`, `sw.js?v=N`, manifest.
+3. **Every** `import '...?v='` in **every** module under `js/`, including leaves that only import `palette` / `screen` (`toko.js`, `visuals.js`, …).
+4. Gate: `grep -o "?v=[0-9]*" index.html sw.js js/*.js | sort -u`  
+   Must show **one** radiofree value (plus brand-kit `?v=2` only).
 
-Leave `../toko/js/signature.js?v=2` alone (brand kit).
+Partial bumps (main/codec at N while leaves still on N−1) build **two `PixelScreen` classes** from one file and can zero the precache hit rate. Offline may still “work” via `ignoreSearch` — that is the safety net, not a clean ship.
 
-Offline: worker `ignoreSearch` covers stale tokens; offline reload works.
+**Current token: v13.** Confirm in `sw.js` before assuming.
+
+Leave `../toko/js/signature.js?v=2` alone.
 
 ---
 
-## Debug surface (keep stable for the other agent)
+## Debug surface (keep stable)
 
 | Helper | Purpose |
 |--------|----------|
-| `__rfh.debug.shot()` | Live shot `{ type, key }` — required to measure rotation |
-| `__rfh.debug.drawAllPlates()` | Every `BROLL_KEYS` at d=0 and d=1 |
-| `__rfh.debug.brollKeys()` | Export of plate list |
-| `__rfh.debug.stories()` | Roster ids (do not hardcode length) |
-
-If the sequencer is refactored, keep something that reports live shot type + key.
+| `__rfh.debug.shot()` | Live `{ type, key }` |
+| `__rfh.debug.drawAllPlates()` | Every B-roll at d=0 and d=1 |
+| `__rfh.debug.brollKeys()` | Plate list |
+| `__rfh.debug.stories()` | Roster ids — **do not hardcode length** (now 14) |
 
 ---
 
@@ -155,53 +139,51 @@ If the sequencer is refactored, keep something that reports live shot type + key
 
 | Failure | Fix |
 |---------|-----|
-| `scr.bands is not a function` | Implement on `PixelScreen` before shipping plates that call it |
+| `scr.bands is not a function` | Implement on `PixelScreen` first |
 | New panels invisible | Align all `?v=N` in one commit |
-| Language blocks wiped | Restore full EN/FI/JA from history |
+| Leaf imports left on old token | Same — `toko.js` / `visuals.js` matter |
+| FI/JA were `{...EN}` (silent) | Real per-language COPY; verify switch shows native script |
+| Language blocks wiped | Restore from history |
 | Narrow street labeled Mannerheimintie | `mannerheim` vs `katu` |
 | B-roll with faces | Reject |
-| `pickBroll` always returned `story.broll` | Unreachable plates + frozen-looking cuts — use lead ~60% + no consecutive repeat |
-| Broken plate only fails sometimes | `drawAllPlates` |
-| Re-import load-time modules | Use `__rfh.debug.*` |
+| `pickBroll` always `story.broll` | ~60% own + no consecutive repeat |
+| Broken plate only sometimes | `drawAllPlates` |
+| Re-import load-time modules | `__rfh.debug.*` |
 | Hardcoded roster size | `stories().length` |
-| `behavior: 'auto'` scroll | Use `'instant'` |
-| `line()` long rays | Round endpoints before slope |
-| Bayer cell / grain | `bayer(x>>1,y>>1)` for 2px cells; grain from `Math.random()` |
+| `behavior: 'auto'` scroll | `'instant'` |
+| `line()` / bayer / grain | endpoints rounded; cell index; random grain |
 
 ---
 
 ## Goals
 
 **Done / keep stable**
-- Weighted cuts + rotation that reaches every plate
-- Masked Toko + trilingual Reader
-- DECODE on all shots (cuts continue)
-- 10 Helsinki B-roll plates with motion
-- City ambient, offline PWA, `drawAllPlates` / `shot()`
+- Weighted cuts + rotation reaching the pool
+- Masked Toko + trilingual Reader (14 bulletins, real FI/JA)
+- DECODE on all shots; 10 Helsinki B-roll; ambient; offline PWA
+- `drawAllPlates` / `shot()`; v13 aligned including leaves
 
-**Good next (if asked)**
-- More pure Helsinki B-roll (verify geography + plates probe)
-- Stronger per-story `broll` wiring
-- Motion polish if a panel feels static
+**Open / good next (if asked)**
+- Dedicated `wafer` graphic for `ram-discipline` (still on `coin`)
+- Confirm `katajanokka` on air under real viewing
+- More pure Helsinki B-roll (geography + plates probe)
+- Human eye on `ram-discipline` HSINCHU / “three major fabs” framing vs fiction footer
 
 **Out of scope unless human asks**
-- Real news / named defence actors
-- Image/video assets, landscape redesign, drop trilingual
-- Port `wire.json` or Claude poly plates
+- Real news / named defence actors; image assets; drop trilingual; port `wire.json` or poly plates
 
 ---
 
 ## Verify before claiming shipped
 
-1. Private tab / hard refresh on live URL.
-2. Tune in ≥12 s — B-roll cuts change; not the same still.
-3. DECODE — text + picture shift; Toko tears; **cuts still change**.
-4. FI / EN / JA — no missing keys.
+1. Private tab / hard refresh.
+2. Tune in ≥12 s — B-roll cuts change.
+3. DECODE — text + picture; cuts still change.
+4. FI / EN / JA — **native** bulletin text, not English under FI/JA.
 5. Console clean.
-6. `__rfh.debug.drawAllPlates()` → `{ ok: true, count: 10, ... }`.
-7. Optional: real offline (register worker, cut network, reload, read).
-
-Also useful: sample `__rfh.debug.shot()` across posts; confirm low-frequency plates (e.g. `katajanokka`) can appear.
+6. `__rfh.debug.drawAllPlates()` → ok.
+7. Token grep = one radiofree value.
+8. Optional: real offline reload.
 
 ---
 
