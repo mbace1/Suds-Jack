@@ -579,6 +579,34 @@ function serve() {
   ok('and carries what he was talking about',
     filed && filed.topic === 'about:hyperdagger', String(filed && filed.topic));
 
+  // ── somebody else's games ──────────────────────────────────────────────
+  // The receipts for the mantra. Same rack mechanic as the cabinets, minus
+  // the link — there is nowhere on this floor to send you for a game he did
+  // not make, and a Play button that went somewhere would be a shop move.
+  await page.evaluate(() => globalThis.__tokoChat.say('faves'));
+  await settle();
+  const rackF = await page.evaluate(() =>
+    [...document.querySelectorAll('.toko-chat .tc-menu.is-yours button')].map(b => b.textContent));
+  ok('he racks up what he plays', rackF.length >= 6, String(rackF.length));
+  await page.keyboard.press('1');
+  await settle();
+  ok('picking one gets his line and the year',
+    /THE DISKARMOR/.test(await logText())
+    && await page.evaluate(() =>
+      [...document.querySelectorAll('.toko-chat .tc-score')].some(n => /1986/.test(n.textContent))));
+  ok('and it hands the menu back', await page.evaluate(() =>
+    !globalThis.__tokoChat.asking()
+    && document.querySelectorAll('.toko-chat .tc-menu button').length > 0));
+  ok('no Play link for a game he did not make',
+    await page.evaluate(() => {
+      const a = [...document.querySelectorAll('.toko-chat .tc-go')].pop();
+      return !a || !/RYGAR/i.test(a.textContent);
+    }));
+  await page.evaluate(() => globalThis.__tokoChat.type('chrono trigger'));
+  await settle();
+  ok('and naming one at the parser reaches it',
+    /NO RANDOM BATTLES/.test(await logText()));
+
   // ── reading your own notes back ────────────────────────────────────────
   // Feedback you cannot see again is a suggestion box with a lock on it.
   await page.evaluate(() => {
@@ -771,6 +799,21 @@ function serve() {
     notes.missing.length === 0, notes.missing.join(', '));
   ok('and no pack invents a cabinet English does not have',
     notes.extra.length === 0, notes.extra.join(', '));
+
+  // Same rule for the games he did not make: an entry present in English and
+  // missing from a pack drops an English paragraph into a Finnish answer.
+  const fav = await page.evaluate(async () => {
+    const d = await import('/toko/js/dialogue.js');
+    const seen = {};
+    for (const code of ['en', 'fi', 'ja']) {
+      d.setLang(code);
+      seen[code] = d.L('FAVOURITES').map(f => f.id);
+    }
+    d.setLang('en');
+    return { en: seen.en, missing: seen.en.filter(i => !seen.fi.includes(i) || !seen.ja.includes(i)) };
+  });
+  ok('every favourite exists in all three languages',
+    fav.missing.length === 0, fav.missing.join(', '));
 
   // Japanese does not space its words, so the whitespace tokeniser sees one
   // long run and matches nothing. That pack sets `substring: true` and the

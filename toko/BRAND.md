@@ -256,6 +256,13 @@ What it does beyond talking:
   own line, a queued one says it is queued, and dropped on a page with no hub
   he says it is written down on your machine and nothing more. He mentions a
   note **once** on your next visit; twice would be a receipt.
+- **He talks about the games he did NOT make.** `WHAT DO YOU PLAY?` racks up
+  `FAVOURITES` — Rygar, Sin and Punishment 2, Chrono Trigger, Nex Machina,
+  The Binding of Isaac, Mario Bros., plus the two Suds Jack's own concept line
+  names. This is where the mantra stops being an opinion and turns into
+  receipts: every rule §5b shouts came off one of these. Three lines each, and
+  **no Play link** — there is nowhere on this floor to send you for somebody
+  else's game, and a button that went somewhere would be a shop move.
 - **He talks about one cabinet at a time.** `askGames` is the his-question
   mechanic with the **live catalogue** as the options, so a cabinet added
   tomorrow is on the rack tonight. His line per game lives in `GAME_NOTES`;

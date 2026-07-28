@@ -22,6 +22,7 @@
 //   notes  follow the reply with the notes you have already left
 //   changed follow the reply with the log of what actually got fixed
 //   askGames  like `asks`, but the options are the live catalogue
+//   askFaves  like `asks`, but the options are somebody else's games
 //   scores follow the reply with whatever the games left on THIS machine
 //   torn   the portrait tears while he answers — a glitch is an event
 
@@ -185,7 +186,15 @@ export const TOPICS = [
       'AND IF THE VERB IS DULL THE DECORATION',
       'IS A COVER-UP.',
     ],
-    opens: ['thirty', 'feel', 'hard', 'creed'],
+    opens: ['thirty', 'feel', 'hard', 'creed', 'faves'],
+  },
+  {
+    // Where the mantra stops being an opinion and turns into receipts. Every
+    // rule he shouts came off one of these.
+    id: 'faves', q: 'WHAT DO YOU PLAY?', askFaves: true,
+    a: ['OTHER PEOPLE\u2019S GAMES. CONSTANTLY.',
+      'EVERYTHING I SHOUT ABOUT CAME OFF ONE',
+      'OF THESE. PICK ONE.'],
   },
   {
     id: 'thirty', q: 'AND THE FIRST THIRTY SECONDS?', once: true, locked: true,
@@ -649,6 +658,68 @@ export const GAME_NOTES = {
 
 export const ABOUT_UNKNOWN = ['I DO NOT HAVE A LINE ABOUT THAT ONE YET.'];
 
+// ── what he plays ────────────────────────────────────────────────────────
+// Somebody else's games. This is where the mantra stops being an opinion and
+// starts being a set of receipts: every rule he shouts came off one of these,
+// and naming them is the difference between a position and a pose.
+//
+// The order is the order of the rack. Keep each one to three lines — a
+// favourite you have to explain at length was not the point.
+export const FAVOURITES = [
+  {
+    id: 'rygar', name: 'RYGAR', when: '1986',
+    a: ['THE DISKARMOR. ONE VERB, ON A CHAIN,',
+      'AND THE WHOLE GAME IS LEARNING ITS ARC.',
+      'THAT IS THE ENTIRE LESSON, RIGHT THERE.'],
+  },
+  {
+    id: 'sinpunishment', name: 'SIN AND PUNISHMENT 2', when: '2009',
+    a: ['TREASURE NEVER LET A SCREEN SIT STILL.',
+      'IT IS ON RAILS AND IT IS STILL ALL YOURS \u2014',
+      'THE TRACK IS THE FRAME, NOT THE LEASH.'],
+  },
+  {
+    id: 'chrono', name: 'CHRONO TRIGGER', when: '1995',
+    a: ['NO RANDOM BATTLES. NO WASTED SCREEN.',
+      'IT RESPECTS YOUR TIME IN A GENRE BUILT',
+      'ON TAKING IT, AND IT IS STILL THE BEST ONE.'],
+  },
+  {
+    id: 'nexmachina', name: 'NEX MACHINA', when: '2017',
+    a: ['EVERYTHING ON SCREEN IS TRYING TO KILL YOU',
+      'AND EVERY BIT OF IT IS READABLE.',
+      'THAT IS NOT CHAOS. THAT IS COMPOSITION.'],
+  },
+  {
+    id: 'isaac', name: 'THE BINDING OF ISAAC', when: '2011',
+    a: ['THE ITEMS TALK TO EACH OTHER.',
+      'THE RUN THAT BREAKS THE GAME IS THE RUN',
+      'YOU TELL PEOPLE ABOUT FOR YEARS.'],
+  },
+  {
+    id: 'mariobros', name: 'MARIO BROS.', when: '1983',
+    a: ['ONE SCREEN. HIT THE FLOOR FROM UNDERNEATH.',
+      'THE VERB IS THE WHOLE DESIGN AND IT WAS',
+      'FINISHED THE DAY THEY THOUGHT OF IT.'],
+  },
+  {
+    // Suds Jack's own concept line names these two, so they are on the list
+    // whether or not anybody asks.
+    id: 'bombjack', name: 'BOMB JACK', when: '1984',
+    a: ['FLOAT, DROP, FLOAT. THAT IS THE WHOLE VERB.',
+      'A JUMP WITH A DIMMER ON IT INSTEAD OF',
+      'A SWITCH, AND NOBODY HAS BEATEN IT SINCE.'],
+  },
+  {
+    id: 'tempest', name: 'TEMPEST 2000', when: '1994',
+    a: ['MINTER PUT A RAVE IN A TUBE.',
+      'PROOF THAT COLOUR AND SOUND ARE MECHANICS,',
+      'NOT DECORATION LAID ON TOP OF THEM.'],
+  },
+];
+
+export const FAVE_UNKNOWN = ['I HAVE NOT PLAYED THAT ONE ENOUGH TO SAY.'];
+
 // ── the parser ───────────────────────────────────────────────────────────
 // You can also just TYPE at him, which is the whole reason this thing is
 // shaped like Police Quest. Still no language model: it is word overlap
@@ -677,6 +748,7 @@ const KEYS = {
   hard: ['HARD', 'DIFFICULT', 'DIFFICULTY', 'UNFAIR', 'BRUTAL', 'EASY'],
   loop: ['LOOP', 'AGAIN', 'REPLAY', 'ADDICTIVE', 'RETRY', 'RUN'],
   creed: ['CREED', 'MANTRA', 'WHOLE', 'RECITE', 'ALL', 'MANIFESTO'],
+  faves: ['FAVOURITE', 'FAVORITE', 'PLAY', 'PLAYED', 'INFLUENCE', 'INSPIRED', 'CLASSICS'],
   retro: ['RETRO', 'NOSTALGIA', 'PIXEL', 'ATARI', 'MASTER', 'SYSTEM', 'OLD'],
   anarchy: ['ANARCHIST', 'ANARCHY', 'POLITICS', 'PUNK', 'DIY', 'INDIE'],
   browser: ['BROWSER', 'WEB', 'HTML', 'STEAM', 'INSTALL', 'STORE'],
@@ -856,6 +928,8 @@ export function L(key) {
       GREETING, LATE, ASIDES, MISSES, RETURNING, NOTED, REMEMBERED,
       CRY_A: CRY.a, SEEN_NOTHING, SEEN_SOMETHING, UI,
       CHANGED_NONE, CHANGED_YOURS, ABOUT_UNKNOWN, GAME_NOTES, CHANGED,
+      FAVOURITES, FAVE_UNKNOWN,
+      FAVOURITES, FAVE_UNKNOWN,
     };
   }
   // `p ? p[key] : undefined`, NOT `p && p[key]` — the second yields null when
