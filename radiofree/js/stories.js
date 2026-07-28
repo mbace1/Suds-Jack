@@ -25,12 +25,12 @@
 //      languages, and the feed shows that rather than nothing. An app that can
 //      be updated from outside is an app that can be broken from outside.
 
-import { PANEL_KEYS, BROLL_KEYS } from './visuals.js?v=24';
+import { PANEL_KEYS, BROLL_KEYS } from './visuals.js?v=25';
 
-import { SECTOR_COLOR } from './palette.js?v=24';
-import { validateWire, orderByChannel, pickCopy } from './wire.js?v=24';
+import { SECTOR_COLOR } from './palette.js?v=25';
+import { validateWire, rotate, pickCopy } from './wire.js?v=25';
 
-export { parseLine, flatten } from './wire.js?v=24';
+export { parseLine, flatten } from './wire.js?v=25';
 
 export const WIRE_URL = 'wire.json';
 
@@ -80,15 +80,24 @@ const OFF_AIR = {
 export let SECTORS = [];
 export let STORIES = [];
 export let COPY = { en: {}, fi: {}, ja: {} };
+// ids that are on the wire but out of the rotation — retired, or past `keep`
+export let ARCHIVED = [];
 
 // what the app is currently reading — for the console handle and the gate
-export let WIRE_INFO = { source: 'none', updated: null, count: 0, errors: [] };
+export let WIRE_INFO = { source: 'none', updated: null, count: 0, archived: 0, errors: [] };
 
 function install(wire, source, errors = []) {
   SECTORS = wire.sectors;
-  STORIES = orderByChannel(wire.stories, wire.sectors);
+  // Newest first, oldest archived off the bottom. `rotate` also drops retired
+  // bulletins, so ARCHIVED is reported rather than swallowed — a feed that
+  // quietly got shorter reads as bulletins that were never written.
+  const { shown, archived } = rotate(wire);
+  STORIES = shown;
+  ARCHIVED = archived;
   COPY = wire.copy;
-  WIRE_INFO = { source, updated: wire.updated || null, count: STORIES.length, errors };
+  WIRE_INFO = { source, updated: wire.updated || null, count: STORIES.length,
+                archived: archived.length, errors };
+  if (archived.length) console.info(`[rfh] ${archived.length} archived: ${archived.join(', ')}`);
   return WIRE_INFO;
 }
 

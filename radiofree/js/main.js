@@ -1,13 +1,13 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=24';
-import { Post, Reader } from './codec.js?v=24';
-import { Package } from './package.js?v=24';
-import { SECTORS, STORIES, COPY, storyCopy, parseLine, loadWire, WIRE_INFO } from './stories.js?v=24';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=24';
-import * as audio from './audio.js?v=24';
-import { PixelScreen } from './screen.js?v=24';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=24';
+import { PAL, SECTOR_COLOR } from './palette.js?v=25';
+import { Post, Reader } from './codec.js?v=25';
+import { Package } from './package.js?v=25';
+import { SECTORS, STORIES, COPY, ARCHIVED, storyCopy, parseLine, loadWire, WIRE_INFO } from './stories.js?v=25';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=25';
+import * as audio from './audio.js?v=25';
+import { PixelScreen } from './screen.js?v=25';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=25';
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
@@ -260,7 +260,11 @@ function buildSignOff(i, date) {
 function paintTally(p) {
   const wrap = p.els.tally;
   wrap.innerHTML = '';
-  wrap.appendChild(el('p', 'tally-head', `${t('off.tally')} ${decodedIds.size}/${STORIES.length}`));
+  // Count against WHAT AIRED, not against everything ever decoded. `rfhDecoded`
+  // persists across visits, so once bulletins start being archived a returning
+  // listener's set outgrows the feed and the tally reads "14/12".
+  const onAir = STORIES.filter(s => decodedIds.has(s.id)).length;
+  wrap.appendChild(el('p', 'tally-head', `${t('off.tally')} ${onAir}/${STORIES.length}`));
   for (const story of STORIES) {
     const copy = storyCopy(story.id, getLang());
     const got = decodedIds.has(story.id);
@@ -272,7 +276,7 @@ function paintTally(p) {
     if (got) row.appendChild(el('span', 'tally-tell', copy.tell));
     wrap.appendChild(row);
   }
-  const n = decodedIds.size;
+  const n = onAir;
   wrap.appendChild(el('p', 'tally-note',
     n === 0 ? t('off.none')
       : n >= STORIES.length ? t('off.all').replace('{n}', String(STORIES.length))
@@ -482,7 +486,8 @@ window.__rfh = {
   get state() {
     const p = posts[active];
     if (!p) return null;
-    if (p.signoff) return { signoff: true, index: active, decodedCount: decodedIds.size, lang: getLang() };
+    if (p.signoff) return { signoff: true, index: active,
+        decodedCount: STORIES.filter(s => decodedIds.has(s.id)).length, lang: getLang() };
     return { channel: p.story.sector, index: active, decoded: p.decoded,
              id: p.story.id, lang: getLang() };
   },
@@ -498,6 +503,12 @@ window.__rfh = {
     // module gets a fresh and EMPTY copy — that crashed the gate once.
     wire: () => ({ ...WIRE_INFO }),
     wireData: () => ({ sectors: SECTORS, stories: STORIES, copy: COPY }),
+    // the rotation as it actually aired: what is on, top first, and what the
+    // wire is still carrying but keeping off the feed
+    rotation: () => ({
+      onAir: STORIES.map(s => ({ id: s.id, sector: s.sector, filed: s.filed || null })),
+      archived: [...ARCHIVED],
+    }),
     // codec posts hold a shot OBJECT, packages hold a shot NAME — a gate reads
     // this to prove the program frame really is cutting, so it has to answer
     // for both kinds without the caller knowing which it asked

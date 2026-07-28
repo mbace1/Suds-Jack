@@ -22,6 +22,14 @@ const RESERVED_IDS = ['sign-off'];
 
 const isStr = (v) => typeof v === 'string' && v.trim().length > 0;
 
+// A filing date is YYYY-MM-DD and has to be a date that exists — '2026-02-31'
+// parses happily in most hands and then sorts somewhere nobody expects.
+const isDate = (v) => {
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const d = new Date(v + 'T00:00:00Z');
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+};
+
 // Well-formed markup is {{as broadcast|what that means}}. A stray or unclosed
 // brace does not throw — parseLine simply does not match it, and the bulletin
 // ships with the raw braces visible on air. So it is an error here instead.
@@ -109,7 +117,36 @@ export function validateWire(wire, { panelKeys = null, brollKeys = null, sectorI
       else if (brollKeys && !brollKeys.includes(s.broll)) {
         E(where, `broll "${s.broll}" is not footage in this build (have: ${brollKeys.join(', ')})`);
       }
+      // ── the rotation, all optional ────────────────────────────────
+      if (s.filed !== undefined && !isDate(s.filed)) {
+        E(where, `filed must be YYYY-MM-DD, got ${JSON.stringify(s.filed)}`);
+      }
+      if (s.retired !== undefined && typeof s.retired !== 'boolean') {
+        E(where, `retired must be true or false, got ${JSON.stringify(s.retired)}`);
+      }
     });
+  }
+
+  // ── the archive ──────────────────────────────────────────────────
+  if (wire.keep !== undefined
+      && (!Number.isInteger(wire.keep) || wire.keep < 1)) {
+    E('wire.keep', `must be a positive whole number, got ${JSON.stringify(wire.keep)}`);
+  }
+  if (Array.isArray(stories) && stories.length) {
+    const live = stories.filter(s => s && s.retired !== true);
+    // An empty feed is the failure this whole file exists to prevent, and
+    // archiving is the one edit that can cause it from a wire that is
+    // otherwise perfectly well-formed.
+    if (live.length === 0) E('wire.stories', 'every bulletin is retired — that is an empty broadcast');
+    const cut = live.length - (wire.keep || live.length);
+    if (cut > 0) {
+      // Never silent. A cap that quietly drops bulletins reads as "they were
+      // never written" the next time somebody counts the feed.
+      warnings.push(`wire.keep = ${wire.keep}: ${cut} bulletin${cut === 1 ? '' : 's'} `
+        + `will be archived off the bottom of the rotation`);
+    }
+    const retired = stories.filter(s => s && s.retired === true).length;
+    if (retired) warnings.push(`${retired} bulletin${retired === 1 ? ' is' : 's are'} retired`);
   }
 
   // ── the copy, in every language ──────────────────────────────────
@@ -174,6 +211,53 @@ export function orderByChannel(stories, sectors) {
     .map((s, i) => ({ s, i }))
     .sort((a, b) => (rank.get(a.s.sector) ?? 99) - (rank.get(b.s.sector) ?? 99) || a.i - b.i)
     .map(x => x.s);
+}
+
+/**
+ * The rotation: what the feed actually shows, newest first, oldest archived
+ * off the bottom.
+ *
+ * A bulletin filed today has to arrive at the TOP — that is the whole point of
+ * a wire you can update from outside the bundle. But the feed is also read as
+ * three channels, and shuffling a day's batch across the bands would make the
+ * dial jump about. So it sorts by filing date DESCENDING and keeps channel
+ * order inside each day's batch: a new drop lands on top, still grouped.
+ *
+ * `filed` is OPTIONAL and its absence is meaningful — an unfiled bulletin is
+ * the standing backlog and sorts BELOW everything dated, in exactly the order
+ * the file lists it. That is what lets a wire with no dates in it at all keep
+ * the arrangement it already had.
+ *
+ * Two ways to archive, and both are deliberate:
+ *   `story.retired: true` — this one, by name, out of the rotation.
+ *   `wire.keep: n`        — keep the newest n and let the tail fall off.
+ * Retiring never deletes: the copy stays in the wire, so un-retiring is a
+ * one-word edit rather than a rewrite.
+ */
+export function rotate(wire) {
+  const stories = Array.isArray(wire.stories) ? wire.stories : [];
+  const sectors = Array.isArray(wire.sectors) ? wire.sectors : [];
+  const rank = new Map(sectors.map((s, i) => [s.id, i]));
+  // '' for undated, and it sorts LAST under a descending compare because no
+  // real date is below it
+  const filed = (s) => (typeof s.filed === 'string' ? s.filed : '0000-00-00');
+
+  const live = stories
+    .filter(s => s && s.retired !== true)
+    .map((s, i) => ({ s, i }))
+    .sort((a, b) =>
+      filed(b.s).localeCompare(filed(a.s))
+      || (rank.get(a.s.sector) ?? 99) - (rank.get(b.s.sector) ?? 99)
+      || a.i - b.i)
+    .map(x => x.s);
+
+  const keep = Number.isInteger(wire.keep) && wire.keep > 0 ? wire.keep : live.length;
+  const shown = live.slice(0, keep);
+  const archived = [
+    ...stories.filter(s => s && s.retired === true).map(s => s.id),
+    ...live.slice(keep).map(s => s.id),
+  ];
+  return { shown, archived };
 }
 
 // English is the fallback, the same way t() falls back — a language missing a
