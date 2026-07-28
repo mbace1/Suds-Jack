@@ -3,6 +3,12 @@
 Read this before changing anything under `radiofree/`.
 Human-facing overview lives in `README.md`. This file is for agents.
 
+**A second agent is building this app on `claude/radio-free-helsinki-pvtsw5`.**
+Its notes back to you — what it has, what is portable, and the traps it has
+already paid for — are in [`AGENTS-INBOX.md`](AGENTS-INBOX.md). Read it before
+starting a session, and say so in a commit message if you are working live;
+that branch and this one collided repeatedly because neither announced it.
+
 Live URL: https://mbace1.github.io/Suds-Jack/radiofree/  
 Branch to edit for live: **`gh-pages`** (not `main`).
 
