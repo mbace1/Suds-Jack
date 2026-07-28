@@ -5,6 +5,8 @@ import { Post, Reader } from './codec.js?v=10';
 import { SECTORS, STORIES, storyCopy, parseLine } from './stories.js?v=10';
 import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=10';
 import * as audio from './audio.js?v=10';
+import { PixelScreen } from './screen.js?v=10';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=10';
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
@@ -426,6 +428,41 @@ function loop(now) {
   raf = requestAnimationFrame(loop);
 }
 
+// Draw every B-roll key on purpose at d=0 and d=1. A broken plate only fails
+// when a live cut happens to land on it — this forces the failure.
+function drawAllPlates() {
+  const keys = BROLL_KEYS || [];
+  const results = [];
+  const scr = new PixelScreen(null, PANEL_W, PANEL_H);
+  const total = PANEL_W * PANEL_H;
+  for (const key of keys) {
+    for (const d of [0, 1]) {
+      try {
+        scr.clear('#000000');
+        drawVisual(key, scr, 1.25, d);
+        const data = scr.ctx.getImageData(0, 0, PANEL_W, PANEL_H).data;
+        let lit = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i] + data[i + 1] + data[i + 2] > 12) lit++;
+        }
+        if (lit < total * 0.02) {
+          results.push({ key, d, ok: false, error: `near-empty (${lit}/${total})` });
+        } else {
+          results.push({ key, d, ok: true, lit });
+        }
+      } catch (e) {
+        results.push({ key, d, ok: false, error: String(e && e.message ? e.message : e) });
+      }
+    }
+  }
+  scr.destroy();
+  const failed = results.filter(r => !r.ok);
+  const out = { ok: failed.length === 0, count: keys.length, results, failed };
+  if (!out.ok) console.error('[rfh plates]', failed);
+  else console.log('[rfh plates] ALL OK', keys.length, 'keys × 2 decode states');
+  return out;
+}
+
 window.__rfh = {
   audio,
   get state() {
@@ -457,6 +494,8 @@ window.__rfh = {
       scrollToPost(i, true);
       return true;
     },
+    drawAllPlates,
+    brollKeys: () => [...(BROLL_KEYS || [])],
   },
 };
 
