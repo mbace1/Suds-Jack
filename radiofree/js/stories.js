@@ -15,15 +15,18 @@ export const STORIES = [
   { id: 'season-zero',         sector: 'GAMING',   visual: 'chart2',  broll: 'mannerheim' },
   { id: 'foundry-deal',        sector: 'GAMING',   visual: 'mesh',    broll: 'station' },
   { id: 'summit-consensus',    sector: 'GAMING',   visual: 'crowd',   broll: 'cathedral' },
+  { id: 'surprise-bundle',       sector: 'GAMING',     visual: 'mesh',      broll: 'katu' },
   { id: 'heat-recovery',       sector: 'INDUSTRY', visual: 'heat',    broll: 'harbour' },
   { id: 'vuosaari-automation', sector: 'INDUSTRY', visual: 'crane',   broll: 'harbour' },
   { id: 'sixth-generation',    sector: 'INDUSTRY', visual: 'tower',   broll: 'mannerheim' },
   { id: 'round-b',             sector: 'INDUSTRY', visual: 'coin',    broll: 'katu' },
   { id: 'ram-discipline',      sector: 'INDUSTRY', visual: 'coin',    broll: 'harbour' },
+  { id: 'up-to-ten',             sector: 'INDUSTRY',   visual: 'chart2',    broll: 'suomenlinna' },
   { id: 'seabed',              sector: 'DEFENCE',  visual: 'sea',     broll: 'gulf' },
   { id: 'interference',        sector: 'DEFENCE',  visual: 'sat',     broll: 'station' },
   { id: 'synthetic-env',       sector: 'DEFENCE',  visual: 'engine',  broll: 'cathedral' },
   { id: 'amplification',       sector: 'DEFENCE',  visual: 'crowd2',  broll: 'kamppi' },
+  { id: 'no-comment',            sector: 'DEFENCE',    visual: 'tower',     broll: 'katajanokka' },
   { id: 'border-lab',          sector: 'DEFENCE',  visual: 'border',  broll: 'cathedral' },
 ];
 
@@ -181,6 +184,39 @@ const EN = {
     technique: 'PRE-EMPTIVE FRAME',
     decodeNote: 'The most effective move is not a lie in the text \u2014 it is the assumption in front of it.',
     tell: 'Ask who decided this was the question. Including here.',
+  },
+  'surprise-bundle': {
+    slug: 'RUOHOLAHTI',
+    head: 'Lumipeli removes loot boxes from Season Zero',
+    lines: [
+      'Lumipeli has {{removed loot boxes|renamed loot boxes}} from Season Zero, replacing them with what the studio calls {{Surprise Reward Bundles|loot boxes}}. The change {{follows extensive player feedback|follows a draft bill in two markets}}.',
+      'The studio said the new bundles {{put the player in control|cost 4.99 and contain the same items at the same odds}}, and that it was {{proud to lead the industry here|the first to be asked}}.',
+    ],
+    technique: 'RENAMING AS REFORM',
+    decodeNote: 'Nothing was removed; a noun was. Watch for a reform announced entirely in the vocabulary of the thing it replaces \u2014 the mechanism, the price and the odds all come through the sentence intact, and the only measurable change is what the item is called. The panel is the same crate twice. "Follows player feedback" is doing a separate job: it dates the decision to the complaints rather than to the legislation, so the studio gets to have chosen.',
+    tell: 'Ask what a customer can now do that they could not do last week. If the answer is "read a different word", nothing was reformed.',
+  },
+  'up-to-ten': {
+    slug: 'PIT\u00c4J\u00c4NM\u00c4KI',
+    head: 'Verkkovoima launches home speeds of up to ten gigabits',
+    lines: [
+      'Verkkovoima has opened a residential tier running at {{speeds of up to ten gigabits|a figure reached once, inside the exchange building, at four in the morning}}. The operator says this makes it {{the fastest connection in the country|the largest number printed on a Finnish advertisement}}.',
+      'The company said {{customers can expect a transformative experience|the median line it measured ran at one point four}} and that {{speeds may vary by property|the number in the advertisement was measured in a building with nobody living in it}}.',
+    ],
+    technique: 'THE UNBOUNDED RANGE',
+    decodeNote: '"Up to" has no floor. It names a ceiling and leaves the reader to supply a typical value, which is a job the sentence has quietly handed over. The only number in it anybody is promising is zero. The panel is the same measurement set twice \u2014 decode it and the column collapses to the median, every reading drops to where it actually fell, and the one lonely dot at the top is left ringed. That is the measurement that made the advertisement legal.',
+    tell: 'Read it as "at least nothing, and at most". If it still sounds like an offer, it was not one.',
+  },
+  'no-comment': {
+    slug: 'KATAJANOKKA',
+    head: 'Ministry responds to reports of a new interception capability',
+    lines: [
+      'Asked about reports of a new interception capability, the ministry said it {{does not comment on capabilities it does not possess|did not say it does not possess this one}}, and that {{the reports are speculative|the reports are correct in every particular the ministry chose not to address}}.',
+      'A spokesperson added that {{no such programme has been approved in the form described|the form described is not the form}} and that {{the ministry has nothing further to add at this time|the ministry has three further things to add, in October}}.',
+    ],
+    technique: 'NON-DENIAL DENIAL',
+    decodeNote: 'Every clause is true and none of them is a denial. "Does not comment on capabilities it does not possess" is a sentence about policy wearing the clothes of a sentence about fact, and "in the form described" moves the denial onto the description rather than the thing. Count the denials in the panel: the statement runs to six lines and the number of claims it refuses is zero.',
+    tell: 'Write down the exact sentence you wanted denied, then look for it, word for word, inside a "no". If it is not in there, it was not denied.',
   },
 };
 
@@ -341,6 +377,39 @@ const FI = {
     decodeNote: 'Pino allekirjoitettuja lykk\u00e4yksi\u00e4 kerrotaan s\u00e4\u00e4n\u00e4 \u2014 jonakin joka "oli aina tulossa".',
     tell: 'Jos pula oli v\u00e4ist\u00e4m\u00e4t\u00f6n, kysy kuka allekirjoitti kapasiteettij\u00e4\u00e4dytykset, ja kenen tilaukset saapuvat edelleen ajoissa.',
   },
+  'surprise-bundle': {
+    slug: 'RUOHOLAHTI',
+    head: 'Lumipeli poistaa lootboxit Season Zerosta',
+    lines: [
+      'Lumipeli on {{poistanut lootboxit|nimennyt lootboxit uudelleen}} Season Zerosta ja korvannut ne sill\u00e4, mit\u00e4 studio kutsuu {{yll\u00e4tyspalkintopaketeiksi|lootboxeiksi}}. Muutos {{tehtiin pelaajapalautteen pohjalta|tehtiin kahdessa maassa vireill\u00e4 olevan lakiesityksen pohjalta}}.',
+      'Studion mukaan uudet paketit {{antavat pelaajalle hallinnan|maksavat 4,99 ja sis\u00e4lt\u00e4v\u00e4t samat esineet samoilla todenn\u00e4k\u00f6isyyksill\u00e4}}, ja studio {{on ylpe\u00e4 voidessaan n\u00e4ytt\u00e4\u00e4 suuntaa|ehti ensimm\u00e4isen\u00e4 kysytt\u00e4v\u00e4ksi}}.',
+    ],
+    technique: 'UUDELLEENNIME\u00c4MINEN UUDISTUKSENA',
+    decodeNote: 'Mit\u00e4\u00e4n ei poistettu \u2014 substantiivi poistettiin. Suomessa temppu piiloutuu yhdyssanaan: "yll\u00e4tyspalkintopaketti" on yksi sana, ja yksi sana kuulostaa yhdelt\u00e4 asialta, jolloin kukaan ei pura sit\u00e4 osiin ja kysy, mik\u00e4 osa siit\u00e4 on muuttunut. Mekanismi, hinta ja todenn\u00e4k\u00f6isyydet selvi\u00e4v\u00e4t lauseesta koskemattomina. Kuvassa on sama laatikko kahdesti. "Pelaajapalautteen pohjalta" tekee oman erillisen ty\u00f6ns\u00e4: se ajoittaa p\u00e4\u00e4t\u00f6ksen valituksiin eik\u00e4 lakiesitykseen, jolloin studio saa n\u00e4ytt\u00e4\u00e4 valinneen itse.',
+    tell: 'Kysy, mit\u00e4 asiakas pystyy nyt tekem\u00e4\u00e4n, mit\u00e4 h\u00e4n ei pystynyt viime viikolla. Jos vastaus on "lukemaan eri sanan", mit\u00e4\u00e4n ei uudistettu.',
+  },
+  'up-to-ten': {
+    slug: 'PIT\u00c4J\u00c4NM\u00c4KI',
+    head: 'Verkkovoima tuo koteihin jopa kymmenen gigabitin nopeudet',
+    lines: [
+      'Verkkovoima on avannut kuluttajaliittym\u00e4n, jonka nopeus on {{jopa kymmenen gigabitti\u00e4|kerran mitattu luku, keskuksen omassa talossa, nelj\u00e4lt\u00e4 aamuy\u00f6ll\u00e4}}. Operaattorin mukaan kyseess\u00e4 on {{maan nopein liittym\u00e4|maan suurin mainokseen painettu luku}}.',
+      'Yhti\u00f6 kertoi, ett\u00e4 {{asiakkaat voivat odottaa aivan uudenlaista kokemusta|sen itse mittaama mediaaniyhteys kulki 1,4:ss\u00e4}} ja ett\u00e4 {{nopeus voi vaihdella kiinteist\u00f6kohtaisesti|mainoksen luku mitattiin talossa, jossa ei asu ket\u00e4\u00e4n}}.',
+    ],
+    technique: 'RAJATON VAIHTELUV\u00c4LI',
+    decodeNote: '"Jopa" ei tunne alarajaa. Sana nime\u00e4\u00e4 katon ja j\u00e4tt\u00e4\u00e4 lukijan t\u00e4ytt\u00e4m\u00e4\u00e4n tyypillisen arvon itse \u2014 ty\u00f6n, jonka lause on hiljaa siirt\u00e4nyt h\u00e4nelle. Ainoa luku, jonka lause todella lupaa, on nolla. Suomessa temppu on erityisen huomaamaton, koska "jopa" kuulostaa innostuneelta eik\u00e4 varovaiselta: se on kehumisen sana, ei varauksen. Kuvassa on sama mittausaineisto kahdesti \u2014 pura se, ja palkki romahtaa mediaaniin, mittaukset asettuvat sinne minne ne osuivat, ja ylin yksin\u00e4inen piste j\u00e4\u00e4 renkaaseen. Se on se, jonka ansiosta mainos on laillinen.',
+    tell: 'Lue se muodossa "v\u00e4hint\u00e4\u00e4n ei mit\u00e4\u00e4n, enint\u00e4\u00e4n". Jos se kuulostaa yh\u00e4 tarjoukselta, se ei ollut tarjous.',
+  },
+  'no-comment': {
+    slug: 'KATAJANOKKA',
+    head: 'Ministeri\u00f6 vastaa tietoihin uudesta sieppauskyvyst\u00e4',
+    lines: [
+      'Uudesta sieppauskyvyst\u00e4 kysytt\u00e4ess\u00e4 ministeri\u00f6 totesi, ettei se {{kommentoi kykyj\u00e4, joita sill\u00e4 ei ole|sanonut, ettei sill\u00e4 ole t\u00e4t\u00e4}}, ja ett\u00e4 {{tiedot ovat spekulatiivisia|tiedot pit\u00e4v\u00e4t paikkansa jokaisessa kohdassa, jota ministeri\u00f6 ei valinnut k\u00e4sitell\u00e4}}.',
+      'Tiedottaja lis\u00e4si, ettei {{t\u00e4llaista ohjelmaa ole hyv\u00e4ksytty kuvatussa muodossa|kuvattu muoto ole se muoto}} ja ettei {{ministeri\u00f6ll\u00e4 ole t\u00e4ss\u00e4 vaiheessa lis\u00e4tt\u00e4v\u00e4\u00e4|ministeri\u00f6ll\u00e4 ole lis\u00e4tt\u00e4v\u00e4\u00e4 ennen lokakuuta, jolloin sill\u00e4 on kolme asiaa}}.',
+    ],
+    technique: 'KIELTO JOKA EI KIELL\u00c4',
+    decodeNote: 'Jokainen lause on tosi eik\u00e4 yksik\u00e4\u00e4n ole kielto. "Ei kommentoi kykyj\u00e4, joita sill\u00e4 ei ole" on linjausta koskeva lause pukeutuneena tosiasiaa koskevaksi lauseeksi, ja "kuvatussa muodossa" siirt\u00e4\u00e4 kiellon kuvaukseen eik\u00e4 itse asiaan. Suomessa muoto tekee tempusta viel\u00e4 sile\u00e4mm\u00e4n: kieltoverbi tulee ensin ja p\u00e4\u00e4verbi kaukana per\u00e4ss\u00e4, joten korva kuulee "ei" mutta ei ehdi tarkistaa mihin se osui. Laske kuvasta kiellot: lausunto on kuusirivinen ja sen kiist\u00e4mien v\u00e4itteiden m\u00e4\u00e4r\u00e4 on nolla.',
+    tell: 'Kirjoita yl\u00f6s se lause, jonka halusit kiistetyksi, ja etsi se sanasta sanaan jonkin "ei"-lauseen sis\u00e4lt\u00e4. Jos sit\u00e4 ei ole siell\u00e4, sit\u00e4 ei kiistetty.',
+  },
 };
 
 const JA = {
@@ -499,6 +568,39 @@ const JA = {
     technique: '\u76ee\u7684\u8ad6\uff08TELEOLOGY\uff09',
     decodeNote: '\u7f72\u540d\u3055\u308c\u305f\u5148\u9001\u308a\u306e\u5c71\u304c\u3001\u300c\u5fc5\u305a\u6765\u308b\u306f\u305a\u3060\u3063\u305f\u300d\u5929\u5019\u3068\u3057\u3066\u8a9e\u3089\u308c\u308b\u3002',
     tell: '\u4e0d\u8db3\u304c\u4e0d\u53ef\u907f\u3060\u3063\u305f\u306a\u3089\u3001\u8ab0\u304c\u751f\u7523\u51cd\u7d50\u306b\u7f72\u540d\u3057\u3001\u8ab0\u306e\u6ce8\u6587\u304c\u4eca\u3082\u6642\u9593\u901a\u308a\u306b\u5c4a\u304f\u306e\u304b\u3092\u805e\u3051\u3002',
+  },
+  'surprise-bundle': {
+    slug: '\u30eb\u30aa\u30db\u30e9\u30cf\u30c6\u30a3',
+    head: '\u30eb\u30df\u30da\u30ea\u3001\u30b7\u30fc\u30ba\u30f3\u30fb\u30bc\u30ed\u304b\u3089\u30eb\u30fc\u30c8\u30dc\u30c3\u30af\u30b9\u3092\u64a4\u53bb',
+    lines: [
+      '\u30eb\u30df\u30da\u30ea\u306f\u30b7\u30fc\u30ba\u30f3\u30fb\u30bc\u30ed\u304b\u3089\u30eb\u30fc\u30c8\u30dc\u30c3\u30af\u30b9\u3092{{\u64a4\u53bb\u3057\u305f|\u540d\u524d\u3092\u5909\u3048\u305f}}\u3068\u767a\u8868\u3057\u3001\u4ee3\u308f\u308a\u306b\u30b9\u30bf\u30b8\u30aa\u304c{{\u30b5\u30d7\u30e9\u30a4\u30ba\u5831\u916c\u30d1\u30c3\u30af|\u30eb\u30fc\u30c8\u30dc\u30c3\u30af\u30b9}}\u3068\u547c\u3076\u3082\u306e\u3092\u5c0e\u5165\u3057\u305f\u3002\u5909\u66f4\u306f{{\u30d7\u30ec\u30a4\u30e4\u30fc\u306e\u58f0\u3092\u53d7\u3051\u305f\u3082\u306e|\u4e8c\u3064\u306e\u5e02\u5834\u3067\u5be9\u8b70\u4e2d\u306e\u6cd5\u6848\u3092\u53d7\u3051\u305f\u3082\u306e}}\u3060\u3068\u3044\u3046\u3002',
+      '\u30b9\u30bf\u30b8\u30aa\u306b\u3088\u308c\u3070\u65b0\u3057\u3044\u30d1\u30c3\u30af\u306f{{\u30d7\u30ec\u30a4\u30e4\u30fc\u306b\u4e3b\u5c0e\u6a29\u3092\u6e21\u3059|4.99\u3067\u3001\u540c\u3058\u54c1\u3092\u540c\u3058\u78ba\u7387\u3067\u542b\u3080}}\u3082\u306e\u3067\u3042\u308a\u3001{{\u3053\u306e\u5206\u91ce\u3067\u5148\u982d\u306b\u7acb\u3066\u305f\u3053\u3068\u3092\u8a87\u308a\u306b\u601d\u3046|\u6700\u521d\u306b\u554f\u308f\u308c\u305f\u5074\u306b\u306a\u3063\u305f}}\u3068\u3057\u3066\u3044\u308b\u3002',
+    ],
+    technique: '\u6539\u540d\u3068\u3044\u3046\u6539\u9769',
+    decodeNote: '\u64a4\u53bb\u3055\u308c\u305f\u306e\u306f\u4ed5\u7d44\u307f\u3067\u306f\u306a\u304f\u540d\u8a5e\u3072\u3068\u3064\u3060\u3002\u7f6e\u304d\u63db\u3048\u305f\u306f\u305a\u306e\u3082\u306e\u306e\u8a9e\u5f59\u3060\u3051\u3067\u8a9e\u3089\u308c\u308b\u6539\u9769\u306b\u6c17\u3092\u3064\u3051\u305f\u3044\u2014\u2014\u4ed5\u639b\u3051\u3082\u4fa1\u683c\u3082\u78ba\u7387\u3082\u6587\u306e\u306a\u304b\u3092\u7121\u50b7\u3067\u901a\u308a\u629c\u3051\u3001\u6e2c\u308c\u308b\u5909\u5316\u306f\u547c\u3073\u540d\u3060\u3051\u3002\u65e5\u672c\u8a9e\u3067\u306f\u30ab\u30bf\u30ab\u30ca\u306b\u7f6e\u304d\u63db\u3048\u308b\u3060\u3051\u3067\u65b0\u3057\u3055\u306e\u898b\u305f\u76ee\u304c\u51fa\u308b\u306e\u3067\u3001\u3053\u306e\u624b\u306f\u3044\u3063\u305d\u3046\u5b89\u304f\u6e08\u3080\u3002\u56f3\u306f\u540c\u3058\u7bb1\u3092\u4e8c\u5ea6\u6620\u3057\u3066\u3044\u308b\u3002\u300c\u30d7\u30ec\u30a4\u30e4\u30fc\u306e\u58f0\u3092\u53d7\u3051\u305f\u300d\u3082\u5225\u306e\u4ed5\u4e8b\u3092\u3057\u3066\u3044\u3066\u3001\u6c7a\u5b9a\u306e\u65e5\u4ed8\u3092\u6cd5\u6848\u3067\u306f\u306a\u304f\u82e6\u60c5\u306e\u307b\u3046\u306b\u5bc4\u305b\u3001\u30b9\u30bf\u30b8\u30aa\u304c\u81ea\u5206\u3067\u9078\u3093\u3060\u3053\u3068\u306b\u3057\u3066\u3044\u308b\u3002',
+    tell: '\u5148\u9031\u3067\u304d\u306a\u304b\u3063\u305f\u4f55\u304c\u3001\u4eca\u9031\u304b\u3089\u5ba2\u306b\u3067\u304d\u308b\u3088\u3046\u306b\u306a\u3063\u305f\u306e\u304b\u3092\u8a0a\u304f\u3002\u7b54\u3048\u304c\u300c\u9055\u3046\u5358\u8a9e\u3092\u8aad\u3080\u3053\u3068\u300d\u306a\u3089\u3001\u6539\u9769\u3055\u308c\u305f\u3082\u306e\u306f\u306a\u3044\u3002',
+  },
+  'up-to-ten': {
+    slug: '\u30d4\u30bf\u30e4\u30f3\u30de\u30ad',
+    head: '\u30f4\u30a7\u30eb\u30c3\u30b3\u30f4\u30a9\u30a4\u30de\u3001\u5bb6\u5ead\u5411\u3051\u306b\u6700\u592710\u30ae\u30ac\u306e\u56de\u7dda',
+    lines: [
+      '\u30f4\u30a7\u30eb\u30c3\u30b3\u30f4\u30a9\u30a4\u30de\u304c\u5bb6\u5ead\u5411\u3051\u56de\u7dda\u3092\u958b\u59cb\u3057\u305f\u3002\u901f\u5ea6\u306f{{\u6700\u592710\u30ae\u30ac\u30d3\u30c3\u30c8|\u4ea4\u63db\u5c40\u306e\u5efa\u7269\u306e\u4e2d\u3067\u3001\u5348\u524d\u56db\u6642\u306b\u3001\u4e00\u5ea6\u3060\u3051\u51fa\u305f\u6570\u5b57}}\u3067\u3001\u540c\u793e\u306b\u3088\u308c\u3070\u3053\u308c\u306f{{\u56fd\u5185\u6700\u901f\u306e\u63a5\u7d9a|\u30d5\u30a3\u30f3\u30e9\u30f3\u30c9\u306e\u5e83\u544a\u306b\u5370\u5237\u3055\u308c\u305f\u6570\u5b57\u3068\u3057\u3066\u306f\u6700\u5927}}\u3060\u3068\u3044\u3046\u3002',
+      '\u540c\u793e\u306f{{\u3053\u308c\u307e\u3067\u306b\u306a\u3044\u4f53\u9a13\u304c\u671f\u5f85\u3067\u304d\u308b|\u81ea\u793e\u304c\u6e2c\u3063\u305f\u56de\u7dda\u306e\u4e2d\u592e\u5024\u306f1.4\u3060\u3063\u305f}}\u3068\u3057\u3001{{\u901f\u5ea6\u306f\u5efa\u7269\u306b\u3088\u308a\u5909\u52d5\u3059\u308b\u5834\u5408\u304c\u3042\u308b|\u5e83\u544a\u306e\u6570\u5b57\u306f\u3001\u4f4f\u4eba\u306e\u3044\u306a\u3044\u5efa\u7269\u3067\u6e2c\u3089\u308c\u305f}}\u3068\u8ff0\u3079\u305f\u3002',
+    ],
+    technique: '\u4e0a\u9650\u3060\u3051\u306e\u5e45',
+    decodeNote: '\u300c\u6700\u5927\u300d\u306b\u4e0b\u9650\u306f\u306a\u3044\u3002\u5929\u4e95\u306e\u6570\u5b57\u3060\u3051\u3092\u793a\u3057\u3001\u3075\u3064\u3046\u306f\u3069\u306e\u304f\u3089\u3044\u304b\u306f\u8aad\u307f\u624b\u306b\u57cb\u3081\u3055\u305b\u308b\u2014\u2014\u6587\u304c\u9ed9\u3063\u3066\u6e21\u3057\u305f\u4ed5\u4e8b\u3060\u3002\u3053\u306e\u6587\u304c\u672c\u5f53\u306b\u7d04\u675f\u3057\u3066\u3044\u308b\u6570\u5b57\u306f\u30bc\u30ed\u3072\u3068\u3064\u3060\u3051\u3002\u65e5\u672c\u8a9e\u3067\u306f\u6570\u5b57\u306e\u524d\u306b\u4e8c\u5b57\u3092\u7f6e\u304f\u3060\u3051\u3067\u6e08\u3080\u3076\u3093\u3001\u3044\u3063\u305d\u3046\u8efd\u304f\u901a\u308a\u904e\u304e\u3066\u3044\u304f\u3002\u56f3\u306f\u540c\u3058\u6e2c\u5b9a\u7d50\u679c\u3092\u4e8c\u5ea6\u898b\u305b\u3066\u3044\u308b\u3002\u89e3\u304f\u3068\u67f1\u306f\u4e2d\u592e\u5024\u307e\u3067\u5d29\u308c\u3001\u6e2c\u5b9a\u5024\u306f\u305d\u308c\u305e\u308c\u843d\u3061\u305f\u5834\u6240\u306b\u6563\u3089\u3070\u308a\u3001\u3044\u3061\u3070\u3093\u4e0a\u306e\u5b64\u7acb\u3057\u305f\u70b9\u3060\u3051\u304c\u4e38\u3067\u56f2\u307e\u308c\u308b\u2014\u2014\u305d\u306e\u5e83\u544a\u3092\u5408\u6cd5\u306b\u3057\u305f\u4e00\u70b9\u3060\u3002',
+    tell: '\u300c\u6700\u4f4e\u30bc\u30ed\u3001\u6700\u9ad8\u3067\u300d\u3068\u8aad\u307f\u66ff\u3048\u3066\u307f\u308b\u3002\u305d\u308c\u3067\u3082\u58f2\u308a\u6587\u53e5\u306b\u805e\u3053\u3048\u308b\u306a\u3089\u3001\u58f2\u308a\u6587\u53e5\u3067\u306f\u306a\u304b\u3063\u305f\u3002',
+  },
+  'no-comment': {
+    slug: '\u30ab\u30bf\u30e4\u30ce\u30c3\u30ab',
+    head: '\u7701\u3001\u65b0\u305f\u306a\u508d\u53d7\u80fd\u529b\u3092\u3081\u3050\u308b\u5831\u9053\u306b\u5fdc\u3058\u308b',
+    lines: [
+      '\u65b0\u305f\u306a\u508d\u53d7\u80fd\u529b\u306b\u3064\u3044\u3066\u306e\u5831\u9053\u3092\u554f\u308f\u308c\u3001\u7701\u306f{{\u4fdd\u6709\u3057\u3066\u3044\u306a\u3044\u80fd\u529b\u306b\u3064\u3044\u3066\u306f\u8ad6\u8a55\u3057\u306a\u3044|\u4fdd\u6709\u3057\u3066\u3044\u306a\u3044\u3068\u306f\u8a00\u3063\u3066\u3044\u306a\u3044}}\u3068\u3057\u3001{{\u5831\u9053\u306f\u61b6\u6e2c\u3067\u3042\u308b|\u5831\u9053\u306f\u3001\u7701\u304c\u3042\u3048\u3066\u89e6\u308c\u306a\u304b\u3063\u305f\u3059\u3079\u3066\u306e\u70b9\u3067\u6b63\u3057\u3044}}\u3068\u8ff0\u3079\u305f\u3002',
+      '\u5831\u9053\u5b98\u306f\u3055\u3089\u306b\u3001{{\u8a18\u8ff0\u3055\u308c\u305f\u304b\u305f\u3061\u3067\u306e\u8a08\u753b\u306f\u627f\u8a8d\u3055\u308c\u3066\u3044\u306a\u3044|\u8a18\u8ff0\u3055\u308c\u305f\u304b\u305f\u3061\u304c\u3001\u305d\u306e\u304b\u305f\u3061\u3067\u306f\u306a\u3044}}\u3068\u3057\u3001{{\u73fe\u6642\u70b9\u3067\u4ed8\u3051\u52a0\u3048\u308b\u3053\u3068\u306f\u306a\u3044|\u4ed8\u3051\u52a0\u3048\u308b\u3053\u3068\u306f\u4e09\u3064\u3042\u308a\u3001\u305d\u308c\u306f\u5341\u6708\u306b\u306a\u308b}}\u3068\u8a9e\u3063\u305f\u3002',
+    ],
+    technique: '\u5426\u5b9a\u3057\u306a\u3044\u5426\u5b9a',
+    decodeNote: '\u3069\u306e\u7bc0\u3082\u771f\u3067\u3001\u3069\u308c\u3072\u3068\u3064\u5426\u5b9a\u3067\u306f\u306a\u3044\u3002\u300c\u4fdd\u6709\u3057\u3066\u3044\u306a\u3044\u80fd\u529b\u306b\u3064\u3044\u3066\u306f\u8ad6\u8a55\u3057\u306a\u3044\u300d\u306f\u65b9\u91dd\u306e\u8a71\u304c\u4e8b\u5b9f\u306e\u8a71\u306e\u670d\u3092\u7740\u305f\u3082\u306e\u3067\u3001\u300c\u8a18\u8ff0\u3055\u308c\u305f\u304b\u305f\u3061\u3067\u306f\u300d\u306f\u5426\u5b9a\u306e\u77db\u5148\u3092\u4e2d\u8eab\u304b\u3089\u8a18\u8ff0\u306e\u307b\u3046\u3078\u79fb\u3057\u3066\u3044\u308b\u3002\u65e5\u672c\u8a9e\u3067\u306f\u5426\u5b9a\u304c\u6587\u672b\u306b\u6765\u308b\u3076\u3093\u3001\u805e\u304d\u624b\u306f\u6700\u5f8c\u307e\u3067\u5f85\u305f\u3055\u308c\u3001\u5f85\u3063\u305f\u5148\u3067\u5426\u5b9a\u3055\u308c\u305f\u306e\u304c\u4f55\u3060\u3063\u305f\u306e\u304b\u3092\u78ba\u304b\u3081\u308b\u4f59\u88d5\u304c\u306a\u3044\u3002\u56f3\u306e\u5426\u5b9a\u3092\u6570\u3048\u3066\u307b\u3057\u3044\u2014\u2014\u516d\u884c\u306e\u58f0\u660e\u304c\u9000\u3051\u305f\u4e3b\u5f35\u306f\u3001\u30bc\u30ed\u3060\u3002',
+    tell: '\u5426\u5b9a\u3057\u3066\u307b\u3057\u304b\u3063\u305f\u4e00\u6587\u3092\u305d\u306e\u307e\u307e\u66f8\u304d\u51fa\u3057\u3001\u3069\u308c\u304b\u306e\u300c\u301c\u306a\u3044\u300d\u306e\u4e2d\u306b\u4e00\u8a9e\u4e00\u53e5\u305d\u306e\u307e\u307e\u5165\u3063\u3066\u3044\u308b\u304b\u63a2\u3059\u3002\u7121\u3051\u308c\u3070\u3001\u5426\u5b9a\u3055\u308c\u3066\u3044\u306a\u3044\u3002',
   },
 };
 
