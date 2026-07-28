@@ -5,155 +5,145 @@
   "keep": 5,
   "sectors": [
     {
-      "id": "GAMING",
-      "freq": "87.60",
-      "call": "KAIKU"
-    },
-    {
-      "id": "INDUSTRY",
+      "id": "RFH",
       "freq": "104.40",
-      "call": "VERKKO"
-    },
-    {
-      "id": "DEFENCE",
-      "freq": "141.12",
-      "call": "VARTIO"
+      "call": "HELSINKI"
     }
   ],
   "stories": [
     {
       "id": "kaiku-restructure",
-      "sector": "GAMING",
+      "sector": "RFH",
       "visual": "chart",
       "broll": "katu"
     },
     {
       "id": "season-zero",
-      "sector": "GAMING",
+      "sector": "RFH",
       "visual": "chart2",
       "broll": "mannerheim"
     },
     {
       "id": "foundry-deal",
-      "sector": "GAMING",
+      "sector": "RFH",
       "visual": "mesh",
       "broll": "station"
     },
     {
       "id": "summit-consensus",
-      "sector": "GAMING",
+      "sector": "RFH",
       "visual": "crowd",
       "broll": "cathedral"
     },
     {
       "id": "surprise-bundle",
-      "sector": "GAMING",
+      "sector": "RFH",
       "visual": "mesh",
       "broll": "katu"
     },
     {
       "id": "heat-recovery",
-      "sector": "INDUSTRY",
+      "sector": "RFH",
       "visual": "heat",
       "broll": "harbour"
     },
     {
       "id": "vuosaari-automation",
-      "sector": "INDUSTRY",
+      "sector": "RFH",
       "visual": "crane",
       "broll": "harbour"
     },
     {
       "id": "sixth-generation",
-      "sector": "INDUSTRY",
+      "sector": "RFH",
       "visual": "tower",
       "broll": "mannerheim"
     },
     {
       "id": "round-b",
-      "sector": "INDUSTRY",
+      "sector": "RFH",
       "visual": "coin",
       "broll": "katu"
     },
     {
       "id": "ram-discipline",
-      "sector": "INDUSTRY",
+      "sector": "RFH",
       "visual": "coin",
       "broll": "harbour"
     },
     {
       "id": "up-to-ten",
-      "sector": "INDUSTRY",
+      "sector": "RFH",
       "visual": "chart2",
       "broll": "suomenlinna"
     },
     {
       "id": "seabed",
-      "sector": "DEFENCE",
+      "sector": "RFH",
       "visual": "sea",
       "broll": "gulf"
     },
     {
       "id": "interference",
-      "sector": "DEFENCE",
+      "sector": "RFH",
       "visual": "sat",
       "broll": "station"
     },
     {
       "id": "synthetic-env",
-      "sector": "DEFENCE",
+      "sector": "RFH",
       "visual": "engine",
       "broll": "cathedral"
     },
     {
       "id": "amplification",
-      "sector": "DEFENCE",
+      "sector": "RFH",
       "visual": "crowd2",
       "broll": "kamppi"
     },
     {
       "id": "no-comment",
-      "sector": "DEFENCE",
+      "sector": "RFH",
       "visual": "tower",
       "broll": "katajanokka"
     },
     {
       "id": "border-lab",
-      "sector": "DEFENCE",
+      "sector": "RFH",
       "visual": "border",
       "broll": "cathedral"
     },
     {
       "id": "four-hundred",
-      "sector": "INDUSTRY",
+      "sector": "RFH",
       "visual": "crane",
       "broll": "kamppi",
       "filed": "2026-07-28"
     },
     {
       "id": "airspace-responds",
-      "sector": "DEFENCE",
+      "sector": "RFH",
       "visual": "sat",
       "broll": "gulf",
       "filed": "2026-07-28"
     },
     {
       "id": "fatigue-study",
-      "sector": "GAMING",
+      "sector": "RFH",
       "visual": "chart2",
       "broll": "station",
       "filed": "2026-07-28"
     },
     {
       "id": "four-hundred-percent",
-      "sector": "INDUSTRY",
+      "sector": "RFH",
       "visual": "heat",
       "broll": "harbour",
       "filed": "2026-07-28"
     },
     {
       "id": "in-principle",
-      "sector": "DEFENCE",
+      "sector": "RFH",
       "visual": "border",
       "broll": "suomenlinna",
       "filed": "2026-07-28"

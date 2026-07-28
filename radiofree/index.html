@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#04070a">
-<link rel="manifest" href="manifest.webmanifest?v=26">
+<link rel="manifest" href="manifest.webmanifest?v=27">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="description" content="Radio Free Helsinki — a fictional pirate news broadcast. Toko reads the day's wire from a codec screen; DECODE shows you what the wording was doing.">
@@ -24,7 +24,7 @@
     --gaming: #54d6ff;
     --industry: #8fe36a;
     --defence: #ff6b6b;
-    --accent: var(--gaming);
+    --accent: var(--green);        /* one station: green is the accent */
     --mast-h: 54px;
     --col: 480px;
     --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, 'Courier New', monospace;
@@ -72,6 +72,8 @@
   #lang { font-size: 11px; letter-spacing: .1em; }
 
   .dial { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+  /* one station: the dial is a readout, so the jump buttons are gone */
+  .dial #chUp, .dial #chDown { display: none; }
   .dial button {
     min-width: 44px; min-height: 44px;
     background: none; border: 0; color: var(--green-dim);
@@ -449,12 +451,12 @@
   <main id="feed" tabindex="-1"></main>
 </div>
 
-<script type="module" src="js/main.js?v=26"></script>
+<script type="module" src="js/main.js?v=27"></script>
 <script type="module" src="../hub/shell.js?v=13"></script>
 <script>
   if ('serviceWorker' in navigator &&
       (location.protocol === 'https:' || new URLSearchParams(location.search).has('sw'))) {
-    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=26').catch(() => {}));
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=27').catch(() => {}));
   }
 </script>
 
