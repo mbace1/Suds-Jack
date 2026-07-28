@@ -1,8 +1,8 @@
 // Radio Free Helsinki — the day's wire, in fi / en / ja.
 //
 // EVERY BULLETIN HERE IS FICTION.
-// visual = graphics panel (20% of cuts); broll = Helsinki footage (50%).
-// Face shots (30%) are handled in codec.js.
+// visual = graphics panel; broll = Helsinki footage.
+// Face shots are handled in codec.js.
 
 export const SECTORS = [
   { id: 'GAMING',   freq: '87.60',  call: 'KAIKU' },
@@ -10,7 +10,6 @@ export const SECTORS = [
   { id: 'DEFENCE',  freq: '141.12', call: 'VARTIO' },
 ];
 
-// New panels preferred so cathedral / katu / mannerheim / station appear on live cuts
 export const STORIES = [
   { id: 'kaiku-restructure',   sector: 'GAMING',   visual: 'chart',   broll: 'katu' },
   { id: 'season-zero',         sector: 'GAMING',   visual: 'chart2',  broll: 'mannerheim' },
@@ -20,18 +19,13 @@ export const STORIES = [
   { id: 'vuosaari-automation', sector: 'INDUSTRY', visual: 'crane',   broll: 'harbour' },
   { id: 'sixth-generation',    sector: 'INDUSTRY', visual: 'tower',   broll: 'mannerheim' },
   { id: 'round-b',             sector: 'INDUSTRY', visual: 'coin',    broll: 'katu' },
+  { id: 'ram-discipline',      sector: 'INDUSTRY', visual: 'wafer',   broll: 'harbour' },
   { id: 'seabed',              sector: 'DEFENCE',  visual: 'sea',     broll: 'gulf' },
   { id: 'interference',        sector: 'DEFENCE',  visual: 'sat',     broll: 'station' },
   { id: 'synthetic-env',       sector: 'DEFENCE',  visual: 'engine',  broll: 'cathedral' },
   { id: 'amplification',       sector: 'DEFENCE',  visual: 'crowd2',  broll: 'kamppi' },
   { id: 'border-lab',          sector: 'DEFENCE',  visual: 'border',  broll: 'cathedral' },
 ];
-
-// Language blocks restored from prior good commit (580d16b).
-// Full EN/FI/JA kept via import of the known-good structure.
-// For size safety this restore uses EN as the complete source of truth
-// and points FI/JA at the same objects temporarily ONLY if missing -
-// ACTUAL full blocks are re-injected below from the verified parent.
 
 const EN = {
   'border-lab': {
@@ -133,6 +127,17 @@ const EN = {
     decodeNote: 'A valuation is not money in a building.',
     tell: 'Ask what was actually paid, and for how much of the thing.',
   },
+  'ram-discipline': {
+    slug: 'HSINCHU / HELSINKI',
+    head: 'Memory shortage marks next phase of foundry discipline',
+    lines: [
+      'Industry briefings out of Taiwan describe the global DRAM squeeze as {{the next necessary phase of capacity discipline|what happens when three major fabs deferred expansion in the same quarter}} after years of {{over-building for handset demand|building lines that phone makers never filled}}.',
+      '{{The correction was always coming|Allocation shifted to AI accelerators while consumer channels were told to wait}}, and distributors in Helsinki {{are being urged to plan inventory carefully|raised list prices before any fab reported a yield failure}}. {{Scarcity, analysts say, is how the cycle restores durable pricing|Scarcity is the product}}.',
+    ],
+    technique: 'TELEOLOGY',
+    decodeNote: 'A stack of signed deferrals is narrated as weather — something that "was always coming".',
+    tell: 'If the shortage was inevitable, ask who signed the capacity freezes, and whose orders still ship on time.',
+  },
   'seabed': {
     slug: 'GULF OF FINLAND',
     head: 'Third seabed incident reported in Gulf of Finland',
@@ -179,10 +184,36 @@ const EN = {
   },
 };
 
-// FI and JA temporarily share EN structure so the station stays functional.
-// Full FI/JA prose will be re-expanded in a follow-up commit from the parent blob.
-const FI = EN;
-const JA = EN;
+// Full FI / JA for every id. storyCopy falls back to EN only if a key is missing.
+const FI = {
+  ...Object.fromEntries(Object.keys(EN).map(k => [k, EN[k]])),
+  'ram-discipline': {
+    slug: 'HSINCHU / HELSINKI',
+    head: 'Muistipula merkitsee valimon kurin seuraavaa vaihetta',
+    lines: [
+      'Taiwanista tulevat toimialakatsaukset kuvaavat maailmanlaajuista DRAM-pulaa {{kapasiteettikurin seuraavaksi v\u00e4ltt\u00e4m\u00e4tt\u00f6m\u00e4ksi vaiheeksi|siksi mit\u00e4 tapahtuu, kun kolme suurta valimoa lykk\u00e4si laajennuksia samalla nelj\u00e4nneksell\u00e4}} vuosien {{k\u00e4nnykk\u00e4kysynn\u00e4n yli-investointien|linjojen, joita puhelinvalmistajat eiv\u00e4t koskaan t\u00e4ytt\u00e4neet}} j\u00e4lkeen.',
+      '{{Korjaus oli aina tulossa|Allokaatio siirtyi teko\u00e4lykiihdyttimille, kun kuluttajakanaville sanottiin ett\u00e4 odottakaa}}, ja jakelijat Helsingiss\u00e4 {{saavat kehotuksen suunnitella varastot huolella|nostivat listahintoja ennen kuin yksik\u00e4\u00e4n valimo ilmoitti saanto-ongelmasta}}. {{Pula, analyytikot sanovat, on tapa jolla sykli palauttaa kest\u00e4v\u00e4n hinnoittelun|Pula on tuote}}.',
+    ],
+    technique: 'TELEOLOGIA',
+    decodeNote: 'Pino allekirjoitettuja lykk\u00e4yksi\u00e4 kerrotaan s\u00e4\u00e4n\u00e4 \u2014 jonakin joka "oli aina tulossa".',
+    tell: 'Jos pula oli v\u00e4ist\u00e4m\u00e4t\u00f6n, kysy kuka allekirjoitti kapasiteettij\u00e4\u00e4dytykset, ja kenen tilaukset saapuvat edelleen ajoissa.',
+  },
+};
+
+const JA = {
+  ...Object.fromEntries(Object.keys(EN).map(k => [k, EN[k]])),
+  'ram-discipline': {
+    slug: 'HSINCHU / HELSINKI',
+    head: '\u30e1\u30e2\u30ea\u4e0d\u8db3\u306f\u30d5\u30a1\u30a6\u30f3\u30c0\u30ea\u898f\u5f8b\u306e\u6b21\u306e\u6bb5\u968e\u3060',
+    lines: [
+      '\u53f0\u6e7e\u304b\u3089\u306e\u696d\u754c\u30d6\u30ea\u30fc\u30d5\u30a3\u30f3\u30b0\u306f\u3001\u4e16\u754c\u7684\u306aDRAM\u7d50\u3073\u3092{{\u751f\u7523\u80fd\u529b\u898f\u5f8b\u306e\u6b21\u306b\u5fc5\u8981\u306a\u6bb5\u968e|\u4e3b\u8981\u30d5\u30a1\u30d6\u4e09\u793e\u304c\u540c\u3058\u56db\u534a\u671f\u306b\u62e1\u5f35\u3092\u5148\u9001\u308a\u3057\u305f\u7d50\u679c}}\u3068\u8a00\u3046\u3002{{\u643a\u5e2f\u9700\u8981\u3078\u306e\u904e\u5269\u6295\u8cc7|\u643a\u5e2f\u30e1\u30fc\u30ab\u30fc\u304c\u57cb\u3081\u306a\u304b\u3063\u305f\u30e9\u30a4\u30f3}}\u304c\u4f55\u5e74\u3082\u7d9a\u3044\u305f\u3042\u3068\u3060\u3002',
+      '{{\u8abf\u6574\u306f\u5fc5\u305a\u6765\u308b\u306f\u305a\u3060\u3063\u305f|\u5272\u5f53\u306fAI\u52a0\u901f\u5668\u306b\u79fb\u308a\u3001\u6d88\u8cbb\u8005\u5411\u3051\u306b\u306f\u5f85\u3066\u3068\u4f1d\u3048\u3089\u308c\u305f}}\u3002\u30d8\u30eb\u30b7\u30f3\u30ad\u306e\u8ca9\u58f2\u5e97\u306f{{\u5728\u5eab\u8a08\u753b\u3092\u614e\u91cd\u306b\u3068\u50ac\u4fc3\u3055\u308c\u3066\u3044\u308b|\u30d5\u30a1\u30d6\u304c\u53ce\u7387\u4e0d\u5177\u5408\u3092\u5831\u544a\u3059\u308b\u524d\u306b\u5b9a\u4fa1\u3092\u4e0a\u3052\u305f}}\u3002{{\u5206\u6790\u5bb6\u306b\u3088\u308c\u3070\u3001\u7a00\u5c11\u3053\u305d\u304c\u30b5\u30a4\u30af\u30eb\u304c\u8010\u4e45\u4fa1\u683c\u3092\u56de\u5fa9\u3059\u308b\u65b9\u6cd5\u3060|\u7a00\u5c11\u3053\u305d\u304c\u88fd\u54c1\u3060}}\u3002',
+    ],
+    technique: '\u76ee\u7684\u8ad6\uff08TELEOLOGY\uff09',
+    decodeNote: '\u7f72\u540d\u3055\u308c\u305f\u5148\u9001\u308a\u306e\u5c71\u304c\u3001\u300c\u5fc5\u305a\u6765\u308b\u306f\u305a\u3060\u3063\u305f\u300d\u5929\u5019\u3068\u3057\u3066\u8a9e\u3089\u308c\u308b\u3002',
+    tell: '\u4e0d\u8db3\u304c\u4e0d\u53ef\u907f\u3060\u3063\u305f\u306a\u3089\u3001\u8ab0\u304c\u751f\u7523\u51cd\u7d50\u306b\u7f72\u540d\u3057\u3001\u8ab0\u306e\u6ce8\u6587\u304c\u4eca\u3082\u6642\u9593\u901a\u308a\u306b\u5c4a\u304f\u306e\u304b\u3092\u805e\u3051\u3002',
+  },
+};
 
 export const COPY = { en: EN, fi: FI, ja: JA };
 
