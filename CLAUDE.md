@@ -205,7 +205,24 @@ reads as a run.
 turn is 18, a mantle is 40, and until a move reaches the frame it declares `open` the
 stick is not connected to anything. Nothing accelerates freely. Tap a direction for one
 step, hold and the step runs on into a run (Flashback's rule). Grounded moves are
-scripted displacement; jumps are ballistic off a scripted gather. **Every distance in the
+scripted displacement; jumps are ballistic off a scripted gather. A committed move set
+has to **buffer the jump** (26 frames, just over a step) or a button pressed while you
+are locked out reads as unresponsive rather than as committed.
+**The rest of Prince of Persia's vocabulary is there and it is the point of the game**:
+the **careful step** on Shift (5px in 26 frames — more time for less ground, which is
+the trade you want when the floor ends in nine pixels, and held it never promotes to a
+run); **climbing down** a lip on purpose (`lipAhead`, then a scripted lower into a hang,
+with a 16-frame `dropLock` so the still-held down button does not immediately drop him
+into what he just avoided); **stepping up** onto anything one tile high rather than
+dangling off it (`stepUpAhead`); the **run-turn** (22 frames against skid-then-turn's
+34); the **wall bump** (and he will not sprint at a wall he is already against — that
+oscillated); and a **flask you have to crouch over**.
+**The sword** is the other half. Out, he is in a stance rather than walking: forward
+advances, back retreats, up strikes, Shift parries, down sheathes. The blow lands on ONE
+frame in the middle of the swing (`hitAt`) and `guarding` is a 4-frame window either
+side of it, so a parry is a read rather than a held button. `Swordsman` in `enemy.js`
+runs the same grammar with the same wind-ups. One button cycles what is in his hands
+(none → pistol → sword), because the touch panel has one. **Every distance in the
 level is measured off two numbers**: a standing jump rises 27px and his hands reach 26
 above his feet, so he catches a lip 53px up — a storey is 3 tiles = 48 — and a running
 jump carries 3.7 tiles, so a 3-tile gap goes and a 4-tile gap does not. Falls are PoP's
@@ -226,8 +243,15 @@ Two traps for anyone editing it: **`tryX`/`tryY` must move floor(|d|) whole pixe
 the remainder** — an off-by-one loop there silently scaled the run from 1.62px/frame to
 2.62 and turned a three-tile gap into a five-tile one; and **the wall tiles are painted
 after the backdrop**, so anything meant to sit on a wall (the glyphs) has to be drawn from
-`level.js`, not `scenery.js`, or it gets buried. `window.__fp` exposes `{game, hero(),
-world(), debug: {room, give, state, pure}}`. **Signed** by Toko Midori (bottom-left, so it
+`level.js`, not `scenery.js`, or it gets buried. **Never assign to `hero.armed`** — it is
+a getter derived from `weapon` now, and the write throws in strict mode.
+**The controls are drawn in display pixels, not picture pixels** (`padZones` in
+`main.js`, after `present()`): in portrait `screen.js` gives the picture the top ~60% and
+hands the rest to a real panel, because a thumb on an upright phone covers the third of
+the screen where the thing that kills you is. Landscape overlays them in the corners.
+Both only appear on a touchscreen (`input.coarse`, the same media query the arcade shell
+uses — waiting for the first tap left a phone showing an empty panel).
+`window.__fp` exposes `{game, hero(), world(), debug: {room, give, state, pure}}`. **Signed** by Toko Midori (bottom-left, so it
 clears the health marks top-right and the way home top-left) and named in `SIGNED` in
 `toko/test/brand.cjs`. Same `gh-pages` deploy caveat as paperboy.
 

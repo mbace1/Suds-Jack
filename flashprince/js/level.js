@@ -10,7 +10,7 @@
 
 import { ROOMS, RW, RH, TILE, ROOM_W, ROOM_H } from './rooms.js';
 import { C } from './palette.js';
-import { glyphs } from './scenery.js';
+import { glyphs, weights } from './scenery.js';
 
 const SOLIDS = '#~^';
 const rand = s => () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
@@ -44,7 +44,8 @@ export class World {
         else if (ch === 'D') { this.door = { x, y: y + TILE, tx, ty }; this.grid[ty][tx] = ' '; }
         else if (ch === 'G') { this.pickups.push({ kind: 'gun', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
         else if (ch === 'h') { this.pickups.push({ kind: 'cell', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
-        else if ('bgd'.includes(ch)) { this.spawns.push({ kind: ch, x, y: y + TILE }); this.grid[ty][tx] = ' '; }
+        else if (ch === 'B') { this.pickups.push({ kind: 'sword', x, y: y + TILE - 6 }); this.grid[ty][tx] = ' '; }
+        else if ('bgds'.includes(ch)) { this.spawns.push({ kind: ch, x, y: y + TILE }); this.grid[ty][tx] = ' '; }
         else if (ch === 'T') { this.lights.push({ x, y: y + 8 }); this.grid[ty][tx] = '-'; }
         else if (ch === '^') this.spikes.push({ tx, ty });
         else if (ch === 'C') { this.chompers.push({ tx, ty, phase: (tx * 47) % CHOMP_CYCLE, reach: this.shaft(tx, ty) }); this.grid[ty][tx] = ' '; }
@@ -102,6 +103,35 @@ export class World {
       return { x: hx, y: lipY, face };
     }
     return null;
+  }
+
+  // Something a foot high directly ahead: one tile, with sky above it. Prince
+  // of Persia steps onto these rather than making you hang off them, and the
+  // difference matters — a move set that dangles you from a kerb is comic.
+  stepUpAhead(x, y, face) {
+    const tx = Math.floor((x + face * 10) / TILE);
+    const ty = Math.round(y / TILE) - 1;
+    if (ty < 1) return null;
+    if (!this.solidTile(tx, ty) || this.solidTile(tx, ty - 1)) return null;
+    const lipY = ty * TILE;
+    if (this.boxSolid(tx * TILE + 3, lipY - 29, 10, 28)) return null;
+    return lipY;
+  }
+
+  // The edge he is standing AT, in front of him — the one he climbs down over
+  // on purpose. `ledgeBehind` is the same geometry found after the mistake;
+  // this one is found before it.
+  lipAhead(x, y, face) {
+    const ty = Math.round(y / TILE);
+    const here = Math.floor(x / TILE);
+    if (!this.solidTile(here, ty)) return null;
+    if (this.solidTile(here + face, ty)) return null;
+    const edge = face > 0 ? (here + 1) * TILE : here * TILE;
+    if (Math.abs(x - edge) > 14) return null;       // he has to be AT it
+    const hx = edge + face * 5;
+    const lipY = ty * TILE;
+    if (this.boxSolid(hx - 4, lipY + 3, 8, 22)) return null;
+    return { x: hx, y: lipY, face: -face };
   }
 
   // the lip he has just walked off the end of, which he catches on the way past
@@ -207,7 +237,37 @@ export class World {
         if (this.tile(tx, ty - 1) !== '-') scr.rect(x, y, TILE, 2, C.DARK);
       }
     }
+    // Niches cut into the back wall. A flat wall with writing on it reads as
+    // wallpaper; a wall with holes in it reads as a place that was built for
+    // something. Cheap: one dark rect and one lit lip each.
+    {
+      const w = weights(this.room.t);
+      if (w.ruin > 0.25 || w.palace > 0.25) {
+        const rr = rand(this.seed + 977);
+        for (let ty = 1; ty < RH - 1; ty++) {
+          for (let tx = 1; tx < RW - 1; tx++) {
+            if (this.tile(tx, ty) !== '-' || this.tile(tx, ty + 1) !== '-') continue;
+            if (rr() > 0.04) continue;
+            // Small and shallow. The first cut made them full-tile black
+            // rectangles and the wall read as a row of doorways rather than a
+            // wall with alcoves cut into it.
+            const x = tx * TILE + 4, y = ty * TILE + 4;
+            const w2 = TILE - 8, h2 = TILE + 3;
+            scr.rect(x, y, w2, h2, C.DARK);
+            scr.rect(x, y, w2, 1, C.SOLID);
+            scr.rect(x, y + h2 - 2, w2, 2, C.NEAR);
+            if (rr() < 0.5) scr.rect(x + 2, y + h2 - 7, w2 - 4, 5, C.NEAR);
+          }
+        }
+      }
+    }
     glyphs(scr, this.room, this.index);
+    for (const L of this.lights) {
+      // a sconce, and the flat wash it throws on the wall behind it
+      scr.veil([L.x - 13, L.y - 8, L.x + 13, L.y - 8, L.x + 18, L.y + 26, L.x - 18, L.y + 26], C.LUX2, 0.16);
+      scr.rect(L.x - 3, L.y + 2, 6, 9, C.DARK);
+      scr.rect(L.x - 5, L.y + 10, 10, 2, C.DARK);
+    }
 
     // the mass
     const mass = [];
@@ -240,6 +300,46 @@ export class World {
       if (empty(tx + 1, ty)) scr.rect(x + TILE - 2, y, 2, TILE, C.DARK);
       // a couple of faces catching the light, flat, no gradient
       if (r() < 0.22) scr.rect(x + 2 + r() * 6, y + 4 + r() * 8, 3 + r() * 5, 2, C.DARK);
+    }
+
+    // ── what the rock is MADE of ─────────────────────────────────────
+    // The mass alone reads as one poured shape. Coursing it — a joint every
+    // couple of tiles, offset row to row — is what turns it from a silhouette
+    // into masonry, and it costs one rect per tile. The jungle gets strata
+    // instead of courses, because rock is bedded and walls are laid.
+    const w = weights(this.room.t);
+    const built = Math.max(w.ruin, w.palace, w.machine);
+    for (const [tx, ty] of mass) {
+      const x = tx * TILE, y = ty * TILE;
+      if (empty(tx, ty - 1) || this.tile(tx, ty) === '~') continue;
+      if (built > 0.3) {
+        if ((ty & 1) === 0) scr.rect(x, y, TILE, 1, C.DARK);
+        const j = ((ty & 1) ? 0 : 8);
+        if (!empty(tx, ty)) scr.rect(x + j, y, 1, TILE, C.DARK);
+      } else {
+        // bedding planes: long, wavering, and nothing like a straight joint
+        if ((ty * 7 + tx * 3) % 5 === 0) {
+          scr.rect(x, y + 3 + ((tx * 5) % 4), TILE, 1, C.DARK);
+        }
+        if (r() < 0.18) scr.rect(x + 3 + r() * 8, y + 6 + r() * 6, 2, 2, C.EDGE);
+      }
+    }
+
+    // and the ground shows what the light is doing to it: a second, dimmer
+    // band under every lit surface so the edge is a lip rather than a line
+    for (const [tx, ty] of mass) {
+      if (!empty(tx, ty - 1)) continue;
+      const x = tx * TILE, y = ty * TILE;
+      scr.rect(x, y + 2, TILE, 1, built > 0.3 ? C.SOLID : C.DARK);
+      // tufts on natural ground, chips out of built ground
+      if (built > 0.3) {
+        if (r() < 0.3) scr.rect(x + 2 + r() * 10, y, 2 + r() * 3, 1, C.DARK);
+      } else if (r() < 0.55) {
+        const gx = x + r() * (TILE - 4);
+        for (let i = 0; i < 3; i++) {
+          scr.rect(gx + i * 1.6, y - 1 - (i === 1 ? 2 : 1), 1, 1 + (i === 1 ? 2 : 1), C.EDGE);
+        }
+      }
     }
   }
 
@@ -343,6 +443,13 @@ export class World {
         scr.poly([p.x - 6, p.y + bob, p.x + 6, p.y + bob - 1, p.x + 6, p.y + bob + 2, p.x - 6, p.y + bob + 3], C.HAIR);
         scr.poly([p.x - 4, p.y + bob + 3, p.x - 1, p.y + bob + 3, p.x - 2, p.y + bob + 7, p.x - 5, p.y + bob + 7], C.HAIR);
         scr.rect(p.x - 7, p.y + bob - 3, 15, 1, C.LUX);
+      } else if (p.kind === 'sword') {
+        scr.poly([p.x - 15, p.y + bob + 1, p.x + 9, p.y + bob - 1, p.x + 11, p.y + bob,
+          p.x + 9, p.y + bob + 2, p.x - 15, p.y + bob + 3], C.EDGE);
+        scr.poly([p.x - 15, p.y + bob + 1, p.x + 9, p.y + bob - 1, p.x + 11, p.y + bob], C.LUX);
+        scr.rect(p.x - 18, p.y + bob - 2, 4, 6, C.DARK);
+        scr.rect(p.x - 22, p.y + bob, 5, 3, C.DARK);
+        scr.rect(p.x - 24, p.y + bob - 4, 15, 1, C.LUX);
       } else {
         scr.rect(p.x - 4, p.y + bob - 5, 8, 11, C.EDGE);
         scr.rect(p.x - 3, p.y + bob - 4, 6, 9, C.ALERT);

@@ -4,6 +4,57 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v3 — 2026-07-28
+
+Prince of Persia's move set, properly; a real control panel on a phone; and
+the rock stops being one poured shape.
+
+**The move set.** What was here was Flashback's half — commit, run, hang,
+mantle. This is the rest of PoP's vocabulary, and every one of them exists
+because the original had it and the game is worse without it:
+
+- **The careful step** (Shift + a direction). Five pixels instead of twelve
+  and twenty-six frames instead of twenty-two: more time to travel less
+  ground, which is exactly the trade you want when the floor runs out in nine
+  pixels. Held, it never promotes to a run. It is the most useful button in
+  Prince of Persia and it was missing.
+- **Climbing down** (down, at a lip). He kneels, gets his hands on the edge
+  and lowers himself over it — twenty-six pixels of descent for free, and the
+  difference between a two-storey drop and a survivable one. The button that
+  did it is still held when he arrives, so letting go needs a fresh press;
+  without that he dropped into the thing he had just carefully avoided.
+- **Stepping up** onto anything a foot high, rather than hanging off it. A
+  move set that dangles you from a kerb is comic.
+- **The run-turn** — plant, pivot, go back the other way in twenty-two frames
+  instead of skidding to a halt and then turning in thirty-four.
+- **The wall bump.** Running into stone stops you and takes a moment back for
+  it. And he will not sprint at a wall he is already standing against, which
+  is what turned the first cut into a bump-step-bump oscillation.
+- **The flask** now needs a crouch over it, as PoP's potions do — a beat of
+  vulnerability in exchange for the heal.
+- **A buffered jump.** 26 frames, just longer than a step. A committed move
+  set has to forgive a button pressed while you are locked out of the world,
+  or it reads as unresponsive when it is only committed.
+
+**The sword.** Found in the tomb, and once it is out he is in a stance rather
+than walking: forward advances, back retreats, up strikes, Shift parries, down
+puts it away. The **swordsman** runs the same grammar with the same wind-ups,
+so a fight is two people reading each other. A strike lands on ONE frame in
+the middle of the swing; the parry window is four frames either side of it.
+Parry and the blades ring and nobody is hurt. Stand there and you lose a
+flask.
+
+**The controls, on a phone.** Held upright, the pad is now a real panel UNDER
+the picture — a thumb on a portrait phone covers the bottom third of the
+glass, and in a game where the thing that kills you is at your feet that is
+the third you most need to see. Landscape keeps the overlay, pushed into the
+corners and kept faint. Both are drawn in display pixels rather than into the
+sixteen-colour buffer, and both only appear on a touchscreen.
+
+**Art.** Coursed masonry on everything built and bedding planes on everything
+natural; alcoves cut into the back walls; grass tufts on soil and chipped
+edges on stone; sconces that wash the wall behind them.
+
 ## v2 — 2026-07-28
 
 The first act stops being one long screen.

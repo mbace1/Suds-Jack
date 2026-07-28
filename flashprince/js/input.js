@@ -15,7 +15,11 @@ const KEYS = {
   left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'],
   up: ['ArrowUp', 'KeyW'], down: ['ArrowDown', 'KeyS'],
   jump: ['Space', 'ArrowUp', 'KeyW'],
-  fire: ['KeyX', 'KeyJ', 'Enter'], gun: ['KeyE', 'ShiftLeft', 'ShiftRight'],
+  fire: ['KeyX', 'KeyJ', 'Enter'], gun: ['KeyE', 'KeyQ'],
+  // Shift is Prince of Persia's own careful-step key, and it keeps that job
+  // here: held, a direction places one foot instead of taking a stride, and
+  // with the sword out it is the parry.
+  careful: ['ShiftLeft', 'ShiftRight'],
   pause: ['Escape', 'KeyP'],
 };
 
@@ -25,10 +29,15 @@ export class Input {
     this.held = new Set();
     this.dir = 0; this.dirHeld = 0;
     this.up = false; this.down = false;
-    this.jump = false; this.fire = false; this.gun = false;
+    this.jump = false; this.fire = false; this.gun = false; this.careful = false;
     this.jumpPress = false; this.firePress = false; this.gunPress = false;
+    this.carefulPress = false;
     this.pausePress = false; this.anyPress = false;
     this.touch = false;
+    // A touchscreen says so before it is touched. Waiting for the first tap
+    // meant a phone showed an empty control panel until you guessed where to
+    // press — the same media query the arcade shell uses for its own button.
+    this.coarse = matchMedia('(hover: none) and (pointer: coarse)').matches;
     this.zones = [];                // filled in by the HUD each frame
     this.pointers = new Map();
     this.padPrev = [];
@@ -57,7 +66,9 @@ export class Input {
       this.touch = true;
       if (!on) { this.pointers.delete(id); return; }
       this.anyPress = true;
-      this.pointers.set(id, this.scr.toPicture(x, y));
+      // display space, not picture space: the pad is drawn on the display
+      // canvas, and in portrait it is not over the picture at all
+      this.pointers.set(id, this.scr.toDisplay(x, y));
     };
     const down = e => {
       for (const t of e.changedTouches ?? [e]) set(t.identifier ?? 'm', true, t.clientX, t.clientY);
@@ -84,6 +95,7 @@ export class Input {
     if (k === 'jump') this.jumpPress = true;
     if (k === 'fire') this.firePress = true;
     if (k === 'gun') this.gunPress = true;
+    if (k === 'careful') this.carefulPress = true;
     if (k === 'pause') this.pausePress = true;
     this.anyPress = true;
   }
@@ -102,16 +114,18 @@ export class Input {
   }
 
   poll() {
-    const wasJump = this.jump, wasFire = this.fire, wasGun = this.gun;
+    const wasJump = this.jump, wasFire = this.fire, wasGun = this.gun, wasCareful = this.careful;
     let L = this.held.has('left'), R = this.held.has('right');
     let U = this.held.has('up'), D = this.held.has('down');
     let J = this.held.has('jump'), F = this.held.has('fire'), G = this.held.has('gun');
+    let K = this.held.has('careful');
 
     if (this.touch) {
       L = L || this.zoneHeld('left'); R = R || this.zoneHeld('right');
       U = U || this.zoneHeld('up'); D = D || this.zoneHeld('down');
       // the up pad is the jump button too, same as the arrow key is
       J = J || this.zoneHeld('jump') || U; F = F || this.zoneHeld('fire'); G = G || this.zoneHeld('gunbtn');
+      K = K || this.zoneHeld('careful');
     }
 
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -124,7 +138,8 @@ export class Input {
       D = D || ay > 0.5 || p.buttons[13]?.pressed;
       J = J || p.buttons[0]?.pressed;
       F = F || p.buttons[2]?.pressed || p.buttons[7]?.pressed || p.buttons[5]?.pressed;
-      G = G || p.buttons[3]?.pressed || p.buttons[1]?.pressed;
+      G = G || p.buttons[3]?.pressed;
+      K = K || p.buttons[1]?.pressed || p.buttons[4]?.pressed || p.buttons[6]?.pressed;
       if (p.buttons[9]?.pressed && !this.padPrev[9]) this.pausePress = true;
       this.padPrev = p.buttons.map(b => b.pressed);
       break;
@@ -139,13 +154,14 @@ export class Input {
     if (J && !wasJump) this.jumpPress = true;
     if (F && !wasFire) this.firePress = true;
     if (G && !wasGun) this.gunPress = true;
-    if ((J && !wasJump) || (F && !wasFire) || (G && !wasGun)) this.anyPress = true;
-    this.jump = J; this.fire = F; this.gun = G;
+    if (K && !wasCareful) this.carefulPress = true;
+    if ((J && !wasJump) || (F && !wasFire) || (G && !wasGun) || (K && !wasCareful)) this.anyPress = true;
+    this.jump = J; this.fire = F; this.gun = G; this.careful = K;
   }
 
   // called at the end of a frame: edges last exactly one frame
   flush() {
-    this.jumpPress = this.firePress = this.gunPress = false;
+    this.jumpPress = this.firePress = this.gunPress = this.carefulPress = false;
     this.pausePress = false; this.anyPress = false;
   }
 }

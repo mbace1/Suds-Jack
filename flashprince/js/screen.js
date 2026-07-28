@@ -54,6 +54,15 @@ export class Screen {
     this.lut.fill(-1);
   }
 
+  // Held upright, the controls go UNDER the picture rather than on top of it.
+  //
+  // A thumb on a phone held in portrait covers the bottom third of the glass,
+  // and in a game where the thing that kills you is usually at your feet that
+  // is the third you most need to see. So portrait gives the picture the top of
+  // the screen and hands the rest over to a real control panel; the game is
+  // never behind a finger. Landscape has room for both, so there the pad goes
+  // back over the picture where a thumb already rests — and only on a
+  // touchscreen, because a mouse does not need a d-pad drawn for it.
   resize() {
     const dw = innerWidth, dh = innerHeight;
     const dpr = Math.min(2, devicePixelRatio || 1);
@@ -61,10 +70,25 @@ export class Screen {
     this.display.height = Math.floor(dh * dpr);
     this.display.style.width = `${dw}px`;
     this.display.style.height = `${dh}px`;
-    const s = Math.min(this.display.width / W, this.display.height / H);
-    this.scale = s;
-    this.ox = Math.floor((this.display.width - W * s) / 2);
-    this.oy = Math.floor((this.display.height - H * s) / 2);
+    const DW = this.display.width, DH = this.display.height;
+
+    this.portrait = DH > DW * 1.12;
+    if (this.portrait) {
+      // fit the width, but never let the picture eat the panel: a control band
+      // under about 30% of the height stops being tappable
+      const s = Math.min(DW / W, (DH * 0.60) / H);
+      this.scale = s;
+      this.ox = Math.floor((DW - W * s) / 2);
+      this.oy = Math.floor(Math.min(DH * 0.06, (DH - H * s) * 0.25));
+      const top = this.oy + H * s;
+      this.band = { x: 0, y: Math.round(top), w: DW, h: Math.round(DH - top) };
+    } else {
+      const s = Math.min(DW / W, DH / H);
+      this.scale = s;
+      this.ox = Math.floor((DW - W * s) / 2);
+      this.oy = Math.floor((DH - H * s) / 2);
+      this.band = null;
+    }
     this.dctx.imageSmoothingEnabled = false;
   }
 
@@ -75,6 +99,24 @@ export class Screen {
     return {
       x: ((cx - r.left) * dpr - this.ox) / this.scale,
       y: ((cy - r.top) * dpr - this.oy) / this.scale,
+    };
+  }
+
+  // …and → a point on the display canvas, which is where the controls live.
+  // They are drawn in real pixels rather than picture pixels on purpose: a
+  // button is chrome, not part of the sixteen-colour world, and at a 3x upscale
+  // a picture-space button is a blurry lump with letters four pixels tall.
+  toDisplay(cx, cy) {
+    const r = this.display.getBoundingClientRect();
+    const dpr = this.display.width / r.width;
+    return { x: (cx - r.left) * dpr, y: (cy - r.top) * dpr };
+  }
+
+  // a rect in picture space → the same rect on the display canvas
+  pictureRect(x, y, w, h) {
+    return {
+      x: this.ox + x * this.scale, y: this.oy + y * this.scale,
+      w: w * this.scale, h: h * this.scale,
     };
   }
 

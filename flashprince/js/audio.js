@@ -63,6 +63,19 @@ export const sfx = {
   orb: () => blip({ f: 260, f2: 400, type: 'sine', d: 0.24, g: 0.1 }),
   hit: () => { noise({ d: 0.16, g: 0.2, hp: 200, lp: 2000 }); blip({ f: 160, f2: 60, type: 'square', d: 0.14, g: 0.2 }); },
   kill: () => { noise({ d: 0.34, g: 0.26, hp: 90, lp: 2600 }); blip({ f: 300, f2: 40, type: 'sawtooth', d: 0.3, g: 0.18 }); },
+  inch: () => noise({ d: 0.06, g: 0.035, hp: 1200, lp: 3000 }),
+  bump: () => { noise({ d: 0.18, g: 0.16, hp: 90, lp: 1100 }); blip({ f: 110, f2: 52, type: 'sine', d: 0.16, g: 0.18 }); },
+  // The blade. Steel is a bright inharmonic ring, so it is a high sine sliding
+  // DOWN under a burst of filtered noise — the same recipe for the draw, the
+  // swing and the parry, at three different speeds.
+  steel: () => { blip({ f: 1900, f2: 900, type: 'sine', d: 0.3, g: 0.1 }); noise({ d: 0.22, g: 0.07, hp: 2600 }); },
+  swing: () => noise({ d: 0.13, g: 0.1, hp: 700, lp: 5200 }),
+  cut: () => { noise({ d: 0.14, g: 0.2, hp: 300, lp: 2400 }); blip({ f: 420, f2: 150, type: 'sawtooth', d: 0.14, g: 0.16 }); },
+  clang: () => {
+    blip({ f: 2600, f2: 1500, type: 'sine', d: 0.28, g: 0.16 });
+    blip({ f: 3400, f2: 2100, type: 'sine', d: 0.2, g: 0.1, when: 0.01 });
+    noise({ d: 0.12, g: 0.13, hp: 3000 });
+  },
   hurt: () => { blip({ f: 240, f2: 100, type: 'sawtooth', d: 0.22, g: 0.22 }); },
   die: () => {
     blip({ f: 320, f2: 40, type: 'sawtooth', d: 0.8, g: 0.28 });

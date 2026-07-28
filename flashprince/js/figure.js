@@ -76,6 +76,48 @@ export const POSE = {
   aimLow:   P(  58,  88,   50,  94,   84,   6,   20,  40,  24,  -8,  11,  1,  0),
   recoil:   P( -12,  10,   16,  10,   72,  16,  -16,  20,  -4,  -8,  -1, -1,  0),
 
+  // ── the careful step ───────────────────────────────────────────────
+  // Shift, in Prince of Persia, and the most useful move in it. He shortens
+  // his stride, leans back off the toe, and puts one foot down where he can
+  // see it. It exists because the game kills you for a pixel.
+  inch1:    P(  13,   5,   -9,  15,  -10,  20,   11,  18,  -4,  -2,   1,  0,  0),
+  inch2:    P(   4,  12,   -3,   9,   -4,  18,    5,  17,  -5,  -2,   2,  0,  0),
+  inch3:    P(  -8,   7,   11,   8,    9,  19,   -8,  17,  -4,  -2,   1,  0,  0),
+  peer:     P(  -6,   5,    9,   7,   10,  22,   -8,  18, -10,  14,   2, -1,  0),
+
+  // stepping up onto something a foot high, without hanging off it first
+  stepUpA:  P(  74,  62,   -6,  10,  -26,  36,   16,  30,  22,  -4,   2,  1,  0),
+  stepUpB:  P(  52,  20,   26,  74,    6,  46,  -18,  40,  30,  -6,  -6,  3,  0),
+  stepUpC:  P(  14,   8,   36,  56,   22,  38,   -8,  34,  16,  -4,  -2,  4,  0),
+
+  // lowering himself over an edge on purpose, which is not the same thing as
+  // falling off one
+  kneel:    P(  84,  96,   62,  88,   36,  58,   30,  54,  40,  -6,  12,  0,  0),
+  reachDn:  P( 100, 104,   78,  96,  110,  40,  104,  44,  46,   2,  14, -2,  0),
+  lower:    P(  46,  52,   30,  40,  150,  22,  146,  26,  10,   6,   6, -1,  0),
+
+  // running into a wall at speed, which Prince of Persia also charges you for
+  bumpA:    P(  26,  18,  -14,  26,  -46,  58,  -52,  52, -22,  16,   4, -2,  0),
+  bumpB:    P(  10,  22,   -6,  18,  -20,  46,  -26,  42, -10,   8,   3, -1,  0),
+
+  // the flask
+  drinkA:   P(  58,  88,   50,  94,   26,  62,   18,  58,  28,  -4,  11,  1,  0),
+  drinkB:   P(  56,  86,   48,  92,  132,  96,   22,  60,  20, -14,  10,  1,  0),
+
+  // ── the sword ──────────────────────────────────────────────────────
+  // En garde is a WHOLE BODY, not an arm: side-on, weight back, knees soft.
+  // At thirty pixels the stance has to be readable as a silhouette or the
+  // duel is unreadable, and the duel is the other half of the game.
+  guard:    P(  30,  26,  -22,  30,   62,  52,  -30,  44,  -8,  -4,   6,  0,  0),
+  guardHi:  P(  28,  24,  -20,  28,   78,  40,  -28,  42,  -4,  -6,   5,  0,  0),
+  advance:  P(  44,  18,  -14,  40,   66,  48,  -34,  46,   2,  -4,   5,  2,  0),
+  retreat:  P(  10,  38,  -34,  22,   56,  58,  -24,  40, -14,  -2,   7, -2,  0),
+  strikeA:  P(  38,  22,  -18,  34,   14,  86,  -26,  46,  -2,  -6,   5,  0,  0),
+  strikeB:  P(  62,  14,  -20,  46,   96,   4,  -18,  40,  16,  -8,   2,  4,  0),
+  parry:    P(  26,  28,  -20,  30,  104,  36,  -26,  44, -10,  -8,   6, -1,  0),
+  clang:    P(  22,  30,  -18,  32,  118,  52,  -30,  46, -16,  -4,   7, -3,  0),
+  swordUp:  P(  -4,   6,    8,   6,   36,  70,   -8,  14,   2,  -2,   0,  0,  0),
+
   // and being hit, and stopping
   hurt:     P( -16,  16,   22,  20,  -34,  40,  -42,  34, -12,  12,   2, -2,  0),
   deadA:    P(  40,  70,   30,  60,  -60,  40,  -66,  36, -30,  20,   6, -2, 26),
@@ -222,6 +264,21 @@ export function drawFigure(scr, x, y, face, pose, col, opt = {}) {
     const g = (a, b) => [handNp.x + ux * a * s + nx * b * s, handNp.y + uy * a * s + ny * b * s];
     scr.poly([...g(-1, -1.6), ...g(6.5, -1.4), ...g(6.5, 0.2), ...g(-1, 0.8)], col.gun ?? col.hair);
     scr.poly([...g(0.4, 0.6), ...g(2.4, 0.6), ...g(1.8, 3.4), ...g(-0.2, 3.2)], col.gun ?? col.hair);
+  }
+
+  if (opt.sword) {
+    // A blade laid along the forearm and out past the fist. It is drawn from
+    // the ARM's direction rather than from the pose, so every stance in the
+    // duel points it somewhere believable without the pose table having to
+    // carry a sword angle as a fourteenth number.
+    const dx = handNp.x - elbNp.x, dy = handNp.y - elbNp.y;
+    const L = Math.hypot(dx, dy) || 1;
+    const ux = dx / L, uy = dy / L, nx = -uy, ny = ux;
+    const b = (a, o) => [handNp.x + ux * a * s + nx * o * s, handNp.y + uy * a * s + ny * o * s];
+    scr.poly([...b(-3, -2.6), ...b(1, -2.6), ...b(1, 2.6), ...b(-3, 2.6)], col.hilt ?? col.hair);  // guard
+    scr.poly([...b(1, -1.5), ...b(24, -0.7), ...b(25.5, 0), ...b(24, 0.7), ...b(1, 1.5)], col.blade ?? col.skin);
+    scr.poly([...b(1, -1.5), ...b(24, -0.7), ...b(25.5, 0), ...b(2, -0.2)], col.edge ?? col.blade ?? col.skin);
+    scr.poly([...b(-5.5, -1.2), ...b(-3, -1.2), ...b(-3, 1.2), ...b(-5.5, 1.2)], col.hilt ?? col.hair);
   }
   return { head: hd, hand: handNp, pelvis: pelR, shoulder: sho };
 }

@@ -246,8 +246,137 @@ export class Drone {
   }
 }
 
+// ── the swordsman ────────────────────────────────────────────────────
+// Prince of Persia's guard, and the reason its duels are a conversation. He
+// runs the SAME stance the player does — advance, retreat, strike, parry —
+// with the same wind-ups, so a fight is two people reading each other rather
+// than two people mashing. He will not walk into your blade, he backs off when
+// you press him, and he punishes a strike thrown from too far away.
+//
+// The whole difficulty knob is `think`: how long he stands in guard before he
+// commits to something. Shorten it and he is a machine; this is deliberately
+// long enough that you always get to move first if you are willing to.
+const SWING = 12, SWING_END = 30, REACH = 27, GUARD_WIN = [4, 18];
+
+export class Swordsman {
+  constructor(x, y) {
+    this.x = x; this.y = y; this.face = -1;
+    this.state = 'patrol'; this.f = 0;
+    this.hp = 3; this.dead = false; this.hurtT = 0;
+    this.home = x; this.type = 'swordsman';
+    this.w = 12; this.h = 30;
+    this.think = 46;
+  }
+
+  get guarding() { return this.state === 'parry' && this.f >= GUARD_WIN[0] && this.f <= GUARD_WIN[1]; }
+  go(s) { this.state = s; this.f = 0; }
+
+  sees(hero) {
+    if (hero.dead) return false;
+    const dx = hero.x - this.x;
+    if (Math.abs(dx) > 150 || Math.abs(hero.y - this.y) > 34) return false;
+    return Math.sign(dx) === this.face || Math.abs(dx) < 26;
+  }
+
+  update(world, hero, game) {
+    this.f++;
+    if (this.hurtT > 0) this.hurtT--;
+    if (this.dead) return;
+    const dx = hero.x - this.x, gap = Math.abs(dx);
+
+    if (this.state === 'patrol') {
+      const ahead = this.x + this.face * 9;
+      if (!world.boxSolid(ahead - 3, this.y + 1, 6, 4) || world.boxSolid(ahead - 3, this.y - 26, 6, 24)
+        || Math.abs(this.x - this.home) > 50) this.face *= -1;
+      else this.x += 0.38 * this.face;
+      if (this.sees(hero)) { this.face = Math.sign(dx) || this.face; this.go('draw'); }
+      return;
+    }
+    if (this.state === 'draw') { if (this.f >= 26) this.go('guard'); return; }
+    if (this.state === 'struck') { if (this.f >= 22) this.go('guard'); return; }
+    if (this.state === 'clang') { if (this.f >= 18) this.go('guard'); return; }
+
+    if (this.state === 'advance') { this.x += 0.5 * this.face; if (this.f >= 20) this.go('guard'); return; }
+    if (this.state === 'retreat') { this.x -= 0.48 * this.face; if (this.f >= 22) this.go('guard'); return; }
+    if (this.state === 'parry') { if (this.f >= 24) this.go('guard'); return; }
+
+    if (this.state === 'strike') {
+      if (this.f === SWING) {
+        // the blow lands on ONE frame, and the parry window is the answer to it
+        if (!hero.dead && gap < REACH + 8 && Math.abs(hero.y - this.y) < 26) {
+          if (hero.guarding) { game.clash(this, hero); this.go('clang'); return; }
+          game.hurt(1, false, this.x);
+        }
+      }
+      if (this.f >= SWING_END) this.go('guard');
+      return;
+    }
+
+    // guard: the decision. Distance picks the weights — he closes when you are
+    // out of reach and gives ground when you are inside it.
+    this.face = Math.sign(dx) || this.face;
+    if (this.f < this.think) return;
+    this.f = 0;
+    this.think = 34 + ((this.x * 7 + this.hp * 13) % 26);
+    if (!this.sees(hero)) { this.go('patrol'); return; }
+    if (gap > REACH + 14) { this.go('advance'); return; }
+    if (gap < 16) { this.go('retreat'); return; }
+    // inside reach: mostly swing, sometimes read you instead
+    const roll = (this.x * 31 + this.hp * 17 + this.think) % 100;
+    this.go(roll < 58 ? 'strike' : roll < 80 ? 'parry' : roll < 92 ? 'advance' : 'retreat');
+  }
+
+  // the player's blade arriving
+  cut(game) {
+    if (this.dead) return 'miss';
+    if (this.guarding) { this.go('clang'); return 'parried'; }
+    this.hp--;
+    this.hurtT = 9;
+    if (this.hp <= 0) {
+      this.dead = true; this.f = 0;
+      game.fx.burst(this.x, this.y - 16, C.ALERT, 14);
+      return 'killed';
+    }
+    this.go('struck');
+    return 'hit';
+  }
+
+  strike(game) { this.cut(game); }         // a bullet works too
+
+  pose() {
+    if (this.dead) return sample([[Q.deadA, 12], [Q.deadB, 40]], this.f);
+    switch (this.state) {
+      case 'patrol': return sample([[Q.step1, 10], [Q.step2, 10], [Q.step3, 10], [Q.step2, 10]], this.f, true);
+      case 'draw': return sample([[Q.draw1, 8], [Q.swordUp, 9], [Q.guardHi, 5], [Q.guard, 4]], this.f);
+      case 'advance': return sample([[Q.advance, 11], [Q.guard, 9]], this.f);
+      case 'retreat': return sample([[Q.retreat, 12], [Q.guard, 10]], this.f);
+      case 'strike': return sample([[Q.strikeA, 8], [Q.strikeB, 10], [Q.strikeB, 6], [Q.guard, 9]], this.f);
+      case 'parry': return sample([[Q.parry, 16], [Q.guard, 8]], this.f);
+      case 'clang': return sample([[Q.clang, 10], [Q.guard, 8]], this.f);
+      case 'struck': return sample([[Q.hurt, 10], [Q.guard, 12]], this.f);
+      default: return sample([[Q.guard, 62], [Q.guardHi, 62]], this.f, true);
+    }
+  }
+
+  draw(scr) {
+    const hot = this.hurtT > 0;
+    const col = {
+      far: C.DARK, body: hot ? C.EDGE : C.SOLID, legs: hot ? C.EDGE : C.DARK,
+      arms: hot ? C.EDGE : C.SOLID, skin: C.EDGE, hair: C.VOID,
+      eye: C.ALERT, blade: C.EDGE, edge: C.LUX, hilt: C.VOID,
+    };
+    drawFigure(scr, this.x, this.y, this.face, this.pose(), col,
+      { sword: !this.dead && this.state !== 'patrol' });
+    if (this.state === 'draw' && this.f % 10 < 5) {
+      scr.rect(this.x - 1, this.y - 44, 3, 6, C.ALERT);
+      scr.rect(this.x - 1, this.y - 36, 3, 3, C.ALERT);
+    }
+  }
+}
+
 export function makeEnemy(kind, x, y) {
   if (kind === 'b') return new Beast(x, y);
   if (kind === 'd') return new Drone(x, y);
+  if (kind === 's') return new Swordsman(x, y);
   return new Sentry(x, y);
 }

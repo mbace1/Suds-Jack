@@ -21,8 +21,10 @@
 //   f  a field you cannot walk through while it is lit
 //   C  a slab waiting in the ceiling
 //   D  the door out
-//   S  where he wakes up      G  the pistol       h  a medical cell
-//   b  something that lives here          g  a sentry        d  a drone
+//   S  where he wakes up                  h  a flask (crouch over it)
+//   B  a blade                            G  the pistol
+//   b  something that lives here          g  a sentry with a rifle
+//   s  a swordsman                        d  a drone
 //   T  a light
 //
 // `scene` is the one thing a screen has that no other screen has. The biome
@@ -169,7 +171,7 @@ export const ROOMS = [
       '   ---------------  ',
       '   ---C-------C---  ',
       '   ---------------  ',
-      '   ---------------  ',
+      '   ------B--------  ',
       '   -------------h-  ',
       '####################',
     ],
@@ -204,7 +206,7 @@ export const ROOMS = [
       '  ---------------   ',
       '  -----#####----T   ',
       '  ---------------   ',
-      '  -g---------g---   ',
+      '  -g---------s---   ',
       '####################',
     ],
   },
@@ -238,7 +240,7 @@ export const ROOMS = [
       '   --------------   ',
       '   ---##----##---   ',
       '   --------------   ',
-      '   -g--------g---   ',
+      '   -s--------s---   ',
       '####################',
     ],
   },
