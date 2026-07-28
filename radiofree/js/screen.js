@@ -55,6 +55,24 @@ export class PixelScreen {
     this.ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
   }
 
+  // Horizontal sky / ground gradient used by Helsinki B-roll panels.
+  // colors is an array of 2+ hex stops; fills [x,y,w,h] top→bottom.
+  bands(x, y, w, h, colors) {
+    if (!colors || colors.length === 0) return;
+    if (colors.length === 1) {
+      this.px(x, y, w, h, colors[0]);
+      return;
+    }
+    const n = colors.length - 1;
+    for (let row = 0; row < h; row++) {
+      const t = row / Math.max(1, h - 1);
+      const i = Math.min(n - 1, Math.floor(t * n));
+      const local = (t * n) - i;
+      const c = mix(colors[i], colors[i + 1], local);
+      this.px(x, y + row, w, 1, c);
+    }
+  }
+
   rect(x, y, w, h, color, edge) {
     this.px(x, y, w, h, color);
     if (edge === undefined) return;
@@ -119,14 +137,6 @@ export class PixelScreen {
     this.ctx.globalAlpha = 0.22;
     for (let y = 0; y < this.h; y += step) this.px(0, y, this.w, 1, alphaColor);
     this.ctx.globalAlpha = 1;
-  }
-
-  // A rect filled with equal horizontal bands — a stepped gradient, which is
-  // the only kind this app has: a smooth one would dither itself into noise at
-  // this resolution. Every night-shot sky in the footage is one of these.
-  bands(x, y, w, h, colors) {
-    const bh = h / colors.length;
-    colors.forEach((c, i) => this.px(x, y + i * bh, w, Math.ceil(bh), c));
   }
 
   destroy() { this.canvas.remove(); }

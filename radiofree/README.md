@@ -6,7 +6,7 @@ screen** stood on end — the story's picture on top, **Toko** (the teal gel fro
 Toko Drop) reading the wire below it with a data column and a waveform — plus a
 right-hand rail and the copy underneath.
 
-All sixteen bulletins live in one column, ordered by channel. It covers what
+All thirteen bulletins live in one column, ordered by channel. It covers what
 Helsinki actually is — a games town wired into a tech industry, sitting next to a
 defence band — and every bulletin has a **DECODE** button.
 
@@ -54,10 +54,10 @@ hear a station you have not tuned to.
 
 ## The sign-off
 
-The feed does not just stop after the last bulletin. The station signs off:
-a test card, the carrier gone, `--.--` on the dial — and it hands back every
-technique on the wire, marking the ones **you** actually opened and printing
-their tells at you. The ones you skipped stay dim, and say so.
+The feed does not just stop after the twelfth bulletin. The station signs off:
+a test card, the carrier gone, `--.--` on the dial — and it hands back the
+twelve techniques, marking the ones **you** actually opened and printing their
+tells at you. The ones you skipped stay dim, and say so.
 
 The last bulletin on the defence band turns the frame on this station; the
 sign-off is the same move made specific to you, which is why the count is real
@@ -68,11 +68,11 @@ technique found once is still credited on the next visit.
 
 The address follows the scroll — `#seabed` while you are on the seabed story —
 and a link that names a bulletin opens on it. That is what makes a post worth
-sending someone; a link that lands them at the top of the whole pile is a
+sending someone; a link that lands them at the top of a twelve-story pile is a
 different link.
 
 It is `replaceState`, not `push`: the back button leaves the page instead of
-walking a dozen-odd fake history entries. The trap that buys — and the reason it has
+walking twelve fake history entries. The trap that buys — and the reason it has
 to be `replaceState` — is that it does **not** fire `hashchange`, so the handler
 that catches pasted links can never be triggered by the app's own writes.
 
@@ -92,15 +92,6 @@ the network, reloads, and reads a bulletin.
 **Bump `sw.js`'s `VERSION` and `V` with the rest of the `?v=N` tokens.** A new
 deploy has to be a new cache name or the old shell simply stays.
 
-**The wire is the exception, and it is deliberate.** `wire.json` is served
-**network-first** while the shell stays cache-first. That split is the whole
-external-update arrangement: the app comes off disk instantly and the *content*
-is never stale. Making the wire cache-first to save one request would pin a
-listener to whatever bulletins they happened to download first — the app would
-keep updating on version bumps and the news never would, silently. Offline, the
-worker serves the last wire that listener actually received, which is
-deliberately not the one that shipped with the build.
-
 ## DECODE — the point of the thing
 
 Press it and the bulletin re-reads itself in plain language. The broadcast
@@ -118,10 +109,6 @@ did, and gives a **TELL** — the question that catches it next time, in the wil
 The techniques: agentless passive, missing denominator, euphemism, manufactured
 consensus, selective baseline, nominalization, source laundering, numbers as
 atmosphere, category drift, anonymous authority, procurement dialect,
-**renaming as reform** (a reform announced entirely in the vocabulary of the
-thing it replaces — the price and the odds come through the sentence intact),
-**the unbounded range** ("up to" names a ceiling and hands the reader the job
-of supplying a typical value), **the non-denial denial**,
 **speculation as reporting** (the hedge stack — could, may, is emerging, cannot
 be ruled out, none of which claims anything and which together build a whole
 theatre), and — last on the defence band, pointed back at this station — the
@@ -180,17 +167,12 @@ app into the thing the app is about.
 ```
 radiofree/
   index.html      shell + all CSS (codec chrome, CRT scanlines, feed layout)
-  wire.json       THE BULLETINS — data, fetched at boot, updatable without a build
-  STORIES.md      how to add a bulletin — read this first
   js/
     main.js       boot, the tune-in gate, the feed, tuning, decode, the loop
     codec.js      one post's screen (both frames in ONE canvas) + the Reader
     toko.js       the anchor: gel wobble, blink, lip-sync, decode tear
     visuals.js    the story panels + the sign-off test card
-    broll.js      the Helsinki footage pool — nine plates, two registers
-    poly.js       the small flat-shaded 3D renderer the footage is built on
-    stories.js    fetches, validates and installs wire.json (+ the off-air post)
-    wire.js       the wire format: the validator, the sort, the markup parser
+    stories.js    the wire — copy, decode readings, techniques, tells (fi/en/ja)
     i18n.js       every other string, in all three languages
     screen.js     PixelScreen: small canvas, hard-pixel upscale, dither helpers
     audio.js      synth codec kit + the carrier hiss, all through one master gain
@@ -199,40 +181,9 @@ radiofree/
   manifest.webmanifest
   icon-192.png    drawn in code and baked — see the note below
   icon-512.png
-  tools/
-    validate-wire.mjs   check a wire without a browser (exit 1 = do not publish)
   test/
     smoke.cjs     the gate (see below)
 ```
-
-## Adding a bulletin
-
-**A bulletin is a JSON edit.** The wire lives in `wire.json` — add a roster
-entry and a copy block in each of en/fi/ja, run the validator, publish the file.
-No build, no deploy, no cache-token bump:
-
-```
-node radiofree/tools/validate-wire.mjs      # exit 0 = safe to publish
-```
-
-**`STORIES.md` is the bar.** Three things from it worth having in your head:
-
-**The art is the one thing JSON cannot add.** `visual` and `broll` name panels
-and footage that are drawn in code, and both fall back *silently* in the
-renderer — a typo ships the wrong picture beside the right words and nothing
-complains. That is why the wire is validated before a word of it reaches the
-screen, by the same validator the CLI runs. Reusing a panel costs nothing; a
-new one is a code change and a deploy, and it is the only part that is.
-
-**Register: The Onion, not a sketch.** The deadpan is total and the joke is in
-the *fact*, never in the wording. A bulletin that sounds like it is being funny
-has stopped being able to teach, because the whole claim is that this is exactly
-how the real ones sound.
-
-**The plain reading has to be specific.** "A difficult but necessary step" →
-"a way to protect this quarter's margin", not "something bad". A decode that
-only says "this is spin" has told the listener nothing they did not press the
-button already knowing.
 
 ## Notes for anyone editing it
 
@@ -267,75 +218,9 @@ before DECODE. Sector colours (cyan/green/red) carry the channel; green is the
 default phosphor. Adding an amber accent anywhere else costs the app the one
 piece of colour vocabulary it teaches.
 
-**The top frame is an edit, not a picture.** Every bulletin cuts on a 3.6 s beat
-between three shots: the story **graphic** (`visuals.js`), **B-roll** of a
-low-poly Helsinki (`broll.js` — the Esplanadi with drones over it, the container
-harbour, the eastern treeline), and a **wide** of the booth (`drawWide` in
-`toko.js`). The three are deliberately different registers — a flat phosphor
-chart, daylight footage with depth in it, and a second camera on the same
-person — because that contrast is what makes a post read as a cut package
-rather than as two fixed frames. The director lives in `Post.cutting()`; a cut
-snaps with one bright band and a couple of displaced rows, or it reads as a
-channel change rather than an edit. **DECODE holds the graphic**: it is the only
-shot that decodes, so pressing it cuts home and stays there.
-
-**Only the live post runs the edit.** Neighbours hold the single frame
-`renderStatic()` painted, and `goLive()` resets a post to shot 0 — you always
-land on the graphic, never halfway through an edit the post was running when
-you scrolled off it.
-
-**Footage is 3D, and `poly.js` is a painter's-algorithm renderer with no
-clipper.** Two traps it has already paid for. A polygon that reaches behind the
-near plane is dropped *whole* — the first ground planes ran from z −4 with the
-camera at z −3, so every one of them silently vanished and the shot was bare
-sky. And sorting is by average depth, so two full-length ground planes stacked
-on each other (a road laid over the lawns) have the *same* average depth and the
-sort is a coin toss: butt the strips together in x instead, and it cannot
-matter. `cam.hz` slides the horizon off centre — the renderer has no pitch, and
-in a 128×152 portrait frame a horizon at the halfway mark is half a picture.
-
-**The footage pool is nine plates in two registers**, and they have to sit in
-one hour of the day. Three are rendered (`esplanadi` with its drone formation,
-`harbour`, `treeline` — poly.js, over the dusk ramps at the top of `broll.js`)
-and six are painted in phosphor at night (`cathedral`, `katu`, `mannerheim`,
-`station`, `kamppi`, `gulf`). The painted ones arrived from the deployed branch,
-where they had been written into `visuals.js` as story panels; they are footage,
-so they live in `broll.js` now and keep their approved names. The rendered ones
-were a bright midday until the two sets met — a rotation that cuts from noon to
-midnight and back is a rotation the eye catches every time, so the poly ramps
-were pulled down to the same hour. Lit windows in those plates are phosphor,
-never warm: amber has one job.
-
-**Every plate must be drawn by the gate, on purpose.** A plate is only drawn
-when a post happens to reach that beat, so a broken one ships silently — and
-did: four of the approved plates called `PixelScreen.bands()`, which did not
-exist on the branch they were written on, and threw the instant the edit cut to
-them. The gate now draws every key in `BROLL_KEYS` in both states and fails on a
-throw or a near-empty frame.
-
-**Video grain must not come from `bayer()`.** The low cells of the matrix are the
-same cells every frame, so a bayer-gated grain sat perfectly still and read as a
-perforated screen rather than as a signal. Plain `Math.random()` positions.
-
-**The wire is data, and data from outside the build cannot be trusted.**
-`wire.json` is fetched at boot and put through `validateWire` before a word of
-it reaches the screen — the same function `tools/validate-wire.mjs` runs in a
-terminal, so a wire that passes locally cannot then fail in a browser for a
-reason the author never saw. If it 404s, times out, is unparseable or fails
-validation, the feed shows a baked-in **station identification** post instead of
-nothing; it carries markup and decodes like any bulletin, because a dead DECODE
-button would be the app failing at the one thing it does.
-
-**Never `import()` `stories.js` a second time to read the wire.** It holds the
-wire in *live bindings* that `loadWire()` fills once, so a second import — a
-test, a console, a lazily-loaded module — gets a fresh and **empty** copy. That
-crashed the gate the first time. Everything inspecting the wire goes through
-`__rfh.debug.wireData()`.
-
-**A mistyped visual or footage key falls back silently** — to the bar chart, or
-to Esplanadi — which would ship the wrong picture beside the right words.
-`PANEL_KEYS` and `BROLL_KEYS` are exported from `visuals.js` and `broll.js` and
-the gate checks every story's `visual` and `broll` against them.
+**A mistyped visual key falls back silently** to the bar chart, which would ship
+the wrong picture beside the right words. `PANEL_KEYS` is exported from
+`visuals.js` and the gate checks every story's key against it.
 
 **A missing string does not throw.** `t()` returns the key, and a raw key is
 still a non-empty string, so `rail.decode` would ship quietly on a button. The
@@ -358,26 +243,18 @@ collapses into a regular dot grid — the gulf water column did exactly that. Us
 NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs
 ```
 
-Ninety-one checks in a real browser: zero console errors; the feed is vertical (one
+Seventy-two checks in a real browser: zero console errors; the feed is vertical (one
 post per screen, snapping, media portrait both in the buffer and on screen); the
 live codec animates while its neighbours hold their painted frame and unread
-posts sit on standby; the program frame really cuts between the graphic, the
-footage and the wide, and DECODE holds the graphic; the reader types and can be
-skipped; DECODE grows the plain readings, re-folds, and stays per-post;
-scrolling, the rail, the keyboard and the dial all move the feed; every one of
-the bulletins carries a full read *and* a decode; every visual key is a real
-panel and every `broll` key real footage; roster counts are read off
-`__rfh.debug.stories()` rather than hardcoded — that number went stale twice; **fi/en/ja are complete**
+posts sit on standby; the reader types and can be skipped; DECODE grows the
+plain readings, re-folds, and stays per-post; scrolling, the rail, the keyboard
+and the dial all move the feed; every one of the twelve bulletins carries a full
+read *and* a decode; every visual key is a real panel; **fi/en/ja are complete**
 (every interface key and every field of every bulletin, with markup to decode)
 and switching language keeps your place and your open drawer; every control is
 44px; the sign-off closes the feed, lists every technique and marks the ones
 you decoded (in every language); the address follows the scroll and a `#id`
-link opens that bulletin; and the whole external-update path — the feed is
-reading a *fetched* wire rather than a baked-in one, the CLI validator catches a
-bad art key, a missing language and a bulletin with nothing to decode, a broken
-wire degrades to the station identification without throwing, a cached shell
-still picks up an edited wire on the next load, and offline reads the last wire
-that arrived
+link opens that bulletin
 without pushing history; the precache names every module and agrees with the
 page's version; the app **really boots with the network cut**; and **WCAG AA on
 every text colour** — measured with the translucent decode-box

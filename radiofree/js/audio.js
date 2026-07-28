@@ -7,13 +7,14 @@ let ctx = null;
 let master = null;
 let isMuted = false;
 let hissNode = null;      // the carrier hiss under the whole broadcast
+let cityNode = null;      // low city rumble / distant tram bed
 
 export function init() {
   if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
   if (!master) {
     master = ctx.createGain();
     master.gain.value = isMuted ? 0 : 1;
-    master.connect(ctx.destination);      // the ONLY connection to the speakers
+    master.connect(ctx.destination);
   }
   if (ctx.state === 'suspended') ctx.resume();
 }
@@ -47,7 +48,6 @@ function tone(freq, dur, type = 'square', gain = 0.05, when = 0) {
   o.stop(t + dur + 0.03);
 }
 
-// a burst of filtered noise — static, the tuning sweep, the decode tear
 function noise(dur, f0, f1, gain = 0.06, q = 1.0) {
   if (!ctx) return;
   const t = ctx.currentTime;
@@ -68,19 +68,15 @@ function noise(dur, f0, f1, gain = 0.06, q = 1.0) {
   src.start(t);
 }
 
-// one character of Toko talking. Pitched per character so a sentence has a
-// contour instead of a flat beep-beep-beep.
 export function blip(seed = 0) {
   tone(660 + (seed % 7) * 34, 0.045, 'square', 0.026);
 }
 
-// the codec answering: two rising pips
 export function connect() {
   tone(523.25, 0.08, 'square', 0.05);
   tone(784, 0.16, 'square', 0.045, 0.09);
 }
 
-// incoming call — the ring you cannot ignore
 export function ring() {
   for (let i = 0; i < 3; i++) {
     tone(880, 0.07, 'square', 0.045, i * 0.42);
@@ -88,17 +84,13 @@ export function ring() {
   }
 }
 
-// turning the dial: a swept hiss with a pip when it lands
 export function tune(landed = true) {
   noise(0.26, 2200, 500, 0.05, 0.8);
   if (landed) tone(392, 0.1, 'square', 0.04, 0.2);
 }
 
-// paging to the next bulletin
 export function page() { tone(330, 0.06, 'square', 0.035); tone(494, 0.09, 'square', 0.03, 0.05); }
 
-// DECODE: the sound of a story being pulled apart. A tear of noise, then a
-// falling tone — the only voice in the kit that goes down.
 export function decode() {
   noise(0.42, 3000, 300, 0.07, 0.7);
   if (!ctx) return;
@@ -115,13 +107,8 @@ export function decode() {
   o.stop(t + 0.6);
 }
 
-// re-folding the bulletin back to its official wording
 export function recode() { tone(300, 0.07, 'square', 0.03); tone(220, 0.12, 'square', 0.025, 0.06); }
 
-// ── the carrier ────────────────────────────────────────────────────
-// A near-inaudible band-passed hiss under everything: the sound of a receiver
-// that is on. Sold the whole app the moment it was added, and it is the first
-// thing to stop when the broadcast is closed.
 export function carrierStart() {
   if (!ctx || hissNode) return;
   const len = 2.0;
@@ -141,9 +128,11 @@ export function carrierStart() {
   src.connect(f).connect(g).connect(out());
   src.start();
   hissNode = { src, g };
+  cityStart();
 }
 
 export function carrierStop() {
+  cityStop();
   if (!hissNode) return;
   const { src, g } = hissNode;
   hissNode = null;
@@ -156,11 +145,59 @@ export function carrierStop() {
   } catch { /* already gone */ }
 }
 
-// the carrier ducks while a bulletin is being read, so the voice sits on top
 export function carrierDuck(down) {
   if (!hissNode) return;
   const t = ctx.currentTime;
   hissNode.g.gain.cancelScheduledValues(t);
   hissNode.g.gain.setValueAtTime(hissNode.g.gain.value, t);
   hissNode.g.gain.linearRampToValueAtTime(down ? 0.006 : 0.012, t + 0.25);
+  if (cityNode) {
+    cityNode.g.gain.cancelScheduledValues(t);
+    cityNode.g.gain.setValueAtTime(cityNode.g.gain.value, t);
+    cityNode.g.gain.linearRampToValueAtTime(down ? 0.003 : 0.008, t + 0.25);
+  }
+}
+
+// Quiet low city bed: distant rumble + soft filtered noise. Sits under the
+// carrier so the station still feels like a receiver in a city, not a void.
+function cityStart() {
+  if (!ctx || cityNode) return;
+  const len = 3.0;
+  const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * len), ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) {
+    // brown-ish noise: integrate white for low rumble character
+    d[i] = (i === 0 ? 0 : d[i - 1] * 0.98) + (Math.random() * 2 - 1) * 0.02;
+  }
+  // normalize roughly
+  let peak = 0;
+  for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+  if (peak > 0) for (let i = 0; i < d.length; i++) d[i] /= peak;
+
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 280;
+  lp.Q.value = 0.7;
+  const g = ctx.createGain();
+  g.gain.value = 0;
+  g.gain.linearRampToValueAtTime(0.008, ctx.currentTime + 1.8);
+  src.connect(lp).connect(g).connect(out());
+  src.start();
+  cityNode = { src, g };
+}
+
+function cityStop() {
+  if (!cityNode) return;
+  const { src, g } = cityNode;
+  cityNode = null;
+  try {
+    const t = ctx.currentTime;
+    g.gain.cancelScheduledValues(t);
+    g.gain.setValueAtTime(g.gain.value, t);
+    g.gain.linearRampToValueAtTime(0, t + 0.3);
+    src.stop(t + 0.4);
+  } catch { /* already gone */ }
 }
