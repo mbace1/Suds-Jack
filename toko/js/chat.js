@@ -157,8 +157,16 @@ const CSS = `
 .toko-chat .tc-log .tc-gift:hover { background: var(--tc-hot); color: #000; }
 .toko-chat .tc-log .tc-gift img { width: 28px; height: 28px; display: block; }
 
-/* the note you write him, and the scoreboard he reads back */
-.toko-chat .tc-note { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+/* The note you write him. Its OWN row under the transcript, never inside it:
+   in the log it scrolled away with the conversation and the send button went
+   below the clipped fold. flex: none so it keeps its height when the panel is
+   tight. */
+.toko-chat .tc-note-row {
+  flex: none; border-top: 2px solid var(--tc-line); padding: 10px 12px 12px;
+  background: #ffffff08;
+}
+.toko-chat .tc-note-row[hidden] { display: none; }
+.toko-chat .tc-note { display: flex; flex-wrap: wrap; gap: 8px; }
 .toko-chat .tc-note textarea {
   flex: 1 1 220px; min-height: 66px; resize: vertical;
   font: inherit; color: var(--tc-ink); background: #00000060;
@@ -333,7 +341,14 @@ export function mountChat(anchor, opts = {}) {
   const leave = el('button');
   leave.type = 'button';
   foot.append(hint, el('span', 'tc-spacer'), sound, leave);
-  body.append(log, list, sayRow, foot);
+  // The compose box gets a row of its OWN, not a paragraph in the transcript.
+  // Inside .tc-log it scrolled with the conversation, and since that element
+  // is capped and clipped the SEND button ended up below the fold — present,
+  // focusable, and invisible. Somebody wrote a note and could not find the
+  // way to send it, which is the worst possible place for this to break.
+  const noteRow = el('div', 'tc-note-row');
+  noteRow.hidden = true;
+  body.append(log, noteRow, list, sayRow, foot);
   panel.append(portrait, body);
   root.appendChild(panel);
 
@@ -777,13 +792,17 @@ export function mountChat(anchor, opts = {}) {
     const send = el('button', null, u('SEND'));
     send.type = 'button';
     wrap.append(box, send);
-    log.appendChild(wrap);
+    noteRow.textContent = '';
+    noteRow.appendChild(wrap);
+    noteRow.hidden = false;
+    list.hidden = true;                    // one thing to do at a time
     log.scrollTop = log.scrollHeight;
-    if (lastInputWasKey) box.focus();
+    box.focus();                           // it is the only reason it is open
 
     send.addEventListener('click', async () => {
       const text = box.value.trim();
-      wrap.remove();
+      noteRow.hidden = true;
+      noteRow.textContent = '';
       // Saying nothing records nothing. The hub holds the same rule, and it
       // is the difference between asking for feedback and harvesting it.
       if (!text) { type(u('NOTHING_SAID')); return; }
