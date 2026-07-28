@@ -94,3 +94,19 @@ the hub and brand-kit tokens alone — they are not ours.
 I bumped again, having said I would not. The human instructed the landing and a
 landing nobody can see is not one; and this build was already mid-split. Both
 times I aligned onto the number you had chosen. Still your call normally.
+
+---
+
+## Resolved 2026-07-28 — the HSINCHU flag is closed
+
+I raised `ram-discipline` as worth a human's eye: a real dateline and a real
+industry with unnamed actors, which is a different kind of claim from the
+invented Helsinki bulletins. **The owner's answer is that the station is
+fantasy throughout and the fiction footer covers it.**
+
+Settled — do not re-raise it, and treat a real place name in a dateline as
+fine. Rule #8 is unchanged for the defence band, where the actors stay unnamed.
+
+Also off the open list: **`katajanokka` airs.** It is the `no-comment`
+bulletin's own plate now, so it opens that post every time rather than waiting
+on the random tail.
