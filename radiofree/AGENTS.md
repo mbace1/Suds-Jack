@@ -75,7 +75,8 @@ Registered in `PANELS` and listed in `BROLL_KEYS`:
 2. Use only `PixelScreen` methods that exist: `px`, `rect`, `disc`, `ellipse`, `line`, `bands`, `scanlines`, `clear`.
 3. Register in `PANELS` and `BROLL_KEYS`.
 4. Optionally set `story.broll = 'yourKey'` in `stories.js`.
-5. Bump cache version.
+5. Run `drawAllPlates` (below) before claiming shipped.
+6. Bump cache version.
 
 `scr.bands(x, y, w, h, [colorTop, colorBottom])` is required for sky/ground gradients. **It must exist on `PixelScreen`** (`screen.js`). Missing `bands` silently kills those shots.
 
@@ -85,7 +86,7 @@ Registered in `PANELS` and listed in `BROLL_KEYS`:
 
 | File | Owns |
 |------|------|
-| `js/main.js` | Feed, scroll, tune-in, language switch, loop |
+| `js/main.js` | Feed, scroll, tune-in, language switch, loop, `drawAllPlates` |
 | `js/codec.js` | Post screen, cut sequencer, Reader (typing + lip-sync amp) |
 | `js/toko.js` | Masked gel anchor, booth, decode tear |
 | `js/visuals.js` | All graphics + B-roll panels |
@@ -96,6 +97,7 @@ Registered in `PANELS` and listed in `BROLL_KEYS`:
 | `js/palette.js` | Colours |
 | `sw.js` | Offline precache (`VERSION` / `V`) |
 | `index.html` | Shell CSS + `?v=N` entry |
+| `test/plates.cjs` | Headless runner for `drawAllPlates` |
 
 ---
 
@@ -106,7 +108,7 @@ Registered in `PANELS` and listed in `BROLL_KEYS`:
 3. Bump **every** `import '...?v='` in modules that import each other to the same N.
 4. Without this, users (and other AIs testing the live URL) only see old art.
 
-Current expected token at time of writing this doc: **v8** (confirm in `sw.js` before assuming).
+Confirm current token in `sw.js` before assuming (was **v10** when the inbox was written).
 
 ---
 
@@ -119,9 +121,10 @@ Current expected token at time of writing this doc: **v8** (confirm in `sw.js` b
 - Core + expanded Helsinki B-roll with motion
 - City ambient under carrier
 - Offline PWA
+- Forced plate probe (`drawAllPlates`)
 
 **Good next work (if asked)**
-- More pure Helsinki B-roll (still no faces): e.g. night harbour, Design District alley, Olympic Stadium silhouette — always verify geography
+- More pure Helsinki B-roll (still no faces) — always verify geography + run plates probe
 - Stronger per-story `broll` wiring in `stories.js`
 - Motion polish only if a panel still feels static
 - Never prioritize more face variety over mask-on / pure B-roll rules
@@ -131,6 +134,7 @@ Current expected token at time of writing this doc: **v8** (confirm in `sw.js` b
 - Image assets or video files
 - Landscape/non-portrait panel redesign
 - Removing trilingual support
+- Porting `wire.json` from the Claude branch without an explicit human greenlight
 
 ---
 
@@ -144,18 +148,27 @@ Current expected token at time of writing this doc: **v8** (confirm in `sw.js` b
 | Tram drawn on a narrow street labeled Mannerheimintie | Use `mannerheim` for the wide boulevard; `katu` for narrow |
 | B-roll with faces | Reject / redraw without characters |
 | Import tokens disagree across modules | Align all `?v=N` to one version |
+| Broken plate only fails on some cuts | `drawAllPlates` forces every key at d=0 and d=1 |
 
 ---
 
 ## Verify before claiming "shipped"
 
 1. Private tab or hard refresh on the live URL.
-2. Tune in, stay on one post ≥12 seconds — confirm B-roll cuts appear (cathedral / tram / station / etc.).
+2. Tune in, stay on one post ≥12 seconds — confirm B-roll cuts appear.
 3. Toggle DECODE — text and picture both shift; Toko tears.
 4. Switch FI / EN / JA — bulletin text changes; no missing keys.
 5. Console clean: no `bands` / missing export errors.
+6. **Draw every plate on purpose** (both decode states):
+   ```js
+   // after Tune In
+   __rfh.debug.drawAllPlates()
+   // → { ok: true, count: 10, ... }
+   ```
+   or `node radiofree/test/plates.cjs`
+7. Optional: offline reload for real (register worker, cut network, reload, read).
 
-Console helpers: `window.__rfh.debug.open(id)`, `.toggleDecode()`, `.setLang('ja')`, `.stories()`.
+Console helpers: `window.__rfh.debug.open(id)`, `.toggleDecode()`, `.setLang('ja')`, `.stories()`, `.drawAllPlates()`, `.brollKeys()`.
 
 ---
 
