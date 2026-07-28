@@ -270,6 +270,14 @@ What it does beyond talking:
 - **You can read your own notes back.** Feedback you cannot see again is a
   suggestion box with a lock on it, so `WHAT HAVE I TOLD YOU?` prints the
   archive off your machine — the same one the hub keeps.
+- **And he tells you what changed.** `DID ANY OF IT MATTER?` reads out
+  `CHANGED` in `dialogue.js` — a **hand-kept** log of what actually got fixed.
+  Nothing generates it, because the whole point is that a person read the
+  notes and did something; add an entry when you ship the fix. It never says
+  *you asked for this*, because most entries nobody asked for and a counter
+  that flatters you is back to being a shop. It does check whether you left a
+  note about that same cabinet and say so **once** — that claim is true and
+  checkable, which is the only kind worth making.
 - **He reads what the cabinets left on your machine.** `HAVE YOU SEEN ME
   PLAY?` reads the games' own `localStorage` hi-scores, shows them, and sends
   them nowhere. He says as much while doing it — a workshop that claims not

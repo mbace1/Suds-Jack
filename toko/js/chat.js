@@ -27,7 +27,8 @@ import { glance, drift } from './util.js';
 import { hit } from './glitch.js';
 import {
   TOPICS, ASIDES, MISSES, CRY, SCOREBOARD, SEEN_NOTHING, SEEN_SOMETHING,
-  GAME_NOTES, ABOUT_UNKNOWN, menu, greeting, find, nameWords,
+  GAME_NOTES, ABOUT_UNKNOWN, CHANGED, CHANGED_NONE, CHANGED_YOURS,
+  menu, greeting, find, nameWords,
 } from './dialogue.js';
 
 // He keeps four things between visits and nothing else: how many times you
@@ -177,6 +178,7 @@ const CSS = `
 }
 .toko-chat .tc-log .tc-tell:hover { border-color: var(--tc-hot); color: var(--tc-ink); }
 .toko-chat .tc-log .tc-score { color: var(--tc-dim); }
+.toko-chat .tc-log .tc-you-quiet { color: var(--tc-hot); }
 .toko-chat .tc-log .tc-score b { color: var(--tc-ink); font-weight: normal; }
 
 /* the parser: the reason this thing is shaped like Police Quest */
@@ -593,6 +595,49 @@ export function mountChat(anchor, opts = {}) {
     log.scrollTop = log.scrollHeight;
   }
 
+  // ── what changed ───────────────────────────────────────────────────────
+  // The other half of the note box. A suggestion box nobody ever answers
+  // stops getting used, so this reads out the hand-kept log of what actually
+  // got fixed — and, where you left a note about that same cabinet, says so.
+  //
+  // That last part is the only claim it makes about you, and it is checkable:
+  // it compares the `game` on the log entry against the `game` on the notes
+  // already on your machine. The log itself never says "you asked for this",
+  // because most entries nobody asked for and a counter that flatters you is
+  // back to being a shop.
+  function myGames() {
+    const fb = globalThis.__hub && globalThis.__hub.feedback;
+    let all = [];
+    try { all = (fb && fb.archive && fb.archive()) || []; } catch { all = []; }
+    return new Set(all.filter(n => n && n.note && n.game).map(n => n.game));
+  }
+
+  function readChanged() {
+    if (!CHANGED.length) { type(CHANGED_NONE); return; }
+    const mine = myGames();
+    const games = cabinets();
+    const titleOf = id => {
+      const g = games.find(x => x.id === id);
+      return (g && (g.title || g.id) || id).toUpperCase();
+    };
+    // ONCE per game, on its most recent entry. Said against every line it
+    // stops being an acknowledgement and turns into flattery, which is the
+    // one register this counter is not for.
+    const flagged = new Set();
+    for (const e of CHANGED.slice(0, 6)) {
+      const head = el('p', 'tc-score');
+      head.append(document.createTextNode('  ' + (e.when || '') + '  '),
+        Object.assign(el('b'), { textContent: e.game === 'hub' ? 'THE ARCADE' : titleOf(e.game) }));
+      log.appendChild(head);
+      for (const l of e.what) log.appendChild(el('p', 'tc-me', '    ' + l));
+      if (mine.has(e.game) && !flagged.has(e.game)) {
+        flagged.add(e.game);
+        log.appendChild(el('p', 'tc-you-quiet', '    ' + CHANGED_YOURS));
+      }
+    }
+    log.scrollTop = log.scrollHeight;
+  }
+
   // The sticker. Not a link to a file — there is no file, and there is no
   // image asset anywhere in this brand. `svgBadge` emits the same arcs the
   // canvas strokes, so what he hands you and what you are looking at are the
@@ -778,6 +823,10 @@ export function mountChat(anchor, opts = {}) {
     if (t.notes) {
       const prev = after;
       after = () => { readNotes(); if (prev) prev(); };
+    }
+    if (t.changed) {
+      const prev = after;
+      after = () => { readChanged(); if (prev) prev(); };
     }
     if (t.askGames) {
       // the rack: eight at most, because the menu has nine slots and one of

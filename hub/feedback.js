@@ -18,6 +18,12 @@
 // burst. Nothing is ever dropped on the floor, and nothing is promised that
 // was not done: an opaque no-cors POST reports 'sent-blind', not 'sent'.
 
+// PASTE THE SHEET URL HERE and the whole floor switches over — the arcade,
+// the counter, and every surface that posts through this module. Deploy
+// scripts/feedback-sheet.gs as a web app (setup is in its header comment,
+// ~3 minutes) and drop its /exec URL in. Unlimited, and it lands somewhere
+// sortable by game instead of in an inbox — at the cost that its answer
+// cannot be read, so those notes report 'sent-blind', never 'sent'.
 const SHEET_ENDPOINT = '';                                  // 'https://script.google.com/macros/s/XXXX/exec'
 const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mdarbpve';
 
