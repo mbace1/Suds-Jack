@@ -249,43 +249,6 @@ export const TOPICS = [
     ],
   },
 
-  // ── the money ──────────────────────────────────────────────────────────
-  {
-    id: 'cost', q: 'WHAT DOES IT COST?',
-    a: [
-      'NOTHING.',
-      'NO PUBLISHER. NO LAUNCHER. NO ACCOUNT.',
-      'IF THAT SOUNDS LIKE A CATCH,',
-      'READ THE SOURCE. IT IS RIGHT THERE.',
-    ],
-    opens: ['steal'],
-  },
-  {
-    id: 'steal', q: 'CAN I TAKE YOUR CODE?', once: true, locked: true,
-    a: [
-      'TAKE IT. THAT IS WHAT IT IS FOR.',
-      'DO NOT TAKE THE FACE — THAT ONE IS MINE',
-      'AND YOU SHOULD WANT YOUR OWN ANYWAY.',
-      'EVERYTHING ELSE: YOURS.',
-      'PUT YOUR NAME ON IT AND MAKE IT WORSE.',
-    ],
-    opens: ['gift'],
-  },
-
-  // ── he hands you something ─────────────────────────────────────────────
-  {
-    // Not a link to a file — there are no files. The counter draws the sticker
-    // out of the same arcs the mark is made of and hands it to you as SVG.
-    id: 'gift', q: 'GIVE ME SOMETHING, THEN.', once: true, locked: true, gift: true,
-    a: [
-      'HERE. I DREW IT WHILE YOU WERE ASKING.',
-      'IT IS VECTOR, SO IT IS ANY SIZE YOU LIKE.',
-      'PRINT IT. PUT IT ON A LAPTOP.',
-      'PUT IT SOMEWHERE IT IS NOT SUPPOSED',
-      'TO BE.',
-    ],
-  },
-
   // ── he asks you ────────────────────────────────────────────────────────
   {
     // The one topic that runs the other way. `asks` turns the menu into YOUR
@@ -333,6 +296,43 @@ export const TOPICS = [
         ],
         opens: ['start'],
       },
+    ],
+  },
+
+  // ── the money ──────────────────────────────────────────────────────────
+  {
+    id: 'cost', q: 'WHAT DOES IT COST?',
+    a: [
+      'NOTHING.',
+      'NO PUBLISHER. NO LAUNCHER. NO ACCOUNT.',
+      'IF THAT SOUNDS LIKE A CATCH,',
+      'READ THE SOURCE. IT IS RIGHT THERE.',
+    ],
+    opens: ['steal'],
+  },
+  {
+    id: 'steal', q: 'CAN I TAKE YOUR CODE?', once: true, locked: true,
+    a: [
+      'TAKE IT. THAT IS WHAT IT IS FOR.',
+      'DO NOT TAKE THE FACE — THAT ONE IS MINE',
+      'AND YOU SHOULD WANT YOUR OWN ANYWAY.',
+      'EVERYTHING ELSE: YOURS.',
+      'PUT YOUR NAME ON IT AND MAKE IT WORSE.',
+    ],
+    opens: ['gift'],
+  },
+
+  // ── he hands you something ─────────────────────────────────────────────
+  {
+    // Not a link to a file — there are no files. The counter draws the sticker
+    // out of the same arcs the mark is made of and hands it to you as SVG.
+    id: 'gift', q: 'GIVE ME SOMETHING, THEN.', once: true, locked: true, gift: true,
+    a: [
+      'HERE. I DREW IT WHILE YOU WERE ASKING.',
+      'IT IS VECTOR, SO IT IS ANY SIZE YOU LIKE.',
+      'PRINT IT. PUT IT ON A LAPTOP.',
+      'PUT IT SOMEWHERE IT IS NOT SUPPOSED',
+      'TO BE.',
     ],
   },
 
