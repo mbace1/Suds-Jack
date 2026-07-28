@@ -1,13 +1,13 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=13';
-import { Post, Reader } from './codec.js?v=13';
-import { Photo } from './photo.js?v=13';
-import { SECTORS, STORIES, storyCopy, parseLine } from './stories.js?v=13';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=13';
-import * as audio from './audio.js?v=13';
-import { PixelScreen } from './screen.js?v=13';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=13';
+import { PAL, SECTOR_COLOR } from './palette.js?v=14';
+import { Post, Reader } from './codec.js?v=14';
+import { Package } from './package.js?v=14';
+import { SECTORS, STORIES, storyCopy, parseLine } from './stories.js?v=14';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=14';
+import * as audio from './audio.js?v=14';
+import { PixelScreen } from './screen.js?v=14';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=14';
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
@@ -197,7 +197,7 @@ function buildFeed() {
     art.append(media, cap);
     feed.appendChild(art);
 
-    const post = new Photo(slot, story, sector, i);
+    const post = new Package(slot, story, sector, i);
     post.renderStatic();
     posts.push({ story, sector, copy, post, decoded: false, read: false,
       els: { art, bulletin, box, decodeBtn } });
@@ -480,10 +480,26 @@ window.__rfh = {
     toggleDecode: () => toggleDecode(active),
     finishRead: () => reader.finish(),
     stories: () => posts.filter(p => !p.signoff).map(p => p.story.id),
+    // codec posts hold a shot OBJECT, packages hold a shot NAME — the gate
+    // reads this to prove the program frame really is cutting, so it has to
+    // answer for both kinds without the caller knowing which it asked
     shot: () => {
       const p = posts[active];
-      if (!p || p.signoff || !p.post.shot) return null;
-      return { type: p.post.shot.type, key: p.post.shot.key || null };
+      if (!p || p.signoff) return null;
+      const s = p.post.shot;
+      if (!s) return null;
+      return typeof s === 'string' ? { type: s, key: null }
+        : { type: s.type, key: s.key || null };
+    },
+    beat: () => {
+      const p = posts[active];
+      return p && !p.signoff && p.post.beat !== undefined ? p.post.beat : null;
+    },
+    cutTo: shot => {
+      const p = posts[active];
+      if (!p || p.signoff || !p.post.cutTo) return false;
+      p.post.cutTo(shot);
+      return true;
     },
     decoded: () => [...decodedIds],
     forgetDecoded: () => { decodedIds.clear(); try { localStorage.removeItem(DECODED_KEY); } catch {} },

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RFH — anchor shot preview</title>
+<style>
+  body { margin: 0; background: #04070a; color: #7dffb2;
+         font: 12px ui-monospace, Menlo, monospace; }
+  .row { display: flex; gap: 20px; padding: 20px; align-items: flex-start; }
+  .post { position: relative; width: 300px; height: 533px; overflow: hidden;
+          border: 1px solid #1c4a38; }
+  .photo-wrap { position: absolute; inset: 0; overflow: hidden; background: #05100c; }
+  .photo { position: absolute; inset: 0; width: 100%; height: 100%;
+           object-fit: cover; object-position: 50% 45%; image-rendering: pixelated; }
+  .photo-grade { position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(to bottom,
+        rgba(0,0,0,.34) 0 1px, rgba(0,0,0,0) 1px 3px),
+      radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 45%, rgba(2,8,6,.72) 100%);
+    mix-blend-mode: multiply; }
+  .photo-sweep { position: absolute; left: 0; right: 0; height: 22%; top: -25%;
+    pointer-events: none;
+    background: linear-gradient(to bottom, rgba(125,255,178,0), rgba(125,255,178,.05), rgba(125,255,178,0)); }
+  h1 { font-size: 13px; padding: 16px 20px 0; font-weight: 400; }
+</style>
+</head>
+<body>
+<h1>Toko at the desk — brand face (toko/js/face.js GEO), left: on air · right: DECODE</h1>
+<div class="row">
+  <div class="post"><div class="slot" id="a"></div></div>
+  <div class="post"><div class="slot" id="b"></div></div>
+</div>
+<script type="module">
+import { Anchor } from './js/anchor.js?v=14';
+
+const story = { id: 'preview', sector: 'GAMING' };
+const sector = { freq: '87.60', call: 'KAIKU' };
+const a = new Anchor(document.getElementById('a'), story, sector, 0);
+const b = new Anchor(document.getElementById('b'), story,
+  { freq: '141.12', call: 'VARTIO' }, 3);
+b.story = { id: 'preview2', sector: 'DEFENCE' };
+b.accent = '#ff6b6b';
+b.decoded = true;
+b.wrap.classList.add('decoded');
+
+let last = performance.now(), phase = 0;
+(function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  phase += dt;
+  // stand in for the reader's per-character mouth amplitude
+  const mouth = (phase % 6) < 4 ? Math.abs(Math.sin(phase * 9)) : 0;
+  for (const s of [a, b]) { s.update(dt, mouth); s.draw(); }
+  requestAnimationFrame(loop);
+})(last);
+
+window.__preview = { a, b };
+</script>
+</body>
+</html>

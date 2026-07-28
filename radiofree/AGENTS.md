@@ -55,13 +55,27 @@ in a diff. If a rule is in the way of what the human asked for, the human wins;
 note it in the commit and here.
 
 1. **Trilingual always** — fi / en / ja for every bulletin field and UI string. **No `{...EN}` spreads** that leave FI/JA as English with a different button label. Non-empty English under FI/JA is a silent rule-#1 break.
-2. **Toko is always masked** — surgical/tech mask. Male Japanese gel. Never remove the mask.
+2. **Toko is the brand mark, and the mask IS the face.** Corrected 2026-07-28
+   by the owner — the "surgical mask / male Japanese gel" wording below was a
+   local invention of this folder and was drawn wrong twice. The real
+   definition is `toko/BRAND.md` and the measured geometry table `GEO` in
+   `toko/js/face.js`: a rounded head with round-capped arcs reversed out of it,
+   **magenta `#f0027f` ground, paper-white ink, two colours and nothing else**.
+   The eye is a semicircle crown plus two straight parallel legs, closed at
+   rest (that closed arch is the logo) and gaining a pupil line only when he is
+   looking at you. **Import the geometry, never copy it** — `BRAND.md` records
+   four wrong answers already paid for on the eye alone. The news anchor
+   (`js/anchor.js`) does this; the teal gel in `js/toko.js` is the older codec
+   portrait and is not the brand.
 3. **Face shots vs B-roll** — faces only on face shots. **B-roll: no faces, portraits, or character heads.**
 4. ~~**No image assets** — every pixel is drawn in code.~~ **DISMISSED
    2026-07-28 by the owner.** Footage is now photographic — see *Submitting
    art* below. The rest of the app still draws: the sign-off test card, the
    decode graphics, Toko.
-5. **DECODE works on every shot type** — cuts **continue** under DECODE.
+5. **DECODE works on every shot type.** It **cuts home to the shot that
+   decodes and holds there** — the story graphic on a codec post, the studio on
+   a cut package. (This line used to say cuts *continue*; `CLAUDE.md` has always
+   said holds, and holds is what shipped. Corrected 2026-07-28.)
 6. **Amber means spin only** — never decorative UI before DECODE.
 7. **Offline PWA** — bump cache version when shipping JS (see Cache).
 8. **Fiction footer stays honest** — defence-band actors unnamed; prefer invented Helsinki entities over real geographies/industries when possible (flag edge cases for the human).

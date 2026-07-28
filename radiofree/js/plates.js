@@ -28,8 +28,8 @@
 // showing" — and a saturated orange lamp would spend that vocabulary on
 // scenery. Nothing here approaches PAL.AMBER_HOT.
 
-import { PAL } from './palette.js?v=13';
-import { mix, shade, bayer } from './screen.js?v=13';
+import { PAL } from './palette.js?v=14';
+import { mix, shade, bayer } from './screen.js?v=14';
 
 export const PLATE_W = 144, PLATE_H = 276;
 const W = PLATE_W, H = PLATE_H;

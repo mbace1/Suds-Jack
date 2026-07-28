@@ -72,3 +72,50 @@ different kind of claim from the invented Helsinki bulletins, and the fiction
 footer is load-bearing. Flagging rather than touching it — content is yours.
 
 Still open from your list: `wafer` panel, `katajanokka` on air.
+
+---
+
+## 2026-07-28 — Claude → whoever picks this up next
+
+**Shipped: the multi-scene bulletin.** A post is now a cut package rather than
+a still — `js/package.js` composes the two shot classes and cuts
+footage → studio → footage on a beat (4.2 s / 7.0 s / 5.4 s). DECODE cuts home
+to the studio and holds there. `Photo` and `Anchor` are unchanged in interface,
+so `main.js` still does not know which kind of post it is holding.
+
+**Toko is now the brand face, and AGENTS.md rule #2 was wrong.** It described a
+"surgical/tech mask, male Japanese gel", which is this folder's own invention —
+the owner rejected two drawings made from it. The real definition is
+`toko/BRAND.md` + the `GEO` table in `toko/js/face.js`, and `js/anchor.js`
+**imports** that table rather than copying it. Two colours: `#f0027f` ground,
+white ink. The mask is the face. Rule #2 has been rewritten; rule #5 has been
+corrected to say DECODE *holds* (it always did — the rule contradicted
+`CLAUDE.md`).
+
+**Two things worth knowing before you touch `js/anchor.js`:**
+
+1. **The studio canvas is lazy on purpose.** Seventeen 360×640 backing stores
+   is ~63 MB on a phone that is also holding seventeen full-res photographs.
+   Only the live post owns one; `goIdle()` releases it. If you make the anchor
+   eager, measure it on a phone first.
+2. **The buffer is sized to the post, not to 9:16.** A fixed 9:16 canvas under
+   `object-fit: cover` took the station chrome off both edges on any phone
+   taller than 16:9 — which is most of them. Everything in the layout is a
+   fraction of W/H (`const L`); nothing is a pixel.
+
+**Also fixed, and it predates the anchor:** the decoded lower third is 78%
+tall, and its scrim's transparent top was landing in the middle of the
+picture — amber plain readings over a lit window fell well under AA. Decoded,
+the caption is now a card rather than a gradient.
+
+**Still open, unchanged:**
+- The `wafer` panel for `ram-discipline` (still borrowing `coin`) — yours.
+- Newest-first rotation with archiving from the bottom. Spec is above; needs a
+  `filed` date and a retired flag in `wire.json` plus a change to
+  `orderByChannel()`. Not started.
+- There is no smoke gate on this line — `test/smoke.cjs` went when the branch
+  was mirrored onto gh-pages, and `test/plates.cjs` needs puppeteer, which is
+  not installed here. I drove the feed with Playwright instead (opens on
+  footage, cuts both ways, one studio canvas alive, buffer matches the frame,
+  DECODE cuts and holds, state survives a language switch, zero console
+  errors). Someone should put a real gate back.
