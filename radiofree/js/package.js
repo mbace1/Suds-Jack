@@ -12,9 +12,11 @@
 // amplitude). Both already mirror the same interface, so this one does too and
 // main.js still does not know which kind of post it is holding.
 //
-// DECODE cuts home to the ANCHOR and holds there. That is the rule the codec
-// posts already follow — decode goes to the one shot that decodes — and here
-// it means the plain reading arrives from a person rather than from a caption.
+// DECODE cuts home to the GRAPHIC and holds there — the rule the codec posts
+// always followed, restored now that the graphic is on screen. The panels
+// decode as hard as the words do: the truncated chart re-bases, the valuation
+// tower goes hollow, the packed auditorium empties. Holding the studio instead
+// showed a face while the picture that was doing the arguing stayed off air.
 //
 // THE STUDIO CANVAS IS LAZY, and that is not an optimisation, it is the
 // difference between working and not: seventeen 360×640 backing stores is
@@ -23,16 +25,23 @@
 // footage — which is what an idle post should be showing anyway — costs an
 // <img> that was already there.
 
-import { Photo } from './photo.js?v=25';
-import { Anchor } from './anchor.js?v=25';
+import { Photo } from './photo.js?v=26';
+import { Anchor } from './anchor.js?v=26';
+import { Graphic } from './graphic.js?v=26';
 
 // The beat. Footage leads because the story is about somewhere; the studio
-// gets the longest single hold because that is where the words are.
+// gets the longest single hold because that is where the words are; the
+// graphic comes after it, while what he just said is still in your ear, and
+// then it goes back out to footage.
 const BEATS = [
-  { shot: 'broll', len: 4.2 },
-  { shot: 'anchor', len: 7.0 },
-  { shot: 'broll', len: 5.4 },
+  { shot: 'broll', len: 4.0 },
+  { shot: 'anchor', len: 6.5 },
+  { shot: 'graphic', len: 5.0 },
+  { shot: 'broll', len: 4.5 },
 ];
+// The one shot that decodes. DECODE cuts home to it and holds — the words are
+// only half of what a bulletin is doing, and this is the other half.
+const HOME = 'graphic';
 const CUT_FLASH = 0.16;
 
 export class Package {
@@ -42,7 +51,11 @@ export class Package {
     this.seed = seed;
     this.live = false;
     this._decoded = false;
-    this.anchor = null;
+    // Both drawn shots are LAZY, for the reason at the top of this file — and
+    // the graphic costs a second canvas on top of the studio's, so the same
+    // rule has to hold for it or the saving is undone by the shot that came to
+    // help. Declared FIRST: `get anchor()` reads through it.
+    this.drawn = { anchor: null, graphic: null };
 
     host.innerHTML = '';
     const root = document.createElement('div');
@@ -52,16 +65,18 @@ export class Package {
     a.className = 'pkg-shot on';
     const b = document.createElement('div');
     b.className = 'pkg-shot';
+    const g = document.createElement('div');
+    g.className = 'pkg-shot';
     const flash = document.createElement('div');
     flash.className = 'pkg-cut';
 
-    root.append(a, b, flash);
+    root.append(a, b, g, flash);
     host.appendChild(root);
 
     this.photo = new Photo(a, story, sector, seed);
     this.root = root;
     this.flash = flash;
-    this.layers = { broll: a, anchor: b };
+    this.layers = { broll: a, anchor: b, graphic: g };
 
     // A post always rests on its own footage, live or not, so scrolling the
     // feed shows real pictures rather than a wall of the same studio.
@@ -76,29 +91,36 @@ export class Package {
     this._decoded = !!v;
     this.photo.decoded = this._decoded;
     this.photo.sync();
-    if (this._decoded && this.live) {
-      this.ensureAnchor();
-      this.cutTo('anchor');
+    for (const k of ['anchor', 'graphic']) {
+      const sh = this.drawn[k];
+      if (sh) { sh.decoded = this._decoded; sh.paint(); }
     }
-    if (this.anchor) { this.anchor.decoded = this._decoded; this.anchor.paint(); }
+    if (this._decoded && this.live) this.cutTo(HOME);
   }
 
-  ensureAnchor() {
-    if (this.anchor) return this.anchor;
-    this.anchor = new Anchor(this.layers.anchor, this.story, this.sector, this.seed);
-    this.anchor.decoded = this._decoded;
-    // it is created mid-package, so it has to be told the post is on air —
-    // the anchor only reads aloud while it is live
-    if (this.live) this.anchor.goLive();
-    this.anchor.paint();
-    return this.anchor;
+  // `anchor` stays readable as a property because the console reaches for it
+  get anchor() { return this.drawn && this.drawn.anchor; }
+
+  ensure(kind) {
+    if (this.drawn[kind]) return this.drawn[kind];
+    const Cls = kind === 'graphic' ? Graphic : Anchor;
+    const sh = new Cls(this.layers[kind], this.story, this.sector, this.seed);
+    sh.decoded = this._decoded;
+    // created mid-package, so it has to be told the post is on air — the
+    // anchor only reads aloud while it is live
+    if (this.live) sh.goLive();
+    sh.paint();
+    this.drawn[kind] = sh;
+    return sh;
   }
 
-  releaseAnchor() {
-    if (!this.anchor) return;
-    this.anchor.destroy();
-    this.anchor = null;
-    this.layers.anchor.innerHTML = '';
+  release() {
+    for (const k of ['anchor', 'graphic']) {
+      if (!this.drawn[k]) continue;
+      this.drawn[k].destroy();
+      this.drawn[k] = null;
+      this.layers[k].innerHTML = '';
+    }
   }
 
   show(shot, immediate = false) {
@@ -117,7 +139,7 @@ export class Package {
 
   cutTo(shot) {
     if (shot === this.shot) return;
-    if (shot === 'anchor') this.ensureAnchor();
+    if (shot !== 'broll') this.ensure(shot);
     this.show(shot);
     this.flashT = CUT_FLASH;
   }
@@ -130,9 +152,9 @@ export class Package {
     // while you were somewhere else. Every post starts its own cut from shot 0.
     this.beat = 0;
     this.clock = 0;
-    if (this._decoded) { this.ensureAnchor(); this.show('anchor', true); }
+    if (this._decoded) { this.ensure(HOME); this.show(HOME, true); }
     else this.show('broll', true);
-    if (this.anchor) this.anchor.goLive();
+    for (const k of ['anchor', 'graphic']) if (this.drawn[k]) this.drawn[k].goLive();
   }
 
   goIdle() {
@@ -142,19 +164,21 @@ export class Package {
     this.flashT = 0;
     this.flash.style.opacity = '0';
     this.show('broll', true);
-    this.releaseAnchor();
+    this.release();
   }
 
   update(dt, mouth = 0) {
     this.photo.update(dt, mouth);
-    if (this.anchor) this.anchor.update(dt, mouth);
+    for (const k of ['anchor', 'graphic']) {
+      if (this.drawn[k]) this.drawn[k].update(dt, mouth);
+    }
 
     if (this.flashT > 0) {
       this.flashT = Math.max(0, this.flashT - dt);
       this.flash.style.opacity = String((this.flashT / CUT_FLASH) * 0.55);
     }
 
-    // decode holds the studio — the cut stops while the plain reading is up
+    // decode holds the graphic — the cut stops while the plain reading is up
     if (!this.live || this._decoded) return;
     this.clock += dt;
     const b = BEATS[this.beat];
@@ -165,15 +189,19 @@ export class Package {
     }
   }
 
-  // Only the studio costs a draw, and only while it is the shot on screen —
-  // the footage is an <img> whose motion is CSS and keeps running either way.
-  draw() { if (this.shot === 'anchor' && this.anchor) this.anchor.draw(); }
+  // Only the DRAWN shot on screen costs a draw — the footage is an <img> whose
+  // motion is CSS and keeps running either way, and the shot that is not up
+  // does not need a frame.
+  draw() {
+    const sh = this.drawn[this.shot];
+    if (sh) sh.draw();
+  }
 
   renderStatic() { this.photo.renderStatic(); }
 
   destroy() {
     this.photo.destroy();
-    this.releaseAnchor();
+    this.release();
     this.root.remove();
   }
 }

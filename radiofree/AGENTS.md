@@ -72,10 +72,13 @@ note it in the commit and here.
    2026-07-28 by the owner.** Footage is now photographic — see *Submitting
    art* below. The rest of the app still draws: the sign-off test card, the
    decode graphics, Toko.
-5. **DECODE works on every shot type.** It **cuts home to the shot that
-   decodes and holds there** — the story graphic on a codec post, the studio on
-   a cut package. (This line used to say cuts *continue*; `CLAUDE.md` has always
-   said holds, and holds is what shipped. Corrected 2026-07-28.)
+5. **DECODE works on every shot type.** It **cuts home to the STORY GRAPHIC
+   and holds there** — on a codec post and on a cut package alike. The panels
+   decode as hard as the words do (the truncated chart re-bases, the valuation
+   tower goes hollow, the packed auditorium empties), so the graphic is the one
+   shot that decodes and the one DECODE goes to. Decoded, the lower third is
+   capped at 62% and the graphic card goes **compact** — 78% buried the picture
+   entirely, which meant DECODE cut to something you could not see.
 6. **Amber means spin only** — never decorative UI before DECODE.
 7. **Offline PWA** — bump cache version when shipping JS (see Cache).
 8. **Fiction footer stays honest** — defence-band actors unnamed; prefer invented Helsinki entities over real geographies/industries when possible (flag edge cases for the human).

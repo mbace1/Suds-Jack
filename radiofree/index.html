@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#04070a">
-<link rel="manifest" href="manifest.webmanifest?v=25">
+<link rel="manifest" href="manifest.webmanifest?v=26">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="description" content="Radio Free Helsinki — a fictional pirate news broadcast. Toko reads the day's wire from a codec screen; DECODE shows you what the wording was doing.">
@@ -351,7 +351,9 @@
      is drawn too (amber furniture + a band tear), so the sepia grade the
      photographs take would only sepia the brand pink out of Toko. */
   .anchor-cv { animation: none; object-position: 50% 45%; }
-  .photo-wrap.decoded .anchor-cv { filter: none; }
+  .graphic-cv { animation: none; object-position: 50% 40%; }
+  .photo-wrap.decoded .anchor-cv,
+  .photo-wrap.decoded .graphic-cv { filter: none; }
 
   /* ── the cut package: footage → studio → footage ────────────────── */
   .pkg { position: absolute; inset: 0; }
@@ -399,7 +401,10 @@
      or over Toko's magenta, the amber plain readings fall miles under AA.
      Decoded, the lower third stops being a gradient and becomes a card. */
   .post.is-decoded .post-caption {
-    max-height: 78%; overflow-y: auto;
+    /* 78% buried the graphic completely, and DECODE cuts home to the graphic —
+       so decoding hid the very thing it was cutting to. The caption scrolls,
+       the picture does not, so the picture gets the band it needs. */
+    max-height: 62%; overflow-y: auto;
     background: linear-gradient(to top,
       rgba(3,10,8,.97) 0%, rgba(3,10,8,.96) 78%, rgba(3,10,8,.80) 100%);
     padding-top: 22px;
@@ -444,12 +449,12 @@
   <main id="feed" tabindex="-1"></main>
 </div>
 
-<script type="module" src="js/main.js?v=25"></script>
+<script type="module" src="js/main.js?v=26"></script>
 <script type="module" src="../hub/shell.js?v=13"></script>
 <script>
   if ('serviceWorker' in navigator &&
       (location.protocol === 'https:' || new URLSearchParams(location.search).has('sw'))) {
-    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=25').catch(() => {}));
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=26').catch(() => {}));
   }
 </script>
 

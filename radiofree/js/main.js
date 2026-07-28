@@ -1,13 +1,13 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=25';
-import { Post, Reader } from './codec.js?v=25';
-import { Package } from './package.js?v=25';
-import { SECTORS, STORIES, COPY, ARCHIVED, storyCopy, parseLine, loadWire, WIRE_INFO } from './stories.js?v=25';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=25';
-import * as audio from './audio.js?v=25';
-import { PixelScreen } from './screen.js?v=25';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=25';
+import { PAL, SECTOR_COLOR } from './palette.js?v=26';
+import { Post, Reader } from './codec.js?v=26';
+import { Package } from './package.js?v=26';
+import { SECTORS, STORIES, COPY, ARCHIVED, storyCopy, parseLine, loadWire, WIRE_INFO } from './stories.js?v=26';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=26';
+import * as audio from './audio.js?v=26';
+import { PixelScreen } from './screen.js?v=26';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=26';
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
@@ -531,6 +531,17 @@ window.__rfh = {
       const p = posts[active];
       const a = p && p.post && p.post.anchor;
       return a ? a.mouthSmooth : null;
+    },
+    // which panel the live post is carrying — thirteen of these exist and
+    // until now none of them reached a screen
+    visual: () => {
+      const p = posts[active];
+      return p && !p.signoff ? p.story.visual : null;
+    },
+    // the live package itself, so a gate can look inside a shot
+    pkg: () => {
+      const p = posts[active];
+      return p && !p.signoff ? p.post.drawn : null;
     },
     cutTo: shot => {
       const p = posts[active];
