@@ -658,6 +658,14 @@ const STOP = new Set(['THE', 'A', 'AN', 'IS', 'ARE', 'WAS', 'DO', 'DOES', 'DID',
 
 const words = s => (s.toUpperCase().match(/[A-Z']+/g) || []).filter(w => !STOP.has(w));
 
+// The same filter for CABINET TITLES, which keep their digits ("Tiny 2D",
+// "20/20"). Without the stop list "SAY THE WHOLE THING" scored a hit on
+// "The Game of Life" through the word THE and he answered about the wrong
+// thing entirely — with total confidence, which is the one failure this
+// parser is not allowed to have.
+export const nameWords = s =>
+  (String(s).toUpperCase().match(/[A-Z0-9]+/g) || []).filter(w => !STOP.has(w));
+
 // He hears the cry and answers it, whatever else is in the sentence.
 export const CRY = {
   test: s => /GO\s+MAKE\s+(YOUR\s+)?OWN/i.test(s),

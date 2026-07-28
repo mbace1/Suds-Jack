@@ -27,7 +27,7 @@ import { glance, drift } from './util.js';
 import { hit } from './glitch.js';
 import {
   TOPICS, ASIDES, MISSES, CRY, SCOREBOARD, SEEN_NOTHING, SEEN_SOMETHING,
-  GAME_NOTES, ABOUT_UNKNOWN, menu, greeting, find,
+  GAME_NOTES, ABOUT_UNKNOWN, menu, greeting, find, nameWords,
 } from './dialogue.js';
 
 // He keeps four things between visits and nothing else: how many times you
@@ -532,13 +532,13 @@ export function mountChat(anchor, opts = {}) {
   // on the id and on the title's words, so "DAGGER" alone is enough and a
   // one-word title cannot be hit by a single stray word of a longer sentence.
   function matchGame(text) {
-    const said = new Set((text.toUpperCase().match(/[A-Z0-9]+/g) || []));
+    const said = new Set(nameWords(text));
+    if (!said.size) return null;
     let best = null, score = 0;
     for (const g of cabinets()) {
-      const own = (g.title || g.id || '').toUpperCase().match(/[A-Z0-9]+/g) || [];
       let s = 0;
-      for (const w of own) if (w.length > 2 && said.has(w)) s++;
-      if (said.has((g.id || '').toUpperCase())) s += 2;
+      for (const w of nameWords(g.title || g.id || '')) if (said.has(w)) s++;
+      if (said.has(String(g.id || '').toUpperCase())) s += 2;
       if (s > score) { score = s; best = g; }
     }
     return score >= 1 ? best : null;
@@ -672,7 +672,11 @@ export function mountChat(anchor, opts = {}) {
             note: text,
             // what he was talking about when you wrote it. A note that says
             // "this is broken" is worth nothing without it.
-            topic: lastTopic || null,
+            // from the CABINET when there is one. `lastTopic` drifts: a
+            // TELL button stays in the transcript, so clicking one from
+            // further up is legitimate and must not be labelled with
+            // whatever he happens to be talking about now.
+            topic: about ? 'about:' + about.id : (lastTopic || null),
             ts: Date.now(),
           })
           : 'off';

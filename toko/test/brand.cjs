@@ -527,6 +527,21 @@ function serve() {
   ok('a cabinet can be named straight at the parser',
     /SURVIVAL TIME IS THE ONLY SCORE/.test(await logText()));
 
+  // The failure this guards: cabinets were matched on ANY title word over two
+  // characters, so "SAY THE WHOLE THING" scored a hit on "The Game of Life"
+  // through the word THE, and he answered about the wrong thing entirely with
+  // total confidence — the one failure this parser is not allowed to have.
+  await page.evaluate(() => {
+    globalThis.__hub.games = [
+      { id: 'gameoflife', title: 'The Game of Life', path: 'gameoflife/' },
+      { id: 'hyperdagger', title: 'Hyper Dagger', path: 'hyperdagger/' },
+    ];
+  });
+  await page.evaluate(() => globalThis.__tokoChat.type('say the whole thing'));
+  await settle();
+  ok('a stop word does not match a cabinet',
+    /THE VERB FIRST[\s\S]*GO MAKE YOUR OWN/.test(await logText()));
+
   // The routing step, and the reason the counter can be the front door for
   // all of it: a note taken in front of a cabinet files under THAT GAME —
   // the same `game` field every other feedback surface here uses — and
