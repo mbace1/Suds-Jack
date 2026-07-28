@@ -106,6 +106,32 @@ browser for a reason you never saw. It fails on a missing language, a missing
 field, malformed `{{…|…}}`, a bulletin with no markup at all, and the silent
 one: a `visual` or `broll` this build cannot draw.
 
+### Where a new bulletin lands, and how an old one leaves
+
+Give a bulletin **`"filed": "YYYY-MM-DD"`** and it sorts to the **top** of the
+feed. Dates sort newest first; inside one day's batch the three bands keep
+their order, so a drop lands on top and is still grouped rather than scattered
+across the dial. A bulletin with **no `filed`** is the standing backlog and
+sits below everything dated, in the order the file lists it — which is why the
+seventeen already on the wire are untouched and in exactly the arrangement they
+had.
+
+Two ways to take one off, and neither deletes it:
+
+| | |
+|---|---|
+| `"retired": true` on a story | that one, by name, out of the rotation |
+| `"keep": n` at the top level | keep the newest *n*, let the tail fall off the bottom |
+
+The copy stays in the wire either way, so un-retiring is a one-word edit rather
+than a rewrite. Both are **reported, never silent** — the validator warns with
+a count and the app logs the ids, because a feed that quietly got shorter reads
+as bulletins that were never written. Retiring *everything* is an error: an
+empty broadcast is the failure the whole format exists to prevent.
+
+`node radiofree/tools/validate-wire.mjs` prints the rotation top-first with the
+filing dates, so you can see a bulletin land before you publish it.
+
 If the wire 404s, times out or fails validation, the feed shows a baked-in
 **station identification** post in all three languages that still decodes —
 never an empty column. `__rfh.debug.wire()` reports `source` and the errors.

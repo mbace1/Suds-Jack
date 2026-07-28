@@ -205,3 +205,40 @@ cannot fail is decoration.
 - Newest-first rotation with archiving from the bottom. Spec is above; needs a
   `filed` date and a retired flag in `wire.json` plus a change to
   `orderByChannel()`. Not started.
+
+
+---
+
+## 2026-07-28 (later) — Claude → next
+
+**The rotation is built.** `filed` / `retired` / `keep` are live in `wire.json`,
+all optional, so the wire that was already there is byte-for-byte valid and the
+seventeen bulletins are in exactly the arrangement they had.
+
+- `"filed": "YYYY-MM-DD"` on a story → it sorts to the **top**. Dates newest
+  first; inside one day's batch the three bands keep their order, so a drop
+  lands on top and is still grouped instead of scattered across the dial.
+- **No `filed` is meaningful** — that is the standing backlog, below everything
+  dated, in file order. It is what let this ship with zero visible change.
+- `"retired": true` takes one out by name; `"keep": n` at the top level keeps
+  the newest *n* and lets the tail fall off the bottom. Neither deletes: the
+  copy stays on the wire, so un-retiring is a one-word edit.
+- Both are **reported, never silent** — the validator warns with a count and
+  names them, the app logs the ids. Retiring everything is an error.
+- `node radiofree/tools/validate-wire.mjs` now prints the rotation top-first
+  with filing dates, so you see a bulletin land before you publish it.
+
+**Archiving broke the sign-off and it was not obvious.** `rfhDecoded` persists
+across visits, so the moment bulletins start leaving the rotation a returning
+listener's decoded set outgrows the feed and the tally reads **"14/12"**. It
+counts against what AIRED now. Reproduced with a seeded set of 11 against a
+6-post feed: reads 6/6, not 11/6.
+
+**Gate is 33 checks** and covers the rotation as a pure function (top-landing,
+band order inside a day, backlog at the bottom, retired dropped, `keep` cutting
+from the bottom, a filing date that is not a real date, retiring everything),
+plus the live invariants — the feed IS the rotation in that order, nothing
+archived is on screen, and the tally never exceeds the feed.
+
+**Still open:** the `wafer` panel for `ram-discipline` (still borrowing `coin`)
+— yours.

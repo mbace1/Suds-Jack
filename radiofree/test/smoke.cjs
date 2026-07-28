@@ -119,9 +119,60 @@ function staticChecks() {
      `${wire.stories && wire.stories.length} stories`);
 }
 
+// The rotation is a pure function over the wire, so it is checked here rather
+// than by publishing six fixture wires and reloading a browser at each one.
+// The three behaviours below are the whole contract an external author leans
+// on when they file a bulletin or archive one.
+async function rotationChecks() {
+  console.log('\nrotation');
+  const { rotate, validateWire } = await import(
+    'file://' + path.join(RF, 'js', 'wire.js'));
+
+  const S = (id, sector, filed, retired) => ({
+    id, sector, visual: 'chart', broll: 'katu',
+    ...(filed ? { filed } : {}), ...(retired !== undefined ? { retired } : {}),
+  });
+  const sectors = [{ id: 'GAMING' }, { id: 'INDUSTRY' }, { id: 'DEFENCE' }];
+  const wire = { sectors, stories: [
+    S('back-a', 'GAMING'), S('back-b', 'DEFENCE'),
+    S('mon-def', 'DEFENCE', '2026-07-27'), S('mon-game', 'GAMING', '2026-07-27'),
+    S('tue-ind', 'INDUSTRY', '2026-07-28'),
+    S('gone', 'GAMING', '2026-07-28', true),
+  ] };
+
+  const r = rotate(wire);
+  ok('a bulletin filed today lands at the TOP',
+     r.shown[0].id === 'tue-ind', r.shown.map(x => x.id).join(' → '));
+  ok('inside one day the bands keep their order',
+     r.shown[1].id === 'mon-game' && r.shown[2].id === 'mon-def',
+     r.shown.map(x => x.id).join(' → '));
+  ok('undated bulletins are the backlog and sit at the bottom, in file order',
+     r.shown.slice(-2).map(x => x.id).join(',') === 'back-a,back-b',
+     r.shown.map(x => x.id).join(' → '));
+  ok('a retired bulletin leaves the rotation',
+     !r.shown.some(x => x.id === 'gone') && r.archived.includes('gone'));
+
+  const k = rotate({ ...wire, keep: 3 });
+  ok('keep cuts from the BOTTOM — the oldest go first',
+     k.shown.length === 3 && k.archived.includes('back-b') && k.archived.includes('back-a'),
+     k.shown.map(x => x.id).join(' → ') + ' | archived ' + k.archived.join(','));
+
+  const mini = (over) => validateWire({
+    version: 1,
+    sectors: [{ id: 'GAMING', freq: '1', call: 'K' }],
+    stories: [{ id: 'x', sector: 'GAMING', visual: 'chart', broll: 'katu', ...over }],
+    copy: { en: {}, fi: {}, ja: {} },
+  });
+  ok('a filing date that is not a real date is rejected',
+     mini({ filed: '2026-02-31' }).errors.some(e => /filed must be/.test(e)));
+  ok('retiring every bulletin is an error, not an empty feed',
+     mini({ retired: true }).errors.some(e => /empty broadcast/.test(e)));
+}
+
 async function main() {
   console.log('Radio Free Helsinki — gate');
   staticChecks();
+  await rotationChecks();
 
   const drv = await launch();
   if (!drv) {
@@ -162,6 +213,15 @@ async function main() {
      wire.source === 'network', JSON.stringify(wire));
   ok('the wire validated clean', !wire.errors || wire.errors.length === 0,
      (wire.errors || []).join('; '));
+
+  const rot = await go(() => __rfh.debug.rotation());
+  const onScreen = await go(() =>
+    [...document.querySelectorAll('.post:not(.sign-off)')].map(a => a.dataset.id));
+  ok('the feed is exactly what the rotation says aired, in that order',
+     rot.onAir.map(x => x.id).join(',') === onScreen.join(','),
+     `rotation ${rot.onAir.length} vs feed ${onScreen.length}`);
+  ok('nothing archived is on screen',
+     !rot.archived.some(id => onScreen.includes(id)), rot.archived.join(','));
 
   console.log('\nthe cut package');
   ok('a post opens on its own footage',
@@ -235,6 +295,22 @@ async function main() {
      !!(await go(() => __rfh.debug.shot())));
   await go(() => __rfh.debug.setLang('en'));
   await wait(600);
+
+  // The decoded set persists across visits, so once bulletins start being
+  // archived a returning listener's set outgrows the feed — the sign-off has to
+  // count against what AIRED or it reads "14/12".
+  console.log('\nsign-off');
+  await go((n) => __rfh.debug.go(n), 99);
+  await wait(1200);
+  const off = await go(() => {
+    const head = document.querySelector('.post.sign-off .tally-head');
+    return { state: __rfh.state, head: head ? head.textContent : null };
+  });
+  ok('the sign-off closes the feed', !!(off.state && off.state.signoff),
+     JSON.stringify(off.state));
+  const m = (off.head || '').match(/(\d+)\s*\/\s*(\d+)/);
+  ok('the tally counts against what aired', m && Number(m[1]) <= Number(m[2]),
+     off.head);
 
   console.log('\nconsole');
   ok('zero console errors', errs.length === 0, errs.join(' | '));
