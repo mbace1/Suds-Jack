@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#04070a">
-<link rel="manifest" href="manifest.webmanifest?v=15">
+<link rel="manifest" href="manifest.webmanifest?v=16">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="description" content="Radio Free Helsinki — a fictional pirate news broadcast. Toko reads the day's wire from a codec screen; DECODE shows you what the wording was doing.">
@@ -103,6 +103,7 @@
   @media (prefers-reduced-motion: reduce) { #feed { scroll-behavior: auto; } }
 
   .post {
+    position: relative;                 /* the lower third is absolute inside it */
     height: 100vh; height: 100dvh;
     scroll-snap-align: start; scroll-snap-stop: always;
     display: flex; flex-direction: column;
@@ -257,6 +258,91 @@
     .post-media { height: 44vh; }
     .head { font-size: 16px; }
   }
+  /* ── the footage, as pictures (Grok's frames, used as is) ──────── */
+  /* The picture IS the post now: full bleed, with the copy as a lower
+     third over it. Text sits on a scrim rather than in a column below,
+     which is what makes it read as a news bulletin rather than a card. */
+  .post-media { height: auto; flex: 1 1 auto; min-height: 0; }
+  .photo-wrap {
+    position: absolute; inset: 0; overflow: hidden; background: #05100c;
+  }
+  .photo {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    /* The frames are 2:3 and the post is taller, so cover crops the sides.
+       object-fit does that correctly; sizing with min-width/height instead
+       leaves the image at its natural 784px and shows a 1:1 crop of the
+       middle, which is most of a cathedral and none of the square. */
+    object-fit: cover; object-position: 50% 42%;
+    image-rendering: pixelated;
+    animation: kenburns 26s ease-in-out infinite alternate;
+  }
+  @keyframes kenburns {
+    /* never sits at 1.00: the frames carry their own camera HUD along the top
+       edge, and at no zoom the full height shows, so that strip lands under
+       the masthead. cover crops width here, not height, so object-position
+       cannot hide it — a permanent slight push can. */
+    from { transform: scale(1.07); }
+    to   { transform: scale(1.16); }
+  }
+  /* phosphor grade + CRT lines, so a photograph still arrives through the
+     receiver rather than sitting on the page like a stock image */
+  .photo-grade {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      repeating-linear-gradient(to bottom,
+        rgba(0,0,0,.34) 0 1px, rgba(0,0,0,0) 1px 3px),
+      radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 45%, rgba(2,8,6,.72) 100%);
+    mix-blend-mode: multiply;
+  }
+  .photo-sweep {
+    position: absolute; left: 0; right: 0; height: 22%; pointer-events: none;
+    background: linear-gradient(to bottom, rgba(125,255,178,0), rgba(125,255,178,.05), rgba(125,255,178,0));
+    animation: sweep 7s linear infinite;
+  }
+  @keyframes sweep { from { top: -25%; } to { top: 105%; } }
+  /* DECODE has to mutate every shot type, photographs included */
+  .photo-wrap.decoded .photo {
+    filter: sepia(.55) saturate(1.5) hue-rotate(-18deg) brightness(.92);
+  }
+  .photo-wrap.decoded .photo-sweep {
+    background: linear-gradient(to bottom, rgba(255,180,58,0), rgba(255,180,58,.12), rgba(255,180,58,0));
+    animation-duration: 2.4s;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .photo, .photo-sweep { animation: none; }
+  }
+
+  /* ── the lower third ───────────────────────────────────────────── */
+  .post-caption {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: 0 14px calc(14px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top,
+      rgba(3,10,8,.94) 0%, rgba(3,10,8,.86) 45%, rgba(3,10,8,0) 100%);
+    padding-top: 46px;
+    max-height: 62%;
+  }
+  .post-caption .head {
+    font-size: 19px; line-height: 1.2; margin-bottom: 6px;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+  /* max two lines of smaller text — until DECODE, which needs the room */
+  .post:not(.is-decoded) .bulletin {
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+    overflow: hidden; font-size: 13px;
+  }
+  .post:not(.is-decoded) .bulletin-line + .bulletin-line { margin-top: 0; }
+  .post:not(.is-decoded) .fiction { display: none; }
+  .post.is-decoded .post-caption { max-height: 78%; overflow-y: auto; }
+
+  /* the rail has to sit above the lower third, and clear of it */
+  .rail { z-index: 3; bottom: auto; top: 58%; }
+  .post-caption { z-index: 2; }
+  /* the signature badge lives bottom-left, so keep the copy out of its corner */
+  .post-caption .bulletin, .post-caption .head { padding-left: 46px; }
+  .post-caption .tag { padding-left: 46px; }
+  .swipe-hint { display: none; }
 </style>
 </head>
 <body>
@@ -289,12 +375,12 @@
   <main id="feed" tabindex="-1"></main>
 </div>
 
-<script type="module" src="js/main.js?v=15"></script>
+<script type="module" src="js/main.js?v=16"></script>
 <script type="module" src="../hub/shell.js?v=13"></script>
 <script>
   if ('serviceWorker' in navigator &&
       (location.protocol === 'https:' || new URLSearchParams(location.search).has('sw'))) {
-    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=15').catch(() => {}));
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=16').catch(() => {}));
   }
 </script>
 
