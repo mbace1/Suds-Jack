@@ -10,7 +10,7 @@ import { GAMES, SKETCHES } from './games.js?v=5';
 import { drawMarquee } from './art.js?v=7';
 import * as feedback from './feedback.js?v=7';
 import * as topics from './topics.js?v=2';
-import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=3';
+import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=4';
 import { watchPad, padPresent } from './pad.js?v=5';
 
 const el = (tag, cls = '', text = '') => {
@@ -23,6 +23,7 @@ const el = (tag, cls = '', text = '') => {
 // ── cabinets ───────────────────────────────────────────────────────
 function cabinet(game) {
   const card = el('article', 'cab');
+  card.id = `cab-${game.id}`;
   card.style.setProperty('--cab', game.accent);   // the cabinet's own colour
 
   // a cabinet with nothing behind it yet is a frame, not a link
@@ -42,7 +43,16 @@ function cabinet(game) {
 
   const body = el('div', 'cab-body');
   const head = el('div', 'cab-head');
-  head.append(el('span', 'caret', '>'), el('h3', '', game.title));
+  // The title is an anchor to this cabinet. That is the whole deep-link
+  // affordance: right-click, copy link, paste into a message, and whoever opens
+  // it lands on this cabinet with the floor already scrolled to it. A separate
+  // "share" button would be a third control on a card that already has two.
+  const h3 = el('h3');
+  const anchor = el('a', 'cab-link', game.title);
+  anchor.href = `#${game.id}`;
+  anchor.onclick = e => { e.preventDefault(); goTo(game.id); };
+  h3.appendChild(anchor);
+  head.append(el('span', 'caret', '>'), h3);
   // the version, if the project has one. Filled in after versions.json lands,
   // so a missing or stale file costs a number rather than the whole cabinet.
   const ver = el('span', 'ver');
@@ -67,6 +77,9 @@ function cabinet(game) {
   if (playable) {
     go = el('a', 'btn play', `[ ${t('play')} ]`);
     go.href = game.path;
+    // pressing Play is the only honest signal the hub has that you tried it —
+    // it cannot know whether you liked it, and does not ask
+    go.addEventListener('click', () => markPlayed(game.id));
   } else {
     // a dead button that says so beats a live one that 404s
     go = el('button', 'btn dead', `[ ${t('notup')} ]`);
@@ -403,6 +416,84 @@ async function showVersions() {
   markFresh(versions);
 }
 
+// ── what you have already tried ────────────────────────────────────
+// Thirteen cabinets and no memory means every visit starts from nothing: you
+// scan the same covers deciding which ones you have already opened. Pressing
+// Play is the only honest signal the hub has — it cannot know whether you
+// stayed, or liked it, and it does not ask. So it records exactly that much and
+// says exactly that much: TRIED, with the date, and a count in the heading.
+//
+// Nothing is reordered by it. Sorting the floor by what you have played would
+// move the covers around under somebody who had just learned where they were,
+// which costs more than it gives.
+const PLAYED_KEY = 'sudsJackHubPlayed';
+
+function readPlayed() {
+  try { return JSON.parse(localStorage.getItem(PLAYED_KEY)) || {}; } catch { return {}; }
+}
+
+function markPlayed(id) {
+  const p = readPlayed();
+  p[id] = Date.now();
+  try { localStorage.setItem(PLAYED_KEY, JSON.stringify(p)); } catch { /* private mode */ }
+  showPlayed();
+}
+
+function showPlayed() {
+  const played = readPlayed();
+  let n = 0;
+  for (const card of document.querySelectorAll('.cab')) {
+    const id = card.id.replace(/^cab-/, '');
+    card.querySelector('.tried')?.remove();
+    if (!played[id]) continue;
+    n++;
+    card.classList.add('is-tried');
+    const tag = el('span', 'tried', t('played'));
+    tag.title = t('played.when', { x: new Date(played[id]).toLocaleDateString(getLang()) });
+    card.querySelector('.cab-head')?.appendChild(tag);
+  }
+  const head = document.getElementById('floor-head');
+  if (!head) return;
+  const total = document.querySelectorAll('.cab').length;
+  // what CHANGED owns this line when there is any — news beats a reminder
+  if (n && !head.dataset.fresh) head.textContent = `${t('floor')} · ${t('played.count', { n, m: total })}`;
+}
+
+// ── one cabinet, by name ───────────────────────────────────────────
+// /#hyperdagger lands on that cabinet; /#hyperdagger/feedback opens its note
+// panel. That second one is the point: a link you can paste to a playtester
+// which puts them in front of the box, and getting somebody in front of the box
+// is upstream of getting a note at all. setHash uses replaceState so it never
+// fires its own hashchange back at itself — the rule gameoflife's deep links
+// already follow.
+function setHash(h) {
+  history.replaceState(null, '', h ? `#${h}` : location.pathname + location.search);
+}
+
+function goTo(id, opts = {}) {
+  const card = document.getElementById(`cab-${id}`);
+  if (!card) return false;
+  setHash(id);
+  card.scrollIntoView({ block: 'center', behavior: opts.jump ? 'auto' : 'smooth' });
+  const at = navigables().indexOf(card);
+  if (at >= 0) select(at, false);
+  return true;
+}
+
+function openFromHash({ jump = false } = {}) {
+  const raw = decodeURIComponent(location.hash.slice(1));
+  if (!raw) return;
+  const [id, what] = raw.split('/');
+  const game = GAMES.find(g => g.id === id);
+  // a link to a cabinet that no longer exists should not leave a dead address
+  // in the bar for the next person who copies it
+  if (!game) { setHash(''); return; }
+  goTo(id, { jump });
+  if (what === 'feedback') openFeedback(game.title, game.id, game.accent);
+}
+
+addEventListener('hashchange', () => openFromHash());
+
 // ── what has moved since you were last here ────────────────────────
 // A page with twelve cabinets on it and no memory asks you to remember which
 // ones you have already seen, which nobody does. The version numbers are
@@ -444,7 +535,10 @@ function markFresh(versions) {
     slot.closest('.cab')?.classList.add('has-fresh');
   }
   const head = document.getElementById('floor-head');
-  if (n && head) head.textContent = `${t('floor')} · ${t('fresh.count', { n })}`;
+  if (n && head) {
+    head.textContent = `${t('floor')} · ${t('fresh.count', { n })}`;
+    head.dataset.fresh = '1';
+  }
 }
 
 // this visit becomes the last one on the way out
@@ -722,6 +816,7 @@ function render() {
 
   padHint(false);
   notesLink();
+  showPlayed();
   showVersions();
   // a rebuild threw away the elements the selection pointed at
   sel = -1;
@@ -733,6 +828,14 @@ document.documentElement.lang = getLang();
 render();
 
 document.getElementById('hub-feedback').onclick = () => openFeedback(t('hub.self'), 'hub');
+
+// a pasted link lands where it says it does, without the smooth scroll that
+// would read as the page moving on its own
+openFromHash({ jump: true });
+
+// a pasted link lands where it says it does, without the smooth scroll that
+// would look like the page moving on its own
+openFromHash({ jump: true });
 
 // What was on screen when the note was written. Feedback about a layout that
 // nobody can tell you was in force is feedback about nothing, so this rides
@@ -757,6 +860,8 @@ window.__hub = {
     lang: getLang, setLang: useLang, langs: LANGS, render,
     layout: readLayout, setLayout: useLayout, layouts: LAYOUTS,
     notes: openNotes, notesLink,
+    goTo, openFromHash, played: readPlayed, markPlayed,
+    goTo, openFromHash, played: readPlayed, markPlayed,
     seen: readSeen, markSeen: () => {
       try { localStorage.setItem(SEEN_KEY, JSON.stringify(pendingSeen ?? {})); } catch { /* */ }
     },
