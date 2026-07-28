@@ -127,22 +127,25 @@ h1 .amp { color: var(--accent); }
 }
 
 /* ── the cabinets ── */
-/* The row grows with the screen, but never past the point where the marquee
-   stops reading — that is the whole reason the cabinets exist. The ladder is
-   set on the marquee's rendered width rather than on device names: each step
-   up only happens once there is room to keep it around 340px or better.
-   1 on a phone · 2 on a tablet held upright or a small laptop ·
-   3 on a wide iPad or an ordinary desktop · 4 on a large desktop. */
+/* The row grows with the screen. The ladder is set on the marquee's rendered
+   width rather than on device names:
+   2 on a phone · 2 on a tablet held upright or a small laptop ·
+   3 on a wide iPad or an ordinary desktop · 4 on a large desktop.
+   A phone gets two because one cabinet to a screen turns the floor into a
+   scroll — you cannot compare two games you cannot see at once, and comparing
+   is what a floor is FOR. The cost is a ~165px marquee, which the pixel art
+   survives; what it does not survive is the body text at full size, so that
+   tightens below. */
 .rack {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 22px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 12px;
   margin-top: 18px;
   list-style: none;
 }
 
 @media (min-width: 660px) {
-  .rack { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 24px; }
+  .rack { gap: 26px 24px; }
 }
 
 @media (min-width: 1100px) {
@@ -151,6 +154,79 @@ h1 .amp { color: var(--accent); }
 
 @media (min-width: 1480px) {
   .rack { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px 22px; }
+}
+
+/* ── the other two shapes ──
+   The rack above is one opinion about how big a cover should be. These are the
+   other two, so the question can be settled by looking rather than arguing —
+   and every note records which one was in force when it was written. */
+
+/* WIDE — one cabinet per row, the marquee at the full width of the wrap. This
+   is the pixel art at 10× or more; whether that reads as a banner or as a
+   blown-up thumbnail is exactly the thing worth finding out. */
+html[data-layout="wide"] .rack {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 40px;
+}
+html[data-layout="wide"] .cab-body {
+  /* the text stops where a line is still readable, even though the picture
+     above it does not — 90 characters is a wall */
+  max-width: 72ch;
+}
+@media (min-width: 900px) {
+  /* past this width the marquee is tall enough that its own text scrolls off
+     under it, so the two sit side by side instead */
+  html[data-layout="wide"] .cab {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 28px;
+    align-items: start;
+  }
+  html[data-layout="wide"] .cab-body { padding-top: 0; }
+}
+
+/* LIST — no picture at all. One line per game: caret, title, version, tagline,
+   and the two buttons. For anyone who already knows the floor and came here to
+   get somewhere, which is most people after the first visit. */
+html[data-layout="list"] .rack {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+html[data-layout="list"] .marquee { display: none; }
+html[data-layout="list"] .cab {
+  border-bottom: 1px solid var(--line);
+  padding: 0;
+}
+html[data-layout="list"] .cab-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 16px;
+  padding: 6px 2px;
+}
+html[data-layout="list"] .cab-head { grid-column: 1; }
+html[data-layout="list"] .tagline {
+  grid-column: 1;
+  margin-left: 20px;
+  /* one line, cut cleanly — the whole point of this shape is the scan */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html[data-layout="list"] .actions {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  margin-left: 0;
+}
+html[data-layout="list"] .lineage,
+html[data-layout="list"] .tags,
+html[data-layout="list"] .controls,
+html[data-layout="list"] .note { display: none; }
+html[data-layout="list"] .cab.dark { opacity: .55; }
+
+/* the shape changes under you; let it move rather than jump */
+@media (prefers-reduced-motion: no-preference) {
+  .cab { transition: opacity .18s ease-out; }
 }
 
 .cab {
@@ -197,6 +273,19 @@ h1 .amp { color: var(--accent); }
   letter-spacing: .16em;
   font-weight: 400;
   text-transform: uppercase;
+}
+
+/* what moved since you were last here. Loud enough to find while scanning,
+   quiet enough that twelve of them would not be a wall of shouting. */
+.fresh {
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--cab);
+  padding: 2px 5px;
+  margin-left: 6px;
+  align-self: center;
 }
 
 /* the version sits with the title, quiet — it is provenance, not a headline */
@@ -365,6 +454,42 @@ footer {
 .link-btn::before, footer a::before { content: '>\00a0'; color: var(--accent); }
 .link-btn:hover, footer a:hover { color: var(--accent); }
 
+/* Two to a row on a phone puts each column at about 155px, and at 155px a
+   cabinet has to be a poster rather than a datasheet. The first pass kept
+   every line and the tagline alone wrapped to six — two covers visible and the
+   Play buttons a screen and a half down, which is worse than the one-up it
+   replaced.
+   So the phone cabinet is cut to what actually chooses a game: the cover, the
+   name, what it is in a sentence, where it stands, and the two buttons. The
+   lineage, the tag list and the keyboard controls are all still in the DOM for
+   anything reading it aloud — they are just not what a thumb is scanning for,
+   and the keyboard controls in particular are the one line on the card that a
+   phone player cannot use. The 44px floor is untouched: this is exactly where
+   it matters. */
+@media (max-width: 659px) {
+  .cab-body { padding: 10px 0 0; gap: 6px; }
+  .cab h3 { font-size: 13px; letter-spacing: .1em; }
+  .lineage, .tags, .controls { display: none; }
+
+  /* three lines of tagline, two of state — enough to know what it is, capped
+     so the two columns stay in step with each other */
+  .tagline, .note {
+    margin-left: 10px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .tagline { font-size: 12px; line-height: 1.45; -webkit-line-clamp: 3; }
+  .note { font-size: 11px; line-height: 1.4; -webkit-line-clamp: 2; }
+
+  /* and the buttons sit on the floor of the cell, so the two columns line up
+     however tall their text came out */
+  .actions { margin-left: 2px; margin-top: auto; padding-top: 8px; gap: 0; }
+  .btn { font-size: 12.5px; letter-spacing: .08em; padding: 12px 8px; }
+  .marquee { padding: 5px; border-radius: 9px; }
+}
+
+
 /* ── feedback panel ── */
 .scrim {
   position: fixed;
@@ -456,6 +581,38 @@ footer {
 .fb-said { color: var(--ink); font-size: 14px; padding: 8px 0; }
 
 .sheet .actions { margin-left: 0; }
+
+/* ── the notes you have already left ── */
+.note-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 52vh;
+  overflow-y: auto;
+}
+
+.note-row {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.note-row:last-child { border-bottom: 0; }
+
+.note-head { display: flex; align-items: baseline; gap: 10px; }
+.note-what { font-size: 12.5px; letter-spacing: .08em; text-transform: uppercase; }
+
+/* delivered is the quiet state and held is the loud one, because held is the
+   only one you might want to do something about */
+.note-state {
+  margin-left: auto;
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.note-state.held { color: var(--bg); background: var(--accent); padding: 2px 5px; }
+
+.note-meta { font-size: 11px; color: var(--ink-dim); margin-top: 3px; }
+.note-text { font-size: 13px; color: #c4cbd0; margin-top: 5px; white-space: pre-wrap; }
 
 /* a view arrives the way a terminal draws one: quickly, and once */
 @keyframes term-in { from { opacity: 0 } to { opacity: 1 } }

@@ -256,6 +256,52 @@ function check(name, cond) {
   await page.locator('.lang-btn[data-lang="en"]').click();
   check('and back to English', (await page.locator('#floor-head').textContent()) === before);
 
+  // ── the floor's shape, and whether a note knows which one it saw ──
+  check('the status line offers three shapes',
+    await page.locator('.layout-row .opt-btn').count() === 3);
+  check('and each is a 44px target', (await page.$$eval('.layout-row .opt-btn', bs =>
+    bs.map(b => b.getBoundingClientRect()))).every(r => r.width >= 44 && r.height >= 44));
+
+  const rackCols = await page.evaluate(() => __hub.debug.columns());
+  check(`the rack puts several across at this width (${rackCols})`, rackCols > 1);
+
+  await page.locator('.layout-row .opt-btn[data-layout="wide"]').click();
+  const wide = await page.evaluate(() => ({
+    cols: __hub.debug.columns(),
+    art: !!document.querySelector('.cab .art')?.getBoundingClientRect().width,
+    w: Math.round(document.querySelector('.cab .art').getBoundingClientRect().width),
+  }));
+  check(`wide gives the cover the row to itself (${wide.w}px)`, wide.cols === 1 && wide.w > 380);
+
+  await page.locator('.layout-row .opt-btn[data-layout="list"]').click();
+  const list = await page.evaluate(() => ({
+    cols: __hub.debug.columns(),
+    marquee: document.querySelector('.cab .marquee')?.getBoundingClientRect().height ?? 0,
+    plays: document.querySelectorAll('.cab .btn.play').length,
+    tall: Math.round(document.getElementById('cabinets').getBoundingClientRect().height),
+  }));
+  check(`list drops the covers entirely and keeps every Play (${list.plays})`,
+    list.marquee === 0 && list.plays > 0);
+  check(`and fits the whole floor in a screen or so (${list.tall}px)`, list.tall < 900);
+
+  await page.reload({ waitUntil: 'networkidle' });
+  check('the shape survives a reload',
+    await page.evaluate(() => document.documentElement.dataset.layout) === 'list');
+
+  // and the note carries it. A note about a layout nobody can tell you was in
+  // force is a note about nothing.
+  await page.evaluate(u => __hub.feedback.setEndpoint(u), `${base}/collect`);
+  await page.locator('.cab').first().locator('.btn.ghost').click();
+  await page.locator('.fb-text').fill('the covers are the reason I came');
+  await page.locator('.sheet .btn.play').click();
+  await page.waitForFunction(() => document.querySelector('.fb-said'), null, { timeout: 5000 });
+  const ctx = collected[collected.length - 1];
+  check(`a note records the shape and language it was written in (${ctx?.layout}/${ctx?.lang})`,
+    ctx?.layout === 'list' && ctx?.lang === 'en');
+  await page.locator('.sheet .btn.ghost').click();
+  collected.length = 0;
+  await page.evaluate(() => { __hub.debug.setLayout('rack'); localStorage.removeItem('sudsJackHub'); });
+
   // ── feedback: what the note is ABOUT ──
   // The kinds are ordered per project, and that ordering is the question each
   // project is asking — so it has to survive, not quietly fall back to a fixed
@@ -323,6 +369,56 @@ function check(name, cond) {
   check('an undeliverable note is held, not lost', (await page.evaluate(() => __hub.feedback.outbox())).length === 1);
   check('and the player is told so, not thanked', true);
   await page.locator('.sheet .btn.ghost').click();
+
+  // ── reading back what you have already said ──
+  // Two notes on the device now: one delivered, one stuck. A feedback channel
+  // you cannot read back is a suggestion box nailed shut, so the archive is
+  // visible, and it has to be HONEST about which of the two is which.
+  check('the status line offers the notes once there are any',
+    await page.locator('#notes-link').count() === 1);
+  check('and says how many', /2/.test(await page.locator('#notes-link').textContent()));
+  await page.locator('#notes-link').click();
+  await page.waitForSelector('.note-list');
+  const rows = await page.$$eval('.note-row', ns => ns.map(n => ({
+    what: n.querySelector('.note-what').textContent,
+    state: n.querySelector('.note-state').textContent,
+    held: n.querySelector('.note-state').classList.contains('held'),
+    text: n.querySelector('.note-text')?.textContent ?? '',
+    meta: n.querySelector('.note-meta').textContent,
+  })));
+  check(`both notes are listed, newest first (${rows.length})`,
+    rows.length === 2 && rows[0].text === 'held note');
+  check('the stuck one is marked held and the sent one is not',
+    rows[0].held === true && rows[1].held === false);
+  check(`each says what it was about (${rows[1].what})`, rows.every(r => r.what.trim().length > 2));
+  check(`and which shape of the floor it was written in (${rows[0].meta})`,
+    rows.every(r => /rack|wide|list/.test(r.meta)));
+
+  // the held one can be pushed from here rather than waiting for a next visit
+  await page.evaluate(u => __hub.feedback.setEndpoint(u), `${base}/collect`);
+  await page.locator('.sheet .btn.play').click();
+  await page.waitForFunction(() => !document.querySelector('.note-state.held'), null, { timeout: 5000 });
+  check('sending the held ones from here clears them', collected.length === 2);
+  check('and the panel says so without a reload',
+    await page.locator('.note-state.held').count() === 0);
+
+  // and the whole record can be thrown away — the other half of keeping
+  // something on somebody's machine. Two presses, the second is the confirm.
+  const forget = page.locator('.sheet .btn.ghost').first();
+  await forget.click();
+  check('forgetting asks once', /again|uudestaan|もう一度/.test(await forget.textContent()));
+  await forget.click();
+  check('and then does it', (await page.evaluate(() => __hub.feedback.archive())).length === 0);
+  check('the link goes away with the last note',
+    await page.locator('#notes-link').count() === 0);
+  await page.locator('.sheet .btn.ghost').last().click();
+
+  // put the two back so the rest of the suite still has its fixtures
+  collected.length = 0;
+  await page.evaluate(u => __hub.feedback.setEndpoint(u), `${base}/collect`);
+  await page.evaluate(() => __hub.feedback.send({ game: 'tokodrop', kind: 'balance', rating: 4, text: 'the second wave is a wall', ts: Date.now() }));
+  await page.evaluate(u => __hub.feedback.setEndpoint(u), `${base}/collect-broken`);
+  await page.evaluate(() => __hub.feedback.send({ game: 'hyperdagger', kind: 'bug', rating: 1, text: 'held note', ts: Date.now() + 1 }));
 
   // the outbox drains once something answers again
   await page.evaluate(u => __hub.feedback.setEndpoint(u), `${base}/collect`);
@@ -394,28 +490,38 @@ function check(name, cond) {
     getComputedStyle(document.getElementById('cabinets')).gridTemplateColumns.split(' ').length);
   const marqueeWidth = () => page.evaluate(() =>
     document.querySelector('.cab .art').getBoundingClientRect().width);
+  // 2 / 2 / 3 / 4. A phone gets two rather than one because one cabinet to a
+  // screen turns the floor into a scroll, and comparing two games you cannot
+  // see at once is not comparing. The floor a marquee must clear is therefore
+  // per step, not one number: a phone's 157px is small and legible, and a
+  // desktop shrinking to that would mean the ladder had gone wrong.
   const ladder = [
-    [390, 1, 'a phone'], [800, 2, 'a tablet upright'],
-    [1180, 3, 'a wide iPad'], [1600, 4, 'a large desktop'],
+    [390, 2, 150, 'a phone'], [800, 2, 300, 'a tablet upright'],
+    [1180, 3, 300, 'a wide iPad'], [1600, 4, 300, 'a large desktop'],
   ];
   const wrong = [], thumbs = [];
-  for (const [w, want, what] of ladder) {
+  for (const [w, want, floor, what] of ladder) {
     await page.setViewportSize({ width: w, height: 900 });
     await page.waitForTimeout(80);
     const got = await cols();
     if (got !== want) wrong.push(`${what} ${w}px: ${got} not ${want}`);
     const mw = await marqueeWidth();
-    if (mw < 300) thumbs.push(`${what} ${Math.round(mw)}px`);
+    if (mw < floor) thumbs.push(`${what} ${Math.round(mw)}px < ${floor}`);
   }
-  check(`the row grows 1-2-3-4 with the screen${wrong.length ? ` — ${wrong}` : ''}`, wrong.length === 0);
-  check(`and no step shrinks the marquee to a thumbnail${thumbs.length ? ` — ${thumbs}` : ''}`,
+  check(`the row grows 2-2-3-4 with the screen${wrong.length ? ` — ${wrong}` : ''}`, wrong.length === 0);
+  check(`and no step shrinks the marquee past what it can carry${thumbs.length ? ` — ${thumbs}` : ''}`,
     thumbs.length === 0);
   await page.setViewportSize({ width: 1100, height: 900 });
 
-  // a phone, held upright: the cabinets stack and nothing runs off the side
+  // a phone, held upright: two to a row, and nothing runs off the side. Two
+  // rather than one because one cabinet to a screen turns the floor into a
+  // scroll, and you cannot compare two games you cannot see at once.
   await page.setViewportSize({ width: 390, height: 780 });
   await page.waitForTimeout(120);
-  check('and one cabinet wide on a phone', await cols() === 1);
+  check('and two cabinets to a row on a phone', await cols() === 2);
+  const phoneArt = await page.evaluate(() =>
+    Math.round(document.querySelector('.cab .art').getBoundingClientRect().width));
+  check(`the marquee is still big enough to read (${phoneArt}px)`, phoneArt >= 150);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   check(`nothing overflows a phone (${overflow}px)`, overflow <= 0);
 
@@ -463,6 +569,37 @@ function check(name, cond) {
     shown.every(([id, text]) => text === `v${versions[id].v}`));
   check('a project with a VERSIONS.md reports its release number, not its token',
     versions.gameoflife.from === 'VERSIONS.md');
+
+  // ── what moved since you were last here ──
+  // A first visit has nothing to compare against, and marking all twelve as new
+  // would say nothing while looking like it said something.
+  check('a first visit is not told everything is new',
+    await page.locator('.fresh').count() === 0);
+
+  // A visitor who was here when the numbers were lower. The snapshot is planted
+  // by an init script rather than by evaluate(): navigating away fires
+  // pagehide, which is exactly when the page writes its OWN snapshot, so an
+  // evaluate-then-reload would be clobbered by the code under test.
+  const older = { tokodrop: 1, hyperdagger: 1, gameoflife: 1 };
+  const back = await browser.newContext({ viewport: { width: 1100, height: 900 } });
+  await back.addInitScript(seed => {
+    try { localStorage.setItem('sudsJackHubSeen', seed); } catch { /* private mode */ }
+  }, JSON.stringify(older));
+  const rp = await back.newPage();
+  await rp.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+  await rp.waitForFunction(() => document.querySelectorAll('.ver').length
+    && [...document.querySelectorAll('.ver')].some(v => v.textContent), null, { timeout: 5000 });
+  const marks = await rp.$$eval('.fresh', ns =>
+    ns.map(n => [n.closest('.cab').querySelector('.ver').dataset.game, n.textContent]));
+  const ids = marks.map(m => m[0]);
+  check(`coming back marks what moved (${ids.length}: ${ids.slice(0, 4)})`, ids.length > 0);
+  check('the three it had already seen at a lower number are among them',
+    Object.keys(older).every(id => !versions[id] || ids.includes(id)));
+  check('and a project it had never seen reads as new, not updated',
+    marks.every(([id, label]) => (id in older) ? label !== 'new' : label === 'new'));
+  const head = await rp.locator('#floor-head').textContent();
+  check(`the heading says how many (${head.split('·')[1]?.trim()})`, head.includes(String(ids.length)));
+  await back.close();
 
   // ── a controller ──
   // No real pad in a headless browser, so stand one in front of the Gamepad
