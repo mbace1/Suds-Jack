@@ -40,6 +40,10 @@ export const PAL = {
 };
 
 export const SECTOR_COLOR = {
+  // ONE STATION. The three bands were a conceit for a twenty-post feed and
+  // read as clutter on five — the dial is a readout now, not a control.
+  // The old ids are kept so a wire written before this still validates.
+  RFH: PAL.GREEN,
   GAMING: PAL.GAMING,
   INDUSTRY: PAL.INDUSTRY,
   DEFENCE: PAL.DEFENCE,
