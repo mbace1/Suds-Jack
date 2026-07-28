@@ -70,6 +70,41 @@ note it in the commit and here.
 
 ---
 
+## Adding a bulletin — it is a JSON edit now
+
+The wire lives in **`wire.json`**, fetched at boot. Adding a bulletin is a
+roster entry plus a copy block in each of `copy.en` / `copy.fi` / `copy.ja`,
+then:
+
+```
+node radiofree/tools/validate-wire.mjs      # exit 0 = safe to publish
+```
+
+**No build, no deploy, no cache-token bump.** The app picks it up on the next
+load, because `wire.json` is served network-first while the shell stays
+cache-first (`sw.js`). Making the wire cache-first to save a request would pin
+a listener to whatever bulletins they downloaded first and quietly undo the
+whole arrangement.
+
+`js/wire.js` is the validator — the same function the CLI runs and the app runs
+on the download, so a wire that passes in a terminal cannot be rejected in a
+browser for a reason you never saw. It fails on a missing language, a missing
+field, malformed `{{…|…}}`, a bulletin with no markup at all, and the silent
+one: a `visual` or `broll` this build cannot draw.
+
+If the wire 404s, times out or fails validation, the feed shows a baked-in
+**station identification** post in all three languages that still decodes —
+never an empty column. `__rfh.debug.wire()` reports `source` and the errors.
+
+**Never `import()` `stories.js` twice to read the wire.** It holds it in live
+bindings filled once by `loadWire()`, so a second import gets an EMPTY copy.
+Go through `__rfh.debug.wireData()`.
+
+`radiofree/STORIES.md` is the content bar: The Onion register, one new
+technique per bulletin, every plain reading specific.
+
+---
+
 ## Submitting art
 
 Footage frames are image files now. If you are handing art in, this is what

@@ -1,13 +1,13 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=20';
-import { Post, Reader } from './codec.js?v=20';
-import { Photo } from './photo.js?v=20';
-import { SECTORS, STORIES, storyCopy, parseLine } from './stories.js?v=20';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=20';
-import * as audio from './audio.js?v=20';
-import { PixelScreen } from './screen.js?v=20';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=20';
+import { PAL, SECTOR_COLOR } from './palette.js?v=21';
+import { Post, Reader } from './codec.js?v=21';
+import { Photo } from './photo.js?v=21';
+import { SECTORS, STORIES, COPY, storyCopy, parseLine, loadWire, WIRE_INFO } from './stories.js?v=21';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=21';
+import * as audio from './audio.js?v=21';
+import { PixelScreen } from './screen.js?v=21';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=21';
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
@@ -120,13 +120,17 @@ $('sound').onclick = () => {
   if (soundOn) audio.blip(1);
 };
 
-$('tuneIn').onclick = () => {
+$('tuneIn').onclick = async () => {
   audio.init();
   audio.setMuted(!soundOn);
   audio.ring();
   gate.classList.add('gone');
   app.hidden = false;
   setTimeout(() => { audio.connect(); audio.carrierStart(); }, 780);
+  // The wire is fetched now, so tuning in is genuinely tuning in. loadWire()
+  // always resolves — with the day's bulletins or with the off-air post — so
+  // there is no branch here where the feed never appears.
+  await loadWire();
   boot();
 };
 
@@ -480,6 +484,11 @@ window.__rfh = {
     toggleDecode: () => toggleDecode(active),
     finishRead: () => reader.finish(),
     stories: () => posts.filter(p => !p.signoff).map(p => p.story.id),
+    // Anything inspecting the wire comes through here. stories.js holds it in
+    // live bindings filled once by loadWire(), so a second import() of that
+    // module gets a fresh and EMPTY copy — that crashed the gate once.
+    wire: () => ({ ...WIRE_INFO }),
+    wireData: () => ({ sectors: SECTORS, stories: STORIES, copy: COPY }),
     shot: () => {
       const p = posts[active];
       if (!p || p.signoff || !p.post.shot) return null;
