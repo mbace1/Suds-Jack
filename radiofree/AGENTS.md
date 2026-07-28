@@ -46,18 +46,82 @@ Feel: half Metal Gear codec, half TikTok feed, phosphor green, offline-first, **
 
 ---
 
-## Hard rules (do not violate)
+## House rules (guidelines, not blockers)
+
+Owner's call, 2026-07-28: these are **high-level guidelines**, not gates. They
+encode things that have gone wrong before, so departing from one should be a
+decision someone made on purpose and said out loud — not a thing you discover
+in a diff. If a rule is in the way of what the human asked for, the human wins;
+note it in the commit and here.
 
 1. **Trilingual always** — fi / en / ja for every bulletin field and UI string. **No `{...EN}` spreads** that leave FI/JA as English with a different button label. Non-empty English under FI/JA is a silent rule-#1 break.
 2. **Toko is always masked** — surgical/tech mask. Male Japanese gel. Never remove the mask.
 3. **Face shots vs B-roll** — faces only on face shots. **B-roll: no faces, portraits, or character heads.**
-4. **No image assets** — every pixel is drawn in code (`PixelScreen`).
+4. ~~**No image assets** — every pixel is drawn in code.~~ **DISMISSED
+   2026-07-28 by the owner.** Footage is now photographic — see *Submitting
+   art* below. The rest of the app still draws: the sign-off test card, the
+   decode graphics, Toko.
 5. **DECODE works on every shot type** — cuts **continue** under DECODE.
 6. **Amber means spin only** — never decorative UI before DECODE.
 7. **Offline PWA** — bump cache version when shipping JS (see Cache).
 8. **Fiction footer stays honest** — defence-band actors unnamed; prefer invented Helsinki entities over real geographies/industries when possible (flag edge cases for the human).
 9. **Do not wipe `stories.js` language blocks** — EN / FI / JA must stay complete and **distinct**.
 10. **Helsinki accuracy** — `mannerheim` = wide boulevard; `katu` = narrow street; station = Central Station clock tower; cathedral = Tuomiokirkko / Senate Square.
+
+---
+
+## Submitting art
+
+Footage frames are image files now. If you are handing art in, this is what
+makes it drop straight in.
+
+**Format and size.** 2:3 portrait. The shipped set is **784×1168**; that is the
+floor, bigger is fine. PNG preferred (lossless, and these are pixel art); JPG
+accepted — the current three are JPG at 160–250 KB each. Keep each file under
+about 250 KB: they go in the offline precache, which is otherwise ~100 KB of
+JS, and the app gets read on a metro.
+
+**The safe area — this is the one that bites.** A 2:3 frame in a phone-shaped
+post is cropped by `object-fit: cover`, and the slow Ken Burns push scales to
+1.09 on top of that. So:
+
+- Keep the subject inside the **central ~70% of the width**. Roughly 11% is
+  cropped off each side at rest, and another ~4% at the far end of the push.
+  In `cathedral` the flagpoles sit right on that line.
+- Keep anything essential **out of the bottom third** — the lower third
+  (dateline, headline, two lines of copy) sits over it on a dark scrim.
+- `object-position` is `50% 42%`, so the frame favours the upper half.
+
+**Look.** Night. Dark, green-cast, high contrast, dense: individually lit
+windows, real depth, converging lines. Warm practical light — street lamps, lit
+tram windows, headlights — is welcome and in the reference set, but keep it
+**dim and desaturated**. Nothing should approach a saturated amber: rule #6
+still holds, amber means "the spin is showing" and scenery does not get to
+spend that. **No faces, characters or portraits in footage** (rule #3).
+
+**Dropping it in.** Name the file after its footage key and put it in
+`radiofree/img/<key>.jpg`, then add it to the `SHELL` list in `sw.js` and bump
+the cache token. `js/photo.js` maps every footage key to a frame; add yours to
+`FOR_KEY` there.
+
+The ten keys, and what each wants:
+
+| key | shot | frame |
+|---|---|---|
+| `cathedral` | Tuomiokirkko / Senate Square | ✅ shipped |
+| `katu` | narrow street, tram head-on | ✅ shipped |
+| `mannerheim` | wide boulevard, tram approaching | ✅ shipped |
+| `esplanadi` | the park avenue | borrows `katu` |
+| `kamppi` | plaza at night | borrows `katu` |
+| `station` | Central Station clock tower | borrows `katu` |
+| `harbour` | south harbour, cranes and ships | borrows `mannerheim` |
+| `gulf` | the waterfront | borrows `mannerheim` |
+| `suomenlinna` | the fortress islands, ferry | borrows `cathedral` |
+| `katajanokka` | waterfront, Uspenski silhouette | borrows `cathedral` |
+
+Seven still borrow. A borrowed frame never contradicts its dateline — the
+mapping goes to the nearest shot, not to a default — but the seven are the
+open work.
 
 ---
 
