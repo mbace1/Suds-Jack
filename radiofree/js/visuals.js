@@ -4,8 +4,8 @@
 //   B-ROLL   — low-poly Helsinki news footage
 // Face shots are handled in codec.js (large masked Toko), not here.
 
-import { PAL } from './palette.js?v=17';
-import { mix, shade, bayer } from './screen.js?v=17';
+import { PAL } from './palette.js?v=18';
+import { mix, shade, bayer } from './screen.js?v=18';
 
 export const PANEL_W = 128, PANEL_H = 152;
 const W = PANEL_W, H = PANEL_H;
