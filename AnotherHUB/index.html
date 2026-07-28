@@ -63,7 +63,7 @@
        because hub.js assigns window.__hub wholesale — hung on before that,
        the counter's own handle would be thrown away. -->
   <script type="module">
-    import { mountChat } from './toko/js/chat.js?v=12';
+    import { mountChat } from './toko/js/chat.js?v=13';
     window.__hub.chat = mountChat(document.querySelector('header'));
   </script>
 

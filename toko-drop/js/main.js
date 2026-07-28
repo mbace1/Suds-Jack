@@ -3606,10 +3606,19 @@ const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mdarbpve';
 // EMPTY = the death screen shows no leaderboard UI at all.
 const LEADERBOARD_ENDPOINT = '';  // e.g. 'https://script.google.com/macros/s/YYYY/exec'
 let _lbPosted = false;  // one POST per death, reset each run
+// ONE ID PER GAME, ACROSS THE WHOLE FLOOR. This is the arcade catalogue's id
+// for this cabinet (hub/games.js), and it is what the hub's own Feedback
+// button and Toko's counter both file under. This file used to send
+// 'toko-drop' with a hyphen, which put the death screen's notes in a
+// different bucket from everything else said about the same game — invisible
+// until you sort the sheet by game and find two of them. A sheet with rows
+// from before this change has both spellings; they are the same cabinet.
+const GAME_ID = 'tokodrop';
+
 function postFeedback(record) {
   const payload = JSON.stringify({
     ...record,
-    game: 'toko-drop',
+    game: GAME_ID,
     build: new URL(import.meta.url).searchParams.get('v') ?? '?',
     smash: smashMode,
     announcer: announcerOn,
