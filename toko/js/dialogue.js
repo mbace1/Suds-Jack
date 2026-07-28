@@ -171,6 +171,127 @@ export const TOPICS = [
     ],
   },
 
+  // ── the mantra ─────────────────────────────────────────────────────────
+  // The shop rules. Every one of these is a thing that was decided while
+  // building something on this floor, and every one of them is short enough
+  // to shout across a room, which is the test.
+  {
+    id: 'mantra', q: 'WHAT MAKES A GOOD GAME?',
+    a: [
+      'THE VERB.',
+      'RUN. FIRE. FALL. POUR. WAIT.',
+      'EVERYTHING ELSE IS DECORATION ON A VERB,',
+      'AND IF THE VERB IS DULL THE DECORATION',
+      'IS A COVER-UP.',
+    ],
+    opens: ['thirty', 'feel', 'hard', 'creed'],
+  },
+  {
+    id: 'thirty', q: 'AND THE FIRST THIRTY SECONDS?', once: true, locked: true,
+    a: [
+      'THEY TEACH YOU BY KILLING YOU.',
+      'NOT A TUTORIAL. NOT A WALL OF TEXT WITH',
+      'A CONTINUE BUTTON.',
+      'DIE ONCE, UNDERSTAND, GO AGAIN.',
+      'IF IT NEEDS EXPLAINING IT NEEDS REBUILDING.',
+    ],
+  },
+  {
+    id: 'feel', q: 'WHAT IS "FEEL"?', once: true, locked: true,
+    a: [
+      'THE GAP BETWEEN YOUR THUMB AND THE SCREEN.',
+      'A PRESS ANSWERS IN ONE FRAME OR IT IS',
+      'BROKEN, AND IT DOES NOT MATTER HOW GOOD',
+      'THE REST OF IT LOOKS.',
+      'SHAKE THE CAMERA. MOVE THE NUMBER.',
+      'MAKE THE HIT COST SOMETHING TO WATCH.',
+    ],
+    opens: ['juice'],
+  },
+  {
+    id: 'juice', q: 'IS THAT NOT JUST JUICE?', once: true, locked: true,
+    a: [
+      'JUICE ON A BAD VERB IS A LIAR.',
+      'IT BUYS YOU THIRTY SECONDS AND THEN THE',
+      'PLAYER NOTICES THERE IS NOTHING UNDER IT.',
+      'GET THE VERB RIGHT WHILE IT IS STILL UGLY.',
+      'THEN MAKE IT LOUD.',
+    ],
+  },
+  {
+    id: 'hard', q: 'WHY IS EVERYTHING SO HARD?', once: true, locked: true,
+    a: [
+      'IT IS NOT HARD. IT IS HONEST.',
+      'THE ENEMY IS SLOW AND VISIBLE AND IT',
+      'STILL GETS YOU, SO THAT IS ON YOU,',
+      'AND SO IS THE NEXT ONE.',
+      'A GAME THAT CANNOT KILL YOU CANNOT',
+      'CONGRATULATE YOU EITHER.',
+    ],
+    opens: ['loop'],
+  },
+  {
+    id: 'loop', q: 'WHAT MAKES ME PRESS AGAIN?', once: true, locked: true,
+    a: [
+      'THE RUN HAS TO BE SHORT ENOUGH THAT',
+      'LOSING IS CHEAPER THAN QUITTING.',
+      'NO SAVE. NO LOADING SCREEN. NO MENU',
+      'BETWEEN THE DOOR AND THE VERB.',
+      'ONE BUTTON AND YOU ARE BACK IN.',
+    ],
+  },
+  {
+    // The set piece. Nine lines, and every one of them is a rule somebody
+    // on this floor actually followed.
+    id: 'creed', q: 'SAY THE WHOLE THING.', once: true, locked: true,
+    a: [
+      'THE VERB FIRST.',
+      'ONE FRAME TO ANSWER.',
+      'DIE, UNDERSTAND, GO AGAIN.',
+      'SHORT RUNS. NO SAVE.',
+      'CONSTRAINTS, NOT NOSTALGIA.',
+      'DRAW IT IN CODE.',
+      'NO ACCOUNT. NO LAUNCHER. NO PERMISSION.',
+      'SHIP THE BROKEN ONE.',
+      'GO MAKE YOUR OWN.',
+    ],
+    opens: ['retro', 'anarchy'],
+  },
+
+  // ── the position ───────────────────────────────────────────────────────
+  {
+    id: 'retro', q: '"CONSTRAINTS, NOT NOSTALGIA"?', once: true, locked: true,
+    a: [
+      'A 2600 CHANGED COLOUR ONCE A SCANLINE.',
+      'SO A BURNING SKY IS FLAT BARS WITH HARD',
+      'SEAMS IN IT, AND IT LOOKS LIKE THAT',
+      'BECAUSE OF PHYSICS, NOT BECAUSE I MISS 1982.',
+      'TAKE THE LIMIT. DO NOT TAKE THE MOOD.',
+    ],
+  },
+  {
+    id: 'anarchy', q: 'WHY CALL IT ANARCHIST?', once: true, locked: true,
+    a: [
+      'BECAUSE NOBODY IS ABOVE YOU IN THIS.',
+      'NO STOREFRONT DECIDING WHAT EXISTS.',
+      'NO ENGINE YOU RENT. NO ACCOUNT YOU BEG',
+      'TO KEEP.',
+      'IT IS NOT A POSE. IT IS A URL AND A',
+      'VIEW-SOURCE AND YOU ARE ALREADY IN.',
+    ],
+    opens: ['browser'],
+  },
+  {
+    id: 'browser', q: 'WHY THE BROWSER?', once: true, locked: true,
+    a: [
+      'IT IS THE LAST PLACE A STRANGER CAN',
+      'PLAY YOUR THING IN ONE CLICK.',
+      'NO INSTALL. NO STORE REVIEW. NO 90 GB.',
+      'AND THE SOURCE IS RIGHT THERE, WHICH IS',
+      'HOW I LEARNED, AND HOW YOU WILL.',
+    ],
+  },
+
   // ── go make your own ───────────────────────────────────────────────────
   {
     id: 'start', q: 'HOW DO I START?',
@@ -179,7 +300,28 @@ export const TOPICS = [
       'SHIP THE BROKEN ONE.',
       'NOBODY IS COMING TO GIVE YOU PERMISSION.',
     ],
-    opens: ['bad', 'tools'],
+    opens: ['bad', 'tools', 'finish'],
+  },
+  {
+    id: 'finish', q: 'HOW DO I FINISH?', once: true, locked: true,
+    a: [
+      'YOU DO NOT. YOU STOP.',
+      'PICK THE ONE THING IT IS ABOUT AND CUT',
+      'EVERYTHING THAT IS NOT THAT.',
+      'THE HALF YOU DELETE IS THE HALF THAT',
+      'WOULD HAVE TAKEN A YEAR.',
+    ],
+    opens: ['test'],
+  },
+  {
+    id: 'test', q: 'HOW DO I KNOW IF IT IS ANY GOOD?', once: true, locked: true,
+    a: [
+      'PUT IT IN SOMEBODY ELSE\'S HANDS AND',
+      'SAY NOTHING.',
+      'EVERY WORD YOU SAY WHILE THEY PLAY IS A',
+      'THING YOUR GAME FAILED TO SAY.',
+      'WATCH THEIR HANDS, NOT THEIR FACE.',
+    ],
   },
   {
     id: 'bad', q: 'WHAT IF I AM BAD AT IT?', once: true, locked: true,
@@ -476,6 +618,18 @@ const KEYS = {
   faraway: ['FAR', 'AWAY', 'SLOW', 'TIRED', 'STONED', 'DREAMING'],
   late: ['LATE', 'NIGHT', 'SLEEP', 'BED', 'HOUR', 'TIME'],
   start: ['START', 'BEGIN', 'HOW', 'LEARN', 'MAKE', 'FIRST'],
+  mantra: ['GOOD', 'GAME', 'MANTRA', 'RULES', 'DESIGN', 'VERB', 'PHILOSOPHY'],
+  thirty: ['TUTORIAL', 'TEACH', 'ONBOARDING', 'THIRTY', 'SECONDS', 'LEARNING'],
+  feel: ['FEEL', 'GAMEFEEL', 'RESPONSIVE', 'INPUT', 'LAG', 'TIGHT', 'CONTROLS'],
+  juice: ['JUICE', 'JUICY', 'POLISH', 'PARTICLES', 'SHAKE', 'EFFECTS'],
+  hard: ['HARD', 'DIFFICULT', 'DIFFICULTY', 'UNFAIR', 'BRUTAL', 'EASY'],
+  loop: ['LOOP', 'AGAIN', 'REPLAY', 'ADDICTIVE', 'RETRY', 'RUN'],
+  creed: ['CREED', 'MANTRA', 'WHOLE', 'RECITE', 'ALL', 'MANIFESTO'],
+  retro: ['RETRO', 'NOSTALGIA', 'PIXEL', 'ATARI', 'MASTER', 'SYSTEM', 'OLD'],
+  anarchy: ['ANARCHIST', 'ANARCHY', 'POLITICS', 'PUNK', 'DIY', 'INDIE'],
+  browser: ['BROWSER', 'WEB', 'HTML', 'STEAM', 'INSTALL', 'STORE'],
+  finish: ['FINISH', 'DONE', 'SCOPE', 'STUCK', 'ENDLESS', 'STOP'],
+  test: ['TEST', 'PLAYTEST', 'GOOD', 'FEEDBACK', 'WATCH', 'TESTERS'],
   bad: ['BAD', 'TERRIBLE', 'FAIL', 'SUCK', 'MISTAKE', 'AFRAID'],
   tools: ['TOOLS', 'TOOL', 'USE', 'ENGINE', 'UNITY', 'GODOT', 'EDITOR', 'STACK'],
   build: ['BUILD', 'COMPILE', 'BUNDLER', 'NPM', 'WEBPACK', 'STEP'],
@@ -503,6 +657,14 @@ const STOP = new Set(['THE', 'A', 'AN', 'IS', 'ARE', 'WAS', 'DO', 'DOES', 'DID',
   'FOR', 'AM', 'BE', 'CAN', 'WILL', 'YOUR', 'HAVE', 'HAS', 'NOT', 'SO', 'AT']);
 
 const words = s => (s.toUpperCase().match(/[A-Z']+/g) || []).filter(w => !STOP.has(w));
+
+// The same filter for CABINET TITLES, which keep their digits ("Tiny 2D",
+// "20/20"). Without the stop list "SAY THE WHOLE THING" scored a hit on
+// "The Game of Life" through the word THE and he answered about the wrong
+// thing entirely — with total confidence, which is the one failure this
+// parser is not allowed to have.
+export const nameWords = s =>
+  (String(s).toUpperCase().match(/[A-Z0-9]+/g) || []).filter(w => !STOP.has(w));
 
 // He hears the cry and answers it, whatever else is in the sentence.
 export const CRY = {
