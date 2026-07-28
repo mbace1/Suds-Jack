@@ -6,10 +6,10 @@
 // Idle/static frames prefer story.broll so the new Helsinki art is visible
 // while scrolling — not only during live cuts.
 
-import { PixelScreen, shade, mix } from './screen.js?v=10';
-import { PAL, SECTOR_COLOR } from './palette.js?v=10';
-import { Toko } from './toko.js?v=10';
-import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=10';
+import { PixelScreen, shade, mix } from './screen.js?v=12';
+import { PAL, SECTOR_COLOR } from './palette.js?v=12';
+import { Toko } from './toko.js?v=12';
+import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=12';
 
 export const POST_W = 144, POST_H = 276;
 const VF = { x: 8, y: 6, w: PANEL_W, h: PANEL_H };
@@ -20,17 +20,29 @@ const WAVE = { x: 8, y: 266, w: 128, h: 8 };
 const WEIGHTS = { face: 0.20, graphic: 0.15, broll: 0.65 };
 const CUT_MIN = 3.2, CUT_MAX = 5.5;
 
-function pickBroll(story) {
-  if (story.broll) return story.broll;
-  const pool = BROLL_KEYS || ['esplanadi', 'kamppi', 'harbour', 'gulf', 'cathedral', 'katu', 'mannerheim', 'station', 'suomenlinna', 'katajanokka'];
-  return pool[Math.floor(Math.random() * pool.length)];
+// The rotation. AGENTS.md documents this as "story.broll preferred ~85%, else
+// random from BROLL_KEYS" — the code had drifted to returning story.broll
+// 100% of the time, and since every story sets one, esplanadi, suomenlinna and
+// katajanokka never reached the air at all. Worse, every broll cut inside a
+// post was the same still, so 65% of the sequencer was one held frame.
+//
+// So: the story's own plate leads and stays the likeliest shot, but never twice
+// running. Two identical broll cuts in a row read as the picture having frozen,
+// which is the opposite of what a cut is for.
+function pickBroll(story, lastKey) {
+  const pool = (BROLL_KEYS && BROLL_KEYS.length) ? BROLL_KEYS
+    : ['esplanadi', 'kamppi', 'harbour', 'gulf', 'cathedral', 'katu', 'mannerheim', 'station', 'suomenlinna', 'katajanokka'];
+  const own = pool.includes(story.broll) ? story.broll : null;
+  if (own && own !== lastKey && Math.random() < 0.6) return own;
+  const others = pool.filter(k => k !== lastKey);
+  return others[Math.floor(Math.random() * others.length)] || own || pool[0];
 }
 
-function pickShot(story) {
+function pickShot(story, lastKey) {
   const r = Math.random();
   if (r < WEIGHTS.face) return { type: 'face' };
   if (r < WEIGHTS.face + WEIGHTS.graphic) return { type: 'graphic' };
-  return { type: 'broll', key: pickBroll(story) };
+  return { type: 'broll', key: pickBroll(story, lastKey) };
 }
 
 export class Post {
@@ -55,6 +67,7 @@ export class Post {
     this.shot = story.broll
       ? { type: 'broll', key: story.broll }
       : { type: 'graphic' };
+    this.lastBroll = story.broll || null;
     this.cutT = 0;
     this.nextCut = CUT_MIN + Math.random() * (CUT_MAX - CUT_MIN);
   }
@@ -65,11 +78,15 @@ export class Post {
     // Always open on preferred B-roll when the story has one — guaranteed first look
     this.shot = this.story.broll
       ? { type: 'broll', key: this.story.broll }
-      : pickShot(this.story);
+      : pickShot(this.story, this.lastBroll);
+    this.noteShot();
     this.cutT = 0;
     this.nextCut = CUT_MIN + Math.random() * (CUT_MAX - CUT_MIN);
   }
   goIdle() { this.live = false; }
+
+  // what the last footage beat showed, so the next one can differ
+  noteShot() { if (this.shot && this.shot.type === 'broll' && this.shot.key) this.lastBroll = this.shot.key; }
 
   update(dt, mouth) {
     this.t += dt;
@@ -81,7 +98,8 @@ export class Post {
     if (this.live && !this.silent) {
       this.cutT += dt;
       if (this.cutT >= this.nextCut) {
-        this.shot = pickShot(this.story);
+        this.shot = pickShot(this.story, this.lastBroll);
+        this.noteShot();
         this.cutT = 0;
         this.nextCut = CUT_MIN + Math.random() * (CUT_MAX - CUT_MIN);
       }

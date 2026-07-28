@@ -1,12 +1,12 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=10';
-import { Post, Reader } from './codec.js?v=10';
-import { SECTORS, STORIES, storyCopy, parseLine } from './stories.js?v=10';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=10';
-import * as audio from './audio.js?v=10';
-import { PixelScreen } from './screen.js?v=10';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=10';
+import { PAL, SECTOR_COLOR } from './palette.js?v=12';
+import { Post, Reader } from './codec.js?v=12';
+import { SECTORS, STORIES, storyCopy, parseLine } from './stories.js?v=12';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=12';
+import * as audio from './audio.js?v=12';
+import { PixelScreen } from './screen.js?v=12';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=12';
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
@@ -479,6 +479,14 @@ window.__rfh = {
     toggleDecode: () => toggleDecode(active),
     finishRead: () => reader.finish(),
     stories: () => posts.filter(p => !p.signoff).map(p => p.story.id),
+    // what the live post's sequencer is showing right now — without this the
+    // rotation cannot be tested, and an untestable rotation is how three
+    // plates sat off the air unnoticed
+    shot: () => {
+      const p = posts[active];
+      if (!p || p.signoff || !p.post.shot) return null;
+      return { type: p.post.shot.type, key: p.post.shot.key || null };
+    },
     decoded: () => [...decodedIds],
     forgetDecoded: () => { decodedIds.clear(); try { localStorage.removeItem(DECODED_KEY); } catch {} },
     setLang: useLang,

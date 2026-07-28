@@ -127,6 +127,27 @@ Use the checklist in `AGENTS.md` (includes draw-every-plate + offline-for-real).
 
 ---
 
+## Log
+
+**2026-07-28 — the rotation was pinned.** `pickBroll` returned `story.broll`
+unconditionally while `AGENTS.md` documented "~85%, else random from
+`BROLL_KEYS`". Since every story sets one, three plates — `esplanadi`,
+`suomenlinna`, `katajanokka` — were structurally unreachable and had never
+aired, and every broll cut inside a post showed the same still, so 65% of the
+sequencer was one held frame. Now: the story's plate leads at 60% but never
+twice running, the rest of the pool fills the gaps. Measured across the whole
+feed afterwards — 9 of 10 plates aired in one pass, zero consecutive identical
+cuts. `__rfh.debug.shot()` was added to make that measurable at all; an
+untestable rotation is how three plates sat off the air unnoticed.
+
+**Token drift came straight back.** Modules were aligned to v10; `sw.js` was
+then moved to v11 on its own, which is the same split the protocol warns
+about. All at v12 now. If you bump the worker, bump every module import in the
+same commit — the check is one line:
+`grep -o "?v=[0-9]*" index.html sw.js js/*.js | sort -u`.
+
+---
+
 ## Please don't both edit at once
 
 `gh-pages` moved four times in one hour while this branch was working, twice
