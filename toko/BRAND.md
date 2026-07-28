@@ -245,9 +245,30 @@ What it does beyond talking:
   catalogue (`window.__hub`) and answers with one game and a real link — the
   same one all day, which is the line he says while giving it. Dropped on a
   page with no catalogue he says he cannot see the floor, rather than throwing.
-- **He remembers you came back.** Two things persist and nothing else: how many
-  times you have opened the counter, and whether you asked for the tick. No
-  identity, no profile, no account — the workshop is built on not having one.
+- **He asks YOU something.** One topic (`asks:`) runs the other way: the menu
+  becomes your mouth for a turn, and what you answer can open branches. Same
+  nine slots, same number keys — only the direction changes, and the menu is
+  handed straight back. A conversation stuck in answer mode is a dead end with
+  a caret in it, so the gate checks for the hand-back.
+- **He gives you a sticker.** `gift:` hands over the badge as a real download —
+  built on the spot from `svgBadge()`, which is the same arcs the canvas
+  strokes. There is no file behind it because there is no image asset anywhere
+  in this brand; it is a data URI he draws while you are asking.
+- **He says things unprompted.** Sit at the counter without picking anything
+  and after 24 seconds he offers a line. Three a visit, then he lets it be
+  quiet — a Sierra front desk was never silent, but a counter that keeps
+  talking at you is a shop.
+- **He knows the hour.** Between midnight and five he opens differently and one
+  topic exists that does not exist at two in the afternoon. It reads the
+  reader's own clock; nothing is sent anywhere.
+- **He remembers you came back.** Three things persist and nothing else: how
+  many times you have opened the counter, the last thing you asked (he opens
+  with it next time), and whether you wanted the tick. No identity, no profile,
+  no account — the workshop is built on not having one, and all three fit in a
+  sentence you could read aloud.
+- **The back of the shop.** One topic has `needs:` rather than an unlock, so it
+  appears only once you have actually dug. The reward for exhausting a tree
+  should be more tree.
 - **A typing tick**, off until you ask for it, remembered after you do. The
   AudioContext is built lazily on that first gesture, because one created
   before a gesture just sits suspended and logs a warning for its trouble.
@@ -260,6 +281,18 @@ Rules it holds:
 - **It must not push the games below the fold.** It sits *above* the cabinets,
   so the topic menu runs two columns where there is room; stacked, seven topics
   at the 44px tap floor made a panel nearly 600px tall.
+- **Nine slots, and one of them is the way out.** The keys are 1–9, so the menu
+  shows nine. The tree outgrew that and goodbye fell off the bottom, which
+  turns a counter you can walk away from into one you cannot; `end` topics now
+  get a reserved slot. For the same reason, whatever the last answer *opened*
+  sorts to the top — a branch pushed off the bottom of the list that opened it
+  is a branch nobody finds.
+- **Nothing in it may depend on the wall clock to pass.** The hour changes what
+  he says, so the gate skips his typing rather than waiting it out — a fixed
+  wait passed all day and failed after midnight, when the late greeting is
+  longer. For the same reason the late greeting is two lines: at 34ms a
+  character a third puts four seconds between opening the counter and being
+  allowed to speak, and that is a wait, not a mood.
 - **The typing is time-driven, not a chain of timeouts.** A `setTimeout` per
   character pays the timer's minimum resolution every time, and an
   18ms-per-character line measured out at nearly 70 — the greeting took 2.6
@@ -267,6 +300,14 @@ Rules it holds:
   rAF walks the schedule.
 - **Reduced motion prints the line whole.** No typing, no blink, no growth
   animation.
+- **It has to survive a 390px screen.** The panel is capped and clips, so its
+  grid rows are `minmax(0, 1fr)` and the menu scrolls inside them — an `auto`
+  row sizes to its content and overflows the cap instead, which hid the bottom
+  four topics *and* the way out on a phone while looking perfect on a laptop.
+  The gate opens the counter at phone size for exactly this.
+- **No back-ticks in the stylesheet.** It is a template literal, and one
+  back-tick in a CSS comment ends the string mid-rule and takes the whole
+  module down with it.
 
 ---
 
@@ -387,7 +428,8 @@ toko/
     util.js       seeded RNG + the resting pulse
     sting.js      the three-second sting (skippable from frame one)
     chat.js       the counter — the conversation panel, self-contained
-    dialogue.js   what Toko says. Edit THIS to change the conversation
+    dialogue.js   what Toko says — topics, his question, the greetings,
+                  the asides. Edit THIS to change the conversation
     signature.js  sign() — the drop-in corner badge
     masthead.js   the animated lockup for the arcade hub
     board.js      wires the board out of the shipping modules

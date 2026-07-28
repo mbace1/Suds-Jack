@@ -266,6 +266,12 @@ function serve() {
     await page.evaluate(() => document.querySelector('.toko-chat .tc-bar').getBoundingClientRect().height >= 44));
 
   await page.click('.toko-chat .tc-bar');
+  // Skip the greeting rather than sit through it. Waiting it out made this
+  // gate depend on the WALL CLOCK: after midnight Toko opens with a different,
+  // longer line and the wait expired. Clicking the log is the skip a player
+  // has, and it is the same one at every hour.
+  await page.waitForTimeout(150);
+  await page.evaluate(() => document.querySelector('.toko-chat .tc-log').click());
   // wait for the menu rather than a fixed sleep — a fixed sleep here would
   // pass or fail on how fast the machine happens to be
   await page.waitForSelector('.toko-chat .tc-menu button', { timeout: 4000 });
@@ -275,13 +281,19 @@ function serve() {
     topics: document.querySelectorAll('.toko-chat .tc-menu button').length,
     tall: document.querySelector('.toko-chat .tc-panel').getBoundingClientRect().height > 200,
     taps: [...document.querySelectorAll('.toko-chat .tc-menu button')]
-      .every(b => b.getBoundingClientRect().height >= 44),
+      .map(b => Math.round(b.getBoundingClientRect().height)),
+    // Goodbye must survive the nine-slot cap. With the tree this size the
+    // body alone can fill the menu, and a counter you cannot walk out of is
+    // a trap with a caret in it.
+    goodbye: [...document.querySelectorAll('.toko-chat .tc-menu button')]
+      .some(b => /GO MAKE SOMETHING/.test(b.textContent)),
   }));
   ok('it opens', chat.open);
   ok('it grows into a panel', chat.tall);
   ok('Toko says something first', chat.greeted);
   ok('the topic menu is populated', chat.topics >= 4, String(chat.topics));
-  ok('every topic clears 44px', chat.taps);
+  ok('every topic clears 44px', chat.taps.every(h => h >= 44), chat.taps.join(' '));
+  ok('you can always leave', chat.goodbye);
 
   // pressing 1 asks the first topic; asking WHO ARE YOU unlocks two more
   const before = chat.topics;
@@ -315,6 +327,77 @@ function serve() {
     await page.evaluate(() => /CANNOT SEE THE FLOOR/.test(
       document.querySelector('.toko-chat .tc-log').textContent)));
 
+  // ── he asks you back ───────────────────────────────────────────────────
+  // The one topic that runs the other way: the menu becomes YOUR mouth for a
+  // turn. What this guards is that it hands the menu back afterwards — a
+  // conversation that gets stuck in answer mode is a dead end with a caret.
+  await page.evaluate(() => globalThis.__tokoChat.say('me'));
+  await page.waitForTimeout(120);
+  await page.evaluate(() => document.querySelector('.toko-chat .tc-log').click());
+  await page.waitForSelector('.toko-chat .tc-menu.is-yours button', { timeout: 4000 });
+  ok('Toko can ask YOU something',
+    await page.evaluate(() => globalThis.__tokoChat.asking()));
+  await page.keyboard.press('1');
+  await page.waitForTimeout(120);
+  await page.evaluate(() => document.querySelector('.toko-chat .tc-log').click());
+  await page.waitForTimeout(200);
+  ok('answering him hands the menu back',
+    await page.evaluate(() => !globalThis.__tokoChat.asking()
+      && !document.querySelector('.toko-chat .tc-menu').classList.contains('is-yours')
+      && document.querySelectorAll('.toko-chat .tc-menu button').length > 0));
+
+  // ── the sticker ────────────────────────────────────────────────────────
+  // He hands you a real file that is not a file: the badge, emitted from the
+  // same arcs the canvas strokes, as an SVG data URI built on the spot.
+  await page.evaluate(() => globalThis.__tokoChat.say('gift'));
+  await page.waitForTimeout(120);
+  await page.evaluate(() => document.querySelector('.toko-chat .tc-log').click());
+  await page.waitForSelector('.toko-chat .tc-gift', { timeout: 4000 });
+  const gift = await page.evaluate(() => {
+    const a = document.querySelector('.toko-chat .tc-gift');
+    return {
+      download: a.download,
+      svg: decodeURIComponent(a.href.replace(/^data:image\/svg\+xml;charset=utf-8,/, '')),
+      tall: a.getBoundingClientRect().height >= 44,
+    };
+  });
+  ok('he hands you a sticker', /\.svg$/.test(gift.download), gift.download);
+  ok('the sticker is the mark, not an asset',
+    /<svg/.test(gift.svg) && /<circle/.test(gift.svg) && /#F0027F/i.test(gift.svg));
+  ok('the sticker link clears 44px', gift.tall);
+
+  // ── the hour, and the menu it gates ────────────────────────────────────
+  const clock = await page.evaluate(async () => {
+    const d = await import('/toko/js/dialogue.js');
+    const ids = h => d.menu(new Set(d.TOPICS.map(t => t.id)), new Set(), { hour: h })
+      .map(t => t.id);
+    return {
+      night: ids(2).includes('late'),
+      noon: ids(13).includes('late'),
+      lateGreeting: d.greeting({ visits: 1, hour: 2 }).join(' '),
+      dayGreeting: d.greeting({ visits: 1, hour: 13 }).join(' '),
+      remembers: d.greeting({ visits: 4, hour: 13, last: 'mask' }).join(' '),
+      // the back room is not opened by any one topic — you have to have dug
+      shallow: ids(13).includes('back'),
+      deep: d.menu(new Set(d.TOPICS.map(t => t.id)),
+        new Set(d.TOPICS.slice(0, 10).map(t => t.id)), { hour: 13 }).map(t => t.id).includes('back'),
+    };
+  });
+  ok('one topic only exists at night', clock.night && !clock.noon);
+  ok('and he greets you differently at 2am', clock.lateGreeting !== clock.dayGreeting);
+  ok('he remembers the last thing you asked', /MASK/.test(clock.remembers), clock.remembers);
+  ok('the back room stays shut until you have dug', !clock.shallow && clock.deep);
+
+  // fresh branches sort to the top, because the menu only shows nine and a
+  // branch pushed off the bottom of the list that opened it is a dead branch
+  ok('what he just opened comes first',
+    await page.evaluate(async () => {
+      const d = await import('/toko/js/dialogue.js');
+      const ids = d.menu(new Set(d.TOPICS.map(t => t.id)), new Set(),
+        { hour: 13, fresh: new Set(['clusters']) }).map(t => t.id);
+      return ids[0] === 'clusters';
+    }));
+
   // the tick: off until asked for, and remembered
   const snd = await page.evaluate(() => {
     const b = document.querySelector('.toko-chat .tc-snd');
@@ -342,6 +425,45 @@ function serve() {
 
   await page.keyboard.press('Escape');
   ok('board still clean after the counter', page.__errs.length === 0, page.__errs.join(' | '));
+
+  // ── the counter on a phone ─────────────────────────────────────────────
+  // The panel is capped and clips, and an AUTO grid row sizes to its content
+  // and overflows that cap instead of letting the child scroll — which hid
+  // the bottom four topics AND the way out on a 390px screen. Desktop could
+  // not see it, because at 1100px the menu runs three columns and fits.
+  {
+    const ph = await browser.newPage({
+      viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true,
+    });
+    ph.__errs = [];
+    ph.on('pageerror', e => ph.__errs.push('pageerror: ' + e.message));
+    await ph.goto(base + '/toko/index.html', { waitUntil: 'networkidle' });
+    await ph.click('.toko-chat .tc-bar');
+    await ph.waitForTimeout(150);
+    await ph.evaluate(() => document.querySelector('.toko-chat .tc-log').click());
+    await ph.waitForSelector('.toko-chat .tc-menu button');
+    await ph.waitForTimeout(200);
+    const m = await ph.evaluate(() => {
+      const menu = document.querySelector('.toko-chat .tc-menu');
+      const panel = document.querySelector('.toko-chat .tc-panel');
+      const btns = [...menu.querySelectorAll('button')];
+      return {
+        clipped: menu.getBoundingClientRect().bottom > panel.getBoundingClientRect().bottom + 1,
+        short: btns.filter(b => b.getBoundingClientRect().height < 44).length,
+        reachable: menu.scrollHeight <= menu.clientHeight + 1
+          || getComputedStyle(menu).overflowY === 'auto',
+        leave: btns.some(b => /MAKE SOMETHING/.test(b.textContent)),
+        wide: document.documentElement.scrollWidth > 390,
+      };
+    });
+    ok('phone: the menu is not clipped by the panel', !m.clipped);
+    ok('phone: every topic still clears 44px', m.short === 0, String(m.short));
+    ok('phone: anything below the fold of the menu can be scrolled to', m.reachable);
+    ok('phone: the way out is on the menu', m.leave);
+    ok('phone: nothing overflows sideways', !m.wide);
+    ok('phone: no errors', ph.__errs.length === 0, ph.__errs.join(' | '));
+    await ph.close();
+  }
 
   // ── the sting ──────────────────────────────────────────────────────────
   console.log('\nthe sting');
