@@ -28,7 +28,7 @@
     "from": "cache token"
   },
   "radiofree": {
-    "v": 6,
+    "v": 22,
     "from": "cache token"
   },
   "tinyhawk": {
@@ -36,7 +36,7 @@
     "from": "cache token"
   },
   "tiny2d": {
-    "v": 1,
-    "from": "cache token"
+    "v": 3,
+    "from": "VERSIONS.md"
   }
 }

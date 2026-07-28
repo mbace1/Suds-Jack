@@ -16,8 +16,8 @@
 // sidesteps a whole class of spawn/cull bugs.
 
 import * as THREE from 'three';
-import { COL, GLOW } from './palette.js?v=1';
-import { mulberry32, lerp, clamp } from './rng.js?v=1';
+import { COL, GLOW } from './palette.js?v=3';
+import { mulberry32, lerp, clamp } from './rng.js?v=3';
 
 const DX      = 0.45;   // ribbon sample spacing (world units)
 const SPAN    = 130;    // world units of ribbon kept alive around the camera

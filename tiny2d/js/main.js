@@ -16,16 +16,34 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { COL } from './palette.js?v=1';
-import { Terrain } from './terrain.js?v=1';
-import { Skater } from './skater.js?v=1';
-import { Input } from './input.js?v=1';
-import { Audio } from './audio.js?v=1';
-import { randomSeed, clamp, lerp } from './rng.js?v=1';
+import { COL } from './palette.js?v=3';
+import { Terrain } from './terrain.js?v=3';
+import { Skater } from './skater.js?v=3';
+import { Input } from './input.js?v=3';
+import { Audio } from './audio.js?v=3';
+import { randomSeed, clamp, lerp } from './rng.js?v=3';
 
 // ── Tuning ─────────────────────────────────────────────────────────────────
-const ZOOM_MIN     = 34;    // ortho frustum height at a standstill
-const ZOOM_MAX     = 50;    // ...and flat out. Endless reads wide on purpose.
+// The view is anchored on its WIDTH, not its height. This is a side-on game
+// and the thing you have to see is the next hill: a terrain segment is 22-37
+// units long (terrain.js `len`), so a view has to hold at least one of those or
+// it is a slope with nothing readable on it. Anchoring on height — which is what this
+// did — made the visible width a function of the aspect ratio, so a phone held
+// upright got 34 × 0.46 ≈ 16 units across and the screen filled with dark mass.
+//
+// On a 16:9 desktop these numbers reproduce the old view exactly (34 × 16/9 =
+// 60 at a standstill, 50 × 16/9 = 89 flat out). Off 16:9 the height follows
+// from the width and is only clamped: never shorter than the old view, never
+// so tall that the skater is a speck in a field of sky.
+const VIEW_W_MIN   = 60;    // world units across at a standstill
+const VIEW_W_MAX   = 89;    // ...and flat out. Endless reads wide on purpose.
+const VIEW_H_MIN   = 34;
+// 78 is where a 20:9 phone held upright stops being the problem: it buys 36
+// units across (one whole terrain segment, and the lip of the next) where the
+// old view gave 16. Higher was tried — 92 shows more hill but shrinks the
+// skater to a speck against a field of sky, which is the other way to make a
+// screen unreadable.
+const VIEW_H_MAX   = 78;
 const CAM_OFF      = new THREE.Vector3(4, 6, 26);
 const LIGHT_START  = 32;    // seconds of daylight
 const LIGHT_CAP    = 46;
@@ -41,7 +59,10 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
 const scene = new THREE.Scene();
-let zoom = ZOOM_MIN;
+let zoom = VIEW_W_MIN;   // the width we are asking for
+let viewH = VIEW_H_MIN;  // the height that fell out of it — what the sky and
+let viewW = VIEW_W_MIN;  // the camera clamp are sized against, and the width
+                         // actually granted after the height clamp
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 400);
 
 // Same stack as tinyhawk and hyperdagger: ACES + a composer, with SELECTIVE
@@ -290,20 +311,35 @@ function handleEvents(events) {
 // an actual resize, so they are separate calls.
 function applyZoom() {
   const aspect = innerWidth / innerHeight;
-  camera.left = -zoom * aspect / 2;
-  camera.right = zoom * aspect / 2;
-  camera.top = zoom / 2;
-  camera.bottom = -zoom / 2;
+  // Ask for `zoom` units across; take the height that implies, clamped. On a
+  // tall screen the clamp is what stops the world shrinking to nothing — you
+  // get a little less width than asked for rather than a doll's-house view.
+  viewH = clamp(zoom / aspect, VIEW_H_MIN, VIEW_H_MAX);
+  viewW = viewH * aspect;
+  camera.left = -viewW / 2;
+  camera.right = viewW / 2;
+  camera.top = viewH / 2;
+  camera.bottom = -viewH / 2;
   camera.updateProjectionMatrix();
-  sky.scale.set(zoom * aspect * 1.4, zoom * 1.4, 1);
-  const r = zoom * 0.075;
+  sky.scale.set(viewW * 1.4, viewH * 1.4, 1);
+  // The sun is sized against the WIDTH: it was 2.55 units in a 60-wide view, and
+  // keeping that proportion is what stops it swelling into a moon that eats half
+  // the screen on a tall one (where the height is clamped up, not the width).
+  const r = viewW * 0.0425;
   sun.scale.set(r, r, 1);
   // High enough to clear the far hill crests, which sit near the centre line.
-  sun.position.set(-zoom * aspect * 0.26, zoom * 0.3, sun.position.z);
+  sun.position.set(-viewW * 0.26, viewH * 0.3, sun.position.z);
 }
 
 function resize() {
-  renderer.setSize(innerWidth, innerHeight, false);
+  // updateStyle must stay ON. With it off, three sizes the drawing buffer to
+  // innerWidth × pixelRatio and leaves the element's CSS size alone — and an
+  // unstyled canvas lays out at its buffer size in CSS pixels. On any phone
+  // (pixelRatio 2) that is a canvas twice the viewport in both directions, so
+  // the player sees the top-left quarter of the picture at 2× and the skater,
+  // who rides the middle of it, is off the bottom of the screen. dropcabal can
+  // pass false because its CSS pins the canvas to 100vw/100vh; this one cannot.
+  renderer.setSize(innerWidth, innerHeight);
   composer.setSize(innerWidth, innerHeight);
   bloom.setSize(innerWidth, innerHeight);
   applyZoom();
@@ -349,15 +385,20 @@ function animate(now) {
   if (state === 'play') {
     // Lead the skater by speed so the next hill is always visible, and damp
     // vertical motion hard — a camera that tracks every bump is unreadable.
-    const targetZoom = lerp(ZOOM_MIN, ZOOM_MAX, clamp((skater.speed - 14) / 44, 0, 1));
+    const targetZoom = lerp(VIEW_W_MIN, VIEW_W_MAX, clamp((skater.speed - 14) / 44, 0, 1));
     if (Math.abs(targetZoom - zoom) > 0.01) {
       zoom = lerp(zoom, targetZoom, 1 - Math.pow(0.2, dt));
       applyZoom();
     }
-    const lead = clamp(skater.speed * 0.32, 4, 16);
+    // Lead is a fraction of the view, not a fixed distance: 16 units ahead is a
+    // quarter of a 60-wide screen and more than half of a 29-wide one, which is
+    // what pinned the skater to the left edge on a phone held upright.
+    const lead = clamp(skater.speed * 0.32, 4, 16) * (viewW / VIEW_W_MIN);
     camX = lerp(camX, skater.x + lead, 1 - Math.pow(0.0005, dt));
     camY = lerp(camY, skater.y + 3, 1 - Math.pow(0.15, dt));
-    camY = clamp(camY, skater.y - zoom * 0.28, skater.y + zoom * 0.34);
+    // against the height, not the width — this is how far off centre the
+    // skater may drift vertically before the camera drags him back
+    camY = clamp(camY, skater.y - viewH * 0.28, skater.y + viewH * 0.34);
   } else {
     // Menus and the death screen drift slowly along the hills rather than
     // sitting on a frozen frame.

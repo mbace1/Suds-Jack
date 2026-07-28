@@ -19,9 +19,12 @@
 
     /* ── HUD ─────────────────────────────────────────────────────────── */
     #hud {
+      /* the arcade shell parks a 44px HOME button in the top-left corner, on
+         every screen — so the readouts start below it rather than under it */
+      --hud-top: calc(max(12px, env(safe-area-inset-top)) + 48px);
       position: fixed; inset: 0;
       pointer-events: none;
-      padding: max(12px, env(safe-area-inset-top)) 14px 14px;
+      padding: var(--hud-top) 14px 14px;
     }
     #hudTop { display: flex; justify-content: space-between; align-items: flex-start; }
     #dist { font-size: 30px; font-weight: bold; line-height: 1; }
@@ -33,7 +36,7 @@
     #lightBar {
       position: absolute;
       left: 50%; transform: translateX(-50%);
-      top: max(14px, env(safe-area-inset-top));
+      top: var(--hud-top);
       width: min(38vw, 190px); height: 6px;
       background: rgba(255, 255, 255, 0.14);
       border-radius: 3px; overflow: hidden;
@@ -45,7 +48,7 @@
     }
     #lightLabel {
       position: absolute; left: 50%; transform: translateX(-50%);
-      top: calc(max(14px, env(safe-area-inset-top)) + 10px);
+      top: calc(var(--hud-top) + 10px);
       font-size: 9px; letter-spacing: 2px; opacity: 0.5;
     }
 
@@ -81,7 +84,10 @@
       display: block; font-size: 12px; letter-spacing: 5px;
       opacity: 0.55; margin-top: 8px; font-weight: normal;
     }
-    button {
+    /* scoped to the buttons this page owns: a bare `button` rule also hits the
+       arcade shell's HOME and HOLD buttons, and min-width: 190px turned the
+       HOLD circle into an ellipse wide enough to sit under the sound toggle */
+    .overlay button, #btnSound {
       font: inherit; font-weight: bold; letter-spacing: 2px;
       min-height: 46px; min-width: 190px;
       padding: 12px 22px;
@@ -89,9 +95,11 @@
       background: transparent; color: #f4f1e8;
       cursor: pointer;
     }
-    button.primary { background: #ff5a5f; border-color: #ff5a5f; }
-    button.ghost { opacity: 0.45; min-width: 190px; }
-    button:focus-visible { outline: 3px solid #ffd166; outline-offset: 3px; }
+    .overlay button.primary { background: #ff5a5f; border-color: #ff5a5f; }
+    .overlay button.ghost { opacity: 0.45; min-width: 190px; }
+    .overlay button:focus-visible, #btnSound:focus-visible {
+      outline: 3px solid #ffd166; outline-offset: 3px;
+    }
     .hint { font-size: 12px; line-height: 1.7; opacity: 0.6; max-width: 430px; }
     .hint b { color: #8dfff0; }
     #menuBest, .sub { font-size: 12px; opacity: 0.6; }
@@ -102,6 +110,16 @@
       position: fixed; right: 12px; bottom: 12px;
       min-width: 0; min-height: 44px; padding: 8px 14px;
       font-size: 12px; border-width: 1px; opacity: 0.5;
+    }
+    /* a touchscreen also carries the shell's HOLD button in that corner, and
+       the whole game is one press — the sound toggle cannot be sitting under
+       the thumb that plays it. Same query the shell uses to put it there. */
+    @media (hover: none) and (pointer: coarse) {
+      #btnSound {
+        bottom: auto;
+        top: calc(max(12px, env(safe-area-inset-top)) + 108px);
+        right: max(12px, env(safe-area-inset-right));
+      }
     }
   </style>
 </head>
@@ -153,8 +171,8 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=1"></script>
+  <script type="module" src="js/main.js?v=3"></script>
   <!-- the arcade shell: a home button and a controller way back -->
-  <script type="module" src="../hub/shell.js?v=9"></script>
+  <script type="module" src="../hub/shell.js?v=10"></script>
 </body>
 </html>

@@ -71,3 +71,8 @@ the headless smoke test.
 Same caveat as the other demos: the published site is served from the **`gh-pages`
 branch**, not `main`. Copy `tiny2d/` across to go live at `/Suds-Jack/tiny2d/`, and bump
 the `?v=N` cache-busters together.
+
+The game is developed here now — it used to exist only on the deployed site, which is why
+its cabinet was `inRepo: false`. Releases go in `VERSIONS.md` (a `## vN` entry at the top,
+staged with the change); `scripts/versions.mjs` reads that top entry at deploy time and
+the arcade shows the number on the cabinet.
