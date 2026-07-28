@@ -32,11 +32,65 @@
  * "sent-blind" and never as delivered. If you want confirmed delivery, keep
  * Formspree. If you want volume, use this. You cannot have both.
  *
- * Re-deploying creates a NEW /exec URL unless you use
- * "Manage deployments -> edit -> new version" on the existing deployment.
+ * UPDATING IT LATER — read this before you touch Deploy:
+ *   Deploy -> MANAGE deployments -> pencil -> Version: New version.
+ *   NOT "New deployment". That one mints a brand new /exec URL and quietly
+ *   orphans the old one, so the site keeps posting into a dead endpoint and
+ *   nothing anywhere says so. If you do it by accident: nothing is broken,
+ *   the new URL just has to be pasted into SHEET_ENDPOINT again.
+ *
+ * IF NOTHING ARRIVES, in the order that finds it fastest:
+ *   1. Open the /exec URL in a browser tab.
+ *      "ok — sheet reachable, N row(s)"  -> the script side is fine, the
+ *                                           problem is on the site.
+ *      "BROKEN: ..."                     -> the script runs, the sheet does
+ *                                           not open. Check SHEET_ID.
+ *      a Google sign-in page             -> access is "Anyone with Google
+ *                                           account". Manage deployments ->
+ *                                           pencil -> Who has access: Anyone.
+ *      "Script function not found: doGet"-> the deployment is serving code
+ *                                           from before your last paste.
+ *                                           Manage deployments -> New version.
+ *   2. Apps Script sidebar -> Executions. Shows whether doPost ran at all and
+ *      what it threw. This is the only place a failure is visible: the site
+ *      posts no-cors and CANNOT be told anything went wrong.
+ *
+ * THAT LAST LINE IS WHY THIS FILE IS SHAPED THE WAY IT IS. Nothing here can
+ * report a failure to the thing that called it. So: ES5, because the runtime
+ * might be Rhino and `const` would be a syntax error nobody sees; the sheet
+ * BY ID, because getActiveSpreadsheet() returns null in a standalone project
+ * and throws where no one is looking; and a doGet, so the whole path can be
+ * proved with one browser tab instead of a note left on a live site.
  */
 
+// The spreadsheet, BY ID. getActiveSpreadsheet() only works when the script
+// is container-bound — created from inside the sheet via Extensions -> Apps
+// Script. A standalone project gets null back and every POST throws, which
+// from the outside looks exactly like "nothing happens": the site cannot read
+// the reply anyway, so the note vanishes with no error anywhere a player or
+// an author would see it. Naming the id works either way.
+var SHEET_ID = '1OIZ1EdEPRHhKgAJ0p08_PjUWwkeXP2XrIX14a9sZps8';
 var SHEET_NAME = 'feedback';
+
+function book() {
+  return SHEET_ID ? SpreadsheetApp.openById(SHEET_ID)
+                  : SpreadsheetApp.getActiveSpreadsheet();
+}
+
+// Visiting the /exec URL in a browser is the fastest way to prove the
+// deployment is alive and can reach the sheet. Without this, a GET answers
+// "Script function not found: doGet", which tells you the deployment exists
+// but nothing about whether it works.
+function doGet() {
+  try {
+    var sh = book().getSheetByName(SHEET_NAME);
+    var n = sh ? sh.getLastRow() : 0;
+    return ContentService.createTextOutput(
+      'ok — sheet reachable, ' + n + ' row(s) including the header');
+  } catch (err) {
+    return ContentService.createTextOutput('BROKEN: ' + err);
+  }
+}
 
 // The default header, written only when the sheet is EMPTY. Ordered
 // most-useful-first, because this is a thing a person reads on a Monday:
@@ -50,7 +104,7 @@ var COLUMNS = [
 
 function doPost(e) {
   var data = JSON.parse(e.postData.contents);
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = book();
   var sheet = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
 
   // Map onto whatever header the sheet ALREADY has, rather than assuming this
