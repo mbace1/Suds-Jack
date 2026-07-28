@@ -8,7 +8,7 @@
 
 import { GAMES, SKETCHES } from './games.js?v=10';
 import { drawMarquee } from './art.js?v=10';
-import * as feedback from './feedback.js?v=12';
+import * as feedback from './feedback.js?v=13';
 import * as topics from './topics.js?v=2';
 import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=5';
 import { watchPad, padPresent } from './pad.js?v=9';

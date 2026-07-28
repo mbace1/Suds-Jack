@@ -3599,7 +3599,7 @@ function buildPositiveReasons() {
 //    it takes over as primary.
 //  - Formspree fallback (~50 submissions/month free) while SHEET_ENDPOINT
 //    is empty.
-const SHEET_ENDPOINT     = '';  // e.g. 'https://script.google.com/macros/s/XXXX/exec'
+const SHEET_ENDPOINT     = 'https://script.google.com/macros/s/AKfycbycM2SigkqxRLecc5S4SFF_sq3XDNrVmfcXzYb2cQrHnBEoSU6JNeB7yQ8pAuN89lDf/exec';
 const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mdarbpve';
 // Daily leaderboard (v131, roadmap M3): scripts/leaderboard-sheet.gs, same
 // 3-minute Apps Script setup as the feedback sink but its own deployment.
