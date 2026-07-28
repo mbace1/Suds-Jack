@@ -256,6 +256,62 @@ function check(name, cond) {
   await page.locator('.lang-btn[data-lang="en"]').click();
   check('and back to English', (await page.locator('#floor-head').textContent()) === before);
 
+  // ── one cabinet, by name ──
+  // The point of the second form is a link you can paste to a playtester that
+  // puts them in front of the box — getting somebody in front of the box is
+  // upstream of getting a note at all.
+  const pick = games[2];
+  await page.goto(`${base}/index.html#${pick.id}`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(200);
+  check(`a link to one cabinet lands on it (#${pick.id})`,
+    await page.evaluate(id => document.querySelector('.cab.sel')?.id === `cab-${id}`, pick.id));
+
+  await page.goto(`${base}/index.html#${pick.id}/feedback`, { waitUntil: 'networkidle' });
+  await page.waitForSelector('.sheet', { timeout: 5000 });
+  check('and the /feedback form opens its note panel straight away',
+    (await page.locator('.sheet h2').textContent()).includes(pick.title));
+  await page.keyboard.press('Escape');
+
+  // a link to something that is no longer listed must not leave a dead address
+  // in the bar for the next person who copies it
+  await page.goto(`${base}/index.html#no-such-game`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(200);
+  check('a link to a cabinet that is gone clears itself', !page.url().includes('#'));
+
+  // the title carries the address, so copy-link works without a share button
+  await page.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+  const hrefsById = await page.$$eval('.cab', cs =>
+    cs.map(c => [c.id, c.querySelector('.cab-link')?.getAttribute('href')]));
+  check('every cabinet title is its own link',
+    hrefsById.every(([id, href]) => href === `#${id.replace(/^cab-/, '')}`));
+
+  // ── what you have already tried ──
+  check('nothing is marked before you have played anything',
+    await page.locator('.tried').count() === 0);
+  // Play is a real link, so clicking it here would navigate away before the
+  // mark could be read. A capture listener cancels the navigation and the
+  // cabinet's own bubble listener still runs — which is the thing under test.
+  await page.evaluate(() => {
+    const a = document.querySelector('.cab .btn.play');
+    a.addEventListener('click', e => e.preventDefault(), true);
+    a.click();
+  });
+  await page.waitForTimeout(150);
+  check('pressing Play marks that cabinet tried', await page.locator('.tried').count() === 1);
+  const tally = await page.locator('#floor-head').textContent();
+  check(`and the heading keeps a tally (${tally.split('·')[1]?.trim()})`, /1/.test(tally));
+  check('it survives a reload', await (async () => {
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForTimeout(200);
+    return await page.locator('.tried').count() === 1;
+  })());
+  // the floor does not reorder itself around it — moving the covers under
+  // somebody who just learned where they were costs more than it gives
+  const floorOrder = await page.$$eval('.cab', cs => cs.map(c => c.id));
+  check('and the floor does not rearrange itself',
+    floorOrder[0] === `cab-${games[0].id}` && floorOrder[1] === `cab-${games[1].id}`);
+  await page.evaluate(() => localStorage.removeItem('sudsJackHubPlayed'));
+
   // ── the floor's shape, and whether a note knows which one it saw ──
   check('the status line offers three shapes',
     await page.locator('.layout-row .opt-btn').count() === 3);

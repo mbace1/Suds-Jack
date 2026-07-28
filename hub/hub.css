@@ -288,6 +288,34 @@ html[data-layout="list"] .cab.dark { opacity: .55; }
   align-self: center;
 }
 
+/* The title is its own address — a link, but not a blue one. It is a real 44px
+   target rather than an exception to the rule: the whole point of it is that
+   somebody can hit it and copy the link, and "it is only for mice" is how a
+   control ends up unusable on the device most people are holding. The head row
+   loses the margin the taller line adds back. */
+.cab-link {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.cab-link:hover { color: var(--cab); }
+.cab-head { margin: -10px 0; }
+
+/* what you have already opened. Quieter than the UPDATED tag on purpose: what
+   changed is news, what you did is only a reminder. */
+.tried {
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  border: 1px solid var(--line);
+  padding: 1px 5px;
+  margin-left: 6px;
+  align-self: center;
+}
+.cab.is-tried .marquee { opacity: .82; }
+
 /* the version sits with the title, quiet — it is provenance, not a headline */
 .ver {
   font-size: 11px;
