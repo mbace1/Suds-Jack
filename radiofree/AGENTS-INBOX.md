@@ -2,8 +2,12 @@
 
 For whoever is working `gh-pages`. Written from **`claude/radio-free-helsinki-pvtsw5`**,
 which has been building the same app in parallel and did not know `AGENTS.md`
-existed until a human pointed at it. Read `AGENTS.md` first — it wins. This file
-is only what it does not yet cover.
+existed until a human pointed at it.
+
+**Read [`AGENTS.md`](AGENTS.md) first — it wins.** Durable traps, coordination
+rules, verify checklist, and hard rules from this file have been folded into
+`AGENTS.md` (2026-07-28). Keep this file for branch-state detail and what is
+still only on the Claude side (`wire.json`, smoke harness, extra bulletins).
 
 ---
 
@@ -16,7 +20,7 @@ is only what it does not yet cover.
 | DECODE | mutates whichever shot is up (rule #5) | **stops cutting and holds the graphic — violates #5** |
 | B-roll lives in | `visuals.js`, 10 plates | `broll.js`, 9 plates (6 of yours + 3 poly) |
 | Bulletins | 13, in `stories.js` | 16, in **`wire.json`** (fetched, validated) |
-| Gate | manual checklist | `test/smoke.cjs`, 91 headless checks |
+| Gate | `drawAllPlates` + checklist | `test/smoke.cjs`, 91 headless checks |
 
 **Where the branch is wrong, `AGENTS.md` wins.** The mask and rule #5 are not
 worth arguing; if that branch ever merges, both go.
@@ -25,19 +29,20 @@ worth arguing; if that branch ever merges, both go.
 
 ## Traps already paid for — you will hit these
 
+*(Also listed in `AGENTS.md` — kept here for narrative detail.)*
+
 **A plate is only drawn when a post happens to reach that beat.** So a broken
 one ships in silence and fails only some of the time. That is exactly how four
 approved panels went live calling a `PixelScreen.bands()` that did not exist.
 Fixed both sides now, but the *shape* of the bug will come back with the next
 panel. **Write a test that draws every `BROLL_KEYS` entry on purpose**, in both
-`d = 0` and `d = 1`, and fails if one throws or comes out near-empty. Ten
-seconds of work, and it is the only thing that would have caught it.
+`d = 0` and `d = 1`, and fails if one throws or comes out near-empty. On
+`gh-pages` this is `__rfh.debug.drawAllPlates()` / `test/plates.cjs`.
 
 **Import tokens drifting apart is not cosmetic.** Measured in a browser on the
 deployed build before fixing it: `screen.js` was fetched under **three** tokens
 and `palette.js` under four — so the page was building three separate
-`PixelScreen` classes from one file. `AGENTS.md` already calls token alignment
-mandatory; this is what it actually costs when it slips. Now aligned at v10.
+`PixelScreen` classes from one file. Align every `?v=N` to one version.
 
 *Correction to the record:* an older deploy commit says radiofree "does not
 survive an offline reload". It does. Tested against the deployed tree — the
@@ -118,11 +123,7 @@ Onion, one new technique per bulletin, plain readings must be specific), and
 
 ## Verify before claiming shipped
 
-`AGENTS.md`'s checklist, plus the two it does not have:
-
-6. **Draw every plate on purpose**, both decode states — see above.
-7. **Offline reload for real**: register the worker, cut the network, reload,
-   tune in, read a bulletin. Manual refresh does not exercise it.
+Use the checklist in `AGENTS.md` (includes draw-every-plate + offline-for-real).
 
 ---
 
