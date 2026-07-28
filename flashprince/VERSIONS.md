@@ -4,6 +4,43 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v4 — 2026-07-28
+
+Art built to the owner's reference sheets (two Another World tribute
+illustrations, 2026-07). What they demanded that the build was not doing:
+
+- **Every material is a RAMP, not a fill.** A rock face in the reference is a
+  lit top plane, a mid face, a shadow side and a dark crevice line — four
+  values on one shape — and every mass here was being painted with exactly
+  one. The sixteen-colour rule was never the obstacle; the eleven world slots
+  were just being spent flat. Every surface now carries EDGE / NEAR / SOLID /
+  DARK across it.
+- **Foliage is clustered blades, not a frond on a stick.** New `leaves()`:
+  broad leaves over a NARROW fan, widest about halfway along, on a filled base,
+  drawn dark and then lighter and smaller over the top. The first cut used thin
+  triangles over a 270° fan and every cluster came out a black starburst.
+- **Growth over every lip** — moss and creeper hanging off each exposed
+  surface, LIGHTER than the stone it hangs from. The other way round it reads
+  as damage rather than as life, which is the tell in both references.
+- **Ruins became architecture**: base, tapered shaft with a lit edge and
+  flutes, capital, lintel, and a carved meander. Palace arches got a keystone,
+  an impost course and a dark void behind them.
+- **The machine became a machine**: dark armoured plate with cyan light strips,
+  hot orange vents and slack cable runs, instead of one flat wheel.
+- **Warm against cool.** Both references live on it — teal jungle against
+  orange machine light, cyan crystal against red rock — and each biome was
+  sitting in a single temperature. The reactor's LUX2 is now a hot orange.
+- **A sky with things in it**: stars, and three bodies rather than two.
+- Foreground **bioluminescence** — glowing caps and crystals clustered along
+  the bottom of the frame — and **petroglyphs** cut into the rock where the
+  stone starts and the jungle ends.
+
+One thing that had to be walked back: the first atmosphere pass stacked three
+haze veils all the way down to the floor, which added to about half an alpha
+over everything the player stands on and turned the whole picture pale.
+Recession has to happen BEHIND the action, not on it — it is two bands in the
+middle distance and one veil at the foot now.
+
 ## v3 — 2026-07-28
 
 Prince of Persia's move set, properly; a real control panel on a phone; and

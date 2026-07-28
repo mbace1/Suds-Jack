@@ -50,15 +50,25 @@ export function paintBack(scr, room, index) {
   }
   scr.rect(0, Math.round(H * 0.62), W, H, C.FAR);
 
-  // two suns, low and close together, on the jungle side of the journey
-  if (w.jungle > 0.15) {
-    scr.disc(232, 34, 13 * w.jungle + 3, C.SKY_LO);
-    scr.disc(232, 34, 9 * w.jungle + 2, C.LUX2);
-    scr.disc(262, 46, 5 * w.jungle + 2, C.LUX2);
+  // stars, and more than one moon. It is not Earth and the sky is the cheapest
+  // place to say so — the reference hangs five up there.
+  for (let i = 0; i < 30; i++) {
+    const sx = (i * 61 + index * 17) % W, sy = (i * 29) % 62;
+    scr.rect(sx, sy, 1, 1, i % 5 ? C.FAR : C.EDGE);
   }
-  if (w.palace > 0.3) {                                  // one moon instead
+  if (w.jungle > 0.15 || w.machine > 0.2) {
+    scr.disc(232, 34, 13 * Math.max(w.jungle, 0.5) + 3, C.SKY_LO);
+    scr.disc(232, 34, 9 * Math.max(w.jungle, 0.5) + 2, C.LUX2);
+    scr.disc(232, 31, 6, C.EDGE);                        // the lit limb of it
+    scr.disc(262, 46, 5 * Math.max(w.jungle, 0.4) + 2, C.LUX2);
+    scr.disc(196, 20, 7, C.FAR);                         // a third, further off
+    scr.disc(194, 18, 5, C.MID);
+  }
+  if (w.palace > 0.3) {
     scr.disc(64, 30, 11, C.LUX);
     scr.disc(60, 27, 9, C.SKY_HI);
+    scr.disc(258, 22, 6, C.FAR);
+    scr.disc(256, 21, 4, C.MID);
   }
 
   // FAR — the shape of the land, one silhouette
@@ -107,24 +117,62 @@ export function paintBack(scr, room, index) {
     for (let i = 0; i < n; i++) {
       const x = 20 + r() * (W - 50), hh = 50 + r() * 50;
       const ww = 13 + r() * 7;
-      // a column, tapered, with a slab across the top of it
-      scr.poly([x, horizon + 30, x + ww, horizon + 30, x + ww - 2, horizon + 30 - hh, x + 2, horizon + 30 - hh], C.NEAR);
-      scr.rect(x - 4, horizon + 26 - hh, ww + 8, 6, C.NEAR);
-      if (r() < 0.5) scr.rect(x - 10, horizon + 20 - hh, ww + 26, 5, C.NEAR);
+      // A COLUMN, not a post: base, tapered shaft with a lit edge and flutes,
+      // capital, and a lintel across the top. Three values on one shape is what
+      // separates a ruin from a rectangle.
+      const b0 = horizon + 30, top = b0 - hh;
+      scr.poly([x, b0, x + ww, b0, x + ww - 2, top, x + 2, top], C.NEAR);
+      scr.poly([x, b0, x + 3, b0, x + 5, top, x + 2, top], C.MID);       // the lit edge
+      for (let k = 1; k < 3; k++) scr.rect(x + 3 + k * (ww / 3.4), top + 4, 1, hh - 8, C.FAR);
+      scr.rect(x - 3, top - 5, ww + 6, 5, C.NEAR);                        // capital
+      scr.rect(x - 3, top - 5, ww + 6, 1, C.MID);
+      scr.rect(x - 2, b0 - 4, ww + 4, 4, C.NEAR);                         // base
+      if (r() < 0.55) {
+        scr.rect(x - 11, top - 12, ww + 26, 7, C.NEAR);                   // lintel
+        scr.rect(x - 11, top - 12, ww + 26, 1, C.MID);
+        // a meander cut into it — the one carved motif the references all have
+        for (let k = 0; k < 5; k++) {
+          const mx = x - 8 + k * ((ww + 20) / 5);
+          scr.rect(mx, top - 10, 4, 1, C.FAR);
+          scr.rect(mx + 3, top - 10, 1, 3, C.FAR);
+        }
+      }
+      if (w.vine > 0.15 || w.jungle > 0.2) drape(scr, x - 2, top - 4, ww + 4, C.MID, r, 12);
     }
   }
   if (w.machine > 0.15) {
-    // the thing under the temple: concentric arcs and a core, dead flat
-    const cx = 160 + (r() - 0.5) * 90, cy = 74;
-    for (let k = 5; k >= 1; k--) {
-      scr.disc(cx, cy, k * 11 * w.machine + 6, k % 2 ? C.NEAR : C.MID);
-    }
+    // THE MACHINE. Dark armoured plate, cyan light strips, hot orange vents and
+    // cable runs slung between them — the reference's whole right-hand side is
+    // that, and a flat wheel was reading as a cog in a mill.
+    const cx = 160 + (r() - 0.5) * 70, cy = 72;
+    for (let k = 5; k >= 1; k--) scr.disc(cx, cy, k * 10 * w.machine + 6, k % 2 ? C.NEAR : C.MID);
     for (let i = 0; i < 8; i++) {
       const a = i / 8 * Math.PI * 2;
       scr.limb(cx + Math.cos(a) * 20, cy + Math.sin(a) * 20,
-        cx + Math.cos(a) * 78, cy + Math.sin(a) * 78, 3, 1.5, C.MID);
+        cx + Math.cos(a) * 74, cy + Math.sin(a) * 74, 3, 1.5, C.MID);
     }
-    for (let i = 0; i < 5; i++) scr.rect(0, 26 + i * 26, W, 2, C.NEAR);
+    // plated bulkheads down both sides, each with its own strip and vent
+    for (const side of [0, 1]) {
+      const bx = side ? W - 62 : 6;
+      for (let k = 0; k < 5; k++) {
+        const py = 8 + k * 22, ph = 18;
+        scr.rect(bx, py, 56, ph, C.NEAR);
+        scr.rect(bx, py, 56, 1, C.MID);
+        scr.rect(bx, py + ph - 2, 56, 2, C.DARK);
+        if (k % 2 === 0) scr.rect(bx + (side ? 4 : 44), py + 4, 8, 3, C.LUX);
+        else {
+          scr.rect(bx + (side ? 6 : 40), py + 4, 12, 9, C.DARK);
+          scr.rect(bx + (side ? 8 : 42), py + 6, 8, 5, C.LUX2);
+        }
+      }
+      // a cable run, slack between two anchors
+      const ax = side ? W - 66 : 62;
+      for (let i = 0; i <= 16; i++) {
+        const tt = i / 16, px = ax + (side ? -1 : 1) * tt * 34;
+        scr.rect(px, 30 + Math.sin(tt * Math.PI) * 26, 2, 2, C.DARK);
+      }
+    }
+    for (let i = 0; i < 5; i++) scr.rect(0, 26 + i * 26, W, 1, C.NEAR);
   }
   if (w.palace > 0.2) {
     // a colonnade of round arches — the one shape that says renaissance at
@@ -133,8 +181,12 @@ export function paintBack(scr, room, index) {
     for (let i = 0; i < n; i++) {
       const x = 8 + i * 64, top = 58, ww = 46;
       scr.rect(x, top, ww, H - top, C.NEAR);
+      arch(scr, x + 4, top + 14, ww - 8, 62, C.FAR);      // the void inside it
       arch(scr, x + 6, top + 16, ww - 12, 58, C.MID);
+      scr.rect(x + ww / 2 - 3, top + 14, 6, 7, C.EDGE);   // the keystone
       scr.rect(x - 3, top - 5, ww + 6, 7, C.NEAR);
+      scr.rect(x - 3, top - 5, ww + 6, 1, C.EDGE);
+      scr.rect(x - 1, top + 12, ww + 2, 2, C.MID);        // impost course
     }
   }
 
@@ -174,9 +226,9 @@ export function paintBack(scr, room, index) {
       frond(scr, x, -6 + r() * 10, 0.45 + r() * 0.5, 34 + r() * 24, C.NEAR, 0.7, 5.5);
     }
     scr.rect(0, 0, W, 10, C.NEAR);
-    for (let i = 0; i < 22; i++) {                                           // undergrowth
-      const x = r() * W, hh = 10 + r() * 16;
-      frond(scr, x, horizon + 62, -1.35 + (r() - 0.5) * 0.7, hh, C.DARK, 0.25, 2.2);
+    for (let i = 0; i < 16; i++) {                                           // undergrowth
+      const x = r() * W;
+      leaves(scr, x, horizon + 62, 9 + r() * 9, C.DARK, C.SOLID, 6, Math.PI * 0.9);
     }
   }
   if (scene === 'canopy') {
@@ -202,8 +254,49 @@ export function paintBack(scr, room, index) {
     scr.poly([148, horizon + 34, 196, horizon + 34, 192, horizon + 18, 152, horizon + 20], C.SOLID);
   }
 
-  // NEAR-ish ground haze: one flat veil that pushes everything behind it back
-  if (scene !== 'chasm') scr.veil([0, horizon - 6, W, horizon - 22, W, H, 0, H], C.NEAR, 0.35);
+  // ATMOSPHERE. One veil flattened everything behind it into a single plane;
+  // the references get their depth from each layer being one step hazier than
+  // the one in front, so this is three, stacked and shallow.
+  // Two BANDS in the middle distance and one veil at the foot, not three washes
+  // down to the floor. Stacked all the way to the bottom of the frame they add
+  // to half an alpha over everything the player is standing on, and the whole
+  // picture went pale — recession has to happen BEHIND the action, not on it.
+  if (scene !== 'chasm') {
+    scr.veil([0, horizon - 48, W, horizon - 58, W, horizon - 12, 0, horizon - 4], C.NEAR, 0.15);
+    scr.veil([0, horizon - 4, W, horizon - 20, W, H, 0, H], C.NEAR, 0.3);
+  }
+
+  // ── the foreground, and what grows in it ─────────────────────────
+  // Bioluminescence clustered along the bottom of the frame, which is where
+  // both references put it: cold light low down, against whatever the sky is
+  // doing. Drawn last so it sits in front of everything.
+  if (w.jungle > 0.25 || w.vine > 0.25) {
+    for (let i = 0; i < 9; i++) {
+      const gx = (i * 41 + index * 23) % W, gy = H - 4 - (i % 3) * 3;
+      const hh = 4 + (i % 4) * 2;
+      scr.rect(gx, gy - hh, 2, hh, C.DARK);              // stem
+      scr.poly([gx - 4, gy - hh, gx + 6, gy - hh, gx + 4, gy - hh - 4, gx - 2, gy - hh - 4], C.LUX);
+      scr.rect(gx - 1, gy - hh - 3, 4, 1, C.LUX2);       // the lit cap
+    }
+    for (let i = 0; i < 5; i++) {                        // and a few crystals
+      const gx = 12 + ((i * 73 + index * 31) % (W - 24));
+      const hh = 6 + (i % 3) * 4;
+      scr.poly([gx, H, gx + 5, H, gx + 4, H - hh, gx + 2, H - hh - 3, gx + 1, H - hh], C.LUX);
+      scr.poly([gx + 1, H, gx + 2, H, gx + 2, H - hh + 1, gx + 1, H - hh + 1], C.LUX2);
+    }
+  }
+  // petroglyphs cut into the rock, where the stone starts and the jungle ends
+  if (w.ruin > 0.3 && w.glyph < 0.55) {
+    const gr = rand(index * 613 + 5);
+    for (let i = 0; i < 4; i++) {
+      const gx = 10 + gr() * 40, gy = 96 + gr() * 50;
+      scr.rect(gx + 2, gy, 2, 9, C.DARK);                // a figure: body,
+      scr.rect(gx, gy + 3, 6, 1, C.DARK);                // arms,
+      scr.rect(gx + 1, gy + 9, 2, 4, C.DARK);            // legs
+      scr.rect(gx + 4, gy + 9, 2, 4, C.DARK);
+      scr.disc(gx + 3, gy - 2, 2, C.DARK);               // and a head
+    }
+  }
 }
 
 // Marks cut into the wall. Called by the tile painter rather than the backdrop
@@ -247,16 +340,64 @@ export function frond(scr, x, y, ang, len, ci, droop = 0.55, wide = 4.4) {
   scr.poly([...top, ...bot], ci);
 }
 
+// A CLUSTER of pointed leaves radiating off one base, drawn dark first and then
+// a smaller lighter fan over it. This is the single biggest thing the reference
+// art does that a frond-on-a-stick does not: real foliage is many small blades
+// overlapping at two values, and the overlap is what reads as a plant rather
+// than as a feather.
+export function leaves(scr, x, y, r, dark, lit, n = 7, spread = Math.PI * 0.8, tilt = -Math.PI / 2) {
+  // A LEAF, not a spine. The first cut made each blade a thin triangle over a
+  // 270-degree fan and every cluster came out a black starburst — a sea urchin.
+  // Real foliage is broad blades over a NARROW fan, widest about halfway along,
+  // sitting on a filled base so the shape has body between the points.
+  const blade = (a, L, wd, ci) => {
+    const cx = Math.cos(a), cy = Math.sin(a), nx = -cy * wd, ny = cx * wd;
+    scr.poly([
+      x, y,
+      x + cx * L * 0.42 + nx, y + cy * L * 0.42 + ny,
+      x + cx * L, y + cy * L,
+      x + cx * L * 0.42 - nx, y + cy * L * 0.42 - ny,
+    ], ci);
+  };
+  for (let pass = 0; pass < 2; pass++) {
+    const ci = pass ? lit : dark;
+    const k = pass ? 0.66 : 1;
+    const cnt = pass ? Math.max(3, n - 3) : n;
+    for (let i = 0; i < cnt; i++) {
+      const a = tilt - spread / 2 + (spread * i) / Math.max(1, cnt - 1);
+      const L = r * k * (0.78 + ((i * 37) % 10) / 34);
+      blade(a, L, Math.max(1.6, r * 0.3 * k), ci);
+    }
+    // the base the blades come out of, so the middle is mass and not gaps
+    scr.disc(x + Math.cos(tilt) * r * 0.16 * k, y + Math.sin(tilt) * r * 0.16 * k,
+      Math.max(1.5, r * 0.26 * k), ci);
+  }
+}
+
+// Moss and creeper hanging off a lip. Lighter than what it hangs from, because
+// in every one of the references the growth is the light thing and the stone is
+// the dark thing — the other way round and it reads as damage.
+export function drape(scr, x, y, w, ci, r, len = 9) {
+  for (let i = 0; i < w; i += 2 + ((i * 3) % 3)) {
+    const L = 2 + r() * len;
+    scr.rect(x + i, y, 2, L, ci);
+    if (L > len * 0.6) scr.rect(x + i - 1, y + L - 2, 3, 2, ci);
+  }
+}
+
 function trunk(scr, x, base, h, w, lean, ci) {
   const tx = x + lean;
   scr.poly([x - w, base, x + w, base, tx + w * 0.5, base - h, tx - w * 0.5, base - h], ci);
-  // the crown: seven blades from left to right, every one of them falling
+  // one lit edge down the trunk, so it is a cylinder and not a plank
+  scr.poly([x - w, base, x - w + 2, base, tx - w * 0.5 + 1.5, base - h, tx - w * 0.5, base - h],
+    ci === C.NEAR ? C.MID : C.NEAR);
+  // the crown: blades, and then a cluster of leaves over the join
   const top = base - h + 4;
   for (let i = 0; i < 7; i++) {
     const a = -Math.PI * 0.95 + i * (Math.PI * 0.9) / 6;
     frond(scr, tx, top, a, 25 + (i % 3) * 13, ci, 0.55, 3.4);
   }
-  scr.disc(tx, top + 2, w * 1.2, ci);
+  leaves(scr, tx, top + 2, 16, ci, ci === C.NEAR ? C.MID : C.FAR, 9, Math.PI * 1.25);
 }
 
 function arch(scr, x, y, w, h, ci) {
@@ -321,7 +462,18 @@ export function drawFore(scr, room, index) {
       for (let i = 0; i < 5; i++) {
         const y = 2 + i * 34 + r() * 14;
         const a = (side ? Math.PI : 0) + (s * (-0.5 + r() * 0.7));
-        frond(scr, x + s * 8, y, a, 46 + r() * 40, C.VOID, 0.42, 6.5);
+        const L = 46 + r() * 40;
+        frond(scr, x + s * 8, y, a, L, C.VOID, 0.42, 6.5);
+        // A LEAF CLUSTER at the end of each one. Bare arcs read as wire; the
+        // reference's foreground is a dense unlit MASS of foliage, and mass is
+        // what makes the lit middle distance sit back behind it.
+        leaves(scr, x + s * 8 + Math.cos(a) * L * 0.82,
+          y + Math.sin(a) * L * 0.82 + 0.42 * L * 0.67,
+          15 + r() * 8, C.VOID, C.VOID, 7, Math.PI * 0.85, a);
+      }
+      // and a bank of it along the very bottom corner
+      for (let i = 0; i < 4; i++) {
+        leaves(scr, x + s * (10 + i * 22), H + 6, 19 + r() * 10, C.VOID, C.VOID, 7, Math.PI * 0.9);
       }
     }
   }

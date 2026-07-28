@@ -10,7 +10,7 @@
 
 import { ROOMS, RW, RH, TILE, ROOM_W, ROOM_H } from './rooms.js';
 import { C } from './palette.js';
-import { glyphs, weights } from './scenery.js';
+import { glyphs, weights, drape, leaves } from './scenery.js';
 
 const SOLIDS = '#~^';
 const rand = s => () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
@@ -280,12 +280,19 @@ export class World {
       }
     }
 
-    // every exposed surface: a lit band, then lumps sitting on it so the top of
-    // the world is a line somebody chipped rather than a line somebody ruled
+    // EVERY SURFACE IS A RAMP, not a fill. This is the whole lesson of the
+    // reference art: a rock face there is a lit top plane, a mid face, a shadow
+    // side and a dark crevice line — four values on one shape — and the mass
+    // here was being painted with one. The eleven world slots are enough for
+    // that; they were just being spent flat.
+    const w0 = weights(this.room.t);
+    const nat = Math.max(w0.ruin, w0.palace, w0.machine) < 0.3;
     for (const [tx, ty] of mass) {
       const x = tx * TILE, y = ty * TILE;
-      if (empty(tx, ty - 1)) {
-        scr.rect(x, y, TILE, 2, C.EDGE);
+      const lit = empty(tx, ty - 1);
+      if (lit) {
+        scr.rect(x, y, TILE, 2, C.EDGE);                       // the lit plane
+        scr.rect(x, y + 2, TILE, 2, C.NEAR);                   // its turn-under
         const n = 1 + ((r() * 3) | 0);
         for (let i = 0; i < n; i++) {
           const w = 2 + r() * 4, h = 1 + r() * 2, ox = r() * (TILE - w);
@@ -296,10 +303,27 @@ export class World {
         scr.rect(x, y + TILE - 3, TILE, 3, C.DARK);
         if (r() < 0.5) scr.poly([x + 3, y + TILE, x + 11, y + TILE, x + 8, y + TILE + 3], C.DARK);
       }
-      if (empty(tx - 1, ty)) scr.rect(x, y, 2, TILE, C.DARK);
-      if (empty(tx + 1, ty)) scr.rect(x + TILE - 2, y, 2, TILE, C.DARK);
-      // a couple of faces catching the light, flat, no gradient
+      // the two vertical faces get opposite treatment — one catches the light
+      // the top plane catches, the other is the shadow side
+      if (empty(tx - 1, ty)) { scr.rect(x, y, 2, TILE, C.NEAR); scr.rect(x, y, 1, TILE, C.DARK); }
+      if (empty(tx + 1, ty)) scr.rect(x + TILE - 3, y, 3, TILE, C.DARK);
       if (r() < 0.22) scr.rect(x + 2 + r() * 6, y + 4 + r() * 8, 3 + r() * 5, 2, C.DARK);
+    }
+
+    // ── what grows on it ─────────────────────────────────────────────
+    // Moss over every lip and creeper hanging off it, lighter than the stone.
+    // In both references the growth is the LIGHT thing and the rock is the dark
+    // thing; the other way round it reads as damage rather than as life.
+    if (nat || w0.vine > 0.25) {
+      for (const [tx, ty] of mass) {
+        if (!empty(tx, ty - 1)) continue;
+        const x = tx * TILE, y = ty * TILE;
+        if (r() < 0.75) drape(scr, x + 1, y + 3, TILE - 2, nat ? C.SOLID : C.EDGE, r, 11);
+        if (r() < 0.45) {
+          leaves(scr, x + 3 + r() * 9, y - 1, 6 + r() * 5,
+            nat ? C.SOLID : C.NEAR, C.EDGE, 5, Math.PI * 0.95);
+        }
+      }
     }
 
     // ── what the rock is MADE of ─────────────────────────────────────
