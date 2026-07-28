@@ -20,6 +20,7 @@
 //   keys   words the typed parser matches on, over and above the question
 //   note   follow the reply with a box to write him one
 //   notes  follow the reply with the notes you have already left
+//   changed follow the reply with the log of what actually got fixed
 //   askGames  like `asks`, but the options are the live catalogue
 //   scores follow the reply with whatever the games left on THIS machine
 //   torn   the portrait tears while he answers — a glitch is an event
@@ -510,6 +511,13 @@ export const TOPICS = [
     // Feedback you cannot see again is a suggestion box with a lock on it.
     id: 'mine', q: 'WHAT HAVE I TOLD YOU?', locked: true, notes: true,
     a: ['WHAT YOU LEFT ME IS STILL ON YOUR MACHINE.', 'HERE IT IS.'],
+    opens: ['changed'],
+  },
+  {
+    // The half that makes the note box worth using twice. A suggestion box
+    // nobody answers stops getting used.
+    id: 'changed', q: 'DID ANY OF IT MATTER?', changed: true,
+    a: ['SOME OF IT. HERE IS WHAT MOVED.'],
   },
 
   // ── what he can see from here ──────────────────────────────────────────
@@ -559,6 +567,45 @@ for (const id of ['ai', 'scroll', 'hypocrite', 'seam']) {
   const t = TOPICS.find(x => x.id === id);
   if (t) t.torn = true;
 }
+
+// ── what changed ─────────────────────────────────────────────────────────
+// The other half of the note box. A suggestion box nobody ever answers stops
+// getting used, so this is the answer: a hand-kept log of what actually got
+// fixed, newest first, read out at the counter.
+//
+// TWO RULES, and they are the whole reason it is worth having.
+//
+// It is HAND-KEPT. Nothing generates it, because the point is that a person
+// read the notes and did something. Add an entry when you ship the fix.
+//
+// It never claims somebody asked. These are things that changed, stated
+// flatly; the counter separately checks whether YOU left a note about that
+// game and says so if you did, which is true and checkable rather than
+// flattering. Do not write "you asked for this" into the text.
+//
+//   { when, game, what: [lines] }   game matches the catalogue's id, or
+//                                   'hub' for the arcade itself
+export const CHANGED = [
+  {
+    when: '2026-07', game: 'hub',
+    what: ['THE COUNTER TOOK ITS FIRST NOTES.',
+      'YOU CAN ALSO JUST TYPE AT ME NOW.'],
+  },
+  {
+    when: '2026-07', game: 'hub',
+    what: ['THE HOME BUTTON WORKED WITH A MOUSE AND',
+      'DID NOTHING UNDER A THUMB.',
+      'IT WORKS UNDER A THUMB.'],
+  },
+  {
+    when: '2026-07', game: 'hub',
+    what: ['GAMES THAT ARE NOT UP SAY SO ON THE',
+      'BUTTON INSTEAD OF 404ING AT YOU.'],
+  },
+];
+
+export const CHANGED_NONE = ['NOTHING WORTH READING OUT YET.'];
+export const CHANGED_YOURS = 'YOU LEFT A NOTE ABOUT THIS ONE.';
 
 // ── what he thinks of his own cabinets ───────────────────────────────────
 // Keyed by the catalogue's own ids. A game with no line here is not a bug:
@@ -645,6 +692,7 @@ const KEYS = {
   seen: ['SEEN', 'SCORE', 'SCORES', 'HIGH', 'RECORD', 'PLAYED', 'STATS'],
   about: ['ABOUT', 'TELL', 'CABINET', 'DESCRIBE', 'THEM'],
   mine: ['MINE', 'TOLD', 'NOTES', 'WROTE', 'SENT', 'ARCHIVE'],
+  changed: ['CHANGED', 'FIXED', 'MATTER', 'MATTERED', 'LISTEN', 'IGNORE', 'CHANGELOG'],
   back: ['BACK', 'MORE', 'DEEPER', 'SECRET'],
   bye: ['BYE', 'GOODBYE', 'LEAVE', 'EXIT', 'QUIT', 'NOTHING', 'THANKS'],
 };

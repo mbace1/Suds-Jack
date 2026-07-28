@@ -583,6 +583,30 @@ function serve() {
   await settle();
   ok('and says so when there are none', /THE BOX IS EMPTY/.test(await logText()));
 
+  // ── and what changed because of it ─────────────────────────────────────
+  // The other half of the note box: a suggestion box nobody answers stops
+  // getting used. The log is hand-kept and never claims you asked — but it
+  // does check whether you left a note about that cabinet, ONCE, because
+  // said against every line it stops being an acknowledgement and becomes
+  // flattery.
+  await page.evaluate(() => {
+    globalThis.__hub.feedback = {
+      archive: () => [{ ts: Date.now(), game: 'hub', note: 'home button does nothing on my phone' }],
+      send: () => 'sent',
+    };
+  });
+  await page.evaluate(() => globalThis.__tokoChat.say('changed'));
+  await settle();
+  const chg = await page.evaluate(() => ({
+    entries: document.querySelectorAll('.toko-chat .tc-score').length,
+    yours: document.querySelectorAll('.toko-chat .tc-you-quiet').length,
+    text: document.querySelector('.toko-chat .tc-log').textContent,
+  }));
+  ok('he reads out what actually changed', chg.entries >= 3, String(chg.entries));
+  ok('and flags a game you noted about exactly once', chg.yours === 1, String(chg.yours));
+  ok('the log never claims you asked for it',
+    !/YOU ASKED FOR/i.test(chg.text) && !/BECAUSE YOU/i.test(chg.text));
+
   // ── the hour, and the menu it gates ────────────────────────────────────
   const clock = await page.evaluate(async () => {
     const d = await import('/toko/js/dialogue.js');
