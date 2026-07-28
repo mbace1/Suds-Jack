@@ -815,6 +815,60 @@ function serve() {
   ok('every favourite exists in all three languages',
     fav.missing.length === 0, fav.missing.join(', '));
 
+  // A DUPLICATE KEY in an object literal is not an error in JavaScript — the
+  // later one silently wins. Flash Prince was written twice in all three
+  // packs, once by hand and once by a tool, and the hand-written line was the
+  // one being thrown away. Nothing catches that at runtime, so it is caught
+  // here, by reading the source rather than the object.
+  // Strings first, then braces. `{x}` and `{n}` are real interpolation marks
+  // inside these files, so counting braces over raw source walks straight off
+  // the end of a table; blanking string bodies (and comments) first makes the
+  // depth honest. `a:` and `opens:` legitimately repeat across topics, which
+  // is why this scopes to ONE named table at a time rather than the file.
+  const blanked = (src) => {
+    let out = '', i = 0;
+    while (i < src.length) {
+      const c = src[i];
+      if (c === '/' && src[i + 1] === '/') { while (i < src.length && src[i] !== '\n') i++; continue; }
+      if (c === '/' && src[i + 1] === '*') { const e = src.indexOf('*/', i); i = e < 0 ? src.length : e + 2; continue; }
+      if (c === "'" || c === '"' || c === '`') {
+        const q = c; out += q; i++;
+        while (i < src.length && src[i] !== q) { if (src[i] === '\\') i++; i++; }
+        out += q; i++; continue;
+      }
+      out += c; i++;
+    }
+    return out;
+  };
+  const dupesIn = (src, table) => {
+    const m = new RegExp('\\b' + table + '\\s*[:=]\\s*\\{').exec(src);
+    if (!m) return [];
+    let depth = 0, start = m.index + m[0].length - 1, end = src.length;
+    for (let i = start; i < src.length; i++) {
+      if (src[i] === '{') depth++;
+      else if (src[i] === '}' && --depth === 0) { end = i; break; }
+    }
+    const body = src.slice(start + 1, end);
+    const seen = new Set(), dup = [];
+    let d = 0;
+    for (const mm of body.matchAll(/[{}]|([A-Za-z_][A-Za-z0-9_]*)\s*:/g)) {
+      if (mm[0] === '{') { d++; continue; }
+      if (mm[0] === '}') { d--; continue; }
+      if (d !== 0) continue;                       // nested object, not ours
+      if (seen.has(mm[1])) dup.push(table + '.' + mm[1]);
+      seen.add(mm[1]);
+    }
+    return dup;
+  };
+  const dupes = [];
+  for (const file of ['dialogue.js', 'dialogue.fi.js', 'dialogue.ja.js']) {
+    const src = blanked(fs.readFileSync(path.join(ROOT, 'toko', 'js', file), 'utf8'));
+    for (const table of ['GAME_NOTES', 'KEYS', 'UI', 'T']) {
+      for (const d of dupesIn(src, table)) dupes.push(file + ' ' + d);
+    }
+  }
+  ok('no table declares the same key twice', dupes.length === 0, dupes.join(', '));
+
   // Japanese does not space its words, so the whitespace tokeniser sees one
   // long run and matches nothing. That pack sets `substring: true` and the
   // parser asks a different question — does this key APPEAR in what you
