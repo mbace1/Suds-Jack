@@ -16,12 +16,12 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { COL } from './palette.js?v=2';
-import { Terrain } from './terrain.js?v=2';
-import { Skater } from './skater.js?v=2';
-import { Input } from './input.js?v=2';
-import { Audio } from './audio.js?v=2';
-import { randomSeed, clamp, lerp } from './rng.js?v=2';
+import { COL } from './palette.js?v=3';
+import { Terrain } from './terrain.js?v=3';
+import { Skater } from './skater.js?v=3';
+import { Input } from './input.js?v=3';
+import { Audio } from './audio.js?v=3';
+import { randomSeed, clamp, lerp } from './rng.js?v=3';
 
 // ── Tuning ─────────────────────────────────────────────────────────────────
 // The view is anchored on its WIDTH, not its height. This is a side-on game
@@ -332,7 +332,14 @@ function applyZoom() {
 }
 
 function resize() {
-  renderer.setSize(innerWidth, innerHeight, false);
+  // updateStyle must stay ON. With it off, three sizes the drawing buffer to
+  // innerWidth × pixelRatio and leaves the element's CSS size alone — and an
+  // unstyled canvas lays out at its buffer size in CSS pixels. On any phone
+  // (pixelRatio 2) that is a canvas twice the viewport in both directions, so
+  // the player sees the top-left quarter of the picture at 2× and the skater,
+  // who rides the middle of it, is off the bottom of the screen. dropcabal can
+  // pass false because its CSS pins the canvas to 100vw/100vh; this one cannot.
+  renderer.setSize(innerWidth, innerHeight);
   composer.setSize(innerWidth, innerHeight);
   bloom.setSize(innerWidth, innerHeight);
   applyZoom();

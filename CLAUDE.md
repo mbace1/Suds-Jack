@@ -198,6 +198,13 @@ featureless dark mass. Anything framed in world units has to follow the width fo
 same reason — the sun's radius and the camera's forward lead both did not, and swelled
 into a moon / pinned the skater to the left edge on a phone. A 16:9 desktop is
 unaffected by any of it (34 × 16/9 = 60 was always the real number).
+The renderer must keep **`setSize`'s `updateStyle` on**: with it off (which is how the
+game shipped) the canvas element has no CSS size and lays out at its *buffer* size in
+CSS pixels — on a phone at `setPixelRatio(min(dpr,2))` that is a canvas twice the
+viewport each way, so the player sees the top-left quarter at 2× and the skater is
+below the bottom edge. `dropcabal` passes `false` legitimately because its CSS pins the
+canvas to 100vw/100vh for the pixel-art upscale; copying the flag without the CSS is
+the trap.
 It is **its own game, not a Tiny Hawk mode** — spun out of that project's design work when
 Tiny Hawk went third-person 3D, and it shares nothing with it at runtime (its own
 `tiny2dHi` / `tiny2dSound` keys). What travelled the other way is physics: `tinyhawk`'s

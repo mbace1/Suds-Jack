@@ -8,6 +8,19 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v3 — 2026-07-28
+**The canvas was twice the size of the phone**
+- `resize()` called `renderer.setSize(w, h, false)` — `updateStyle` off — and
+  the canvas had no CSS size, so the element laid out at its *drawing buffer*
+  size in CSS pixels. With `setPixelRatio(min(dpr, 2))` that is **twice the
+  viewport in each direction on any phone**: the player saw the top-left
+  quarter of the picture at 2×, and the skater, who rides the middle of it,
+  sat below the bottom edge of the screen. Measured at dpr 2 on a 393×851
+  screen: canvas 786×1702, skater at y=874. Now 393×851 and y=481.
+- dropcabal passes `false` on purpose — its CSS pins the canvas to 100vw/100vh
+  because it renders at a fixed 220px internal height. This one had copied the
+  flag without the CSS.
+
 ## v2 — 2026-07-27
 **The phone can see the hill**
 - The ortho view is anchored on its **width** (60 units across at a standstill,
