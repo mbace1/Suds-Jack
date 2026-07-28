@@ -20,9 +20,9 @@
 // ids — and cannot confirm delivery, because Google Forms sends no CORS headers
 // and the browser can only fire the request blind. Formspree is the easier fit.
 
-import * as store from './storage.js?v=41';
+import * as store from './storage.js?v=42';
 
-let ENDPOINT = 'https://script.google.com/macros/s/AKfycbycM2SigkqxRLecc5S4SFF_sq3XDNrVmfcXzYb2cQrHnBEoSU6JNeB7yQ8pAuN89lDf/exec';
+let ENDPOINT = 'https://script.google.com/macros/s/AKfycbwFnbiZ-nPQOId06S2PHPvehLoTKyTu45eFnshpArEuvcxBfEeMXhxtOh6kH8Z9o3Fu/exec';
 
 export function endpoint() { return ENDPOINT; }
 export function configured() { return !!ENDPOINT; }
