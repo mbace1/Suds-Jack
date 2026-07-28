@@ -4,8 +4,8 @@
 // A quiet story about waiting for the uncatchable and freezing what the eye
 // cannot hold.
 
-import { PixelScreen } from '../pixel.js?v=41';
-import { PAL } from '../palette.js?v=41';
+import { PixelScreen } from '../pixel.js?v=42';
+import { PAL } from '../palette.js?v=42';
 
 export const lightning = {
   id: 'lightning',

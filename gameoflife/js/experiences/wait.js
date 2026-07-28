@@ -6,8 +6,8 @@
 // a dithered blue vignette halo on pure black, a gnarled silver pine, glowing
 // green fireflies that break the frame, and a lone star out in the dark.
 
-import { PixelScreen, bayer, rampDither } from '../pixel.js?v=41';
-import { PAL } from '../palette.js?v=41';
+import { PixelScreen, bayer, rampDither } from '../pixel.js?v=42';
+import { PAL } from '../palette.js?v=42';
 
 const WAIT_SEC = 9;                 // how long the mist takes to thin
 // the vignette the scene floats in (soft organic blob, not jagged teeth)

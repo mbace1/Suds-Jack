@@ -13,12 +13,12 @@
 // Registered from index.html only over https (or with ?sw=1), so local dev and
 // the smoke gate are never served a stale shell.
 
-const VERSION = 'v41';
+const VERSION = 'v42';
 const CACHE = `gol-${VERSION}`;
 
 // the shell: everything needed to open the hub and run any experience. The
 // query strings matter — these are the URLs the page actually requests.
-const V = `?v=41`;
+const V = `?v=42`;
 const SHELL = [
   './',
   './index.html',

@@ -23,7 +23,7 @@
 // from players' browsers and there is no server here to hide it behind. If
 // it ever gets abused, redeploy the Apps Script for a fresh /exec URL and
 // change this line; nothing else needs to move.
-const SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbycM2SigkqxRLecc5S4SFF_sq3XDNrVmfcXzYb2cQrHnBEoSU6JNeB7yQ8pAuN89lDf/exec';
+const SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwFnbiZ-nPQOId06S2PHPvehLoTKyTu45eFnshpArEuvcxBfEeMXhxtOh6kH8Z9o3Fu/exec';
 const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mdarbpve';
 
 const KEY = 'sudsJackHub';

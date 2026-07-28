@@ -11,8 +11,8 @@
 // the animal is basically a travelling wave. Revert: look into the nearest
 // ditch, and let something remain unexplained.
 
-import { PixelScreen, rampDither } from '../pixel.js?v=41';
-import { PAL } from '../palette.js?v=41';
+import { PixelScreen, rampDither } from '../pixel.js?v=42';
+import { PAL } from '../palette.js?v=42';
 
 const WATER = ['#050d12', '#0a1a22', '#123039', '#1c4a52'];
 const WEED = ['#1e3a2c', '#2c5240', '#3d6b52'];

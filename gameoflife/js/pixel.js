@@ -5,8 +5,8 @@
 // curved, scanlined, and faintly glowing. Nothing that draws had to change for
 // it: the drawing surface is still a flat 192×128 2D context.
 
-import { makeCrt, warp } from './crt.js?v=41';
-import { accentRgb } from './palette.js?v=41';
+import { makeCrt, warp } from './crt.js?v=42';
+import { accentRgb } from './palette.js?v=42';
 
 // darken (f<1) or lighten (f>1) a #rrggbb hex — used for crisp section seams
 // and outline edges so shapes read as defined pixel blocks, not soft washes
