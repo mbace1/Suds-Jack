@@ -28,8 +28,8 @@
 // showing" — and a saturated orange lamp would spend that vocabulary on
 // scenery. Nothing here approaches PAL.AMBER_HOT.
 
-import { PAL } from './palette.js?v=19';
-import { mix, shade, bayer } from './screen.js?v=19';
+import { PAL } from './palette.js?v=20';
+import { mix, shade, bayer } from './screen.js?v=20';
 
 export const PLATE_W = 144, PLATE_H = 276;
 const W = PLATE_W, H = PLATE_H;
@@ -423,20 +423,42 @@ function mannerheimBase(c, o = {}) {
       }
     }
   }
+  if (o.marker) {                      // gulf: a channel marker, and nothing else
+    P(c, 100, 128, 3, 32, '#3f6350');
+    P(c, 96, 122, 11, 8, '#2b4a3a');
+    P(c, 30, 150, 2, 10, '#3f6350'); P(c, 27, 146, 8, 5, '#2b4a3a');
+  }
+  if (o.plaza) {                       // kamppi: a bus interchange, not a void
+    P(c, 0, 168, W, 26, '#16281f'); P(c, 0, 168, W, 2, '#33553f');           // the canopy
+    for (let i = 0; i < 7; i++) P(c, 8 + i * 20, 170, 2, 24, '#0f1d17');     // its columns
+    for (let i = 0; i < 6; i++) {                                            // buses under it
+      const bx = 6 + i * 23;
+      P(c, bx, 178, 18, 11, '#2a4636'); P(c, bx + 2, 180, 14, 5, '#96c4a6');
+    }
+    for (let i = 0; i < 26; i++) {                                           // paving
+      const py = 200 + (i % 7) * 11;
+      P(c, (i * 37) % W, py, 26, 1, '#20372b');
+    }
+  }
   if (o.fort) {                        // ramparts on a low island
     for (let i = 0; i < 3; i++) {
       const fx = 12 + i * 46, fw = 38 - i * 4;
-      P(c, fx, 142, fw, 16, '#1b2a22'); P(c, fx, 142, fw, 2, '#2e4437');
-      for (let k = 0; k < fw; k += 6) P(c, fx + k, 138, 3, 4, '#243527');   // crenellations
+      P(c, fx, 140, fw, 18, '#41604e'); P(c, fx, 140, fw, 2, '#6d9781');
+      for (let k = 0; k < fw; k += 6) P(c, fx + k, 135, 4, 5, '#547a63');   // crenellations
+      for (let k = 3; k < fw; k += 11) P(c, fx + k, 146, 3, 5, '#1d2f26');  // embrasures
     }
-    P(c, 60, 150, 24, 10, '#111d18');                                        // the gate
+    P(c, 58, 146, 26, 12, '#16241d');                                        // the gate
+    P(c, 58, 146, 26, 2, '#6d9781');
   }
   if (o.cranes) {                      // gantries over the quay
     for (let i = 0; i < 3; i++) {
       const gx = 18 + i * 44, gy = 84 - i * 4, gh = 66 - i * 6;
-      P(c, gx, gy, 2, gh, '#0e1b16'); P(c, gx + 20, gy, 2, gh, '#0e1b16');
-      P(c, gx - 4, gy, 30, 3, '#16281f');
-      P(c, gx + 8, gy - 14, 2, 14, '#0e1b16');
+      P(c, gx, gy, 3, gh, '#3f6350'); P(c, gx + 22, gy, 3, gh, '#3f6350');   // legs
+      P(c, gx - 6, gy - 3, 36, 4, '#598872');                                  // the boom
+      P(c, gx + 9, gy - 20, 3, 20, '#3f6350');                                 // the mast
+      P(c, gx + 4, gy + 10, 16, 7, '#2b4a3a');                                 // the cab
+      P(c, gx - 6, gy - 3, 36, 1, '#7fb198');                                  // a lit edge
+      for (let k = 0; k < gh; k += 9) P(c, gx, gy + k, 25, 1, '#2b4a3a');      // lattice
     }
   }
   for (let y = 158; y < H; y++) {
@@ -546,7 +568,7 @@ function esplanadi(scr, t, d) {
 }
 // the plaza: mannerheim's blocks, no rails, a canopy line
 function kamppi(scr, t, d) {
-  mannerheim(scr, t, d, { rails: false, tram: false, traffic: 40, label: 'kamppi' });
+  mannerheim(scr, t, d, { rails: false, tram: false, traffic: 40, plaza: true, label: 'kamppi' });
 }
 // the clock tower: cathedral's massing, a tower instead of a dome
 function station(scr, t, d) {
@@ -558,7 +580,8 @@ function harbour(scr, t, d) {
 }
 // open water and a far shore
 function gulf(scr, t, d) {
-  mannerheim(scr, t, d, { rails: false, tram: false, traffic: 6, water: true, cranes: false, low: true, label: 'gulf' });
+  mannerheim(scr, t, d, { rails: false, tram: false, traffic: 6, water: true,
+                          cranes: false, low: true, marker: true, label: 'gulf' });
 }
 // the fortress islands — water and low ramparts, NOT the cathedral with fewer
 // steps, which is what the first attempt was and is precisely the duplicate
