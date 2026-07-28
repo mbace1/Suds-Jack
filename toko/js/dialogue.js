@@ -19,6 +19,8 @@
 //   needs  how many things you must have asked before it appears
 //   keys   words the typed parser matches on, over and above the question
 //   note   follow the reply with a box to write him one
+//   notes  follow the reply with the notes you have already left
+//   askGames  like `asks`, but the options are the live catalogue
 //   scores follow the reply with whatever the games left on THIS machine
 //   torn   the portrait tears while he answers — a glitch is an event
 
@@ -229,7 +231,15 @@ export const TOPICS = [
       'AND A QUIET ONE THAT SENDS YOU OUTSIDE.',
       'PICK A CABINET. PRESS PLAY.',
     ],
-    opens: ['quiet', 'dead'],
+    opens: ['quiet', 'dead', 'about'],
+  },
+  {
+    // `askGames` is `asks` built from the LIVE catalogue rather than written
+    // here — the counter turns the menu into a rack of cabinets and he says
+    // his piece about whichever one you point at. A cabinet added tomorrow
+    // is on this list tonight.
+    id: 'about', q: 'TELL ME ABOUT ONE OF THEM.', locked: true, askGames: true,
+    a: ['WHICH ONE.'],
   },
   {
     id: 'quiet', q: 'THE QUIET ONE?', once: true, locked: true,
@@ -258,7 +268,7 @@ export const TOPICS = [
     // The counter's whole reason for existing, really. Everything else is
     // Toko talking; this is the one place the traffic runs the other way and
     // ends up somewhere a person reads it.
-    id: 'note', q: 'I HAVE SOMETHING TO SAY.', note: true,
+    id: 'note', q: 'I HAVE SOMETHING TO SAY.', note: true, opens: ['mine'],
     a: [
       'THEN SAY IT. I AM LISTENING.',
       'BROKEN, BORING, WRONG — ALL USEFUL.',
@@ -353,6 +363,13 @@ export const TOPICS = [
     ],
   },
 
+  {
+    // Everything you have ever left him, read back off your own machine.
+    // Feedback you cannot see again is a suggestion box with a lock on it.
+    id: 'mine', q: 'WHAT HAVE I TOLD YOU?', locked: true, notes: true,
+    a: ['WHAT YOU LEFT ME IS STILL ON YOUR MACHINE.', 'HERE IT IS.'],
+  },
+
   // ── what he can see from here ──────────────────────────────────────────
   {
     // Read off YOUR machine, by the games themselves, and never sent
@@ -401,6 +418,43 @@ for (const id of ['ai', 'scroll', 'hypocrite', 'seam']) {
   if (t) t.torn = true;
 }
 
+// ── what he thinks of his own cabinets ───────────────────────────────────
+// Keyed by the catalogue's own ids. A game with no line here is not a bug:
+// the counter falls back to the catalogue's tagline, so a cabinet added
+// tomorrow can still be asked about tonight — it just gets the blurb instead
+// of an opinion until somebody writes him one.
+export const GAME_NOTES = {
+  sudsjack: ['THE NAMESAKE. A TUBE AND A LOT OF SOAP.',
+    'THE ONE YOU CAN PLAY IS THE OLD VECTOR BUILD.',
+    'THE REBUILD STARTS FROM HYPER DAGGER.'],
+  tokodrop: ['GEL. IT WOBBLES BECAUSE I WANTED IT TO.',
+    'THE ENEMIES SCHOOL LIKE FISH AND THEN',
+    'THEY BURST. THAT IS THE WHOLE PITCH.'],
+  hyperdagger: ['THE ONE THAT WILL KILL YOU FASTEST.',
+    'EVERY SKULL IS BUILT OUT OF CUBES AND',
+    'EVERY DEATH THROWS THEM ACROSS THE FLOOR.',
+    'SURVIVAL TIME IS THE ONLY SCORE.'],
+  dropcabal: ['CABAL, WITH MY GELS IN IT.',
+    'SHOOT INTO THE DEPTH. THE NEAR THINGS EAT',
+    'THE SHOTS YOU MEANT FOR THE FAR ONES.'],
+  paperboy: ['A PAPER ROUTE AT DAWN. FLAT COLOUR,',
+    'NO LIGHTS, NO SHADOWS — A POSTER YOU RIDE.',
+    'IT IS NOT MOVING MUCH THESE DAYS.'],
+  gameoflife: ['THE QUIET ONE. IT ENDS BY SENDING YOU',
+    'OUTSIDE, AND IT WORKS WITH THE SIGNAL OFF.',
+    'THE ONE ROOM I DO NOT SIGN.'],
+  neonronin: ['A GATE, A STAIR, AND SOMEBODY WALKING UP IT.',
+    'I DREW THE COVER BEFORE I DREW THE GAME.'],
+  skltr: ['BONES. KEEP MOVING.'],
+  powder: ['DOWNHILL, FAST, AND THE TURN COMES',
+    'LATER THAN YOU THINK.'],
+  tinyhawk: ['SMALL BIRD. LONG DROP.'],
+  tiny2d: ['ONE BUTTON. THAT IS THE WHOLE INSTRUMENT.'],
+  eyetest: ['NOT REALLY A GAME. LOOK ANYWAY.'],
+};
+
+export const ABOUT_UNKNOWN = ['I DO NOT HAVE A LINE ABOUT THAT ONE YET.'];
+
 // ── the parser ───────────────────────────────────────────────────────────
 // You can also just TYPE at him, which is the whole reason this thing is
 // shaped like Police Quest. Still no language model: it is word overlap
@@ -435,6 +489,8 @@ const KEYS = {
   gift: ['GIFT', 'STICKER', 'GIVE', 'SOMETHING', 'FREE', 'DOWNLOAD', 'SVG'],
   note: ['NOTE', 'SAY', 'FEEDBACK', 'TELL', 'BUG', 'IDEA', 'THANKS', 'HATE', 'LOVE'],
   seen: ['SEEN', 'SCORE', 'SCORES', 'HIGH', 'RECORD', 'PLAYED', 'STATS'],
+  about: ['ABOUT', 'TELL', 'CABINET', 'DESCRIBE', 'THEM'],
+  mine: ['MINE', 'TOLD', 'NOTES', 'WROTE', 'SENT', 'ARCHIVE'],
   back: ['BACK', 'MORE', 'DEEPER', 'SECRET'],
   bye: ['BYE', 'GOODBYE', 'LEAVE', 'EXIT', 'QUIT', 'NOTHING', 'THANKS'],
 };
