@@ -1,5 +1,5 @@
-import { PixelScreen } from './screen.js?v=18';
-import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=18';
+import { PixelScreen } from './screen.js?v=19';
+import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=19';
 // Radio Free Helsinki — the footage, as pictures.
 //
 // The plates used to be drawn in code at 144×276. These are Grok's finished
@@ -35,13 +35,13 @@ const FOR_KEY = {
   cathedral:   { img: 'cathedral' },
   katu:        { img: 'katu' },
   mannerheim:  { img: 'mannerheim' },
-  suomenlinna: { draw: 'cathedral' },
-  katajanokka: { draw: 'cathedral' },
-  esplanadi:   { draw: 'katu' },
-  kamppi:      { draw: 'katu' },
-  station:     { draw: 'katu' },
-  harbour:     { draw: 'mannerheim' },
-  gulf:        { draw: 'mannerheim' },
+  esplanadi:   { draw: 'esplanadi' },
+  kamppi:      { draw: 'kamppi' },
+  station:     { draw: 'station' },
+  harbour:     { draw: 'harbour' },
+  gulf:        { draw: 'gulf' },
+  suomenlinna: { draw: 'suomenlinna' },
+  katajanokka: { draw: 'katajanokka' },
 };
 export const PHOTO_KEYS = Object.keys(FOR_KEY);
 export const sourceFor = (broll) => FOR_KEY[broll] || FOR_KEY.cathedral;

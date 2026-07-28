@@ -1,7 +1,7 @@
 // Radio Free Helsinki — offline.
-const VERSION = 'v18';
+const VERSION = 'v19';
 const CACHE = `rfh-${VERSION}`;
-const V = `?v=18`;
+const V = `?v=19`;
 const SHELL = [
   '../toko/js/signature.js?v=2',
   ...['surface', 'palette', 'face', 'util', 'glitch'].map(m => `../toko/js/${m}.js`),
