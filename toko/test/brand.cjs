@@ -32,7 +32,7 @@ const MIME = {
   '.webmanifest': 'application/manifest+json',
 };
 
-const SIGNED = ['toko-drop', 'paperboy', 'dropcabal', 'hyperdagger'];
+const SIGNED = ['toko-drop', 'paperboy', 'dropcabal', 'hyperdagger', 'flashprince'];
 
 let pass = 0, fail = 0;
 const ok = (name, cond, detail) => {

@@ -43,7 +43,7 @@ an undeliverable one goes to an outbox and is retried on the next visit, one
 at a time. Pressing Send having said nothing records nothing.
 
 ```sh
-node test/hub-smoke.cjs      # 31 checks (needs playwright + its Chromium)
+node test/hub-smoke.cjs      # 141 checks (needs playwright + its Chromium)
 ```
 
 > **Catalogue entries carry `inRepo`.** The live site root (`gh-pages`) is a
@@ -141,6 +141,48 @@ so the scheme re-tints in one place.
 - "Day" milestones every 130 m ramp bike speed + hazard density and award a bonus; hi-score in localStorage
 - Screen-shake trauma + spark bursts on deliveries, smashes, pickups and crashes
 
+### `flashprince/`
+**Flash Prince.** A cinematic platformer in the **Another World** idiom, crossed with
+**Flashback** and the original **Prince of Persia**. Canvas 2D, no build step, no image
+assets — and not a sprite in it: every frame, background and character alike, is a list
+of **filled polygons** rasterised into a 320×192 buffer and then **quantised to sixteen
+colours**, which takes the antialiasing back out and leaves the hard flat edges the
+originals had. The character is a **rotoscoped skeleton** — a pose is thirteen joint
+angles, a frame is those angles turned into eleven polygons, an animation is a short list
+of poses with times against them.
+
+**Controls:** ← → walk (**hold to run**) · ↑ jump, pull up, stand · ↓ crouch / let go ·
+E draw or holster the pistol · X fire · ESC pause
+**Mobile:** an on-screen cross bottom-left, JUMP / FIRE / GUN bottom-right. **Gamepad:**
+left stick or d-pad, A jump, X/RT fire, Y draw.
+
+#### The rule
+**Every move you start, you finish.** A step is 22 frames long and carries 12 pixels
+whether you like it or not; a turn is 18; a mantle is 40; and until a move reaches the
+frame it declares open, the stick is not connected to anything. Nothing accelerates
+freely anywhere. Tap a direction for one careful step, hold it and the step runs on into
+a run — Flashback's rule, and the only reason a ledge edge is survivable.
+
+- **The ledge.** Walk off an edge and he *catches* it rather than falls. Hold toward a lip
+  in the air and he grabs it; ↑ mantles him over, slowly. A standing jump rises 27px and
+  his hands reach 26 above his feet, so he can catch a lip 53px up — a storey is 48, which
+  is why a storey is climbable, and every platform in the game is measured off that number
+- **Falls** cost what they cost in Prince of Persia: one storey free, two hurt, three kill
+- **The duel.** A sentry takes 68 frames from seeing you to firing — spot 26, draw 26, aim
+  16 — and so do you; drawing the pistol costs 21 of them. **Crouch and his shot goes over
+  your head. Roll and you go under it.** Two actors locked into animations, each betting
+  that theirs finishes first, which is Flashback's gunfights and Prince of Persia's sword
+  fights both
+- **Fourteen screens** with a hard cut between them (no scrolling, no camera — a screen is
+  a composition you learn, die on, and never see again): jungle → dig → tomb → reactor →
+  palace → overgrown. The **sixteen-colour palette walks continuously across the whole
+  run**, so the greens drain out of the rock over four screens while the sandstone comes up
+  underneath and nothing ever announces a change of biome
+- Traps: spike beds on a cycle, ceiling slabs, tiles that will not hold you, a plate-and-
+  gate on a timer you have to beat, pulsing force fields
+- A beast that coils and leaps, sentries with rifles, drones that lob slow orbs; three
+  health cells; a run clock, and a best time in `localStorage`
+
 ### `dropcabal/`
 **Drop Cabal.** A **Cabal (1988 arcade) homage** built on Three.js r167 — the blob and
 cube gels from Toko Drop invade a Cabal gallery. Chunky **pixel rendering** (220 px
@@ -233,6 +275,7 @@ Twin-stick bullet-hell arena shooter built on Three.js r167.
 ## Changelog
 
 ### 2026-07
+- **`flashprince/` — Flash Prince v1:** new cinematic platformer, **Another World × Flashback × Prince of Persia**. Canvas 2D, no build step, no assets. **Polygon renderer** (`screen.js`): everything is filled polygons at 320×192, then a pass snaps every pixel to the nearest of the room's sixteen colours through a lazily-filled RGB555 table — hard edges, a genuinely 16-colour framebuffer, and palette changes per screen the way the original did them. **Rotoscoped skeletal animation** (`figure.js`): a pose is thirteen joint angles, a frame is eleven polygons, a clip is poses with hold times, so a run can sit on its contact pose for three frames and blur through the pass in one. **Committed movement** (`hero.js`): every grounded move is a scripted length carrying a scripted distance, jumps are ballistic off a scripted gather, and input is only read in the window a move declares open. Ledge grabs (walk off an edge and he catches it), slow mantles, PoP's fall ladder (one storey free, two hurt, three kill), a crouch/roll that goes under gunfire, and a draw-time pistol duel against sentries running the same clock. **Fourteen hand-authored screens** with hard cuts, the 16-colour palette walking continuously from jungle to tomb to reactor to palace to overgrown so the biome changes without a transition anywhere. Spikes, ceiling slabs, crumbling tiles, plate-and-gate timers, force fields; beast, sentry and drone. Keyboard, gamepad and an on-screen pad; the arcade shell for the way home
 - **hyperdagger v3.6 — style meter + gamepad:** a Returnal/DMC-flavoured rank system (`STYLE_TIERS` D→SSS, cap 150) rewards chaining — kills add by type, a dash *through* an orb adds +4 (credited once per orb via `o.phased`), gem pickups top it up; `step()` bleeds the meter at `6 + styleVal·0.05`/s so the top tiers stay fleeting. The tier shows as a HUD badge + `×mult` + fill bar (`#style`), folds into the music-intensity signal (0.35 weight), and its run peak is a new death-recap line; only S-and-above rank-ups toast so lower crossings never clobber an enemy-debut announcement. **Gamepad support:** `input.pollGamepad()` runs each frame and feeds the existing `getMove`/`getLookRate`/`firing` getters (left stick move, right stick look-rate, RT/RB fire, A = jump ×2, B/LT = dash, deadzoned + edge-detected) so a controller needs no other plumbing
 - **hyperdagger v3.5 — adaptive music layer:** an all-synth A1 minor-pentatonic arpeggio on a lookahead scheduler (16th notes queued ~0.15 s ahead so it never stutters, resyncs after a pause instead of bursting) plays over the drone. Voices layer in with a run-intensity signal (live-threat count + run progress): bass always, arp above ~0.25, hi-hat tick above ~0.5, a lead counter-melody above ~0.75 — so the soundtrack thickens as the swarm builds and thins when you clear it. New MUSIC on/off toggle in the pause menu (`opts.music`, persisted, reconciles live)
 - **hyperdagger v3.4 — milestone announcements:** every enemy debut now gets an authored first-encounter moment — a 2.2 s named toast (THE WATCHERS / THE BRUTES / THORNS BENEATH / THE THIEVES / THE BLINKERS / THE SERPENT / THE PALE SERPENT / CROWNED SKULLS / THE SPLITTERS) plus a low two-note dread stinger and a trauma pulse; THE LEVIATHAN RISES re-announces on every boss respawn. One-per-run keyed in `announced{}`; new `debug.setTime()` warp for testing the schedule
