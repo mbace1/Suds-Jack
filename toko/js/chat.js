@@ -27,7 +27,7 @@ import { glance, drift } from './util.js';
 import { hit } from './glitch.js';
 import {
   TOPICS, CRY, SCOREBOARD, L, u, say, sayOption, setLang, getLang,
-  menu, greeting, find, nameWords,
+  menu, greeting, find, nameWords, askedWords,
 } from './dialogue.js';
 
 // He keeps four things between visits and nothing else: how many times you
@@ -582,14 +582,22 @@ export function mountChat(anchor, opts = {}) {
   function matchGame(text) {
     const said = new Set(nameWords(text));
     if (!said.size) return null;
+    // A word Toko already uses in a question of his own is not distinctive
+    // enough to name a cabinet BY ITSELF. "WHAT MAKES A GOOD GAME?" was
+    // answered with the cabinet *The Game of Life*, because GAME is in its
+    // title and one title word used to be enough.
+    const common = askedWords();
     let best = null, score = 0;
     for (const g of cabinets()) {
       let s = 0;
-      for (const w of nameWords(g.title || g.id || '')) if (said.has(w)) s++;
-      if (said.has(String(g.id || '').toUpperCase())) s += 2;
+      for (const w of nameWords(g.title || g.id || '')) {
+        if (said.has(w)) s += common.has(w) ? 1 : 2;
+      }
+      if (said.has(String(g.id || '').toUpperCase())) s += 3;
       if (s > score) { score = s; best = g; }
     }
-    return score >= 1 ? best : null;
+    // two ordinary title words, or one distinctive one, or the id
+    return score >= 2 ? best : null;
   }
 
   // His line about one cabinet, followed by the way in. Written per game in

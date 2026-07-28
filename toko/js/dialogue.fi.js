@@ -49,7 +49,7 @@ export const FI = {
   SEEN_NOTHING: [
     'EI MITÄÄN. OLET JOKO UUSI TAI TYHJENSIT SEN,',
     'JA MOLEMMAT SOPIVAT MINULLE.',
-    'MENE LAITTAMAAN JOKIN NUMERO JOHONKIN.',
+    'MENE JÄTTÄMÄÄN JOKIN NUMERO JOHONKIN.',
   ],
   SEEN_SOMETHING: ['TÄHÄN MENNESSÄ:'],
   CHANGED_NONE: ['EI VIELÄ MITÄÄN LUKEMISEN ARVOISTA.'],
@@ -81,11 +81,11 @@ export const FI = {
       'UUSI ALKAA HYPER DAGGERISTA.'],
     tokodrop: ['HYYTELÖÄ. SE HEILUU KOSKA HALUSIN NIIN.',
       'VIHOLLISET PARVEILEVAT KUIN KALAT JA',
-      'SITTEN NE PAUKAHTAVAT. SIINÄ KAIKKI.'],
+      'SITTEN NE PUHKEAVAT. SIINÄ KAIKKI.'],
     hyperdagger: ['TÄMÄ TAPPAA SINUT NOPEIMMIN.',
       'JOKAINEN KALLO ON RAKENNETTU KUUTIOISTA JA',
       'JOKAINEN KUOLEMA HEITTÄÄ NE LATTIALLE.',
-      'ELOSSAOLOAIKA ON AINOA PISTEMÄÄRÄ.'],
+      'SELVIYTYMISAIKA ON AINOA PISTEMÄÄRÄ.'],
     dropcabal: ['CABAL, MINUN HYYTELÖILLÄNI.',
       'AMMU SYVYYTEEN. LÄHELLÄ OLEVAT SYÖVÄT',
       'LAUKAUKSET JOTKA TARKOITIT KAUAS.'],
@@ -99,7 +99,7 @@ export const FI = {
     gameoflife: ['HILJAINEN. SE PÄÄTTYY SIIHEN ETTÄ',
       'SE LÄHETTÄÄ SINUT ULOS, JA TOIMII ILMAN VERKKOA.',
       'AINOA HUONE JOTA EN SIGNEERAA.'],
-    neonronin: ['PORTTI, PORRAS, JA JOKU NOUSEE SITÄ.',
+    neonronin: ['PORTTI, PORTAAT, JA JOKU NOUSEE NIITÄ.',
       'PIIRSIN KANNEN ENNEN PELIÄ.'],
     skltr: ['LUITA. PYSY LIIKKEESSÄ.'],
     powder: ['ALAMÄKEEN, LUJAA, JA KÄÄNNE TULEE',
@@ -107,7 +107,20 @@ export const FI = {
     tinyhawk: ['PIENI LINTU. PITKÄ PUDOTUS.'],
     tiny2d: ['YKSI NAPPI. SIINÄ KOKO SOITIN.'],
     eyetest: ['EI OIKEASTAAN PELI. KATSO SILTI.'],
+    radiofree: ['PIRAATTIVIRTA, JA MINÄ LUEN SEN.',
+      'JOKAINEN TIEDOTE ON KEKSITTY. SE ON KOKO IDEA —',
+      'DECODE PURKAA YHDEN JA NÄYTTÄÄ MITÄ',
+      'SANAMUOTO TEKI SINULLE.',
+      'LUE SEURAAVA OIKEA UUTINEN SAMALLA TAVALLA.'],
   },
+
+  // Finnish function words. Without these the parser scored on ON/EI/JA/SE
+  // and two ordinary words were enough to hand back a confident wrong
+  // answer — the exact failure the whole thing is built to avoid.
+  STOP: ['ON', 'EI', 'JA', 'SE', 'SITÄ', 'SEN', 'TAI', 'MUTTA', 'OLEN', 'OLET',
+    'MINÄ', 'SINÄ', 'ME', 'NE', 'MIKÄ', 'MITÄ', 'MIKSI', 'MITEN', 'KUN',
+    'ETTÄ', 'JOS', 'NIIN', 'VAIN', 'JO', 'VIELÄ', 'TÄMÄ', 'TUO', 'OLE',
+    'VOI', 'PITÄÄ', 'SAA', 'ONKO', 'OLIKO'],
 
   // What the parser matches on, in Finnish. Not a translation of the English
   // keys — the words a Finnish speaker would actually type, including the
@@ -141,11 +154,11 @@ export const FI = {
     finish: ['VALMIIKSI', 'VALMIS', 'LOPETAN', 'JUMISSA', 'LAAJUUS'],
     test: ['TESTAAN', 'TESTATA', 'PELITESTI', 'PALAUTE', 'KATSOA'],
     play: ['PELAAN', 'PELATA', 'SUOSITTELE', 'VALITSE', 'MIKÄ', 'PARAS'],
-    floor: ['LATTIA', 'PELIT', 'LISTA', 'VALIKOIMA', 'ARKADI'],
+    floor: ['LATTIA', 'PELIT', 'LISTA', 'VALIKOIMA', 'ARKADI', 'TÄÄLLÄ'],
     quiet: ['HILJAINEN', 'ELÄMÄ', 'RAUHA', 'ZEN', 'LUONTO', 'ULOS'],
     dead: ['KUOLLUT', 'ARKISTO', 'VANHA', 'HYLÄTTY'],
     about: ['KERRO', 'KAAPPI', 'KUVAILE', 'NIISTÄ'],
-    me: ['KYSY', 'SINÄ', 'SEN SIJAAN', 'VUORO', 'KYSYMYS'],
+    me: ['KYSY', 'VUOROSI', 'VUORO', 'KYSYMYS'],
     note: ['VIESTI', 'SANOA', 'PALAUTE', 'KERTOA', 'BUGI', 'IDEA', 'KIITOS'],
     mine: ['OMAT', 'KERTONUT', 'VIESTIT', 'KIRJOITIN', 'ARKISTO'],
     changed: ['MUUTTUI', 'KORJATTU', 'MERKITYSTÄ', 'KUUNTELET', 'MUUTOKSET'],
@@ -154,7 +167,7 @@ export const FI = {
     steal: ['VARASTAA', 'OTTAA', 'KOPIOIDA', 'LISENSSI', 'LÄHDEKOODI', 'KOODI'],
     gift: ['LAHJA', 'TARRA', 'ANNA', 'JOTAIN', 'LATAA', 'SVG'],
     back: ['TAKAHUONE', 'LISÄÄ', 'SYVEMMÄLLE', 'SALAISUUS'],
-    bye: ['HEI', 'MOIKKA', 'LÄHDEN', 'POIS', 'EI MITÄÄN', 'KIITOS'],
+    bye: ['MOIKKA', 'LÄHDEN', 'POIS', 'HEIPPA', 'KIITOS'],
   },
 
   UI: {
