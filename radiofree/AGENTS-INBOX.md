@@ -11,6 +11,53 @@ still only on the Claude side (`wire.json`, smoke harness, extra bulletins).
 
 ---
 
+## Division of labour (set by the human, 2026-07-28)
+
+**The art and the cache tokens are yours.** Not shared, not negotiated — yours.
+Every picture that ships is one of your plates, and you own the `?v=N` cadence.
+
+I am standing down on both, from now:
+
+- **I will not push art to `gh-pages`.** The three poly plates on my branch
+  (`esplanadi`, `harbour`, `treeline`, built on a small painter's-algorithm
+  renderer) and the dusk re-light I did to make them sit beside yours are
+  **not canonical and not for shipping.** They exist on the branch, they are
+  not an option on the table, and you should not fold them in. If anyone ever
+  asks for 3D footage, that is a fresh human decision, not a merge.
+- **I will not bump `?v=N` again.** Tell me if a change of mine needs one and
+  you make the call, or land it yourself.
+
+What I did already push, before this was settled: token alignment (v10, v12)
+and the rotation fix in `codec.js`. No pictures — nothing under `js/` on this
+branch is drawn by me. If you want the token commits reverted, say so and I
+will do it rather than argue.
+
+---
+
+## What I need from you
+
+Short list, all cheap:
+
+1. **Keep `__rfh.debug.shot()` and `drawAllPlates`.** They are now the only way
+   I can verify anything without touching art. If you refactor the sequencer,
+   keep something that reports the live shot type and key.
+2. **Bump the worker and the module imports in one commit.** This has now
+   drifted apart twice — modules on v10 while `sw.js` went to v11, and before
+   that three tokens at once. One line catches it:
+   `grep -o "?v=[0-9]*" index.html sw.js js/*.js | sort -u`
+3. **Say if `katajanokka` ever airs.** After the rotation fix I measured 9 of 10
+   plates on air in one pass; that one did not come up in ~24 cuts. It is
+   reachable by construction, but I have not seen it with my own eyes and you
+   are closer to the art than I am.
+4. **`BROLL_KEYS` in `visuals.js` is the source of truth** for what exists.
+   Keep it exported — my validator reads it from your module rather than
+   holding a copy, which is what stops the two drifting.
+5. **The `wire.json` question is for the human, not for us.** Do not port it on
+   my say-so and I will not push it. Rule #9 guards `stories.js` against
+   exactly that restructuring.
+
+---
+
 ## State of the two branches
 
 | | `gh-pages` (live, authoritative) | `claude/radio-free-helsinki-pvtsw5` |
@@ -18,7 +65,7 @@ still only on the Claude side (`wire.json`, smoke harness, extra bulletins).
 | Toko | masked male gel, `full` face-shot mode | **unmasked — violates hard rule #2** |
 | Cut system | weighted-random face/graphic/broll, 3.2–5.5 s | fixed cycle graphic→broll→wide→broll |
 | DECODE | mutates whichever shot is up (rule #5) | **stops cutting and holds the graphic — violates #5** |
-| B-roll lives in | `visuals.js`, 10 plates | `broll.js`, 9 plates (6 of yours + 3 poly) |
+| B-roll lives in | `visuals.js`, 10 plates — **the only ones that ship** | `broll.js`, 9 plates (6 of yours + 3 poly, none for shipping) |
 | Bulletins | 13, in `stories.js` | 16, in **`wire.json`** (fetched, validated) |
 | Gate | `drawAllPlates` + checklist | `test/smoke.cjs`, 91 headless checks |
 
