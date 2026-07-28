@@ -4,6 +4,29 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v5 — 2026-07-28
+
+The second pass at the references — the two things v4 was still short of, plus
+two the pictures do that I had not noticed the first time.
+
+- **Planting has depth now.** A BANK of ferns receding along the horizon, not
+  one row: the references never show a single line of plants, and it is the
+  mass behind that makes the few near ones read as near. Creeper coming down
+  out of the canopy at two depths, and epiphytes clinging to the trunks
+  themselves — a bare trunk appears nowhere in either picture.
+- **Carved relief.** Recessed panels cut into the interior stone with a lit
+  head and a shadowed sill and a motif inside them, and the meander running
+  along the fronts of the steps. (On EVERY step front first, which turned the
+  floor into a zip fastener — it is one tile in four now.)
+- **Light that glows.** `halo()`: a wide soft ring the quantiser lands on
+  whatever is nearest, a solid ring of the light's own colour, a hot core.
+  With sixteen flat colours there is no bloom to reach for, so glow has to be
+  painted the way a 1991 artist would have painted it. On the door and the
+  bioluminescence.
+- **The man touches the floor.** One flat contact shadow. Without it he is a
+  cut-out laid on the picture instead of someone standing in it, and that is
+  true of every figure in both references.
+
 ## v4 — 2026-07-28
 
 Art built to the owner's reference sheets (two Another World tribute

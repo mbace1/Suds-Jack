@@ -14,7 +14,7 @@
 import { Screen, W, H } from './screen.js';
 import { paletteAt, C } from './palette.js';
 import { World, ROOM_W, ROOM_H, ROOMS } from './level.js';
-import { paintBack, drawAir, drawFore } from './scenery.js';
+import { paintBack, drawAir, drawFore, halo } from './scenery.js';
 import { Hero } from './hero.js';
 import { makeEnemy } from './enemy.js';
 import { drawFigure, POSE } from './figure.js';
@@ -373,11 +373,22 @@ class Game {
     drawAir(scr, this.world.room, this.clock);
     this.world.drawTiles(scr);
     this.world.drawTraps(scr);
+    if (this.world.door) {
+      const d = this.world.door;
+      halo(scr, d.x, d.y - 16, 22 + Math.sin(this.clock * 0.06) * 3);
+    }
 
     for (const e of this.enemies) e.draw(scr);
 
     const h = this.hero;
     const blink = h.hurtT > 0 && (h.hurtT >> 1) % 2 === 0;
+    // A contact shadow. Without one he is a cut-out laid on the picture rather
+    // than a man standing in it — and it is one flat ellipse, which is all a
+    // sixteen-colour screen can afford and all the references use.
+    if (!h.dead && this.world.boxSolid(h.x - 2, h.y + 1, 4, 3)) {
+      const wdt = h.low ? 13 : 9;
+      scr.poly([h.x - wdt, h.y - 1, h.x + wdt, h.y - 1, h.x + wdt - 3, h.y + 2, h.x - wdt + 3, h.y + 2], C.DARK);
+    }
     if (!blink) {
       drawFigure(scr, h.x, h.y, h.face, h.pose(), HERO_COL, {
         gun: h.weapon === 'gun' && !h.dead,

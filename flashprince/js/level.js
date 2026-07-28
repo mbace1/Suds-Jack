@@ -10,7 +10,7 @@
 
 import { ROOMS, RW, RH, TILE, ROOM_W, ROOM_H } from './rooms.js';
 import { C } from './palette.js';
-import { glyphs, weights, drape, leaves } from './scenery.js';
+import { glyphs, weights, drape, leaves, halo } from './scenery.js';
 
 const SOLIDS = '#~^';
 const rand = s => () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
@@ -261,6 +261,31 @@ export class World {
         }
       }
     }
+    // CARVED RELIEF. The references cut real panels into their stone — a
+    // recessed field with a lit top edge and a shadowed sill, and a repeating
+    // motif band along the courses. Flat wall plus writing reads as wallpaper;
+    // wall plus relief reads as something a mason spent a season on.
+    {
+      const w2 = weights(this.room.t);
+      if (w2.ruin > 0.3 || w2.palace > 0.3) {
+        const rr2 = rand(this.seed + 4211);
+        for (let ty = 1; ty < RH - 2; ty++) {
+          for (let tx = 1; tx < RW - 2; tx++) {
+            if (this.tile(tx, ty) !== '-' || this.tile(tx + 1, ty) !== '-') continue;
+            if (rr2() > 0.07) continue;
+            const x = tx * TILE + 2, y = ty * TILE + 3, pw = TILE * 2 - 4, ph = TILE - 6;
+            scr.rect(x, y, pw, ph, C.DARK);                 // the recess
+            scr.rect(x, y, pw, 1, C.SOLID);                 // its lit head
+            scr.rect(x, y + ph - 1, pw, 1, C.NEAR);         // and its sill
+            for (let k = 0; k < 3; k++) {                   // the motif inside
+              scr.rect(x + 3 + k * 8, y + 2, 5, 1, C.NEAR);
+              scr.rect(x + 3 + k * 8 + 4, y + 2, 1, 4, C.NEAR);
+              scr.rect(x + 3 + k * 8, y + 5, 5, 1, C.NEAR);
+            }
+          }
+        }
+      }
+    }
     glyphs(scr, this.room, this.index);
     for (const L of this.lights) {
       // a sconce, and the flat wash it throws on the wall behind it
@@ -358,6 +383,13 @@ export class World {
       // tufts on natural ground, chips out of built ground
       if (built > 0.3) {
         if (r() < 0.3) scr.rect(x + 2 + r() * 10, y, 2 + r() * 3, 1, C.DARK);
+        // the meander again, on SOME of the step fronts. Run on every tile it
+        // stopped being carving and became a zip fastener along the floor.
+        if ((tx + ty) % 4 === 0) {
+          scr.rect(x + 2, y + 5, 6, 1, C.DARK);
+          scr.rect(x + 7, y + 5, 1, 3, C.DARK);
+          scr.rect(x + 10, y + 6, 4, 1, C.DARK);
+        }
       } else if (r() < 0.55) {
         const gx = x + r() * (TILE - 4);
         for (let i = 0; i < 3; i++) {

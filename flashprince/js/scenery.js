@@ -111,6 +111,24 @@ export function paintBack(scr, room, index) {
       const x = 16 + r() * (W - 32), lean = (r() - 0.5) * spec.lean;
       trunk(scr, x, horizon + spec.base, spec.h + r() * 46, spec.wd + r() * 5, lean, C.NEAR);
     }
+    // A BANK of it at the horizon, in the middle-distance value. The references
+    // never show one row of plants — there is always a mass of them receding,
+    // and it is the mass that makes the few near ones read as near.
+    for (let i = 0; i < 26; i++) {
+      const x = -8 + (i * 13 + (i % 3) * 5) % (W + 16);
+      leaves(scr, x, horizon + 6 + (i % 3) * 4, 7 + (i % 4) * 4, C.MID, C.NEAR, 6, Math.PI * 0.75);
+    }
+    // creeper coming down out of the canopy, everywhere, at two depths
+    for (let i = 0; i < 12; i++) {
+      const x = 6 + r() * (W - 12), L = 20 + r() * 60;
+      const ci = i % 2 ? C.MID : C.NEAR;
+      const sway = (r() - 0.5) * 14;
+      for (let k = 0; k <= 8; k++) {
+        const tt = k / 8;
+        scr.rect(x + sway * tt * tt, tt * L, 2, L / 8 + 1, ci);
+      }
+      leaves(scr, x + sway, L, 5 + r() * 4, ci, ci, 5, Math.PI * 0.8, Math.PI / 2);
+    }
   }
   if (w.ruin > 0.1) {
     const n = Math.round(1 + w.ruin * 3);
@@ -274,6 +292,7 @@ export function paintBack(scr, room, index) {
     for (let i = 0; i < 9; i++) {
       const gx = (i * 41 + index * 23) % W, gy = H - 4 - (i % 3) * 3;
       const hh = 4 + (i % 4) * 2;
+      halo(scr, gx + 1, gy - hh - 1, 9);
       scr.rect(gx, gy - hh, 2, hh, C.DARK);              // stem
       scr.poly([gx - 4, gy - hh, gx + 6, gy - hh, gx + 4, gy - hh - 4, gx - 2, gy - hh - 4], C.LUX);
       scr.rect(gx - 1, gy - hh - 3, 4, 1, C.LUX2);       // the lit cap
@@ -374,6 +393,16 @@ export function leaves(scr, x, y, r, dark, lit, n = 7, spread = Math.PI * 0.8, t
   }
 }
 
+// A light that reads as a light. With sixteen flat colours there is no bloom to
+// reach for, so glow is a HALO: one wide soft ring that the quantiser lands on
+// whatever is nearest, a solid ring of the light's own colour, and a hot core.
+// It is the same three-step trick a 1991 artist would have painted by hand.
+export function halo(scr, x, y, r, ci = C.LUX, hot = C.LUX2) {
+  scr.veil([x - r, y - r * 0.8, x + r, y - r * 0.8, x + r * 0.8, y + r, x - r * 0.8, y + r], ci, 0.2);
+  scr.disc(x, y, r * 0.5, ci, 0.45);
+  scr.disc(x, y, r * 0.24, hot);
+}
+
 // Moss and creeper hanging off a lip. Lighter than what it hangs from, because
 // in every one of the references the growth is the light thing and the stone is
 // the dark thing — the other way round and it reads as damage.
@@ -398,6 +427,13 @@ function trunk(scr, x, base, h, w, lean, ci) {
     frond(scr, tx, top, a, 25 + (i % 3) * 13, ci, 0.55, 3.4);
   }
   leaves(scr, tx, top + 2, 16, ci, ci === C.NEAR ? C.MID : C.FAR, 9, Math.PI * 1.25);
+  // things growing ON it — the references never leave a trunk bare
+  for (let k = 0; k < 3; k++) {
+    const ty2 = base - h * (0.25 + k * 0.22);
+    const sx = x + lean * ((base - ty2) / h) + (k % 2 ? w : -w);
+    leaves(scr, sx, ty2, 7 + (k % 2) * 3, ci, ci === C.NEAR ? C.MID : C.FAR,
+      5, Math.PI * 0.7, k % 2 ? -0.4 : Math.PI + 0.4);
+  }
 }
 
 function arch(scr, x, y, w, h, ci) {
