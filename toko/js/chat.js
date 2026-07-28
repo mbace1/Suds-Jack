@@ -170,6 +170,12 @@ const CSS = `
 }
 .toko-chat .tc-note button:hover { background: var(--tc-hot); color: #000; }
 .toko-chat .tc-note button[disabled] { opacity: .45; cursor: default; }
+.toko-chat .tc-log .tc-tell {
+  font: inherit; letter-spacing: .1em; margin-top: 8px;
+  min-height: 44px; padding: 0 12px; cursor: pointer;
+  background: none; border: 2px solid var(--tc-line); color: var(--tc-dim);
+}
+.toko-chat .tc-log .tc-tell:hover { border-color: var(--tc-hot); color: var(--tc-ink); }
 .toko-chat .tc-log .tc-score { color: var(--tc-dim); }
 .toko-chat .tc-log .tc-score b { color: var(--tc-ink); font-weight: normal; }
 
@@ -389,6 +395,7 @@ export function mountChat(anchor, opts = {}) {
   let pending = null;           // HIS question: the menu is your answers now
   let asides = 0;               // unprompted lines spent this visit
   let idle = 0;                 // the timer that produces them
+  let lastTopic = null;         // what he was talking about — rides on a note
 
   // The hour where the reader is, not where a server is. It gates one topic
   // and one greeting, and it is the only thing here that looks at a clock.
@@ -543,6 +550,7 @@ export function mountChat(anchor, opts = {}) {
   function talkAbout(g) {
     const said = GAME_NOTES[g.id]
       || (g.tagline ? [String(g.tagline).toUpperCase()] : ABOUT_UNKNOWN);
+    lastTopic = 'about:' + g.id;
     type(said, () => {
       const p = el('p', 'tc-me');
       const a = el('a', 'tc-go');
@@ -551,6 +559,16 @@ export function mountChat(anchor, opts = {}) {
       p.appendChild(a);
       if (g.lineage) p.appendChild(document.createTextNode('  — ' + g.lineage));
       log.appendChild(p);
+      // The routing step. Standing in front of one cabinet is the moment a
+      // player actually has something to say about it, and a note taken here
+      // files under that game rather than under "the counter".
+      const tell = el('button', 'tc-tell');
+      tell.type = 'button';
+      tell.textContent = '▸ TELL HIM ABOUT THIS ONE';
+      tell.addEventListener('click', () => { tell.remove(); takeNote(g); });
+      const q = el('p');
+      q.appendChild(tell);
+      log.append(q);
       log.scrollTop = log.scrollHeight;
     });
   }
@@ -613,11 +631,19 @@ export function mountChat(anchor, opts = {}) {
     off: ['THERE IS NOWHERE TO SEND IT TODAY,', 'SO IT IS WRITTEN DOWN ON YOUR MACHINE.'],
   };
 
-  function takeNote() {
+  // `about` is a cabinet, when the note is about one. It is what turns a pile
+  // of notes into something you can act on: `game` is the field every other
+  // feedback surface in this workshop already files under, so a note left at
+  // the counter about Hyper Dagger lands in the same bucket as one left on
+  // Hyper Dagger's own form.
+  function takeNote(about) {
     const wrap = el('div', 'tc-note');
     const box = el('textarea');
-    box.setAttribute('aria-label', 'Your note to Toko');
-    box.placeholder = 'broken, boring, wrong — all useful';
+    const who = about ? (about.title || about.id).toUpperCase() : null;
+    box.setAttribute('aria-label', who ? `Your note about ${who}` : 'Your note to Toko');
+    box.placeholder = who
+      ? `about ${who.toLowerCase()} — broken, boring, wrong, all useful`
+      : 'broken, boring, wrong — all useful';
     box.maxLength = 2000;
     const send = el('button', null, 'SEND');
     send.type = 'button';
@@ -638,7 +664,17 @@ export function mountChat(anchor, opts = {}) {
       try {
         const fb = globalThis.__hub && globalThis.__hub.feedback;
         status = fb && fb.send
-          ? await fb.send({ game: 'toko-counter', kind: 'counter', note: text })
+          ? await fb.send({
+            // filed under the cabinet when there is one, so it sorts with
+            // everything else said about that game
+            game: about ? about.id : 'toko-counter',
+            kind: 'counter',
+            note: text,
+            // what he was talking about when you wrote it. A note that says
+            // "this is broken" is worth nothing without it.
+            topic: lastTopic || null,
+            ts: Date.now(),
+          })
           : 'off';
       } catch { status = 'off'; }
       // he brings it up next time, once
@@ -717,6 +753,7 @@ export function mountChat(anchor, opts = {}) {
     if (t.opens) t.opens.forEach(id => unlocked.add(id));
     list.hidden = true;
     if (t.torn) tornUntil = performance.now() + 1400;
+    lastTopic = t.id;
     // what he greets you with next time — the last thing you were curious
     // about, and nothing else about you
     store.write({ ...store.read(), last: t.id });

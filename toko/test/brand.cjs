@@ -527,6 +527,27 @@ function serve() {
   ok('a cabinet can be named straight at the parser',
     /SURVIVAL TIME IS THE ONLY SCORE/.test(await logText()));
 
+  // The routing step, and the reason the counter can be the front door for
+  // all of it: a note taken in front of a cabinet files under THAT GAME —
+  // the same `game` field every other feedback surface here uses — and
+  // carries what he was talking about when you wrote it. A note that says
+  // "this is broken" is worth nothing without that.
+  await page.evaluate(() => {
+    globalThis.__hub.feedback = { sent: [], send(e) { this.sent.push(e); return 'sent'; } };
+  });
+  await page.evaluate(() => globalThis.__tokoChat.type('what about hyper dagger'));
+  await settle();
+  await page.click('.toko-chat .tc-tell');
+  await page.waitForSelector('.toko-chat .tc-note textarea', { timeout: 4000 });
+  await page.fill('.toko-chat .tc-note textarea', 'the serpent is unfair from behind');
+  await page.click('.toko-chat .tc-note button');
+  await settle();
+  const filed = await page.evaluate(() => globalThis.__hub.feedback.sent[0]);
+  ok('a note in front of a cabinet files under that cabinet',
+    filed && filed.game === 'hyperdagger', JSON.stringify(filed));
+  ok('and carries what he was talking about',
+    filed && filed.topic === 'about:hyperdagger', String(filed && filed.topic));
+
   // ── reading your own notes back ────────────────────────────────────────
   // Feedback you cannot see again is a suggestion box with a lock on it.
   await page.evaluate(() => {

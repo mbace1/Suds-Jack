@@ -261,6 +261,12 @@ What it does beyond talking:
   tomorrow is on the rack tonight. His line per game lives in `GAME_NOTES`;
   one with nothing written yet falls back to the catalogue's own tagline
   rather than going missing. Naming a game at the parser gets it directly.
+- **A note can be *about* something.** Standing in front of one cabinet is the
+  moment a player actually has something to say about it, so his line about a
+  game is followed by *tell him about this one* — and a note taken there files
+  under **that game's id**, the same `game` field every other feedback surface
+  in the workshop already uses, plus the topic he was on when you wrote it. A
+  note that says "this is broken" is worth nothing without that.
 - **You can read your own notes back.** Feedback you cannot see again is a
   suggestion box with a lock on it, so `WHAT HAVE I TOLD YOU?` prints the
   archive off your machine — the same one the hub keeps.
