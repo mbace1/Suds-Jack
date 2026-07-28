@@ -17,13 +17,6 @@
       <p class="sub">A workshop of browser games. Nothing to install, nothing to sign up for — pick a cabinet and press Play.</p>
     </header>
 
-    <!-- Toko is at the counter. A Sierra-style conversation with the artist
-         behind the cabinets; the tree lives in toko/js/dialogue.js. -->
-    <script type="module">
-      import { mountChat } from './toko/js/chat.js?v=8';
-      mountChat(document.querySelector('header'));
-    </script>
-
 
     <div class="rule"></div>
     <p class="count">The floor — in development</p>
@@ -61,5 +54,15 @@
   </style>
 
   <script type="module" src="hub/hub.js?v=15"></script>
+  <!-- Toko is at the counter. A Sierra-style conversation with the artist
+       behind the cabinets; the tree lives in toko/js/dialogue.js. It mounts
+       itself after <header> wherever this tag sits, and it sits AFTER hub.js
+       because hub.js assigns window.__hub wholesale — hung on before that,
+       the counter's own handle would be thrown away. -->
+  <script type="module">
+    import { mountChat } from './toko/js/chat.js?v=9';
+    window.__hub.chat = mountChat(document.querySelector('header'));
+  </script>
+
 </body>
 </html>
