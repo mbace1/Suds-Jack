@@ -5,8 +5,8 @@
 // (it is species you count, not plants). Revert: read the oldest living boundary
 // near you. Full-scene build (the English-lane family, not the void vignette).
 
-import { PixelScreen, bayer, rampDither } from '../pixel.js?v=40';
-import { PAL } from '../palette.js?v=40';
+import { PixelScreen, bayer, rampDither } from '../pixel.js?v=41';
+import { PAL } from '../palette.js?v=41';
 
 const HEDGE_Y = 66, LANE_Y = 92;
 

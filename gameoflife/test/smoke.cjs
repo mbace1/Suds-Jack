@@ -760,7 +760,14 @@ async function tapPixel(page, x, y) {
     await page.locator('.offer').count() === 1);
 
   // ── the feedback actually leaves the browser ──────────────────────
-  // with no endpoint configured, nothing is promised and nothing is sent
+  // with no endpoint configured, nothing is promised and nothing is sent.
+  //
+  // ARRANGED, not assumed: the app used to ship with ENDPOINT empty, so this
+  // block could just open the panel and look. It ships pointed at the Sheet
+  // now, and leaving that in place meant the "unconfigured" case posted for
+  // real, queued when the post failed, and put a stray note in the outbox
+  // that three later checks then tripped over.
+  await page.evaluate(() => __gol.debug.setEndpoint(''));
   const sentBefore = collected.length;
   await page.locator('.footer-link').click();
   check('unconfigured panel makes no delivery claim', await page.locator('.fb-dest').count() === 0);
