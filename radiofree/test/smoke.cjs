@@ -232,11 +232,15 @@ async function main() {
     seen.add((await go(() => __rfh.debug.shot())).type);
     await wait(500);
   }
-  ok('the frame really cuts between footage and the studio',
-     seen.has('broll') && seen.has('anchor'), [...seen].join(','));
+  ok('the frame cuts through all three registers — footage, studio, graphic',
+     seen.has('broll') && seen.has('anchor') && seen.has('graphic'),
+     [...seen].join(','));
 
-  const canvases = () => go(() => document.querySelectorAll('canvas.anchor-cv').length);
-  ok('one studio canvas alive, not one per post', (await canvases()) === 1,
+  // Both drawn shots are lazy, and the graphic doubles the exposure: two
+  // canvases per post across seventeen posts is the same wall from further off.
+  const canvases = () => go(() =>
+    document.querySelectorAll('canvas.anchor-cv, canvas.graphic-cv').length);
+  ok('at most one post owns drawn canvases', (await canvases()) <= 2,
      String(await canvases()));
 
   // A fixed 9:16 buffer under object-fit: cover took the station chrome off
@@ -267,11 +271,20 @@ async function main() {
   await go(() => __rfh.debug.cutTo('broll'));
   await go(() => __rfh.debug.toggleDecode());
   await wait(400);
-  ok('DECODE cuts home to the shot that decodes',
-     (await go(() => __rfh.debug.shot())).type === 'anchor');
+  ok('DECODE cuts home to the graphic — the shot that decodes',
+     (await go(() => __rfh.debug.shot())).type === 'graphic');
   await wait(9000);
   ok('DECODE holds it — the cut stops while the plain reading is up',
-     (await go(() => __rfh.debug.shot())).type === 'anchor');
+     (await go(() => __rfh.debug.shot())).type === 'graphic');
+  // The panels mix green -> amber on a 0..1 `decode`, which is what re-bases
+  // the chart and hollows the tower. If that stays 0 the picture is still
+  // arguing the spin while the words next to it have been struck out.
+  const dk = await go(() => {
+    const p = __rfh.debug.pkg && __rfh.debug.pkg();
+    return p && p.graphic ? p.graphic.decodeK : null;
+  });
+  ok('the graphic itself decodes, not just the words', dk !== null && dk > 0.9,
+     String(dk));
   const plain = await go(() => document.querySelectorAll('.post.live .plain').length);
   ok('the plain readings are showing', plain > 0, String(plain));
 
@@ -280,14 +293,14 @@ async function main() {
   await wait(900);
   ok('the next post opens on its own footage',
      (await go(() => __rfh.debug.shot())).type === 'broll');
-  ok('the studio canvas is released when a post goes idle',
-     (await canvases()) <= 1, String(await canvases()));
+  ok('the drawn canvases are released when a post goes idle',
+     (await canvases()) <= 2, String(await canvases()));
 
   await go(() => __rfh.debug.go(-1));
   await wait(900);
   const back = await go(() => ({ shot: __rfh.debug.shot().type, dec: __rfh.state.decoded }));
-  ok('coming back to a decoded post re-opens on the studio',
-     back.shot === 'anchor' && back.dec, JSON.stringify(back));
+  ok('coming back to a decoded post re-opens on the graphic',
+     back.shot === 'graphic' && back.dec, JSON.stringify(back));
 
   await go(() => __rfh.debug.setLang('fi'));
   await wait(1200);

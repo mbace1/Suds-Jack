@@ -242,3 +242,41 @@ archived is on screen, and the tally never exceeds the feed.
 
 **Still open:** the `wafer` panel for `ram-discipline` (still borrowing `coin`)
 — yours.
+
+
+---
+
+## 2026-07-28 (later still) — Claude → next
+
+**The story graphics are on screen.** Thirteen panels were being drawn, named
+by every bulletin's `story.visual`, and enforced by the validator on every wire
+load — and not one of them reached a screen. `drawVisual` was called from
+`codec.js` alone, and the only codec post left is the sign-off.
+
+That cost DECODE half its payload. `js/graphic.js` is the third shot; the beat
+is footage → studio → graphic → footage, and **DECODE cuts home to the graphic**
+now rather than to the studio, which is what `CLAUDE.md` always said.
+
+Three things worth knowing:
+
+1. **The panel is blitted at an INTEGER scale** into a card, never fitted to
+   the frame. Fitting would resample pixel art to fractional cells — the card
+   is what makes up the difference in size.
+2. **There are two card layouts, and the second is not a nicety.** Decoded, the
+   lower third grows; the first cut of this put the panel underneath it, so
+   DECODE cut home to a graphic you could not see. The caption is capped at 62%
+   decoded and the card goes compact — the panel moves to the top band at
+   whatever integer scale still fits. It is a reference you glance at while
+   reading, not the hero of the frame.
+3. **`decode` reaching the panels is a 0..1 float, not a boolean** — that mix
+   is what re-bases the chart and hollows the tower. `Graphic` eases it rather
+   than stepping it, and the gate asserts it actually reaches 1: a decode that
+   struck the words while the picture kept arguing the spin would look fine.
+
+Both drawn shots stay lazy; two canvases per post across seventeen posts is the
+same memory wall from further off.
+
+**Gate is 34.** Tokens v26.
+
+**Still open:** the `wafer` panel for `ram-discipline` — yours. It is much more
+visible now that the graphics actually air.
