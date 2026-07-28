@@ -490,6 +490,123 @@ function serve() {
   ok('with nowhere to send it he says exactly that',
     /WRITTEN DOWN ON YOUR MACHINE/.test(await logText()));
 
+  // ── one cabinet at a time ──────────────────────────────────────────────
+  // `askGames` is the his-question mechanic with the LIVE catalogue as the
+  // options, so a cabinet added tomorrow is on the rack tonight — and one
+  // with no line written for it yet falls back to its own tagline rather
+  // than going missing.
+  await page.evaluate(() => {
+    globalThis.__hub = globalThis.__hub || {};
+    globalThis.__hub.games = [
+      { id: 'hyperdagger', title: 'Hyper Dagger', path: 'hyperdagger/', lineage: 'Devil Daggers × HYPERDEMON' },
+      { id: 'newthing', title: 'New Thing', path: 'newthing/', tagline: 'a cabinet with no line written yet' },
+    ];
+  });
+  await page.evaluate(() => globalThis.__tokoChat.say('about'));
+  await settle();
+  const rack = await page.evaluate(() =>
+    [...document.querySelectorAll('.toko-chat .tc-menu.is-yours button')].map(b => b.textContent));
+  ok('the rack is built from the live catalogue', rack.length === 2, rack.join(' | '));
+  await page.keyboard.press('1');
+  await settle();
+  ok('picking one gets his line and a real link',
+    await page.evaluate(() => {
+      const t = document.querySelector('.toko-chat .tc-log').textContent;
+      const a = [...document.querySelectorAll('.toko-chat .tc-go')].pop();
+      return /SURVIVAL TIME IS THE ONLY SCORE/.test(t) && a.getAttribute('href') === 'hyperdagger/';
+    }));
+  ok('and the rack hands the menu back', await page.evaluate(() =>
+    !globalThis.__tokoChat.asking()
+    && document.querySelectorAll('.toko-chat .tc-menu button').length > 0));
+  await page.evaluate(() => globalThis.__tokoChat.type('tell me about new thing'));
+  await settle();
+  ok('a cabinet with no line falls back to its tagline',
+    /NO LINE WRITTEN YET/.test(await logText()));
+  await page.evaluate(() => globalThis.__tokoChat.type('what about hyper dagger'));
+  await settle();
+  ok('a cabinet can be named straight at the parser',
+    /SURVIVAL TIME IS THE ONLY SCORE/.test(await logText()));
+
+  // The failure this guards: cabinets were matched on ANY title word over two
+  // characters, so "SAY THE WHOLE THING" scored a hit on "The Game of Life"
+  // through the word THE, and he answered about the wrong thing entirely with
+  // total confidence — the one failure this parser is not allowed to have.
+  await page.evaluate(() => {
+    globalThis.__hub.games = [
+      { id: 'gameoflife', title: 'The Game of Life', path: 'gameoflife/' },
+      { id: 'hyperdagger', title: 'Hyper Dagger', path: 'hyperdagger/' },
+    ];
+  });
+  await page.evaluate(() => globalThis.__tokoChat.type('say the whole thing'));
+  await settle();
+  ok('a stop word does not match a cabinet',
+    /THE VERB FIRST[\s\S]*GO MAKE YOUR OWN/.test(await logText()));
+
+  // The routing step, and the reason the counter can be the front door for
+  // all of it: a note taken in front of a cabinet files under THAT GAME —
+  // the same `game` field every other feedback surface here uses — and
+  // carries what he was talking about when you wrote it. A note that says
+  // "this is broken" is worth nothing without that.
+  await page.evaluate(() => {
+    globalThis.__hub.feedback = { sent: [], send(e) { this.sent.push(e); return 'sent'; } };
+  });
+  await page.evaluate(() => globalThis.__tokoChat.type('what about hyper dagger'));
+  await settle();
+  await page.click('.toko-chat .tc-tell');
+  await page.waitForSelector('.toko-chat .tc-note textarea', { timeout: 4000 });
+  await page.fill('.toko-chat .tc-note textarea', 'the serpent is unfair from behind');
+  await page.click('.toko-chat .tc-note button');
+  await settle();
+  const filed = await page.evaluate(() => globalThis.__hub.feedback.sent[0]);
+  ok('a note in front of a cabinet files under that cabinet',
+    filed && filed.game === 'hyperdagger', JSON.stringify(filed));
+  ok('and carries what he was talking about',
+    filed && filed.topic === 'about:hyperdagger', String(filed && filed.topic));
+
+  // ── reading your own notes back ────────────────────────────────────────
+  // Feedback you cannot see again is a suggestion box with a lock on it.
+  await page.evaluate(() => {
+    globalThis.__hub.feedback = {
+      archive: () => [{ ts: Date.parse('2026-07-20'), note: 'the eyes look right now' }],
+      send: () => 'sent',
+    };
+  });
+  await page.evaluate(() => globalThis.__tokoChat.say('mine'));
+  await settle();
+  ok('he reads your own notes back to you',
+    await page.evaluate(() => {
+      const rows = [...document.querySelectorAll('.toko-chat .tc-score')].map(n => n.textContent);
+      return rows.some(r => /2026-07-20/.test(r) && /eyes look right now/.test(r));
+    }));
+  await page.evaluate(() => { globalThis.__hub.feedback = { archive: () => [], send: () => 'sent' }; });
+  await page.evaluate(() => globalThis.__tokoChat.say('mine'));
+  await settle();
+  ok('and says so when there are none', /THE BOX IS EMPTY/.test(await logText()));
+
+  // ── and what changed because of it ─────────────────────────────────────
+  // The other half of the note box: a suggestion box nobody answers stops
+  // getting used. The log is hand-kept and never claims you asked — but it
+  // does check whether you left a note about that cabinet, ONCE, because
+  // said against every line it stops being an acknowledgement and becomes
+  // flattery.
+  await page.evaluate(() => {
+    globalThis.__hub.feedback = {
+      archive: () => [{ ts: Date.now(), game: 'hub', note: 'home button does nothing on my phone' }],
+      send: () => 'sent',
+    };
+  });
+  await page.evaluate(() => globalThis.__tokoChat.say('changed'));
+  await settle();
+  const chg = await page.evaluate(() => ({
+    entries: document.querySelectorAll('.toko-chat .tc-score').length,
+    yours: document.querySelectorAll('.toko-chat .tc-you-quiet').length,
+    text: document.querySelector('.toko-chat .tc-log').textContent,
+  }));
+  ok('he reads out what actually changed', chg.entries >= 3, String(chg.entries));
+  ok('and flags a game you noted about exactly once', chg.yours === 1, String(chg.yours));
+  ok('the log never claims you asked for it',
+    !/YOU ASKED FOR/i.test(chg.text) && !/BECAUSE YOU/i.test(chg.text));
+
   // ── the hour, and the menu it gates ────────────────────────────────────
   const clock = await page.evaluate(async () => {
     const d = await import('/toko/js/dialogue.js');

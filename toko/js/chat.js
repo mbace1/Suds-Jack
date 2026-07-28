@@ -27,7 +27,8 @@ import { glance, drift } from './util.js';
 import { hit } from './glitch.js';
 import {
   TOPICS, ASIDES, MISSES, CRY, SCOREBOARD, SEEN_NOTHING, SEEN_SOMETHING,
-  menu, greeting, find,
+  GAME_NOTES, ABOUT_UNKNOWN, CHANGED, CHANGED_NONE, CHANGED_YOURS,
+  menu, greeting, find, nameWords,
 } from './dialogue.js';
 
 // He keeps four things between visits and nothing else: how many times you
@@ -170,7 +171,14 @@ const CSS = `
 }
 .toko-chat .tc-note button:hover { background: var(--tc-hot); color: #000; }
 .toko-chat .tc-note button[disabled] { opacity: .45; cursor: default; }
+.toko-chat .tc-log .tc-tell {
+  font: inherit; letter-spacing: .1em; margin-top: 8px;
+  min-height: 44px; padding: 0 12px; cursor: pointer;
+  background: none; border: 2px solid var(--tc-line); color: var(--tc-dim);
+}
+.toko-chat .tc-log .tc-tell:hover { border-color: var(--tc-hot); color: var(--tc-ink); }
 .toko-chat .tc-log .tc-score { color: var(--tc-dim); }
+.toko-chat .tc-log .tc-you-quiet { color: var(--tc-hot); }
 .toko-chat .tc-log .tc-score b { color: var(--tc-ink); font-weight: normal; }
 
 /* the parser: the reason this thing is shaped like Police Quest */
@@ -389,6 +397,7 @@ export function mountChat(anchor, opts = {}) {
   let pending = null;           // HIS question: the menu is your answers now
   let asides = 0;               // unprompted lines spent this visit
   let idle = 0;                 // the timer that produces them
+  let lastTopic = null;         // what he was talking about — rides on a note
 
   // The hour where the reader is, not where a server is. It gates one topic
   // and one greeting, and it is the only thing here that looks at a clock.
@@ -514,6 +523,121 @@ export function mountChat(anchor, opts = {}) {
     return live[day % live.length];
   }
 
+  // Every live cabinet, for the topics that turn the menu into a rack.
+  function cabinets() {
+    const hub = globalThis.__hub;
+    const all = (hub && (hub.games || hub.active)) || [];
+    return all.filter(g => g && g.path && g.live !== false);
+  }
+
+  // A cabinet by name, for the parser: "tell me about hyper dagger". Matched
+  // on the id and on the title's words, so "DAGGER" alone is enough and a
+  // one-word title cannot be hit by a single stray word of a longer sentence.
+  function matchGame(text) {
+    const said = new Set(nameWords(text));
+    if (!said.size) return null;
+    let best = null, score = 0;
+    for (const g of cabinets()) {
+      let s = 0;
+      for (const w of nameWords(g.title || g.id || '')) if (said.has(w)) s++;
+      if (said.has(String(g.id || '').toUpperCase())) s += 2;
+      if (s > score) { score = s; best = g; }
+    }
+    return score >= 1 ? best : null;
+  }
+
+  // His line about one cabinet, followed by the way in. Written per game in
+  // GAME_NOTES; a cabinet with no line yet falls back to the catalogue's own
+  // tagline, so one added tomorrow can still be asked about tonight.
+  function talkAbout(g) {
+    const said = GAME_NOTES[g.id]
+      || (g.tagline ? [String(g.tagline).toUpperCase()] : ABOUT_UNKNOWN);
+    lastTopic = 'about:' + g.id;
+    type(said, () => {
+      const p = el('p', 'tc-me');
+      const a = el('a', 'tc-go');
+      a.href = g.path;
+      a.textContent = '▸ ' + (g.title || g.id).toUpperCase();
+      p.appendChild(a);
+      if (g.lineage) p.appendChild(document.createTextNode('  — ' + g.lineage));
+      log.appendChild(p);
+      // The routing step. Standing in front of one cabinet is the moment a
+      // player actually has something to say about it, and a note taken here
+      // files under that game rather than under "the counter".
+      const tell = el('button', 'tc-tell');
+      tell.type = 'button';
+      tell.textContent = '▸ TELL HIM ABOUT THIS ONE';
+      tell.addEventListener('click', () => { tell.remove(); takeNote(g); });
+      const q = el('p');
+      q.appendChild(tell);
+      log.append(q);
+      log.scrollTop = log.scrollHeight;
+    });
+  }
+
+  // ── what you have already told him ─────────────────────────────────────
+  // Read back off your own machine. Feedback you cannot see again is a
+  // suggestion box with a lock on it.
+  function readNotes() {
+    const fb = globalThis.__hub && globalThis.__hub.feedback;
+    let all = [];
+    try { all = (fb && fb.archive && fb.archive()) || []; } catch { all = []; }
+    const mine = all.filter(n => n && n.note);
+    if (!mine.length) { type(['NOTHING YET. THE BOX IS EMPTY.']); return; }
+    for (const n of mine.slice(0, 5)) {
+      const p = el('p', 'tc-score');
+      const when = n.ts ? new Date(n.ts).toISOString().slice(0, 10) : '';
+      p.append(document.createTextNode('  ' + when + '  '),
+        Object.assign(el('b'), { textContent: String(n.note) }));
+      log.appendChild(p);
+    }
+    if (mine.length > 5) log.appendChild(el('p', 'tc-score', `  …AND ${mine.length - 5} MORE.`));
+    log.scrollTop = log.scrollHeight;
+  }
+
+  // ── what changed ───────────────────────────────────────────────────────
+  // The other half of the note box. A suggestion box nobody ever answers
+  // stops getting used, so this reads out the hand-kept log of what actually
+  // got fixed — and, where you left a note about that same cabinet, says so.
+  //
+  // That last part is the only claim it makes about you, and it is checkable:
+  // it compares the `game` on the log entry against the `game` on the notes
+  // already on your machine. The log itself never says "you asked for this",
+  // because most entries nobody asked for and a counter that flatters you is
+  // back to being a shop.
+  function myGames() {
+    const fb = globalThis.__hub && globalThis.__hub.feedback;
+    let all = [];
+    try { all = (fb && fb.archive && fb.archive()) || []; } catch { all = []; }
+    return new Set(all.filter(n => n && n.note && n.game).map(n => n.game));
+  }
+
+  function readChanged() {
+    if (!CHANGED.length) { type(CHANGED_NONE); return; }
+    const mine = myGames();
+    const games = cabinets();
+    const titleOf = id => {
+      const g = games.find(x => x.id === id);
+      return (g && (g.title || g.id) || id).toUpperCase();
+    };
+    // ONCE per game, on its most recent entry. Said against every line it
+    // stops being an acknowledgement and turns into flattery, which is the
+    // one register this counter is not for.
+    const flagged = new Set();
+    for (const e of CHANGED.slice(0, 6)) {
+      const head = el('p', 'tc-score');
+      head.append(document.createTextNode('  ' + (e.when || '') + '  '),
+        Object.assign(el('b'), { textContent: e.game === 'hub' ? 'THE ARCADE' : titleOf(e.game) }));
+      log.appendChild(head);
+      for (const l of e.what) log.appendChild(el('p', 'tc-me', '    ' + l));
+      if (mine.has(e.game) && !flagged.has(e.game)) {
+        flagged.add(e.game);
+        log.appendChild(el('p', 'tc-you-quiet', '    ' + CHANGED_YOURS));
+      }
+    }
+    log.scrollTop = log.scrollHeight;
+  }
+
   // The sticker. Not a link to a file — there is no file, and there is no
   // image asset anywhere in this brand. `svgBadge` emits the same arcs the
   // canvas strokes, so what he hands you and what you are looking at are the
@@ -552,11 +676,19 @@ export function mountChat(anchor, opts = {}) {
     off: ['THERE IS NOWHERE TO SEND IT TODAY,', 'SO IT IS WRITTEN DOWN ON YOUR MACHINE.'],
   };
 
-  function takeNote() {
+  // `about` is a cabinet, when the note is about one. It is what turns a pile
+  // of notes into something you can act on: `game` is the field every other
+  // feedback surface in this workshop already files under, so a note left at
+  // the counter about Hyper Dagger lands in the same bucket as one left on
+  // Hyper Dagger's own form.
+  function takeNote(about) {
     const wrap = el('div', 'tc-note');
     const box = el('textarea');
-    box.setAttribute('aria-label', 'Your note to Toko');
-    box.placeholder = 'broken, boring, wrong — all useful';
+    const who = about ? (about.title || about.id).toUpperCase() : null;
+    box.setAttribute('aria-label', who ? `Your note about ${who}` : 'Your note to Toko');
+    box.placeholder = who
+      ? `about ${who.toLowerCase()} — broken, boring, wrong, all useful`
+      : 'broken, boring, wrong — all useful';
     box.maxLength = 2000;
     const send = el('button', null, 'SEND');
     send.type = 'button';
@@ -577,7 +709,21 @@ export function mountChat(anchor, opts = {}) {
       try {
         const fb = globalThis.__hub && globalThis.__hub.feedback;
         status = fb && fb.send
-          ? await fb.send({ game: 'toko-counter', kind: 'counter', note: text })
+          ? await fb.send({
+            // filed under the cabinet when there is one, so it sorts with
+            // everything else said about that game
+            game: about ? about.id : 'toko-counter',
+            kind: 'counter',
+            note: text,
+            // what he was talking about when you wrote it. A note that says
+            // "this is broken" is worth nothing without it.
+            // from the CABINET when there is one. `lastTopic` drifts: a
+            // TELL button stays in the transcript, so clicking one from
+            // further up is legitimate and must not be labelled with
+            // whatever he happens to be talking about now.
+            topic: about ? 'about:' + about.id : (lastTopic || null),
+            ts: Date.now(),
+          })
           : 'off';
       } catch { status = 'off'; }
       // he brings it up next time, once
@@ -620,6 +766,10 @@ export function mountChat(anchor, opts = {}) {
     parse.value = '';
     if (typing) finishTyping();
     if (CRY.test(raw)) { line('tc-you', raw.toUpperCase()); type(CRY.a); return; }
+    // A cabinet by name beats a topic. "TELL ME ABOUT HYPER DAGGER" should
+    // get the cabinet, not the general TELL ME ABOUT ONE OF THEM.
+    const g = matchGame(raw);
+    if (g) { line('tc-you', raw.toUpperCase()); list.hidden = true; talkAbout(g); return; }
     const t = find(raw);
     if (t) { unlocked.add(t.id); ask(t, raw.toUpperCase()); return; }
     line('tc-you', raw.toUpperCase());
@@ -628,13 +778,16 @@ export function mountChat(anchor, opts = {}) {
   }
   let misses = 0;
 
-  // Your half of the one topic that runs the other way.
+  // Your half of the topics that run the other way — his question, and the
+  // cabinet rack. An option carrying a `game` is a cabinet; everything else
+  // is a written answer.
   function answer(o) {
     if (typing) { finishTyping(); return; }
     pending = null;
     line('tc-you', o.q);
     if (o.opens) { fresh = new Set(o.opens); o.opens.forEach(id => unlocked.add(id)); }
     list.hidden = true;
+    if (o.game) { talkAbout(o.game); return; }
     type(o.a);
   }
 
@@ -649,6 +802,7 @@ export function mountChat(anchor, opts = {}) {
     if (t.opens) t.opens.forEach(id => unlocked.add(id));
     list.hidden = true;
     if (t.torn) tornUntil = performance.now() + 1400;
+    lastTopic = t.id;
     // what he greets you with next time — the last thing you were curious
     // about, and nothing else about you
     store.write({ ...store.read(), last: t.id });
@@ -665,6 +819,27 @@ export function mountChat(anchor, opts = {}) {
     if (t.scores) {
       const prev = after;
       after = () => { readScores(); if (prev) prev(); };
+    }
+    if (t.notes) {
+      const prev = after;
+      after = () => { readNotes(); if (prev) prev(); };
+    }
+    if (t.changed) {
+      const prev = after;
+      after = () => { readChanged(); if (prev) prev(); };
+    }
+    if (t.askGames) {
+      // the rack: eight at most, because the menu has nine slots and one of
+      // them is always the way out
+      const rack = cabinets().slice(0, 8)
+        .map(g => ({ id: 'g:' + g.id, q: (g.title || g.id).toUpperCase(), game: g }));
+      const prev = after;
+      after = () => {
+        if (!rack.length) { type(['THOUGH FROM HERE I CANNOT SEE THE FLOOR.']); return; }
+        pending = rack;
+        renderMenu();
+        if (prev) prev();
+      };
     }
     if (t.asks) {
       const prev = after;

@@ -507,7 +507,16 @@ posts through the **arcade's own** `window.__hub.feedback` rather than a second
 transport — saying nothing records nothing, and he never claims a delivery that
 did not happen (`sent-blind` / `queued` / no-hub each get their own line).
 **`scores: true`** reads the games' `localStorage` hi-scores off *your* machine,
-shows them and sends them nowhere. `asks:` turns the menu into your mouth for a
+shows them and sends them nowhere; **`notes: true`** reads your own past notes
+back out of the archive and **`changed: true`** reads out `CHANGED` — a
+*hand-kept* log of what actually got fixed, which is what stops a suggestion
+box going stale (it never claims you asked; it does flag a cabinet you noted
+about, once); a note taken in front of a cabinet **files under that
+game's id** (plus the topic he was on), which is what makes the counter usable
+as the single front door for feedback rather than a fourth inbox; **`askGames: true`** turns the menu into a rack of the
+**live** catalogue and he says his piece about whichever cabinet you point at
+(`GAME_NOTES` per id, falling back to that game's tagline, so one added tomorrow
+is answerable tonight — and naming it at the parser gets it directly). `asks:` turns the menu into your mouth for a
 turn; `gift:` hands over the badge as an SVG data URI; `torn:` tears the portrait
 while he answers (a glitch is an event, so it decays); `after:`/`needs:` gate a
 topic by hour and by how far you have dug. `#toko` opens the counter. Traps found
@@ -525,7 +534,7 @@ is the animated lockup for the arcade hub — `stop()` it wherever the page
 re-renders or the loop leaks against a detached canvas. `surface.js` is the
 DPR-aware smooth canvas (the mark is curves, so antialiasing stays ON).
 `toko/index.html` is the **brand board**, built out of the shipping modules.
-`toko/test/brand.cjs` is the gate (Playwright, 113 checks): geometry invariants
+`toko/test/brand.cjs` is the gate (Playwright, 126 checks): geometry invariants
 (slot width, stem/crown merge, mouth-clears-eyes, symmetry), **every rendered
 pixel checked against the two-colour system**, SVG well-formedness + that it
 emits exactly the canvas's arcs at the shipping stroke weight, the sting

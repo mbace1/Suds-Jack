@@ -19,6 +19,9 @@
 //   needs  how many things you must have asked before it appears
 //   keys   words the typed parser matches on, over and above the question
 //   note   follow the reply with a box to write him one
+//   notes  follow the reply with the notes you have already left
+//   changed follow the reply with the log of what actually got fixed
+//   askGames  like `asks`, but the options are the live catalogue
 //   scores follow the reply with whatever the games left on THIS machine
 //   torn   the portrait tears while he answers — a glitch is an event
 
@@ -169,6 +172,127 @@ export const TOPICS = [
     ],
   },
 
+  // ── the mantra ─────────────────────────────────────────────────────────
+  // The shop rules. Every one of these is a thing that was decided while
+  // building something on this floor, and every one of them is short enough
+  // to shout across a room, which is the test.
+  {
+    id: 'mantra', q: 'WHAT MAKES A GOOD GAME?',
+    a: [
+      'THE VERB.',
+      'RUN. FIRE. FALL. POUR. WAIT.',
+      'EVERYTHING ELSE IS DECORATION ON A VERB,',
+      'AND IF THE VERB IS DULL THE DECORATION',
+      'IS A COVER-UP.',
+    ],
+    opens: ['thirty', 'feel', 'hard', 'creed'],
+  },
+  {
+    id: 'thirty', q: 'AND THE FIRST THIRTY SECONDS?', once: true, locked: true,
+    a: [
+      'THEY TEACH YOU BY KILLING YOU.',
+      'NOT A TUTORIAL. NOT A WALL OF TEXT WITH',
+      'A CONTINUE BUTTON.',
+      'DIE ONCE, UNDERSTAND, GO AGAIN.',
+      'IF IT NEEDS EXPLAINING IT NEEDS REBUILDING.',
+    ],
+  },
+  {
+    id: 'feel', q: 'WHAT IS "FEEL"?', once: true, locked: true,
+    a: [
+      'THE GAP BETWEEN YOUR THUMB AND THE SCREEN.',
+      'A PRESS ANSWERS IN ONE FRAME OR IT IS',
+      'BROKEN, AND IT DOES NOT MATTER HOW GOOD',
+      'THE REST OF IT LOOKS.',
+      'SHAKE THE CAMERA. MOVE THE NUMBER.',
+      'MAKE THE HIT COST SOMETHING TO WATCH.',
+    ],
+    opens: ['juice'],
+  },
+  {
+    id: 'juice', q: 'IS THAT NOT JUST JUICE?', once: true, locked: true,
+    a: [
+      'JUICE ON A BAD VERB IS A LIAR.',
+      'IT BUYS YOU THIRTY SECONDS AND THEN THE',
+      'PLAYER NOTICES THERE IS NOTHING UNDER IT.',
+      'GET THE VERB RIGHT WHILE IT IS STILL UGLY.',
+      'THEN MAKE IT LOUD.',
+    ],
+  },
+  {
+    id: 'hard', q: 'WHY IS EVERYTHING SO HARD?', once: true, locked: true,
+    a: [
+      'IT IS NOT HARD. IT IS HONEST.',
+      'THE ENEMY IS SLOW AND VISIBLE AND IT',
+      'STILL GETS YOU, SO THAT IS ON YOU,',
+      'AND SO IS THE NEXT ONE.',
+      'A GAME THAT CANNOT KILL YOU CANNOT',
+      'CONGRATULATE YOU EITHER.',
+    ],
+    opens: ['loop'],
+  },
+  {
+    id: 'loop', q: 'WHAT MAKES ME PRESS AGAIN?', once: true, locked: true,
+    a: [
+      'THE RUN HAS TO BE SHORT ENOUGH THAT',
+      'LOSING IS CHEAPER THAN QUITTING.',
+      'NO SAVE. NO LOADING SCREEN. NO MENU',
+      'BETWEEN THE DOOR AND THE VERB.',
+      'ONE BUTTON AND YOU ARE BACK IN.',
+    ],
+  },
+  {
+    // The set piece. Nine lines, and every one of them is a rule somebody
+    // on this floor actually followed.
+    id: 'creed', q: 'SAY THE WHOLE THING.', once: true, locked: true,
+    a: [
+      'THE VERB FIRST.',
+      'ONE FRAME TO ANSWER.',
+      'DIE, UNDERSTAND, GO AGAIN.',
+      'SHORT RUNS. NO SAVE.',
+      'CONSTRAINTS, NOT NOSTALGIA.',
+      'DRAW IT IN CODE.',
+      'NO ACCOUNT. NO LAUNCHER. NO PERMISSION.',
+      'SHIP THE BROKEN ONE.',
+      'GO MAKE YOUR OWN.',
+    ],
+    opens: ['retro', 'anarchy'],
+  },
+
+  // ── the position ───────────────────────────────────────────────────────
+  {
+    id: 'retro', q: '"CONSTRAINTS, NOT NOSTALGIA"?', once: true, locked: true,
+    a: [
+      'A 2600 CHANGED COLOUR ONCE A SCANLINE.',
+      'SO A BURNING SKY IS FLAT BARS WITH HARD',
+      'SEAMS IN IT, AND IT LOOKS LIKE THAT',
+      'BECAUSE OF PHYSICS, NOT BECAUSE I MISS 1982.',
+      'TAKE THE LIMIT. DO NOT TAKE THE MOOD.',
+    ],
+  },
+  {
+    id: 'anarchy', q: 'WHY CALL IT ANARCHIST?', once: true, locked: true,
+    a: [
+      'BECAUSE NOBODY IS ABOVE YOU IN THIS.',
+      'NO STOREFRONT DECIDING WHAT EXISTS.',
+      'NO ENGINE YOU RENT. NO ACCOUNT YOU BEG',
+      'TO KEEP.',
+      'IT IS NOT A POSE. IT IS A URL AND A',
+      'VIEW-SOURCE AND YOU ARE ALREADY IN.',
+    ],
+    opens: ['browser'],
+  },
+  {
+    id: 'browser', q: 'WHY THE BROWSER?', once: true, locked: true,
+    a: [
+      'IT IS THE LAST PLACE A STRANGER CAN',
+      'PLAY YOUR THING IN ONE CLICK.',
+      'NO INSTALL. NO STORE REVIEW. NO 90 GB.',
+      'AND THE SOURCE IS RIGHT THERE, WHICH IS',
+      'HOW I LEARNED, AND HOW YOU WILL.',
+    ],
+  },
+
   // ── go make your own ───────────────────────────────────────────────────
   {
     id: 'start', q: 'HOW DO I START?',
@@ -177,7 +301,28 @@ export const TOPICS = [
       'SHIP THE BROKEN ONE.',
       'NOBODY IS COMING TO GIVE YOU PERMISSION.',
     ],
-    opens: ['bad', 'tools'],
+    opens: ['bad', 'tools', 'finish'],
+  },
+  {
+    id: 'finish', q: 'HOW DO I FINISH?', once: true, locked: true,
+    a: [
+      'YOU DO NOT. YOU STOP.',
+      'PICK THE ONE THING IT IS ABOUT AND CUT',
+      'EVERYTHING THAT IS NOT THAT.',
+      'THE HALF YOU DELETE IS THE HALF THAT',
+      'WOULD HAVE TAKEN A YEAR.',
+    ],
+    opens: ['test'],
+  },
+  {
+    id: 'test', q: 'HOW DO I KNOW IF IT IS ANY GOOD?', once: true, locked: true,
+    a: [
+      'PUT IT IN SOMEBODY ELSE\'S HANDS AND',
+      'SAY NOTHING.',
+      'EVERY WORD YOU SAY WHILE THEY PLAY IS A',
+      'THING YOUR GAME FAILED TO SAY.',
+      'WATCH THEIR HANDS, NOT THEIR FACE.',
+    ],
   },
   {
     id: 'bad', q: 'WHAT IF I AM BAD AT IT?', once: true, locked: true,
@@ -229,7 +374,15 @@ export const TOPICS = [
       'AND A QUIET ONE THAT SENDS YOU OUTSIDE.',
       'PICK A CABINET. PRESS PLAY.',
     ],
-    opens: ['quiet', 'dead'],
+    opens: ['quiet', 'dead', 'about'],
+  },
+  {
+    // `askGames` is `asks` built from the LIVE catalogue rather than written
+    // here — the counter turns the menu into a rack of cabinets and he says
+    // his piece about whichever one you point at. A cabinet added tomorrow
+    // is on this list tonight.
+    id: 'about', q: 'TELL ME ABOUT ONE OF THEM.', locked: true, askGames: true,
+    a: ['WHICH ONE.'],
   },
   {
     id: 'quiet', q: 'THE QUIET ONE?', once: true, locked: true,
@@ -258,7 +411,7 @@ export const TOPICS = [
     // The counter's whole reason for existing, really. Everything else is
     // Toko talking; this is the one place the traffic runs the other way and
     // ends up somewhere a person reads it.
-    id: 'note', q: 'I HAVE SOMETHING TO SAY.', note: true,
+    id: 'note', q: 'I HAVE SOMETHING TO SAY.', note: true, opens: ['mine'],
     a: [
       'THEN SAY IT. I AM LISTENING.',
       'BROKEN, BORING, WRONG — ALL USEFUL.',
@@ -353,6 +506,20 @@ export const TOPICS = [
     ],
   },
 
+  {
+    // Everything you have ever left him, read back off your own machine.
+    // Feedback you cannot see again is a suggestion box with a lock on it.
+    id: 'mine', q: 'WHAT HAVE I TOLD YOU?', locked: true, notes: true,
+    a: ['WHAT YOU LEFT ME IS STILL ON YOUR MACHINE.', 'HERE IT IS.'],
+    opens: ['changed'],
+  },
+  {
+    // The half that makes the note box worth using twice. A suggestion box
+    // nobody answers stops getting used.
+    id: 'changed', q: 'DID ANY OF IT MATTER?', changed: true,
+    a: ['SOME OF IT. HERE IS WHAT MOVED.'],
+  },
+
   // ── what he can see from here ──────────────────────────────────────────
   {
     // Read off YOUR machine, by the games themselves, and never sent
@@ -401,6 +568,82 @@ for (const id of ['ai', 'scroll', 'hypocrite', 'seam']) {
   if (t) t.torn = true;
 }
 
+// ── what changed ─────────────────────────────────────────────────────────
+// The other half of the note box. A suggestion box nobody ever answers stops
+// getting used, so this is the answer: a hand-kept log of what actually got
+// fixed, newest first, read out at the counter.
+//
+// TWO RULES, and they are the whole reason it is worth having.
+//
+// It is HAND-KEPT. Nothing generates it, because the point is that a person
+// read the notes and did something. Add an entry when you ship the fix.
+//
+// It never claims somebody asked. These are things that changed, stated
+// flatly; the counter separately checks whether YOU left a note about that
+// game and says so if you did, which is true and checkable rather than
+// flattering. Do not write "you asked for this" into the text.
+//
+//   { when, game, what: [lines] }   game matches the catalogue's id, or
+//                                   'hub' for the arcade itself
+export const CHANGED = [
+  {
+    when: '2026-07', game: 'hub',
+    what: ['THE COUNTER TOOK ITS FIRST NOTES.',
+      'YOU CAN ALSO JUST TYPE AT ME NOW.'],
+  },
+  {
+    when: '2026-07', game: 'hub',
+    what: ['THE HOME BUTTON WORKED WITH A MOUSE AND',
+      'DID NOTHING UNDER A THUMB.',
+      'IT WORKS UNDER A THUMB.'],
+  },
+  {
+    when: '2026-07', game: 'hub',
+    what: ['GAMES THAT ARE NOT UP SAY SO ON THE',
+      'BUTTON INSTEAD OF 404ING AT YOU.'],
+  },
+];
+
+export const CHANGED_NONE = ['NOTHING WORTH READING OUT YET.'];
+export const CHANGED_YOURS = 'YOU LEFT A NOTE ABOUT THIS ONE.';
+
+// ── what he thinks of his own cabinets ───────────────────────────────────
+// Keyed by the catalogue's own ids. A game with no line here is not a bug:
+// the counter falls back to the catalogue's tagline, so a cabinet added
+// tomorrow can still be asked about tonight — it just gets the blurb instead
+// of an opinion until somebody writes him one.
+export const GAME_NOTES = {
+  sudsjack: ['THE NAMESAKE. A TUBE AND A LOT OF SOAP.',
+    'THE ONE YOU CAN PLAY IS THE OLD VECTOR BUILD.',
+    'THE REBUILD STARTS FROM HYPER DAGGER.'],
+  tokodrop: ['GEL. IT WOBBLES BECAUSE I WANTED IT TO.',
+    'THE ENEMIES SCHOOL LIKE FISH AND THEN',
+    'THEY BURST. THAT IS THE WHOLE PITCH.'],
+  hyperdagger: ['THE ONE THAT WILL KILL YOU FASTEST.',
+    'EVERY SKULL IS BUILT OUT OF CUBES AND',
+    'EVERY DEATH THROWS THEM ACROSS THE FLOOR.',
+    'SURVIVAL TIME IS THE ONLY SCORE.'],
+  dropcabal: ['CABAL, WITH MY GELS IN IT.',
+    'SHOOT INTO THE DEPTH. THE NEAR THINGS EAT',
+    'THE SHOTS YOU MEANT FOR THE FAR ONES.'],
+  paperboy: ['A PAPER ROUTE AT DAWN. FLAT COLOUR,',
+    'NO LIGHTS, NO SHADOWS — A POSTER YOU RIDE.',
+    'IT IS NOT MOVING MUCH THESE DAYS.'],
+  gameoflife: ['THE QUIET ONE. IT ENDS BY SENDING YOU',
+    'OUTSIDE, AND IT WORKS WITH THE SIGNAL OFF.',
+    'THE ONE ROOM I DO NOT SIGN.'],
+  neonronin: ['A GATE, A STAIR, AND SOMEBODY WALKING UP IT.',
+    'I DREW THE COVER BEFORE I DREW THE GAME.'],
+  skltr: ['BONES. KEEP MOVING.'],
+  powder: ['DOWNHILL, FAST, AND THE TURN COMES',
+    'LATER THAN YOU THINK.'],
+  tinyhawk: ['SMALL BIRD. LONG DROP.'],
+  tiny2d: ['ONE BUTTON. THAT IS THE WHOLE INSTRUMENT.'],
+  eyetest: ['NOT REALLY A GAME. LOOK ANYWAY.'],
+};
+
+export const ABOUT_UNKNOWN = ['I DO NOT HAVE A LINE ABOUT THAT ONE YET.'];
+
 // ── the parser ───────────────────────────────────────────────────────────
 // You can also just TYPE at him, which is the whole reason this thing is
 // shaped like Police Quest. Still no language model: it is word overlap
@@ -422,6 +665,18 @@ const KEYS = {
   faraway: ['FAR', 'AWAY', 'SLOW', 'TIRED', 'STONED', 'DREAMING'],
   late: ['LATE', 'NIGHT', 'SLEEP', 'BED', 'HOUR', 'TIME'],
   start: ['START', 'BEGIN', 'HOW', 'LEARN', 'MAKE', 'FIRST'],
+  mantra: ['GOOD', 'GAME', 'MANTRA', 'RULES', 'DESIGN', 'VERB', 'PHILOSOPHY'],
+  thirty: ['TUTORIAL', 'TEACH', 'ONBOARDING', 'THIRTY', 'SECONDS', 'LEARNING'],
+  feel: ['FEEL', 'GAMEFEEL', 'RESPONSIVE', 'INPUT', 'LAG', 'TIGHT', 'CONTROLS'],
+  juice: ['JUICE', 'JUICY', 'POLISH', 'PARTICLES', 'SHAKE', 'EFFECTS'],
+  hard: ['HARD', 'DIFFICULT', 'DIFFICULTY', 'UNFAIR', 'BRUTAL', 'EASY'],
+  loop: ['LOOP', 'AGAIN', 'REPLAY', 'ADDICTIVE', 'RETRY', 'RUN'],
+  creed: ['CREED', 'MANTRA', 'WHOLE', 'RECITE', 'ALL', 'MANIFESTO'],
+  retro: ['RETRO', 'NOSTALGIA', 'PIXEL', 'ATARI', 'MASTER', 'SYSTEM', 'OLD'],
+  anarchy: ['ANARCHIST', 'ANARCHY', 'POLITICS', 'PUNK', 'DIY', 'INDIE'],
+  browser: ['BROWSER', 'WEB', 'HTML', 'STEAM', 'INSTALL', 'STORE'],
+  finish: ['FINISH', 'DONE', 'SCOPE', 'STUCK', 'ENDLESS', 'STOP'],
+  test: ['TEST', 'PLAYTEST', 'GOOD', 'FEEDBACK', 'WATCH', 'TESTERS'],
   bad: ['BAD', 'TERRIBLE', 'FAIL', 'SUCK', 'MISTAKE', 'AFRAID'],
   tools: ['TOOLS', 'TOOL', 'USE', 'ENGINE', 'UNITY', 'GODOT', 'EDITOR', 'STACK'],
   build: ['BUILD', 'COMPILE', 'BUNDLER', 'NPM', 'WEBPACK', 'STEP'],
@@ -435,6 +690,9 @@ const KEYS = {
   gift: ['GIFT', 'STICKER', 'GIVE', 'SOMETHING', 'FREE', 'DOWNLOAD', 'SVG'],
   note: ['NOTE', 'SAY', 'FEEDBACK', 'TELL', 'BUG', 'IDEA', 'THANKS', 'HATE', 'LOVE'],
   seen: ['SEEN', 'SCORE', 'SCORES', 'HIGH', 'RECORD', 'PLAYED', 'STATS'],
+  about: ['ABOUT', 'TELL', 'CABINET', 'DESCRIBE', 'THEM'],
+  mine: ['MINE', 'TOLD', 'NOTES', 'WROTE', 'SENT', 'ARCHIVE'],
+  changed: ['CHANGED', 'FIXED', 'MATTER', 'MATTERED', 'LISTEN', 'IGNORE', 'CHANGELOG'],
   back: ['BACK', 'MORE', 'DEEPER', 'SECRET'],
   bye: ['BYE', 'GOODBYE', 'LEAVE', 'EXIT', 'QUIT', 'NOTHING', 'THANKS'],
 };
@@ -447,6 +705,14 @@ const STOP = new Set(['THE', 'A', 'AN', 'IS', 'ARE', 'WAS', 'DO', 'DOES', 'DID',
   'FOR', 'AM', 'BE', 'CAN', 'WILL', 'YOUR', 'HAVE', 'HAS', 'NOT', 'SO', 'AT']);
 
 const words = s => (s.toUpperCase().match(/[A-Z']+/g) || []).filter(w => !STOP.has(w));
+
+// The same filter for CABINET TITLES, which keep their digits ("Tiny 2D",
+// "20/20"). Without the stop list "SAY THE WHOLE THING" scored a hit on
+// "The Game of Life" through the word THE and he answered about the wrong
+// thing entirely — with total confidence, which is the one failure this
+// parser is not allowed to have.
+export const nameWords = s =>
+  (String(s).toUpperCase().match(/[A-Z0-9]+/g) || []).filter(w => !STOP.has(w));
 
 // He hears the cry and answers it, whatever else is in the sentence.
 export const CRY = {

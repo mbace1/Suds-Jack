@@ -256,6 +256,28 @@ What it does beyond talking:
   own line, a queued one says it is queued, and dropped on a page with no hub
   he says it is written down on your machine and nothing more. He mentions a
   note **once** on your next visit; twice would be a receipt.
+- **He talks about one cabinet at a time.** `askGames` is the his-question
+  mechanic with the **live catalogue** as the options, so a cabinet added
+  tomorrow is on the rack tonight. His line per game lives in `GAME_NOTES`;
+  one with nothing written yet falls back to the catalogue's own tagline
+  rather than going missing. Naming a game at the parser gets it directly.
+- **A note can be *about* something.** Standing in front of one cabinet is the
+  moment a player actually has something to say about it, so his line about a
+  game is followed by *tell him about this one* — and a note taken there files
+  under **that game's id**, the same `game` field every other feedback surface
+  in the workshop already uses, plus the topic he was on when you wrote it. A
+  note that says "this is broken" is worth nothing without that.
+- **You can read your own notes back.** Feedback you cannot see again is a
+  suggestion box with a lock on it, so `WHAT HAVE I TOLD YOU?` prints the
+  archive off your machine — the same one the hub keeps.
+- **And he tells you what changed.** `DID ANY OF IT MATTER?` reads out
+  `CHANGED` in `dialogue.js` — a **hand-kept** log of what actually got fixed.
+  Nothing generates it, because the whole point is that a person read the
+  notes and did something; add an entry when you ship the fix. It never says
+  *you asked for this*, because most entries nobody asked for and a counter
+  that flatters you is back to being a shop. It does check whether you left a
+  note about that same cabinet and say so **once** — that claim is true and
+  checkable, which is the only kind worth making.
 - **He reads what the cabinets left on your machine.** `HAVE YOU SEEN ME
   PLAY?` reads the games' own `localStorage` hi-scores, shows them, and sends
   them nowhere. He says as much while doing it — a workshop that claims not
