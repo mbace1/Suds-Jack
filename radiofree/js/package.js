@@ -25,9 +25,9 @@
 // footage — which is what an idle post should be showing anyway — costs an
 // <img> that was already there.
 
-import { Photo } from './photo.js?v=27';
-import { Anchor } from './anchor.js?v=27';
-import { Graphic } from './graphic.js?v=27';
+import { Photo } from './photo.js?v=28';
+import { Anchor } from './anchor.js?v=28';
+import { Graphic } from './graphic.js?v=28';
 
 // The beat. Footage leads because the story is about somewhere; the studio
 // gets the longest single hold because that is where the words are; the
