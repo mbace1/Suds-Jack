@@ -256,6 +256,62 @@ function check(name, cond) {
   await page.locator('.lang-btn[data-lang="en"]').click();
   check('and back to English', (await page.locator('#floor-head').textContent()) === before);
 
+  // ── the offline shell's list ──
+  // A precache list is a copy of the page's module graph, and a copy drifts:
+  // this caught feedback.js at ?v=7 in sw.js while the page had already moved
+  // to ?v=9, which is a hub that loads online and is blank on a plane. There is
+  // no build step to generate it, so it is checked instead.
+  const swSrc = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+  const pageSrc = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const hubSrc = fs.readFileSync(path.join(ROOT, 'hub', 'hub.js'), 'utf8');
+  const needed = new Set([
+    ...(pageSrc.match(/hub\/[a-z0-9]+\.(?:js|css)\?v=\d+/g) ?? []),
+    ...[...hubSrc.matchAll(/from '\.\/([a-z0-9]+\.js\?v=\d+)'/g)].map(m => `hub/${m[1]}`),
+  ]);
+  const absent = [...needed].filter(u => !swSrc.includes(u));
+  check(`the offline shell names every module the page asks for (${needed.size})${absent.length ? ` — missing ${absent}` : ''}`,
+    absent.length === 0);
+
+  // ── finding one ──
+  const tagCount = await page.locator('.tag-btn').count();
+  check(`the floor can be filtered by tag (${tagCount})`, tagCount > 3);
+  await page.fill('#find-box', 'voxel');
+  await page.waitForTimeout(120);
+  const hits = await page.$$eval('.cab', cs => cs.filter(c => !c.hidden).map(c => c.id));
+  check(`typing narrows it (${hits.length}: ${hits.map(h => h.slice(4))})`,
+    hits.length > 0 && hits.length < games.length);
+  check('and the count says how far it narrowed',
+    /\d+/.test(await page.locator('#find-count').textContent()));
+  // it searches what the page is showing, not the English underneath
+  await page.locator('.lang-btn[data-lang="fi"]').click();
+  await page.fill('#find-box', 'vektori');
+  await page.waitForTimeout(120);
+  check('and it searches the language you are reading in',
+    (await page.$$eval('.cab', cs => cs.filter(c => !c.hidden).length)) > 0);
+  await page.locator('.lang-btn[data-lang="en"]').click();
+
+  await page.fill('#find-box', 'zzzzz');
+  await page.waitForTimeout(120);
+  check('nothing matching says so rather than showing an empty floor',
+    await page.locator('#find-none').isVisible());
+  // and the pad must not be able to walk into something that is filtered out
+  check('a filtered-out cabinet is not reachable with a pad',
+    await page.evaluate(() => __hub.debug.select(0) === undefined
+      && !document.querySelector('.cab.sel:not([hidden])')) !== false);
+  await page.fill('#find-box', '');
+  await page.waitForTimeout(120);
+  check('clearing it puts the whole floor back',
+    await page.$$eval('.cab', cs => cs.filter(c => !c.hidden).length) === games.length);
+
+  // ── one at random ──
+  const rolled = new Set();
+  for (let i = 0; i < 12; i++) rolled.add(await page.evaluate(() => __hub.debug.surprise()));
+  check(`show-me-one picks from the floor (${rolled.size} different in 12 rolls)`,
+    rolled.size > 1 && [...rolled].every(id => games.some(g => g.id === id)));
+  check('and never lands on a cabinet with nothing behind it',
+    [...rolled].every(id => games.find(g => g.id === id)?.live !== false));
+  setHashless: { await page.goto(`${base}/index.html`, { waitUntil: 'networkidle' }); }
+
   // ── one cabinet, by name ──
   // The point of the second form is a link you can paste to a playtester that
   // puts them in front of the box — getting somebody in front of the box is
