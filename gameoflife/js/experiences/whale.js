@@ -11,8 +11,8 @@
 // luminescent cyan and breaking the frame — the only light down there is alive.
 // Revert: find something fallen and see what is eating it.
 
-import { PixelScreen, bayer, rampDither, shade } from '../pixel.js?v=40';
-import { PAL } from '../palette.js?v=40';
+import { PixelScreen, bayer, rampDither, shade } from '../pixel.js?v=42';
+import { PAL } from '../palette.js?v=42';
 
 // the water column, dark → darker; the surface is the only lit thing
 const SEA = ['#04070d', '#071019', '#0b1c2b', '#12303f', '#1d4a5c', '#2f6d80'];

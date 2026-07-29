@@ -10,8 +10,8 @@
 // clears): here the growth was never hidden by weather or spoiled by hands. It
 // was simply underground, which is where growth usually is.
 
-import { PixelScreen, shade, bayer, rampDither } from '../pixel.js?v=40';
-import { PAL } from '../palette.js?v=40';
+import { PixelScreen, shade, bayer, rampDither } from '../pixel.js?v=42';
+import { PAL } from '../palette.js?v=42';
 
 const DAYS = 4, DAY_SEC = 3.4;            // four day/night cycles ≈ 13.6 s
 const VX = 20, VW = 152;                  // the vignette floating in the void

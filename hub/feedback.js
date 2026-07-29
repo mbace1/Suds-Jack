@@ -18,7 +18,12 @@
 // burst. Nothing is ever dropped on the floor, and nothing is promised that
 // was not done: an opaque no-cors POST reports 'sent-blind', not 'sent'.
 
-const SHEET_ENDPOINT = '';                                  // 'https://script.google.com/macros/s/XXXX/exec'
+// The Sheet is live. This is deliberately PUBLIC — it ships in client-side
+// JS and the deployment is set to "Anyone", because notes post anonymously
+// from players' browsers and there is no server here to hide it behind. If
+// it ever gets abused, redeploy the Apps Script for a fresh /exec URL and
+// change this line; nothing else needs to move.
+const SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwFnbiZ-nPQOId06S2PHPvehLoTKyTu45eFnshpArEuvcxBfEeMXhxtOh6kH8Z9o3Fu/exec';
 const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mdarbpve';
 
 const KEY = 'sudsJackHub';

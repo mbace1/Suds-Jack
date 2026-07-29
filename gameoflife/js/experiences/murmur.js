@@ -10,8 +10,8 @@
 // scripted the scene would be lying about its own subject.
 // Revert: find a flock at dusk and watch it instead of filming it.
 
-import { PixelScreen } from '../pixel.js?v=40';
-import { PAL } from '../palette.js?v=40';
+import { PixelScreen } from '../pixel.js?v=42';
+import { PAL } from '../palette.js?v=42';
 
 const N = 110;                      // starlings
 const SKY = ['#2b2440', '#4a3a58', '#8a5d6d', '#c98f7a'];

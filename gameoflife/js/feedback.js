@@ -20,9 +20,9 @@
 // ids — and cannot confirm delivery, because Google Forms sends no CORS headers
 // and the browser can only fire the request blind. Formspree is the easier fit.
 
-import * as store from './storage.js?v=40';
+import * as store from './storage.js?v=42';
 
-let ENDPOINT = '';
+let ENDPOINT = 'https://script.google.com/macros/s/AKfycbwFnbiZ-nPQOId06S2PHPvehLoTKyTu45eFnshpArEuvcxBfEeMXhxtOh6kH8Z9o3Fu/exec';
 
 export function endpoint() { return ENDPOINT; }
 export function configured() { return !!ENDPOINT; }
@@ -36,11 +36,36 @@ export function setEndpoint(url) { ENDPOINT = url || ''; }   // tests + console
 // the same Apps Script and its rows sit with everything else.
 const GAME_ID = 'gameoflife';
 
+// An Apps Script web app CANNOT answer a CORS preflight, and an
+// `application/json` body is exactly what triggers one. Posting this the
+// obvious way meant every note failed, queued, and retried forever on a path
+// that could never work. So the request is kept "simple" — text/plain,
+// no-cors — which the browser sends without asking permission first.
+//
+// The cost is that the answer is opaque: `res.ok` is false and `res.status`
+// is 0 on a POST that arrived perfectly. Reading either would turn every
+// successful send into a failure, so neither is read. What is left is the
+// honest statement that it LEFT, which is what 'sent-blind' means. Only a
+// real network error throws, and only that queues.
+// A FUNCTION, not a const: setEndpoint() repoints this at runtime (the smoke
+// gate does exactly that), and a value frozen at import would keep answering
+// for the endpoint that is no longer in use.
+const blind = () => /script\.google\.com/.test(ENDPOINT);
+
 async function post(entry) {
+  const body = JSON.stringify({ game: GAME_ID, source: 'gameoflife', ...entry });
+  if (blind()) {
+    await fetch(ENDPOINT, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body,
+    });
+    return;
+  }
   const res = await fetch(ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ game: GAME_ID, source: 'gameoflife', ...entry }),
+    body,
   });
   if (!res.ok) throw new Error(`endpoint answered ${res.status}`);
 }
@@ -51,7 +76,9 @@ export async function send(entry) {
   if (!ENDPOINT) return 'off';
   try {
     await post(entry);
-    return 'sent';
+    // never 'sent' on the blind path: it left, and that is all anybody here
+    // can honestly say about it
+    return blind() ? 'sent-blind' : 'sent';
   } catch {
     store.queueFeedback(entry);
     return 'queued';

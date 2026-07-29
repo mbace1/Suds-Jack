@@ -439,10 +439,30 @@ function serve() {
   await page.evaluate(() => globalThis.__tokoChat.say('note'));
   await settle();
   await page.waitForSelector('.toko-chat .tc-note textarea', { timeout: 4000 });
-  ok('the note box clears 44px on its send',
-    await page.evaluate(() =>
-      document.querySelector('.toko-chat .tc-note button').getBoundingClientRect().height >= 44));
-  await page.click('.toko-chat .tc-note button');            // empty
+  // NOT just "is it 44px tall". It was 44px tall and unreachable: the box used
+  // to be appended into .tc-log, which is capped and clipped, so the send
+  // button scrolled below the fold — present, focusable, and invisible.
+  // Somebody wrote a note and could not find the way to send it. So this
+  // asks the page where the button actually IS, whether a hit test at its
+  // centre lands on it, and then clicks it for real rather than through
+  // evaluate(), which would have passed the whole time.
+  const sendGeo = await page.evaluate(() => {
+    const b = document.querySelector('.toko-chat .tc-note button');
+    const panel = document.querySelector('.toko-chat .tc-panel');
+    const r = b.getBoundingClientRect(), pr = panel.getBoundingClientRect();
+    const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+    return {
+      tall: r.height >= 44,
+      inPanel: r.bottom <= pr.bottom + 1 && r.top >= pr.top - 1,
+      hits: !!top && !!top.closest('.tc-note'),
+    };
+  });
+  ok('the send button clears 44px', sendGeo.tall);
+  ok('and is inside the visible panel, not below the fold', sendGeo.inPanel);
+  ok('and a hit test at its centre lands on it', sendGeo.hits);
+  // a REAL click at real coordinates — the previous evaluate().click() would
+  // have kept passing while a player could not reach the button at all
+  await page.click('.toko-chat .tc-note button', { timeout: 5000 });   // empty
   await settle();
   ok('saying nothing records nothing',
     await page.evaluate(() => globalThis.__hub.feedback.sent.length === 0
