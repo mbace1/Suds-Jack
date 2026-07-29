@@ -1,6 +1,6 @@
 // Radio Free Helsinki — interface strings, fi / en / ja.
 //
-// The bulletins themselves live in stories.js (they are long enough to want
+// The videos themselves live in stories.js (they are long enough to want
 // their own file); everything else the interface says is here. t() falls back
 // to English so a missing string shows English rather than breaking a view —
 // which is exactly why the gate checks that no key is missing at all: a raw key
@@ -16,13 +16,13 @@ const STR = {
   // ────────────────────────────────────────────────── English
   en: {
     'gate.blurb': 'Pirate wire out of the capital. Games, industry, and the defence band — read by Toko, who has never been asked to be impartial.',
-    'gate.fiction': 'Every bulletin is invented. Every technique in them is not.',
+    'gate.fiction': 'Every video is invented. Every technique in them is not.',
     'gate.btn': '▶ Tune in',
 
     'off.tag': 'TRANSMISSION ENDS',
     'off.head': 'That is the wire. Now the part about us.',
     'off.p1': '{n} stories out of a day. Somebody chose them, and somebody put them in an order, and that somebody was this station.',
-    'off.p2': 'Every technique below is real and none of the bulletins were. The useful half is the one you take out of here — so here is what you pulled apart tonight, and what you let past.',
+    'off.p2': 'Every technique below is real and none of the videos were. The useful half is the one you take out of here — so here is what you pulled apart tonight, and what you let past.',
     'off.tally': 'DECODED',
     'off.none': 'You did not decode any of them. That is allowed — but the tells are the whole payload, and they are up there behind the ⧉.',
     'off.all': 'All {n}. Go and find one of these in something real.',
@@ -35,7 +35,7 @@ const STR = {
 
     'tag.onair': 'ON AIR',
     'standby': 'awaiting transmission',
-    'hint.swipe': 'swipe up for the next bulletin',
+    'hint.swipe': 'swipe up for the next video',
     'tell.prefix': 'TELL: ',
     'fiction': 'Fictional broadcast · invented studios, ministries and ports · real techniques',
 
@@ -46,7 +46,7 @@ const STR = {
     'a11y.prevChannel': 'Previous channel',
     'a11y.nextChannel': 'Next channel',
     'a11y.sound': 'Sound on or off',
-    'a11y.nextPost': 'Next bulletin',
+    'a11y.nextPost': 'Next video',
     'a11y.lang': 'Language — English. Press to change.',
   },
 
@@ -59,7 +59,7 @@ const STR = {
     'off.tag': 'LÄHETYS PÄÄTTYY',
     'off.head': 'Siinä oli päivän lanka. Nyt se osa joka koskee meitä.',
     'off.p1': '{n} juttua yhdestä päivästä. Joku valitsi ne, ja joku pani ne järjestykseen, ja se joku oli tämä asema.',
-    'off.p2': 'Jokainen alla oleva keino on todellinen eikä yksikään uutinen ollut. Hyödyllinen puolisko on se jonka viet täältä mukanasi — tässä siis se minkä purit tänään, ja se minkä päästit ohi.',
+    'off.p2': 'Jokainen alla oleva keino on todellinen eikä yksikään video ollut. Hyödyllinen puolisko on se jonka viet täältä mukanasi — tässä siis se minkä purit tänään, ja se minkä päästit ohi.',
     'off.tally': 'PURETUT',
     'off.none': 'Et purkanut yhtäkään. Se on sallittua — mutta tunnusmerkit ovat koko anti, ja ne odottavat tuolla ⧉:n takana.',
     'off.all': 'Kaikki {n}. Mene nyt etsimään yksi näistä jostakin oikeasta.',
@@ -72,7 +72,7 @@ const STR = {
 
     'tag.onair': 'SUORA',
     'standby': 'odottaa lähetystä',
-    'hint.swipe': 'pyyhkäise ylös seuraavaan',
+    'hint.swipe': 'pyyhkäise ylös seuraavaan videoon',
     'tell.prefix': 'TUNNISTAT NÄIN: ',
     'fiction': 'Kuvitteellinen lähetys · keksityt studiot, ministeriöt ja satamat · todelliset keinot',
 
@@ -83,7 +83,7 @@ const STR = {
     'a11y.prevChannel': 'Edellinen kanava',
     'a11y.nextChannel': 'Seuraava kanava',
     'a11y.sound': 'Ääni päälle tai pois',
-    'a11y.nextPost': 'Seuraava uutinen',
+    'a11y.nextPost': 'Seuraava video',
     'a11y.lang': 'Kieli — suomi. Vaihda painamalla.',
   },
 
@@ -96,7 +96,7 @@ const STR = {
     'off.tag': '放送終了',
     'off.head': '以上が今日の電文。ここからは、こちらの話。',
     'off.p1': '一日から{n}本。誰かがそれを選び、誰かが順番をつけた。その誰かが、この局だ。',
-    'off.p2': '下に並ぶ手法はどれも実在し、速報はどれも作りものだった。役に立つのは持ち帰るほうの半分だ——というわけで、今夜あなたが解いたものと、通り過ぎたものを置いておく。',
+    'off.p2': '下に並ぶ手法はどれも実在し、動画はどれも作りものだった。役に立つのは持ち帰るほうの半分だ——というわけで、今夜あなたが解いたものと、通り過ぎたものを置いておく。',
     'off.tally': '解読済み',
     'off.none': 'ひとつも解読しなかった。それでもかまわない——ただ、見分け方こそがこの放送の中身で、⧉ の奥にまだ置いてある。',
     'off.all': '{n}本すべて。あとは本物のどれかで、この手口をひとつ見つけにいくこと。',
@@ -109,7 +109,7 @@ const STR = {
 
     'tag.onair': 'オンエア',
     'standby': '送信待ち',
-    'hint.swipe': '上にスワイプで次の記事へ',
+    'hint.swipe': '上にスワイプで次の動画へ',
     'tell.prefix': '見分け方：',
     'fiction': '架空の放送 · 架空のスタジオ・省庁・港湾 · 実在する手法',
 
@@ -120,7 +120,7 @@ const STR = {
     'a11y.prevChannel': '前のチャンネル',
     'a11y.nextChannel': '次のチャンネル',
     'a11y.sound': '音のオン・オフ',
-    'a11y.nextPost': '次の記事',
+    'a11y.nextPost': '次の動画',
     'a11y.lang': '言語 — 日本語。押すと切り替わります。',
   },
 };
