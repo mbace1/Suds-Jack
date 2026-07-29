@@ -6,11 +6,13 @@
 // other — and that contrast is what makes a post read as something edited
 // rather than as a card with a caption.
 //
-// It composes the two shot classes rather than reimplementing either. `Photo`
-// is the B-roll (Grok's frames, CSS ken-burns, no main-thread cost) and
-// `Anchor` is the studio (a live canvas driven by the reader's mouth
-// amplitude). Both already mirror the same interface, so this one does too and
-// main.js still does not know which kind of post it is holding.
+// It composes the shot classes rather than reimplementing any of them. The
+// B-roll is a PHOTOGRAPH where one exists (Grok's frames, CSS ken-burns, no
+// main-thread cost) and a DRAWN PLATE otherwise — three photographs were
+// serving ten footage keys, which put a night city street under a story about
+// a summer beach. `Anchor` is the studio and `Graphic` is the story panel.
+// All four mirror the same interface, so this one does too and main.js still
+// does not know which kind of post it is holding.
 //
 // DECODE cuts home to the GRAPHIC and holds there — the rule the codec posts
 // always followed, restored now that the graphic is on screen. The panels
@@ -25,9 +27,10 @@
 // footage — which is what an idle post should be showing anyway — costs an
 // <img> that was already there.
 
-import { Photo } from './photo.js?v=28';
-import { Anchor } from './anchor.js?v=28';
-import { Graphic } from './graphic.js?v=28';
+import { Photo } from './photo.js?v=29';
+import { Anchor } from './anchor.js?v=29';
+import { Graphic } from './graphic.js?v=29';
+import { Plate, isDrawn } from './plate.js?v=29';
 
 // The beat. Footage leads because the story is about somewhere; the studio
 // gets the longest single hold because that is where the words are; the
@@ -73,7 +76,10 @@ export class Package {
     root.append(a, b, g, flash);
     host.appendChild(root);
 
-    this.photo = new Photo(a, story, sector, seed);
+    // the photograph is still the default: a post only gets a drawn plate
+    // when no photographed frame matches its dateline
+    const Footage = isDrawn(story && story.broll) ? Plate : Photo;
+    this.photo = new Footage(a, story, sector, seed);
     this.root = root;
     this.flash = flash;
     this.layers = { broll: a, anchor: b, graphic: g };
@@ -193,6 +199,7 @@ export class Package {
   // motion is CSS and keeps running either way, and the shot that is not up
   // does not need a frame.
   draw() {
+    if (this.shot === 'broll') { if (this.photo.draw) this.photo.draw(); return; }
     const sh = this.drawn[this.shot];
     if (sh) sh.draw();
   }
