@@ -1,0 +1,121 @@
+// Suds Jack smoke: does it boot, does it play, does anything throw.
+const { chromium } = require('playwright');
+const http = require('http'); const fs = require('fs'); const path = require('path');
+const ROOT = require('path').resolve(__dirname, '..', '..');
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png' };
+const s = http.createServer((req, res) => {
+  let p = path.join(ROOT, decodeURIComponent(req.url.split('?')[0]));
+  if (fs.existsSync(p) && fs.statSync(p).isDirectory()) p = path.join(p, 'index.html');
+  if (!fs.existsSync(p)) { res.writeHead(404); return res.end('no'); }
+  res.writeHead(200, { 'Content-Type': MIME[path.extname(p)] || 'application/octet-stream' });
+  fs.createReadStream(p).pipe(res);
+});
+let pass = 0, fail = 0;
+const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, console.log('  FAIL ' + n + (d ? ' → ' + d : ''))); };
+
+s.listen(0, '127.0.0.1', async () => {
+  const base = 'http://127.0.0.1:' + s.address().port;
+  const b = await chromium.launch();
+  const p = await b.newPage({ viewport: { width: 1000, height: 720 } });
+  const errs = [];
+  p.on('pageerror', e => errs.push('pageerror: ' + e.message));
+  p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
+
+  await p.goto(base + '/sudsjack/', { waitUntil: 'networkidle' });
+  await p.waitForTimeout(700);
+  ok('it boots with no errors', errs.length === 0, errs.slice(0, 3).join(' | '));
+  ok('the handle is exposed', await p.evaluate(() => !!window.__sj));
+  ok('the menu is up', await p.locator('#menu').isVisible());
+  ok('WebGL actually painted', await p.evaluate(() => {
+    const c = document.getElementById('game');
+    return c.width > 100 && !!c.getContext('webgl2');
+  }));
+  await p.screenshot({ path: process.env.SHOT_MENU || '/tmp/sj-menu.png' });
+
+  // play
+  await p.click('#play');
+  await p.waitForTimeout(500);
+  ok('play starts a run', await p.evaluate(() => window.__sj.state.mode === 'play'));
+  ok('and the menu is gone', await p.locator('#menu').isHidden());
+
+  // risers appear on their own
+  await p.waitForTimeout(2500);
+  const spawned = await p.evaluate(() => window.__sj.risers.items.length);
+  ok('the director spawns risers (' + spawned + ')', spawned > 0);
+  ok('exactly one bubble is lit',
+    await p.evaluate(() => window.__sj.risers.items.filter(i => i.lit).length) === 1);
+
+  // riding the rim
+  const before = await p.evaluate(() => window.__sj.player.lane);
+  await p.keyboard.down('ArrowRight');
+  await p.waitForTimeout(400);
+  await p.keyboard.up('ArrowRight');
+  const after = await p.evaluate(() => window.__sj.player.lane);
+  ok('holding right rides the rim (' + before.toFixed(2) + ' → ' + after.toFixed(2) + ')', Math.abs(after - before) > 0.4);
+
+  // The dive commits: no lane change while down the tube. Everything here
+  // waits on GAME state rather than the clock — this sandbox has no GPU and
+  // renders at a handful of frames a second, so a fixed sleep measures the
+  // rasteriser, not the game.
+  await p.evaluate(() => window.__sj.player.dive());
+  await p.waitForFunction(() => window.__sj.player.depth > 0.1, null, { timeout: 5000 });
+  const dLane = await p.evaluate(() => window.__sj.player.lane);
+  await p.keyboard.down('ArrowLeft');
+  await p.waitForFunction(() => window.__sj.player.depth > 0.4, null, { timeout: 5000 });
+  const dLane2 = await p.evaluate(() => ({ lane: window.__sj.player.lane, depth: window.__sj.player.depth }));
+  await p.keyboard.up('ArrowLeft');
+  ok('the dive leaves the mouth (depth ' + dLane2.depth.toFixed(2) + ')', dLane2.depth > 0.1);
+  ok('and locks the lane while committed', Math.abs(dLane2.lane - dLane) < 0.02, `${dLane} → ${dLane2.lane}`);
+  const back = await p.waitForFunction(() => !window.__sj.player.diving && window.__sj.player.depth < 0.02,
+    null, { timeout: 8000 }).then(() => true).catch(() => false);
+  ok('and comes back to the rim', back);
+
+  // collection
+  const s0 = await p.evaluate(() => window.__sj.state.score);
+  const c0 = await p.evaluate(() => window.__sj.state.chain);
+  await p.evaluate(() => window.__sj.debug.give('bubble'));
+  await p.waitForFunction(s => window.__sj.state.score > s, s0, { timeout: 5000 }).catch(() => {});
+  const s1 = await p.evaluate(() => window.__sj.state.score);
+  const c1 = await p.evaluate(() => window.__sj.state.chain);
+  ok('a bubble in reach is collected (' + s0 + ' → ' + s1 + ')', s1 > s0);
+  ok('and the lit one raises the chain (' + c0 + ' → ' + c1 + ')', c1 > c0);
+
+  // damage
+  const l0 = await p.evaluate(() => window.__sj.state.lives);
+  await p.evaluate(() => window.__sj.debug.give('grime'));
+  await p.waitForFunction(l => window.__sj.state.lives < l, l0, { timeout: 5000 }).catch(() => {});
+  const st = await p.evaluate(() => ({ lives: window.__sj.state.lives, chain: window.__sj.state.chain, mercy: window.__sj.player.mercy }));
+  ok('grime costs a life (' + l0 + ' → ' + st.lives + ')', st.lives === l0 - 1);
+  ok('and breaks the chain', st.chain === 1);
+  ok('and gives you mercy frames', st.mercy > 0);
+
+  // levels
+  await p.evaluate(() => window.__sj.debug.setLevel(4));
+  await p.waitForFunction(() => window.__sj.tube.shape === 'drain', null, { timeout: 5000 }).catch(() => {});
+  ok('the web changes shape per level',
+    await p.evaluate(() => window.__sj.tube.shape) === 'drain');
+  await p.screenshot({ path: process.env.SHOT_PLAY || '/tmp/sj-play.png' });
+
+  // Game over. The mercy frames from the hit above are REAL — a second grime
+  // inside them costs nothing, which is the point of them — so they have to be
+  // spent before this means anything.
+  await p.evaluate(() => { window.__sj.state.lives = 1; window.__sj.player.mercy = 0; window.__sj.debug.give('grime'); });
+  await p.waitForFunction(() => window.__sj.state.mode === 'over', null, { timeout: 5000 }).catch(() => {});
+  ok('the last life ends the run', await p.evaluate(() => window.__sj.state.mode) === 'over');
+  ok('and the recap is up', await p.locator('#over').isVisible());
+  ok('a score survives as the best',
+    await p.evaluate(() => +localStorage.getItem('sudsJackHi')) > 0);
+  await p.click('#again');
+  await p.waitForFunction(() => window.__sj.state.mode === 'play', null, { timeout: 5000 }).catch(() => {});
+  ok('again restarts', await p.evaluate(() => window.__sj.state.mode) === 'play');
+
+  // the shell and the signature
+  ok('it has a way home', await p.locator('.arcade-home').count() === 1);
+  ok('and it is signed', await p.locator('.toko-signature').count() === 1);
+
+  ok('nothing errored across the whole run', errs.length === 0, errs.slice(0, 3).join(' | '));
+
+  console.log(`\n${pass} passed, ${fail} failed`);
+  await b.close(); s.close();
+  process.exit(fail ? 1 : 0);
+});

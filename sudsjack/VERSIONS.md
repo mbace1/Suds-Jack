@@ -1,0 +1,61 @@
+# Suds Jack — versions
+
+The rebuild. **The playable Suds Jack is still `sudz/`** — the original canvas
+vector tube shooter — and it stays the one the arcade points at until this one
+is better than it. Two things sharing a name is confusing enough without the
+floor sending people at the unfinished one.
+
+The `?v=N` token in `index.html` tracks module-graph changes; this number is
+the public release. Bump both when shipping.
+
+## v1 — 2026-07-30
+
+**The tube, with the gun taken out.**
+
+The lineage is "Bomb Jack × Suds 51 × Tempest 2000" and this build takes it
+literally, in that order: Bomb Jack is the **game** (collect, in the right
+order, no weapon), Tempest is the **shape** (a tube you ride the rim of), the
+suds are what it is made of.
+
+- **Every position is `(lane, depth)`.** `tube.js` owns the only conversion to
+  world space, which is what lets the web change shape between levels — circle,
+  square, clover, drain, star — without one line of game logic knowing. A
+  bubble rises the same way up a star as up a circle.
+- **The dive is the game.** You can stand at the mouth and take what arrives;
+  that is safe and slow. Meeting a bubble halfway down pays up to 3× and
+  **locks your lane until you are back** — Flash Prince's commitment rule, on
+  a 0.62s clock.
+- **One bubble is lit at a time.** Taking it raises the chain, letting it past
+  you resets it. When one is taken the *deepest* remaining bubble lights, so
+  the chain stays reachable rather than becoming a coin flip. That is Bomb
+  Jack's whole design and it is what makes this a routing game rather than a
+  catching game.
+- **Grime steps toward you** as it rises — Tempest's flipper without the gun,
+  and the only reason moving matters. A hazard that came straight up its own
+  lane could be dodged by standing in the right place, which is a waiting room,
+  not a game.
+- Bubbles are cold, round, bright and bloom; grime is warm, angular, dull and
+  never blooms. You should be able to tell them apart at the far end of the
+  tube at speed without reading anything.
+- Three lives, mercy frames, per-level web and hue, `sudsJackHi` in
+  localStorage. Keys, gamepad and touch (drag the rim, tap to dive).
+
+Inherited from `hyperdagger/`: no build step, three.js r167 from a **local
+vendor copy** (not the CDN — that is what its offline worker needed and this
+one will want the same), ACES + `EffectComposer`, the debug handle on `window`,
+and the discipline of a director that spawns *away* from where you are
+standing.
+
+Three things learned making it look right, all the same lesson — a tube is
+made of depth, and depth is easy to throw away:
+
+- the far end kept **16%** of its radius and the whole thing read as a flat
+  dartboard. It keeps 8.5% now.
+- the camera was **dead-on**, so the web was a wheel of spokes no matter how
+  hard it converged. It sits above the mouth looking down into it.
+- the afterimage was at **0.82** with the tube turning under it, and the rails
+  ghosted into a starburst that hid both the web and the risers. 0.5, and the
+  tube barely turns during play.
+
+Not in yet: the superzapper, the psychedelic level-transition, voxel risers,
+a real Suds 51 read on the palette, and anything that earns a life back.

@@ -109,19 +109,39 @@ root's orphaned `game.js`/`style.css`/`levels.json` were removed. `paperboy/` an
 `goo-*.html` sketches had to be carried onto `gh-pages` with the hub — the site had never
 held them, and four of the hub's links pointed at them.
 
-### Suds Jack
-Concept: "Bomb Jack x Suds 51 x Tempest 2000" — floating bomb-collection gameplay, soap/bubble
-aesthetic, Tempest 2000 psychedelic tube-shooter energy.
-**Two things share the name.** The playable one is the **original canvas vector build**, live
-at `sudz/` on `gh-pages` (a tube shooter: ← → move, Space fire, Z superzapper; it has the
-mobile touch controls the old site-root copy never got). The one being **started next** is a
-rebuild that takes **`hyperdagger/` as its baseline** rather than starting from an empty
-scene — so it inherits that project's whole spine: Three.js r167 with no build step (jsDelivr
-importmap), the string-art **voxel pipeline** in `voxel.js` (`VoxelSprite` instanced meshes,
-`DebrisPool` physical gibs), the ACES + `EffectComposer` render stack, the telegraphed spawn
-director, the three-way input path (pointer-lock / gamepad / dual touch sticks), and the
-all-synth `audio.js`. Read `hyperdagger/`'s architecture notes below before starting: what
-changes is the game, not the engine underneath it.
+### Suds Jack (`sudsjack/`) — the rebuild
+Concept: "Bomb Jack x Suds 51 x Tempest 2000", taken **literally and in that order** —
+Bomb Jack is the *game* (collect, in the right order, **no weapon**), Tempest is the
+*shape* (a tube you ride the rim of), the suds are what it is made of.
+**Two things share the name.** The playable one is still the **original canvas vector
+build**, live at `sudz/` on `gh-pages` (a tube *shooter*: ← → move, Space fire, Z
+superzapper). The arcade's `sudsjack` cabinet points there and **stays pointed there**
+until the rebuild is better than it. The rebuild is `sudsjack/`, deployed unlisted.
+**Every position in the game is `(lane, depth)`** — `tube.js` owns the only conversion to
+world space, which is what lets the web change shape per level (circle / square / clover /
+drain / star) with no game logic knowing: a bubble rises the same way up a star as up a
+circle. **The dive is the game**: standing at the mouth and taking what arrives is safe and
+slow, meeting a bubble halfway down pays up to 3× and **locks your lane until you are
+back** (Flash Prince's commitment rule, on a 0.62s clock). **One bubble is lit at a time** —
+taking it raises the chain, letting it past resets it, and the *deepest* remaining bubble
+lights next so the chain stays reachable rather than becoming a coin flip. **Grime steps
+toward you** as it rises (Tempest's flipper minus the gun) — a hazard that came straight up
+its own lane could be dodged by standing still in the right place, which is a waiting room,
+not a game. Bubbles are cold, round and bloom; grime is warm, angular and never does.
+Inherited from `hyperdagger/`: no build step, ACES + `EffectComposer`, a director that
+spawns **away** from where you stand, and `window.__sj` for the smoke test to drive. **Not**
+inherited: the first-person controller and the flat arena — a tube is not an arena. three.js
+comes from a **local `vendor/` copy**, not the CDN (hyperdagger on `gh-pages` already went
+that way for its offline worker).
+Three traps, all the same lesson — *a tube is made of depth and depth is easy to throw
+away*: the far end kept **16%** of its radius and read as a flat dartboard (8.5% now); the
+camera was **dead-on**, so the web was a wheel of spokes however hard it converged (it sits
+above the mouth looking down into it); and the afterimage at **0.82** with the tube turning
+under it ghosted the rails into a starburst that hid both web and risers (0.5, and it barely
+turns during play). `node sudsjack/test/smoke.cjs` = 25 checks: boot, the director, the
+lane-lock during a dive, collection, the chain, damage, mercy frames, the level shapes,
+game over, the way home and the signature — all driven off **game state, not the wall
+clock**, because a sandbox with no GPU renders this at a handful of frames a second.
 Build tooling: none — same no-build rule as every other demo here.
 
 ### Paper Route — Dawn Run (`paperboy/`)
@@ -621,7 +641,20 @@ Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4
 ## Repository Structure
 
 ```
-suds-jack/      # (not yet scaffolded — the game itself lives at sudz/ on gh-pages)
+sudsjack/       # Suds Jack — the rebuild: Bomb Jack's collection on Tempest's tube
+  index.html    #   (the playable original is still sudz/ on gh-pages)
+  VERSIONS.md
+  vendor/       # three.js r167, local — not the CDN
+  js/
+    tube.js     # the web: (lane, depth) → world, and the five shapes
+    player.js   # the claw on the rim; the dive, and the lane-lock that pays for it
+    things.js   # risers: bubbles (one lit) and grime (steps toward you); pops
+    main.js     # scene, render stack, director, scoring, levels, HUD, states
+    input.js    # keys / pad / drag-the-rim touch, all feeding two getters
+    audio.js    # synth kit: pop, lit, miss, dive, hit, level, and a two-note bed
+    palette.js  # soap: everything you want is cold and blooms, everything else is warm
+  test/
+    smoke.cjs   # 25 checks, driven off game state rather than the clock
 index.html      # the arcade: every game on one page, Play + Feedback each
 hub/
   games.js      # the catalogue — one entry per playable thing (path, accent, art, inRepo)
