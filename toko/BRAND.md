@@ -514,6 +514,14 @@ import { drawLockup, drawSheet }    from '../toko/js/lockup.js';
 import { svgFace, svgBadge, faviconHref } from '../toko/js/face.js';
 ```
 
+`playStingOnce(key)` is what the arcade uses: **once per browser**, on a
+first-ever arrival, and **never in front of a deep link** — `/#hyperdagger` or
+`/#toko` means somebody came for one thing, and a title card between them and it
+is an advertisement. It is imported dynamically and swallowed on failure, so a
+nicety can never be the reason the floor does not open, and the arcade's gate
+marks it seen in every test context (a three-second full-screen takeover would
+otherwise eat the first click of every other check).
+
 `startMasthead(el)` — `stop()` it wherever the page re-renders, or the loop
 leaks against a detached canvas (a bug the Game of Life hub has already paid for
 once).

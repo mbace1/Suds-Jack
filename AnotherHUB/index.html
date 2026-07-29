@@ -62,7 +62,29 @@
     }
   </style>
 
-  <script type="module" src="hub/hub.js?v=14"></script>
+  <script type="module" src="hub/hub.js?v=15"></script>
+  <!-- Toko is at the counter. A Sierra-style conversation with the artist
+       behind the cabinets; the tree lives in toko/js/dialogue.js. It mounts
+       itself after <header> wherever this tag sits, and it sits AFTER hub.js
+       because hub.js assigns window.__hub wholesale — hung on before that,
+       the counter's own handle would be thrown away. -->
+  <script type="module">
+    import { mountChat } from './toko/js/chat.js?v=20';
+    window.__hub.chat = mountChat(document.querySelector('header'));
+
+    // The sting, once per browser: the face draws itself, then the arcade.
+    // Two rules keep it from being an ad. It is skippable from the first
+    // frame (any key, any tap), and it does not play in front of a DEEP LINK
+    // — /#hyperdagger or /#toko means somebody came for one thing, and a
+    // title card between them and it is exactly the thing this workshop is
+    // against. Dynamically imported and swallowed on failure: a nicety must
+    // never be the reason the floor does not open.
+    if (!location.hash) {
+      import('./toko/js/sting.js?v=1')
+        .then(m => m.playStingOnce('tokoSting'))
+        .catch(() => {});
+    }
+  </script>
   <script>
     // The arcade is the front door, and a front door that needs a signal is a
     // poor one. Registered on https only (or ?sw=1) so local dev and the smoke

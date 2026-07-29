@@ -78,7 +78,18 @@ function check(name, cond) {
   await new Promise(r => server.listen(0, r));
   const base = `http://localhost:${server.address().port}`;
   const browser = await chromium.launch();
+
+  // The sting plays ONCE PER BROWSER on a first-ever arrival, and it is a
+  // full-screen takeover for three seconds — which would swallow the first
+  // click of every context this suite opens. Mark it as already seen, the way
+  // a returning visitor's browser has, and test the real thing on purpose in
+  // its own fresh context at the end.
+  const seenSting = ctx => ctx.addInitScript(() => {
+    try { localStorage.setItem('tokoSting', '1'); } catch { /* private mode */ }
+  });
+
   const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+  await seenSting(page.context());
 
   // Two kinds of noise are not defects. The 500 from /collect-broken is this
   // test's own stub failing on purpose. And once this suite started opening
@@ -165,8 +176,17 @@ function check(name, cond) {
     if (!r.ok()) dead.push(`${g.id} ${r.status()}`);
   }
   check(`every link this branch can see resolves${dead.length ? ` — ${dead}` : ''}`, dead.length === 0);
-  check('the games only on the deployed site are marked as such',
-    games.filter(g => !g.inRepo).every(g => !fs.existsSync(path.join(ROOT, g.path))));
+  // This gate runs in two places and `inRepo` means different things in each:
+  // on a source branch it is "this checkout has it", on the deployed site root
+  // EVERYTHING is there. Asserting the source-branch shape against the deploy
+  // failed a check about the catalogue every time the gate was run where the
+  // site actually lives — which is the run that matters most.
+  const away = games.filter(g => !g.inRepo);
+  const DEPLOYED = away.length > 0 && away.every(g => fs.existsSync(path.join(ROOT, g.path)));
+  check(DEPLOYED
+    ? 'the deployed tree carries the games this branch does not'
+    : 'the games only on the deployed site are marked as such',
+    DEPLOYED || away.every(g => !fs.existsSync(path.join(ROOT, g.path))));
 
   // a marquee that draws nothing is a black rectangle nobody notices
   const blank = await page.evaluate(() => {
@@ -704,6 +724,7 @@ function check(name, cond) {
   // evaluate-then-reload would be clobbered by the code under test.
   const older = { tokodrop: 1, hyperdagger: 1, gameoflife: 1 };
   const back = await browser.newContext({ viewport: { width: 1100, height: 900 } });
+  await seenSting(back);
   await back.addInitScript(seed => {
     try { localStorage.setItem('sudsJackHubSeen', seed); } catch { /* private mode */ }
   }, JSON.stringify(older));
@@ -897,9 +918,14 @@ function check(name, cond) {
     navigator.getGamepads = () => [window.__pad];
     window.__pad.buttons[9].pressed = true;
   });
-  await page.waitForTimeout(220);
-  const filled = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.arcade-home .fill')).width));
-  check('holding Start starts filling the home button', filled > 0);
+  // Wait for the fill, do not sleep past it. A fixed 220ms raced the first
+  // gamepad poll on a heavy page (three.js still settling) and reported 0 —
+  // the assertion is that holding Start fills the button, not that it fills
+  // inside a quarter of a second.
+  const filled = await page.waitForFunction(
+    () => parseFloat(getComputedStyle(document.querySelector('.arcade-home .fill')).width) > 0,
+    null, { timeout: 3000 }).then(() => true).catch(() => false);
+  check('holding Start starts filling the home button', filled);
   await page.waitForFunction(() => location.pathname === '/' || location.pathname.endsWith('/index.html'), null, { timeout: 4000 });
   check('and holding it long enough goes back to the arcade', true);
 
@@ -952,6 +978,45 @@ function check(name, cond) {
   const order = seen.filter(e => e.endsWith('Space'));
   check(`in that order, and once each (${order.join(' ')})`,
     order.join() === 'down:Space,up:Space');
+
+  // ── the sting, on a first-ever arrival ──
+  // Once per browser, skippable from the first frame, and never in front of a
+  // deep link: /#hyperdagger means somebody came for one cabinet, and a title
+  // card between them and it is an advertisement.
+  {
+    const fresh = await browser.newContext({ viewport: { width: 1100, height: 900 } });
+    const fp = await fresh.newPage();
+    await fp.goto(base, { waitUntil: 'domcontentloaded' });
+    const card = fp.locator('div[role="img"][aria-label*="TOKO" i], div[role="img"]').first();
+    check('a first-ever arrival gets the sting',
+      await card.waitFor({ state: 'visible', timeout: 4000 }).then(() => true).catch(() => false));
+    check('and it covers the floor while it plays',
+      await fp.evaluate(() => {
+        const el = document.querySelector('div[role="img"]');
+        const cs = el && getComputedStyle(el);
+        return !!cs && cs.position === 'fixed' && parseInt(cs.zIndex, 10) > 1000;
+      }));
+    await fp.keyboard.press('Space');
+    await fp.waitForTimeout(400);
+    check('any key skips it',
+      await fp.evaluate(() => !document.querySelector('div[role="img"][style*="fixed"]')));
+    check('and the arcade is underneath it, already rendered',
+      await fp.locator('.cab').count() > 0);
+
+    await fp.goto(base, { waitUntil: 'domcontentloaded' });
+    await fp.waitForTimeout(500);
+    check('a second visit never sees it again',
+      await fp.evaluate(() => !document.querySelector('div[role="img"][style*="fixed"]')));
+    await fresh.close();
+
+    const linked = await browser.newContext({ viewport: { width: 1100, height: 900 } });
+    const lp = await linked.newPage();
+    await lp.goto(`${base}/#hyperdagger`, { waitUntil: 'domcontentloaded' });
+    await lp.waitForTimeout(600);
+    check('a deep link is never made to sit through it',
+      await lp.evaluate(() => !document.querySelector('div[role="img"][style*="fixed"]')));
+    await linked.close();
+  }
 
   check(`zero console/page errors overall${errors.length ? ` — ${errors[0]}` : ''}`, errors.length === 0);
 

@@ -95,7 +95,7 @@ the Formspree endpoint `toko-drop` already uses. Every note lands in `localStora
 undeliverable ones queue in an outbox drained one at a time on the next visit; Send with
 nothing said records nothing. `window.__hub` exposes `{games, sketches, feedback, debug}`
 (`feedback.setEndpoint(url, blind)` points it at a stub for tests).
-`node test/hub-smoke.cjs` = 141 checks: a cabinet per catalogue entry, every in-repo link
+`node test/hub-smoke.cjs` = 166 checks: a cabinet per catalogue entry, every in-repo link
 resolving 200, every marquee actually painted, the full feedback path (empty / sent /
 queued / drained), modal behaviour (Esc, backdrop, focus returned), WCAG AA, 44px targets,
 no horizontal overflow on a phone.
@@ -565,7 +565,13 @@ offline; `toko/VERSIONS.md` is the log, `scripts/versions.mjs` reads it into
 the gate fails if code and log disagree.
 `sting.js` is a ~3s sting where the face **draws itself** (arcs revealed by
 dash-offset so they grow along their own path: mouth sweeps open → eyes drop in
-→ blink → logotype lands), skippable on any input from frame one. `masthead.js`
+→ blink → logotype lands), skippable on any input from frame one. It plays on
+the arcade **once per browser** (`playStingOnce`, key `tokoSting`) and **never
+in front of a deep link** — `/#hyperdagger` or `/#toko` means somebody came for
+one thing, and a title card between them and it is an advertisement. Imported
+dynamically and swallowed on failure: a nicety must never be the reason the
+floor does not open, and the smoke gate marks it seen in every context so a
+three-second takeover cannot eat the first click of every other test. `masthead.js`
 is the animated lockup for the arcade hub — `stop()` it wherever the page
 re-renders or the loop leaks against a detached canvas. `surface.js` is the
 DPR-aware smooth canvas (the mark is curves, so antialiasing stays ON).
