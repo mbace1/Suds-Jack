@@ -10,7 +10,7 @@
   <meta name="description" content="Every game in the Suds Jack workshop on one page — vector tube shooters, gelatin bullet hell, voxel first-person survival, a paper route, and quiet stories that send you back outside." />
   <meta name="theme-color" content="#06070a" />
   <meta name="color-scheme" content="dark" />
-  <link rel="stylesheet" href="hub/hub.css?v=16" />
+  <link rel="stylesheet" href="hub/hub.css?v=17" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%2306070a'/><circle cx='8' cy='8' r='4' fill='%2335e8d8'/></svg>" />
 </head>
 <body>
@@ -20,29 +20,35 @@
       <p class="sub">A workshop of browser games. Nothing to install, nothing to sign up for — pick a cabinet and press Play.</p>
     </header>
 
-
     <div class="rule"></div>
-    <p class="count">The floor — in development</p>
+    <p class="count" id="floor-head">The floor — in development</p>
+
+    <!-- the box and the tags are built by hub.js so they can be relabelled with
+         the language; this is where they go -->
+    <div id="find-block">
+      <button class="link-btn" id="surprise">Show me one</button>
+    </div>
+    <p class="find-none" id="find-none" hidden>Nothing on the floor matches that.</p>
 
     <main>
-      <h2 class="sr-only">Games in development</h2>
+      <h2 class="sr-only" id="floor-sr">Games in development</h2>
       <div class="rack" id="cabinets"></div>
 
       <div id="archive-block">
         <div class="rule"></div>
-        <h2 class="count">Archived — finished or set down</h2>
+        <h2 class="count" id="archive-head">Archived — finished or set down</h2>
         <div class="rack archived" id="archived"></div>
       </div>
 
       <div class="rule"></div>
-      <h2 class="shelf-head">Shader sketches — where the look came from</h2>
+      <h2 class="shelf-head" id="sketch-head">Shader sketches — where the look came from</h2>
       <ul class="shelf" id="sketches"></ul>
     </main>
 
     <div class="rule"></div>
 
     <footer id="status">
-      <a href="https://github.com/mbace1/Suds-Jack">Source on GitHub</a>
+      <a href="https://github.com/mbace1/Suds-Jack" id="source-link">Source on GitHub</a>
       <button class="link-btn" id="hub-feedback">Tell us about the arcade itself</button>
     </footer>
   </div>
@@ -67,5 +73,14 @@
     window.__hub.chat = mountChat(document.querySelector('header'));
   </script>
 
+  <script>
+    // The arcade is the front door, and a front door that needs a signal is a
+    // poor one. Registered on https only (or ?sw=1) so local dev and the smoke
+    // gate are never handed a stale shell — the same rule gameoflife follows.
+    if ('serviceWorker' in navigator
+        && (location.protocol === 'https:' || location.search.includes('sw=1'))) {
+      addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
 </body>
 </html>

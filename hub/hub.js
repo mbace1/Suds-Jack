@@ -8,9 +8,9 @@
 
 import { GAMES, SKETCHES } from './games.js?v=10';
 import { drawMarquee } from './art.js?v=10';
-import * as feedback from './feedback.js?v=14';
+import * as feedback from './feedback.js?v=13';
 import * as topics from './topics.js?v=2';
-import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=5';
+import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=6';
 import { watchPad, padPresent } from './pad.js?v=9';
 
 const el = (tag, cls = '', text = '') => {
@@ -416,6 +416,123 @@ async function showVersions() {
   markFresh(versions);
 }
 
+// ── finding one ────────────────────────────────────────────────────
+// Thirteen cabinets is past the point where scanning works, and the tags are
+// already in the catalogue doing nothing. So: a box and a row of tags above the
+// floor. Typing matches the title, the tagline, the lineage and the tags — in
+// whatever language the page is in, because a Finnish reader searching for
+// "räiskintä" should not have to guess the English.
+//
+// Tags are OR against each other and AND against the text: picking `gamepad`
+// and `pixel` means either, which is what a person means by picking two, and
+// then the words narrow it. Nothing is persisted — a filter you did not set
+// yourself is a page that lies about how much is on it.
+let query = '', picked = new Set();
+
+function allTags() {
+  const n = new Map();
+  for (const g of GAMES) for (const tg of g.tags) n.set(tg, (n.get(tg) ?? 0) + 1);
+  return [...n.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(e => e[0]);
+}
+
+function matches(g) {
+  if (picked.size && !g.tags.some(tg => picked.has(tg))) return false;
+  if (!query) return true;
+  const hay = [g.title, gameText(g, 'tagline'), gameText(g, 'lineage'), ...g.tags]
+    .join(' ').toLowerCase();
+  return query.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w));
+}
+
+function applyFilter() {
+  let shown = 0;
+  for (const card of document.querySelectorAll('.cab')) {
+    const g = GAMES.find(x => `cab-${x.id}` === card.id);
+    const ok = !g || matches(g);
+    card.hidden = !ok;
+    if (ok) shown++;
+  }
+  // an empty archive block under a filter is a heading over nothing
+  const arch = document.getElementById('archive-block');
+  if (arch) arch.hidden = !archived.length
+    || ![...document.querySelectorAll('#archived .cab')].some(c => !c.hidden);
+
+  const on = query || picked.size;
+  const found = document.getElementById('find-count');
+  if (found) {
+    found.textContent = on ? t('find.count', { n: shown, m: GAMES.length }) : '';
+    found.hidden = !on;
+  }
+  const none = document.getElementById('find-none');
+  if (none) none.hidden = !(on && shown === 0);
+  document.querySelectorAll('.tag-btn').forEach(b => {
+    const lit = picked.has(b.dataset.tag);
+    b.classList.toggle('on', lit);
+    b.setAttribute('aria-pressed', String(lit));
+  });
+  sel = -1;
+}
+
+function findRow() {
+  const row = el('div', 'find-row');
+  const box = el('input', 'find-box');
+  box.id = 'find-box';
+  box.type = 'search';
+  box.placeholder = t('find');
+  box.setAttribute('aria-label', t('find'));
+  box.value = query;
+  box.oninput = () => { query = box.value.trim(); applyFilter(); };
+  row.appendChild(box);
+
+  const tags = el('div', 'tag-row');
+  for (const tg of allTags()) {
+    const b = el('button', 'tag-btn', tg);
+    b.type = 'button';
+    b.dataset.tag = tg;
+    b.onclick = () => {
+      picked.has(tg) ? picked.delete(tg) : picked.add(tg);
+      applyFilter();
+    };
+    tags.appendChild(b);
+  }
+  row.appendChild(tags);
+
+  const count = el('span', 'find-count');
+  count.id = 'find-count';
+  count.hidden = true;
+  row.appendChild(count);
+  return row;
+}
+
+// `/` puts the caret in the box the way every list on the internet does, and
+// Escape empties it — but only when the box is where you already are, or Escape
+// would be taken away from the panels that need it
+addEventListener('keydown', e => {
+  if (e.key === '/' && !/^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName)) {
+    e.preventDefault();
+    document.getElementById('find-box')?.focus();
+    return;
+  }
+  if (e.key === 'Escape' && document.activeElement?.id === 'find-box') {
+    query = ''; picked.clear();
+    document.getElementById('find-box').value = '';
+    applyFilter();
+  }
+});
+
+// ── one at random ──────────────────────────────────────────────────
+// Thirteen cabinets and no idea where to start is the other half of the same
+// problem the filter solves. This picks something playable you have not opened
+// yet, and only falls back to the whole floor once you have tried everything.
+function surprise() {
+  const played = readPlayed();
+  const live = GAMES.filter(g => g.live !== false);
+  const fresh = live.filter(g => !played[g.id]);
+  const pool = fresh.length ? fresh : live;
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  if (pick) goTo(pick.id);
+  return pick?.id ?? null;
+}
+
 // ── what you have already tried ────────────────────────────────────
 // Thirteen cabinets and no memory means every visit starts from nothing: you
 // scan the same covers deciding which ones you have already opened. Pressing
@@ -555,10 +672,12 @@ addEventListener('pagehide', () => {
 const A = 0, B = 1, X = 2, Y = 3;
 
 function navigables() {
+  // offsetParent is null for anything display:none — a filtered-out cabinet is
+  // not somewhere the pad should be able to walk to
   return [
     ...document.querySelectorAll('.cab'),
     ...document.querySelectorAll('.sketch'),
-  ];
+  ].filter(n => n.offsetParent !== null);
 }
 
 // what a cabinet's direction key actually lands on: Play if there is
@@ -783,7 +902,12 @@ function render() {
   setText('#archive-head', 'archive');
   setText('#sketch-head', 'sketches');
   setText('#source-link', 'source');
+  setText('#find-none', 'find.none');
+  setText('#surprise', 'surprise');
   setText('#hub-feedback', 'tell.hub');
+
+  document.querySelector('.find-row')?.remove();
+  document.getElementById('find-block').appendChild(findRow());
 
   const rack = document.getElementById('cabinets');
   rack.textContent = '';
@@ -814,6 +938,7 @@ function render() {
   useAccent(readAccent());
   useLayout(readLayout());
 
+  applyFilter();
   padHint(false);
   notesLink();
   showPlayed();
@@ -828,6 +953,7 @@ document.documentElement.lang = getLang();
 render();
 
 document.getElementById('hub-feedback').onclick = () => openFeedback(t('hub.self'), 'hub');
+document.getElementById('surprise').onclick = surprise;
 
 // a pasted link lands where it says it does, without the smooth scroll that
 // would read as the page moving on its own
@@ -860,8 +986,10 @@ window.__hub = {
     lang: getLang, setLang: useLang, langs: LANGS, render,
     layout: readLayout, setLayout: useLayout, layouts: LAYOUTS,
     notes: openNotes, notesLink,
-    goTo, openFromHash, played: readPlayed, markPlayed,
-    goTo, openFromHash, played: readPlayed, markPlayed,
+    goTo, openFromHash, played: readPlayed, markPlayed, surprise,
+    filter: (q, tags) => { query = q ?? ''; picked = new Set(tags ?? []); applyFilter(); },
+    goTo, openFromHash, played: readPlayed, markPlayed, surprise,
+    filter: (q, tags) => { query = q ?? ''; picked = new Set(tags ?? []); applyFilter(); },
     seen: readSeen, markSeen: () => {
       try { localStorage.setItem(SEEN_KEY, JSON.stringify(pendingSeen ?? {})); } catch { /* */ }
     },
