@@ -943,6 +943,32 @@ function serve() {
   await page.evaluate(() => { document.documentElement.lang = 'en'; });
   await page.waitForTimeout(200);
 
+  // ── the cache-buster reaches the whole chain ───────────────────────────
+  // The arcade imports chat.js with a ?v= on it. A STATIC import cannot carry
+  // that token onward, so for a while the bust stopped at the first file: a
+  // returning visitor mid-deploy got the new chat.js against a stale
+  // dialogue.js, the named imports were not there, the module failed to link,
+  // and the counter did not render at all. Nothing catches that at runtime —
+  // by then there is no counter to ask.
+  {
+    const tp = await newPage();
+    const seen = [];
+    tp.on('request', r => {
+      const u = r.url();
+      if (u.includes('/toko/js/')) seen.push(u.split('/toko/js/')[1]);
+    });
+    await tp.goto(base + '/toko/_tokentest.html', { waitUntil: 'networkidle' });
+    await tp.waitForTimeout(600);
+    const tokened = n => seen.some(u => u === n + '?v=99');
+    ok('the ?v= reaches the dialogue tree', tokened('dialogue.js'), seen.join(' '));
+    ok('and both language packs',
+      tokened('dialogue.fi.js') && tokened('dialogue.ja.js'), seen.join(' '));
+    ok('and mountChat is still synchronous',
+      await tp.evaluate(() => typeof globalThis.__hub.chat.open === 'function'));
+    ok('with no errors', tp.__errs.length === 0, tp.__errs.join(' | '));
+    await tp.close();
+  }
+
   // ── the deep link ──────────────────────────────────────────────────────
   // `#toko` opens the counter, so a link can point at the conversation and
   // not just the page it sits on.
