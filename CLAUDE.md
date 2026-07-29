@@ -33,10 +33,18 @@ frame), Hyper Dagger is **HYPERDEMON × Bone Dust**. Three things were learned b
 those two and hold generally: a hero cannot be a black silhouette against a dark scene
 (light it, or rim it in two colours); **cropping** a foreground figure at the frame is
 what makes it read as foreground; and a framing device has to be **lighter** than the
-sky behind it or it is just an outline floating in the void. The rack **grows with the screen — 1 / 2 / 3 / 4** at 660 / 1100 / 1480px, inside a
-1520px wrap. The ladder is set by what the *marquee* gets, not by device names: every
-step keeps it near 350px, which is the width at which the pixel art still reads. Each
-row's cabinets sit side by side with their text under them, then the next row.
+sky behind it or it is just an outline floating in the void. The rack **grows with the screen — 2 / 2 / 3 / 4** at 1100 / 1480px, inside a 1520px
+wrap; a phone gets two because one cabinet to a screen turns the floor into a scroll and
+you cannot compare what you cannot see at once. At that width the card is cut to a
+**poster** — cover, name, three clamped lines, two of state, the buttons — because the
+tagline alone wrapped to six. Three **shapes** switch the whole floor from the status
+line (`rack` / `wide` / `list`, persisted under `sudsJackHubLayout`), and **every note
+records which one was in force**, so "the covers are too small" and "too loud" can be
+told apart. The page also has a memory: it diffs `versions.json` against the numbers you
+last saw (`sudsJackHubSeen`, written on `pagehide`) and tags what **moved**; pressing
+Play marks a cabinet **tried** (`sudsJackHubPlayed`). Neither reorders the floor.
+`/#hyperdagger` deep-links a cabinet and `/#hyperdagger/feedback` opens its note panel —
+the cabinet title is the anchor, so there is no third button on the card.
 **`live: false`** marks a cabinet with nothing behind it: the marquee goes unlit and
 un-linked, Play becomes a dead `[ NOT UP ]`, and the `note` field replaces the controls
 line with why. Not every button has to work for a game to be worth listing — and a
