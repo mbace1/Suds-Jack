@@ -89,10 +89,22 @@ const CSS = `
   grid-template-rows: minmax(0, 1fr);
   /* the animation: the counter grows into a room */
   max-height: 0; opacity: 0; transform: scaleY(.86); transform-origin: top;
+  /* A CLOSED COUNTER IS NOT A ROOM YOU CAN BE IN. Without this the parser
+     field, the two footer buttons and every topic on the menu stayed in the
+     tab order and in the screen-reader tree while the panel was shut — you
+     could tab into a conversation that was not on screen. visibility is
+     transitioned with a delay so the closing animation still plays out; it is
+     also why the tap-target sweep must skip hidden subtrees, since a scaled
+     element measures its scaled size and a shut panel is at .86. */
+  visibility: hidden;
   transition: max-height .32s cubic-bezier(.2,.7,.3,1), opacity .2s linear,
-              transform .32s cubic-bezier(.2,.7,.3,1);
+              transform .32s cubic-bezier(.2,.7,.3,1),
+              visibility 0s linear .32s;
 }
-.toko-chat.is-open .tc-panel { max-height: 520px; opacity: 1; transform: none; }
+.toko-chat.is-open .tc-panel {
+  max-height: 520px; opacity: 1; transform: none;
+  visibility: visible; transition-delay: 0s;
+}
 .toko-chat.is-open .tc-bar { display: none; }
 
 .toko-chat .tc-portrait {
