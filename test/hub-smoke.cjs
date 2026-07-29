@@ -577,7 +577,12 @@ function check(name, cond) {
     const dim = [], small = [];
     for (const el of document.querySelectorAll('body *')) {
       const cs = getComputedStyle(el);
-      if (cs.display === 'none' || el.classList.contains('sr-only')) continue;
+      // visibility is inherited, so this skips whole hidden subtrees — a thing
+      // nobody can see is neither unreadable nor a small tap target. It also
+      // stops a collapsed panel reporting its controls at their SCALED size:
+      // the counter shuts with a scaleY(.86), and 44px measured 38.
+      if (cs.display === 'none' || cs.visibility === 'hidden'
+        || el.classList.contains('sr-only')) continue;
       if ([...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) {
         const size = parseFloat(cs.fontSize);
         const large = size >= 24 || (size >= 18.66 && parseInt(cs.fontWeight, 10) >= 700);
@@ -675,8 +680,13 @@ function check(name, cond) {
     () => [...document.querySelectorAll('.ver')].some(n => n.textContent), null, { timeout: 5000 });
   const shown = await page.locator('.cab .ver').evaluateAll(ns =>
     ns.map(n => [n.dataset.game, n.textContent]).filter(([, t]) => t));
+  // versions.json is not a list of cabinets: scripts/versions.mjs also numbers
+  // projects that ship like one and are not on the floor (toko/ — the mark,
+  // the sting, the badge and the counter). Count the entries that ARE
+  // cabinets, or adding one silently fails a check about the rack.
+  const numbered = Object.keys(versions).filter(id => games.some(g => g.id === id));
   check(`the cabinets show a version (${shown.length} of ${games.length})`,
-    shown.length === Object.keys(versions).length);
+    shown.length === numbered.length);
   check('and it is the number the generator found',
     shown.every(([id, text]) => text === `v${versions[id].v}`));
   check('a project with a VERSIONS.md reports its release number, not its token',
