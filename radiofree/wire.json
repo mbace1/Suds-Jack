@@ -1,7 +1,7 @@
 {
   "version": 1,
   "station": "Radio Free Helsinki",
-  "updated": "2026-07-28",
+  "updated": "2026-07-29",
   "keep": 5,
   "sectors": [
     {
@@ -147,6 +147,20 @@
       "visual": "border",
       "broll": "suomenlinna",
       "filed": "2026-07-28"
+    },
+    {
+      "id": "beach-capacity",
+      "sector": "RFH",
+      "visual": "beach",
+      "broll": "gulf",
+      "filed": "2026-07-29"
+    },
+    {
+      "id": "moon-largest",
+      "sector": "RFH",
+      "visual": "moon",
+      "broll": "katajanokka",
+      "filed": "2026-07-29"
     }
   ],
   "copy": {
@@ -392,6 +406,28 @@
         "technique": "HEDGE STACKING",
         "decodeNote": "Six hedges in one sentence: could, potentially, help, mitigate, some, of the identified. Each is defensible standing alone. Stacked, they say nothing whatsoever while keeping the shape and the cadence of an answer, so the room moves on. The contract is the only unhedged fact in the story.",
         "tell": "Delete every hedge and read what is left. If nothing is left, nothing was said."
+      },
+      "beach-capacity": {
+        "slug": "HIETSU",
+        "head": "Beach declared 94.7 per cent full by the company that decided what full means",
+        "lines": [
+          "Drone operator Dronaldson & Sons Oy says the city beach reached {{94.7 per cent of capacity|a number it arrived at after deciding, by itself, what a full beach is}} on Sunday — {{a record for the season|the first time anybody has measured it}}.",
+          "The city {{has requested the methodology|has asked how they counted}}. The company {{considers it commercially sensitive|will not say}}. One drone {{surveyed the site|flew over about a fifth of the sand}}."
+        ],
+        "technique": "PRECISION AS PROOF",
+        "decodeNote": "A decimal point is a claim about method, not about the world. Ninety-four point seven sounds counted; about ninety-five sounds guessed; both can come from exactly the same guess. The extra digit carries no information. It is a costume, and it is worn because a number that specific feels rude to question.",
+        "tell": "Ask how it was measured. If the answer is shorter than the number, the number is decoration."
+      },
+      "moon-largest": {
+        "slug": "VANTAA",
+        "head": "Moon confirmed largest ever by man standing next to a chimney",
+        "lines": [
+          "Dronaldson & Sons Oy reports the moon rose {{forty per cent larger than usual|exactly the size it always is, next to something tall}} over Vantaa on Tuesday, {{a figure derived from comparative imagery|a figure derived from a chimney}}.",
+          "The company {{was unable to provide a baseline|was asked what usual is, and did not say}}. The moon {{could not be reached for comment|is three hundred and eighty-four thousand kilometres away}}."
+        ],
+        "technique": "COMPARISON WITHOUT A BASE",
+        "decodeNote": "Larger than what? A comparison with no baseline is a number that cannot be wrong, because there is nothing to check it against. The chimney did all the work — put anything beside an object of known size and the eye supplies a scale the sentence never had to earn. This is the moon illusion, sold as a measurement.",
+        "tell": "Larger than what, exactly? If the sentence never says, the comparison is decoration."
       }
     },
     "fi": {
@@ -636,6 +672,28 @@
         "technique": "VARAUSTEN PINOAMINEN",
         "decodeNote": "Kuusi varausta yhdessä lauseessa: voisi, mahdollisesti, osaltaan, lieventää, osaa, tunnistetuista. Jokainen niistä kestää tarkastelun yksinään. Pinottuina ne eivät sano yhtään mitään, mutta säilyttävät vastauksen muodon ja rytmin, joten sali siirtyy eteenpäin. Sopimus on jutun ainoa varaukseton fakta.",
         "tell": "Poista kaikki varaukset ja lue mitä jää jäljelle. Jos mitään ei jää, mitään ei sanottu."
+      },
+      "beach-capacity": {
+        "slug": "HIETSU",
+        "head": "Yhtiö, joka päätti mitä täysi tarkoittaa, julisti rannan 94,7-prosenttisesti täydeksi",
+        "lines": [
+          "Lennokkioperaattori Dronaldson & Sons Oy kertoo kaupungin uimarannan yltäneen sunnuntaina {{94,7 prosenttiin kapasiteetistaan|lukuun, johon se päätyi päätettyään itse, mikä on täysi ranta}} — {{kauden ennätys|ensimmäinen kerta, kun kukaan on mitannut sitä}}.",
+          "Kaupunki {{on pyytänyt menetelmäkuvausta|on kysynyt, miten ne laskettiin}}. Yhtiö {{pitää sitä liikesalaisuutena|ei kerro}}. Yksi lennokki {{kartoitti kohteen|lensi noin viidenneksen yli hiekasta}}."
+        ],
+        "technique": "TARKKUUS TODISTEENA",
+        "decodeNote": "Desimaalipilkku on väite menetelmästä, ei maailmasta. «94,7» kuulostaa lasketulta, «noin yhdeksänkymmentäviisi» kuulostaa arvatulta, ja molemmat voivat tulla täsmälleen samasta arvauksesta. Ylimääräinen numero ei kanna tietoa. Se on puku, ja se puetaan siksi, että noin tarkkaa lukua tuntuu epäkohteliaalta kyseenalaistaa.",
+        "tell": "Kysy, miten se mitattiin. Jos vastaus on lyhyempi kuin luku, luku on koriste."
+      },
+      "moon-largest": {
+        "slug": "VANTAA",
+        "head": "Kuu vahvistettu kaikkien aikojen suurimmaksi — vahvistajana mies piipun vieressä",
+        "lines": [
+          "Dronaldson & Sons Oy kertoo kuun nousseen tiistaina Vantaan yllä {{neljäkymmentä prosenttia tavallista suurempana|täsmälleen sen kokoisena kuin aina, jonkin korkean vieressä}}, {{mikä perustuu vertailukuviin|mikä perustuu piippuun}}.",
+          "Yhtiö {{ei kyennyt toimittamaan vertailukohtaa|kysyttiin mikä on tavallinen, eikä se kertonut}}. Kuu {{ei ollut tavoitettavissa|on kolmensadankahdeksankymmenenneljäntuhannen kilometrin päässä}}."
+        ],
+        "technique": "VERTAILU ILMAN VERTAILUKOHTAA",
+        "decodeNote": "Suurempi kuin mikä? Vertailu ilman vertailukohtaa on luku, joka ei voi olla väärä, koska mitään ei ole mihin sitä verrata. Piippu teki koko työn — aseta mikä tahansa tunnetun kokoisen esineen viereen, ja silmä tarjoaa mittakaavan, jota lauseen ei koskaan tarvinnut ansaita. Tämä on kuuharha myytynä mittauksena.",
+        "tell": "Suurempi kuin mikä, tarkalleen? Jos lause ei koskaan sano sitä, vertailu on koriste."
       }
     },
     "ja": {
@@ -880,6 +938,28 @@
         "technique": "ぼかしの積み重ね",
         "decodeNote": "一文にぼかしが六つ——「可能性」「あり得る」「資する」「一部」「特定された」「原則として」。一つひとつは単独なら擁護できる。積み重なると、答えの形と拍子だけを保ったまま、何ひとつ言っていない。だから場は先へ進む。この記事でぼかされていない事実は、契約だけである。",
         "tell": "ぼかしをすべて消して、残ったものを読む。何も残らなければ、何も言われていない。"
+      },
+      "beach-capacity": {
+        "slug": "ヒエタニエミ",
+        "head": "「満員」の定義を自ら決めた会社が、ビーチを九四・七％と発表",
+        "lines": [
+          "ドローン事業者 Dronaldson & Sons Oy によれば、市営ビーチは日曜、{{収容能力の九四・七％に達した|「満員のビーチ」とは何かを自社で決めたうえで出した数字に達した}}——{{今季最高|誰かがこれを測った初めての機会}}である。",
+          "市は{{測定手法の提出を求めている|どう数えたのかを尋ねている}}。同社は{{営業上の機密としている|答えない}}。ドローン一機が{{現地を調査した|砂浜のおよそ五分の一の上を飛んだ}}。"
+        ],
+        "technique": "精度を証拠にすり替える",
+        "decodeNote": "小数点は、世界についてではなく方法についての主張である。「九四・七」は数えたように聞こえ、「およそ九五」は当てずっぽうに聞こえる。だが両方とも、まったく同じ当てずっぽうから出てくることがある。余分な一桁は情報を運んでいない。それは衣装であり、そこまで細かい数字は問いただすのが失礼に感じられる、という理由で着せられている。",
+        "tell": "どう測ったのかを訊く。答えが数字より短ければ、その数字は飾りである。"
+      },
+      "moon-largest": {
+        "slug": "ヴァンター",
+        "head": "煙突の隣に立っていた男性、月を史上最大と確認",
+        "lines": [
+          "Dronaldson & Sons Oy によると、火曜にヴァンター上空に昇った月は{{通常より四〇％大きかった|何か背の高いものの隣にある、いつもどおりの大きさだった}}という。{{比較画像から算出された数値である|煙突から算出された数値である}}。",
+          "同社は{{基準値を示すことができなかった|「通常」とは何かを問われ、答えなかった}}。月は{{取材に応じられなかった|三十八万四千キロメートル先にある}}。"
+        ],
+        "technique": "基準のない比較",
+        "decodeNote": "何より大きいのか。基準のない比較は、照合する相手がいないので、決して間違いになれない数字である。仕事をしたのは煙突のほうだ。大きさの分かっているものの隣に何かを置けば、目のほうが尺度を補ってくれる——文がその尺度を稼ぐ必要は一度もない。これは月の錯視を、測定として売っているだけである。",
+        "tell": "正確には何より大きいのか。文がそれを言わないなら、その比較は飾りである。"
       }
     }
   }

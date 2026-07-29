@@ -4,11 +4,18 @@
 //   B-ROLL   — low-poly Helsinki news footage
 // Face shots are handled in codec.js (large masked Toko), not here.
 
-import { PAL } from './palette.js?v=27';
-import { mix, shade, bayer } from './screen.js?v=27';
+import { PAL } from './palette.js?v=28';
+import { mix, shade, bayer } from './screen.js?v=28';
 
 export const PANEL_W = 128, PANEL_H = 152;
 const W = PANEL_W, H = PANEL_H;
+
+// A hash, for scatter. (i * 41) % 100 looks like scatter and draws a straight
+// diagonal — that trap has been paid for once already, on the poly plates.
+const rnd = (n) => {
+  const x = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
+  return x - Math.floor(x);
+};
 
 function field(scr, decode, grid = true) {
   scr.clear(mix(PAL.PANEL, '#1a1206', decode * 0.5));
@@ -703,9 +710,108 @@ function katajanokka(scr, t, d) {
   if (d > 0.35) num(scr, 4, 6, 'KJ', PAL.AMBER_HOT);
 }
 
+
+// The summer beach, from the drone that is counting it. Sky, water, a sand
+// band with people on it, pines holding the frame. Decoded, the machine's
+// coverage cone lights up and it is a wedge — the rest of the beach was never
+// looked at, which is where the decimal point came from.
+function beach(scr, t, d) {
+  field(scr, d, false);
+  scr.bands(0, 0, W, 44, [mix('#7fb6c8', '#3a2c10', d), mix('#b9d8de', '#4a3714', d)]);
+  // water, dithered in 2px CELLS — sampling at even pixels only reaches four
+  // of the matrix's sixteen values and the stipple collapses into blobs
+  for (let y = 44; y < 72; y += 2) {
+    for (let x = 0; x < W; x += 2) {
+      const u = (y - 44) / 28 + Math.sin(x * 0.07 + t * 0.6) * 0.05;
+      if (bayer(x >> 1, y >> 1) < 0.72 - u * 0.45) scr.px(x, y, 2, 2, mix('#2b6f86', '#3a2a0c', d));
+    }
+  }
+  scr.px(0, 44, W, 1, mix('#cfe7ea', '#6a4c16', d));
+  scr.px(18, 40, 34, 3, mix('#25505c', '#33240a', d));   // the far shore
+  scr.px(84, 41, 26, 2, mix('#25505c', '#33240a', d));
+  scr.px(0, 72, W, 40, mix('#d9c48f', '#584117', d));    // the sand
+  scr.px(0, 112, W, H - 112, mix('#2c4a26', '#3a2c0c', d));
+
+  // the crowd: a hash, not a ramp — (i * 41) % 100 draws a straight diagonal
+  for (let i = 0; i < 54; i++) {
+    const x = 4 + rnd(i * 1.7) * 120, y = 74 + rnd(i * 3.3) * 34;
+    scr.px(x, y, 2, 3, i % 4 ? mix('#3b3128', '#7a5a1c', d) : mix('#c8484a', '#a8701c', d));
+  }
+  // pines, holding both edges
+  for (const [px_, w2] of [[0, 16], [112, 16]]) {
+    scr.px(px_ + w2 / 2 - 2, 0, 4, H, mix('#1d2f1a', '#2c2008', d));
+    for (let y = 4; y < H; y += 9) scr.px(px_, y, w2, 6, mix('#24421f', '#332508', d));
+  }
+  // the drones
+  for (let i = 0; i < 3; i++) {
+    const dx = 22 + ((t * 7 + i * 44) % 90), dy = 14 + Math.sin(t * 1.4 + i) * 4;
+    scr.px(dx - 5, dy, 11, 2, ink(d));
+    scr.px(dx - 1, dy - 2, 3, 5, inkLo(d));
+    if ((t * 3 + i) % 2 < 1) scr.px(dx + 5, dy - 1, 2, 2, mix(PAL.DEFENCE, PAL.AMBER_HOT, d));
+    if (d > 0.15 && i === 1) {
+      // the cone: this is all it actually saw
+      scr.line(dx, dy + 3, dx - 22, 108, PAL.AMBER_DIM);
+      scr.line(dx, dy + 3, dx + 22, 108, PAL.AMBER_DIM);
+      scr.px(dx - 22, 106, 44, 2, PAL.AMBER);
+    }
+  }
+  if (d > 0.4) { num(scr, 6, 130, '18', PAL.AMBER_HOT); num(scr, 20, 130, 'PCT', PAL.AMBER); }
+  else { num(scr, 6, 130, '94', PAL.GREEN_HOT); num(scr, 20, 130, '7', PAL.GREEN); }
+}
+
+// Blue hour, a low orange moon beside a heating-plant chimney, a coaster arc
+// on the ridge, car roofs at the bottom. Decoded, a SECOND moon is drawn high
+// in the empty sky at exactly the same radius: the chimney was the whole
+// argument, and there is nothing up there to measure against.
+function moon(scr, t, d) {
+  field(scr, d, false);
+  scr.bands(0, 0, W, 108, [mix('#0f4f8c', '#2a1e08', d), mix('#2a86c4', '#4a3410', d)]);
+  const mx = 84, my = 82 + Math.sin(t * 0.3) * 1;
+  for (let r = 11; r > 7; r--) {                      // the halo, quantised
+    scr.disc(mx, my, r, mix('#f0a03c', '#c8861e', d));
+  }
+  scr.disc(mx, my, 8, mix('#ffd07a', '#ffe2a8', d));
+  scr.px(mx - 3, my - 2, 2, 2, mix('#e8b45c', '#e0bc78', d));
+  scr.px(mx + 2, my + 3, 3, 2, mix('#e8b45c', '#e0bc78', d));
+
+  scr.px(64, 56, 12, 52, mix('#d8dee2', '#6a5420', d));   // the chimney
+  scr.px(63, 53, 14, 4, mix('#eef2f4', '#7c6428', d));
+  // the coaster, an arc of struts on the ridge
+  for (let i = 0; i < 14; i++) {
+    const a = Math.PI * (0.15 + i / 22);
+    scr.px(20 + Math.cos(a) * 22, 96 - Math.sin(a) * 34, 2, 2, mix('#3d5a70', '#3a2c10', d));
+  }
+  // treeline
+  for (let x = 0; x < W; x += 3) {
+    const h2 = 14 + Math.sin(x * 0.31) * 5 + Math.sin(x * 0.11) * 4;
+    scr.px(x, 108 - h2, 3, h2 + 6, mix('#12321f', '#231a08', d));
+  }
+  scr.px(0, 112, W, 12, mix('#0d2418', '#1c1406', d));
+  // car roofs
+  for (let i = 0; i < 5; i++) {
+    const cx = -6 + i * 30;
+    scr.px(cx, 132, 30, 14, mix('#2b3b46', '#3a2c12', d));
+    scr.px(cx + 5, 126, 20, 7, mix('#3d5060', '#4a3818', d));
+    scr.px(cx + 25, 138, 3, 2, mix('#c8484a', '#a8701c', d));
+  }
+  for (let i = 0; i < 2; i++) {                         // the drones
+    const dx = 30 + ((t * 6 + i * 60) % 74), dy = 26 + Math.sin(t + i * 2) * 5;
+    scr.px(dx - 4, dy, 9, 2, ink(d));
+    scr.px(dx - 1, dy - 2, 3, 4, inkLo(d));
+  }
+  if (d > 0.3) {
+    // the same moon, with nothing next to it
+    scr.disc(34, 30, 8, PAL.AMBER_DIM);
+    scr.disc(34, 30, 7, PAL.AMBER_HOT);
+    scr.px(26, 41, 17, 1, PAL.AMBER);
+    scr.px(mx - 8, my + 13, 17, 1, PAL.AMBER);
+    num(scr, 46, 27, '=', PAL.AMBER_HOT);
+  }
+}
+
 const PANELS = {
   signoff, border, chart, chart2, mesh, crowd, heat, crane, tower, coin,
-  sea, sat, engine, crowd2,
+  sea, sat, engine, crowd2, beach, moon,
   esplanadi, kamppi, harbour, gulf,
   cathedral, katu, mannerheim, station,
   suomenlinna, katajanokka,
