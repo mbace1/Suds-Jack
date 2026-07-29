@@ -25,11 +25,16 @@ import { TOKO, VOICE } from './palette.js';
 import { drawHead, drawBadge, svgBadge } from './face.js';
 import { glance, drift } from './util.js';
 import { hit } from './glitch.js';
-import {
+// Dynamic, so the ?v= this module was loaded with reaches the dialogue tree
+// and the language packs. A static import cannot carry it, which meant the
+// hub's cache-buster only ever busted THIS file — see the note in
+// dialogue.js. Top-level await keeps mountChat() synchronous for callers:
+// the module simply finishes loading before anyone can call it.
+const {
   TOPICS, CRY, SCOREBOARD, L, u, say, sayOption, setLang, getLang,
   menu, greeting, find, nameWords, askedWords,
   FAVOURITES, FAVE_UNKNOWN,
-} from './dialogue.js';
+} = await import('./dialogue.js' + new URL(import.meta.url).search);
 
 // He keeps four things between visits and nothing else: how many times you
 // have come to the counter, the last thing you asked, whether you left him a

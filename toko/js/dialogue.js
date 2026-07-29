@@ -898,8 +898,16 @@ export const UI = {
 // and shouted in caps; Finnish takes the caps but not the article-less
 // clipping; Japanese has no caps at all, so the flatness has to come from
 // short plain-form sentences instead. The packs are written, not converted.
-import { FI } from './dialogue.fi.js';
-import { JA } from './dialogue.ja.js';
+// THE TOKEN TRAVELS. The arcade imports chat.js with a ?v= on it, chat.js
+// passes that token down to this file, and this file passes it to the packs.
+// Without it a cache bust stopped at the first module: a returning visitor
+// mid-deploy got the NEW chat.js against a STALE dialogue.js, the named
+// imports it wanted were not there, the module failed to link, and the
+// counter did not render at all. Loaded with no token (the gate does this)
+// the search string is empty and these resolve exactly as before.
+const V = new URL(import.meta.url).search;
+const { FI } = await import('./dialogue.fi.js' + V);
+const { JA } = await import('./dialogue.ja.js' + V);
 
 const PACKS = { fi: FI, ja: JA };
 export const CODES = ['fi', 'en', 'ja'];
