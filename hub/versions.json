@@ -32,11 +32,11 @@
     "from": "VERSIONS.md"
   },
   "gameoflife": {
-    "v": 42,
-    "from": "cache token"
+    "v": 40,
+    "from": "VERSIONS.md"
   },
   "radiofree": {
-    "v": 28,
+    "v": 30,
     "from": "cache token"
   },
   "tinyhawk": {

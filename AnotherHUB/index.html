@@ -71,6 +71,19 @@
   <script type="module">
     import { mountChat } from './toko/js/chat.js?v=20';
     window.__hub.chat = mountChat(document.querySelector('header'));
+
+    // The sting, once per browser: the face draws itself, then the arcade.
+    // Two rules keep it from being an ad. It is skippable from the first
+    // frame (any key, any tap), and it does not play in front of a DEEP LINK
+    // — /#hyperdagger or /#toko means somebody came for one thing, and a
+    // title card between them and it is exactly the thing this workshop is
+    // against. Dynamically imported and swallowed on failure: a nicety must
+    // never be the reason the floor does not open.
+    if (!location.hash) {
+      import('./toko/js/sting.js?v=1')
+        .then(m => m.playStingOnce('tokoSting'))
+        .catch(() => {});
+    }
   </script>
 
   <script>

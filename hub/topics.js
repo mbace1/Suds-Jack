@@ -79,6 +79,12 @@ const LEADS = {
   neonronin: ['controls', 'look'],
   eyetest: ['idea', 'bug'],
   paperboy: ['more', 'idea'],             // set down — "put it back" is the note
+  flashprince: ['controls', 'balance'],   // commitment is the design AND the
+                                          // complaint: it has to be told apart
+                                          // from lag, and the screens are the
+                                          // difficulty
+  radiofree: ['idea', 'look'],            // it is writing and voice: what it
+                                          // should say next, and how it reads
   hub: ['idea', 'bug'],
 };
 
@@ -141,6 +147,10 @@ const SPECIFIC = {
     'sudsjack:idea': ['Keep the tube, lose the…', 'The rebuild should keep…'],
     'paperboy:more': ['Put this one back on the site'],
     'hub:idea': ['Sort the cabinets by…', 'Show me what changed since last time'],
+    'flashprince:controls': ['I could not tell if it heard me', 'The step goes further than I wanted'],
+    'flashprince:balance': ['One screen keeps killing me', 'The sentry draws before I do'],
+    'radiofree:idea': ['Report on…', 'Let me keep a bulletin', 'A voice I could switch to'],
+    'radiofree:look': ['The decode is hard to follow', 'The voice needs…'],
   },
   fi: {
     'powder:balance': ['Palo loppuu liian nopeasti', 'Ladulta poikkeaminen ei kannata'],
@@ -158,6 +168,10 @@ const SPECIFIC = {
     'sudsjack:idea': ['Pidä putki, jätä pois…', 'Uusintaversion pitäisi säilyttää…'],
     'paperboy:more': ['Palauta tämä sivustolle'],
     'hub:idea': ['Järjestä kaapit…-mukaan', 'Näytä mikä on muuttunut viime käynnin jälkeen'],
+    'flashprince:controls': ['En tiennyt kuuliko se minua', 'Askel vie pidemmälle kuin halusin'],
+    'flashprince:balance': ['Yksi ruutu tappaa aina', 'Vartija ehtii ennen minua'],
+    'radiofree:idea': ['Kertoisi aiheesta…', 'Antaisi tallentaa uutisen', 'Toinen ääni valittavaksi'],
+    'radiofree:look': ['Purkua on vaikea seurata', 'Ääni kaipaa…'],
   },
   ja: {
     'powder:balance': ['バーンが早く切れすぎる', '踏み跡を外す価値がない'],
@@ -175,6 +189,10 @@ const SPECIFIC = {
     'sudsjack:idea': ['筒は残して、…はやめて', '作り直しでも残してほしいのは…'],
     'paperboy:more': ['これをサイトに戻してほしい'],
     'hub:idea': ['キャビネットを…順に並べて', '前回から何が変わったか見せて'],
+    'flashprince:controls': ['聞こえているのか分からなかった', '一歩が思ったより進む'],
+    'flashprince:balance': ['同じ画面で必ず死ぬ', '見張りのほうが先に抜く'],
+    'radiofree:idea': ['これを報じてほしい…', 'ニュースを残させてほしい', '声を選べるように'],
+    'radiofree:look': ['デコードが追いにくい', '声に足りないのは…'],
   },
 };
 
