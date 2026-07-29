@@ -22,5 +22,9 @@
   "gameoflife": {
     "v": 40,
     "from": "VERSIONS.md"
+  },
+  "toko": {
+    "v": 5,
+    "from": "VERSIONS.md"
   }
 }

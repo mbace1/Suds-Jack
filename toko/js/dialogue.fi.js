@@ -30,6 +30,10 @@ export const FI = {
     ['TAAS.', 'ANNA TULLA.'],
     ['TIEDÄT MISSÄ OLEN.', 'KYSY.'],
   ],
+  BACK_FROM: [
+    'SUORAAN PELISTÄ {x}, VAI.',
+    'MITÄ SE TEKI SINULLE?',
+  ],
   NOTED: ['SAIN VIESTISI.', 'LUEN NE KAIKKI. KYSY JOTAIN.'],
   REMEMBERED: ['VIIMEKSI KYSYIT: {x}', 'KYSY JOTAIN MUUTA.'],
   ASIDES: [
@@ -173,6 +177,7 @@ export const FI = {
 
   UI: {
     CUE: 'TOKO ON TISKILL\u00c4',
+    CUE_FROM: 'MITEN MENI: {x}?',
     TALK: 'PUHU',
     HINT: '1-9 VALITSE \u00b7 KIRJOITA PUHUAKSESI \u00b7 ESC POIS',
     LEAVE: 'POIS',

@@ -483,10 +483,18 @@ mark reads clean). But the *resting* animation of a Toko mark is a **blink** —
 eyes squashing shut for a beat every few seconds (`pulse()` in `util.js`);
 `sign()` takes `glitch: true` and does not assume it.
 `signature.js` is the one-line drop-in (`sign()`): badge in a corner, `z-index
-4` so it sits **under** the HUD, `pointer-events: none` unless given an `href`,
-safe-area insets, one still frame under `prefers-reduced-motion`. Signed on
-`main`: `toko-drop/`, `paperboy/` (black-on-white there — magenta fights the
-sunny-day palette), `dropcabal/`, `hyperdagger/`. **`gameoflife/` is
+4` so it sits **under** the HUD, safe-area insets, one still frame under
+`prefers-reduced-motion`. **`counter: true`** — what every signed game passes —
+points it at `../#toko`, so the signature is the way to say something about the
+game you are standing in, from inside it. Two rules there that look like
+fussiness and are not: it is **a link only where there is a cursor**
+(`(pointer: fine)`), because bottom-left is where half these games put the left
+stick and a 44px anchor would eat the touch that starts a run — touch already
+has `hub/shell.js`'s HOME button in the opposite corner; and it navigates on
+**`pointerup` and `touchend`, never `click`**, the same trap shell.js paid for.
+Signed on `main` AND on `gh-pages`: `toko-drop/`, `paperboy/` (black-on-white
+there — magenta fights the sunny-day palette), `dropcabal/`, `hyperdagger/`,
+`flashprince/`. **`gameoflife/` is
 deliberately unsigned** — the room where Toko takes the mask off (a magenta
 badge would undo a zen app built to send you outdoors), and its service worker
 precaches a list scoped to `/gameoflife/` with `test/offline.cjs` asserting
@@ -544,6 +552,17 @@ overflows the clipped cap and hides the bottom of the menu on a phone; **no
 back-ticks in the CSS template literal**; and `glitch.js` works through
 `getImageData`, so a DPR `Surface` must pass **device** pixels plus a
 `scale` (its displacements are tuned for a 44px mark).
+**He knows which cabinet you just left.** The badge links here, so the referrer
+usually names the game: the closed bar asks *how was hyper dagger?* before you
+open him, he opens on that cabinet instead of a generic hello, and the note that
+follows files under it. It reads **`document.baseURI`**, not `location`, because
+`/AnotherHUB/` is the same page one level down behind a `<base href="../">`. No
+referrer (bookmark, typed address, `file://`) is just the ordinary greeting — a
+nicety, never a mechanism. The counter also **states its version** (`V5` in the
+footer) from `VERSION` in `dialogue.js` rather than a fetch, so it is right
+offline; `toko/VERSIONS.md` is the log, `scripts/versions.mjs` reads it into
+`hub/versions.json` via a short `EXTRA` list (the brand is not a cabinet), and
+the gate fails if code and log disagree.
 `sting.js` is a ~3s sting where the face **draws itself** (arcs revealed by
 dash-offset so they grow along their own path: mouth sweeps open → eyes drop in
 → blink → logotype lands), skippable on any input from frame one. `masthead.js`
@@ -551,11 +570,13 @@ is the animated lockup for the arcade hub — `stop()` it wherever the page
 re-renders or the loop leaks against a detached canvas. `surface.js` is the
 DPR-aware smooth canvas (the mark is curves, so antialiasing stays ON).
 `toko/index.html` is the **brand board**, built out of the shipping modules.
-`toko/test/brand.cjs` is the gate (Playwright, 150 checks): geometry invariants
+`toko/test/brand.cjs` is the gate (Playwright, 184 checks): geometry invariants
 (slot width, stem/crown merge, mouth-clears-eyes, symmetry), **every rendered
 pixel checked against the two-colour system**, SVG well-formedness + that it
 emits exactly the canvas's arcs at the shipping stroke weight, the sting
-mounting/skipping, and each signed game's badge.
+mounting/skipping, each signed game's badge (a link with a cursor, inert under a
+thumb), and a real walk **out of a cabinet and into the counter** — two fixtures,
+`toko/_tokentest.html` and `toko/_fromtest.html`, exist for that.
 Two honest caveats recorded in `BRAND.md`: the face geometry is **measured off
 the master artwork**, not lifted from the original vector file (replace `GEO` if
 that file surfaces), and the logotype face is substituted.
@@ -565,11 +586,12 @@ module import that must sit **after `hub/hub.js`** — hub.js assigns
 `window.__hub` wholesale, so a handle hung on before it is thrown away
 (`window.__hub.chat`); the chat picks up hub.css's `--panel`/`--line`
 so it sits inside the terminal's own chrome while keeping magenta for Toko. The
-gh-pages copy omits `test/` (that branch ships docs but no test dirs). The game
-**signatures are NOT on gh-pages yet** — `toko-drop/` and `hyperdagger/` there
-carry offline service workers with exact precache lists, so signing them means
-adding `../toko/js/*` to those lists in the same change, or their offline boot
-silently starts hitting the network.
+gh-pages copy omits `test/` (that branch ships docs but no test dirs). The games
+**are signed on gh-pages** now, and `toko-drop/` and `hyperdagger/` there carry
+offline service workers whose precache lists name `../toko/js/signature.js?v=N`
+plus its five deps — so **changing `signature.js` means bumping that token and
+the list entry in the same change**, or those two games serve the old badge out
+of cache forever while every other cabinet gets the new one.
 
 ### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
 Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
@@ -617,7 +639,7 @@ toko/           # Toko Midori Games — the brand (face, lockups, sting, signatu
     sting.js    # the ~3s sting, the face drawing itself (skippable frame one)
     chat.js     # the counter — Sierra-style conversation panel for the hub
     dialogue.js # what Toko says: the hand-written topic tree
-    signature.js# sign() — the drop-in corner badge a game imports
+    signature.js# sign() — the corner badge; counter:true links it to #toko
     masthead.js # the animated lockup for the arcade hub
     board.js    # wires toko/index.html out of the shipping modules
   test/
