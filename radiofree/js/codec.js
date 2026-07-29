@@ -6,10 +6,10 @@
 // Idle/static frames prefer story.broll so the new Helsinki art is visible
 // while scrolling — not only during live cuts.
 
-import { PixelScreen, shade, mix } from './screen.js?v=28';
-import { PAL, SECTOR_COLOR } from './palette.js?v=28';
-import { Toko } from './toko.js?v=28';
-import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=28';
+import { PixelScreen, shade, mix } from './screen.js?v=29';
+import { PAL, SECTOR_COLOR } from './palette.js?v=29';
+import { Toko } from './toko.js?v=29';
+import { drawVisual, PANEL_W, PANEL_H, num, BROLL_KEYS } from './visuals.js?v=29';
 
 export const POST_W = 144, POST_H = 276;
 const VF = { x: 8, y: 6, w: PANEL_W, h: PANEL_H };

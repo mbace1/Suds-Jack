@@ -28,8 +28,8 @@
 // showing" — and a saturated orange lamp would spend that vocabulary on
 // scenery. Nothing here approaches PAL.AMBER_HOT.
 
-import { PAL } from './palette.js?v=28';
-import { mix, shade, bayer } from './screen.js?v=28';
+import { PAL } from './palette.js?v=29';
+import { mix, shade, bayer } from './screen.js?v=29';
 
 export const PLATE_W = 144, PLATE_H = 276;
 const W = PLATE_W, H = PLATE_H;
@@ -595,7 +595,127 @@ function katajanokka(scr, t, d) {
   cathedral(scr, t, d, { onion: true, steps: 3, quay: true, label: 'katajanokka' });
 }
 
-const PLATES = { esplanadi, kamppi, station, harbour, gulf, suomenlinna, katajanokka };
+
+// ── BEACH — Hietaniemi in July, and the machine counting it ────────
+// The only daylight plate on the wire. Everything else here is night, so this
+// one carries its own palette rather than borrowing the three kits.
+const SAND = ['#d9c48f', '#c9b077'], SEA = ['#3d86a0', '#1f5a72'];
+
+function beachBase(c) {
+  ramp(c, 0, 96, '#8fc6d8', '#cfe6ea');                // the sky
+  ramp(c, 96, 150, SEA[0], SEA[1]);                    // the water
+  P(c, 0, 94, W, 2, '#e6f2f4');
+  P(c, 16, 88, 44, 4, '#2e5c58');                      // the far shore
+  P(c, 92, 89, 38, 3, '#2e5c58');
+  ramp(c, 150, 214, SAND[0], SAND[1]);                 // the sand
+  ramp(c, 214, H, '#3c6b34', '#20401d');               // the grass
+  // the pines that hold both edges of the reference frame
+  for (const [x0, w2] of [[0, 26], [W - 26, 26]]) {
+    P(c, x0 + w2 / 2 - 3, 0, 6, H, '#1d3018');
+    for (let y = 6; y < H; y += 13) {
+      const spread = 10 + Math.sin(y * 0.4) * 4;
+      P(c, x0 + w2 / 2 - spread, y, spread * 2, 8, '#264a20');
+      P(c, x0 + w2 / 2 - spread, y + 7, spread * 2, 1, '#16300f');
+    }
+  }
+  // towels and people on the sand — a hash, never a modular ramp
+  for (let i = 0; i < 90; i++) {
+    const x = 30 + rnd(i * 1.31) * (W - 62), y = 154 + rnd(i * 2.77) * 56;
+    if (rnd(i * 5.1) < 0.34) P(c, x, y, 4, 2, ['#c8484a', '#3c6fb0', '#e0c24a'][i % 3]);
+    else { P(c, x, y, 2, 4, '#3b3128'); P(c, x, y - 2, 2, 2, '#c9a882'); }
+  }
+  for (let i = 0; i < 12; i++) {                        // swimmers
+    const x = 34 + rnd(i * 3.9) * (W - 68);
+    P(c, x, 120 + rnd(i * 7.3) * 24, 2, 2, '#c9a882');
+  }
+}
+
+function beach(scr, t, d) {
+  const c = scr.ctx;
+  c.drawImage(base('beach', beachBase), 0, 0);
+  // the water is the live layer — a cached plate still has to move on its
+  // first screen, or the post reads as a broken page
+  for (let y = 98; y < 148; y += 2) {
+    for (let x = 0; x < W; x += 2) {
+      if (bayer(x >> 1, y >> 1) < 0.10 + Math.sin(x * 0.09 + t * 1.3 + y * 0.2) * 0.06) {
+        P(c, x, y, 2, 1, '#bfe0e8');
+      }
+    }
+  }
+  // the drones, and the one cone that saw anything
+  for (let i = 0; i < 3; i++) {
+    const dx = 34 + ((t * 8 + i * 46) % 84), dy = 30 + Math.sin(t * 1.2 + i) * 5;
+    P(c, dx - 7, dy, 15, 3, '#1a2a26');
+    P(c, dx - 2, dy - 3, 4, 7, '#33504a');
+    if ((t * 3 + i) % 2 < 1) P(c, dx + 7, dy - 1, 2, 2, '#e8564e');
+    if (d > 0.15 && i === 1) {
+      halo(c, dx, dy + 40, 34, PAL.AMBER_DIM, 0.3 * d);
+      P(c, dx - 26, 208, 52, 2, PAL.AMBER);
+    }
+  }
+  amberWash(c, d);
+}
+
+// ── MOON — blue hour over the ridge, and the chimney beside it ─────
+function moonBase(c) {
+  ramp(c, 0, 190, '#0d4f8f', '#2f8ec9');
+  P(c, 70, 108, 16, 84, '#d8dee2');                     // the plant chimney
+  P(c, 68, 103, 20, 6, '#eef2f4');
+  P(c, 70, 108, 3, 84, '#f2f6f8');
+  for (let i = 0; i < 18; i++) {                        // the coaster arc
+    const a = Math.PI * (0.12 + i / 26);
+    P(c, 26 + Math.cos(a) * 30, 176 - Math.sin(a) * 58, 3, 3, '#33566d');
+  }
+  for (let x = 0; x < W; x += 3) {                      // the treeline
+    const h2 = 26 + Math.sin(x * 0.27) * 9 + Math.sin(x * 0.09) * 7;
+    P(c, x, 190 - h2, 3, h2 + 14, '#123a22');
+  }
+  P(c, 0, 204, W, 22, '#0c2718');
+  for (let i = 0; i < 5; i++) {                         // the car park
+    const cx = -10 + i * 34;
+    P(c, cx, 240, 36, 24, '#25333d');
+    P(c, cx + 6, 226, 24, 15, '#37485a');
+    P(c, cx + 8, 228, 20, 8, '#4d6478');
+    P(c, cx + 30, 250, 4, 3, '#c8484a');
+  }
+  // the maple that overhangs the top of the reference frame
+  for (let i = 0; i < 26; i++) {
+    P(c, 4 + rnd(i * 2.3) * 78, 2 + rnd(i * 4.7) * 26, 7, 5, '#0b1d15');
+  }
+}
+
+function moon(scr, t, d) {
+  const c = scr.ctx;
+  c.drawImage(base('moon', moonBase), 0, 0);
+  const mx = 96, my = 150 + Math.sin(t * 0.25) * 1.5;
+  halo(c, mx, my, 26, '#f0a03c', 0.42);
+  for (let dy = -15; dy <= 15; dy++) {
+    const dx = Math.floor(Math.sqrt(Math.max(0, 225 - dy * dy)));
+    P(c, mx - dx, my + dy, dx * 2 + 1, 1, '#ffd07a');
+  }
+  P(c, mx - 6, my - 4, 4, 4, '#e8b45c');
+  P(c, mx + 3, my + 5, 6, 3, '#e8b45c');
+  P(c, mx - 2, my + 9, 4, 2, '#e8b45c');
+  for (let i = 0; i < 2; i++) {                          // the drones
+    const dx = 40 + ((t * 7 + i * 62) % 70), dy = 52 + Math.sin(t + i * 2.2) * 6;
+    P(c, dx - 6, dy, 13, 3, '#0e1e2c');
+    P(c, dx - 2, dy - 3, 4, 6, '#20384c');
+  }
+  if (d > 0.25) {
+    // the same moon, with nothing beside it to lend it a scale
+    halo(c, 40, 62, 26, PAL.AMBER_DIM, 0.4);
+    for (let dy = -15; dy <= 15; dy++) {
+      const dx = Math.floor(Math.sqrt(Math.max(0, 225 - dy * dy)));
+      P(c, 40 - dx, 62 + dy, dx * 2 + 1, 1, PAL.AMBER_HOT);
+    }
+    P(c, 24, 80, 33, 2, PAL.AMBER);
+    P(c, mx - 16, my + 20, 33, 2, PAL.AMBER);
+  }
+  amberWash(c, d);
+}
+
+const PLATES = { esplanadi, kamppi, station, harbour, gulf, suomenlinna, katajanokka,
+                 beach, moon };
 export const PLATE_KEYS = Object.keys(PLATES);
 
 export function drawPlate(key, scr, t, decode) {

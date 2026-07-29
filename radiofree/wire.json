@@ -152,14 +152,14 @@
       "id": "beach-capacity",
       "sector": "RFH",
       "visual": "beach",
-      "broll": "gulf",
+      "broll": "beach",
       "filed": "2026-07-29"
     },
     {
       "id": "moon-largest",
       "sector": "RFH",
       "visual": "moon",
-      "broll": "katajanokka",
+      "broll": "moon",
       "filed": "2026-07-29"
     }
   ],

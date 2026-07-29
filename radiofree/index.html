@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#04070a">
-<link rel="manifest" href="manifest.webmanifest?v=28">
+<link rel="manifest" href="manifest.webmanifest?v=29">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="description" content="Radio Free Helsinki — a fictional pirate news broadcast. Toko reads the day's wire from a codec screen; DECODE shows you what the wording was doing.">
@@ -353,9 +353,12 @@
      is drawn too (amber furniture + a band tear), so the sepia grade the
      photographs take would only sepia the brand pink out of Toko. */
   .anchor-cv { animation: none; object-position: 50% 45%; }
+  /* drawn footage moves because it is redrawn, not because CSS pushes it */
+  .plate-cv { animation: none; object-position: 50% 45%; }
   .graphic-cv { animation: none; object-position: 50% 40%; }
   .photo-wrap.decoded .anchor-cv,
-  .photo-wrap.decoded .graphic-cv { filter: none; }
+  .photo-wrap.decoded .graphic-cv,
+  .photo-wrap.decoded .plate-cv { filter: none; }
 
   /* ── the cut package: footage → studio → footage ────────────────── */
   .pkg { position: absolute; inset: 0; }
@@ -451,12 +454,12 @@
   <main id="feed" tabindex="-1"></main>
 </div>
 
-<script type="module" src="js/main.js?v=28"></script>
+<script type="module" src="js/main.js?v=29"></script>
 <script type="module" src="../hub/shell.js?v=13"></script>
 <script>
   if ('serviceWorker' in navigator &&
       (location.protocol === 'https:' || new URLSearchParams(location.search).has('sw'))) {
-    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=28').catch(() => {}));
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=29').catch(() => {}));
   }
 </script>
 
