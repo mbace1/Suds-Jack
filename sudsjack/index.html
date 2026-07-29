@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Suds Jack</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #05040a;
+      overflow: hidden;
+      touch-action: none;
+      font-family: 'Courier New', ui-monospace, Menlo, monospace;
+      color: #dff6ff;
+    }
+    #game { display: block; }
+
+    /* the HUD sits in the corners, never across the mouth of the tube —
+       the middle of this screen is where the game is read */
+    .hud {
+      position: fixed;
+      pointer-events: none;
+      user-select: none;
+      letter-spacing: .14em;
+      text-shadow: 0 0 14px rgba(75, 227, 255, .55);
+    }
+    #tl { top: max(14px, env(safe-area-inset-top)); left: max(14px, env(safe-area-inset-left)); }
+    #tr { top: max(14px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right)); text-align: right; }
+    #score { font-size: 30px; font-weight: bold; line-height: 1; }
+    #chain { font-size: 17px; color: #ffe98a; min-height: 20px; }
+    #level { font-size: 15px; color: #8f6bff; }
+    #lives { font-size: 17px; color: #4be3ff; letter-spacing: .3em; }
+
+    #banner {
+      position: fixed;
+      top: 11%;
+      left: 0; right: 0;
+      text-align: center;
+      font-size: 20px;
+      letter-spacing: .32em;
+      opacity: 0;
+      transition: opacity .3s;
+      pointer-events: none;
+      text-shadow: 0 0 18px rgba(143, 107, 255, .8);
+    }
+
+    .panel {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-content: center;
+      justify-items: center;
+      gap: 14px;
+      text-align: center;
+      background: rgba(5, 4, 10, .72);
+      padding: 24px;
+    }
+    .panel[hidden] { display: none; }
+    .panel h1 {
+      font-size: clamp(34px, 9vw, 62px);
+      letter-spacing: .18em;
+      font-weight: bold;
+      text-shadow: 0 0 26px rgba(75, 227, 255, .7);
+    }
+    .panel .sub { color: #8f6bff; letter-spacing: .2em; font-size: 13px; }
+    .panel .how { color: #7fa8bb; font-size: 13px; line-height: 1.9; letter-spacing: .08em; }
+    .panel .how b { color: #dff6ff; font-weight: normal; }
+    .btn {
+      font: inherit;
+      letter-spacing: .22em;
+      min-height: 52px;
+      padding: 0 30px;
+      background: none;
+      border: 2px solid #4be3ff;
+      color: #dff6ff;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+    .btn:hover, .btn:focus-visible { background: #4be3ff22; }
+    .stat { font-size: 15px; color: #7fa8bb; letter-spacing: .16em; }
+    .stat b { color: #dff6ff; font-weight: normal; font-size: 22px; }
+
+    #sound {
+      position: fixed;
+      right: max(12px, env(safe-area-inset-right));
+      bottom: max(12px, env(safe-area-inset-bottom));
+      font: inherit;
+      font-size: 12px;
+      letter-spacing: .18em;
+      min-height: 44px;
+      padding: 0 14px;
+      background: none;
+      border: 1px solid #2a4a58;
+      color: #7fa8bb;
+      cursor: pointer;
+      z-index: 5;
+    }
+    #sound:hover { color: #dff6ff; border-color: #4be3ff; }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div class="hud" id="tl">
+    <div id="score">0</div>
+    <div id="chain"></div>
+  </div>
+  <div class="hud" id="tr">
+    <div id="lives">●●●</div>
+    <div id="level">L1</div>
+  </div>
+  <div id="banner"></div>
+
+  <div class="panel" id="menu">
+    <h1>SUDS JACK</h1>
+    <p class="sub">BOMB JACK × TEMPEST · NO GUN</p>
+    <p class="how">
+      Ride the rim. <b>Catch the bubbles</b> before they get past you.<br>
+      The <b>bright one</b> raises your chain — let it through and you lose it.<br>
+      <b>Dive</b> down the tube to meet one early: it pays more, and you<br>
+      cannot change lane until you are back.<br>
+      Grime steps toward you. Do not be there.
+    </p>
+    <p class="how">
+      <b>← →</b> or <b>A D</b> ride · <b>SPACE</b> dive · pad stick + A<br>
+      touch: <b>drag</b> to ride, <b>tap</b> to dive
+    </p>
+    <button class="btn" id="play">Play</button>
+    <p class="stat">BEST <b id="hiScore">0</b></p>
+  </div>
+
+  <div class="panel" id="over" hidden>
+    <h1>DOWN THE DRAIN</h1>
+    <p class="stat">SCORE <b id="finalScore">0</b></p>
+    <p class="stat">REACHED LEVEL <b id="finalLevel">1</b></p>
+    <p class="stat">BEST <b id="finalBest">0</b></p>
+    <button class="btn" id="again">Again</button>
+  </div>
+
+  <button id="sound" aria-pressed="true">♪ ON</button>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.min.js",
+      "three/addons/": "./vendor/jsm/"
+    }
+  }
+  </script>
+  <!-- the arcade shell: a home button and a controller way back -->
+  <script type="module" src="../hub/shell.js?v=9"></script>
+  <script type="module" src="js/main.js?v=1"></script>
+
+  <!-- signed by Toko Midori Games — the badge in the corner, under the HUD.
+       `counter: true` makes it the way to the counter on the hub; on a
+       touchscreen it stays inert, because that corner is the left stick.
+       See ../toko/BRAND.md -->
+  <script type="module">
+    import { sign } from '../toko/js/signature.js?v=3';
+    sign({ corner: 'bottom-left', counter: true });
+  </script>
+</body>
+</html>
