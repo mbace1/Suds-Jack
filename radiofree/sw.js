@@ -3,7 +3,7 @@ const VERSION = 'v28';
 const CACHE = `rfh-${VERSION}`;
 const V = `?v=28`;
 const SHELL = [
-  '../toko/js/signature.js?v=2',
+  '../toko/js/signature.js?v=3',
   ...['surface', 'palette', 'face', 'util', 'glitch'].map(m => `../toko/js/${m}.js`),
   './',
   './index.html',

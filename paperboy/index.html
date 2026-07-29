@@ -48,10 +48,10 @@
   <!-- signed by Toko Midori Games — the badge in the corner, under the HUD,
        taking no input. See ../toko/BRAND.md -->
   <script type="module">
-    import { sign } from '../toko/js/signature.js?v=1';
+    import { sign } from '../toko/js/signature.js?v=3';
     // the badge goes black-on-white here: a magenta disc on the bright
     // sunny-day sky fights the route's own palette for attention
-    sign({ corner: 'bottom-left', ground: '#ffffff', ink: '#000000' });
+    sign({ corner: 'bottom-left', counter: true, ground: '#ffffff', ink: '#000000' });
   </script>
 </body>
 </html>

@@ -412,6 +412,20 @@ Rules it holds:
   row sizes to its content and overflows the cap instead, which hid the bottom
   four topics *and* the way out on a phone while looking perfect on a laptop.
   The gate opens the counter at phone size for exactly this.
+- **He knows which cabinet you just left.** The badge in a game's corner links
+  here, so the referrer usually names the game — the closed bar asks *how was
+  hyper dagger?* before you open him at all, he opens on that cabinet instead
+  of a generic hello, and the note that follows files under it. It reads
+  `document.baseURI`, not `location`, because `/AnotherHUB/` is the same page
+  one level down behind a `<base href="../">`. No referrer (a bookmark, a typed
+  address, `file://`) is simply the ordinary greeting: it is a nicety, never a
+  mechanism, and it must never be the reason the counter fails to open.
+- **It states its version.** `V5` in the footer, read from `VERSION` in
+  `dialogue.js` rather than fetched, so it is still right with the signal off.
+  `toko/VERSIONS.md` is the log; `scripts/versions.mjs` reads it into
+  `hub/versions.json` the same way it does for every cabinet — the brand is not
+  a cabinet, so it is named in that script's short `EXTRA` list. The gate fails
+  if the number in the code and the number in the log disagree.
 - **No back-ticks in the stylesheet.** It is a template literal, and one
   back-tick in a CSS comment ends the string mid-rule and takes the whole
   module down with it.
@@ -459,17 +473,36 @@ cursor.
 ```html
 <script type="module">
   import { sign } from '../toko/js/signature.js';
-  sign();                                     // bottom-left, non-interactive
-  // sign({ corner: 'bottom-right', href: '../toko/' });
+  sign({ corner: 'bottom-left', counter: true });
 </script>
 ```
 
 The badge goes in a corner at `z-index: 4` — **under** the game's HUD, over the
-game canvas — takes no input unless you give it an `href` (then it holds a 44px
-tap target), honours the safe-area insets, and paints one still frame for anyone
-who has asked for reduced motion.
+game canvas — honours the safe-area insets, and paints one still frame for
+anyone who has asked for reduced motion.
 
-Signed on `main`: `toko-drop/`, `paperboy/`, `dropcabal/`, `hyperdagger/`.
+**`counter: true` is what every signed game uses.** It points the badge at
+`../#toko`, so the signature is not just a stamp: it is the way to say
+something about the game you are standing in, from inside it. The counter reads
+the referrer on the way in and opens on that cabinet, and the note you leave
+files under it. Two taps from "that boss is unfair" to having said so.
+
+Two things it does that look like fussiness and are not:
+
+- **It is a link only where there is a cursor.** Bottom-left is where half
+  these games put the left stick, and a 44px anchor sitting on it would eat the
+  touch that starts a run. On a coarse pointer the badge stays a picture, and
+  the HOME button `hub/shell.js` puts in the opposite corner is the way out.
+  `(pointer: fine)` is the test.
+- **It navigates on `pointerup` and `touchend`, never `click`** — the trap
+  `hub/shell.js` already paid for. These games `preventDefault` every touch
+  outside their own UI, and a cancelled `touchstart` takes the synthesised
+  click with it (and the pointer stream, so `pointercancel` arrives and
+  `pointerup` never does). The `href` stays, so middle-click and
+  open-in-new-tab keep working.
+
+Signed on `main`: `toko-drop/`, `paperboy/`, `dropcabal/`, `hyperdagger/`,
+`flashprince/`.
 
 Other entry points:
 
@@ -524,6 +557,7 @@ so a cross-directory import would break the offline promise either way.
 ```
 toko/
   BRAND.md        this
+  VERSIONS.md     the release log — one number for mark, sting, badge, counter
   index.html      the brand board — every mark live, with SVG downloads
   toko.css        the palette as custom properties + the CSS-only glitch
   js/
@@ -542,6 +576,8 @@ toko/
     board.js      wires the board out of the shipping modules
   test/
     brand.cjs     the gate: geometry, SVG, sting, every signed game
+  _tokentest.html   fixtures, not pages: the first proves the ?v= token
+  _fromtest.html    reaches the packs, the second walks in from a cabinet
 ```
 
 > **Deploy:** the live site serves from the **`gh-pages`** branch, not `main`.

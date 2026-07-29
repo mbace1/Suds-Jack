@@ -63,10 +63,17 @@ function fromToken(dir) {
   return { v: Math.max(...tokens), from: 'cache token' };
 }
 
+// Not every project on the floor is a cabinet. The brand — the mark, the
+// sting, the signature and the counter at the top of the hub — ships like one
+// and breaks like one, so it gets a number the same way. It is named here
+// rather than found by scanning, because "a directory with a VERSIONS.md in
+// it" would sweep up anything anybody ever left lying around.
+const EXTRA = [{ id: 'toko', path: 'toko/' }];
+
 const rootLog = rootLogOwner();
 const out = {};
 const missing = [];
-for (const g of GAMES) {
+for (const g of [...GAMES, ...EXTRA]) {
   const dir = path.join(ROOT, g.path);
   if (!existsSync(dir) || !statSync(dir).isDirectory()) { missing.push(`${g.id} (not here)`); continue; }
   const owned = rootLog && rootLog.id === g.id && rootLog.v

@@ -39,6 +39,10 @@ export const JA = {
     ['また来たな。', '言ってみろ。'],
     ['居場所は知ってるだろ。', '聞け。'],
   ],
+  BACK_FROM: [
+    '{x} から直行か。',
+    'あれはお前に何をした。',
+  ],
   NOTED: ['お前の言葉は届いた。', '全部読んでる。何か聞け。'],
   REMEMBERED: ['前に聞いたのはこれだ: {x}', '別のことを聞け。'],
   ASIDES: [
@@ -184,6 +188,7 @@ export const JA = {
 
   UI: {
     CUE: '\u30c8\u30fc\u30b3\u306f\u30ab\u30a6\u30f3\u30bf\u30fc\u306b\u3044\u308b',
+    CUE_FROM: '{x} \u306f\u3069\u3046\u3060\u3063\u305f\uff1f',
     TALK: '\u8a71\u3059',
     HINT: '1-9 \u9078\u3076 \u00b7 \u6253\u3063\u3066\u8a71\u3059 \u00b7 ESC \u51fa\u308b',
     LEAVE: '\u51fa\u308b',

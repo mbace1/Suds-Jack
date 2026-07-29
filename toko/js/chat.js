@@ -31,7 +31,7 @@ import { hit } from './glitch.js';
 // dialogue.js. Top-level await keeps mountChat() synchronous for callers:
 // the module simply finishes loading before anyone can call it.
 const {
-  TOPICS, CRY, SCOREBOARD, L, u, say, sayOption, setLang, getLang,
+  TOPICS, CRY, SCOREBOARD, L, u, say, sayOption, setLang, getLang, VERSION,
   menu, greeting, find, nameWords, askedWords,
   FAVOURITES, FAVE_UNKNOWN,
 } = await import('./dialogue.js' + new URL(import.meta.url).search);
@@ -216,6 +216,9 @@ const CSS = `
 .toko-chat .tc-menu.is-yours button b { color: var(--tc-ink); }
 
 .toko-chat .tc-spacer { flex: 1; }
+/* the release number, stated quietly. Same dim as the hint beside it, which
+   is already measured for contrast. */
+.toko-chat .tc-ver { color: var(--tc-dim); }
 .toko-chat .tc-foot {
   display: flex; align-items: center; gap: 10px;
   border-top: 2px solid var(--tc-line); padding: 6px 10px;
@@ -345,7 +348,13 @@ export function mountChat(anchor, opts = {}) {
   sound.type = 'button';
   const leave = el('button');
   leave.type = 'button';
-  foot.append(hint, el('span', 'tc-spacer'), sound, leave);
+  // The counter has a version like every other project on the floor. It is
+  // read from dialogue.js rather than fetched, so it is still right with the
+  // signal off — hub/versions.json is the same number, built from
+  // toko/VERSIONS.md at deploy time.
+  const ver = el('span', 'tc-ver', 'V' + VERSION);
+  ver.title = `${VOICE.company} v${VERSION}`;
+  foot.append(hint, el('span', 'tc-spacer'), ver, sound, leave);
   // The compose box gets a row of its OWN, not a paragraph in the transcript.
   // Inside .tc-log it scrolled with the conversation, and since that element
   // is capped and clipped the SEND button ended up below the fold — present,
@@ -364,7 +373,11 @@ export function mountChat(anchor, opts = {}) {
   // that supplied its own line keeps it in every language.
   function paintBar() {
     cueEl.textContent = '';
-    cueEl.append((cue || u('CUE')) + ' \u2014 ',
+    // The bar names the cabinet you just left, so knowing where you came from
+    // is visible BEFORE you open him. A cue passed by the host still wins.
+    const said = cue
+      || (from ? u('CUE_FROM', { x: gameName(from) }) : u('CUE'));
+    cueEl.append(said + ' \u2014 ',
       Object.assign(el('span', 'tc-cue'), { textContent: u('TALK') }));
     parse.placeholder = u('PARSE_PH');
     parse.setAttribute('aria-label', u('SAY_TO', { x: VOICE.artistRomaji }));
@@ -597,6 +610,37 @@ export function mountChat(anchor, opts = {}) {
     return all.filter(g => g && g.path && g.live !== false);
   }
 
+  // ── where you came from ────────────────────────────────────────────────
+  // The badge in a game's corner links here, so most of the time the counter
+  // can know which cabinet you just walked off — the browser says so in the
+  // referrer. He opens on THAT game rather than on a generic hello, and the
+  // note that follows files under it.
+  //
+  // Deliberately quiet about failing: no referrer (a bookmark, a typed
+  // address, a no-referrer policy, file://) simply means the ordinary
+  // greeting. It is a nicety, not a mechanism, and it must never be the
+  // reason the counter does not open.
+  function cameFrom() {
+    let ref;
+    try { ref = new URL(document.referrer); } catch { return null; }
+    if (ref.origin !== location.origin) return null;
+    // a reload of the hub itself is not an arrival from anywhere
+    const bare = u => u.replace(/#.*$/, '');
+    if (bare(ref.href) === bare(location.href)) return null;
+    for (const g of cabinets()) {
+      let p;
+      // baseURI, NOT location: /AnotherHUB/ is the same page one level down
+      // with a <base href="../">, so the catalogue's relative paths only
+      // resolve to the real cabinets through the base tag.
+      try { p = new URL(g.path, document.baseURI).pathname; } catch { continue; }
+      const hit = p.endsWith('/') ? ref.pathname.startsWith(p) : ref.pathname === p;
+      if (hit) return g;
+    }
+    return null;
+  }
+  const from = cameFrom();
+  const gameName = g => String(g.title || g.id).toUpperCase();
+
   // A cabinet by name, for the parser: "tell me about hyper dagger". Matched
   // on the id and on the title's words, so "DAGGER" alone is enough and a
   // one-word title cannot be hit by a single stray word of a longer sentence.
@@ -668,18 +712,22 @@ export function mountChat(anchor, opts = {}) {
       p.appendChild(a);
       if (g.lineage) p.appendChild(document.createTextNode('  — ' + g.lineage));
       log.appendChild(p);
-      // The routing step. Standing in front of one cabinet is the moment a
-      // player actually has something to say about it, and a note taken here
-      // files under that game rather than under "the counter".
-      const tell = el('button', 'tc-tell');
-      tell.type = 'button';
-      tell.textContent = u('TELL');
-      tell.addEventListener('click', () => { tell.remove(); takeNote(g); });
-      const q = el('p');
-      q.appendChild(tell);
-      log.append(q);
-      log.scrollTop = log.scrollHeight;
+      offerTell(g);
     });
+  }
+
+  // The routing step. Standing in front of one cabinet is the moment a player
+  // actually has something to say about it, and a note taken here files under
+  // that game rather than under "the counter".
+  function offerTell(g) {
+    const tell = el('button', 'tc-tell');
+    tell.type = 'button';
+    tell.textContent = u('TELL');
+    tell.addEventListener('click', () => { tell.remove(); takeNote(g); });
+    const q = el('p');
+    q.appendChild(tell);
+    log.append(q);
+    log.scrollTop = log.scrollHeight;
   }
 
   // ── what you have already told him ─────────────────────────────────────
@@ -1007,7 +1055,16 @@ export function mountChat(anchor, opts = {}) {
       // the second time it stops being an acknowledgement and starts being
       // a receipt.
       store.write({ ...st, visits, noted: false });
-      type(greeting({ visits, hour: hour(), last: st.last, noted: !!st.noted }));
+      // Coming off a cabinet replaces the greeting rather than being added to
+      // it — two lines is the ceiling here (see LATE in dialogue.js), and
+      // somebody who has just played something already has a subject. The one
+      // thing that outranks it is an unacknowledged note: he owes you that.
+      if (from && !st.noted) {
+        type(L('BACK_FROM').map(l => l.replaceAll('{x}', gameName(from))),
+          () => offerTell(from));
+      } else {
+        type(greeting({ visits, hour: hour(), last: st.last, noted: !!st.noted }));
+      }
     }
     else renderMenu();
     addEventListener('keydown', onKey);
@@ -1120,6 +1177,8 @@ export function mountChat(anchor, opts = {}) {
       return !!t;
     },
     type(text) { said(text); },
+    // the cabinet the referrer says you just left, or null
+    from: () => (from ? from.id : null),
     menu: () => menu(unlocked, asked, { hour: hour(), fresh }).map(t => t.id),
     asking: () => !!pending,
     // still mid-sentence. A caller that picks a topic while he is talking

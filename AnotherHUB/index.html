@@ -62,14 +62,14 @@
     }
   </style>
 
-  <script type="module" src="hub/hub.js?v=17"></script>
+  <script type="module" src="hub/hub.js?v=18"></script>
   <!-- Toko is at the counter. A Sierra-style conversation with the artist
        behind the cabinets; the tree lives in toko/js/dialogue.js. It mounts
        itself after <header> wherever this tag sits, and it sits AFTER hub.js
        because hub.js assigns window.__hub wholesale — hung on before that,
        the counter's own handle would be thrown away. -->
   <script type="module">
-    import { mountChat } from './toko/js/chat.js?v=19';
+    import { mountChat } from './toko/js/chat.js?v=20';
     window.__hub.chat = mountChat(document.querySelector('header'));
   </script>
 
