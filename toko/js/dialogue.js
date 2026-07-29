@@ -26,6 +26,13 @@
 //   scores follow the reply with whatever the games left on THIS machine
 //   torn   the portrait tears while he answers — a glitch is an event
 
+// The brand's release number, and the one place the code states it. It is the
+// first `## vN` heading in toko/VERSIONS.md — test/brand.cjs fails if the two
+// drift, because a version that is only true in the changelog is worse than
+// no version at all. `scripts/versions.mjs` reads the log for
+// hub/versions.json; the counter shows THIS, so it is right even offline.
+export const VERSION = 5;
+
 export const GREETING = [
   'YOU FOUND THE COUNTER.',
   'ASK ME SOMETHING.',
@@ -39,6 +46,20 @@ export const GREETING = [
 export const LATE = [
   'IT IS YOU, AT THIS HOUR.',
   'THE RECORD IS STILL GOING. ASK.',
+];
+
+// You just came off a cabinet — the browser said so, and the badge in that
+// game's corner is probably how you got here. He does not pretend not to
+// notice. This replaces the greeting entirely rather than being bolted on
+// after it: two lines is the ceiling (see LATE), and a player who has just
+// played something has a subject already.
+//
+// It is the shortest path this floor has between finishing a run and saying
+// something about it — the note that follows files under THAT game, so a
+// thought caught while it is still warm lands where it is useful.
+export const BACK_FROM = [
+  'STRAIGHT OFF {x}, THEN.',
+  'WHAT DID IT DO TO YOU?',
 ];
 
 // He came back on his own. Fires when you sit at the counter and pick
@@ -855,6 +876,9 @@ export const MISSES = [
 // one file and not two.
 export const UI = {
   CUE: 'TOKO IS AT THE COUNTER',
+  // The closed bar, when you have just walked off a cabinet. The whole point
+  // of knowing where you came from is that it is visible BEFORE you open him.
+  CUE_FROM: 'HOW WAS {x}?',
   TALK: 'TALK',
   HINT: '1-9 PICK \u00b7 TYPE TO TALK \u00b7 ESC LEAVE',
   LEAVE: 'LEAVE',
@@ -944,8 +968,7 @@ export function L(key) {
       GREETING, LATE, ASIDES, MISSES, RETURNING, NOTED, REMEMBERED,
       CRY_A: CRY.a, SEEN_NOTHING, SEEN_SOMETHING, UI,
       CHANGED_NONE, CHANGED_YOURS, ABOUT_UNKNOWN, GAME_NOTES, CHANGED,
-      FAVOURITES, FAVE_UNKNOWN,
-      FAVOURITES, FAVE_UNKNOWN,
+      FAVOURITES, FAVE_UNKNOWN, BACK_FROM,
     };
   }
   // `p ? p[key] : undefined`, NOT `p && p[key]` — the second yields null when

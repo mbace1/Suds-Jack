@@ -12,10 +12,22 @@
 // covers the HUD, and under prefers-reduced-motion it paints one still frame
 // and stops.
 //
+// `counter: true` is the one every signed game uses: the badge becomes a link
+// to the counter at the top of the arcade (`../#toko`), so the signature is
+// not just a stamp — it is the way to say something about the game you are
+// standing in, from inside it.
+//
 // Rules it enforces so nobody has to remember them:
 //   · 44px minimum whenever it is clickable (tap-target floor)
 //   · z-index 4 — under the game's HUD, over the game canvas
 //   · safe-area insets, so it is never tucked under a phone notch
+//   · A LINK ONLY WHERE THERE IS A CURSOR. Under a thumb the badge stays
+//     inert, because bottom-left is where half these games put the left
+//     stick, and a 44px anchor sitting on it would eat the touch that starts
+//     a run. Touch already has a way out — the HOME button hub/shell.js puts
+//     in the opposite corner — and a shortcut is not worth breaking movement
+//     for. `(pointer: fine)` is the test: a cursor in a corner is not a
+//     thumb on one.
 
 import { Surface } from './surface.js';
 import { TOKO, VOICE } from './palette.js';
@@ -29,7 +41,8 @@ export function sign(opts = {}) {
   const {
     corner = 'bottom-left',
     size = 44,
-    href = null,
+    counter = false,           // link the badge to the counter on the hub
+    href = counter ? new URL('../#toko', location.href).href : null,
     ground = TOKO.MAGENTA,
     ink = TOKO.PAPER,
     opacity = 0.9,
@@ -37,17 +50,38 @@ export function sign(opts = {}) {
     glitch = false,        // opt-in: most pages want the mark to just sit there
     inset = 12,
     parent = document.body,
-    label = `${VOICE.company} — ${VOICE.cry}`,
+    label = counter
+      ? `${VOICE.artistRomaji} — ${VOICE.company}`
+      : `${VOICE.company} — ${VOICE.cry}`,
   } = opts;
 
   unsign();
 
-  const host = document.createElement(href ? 'a' : 'div');
+  // A cursor, not a thumb. See the note at the top: on a touchscreen the
+  // badge stays a picture, because the corner it sits in belongs to the game.
+  const cursor = typeof matchMedia !== 'function' || matchMedia('(pointer: fine)').matches;
+  const live = !!href && cursor;
+
+  const host = document.createElement(live ? 'a' : 'div');
   host.className = 'toko-signature';
-  if (href) {
+  if (live) {
     host.href = href;
     host.title = label;
     host.setAttribute('aria-label', label);
+    // Navigate on pointerup, not click — the same trap hub/shell.js hit.
+    // These games preventDefault every touch outside their own UI, and a
+    // cancelled touchstart takes the synthesised click with it. The href
+    // stays: middle-click and open-in-new-tab keep working.
+    let leaving = false;
+    const go = (e) => {
+      if (leaving || (e.type === 'pointerup' && e.button > 0)) return;
+      leaving = true;
+      e.preventDefault();
+      location.href = href;
+    };
+    host.addEventListener('pointerup', go);
+    host.addEventListener('touchend', go);
+    host.addEventListener('click', (e) => { if (leaving) e.preventDefault(); });
   }
 
   const [vert, horiz] = corner.split('-');
@@ -59,14 +93,14 @@ export function sign(opts = {}) {
     zIndex: '4',
     lineHeight: '0',
     opacity: String(opacity),
-    pointerEvents: href ? 'auto' : 'none',
+    pointerEvents: live ? 'auto' : 'none',
     display: 'grid', placeItems: 'center',
     [vert === 'top' ? 'top' : 'bottom']: `max(${inset}px, env(safe-area-inset-${vert === 'top' ? 'top' : 'bottom'}))`,
     [horiz === 'right' ? 'right' : 'left']: `max(${inset}px, env(safe-area-inset-${horiz === 'right' ? 'right' : 'left'}))`,
   });
   parent.appendChild(host);
 
-  const scr = new Surface(host, px, px, href ? {} : { label });
+  const scr = new Surface(host, px, px, live ? {} : { label });
 
   scr.loop((t) => {
     scr.clear();
