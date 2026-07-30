@@ -36,7 +36,7 @@
     "from": "VERSIONS.md"
   },
   "radiofree": {
-    "v": 30,
+    "v": 31,
     "from": "cache token"
   },
   "tinyhawk": {
