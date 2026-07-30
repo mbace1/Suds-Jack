@@ -6,12 +6,12 @@
 // art.js and a cabinet appears. Feedback is the same panel everywhere, tagged
 // with which game it came from, and goes out through hub/feedback.js.
 
-import { GAMES, SKETCHES } from './games.js?v=5';
-import { drawMarquee } from './art.js?v=7';
-import * as feedback from './feedback.js?v=9';
+import { GAMES, SKETCHES } from './games.js?v=10';
+import { drawMarquee } from './art.js?v=10';
+import * as feedback from './feedback.js?v=13';
 import * as topics from './topics.js?v=2';
-import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=4';
-import { watchPad, padPresent } from './pad.js?v=5';
+import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=6';
+import { watchPad, padPresent } from './pad.js?v=9';
 
 const el = (tag, cls = '', text = '') => {
   const e = document.createElement(tag);
@@ -597,14 +597,23 @@ function goTo(id, opts = {}) {
   return true;
 }
 
+// Fragments this page does not own. One entry, and it is the counter.
+const THEIRS = new Set(['toko']);
+
 function openFromHash({ jump = false } = {}) {
   const raw = decodeURIComponent(location.hash.slice(1));
   if (!raw) return;
   const [id, what] = raw.split('/');
   const game = GAMES.find(g => g.id === id);
-  // a link to a cabinet that no longer exists should not leave a dead address
-  // in the bar for the next person who copies it
-  if (!game) { setHash(''); return; }
+  // THE HASH IS NOT OURS ALONE. `#toko` opens the counter at the top of the
+  // page — every badge in every signed game links to `/#toko` — and this
+  // handler used to wipe any fragment it did not recognise as a cabinet.
+  // hub.js runs first, so the counter's own reader found an empty hash and
+  // never opened: the link had been dead the whole time it was documented as
+  // working, because the gate for it runs on the brand board, where hub.js is
+  // not. A hash somebody else answers to is named here; anything else is still
+  // a dead cabinet link and still gets tidied away.
+  if (!game) { if (!THEIRS.has(id)) setHash(''); return; }
   goTo(id, { jump });
   if (what === 'feedback') openFeedback(game.title, game.id, game.accent);
 }

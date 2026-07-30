@@ -88,6 +88,25 @@ number before anyone starts logging for it and switches to the release number th
 they do. The cabinets fetch that file, so shipping one game does not mean redeploying the
 arcade. **Run it at deploy time** — against the deployed tree, which is the only place
 every project exists.
+**Deploying is `node scripts/deploy-hub.mjs <siteRoot> [--dry]`, never a hand-copy.**
+Three bugs in one session were the same bug: a number in one file disagreeing with a
+number in another (a precache list a token behind the page — an arcade that loads online
+and is blank on a plane; an `index.html` two features back, so the language switch had no
+ids to write into; tokens picked by hand, so a file could change without its number
+moving). The rule that removes the class is **one token per module, bumped when and only
+when its bytes change, and written into every reference by the script** — including each
+game's `../hub/shell.js` tag, which is how sixteen pages were found pinned to shells as
+old as `?v=1`. It copies only what this branch owns (`games.js`/`art.js` are the site's —
+overwriting them deletes a cabinet), derives `sw.js`'s SHELL from the page and `hub.js`
+via `scripts/sw-shell.mjs` (run that alone to keep the branch's own worker honest; the
+smoke gate asserts it), regenerates `AnotherHUB/`, and puts back any `<script>` block the
+site has and this branch does not — that is how the counter mount survives.
+**It will not overwrite a file the site has moved on its own**: gh-pages is edited from
+more than one direction, and a plain byte comparison says *that* two copies differ, never
+*which way*. So it asks whether this branch has ever HELD the site's bytes (tokens
+stripped, since a deployed file has been renumbered); if not, that is somebody else's
+work, it is left alone, and the run stops and tells you to bring it back first. It found
+three files that way on its first real run. **Deploys never merge.**
 `hub/feedback.js` reuses the transport the games already ship (`scripts/feedback-sheet.gs`
 on `gh-pages`): a `SHEET_ENDPOINT` Apps Script if pasted in — unlimited, but `no-cors`, so
 its answer cannot be read and that path reports **`sent-blind`**, never `sent` — otherwise

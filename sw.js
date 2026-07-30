@@ -25,13 +25,13 @@ const CACHE = `suds-hub-${VERSION}`;
 const SHELL = [
   './',
   './index.html',
-  './hub/art.js?v=7',
-  './hub/feedback.js?v=9',
-  './hub/games.js?v=5',
+  './hub/art.js?v=10',
+  './hub/feedback.js?v=13',
+  './hub/games.js?v=10',
   './hub/hub.css?v=13',
   './hub/hub.js?v=14',
-  './hub/i18n.js?v=4',
-  './hub/pad.js?v=5',
+  './hub/i18n.js?v=6',
+  './hub/pad.js?v=9',
   './hub/topics.js?v=2',
 ];
 
