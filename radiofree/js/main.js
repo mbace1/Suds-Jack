@@ -1,13 +1,13 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=30';
-import { Post, Reader } from './codec.js?v=30';
-import { Package } from './package.js?v=30';
-import { SECTORS, STORIES, COPY, ARCHIVED, storyCopy, parseLine, loadWire, WIRE_INFO } from './stories.js?v=30';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=30';
-import * as audio from './audio.js?v=30';
-import { PixelScreen } from './screen.js?v=30';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=30';
+import { PAL, SECTOR_COLOR } from './palette.js?v=31';
+import { Post, Reader } from './codec.js?v=31';
+import { Package } from './package.js?v=31';
+import { SECTORS, STORIES, COPY, ARCHIVED, storyCopy, parseLine, loadWire, WIRE_INFO } from './stories.js?v=31';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=31';
+import * as audio from './audio.js?v=31';
+import { PixelScreen } from './screen.js?v=31';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=31';
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
