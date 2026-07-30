@@ -208,6 +208,48 @@ s.listen(0, '127.0.0.1', async () => {
   await p.waitForFunction(() => window.__sj.state.mode === 'play', null, { timeout: 5000 }).catch(() => {});
   ok('again restarts', await p.evaluate(() => window.__sj.state.mode) === 'play');
 
+  // A PAD ON ITS OWN has to be able to reach a run. The menu and the recap
+  // listen for a pointer or Enter; the pad was only polled inside the play
+  // branch, so a controller could ride the rim but never start. Reload for a
+  // clean menu and drive a synthetic pad through both screens.
+  await p.goto(base + '/sudsjack/', { waitUntil: 'networkidle' });
+  await p.evaluate(() => {
+    window.__pad = { id: 'test', index: 0, connected: true, mapping: 'standard',
+      axes: [0, 0, 0, 0],
+      buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })) };
+    Object.defineProperty(navigator, 'getGamepads', {
+      configurable: true, value: () => [window.__pad],
+    });
+  });
+  await p.waitForFunction(() => window.__sj.state.mode === 'menu', null, { timeout: 5000 });
+  const tap = async (i) => {
+    await p.evaluate(i => { window.__pad.buttons[i].pressed = true; }, i);
+    await p.waitForTimeout(120);
+    await p.evaluate(i => { window.__pad.buttons[i].pressed = false; }, i);
+    await p.waitForTimeout(120);
+  };
+  await tap(0);
+  const padStarted = await p.waitForFunction(() => window.__sj.state.mode === 'play',
+    null, { timeout: 5000 }).then(() => true).catch(() => false);
+  ok('a pad alone starts a run from the menu', padStarted);
+
+  // ...and that same press must not still be sitting in the dive queue, or
+  // Jack leaves the mouth before you have seen the level.
+  ok('and the starting press is not also a dive',
+    await p.evaluate(() => !window.__sj.player.diving && window.__sj.player.depth < 0.02));
+
+  // The recap: a press spent diving during play must not restart the run
+  // under you the instant you die.
+  await p.evaluate(() => { window.__sj.state.lives = 1; window.__sj.player.mercy = 0; window.__sj.debug.give('grime'); });
+  await p.waitForFunction(() => window.__sj.state.mode === 'over', null, { timeout: 5000 }).catch(() => {});
+  await p.waitForTimeout(300);
+  ok('the recap stays up until the pad is pressed again',
+    await p.evaluate(() => window.__sj.state.mode) === 'over');
+  await tap(9);
+  const padAgain = await p.waitForFunction(() => window.__sj.state.mode === 'play',
+    null, { timeout: 5000 }).then(() => true).catch(() => false);
+  ok('and Start restarts from the recap', padAgain);
+
   // the shell and the signature
   ok('it has a way home', await p.locator('.arcade-home').count() === 1);
   ok('and it is signed', await p.locator('.toko-signature').count() === 1);

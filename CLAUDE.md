@@ -159,7 +159,13 @@ could walk through** (the bay was read *after* the step, so the clamp asked the 
 already reached whether you were allowed there), a jump lifted **along the floor's normal**
 (which swings 90° crossing a ridge and threw Jack out of the channel), and **outer bays that
 were not bays** (end ramps to lip height ate half of the first and last).
-`node sudsjack/test/smoke.cjs` = 37 checks: boot, the director, the
+One more of the same family, on the way in rather than the look: **the pad was polled
+inside the play branch**, below the `mode !== 'play'` early return, so a controller could
+ride the rim but could not reach it — the menu and the recap take a pointer or Enter and
+nothing else. Polled in every mode now, A or Start is a way in, and because A is *also*
+dive the same press had to be drained at both edges of a run (`clearPending()`) or it
+started you mid-dive and restarted you off the recap.
+`node sudsjack/test/smoke.cjs` = 41 checks: boot, the director, the
 lane-lock during a dive, collection, the chain, damage, mercy frames, the level shapes,
 game over, the way home and the signature — all driven off **game state, not the wall
 clock**, because a sandbox with no GPU renders this at a handful of frames a second.
