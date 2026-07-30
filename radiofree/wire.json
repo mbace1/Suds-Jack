@@ -1,7 +1,7 @@
 {
   "version": 1,
   "station": "Radio Free Helsinki",
-  "updated": "2026-07-29",
+  "updated": "2026-07-30",
   "keep": 5,
   "sectors": [
     {
@@ -161,6 +161,20 @@
       "visual": "moon",
       "broll": "moon",
       "filed": "2026-07-29"
+    },
+    {
+      "id": "mild-winter",
+      "sector": "RFH",
+      "visual": "heat",
+      "broll": "winterhall",
+      "filed": "2026-07-30"
+    },
+    {
+      "id": "icebreaker",
+      "sector": "RFH",
+      "visual": "sea",
+      "broll": "packice",
+      "filed": "2026-07-30"
     }
   ],
   "copy": {
@@ -354,9 +368,9 @@
       },
       "four-hundred": {
         "slug": "KAMPPI",
-        "head": "Biggies & Birds Inc opens office that has already created four hundred jobs",
+        "head": "Piggies and Birds Inc opens office that has already created four hundred jobs",
         "lines": [
-          "Biggies & Birds Inc {{cut the ribbon on its Kamppi campus this morning|opened a floor with eleven desks on it}}, a site the company says {{has created four hundred jobs|will create four hundred jobs, at some point, if things go the way it hopes}}.",
+          "Piggies and Birds Inc {{cut the ribbon on its Kamppi campus this morning|opened a floor with eleven desks on it}}, a site the company says {{has created four hundred jobs|will create four hundred jobs, at some point, if things go the way it hopes}}.",
           "The figure {{appears in the impact section of the press pack|is written in the past tense inside a document about the future}}, alongside a note that it {{will be reviewed in due course|will not be reviewed}}."
         ],
         "technique": "FUTURE TENSE AS FACT",
@@ -428,6 +442,28 @@
         "technique": "COMPARISON WITHOUT A BASE",
         "decodeNote": "Larger than what? A comparison with no baseline is a number that cannot be wrong, because there is nothing to check it against. The chimney did all the work — put anything beside an object of known size and the eye supplies a scale the sentence never had to earn. This is the moon illusion, sold as a measurement.",
         "tell": "Larger than what, exactly? If the sentence never says, the comparison is decoration."
+      },
+      "mild-winter": {
+        "slug": "KIRKKONUMMI",
+        "head": "Data hall takes credit for mild winter it did not cause",
+        "lines": [
+          "Rack & Ruin Oy notes that {{average winter temperatures in the municipality have risen since its campus opened|the winter got warmer at roughly the same time the building did}}, and calls the result {{a measurable community benefit|a coincidence it would like the credit for}}.",
+          "The company {{did not model any other factor|did not mention the other eleven}}. The winter {{has been mild across the region|was mild in eight municipalities that do not have a data hall}}."
+        ],
+        "technique": "IMPLIED CAUSATION",
+        "decodeNote": "Two things happened near each other in time and the sentence puts them in one clause. It never says caused — it does not have to. Word order does the work, and a reader who would reject the claim outright will accept the arrangement without noticing they were handed one.",
+        "tell": "Would this still be true if the two things had happened in the other order? Ask what else changed in the same window."
+      },
+      "icebreaker": {
+        "slug": "GULF OF BOTHNIA",
+        "head": "Icebreaker trial a success, ministry says on page one; it is stuck",
+        "lines": [
+          "Ka-Boom Nordics Oy's new icebreaker {{completed its acceptance trial|got out of the harbour}} on Thursday, which the ministry calls {{a milestone for the programme|a milestone}}.",
+          "{{The vessel remains on station pending a routine assessment|It is stuck}}. That sentence {{appears in paragraph nine|appears after everybody has stopped reading}}."
+        ],
+        "technique": "BURIED LEDE",
+        "decodeNote": "Nothing here is untrue and nothing has been left out. The news is simply in paragraph nine, where a release puts the thing it must disclose and would rather you did not carry. Order is an editorial claim about importance, and it is the one claim a reader almost never audits.",
+        "tell": "Read the last paragraph first. If that is the story, you were handed the running order for a reason."
       }
     },
     "fi": {
@@ -620,9 +656,9 @@
       },
       "four-hundred": {
         "slug": "KAMPPI",
-        "head": "Biggies & Birds Inc avasi toimiston, joka on jo luonut neljäsataa työpaikkaa",
+        "head": "Piggies and Birds Inc avasi toimiston, joka on jo luonut neljäsataa työpaikkaa",
         "lines": [
-          "Biggies & Birds Inc {{leikkasi tänä aamuna nauhan Kampin kampuksellaan|avasi kerroksen, jossa on yksitoista työpöytää}}, ja yhtiön mukaan kohde {{on luonut neljäsataa työpaikkaa|luo neljäsataa työpaikkaa joskus, jos asiat menevät toivotulla tavalla}}.",
+          "Piggies and Birds Inc {{leikkasi tänä aamuna nauhan Kampin kampuksellaan|avasi kerroksen, jossa on yksitoista työpöytää}}, ja yhtiön mukaan kohde {{on luonut neljäsataa työpaikkaa|luo neljäsataa työpaikkaa joskus, jos asiat menevät toivotulla tavalla}}.",
           "Luku {{esiintyy tiedotepaketin vaikuttavuusosiossa|on kirjoitettu menneessä aikamuodossa asiakirjaan, joka käsittelee tulevaisuutta}}, ja sen vieressä lukee, että se {{tarkistetaan aikanaan|jää tarkistamatta}}."
         ],
         "technique": "TULEVA AIKA FAKTANA",
@@ -694,6 +730,28 @@
         "technique": "VERTAILU ILMAN VERTAILUKOHTAA",
         "decodeNote": "Suurempi kuin mikä? Vertailu ilman vertailukohtaa on luku, joka ei voi olla väärä, koska mitään ei ole mihin sitä verrata. Piippu teki koko työn — aseta mikä tahansa tunnetun kokoisen esineen viereen, ja silmä tarjoaa mittakaavan, jota lauseen ei koskaan tarvinnut ansaita. Tämä on kuuharha myytynä mittauksena.",
         "tell": "Suurempi kuin mikä, tarkalleen? Jos lause ei koskaan sano sitä, vertailu on koriste."
+      },
+      "mild-winter": {
+        "slug": "KIRKKONUMMI",
+        "head": "Konesali ottaa kunnian leudosta talvesta, jota se ei aiheuttanut",
+        "lines": [
+          "Rack & Ruin Oy huomauttaa, että {{kunnan keskimääräiset talvilämpötilat ovat nousseet kampuksen avaamisen jälkeen|talvi lämpeni suunnilleen samaan aikaan kuin rakennus valmistui}}, ja kutsuu tulosta {{mitattavaksi hyödyksi yhteisölle|sattumaksi, josta se haluaisi kunnian}}.",
+          "Yhtiö {{ei mallintanut muita tekijöitä|ei maininnut niitä yhtätoista muuta}}. Talvi {{on ollut leuto koko alueella|oli leuto kahdeksassa kunnassa, joissa ei ole konesalia}}."
+        ],
+        "technique": "VIHJATTU SYY-SEURAUS",
+        "decodeNote": "Kaksi asiaa tapahtui ajallisesti lähekkäin, ja lause panee ne samaan virkkeeseen. Se ei koskaan sano «aiheutti» — sen ei tarvitse. Sanajärjestys tekee työn, ja lukija joka torjuisi väitteen suoraan sanottuna hyväksyy järjestyksen huomaamatta, että hänelle annettiin sellainen.",
+        "tell": "Pitäisikö tämä paikkansa, jos asiat olisivat tapahtuneet toisessa järjestyksessä? Kysy mikä muu muuttui samaan aikaan."
+      },
+      "icebreaker": {
+        "slug": "PERÄMERI",
+        "head": "Jäänmurtajan koeajo onnistui, kertoo ministeriö ensimmäisellä sivulla; alus on jumissa",
+        "lines": [
+          "Ka-Boom Nordics Oy:n uusi jäänmurtaja {{suoritti hyväksymiskoeajonsa|pääsi ulos satamasta}} torstaina, mitä ministeriö kutsuu {{ohjelman merkkipaaluksi|merkkipaaluksi}}.",
+          "{{Alus pysyy asemapaikallaan rutiiniarvioinnin ajan|Se on jumissa}}. Tuo virke {{esiintyy yhdeksännessä kappaleessa|esiintyy sen jälkeen kun kaikki ovat lopettaneet lukemisen}}."
+        ],
+        "technique": "HAUDATTU KÄRKI",
+        "decodeNote": "Mikään tässä ei ole valhetta eikä mitään ole jätetty pois. Uutinen on vain yhdeksännessä kappaleessa, minne tiedote panee sen mikä on pakko kertoa mutta mitä ei toivota kannettavan eteenpäin. Järjestys on toimituksellinen väite tärkeydestä, ja se on se väite jota lukija ei lähes koskaan tarkista.",
+        "tell": "Lue viimeinen kappale ensin. Jos se on juttu, sinulle annettiin tämä järjestys syystä."
       }
     },
     "ja": {
@@ -886,9 +944,9 @@
       },
       "four-hundred": {
         "slug": "カンピ",
-        "head": "Biggies & Birds Inc、すでに四百人の雇用を生んだ拠点を開設",
+        "head": "Piggies and Birds Inc、すでに四百人の雇用を生んだ拠点を開設",
         "lines": [
-          "Biggies & Birds Inc は今朝、{{カンピのキャンパスで開所式を行った|机が十一台ある一フロアを開けた}}。同社によれば、この拠点は{{四百人の雇用を生んでいる|うまくいけばいずれ四百人の雇用を生む}}という。",
+          "Piggies and Birds Inc は今朝、{{カンピのキャンパスで開所式を行った|机が十一台ある一フロアを開けた}}。同社によれば、この拠点は{{四百人の雇用を生んでいる|うまくいけばいずれ四百人の雇用を生む}}という。",
           "この数字は{{発表資料の「実績」欄に記載されている|未来についての文書に、完了した出来事として書かれている}}。その横には{{追って検証される予定|検証されない}}と添えられている。"
         ],
         "technique": "未来形の既成事実化",
@@ -960,6 +1018,28 @@
         "technique": "基準のない比較",
         "decodeNote": "何より大きいのか。基準のない比較は、照合する相手がいないので、決して間違いになれない数字である。仕事をしたのは煙突のほうだ。大きさの分かっているものの隣に何かを置けば、目のほうが尺度を補ってくれる——文がその尺度を稼ぐ必要は一度もない。これは月の錯視を、測定として売っているだけである。",
         "tell": "正確には何より大きいのか。文がそれを言わないなら、その比較は飾りである。"
+      },
+      "mild-winter": {
+        "slug": "キルッコヌンミ",
+        "head": "データホール、自分が起こしていない暖冬の手柄を主張",
+        "lines": [
+          "Rack & Ruin Oy は、{{同社キャンパスの開設以降、自治体の冬の平均気温が上昇している|建物ができたのとだいたい同じ頃に、冬が暖かくなった}}と指摘し、これを{{測定可能な地域貢献|手柄にしたい偶然}}と呼んでいる。",
+          "同社は{{他の要因をモデル化していない|残り十一の要因に触れていない}}。冬は{{地域全体で暖かかった|データホールのない八つの自治体でも暖かかった}}。"
+        ],
+        "technique": "因果のほのめかし",
+        "decodeNote": "二つの出来事が時間的に近くで起き、文はそれをひとつの節に収める。「〜が原因で」とは決して言わない。言う必要がない。仕事をするのは語順であり、はっきり主張されれば退けたはずの読者が、並べ方のほうは、手渡されたことにも気づかずに受け取ってしまう。",
+        "tell": "順番が逆でもこの文は成り立つか。同じ期間に他に何が変わったのかを訊く。"
+      },
+      "icebreaker": {
+        "slug": "ボスニア湾",
+        "head": "砕氷船の試験は成功、と省は一面で発表——船は動けない",
+        "lines": [
+          "Ka-Boom Nordics Oy の新造砕氷船は木曜、{{受領試験を完了した|港から出られた}}。省はこれを{{計画にとっての節目|節目}}と呼んでいる。",
+          "{{同船は定例評価のため現在の位置にとどまっている|動けなくなっている}}。この一文は{{第九段落に置かれている|全員が読むのをやめたあとに置かれている}}。"
+        ],
+        "technique": "本題を埋める",
+        "decodeNote": "嘘は一つもなく、伏せられたものも一つもない。ニュースがただ第九段落にあるだけだ——発表資料が、開示はしなければならないが運ばれたくはないものを置く場所である。順序とは重要さについての編集上の主張であり、読者がほぼ絶対に検証しない唯一の主張でもある。",
+        "tell": "最後の段落から読む。それが本題なら、この順番は理由があって手渡されている。"
       }
     }
   }

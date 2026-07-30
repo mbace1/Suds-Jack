@@ -28,8 +28,8 @@
 // showing" — and a saturated orange lamp would spend that vocabulary on
 // scenery. Nothing here approaches PAL.AMBER_HOT.
 
-import { PAL } from './palette.js?v=30';
-import { mix, shade, bayer } from './screen.js?v=30';
+import { PAL } from './palette.js?v=31';
+import { mix, shade, bayer } from './screen.js?v=31';
 
 export const PLATE_W = 144, PLATE_H = 276;
 const W = PLATE_W, H = PLATE_H;
@@ -714,8 +714,93 @@ function moon(scr, t, d) {
   amberWash(c, d);
 }
 
+
+// ── WINTERHALL — a data hall on a frozen field, steaming ───────────
+function winterhallBase(c) {
+  ramp(c, 0, 120, '#0a1c33', '#1c3f5e');                  // winter night sky
+  for (let i = 0; i < 40; i++) {                          // stars
+    P(c, rnd(i * 1.9) * W, rnd(i * 4.1) * 100, 1, 1, '#9fc4d8');
+  }
+  for (let i = 0; i < 3; i++) {                           // a low aurora band
+    const y = 34 + i * 9;
+    for (let x = 0; x < W; x += 2) {
+      const k = Math.sin(x * 0.05 + i) * 6;
+      P(c, x, y + k, 2, 3 - i, i ? '#1c5c4a' : '#2f8a68');
+    }
+  }
+  ramp(c, 120, 176, '#25455f', '#3b6480');                // the frozen bay
+  P(c, 0, 118, W, 2, '#5f8ba4');
+  ramp(c, 176, H, '#c9d9e4', '#e8f0f5');                  // snow
+  for (let i = 0; i < 60; i++) {                          // drift texture
+    P(c, rnd(i * 2.7) * W, 180 + rnd(i * 5.3) * 90, 6, 2, '#b3c6d4');
+  }
+  // the hall: long, low, and almost windowless, which is what they look like
+  P(c, 14, 128, 116, 44, '#39505f');
+  P(c, 14, 126, 116, 4, '#5a7789');
+  for (let x = 20; x < 126; x += 9) P(c, x, 140, 5, 4, '#7fd0b4');
+  for (let x = 18; x < 128; x += 26) P(c, x, 158, 18, 10, '#2b3d49');
+  P(c, 14, 170, 116, 3, '#1d2c36');
+  P(c, 118, 104, 8, 26, '#495f6e');                       // the stack
+  P(c, 117, 101, 10, 4, '#68808f');
+}
+
+function winterhall(scr, t, d) {
+  const c = scr.ctx;
+  c.drawImage(base('winterhall', winterhallBase), 0, 0);
+  // steam off the stack and the roof line — the live layer
+  for (let i = 0; i < 26; i++) {
+    const a = (t * 14 + i * 11) % 110;
+    const x = 122 + Math.sin((a + i) * 0.12) * 9 - a * 0.06;
+    P(c, x, 100 - a * 0.7, 5 + a * 0.05, 3, i % 3 ? '#7d97a8' : '#a9c0cc');
+  }
+  for (let i = 0; i < 10; i++) {
+    const a = (t * 9 + i * 17) % 60;
+    P(c, 24 + i * 11, 124 - a * 0.5, 4, 2, '#6d8595');
+  }
+  if (d > 0.15) { halo(c, 72, 150, 46, PAL.AMBER_DIM, 0.3 * d); }
+  amberWash(c, d);
+}
+
+// ── PACKICE — the winter gulf, floes, and a ship that is not moving ─
+function packiceBase(c) {
+  ramp(c, 0, 104, '#123a52', '#c98a52');                  // a low winter sun
+  ramp(c, 104, H, '#7f9db0', '#c2d6e2');                  // the ice sheet
+  P(c, 0, 102, W, 3, '#e8c48c');
+  for (let i = 0; i < 80; i++) {                          // floes, hashed
+    const x = rnd(i * 1.7) * W, y = 108 + rnd(i * 3.9) * 160;
+    const w2 = 8 + rnd(i * 6.1) * 22;
+    P(c, x, y, w2, 3 + rnd(i * 8.3) * 4, '#eef5fa');
+    P(c, x, y + 4, w2, 2, '#6f8b9e');
+  }
+  P(c, 84, 92, 34, 12, '#0d2a3c');                        // the far shore
+}
+
+function packice(scr, t, d) {
+  const c = scr.ctx;
+  c.drawImage(base('packice', packiceBase), 0, 0);
+  const sx = 46, sy = 150 + Math.sin(t * 0.5) * 1;        // she is not going far
+  P(c, sx, sy, 54, 14, '#2b3b46');                        // hull
+  P(c, sx + 54, sy + 2, 8, 10, '#2b3b46');                // bow
+  P(c, sx + 12, sy - 14, 20, 15, '#e8ecef');              // superstructure
+  P(c, sx + 15, sy - 11, 5, 4, '#ffd07a');
+  P(c, sx + 24, sy - 11, 5, 4, '#ffd07a');
+  P(c, sx + 34, sy - 22, 5, 23, '#c8484a');               // funnel
+  P(c, sx - 4, sy + 12, 66, 3, '#16242c');
+  for (let i = 0; i < 14; i++) {                          // stack smoke
+    const a = (t * 10 + i * 9) % 66;
+    P(c, sx + 34 + Math.sin((a + i) * 0.15) * 7 - a * 0.05, sy - 24 - a * 0.7,
+      4 + a * 0.05, 3, i % 3 ? '#5c6d78' : '#8ba0ac');
+  }
+  if (d > 0.2) {
+    P(c, sx - 10, sy + 20, 74, 2, PAL.AMBER);             // she has not moved
+    P(c, sx - 10, sy + 18, 2, 6, PAL.AMBER_HOT);
+    P(c, sx + 62, sy + 18, 2, 6, PAL.AMBER_HOT);
+  }
+  amberWash(c, d);
+}
+
 const PLATES = { esplanadi, kamppi, station, harbour, gulf, suomenlinna, katajanokka,
-                 beach, moon };
+                 beach, moon, winterhall, packice };
 export const PLATE_KEYS = Object.keys(PLATES);
 
 export function drawPlate(key, scr, t, decode) {
