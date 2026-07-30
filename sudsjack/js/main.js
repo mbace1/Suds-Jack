@@ -45,8 +45,22 @@ const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 26
 // lines, from above it is a flat ribbon, and only from in here is it a place
 // you are lying in. Jack sits at the bottom of the frame with a little room
 // under him and the walls sweep up past both edges.
-camera.position.set(0, -3.4, 16.5);
-camera.lookAt(0, -6.4, -40);
+//
+// The ridged channel is the exception and gets its own seat. Its five bays
+// are spread across the same width as one half-pipe, so from down in the
+// middle one you see your own bay and two edges — and the whole level is
+// about deciding which bay to be in, which you cannot do if you cannot see
+// them. It sits back and up until all five read.
+const SEATS = {
+  default: { pos: [0, -3.4, 16.5], look: [0, -6.4, -40] },
+  gutters: { pos: [0, 2.4, 22], look: [0, -7.4, -30] },
+};
+function seat(shape) {
+  const s = SEATS[shape] || SEATS.default;
+  camera.position.set(...s.pos);
+  camera.lookAt(...s.look);
+}
+seat('pipe');
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
@@ -111,8 +125,11 @@ function startLevel(n) {
   const shape = SHAPE_NAMES[(n - 1) % SHAPE_NAMES.length];
   // every third web leans off-axis, so a shape you have seen is still a
   // different room the second time round
-  tube.setShape(shape, n % 3 === 0 ? [0.22, -0.14] : [0, 0]);
+  // no bend on the ridged one: a leaning channel plus five bays is two
+  // things to read at once, and the bays are the level
+  tube.setShape(shape, n % 3 === 0 && shape !== 'gutters' ? [0.22, -0.14] : [0, 0]);
   tube.tint(webTint(n));
+  seat(shape);
   toast(`LEVEL ${n} · ${shape.toUpperCase()}`);
   paintHud();
 }
@@ -166,7 +183,13 @@ function director(dt) {
     state.nextBubble = bubbleRate(state.level) * (0.7 + Math.random() * 0.6);
   }
   if (state.nextGrime <= 0) {
-    const lane = awayFrom(player.lane, 4, n);
+    // On the ridged channel grime cannot cross a peak, so "away from you" is
+    // measured in BAYS: dropping it in your own bay is the only way it ever
+    // threatens you there, and dropping it in every other one is what makes
+    // the level a route rather than a hiding place.
+    const lane = tube.peaks.length
+      ? bayLane(Math.random() < 0.45 ? player.lane : Math.random() * n)
+      : awayFrom(player.lane, 4, n);
     risers.spawn('grime', lane, riserSpeed(state.level) * (0.7 + Math.random() * 0.3));
     state.nextGrime = grimeRate(state.level) * (0.7 + Math.random() * 0.7);
   }
@@ -175,6 +198,12 @@ function director(dt) {
 // No short way round in a channel, so distance is just distance. Falling back
 // to the FAR LIP rather than to "half a turn away" matters here: half a turn
 // does not exist, and the far lip is the one place guaranteed to be a walk.
+// a lane inside whichever bay `lane` falls in, at its far end from the middle
+function bayLane(lane) {
+  const [lo, hi] = tube.bayRange(lane);
+  return lo + Math.random() * (hi - lo);
+}
+
 function awayFrom(lane, minGap, n) {
   for (let i = 0; i < 12; i++) {
     const c = Math.floor(Math.random() * n);
@@ -200,7 +229,9 @@ function step(dt) {
 
   state.t += dt;
   input.pollGamepad();
-  player.move(input.spin(), dt);
+  const spin = input.spin();
+  player.move(spin, dt);
+  if (input.jump() && player.jump(spin)) audio.jump();
   if (input.dive() && player.dive()) audio.dive();
   player.update(dt);
 

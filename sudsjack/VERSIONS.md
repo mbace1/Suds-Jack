@@ -8,6 +8,53 @@ floor sending people at the unfinished one.
 The `?v=N` token in `index.html` tracks module-graph changes; this number is
 the public release. Bump both when shipping.
 
+## v3 — 2026-07-30
+
+**Five half-pipes in a row, and a jump to get between them.** (Owner's
+direction.)
+
+A new channel — `gutters`, level 3 — made of **five identical bays with a
+ridge between each**. The ridges are the point: they are the only thing in
+this game that stops you *riding* somewhere, so the level arrives with its own
+verb.
+
+- **The jump** (`↑` / `W`, pad `X`, flick up on touch). It commits your LANE
+  the way the dive commits your DEPTH — you pick a bay and you are going there
+  — and while you are off the floor **grime passes underneath you**. That
+  second part is what stops the verb being dead weight on the five levels with
+  no ridges in them: everywhere else, a jump is a dodge and a two-lane hop.
+- **Grime cannot cross a ridge either**, and it cannot jump. Each bay keeps
+  its own problem, so the level is a route rather than a hiding place — and
+  grime that cannot reach you sits in its bay in plain sight, which is a
+  threat you can plan around instead of one you react to.
+- The ridged channel gets **its own camera seat**, further back and higher.
+  From down in the middle bay you can see your own bay and two edges, and the
+  whole level is about deciding which bay to be in — which you cannot do if
+  you cannot see them.
+
+Three things it got wrong first, all found by looking at it:
+
+- **A wall you could walk through.** The bay you are in was read *after* the
+  step, so one frame of movement carried you over a ridge and the clamp then
+  asked the bay you had already arrived in whether you were allowed to be
+  there. It says yes. The bay is read before the step now.
+- **The jump lifted along the floor's normal**, which swings through ninety
+  degrees as you cross a ridge — so a jump threw Jack sideways out of the
+  channel halfway over. The channel opens upward; off the floor means up.
+- **Only three of the five bays were bays.** The two outer ends ramped up to
+  lip height to give the channel walls, and that ramp ate half of the first
+  and last bay — they read as big flat wings. All five are identical now, and
+  a ridge is half a bay deep rather than nearly a full one, so you can see the
+  bay you are jumping into. Four lanes to a bay, not three: at three the
+  cosine is sampled so coarsely that a bay draws as a V, and a bay you can
+  stand in three places in is a slot, not somewhere you move around.
+
+Level 3 also stopped being magenta. Toko's badge sits in that corner in the
+brand's own magenta, and two magentas on a screen make the signature look like
+part of the game.
+
+Smoke gate 28 → 37 checks.
+
 ## v2 — 2026-07-30
 
 **A half tunnel, and you lie on the floor of it.** (Owner's direction.)
