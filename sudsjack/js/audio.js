@@ -83,6 +83,9 @@ export class AudioKit {
 
   dive() { this._noise(0.2, 900, 1.2, 0.12); this._blip(300, 0.18, 'sine', 0.1, 0.5); }
 
+  // up, not down: the jump is the dive's opposite and has to sound like it
+  jump() { this._blip(340, 0.22, 'triangle', 0.16, 2.2); this._noise(0.1, 1500, 1.6, 0.05); }
+
   hit() {
     this._noise(0.36, 420, 0.8, 0.34);
     this._blip(120, 0.4, 'sawtooth', 0.24, 0.4);

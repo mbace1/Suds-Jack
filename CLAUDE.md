@@ -123,8 +123,17 @@ closed ring has no ends**, so you can always keep running, while a channel has t
 the lane at each one is somewhere you can be **cornered**. Lanes clamp instead of wrapping
 and grime has no short way round).
 **Every position in the game is `(lane, depth)`** — `tube.js` owns the only conversion to
-world space, which is what lets the channel change shape per level (pipe / trough / wave /
-drain / vee) with no game logic knowing: a bubble rises the same way up a vee as up a pipe. **The dive is the game**: standing at the mouth and taking what arrives is safe and
+world space, which is what lets the channel change shape per level (pipe / trough / gutters /
+wave / drain / vee) with no game logic knowing: a bubble rises the same way up a vee as up a
+pipe. **`gutters`** (level 3) is five identical half-pipes in a row with a **ridge** between
+each, and it is the one shape that brings a verb with it: a ridge is the only thing that
+stops you *riding* somewhere, so you **jump** it (`↑`/`W`, pad X, flick up). A jump commits
+your lane the way a dive commits your depth, and **grime passes under you while you are off
+the floor** — which is what stops the verb being dead weight on the five levels with no
+ridges. Grime cannot cross a ridge or jump either, so each bay keeps its own problem and the
+level is a route rather than a hiding place. That shape gets its own **camera seat** (`SEATS`
+in `main.js`), further back, because a level about choosing a bay fails if you cannot see the
+bays. **The dive is the game**: standing at the mouth and taking what arrives is safe and
 slow, meeting a bubble halfway down pays up to 3× and **locks your lane until you are
 back** (Flash Prince's commitment rule, on a 0.62s clock). **One bubble is lit at a time** —
 taking it raises the chain, letting it past resets it, and the *deepest* remaining bubble
@@ -145,7 +154,12 @@ channel (above the floor, below the lips) is it somewhere you are lying; and the
 at **0.82** ghosted the rails into a starburst (0.5). One more that was a control bug, not a
 look: **three of the five channel shapes ran right-to-left**, so on those levels pressing
 right moved you left and the claw drew upside down — the gate now asserts every shape's
-direction and floor angle. `node sudsjack/test/smoke.cjs` = 28 checks: boot, the director, the
+direction and floor angle. The ridges added three more of the same family: a **wall you
+could walk through** (the bay was read *after* the step, so the clamp asked the bay you had
+already reached whether you were allowed there), a jump lifted **along the floor's normal**
+(which swings 90° crossing a ridge and threw Jack out of the channel), and **outer bays that
+were not bays** (end ramps to lip height ate half of the first and last).
+`node sudsjack/test/smoke.cjs` = 37 checks: boot, the director, the
 lane-lock during a dive, collection, the chain, damage, mercy frames, the level shapes,
 game over, the way home and the signature — all driven off **game state, not the wall
 clock**, because a sandbox with no GPU renders this at a handful of frames a second.
@@ -657,7 +671,7 @@ sudsjack/       # Suds Jack — the rebuild: Bomb Jack's collection on Tempest's
     player.js   # the claw on the floor; the dive, and the lane-lock that pays for it
     things.js   # risers: bubbles (one lit) and grime (steps toward you); pops
     main.js     # scene, render stack, director, scoring, levels, HUD, states
-    input.js    # keys / pad / drag-the-rim touch, all feeding two getters
+    input.js    # keys / pad / drag-the-rim touch, all feeding three getters
     audio.js    # synth kit: pop, lit, miss, dive, hit, level, and a two-note bed
     palette.js  # soap: everything you want is cold and blooms, everything else is warm
   test/

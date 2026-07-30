@@ -47,6 +47,9 @@ export const PAL = {
 // job: a level you have seen before should not look identical the second time,
 // or you stop reading the web and start reading from memory.
 export function webTint(level) {
-  const hues = [0.55, 0.72, 0.86, 0.05, 0.32, 0.48];
+  // no magenta on level 3: Toko's badge sits in that corner in the brand's
+  // own magenta, and two magentas on one screen make the signature look like
+  // part of the game
+  const hues = [0.55, 0.72, 0.42, 0.05, 0.32, 0.86];
   return hues[(level - 1) % hues.length];
 }

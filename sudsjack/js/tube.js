@@ -67,12 +67,52 @@ const SHAPES = {
     const a = Math.PI + u * Math.PI;
     return [Math.cos(a) * 1.05, Math.sin(a) * (1.15 - u * 0.5)];
   },
+  // FIVE HALF-PIPES IN A ROW, with a peak between each (owner's direction).
+  // The peaks are the point: they are the only thing in this game that stops
+  // you RIDING somewhere, so the level comes with its own verb — you jump
+  // them. Each bay is its own little channel with its own problem in it, and
+  // getting to the next one is a decision instead of a walk.
+  //
+  // The peaks stop at 0.22 rather than reaching the lips: a peak level with
+  // the walls would read as five separate tunnels, and the whole appeal is
+  // seeing the bay you are about to jump into.
+  gutters: (u) => {
+    // FIVE IDENTICAL BAYS between six identical ridge tops. Both of those
+    // words are load-bearing:
+    //  · identical, because the first cut ramped the two outer ends up to
+    //    lip height to give the channel walls, and that ramp ate half of the
+    //    first and last bays — they read as big flat wings and there were
+    //    really only three U's in the middle.
+    //  · a ridge is half a bay deep. Taken nearly to the top it is a row of
+    //    spikes, and you cannot see the bay you are about to jump into.
+    const t = (u * BAYS) % 1;                       // where you are in a bay
+    const dip = -0.5 * (1 - Math.cos(t * Math.PI * 2));   // 0 at a ridge, -1 at a floor
+    return [-1 + u * 2, dip * 0.5 - 0.5];
+  },
 };
 
-export const SHAPE_NAMES = ['pipe', 'trough', 'wave', 'drain', 'vee'];
+// How many bays `gutters` has, and — with LANES_PER_BAY — where its peaks
+// fall. They sit on lane SEAMS rather than on lanes, so a peak is a line you
+// cannot cross rather than a square you cannot stand on: standing on top of
+// one would need a rule about what happens when you are on it, and there is
+// no good answer to that.
+export const BAYS = 5;
+// Four, not three. At three lanes a bay the cosine is sampled so coarsely
+// that each bay draws as a V instead of a U — and a bay you can only stand in
+// three places in is not somewhere you move around, it is a slot.
+export const LANES_PER_BAY = 4;
+
+// Which shapes have peaks, and where. Declared rather than detected: finding
+// local maxima in a cross-section also finds `wave`'s ripples, which are meant
+// to be texture underfoot and not walls.
+const PEAKS = {
+  gutters: Array.from({ length: BAYS - 1 }, (_, i) => (i + 1) * LANES_PER_BAY),
+};
+
+export const SHAPE_NAMES = ['pipe', 'trough', 'gutters', 'wave', 'drain', 'vee'];
 
 export class Tube {
-  constructor(scene, { lanes = 13, radius = 11.4, depth = 78 } = {}) {
+  constructor(scene, { lanes = BAYS * LANES_PER_BAY, radius = 11.4, depth = 78 } = {}) {
     this.lanes = lanes;
     this.radius = radius;
     this.depth = depth;
@@ -129,6 +169,37 @@ export class Tube {
 
   /** The middle lane — the floor of the channel, and where a run starts. */
   get floorLane() { return (this.lanes - 1) / 2; }
+
+  /** Lane seams you cannot ride across on this shape. Empty on most of them. */
+  get peaks() { return PEAKS[this.shape] || []; }
+
+  /**
+   * How far you can ride from where you are without jumping: the bay you are
+   * in, bounded by peaks or by the lips. On a shape with no peaks that is the
+   * whole channel, which is why nothing else needs a special case for this.
+   */
+  bayRange(lane) {
+    let lo = 0, hi = this.lanes;
+    for (const p of this.peaks) {
+      if (p <= lane && p > lo) lo = p;
+      if (p > lane && p < hi) hi = p;
+    }
+    return [lo, hi - 0.001];
+  }
+
+  /**
+   * Where a jump in `dir` lands: the middle of the next bay, or — on a shape
+   * with no peaks — a two-lane hop, which keeps the verb useful everywhere
+   * rather than making it dead weight on four levels out of six.
+   */
+  jumpTarget(lane, dir) {
+    const [lo, hi] = this.bayRange(lane);
+    if (!this.peaks.length) return this.clampLane(lane + dir * 2);
+    const edge = dir > 0 ? hi + 0.001 : lo - 0.001;
+    if (edge < 0 || edge >= this.lanes) return null;      // no bay that way
+    const [nlo, nhi] = this.bayRange(edge);
+    return (nlo + nhi) / 2;
+  }
 
   /**
    * The one function. `lane` may be fractional (the player slides between

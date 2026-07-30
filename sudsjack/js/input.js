@@ -1,15 +1,15 @@
 // SUDS JACK — input.
 //
-// Two verbs, three ways in, and every path feeds the SAME two getters so
-// nothing downstream knows which one you are using: `spin()` is -1..1 around
-// the rim, `dive()` is an edge-triggered request.
+// Three verbs, three ways in, and every path feeds the SAME getters so
+// nothing downstream knows which one you are using: `spin()` is -1..1 across
+// the channel, `dive()` and `jump()` are edge-triggered requests.
 //
 // The touch control is the one worth explaining. A tube is a ring, and a
-// virtual stick on a ring is a lie — you would be aiming at a lane instead of
-// travelling along the rim. So touch is a DRAG: move your thumb sideways
-// anywhere on the screen and the rim turns with it, one screen-width to about
-// two-thirds of the way round. A tap that goes nowhere is a dive. That means
-// the same thumb does both and there is nothing on screen to cover the tube.
+// virtual stick on a channel is a lie — you would be aiming at a lane instead
+// of travelling across the floor. So touch is a DRAG: move your thumb sideways
+// anywhere on the screen and Jack rides with it. A tap that goes nowhere is a
+// dive, and a flick UP is a jump. That means one thumb does all three and
+// there is nothing on screen covering the channel.
 
 const RIM_PER_PX = 2.6;      // rim units per screen width of drag
 const TAP_MS = 250;
@@ -19,6 +19,7 @@ export class Input {
   constructor(canvas) {
     this.keys = new Set();
     this._dive = false;
+    this._jump = false;
     this._drag = 0;           // -1..1, decays each frame it is read
     this._touch = null;
     this._padDive = false;
@@ -26,10 +27,11 @@ export class Input {
     this.sawTouch = false;
 
     addEventListener('keydown', (e) => {
-      if (['ArrowLeft', 'ArrowRight', 'ArrowDown', 'Space', 'KeyA', 'KeyD', 'KeyS'].includes(e.code)) e.preventDefault();
+      if (['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', 'Space', 'KeyA', 'KeyD', 'KeyS', 'KeyW'].includes(e.code)) e.preventDefault();
       if (e.repeat) return;
       this.keys.add(e.code);
       if (e.code === 'Space' || e.code === 'ArrowDown' || e.code === 'KeyS') this._dive = true;
+      if (e.code === 'ArrowUp' || e.code === 'KeyW') this._jump = true;
     });
     addEventListener('keyup', e => this.keys.delete(e.code));
 
@@ -37,7 +39,7 @@ export class Input {
       const t = e.changedTouches ? e.changedTouches[0] : e;
       if (e.target.closest && e.target.closest('button, a')) return;
       this.sawTouch = true;
-      this._touch = { id: t.identifier ?? 'mouse', x: t.clientX, x0: t.clientX, t0: performance.now(), moved: 0 };
+      this._touch = { id: t.identifier ?? 'mouse', x: t.clientX, y: t.clientY, y0: t.clientY, t0: performance.now(), moved: 0, up: 0 };
       e.preventDefault();
     };
     const move = (e) => {
@@ -46,9 +48,19 @@ export class Input {
       const t = list.find(x => (x.identifier ?? 'mouse') === this._touch.id);
       if (!t) return;
       const dx = t.clientX - this._touch.x;
+      const dy = t.clientY - this._touch.y;
       this._touch.x = t.clientX;
+      this._touch.y = t.clientY;
       this._touch.moved += Math.abs(dx);
-      this._drag += (dx / innerWidth) * RIM_PER_PX;
+      this._touch.up = Math.max(this._touch.up, this._touch.y0 - t.clientY);
+      // a flick UP is a jump, and it must not also read as a ride: a thumb
+      // travelling upward is not asking to go sideways
+      if (this._touch.up > 46 && Math.abs(dy) > Math.abs(dx)) {
+        this._jump = true;
+        this._touch.y0 = t.clientY;      // one jump per flick
+      } else {
+        this._drag += (dx / innerWidth) * RIM_PER_PX;
+      }
       e.preventDefault();
     };
     const end = (e) => {
@@ -82,6 +94,12 @@ export class Input {
     const a = !!(p.buttons[0] && p.buttons[0].pressed);
     if (a && !this._padPrev) this._dive = true;
     this._padPrev = a;
+    // X or Y — whichever the pad calls them, the two face buttons that are
+    // not the dive
+    const jumpBtn = !!(p.buttons[2] && p.buttons[2].pressed)
+      || !!(p.buttons[3] && p.buttons[3].pressed);
+    if (jumpBtn && !this._padJumpPrev) this._jump = true;
+    this._padJumpPrev = jumpBtn;
   }
 
   spin() {
@@ -100,4 +118,6 @@ export class Input {
   }
 
   dive() { const d = this._dive; this._dive = false; return d; }
+
+  jump() { const j = this._jump; this._jump = false; return j; }
 }

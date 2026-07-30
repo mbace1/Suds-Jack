@@ -90,10 +90,76 @@ s.listen(0, '127.0.0.1', async () => {
   ok('and gives you mercy frames', st.mercy > 0);
 
   // levels
-  await p.evaluate(() => window.__sj.debug.setLevel(4));
+  await p.evaluate(() => window.__sj.debug.setLevel(5));
   await p.waitForFunction(() => window.__sj.tube.shape === 'drain', null, { timeout: 5000 }).catch(() => {});
   ok('the channel changes shape per level',
     await p.evaluate(() => window.__sj.tube.shape) === 'drain');
+
+  // ── the ridged channel: five bays, and a verb to get between them ──
+  await p.evaluate(() => { window.__sj.debug.setLevel(3); window.__sj.risers.clear(); });
+  await p.waitForFunction(() => window.__sj.tube.shape === 'gutters', null, { timeout: 5000 }).catch(() => {});
+  const bays = await p.evaluate(() => ({ shape: window.__sj.tube.shape, peaks: window.__sj.tube.peaks }));
+  ok('level 3 is the five-bay channel', bays.shape === 'gutters', bays.shape);
+  ok('with a ridge between each (' + bays.peaks + ')', bays.peaks.length === 4);
+
+  // a ridge is a wall to RIDING
+  const penned = await p.evaluate(async () => {
+    const j = window.__sj;
+    j.player.lane = j.tube.floorLane;
+    const [lo, hi] = j.tube.bayRange(j.player.lane);
+    for (let i = 0; i < 60; i++) j.player.move(1, 0.05), j.player.update(0.05);   // shove right
+    const right = j.player.lane;
+    for (let i = 0; i < 120; i++) j.player.move(-1, 0.05), j.player.update(0.05); // and left
+    return { lo, hi, right, left: j.player.lane };
+  });
+  ok('riding cannot cross a ridge', penned.right <= penned.hi + 0.01 && penned.left >= penned.lo - 0.01,
+    JSON.stringify(penned));
+
+  // but a jump can
+  const hopped = await p.evaluate(async () => {
+    const j = window.__sj;
+    j.player.lane = j.tube.floorLane;
+    const before = j.tube.bayRange(j.player.lane);
+    const started = j.player.jump(1);
+    let peak = 0;
+    for (let i = 0; i < 40; i++) { j.player.update(0.02); peak = Math.max(peak, j.player.air); }
+    const after = j.tube.bayRange(j.player.lane);
+    return { started, peak, before, after, lane: j.player.lane };
+  });
+  ok('a jump starts', hopped.started);
+  ok('and leaves the floor (' + hopped.peak.toFixed(1) + ' units)', hopped.peak > 1);
+  ok('and lands you in the next bay', hopped.after[0] > hopped.before[0], JSON.stringify(hopped));
+
+  // and it is a dodge: grime goes under you
+  const dodged = await p.evaluate(async () => {
+    const j = window.__sj;
+    j.player.mercy = 0;
+    j.player.jump(1);
+    for (let i = 0; i < 6; i++) j.player.update(0.02);      // get some air
+    const lives = j.state.lives;
+    const airborne = j.player.airborne;
+    j.debug.give('grime');
+    for (let i = 0; i < 4; i++) j.debug.step(0.02);
+    return { airborne, lives, after: j.state.lives };
+  });
+  ok('mid-jump you are off the floor', dodged.airborne);
+  ok('and grime passes under you', dodged.after === dodged.lives,
+    `${dodged.lives} → ${dodged.after}`);
+
+  // grime is penned in too, or the bays would only ever constrain the player
+  const pennedGrime = await p.evaluate(async () => {
+    const j = window.__sj;
+    j.risers.clear();
+    j.player.lane = 1;                       // far left bay
+    const it = j.risers.spawn('grime', 13, 0.02);   // far right bay
+    const [lo, hi] = j.tube.bayRange(13);
+    for (let i = 0; i < 200; i++) j.risers.update(0.05, j.player);
+    return { lane: it.lane, lo, hi };
+  });
+  ok('grime cannot cross a ridge either',
+    pennedGrime.lane >= pennedGrime.lo && pennedGrime.lane <= pennedGrime.hi,
+    JSON.stringify(pennedGrime));
+  await p.evaluate(() => { window.__sj.risers.clear(); window.__sj.player.mercy = 0; });
 
   // EVERY channel has to run left to right. Three of the five did not when
   // they were written, so on those levels pressing right moved you left and

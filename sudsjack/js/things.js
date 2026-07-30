@@ -99,8 +99,16 @@ export class Risers {
           // way to go — no short way round, because there is no way round —
           // so grime coming at you from the far lip has to cross everything
           // in between and you can watch it do it.
+          // It is stopped by a ridge the same way you are, and it cannot
+          // jump. That is what makes the five-bay level a level rather than a
+          // backdrop: each bay keeps its own problem, and moving to another
+          // one is the play. Grime that cannot reach you sits in its bay and
+          // waits, which is a threat you can see and route around.
           const d = player.lane - it.lane;
-          if (Math.abs(d) > 0.5) it.lane = this.tube.clampLane(it.lane + Math.sign(d));
+          const [lo, hi] = this.tube.bayRange(it.lane);
+          if (Math.abs(d) > 0.5) {
+            it.lane = Math.max(lo, Math.min(hi, this.tube.clampLane(it.lane + Math.sign(d))));
+          }
           it.stepIn = 0.35 + it.depth * 0.9;
         }
       }
@@ -110,12 +118,16 @@ export class Risers {
       // depends on a hundredth of a lane is a hit nobody can see coming.
       const gap = Math.abs(it.lane - player.lane);
       const near = gap < 0.62 && Math.abs(it.depth - player.depth) < 0.085;
+      // Off the floor, grime goes under you. The jump is a way across a ridge
+      // AND a dodge, which is what stops it being dead weight on the five
+      // levels that have no ridges in them.
+      const overIt = it.type === 'grime' && player.airborne;
 
       if (it.type === 'bubble') {
         if (near) { it.dead = true; collected.push(it); continue; }
         if (it.depth <= -0.02) { it.dead = true; missed.push(it); }
       } else {
-        if (near) { it.dead = true; struck.push(it); continue; }
+        if (near && !overIt) { it.dead = true; struck.push(it); continue; }
         // grime that gets past the mouth just goes over the edge; the danger
         // was the arrival, not the aftermath
         if (it.depth <= -0.05) it.dead = true;
