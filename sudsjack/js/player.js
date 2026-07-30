@@ -70,8 +70,12 @@ export class Player {
     const step = RIM_ACCEL * dt;
     this.vel += Math.abs(d) <= step ? d : Math.sign(d) * step;
     this.lane += this.vel * dt;
-    const n = this.tube.lanes;
-    this.lane = ((this.lane % n) + n) % n;
+    // The channel has ENDS. Running out of floor is the thing a closed tube
+    // could never do to you, and it is where being cornered comes from — so
+    // the clamp also kills the velocity, or you slide back off the wall the
+    // instant you let go and it reads as a bounce.
+    const clamped = this.tube.clampLane(this.lane);
+    if (clamped !== this.lane) { this.lane = clamped; this.vel = 0; }
   }
 
   update(dt) {
@@ -91,19 +95,20 @@ export class Player {
     }
 
     const p = this.tube.at(this.lane, this.depth);
-    // pulled a little inside the rim: centred exactly on it, half the claw
-    // hangs out into the void and the tube stops looking like a solid edge
-    p.x *= 0.93; p.y *= 0.93;
+    // sat a little INSIDE the channel rather than on its skin, so the floor
+    // still reads as a surface he is lying on rather than a line through him
+    p.multiplyScalar(1);
+    const inset = this.tube.at(this.lane, this.depth + 0.012, new THREE.Vector3());
+    p.lerp(inset, 0.55);
     this.mesh.position.copy(p);
-    // He LIES ON the rim, opening toward the middle of the tube — which is
-    // where everything comes from. The first cut used lookAt() to point him
-    // up the tube and he foreshortened into two white streaks from the
-    // camera's angle: a claw seen end-on is not a claw. Rolling him around
-    // the axis instead keeps the whole shape facing the player at every point
-    // on the rim, which is how Tempest's own claw works.
-    this.mesh.rotation.set(0, 0, Math.atan2(p.y, p.x) + Math.PI / 2);
-    const scale = 1.05 * (1 - 0.62 * this.depth);
-    this.mesh.scale.setScalar(scale);
+    // He LIES ON the floor of the channel, and tips with it: flat at the
+    // bottom, up on its side against a wall. The angle is sampled off the
+    // shape either side of him rather than assumed radial, because on the
+    // square trough and the vee the floor does not face the axis.
+    // (The first cut used lookAt() to point him up the channel and he
+    // foreshortened into two white streaks — a claw seen end-on is not a
+    // claw.)
+    this.mesh.rotation.set(0, 0, this.tube.faceAngle(this.lane));
 
     const c = this.diving ? PAL.JACK_DIVE : PAL.JACK;
     this.mat.color.setRGB(c[0], c[1], c[2]);
@@ -121,7 +126,8 @@ export class Player {
   }
 
   reset() {
-    this.lane = 0; this.vel = 0; this.depth = 0;
+    // a run starts on the floor, in the middle of the channel
+    this.lane = this.tube.floorLane; this.vel = 0; this.depth = 0;
     this.diveT = -1; this.mercy = 0; this.alive = true;
     this.mesh.visible = true;
   }

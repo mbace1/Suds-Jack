@@ -1,78 +1,95 @@
-// SUDS JACK — the tube.
+// SUDS JACK — the trough.
 //
-// Tempest's web, and the one piece of geometry the whole game is measured
-// against: every position in this game is (lane, depth). A lane is a segment
-// of the rim, depth is 0 at the mouth where you stand and 1 at the far end
-// where things come from. Nothing anywhere else in this project touches world
-// coordinates — it asks `at(lane, depth)` and gets a point back.
+// Not a closed tube: a HALF tunnel, open along the top, and you ride the floor
+// of it. Every position is still (lane, depth) — a lane is a strip of the
+// channel running away from you, depth is 0 at the mouth where you are and 1
+// at the far end where things come from. Nothing outside this file touches
+// world coordinates: it asks `at(lane, depth)` and gets a point back.
 //
-// That is not tidiness for its own sake. It is what lets the web change shape
-// between levels (circle → square → clover → star) without one line of the
-// game logic knowing: the shapes differ in where `at()` puts you, not in what
-// a lane means. Bubbles rise the same way up a star as up a circle.
+// THE OPENING IS NOT DECORATION. A closed ring has no ends, so you can always
+// keep running and a hazard can always be outrun; a channel has two lips, and
+// the lane at each lip is somewhere you can be cornered. That is the whole
+// difference in the game, and it comes entirely out of this file — `at()` maps
+// lanes across an arc instead of around a circle, and `lanes` no longer wrap.
 //
-// The far end does NOT converge to a point. A tube that closes to a dot has
-// nowhere to spawn anything and the last stretch of every riser is a crawl
-// across two pixels; this one keeps 8.5% of its radius at the back, which is
-// enough to read a lane at the moment it matters — when it is still far away.
-// The first cut kept 16% and the whole thing read as a flat dartboard: too
-// little convergence and there is no tube, just a disc with spokes on it.
+// THE CROSS-SECTION DOES NOT CHANGE WITH DEPTH, and that is the correction
+// that made this a tunnel. It was built first the way Tempest draws a web —
+// the far end scaled down toward a point — which is right for a 2D vector
+// game with no camera and wrong here, because a perspective camera is ALREADY
+// converging it. Doing both meant the floor climbed steeply away from you and
+// the whole thing read as a flat paper fan seen from above rather than a
+// channel you are lying in. A real tunnel is the same size all the way along;
+// the far end looks small because it is far away.
+//
+// `lean` survives from that first cut and now does something better: it
+// offsets the far cross-section, which BENDS the channel instead of shrinking
+// it.
 
 import * as THREE from 'three';
 import { PAL } from './palette.js';
 
-const FAR_SCALE = 0.085;
 
-// Each shape maps a fraction around the rim (0..1) to a unit-radius point.
-// They are closed loops of the same length, so a lane index means the same
-// thing in all of them and a level change is a shape swap, not a rebuild.
+// Each shape maps a fraction ACROSS the channel (0 = left lip, 1 = right lip)
+// to a unit cross-section point. THE DIRECTION IS PART OF THE CONTRACT: three
+// of these ran right-to-left when they were first written, so on those levels
+// pressing right moved you left and the claw was drawn upside down — the
+// player and the shapes disagreed about which way round the channel went, and
+// only the shapes were wrong. `faceAngle()` on a flat floor is 0 when a shape
+// has this the right way round, which is what the smoke gate now checks. y = 0 is the height of the lips and negative
+// is down into the trough, so every shape hangs below the opening and the
+// floor is somewhere around u = 0.5. They all run left to right, so a lane
+// index means the same thing in all of them and a level change is a shape
+// swap, not a rebuild.
 const SHAPES = {
-  circle: (u) => {
-    const a = u * Math.PI * 2;
+  // the plain half-pipe: the bottom half of a circle
+  pipe: (u) => {
+    const a = Math.PI + u * Math.PI;
     return [Math.cos(a), Math.sin(a)];
   },
-  square: (u) => {
-    // walk the perimeter of a square, corner to corner
-    const s = u * 4, side = Math.floor(s) % 4, f = s - Math.floor(s);
-    const pts = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
-    const [ax, ay] = pts[side], [bx, by] = pts[(side + 1) % 4];
-    return [ax + (bx - ax) * f, ay + (by - ay) * f];
+  // a square channel: down the left wall, across the floor, up the right
+  trough: (u) => {
+    if (u < 0.25) return [-1, -(u / 0.25)];
+    if (u < 0.75) return [-1 + ((u - 0.25) / 0.5) * 2, -1];
+    return [1, -(1 - (u - 0.75) / 0.25)];
   },
-  clover: (u) => {
-    const a = u * Math.PI * 2;
-    const r = 0.72 + 0.34 * Math.abs(Math.cos(a * 2));
-    return [Math.cos(a) * r, Math.sin(a) * r];
+  // a V: no floor at all, so the middle is a single lane and the walls are
+  // long — the shape that most rewards sitting still and most punishes it
+  vee: (u) => [(u - 0.5) * 2, -(1 - Math.abs(u - 0.5) * 2)],
+  // a rippled floor: three shallow dips, so "the bottom" is three places
+  wave: (u) => {
+    const a = Math.PI + u * Math.PI;
+    const r = 0.78 + 0.22 * Math.cos(u * Math.PI * 6);
+    return [Math.cos(a), Math.sin(a) * r];
   },
-  star: (u) => {
-    const a = u * Math.PI * 2;
-    const r = 0.62 + 0.42 * Math.cos(a * 5) ** 2;
-    return [Math.cos(a) * r, Math.sin(a) * r];
-  },
-  // A drain: the rim is a circle but the far end is pulled off-axis, so the
-  // lanes are not the same length and the tube leans. Nothing in the game
-  // notices; it just feels wrong in the right way.
+  // a drain: deep and steep on the left, shallow on the right. The lips are
+  // at different heights, so neither end of the channel is the same trap.
   drain: (u) => {
-    const a = u * Math.PI * 2;
-    return [Math.cos(a), Math.sin(a) * 0.78];
+    const a = Math.PI + u * Math.PI;
+    return [Math.cos(a) * 1.05, Math.sin(a) * (1.15 - u * 0.5)];
   },
 };
 
-export const SHAPE_NAMES = ['circle', 'square', 'clover', 'drain', 'star'];
+export const SHAPE_NAMES = ['pipe', 'trough', 'wave', 'drain', 'vee'];
 
 export class Tube {
-  constructor(scene, { lanes = 14, radius = 8.2, depth = 74 } = {}) {
+  constructor(scene, { lanes = 13, radius = 11.4, depth = 78 } = {}) {
     this.lanes = lanes;
     this.radius = radius;
     this.depth = depth;
-    this.shape = 'circle';
+    this.shape = 'pipe';
     this.lean = new THREE.Vector2(0, 0);   // where the far end sits, in radii
 
     this.group = new THREE.Group();
     scene.add(this.group);
 
-    // the rails: one line per lane boundary, running the length of the tube
+    // An open channel has one more seam than it has lanes. Every count in
+    // here is lanes+1 for that reason, and the ring loops stop at the lips
+    // instead of closing — a segment joining the two lips would draw a lid on
+    // a thing whose whole point is that it has no lid.
+    const seams = lanes + 1;
+
     this.railGeo = new THREE.BufferGeometry();
-    this.railPos = new Float32Array(lanes * 2 * 3);
+    this.railPos = new Float32Array(seams * 2 * 3);
     this.railGeo.setAttribute('position', new THREE.BufferAttribute(this.railPos, 3));
     this.rails = new THREE.LineSegments(
       this.railGeo,
@@ -80,9 +97,9 @@ export class Tube {
     );
     this.group.add(this.rails);
 
-    // rings at a few depths — the only thing telling you how far away a riser
+    // ribs at a few depths — the only thing telling you how far away a riser
     // is, since there is no lighting and no shadow to do it
-    this.ringDepths = [0, 0.13, 0.3, 0.52, 0.76, 1];
+    this.ringDepths = [0, 0.09, 0.2, 0.33, 0.48, 0.65, 0.83, 1];
     this.ringGeo = new THREE.BufferGeometry();
     this.ringPos = new Float32Array(this.ringDepths.length * lanes * 2 * 3);
     this.ringGeo.setAttribute('position', new THREE.BufferAttribute(this.ringPos, 3));
@@ -92,7 +109,8 @@ export class Tube {
     );
     this.group.add(this.rings);
 
-    // the mouth: the rim you ride, drawn hot so the play surface is obvious
+    // the mouth: the near edge you ride, drawn hot so the play surface is
+    // obvious
     this.rimGeo = new THREE.BufferGeometry();
     this.rimPos = new Float32Array(lanes * 2 * 3);
     this.rimGeo.setAttribute('position', new THREE.BufferAttribute(this.rimPos, 3));
@@ -105,42 +123,53 @@ export class Tube {
     this.rebuild();
   }
 
-  // A lane's centre as a fraction around the rim. Lanes are BETWEEN rails, so
-  // the centre is offset half a lane — you ride the segment, not the seam.
-  _u(lane) { return ((lane % this.lanes) + this.lanes) % this.lanes / this.lanes; }
+  // Lanes DO NOT WRAP. Running off the end of a channel is not a thing, and
+  // the clamp is where "cornered at the lip" comes from.
+  clampLane(lane) { return Math.max(0, Math.min(this.lanes - 0.001, lane)); }
+
+  /** The middle lane — the floor of the channel, and where a run starts. */
+  get floorLane() { return (this.lanes - 1) / 2; }
 
   /**
    * The one function. `lane` may be fractional (the player slides between
    * lanes), `depth` is 0 at the mouth and 1 at the far end.
    */
   at(lane, depth, out = new THREE.Vector3()) {
-    const u = (this._u(lane) + 0.5 / this.lanes) % 1;
-    const [sx, sy] = SHAPES[this.shape](u);
-    const k = 1 + (FAR_SCALE - 1) * depth;          // radius falls off with depth
-    const cx = this.lean.x * this.radius * depth;   // and the far end can lean
-    const cy = this.lean.y * this.radius * depth;
+    const u = (this.clampLane(lane) + 0.5) / this.lanes;
+    return this._point(u, depth, out);
+  }
+
+  _point(u, depth, out = new THREE.Vector3()) {
+    const [sx, sy] = SHAPES[this.shape](Math.max(0, Math.min(1, u)));
+    // no k: same channel at every depth. The camera does the converging.
     return out.set(
-      cx + sx * this.radius * k,
-      cy + sy * this.radius * k,
+      this.lean.x * this.radius * depth + sx * this.radius,
+      this.lean.y * this.radius * depth + sy * this.radius,
       -this.depth * depth,
     );
   }
 
-  // The rim point ON a seam rather than in a lane centre — for drawing the web
-  // itself, which is made of seams.
+  // The seam BETWEEN lanes rather than a lane centre — for drawing the
+  // channel itself, which is made of seams.
   _seam(i, depth, out = new THREE.Vector3()) {
-    const u = ((i % this.lanes) + this.lanes) % this.lanes / this.lanes;
-    const [sx, sy] = SHAPES[this.shape](u);
-    const k = 1 + (FAR_SCALE - 1) * depth;
-    return out.set(
-      this.lean.x * this.radius * depth + sx * this.radius * k,
-      this.lean.y * this.radius * depth + sy * this.radius * k,
-      -this.depth * depth,
-    );
+    return this._point(i / this.lanes, depth, out);
+  }
+
+  /**
+   * Which way the floor faces at a lane, as an angle. Sampled either side
+   * rather than assumed radial: on a round pipe the surface normal happens to
+   * point at the axis, but on the square trough and the vee it does not, and
+   * the player has to lie ON the floor in all of them.
+   */
+  faceAngle(lane) {
+    const e = 0.35;
+    const a = this.at(lane - e, 0, new THREE.Vector3());
+    const b = this.at(lane + e, 0, new THREE.Vector3());
+    return Math.atan2(b.y - a.y, b.x - a.x);
   }
 
   setShape(name, lean = [0, 0]) {
-    this.shape = SHAPES[name] ? name : 'circle';
+    this.shape = SHAPES[name] ? name : 'pipe';
     this.lean.set(lean[0], lean[1]);
     this.rebuild();
   }
@@ -148,7 +177,7 @@ export class Tube {
   rebuild() {
     const a = new THREE.Vector3(), b = new THREE.Vector3();
     let p = 0;
-    for (let i = 0; i < this.lanes; i++) {
+    for (let i = 0; i <= this.lanes; i++) {
       this._seam(i, 0, a); this._seam(i, 1, b);
       this.railPos.set([a.x, a.y, a.z, b.x, b.y, b.z], p); p += 6;
     }
@@ -171,11 +200,13 @@ export class Tube {
     this.rimGeo.attributes.position.needsUpdate = true;
   }
 
-  // A slow roll, so a still web never looks like a screenshot. It is rotation
-  // of the GROUP, not of the lane numbering — where a bubble is on the rim
-  // does not change because the picture turned.
-  update(dt, spin = 0.06) {
-    this.group.rotation.z += dt * spin;
+  // A slow sway rather than a roll. A channel cannot spin — it has a floor,
+  // and a floor that rotates is not a floor — so the whole thing leans a few
+  // degrees each way instead, which keeps a still picture alive without ever
+  // making you wonder which way is down.
+  update(dt, amount = 1) {
+    this._sway = (this._sway || 0) + dt * 0.35;
+    this.group.rotation.z = Math.sin(this._sway) * 0.035 * amount;
   }
 
   tint(hue) {
