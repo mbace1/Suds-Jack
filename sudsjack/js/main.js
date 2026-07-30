@@ -40,11 +40,13 @@ renderer.toneMappingExposure = 1.15;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(PAL.VOID);
 const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 260);
-// Slightly above the mouth and looking down into it. Dead-on, the web is a
-// flat wheel of spokes no matter how hard the far end converges — you need to
-// see a little of the INSIDE of the tube for it to be a tube.
-camera.position.set(0, 5.4, 17.5);
-camera.lookAt(0, -1.2, -18);
+// INSIDE the channel, above the floor and below the lips, looking down its
+// length. This is the whole read: level with the lips a half tunnel is two
+// lines, from above it is a flat ribbon, and only from in here is it a place
+// you are lying in. Jack sits at the bottom of the frame with a little room
+// under him and the walls sweep up past both edges.
+camera.position.set(0, -3.4, 16.5);
+camera.lookAt(0, -6.4, -40);
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
@@ -58,7 +60,7 @@ composer.addPass(smear);
 composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.7, 0.42, 0.72));
 composer.addPass(new OutputPass());
 
-const tube = new Tube(scene, { lanes: 14, radius: 11.4, depth: 78 });
+const tube = new Tube(scene, { lanes: 13, radius: 11.4, depth: 78 });
 const player = new Player(scene, tube);
 const risers = new Risers(scene, tube);
 const pops = new Pops(scene, tube);
@@ -170,22 +172,23 @@ function director(dt) {
   }
 }
 
+// No short way round in a channel, so distance is just distance. Falling back
+// to the FAR LIP rather than to "half a turn away" matters here: half a turn
+// does not exist, and the far lip is the one place guaranteed to be a walk.
 function awayFrom(lane, minGap, n) {
   for (let i = 0; i < 12; i++) {
     const c = Math.floor(Math.random() * n);
-    let d = Math.abs(c - lane);
-    d = Math.min(d, n - d);
-    if (d >= minGap) return c;
+    if (Math.abs(c - lane) >= minGap) return c;
   }
-  return Math.floor(lane + n / 2) % n;
+  return lane < n / 2 ? n - 1 : 0;
 }
 
 // ── the frame ────────────────────────────────────────────────────────────
 let last = performance.now();
 
 function step(dt) {
-  // barely turning during play: the web is the thing you are reading
-  tube.update(dt, state.mode === 'play' ? 0.012 : 0.1);
+  // barely moving during play: the channel is the thing you are reading
+  tube.update(dt, state.mode === 'play' ? 0.35 : 1);
   pops.update(dt);
 
   if (state.banner > 0) {
@@ -271,7 +274,7 @@ paintHud();
 // Same contract as every other cabinet here: enough to drive the game from a
 // console or a headless test without touching the DOM.
 window.__sj = {
-  state, tube, player, risers, audio,
+  state, tube, player, risers, audio, camera,
   debug: {
     start: startRun,
     over: gameOver,

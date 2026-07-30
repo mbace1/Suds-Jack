@@ -8,6 +8,48 @@ floor sending people at the unfinished one.
 The `?v=N` token in `index.html` tracks module-graph changes; this number is
 the public release. Bump both when shipping.
 
+## v2 — 2026-07-30
+
+**A half tunnel, and you lie on the floor of it.** (Owner's direction.)
+
+The closed tube is gone. It is a channel now — open along the top, walls
+sweeping up on both sides, and Suds Jack lying on the floor at the bottom of
+the frame rather than clinging to a rim.
+
+- **The opening is not decoration.** A closed ring has no ends, so you can
+  always keep running and any hazard can be outrun. A channel has two lips, and
+  the lane at each lip is somewhere you can be **cornered** — lanes clamp
+  instead of wrapping, and the clamp kills your speed so it does not read as a
+  bounce. Grime has no short way round any more either: coming from the far
+  lip it has to cross everything in between, and you get to watch it do it.
+- Five channels: `pipe` (a round half-pipe), `trough` (square, two walls and a
+  floor), `wave` (a rippled floor — "the bottom" is three places), `drain`
+  (steep one side, shallow the other, so neither lip is the same trap) and
+  `vee` (no floor at all: the middle is one lane).
+- Jack **lies on the floor and tips with it** — flat at the bottom, up on his
+  side against a wall. The angle is sampled off the shape either side of him
+  rather than assumed radial, because on the trough and the vee the floor does
+  not face the axis.
+- The camera moved **inside** the channel, above the floor and below the lips.
+  Level with the lips a half tunnel is two lines; from above it is a flat
+  ribbon; only from in here is it somewhere you are lying.
+
+Two real mistakes fixed on the way, both found by looking at the thing:
+
+- **The cross-section was being shrunk with depth as well as by the camera.**
+  That is right for Tempest, which is 2D vector art with no camera, and wrong
+  here: the floor climbed steeply away and the whole channel read as a flat
+  paper fan. A tunnel is the same size all the way along — the far end looks
+  small because it is far away. Risers had the same double-shrink and lost it
+  too.
+- **Three of the five channels ran right to left**, so on those levels
+  pressing right moved you left and the claw was drawn upside down. The player
+  and the shapes disagreed about which way round the channel went, and only
+  the shapes were wrong. The gate now asserts the direction and the floor
+  angle for every shape, plus that lanes do not wrap.
+
+Smoke gate 25 → 28 checks.
+
 ## v1 — 2026-07-30
 
 **The tube, with the gun taken out.**

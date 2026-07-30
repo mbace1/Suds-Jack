@@ -86,7 +86,6 @@ export class Risers {
    */
   update(dt, player) {
     const collected = [], missed = [], struck = [];
-    const n = this.tube.lanes;
 
     for (const it of this.items) {
       if (it.dead) continue;
@@ -96,11 +95,12 @@ export class Risers {
       if (it.type === 'grime') {
         it.stepIn -= dt;
         if (it.stepIn <= 0) {
-          // step one lane toward the player, the short way round the rim
-          let d = player.lane - it.lane;
-          while (d > n / 2) d -= n;
-          while (d < -n / 2) d += n;
-          if (Math.abs(d) > 0.5) it.lane = (it.lane + Math.sign(d) + n) % n;
+          // Step one lane toward the player. In a channel there is only one
+          // way to go — no short way round, because there is no way round —
+          // so grime coming at you from the far lip has to cross everything
+          // in between and you can watch it do it.
+          const d = player.lane - it.lane;
+          if (Math.abs(d) > 0.5) it.lane = this.tube.clampLane(it.lane + Math.sign(d));
           it.stepIn = 0.35 + it.depth * 0.9;
         }
       }
@@ -108,8 +108,7 @@ export class Risers {
       // Reaching the player: same lane, same depth. The lane tolerance is
       // generous because the player slides between lanes and a hit that
       // depends on a hundredth of a lane is a hit nobody can see coming.
-      let gap = Math.abs(it.lane - player.lane);
-      gap = Math.min(gap, n - gap);
+      const gap = Math.abs(it.lane - player.lane);
       const near = gap < 0.62 && Math.abs(it.depth - player.depth) < 0.085;
 
       if (it.type === 'bubble') {
@@ -134,7 +133,10 @@ export class Risers {
     const p = new THREE.Vector3();
     for (const it of this.items) {
       this.tube.at(it.lane, Math.max(it.depth, 0), p);
-      const scale = 1 - 0.46 * it.depth;
+      // No depth scaling. The channel is the same size all the way along and
+      // the camera does the converging (see tube.js); scaling risers as well
+      // would shrink them twice and the far end would swallow them.
+      const scale = 1;
       this._e.set(it.spin, it.spin * 0.7, 0);
       this._q.setFromEuler(this._e);
       this._s.setScalar(scale * (it.type === 'bubble' && it.lit ? 1.35 : 1));
@@ -194,7 +196,7 @@ export class Pops {
     m.material.color.setRGB(color[0], color[1], color[2]);
     this.tube.at(lane, Math.max(depth, 0), m.position);
     m.lookAt(0, 0, m.position.z + 10);
-    this.live.push({ m, t: 0, base: 1 - 0.6 * depth });
+    this.live.push({ m, t: 0, base: 1 });
   }
 
   update(dt) {

@@ -92,8 +92,41 @@ s.listen(0, '127.0.0.1', async () => {
   // levels
   await p.evaluate(() => window.__sj.debug.setLevel(4));
   await p.waitForFunction(() => window.__sj.tube.shape === 'drain', null, { timeout: 5000 }).catch(() => {});
-  ok('the web changes shape per level',
+  ok('the channel changes shape per level',
     await p.evaluate(() => window.__sj.tube.shape) === 'drain');
+
+  // EVERY channel has to run left to right. Three of the five did not when
+  // they were written, so on those levels pressing right moved you left and
+  // the claw was drawn upside down — the shapes and the player disagreed
+  // about which way round the channel went. A flat floor faces 0°.
+  const dirs = await p.evaluate(() => {
+    const j = window.__sj, out = [];
+    for (let l = 1; l <= 5; l++) {
+      j.debug.setLevel(l);
+      const a = j.tube.at(1, 0, new (j.tube.at(0, 0).constructor)());
+      const b = j.tube.at(j.tube.lanes - 2, 0, new (j.tube.at(0, 0).constructor)());
+      out.push({ shape: j.tube.shape, ltr: b.x > a.x,
+        floor: Math.abs(j.tube.faceAngle(j.tube.floorLane) * 180 / Math.PI) });
+    }
+    return out;
+  });
+  ok('every channel runs left to right', dirs.every(d => d.ltr),
+    dirs.filter(d => !d.ltr).map(d => d.shape).join(','));
+  ok('and its floor faces up in all of them',
+    dirs.every(d => d.floor < 25), dirs.map(d => `${d.shape} ${d.floor.toFixed(0)}°`).join(' '));
+
+  // the channel has ENDS: you can be cornered at a lip
+  const lips = await p.evaluate(async () => {
+    const j = window.__sj;
+    j.player.lane = 0;
+    for (let i = 0; i < 30; i++) j.debug.step(0.05);   // shove left, hard
+    const low = j.player.lane;
+    j.player.lane = j.tube.lanes;
+    for (let i = 0; i < 30; i++) j.debug.step(0.05);
+    return { low, high: j.player.lane, lanes: j.tube.lanes };
+  });
+  ok('lanes do not wrap round the ends',
+    lips.low >= 0 && lips.high <= lips.lanes, JSON.stringify(lips));
   await p.screenshot({ path: process.env.SHOT_PLAY || '/tmp/sj-play.png' });
 
   // Game over. The mercy frames from the hit above are REAL — a second grime

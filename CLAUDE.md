@@ -117,10 +117,14 @@ Bomb Jack is the *game* (collect, in the right order, **no weapon**), Tempest is
 build**, live at `sudz/` on `gh-pages` (a tube *shooter*: ← → move, Space fire, Z
 superzapper). The arcade's `sudsjack` cabinet points there and **stays pointed there**
 until the rebuild is better than it. The rebuild is `sudsjack/`, deployed unlisted.
+It is a **half tunnel** — a channel open along the top, walls sweeping up both sides, Jack
+lying on the floor of it (owner's direction, and it is a design change, not a view: **a
+closed ring has no ends**, so you can always keep running, while a channel has two lips and
+the lane at each one is somewhere you can be **cornered**. Lanes clamp instead of wrapping
+and grime has no short way round).
 **Every position in the game is `(lane, depth)`** — `tube.js` owns the only conversion to
-world space, which is what lets the web change shape per level (circle / square / clover /
-drain / star) with no game logic knowing: a bubble rises the same way up a star as up a
-circle. **The dive is the game**: standing at the mouth and taking what arrives is safe and
+world space, which is what lets the channel change shape per level (pipe / trough / wave /
+drain / vee) with no game logic knowing: a bubble rises the same way up a vee as up a pipe. **The dive is the game**: standing at the mouth and taking what arrives is safe and
 slow, meeting a bubble halfway down pays up to 3× and **locks your lane until you are
 back** (Flash Prince's commitment rule, on a 0.62s clock). **One bubble is lit at a time** —
 taking it raises the chain, letting it past resets it, and the *deepest* remaining bubble
@@ -133,12 +137,15 @@ spawns **away** from where you stand, and `window.__sj` for the smoke test to dr
 inherited: the first-person controller and the flat arena — a tube is not an arena. three.js
 comes from a **local `vendor/` copy**, not the CDN (hyperdagger on `gh-pages` already went
 that way for its offline worker).
-Three traps, all the same lesson — *a tube is made of depth and depth is easy to throw
-away*: the far end kept **16%** of its radius and read as a flat dartboard (8.5% now); the
-camera was **dead-on**, so the web was a wheel of spokes however hard it converged (it sits
-above the mouth looking down into it); and the afterimage at **0.82** with the tube turning
-under it ghosted the rails into a starburst that hid both web and risers (0.5, and it barely
-turns during play). `node sudsjack/test/smoke.cjs` = 25 checks: boot, the director, the
+Traps, all the same lesson — *depth is easy to throw away*: the **cross-section was shrunk
+with depth as well as by the camera**, which is right for Tempest (2D vector, no camera) and
+wrong here — the floor climbed away and the channel read as a flat paper fan, and risers had
+the same double-shrink; the camera was outside looking in, when only from **inside** the
+channel (above the floor, below the lips) is it somewhere you are lying; and the afterimage
+at **0.82** ghosted the rails into a starburst (0.5). One more that was a control bug, not a
+look: **three of the five channel shapes ran right-to-left**, so on those levels pressing
+right moved you left and the claw drew upside down — the gate now asserts every shape's
+direction and floor angle. `node sudsjack/test/smoke.cjs` = 28 checks: boot, the director, the
 lane-lock during a dive, collection, the chain, damage, mercy frames, the level shapes,
 game over, the way home and the signature — all driven off **game state, not the wall
 clock**, because a sandbox with no GPU renders this at a handful of frames a second.
@@ -646,8 +653,8 @@ sudsjack/       # Suds Jack — the rebuild: Bomb Jack's collection on Tempest's
   VERSIONS.md
   vendor/       # three.js r167, local — not the CDN
   js/
-    tube.js     # the web: (lane, depth) → world, and the five shapes
-    player.js   # the claw on the rim; the dive, and the lane-lock that pays for it
+    tube.js     # the channel: (lane, depth) → world, and the five shapes
+    player.js   # the claw on the floor; the dive, and the lane-lock that pays for it
     things.js   # risers: bubbles (one lit) and grime (steps toward you); pops
     main.js     # scene, render stack, director, scoring, levels, HUD, states
     input.js    # keys / pad / drag-the-rim touch, all feeding two getters
