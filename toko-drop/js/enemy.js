@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { TUNING } from './tuning.js?v=171';
-import { nesSnap, NEON } from './retro.js?v=171';
+import { TUNING } from './tuning.js?v=172';
+import { nesSnap, NEON } from './retro.js?v=172';
 
 // ── Goo shader ────────────────────────────────────────────────────────────────
 // v194: under the WEBGPU (BETA) build the goo FX run as a TSL node graph
@@ -186,6 +186,7 @@ export function applySatinValues() {
     m.thickness          = M.thickness;
     m.ior                = M.ior;
     m.gooU.uSSS.value    = M.sss;
+    if (m.gooU.uThick) m.gooU.uThick.value = M.thickness;   // v218 (WEBGPU dome)
   }
 }
 
@@ -261,6 +262,9 @@ export function makeSatinMat(color, fam, radius) {
     uSSS:    U(M.sss),
     uSSSColor: U(col.clone().lerp(new THREE.Color(0xffffff), 0.25)),
     uLightDir: U(SUN_DIR.clone()),
+    // v218: base gel thickness as a uniform so the depth-varying thicknessNode
+    // (WEBGPU build) stays live under the pause-menu sliders. Classic ignores it.
+    uThick:  U(M.thickness),
   };
   mat.gooU = u;     // FX uniform access for enemy.js (physical mats have no .uniforms)
   mat.gooFam = fam; // family for applySatinValues overrides
@@ -331,6 +335,19 @@ function applyGooNodes(mat, u, flat) {
     .add(sin(q.z.mul(13.0).add(u.uTime.mul(38.0))))
     .mul(0.3333);
   p = p.add(normalLocal.mul(te).mul(u.uRadius.mul(u.uTear).mul(0.22)));
+  // v218 GOO PASS (roadmap-v2 Phase 3 — past parity, TSL only):
+  // a second, finer lump octave keeps the surface simmering at rest and
+  // SEETHES while a hit ripple is live — the gel remembers being struck.
+  const oct2 = sin(q.x.mul(8.3).add(u.uTime.mul(4.7)).add(u.uPhase.mul(2.1)))
+    .add(sin(q.y.mul(9.1).sub(u.uTime.mul(3.9)).add(u.uPhase)))
+    .add(sin(q.z.mul(7.7).add(u.uTime.mul(5.3))))
+    .mul(0.3333);
+  p = p.add(normalLocal.mul(oct2)
+    .mul(u.uRadius.mul(u.uWobble).mul(float(0.028).add(u.uHit.mul(0.075)))));
+  // v218: pop burst — pressure before the pop. The death thrash (uTear)
+  // also INFLATES the body about its floor contact, so the burst reads as
+  // something that had to happen instead of a disappearing act.
+  p = p.mul(float(1.0).add(u.uTear.mul(0.2)));
   const sdir = vec3(u.uStretchDir.x, 0.0, u.uStretchDir.y);
   p = p.add(sdir.mul(dot(p, sdir)).mul(u.uStretch));
   mat.positionNode = vec3(p.x, p.y.mul(float(1.0).sub(u.uStretch.mul(0.4))), p.z);
@@ -341,7 +358,16 @@ function applyGooNodes(mat, u, flat) {
   const H = normalize(L.add(N.mul(0.45)));
   const sss  = clamp(dot(V, H.negate()), 0.0, 1.0).pow(2.2).mul(u.uSSS);
   const wrap = clamp(dot(N, L).mul(0.5).add(0.5), 0.0, 1.0);
-  mat.emissiveNode = materialEmissive.add(u.uSSSColor.mul(sss.add(wrap.mul(0.18).mul(u.uSSS))));
+  // v218: the dying gel lights from WITHIN — an interior surge plus a
+  // fresnel rim flare, both riding uTear so they cost nothing in life.
+  const fres = float(1.0).sub(clamp(dot(N, V), 0.0, 1.0)).pow(3.0);
+  mat.emissiveNode = materialEmissive.add(u.uSSSColor.mul(
+    sss.add(wrap.mul(0.18).mul(u.uSSS)).add(u.uTear.mul(fres.mul(1.1).add(0.7)))));
+  // v218: dome refraction — transmission thickness varies with height, thick
+  // at the belly and thin at the crown, so the gel bends light like a dome
+  // instead of a uniform shell. positionLocal.y spans 0..~1.7 (unit dome,
+  // floor-anchored); uThick keeps the pause-menu THICKNESS slider live.
+  mat.thicknessNode = u.uThick.mul(clamp(float(1.25).sub(positionLocal.y.mul(0.41)), 0.55, 1.25));
 }
 
 export const EnemyType = {
