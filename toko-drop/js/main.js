@@ -1,15 +1,15 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=170';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=170';
-import { Player, PLAYER_RADIUS } from './player.js?v=170';
+import { InputManager } from './input.js?v=171';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=171';
+import { Player, PLAYER_RADIUS } from './player.js?v=171';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=170';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=170';
-import { audio } from './audio.js?v=170';
-import { initDesigner } from './designer.js?v=170';
-import { createSpecimen } from './specimen.js?v=170';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=170';
-import { TUNING } from './tuning.js?v=170';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=171';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=171';
+import { audio } from './audio.js?v=171';
+import { initDesigner } from './designer.js?v=171';
+import { createSpecimen } from './specimen.js?v=171';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=171';
+import { TUNING } from './tuning.js?v=171';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -52,24 +52,28 @@ let rng = Math.random.bind(Math);
 // ── Wave scaling (Nex Machina pacing) ─────────────────────────────────────────────
 // Difficulty climbs to ~8/10 by wave 10 (the "knee"), then plateaus with a slow
 // creep toward 9/10 — tuned for competitive 5–10 min runs.
+// v217 WAVE DIRECTOR v1: the numbers live in TUNING.waves (tuning.js) —
+// composition, cadence and escalation are data; this file keeps the algorithm.
 function getWaveScale(wave) {
-  const ramp = Math.min(wave, 10) - 1;   // 0..9 across waves 1-10
-  const post = Math.max(0, wave - 10);   // 0,1,2… after wave 10
-  // Gentler on-ramp (v95): waves 1-5 shave a little enemy speed, fading out
-  // linearly so wave 6+ rejoins the original curve exactly. Fire rates and
-  // the post-10 curve are untouched.
-  const earlyEase = wave < 6 ? (6 - wave) * 0.012 : 0;
+  const S = TUNING.waves.scale;
+  const ramp = Math.min(wave, S.knee) - 1;   // 0..knee-1 across the on-ramp
+  const post = Math.max(0, wave - S.knee);   // 0,1,2… after the knee
+  // Gentler on-ramp (v95): early waves shave a little enemy speed, fading out
+  // linearly so the curve rejoins itself exactly. Fire rates and the
+  // post-knee curve are untouched.
+  const earlyEase = wave < S.earlyEase.until ? (S.earlyEase.until - wave) * S.earlyEase.per : 0;
   return {
-    speedMult:    Math.min(1.1 + ramp * 0.09 + post * 0.02 - earlyEase, 2.4),
-    intervalMult: Math.max(1.0 - ramp * 0.055 - post * 0.010, 0.35),
+    speedMult:    Math.min(S.speed.base + ramp * S.speed.ramp + post * S.speed.post - earlyEase, S.speed.cap),
+    intervalMult: Math.max(S.interval.base - ramp * S.interval.ramp - post * S.interval.post, S.interval.floor),
   };
 }
 
 // Wave rhythm — creates intensity pulses across waves (swarm beats + breather lulls).
 function waveKind(w) {
-  if (w % 8 === 0)           return 'boss';   // every 8th: big guaranteed enemy
-  if (w % 4 === 0)           return 'spike';  // every 4th (not boss): heavy budget
-  if (w >= 3 && w % 3 === 0) return 'swarm';  // every 3rd (not spike/boss): rush of bodies
+  const R = TUNING.waves.rhythm;
+  if (w % R.bossEvery === 0)                    return 'boss';   // big guaranteed enemy
+  if (w % R.spikeEvery === 0)                   return 'spike';  // heavy budget
+  if (w >= R.swarmFrom && w % R.swarmEvery === 0) return 'swarm'; // rush of bodies
   return 'normal';
 }
 
@@ -78,27 +82,12 @@ function waveKind(w) {
 // Enemy pool: [type, minWave, budget-cost]. Unlocked types grow with wave number.
 // getEnemySchedule uses rng (seeded per run) so every run plays differently.
 function getEnemySchedule(wave) {
-  const { GLOBBO, SPITTOR, FANNER, WEEVA, SPLITTA,
-          YELA_CUBE, ORANGE_CUBE, SLUDGE_CUBE, REDD_CUBE, PURP_CUBE, TORO, BAMBU, PYRA, OMEGA, BOTFLY, WARDEN, BULWARK, SIREN, CLOAKER, MAGNA, DRAPER, PRISM, SHEPHERD } = EnemyType;
-  const AFFIXES = ['volatile', 'swift', 'anchored'];
-  const POOL = [
-    // [type, minWave, cost]
-    [GLOBBO,      1, 1], [YELA_CUBE,  1, 1], [SPITTOR,    1, 2], [FANNER,     1, 2],
-    [ORANGE_CUBE, 2, 2], [WEEVA,      2, 3],
-    [SLUDGE_CUBE, 3, 2], [BAMBU,      3, 3], [SPLITTA,    3, 3],
-    [REDD_CUBE,   4, 3],
-    [PURP_CUBE,   5, 3], [PYRA,       5, 4], [BOTFLY,     5, 4],
-    [TORO,        6, 5],
-    [WARDEN,      7, 5],  // v124: shield-bearer — cost keeps it rare, one per wave-ish
-    [BULWARK,     6, 4],  // v140: plate walker — front is bulletproof, flank it
-    [SIREN,       8, 5],  // v141: screamer — surges the pack, kill it first
-    [CLOAKER,     9, 4],  // v143: ambusher — shimmer-flanks, telegraphed burst
-    [MAGNA,      10, 5],  // v144: magnet — pulls you off your line, dash breaks it
-    [DRAPER,      7, 5],  // v171: wall-weaver — looms marching bullet curtains
-  ];
-  // v203: THE SHEPHERD herds the flock. v211: it is simply a roster entry —
-  // its mechanic is its own identity, not a mode that has to be switched on.
-  POOL.push([SHEPHERD, 4, 4]);
+  const { GLOBBO, TORO, OMEGA, WARDEN, PRISM, DRAPER } = EnemyType;
+  // v217: the tables are data (TUNING.waves) — pool order there is draw order
+  // here, so the seeded index math is untouched.
+  const W = TUNING.waves;
+  const AFFIXES = W.affixes;
+  const POOL = Object.entries(W.pool).map(([name, [min, cost]]) => [EnemyType[name], min, cost]);
   // TEST MODE (v142): every enemy type is unlocked from wave 1 so new
   // designs can be met within seconds of pressing start.
   const available = POOL.filter(([, min]) => testMode || wave >= min);
@@ -114,59 +103,57 @@ function getEnemySchedule(wave) {
   const isBreather = kind === 'normal' && waveKind(wave - 1) !== 'normal';
 
   // Budget grows slowly in early waves so the ramp feels earned, not punishing.
-  // Knee at wave 10; kind multipliers are gentler than before so even spike/swarm
-  // waves in the first few rounds don't wall the player.
-  const rampB  = Math.min(wave, 10);
-  const postB  = Math.max(0, wave - 10);
-  const base   = 5 + rampB * 1.8 + postB * 0.8;
-  const mod    = isBoss ? 2.0 : isSpike ? 1.4 : isSwarm ? 1.25 : isPrize ? 0.8 : isBreather ? 0.6 : 1.0;
+  // Knee + kind multipliers come from TUNING.waves.budget.
+  const B = W.budget;
+  const rampB  = Math.min(wave, B.knee);
+  const postB  = Math.max(0, wave - B.knee);
+  const base   = B.base + rampB * B.ramp + postB * B.post;
+  const mod    = isBoss ? B.kind.boss : isSpike ? B.kind.spike : isSwarm ? B.kind.swarm
+               : isPrize ? B.kind.prize : isBreather ? B.kind.breather : B.kind.normal;
   let budget = Math.floor(base * mod);
-  // Gentler on-ramp (v95): waves 1-5 spawn a bit less (−15% at wave 1,
-  // fading to 0 by wave 6); caps, rhythm, and unlock gates are unchanged.
-  if (wave < 6) budget = Math.floor(budget * (0.85 + 0.03 * (wave - 1)));
-  // SMASH TV (v109): the show wants bodies — 40% more budget on every wave.
-  // v178: each SMASH floor raises the stakes on top of the show's +40%
-  if (smashMode) budget = Math.floor(budget * 1.4 * (1 + 0.12 * Math.max(0, smashFloor - 1)));
-  // TEST MODE (v142): early waves get a wave-8-sized budget floor so the
+  // Gentler on-ramp (v95): early waves spawn a bit less, fading to full;
+  // caps, rhythm, and unlock gates are unchanged.
+  if (wave < B.early.until) budget = Math.floor(budget * (B.early.base + B.early.step * (wave - 1)));
+  // SMASH TV (v109): the show wants bodies — more budget on every wave.
+  // v178: each SMASH floor raises the stakes on top of the show's bonus
+  if (smashMode) budget = Math.floor(budget * B.smash * (1 + B.smashFloorStep * Math.max(0, smashFloor - 1)));
+  // TEST MODE (v142): early waves get a late-wave-sized budget floor so the
   // expensive late types (WARDEN 5, SIREN 5…) actually fit from wave 1.
-  if (testMode) budget = Math.max(budget, 24);
+  if (testMode) budget = Math.max(budget, B.testFloor);
   // v179: RICH DAY — bigger crowds pay for the bigger loot
-  if (dailyMod === 'rich') budget = Math.floor(budget * 1.4);
+  if (dailyMod === 'rich') budget = Math.floor(budget * B.rich);
   // v187: no lanes to respect — CLOSE COMBAT floods the floor instead
-  if (meleeRun) budget = Math.floor(budget * 1.35);
+  if (meleeRun) budget = Math.floor(budget * B.melee);
 
   // Composed waves (v116): melee mobs FLOOD the arena (groups/twins — the
   // fodder you mow through), while ranged enemies are placed DELIBERATELY —
   // few of them, capped, spread apart in arrival time and position so each
   // shooter is a tactical problem to prioritise, not part of the noise.
-  const SHOOTERS  = new Set([SPITTOR, FANNER, WEEVA, ORANGE_CUBE, PURP_CUBE, BAMBU, PYRA, BOTFLY, CLOAKER, DRAPER]);
+  const SHOOTERS  = new Set(W.shooters.map(n => EnemyType[n]));
   // v187 CLOSE COMBAT: nobody fires — the gun club joins the melee pool as
   // chasers (muzzled + sped up at spawn); DRAPER sits out (it IS a gun).
   const draft     = meleeRun ? available.filter(([ty]) => ty !== DRAPER) : available;
   const meleePool = draft.filter(([ty]) => meleeRun || !SHOOTERS.has(ty));
   const shootPool = meleeRun ? [] : draft.filter(([ty]) => SHOOTERS.has(ty));
 
-  // Mob variants: swarm waves favour bodies; SMASH TV leans toward door-rush groups.
-  const VARIANTS = meleeRun
-    ? ['group', 'group', 'group', 'twin', 'twin', 'normal', 'normal', 'elite']   // v187: horde texture
-    : isSwarm
-      ? ['group', 'group', 'twin', 'normal']
-      : smashMode
-        ? ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group', 'group', 'group']
-        : ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group'];
-  const swarmPool = meleePool.filter(([, , c]) => c <= 2);
+  // Mob variants: swarm waves favour bodies; SMASH TV leans toward door-rush
+  // groups. The draw tables live in TUNING.waves.variants (odds = repetition).
+  const V = W.variants;
+  const VARIANTS = meleeRun ? V.melee : isSwarm ? V.swarm : smashMode ? V.smash : V.normal;
+  const swarmPool = meleePool.filter(([, , c]) => c <= V.swarmCostMax);
   // v187: the melee draw leans cheap — bodies twice as likely as heavies
   const drawPool  = (isSwarm && swarmPool.length) ? swarmPool
-                  : meleeRun ? [...meleePool.filter(([, , c]) => c <= 3), ...meleePool]
+                  : meleeRun ? [...meleePool.filter(([, , c]) => c <= V.meleeCheapMax), ...meleePool]
                   : (meleePool.length ? meleePool : available);
 
   const list = [];
   let spent = 0, t = 0;
   // Cap grows with wave number so early waves stay sparse; later waves can fill the arena.
+  const C = W.caps;
   let cap = isSwarm
-    ? Math.min(22, 5 + Math.floor(wave * 1.4))
-    : Math.min(14, 4 + wave);
-  if (meleeRun) cap = Math.floor(cap * 1.5);   // v187: the horde IS the game
+    ? Math.min(C.swarm.max, C.swarm.base + Math.floor(wave * C.swarm.per))
+    : Math.min(C.normal.max, C.normal.base + wave * C.normal.per);
+  if (meleeRun) cap = Math.floor(cap * C.meleeMult);   // v187: the horde IS the game
 
   // Boss wave: guaranteed boss up front. OMEGA (v71) is boss-exclusive — it
   // never appears in POOL, so every boss wave gets a purpose-built enemy
@@ -212,17 +199,18 @@ function getEnemySchedule(wave) {
   // spaced ~3s apart and spawnWave assigns them maximally separated positions
   // (spread angles / different doors) so they form crossfires to be prioritised.
   {
-    let shooterCap = Math.min(1 + Math.floor(wave / 3), 5);
-    if (isSwarm) shooterCap = 1;
-    if (isBoss)  shooterCap = Math.min(shooterCap, 2);
-    const shooterBudget = Math.floor(budget * 0.35);
-    let sSpent = 0, k = 0, st = 0.8;
+    const SP = W.shooterPlan;
+    let shooterCap = Math.min(SP.capBase + Math.floor(wave / SP.capPerWaves), SP.capMax);
+    if (isSwarm) shooterCap = SP.swarmCap;
+    if (isBoss)  shooterCap = Math.min(shooterCap, SP.bossCap);
+    const shooterBudget = Math.floor(budget * SP.budgetShare);
+    let sSpent = 0, k = 0, st = SP.first;
     while (shootPool.length && k < shooterCap && sSpent < shooterBudget) {
       const [type, , cost] = shootPool[Math.floor(rng() * shootPool.length)];
-      if (sSpent + cost > shooterBudget + 2) break;
+      if (sSpent + cost > shooterBudget + SP.slack) break;
       list.push({ type, t: st, shooter: true, slot: k });
       sSpent += cost;
-      st += 2.5 + rng() * 1.5;
+      st += SP.gap + rng() * SP.gapRand;
       k++;
     }
     spent += sSpent;
@@ -231,37 +219,38 @@ function getEnemySchedule(wave) {
   while (spent < budget && list.length < cap) {
     const [type, , cost0] = drawPool[Math.floor(rng() * drawPool.length)];
     // v187: a drafted shooter without its gun is just legs — priced like it
-    const cost = meleeRun && SHOOTERS.has(type) ? Math.max(1, cost0 - 2) : cost0;
+    const cost = meleeRun && SHOOTERS.has(type) ? Math.max(1, cost0 - V.meleeShooterDiscount) : cost0;
     const variant = VARIANTS[Math.floor(rng() * VARIANTS.length)];
     let entry, entryCost;
     if (variant === 'elite') {
-      entryCost = Math.ceil(cost * 1.6);
+      entryCost = Math.ceil(cost * V.eliteCost);
       // Elite affixes (v145): every elite carries one behavior modifier with
       // a readable tell — not just bigger/more HP. Seeded, so dailies match.
       entry = { type, t, elite: true, affix: AFFIXES[Math.floor(rng() * AFFIXES.length)] };
     } else if (variant === 'elitelite') {
-      entryCost = Math.ceil(cost * 1.25);
+      entryCost = Math.ceil(cost * V.eliteliteCost);
       entry = { type, t, elitelite: true,
                 affix: rng() < 0.5 ? AFFIXES[Math.floor(rng() * AFFIXES.length)] : null };
     } else if (variant === 'twin') {
-      entryCost = Math.ceil(cost * 1.6);
+      entryCost = Math.ceil(cost * V.twinCost);
       entry = { type, t, count: 2 };
     } else if (variant === 'group') {
       const cheaper = swarmPool.length ? swarmPool : meleePool;
       const pick = cheaper.length ? cheaper[Math.floor(rng() * cheaper.length)] : [type, 0, cost];
-      const cnt = (meleeRun ? 4 : 3) + Math.floor(rng() * 2);   // v187: fatter packs
-      const pCost = meleeRun && SHOOTERS.has(pick[0]) ? Math.max(1, pick[2] - 2) : pick[2];
+      const cnt = (meleeRun ? V.group.meleeBase : V.group.base) + Math.floor(rng() * V.group.rand);
+      const pCost = meleeRun && SHOOTERS.has(pick[0]) ? Math.max(1, pick[2] - V.meleeShooterDiscount) : pick[2];
       entryCost = pCost * cnt;
       entry = { type: pick[0], t, count: cnt };
     } else {
       entryCost = cost;
       entry = { type, t };
     }
-    if (spent + entryCost > budget + 3) break;
+    if (spent + entryCost > budget + B.slack) break;
     list.push(entry);
     // Tight spawn cadence so most of the budget is on-field before the player can
     // clear it (prevents instant wave-end from trivialising waves). Swarms burst faster.
-    t += isSwarm ? (0.08 + rng() * 0.28) : (0.18 + rng() * 0.5);
+    t += isSwarm ? (W.cadence.swarm.min + rng() * W.cadence.swarm.rand)
+                 : (W.cadence.normal.min + rng() * W.cadence.normal.rand);
     spent += entryCost;
   }
   // SMASH TV (v114): re-pace the MOB flood like the show — bursts of ~3 every
@@ -269,14 +258,15 @@ function getEnemySchedule(wave) {
   // around the room. Shooters keep their own spaced schedule but get spread
   // across DIFFERENT doors, so their crossfire comes from separate walls.
   if (smashMode && list.length) {
+    const P = W.cadence.smashPulse;
     const mobs = list.filter(e => !e.shooter && !e.boss);
     const pulseT = [0];
-    for (let pi = 1; pi <= Math.ceil(mobs.length / 3); pi++) {
-      pulseT.push(pulseT[pi - 1] + 2.0 + rng() * 1.0);
+    for (let pi = 1; pi <= Math.ceil(mobs.length / P.size); pi++) {
+      pulseT.push(pulseT[pi - 1] + P.gap + rng() * P.rand);
     }
     mobs.forEach((entry, i) => {
-      const pi = Math.floor(i / 3);
-      entry.t    = pulseT[pi] + (i % 3) * 0.15;
+      const pi = Math.floor(i / P.size);
+      entry.t    = pulseT[pi] + (i % P.size) * 0.15;
       entry.door = pi % 4;
     });
     const doorOff = Math.floor(rng() * 4);
@@ -4408,7 +4398,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v216' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v217' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -9114,6 +9104,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=170').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=171').catch(() => {});
   });
 }

@@ -123,6 +123,85 @@ export const TUNING = {
     weaveGain: 1.6,      // u/s at full weave
   },
 
+  // v217 WAVE DIRECTOR v1 (roadmap-v2 Phase 2) — the classic-mode spawn
+  // director as data. main.js keeps the assembly ALGORITHM (getEnemySchedule);
+  // everything tabular about it lives here: which types exist at which depth
+  // and cost (composition), the boss/spike/swarm pulse and spawn timing
+  // (cadence), and the speed/fire-rate/budget curves (escalation).
+  //
+  // ORDER MATTERS in `pool`: the draw rolls a seeded index into this list, so
+  // reordering entries reshuffles every seeded run (and the daily). Append new
+  // types at the end. Boss-wave choreography (OMEGA/PRISM alternation, WARDEN
+  // escorts) stays scripted in main.js — it is a set piece, not a table.
+  waves: {
+    // escalation — getWaveScale: difficulty knees at `knee`, then slow creep
+    scale: {
+      knee: 10,
+      speed:    { base: 1.1, ramp: 0.09,  post: 0.02,  cap: 2.4 },
+      interval: { base: 1.0, ramp: 0.055, post: 0.010, floor: 0.35 },
+      earlyEase: { until: 6, per: 0.012 },   // waves 1-5 shave a little speed
+    },
+    // cadence — waveKind: every 8th boss, every 4th spike, every 3rd swarm
+    rhythm: { bossEvery: 8, spikeEvery: 4, swarmEvery: 3, swarmFrom: 3 },
+    // composition — EnemyType name -> [minWave, budgetCost]
+    pool: {
+      GLOBBO:      [1, 1], YELA_CUBE: [1, 1], SPITTOR: [1, 2], FANNER: [1, 2],
+      ORANGE_CUBE: [2, 2], WEEVA:     [2, 3],
+      SLUDGE_CUBE: [3, 2], BAMBU:     [3, 3], SPLITTA: [3, 3],
+      REDD_CUBE:   [4, 3],
+      PURP_CUBE:   [5, 3], PYRA:      [5, 4], BOTFLY:  [5, 4],
+      TORO:        [6, 5],
+      WARDEN:      [7, 5],   // shield-bearer — cost keeps it rare
+      BULWARK:     [6, 4],   // plate walker — front is bulletproof, flank it
+      SIREN:       [8, 5],   // screamer — surges the pack, kill it first
+      CLOAKER:     [9, 4],   // ambusher — shimmer-flanks, telegraphed burst
+      MAGNA:      [10, 5],   // magnet — pulls you off your line, dash breaks it
+      DRAPER:      [7, 5],   // wall-weaver — looms marching bullet curtains
+      SHEPHERD:    [4, 4],   // herds the flock — its mechanic is its identity
+    },
+    // ranged types: placed deliberately (capped, spread) instead of flooded
+    shooters: ['SPITTOR', 'FANNER', 'WEEVA', 'ORANGE_CUBE', 'PURP_CUBE',
+               'BAMBU', 'PYRA', 'BOTFLY', 'CLOAKER', 'DRAPER'],
+    affixes: ['volatile', 'swift', 'anchored'],   // elite behavior modifiers
+    // escalation — the wave's spend on bodies
+    budget: {
+      base: 5, ramp: 1.8, post: 0.8, knee: 10, slack: 3,
+      kind: { boss: 2.0, spike: 1.4, swarm: 1.25, prize: 0.8, breather: 0.6, normal: 1.0 },
+      early: { until: 6, base: 0.85, step: 0.03 },   // −15% at wave 1, gone by 6
+      smash: 1.4, smashFloorStep: 0.12,   // the show wants bodies; floors stack
+      melee: 1.35,                        // CLOSE COMBAT floods the floor
+      rich: 1.4,                          // RICH DAY: crowds pay for the loot
+      testFloor: 24,                      // TEST MODE fits late types at wave 1
+    },
+    // on-field body caps
+    caps: {
+      swarm:  { base: 5, per: 1.4, max: 22 },
+      normal: { base: 4, per: 1,   max: 14 },
+      meleeMult: 1.5,
+    },
+    // deliberate-shooter plan: 1 at wave 1 growing to capMax by ~wave 12
+    shooterPlan: { capBase: 1, capPerWaves: 3, capMax: 5, swarmCap: 1, bossCap: 2,
+                   budgetShare: 0.35, slack: 2, first: 0.8, gap: 2.5, gapRand: 1.5 },
+    // variant draw tables (relative odds = repetition) + variant pricing
+    variants: {
+      melee:  ['group', 'group', 'group', 'twin', 'twin', 'normal', 'normal', 'elite'],
+      swarm:  ['group', 'group', 'twin', 'normal'],
+      smash:  ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group', 'group', 'group'],
+      normal: ['normal', 'normal', 'normal', 'elite', 'elitelite', 'twin', 'group'],
+      eliteCost: 1.6, eliteliteCost: 1.25, twinCost: 1.6,
+      group: { base: 3, meleeBase: 4, rand: 2 },
+      swarmCostMax: 2,          // swarm waves draw only bodies this cheap
+      meleeCheapMax: 3,         // the melee draw doubles up on cheap bodies
+      meleeShooterDiscount: 2,  // a drafted shooter without its gun is just legs
+    },
+    // cadence — spawn drip inside a wave
+    cadence: {
+      swarm:  { min: 0.08, rand: 0.28 },
+      normal: { min: 0.18, rand: 0.5 },
+      smashPulse: { size: 3, gap: 2.0, rand: 1.0 },   // bursts of 3, one door each
+    },
+  },
+
   fx: {
     hitDroplets: 8, killDroplets: 22, killChunks: 5,
     splatLife: 20,
