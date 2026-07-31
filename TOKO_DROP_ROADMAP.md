@@ -68,15 +68,9 @@ materials and follows the renderer's kind. It is the engine the lab should have.
 
 *Goal: the visual source of truth stops being a fork.*
 
-- [ ] **Rebuild `enemy-lab.html` on the game's own code**: import `enemy.js` /
-      `tuning.js` and render through `js/specimen.js`, deleting the duplicate
-      `onBeforeCompile` goo. Vendored three, not the CDN. WebGPU comes free —
-      the game's material already carries the v194 TSL path
-- [ ] Verify all **40** types render and animate in the lab on both renderers
-- [ ] `WEBGPU_MIGRATION_NOTES.md` — written retrospectively from the v191–v195
-      lessons (node graphs evaluate every branch; ÷0 → NaN poisons everything;
-      TSL `select`/`ConditionalNode` black-screens WebGL2, use `step()`+`mix()`;
-      `.pow(2.2)` for output-encoding parity)
+- [x] **Rebuild `enemy-lab.html` on the game's own code** — *v216*
+- [x] Verify all **40** types on both renderers — *v216, 11/11 headless*
+- [x] `WEBGPU_MIGRATION_NOTES.md` — *shipped alongside v216; Phase 1 complete*
 
 ## Phase 2 — Main game systems
 
