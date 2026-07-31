@@ -206,11 +206,13 @@ async function main() {
 
   console.log('\nthe wire');
   const wire = await go(() => window.__rfh.debug.wire());
-  // 'network' is what loadWire() installs on a good fetch; 'off-air' is the
-  // baked-in station identification, and shipping that silently is the whole
-  // reason this check exists.
+  // 'episode' is a dated broadcast out of wire/, 'network' the single-file
+  // fallback for a shell cached before episodes existed, 'off-air' the baked-in
+  // station identification — and shipping that silently is why this check is here.
   ok('the wire is FETCHED, not the baked-in station identification',
-     wire.source === 'network', JSON.stringify(wire));
+     wire.source === 'episode' || wire.source === 'network', JSON.stringify(wire));
+  ok('a dated episode is what actually played', wire.source === 'episode',
+     JSON.stringify(wire));
   ok('the wire validated clean', !wire.errors || wire.errors.length === 0,
      (wire.errors || []).join('; '));
 
@@ -222,6 +224,15 @@ async function main() {
      `rotation ${rot.onAir.length} vs feed ${onScreen.length}`);
   ok('nothing archived is on screen',
      !rot.archived.some(id => onScreen.includes(id)), rot.archived.join(','));
+
+  // ── episodes ─────────────────────────────────────────────────────
+  console.log('\nepisodes');
+  const eps = await go(() => ({ list: __rfh.debug.episodes(), at: __rfh.debug.episode() }));
+  ok('the index lists more than one morning', eps.list.length >= 2, JSON.stringify(eps.list));
+  ok('no date asked for plays the NEWEST', eps.at === eps.list[0], JSON.stringify(eps));
+  ok('the archive picker is on screen with a choice to make',
+     await go(() => { const a = document.getElementById('archive');
+                      return !!a && !a.hidden && a.querySelectorAll('option').length >= 2; }));
 
   console.log('\nthe cut package');
   ok('a post opens on its own footage',
@@ -330,6 +341,25 @@ async function main() {
   // hidden — it is that DECODE was never built. Checked against the DOM and
   // against the page's own text, because a struck span that is display:none
   // still puts its words in textContent.
+  console.log('\ndate routing');
+  for (const [q, want, label] of [
+    ['?date=' + eps.list[1], eps.list[1], 'an older date plays that morning'],
+    ['?date=1999-01-01', eps.list[0], 'an unknown date falls back to the newest, never a blank screen'],
+  ]) {
+    const dp = await browser.newPage();
+    const derr = [];
+    dp.on('pageerror', e => derr.push(e.message));
+    await dp.goto(base + q, { waitUntil: 'load' });
+    await wait(600);
+    await dp.evaluate(() => window.__rfh.debug.tuneIn());
+    await wait(1600);
+    const got = await dp.evaluate(() => ({ at: __rfh.debug.episode(),
+                                           posts: document.querySelectorAll('.post').length }));
+    ok(label, got.at === want && got.posts > 1, JSON.stringify(got) + ' wanted ' + want);
+    ok(label + ' — without throwing', derr.length === 0, derr.join(' | '));
+    await dp.close();
+  }
+
   console.log('\nclean mode');
   const cp = await browser.newPage();
   const cerrs = [];

@@ -1,7 +1,7 @@
 // Radio Free Helsinki — offline.
-const VERSION = 'v35';
+const VERSION = 'v36';
 const CACHE = `rfh-${VERSION}`;
-const V = `?v=35`;
+const V = `?v=36`;
 const SHELL = [
   '../toko/js/signature.js?v=2',
   ...['surface', 'palette', 'face', 'util', 'glitch'].map(m => `../toko/js/${m}.js`),
@@ -12,6 +12,9 @@ const SHELL = [
   './img/katu.jpg',
   './img/mannerheim.jpg',
   './wire.json',
+  './wire/index.json',
+  './wire/2026-07-31.json',
+  './wire/2026-07-28.json',
   './icon-192.png',
   './icon-512.png',
   ...['main', 'codec', 'package', 'anchor', 'graphic', 'plate', 'photo', 'plates', 'wire', 'toko', 'visuals', 'stories', 'i18n', 'screen', 'audio', 'palette']

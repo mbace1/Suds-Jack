@@ -48,6 +48,7 @@ const STR = {
     'a11y.sound': 'Sound on or off',
     'a11y.nextPost': 'Next video',
     'a11y.lang': 'Language — English. Press to change.',
+    'a11y.archive': 'Choose a broadcast date',
   },
 
   // ────────────────────────────────────────────────── Suomi
@@ -85,6 +86,7 @@ const STR = {
     'a11y.sound': 'Ääni päälle tai pois',
     'a11y.nextPost': 'Seuraava video',
     'a11y.lang': 'Kieli — suomi. Vaihda painamalla.',
+    'a11y.archive': 'Valitse lähetyspäivä',
   },
 
   // ────────────────────────────────────────────────── 日本語
@@ -122,6 +124,7 @@ const STR = {
     'a11y.sound': '音のオン・オフ',
     'a11y.nextPost': '次の動画',
     'a11y.lang': '言語 — 日本語。押すと切り替わります。',
+    'a11y.archive': '放送日を選ぶ',
   },
 };
 
