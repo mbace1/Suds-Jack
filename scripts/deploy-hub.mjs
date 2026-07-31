@@ -52,6 +52,7 @@ if (!site || !fs.existsSync(path.join(site, 'index.html'))) {
 const OWNED = [
   'hub/hub.js', 'hub/hub.css', 'hub/i18n.js', 'hub/topics.js',
   'hub/feedback.js', 'hub/pad.js', 'hub/padkeys.js', 'hub/shell.js',
+  'hub/arcade.js',
   'scripts/versions.mjs',
 ];
 const THEIRS = ['hub/games.js', 'hub/art.js'];
@@ -206,9 +207,29 @@ for (const f of OWNED) {
   const cat = read(site, 'hub/games.js') ?? '';
   const art = read(site, 'hub/art.js') ?? '';
   const arts = [...cat.matchAll(/art: '([a-z0-9]+)'/g)].map(m => m[1]);
-  const drawn = new Set([...art.matchAll(/^ {2}([a-z0-9]+)\(g, a\)/gm)].map(m => m[1]));
+  // `(g)` as well as `(g, a)` — a marquee that does not tint from an accent
+  // takes one argument, and hard-coding two reported the brand mark as a
+  // missing drawing on the one deploy that added it
+  const drawn = new Set([...art.matchAll(/^ {2}([a-z0-9]+)\(g(?:, a)?\)/gm)].map(m => m[1]));
   const blank = arts.filter(a => !drawn.has(a));
   if (blank.length) note(`! the site lists cabinets with no marquee: ${blank}`);
+}
+
+// A module this branch imports but never listed as OWNED would simply not be
+// copied, and the deploy would still report success — the page would ask the
+// site for a file that is not there and the arcade would not boot at all. This
+// is the one failure the rest of the script cannot catch, because everything
+// downstream reasons about references rather than about files.
+{
+  const graph = [read(REPO, 'index.html'), read(REPO, 'hub/hub.js'), read(REPO, 'hub/shell.js')]
+    .join('\n');
+  const want = new Set([...graph.matchAll(/(?:\.\/|hub\/)([\w.-]+\.(?:js|css))\?v=\d+/g)]
+    .map(m => `hub/${m[1]}`));
+  const missing = [...want].filter(f => read(site, f) == null);
+  if (missing.length) {
+    note(`! the page asks for ${missing.join(', ')} and the site does not have it`);
+    note('  add it to OWNED in this script — nothing else will copy it');
+  }
 }
 
 // ── 2. the page ────────────────────────────────────────────────────
