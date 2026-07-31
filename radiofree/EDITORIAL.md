@@ -184,3 +184,20 @@ story; the OUTPUT is what goes on air.
 - [ ] A tell that works on tomorrow's real article
 - [ ] All three languages, each written in its own idiom — not translated
 - [ ] `node radiofree/tools/validate-wire.mjs` exits 0
+
+---
+
+## How this page reaches air
+
+`tools/generate-wire.mjs` reads this file **whole** and sends it as the system
+prompt, every morning, with the day's real headlines under it. There is no
+second copy of the rules anywhere: editing this page is how the show changes.
+
+Two of the rules above are also enforced in code, because they are the two that
+fail without looking like failure — copy with nothing to decode, and copy still
+wearing a real name lifted out of the source headline. The generator rejects
+both and sends the draft back with the reason attached, and the gate
+(`test/smoke.cjs`) proves it still does.
+
+Everything else on this page is trusted to the writing. If a morning comes out
+flat, the fix is here.

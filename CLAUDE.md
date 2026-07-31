@@ -311,6 +311,29 @@ import gets an empty copy (this crashed the gate) — go through
 never in the wording — one new technique per bulletin, and every plain reading
 specific ("a way to protect this quarter's margin", not "something bad").
 
+**A morning is a file, and a job writes it.** The wire is dated now:
+`wire/index.json` lists the broadcasts newest first and `wire/<date>.json` is
+one morning (`?date=` opens one, the archive picker is a native `<select>`);
+`wire.json` stays as the **fallback** for a shell cached before episodes
+existed, never the source. `.github/workflows/radiofree-wire.yml` runs
+`tools/generate-wire.mjs` at 04:10 UTC: real headlines off RSS → the model with
+**`radiofree/EDITORIAL.md` as the entire prompt** → the app's own `validateWire`
+→ commit to `main` (the record) *and* `gh-pages` (the site). It **repairs rather
+than rerolls** (errors go back with the draft) and **writes nothing unless
+everything passes**, so a bad morning leaves yesterday's broadcast up. Changing
+what the show sounds like is an edit to `EDITORIAL.md`, not to the workflow.
+Two rules are enforced in code because they fail silently — a bulletin with
+nothing to decode, and copy still wearing a real name lifted out of the source
+headline (**real events, invented actors**; the check pulls proper nouns from
+the headlines and looks for them in the copy, sentence-initial included, which
+is where a company name usually sits). It needs an `ANTHROPIC_API_KEY` repo
+secret. Consequences for `sw.js`: **everything under `wire/` is network-first**,
+`index.json` above all — cache-first there freezes the list of broadcasts on the
+day the app was installed and no installed copy ever learns a new morning exists
+— and the precache **names no dated episode**; install reads the index and
+caches whatever it points at. `loadWire` walks the index **down** if the newest
+episode 404s (a half-published morning must cost yesterday, not the whole feed).
+
 **Scrolling is the primary control**; the masthead dial is a *readout* of which
 channel the scroll landed on plus a jump between bands. **Only the live post
 animates** — it re-tunes (picture up out of noise), types, and drives the lip-sync;
@@ -426,9 +449,11 @@ the target and run to the guard limit, which drew two long rays across the
 account graph. `field(scr, decode, false)` turns the graticule off for scenes with their own full-frame
 texture (`sea`, `engine`); a grid under a wireframe terrain is noise on noise.
 
-**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 91
+**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 62
 checks (roster counts are read off `__rfh.debug.stories()`, never hardcoded — that
-number went stale twice): zero console errors, the feed is vertical (one post per screen, snapping, media
+number went stale twice), including a **generator block that runs with no network
+and no API key**: the feed parser over a fixture, a lifted company name rejected,
+a one-span bulletin rejected, two bulletins sharing a technique rejected. Also: zero console errors, the feed is vertical (one post per screen, snapping, media
 portrait in the buffer *and* on screen), the live codec animates while neighbours hold
 their painted frame and unread posts sit on standby, the reader types and can be
 skipped, DECODE grows plain readings / re-folds / stays per-post, scroll+rail+keyboard
