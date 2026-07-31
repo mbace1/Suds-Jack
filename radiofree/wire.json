@@ -1,7 +1,7 @@
 {
   "version": 1,
   "station": "Radio Free Helsinki",
-  "updated": "2026-07-30",
+  "updated": "2026-07-31",
   "keep": 5,
   "sectors": [
     {
@@ -175,6 +175,20 @@
       "visual": "sea",
       "broll": "packice",
       "filed": "2026-07-30"
+    },
+    {
+      "id": "crime-wave",
+      "sector": "RFH",
+      "visual": "crowd",
+      "broll": "chase",
+      "filed": "2026-07-31"
+    },
+    {
+      "id": "complaints-down",
+      "sector": "RFH",
+      "visual": "chart",
+      "broll": "approach",
+      "filed": "2026-07-31"
     }
   ],
   "copy": {
@@ -464,6 +478,28 @@
         "technique": "BURIED LEDE",
         "decodeNote": "Nothing here is untrue and nothing has been left out. The news is simply in paragraph nine, where a release puts the thing it must disclose and would rather you did not carry. Order is an editorial claim about importance, and it is the one claim a reader almost never audits.",
         "tell": "Read the last paragraph first. If that is the story, you were handed the running order for a reason."
+      },
+      "crime-wave": {
+        "slug": "RING ROAD III",
+        "head": "City-wide crime wave confirmed by one car",
+        "lines": [
+          "A pursuit on the ring road on Friday {{is the latest in a rising tide of vehicle crime|is the second one this year}}, according to a statement {{issued while the helicopter was still up|issued before anybody had landed}}.",
+          "The wave {{is described as city-wide|was filmed from one aircraft, over one road, for eleven minutes}}. Recorded vehicle crime {{has moved|has moved by less than the reporting margin}}."
+        ],
+        "technique": "ANECDOTE AS TREND",
+        "decodeNote": "One event, lit well, becomes a pattern the moment somebody calls it the latest. The footage is real, the pursuit happened, and neither fact says anything about a city — but a wave needs at least two waves, and you were shown one car from a helicopter that was already paying for itself.",
+        "tell": "How many cases is this trend made of? If the answer is one, it is a story, not a trend."
+      },
+      "complaints-down": {
+        "slug": "VANTAA APPROACH",
+        "head": "Noise complaints down sixty per cent since the form moved",
+        "lines": [
+          "Airport operator Wing & A Prayer Oy reports {{a sixty per cent fall in noise complaints|that sixty per cent fewer people found the new form}} since {{the reporting process was streamlined|the form moved to a page nothing links to}}.",
+          "The operator {{describes the trend as encouraging|is encouraged}}. Aircraft movements over the same period {{are up nine per cent|are up nine per cent, for anyone still counting those}}."
+        ],
+        "technique": "CHANGING WHAT COUNTS",
+        "decodeNote": "The number fell because the measuring changed, not because the thing did. Every figure here is true and the trend is real — of the instrument. This is the cheapest improvement available to anybody who owns both the problem and the form, and it survives because a count feels like an observation rather than a decision about what to write down.",
+        "tell": "Did the thing change, or did the way of counting it change? Ask when the form last moved."
       }
     },
     "fi": {
@@ -752,6 +788,28 @@
         "technique": "HAUDATTU KÄRKI",
         "decodeNote": "Mikään tässä ei ole valhetta eikä mitään ole jätetty pois. Uutinen on vain yhdeksännessä kappaleessa, minne tiedote panee sen mikä on pakko kertoa mutta mitä ei toivota kannettavan eteenpäin. Järjestys on toimituksellinen väite tärkeydestä, ja se on se väite jota lukija ei lähes koskaan tarkista.",
         "tell": "Lue viimeinen kappale ensin. Jos se on juttu, sinulle annettiin tämä järjestys syystä."
+      },
+      "crime-wave": {
+        "slug": "KEHÄ III",
+        "head": "Koko kaupungin rikosaalto vahvistettu yhdellä autolla",
+        "lines": [
+          "Perjantainen takaa-ajo kehätiellä {{on viimeisin osoitus kasvavasta ajoneuvorikollisuuden aallosta|on tämän vuoden toinen}}, kertoo tiedote, {{joka annettiin helikopterin ollessa yhä ilmassa|joka annettiin ennen kuin kukaan oli laskeutunut}}.",
+          "Aaltoa {{kuvataan koko kaupungin laajuiseksi|kuvattiin yhdestä koneesta, yhden tien yllä, yhdentoista minuutin ajan}}. Tilastoitu ajoneuvorikollisuus {{on liikkunut|on liikkunut vähemmän kuin tilastointivirhe}}."
+        ],
+        "technique": "YKSITTÄISTAPAUS TRENDINÄ",
+        "decodeNote": "Yksi tapahtuma, hyvin valaistuna, muuttuu kaavaksi sillä hetkellä kun joku sanoo «viimeisin». Kuvamateriaali on aitoa, takaa-ajo tapahtui, eikä kumpikaan kerro kaupungista mitään — mutta aaltoon tarvitaan ainakin kaksi aaltoa, ja sinulle näytettiin yksi auto helikopterista, joka oli jo maksamassa itseään takaisin.",
+        "tell": "Montako tapausta tämä trendi sisältää? Jos vastaus on yksi, se on juttu eikä trendi."
+      },
+      "complaints-down": {
+        "slug": "VANTAAN LÄHESTYMINEN",
+        "head": "Meluvalitukset laskeneet kuusikymmentä prosenttia siitä kun lomake siirrettiin",
+        "lines": [
+          "Lentoaseman operaattori Wing & A Prayer Oy kertoo {{meluvalitusten vähentyneen kuusikymmentä prosenttia|että kuusikymmentä prosenttia vähemmän ihmisiä löysi uuden lomakkeen}} sen jälkeen kun {{ilmoitusprosessia sujuvoitettiin|lomake siirrettiin sivulle, jolle ei johda yhtään linkkiä}}.",
+          "Operaattori {{pitää kehitystä rohkaisevana|on rohkaistunut}}. Lentoliikenteen määrä samalla ajanjaksolla {{on kasvanut yhdeksän prosenttia|on kasvanut yhdeksän prosenttia, niille jotka vielä laskevat sitä}}."
+        ],
+        "technique": "MITTAUSTAVAN VAIHTO",
+        "decodeNote": "Luku laski koska mittaus muuttui, ei koska asia muuttui. Jokainen luku tässä on tosi ja kehitys on todellinen — mittarin kehitys. Tämä on halvin saatavilla oleva parannus kenelle tahansa, joka omistaa sekä ongelman että lomakkeen, ja se kestää siksi että laskenta tuntuu havainnolta eikä päätökseltä siitä mitä kirjataan ylös.",
+        "tell": "Muuttuiko asia vai tapa laskea se? Kysy milloin lomaketta viimeksi siirrettiin."
       }
     },
     "ja": {
@@ -1040,6 +1098,28 @@
         "technique": "本題を埋める",
         "decodeNote": "嘘は一つもなく、伏せられたものも一つもない。ニュースがただ第九段落にあるだけだ——発表資料が、開示はしなければならないが運ばれたくはないものを置く場所である。順序とは重要さについての編集上の主張であり、読者がほぼ絶対に検証しない唯一の主張でもある。",
         "tell": "最後の段落から読む。それが本題なら、この順番は理由があって手渡されている。"
+      },
+      "crime-wave": {
+        "slug": "環状三号",
+        "head": "市全域の犯罪多発、車一台で確認される",
+        "lines": [
+          "金曜の環状道路での追跡は、{{増加する車両犯罪の波の最新の一件である|今年二件目である}}。この発表は{{ヘリコプターがまだ上空にあるうちに出された|誰も着陸しないうちに出された}}。",
+          "この「波」は{{市全域のものとされている|一機から、一本の道路の上で、十一分間だけ撮影された}}。統計上の車両犯罪は{{動いている|統計誤差より小さくしか動いていない}}。"
+        ],
+        "technique": "一件を趨勢に見せる",
+        "decodeNote": "よく照らされた一つの出来事は、誰かが「最新の」と呼んだ瞬間にパターンになる。映像は本物で、追跡は実際に起きた。そのどちらも市について何も語っていない——だが「波」には少なくとも二つの波が要る。あなたが見せられたのは、すでに元を取りはじめていたヘリコプターから撮った、車一台である。",
+        "tell": "その趨勢は何件でできているのか。答えが一件なら、それは趨勢ではなく一つの記事である。"
+      },
+      "complaints-down": {
+        "slug": "ヴァンター進入",
+        "head": "騒音の苦情、フォームが移動して以来六〇％減",
+        "lines": [
+          "空港運営の Wing & A Prayer Oy は、{{騒音苦情が六〇％減少した|新しいフォームにたどり着いた人が六〇％減った}}と発表した。{{申告手続きを合理化した|どこからもリンクされていないページにフォームを移した}}あとのことである。",
+          "同社は{{この傾向を心強いとしている|心強く思っている}}。同じ期間の発着回数は{{九％増加している|九％増加している。まだそれを数えている人にとっては}}。"
+        ],
+        "technique": "数え方のほうを変える",
+        "decodeNote": "数字が下がったのは、対象が変わったからではなく、測り方が変わったからである。ここにある数字はどれも本当で、傾向も本物だ——計器のほうの傾向が。問題とフォームの両方を持っている者にとって、これは最も安上がりな「改善」であり、しかも生き延びる。数えることが、何を書き留めるかの判断ではなく、観察のように感じられるからだ。",
+        "tell": "変わったのは対象か、それとも数え方か。フォームが最後に動いたのはいつかを訊く。"
       }
     }
   }
