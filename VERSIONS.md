@@ -7,6 +7,21 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v216 — 2026-07-31
+**The enemy lab stops being a fork** *(roadmap-v2 Phase 1)*
+- The declared visual source of truth imported **no game code**: its own copy of the goo shader via `onBeforeCompile`, CDN three@0.160 (against the no-CDN rule), and 15 hand-mirrored enemy defs against a 40-type roster. Under "never painted twice", art tuned there was tuned against an implementation the game doesn't run
+- `enemy-lab.html` now renders the game's **own `Enemy`** through `js/specimen.js` (the v212 portrait core, extended with lab-only options: `roam`, `onFrame` FX drain, `resize`, `hit`/`kill` through the real damage path). The forked shader, SDF geometry builder, movement sims and DEFS table — ~700 lines — are deleted
+- **Vendored three, flag-aware**: the same boot-script importmap as `index.html`; a ⚡ chip flips the `WEBGPU` flag and reloads, so both builds are one tap apart in the lab itself
+- **All 40 types**, chips built from `EnemyType` at runtime; the info line reads hp/speed/radius/fire from `CFG` live — hand-kept descriptions are how the old lab drifted, so nothing here is hand-kept
+- Tuning sliders and presets write the **real `TUNING.material`** through the same `applyMaterialPreset`/`applySatinValues` calls as the pause menu
+- The old lab's touch-orbit camera (drag / pinch / wheel) is kept — mobile is first-class
+- Verified headless (11/11): on **both** builds all 40 types spawn a live specimen with zero page errors, HIT decrements hp through the real path, KILL runs the real death and the lab respawns the subject; the flag genuinely switches builds (`WEBGL` ↔ `WEBGPU` screenshots show the same body, same material). `smoke.sh` + `cabinets.sh` green
+- `enemy-lab.html` joins `bump-version.sh`'s file loop (it carries `?v=` tokens now)
+- Phase-1 remainder: `WEBGPU_MIGRATION_NOTES.md`, next
+- Cache-bust `?v=169` → `?v=170`; HUD label → v216
+
+---
+
 ## v215 — 2026-07-27
 **THE FRUIT LADDER — pickups you can read across the floor**
 - Field feedback: *"we need better pickup indicators… cherries and a banana bunch"*, then *"look at classic arcade games for references"*. The second note changed the design: in the reference cabinets the bonus item isn't decoration, it's a **LADDER** — the item changes as you go deeper and each rung has a learnable value, so the fruit tells you how far in you are AND what it's worth before you read a number
