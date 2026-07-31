@@ -54,6 +54,11 @@ const OWNED = [
   'hub/feedback.js', 'hub/pad.js', 'hub/padkeys.js', 'hub/shell.js',
   'hub/arcade.js',
   'scripts/versions.mjs',
+  // The sting is the hub's now — hub.js imports it on Play — so it ships with
+  // the hub. NOT the counter's files: chat.js and dialogue*.js are actively
+  // rewritten from another direction and belong to whoever is doing that. The
+  // guard below would catch it either way; keeping them out says so up front.
+  'toko/js/sting.js', 'toko/js/board.js', 'toko/index.html',
 ];
 const THEIRS = ['hub/games.js', 'hub/art.js'];
 
