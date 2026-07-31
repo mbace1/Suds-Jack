@@ -189,6 +189,55 @@ export const ART = {
     }
   },
 
+  // The secret cabinet: the workshop's own mark, in the workshop's own two
+  // colours. Not tinted from an accent like every other marquee here — magenta
+  // and black IS the brand and a marquee that recoloured it would be the one
+  // picture on this floor that lies about what it is showing.
+  //
+  // Redrawn in pixels rather than imported from toko/js/face.js. That module is
+  // built for smooth canvas at 44px and up, where the mark is arcs; at 128x72
+  // behind pixelated upscaling those arcs would be rasterised twice and the
+  // eye slots — the most sensitive measurement in the brand — would close. The
+  // slots are cut here as explicit gaps so they cannot.
+  mask(g) {
+    const INK = '#000000', MARK = '#F0027F';
+    g.p(0, 0, W, H, INK);
+    // a lit disc behind it, the badge carrier
+    g.disc(64, 36, 30, '#12060c');
+    g.disc(64, 36, 29, '#1a0810');
+
+    // An arc of fat pixels, degrees from east. Y GROWS DOWNWARD on a canvas,
+    // so 90 is the BOTTOM of the circle and an arc "opening up" is 0..180, not
+    // 180..360. The first cut had the mouth the other way round and the mark
+    // came out as one magenta blob — the mouth was arching over the eyes it is
+    // supposed to sit under.
+    const S = 3;
+    const arc = (cx, cy, r, a0, a1, c) => {
+      for (let d = a0; d <= a1; d += 1.5) {
+        const t = d * Math.PI / 180;
+        g.p(Math.round(cx + Math.cos(t) * r - S / 2), Math.round(cy + Math.sin(t) * r - S / 2), S, S, c);
+      }
+    };
+
+    // The mouth: two nested arcs opening UP, both stopping short of a
+    // semicircle so the tips stand up straight and leave air under the eyes.
+    arc(64, 34, 17, 20, 160, MARK);
+    arc(64, 34, 9, 26, 154, MARK);
+
+    // Each eye: a crown opening DOWN with two straight legs, and a stem
+    // dropped from the inside of the crown. The STEM is what cuts the two
+    // slots, and the slots are what make an eye an eye rather than a blob —
+    // which is why the stroke is the most sensitive number in this brand and
+    // why the gaps are stated here as arithmetic instead of hoped for.
+    for (const dx of [-14, 14]) {
+      const cx = 64 + dx, cy = 24, r = 8, leg = 6;
+      arc(cx, cy, r, 180, 360, MARK);
+      g.p(cx - r - 1, cy, S, leg, MARK);            // left leg
+      g.p(cx + r - 1, cy, S, leg, MARK);            // right leg
+      g.p(cx - 1, cy - r + S, S, leg + r - S, MARK); // the stem, off the crown
+    }
+  },
+
   // Drop Cabal: sunset rows, sandbags, one little commando
   cabal(g, a) {
     g.bands(['#2a1a3a', '#5a2a4a', '#8a3a44', a]);

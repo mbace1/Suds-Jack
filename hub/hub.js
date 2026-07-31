@@ -6,12 +6,13 @@
 // art.js and a cabinet appears. Feedback is the same panel everywhere, tagged
 // with which game it came from, and goes out through hub/feedback.js.
 
-import { GAMES, SKETCHES } from './games.js?v=10';
-import { drawMarquee } from './art.js?v=11';
+import { GAMES, SKETCHES } from './games.js?v=12';
+import { drawMarquee } from './art.js?v=13';
 import * as feedback from './feedback.js?v=13';
 import * as topics from './topics.js?v=2';
-import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=6';
+import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=8';
 import { watchPad, padPresent } from './pad.js?v=9';
+import * as room from './arcade.js?v=2';
 
 const el = (tag, cls = '', text = '') => {
   const e = document.createElement(tag);
@@ -65,6 +66,17 @@ function cabinet(game) {
   for (const tg of game.tags) tags.appendChild(el('li', '', tg));
   body.appendChild(tags);
 
+  // Your best, off your own disk. The games already write these; the hub only
+  // reads them back. Nothing is fetched and nothing is sent — which is also
+  // the reason there is no leaderboard here and never will be, and why a
+  // cabinet you have not played simply has no line rather than a zero.
+  const best = room.bestOf(game);
+  if (best != null) {
+    const fmt = game.score.fmt === 'points' ? best.toLocaleString()
+      : t('best.secs', { x: Math.round(best) });
+    body.appendChild(el('p', 'best', `${t('best')} ${fmt}`));
+  }
+
   // where a cabinet stands right now: its own line while it is playable, and
   // in place of the controls once there is nothing to press
   const note = gameText(game, 'note');
@@ -79,7 +91,7 @@ function cabinet(game) {
     go.href = game.path;
     // pressing Play is the only honest signal the hub has that you tried it —
     // it cannot know whether you liked it, and does not ask
-    go.addEventListener('click', () => markPlayed(game.id));
+    go.addEventListener('click', () => { markPlayed(game.id); room.sound.coin(); });
   } else {
     // a dead button that says so beats a live one that 404s
     go = el('button', 'btn dead', `[ ${t('notup')} ]`);
@@ -431,7 +443,10 @@ let query = '', picked = new Set();
 
 function allTags() {
   const n = new Map();
-  for (const g of GAMES) for (const tg of g.tags) n.set(tg, (n.get(tg) ?? 0) + 1);
+  // onFloor(), not GAMES. A locked cabinet's tags in the filter row is the
+  // secret announcing itself: `brand` appeared in the tag list next to
+  // `arcade` and pointed straight at a cabinet nobody was supposed to see yet.
+  for (const g of onFloor()) for (const tg of g.tags) n.set(tg, (n.get(tg) ?? 0) + 1);
   return [...n.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(e => e[0]);
 }
 
@@ -453,13 +468,13 @@ function applyFilter() {
   }
   // an empty archive block under a filter is a heading over nothing
   const arch = document.getElementById('archive-block');
-  if (arch) arch.hidden = !archived.length
+  if (arch) arch.hidden = !archived().length
     || ![...document.querySelectorAll('#archived .cab')].some(c => !c.hidden);
 
   const on = query || picked.size;
   const found = document.getElementById('find-count');
   if (found) {
-    found.textContent = on ? t('find.count', { n: shown, m: GAMES.length }) : '';
+    found.textContent = on ? t('find.count', { n: shown, m: onFloor().length }) : '';
     found.hidden = !on;
   }
   const none = document.getElementById('find-none');
@@ -525,7 +540,9 @@ addEventListener('keydown', e => {
 // yet, and only falls back to the whole floor once you have tried everything.
 function surprise() {
   const played = readPlayed();
-  const live = GAMES.filter(g => g.live !== false);
+  // onFloor(), not GAMES: a locked cabinet is not on the floor, and offering
+  // it here would both scroll to nothing and give the secret away.
+  const live = onFloor().filter(g => g.live !== false);
   const fresh = live.filter(g => !played[g.id]);
   const pool = fresh.length ? fresh : live;
   const pick = pool[Math.floor(Math.random() * pool.length)];
@@ -553,7 +570,12 @@ function markPlayed(id) {
   const p = readPlayed();
   p[id] = Date.now();
   try { localStorage.setItem(PLAYED_KEY, JSON.stringify(p)); } catch { /* private mode */ }
+  // pressing Play is the only honest signal this page gets, so all three
+  // counters hang off this one moment and nothing else
+  room.credits.add();
+  room.streak.mark();
   showPlayed();
+  wallRow();
 }
 
 function showPlayed() {
@@ -604,7 +626,9 @@ function openFromHash({ jump = false } = {}) {
   const raw = decodeURIComponent(location.hash.slice(1));
   if (!raw) return;
   const [id, what] = raw.split('/');
-  const game = GAMES.find(g => g.id === id);
+  // onFloor(), so a pasted `#brand` cannot hand somebody the secret cabinet
+  // without the code — it falls through to "not a cabinet here" instead
+  const game = onFloor().find(g => g.id === id);
   // THE HASH IS NOT OURS ALONE. `#toko` opens the counter at the top of the
   // page — every badge in every signed game links to `/#toko` — and this
   // handler used to wipe any fragment it did not recognise as a cabinet.
@@ -831,6 +855,41 @@ function layoutRow() {
   return row;
 }
 
+// ── the room: sound, and the counters on the wall ──────────────────
+// Sound is OFF and says so. The counters only appear once there is something
+// to count — an arcade wall with "0 credits · 0 tickets" on it is a page
+// telling you what you have not done yet, which is nagging with extra steps.
+function soundRow() {
+  const row = el('div', 'status-row sound-row');
+  row.appendChild(el('span', 'status-label', t('sound')));
+  const b = el('button', 'opt-btn');
+  const paint = () => {
+    const on = room.sound.on();
+    b.textContent = t(on ? 'sound.on' : 'sound.off');
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', String(on));
+  };
+  b.onclick = () => { room.sound.set(!room.sound.on()); paint(); };
+  paint();
+  row.appendChild(b);
+  return row;
+}
+
+function wallRow() {
+  document.querySelector('.wall-row')?.remove();
+  const c = room.credits.get(), tk = room.tickets.get(), st = room.streak.get();
+  if (!c && !tk && st < 2) return;
+  const row = el('div', 'status-row wall-row');
+  if (c) row.appendChild(el('span', 'wall', c === 1 ? t('credit.one') : t('credit.many', { x: c })));
+  if (st > 1) row.appendChild(el('span', 'wall', t('streak', { x: st })));
+  if (tk) {
+    const n = el('span', 'wall', t('tickets', { x: tk }));
+    n.title = t('tickets.buy');          // the joke, where it cannot get in the way
+    row.appendChild(n);
+  }
+  document.getElementById('status').appendChild(row);
+}
+
 function readAccent() {
   try { return ACCENTS[localStorage.getItem(ACCENT_KEY)] ? localStorage.getItem(ACCENT_KEY) : 'cyan'; }
   catch { return 'cyan'; }
@@ -895,8 +954,13 @@ function useLang(code) {
 // the top of the page to itself; everything finished or set down is still
 // here, still playable, one section further down. A game moves between them
 // by one word in games.js.
-const active = GAMES.filter(g => g.status !== 'archived');
-const archived = GAMES.filter(g => g.status === 'archived');
+// A secret cabinet is off every rack, every count and every filter until the
+// code is entered. `shown()` is read at render time rather than captured once,
+// so unlocking is a re-render and nothing else has to know about it.
+let unlocked = false;
+const onFloor = () => GAMES.filter(g => !g.secret || unlocked);
+const active = () => onFloor().filter(g => g.status !== 'archived');
+const archived = () => onFloor().filter(g => g.status === 'archived');
 
 const setText = (sel, key) => {
   const n = document.querySelector(sel);
@@ -920,18 +984,18 @@ function render() {
 
   const rack = document.getElementById('cabinets');
   rack.textContent = '';
-  for (const g of active) rack.appendChild(cabinet(g));
+  for (const g of active()) rack.appendChild(cabinet(g));
 
   const oldRack = document.getElementById('archived');
   oldRack.textContent = '';
-  for (const g of archived) oldRack.appendChild(cabinet(g));
+  for (const g of archived()) oldRack.appendChild(cabinet(g));
 
   const shelfList = document.getElementById('sketches');
   shelfList.textContent = '';
   for (const s of SKETCHES) shelfList.appendChild(shelf(s));
 
   // the archive is only worth a heading if there is something in it
-  document.getElementById('archive-block').hidden = !archived.length;
+  document.getElementById('archive-block').hidden = !archived().length;
 
   document.querySelectorAll('.lang-row .lang-btn').forEach(b => {
     const on = b.dataset.lang === getLang();
@@ -942,6 +1006,8 @@ function render() {
   // the accent row carries words too, so it is rebuilt with everything else
   document.querySelector('.accent-row')?.remove();
   document.querySelector('.layout-row')?.remove();
+  document.querySelector('.sound-row')?.remove();
+  document.getElementById('status').prepend(soundRow());
   document.getElementById('status').prepend(accentRow());
   document.getElementById('status').prepend(layoutRow());
   useAccent(readAccent());
@@ -951,6 +1017,7 @@ function render() {
   padHint(false);
   notesLink();
   showPlayed();
+  wallRow();
   showVersions();
   // a rebuild threw away the elements the selection pointed at
   sel = -1;
@@ -968,10 +1035,6 @@ document.getElementById('surprise').onclick = surprise;
 // would read as the page moving on its own
 openFromHash({ jump: true });
 
-// a pasted link lands where it says it does, without the smooth scroll that
-// would look like the page moving on its own
-openFromHash({ jump: true });
-
 // What was on screen when the note was written. Feedback about a layout that
 // nobody can tell you was in force is feedback about nothing, so this rides
 // along on every note from either surface — the panel under a cover art and the
@@ -981,13 +1044,47 @@ feedback.setContext(() => ({ layout: readLayout(), lang: getLang() }));
 // anything written while an endpoint was unreachable goes out now, quietly
 feedback.flush();
 
+// ── the room ───────────────────────────────────────────────────────
+// Everything below is atmosphere and every piece of it is allowed to do
+// nothing: reduced motion turns the first three off, sound is off until asked,
+// and the floor above works with all of it missing.
+room.powerOn();
+room.sound.start();                    // a no-op unless it was left switched on
+room.flicker();
+
+// The idle reel. It has to stand down when the page is not actually being
+// looked at, or a tab left open in the background spends the afternoon
+// redrawing covers nobody is watching.
+const reel = room.attract({
+  games: onFloor().filter(g => g.live !== false),
+  draw: drawMarquee,
+});
+addEventListener('visibilitychange', () => { if (document.hidden) reel.stop(); });
+
+// The code. What it reveals is a cabinet that was in the catalogue the whole
+// time — re-rendering is the entire unlock, because `active()` reads `unlocked`
+// rather than having been handed a list.
+room.konami(() => {
+  if (unlocked) return;
+  unlocked = true;
+  render();
+  goTo('brand');
+  room.sound.coin();
+});
+
 // Console handle, same convention as the games — and the seam the counter
 // reaches through. `topics` and `feedback` are published here so anything else
 // on the page uses THESE module instances rather than importing its own copy at
 // its own ?v= token: a second instance of feedback.js has its own endpoint
 // configuration, which is a bug that only shows up after the next token bump.
 window.__hub = {
-  games: GAMES, active, archived, sketches: SKETCHES, feedback, topics,
+  games: GAMES, sketches: SKETCHES, feedback, topics, room,
+  // GETTERS, not the arrays. The counter reads `__hub.active` and expects a
+  // list, and these two now depend on whether the secret cabinet is unlocked —
+  // handing over a snapshot would freeze it at whatever was true when hub.js
+  // finished loading, which is always "locked".
+  get active() { return active(); },
+  get archived() { return archived(); },
   t, lang: getLang,
   debug: {
     open: openFeedback, accent: readAccent, setAccent: useAccent,
@@ -995,6 +1092,7 @@ window.__hub = {
     lang: getLang, setLang: useLang, langs: LANGS, render,
     layout: readLayout, setLayout: useLayout, layouts: LAYOUTS,
     notes: openNotes, notesLink,
+    reel, room, unlock: () => { unlocked = true; render(); },
     goTo, openFromHash, played: readPlayed, markPlayed, surprise,
     filter: (q, tags) => { query = q ?? ''; picked = new Set(tags ?? []); applyFilter(); },
     goTo, openFromHash, played: readPlayed, markPlayed, surprise,

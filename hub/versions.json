@@ -4,11 +4,11 @@
     "from": "VERSIONS.md"
   },
   "tokodrop": {
-    "v": 215,
+    "v": 216,
     "from": "VERSIONS.md"
   },
   "hyperdagger": {
-    "v": 13,
+    "v": 15,
     "from": "VERSIONS.md"
   },
   "dropcabal": {
@@ -36,7 +36,7 @@
     "from": "VERSIONS.md"
   },
   "radiofree": {
-    "v": 31,
+    "v": 37,
     "from": "cache token"
   },
   "tinyhawk": {
@@ -45,6 +45,10 @@
   },
   "tiny2d": {
     "v": 3,
+    "from": "VERSIONS.md"
+  },
+  "brand": {
+    "v": 5,
     "from": "VERSIONS.md"
   },
   "toko": {
