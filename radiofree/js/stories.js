@@ -25,14 +25,28 @@
 //      languages, and the feed shows that rather than nothing. An app that can
 //      be updated from outside is an app that can be broken from outside.
 
-import { PANEL_KEYS, BROLL_KEYS } from './visuals.js?v=35';
+import { PANEL_KEYS, BROLL_KEYS } from './visuals.js?v=36';
 
-import { SECTOR_COLOR } from './palette.js?v=35';
-import { validateWire, rotate, pickCopy, cleanLines } from './wire.js?v=35';
+import { SECTOR_COLOR } from './palette.js?v=36';
+import { validateWire, rotate, pickCopy, cleanLines } from './wire.js?v=36';
 
-export { parseLine, flatten, splitLine, cleanLines } from './wire.js?v=35';
+export { parseLine, flatten, splitLine, cleanLines } from './wire.js?v=36';
 
+// EPISODES. `wire/index.json` lists the dates newest first and each
+// `wire/<date>.json` is one day's broadcast — which is what the daily job will
+// commit, one file per morning, never editing yesterday's.
+//
+// `wire.json` stays exactly where it was and is the FALLBACK, not the source.
+// A shell cached before this change still asks for it and still gets a whole
+// valid wire; deleting it would have dark-screened every installed copy of the
+// app on the morning of the switch.
+export const INDEX_URL = 'wire/index.json';
 export const WIRE_URL = 'wire.json';
+export const episodeUrl = (date) => `wire/${date}.json`;
+
+// what the archive picker draws, filled by loadWire()
+export let EPISODES = [];
+export let EPISODE = null;
 
 // The station identification. Not an error page — the feed is a feed, so a
 // wire that cannot be read becomes one post that says so, on air, in register.
@@ -95,8 +109,8 @@ function install(wire, source, errors = []) {
   STORIES = shown;
   ARCHIVED = archived;
   COPY = wire.copy;
-  WIRE_INFO = { source, updated: wire.updated || null, count: STORIES.length,
-                archived: archived.length, errors };
+  WIRE_INFO = { source, updated: wire.updated || null, date: wire.date || null,
+                count: STORIES.length, archived: archived.length, errors };
   if (archived.length) console.info(`[rfh] ${archived.length} archived: ${archived.join(', ')}`);
   return WIRE_INFO;
 }
@@ -109,30 +123,78 @@ function install(wire, source, errors = []) {
  * copy; the service worker does the real work (network first, the cached wire
  * as fallback), so this stays correct with or without a worker installed.
  */
-export async function loadWire(url = WIRE_URL) {
-  let errors = [];
+/**
+ * Fetch, check, install. Resolves with WIRE_INFO no matter what happens — the
+ * caller always gets a feed to build, and `source` says which one it is.
+ *
+ * The ladder is deliberate and each rung has been earned:
+ *   the asked-for date → the newest episode in the index → `wire.json` →
+ *   the baked-in station identification.
+ * A bad `?date=` must not be a blank screen, and neither must an index that
+ * 404s on a shell that was cached before episodes existed.
+ *
+ * `cache: 'no-cache'` asks the browser to revalidate; the service worker does
+ * the real work (network first, the cached copy as fallback), so this stays
+ * correct with or without a worker installed.
+ */
+async function fetchJson(url) {
+  const res = await fetch(url, { cache: 'no-cache' });
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  return res.json();
+}
+
+function check(wire) {
+  return validateWire(wire, {
+    panelKeys: PANEL_KEYS,
+    brollKeys: BROLL_KEYS,
+    sectorIds: Object.keys(SECTOR_COLOR),
+  });
+}
+
+export async function loadWire(want = null) {
+  const errors = [];
+  const tried = [];
+
+  // ── the index, and the episode it points at ──────────────────────
   try {
-    const res = await fetch(url, { cache: 'no-cache' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const wire = await res.json();
-    const v = validateWire(wire, {
-      panelKeys: PANEL_KEYS,
-      brollKeys: BROLL_KEYS,
-      sectorIds: Object.keys(SECTOR_COLOR),
-    });
+    const index = await fetchJson(INDEX_URL);
+    const list = Array.isArray(index.episodes) ? index.episodes.filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)) : [];
+    if (!list.length) throw new Error('index lists no episodes');
+    EPISODES = list;
+    // an unknown date falls back to the newest rather than to nothing — a
+    // shared link to a retired day should still play something
+    const date = want && list.includes(want) ? want : list[0];
+    if (want && date !== want) errors.push(`no episode for ${want}; playing ${date}`);
+    const wire = await fetchJson(episodeUrl(date));
+    const v = check(wire);
     if (v.ok) {
-      // warnings are for the author, not the listener — they do not stop a read
       if (v.warnings.length) console.warn('[rfh] wire warnings:\n' + v.warnings.join('\n'));
-      return install(wire, 'network');
+      EPISODE = date;
+      return install(wire, 'episode', errors);
     }
-    errors = v.errors;
-    console.error(`[rfh] wire rejected (${errors.length} problem${errors.length === 1 ? '' : 's'}):\n`
-      + errors.join('\n'));
+    tried.push(...v.errors);
+    console.error(`[rfh] episode ${date} rejected:\n` + v.errors.join('\n'));
   } catch (err) {
-    errors = [String(err && err.message ? err.message : err)];
-    console.error('[rfh] wire unavailable: ' + errors[0]);
+    tried.push(String(err && err.message ? err.message : err));
   }
-  return install(OFF_AIR, 'off-air', errors);
+
+  // ── the single-file wire, for a shell cached before episodes ─────
+  try {
+    const wire = await fetchJson(WIRE_URL);
+    const v = check(wire);
+    if (v.ok) {
+      console.warn('[rfh] no episode available; falling back to wire.json');
+      EPISODE = wire.date || null;
+      return install(wire, 'network', [...errors, ...tried]);
+    }
+    tried.push(...v.errors);
+  } catch (err) {
+    tried.push(String(err && err.message ? err.message : err));
+  }
+
+  console.error('[rfh] wire unavailable:\n' + tried.join('\n'));
+  EPISODE = null;
+  return install(OFF_AIR, 'off-air', [...errors, ...tried]);
 }
 
 // The broadcast text alone — what Toko says, with no annotation anywhere in

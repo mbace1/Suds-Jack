@@ -1,13 +1,14 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=35';
-import { Post, Reader } from './codec.js?v=35';
-import { Package } from './package.js?v=35';
-import { SECTORS, STORIES, COPY, ARCHIVED, storyCopy, storyBroadcast, parseLine, loadWire, WIRE_INFO } from './stories.js?v=35';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=35';
-import * as audio from './audio.js?v=35';
-import { PixelScreen } from './screen.js?v=35';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=35';
+import { PAL, SECTOR_COLOR } from './palette.js?v=36';
+import { Post, Reader } from './codec.js?v=36';
+import { Package } from './package.js?v=36';
+import { SECTORS, STORIES, COPY, ARCHIVED, EPISODES, EPISODE, storyCopy, storyBroadcast,
+         parseLine, loadWire, WIRE_INFO } from './stories.js?v=36';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=36';
+import * as audio from './audio.js?v=36';
+import { PixelScreen } from './screen.js?v=36';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=36';
 
 // CLEAN — the transmission with no second layer on it. `?clean` is what a clip
 // export loads, and it does not hide DECODE, it never builds it: no rail
@@ -17,7 +18,11 @@ import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=35';
 // plain readings lived inside the broadcast string, "off" could only ever mean
 // rendered-then-hidden, which is one CSS mistake away from being on screen and
 // no basis for an export at all.
-const CLEAN = new URLSearchParams(location.search).has('clean');
+const PARAMS = new URLSearchParams(location.search);
+const CLEAN = PARAMS.has('clean');
+// which morning's broadcast to play. An unknown or absent date plays the
+// newest — see loadWire's ladder.
+const WANT_DATE = PARAMS.get('date');
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
@@ -140,14 +145,45 @@ $('tuneIn').onclick = async () => {
   // The wire is fetched now, so tuning in is genuinely tuning in. loadWire()
   // always resolves — with the day's bulletins or with the off-air post — so
   // there is no branch here where the feed never appears.
-  await loadWire();
+  await loadWire(WANT_DATE);
   boot();
 };
+
+// The archive. A native <select> on purpose: it is one element, it is
+// keyboard- and screen-reader-correct without a line of ARIA, and on a phone it
+// opens the platform's own picker instead of a list this app would have to
+// re-implement badly. Hidden entirely when there is only one morning to pick.
+function buildArchive() {
+  const host = $('archive');
+  if (!host) return;
+  host.innerHTML = '';
+  if (CLEAN || EPISODES.length < 2) { host.hidden = true; return; }
+  host.hidden = false;
+  const sel = el('select', 'archive-sel');
+  sel.setAttribute('aria-label', t('a11y.archive'));
+  for (const d of EPISODES) {
+    const o = document.createElement('option');
+    o.value = d;
+    o.textContent = formatDate(new Date(d + 'T00:00:00'));
+    if (d === EPISODE) o.selected = true;
+    sel.appendChild(o);
+  }
+  // a different morning is a different broadcast, so it is a navigation, not a
+  // re-render — the decoded set, the scroll and the audio all reset with it
+  sel.onchange = () => {
+    const u = new URL(location.href);
+    u.searchParams.set('date', sel.value);
+    u.hash = '';
+    location.assign(u.toString());
+  };
+  host.appendChild(sel);
+}
 
 function boot() {
   booted = true;
   paintSound();
   paintMastLang();
+  buildArchive();
   $('lang').onclick = () => useLang(nextLang());
   // TYPEWRITER OFF. The copy is set, not typed, and the per-character blips
   // are silenced with it — owner's call, the bulletins read better as text
@@ -532,6 +568,8 @@ window.__rfh = {
     // module gets a fresh and EMPTY copy — that crashed the gate once.
     wire: () => ({ ...WIRE_INFO }),
     wireData: () => ({ sectors: SECTORS, stories: STORIES, copy: COPY }),
+    episode: () => EPISODE,
+    episodes: () => [...EPISODES],
     // the rotation as it actually aired: what is on, top first, and what the
     // wire is still carrying but keeping off the feed
     rotation: () => ({
