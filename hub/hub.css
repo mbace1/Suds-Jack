@@ -126,52 +126,6 @@ h1 .amp { color: var(--accent); }
   text-transform: uppercase;
 }
 
-/* ── finding one ── */
-#find-block { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 12px; }
-.find-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; flex: 1; }
-
-.find-box {
-  font: inherit;
-  font-size: 13px;
-  min-height: 44px;
-  min-width: 180px;
-  padding: 0 12px;
-  background: var(--panel);
-  color: var(--ink);
-  border: 1px solid var(--line);
-}
-.find-box:focus { border-color: var(--accent); outline: none; }
-.find-box::placeholder { color: var(--ink-dim); }
-
-.tag-row { display: flex; flex-wrap: wrap; gap: 4px; }
-.tag-btn {
-  font: inherit;
-  font-size: 11.5px;
-  min-height: 44px;
-  /* a three-letter tag like `fps` is 41px wide with the padding it wants; the
-     floor is on both dimensions, so it gets a minimum too */
-  min-width: 44px;
-  padding: 0 9px;
-  background: none;
-  border: 1px solid transparent;
-  color: var(--ink-dim);
-  cursor: pointer;
-}
-.tag-btn:hover { color: var(--ink); }
-.tag-btn.on { color: var(--accent); border-color: var(--accent); }
-
-.find-count { font-size: 11.5px; letter-spacing: .18em; color: var(--ink-dim); }
-.find-none { color: var(--ink-dim); font-size: 13px; margin-top: 14px; }
-
-
-/* the tag row is the first thing to go on a phone: thirteen tags at 44px is
-   four rows of chrome above two cabinets. The box stays — typing is the part
-   that scales. */
-@media (max-width: 659px) {
-  .tag-row { display: none; }
-  .find-box { flex: 1; min-width: 0; }
-}
-
 /* ── the cabinets ── */
 /* The row grows with the screen. The ladder is set on the marquee's rendered
    width rather than on device names:

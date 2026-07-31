@@ -299,37 +299,6 @@ function check(name, cond) {
   check(`the offline shell names every module the page asks for (${needed.size})${absent.length ? ` — missing ${absent}` : ''}`,
     absent.length === 0);
 
-  // ── finding one ──
-  const tagCount = await page.locator('.tag-btn').count();
-  check(`the floor can be filtered by tag (${tagCount})`, tagCount > 3);
-  await page.fill('#find-box', 'voxel');
-  await page.waitForTimeout(120);
-  const hits = await page.$$eval('.cab', cs => cs.filter(c => !c.hidden).map(c => c.id));
-  check(`typing narrows it (${hits.length}: ${hits.map(h => h.slice(4))})`,
-    hits.length > 0 && hits.length < games.length);
-  check('and the count says how far it narrowed',
-    /\d+/.test(await page.locator('#find-count').textContent()));
-  // it searches what the page is showing, not the English underneath
-  await page.locator('.lang-btn[data-lang="fi"]').click();
-  await page.fill('#find-box', 'vektori');
-  await page.waitForTimeout(120);
-  check('and it searches the language you are reading in',
-    (await page.$$eval('.cab', cs => cs.filter(c => !c.hidden).length)) > 0);
-  await page.locator('.lang-btn[data-lang="en"]').click();
-
-  await page.fill('#find-box', 'zzzzz');
-  await page.waitForTimeout(120);
-  check('nothing matching says so rather than showing an empty floor',
-    await page.locator('#find-none').isVisible());
-  // and the pad must not be able to walk into something that is filtered out
-  check('a filtered-out cabinet is not reachable with a pad',
-    await page.evaluate(() => __hub.debug.select(0) === undefined
-      && !document.querySelector('.cab.sel:not([hidden])')) !== false);
-  await page.fill('#find-box', '');
-  await page.waitForTimeout(120);
-  check('clearing it puts the whole floor back',
-    await page.$$eval('.cab', cs => cs.filter(c => !c.hidden).length) === games.length);
-
   setHashless: { await page.goto(`${base}/index.html`, { waitUntil: 'networkidle' }); }
 
   // ── one cabinet, by name ──
