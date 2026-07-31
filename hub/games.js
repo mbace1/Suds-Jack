@@ -422,6 +422,7 @@ export const GAMES = [
 // The shader studies the games were built out of — playable, but they are
 // experiments, so they get a quieter shelf of their own.
 export const SKETCHES = [
+  { id: 'toko-enemy-lab', fi: { tagline: 'Kaikki Toko Dropin 40 geeliä elävinä pelin omalla koodilla — osu, poksauta, säädä materiaalit.' }, ja: { tagline: 'トコドロップの全40ゼリーが実ゲームのコードで生きている — 叩いて、弾けさせて、質感をいじって。' }, title: 'Toko Enemy Lab', tagline: 'All 40 Toko Drop gels live on the real game code — hit them, pop them, restyle the goo.', path: 'toko-drop/enemy-lab.html', inRepo: true },
   { id: 'goo-surface', fi: { tagline: 'SPH-kevyt möykky, 64 hiukkasta, metapallopassi. Tökkää sitä.' }, ja: { tagline: '軽量 SPH のどろどろ、粒子 64、メタボール処理。つついてみて。' }, title: 'Goo Surface', tagline: 'SPH-lite goop, 64 particles, metaball pass. Poke it.', path: 'goo-surface.html', inRepo: true },
   { id: 'goo-flop', fi: { tagline: 'Yksi geelikuutio, joka kaatuu kyljelleen kun pyyhkäiset.' }, ja: { tagline: 'スワイプすると横に倒れるゼリーの立方体ひとつ。' }, title: 'Goo Flop', tagline: 'One gel cube that tips onto its side when you swipe.', path: 'goo-flop.html', inRepo: true },
   { id: 'goo-snowman', fi: { tagline: 'Säteenmarssitettu SDF-lumiukko — täältä geelin ilme alkoi.' }, ja: { tagline: 'レイマーチング SDF の雪だるま — この見た目の始まり。' }, title: 'Goo Snowman', tagline: 'Ray-marched SDF snowman — where the goo look started.', path: 'goo-snowman.html', inRepo: true },

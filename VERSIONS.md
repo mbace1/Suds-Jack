@@ -7,6 +7,30 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v219 — 2026-07-31
+**Testing lives where you play — bigger tester, lab reachable from game and hub**
+- Field feedback, two beats: *"shouldn't the testing be in the options enemy
+  editor?"* and *"it should be accessible through the game and hub… you can
+  make the viewport bigger"*
+- **The pause-menu tester viewport fills the tab** (was capped at 520px):
+  `aspect-ratio` pins the box, and the render loop sizes the framebuffer to
+  the panel, self-healing across tab switches, rotation and resizes — big
+  enough to actually judge the v218 gel on-device
+- **FULL LAB ↗** button in the ENEMIES tab — the full-screen lab is one tap
+  from the tuner (it navigates away from the game and says so)
+- **The lab joins the arcade**: `enemy-lab.html` now loads the hub shell
+  (home button back to the arcade), and the hub's SKETCHES shelf lists
+  **Toko Enemy Lab** (en/fi/ja) next to the goo sketches it grew out of —
+  hub → lab → home is a complete loop
+- Hub cache chain bumped per its own discipline: `games.js?v=12→13` (in
+  `hub.js`), `hub.js?v=25→26` (in the root page). `shell.js` deliberately
+  keeps its `games.js?v=12` import — it reads only `GAMES`, which is
+  unchanged, and bumping it would cascade a token rewrite into sixteen
+  game pages for nothing
+- Cache-bust `?v=172` → `?v=173`; HUD label → v219
+
+---
+
 ## v218 — 2026-07-31
 **Goo/gel TSL pass — past parity** *(roadmap-v2 Phase 3, art priority 1)*
 - The v194 TSL port matched the WebGL gel exactly; this is the first pass that
