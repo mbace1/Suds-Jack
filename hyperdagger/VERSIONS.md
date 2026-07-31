@@ -8,6 +8,14 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v15 — 2026-07-31
+**tuning.js — every feel number in one file**
+- New `js/tuning.js` (toko-drop's pattern): player body, mouse/touch/pad look
+  rates + turn ramp, pad stick shaping, touch gesture windows, aim assist,
+  dash, the full weapon table, gem physics, REAP, style bleed, HYPER economy.
+- Pure refactor — behavior provably unchanged (49-section suite green).
+- Drift fix: style bleed documented at its real 5 + v·0.045 (the v4.1 soften).
+
 ## v14 — 2026-07-31
 **REAP + controller-first aim**
 - REAP (R/E, ✕/LB): spend the bone-yard — devours every settled bone within

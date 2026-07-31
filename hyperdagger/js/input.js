@@ -1,14 +1,17 @@
-const STICK_R = 60;
-const LOOK_DEADZONE = 0.12;
-const TAP_MS = 250;        // max duration for a tap
-const TAP_PX = 12;         // max travel for a tap
-const FLICK_WINDOW = 150;  // ms of trailing movement examined at release
-const FLICK_PX = 40;       // min travel within that window to count as a flick
+import { TUNING as T } from './tuning.js?v=45';
+
+// all feel numbers live in tuning.js; these aliases keep the code readable
+const STICK_R = T.touch.stickR;
+const LOOK_DEADZONE = T.touch.lookDeadzone;
+const TAP_MS = T.touch.tapMs;
+const TAP_PX = T.touch.tapPx;
+const FLICK_WINDOW = T.touch.flickWindow;
+const FLICK_PX = T.touch.flickPx;
 
 // --- stick shaping (controller-first aim) --------------------------------
-const PAD_DZ = 0.18;   // radial deadzone
-const PAD_SAT = 0.95;  // deflection past this reads as full
-const LOOK_EXP = 2.0;  // response curve on look magnitude — see shapeStick
+const PAD_DZ = T.pad.deadzone;
+const PAD_SAT = T.pad.saturation;
+const LOOK_EXP = T.pad.lookExp;
 
 /**
  * Radial deadzone + outer saturation, shaping MAGNITUDE only so the direction

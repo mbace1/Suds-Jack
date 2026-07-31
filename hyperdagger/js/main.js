@@ -5,18 +5,19 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=44';
-import { Player } from './player.js?v=44';
-import { DaggerPool } from './daggers.js?v=44';
-import { GemPool } from './gems.js?v=44';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=44';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=44';
-import { OrbPool } from './bullets.js?v=44';
-import { AudioKit } from './audio.js?v=44';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=44';
+import { InputManager } from './input.js?v=45';
+import { Player } from './player.js?v=45';
+import { DaggerPool } from './daggers.js?v=45';
+import { GemPool } from './gems.js?v=45';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=45';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=45';
+import { OrbPool } from './bullets.js?v=45';
+import { AudioKit } from './audio.js?v=45';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=45';
+import { TUNING as T } from './tuning.js?v=45';
 
 const ARENA_R = 26;
-const FIRE_SPREAD = 0.035;   // radians
+const FIRE_SPREAD = T.weapon.spread;
 const SKULL_CAP = 46;
 const TOTEM_CAP = 6;
 const SERPENT_CAP = 2;
@@ -73,14 +74,8 @@ let perfGoodSince = 0;
 let forcedFrameTime = null; // debug override (ms)
 
 // Devil-Daggers-style dagger levels, advanced by collecting gems.
-const LEVEL_GEMS = [0, 0, 10, 30, 70]; // gems needed to reach index level
-const WEAPON = [
-  null,
-  { stream: 13, homing: false },
-  { stream: 18, homing: false },
-  { stream: 18, homing: true },
-  { stream: 26, homing: true }, // LV4 — the crimson hand (DD's fourth tier)
-];
+const LEVEL_GEMS = T.weapon.levelGems; // gems needed to reach index level
+const WEAPON = T.weapon.tiers;         // LV4 — the crimson hand (DD's fourth tier)
 const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10, watcher: 1, blinker: 1, dread: 3, husk: 4, revenant: 2 };
 
 // The gauntlet itself evolves with the weapon (DD's hand upgrades): knuckle
@@ -108,7 +103,7 @@ const STYLE_TIERS = [
   { min: 92, label: 'SS', color: '#e83030' },
   { min: 124, label: 'SSS', color: '#c81e1e' },
 ];
-const STYLE_CAP = 150;
+const STYLE_CAP = T.style.cap;
 // style awarded per kill by enemy type (dash-through orbs + gems add their own)
 const STYLE_GAIN = {
   skull: 3, brute: 6, serpent: 5, spider: 5, watcher: 5,
@@ -621,9 +616,9 @@ let slowmo = 0;
 // a draining life-timer is your health — kills add seconds, hits cost 10.
 let mode = localStorage.getItem('hyperDaggerMode') === 'hyper' ? 'hyper' : 'pure';
 let hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
-const HYPER_START = 30;
-const HYPER_CAP = 60;
-const HYPER_HIT_COST = 10;
+const HYPER_START = T.hyper.start;
+const HYPER_CAP = T.hyper.cap;
+const HYPER_HIT_COST = T.hyper.hitCost;
 let lifeT = HYPER_START;
 let mercyT = 0; // post-hit i-frames (hyper mode)
 
@@ -1749,10 +1744,10 @@ function addStyle(amount) {
 // STICKY, not magnetic: near a target the look rate scales down, which makes
 // tracking hold. Nothing is ever aimed for you — it amplifies aim, it doesn't
 // replace it — and mouse and touch never see it at all.
-const AIM_CONE = 0.16;  // rad — full slowdown inside this angle off-centre
-const AIM_FADE = 0.26;  // rad — no slowdown at or beyond this
-const AIM_SLOW = 0.55;  // look-rate multiplier at dead centre
-const AIM_MAX_D = 45;   // ignore targets further out than this
+const AIM_CONE = T.aim.cone;
+const AIM_FADE = T.aim.fade;
+const AIM_SLOW = T.aim.slow;
+const AIM_MAX_D = T.aim.maxDist;
 const _aimF = new THREE.Vector3();
 const _aimT = new THREE.Vector3();
 
@@ -1851,12 +1846,12 @@ function updateCombat(dt) {
   // minimalistic shooting: the stream is automatic while you're moving;
   // holding LMB / the look stick fires while standing still
   const mv = input.getMove();
-  const autoFire = Math.hypot(mv.x, mv.y) > 0.15;
+  const autoFire = Math.hypot(mv.x, mv.y) > T.weapon.autoFireMove;
   if (input.firing || autoFire) {
     fireTimer -= dt;
     while (fireTimer <= 0) {
       fireTimer += 1 / w.stream;
-      fireDagger(FIRE_SPREAD, 58, w.homing);
+      fireDagger(FIRE_SPREAD, T.weapon.daggerSpeed, w.homing);
       recoil = Math.min(0.035, recoil + 0.007);
       audio.fire();
     }
@@ -2011,9 +2006,9 @@ function playerStruck(sx, sz, killerType, killer = null) {
 // a damaging pulse, but you can only do it where you have already killed, and
 // once spent the field is empty when the next serpent lands on you.
 // Deliberately has no HUD meter: the resource is the floor, in plain sight.
-const REAP_R = 7;        // radius searched and blasted
-const REAP_MIN = 30;     // fewer bones than this and it simply doesn't fire
-const REAP_COOL = 3.0;
+const REAP_R = T.reap.radius;
+const REAP_MIN = T.reap.minBones;
+const REAP_COOL = T.reap.cooldown;
 let reapCool = 0;
 
 function tryReap() {
@@ -2173,7 +2168,9 @@ function step(dt) {
   // top tiers stay fleeting and demand a continuous chain
   // provisional v4.1 soften (was 6 + 0.05v): S-rank was bleeding out between
   // pulse peaks even on good runs — revisit once the run log has real data
-  if (styleVal > 0) styleVal = Math.max(0, styleVal - dt * (5 + styleVal * 0.045));
+  if (styleVal > 0) {
+    styleVal = Math.max(0, styleVal - dt * (T.style.bleedBase + styleVal * T.style.bleedScale));
+  }
   updateStyleHud();
   // music intensity: swarm density (live threats, not eggs) + run progress +
   // how hard you're chaining right now (the style meter)
@@ -2335,6 +2332,7 @@ window.__hd = {
     spawnBlinker() { const p = ringSpot(8).clone(); p.y = 1.2; enemies.push(new Blinker(scene, p, ARENA_R - 1)); },
     reap() { return tryReap(); },
     getReap() { return { cool: +reapCool.toFixed(2), bones: litter.count }; },
+    getTuning() { return T; },
     // aim: raw() reports the assist a stick WOULD get right now, ignoring the
     // "is a stick even in use" gate, so tests can probe the falloff curve
     // without faking a gamepad

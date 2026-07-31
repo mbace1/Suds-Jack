@@ -24,7 +24,7 @@ const PRECACHE = [
   './', './index.html',
   // Module tokens are all normalized to the release token, so these precache
   // entries are byte-identical to the URLs the page actually imports.
-  ...['main', 'input', 'player', 'daggers', 'gems', 'voxel', 'enemy', 'bullets', 'audio', 'rng']
+  ...['main', 'input', 'player', 'daggers', 'gems', 'voxel', 'enemy', 'bullets', 'audio', 'rng', 'tuning']
     .map(m => `./js/${m}.js?v=${TOKEN}`),
   './vendor/three.module.min.js',
   './vendor/jsm/postprocessing/EffectComposer.js',

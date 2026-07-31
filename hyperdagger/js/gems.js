@@ -3,10 +3,12 @@ import * as THREE from 'three';
 const _d = new THREE.Vector3();
 const _zero = new THREE.Matrix4().makeScale(0, 0, 0);
 
-const GRAVITY = -22;
-const MAGNET_R = 5.5;
-const COLLECT_R = 0.95;
-const LIFETIME = 25;
+import { TUNING as T } from './tuning.js?v=45';
+
+const GRAVITY = T.gems.gravity;
+const MAGNET_R = T.gems.magnetR;
+const COLLECT_R = T.gems.collectR;
+const LIFETIME = T.gems.lifetime;
 
 /** Devil-Daggers-style gems: dropped by heavy kills, bounce out physically,
  *  hover in place, magnet to the player when close. Collecting them levels

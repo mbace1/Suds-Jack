@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { TUNING as T } from './tuning.js?v=45';
 
 const _v = new THREE.Vector3();
 const _t = new THREE.Vector3();
@@ -38,7 +39,7 @@ export class DaggerPool {
     this.mesh.instanceMatrix.needsUpdate = true;
   }
 
-  fire(origin, dir, speed = 58, homing = false) {
+  fire(origin, dir, speed = T.weapon.daggerSpeed, homing = false) {
     const m = this.pool.pop();
     if (!m) return;
     m.position.copy(origin);
@@ -57,18 +58,18 @@ export class DaggerPool {
   /** Advance daggers; homing ones steer toward the best target in a ~37° cone.
    *  Caller does collision using {prev → m.position} segments. */
   update(dt, targets = []) {
-    const steerK = 1 - Math.exp(-7 * dt);
+    const steerK = 1 - Math.exp(-T.weapon.homingSteer * dt);
     for (let i = this.active.length - 1; i >= 0; i--) {
       const d = this.active[i];
       if (d.homing && targets.length) {
         _n.copy(d.vel).normalize();
-        let bestDot = 0.8, found = false;
+        let bestDot = T.weapon.homingDot, found = false;
         for (const e of targets) {
           if (!e.alive) continue;
           e.center(_c);
           _t.copy(_c).sub(d.m.position);
           const dist = _t.length();
-          if (dist > 30 || dist < 0.5) continue;
+          if (dist > T.weapon.homingRange || dist < 0.5) continue;
           _t.divideScalar(dist);
           const dot = _n.dot(_t);
           if (dot > bestDot) { bestDot = dot; _best.copy(_t); found = true; }

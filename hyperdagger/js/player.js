@@ -1,23 +1,25 @@
 import * as THREE from 'three';
+import { TUNING as T } from './tuning.js?v=45';
 
-const EYE = 1.6;
-const GRAVITY = -24;
-const JUMP_V = 8.6;
-const MOUSE_SENS = 0.0023;   // rad per pixel
-const STICK_YAW_RATE = 3.8;  // rad/s at full deflection — touch (proven feel)
-const STICK_PITCH_RATE = 2.8;
+// all feel numbers live in tuning.js; these aliases keep the code readable
+const EYE = T.player.eye;
+const GRAVITY = T.player.gravity;
+const JUMP_V = T.player.jumpV;
+const MOUSE_SENS = T.look.mouseSens;
+const STICK_YAW_RATE = T.look.touchYaw;   // touch (proven feel, stays put)
+const STICK_PITCH_RATE = T.look.touchPitch;
 // Gamepad-only look tuning. The response curve in input.js protects precision
 // near centre, which is what lets the pad's base rates sit higher than a
 // linear stick could. Touch keeps the flat rates above — it was already good.
-const PAD_YAW_RATE = 4.6;
-const PAD_PITCH_RATE = 3.4;
-const RAMP_T = 0.28;         // s of sustained deflection to reach full ramp
-const RAMP_MAX = 1.55;       // turn multiplier once ramped
-const RAMP_PUSH = 0.7;       // shaped deflection that counts as "held over"
-const DASH_SPEED = 30;
-const DASH_TIME = 0.16;
-const DASH_CD = 1.0;
-const MAX_JUMPS = 2; // ground jump + one air jump
+const PAD_YAW_RATE = T.look.padYaw;
+const PAD_PITCH_RATE = T.look.padPitch;
+const RAMP_T = T.look.rampT;
+const RAMP_MAX = T.look.rampMax;
+const RAMP_PUSH = T.look.rampPush;
+const DASH_SPEED = T.dash.speed;
+const DASH_TIME = T.dash.time;
+const DASH_CD = T.dash.cooldown;
+const MAX_JUMPS = T.player.maxJumps;
 
 const _fwd = new THREE.Vector3();
 const _right = new THREE.Vector3();
@@ -30,7 +32,7 @@ export class Player {
     this.arenaR = arenaR;
     camera.rotation.order = 'YXZ';
     this.feet = new THREE.Vector3();
-    this.speed = 12;
+    this.speed = T.player.speed;
     this.sens = 1; // look sensitivity multiplier (pause-menu option)
     this.aimAssist = 1; // <1 slows stick look near a target; main sets it per frame
     this.reset();
@@ -101,7 +103,7 @@ export class Player {
     this.dashCd -= dt;
     const flick = this.input.consumeDashFlick();
     if (this.input.consumeDash() || flick) {
-      this.dashBuf = 0.25;
+      this.dashBuf = T.dash.buffer;
       this.dashBufFlick = flick || null;
     } else if (this.dashBuf > 0) {
       this.dashBuf -= dt;
