@@ -90,12 +90,12 @@
   (function () {
     var gpu = false;
     try { gpu = localStorage.getItem('tokoDropGpu') === '1'; } catch (e) {}
-    var three = gpu ? './vendor/three.webgpu.min.js?v=172'
-                    : './vendor/three.module.min.js?v=172';
+    var three = gpu ? './vendor/three.webgpu.min.js?v=173'
+                    : './vendor/three.module.min.js?v=173';
     document.write('<script type="importmap">' + JSON.stringify({
       imports: {
         'three': three,
-        'three/addons/geometries/RoundedBoxGeometry.js': './vendor/jsm/geometries/RoundedBoxGeometry.js?v=172',
+        'three/addons/geometries/RoundedBoxGeometry.js': './vendor/jsm/geometries/RoundedBoxGeometry.js?v=173',
         'three/addons/': './vendor/jsm/'
       }
     }) + '<\/script>');
@@ -103,9 +103,9 @@
 </script>
 <script type="module">
 import * as THREE from 'three';
-import { EnemyType, CFG, applySatinValues } from './js/enemy.js?v=172';
-import { TUNING, applyMaterialPreset } from './js/tuning.js?v=172';
-import { createSpecimen } from './js/specimen.js?v=172';
+import { EnemyType, CFG, applySatinValues } from './js/enemy.js?v=173';
+import { TUNING, applyMaterialPreset } from './js/tuning.js?v=173';
+import { createSpecimen } from './js/specimen.js?v=173';
 
 const IS_GPU = typeof THREE.WebGPURenderer === 'function';
 
@@ -304,5 +304,8 @@ view.start();
 addEventListener('resize', () => view.resize(innerWidth, innerHeight));
 window._lab = { select, view, EnemyType, CFG, isGpu: IS_GPU };   // headless verify hook
 </script>
+<!-- v219: the arcade shell — a home button so the lab is a first-class stop
+     on the site (hub → sketches → lab → home), same include as the game -->
+<script type="module" src="../hub/shell.js?v=15"></script>
 </body>
 </html>

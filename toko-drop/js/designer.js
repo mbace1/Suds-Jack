@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=172';
-import { t } from './lang.js?v=172';
-import { TUNING, applyMaterialPreset } from './tuning.js?v=172';
+import { CFG, EnemyType, Enemy, GOO_TIME, applySatinValues } from './enemy.js?v=173';
+import { t } from './lang.js?v=173';
+import { TUNING, applyMaterialPreset } from './tuning.js?v=173';
 
 // Sentinel for the non-enemy SETTINGS page in the pause-menu list.
 const SETTINGS_PAGE = 'settings';
@@ -23,7 +23,7 @@ function ensureTester() {
     ? new THREE.WebGPURenderer({ canvas, antialias: true })  // v192: adaptive backend, same as main.js
     : new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
-  renderer.setSize(520, 260, false);
+  renderer.setSize(520, 260, false);   // placeholder; the loop sizes to the panel (v219)
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x07071a);
   scene.add(new THREE.AmbientLight(0xffffff, 0.45));
@@ -132,6 +132,14 @@ function testerLoop(ts) {
       f.m.material.opacity = 0.5 * Math.max(0, f.life / 2.2);
     }
     if (f.life <= 0) { T.scene.remove(f.m); f.m.material.dispose(); T.fx.splice(i, 1); }
+  }
+  // v219: size the render to the panel — the canvas fills the tab's width
+  // (field feedback: the viewport was too small to judge the gel), and this
+  // self-heals across tab switches, rotation, and window resizes.
+  const cw = T.canvas.clientWidth;
+  if (cw && Math.abs(cw - (T._w || 0)) > 2) {
+    T._w = cw;
+    T.renderer.setSize(cw, Math.round(cw / 2), false);   // camera aspect stays 2:1
   }
   if (T.ready) T.renderer.render(T.scene, T.camera);
 }
@@ -630,8 +638,10 @@ export function initDesigner({ onResume, settings }) {
 
     // Specimen viewport — the selected enemy runs live in its own mini scene.
     const T = ensureTester();
+    // v219: the viewport fills the tab (field feedback: too small to judge
+    // the gel). aspect-ratio pins the box so the loop's resize never reflows.
     T.canvas.style.cssText =
-      'width:100%;max-width:520px;display:block;border:1px solid #141428;border-radius:4px;margin-bottom:8px';
+      'width:100%;aspect-ratio:2/1;display:block;border:1px solid #141428;border-radius:4px;margin-bottom:8px';
     el.appendChild(T.canvas);
     if (T.type !== selectedType || !T.specimen) testerSpawn(selectedType);
     testerStart();
@@ -655,6 +665,15 @@ export function initDesigner({ onResume, settings }) {
     });
     mkDbg('KILL', () => { if (T.specimen && T.specimen.alive) T.specimen.destroy(); });
     mkDbg('RESPAWN', () => testerSpawn(selectedType));
+    // v219: the full-screen lab, one tap from the tuner — same materials, all
+    // 40 chips, the ⚡ build flip. It navigates away, so it says so.
+    const labBtn = document.createElement('button');
+    labBtn.className = 'dbtn';
+    labBtn.textContent = 'FULL LAB ↗';
+    labBtn.style.marginLeft = 'auto';
+    labBtn.title = 'Opens the full-screen enemy lab (leaves the game)';
+    labBtn.addEventListener('click', () => { location.href = 'enemy-lab.html'; });
+    dbgRow.appendChild(labBtn);
     el.appendChild(dbgRow);
 
     function cfgSlider(label, min, max, step, key) {
