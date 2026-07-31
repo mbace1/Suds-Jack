@@ -12,7 +12,7 @@ import * as feedback from './feedback.js?v=13';
 import * as topics from './topics.js?v=2';
 import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=10';
 import { watchPad, padPresent } from './pad.js?v=9';
-import * as room from './arcade.js?v=3';
+import * as room from './arcade.js?v=4';
 
 const el = (tag, cls = '', text = '') => {
   const e = document.createElement(tag);
@@ -1031,7 +1031,24 @@ feedback.flush();
 // Everything below is atmosphere and every piece of it is allowed to do
 // nothing: reduced motion turns the first three off, sound is off until asked,
 // and the floor above works with all of it missing.
-room.powerOn();
+// The intro: the tube opens, then the workshop's mark draws itself in it.
+//
+// NOT IN FRONT OF A DEEP LINK. `/#hyperdagger` means somebody came for one
+// thing, and a title card between them and it is exactly what this workshop is
+// against — the rule came from the sting's own mount on the deployed page and
+// it now covers the tube as well, since a boot animation is no less in the way
+// than a logo.
+//
+// The sting is imported lazily and its failure is swallowed inside powerOn:
+// toko/ is a sibling of hub/, and a tree that does not carry it still boots.
+// `playStingOnce` returns null once it has been seen, so after the first visit
+// this is the tube alone.
+if (!location.hash) {
+  room.powerOn({
+    mark: () => import('../toko/js/sting.js')
+      .then(m => m.playStingOnce('tokoSting')?.done),
+  });
+}
 room.sound.start();                    // a no-op unless it was left switched on
 room.flicker();
 
