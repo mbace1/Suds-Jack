@@ -733,22 +733,31 @@ footer {
   display: grid;
   place-items: center;
   pointer-events: none;                 /* never between you and the floor */
-  animation: po-out .18s ease-in .62s both;
 }
+/* The element is the WHOLE SCREEN and gets squashed down to a line, rather
+   than a small line being scaled up to a screen. The first cut did it the
+   other way — a 620px-wide, 2px-tall bar scaled by 120 — so the line was a
+   band across the middle of a wide monitor and the opening never reached the
+   top or bottom of a tall one. Scaling down from the real size means the sweep
+   is the full width of the glass and the opening is the full height of it,
+   whatever shape the window is. */
 .power-on i {
   display: block;
-  width: min(70vw, 620px);
-  height: 2px;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;                       /* the real one, under a phone's bars */
   background: var(--accent);
-  box-shadow: 0 0 12px var(--accent);
-  animation: po-line .62s ease-out both;
+  transform-origin: center;
+  animation: po-line .68s ease-out both;
 }
 @keyframes po-line {
-  0%   { transform: scaleX(0);   opacity: 0; }
-  22%  { transform: scaleX(1);   opacity: 1; }
-  100% { transform: scaleX(1) scaleY(120); opacity: .12; }
+  /* scaleY is a fraction of the viewport rather than a pixel count, so the
+     line stays about the same weight on a phone and on a monitor */
+  0%   { transform: scaleX(0) scaleY(.004); opacity: 0; }
+  12%  { transform: scaleX(.35) scaleY(.004); opacity: 1; }
+  34%  { transform: scaleX(1) scaleY(.004); opacity: 1; }
+  100% { transform: scaleX(1) scaleY(1); opacity: .1; }
 }
-@keyframes po-out { to { opacity: 0; visibility: hidden; } }
 
 /* 7. marquee flicker: one tube on the floor struggling for a moment */
 .art.flick { animation: flick .9s steps(1, end) both; }

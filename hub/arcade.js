@@ -19,29 +19,80 @@ const store = {
 };
 
 // ── 5. power-on ────────────────────────────────────────────────────
-// The page comes up like a tube rather than like a document: one bright line
-// across the middle, then it opens vertically, then the phosphor fades and the
-// floor is there.
+// The intro. Not a page transition — an INTRO, the way a cabinet has one: the
+// tube comes on across the whole glass, and then the workshop's mark draws
+// itself in it, and then the floor is there.
 //
-// Once per TAB, not once per load. Every game on this site is a real navigation
-// and coming back from one is a fresh page — a boot animation on each return
-// would be a toll on the way home, which is the opposite of what the shell
-// button is for. sessionStorage is exactly "this tab, this visit".
-export function powerOn() {
-  if (REDUCED.matches) return;
-  try { if (sessionStorage.getItem('sudsJackHubBooted')) return; } catch { return; }
-  try { sessionStorage.setItem('sudsJackHubBooted', '1'); } catch { /* */ }
+// It is one animation, deliberately. The sting (toko/js/sting.js — the face
+// revealed along its own arcs) was already mounted on the deployed page from
+// its own <script>, and the tube open was added later from here, so the two
+// were playing AT ONCE: a black veil sweeping open underneath a magenta panel
+// at z-index 99999 that covered it completely. Sequencing them is the whole
+// fix — the tube is the frame the mark arrives in.
+//
+// Two different cadences, both kept, because they are answering different
+// questions:
+//
+//   the tube    once per TAB (sessionStorage). Every game here is a real
+//               navigation, so coming back from one is a fresh page, and a
+//               boot animation on each return is a toll on the way home.
+//   the mark    once per BROWSER (playStingOnce's own key). A logo sting is
+//               an introduction, and you only get introduced once.
+//
+// So a first-ever visit gets the tube and the mark; a new tab later gets the
+// tube alone; walking back from a game gets neither.
+const BOOT_KEY = 'sudsJackHubBooted';
+
+export function powerOn({ mark } = {}) {
+  const nothing = Promise.resolve();
+  try {
+    if (sessionStorage.getItem(BOOT_KEY)) return nothing;
+    sessionStorage.setItem(BOOT_KEY, '1');
+  } catch { return nothing; }
+
+  // Reduced motion drops the TUBE, not the introduction. The sting has its own
+  // still-frame path for exactly this case — it holds the finished mark for a
+  // beat instead of drawing it — so refusing to call it at all would be this
+  // module deciding that somebody who dislikes movement also does not get to
+  // be told whose workshop this is.
+  if (REDUCED.matches) return Promise.resolve(mark?.()).catch(() => {});
 
   const veil = document.createElement('div');
   veil.className = 'power-on';
   veil.setAttribute('aria-hidden', 'true');       // it is not content
   veil.innerHTML = '<i></i>';
   document.body.appendChild(veil);
-  // the element removes itself; nothing else has to remember it exists
-  veil.addEventListener('animationend', e => {
-    if (e.target === veil) veil.remove();
-  });
-  setTimeout(() => veil.remove(), 2000);          // and a belt for the braces
+
+  let over = false;
+  const away = () => {
+    if (over) return;
+    over = true;
+    off();
+    veil.classList.add('gone');
+    setTimeout(() => veil.remove(), 340);
+  };
+
+  // Skippable from the first frame, the same rule the sting already holds
+  // itself to — and ONE input skips the whole thing rather than each half in
+  // turn. Skipping before the mark is reached deliberately leaves it unseen
+  // rather than marking it as shown: you did not watch it, so you have not
+  // been introduced, and it is still waiting next time.
+  const skip = () => away();
+  const off = () => {
+    removeEventListener('keydown', skip);
+    removeEventListener('pointerdown', skip);
+  };
+  addEventListener('keydown', skip);
+  addEventListener('pointerdown', skip);
+
+  // The veil HOLDS after the tube opens rather than removing itself, so the
+  // mark has a black screen to arrive on instead of the floor. Everything
+  // after this point is a nicety, and a nicety may never be the reason the
+  // page does not open — hence the catch either side of it.
+  return new Promise(r => setTimeout(r, 720))
+    .then(() => (over || !mark ? null : (off(), mark())))
+    .catch(() => {})
+    .then(away, away);
 }
 
 // ── 2. room tone ───────────────────────────────────────────────────

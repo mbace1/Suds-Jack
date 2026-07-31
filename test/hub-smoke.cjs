@@ -974,6 +974,57 @@ function check(name, cond) {
   check('the power-on veil takes itself off the page',
     (await page.$$('.power-on')).length === 0);
 
+  // ── the intro ──
+  // Once per TAB, so it has to be driven in a context that has not used its
+  // one go yet — on the shared page above it played before the first check and
+  // every assertion here would pass without ever running.
+  {
+    const boot = await browser.newContext({ viewport: { width: 1000, height: 700 } });
+    const seen = sel => bp => bp.$$(sel).then(a => a.length > 0);
+    const veil = seen('.power-on'), sting = seen('[role=img]');
+
+    let bp = await boot.newPage();
+    await bp.goto(`${base}/index.html`, { waitUntil: 'commit' });
+    // measured after the sweep lands (34% of .68s), because a bounding rect is
+    // the TRANSFORMED box — read at 200ms it is a bar mid-flight and reports a
+    // fraction of the width no matter how wide the element really is
+    await bp.waitForTimeout(420);
+    check('the intro opens across the whole screen', await bp.evaluate(() => {
+      const i = document.querySelector('.power-on i');
+      if (!i) return false;
+      const r = i.getBoundingClientRect();
+      return i.offsetWidth === innerWidth && Math.abs(r.width - innerWidth) < 2;
+    }));
+    // one input, and the WHOLE thing goes — not one half of it
+    await bp.keyboard.press('Escape');
+    await bp.waitForTimeout(500);
+    check('any key skips it from the first frame', !await veil(bp) && !await sting(bp));
+    check('and a skipped mark is still unseen next time',
+      await bp.evaluate(() => !localStorage.getItem('tokoSting')));
+    await bp.close();
+
+    // a pasted link means somebody came for one thing
+    bp = await boot.newPage();
+    await bp.goto(`${base}/index.html#hyperdagger`, { waitUntil: 'commit' });
+    await bp.waitForTimeout(260);
+    check('a deep link gets no intro at all', !await veil(bp));
+    await bp.close();
+    await boot.close();
+
+    // reduced motion drops the tube, NOT the introduction — the sting holds a
+    // still frame for exactly this case
+    const still = await browser.newContext({
+      viewport: { width: 1000, height: 700 }, reducedMotion: 'reduce',
+    });
+    bp = await still.newPage();
+    await bp.goto(`${base}/index.html`, { waitUntil: 'commit' });
+    await bp.waitForTimeout(600);
+    check('reduced motion gets the mark but not the tube',
+      !await veil(bp) && await sting(bp));
+    await bp.close();
+    await still.close();
+  }
+
   // sound is off until asked, and says which it is
   check('sound is off on arrival',
     await page.$eval('.sound-row .opt-btn', b => b.getAttribute('aria-pressed') === 'false'));

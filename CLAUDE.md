@@ -82,10 +82,17 @@ the rating and A sends; selection is real DOM focus with its own ring, since a p
 may never trigger `:focus-visible`.
 **The room.** `hub/arcade.js` is the atmosphere layer, kept out of `hub.js` because
 hub.js is the floor. Everything in it is allowed to do nothing: `prefers-reduced-motion`
-turns off the **power-on** (one line across the middle, then it opens — once per *tab*
-via sessionStorage, because every game here is a real navigation and a boot animation on
-each return is a toll on the way home) and the **marquee flicker** (one tube struggles for
-a moment, never two at once). **Room tone** is a detuned-saw bed plus a coin
+turns off the **marquee flicker** (one tube struggles for a moment, never two at once).
+The **intro** is one animation, not two: the tube comes on across the *whole* screen and
+then `toko/js/sting.js` draws the mark in it (the two used to play at once — a black veil
+sweeping open under a magenta panel at z-index 99999 that hid it completely). The tube is
+once per **tab** (sessionStorage — every game is a real navigation, and a boot animation
+on each return is a toll on the way home); the mark is once per **browser**, since you are
+only introduced once. It is skippable from frame one and **one input skips all of it**,
+leaving the mark unseen rather than marking it shown. No intro in front of a **deep link**.
+`prefers-reduced-motion` drops the tube but still calls the sting, which has its own
+still-frame path — refusing it outright would decide that disliking movement also means
+not being told whose workshop this is. **Room tone** is a detuned-saw bed plus a coin
 on Play, routed through one master gain and **off until asked**. Three counters hang off
 the single honest signal this page gets — pressing Play — and only appear once there is
 something to count: **credits**, a **streak** counted back from TODAY (counted from the
