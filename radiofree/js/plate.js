@@ -18,8 +18,8 @@
 // are drawn at that size rather than at the panel's 128×152, which would have
 // had to be cropped by a third or letterboxed.
 
-import { PixelScreen } from './screen.js?v=31';
-import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=31';
+import { PixelScreen } from './screen.js?v=32';
+import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=32';
 
 // OPT-IN, and named one at a time on purpose. `plates.js` can draw seven of
 // the ten footage keys, so testing against PLATE_KEYS would have quietly moved
@@ -27,7 +27,7 @@ import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=31';
 // the exact swap he pushed back on once already. A photograph wins wherever
 // one exists. A key lands on this list only when there is no frame for it and
 // the drawn plate is the picture the story is actually about.
-const DRAWN = ['beach', 'moon', 'winterhall', 'packice'];
+const DRAWN = ['beach', 'moon', 'winterhall', 'packice', 'chase', 'approach'];
 export const isDrawn = (broll) => DRAWN.includes(broll);
 
 export class Plate {

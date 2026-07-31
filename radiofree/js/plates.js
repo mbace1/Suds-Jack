@@ -28,8 +28,8 @@
 // showing" — and a saturated orange lamp would spend that vocabulary on
 // scenery. Nothing here approaches PAL.AMBER_HOT.
 
-import { PAL } from './palette.js?v=31';
-import { mix, shade, bayer } from './screen.js?v=31';
+import { PAL } from './palette.js?v=32';
+import { mix, shade, bayer } from './screen.js?v=32';
 
 export const PLATE_W = 144, PLATE_H = 276;
 const W = PLATE_W, H = PLATE_H;
@@ -799,8 +799,153 @@ function packice(scr, t, d) {
   amberWash(c, d);
 }
 
+
+// ── CHASE — the helicopter shot, and the road moving under it ──────
+//
+// The first ACTION plate, and it changes what a plate is: the others cache a
+// static base and keep one live layer over it, but here the camera itself is
+// moving, so the road cannot be cached. Everything is fillRects — a few hundred
+// a frame — because a per-pixel pass over 144×276 sixty times a second is a
+// different kind of program.
+function chase(scr, t, d) {
+  const c = scr.ctx;
+  const scroll = t * 150;                                  // the tracking shot
+  ramp(c, 0, H, '#0a1218', '#131d24');
+  P(c, 0, 0, 22, H, '#101c14');                            // verges
+  P(c, 122, 0, 22, H, '#101c14');
+  P(c, 22, 0, 100, H, '#20262b');                          // tarmac
+
+  // lane markings, scrolling. The road is what tells you the camera is moving;
+  // hold it still and the cars read as parked and vibrating.
+  for (const lx of [55, 88]) {
+    for (let y = -40 + (scroll % 40); y < H; y += 40) P(c, lx, y, 3, 22, '#c8cdd0');
+  }
+  P(c, 24, 0, 2, H, '#7d868c');
+  P(c, 118, 0, 2, H, '#7d868c');
+  // speed streaks — the cheapest possible motion blur, and the most legible
+  for (let i = 0; i < 26; i++) {
+    const y = ((i * 37 + scroll * 1.6) % (H + 40)) - 20;
+    P(c, 26 + rnd(i * 3.1) * 90, y, 2, 12 + rnd(i * 5.7) * 10, '#2c343a');
+  }
+  // the traffic that got out of the way, on the shoulder
+  for (let i = 0; i < 4; i++) {
+    const y = ((i * 90 + scroll * 0.55) % (H + 60)) - 30;
+    const x = i % 2 ? 26 : 106;
+    P(c, x, y, 11, 20, i % 2 ? '#3d4a52' : '#4a3f38');
+    P(c, x + 1, y + 3, 9, 7, '#1a2126');
+    P(c, x, y + 18, 11, 2, '#8a3a34');
+  }
+
+  const lx = 72 + Math.sin(t * 1.5) * 26;                  // the one being chased
+  const px = 72 + Math.sin(t * 1.5 - 0.85) * 26;           // the one chasing
+
+  // the searchlight, locked on the lead car and always a little late
+  halo(c, lx + 5, 150, 34, '#e8e0c0', 0.30);
+  const car = (x, y, body, roof) => {
+    P(c, x, y, 12, 22, body);
+    P(c, x + 1, y + 4, 10, 8, roof);
+    P(c, x + 1, y + 20, 4, 2, '#c8484a');
+    P(c, x + 7, y + 20, 4, 2, '#c8484a');
+    P(c, x + 1, y, 4, 2, '#ffe9b0');
+    P(c, x + 7, y, 4, 2, '#ffe9b0');
+  };
+  car(lx, 140, '#c9ccce', '#20272c');
+  car(px, 196, '#1f2a33', '#0e161c');
+  // the bar on the roof — two blocks, alternating, never both
+  const blue = (t * 6) % 2 < 1;
+  P(c, px + 1, 202, 5, 3, blue ? '#4aa8ff' : '#123048');
+  P(c, px + 6, 202, 5, 3, blue ? '#182838' : '#ff5a4a');
+
+  if (d > 0.2) {
+    // widen the light and the road is empty in both directions: a wave of two
+    halo(c, 72, 150, 96, PAL.AMBER_DIM, 0.34 * d);
+    P(c, 26, 120, 92, 2, PAL.AMBER);
+    P(c, 26, 224, 92, 2, PAL.AMBER);
+    P(c, 26, 120, 2, 106, PAL.AMBER);
+    P(c, 116, 120, 2, 106, PAL.AMBER);
+  }
+  amberWash(c, d);
+}
+
+// ── APPROACH — a heavy on short finals, from underneath ────────────
+//
+// The slow one. It crosses the frame in eleven seconds and the whole effect is
+// that it takes its time: a wide-body directly overhead barely seems to move,
+// which is exactly why standing under an approach path is worth doing.
+function approachBase(c) {
+  ramp(c, 0, 214, '#1c4d78', '#7fa8c4');
+  for (let i = 0; i < 5; i++) {                            // cloud shelves
+    const y = 26 + i * 30, w2 = 40 + rnd(i * 3.7) * 60;
+    P(c, rnd(i * 9.1) * (W - w2), y, w2, 7, '#9dbdd2');
+    P(c, rnd(i * 9.1) * (W - w2), y + 6, w2, 3, '#7a9db4');
+  }
+  for (let x = 0; x < W; x += 3) {                         // the treeline
+    const h2 = 16 + Math.sin(x * 0.33) * 6 + Math.sin(x * 0.12) * 5;
+    P(c, x, 214 - h2, 3, h2 + 20, '#16301d');
+  }
+  P(c, 0, 234, W, H - 234, '#0f2416');
+  for (let x = 6; x < W; x += 22) {                        // approach lights
+    P(c, x, 244, 12, 2, '#e0e8ec');
+    P(c, x + 4, 246, 4, 8, '#3b4a52');
+  }
+}
+
+function approach(scr, t, d) {
+  const c = scr.ctx;
+  c.drawImage(base('approach', approachBase), 0, 0);
+
+  // It comes over you and settles away toward the runway: big and low at the
+  // bottom of the frame, small and far at the top. Eleven seconds, linear,
+  // because an aircraft on finals does not ease.
+  const u = ((t * 0.09) % 1);
+  const y = H + 34 - u * (H + 90);
+  const k = 1.55 - u * 1.2;                                 // it recedes
+  const cx = 70 + Math.sin(t * 0.25) * 3;
+  const S = (a) => Math.max(1, Math.round(a * k));
+
+  const body = '#dfe6ea', shade2 = '#9aa9b2', dark = '#39464e';
+  // wing, engines under it, then the fuselage over the top
+  P(c, cx - S(46), y - S(4), S(92), S(9), body);
+  P(c, cx - S(46), y + S(4), S(92), S(3), shade2);
+  for (const ex of [-30, -16, 16, 30]) {
+    P(c, cx + S(ex) - S(5), y + S(5), S(10), S(11), dark);
+    P(c, cx + S(ex) - S(4), y + S(6), S(8), S(3), '#7f8f99');
+  }
+  P(c, cx - S(8), y - S(34), S(16), S(64), body);
+  P(c, cx - S(8), y + S(14), S(16), S(16), shade2);
+  P(c, cx - S(3), y - S(38), S(6), S(6), body);            // nose
+  P(c, cx - S(20), y + S(30), S(40), S(7), body);          // tailplane
+  P(c, cx - S(2), y + S(28), S(4), S(14), shade2);         // fin, seen end-on
+  if (k > 0.9) {                                           // gear, while it is close
+    P(c, cx - S(12), y - S(22), S(4), S(6), dark);
+    P(c, cx + S(8), y - S(22), S(4), S(6), dark);
+    P(c, cx - S(2), y + S(6), S(4), S(6), dark);
+  }
+  // navigation lights: red to port, green to starboard, and one white strobe
+  P(c, cx - S(47), y - S(3), S(4), S(4), '#ff4a3a');
+  P(c, cx + S(43), y - S(3), S(4), S(4), '#3aff7a');
+  if ((t * 1.4) % 1 < 0.12) {
+    P(c, cx - S(47), y - S(3), S(5), S(5), '#ffffff');
+    P(c, cx + S(43), y - S(3), S(5), S(5), '#ffffff');
+  }
+  if (k > 1.15) {                                          // wingtip vapour
+    for (let i = 0; i < 8; i++) {
+      const a = (t * 20 + i * 9) % 40;
+      P(c, cx - S(48) - a * 0.3, y + S(2) + a, 3, 2, '#c9d8e0');
+      P(c, cx + S(44) + a * 0.3, y + S(2) + a, 3, 2, '#c9d8e0');
+    }
+  }
+  if (d > 0.2) {
+    halo(c, cx, y, Math.round(70 * k), PAL.AMBER_DIM, 0.3 * d);
+    P(c, 8, 250, 128, 2, PAL.AMBER);
+    P(c, 8, 246, 2, 10, PAL.AMBER_HOT);
+    P(c, 134, 246, 2, 10, PAL.AMBER_HOT);
+  }
+  amberWash(c, d);
+}
+
 const PLATES = { esplanadi, kamppi, station, harbour, gulf, suomenlinna, katajanokka,
-                 beach, moon, winterhall, packice };
+                 beach, moon, winterhall, packice, chase, approach };
 export const PLATE_KEYS = Object.keys(PLATES);
 
 export function drawPlate(key, scr, t, decode) {
