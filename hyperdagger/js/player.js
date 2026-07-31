@@ -4,8 +4,16 @@ const EYE = 1.6;
 const GRAVITY = -24;
 const JUMP_V = 8.6;
 const MOUSE_SENS = 0.0023;   // rad per pixel
-const STICK_YAW_RATE = 3.8;  // rad/s at full right-stick deflection
+const STICK_YAW_RATE = 3.8;  // rad/s at full deflection — touch (proven feel)
 const STICK_PITCH_RATE = 2.8;
+// Gamepad-only look tuning. The response curve in input.js protects precision
+// near centre, which is what lets the pad's base rates sit higher than a
+// linear stick could. Touch keeps the flat rates above — it was already good.
+const PAD_YAW_RATE = 4.6;
+const PAD_PITCH_RATE = 3.4;
+const RAMP_T = 0.28;         // s of sustained deflection to reach full ramp
+const RAMP_MAX = 1.55;       // turn multiplier once ramped
+const RAMP_PUSH = 0.7;       // shaped deflection that counts as "held over"
 const DASH_SPEED = 30;
 const DASH_TIME = 0.16;
 const DASH_CD = 1.0;
@@ -24,6 +32,7 @@ export class Player {
     this.feet = new THREE.Vector3();
     this.speed = 12;
     this.sens = 1; // look sensitivity multiplier (pause-menu option)
+    this.aimAssist = 1; // <1 slows stick look near a target; main sets it per frame
     this.reset();
   }
 
@@ -38,6 +47,7 @@ export class Player {
     this.dashCd = 0;
     this.dashDir = this.dashDir || new THREE.Vector3();
     this.dashBuf = 0;
+    this.turnRamp = 0;
     this.dashBufFlick = null;
     this.justDashed = false;
     this.justJumped = false;
@@ -55,8 +65,26 @@ export class Player {
     this.yaw -= look.dx * MOUSE_SENS * this.sens;
     this.pitch -= look.dy * MOUSE_SENS * this.sens;
     const rate = this.input.getLookRate();
-    this.yaw -= rate.x * STICK_YAW_RATE * this.sens * dt;
-    this.pitch -= rate.y * STICK_PITCH_RATE * this.sens * dt;
+    if (this.input.gamepad) {
+      // Turn ramp (pad only): hold the stick over and the turn accelerates,
+      // so whipping 180° onto something behind you is quick while
+      // flick-and-settle stays precise. Decays 3× faster than it builds —
+      // releasing the stick must drop straight back to fine aim, or the next
+      // small correction inherits spin speed and overshoots.
+      const push = Math.hypot(rate.x, rate.y);
+      this.turnRamp = push > RAMP_PUSH
+        ? Math.min(1, this.turnRamp + dt / RAMP_T)
+        : Math.max(0, this.turnRamp - dt * 3 / RAMP_T);
+      // aimAssist only ever scales the pad term — mouse and touch never see it
+      const k = this.sens * this.aimAssist * (1 + this.turnRamp * (RAMP_MAX - 1)) * dt;
+      this.yaw -= rate.x * PAD_YAW_RATE * k;
+      this.pitch -= rate.y * PAD_PITCH_RATE * k;
+    } else {
+      // touch path — untouched, the shipped feel
+      this.turnRamp = 0;
+      this.yaw -= rate.x * STICK_YAW_RATE * this.sens * dt;
+      this.pitch -= rate.y * STICK_PITCH_RATE * this.sens * dt;
+    }
     this.pitch = Math.max(-1.45, Math.min(1.45, this.pitch));
 
     // Move relative to yaw. Camera faces -z at yaw 0.

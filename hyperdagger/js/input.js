@@ -5,6 +5,29 @@ const TAP_PX = 12;         // max travel for a tap
 const FLICK_WINDOW = 150;  // ms of trailing movement examined at release
 const FLICK_PX = 40;       // min travel within that window to count as a flick
 
+// --- stick shaping (controller-first aim) --------------------------------
+const PAD_DZ = 0.18;   // radial deadzone
+const PAD_SAT = 0.95;  // deflection past this reads as full
+const LOOK_EXP = 2.0;  // response curve on look magnitude — see shapeStick
+
+/**
+ * Radial deadzone + outer saturation, shaping MAGNITUDE only so the direction
+ * a stick is pushed is the direction it reads. Deadzoning each axis
+ * separately (the old path) notches diagonals: a stick pushed to a perfect
+ * 45° gets both components trimmed, so it aims shallower than it points.
+ *
+ * `exp` applies a power curve to the shaped magnitude. On look that buys the
+ * thing a linear rate can't: fine tracking near centre AND a fast top end
+ * from one stick, instead of a single compromise sensitivity.
+ */
+function shapeStick(x, y, dz, sat = 1, exp = 1) {
+  const len = Math.hypot(x, y);
+  if (len <= dz) return { x: 0, y: 0 };
+  let m = Math.min(1, (len - dz) / (sat - dz));
+  if (exp !== 1) m = Math.pow(m, exp);
+  return { x: (x / len) * m, y: (y / len) * m };
+}
+
 /**
  * Unified input. Desktop: pointer-lock mouse look, WASD, hold LMB to fire
  * (firing is also automatic while moving), Space = jump / double jump,
@@ -162,17 +185,12 @@ export class InputManager {
       this._warnedMapping = true;
       console.warn(`[hyperdagger] gamepad "${gp.id}" reports mapping "${gp.mapping}" — buttons may be scrambled (standard mapping expected)`);
     }
-    const DZ = 0.18;
-    const ax = i => {
-      const v = gp.axes[i] || 0;
-      return Math.abs(v) < DZ ? 0 : (v - Math.sign(v) * DZ) / (1 - DZ);
-    };
-    // left stick → move (screen-up is forward, so invert y); clamp to unit
-    let mx = ax(0), my = -ax(1);
-    const ml = Math.hypot(mx, my);
-    if (ml > 1) { mx /= ml; my /= ml; }
-    this._pad.move = { x: mx, y: my };
-    this._pad.look = { x: ax(2), y: ax(3) };
+    const raw = i => gp.axes[i] || 0;
+    // left stick → move (screen-up is forward, so invert y). Move stays
+    // LINEAR: you want full walk speed without shoving the stick to the rim.
+    this._pad.move = shapeStick(raw(0), -raw(1), PAD_DZ, PAD_SAT);
+    // right stick → look, through the response curve
+    this._pad.look = shapeStick(raw(2), raw(3), PAD_DZ, PAD_SAT, LOOK_EXP);
     const btn = i => !!(gp.buttons[i] && gp.buttons[i].pressed);
     this._pad.firing = btn(7) || btn(5); // RT / RB hold to fire
     const jumpNow = btn(0);              // A = jump / double jump
@@ -227,7 +245,9 @@ export class InputManager {
     return r;
   }
 
-  /** Right-stick deflection (touch or gamepad), each axis in [-1, 1]. */
+  /** Right-stick deflection (touch or gamepad), each axis in [-1, 1].
+   *  Touch keeps its original linear response (it already feels right);
+   *  only the GAMEPAD path goes through the response curve. */
   getLookRate() {
     if (this.right.active) {
       let x = Math.max(-1, Math.min(1, this.right.dx / STICK_R));

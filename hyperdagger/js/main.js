@@ -5,15 +5,15 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=43';
-import { Player } from './player.js?v=43';
-import { DaggerPool } from './daggers.js?v=43';
-import { GemPool } from './gems.js?v=43';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=43';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=43';
-import { OrbPool } from './bullets.js?v=43';
-import { AudioKit } from './audio.js?v=43';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=43';
+import { InputManager } from './input.js?v=44';
+import { Player } from './player.js?v=44';
+import { DaggerPool } from './daggers.js?v=44';
+import { GemPool } from './gems.js?v=44';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=44';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=44';
+import { OrbPool } from './bullets.js?v=44';
+import { AudioKit } from './audio.js?v=44';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=44';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = 0.035;   // radians
@@ -35,7 +35,7 @@ const opts = Object.assign(
   // motion=false is the reduced-motion master switch (forces smear/shake/chroma/FOV
   // kicks off without touching the individual toggles); contrast=true brightens
   // orbs + telegraphs and kills the floor's red flush for readability
-  { speed: 1, fov: 80, sens: 1, smear: true, shake: true, chroma: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson' },
+  { speed: 1, fov: 80, sens: 1, aim: true, smear: true, shake: true, chroma: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson' },
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
 
 // STYLE presets: hue targets for the accent recolor (null = native crimson).
@@ -1164,6 +1164,7 @@ function showPause() {
      ${optRow('SPEED', 'speed', [1, 1.25, 1.5], v => v + '\u00d7')}
      ${optRow('FOV', 'fov', [70, 80, 90], v => v)}
      ${optRow('SENS', 'sens', [0.7, 1, 1.3, 1.6], v => ({ 0.7: 'LOW', 1: 'MED', 1.3: 'HIGH', 1.6: 'MAX' })[v])}
+     ${optRow('AIM', 'aim', [true, false], v => v ? 'ASSIST ON' : 'ASSIST OFF')}
      ${optRow('FX', 'smear', [true, false], v => v ? 'SMEAR ON' : 'SMEAR OFF')}
      ${optRow('', 'shake', [true, false], v => v ? 'SHAKE ON' : 'SHAKE OFF')}
      ${optRow('', 'chroma', [true, false], v => v ? 'CHROMA ON' : 'CHROMA OFF')}
@@ -1743,6 +1744,40 @@ function addStyle(amount) {
   }
 }
 
+// ------------------------------------------------------------- aim assist
+// Pad aim can't match a mouse on small fast targets, so the reticle gets
+// STICKY, not magnetic: near a target the look rate scales down, which makes
+// tracking hold. Nothing is ever aimed for you — it amplifies aim, it doesn't
+// replace it — and mouse and touch never see it at all.
+const AIM_CONE = 0.16;  // rad — full slowdown inside this angle off-centre
+const AIM_FADE = 0.26;  // rad — no slowdown at or beyond this
+const AIM_SLOW = 0.55;  // look-rate multiplier at dead centre
+const AIM_MAX_D = 45;   // ignore targets further out than this
+const _aimF = new THREE.Vector3();
+const _aimT = new THREE.Vector3();
+
+/** The slowdown the nearest-to-centre target earns, ungated. */
+function aimAssistRawK() {
+  camera.getWorldDirection(_aimF);
+  let best = Infinity;
+  for (const e of enemies) {
+    e.center(_aimT);
+    _aimT.sub(camera.position);
+    const d = _aimT.length();
+    if (d < 1 || d > AIM_MAX_D) continue;
+    const ang = Math.acos(Math.min(1, Math.max(-1, _aimT.dot(_aimF) / d)));
+    if (ang < best) best = ang;
+  }
+  if (best >= AIM_FADE) return 1;
+  const t = best <= AIM_CONE ? 1 : (AIM_FADE - best) / (AIM_FADE - AIM_CONE);
+  return 1 - (1 - AIM_SLOW) * t;
+}
+
+function aimAssistK() {
+  if (!opts.aim || !input.gamepad) return 1; // pad only — touch was good as-is
+  return aimAssistRawK();
+}
+
 // ---------------------------------------------------------------- combat
 const _p0 = new THREE.Vector3();
 const _c = new THREE.Vector3();
@@ -2040,6 +2075,7 @@ const clock = new THREE.Clock();
 
 function step(dt) {
   gameTime += dt;
+  player.aimAssist = aimAssistK();
   player.update(dt);
   if (player.justDashed) {
     player.justDashed = false;
@@ -2299,6 +2335,17 @@ window.__hd = {
     spawnBlinker() { const p = ringSpot(8).clone(); p.y = 1.2; enemies.push(new Blinker(scene, p, ARENA_R - 1)); },
     reap() { return tryReap(); },
     getReap() { return { cool: +reapCool.toFixed(2), bones: litter.count }; },
+    // aim: raw() reports the assist a stick WOULD get right now, ignoring the
+    // "is a stick even in use" gate, so tests can probe the falloff curve
+    // without faking a gamepad
+    getAim() {
+      return {
+        assist: +player.aimAssist.toFixed(3),
+        raw: +aimAssistRawK().toFixed(3),
+        ramp: +player.turnRamp.toFixed(3),
+        on: opts.aim,
+      };
+    },
     spawnRevenant() {
       const p = ringSpot(8).clone(); p.y = -0.6;
       const r = new Revenant(scene, p); enemies.push(r); return r;

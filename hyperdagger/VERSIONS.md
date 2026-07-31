@@ -8,6 +8,18 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v14 — 2026-07-31
+**REAP + controller-first aim**
+- REAP (R/E, ✕/LB): spend the bone-yard — devours every settled bone within
+  7 u into a damage pulse scaled by the pile; bare floor refuses without
+  burning the cooldown. The carnage is now a resource as well as a threat.
+- Controller-first aim, gamepad only (mouse untouched, touch untouched by
+  explicit decision): radial stick shaping with a response curve, a turn ramp
+  for fast 180s that decays 3× faster than it builds, and sticky-reticle aim
+  assist (slows tracking near a target, never aims for you) with an
+  AIM ASSIST pause-menu toggle.
+- Press kit under `press/` (PRESS.md + six 1280×720 shots).
+
 ## v13 — 2026-07-27
 **The log starts here**
 - Voxel enemies, the style meter, gamepad support and the paced onboarding — the state this log starts from.
