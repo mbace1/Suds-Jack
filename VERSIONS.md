@@ -7,6 +7,32 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v218 — 2026-07-31
+**Goo/gel TSL pass — past parity** *(roadmap-v2 Phase 3, art priority 1)*
+- The v194 TSL port matched the WebGL gel exactly; this is the first pass that
+  goes **past** it — the reason the stack moved. Everything below lives behind
+  `IS_GPU` in `applyGooNodes`/`makeSatinMat`; **the classic build is untouched**
+- **Dome refraction**: `thicknessNode` varies transmission thickness with
+  height — thick at the belly, thin at the crown — so the gel bends light like
+  a dome instead of a uniform shell. Driven by a new `uThick` uniform so the
+  pause-menu THICKNESS slider stays live (`applySatinValues` writes it)
+- **Wobble dynamics**: a second, finer lump octave keeps the surface simmering
+  at rest and **seethes** while a hit ripple is live (`uHit` scales its
+  amplitude ~4×) — the gel remembers being struck
+- **Pop burst**: the death thrash (`uTear`) now also **inflates** the body
+  about its floor contact and lights it from within — interior surge + fresnel
+  rim flare — so the pop reads as pressure that had to go somewhere
+- Zero-conditional graphs throughout (the v195 lesson): no `select`, no new
+  divisions, `clamp` before every `pow`
+- Verified headless 16/16 on **both** builds via the lab: the flag build
+  carries `positionNode`+`emissiveNode`+`thicknessNode`, classic carries none;
+  hit/kill through the real damage path with zero page errors; the real game
+  boots clean on both builds. Frozen-state stills (rest / `uHit=1` /
+  `uTear=1`) captured for review. `smoke.sh` + `cabinets.sh` green
+- Cache-bust `?v=171` → `?v=172`; HUD label → v218
+
+---
+
 ## v217 — 2026-07-31
 **Wave director v1 — the spawn tables are data** *(roadmap-v2 Phase 2)*
 - Everything tabular about the classic-mode spawn director moves out of
