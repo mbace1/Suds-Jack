@@ -7,7 +7,7 @@
 // forever, so none of it may ever stand between you and pressing Play.
 //
 // Kept out of hub.js because hub.js is the floor: cabinets, feedback, the
-// catalogue. This is the room tone, the idle reel, the counters on the wall.
+// catalogue. This is the room tone, the flicker, the counters on the wall.
 
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)');
 const store = {
@@ -120,81 +120,17 @@ export const sound = {
   },
 };
 
-// ── 1. attract mode ────────────────────────────────────────────────
-// Leave the floor alone for a while and it starts showing you the covers, one
-// at a time, big. This is what an arcade does with an idle cabinet and it is
-// the cheapest way to make a page of small pictures feel like a room.
-//
-// Any input at all ends it, including the input that would have ended it
-// anyway — the whole point is that it must never be in the way. It also stands
-// down while a dialog is open, because a modal is somebody in the middle of
-// something.
-const IDLE_MS = 30000, HOLD_MS = 4200;
-
-export function attract({ games, draw, onExit } = {}) {
-  if (REDUCED.matches) return { stop() {} };
-
-  let timer = 0, reel = 0, box = null, at = 0;
-  const live = () => games.filter(g => g.live !== false);
-
-  const show = () => {
-    const list = live();
-    if (!list.length) return stop();
-    const g = list[at++ % list.length];
-    box.querySelector('.attract-name').textContent = g.title;
-    box.querySelector('.attract-line').textContent = g.lineage ?? '';
-    box.style.setProperty('--cab', g.accent);
-    draw(box.querySelector('canvas'), g.art, g.accent);
-  };
-
-  const begin = () => {
-    if (box || document.querySelector('.sheet:not([hidden])')) return;
-    box = document.createElement('div');
-    box.className = 'attract';
-    box.setAttribute('aria-hidden', 'true');   // the floor underneath is the page
-    box.innerHTML = '<canvas class="art" width="128" height="72"></canvas>' +
-      '<p class="attract-name"></p><p class="attract-line"></p>';
-    document.body.appendChild(box);
-    document.documentElement.dataset.attract = 'on';
-    show();
-    reel = setInterval(show, HOLD_MS);
-  };
-
-  const stop = () => {
-    clearInterval(reel); reel = 0;
-    box?.remove(); box = null;
-    delete document.documentElement.dataset.attract;
-  };
-
-  const poke = () => {
-    if (box) { stop(); onExit?.(); }
-    clearTimeout(timer);
-    timer = setTimeout(begin, IDLE_MS);
-  };
-
-  // `capture` so a click that is about to be swallowed by a cabinet still
-  // counts as somebody being here
-  for (const ev of ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart', 'focusin'])
-    addEventListener(ev, poke, { capture: true, passive: true });
-  poke();
-  // `begin` is handed back so the gate can raise the reel without sitting
-  // through the idle timer — an animation nobody can trigger on purpose is an
-  // animation nobody can test.
-  return { stop, poke, begin, showing: () => !!box };
-}
-
 // ── 7. marquee flicker ─────────────────────────────────────────────
-// Every so often one tube on the floor struggles for a moment and settles. One
-// cabinet at a time, never the same one twice running, and never while the
-// attract reel is up — two things twitching at once reads as a broken page
-// rather than as an old one.
+// Every so often one tube on the floor struggles for a moment and settles.
+// One cabinet at a time and never the same one twice running — two things
+// twitching at once reads as a broken page rather than as an old one.
 export function flicker(root = document) {
   if (REDUCED.matches) return { stop() {} };
   let last = null;
   const tick = () => {
     const arts = [...root.querySelectorAll('.cab:not([hidden]) .art')]
       .filter(n => n !== last && n.offsetParent !== null);
-    if (arts.length && !document.documentElement.dataset.attract) {
+    if (arts.length) {
       const n = arts[Math.floor(Math.random() * arts.length)];
       last = n;
       n.classList.add('flick');

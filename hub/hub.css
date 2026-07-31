@@ -750,41 +750,6 @@ footer {
 }
 @keyframes po-out { to { opacity: 0; visibility: hidden; } }
 
-/* 1. attract: the idle reel. The floor stays exactly where it was underneath
-   — this is a sheet over the top, not a state the page enters, so leaving it
-   cannot lose your scroll position or your selection. */
-.attract {
-  position: fixed;
-  inset: 0;
-  z-index: 30;
-  background: rgba(6, 7, 10, .93);
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: 14px;
-  padding: 24px;
-  animation: at-in .5s ease-out both;
-}
-.attract .art {
-  width: min(78vw, 720px);
-  height: auto;
-  aspect-ratio: 128 / 72;
-  image-rendering: pixelated;
-  border: 1px solid var(--cab, var(--accent));
-  box-shadow: 0 0 34px -10px var(--cab, var(--accent));
-}
-.attract-name {
-  margin: 0;
-  font-size: 18px;
-  letter-spacing: .22em;
-  text-transform: uppercase;
-  color: var(--cab, var(--accent));
-}
-.attract-line { margin: 0; font-size: 12px; letter-spacing: .1em; color: var(--ink-dim); }
-@keyframes at-in { from { opacity: 0 } to { opacity: 1 } }
-/* the floor must not scroll behind the reel */
-html[data-attract] body { overflow: hidden; }
-
 /* 7. marquee flicker: one tube on the floor struggling for a moment */
 .art.flick { animation: flick .9s steps(1, end) both; }
 @keyframes flick {
@@ -800,8 +765,8 @@ html[data-attract] body { overflow: hidden; }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
-  /* belt and braces: JS already refuses to mount these, but if one ever slips
+  /* belt and braces: JS already refuses to mount this, but if it ever slipped
      through it must not sit on top of the page forever with no animation to
      end it and take it away */
-  .power-on, .attract { display: none !important; }
+  .power-on { display: none !important; }
 }
