@@ -1,13 +1,23 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=33';
-import { Post, Reader } from './codec.js?v=33';
-import { Package } from './package.js?v=33';
-import { SECTORS, STORIES, COPY, ARCHIVED, storyCopy, parseLine, loadWire, WIRE_INFO } from './stories.js?v=33';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=33';
-import * as audio from './audio.js?v=33';
-import { PixelScreen } from './screen.js?v=33';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=33';
+import { PAL, SECTOR_COLOR } from './palette.js?v=34';
+import { Post, Reader } from './codec.js?v=34';
+import { Package } from './package.js?v=34';
+import { SECTORS, STORIES, COPY, ARCHIVED, storyCopy, storyBroadcast, parseLine, loadWire, WIRE_INFO } from './stories.js?v=34';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=34';
+import * as audio from './audio.js?v=34';
+import { PixelScreen } from './screen.js?v=34';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=34';
+
+// CLEAN — the transmission with no second layer on it. `?clean` is what a clip
+// export loads, and it does not hide DECODE, it never builds it: no rail
+// button, no decode box, no struck spans, no plain readings anywhere in the
+// document. That is only possible because the wire now carries the broadcast
+// and the annotation as SEPARATE fields (`splitLine` in wire.js); while the
+// plain readings lived inside the broadcast string, "off" could only ever mean
+// rendered-then-hidden, which is one CSS mistake away from being on screen and
+// no basis for an export at all.
+const CLEAN = new URLSearchParams(location.search).has('clean');
 
 const $ = id => document.getElementById(id);
 const app = $('app'), gate = $('gate'), feed = $('feed');
@@ -178,15 +188,19 @@ function buildFeed() {
     media.appendChild(slot);
 
     const rail = el('div', 'rail');
-    const decodeBtn = el('button', 'rail-btn decode-btn');
-    decodeBtn.innerHTML = `<span class="glyph" aria-hidden="true">⧉</span><span class="lbl">${t('rail.decode')}</span>`;
-    decodeBtn.setAttribute('aria-expanded', 'false');
-    decodeBtn.onclick = () => toggleDecode(i);
+    let decodeBtn = null;
+    if (!CLEAN) {
+      decodeBtn = el('button', 'rail-btn decode-btn');
+      decodeBtn.innerHTML = `<span class="glyph" aria-hidden="true">⧉</span><span class="lbl">${t('rail.decode')}</span>`;
+      decodeBtn.setAttribute('aria-expanded', 'false');
+      decodeBtn.onclick = () => toggleDecode(i);
+    }
     const nextBtn = el('button', 'rail-btn next-btn');
     nextBtn.innerHTML = `<span class="glyph" aria-hidden="true">▼</span><span class="lbl">${t('rail.next')}</span>`;
     nextBtn.setAttribute('aria-label', t('a11y.nextPost'));
     nextBtn.onclick = () => scrollToPost(i + 1);
-    rail.append(decodeBtn, nextBtn);
+    if (decodeBtn) rail.append(decodeBtn);
+    rail.append(nextBtn);
     media.appendChild(rail);
     if (i === 0) media.appendChild(el('div', 'swipe-hint', t('hint.swipe')));
 
@@ -198,14 +212,19 @@ function buildFeed() {
     bulletin.setAttribute('aria-live', 'polite');
     bulletin.appendChild(el('p', 'standby', t('standby')));
 
-    const box = el('div', 'decode-box');
-    box.hidden = true;
-    box.append(
-      el('p', 'technique', copy.technique),
-      el('p', 'note', copy.decodeNote),
-      el('p', 'tell', t('tell.prefix') + copy.tell),
-    );
-    cap.append(tag, head, bulletin, box, el('p', 'fiction', t('fiction')));
+    let box = null;
+    if (!CLEAN) {
+      box = el('div', 'decode-box');
+      box.hidden = true;
+      box.append(
+        el('p', 'technique', copy.technique),
+        el('p', 'note', copy.decodeNote),
+        el('p', 'tell', t('tell.prefix') + copy.tell),
+      );
+    }
+    cap.append(tag, head, bulletin);
+    if (box) cap.appendChild(box);
+    cap.appendChild(el('p', 'fiction', t('fiction')));
 
     art.append(media, cap);
     feed.appendChild(art);
@@ -294,7 +313,7 @@ function rebuildFeed() {
     p.decoded = keep[i].decoded;
     p.read = keep[i].read;
     p.post.decoded = p.decoded;
-    if (p.decoded) {
+    if (p.decoded && p.els.box && p.els.decodeBtn) {
       p.els.art.classList.add('is-decoded');
       p.els.box.hidden = false;
       p.els.decodeBtn.classList.add('on');
@@ -340,7 +359,7 @@ function setActive(i, first = false) {
     $('call').textContent = t('off.tag');
     document.title = `${t('off.head')} — Radio Free Helsinki`;
     setHash('');
-    paintTally(p);
+    if (!CLEAN) paintTally(p);
     audio.carrierDuck(false);
     if (!first) audio.recode();
     return;
@@ -352,8 +371,12 @@ function setActive(i, first = false) {
   document.title = `${p.copy.head} — Radio Free Helsinki`;
   setHash(p.story.id);
 
-  const lines = p.copy.lines.map(parseLine);
-  reader.play(p.els.bulletin, lines, p.decoded);
+  // In clean mode the Reader is handed runs with no plain half — so `.spun`
+  // and `.plain` are not styled-away, they are never constructed.
+  const lines = CLEAN
+    ? storyBroadcast(p.story.id, getLang()).map(text => [{ text, plain: null }])
+    : p.copy.lines.map(parseLine);
+  reader.play(p.els.bulletin, lines, !CLEAN && p.decoded);
   reader.finish();                     // set, not typed
   p.read = true;
   if (!first) audio.page();
@@ -396,6 +419,7 @@ function tuneChannel(delta) {
 }
 
 function toggleDecode(i) {
+  if (CLEAN) return;
   const p = posts[i];
   if (!p || p.signoff) return;
   if (i !== active) { scrollToPost(i); return; }
@@ -430,6 +454,7 @@ function bindControls() {
       case 'ArrowRight': tuneChannel(1); break;
       case 'ArrowLeft': tuneChannel(-1); break;
       case 'd': case 'D': toggleDecode(active); break;
+      // (clean mode drops the key with the button — toggleDecode returns early)
       default: break;
     }
   });
@@ -491,8 +516,12 @@ window.__rfh = {
     return { channel: p.story.sector, index: active, decoded: p.decoded,
              id: p.story.id, lang: getLang() };
   },
+  clean: CLEAN,
   debug: {
     tuneIn: () => $('tuneIn').click(),
+    // what a clip export would say, straight out of the wire's own field
+    broadcast: (id, lang) => storyBroadcast(id || (posts[active] && posts[active].story.id),
+                                            lang || getLang()),
     go: d => scrollToPost(active + d),
     tuneChannel,
     toggleDecode: () => toggleDecode(active),
