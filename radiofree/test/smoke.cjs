@@ -131,8 +131,13 @@ function staticChecks() {
      'a named episode list is a list of yesterdays once the job runs daily');
   ok('install caches whatever the index points at', /precacheNewest/.test(sw));
 
+  // The deployed site is a curated root with no `.github` in it, and the gate
+  // runs there too (against gh-pages, before a deploy is believed). Absent
+  // entirely = a site checkout, so there is nothing to grade; present but
+  // missing the job = somebody deleted the job.
   const wf = path.join(ROOT, '.github', 'workflows', 'radiofree-wire.yml');
-  if (ok('the daily job exists', fs.existsSync(wf))) {
+  if (fs.existsSync(path.join(ROOT, '.github'))
+      && ok('the daily job exists', fs.existsSync(wf))) {
     const y = fs.readFileSync(wf, 'utf8');
     ok('it runs the generator and then the app\'s own validator',
        y.includes('tools/generate-wire.mjs') && y.includes('tools/validate-wire.mjs'));
