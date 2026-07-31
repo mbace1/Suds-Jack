@@ -25,12 +25,12 @@
 //      languages, and the feed shows that rather than nothing. An app that can
 //      be updated from outside is an app that can be broken from outside.
 
-import { PANEL_KEYS, BROLL_KEYS } from './visuals.js?v=33';
+import { PANEL_KEYS, BROLL_KEYS } from './visuals.js?v=34';
 
-import { SECTOR_COLOR } from './palette.js?v=33';
-import { validateWire, rotate, pickCopy } from './wire.js?v=33';
+import { SECTOR_COLOR } from './palette.js?v=34';
+import { validateWire, rotate, pickCopy, cleanLines } from './wire.js?v=34';
 
-export { parseLine, flatten } from './wire.js?v=33';
+export { parseLine, flatten, splitLine, cleanLines } from './wire.js?v=34';
 
 export const WIRE_URL = 'wire.json';
 
@@ -133,6 +133,14 @@ export async function loadWire(url = WIRE_URL) {
     console.error('[rfh] wire unavailable: ' + errors[0]);
   }
   return install(OFF_AIR, 'off-air', errors);
+}
+
+// The broadcast text alone — what Toko says, with no annotation anywhere in
+// it. This is what a clean render and a clip export read; it is a field, not a
+// filtered string, which is the whole point of the split.
+export function storyBroadcast(id, lang) {
+  const c = pickCopy(COPY, id, lang);
+  return c ? cleanLines(c) : [];
 }
 
 export function storyCopy(id, lang) {

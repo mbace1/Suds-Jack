@@ -199,6 +199,51 @@ export function validateWire(wire, { panelKeys = null, brollKeys = null, sectorI
   return { ok: errors.length === 0, errors, warnings };
 }
 
+
+/**
+ * Split a marked-up line into the two things a line actually is: the BROADCAST
+ * — what Toko says, with no annotation in it at all — and the DECODE, a list of
+ * spans naming where the spin sits and what it plainly meant.
+ *
+ * This is the roadmap's load-bearing move, and it is worth being exact about
+ * why. Until now the plain readings lived INSIDE the broadcast string as
+ * `{{spun|plain}}`, so "DECODE off" could only ever mean "rendered and then
+ * hidden" — the annotation was still in the DOM, still in the accessibility
+ * tree, and still one CSS mistake away from being on screen. A clean export
+ * cannot be built on that. Split here, `broadcast` is a string that has never
+ * met an annotation, and clean mode is a field read rather than a filter.
+ *
+ * `at` is the character offset into `broadcast`, so a renderer can put the
+ * strike and the plain reading back exactly where they came from.
+ */
+export function splitLine(line) {
+  const runs = parseLine(line);
+  let broadcast = '';
+  const decode = [];
+  for (const r of runs) {
+    if (r.plain !== null) decode.push({ at: broadcast.length, spun: r.text, plain: r.plain });
+    broadcast += r.text;
+  }
+  return { broadcast, decode };
+}
+
+// The inverse: rebuild the marked-up form from the split one, so a wire may be
+// written EITHER way and everything downstream sees one shape.
+export function joinLine(broadcast, decode = []) {
+  if (!decode.length) return broadcast;
+  let out = '', at = 0;
+  for (const d of [...decode].sort((a, b) => a.at - b.at)) {
+    out += broadcast.slice(at, d.at) + `{{${d.spun}|${d.plain}}}`;
+    at = d.at + d.spun.length;
+  }
+  return out + broadcast.slice(at);
+}
+
+// What a clean render is allowed to contain: the broadcast, and nothing else.
+export function cleanLines(copy) {
+  return (copy && Array.isArray(copy.lines) ? copy.lines : []).map(l => splitLine(l).broadcast);
+}
+
 /**
  * Put the roster in channel order. The feed is grouped by band, and an
  * external author appending a bulletin to the end of the file should not have

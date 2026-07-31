@@ -325,6 +325,44 @@ async function main() {
   ok('the tally counts against what aired', m && Number(m[1]) <= Number(m[2]),
      off.head);
 
+  // ── clean mode ───────────────────────────────────────────────────
+  // The clip export loads `?clean`, and the contract is not that DECODE is
+  // hidden — it is that DECODE was never built. Checked against the DOM and
+  // against the page's own text, because a struck span that is display:none
+  // still puts its words in textContent.
+  console.log('\nclean mode');
+  const cp = await browser.newPage();
+  const cerrs = [];
+  cp.on('pageerror', e => cerrs.push(e.message));
+  await cp.goto(base + '?clean', { waitUntil: 'load' });
+  await cp.waitForTimeout(700);
+  await cp.evaluate(() => window.__rfh.debug.tuneIn());
+  await cp.waitForTimeout(1600);
+  const cl = await cp.evaluate(() => ({
+    on: !!__rfh.clean,
+    nodes: document.querySelectorAll('.spun, .plain, .decode-box, .decode-btn').length,
+    posts: document.querySelectorAll('.post').length,
+    text: document.body.innerText,
+    said: __rfh.debug.broadcast(),
+  }));
+  ok('?clean reports itself', cl.on);
+  ok('clean builds the feed', cl.posts > 1, String(cl.posts));
+  ok('not one decode node exists in a clean render', cl.nodes === 0, String(cl.nodes));
+  // the plain readings of the live post must be absent from the page text
+  const plains = await cp.evaluate(() => {
+    const w = __rfh.debug.wireData();
+    const id = __rfh.state.id;
+    return (w.copy.en[id].lines.join(' ').match(/\{\{[^|{}]*\|([^{}]*)\}\}/g) || [])
+      .map(m => m.split('|')[1].slice(0, -2));
+  });
+  ok('no plain reading appears anywhere in the clean text',
+     plains.length > 0 && !plains.some(x => cl.text.includes(x)),
+     plains.filter(x => cl.text.includes(x)).join(' | '));
+  ok('the broadcast field still carries the words', cl.said.length > 0,
+     JSON.stringify(cl.said).slice(0, 60));
+  ok('clean mode throws nothing', cerrs.length === 0, cerrs.join(' | '));
+  await cp.close();
+
   console.log('\nconsole');
   ok('zero console errors', errs.length === 0, errs.join(' | '));
 

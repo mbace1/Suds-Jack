@@ -1,5 +1,5 @@
-import { PixelScreen } from './screen.js?v=33';
-import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=33';
+import { PixelScreen } from './screen.js?v=34';
+import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=34';
 // Radio Free Helsinki — the footage, as pictures.
 //
 // The plates used to be drawn in code at 144×276. These are Grok's finished
