@@ -87,8 +87,9 @@ materials and follows the renderer's kind. It is the engine the lab should have.
 
 ## Phase 3 — Showpiece art passes *(priority order, locked)*
 
-- [ ] **Goo/gel TSL pass**: dome refraction, wobble dynamics, pop burst — past
-      parity, not to it. This is the reason the stack moved
+- [x] **Goo/gel TSL pass**: dome refraction, wobble dynamics, pop burst — past
+      parity, not to it. This is the reason the stack moved — *v218: depth-varying
+      thicknessNode, hit-seethe second octave, uTear inflation + interior flare*
 - [ ] Goo pass 2: corpse and swarm materials (satin MID is the floor, goo the ceiling)
 - [ ] **Arena & environment pass**: floor/space treatment that makes swarm flow readable
 - [ ] Arena pass 2: reactive surface response to mass, prizes, pops
