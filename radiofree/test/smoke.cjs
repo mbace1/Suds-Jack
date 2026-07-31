@@ -117,6 +117,85 @@ function staticChecks() {
   ok('wire.json parses and carries bulletins',
      Array.isArray(wire.stories) && wire.stories.length > 0,
      `${wire.stories && wire.stories.length} stories`);
+
+  // The daily job writes a new episode every morning and never touches code, so
+  // the worker has to treat the whole `wire/` directory as content. Served
+  // cache-first, `wire/index.json` is a list of broadcasts frozen on the day the
+  // app was installed — the job would run, the file would land, and no installed
+  // copy would ever learn an episode existed.
+  const isWire = (sw.match(/const isWire = \(u\) => ([\s\S]*?);\n/) || [, ''])[1];
+  ok('the worker treats every wire/ file as content, not shell',
+     /wire\.json/.test(isWire) && /\/wire\//.test(isWire), isWire.replace(/\s+/g, ' '));
+  ok('the precache names no dated episode',
+     !/wire\/\d{4}-\d{2}-\d{2}\.json/.test(sw),
+     'a named episode list is a list of yesterdays once the job runs daily');
+  ok('install caches whatever the index points at', /precacheNewest/.test(sw));
+
+  // The deployed site is a curated root with no `.github` in it, and the gate
+  // runs there too (against gh-pages, before a deploy is believed). Absent
+  // entirely = a site checkout, so there is nothing to grade; present but
+  // missing the job = somebody deleted the job.
+  const wf = path.join(ROOT, '.github', 'workflows', 'radiofree-wire.yml');
+  if (fs.existsSync(path.join(ROOT, '.github'))
+      && ok('the daily job exists', fs.existsSync(wf))) {
+    const y = fs.readFileSync(wf, 'utf8');
+    ok('it runs the generator and then the app\'s own validator',
+       y.includes('tools/generate-wire.mjs') && y.includes('tools/validate-wire.mjs'));
+    ok('it publishes to gh-pages, which is the branch a listener reads',
+       /push origin gh-pages/.test(y));
+  }
+}
+
+// The generator writes the copy nobody proof-reads before it airs, so the two
+// editorial rules that would fail SILENTLY are checked here over fixtures: copy
+// that reads perfectly and is either undecodable or is still wearing the real
+// company's name off the source headline.
+async function generatorChecks() {
+  console.log('\ngenerator');
+  const g = await import('file://' + path.join(RF, 'tools', 'generate-wire.mjs'));
+
+  const rss = `<rss><channel>
+    <item><title>Nokia Oyj cuts 340 jobs at its Espoo site</title><link>x</link>
+      <description><![CDATA[The review was run by Deloitte &amp; co.]]></description></item>
+  </channel></rss>`;
+  const items = g.parseFeed(rss, 'fixture');
+  ok('the feed parser reads a title, a link and an unescaped summary',
+     items.length === 1 && items[0].title.startsWith('Nokia Oyj')
+     && items[0].summary.includes('Deloitte & co'), JSON.stringify(items[0] || {}));
+
+  const names = g.sourceNames(items);
+  // it led the headline, which is where a company name usually is — the first
+  // draft of this check skipped the first word and let exactly this through
+  ok('a name that OPENS the headline is still caught', names.includes('Nokia'), names.join(', '));
+  ok('a place is not a name', !names.some(n => /Espoo/.test(n)), names.join(', '));
+
+  const story = (id, tech, line, lineFi, lineJa) => ({
+    id, visual: 'chart2', broll: 'harbour',
+    en: { slug: 'S', head: 'h', lines: [line], technique: tech, decodeNote: 'n', tell: 't' },
+    fi: { slug: 'S', head: 'h', lines: [lineFi], technique: tech + ' FI', decodeNote: 'n', tell: 't' },
+    ja: { slug: 'S', head: 'h', lines: [lineJa], technique: tech + ' JA', decodeNote: 'n', tell: 't' },
+  });
+  const two = '{{a|the first plain reading}} and {{b|the second}}';
+  const bad = g.assemble({ stories: [
+    story('a', 'AGENTLESS PASSIVE', `Nokia ${two}.`, `Nokia ${two}.`, `Nokia ${two}。`),
+    story('b', 'AGENTLESS PASSIVE', '{{one|only one span}}.', '{{one|vain yksi}}.', '{{一|ひとつだけ}}。'),
+  ] }, '2026-07-31');
+  const v = g.check(bad, names);
+  ok('a lifted company name is an error, not a warning',
+     v.errors.some(e => /"Nokia" is lifted/.test(e)), v.errors.join(' | ').slice(0, 120));
+  ok('a bulletin with one decode span is rejected',
+     v.errors.some(e => /copy\.en\.b: 1 decode span/.test(e)));
+  ok('two bulletins may not share a technique',
+     v.errors.some(e => /already used by a/.test(e)));
+
+  const good = g.assemble({ stories: [
+    story('a', 'AGENTLESS PASSIVE', `Rack & Ruin Oy ${two}.`, `Rack & Ruin Oy ${two}.`, `Rack & Ruin Oy ${two}。`),
+    story('b', 'MISSING DENOMINATOR', `Piggies and Birds Inc ${two}.`, `Piggies and Birds Inc ${two}.`, `Piggies and Birds Inc ${two}。`),
+  ] }, '2026-07-31');
+  const vg = g.check(good, names);
+  ok('an invented cast passes', vg.ok, vg.errors.join(' | '));
+  ok('the episode it assembles is dated and filed',
+     good.date === '2026-07-31' && good.stories.every(s => s.filed === '2026-07-31'));
 }
 
 // The rotation is a pure function over the wire, so it is checked here rather
@@ -173,6 +252,7 @@ async function main() {
   console.log('Radio Free Helsinki — gate');
   staticChecks();
   await rotationChecks();
+  await generatorChecks();
 
   const drv = await launch();
   if (!drv) {

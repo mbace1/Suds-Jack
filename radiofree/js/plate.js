@@ -18,8 +18,8 @@
 // are drawn at that size rather than at the panel's 128×152, which would have
 // had to be cropped by a third or letterboxed.
 
-import { PixelScreen } from './screen.js?v=36';
-import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=36';
+import { PixelScreen } from './screen.js?v=37';
+import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=37';
 
 // OPT-IN, and named one at a time on purpose. `plates.js` can draw seven of
 // the ten footage keys, so testing against PLATE_KEYS would have quietly moved

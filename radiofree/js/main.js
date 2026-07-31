@@ -1,14 +1,14 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=36';
-import { Post, Reader } from './codec.js?v=36';
-import { Package } from './package.js?v=36';
+import { PAL, SECTOR_COLOR } from './palette.js?v=37';
+import { Post, Reader } from './codec.js?v=37';
+import { Package } from './package.js?v=37';
 import { SECTORS, STORIES, COPY, ARCHIVED, EPISODES, EPISODE, storyCopy, storyBroadcast,
-         parseLine, loadWire, WIRE_INFO } from './stories.js?v=36';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=36';
-import * as audio from './audio.js?v=36';
-import { PixelScreen } from './screen.js?v=36';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=36';
+         parseLine, loadWire, WIRE_INFO } from './stories.js?v=37';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=37';
+import * as audio from './audio.js?v=37';
+import { PixelScreen } from './screen.js?v=37';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=37';
 
 // CLEAN — the transmission with no second layer on it. `?clean` is what a clip
 // export loads, and it does not hide DECODE, it never builds it: no rail

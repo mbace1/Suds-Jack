@@ -89,8 +89,61 @@ actually in `js/`, checks that `sw.js`'s version agrees with the `?v=N` the page
 requests, and then proves the point the hard way: it registers the worker, cuts
 the network, reloads, and reads a bulletin.
 
+**The wire is the exception, and it has to be.** Everything under `wire/` is
+served **network-first** while the shell stays cache-first — including
+`wire/index.json`, which is the list of broadcasts. Served cache-first that list
+is frozen on the day the app was installed: the daily job would run, the episode
+would land, and no installed copy would ever learn it existed. The episodes are
+*not* named in the precache either — install reads the index and caches whatever
+it points at, so a list of files cannot rot into a list of yesterdays.
+
 **Bump `sw.js`'s `VERSION` and `V` with the rest of the `?v=N` tokens.** A new
 deploy has to be a new cache name or the old shell simply stays.
+
+## The daily wire
+
+The bulletins are **data**, so a new morning does not need a build, a deploy or
+a cache-token bump — it needs a file. `.github/workflows/radiofree-wire.yml`
+writes one every morning:
+
+```
+04:10 UTC  →  read the day's real headlines off the feeds
+           →  hand them to the model with EDITORIAL.md as the spec
+           →  validate with the app's OWN validator
+           →  commit wire/<date>.json + the date on wire/index.json
+           →  push to main (the record) and gh-pages (the site)
+```
+
+Run it by hand from the Actions tab (there is a **dry run** input that drafts
+and prints without writing), or locally:
+
+```sh
+ANTHROPIC_API_KEY=... node radiofree/tools/generate-wire.mjs --dry-run
+ANTHROPIC_API_KEY=... node radiofree/tools/generate-wire.mjs --date 2026-08-01 --count 5
+node radiofree/tools/generate-wire.mjs --feeds ./saved-feed.xml --dry-run   # no network
+```
+
+Four things are load-bearing:
+
+- **It validates with `js/wire.js`** — the same function the browser runs on the
+  download. A generator with its own idea of the format would eventually write
+  something that passes its own check and shows the off-air card to everybody.
+- **It repairs rather than rerolls.** A rejected draft goes back with the
+  validator's errors attached, so one bad bulletin does not cost the other four.
+- **It writes nothing unless everything passes.** A bad morning leaves
+  yesterday's broadcast up, which is what a station should do when the copy does
+  not arrive.
+- **The naming rule is checked in code, not left to the prompt.** Proper nouns
+  are lifted out of the source headlines and looked for in the finished copy;
+  finding one is an error. *Real events, invented actors* — a generator that
+  quietly stopped inventing the actors would look, from the outside, exactly
+  like one that was working.
+
+The editorial spec is `EDITORIAL.md`, and it is the whole prompt. **Changing
+what the show sounds like is an edit to that file**, not to the workflow.
+
+Setup, once: an `ANTHROPIC_API_KEY` repository secret. Optional repository
+variables `RFH_MODEL` and `RFH_FEEDS` override the model and the sources.
 
 ## DECODE — the point of the thing
 
@@ -172,12 +225,20 @@ radiofree/
     codec.js      one post's screen (both frames in ONE canvas) + the Reader
     toko.js       the anchor: gel wobble, blink, lip-sync, decode tear
     visuals.js    the story panels + the sign-off test card
-    stories.js    the wire — copy, decode readings, techniques, tells (fi/en/ja)
+    stories.js    fetches / validates / installs the day's episode
+    wire.js       the wire format: validator, rotation, {{spun|plain}} parser
     i18n.js       every other string, in all three languages
     screen.js     PixelScreen: small canvas, hard-pixel upscale, dither helpers
     audio.js      synth codec kit + the carrier hiss, all through one master gain
     palette.js    single source of truth for colour
-  sw.js           the offline shell (precaches every file by name)
+  wire/
+    index.json    the broadcasts, newest first — what the archive picker draws
+    <date>.json   one morning
+  wire.json       the FALLBACK, for a shell cached before episodes existed
+  tools/
+    generate-wire.mjs  headlines in, one morning's broadcast out
+    validate-wire.mjs  the app's own validator, in a terminal
+  sw.js           the offline shell (cache-first) + the wire (network-first)
   manifest.webmanifest
   icon-192.png    drawn in code and baked — see the note below
   icon-512.png
@@ -243,7 +304,11 @@ collapses into a regular dot grid — the gulf water column did exactly that. Us
 NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs
 ```
 
-Seventy-two checks in a real browser: zero console errors; the feed is vertical (one
+Sixty-two checks, most of them in a real browser — plus a block that drives the
+generator over fixtures with no network and no API key, because the two
+editorial rules that fail *silently* (copy with nothing to decode, and copy
+still wearing the real company's name off the source headline) are exactly the
+ones nobody proof-reads before they air. The rest: zero console errors; the feed is vertical (one
 post per screen, snapping, media portrait both in the buffer and on screen); the
 live codec animates while its neighbours hold their painted frame and unread
 posts sit on standby; the reader types and can be skipped; DECODE grows the

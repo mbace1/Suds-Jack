@@ -25,12 +25,12 @@
 //      languages, and the feed shows that rather than nothing. An app that can
 //      be updated from outside is an app that can be broken from outside.
 
-import { PANEL_KEYS, BROLL_KEYS } from './visuals.js?v=36';
+import { PANEL_KEYS, BROLL_KEYS } from './visuals.js?v=37';
 
-import { SECTOR_COLOR } from './palette.js?v=36';
-import { validateWire, rotate, pickCopy, cleanLines } from './wire.js?v=36';
+import { SECTOR_COLOR } from './palette.js?v=37';
+import { validateWire, rotate, pickCopy, cleanLines } from './wire.js?v=37';
 
-export { parseLine, flatten, splitLine, cleanLines } from './wire.js?v=36';
+export { parseLine, flatten, splitLine, cleanLines } from './wire.js?v=37';
 
 // EPISODES. `wire/index.json` lists the dates newest first and each
 // `wire/<date>.json` is one day's broadcast — which is what the daily job will
@@ -163,17 +163,38 @@ export async function loadWire(want = null) {
     EPISODES = list;
     // an unknown date falls back to the newest rather than to nothing — a
     // shared link to a retired day should still play something
-    const date = want && list.includes(want) ? want : list[0];
-    if (want && date !== want) errors.push(`no episode for ${want}; playing ${date}`);
-    const wire = await fetchJson(episodeUrl(date));
-    const v = check(wire);
-    if (v.ok) {
-      if (v.warnings.length) console.warn('[rfh] wire warnings:\n' + v.warnings.join('\n'));
-      EPISODE = date;
-      return install(wire, 'episode', errors);
+    const asked = want && list.includes(want) ? want : list[0];
+    if (want && asked !== want) errors.push(`no episode for ${want}; playing ${asked}`);
+
+    // WALK DOWN THE INDEX. The index and the episodes are separate files and a
+    // daily job writes both, so there is a real window — and a real botched
+    // publish — in which the newest date is listed and its file is not there
+    // yet. Dropping straight to `wire.json` at that point would swap a
+    // listener's whole feed for the static fallback because ONE morning was
+    // half-published; yesterday's broadcast is the better answer, and it is one
+    // line down the same list.
+    const order = [asked, ...list.filter(d => d !== asked)];
+    for (const date of order) {
+      let wire;
+      try {
+        wire = await fetchJson(episodeUrl(date));
+      } catch (err) {
+        tried.push(String(err && err.message ? err.message : err));
+        continue;
+      }
+      const v = check(wire);
+      if (v.ok) {
+        if (v.warnings.length) console.warn('[rfh] wire warnings:\n' + v.warnings.join('\n'));
+        if (date !== asked) {
+          errors.push(`episode ${asked} unavailable; playing ${date}`);
+          console.warn(`[rfh] ${asked} unavailable — playing ${date}`);
+        }
+        EPISODE = date;
+        return install(wire, 'episode', errors);
+      }
+      tried.push(...v.errors);
+      console.error(`[rfh] episode ${date} rejected:\n` + v.errors.join('\n'));
     }
-    tried.push(...v.errors);
-    console.error(`[rfh] episode ${date} rejected:\n` + v.errors.join('\n'));
   } catch (err) {
     tried.push(String(err && err.message ? err.message : err));
   }
