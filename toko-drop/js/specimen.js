@@ -12,10 +12,22 @@
 //   view.show(EnemyType.FLIT);   // spawn / respawn the subject
 //   view.start();                // begins its own rAF loop
 //   view.dispose();              // ALWAYS call when the host screen closes
+//
+// v216 (enemy lab rebuild): the lab renders through this module too, so the
+// portrait and the lab can never drift apart. Lab-only options, all inert for
+// the death-screen portrait:
+//   roam: true        — the specimen keeps its real wander instead of being
+//                       recentred like a portrait, in designer-tester bounds
+//   onFrame(s, dt)    — per-frame hook; when provided, the specimen's queued
+//                       FX (chunks/_hitChunks) are left for the host to drain
+//   .resize(w, h)     — live viewport resize (the lab is fullscreen)
+//   .hit() / .kill()  — poke the subject through the REAL damage path
+//   .specimen()       — the live Enemy, for info readouts
 import * as THREE from 'three';
-import { CFG, Enemy, GOO_TIME } from './enemy.js?v=169';
+import { CFG, Enemy, GOO_TIME } from './enemy.js?v=170';
 
-export function createSpecimen({ width = 220, height = 170, bg = 0x07071a } = {}) {
+export function createSpecimen({ width = 220, height = 170, bg = 0x07071a,
+                                 roam = false, onFrame = null } = {}) {
   const canvas = document.createElement('canvas');
   // The flag build has no THREE.WebGLRenderer export, so follow the main
   // renderer's kind the way designer.js does (v191/v192).
@@ -50,7 +62,7 @@ export function createSpecimen({ width = 220, height = 170, bg = 0x07071a } = {}
     if (state.dead) return;
     if (state.specimen) state.specimen.removeFrom(scene);
     state.type = type;
-    state.specimen = new Enemy(scene, type, 0, 0, 1, 1);
+    state.specimen = new Enemy(scene, type, roam ? 2 : 0, 0, 1, 1);
     state.specimen.hp = 9999;          // a portrait never dies mid-question
     // Frame the body: bigger radius, further back.
     const r = CFG[type]?.radius ?? 0.6;
@@ -70,20 +82,43 @@ export function createSpecimen({ width = 220, height = 170, bg = 0x07071a } = {}
     const s = state.specimen;
     if (s) {
       // stubBullets: firing behaviours no-op safely in a portrait
-      if (s.alive) s.update(dt, ghost, { spawnDir() {} }, 6, 6);
+      if (s.alive) s.update(dt, ghost, { spawnDir() {} }, roam ? 11 : 6, roam ? 7 : 6);
       s.updateDeath(dt);
-      if (s.chunks) s.chunks.length = 0;
-      if (s._hitChunks) s._hitChunks.length = 0;
-      // keep it centred: this is a portrait, not a chase
-      s.position.x *= 0.86;
-      s.position.z *= 0.86;
+      if (onFrame) onFrame(s, dt);       // the host drains chunks itself
+      else {
+        if (s.chunks) s.chunks.length = 0;
+        if (s._hitChunks) s._hitChunks.length = 0;
+      }
+      if (!roam) {
+        // keep it centred: this is a portrait, not a chase
+        s.position.x *= 0.86;
+        s.position.z *= 0.86;
+      }
     }
     if (state.ready) renderer.render(scene, camera);
   }
 
   return {
     canvas,
+    scene,
+    camera,   // v216: the lab frames its own wider stage
     show,
+    specimen: () => state.specimen,
+    resize(w, h) {
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    },
+    // Both go through the REAL damage path, so wobble, tear and death FX are
+    // exactly the shipped ones — the entire point of the lab rebuild.
+    hit() {
+      const s = state.specimen;
+      if (s && s.alive) s.hit(s.position.x, s.position.z);
+    },
+    kill() {
+      const s = state.specimen;
+      if (s && s.alive) { s.hp = 1; s.hit(s.position.x, s.position.z); }
+    },
     start() {
       if (state.running || state.dead) return;
       state.running = true;
