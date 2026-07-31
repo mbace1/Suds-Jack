@@ -16,7 +16,7 @@ const STR = {
   // ────────────────────────────────────────────────── English
   en: {
     'gate.blurb': 'Pirate wire out of the capital, read by Toko, who has never been asked to be impartial.',
-    'gate.fiction': 'Every video is invented. Every technique in them is not.',
+    'gate.fiction': 'The events are real. The names are not. Neither are the techniques — those are real too.',
     'gate.btn': '▶ Tune in',
 
     'off.tag': 'TRANSMISSION ENDS',
@@ -37,7 +37,7 @@ const STR = {
     'standby': 'awaiting transmission',
     'hint.swipe': 'swipe up for the next video',
     'tell.prefix': 'TELL: ',
-    'fiction': 'Fictional broadcast · invented studios, ministries and ports · real techniques',
+    'fiction': 'Real events · invented names · real techniques',
 
     'sector.GAMING': 'GAMES / STUDIOS',
     'sector.INDUSTRY': 'TECH / INDUSTRY',
@@ -53,7 +53,7 @@ const STR = {
   // ────────────────────────────────────────────────── Suomi
   fi: {
     'gate.blurb': 'Piraattilähetys pääkaupungista, lukijana Toko, jolta ei ole koskaan pyydetty puolueettomuutta.',
-    'gate.fiction': 'Jokainen video on keksitty. Yksikään niiden keino ei ole.',
+    'gate.fiction': 'Tapahtumat ovat todellisia. Nimet eivät. Keinot ovat.',
     'gate.btn': '▶ Viritä',
 
     'off.tag': 'LÄHETYS PÄÄTTYY',
@@ -74,7 +74,7 @@ const STR = {
     'standby': 'odottaa lähetystä',
     'hint.swipe': 'pyyhkäise ylös seuraavaan videoon',
     'tell.prefix': 'TUNNISTAT NÄIN: ',
-    'fiction': 'Kuvitteellinen lähetys · keksityt studiot, ministeriöt ja satamat · todelliset keinot',
+    'fiction': 'Todellisia tapahtumia · keksityt nimet · todellisia keinoja',
 
     'sector.GAMING': 'PELIT / STUDIOT',
     'sector.INDUSTRY': 'TEKNIIKKA / TEOLLISUUS',
@@ -90,7 +90,7 @@ const STR = {
   // ────────────────────────────────────────────────── 日本語
   ja: {
     'gate.blurb': '首都から流れる海賊電波。読み手はトコ。中立でいてくれと頼まれたことは一度もない。',
-    'gate.fiction': '動画はすべて架空。使われている手法はどれも実在する。',
+    'gate.fiction': '出来事は実際のもの。名前は架空。手法は、実在する。',
     'gate.btn': '▶ 受信する',
 
     'off.tag': '放送終了',
@@ -111,7 +111,7 @@ const STR = {
     'standby': '送信待ち',
     'hint.swipe': '上にスワイプで次の動画へ',
     'tell.prefix': '見分け方：',
-    'fiction': '架空の放送 · 架空のスタジオ・省庁・港湾 · 実在する手法',
+    'fiction': '実際の出来事 · 架空の名前 · 実在する手法',
 
     'sector.GAMING': 'ゲーム / スタジオ',
     'sector.INDUSTRY': 'テクノロジー / 産業',
