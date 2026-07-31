@@ -330,13 +330,6 @@ function check(name, cond) {
   check('clearing it puts the whole floor back',
     await page.$$eval('.cab', cs => cs.filter(c => !c.hidden).length) === games.length);
 
-  // ── one at random ──
-  const rolled = new Set();
-  for (let i = 0; i < 12; i++) rolled.add(await page.evaluate(() => __hub.debug.surprise()));
-  check(`show-me-one picks from the floor (${rolled.size} different in 12 rolls)`,
-    rolled.size > 1 && [...rolled].every(id => games.some(g => g.id === id)));
-  check('and never lands on a cabinet with nothing behind it',
-    [...rolled].every(id => games.find(g => g.id === id)?.live !== false));
   setHashless: { await page.goto(`${base}/index.html`, { waitUntil: 'networkidle' }); }
 
   // ── one cabinet, by name ──

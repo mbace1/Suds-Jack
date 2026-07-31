@@ -534,21 +534,6 @@ addEventListener('keydown', e => {
   }
 });
 
-// ── one at random ──────────────────────────────────────────────────
-// Thirteen cabinets and no idea where to start is the other half of the same
-// problem the filter solves. This picks something playable you have not opened
-// yet, and only falls back to the whole floor once you have tried everything.
-function surprise() {
-  const played = readPlayed();
-  // onFloor(), not GAMES: a locked cabinet is not on the floor, and offering
-  // it here would both scroll to nothing and give the secret away.
-  const live = onFloor().filter(g => g.live !== false);
-  const fresh = live.filter(g => !played[g.id]);
-  const pool = fresh.length ? fresh : live;
-  const pick = pool[Math.floor(Math.random() * pool.length)];
-  if (pick) goTo(pick.id);
-  return pick?.id ?? null;
-}
 
 // ── what you have already tried ────────────────────────────────────
 // Thirteen cabinets and no memory means every visit starts from nothing: you
@@ -976,7 +961,6 @@ function render() {
   setText('#sketch-head', 'sketches');
   setText('#source-link', 'source');
   setText('#find-none', 'find.none');
-  setText('#surprise', 'surprise');
   setText('#hub-feedback', 'tell.hub');
 
   document.querySelector('.find-row')?.remove();
@@ -1029,7 +1013,6 @@ document.documentElement.lang = getLang();
 render();
 
 document.getElementById('hub-feedback').onclick = () => openFeedback(t('hub.self'), 'hub');
-document.getElementById('surprise').onclick = surprise;
 
 // a pasted link lands where it says it does, without the smooth scroll that
 // would read as the page moving on its own
@@ -1093,9 +1076,7 @@ window.__hub = {
     layout: readLayout, setLayout: useLayout, layouts: LAYOUTS,
     notes: openNotes, notesLink,
     reel, room, unlock: () => { unlocked = true; render(); },
-    goTo, openFromHash, played: readPlayed, markPlayed, surprise,
-    filter: (q, tags) => { query = q ?? ''; picked = new Set(tags ?? []); applyFilter(); },
-    goTo, openFromHash, played: readPlayed, markPlayed, surprise,
+    goTo, openFromHash, played: readPlayed, markPlayed,
     filter: (q, tags) => { query = q ?? ''; picked = new Set(tags ?? []); applyFilter(); },
     seen: readSeen, markSeen: () => {
       try { localStorage.setItem(SEEN_KEY, JSON.stringify(pendingSeen ?? {})); } catch { /* */ }

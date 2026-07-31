@@ -163,7 +163,6 @@ h1 .amp { color: var(--accent); }
 .find-count { font-size: 11.5px; letter-spacing: .18em; color: var(--ink-dim); }
 .find-none { color: var(--ink-dim); font-size: 13px; margin-top: 14px; }
 
-#surprise { margin-left: auto; padding-right: 0; text-align: right; }
 
 /* the tag row is the first thing to go on a phone: thirteen tags at 44px is
    four rows of chrome above two cabinets. The box stays — typing is the part
