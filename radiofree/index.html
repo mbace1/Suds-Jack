@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#04070a">
-<link rel="manifest" href="manifest.webmanifest?v=32">
+<link rel="manifest" href="manifest.webmanifest?v=33">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="description" content="Radio Free Helsinki — a fictional pirate news broadcast. Toko reads the day's wire from a codec screen; DECODE shows you what the wording was doing.">
@@ -248,13 +248,22 @@
   }
   #gate button:hover { background: #0d2028; }
   #gate button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
-  .gate-lang { display: flex; gap: 6px; }
-  .gate-lang button {
-    min-width: 52px; min-height: 44px;
-    font-size: 11px; letter-spacing: .12em;
-    background: none; border: 1px solid var(--green-lo); color: var(--text-dim);
+  /* The language row is THREE WORDS, not three buttons. It used to inherit
+     `#gate button { min-width: 220px }` — an id selector, so the 52px sitting
+     on `.gate-lang button` never won it, and three 220px boxes ran off the
+     side of every phone. Selectors here are id-qualified for that reason, and
+     the row is bare text so there is nothing left to overflow. */
+  #gate .gate-lang { display: flex; align-items: center; gap: 0; }
+  #gate .gate-lang button {
+    min-width: 44px; min-height: 44px;      /* the touch floor, and no more */
+    padding: 0 10px;
+    background: none; border: 0; border-radius: 0;
+    color: var(--text-dim);
+    font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
   }
-  .gate-lang button.active { color: var(--green); border-color: var(--green-dim); }
+  #gate .gate-lang button + button { border-left: 1px solid var(--green-lo); }
+  #gate .gate-lang button:hover { background: none; color: var(--green-dim); }
+  #gate .gate-lang button.active { color: var(--green); }
 
   @media (max-height: 620px) {
     .post-media { height: 44vh; }
@@ -454,12 +463,12 @@
   <main id="feed" tabindex="-1"></main>
 </div>
 
-<script type="module" src="js/main.js?v=32"></script>
+<script type="module" src="js/main.js?v=33"></script>
 <script type="module" src="../hub/shell.js?v=13"></script>
 <script>
   if ('serviceWorker' in navigator &&
       (location.protocol === 'https:' || new URLSearchParams(location.search).has('sw'))) {
-    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=32').catch(() => {}));
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=33').catch(() => {}));
   }
 </script>
 

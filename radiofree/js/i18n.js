@@ -15,7 +15,7 @@ export const LANGS = [
 const STR = {
   // ────────────────────────────────────────────────── English
   en: {
-    'gate.blurb': 'Pirate wire out of the capital. Games, industry, and the defence band — read by Toko, who has never been asked to be impartial.',
+    'gate.blurb': 'Pirate wire out of the capital, read by Toko, who has never been asked to be impartial.',
     'gate.fiction': 'Every video is invented. Every technique in them is not.',
     'gate.btn': '▶ Tune in',
 
@@ -52,8 +52,8 @@ const STR = {
 
   // ────────────────────────────────────────────────── Suomi
   fi: {
-    'gate.blurb': 'Piraattilähetys pääkaupungista. Pelit, teollisuus ja puolustuksen taajuus — lukijana Toko, jolta ei ole koskaan pyydetty puolueettomuutta.',
-    'gate.fiction': 'Jokainen uutinen on keksitty. Yksikään niiden keino ei ole.',
+    'gate.blurb': 'Piraattilähetys pääkaupungista, lukijana Toko, jolta ei ole koskaan pyydetty puolueettomuutta.',
+    'gate.fiction': 'Jokainen video on keksitty. Yksikään niiden keino ei ole.',
     'gate.btn': '▶ Viritä',
 
     'off.tag': 'LÄHETYS PÄÄTTYY',
@@ -89,8 +89,8 @@ const STR = {
 
   // ────────────────────────────────────────────────── 日本語
   ja: {
-    'gate.blurb': '首都から流れる海賊電波。ゲーム、産業、そして防衛帯——読み手はトコ。中立でいてくれと頼まれたことは一度もない。',
-    'gate.fiction': 'ニュースはすべて架空。使われている手法はどれも実在する。',
+    'gate.blurb': '首都から流れる海賊電波。読み手はトコ。中立でいてくれと頼まれたことは一度もない。',
+    'gate.fiction': '動画はすべて架空。使われている手法はどれも実在する。',
     'gate.btn': '▶ 受信する',
 
     'off.tag': '放送終了',
