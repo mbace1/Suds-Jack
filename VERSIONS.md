@@ -7,6 +7,29 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v217 — 2026-07-31
+**Wave director v1 — the spawn tables are data** *(roadmap-v2 Phase 2)*
+- Everything tabular about the classic-mode spawn director moves out of
+  `main.js` into a **`TUNING.waves`** block in `tuning.js`: **composition**
+  (the 21-entry type pool with unlock depths and budget costs, the shooter
+  set, elite affixes, variant draw tables), **cadence** (boss/spike/swarm
+  rhythm, in-wave spawn drip, SMASH pulse), and **escalation** (speed/fire-rate
+  curves, budget curve with kind/mode multipliers, body caps, shooter plan)
+- `getEnemySchedule`/`getWaveScale`/`waveKind` keep the assembly **algorithm**
+  and read every number from the table — same shape as v210's
+  `TUNING.movement`: the pause menu can eventually edit waves live
+- **Pool order is draw order** (the seeded index math) — documented in the
+  table; new types append at the end. Boss choreography (OMEGA/PRISM
+  alternation, WARDEN escorts) stays scripted in `main.js`: it's a set piece,
+  not a table
+- **Zero behavior change, proven**: a capture harness ran the director across
+  3 seeds × 5 modes (classic/melee/smash/test/rich) × 30 waves before and
+  after — 233 KB of schedules, byte-for-byte identical. `smoke.sh` +
+  `cabinets.sh` green
+- Cache-bust `?v=170` → `?v=171`; HUD label → v217
+
+---
+
 ## v216 — 2026-07-31
 **The enemy lab stops being a fork** *(roadmap-v2 Phase 1)*
 - The declared visual source of truth imported **no game code**: its own copy of the goo shader via `onBeforeCompile`, CDN three@0.160 (against the no-CDN rule), and 15 hand-mirrored enemy defs against a 40-type roster. Under "never painted twice", art tuned there was tuned against an implementation the game doesn't run

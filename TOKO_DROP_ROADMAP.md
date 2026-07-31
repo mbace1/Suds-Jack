@@ -79,8 +79,9 @@ materials and follows the renderer's kind. It is the engine the lab should have.
       traits per species in `tuning.js`*
 - [x] Corpse bite-back telegraph/timing/cleanup — *v187/v188 revenge rings*
 - [x] Run structure: win/lose, fast restart, no reload
-- [ ] **Wave director v1**: spawn tables move out of `main.js` into `tuning.js`
-      — composition, cadence, escalation as data
+- [x] **Wave director v1**: spawn tables move out of `main.js` into `tuning.js`
+      — composition, cadence, escalation as data — *v217, equivalence proven
+      byte-for-byte (3 seeds × 5 modes × 30 waves)*
 - [ ] Promote WebGPU from BETA once the art passes justify it *(the standing
       criterion: it must really push the gelation look)*
 
