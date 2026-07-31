@@ -18,8 +18,8 @@
 import { drawHead, HEAD } from '../../toko/js/face.js';
 import { TOKO } from '../../toko/js/palette.js';
 import { glance, drift, blink } from '../../toko/js/util.js';
-import { PAL, SECTOR_COLOR } from './palette.js?v=34';
-import { shade, mix } from './screen.js?v=34';
+import { PAL, SECTOR_COLOR } from './palette.js?v=35';
+import { shade, mix } from './screen.js?v=35';
 
 // The canvas is sized to the POST, not to a fixed 9:16. A phone post is
 // taller than 9:16 and `object-fit: cover` crops the sides off a fixed frame —

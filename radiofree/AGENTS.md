@@ -81,6 +81,17 @@ note it in the commit and here.
    entirely, which meant DECODE cut to something you could not see.
 6. **Amber means spin only** — never decorative UI before DECODE.
 7. **Offline PWA** — bump cache version when shipping JS (see Cache).
+8b. **REAL EVENTS, INVENTED ACTORS — always both.** Owner's call, 2026-07-31,
+   and the rule the premise rests on. The event is real and is not embellished;
+   every company, ministry, operator and named person is invented and audibly
+   so (`Piggies and Birds Inc`, `Ka-Boom Nordics Oy`) — a pun tells the listener
+   the name is not a claim. **No real person is quoted, ever.** A parody name
+   must not be a one-to-one mask for one identifiable firm when the story
+   attaches something unflattering; aim at the kind of company, not at a company
+   with the serial numbers filed off. Places and infrastructure may be real —
+   geography is not an accusation. Full spec, with worked transformations, in
+   `EDITORIAL.md`; that file is what the daily generator will be handed.
+
 8. **Fiction footer stays honest** — defence-band actors unnamed; prefer invented Helsinki entities over real geographies/industries when possible (flag edge cases for the human).
 9. **Do not wipe `stories.js` language blocks** — EN / FI / JA must stay complete and **distinct**.
 10. **Helsinki accuracy** — `mannerheim` = wide boulevard; `katu` = narrow street; station = Central Station clock tower; cathedral = Tuomiokirkko / Senate Square.
