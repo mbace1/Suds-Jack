@@ -981,24 +981,30 @@ function check(name, cond) {
   {
     const boot = await browser.newContext({ viewport: { width: 1000, height: 700 } });
     const seen = sel => bp => bp.$$(sel).then(a => a.length > 0);
-    const veil = seen('.power-on'), sting = seen('[role=img]');
+    const veil = seen('.power-on');
 
     let bp = await boot.newPage();
     await bp.goto(`${base}/index.html`, { waitUntil: 'commit' });
-    // measured after the sweep lands (34% of .68s), because a bounding rect is
-    // the TRANSFORMED box — read at 200ms it is a bar mid-flight and reports a
-    // fraction of the width no matter how wide the element really is
-    await bp.waitForTimeout(420);
+    // POLLED, not sampled. A bounding rect is the TRANSFORMED box, and the
+    // veil mounts whenever the module finishes loading rather than at a fixed
+    // offset from navigation — so any single moment catches the sweep somewhere
+    // different, and a fixed 420ms read it at 956 of 1000px on one run and
+    // failed. Waiting for it to land asserts the same thing without racing.
+    await bp.waitForFunction(() => {
+      const i = document.querySelector('.power-on i');
+      return i && Math.abs(i.getBoundingClientRect().width - innerWidth) < 2;
+    }, null, { timeout: 3000 });
     check('the intro opens across the whole screen', await bp.evaluate(() => {
       const i = document.querySelector('.power-on i');
-      if (!i) return false;
-      const r = i.getBoundingClientRect();
-      return i.offsetWidth === innerWidth && Math.abs(r.width - innerWidth) < 2;
+      // the ELEMENT is the viewport — the sweep above proves the animation
+      // reaches across it, this proves there is nothing narrower underneath
+      return i.offsetWidth === innerWidth && i.offsetHeight === innerHeight;
     }));
     // one input, and the WHOLE thing goes — not one half of it
     await bp.keyboard.press('Escape');
     await bp.waitForTimeout(500);
-    check('any key skips it from the first frame', !await veil(bp) && !await sting(bp));
+    check('any key skips it from the first frame',
+      !await veil(bp) && (await bp.$$('.toko-sting')).length === 0);
     check('and a skipped mark is still unseen next time',
       await bp.evaluate(() => !localStorage.getItem('tokoSting')));
     await bp.close();
@@ -1011,18 +1017,56 @@ function check(name, cond) {
     await bp.close();
     await boot.close();
 
-    // reduced motion drops the tube, NOT the introduction — the sting holds a
-    // still frame for exactly this case
+    // reduced motion gets no tube at all
     const still = await browser.newContext({
       viewport: { width: 1000, height: 700 }, reducedMotion: 'reduce',
     });
     bp = await still.newPage();
     await bp.goto(`${base}/index.html`, { waitUntil: 'commit' });
-    await bp.waitForTimeout(600);
-    check('reduced motion gets the mark but not the tube',
-      !await veil(bp) && await sting(bp));
+    await bp.waitForTimeout(500);
+    check('reduced motion gets no tube', !await veil(bp));
     await bp.close();
     await still.close();
+  }
+
+  // ── the mark, in front of a game ──
+  // A studio logo goes before the GAME, not before the menu. So Play holds the
+  // navigation, plays it once per browser, and goes when it is done — and the
+  // second Play is a plain link again.
+  {
+    const run = await browser.newContext({ viewport: { width: 1000, height: 700 } });
+    const bp = await run.newPage();
+    await bp.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+    await bp.waitForFunction(() => window.__hub);
+    check('an unintroduced browser has not seen the mark',
+      await bp.evaluate(() => !localStorage.getItem('tokoSting')));
+
+    await bp.click('#cab-dropcabal a.play');
+    await bp.waitForSelector('.toko-sting', { timeout: 3000 });
+    check('starting a game plays the mark first', true);
+    check('and it records WHICH of the two was shown',
+      ['draw', 'goo'].includes(await bp.evaluate(() => localStorage.getItem('tokoStingStyle'))));
+
+    // One input puts it away AND lets you through — skipping the logo must not
+    // strand you on the page you were leaving. Waited on by URL rather than by
+    // a timeout, and matched on `.toko-sting` rather than [role="img"]: every
+    // signed game carries a badge with that role, so looking for one found the
+    // signature in the corner of the game just navigated to and called it the
+    // sting still being on screen.
+    await bp.keyboard.press('Escape');
+    await bp.waitForURL('**/dropcabal/', { timeout: 4000 });
+    check('the mark is skippable and still takes you to the game',
+      bp.url().endsWith('/dropcabal/'));
+
+    // second time it is a plain link
+    await bp.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+    await bp.waitForFunction(() => window.__hub);
+    await bp.click('#cab-tokodrop a.play');
+    await bp.waitForURL('**/toko-drop/', { timeout: 4000 });
+    check('the next game start is a plain link, no mark',
+      (await bp.$$('.toko-sting')).length === 0);
+    await bp.close();
+    await run.close();
   }
 
   // sound is off until asked, and says which it is

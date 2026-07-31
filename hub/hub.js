@@ -21,6 +21,14 @@ const el = (tag, cls = '', text = '') => {
   return e;
 };
 
+// Has this browser been introduced yet? Read here rather than asked of the
+// sting module, because the answer decides whether Play is a plain link — and
+// a link that has to load a module before it knows whether it is a link would
+// be a link that hesitates.
+function introSeen() {
+  try { return !!localStorage.getItem('tokoSting'); } catch { return true; }
+}
+
 // ── cabinets ───────────────────────────────────────────────────────
 function cabinet(game) {
   const card = el('article', 'cab');
@@ -91,7 +99,23 @@ function cabinet(game) {
     go.href = game.path;
     // pressing Play is the only honest signal the hub has that you tried it —
     // it cannot know whether you liked it, and does not ask
-    go.addEventListener('click', () => { markPlayed(game.id); room.sound.coin(); });
+    go.addEventListener('click', e => {
+      markPlayed(game.id);
+      room.sound.coin();
+      // The workshop's mark, in front of the game — which is where a studio
+      // logo belongs and is the one place it is not in the way of anything.
+      // Once per browser (playStingOnce's own key), skippable from the first
+      // frame, and the navigation happens when it is done EITHER WAY: if the
+      // import fails, or toko/ is not in this tree at all, the catch still
+      // sends you to the game. A nicety must never be the reason a Play button
+      // does nothing.
+      if (introSeen() || e.metaKey || e.ctrlKey || e.shiftKey) return;
+      e.preventDefault();
+      const gone = () => { location.href = game.path; };
+      import('../toko/js/sting.js')
+        .then(m => m.playStingOnce('tokoSting')?.done ?? null)
+        .then(gone, gone);
+    });
   } else {
     // a dead button that says so beats a live one that 404s
     go = el('button', 'btn dead', `[ ${t('notup')} ]`);
@@ -1022,7 +1046,18 @@ openFromHash({ jump: true });
 // nobody can tell you was in force is feedback about nothing, so this rides
 // along on every note from either surface — the panel under a cover art and the
 // counter both post through this module.
-feedback.setContext(() => ({ layout: readLayout(), lang: getLang() }));
+// `intro` is which of the two stings this browser was shown. There are two of
+// them and you only see one, so "the opening drags" is unattributable without
+// it — the same reason every note already records which floor layout was in
+// force. Read lazily off localStorage so it costs nothing until a note is sent.
+feedback.setContext(() => {
+  const c = { layout: readLayout(), lang: getLang() };
+  try {
+    const intro = localStorage.getItem('tokoStingStyle');
+    if (intro) c.intro = intro;
+  } catch { /* private mode */ }
+  return c;
+});
 
 // anything written while an endpoint was unreachable goes out now, quietly
 feedback.flush();
@@ -1031,24 +1066,16 @@ feedback.flush();
 // Everything below is atmosphere and every piece of it is allowed to do
 // nothing: reduced motion turns the first three off, sound is off until asked,
 // and the floor above works with all of it missing.
-// The intro: the tube opens, then the workshop's mark draws itself in it.
+// THE TUBE IS THE HUB'S. The arcade is a terminal, so it comes on like one —
+// and that is all it does here. The workshop's mark used to play on arrival
+// too, which put a studio logo in front of a page that is a menu; it now goes
+// where a studio logo actually goes, in front of a GAME (see the Play handler
+// in cabinet()).
 //
 // NOT IN FRONT OF A DEEP LINK. `/#hyperdagger` means somebody came for one
 // thing, and a title card between them and it is exactly what this workshop is
-// against — the rule came from the sting's own mount on the deployed page and
-// it now covers the tube as well, since a boot animation is no less in the way
-// than a logo.
-//
-// The sting is imported lazily and its failure is swallowed inside powerOn:
-// toko/ is a sibling of hub/, and a tree that does not carry it still boots.
-// `playStingOnce` returns null once it has been seen, so after the first visit
-// this is the tube alone.
-if (!location.hash) {
-  room.powerOn({
-    mark: () => import('../toko/js/sting.js')
-      .then(m => m.playStingOnce('tokoSting')?.done),
-  });
-}
+// against.
+if (!location.hash) room.powerOn();
 room.sound.start();                    // a no-op unless it was left switched on
 room.flicker();
 

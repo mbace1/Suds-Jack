@@ -34,6 +34,12 @@ const SHELL = [
   './hub/i18n.js?v=6',
   './hub/pad.js?v=9',
   './hub/topics.js?v=2',
+  './toko/js/face.js',
+  './toko/js/lockup.js',
+  './toko/js/palette.js',
+  './toko/js/sting.js',
+  './toko/js/surface.js',
+  './toko/js/wordmark.js',
 ];
 
 self.addEventListener('install', e => {

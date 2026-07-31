@@ -83,16 +83,26 @@ may never trigger `:focus-visible`.
 **The room.** `hub/arcade.js` is the atmosphere layer, kept out of `hub.js` because
 hub.js is the floor. Everything in it is allowed to do nothing: `prefers-reduced-motion`
 turns off the **marquee flicker** (one tube struggles for a moment, never two at once).
-The **intro** is one animation, not two: the tube comes on across the *whole* screen and
-then `toko/js/sting.js` draws the mark in it (the two used to play at once — a black veil
-sweeping open under a magenta panel at z-index 99999 that hid it completely). The tube is
-once per **tab** (sessionStorage — every game is a real navigation, and a boot animation
-on each return is a toll on the way home); the mark is once per **browser**, since you are
-only introduced once. It is skippable from frame one and **one input skips all of it**,
-leaving the mark unseen rather than marking it shown. No intro in front of a **deep link**.
-`prefers-reduced-motion` drops the tube but still calls the sting, which has its own
-still-frame path — refusing it outright would decide that disliking movement also means
-not being told whose workshop this is. **Room tone** is a detuned-saw bed plus a coin
+**Two animations, and they belong in different places.** The **CRT power-on** is the
+hub's: the tube strikes across the *whole* screen, opens, and the floor is there — once
+per **tab** (sessionStorage), since every game is a real navigation and a boot animation
+on each return is a toll on the way home. The **Toko sting** is a studio logo, so it plays
+in front of a **game**, not in front of a menu: pressing Play holds the navigation, plays
+it once per **browser**, and goes when it is done *either way* — if the import fails or
+`toko/` is not in the tree, the catch still sends you to the game. Both are skippable from
+frame one, and skipping the sting still takes you through rather than stranding you. For a
+while both played on arrival *at once* — a black veil sweeping open under a magenta panel
+at z-index 99999 that hid it completely. Neither plays in front of a **deep link**.
+There are **two stings** (`STYLES` in `sting.js`), for the same reason the floor has three
+layouts: `draw` reveals the arcs along their own path; `goo` flops a Toko Drop gel cube in,
+which thins into the mark — the face is *drawn* at ~4× stroke weight, where the slots close
+and it is a blob, and thinning to `GEO.stroke` IS the transformation, so nothing crossfades
+and no third colour is needed. `playStingOnce` picks one at random and **records which**
+(`tokoStingStyle`), which rides on every note as `intro` — an intro you saw once and cannot
+name is one you cannot give feedback about. The brand board plays both on demand. Find the
+sting by **`.toko-sting`**, never `[role="img"]`: every signed game carries a badge with
+that role, and a test looking for one found the signature in the corner of the game it had
+just navigated to. **Room tone** is a detuned-saw bed plus a coin
 on Play, routed through one master gain and **off until asked**. Three counters hang off
 the single honest signal this page gets — pressing Play — and only appear once there is
 something to count: **credits**, a **streak** counted back from TODAY (counted from the
