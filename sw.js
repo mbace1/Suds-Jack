@@ -25,6 +25,7 @@ const CACHE = `suds-hub-${VERSION}`;
 const SHELL = [
   './',
   './index.html',
+  './hub/arcade.js?v=1',
   './hub/art.js?v=10',
   './hub/feedback.js?v=13',
   './hub/games.js?v=10',

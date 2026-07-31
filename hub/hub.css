@@ -220,16 +220,30 @@ html[data-layout="wide"] .cab-body {
      above it does not — 90 characters is a wall */
   max-width: 72ch;
 }
+/* The cover takes the WHOLE row — that is the point of this shape, and the
+   first cut missed it: the marquee sat at about 55% with the text beside it and
+   a column of empty floor to the right, which is neither a marquee nor a rack.
+   A real one is the width of the wrap with the words underneath, the way the
+   thing over an actual cabinet is.
+
+   It is capped at 34vh. Uncapped, a 128x72 picture across a 1520px wrap is 855
+   tall and one game fills a laptop screen top to bottom — a shape you cannot
+   compare anything in, which is the same mistake the phone layout made. */
+html[data-layout="wide"] .marquee { display: block; width: 100%; }
+html[data-layout="wide"] .art {
+  width: 100%;
+  height: auto;                       /* the aspect ratio holds it, nothing else */
+}
+/* No `object-fit` here, and that is deliberate twice over. It CROPS — and these
+   are compositions, so cutting the top off Drop Cabal's sky takes the sun out
+   of the picture. And it resamples smoothly whatever `image-rendering` says, so
+   a 128x72 canvas blown up nine times came out blurred instead of blocky, which
+   is the one thing every marquee on this floor is drawn not to be. */
 @media (min-width: 900px) {
-  /* past this width the marquee is tall enough that its own text scrolls off
-     under it, so the two sit side by side instead */
-  html[data-layout="wide"] .cab {
-    display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-    gap: 28px;
-    align-items: start;
-  }
-  html[data-layout="wide"] .cab-body { padding-top: 0; }
+  /* the words go under the picture in one readable measure, not stretched to
+     the full width of a cover that is now very wide indeed */
+  html[data-layout="wide"] .cab-body { padding-top: 14px; }
+  html[data-layout="wide"] .actions { margin-top: 12px; }
 }
 
 /* LIST — no picture at all. One line per game: caret, title, version, tagline,
@@ -693,6 +707,102 @@ footer {
 @keyframes term-in { from { opacity: 0 } to { opacity: 1 } }
 .sheet { animation: term-in .16s ease-out both; }
 
+
+/* ── the room ───────────────────────────────────────────────────────
+   Atmosphere only. Every rule here is inside a motion query or hangs off a
+   class that JS refuses to add under `prefers-reduced-motion`, so the whole
+   section can evaporate and the floor is unchanged. */
+
+/* your best on this machine, off this machine's own localStorage */
+.best {
+  margin: 6px 0 0;
+  font-size: 12px;
+  letter-spacing: .06em;
+  color: var(--cab, var(--accent));
+}
+
+/* the counters on the wall */
+.wall-row { gap: 14px; }
+.wall { color: var(--ink-dim); font-size: 12px; letter-spacing: .06em; }
+
+/* 5. power-on: one line across the middle, then it opens, then it is gone */
+.power-on {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #06070a;
+  display: grid;
+  place-items: center;
+  pointer-events: none;                 /* never between you and the floor */
+  animation: po-out .18s ease-in .62s both;
+}
+.power-on i {
+  display: block;
+  width: min(70vw, 620px);
+  height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent);
+  animation: po-line .62s ease-out both;
+}
+@keyframes po-line {
+  0%   { transform: scaleX(0);   opacity: 0; }
+  22%  { transform: scaleX(1);   opacity: 1; }
+  100% { transform: scaleX(1) scaleY(120); opacity: .12; }
+}
+@keyframes po-out { to { opacity: 0; visibility: hidden; } }
+
+/* 1. attract: the idle reel. The floor stays exactly where it was underneath
+   — this is a sheet over the top, not a state the page enters, so leaving it
+   cannot lose your scroll position or your selection. */
+.attract {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(6, 7, 10, .93);
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  padding: 24px;
+  animation: at-in .5s ease-out both;
+}
+.attract .art {
+  width: min(78vw, 720px);
+  height: auto;
+  aspect-ratio: 128 / 72;
+  image-rendering: pixelated;
+  border: 1px solid var(--cab, var(--accent));
+  box-shadow: 0 0 34px -10px var(--cab, var(--accent));
+}
+.attract-name {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--cab, var(--accent));
+}
+.attract-line { margin: 0; font-size: 12px; letter-spacing: .1em; color: var(--ink-dim); }
+@keyframes at-in { from { opacity: 0 } to { opacity: 1 } }
+/* the floor must not scroll behind the reel */
+html[data-attract] body { overflow: hidden; }
+
+/* 7. marquee flicker: one tube on the floor struggling for a moment */
+.art.flick { animation: flick .9s steps(1, end) both; }
+@keyframes flick {
+  0%, 100% { opacity: 1 }
+  8%   { opacity: .28 }
+  14%  { opacity: 1 }
+  26%  { opacity: .5 }
+  31%  { opacity: 1 }
+  57%  { opacity: .18 }
+  62%  { opacity: 1 }
+  69%  { opacity: .72 }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
+  /* belt and braces: JS already refuses to mount these, but if one ever slips
+     through it must not sit on top of the page forever with no animation to
+     end it and take it away */
+  .power-on, .attract { display: none !important; }
 }

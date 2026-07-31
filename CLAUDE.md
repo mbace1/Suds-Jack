@@ -80,6 +80,27 @@ pad but not aim — that needs their own code. On the arcade itself a direction 
 selection, A plays, Y leaves a note, B backs out, and in the note panel left/right sets
 the rating and A sends; selection is real DOM focus with its own ring, since a pad user
 may never trigger `:focus-visible`.
+**The room.** `hub/arcade.js` is the atmosphere layer, kept out of `hub.js` because
+hub.js is the floor. Everything in it is allowed to do nothing: `prefers-reduced-motion`
+turns off the **power-on** (one line across the middle, then it opens — once per *tab*
+via sessionStorage, because every game here is a real navigation and a boot animation on
+each return is a toll on the way home), the **idle reel** (30s untouched → covers play
+full-bleed one at a time, any input at all ends it) and the **marquee flicker** (one tube
+struggles for a moment, never two at once). **Room tone** is a detuned-saw bed plus a coin
+on Play, routed through one master gain and **off until asked**. Three counters hang off
+the single honest signal this page gets — pressing Play — and only appear once there is
+something to count: **credits**, a **streak** counted back from TODAY (counted from the
+most recent day instead, a streak that ended in March still shows in July), and
+**tickets**, which buy nothing. The **score wall** reads each game's own `localStorage`
+best off *your* disk via a `score: {key, fmt}` field in the catalogue; nothing is fetched
+and nothing is sent, which is why there is no leaderboard. The **Konami code** unlocks a
+`secret: true` cabinet — the brand board, which is real and already in the repo. A secret
+leaks through every list that reads `GAMES` directly rather than `onFloor()`: its tag
+showed up in the filter row, the "showing N of M" count, and a pasted `#brand`. Its id is
+**`brand`, not `toko`** — that fragment already belongs to the counter. The `wide` layout
+is now a **true full-width marquee** (cover at the width of the wrap, words underneath);
+it must not use `object-fit`, which crops the composition *and* resamples smoothly no
+matter what `image-rendering` says, turning a 9× pixel upscale into a blur.
 **Versions.** Toko Drop's system (a `VERSIONS.md` log with `## vN` entries plus a `?v=N`
 module token, moved together by `scripts/bump-version.sh`) now covers the whole floor.
 `node scripts/versions.mjs [siteRoot]` writes `hub/versions.json` by reading each

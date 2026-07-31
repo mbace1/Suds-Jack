@@ -107,7 +107,34 @@ function check(name, cond) {
   check('the catalogue is not empty', games.length >= 8);
   check('every entry declares a status',
     catalogue.every(g => ['active', 'archived'].includes(g.status)));
-  check('active and archived account for the whole catalogue', games.length === catalogue.length);
+  // ...minus the ones that are not on the floor until the code is entered
+  const secret = catalogue.filter(g => g.secret);
+  check('active and archived account for the whole catalogue',
+    games.length === catalogue.length - secret.length);
+  check('a secret cabinet is not on the floor',
+    secret.length > 0 && !games.some(g => g.secret));
+  check('and it is not rendered either',
+    (await page.$$('#cab-brand')).length === 0);
+  // the code, typed the way a person types it
+  for (const k of ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
+    'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a']) {
+    await page.keyboard.press(k);
+  }
+  await page.waitForTimeout(120);
+  check('the code puts it on the floor', (await page.$$('#cab-brand')).length === 1);
+  check('and its marquee is painted', await page.evaluate(() => {
+    const c = document.querySelector('#cab-brand canvas');
+    if (!c) return false;
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    const seen = new Set();
+    for (let i = 0; i < d.length; i += 4) seen.add(`${d[i]},${d[i + 1]},${d[i + 2]}`);
+    return seen.size > 2;
+  }));
+  // Back to a locked floor. The unlock is a real state change on a shared
+  // page, and left standing it added a cabinet to every count below — which is
+  // how seven later checks failed at once the first time this ran.
+  await page.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+  await page.waitForFunction(() => window.__hub);
   check('one cabinet per game', await page.locator('.cab').count() === games.length);
   check('the live floor holds only what is being worked on',
     await page.locator('#cabinets .cab').count() === active.length && active.length > 0);
@@ -942,6 +969,66 @@ function check(name, cond) {
   const order = seen.filter(e => e.endsWith('Space'));
   check(`in that order, and once each (${order.join(' ')})`,
     order.join() === 'down:Space,up:Space');
+
+
+  // ── the room ──
+  // Atmosphere, and the whole promise is that none of it gets in the way. So
+  // what is checked is mostly that it LEAVES: the boot veil clears itself, the
+  // reel goes away on the first keypress, and nothing here is focusable.
+  await page.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+  await page.waitForFunction(() => window.__hub);
+  await page.waitForTimeout(1000);
+  check('the power-on veil takes itself off the page',
+    (await page.$$('.power-on')).length === 0);
+
+  await page.evaluate(() => __hub.debug.reel.begin());
+  await page.waitForTimeout(80);
+  check('the idle reel comes up', (await page.$$('.attract')).length === 1);
+  check('and it shows a cover that is actually painted', await page.evaluate(() => {
+    const c = document.querySelector('.attract canvas');
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    const seen = new Set();
+    for (let i = 0; i < d.length; i += 4) seen.add(`${d[i]},${d[i + 1]},${d[i + 2]}`);
+    return seen.size > 3;
+  }));
+  check('and it is hidden from a screen reader, because the floor is the page',
+    await page.$eval('.attract', n => n.getAttribute('aria-hidden') === 'true'));
+  await page.keyboard.press('x');
+  await page.waitForTimeout(80);
+  check('and any key at all puts it away', (await page.$$('.attract')).length === 0);
+
+  // sound is off until asked, and says which it is
+  check('sound is off on arrival',
+    await page.$eval('.sound-row .opt-btn', b => b.getAttribute('aria-pressed') === 'false'));
+  await page.click('.sound-row .opt-btn');
+  check('and the toggle says so when it is on',
+    await page.$eval('.sound-row .opt-btn', b => b.getAttribute('aria-pressed') === 'true'));
+  await page.click('.sound-row .opt-btn');
+
+  // The counters only exist once there is something to count. Cleared first:
+  // the checks further up press Play for their own reasons, and this ran
+  // against a machine that had already "played" nine things.
+  await page.evaluate(() => {
+    for (const k of ['sudsJackHubCredits', 'sudsJackHubTickets', 'sudsJackHubDays',
+      'sudsJackHubPlayed', 'tokoDropHi']) localStorage.removeItem(k);
+  });
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForFunction(() => window.__hub);
+  check('an untouched machine has no counters on the wall',
+    (await page.$$('.wall-row')).length === 0);
+  await page.evaluate(() => {
+    __hub.debug.markPlayed('tokodrop');
+    localStorage.setItem('tokoDropHi', '4242');
+  });
+  await page.waitForTimeout(60);
+  check('pressing Play puts a credit on the wall',
+    (await page.$eval('.wall-row', n => n.textContent)).includes('1 credit'));
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForFunction(() => window.__hub);
+  check('and a game you have played shows your best, off your own disk',
+    (await page.$eval('#cab-tokodrop .best', n => n.textContent)).includes('4,242'));
+  check('a game you have not played shows no score line at all',
+    (await page.$$('#cab-skltr .best')).length === 0);
 
   check(`zero console/page errors overall${errors.length ? ` — ${errors[0]}` : ''}`, errors.length === 0);
 

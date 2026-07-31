@@ -54,6 +54,7 @@ export const GAMES = [
   },
   {
     id: 'tokodrop',
+    score: { key: 'tokoDropHi', fmt: 'points' },
     fi: {
       tagline: 'Kahden tatin laumaselviytyminen. Geelit väistävät linjojasi, parveilevat kuin kalat ja räjähtävät kostorenkaiksi.',
       lineage: 'luotihelvetti / areena',
@@ -78,6 +79,7 @@ export const GAMES = [
   },
   {
     id: 'hyperdagger',
+    score: { key: 'hyperDaggerHi', fmt: 'secs' },
     fi: {
       tagline: 'Selviydy vokselikallojen laumasta kiekolla tyhjyydessä. Selviytymisaika on ainoa pistemäärä.',
       lineage: 'Devil Daggers × HYPERDEMON',
@@ -102,6 +104,7 @@ export const GAMES = [
   },
   {
     id: 'dropcabal',
+    score: { key: 'dropCabalHi', fmt: 'points' },
     fi: {
       tagline: 'Syvyyssuuntaan kerrostuva galleriaräiskintä — lähellä olevat geelit syövät laukaukset, jotka tähtäsit kauas.',
       lineage: 'Cabal (1988)',
@@ -153,6 +156,7 @@ export const GAMES = [
   },
   {
     id: 'paperboy',
+    score: { key: 'paperRouteHi', fmt: 'points' },
     fi: {
       tagline: 'Toimita tilaajille, riko kaikkien muiden ikkunat, selviä kolmesta kolarista.',
       lineage: 'Paperboy (1985)',
@@ -230,6 +234,7 @@ export const GAMES = [
   },
   {
     id: 'flashprince',
+    score: { key: 'flashPrinceBest', fmt: 'best-time' },
     fi: {
       tagline: 'Jokainen liike viedään loppuun. Riipu, kiipeä ja vedä ase esiin ennen kuin hän ehtii.',
       lineage: 'Another World × Flashback × Prince of Persia',
@@ -356,6 +361,37 @@ export const GAMES = [
     inRepo: false,
     accent: '#e8d24a',
     art: 'optotype',
+  },
+  // Not on the floor. `secret: true` keeps a cabinet out of every rack, every
+  // count and every filter until the code is entered — and what it hides is a
+  // real page that is already in this repo, because a secret that turns out to
+  // be a joke about there being no secret is worth exactly one telling.
+  {
+    // NOT `toko` — that fragment already belongs to the counter (see THEIRS in
+    // hub.js), and a cabinet answering to the same hash would fight the panel
+    // every badge in every signed game links to.
+    id: 'brand',
+    secret: true,
+    fi: {
+      tagline: 'Naamio, merkki ja kaikki mihin se painetaan — työpajan oma identiteetti, elävänä.',
+      lineage: 'kaksi väriä, ei kuvatiedostoja',
+      controls: 'katso · vie merkki mukanasi',
+    },
+    ja: {
+      tagline: '仮面とマーク、そしてそれが刷られるすべて — 工房そのものの正体、生きたまま。',
+      lineage: '二色だけ、画像素材なし',
+      controls: '眺める · マークを持ち帰る',
+    },
+    status: 'active',
+    title: 'Toko Midori Games',
+    tagline: 'The mask, the mark, and everything it gets printed on — the workshop\'s own identity, live.',
+    lineage: 'two colours, no image assets',
+    tags: ['brand', 'canvas'],
+    controls: 'look · take the mark with you',
+    path: 'toko/',
+    inRepo: true,
+    accent: '#F0027F',
+    art: 'mask',
   },
 ];
 
