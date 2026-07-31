@@ -19,28 +19,20 @@ const store = {
 };
 
 // ── 5. power-on ────────────────────────────────────────────────────
-// The intro. Not a page transition — an INTRO, the way a cabinet has one: the
-// tube comes on across the whole glass, and then the workshop's mark draws
-// itself in it, and then the floor is there.
+// The arcade is a terminal, so it comes on like one: the tube strikes across
+// the whole glass, opens, and the floor is there.
 //
-// It is one animation, deliberately. The sting (toko/js/sting.js — the face
-// revealed along its own arcs) was already mounted on the deployed page from
-// its own <script>, and the tube open was added later from here, so the two
-// were playing AT ONCE: a black veil sweeping open underneath a magenta panel
-// at z-index 99999 that covered it completely. Sequencing them is the whole
-// fix — the tube is the frame the mark arrives in.
+// This is the HUB's animation and only the hub's. The workshop's mark used to
+// play here too — for a while both played at once, a black veil sweeping open
+// underneath a magenta panel at z-index 99999 that hid it completely — and it
+// has gone where a studio logo actually belongs, in front of a game rather
+// than in front of a menu. The `mark` hook is still here because the two are
+// worth sequencing on a title screen; the arcade just does not use it.
 //
-// Two different cadences, both kept, because they are answering different
-// questions:
-//
-//   the tube    once per TAB (sessionStorage). Every game here is a real
-//               navigation, so coming back from one is a fresh page, and a
-//               boot animation on each return is a toll on the way home.
-//   the mark    once per BROWSER (playStingOnce's own key). A logo sting is
-//               an introduction, and you only get introduced once.
-//
-// So a first-ever visit gets the tube and the mark; a new tab later gets the
-// tube alone; walking back from a game gets neither.
+// Once per TAB, not once per load. Every game here is a real navigation, so
+// coming back from one is a fresh page, and a boot animation on each return is
+// a toll on the way home — which is the opposite of what the shell button is
+// for. sessionStorage is exactly "this tab, this visit".
 const BOOT_KEY = 'sudsJackHubBooted';
 
 export function powerOn({ mark } = {}) {
