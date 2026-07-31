@@ -259,7 +259,43 @@ for (const f of OWNED) {
 // reference — in the page, in the hub's own modules, and in each game's shell
 // tag — from that one map. A number nobody types by hand is a number that
 // cannot disagree with itself.
-for (const f of changed) seen.set(f, (seen.get(f) ?? 0) + 1);
+const bump = new Set([...changed].filter(f => f.startsWith('hub/')));
+
+// A file this branch does not own can still have changed — `art.js` and
+// `games.js` are edited ON the site, because that is where the cabinets this
+// branch does not carry live. Nothing above would notice, so git is asked:
+// anything dirty in the site's working tree has moved since the last deploy
+// and needs a new number exactly like ours do. Without this a redrawn marquee
+// ships to a browser that already holds the old one and never appears.
+try {
+  const out = execFileSync('git', ['status', '--porcelain', '--', 'hub'],
+    { cwd: site, encoding: 'utf8' });
+  for (const line of out.split('\n')) {
+    const f = line.slice(3).trim();
+    if (f && /^hub\/[\w.-]+\.(?:js|css)$/.test(f)) bump.add(f);
+  }
+} catch { note('! the site is not a git checkout — site-side edits cannot be detected'); }
+
+// A BUMP HAS TO CLIMB. hub.js imports art.js, so moving art.js alone changes
+// nothing for anyone: a browser holding hub.js at the old number keeps that
+// copy, and that copy asks for the old art.js by name. The new marquee would
+// sit on the server and never be fetched. So every module that imports a
+// bumped module is bumped too, to a fixpoint — the page itself carries no
+// token (it is network-first) which is where the climb stops.
+const importsOf = f => [...(read(site, f) ?? '').matchAll(/from '\.\/([\w.-]+\.js)\?v=\d+'/g)]
+  .map(m => `hub/${m[1]}`);
+const hubFiles = files.filter(f => /^hub\/[\w.-]+\.js$/.test(f));
+for (let moved = true; moved;) {
+  moved = false;
+  for (const f of hubFiles) {
+    if (bump.has(f)) continue;
+    if (importsOf(f).some(d => bump.has(d))) { bump.add(f); moved = true; }
+  }
+}
+
+for (const f of bump) seen.set(f, (seen.get(f) ?? 0) + 1);
+changed.clear();
+for (const f of bump) changed.add(f);
 
 for (const f of files) {
   const src = read(site, f);

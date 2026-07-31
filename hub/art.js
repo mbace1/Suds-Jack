@@ -65,99 +65,127 @@ export const ART = {
     g.p(52, 22, 6, 3, '#c9fbe8');           // gel highlight
   },
 
-  // Hyper Dagger: the shot HYPERDEMON puts on its own front — a huge skull
-  // hanging over the disc in the void, seen from behind the hand that is
-  // feeding daggers into it, with the whole sky burning behind its head.
+  // Hyper Dagger: a swarm coming out of the dark, and the only light in the
+  // world is the one you are making.
   //
-  // Drawn in the Atari idiom rather than the modern one. HYPERDEMON's searing
-  // backlight is a hundred blown-out gradients and a 2600 could not do one of
-  // them — what it COULD do was change the colour once per scanline, so a sky
-  // is a stack of flat horizontal bars with hard edges between them. That one
-  // constraint carries the whole picture, and it suits the game's own rule:
-  // black and bone, with dark red the only colour allowed in.
+  // Devil Daggers rather than HYPERDEMON (owner's call, and Bone Dust sits on
+  // the same side). The two look nothing alike and the difference is one
+  // decision: where the light is. HYPERDEMON burns the whole sky behind the
+  // swarm, so a skull reads as a SILHOUETTE punched out of a blaze. Devil
+  // Daggers has no sky at all — pitch black, no horizon, no grid you can see —
+  // and the only thing lighting anything is your own dagger stream coming up
+  // from the bottom of the frame. So the light is UNDER the swarm, jaws are the
+  // brightest thing on the picture, and every crown falls away into the void.
+  // An earlier pass had the burning sky and it was the wrong game on the front.
+  //
+  // Still the Atari idiom: a 2600 changed colour once per scanline, so the
+  // light on a face is a stack of flat steps with hard seams (TONE), never a
+  // ramp — which suits the game's own rule of black and bone with dark red the
+  // only colour allowed in. Depth is the ONLY other tool: further back is
+  // smaller, and dimmer by a fixed number of steps down the same ladder, until
+  // the last of them is barely out of the black.
   skull(g, a) {
-    const INK = '#08070a', BONE = '#e6dfd0', DIM = '#8e857a', GREY = '#5f574e';
-    g.p(0, 0, W, H, INK);
+    const VOID = '#050406';
+    // one ladder of bone under one light. A skull nearer the daggers starts
+    // further up it; a skull further back starts lower, and the far ones never
+    // reach the top rungs at all. Nothing here is blended.
+    const TONE = ['#0d0b0a', '#1d1917', '#332c26', '#564c41', '#8a7f70', '#c0b6a5', '#eae3d4'];
+    g.p(0, 0, W, H, VOID);
 
-    // the burn behind the head, a bar at a time, bleeding off both edges
-    for (let y = 0; y < 58; y++) {
-      const dy = y - 30;
-      if (Math.abs(dy) > 31) continue;
-      const dx = Math.floor(Math.sqrt(31 * 31 - dy * dy) * 1.9);
-      const k = (dy + 31) / 62;
-      const c = k < 0.55 ? mix('#1c0503', a, (k / 0.55) * 0.9)
-        : mix(a, '#f9dfc8', ((k - 0.55) / 0.45) * 0.8);
-      g.p(64 - dx, y, dx * 2 + 1, 1, c);
-    }
-    // the bars STOP, they do not blend — that seam is the whole tell
-    for (let y = 3; y < 58; y += 6) g.p(0, y, W, 1, 'rgba(8,7,10,0.34)');
+    // There is no floor. Devil Daggers gives you an edge to fall off and
+    // nothing whatever to look at, and two passes here proved it: a grid read
+    // as shelving, and flat rows of warm brown across the bottom read as a
+    // muddy streak. What is left is one barely-there seam at the very bottom
+    // so the swarm is not floating in a plain rectangle.
+    g.p(0, 69, W, 1, mix(VOID, '#2a1712', 0.5));
 
-    // The arena, and it has to read as a DISC with an edge — the whole game is
-    // that there is nowhere else to stand. So the grid is clipped to a wedge
-    // that opens toward the viewer rather than run out to the frame, which is
-    // what made an earlier pass look like shelving.
-    const VX = 64, VY = 53;
-    const reach = y => Math.min(66, (y - VY) * 7.5);
-    for (const y of [57, 60, 64, 71]) {
-      const r = reach(y);
-      g.p(VX - r, y, r * 2, 1, mix(GREY, '#cbc2b6', (y - 57) / 14));
-    }
-    for (let i = -5; i <= 5; i++) {
-      g.line(VX + i * 1.6, VY + 2, VX + i * (reach(H) / 5.2), H, i === 0 ? '#8e857a' : GREY);
-    }
+    // One skull, lit from below. `s` is half-width at the temples, `step` is
+    // how far down the tone ladder distance has pushed it.
+    //
+    // The light is FOUR FLAT STEPS, not a ramp. A ramp was the first cut and
+    // every face came out one muddy mid-grey, because almost all of a skull's
+    // area is temple and cheek and a smooth ramp gives those nearly the same
+    // value. Hard seams at fixed heights is both what a 2600 actually did and
+    // the only thing that reads as a light source at this size.
+    const rungOf = t => t < 0.28 ? 2 : t < 0.55 ? 4 : t < 0.76 ? 5 : 6;
 
-    // The head. A Master System sprite is a flat fill inside a hard black line
-    // — so the shape has to be in the SILHOUETTE, because there is no shading
-    // to put it in. Cranium tapers to temples, cheeks pull in, jaw hangs.
-    const half = y => {
-      if (y < 12) return 13 + (y - 6) * 1.2;          // crown
-      if (y < 30) return 20;                          // temples, widest
-      if (y < 36) return 20 - (y - 30) * 0.9;         // cheeks pulling in
-      return 14 - (y - 36) * 0.25;                    // and the jaw tapering off
-    };
-    for (let y = 6; y <= 50; y++) {
-      const w = Math.round(half(y));
-      g.p(64 - w - 1, y, w * 2 + 3, 1, INK);          // the hard line
-      g.p(64 - w, y, w * 2 + 1, 1, y < 36 ? BONE : DIM);
-    }
-    g.p(64 - 13, 6, 27, 3, '#f7f2e8');                // one lit plane, flat
-    g.p(64 - 20, 36, 41, 1, INK);                     // where the jaw hangs off
-    for (let i = 0; i < 5; i++) {                     // teeth
-      g.p(51 + i * 6, 44, 5, 9, INK);
-      g.p(52 + i * 6, 44, 3, 8, BONE);
-    }
-
-    g.p(48, 17, 13, 13, INK);                         // sockets, cut clean
-    g.p(67, 17, 13, 13, INK);
-    g.p(51, 20, 7, 7, a);                             // and what looks out
-    g.p(70, 20, 7, 7, a);
-    g.p(52, 21, 3, 3, '#ffd9cf');
-    g.p(71, 21, 3, 3, '#ffd9cf');
-    g.p(59, 30, 10, 7, INK);                          // nose
-    g.p(46, 15, 36, 2, mix(BONE, INK, 0.45));         // brow
-
-    // two more of them, further out and further back
-    for (const [cx, cy] of [[13, 26], [111, 34]]) {
-      for (let i = 0; i < 11; i++) {                  // same taper, one tenth up
-        const w = i < 2 ? 4 : i < 8 ? 5 : 3;
-        g.p(cx - w - 1, cy + i, w * 2 + 3, 1, INK);
-        g.p(cx - w, cy + i, w * 2 + 1, 1, DIM);
+    // A skull is a DOME AND A BLOCK, not a taper. The first cut described the
+    // outline as one smooth profile narrowing from temples to chin, and every
+    // head came out a mushroom — because a taper is exactly what a mushroom is.
+    // What makes the shape read at 17 pixels is that the cranium is a circle
+    // whose sides drop straight at the temples, and the jaw is a separate,
+    // clearly narrower box hanging under it with a step between them.
+    const head = (cx, cy, s, step) => {
+      const rs = s, dome = rs * 2, h = Math.round(dome + s * 0.55);
+      // The jaw is narrower than the cranium — but LESS so the smaller the
+      // head, because a 10px dome on a 6px jaw is a mushroom, and the far ones
+      // in the swarm all came out as ice-cream cones until this was scaled.
+      const jw = s * Math.min(0.82, 0.56 + Math.max(0, 12 - s) * 0.026);
+      const half = i => {
+        if (i <= rs * 1.2) {                           // the cranium, a circle
+          const dy = rs - i;
+          return Math.max(s * 0.55, Math.sqrt(Math.max(0, rs * rs - dy * dy)));
+        }
+        if (i <= dome) return s * 0.95;                // temples, straight down
+        return jw;                                     // and the jaw under it
+      };
+      for (let i = 0; i <= h; i++) {
+        const w = Math.round(half(i));
+        const c = TONE[Math.max(0, Math.min(6, rungOf(i / h) - step))];
+        g.p(cx - w - 1, cy + i, w * 2 + 3, 1, VOID);   // the hard line
+        g.p(cx - w, cy + i, w * 2 + 1, 1, c);
       }
-      g.p(cx - 4, cy + 3, 3, 4, INK); g.p(cx + 2, cy + 3, 3, 4, INK);
-      g.p(cx - 4, cy + 4, 2, 2, a); g.p(cx + 2, cy + 4, 2, 2, a);
-      for (let i = 0; i < 3; i++) g.p(cx - 4 + i * 3, cy + 11, 2, 3, DIM);
-    }
+      // Sockets are cut back to the void rather than filled — that is what
+      // makes a skull read at this size, and it costs the same at any distance.
+      const ew = Math.max(2, Math.round(s * 0.44)), eo = Math.round(s * 0.09);
+      const ey = cy + Math.round(h * 0.42), eh = Math.max(2, Math.round(s * 0.46));
+      g.p(cx - eo - ew, ey, ew, eh, VOID);
+      g.p(cx + eo, ey, ew, eh, VOID);
+      // What looks out is a POINT, not a pane. Filling the socket turned them
+      // into lit windows and the head stopped being bone.
+      if (s > 6) {
+        const d = Math.max(1, Math.round(s * 0.20)), dy = ey + eh - d - 1;
+        g.p(cx - eo - ew + 1, dy, d, d, a);
+        g.p(cx + eo + ew - d - 1, dy, d, d, a);
+      }
+      if (s > 11) g.p(cx - 1, cy + Math.round(dome * 0.80), 3, Math.round(s * 0.24), VOID);
+      // the step under the cranium — the shadow line that says the jaw is a
+      // separate bone hanging off it, and the thing that stops the two blocks
+      // reading as one lump. Worth its one pixel even on the far ones.
+      g.p(cx - Math.round(jw) - 1, cy + Math.round(dome), Math.round(jw) * 2 + 3, 1, VOID);
+      if (s > 8) {
+        // teeth sit at the TOP of the jaw, not down the middle of it — centred
+        // they turned the whole jaw into one bright slab with a stripe in it
+        const ty = cy + Math.round(dome) + 2, tw = Math.max(1, Math.round(s * 0.12));
+        for (let k = -2; k <= 2; k++) g.p(cx + k * tw * 2 - tw, ty, tw, Math.round(s * 0.26), VOID);
+        // and the one rim the rules demand: a hero cannot be a shape in the
+        // dark, so the underside of the jaw catches the ember it is lit by
+        g.p(cx - Math.round(s * 0.5), cy + h + 1, Math.round(s), 1, mix(VOID, a, 0.7));
+      }
+    };
 
-    // The daggers, entering from the corner nearest the player. There was a
-    // first-person gauntlet down here for a while and it was wrong: at 128x72
-    // a hand is four white bricks, and it took the frame away from the head —
-    // which on the real cover is the whole picture. The stream says the same
-    // thing (someone is throwing these) in a tenth of the pixels.
-    for (let i = 0; i < 6; i++) {
-      const t = i / 6, x = 116 - t * 46, y = 69 - t * 24;
-      g.p(x - 1, y - 1, 9, 4, INK);
+    // The swarm, back to front so nearer heads overlap the ones behind them —
+    // at this size overlap sells depth harder than scale does.
+    head(23, 16, 5, 4);
+    head(108, 14, 6, 4);
+    head(38, 30, 7, 3);
+    head(100, 27, 8, 3);
+    head(16, 42, 10, 2);
+    head(112, 44, 9, 2);
+    head(67, 8, 17, 0);         // the one in your face, on the top rungs
+
+    // The daggers, entering from the corner nearest the player. They are the
+    // light source, so they are the only pure white here, and they run along
+    // the BOTTOM rather than up through the swarm — routed across the middle
+    // they crossed the big skull's socket and read as stuck in its face.
+    // The ember goes ON the stream rather than under the picture: it is the
+    // light these things are throwing, so it has to sit where they are.
+    for (let i = 0; i < 7; i++) {
+      const t = i / 7, x = 2 + t * 34, y = 70 - t * 13;
+      g.p(x - 5, y - 2, 17, 5, mix(VOID, a, 0.16));    // the glow it throws
+      g.p(x - 1, y - 1, 9, 4, VOID);
       g.p(x, y, 7, 2, '#ffffff');
-      g.p(x + 7, y, 4, 1, a);                         // the tail
+      g.p(x - 4, y, 4, 1, a);                          // the tail
     }
   },
 
