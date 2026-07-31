@@ -118,9 +118,18 @@ moving). The rule that removes the class is **one token per module, bumped when 
 when its bytes change, and written into every reference by the script** — including each
 game's `../hub/shell.js` tag, which is how sixteen pages were found pinned to shells as
 old as `?v=1`. It copies only what this branch owns (`games.js`/`art.js` are the site's —
-overwriting them deletes a cabinet), derives `sw.js`'s SHELL from the page and `hub.js`
-via `scripts/sw-shell.mjs` (run that alone to keep the branch's own worker honest; the
-smoke gate asserts it), regenerates `AnotherHUB/`, and puts back any `<script>` block the
+overwriting them deletes a cabinet), derives `sw.js`'s SHELL via `scripts/sw-shell.mjs`
+(run that alone to keep the branch's own worker honest; the smoke gate asserts it) — which
+**walks the import graph from `index.html`** rather than matching `hub/*`, because a
+pattern is a hand-kept list with extra steps: the counter is twelve modules under `toko/`
+and the arcade came up offline with a dead bar across the top until the walk found them.
+It skips any folder shipping its own `sw.js` (a narrower scope wins its own pages), takes
+**built specifiers** (`import('./dialogue.js' + V)` inherits the importer's token, and is
+invisible to a literal `?v=` match), and checks each path is a real file — a line of
+documentation inside `chat.js` had put `toko/js/toko/js/chat.js` in the list. An
+**untokened** module goes in the list but is served network-first with the cache as
+fallback: the counter imports its own modules bare, and cache-first would pin them
+forever with no URL to bust, regenerates `AnotherHUB/`, and puts back any `<script>` block the
 site has and this branch does not — that is how the counter mount survives.
 **It will not overwrite a file the site has moved on its own**: gh-pages is edited from
 more than one direction, and a plain byte comparison says *that* two copies differ, never

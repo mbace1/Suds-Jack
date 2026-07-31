@@ -341,7 +341,8 @@ for (const f of [...changed].sort()) note(`    ${f} -> v${seen.get(f)}`);
   const mine = read(REPO, 'sw.js');
   const theirs = read(site, 'sw.js') ?? '';
   if (mine) {
-    const list = shellOf(read(site, 'index.html'), read(site, 'hub/hub.js'));
+    // walked over the OVERLAY, so it sees the numbers step 3 just wrote
+    const list = shellOf(site, f => read(site, f));
     let out = withShell(mine, list);
     const was = +(theirs.match(/const VERSION = 'v(\d+)';/)?.[1] ?? 0);
     // a new shell needs a new cache name or the old one answers first

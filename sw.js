@@ -73,10 +73,32 @@ self.addEventListener('fetch', e => {
     return;
   }
 
+  // A module with a ?v= token is immutable by construction — a new deploy is a
+  // new URL — so the cache is always right and is answered from first.
+  //
+  // A module WITHOUT one is not. The counter under toko/ imports its own dozen
+  // modules with bare specifiers, and serving those cache-first would pin them
+  // at whatever they were the first time you loaded the page, with no way to
+  // ever move them. They are precached so the counter exists with no signal,
+  // and revalidated so it is never stale with one. Same rule as the page shell,
+  // for the same reason.
+  const mine = /\/(?:hub|toko)\//.test(url.pathname);
+  const immutable = url.search.includes('v=');
+
+  if (mine && !immutable) {
+    e.respondWith(fetch(req)
+      .then(r => {
+        if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+        return r;
+      })
+      .catch(() => caches.match(req)));
+    return;
+  }
+
   e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(r => {
     // only the hub's own modules are worth keeping; a game's files belong to
     // that game's worker
-    if (r.ok && url.pathname.includes('/hub/')) {
+    if (r.ok && mine) {
       const copy = r.clone();
       caches.open(CACHE).then(c => c.put(req, copy));
     }
