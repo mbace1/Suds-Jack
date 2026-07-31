@@ -967,28 +967,12 @@ function check(name, cond) {
   // ── the room ──
   // Atmosphere, and the whole promise is that none of it gets in the way. So
   // what is checked is mostly that it LEAVES: the boot veil clears itself, the
-  // reel goes away on the first keypress, and nothing here is focusable.
+  // counters stay off the wall until there is something to count.
   await page.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.__hub);
   await page.waitForTimeout(1000);
   check('the power-on veil takes itself off the page',
     (await page.$$('.power-on')).length === 0);
-
-  await page.evaluate(() => __hub.debug.reel.begin());
-  await page.waitForTimeout(80);
-  check('the idle reel comes up', (await page.$$('.attract')).length === 1);
-  check('and it shows a cover that is actually painted', await page.evaluate(() => {
-    const c = document.querySelector('.attract canvas');
-    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
-    const seen = new Set();
-    for (let i = 0; i < d.length; i += 4) seen.add(`${d[i]},${d[i + 1]},${d[i + 2]}`);
-    return seen.size > 3;
-  }));
-  check('and it is hidden from a screen reader, because the floor is the page',
-    await page.$eval('.attract', n => n.getAttribute('aria-hidden') === 'true'));
-  await page.keyboard.press('x');
-  await page.waitForTimeout(80);
-  check('and any key at all puts it away', (await page.$$('.attract')).length === 0);
 
   // sound is off until asked, and says which it is
   check('sound is off on arrival',

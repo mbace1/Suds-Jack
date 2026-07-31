@@ -84,9 +84,8 @@ may never trigger `:focus-visible`.
 hub.js is the floor. Everything in it is allowed to do nothing: `prefers-reduced-motion`
 turns off the **power-on** (one line across the middle, then it opens — once per *tab*
 via sessionStorage, because every game here is a real navigation and a boot animation on
-each return is a toll on the way home), the **idle reel** (30s untouched → covers play
-full-bleed one at a time, any input at all ends it) and the **marquee flicker** (one tube
-struggles for a moment, never two at once). **Room tone** is a detuned-saw bed plus a coin
+each return is a toll on the way home) and the **marquee flicker** (one tube struggles for
+a moment, never two at once). **Room tone** is a detuned-saw bed plus a coin
 on Play, routed through one master gain and **off until asked**. Three counters hang off
 the single honest signal this page gets — pressing Play — and only appear once there is
 something to count: **credits**, a **streak** counted back from TODAY (counted from the

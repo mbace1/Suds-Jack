@@ -120,7 +120,7 @@ const STR = {
     'notes.retry': 'Send the held ones',
     'notes.forget': 'Forget these',
     'notes.sure': 'Sure? Press again',
-    // the room: sound, the counters on the wall, the idle reel
+    // the room: sound, and the counters on the wall
     'sound': 'sound',
     'sound.on': 'on',
     'sound.off': 'off',
@@ -132,7 +132,6 @@ const STR = {
     'streak': '{x} days running',
     'tickets': '{x} tickets',
     'tickets.buy': 'Tickets buy nothing.',
-    'attract.hint': 'press anything',
     'secret.found': 'A cabinet you were not shown.',
   },
 
@@ -208,7 +207,6 @@ const STR = {
     'streak': '{x} päivää putkeen',
     'tickets': '{x} lippua',
     'tickets.buy': 'Lipuilla ei saa mitään.',
-    'attract.hint': 'paina mitä tahansa',
     'secret.found': 'Kaappi jota ei näytetty sinulle.',
   },
 
@@ -284,7 +282,6 @@ const STR = {
     'streak': '{x}日連続',
     'tickets': 'チケット {x} 枚',
     'tickets.buy': 'チケットでは何も買えません。',
-    'attract.hint': '何かキーを',
     'secret.found': '見せていなかったキャビネット。',
   },
 };

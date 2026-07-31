@@ -1035,15 +1035,6 @@ room.powerOn();
 room.sound.start();                    // a no-op unless it was left switched on
 room.flicker();
 
-// The idle reel. It has to stand down when the page is not actually being
-// looked at, or a tab left open in the background spends the afternoon
-// redrawing covers nobody is watching.
-const reel = room.attract({
-  games: onFloor().filter(g => g.live !== false),
-  draw: drawMarquee,
-});
-addEventListener('visibilitychange', () => { if (document.hidden) reel.stop(); });
-
 // The code. What it reveals is a cabinet that was in the catalogue the whole
 // time — re-rendering is the entire unlock, because `active()` reads `unlocked`
 // rather than having been handed a list.
@@ -1075,7 +1066,7 @@ window.__hub = {
     lang: getLang, setLang: useLang, langs: LANGS, render,
     layout: readLayout, setLayout: useLayout, layouts: LAYOUTS,
     notes: openNotes, notesLink,
-    reel, room, unlock: () => { unlocked = true; render(); },
+    room, unlock: () => { unlocked = true; render(); },
     goTo, openFromHash, played: readPlayed, markPlayed,
     filter: (q, tags) => { query = q ?? ''; picked = new Set(tags ?? []); applyFilter(); },
     seen: readSeen, markSeen: () => {
