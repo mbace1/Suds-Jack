@@ -7,6 +7,27 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v221 — 2026-08-01
+**Each mode drafts its own roster** *(field call: "different enemies for each mode")*
+- **CLOSE COMBAT now draws from its own table** (`TUNING.waves.poolMelee`).
+  The gun ecology's stationary artillery — BAMBU and PYRA, speed 0, which
+  muzzled were literally poles of free score (their 1.4× melee speed boost
+  multiplies zero) — and the pure gun species BOTFLY and DRAPER sit out.
+  The melee-native threats arrive earlier instead: CLOAKER's ambush at wave 5
+  (was 9), SIREN's surge at 7, MAGNA's pull at 9
+- **ORIGINAL mode is untouched** — `pool` is the gun ecology, byte-for-byte:
+  re-captured schedules for classic/smash/test/rich modes are identical to
+  v220 across 3 seeds × 30 waves; only melee differs, and it never fields a
+  forbidden type while ORIGINAL still fields all four
+- Same data discipline as v217: order is draw order, append don't reorder
+- The CLOSE COMBAT hint text finally tells the truth (en/ja/fi): *"Its own
+  roster, nobody fires — every body hurts, and corpses strike back in kind:
+  aimed bursts, fans, rings"* (it still said "REVENGE rings" from v187)
+- `smoke.sh` + `cabinets.sh` green
+- Cache-bust `?v=174` → `?v=175`; HUD label → v221
+
+---
+
 ## v220 — 2026-07-31
 **REVENGE SPEAKS THE SPECIES' LANGUAGE — and the sludge trail pours**
 - Field feedback, two calls: revenge bullets *"can't really be used as is but

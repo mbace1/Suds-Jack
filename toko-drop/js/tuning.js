@@ -159,6 +159,23 @@ export const TUNING = {
       DRAPER:      [7, 5],   // wall-weaver — looms marching bullet curtains
       SHEPHERD:    [4, 4],   // herds the flock — its mechanic is its identity
     },
+    // v221 (field call: "different enemies for each mode"): CLOSE COMBAT
+    // draws its OWN table. The gun ecology's stationary artillery (BAMBU,
+    // PYRA — speed 0, so muzzled they are literally poles of free score) and
+    // the pure gun species (BOTFLY, DRAPER) sit out; the melee-native threats
+    // arrive earlier instead — CLOAKER's ambush at 5, SIREN's surge at 7,
+    // MAGNA's pull at 9. ORIGINAL mode keeps `pool` unchanged.
+    // Same rule as `pool`: ORDER IS DRAW ORDER — append, don't reorder.
+    poolMelee: {
+      GLOBBO:      [1, 1], YELA_CUBE: [1, 1], SPITTOR: [1, 2], FANNER: [1, 2],
+      ORANGE_CUBE: [2, 2], WEEVA:     [2, 3],
+      SLUDGE_CUBE: [3, 2], SPLITTA:   [3, 3],
+      REDD_CUBE:   [4, 3], SHEPHERD:  [4, 4],
+      PURP_CUBE:   [5, 3], CLOAKER:   [5, 4],
+      TORO:        [6, 5], BULWARK:   [6, 4],
+      SIREN:       [7, 5], WARDEN:    [7, 5],
+      MAGNA:       [9, 5],
+    },
     // ranged types: placed deliberately (capped, spread) instead of flooded
     shooters: ['SPITTOR', 'FANNER', 'WEEVA', 'ORANGE_CUBE', 'PURP_CUBE',
                'BAMBU', 'PYRA', 'BOTFLY', 'CLOAKER', 'DRAPER'],
