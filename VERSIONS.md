@@ -7,191 +7,54 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
-## v219 — 2026-07-31
-**Testing lives where you play — bigger tester, lab reachable from game and hub**
-- Field feedback, two beats: *"shouldn't the testing be in the options enemy
-  editor?"* and *"it should be accessible through the game and hub… you can
-  make the viewport bigger"*
-- **The pause-menu tester viewport fills the tab** (was capped at 520px):
-  `aspect-ratio` pins the box, and the render loop sizes the framebuffer to
-  the panel, self-healing across tab switches, rotation and resizes — big
-  enough to actually judge the v218 gel on-device
-- **FULL LAB ↗** button in the ENEMIES tab — the full-screen lab is one tap
-  from the tuner (it navigates away from the game and says so)
-- **The lab joins the arcade**: `enemy-lab.html` now loads the hub shell
-  (home button back to the arcade), and the hub's SKETCHES shelf lists
-  **Toko Enemy Lab** (en/fi/ja) next to the goo sketches it grew out of —
-  hub → lab → home is a complete loop
-- Hub cache chain bumped per its own discipline: `games.js?v=12→13` (in
-  `hub.js`), `hub.js?v=25→26` (in the root page). `shell.js` deliberately
-  keeps its `games.js?v=12` import — it reads only `GAMES`, which is
-  unchanged, and bumping it would cascade a token rewrite into sixteen
-  game pages for nothing
-- Cache-bust `?v=172` → `?v=173`; HUD label → v219
-
----
-
-## v218 — 2026-07-31
-**Goo/gel TSL pass — past parity** *(roadmap-v2 Phase 3, art priority 1)*
-- The v194 TSL port matched the WebGL gel exactly; this is the first pass that
-  goes **past** it — the reason the stack moved. Everything below lives behind
-  `IS_GPU` in `applyGooNodes`/`makeSatinMat`; **the classic build is untouched**
-- **Dome refraction**: `thicknessNode` varies transmission thickness with
-  height — thick at the belly, thin at the crown — so the gel bends light like
-  a dome instead of a uniform shell. Driven by a new `uThick` uniform so the
-  pause-menu THICKNESS slider stays live (`applySatinValues` writes it)
-- **Wobble dynamics**: a second, finer lump octave keeps the surface simmering
-  at rest and **seethes** while a hit ripple is live (`uHit` scales its
-  amplitude ~4×) — the gel remembers being struck
-- **Pop burst**: the death thrash (`uTear`) now also **inflates** the body
-  about its floor contact and lights it from within — interior surge + fresnel
-  rim flare — so the pop reads as pressure that had to go somewhere
-- Zero-conditional graphs throughout (the v195 lesson): no `select`, no new
-  divisions, `clamp` before every `pow`
-- Verified headless 16/16 on **both** builds via the lab: the flag build
-  carries `positionNode`+`emissiveNode`+`thicknessNode`, classic carries none;
-  hit/kill through the real damage path with zero page errors; the real game
-  boots clean on both builds. Frozen-state stills (rest / `uHit=1` /
-  `uTear=1`) captured for review. `smoke.sh` + `cabinets.sh` green
-- Cache-bust `?v=171` → `?v=172`; HUD label → v218
-
----
-
-## v217 — 2026-07-31
-**Wave director v1 — the spawn tables are data** *(roadmap-v2 Phase 2)*
-- Everything tabular about the classic-mode spawn director moves out of
-  `main.js` into a **`TUNING.waves`** block in `tuning.js`: **composition**
-  (the 21-entry type pool with unlock depths and budget costs, the shooter
-  set, elite affixes, variant draw tables), **cadence** (boss/spike/swarm
-  rhythm, in-wave spawn drip, SMASH pulse), and **escalation** (speed/fire-rate
-  curves, budget curve with kind/mode multipliers, body caps, shooter plan)
-- `getEnemySchedule`/`getWaveScale`/`waveKind` keep the assembly **algorithm**
-  and read every number from the table — same shape as v210's
-  `TUNING.movement`: the pause menu can eventually edit waves live
-- **Pool order is draw order** (the seeded index math) — documented in the
-  table; new types append at the end. Boss choreography (OMEGA/PRISM
-  alternation, WARDEN escorts) stays scripted in `main.js`: it's a set piece,
-  not a table
-- **Zero behavior change, proven**: a capture harness ran the director across
-  3 seeds × 5 modes (classic/melee/smash/test/rich) × 30 waves before and
-  after — 233 KB of schedules, byte-for-byte identical. `smoke.sh` +
-  `cabinets.sh` green
-- Cache-bust `?v=170` → `?v=171`; HUD label → v217
-
----
-
-## v216 — 2026-07-31
-**The enemy lab stops being a fork** *(roadmap-v2 Phase 1)*
-- The declared visual source of truth imported **no game code**: its own copy of the goo shader via `onBeforeCompile`, CDN three@0.160 (against the no-CDN rule), and 15 hand-mirrored enemy defs against a 40-type roster. Under "never painted twice", art tuned there was tuned against an implementation the game doesn't run
-- `enemy-lab.html` now renders the game's **own `Enemy`** through `js/specimen.js` (the v212 portrait core, extended with lab-only options: `roam`, `onFrame` FX drain, `resize`, `hit`/`kill` through the real damage path). The forked shader, SDF geometry builder, movement sims and DEFS table — ~700 lines — are deleted
-- **Vendored three, flag-aware**: the same boot-script importmap as `index.html`; a ⚡ chip flips the `WEBGPU` flag and reloads, so both builds are one tap apart in the lab itself
-- **All 40 types**, chips built from `EnemyType` at runtime; the info line reads hp/speed/radius/fire from `CFG` live — hand-kept descriptions are how the old lab drifted, so nothing here is hand-kept
-- Tuning sliders and presets write the **real `TUNING.material`** through the same `applyMaterialPreset`/`applySatinValues` calls as the pause menu
-- The old lab's touch-orbit camera (drag / pinch / wheel) is kept — mobile is first-class
-- Verified headless (11/11): on **both** builds all 40 types spawn a live specimen with zero page errors, HIT decrements hp through the real path, KILL runs the real death and the lab respawns the subject; the flag genuinely switches builds (`WEBGL` ↔ `WEBGPU` screenshots show the same body, same material). `smoke.sh` + `cabinets.sh` green
-- `enemy-lab.html` joins `bump-version.sh`'s file loop (it carries `?v=` tokens now)
-- Phase-1 remainder: `WEBGPU_MIGRATION_NOTES.md`, next
-- Cache-bust `?v=169` → `?v=170`; HUD label → v216
-
----
-
-## v215 — 2026-07-27
-**THE FRUIT LADDER — pickups you can read across the floor**
-- Field feedback: *"we need better pickup indicators… cherries and a banana bunch"*, then *"look at classic arcade games for references"*. The second note changed the design: in the reference cabinets the bonus item isn't decoration, it's a **LADDER** — the item changes as you go deeper and each rung has a learnable value, so the fruit tells you how far in you are AND what it's worth before you read a number
-- Valuables were two anonymous boxes (`CASH_GEO`, `PRIZE_GEO`). They are now **six fruits, cheapest to dearest**: cherry pair → strawberry → orange → apple → pear → banana bunch, each a hand-merged silhouette in the same style as the existing key/potion/food pickups
-- **The rung carries the value**: ×1.0 / ×1.4 / ×1.9 / ×2.5 / ×3.2 / ×4.0. A 500-point drop pays 500 as a cherry and 2000 as a bananas
-- **The rung follows depth** — one step every two waves, then it holds at banana rather than wrapping, so a deep run keeps the dearest item. The rare big prize always takes the top rung, so a jackpot always reads as one
-- **The badge is gone from fruit.** Every pickup used to float a glyph; at play distance the `$` was *larger than the pickup it labelled* and competed with the silhouette. The shape is the indicator now, and fruit stays solid rather than pulsing toward invisible
-- **Two visual iterations, both from looking rather than reasoning**: the first pass rendered fruit smaller than its own badge, and the first banana read as a wishbone — the fingers are two segments angled against each other now, which is what sells the curve
-- Replacing the two shared geometries upgraded **every** valuables site at once; a `wearFruit()` helper keeps shape, colour, scale and value multiplier from ever drifting apart
-- Verified: all six rungs render distinctly in one frame; the ladder reports `cherry 500 → banana 2000` and steps cherry/strawberry/orange/apple/pear/banana across waves 1–11, holding at banana by wave 20. `smoke.sh` and `cabinets.sh` green on all six
-- Cache-bust `?v=168` → `?v=169`; HUD label → v215
-
----
-
-## v214 — 2026-07-27
-**TOKOTRON steps closer to the reference — rescue curve, the extra man, no pickups**
-- Middle-ground pass (user direction: *"we have lives and one kill is easy but not necessary now… take steps closer"*). One-hit-kill is deliberately NOT adopted; these are the reference rules that are cheap with what the cabinet already has
-- **The rescue curve is the reference's**: 1000 / 2000 / 3000 / 4000 / 5000, then **flat at 5000**, resetting each room. It was uncapped, so an eight-human wave paid 8000 for the last one and the chain stopped being a decision — now the fifth save is the ceiling and the pressure is on saving *many*, not on saving one more
-- **THE EXTRA MAN.** Every 25,000 points tops a life dot back up (or raises the cap if you're full), announced with `EXTRA MAN!` — the reference's extra-man rule, using the HP dots that already read as lives. Fires once per mark, and the mark climbs
-- **The cabinet is guaranteed pickup-free.** Nothing spawns pods there today, but the wave build now clears `powerups` outright so a future shared drop can't quietly leak one into the vector room
-- **A rescue tally per room**: leaving a room reports `n SAVED` (or `NONE SAVED`), so the family is scored out loud instead of silently
-- **Already faithful, confirmed while auditing rather than rebuilt**: electrodes fry grunts that blunder into them, Hulks are unkillable and shove when shot, MINDERs convert humans instead of killing them, ORBs brood, and the whole wave materialises around a recentred player
-- Verified headless (8/8): the payout series measured at the rescue site reads **1000, 2000, 3000, 4000, 5000, 5000, 5000, 5000** across a planted family of eight; crossing the score mark awards a man exactly once and pushes the mark up 25,000; a deliberately planted pickup is gone when the next room builds; the tally resets per room. `smoke.sh` and `cabinets.sh` green on all six
-- **Test-method note**: the first attempt measured payouts as a score delta, which also caught kills landing in the same window and produced impossible values (7000, 10000). Measuring the payout at its own site was the fix — the code was right, the ruler wasn't
-- **Gate fix (found rebasing onto a concurrent push)**: the arcade shell added `../hub/shell.js` to every game's index. The live site serves from the repo root so that resolves fine, but `cabinets.sh` copies only `toko-drop/` into its work dir — so all six cabinets 404'd and the gate reported six breaks that did not exist. It now mirrors sibling `hub/` into the served root
-- Cache-bust `?v=167` → `?v=168`; HUD label → v214
-
----
-
-## v213 — 2026-07-27
-**TOKOTRON: the floor stops filling with slime — and you can see yourself again**
-- Field report: *"tokotron gets stuck after wave 2… the protagonist graphics cut out."* Diagnosed by screenshotting the cabinet across four waves rather than reading code. The wave logic was innocent — a probe clears waves 1→7 cleanly. **The floor was the problem**
-- **Root cause**: goo puddles have a 20 s life and are only cleared by `clearFX()` at run start — never between waves. TOKOTRON kills 17–25 bodies per wave on instant full-wave spawns, and v200's juice adds satellite splats per kill, so within two waves the 192-instance pool was saturated with overlapping transparent quads. The wave-3 screenshot is a red carpet with the game hidden underneath. Overdraw collapses the framerate, `PERF MODE AUTO-ON` fires, and perf mode strips the player's transmissive gel material — leaving only a thin additive rim. That is the "graphics cut out", and at that framerate the cabinet feels stuck
-- **TOKOTRON bodies no longer bleed.** Its roster is machines: they shatter into shards, never slime. Puddles and satellite splats are skipped in this cabinet — right for the reference, and it removes the overdraw at source
-- **Each wave is a fresh room**: splats and trails clear at wave build, so nothing accumulates across a run
-- **The player has a solid core.** A `MeshBasicMaterial` disc sits under the gel, so the protagonist reads whatever the renderer is allowed to do — perf mode can no longer erase them
-- **A thin vector grid** (field request): built by hand rather than `GridHelper`, because the arena is a rectangle and a square helper either spills past the bounds or stretches its cells. ~1.8u spacing, 30% opacity, bounded exactly to the arena. This revises the v151 art note "dark background, no grid"
-- Verified: four-wave screenshot sweep shows the red carpet gone, the grid matching the arena footprint, and the player as a clearly visible disc. `smoke.sh` and `cabinets.sh` green on all six
-- **Not claimed**: this container renders under swiftshader at ~14 FPS regardless, so the framerate recovery is inferred from removing the overdraw, not measured on real hardware
-- Cache-bust `?v=166` → `?v=167`; HUD label → v213
-
----
-
-## v212 — 2026-07-26
-**The death screen asks about what just killed you — and shows it**
-- The feedback form asked every player the same two questions forever, so every submission came back the same shape. The death screen now opens with a **question chosen from the run you just had**, with the body that ended it **rendered live** beside it
-- **A seven-entry question deck**, matched most-specific-first: melee killer ("could you read what it was about to do?"), shooter ("did you see the shot coming?"), lobber ("was there enough warning on the ground?"), hazard ("the arena killed you, not an enemy"), death-in-a-crowd ("could you still tell a FLIT apart?"), movement ("did it behave like its own creature?"), and a general fallback
-- **It rotates.** The last four asked ids are remembered, so a second death to the same body asks something new — the same TORO gets *"could you read it?"* once and *"how did it MOVE?"* next time. Different entry, different question, different visual
-- **`js/specimen.js` is a new reusable module**: a passive "one enemy, up close" portrait any screen can mount. Deliberately separate from the pause-menu enemy tester, which is wired to menu state, HIT/KILL buttons and live CFG editing. It follows the main renderer's kind, so it works under the WEBGPU flag too
-- **Only from wave 2** — a wave-1 death hasn't seen enough of the game to have an opinion worth asking for. Hazard deaths show no portrait, because there's no creature to show
-- The answer, the question's id, and what actually landed the killing blow all ride along in the feedback payload, so answers are attributable rather than free-floating text
-- Groundwork for the hub feedback button: the deck and the portrait are the reusable half
-- New file carries `?v=` tokens from day one and is registered in **both** `bump-version.sh`'s file loop and `sw.js`'s precache list (the v118/v119 lesson)
-- **Bug caught by the test**: the panel guarded the portrait with `CFG[showType]`, but `CFG` was never imported into `main.js` — every death after wave 1 would have thrown. Now imported
-- Verified headless (12/12): the fatal blow is recorded; the question names the killer and a live portrait mounts; the portrait is disposed when the screen closes (its rAF loop with it); a repeat death asks a different question; a hazard death asks the hazard question with no portrait; a wave-1 death is not quizzed. `smoke.sh` and `cabinets.sh` green on all six
-- Localized en/ja/fi
-- Cache-bust `?v=165` → `?v=166`; HUD label → v212
-
----
-
-## v211 — 2026-07-25
-**FLUID is retired — behaviour belongs to the species, not to a mode**
-- User direction: *"fluid is problematic and should not exist. each enemy can have options for behavior to test what works, but there should never be a toggle like the one we had with fluid mode, since that breaks the game."* A global switch that rewrites how all 40 species move is the wrong shape, and that includes the v210 `MOVEMENT PROFILES` toggle — same mistake, one release younger. Both are gone
-- **`FLUID MODE` and `MOVEMENT PROFILES` deleted from OPTIONS**, along with `fluidMode`/`fluidRun`/`mvProfiles` and every branch they gated. Movement traits (dodge / flock / current / weave) are simply how each species moves, always
-- **The global split-on-death is deleted.** Splitting was *already* species identity — SPLITTA, REDD_CUBE and PURP_CUBE spawn their own children from `enemy.js`, each with its own telegraph — so the mode-wide version was a duplicate bolted over a mechanic that already existed properly, and it turned every large corpse into a minnow factory regardless of what died
-- **THE SHEPHERD is just a roster entry** now, not a mode's mascot; the mode's `×0.85` wave-budget compensation goes with the mode; the swarm cards are always in the pool; the `+fluid` leaderboard tag is gone
-- **Experimenting moved to where it belongs**: the pause-menu enemy tester gains a `HOW THIS ENEMY MOVES` section — four sliders on the selected species, watched up close, one at a time. Profiles are per-type copies, so tuning a TORO never drags the CHARGER that shares its role
-- **One judgment call worth naming**: the wave CURRENT (STREAM/RING/PINCER) is *arena* choreography rather than species identity, so it stays with classic waves and sits out the cabinets, which script their own pacing. The per-species traits do apply inside cabinets — a FLIT is a FLIT in the basement too
-- `scripts/cabinets.sh` updated: the FLUID-leak probe is retired, and native splitters spawning children inside a cabinet is no longer flagged (that's identity, not a leak)
-- Verified headless (15/15): `fluidMode`, `fluidRun` and `mvProfiles` are all undefined; a FLIT still dodges (impulse 10.8) with no mode enabling it and a TORO still never does; tuning TORO's dodge to 1.0 makes it dodge in the real game (12) **without** changing CHARGER; killing an ordinary big body spawns no minnows while REDD_CUBE still spawns 4 children and PURP_CUBE 5. `smoke.sh` and `cabinets.sh` green on all six
-- Cache-bust `?v=164` → `?v=165`; HUD label → v211
-
----
-
-## v210 — 2026-07-25
-**MOVEMENT PROFILES — 40 species again, instead of one school**
-- Field feedback: *"the movement of enemies is now unnatural, they should have unique patterns but not all just dodge [shots]."* Correct, and the cause was structural: FLUID (the default since v198) bolted the **same four forces onto every non-boss body** — dodge, flock, wave current, shepherd pull — so a charging TORO, a stationary TURRET, a lobbing BAMBU and a FLIT all moved like the same fish and each type's own behaviour got averaged away
-- Every enemy type now declares **how much of the shared movement it takes**, in `js/tuning.js` where enemy feel belongs. Ten roles across all 40 types:
-- **SCHOOL** (FLIT, GRUNT, GHOST, SPLITTA, minis) — the fish: full flock, full current, they dodge
-- **DARTER** (HOPPER, PROG) — quick bodies that genuinely read your gun
-- **DRIFTER** (GLOBBO, THUG, most cubes) — ordinary bodies, light schooling
-- **HUNTER** (CLOAKER, PYRA) — solo stalkers: they **weave**, and never school
-- **HOLDER** (SPITTOR, FANNER, WEEVA, BAMBU, BOTFLY, SPITTLE, TROOPER, DRAPER) — ranged, holds its ground: **no dodge, no schooling**
-- **COMMIT** (TORO, CHARGER, WRAITH) — a charger is committed to its line; sidestepping mid-charge was the most unnatural thing in the build
-- **MASS** (BRUTE, BULWARK, SLUDGE_CUBE, bosses) — heavies plough through
-- **FIXED** (TURRET) — moved by nothing. It was previously being drifted around by schooling and by the wave current, which is simply a bug
-- **SUPPORT** / **HERDER** — bodies with a job; the SHEPHERD never joins the school it herds
-- **WEAVE is new**: a per-body serpentine approach with its own phase, so solo hunters have a path with personality without borrowing the school's motion
-- **Fish now school only with fish.** The boids loop walks a per-frame list of actual flockers, so a turret is never pulled toward a crowd — and heavies/holders skip the O(n²) neighbour walk entirely, which is a free perf win
-- **The original movement is one click away** (user direction): `MOVEMENT PROFILES` in OPTIONS, default ON. Off restores the exact v196–v209 behaviour where every body took the full share of every force — kept as a real toggle, not a dead code path, so the two can be compared back-to-back in the field. Localized en/ja/fi
-- Verified headless (18/18): the role table resolves for all 40 types with no unknown roles; a FLIT sidesteps (impulse 10.8) while TORO, TURRET and SPITTOR never sidestep at all (exactly 0); a school of FLITs tightens up while a bank of TURRETs holds formation; a STREAM current moves a TURRET zero units; and the toggle round-trips — profiles OFF makes a TORO dodge again (12), back ON returns it to 0. `smoke.sh` and `cabinets.sh` green on all six
-- Archived v200–v209 into the Archive section (decade rule)
-- Cache-bust `?v=163` → `?v=164`; HUD label → v210
-
----
+## v220 — 2026-07-31
+**REVENGE SPEAKS THE SPECIES' LANGUAGE — and the sludge trail pours**
+- Field feedback, two calls: revenge bullets *"can't really be used as is but
+  need quite different attacks and strategy… original colors in the one and
+  slightly different colors and features for the other"*, and *"the sludge
+  trails on Yella cube are nicer than the sharp edges of the sludge cube
+  trails"*
+- **Revenge is its own attack class now.** The uniform CLOSE COMBAT corpse
+  ring is gone: gunner corpses (SPITTOR, ORANGE CUBE, BOTFLY, CLOAKER,
+  TROOPER) spit a slow 3-shot **AIMED** burst at your position, arc species
+  (FANNER, PURP CUBE, PYRA, BAMBU, WEEVA, DRAPER, SPITTLE) throw a slow
+  5-shot **FAN** (~115°), everyone else — and every boss — blooms the classic
+  grazeable **RING**. All of it at 0.6× bullet speed: the graze game, not a wall
+- **Revenge never wears living colors**: warm bullet colors shift to dark
+  blood-orange/red, yellows to poison green, cool colors to deep venom — so
+  living fire and corpse fire read apart at a glance. The VOLATILE elite ring
+  joins the same palette (was flat orange)
+- Dialects, counts, spreads, speed and the palette rules are **data in
+  `TUNING.revenge`** (the wave-director pattern); `revengeColor()` derives
+  each species' revenge tint from its own `bulletColor`, cached
+- The verification suite caught a real tuning error before ship: the first
+  fan spread (0.95 rad/shot) spanned 217° — a broken ring, not a fan — now 0.5
+- **The sludge trail is poured, not drawn**: the quad-strip ribbon (sharp
+  edges, the field call) is replaced by overlapping squashed **gel blobs** —
+  the YELA droplet language — one per trail point, overlapping at 0.35u
+  spacing, drying down as each point's 3s poison window expires. Same hazard
+  footprint, same lethal pulse, same fade on death
+- `scripts/enemy-loop.mjs` gains `sludge` and `revenge` scenarios (+ a
+  `meleeRun` reset guard) so both changes are answerable with moving pictures
+- Verified headless 16/16: dialect counts/spreads (unwrapped), palette
+  shifts (YELA→green-dominant, SPITTOR→dark red), 0.6× speed against a
+  full-speed reference, volatile recolor, and zero revenge outside CLOSE
+  COMBAT. `smoke.sh` + `cabinets.sh` green
+- Cache-bust `?v=173` → `?v=174`; HUD label → v220
 
 ## Archive
+
+**v210–v219 summary (2026-07-25 – 2026-07-31)**
+- v210: MOVEMENT PROFILES — each species declares its share of the swarm forces
+- v211: FLUID retired — behaviour is species identity; per-enemy movement sliders in the tuner (standing rule: no global behaviour toggle)
+- v212: Contextual death-screen feedback — a rotating question beside a live specimen of what killed you
+- v213: TOKOTRON unstuck — splat-pool saturation diagnosed by screenshot; minimalist grid floor; solid player core
+- v214: TOKOTRON reference rules — rescue curve 1000→5000 capped, EXTRA MAN at 25k, pickup-free vector room
+- v215: THE FRUIT LADDER — six fruits, one per depth rung, each carrying its value; badges retired
+- v216: The enemy lab stops being a fork — rebuilt on js/specimen.js, vendored three, both builds (roadmap-v2 Phase 1)
+- v217: Wave director v1 — composition/cadence/escalation move into TUNING.waves as data, equivalence proven byte-for-byte
+- v218: Goo/gel TSL pass past parity — depth-varying thickness, hit-seethe octave, uTear pop burst (flag build only)
+- v219: Testing lives where you play — tester viewport fills the tab; the lab reachable from game and hub
 
 **v200–v209 summary (2026-07-24 – 2026-07-25)**
 - v200: THE JUICE PASS — every death detonates (option A, for everyone)

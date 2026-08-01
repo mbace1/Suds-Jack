@@ -202,6 +202,39 @@ export const TUNING = {
     },
   },
 
+  // v220 REVENGE LANGUAGE (field feedback: "revenge bullets… can't really be
+  // used as is but need quite different attacks and strategy… original colors
+  // in the one and slightly different colors and features for the other").
+  //
+  // A corpse's retaliation is its own attack class, never a copy of the living
+  // one. Living fire wears the species' bulletColor; revenge wears the SHIFTED
+  // palette below — warm colors go dark blood-orange/red, yellows go poison
+  // green, cool colors go deep venom — and it comes slow and grazeable.
+  revenge: {
+    speedMult: 0.6,          // revenge is slow — the graze game, not a wall
+    // Dialect per species: revenge ECHOES the species' living attack family
+    // but demands different play — AIMED spits a slow burst at your position
+    // (move off the line), FAN throws a slow arc (sidestep wide), RING blooms
+    // the classic circle (stay off the corpse). Unlisted types RING. Bosses
+    // always RING (a boss corpse is an arena event, not a duel).
+    byType: {
+      SPITTOR: 'AIMED', ORANGE_CUBE: 'AIMED', BOTFLY: 'AIMED', CLOAKER: 'AIMED', TROOPER: 'AIMED',
+      FANNER: 'FAN', PURP_CUBE: 'FAN', PYRA: 'FAN', BAMBU: 'FAN', WEEVA: 'FAN', DRAPER: 'FAN', SPITTLE: 'FAN',
+    },
+    fallback: 'RING',
+    aimed: { count: 3, spread: 0.14 },
+    fan:   { count: 5, spread: 0.5 },   // 5 shots × 0.5 rad ≈ a 115° arc — a FAN, not a broken ring
+    ring:  { small: 4, big: 7, boss: 14, bigRadius: 0.75 },
+    // Palette shift rules (revengeColor() in main.js applies them to the
+    // species' living bulletColor, falling back to its body color):
+    palette: {
+      yellowLo: 0.10, yellowHi: 0.22,          // hue band that reads "yellow"
+      poisonHue: 0.285, poisonSatMin: 0.75, poisonL: 0.42,   // → poison green
+      warmHiCut: 0.92,                          // magenta-reds count as warm
+      satMul: 1.2, darkL: 0.55, coolL: 0.5, lFloor: 0.30,    // dark blood / deep venom
+    },
+  },
+
   fx: {
     hitDroplets: 8, killDroplets: 22, killChunks: 5,
     splatLife: 20,
