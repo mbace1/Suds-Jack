@@ -1,15 +1,15 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=174';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=174';
-import { Player, PLAYER_RADIUS } from './player.js?v=174';
+import { InputManager } from './input.js?v=175';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=175';
+import { Player, PLAYER_RADIUS } from './player.js?v=175';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=174';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=174';
-import { audio } from './audio.js?v=174';
-import { initDesigner } from './designer.js?v=174';
-import { createSpecimen } from './specimen.js?v=174';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=174';
-import { TUNING } from './tuning.js?v=174';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=175';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=175';
+import { audio } from './audio.js?v=175';
+import { initDesigner } from './designer.js?v=175';
+import { createSpecimen } from './specimen.js?v=175';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=175';
+import { TUNING } from './tuning.js?v=175';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -87,7 +87,10 @@ function getEnemySchedule(wave) {
   // here, so the seeded index math is untouched.
   const W = TUNING.waves;
   const AFFIXES = W.affixes;
-  const POOL = Object.entries(W.pool).map(([name, [min, cost]]) => [EnemyType[name], min, cost]);
+  // v221: each mode draws its own table — CLOSE COMBAT gets the melee-native
+  // roster (poolMelee), ORIGINAL keeps the gun ecology (pool).
+  const poolSrc = meleeRun && W.poolMelee ? W.poolMelee : W.pool;
+  const POOL = Object.entries(poolSrc).map(([name, [min, cost]]) => [EnemyType[name], min, cost]);
   // TEST MODE (v142): every enemy type is unlocked from wave 1 so new
   // designs can be met within seconds of pressing start.
   const available = POOL.filter(([, min]) => testMode || wave >= min);
@@ -4433,7 +4436,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v220' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v221' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -9139,6 +9142,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=174').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=175').catch(() => {});
   });
 }
