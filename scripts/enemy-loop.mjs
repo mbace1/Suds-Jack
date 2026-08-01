@@ -78,6 +78,18 @@ const SCENARIOS = {
     tick:  'window._LOOP.shoot()',
     every: 3,
   },
+  sludge: {
+    title: 'SLUDGE — poured gel trail, dries as the venom fades (v220)',
+    type: 'SLUDGE_CUBE',
+    setup: 'window._LOOP.solo("SLUDGE_CUBE", 8)',
+  },
+  revenge: {
+    title: 'REVENGE — a dead gunner spits back: slow, dark, aimed (v220)',
+    type: 'SPITTOR',
+    setup: 'window._LOOP.revenge("SPITTOR", 5)',
+    tick:  'window._LOOP.shoot()',
+    every: 4,
+  },
 };
 
 // ── the in-page harness ───────────────────────────────────────────────────────
@@ -90,6 +102,7 @@ window._LOOP = {
   reset() {
     for (const e of enemies) { e.alive = false; e._dying = false; }
     enemies = []; pendingSpawns = []; bullets.clear();
+    meleeRun = false;   // v220: the revenge scenario flips it on; never leak
     player.mesh.position.set(0, PLAYER_RADIUS, HALF_Z - 3);
     player.grantInvincibility(99999);
     waveIntroT = 0; milestoneT = 0;
@@ -109,6 +122,20 @@ window._LOOP = {
         Math.cos(a) * dist, HALF_Z - 3 - dist + Math.sin(a) * dist * 0.5, 1, 1);
       e.hp = 99999; enemies.push(e);
     }
+    return null;
+  },
+  revenge(type, dist) {
+    // v220: CLOSE COMBAT corpse retaliation — a mortal body under real fire;
+    // the kill runs the REAL onKill, so the burst is the shipped dialect.
+    this.solo(type, dist);
+    meleeRun = true;
+    enemies[0].hp = 2;
+    // The other scenarios never kill; this one does — an unkillable TURRET
+    // parked in the far corner keeps the wave from ending after the kill,
+    // or the next wave pours into the shot.
+    const s = new Enemy(scene, EnemyType.TURRET, -HALF_X + 1.2, -HALF_Z + 1.2, 1, 1);
+    s.hp = 99999;
+    enemies.push(s);
     return null;
   },
   shoot() {

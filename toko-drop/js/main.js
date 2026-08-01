@@ -1,15 +1,15 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=173';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=173';
-import { Player, PLAYER_RADIUS } from './player.js?v=173';
+import { InputManager } from './input.js?v=174';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=174';
+import { Player, PLAYER_RADIUS } from './player.js?v=174';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=173';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=173';
-import { audio } from './audio.js?v=173';
-import { initDesigner } from './designer.js?v=173';
-import { createSpecimen } from './specimen.js?v=173';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=173';
-import { TUNING } from './tuning.js?v=173';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=174';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=174';
+import { audio } from './audio.js?v=174';
+import { initDesigner } from './designer.js?v=174';
+import { createSpecimen } from './specimen.js?v=174';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=174';
+import { TUNING } from './tuning.js?v=174';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -863,28 +863,32 @@ class PoisonZone {
   remove(sc) {}
 }
 
+// v220: shared low-poly dome for sludge trail blobs (scaled per blob; never
+// disposed per-ribbon).
+const SLUDGE_BLOB_GEO = new THREE.SphereGeometry(1, 10, 7);
 class SludgeRibbon {
+  // v220 (field feedback: "the sludge trails on Yella cube are nicer than the
+  // sharp edges of the sludge cube trails"): the quad-strip ribbon is gone.
+  // The trail is now overlapping squashed GEL BLOBS — the same poured-droplet
+  // language as the YELA slime trail — one per trail point, aged on the
+  // poison window so the venom visibly dries out as its hazard expires.
   constructor(sc, enemy) {
     this._enemy     = enemy;
     this._fading    = false;
     this._fadeLife  = 2.0;
-    const maxPts    = 12;
-    this._geo       = new THREE.BufferGeometry();
-    this._posArr    = new Float32Array(maxPts * 2 * 3);
-    this._geo.setAttribute('position', new THREE.BufferAttribute(this._posArr, 3));
-    const idx = [];
-    for (let i = 0; i < maxPts - 1; i++) {
-      const a = i*2, b = i*2+1, c = (i+1)*2, d = (i+1)*2+1;
-      idx.push(a, b, c,  b, d, c);
-    }
-    this._geo.setIndex(idx);
+    this._t         = 0;
     this.mat = new THREE.MeshBasicMaterial({
-      color: 0x88cc00, transparent: true, opacity: 0.4,
-      depthWrite: false, side: THREE.DoubleSide,
+      color: 0x88cc00, transparent: true, opacity: 0.4, depthWrite: false,
     });
-    this.mesh = new THREE.Mesh(this._geo, this.mat);
-    this.mesh.position.y = 0.015;
-    this._t = 0;
+    this.mesh = new THREE.Group();
+    this._blobs = [];
+    for (let i = 0; i < 12; i++) {
+      const m = new THREE.Mesh(SLUDGE_BLOB_GEO, this.mat);
+      m.visible = false;
+      this.mesh.add(m);
+      this._blobs.push(m);
+    }
+    this.mesh.position.y = 0.02;
     sc.add(this.mesh);
   }
   update(dt) {
@@ -895,54 +899,41 @@ class SludgeRibbon {
       this.mat.opacity = 0.4 * Math.max(0, this._fadeLife / 2.0);
       if (this._fadeLife <= 0) return false;
     } else {
-      // The ribbon IS the hazard visual now (v100): saturated pulse while the
-      // trail is being laid (its zones are lethal), fade handled above.
+      // The trail IS the hazard visual (v100): saturated pulse while its
+      // zones are lethal, fade handled above.
       this.mat.opacity = 0.35 + 0.2 * Math.abs(Math.sin(this._t * 5));
     }
     const pts = this._enemy._trailPositions;
     // Expire points older than the poison zones' lethal window (v105) so a
-    // resting SLUDGE's old ribbon doesn't outlive its actual hazard.
+    // resting SLUDGE's old trail doesn't outlive its actual hazard.
     if (pts && pts.length && this._enemy.alive) {
       const now = this._enemy._wobbleT;
       while (pts.length && now - (pts[0].t ?? now) > 3.0) pts.shift();
     }
     const n = pts ? pts.length : 0;
-    if (n >= 2) {
-      // Width matches the poison hitbox (zones spawn at enemy.radius * 1.8).
-      const hw = this._enemy.radius * 1.5;
-      let lpx = 0, lpz = hw; // fallback perpendicular for degenerate segments
-      for (let i = 0; i < n; i++) {
-        let tx, tz;
-        if (i < n - 1) { tx = pts[i+1].x - pts[i].x; tz = pts[i+1].z - pts[i].z; }
-        else            { tx = pts[i].x - pts[i-1].x; tz = pts[i].z - pts[i-1].z; }
-        const tl = Math.hypot(tx, tz);
-        // v132: undulating width — the straight-edged quad strip read as a
-        // square band; a per-point sway makes it a poured organic streak.
-        const ww = hw * (0.72 + 0.28 * Math.sin(i * 1.9 + this._t * 2.2));
-        let px, pz;
-        if (tl < 1e-4) { px = lpx; pz = lpz; } // coincident points: keep last direction
-        else           { px = -tz / tl * ww; pz = tx / tl * ww; lpx = px; lpz = pz; }
-        const b = i * 6;
-        this._posArr[b]   = pts[i].x + px; this._posArr[b+1] = 0; this._posArr[b+2] = pts[i].z + pz;
-        this._posArr[b+3] = pts[i].x - px; this._posArr[b+4] = 0; this._posArr[b+5] = pts[i].z - pz;
-      }
-      // Fumes (v132): faint bubbles rise off the live trail.
-      if (!this._fading && Math.random() < dt * 5) {
-        const p = pts[Math.floor(Math.random() * n)];
-        bubblePool.spawn(p.x + (Math.random() - 0.5) * hw, p.z + (Math.random() - 0.5) * hw, 0xaadd44);
-      }
-      for (let i = n; i < 12; i++) {
-        const b = i * 6;
-        this._posArr[b]   = pts[n-1].x; this._posArr[b+1] = 0; this._posArr[b+2] = pts[n-1].z;
-        this._posArr[b+3] = pts[n-1].x; this._posArr[b+4] = 0; this._posArr[b+5] = pts[n-1].z;
-      }
-    } else {
-      this._posArr.fill(0);
+    // Blob footprint matches the poison hitbox (zones spawn at radius * 1.8);
+    // points land every 0.35u so neighbours overlap into one poured streak.
+    const hw = this._enemy.radius * 1.5;
+    const now = this._enemy.alive ? this._enemy._wobbleT : null;
+    for (let i = 0; i < this._blobs.length; i++) {
+      const m = this._blobs[i];
+      if (i >= n) { m.visible = false; continue; }
+      const p = pts[i];
+      // 0 = freshly poured → 1 = about to expire; the puddle dries down
+      const age = now == null ? 0.5 : Math.min(1, Math.max(0, (now - (p.t ?? now)) / 3.0));
+      const r = hw * (0.85 + 0.25 * Math.sin(i * 1.9 + this._t * 2.2)) * (1.0 - age * 0.45);
+      m.visible = true;
+      m.position.set(p.x, 0, p.z);
+      m.scale.set(r, r * 0.26, r);
     }
-    this._geo.attributes.position.needsUpdate = true;
+    // Fumes (v132): faint bubbles rise off the live trail.
+    if (!this._fading && n >= 2 && Math.random() < dt * 5) {
+      const p = pts[Math.floor(Math.random() * n)];
+      bubblePool.spawn(p.x + (Math.random() - 0.5) * hw, p.z + (Math.random() - 0.5) * hw, 0xaadd44);
+    }
     return true;
   }
-  remove(sc) { sc.remove(this.mesh); this._geo.dispose(); }
+  remove(sc) { sc.remove(this.mesh); this.mat.dispose(); }
 }
 
 class Gate {
@@ -3093,34 +3084,78 @@ function syncAutoOrientation() {
   }
 }
 
+// v220 REVENGE LANGUAGE: a corpse's retaliation never wears living colors —
+// warm bullet colors shift to dark blood-orange/red, yellows to poison green,
+// cool colors to deep venom (TUNING.revenge.palette), so the two attack
+// classes read apart at a glance. Cached per type; falls back to body color
+// for species that never fire while alive.
+const _revColCache = new Map();
+function revengeColor(type) {
+  if (_revColCache.has(type)) return _revColCache.get(type);
+  const P = TUNING.revenge.palette;
+  const c = new THREE.Color(CFG[type].bulletColor ?? CFG[type].color);
+  const hsl = { h: 0, s: 0, l: 0 };
+  c.getHSL(hsl);
+  if (hsl.h >= P.yellowLo && hsl.h <= P.yellowHi) {
+    c.setHSL(P.poisonHue, Math.max(hsl.s, P.poisonSatMin), P.poisonL);          // yellow → poison green
+  } else if (hsl.h < P.yellowLo || hsl.h > P.warmHiCut) {
+    c.setHSL(hsl.h < P.yellowLo ? hsl.h * 0.4 : hsl.h,                          // warm → dark blood
+      Math.min(1, hsl.s * P.satMul), Math.max(P.lFloor, hsl.l * P.darkL));
+  } else {
+    c.setHSL(hsl.h, Math.min(1, hsl.s * P.satMul), Math.max(P.lFloor, hsl.l * P.coolL)); // cool → deep venom
+  }
+  const hex = c.getHex();
+  _revColCache.set(type, hex);
+  return hex;
+}
+const TYPE_KEY = Object.fromEntries(Object.entries(EnemyType).map(([k, v]) => [v, k]));
+
 function onKill(e, src = null) {   // v188: 'env' kills (gate/vent/surge) are marked
   // VOLATILE affix (v145): the fuse pays off — a slow 8-bullet ring from the
-  // corpse. The orange strobe telegraphed it the whole time.
+  // corpse. The orange strobe telegraphed it the whole time. v220: the ring
+  // wears the revenge palette, not a flat orange.
   if (e._affix === 'volatile') {
     for (let j = 0; j < 8; j++) {
       const a = (j / 8) * Math.PI * 2;
       bullets.spawnDir(e.position.x, e.position.z, Math.cos(a), Math.sin(a),
-        false, 0xff8833, false, e.type);
+        false, revengeColor(e.type), false, e.type);
     }
     addShake(0.12);
   }
-  // v187 CLOSE COMBAT: the dead shoot back — every corpse bursts into a slow,
-  // grazeable REVENGE RING (the run's ONLY bullets). Capped so a mass grave
-  // can't exhaust the pool. v188 (playtest video): revenge answers the PLAYER
-  // only — gate lasers, vents, and suds walls vaporize cleanly, so a
-  // barricade can never become a bullet fountain you farm from cover.
-  // v211: big bodies no longer split as a global rule. Splitting was already
-  // SPECIES identity — SPLITTA, REDD_CUBE and PURP_CUBE spawn their own
-  // children from enemy.js, each with its own telegraph — so the mode-wide
-  // version was a duplicate bolted over a mechanic that already existed, and
-  // it turned every large corpse into a minnow factory regardless of what died.
+  // v187 CLOSE COMBAT: the dead shoot back. Capped so a mass grave can't
+  // exhaust the pool. v188 (playtest video): revenge answers the PLAYER only —
+  // gate lasers, vents, and suds walls vaporize cleanly, so a barricade can
+  // never become a bullet fountain you farm from cover.
+  // v220 (field feedback): the uniform ring is gone — revenge SPEAKS THE
+  // SPECIES' LANGUAGE. Gunner corpses spit a slow AIMED burst at you, arc
+  // species throw a slow FAN, everyone else (and every boss) blooms the
+  // classic RING. All of it slow, grazeable, and in the revenge palette, so
+  // it demands its own strategy instead of imitating living fire.
+  // v211: big bodies no longer split as a global rule — splitting is species
+  // identity (SPLITTA/REDD_CUBE/PURP_CUBE spawn their own children).
   if (meleeRun && src !== 'env' && gameState === 'playing' && bullets.active.length < 240) {
-    const nRev = e._isBoss ? 14 : e.radius > 0.75 ? 7 : 4;
-    const a0 = Math.random() * Math.PI * 2;
-    for (let j = 0; j < nRev; j++) {
-      const a = a0 + (j / nRev) * Math.PI * 2;
-      bullets.spawnDir(e.position.x, e.position.z, Math.cos(a), Math.sin(a),
-        false, 0xff8866, false, e.type, false, 6, 0.6);
+    const R = TUNING.revenge;
+    const col = revengeColor(e.type);
+    const dialect = e._isBoss ? 'RING' : (R.byType[TYPE_KEY[e.type]] || R.fallback);
+    if (dialect === 'AIMED' || dialect === 'FAN') {
+      const D = dialect === 'AIMED' ? R.aimed : R.fan;
+      const bx = player.mesh.position.x - e.position.x;
+      const bz = player.mesh.position.z - e.position.z;
+      const bl = Math.hypot(bx, bz);
+      const baseA = bl > 1e-3 ? Math.atan2(bz, bx) : Math.random() * Math.PI * 2;
+      for (let j = 0; j < D.count; j++) {
+        const a = baseA + (j - (D.count - 1) / 2) * D.spread;
+        bullets.spawnDir(e.position.x, e.position.z, Math.cos(a), Math.sin(a),
+          false, col, false, e.type, false, 6, R.speedMult);
+      }
+    } else {
+      const nRev = e._isBoss ? R.ring.boss : e.radius > R.ring.bigRadius ? R.ring.big : R.ring.small;
+      const a0 = Math.random() * Math.PI * 2;
+      for (let j = 0; j < nRev; j++) {
+        const a = a0 + (j / nRev) * Math.PI * 2;
+        bullets.spawnDir(e.position.x, e.position.z, Math.cos(a), Math.sin(a),
+          false, col, false, e.type, false, 6, R.speedMult);
+      }
     }
   }
   streak++;
@@ -4398,7 +4433,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v219' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v220' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -9104,6 +9139,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=173').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=174').catch(() => {});
   });
 }
