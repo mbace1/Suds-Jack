@@ -1,0 +1,16 @@
+{
+  "name": "Radio Free Helsinki",
+  "short_name": "RFH",
+  "description": "A fictional pirate news broadcast. Toko reads the day's wire from a codec screen; DECODE shows you what the wording was doing.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#04070a",
+  "theme_color": "#04070a",
+  "lang": "en",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

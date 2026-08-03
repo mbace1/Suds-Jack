@@ -19,20 +19,33 @@
 // caching their files from out here would be two answers to the same question.
 // A narrower scope wins the page, so those keep controlling themselves.
 
-const VERSION = 'v1';
+const VERSION = 'v9';
 const CACHE = `suds-hub-${VERSION}`;
 
 const SHELL = [
   './',
   './index.html',
-  './hub/art.js?v=7',
-  './hub/feedback.js?v=9',
-  './hub/games.js?v=5',
-  './hub/hub.css?v=13',
-  './hub/hub.js?v=15',
-  './hub/i18n.js?v=4',
-  './hub/pad.js?v=5',
+  './hub/arcade.js?v=5',
+  './hub/art.js?v=13',
+  './hub/feedback.js?v=13',
+  './hub/games.js?v=13',
+  './hub/hub.css?v=23',
+  './hub/hub.js?v=26',
+  './hub/i18n.js?v=11',
+  './hub/pad.js?v=9',
   './hub/topics.js?v=2',
+  './toko/js/chat.js?v=20',
+  './toko/js/dialogue.fi.js?v=20',
+  './toko/js/dialogue.ja.js?v=20',
+  './toko/js/dialogue.js?v=20',
+  './toko/js/face.js',
+  './toko/js/glitch.js',
+  './toko/js/lockup.js',
+  './toko/js/palette.js',
+  './toko/js/sting.js',
+  './toko/js/surface.js',
+  './toko/js/util.js',
+  './toko/js/wordmark.js',
 ];
 
 self.addEventListener('install', e => {
@@ -72,10 +85,32 @@ self.addEventListener('fetch', e => {
     return;
   }
 
+  // A module with a ?v= token is immutable by construction — a new deploy is a
+  // new URL — so the cache is always right and is answered from first.
+  //
+  // A module WITHOUT one is not. The counter under toko/ imports its own dozen
+  // modules with bare specifiers, and serving those cache-first would pin them
+  // at whatever they were the first time you loaded the page, with no way to
+  // ever move them. They are precached so the counter exists with no signal,
+  // and revalidated so it is never stale with one. Same rule as the page shell,
+  // for the same reason.
+  const mine = /\/(?:hub|toko)\//.test(url.pathname);
+  const immutable = url.search.includes('v=');
+
+  if (mine && !immutable) {
+    e.respondWith(fetch(req)
+      .then(r => {
+        if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+        return r;
+      })
+      .catch(() => caches.match(req)));
+    return;
+  }
+
   e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(r => {
     // only the hub's own modules are worth keeping; a game's files belong to
     // that game's worker
-    if (r.ok && url.pathname.includes('/hub/')) {
+    if (r.ok && mine) {
       const copy = r.clone();
       caches.open(CACHE).then(c => c.put(req, copy));
     }

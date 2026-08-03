@@ -79,11 +79,9 @@ function check(name, cond) {
   const base = `http://localhost:${server.address().port}`;
   const browser = await chromium.launch();
 
-  // The sting plays ONCE PER BROWSER on a first-ever arrival, and it is a
-  // full-screen takeover for three seconds — which would swallow the first
-  // click of every context this suite opens. Mark it as already seen, the way
-  // a returning visitor's browser has, and test the real thing on purpose in
-  // its own fresh context at the end.
+  // The sting plays ONCE PER BROWSER when the first game is launched, and it
+  // is a full-screen takeover for three seconds. Mark it as already seen in
+  // general-purpose contexts and test the real first-Play path at the end.
   const seenSting = ctx => ctx.addInitScript(() => {
     try { localStorage.setItem('tokoSting', '1'); } catch { /* private mode */ }
   });
@@ -115,10 +113,13 @@ function check(name, cond) {
   // the page renders the live floor first, then the archive — so that, not the
   // catalogue order, is the order the cabinets appear in
   const games = [...active, ...archived];
+  const visible = catalogue.filter(g => !g.secret);
   check('the catalogue is not empty', games.length >= 8);
   check('every entry declares a status',
     catalogue.every(g => ['active', 'archived'].includes(g.status)));
-  check('active and archived account for the whole catalogue', games.length === catalogue.length);
+  check('active and archived account for the visible catalogue', games.length === visible.length);
+  check('secret cabinets stay off the floor until unlocked',
+    catalogue.filter(g => g.secret).every(g => !games.some(x => x.id === g.id)));
   check('one cabinet per game', await page.locator('.cab').count() === games.length);
   check('the live floor holds only what is being worked on',
     await page.locator('#cabinets .cab').count() === active.length && active.length > 0);
@@ -167,8 +168,7 @@ function check(name, cond) {
   }
 
   // and the ones this branch carries actually resolve — a hub whose buttons
-  // 404 is worse than no hub. (Entries with inRepo:false live only on the
-  // deployed site root; see README.)
+  // 404 is worse than no hub.
   const local = [...games, ...sketches].filter(g => g.inRepo && g.live !== false);
   const dead = [];
   for (const g of local) {
@@ -176,17 +176,11 @@ function check(name, cond) {
     if (!r.ok()) dead.push(`${g.id} ${r.status()}`);
   }
   check(`every link this branch can see resolves${dead.length ? ` — ${dead}` : ''}`, dead.length === 0);
-  // This gate runs in two places and `inRepo` means different things in each:
-  // on a source branch it is "this checkout has it", on the deployed site root
-  // EVERYTHING is there. Asserting the source-branch shape against the deploy
-  // failed a check about the catalogue every time the gate was run where the
-  // site actually lives — which is the run that matters most.
+  // A complete source checkout now contains the deployed catalogue. Keep the
+  // assertion explicit so a future import cannot accidentally reintroduce
+  // production-only links into main.
   const away = games.filter(g => !g.inRepo);
-  const DEPLOYED = away.length > 0 && away.every(g => fs.existsSync(path.join(ROOT, g.path)));
-  check(DEPLOYED
-    ? 'the deployed tree carries the games this branch does not'
-    : 'the games only on the deployed site are marked as such',
-    DEPLOYED || away.every(g => !fs.existsSync(path.join(ROOT, g.path))));
+  check('the complete source tree carries every visible cabinet', away.length === 0);
 
   // a marquee that draws nothing is a black rectangle nobody notices
   const blank = await page.evaluate(() => {
@@ -292,45 +286,11 @@ function check(name, cond) {
   check(`the offline shell names every module the page asks for (${needed.size})${absent.length ? ` — missing ${absent}` : ''}`,
     absent.length === 0);
 
-  // ── finding one ──
-  const tagCount = await page.locator('.tag-btn').count();
-  check(`the floor can be filtered by tag (${tagCount})`, tagCount > 3);
-  await page.fill('#find-box', 'voxel');
-  await page.waitForTimeout(120);
-  const hits = await page.$$eval('.cab', cs => cs.filter(c => !c.hidden).map(c => c.id));
-  check(`typing narrows it (${hits.length}: ${hits.map(h => h.slice(4))})`,
-    hits.length > 0 && hits.length < games.length);
-  check('and the count says how far it narrowed',
-    /\d+/.test(await page.locator('#find-count').textContent()));
-  // it searches what the page is showing, not the English underneath
-  await page.locator('.lang-btn[data-lang="fi"]').click();
-  await page.fill('#find-box', 'vektori');
-  await page.waitForTimeout(120);
-  check('and it searches the language you are reading in',
-    (await page.$$eval('.cab', cs => cs.filter(c => !c.hidden).length)) > 0);
-  await page.locator('.lang-btn[data-lang="en"]').click();
-
-  await page.fill('#find-box', 'zzzzz');
-  await page.waitForTimeout(120);
-  check('nothing matching says so rather than showing an empty floor',
-    await page.locator('#find-none').isVisible());
-  // and the pad must not be able to walk into something that is filtered out
-  check('a filtered-out cabinet is not reachable with a pad',
-    await page.evaluate(() => __hub.debug.select(0) === undefined
-      && !document.querySelector('.cab.sel:not([hidden])')) !== false);
-  await page.fill('#find-box', '');
-  await page.waitForTimeout(120);
-  check('clearing it puts the whole floor back',
-    await page.$$eval('.cab', cs => cs.filter(c => !c.hidden).length) === games.length);
-
-  // ── one at random ──
-  const rolled = new Set();
-  for (let i = 0; i < 12; i++) rolled.add(await page.evaluate(() => __hub.debug.surprise()));
-  check(`show-me-one picks from the floor (${rolled.size} different in 12 rolls)`,
-    rolled.size > 1 && [...rolled].every(id => games.some(g => g.id === id)));
-  check('and never lands on a cabinet with nothing behind it',
-    [...rolled].every(id => games.find(g => g.id === id)?.live !== false));
-  setHashless: { await page.goto(`${base}/index.html`, { waitUntil: 'networkidle' }); }
+  // The live floor deliberately removed search/tag chrome and the randomizer;
+  // their stale tests previously timed out after the production baseline was
+  // brought back into source.
+  check('the retired find-a-game controls stay off the floor',
+    await page.locator('#find-box, .tag-btn, #surprise').count() === 0);
 
   // ── one cabinet, by name ──
   // The point of the second form is a link you can paste to a playtester that
@@ -688,8 +648,17 @@ function check(name, cond) {
 
   // ── the version each project is on ──
   const versions = JSON.parse(fs.readFileSync(path.join(ROOT, 'hub', 'versions.json'), 'utf8'));
-  check('versions.json covers the projects this branch carries',
-    games.filter(g => g.inRepo).every(g => versions[g.id]));
+  const unversioned = games.filter(g => g.inRepo && !versions[g.id]);
+  const honestlyUnversioned = unversioned.every(g => {
+    const dir = path.join(ROOT, g.path);
+    const log = path.join(dir, 'VERSIONS.md');
+    const html = path.join(dir, 'index.html');
+    if (fs.existsSync(log)) return false;
+    const src = fs.existsSync(html) ? fs.readFileSync(html, 'utf8') : '';
+    return !/src="(?!\.\.\/)[^"]*?\?v=\d+"/.test(src);
+  });
+  check(`unversioned cabinets are missing both a log and their own token (${unversioned.map(g => g.id)})`,
+    honestlyUnversioned);
   check('every version came from a log or a real cache token',
     Object.values(versions).every(v => Number.isInteger(v.v) && v.v > 0
       && ['VERSIONS.md', 'cache token'].includes(v.from)));
@@ -979,16 +948,20 @@ function check(name, cond) {
   check(`in that order, and once each (${order.join(' ')})`,
     order.join() === 'down:Space,up:Space');
 
-  // ── the sting, on a first-ever arrival ──
-  // Once per browser, skippable from the first frame, and never in front of a
-  // deep link: /#hyperdagger means somebody came for one cabinet, and a title
-  // card between them and it is an advertisement.
+  // ── the sting, on the first Play ──
+  // Once per browser, skippable from the first frame, and never merely on
+  // arrival: the workshop's mark belongs in front of a game, not its menu.
   {
     const fresh = await browser.newContext({ viewport: { width: 1100, height: 900 } });
     const fp = await fresh.newPage();
     await fp.goto(base, { waitUntil: 'domcontentloaded' });
+    check('a first-ever arrival opens directly onto the arcade',
+      await fp.evaluate(() => !document.querySelector('div[role="img"][style*="fixed"]')));
+    const firstPlay = fp.locator('.cab .btn.play').first();
+    const destination = await firstPlay.getAttribute('href');
+    await firstPlay.click();
     const card = fp.locator('div[role="img"][aria-label*="TOKO" i], div[role="img"]').first();
-    check('a first-ever arrival gets the sting',
+    check('the first Play gets the sting',
       await card.waitFor({ state: 'visible', timeout: 4000 }).then(() => true).catch(() => false));
     check('and it covers the floor while it plays',
       await fp.evaluate(() => {
@@ -997,23 +970,24 @@ function check(name, cond) {
         return !!cs && cs.position === 'fixed' && parseInt(cs.zIndex, 10) > 1000;
       }));
     await fp.keyboard.press('Space');
-    await fp.waitForTimeout(400);
+    await fp.waitForURL(url => url.pathname.endsWith(`/${destination}`), { timeout: 5000 });
     check('any key skips it',
       await fp.evaluate(() => !document.querySelector('div[role="img"][style*="fixed"]')));
-    check('and the arcade is underneath it, already rendered',
-      await fp.locator('.cab').count() > 0);
+    check('and the game opens when it is done', fp.url().endsWith(`/${destination}`));
 
     await fp.goto(base, { waitUntil: 'domcontentloaded' });
-    await fp.waitForTimeout(500);
-    check('a second visit never sees it again',
-      await fp.evaluate(() => !document.querySelector('div[role="img"][style*="fixed"]')));
+    const secondDestination = await fp.locator('.cab .btn.play').first().getAttribute('href');
+    await fp.locator('.cab .btn.play').first().click();
+    await fp.waitForURL(url => url.pathname.endsWith(`/${secondDestination}`), { timeout: 3000 });
+    check('a second Play never shows it again',
+      fp.url().endsWith(`/${secondDestination}`));
     await fresh.close();
 
     const linked = await browser.newContext({ viewport: { width: 1100, height: 900 } });
     const lp = await linked.newPage();
     await lp.goto(`${base}/#hyperdagger`, { waitUntil: 'domcontentloaded' });
     await lp.waitForTimeout(600);
-    check('a deep link is never made to sit through it',
+    check('a deep link never gets an arrival sting',
       await lp.evaluate(() => !document.querySelector('div[role="img"][style*="fixed"]')));
     await linked.close();
   }

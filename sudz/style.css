@@ -1,0 +1,87 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #000;
+  overflow: hidden;
+  font-family: 'Courier New', monospace;
+}
+
+#gameCanvas {
+  display: block;
+  cursor: none;
+}
+
+#hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.hud-score {
+  color: #0ff;
+  font-size: 22px;
+  font-weight: bold;
+  text-shadow: 0 0 10px #0ff, 0 0 20px #0ff;
+  letter-spacing: 2px;
+}
+
+.hud-level {
+  color: #ff0;
+  font-size: 20px;
+  font-weight: bold;
+  text-shadow: 0 0 10px #ff0, 0 0 20px #ff0;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+.hud-lives {
+  color: #f0f;
+  font-size: 22px;
+  font-weight: bold;
+  text-shadow: 0 0 10px #f0f, 0 0 20px #f0f;
+  letter-spacing: 2px;
+  text-align: right;
+}
+
+#overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.75);
+  pointer-events: none;
+}
+
+#overlay h1 {
+  font-size: 64px;
+  font-weight: bold;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+#overlay p {
+  font-size: 22px;
+  letter-spacing: 3px;
+  color: #aaa;
+  margin-bottom: 10px;
+}
+
+#overlay.hidden {
+  display: none;
+}

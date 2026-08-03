@@ -77,8 +77,10 @@ export class AudioKit {
 
   gib(big = false) {
     if (!this.ctx) return;
-    this._noise(big ? 0.5 : 0.3, 'lowpass', big ? 500 : 800, 0.7, big ? 0.55 : 0.4);
-    this._tone('sine', big ? 150 : 190, 35, big ? 0.45 : 0.3, 0.45);
+    // ±12% pitch variance so back-to-back gibs don't machine-gun identically
+    const v = 0.88 + Math.random() * 0.24;
+    this._noise(big ? 0.5 : 0.3, 'lowpass', (big ? 500 : 800) * v, 0.7, big ? 0.55 : 0.4);
+    this._tone('sine', (big ? 150 : 190) * v, 35, big ? 0.45 : 0.3, 0.45);
   }
 
   shotgun() {
@@ -150,6 +152,45 @@ export class AudioKit {
   blink() {
     if (!this.ctx) return;
     this._tone('square', 900, 200, 0.12, 0.15);
+  }
+
+  /** A dagger burying itself in husk plating: dull, dead, no ring — this is
+   *  the sound of damage NOT happening, so it must not read like a hit. */
+  plate() {
+    if (!this.ctx) return;
+    const v = 0.9 + Math.random() * 0.2;
+    this._noise(0.07, 'bandpass', 320 * v, 2.5, 0.22);
+    this._tone('triangle', 130 * v, 60, 0.09, 0.16);
+  }
+
+  /** SHELL BREACHED: a dry crack, then the bared core swelling up under it. */
+  breach() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this._noise(0.18, 'highpass', 1800, 0.9, 0.35, t);
+    this._tone('square', 90, 420, 0.35, 0.3, t);
+    this._tone('sawtooth', 300, 120, 0.5, 0.22, t + 0.06);
+  }
+
+  /** The revenant hauling itself up through the floor — a scraping swell,
+   *  deliberately not the bright spawn chirp everything else uses. */
+  rise() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this._noise(0.7, 'lowpass', 260, 0.6, 0.3, t);
+    this._tone('sawtooth', 48, 130, 0.75, 0.26, t);
+    this._tone('sine', 70, 180, 0.6, 0.18, t + 0.12);
+  }
+
+  /** REAP — the bone-yard drawn in and spent: a sucking inhale that turns
+   *  over into a hard downbeat. Distinct from a gib or a shockwave. */
+  reap(power = 1) {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this._noise(0.22, 'bandpass', 500, 1.2, 0.3, t);          // the intake
+    this._tone('sawtooth', 70, 260, 0.22, 0.2, t);            // rising pull
+    this._tone('square', 200, 40, 0.34, 0.34 * power, t + 0.2); // the spend
+    this._noise(0.4, 'lowpass', 700, 0.6, 0.4 * power, t + 0.2);
   }
 
   clink() {
@@ -236,6 +277,11 @@ export class AudioKit {
     const now = this.ctx.currentTime;
     m.intensity += (intensity - m.intensity) * 0.05; // smooth
     const I = m.intensity;
+    // duck the drone under the music as intensity climbs — at full swarm the
+    // arrangement carries the low end, the drone just muddies it
+    if (this._drone) {
+      this._drone.g.gain.setTargetAtTime(0.055 * (1 - 0.5 * I), now, 0.4);
+    }
     // if we fell behind (tab throttled / paused), resync instead of bursting
     if (m.next < now - 0.25) m.next = now + 0.02;
     while (m.next < now + 0.15) {

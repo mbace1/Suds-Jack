@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>TOKO DROP — enemy visual tester</title>
+<link rel="icon" href="favicon.png">
+<!-- v216 (roadmap-v2 Phase 1): this page used to be a FORK — its own copy of
+     the goo shader via onBeforeCompile, on CDN three@0.160, with 15
+     hand-mirrored enemy defs. It now renders the game's OWN Enemy through
+     js/specimen.js on the vendored three builds, so what you tune here is what
+     ships. All 40 types, both renderers (the ⚡ chip flips WEBGPU + reloads). -->
+<style>
+  :root{ --panel:#f3f4f1; --line:#d3d5d0; --ink:#33362f; --dim:#7c8078; --teal:#3fae8c; }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden;background:#07071a;touch-action:none;
+    -webkit-user-select:none;user-select:none;overscroll-behavior:none;
+    font-family:ui-monospace,'Cascadia Code',Menlo,monospace;color:var(--ink)}
+  #view{position:fixed;inset:0;touch-action:none;cursor:grab}
+  #view:active{cursor:grabbing}
+
+  #info{position:fixed;top:12px;left:12px;right:12px;text-align:center;pointer-events:none;color:#dfe6ff}
+  #info b{font-size:14px;letter-spacing:.1em}
+  #info small{display:block;margin-top:3px;font-size:11px;color:#8890b8}
+
+  #panel{position:fixed;left:0;right:0;bottom:0;
+    background:color-mix(in srgb,var(--panel) 95%,transparent);
+    border-top:1px solid var(--line);border-radius:18px 18px 0 0;
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+    backdrop-filter:blur(8px);touch-action:auto}
+  #chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
+  #chips::-webkit-scrollbar{display:none}
+  #chips button{flex:0 0 auto;font:inherit;font-size:11px;padding:9px 12px;border-radius:999px;
+    border:1px solid var(--line);background:#fff;color:var(--dim);cursor:pointer;white-space:nowrap}
+  #chips button.on{border-color:var(--ink);color:var(--ink)}
+  #chips i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+
+  #actions{display:flex;gap:8px;margin-top:2px}
+  #actions button{flex:1;font:inherit;font-size:13px;padding:13px 0;border-radius:12px;
+    border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+  #actions #btnHit{border-color:#c9a227;color:#8a6d00;background:#fdf6dd}
+  #actions #btnKill{border-color:#c05555;color:#8f2222;background:#fbe4e4}
+  #actions #btnGpu{max-width:64px}
+  #actions #btnTune{max-width:64px}
+
+  #tune{display:none;margin-top:10px}
+  #panel.tuning #tune{display:block}
+  .row{display:grid;grid-template-columns:92px 1fr;align-items:center;gap:10px;min-height:34px}
+  label{font-size:11px;color:var(--dim)}
+  input[type=range]{width:100%;accent-color:var(--teal);height:30px;touch-action:auto}
+  .presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+  .presets button{flex:1 0 30%;font:inherit;font-size:12px;padding:10px 0;border-radius:10px;
+    border:1px solid var(--line);background:#fff;color:var(--dim);cursor:pointer}
+  .presets button.on{background:var(--teal);border-color:var(--teal);color:#fff}
+  .copyBtn{width:100%;margin-top:8px;font:inherit;font-size:12px;padding:11px 0;border-radius:10px;
+    border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer}
+  @media (min-width:700px){
+    #panel{left:auto;right:12px;bottom:12px;width:340px;border:1px solid var(--line);border-radius:16px}
+  }
+</style>
+</head>
+<body>
+<div id="mount"></div>
+<div id="info"><b id="infoName"></b><small id="infoDesc"></small></div>
+
+<div id="panel">
+  <div id="chips"></div>
+  <div id="actions">
+    <button id="btnHit">HIT</button>
+    <button id="btnKill">KILL</button>
+    <button id="btnGpu">⚡</button>
+    <button id="btnTune">⚙</button>
+  </div>
+  <div id="tune">
+    <div class="presets" id="presetRow"></div>
+    <div class="rows">
+      <div class="row"><label>sss glow</label><input id="uSSS" type="range" min="0" max="1.5" step="0.01"></div>
+      <div class="row"><label>roughness</label><input id="uRough" type="range" min="0" max="0.5" step="0.005"></div>
+      <div class="row"><label>clearcoat</label><input id="uCC" type="range" min="0" max="1" step="0.01"></div>
+      <div class="row"><label>sheen</label><input id="uSheen" type="range" min="0" max="1" step="0.01"></div>
+      <div class="row"><label>transmission</label><input id="uTrans" type="range" min="0" max="0.9" step="0.01"></div>
+    </div>
+    <button id="btnCopy" class="copyBtn">copy tuning JSON</button>
+  </div>
+</div>
+
+<!-- Same flag-aware boot as index.html: importmaps are immutable per page, so
+     the WEBGPU choice happens here, before any module resolves. -->
+<script>
+  (function () {
+    var gpu = false;
+    try { gpu = localStorage.getItem('tokoDropGpu') === '1'; } catch (e) {}
+    var three = gpu ? './vendor/three.webgpu.min.js?v=175'
+                    : './vendor/three.module.min.js?v=175';
+    document.write('<script type="importmap">' + JSON.stringify({
+      imports: {
+        'three': three,
+        'three/addons/geometries/RoundedBoxGeometry.js': './vendor/jsm/geometries/RoundedBoxGeometry.js?v=175',
+        'three/addons/': './vendor/jsm/'
+      }
+    }) + '<\/script>');
+  })();
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { EnemyType, CFG, applySatinValues } from './js/enemy.js?v=175';
+import { TUNING, applyMaterialPreset } from './js/tuning.js?v=175';
+import { createSpecimen } from './js/specimen.js?v=175';
+
+const IS_GPU = typeof THREE.WebGPURenderer === 'function';
+
+/* ── the stage: one specimen view, fullscreen, roaming ────────────────────── */
+const fx = [];                       // droplet bursts drained from the enemy
+const dropGeo = new THREE.SphereGeometry(1, 7, 5);
+let respawnT = 0;
+let currentType = EnemyType.GLOBBO;
+
+const view = createSpecimen({
+  width: innerWidth, height: innerHeight, bg: 0x07071a,
+  roam: true,
+  onFrame(s, dt) {
+    // Drain the REAL enemy FX queues into lab droplets (designer.js pattern)
+    if (s.chunks && s.chunks.length) {
+      for (const c of s.chunks) burst(c.x, c.y, c.z, CFG[s.type].color, 1.1);
+      s.chunks.length = 0;
+    }
+    if (s._hitChunks && s._hitChunks.length) {
+      for (const c of s._hitChunks) burst(c.x, c.y, c.z, c.color, 0.8);
+      s._hitChunks.length = 0;
+    }
+    // droplet physics: gravity, floor stop, shrink out
+    for (let i = fx.length - 1; i >= 0; i--) {
+      const f = fx[i];
+      f.life -= dt;
+      f.vy -= 12 * dt;
+      f.m.position.x += f.vx * dt;
+      f.m.position.y = Math.max(0.04, f.m.position.y + f.vy * dt);
+      f.m.position.z += f.vz * dt;
+      if (f.m.position.y <= 0.05) { f.vx *= 0.5; f.vz *= 0.5; f.vy = 0; }
+      f.m.scale.multiplyScalar(Math.max(0, Math.min(1, f.life * 2.2)) ** 0.08);
+      if (f.life <= 0) { view.scene.remove(f.m); f.m.material.dispose(); fx.splice(i, 1); }
+    }
+    // a killed specimen comes back on its own, like the pause-menu tester
+    if (!s.alive && !s._dying) {
+      respawnT += dt;
+      if (respawnT > 1.1) select(currentType);
+    }
+  },
+});
+document.getElementById('mount').appendChild(view.canvas);
+view.canvas.id = 'view';
+
+function burst(x, y, z, color, power) {
+  for (let i = 0; i < 2; i++) {
+    const m = new THREE.Mesh(dropGeo, new THREE.MeshBasicMaterial({ color }));
+    const a = Math.random() * Math.PI * 2;
+    const sp = (2 + Math.random() * 3) * power;
+    m.position.set(x, y, z);
+    m.scale.setScalar(0.09 + Math.random() * 0.08);
+    view.scene.add(m);
+    fx.push({ m, vx: Math.cos(a) * sp, vy: 2.5 + Math.random() * 3.5, vz: Math.sin(a) * sp, life: 1.0 });
+  }
+}
+
+// a floor + grid so movement reads (the portrait has none)
+{
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 20),
+    new THREE.MeshBasicMaterial({ color: 0x0d0d24 }));
+  floor.rotation.x = -Math.PI / 2;
+  view.scene.add(floor);
+  const grid = new THREE.GridHelper(28, 20, 0x222248, 0x15152e);
+  grid.position.y = 0.01;
+  view.scene.add(grid);
+}
+
+/* ── orbit camera (kept from the old lab — touch is first-class) ──────────── */
+const isMobile = matchMedia('(max-width: 700px), (pointer: coarse)').matches;
+const orbit = { yaw: -0.35, pitch: 0.62, dist: isMobile ? 13 : 11, target: new THREE.Vector3(0, 0.6, 0) };
+function applyOrbit() {
+  orbit.pitch = Math.min(1.4, Math.max(0.15, orbit.pitch));
+  orbit.dist  = Math.min(24, Math.max(4, orbit.dist));
+  const cp = Math.cos(orbit.pitch), sp = Math.sin(orbit.pitch);
+  view.camera.position.set(
+    orbit.target.x + orbit.dist * cp * Math.sin(orbit.yaw),
+    orbit.target.y + orbit.dist * sp,
+    orbit.target.z + orbit.dist * cp * Math.cos(orbit.yaw));
+  view.camera.lookAt(orbit.target);
+}
+const pointers = new Map(); let lastPinch = 0;
+view.canvas.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    lastPinch = Math.hypot(a.x - b.x, a.y - b.y);
+  }
+});
+addEventListener('pointermove', e => {
+  const p = pointers.get(e.pointerId); if (!p) return;
+  const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+  if (pointers.size === 1) { orbit.yaw -= dx * 0.0075; orbit.pitch += dy * 0.0075; applyOrbit(); }
+  else if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (lastPinch > 0 && d > 0) { orbit.dist *= lastPinch / d; applyOrbit(); }
+    lastPinch = d;
+  }
+});
+addEventListener('pointerup',     e => pointers.delete(e.pointerId));
+addEventListener('pointercancel', e => pointers.delete(e.pointerId));
+addEventListener('wheel', e => { orbit.dist *= 1 + Math.sign(e.deltaY) * 0.08; applyOrbit(); }, { passive: true });
+
+/* ── chips: every type the game has, straight from EnemyType ──────────────── */
+const infoName = document.getElementById('infoName');
+const infoDesc = document.getElementById('infoDesc');
+const chips = document.getElementById('chips');
+const NAMES = Object.entries(EnemyType);   // [name, id] — the real roster
+
+function select(type) {
+  currentType = type;
+  respawnT = 0;
+  view.show(type);
+  applyOrbit();          // show() frames a portrait; the lab keeps its orbit
+  const c = CFG[type];
+  const name = NAMES.find(([, id]) => id === type)?.[0] ?? String(type);
+  infoName.textContent = name.replace(/_/g, ' ');
+  // stats are READ from CFG, never hand-written — hand-kept descriptions are
+  // how the old lab drifted to 15 stale defs
+  infoDesc.textContent =
+    `hp ${c.hp} · speed ${c.speed} · radius ${c.radius}` +
+    (c.fireInterval != null ? ` · fires every ${c.fireInterval}s` : '') +
+    ` · ${IS_GPU ? 'WEBGPU build' : 'WEBGL build'}`;
+  [...chips.children].forEach(b => b.classList.toggle('on', +b.dataset.type === type));
+}
+
+for (const [name, id] of NAMES) {
+  const b = document.createElement('button');
+  b.dataset.type = id;
+  const dot = document.createElement('i');
+  dot.style.background = '#' + (CFG[id]?.color ?? 0x888888).toString(16).padStart(6, '0');
+  b.appendChild(dot);
+  b.appendChild(document.createTextNode(name.replace(/_/g, ' ')));
+  b.addEventListener('click', () => select(id));
+  chips.appendChild(b);
+}
+
+/* ── actions ──────────────────────────────────────────────────────────────── */
+document.getElementById('btnHit').addEventListener('click', () => view.hit());
+document.getElementById('btnKill').addEventListener('click', () => view.kill());
+const btnGpu = document.getElementById('btnGpu');
+btnGpu.title = IS_GPU ? 'on WEBGPU build — tap for WEBGL' : 'on WEBGL build — tap for WEBGPU';
+if (IS_GPU) btnGpu.style.color = '#7722cc';
+btnGpu.addEventListener('click', () => {
+  try { localStorage.setItem('tokoDropGpu', IS_GPU ? '0' : '1'); } catch (e) {}
+  location.reload();
+});
+document.getElementById('btnTune').addEventListener('click', () =>
+  document.getElementById('panel').classList.toggle('tuning'));
+
+/* ── tuning: writes the REAL TUNING.material, same calls as the pause menu ── */
+const ui = {
+  sss:          document.getElementById('uSSS'),
+  roughness:    document.getElementById('uRough'),
+  clearcoat:    document.getElementById('uCC'),
+  sheen:        document.getElementById('uSheen'),
+  transmission: document.getElementById('uTrans'),
+};
+const presetRow = document.getElementById('presetRow');
+function pullUI() { for (const [k, el] of Object.entries(ui)) el.value = TUNING.material[k]; }
+for (const [k, el] of Object.entries(ui)) {
+  el.addEventListener('input', () => {
+    TUNING.material[k] = +el.value;
+    applySatinValues();
+    [...presetRow.children].forEach(b => b.classList.remove('on'));
+  });
+}
+for (const name of Object.keys(TUNING.material.presets)) {
+  const b = document.createElement('button');
+  b.textContent = name;
+  b.addEventListener('click', () => {
+    applyMaterialPreset(name);
+    applySatinValues();
+    pullUI();
+    [...presetRow.children].forEach(x => x.classList.toggle('on', x === b));
+  });
+  presetRow.appendChild(b);
+}
+document.getElementById('btnCopy').addEventListener('click', async e => {
+  const M = TUNING.material;
+  const text = JSON.stringify({
+    sss: M.sss, roughness: M.roughness, clearcoat: M.clearcoat,
+    sheen: M.sheen, transmission: M.transmission,
+  }, null, 1);
+  try { await navigator.clipboard.writeText(text); e.target.textContent = 'copied ✓'; }
+  catch (_) { prompt('Copy this:', text); }
+  setTimeout(() => { e.target.textContent = 'copy tuning JSON'; }, 1400);
+});
+
+/* ── boot ─────────────────────────────────────────────────────────────────── */
+pullUI();
+select(EnemyType.GLOBBO);
+applyOrbit();
+view.start();
+addEventListener('resize', () => view.resize(innerWidth, innerHeight));
+window._lab = { select, view, EnemyType, CFG, isGpu: IS_GPU };   // headless verify hook
+</script>
+<!-- v219: the arcade shell — a home button so the lab is a first-class stop
+     on the site (hub → sketches → lab → home), same include as the game -->
+<script type="module" src="../hub/shell.js?v=15"></script>
+</body>
+</html>
