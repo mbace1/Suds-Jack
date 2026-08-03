@@ -665,12 +665,34 @@ reference; the old UE5 notes no longer describe this repository.
 - `scripts/enemy-loop.mjs` records short looping GIFs from the real game code.
   Use it for movement and readability questions instead of hand-building a
   separate capture harness. Scenarios live in the script's `SCENARIOS` map.
+  Stage captures in a throwaway copy of `toko-drop/`; test-only harness code
+  must never reach the shipped tree. Do not use Playwright's `networkidle`
+  wait because the service worker keeps the network active. SwiftShader takes
+  roughly 1.5 seconds per screenshot, so run longer loops in the background.
+  Keep capture-only dependencies such as `gifenc` and `pngjs` in scratch and
+  expose them with `NODE_PATH` rather than vendoring them into the game.
 - Every Toko Drop game change needs a new top entry in `VERSIONS.md` and matching
   cache tokens. `scripts/bump-version.sh <N>` performs the coordinated bump.
+- Install the version guard with
+  `cp scripts/pre-commit .git/hooks/pre-commit`. Never skip hooks with
+  `--no-verify`, and never force-push a default or production branch.
 - The live site remains on `gh-pages` until the source-of-truth migration is
   completed. Reconciliation branches must not deploy or force-push production.
 - New resource paths need versioned URLs from their first release because the
   Pages CDN may temporarily cache a pre-deployment 404.
+
+**Current production workflow (until the migration is complete):**
+
+- Toko Drop changes go through a pull request and squash merge into
+  `gh-pages`. After the merge, `scripts/release.sh` force-resyncs the working
+  branch to `origin/gh-pages`; it discards unmerged commits on that working
+  branch, so preserve or merge them before running it.
+- Other games may be pushed directly to `gh-pages` only when the commit is
+  limited to that game's directory. Concurrent agents must resync after those
+  pushes and account for superseded deployment runs.
+- After every production push, verify that the **pages build and deployment**
+  Actions run—not merely the commit status—concludes `success`. A failed or
+  superseded deployment can otherwise look exactly like a broken site.
 
 ## Repository Structure
 
