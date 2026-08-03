@@ -27,6 +27,14 @@ The complete public HTML list is recorded as `publicHtmlPaths` in
 
 ## Inventory checkpoint
 
+The preservation snapshot is anchored to these exact refs:
+
+- `main`: `890bd8b6564d3daf7967072de17f36407f443a9b`
+- `gh-pages`: `0f0e2105d5565d0bcf75494edcbdba7ee6e35d1f`
+
+All import and divergence counts below refer to that production SHA. Re-run the
+inventory against the current `gh-pages` head before this branch leaves draft.
+
 | Classification | Paths | Default treatment |
 |---|---:|---|
 | Identical | 189 | No change |
