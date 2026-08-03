@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=10';
+import { VoxelSprite, MODELS } from './voxel.js?v=45';
 
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();
@@ -75,6 +75,125 @@ export class Skull extends VoxelEnemy {
   }
 }
 
+/**
+ * THE HUSK — the enemy where the voxel physics ARE the mechanic. Its shell
+ * encloses a glowing core, and daggers barely dent plating: you have to chew
+ * a hole through it (chip damage erodes a crater, chunk detachment sheds the
+ * severed plates) until the core is bared, and only then does it take real
+ * damage. Slow, heavy, and it never flinches — a positioning fight, not a
+ * reflex one.
+ */
+export class Husk extends VoxelEnemy {
+  constructor(scene, pos, speedBoost = 0) {
+    super(scene, MODELS.husk, pos);
+    this.type = 'husk';
+    this.hp = 16;
+    this.maxHp = 16; // set up front so the chip-per-hit rate is right from hit 1
+    this.radius = 1.45;
+    this.score = 7;
+    this.vel = new THREE.Vector3();
+    this.maxSpeed = 3.2 + speedBoost;
+    this.accel = 8;
+    this.knock = 1.5; // an armored slab barely flinches
+    this.shellTotal = this.sprite.voxels.length;
+    this.cracked = false;
+    this.bobT = Math.random() * Math.PI * 2;
+  }
+
+  /** Which AudioKit voice a dagger hit should use — plating swallows the
+   *  strike, a bared core rings like anything else. */
+  get hitSound() { return this.coreExposed ? 'hit' : 'plate'; }
+
+  /** Fraction of the shell chipped away. */
+  get exposure() { return 1 - this.sprite.aliveCount / this.shellTotal; }
+  get coreExposed() { return this.exposure >= CORE_AT; }
+
+  /** True exactly once, on the hit that first bares the core — the caller
+   *  turns that into the stinger + shockwave. Checked AFTER chipping, so the
+   *  moment lines up with the hole actually opening. */
+  checkCrack() {
+    if (this.cracked || !this.coreExposed) return false;
+    this.cracked = true;
+    this.sprite.retint({ C: [4.2, 0.35, 0.35] }); // the bared core ignites
+    return true;
+  }
+
+  update(dt, playerEye) {
+    this.baseUpdate(dt);
+    this.bobT += dt * 1.6;
+    _dir.copy(playerEye).sub(this.pos);
+    _dir.y = 0; // it walks — no bobbing float, it should read as heavy
+    _dir.normalize();
+    this.vel.addScaledVector(_dir, this.accel * dt);
+    const sp = this.vel.length();
+    if (sp > this.maxSpeed) this.vel.multiplyScalar(this.maxSpeed / sp);
+    this.pos.addScaledVector(this.vel, dt);
+    this.pos.y = 1.35 + Math.sin(this.bobT) * 0.06; // a heavy plod
+    this.group.lookAt(playerEye.x, this.pos.y, playerEye.z);
+  }
+
+  hit(dmg, dir) {
+    // plating shrugs off daggers; a bared core takes double
+    this.hp -= this.coreExposed ? dmg * 2 : dmg * 0.2;
+    this.sprite.flash();
+    this.vel.addScaledVector(dir, this.knock);
+  }
+}
+
+/** How much of the shell must be gone before the core counts as exposed. */
+const CORE_AT = 0.32;
+
+/**
+ * THE REVENANT — the bone-yard turned against you. It can only rise where the
+ * player's own carnage has piled up, devours those bones to assemble itself,
+ * and claws up out of the floor. Fast enough to punish camping on a killing
+ * field, which is exactly the habit the litter system rewards.
+ */
+export class Revenant extends VoxelEnemy {
+  constructor(scene, pos, speedBoost = 0) {
+    super(scene, MODELS.revenant, pos);
+    this.type = 'revenant';
+    this.hp = 6;
+    this.maxHp = 6;
+    this.radius = 1.0;
+    this.score = 4;
+    this.vel = new THREE.Vector3();
+    this.maxSpeed = 5.2 + speedBoost;
+    this.accel = 13;
+    this.knock = 4;
+    this.bobT = Math.random() * Math.PI * 2;
+    this.riseT = 0.9; // hauls itself up through the floor before it can chase
+    this.pos.y = -0.6;
+  }
+
+  /** Harmless while still emerging — you get a beat to back off. */
+  get rising() { return this.riseT > 0; }
+
+  update(dt, playerEye) {
+    this.baseUpdate(dt);
+    this.group.lookAt(playerEye.x, this.pos.y, playerEye.z);
+    if (this.riseT > 0) {
+      this.riseT = Math.max(0, this.riseT - dt);
+      this.pos.y = 1.05 - (this.riseT / 0.9) * 1.65;
+      return;
+    }
+    this.bobT += dt * 2.6;
+    _dir.copy(playerEye).sub(this.pos);
+    _dir.y = 0;
+    _dir.normalize();
+    this.vel.addScaledVector(_dir, this.accel * dt);
+    const sp = this.vel.length();
+    if (sp > this.maxSpeed) this.vel.multiplyScalar(this.maxSpeed / sp);
+    this.pos.addScaledVector(this.vel, dt);
+    this.pos.y = 1.05 + Math.sin(this.bobT) * 0.08;
+  }
+
+  hit(dmg, dir) {
+    super.hit(dmg, dir);
+    this.vel.addScaledVector(dir, this.knock);
+  }
+}
+
 /** Gilded skull — faster, 2 HP, appears later in a run. */
 export class Wraith extends Skull {
   constructor(scene, pos, speedBoost = 0) {
@@ -94,6 +213,20 @@ export class Splitter extends Skull {
     this.score = 2;
     this.knock = 4;
     this.splits = true;
+  }
+}
+
+/** Skull IV analog: big, FAST, dark-red bone with a burning crown. Late-run
+ *  pressure spike — it outruns a walking player, so it forces dashes. */
+export class DreadSkull extends Skull {
+  constructor(scene, pos, speedBoost = 0) {
+    super(scene, pos, speedBoost + 2.6, MODELS.skullDread);
+    this.type = 'dread';
+    this.hp = 8;
+    this.radius = 1.3;
+    this.score = 5;
+    this.accel = 22;
+    this.knock = 2; // barely flinches
   }
 }
 

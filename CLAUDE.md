@@ -606,13 +606,11 @@ offline; `toko/VERSIONS.md` is the log, `scripts/versions.mjs` reads it into
 the gate fails if code and log disagree.
 `sting.js` is a ~3s sting where the face **draws itself** (arcs revealed by
 dash-offset so they grow along their own path: mouth sweeps open → eyes drop in
-→ blink → logotype lands), skippable on any input from frame one. It plays on
-the arcade **once per browser** (`playStingOnce`, key `tokoSting`) and **never
-in front of a deep link** — `/#hyperdagger` or `/#toko` means somebody came for
-one thing, and a title card between them and it is an advertisement. Imported
-dynamically and swallowed on failure: a nicety must never be the reason the
-floor does not open, and the smoke gate marks it seen in every context so a
-three-second takeover cannot eat the first click of every other test. `masthead.js`
+→ blink → logotype lands), skippable on any input from frame one. The arcade
+plays it **once per browser on the first Play** (`playStingOnce`, key
+`tokoSting`), not merely on arrival: the mark belongs in front of a game, not
+its menu. It is imported dynamically and swallowed on failure, so a nicety can
+never be the reason a game does not open. `masthead.js`
 is the animated lockup for the arcade hub — `stop()` it wherever the page
 re-renders or the loop leaks against a detached canvas. `surface.js` is the
 DPR-aware smooth canvas (the mark is curves, so antialiasing stays ON).
@@ -640,24 +638,39 @@ plus its five deps — so **changing `signature.js` means bumping that token and
 the list entry in the same change**, or those two games serve the old badge out
 of cache forever while every other cabinet gets the new one.
 
-### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
-Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
+### Toko Drop (`toko-drop/`)
 
-**Pillars:** twin-stick controls, bullet-hell enemy patterns with deliberately slow enemy movement, roguelite run-based progression, gun upgrade trees, gelatin/clay visuals (translucent wobbling materials, destructible chunks, colorful puddle decals).
+Browser twin-stick swarm-survival game built with Three.js and ES modules, with
+no build step. The current live implementation is the canonical gameplay
+reference; the old UE5 notes no longer describe this repository.
 
-**Current UE5.4 state:**
-- Player pawn: `BP_GelPlayer` (Character-based, static mesh + `M_Gelatin` material, set as Default Pawn in `BP_TopDownGameMode`)
-- Weapon: `BP_Weapon` (Actor-based, basic firing logic, spawned at a character weapon point)
-- Enemy: Blueprint class with basic "move toward player" AI
-- Mostly Blueprint-driven; open to C++ for performance-sensitive paths (bullet counts in bullet-hell can get heavy)
+- **`js/tuning.js` is the single source of truth for enemy look and feel.**
+  Constants covered by `TUNING` must be read from it rather than duplicated in
+  `enemy.js` or `main.js`.
+- `enemy-lab.html` is the standalone visual reference. When a written brief and
+  the lab disagree, the lab wins.
+- `js/enemy.js` owns enemy types, behaviours, goo shaders and gel geometry.
+- `js/main.js` owns orchestration: the game loop, waves, collisions, HUD and
+  title/pause/death screens.
+- `js/bullet.js`, `js/player.js`, `js/input.js`, `js/audio.js`, `js/lang.js`,
+  `js/designer.js` and `js/retro.js` hold the major supporting systems.
+- `TOKO_DROP_ROADMAP.md` is forward planning, `GDD.md` contains design truths,
+  and `VERSIONS.md` records shipped changes.
 
-**Systems still to build:**
-1. Weapon system + upgrade trees
-2. Enemy bullet-hell patterns (spiral, spread, ring, etc.)
-3. Arena + procedural/roguelite run generation
-4. Roguelite meta-progression (unlocks, between-run upgrades)
-5. Gelatin VFX: vertex displacement wobble, destructible chunks, puddle decals (Niagara + material functions)
-6. HUD: health, score, run state
+**Release and visual-validation discipline:**
+
+- Run `scripts/smoke.sh` for the main game gate. If a change affects modes or
+  `inCabinet()`, also run `scripts/cabinets.sh`; it boots and plays all six
+  cabinets and checks for mode leaks, retro-pass failures and page errors.
+- `scripts/enemy-loop.mjs` records short looping GIFs from the real game code.
+  Use it for movement and readability questions instead of hand-building a
+  separate capture harness. Scenarios live in the script's `SCENARIOS` map.
+- Every Toko Drop game change needs a new top entry in `VERSIONS.md` and matching
+  cache tokens. `scripts/bump-version.sh <N>` performs the coordinated bump.
+- The live site remains on `gh-pages` until the source-of-truth migration is
+  completed. Reconciliation branches must not deploy or force-push production.
+- New resource paths need versioned URLs from their first release because the
+  Pages CDN may temporarily cache a pre-deployment 404.
 
 ## Repository Structure
 

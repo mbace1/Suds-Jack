@@ -284,7 +284,11 @@ function faceIn(ctx, x, y, w, h, opts) {
 globalThis.__tokoChat = mountChat($('#chat-demo'), { where: 'in' });
 
 // ── the sting ────────────────────────────────────────────────────────────
-$('#b-sting').addEventListener('click', () => { playSting(); });
+// Two stings, two buttons. They are the same length and say the same thing;
+// which one belongs on the front of the workshop is a question you settle by
+// watching them back to back, not by describing them to each other.
+$('#b-sting').addEventListener('click', () => { playSting({ style: 'draw' }); });
+$('#b-sting-goo').addEventListener('click', () => { playSting({ style: 'goo' }); });
 
 // ── the footer badge ─────────────────────────────────────────────────────
 {

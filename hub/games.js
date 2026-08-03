@@ -12,9 +12,9 @@
 //          dead and dimmed instead of pointing at a 404, and `note` says why.
 //          Not every button has to work for a game to be worth listing.
 // `path`   what Play opens, relative to the hub page.
-// `inRepo` true when the folder lives on this branch too. The site (gh-pages)
-//          is a curated root that carries a few games `main` does not, so the
-//          local test loop only checks the links it can actually see.
+// `inRepo` true when the folder lives in a complete source checkout. Keep this
+//          explicit so partial or experimental branches can still mark links
+//          they do not carry without weakening the local link gate.
 // `accent` the card's neon; taken from the game's own palette so the row of
 //          cards reads as the row of cabinets it is meant to be.
 // `art`    the key of a draw function in art.js (each cabinet gets a marquee).
@@ -48,12 +48,13 @@ export const GAMES = [
     tags: ['shooter', 'vector', 'canvas'],
     controls: '← → / A D move · Space fire · Z superzapper',
     path: 'sudz/',
-    inRepo: false,
+    inRepo: true,
     accent: '#22e0e8',
     art: 'tube',
   },
   {
     id: 'tokodrop',
+    score: { key: 'tokoDropHi', fmt: 'points' },
     fi: {
       tagline: 'Kahden tatin laumaselviytyminen. Geelit väistävät linjojasi, parveilevat kuin kalat ja räjähtävät kostorenkaiksi.',
       lineage: 'luotihelvetti / areena',
@@ -78,6 +79,7 @@ export const GAMES = [
   },
   {
     id: 'hyperdagger',
+    score: { key: 'hyperDaggerHi', fmt: 'secs' },
     fi: {
       tagline: 'Selviydy vokselikallojen laumasta kiekolla tyhjyydessä. Selviytymisaika on ainoa pistemäärä.',
       lineage: 'Devil Daggers × HYPERDEMON',
@@ -102,6 +104,7 @@ export const GAMES = [
   },
   {
     id: 'dropcabal',
+    score: { key: 'dropCabalHi', fmt: 'points' },
     fi: {
       tagline: 'Syvyyssuuntaan kerrostuva galleriaräiskintä — lähellä olevat geelit syövät laukaukset, jotka tähtäsit kauas.',
       lineage: 'Cabal (1988)',
@@ -147,12 +150,13 @@ export const GAMES = [
     tags: ['racing', 'ps1', 'three.js'],
     controls: 'A D carve · W tuck · S scrub · Space burn · twin sticks on touch',
     path: 'powder/',
-    inRepo: false,
+    inRepo: true,
     accent: '#d7a35c',
     art: 'powder',
   },
   {
     id: 'paperboy',
+    score: { key: 'paperRouteHi', fmt: 'points' },
     fi: {
       tagline: 'Toimita tilaajille, riko kaikkien muiden ikkunat, selviä kolmesta kolarista.',
       lineage: 'Paperboy (1985)',
@@ -198,7 +202,7 @@ export const GAMES = [
     tags: ['roguelike', 'survival', 'canvas'],
     controls: 'WASD move · fires on its own',
     path: 'Skltr/',
-    inRepo: false,
+    inRepo: true,
     accent: '#3ce85a',
     art: 'bones',
   },
@@ -224,12 +228,13 @@ export const GAMES = [
     tags: ['action', 'three.js', 'combo'],
     controls: 'WASD + mouse · LMB chains · tap stick to jump ×2',
     path: 'neon-ronin/',
-    inRepo: false,
+    inRepo: true,
     accent: '#e83ca8',
     art: 'slash',
   },
   {
     id: 'flashprince',
+    score: { key: 'flashPrinceBest', fmt: 'best-time' },
     fi: {
       tagline: 'Jokainen liike viedään loppuun. Riipu, kiipeä ja vedä ase esiin ennen kuin hän ehtii.',
       lineage: 'Another World × Flashback × Prince of Persia',
@@ -280,6 +285,30 @@ export const GAMES = [
     art: 'treeline',
   },
   {
+    id: 'radiofree',
+    fi: {
+      tagline: 'Piraattiuutisvirta Tokon lukemana. Jokainen tiedote on keksitty; DECODE näyttää mitä sanamuoto oikeasti teki.',
+      lineage: 'Metal Gearin kodekki × puhelimen syöte',
+      controls: 'vieritä tai pyyhkäise · ⧉ purkaa tiedotteen · ← → vaihtaa taajuutta',
+    },
+    ja: {
+      tagline: 'トコが読み上げる海賊放送のニュース。どの速報も作りもの。DECODE がその言い回しの仕掛けを見せる。',
+      lineage: 'メタルギアの無線 × スマホのフィード',
+      controls: 'スクロールかスワイプ · ⧉ で速報を解読 · ← → で周波数',
+    },
+    pad: { ui: true },
+    status: 'active',
+    title: 'Radio Free Helsinki',
+    tagline: 'A pirate news feed read by Toko. Every bulletin is invented; DECODE shows you what the wording was doing.',
+    lineage: 'Metal Gear codec × a phone feed',
+    tags: ['app', 'pixel', 'fi / en / ja'],
+    controls: 'scroll or swipe · ⧉ decodes the bulletin · ← → changes band',
+    path: 'radiofree/',
+    inRepo: true,
+    accent: '#7dffb2',
+    art: 'codec',
+  },
+  {
     id: 'tinyhawk',
     fi: {
       tagline: 'Skeittiosuus kuvattuna lähes mustassa puistossa. Lataa tatti, napsauta se ja pidä ketju kasassa.',
@@ -302,7 +331,7 @@ export const GAMES = [
     tags: ['skate', 'three.js', 'gamepad'],
     controls: 'load ↓ then flick ↑ · left stick steers · WASD + Space + Q E F C',
     path: 'tinyhawk/',
-    inRepo: false,
+    inRepo: true,
     accent: '#8fe6d8',
     art: 'prism',
   },
@@ -330,7 +359,7 @@ export const GAMES = [
     tags: ['one-button', 'three.js', 'endless'],
     controls: 'hold anywhere · release at the lip · flick up to trick',
     path: 'tiny2d/',
-    inRepo: false,
+    inRepo: true,
     accent: '#4fd0e0',
     art: 'lip',
   },
@@ -353,15 +382,47 @@ export const GAMES = [
     tags: ['puzzle', 'canvas', 'landscape'],
     controls: 'tap a picture · or ← →',
     path: 'eye-test/',
-    inRepo: false,
+    inRepo: true,
     accent: '#e8d24a',
     art: 'optotype',
+  },
+  // Not on the floor. `secret: true` keeps a cabinet out of every rack, every
+  // count and every filter until the code is entered — and what it hides is a
+  // real page that is already in this repo, because a secret that turns out to
+  // be a joke about there being no secret is worth exactly one telling.
+  {
+    // NOT `toko` — that fragment already belongs to the counter (see THEIRS in
+    // hub.js), and a cabinet answering to the same hash would fight the panel
+    // every badge in every signed game links to.
+    id: 'brand',
+    secret: true,
+    fi: {
+      tagline: 'Naamio, merkki ja kaikki mihin se painetaan — työpajan oma identiteetti, elävänä.',
+      lineage: 'kaksi väriä, ei kuvatiedostoja',
+      controls: 'katso · vie merkki mukanasi',
+    },
+    ja: {
+      tagline: '仮面とマーク、そしてそれが刷られるすべて — 工房そのものの正体、生きたまま。',
+      lineage: '二色だけ、画像素材なし',
+      controls: '眺める · マークを持ち帰る',
+    },
+    status: 'active',
+    title: 'Toko Midori Games',
+    tagline: 'The mask, the mark, and everything it gets printed on — the workshop\'s own identity, live.',
+    lineage: 'two colours, no image assets',
+    tags: ['brand', 'canvas'],
+    controls: 'look · take the mark with you',
+    path: 'toko/',
+    inRepo: true,
+    accent: '#F0027F',
+    art: 'mask',
   },
 ];
 
 // The shader studies the games were built out of — playable, but they are
 // experiments, so they get a quieter shelf of their own.
 export const SKETCHES = [
+  { id: 'toko-enemy-lab', fi: { tagline: 'Kaikki Toko Dropin 40 geeliä elävinä pelin omalla koodilla — osu, poksauta, säädä materiaalit.' }, ja: { tagline: 'トコドロップの全40ゼリーが実ゲームのコードで生きている — 叩いて、弾けさせて、質感をいじって。' }, title: 'Toko Enemy Lab', tagline: 'All 40 Toko Drop gels live on the real game code — hit them, pop them, restyle the goo.', path: 'toko-drop/enemy-lab.html', inRepo: true },
   { id: 'goo-surface', fi: { tagline: 'SPH-kevyt möykky, 64 hiukkasta, metapallopassi. Tökkää sitä.' }, ja: { tagline: '軽量 SPH のどろどろ、粒子 64、メタボール処理。つついてみて。' }, title: 'Goo Surface', tagline: 'SPH-lite goop, 64 particles, metaball pass. Poke it.', path: 'goo-surface.html', inRepo: true },
   { id: 'goo-flop', fi: { tagline: 'Yksi geelikuutio, joka kaatuu kyljelleen kun pyyhkäiset.' }, ja: { tagline: 'スワイプすると横に倒れるゼリーの立方体ひとつ。' }, title: 'Goo Flop', tagline: 'One gel cube that tips onto its side when you swipe.', path: 'goo-flop.html', inRepo: true },
   { id: 'goo-snowman', fi: { tagline: 'Säteenmarssitettu SDF-lumiukko — täältä geelin ilme alkoi.' }, ja: { tagline: 'レイマーチング SDF の雪だるま — この見た目の始まり。' }, title: 'Goo Snowman', tagline: 'Ray-marched SDF snowman — where the goo look started.', path: 'goo-snowman.html', inRepo: true },
