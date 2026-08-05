@@ -115,13 +115,13 @@ export const GAMES = [
       lineage: 'Cabal (1988)',
       controls: 'A D 走る · マウスで照準 + 左クリック · スペース ローリング · G 手榴弾',
     },
-    pad: { keys: { left: 'KeyA', right: 'KeyD', b0: 'Space', b1: 'KeyG' } },   // aim stays on the mouse
+    pad: 'native',   // reads the sticks itself: a crosshair needs an axis, not a keystroke
     status: 'active',
     title: 'Drop Cabal',
     tagline: 'A gallery shooter with layered depth — near gels eat the shots you aimed at far ones.',
     lineage: 'Cabal (1988)',
     tags: ['shooter', 'pixel', 'three.js'],
-    controls: 'A D run · mouse aim + LMB · Space roll · G grenade',
+    controls: 'A D run · mouse aim + LMB · Space roll · G grenade · pad: twin sticks',
     path: 'dropcabal/',
     inRepo: true,
     accent: '#e8913a',

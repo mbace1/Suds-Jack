@@ -915,15 +915,24 @@ function check(name, cond) {
       await page.evaluate(() => window.__arcadeShell.bridged) === null);
   }
 
-  // the key bridge actually produces the key the game listens for
-  const cabal = catalogue.find(g => g.id === 'dropcabal');
-  await page.goto(`${base}/${cabal.path}`, { waitUntil: 'domcontentloaded' });
-  await page.evaluate(() => {
+  // The key bridge actually produces the key a game listens for.
+  //
+  // Every keys-bridged cabinet now lives on the deployed site rather than in
+  // this repo (Drop Cabal used to be the one here, until it grew its own pad
+  // reader — a crosshair needs an axis, so a keystroke could never carry it).
+  // So drive `attachPad` directly with a stub binding, hosted on a page that
+  // bridges nothing itself: whatever keys turn up are the bridge's own work,
+  // with no second one to confuse them for.
+  const host = catalogue.find(g => g.pad === 'native' && g.inRepo);
+  await page.goto(`${base}/${host.path}`, { waitUntil: 'domcontentloaded' });
+  await page.evaluate(async () => {
     window.__seen = [];
     addEventListener('keydown', e => window.__seen.push('down:' + e.code), true);
     addEventListener('keyup', e => window.__seen.push('up:' + e.code), true);
     window.__pad = { buttons: Array.from({ length: 16 }, () => ({ pressed: false, value: 0 })), axes: [0, 0, 0, 0], connected: true };
     navigator.getGamepads = () => [window.__pad];
+    const { attachPad } = await import(new URL('../hub/padkeys.js?v=7', location.href).href);
+    attachPad({ keys: { left: 'KeyA', right: 'KeyD', b0: 'Space' } });
   });
   await page.evaluate(async () => {
     window.__pad.axes = [1, 0, 0, 0];                      // stick right
