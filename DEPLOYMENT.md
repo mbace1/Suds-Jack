@@ -19,6 +19,9 @@ deployment work begins.
 4. Change the Pages publishing source only after that checkpoint succeeds.
 5. Stop direct development on `gh-pages`; it becomes deployment output only.
 
+During the transition, the restored Radio Free Helsinki morning-wire workflow is
+the only approved content-only writer to both branches; it does not deploy code.
+
 ## Rollback
 
 If a checkpoint or live deployment fails, restore the recorded `gh-pages`
