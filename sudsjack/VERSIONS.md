@@ -8,6 +8,37 @@ floor sending people at the unfinished one.
 The `?v=N` token in `index.html` tracks module-graph changes; this number is
 the public release. Bump both when shipping.
 
+## v5 — 2026-08-07
+
+**Press again mid-air and he floats.** (Owner's direction: "many jumps allows
+the character to float a bit", and crossing the pipes "should feel a bit like
+tiny bird ski jumping".)
+
+A jump pressed again in its falling half chains: one more bay, committed the
+same way a jump always is, on a hop that is longer and — this is the part
+that makes it a float — **never rises**. The first cut gave a chained hop its
+own little sine arc and it climbed above the hop that launched it, which
+reads as a double jump, not a float. Now a float GLIDES from wherever the
+arc had him (`1 − k²`: hangs early, drops late), so each press starts from
+lower down and the ladder decays on its own until grime stops fitting
+underneath you — the dodge window is the price of distance. Three floats and
+he lands; from a lip bay, hop plus three floats is exactly the far lip, so
+the cap and the channel are the same size on purpose.
+
+Underneath it, one real bug the gate had passed over: **the declared peaks
+were not the drawn ridges.** The tube's default lane count is `BAYS ×
+LANES_PER_BAY` = 20 and the peaks are declared for it, but `main.js` still
+passed the 13 that predates the ridged channel — 13 does not divide into
+five bays, so the walls you hit sat beside the ridges you saw, one peak was
+past the lip, and the fifth bay was a one-lane sliver. The gate passed
+because it only asked the declaration about itself; it asks the geometry
+now, and the two new checks fail against the 13-lane build. Every
+lane-denominated tuning (rim speed and accel, grime's step cadence and hit
+window, the director's spawn gaps) carries a ×20/13 rescale so world-space
+feel is exactly what it was tuned to.
+
+Smoke gate 41 → 48 checks.
+
 ## v4 — 2026-07-30
 
 **A controller could ride the rim but never reach it.**

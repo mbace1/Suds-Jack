@@ -74,7 +74,14 @@ composer.addPass(smear);
 composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.7, 0.42, 0.72));
 composer.addPass(new OutputPass());
 
-const tube = new Tube(scene, { lanes: 13, radius: 11.4, depth: 78 });
+// Lane count comes from the tube's own default: BAYS × LANES_PER_BAY. The 13
+// this used to pass in predated the ridged channel, and 13 does not divide
+// into five bays — the declared peaks sat at lanes 4/8/12/16 of a channel
+// whose DRAWN ridges were at 2.6/5.2/7.8/10.4, so the walls you hit were not
+// the ridges you saw, one peak was past the lip, and the fifth bay was a
+// one-lane sliver. Every lane-denominated tuning below was rescaled ×20/13 to
+// keep world-space feel identical.
+const tube = new Tube(scene, { radius: 11.4, depth: 78 });
 const player = new Player(scene, tube);
 const risers = new Risers(scene, tube);
 const pops = new Pops(scene, tube);
@@ -180,7 +187,7 @@ function director(dt) {
   const n = tube.lanes;
 
   if (state.nextBubble <= 0 && state.quota > 0) {
-    const lane = awayFrom(player.lane, 2, n);
+    const lane = awayFrom(player.lane, 3, n);
     risers.spawn('bubble', lane, riserSpeed(state.level) * (0.85 + Math.random() * 0.4));
     state.nextBubble = bubbleRate(state.level) * (0.7 + Math.random() * 0.6);
   }
@@ -191,7 +198,7 @@ function director(dt) {
     // the level a route rather than a hiding place.
     const lane = tube.peaks.length
       ? bayLane(Math.random() < 0.45 ? player.lane : Math.random() * n)
-      : awayFrom(player.lane, 4, n);
+      : awayFrom(player.lane, 6, n);
     risers.spawn('grime', lane, riserSpeed(state.level) * (0.7 + Math.random() * 0.3));
     state.nextGrime = grimeRate(state.level) * (0.7 + Math.random() * 0.7);
   }
