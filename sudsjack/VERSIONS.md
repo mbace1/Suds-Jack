@@ -8,6 +8,53 @@ floor sending people at the unfinished one.
 The `?v=N` token in `index.html` tracks module-graph changes; this number is
 the public release. Bump both when shipping.
 
+## v6 — 2026-08-07
+
+**The Scum Line.** One rule, aimed at the four places the tension was
+leaking: the dive was optional (it advertised 3× but capped at 2.1×, against
+a ×16 chain that never needed it), nothing accumulated (grime past the mouth
+just died, so dodging was free and a patient run idled forever), the chain
+had no decision in it, and levels got longer rather than deeper.
+
+**Grime that reaches the mouth now settles as SCUM** — a film on its lane,
+stacking to three layers. Every dodge is a loan. It is Tempest's spikes with
+the gun taken out, the way grime was already its flipper.
+
+Scum does three things, none of them a bullet:
+
+- **Sticky.** Standing in it, rim speed ×0.4. Airborne is exempt — the jump
+  and the float are the way ACROSS a fouled stretch on every shape now, not
+  just the ridged one.
+- **Barren.** The director will not raise a bubble through a fouled lane, so
+  neglect starves the chain instead of blocking you: the income migrates
+  into whatever you kept clean, and the channel narrows around you.
+- **The flood.** Past 80% coverage the channel washes itself: a life, the
+  chain, and a clean rim, in that order. The one failure you walked into
+  slowly, on a meter you were looking at the whole time.
+
+**The dive is the only thing that takes it off.** A dive that comes all the
+way back wipes one layer from its lane — Suds Jack washes, which is the verb
+the game is named after — and pays 50 × level. A dry dive is never wasted,
+but it is 0.62s lane-locked in the stickiest place on the rim. A dive
+knocked out of the water scrubs nothing.
+
+**The cash-out the chain never had:** a level clear washes the channel and
+pays 40 × level × clean lanes, so the last seconds of every level are a
+decision — one more deep bubble, or scrub toward the bonus.
+
+The HUD grew one element: the scum line, a strip of twenty cells under the
+channel — the mouth seen edge-on. It is the route map and the flood meter in
+one fact, because a second gauge for the same danger is a gauge nobody
+reads.
+
+Collection scoring, the lit order, relight, dive timings, grime stepping,
+ridges and the float are untouched. Tuning knobs, most sensitive first:
+`FLOOD_AT` (0.8), `STICKY` (0.4), layers per scrub (1), the barren rule
+(hard skip vs. reduced odds).
+
+Smoke gate 48 → 60 checks, and the new ones are proven: against the
+pre-scum build the scum section does not pass — it cannot even run.
+
 ## v5 — 2026-08-07
 
 **Press again mid-air and he floats.** (Owner's direction: "many jumps allows

@@ -174,7 +174,18 @@ that predate the ridged channel while the peaks are declared for the tube's own 
 of 20, so the walls sat beside the ridges, one peak was past the lip, and the fifth bay
 was a sliver. The gate now asks the geometry, not the declaration, and every
 lane-denominated tuning carries a ×20/13 rescale to keep world-space feel.
-`node sudsjack/test/smoke.cjs` = 48 checks: boot, the director, the
+**The Scum Line** (v6): grime past the mouth **settles** instead of dying — a film on its
+lane, three layers deep, because dodging used to be free and nothing accumulated, so a
+patient run idled forever. Scum is **sticky** (rim ×0.4 underfoot; airborne exempt, which
+makes the float the way across a fouled stretch on every shape), **barren** (the director
+skips fouled lanes, so neglect starves the chain rather than blocking you) and past **80%
+coverage the channel floods** — a life, the chain, a clean rim. The **dive is the only
+scrub** (one layer per completed dive, 50 × level; a dive cancelled by a hit scrubs
+nothing) — which is what finally makes the stated core verb load-bearing: it advertised
+3× but capped at 2.1× against a ×16 chain that never needed it. Level clear washes the
+channel and pays 40 × level × clean lanes — the chain's missing cash-out beat. The scum
+line itself is a 20-cell strip under the channel: route map and flood meter, one fact.
+`node sudsjack/test/smoke.cjs` = 60 checks: boot, the director, the
 lane-lock during a dive, collection, the chain, damage, mercy frames, the level shapes,
 game over, the way home and the signature — all driven off **game state, not the wall
 clock**, because a sandbox with no GPU renders this at a handful of frames a second.
