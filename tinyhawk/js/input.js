@@ -153,6 +153,7 @@ export class InputManager {
     this._touchMap = new Map();
 
     this.actions = [];
+    this.uiActions = [];
     // Every action the input has ever emitted, newest last. The game never
     // reads this — it exists so the gesture layer can be asserted on its own.
     this.actionLog = [];
@@ -350,6 +351,18 @@ export class InputManager {
       return now && !was;
     };
 
+    if (!this.enabled) {
+      if (edge('uiConfirm', btn(0) || btn(9))) this.uiActions.push('confirm');
+      if (edge('uiBack', btn(1) || btn(8))) this.uiActions.push('back');
+      const ux = (btn(15) ? 1 : 0) - (btn(14) ? 1 : 0) || Math.sign(mx) * (Math.abs(mx) > 0.62 ? 1 : 0);
+      const uy = (btn(13) ? 1 : 0) - (btn(12) ? 1 : 0) || Math.sign(-my) * (Math.abs(my) > 0.62 ? 1 : 0);
+      const dir = ux ? (ux > 0 ? 'right' : 'left') : uy ? (uy > 0 ? 'down' : 'up') : '';
+      if (dir && dir !== this._uiPrevDir) this.uiActions.push(dir);
+      this._uiPrevDir = dir;
+      return;
+    }
+    this._uiPrevDir = '';
+
     if (this.scheme === 'skate') {
       // Right stick is the board. Camera follows on its own; the bumpers give
       // a manual nudge for when you want to look around.
@@ -425,6 +438,30 @@ export class InputManager {
     return a;
   }
 
+  consumeUIActions() {
+    const actions = this.uiActions;
+    this.uiActions = [];
+    return actions;
+  }
+
+  // Drain the press that selected a menu item. Without this, holding A to
+  // enter a run becomes an ollie charge on the very next frame.
+  drainGamepad() {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : null;
+    let gp = null;
+    if (pads) for (const pad of pads) { if (pad && pad.connected) { gp = pad; break; } }
+    if (!gp) return;
+    const pressed = index => !!(gp.buttons[index] && gp.buttons[index].pressed);
+    this._padPrev.a = pressed(0);
+    this._padPrev.x = pressed(2);
+    this._padPrev.b = pressed(1);
+    this._padPrev.y = pressed(3);
+    this._padPrev.lb = pressed(4);
+    this._padPrev.uiConfirm = pressed(0) || pressed(9);
+    this._padPrev.uiBack = pressed(1) || pressed(8);
+    this.padFlick.reset();
+  }
+
   setAirborne(v) { this.airborne = v; }
 
   /** True while a pop is loaded but not yet released. The skater crouches on
@@ -438,6 +475,7 @@ export class InputManager {
     this.left.active = this.right.active = false;
     this.left.dx = this.left.dy = this.right.dx = this.right.dy = 0;
     this.actions.length = 0;
+    this.uiActions.length = 0;
     this._charging = false;
     this._charge = 0;
     this.flash = null;
