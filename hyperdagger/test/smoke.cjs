@@ -274,6 +274,32 @@ s.listen(0, '127.0.0.1', async () => {
   ok('a chip tears and re-forms the skin', hull.after > 0 && hull.after !== hull.before, JSON.stringify(hull));
   ok('LOOK CUBES and the low tier both fall back', hull.cubesBack === false && hull.lowShed === false, JSON.stringify(hull));
 
+  // ---- long-run health: spawn/kill cycles must plateau, not climb --------
+  // (the hull re-skin allocates a fresh BufferGeometry per rebuild, so this
+  // is the check that catches a missed dispose anywhere in that path)
+  const health = await p.evaluate(async () => {
+    const hd = window.__hd;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    hd.debug.setOpt('perf', 'low'); // cheap frames — we count objects, not pixels
+    const cycle = async () => {
+      for (let i = 0; i < 4; i++) { hd.debug.spawnDread(); hd.debug.spawnWatcher(); }
+      await frames(4);
+      // chip one so the re-skin path runs too
+      const e = hd.enemies.find(x => x.alive);
+      if (e?.sprite?.hull) { e.sprite.chip(e.sprite.worldVoxels()[0].pos, 20); await frames(3); }
+      for (const x of hd.enemies) x.alive = false;
+      await frames(4); // the main loop prunes + disposes dead enemies
+    };
+    await cycle(); // warmup — first-use allocations (programs, shared geometry)
+    const a = hd.debug.getHealth();
+    for (let i = 0; i < 4; i++) await cycle();
+    const b = hd.debug.getHealth();
+    hd.debug.setOpt('perf', 'auto');
+    return { a: { g: a.geometries, t: a.textures, sc: a.sceneChildren, en: a.enemies }, b: { g: b.geometries, t: b.textures, sc: b.sceneChildren, en: b.enemies } };
+  });
+  ok('spawn/kill cycles do not leak geometry', health.b.g - health.a.g <= 2 && health.b.t === health.a.t, JSON.stringify(health));
+  ok('the scene graph returns to baseline', health.b.sc <= health.a.sc + 2 && health.b.en === health.a.en, JSON.stringify(health));
+
   // ---- death → restart under 2 s -----------------------------------------
   const death = await p.evaluate(async () => {
     const hd = window.__hd;

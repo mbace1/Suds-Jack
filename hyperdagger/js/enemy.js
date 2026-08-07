@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=49';
+import { VoxelSprite, MODELS } from './voxel.js?v=50';
 
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();
@@ -35,6 +35,11 @@ class VoxelEnemy {
   }
 
   remove(scene) {
+    // idempotent: killEnemy removes on the kill, and the prune loop removes
+    // again on the splice — any path that only flags alive=false still gets
+    // its group and GPU resources released exactly once
+    if (this.removed) return;
+    this.removed = true;
     scene.remove(this.group);
     this.sprite.dispose();
   }

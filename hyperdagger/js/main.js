@@ -5,16 +5,16 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=49';
-import { Player } from './player.js?v=49';
-import { DaggerPool } from './daggers.js?v=49';
-import { GemPool } from './gems.js?v=49';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=49';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=49';
-import { OrbPool } from './bullets.js?v=49';
-import { AudioKit } from './audio.js?v=49';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=49';
-import { TUNING as T } from './tuning.js?v=49';
+import { InputManager } from './input.js?v=50';
+import { Player } from './player.js?v=50';
+import { DaggerPool } from './daggers.js?v=50';
+import { GemPool } from './gems.js?v=50';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=50';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=50';
+import { OrbPool } from './bullets.js?v=50';
+import { AudioKit } from './audio.js?v=50';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=50';
+import { TUNING as T } from './tuning.js?v=50';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -2045,7 +2045,10 @@ function updateCombat(dt) {
     }
   }
   for (let j = enemies.length - 1; j >= 0; j--) {
-    if (!enemies[j].alive) enemies.splice(j, 1);
+    if (!enemies[j].alive) {
+      enemies[j].remove(scene); // no-op after killEnemy; releases debug/edge-path kills
+      enemies.splice(j, 1);
+    }
   }
 
   // gems: magnet + collect
