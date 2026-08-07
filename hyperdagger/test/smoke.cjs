@@ -175,6 +175,34 @@ s.listen(0, '127.0.0.1', async () => {
   });
   ok('style rises and bleeds', style.highVal >= 75 && style.highTier !== 'D' && style.laterVal < style.highVal, JSON.stringify(style));
 
+  // ---- v4.30 HYPERDEMON visual push --------------------------------------
+  const fx = await p.evaluate(async () => {
+    const hd = window.__hd;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    hd.debug.setOpt('perf', 'high'); // pin T0 so the governor can't interfere
+    hd.debug.setOpt('edge', true);
+    const on = hd.debug.getFx();
+    hd.debug.setOpt('edge', false);
+    const off = hd.debug.getFx().edge;
+    hd.debug.setOpt('edge', true);
+    hd.debug.setOpt('perf', 'low'); // T4 must shed the pass regardless of opts
+    const tierGated = hd.debug.getFx().edge;
+    hd.debug.setOpt('perf', 'high');
+    // smear deepens mid-dash and settles back
+    const dampIdle = hd.debug.getFx().damp;
+    hd.player.dashT = hd.debug.getTuning().dash.time;
+    await frames(1);
+    const dampDash = hd.debug.getFx().damp;
+    await frames(30);
+    const dampBack = hd.debug.getFx().damp;
+    hd.debug.setOpt('perf', 'auto');
+    return { edgeOn: on.edge, glow: on.gridGlow, off, tierGated, dampIdle, dampDash, dampBack };
+  });
+  ok('neon edge pass on by default at T0', fx.edgeOn === true, JSON.stringify(fx));
+  ok('EDGE OFF and the low tier both shed it', fx.off === false && fx.tierGated === false, JSON.stringify(fx));
+  ok('the grid glow is HDR', fx.glow > 1.5, JSON.stringify(fx));
+  ok('smear deepens mid-dash, settles back', fx.dampDash > fx.dampIdle + 0.05 && fx.dampBack <= fx.dampIdle + 0.01, JSON.stringify(fx));
+
   // ---- death → restart under 2 s -----------------------------------------
   const death = await p.evaluate(async () => {
     const hd = window.__hd;

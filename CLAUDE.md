@@ -210,8 +210,10 @@ gib individually (its pale **ghost** variant is armored from the front — shoot
 from behind), spider gem-thieves that also lay **egg sacs** (hatch 2 skulls unless shot,
 harmless to touch), and the Leviathan boss. Returnal-inspired bullet-hell: enemy orbs are slow, readable,
 and the **dash phases through projectiles** (never bodies). Movement: **jump + double
-jump**, dash with FOV kick (requests buffered 0.25 s across the cooldown). Art is **black & white with dark red as the only contrast color** — the neon grid
-just stops at the arena edge (no barrier visual). Desktop: pointer-lock mouse look,
+jump**, dash with FOV kick (requests buffered 0.25 s across the cooldown). Art is **black & white with dark red as the only contrast color** — plus, since
+v4.30, a deliberately dim pastel iridescence in the sky (HYPERDEMON's wash; it stays
+atmosphere, never a gameplay color) — and the neon grid glows and just stops at the
+arena edge (no barrier visual). Desktop: pointer-lock mouse look,
 **DD gunfeel — LMB tap = shotgun burst, hold = stream** (v4.29; every dagger manually
 aimed), Space jump ×2, Shift dash,
 Esc = pause/options. Touch: dual on-screen sticks — left moves, right looks; **firing is
@@ -972,10 +974,14 @@ alongside threat count and run progress), and only **S+** rank-ups toast/flouris
 lower crossings never clobber an enemy-debut announcement. `stylePeakIdx` is the
 run-end "peak rank" recap line. Debug: `__hd.debug.addStyle(n)` / `getStyle()`.
 
-**Render / feel:** ACES tone mapping + `EffectComposer` (`RenderPass` →
-`AfterimagePass` 0.72 (HYPERDEMON motion smear) → `UnrealBloomPass` 0.7/0.45/0.6 →
-chromatic-aberration `ShaderPass` → `OutputPass`); smear/shake/chroma each sit behind a
-pause-menu toggle. Bloom is *selective* via HDR colors (white daggers/blade/crown, red
+**Render / feel:** ACES tone mapping + `EffectComposer` (`RenderPass` → neon-rim
+edge `ShaderPass` (v4.30: cross-gradient edge detect tinted by the STYLE accent, HDR
+so bloom bites; placed BEFORE the smear so edges streak with motion; T0-T1 only via
+`tier.edge`) → `AfterimagePass` (damp is DYNAMIC since v4.30 — `SMEAR_BASE` 0.74 +
+`SMEAR_DASH` 0.12·dashK, so the hardest smear is transient and the 0.82-starburst
+trap stays closed) → `UnrealBloomPass` 0.7/0.45/0.6 → chromatic-aberration
+`ShaderPass` → `OutputPass`); smear/shake/chroma/edge each sit behind a pause-menu
+toggle. Bloom is *selective* via HDR colors (white daggers/blade/crown, red
 eyes/veins/gems exceed 1.0). A **trauma** value (kills, shotgun, dash,
 death) drives camera shake + the chroma amount; dash and shotgun kick the FOV. The
 first-person **voxel gauntlet** is a camera child (`scene.add(camera)` required) at
@@ -993,9 +999,13 @@ after a pause, resyncs instead of bursting). Voices layer in by intensity (compu
 `die`; a MUSIC pause-menu toggle (`opts.music`) reconciles live via `applyOpts` →
 `musicPlaying()`.
 
-Sky is a `BackSide` sphere: greyscale band shimmer over black with one dark-red ember
-glow at the horizon (`fog: false`); the floor is a `CanvasTexture` white-on-black grid
-on a circle of exactly `ARENA_R` — the grid simply ends at the edge, no barrier mesh. Death/menu/pause are DOM overlays; touch sticks
+Sky is a `BackSide` sphere: since v4.30 a dim **pastel iridescence** (three hue
+cycles around the horizon, drifting with time, desaturated toward white, peak ≈0.09
+so it never trips bloom) replaces the old greyscale band shimmer, with the dark-red
+ember glow still holding the horizon (`fog: false`); the floor is a `CanvasTexture`
+white-on-black grid on a circle of exactly `ARENA_R` — the grid simply ends at the
+edge, no barrier mesh, and `uGlow` 1.8 lifts the major lines past the bloom
+threshold so the grid itself glows (hotter on music beats via `uPulse`). Death/menu/pause are DOM overlays; touch sticks
 are drawn on the `#canvas-ui` overlay each frame. Hi-score lives in `localStorage` under
 `hyperDaggerHi`. `window.__hd` exposes `{enemies, player, debris, daggers, gems,
 serpents, audio, debug}` (debug: `addGems(n)`, `spawnSerpent()`, `spawnSpider()`,
