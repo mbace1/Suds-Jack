@@ -15,7 +15,7 @@
       "id": "kilowatt-desk",
       "sector": "RFH",
       "visual": "coin",
-      "broll": "kamppi",
+      "broll": "switchyard",
       "filed": "2026-08-07"
     },
     {
@@ -36,14 +36,14 @@
       "id": "cable-so-far",
       "sector": "RFH",
       "visual": "sea",
-      "broll": "gulf",
+      "broll": "cableship",
       "filed": "2026-08-07"
     },
     {
       "id": "hundred-million",
       "sector": "RFH",
       "visual": "mesh",
-      "broll": "esplanadi",
+      "broll": "swarm",
       "filed": "2026-08-07"
     }
   ],

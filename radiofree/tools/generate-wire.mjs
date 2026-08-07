@@ -115,6 +115,9 @@ const BROLL_NOTES = {
   packice: 'pack ice, a vessel working through it',
   chase: 'ACTION — a car pursuit on the ring road, night',
   approach: 'ACTION — a heavy aircraft landing, seen from underneath',
+  cableship: 'ACTION — a cable ship working a repair at night, the cable running off the stern into black water',
+  swarm: 'ACTION — a drone formation crossing the city after midnight; decoded, every machine is joined to one van',
+  switchyard: 'a high-voltage substation at night, busbars sagging, a load meter filling; decoded, billed against drawn',
 };
 
 // Places are not accusations (`EDITORIAL.md`), so the naming check has to know

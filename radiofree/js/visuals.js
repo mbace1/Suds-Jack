@@ -4,8 +4,8 @@
 //   B-ROLL   — low-poly Helsinki news footage
 // Face shots are handled in codec.js (large masked Toko), not here.
 
-import { PAL } from './palette.js?v=39';
-import { mix, shade, bayer } from './screen.js?v=39';
+import { PAL } from './palette.js?v=40';
+import { mix, shade, bayer } from './screen.js?v=40';
 
 export const PANEL_W = 128, PANEL_H = 152;
 const W = PANEL_W, H = PANEL_H;
@@ -824,6 +824,7 @@ export const BROLL_KEYS = [
   'suomenlinna', 'katajanokka',
   // drawn footage, not photographed — see js/plate.js
   'beach', 'moon', 'winterhall', 'packice', 'chase', 'approach',
+  'cableship', 'swarm', 'switchyard',
 ];
 
 export function drawVisual(key, scr, t, decode) {

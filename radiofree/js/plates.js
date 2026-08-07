@@ -28,8 +28,8 @@
 // showing" — and a saturated orange lamp would spend that vocabulary on
 // scenery. Nothing here approaches PAL.AMBER_HOT.
 
-import { PAL } from './palette.js?v=39';
-import { mix, shade, bayer } from './screen.js?v=39';
+import { PAL } from './palette.js?v=40';
+import { mix, shade, bayer } from './screen.js?v=40';
 
 export const PLATE_W = 144, PLATE_H = 276;
 const W = PLATE_W, H = PLATE_H;
@@ -944,7 +944,226 @@ function approach(scr, t, d) {
   amberWash(c, d);
 }
 
+// ── CABLESHIP — working a repair, at night, on the Gulf ────────────
+//
+// The stern shot: a cable running off the sheave into black water, deck lights
+// burning, the swell going through under it. Decoded, the seabed is drawn —
+// the cable as a straight amber line with the break marked — because the point
+// of that bulletin is that the sentence never says where it went.
+// COMPOSED FOR THE TOP HALF. The copy sits over the bottom 45% of every post,
+// so a plate whose subject is centred puts its subject under the lower third
+// and reads as an empty sky with a caption. Horizon high, ship in the upper
+// third, and only the cable is allowed to run down behind the words.
+function cableshipBase(c) {
+  ramp(c, 0, 54, NIGHT.sky0, NIGHT.sky1);
+  for (let i = 0; i < 40; i++) {                            // stars, hashed
+    P(c, rnd(i * 2.7) * W, rnd(i * 5.3) * 50, 1, 1, i % 5 ? '#3e6b5f' : '#8fbfae');
+  }
+  P(c, 0, 50, W, 4, '#0d1c19');                             // the far shore
+  for (let i = 0; i < 14; i++) P(c, rnd(i * 7.7) * W, 48, 2, 2, '#c8b98a');
+  ramp(c, 54, H, '#071417', '#03090c');                     // the water
+}
+
+function cableship(scr, t, d) {
+  const c = scr.ctx;
+  c.drawImage(base('cableship', cableshipBase), 0, 0);
+
+  // the swell: 2px cells, sampled at the CELL index — at even pixels only four
+  // of bayer's sixteen values are ever reached and the sea turns to blobs
+  for (let y = 56; y < H; y += 2) {
+    const k = (y - 56) / (H - 56);
+    for (let x = 0; x < W; x += 2) {
+      const wave = Math.sin(x * 0.09 + t * 1.1 + y * 0.16) * 0.06;
+      if (bayer(x >> 1, y >> 1) < 0.10 + k * 0.10 + wave) P(c, x, y, 2, 1, '#12303a');
+    }
+  }
+
+  const hull = 74 + Math.sin(t * 0.7) * 2;                  // she rides the swell
+  // The ship, stern-on. Narrow enough to have water either side of her: the
+  // first cut ran 100px of a 144px frame and read as a wall with lights on it,
+  // which is what a hull does when nothing around it is visibly liquid.
+  P(c, 32, hull, 80, 22, '#1b262c');                        // hull
+  P(c, 34, hull - 3, 76, 3, '#243139');                     // sheer strake
+  P(c, 32, hull + 20, 80, 3, '#0c1418');                    // boot topping
+  // the waterline, and a broken reflection under it so she floats
+  for (let x = 32; x < 112; x += 2) {
+    if (bayer(x >> 1, (hull + 24) >> 1) < 0.42) P(c, x, hull + 23, 2, 1, '#37525c');
+  }
+  for (let i = 0; i < 22; i++) {
+    const rx = 34 + rnd(i * 2.3) * 74;
+    const ry = hull + 26 + rnd(i * 4.1) * 14;
+    if (Math.sin(t * 2 + i) > -0.2) P(c, rx, ry, 3, 1, '#2a4b52');
+  }
+  P(c, 38, hull - 20, 40, 20, '#232f36');                   // house
+  for (let i = 0; i < 5; i++) P(c, 42 + i * 7, hull - 15, 4, 5, '#e8d8a8');   // windows
+  P(c, 82, hull - 32, 4, 34, '#2b3941');                    // mast
+  P(c, 80, hull - 36, 8, 4, '#38474f');
+  // the A-frame and the sheave over the stern, where the cable goes over
+  P(c, 92, hull - 24, 4, 26, '#39474e');
+  P(c, 110, hull - 24, 4, 26, '#39474e');
+  P(c, 92, hull - 26, 22, 4, '#455560');
+  const sheave = 103;
+  halo(c, sheave, hull - 6, 26, '#e8dcb0', 0.34);           // the deck light
+  P(c, sheave - 5, hull - 24, 10, 10, '#5a6a72');
+
+  // the cable: over the sheave, down the transom, into the water, and a live
+  // catenary sag so the sea is visibly pulling on it
+  for (let y = hull - 14; y < H; y += 2) {
+    const sag = Math.sin(y * 0.05 + t * 0.9) * 2;
+    P(c, sheave + sag + (y - hull) * 0.06, y, 2, 2, '#7f8a90');
+  }
+  // the mark buoy, blinking, well off the quarter
+  const blink = (t * 0.8) % 1 < 0.16;
+  P(c, 26, 130, 4, 6, '#3c4a52');
+  P(c, 26, 126, 4, 4, blink ? '#ffd27a' : '#4a4231');
+  if (blink) halo(c, 28, 128, 12, '#ffd27a', 0.30);
+
+  if (d > 0.2) {
+    // the seabed, and the one place the cable stopped being a cable
+    P(c, 0, 150, W, 2, PAL.AMBER_DIM);                      // the seabed
+    P(c, 6, 146, 60, 2, PAL.AMBER);
+    P(c, 78, 146, 60, 2, PAL.AMBER);
+    const pulse = 0.5 + 0.5 * Math.sin(t * 4);
+    P(c, 66, 142 + pulse * 2, 12, 10, PAL.AMBER_HOT);       // where it stopped
+    P(c, 4, 158, 2, 8, PAL.AMBER_DIM);
+    P(c, 138, 158, 2, 8, PAL.AMBER_DIM);
+  }
+  amberWash(c, d);
+}
+
+// ── SWARM — a formation crossing the city, after midnight ──────────
+//
+// The action plate for anything about networks. Twenty-two machines holding a
+// lattice and drifting across the frame; decoded, every one of them is joined
+// to a single van on the ground, because a swarm is one operator with good
+// spacing.
+// Same rule as cableship: the roofline sits at 120 and the street at 138, so
+// the whole scene — sky, city, van — lands above the lower third.
+function swarmBase(c) {
+  ramp(c, 0, 120, NIGHT.sky0, '#122824');
+  for (let i = 0; i < 50; i++) {
+    P(c, rnd(i * 3.1) * W, rnd(i * 6.9) * 112, 1, 1, i % 4 ? '#33604f' : '#86b7a4');
+  }
+  // the boulevard, low and dense, so the sky is the subject
+  for (let i = 0; i < 16; i++) {
+    const x = i * 10 - 4, h2 = 14 + rnd(i * 4.3) * 26;
+    P(c, x, 120 - h2, 11, h2 + 18, i % 2 ? '#0e1a1c' : '#111f21');
+    for (let wy = 120 - h2 + 4; wy < 136; wy += 6) {
+      for (let wx = x + 2; wx < x + 9; wx += 4) {
+        if (rnd(wx * wy) < 0.42) P(c, wx, wy, 2, 3, '#d8c290');
+      }
+    }
+  }
+  P(c, 0, 138, W, H - 138, '#080f11');                      // the street
+  for (let x = 8; x < W; x += 26) { P(c, x, 144, 2, 12, '#243036'); halo(c, x + 1, 142, 11, '#e8d8a8', 0.22); }
+}
+
+function swarm(scr, t, d) {
+  const c = scr.ctx;
+  c.drawImage(base('swarm', swarmBase), 0, 0);
+
+  const N = 22, VAN = { x: 104, y: 150 };
+  const drift = (t * 9) % (W + 60) - 30;
+  for (let i = 0; i < N; i++) {
+    // a lattice, not a hash: they are holding station, which is the whole tell
+    const col = i % 6, row = (i / 6) | 0;
+    const x = drift + col * 17 + row * 6;
+    const y = 26 + row * 20 + Math.sin(t * 1.3 + i) * 2;
+    if (x < -8 || x > W + 8) continue;
+    P(c, x - 5, y, 11, 2, '#8f9ea6');                       // the arms
+    P(c, x - 1, y - 2, 3, 5, '#c3cdd2');                    // the body
+    const on = ((t * 2.2 + i * 0.31) % 1) < 0.5;
+    P(c, x - 6, y - 1, 2, 2, on ? '#ff5a4a' : '#3a1f1c');   // nav lights
+    P(c, x + 5, y - 1, 2, 2, on ? '#3aff7a' : '#1c3a26');
+    if (d > 0.25) {
+      // every machine, back to one van
+      c.globalAlpha = 0.45;
+      c.strokeStyle = PAL.AMBER_DIM;
+      c.beginPath(); c.moveTo(x, y + 2); c.lineTo(VAN.x, VAN.y); c.stroke();
+      c.globalAlpha = 1;
+    }
+  }
+
+  if (d > 0.25) {
+    P(c, VAN.x - 12, VAN.y - 8, 24, 12, '#2a3238');         // the van
+    P(c, VAN.x - 12, VAN.y + 3, 24, 3, '#171d21');
+    halo(c, VAN.x, VAN.y - 2, 20, PAL.AMBER, 0.42 * d);
+    P(c, VAN.x - 2, VAN.y - 20, 3, 12, PAL.AMBER_DIM);      // the mast
+    P(c, VAN.x - 6, VAN.y - 22, 11, 3, PAL.AMBER_HOT);
+  }
+  amberWash(c, d);
+}
+
+// ── SWITCHYARD — where the bill is made, at night ──────────────────
+//
+// Busbars, insulator stacks, a lattice tower and a transformer that hums a
+// little brighter every few seconds. Decoded, the load meter grows a second
+// bar beside it: what was drawn, and what was billed.
+function switchyardBase(c) {
+  ramp(c, 0, 104, NIGHT.sky0, '#16302b');
+  for (let i = 0; i < 34; i++) P(c, rnd(i * 4.9) * W, rnd(i * 8.1) * 96, 1, 1, '#2f5a4d');
+  P(c, 0, 104, W, H - 104, '#0b1512');                      // the yard
+  for (let x = 0; x < W; x += 4) P(c, x, 104, 4, 1, '#1d3029');
+  // the lattice tower, stage left, cropped by the frame
+  for (let y = 10; y < 132; y += 8) {
+    P(c, 12 + (y - 10) * 0.055, y, 3, 8, '#33443c');
+    P(c, 40 - (y - 10) * 0.055, y, 3, 8, '#33443c');
+    P(c, 14, y + 4, 26, 1, '#2a3a33');
+  }
+  P(c, 6, 10, 44, 4, '#3d4f46');
+  // three insulator stacks — discs, because that is what makes them read
+  for (const bx of [70, 96, 122]) {
+    P(c, bx - 2, 62, 5, 64, '#3a4c44');
+    for (let y = 62; y < 122; y += 7) P(c, bx - 7, y, 15, 3, '#5c6f66');
+  }
+  // the transformer block and its radiator fins
+  P(c, 58, 126, 52, 26, '#28352f');
+  for (let i = 0; i < 9; i++) P(c, 60 + i * 6, 130, 3, 18, '#1b2620');
+  P(c, 56, 152, 56, 4, '#141d19');
+}
+
+function switchyard(scr, t, d) {
+  const c = scr.ctx;
+  c.drawImage(base('switchyard', switchyardBase), 0, 0);
+
+  // the busbars sag between the stacks and breathe with the load
+  const load = 0.5 + 0.5 * Math.sin(t * 0.6);
+  for (const [x0, x1] of [[16, 70], [70, 96], [96, 122]]) {
+    for (let x = x0; x < x1; x++) {
+      const k = (x - x0) / Math.max(1, x1 - x0);
+      const sag = Math.sin(k * Math.PI) * 7;
+      P(c, x, 58 + sag, 1, 2, '#6d7f76');
+    }
+  }
+  // corona: a few cells of light on the stack tops, never the same two frames
+  for (let i = 0; i < 6; i++) {
+    const bx = [70, 96, 122][i % 3];
+    if (((t * 7 + i * 2.3) % 5) > 1.1) continue;
+    P(c, bx - 4 + (i % 2) * 6, 56 - (i % 3), 2, 2, '#bfe8ff');
+  }
+  halo(c, 84, 132, 28, '#e8d8a8', 0.16 + load * 0.10);      // the yard light
+
+  // the load meter, top right, filling — the number the bill is made from
+  const gx = 100, gy = 14, gw = 36, gh = 12;
+  P(c, gx - 1, gy - 1, gw + 2, gh + 2, '#0d1714');
+  P(c, gx, gy, gw, gh, '#101d18');
+  P(c, gx, gy, Math.round(gw * (0.55 + load * 0.35)), gh, mix('#4fd18f', PAL.AMBER, d));
+  for (let i = 1; i < 4; i++) P(c, gx + i * 9, gy, 1, gh, '#0b1512');
+
+  if (d > 0.25) {
+    // drawn against billed: same yard, two bars, one of them new
+    const bx = 8, by = 14;
+    P(c, bx - 1, by - 1, 38, gh + 2, '#1a1408');
+    P(c, bx, by, 36, gh, '#20180a');
+    P(c, bx, by, 36, gh, PAL.AMBER);                        // billed: all of it
+    P(c, bx, by + gh + 4, 8, 4, PAL.AMBER_HOT);             // drawn: a fraction
+    halo(c, bx + 18, by + 6, 20, PAL.AMBER_DIM, 0.30 * d);
+  }
+  amberWash(c, d);
+}
+
 const PLATES = { esplanadi, kamppi, station, harbour, gulf, suomenlinna, katajanokka,
+                 cableship, swarm, switchyard,
                  beach, moon, winterhall, packice, chase, approach };
 export const PLATE_KEYS = Object.keys(PLATES);
 
