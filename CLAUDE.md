@@ -269,11 +269,16 @@ deliberately different registers; that contrast is what makes a post read as a
 cut package rather than two fixed frames. `Post.cutting()` is the director, a
 cut snaps with a bright band + displaced rows, `goLive()` resets to shot 0, and
 **DECODE cuts home to the graphic and holds** — it is the only shot that
-decodes. The footage pool is **nine plates in two registers** and they must sit in one
-hour: three rendered (`esplanadi` + drones, `harbour`, `treeline`) and six
-painted in phosphor at night (`cathedral`, `katu`, `mannerheim`, `station`,
-`kamppi`, `gulf` — these came over from the deployed branch, where they had been
-written into `visuals.js` as story panels, and keep their approved names). The
+decodes. The footage pool is **nineteen keys in three registers**: three of the
+owner's photographs (`cathedral`, `katu`, `mannerheim`), the phosphor city
+plates, and the ACTION plates the owner asked for — `chase` (a pursuit on the
+ring road), `approach` (a heavy landing, seen from underneath), `cableship` (a
+repair on the Gulf at night), `swarm` (a drone formation crossing the city;
+decoded, every machine joins one van) and `switchyard` (busbars and a load
+meter; decoded, billed against drawn). **Compose a plate for the TOP HALF** —
+the copy sits over the bottom 45% of every post, so a subject centred in the
+144×276 frame lands under the lower third and the plate reads as an empty sky
+with a caption; that was drawn twice before it was noticed. The
 poly ramps were pulled from midday down to dusk when the sets met; lit windows
 are phosphor, never warm. A post's own plate leads and the second footage beat
 comes from the rest of the pool (seeded off the post index, not `Math.random()`,
