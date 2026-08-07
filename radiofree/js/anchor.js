@@ -71,7 +71,7 @@ export class Anchor {
     wrap.className = 'photo-wrap anchor-wrap';
 
     const cv = document.createElement('canvas');
-    cv.className = 'photo anchor-cv';
+    cv.className = 'photo drawn anchor-cv';
     // the bulletin text is the channel a screen reader follows; the studio is
     // decoration on top of it
     cv.setAttribute('aria-hidden', 'true');

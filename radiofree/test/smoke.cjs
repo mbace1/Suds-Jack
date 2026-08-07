@@ -440,6 +440,48 @@ async function main() {
     await dp.close();
   }
 
+  // ── the clip framing ─────────────────────────────────────────────
+  // `?vertical` is what a recorder loads. Everything checked here is
+  // something that would burn into a video and could not be taken out
+  // afterwards: a masthead, a HUB button, a signature badge, a headline
+  // clipped at "…", a picture letterboxed inside its own frame.
+  console.log('\nvertical');
+  const vp = await browser.newPage();
+  const verrs = [];
+  vp.on('pageerror', e => verrs.push(e.message));
+  await vp.goto(base + '?vertical', { waitUntil: 'load' });
+  await wait(700);
+  await vp.evaluate(() => window.__rfh.debug.tuneIn());
+  await wait(1800);
+  const vt = await vp.evaluate(() => {
+    const shown = (sel) => {
+      const e = document.querySelector(sel);
+      return !!e && getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height > 0;
+    };
+    const post = document.querySelector('.post');
+    const shot = post.querySelector('.pkg-shot.on .photo');
+    const head = post.querySelector('.head');
+    return {
+      on: !!__rfh.vertical,
+      posts: document.querySelectorAll('.post').length,
+      chrome: ['.mast', '.rail', '.arcade-home', '.swipe-hint'].filter(shown),
+      sig: !!document.querySelector('[class*="signature"]'),
+      // the picture must FILL the frame: a canvas sized by height with width
+      // auto sat letterboxed, and on the dark plates that read as art
+      fill: shot ? shot.getBoundingClientRect().width / post.getBoundingClientRect().width : 0,
+      clamp: head ? getComputedStyle(head).webkitLineClamp : 'x',
+    };
+  });
+  ok('?vertical reports itself', vt.on && vt.posts > 1, JSON.stringify(vt.posts));
+  ok('no site furniture is in the frame', vt.chrome.length === 0 && !vt.sig,
+     vt.chrome.join(', ') + (vt.sig ? ' signature' : ''));
+  ok('the picture fills the frame, not a letterbox inside it', vt.fill > 0.99,
+     'width ratio ' + vt.fill.toFixed(3));
+  ok('the headline is not clipped at an ellipsis',
+     vt.clamp === 'none' || vt.clamp === '', vt.clamp);
+  ok('the clip framing throws nothing', verrs.length === 0, verrs.join(' | '));
+  await vp.close();
+
   console.log('\nclean mode');
   const cp = await browser.newPage();
   const cerrs = [];

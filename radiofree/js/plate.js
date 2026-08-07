@@ -47,7 +47,7 @@ export class Plate {
     // same CSS the photographs use — so a cut between the two changes the
     // subject and not the apparent resolution of the broadcast
     this.scr = new PixelScreen(null, PLATE_W, PLATE_H);
-    this.scr.canvas.className = 'photo plate-cv';
+    this.scr.canvas.className = 'photo drawn plate-cv';
     this.scr.canvas.setAttribute('aria-hidden', 'true');
 
     const grade = document.createElement('div');

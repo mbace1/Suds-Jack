@@ -63,7 +63,7 @@ export class Graphic {
     wrap.className = 'photo-wrap graphic-wrap';
 
     const cv = document.createElement('canvas');
-    cv.className = 'photo graphic-cv';
+    cv.className = 'photo drawn graphic-cv';
     cv.setAttribute('aria-hidden', 'true');   // the bulletin text is the channel
 
     const grade = document.createElement('div');

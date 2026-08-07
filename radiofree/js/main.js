@@ -20,6 +20,14 @@ import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=37';
 // no basis for an export at all.
 const PARAMS = new URLSearchParams(location.search);
 const CLEAN = PARAMS.has('clean');
+// VERTICAL — the clip framing. The app is already 9:16, so this is not a
+// second layout: it is the same one with the furniture taken out (masthead,
+// rail, hub button, signature badge) so a recording carries the broadcast and
+// nothing that belongs to a website. It is SEPARATE from ?clean on purpose —
+// a clip of a bulletin being decoded is a clip worth having, so the two are
+// combined by the caller (`?vertical&clean`) rather than by this file.
+const VERTICAL = PARAMS.has('vertical');
+if (VERTICAL) document.documentElement.classList.add('vertical');
 // which morning's broadcast to play. An unknown or absent date plays the
 // newest — see loadWire's ladder.
 const WANT_DATE = PARAMS.get('date');
@@ -157,7 +165,7 @@ function buildArchive() {
   const host = $('archive');
   if (!host) return;
   host.innerHTML = '';
-  if (CLEAN || EPISODES.length < 2) { host.hidden = true; return; }
+  if (CLEAN || VERTICAL || EPISODES.length < 2) { host.hidden = true; return; }
   host.hidden = false;
   const sel = el('select', 'archive-sel');
   sel.setAttribute('aria-label', t('a11y.archive'));
@@ -553,6 +561,7 @@ window.__rfh = {
              id: p.story.id, lang: getLang() };
   },
   clean: CLEAN,
+  vertical: VERTICAL,
   debug: {
     tuneIn: () => $('tuneIn').click(),
     // what a clip export would say, straight out of the wire's own field
