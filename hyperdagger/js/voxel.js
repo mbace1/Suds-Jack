@@ -119,6 +119,8 @@ export const MODELS = {
   // blinker — glitch shard that teleports toward the player
   blinker: {
     voxelSize: 0.26,
+    noHull: true, // a glitch shard reads as loose cubes on purpose
+
     palette: { D: 0x3a3a3a, R: [2.6, 0.2, 0.2] },
     layers: [
       ['...', '.D.', '...'],
@@ -304,6 +306,8 @@ export const MODELS = {
   hand: {
     voxelSize: 0.05,
     wobble: 0.3,
+    noHull: true, // the checkerboard IS the glove — smoothing erases it
+
     palette: { G: 0x3a3a3a, D: 0x222222, H: 0x555555, B: [1.25, 1.25, 1.25] },
     layers: [
       ['...', '...', '...', '...', '...', '...', '...', 'DGD', 'GDG', 'DGD'],
@@ -427,11 +431,22 @@ export function parseModel(def, subdivide = 1) {
   return voxels;
 }
 
+// v4.32 hull mode (owner's direction, 2026-08-07, off a rendered A/B/C
+// test): while ALIVE an enemy wears a smoothed mesh skin over its voxel
+// lattice — cubes read as Minecraft. The voxels stay the physics currency:
+// chips tear real holes (the skin rebuilds around them), severed islands
+// and deaths still burst instanced cubes. Models opt out with `noHull`
+// (the gauntlet's checkerboard and the blinker's glitch-shard identity).
+let hullMode = true;
+export function setHullMode(on) { hullMode = !!on; }
+export function getHullMode() { return hullMode; }
+
 /** One voxel model as a single InstancedMesh with per-voxel colors.
  *  Voxels can be chipped off before death (bullet holes) — dead voxels are
  *  scaled to zero and excluded from worldVoxels()/death bursts. */
 export class VoxelSprite {
   constructor(def, subdivide = globalDetail + (def.detailBoost || 0)) {
+    this.def = def;
     subdivide = Math.max(1, Math.min(4, subdivide));
     this.voxels = parseModel(def, subdivide);
     this.size = def.voxelSize / subdivide;
@@ -504,6 +519,126 @@ export class VoxelSprite {
       v.gz = Math.round((v.z - mz) * inv) + 1;
       this.grid.set(v.gx + v.gy * 1024 + v.gz * 1048576, i);
     });
+    this.gridMin = { mx, my, mz };
+
+    this.hull = null;
+    this.hullMat = null;
+    this.hullDirty = false;
+    this.hullCd = 0;
+    this.setHull(hullMode);
+  }
+
+  /** Switch the alive-look between the smooth skin and raw cubes. The
+   *  instanced mesh stays the transform/physics anchor either way — count=0
+   *  hides the cubes without touching visibility, so the hull (its child)
+   *  still renders and every worldMatrix path is unchanged. */
+  setHull(on) {
+    const want = !!on && !this.def.noHull;
+    if (want === !!this.hull) return;
+    if (want) {
+      this.hullMat = new THREE.MeshBasicMaterial({ vertexColors: true });
+      this.hull = new THREE.Mesh(new THREE.BufferGeometry(), this.hullMat);
+      this.hull.frustumCulled = false;
+      this.mesh.add(this.hull);
+      this.mesh.count = 0;
+      this._rebuildHull();
+    } else {
+      this.mesh.remove(this.hull);
+      this.hull.geometry.dispose();
+      this.hullMat.dispose();
+      this.hull = null;
+      this.hullMat = null;
+      this.mesh.count = this.voxels.length;
+    }
+  }
+
+  /** Rebuild the skin from the ALIVE voxels: culled outer faces on welded
+   *  corners, heavy Laplacian smoothing (the C3 look), then exploded to
+   *  non-indexed with ONE color per face — smooth silhouette, crisp cell
+   *  color, no smearing of the HDR eyes into the bone. Unlit material, so
+   *  no normals needed. */
+  _rebuildHull() {
+    const s = this.size;
+    const { mx, my, mz } = this.gridMin;
+    const cornerIdx = new Map();
+    const P = []; // welded corner positions (flat xyz)
+    const faces = []; // [c0,c1,c2,c3, colorIndex]
+    const corner = (gx, gy, gz) => {
+      const k = gx + gy * 1024 + gz * 1048576;
+      let idx = cornerIdx.get(k);
+      if (idx === undefined) {
+        idx = P.length / 3;
+        cornerIdx.set(k, idx);
+        P.push(mx + (gx - 1) * s - s / 2, my + (gy - 1) * s - s / 2, mz + (gz - 1) * s - s / 2);
+      }
+      return idx;
+    };
+    // quad corner offsets per face direction, wound outward
+    const QUADS = [
+      [[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1]],  // +x
+      [[0, 0, 1], [0, 1, 1], [0, 1, 0], [0, 0, 0]],  // -x
+      [[0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0]],  // +y
+      [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]],  // -y
+      [[1, 0, 1], [1, 1, 1], [0, 1, 1], [0, 0, 1]],  // +z
+      [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]],  // -z
+    ];
+    const DIRS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+    for (let i = 0; i < this.voxels.length; i++) {
+      const v = this.voxels[i];
+      if (!v.alive) continue;
+      for (let f = 0; f < 6; f++) {
+        const [dx, dy, dz] = DIRS[f];
+        const nk = (v.gx + dx) + (v.gy + dy) * 1024 + (v.gz + dz) * 1048576;
+        const n = this.grid.get(nk);
+        if (n !== undefined && this.voxels[n].alive) continue;
+        const q = QUADS[f].map(([a, b, c]) => corner(v.gx + a, v.gy + b, v.gz + c));
+        faces.push(q[0], q[1], q[2], q[3], i);
+      }
+    }
+    // neighbor graph over quad edges, then heavy smoothing (3 passes)
+    const nbr = new Map();
+    const link = (a, b) => {
+      let sa = nbr.get(a);
+      if (!sa) nbr.set(a, sa = new Set());
+      sa.add(b);
+    };
+    for (let f = 0; f < faces.length; f += 5) {
+      for (let e = 0; e < 4; e++) {
+        const a = faces[f + e], b = faces[f + ((e + 1) & 3)];
+        link(a, b); link(b, a);
+      }
+    }
+    let cur = P;
+    for (let it = 0; it < 3; it++) {
+      const next = cur.slice();
+      for (const [vi, ns] of nbr) {
+        let sx = 0, sy = 0, sz = 0;
+        for (const n of ns) { sx += cur[n * 3]; sy += cur[n * 3 + 1]; sz += cur[n * 3 + 2]; }
+        const k = 0.62, inv = k / ns.size;
+        next[vi * 3] = cur[vi * 3] * (1 - k) + sx * inv;
+        next[vi * 3 + 1] = cur[vi * 3 + 1] * (1 - k) + sy * inv;
+        next[vi * 3 + 2] = cur[vi * 3 + 2] * (1 - k) + sz * inv;
+      }
+      cur = next;
+    }
+    // explode to non-indexed triangles with a flat color per face
+    const nf = faces.length / 5;
+    const pos = new Float32Array(nf * 18);
+    const col = new Float32Array(nf * 18);
+    let o = 0;
+    for (let f = 0; f < faces.length; f += 5) {
+      const c = this.voxels[faces[f + 4]].color;
+      for (const vi of [faces[f], faces[f + 1], faces[f + 2], faces[f], faces[f + 2], faces[f + 3]]) {
+        pos[o] = cur[vi * 3]; col[o++] = c.r;
+        pos[o] = cur[vi * 3 + 1]; col[o++] = c.g;
+        pos[o] = cur[vi * 3 + 2]; col[o++] = c.b;
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    this.hull.geometry.dispose();
+    this.hull.geometry = g;
   }
 
   /** After chips carve the model, voxel islands no longer 6-connected to the
@@ -555,6 +690,7 @@ export class VoxelSprite {
       this.mesh.setMatrixAt(i, _m.makeScale(0, 0, 0));
     }
     this.mesh.instanceMatrix.needsUpdate = true;
+    this.hullDirty = true;
     return clusters.filter(c => c.length);
   }
 
@@ -589,7 +725,10 @@ export class VoxelSprite {
       });
       this.mesh.setMatrixAt(i, _m.makeScale(0, 0, 0));
     }
-    if (out.length) this.mesh.instanceMatrix.needsUpdate = true;
+    if (out.length) {
+      this.mesh.instanceMatrix.needsUpdate = true;
+      this.hullDirty = true; // the skin re-forms around the hole
+    }
     return out;
   }
 
@@ -604,6 +743,20 @@ export class VoxelSprite {
     if (this.flashK > 0) {
       this.flashK = Math.max(0, this.flashK - dt * 7);
       this.material.color.setScalar(1 + this.flashK);
+      if (this.hullMat) this.hullMat.color.setScalar(1 + this.flashK);
+    }
+    if (this.hull) {
+      // the skin breathes (the instanced lattice does this in its vertex
+      // shader; the hull gets the whole-body term)
+      this.hull.scale.setScalar(1 + 0.022 * this.baseWobble * Math.sin(this.animT * 2.1));
+      if (this.hullDirty) {
+        this.hullCd -= dt;
+        if (this.hullCd <= 0) {
+          this._rebuildHull();
+          this.hullDirty = false;
+          this.hullCd = 0.1; // chips arrive in bursts — batch the re-skin
+        }
+      }
     }
   }
 
@@ -619,6 +772,7 @@ export class VoxelSprite {
       this.mesh.setColorAt(i, v.color);
     });
     this.mesh.instanceColor.needsUpdate = true;
+    this.hullDirty = true;
   }
 
   /** Re-derive every voxel color from its pre-style base under the current
@@ -629,6 +783,7 @@ export class VoxelSprite {
       this.mesh.setColorAt(i, v.color);
     });
     this.mesh.instanceColor.needsUpdate = true;
+    this.hullDirty = true;
   }
 
   randomColor() {
@@ -653,6 +808,10 @@ export class VoxelSprite {
   dispose() {
     this.mesh.geometry.dispose();
     this.material.dispose();
+    if (this.hull) {
+      this.hull.geometry.dispose();
+      this.hullMat.dispose();
+    }
   }
 }
 

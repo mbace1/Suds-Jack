@@ -8,6 +8,22 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v19 — 2026-08-07
+**The mesh hull — smooth skin alive, voxels where it tears**
+- Enemies no longer read as cube stacks (owner: "too Minecraft", decided off
+  a rendered A/B/C test): while ALIVE each wears a smoothed mesh skin built
+  from its own voxel lattice — culled outer faces, welded corners, 3 passes
+  of heavy Laplacian smoothing, one flat color per face (HDR eyes stay
+  crisp). The voxels remain the physics currency: chips tear real holes and
+  the skin re-forms around them (0.1 s throttle), severed islands and deaths
+  still burst instanced cubes.
+- The hull rides as a child of the InstancedMesh with count=0 hiding the
+  cubes — every transform, chip, detach and burst path is untouched.
+- `noHull` opts a model out: the gauntlet keeps its checkerboard, the
+  blinker keeps its glitch shards.
+- LOOK SMOOTH / CUBES in the pause menu (persisted); the perf governor
+  falls back to cubes below tier T2. Smoke gate grows to 31 checks.
+
 ## v18 — 2026-08-07
 **Detail overhaul — sculpted models, baked AO, serpent swoop, glow trim**
 - The skull family is authored at 11×5×10 (357 source voxels, was 7×3×6 / 91)
