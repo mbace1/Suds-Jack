@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=45';
+import { TUNING as T } from './tuning.js?v=46';
 
 // all feel numbers live in tuning.js; these aliases keep the code readable
 const STICK_R = T.touch.stickR;
@@ -32,10 +32,11 @@ function shapeStick(x, y, dz, sat = 1, exp = 1) {
 }
 
 /**
- * Unified input. Desktop: pointer-lock mouse look, WASD, hold LMB to fire
- * (firing is also automatic while moving), Space = jump / double jump,
- * Shift = dash. Gamepad: left stick moves, right stick looks, RT/RB fire,
- * A jumps (×2), B/LT dashes. Touch: left stick moves, right stick looks; a
+ * Unified input. Desktop: pointer-lock mouse look, WASD, LMB tap = shotgun
+ * burst / hold = stream (main.js reads the raw held state and does the
+ * tap-vs-hold timing), Space = jump / double jump,
+ * Shift = dash. Gamepad: left stick moves, right stick looks, RT/RB fire
+ * with the same tap/hold split, A jumps (×2), B/LT dashes. Touch: left stick moves, right stick looks; a
  * quick tap on EITHER stick jumps (a second finger tapping while a stick is
  * held works too), and a fast flick on either stick dashes in the flick
  * direction. Flicks are judged by the LAST 150 ms of movement before

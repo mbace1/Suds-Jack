@@ -5,16 +5,16 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=45';
-import { Player } from './player.js?v=45';
-import { DaggerPool } from './daggers.js?v=45';
-import { GemPool } from './gems.js?v=45';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=45';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=45';
-import { OrbPool } from './bullets.js?v=45';
-import { AudioKit } from './audio.js?v=45';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=45';
-import { TUNING as T } from './tuning.js?v=45';
+import { InputManager } from './input.js?v=46';
+import { Player } from './player.js?v=46';
+import { DaggerPool } from './daggers.js?v=46';
+import { GemPool } from './gems.js?v=46';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=46';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=46';
+import { OrbPool } from './bullets.js?v=46';
+import { AudioKit } from './audio.js?v=46';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=46';
+import { TUNING as T } from './tuning.js?v=46';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -595,6 +595,11 @@ let deathCam = null;                       // {yaw, pitch, t} — killer-focus l
 let gemCount = 0;
 let weaponLv = 1;
 let fireTimer = 0;
+// DD gunfeel state: how long the trigger has been held, whether it was held
+// last frame, and the lockout after a shotgun burst
+let fireHeldT = 0;
+let fireWasHeld = false;
+let shotCd = 0;
 let styleVal = 0;      // current meter fill (0..STYLE_CAP), bleeds when idle
 let stylePeakIdx = 0;  // best tier reached this run (for the death recap)
 let nextTotemAt = 0;
@@ -776,8 +781,8 @@ function showTips() {
   elMsg.style.display = 'block';
   elMsg.innerHTML =
     `<h1>HOW TO SURVIVE</h1>
-     <p class="big">&#9876; fire is <b>automatic while you move</b></p>
-     <p class="sub">stand still and hold LMB / the look stick to fire in place</p>
+     <p class="big">&#9876; <b>tap</b> = shotgun burst &middot; <b>hold</b> = stream</p>
+     <p class="sub">every dagger is aimed &mdash; on touch the stream runs itself while you move</p>
      <p class="big">&#10227; the <b>dash phases through orbs</b></p>
      <p class="sub">never through bodies &mdash; charge the red projectiles, dodge the bone</p>
      <p class="big">&#9670; <b>gems level your daggers</b></p>
@@ -965,6 +970,11 @@ function resetRun() {
   gemCount = 0;
   weaponLv = 1;
   fireTimer = 0;
+  // pretend the trigger is already down a long time, so releasing the click
+  // that started the run can never fire a spurious shotgun
+  fireHeldT = 999;
+  fireWasHeld = true;
+  shotCd = 0;
   styleVal = 0;
   stylePeakIdx = 0;
   // onboarding pacing lives in PULSE_POOL's unlock gates (watcher 25s …
@@ -1840,14 +1850,45 @@ function killEnemy(e, dir) {
   e.remove(scene);
 }
 
+/** The other half of DD's gunfeel: a tap dumps a fistful of daggers in a
+ *  wide cone at once, then locks the hand out briefly. Burst damage for a
+ *  brute in your face, at the cost of your stream. */
+function fireShotgun(w) {
+  for (let i = 0; i < T.weapon.shotgunCount; i++) {
+    fireDagger(T.weapon.shotgunSpread, T.weapon.daggerSpeed * (0.92 + Math.random() * 0.16), w.homing);
+  }
+  shotCd = T.weapon.shotgunCd;
+  recoil = 0.06;
+  fovKick = Math.max(fovKick, 3.5);
+  trauma = Math.max(trauma, 0.22);
+  audio.shotgun();
+  buzz(0.5, 0.3, 90);
+}
+
 function updateCombat(dt) {
   const w = WEAPON[weaponLv];
 
-  // minimalistic shooting: the stream is automatic while you're moving;
-  // holding LMB / the look stick fires while standing still
-  const mv = input.getMove();
-  const autoFire = Math.hypot(mv.x, mv.y) > T.weapon.autoFireMove;
-  if (input.firing || autoFire) {
+  // DD gunfeel: TAP = shotgun burst, HOLD = stream — every dagger manually
+  // aimed on desktop and pad. Touch alone keeps the old auto-fire (a thumb
+  // can't work two sticks and a trigger; owner's call, 2026-07-31).
+  shotCd = Math.max(0, shotCd - dt);
+  let streaming;
+  if (input.touchMode && !input.gamepad) {
+    const mv = input.getMove();
+    streaming = input.firing || Math.hypot(mv.x, mv.y) > T.weapon.autoFireMove;
+  } else {
+    const held = input.firing;
+    if (held) {
+      fireHeldT += dt;
+    } else {
+      // a press released before the stream spun up was a TAP → shotgun
+      if (fireWasHeld && fireHeldT < T.weapon.streamDelay && shotCd <= 0) fireShotgun(w);
+      fireHeldT = 0;
+    }
+    fireWasHeld = held;
+    streaming = held && fireHeldT >= T.weapon.streamDelay;
+  }
+  if (streaming && shotCd <= 0) {
     fireTimer -= dt;
     while (fireTimer <= 0) {
       fireTimer += 1 / w.stream;
@@ -2333,6 +2374,7 @@ window.__hd = {
     reap() { return tryReap(); },
     getReap() { return { cool: +reapCool.toFixed(2), bones: litter.count }; },
     getTuning() { return T; },
+    getGun() { return { shotCd: +shotCd.toFixed(2), heldT: +fireHeldT.toFixed(2) }; },
     // aim: raw() reports the assist a stick WOULD get right now, ignoring the
     // "is a stick even in use" gate, so tests can probe the falloff curve
     // without faking a gamepad
