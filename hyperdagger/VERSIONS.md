@@ -8,6 +8,17 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v20 — 2026-08-07
+**Enemy release hygiene — caught by the new long-run health gate**
+- The smoke gate gained a spawn/kill plateau check (geometry, textures,
+  scene-graph size across repeated cycles) and it immediately caught a
+  leak: an enemy killed by flagging `alive = false` without `killEnemy`
+  was spliced out of the array but its group stayed in the scene and its
+  GPU resources were never released. Production kill paths were safe by
+  convention; debug and edge paths were not.
+- `VoxelEnemy.remove()` is idempotent now, and the prune loop releases on
+  splice — every death path frees exactly once, by construction.
+
 ## v19 — 2026-08-07
 **The mesh hull — smooth skin alive, voxels where it tears**
 - Enemies no longer read as cube stacks (owner: "too Minecraft", decided off
