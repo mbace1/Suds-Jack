@@ -102,6 +102,26 @@ s.listen(0, '127.0.0.1', async () => {
   ok('level 3 is the five-bay channel', bays.shape === 'gutters', bays.shape);
   ok('with a ridge between each (' + bays.peaks + ')', bays.peaks.length === 4);
 
+  // The declared peaks must BE the drawn ridges. They disagreed once: the
+  // peaks were declared for a twenty-lane channel while main.js still built
+  // thirteen, so the walls you hit sat beside the ridges you saw, one peak
+  // was past the lip, and the fifth bay was a one-lane sliver. The gate
+  // passed because it only ever asked the declaration about itself — this
+  // asks the geometry.
+  const ridges = await p.evaluate(() => {
+    const t = window.__sj.tube;
+    const y = (u) => t._point(u, 0).y;
+    return t.peaks.map(pk => {
+      const u = pk / t.lanes;
+      return { pk, inRange: pk > 0 && pk < t.lanes,
+               higher: y(u) > y(u - 0.1) + 0.05 && y(u) > y(u + 0.1) + 0.05 };
+    });
+  });
+  ok('every peak is inside the channel', ridges.every(r => r.inRange),
+    JSON.stringify(ridges));
+  ok('and every peak sits on a drawn ridge', ridges.every(r => r.higher),
+    JSON.stringify(ridges));
+
   // a ridge is a wall to RIDING
   const penned = await p.evaluate(async () => {
     const j = window.__sj;
@@ -145,6 +165,63 @@ s.listen(0, '127.0.0.1', async () => {
   ok('mid-jump you are off the floor', dodged.airborne);
   ok('and grime passes under you', dodged.after === dodged.lives,
     `${dodged.lives} → ${dodged.after}`);
+
+  // ── the float: pressing again mid-air chains one more bay ──
+  const floated = await p.evaluate(async () => {
+    const j = window.__sj;
+    const land = () => { while (j.player.jumping) j.player.update(0.02); };
+    land();
+
+    // early press must NOT chain: still going up is not a float
+    j.player.lane = j.tube.floorLane;
+    j.player.jump(1);
+    j.player.update(0.02);                        // barely off the floor
+    const early = j.player.jump(1);
+    land();
+
+    // one flight: hop, then press twice in the falling halves. Air at each
+    // press is the height the float STARTS from — that is what must be off
+    // the floor; the tail of the last glide is an ordinary landing. It leaves
+    // from the far-left bay so there are enough bays to float across.
+    j.player.lane = j.tube.bayRange(0)[0] + 2;
+    const startBay = j.tube.bayRange(j.player.lane)[0];
+    j.player.jump(1);
+    let hopPeak = 0, floatPeak = 0, airAt = [];
+    for (let i = 0; i < 400 && j.player.jumping; i++) {
+      j.player.update(0.02);
+      if (!airAt.length) hopPeak = Math.max(hopPeak, j.player.air);
+      else floatPeak = Math.max(floatPeak, j.player.air);
+      const k = j.player.jumpT / j.player.hopMs;
+      if (j.player.jumping && k > 0.5 && airAt.length < 2 && j.player.jump(1)) {
+        airAt.push(j.player.air);
+      }
+    }
+    const endBay = j.tube.bayRange(j.player.lane)[0];
+    return { early, airAt, hopPeak, floatPeak, startBay, endBay };
+  });
+  ok('a press straight off the floor does not float', !floated.early);
+  ok('pressing again mid-air chains (' + floated.airAt.length + ' floats)', floated.airAt.length === 2);
+  ok('each float starts well off the floor (' + floated.airAt.map(a => a.toFixed(1)).join(', ') + ')',
+    floated.airAt.every(a => a > 1));
+  ok('and a float never out-jumps the jump (' + floated.floatPeak.toFixed(1) + ' ≤ ' + floated.hopPeak.toFixed(1) + ')',
+    floated.floatPeak <= floated.hopPeak + 0.01 && floated.endBay > floated.startBay);
+
+  // and it is bounded: mashing jump is a float, not a flight
+  const capped = await p.evaluate(async () => {
+    const j = window.__sj;
+    while (j.player.jumping) j.player.update(0.02);
+    j.player.lane = j.tube.bayRange(0)[0] + 1;    // far left bay
+    j.player.jump(1);
+    let granted = 0;
+    for (let i = 0; i < 600 && j.player.jumping; i++) {
+      j.player.update(0.02);
+      if (j.player.jump(1)) granted++;            // mash every frame
+    }
+    return granted;
+  });
+  // three exactly: from the far-left bay, hop + three floats is lip to lip —
+  // the cap and the channel are the same size, which is not a coincidence
+  ok('the float is bounded, and spans the channel (' + capped + ' chains granted)', capped === 3);
 
   // grime is penned in too, or the bays would only ever constrain the player
   const pennedGrime = await p.evaluate(async () => {

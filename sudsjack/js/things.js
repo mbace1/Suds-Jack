@@ -109,7 +109,10 @@ export class Risers {
           if (Math.abs(d) > 0.5) {
             it.lane = Math.max(lo, Math.min(hi, this.tube.clampLane(it.lane + Math.sign(d))));
           }
-          it.stepIn = 0.35 + it.depth * 0.9;
+          // ×13/20 of the original countdown: a lane is narrower now that
+          // twenty span the channel, so the cadence quickens to keep grime's
+          // WORLD speed — and the menace — what it was tuned to
+          it.stepIn = 0.23 + it.depth * 0.59;
         }
       }
 
@@ -117,7 +120,8 @@ export class Risers {
       // generous because the player slides between lanes and a hit that
       // depends on a hundredth of a lane is a hit nobody can see coming.
       const gap = Math.abs(it.lane - player.lane);
-      const near = gap < 0.62 && Math.abs(it.depth - player.depth) < 0.085;
+      // 0.62 lanes of the thirteen-lane channel, in twenty-lane units
+      const near = gap < 0.95 && Math.abs(it.depth - player.depth) < 0.085;
       // Off the floor, grime goes under you. The jump is a way across a ridge
       // AND a dodge, which is what stops it being dead weight on the five
       // levels that have no ridges in them.

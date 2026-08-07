@@ -165,7 +165,16 @@ ride the rim but could not reach it — the menu and the recap take a pointer or
 nothing else. Polled in every mode now, A or Start is a way in, and because A is *also*
 dive the same press had to be drained at both edges of a run (`clearPending()`) or it
 started you mid-dive and restarted you off the recap.
-`node sudsjack/test/smoke.cjs` = 41 checks: boot, the director, the
+**The float** (owner's direction): jump pressed again in its falling half chains one more
+bay on a hop that GLIDES (`1 − k²` from wherever the arc was — it never rises, because a
+float that climbs reads as a double jump), each press starting lower until grime stops
+fitting underneath; three floats is lip to lip from a lip bay, deliberately. Found under
+it: **the declared peaks were not the drawn ridges** — main.js still passed the 13 lanes
+that predate the ridged channel while the peaks are declared for the tube's own default
+of 20, so the walls sat beside the ridges, one peak was past the lip, and the fifth bay
+was a sliver. The gate now asks the geometry, not the declaration, and every
+lane-denominated tuning carries a ×20/13 rescale to keep world-space feel.
+`node sudsjack/test/smoke.cjs` = 48 checks: boot, the director, the
 lane-lock during a dive, collection, the chain, damage, mercy frames, the level shapes,
 game over, the way home and the signature — all driven off **game state, not the wall
 clock**, because a sandbox with no GPU renders this at a handful of frames a second.
