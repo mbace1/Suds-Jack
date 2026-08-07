@@ -18,8 +18,8 @@
 import { drawHead, HEAD } from '../../toko/js/face.js';
 import { TOKO } from '../../toko/js/palette.js';
 import { glance, drift, blink } from '../../toko/js/util.js';
-import { PAL, SECTOR_COLOR } from './palette.js?v=37';
-import { shade, mix } from './screen.js?v=37';
+import { PAL, SECTOR_COLOR } from './palette.js?v=38';
+import { shade, mix } from './screen.js?v=38';
 
 // The canvas is sized to the POST, not to a fixed 9:16. A phone post is
 // taller than 9:16 and `object-fit: cover` crops the sides off a fixed frame —
@@ -71,7 +71,7 @@ export class Anchor {
     wrap.className = 'photo-wrap anchor-wrap';
 
     const cv = document.createElement('canvas');
-    cv.className = 'photo anchor-cv';
+    cv.className = 'photo drawn anchor-cv';
     // the bulletin text is the channel a screen reader follows; the studio is
     // decoration on top of it
     cv.setAttribute('aria-hidden', 'true');

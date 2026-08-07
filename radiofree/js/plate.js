@@ -18,8 +18,8 @@
 // are drawn at that size rather than at the panel's 128×152, which would have
 // had to be cropped by a third or letterboxed.
 
-import { PixelScreen } from './screen.js?v=37';
-import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=37';
+import { PixelScreen } from './screen.js?v=38';
+import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=38';
 
 // OPT-IN, and named one at a time on purpose. `plates.js` can draw seven of
 // the ten footage keys, so testing against PLATE_KEYS would have quietly moved
@@ -47,7 +47,7 @@ export class Plate {
     // same CSS the photographs use — so a cut between the two changes the
     // subject and not the apparent resolution of the broadcast
     this.scr = new PixelScreen(null, PLATE_W, PLATE_H);
-    this.scr.canvas.className = 'photo plate-cv';
+    this.scr.canvas.className = 'photo drawn plate-cv';
     this.scr.canvas.setAttribute('aria-hidden', 'true');
 
     const grade = document.createElement('div');

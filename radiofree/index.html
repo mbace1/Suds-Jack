@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#04070a">
-<link rel="manifest" href="manifest.webmanifest?v=37">
+<link rel="manifest" href="manifest.webmanifest?v=38">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="description" content="Radio Free Helsinki — a fictional pirate news broadcast. Toko reads the day's wire from a codec screen; DECODE shows you what the wording was doing.">
@@ -305,6 +305,12 @@
   /* a drawn plate is already 144x276 and already moving — no cover crop, no
      Ken Burns. Stretching it to the post is the whole point of pixel art. */
   .photo.drawn { object-fit: fill; animation: none; }
+  /* `.media-slot canvas` sizes a canvas by HEIGHT with width auto — right for
+     the codec screens, wrong for a shot canvas, which IS the frame. It also
+     out-specifies `.photo`, so a drawn plate (144×276 = 0.52 against a post's
+     0.5625) sat letterboxed with a black strip down one side; on the dark
+     plates that read as part of the art, which is how it survived. */
+  .media-slot .photo { width: 100%; height: 100%; }
 
   @keyframes kenburns {
     /* never sits at 1.00: the frames carry their own camera HUD along the top
@@ -445,6 +451,64 @@
   /* the copy used to be indented past the signature badge in the corner;
      raising it off the bottom clears the badge on its own */
   .swipe-hint { display: none; }
+
+  /* ── ?vertical — the clip framing ──────────────────────────────────
+     What a recorder loads. The app is ALREADY 9:16, which is the whole
+     reason the feed was built vertical in the first place, so this mode
+     is not a second layout — it is the same one with the furniture taken
+     out: no masthead, no rail, no hub button, no signature badge, nothing
+     that belongs to a website rather than to a broadcast.
+
+     It deliberately does NOT scale anything. A capture at 1080×1920 is a
+     405×720 viewport at deviceScaleFactor 2.667, and letting the recorder
+     do the scaling keeps the type vector-crisp and every px size in this
+     file honest. A CSS transform would rasterise the layer once and
+     upscale it, which is exactly the softness a clip cannot hide. */
+  .vertical .mast,
+  .vertical .rail,
+  .vertical .swipe-hint,
+  .vertical .standby,
+  .vertical .arcade-home,
+  .vertical .toko-signature { display: none !important; }
+
+  .vertical #feed { scroll-behavior: auto; }
+  .vertical .post {
+    padding-top: calc(env(safe-area-inset-top) + 10px);
+    padding-bottom: env(safe-area-inset-bottom);
+    max-width: none;                 /* the frame IS the column */
+  }
+  /* the picture keeps the frame; the copy sits over it, a little larger,
+     because a clip is watched at arm's length and not held */
+  .vertical .post-caption {
+    padding-bottom: calc(9% + env(safe-area-inset-bottom));
+    max-height: 56%;
+    /* a heavier scrim than the page's. On the page the copy is two lines over
+       a picture the reader can see around it; a clip shows the whole bulletin,
+       and over a bright plate (the beach at noon) the thin gradient put the
+       body text under AA. */
+    background: linear-gradient(to top,
+      rgba(3,10,8,.97) 0%, rgba(3,10,8,.93) 58%, rgba(3,10,8,0) 100%);
+  }
+  /* the headline is clamped to two lines on the page and must not be here —
+     "Beach declared 94.7 per cent full by the company that…" is the joke with
+     the punchline cropped off */
+  .vertical .post-caption .head {
+    font-size: 21px; display: block; -webkit-line-clamp: none; overflow: visible;
+  }
+  /* NO CLAMP. On the page the copy is clipped to two lines because the picture
+     is the post and the words are a caption you can open. A clip cannot be
+     opened — a bulletin that ends in "…" on a video has simply not been read,
+     so vertical shows the whole thing and gives the scrim the room for it. */
+  .vertical .post:not(.is-decoded) .bulletin {
+    display: block; -webkit-line-clamp: none; overflow: visible; font-size: 14px;
+  }
+  .vertical .post:not(.is-decoded) .bulletin-line + .bulletin-line { margin-top: 9px; }
+  .vertical .post.is-decoded .post-caption { max-height: 72%; }
+  .vertical .tag { font-size: 11px; }
+  /* the honesty line stays — real events, invented names — because a clip
+     travels further from this page than the page does */
+  .vertical .post:not(.is-decoded) .fiction { display: block; }
+  .vertical .fiction { font-size: 9px; margin: 10px 0 2px; }
 </style>
 </head>
 <body>
@@ -478,18 +542,24 @@
   <main id="feed" tabindex="-1"></main>
 </div>
 
-<script type="module" src="js/main.js?v=37"></script>
-<script type="module" src="../hub/shell.js?v=15"></script>
+<script type="module" src="js/main.js?v=38"></script>
+<script type="module">
+  // The arcade shell and the signature badge are the site around the app, and
+  // a clip must not carry them — a HUB button burned into a video is a button
+  // nobody can press. Loaded conditionally rather than hidden, so `?vertical`
+  // never depends on winning a CSS fight with somebody else's stylesheet.
+  if (!new URLSearchParams(location.search).has('vertical')) {
+    await import('../hub/shell.js?v=13');
+    const { sign } = await import('../toko/js/signature.js?v=2');
+    sign({ corner: 'bottom-left' });
+  }
+</script>
 <script>
   if ('serviceWorker' in navigator &&
       (location.protocol === 'https:' || new URLSearchParams(location.search).has('sw'))) {
-    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=37').catch(() => {}));
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=38').catch(() => {}));
   }
 </script>
 
-  <script type="module">
-    import { sign } from '../toko/js/signature.js?v=2';
-    sign({ corner: 'bottom-left' });
-  </script>
 </body>
 </html>
