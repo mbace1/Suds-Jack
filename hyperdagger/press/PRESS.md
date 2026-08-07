@@ -78,8 +78,10 @@ shared leaderboard, and a full options menu down to voxel density.
 - Vanilla **Three.js r167**, no build step, no framework, no dependencies beyond
   a vendored copy of three. Open the HTML file and it runs.
 - Enemies are **string-art voxel models** — text layers in source, parsed into
-  one `InstancedMesh` each, subdivided ×64 at the default density (a dread skull
-  is 5,824 voxels).
+  one `InstancedMesh` each. The skull is sculpted at 11×5×10 with real anatomy
+  (sockets, teeth, nasal cavity), and the parser **bakes ambient occlusion** —
+  crevices darken, tops lift, a hash grain breaks flat fills — so unlit voxels
+  read as material (a dread skull is 9,639 voxels at full detail).
 - Per-voxel animation runs entirely in a **vertex shader** shared by every
   sprite, so density costs nothing on the CPU.
 - Debris, the bone-yard, daggers, orbs and gems are each **one draw call**; the

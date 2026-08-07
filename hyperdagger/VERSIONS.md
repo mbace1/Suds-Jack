@@ -8,6 +8,24 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v18 — 2026-08-07
+**Detail overhaul — sculpted models, baked AO, serpent swoop, glow trim**
+- The skull family is authored at 11×5×10 (357 source voxels, was 7×3×6 / 91)
+  with real anatomy: jaw, teeth rows, nasal cavity, flared cheekbones, deep
+  sockets with the pupil recessed inside, brow ridge, dome. Serpent rings are
+  open armored hoops with a dorsal ridge; the head has a dark maw, recessed
+  eyes and horn tips; the watcher grew an armored lens + antenna. voxelSize
+  rescaled everywhere so world size and hitboxes are unchanged.
+- parseModel now BAKES SHADING: neighbor-occlusion darkens crevices, sky
+  exposure lifts tops, a deterministic hash grain breaks flat fills. HDR glow
+  voxels pass through untouched, so bloom still bites the same.
+- The AUTO subdivision ladder sits one tier lower ([3,2,2,1,1], coarse ceil
+  ×8) — detail now comes from the sculpt, not from subdividing a blob.
+- Neon trimmed (owner's call): edge rim 0.30→0.15, grid glow 1.8→1.5.
+- The serpent CRUISES AS A SINE IN Y (4.8±3.9, stiffer steering) — it dives
+  to the floor and arcs overhead instead of flying level; chain-follow turns
+  that into a visible body wave.
+
 ## v17 — 2026-08-07
 **HYPERDEMON visual push — pastel sky, glowing grid, neon rims, dash smear**
 - Sky: a dim pastel iridescence (three hue cycles drifting around the

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 const _d = new THREE.Vector3();
 const _zero = new THREE.Matrix4().makeScale(0, 0, 0);
 
-import { TUNING as T } from './tuning.js?v=47';
+import { TUNING as T } from './tuning.js?v=48';
 
 const GRAVITY = T.gems.gravity;
 const MAGNET_R = T.gems.magnetR;

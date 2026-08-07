@@ -5,16 +5,16 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=47';
-import { Player } from './player.js?v=47';
-import { DaggerPool } from './daggers.js?v=47';
-import { GemPool } from './gems.js?v=47';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=47';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=47';
-import { OrbPool } from './bullets.js?v=47';
-import { AudioKit } from './audio.js?v=47';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=47';
-import { TUNING as T } from './tuning.js?v=47';
+import { InputManager } from './input.js?v=48';
+import { Player } from './player.js?v=48';
+import { DaggerPool } from './daggers.js?v=48';
+import { GemPool } from './gems.js?v=48';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=48';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=48';
+import { OrbPool } from './bullets.js?v=48';
+import { AudioKit } from './audio.js?v=48';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=48';
+import { TUNING as T } from './tuning.js?v=48';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -54,7 +54,10 @@ const BASE_PR = Math.min(window.devicePixelRatio, 2);
 // seconds of frame samples to react, and a mid-range phone spending those
 // seconds at the ceiling stutters through the opening spawn. An explicit
 // VOXEL pick still reaches ×64 on any device.
-const AUTO_DETAIL_CEIL = window.matchMedia?.('(pointer: coarse)').matches ? 3 : 4;
+// v4.31: the models themselves carry ~4× more voxels now, so the AUTO
+// subdivision ladder sits one tier lower for the same instance budget —
+// detail comes from the sculpt, not from subdividing a blob
+const AUTO_DETAIL_CEIL = window.matchMedia?.('(pointer: coarse)').matches ? 2 : 3;
 const PERF_TIERS = [
   // gibs = how many pieces ONE death throws (scales with the voxel density
   // ladder below, so a ×64 enemy actually shatters instead of chunking)
@@ -152,7 +155,7 @@ const EdgeShader = {
     tDiffuse: { value: null },
     uPx: { value: new THREE.Vector2(1 / window.innerWidth, 1 / window.innerHeight) },
     uTint: { value: new THREE.Color(1.6, 0.35, 0.35) }, // HDR so bloom bites (STYLE re-aims it)
-    uAmt: { value: 0.3 },
+    uAmt: { value: 0.15 }, // v4.31: halved — a rim, not a wash (owner's call)
   },
   vertexShader: /* glsl */`
     varying vec2 vUv;
@@ -303,7 +306,7 @@ const floorMat = new THREE.ShaderMaterial({
   uniforms: {
     map: { value: makeFloorTexture() },
     uPulse: { value: 0 },
-    uGlow: { value: 1.8 },
+    uGlow: { value: 1.5 }, // v4.31: pulled back from 1.8 — the grid glows, it doesn't shout
     uRed: { value: 0 },
     uAccent: { value: new THREE.Color(2.2, 0.25, 0.25) }, // hurt-flush tint (STYLE re-aims it)
   },
@@ -1172,7 +1175,7 @@ function applyOpts() {
   // VOXEL choice overrides it. Existing sprites keep their detail until they
   // die — the swarm re-densifies within seconds.
   const autoDetail = opts.perf === 'low' ? 1
-    : Math.min(AUTO_DETAIL_CEIL, [4, 3, 2, 2, 1][perfTier]);
+    : Math.min(AUTO_DETAIL_CEIL, [3, 2, 2, 1, 1][perfTier]);
   setVoxelDetail(opts.detail === 'auto' ? autoDetail : opts.detail);
   // reduced motion (opts.motion=false) and the perf tier both override the
   // individual FX toggles without rewriting them — user intent stays in opts.*
@@ -2470,7 +2473,7 @@ window.__hd = {
     getDailyTable() { return readDailyTable(); },
     pulse(n) { runPulse(n ?? ++pulseN); },
     setOpt(k, v) { opts[k] = v; saveOpts(); applyOpts(); },
-    getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, edge: edgePass.enabled, damp: afterimage.uniforms['damp'].value, gridGlow: floorMat.uniforms.uGlow.value, fov: camera.fov, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
+    getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, edge: edgePass.enabled, edgeAmt: edgePass.uniforms.uAmt.value, damp: afterimage.uniforms['damp'].value, gridGlow: floorMat.uniforms.uGlow.value, fov: camera.fov, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
     getVfx() { return { shadows: shadows.count, sparks: sparks.length, speedOn: speedPass.enabled, rippleT, rippleOn: ripplePass.enabled, ember: skyMat.uniforms.uEmber.value }; },
     /** Everything that could leak over a long run: pool occupancy, scene graph
      *  size, and GPU resource counts. A survival game lives or dies on the
