@@ -68,6 +68,8 @@ export const TUNING = {
 
   // dagger stream. tiers[lv] = {stream: shots/s, homing}; LV4 is the crimson
   // hand. levelGems[lv] = total gems needed to reach that level.
+  // DD gunfeel (2026-07-31): TAP = shotgun burst, HOLD = stream, manually
+  // aimed on desktop and pad; touch alone keeps auto-fire while moving.
   weapon: {
     levelGems: [0, 0, 10, 30, 70],
     tiers: [
@@ -82,7 +84,11 @@ export const TUNING = {
     homingDot: 0.8,    // cos of the steer cone (~37°)
     homingRange: 30,   // u — targets beyond this are ignored
     homingSteer: 7,    // 1/s — exponential steer rate toward the target
-    autoFireMove: 0.15, // move-input length that turns the stream on
+    autoFireMove: 0.15, // move-input length that turns the touch stream on
+    streamDelay: 0.22, // s a press must be held before the stream begins
+    shotgunCount: 10,  // daggers in one tap-burst
+    shotgunSpread: 0.14, // rad — much wider cone than the stream
+    shotgunCd: 0.6,    // s before the hand fires again after a burst
   },
 
   gems: {

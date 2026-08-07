@@ -8,6 +8,18 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v16 — 2026-08-07
+**Devil Daggers gunfeel — TAP = shotgun, HOLD = stream**
+- The reference's two-mode trigger, manually aimed on desktop and pad: a press
+  released inside 0.22 s dumps a 10-dagger burst in a wide cone (recoil, FOV
+  kick, its own synth voice) and locks the hand for 0.6 s; holding past the
+  delay runs the stream. The old fire-while-moving auto-stream is REMOVED on
+  desktop/pad — aim and trigger discipline are the skill again.
+- Touch alone keeps auto-fire while moving (two sticks already claim both
+  thumbs). Tips card rewritten to teach tap-vs-hold.
+- The smoke gate now lives in-repo at `test/smoke.cjs` (19 checks) like every
+  other project's, so it survives environment resets.
+
 ## v15 — 2026-07-31
 **tuning.js — every feel number in one file**
 - New `js/tuning.js` (toko-drop's pattern): player body, mouse/touch/pad look

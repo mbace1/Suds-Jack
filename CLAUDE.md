@@ -212,7 +212,8 @@ harmless to touch), and the Leviathan boss. Returnal-inspired bullet-hell: enemy
 and the **dash phases through projectiles** (never bodies). Movement: **jump + double
 jump**, dash with FOV kick (requests buffered 0.25 s across the cooldown). Art is **black & white with dark red as the only contrast color** — the neon grid
 just stops at the arena edge (no barrier visual). Desktop: pointer-lock mouse look,
-**fire is automatic while moving** (hold LMB when still), Space jump ×2, Shift dash,
+**DD gunfeel — LMB tap = shotgun burst, hold = stream** (v4.29; every dagger manually
+aimed), Space jump ×2, Shift dash,
 Esc = pause/options. Touch: dual on-screen sticks — left moves, right looks; **firing is
 automatic while moving** (or while the look stick is held); **tap either stick = jump ×2,
 flick either stick = dash**; ⏸ button top-right. The pause menu carries persisted
@@ -939,9 +940,13 @@ cap 60), kills add `e.score` seconds, an enemy touch costs 10 + `player.nudge`
 knockback + 1.2 s `mercyT` i-frames, and 0 → `die(true)` = TIME OUT. Hi-scores are
 per-mode (`hyperDaggerHi` / `hyperDaggerHiHyper`).
 
-**Input quirks:** shooting is minimalistic — the stream is automatic whenever move
-input is nonzero (`getMove()` length > 0.15), and holding LMB / the look stick fires
-while standing still. A sub-250 ms / sub-12 px tap on EITHER stick = jump (works
+**Input quirks:** shooting is DD's two-mode gunfeel (v4.29) on desktop + pad — a press
+released inside `streamDelay` (0.22 s) fires a `shotgunCount` burst in a wide cone and
+locks the hand for `shotgunCd`; holding past the delay runs the stream. `updateCombat`
+does the tap-vs-hold timing off `input.firing`'s raw held state; `fireHeldT` is seeded
+to 999 in `resetRun` so releasing the click that started the run can't shotgun. Touch
+alone keeps the old auto-fire (stream while moving / look stick held — a thumb can't
+work two sticks and a trigger). Debug: `getGun()`. A sub-250 ms / sub-12 px tap on EITHER stick = jump (works
 mid-air for the double jump; a second finger tapping an occupied half also jumps); a
 fast ≥40 px flick within the last 150 ms before release on **either stick = dash**
 along the screen-space flick direction. No on-screen buttons —
