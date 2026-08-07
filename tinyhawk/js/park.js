@@ -13,7 +13,7 @@
 // affordable later.
 
 import * as THREE from 'three';
-import { COL, GLOW } from './palette.js?v=1';
+import { COL, GLOW, ZONES } from './palette.js?v=2';
 
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 const smooth = (t) => t * t * (3 - 2 * t);
@@ -132,17 +132,25 @@ const RAILS = [
   { a: [-26, -13], b: [-6, -13], lift: 0.15, ledge: true },   // quarterpipe coping
 ];
 const RAIL_R = 0.11;
+const HAZARD_SPOTS = [
+  [-1.8, -0.3], [7.5, 8.8], [-15.5, 8.2], [20.5, -11.5], [-9.5, 26.5], [26.5, 18.2],
+];
 
 const GRID = 1.15;   // heightfield mesh sampling step
 
 export class Park {
   constructor(scene) {
+    this.scene = scene;
     this.features = FEATURES;
     this.mesh = this.build();
     scene.add(this.mesh);
     this.lines = this.buildLines();
     scene.add(this.lines);
     this.rails = this.buildRails(scene);
+    this.hazardGroup = new THREE.Group();
+    this.hazards = [];
+    scene.add(this.hazardGroup);
+    this.setZone('arena');
   }
 
   // World-space segments for the physics, plus the glowing bar you see. A rail
@@ -151,7 +159,8 @@ export class Park {
     const out = [];
     const c = new THREE.Color().setRGB(GLOW.coping[0], GLOW.coping[1], GLOW.coping[2]);
     const led = new THREE.Color().setRGB(GLOW.line[0], GLOW.line[1], GLOW.line[2]);
-    for (const R of RAILS) {
+    for (let index = 0; index < RAILS.length; index++) {
+      const R = RAILS[index];
       const ay = this.height(R.a[0], R.a[1]) + R.lift;
       const by = this.height(R.b[0], R.b[1]) + R.lift;
       const A = new THREE.Vector3(R.a[0], ay, R.a[1]);
@@ -159,7 +168,7 @@ export class Park {
       const dir = new THREE.Vector3().subVectors(B, A);
       const len = dir.length();
       dir.normalize();
-      out.push({ a: A, b: B, dir, len, ledge: !!R.ledge });
+      out.push({ id: `rail-${index + 1}`, a: A, b: B, dir, len, ledge: !!R.ledge });
 
       const geo = new THREE.BoxGeometry(R.ledge ? 0.5 : RAIL_R * 2, RAIL_R * 2, len);
       const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
@@ -168,8 +177,45 @@ export class Park {
       mesh.position.copy(A).addScaledVector(dir, len / 2);
       mesh.lookAt(B);
       scene.add(mesh);
+      out[out.length - 1].mesh = mesh;
     }
     return out;
+  }
+
+  setZone(name = 'arena') {
+    const zone = ZONES[name] || ZONES.arena;
+    this.zone = name in ZONES ? name : 'arena';
+    const [r, g, b] = zone.wash;
+    this.mesh.material.color.setRGB(r, g, b);
+    this.lines.material.color.setRGB(r, g, b);
+    for (const rail of this.rails || []) rail.mesh.material.color.setRGB(r, g, b);
+    for (const mesh of this.hazardGroup?.children || []) mesh.material.color.setRGB(r * 1.5, g * 0.45, b * 0.4);
+    return zone;
+  }
+
+  // Story choices can scar the fixed park without swapping the physics kit.
+  // They are short luminous skate-stoppers placed on otherwise useful lines.
+  setHazards(count = 0) {
+    this.hazardGroup.clear();
+    this.hazards = [];
+    const n = Math.max(0, Math.min(HAZARD_SPOTS.length, count * 2));
+    for (let i = 0; i < n; i++) {
+      const [x, z] = HAZARD_SPOTS[i];
+      const y = this.height(x, z) + 0.18;
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(1.15, 0.24, 0.24),
+        new THREE.MeshBasicMaterial({ color: 0xe04455 })
+      );
+      mesh.position.set(x, y, z);
+      mesh.rotation.y = (i % 2 ? 0.5 : -0.35);
+      this.hazardGroup.add(mesh);
+      this.hazards.push({ x, z, radius: 0.78 });
+    }
+    this.setZone(this.zone);
+  }
+
+  hazardAt(p) {
+    return this.hazards.find(h => Math.hypot(p.x - h.x, p.z - h.z) < h.radius) || null;
   }
 
   // Closest point on any rail to p, if it is within reach. Returns
