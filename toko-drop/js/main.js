@@ -1,15 +1,15 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=175';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=175';
-import { Player, PLAYER_RADIUS } from './player.js?v=175';
+import { InputManager } from './input.js?v=176';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=176';
+import { Player, PLAYER_RADIUS } from './player.js?v=176';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=175';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=175';
-import { audio } from './audio.js?v=175';
-import { initDesigner } from './designer.js?v=175';
-import { createSpecimen } from './specimen.js?v=175';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=175';
-import { TUNING } from './tuning.js?v=175';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=176';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=176';
+import { audio } from './audio.js?v=176';
+import { initDesigner } from './designer.js?v=176';
+import { createSpecimen } from './specimen.js?v=176';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=176';
+import { TUNING } from './tuning.js?v=176';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -588,7 +588,34 @@ class ChunkPool {
   // angular nugget, right for cube-family debris and hard shards. Pass a denser
   // sphere for smooth goo droplets (blob-family deaths must NOT look like cubes).
   constructor(sc, geo = new THREE.SphereGeometry(1, 5, 3)) {
-    const mat = new THREE.MeshBasicMaterial();              // opaque; instanceColor multiplies
+    // v222 GOO PASS 2 (roadmap-v2 Phase 3): under the WEBGPU build corpse
+    // matter reads as GEL, not matte confetti — per-instance aColor feeds a
+    // node graph with wrap light, a fresnel jelly rim and a wet glint. The
+    // angular pool becomes hard candy shards, the smooth pool jelly droplets,
+    // both from the same graph. Classic keeps the flat instanceColor
+    // material byte-for-byte. Zero-conditional graph (the v195 lesson).
+    let mat;
+    if (IS_GPU) {
+      this._aColor = new THREE.InstancedBufferAttribute(new Float32Array(CHUNK_POOL * 3), 3);
+      geo.setAttribute('aColor', this._aColor);
+      mat = new THREE.MeshBasicNodeMaterial();
+      const { attribute, vec3, vec4, float, clamp, dot, normalize, mix,
+              cameraViewMatrix, positionViewDirection } = TSL;
+      const normalViewN = TSL.normalView ?? TSL.transformedNormalView;
+      const base = attribute('aColor', 'vec3').pow(2.2);   // output-encoding parity
+      const N = normalize(normalViewN);
+      const V = positionViewDirection;
+      const L = normalize(cameraViewMatrix.mul(vec4(8.0, 20.0, 10.0, 0.0)).xyz); // main.js sun
+      const H = normalize(L.add(V));
+      const wrap = clamp(dot(N, L).mul(0.5).add(0.5), 0.0, 1.0);
+      const fres = float(1.0).sub(clamp(dot(N, V), 0.0, 1.0)).pow(2.5);
+      const spec = clamp(dot(N, H), 0.0, 1.0).pow(24.0);
+      mat.colorNode = base.mul(wrap.mul(0.75).add(0.35))                 // lit gel body
+        .add(mix(base, vec3(1.0, 1.0, 1.0), 0.6).mul(fres).mul(0.8))    // jelly rim
+        .add(vec3(1.0, 1.0, 1.0).mul(spec).mul(0.5));                   // wet glint
+    } else {
+      mat = new THREE.MeshBasicMaterial();            // opaque; instanceColor multiplies
+    }
     this.mesh = new THREE.InstancedMesh(geo, mat, CHUNK_POOL);
     this.mesh.frustumCulled = false;
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -627,8 +654,15 @@ class ChunkPool {
     this.life[i] = 1.4; this.size[i] = size;
     this.sq[i] = 1.0; this.sqV[i] = 0.0; this.active[i] = 1;
     this._col.set(color);
-    this.mesh.setColorAt(i, this._col);
-    if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
+    if (this._aColor) {   // v222: the WEBGPU gel graph reads aColor instead
+      this._aColor.array[i * 3]     = this._col.r;
+      this._aColor.array[i * 3 + 1] = this._col.g;
+      this._aColor.array[i * 3 + 2] = this._col.b;
+      this._aColor.needsUpdate = true;
+    } else {
+      this.mesh.setColorAt(i, this._col);
+      if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
+    }
   }
   update(dt) {
     let dirty = false;
@@ -4436,7 +4470,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v221' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v222' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -9142,6 +9176,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=175').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=176').catch(() => {});
   });
 }

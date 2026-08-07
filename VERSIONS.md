@@ -7,6 +7,30 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v222 — 2026-08-07
+**Goo pass 2 — corpse matter reads as gel** *(roadmap-v2 Phase 3, WEBGPU build)*
+- The corpse was the last flat thing on the floor: both `ChunkPool`s (angular
+  cube debris + smooth goo droplets) rendered matte `MeshBasicMaterial`
+  confetti on every build. Under the **WEBGPU flag** they now carry a
+  **gel-nugget node graph** — per-instance `aColor` (the SplatPool pattern),
+  wrap lighting off the arena sun, a fresnel jelly rim toward white, and a
+  wet specular glint. The angular pool becomes hard candy shards, the smooth
+  pool jelly droplets, both from one graph
+- **Classic is untouched byte-for-byte** — the flat `instanceColor` material
+  and its write path only run when the node path doesn't
+- Zero-conditional graph (the v195 lesson), `.pow(2.2)` output-encoding
+  parity on the instance color (the v192 lesson), no new divisions
+- Verified headless 8/8: under the flag both pools carry `colorNode`+`aColor`
+  and classic carries neither; a live in-run burst renders on both builds with
+  zero page errors — comparison screenshots show shaded gel nuggets vs the
+  old flat discs. `smoke.sh` + `cabinets.sh` green
+- Living-swarm materials were already satin/physical (v90) with the v218 dome
+  work — this closes the corpse half of "satin MID is the floor, goo the
+  ceiling"
+- Cache-bust `?v=175` → `?v=176`; HUD label → v222
+
+---
+
 ## v221 — 2026-08-01
 **Each mode drafts its own roster** *(field call: "different enemies for each mode")*
 - **CLOSE COMBAT now draws from its own table** (`TUNING.waves.poolMelee`).
