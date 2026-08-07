@@ -8,6 +8,33 @@ floor sending people at the unfinished one.
 The `?v=N` token in `index.html` tracks module-graph changes; this number is
 the public release. Bump both when shipping.
 
+## v4 — 2026-07-30
+
+**A controller could ride the rim but never reach it.**
+
+`pollGamepad()` was called inside the play branch of the frame, below the
+`mode !== 'play'` early return — so on the two screens where you are not
+playing, the pad was never read at all. The menu and the recap listen for a
+pointer or Enter, which means a pad on its own got you as far as looking at
+the title and no further. It is polled in every mode now, and A or Start is a
+way in.
+
+Two things that only show up once the same button does two jobs:
+
+- **The press that starts a run was still queued as a dive.** A is dive during
+  play, so the press that got you in was sitting in `_dive` when the first
+  frame read it and Jack left the mouth before you had seen the level.
+- **A press spent diving would restart the run at the recap.** Every A edge
+  set the start flag, nothing consumed it during play, and it was still there
+  when you died — the recap flashed past under your thumb. `clearPending()` on
+  both edges of a run drains it (the jump queue too, now that there is one).
+
+Neither is visible without a pad in your hands, which is why they lasted:
+nothing in the gate had ever pressed one. It drives a synthetic pad through
+the menu and the recap now.
+
+Smoke gate 37 → 41 checks.
+
 ## v3 — 2026-07-30
 
 **Five half-pipes in a row, and a jump to get between them.** (Owner's

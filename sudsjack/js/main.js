@@ -138,6 +138,7 @@ function startRun() {
   state.mode = 'play';
   state.score = 0; state.chain = 1; state.lives = 3; state.t = 0;
   risers.clear(); pops.clear(); player.reset();
+  input.clearPending();
   startLevel(1);
   el('menu').hidden = true;
   el('over').hidden = true;
@@ -146,6 +147,7 @@ function startRun() {
 
 function gameOver() {
   state.mode = 'over';
+  input.clearPending();
   audio.bedStop(); audio.over();
   const best = Math.max(hi(), state.score);
   setHi(best);
@@ -220,15 +222,23 @@ function step(dt) {
   tube.update(dt, state.mode === 'play' ? 0.35 : 1);
   pops.update(dt);
 
+  // Polled in EVERY mode. A pad that can only be read once you are already
+  // playing cannot get you there: the menu and the recap listen for a pointer
+  // or Enter, so a controller alone was stranded on both screens.
+  input.pollGamepad();
+
   if (state.banner > 0) {
     state.banner -= dt;
     if (state.banner <= 0) hud.banner.style.opacity = '0';
   }
 
-  if (state.mode !== 'play') { player.update(dt); return; }
+  if (state.mode !== 'play') {
+    if (input.start()) startRun();
+    player.update(dt);
+    return;
+  }
 
   state.t += dt;
-  input.pollGamepad();
   const spin = input.spin();
   player.move(spin, dt);
   if (input.jump() && player.jump(spin)) audio.jump();
