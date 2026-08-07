@@ -199,9 +199,14 @@ jsDelivr CDN via an importmap, same as toko-drop).
 ### Hyper Dagger (`hyperdagger/`)
 A first-person **Devil Daggers × HYPERDEMON homage** on Three.js r167 — survive a swarm
 of **voxel** skulls on a neon disc in a synthwave void; survival time is the only score.
-Enemies are string-art voxel models (one `InstancedMesh` per enemy, per-voxel colors) and
+Enemies are string-art voxel models (one `InstancedMesh` per enemy, per-voxel colors;
+since v4.31 the skull family is a real 11×5×10 sculpt — sockets, teeth, nasal cavity —
+and `parseModel` bakes AO + grain into the colors) and
 deaths explode them into **physical voxel debris** (gravity, floor bounce, tumble) from a
-shared pool. Combat: **hold to stream daggers**, gems drop from heavy kills and level
+shared pool. NEXT (owner's direction, 2026-08-07): enemies render as a **smoothed mesh
+hull** over the voxel lattice while alive (heavy Laplacian smoothing — the C3 look),
+with voxels appearing only where damage tears the surface and in death bursts — the
+cube look read as Minecraft. Combat: **hold to stream daggers**, gems drop from heavy kills and level
 the daggers up (LV 3 = **homing**); enemy roster is skulls, crowned skulls, splitter
 skulls (burst into minis), brutes, drifting totem spawners (which also pulse **jumpable
 orb rings**), **watcher** drones firing aimed orb volleys, thorn spikes erupting under
@@ -885,7 +890,12 @@ start}}` for console tinkering and headless smoke tests.
 are hex ints, or `[r,g,b]` arrays with components > 1 for **HDR glow voxels** (eyes,
 totem veins) that trip the bloom threshold while bone/body stays matte. `VoxelSprite`
 bakes a model into one `InstancedMesh` (per-voxel `setColorAt`; hit-flash brightens
-`material.color`, which multiplies every instance). `DebrisPool` is a single 1600-cube
+`material.color`, which multiplies every instance). `bakeShading` (v4.31) runs inside
+`parseModel`: neighbor-occlusion darkens crevices, sky exposure lifts tops, a
+deterministic hash grain breaks flat fills — HDR voxels pass through so bloom bites
+identically, and because it bakes into the parse colors, `applyStyle` and hit-flash
+inherit it. The AUTO subdivision ladder is `[3,2,2,1,1]` (coarse ceil ×8) since the
+sculpts carry ~4× the source voxels. `DebrisPool` is a single 1600-cube
 `InstancedMesh`: gravity −28, floor bounce ×−0.38 with friction, Euler tumble, shrink-out
 over the last 0.3 s; `burst(worldVoxels, …)` explodes a dead enemy's actual voxels
 outward from their centroid plus the killing dagger's impulse.
@@ -916,7 +926,9 @@ sac every ~10s; **blinkers** (cap 3) from t=90 every 25s tightening to 14s; **se
 **Leviathan** from t=150, one at a time, respawning every 120s. Totem exhales roll
 splitters (15%, > 45s) before crowned skulls (30%, > 60s). A `Serpent` is a controller
 owning 12 `SerpentSegment` enemies (pushed into the main `enemies` array so the normal
-collision loops apply); the head weaves around the player and dive-bombs every 8s,
+collision loops apply); the head cruises as a deep sine in Y (4.8±3.9, v4.31 — it
+dives to the floor and arcs overhead rather than flying level; steering is stiff
+enough to ride the sine, or lag averages it flat) and dive-bombs every 8s,
 surviving segments chain-follow at 0.95 u spacing, and each ring gibs + drops a gem
 individually. Spiders skitter on the floor and eat loose gems — killing one refunds
 everything it swallowed + 1. The Leviathan is a 60-HP god-head at the arena centre that
@@ -1004,7 +1016,8 @@ cycles around the horizon, drifting with time, desaturated toward white, peak �
 so it never trips bloom) replaces the old greyscale band shimmer, with the dark-red
 ember glow still holding the horizon (`fog: false`); the floor is a `CanvasTexture`
 white-on-black grid on a circle of exactly `ARENA_R` — the grid simply ends at the
-edge, no barrier mesh, and `uGlow` 1.8 lifts the major lines past the bloom
+edge, no barrier mesh, and `uGlow` 1.5 (trimmed from 1.8 in v4.31, with the edge rim
+halved to 0.15 — owner's call) lifts the major lines past the bloom
 threshold so the grid itself glows (hotter on music beats via `uPulse`). Death/menu/pause are DOM overlays; touch sticks
 are drawn on the `#canvas-ui` overlay each frame. Hi-score lives in `localStorage` under
 `hyperDaggerHi`. `window.__hd` exposes `{enemies, player, debris, daggers, gems,

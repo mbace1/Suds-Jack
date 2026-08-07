@@ -200,8 +200,49 @@ s.listen(0, '127.0.0.1', async () => {
   });
   ok('neon edge pass on by default at T0', fx.edgeOn === true, JSON.stringify(fx));
   ok('EDGE OFF and the low tier both shed it', fx.off === false && fx.tierGated === false, JSON.stringify(fx));
-  ok('the grid glow is HDR', fx.glow > 1.5, JSON.stringify(fx));
+  ok('the grid glow is HDR', fx.glow > 1.2, JSON.stringify(fx)); // v4.31 trims it to 1.5 — still past the bloom threshold
   ok('smear deepens mid-dash, settles back', fx.dampDash > fx.dampIdle + 0.05 && fx.dampBack <= fx.dampIdle + 0.01, JSON.stringify(fx));
+
+  // ---- v4.31 detail overhaul ---------------------------------------------
+  const detail31 = await p.evaluate(async (tok) => {
+    const { MODELS, parseModel } = await import(`./js/voxel.js?v=${tok}`);
+    const base = parseModel(MODELS.skull, 1);
+    // world width must be unchanged by the resolution bump (hitboxes!)
+    const xs = base.map(v => v.x);
+    const width = Math.max(...xs) - Math.min(...xs) + MODELS.skull.voxelSize;
+    // baked AO: bone voxels must NOT all share one flat color any more
+    const boneCols = new Set(base.filter(v => v.key === 'W').map(v => v.color.getHexString()));
+    return { count: base.length, width: +width.toFixed(2), boneShades: boneCols.size };
+  }, token);
+  ok('the skull is a sculpt now (≥250 source voxels)', detail31.count >= 250, JSON.stringify(detail31));
+  ok('its world width is unchanged (~1.54)', Math.abs(detail31.width - 1.54) < 0.02, JSON.stringify(detail31));
+  ok('AO bake gives bone real shading', detail31.boneShades > 10, JSON.stringify(detail31));
+
+  const fx31 = await p.evaluate(() => {
+    const hd = window.__hd;
+    return { glow: hd.debug.getFx().gridGlow, edgeAmt: hd.debug.getFx().edgeAmt };
+  });
+  ok('the neon is dialled back (glow 1.5, edge 0.15)', fx31.glow === 1.5 && fx31.edgeAmt === 0.15, JSON.stringify(fx31));
+
+  const swoop = await p.evaluate(async () => {
+    const hd = window.__hd;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    hd.debug.setOpt('perf', 'low'); // motion test — voxel density is irrelevant, frames are not
+    for (const e of hd.enemies) e.alive = false;
+    hd.enemies.length = 0;
+    hd.debug.spawnSerpent();
+    const ys = [];
+    for (let i = 0; i < 60; i++) {
+      const head = hd.serpents[0]?.segments.find(s => s.alive);
+      if (head) ys.push(head.pos.y);
+      await frames(2);
+    }
+    const serp = hd.serpents[0];
+    if (serp) for (const s of serp.segments) s.alive = false;
+    hd.debug.setOpt('perf', 'auto');
+    return { min: +Math.min(...ys).toFixed(2), max: +Math.max(...ys).toFixed(2) };
+  });
+  ok('the serpent swoops vertically (Y spread > 2.5)', swoop.max - swoop.min > 2.5, JSON.stringify(swoop));
 
   // ---- death → restart under 2 s -----------------------------------------
   const death = await p.evaluate(async () => {

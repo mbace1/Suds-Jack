@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=47';
+import { VoxelSprite, MODELS } from './voxel.js?v=48';
 
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();
@@ -628,16 +628,22 @@ export class Serpent {
       _tv.copy(playerEye);       // dive-bomb straight at the player
       speed = 12.5;
     } else {
-      const a = this.t * 0.55;   // weave a ring around the player
+      // weave a ring around the player while SWOOPING — the cruise is a deep
+      // sine in Y (owner's call, 2026-08-07: it should go up and down, not
+      // fly level), diving to just off the floor and arcing well overhead;
+      // the chain-follow turns that into a visible body wave
+      const a = this.t * 0.55;
       _tv.set(
-        playerEye.x + Math.cos(a) * 11,
-        3.2 + Math.sin(this.t * 0.8) * 2.4,
-        playerEye.z + Math.sin(a) * 11,
+        playerEye.x + Math.cos(a) * 9.5,
+        4.8 + Math.sin(this.t * 1.1) * 3.9,
+        playerEye.z + Math.sin(a) * 9.5,
       );
     }
 
     _sd.copy(_tv).sub(head.pos).normalize();
-    this.vel.addScaledVector(_sd, 9 * dt);
+    // steering must be stiff enough to actually ride the sine — at the old
+    // 9/s the lag averaged the swoop back into level flight
+    this.vel.addScaledVector(_sd, 13 * dt);
     if (this.vel.length() > speed) this.vel.setLength(speed);
     head.pos.addScaledVector(this.vel, dt);
     if (head.pos.y < 0.8) head.pos.y = 0.8;
