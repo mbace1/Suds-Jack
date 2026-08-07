@@ -5,16 +5,16 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=46';
-import { Player } from './player.js?v=46';
-import { DaggerPool } from './daggers.js?v=46';
-import { GemPool } from './gems.js?v=46';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=46';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=46';
-import { OrbPool } from './bullets.js?v=46';
-import { AudioKit } from './audio.js?v=46';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=46';
-import { TUNING as T } from './tuning.js?v=46';
+import { InputManager } from './input.js?v=47';
+import { Player } from './player.js?v=47';
+import { DaggerPool } from './daggers.js?v=47';
+import { GemPool } from './gems.js?v=47';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=47';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=47';
+import { OrbPool } from './bullets.js?v=47';
+import { AudioKit } from './audio.js?v=47';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=47';
+import { TUNING as T } from './tuning.js?v=47';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -36,7 +36,7 @@ const opts = Object.assign(
   // motion=false is the reduced-motion master switch (forces smear/shake/chroma/FOV
   // kicks off without touching the individual toggles); contrast=true brightens
   // orbs + telegraphs and kills the floor's red flush for readability
-  { speed: 1, fov: 80, sens: 1, aim: true, smear: true, shake: true, chroma: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson' },
+  { speed: 1, fov: 80, sens: 1, aim: true, smear: true, shake: true, chroma: true, edge: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson' },
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
 
 // STYLE presets: hue targets for the accent recolor (null = native crimson).
@@ -58,11 +58,11 @@ const AUTO_DETAIL_CEIL = window.matchMedia?.('(pointer: coarse)').matches ? 3 : 
 const PERF_TIERS = [
   // gibs = how many pieces ONE death throws (scales with the voxel density
   // ladder below, so a ×64 enemy actually shatters instead of chunking)
-  { chroma: true,  smear: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 520, litter: 2500 }, // T0 full
-  { chroma: false, smear: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 420, litter: 2000 }, // T1
-  { chroma: false, smear: false, pr: BASE_PR,                bloom: true,  debrisCap: 3000, gibs: 300, litter: 1200 }, // T2
-  { chroma: false, smear: false, pr: Math.min(BASE_PR, 1.5), bloom: true,  debrisCap: 2000, gibs: 220, litter: 600 }, // T3
-  { chroma: false, smear: false, pr: 1,                      bloom: false, debrisCap: 800,  gibs: 110, litter: 0 }, // T4 floor
+  { chroma: true,  smear: true,  edge: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 520, litter: 2500 }, // T0 full
+  { chroma: false, smear: true,  edge: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 420, litter: 2000 }, // T1
+  { chroma: false, smear: false, edge: false, pr: BASE_PR,                bloom: true,  debrisCap: 3000, gibs: 300, litter: 1200 }, // T2
+  { chroma: false, smear: false, edge: false, pr: Math.min(BASE_PR, 1.5), bloom: true,  debrisCap: 2000, gibs: 220, litter: 600 }, // T3
+  { chroma: false, smear: false, edge: false, pr: 1,                      bloom: false, debrisCap: 800,  gibs: 110, litter: 0 }, // T4 floor
 ];
 // mutable so headless tests can shrink the timescales
 const perfTuning = { downMs: 40, upMs: 22, settleMs: 2000, stableMs: 15000, downHoldMs: 1500, emaAlpha: 0.08 };
@@ -143,9 +143,51 @@ const ChromaShader = {
     }`,
 };
 
+// v4.30 neon rim: a cross-gradient edge tint over the raw render — every
+// silhouette gets HYPERDEMON's wire glow. It sits BEFORE the smear and the
+// bloom on purpose: edges streak with motion and flare like everything else
+// bright, instead of being pasted on top of the finished frame.
+const EdgeShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    uPx: { value: new THREE.Vector2(1 / window.innerWidth, 1 / window.innerHeight) },
+    uTint: { value: new THREE.Color(1.6, 0.35, 0.35) }, // HDR so bloom bites (STYLE re-aims it)
+    uAmt: { value: 0.3 },
+  },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform vec2 uPx;
+    uniform vec3 uTint;
+    uniform float uAmt;
+    varying vec2 vUv;
+    float lum(vec2 o) {
+      vec3 c = texture2D(tDiffuse, vUv + o * uPx).rgb;
+      return dot(c, vec3(0.299, 0.587, 0.114));
+    }
+    void main() {
+      vec4 base = texture2D(tDiffuse, vUv);
+      float gx = lum(vec2(1.0, 0.0)) - lum(vec2(-1.0, 0.0));
+      float gy = lum(vec2(0.0, 1.0)) - lum(vec2(0.0, -1.0));
+      // soft threshold keeps the dither of the sky quiet; only real
+      // silhouettes (enemy vs void, grid vs floor) light up
+      float e = clamp(length(vec2(gx, gy)) * 2.0 - 0.16, 0.0, 1.0);
+      gl_FragColor = vec4(base.rgb + uTint * e * uAmt, base.a);
+    }`,
+};
+
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-const afterimage = new AfterimagePass(0.72); // motion smear on everything bright
+const edgePass = new ShaderPass(EdgeShader);
+composer.addPass(edgePass);
+// motion smear on everything bright; damp is DYNAMIC since v4.30 — it deepens
+// mid-dash (see the fovKick block), so the hardest smear is always transient
+// and the 0.82-starburst trap stays closed
+const SMEAR_BASE = 0.74;
+const SMEAR_DASH = 0.12;
+const afterimage = new AfterimagePass(SMEAR_BASE);
 composer.addPass(afterimage);
 const bloom = new UnrealBloomPass(
   new THREE.Vector2(window.innerWidth, window.innerHeight), 0.5, 0.4, 0.6); // eased so voxel cells read through the glow
@@ -261,6 +303,7 @@ const floorMat = new THREE.ShaderMaterial({
   uniforms: {
     map: { value: makeFloorTexture() },
     uPulse: { value: 0 },
+    uGlow: { value: 1.8 },
     uRed: { value: 0 },
     uAccent: { value: new THREE.Color(2.2, 0.25, 0.25) }, // hurt-flush tint (STYLE re-aims it)
   },
@@ -270,12 +313,15 @@ const floorMat = new THREE.ShaderMaterial({
   fragmentShader: /* glsl */`
     uniform sampler2D map;
     uniform float uPulse;
+    uniform float uGlow;
     uniform float uRed;
     uniform vec3 uAccent;
     varying vec2 vUv;
     void main() {
       vec3 col = texture2D(map, vUv * 14.0).rgb;
-      col *= 1.0 + uPulse * 0.9;                                  // beat glow
+      // v4.30: uGlow lifts the major lines just past the bloom threshold, so
+      // the grid itself glows — and the beat pulse pushes it visibly hotter
+      col *= uGlow + uPulse * 0.9;
       col = mix(col, col * uAccent, clamp(uRed, 0.0, 1.0));       // hurt flush
       gl_FragColor = vec4(col, 1.0);
     }`,
@@ -286,8 +332,10 @@ const floor = new THREE.Mesh(
 );
 scene.add(floor);
 
-// monochrome sky: grey band shimmer over black, with a single dark-red
-// ember glow hugging the horizon as the one contrast color
+// v4.30 sky: HYPERDEMON's pastel iridescence over black — a slow hue-walk
+// around the horizon replaces the old greyscale band shimmer. Held DIM
+// (peak ≈0.09) so it stays a wash behind the fight and never trips bloom;
+// the dark-red ember glow keeps the horizon as the danger line.
 const skyMat = new THREE.ShaderMaterial({
   side: THREE.BackSide,
   depthWrite: false,
@@ -316,7 +364,12 @@ const skyMat = new THREE.ShaderMaterial({
       float b1 = 0.5 + 0.5 * sin(ang * 7.0 - uTime * 0.6 + h * 9.0);
       float b2 = 0.5 + 0.5 * sin(ang * 13.0 + uTime * 0.9 - h * 14.0);
       float horiz = 1.0 - clamp(abs(h) * 2.6, 0.0, 1.0);
-      col += vec3(0.05) * (b1 * 0.6 + b2 * 0.4) * horiz;
+      // pastel iridescence: three hue cycles around the ring, drifting with
+      // time, desaturated toward white — the bands now modulate COLOR, not grey
+      float hue = ang * 0.477 + uTime * 0.03;
+      vec3 pastel = 0.5 + 0.5 * cos(6.28318 * (hue + vec3(0.0, 0.33, 0.67)));
+      pastel = mix(vec3(1.0), pastel, 0.45);
+      col += pastel * 0.09 * (b1 * 0.6 + b2 * 0.4) * horiz;
       // ember horizon swells with trauma and while the Leviathan lives
       col += uEmberCol * pow(max(0.0, 1.0 - abs(h) * 4.0), 3.0) * (1.0 + uEmber);
       gl_FragColor = vec4(col, 1.0);
@@ -524,6 +577,7 @@ function applyRenderScale() {
   composer.setPixelRatio(pr);
   renderer.setSize(window.innerWidth, window.innerHeight);
   composer.setSize(window.innerWidth, window.innerHeight);
+  edgePass.uniforms.uPx.value.set(1 / window.innerWidth, 1 / window.innerHeight);
 }
 
 function resize() {
@@ -1124,6 +1178,8 @@ function applyOpts() {
   // individual FX toggles without rewriting them — user intent stays in opts.*
   afterimage.enabled = opts.smear && opts.motion && tier.smear;
   chromaPass.enabled = opts.chroma && opts.motion && tier.chroma;
+  // the neon rim is a static effect, so the motion toggle leaves it alone
+  edgePass.enabled = opts.edge && tier.edge;
   bloom.enabled = tier.bloom;
   debris.softCap = tier.debrisCap;
   debris.gibTarget = tier.gibs;
@@ -1143,6 +1199,7 @@ function applyOpts() {
   styleTint(gems.mesh.material.color.setRGB(2.4, 0.15, 0.15));
   styleTint(floorMat.uniforms.uAccent.value.setRGB(2.2, 0.25, 0.25));
   styleTint(skyMat.uniforms.uEmberCol.value.setRGB(0.30, 0.02, 0.02));
+  styleTint(edgePass.uniforms.uTint.value.setRGB(1.6, 0.35, 0.35));
   player.sens = opts.sens;
   // reconcile music with the toggle live (only while a run is active)
   if (state === 'playing') {
@@ -1173,6 +1230,7 @@ function showPause() {
      ${optRow('FX', 'smear', [true, false], v => v ? 'SMEAR ON' : 'SMEAR OFF')}
      ${optRow('', 'shake', [true, false], v => v ? 'SHAKE ON' : 'SHAKE OFF')}
      ${optRow('', 'chroma', [true, false], v => v ? 'CHROMA ON' : 'CHROMA OFF')}
+     ${optRow('', 'edge', [true, false], v => v ? 'EDGE ON' : 'EDGE OFF')}
      ${optRow('', 'music', [true, false], v => v ? 'MUSIC ON' : 'MUSIC OFF')}
      ${optRow('A11Y', 'motion', [true, false], v => v ? 'MOTION FULL' : 'MOTION REDUCED')}
      ${optRow('', 'contrast', [false, true], v => v ? 'CONTRAST HIGH' : 'CONTRAST NORMAL')}
@@ -2268,6 +2326,11 @@ function updateFeel(dt) {
   // sky ember swells with trauma and while the Leviathan is on the field
   skyMat.uniforms.uEmber.value = t2 * 0.9 + (levAlive ? 0.7 : 0);
   fovKick = Math.max(0, fovKick - dt * 18);
+  // smear deepens mid-dash — HYPERDEMON smears hardest at speed. dashK decays
+  // with the dash itself, so the heavy end is always transient.
+  if (afterimage.enabled) {
+    afterimage.uniforms['damp'].value = SMEAR_BASE + player.dashK * SMEAR_DASH;
+  }
   const fov = opts.fov + (opts.motion ? player.dashK * 9 + fovKick : 0);
   if (Math.abs(camera.fov - fov) > 0.01) {
     camera.fov = fov;
@@ -2406,8 +2469,8 @@ window.__hd = {
     lastPulsePicks,
     getDailyTable() { return readDailyTable(); },
     pulse(n) { runPulse(n ?? ++pulseN); },
-    setOpt(k, v) { opts[k] = v; saveOpts(); },
-    getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, fov: camera.fov, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
+    setOpt(k, v) { opts[k] = v; saveOpts(); applyOpts(); },
+    getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, edge: edgePass.enabled, damp: afterimage.uniforms['damp'].value, gridGlow: floorMat.uniforms.uGlow.value, fov: camera.fov, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
     getVfx() { return { shadows: shadows.count, sparks: sparks.length, speedOn: speedPass.enabled, rippleT, rippleOn: ripplePass.enabled, ember: skyMat.uniforms.uEmber.value }; },
     /** Everything that could leak over a long run: pool occupancy, scene graph
      *  size, and GPU resource counts. A survival game lives or dies on the

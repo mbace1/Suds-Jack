@@ -8,6 +8,19 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v17 — 2026-08-07
+**HYPERDEMON visual push — pastel sky, glowing grid, neon rims, dash smear**
+- Sky: a dim pastel iridescence (three hue cycles drifting around the
+  horizon, desaturated toward white) replaces the greyscale band shimmer;
+  the red ember horizon stays the danger line.
+- Grid: `uGlow` 1.8 lifts the major lines past the bloom threshold — the
+  floor itself glows, hotter on music beats.
+- Neon rim: a new edge-detect pass tinted by the STYLE accent, placed
+  before the smear so silhouettes streak and flare; EDGE toggle in the
+  pause menu, shed automatically below perf tier T1.
+- Motion smear is dynamic: damp 0.74 at rest, up to 0.86 mid-dash — the
+  hardest smear is always transient (the 0.82-starburst trap stays closed).
+
 ## v16 — 2026-08-07
 **Devil Daggers gunfeel — TAP = shotgun, HOLD = stream**
 - The reference's two-mode trigger, manually aimed on desktop and pad: a press
