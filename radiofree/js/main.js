@@ -1,14 +1,14 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=38';
-import { Post, Reader } from './codec.js?v=38';
-import { Package } from './package.js?v=38';
+import { PAL, SECTOR_COLOR } from './palette.js?v=39';
+import { Post, Reader } from './codec.js?v=39';
+import { Package } from './package.js?v=39';
 import { SECTORS, STORIES, COPY, ARCHIVED, EPISODES, EPISODE, storyCopy, storyBroadcast,
-         parseLine, loadWire, WIRE_INFO } from './stories.js?v=38';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=38';
-import * as audio from './audio.js?v=38';
-import { PixelScreen } from './screen.js?v=38';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=38';
+         parseLine, loadWire, WIRE_INFO } from './stories.js?v=39';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=39';
+import * as audio from './audio.js?v=39';
+import { PixelScreen } from './screen.js?v=39';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=39';
 
 // CLEAN — the transmission with no second layer on it. `?clean` is what a clip
 // export loads, and it does not hide DECODE, it never builds it: no rail
@@ -574,11 +574,49 @@ window.__rfh = {
   },
   clean: CLEAN,
   vertical: VERTICAL,
+  // The stingers a recording tops and tails itself with. Kept here rather than
+  // in the renderer because they are made of the wire — the frequency, and the
+  // bulletin's own TELL — and the renderer must not learn to read the wire; it
+  // presses play and nothing else.
+  //
+  //   ident()            the station, at the head
+  //   ident({ tell: 1 }) the end card: the question that catches this
+  //                      technique in the wild, which is the only thing worth
+  //                      taking away from fifteen seconds
+  ident: async ({ ms = 1100, tell = false, fade = 280 } = {}) => {
+    const box = $('ident');
+    const sec = SECTORS[0] || {};
+    $('identSub').textContent = tell
+      ? (WIRE_INFO.date || '')
+      : `${sec.freq || '--.--'} ${sec.call || ''}`.trim();
+    const body = $('identBody');
+    body.innerHTML = '';
+    if (tell) {
+      const p = posts[active];
+      const c = p && !p.signoff ? storyCopy(p.story.id, getLang()) : null;
+      if (c) {
+        body.appendChild(el('span', 'lead', c.technique));
+        body.appendChild(document.createTextNode(c.tell));
+      }
+    }
+    box.hidden = false;
+    // a frame between display and opacity, or the transition never starts
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    box.classList.add('on');
+    await new Promise(r => setTimeout(r, ms));
+    box.classList.remove('on');
+    await new Promise(r => setTimeout(r, fade));
+    box.hidden = true;
+  },
   debug: {
     tuneIn: () => $('tuneIn').click(),
     // what a clip export would say, straight out of the wire's own field
     broadcast: (id, lang) => storyBroadcast(id || (posts[active] && posts[active].story.id),
                                             lang || getLang()),
+    // the whole copy block for a bulletin, in the language on screen — what a
+    // caption file and a post text are written from
+    copy: (id, lang) => storyCopy(id || (posts[active] && posts[active].story.id),
+                                  lang || getLang()),
     go: d => scrollToPost(active + d),
     tuneChannel,
     toggleDecode: () => toggleDecode(active),

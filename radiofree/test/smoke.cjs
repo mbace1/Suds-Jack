@@ -272,6 +272,27 @@ async function clipChecks() {
      c.decode === false && c.seconds === 20 && c.cut === 5 && c.ids.join(',') === 'a,b',
      JSON.stringify(c));
 
+  // the sidecars. A caption file whose cues drift is worse than none — the
+  // platform shows the wrong line over the right picture with total confidence
+  const meta = { head: 'A headline', slug: 'S', technique: 'PRECISION AS PROOF',
+                 tell: 'Ask how it was measured.', lines: ['One.', 'Two.'] };
+  const srt = r.captions(meta, { ident: 1.1, body: 12, card: 2.6 });
+  const times = [...srt.matchAll(/(\d\d):(\d\d):(\d\d),(\d\d\d) --> (\d\d):(\d\d):(\d\d),(\d\d\d)/g)]
+    .map(m => [Number(m[3]) + Number(m[4]) / 1000, Number(m[7]) + Number(m[8]) / 1000]);
+  ok('the captions cover every line plus both stingers', times.length === 5,
+     `${times.length} cues`);
+  ok('the cues run forwards and do not overlap',
+     times.every(([a, b], i) => b > a && (i === 0 || Math.abs(a - times[i - 1][1]) < 0.002)),
+     JSON.stringify(times));
+  ok('the last cue is the tell — the only thing worth taking away',
+     srt.trim().endsWith(meta.tell), srt.trim().slice(-60));
+
+  const post = r.postText(meta, { date: '2026-07-31', lang: 'en' });
+  ok('the post text carries the head, the technique and the tell',
+     post.includes(meta.head) && post.includes(meta.technique) && post.includes(meta.tell));
+  ok('...and says what the station is',
+     /real events · invented names · real techniques/i.test(post));
+
   ok('it records the app, in clip framing', /\?vertical/.test(src));
   ok('it asks the app which bulletins aired, not the wire file',
      /debug\.stories\(\)/.test(src));
@@ -518,6 +539,21 @@ async function main() {
      'width ratio ' + vt.fill.toFixed(3));
   ok('the headline is not clipped at an ellipsis',
      vt.clamp === 'none' || vt.clamp === '', vt.clamp);
+  // the stingers, driven the way the renderer drives them
+  const st = await vp.evaluate(async () => {
+    const box = document.getElementById('ident');
+    // the fade in is a .28s CSS transition, so sample after it, not during
+    const p = window.__rfh.ident({ ms: 900, tell: true, fade: 60 });
+    await new Promise(r => setTimeout(r, 600));
+    const up = !box.hidden && Number(getComputedStyle(box).opacity) > 0.9;
+    const text = box.innerText;
+    await p;
+    return { up, text, gone: box.hidden };
+  });
+  ok('the end card comes up and goes away again', st.up && st.gone, JSON.stringify(st.gone));
+  ok('...carrying the technique and the tell',
+     /[A-Z]{4,}/.test(st.text) && st.text.length > 40, JSON.stringify(st.text).slice(0, 90));
+
   ok('the clip framing throws nothing', verrs.length === 0, verrs.join(' | '));
   await vp.close();
 
