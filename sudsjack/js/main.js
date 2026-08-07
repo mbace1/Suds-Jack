@@ -103,9 +103,10 @@ const state = {
   chain: 1,
   lives: 3,
   level: 1,
-  quota: 0,            // bubbles left to clear this level
+  quota: 0,            // unresolved bubbles in the current formation
+  formationTotal: 0,
+  formationMisses: 0,
   t: 0,
-  nextBubble: 0,
   nextGrime: 0,
   banner: 0,
 };
@@ -119,15 +120,37 @@ const hud = {
 function hi() { try { return +localStorage.getItem(HI_KEY) || 0; } catch { return 0; } }
 function setHi(v) { try { localStorage.setItem(HI_KEY, String(v)); } catch { /* private mode */ } }
 
-function levelQuota(n) { return 8 + n * 4; }
-function bubbleRate(n) { return Math.max(0.55, 1.5 - n * 0.09); }     // seconds between
+function levelQuota(n) { return Math.min(24, 10 + n * 2); }
 function grimeRate(n) { return Math.max(0.9, 3.2 - n * 0.22); }
 function riserSpeed(n) { return 0.16 + n * 0.018; }                    // depth per second
 
+// A level is a BOARD, not a faucet. Every bubble is present from the first
+// frame, so the player can read a route through lane and depth before moving.
+// Rows are staggered to stop a formation becoming columns of automatic catches;
+// the channel shape changes where those rows are useful, especially in gutters.
+function seedFormation(n) {
+  const total = levelQuota(n);
+  const rows = Math.max(3, Math.ceil(total / 5));
+  const speed = riserSpeed(n);
+  for (let i = 0; i < total; i++) {
+    const row = i % rows;
+    const col = Math.floor(i / rows);
+    const cols = Math.ceil(total / rows);
+    const u = (col + 0.5 + (row % 2 ? 0.22 : -0.22)) / cols;
+    const lane = tube.clampLane(u * tube.lanes);
+    // The near row creates an immediate choice; the far rows reveal the route.
+    const depth = 0.34 + (row / Math.max(1, rows - 1)) * 0.6;
+    const it = risers.spawn('bubble', lane, speed);
+    if (it) it.depth = depth;
+  }
+  risers.relight();
+  state.quota = total;
+  state.formationTotal = total;
+  state.formationMisses = 0;
+}
+
 function startLevel(n) {
   state.level = n;
-  state.quota = levelQuota(n);
-  state.nextBubble = 0.4;
   state.nextGrime = 1.8 + Math.random();
   const shape = SHAPE_NAMES[(n - 1) % SHAPE_NAMES.length];
   // every third web leans off-axis, so a shape you have seen is still a
@@ -137,7 +160,8 @@ function startLevel(n) {
   tube.setShape(shape, n % 3 === 0 && shape !== 'gutters' ? [0.22, -0.14] : [0, 0]);
   tube.tint(webTint(n));
   seat(shape);
-  toast(`LEVEL ${n} · ${shape.toUpperCase()}`);
+  seedFormation(n);
+  toast(`LEVEL ${n} · ${shape.toUpperCase()} · READ THE ROUTE`);
   paintHud();
 }
 
@@ -182,15 +206,9 @@ function paintHud() {
 // where you are standing: a hazard that appears in the lane you already
 // occupy is not a decision, it is a tax.
 function director(dt) {
-  state.nextBubble -= dt;
   state.nextGrime -= dt;
   const n = tube.lanes;
 
-  if (state.nextBubble <= 0 && state.quota > 0) {
-    const lane = awayFrom(player.lane, 3, n);
-    risers.spawn('bubble', lane, riserSpeed(state.level) * (0.85 + Math.random() * 0.4));
-    state.nextBubble = bubbleRate(state.level) * (0.7 + Math.random() * 0.6);
-  }
   if (state.nextGrime <= 0) {
     // On the ridged channel grime cannot cross a peak, so "away from you" is
     // measured in BAYS: dropping it in your own bay is the only way it ever
@@ -266,16 +284,26 @@ function step(dt) {
     else audio.pop(state.chain);
     pops.at(it.lane, it.depth, it.lit ? PAL.BUBBLE_LIT : PAL.BUBBLE);
     state.quota--;
-    if (state.quota <= 0 && !risers.items.some(i => i.type === 'bubble')) {
-      audio.level();
-      startLevel(state.level + 1);
-    }
   }
 
   for (const it of missed) {
-    // Only the lit one costs you. Letting an ordinary bubble go is a shrug;
-    // letting the lit one past is the whole chain, and that is Bomb Jack.
+    state.quota--;
+    state.formationMisses++;
+    // Only the lit one costs the chain, but every miss stains the board and
+    // forfeits its perfect-clear bonus. A route can survive a mistake without
+    // pretending the mistake did not happen.
     if (it.lit) { state.chain = 1; audio.miss(); toast('CHAIN LOST'); }
+  }
+
+  if (state.quota <= 0 && !risers.items.some(i => i.type === 'bubble')) {
+    const perfect = state.formationMisses === 0;
+    if (perfect) {
+      const bonus = 1000 * state.level * Math.max(1, state.chain);
+      state.score += bonus;
+      toast(`PERFECT ROUTE +${bonus.toLocaleString()}`);
+    }
+    audio.level();
+    startLevel(state.level + 1);
   }
 
   if (struck.length && player.hit()) {
