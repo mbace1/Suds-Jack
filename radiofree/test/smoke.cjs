@@ -248,11 +248,50 @@ async function rotationChecks() {
      mini({ retired: true }).errors.some(e => /empty broadcast/.test(e)));
 }
 
+// The clip renderer drives the real app, so recording one in here would cost
+// fifteen seconds a bulletin to re-prove what the browser block already
+// proved. What is graded instead is the part that has no other witness: the
+// frame arithmetic, and that the renderer loads the app rather than redrawing
+// it — a second renderer would go on looking right long after the app changed.
+async function clipChecks() {
+  console.log('\nclips');
+  const src = fs.readFileSync(path.join(RF, 'tools', 'render-clips.mjs'), 'utf8');
+  const r = await import('file://' + path.join(RF, 'tools', 'render-clips.mjs'));
+
+  const { view, size, scale } = r.FRAME;
+  ok('the frame is 1080×1920', size.width === 1080 && size.height === 1920);
+  ok('the viewport and the scale multiply out to the frame',
+     Math.round(view.width * scale) === size.width && Math.round(view.height * scale) === size.height,
+     `${view.width}×${view.height} × ${scale.toFixed(3)}`);
+
+  const d = r.args([]);
+  ok('a clip decodes by default — the hold is the point',
+     d.decode === true && d.cut > 0 && d.cut < d.seconds, JSON.stringify(d));
+  const c = r.args(['--no-decode', '--seconds', '20', '--cut', '5', '--ids', 'a, b']);
+  ok('the timeline and the roster are settable',
+     c.decode === false && c.seconds === 20 && c.cut === 5 && c.ids.join(',') === 'a,b',
+     JSON.stringify(c));
+
+  ok('it records the app, in clip framing', /\?vertical/.test(src));
+  ok('it asks the app which bulletins aired, not the wire file',
+     /debug\.stories\(\)/.test(src));
+
+  const wf = path.join(ROOT, '.github', 'workflows', 'radiofree-clips.yml');
+  if (fs.existsSync(path.join(ROOT, '.github'))
+      && ok('the clip job exists', fs.existsSync(wf))) {
+    const y = fs.readFileSync(wf, 'utf8');
+    ok('it records the live site, not a checkout', /--url https:\/\//.test(y));
+    ok('it uploads the clips rather than committing them',
+       /upload-artifact/.test(y) && !/git commit/.test(y));
+  }
+}
+
 async function main() {
   console.log('Radio Free Helsinki — gate');
   staticChecks();
   await rotationChecks();
   await generatorChecks();
+  await clipChecks();
 
   const drv = await launch();
   if (!drv) {

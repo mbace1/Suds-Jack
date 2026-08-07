@@ -1,0 +1,77 @@
+# Radio Free Helsinki — the morning's clips.
+#
+# Records the real app, one bulletin per clip, 1080×1920, and uploads them as
+# a build artifact. It does NOT commit them: a repository is a bad place to
+# keep five megabytes of video a day, and the site does not serve them.
+#
+# Runs after the wire job succeeds, so the clips are of the broadcast that was
+# just written; `workflow_dispatch` re-renders any morning on demand.
+#
+# The clips are of the SITE (gh-pages), not of a checkout — what the listener
+# can actually load is what gets recorded. That is also why there is no second
+# renderer anywhere: `?vertical` is the framing and this only presses play.
+
+name: radiofree clips
+
+on:
+  workflow_run:
+    workflows: ['radiofree wire']
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Which morning (YYYY-MM-DD). Blank = the newest.'
+        required: false
+      seconds:
+        description: 'Hold, in seconds'
+        required: false
+        default: '16'
+      cut:
+        description: 'DECODE fires at, in seconds'
+        required: false
+        default: '8'
+
+concurrency:
+  group: radiofree-clips
+  cancel-in-progress: true
+
+jobs:
+  clips:
+    # a failed wire run has nothing new to record
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: install the browser
+        run: npm i -D playwright@1.49.1 && npx playwright install --with-deps chromium
+
+      - name: record
+        env:
+          DATE: ${{ inputs.date }}
+          SECONDS_HOLD: ${{ inputs.seconds || '16' }}
+          CUT: ${{ inputs.cut || '8' }}
+        run: |
+          set -e
+          ARGS=""
+          [ -n "$DATE" ] && ARGS="--date $DATE"
+          # the live site, not this checkout — a clip should be of what a
+          # listener can actually load
+          node radiofree/tools/render-clips.mjs \
+            --url https://mbace1.github.io/Suds-Jack/radiofree/ \
+            --seconds "$SECONDS_HOLD" --cut "$CUT" \
+            --out clips $ARGS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: radiofree-clips
+          path: clips/**/*.mp4
+          if-no-files-found: error
+          retention-days: 30

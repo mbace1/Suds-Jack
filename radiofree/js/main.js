@@ -1,14 +1,14 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=37';
-import { Post, Reader } from './codec.js?v=37';
-import { Package } from './package.js?v=37';
+import { PAL, SECTOR_COLOR } from './palette.js?v=38';
+import { Post, Reader } from './codec.js?v=38';
+import { Package } from './package.js?v=38';
 import { SECTORS, STORIES, COPY, ARCHIVED, EPISODES, EPISODE, storyCopy, storyBroadcast,
-         parseLine, loadWire, WIRE_INFO } from './stories.js?v=37';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=37';
-import * as audio from './audio.js?v=37';
-import { PixelScreen } from './screen.js?v=37';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=37';
+         parseLine, loadWire, WIRE_INFO } from './stories.js?v=38';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=38';
+import * as audio from './audio.js?v=38';
+import { PixelScreen } from './screen.js?v=38';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=38';
 
 // CLEAN — the transmission with no second layer on it. `?clean` is what a clip
 // export loads, and it does not hide DECODE, it never builds it: no rail
@@ -143,7 +143,13 @@ $('sound').onclick = () => {
   if (soundOn) audio.blip(1);
 };
 
+let tuning = false;
 $('tuneIn').onclick = async () => {
+  // idempotent: vertical tunes itself in, and the console handle and the gate
+  // both press this button. A second run would fetch the wire again and build
+  // a second feed on top of the first.
+  if (tuning || booted) return;
+  tuning = true;
   audio.init();
   audio.setMuted(!soundOn);
   audio.ring();
@@ -156,6 +162,12 @@ $('tuneIn').onclick = async () => {
   await loadWire(WANT_DATE);
   boot();
 };
+
+// A recording starts when the browser context does and cannot be trimmed
+// afterwards, so the tune-in card would be the first two seconds of every
+// clip — the station's front door, in a video that is not the station. In
+// clip framing the receiver is already on.
+if (VERTICAL) $('tuneIn').click();
 
 // The archive. A native <select> on purpose: it is one element, it is
 // keyboard- and screen-reader-correct without a line of ARIA, and on a phone it
