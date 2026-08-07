@@ -244,6 +244,36 @@ s.listen(0, '127.0.0.1', async () => {
   });
   ok('the serpent swoops vertically (Y spread > 2.5)', swoop.max - swoop.min > 2.5, JSON.stringify(swoop));
 
+  // ---- v4.32 mesh hull: smooth skin alive, voxels where it tears ---------
+  const hull = await p.evaluate(async () => {
+    const hd = window.__hd;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    hd.debug.setOpt('perf', 'high');
+    hd.debug.setOpt('look', 'smooth');
+    for (const e of hd.enemies) e.alive = false;
+    hd.enemies.length = 0;
+    hd.debug.spawnDread();
+    await frames(3);
+    const on = hd.debug.getLook();
+    const e = hd.enemies[hd.enemies.length - 1];
+    const before = e.sprite.hull.geometry.getAttribute('position').count;
+    e.sprite.chip(e.sprite.worldVoxels()[0].pos, 40);
+    await frames(6); // past the re-skin throttle at clamped dt
+    const after = e.sprite.hull.geometry.getAttribute('position').count;
+    hd.debug.setOpt('look', 'cubes');
+    const cubes = hd.debug.getLook();
+    hd.debug.setOpt('look', 'smooth');
+    hd.debug.setOpt('perf', 'low');
+    const low = hd.debug.getLook();
+    hd.debug.setOpt('perf', 'auto');
+    e.alive = false;
+    return { hullOn: on.sample?.hull, cubesHidden: on.sample?.cubes, handCubes: on.hand,
+      before, after, cubesBack: cubes.sample?.hull, lowShed: low.sample?.hull };
+  });
+  ok('the smooth skin is the default alive-look', hull.hullOn === true && hull.cubesHidden === 0 && hull.handCubes === false, JSON.stringify(hull));
+  ok('a chip tears and re-forms the skin', hull.after > 0 && hull.after !== hull.before, JSON.stringify(hull));
+  ok('LOOK CUBES and the low tier both fall back', hull.cubesBack === false && hull.lowShed === false, JSON.stringify(hull));
+
   // ---- death → restart under 2 s -----------------------------------------
   const death = await p.evaluate(async () => {
     const hd = window.__hd;

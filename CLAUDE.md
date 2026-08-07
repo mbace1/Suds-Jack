@@ -203,10 +203,15 @@ Enemies are string-art voxel models (one `InstancedMesh` per enemy, per-voxel co
 since v4.31 the skull family is a real 11×5×10 sculpt — sockets, teeth, nasal cavity —
 and `parseModel` bakes AO + grain into the colors) and
 deaths explode them into **physical voxel debris** (gravity, floor bounce, tumble) from a
-shared pool. NEXT (owner's direction, 2026-08-07): enemies render as a **smoothed mesh
-hull** over the voxel lattice while alive (heavy Laplacian smoothing — the C3 look),
-with voxels appearing only where damage tears the surface and in death bursts — the
-cube look read as Minecraft. Combat: **hold to stream daggers**, gems drop from heavy kills and level
+shared pool. Since v4.32 (owner's direction, off a rendered A/B/C test — the cube look
+read as Minecraft) an ALIVE enemy wears a **smoothed mesh hull** over the voxel
+lattice: culled outer faces on welded corners, 3 passes of Laplacian smoothing (the
+heavy C3 look), one flat color per face so the HDR eyes never smear into bone, no
+normals (unlit). The hull is a CHILD of the InstancedMesh with `count=0` hiding the
+cubes, so every transform/chip/burst path is untouched; chips mark it dirty and it
+re-forms around the hole on a 0.1 s throttle. `noHull` opts a model out (the
+gauntlet's checkerboard, the blinker's glitch shards); LOOK SMOOTH/CUBES in the pause
+menu, shed below perf tier T2. Debug: `getLook()`. Combat: **hold to stream daggers**, gems drop from heavy kills and level
 the daggers up (LV 3 = **homing**); enemy roster is skulls, crowned skulls, splitter
 skulls (burst into minis), brutes, drifting totem spawners (which also pulse **jumpable
 orb rings**), **watcher** drones firing aimed orb volleys, thorn spikes erupting under

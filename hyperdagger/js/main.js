@@ -5,16 +5,16 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=48';
-import { Player } from './player.js?v=48';
-import { DaggerPool } from './daggers.js?v=48';
-import { GemPool } from './gems.js?v=48';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=48';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=48';
-import { OrbPool } from './bullets.js?v=48';
-import { AudioKit } from './audio.js?v=48';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=48';
-import { TUNING as T } from './tuning.js?v=48';
+import { InputManager } from './input.js?v=49';
+import { Player } from './player.js?v=49';
+import { DaggerPool } from './daggers.js?v=49';
+import { GemPool } from './gems.js?v=49';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=49';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=49';
+import { OrbPool } from './bullets.js?v=49';
+import { AudioKit } from './audio.js?v=49';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=49';
+import { TUNING as T } from './tuning.js?v=49';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -36,7 +36,7 @@ const opts = Object.assign(
   // motion=false is the reduced-motion master switch (forces smear/shake/chroma/FOV
   // kicks off without touching the individual toggles); contrast=true brightens
   // orbs + telegraphs and kills the floor's red flush for readability
-  { speed: 1, fov: 80, sens: 1, aim: true, smear: true, shake: true, chroma: true, edge: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson' },
+  { speed: 1, fov: 80, sens: 1, aim: true, smear: true, shake: true, chroma: true, edge: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson', look: 'smooth' },
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
 
 // STYLE presets: hue targets for the accent recolor (null = native crimson).
@@ -61,11 +61,11 @@ const AUTO_DETAIL_CEIL = window.matchMedia?.('(pointer: coarse)').matches ? 2 : 
 const PERF_TIERS = [
   // gibs = how many pieces ONE death throws (scales with the voxel density
   // ladder below, so a ×64 enemy actually shatters instead of chunking)
-  { chroma: true,  smear: true,  edge: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 520, litter: 2500 }, // T0 full
-  { chroma: false, smear: true,  edge: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 420, litter: 2000 }, // T1
-  { chroma: false, smear: false, edge: false, pr: BASE_PR,                bloom: true,  debrisCap: 3000, gibs: 300, litter: 1200 }, // T2
-  { chroma: false, smear: false, edge: false, pr: Math.min(BASE_PR, 1.5), bloom: true,  debrisCap: 2000, gibs: 220, litter: 600 }, // T3
-  { chroma: false, smear: false, edge: false, pr: 1,                      bloom: false, debrisCap: 800,  gibs: 110, litter: 0 }, // T4 floor
+  { chroma: true,  smear: true,  edge: true,  hull: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 520, litter: 2500 }, // T0 full
+  { chroma: false, smear: true,  edge: true,  hull: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 420, litter: 2000 }, // T1
+  { chroma: false, smear: false, edge: false, hull: true,  pr: BASE_PR,                bloom: true,  debrisCap: 3000, gibs: 300, litter: 1200 }, // T2
+  { chroma: false, smear: false, edge: false, hull: false, pr: Math.min(BASE_PR, 1.5), bloom: true,  debrisCap: 2000, gibs: 220, litter: 600 }, // T3
+  { chroma: false, smear: false, edge: false, hull: false, pr: 1,                      bloom: false, debrisCap: 800,  gibs: 110, litter: 0 }, // T4 floor
 ];
 // mutable so headless tests can shrink the timescales
 const perfTuning = { downMs: 40, upMs: 22, settleMs: 2000, stableMs: 15000, downHoldMs: 1500, emaAlpha: 0.08 };
@@ -1194,8 +1194,13 @@ function applyOpts() {
   setStyleHue(STYLE_HUES[opts.style] ?? null);
   hand.applyStyle();
   litter.applyStyle();
-  for (const e of enemies) e.sprite.applyStyle?.();
-  if (flyby) for (const p of flyby.parts) p.sprite.applyStyle();
+  // v4.32 LOOK: smooth hull skin vs raw cubes — user toggle gated by the
+  // perf tier (a skin rebuild on every chip is not free on weak hardware)
+  const hullOn = opts.look === 'smooth' && tier.hull;
+  setHullMode(hullOn);
+  hand.setHull(hullOn); // noHull in the model def keeps it cubes regardless
+  for (const e of enemies) { e.sprite.applyStyle?.(); e.sprite.setHull?.(hullOn); }
+  if (flyby) for (const p of flyby.parts) { p.sprite.applyStyle(); p.sprite.setHull(hullOn); }
   // high contrast: hotter orbs so projectiles read against the bloom
   // (intensity picked first, then the style hue re-aims it)
   styleTint(orbs.mat.color.setRGB(...(opts.contrast ? [3.4, 0.5, 0.5] : [2.6, 0.2, 0.2])));
@@ -1240,6 +1245,7 @@ function showPause() {
      ${optRow('PERF', 'perf', ['auto', 'high', 'low'], v => v.toUpperCase())}
      ${optRow('', 'haptics', [true, false], v => v ? 'HAPTICS ON' : 'HAPTICS OFF')}
      ${optRow('VOXEL', 'detail', ['auto', 1, 2, 3, 4], v => v === 'auto' ? 'AUTO' : ({ 1: '1X', 2: '8X', 3: '27X', 4: '64X' })[v])}
+     ${optRow('LOOK', 'look', ['smooth', 'cubes'], v => v.toUpperCase())}
      ${optRow('STYLE', 'style', ['crimson', 'cyan', 'gold', 'violet'], v => v.toUpperCase())}
      <p class="go">click / tap anywhere else to resume</p>`;
   for (const b of elMsg.querySelectorAll('button.opt')) {
@@ -2441,6 +2447,14 @@ window.__hd = {
     getReap() { return { cool: +reapCool.toFixed(2), bones: litter.count }; },
     getTuning() { return T; },
     getGun() { return { shotCd: +shotCd.toFixed(2), heldT: +fireHeldT.toFixed(2) }; },
+    getLook() {
+      const e = enemies.find(x => x.alive && x.sprite);
+      return {
+        mode: opts.look, hullMode: getHullMode(),
+        sample: e ? { hull: !!e.sprite.hull, cubes: e.sprite.mesh.count, tris: e.sprite.hull ? e.sprite.hull.geometry.getAttribute('position').count / 3 : 0 } : null,
+        hand: !!hand.hull,
+      };
+    },
     // aim: raw() reports the assist a stick WOULD get right now, ignoring the
     // "is a stick even in use" gate, so tests can probe the falloff curve
     // without faking a gamepad
