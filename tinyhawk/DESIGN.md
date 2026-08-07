@@ -5,7 +5,9 @@
 > Three.js r167, no build step. Art direction follows **Skate Story** (§4b) and the
 > hyperdagger render stack, *not* the flat-unlit paperboy/dropcabal rule.
 
-Status: **design + control prototype.** The side-on one-button experiment that came out of
+Status: **vertical slice.** Free Skate, the seeded Daily, and the complete Part loop are
+playable: 13-row map, film economy, goals, sessions, shops, rests, story choices, board
+parts, district washes, rival and final tape recap. The side-on one-button experiment that came out of
 the first draft of this doc now lives on its own as [`tiny2d/`](../tiny2d/) — it is a
 finished small game, not a Tiny Hawk mode.
 
@@ -180,8 +182,6 @@ Reference: **Skate Story** (Sam Eng). Not the flat poster look of `paperboy` and
 
 ---
 
-## 6. Modes---
-
 ## 6. Modes
 
 * **Free Skate** — no timer, no goals. Learn the park. This is where the controls are
@@ -252,10 +252,11 @@ tinyhawk/
     park.js     # heightfield features + mesh build; rails and ledges
     skater.js   # 3D physics: roll, carve, ollie, air, spin, land/bail
     tricks.js   # trick table, combo string, scoring, bank/bail
+    goals.js    # deterministic objective sets + UTC daily seed
     input.js    # twin sticks with the drag/flick discriminator; mouse+keys
-    map.js      # node graph + DOM map overlay           (P4)
-    meta.js     # run state, film, goals, parts, storage (P4)
-    story.js    # events, choices, district text          (P5)
+    map.js      # node graph + DOM map overlay
+    meta.js     # run state, film, parts, storage
+    story.js    # events, choices, district text
     audio.js    # WebAudio kit
 ```
 
@@ -263,25 +264,27 @@ tinyhawk/
 
 ---
 
-## 10. Build order
+## 10. Build order and current state
 
-**P0 — the controls.** Park heightfield, chase camera, twin sticks with the drag/flick
+**P0 — the controls. COMPLETE.** Park heightfield, chase camera, twin sticks with the drag/flick
 split, ollie, air spin, trick registration, land/bail, combo readout. No grinds, no goals.
 *The gate: if the flick threshold and the camera do not feel right here, nothing later
 saves it.*
 
-**P1 — the combo.** Rails and ledges, grind lock and balance, manuals, the full trick table
+**P1 — the combo. COMPLETE.** Rails and ledges, grind lock and balance, manuals, the full trick table
 with the repeat penalty, proper combo banking and HUD.
 
-**P2 — a park worth learning.** The primitives kit filled out, one hand-arranged park with
+**P2 — a park worth learning. COMPLETE FOR THE VERTICAL SLICE.** The primitives kit filled out, one hand-arranged park with
 real lines through it, Free Skate and Daily. **Shippable milestone.**
 
-**P3 — the look.** Three-tone vertex shading, ink outlines, palette, skater model, bail
-ragdoll, audio kit, touch tuned on a real phone.
+**P3 — the look. MOSTLY COMPLETE.** Three-tone vertex shading, palette, prism skater,
+speed-driven post, audio kit and touch controls are in. A true bail ragdoll and final
+real-device touch tuning remain polish work.
 
-**P4 — The Part.** Map, node types, film economy, goals, parts, trick unlocks, districts.
+**P4 — The Part. COMPLETE.** Map, node types, film economy, goals, parts, trick unlocks, districts.
 
-**P5 — story and polish.** Events, part recap, rank, options, `gh-pages` deploy.
+**P5 — story and polish. PLAYABLE.** Events, persistent consequences, part recap and rank
+are in. More event writing, options, device tuning and `gh-pages` deployment remain.
 
 ---
 
@@ -330,9 +333,10 @@ Traps worth remembering, both found by testing:
 
 ---
 
-## 12. Open decisions
+## 12. Resolved playtest rules
 
-* Does Free Skate have any scoring at all, or is it genuinely idle?
-* Daily on a fixed park with rotating goals, or a rotating park too?
-* Fakie landings score more — do they also *keep* the combo, or open a new one?
-* Film pool of 5 for the whole tour, or per-district refills? (Playtest number.)
+* Free Skate keeps score but has no clock and no goals.
+* Daily uses the fixed learned park with a UTC-seeded rotating goal set and three tries.
+* Fakie keeps the combo and adds an 18% pending-score premium.
+* Film is 5 for the whole tour. Rest can refill 2; story consequences can temporarily
+  lower the maximum.
