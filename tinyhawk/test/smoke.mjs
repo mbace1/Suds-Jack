@@ -1,0 +1,90 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { ComboSystem } from '../js/tricks.js';
+import { createMetrics, makeGoalSet } from '../js/goals.js';
+import { availableNodes, generateTour } from '../js/map.js';
+import { PARTS, PartRun } from '../js/meta.js';
+import { chooseEvent, pickEvent } from '../js/story.js';
+
+let checks = 0;
+const ok = (condition, message) => { assert.ok(condition, message); checks++; };
+const equal = (actual, expected, message) => { assert.equal(actual, expected, message); checks++; };
+
+const tour = generateTour('smoke');
+equal(tour.rows.length, 13, 'tour has thirteen rows');
+equal(tour.rows[0].length, 1, 'tour starts at one node');
+equal(tour.rows[12][0].type, 'boss', 'tour ends at the rival');
+for (let row = 0; row < 12; row++) {
+  for (const node of tour.rows[row]) ok(node.next.length >= 1, `${node.id} has a route forward`);
+  for (const next of tour.rows[row + 1]) {
+    ok(tour.rows[row].some(node => node.next.includes(next.id)), `${next.id} is reachable`);
+  }
+}
+let route = [];
+for (let row = 0; row < 13; row++) {
+  const choices = availableNodes(tour, route);
+  equal(choices.length > 0, true, `row ${row} offers a node`);
+  route.push({ nodeId: choices[0] });
+}
+equal(route.at(-1).nodeId, 'r12n0', 'a valid route reaches the rival');
+
+const goalsA = makeGoalSet('daily:2030-01-02', 0.58);
+const goalsB = makeGoalSet('daily:2030-01-02', 0.58);
+equal(JSON.stringify(goalsA.goals.map(g => [g.id, g.target])), JSON.stringify(goalsB.goals.map(g => [g.id, g.target])), 'daily goals are deterministic');
+const metrics = createMetrics();
+for (const goal of goalsA.goals.slice(0, 2)) {
+  if (goal.id === 'rails') for (let i = 0; i < goal.target; i++) metrics.rails.add(`r${i}`);
+  else if (goal.id === 'score') metrics.score = goal.target;
+  else if (goal.id === 'combo') metrics.bestMult = goal.target;
+  else if (goal.id === 'grind') metrics.bestGrind = goal.target;
+  else if (goal.id === 'manual') metrics.bestManual = goal.target;
+  else if (goal.id === 'tricks') metrics.tricks = goal.target;
+  else if (goal.id === 'fakie') metrics.fakies = goal.target;
+}
+ok(goalsA.passed(metrics), 'two of three goals clear a spot');
+
+const combo = new ComboSystem();
+combo.begin();
+const first = combo.addTrick('left');
+const repeat = combo.addTrick('left');
+ok(repeat.points < first.points, 'repeating a trick loses value');
+combo.land({ spin: 0, airTime: 0.7, fakie: false });
+equal(combo.snapshot().score, 0, 'pending points do not pay on landing alone');
+const bank = combo.bank();
+ok(bank.total > 0 && combo.snapshot().score === bank.total, 'rolling away banks the multiplier');
+
+const insured = new ComboSystem({ insurance: true });
+insured.begin();
+insured.addTrick('right');
+const saved = insured.bail();
+ok(saved.insured && saved.saved > 0, 'insurance saves half of the first bailed combo');
+insured.begin();
+insured.addTrick('right');
+equal(insured.bail().saved, 0, 'insurance only fires once per node');
+
+const run = new PartRun('economy');
+equal(run.film, 5, 'part starts with five film');
+run.failAttempt();
+equal(run.film, 4, 'failed attempt burns one film');
+run.restFilm();
+equal(run.film, 5, 'rest refills film to the maximum');
+run.footage = 999;
+ok(run.buy(PARTS[0].id), 'a board part can be bought');
+ok(run.modifiers().grindCorrect > 1 && run.modifiers().maxSpeed < 1, 'part preserves its trade-off');
+const beforeReward = run.footage;
+run.clearNode(run.tour.rows[0][0], { score: 9000, bestMult: 5, line: 'Kickflip + Manual' });
+ok(run.footage > beforeReward && run.route.length === 1, 'clearing a spot pays and advances the tape');
+
+const event = pickEvent('event-seed', []);
+const filmBefore = run.film;
+const result = chooseEvent(run, event, 0);
+ok(typeof result === 'string' && run.seenEvents.includes(event.id), 'story choice records a persistent consequence');
+ok(run.film <= run.maxFilm && filmBefore <= 5, 'story state keeps film inside its current maximum');
+
+const index = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+const main = await readFile(new URL('../js/main.js', import.meta.url), 'utf8');
+for (const id of ['btnFree', 'btnDaily', 'btnPart', 'mapHost']) ok(index.includes(id), `${id} exists in the shell`);
+for (const moduleName of ['tricks.js', 'goals.js', 'map.js', 'meta.js', 'story.js']) ok(main.includes(moduleName), `${moduleName} is wired into the game`);
+ok(!index.includes('CONTROL PROTOTYPE'), 'the shipped menu no longer calls itself P0');
+
+console.log(`Tiny Hawk smoke: ${checks} checks passed`);
