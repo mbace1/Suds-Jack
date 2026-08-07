@@ -82,6 +82,10 @@ shared leaderboard, and a full options menu down to voxel density.
   (sockets, teeth, nasal cavity), and the parser **bakes ambient occlusion** —
   crevices darken, tops lift, a hash grain breaks flat fills — so unlit voxels
   read as material (a dread skull is 9,639 voxels at full detail).
+- While **alive**, an enemy wears a **smoothed mesh hull** generated from its
+  own lattice — culled outer faces, welded corners, heavy Laplacian smoothing,
+  one flat color per face. Damage tears real holes in it and the skin re-forms
+  around the wound; death dissolves it back into the voxels it was made of.
 - Per-voxel animation runs entirely in a **vertex shader** shared by every
   sprite, so density costs nothing on the CPU.
 - Debris, the bone-yard, daggers, orbs and gems are each **one draw call**; the
