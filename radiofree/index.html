@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#04070a">
-<link rel="manifest" href="manifest.webmanifest?v=38">
+<link rel="manifest" href="manifest.webmanifest?v=39">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="description" content="Radio Free Helsinki — a fictional pirate news broadcast. Toko reads the day's wire from a codec screen; DECODE shows you what the wording was doing.">
@@ -509,6 +509,39 @@
      travels further from this page than the page does */
   .vertical .post:not(.is-decoded) .fiction { display: block; }
   .vertical .fiction { font-size: 9px; margin: 10px 0 2px; }
+
+  /* ── the stingers ─────────────────────────────────────────────────
+     A card over everything, on the void, with the same scanlines the rest of
+     the app wears (body::after is z-index 60, so this sits under it and gets
+     them for free). Two uses: the station identifying itself at the head of a
+     clip, and the TELL as the end card. */
+  #ident {
+    position: fixed; inset: 0; z-index: 55;
+    background: var(--void);
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 34px;
+    opacity: 0; transition: opacity .28s linear;
+  }
+  #ident[hidden] { display: none; }
+  #ident.on { opacity: 1; }
+  .ident-inner { text-align: center; max-width: 34em; }
+  .ident-mark {
+    font-size: 22px; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--green);
+  }
+  .ident-mark b { color: var(--amber); }
+  .ident-sub {
+    margin-top: 8px; font-size: 11px; letter-spacing: .3em;
+    color: var(--green-dim); text-transform: uppercase;
+  }
+  .ident-body {
+    margin-top: 26px; font-size: 17px; line-height: 1.5; color: var(--amber);
+  }
+  .ident-body:empty { display: none; }
+  .ident-body .lead {
+    display: block; font-size: 11px; letter-spacing: .28em;
+    color: var(--amber-hot); text-transform: uppercase; margin-bottom: 10px;
+  }
 </style>
 </head>
 <body>
@@ -542,7 +575,20 @@
   <main id="feed" tabindex="-1"></main>
 </div>
 
-<script type="module" src="js/main.js?v=38"></script>
+<!-- The stingers. A clip opens and closes as a broadcast rather than starting
+     mid-sentence and stopping mid-sentence: the station identifies itself, and
+     the end card hands over the TELL — the question that catches this
+     technique in the wild, which is the only thing worth taking away from
+     fifteen seconds. Empty and inert until a recording asks for it. -->
+<div id="ident" hidden aria-hidden="true">
+  <div class="ident-inner">
+    <div class="ident-mark">Radio <b>Free</b> Helsinki</div>
+    <div class="ident-sub" id="identSub"></div>
+    <div class="ident-body" id="identBody"></div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js?v=39"></script>
 <script type="module">
   // The arcade shell and the signature badge are the site around the app, and
   // a clip must not carry them — a HUB button burned into a video is a button
@@ -557,7 +603,7 @@
 <script>
   if ('serviceWorker' in navigator &&
       (location.protocol === 'https:' || new URLSearchParams(location.search).has('sw'))) {
-    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=38').catch(() => {}));
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=39').catch(() => {}));
   }
 </script>
 

@@ -176,6 +176,28 @@ wire job and uploads the MP4s as an artifact — it does not commit them.
 There must never be a second renderer. A clip drawn by its own code path would
 go on looking right long after the app it claims to be a clip *of* had changed.
 
+**Stingers.** A clip opens on the station identifying itself and closes on the
+**TELL** — the question that catches this technique in the wild, which is the
+only thing worth taking away from fifteen seconds. Both are drawn by the app
+(`__rfh.ident`) off the wire, because the renderer must not learn to read the
+wire; it presses play and nothing else. `--no-stingers` to drop them.
+
+**Sidecars.** Beside every clip:
+
+```
+2026-07-31/
+  beach-capacity.mp4    the clip
+  beach-capacity.srt    captions, timed to the renderer's own timeline
+  beach-capacity.txt    the post text — headline, technique, tell, tags
+  manifest.json         what this morning produced
+```
+
+Posting is **not** automated, and that is a decision rather than a gap. It
+needs somebody's account and somebody's judgement about where a thing goes, and
+an unattended job holding both would be the one part of this project that could
+do damage while nobody is watching. What a job *can* do without either is write
+the caption, so posting is a paste rather than a rewrite.
+
 ## DECODE — the point of the thing
 
 Press it and the bulletin re-reads itself in plain language. The broadcast

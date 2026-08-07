@@ -26,7 +26,7 @@
 // a laptop that does not have ffmpeg installed.
 
 import { spawn } from 'node:child_process';
-import { mkdir, readFile, readdir, rename, rm } from 'node:fs/promises';
+import { mkdir, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { createReadStream } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -63,10 +63,15 @@ function serve() {
 }
 
 export function args(argv) {
-  const o = { date: null, ids: null, out: path.join(RF, 'clips'), seconds: 16, cut: 8, decode: true, url: null };
+  const o = { date: null, ids: null, out: path.join(RF, 'clips'), seconds: 16, cut: 8,
+              decode: true, url: null, ident: 1.1, card: 2.6, lang: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--no-decode') o.decode = false;
+    else if (a === '--no-stingers') { o.ident = 0; o.card = 0; }
+    else if (a === '--ident') o.ident = Number(argv[++i]);
+    else if (a === '--card') o.card = Number(argv[++i]);
+    else if (a === '--lang') o.lang = argv[++i];
     else if (a === '--date') o.date = argv[++i];
     else if (a === '--ids') o.ids = argv[++i].split(',').map(s => s.trim()).filter(Boolean);
     else if (a === '--out') o.out = path.resolve(argv[++i]);
@@ -107,6 +112,68 @@ function toMp4(webm, mp4, head = 0) {
 // The frame the clips are cut to, exported so the gate can grade it without
 // spending fifteen seconds a bulletin recording one.
 export const FRAME = { view: VIEW, size: SIZE, scale: SCALE };
+
+const clock = (s) => {
+  const ms = Math.max(0, Math.round(s * 1000));
+  const h = String(Math.floor(ms / 3600000)).padStart(2, '0');
+  const m = String(Math.floor(ms / 60000) % 60).padStart(2, '0');
+  const sec = String(Math.floor(ms / 1000) % 60).padStart(2, '0');
+  return `${h}:${m}:${sec},${String(ms % 1000).padStart(3, '0')}`;
+};
+
+/**
+ * A caption file for one clip.
+ *
+ * The copy is already burned into the frame — it is a lower third, not a
+ * voice-over — so this is not a transcript nobody can read. It is what the
+ * platforms ingest: the accessibility track, and the thing that makes a clip
+ * searchable by the words in it rather than by whatever the uploader typed.
+ *
+ * The timeline is the renderer's own, so the cues cannot drift from the clip:
+ * ident, then the bulletin, then — at the same instant DECODE fires — the
+ * technique, and the tell over the end card.
+ */
+export function captions(meta, t) {
+  const cues = [];
+  let at = 0;
+  const cue = (len, text) => { cues.push([at, at + len, text]); at += len; };
+
+  if (t.ident > 0) cue(t.ident, 'Radio Free Helsinki');
+  const bodyLen = Math.max(1, t.body);
+  const spoken = [meta.head, ...(meta.lines || [])].filter(Boolean);
+  // the head gets a fifth of the body, the lines share the rest
+  const headLen = Math.min(3, bodyLen / 4);
+  cue(headLen, meta.head);
+  const each = (bodyLen - headLen) / Math.max(1, spoken.length - 1);
+  for (const line of spoken.slice(1)) cue(each, line);
+  if (t.card > 0) cue(t.card, `${meta.technique} — ${meta.tell}`);
+
+  return cues.map(([a, b, text], i) =>
+    `${i + 1}\n${clock(a)} --> ${clock(b)}\n${String(text).trim()}\n`).join('\n');
+}
+
+/**
+ * The text that goes with the clip when it is posted.
+ *
+ * Deliberately NOT an auto-post. Posting needs somebody's account and
+ * somebody's judgement about where a thing goes, and a job holding the keys to
+ * both would be the one part of this project that could do damage while
+ * unattended. What it can do without either is write the caption, so posting
+ * is a paste rather than a rewrite.
+ */
+export function postText(meta, { date, lang }) {
+  const tags = ['#RadioFreeHelsinki', '#DECODE', '#medialukutaito', '#propaganda'];
+  return [
+    meta.head,
+    '',
+    `${meta.technique} — ${meta.tell}`,
+    '',
+    'Real events · invented names · real techniques.',
+    `Radio Free Helsinki, ${date}${lang && lang !== 'en' ? ` (${lang})` : ''}`,
+    '',
+    tags.join(' '),
+  ].join('\n') + '\n';
+}
 
 async function main() {
   const opt = args(process.argv.slice(2));
@@ -182,9 +249,26 @@ async function main() {
     await page.evaluate(() => window.__rfh.debug.tuneIn());
     await page.waitForFunction((want) => window.__rfh.state && window.__rfh.state.id === want,
       id, { timeout: 20000 });
+    // a clip is made in ONE language and the app has three; the switch rebuilds
+    // the feed in place, so it has to happen before anything is worth recording
+    if (opt.lang) {
+      await page.evaluate((l) => window.__rfh.debug.setLang(l), opt.lang);
+      await sleep(500);
+    }
     // let the first cut settle before the clip is worth anything
     await sleep(600);
     const head = (Date.now() - t0) / 1000;   // dead air at the top of the file
+
+    // ── the stingers ────────────────────────────────────────────────
+    // The station identifies itself, and the clip ends on the TELL rather
+    // than stopping mid-sentence. Both are drawn by the app off the wire —
+    // see `__rfh.ident` — because this file must not learn to read the wire.
+    const marks = { ident: 0 };
+    if (opt.ident) {
+      await page.evaluate((ms) => window.__rfh.ident({ ms }), opt.ident * 1000);
+      marks.ident = opt.ident + 0.56;        // the two fades
+    }
+    const t1 = Date.now();
 
     if (opt.decode) {
       await sleep(opt.cut * 1000);
@@ -193,6 +277,16 @@ async function main() {
     } else {
       await sleep(opt.seconds * 1000);
     }
+    marks.body = (Date.now() - t1) / 1000;
+    if (opt.card) await page.evaluate((ms) => window.__rfh.ident({ ms, tell: true }), opt.card * 1000);
+
+    // what the clip is OF, straight out of the app's own copy — the caption
+    // file and the post text are written from this, never from the wire file
+    const meta = await page.evaluate((want) => {
+      const c = window.__rfh.debug.copy(want);
+      return c && { head: c.head, slug: c.slug, technique: c.technique, tell: c.tell,
+                    lines: window.__rfh.debug.broadcast(want), lang: window.__rfh.state.lang };
+    }, id);
 
     const video = page.video();
     await ctx.close();                       // the file is only written on close
@@ -207,10 +301,36 @@ async function main() {
     } else {
       line += `   (webm opens on ${head.toFixed(1)}s of load — ffmpeg trims it)`;
     }
+    // the sidecars: what a platform ingests, and what a human pastes
+    if (meta) {
+      await writeFile(path.join(outDir, `${id}.srt`),
+        captions(meta, { ident: marks.ident, body: marks.body, card: opt.card }));
+      await writeFile(path.join(outDir, `${id}.txt`),
+        postText(meta, { date: opt.date, lang: meta.lang }));
+      line += '  + srt/txt';
+    }
     if (errs.length) line += `   ! ${errs.join(' | ')}`;
     console.log(line);
-    made.push(id);
+    made.push({ id, meta, seconds: marks.ident + marks.body + opt.card });
   }
+
+  // One file that says what this morning produced, so whatever posts it does
+  // not have to guess at filenames or re-read the wire.
+  await writeFile(path.join(outDir, 'manifest.json'), JSON.stringify({
+    station: 'Radio Free Helsinki',
+    date: opt.date,
+    frame: `${SIZE.width}x${SIZE.height}`,
+    clips: made.map(m => ({
+      id: m.id,
+      video: `${m.id}.mp4`,
+      captions: `${m.id}.srt`,
+      post: `${m.id}.txt`,
+      seconds: Math.round(m.seconds * 10) / 10,
+      head: m.meta && m.meta.head,
+      technique: m.meta && m.meta.technique,
+      lang: m.meta && m.meta.lang,
+    })),
+  }, null, 2) + '\n');
 
   await browser.close();
   if (srv) srv.close();

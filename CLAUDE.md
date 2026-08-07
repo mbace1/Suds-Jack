@@ -439,6 +439,28 @@ every file (no build step), and the gate checks it against `js/`, checks
 cuts the network and reads a bulletin. **Bump `sw.js` with the other tokens.**
 Both app icons are drawn in code at 48px and baked to PNG — redraw, don't edit.
 
+**Clips are the app, recorded.** `?vertical` is the clip framing — the same
+9:16 layout with the furniture taken out (masthead, rail, HUB button,
+signature badge; the shell and the badge are *skipped*, not hidden) and
+neither the headline nor the copy clipped at an ellipsis, because a bulletin
+that ends in "…" on a video has not been read. It scales nothing: 1080×1920 is
+a 405×720 viewport at deviceScaleFactor 2.667, and letting the recorder scale
+keeps the type vector-crisp where a CSS transform rasterises once and upscales.
+`?vertical` also tunes itself in — a recording starts when the browser context
+does and cannot be trimmed afterwards, so the tune-in card would be the first
+two seconds of every clip. `tools/render-clips.mjs` drives the real app and
+records it (Playwright → silent WebM; ffmpeg → MP4 with the measured load-head
+trimmed): the cut runs, DECODE fires at `--cut` and HOLDS, out at `--seconds`,
+with a station ident at the head and the bulletin's **TELL** as the end card
+(`__rfh.ident`, drawn by the app off the wire — the renderer must never learn
+to read the wire). Sidecars per clip: `.srt` timed to the renderer's own
+timeline, `.txt` post text, `manifest.json`. **There must never be a second
+renderer** — a clip drawn by its own code path goes on looking right long after
+the app changed. Posting is deliberately NOT automated. `.media-slot canvas`
+sizes by height with width auto, which is right for the codec screens and wrong
+for a shot canvas — `.photo.drawn` fixes it and every drawn shot must carry the
+class or it sits letterboxed.
+
 **Traps:** `drawVisual` falls back to the bar chart on an unknown key, which would ship
 the wrong picture beside the right words in silence — `PANEL_KEYS` is exported and the
 gate checks every story against it. Dither in 2px cells must sample `bayer(x >> 1, y >> 1)`
