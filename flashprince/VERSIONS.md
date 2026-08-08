@@ -4,6 +4,28 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v3 — 2026-08-08
+
+The remake movement lab shifts from a procedural angle rig toward dense,
+authored cinematic-platformer animation.
+
+- **12-drawing run cycle** with separate contact, recoil, passing, high, flight
+  and reach phases, plus uneven exposure so planted frames read longer than
+  airborne ones.
+- **8-drawing walk cycle** with lower knee lift and longer weight-bearing
+  contacts.
+- **Action animation pass:** running/standing takeoff, rise, apex, fall,
+  landing, hard stop, planted pivot, ledge impact, hanging motion and a
+  multi-stage pull-up now use their own authored screen-space drawings instead
+  of collapsing to one generic pose.
+- **Renderer split:** the approved run/walk strip remains untouched while the
+  action layer overrides only the states that still needed denser animation.
+- **Mobile controls:** the house dual-stick pattern is the default, with the
+  button/D-pad layout retained as a persistent alternative in the Controls
+  menu.
+- Physics, ledge anchors, jump distances and fall rules are unchanged while the
+  visual motion is rebuilt around them.
+
 ## v2 — 2026-07-28
 
 The first act stops being one long screen.
