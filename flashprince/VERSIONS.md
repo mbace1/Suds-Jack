@@ -2,6 +2,17 @@
 
 The public release number. The `?v=N` token in `index.html` is a separate thing: it tracks every module-graph change so a browser cannot serve half of one build and half of another. Bump both when shipping.
 
+## v8 — 2026-08-08
+
+Reference-density animation pass toward the Flashback / classic Prince of Persia target.
+
+- **Locomotion timing rebuilt:** walk, run-start, full run and running recovery now expose substantially more discrete animation moments instead of leaning on long pose holds.
+- **12-beat run presentation:** contact, down, passing and flight phases are split across both halves of the stride with short, deliberately uneven exposure.
+- **Walk remains committed:** the 24-tick step keeps the existing physical travel but distributes it across eight visible phase beats for a more photographed/rotoscoped read.
+- **Run-start + recovery:** acceleration and landing-to-run now have denser transition timing so the character does not snap between the good cyclic animation and traversal actions.
+- **v7 body fidelity retained:** broader chest, tapered waist, costume mass, hands, boots, jaw/hair silhouette and near/far limb depth remain the drawing foundation.
+- **Jungle route retained:** the five-screen lush sci-fi opening and advanced traversal vocabulary remain playable while character fidelity is pushed first.
+
 ## v7 — 2026-08-08
 
 Character and environment fidelity pass.
