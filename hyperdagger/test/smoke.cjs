@@ -23,7 +23,7 @@ const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, co
 
 s.listen(0, '127.0.0.1', async () => {
   const base = 'http://127.0.0.1:' + s.address().port;
-  const b = await chromium.launch({ args: ['--use-gl=swiftshader'] });
+  const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--disable-dev-shm-usage'] });
   const p = await b.newPage({ viewport: { width: 1100, height: 720 } });
   const errs = [];
   p.on('pageerror', e => errs.push('pageerror: ' + e.message));
