@@ -2,6 +2,15 @@
 
 The public release number. The `?v=N` token in `index.html` is a separate thing: it tracks every module-graph change so a browser cannot serve half of one build and half of another. Bump both when shipping.
 
+## v12 — 2026-08-08
+
+Playable-entrypoint correction plus live run-cycle replacement.
+
+- **Hub playable now launches the actual game loop (`main.js`) again**, not the animation-reference lab.
+- **Live hero run now uses twelve individually authored silhouettes** with uneven held exposure instead of the old four-key interpolated run rig.
+- **Contact frames hold longer; passing/flight frames snap through faster** to restore a photographed/rotoscoped cadence.
+- **No environment expansion in this pass:** work is deliberately concentrated on character movement and the playable route.
+
 ## v11 — 2026-08-08
 
 Direct Flashback-reference locomotion silhouette pass.
