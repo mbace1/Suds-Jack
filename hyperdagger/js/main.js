@@ -5,16 +5,17 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=51';
-import { Player } from './player.js?v=51';
-import { DaggerPool } from './daggers.js?v=51';
-import { GemPool } from './gems.js?v=51';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=51';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=51';
-import { OrbPool } from './bullets.js?v=51';
-import { AudioKit } from './audio.js?v=51';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=51';
-import { TUNING as T } from './tuning.js?v=51';
+import { InputManager } from './input.js?v=52';
+import { Player } from './player.js?v=52';
+import { DaggerPool } from './daggers.js?v=52';
+import { GemPool } from './gems.js?v=52';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=52';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=52';
+import { OrbPool } from './bullets.js?v=52';
+import { AudioKit } from './audio.js?v=52';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=52';
+import { TUNING as T } from './tuning.js?v=52';
+import { HyperEnvironment } from './environment.js?v=52';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -197,6 +198,40 @@ const bloom = new UnrealBloomPass(
 composer.addPass(bloom);
 const chromaPass = new ShaderPass(ChromaShader);
 composer.addPass(chromaPass);
+
+// v22 spherical-awareness language: threats outside the forward view burn
+// into the screen periphery. This is direction information rather than a
+// conventional HUD arrow, keeping the view diegetic and readable at speed.
+const ThreatShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    uRear: { value: 0 },
+    uSide: { value: 0 },
+    uTint: { value: new THREE.Color(2.5, 0.18, 0.18) },
+  },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform float uRear;
+    uniform float uSide;
+    uniform vec3 uTint;
+    varying vec2 vUv;
+    void main() {
+      vec4 base = texture2D(tDiffuse, vUv);
+      vec2 p = vUv * 2.0 - 1.0;
+      float edge = smoothstep(0.38, 1.0, abs(p.x));
+      float band = smoothstep(0.08, 0.46, 1.0 - abs(p.y));
+      float scan = 0.68 + 0.32 * sin(p.y * 64.0);
+      float sideBias = 0.72 + 0.28 * sign(p.x) * uSide;
+      float signal = edge * band * scan * sideBias * uRear;
+      base.rgb += uTint * signal * 0.22;
+      gl_FragColor = base;
+    }`,
+};
+const threatPass = new ShaderPass(ThreatShader);
+composer.addPass(threatPass);
 
 // dash speedlines: additive radial streaks from screen centre while dashK is
 // hot (HYPERDEMON's punched-through-space read). Enabled only mid-dash, and
@@ -401,6 +436,10 @@ const dust = (() => {
   scene.add(p);
   return p;
 })();
+
+// Original procedural arena kit: abyss rings, bone pylons, orbiting shards,
+// broken arches and a reactive spherical threat lattice.
+const environment = new HyperEnvironment(scene, ARENA_R);
 
 // ---------------------------------------------------------------- actors
 const input = new InputManager();
@@ -1183,6 +1222,7 @@ function applyOpts() {
   chromaPass.enabled = opts.chroma && opts.motion && tier.chroma;
   // the neon rim is a static effect, so the motion toggle leaves it alone
   edgePass.enabled = opts.edge && tier.edge;
+  threatPass.enabled = perfTier < PERF_TIERS.length - 1;
   bloom.enabled = tier.bloom;
   debris.softCap = tier.debrisCap;
   debris.gibTarget = tier.gibs;
@@ -1208,6 +1248,10 @@ function applyOpts() {
   styleTint(floorMat.uniforms.uAccent.value.setRGB(2.2, 0.25, 0.25));
   styleTint(skyMat.uniforms.uEmberCol.value.setRGB(0.30, 0.02, 0.02));
   styleTint(edgePass.uniforms.uTint.value.setRGB(1.6, 0.35, 0.35));
+  styleTint(threatPass.uniforms.uTint.value.setRGB(2.5, 0.18, 0.18));
+  const envAccent = styleTint(new THREE.Color().setRGB(2.2, 0.22, 0.22));
+  environment.setAccent(envAccent);
+  environment.setQuality(perfTier);
   player.sens = opts.sens;
   // reconcile music with the toggle live (only while a run is active)
   if (state === 'playing') {
@@ -2309,6 +2353,9 @@ function step(dt) {
   elGems.textContent = `◆ ${gemCount} · LV ${weaponLv}${weaponLv >= 4 ? ' CRIMSON' : weaponLv >= 3 ? ' HOMING' : ''}`;
 }
 
+const _threatForward = new THREE.Vector3();
+const _threatTo = new THREE.Vector3();
+const _threatInvQ = new THREE.Quaternion();
 function updateFeel(dt) {
   // trauma-driven shake + chromatic aberration + FOV kicks (dash, shotgun)
   trauma = Math.max(0, trauma - dt * 1.5);
@@ -2337,6 +2384,29 @@ function updateFeel(dt) {
   ripplePass.enabled = rippleAmp > 0 && opts.motion && PERF_TIERS[perfTier].smear;
   // sky ember swells with trauma and while the Leviathan is on the field
   skyMat.uniforms.uEmber.value = t2 * 0.9 + (levAlive ? 0.7 : 0);
+  environment.update(dt, { intensity: musicI, trauma: t2, leviathan: levAlive });
+
+  // Nearest off-camera threat drives the peripheral burn. Signed camera-space
+  // X biases the glow toward the side the player should turn toward.
+  camera.getWorldDirection(_threatForward);
+  let rear = 0, rearSide = 0;
+  for (const e of enemies) {
+    if (!e.alive || e.type === 'egg' || e.type === 'totem') continue;
+    _threatTo.set(e.pos.x - camera.position.x, e.pos.y - camera.position.y, e.pos.z - camera.position.z);
+    const dist = Math.max(0.01, _threatTo.length());
+    _threatTo.multiplyScalar(1 / dist);
+    const facing = _threatForward.dot(_threatTo);
+    if (facing > 0.15) continue;
+    const strength = (0.15 - facing) / 1.15 * Math.max(0, 1 - dist / 28);
+    if (strength > rear) {
+      rear = strength;
+      _threatInvQ.copy(camera.quaternion).invert();
+      _threatTo.applyQuaternion(_threatInvQ);
+      rearSide = Math.sign(_threatTo.x);
+    }
+  }
+  threatPass.uniforms.uRear.value += (rear - threatPass.uniforms.uRear.value) * Math.min(1, dt * 8);
+  threatPass.uniforms.uSide.value += (rearSide - threatPass.uniforms.uSide.value) * Math.min(1, dt * 6);
   fovKick = Math.max(0, fovKick - dt * 18);
   // smear deepens mid-dash — HYPERDEMON smears hardest at speed. dashK decays
   // with the dash itself, so the heavy end is always transient.
@@ -2490,7 +2560,8 @@ window.__hd = {
     getDailyTable() { return readDailyTable(); },
     pulse(n) { runPulse(n ?? ++pulseN); },
     setOpt(k, v) { opts[k] = v; saveOpts(); applyOpts(); },
-    getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, edge: edgePass.enabled, edgeAmt: edgePass.uniforms.uAmt.value, damp: afterimage.uniforms['damp'].value, gridGlow: floorMat.uniforms.uGlow.value, fov: camera.fov, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
+    getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, edge: edgePass.enabled, threat: threatPass.enabled, rearSignal: threatPass.uniforms.uRear.value, edgeAmt: edgePass.uniforms.uAmt.value, damp: afterimage.uniforms['damp'].value, gridGlow: floorMat.uniforms.uGlow.value, fov: camera.fov, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
+    getEnvironment() { return environment.getState(); },
     getVfx() { return { shadows: shadows.count, sparks: sparks.length, speedOn: speedPass.enabled, rippleT, rippleOn: ripplePass.enabled, ember: skyMat.uniforms.uEmber.value }; },
     /** Everything that could leak over a long run: pool occupancy, scene graph
      *  size, and GPU resource counts. A survival game lives or dies on the
