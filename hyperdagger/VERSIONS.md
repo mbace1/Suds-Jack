@@ -8,6 +8,20 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v25 — 2026-08-08
+**Remove what does not help the fight**
+- The v24 combat-driven projection, rear holograms, spectral rim, contrast
+  escalation and muzzle-star treatment are removed. Camera FOV no longer
+  expands with style, pressure or weapon level.
+- New clean defaults keep spherical projection, smear, chromatic separation
+  and edge tint off. A fresh settings key ensures the reset applies to
+  returning players instead of inheriting the previous spectacle stack.
+- The peripheral red warning, dash speedlines and screen-space impact ripple
+  are disabled. Bloom is reduced from 0.50 to 0.32 with a tighter threshold,
+  leaving enemy silhouettes and the arena grid legible.
+- The focused software-WebGL gate verifies a playable run, stable FOV, firing,
+  restrained bloom, absent overlays and zero browser errors.
+
 ## v24 — 2026-08-08
 **The view becomes part of the weapon**
 - The spherical projection now opens dynamically from a wide, stable aiming

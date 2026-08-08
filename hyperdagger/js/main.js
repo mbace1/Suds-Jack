@@ -5,17 +5,17 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=54';
-import { Player } from './player.js?v=54';
-import { DaggerPool } from './daggers.js?v=54';
-import { GemPool } from './gems.js?v=54';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=54';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=54';
-import { OrbPool } from './bullets.js?v=54';
-import { AudioKit } from './audio.js?v=54';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=54';
-import { TUNING as T } from './tuning.js?v=54';
-import { HyperEnvironment } from './environment.js?v=54';
+import { InputManager } from './input.js?v=55';
+import { Player } from './player.js?v=55';
+import { DaggerPool } from './daggers.js?v=55';
+import { GemPool } from './gems.js?v=55';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=55';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=55';
+import { OrbPool } from './bullets.js?v=55';
+import { AudioKit } from './audio.js?v=55';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=55';
+import { TUNING as T } from './tuning.js?v=55';
+import { HyperEnvironment } from './environment.js?v=55';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -32,12 +32,14 @@ const ENEMY_NAMES = {
 };
 
 // player-tunable options (pause menu), persisted across sessions
-const OPTS_KEY = 'hyperDaggerOpts';
+// v25 deliberately starts from a clean image. A new key prevents old,
+// spectacle-heavy defaults from silently carrying into the reset.
+const OPTS_KEY = 'hyperDaggerOptsV25';
 const opts = Object.assign(
   // motion=false is the reduced-motion master switch (forces smear/shake/chroma/FOV
   // kicks off without touching the individual toggles); contrast=true brightens
   // orbs + telegraphs and kills the floor's red flush for readability
-  { speed: 1, fov: 80, sens: 1, aim: true, projection: true, smear: true, shake: true, chroma: true, edge: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson', look: 'smooth' },
+  { speed: 1, fov: 80, sens: 1, aim: true, projection: false, smear: false, shake: true, chroma: false, edge: false, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson', look: 'smooth' },
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
 
 // STYLE presets: hue targets for the accent recolor (null = native crimson).
@@ -154,9 +156,6 @@ const SphereShader = {
     uCamRot: { value: _sphereCamRot },
     uAspect: { value: window.innerWidth / window.innerHeight },
     uAmount: { value: 1 },
-    uIntensity: { value: 0 },
-    uRearSignal: { value: 0 },
-    uTime: { value: 0 },
     uTint: { value: new THREE.Color(2.7, 0.12, 0.12) },
   },
   vertexShader: /* glsl */`
@@ -169,9 +168,6 @@ const SphereShader = {
     uniform mat3 uCamRot;
     uniform float uAspect;
     uniform float uAmount;
-    uniform float uIntensity;
-    uniform float uRearSignal;
-    uniform float uTime;
     uniform vec3 uTint;
     varying vec2 vUv;
     void main() {
@@ -181,11 +177,9 @@ const SphereShader = {
       float edgeR = sqrt(uAspect * uAspect + 1.0);
       float nr = clamp(length(p) / edgeR, 0.0, 1.0);
       vec2 radial = length(p) > 0.0001 ? normalize(p) : vec2(0.0);
-      // The view opens with combat intensity: quiet play is already wider
-      // than linear perspective, while a hot chain approaches 180 degrees.
-      // The centre stays stable so aiming never inherits the edge distortion.
-      float thetaMax = mix(2.50, 3.10, clamp(uIntensity, 0.0, 1.0));
-      float theta = pow(nr, mix(1.16, 0.92, uIntensity)) * thetaMax;
+      // Centre stays conventional for aiming; the frame edge bends through
+      // the side view and reaches almost directly behind at the corners.
+      float theta = nr * 3.05;
       vec3 localDir = vec3(radial * sin(theta), -cos(theta));
       vec3 worldDir = normalize(uCamRot * localDir);
       vec3 sphere = textureCube(uWorld, worldDir).rgb;
@@ -194,75 +188,39 @@ const SphereShader = {
       // not a HUD marker or a generic edge alarm.
       vec3 tangent = normalize(cross(abs(worldDir.y) < 0.92 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0), worldDir));
       vec3 bitangent = normalize(cross(worldDir, tangent));
-      vec3 tc = textureCube(uThreat, worldDir).rgb;
-      float centreLum = max(tc.r, max(tc.g, tc.b));
-      float threatLum = centreLum;
-      vec3 tx = textureCube(uThreat, normalize(worldDir + tangent * 0.060)).rgb;
-      vec3 nx = textureCube(uThreat, normalize(worldDir - tangent * 0.060)).rgb;
-      vec3 ty = textureCube(uThreat, normalize(worldDir + bitangent * 0.060)).rgb;
-      vec3 ny = textureCube(uThreat, normalize(worldDir - bitangent * 0.060)).rgb;
+      float threatLum = max(textureCube(uThreat, worldDir).r, max(textureCube(uThreat, worldDir).g, textureCube(uThreat, worldDir).b));
+      vec3 tx = textureCube(uThreat, normalize(worldDir + tangent * 0.035)).rgb;
+      vec3 nx = textureCube(uThreat, normalize(worldDir - tangent * 0.035)).rgb;
+      vec3 ty = textureCube(uThreat, normalize(worldDir + bitangent * 0.035)).rgb;
+      vec3 ny = textureCube(uThreat, normalize(worldDir - bitangent * 0.035)).rgb;
       threatLum = max(threatLum, max(max(max(tx.r, max(tx.g, tx.b)), max(nx.r, max(nx.g, nx.b))), max(max(ty.r, max(ty.g, ty.b)), max(ny.r, max(ny.g, ny.b)))));
-      float rear = smoothstep(1.42, 2.42, theta);
+      float rear = smoothstep(1.05, 2.45, theta);
       float silhouette = smoothstep(0.018, 0.32, threatLum);
-      float core = smoothstep(0.025, 0.30, centreLum);
-      float outline = clamp(silhouette - core, 0.0, 1.0);
-      // Rear space is deliberately dim: the enemy-only capture becomes a
-      // red hologram rather than an ordinary second camera pasted at the rim.
-      sphere *= 1.0 - rear * (0.28 + uRearSignal * 0.28);
-      float scan = 0.72 + 0.28 * sin(vUv.y * 118.0 + uTime * 9.0);
-      float holo = (core * (0.68 + threatLum * 0.92) + outline * 0.82)
-        * rear * (0.68 + uRearSignal * 0.48) * scan;
-      sphere += uTint * holo;
-      sphere += uTint * rear * uRearSignal * (0.018 + scan * 0.012);
-      float lens = smoothstep(mix(0.20, 0.08, uIntensity), mix(0.92, 0.72, uIntensity), nr) * uAmount;
+      sphere = mix(sphere, sphere + uTint * (0.72 + threatLum * 0.48), silhouette * rear * 0.78);
+      // Fine scan breakup keeps the rear signal graphic rather than a red fog.
+      sphere += uTint * silhouette * rear * (0.035 + 0.025 * sin(vUv.y * 96.0));
+      float lens = smoothstep(0.12, 0.82, nr) * uAmount;
       gl_FragColor = vec4(mix(forward.rgb, sphere, lens), forward.a);
     }`,
 };
 
 // HYPERDEMON-ish chromatic aberration, driven by the trauma system
 const ChromaShader = {
-  uniforms: {
-    tDiffuse: { value: null },
-    uAmount: { value: 0.0012 },
-    uIntensity: { value: 0 },
-    uFlash: { value: 0 },
-    uDash: { value: 0 },
-    uTime: { value: 0 },
-    uAspect: { value: window.innerWidth / window.innerHeight },
-  },
+  uniforms: { tDiffuse: { value: null }, uAmount: { value: 0.0012 } },
   vertexShader: /* glsl */`
     varying vec2 vUv;
     void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: /* glsl */`
     uniform sampler2D tDiffuse;
     uniform float uAmount;
-    uniform float uIntensity;
-    uniform float uFlash;
-    uniform float uDash;
-    uniform float uTime;
-    uniform float uAspect;
     varying vec2 vUv;
     void main() {
-      vec2 p = vUv - 0.5;
-      vec2 pa = vec2(p.x * uAspect, p.y);
-      float r = length(pa);
-      vec2 radial = r > 0.0001 ? normalize(pa) : vec2(0.0);
-      radial.x /= uAspect;
-      float split = uAmount * (0.42 + r * (1.15 + uIntensity * 1.8) + uDash * 1.4);
-      vec3 col = vec3(
-        texture2D(tDiffuse, clamp(vUv - radial * split, 0.0, 1.0)).r,
+      vec2 d = (vUv - 0.5) * uAmount;
+      gl_FragColor = vec4(
+        texture2D(tDiffuse, vUv - d).r,
         texture2D(tDiffuse, vUv).g,
-        texture2D(tDiffuse, clamp(vUv + radial * split, 0.0, 1.0)).b);
-      // Combat progressively hardens contrast and adds a pearlescent rim,
-      // while firing creates a short central star instead of a flat flash.
-      col = mix(col, (col - 0.5) * 1.13 + 0.5, uIntensity * 0.42);
-      float ang = atan(pa.y, pa.x);
-      float ray = pow(abs(cos(ang * 4.0 + uTime * 0.8)), 22.0);
-      float muzzle = exp(-r * 12.0) + ray * exp(-r * 5.5) * 0.34;
-      vec3 pearl = 0.5 + 0.5 * cos(6.28318 * (ang * 0.28 + uTime * 0.025 + vec3(0.0, 0.33, 0.67)));
-      col += pearl * smoothstep(0.18, 0.68, r) * (1.0 - smoothstep(0.68, 0.82, r)) * uIntensity * 0.055;
-      col += vec3(2.0, 0.42, 0.18) * muzzle * uFlash;
-      gl_FragColor = vec4(max(col, 0.0), 1.0);
+        texture2D(tDiffuse, vUv + d).b,
+        1.0);
     }`,
 };
 
@@ -315,7 +273,7 @@ const SMEAR_DASH = 0.12;
 const afterimage = new AfterimagePass(SMEAR_BASE);
 composer.addPass(afterimage);
 const bloom = new UnrealBloomPass(
-  new THREE.Vector2(window.innerWidth, window.innerHeight), 0.5, 0.4, 0.6); // eased so voxel cells read through the glow
+  new THREE.Vector2(window.innerWidth, window.innerHeight), 0.32, 0.25, 0.78);
 composer.addPass(bloom);
 const chromaPass = new ShaderPass(ChromaShader);
 composer.addPass(chromaPass);
@@ -694,7 +652,6 @@ handGroup.position.set(0.32, -0.4, -1.05); // far enough that it reads as a hand
 handGroup.traverse(o => o.layers.set(1));
 camera.add(handGroup);
 let recoil = 0;
-let weaponFlash = 0;
 
 /** Re-skin the gauntlet to match the current dagger level (DD's evolving hand). */
 function applyGauntlet(lv) {
@@ -750,7 +707,6 @@ function resize() {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   spherePass.uniforms.uAspect.value = camera.aspect;
-  chromaPass.uniforms.uAspect.value = camera.aspect;
   ui.width = window.innerWidth;
   ui.height = window.innerHeight;
 }
@@ -1215,7 +1171,6 @@ function resetRun() {
   debuted = {};
   trauma = 0;
   fovKick = 0;
-  weaponFlash = 0;
   slowmo = 0;
   lifeT = HYPER_START;
   mercyT = 0;
@@ -1349,10 +1304,9 @@ function applyOpts() {
   // the neon rim is a static effect, so the motion toggle leaves it alone
   edgePass.enabled = opts.edge && tier.edge;
   spherePass.enabled = opts.projection && tier.sphereEvery > 0;
-  // The old peripheral warning remains the fallback on tiers that cannot
-  // afford the cube captures. The spherical pass already carries real rear
-  // silhouettes, so stacking both only turns awareness into red noise.
-  threatPass.enabled = !spherePass.enabled && perfTier < PERF_TIERS.length - 1;
+  // The peripheral warning was visually loud without improving the core aim.
+  // Keep rear awareness inside the optional spherical view only.
+  threatPass.enabled = false;
   bloom.enabled = tier.bloom;
   debris.softCap = tier.debrisCap;
   debris.gibTarget = tier.gibs;
@@ -2102,7 +2056,6 @@ function fireShotgun(w) {
   }
   shotCd = T.weapon.shotgunCd;
   recoil = 0.06;
-  weaponFlash = 1;
   fovKick = Math.max(fovKick, 3.5);
   trauma = Math.max(trauma, 0.22);
   audio.shotgun();
@@ -2138,7 +2091,6 @@ function updateCombat(dt) {
       fireTimer += 1 / w.stream;
       fireDagger(FIRE_SPREAD, T.weapon.daggerSpeed, w.homing);
       recoil = Math.min(0.035, recoil + 0.007);
-      weaponFlash = Math.max(weaponFlash, 0.26 + weaponLv * 0.055);
       audio.fire();
     }
   } else {
@@ -2499,35 +2451,19 @@ function updateFeel(dt) {
     camera.rotation.x += (Math.random() - 0.5) * t2 * 0.03;
     camera.position.y += (Math.random() - 0.5) * t2 * 0.08;
   }
-  const chainK = styleVal / STYLE_CAP;
-  const powerK = (weaponLv - 1) / Math.max(1, WEAPON.length - 2);
-  const visionTarget = Math.min(1, musicI * 0.5 + chainK * 0.32 + powerK * 0.18);
-  const vision = spherePass.uniforms.uIntensity.value +=
-    (visionTarget - spherePass.uniforms.uIntensity.value) * Math.min(1, dt * 2.8);
-  spherePass.uniforms.uTime.value += dt * (1 + vision * 2.4);
-  spherePass.uniforms.uAmount.value = 0.82 + vision * 0.18;
-  chromaPass.uniforms.uAmount.value = 0.00115 + vision * 0.0024 + t2 * 0.018;
-  chromaPass.uniforms.uIntensity.value = vision;
-  chromaPass.uniforms.uDash.value = player.dashK;
-  chromaPass.uniforms.uTime.value += dt;
-  weaponFlash = Math.max(0, weaponFlash - dt * (5.5 + weaponFlash * 6));
-  chromaPass.uniforms.uFlash.value = opts.motion ? weaponFlash : weaponFlash * 0.35;
+  chromaPass.uniforms.uAmount.value = 0.0012 + t2 * 0.02;
   // reactive floor: grid thumps on the 138 BPM beat scaled by music intensity,
   // and flushes red when you take trauma (high contrast keeps the grid clean)
   if (state !== 'playing' || paused) musicI = Math.max(0, musicI - dt * 0.8);
   const beat = 1 - ((performance.now() / 1000) * (138 / 60)) % 1;
   floorMat.uniforms.uPulse.value = musicI * (0.25 + 0.75 * beat * beat);
   floorMat.uniforms.uRed.value = opts.contrast ? 0 : t2 * 0.85;
-  // dash speedlines ride the same gates as the smear (motion + perf tier)
-  speedPass.uniforms.uTime.value += dt;
-  speedPass.uniforms.uAmount.value = player.dashK;
-  speedPass.enabled = player.dashK > 0.02 && opts.motion && PERF_TIERS[perfTier].smear;
-  // impact ripple: same gates; amp clears once the wave has fully decayed
+  // Removed from the presentation: speedlines and screen-space ripples made
+  // the image busier without communicating anything the weapon/camera did not.
+  speedPass.enabled = false;
   rippleT += dt;
   if (rippleT > 0.8) rippleAmp = 0;
-  ripplePass.uniforms.uT.value = rippleT;
-  ripplePass.uniforms.uAmp.value = rippleAmp;
-  ripplePass.enabled = rippleAmp > 0 && opts.motion && PERF_TIERS[perfTier].smear;
+  ripplePass.enabled = false;
   // sky ember swells with trauma and while the Leviathan is on the field
   skyMat.uniforms.uEmber.value = t2 * 0.9 + (levAlive ? 0.7 : 0);
   environment.update(dt, { intensity: musicI, trauma: t2, leviathan: levAlive });
@@ -2553,17 +2489,13 @@ function updateFeel(dt) {
   }
   threatPass.uniforms.uRear.value += (rear - threatPass.uniforms.uRear.value) * Math.min(1, dt * 8);
   threatPass.uniforms.uSide.value += (rearSide - threatPass.uniforms.uSide.value) * Math.min(1, dt * 6);
-  spherePass.uniforms.uRearSignal.value +=
-    (rear - spherePass.uniforms.uRearSignal.value) * Math.min(1, dt * 8);
   fovKick = Math.max(0, fovKick - dt * 18);
   // smear deepens mid-dash — HYPERDEMON smears hardest at speed. dashK decays
   // with the dash itself, so the heavy end is always transient.
   if (afterimage.enabled) {
     afterimage.uniforms['damp'].value = SMEAR_BASE + player.dashK * SMEAR_DASH;
   }
-  // HYPER-style peripheral expansion: pressure and a strong chain open the
-  // view before the dash/shotgun kicks are layered on top.
-  const fov = opts.fov + (opts.motion ? vision * 9 + player.dashK * 9 + fovKick : vision * 3);
+  const fov = opts.fov + (opts.motion ? player.dashK * 9 + fovKick : 0);
   if (Math.abs(camera.fov - fov) > 0.01) {
     camera.fov = fov;
     camera.updateProjectionMatrix();
@@ -2734,8 +2666,8 @@ window.__hd = {
     getDailyTable() { return readDailyTable(); },
     pulse(n) { runPulse(n ?? ++pulseN); },
     setOpt(k, v) { opts[k] = v; saveOpts(); applyOpts(); },
-    getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, edge: edgePass.enabled, sphere: spherePass.enabled, threat: threatPass.enabled, rearSignal: threatPass.uniforms.uRear.value, edgeAmt: edgePass.uniforms.uAmt.value, damp: afterimage.uniforms['damp'].value, gridGlow: floorMat.uniforms.uGlow.value, fov: camera.fov, vision: spherePass.uniforms.uIntensity.value, weaponFlash, chromaAmount: chromaPass.uniforms.uAmount.value, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
-    getProjection() { return { enabled: spherePass.enabled, intensity: spherePass.uniforms.uIntensity.value, rearSignal: spherePass.uniforms.uRearSignal.value, amount: spherePass.uniforms.uAmount.value, worldCaptures: sphereWorldCaptures, threatCaptures: sphereThreatCaptures, worldSize: sphereWorldTarget.width, threatSize: sphereThreatTarget.width }; },
+    getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, edge: edgePass.enabled, sphere: spherePass.enabled, threat: threatPass.enabled, rearSignal: threatPass.uniforms.uRear.value, edgeAmt: edgePass.uniforms.uAmt.value, damp: afterimage.uniforms['damp'].value, gridGlow: floorMat.uniforms.uGlow.value, fov: camera.fov, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
+    getProjection() { return { enabled: spherePass.enabled, worldCaptures: sphereWorldCaptures, threatCaptures: sphereThreatCaptures, worldSize: sphereWorldTarget.width, threatSize: sphereThreatTarget.width }; },
     getEnvironment() { return environment.getState(); },
     getVfx() { return { shadows: shadows.count, sparks: sparks.length, speedOn: speedPass.enabled, rippleT, rippleOn: ripplePass.enabled, ember: skyMat.uniforms.uEmber.value }; },
     /** Everything that could leak over a long run: pool occupancy, scene graph
