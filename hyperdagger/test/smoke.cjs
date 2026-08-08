@@ -23,7 +23,13 @@ const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, co
 
 s.listen(0, '127.0.0.1', async () => {
   const base = 'http://127.0.0.1:' + s.address().port;
-  const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--disable-dev-shm-usage'] });
+  const b = await chromium.launch({
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined,
+    env: { ...process.env, LD_LIBRARY_PATH: process.env.PLAYWRIGHT_CHROMIUM_LIB || process.env.LD_LIBRARY_PATH },
+    args: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+      ? ['--no-sandbox', '--single-process', '--no-zygote', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--in-process-gpu']
+      : ['--use-gl=swiftshader', '--disable-dev-shm-usage'],
+  });
   const p = await b.newPage({ viewport: { width: 1100, height: 720 } });
   const errs = [];
   p.on('pageerror', e => errs.push('pageerror: ' + e.message));
@@ -43,6 +49,18 @@ s.listen(0, '127.0.0.1', async () => {
   await p.mouse.click(550, 360);
   await p.waitForFunction(() => window.__hd.debug.getState().state === 'playing', null, { timeout: 10000 });
   ok('a click starts the run', true);
+
+  // ---- v25 clean presentation baseline ---------------------------------
+  const clean25 = await p.evaluate(() => ({
+    fx: window.__hd.debug.getFx(),
+    vfx: window.__hd.debug.getVfx(),
+  }));
+  ok('v25 starts without spectacle overlays',
+    !clean25.fx.sphere && !clean25.fx.threat && !clean25.fx.smear &&
+    !clean25.fx.chroma && !clean25.fx.edge && !clean25.vfx.speedOn &&
+    !clean25.vfx.rippleOn,
+    JSON.stringify(clean25));
+  ok('v25 bloom is restrained', clean25.fx.bloomStrength === 0.32, JSON.stringify(clean25.fx));
 
   // ---- tuning.js is what the game actually reads -------------------------
   const tun = await p.evaluate(() => {
@@ -285,27 +303,6 @@ s.listen(0, '127.0.0.1', async () => {
   ok('projection option and low tier shed cube captures',
     projection23.off.enabled === false && projection23.low.enabled === false,
     JSON.stringify(projection23));
-
-  // ---- v24 combat-reactive visual stack --------------------------------
-  const vision24 = await p.evaluate(async () => {
-    const hd = window.__hd;
-    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
-    hd.debug.setOpt('perf', 'high');
-    hd.debug.setOpt('projection', true);
-    const quiet = hd.debug.getFx();
-    hd.debug.addStyle(118);
-    hd.debug.addGems(70);
-    await frames(5);
-    const hot = { fx: hd.debug.getFx(), projection: hd.debug.getProjection() };
-    hd.debug.setOpt('perf', 'auto');
-    return { quiet, hot };
-  });
-  ok('v24 combat intensity opens the view and spectral split',
-    vision24.hot.fx.vision > vision24.quiet.vision + 0.12 &&
-    vision24.hot.fx.fov > vision24.quiet.fov + 1.5 &&
-    vision24.hot.fx.chromaAmount > vision24.quiet.chromaAmount + 0.0004 &&
-    vision24.hot.projection.amount > 0.84,
-    JSON.stringify(vision24));
 
   const swoop = await p.evaluate(async () => {
     const hd = window.__hd;
