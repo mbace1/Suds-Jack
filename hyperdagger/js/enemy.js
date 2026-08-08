@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=52';
+import { VoxelSprite, MODELS } from './voxel.js?v=53';
 
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();
@@ -9,6 +9,9 @@ class VoxelEnemy {
     this.sprite = new VoxelSprite(model);
     this.group = new THREE.Group();
     this.group.add(this.sprite.mesh);
+    // Rear-world projection renders this layer into a separate cube map so
+    // enemy silhouettes can glow without turning the whole arena red.
+    this.group.traverse(o => o.layers.enable(2));
     this.group.position.copy(pos);
     this.group.scale.setScalar(0.01);
     this.spawnK = 0;
@@ -27,6 +30,9 @@ class VoxelEnemy {
       this.group.scale.setScalar(this.spawnK);
     }
     this.sprite.update(dt);
+    // LOOK can recreate the smooth hull after construction; keep that new
+    // child in the enemy-only capture as well.
+    if (this.sprite.hull) this.sprite.hull.layers.enable(2);
   }
 
   hit(dmg, dir) {
