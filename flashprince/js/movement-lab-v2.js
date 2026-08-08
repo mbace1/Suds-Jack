@@ -6,11 +6,16 @@ import { drawCinematicFigureV4 } from './cinematic-actions.js';
 
 const T=16,RW=20,RH=12;
 const LABS=[
- {spawn:[40,176],map:['                    ','                    ','                    ','                    ','                    ','                    ','                    ','                    ','                    ','                    ','                    ','####################']},
- {spawn:[40,144],map:['                    ','                    ','                    ','                    ','                    ','                    ','                    ','              ######','              ######','######   ###########','######   ###########','######   ###########']},
- {spawn:[40,80],map:['                    ','                    ','                    ','                    ','                    ',' #####              ',' #####              ',' #####   #####      ',' #####   #####   ###',' #####   #####   ###',' #####   #####   ###','####################']},
- {spawn:[40,176],map:['                    ','                    ','                    ','                    ','                    ','                    ','                    ','                    ','                    ','                    ','        ##          ','############    ####']},
+ {spawn:[32,176],map:['                    ','                    ','                    ','                    ','                    ','                    ','                    ','                    ','                    ','                    ','             ###    ','#########   ########']},
+ {spawn:[28,176],map:['                    ','                    ','                    ','                    ','                    ','                    ','              ####  ','              ####  ','         ###  ####  ','         ###  ####  ','    ###  ###  ####  ','########     ########']},
+ {spawn:[28,160],map:['                    ','                    ','                    ','                    ','                    ','             #####  ','             #####  ','       ####  #####  ','       ####  #####  ',' ####  ####  #####  ',' ####  ####  #####  ','######    ##########']},
+ {spawn:[28,176],map:['                    ','                    ','                    ','                    ','                    ','                    ','                    ','             ####   ','             ####   ','       ###   ####   ','   ##  ###   ####   ','#######    #########']},
 ];
+
+function vine(s,x,y,len,ci){let px=x,py=y;for(let i=0;i<5;i++){const nx=x+Math.sin(i*1.7+x*.07)*5,ny=y+i*len/4;s.line(px,py,nx,ny,ci,.8);if(i>0)s.poly([nx,ny,nx+5,ny+2,nx+1,ny+5],ci);px=nx;py=ny}}
+function frond(s,x,y,flip,ci){for(let i=0;i<5;i++){const yy=y+i*3;s.poly([x,yy,x+flip*(18-i*2),yy-5,x+flip*(8-i),yy+2],ci)}}
+function trunk(s,x,base,w,h,lean,ci){s.poly([x-w,base,x+w,base,x+lean+w*.45,base-h,x+lean-w*.45,base-h],ci);frond(s,x+lean,base-h,1,ci);frond(s,x+lean,base-h,-1,ci)}
+
 class World{
  constructor(){this.load(0)}
  load(i){this.i=(i+LABS.length)%LABS.length;this.lab=LABS[this.i];this.g=this.lab.map.map(r=>[...r])}
@@ -19,7 +24,24 @@ class World{
  boxSolid(x,y,w,h){const x0=Math.floor(x/T),x1=Math.floor((x+w-1)/T),y0=Math.floor(y/T),y1=Math.floor((y+h-1)/T);for(let yy=y0;yy<=y1;yy++)for(let xx=x0;xx<=x1;xx++)if(this.solidTile(xx,yy))return true;return false}
  ledgeAhead(x,y,face){const tx=Math.floor((x+face*7)/T),target=y-26;for(let ty=Math.floor((target-11)/T);ty<=Math.floor((target+11)/T);ty++){if(!this.solidTile(tx,ty)||this.solidTile(tx,ty-1)||this.solidTile(tx-face,ty))continue;const lipY=ty*T;if(Math.abs(lipY-target)>10)continue;const hx=tx*T+(face>0?-5:T+5);if(!this.boxSolid(hx-4,lipY+3,8,22))return{x:hx,y:lipY,face}}return null}
  ledgeBehind(x,y,face){const tx=Math.floor((x-face*7)/T),ty=Math.floor((y+2)/T);if(!this.solidTile(tx,ty)||this.solidTile(tx,ty-1))return null;const lipY=ty*T;if(Math.abs(lipY-y)>6)return null;const edge=face>0?(tx+1)*T:tx*T,hx=edge+face*5;return this.boxSolid(hx-4,lipY+3,8,22)?null:{x:hx,y:lipY,face:-face}}
- draw(s){s.clear(C.VOID);s.rect(0,0,W,H,C.DARK);s.rect(0,0,W,44,C.VOID);for(let y=0;y<RH;y++)for(let x=0;x<RW;x++)if(this.solidTile(x,y)){s.rect(x*T,y*T,T,T,C.SOLID);if(!this.solidTile(x,y-1)){s.rect(x*T,y*T,T,2,C.EDGE);s.rect(x*T,y*T+2,T,1,C.NEAR)}if((x+y)%3===0)s.rect(x*T+2,y*T+6,6,1,C.FAR)}s.line(0,46,W,46,C.FAR,.45)}
+ draw(s){
+  s.clear(C.VOID);s.rect(0,0,W,H,C.DARK);
+  // distant alien sky, canopy and mist: jungle dominates, technology whispers.
+  s.disc(254,30,18,C.FAR,.42);s.disc(254,30,10,C.NEAR,.22);
+  s.poly([0,68,38,49,74,61,112,42,151,59,194,38,236,55,278,40,320,57,320,116,0,116],C.FAR,.72);
+  for(let x=8;x<330;x+=38)trunk(s,x,137,4,58+(x%27),((x/19)%3-1)*7,C.NEAR);
+  s.veil([0,92,W,82,W,138,0,145],C.SUIT_HI,.06);
+  for(let x=18;x<W;x+=53)vine(s,x,0,25+(x%18),C.EDGE);
+  // tiny sci-fi traces, deliberately subordinate to foliage.
+  if(this.i===0){s.poly([18,158,34,149,53,153,57,164,48,169,25,168],C.SOLID);s.line(30,153,47,155,C.EDGE,1);s.disc(48,158,2,C.ALERT,.8)}
+  if(this.i===1){s.line(198,127,244,118,C.EDGE,1);s.disc(245,118,2,C.ALERT,.8);s.line(245,118,257,109,C.FAR,.7)}
+  if(this.i===2){s.poly([252,91,269,85,278,91,272,101,255,101],C.SOLID);s.line(258,93,271,91,C.ALERT,.8)}
+  if(this.i===3){s.line(112,150,128,138,C.EDGE,1);s.line(128,138,144,143,C.EDGE,1);s.disc(128,138,2,C.ALERT,.8)}
+  // playable terrain: dark root/stone masses with bright wet lips.
+  for(let y=0;y<RH;y++)for(let x=0;x<RW;x++)if(this.solidTile(x,y)){s.rect(x*T,y*T,T,T,C.SOLID);if(!this.solidTile(x,y-1)){s.rect(x*T,y*T,T,2,C.EDGE);s.rect(x*T,y*T+2,T,2,C.NEAR);if((x+this.i)%2===0)frond(s,x*T+8,y*T-1,(x%2?1:-1),C.NEAR)}if((x+y)%3===0)s.rect(x*T+2,y*T+8,7,1,C.FAR)}
+  // near foliage crosses the picture plane for Another World-like depth.
+  trunk(s,-3,H+18,8,92,11,C.VOID);trunk(s,W+5,H+20,9,105,-13,C.VOID);frond(s,8,154,1,C.VOID);frond(s,314,143,-1,C.VOID);
+ }
 }
 class Lab{
  constructor(){this.s=new Screen(document.getElementById('screen'));this.s.setPalette(paletteAt(2.15));this.input=new Input(this.s);this.world=new World();this.flash=0;this.load(0);addEventListener('keydown',e=>{if(/^Digit[1-4]$/.test(e.code))this.load(Number(e.code.slice(-1))-1);if(e.code==='KeyR')this.reset()});this.last=performance.now();this.acc=0;requestAnimationFrame(t=>this.frame(t))}
