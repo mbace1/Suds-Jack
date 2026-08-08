@@ -93,7 +93,9 @@ materials and follows the renderer's kind. It is the engine the lab should have.
 - [x] Goo pass 2: corpse and swarm materials (satin MID is the floor, goo the
       ceiling) — *v222: corpse matter (both chunk pools) gets a gel-nugget node
       graph under the flag; the living swarm was already satin/physical + v218*
-- [ ] **Arena & environment pass**: floor/space treatment that makes swarm flow readable
+- [x] **Arena & environment pass**: floor/space treatment that makes swarm flow
+      readable — *v223: rim vignette, grid distance falloff, and a lit pool that
+      follows the player; both renderers in parity, constants in `TUNING.arena`*
 - [ ] Arena pass 2: reactive surface response to mass, prizes, pops
 - [ ] Performance budget checkpoint on a mid-range phone, measured after each pass
 
