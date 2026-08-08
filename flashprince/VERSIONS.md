@@ -2,6 +2,17 @@
 
 The public release number. The `?v=N` token in `index.html` is a separate thing: it tracks every module-graph change so a browser cannot serve half of one build and half of another. Bump both when shipping.
 
+## v6 — 2026-08-08
+
+The remake stops behaving like a set of selectable movement rooms and becomes the beginning of an actual cinematic-platformer route.
+
+- **Five connected fixed screens:** walking off the side now hard-cuts into the adjacent jungle screen, and the route can be traversed back in the opposite direction.
+- **Movement choreography:** the layouts escalate from run/jump gaps into staggered ledges, climbing, hanging, low traversal and controlled drops so the advanced body vocabulary is part of the route rather than a demonstration.
+- **Jungle first:** layered canopy, mist, hanging vines and foreground silhouettes remain dominant throughout the opening.
+- **Sci-fi reveal:** pod → beacon/cable → embedded panel → buried conduit → a geometric doorway in the fifth chamber. Technology is discovered progressively inside the vegetation rather than replacing it.
+- **No animation regression:** v5 crouch, roll, climb-down, shimmy and low-mantle frames remain layered over the dense v3/v4 run, walk, jump, stop, pivot, catch and pull-up animation set.
+- **House controls retained:** dual sticks remain default; buttons remain selectable from Controls.
+
 ## v5 — 2026-08-08
 
 The jungle slice now carries the rest of the cinematic body vocabulary instead of falling back to sparse legacy poses.
