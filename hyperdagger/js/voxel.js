@@ -13,47 +13,114 @@ const _s = new THREE.Vector3();
  * Palette values are hex ints, or [r,g,b] arrays with components > 1 for
  * HDR glow parts that should trip the bloom pass.
  */
+// v4.31 detail overhaul: the skull is authored at 11×5×10 (was 7×3×6) with
+// real anatomy — jaw, two teeth rows, nasal cavity, flared cheekbones, deep
+// eye sockets with the burning pupil recessed inside, brow ridge, cranium
+// dome. Every row is exactly 11 chars and every layer exactly 5 rows so the
+// parse grid stays on one parity and the baked AO sees true neighbors.
+// voxelSize on every skull-family model is rescaled ×7/11, so world size,
+// hitboxes and gameplay are unchanged.
 const SKULL_LAYERS = [
-  ['..WWW..', '..SWS..'],
-  ['.WWWWW.', '.WSWSW.', '..WWW..'],
-  ['.WWKWW.', 'WWWWWWW', '.WWWWW.'],
-  ['WRRWRRW', 'WWWWWWW', '.WWWWW.'],
-  ['WWWWWWW', 'WWWWWWW', '.WWWWW.'],
-  ['.WWWWW.', '.WWWWW.', '..WWW..'],
+  [ // chin
+    '....WWW....',
+    '...WWWWW...',
+    '...WWWWW...',
+    '....WWW....',
+    '...........'],
+  [ // lower teeth
+    '...WKWKW...',
+    '..WWWWWWW..',
+    '..WWWWWWW..',
+    '...WWWWW...',
+    '...........'],
+  [ // bite line — upper teeth
+    '..WKWKWKW..',
+    '.WWWWWWWWW.',
+    '.WWWWWWWWW.',
+    '..WWWWWWW..',
+    '...WWWWW...'],
+  [ // maxilla, nasal base
+    '.WWWWKWWWW.',
+    '.WWWWWWWWW.',
+    '.WWWWWWWWW.',
+    '..WWWWWWW..',
+    '...WWWWW...'],
+  [ // cheekbones flare, nasal cavity
+    'WWWWWKWWWWW',
+    'WWWWWWWWWWW',
+    '.WWWWWWWWW.',
+    '..WWWWWWW..',
+    '...WWWWW...'],
+  [ // socket floors
+    'WWKKWWWKKWW',
+    'WWWWWWWWWWW',
+    'WWWWWWWWWWW',
+    '.WWWWWWWWW.',
+    '..WWWWWWW..'],
+  [ // eyes — pupils recessed in dark sockets
+    'WKRKWWWKRKW',
+    'WWWWWWWWWWW',
+    'WWWWWWWWWWW',
+    '.WWWWWWWWW.',
+    '..WWWWWWW..'],
+  [ // brow ridge
+    '.WWWWWWWWW.',
+    'WWWWWWWWWWW',
+    'WWWWWWWWWWW',
+    '.WWWWWWWWW.',
+    '..WWWWWWW..'],
+  [ // cranium
+    '..WWWWWWW..',
+    '.WWWWWWWWW.',
+    '.WWWWWWWWW.',
+    '..WWWWWWW..',
+    '...WWWWW...'],
+  [ // dome
+    '....WWW....',
+    '...WWWWW...',
+    '...WWWWW...',
+    '....WWW....',
+    '...........'],
 ];
+// crown / horn layers for the variants, at the new 11-wide grid
+const CROWN_5 = ['...........', '.C.C.C.C.C.', '...........'];
+const CROWN_6 = ['...........', 'C.C.C.C.C.C', '...........'];
+const BRUTE_HORNS = ['V.........V', '...........', '...........'];
 
 export const MODELS = {
   skull: {
-    voxelSize: 0.22,
+    voxelSize: 0.14,
     palette: { W: 0xd8d8d8, S: 0xa8a8a8, R: [2.8, 0.2, 0.2], K: 0x1a1a1a },
     layers: SKULL_LAYERS,
   },
   // crowned skull — faster, 2 HP, red crown
   skull2: {
-    voxelSize: 0.22,
+    voxelSize: 0.14,
     palette: { W: 0x8a8a8a, S: 0x666666, R: [2.8, 0.2, 0.2], K: 0x111111, C: [2.2, 0.2, 0.2] },
-    layers: [...SKULL_LAYERS, ['.C.C.C.', '.......', '.......']],
+    layers: [...SKULL_LAYERS, CROWN_5],
   },
   // splitter — big white-crowned skull that bursts into minis
   skullBig: {
-    voxelSize: 0.32,
+    voxelSize: 0.2,
     palette: { W: 0xdcdcdc, S: 0xaaaaaa, R: [2.8, 0.2, 0.2], K: 0x1a1a1a, C: [2.4, 2.4, 2.4] },
-    layers: [...SKULL_LAYERS, ['.C.C.C.', '.......', '.......']],
+    layers: [...SKULL_LAYERS, CROWN_5],
   },
   skullTiny: {
-    voxelSize: 0.12,
+    voxelSize: 0.076,
     palette: { W: 0xb8b8b8, S: 0x8a8a8a, R: [2.8, 0.2, 0.2], K: 0x151515 },
     layers: SKULL_LAYERS,
   },
   // dread skull — the Skull IV analog: big, fast, dark-red bone, burning crown
   skullDread: {
-    voxelSize: 0.4,
+    voxelSize: 0.25,
     palette: { W: 0x6e1212, S: 0x4a0c0c, R: [3.2, 0.35, 0.35], K: 0x0a0202, C: [2.6, 0.2, 0.2] },
-    layers: [...SKULL_LAYERS, ['C.C.C.C', '.......', '.......']],
+    layers: [...SKULL_LAYERS, CROWN_6],
   },
   // blinker — glitch shard that teleports toward the player
   blinker: {
     voxelSize: 0.26,
+    noHull: true, // a glitch shard reads as loose cubes on purpose
+
     palette: { D: 0x3a3a3a, R: [2.6, 0.2, 0.2] },
     layers: [
       ['...', '.D.', '...'],
@@ -73,24 +140,32 @@ export const MODELS = {
       ['.W.', 'WWW', '.W.'],
     ],
   },
-  // ghost serpent — pale rings armored from the front (shoot from behind)
+  // ghost serpent — pale rings armored from the front (shoot from behind);
+  // same v4.31 geometry as the live serpent, bleached
   serpentGhost: {
-    voxelSize: 0.3,
+    voxelSize: 0.18,
     palette: { S: 0xf0f0f0, C: [1.4, 1.4, 1.4] },
     layers: [
-      ['.S.', 'SSS', '.S.'],
-      ['SSS', 'SCS', 'SSS'],
-      ['.S.', 'SSS', '.S.'],
+      ['.SSS.', '.SSS.', '.SSS.'],
+      ['S...S', 'S.C.S', 'S...S'],
+      ['S...S', 'S.C.S', 'S...S'],
+      ['S...S', 'S.C.S', 'S...S'],
+      ['.SSS.', '.SSS.', '.SSS.'],
+      ['..S..', '..S..', '..S..'],
     ],
   },
   serpentGhostHead: {
-    voxelSize: 0.36,
-    palette: { S: 0xd8d8d8, C: [1.4, 1.4, 1.4], R: [2.8, 0.2, 0.2] },
+    voxelSize: 0.18,
+    palette: { S: 0xd8d8d8, C: [1.4, 1.4, 1.4], R: [2.8, 0.2, 0.2], K: 0x2a2a2a },
     layers: [
-      ['.S.', 'SSS', '.S.'],
-      ['S.S', 'SCS', 'SSS'],
-      ['R.R', 'SSS', 'SSS'],
-      ['.S.', 'SSS', '.S.'],
+      ['.SKSKS.', '.SSSSS.', '..SSS..'],
+      ['SSSSSSS', 'SSSSSSS', '.SSSSS.'],
+      ['SKKKKKS', 'SSSSSSS', '.SSSSS.'],
+      ['SKKKKKS', 'SSSSSSS', '.SSSSS.'],
+      ['SSSSSSS', 'SSSSSSS', '.SSSSS.'],
+      ['.RSSSR.', 'SSSSSSS', '.SSSSS.'],
+      ['.SSSSS.', 'SSCSCSS', '..SSS..'],
+      ['S.....S', '.......', '.......'],
     ],
   },
   // thorn — white spike that erupts from a telegraphed floor sigil
@@ -109,42 +184,51 @@ export const MODELS = {
   },
   // watcher — hovering drone eye that fires orb volleys (Returnal turret nod)
   watcher: {
-    voxelSize: 0.26,
-    palette: { S: 0x2a2a2a, W: 0xcfcfcf, R: [2.8, 0.2, 0.2] },
+    voxelSize: 0.19,
+    palette: { S: 0x2a2a2a, W: 0xcfcfcf, R: [2.8, 0.2, 0.2], K: 0x101010 },
     layers: [
-      ['.SSS.', 'SSSSS', '.SSS.'],
-      ['SRRRS', 'SWSWS', 'SSSSS'],
-      ['.SSS.', 'SSSSS', '.SSS.'],
+      ['.SSSSS.', 'SSSSSSS', '.SSSSS.'],
+      ['SKRRRKS', 'SSWSWSS', 'SSSSSSS'],
+      ['.SSSSS.', 'SSSSSSS', '.SSSSS.'],
+      ['...S...', '..SSS..', '...S...'],
     ],
   },
   brute: {
-    voxelSize: 0.46,
+    voxelSize: 0.29,
     palette: { W: 0x2e2e2e, S: 0x1e1e1e, R: [2.8, 0.2, 0.2], K: 0x0a0a0a, V: [1.8, 0.15, 0.15] },
     layers: [
       ...SKULL_LAYERS.map(l => l.map(r => r)),
-      ['V.....V', '.......', '.......'],
-      ['V.....V', '.......', '.......'],
+      BRUTE_HORNS,
+      BRUTE_HORNS,
     ],
   },
-  // serpent body segment — armored ring with an HDR core
+  // serpent body segment — an armored ring you can see through, with side
+  // plates, a dorsal ridge spike, and the HDR core suspended in the middle
   serpent: {
-    voxelSize: 0.3,
+    voxelSize: 0.18,
     palette: { S: 0xcfcfcf, C: [2.4, 0.2, 0.2] },
     layers: [
-      ['.S.', 'SSS', '.S.'],
-      ['SSS', 'SCS', 'SSS'],
-      ['.S.', 'SSS', '.S.'],
+      ['.SSS.', '.SSS.', '.SSS.'],
+      ['S...S', 'S.C.S', 'S...S'],
+      ['S...S', 'S.C.S', 'S...S'],
+      ['S...S', 'S.C.S', 'S...S'],
+      ['.SSS.', '.SSS.', '.SSS.'],
+      ['..S..', '..S..', '..S..'],
     ],
   },
-  // serpent head — eyes + open mouth at the front face
+  // serpent head — open dark maw, recessed eyes, horn tips
   serpentHead: {
-    voxelSize: 0.36,
-    palette: { S: 0x9a9a9a, C: [2.4, 0.2, 0.2], R: [2.8, 0.2, 0.2] },
+    voxelSize: 0.18,
+    palette: { S: 0x9a9a9a, C: [2.4, 0.2, 0.2], R: [2.8, 0.2, 0.2], K: 0x151515 },
     layers: [
-      ['.S.', 'SSS', '.S.'],
-      ['S.S', 'SCS', 'SSS'],
-      ['R.R', 'SSS', 'SSS'],
-      ['.S.', 'SSS', '.S.'],
+      ['.SKSKS.', '.SSSSS.', '..SSS..'],
+      ['SSSSSSS', 'SSSSSSS', '.SSSSS.'],
+      ['SKKKKKS', 'SSSSSSS', '.SSSSS.'],
+      ['SKKKKKS', 'SSSSSSS', '.SSSSS.'],
+      ['SSSSSSS', 'SSSSSSS', '.SSSSS.'],
+      ['.RSSSR.', 'SSSSSSS', '.SSSSS.'],
+      ['.SSSSS.', 'SSCSCSS', '..SSS..'],
+      ['S.....S', '.......', '.......'],
     ],
   },
   // gem thief — squat body, corner legs, red eyes front
@@ -222,6 +306,8 @@ export const MODELS = {
   hand: {
     voxelSize: 0.05,
     wobble: 0.3,
+    noHull: true, // the checkerboard IS the glove — smoothing erases it
+
     palette: { G: 0x3a3a3a, D: 0x222222, H: 0x555555, B: [1.25, 1.25, 1.25] },
     layers: [
       ['...', '...', '...', '...', '...', '...', '...', 'DGD', 'GDG', 'DGD'],
@@ -272,6 +358,37 @@ export function styleTint(c) {
   return c;
 }
 
+/** Baked voxel shading (v4.31): unlit flat fills read as cardboard, so parse
+ *  bakes the lighting a real material would get — crevice voxels darken by
+ *  neighbor occlusion, sky-exposed voxels lift, and a hash grain breaks up
+ *  flat runs. HDR voxels (any channel > 1) are gameplay bloom carriers and
+ *  pass through untouched. Baked into the parse colors, so applyStyle and
+ *  the hit-flash multiplier both inherit it for free. */
+function bakeShading(voxels, ms) {
+  const key = (x, y, z) => `${Math.round(x / ms)},${Math.round(y / ms)},${Math.round(z / ms)}`;
+  const occ = new Set();
+  for (const v of voxels) occ.add(key(v.x, v.y, v.z));
+  for (const v of voxels) {
+    const c = v.color;
+    if (c.r > 1 || c.g > 1 || c.b > 1) continue;
+    let n = 0;
+    if (occ.has(key(v.x + ms, v.y, v.z))) n++;
+    if (occ.has(key(v.x - ms, v.y, v.z))) n++;
+    if (occ.has(key(v.x, v.y + ms, v.z))) n++;
+    if (occ.has(key(v.x, v.y - ms, v.z))) n++;
+    if (occ.has(key(v.x, v.y, v.z + ms))) n++;
+    if (occ.has(key(v.x, v.y, v.z - ms))) n++;
+    let k = 1 - (n / 6) * 0.42;                                // crevices sink
+    if (!occ.has(key(v.x, v.y + ms, v.z))) k *= 1.14;          // top light
+    if (!occ.has(key(v.x, v.y, v.z + ms))) k *= 1.05;          // front catches the glow
+    // deterministic grain: same voxel, same fleck, every parse
+    const h = (Math.round(v.x / ms) * 374761393 + Math.round(v.y / ms) * 668265263 + Math.round(v.z / ms) * 2147483647) | 0;
+    k *= 1 + (((h ^ (h >> 13)) & 0xff) / 255 - 0.5) * 0.1;
+    k = Math.max(0.5, Math.min(1.25, k));
+    c.multiplyScalar(k);
+  }
+}
+
 /** Parse a model definition into centred local-space voxels, subdividing
  *  each source voxel into subdivide³ minis. */
 export function parseModel(def, subdivide = 1) {
@@ -310,14 +427,26 @@ export function parseModel(def, subdivide = 1) {
       }
     }
   }
+  bakeShading(voxels, ms);
   return voxels;
 }
+
+// v4.32 hull mode (owner's direction, 2026-08-07, off a rendered A/B/C
+// test): while ALIVE an enemy wears a smoothed mesh skin over its voxel
+// lattice — cubes read as Minecraft. The voxels stay the physics currency:
+// chips tear real holes (the skin rebuilds around them), severed islands
+// and deaths still burst instanced cubes. Models opt out with `noHull`
+// (the gauntlet's checkerboard and the blinker's glitch-shard identity).
+let hullMode = true;
+export function setHullMode(on) { hullMode = !!on; }
+export function getHullMode() { return hullMode; }
 
 /** One voxel model as a single InstancedMesh with per-voxel colors.
  *  Voxels can be chipped off before death (bullet holes) — dead voxels are
  *  scaled to zero and excluded from worldVoxels()/death bursts. */
 export class VoxelSprite {
   constructor(def, subdivide = globalDetail + (def.detailBoost || 0)) {
+    this.def = def;
     subdivide = Math.max(1, Math.min(4, subdivide));
     this.voxels = parseModel(def, subdivide);
     this.size = def.voxelSize / subdivide;
@@ -390,6 +519,126 @@ export class VoxelSprite {
       v.gz = Math.round((v.z - mz) * inv) + 1;
       this.grid.set(v.gx + v.gy * 1024 + v.gz * 1048576, i);
     });
+    this.gridMin = { mx, my, mz };
+
+    this.hull = null;
+    this.hullMat = null;
+    this.hullDirty = false;
+    this.hullCd = 0;
+    this.setHull(hullMode);
+  }
+
+  /** Switch the alive-look between the smooth skin and raw cubes. The
+   *  instanced mesh stays the transform/physics anchor either way — count=0
+   *  hides the cubes without touching visibility, so the hull (its child)
+   *  still renders and every worldMatrix path is unchanged. */
+  setHull(on) {
+    const want = !!on && !this.def.noHull;
+    if (want === !!this.hull) return;
+    if (want) {
+      this.hullMat = new THREE.MeshBasicMaterial({ vertexColors: true });
+      this.hull = new THREE.Mesh(new THREE.BufferGeometry(), this.hullMat);
+      this.hull.frustumCulled = false;
+      this.mesh.add(this.hull);
+      this.mesh.count = 0;
+      this._rebuildHull();
+    } else {
+      this.mesh.remove(this.hull);
+      this.hull.geometry.dispose();
+      this.hullMat.dispose();
+      this.hull = null;
+      this.hullMat = null;
+      this.mesh.count = this.voxels.length;
+    }
+  }
+
+  /** Rebuild the skin from the ALIVE voxels: culled outer faces on welded
+   *  corners, heavy Laplacian smoothing (the C3 look), then exploded to
+   *  non-indexed with ONE color per face — smooth silhouette, crisp cell
+   *  color, no smearing of the HDR eyes into the bone. Unlit material, so
+   *  no normals needed. */
+  _rebuildHull() {
+    const s = this.size;
+    const { mx, my, mz } = this.gridMin;
+    const cornerIdx = new Map();
+    const P = []; // welded corner positions (flat xyz)
+    const faces = []; // [c0,c1,c2,c3, colorIndex]
+    const corner = (gx, gy, gz) => {
+      const k = gx + gy * 1024 + gz * 1048576;
+      let idx = cornerIdx.get(k);
+      if (idx === undefined) {
+        idx = P.length / 3;
+        cornerIdx.set(k, idx);
+        P.push(mx + (gx - 1) * s - s / 2, my + (gy - 1) * s - s / 2, mz + (gz - 1) * s - s / 2);
+      }
+      return idx;
+    };
+    // quad corner offsets per face direction, wound outward
+    const QUADS = [
+      [[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1]],  // +x
+      [[0, 0, 1], [0, 1, 1], [0, 1, 0], [0, 0, 0]],  // -x
+      [[0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0]],  // +y
+      [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]],  // -y
+      [[1, 0, 1], [1, 1, 1], [0, 1, 1], [0, 0, 1]],  // +z
+      [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]],  // -z
+    ];
+    const DIRS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+    for (let i = 0; i < this.voxels.length; i++) {
+      const v = this.voxels[i];
+      if (!v.alive) continue;
+      for (let f = 0; f < 6; f++) {
+        const [dx, dy, dz] = DIRS[f];
+        const nk = (v.gx + dx) + (v.gy + dy) * 1024 + (v.gz + dz) * 1048576;
+        const n = this.grid.get(nk);
+        if (n !== undefined && this.voxels[n].alive) continue;
+        const q = QUADS[f].map(([a, b, c]) => corner(v.gx + a, v.gy + b, v.gz + c));
+        faces.push(q[0], q[1], q[2], q[3], i);
+      }
+    }
+    // neighbor graph over quad edges, then heavy smoothing (3 passes)
+    const nbr = new Map();
+    const link = (a, b) => {
+      let sa = nbr.get(a);
+      if (!sa) nbr.set(a, sa = new Set());
+      sa.add(b);
+    };
+    for (let f = 0; f < faces.length; f += 5) {
+      for (let e = 0; e < 4; e++) {
+        const a = faces[f + e], b = faces[f + ((e + 1) & 3)];
+        link(a, b); link(b, a);
+      }
+    }
+    let cur = P;
+    for (let it = 0; it < 3; it++) {
+      const next = cur.slice();
+      for (const [vi, ns] of nbr) {
+        let sx = 0, sy = 0, sz = 0;
+        for (const n of ns) { sx += cur[n * 3]; sy += cur[n * 3 + 1]; sz += cur[n * 3 + 2]; }
+        const k = 0.62, inv = k / ns.size;
+        next[vi * 3] = cur[vi * 3] * (1 - k) + sx * inv;
+        next[vi * 3 + 1] = cur[vi * 3 + 1] * (1 - k) + sy * inv;
+        next[vi * 3 + 2] = cur[vi * 3 + 2] * (1 - k) + sz * inv;
+      }
+      cur = next;
+    }
+    // explode to non-indexed triangles with a flat color per face
+    const nf = faces.length / 5;
+    const pos = new Float32Array(nf * 18);
+    const col = new Float32Array(nf * 18);
+    let o = 0;
+    for (let f = 0; f < faces.length; f += 5) {
+      const c = this.voxels[faces[f + 4]].color;
+      for (const vi of [faces[f], faces[f + 1], faces[f + 2], faces[f], faces[f + 2], faces[f + 3]]) {
+        pos[o] = cur[vi * 3]; col[o++] = c.r;
+        pos[o] = cur[vi * 3 + 1]; col[o++] = c.g;
+        pos[o] = cur[vi * 3 + 2]; col[o++] = c.b;
+      }
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    this.hull.geometry.dispose();
+    this.hull.geometry = g;
   }
 
   /** After chips carve the model, voxel islands no longer 6-connected to the
@@ -441,6 +690,7 @@ export class VoxelSprite {
       this.mesh.setMatrixAt(i, _m.makeScale(0, 0, 0));
     }
     this.mesh.instanceMatrix.needsUpdate = true;
+    this.hullDirty = true;
     return clusters.filter(c => c.length);
   }
 
@@ -475,7 +725,10 @@ export class VoxelSprite {
       });
       this.mesh.setMatrixAt(i, _m.makeScale(0, 0, 0));
     }
-    if (out.length) this.mesh.instanceMatrix.needsUpdate = true;
+    if (out.length) {
+      this.mesh.instanceMatrix.needsUpdate = true;
+      this.hullDirty = true; // the skin re-forms around the hole
+    }
     return out;
   }
 
@@ -490,6 +743,20 @@ export class VoxelSprite {
     if (this.flashK > 0) {
       this.flashK = Math.max(0, this.flashK - dt * 7);
       this.material.color.setScalar(1 + this.flashK);
+      if (this.hullMat) this.hullMat.color.setScalar(1 + this.flashK);
+    }
+    if (this.hull) {
+      // the skin breathes (the instanced lattice does this in its vertex
+      // shader; the hull gets the whole-body term)
+      this.hull.scale.setScalar(1 + 0.022 * this.baseWobble * Math.sin(this.animT * 2.1));
+      if (this.hullDirty) {
+        this.hullCd -= dt;
+        if (this.hullCd <= 0) {
+          this._rebuildHull();
+          this.hullDirty = false;
+          this.hullCd = 0.1; // chips arrive in bursts — batch the re-skin
+        }
+      }
     }
   }
 
@@ -505,6 +772,7 @@ export class VoxelSprite {
       this.mesh.setColorAt(i, v.color);
     });
     this.mesh.instanceColor.needsUpdate = true;
+    this.hullDirty = true;
   }
 
   /** Re-derive every voxel color from its pre-style base under the current
@@ -515,6 +783,7 @@ export class VoxelSprite {
       this.mesh.setColorAt(i, v.color);
     });
     this.mesh.instanceColor.needsUpdate = true;
+    this.hullDirty = true;
   }
 
   randomColor() {
@@ -539,6 +808,10 @@ export class VoxelSprite {
   dispose() {
     this.mesh.geometry.dispose();
     this.material.dispose();
+    if (this.hull) {
+      this.hull.geometry.dispose();
+      this.hullMat.dispose();
+    }
   }
 }
 
