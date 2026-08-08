@@ -25,12 +25,21 @@ const LABS = [
     ],
   },
   {
-    name: '03 FALL + LANDING', note: 'DROP · LAND-CATCH > RISE · ONE STOREY FREE · TWO HURT · THREE KILL',
+    name: '03 FALL + LANDING', note: 'STAND/RUN LANDINGS DIFFER · ONE STOREY FREE · TWO HURT · THREE KILL',
     spawn: [40, 80],
     map: [
       '                    ','                    ','                    ','                    ',
       '                    ',' #####              ',' #####              ',' #####   #####      ',
       ' #####   #####   ###',' #####   #####   ###',' #####   #####   ###','####################',
+    ],
+  },
+  {
+    name: '04 BODY VOCABULARY', note: 'CROUCH-WALK · 1-TILE STEP-UP · DOWN AT EDGE = CLIMB-DOWN · HANG MOVE',
+    spawn: [40, 176],
+    map: [
+      '                    ','                    ','                    ','                    ',
+      '                    ','                    ','                    ','                    ',
+      '                    ','                    ','        ##          ','############    ####',
     ],
   },
 ];
@@ -78,7 +87,7 @@ class Lab {
     this.s = new Screen(document.getElementById('screen')); this.s.setPalette(paletteAt(2.15));
     this.input = new Input(this.s); this.world = new World(); this.flash=0; this.frozen=false; this.stepOnce=false; this.load(0);
     addEventListener('keydown', e => {
-      if (e.code==='Digit1') this.load(0); if (e.code==='Digit2') this.load(1); if (e.code==='Digit3') this.load(2);
+      if (e.code==='Digit1') this.load(0); if (e.code==='Digit2') this.load(1); if (e.code==='Digit3') this.load(2); if (e.code==='Digit4') this.load(3);
       if (e.code==='KeyR') this.reset();
       if (e.code==='KeyF') { this.frozen=!this.frozen; this.stepOnce=false; }
       if (e.code==='Period' && this.frozen) this.stepOnce=true;
@@ -111,7 +120,7 @@ class Lab {
     s.text(`STATE ${this.hero.state.toUpperCase()}  F ${this.hero.f}`,8,29,C.SUIT_HI,6);
     s.text(`PHASE A${m.anticipate??0} C${m.commit??0} T${m.transition??0} / ${m.dur}`,8,38,C.LUX,6);
     s.text(`X ${this.hero.x.toFixed(1)} Y ${this.hero.y.toFixed(1)} HP ${this.hero.health}  J-BUF ${this.input.buffer.jump}`,8,47,C.LUX,6);
-    s.text(`1/2/3 LAB · R RESET · F ${this.frozen?'RESUME':'FREEZE'} · . FRAME STEP`,8,57,this.frozen?C.ALERT:C.NEAR,6);
+    s.text(`1/2/3/4 LAB · R RESET · F ${this.frozen?'RESUME':'FREEZE'} · . FRAME STEP`,8,57,this.frozen?C.ALERT:C.NEAR,6);
     s.line(310,80,310,128,C.ALERT,1); s.line(306,80,314,80,C.ALERT,1); s.line(306,128,314,128,C.ALERT,1); s.text('48',296,100,C.ALERT,6);
     for (const z of this.zones()) { s.rect(z.x,z.y,z.w,z.h,C.DARK); s.rect(z.x+1,z.y+1,z.w-2,1,C.EDGE); }
     if (this.flash) s.veil([0,0,W,0,W,H,0,H],C.ALERT,0.18);
