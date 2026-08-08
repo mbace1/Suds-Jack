@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { ComboSystem } from '../js/tricks.js';
+import { ComboSystem, SPECIAL_TRICKS } from '../js/tricks.js';
 import { createMetrics, makeGoalSet } from '../js/goals.js';
 import { availableNodes, generateTour } from '../js/map.js';
 import { PARTS, PartRun } from '../js/meta.js';
@@ -95,6 +95,21 @@ insured.begin();
 insured.addTrick('right');
 equal(insured.bail().saved, 0, 'insurance only fires once per node');
 
+const heated = new ComboSystem();
+let specialReady = false;
+for (let i = 0; i < 6; i++) {
+  heated.begin();
+  heated.addTrick(i % 2 ? 'left' : 'right');
+  heated.land({ spin: 0, airTime: 0.8, fakie: false });
+  specialReady ||= heated.bank().specialReady;
+}
+ok(specialReady && heated.snapshot().specialLive, 'landed lines fill and activate the special meter');
+const signature = heated.addTrick('left');
+equal(signature.name, SPECIAL_TRICKS.left.name, 'a live meter upgrades the next flick to a signature trick');
+ok(signature.special && heated.snapshot().special < 100, 'signature tricks consume special meter');
+heated.bail();
+equal(heated.snapshot().specialLive, false, 'a bail kills the live special state');
+
 const run = new PartRun('economy');
 equal(run.film, 5, 'part starts with five film');
 ok(run.commitNode('r0n0'), 'choosing a node commits the route');
@@ -133,7 +148,7 @@ ok(run.film <= run.maxFilm && filmBefore <= 5, 'story state keeps film inside it
 const index = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const main = await readFile(new URL('../js/main.js', import.meta.url), 'utf8');
 const skaterSource = await readFile(new URL('../js/skater.js', import.meta.url), 'utf8');
-for (const id of ['btnFree', 'btnDaily', 'btnPart', 'mapHost']) ok(index.includes(id), `${id} exists in the shell`);
+for (const id of ['btnFree', 'btnDaily', 'btnPart', 'mapHost', 'specialFill']) ok(index.includes(id), `${id} exists in the shell`);
 for (const moduleName of ['tricks.js', 'goals.js', 'map.js', 'meta.js', 'story.js']) ok(main.includes(moduleName), `${moduleName} is wired into the game`);
 ok(!index.includes('CONTROL PROTOTYPE'), 'the shipped menu no longer calls itself P0');
 for (const part of ['fat-bird-skater', 'fat-bird-belly', 'beak', 'left-wing', 'skateboard-deck']) {

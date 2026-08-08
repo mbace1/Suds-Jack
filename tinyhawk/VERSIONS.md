@@ -1,5 +1,12 @@
 # Tiny Hawk versions
 
+## v6 — Special meter
+
+- Added a THPS-style Special meter that fills only when complete landed lines bank successfully.
+- Added four fat-bird signature tricks: Wingspan Grab, Featherflip, Talonflip and Eggplant Impossible.
+- Made signature tricks consume the live meter and made bails kill the Special state.
+- Added Special-trick session goals and a dedicated HUD meter without changing the Skate-style flick controls.
+
 ## v5 — Fat bird protagonist
 
 - Replaced the abstract prism skater with a permanent fat bird riding a complete skateboard.
