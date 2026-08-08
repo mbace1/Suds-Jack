@@ -632,6 +632,35 @@ export const CHANGED = [
     what: ['GAMES THAT ARE NOT UP SAY SO ON THE',
       'BUTTON INSTEAD OF 404ING AT YOU.'],
   },
+  {
+    when: '2026-08', game: 'hyperdagger',
+    what: ['THE COVER WAS THE WRONG GAME.',
+      'THE SKY IS GONE. THE ONLY LIGHT ON THE',
+      'SWARM IS YOUR OWN DAGGER STREAM.'],
+  },
+  {
+    when: '2026-08', game: 'hub',
+    what: ['SIXTEEN PAGES WERE SERVING A MONTHS-OLD',
+      'HOME BUTTON OUT OF CACHE.',
+      'EVERY ONE NOW ASKS FOR THE CURRENT ONE.'],
+  },
+  {
+    when: '2026-08', game: 'hub',
+    what: ['THE TUBE COMES ON ACROSS THE WHOLE',
+      'GLASS, AND MY MARK PLAYS BEFORE YOUR',
+      'FIRST GAME INSTEAD OF BEFORE THE MENU.',
+      'THERE ARE TWO OF IT. YOU GOT ONE.'],
+  },
+  {
+    when: '2026-08', game: 'hub',
+    what: ['I WORK WITHOUT A SIGNAL NOW.',
+      'THE WHOLE FLOOR ALWAYS DID.'],
+  },
+  {
+    when: '2026-08', game: 'hub',
+    what: ['YOUR BEST SCORES ARE ON THE CABINETS.',
+      'READ OFF YOUR OWN MACHINE, SENT NOWHERE.'],
+  },
 ];
 
 export const CHANGED_NONE = ['NOTHING WORTH READING OUT YET.'];
