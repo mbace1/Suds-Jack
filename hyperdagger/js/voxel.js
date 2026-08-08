@@ -359,7 +359,7 @@ export const MODELS = {
     wobble: 0.3,
     noHull: true, // the checkerboard IS the glove — smoothing erases it
 
-    palette: { G: 0x3a3a3a, D: 0x222222, H: 0x555555, B: [1.25, 1.25, 1.25] },
+    palette: { G: 0xbeb4a6, D: 0x5c554d, H: 0xe2d8c8, B: [2.2, 0.22, 0.08] },
     layers: [
       ['...', '...', '...', '...', '...', '...', '...', 'DGD', 'GDG', 'DGD'],
       ['.B.', '.B.', '.B.', '.B.', '.B.', '.B.', '.B.', 'GHG', 'DGD', 'GDG'],
@@ -652,7 +652,8 @@ export class VoxelSprite {
         faces.push(q[0], q[1], q[2], q[3], i);
       }
     }
-    // neighbor graph over quad edges, then heavy smoothing (3 passes)
+    // One restrained relaxation pass preserves the authored low-poly planes
+    // instead of turning every enemy into the same soft silhouette.
     const nbr = new Map();
     const link = (a, b) => {
       let sa = nbr.get(a);
@@ -666,12 +667,12 @@ export class VoxelSprite {
       }
     }
     let cur = P;
-    for (let it = 0; it < 3; it++) {
+    for (let it = 0; it < 1; it++) {
       const next = cur.slice();
       for (const [vi, ns] of nbr) {
         let sx = 0, sy = 0, sz = 0;
         for (const n of ns) { sx += cur[n * 3]; sy += cur[n * 3 + 1]; sz += cur[n * 3 + 2]; }
-        const k = 0.62, inv = k / ns.size;
+        const k = 0.38, inv = k / ns.size;
         next[vi * 3] = cur[vi * 3] * (1 - k) + sx * inv;
         next[vi * 3 + 1] = cur[vi * 3 + 1] * (1 - k) + sy * inv;
         next[vi * 3 + 2] = cur[vi * 3 + 2] * (1 - k) + sz * inv;
