@@ -6,6 +6,13 @@ import { availableNodes, generateTour } from '../js/map.js';
 import { PARTS, PartRun } from '../js/meta.js';
 import { chooseEvent, pickEvent } from '../js/story.js';
 
+const storage = new Map();
+globalThis.localStorage = {
+  getItem: key => storage.has(key) ? storage.get(key) : null,
+  setItem: (key, value) => storage.set(key, String(value)),
+  removeItem: key => storage.delete(key),
+};
+
 let checks = 0;
 const ok = (condition, message) => { assert.ok(condition, message); checks++; };
 const equal = (actual, expected, message) => { assert.equal(actual, expected, message); checks++; };
@@ -64,6 +71,10 @@ equal(insured.bail().saved, 0, 'insurance only fires once per node');
 
 const run = new PartRun('economy');
 equal(run.film, 5, 'part starts with five film');
+ok(run.commitNode('r0n0'), 'choosing a node commits the route');
+equal(run.pendingNodeId, 'r0n0', 'the committed node survives outside the session');
+equal(PartRun.load().pendingNodeId, 'r0n0', 'the committed node survives a reload');
+equal(run.commitNode('r1n0'), false, 'a committed node cannot be rerolled');
 run.failAttempt();
 equal(run.film, 4, 'failed attempt burns one film');
 run.restFilm();
@@ -74,6 +85,18 @@ ok(run.modifiers().grindCorrect > 1 && run.modifiers().maxSpeed < 1, 'part prese
 const beforeReward = run.footage;
 run.clearNode(run.tour.rows[0][0], { score: 9000, bestMult: 5, line: 'Kickflip + Manual' });
 ok(run.footage > beforeReward && run.route.length === 1, 'clearing a spot pays and advances the tape');
+equal(run.pendingNodeId, null, 'clearing the spot releases the route commitment');
+run.parts.push('insurance-clip');
+ok(run.modifiers('r1n0').insurance, 'insurance is live on a fresh node');
+run.markInsuranceUsed('r1n0');
+equal(run.modifiers('r1n0').insurance, false, 'insurance stays spent across retries of that node');
+equal(PartRun.load().modifiers('r1n0').insurance, false, 'spent insurance survives a reload');
+
+const eliteRun = new PartRun('elite-reward');
+const elite = eliteRun.tour.nodes.find(node => node.type === 'session');
+eliteRun.clearNode(elite, { score: 12000, line: 'Boardslide' });
+equal(eliteRun.parts.length, 1, 'clearing a session guarantees a board part');
+ok(eliteRun.route[0].partReward, 'the fitted session reward is recorded on the tape');
 
 const event = pickEvent('event-seed', []);
 const filmBefore = run.film;
