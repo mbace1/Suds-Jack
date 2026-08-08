@@ -27,6 +27,10 @@
     "v": 12,
     "from": "cache token"
   },
+  "neonronin": {
+    "v": 1,
+    "from": "VERSIONS.md"
+  },
   "flashprince": {
     "v": 2,
     "from": "VERSIONS.md"
@@ -45,6 +49,10 @@
   },
   "tiny2d": {
     "v": 3,
+    "from": "VERSIONS.md"
+  },
+  "eyetest": {
+    "v": 1,
     "from": "VERSIONS.md"
   },
   "brand": {

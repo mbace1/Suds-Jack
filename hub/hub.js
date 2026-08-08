@@ -452,16 +452,6 @@ async function showVersions() {
   markFresh(versions);
 }
 
-// ── finding one ────────────────────────────────────────────────────
-// Thirteen cabinets is past the point where scanning works, and the tags are
-// already in the catalogue doing nothing. So: a box and a row of tags above the
-// floor. Typing matches the title, the tagline, the lineage and the tags — in
-// whatever language the page is in, because a Finnish reader searching for
-// "räiskintä" should not have to guess the English.
-//
-// Tags are OR against each other and AND against the text: picking `gamepad`
-// and `pixel` means either, which is what a person means by picking two, and
-// then the words narrow it. Nothing is persisted — a filter you did not set
 // ── what you have already tried ────────────────────────────────────
 // Thirteen cabinets and no memory means every visit starts from nothing: you
 // scan the same covers deciding which ones you have already opened. Pressing
