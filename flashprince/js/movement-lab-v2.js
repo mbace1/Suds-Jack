@@ -7,7 +7,7 @@ import { drawFigure } from './figure.js';
 const T = 16, RW = 20, RH = 12;
 const LABS = [
   {
-    name: '01 FLOW', note: 'STEP > RUN-START > RUN > BRAKE > PIVOT · BUFFER JUMP LATE',
+    name: '01 FLOW / ROTOSCOPE 2.0', note: 'STEP > RUN-START > RUN > BRAKE > PIVOT · BUFFER JUMP LATE',
     spawn: [40, 176],
     map: [
       '                    ','                    ','                    ','                    ',
@@ -16,7 +16,7 @@ const LABS = [
     ],
   },
   {
-    name: '02 GAP + LEDGE', note: '3-TILE RUNNING GAP · HIGH LIP · HOLD TOWARD / UP TO CATCH',
+    name: '02 GAP + LEDGE CATCH', note: '3-TILE RUNNING GAP · HIGH LIP · WATCH IMPACT > DROP > HANG',
     spawn: [40, 144],
     map: [
       '                    ','                    ','                    ','                    ',
@@ -25,7 +25,7 @@ const LABS = [
     ],
   },
   {
-    name: '03 FALL LADDER', note: 'DROP · ONE STOREY FREE · TWO HURT · THREE KILL',
+    name: '03 FALL + LANDING', note: 'DROP · LAND-CATCH > RISE · ONE STOREY FREE · TWO HURT · THREE KILL',
     spawn: [40, 80],
     map: [
       '                    ','                    ','                    ','                    ',
