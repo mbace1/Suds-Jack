@@ -7,7 +7,7 @@
 //
 // TOUCH is always Skate-style flick-it:
 //   left half   steer + push (a plain stick)
-//   right half  the BOARD. Drag down to load, flick up to pop. The direction of
+//   right half  the BOARD. Drag down to load, then release or flick up to pop. The direction of
 //               the flick picks the trick, the speed picks the height:
 //                 flick up             ollie / grab in the air
 //                 flick up-left        kickflip
