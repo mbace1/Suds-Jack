@@ -72,6 +72,7 @@ const EVENTS = [
       {
         label: 'Take the roof',
         result: 'Trade 25 footage for a wider trick vocabulary.',
+        available(run) { return run.footage >= 25 && run.vocabulary < 2; },
         apply(run) { if (run.footage >= 25) { run.footage -= 25; run.vocabulary = Math.min(2, run.vocabulary + 1); } },
       },
       { label: 'Stay at street level', result: 'Save the footage cash.', apply() {} },
