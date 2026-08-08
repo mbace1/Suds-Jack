@@ -2,7 +2,7 @@ import { Screen, W, H } from './screen.js';
 import { paletteAt, C } from './palette.js';
 import { ReferenceHero } from './reference-hero.js';
 import { Input } from './input.js';
-import { drawCinematicFigure } from './cinematic-figure.js';
+import { drawCinematicFigureV4 } from './cinematic-actions.js';
 
 const T=16,RW=20,RH=12;
 const LABS=[
@@ -28,7 +28,7 @@ class Lab{
  kill(){if(this.hero.dead)return;this.hero.dead=true;this.hero.health=0;this.hero.go('dead');this.flash=8}
  hurt(n){this.hero.health-=n;this.flash=5;if(this.hero.health<=0)this.kill()}
  step(){this.input.poll();if(!this.hero.dead){this.hero.update(this.world,this.input,this);if(this.hero.y>H+40)this.kill()}else if(this.input.anyPress)this.reset();if(this.flash>0)this.flash--;this.input.flush()}
- paint(){const s=this.s;this.world.draw(s);drawCinematicFigure(s,this.hero,{far:C.SUIT,body:C.SUIT_HI,legs:C.SUIT,arms:C.SUIT_HI,skin:C.SKIN,hair:C.HAIR});if(this.flash)s.veil([0,0,W,0,W,H,0,H],C.ALERT,.18);s.present()}
+ paint(){const s=this.s;this.world.draw(s);drawCinematicFigureV4(s,this.hero,{far:C.SUIT,body:C.SUIT_HI,legs:C.SUIT,arms:C.SUIT_HI,skin:C.SKIN,hair:C.HAIR});if(this.flash)s.veil([0,0,W,0,W,H,0,H],C.ALERT,.18);s.present()}
  frame(t){this.acc+=Math.min(100,t-this.last);this.last=t;const tick=1000/60;while(this.acc>=tick){this.step();this.acc-=tick}this.paint();requestAnimationFrame(n=>this.frame(n))}
 }
 new Lab();
