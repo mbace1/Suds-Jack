@@ -196,6 +196,10 @@ export class Park {
   // Story choices can scar the fixed park without swapping the physics kit.
   // They are short luminous skate-stoppers placed on otherwise useful lines.
   setHazards(count = 0) {
+    for (const child of [...this.hazardGroup.children]) {
+      child.geometry?.dispose();
+      child.material?.dispose();
+    }
     this.hazardGroup.clear();
     this.hazards = [];
     const n = Math.max(0, Math.min(HAZARD_SPOTS.length, count * 2));
