@@ -2,6 +2,16 @@
 
 The public release number. The `?v=N` token in `index.html` is a separate thing: it tracks every module-graph change so a browser cannot serve half of one build and half of another. Bump both when shipping.
 
+## v13 — 2026-08-08
+
+Conrad-sheet reference motion pass.
+
+- **Reference baseline locked:** the LuigiBlood SNES Conrad B. Hart sheet (1088×2928) is now the explicit character-motion benchmark.
+- **Walk, turn, takeoff, airborne, landing, hang and pull-up presentation rebuilt** as held authored frame sequences rather than generic interpolation through a few poses.
+- **Run retains the v12 twelve-frame uneven-exposure cycle.**
+- **No original Flashback sprite artwork is shipped:** the game keeps its own simplified renderer while using the reference for motion, silhouette progression and timing language.
+- **Gameplay distances, collisions and level content are unchanged.**
+
 ## v12 — 2026-08-08
 
 Playable-entrypoint correction plus live run-cycle replacement.
