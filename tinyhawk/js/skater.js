@@ -12,7 +12,7 @@
 //   • fakie — landing at ~180° is legal and worth more, not a bail
 
 import * as THREE from 'three';
-import { PARK_EXTENT } from './park.js?v=1';
+import { PARK_EXTENT } from './park.js?v=2';
 
 const G          = 26;
 const PUSH       = 16;    // acceleration while the stick is deflected
@@ -128,7 +128,18 @@ export class Skater {
     this.pos = new THREE.Vector3();
     this.vel = new THREE.Vector3();
     this.up = new THREE.Vector3(0, 1, 0);
+    this.setModifiers();
     this.reset();
+  }
+
+  setModifiers(mods = {}) {
+    this.mods = {
+      grindCorrect: mods.grindCorrect ?? 1,
+      maxSpeed: mods.maxSpeed ?? 1,
+      turn: mods.turn ?? 1,
+      landingTolerance: mods.landingTolerance ?? 1,
+      grindFriction: mods.grindFriction ?? 1,
+    };
   }
 
   reset() {
@@ -149,6 +160,7 @@ export class Skater {
     this.grind = null;    // { rail, t, dir, balance, balVel, time, name }
     this.manual = null;   // { balance, balVel, time }
     this.loading = false;
+    this.hazardCooldown = 0;
   }
 
   get speed() { return this.vel.length(); }
@@ -160,6 +172,7 @@ export class Skater {
     const ev = [];
     const park = this.park;
     if (this.bailT > 0) this.bailT = Math.max(0, this.bailT - dt);
+    if (this.hazardCooldown > 0) this.hazardCooldown -= dt;
 
     const mv = input.getMove();
     const mag = Math.hypot(mv.x, mv.y);
@@ -218,13 +231,13 @@ export class Skater {
       const g = this.grind, r = g.rail;
       g.time += dt;
       // Rails are slow, and they tilt you down their own slope.
-      g.vAlong *= Math.exp(-GRIND_FRIC * dt);
+      g.vAlong *= Math.exp(-GRIND_FRIC * this.mods.grindFriction * dt);
       g.vAlong += -G * r.dir.y * dt;
       g.t += (g.vAlong * dt) / r.len;
 
       // Balance runs away from centre; the stick is all that holds it.
       g.balVel += g.balance * GRIND_INSTAB * dt;
-      g.balVel -= mv.x * GRIND_CORRECT * dt;
+      g.balVel -= mv.x * GRIND_CORRECT * this.mods.grindCorrect * dt;
       g.balVel *= Math.exp(-1.6 * dt);
       g.balance += g.balVel * dt;
 
@@ -275,7 +288,8 @@ export class Skater {
       if (mag > 0.12 && !locked) {
         const want = Math.atan2(wantX, wantZ);
         // Steering authority falls off with speed — you commit to a line.
-        const rate = TURN * (1 - Math.min(this.speed / MAX_SPEED, 1) * 0.6) * mag;
+        const maxSpeed = MAX_SPEED * this.mods.maxSpeed;
+        const rate = TURN * this.mods.turn * (1 - Math.min(this.speed / maxSpeed, 1) * 0.6) * mag;
         this.yaw = turnToward(this.yaw, want, rate * dt);
       }
 
@@ -310,7 +324,8 @@ export class Skater {
       this.up.lerp(_UP, 1 - Math.pow(0.02, dt));
     }
 
-    if (this.speed > MAX_SPEED) this.vel.multiplyScalar(MAX_SPEED / this.speed);
+    const maxSpeed = MAX_SPEED * this.mods.maxSpeed;
+    if (this.speed > maxSpeed) this.vel.multiplyScalar(maxSpeed / this.speed);
     this.pos.addScaledVector(this.vel, dt);
 
     // ── Surface contact ─────────────────────────────────────────────────
@@ -327,6 +342,13 @@ export class Skater {
       this.grounded = false;
     }
 
+    if (this.grounded && !locked && this.hazardCooldown <= 0 && this.speed > 4 && park.hazardAt(this.pos)) {
+      this.bailT = BAIL_TIME;
+      this.hazardCooldown = 1.25;
+      this.vel.multiplyScalar(-0.18);
+      ev.push({ type: 'bail', cause: 'skate-stopper' });
+    }
+
     // ── Catching a rail ─────────────────────────────────────────────────
     // Airborne only: you have to ollie onto it, which is both correct skating
     // and stops a rail sitting on the floor from grabbing you as you roll past.
@@ -341,11 +363,12 @@ export class Skater {
             rail: hit.rail, t: hit.t, vAlong,
             balance: (Math.random() - 0.5) * 0.25, balVel: 0, time: 0,
             name: along > 0.8 ? '50-50' : along < 0.4 ? 'Boardslide' : 'Crooked',
+            railId: hit.rail.id,
           };
           this.airTime = 0;
           this.trick = null;
           this.trickPhase = 0;
-          ev.push({ type: 'grindStart', name: this.grind.name });
+          ev.push({ type: 'grindStart', name: this.grind.name, railId: this.grind.railId });
         }
       }
     }
@@ -372,8 +395,9 @@ export class Skater {
                 + (this.vel.z / speedH) * Math.cos(this.yaw);
       err = Math.acos(Math.max(-1, Math.min(1, dot)));
     }
-    const isFakie = err > Math.PI - LAND_TOL;
-    const clean = err < LAND_TOL || isFakie;
+    const tolerance = LAND_TOL * this.mods.landingTolerance;
+    const isFakie = err > Math.PI - tolerance;
+    const clean = err < tolerance || isFakie;
 
     const spd = this.speed;
     const align = spd > 0.01 ? Math.max(0, -this.vel.dot(n)) / spd : 0;
@@ -412,7 +436,7 @@ export class Skater {
   endGrind(why) {
     const g = this.grind;
     this.grind = null;
-    return { type: 'grindEnd', name: g.name, time: g.time, why };
+    return { type: 'grindEnd', name: g.name, railId: g.railId, time: g.time, why };
   }
 
   endManual() {

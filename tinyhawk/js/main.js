@@ -1,12 +1,4 @@
-// ── Tiny Hawk — main ───────────────────────────────────────────────────────
-// P0: the control scheme. Park heightfield, chase camera, twin sticks with the
-// drag/flick split, ollie, air spin, tricks, land/bail, combo readout.
-// No grinds, no goals — those are P1 and P4 (design doc §10).
-//
-// The gate this build exists to answer: does the right stick's slow-drag vs
-// flick split actually feel like two separate verbs, and does the chase camera
-// stay out of the player's way?
-
+// Tiny Hawk — the park is the instrument; The Part gives every line a cost.
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -14,20 +6,38 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { COL, GLOW, ZONES } from './palette.js?v=1';
-import { Park, PARK_EXTENT } from './park.js?v=1';
-import { Skater } from './skater.js?v=1';
-import { InputManager, SCHEMES } from './input.js?v=1';
-import { Audio } from './audio.js?v=1';
+import { GLOW, ZONES } from './palette.js?v=2';
+import { Park } from './park.js?v=2';
+import { Skater } from './skater.js?v=2';
+import { InputManager, SCHEMES } from './input.js?v=2';
+import { Audio } from './audio.js?v=2';
+import { ComboSystem } from './tricks.js?v=2';
+import { createMetrics, makeGoalSet, utcDay } from './goals.js?v=2';
+import { NODE_INFO, renderMap } from './map.js?v=2';
+import { PARTS, PartRun } from './meta.js?v=2';
+import { chooseEvent, pickEvent } from './story.js?v=2';
 
-const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const lerp = (a, b, t) => a + (b - a) * t;
-
-const CAM_PITCH_MIN = 0.05, CAM_PITCH_MAX = 0.85;
-const CAM_SPRING_IDLE = 0.35;   // seconds of no look input before the cam follows
 const PHYS_STEP = 1 / 120;
+const CAM_PITCH_MIN = 0.05;
+const CAM_PITCH_MAX = 0.85;
+const CAM_SPRING_IDLE = 0.35;
+const DISTRICTS = [
+  { key: 'arena', name: 'THE BLUE PARK' },
+  { key: 'rust', name: 'THE YARDS' },
+  { key: 'hell', name: 'THE LAST PLAZA' },
+];
+const SPOTS = [
+  [0, 24, Math.PI],
+  [-20, 5, Math.PI / 2],
+  [23, -15, -Math.PI / 2],
+  [-12, 26, Math.PI],
+  [18, 24, -Math.PI * 0.75],
+  [-25, -24, 0],
+];
 
-// ── Renderer / scene ───────────────────────────────────────────────────────
+// ── Renderer ───────────────────────────────────────────────────────────────
 const canvas = document.getElementById('canvas-game');
 const canvasUI = document.getElementById('canvas-ui');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -35,45 +45,38 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
 const scene = new THREE.Scene();
-const ZONE = ZONES.arena;
-scene.background = new THREE.Color(ZONE.sky);
+scene.background = new THREE.Color(ZONES.arena.sky);
 const camera = new THREE.PerspectiveCamera(70, 1, 0.1, 900);
 
-// Pinpoint lights in a black sky — stadium rigs, distant windows, embers. HDR
-// so bloom turns each one into a soft flare, which is most of the atmosphere in
-// the reference for almost no cost.
-{
-  const N = 300, pos = [], col = [];
+const starMaterial = (() => {
+  const pos = [], col = [];
   const c = new THREE.Color();
-  const warm = GLOW.lampWarm, cool = GLOW[ZONE.dots] || GLOW.lampCool;
-  for (let i = 0; i < N; i++) {
+  for (let i = 0; i < 300; i++) {
     const a = Math.random() * Math.PI * 2;
-    const y = Math.pow(Math.random(), 1.7);           // crowd them near the horizon
+    const y = Math.pow(Math.random(), 1.7);
     const r = 300;
     pos.push(Math.cos(a) * r * (1 - y * 0.2), 12 + y * 190, Math.sin(a) * r * (1 - y * 0.2));
-    const g = Math.random() < 0.25 ? warm : cool;
+    const glow = Math.random() < 0.25 ? GLOW.lampWarm : GLOW.lampCool;
     const k = 0.5 + Math.random() * 0.9;
-    c.setRGB(g[0] * k, g[1] * k, g[2] * k);
+    c.setRGB(glow[0] * k, glow[1] * k, glow[2] * k);
     col.push(c.r, c.g, c.b);
   }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-  const pts = new THREE.Points(geo, new THREE.PointsMaterial({
-    size: 1.7, vertexColors: true, sizeAttenuation: true, depthWrite: false,
-  }));
-  pts.frustumCulled = false;
-  scene.add(pts);
-}
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  const material = new THREE.PointsMaterial({ size: 1.7, vertexColors: true, sizeAttenuation: true, depthWrite: false });
+  const stars = new THREE.Points(geometry, material);
+  stars.frustumCulled = false;
+  scene.add(stars);
+  return material;
+})();
 
-// Chromatic aberration, driven by speed — the reference sells motion almost
-// entirely with post, not with geometry.
 const ChromaShader = {
   uniforms: { tDiffuse: { value: null }, uAmount: { value: 0.0012 } },
-  vertexShader: /* glsl */`
+  vertexShader: `
     varying vec2 vUv;
     void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-  fragmentShader: /* glsl */`
+  fragmentShader: `
     uniform sampler2D tDiffuse;
     uniform float uAmount;
     varying vec2 vUv;
@@ -89,11 +92,8 @@ const ChromaShader = {
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-const afterimage = new AfterimagePass(0.6);    // the smear, speed-driven below
+const afterimage = new AfterimagePass(0.5);
 composer.addPass(afterimage);
-// Threshold high enough that ONLY the HDR line-work and the prism's rim bloom.
-// Drop it and the matte ground blooms too, which is what turns the whole look
-// into fog.
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.62, 0.45, 0.92);
 composer.addPass(bloom);
 const chromaPass = new ShaderPass(ChromaShader);
@@ -101,216 +101,524 @@ composer.addPass(chromaPass);
 composer.addPass(new OutputPass());
 
 const park = new Park(scene);
-
-// The plateau the park is carved into. The rim flattens out at its own height
-// past PARK_EXTENT, so a frame of planes at that height joins it seamlessly and
-// the world does not just stop.
-{
-  const RIM_TOP = park.height(PARK_EXTENT, 0);
-  const mat = new THREE.MeshBasicMaterial({ color: COL.void });
-  const F = 400, E = PARK_EXTENT;
-  const quads = [
-    [-F, -F, F, -E], [-F, E, F, F], [-F, -E, -E, E], [E, -E, F, E],
-  ];
-  for (const [x0, z0, x1, z1] of quads) {
-    const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0);
-    const m = new THREE.Mesh(g, mat);
-    m.rotation.x = -Math.PI / 2;
-    m.position.set((x0 + x1) / 2, RIM_TOP, (z0 + z1) / 2);
-    scene.add(m);
-  }
-}
-
 const skater = new Skater(scene, park);
 const input = new InputManager();
 const audio = new Audio();
+const combo = new ComboSystem();
 
-// ── HUD ────────────────────────────────────────────────────────────────────
-const $ = (id) => document.getElementById(id);
+const $ = id => document.getElementById(id);
 const el = {
+  hud: $('hud'), menu: $('menu'), panel: $('panel'),
   mphNum: $('mphNum'), mphArrows: $('mphArrows'), mphFill: $('mphFill'),
   score: $('score'), mult: $('mult'), trick: $('trick'), breakdown: $('breakdown'),
   objName: $('objName'), objFill: $('objFill'), goals: $('goals'),
-  balance: $('balance'), balMark: $('balMark'),
-  over: $('over'), overStats: $('overStats'),
-  toast: $('toast'), hud: $('hud'), menu: $('menu'), sound: $('btnSound'),
+  balance: $('balance'), balMark: $('balMark'), toast: $('toast'),
+  district: $('district'), film: $('film'), footage: $('footage'),
+  panelEyebrow: $('panelEyebrow'), panelTitle: $('panelTitle'), panelCopy: $('panelCopy'),
+  panelBody: $('panelBody'), panelActions: $('panelActions'),
+  sound: $('btnSound'), resume: $('btnResume'), scheme: $('btnScheme'),
 };
-const OBJ_TARGET = 25000;   // what the top banner is a progress bar toward
 
+// ── State ──────────────────────────────────────────────────────────────────
 let state = 'menu';
-let score = 0;
-let camYaw = 0, camPitch = 0.13, lookIdle = 0;
-let best = 0;
-try { best = parseInt(localStorage.getItem('tinyHawkP0Best') || '0', 10) || 0; } catch (e) { /* ignore */ }
-
-const camTarget = new THREE.Vector3();
+let mode = 'free';
+let part = PartRun.load();
+let currentNode = null;
+let goals = null;
+let metrics = createMetrics();
+let sessionTime = 0;
+let sessionLimit = 0;
+let sessionTitle = '';
+let sessionDistrict = 0;
+let daily = null;
 let toastT = 0;
+let bestLine = { total: 0, text: '—' };
+let camYaw = 0;
+let camPitch = 0.13;
+let lookIdle = 0;
+const camTarget = new THREE.Vector3();
 
-function toast(text, color) {
+function toast(text, color = '#f1ecde') {
   el.toast.textContent = text;
-  el.toast.style.color = color || '#f4f1e8';
-  toastT = 1.0;
+  el.toast.style.color = color;
+  el.toast.style.opacity = '1';
+  toastT = 1.1;
 }
 
-// Trick names read like a skater would say them, because the centre line of
-// the HUD is the one place the game talks to you.
-const TRICK_NAME = { up: 'Grab', down: 'Pop Shuvit', left: 'Kickflip', right: 'Heelflip' };
-
-// ── The combo chain ────────────────────────────────────────────────────────
-// This is what grinds and manuals are FOR. A chain stays open while you are in
-// the air, on a rail, or on the back wheels, and only banks when you finally
-// roll away clean — so a manual across the flat between two features is worth
-// more than the two features apart. Bail and the whole pending total is gone.
-const GRIND_PPS = 90;    // points per second on a rail
-const MANUAL_PPS = 45;
-const BANK_GRACE = 0.28; // seconds rolling clean before a chain closes
-
-let chain = { open: false, pending: 0, parts: [], grace: 0 };
-
-function chainOpen(part) {
-  if (!chain.open) { chain = { open: true, pending: 0, parts: [], grace: 0 }; }
-  if (part) chain.parts.push(part);
-  chain.grace = 0;
-  showLine();
+function setZone(index = 0) {
+  sessionDistrict = clamp(index, 0, 2);
+  const district = DISTRICTS[sessionDistrict];
+  const zone = park.setZone(district.key);
+  scene.background.setHex(zone.sky);
+  skater.mat.uniforms.uWash.value.set(...zone.wash);
+  starMaterial.size = district.key === 'hell' ? 2.1 : 1.7;
 }
 
-function chainAdd(pts) { if (chain.open) chain.pending += pts; }
-
-function chainBank() {
-  if (!chain.open) return;
-  const mult = Math.max(1, chain.parts.length);
-  const total = Math.round(chain.pending * mult);
-  if (total > 0) {
-    score += total;
-    bestChain = Math.max(bestChain, mult);
-    goalCombo = Math.max(goalCombo, mult);
-    toast(chain.parts.join(' + '), UI_CLEAN);
-    el.breakdown.textContent = `${Math.round(chain.pending)} × ${mult} = ${total.toLocaleString()}`;
-    el.breakdown.style.opacity = '1';
-    audio.land(true);
-    if (score > best) { best = Math.floor(score); try { localStorage.setItem('tinyHawkP0Best', String(best)); } catch (e) { /* ignore */ } }
-  }
-  chain = { open: false, pending: 0, parts: [], grace: 0 };
-  showLine();
+function setSpawn(node) {
+  const pick = SPOTS[node ? (node.row * 3 + node.column) % SPOTS.length : 0];
+  skater.pos.set(pick[0], 0, pick[1]);
+  skater.pos.y = park.height(skater.pos.x, skater.pos.z);
+  skater.yaw = pick[2];
+  skater.vel.set(Math.sin(skater.yaw) * 6, 0, Math.cos(skater.yaw) * 6);
+  skater.root.position.copy(skater.pos);
 }
 
-function chainLose() {
-  chain = { open: false, pending: 0, parts: [], grace: 0 };
-  showLine();
-  el.breakdown.style.opacity = '0';
+function showOnly(target) {
+  el.menu.classList.toggle('hidden', target !== 'menu');
+  el.panel.classList.toggle('hidden', target !== 'panel');
+  el.hud.classList.toggle('hidden', target !== 'hud');
 }
 
-const UI_CLEAN = '#8fe6d8';
-
-function showLine() {
-  el.trick.textContent = chain.parts.join(' + ');
-  el.trick.style.opacity = chain.parts.length ? '1' : '0';
+function showMenu() {
+  state = 'menu';
+  input.enabled = false;
+  currentNode = null;
+  part = PartRun.load();
+  el.resume.classList.toggle('hidden', !part || !part.alive || part.finished);
+  showOnly('menu');
+  setZone(0);
 }
 
-function updateHud() {
-  const kmh = Math.round(skater.speed * 2.4);
-  el.mphNum.textContent = kmh;
-  el.mphArrows.textContent = '>'.repeat(clamp(Math.round(kmh / 9), 0, 7));
-  el.mphFill.style.width = clamp(kmh / 80, 0, 1) * 100 + '%';
-  el.score.textContent = Math.floor(score).toLocaleString();
-  el.mult.textContent = '×' + Math.max(1, chain.parts.length);
+function showPanel(eyebrow, title, copy = '') {
+  state = 'panel';
+  input.enabled = false;
+  showOnly('panel');
+  el.panelEyebrow.textContent = eyebrow;
+  el.panelTitle.textContent = title;
+  el.panelCopy.textContent = copy;
+  el.panelBody.replaceChildren();
+  el.panelActions.replaceChildren();
+}
 
-  // Balance meter — only up while something is actually balancing.
-  const bal = skater.grind ? skater.grind.balance : skater.manual ? skater.manual.balance : null;
-  if (bal === null) {
-    el.balance.style.opacity = '0';
+function action(label, fn, className = '') {
+  const button = document.createElement('button');
+  button.textContent = label;
+  if (className) button.className = className;
+  button.addEventListener('click', fn);
+  el.panelActions.append(button);
+  return button;
+}
+
+function dailyRecord() {
+  const day = utcDay();
+  let record = null;
+  try { record = JSON.parse(localStorage.getItem('tinyHawkDailyV2') || 'null'); } catch (error) { /* ignore */ }
+  if (!record || record.day !== day) record = { day, attempts: 0, best: 0, cleared: 0 };
+  return record;
+}
+
+function saveDaily() {
+  try { localStorage.setItem('tinyHawkDailyV2', JSON.stringify(daily)); } catch (error) { /* ignore */ }
+}
+
+function beginSession(kind, node = null) {
+  mode = kind;
+  currentNode = node;
+  metrics = createMetrics();
+  sessionTime = 0;
+  bestLine = { total: 0, text: '—' };
+
+  let difficulty = 0.25;
+  let build = {};
+  if (kind === 'part') {
+    difficulty = node.row / 12;
+    build = part.modifiers(node.id);
+    sessionLimit = node.type === 'session' ? 95 : node.type === 'boss' ? 105 : 75;
+    sessionTitle = node.type === 'boss' ? 'Rival line' : node.type === 'session' ? 'Session' : 'Spot';
+    goals = makeGoalSet(node.seed, difficulty, {
+      boss: node.type === 'boss',
+      quota: part.flags.sponsorQuota,
+    });
+    if (node.type === 'boss') goals.goals[0].target += part.flags.rivalBonus;
+    setZone(node.district);
+    park.setHazards(build.hazards);
+  } else if (kind === 'daily') {
+    daily = dailyRecord();
+    if (daily.attempts >= 3) return showDailyClosed();
+    daily.attempts++;
+    saveDaily();
+    sessionLimit = 90;
+    sessionTitle = `Daily · try ${daily.attempts}/3`;
+    goals = makeGoalSet(`daily:${daily.day}`, 0.58);
+    setZone(1);
+    park.setHazards(0);
   } else {
-    el.balance.style.opacity = '1';
-    el.balMark.style.left = (50 + clamp(bal, -1, 1) * 50) + '%';
-    el.balMark.style.background = Math.abs(bal) > 0.66 ? '#ff6a5a' : UI_CLEAN;
+    sessionLimit = 0;
+    sessionTitle = 'Free Skate';
+    goals = null;
+    setZone(0);
+    park.setHazards(0);
   }
 
-  if (mode === 'run') {
-    const left = Math.max(0, RUN_TIME - runT);
-    el.objName.textContent = `Run — ${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}`;
-    el.objFill.style.width = clamp(1 - left / RUN_TIME, 0, 1) * 100 + '%';
-    el.goals.innerHTML = GOALS.map(g => {
-      const done = g.done();
-      return `<span class="${done ? 'got' : ''}">${done ? '✓' : '·'} ${g.label()}</span>`;
-    }).join('');
-  } else {
-    el.objName.textContent = 'Endless';
-    el.objFill.style.width = clamp(score / 25000, 0, 1) * 100 + '%';
-    el.goals.innerHTML = `<span>best chain ×${bestChain}</span>`;
-  }
+  combo.setBuild(build);
+  combo.resetSession();
+  skater.setModifiers(build);
+  skater.reset();
+  setSpawn(node);
+  camTarget.copy(skater.pos);
+  camYaw = skater.yaw;
+  camPitch = 0.13;
+  lookIdle = 0;
+  input.clear();
+  if (input.drainGamepad) input.drainGamepad();
+  input.enabled = true;
+  audio.init();
+  audio.resume();
+  state = 'play';
+  showOnly('hud');
+  updateHud();
 }
 
-// ── Modes ──────────────────────────────────────────────────────────────────
-const RUN_TIME = 120;
-let mode = 'run', runT = 0, bestChain = 1;
-let goalCombo = 1, goalGrind = 0;
+function updateMetrics() {
+  const snap = combo.snapshot();
+  metrics.score = snap.score;
+  metrics.bestMult = Math.max(metrics.bestMult, snap.bestMult);
+}
 
-const GOALS = [
-  { label: () => `${Math.min(Math.floor(score), 12000).toLocaleString()} / 12,000 pts`,
-    done: () => score >= 12000 },
-  { label: () => `grind ${goalGrind.toFixed(1)} / 2.5s`, done: () => goalGrind >= 2.5 },
-  { label: () => `chain ×${goalCombo} / ×5`, done: () => goalCombo >= 5 },
-];
+function acceptCombo(result) {
+  if (!result || result.type !== 'bank') return;
+  updateMetrics();
+  const text = result.parts.join(' + ') || 'Clean line';
+  if (result.total > bestLine.total) bestLine = { total: result.total, text };
+  el.breakdown.textContent = `${result.base.toLocaleString()} × ${result.mult} = ${result.total.toLocaleString()}`;
+  toast(text, '#8fe6d8');
+  audio.land(true);
+}
 
-// ── Scoring ────────────────────────────────────────────────────────────────
+function loseCombo() {
+  const result = combo.bail();
+  updateMetrics();
+  if (result.insured) {
+    if (mode === 'part' && part && currentNode) part.markInsuranceUsed(currentNode.id);
+    toast(`Insurance kept ${result.saved.toLocaleString()}`, '#e8c98a');
+  } else {
+    toast('Bail', '#ff665c');
+  }
+  return result;
+}
+
 function handleEvents(events) {
-  for (const e of events) {
-    if (e.type === 'ollie') {
-      audio.pop(e.power);
-      chainOpen('Ollie');
-    } else if (e.type === 'trick') {
+  for (const event of events) {
+    if (event.type === 'ollie') {
+      combo.begin();
+      audio.pop(event.power);
+    } else if (event.type === 'trick') {
+      const trick = combo.addTrick(event.dir);
+      metrics.tricks++;
+      toast(`${trick.name} +${trick.points}`, trick.penalty < 0.7 ? '#e8c98a' : '#f1ecde');
       audio.trick();
-      chainOpen(TRICK_NAME[e.dir]);
-      chainAdd(260);
-    } else if (e.type === 'grindStart') {
+    } else if (event.type === 'grindStart') {
+      combo.addLink(event.name);
       audio.trick();
-      chainOpen(e.name);
-    } else if (e.type === 'grindEnd') {
-      goalGrind = Math.max(goalGrind, e.time);
-    } else if (e.type === 'manualStart') {
-      chainOpen('Manual');
-    } else if (e.type === 'bail') {
+    } else if (event.type === 'grindEnd') {
+      metrics.bestGrind = Math.max(metrics.bestGrind, event.time);
+      if (event.railId) metrics.rails.add(event.railId);
+    } else if (event.type === 'manualStart') {
+      combo.addLink('Manual');
+    } else if (event.type === 'manualEnd') {
+      metrics.bestManual = Math.max(metrics.bestManual, event.time);
+    } else if (event.type === 'bail') {
+      metrics.bails++;
       audio.bail();
-      toast('Bail', '#ff6a5a');
-      chainLose();
-    } else if (e.type === 'land') {
-      const spins = Math.floor(e.spin / (Math.PI * 0.95));
-      if (e.quality === 'bail') {
+      loseCombo();
+    } else if (event.type === 'land') {
+      if (event.quality === 'bail') {
+        metrics.bails++;
         audio.bail();
-        toast('Bail', '#ff6a5a');
-        chainLose();
+        loseCombo();
       } else {
-        if (chain.open) {
-          chainAdd(Math.round(e.airTime * 220) + spins * 150 + 60);
-          if (spins) chain.parts.push(spins * 180 + '°');
-          if (e.fakie) chain.parts.push('Fakie');
-          showLine();
-        }
-        audio.land(e.quality === 'clean');
+        combo.land(event);
+        if (event.fakie) metrics.fakies++;
+        audio.land(event.quality === 'clean');
       }
     }
   }
 }
 
-// ── Camera ─────────────────────────────────────────────────────────────────
-// three.js' `fov` is the VERTICAL angle, so a fixed value crops the sides on a
-// narrow screen: an iPad at 4:3 sees ~86° across where a 16:9 desktop sees
-// ~102°, and the tighter one reads as "zoomed in". This keeps a horizontal
-// MINIMUM instead — wide screens are unchanged, narrow ones open the vertical
-// angle up rather than losing the world at the edges.
-const V_BASE = 70;                            // vertical fov on a wide screen
-const H_MIN = 96 * (Math.PI / 180);           // never show less than this across
+function updateHud() {
+  updateMetrics();
+  const snap = combo.snapshot();
+  const kmh = Math.round(skater.speed * 2.4);
+  el.mphNum.textContent = kmh;
+  el.mphArrows.textContent = '>'.repeat(clamp(Math.round(kmh / 9), 0, 7));
+  el.mphFill.style.width = `${clamp(kmh / 80, 0, 1) * 100}%`;
+  el.score.textContent = snap.score.toLocaleString();
+  el.mult.textContent = `×${snap.mult}`;
+  el.trick.textContent = snap.parts.join(' + ');
+  el.trick.style.opacity = snap.parts.length ? '1' : '0';
+
+  const balance = skater.grind ? skater.grind.balance : skater.manual ? skater.manual.balance : null;
+  el.balance.style.opacity = balance == null ? '0' : '1';
+  if (balance != null) {
+    el.balMark.style.left = `${50 + clamp(balance, -1, 1) * 50}%`;
+    el.balMark.style.background = Math.abs(balance) > 0.66 ? '#ff665c' : '#8fe6d8';
+  }
+
+  if (mode === 'part' && part) {
+    el.district.textContent = `${DISTRICTS[sessionDistrict].name} · ${sessionTitle}`;
+    el.film.textContent = '●'.repeat(part.film) + '○'.repeat(Math.max(0, part.maxFilm - part.film));
+    el.footage.textContent = `${part.footage} ftg`;
+  } else if (mode === 'daily' && daily) {
+    el.district.textContent = `DAILY ${daily.day}`;
+    el.film.textContent = `TRY ${daily.attempts}/3`;
+    el.footage.textContent = `BEST ${daily.best.toLocaleString()}`;
+  } else {
+    el.district.textContent = 'FREE SKATE';
+    el.film.textContent = '';
+    el.footage.textContent = '';
+  }
+
+  if (goals) {
+    const left = Math.max(0, sessionLimit - sessionTime);
+    el.objName.textContent = `${sessionTitle} · ${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}`;
+    el.objFill.style.width = `${clamp(sessionTime / sessionLimit, 0, 1) * 100}%`;
+    el.goals.innerHTML = goals.status(metrics).map(goal =>
+      `<span class="${goal.done ? 'got' : ''}">${goal.done ? '✓' : '·'} ${goal.label}</span>`
+    ).join('');
+  } else {
+    el.objName.textContent = 'Learn the park · invent a line';
+    el.objFill.style.width = `${clamp(snap.score / 30000, 0, 1) * 100}%`;
+    el.goals.innerHTML = `<span>best chain ×${snap.bestMult}</span><span>best line ${snap.bestBank.toLocaleString()}</span>`;
+  }
+}
+
+function finishSession() {
+  if (state !== 'play' || !goals) return;
+  input.enabled = false;
+  if (combo.open && skater.grounded && !skater.bailing) acceptCombo(combo.bank());
+  else if (combo.open) combo.discard();
+  updateMetrics();
+
+  if (mode === 'daily') return finishDaily();
+  if (mode !== 'part' || !part || !currentNode) return showMenu();
+
+  const status = goals.status(metrics);
+  const cleared = goals.passed(metrics);
+  const got = status.filter(goal => goal.done).length;
+  if (cleared) {
+    const bonus = currentNode.type === 'boss' && part.flags.rivalBonus ? 50 : 0;
+    const reward = part.clearNode(currentNode, {
+      score: metrics.score,
+      bestMult: metrics.bestMult,
+      line: bestLine.text,
+      bonus,
+    });
+    if (part.finished) return showFinal(true);
+    const fitted = part.route[part.route.length - 1].partReward;
+    showPanel('clip landed', `${got} / ${goals.required} goals`,
+      `The line is on tape. +${reward} footage.${fitted ? ` Fitted: ${fitted}.` : ''}`);
+    resultBody(status);
+    action('Back to the map', showMap, 'primary');
+  } else {
+    part.failAttempt();
+    if (!part.alive) return showFinal(false);
+    showPanel('film burned', `${got} / ${goals.required} goals`, `${part.film} reel${part.film === 1 ? '' : 's'} left for the whole tour.`);
+    resultBody(status);
+    action('Retry this spot', () => beginSession('part', currentNode), 'primary');
+    action('Save and leave', showMenu);
+  }
+}
+
+function resultBody(status) {
+  el.panelBody.innerHTML = `
+    <div class="result-score">${metrics.score.toLocaleString()}</div>
+    <div class="statline"><span>best chain <strong>×${metrics.bestMult}</strong></span><span>best grind <strong>${metrics.bestGrind.toFixed(1)}s</strong></span><span>bails <strong>${metrics.bails}</strong></span></div>
+    <div class="tape-list">${status.map(goal => `<div><span>${goal.done ? '✓' : '·'}</span><strong>${goal.label}</strong><span>${goal.done ? 'ON TAPE' : 'MISSED'}</span></div>`).join('')}</div>`;
+}
+
+function finishDaily() {
+  const status = goals.status(metrics);
+  const got = goals.completed(metrics);
+  daily.best = Math.max(daily.best, metrics.score);
+  daily.cleared = Math.max(daily.cleared, got);
+  saveDaily();
+  showPanel(`daily ${daily.day}`, `${metrics.score.toLocaleString()} points`, `Try ${daily.attempts} of 3. Best score is the card.`);
+  resultBody(status);
+  if (daily.attempts < 3) action('Use next try', () => beginSession('daily'), 'primary');
+  action('Copy share card', copyDaily, 'soft');
+  action('Menu', showMenu);
+}
+
+function showDailyClosed() {
+  daily = dailyRecord();
+  showPanel(`daily ${daily.day}`, 'The three tries are gone', `Best: ${daily.best.toLocaleString()} · objectives: ${daily.cleared}/3`);
+  action('Copy share card', copyDaily, 'soft');
+  action('Menu', showMenu, 'primary');
+}
+
+async function copyDaily() {
+  const text = `TINY HAWK · ${daily.day}\n${daily.best.toLocaleString()} pts · ${daily.cleared}/3 goals\nthree tries, one park`;
+  try {
+    await navigator.clipboard.writeText(text);
+    el.panelCopy.textContent = 'Share card copied.';
+  } catch (error) {
+    el.panelCopy.textContent = text.replaceAll('\n', ' · ');
+  }
+}
+
+function startNewPart(force = false) {
+  const saved = PartRun.load();
+  if (force !== true && saved && saved.alive && !saved.finished) {
+    part = saved;
+    showPanel('active tape', 'Start over?', 'A Part is already in progress. Starting a new one replaces that route and its footage.');
+    action('Keep current part', showMap, 'primary');
+    action('Replace with a new part', () => startNewPart(true));
+    return;
+  }
+  part = new PartRun(`part-${Date.now()}`);
+  part.save();
+  showMap();
+}
+
+function showMap() {
+  if (!part) return startNewPart();
+  if (!part.alive || part.finished) return showFinal(part.finished);
+  if (part.pendingNodeId) {
+    const pending = part.tour.byId[part.pendingNodeId];
+    if (pending) return showPendingNode(pending);
+    part.pendingNodeId = null;
+    part.save();
+  }
+  setZone(part.district);
+  park.setHazards(part.flags.stoppers);
+  showPanel('the part', 'Choose the next spot', 'The whole route is visible. Once you pick a node, the camera is rolling.');
+  el.panelBody.innerHTML = `
+    <div class="statline">
+      <span>film <strong>${'●'.repeat(part.film)}${'○'.repeat(Math.max(0, part.maxFilm - part.film))}</strong></span>
+      <span>footage <strong>${part.footage}</strong></span>
+      <span>parts <strong>${part.parts.length}</strong></span>
+      <span>vocabulary <strong>${part.vocabulary + 1}/3</strong></span>
+    </div>
+    <div id="mapHost"></div>`;
+  renderMap($('mapHost'), part.tour, part, enterNode);
+  action('Save and leave', showMenu);
+}
+
+function showPendingNode(node) {
+  const info = NODE_INFO[node.type];
+  setZone(node.district);
+  showPanel('committed node', `${info.label} · row ${node.row + 1}`, 'This is the node you chose. Leaving the page cannot reroll the route or dodge the attempt.');
+  action(`Resume ${info.label.toLowerCase()}`, () => openCommittedNode(node), 'primary');
+  action('Save and leave', showMenu);
+}
+
+function enterNode(node) {
+  if (!part.commitNode(node.id)) return showMap();
+  openCommittedNode(node);
+}
+
+function openCommittedNode(node) {
+  currentNode = node;
+  if (node.type === 'spot' || node.type === 'session' || node.type === 'boss') {
+    beginSession('part', node);
+  } else if (node.type === 'event') {
+    showEvent(node);
+  } else if (node.type === 'shop') {
+    showShop(node);
+  } else {
+    showRest(node);
+  }
+}
+
+function finishQuietNode(node, line) {
+  part.clearNode(node, { line });
+  if (!part.alive) showFinal(false);
+  else showMap();
+}
+
+function showEvent(node) {
+  const event = pickEvent(node.seed, part.seenEvents);
+  showPanel('event', event.title, event.body);
+  const list = document.createElement('div');
+  list.className = 'choice-list';
+  for (let i = 0; i < event.choices.length; i++) {
+    const choice = event.choices[i];
+    const button = document.createElement('button');
+    button.disabled = choice.available ? !choice.available(part) : false;
+    button.innerHTML = `${choice.label}<small>${choice.result}</small>`;
+    button.addEventListener('click', () => {
+      const result = chooseEvent(part, event, i);
+      part.clearNode(node, { line: event.title });
+      showPanel('choice made', choice.label, result);
+      action('Continue', part.alive ? showMap : () => showFinal(false), 'primary');
+    });
+    list.append(button);
+  }
+  el.panelBody.append(list);
+}
+
+function showShop(node) {
+  showPanel('shop', 'Spend the footage', 'Parts change the board both ways. Lessons widen the trick vocabulary.');
+  const draw = () => {
+    el.panelBody.replaceChildren();
+    const stats = document.createElement('div');
+    stats.className = 'statline';
+    stats.innerHTML = `<span>footage <strong>${part.footage}</strong></span><span>vocabulary <strong>${part.vocabulary + 1}/3</strong></span>`;
+    const grid = document.createElement('div');
+    grid.className = 'shop-grid';
+    for (const item of PARTS) {
+      const owned = part.parts.includes(item.id);
+      const button = document.createElement('button');
+      button.disabled = owned || part.footage < item.cost;
+      button.innerHTML = `${owned ? 'FITTED' : `${item.cost} · ${item.name}`}<small>${item.text}</small>`;
+      button.addEventListener('click', () => { if (part.buy(item.id)) draw(); });
+      grid.append(button);
+    }
+    const lessonCost = 65 + part.vocabulary * 35;
+    const lesson = document.createElement('button');
+    lesson.disabled = part.vocabulary >= 2 || part.footage < lessonCost;
+    lesson.innerHTML = `${part.vocabulary >= 2 ? 'ALL TRICKS LEARNED' : `${lessonCost} · LEARN A TRICK SET`}<small>new grabs, flips and shuvits enter the directional vocabulary</small>`;
+    lesson.addEventListener('click', () => { if (part.buy('lesson')) draw(); });
+    grid.append(lesson);
+    el.panelBody.append(stats, grid);
+  };
+  draw();
+  action('Leave the shop', () => finishQuietNode(node, 'SHOP'), 'primary');
+}
+
+function showRest(node) {
+  showPanel('rest', 'One night, one choice', 'Refill the camera bag, or spend the night learning a new family of tricks.');
+  const list = document.createElement('div');
+  list.className = 'choice-list';
+  const film = document.createElement('button');
+  film.innerHTML = `Take two film<small>up to the current maximum of ${part.maxFilm}</small>`;
+  film.addEventListener('click', () => { part.restFilm(); finishQuietNode(node, 'REST · FILM'); });
+  const practise = document.createElement('button');
+  practise.disabled = part.vocabulary >= 2;
+  practise.innerHTML = `Practise all night<small>${part.vocabulary >= 2 ? 'the vocabulary is already complete' : 'unlock the next trick tier for this run'}</small>`;
+  practise.addEventListener('click', () => { part.practise(); finishQuietNode(node, 'REST · PRACTICE'); });
+  list.append(film, practise);
+  el.panelBody.append(list);
+}
+
+function showFinal(success) {
+  if (!part) return showMenu();
+  const title = success ? `THE PART IS ${part.rank()}` : 'THE TAPE RUNS OUT';
+  const copy = success
+    ? 'No podium. No cutscene. Just the lines you managed to keep.'
+    : 'The route ends where the film did. The unfinished tape still exists.';
+  showPanel(success ? 'final cut' : 'unfinished part', title, copy);
+  const total = part.route.reduce((sum, entry) => sum + (entry.score || 0), 0);
+  el.panelBody.innerHTML = `
+    <div class="result-score">${total.toLocaleString()}</div>
+    <div class="statline"><span>rank <strong>${part.rank()}</strong></span><span>nodes <strong>${part.route.length}/13</strong></span><span>film <strong>${part.film}</strong></span></div>
+    <div class="tape-list">${part.route.map((entry, index) => `
+      <div><span>${String(index + 1).padStart(2, '0')}</span><strong>${entry.line || NODE_INFO[entry.type]?.label || entry.type}</strong><span>${entry.score ? entry.score.toLocaleString() : '—'}</span></div>`).join('')}</div>`;
+  action('Shoot a new part', startNewPart, 'primary');
+  action('Menu', showMenu);
+}
+
+// ── Camera and frame ───────────────────────────────────────────────────────
+const V_BASE = 70;
+const H_MIN = 96 * Math.PI / 180;
 function baseFov() {
-  const aspect = innerWidth / innerHeight;
-  const fromH = 2 * Math.atan(Math.tan(H_MIN / 2) / aspect) * (180 / Math.PI);
+  const fromH = 2 * Math.atan(Math.tan(H_MIN / 2) / (innerWidth / innerHeight)) * 180 / Math.PI;
   return clamp(Math.max(V_BASE, fromH), 60, 100);
 }
 
 function updateCamera(dt) {
-  // A rate, not a delta — the right stick under the THPS scheme and the
-  // bumpers under Skate both report deflection, and neither is pixels.
   const rate = input.getLookRate();
-  if (Math.abs(rate.x) > 1e-4 || Math.abs(rate.y) > 1e-4) {
+  if (Math.abs(rate.x) + Math.abs(rate.y) > 0.0001) {
     camYaw -= rate.x * dt;
     camPitch = clamp(camPitch + rate.y * dt, CAM_PITCH_MIN, CAM_PITCH_MAX);
     lookIdle = 0;
@@ -318,155 +626,126 @@ function updateCamera(dt) {
     lookIdle += dt;
   }
 
-  // Spring back behind the direction of travel, but only once the player has
-  // stopped steering the camera — fighting the player is the fastest way to
-  // ruin a skate game.
   const flat = Math.hypot(skater.vel.x, skater.vel.z);
   if (lookIdle > CAM_SPRING_IDLE && flat > 3) {
     const travel = Math.atan2(skater.vel.x, skater.vel.z);
-    let d = travel - camYaw;
-    while (d > Math.PI) d -= Math.PI * 2;
-    while (d < -Math.PI) d += Math.PI * 2;
-    camYaw += d * (1 - Math.pow(0.12, dt));
+    let delta = travel - camYaw;
+    while (delta > Math.PI) delta -= Math.PI * 2;
+    while (delta < -Math.PI) delta += Math.PI * 2;
+    camYaw += delta * (1 - Math.pow(0.12, dt));
   }
 
   camTarget.lerp(skater.pos, 1 - Math.pow(0.0009, dt));
-  // Skate Story's camera sits low and behind the board. Close, but not so close
-  // that the skater fills the frame and you cannot read the park ahead of you.
   const dist = 7.6 + skater.speed * 0.17;
   const cp = Math.cos(camPitch), sp = Math.sin(camPitch);
   const cx = camTarget.x - Math.sin(camYaw) * cp * dist;
   const cz = camTarget.z - Math.cos(camYaw) * cp * dist;
   const cy = camTarget.y + sp * dist + 1.2;
-  // Never let the camera sink into a transition.
-  const floor = park.height(cx, cz) + 0.9;
-  camera.position.set(cx, Math.max(cy, floor), cz);
+  camera.position.set(cx, Math.max(cy, park.height(cx, cz) + 0.9), cz);
   camera.lookAt(camTarget.x, camTarget.y + 0.95, camTarget.z);
-
-  const wantFov = baseFov() + clamp(skater.airTime, 0, 1) * 8 + skater.speed * 0.3;
-  camera.fov = lerp(camera.fov, wantFov, 1 - Math.pow(0.02, dt));
+  camera.fov = lerp(camera.fov, baseFov() + clamp(skater.airTime, 0, 1) * 8 + skater.speed * 0.3, 1 - Math.pow(0.02, dt));
   camera.updateProjectionMatrix();
 }
 
-// ── Loop ───────────────────────────────────────────────────────────────────
 function resize() {
   const w = innerWidth, h = innerHeight;
   renderer.setSize(w, h, false);
   composer.setSize(w, h);
   bloom.setSize(w, h);
   const dpr = Math.min(devicePixelRatio, 2);
-  canvasUI.width = w * dpr; canvasUI.height = h * dpr;
-  canvasUI.style.width = w + 'px'; canvasUI.style.height = h + 'px';
+  canvasUI.width = w * dpr;
+  canvasUI.height = h * dpr;
+  canvasUI.style.width = `${w}px`;
+  canvasUI.style.height = `${h}px`;
   camera.aspect = w / h;
-  camera.fov = baseFov();   // snap on resize; the loop only lerps from here
+  camera.fov = baseFov();
   camera.updateProjectionMatrix();
+  input.layout();
 }
 addEventListener('resize', resize);
+
+function handleUiPad(actions) {
+  if (!actions.length || state === 'play') return;
+  const root = el.menu.classList.contains('hidden') ? el.panel : el.menu;
+  const buttons = [...root.querySelectorAll('button:not(:disabled)')];
+  if (!buttons.length) return;
+  let index = Math.max(0, buttons.indexOf(document.activeElement));
+  for (const actionName of actions) {
+    if (actionName === 'confirm') buttons[index].click();
+    else if (actionName === 'back') showMenu();
+    else {
+      index += actionName === 'left' || actionName === 'up' ? -1 : 1;
+      index = (index + buttons.length) % buttons.length;
+      buttons.forEach(button => button.classList.remove('pad-focus'));
+      buttons[index].classList.add('pad-focus');
+      buttons[index].focus();
+    }
+  }
+}
 
 let last = performance.now();
 function animate(now) {
   requestAnimationFrame(animate);
-  let dt = (now - last) / 1000;
+  let dt = Math.min((now - last) / 1000, 1 / 20);
   last = now;
   if (!(dt > 0)) return;
-  dt = Math.min(dt, 1 / 20);
 
   input.pollGamepad(dt);
+  handleUiPad(input.consumeUIActions());
   input.setAirborne(!skater.grounded);
   input.update(dt);
 
   if (state === 'play') {
-    let acc = dt, guard = 0;
     const events = [];
-    while (acc > 0 && guard++ < 32) {
-      const h = Math.min(PHYS_STEP, acc);
-      events.push(...skater.update(h, input, camYaw));
-      acc -= h;
+    let remaining = dt;
+    for (let guard = 0; remaining > 0 && guard < 32; guard++) {
+      const step = Math.min(PHYS_STEP, remaining);
+      events.push(...skater.update(step, input, camYaw));
+      remaining -= step;
     }
     handleEvents(events);
-
-    // Grinds and manuals earn while they last, and hold the chain open.
-    if (skater.grind) chainAdd(GRIND_PPS * dt);
-    if (skater.manual) chainAdd(MANUAL_PPS * dt);
-    if (chain.open) {
-      if (skater.chaining) chain.grace = 0;
-      else {
-        chain.grace += dt;
-        if (chain.grace >= BANK_GRACE) chainBank();
-      }
-    }
-
-    if (mode === 'run') {
-      runT += dt;
-      if (runT >= RUN_TIME) endRun();
-    }
+    acceptCombo(combo.tick(dt, skater.chaining, !!skater.grind, !!skater.manual));
+    sessionTime += dt;
+    if (sessionLimit && sessionTime >= sessionLimit) finishSession();
     updateHud();
   }
 
   updateCamera(dt);
-
   if (toastT > 0) {
     toastT -= dt;
     el.toast.style.opacity = String(clamp(toastT, 0, 1));
   }
 
-  // Smear and aberration ride speed, so going fast *looks* like going fast.
-  const sp = clamp((skater.speed - 6) / 26, 0, 1);
-  afterimage.uniforms.damp.value = 0.48 + sp * 0.18;
-  chromaPass.uniforms.uAmount.value = 0.0012 + sp * 0.009;
+  const speedPost = clamp((skater.speed - 6) / 26, 0, 1);
+  afterimage.uniforms.damp.value = 0.48 + speedPost * 0.18;
+  chromaPass.uniforms.uAmount.value = 0.0012 + speedPost * 0.009;
 
-  const g = canvasUI.getContext('2d');
+  const context = canvasUI.getContext('2d');
   const dpr = canvasUI.width / innerWidth;
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  g.clearRect(0, 0, canvasUI.width, canvasUI.height);
-  g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  input.drawTouchUI(g);
-
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.clearRect(0, 0, canvasUI.width, canvasUI.height);
+  context.setTransform(dpr, 0, 0, dpr, 0, 0);
+  input.drawTouchUI(context);
   composer.render();
 }
 
 // ── Shell ──────────────────────────────────────────────────────────────────
-function endRun() {
-  state = 'over';
-  input.enabled = false;
-  chainLose();
-  const got = GOALS.filter(g => g.done()).length;
-  el.overStats.innerHTML = `
-    <div class="big">${Math.floor(score).toLocaleString()}</div>
-    <div class="sub">${got} / ${GOALS.length} objectives · best chain ×${bestChain}</div>
-    <div class="sub">${GOALS.map(g => (g.done() ? '✓ ' : '· ') + g.label()).join('<br>')}</div>`;
-  el.over.classList.remove('hidden');
-  el.hud.classList.add('hidden');
-}
+$('btnFree').addEventListener('click', () => beginSession('free'));
+$('btnDaily').addEventListener('click', () => beginSession('daily'));
+$('btnPart').addEventListener('click', startNewPart);
+el.resume.addEventListener('click', () => { part = PartRun.load(); showMap(); });
 
-function startSkate(m) {
-  if (m) mode = m;
-  audio.init();
-  audio.resume();
-  skater.reset();
-  score = 0; runT = 0; bestChain = 1; goalCombo = 1; goalGrind = 0;
-  chain = { open: false, pending: 0, parts: [], grace: 0 };
-  el.trick.style.opacity = '0'; el.breakdown.style.opacity = '0';
-  camTarget.copy(skater.pos);
-  camYaw = skater.yaw;
-  input.clear();
-  input.enabled = true;
-  state = 'play';
-  el.menu.classList.add('hidden');
-  el.over.classList.add('hidden');
-  el.hud.classList.remove('hidden');
-  updateHud();
+function paintScheme() {
+  el.scheme.textContent = input.scheme === 'skate'
+    ? 'Controls: Skate (flick-it)'
+    : 'Controls: Tony Hawk (buttons)';
 }
-
-$('btnRun').addEventListener('click', () => startSkate('run'));
-$('btnEndless').addEventListener('click', () => startSkate('endless'));
-$('btnAgain').addEventListener('click', () => startSkate());
-$('btnMenu').addEventListener('click', () => {
-  state = 'menu';
-  input.enabled = false;
-  el.over.classList.add('hidden');
-  el.menu.classList.remove('hidden');
+el.scheme.addEventListener('click', () => {
+  input.setScheme(input.scheme === 'skate' ? 'thps' : 'skate');
+  paintScheme();
 });
+paintScheme();
+
 el.sound.addEventListener('click', () => {
   audio.init();
   audio.setMuted(audio.on);
@@ -474,42 +753,40 @@ el.sound.addEventListener('click', () => {
 });
 el.sound.textContent = audio.on ? '♪ on' : '♪ off';
 
-const btnScheme = $('btnScheme');
-function paintScheme() {
-  btnScheme.textContent = input.scheme === 'skate'
-    ? 'CONTROLS: SKATE (flick-it)'
-    : 'CONTROLS: TONY HAWK (buttons)';
-}
-btnScheme.addEventListener('click', () => {
-  input.setScheme(input.scheme === 'skate' ? 'thps' : 'skate');
-  paintScheme();
-});
-paintScheme();
-
-addEventListener('keydown', (e) => {
-  if (e.code === 'KeyR' && state === 'play') startSkate();
+addEventListener('keydown', event => {
+  if (event.code === 'Escape' && state === 'play') showMenu();
+  if (event.code === 'KeyR' && state === 'play' && mode === 'free') beginSession('free');
 });
 
 resize();
+setZone(0);
 camTarget.copy(skater.pos);
+showMenu();
 requestAnimationFrame(animate);
 
 window.__th = {
   skater, park, input, audio, camera,
+  get part() { return part; },
   debug: {
     state: () => state,
-    start: startSkate,
-    stats: () => ({ score: Math.round(score), mode, runT: +runT.toFixed(1),
-      chain: chain.parts.length, pending: Math.round(chain.pending), bestChain,
-      goalGrind: +goalGrind.toFixed(2), goalCombo,
-      speed: +skater.speed.toFixed(1), grounded: skater.grounded,
-      grind: skater.grind ? skater.grind.name : null,
-      manual: !!skater.manual }),
-    setMode: (m) => { mode = m; },
-    endRun: () => endRun(),
-    // The number the whole control scheme rests on (design doc §4, §11).
+    mode: () => mode,
+    startFree: () => beginSession('free'),
+    startDaily: () => beginSession('daily'),
+    newPart: startNewPart,
+    showMap,
+    endSession: finishSession,
+    stats: () => ({
+      ...combo.snapshot(),
+      sessionTime: +sessionTime.toFixed(2),
+      film: part?.film ?? null,
+      footage: part?.footage ?? null,
+      node: currentNode?.id ?? null,
+      grounded: skater.grounded,
+      grind: skater.grind?.name ?? null,
+      manual: !!skater.manual,
+    }),
     scheme: () => input.scheme,
-    setScheme: (s) => { input.setScheme(s); paintScheme(); },
+    setScheme: value => { input.setScheme(value); paintScheme(); },
     schemes: SCHEMES,
     act: (dir, power = 1) => input.actions.push({ dir, power }),
     setCam: (yaw, pitch) => { camYaw = yaw; if (pitch != null) camPitch = pitch; },
