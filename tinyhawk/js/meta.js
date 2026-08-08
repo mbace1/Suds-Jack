@@ -1,4 +1,5 @@
 import { generateTour } from './map.js?v=2';
+import { hashSeed } from './goals.js?v=2';
 
 const SAVE_KEY = 'tinyHawkPartV2';
 
@@ -45,8 +46,10 @@ export class PartRun {
     this.film = 5;
     this.footage = 0;
     this.route = [];
+    this.pendingNodeId = null;
     this.parts = [];
     this.vocabulary = 0;
+    this.insuranceUsedNodes = [];
     this.flags = defaults();
     this.seenEvents = [];
     this.finished = false;
@@ -56,7 +59,7 @@ export class PartRun {
   get district() { return Math.min(2, Math.floor(this.route.length / 4)); }
   get alive() { return this.film > 0; }
 
-  modifiers() {
+  modifiers(nodeId = null) {
     const out = {
       repeatPenalty: 0.55,
       vocabulary: this.vocabulary,
@@ -78,7 +81,28 @@ export class PartRun {
         else out[key] *= value;
       }
     }
+    if (nodeId && this.insuranceUsedNodes.includes(nodeId)) out.insurance = false;
     return out;
+  }
+
+  commitNode(nodeId) {
+    if (this.pendingNodeId) return this.pendingNodeId === nodeId;
+    const node = this.tour.byId[nodeId];
+    if (!node) return false;
+    const available = this.route.length
+      ? this.tour.byId[this.route[this.route.length - 1].nodeId]?.next || []
+      : this.tour.rows[0].map(item => item.id);
+    if (!available.includes(nodeId)) return false;
+    this.pendingNodeId = nodeId;
+    this.save();
+    return true;
+  }
+
+  markInsuranceUsed(nodeId) {
+    if (nodeId && !this.insuranceUsedNodes.includes(nodeId)) {
+      this.insuranceUsedNodes.push(nodeId);
+      this.save();
+    }
   }
 
   failAttempt() {
@@ -89,7 +113,19 @@ export class PartRun {
 
   clearNode(node, result = {}) {
     const base = node.type === 'boss' ? 120 : node.type === 'session' ? 70 : node.type === 'spot' ? 35 : 0;
-    const reward = Math.round((base + (result.bonus || 0)) * this.flags.sponsorPay);
+    let reward = Math.round((base + (result.bonus || 0)) * this.flags.sponsorPay);
+    let partReward = null;
+    if (node.type === 'session') {
+      const available = PARTS.filter(item => !this.parts.includes(item.id));
+      if (available.length) {
+        const part = available[hashSeed(node.seed) % available.length];
+        this.parts.push(part.id);
+        partReward = part.name;
+      } else {
+        reward += 50;
+        partReward = '50 footage · board already complete';
+      }
+    }
     this.footage += reward;
     this.route.push({
       nodeId: node.id,
@@ -99,7 +135,9 @@ export class PartRun {
       bestMult: result.bestMult || 1,
       line: result.line || '—',
       reward,
+      partReward,
     });
+    this.pendingNodeId = null;
     if (this.flags.kneeNodes > 0) this.flags.kneeNodes--;
     if (this.film > this.maxFilm) this.film = this.maxFilm;
     if (node.type === 'boss') this.finished = true;
@@ -149,8 +187,10 @@ export class PartRun {
       film: this.film,
       footage: this.footage,
       route: this.route,
+      pendingNodeId: this.pendingNodeId,
       parts: this.parts,
       vocabulary: this.vocabulary,
+      insuranceUsedNodes: this.insuranceUsedNodes,
       flags: this.flags,
       seenEvents: this.seenEvents,
       finished: this.finished,
@@ -173,8 +213,12 @@ export class PartRun {
     run.film = Math.max(0, Number(data.film) || 0);
     run.footage = Math.max(0, Number(data.footage) || 0);
     run.route = data.route;
+    run.pendingNodeId = typeof data.pendingNodeId === 'string' && run.tour.byId[data.pendingNodeId]
+      ? data.pendingNodeId : null;
     run.parts = Array.isArray(data.parts) ? data.parts.filter(id => PARTS.some(part => part.id === id)) : [];
     run.vocabulary = Math.max(0, Math.min(2, Number(data.vocabulary) || 0));
+    run.insuranceUsedNodes = Array.isArray(data.insuranceUsedNodes)
+      ? data.insuranceUsedNodes.filter(id => typeof id === 'string') : [];
     run.flags = { ...defaults(), ...(data.flags || {}) };
     run.seenEvents = Array.isArray(data.seenEvents) ? data.seenEvents : [];
     run.finished = !!data.finished;
