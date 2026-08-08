@@ -211,10 +211,6 @@ function saveDaily() {
   try { localStorage.setItem('tinyHawkDailyV2', JSON.stringify(daily)); } catch (error) { /* ignore */ }
 }
 
-function sessionMods() {
-  return mode === 'part' && part ? part.modifiers() : {};
-}
-
 function beginSession(kind, node = null) {
   mode = kind;
   currentNode = node;
@@ -226,7 +222,7 @@ function beginSession(kind, node = null) {
   let build = {};
   if (kind === 'part') {
     difficulty = node.row / 12;
-    build = part.modifiers();
+    build = part.modifiers(node.id);
     sessionLimit = node.type === 'session' ? 95 : node.type === 'boss' ? 105 : 75;
     sessionTitle = node.type === 'boss' ? 'Rival line' : node.type === 'session' ? 'Session' : 'Spot';
     goals = makeGoalSet(node.seed, difficulty, {
@@ -239,8 +235,10 @@ function beginSession(kind, node = null) {
   } else if (kind === 'daily') {
     daily = dailyRecord();
     if (daily.attempts >= 3) return showDailyClosed();
+    daily.attempts++;
+    saveDaily();
     sessionLimit = 90;
-    sessionTitle = `Daily · try ${daily.attempts + 1}/3`;
+    sessionTitle = `Daily · try ${daily.attempts}/3`;
     goals = makeGoalSet(`daily:${daily.day}`, 0.58);
     setZone(1);
     park.setHazards(0);
@@ -291,6 +289,7 @@ function loseCombo() {
   const result = combo.bail();
   updateMetrics();
   if (result.insured) {
+    if (mode === 'part' && part && currentNode) part.markInsuranceUsed(currentNode.id);
     toast(`Insurance kept ${result.saved.toLocaleString()}`, '#e8c98a');
   } else {
     toast('Bail', '#ff665c');
@@ -361,7 +360,7 @@ function updateHud() {
     el.footage.textContent = `${part.footage} ftg`;
   } else if (mode === 'daily' && daily) {
     el.district.textContent = `DAILY ${daily.day}`;
-    el.film.textContent = `TRY ${daily.attempts + 1}/3`;
+    el.film.textContent = `TRY ${daily.attempts}/3`;
     el.footage.textContent = `BEST ${daily.best.toLocaleString()}`;
   } else {
     el.district.textContent = 'FREE SKATE';
@@ -405,7 +404,9 @@ function finishSession() {
       bonus,
     });
     if (part.finished) return showFinal(true);
-    showPanel('clip landed', `${got} / ${goals.required} goals`, `The line is on tape. +${reward} footage.`);
+    const fitted = part.route[part.route.length - 1].partReward;
+    showPanel('clip landed', `${got} / ${goals.required} goals`,
+      `The line is on tape. +${reward} footage.${fitted ? ` Fitted: ${fitted}.` : ''}`);
     resultBody(status);
     action('Back to the map', showMap, 'primary');
   } else {
@@ -428,7 +429,6 @@ function resultBody(status) {
 function finishDaily() {
   const status = goals.status(metrics);
   const got = goals.completed(metrics);
-  daily.attempts++;
   daily.best = Math.max(daily.best, metrics.score);
   daily.cleared = Math.max(daily.cleared, got);
   saveDaily();
@@ -456,7 +456,15 @@ async function copyDaily() {
   }
 }
 
-function startNewPart() {
+function startNewPart(force = false) {
+  const saved = PartRun.load();
+  if (force !== true && saved && saved.alive && !saved.finished) {
+    part = saved;
+    showPanel('active tape', 'Start over?', 'A Part is already in progress. Starting a new one replaces that route and its footage.');
+    action('Keep current part', showMap, 'primary');
+    action('Replace with a new part', () => startNewPart(true));
+    return;
+  }
   part = new PartRun(`part-${Date.now()}`);
   part.save();
   showMap();
@@ -465,6 +473,12 @@ function startNewPart() {
 function showMap() {
   if (!part) return startNewPart();
   if (!part.alive || part.finished) return showFinal(part.finished);
+  if (part.pendingNodeId) {
+    const pending = part.tour.byId[part.pendingNodeId];
+    if (pending) return showPendingNode(pending);
+    part.pendingNodeId = null;
+    part.save();
+  }
   setZone(part.district);
   park.setHazards(part.flags.stoppers);
   showPanel('the part', 'Choose the next spot', 'The whole route is visible. Once you pick a node, the camera is rolling.');
@@ -480,7 +494,20 @@ function showMap() {
   action('Save and leave', showMenu);
 }
 
+function showPendingNode(node) {
+  const info = NODE_INFO[node.type];
+  setZone(node.district);
+  showPanel('committed node', `${info.label} · row ${node.row + 1}`, 'This is the node you chose. Leaving the page cannot reroll the route or dodge the attempt.');
+  action(`Resume ${info.label.toLowerCase()}`, () => openCommittedNode(node), 'primary');
+  action('Save and leave', showMenu);
+}
+
 function enterNode(node) {
+  if (!part.commitNode(node.id)) return showMap();
+  openCommittedNode(node);
+}
+
+function openCommittedNode(node) {
   currentNode = node;
   if (node.type === 'spot' || node.type === 'session' || node.type === 'boss') {
     beginSession('part', node);
@@ -507,6 +534,7 @@ function showEvent(node) {
   for (let i = 0; i < event.choices.length; i++) {
     const choice = event.choices[i];
     const button = document.createElement('button');
+    button.disabled = choice.available ? !choice.available(part) : false;
     button.innerHTML = `${choice.label}<small>${choice.result}</small>`;
     button.addEventListener('click', () => {
       const result = chooseEvent(part, event, i);
@@ -765,4 +793,3 @@ window.__th = {
     getCam: () => ({ yaw: camYaw, pitch: camPitch }),
   },
 };
-
