@@ -6,6 +6,12 @@
 // direction and hands that count to the hero, and the hero decides what it
 // meant. There is no analogue anything: an eight-way pad in 1991 and a thumb in
 // 2026 both resolve to the same three values.
+//
+// v3 movement-lab rule: a committed animation may delay a command, but it must
+// not silently eat a sensible command pressed near the transition. Edges are
+// therefore remembered for a few simulation frames. The hero still decides
+// WHEN an action is physically legal; Input only remembers WHAT the player
+// asked for. This is commitment without dead controls.
 
 // Up is BOTH the direction and the jump, as it is in Prince of Persia — the
 // same key that leaps also pulls you over a lip and stands you out of a crouch,
@@ -19,6 +25,10 @@ const KEYS = {
   pause: ['Escape', 'KeyP'],
 };
 
+// Long enough to bridge the recovery tail of a step/landing, short enough that
+// an old request cannot survive a whole action and surprise the player later.
+const BUFFER_FRAMES = { jump: 8, fire: 6, gun: 6 };
+
 export class Input {
   constructor(scr) {
     this.scr = scr;
@@ -28,6 +38,7 @@ export class Input {
     this.jump = false; this.fire = false; this.gun = false;
     this.jumpPress = false; this.firePress = false; this.gunPress = false;
     this.pausePress = false; this.anyPress = false;
+    this.buffer = { jump: 0, fire: 0, gun: 0 };
     this.touch = false;
     this.zones = [];                // filled in by the HUD each frame
     this.pointers = new Map();
@@ -80,12 +91,27 @@ export class Input {
     return out;
   }
 
+  remember(k) {
+    if (BUFFER_FRAMES[k]) this.buffer[k] = BUFFER_FRAMES[k];
+  }
+
   edge(k) {
-    if (k === 'jump') this.jumpPress = true;
-    if (k === 'fire') this.firePress = true;
-    if (k === 'gun') this.gunPress = true;
+    if (k === 'jump') { this.jumpPress = true; this.remember('jump'); }
+    if (k === 'fire') { this.firePress = true; this.remember('fire'); }
+    if (k === 'gun') { this.gunPress = true; this.remember('gun'); }
     if (k === 'pause') this.pausePress = true;
     this.anyPress = true;
+  }
+
+  // Explicit consumption is available to the movement rewrite. The current
+  // hero does not need it yet because the short lifetime expires during the
+  // action it starts, but transition-table code should consume on acceptance.
+  consume(k) {
+    if (!(k in this.buffer)) return;
+    this.buffer[k] = 0;
+    if (k === 'jump') this.jumpPress = false;
+    if (k === 'fire') this.firePress = false;
+    if (k === 'gun') this.gunPress = false;
   }
 
   // the on-screen pad. main.js declares where the buttons are so there is one
@@ -136,16 +162,27 @@ export class Input {
     this.up = U; this.down = D;
 
     // touch and pad have no keydown, so edges are derived here for everyone
-    if (J && !wasJump) this.jumpPress = true;
-    if (F && !wasFire) this.firePress = true;
-    if (G && !wasGun) this.gunPress = true;
+    if (J && !wasJump) { this.jumpPress = true; this.remember('jump'); }
+    if (F && !wasFire) { this.firePress = true; this.remember('fire'); }
+    if (G && !wasGun) { this.gunPress = true; this.remember('gun'); }
     if ((J && !wasJump) || (F && !wasFire) || (G && !wasGun)) this.anyPress = true;
     this.jump = J; this.fire = F; this.gun = G;
+
+    // A remembered request is presented to gameplay exactly like the original
+    // one-frame edge. This is what lets a jump pressed on frame 18 of a 22-frame
+    // step be accepted when the step's transition window opens on frame 22.
+    this.jumpPress = this.jumpPress || this.buffer.jump > 0;
+    this.firePress = this.firePress || this.buffer.fire > 0;
+    this.gunPress = this.gunPress || this.buffer.gun > 0;
   }
 
-  // called at the end of a frame: edges last exactly one frame
+  // called at the end of a frame: raw edges last exactly one frame, buffered
+  // intent counts down independently until gameplay accepts it or it expires.
   flush() {
     this.jumpPress = this.firePress = this.gunPress = false;
     this.pausePress = false; this.anyPress = false;
+    for (const k of Object.keys(this.buffer)) {
+      if (this.buffer[k] > 0) this.buffer[k]--;
+    }
   }
 }
