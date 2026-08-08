@@ -5,16 +5,16 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=45';
-import { Player } from './player.js?v=45';
-import { DaggerPool } from './daggers.js?v=45';
-import { GemPool } from './gems.js?v=45';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint } from './voxel.js?v=45';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=45';
-import { OrbPool } from './bullets.js?v=45';
-import { AudioKit } from './audio.js?v=45';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=45';
-import { TUNING as T } from './tuning.js?v=45';
+import { InputManager } from './input.js?v=51';
+import { Player } from './player.js?v=51';
+import { DaggerPool } from './daggers.js?v=51';
+import { GemPool } from './gems.js?v=51';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=51';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=51';
+import { OrbPool } from './bullets.js?v=51';
+import { AudioKit } from './audio.js?v=51';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=51';
+import { TUNING as T } from './tuning.js?v=51';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -36,7 +36,7 @@ const opts = Object.assign(
   // motion=false is the reduced-motion master switch (forces smear/shake/chroma/FOV
   // kicks off without touching the individual toggles); contrast=true brightens
   // orbs + telegraphs and kills the floor's red flush for readability
-  { speed: 1, fov: 80, sens: 1, aim: true, smear: true, shake: true, chroma: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson' },
+  { speed: 1, fov: 80, sens: 1, aim: true, smear: true, shake: true, chroma: true, edge: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson', look: 'smooth' },
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
 
 // STYLE presets: hue targets for the accent recolor (null = native crimson).
@@ -54,15 +54,18 @@ const BASE_PR = Math.min(window.devicePixelRatio, 2);
 // seconds of frame samples to react, and a mid-range phone spending those
 // seconds at the ceiling stutters through the opening spawn. An explicit
 // VOXEL pick still reaches ×64 on any device.
-const AUTO_DETAIL_CEIL = window.matchMedia?.('(pointer: coarse)').matches ? 3 : 4;
+// v4.31: the models themselves carry ~4× more voxels now, so the AUTO
+// subdivision ladder sits one tier lower for the same instance budget —
+// detail comes from the sculpt, not from subdividing a blob
+const AUTO_DETAIL_CEIL = window.matchMedia?.('(pointer: coarse)').matches ? 2 : 3;
 const PERF_TIERS = [
   // gibs = how many pieces ONE death throws (scales with the voxel density
   // ladder below, so a ×64 enemy actually shatters instead of chunking)
-  { chroma: true,  smear: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 520, litter: 2500 }, // T0 full
-  { chroma: false, smear: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 420, litter: 2000 }, // T1
-  { chroma: false, smear: false, pr: BASE_PR,                bloom: true,  debrisCap: 3000, gibs: 300, litter: 1200 }, // T2
-  { chroma: false, smear: false, pr: Math.min(BASE_PR, 1.5), bloom: true,  debrisCap: 2000, gibs: 220, litter: 600 }, // T3
-  { chroma: false, smear: false, pr: 1,                      bloom: false, debrisCap: 800,  gibs: 110, litter: 0 }, // T4 floor
+  { chroma: true,  smear: true,  edge: true,  hull: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 520, litter: 2500 }, // T0 full
+  { chroma: false, smear: true,  edge: true,  hull: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 420, litter: 2000 }, // T1
+  { chroma: false, smear: false, edge: false, hull: true,  pr: BASE_PR,                bloom: true,  debrisCap: 3000, gibs: 300, litter: 1200 }, // T2
+  { chroma: false, smear: false, edge: false, hull: false, pr: Math.min(BASE_PR, 1.5), bloom: true,  debrisCap: 2000, gibs: 220, litter: 600 }, // T3
+  { chroma: false, smear: false, edge: false, hull: false, pr: 1,                      bloom: false, debrisCap: 800,  gibs: 110, litter: 0 }, // T4 floor
 ];
 // mutable so headless tests can shrink the timescales
 const perfTuning = { downMs: 40, upMs: 22, settleMs: 2000, stableMs: 15000, downHoldMs: 1500, emaAlpha: 0.08 };
@@ -143,9 +146,51 @@ const ChromaShader = {
     }`,
 };
 
+// v4.30 neon rim: a cross-gradient edge tint over the raw render — every
+// silhouette gets HYPERDEMON's wire glow. It sits BEFORE the smear and the
+// bloom on purpose: edges streak with motion and flare like everything else
+// bright, instead of being pasted on top of the finished frame.
+const EdgeShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    uPx: { value: new THREE.Vector2(1 / window.innerWidth, 1 / window.innerHeight) },
+    uTint: { value: new THREE.Color(1.6, 0.35, 0.35) }, // HDR so bloom bites (STYLE re-aims it)
+    uAmt: { value: 0.15 }, // v4.31: halved — a rim, not a wash (owner's call)
+  },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform vec2 uPx;
+    uniform vec3 uTint;
+    uniform float uAmt;
+    varying vec2 vUv;
+    float lum(vec2 o) {
+      vec3 c = texture2D(tDiffuse, vUv + o * uPx).rgb;
+      return dot(c, vec3(0.299, 0.587, 0.114));
+    }
+    void main() {
+      vec4 base = texture2D(tDiffuse, vUv);
+      float gx = lum(vec2(1.0, 0.0)) - lum(vec2(-1.0, 0.0));
+      float gy = lum(vec2(0.0, 1.0)) - lum(vec2(0.0, -1.0));
+      // soft threshold keeps the dither of the sky quiet; only real
+      // silhouettes (enemy vs void, grid vs floor) light up
+      float e = clamp(length(vec2(gx, gy)) * 2.0 - 0.16, 0.0, 1.0);
+      gl_FragColor = vec4(base.rgb + uTint * e * uAmt, base.a);
+    }`,
+};
+
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-const afterimage = new AfterimagePass(0.72); // motion smear on everything bright
+const edgePass = new ShaderPass(EdgeShader);
+composer.addPass(edgePass);
+// motion smear on everything bright; damp is DYNAMIC since v4.30 — it deepens
+// mid-dash (see the fovKick block), so the hardest smear is always transient
+// and the 0.82-starburst trap stays closed
+const SMEAR_BASE = 0.74;
+const SMEAR_DASH = 0.12;
+const afterimage = new AfterimagePass(SMEAR_BASE);
 composer.addPass(afterimage);
 const bloom = new UnrealBloomPass(
   new THREE.Vector2(window.innerWidth, window.innerHeight), 0.5, 0.4, 0.6); // eased so voxel cells read through the glow
@@ -261,6 +306,7 @@ const floorMat = new THREE.ShaderMaterial({
   uniforms: {
     map: { value: makeFloorTexture() },
     uPulse: { value: 0 },
+    uGlow: { value: 1.5 }, // v4.31: pulled back from 1.8 — the grid glows, it doesn't shout
     uRed: { value: 0 },
     uAccent: { value: new THREE.Color(2.2, 0.25, 0.25) }, // hurt-flush tint (STYLE re-aims it)
   },
@@ -270,12 +316,15 @@ const floorMat = new THREE.ShaderMaterial({
   fragmentShader: /* glsl */`
     uniform sampler2D map;
     uniform float uPulse;
+    uniform float uGlow;
     uniform float uRed;
     uniform vec3 uAccent;
     varying vec2 vUv;
     void main() {
       vec3 col = texture2D(map, vUv * 14.0).rgb;
-      col *= 1.0 + uPulse * 0.9;                                  // beat glow
+      // v4.30: uGlow lifts the major lines just past the bloom threshold, so
+      // the grid itself glows — and the beat pulse pushes it visibly hotter
+      col *= uGlow + uPulse * 0.9;
       col = mix(col, col * uAccent, clamp(uRed, 0.0, 1.0));       // hurt flush
       gl_FragColor = vec4(col, 1.0);
     }`,
@@ -286,8 +335,10 @@ const floor = new THREE.Mesh(
 );
 scene.add(floor);
 
-// monochrome sky: grey band shimmer over black, with a single dark-red
-// ember glow hugging the horizon as the one contrast color
+// v4.30 sky: HYPERDEMON's pastel iridescence over black — a slow hue-walk
+// around the horizon replaces the old greyscale band shimmer. Held DIM
+// (peak ≈0.09) so it stays a wash behind the fight and never trips bloom;
+// the dark-red ember glow keeps the horizon as the danger line.
 const skyMat = new THREE.ShaderMaterial({
   side: THREE.BackSide,
   depthWrite: false,
@@ -316,7 +367,12 @@ const skyMat = new THREE.ShaderMaterial({
       float b1 = 0.5 + 0.5 * sin(ang * 7.0 - uTime * 0.6 + h * 9.0);
       float b2 = 0.5 + 0.5 * sin(ang * 13.0 + uTime * 0.9 - h * 14.0);
       float horiz = 1.0 - clamp(abs(h) * 2.6, 0.0, 1.0);
-      col += vec3(0.05) * (b1 * 0.6 + b2 * 0.4) * horiz;
+      // pastel iridescence: three hue cycles around the ring, drifting with
+      // time, desaturated toward white — the bands now modulate COLOR, not grey
+      float hue = ang * 0.477 + uTime * 0.03;
+      vec3 pastel = 0.5 + 0.5 * cos(6.28318 * (hue + vec3(0.0, 0.33, 0.67)));
+      pastel = mix(vec3(1.0), pastel, 0.45);
+      col += pastel * 0.09 * (b1 * 0.6 + b2 * 0.4) * horiz;
       // ember horizon swells with trauma and while the Leviathan lives
       col += uEmberCol * pow(max(0.0, 1.0 - abs(h) * 4.0), 3.0) * (1.0 + uEmber);
       gl_FragColor = vec4(col, 1.0);
@@ -524,6 +580,7 @@ function applyRenderScale() {
   composer.setPixelRatio(pr);
   renderer.setSize(window.innerWidth, window.innerHeight);
   composer.setSize(window.innerWidth, window.innerHeight);
+  edgePass.uniforms.uPx.value.set(1 / window.innerWidth, 1 / window.innerHeight);
 }
 
 function resize() {
@@ -595,6 +652,11 @@ let deathCam = null;                       // {yaw, pitch, t} — killer-focus l
 let gemCount = 0;
 let weaponLv = 1;
 let fireTimer = 0;
+// DD gunfeel state: how long the trigger has been held, whether it was held
+// last frame, and the lockout after a shotgun burst
+let fireHeldT = 0;
+let fireWasHeld = false;
+let shotCd = 0;
 let styleVal = 0;      // current meter fill (0..STYLE_CAP), bleeds when idle
 let stylePeakIdx = 0;  // best tier reached this run (for the death recap)
 let nextTotemAt = 0;
@@ -776,8 +838,8 @@ function showTips() {
   elMsg.style.display = 'block';
   elMsg.innerHTML =
     `<h1>HOW TO SURVIVE</h1>
-     <p class="big">&#9876; fire is <b>automatic while you move</b></p>
-     <p class="sub">stand still and hold LMB / the look stick to fire in place</p>
+     <p class="big">&#9876; <b>tap</b> = shotgun burst &middot; <b>hold</b> = stream</p>
+     <p class="sub">every dagger is aimed &mdash; on touch the stream runs itself while you move</p>
      <p class="big">&#10227; the <b>dash phases through orbs</b></p>
      <p class="sub">never through bodies &mdash; charge the red projectiles, dodge the bone</p>
      <p class="big">&#9670; <b>gems level your daggers</b></p>
@@ -965,6 +1027,11 @@ function resetRun() {
   gemCount = 0;
   weaponLv = 1;
   fireTimer = 0;
+  // pretend the trigger is already down a long time, so releasing the click
+  // that started the run can never fire a spurious shotgun
+  fireHeldT = 999;
+  fireWasHeld = true;
+  shotCd = 0;
   styleVal = 0;
   stylePeakIdx = 0;
   // onboarding pacing lives in PULSE_POOL's unlock gates (watcher 25s …
@@ -1108,12 +1175,14 @@ function applyOpts() {
   // VOXEL choice overrides it. Existing sprites keep their detail until they
   // die — the swarm re-densifies within seconds.
   const autoDetail = opts.perf === 'low' ? 1
-    : Math.min(AUTO_DETAIL_CEIL, [4, 3, 2, 2, 1][perfTier]);
+    : Math.min(AUTO_DETAIL_CEIL, [3, 2, 2, 1, 1][perfTier]);
   setVoxelDetail(opts.detail === 'auto' ? autoDetail : opts.detail);
   // reduced motion (opts.motion=false) and the perf tier both override the
   // individual FX toggles without rewriting them — user intent stays in opts.*
   afterimage.enabled = opts.smear && opts.motion && tier.smear;
   chromaPass.enabled = opts.chroma && opts.motion && tier.chroma;
+  // the neon rim is a static effect, so the motion toggle leaves it alone
+  edgePass.enabled = opts.edge && tier.edge;
   bloom.enabled = tier.bloom;
   debris.softCap = tier.debrisCap;
   debris.gibTarget = tier.gibs;
@@ -1125,14 +1194,20 @@ function applyOpts() {
   setStyleHue(STYLE_HUES[opts.style] ?? null);
   hand.applyStyle();
   litter.applyStyle();
-  for (const e of enemies) e.sprite.applyStyle?.();
-  if (flyby) for (const p of flyby.parts) p.sprite.applyStyle();
+  // v4.32 LOOK: smooth hull skin vs raw cubes — user toggle gated by the
+  // perf tier (a skin rebuild on every chip is not free on weak hardware)
+  const hullOn = opts.look === 'smooth' && tier.hull;
+  setHullMode(hullOn);
+  hand.setHull(hullOn); // noHull in the model def keeps it cubes regardless
+  for (const e of enemies) { e.sprite.applyStyle?.(); e.sprite.setHull?.(hullOn); }
+  if (flyby) for (const p of flyby.parts) { p.sprite.applyStyle(); p.sprite.setHull(hullOn); }
   // high contrast: hotter orbs so projectiles read against the bloom
   // (intensity picked first, then the style hue re-aims it)
   styleTint(orbs.mat.color.setRGB(...(opts.contrast ? [3.4, 0.5, 0.5] : [2.6, 0.2, 0.2])));
   styleTint(gems.mesh.material.color.setRGB(2.4, 0.15, 0.15));
   styleTint(floorMat.uniforms.uAccent.value.setRGB(2.2, 0.25, 0.25));
   styleTint(skyMat.uniforms.uEmberCol.value.setRGB(0.30, 0.02, 0.02));
+  styleTint(edgePass.uniforms.uTint.value.setRGB(1.6, 0.35, 0.35));
   player.sens = opts.sens;
   // reconcile music with the toggle live (only while a run is active)
   if (state === 'playing') {
@@ -1163,12 +1238,14 @@ function showPause() {
      ${optRow('FX', 'smear', [true, false], v => v ? 'SMEAR ON' : 'SMEAR OFF')}
      ${optRow('', 'shake', [true, false], v => v ? 'SHAKE ON' : 'SHAKE OFF')}
      ${optRow('', 'chroma', [true, false], v => v ? 'CHROMA ON' : 'CHROMA OFF')}
+     ${optRow('', 'edge', [true, false], v => v ? 'EDGE ON' : 'EDGE OFF')}
      ${optRow('', 'music', [true, false], v => v ? 'MUSIC ON' : 'MUSIC OFF')}
      ${optRow('A11Y', 'motion', [true, false], v => v ? 'MOTION FULL' : 'MOTION REDUCED')}
      ${optRow('', 'contrast', [false, true], v => v ? 'CONTRAST HIGH' : 'CONTRAST NORMAL')}
      ${optRow('PERF', 'perf', ['auto', 'high', 'low'], v => v.toUpperCase())}
      ${optRow('', 'haptics', [true, false], v => v ? 'HAPTICS ON' : 'HAPTICS OFF')}
      ${optRow('VOXEL', 'detail', ['auto', 1, 2, 3, 4], v => v === 'auto' ? 'AUTO' : ({ 1: '1X', 2: '8X', 3: '27X', 4: '64X' })[v])}
+     ${optRow('LOOK', 'look', ['smooth', 'cubes'], v => v.toUpperCase())}
      ${optRow('STYLE', 'style', ['crimson', 'cyan', 'gold', 'violet'], v => v.toUpperCase())}
      <p class="go">click / tap anywhere else to resume</p>`;
   for (const b of elMsg.querySelectorAll('button.opt')) {
@@ -1840,14 +1917,45 @@ function killEnemy(e, dir) {
   e.remove(scene);
 }
 
+/** The other half of DD's gunfeel: a tap dumps a fistful of daggers in a
+ *  wide cone at once, then locks the hand out briefly. Burst damage for a
+ *  brute in your face, at the cost of your stream. */
+function fireShotgun(w) {
+  for (let i = 0; i < T.weapon.shotgunCount[weaponLv]; i++) {
+    fireDagger(T.weapon.shotgunSpread, T.weapon.daggerSpeed * (0.92 + Math.random() * 0.16), w.homing);
+  }
+  shotCd = T.weapon.shotgunCd;
+  recoil = 0.06;
+  fovKick = Math.max(fovKick, 3.5);
+  trauma = Math.max(trauma, 0.22);
+  audio.shotgun();
+  buzz(0.5, 0.3, 90);
+}
+
 function updateCombat(dt) {
   const w = WEAPON[weaponLv];
 
-  // minimalistic shooting: the stream is automatic while you're moving;
-  // holding LMB / the look stick fires while standing still
-  const mv = input.getMove();
-  const autoFire = Math.hypot(mv.x, mv.y) > T.weapon.autoFireMove;
-  if (input.firing || autoFire) {
+  // DD gunfeel: TAP = shotgun burst, HOLD = stream — every dagger manually
+  // aimed on desktop and pad. Touch alone keeps the old auto-fire (a thumb
+  // can't work two sticks and a trigger; owner's call, 2026-07-31).
+  shotCd = Math.max(0, shotCd - dt);
+  let streaming;
+  if (input.touchMode && !input.gamepad) {
+    const mv = input.getMove();
+    streaming = input.firing || Math.hypot(mv.x, mv.y) > T.weapon.autoFireMove;
+  } else {
+    const held = input.firing;
+    if (held) {
+      fireHeldT += dt;
+    } else {
+      // a press released before the stream spun up was a TAP → shotgun
+      if (fireWasHeld && fireHeldT < T.weapon.streamDelay && shotCd <= 0) fireShotgun(w);
+      fireHeldT = 0;
+    }
+    fireWasHeld = held;
+    streaming = held && fireHeldT >= T.weapon.streamDelay;
+  }
+  if (streaming && shotCd <= 0) {
     fireTimer -= dt;
     while (fireTimer <= 0) {
       fireTimer += 1 / w.stream;
@@ -1937,7 +2045,10 @@ function updateCombat(dt) {
     }
   }
   for (let j = enemies.length - 1; j >= 0; j--) {
-    if (!enemies[j].alive) enemies.splice(j, 1);
+    if (!enemies[j].alive) {
+      enemies[j].remove(scene); // no-op after killEnemy; releases debug/edge-path kills
+      enemies.splice(j, 1);
+    }
   }
 
   // gems: magnet + collect
@@ -2227,6 +2338,11 @@ function updateFeel(dt) {
   // sky ember swells with trauma and while the Leviathan is on the field
   skyMat.uniforms.uEmber.value = t2 * 0.9 + (levAlive ? 0.7 : 0);
   fovKick = Math.max(0, fovKick - dt * 18);
+  // smear deepens mid-dash — HYPERDEMON smears hardest at speed. dashK decays
+  // with the dash itself, so the heavy end is always transient.
+  if (afterimage.enabled) {
+    afterimage.uniforms['damp'].value = SMEAR_BASE + player.dashK * SMEAR_DASH;
+  }
   const fov = opts.fov + (opts.motion ? player.dashK * 9 + fovKick : 0);
   if (Math.abs(camera.fov - fov) > 0.01) {
     camera.fov = fov;
@@ -2333,6 +2449,15 @@ window.__hd = {
     reap() { return tryReap(); },
     getReap() { return { cool: +reapCool.toFixed(2), bones: litter.count }; },
     getTuning() { return T; },
+    getGun() { return { shotCd: +shotCd.toFixed(2), heldT: +fireHeldT.toFixed(2) }; },
+    getLook() {
+      const e = enemies.find(x => x.alive && x.sprite);
+      return {
+        mode: opts.look, hullMode: getHullMode(),
+        sample: e ? { hull: !!e.sprite.hull, cubes: e.sprite.mesh.count, tris: e.sprite.hull ? e.sprite.hull.geometry.getAttribute('position').count / 3 : 0 } : null,
+        hand: !!hand.hull,
+      };
+    },
     // aim: raw() reports the assist a stick WOULD get right now, ignoring the
     // "is a stick even in use" gate, so tests can probe the falloff curve
     // without faking a gamepad
@@ -2364,8 +2489,8 @@ window.__hd = {
     lastPulsePicks,
     getDailyTable() { return readDailyTable(); },
     pulse(n) { runPulse(n ?? ++pulseN); },
-    setOpt(k, v) { opts[k] = v; saveOpts(); },
-    getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, fov: camera.fov, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
+    setOpt(k, v) { opts[k] = v; saveOpts(); applyOpts(); },
+    getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, edge: edgePass.enabled, edgeAmt: edgePass.uniforms.uAmt.value, damp: afterimage.uniforms['damp'].value, gridGlow: floorMat.uniforms.uGlow.value, fov: camera.fov, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
     getVfx() { return { shadows: shadows.count, sparks: sparks.length, speedOn: speedPass.enabled, rippleT, rippleOn: ripplePass.enabled, ember: skyMat.uniforms.uEmber.value }; },
     /** Everything that could leak over a long run: pool occupancy, scene graph
      *  size, and GPU resource counts. A survival game lives or dies on the

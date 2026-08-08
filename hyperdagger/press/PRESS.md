@@ -51,6 +51,8 @@ shared leaderboard, and a full options menu down to voxel density.
 
 ## Features
 
+- **Devil Daggers gunfeel** — tap for a shotgun burst, hold for the stream;
+  every dagger manually aimed
 - **Two rulesets** — PURE (one touch kills) and HYPER (a draining clock is your
   health; kills buy seconds)
 - **~16 enemy types** introduced one at a time on a guaranteed schedule
@@ -67,8 +69,8 @@ shared leaderboard, and a full options menu down to voxel density.
 
 | | Move | Fire | Jump | Dash | Pause |
 |---|---|---|---|---|---|
-| **Mouse + keys** | WASD | automatic while moving (hold LMB when still) | Space ×2 | Shift | Esc |
-| **Gamepad** | left stick | RT/RB or moving | A/✕ ×2 | B/○ | Start |
+| **Mouse + keys** | WASD | LMB — tap = shotgun burst, hold = stream | Space ×2 | Shift | Esc |
+| **Gamepad** | left stick | RT/RB — tap = burst, hold = stream | A/✕ ×2 | B/○ | Start |
 | **Touch** | left stick | automatic while moving | tap either stick | flick either stick | ⏸ |
 
 ## Tech notes (for a devlog / HN-style audience)
@@ -76,8 +78,14 @@ shared leaderboard, and a full options menu down to voxel density.
 - Vanilla **Three.js r167**, no build step, no framework, no dependencies beyond
   a vendored copy of three. Open the HTML file and it runs.
 - Enemies are **string-art voxel models** — text layers in source, parsed into
-  one `InstancedMesh` each, subdivided ×64 at the default density (a dread skull
-  is 5,824 voxels).
+  one `InstancedMesh` each. The skull is sculpted at 11×5×10 with real anatomy
+  (sockets, teeth, nasal cavity), and the parser **bakes ambient occlusion** —
+  crevices darken, tops lift, a hash grain breaks flat fills — so unlit voxels
+  read as material (a dread skull is 9,639 voxels at full detail).
+- While **alive**, an enemy wears a **smoothed mesh hull** generated from its
+  own lattice — culled outer faces, welded corners, heavy Laplacian smoothing,
+  one flat color per face. Damage tears real holes in it and the skin re-forms
+  around the wound; death dissolves it back into the voxels it was made of.
 - Per-voxel animation runs entirely in a **vertex shader** shared by every
   sprite, so density costs nothing on the CPU.
 - Debris, the bone-yard, daggers, orbs and gems are each **one draw call**; the
@@ -93,7 +101,7 @@ shared leaderboard, and a full options menu down to voxel density.
 |---|---|
 | `01-hero-husk-breached.png` | A husk with its shell chewed open and the core blazing, standing in a bone-yard |
 | `02-boneyard.png` | The floor after three heavy kills — carnage that stays |
-| `03-swarm.png` | Mid-run: the swarm, a spawn telegraph, daggers in flight |
+| `03-swarm.png` | Mid-run: the swarm closing in under the spawn telegraphs |
 | `04-shatter.png` | One ×64 enemy shattering into ~486 individual pieces |
 | `05-style-cyan.png` | The CYAN style preset — same game, re-hued accent |
 | `06-voxel-lab.png` | The Voxel Lab workbench |
