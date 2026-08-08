@@ -2,6 +2,16 @@
 
 The public release number. The `?v=N` token in `index.html` is a separate thing: it tracks every module-graph change so a browser cannot serve half of one build and half of another. Bump both when shipping.
 
+## v14 — 2026-08-08
+
+Literal raster-sprite proof using the Conrad SNES sheet as motion/silhouette reference.
+
+- **The procedural character rig is removed from the playable proof.** The visible character is encoded as complete raster frames.
+- **No pose interpolation, joints, limb angles or skeletal renderer are used** for the displayed walk/run/turn frames.
+- **Run, walk and turn are the only focus of this proof.** Environment/gameplay content is intentionally removed so the character motion can be judged directly.
+- **The Conrad sheet is reference only:** the proof ships newly authored Flash Prince pixels, not original Flashback sprite artwork.
+- **Hub Play now opens the v14 raster-sprite proof.**
+
 ## v13 — 2026-08-08
 
 Conrad-sheet reference motion pass.
