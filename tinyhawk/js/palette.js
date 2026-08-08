@@ -1,7 +1,7 @@
 // ── Palette ────────────────────────────────────────────────────────────────
 // Art direction: Skate Story. A near-black world washed in ONE dominant hue,
 // everything reading as silhouette, and the only bright things are glowing
-// line-work and the skater — who is a faceted prism, not a painted figure.
+// line-work and the faceted fat-bird skater.
 //
 // This deliberately breaks the flat-unlit rule that paperboy and dropcabal
 // follow. It follows hyperdagger instead: ACES tone mapping and an

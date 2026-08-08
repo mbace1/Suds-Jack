@@ -40,7 +40,7 @@
     "from": "cache token"
   },
   "tinyhawk": {
-    "v": 4,
+    "v": 5,
     "from": "VERSIONS.md"
   },
   "tiny2d": {
