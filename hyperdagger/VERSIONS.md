@@ -8,6 +8,20 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v24 — 2026-08-08
+**The view becomes part of the weapon**
+- The spherical projection now opens dynamically from a wide, stable aiming
+  view toward nearly 180 degrees as combat pressure, weapon power and style
+  rise. Peripheral expansion is continuous rather than a binary effect.
+- Rear threats are separated from rear space as animated red holograms:
+  darker rear geometry, enlarged silhouette-preserving outlines and live scan
+  breakup keep actual enemy shapes readable against the arena.
+- The final image gains combat-reactive spectral separation, pearlescent edge
+  colour, hardened contrast and short radial muzzle stars. Shotgun bursts and
+  dagger streams now change the frame itself without covering the reticle.
+- Reduced-motion and performance tiers retain their existing fallbacks. New
+  smoke probes lock the dynamic projection, FOV and chromatic escalation.
+
 ## v23 — 2026-08-08
 **The arena wraps around you**
 - A real spherical projection now bends the live 3D arena through the side

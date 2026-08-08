@@ -286,6 +286,27 @@ s.listen(0, '127.0.0.1', async () => {
     projection23.off.enabled === false && projection23.low.enabled === false,
     JSON.stringify(projection23));
 
+  // ---- v24 combat-reactive visual stack --------------------------------
+  const vision24 = await p.evaluate(async () => {
+    const hd = window.__hd;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    hd.debug.setOpt('perf', 'high');
+    hd.debug.setOpt('projection', true);
+    const quiet = hd.debug.getFx();
+    hd.debug.addStyle(118);
+    hd.debug.addGems(70);
+    await frames(5);
+    const hot = { fx: hd.debug.getFx(), projection: hd.debug.getProjection() };
+    hd.debug.setOpt('perf', 'auto');
+    return { quiet, hot };
+  });
+  ok('v24 combat intensity opens the view and spectral split',
+    vision24.hot.fx.vision > vision24.quiet.vision + 0.12 &&
+    vision24.hot.fx.fov > vision24.quiet.fov + 1.5 &&
+    vision24.hot.fx.chromaAmount > vision24.quiet.chromaAmount + 0.0004 &&
+    vision24.hot.projection.amount > 0.84,
+    JSON.stringify(vision24));
+
   const swoop = await p.evaluate(async () => {
     const hd = window.__hd;
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
