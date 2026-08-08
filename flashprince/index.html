@@ -4,20 +4,38 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#000000">
-  <title>Flash Prince — Remake Lab</title>
+  <title>Flash Prince</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { background:#000; height:100%; overflow:hidden; touch-action:none; overscroll-behavior:none; -webkit-tap-highlight-color:transparent; }
-    #screen { display:block; width:100vw; height:100vh; image-rendering:pixelated; image-rendering:crisp-edges; user-select:none; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{width:100%;height:100%;background:#000;overflow:hidden;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+    body{display:grid;grid-template-rows:minmax(0,1fr) auto;touch-action:none}
+    #stage{min-height:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    #screen{display:block;max-width:100%;max-height:100%;width:auto;height:auto;aspect-ratio:5/3;image-rendering:pixelated;image-rendering:crisp-edges;user-select:none;touch-action:none}
+    #deck{display:none;height:126px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));border-top:1px solid #31382a;background:#080b08;align-items:center;justify-content:space-between;gap:18px;touch-action:none}
+    .cluster{display:grid;grid-template-columns:56px 56px 56px;grid-template-rows:48px 48px;gap:5px}
+    .key{appearance:none;border:1px solid #76864e;background:#11170f;color:#c8ee5a;font:700 20px/1 monospace;border-radius:8px;box-shadow:inset 0 0 0 1px #1c2418;touch-action:none;user-select:none}
+    .key:active,.key.on{background:#28351d;color:#fff;border-color:#c8ee5a}
+    .up{grid-column:2;grid-row:1}.left{grid-column:1;grid-row:2}.down{grid-column:2;grid-row:2}.right{grid-column:3;grid-row:2}
+    .jump{width:94px;height:94px;border-radius:50%;font-size:15px;letter-spacing:.08em}
+    @media (hover:none),(pointer:coarse){#deck{display:flex}#stage{padding:6px}}
   </style>
 </head>
 <body>
-  <canvas id="screen"></canvas>
+  <main id="stage"><canvas id="screen" width="320" height="192"></canvas></main>
+  <nav id="deck" aria-label="Game controls">
+    <div class="cluster">
+      <button class="key up" data-game-key="up" aria-label="Up">▲</button>
+      <button class="key left" data-game-key="left" aria-label="Left">◀</button>
+      <button class="key down" data-game-key="down" aria-label="Down">▼</button>
+      <button class="key right" data-game-key="right" aria-label="Right">▶</button>
+    </div>
+    <button class="key jump" data-game-key="jump" aria-label="Jump">JUMP</button>
+  </nav>
   <script type="module" src="../hub/shell.js?v=15"></script>
-  <script type="module" src="js/movement-lab-v2.js?v=5"></script>
+  <script type="module" src="js/movement-lab-v2.js?v=6"></script>
   <script type="module">
     import { sign } from '../toko/js/signature.js?v=3';
-    sign({ corner: 'bottom-left', counter: true });
+    sign({ corner:'bottom-left', counter:true });
   </script>
 </body>
 </html>
