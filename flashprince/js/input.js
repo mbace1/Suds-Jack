@@ -6,11 +6,13 @@
 // direction and hands that count to the hero, and the hero decides what it
 // meant. There is no analogue anything: an eight-way pad in 1991 and a thumb in
 // 2026 both resolve to the same three values.
+//
+// v3 movement-lab rule: a committed animation may delay a command, but it must
+// not silently eat a sensible command pressed near the transition. Edges are
+// therefore remembered for a few simulation frames. The hero still decides
+// WHEN an action is physically legal; Input only remembers WHAT the player
+// asked for. This is commitment without dead controls.
 
-// Up is BOTH the direction and the jump, as it is in Prince of Persia — the
-// same key that leaps also pulls you over a lip and stands you out of a crouch,
-// because in all three of these games "up" means "commit upward" rather than
-// "point upward". A code can therefore belong to two of these at once.
 const KEYS = {
   left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'],
   up: ['ArrowUp', 'KeyW'], down: ['ArrowDown', 'KeyS'],
@@ -18,6 +20,8 @@ const KEYS = {
   fire: ['KeyX', 'KeyJ', 'Enter'], gun: ['KeyE', 'ShiftLeft', 'ShiftRight'],
   pause: ['Escape', 'KeyP'],
 };
+
+const BUFFER_FRAMES = { jump: 8, fire: 6, gun: 6 };
 
 export class Input {
   constructor(scr) {
@@ -28,8 +32,9 @@ export class Input {
     this.jump = false; this.fire = false; this.gun = false;
     this.jumpPress = false; this.firePress = false; this.gunPress = false;
     this.pausePress = false; this.anyPress = false;
+    this.buffer = { jump: 0, fire: 0, gun: 0 };
     this.touch = false;
-    this.zones = [];                // filled in by the HUD each frame
+    this.zones = [];
     this.pointers = new Map();
     this.padPrev = [];
 
@@ -49,10 +54,6 @@ export class Input {
     addEventListener('blur', () => this.held.clear());
 
     const surf = document.getElementById('screen');
-    // A finger going down is an EDGE in its own right. A tap can begin and end
-    // inside a single frame, so a poll that only looks at which pointers are
-    // currently held will miss it entirely — which is what made the title
-    // screen ignore taps while answering every key.
     const set = (id, on, x, y) => {
       this.touch = true;
       if (!on) { this.pointers.delete(id); return; }
@@ -80,16 +81,26 @@ export class Input {
     return out;
   }
 
+  remember(k) {
+    if (BUFFER_FRAMES[k]) this.buffer[k] = BUFFER_FRAMES[k];
+  }
+
   edge(k) {
-    if (k === 'jump') this.jumpPress = true;
-    if (k === 'fire') this.firePress = true;
-    if (k === 'gun') this.gunPress = true;
+    if (k === 'jump') { this.jumpPress = true; this.remember('jump'); }
+    if (k === 'fire') { this.firePress = true; this.remember('fire'); }
+    if (k === 'gun') { this.gunPress = true; this.remember('gun'); }
     if (k === 'pause') this.pausePress = true;
     this.anyPress = true;
   }
 
-  // the on-screen pad. main.js declares where the buttons are so there is one
-  // description of them and the drawing and the hit-testing cannot disagree.
+  consume(k) {
+    if (!(k in this.buffer)) return;
+    this.buffer[k] = 0;
+    if (k === 'jump') this.jumpPress = false;
+    if (k === 'fire') this.firePress = false;
+    if (k === 'gun') this.gunPress = false;
+  }
+
   setZones(z) { this.zones = z; }
 
   zoneHeld(name) {
@@ -110,7 +121,6 @@ export class Input {
     if (this.touch) {
       L = L || this.zoneHeld('left'); R = R || this.zoneHeld('right');
       U = U || this.zoneHeld('up'); D = D || this.zoneHeld('down');
-      // the up pad is the jump button too, same as the arrow key is
       J = J || this.zoneHeld('jump') || U; F = F || this.zoneHeld('fire'); G = G || this.zoneHeld('gunbtn');
     }
 
@@ -135,17 +145,22 @@ export class Input {
     this.dir = dir;
     this.up = U; this.down = D;
 
-    // touch and pad have no keydown, so edges are derived here for everyone
-    if (J && !wasJump) this.jumpPress = true;
-    if (F && !wasFire) this.firePress = true;
-    if (G && !wasGun) this.gunPress = true;
+    if (J && !wasJump) { this.jumpPress = true; this.remember('jump'); }
+    if (F && !wasFire) { this.firePress = true; this.remember('fire'); }
+    if (G && !wasGun) { this.gunPress = true; this.remember('gun'); }
     if ((J && !wasJump) || (F && !wasFire) || (G && !wasGun)) this.anyPress = true;
     this.jump = J; this.fire = F; this.gun = G;
+
+    this.jumpPress = this.jumpPress || this.buffer.jump > 0;
+    this.firePress = this.firePress || this.buffer.fire > 0;
+    this.gunPress = this.gunPress || this.buffer.gun > 0;
   }
 
-  // called at the end of a frame: edges last exactly one frame
   flush() {
     this.jumpPress = this.firePress = this.gunPress = false;
     this.pausePress = false; this.anyPress = false;
+    for (const k of Object.keys(this.buffer)) {
+      if (this.buffer[k] > 0) this.buffer[k]--;
+    }
   }
 }
