@@ -2,25 +2,17 @@
 //
 // This deliberately sits beside hero.js rather than replacing it yet. The lab
 // uses the real Hero collision, ledge, fall and jump machinery, but this class
-// replaces the locomotion timing model so we can prove the feel before the
-// campaign inherits it.
-//
-// The contract is no longer "input is ignored until open". Every finite move
-// has three phases:
-//   anticipate — the body is preparing force
-//   commit      — physics must finish what was started
-//   transition  — the body still finishes, but the next intent may be accepted
-// Buffered input is consumed only when a physically valid transition begins.
+// replaces locomotion timing so we can prove the feel before the campaign
+// inherits it.
 
-import { Hero, HERO_H, CROUCH_H } from './hero.js';
+import { Hero, HERO_H } from './hero.js';
 import { POSE as Q, sample } from './figure.js';
+import { R } from './movement-poses.js';
 
 const phase = (dur, anticipate, transition, extra = {}) => ({
   dur, anticipate, commit: transition - anticipate, transition, ...extra,
 });
 
-// Root-motion curves are per-frame samples. The important difference from a
-// flat speed is that feet can plant, push and settle while distance stays exact.
 const FLOW = {
   stand: { dur: 999, loop: true, transition: 0, clip: [[Q.breathe, 46], [Q.stand, 54]] },
 
@@ -29,41 +21,41 @@ const FLOW = {
     clip: [[Q.step1, 7], [Q.step2, 8], [Q.step3, 7]],
   }),
 
-  // A run does not appear from nowhere. Six frames of forward weight transfer
-  // bridge the careful step into the first full running contact.
-  runStart: phase(8, 2, 6, {
-    root: [0.45,0.72,1.02,1.28,1.48,1.58,1.62,1.62],
-    clip: [[Q.step3, 2], [Q.run2, 2], [Q.run1, 4]],
+  // Rotoscope 2.0: these are no longer recycled run/step keys. The torso loads,
+  // the rear leg pushes, then the body crosses into the first running contact.
+  runStart: phase(9, 2, 7, {
+    root: [0.24,0.42,0.68,0.96,1.22,1.43,1.56,1.62,1.62],
+    clip: [[R.startLoad, 3], [R.startPush, 3], [R.startFly, 2], [Q.run1, 1]],
   }),
 
   run: { dur: 999, loop: true, transition: 0, speed: 1.62,
     clip: [[Q.run1, 5], [Q.run2, 5], [Q.run3, 5], [Q.run4, 5]] },
 
-  // Stop is intentionally longer than the old skid. A human at speed spends
-  // distance killing that speed; releasing the stick is not a brake button.
   runStop: phase(20, 0, 12, {
     root: [1.52,1.44,1.34,1.23,1.10,0.96,0.82,0.69,0.57,0.46,0.36,0.28,0.21,0.15,0.10,0.06,0.03,0.01,0,0],
-    clip: [[Q.skid, 10], [Q.turnA, 4], [Q.stand, 6]],
+    clip: [[R.brakeReach, 5], [R.brakePlant, 7], [R.brakeSettle, 5], [Q.stand, 3]],
   }),
 
-  // Reversal is stop → planted pivot → acceleration. The facing flip happens
-  // at the planted middle frame, never while the body is still travelling.
-  pivot: phase(15, 3, 11, {
-    flipAt: 8,
-    root: [0.22,0.16,0.10,0.05,0,0,0,0,0,0.04,0.12,0.24,0.42,0.62,0.84],
+  pivot: phase(16, 3, 12, {
+    flipAt: 9,
+    root: [0.18,0.13,0.08,0.04,0,0,0,0,0,0.03,0.10,0.20,0.34,0.50,0.68,0.88],
     rootSigned: true,
-    clip: [[Q.skid, 4], [Q.turnA, 4], [Q.turnB, 4], [Q.run2, 3]],
+    clip: [[R.pivotLoad, 5], [R.pivotPlant, 4], [R.pivotPush, 4], [R.startPush, 3]],
   }),
 
   gather: phase(7, 2, 7, { clip: [[Q.gather, 7]] }),
-  gatherRun: phase(4, 1, 4, { root: [1.25,1.42,1.55,1.62], clip: [[Q.run2, 1], [Q.gather, 3]] }),
+  gatherRun: phase(4, 1, 4, { root: [1.25,1.42,1.55,1.62], clip: [[R.startFly, 1], [Q.gather, 3]] }),
   air: { dur: 999, air: true, transition: 0, clip: [[Q.launch, 6], [Q.rise, 8], [Q.apex, 10], [Q.descend, 40]] },
   fall: { dur: 999, air: true, transition: 0, clip: [[Q.descend, 8], [Q.descend, 40]] },
-  land: phase(12, 4, 8, { clip: [[Q.land, 6], [Q.stand, 6]] }),
-  landHard: phase(26, 8, 23, { clip: [[Q.sprawl, 14], [Q.land, 7], [Q.stand, 5]] }),
 
+  land: phase(13, 4, 9, { clip: [[R.landCatch, 5], [R.landRise, 5], [Q.stand, 3]] }),
+  landHard: phase(28, 9, 24, { clip: [[Q.sprawl, 12], [R.landCatch, 7], [R.landRise, 6], [Q.stand, 3]] }),
+
+  // A catch now has its own impact instead of snapping directly to a calm hang.
+  ledgeCatch: phase(12, 0, 12, { hang: true, clip: [[R.catchHit, 4], [R.catchDrop, 5], [Q.hang, 3]] }),
   hang: { dur: 999, loop: true, hang: true, transition: 0, clip: [[Q.hang, 70], [Q.hangSwing, 70]] },
-  pullUp: phase(40, 8, 34, { hang: true, clip: [[Q.hang, 4], [Q.pullUp, 14], [Q.mantle, 13], [Q.standUp, 9]] }),
+  pullUp: phase(42, 8, 36, { hang: true,
+    clip: [[Q.hang, 4], [Q.pullUp, 13], [R.mantleKnee, 12], [R.mantleRise, 9], [Q.stand, 4]] }),
 
   crouch: phase(9, 3, 8, { low: true, clip: [[Q.crouch, 9]] }),
   crouchIdle: { dur: 999, loop: true, low: true, transition: 0, clip: [[Q.crouch, 60], [Q.crouchLo, 60]] },
@@ -94,8 +86,6 @@ export class MovementHero extends Hero {
 
     if (m.flipAt && this.f === m.flipAt) this.face *= -1;
 
-    // Authored root motion first. Pivot root is signed against the facing at
-    // entry so the body brakes before the flip and accelerates after it.
     if (m.root) {
       const k = Math.min(m.root.length - 1, this.f - 1);
       const basis = m.rootSigned ? (this.f < (m.flipAt || 999) ? this.enterFace : this.face) : this.face;
@@ -129,6 +119,42 @@ export class MovementHero extends Hero {
     super.stickToFloor(world);
   }
 
+  // The inherited ledge finder remains authoritative; only the arrival state
+  // changes. Hands still snap to the exact physical lip, then the catch impact
+  // visibly spends twelve frames before the calm hanging loop begins.
+  grab(ledge) {
+    this.x = ledge.x;
+    this.y = ledge.y + 26;
+    this.face = ledge.face;
+    this.vx = this.vy = 0;
+    this.ledgeY = ledge.y;
+    this.go('ledgeCatch');
+  }
+
+  hangFrame(world, input, done) {
+    if (this.state === 'ledgeCatch') {
+      // a tiny pendulum settle: hands stay fixed while feet/body drop under them.
+      const t = Math.min(1, this.f / FLOW.ledgeCatch.dur);
+      this.y = this.ledgeY + 26 + Math.sin(t * Math.PI) * 1.5;
+      if (done) { this.y = this.ledgeY + 26; this.go('hang'); }
+      return;
+    }
+
+    if (this.state === 'pullUp') {
+      const t = Math.min(1, Math.max(0, (this.f - 6) / 29));
+      this.y = this.ledgeY + 26 - 26 * t;
+      this.x += (this.f > 23 ? 0.40 : 0.11) * this.face;
+      if (done) { this.y = this.ledgeY; this.go('stand'); }
+      return;
+    }
+
+    if (input.up) { this.go('pullUp'); return; }
+    if (input.down || input.dir === -this.face) {
+      this.vx = 0; this.vy = 0.4; this.fallFrom = this.y;
+      this.go('fall');
+    }
+  }
+
   flow(world, input, game, done) {
     const s = this.state;
 
@@ -153,8 +179,7 @@ export class MovementHero extends Hero {
 
     if (s === 'runStart') {
       if (this.buffered(input, 'jump')) { this.take(input, 'jump'); this.jump(world, input, true); return; }
-      if (input.dir === -this.face) { this.go('runStop'); return; }
-      if (!input.dir) { this.go('runStop'); return; }
+      if (input.dir === -this.face || !input.dir) { this.go('runStop'); return; }
       if (done) this.go('run');
       return;
     }
@@ -169,8 +194,6 @@ export class MovementHero extends Hero {
     }
 
     if (s === 'runStop') {
-      // Reversal requested during braking is remembered by held direction; the
-      // pivot starts only after enough speed has physically bled away.
       if (input.dir === -this.face) this.wantReverse = true;
       if (this.buffered(input, 'jump') && this.f >= 15) {
         this.take(input, 'jump'); this.jump(world, input, false); return;
@@ -192,7 +215,7 @@ export class MovementHero extends Hero {
     }
 
     if (s === 'land') {
-      if (this.buffered(input, 'jump') && this.f >= 9) { this.take(input, 'jump'); this.jump(world, input, false); return; }
+      if (this.buffered(input, 'jump') && this.f >= 10) { this.take(input, 'jump'); this.jump(world, input, false); return; }
       if (done) {
         if (input.dir === this.face) this.go('step');
         else if (input.dir === -this.face) this.go('pivot');
