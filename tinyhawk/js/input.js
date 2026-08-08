@@ -110,16 +110,17 @@ export class FlickIt {
         act = {
           dir: Math.abs(x) > 0.4 ? (x < 0 ? 'left' : 'right') : 'up',
           power: power(Math.hypot(vx, vy), this.depth),
+          pop: true,
         };
       } else if (y < RELEASE_Y && vy <= -RELEASE_SPEED) {
         // A physical stick springs to centre and a touchscreen thumb lifts.
         // Both are legitimate releases of a loaded ollie. Requiring the input
         // to cross above centre made quick pops vanish on phones and made real
         // pads feel broken unless the player exaggerated every gesture.
-        act = { dir: 'up', power: power(Math.hypot(vx, vy), this.depth) };
+        act = { dir: 'up', power: power(Math.hypot(vx, vy), this.depth), pop: true };
       } else if (Math.abs(vx) >= SHUV_SPEED && Math.abs(vx) > Math.abs(vy) * 1.5 && y > 0.15) {
         // Genuinely sideways, not the sideways part of a diagonal pop.
-        act = { dir: 'down', power: power(Math.abs(vx), this.depth) };
+        act = { dir: 'down', power: power(Math.abs(vx), this.depth), pop: true };
       } else if (y < LOAD_Y * 0.35 && vy > -POP_SPEED) {
         // Eased back out without committing. The speed guard matters: without
         // it, a flick fast enough to cross neutral in one frame un-loads on the
@@ -137,7 +138,7 @@ export class FlickIt {
   // the thumb lifts instead of resetting the gesture before it is observed.
   release(airborne) {
     if (airborne || !this.loaded || this.cool > 0) return null;
-    const act = { dir: 'up', power: power(POP_SPEED, this.depth) };
+    const act = { dir: 'up', power: power(POP_SPEED, this.depth), pop: true };
     this.loaded = false;
     this.depth = 0;
     this.cool = GESTURE_COOL;
@@ -214,9 +215,10 @@ export class InputManager {
     this.restR = { x: innerWidth - m, y: innerHeight - m };
   }
 
-  fire(dir, powerV) {
-    this.actions.push({ dir, power: powerV });
-    this.actionLog.push({ dir, power: powerV });
+  fire(dir, powerV, detail = {}) {
+    const action = { ...detail, dir, power: powerV };
+    this.actions.push(action);
+    this.actionLog.push(action);
     if (this.actionLog.length > 40) this.actionLog.shift();
     this.flash = { dir, t: 0.3 };
   }
@@ -290,7 +292,7 @@ export class InputManager {
       const s = this[this._mouseSide];
       if (this._mouseSide === 'right') {
         const act = this.touchFlick.release(this.airborne);
-        if (act) this.fire(act.dir, act.power);
+        if (act) this.fire(act.dir, act.power, act);
       }
       s.active = false; s.dx = 0; s.dy = 0;
       this._mouseSide = null;
@@ -347,7 +349,7 @@ export class InputManager {
       const s = this[side];
       if (side === 'right') {
         const act = this.touchFlick.release(this.airborne);
-        if (act) this.fire(act.dir, act.power);
+        if (act) this.fire(act.dir, act.power, act);
       }
       s.active = false; s.dx = 0; s.dy = 0;
       if (side === 'right') this.touchFlick.reset();
@@ -363,7 +365,7 @@ export class InputManager {
       clampUnit(stick.dx / STICK_R), clampUnit(stick.dy / STICK_R),
       dt, this.airborne
     );
-    if (act) this.fire(act.dir, act.power);
+    if (act) this.fire(act.dir, act.power, act);
   }
 
   // ── Gamepad ──────────────────────────────────────────────────────────────
@@ -415,7 +417,7 @@ export class InputManager {
       // a manual nudge for when you want to look around.
       this._pad.look = { x: (btn(5) ? 1 : 0) - (btn(4) ? 1 : 0), y: 0 };
       const act = this.padFlick.sample(rx, ry, dt, this.airborne);
-      if (act) this.fire(act.dir, act.power);
+      if (act) this.fire(act.dir, act.power, act);
     } else {
       // THPS: right stick is the camera, tricks are on the face buttons, and
       // the ollie is a hold-and-release charge on A.
