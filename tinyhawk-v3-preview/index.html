@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Tiny Hawk — shoot the part</title>
+  <style>
+    :root {
+      --ink: #f1ecde;
+      --dim: rgba(241,236,222,.56);
+      --ghost: rgba(241,236,222,.14);
+      --mint: #8fe6d8;
+      --gold: #e8c98a;
+      --red: #ff665c;
+      --void: #03060c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; }
+    body {
+      overflow: hidden;
+      touch-action: none;
+      background: var(--void);
+      color: var(--ink);
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    canvas { display: block; }
+    #canvas-game { width: 100%; height: 100%; }
+    #canvas-ui { position: fixed; inset: 0; pointer-events: none; }
+    .hidden { display: none !important; }
+
+    #hud {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      text-shadow: 0 2px 12px #000;
+    }
+    #objective {
+      position: absolute;
+      left: 50%;
+      top: max(20px, env(safe-area-inset-top));
+      width: min(76vw, 520px);
+      transform: translateX(-50%);
+      text-align: center;
+    }
+    #objName { color: var(--gold); font-size: 16px; letter-spacing: .08em; text-transform: uppercase; }
+    #objBar { height: 5px; margin: 6px auto 0; border: 1px solid rgba(232,201,138,.55); }
+    #objFill { width: 0; height: 100%; background: rgba(232,201,138,.75); transition: width .18s linear; }
+    #goals { display: flex; justify-content: center; gap: 12px; margin-top: 7px; font: 10px/1.25 ui-monospace, monospace; color: var(--dim); }
+    #goals .got { color: var(--mint); }
+
+    #runState {
+      position: absolute;
+      left: max(16px, env(safe-area-inset-left));
+      top: max(18px, env(safe-area-inset-top));
+      font: 11px/1.5 ui-monospace, monospace;
+      letter-spacing: .08em;
+      color: var(--dim);
+    }
+    #runState strong { color: var(--ink); font-weight: 600; }
+    #film { color: var(--red); letter-spacing: .15em; }
+    #footage { color: var(--gold); }
+
+    #mph {
+      position: absolute;
+      left: max(16px, env(safe-area-inset-left));
+      bottom: max(18px, env(safe-area-inset-bottom));
+      font: 12px/1.2 ui-monospace, monospace;
+      color: var(--dim);
+    }
+    #mph .arrows { color: var(--mint); letter-spacing: 2px; margin-left: 6px; }
+    #mphBar { width: 96px; height: 3px; margin-top: 5px; background: var(--ghost); }
+    #mphFill { width: 0; height: 100%; background: var(--mint); }
+
+    #centre {
+      position: absolute;
+      left: 50%;
+      bottom: max(22px, env(safe-area-inset-bottom));
+      width: min(88vw, 650px);
+      transform: translateX(-50%);
+      text-align: center;
+    }
+    #scoreRow { display: flex; align-items: baseline; justify-content: center; gap: 14px; }
+    #score { color: #efe7d2; font-size: clamp(25px, 5vw, 34px); font-style: italic; }
+    #mult { color: rgba(239,231,210,.82); font-size: 17px; }
+    #rule { height: 1px; margin: 3px 0 6px; background: rgba(239,231,210,.42); }
+    #trick { min-height: 1.3em; color: var(--gold); font-size: clamp(15px, 3.6vw, 21px); font-style: italic; }
+    #breakdown { min-height: 1.3em; margin-top: 3px; color: rgba(232,201,138,.82); font: 10px/1.2 ui-monospace, monospace; letter-spacing: .08em; }
+    #balance { position: relative; width: 190px; height: 10px; margin: 9px auto 0; opacity: 0; }
+    #balTrack { position: absolute; inset: 4px 0 auto; height: 2px; background: rgba(239,231,210,.22); }
+    #balMark { position: absolute; top: 0; left: 50%; width: 3px; height: 10px; margin-left: -1.5px; background: var(--mint); }
+    #toast {
+      position: absolute;
+      left: 50%;
+      top: 31%;
+      transform: translateX(-50%);
+      color: var(--ink);
+      font-size: 22px;
+      font-style: italic;
+      white-space: nowrap;
+      opacity: 0;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+      overflow-y: auto;
+      background:
+        linear-gradient(rgba(3,6,12,.86), rgba(3,6,12,.94)),
+        repeating-linear-gradient(0deg, transparent 0 3px, rgba(255,255,255,.035) 3px 4px);
+      text-align: center;
+    }
+    .eyebrow { color: var(--mint); font-size: 10px; letter-spacing: .28em; text-transform: uppercase; }
+    h1, h2 {
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      font-style: italic;
+      line-height: .92;
+    }
+    h1 { font-size: clamp(46px, 12vw, 78px); letter-spacing: -.035em; }
+    h2 { max-width: 760px; font-size: clamp(31px, 7vw, 54px); }
+    .deck { max-width: 590px; color: var(--dim); font-size: 12px; line-height: 1.7; }
+    .deck strong { color: var(--ink); }
+    .actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; max-width: 850px; }
+    button {
+      min-width: 184px;
+      min-height: 46px;
+      padding: 11px 18px;
+      border: 1px solid rgba(241,236,222,.75);
+      border-radius: 0;
+      background: rgba(3,6,12,.5);
+      color: var(--ink);
+      font: 700 11px/1.25 ui-monospace, monospace;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    button.primary { border-color: var(--red); background: var(--red); color: #080307; }
+    button.soft { border-color: rgba(143,230,216,.7); color: var(--mint); }
+    button:disabled { opacity: .25; cursor: default; }
+    button:focus-visible, button.pad-focus { outline: 3px solid var(--gold); outline-offset: 3px; }
+    .mode-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; width: min(760px, 94vw); }
+    .mode-grid button { min-width: 0; min-height: 84px; }
+    .mode-grid b, .mode-grid small { display: block; }
+    .mode-grid small { margin-top: 6px; opacity: .58; font-size: 9px; font-weight: 400; letter-spacing: .04em; text-transform: none; }
+
+    .keys { max-width: 650px; color: var(--dim); font-size: 10px; line-height: 1.6; }
+    .keys b { color: var(--mint); }
+    #panelBody { width: min(920px, 96vw); }
+    .choice-list, .shop-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin: 12px auto 0; width: min(760px, 94vw); }
+    .choice-list button, .shop-grid button { min-width: 0; min-height: 72px; }
+    .choice-list small, .shop-grid small { display: block; margin-top: 5px; color: var(--dim); font-weight: 400; letter-spacing: 0; text-transform: none; }
+    .statline { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; color: var(--dim); font-size: 11px; }
+    .statline strong { color: var(--ink); }
+    .result-score { margin: 5px 0; font: italic clamp(44px, 10vw, 76px)/1 Georgia, serif; }
+    .tape-list { width: min(680px, 92vw); margin: 8px auto; text-align: left; font-size: 10px; line-height: 1.65; color: var(--dim); }
+    .tape-list div { display: grid; grid-template-columns: 32px 1fr auto; gap: 8px; border-bottom: 1px solid var(--ghost); padding: 3px 0; }
+    .tape-list strong { color: var(--ink); }
+
+    #mapHost { width: min(640px, 94vw); margin: 0 auto; }
+    .map-tree { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 2px 10px; }
+    .map-links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+    .map-links line { stroke: rgba(241,236,222,.17); stroke-width: 1; }
+    .map-links line.used { stroke: rgba(143,230,216,.65); stroke-width: 2; }
+    .map-row { position: relative; z-index: 1; display: flex; justify-content: space-evenly; min-height: 36px; }
+    .map-node { display: grid; place-items: center; gap: 0; width: 68px; min-width: 68px; min-height: 34px; padding: 2px 5px; border-color: rgba(241,236,222,.28); background: #07101a; }
+    .map-node span { font-size: 13px; line-height: 1; }
+    .map-node small { font-size: 7px; letter-spacing: .1em; }
+    .map-node.available { border-color: var(--gold); color: var(--gold); }
+    .map-node.cleared { border-color: rgba(143,230,216,.65); color: var(--mint); opacity: .55; }
+    .node-boss.available { background: var(--red); color: #080307; border-color: var(--red); }
+
+    #btnSound {
+      position: fixed;
+      z-index: 8;
+      right: max(12px, env(safe-area-inset-right));
+      top: max(12px, env(safe-area-inset-top));
+      min-width: 0;
+      min-height: 44px;
+      padding: 8px 13px;
+      opacity: .58;
+    }
+
+    @media (max-width: 660px) {
+      .mode-grid { grid-template-columns: 1fr; }
+      .mode-grid button { min-height: 58px; }
+      .choice-list, .shop-grid { grid-template-columns: 1fr; }
+      #goals { gap: 5px; font-size: 8px; }
+      #runState { top: 62px; }
+    }
+    @media (max-height: 560px) {
+      .overlay { justify-content: flex-start; gap: 8px; padding-top: 12px; }
+      h1 { font-size: 40px; }
+      h2 { font-size: 31px; }
+      .mode-grid { grid-template-columns: repeat(3, 1fr); }
+      .mode-grid button { min-height: 54px; }
+      .keys { display: none; }
+      .map-row { min-height: 29px; }
+      .map-node { min-height: 28px; }
+      #centre { bottom: 8px; }
+      #mph { bottom: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas-game"></canvas>
+  <canvas id="canvas-ui"></canvas>
+
+  <div id="hud" class="hidden">
+    <div id="runState">
+      <div id="district">FREE SKATE</div>
+      <div><span id="film"></span> <span id="footage"></span></div>
+    </div>
+    <div id="objective">
+      <div id="objName">Learn the park</div>
+      <div id="objBar"><div id="objFill"></div></div>
+      <div id="goals"></div>
+    </div>
+    <div id="mph">
+      <span id="mphNum">0</span> km/h<span class="arrows" id="mphArrows"></span>
+      <div id="mphBar"><div id="mphFill"></div></div>
+    </div>
+    <div id="toast"></div>
+    <div id="centre">
+      <div id="scoreRow"><span id="score">0</span><span id="mult">×1</span></div>
+      <div id="rule"></div>
+      <div id="trick"></div>
+      <div id="breakdown"></div>
+      <div id="balance"><div id="balTrack"></div><div id="balMark"></div></div>
+    </div>
+  </div>
+
+  <main id="menu" class="overlay">
+    <div class="eyebrow">a tiny skate story</div>
+    <h1>TINY HAWK</h1>
+    <p class="deck">You have a camcorder and not enough film. Learn the spot, invent the line, and <strong>land it</strong>—the multiplier only pays when you roll away.</p>
+    <div class="mode-grid">
+      <button id="btnFree"><b>Free Skate</b><small>no clock, no goals</small></button>
+      <button id="btnDaily"><b>Daily</b><small>one shared goal set, three tries</small></button>
+      <button id="btnPart" class="primary"><b>The Part</b><small>five reels for the whole tour</small></button>
+    </div>
+    <button id="btnResume" class="soft hidden">Resume the part</button>
+    <button id="btnScheme">Controls: Skate (flick-it)</button>
+    <p class="keys"><b>MOVE</b> left stick / WASD · <b>LOAD + POP</b> right stick ↓ then flick ↑ / Space · <b>TRICKS</b> committed air flick / Q E F C · <b>GRIND</b> catch a rail · <b>MANUAL</b> flick ↓ on landing</p>
+  </main>
+
+  <section id="panel" class="overlay hidden" aria-live="polite">
+    <div id="panelEyebrow" class="eyebrow"></div>
+    <h2 id="panelTitle"></h2>
+    <p id="panelCopy" class="deck"></p>
+    <div id="panelBody"></div>
+    <div id="panelActions" class="actions"></div>
+  </section>
+
+  <button id="btnSound">♪ on</button>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="js/main.js?v=3"></script>
+  <script type="module" src="../hub/shell.js?v=15"></script>
+</body>
+</html>
