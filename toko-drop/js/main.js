@@ -1,15 +1,15 @@
 import * as THREE from 'three';
-import { InputManager } from './input.js?v=176';
-import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=176';
-import { Player, PLAYER_RADIUS } from './player.js?v=176';
+import { InputManager } from './input.js?v=177';
+import { BulletPool, BULLET_R, FAT_BULLET_R, BULLET_CONFIG } from './bullet.js?v=177';
+import { Player, PLAYER_RADIUS } from './player.js?v=177';
 import { Enemy, EnemyType, GOO_TIME, makeSatinMat, applySatinValues, WARDEN_AURA,
-         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=176';   // v212: CFG guards the portrait
-import { RetroPass } from './retro.js?v=176';
-import { audio } from './audio.js?v=176';
-import { initDesigner } from './designer.js?v=176';
-import { createSpecimen } from './specimen.js?v=176';   // v212: the portrait on the death screen
-import { t, getLang, setLang, langs } from './lang.js?v=176';
-import { TUNING } from './tuning.js?v=176';
+         SHEPHERD_RADIUS, CABINET_STYLE, VIS, CFG } from './enemy.js?v=177';   // v212: CFG guards the portrait
+import { RetroPass } from './retro.js?v=177';
+import { audio } from './audio.js?v=177';
+import { initDesigner } from './designer.js?v=177';
+import { createSpecimen } from './specimen.js?v=177';   // v212: the portrait on the death screen
+import { t, getLang, setLang, langs } from './lang.js?v=177';
+import { TUNING } from './tuning.js?v=177';
 
 // Arena dimensions are swappable between portrait and landscape modes.
 const ARENA_PRESETS = {
@@ -388,11 +388,18 @@ const FLOOR_VERT = `
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
+// v223 ARENA PASS: the grid alone gave the swarm nothing to read against.
+// Three terms (all TUNING.arena) add depth and a centre of gravity —
+// a rim vignette, a distance falloff on the grid itself, and a soft pool
+// that FOLLOWS THE PLAYER, so an approaching wave crosses lit ground.
 const FLOOR_FRAG = `
   precision highp float;
   uniform float uTime;
   uniform float uGridX;
   uniform float uGridZ;
+  uniform vec2  uPlayer;    // player position in uv space (0..1)
+  uniform vec4  uArena;     // vignetteInner, vignetteDepth, poolRadius, poolLift
+  uniform float uGridFall;
   varying vec2 vUv;
   void main() {
     vec3 base = vec3(0.079, 0.079, 0.169);
@@ -401,41 +408,74 @@ const FLOOR_FRAG = `
     float gz = abs(fract(vUv.y * uGridZ) - 0.5);
     float grid = max(0.0, 1.0 - min(gx, gz) * 50.0);
     float pulse = 0.7 + 0.3 * sin(uTime * 1.2);
+    // Rim distance in uv space, corner-normalized so it reads the same on
+    // portrait and landscape arenas.
+    float rim = length(vUv - 0.5) / 0.7071;
+    float vig = 1.0 - uArena.y * smoothstep(uArena.x, 1.0, rim);
+    // The grid fades toward the rim: the horizon stops shimmering and the
+    // near ground reads closer.
+    float gridFade = 1.0 - uGridFall * smoothstep(uArena.x, 1.0, rim);
+    // The pool you stand in — soft, subtle, and it moves with you.
+    float pool = 1.0 - smoothstep(0.0, uArena.z, length(vUv - uPlayer));
     vec3 gridColor = mix(vec3(0.13, 0.07, 0.38), vec3(0.0, 0.55, 0.50), grid);
-    vec3 col = mix(base, gridColor, grid * pulse * 0.7);
+    vec3 col = mix(base, gridColor, grid * pulse * 0.7 * gridFade);
+    col = col * vig + gridColor * pool * uArena.w * 0.25 + base * pool * uArena.w;
     gl_FragColor = vec4(col, 1.0);
   }
 `;
 // v191: under WEBGPU the same three uniforms are TSL uniform() nodes — they
 // share the `.value` interface, so every write site (arena resize, per-frame
 // uTime) stays byte-identical across both paths.
+// v223: uPlayer/uArena/uGridFall join on both paths — same bridge, so every
+// write site below stays byte-identical across renderers.
+const _AR = TUNING.arena;
 const floorUniforms = IS_GPU
   ? {
       uTime:  TSL.uniform(0),
       uGridX: TSL.uniform((HALF_X * 2) / GRID_CELL),
       uGridZ: TSL.uniform((HALF_Z * 2) / GRID_CELL),
+      uPlayer: TSL.uniform(new THREE.Vector2(0.5, 0.5)),
+      uArena:  TSL.uniform(new THREE.Vector4(
+        _AR.vignetteInner, _AR.vignetteDepth, _AR.poolRadius, _AR.poolLift)),
+      uGridFall: TSL.uniform(_AR.gridFalloff),
     }
   : {
       uTime:  { value: 0 },
       uGridX: { value: (HALF_X * 2) / GRID_CELL },
       uGridZ: { value: (HALF_Z * 2) / GRID_CELL },
+      uPlayer: { value: new THREE.Vector2(0.5, 0.5) },
+      uArena:  { value: new THREE.Vector4(
+        _AR.vignetteInner, _AR.vignetteDepth, _AR.poolRadius, _AR.poolLift) },
+      uGridFall: { value: _AR.gridFalloff },
     };
 // TSL port of FLOOR_FRAG (v191): same math, node graph instead of GLSL.
 function makeFloorMat() {
   if (!IS_GPU) {
     return new THREE.ShaderMaterial({ vertexShader: FLOOR_VERT, fragmentShader: FLOOR_FRAG, uniforms: floorUniforms });
   }
-  const { uv, vec3, float, mix } = TSL;
+  const { uv, vec3, float, mix, smoothstep, length } = TSL;
   const m  = new THREE.MeshBasicNodeMaterial();
   const gx = uv().x.mul(floorUniforms.uGridX).fract().sub(0.5).abs();
   const gz = uv().y.mul(floorUniforms.uGridZ).fract().sub(0.5).abs();
   const grid  = float(1.0).sub(gx.min(gz).mul(50.0)).max(0.0);
   const pulse = floorUniforms.uTime.mul(1.2).sin().mul(0.3).add(0.7);
   const gridColor = mix(vec3(0.13, 0.07, 0.38), vec3(0.0, 0.55, 0.50), grid);
+  const base = vec3(0.079, 0.079, 0.169);
+  // v223 arena terms — the same three the GLSL path runs, node-for-node.
+  const A = floorUniforms.uArena;
+  const rim = length(uv().sub(0.5)).div(0.7071);
+  const edge = smoothstep(A.x, float(1.0), rim);
+  const vig = float(1.0).sub(A.y.mul(edge));
+  const gridFade = float(1.0).sub(floorUniforms.uGridFall.mul(edge));
+  const pool = float(1.0).sub(smoothstep(float(0.0), A.z, length(uv().sub(floorUniforms.uPlayer))));
+  const lit = mix(base, gridColor, grid.mul(pulse).mul(0.7).mul(gridFade));
   // .pow(2.2): the GLSL original writes raw values straight to the sRGB
   // framebuffer; the node pipeline output-encodes (linear→sRGB), so pre-decode
   // to round-trip — without this the floor renders visibly washed out.
-  m.colorNode = mix(vec3(0.079, 0.079, 0.169), gridColor, grid.mul(pulse).mul(0.7)).pow(2.2);
+  m.colorNode = lit.mul(vig)
+    .add(gridColor.mul(pool).mul(A.w).mul(0.25))
+    .add(base.mul(pool).mul(A.w))
+    .pow(2.2);
   return m;
 }
 const floor = new THREE.Mesh(
@@ -4470,7 +4510,7 @@ function drawHUD() {
   ctx.fillStyle = 'rgba(255,255,255,0.18)';
   ctx.font = '10px monospace';
   ctx.textAlign = 'left';
-  ctx.fillText('v222' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
+  ctx.fillText('v223' + (IS_GPU ? (renderer.backend?.isWebGPUBackend ? ' · WEBGPU' : ' · WEBGPU(GL)') : ''),
     16, uiCanvas.height - 12);
 
   // Seed (bottom-right, very faint — for sharing runs)
@@ -9143,6 +9183,13 @@ function loop() {
   VIS.now = VIS.hz ? Math.floor(_now * VIS.hz) / VIS.hz : _now;   // v151: stepped
   GOO_TIME.value            = VIS.now;
   floorUniforms.uTime.value = VIS.now;
+  // v223: the pool follows you — world position → the floor plane's uv. The
+  // plane spans ±HALF, and its uv.y runs opposite z (PlaneGeometry rotated
+  // -90° about x), so z is flipped here.
+  floorUniforms.uPlayer.value.set(
+    player.mesh.position.x / (HALF_X * 2) + 0.5,
+    0.5 - player.mesh.position.z / (HALF_Z * 2),
+  );
   if (retro.active) retro.render(renderer, scene, camera);
   else              renderer.render(scene, camera);
   drawHUD();
@@ -9176,6 +9223,6 @@ loop();
 // on unsupported/file: contexts — the game runs identically without it.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js?v=176').catch(() => {});
+    navigator.serviceWorker.register('./sw.js?v=177').catch(() => {});
   });
 }
