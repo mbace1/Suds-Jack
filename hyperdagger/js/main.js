@@ -5,17 +5,17 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=52';
-import { Player } from './player.js?v=52';
-import { DaggerPool } from './daggers.js?v=52';
-import { GemPool } from './gems.js?v=52';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=52';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=52';
-import { OrbPool } from './bullets.js?v=52';
-import { AudioKit } from './audio.js?v=52';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=52';
-import { TUNING as T } from './tuning.js?v=52';
-import { HyperEnvironment } from './environment.js?v=52';
+import { InputManager } from './input.js?v=53';
+import { Player } from './player.js?v=53';
+import { DaggerPool } from './daggers.js?v=53';
+import { GemPool } from './gems.js?v=53';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=53';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=53';
+import { OrbPool } from './bullets.js?v=53';
+import { AudioKit } from './audio.js?v=53';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=53';
+import { TUNING as T } from './tuning.js?v=53';
+import { HyperEnvironment } from './environment.js?v=53';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -37,7 +37,7 @@ const opts = Object.assign(
   // motion=false is the reduced-motion master switch (forces smear/shake/chroma/FOV
   // kicks off without touching the individual toggles); contrast=true brightens
   // orbs + telegraphs and kills the floor's red flush for readability
-  { speed: 1, fov: 80, sens: 1, aim: true, smear: true, shake: true, chroma: true, edge: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson', look: 'smooth' },
+  { speed: 1, fov: 80, sens: 1, aim: true, projection: true, smear: true, shake: true, chroma: true, edge: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson', look: 'smooth' },
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
 
 // STYLE presets: hue targets for the accent recolor (null = native crimson).
@@ -62,11 +62,11 @@ const AUTO_DETAIL_CEIL = window.matchMedia?.('(pointer: coarse)').matches ? 2 : 
 const PERF_TIERS = [
   // gibs = how many pieces ONE death throws (scales with the voxel density
   // ladder below, so a ×64 enemy actually shatters instead of chunking)
-  { chroma: true,  smear: true,  edge: true,  hull: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 520, litter: 2500 }, // T0 full
-  { chroma: false, smear: true,  edge: true,  hull: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 420, litter: 2000 }, // T1
-  { chroma: false, smear: false, edge: false, hull: true,  pr: BASE_PR,                bloom: true,  debrisCap: 3000, gibs: 300, litter: 1200 }, // T2
-  { chroma: false, smear: false, edge: false, hull: false, pr: Math.min(BASE_PR, 1.5), bloom: true,  debrisCap: 2000, gibs: 220, litter: 600 }, // T3
-  { chroma: false, smear: false, edge: false, hull: false, pr: 1,                      bloom: false, debrisCap: 800,  gibs: 110, litter: 0 }, // T4 floor
+  { chroma: true,  smear: true,  edge: true,  hull: true,  sphereEvery: 2, pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 520, litter: 2500 }, // T0 full
+  { chroma: false, smear: true,  edge: true,  hull: true,  sphereEvery: 3, pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 420, litter: 2000 }, // T1
+  { chroma: false, smear: false, edge: false, hull: true,  sphereEvery: 4, pr: BASE_PR,                bloom: true,  debrisCap: 3000, gibs: 300, litter: 1200 }, // T2
+  { chroma: false, smear: false, edge: false, hull: false, sphereEvery: 0, pr: Math.min(BASE_PR, 1.5), bloom: true,  debrisCap: 2000, gibs: 220, litter: 600 }, // T3
+  { chroma: false, smear: false, edge: false, hull: false, sphereEvery: 0, pr: 1,                      bloom: false, debrisCap: 800,  gibs: 110, litter: 0 }, // T4 floor
 ];
 // mutable so headless tests can shrink the timescales
 const perfTuning = { downMs: 40, upMs: 22, settleMs: 2000, stableMs: 15000, downHoldMs: 1500, emaAlpha: 0.08 };
@@ -126,6 +126,81 @@ scene.fog = new THREE.Fog(0x050505, 30, 95);
 
 const camera = new THREE.PerspectiveCamera(opts.fov, window.innerWidth / window.innerHeight, 0.1, 300);
 scene.add(camera); // so the first-person hand (a camera child) renders
+camera.layers.enable(1); // first-person layer; spherical world cameras omit it
+
+// v23: a real 360-degree scene source. The world cube gives the projection
+// shader geometry behind the player; the threat cube isolates enemy shapes so
+// rear silhouettes can burn red without tinting the entire arena. Low-res and
+// cadence-gated by the performance governor: awareness, not a second beauty render.
+const sphereWorldTarget = new THREE.WebGLCubeRenderTarget(192, {
+  minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
+  generateMipmaps: false,
+});
+const sphereThreatTarget = new THREE.WebGLCubeRenderTarget(128, {
+  minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
+  generateMipmaps: false,
+});
+const sphereWorldCamera = new THREE.CubeCamera(0.2, 220, sphereWorldTarget);
+sphereWorldCamera.layers.set(0);
+const sphereThreatCamera = new THREE.CubeCamera(0.2, 80, sphereThreatTarget);
+sphereThreatCamera.layers.set(2);
+const _sphereCamRot = new THREE.Matrix3();
+
+const SphereShader = {
+  uniforms: {
+    tDiffuse: { value: null },
+    uWorld: { value: sphereWorldTarget.texture },
+    uThreat: { value: sphereThreatTarget.texture },
+    uCamRot: { value: _sphereCamRot },
+    uAspect: { value: window.innerWidth / window.innerHeight },
+    uAmount: { value: 1 },
+    uTint: { value: new THREE.Color(2.7, 0.12, 0.12) },
+  },
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: /* glsl */`
+    uniform sampler2D tDiffuse;
+    uniform samplerCube uWorld;
+    uniform samplerCube uThreat;
+    uniform mat3 uCamRot;
+    uniform float uAspect;
+    uniform float uAmount;
+    uniform vec3 uTint;
+    varying vec2 vUv;
+    void main() {
+      vec4 forward = texture2D(tDiffuse, vUv);
+      vec2 p = vUv * 2.0 - 1.0;
+      p.x *= uAspect;
+      float edgeR = sqrt(uAspect * uAspect + 1.0);
+      float nr = clamp(length(p) / edgeR, 0.0, 1.0);
+      vec2 radial = length(p) > 0.0001 ? normalize(p) : vec2(0.0);
+      // Centre stays conventional for aiming; the frame edge bends through
+      // the side view and reaches almost directly behind at the corners.
+      float theta = nr * 3.05;
+      vec3 localDir = vec3(radial * sin(theta), -cos(theta));
+      vec3 worldDir = normalize(uCamRot * localDir);
+      vec3 sphere = textureCube(uWorld, worldDir).rgb;
+      // A small cross-shaped dilation keeps distant threats legible after the
+      // deliberately tiny cube capture. It is still the enemy's real shape,
+      // not a HUD marker or a generic edge alarm.
+      vec3 tangent = normalize(cross(abs(worldDir.y) < 0.92 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0), worldDir));
+      vec3 bitangent = normalize(cross(worldDir, tangent));
+      float threatLum = max(textureCube(uThreat, worldDir).r, max(textureCube(uThreat, worldDir).g, textureCube(uThreat, worldDir).b));
+      vec3 tx = textureCube(uThreat, normalize(worldDir + tangent * 0.035)).rgb;
+      vec3 nx = textureCube(uThreat, normalize(worldDir - tangent * 0.035)).rgb;
+      vec3 ty = textureCube(uThreat, normalize(worldDir + bitangent * 0.035)).rgb;
+      vec3 ny = textureCube(uThreat, normalize(worldDir - bitangent * 0.035)).rgb;
+      threatLum = max(threatLum, max(max(max(tx.r, max(tx.g, tx.b)), max(nx.r, max(nx.g, nx.b))), max(max(ty.r, max(ty.g, ty.b)), max(ny.r, max(ny.g, ny.b)))));
+      float rear = smoothstep(1.05, 2.45, theta);
+      float silhouette = smoothstep(0.018, 0.32, threatLum);
+      sphere = mix(sphere, sphere + uTint * (0.72 + threatLum * 0.48), silhouette * rear * 0.78);
+      // Fine scan breakup keeps the rear signal graphic rather than a red fog.
+      sphere += uTint * silhouette * rear * (0.035 + 0.025 * sin(vUv.y * 96.0));
+      float lens = smoothstep(0.12, 0.82, nr) * uAmount;
+      gl_FragColor = vec4(mix(forward.rgb, sphere, lens), forward.a);
+    }`,
+};
 
 // HYPERDEMON-ish chromatic aberration, driven by the trauma system
 const ChromaShader = {
@@ -184,6 +259,8 @@ const EdgeShader = {
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
+const spherePass = new ShaderPass(SphereShader);
+composer.addPass(spherePass);
 const edgePass = new ShaderPass(EdgeShader);
 composer.addPass(edgePass);
 // motion smear on everything bright; damp is DYNAMIC since v4.30 — it deepens
@@ -570,6 +647,7 @@ handGroup.rotation.y = Math.PI + 0.3; // blade forward, angled 3/4 so its length
 handGroup.rotation.z = 0.2;
 handGroup.rotation.x = 0.15;
 handGroup.position.set(0.32, -0.4, -1.05); // far enough that it reads as a hand, not a wall
+handGroup.traverse(o => o.layers.set(1));
 camera.add(handGroup);
 let recoil = 0;
 
@@ -626,6 +704,7 @@ function resize() {
   applyRenderScale();
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
+  spherePass.uniforms.uAspect.value = camera.aspect;
   ui.width = window.innerWidth;
   ui.height = window.innerHeight;
 }
@@ -1222,7 +1301,11 @@ function applyOpts() {
   chromaPass.enabled = opts.chroma && opts.motion && tier.chroma;
   // the neon rim is a static effect, so the motion toggle leaves it alone
   edgePass.enabled = opts.edge && tier.edge;
-  threatPass.enabled = perfTier < PERF_TIERS.length - 1;
+  spherePass.enabled = opts.projection && tier.sphereEvery > 0;
+  // The old peripheral warning remains the fallback on tiers that cannot
+  // afford the cube captures. The spherical pass already carries real rear
+  // silhouettes, so stacking both only turns awareness into red noise.
+  threatPass.enabled = !spherePass.enabled && perfTier < PERF_TIERS.length - 1;
   bloom.enabled = tier.bloom;
   debris.softCap = tier.debrisCap;
   debris.gibTarget = tier.gibs;
@@ -1249,6 +1332,7 @@ function applyOpts() {
   styleTint(skyMat.uniforms.uEmberCol.value.setRGB(0.30, 0.02, 0.02));
   styleTint(edgePass.uniforms.uTint.value.setRGB(1.6, 0.35, 0.35));
   styleTint(threatPass.uniforms.uTint.value.setRGB(2.5, 0.18, 0.18));
+  styleTint(spherePass.uniforms.uTint.value.setRGB(2.7, 0.12, 0.12));
   const envAccent = styleTint(new THREE.Color().setRGB(2.2, 0.22, 0.22));
   environment.setAccent(envAccent);
   environment.setQuality(perfTier);
@@ -1277,6 +1361,7 @@ function showPause() {
      <p class="sub">~${Math.min(999, Math.round(1000 / Math.max(1, frameEMA)))} fps &middot; ${voxCount.toLocaleString()} voxels on field &middot; new spawns use the VOXEL setting</p>
      ${optRow('SPEED', 'speed', [1, 1.25, 1.5], v => v + '\u00d7')}
      ${optRow('FOV', 'fov', [70, 80, 90], v => v)}
+     ${optRow('VIEW', 'projection', [true, false], v => v ? 'SPHERE' : 'NORMAL')}
      ${optRow('SENS', 'sens', [0.7, 1, 1.3, 1.6], v => ({ 0.7: 'LOW', 1: 'MED', 1.3: 'HIGH', 1.6: 'MAX' })[v])}
      ${optRow('AIM', 'aim', [true, false], v => v ? 'ASSIST ON' : 'ASSIST OFF')}
      ${optRow('FX', 'smear', [true, false], v => v ? 'SMEAR ON' : 'SMEAR OFF')}
@@ -2455,6 +2540,29 @@ function gamepadMenu() {
   }
 }
 
+let sphereFrame = 0;
+let sphereWorldCaptures = 0;
+let sphereThreatCaptures = 0;
+function updateSphereProjection() {
+  camera.updateMatrixWorld();
+  _sphereCamRot.setFromMatrix4(camera.matrixWorld);
+  if (!spherePass.enabled) return;
+  const every = PERF_TIERS[perfTier].sphereEvery;
+  sphereFrame++;
+  sphereThreatCamera.position.copy(camera.position);
+  sphereWorldCamera.position.copy(camera.position);
+  // Enemy-only capture tracks more often; the arena is mostly static and can
+  // update at a slower cadence while camera rotation remains shader-side.
+  if (sphereFrame === 1 || sphereFrame % every === 0) {
+    sphereThreatCamera.update(renderer, scene);
+    sphereThreatCaptures++;
+  }
+  if (sphereFrame === 1 || sphereFrame % (every * 3) === 0) {
+    sphereWorldCamera.update(renderer, scene);
+    sphereWorldCaptures++;
+  }
+}
+
 function animate() {
   requestAnimationFrame(animate);
   const rawDt = clock.getDelta(); // unclamped — the governor needs real frame cost
@@ -2494,6 +2602,7 @@ function animate() {
     }
   }
   updateFeel(dt);
+  updateSphereProjection();
   composer.render();
   uiCtx.clearRect(0, 0, ui.width, ui.height);
   if (state === 'playing' && !paused) input.drawTouchUI(uiCtx);
@@ -2560,7 +2669,8 @@ window.__hd = {
     getDailyTable() { return readDailyTable(); },
     pulse(n) { runPulse(n ?? ++pulseN); },
     setOpt(k, v) { opts[k] = v; saveOpts(); applyOpts(); },
-    getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, edge: edgePass.enabled, threat: threatPass.enabled, rearSignal: threatPass.uniforms.uRear.value, edgeAmt: edgePass.uniforms.uAmt.value, damp: afterimage.uniforms['damp'].value, gridGlow: floorMat.uniforms.uGlow.value, fov: camera.fov, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
+    getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, edge: edgePass.enabled, sphere: spherePass.enabled, threat: threatPass.enabled, rearSignal: threatPass.uniforms.uRear.value, edgeAmt: edgePass.uniforms.uAmt.value, damp: afterimage.uniforms['damp'].value, gridGlow: floorMat.uniforms.uGlow.value, fov: camera.fov, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
+    getProjection() { return { enabled: spherePass.enabled, worldCaptures: sphereWorldCaptures, threatCaptures: sphereThreatCaptures, worldSize: sphereWorldTarget.width, threatSize: sphereThreatTarget.width }; },
     getEnvironment() { return environment.getState(); },
     getVfx() { return { shadows: shadows.count, sparks: sparks.length, speedOn: speedPass.enabled, rippleT, rippleOn: ripplePass.enabled, ember: skyMat.uniforms.uEmber.value }; },
     /** Everything that could leak over a long run: pool occupancy, scene graph
