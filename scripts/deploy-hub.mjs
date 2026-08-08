@@ -171,7 +171,10 @@ for (const f of [...files, 'sw.js']) {
 // history even when the code is character-for-character ours — the first cut
 // compared raw blobs and refused to deploy anything at all, which is the guard
 // being useless in the safe direction rather than the dangerous one.
-const bare = s => s.replace(/\?v=\d+/g, '');
+// ...and with the tail newline normalised: a tool on the site side wrote a
+// file without one, and "every byte identical except the last is missing"
+// spent a run being reported as foreign work.
+const bare = s => s.replace(/\?v=\d+/g, '').replace(/\s*$/, '\n');
 
 const held = (f, text) => {
   const want = bare(text);
