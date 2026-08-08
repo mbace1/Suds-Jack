@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=55';
+import { TUNING as T } from './tuning.js?v=56';
 
 // all feel numbers live in tuning.js; these aliases keep the code readable
 const STICK_R = T.touch.stickR;

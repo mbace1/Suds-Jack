@@ -8,6 +8,24 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v26 — 2026-08-08
+**Devil Daggers becomes the visual target**
+- The procedural background kit is gone: five rifts, twelve pylons, twenty-four
+  horns, ninety-six shards, four arches and the lattice are replaced by one
+  dim horizon line. The floor, enemies and weapon now own the frame.
+- The view returns to a conventional fixed 90-degree perspective. Rendering
+  drops antialiasing, lowers exposure, tightens black fog and keeps all
+  spherical, rear-view, smear, chroma and edge overlays off by default.
+- The sky is an almost-black void with one low red ember band. Grid intensity
+  falls below the bloom threshold and background dust drops from 400 motes to
+  80 faint points.
+- Enemy hulls retain their authored low-poly planes instead of being heavily
+  smoothed. The first-person hand moves to bone, ash and orange-red dagger
+  colours across its weapon tiers.
+- A focused software-WebGL gate verifies the conventional camera, minimal
+  environment, firing path and zero browser errors; a controlled basic-skull
+  frame is captured for visual comparison.
+
 ## v25 — 2026-08-08
 **Remove what does not help the fight**
 - The v24 combat-driven projection, rear holograms, spectral rim, contrast

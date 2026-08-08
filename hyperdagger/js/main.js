@@ -5,17 +5,17 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=55';
-import { Player } from './player.js?v=55';
-import { DaggerPool } from './daggers.js?v=55';
-import { GemPool } from './gems.js?v=55';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=55';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=55';
-import { OrbPool } from './bullets.js?v=55';
-import { AudioKit } from './audio.js?v=55';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=55';
-import { TUNING as T } from './tuning.js?v=55';
-import { HyperEnvironment } from './environment.js?v=55';
+import { InputManager } from './input.js?v=56';
+import { Player } from './player.js?v=56';
+import { DaggerPool } from './daggers.js?v=56';
+import { GemPool } from './gems.js?v=56';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=56';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=56';
+import { OrbPool } from './bullets.js?v=56';
+import { AudioKit } from './audio.js?v=56';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=56';
+import { TUNING as T } from './tuning.js?v=56';
+import { HyperEnvironment } from './environment.js?v=56';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -34,12 +34,12 @@ const ENEMY_NAMES = {
 // player-tunable options (pause menu), persisted across sessions
 // v25 deliberately starts from a clean image. A new key prevents old,
 // spectacle-heavy defaults from silently carrying into the reset.
-const OPTS_KEY = 'hyperDaggerOptsV25';
+const OPTS_KEY = 'hyperDaggerOptsV26';
 const opts = Object.assign(
   // motion=false is the reduced-motion master switch (forces smear/shake/chroma/FOV
   // kicks off without touching the individual toggles); contrast=true brightens
   // orbs + telegraphs and kills the floor's red flush for readability
-  { speed: 1, fov: 80, sens: 1, aim: true, projection: false, smear: false, shake: true, chroma: false, edge: false, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson', look: 'smooth' },
+  { speed: 1, fov: 90, sens: 1, aim: true, projection: false, smear: false, shake: true, chroma: false, edge: false, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson', look: 'smooth' },
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
 
 // STYLE presets: hue targets for the accent recolor (null = native crimson).
@@ -89,10 +89,10 @@ const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10, watcher: 1, b
 // hand model's palette letters; retint() rewrites just those voxels.
 const GAUNTLET_TIERS = [
   null,
-  { G: 0x3a3a3a, D: 0x222222, H: 0x555555, B: [1.25, 1.25, 1.25] },      // base
-  { G: 0x3a3a3a, D: 0x222222, H: [1.35, 1.35, 1.35], B: [1.5, 1.5, 1.5] }, // knuckle glow
-  { G: 0x3a3a3a, D: [1.7, 0.14, 0.14], H: [1.35, 1.35, 1.35], B: [1.5, 1.5, 1.5] }, // red veins
-  { G: 0x4a1010, D: [2.2, 0.16, 0.16], H: [2.0, 0.2, 0.2], B: [1.8, 0.6, 0.6] },    // crimson hand
+  { G: 0xbeb4a6, D: 0x5c554d, H: 0xe2d8c8, B: [2.2, 0.22, 0.08] },
+  { G: 0xc8bdaa, D: 0x625a50, H: [1.25, 0.72, 0.40], B: [2.35, 0.24, 0.08] },
+  { G: 0x8c8174, D: [1.35, 0.10, 0.06], H: [1.5, 0.45, 0.22], B: [2.5, 0.26, 0.08] },
+  { G: 0x4a1010, D: [2.2, 0.16, 0.10], H: [2.0, 0.32, 0.12], B: [2.7, 0.34, 0.10] },
 ];
 
 // Style/combo meter (Returnal/DMC-flavoured): fast kills and dash-throughs
@@ -118,13 +118,14 @@ const STYLE_GAIN = {
 
 // ---------------------------------------------------------------- renderer
 const canvas = document.getElementById('canvas-game');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
 renderer.setPixelRatio(BASE_PR);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.86;
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x050505, 30, 95);
+scene.fog = new THREE.Fog(0x020202, 24, 72);
 
 const camera = new THREE.PerspectiveCamera(opts.fov, window.innerWidth / window.innerHeight, 0.1, 300);
 scene.add(camera); // so the first-person hand (a camera child) renders
@@ -387,21 +388,21 @@ function makeFloorTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = 256;
   const g = c.getContext('2d');
-  g.fillStyle = '#060606';
+  g.fillStyle = '#020202';
   g.fillRect(0, 0, 256, 256);
   for (let ty = 0; ty < 4; ty++) for (let tx = 0; tx < 4; tx++) {
     if (Math.random() < 0.3) {
-      g.fillStyle = 'rgba(255,255,255,0.02)';
+      g.fillStyle = 'rgba(255,255,255,0.012)';
       g.fillRect(tx * 64, ty * 64, 64, 64);
     }
   }
-  g.strokeStyle = 'rgba(255,255,255,0.09)';
+  g.strokeStyle = 'rgba(255,255,255,0.035)';
   g.lineWidth = 1;
   for (let i = 0; i <= 256; i += 32) {
     g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 256); g.stroke();
     g.beginPath(); g.moveTo(0, i); g.lineTo(256, i); g.stroke();
   }
-  g.strokeStyle = 'rgba(255,255,255,0.34)';
+  g.strokeStyle = 'rgba(255,255,255,0.16)';
   g.lineWidth = 2;
   for (let i = 0; i <= 256; i += 64) {
     g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 256); g.stroke();
@@ -420,7 +421,7 @@ const floorMat = new THREE.ShaderMaterial({
   uniforms: {
     map: { value: makeFloorTexture() },
     uPulse: { value: 0 },
-    uGlow: { value: 1.5 }, // v4.31: pulled back from 1.8 — the grid glows, it doesn't shout
+    uGlow: { value: 0.9 },
     uRed: { value: 0 },
     uAccent: { value: new THREE.Color(2.2, 0.25, 0.25) }, // hurt-flush tint (STYLE re-aims it)
   },
@@ -436,9 +437,7 @@ const floorMat = new THREE.ShaderMaterial({
     varying vec2 vUv;
     void main() {
       vec3 col = texture2D(map, vUv * 14.0).rgb;
-      // v4.30: uGlow lifts the major lines just past the bloom threshold, so
-      // the grid itself glows — and the beat pulse pushes it visibly hotter
-      col *= uGlow + uPulse * 0.9;
+      col *= uGlow + uPulse * 0.28;
       col = mix(col, col * uAccent, clamp(uRed, 0.0, 1.0));       // hurt flush
       gl_FragColor = vec4(col, 1.0);
     }`,
@@ -449,10 +448,8 @@ const floor = new THREE.Mesh(
 );
 scene.add(floor);
 
-// v4.30 sky: HYPERDEMON's pastel iridescence over black — a slow hue-walk
-// around the horizon replaces the old greyscale band shimmer. Held DIM
-// (peak ≈0.09) so it stays a wash behind the fight and never trips bloom;
-// the dark-red ember glow keeps the horizon as the danger line.
+// Devil Daggers reference: almost-black void, with one low ember horizon.
+// No hue walk, bands or decorative motion compete with enemy silhouettes.
 const skyMat = new THREE.ShaderMaterial({
   side: THREE.BackSide,
   depthWrite: false,
@@ -476,19 +473,9 @@ const skyMat = new THREE.ShaderMaterial({
     void main() {
       vec3 d = normalize(vPos);
       float h = d.y;
-      float ang = atan(d.z, d.x);
-      vec3 col = mix(vec3(0.055), vec3(0.0), clamp(abs(h) * 2.2, 0.0, 1.0));
-      float b1 = 0.5 + 0.5 * sin(ang * 7.0 - uTime * 0.6 + h * 9.0);
-      float b2 = 0.5 + 0.5 * sin(ang * 13.0 + uTime * 0.9 - h * 14.0);
-      float horiz = 1.0 - clamp(abs(h) * 2.6, 0.0, 1.0);
-      // pastel iridescence: three hue cycles around the ring, drifting with
-      // time, desaturated toward white — the bands now modulate COLOR, not grey
-      float hue = ang * 0.477 + uTime * 0.03;
-      vec3 pastel = 0.5 + 0.5 * cos(6.28318 * (hue + vec3(0.0, 0.33, 0.67)));
-      pastel = mix(vec3(1.0), pastel, 0.45);
-      col += pastel * 0.09 * (b1 * 0.6 + b2 * 0.4) * horiz;
-      // ember horizon swells with trauma and while the Leviathan lives
-      col += uEmberCol * pow(max(0.0, 1.0 - abs(h) * 4.0), 3.0) * (1.0 + uEmber);
+      vec3 col = vec3(0.0015);
+      float horiz = pow(max(0.0, 1.0 - abs(h) * 4.8), 4.0);
+      col += uEmberCol * horiz * (0.52 + uEmber * 0.32);
       gl_FragColor = vec4(col, 1.0);
     }`,
 });
@@ -496,7 +483,7 @@ scene.add(new THREE.Mesh(new THREE.SphereGeometry(220, 32, 16), skyMat));
 
 // drifting dust motes for depth + speed perception
 const dust = (() => {
-  const n = 400;
+  const n = 80;
   const pos = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) {
     const a = Math.random() * Math.PI * 2;
@@ -508,7 +495,7 @@ const dust = (() => {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   const mat = new THREE.PointsMaterial({
-    color: 0xffffff, size: 0.07, transparent: true, opacity: 0.3,
+    color: 0xb8aca4, size: 0.045, transparent: true, opacity: 0.12,
     blending: THREE.AdditiveBlending, depthWrite: false,
   });
   const p = new THREE.Points(geo, mat);
@@ -516,8 +503,7 @@ const dust = (() => {
   return p;
 })();
 
-// Original procedural arena kit: abyss rings, bone pylons, orbiting shards,
-// broken arches and a reactive spherical threat lattice.
+// One horizon line only. The fight owns the rest of the frame.
 const environment = new HyperEnvironment(scene, ARENA_R);
 
 // ---------------------------------------------------------------- actors
@@ -2650,6 +2636,7 @@ window.__hd = {
       const r = new Revenant(scene, p); enemies.push(r); return r;
     },
     spawnHusk() { const p = ringSpot(9).clone(); p.y = 1.35; const h = new Husk(scene, p); enemies.push(h); return h; },
+    spawnSkull() { const p = ringSpot(8).clone(); p.y = 1.2; const s = new Skull(scene, p); enemies.push(s); return s; },
     spawnDread() { const p = ringSpot(8).clone(); p.y = 1.5; enemies.push(new DreadSkull(scene, p)); },
     spawnGhostSerpent() { spawnSerpent(true); },
     spawnLeviathan() { enemies.push(new Leviathan(scene, 5)); },

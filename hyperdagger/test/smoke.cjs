@@ -211,6 +211,7 @@ s.listen(0, '127.0.0.1', async () => {
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
     hd.debug.setOpt('perf', 'high'); // pin T0 so the governor can't interfere
     hd.debug.setOpt('edge', true);
+    hd.debug.setOpt('smear', true);
     const on = hd.debug.getFx();
     hd.debug.setOpt('edge', false);
     const off = hd.debug.getFx().edge;
@@ -230,7 +231,7 @@ s.listen(0, '127.0.0.1', async () => {
   });
   ok('neon edge pass on by default at T0', fx.edgeOn === true, JSON.stringify(fx));
   ok('EDGE OFF and the low tier both shed it', fx.off === false && fx.tierGated === false, JSON.stringify(fx));
-  ok('the grid glow is HDR', fx.glow > 1.2, JSON.stringify(fx)); // v4.31 trims it to 1.5 — still past the bloom threshold
+  ok('the grid stays below the bloom threshold', fx.glow === 0.9, JSON.stringify(fx));
   ok('smear deepens mid-dash, settles back', fx.dampDash > fx.dampIdle + 0.05 && fx.dampBack <= fx.dampIdle + 0.01, JSON.stringify(fx));
 
   // ---- v4.31 detail overhaul ---------------------------------------------
@@ -252,9 +253,9 @@ s.listen(0, '127.0.0.1', async () => {
     const hd = window.__hd;
     return { glow: hd.debug.getFx().gridGlow, edgeAmt: hd.debug.getFx().edgeAmt };
   });
-  ok('the neon is dialled back (glow 1.5, edge 0.15)', fx31.glow === 1.5 && fx31.edgeAmt === 0.15, JSON.stringify(fx31));
+  ok('the grid is subdued (glow 0.9, edge option 0.15)', fx31.glow === 0.9 && fx31.edgeAmt === 0.15, JSON.stringify(fx31));
 
-  // ---- v22 near-parity asset pass ---------------------------------------
+  // ---- enemy assets + v26 minimal arena ---------------------------------
   const assets22 = await p.evaluate(async (tok) => {
     const { MODELS, parseModel } = await import(`./js/voxel.js?v=${tok}`);
     const names = ['watcher', 'spider', 'leviathan', 'revenant', 'husk', 'totem', 'egg', 'blinker'];
@@ -269,12 +270,13 @@ s.listen(0, '127.0.0.1', async () => {
   const rosterCount = Object.values(assets22.models).reduce((n, m) => n + m.count, 0);
   ok('v22 roster sculpts exceed 1,000 source voxels', rosterCount > 1000, JSON.stringify(assets22.models));
   ok('every upgraded enemy is volumetric', Object.values(assets22.models).every(m => m.depth >= 5), JSON.stringify(assets22.models));
-  ok('the arena kit has its complete asset set',
-    assets22.environment.rifts === 5 && assets22.environment.pylons === 12 &&
-    assets22.environment.horns === 24 && assets22.environment.shards === 96 &&
-    assets22.environment.arches === 4 && assets22.environment.lattice === true,
+  ok('the arena background is one horizon line',
+    assets22.environment.horizon === 1 && assets22.environment.groupChildren === 1 &&
+    assets22.environment.rifts === 0 && assets22.environment.pylons === 0 &&
+    assets22.environment.horns === 0 && assets22.environment.shards === 0 &&
+    assets22.environment.arches === 0 && assets22.environment.lattice === 0,
     JSON.stringify(assets22.environment));
-  ok('spherical threat awareness is active', assets22.fx.sphere === true || assets22.fx.threat === true, JSON.stringify(assets22.fx));
+  ok('rear overlays remain absent by default', assets22.fx.sphere === false && assets22.fx.threat === false, JSON.stringify(assets22.fx));
 
   // ---- v23 live spherical projection -----------------------------------
   const projection23 = await p.evaluate(async () => {
