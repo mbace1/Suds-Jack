@@ -8,6 +8,56 @@ floor sending people at the unfinished one.
 The `?v=N` token in `index.html` tracks module-graph changes; this number is
 the public release. Bump both when shipping.
 
+## v7 — 2026-08-08
+
+**On rails.** (Owner's direction: "it should be cool and changing wireframe
+on-rails shooter, but it's just stuck.") The gun comes back, and the founding
+line — "Bomb Jack is the game, no weapon" — is reversed on purpose: the quiet
+collector was considered and it was stuck. v7 is sudz and the rebuild in the
+same tube.
+
+**The flight.** You are moving. The ribs are evenly spaced and STREAM toward
+the mouth (`tube.flow`), which is what speed looks like in a drawing made of
+lines. The sector is a distance now, not a bubble count — it is FLOWN, at
+`flightSpeed(n)` depths per second, and you cannot camp a distance. The HUD
+reads `S3 · 62%`.
+
+**The change.** At 60% of every sector the channel starts BECOMING the next
+sector's shape — `tube.morphTo()`, a smoothstepped blend inside `_point()`,
+timed to arrive as you do. Everything that asks `at()` rides the blend
+without knowing: Jack lies on a floor that is mid-morph, grime climbs walls
+that are still arriving. The camera seat and the ridge rules follow the
+DOMINANT shape the moment it flips, with a `→ GUTTERS` callout. A shape
+change was a scene cut; now it is scenery you fly through.
+
+**The gun.** Hold Space / pad A / RT and the stream runs (touch fires
+automatically, the convention sudz set — and a first cut had a MOUSE drag
+flipping that convention on for desktop, fixed). A bolt does not know a
+bubble from grime: your stream pops bubbles in its path for NOTHING, and
+popping the lit one is the chain, dead by your own hand. That is the whole
+fusion — the gun and the collection fight over the same lane. Kills pay
+flat (grime 75, orb 25, spitter 250); the chain stays the collector's
+economy. The dive moved to S/↓/pad B and keeps everything it had: depth
+pays, lane locks, the scrub.
+
+**Shooting back.** SPITTERS (sector 2 on, two at most) are the first thing
+that does not come to you: they hold mid-tube, walk their lane toward
+yours, and lob orbs — fast, warm, never settling, duckable, jumpable,
+shootable. Magazine dry, a spitter dives like grime and settles like it
+too. Spitters wear the orb's ember colour, not grime's khaki: a thing that
+shoots back must never be confusable with paint on the floor.
+
+Everything v6 built survives and matters MORE under fire: grime you dodge
+settles, scum is sticky and barren, the flood at 80%, the dive as the only
+scrub, the clean bonus at every sector boundary (40 × sector × clean lanes).
+
+Found by screenshotting the build rather than believing it: the menu still
+said NO GUN, scum pads on steep wall lanes read as crates floating off the
+surface (now films, hugging it), and spitters shared khaki with scum.
+
+Smoke gate 60 → 73 checks, and the flight checks fail against v6 — a build
+that cannot fly cannot pass them.
+
 ## v6 — 2026-08-07
 
 **The Scum Line.** One rule, aimed at the four places the tension was

@@ -361,7 +361,9 @@ s.listen(0, '127.0.0.1', async () => {
   ok('and the flood washes the rim clean, with mercy',
     flooded.fouled === 0 && flooded.mercy > 0 && flooded.chain === 1 && flooded.mode === 'play');
 
-  // the level clear washes too, and clean lanes pay
+  // the sector boundary washes too, and clean lanes pay. A sector ends when
+  // you have FLOWN it — distance, not a bubble count — so the test flies the
+  // last stretch rather than collecting anything.
   const washed = await p.evaluate(async () => {
     const j = window.__sj;
     j.debug.setLevel(3);                                 // back on the ridged one
@@ -369,22 +371,136 @@ s.listen(0, '127.0.0.1', async () => {
     j.player.mercy = 0;
     for (let l = 0; l < 4; l++) j.debug.foul(l);         // four fouled, sixteen clean
     const level0 = j.state.level, score0 = j.state.score;
-    j.state.quota = 1;
-    j.debug.give('bubble');
-    for (let i = 0; i < 40 && j.state.level === level0; i++) j.debug.step(0.02);
+    j.state.dist = 16 + level0 * 3 - 0.01;               // a breath from the boundary
+    for (let i = 0; i < 20 && j.state.level === level0; i++) j.debug.step(0.05);
     return { level0, level: j.state.level, fouled: j.scum.fouled(),
              gain: j.state.score - score0, bonus: 40 * level0 * 16 };
   });
-  ok('the level clear washes the channel', washed.level === washed.level0 + 1 && washed.fouled === 0,
+  ok('the sector boundary washes the channel', washed.level === washed.level0 + 1 && washed.fouled === 0,
     JSON.stringify(washed));
   ok('and every clean lane pays (gain ' + washed.gain + ' ≥ bonus ' + washed.bonus + ')',
     washed.gain >= washed.bonus);
+
+  // ── ON RAILS: the flight, the morph, the gun ──
+  // you are moving whether you like it or not
+  const flight = await p.evaluate(async () => {
+    const j = window.__sj;
+    j.debug.setLevel(2);
+    const d0 = j.state.dist, f0 = j.tube.flow;
+    for (let i = 0; i < 20; i++) j.debug.step(0.05);
+    return { dist: j.state.dist - d0, flow: j.tube.flow !== f0, speed: j.tube.speed };
+  });
+  ok('the sector is flown, not collected (dist +' + flight.dist.toFixed(2) + ')',
+    flight.dist > 0.3 && flight.speed > 0);
+  ok('and the ribs stream to show it', flight.flow);
+
+  // the channel becomes the next shape UNDER you, and the rules follow the
+  // dominant one the moment it flips
+  const morphed = await p.evaluate(async () => {
+    const j = window.__sj;
+    j.debug.setLevel(2);                                  // trough → gutters next
+    const before = j.tube.shape;
+    j.state.dist = (16 + 2 * 3) * 0.62;                   // past the morph point
+    j.debug.step(0.05);
+    const started = j.tube.morphing;
+    const y0 = j.tube.at(10, 0).y;
+    let flipped = null;
+    for (let i = 0; i < 400 && j.tube.morphing; i++) {
+      j.tube.update(0.05);
+      if (flipped === null && j.tube.shape !== before) flipped = j.tube.mix;
+    }
+    const y1 = j.tube.at(10, 0).y;
+    return { before, started, flipped, moved: Math.abs(y1 - y0) > 0.5, now: j.tube.shape };
+  });
+  ok('the channel starts morphing mid-sector', morphed.started, JSON.stringify(morphed));
+  ok('the floor actually moves under you', morphed.moved);
+  ok('and the dominant shape flips at half way (' + (morphed.flipped ?? 'never').toString().slice(0, 4) + ')',
+    morphed.flipped !== null && Math.abs(morphed.flipped - 0.5) < 0.08);
+
+  // THE GUN: a bolt kills grime and pays
+  const gunned = await p.evaluate(async () => {
+    const j = window.__sj;
+    j.debug.setLevel(1);
+    j.risers.clear(); j.scum.clear();
+    j.player.mercy = 0;
+    const lane = Math.round(j.player.lane);
+    const g = j.debug.spawn('grime', lane, 0.0001);
+    g.depth = 0.5;
+    const s0 = j.state.score;
+    j.shots.fire(lane, 0.02);
+    for (let i = 0; i < 40 && j.risers.items.length; i++) j.debug.step(0.02);
+    return { dead: j.risers.items.length === 0, gain: j.state.score - s0 };
+  });
+  ok('a bolt kills grime', gunned.dead, JSON.stringify(gunned));
+  ok('and the kill pays', gunned.gain >= 75);
+
+  // holding SPACE actually streams — the wiring, not just the class
+  await p.keyboard.down('Space');
+  const streamed = await p.evaluate(() => {
+    const j = window.__sj;
+    j.shots.clear();
+    for (let i = 0; i < 12; i++) j.debug.step(0.05);
+    return j.shots.items.length;
+  });
+  await p.keyboard.up('Space');
+  ok('holding fire streams bolts (' + streamed + ' in flight)', streamed >= 2);
+
+  // the stream does not know friend from food: popping the LIT one is the
+  // chain, gone, by your own hand — and pays nothing
+  const popped = await p.evaluate(async () => {
+    const j = window.__sj;
+    j.risers.clear(); j.shots.clear();
+    j.state.chain = 6;
+    const lane = Math.round(j.player.lane);
+    const b = j.debug.spawn('bubble', lane, 0.0001);
+    b.depth = 0.5; b.lit = true;
+    const s0 = j.state.score;
+    j.shots.fire(lane, 0.02);
+    for (let i = 0; i < 40 && j.risers.items.length; i++) j.debug.step(0.02);
+    return { gone: j.risers.items.length === 0, chain: j.state.chain, gain: j.state.score - s0 };
+  });
+  ok('a bolt pops a bubble instead of collecting it', popped.gone && popped.gain === 0,
+    JSON.stringify(popped));
+  ok('and popping the lit one kills the chain (6 → ' + popped.chain + ')', popped.chain === 1);
+
+  // SPITTERS hold mid-tube, shoot back, and dive when the magazine is dry
+  const spat = await p.evaluate(async () => {
+    const j = window.__sj;
+    j.risers.clear(); j.shots.clear();
+    j.player.lane = 2;
+    const sp = j.debug.spawn('spitter', 16, 0.0001);
+    sp.depth = sp.holdAt + 0.02; sp.speed = 0.2; sp.fireIn = 0.01;
+    for (let i = 0; i < 30; i++) j.debug.step(0.02);
+    const held = Math.abs(sp.depth - sp.holdAt) < 0.001;
+    const orbs = j.risers.items.filter(i => i.type === 'orb').length;
+    sp.shots = 0;
+    j.debug.step(0.02);
+    return { held, orbs, divesAfter: sp.type === 'grime' };
+  });
+  ok('a spitter holds mid-tube and shoots back (' + spat.orbs + ' orbs)',
+    spat.held && spat.orbs >= 1, JSON.stringify(spat));
+  ok('and dives like grime when its magazine is dry', spat.divesAfter);
+
+  // an orb ducks past the mouth and is GONE — nothing settles off a shot
+  const orbGone = await p.evaluate(async () => {
+    const j = window.__sj;
+    j.risers.clear(); j.scum.clear();
+    j.player.lane = 2;
+    const o = j.debug.spawn('orb', 17, 0.5);
+    o.depth = 0.02;
+    // the director keeps directing while we step, so ask about THE ORB, not
+    // about an empty tube — a bubble spawning mid-loop is the game working
+    for (let i = 0; i < 30 && j.risers.items.includes(o); i++) j.debug.step(0.02);
+    return { gone: !j.risers.items.includes(o), scum: j.scum.at(17) };
+  });
+  ok('an orb past the mouth never settles', orbGone.gone && orbGone.scum === 0,
+    JSON.stringify(orbGone));
 
   // leave the gate the way we found it: the ridged channel, an empty rim
   await p.evaluate(() => {
     const j = window.__sj;
     j.debug.setLevel(3);
-    j.risers.clear(); j.scum.clear();
+    j.risers.clear(); j.scum.clear(); j.shots.clear();
     j.state.lives = 2;
   });
 

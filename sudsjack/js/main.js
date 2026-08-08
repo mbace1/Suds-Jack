@@ -25,7 +25,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { PAL, webTint } from './palette.js';
 import { Tube, SHAPE_NAMES } from './tube.js';
 import { Player } from './player.js';
-import { Risers, Pops, Scum, STICKY } from './things.js';
+import { Risers, Pops, Scum, Shots, STICKY } from './things.js';
 import { Input } from './input.js';
 import { AudioKit } from './audio.js';
 
@@ -86,6 +86,7 @@ const player = new Player(scene, tube);
 const risers = new Risers(scene, tube);
 const pops = new Pops(scene, tube);
 const scum = new Scum(scene, tube);
+const shots = new Shots(scene, tube);
 const input = new Input(canvas);
 const audio = new AudioKit();
 
@@ -103,11 +104,12 @@ const state = {
   score: 0,
   chain: 1,
   lives: 3,
-  level: 1,
-  quota: 0,            // bubbles left to clear this level
+  level: 1,            // the SECTOR — you fly through it, not collect it away
+  dist: 0,             // depths flown into this sector
   t: 0,
   nextBubble: 0,
   nextGrime: 0,
+  nextSpitter: 0,
   banner: 0,
 };
 
@@ -128,26 +130,42 @@ for (let i = 0; i < tube.lanes; i++) {
 function hi() { try { return +localStorage.getItem(HI_KEY) || 0; } catch { return 0; } }
 function setHi(v) { try { localStorage.setItem(HI_KEY, String(v)); } catch { /* private mode */ } }
 
-function levelQuota(n) { return 8 + n * 4; }
+// A sector is a stretch of tube, measured in depths FLOWN — the level driver
+// is the flight itself now, not a bubble count. You cannot camp a distance.
+function sectorLen(n) { return 16 + n * 3; }
+function flightSpeed(n) { return Math.min(0.9, 0.34 + n * 0.045); }    // depths/sec
+function sectorShape(n) { return SHAPE_NAMES[(n - 1) % SHAPE_NAMES.length]; }
+// where in a sector the channel starts becoming the NEXT one. Everything
+// before it is this sector's shape, pure — which is also what keeps the smoke
+// gate honest when it asks for a shape by number.
+const MORPH_AT = 0.6;
+
 function bubbleRate(n) { return Math.max(0.55, 1.5 - n * 0.09); }     // seconds between
 function grimeRate(n) { return Math.max(0.9, 3.2 - n * 0.22); }
+function spitterRate(n) { return Math.max(6, 15 - n); }
 function riserSpeed(n) { return 0.16 + n * 0.018; }                    // depth per second
+const FIRE_CD = 0.16;                                                  // stream cadence
+let fireCD = 0;
+let lastDom = 'pipe';           // the dominant shape last frame — seat swaps on it
 
 function startLevel(n, cleanBonus = 0) {
   state.level = n;
-  state.quota = levelQuota(n);
+  state.dist = 0;
   state.nextBubble = 0.4;
   state.nextGrime = 1.8 + Math.random();
-  const shape = SHAPE_NAMES[(n - 1) % SHAPE_NAMES.length];
+  state.nextSpitter = n >= 2 ? 4 + Math.random() * 3 : Infinity;
+  const shape = sectorShape(n);
   // every third web leans off-axis, so a shape you have seen is still a
   // different room the second time round
   // no bend on the ridged one: a leaning channel plus five bays is two
   // things to read at once, and the bays are the level
   tube.setShape(shape, n % 3 === 0 && shape !== 'gutters' ? [0.22, -0.14] : [0, 0]);
+  tube.speed = flightSpeed(n);
   tube.tint(webTint(n));
+  lastDom = shape;
   seat(shape);
-  // the clean bonus rides the level banner: it is the one moment you look up
-  toast(`LEVEL ${n} · ${shape.toUpperCase()}` + (cleanBonus ? `  ·  CLEAN +${cleanBonus.toLocaleString()}` : ''));
+  // the clean bonus rides the sector banner: it is the one moment you look up
+  toast(`SECTOR ${n} · ${shape.toUpperCase()}` + (cleanBonus ? `  ·  CLEAN +${cleanBonus.toLocaleString()}` : ''));
   paintHud();
 }
 
@@ -155,8 +173,9 @@ function startRun() {
   state.mode = 'play';
   state.score = 0; state.chain = 1; state.lives = 3; state.t = 0;
   risers.clear(); pops.clear(); player.reset();
-  scum.clear();
+  scum.clear(); shots.clear();
   input.clearPending();
+  fireCD = 0;
   startLevel(1);
   el('menu').hidden = true;
   el('over').hidden = true;
@@ -166,6 +185,7 @@ function startRun() {
 function gameOver() {
   state.mode = 'over';
   input.clearPending();
+  tube.speed = 0.1;               // the tube keeps drifting behind the recap
   audio.bedStop(); audio.over();
   const best = Math.max(hi(), state.score);
   setHi(best);
@@ -184,7 +204,7 @@ function toast(text) {
 function paintHud() {
   hud.score.textContent = state.score.toLocaleString();
   hud.chain.textContent = state.chain > 1 ? `×${state.chain}` : '';
-  hud.level.textContent = `L${state.level}`;
+  hud.level.textContent = `S${state.level} · ${Math.min(99, Math.floor(state.dist / sectorLen(state.level) * 100))}%`;
   hud.lives.textContent = '●'.repeat(Math.max(0, state.lives));
   // the scum line: one cell per lane, the map and the flood meter in one
   for (let i = 0; i < scumCells.length; i++) {
@@ -202,7 +222,7 @@ function director(dt) {
   state.nextGrime -= dt;
   const n = tube.lanes;
 
-  if (state.nextBubble <= 0 && state.quota > 0) {
+  if (state.nextBubble <= 0) {
     // BARREN: bubbles do not rise through a fouled lane. This is scum's
     // quietest tooth — neglect never blocks you, it starves you: the chain
     // migrates into whatever you have kept clean, and a channel you let
@@ -231,6 +251,18 @@ function director(dt) {
       : awayFrom(player.lane, 6, n);
     risers.spawn('grime', lane, riserSpeed(state.level) * (0.7 + Math.random() * 0.3));
     state.nextGrime = grimeRate(state.level) * (0.7 + Math.random() * 0.7);
+  }
+
+  // Spitters, from sector 2: the first thing that does not come to you. At
+  // most two hold the tube at once — a third would turn the mid-field into a
+  // firing squad and the mouth into the only conversation.
+  state.nextSpitter -= dt;
+  if (state.nextSpitter <= 0) {
+    const alive = risers.items.filter(i => i.type === 'spitter').length;
+    if (alive < 2) {
+      risers.spawn('spitter', awayFrom(player.lane, 4, n), riserSpeed(state.level) * 0.8);
+    }
+    state.nextSpitter = spitterRate(state.level) * (0.8 + Math.random() * 0.4);
   }
 }
 
@@ -295,8 +327,66 @@ function step(dt) {
     pops.at(player.lane, 0.02, PAL.BUBBLE);
   }
 
+  // ── THE FLIGHT ──
+  // Distance is the level now. It accrues whether you like it or not, the
+  // tube streams to show it, and at MORPH_AT the channel starts BECOMING the
+  // next sector's shape — timed to arrive as you do.
+  state.dist += tube.speed * dt;
+  const len = sectorLen(state.level);
+  if (!tube.morphing && state.dist >= len * MORPH_AT && state.dist < len) {
+    const remain = (len - state.dist) / tube.speed;
+    tube.morphTo(sectorShape(state.level + 1), Math.max(1.5, remain));
+  }
+  // the seat and the rules follow the DOMINANT shape the moment it flips —
+  // the camera pulls back for the bays while you watch them grow
+  if (tube.shape !== lastDom) {
+    lastDom = tube.shape;
+    seat(lastDom);
+    toast(`→ ${lastDom.toUpperCase()}`);
+  }
+  if (state.dist >= len) {
+    audio.level();
+    const bonus = 40 * state.level * scum.clean();
+    state.score += bonus;
+    scum.clear();
+    startLevel(state.level + 1, bonus);
+  }
+
+  // ── THE GUN ──
+  fireCD -= dt;
+  if (input.firing() && fireCD <= 0 && !player.jumping) {
+    shots.fire(player.lane, player.depth + 0.03);
+    audio.fire();
+    fireCD = FIRE_CD;
+  }
+  shots.update(dt);
+
   director(dt);
   const { collected, missed, struck, settled } = risers.update(dt, player);
+
+  // Shots against everything in the tube. A bolt does not know a bubble from
+  // grime — that is the tension the gun brings: the stream that clears your
+  // lane also pops what you were there to collect, and popping the LIT one
+  // is the chain, gone, by your own hand.
+  for (const s of shots.items) {
+    if (s.dead) continue;
+    for (const it of risers.items) {
+      if (it.dead) continue;
+      if (Math.abs(it.lane - s.lane) > 0.7 || Math.abs(it.depth - s.depth) > 0.07) continue;
+      s.dead = true;
+      if (it.type === 'bubble') {
+        it.dead = true;
+        pops.at(it.lane, it.depth, PAL.BUBBLE);
+        if (it.lit) { state.chain = 1; audio.miss(); toast('POPPED THE LIT ONE'); }
+      } else if (--it.hp <= 0) {
+        it.dead = true;
+        pops.at(it.lane, it.depth, [1.2, 0.9, 0.3]);
+        state.score += it.type === 'spitter' ? 250 : it.type === 'orb' ? 25 : 75;
+        audio.zap();
+      }
+      break;
+    }
+  }
 
   // grime that got past the mouth is not gone — it settled
   for (const it of settled) scum.add(it.lane);
@@ -324,17 +414,8 @@ function step(dt) {
     if (it.lit) { state.chain = Math.min(state.chain + 1, 16); audio.lit(state.chain); }
     else audio.pop(state.chain);
     pops.at(it.lane, it.depth, it.lit ? PAL.BUBBLE_LIT : PAL.BUBBLE);
-    state.quota--;
-    if (state.quota <= 0 && !risers.items.some(i => i.type === 'bubble')) {
-      audio.level();
-      // the cash-out: every lane you kept clean pays, then the wash is free.
-      // Spending the level's last seconds scrubbing versus chasing one more
-      // deep bubble is the decision the chain never gave you.
-      const bonus = 40 * state.level * scum.clean();
-      state.score += bonus;
-      scum.clear();
-      startLevel(state.level + 1, bonus);
-    }
+    // no quota any more: the sector ends when you have FLOWN it, and the
+    // clean bonus is paid at the boundary — see the flight block above
   }
 
   for (const it of missed) {
@@ -381,13 +462,14 @@ el('sound').addEventListener('click', () => {
 
 el('hiScore').textContent = hi().toLocaleString();
 tube.tint(webTint(1));
+tube.speed = 0.1;                 // the menu drifts: the tube is going somewhere
 paintHud();
 
 // ── the handle ───────────────────────────────────────────────────────────
 // Same contract as every other cabinet here: enough to drive the game from a
 // console or a headless test without touching the DOM.
 window.__sj = {
-  state, tube, player, risers, scum, audio, camera,
+  state, tube, player, risers, scum, shots, audio, camera,
   debug: {
     // lay n layers on a lane without waiting for grime to do it
     foul: (lane, n = 1) => { for (let i = 0; i < n; i++) scum.add(lane); },

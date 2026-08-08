@@ -101,6 +101,13 @@ export class AudioKit {
     [0, -3, -7, -12].forEach((s, i) => setTimeout(() => this._blip(330 * Math.pow(1.0595, s), 0.34, 'sine', 0.2, 0.7), i * 150));
   }
 
+  // the stream: a tick per bolt, quiet enough to hold down for a minute
+  fire() { this._blip(1150, 0.04, 'square', 0.05, 3.5); }
+
+  // a kill: short, wet, and pitched under the bubble pops so the two
+  // economies never sound like each other
+  zap() { this._blip(240, 0.12, 'sawtooth', 0.16, 1.8); this._noise(0.08, 1400, 2, 0.07); }
+
   // the dive's wet noise again, brighter and shorter: the wipe, not the drop
   scrub() { this._noise(0.16, 2200, 1.8, 0.1); this._blip(760, 0.1, 'sine', 0.12, 1.4); }
 

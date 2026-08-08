@@ -116,7 +116,23 @@ export class Tube {
     this.lanes = lanes;
     this.radius = radius;
     this.depth = depth;
-    this.shape = 'pipe';
+    // The cross-section is a JOURNEY now, not a setting. `_from` is the shape
+    // you are in, `_to` is the one the channel is becoming, `mix` is how far
+    // through the change you are — and everything that asks `at()` rides the
+    // blend without knowing it exists: the player lies on a floor that is
+    // mid-morph, grime climbs walls that are still arriving. That is the
+    // "changing" in changing wireframe: the room reshapes UNDER you, never
+    // as a scene cut.
+    this._from = 'pipe';
+    this._to = null;
+    this.mix = 0;
+    this._mixDur = 1;
+    // Forward FLIGHT. `flow` scrolls the ribs toward the mouth and wraps
+    // them, which is the whole visual grammar of speed in a wireframe — the
+    // world does not move, the rings do. `speed` is in depths per second and
+    // main owns it.
+    this.flow = 0;
+    this.speed = 0;
     this.lean = new THREE.Vector2(0, 0);   // where the far end sits, in radii
 
     this.group = new THREE.Group();
@@ -137,9 +153,10 @@ export class Tube {
     );
     this.group.add(this.rails);
 
-    // ribs at a few depths — the only thing telling you how far away a riser
-    // is, since there is no lighting and no shadow to do it
-    this.ringDepths = [0, 0.09, 0.2, 0.33, 0.48, 0.65, 0.83, 1];
+    // ribs, evenly spaced so they flow past at an even beat — the only thing
+    // telling you how far away a riser is AND how fast you are going, since
+    // there is no lighting and no shadow to do either
+    this.ringDepths = Array.from({ length: 12 }, (_, i) => i / 12);
     this.ringGeo = new THREE.BufferGeometry();
     this.ringPos = new Float32Array(this.ringDepths.length * lanes * 2 * 3);
     this.ringGeo.setAttribute('position', new THREE.BufferAttribute(this.ringPos, 3));
@@ -170,7 +187,15 @@ export class Tube {
   /** The middle lane — the floor of the channel, and where a run starts. */
   get floorLane() { return (this.lanes - 1) / 2; }
 
-  /** Lane seams you cannot ride across on this shape. Empty on most of them. */
+  /** The DOMINANT shape: what the channel mostly is right now. */
+  get shape() { return this._to && this.mix >= 0.5 ? this._to : this._from; }
+
+  /**
+   * Lane seams you cannot ride across on this shape. Empty on most of them.
+   * Mid-morph the ridges follow the dominant shape — while the gutters are
+   * still growing they are scenery, and once they are most of what is there
+   * they are walls. One rule, no half-walls.
+   */
   get peaks() { return PEAKS[this.shape] || []; }
 
   /**
@@ -211,7 +236,15 @@ export class Tube {
   }
 
   _point(u, depth, out = new THREE.Vector3()) {
-    const [sx, sy] = SHAPES[this.shape](Math.max(0, Math.min(1, u)));
+    const uu = Math.max(0, Math.min(1, u));
+    let [sx, sy] = SHAPES[this._from](uu);
+    if (this._to) {
+      // smoothstepped, so a morph arrives the way it left: without a kink
+      const m = this.mix * this.mix * (3 - 2 * this.mix);
+      const [tx, ty] = SHAPES[this._to](uu);
+      sx += (tx - sx) * m;
+      sy += (ty - sy) * m;
+    }
     // no k: same channel at every depth. The camera does the converging.
     return out.set(
       this.lean.x * this.radius * depth + sx * this.radius,
@@ -239,11 +272,27 @@ export class Tube {
     return Math.atan2(b.y - a.y, b.x - a.x);
   }
 
+  /** Arrive instantly. Sector starts and the smoke gate use this. */
   setShape(name, lean = [0, 0]) {
-    this.shape = SHAPES[name] ? name : 'pipe';
+    this._from = SHAPES[name] ? name : 'pipe';
+    this._to = null;
+    this.mix = 0;
     this.lean.set(lean[0], lean[1]);
     this.rebuild();
   }
+
+  /** Become another shape over `seconds`, while everything keeps playing. */
+  morphTo(name, seconds = 4) {
+    if (!SHAPES[name] || name === this.shape) return;
+    // a morph interrupted mid-flight starts from what is actually on screen:
+    // fold the current blend into _from by resolving to the dominant shape
+    if (this._to) { this._from = this.shape; }
+    this._to = name;
+    this.mix = 0;
+    this._mixDur = Math.max(0.1, seconds);
+  }
+
+  get morphing() { return !!this._to; }
 
   rebuild() {
     const a = new THREE.Vector3(), b = new THREE.Vector3();
@@ -255,7 +304,11 @@ export class Tube {
     this.railGeo.attributes.position.needsUpdate = true;
 
     p = 0;
-    for (const d of this.ringDepths) {
+    for (const base of this.ringDepths) {
+      // the ribs FLOW: each ring slides toward the mouth and wraps to the far
+      // end, so the channel streams past you — this is what flying looks like
+      // in a drawing made of lines
+      const d = ((base - this.flow) % 1 + 1) % 1;
       for (let i = 0; i < this.lanes; i++) {
         this._seam(i, d, a); this._seam(i + 1, d, b);
         this.ringPos.set([a.x, a.y, a.z, b.x, b.y, b.z], p); p += 6;
@@ -278,6 +331,21 @@ export class Tube {
   update(dt, amount = 1) {
     this._sway = (this._sway || 0) + dt * 0.35;
     this.group.rotation.z = Math.sin(this._sway) * 0.035 * amount;
+
+    let dirty = false;
+    if (this.speed > 0) {
+      this.flow = (this.flow + this.speed * dt) % 1;
+      dirty = true;
+    }
+    if (this._to) {
+      this.mix += dt / this._mixDur;
+      if (this.mix >= 1) { this._from = this._to; this._to = null; this.mix = 0; }
+      dirty = true;
+    }
+    // The whole channel is ~200 line segments; rebuilding it every frame in
+    // flight costs less than one riser's matrix work. Cheapness is the reason
+    // this file can afford to be alive.
+    if (dirty) this.rebuild();
   }
 
   tint(hue) {

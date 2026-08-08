@@ -110,9 +110,23 @@ root's orphaned `game.js`/`style.css`/`levels.json` were removed. `paperboy/` an
 held them, and four of the hub's links pointed at them.
 
 ### Suds Jack (`sudsjack/`) — the rebuild
-Concept: "Bomb Jack x Suds 51 x Tempest 2000", taken **literally and in that order** —
-Bomb Jack is the *game* (collect, in the right order, **no weapon**), Tempest is the
-*shape* (a tube you ride the rim of), the suds are what it is made of.
+Concept: "Bomb Jack x Suds 51 x Tempest 2000" — Bomb Jack is the *collection* (the lit
+order, the chain), Tempest is the *shape and the gun*, the suds are what it is made of.
+**v7 reversed the founding "no weapon" line** (owner's direction: "cool and changing
+wireframe on-rails shooter"): the quiet collector was considered, and it was stuck. The
+game is **on rails** now — a sector is a DISTANCE flown at `flightSpeed(n)`, the evenly
+spaced ribs **stream** toward the mouth (`tube.flow`) to show it, and at 60% of every
+sector the channel **morphs** into the next sector's shape under you (`tube.morphTo()`,
+a smoothstepped blend inside `_point()`, so everything that asks `at()` rides the change
+without knowing). Seat and ridge rules follow the DOMINANT shape when it flips. **The
+gun**: hold Space / pad A / RT, touch autofires (a mouse drag must NOT flip that
+convention on — it did once). A bolt does not know a bubble from grime — the stream pops
+bubbles for nothing and popping the LIT one kills the chain by your own hand, which is
+the fusion: gun and collection fight over the same lane. Kills pay flat (grime 75, orb
+25, spitter 250); the chain stays the collector's economy. Dive moved to S/↓/pad B,
+keeps depth pay, lane lock, and the scrub. **Spitters** (sector 2+, cap 2) hold
+mid-tube, walk their lane toward yours, lob orbs (fast, warm, never settle), and dive
+like grime when the magazine is dry — they wear the orb's ember, never grime's khaki.
 **Two things share the name.** The playable one is still the **original canvas vector
 build**, live at `sudz/` on `gh-pages` (a tube *shooter*: ← → move, Space fire, Z
 superzapper). The arcade's `sudsjack` cabinet points there and **stays pointed there**
@@ -185,7 +199,7 @@ nothing) — which is what finally makes the stated core verb load-bearing: it a
 3× but capped at 2.1× against a ×16 chain that never needed it. Level clear washes the
 channel and pays 40 × level × clean lanes — the chain's missing cash-out beat. The scum
 line itself is a 20-cell strip under the channel: route map and flood meter, one fact.
-`node sudsjack/test/smoke.cjs` = 60 checks: boot, the director, the
+`node sudsjack/test/smoke.cjs` = 73 checks: boot, the director, the flight, the morph, the gun, the
 lane-lock during a dive, collection, the chain, damage, mercy frames, the level shapes,
 game over, the way home and the signature — all driven off **game state, not the wall
 clock**, because a sandbox with no GPU renders this at a handful of frames a second.

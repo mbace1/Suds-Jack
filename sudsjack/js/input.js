@@ -1,15 +1,22 @@
 // SUDS JACK — input.
 //
-// Three verbs, three ways in, and every path feeds the SAME getters so
+// Four verbs, three ways in, and every path feeds the SAME getters so
 // nothing downstream knows which one you are using: `spin()` is -1..1 across
-// the channel, `dive()` and `jump()` are edge-triggered requests.
+// the channel, `firing()` is a held state, `dive()` and `jump()` are
+// edge-triggered requests.
+//
+// The gun took the biggest button. Space and pad A are FIRE now — held, not
+// tapped, because a stream you feather is a stream you can lift off the lit
+// bubble — and the dive moved down to S / ArrowDown / pad B, which is the
+// right place for it: a dive is a descent and it reads off a descent key.
 //
 // The touch control is the one worth explaining. A tube is a ring, and a
 // virtual stick on a channel is a lie — you would be aiming at a lane instead
 // of travelling across the floor. So touch is a DRAG: move your thumb sideways
 // anywhere on the screen and Jack rides with it. A tap that goes nowhere is a
-// dive, and a flick UP is a jump. That means one thumb does all three and
-// there is nothing on screen covering the channel.
+// dive, and a flick UP is a jump. Touch does not get a fire button at all —
+// the stream is automatic under a thumb, the way sudz already does it, and
+// feathering it is done by where you stand.
 
 const RIM_PER_PX = 2.6;      // rim units per screen width of drag
 const TAP_MS = 250;
@@ -32,7 +39,7 @@ export class Input {
       if (['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', 'Space', 'KeyA', 'KeyD', 'KeyS', 'KeyW'].includes(e.code)) e.preventDefault();
       if (e.repeat) return;
       this.keys.add(e.code);
-      if (e.code === 'Space' || e.code === 'ArrowDown' || e.code === 'KeyS') this._dive = true;
+      if (e.code === 'ArrowDown' || e.code === 'KeyS') this._dive = true;
       if (e.code === 'ArrowUp' || e.code === 'KeyW') this._jump = true;
     });
     addEventListener('keyup', e => this.keys.delete(e.code));
@@ -40,7 +47,9 @@ export class Input {
     const start = (e) => {
       const t = e.changedTouches ? e.changedTouches[0] : e;
       if (e.target.closest && e.target.closest('button, a')) return;
-      this.sawTouch = true;
+      // only a REAL touch flips the autofire convention on — a mouse drag is
+      // a mouse, and a mouse player fires on Space like a keyboard player
+      if (e.changedTouches) this.sawTouch = true;
       this._touch = { id: t.identifier ?? 'mouse', x: t.clientX, y: t.clientY, y0: t.clientY, t0: performance.now(), moved: 0, up: 0 };
       e.preventDefault();
     };
@@ -93,11 +102,18 @@ export class Input {
     if (p.buttons[14] && p.buttons[14].pressed) x = -1;
     if (p.buttons[15] && p.buttons[15].pressed) x = 1;
     this._padAxis = x;
+    // A is FIRE — held — and at a menu its edge is still a way in. B is the
+    // dive now: fire took the biggest button because it is the verb you hold.
     const a = !!(p.buttons[0] && p.buttons[0].pressed);
+    const rt = !!(p.buttons[7] && p.buttons[7].pressed) || !!(p.buttons[5] && p.buttons[5].pressed);
+    const b = !!(p.buttons[1] && p.buttons[1].pressed);
     const st = !!(p.buttons[9] && p.buttons[9].pressed);
-    if (a && !this._padPrev) { this._dive = true; this._start = true; }
+    this._padFire = a || rt;
+    if (a && !this._padPrev) this._start = true;
     if (st && !this._padStartPrev) this._start = true;
+    if (b && !this._padDivePrev) this._dive = true;
     this._padPrev = a;
+    this._padDivePrev = b;
     this._padStartPrev = st;
     // X or Y — whichever the pad calls them, the two face buttons that are
     // not the dive
@@ -125,6 +141,12 @@ export class Input {
   dive() { const d = this._dive; this._dive = false; return d; }
 
   jump() { const j = this._jump; this._jump = false; return j; }
+
+  /** Held, not edged: the stream runs while this is true. Touch is always
+   *  true once a thumb has been seen — the mobile convention sudz set. */
+  firing() {
+    return this.keys.has('Space') || !!this._padFire || this.sawTouch;
+  }
 
   // A / Start off the pad, read only when there is no run to be in. Keyboard
   // and pointer have their own ways in on the buttons themselves.

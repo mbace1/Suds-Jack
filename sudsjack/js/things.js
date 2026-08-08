@@ -60,6 +60,16 @@ export class Risers {
       // grime does not step on a clock — it steps on a countdown that gets
       // shorter as it gets closer, so the last stretch is the dangerous one
       stepIn: 0.9,
+      // What a shot has to spend to kill it. Bubbles have hp too — ONE — and
+      // that is the design working, not a bug: your stream pops the bubbles
+      // in its path, and a popped bubble pays nothing. The gun and the
+      // collection fight over the same lane, which is the whole fusion.
+      hp: type === 'spitter' ? 2 : 1,
+      // spitters hold mid-tube and shoot back; after their magazine is spent
+      // they dive for the mouth like everything else
+      holdAt: type === 'spitter' ? 0.5 + Math.random() * 0.15 : -1,
+      shots: type === 'spitter' ? 4 : 0,
+      fireIn: 1.4,
       dead: false,
     };
     this.items.push(it);
@@ -89,10 +99,27 @@ export class Risers {
 
     for (const it of this.items) {
       if (it.dead) continue;
-      it.depth -= it.speed * dt;
+
+      // A spitter STOPS. It is the first thing in this game that does not
+      // come to you — it sits half way down the tube, walks its lane toward
+      // yours, and makes you deal with it at range or eat what it sends. When
+      // its magazine is spent it stops being special and dives like grime.
+      if (it.type === 'spitter' && it.depth <= it.holdAt) {
+        it.depth = it.holdAt;
+        it.fireIn -= dt;
+        if (it.fireIn <= 0 && it.shots > 0) {
+          it.shots--;
+          it.fireIn = 1.9 + Math.random() * 0.7;
+          const orb = this.spawn('orb', it.lane, it.speed * 3.2);
+          if (orb) orb.depth = it.depth - 0.03;
+        }
+        if (it.shots <= 0) { it.type = 'grime'; it.speed *= 1.6; }
+      } else {
+        it.depth -= it.speed * dt;
+      }
       it.spin += dt * (it.type === 'bubble' ? 1.4 : 2.6);
 
-      if (it.type === 'grime') {
+      if (it.type === 'grime' || it.type === 'spitter') {
         it.stepIn -= dt;
         if (it.stepIn <= 0) {
           // Step one lane toward the player. In a channel there is only one
@@ -130,6 +157,11 @@ export class Risers {
       if (it.type === 'bubble') {
         if (near) { it.dead = true; collected.push(it); continue; }
         if (it.depth <= -0.02) { it.dead = true; missed.push(it); }
+      } else if (it.type === 'orb') {
+        // an orb is a shot, not a body: it burns past the mouth and is gone —
+        // it never settles, because nothing was dodged, only ducked
+        if (near && !overIt) { it.dead = true; struck.push(it); continue; }
+        if (it.depth <= -0.05) it.dead = true;
       } else {
         if (near && !overIt) { it.dead = true; struck.push(it); continue; }
         // Grime that gets past the mouth does NOT go over the edge any more —
@@ -156,7 +188,11 @@ export class Risers {
       const scale = 1;
       this._e.set(it.spin, it.spin * 0.7, 0);
       this._q.setFromEuler(this._e);
-      this._s.setScalar(scale * (it.type === 'bubble' && it.lit ? 1.35 : 1));
+      const size = it.type === 'bubble' && it.lit ? 1.35
+        : it.type === 'spitter' ? 1.5
+        : it.type === 'orb' ? 0.55
+        : 1;
+      this._s.setScalar(scale * size);
       this._m.compose(p, this._q, this._s);
       if (it.type === 'bubble') {
         this.bubbles.setMatrixAt(nb, this._m);
@@ -165,8 +201,16 @@ export class Risers {
         nb++;
       } else {
         this.grime.setMatrixAt(ng, this._m);
-        // grime brightens as it closes, which is the only warning it gives
-        this._c.setHex(it.depth < 0.3 ? PAL.GRIME_HOT : PAL.GRIME);
+        // grime brightens as it closes, which is the only warning it gives;
+        // a spitter is hot the whole time it is shooting, and an orb is hot
+        // because it IS a shot
+        // a spitter wears the ORB colour, not grime's khaki — a thing that
+        // shoots back must never be confusable with paint on the floor
+        this._c.setHex(
+          it.type === 'orb' || it.type === 'spitter' ? PAL.ORB
+          : it.depth < 0.3 ? PAL.GRIME_HOT
+          : PAL.GRIME,
+        );
         this.grime.setColorAt(ng, this._c);
         ng++;
       }
@@ -231,6 +275,66 @@ export class Pops {
     for (const p of this.live) p.m.visible = false;
     this.live.length = 0;
   }
+}
+
+// THE GUN — back in, by the owner's direction, and it changes what the game
+// is: sudz was a shooter, the rebuild took the gun away to find the collecting
+// game, and v7 is the two of them in the same tube. The stream costs nothing
+// to fire and everything to aim: a bolt does not know a bubble from grime, so
+// holding fire down the lane the lit one is rising up is how you lose a chain
+// to your own trigger. That tension is the reason this class exists.
+const SHOT_CAP = 24;
+const SHOT_SPEED = 2.3;         // depths per second — faster than anything alive
+
+export class Shots {
+  constructor(scene, tube) {
+    this.tube = tube;
+    this.items = [];
+    // a bolt is a short bright rod pointed down the tube
+    this.mesh = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(0.22, 0.22, 2.6),
+      new THREE.MeshBasicMaterial(),
+      SHOT_CAP,
+    );
+    this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.mesh.count = 0;
+    this.mesh.frustumCulled = false;
+    tube.group.add(this.mesh);
+    this._m = new THREE.Matrix4();
+    this._q = new THREE.Quaternion();
+    this._s = new THREE.Vector3(1, 1, 1);
+    this._c = new THREE.Color(...PAL.BOLT);
+    this._p = new THREE.Vector3();
+  }
+
+  fire(lane, depth = 0.02) {
+    if (this.items.length >= SHOT_CAP) return null;
+    const s = { lane, depth, dead: false };
+    this.items.push(s);
+    return s;
+  }
+
+  update(dt) {
+    for (const s of this.items) {
+      s.depth += SHOT_SPEED * dt;
+      if (s.depth > 1.02) s.dead = true;
+    }
+    if (this.items.some(s => s.dead)) this.items = this.items.filter(s => !s.dead);
+    let n = 0;
+    for (const s of this.items) {
+      this.tube.at(s.lane, s.depth, this._p);
+      this._p.y += 0.5;                    // off the floor, at chest height
+      this._m.compose(this._p, this._q, this._s);
+      this.mesh.setMatrixAt(n, this._m);
+      this.mesh.setColorAt(n, this._c);
+      n++;
+    }
+    this.mesh.count = n;
+    this.mesh.instanceMatrix.needsUpdate = true;
+    if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
+  }
+
+  clear() { this.items.length = 0; this.mesh.count = 0; }
 }
 
 // THE SCUM LINE. Grime that reaches the mouth settles here: a film on the rim,
@@ -311,8 +415,10 @@ export class Scum {
       this.tube.at(l, 0.012, this._p);
       this._e.set(0, 0, this.tube.faceAngle(l));
       this._q.setFromEuler(this._e);
-      // thicker as it stacks, never taller than it is wide: a film, not a wall
-      this._s.set(1, 0.6 + k * 0.5, 1);
+      // a FILM, hugging the surface — the screenshots caught the first cut
+      // reading as crates floating off the walls, which is what happens the
+      // moment a pad gets taller than it is wide on a steep lane
+      this._s.set(0.9, 0.3 + k * 0.28, 1);
       this._m.compose(this._p, this._q, this._s);
       this.mesh.setMatrixAt(n, this._m);
       this._c.setHex(k >= SCUM_MAX ? PAL.GRIME_DARK : PAL.GRIME);

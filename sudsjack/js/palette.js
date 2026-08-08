@@ -38,6 +38,11 @@ export const PAL = {
   GRIME: 0x8a7b2e,
   GRIME_DARK: 0x3c3512,
   GRIME_HOT: 0xc9b23a,
+  ORB: 0xe06428,        // a spitter's shot: the warmest thing in the tube
+
+  // your shots. Over 1.0 on purpose: a bolt of clean water down a dirty
+  // tube should bloom, and be the coldest thing on screen
+  BOLT: [2.2, 3.1, 3.4],
 
   // chrome
   TEXT: 0xdff6ff,
