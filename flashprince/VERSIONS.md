@@ -2,6 +2,19 @@
 
 The public release number. The `?v=N` token in `index.html` is a separate thing: it tracks every module-graph change so a browser cannot serve half of one build and half of another. Bump both when shipping.
 
+## v5 — 2026-08-08
+
+The jungle slice now carries the rest of the cinematic body vocabulary instead of falling back to sparse legacy poses.
+
+- **Crouch + crouch-walk:** four distinct weight-transfer drawings rather than a low standing pose sliding sideways.
+- **Roll:** five authored phases from tuck through shoulder rotation to recovery.
+- **Climb-down:** stand at lip → sit/turn → hands take weight → full hang.
+- **Shimmy:** alternating hand-transfer/body-swing drawings while the ledge anchor stays exact.
+- **Low mantle:** plant → drive knee/body over → recover to standing, with the existing one-tile contextual traversal rule unchanged.
+- **Stand-up:** three-stage recovery instead of snapping from crouch to the normal standing body.
+- The approved v4 run, walk, jump, brake, pivot, ledge-catch and pull-up layers remain underneath unchanged.
+- Four lush jungle traversal compositions remain the playable testbed, with small sci-fi traces embedded in the foliage.
+
 ## v4 — 2026-08-08
 
 The movement work is now presented inside the first environment target instead of grey movement-test rooms.
