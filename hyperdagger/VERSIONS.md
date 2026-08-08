@@ -8,6 +8,21 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v23 — 2026-08-08
+**The arena wraps around you**
+- A real spherical projection now bends the live 3D arena through the side
+  view and toward the world behind the player while preserving a conventional
+  forward centre for precise aiming.
+- A separate enemy-only cube capture burns real rear silhouettes into the
+  spherical view. Small distant forms receive a shape-preserving dilation;
+  generic warning bars no longer cover the scene on supported quality tiers.
+- The performance governor updates the static world and moving threats at
+  separate cadences, disables the extra captures on low tiers, and retains the
+  lightweight peripheral warning as its fallback. VIEW SPHERE / NORMAL is
+  available in the pause menu.
+- Projection state and capture health are exposed to the smoke gate. The
+  offline graph, hub copy and cache tokens ship with the playable build.
+
 ## v22 — 2026-08-08
 **Near-parity world and enemy art pass**
 - The remaining placeholder enemies are now full 3D source sculpts: Watcher,

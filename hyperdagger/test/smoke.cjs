@@ -256,7 +256,35 @@ s.listen(0, '127.0.0.1', async () => {
     assets22.environment.horns === 24 && assets22.environment.shards === 96 &&
     assets22.environment.arches === 4 && assets22.environment.lattice === true,
     JSON.stringify(assets22.environment));
-  ok('spherical threat awareness is active', assets22.fx.threat === true, JSON.stringify(assets22.fx));
+  ok('spherical threat awareness is active', assets22.fx.sphere === true || assets22.fx.threat === true, JSON.stringify(assets22.fx));
+
+  // ---- v23 live spherical projection -----------------------------------
+  const projection23 = await p.evaluate(async () => {
+    const hd = window.__hd;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    hd.debug.setOpt('perf', 'high');
+    hd.debug.setOpt('projection', true);
+    await frames(4);
+    const active = { projection: hd.debug.getProjection(), fx: hd.debug.getFx() };
+    hd.debug.setOpt('projection', false);
+    await frames(1);
+    const off = hd.debug.getProjection();
+    hd.debug.setOpt('projection', true);
+    hd.debug.setOpt('perf', 'low');
+    await frames(1);
+    const low = hd.debug.getProjection();
+    hd.debug.setOpt('perf', 'auto');
+    return { active, off, low };
+  });
+  ok('v23 spherical projection captures world and threats',
+    projection23.active.projection.enabled === true &&
+    projection23.active.projection.worldCaptures > 0 &&
+    projection23.active.projection.threatCaptures > 0 &&
+    projection23.active.fx.threat === false,
+    JSON.stringify(projection23));
+  ok('projection option and low tier shed cube captures',
+    projection23.off.enabled === false && projection23.low.enabled === false,
+    JSON.stringify(projection23));
 
   const swoop = await p.evaluate(async () => {
     const hd = window.__hd;
