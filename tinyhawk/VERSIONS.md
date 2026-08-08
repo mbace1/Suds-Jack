@@ -1,5 +1,11 @@
 # Tiny Hawk versions
 
+## v3 — Reliable right-stick pop
+
+- Sample touch and mouse flicks at event time so fast gestures cannot disappear between rendered frames.
+- Pop when a loaded stick springs back toward centre, while preserving the full down-to-up flick.
+- Preserve a loaded ollie when the touchscreen thumb releases and guarantee one action per gesture.
+
 ## v2 — The Part
 
 - Rebuilt the prototype around the concept's five-film roguelike run.
