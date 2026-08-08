@@ -47,10 +47,15 @@ s.listen(0, '127.0.0.1', async () => {
   // ---- tuning.js is what the game actually reads -------------------------
   const tun = await p.evaluate(() => {
     const hd = window.__hd; const t = hd.debug.getTuning();
-    return { dash: t.dash.speed, lv4: t.weapon.tiers[4].stream, sg: t.weapon.shotgunCount,
-      player: hd.player.speed === t.player.speed, bleed: t.style.bleedBase };
+    return { dash: t.dash.speed, lv4: t.weapon.tiers[4].stream, sg: t.weapon.shotgunCount[1],
+      player: hd.player.speed === t.player.speed, bleed: t.style.bleedBase,
+      // DD economy invariant: burst DPS < stream DPS at every weapon level
+      economy: t.weapon.tiers.every((tier, lv) =>
+        !tier || t.weapon.shotgunCount[lv] / t.weapon.shotgunCd < tier.stream),
+    };
   });
   ok('TUNING drives the game', tun.dash === 30 && tun.lv4 === 26 && tun.player && tun.bleed === 5, JSON.stringify(tun));
+  ok('the burst never out-DPSes the stream', tun.economy === true && tun.sg === 10, JSON.stringify(tun));
 
   // ---- v4.29 DD gunfeel: TAP = shotgun, HOLD = stream, no auto-fire ------
   const gun = await p.evaluate(async () => {

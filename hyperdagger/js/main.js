@@ -5,16 +5,16 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=50';
-import { Player } from './player.js?v=50';
-import { DaggerPool } from './daggers.js?v=50';
-import { GemPool } from './gems.js?v=50';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=50';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=50';
-import { OrbPool } from './bullets.js?v=50';
-import { AudioKit } from './audio.js?v=50';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=50';
-import { TUNING as T } from './tuning.js?v=50';
+import { InputManager } from './input.js?v=51';
+import { Player } from './player.js?v=51';
+import { DaggerPool } from './daggers.js?v=51';
+import { GemPool } from './gems.js?v=51';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=51';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=51';
+import { OrbPool } from './bullets.js?v=51';
+import { AudioKit } from './audio.js?v=51';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=51';
+import { TUNING as T } from './tuning.js?v=51';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -1921,7 +1921,7 @@ function killEnemy(e, dir) {
  *  wide cone at once, then locks the hand out briefly. Burst damage for a
  *  brute in your face, at the cost of your stream. */
 function fireShotgun(w) {
-  for (let i = 0; i < T.weapon.shotgunCount; i++) {
+  for (let i = 0; i < T.weapon.shotgunCount[weaponLv]; i++) {
     fireDagger(T.weapon.shotgunSpread, T.weapon.daggerSpeed * (0.92 + Math.random() * 0.16), w.homing);
   }
   shotCd = T.weapon.shotgunCd;
