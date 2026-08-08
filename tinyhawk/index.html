@@ -73,6 +73,11 @@
     #mph .arrows { color: var(--mint); letter-spacing: 2px; margin-left: 6px; }
     #mphBar { width: 96px; height: 3px; margin-top: 5px; background: var(--ghost); }
     #mphFill { width: 0; height: 100%; background: var(--mint); }
+    #special { width: 96px; margin-top: 10px; color: var(--gold); font-size: 10px; letter-spacing: .14em; }
+    #specialBar { height: 4px; margin-top: 4px; border: 1px solid rgba(232,201,138,.5); }
+    #specialFill { width: 0; height: 100%; background: var(--gold); transition: width .12s linear; }
+    #special.live { color: #ffcf66; text-shadow: 0 0 12px #ff9f43; }
+    #special.live #specialFill { background: #ffcf66; box-shadow: 0 0 10px #ff9f43; }
 
     #centre {
       position: absolute;
@@ -227,6 +232,7 @@
     <div id="mph">
       <span id="mphNum">0</span> km/h<span class="arrows" id="mphArrows"></span>
       <div id="mphBar"><div id="mphFill"></div></div>
+      <div id="special">SPECIAL<div id="specialBar"><div id="specialFill"></div></div></div>
     </div>
     <div id="toast"></div>
     <div id="centre">
@@ -249,7 +255,7 @@
     </div>
     <button id="btnResume" class="soft hidden">Resume the part</button>
     <button id="btnScheme">Controls: Skate (flick-it)</button>
-    <p class="keys"><b>MOVE</b> left stick / WASD · <b>OLLIE</b> right stick ↓ then release / ↑ · <b>FLIPS</b> ↓↖ kickflip · ↓↗ heelflip · loaded side swipe shuvit · <b>GRIND</b> catch a rail · <b>MANUAL</b> flick ↓ on landing</p>
+    <p class="keys"><b>MOVE</b> left stick / WASD · <b>OLLIE</b> right stick ↓ then release / ↑ · <b>FLIPS</b> ↓↖ kickflip · ↓↗ heelflip · loaded side swipe shuvit · <b>SPECIAL</b> land lines, then flick for signature tricks · <b>MANUAL</b> flick ↓ on landing</p>
   </main>
 
   <section id="panel" class="overlay hidden" aria-live="polite">
@@ -270,7 +276,7 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=5"></script>
-  <script type="module" src="../hub/shell.js?v=18"></script>
+  <script type="module" src="js/main.js?v=6"></script>
+  <script type="module" src="../hub/shell.js?v=15"></script>
 </body>
 </html>

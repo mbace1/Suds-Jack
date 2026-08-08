@@ -34,6 +34,7 @@ export function createMetrics() {
     bestManual: 0,
     tricks: 0,
     fakies: 0,
+    specials: 0,
     rails: new Set(),
     bails: 0,
   };
@@ -67,6 +68,10 @@ const templates = [
   {
     id: 'fakie',
     make: d => ({ target: d > 0.72 ? 2 : 1, read: m => m.fakies, unit: 'fakie landings' }),
+  },
+  {
+    id: 'specials',
+    make: d => ({ target: d > 0.72 ? 2 : 1, read: m => m.specials, unit: 'special tricks' }),
   },
 ];
 
