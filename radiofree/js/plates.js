@@ -158,7 +158,7 @@ const RAIL  = '#5d6f63';
 
 // ── CATHEDRAL — Tuomiokirkko over Senate Square ────────────────────
 function cathedralBase(c, o = {}) {
-  ramp(c, 0, 150, NIGHT.sky0, NIGHT.sky1);
+  sky(c, 0, 150, 126, '#01060a', '#4d6f72', '#08120f');   // dark top, hot at the roofline
   P(c, 0, 150, W, H - 150, NIGHT.sky1);
 
   // cloud banks, flat dithered slabs low in the sky
@@ -292,12 +292,13 @@ function cathedral(scr, t, d, o = {}) {
     P(c, bx + sway, by, 2, hh, '#080d0b');
     P(c, bx + sway, by - 2, 2, 2, '#0b120f');
   }
+  fg(c, 'bottom', 30, 1.7, 0.5);   // black in front — the cheapest depth there is
   amberWash(c, d);
 }
 
 // ── KATU — the narrow street, warm lamps, tram head-on ─────────────
 function katuBase(c, o = {}) {
-  ramp(c, 0, 120, '#0b1a18', '#1b3b34');
+  sky(c, 0, 120, 100, '#01060a', '#48646a', '#08120f');
   P(c, 0, 120, W, H - 120, '#12241f');
 
   // facades either side, stepping in toward the vanishing point
@@ -439,7 +440,7 @@ function katu(scr, t, d, o = {}) {
 
 // ── MANNERHEIM — the wide boulevard, green monochrome ──────────────
 function mannerheimBase(c, o = {}) {
-  ramp(c, 0, 96, '#050a08', '#16281f');
+  sky(c, 0, 96, 82, '#01060a', '#43606a', '#070f0e');
   P(c, 0, 96, W, H - 96, '#16281f');
 
   // towers, tallest at the sides, stepping down toward the axis
@@ -574,6 +575,7 @@ function mannerheim(scr, t, d, o = {}) {
   }
   P(c, tx + tw / 2 - 1, ty - 6 * sc, 2, 6 * sc, '#25382c');
 
+  fg(c, 'bottom', 26, 2.9, 0.45);   // black in front — the cheapest depth there is
   amberWash(c, d);
 }
 
@@ -642,7 +644,7 @@ function katajanokka(scr, t, d) {
 const SAND = ['#d9c48f', '#c9b077'], SEA = ['#3d86a0', '#1f5a72'];
 
 function beachBase(c) {
-  ramp(c, 0, 96, '#8fc6d8', '#cfe6ea');                // the sky
+  ramp(c, 0, 96, '#6aa6c6', '#e8f4f6');    // daylight: the value range is the SUBJECT, not the sky
   ramp(c, 96, 150, SEA[0], SEA[1]);                    // the water
   P(c, 0, 94, W, 2, '#e6f2f4');
   P(c, 16, 88, 44, 4, '#2e5c58');                      // the far shore
@@ -693,12 +695,13 @@ function beach(scr, t, d) {
       P(c, dx - 26, 208, 52, 2, PAL.AMBER);
     }
   }
+  fg(c, 'bottom', 30, 4.4, 0.5);   // black in front — the cheapest depth there is
   amberWash(c, d);
 }
 
 // ── MOON — blue hour over the ridge, and the chimney beside it ─────
 function moonBase(c) {
-  ramp(c, 0, 190, '#0d4f8f', '#2f8ec9');
+  sky(c, 0, 190, 150, '#02132b', '#4f86b4', '#0b2036');
   P(c, 70, 108, 16, 84, '#d8dee2');                     // the plant chimney
   P(c, 68, 103, 20, 6, '#eef2f4');
   P(c, 70, 108, 3, 84, '#f2f6f8');
@@ -708,7 +711,7 @@ function moonBase(c) {
   }
   for (let x = 0; x < W; x += 3) {                      // the treeline
     const h2 = 26 + Math.sin(x * 0.27) * 9 + Math.sin(x * 0.09) * 7;
-    P(c, x, 190 - h2, 3, h2 + 14, '#123a22');
+    P(c, x, 190 - h2, 3, h2 + 14, COAL);
   }
   P(c, 0, 204, W, 22, '#0c2718');
   for (let i = 0; i < 5; i++) {                         // the car park
@@ -751,13 +754,14 @@ function moon(scr, t, d) {
     P(c, 24, 80, 33, 2, PAL.AMBER);
     P(c, mx - 16, my + 20, 33, 2, PAL.AMBER);
   }
+  fg(c, 'bottom', 34, 6.2, 0.55);   // black in front — the cheapest depth there is
   amberWash(c, d);
 }
 
 
 // ── WINTERHALL — a data hall on a frozen field, steaming ───────────
 function winterhallBase(c) {
-  ramp(c, 0, 120, '#0a1c33', '#1c3f5e');                  // winter night sky
+  sky(c, 0, 120, 104, '#01060f', '#3f6d8c', '#081726');   // winter night sky
   for (let i = 0; i < 40; i++) {                          // stars
     P(c, rnd(i * 1.9) * W, rnd(i * 4.1) * 100, 1, 1, '#9fc4d8');
   }
@@ -798,12 +802,13 @@ function winterhall(scr, t, d) {
     P(c, 24 + i * 11, 124 - a * 0.5, 4, 2, '#6d8595');
   }
   if (d > 0.15) { halo(c, 72, 150, 46, PAL.AMBER_DIM, 0.3 * d); }
+  fg(c, 'bottom', 28, 7.1, 0.4);   // black in front — the cheapest depth there is
   amberWash(c, d);
 }
 
 // ── PACKICE — the winter gulf, floes, and a ship that is not moving ─
 function packiceBase(c) {
-  ramp(c, 0, 104, '#123a52', '#c98a52');                  // a low winter sun
+  sky(c, 0, 104, 92, '#04121c', '#f0b06a', '#3a3428');    // a low winter sun
   ramp(c, 104, H, '#7f9db0', '#c2d6e2');                  // the ice sheet
   P(c, 0, 102, W, 3, '#e8c48c');
   for (let i = 0; i < 80; i++) {                          // floes, hashed
@@ -836,6 +841,7 @@ function packice(scr, t, d) {
     P(c, sx - 10, sy + 18, 2, 6, PAL.AMBER_HOT);
     P(c, sx + 62, sy + 18, 2, 6, PAL.AMBER_HOT);
   }
+  fg(c, 'bottom', 30, 9.3, 0.6);   // black in front — the cheapest depth there is
   amberWash(c, d);
 }
 
@@ -850,7 +856,7 @@ function packice(scr, t, d) {
 function chase(scr, t, d) {
   const c = scr.ctx;
   const scroll = t * 150;                                  // the tracking shot
-  ramp(c, 0, H, '#0a1218', '#131d24');
+  sky(c, 0, H, 40, '#01060a', '#25353f', '#0a1218');
   P(c, 0, 0, 22, H, '#101c14');                            // verges
   P(c, 122, 0, 22, H, '#101c14');
   P(c, 22, 0, 100, H, '#20262b');                          // tarmac
@@ -904,6 +910,7 @@ function chase(scr, t, d) {
     P(c, 26, 120, 2, 106, PAL.AMBER);
     P(c, 116, 120, 2, 106, PAL.AMBER);
   }
+  fg(c, 'bottom', 26, 11.5, 0.4);   // black in front — the cheapest depth there is
   amberWash(c, d);
 }
 
@@ -913,7 +920,7 @@ function chase(scr, t, d) {
 // that it takes its time: a wide-body directly overhead barely seems to move,
 // which is exactly why standing under an approach path is worth doing.
 function approachBase(c) {
-  ramp(c, 0, 214, '#1c4d78', '#7fa8c4');
+  ramp(c, 0, 214, '#12406b', '#9fc6dc');   // looking UP: dark zenith, bright horizon
   for (let i = 0; i < 5; i++) {                            // cloud shelves
     const y = 26 + i * 30, w2 = 40 + rnd(i * 3.7) * 60;
     P(c, rnd(i * 9.1) * (W - w2), y, w2, 7, '#9dbdd2');
@@ -921,7 +928,7 @@ function approachBase(c) {
   }
   for (let x = 0; x < W; x += 3) {                         // the treeline
     const h2 = 16 + Math.sin(x * 0.33) * 6 + Math.sin(x * 0.12) * 5;
-    P(c, x, 214 - h2, 3, h2 + 20, '#16301d');
+    P(c, x, 214 - h2, 3, h2 + 20, COAL);          // silhouette, not dark green
   }
   P(c, 0, 234, W, H - 234, '#0f2416');
   for (let x = 6; x < W; x += 22) {                        // approach lights
@@ -937,21 +944,29 @@ function approach(scr, t, d) {
   // It comes over you and settles away toward the runway: big and low at the
   // bottom of the frame, small and far at the top. Eleven seconds, linear,
   // because an aircraft on finals does not ease.
-  const u = ((t * 0.09) % 1);
-  const y = H + 34 - u * (H + 90);
+  // It used to run from below the frame to above it, which meant that for a
+  // third of every cycle the picture was an empty sky — and for another third
+  // the aircraft was behind the copy. It now crosses the VISIBLE band only.
+  const u = ((t * 0.13) % 1);
+  const y = H * 0.60 - u * (H * 0.60 + 40);
   const k = 1.55 - u * 1.2;                                 // it recedes
   const cx = 70 + Math.sin(t * 0.25) * 3;
   const S = (a) => Math.max(1, Math.round(a * k));
 
-  const body = '#dfe6ea', shade2 = '#9aa9b2', dark = '#39464e';
+  // looking up at a heavy: the belly is in SHADOW, with one lit edge along the
+  // leading surfaces. It was near-white all over, which is why it vanished
+  // into the sky it was supposed to be crossing.
+  const body = '#2b3941', shade2 = '#18242b', dark = '#0b1216';
   // wing, engines under it, then the fuselage over the top
   P(c, cx - S(46), y - S(4), S(92), S(9), body);
+  P(c, cx - S(46), y - S(4), S(92), S(2), '#e6eef2');       // the lit leading edge
   P(c, cx - S(46), y + S(4), S(92), S(3), shade2);
   for (const ex of [-30, -16, 16, 30]) {
     P(c, cx + S(ex) - S(5), y + S(5), S(10), S(11), dark);
     P(c, cx + S(ex) - S(4), y + S(6), S(8), S(3), '#7f8f99');
   }
   P(c, cx - S(8), y - S(34), S(16), S(64), body);
+  P(c, cx - S(8), y - S(34), S(3), S(64), '#8fa4ae');       // and down the fuselage
   P(c, cx - S(8), y + S(14), S(16), S(16), shade2);
   P(c, cx - S(3), y - S(38), S(6), S(6), body);            // nose
   P(c, cx - S(20), y + S(30), S(40), S(7), body);          // tailplane
@@ -981,6 +996,7 @@ function approach(scr, t, d) {
     P(c, 8, 246, 2, 10, PAL.AMBER_HOT);
     P(c, 134, 246, 2, 10, PAL.AMBER_HOT);
   }
+  fg(c, 'bottom', 30, 13.7, 0.5);   // black in front — the cheapest depth there is
   amberWash(c, d);
 }
 

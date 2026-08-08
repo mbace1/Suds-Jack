@@ -333,13 +333,17 @@ export class Anchor {
   // copy covers the bottom 45% of the frame, so anything lower is furniture
   // nobody will ever see.
   strap(c, W, H, key, hot, s) {
-    const y = H * 0.455, h = 46 * s, x = W * 0.06;
+    // 0.395, not 0.455: the post's own kicker block starts at 0.45 and the two
+    // collided. And the strap does NOT repeat the dateline — the kicker under
+    // it already carries that, and a name printed twice in one frame reads as
+    // a template rather than a broadcast.
+    const y = H * 0.395, h = 40 * s, x = W * 0.06;
     c.fillStyle = 'rgba(2,10,8,.80)';
-    c.fillRect(x, y, W * 0.72, h);
+    c.fillRect(x, y, W * 0.50, h);
     c.fillStyle = key;
     c.fillRect(x, y, 4 * s, h);
     c.globalAlpha = 0.45;
-    c.fillRect(x, y + h - s, W * 0.72, s);
+    c.fillRect(x, y + h - s, W * 0.50, s);
     c.globalAlpha = 1;
 
     c.textBaseline = 'middle';
@@ -351,8 +355,7 @@ export class Anchor {
     c.globalAlpha = 0.75;
     // the dateline, which is the story's own slug — a stand-up that does not
     // say where it is standing is a green screen
-    const where = ((this.story && this.story.dateline) || this.sector.call || 'HELSINKI');
-    c.fillText(`${hot ? 'DECODE' : 'REPORTING'} · ${where}`.toUpperCase(), x + 13 * s, y + h * 0.72);
+    c.fillText(hot ? 'DECODE' : 'REPORTING', x + 13 * s, y + h * 0.72);
     c.globalAlpha = 1;
   }
 
@@ -367,11 +370,15 @@ export class Anchor {
     // face through the ceiling and a wide one does not shrink it to a pea
     // A stand-up is a closer, off-centre shot: the reporter stands to one side
     // with the place behind them, the way anybody framing this actually would.
-    const K = opt.standup ? 1.10 : 1;
+    // A stand-up is a WIDER shot, not a closer one. At 1.10 he filled the
+    // frame like a logo pasted on a photograph — a reporter on location is
+    // head-and-shoulders in a corner with the place around them, and the place
+    // is the reason the shot exists.
+    const K = opt.standup ? 0.74 : 1;
     const hw = Math.min(W * L.headW, H * L.headWCap * (HEAD.w / HEAD.h) * 1.32) * K;
-    const side = opt.standup ? (this.seed % 2 ? 0.30 : -0.28) : 0;
+    const side = opt.standup ? (this.seed % 2 ? 0.46 : -0.44) : 0;
     const hx = (W - hw) / 2 + W * side * 0.5;
-    const hy = H * (opt.standup ? L.headY + 0.035 : L.headY);
+    const hy = H * (opt.standup ? L.headY + 0.115 : L.headY);
 
     // Eyes shut and smiling at rest — that closed arch IS the logo. They open
     // while he is reading, because that is the one moment he is looking at
@@ -393,7 +400,24 @@ export class Anchor {
     c.restore();
 
     this.torso(c, W, H, sway + tdx, bob, TOKO.MAGENTA, K);
-    if (opt.standup) this.mic(c, W, H, hx + sway + hw / 2, hy + bob, hw);
+    // THE RIM. A flat magenta shape on a dark photograph is a sticker; one
+    // bright edge on the side the light is coming from is a person standing in
+    // the scene. It is two draws — the silhouette again, one pixel over,
+    // clipped to a thin strip — and it is most of the difference.
+    if (opt.standup) {
+      const lit = side > 0 ? -1 : 1;              // light from the open side
+      c.save();
+      c.beginPath();
+      c.rect(hx + sway + (lit < 0 ? -3 : hw - 3) * 1, 0, 6, H);
+      c.clip();
+      c.globalAlpha = 0.85;
+      this.torso(c, W, H, sway + tdx + lit * 2.5, bob, '#ffd6ea', K);
+      drawHead(c, hx + sway + lit * 2.5, hy + bob, hw, {
+        ground: '#ffd6ea', ink: '#ffd6ea', face: false,
+      });
+      c.restore();
+      this.mic(c, W, H, hx + sway + hw / 2, hy + bob, hw);
+    }
     drawHead(c, hx + sway, hy + bob, hw, {
       ground: TOKO.MAGENTA,
       ink: TOKO.PAPER,
