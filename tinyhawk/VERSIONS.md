@@ -1,5 +1,12 @@
 # Tiny Hawk versions
 
+## v5 — Fat bird protagonist
+
+- Replaced the abstract prism skater with a permanent fat bird riding a complete skateboard.
+- Built a readable faceted silhouette with belly, head, beak, eyes, wings, tail, feet, trucks and wheels.
+- Added speed-aware feather shimmer, grounded effort beats and wider airborne wing flares.
+- Preserved crouches, flips, shuvits, grinds, manuals and bail animation across the full character rig.
+
 ## v4 — Skate-style ground flicks
 
 - Connected loaded diagonal pops to kickflips and heelflips instead of discarding them on the ground.

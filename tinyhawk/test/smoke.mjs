@@ -132,8 +132,12 @@ ok(run.film <= run.maxFilm && filmBefore <= 5, 'story state keeps film inside it
 
 const index = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const main = await readFile(new URL('../js/main.js', import.meta.url), 'utf8');
+const skaterSource = await readFile(new URL('../js/skater.js', import.meta.url), 'utf8');
 for (const id of ['btnFree', 'btnDaily', 'btnPart', 'mapHost']) ok(index.includes(id), `${id} exists in the shell`);
 for (const moduleName of ['tricks.js', 'goals.js', 'map.js', 'meta.js', 'story.js']) ok(main.includes(moduleName), `${moduleName} is wired into the game`);
 ok(!index.includes('CONTROL PROTOTYPE'), 'the shipped menu no longer calls itself P0');
+for (const part of ['fat-bird-skater', 'fat-bird-belly', 'beak', 'left-wing', 'skateboard-deck']) {
+  ok(skaterSource.includes(part), `${part} is present in the permanent character rig`);
+}
 
 console.log(`Tiny Hawk smoke: ${checks} checks passed`);
