@@ -404,6 +404,48 @@ async function main() {
   ok('the studio buffer matches the frame, so nothing is cropped',
      Math.abs(fit.buf - fit.box) < 0.02, JSON.stringify(fit));
 
+  // ── the sets, and the camera HUD ─────────────────────────────────
+  // Toko does not read every bulletin from the same desk. The choice is
+  // seeded off the post index and must be STABLE: scrolling back to a
+  // bulletin has to find it in the same place, on the same night.
+  const sets = [];
+  for (let i = 0; i < 6; i++) {
+    await go(() => __rfh.debug.cut('anchor'));
+    await wait(120);
+    sets.push(await go(() => ({ id: __rfh.state.id, set: __rfh.debug.anchorSet() })));
+    await go(() => __rfh.debug.go(1));
+    await wait(700);
+  }
+  ok('some bulletins are read on location, not from the desk',
+     sets.some(x => x.set === 'street') && sets.some(x => x.set === 'booth'),
+     sets.map(x => `${x.id}:${x.set}`).join(' '));
+
+  await go((n) => __rfh.debug.go(-n), 6);
+  await wait(900);
+  await go(() => __rfh.debug.cut('anchor'));
+  await wait(150);
+  const again = await go(() => ({ id: __rfh.state.id, set: __rfh.debug.anchorSet() }));
+  ok('a bulletin keeps its set when you come back to it',
+     !!again.set && again.set === (sets.find(x => x.id === again.id) || {}).set,
+     JSON.stringify(again));
+
+  const hud = () => go(() => {
+    const h = document.querySelector('.post.live .pkg-hud');
+    return h && { rec: h.querySelector('.hud-rec').textContent,
+                  cam: h.querySelector('.hud-cam').textContent,
+                  tc: h.querySelector('.hud-tc').textContent };
+  });
+  const h1 = await hud();
+  await wait(900);
+  const h2 = await hud();
+  ok('the live post carries a camera HUD', !!h1 && /REC|DECODE/.test(h1.rec), JSON.stringify(h1));
+  ok('the timecode is running', h1 && h2 && h1.tc !== h2.tc, `${h1 && h1.tc} → ${h2 && h2.tc}`);
+  await go(() => __rfh.debug.cut('graphic'));
+  await wait(200);
+  const h3 = await hud();
+  ok('the camera number follows the cut', h3 && h3.cam !== h2.cam,
+     `${h2 && h2.cam} → ${h3 && h3.cam}`);
+
   // The typewriter is OFF on this build — the copy is set, not typed — so
   // reader.update() only ever returns a decaying zero. main.js warns about
   // exactly this: with nothing else, Toko's face sits dead and nothing notices.

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#04070a">
-<link rel="manifest" href="manifest.webmanifest?v=40">
+<link rel="manifest" href="manifest.webmanifest?v=41">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="description" content="Radio Free Helsinki — a fictional pirate news broadcast. Toko reads the day's wire from a codec screen; DECODE shows you what the wording was doing.">
@@ -28,6 +28,15 @@
     --mast-h: 54px;
     --col: 480px;
     --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, 'Courier New', monospace;
+    /* A headline set in body-weight monospace is not a headline. Broadcast
+       graphics get their authority from CONTRAST — a heavy grotesque against
+       mono data — so the head is sans and everything that is a readout stays
+       mono. */
+    --sans: system-ui, -apple-system, 'Segoe UI Variable', 'Segoe UI', Roboto,
+            'Helvetica Neue', Arial, sans-serif;
+    /* the two ends of the range the app never had: paper, and true black */
+    --paper: #f4fbf7;
+    --ash: #b9cfc2;
   }
 
   html, body { height: 100%; background: var(--void); overflow: hidden; }
@@ -39,12 +48,16 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /* The vignette is global; THE SCANLINES ARE NOT. They used to run over the
+     whole page at 28% black, which meant every headline and every line of copy
+     was read through a comb — the single cheapest-looking thing in the app, and
+     the reason the type never looked sharp. The picture keeps its own scanlines
+     (`.photo-grade`), where they belong: a CRT is a screen inside the story,
+     not a filter over the reader. */
   body::after {
     content: '';
     position: fixed; inset: 0; z-index: 60; pointer-events: none;
-    background:
-      repeating-linear-gradient(to bottom, rgba(0,0,0,.28) 0 1px, transparent 1px 3px),
-      radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%);
+    background: radial-gradient(ellipse at center, transparent 62%, rgba(0,0,0,.48) 100%);
   }
 
   .mast {
@@ -167,19 +180,41 @@
     scrollbar-width: none;
   }
   .post-caption::-webkit-scrollbar { display: none; }
+  /* the readout line: position in the rotation, and the date */
+  .meta {
+    font-size: 10px; letter-spacing: .16em; color: var(--text-dim);
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+  .meta .rec { color: var(--defence); }
+  .meta .rec::before { content: '● '; }
+  .post.live .meta .rec::before { animation: blink 1.6s steps(1) infinite; }
+
+  /* a solid kicker block, the way a real lower third names the story — a line
+     of dim green text above a headline is a caption, not a strap. It carries
+     the DATELINE only: forty characters in a block of solid colour is a
+     paragraph with a highlighter through it. */
   .tag {
-    font-size: 10px; letter-spacing: .18em; color: var(--accent);
-    text-transform: uppercase; margin-bottom: 5px;
+    display: inline-block;
+    font-family: var(--sans);
+    font-size: 10px; font-weight: 700; letter-spacing: .16em;
+    color: #041710; background: var(--green);
+    padding: 3px 8px 2px; margin-bottom: 8px;
+    text-transform: uppercase;
   }
   .tag .rec { color: var(--defence); }
   .tag .rec::before { content: '● '; }
   .post.live .tag .rec::before { animation: blink 1.6s steps(1) infinite; }
   @keyframes blink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: .15; } }
   .head {
-    font-size: 18px; line-height: 1.25; color: var(--green);
-    margin-bottom: 9px; font-weight: 700;
+    font-family: var(--sans);
+    font-size: 22px; line-height: 1.1; letter-spacing: -0.012em;
+    font-weight: 800; color: var(--paper);
+    margin-bottom: 10px;
+    text-wrap: balance;
   }
-  .bulletin { font-size: 14px; color: #b7e8cd; }
+  /* the copy stays mono — it is wire copy, and it is the one place the
+     typewriter still means something */
+  .bulletin { font-size: 13.5px; line-height: 1.55; color: var(--ash); }
   .bulletin-line + .bulletin-line { margin-top: 9px; }
   .bulletin-line::before { content: '> '; color: var(--green-lo); }
   .standby { font-size: 13px; color: var(--text-dim); letter-spacing: .1em; }
@@ -197,8 +232,12 @@
   }
   .decode-box[hidden] { display: none; }
   .technique {
-    font-size: 11px; letter-spacing: .18em; color: var(--amber-hot);
-    text-transform: uppercase; margin-bottom: 6px;
+    display: inline-block;
+    font-family: var(--sans);
+    font-size: 10px; font-weight: 700; letter-spacing: .16em;
+    color: #1a1204; background: var(--amber);
+    padding: 3px 8px 2px; margin-bottom: 8px;
+    text-transform: uppercase;
   }
   .note { font-size: 13px; color: #e8cfa2; }
   .tell {
@@ -402,6 +441,33 @@
       rgba(255,255,255,.07);
     mix-blend-mode: screen; z-index: 1;
   }
+  /* ── the camera HUD ────────────────────────────────────────────────
+     One overlay for every shot, because the photographs cannot draw one and
+     three copies of the same corner drift apart. It is diegetic — a post is a
+     feed and a feed has a camera on the other end — so it survives ?clean and
+     ?vertical. It sits under the lower third's z-index and above the picture. */
+  .pkg-hud {
+    position: absolute; z-index: 3; left: 10px; right: 10px; top: 8px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 9px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--green-dim); pointer-events: none;
+    text-shadow: 0 1px 2px rgba(0,0,0,.9);
+  }
+  .hud-rec::before {
+    content: '■'; margin-right: 4px; color: var(--text-dim); font-size: 8px;
+  }
+  .pkg-hud.rolling .hud-rec { color: var(--defence); }
+  .pkg-hud.rolling .hud-rec::before { content: '●'; color: var(--defence); }
+  .pkg-hud.hot .hud-rec, .pkg-hud.hot .hud-tc, .pkg-hud.hot .hud-cam { color: var(--amber); }
+  .pkg-hud.hot .hud-rec::before { content: '●'; color: var(--amber); }
+  @keyframes hudblink { 0%, 62% { opacity: 1; } 63%, 100% { opacity: .2; } }
+  .pkg-hud.rolling .hud-rec::before { animation: hudblink 1.6s steps(1) infinite; }
+  .hud-cam { margin-left: auto; opacity: .8; }
+  .hud-tc { font-variant-numeric: tabular-nums; opacity: .8; }
+  @media (prefers-reduced-motion: reduce) {
+    .pkg-hud.rolling .hud-rec::before { animation: none; }
+  }
+
   .post.is-decoded .pkg-cut {
     background:
       linear-gradient(to bottom, rgba(255,180,58,0) 42%,
@@ -486,14 +552,22 @@
        a picture the reader can see around it; a clip shows the whole bulletin,
        and over a bright plate (the beach at noon) the thin gradient put the
        body text under AA. */
+    /* A firmer scrim than the page's, and a hard edge at the top of it. The
+       picture below the fold is detail nobody can use — reflections, a cable,
+       a swell — and detail behind type is just noise the eye has to fight. */
     background: linear-gradient(to top,
-      rgba(3,10,8,.97) 0%, rgba(3,10,8,.93) 58%, rgba(3,10,8,0) 100%);
+      rgba(2,8,7,.985) 0%, rgba(2,8,7,.96) 62%, rgba(2,8,7,.55) 88%, rgba(2,8,7,0) 100%);
+  }
+  .vertical .post-caption::before {
+    content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px;
+    background: linear-gradient(to right,
+      rgba(125,255,178,0), rgba(125,255,178,.22) 20%, rgba(125,255,178,.22) 80%, rgba(125,255,178,0));
   }
   /* the headline is clamped to two lines on the page and must not be here —
      "Beach declared 94.7 per cent full by the company that…" is the joke with
      the punchline cropped off */
   .vertical .post-caption .head {
-    font-size: 21px; display: block; -webkit-line-clamp: none; overflow: visible;
+    font-size: 24px; display: block; -webkit-line-clamp: none; overflow: visible;
   }
   /* NO CLAMP. On the page the copy is clipped to two lines because the picture
      is the post and the words are a caption you can open. A clip cannot be
@@ -504,7 +578,7 @@
   }
   .vertical .post:not(.is-decoded) .bulletin-line + .bulletin-line { margin-top: 9px; }
   .vertical .post.is-decoded .post-caption { max-height: 72%; }
-  .vertical .tag { font-size: 11px; }
+  .vertical .tag { font-size: 11px; padding: 4px 9px 3px; }
   /* the honesty line stays — real events, invented names — because a clip
      travels further from this page than the page does */
   .vertical .post:not(.is-decoded) .fiction { display: block; }
@@ -588,14 +662,14 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=40"></script>
+<script type="module" src="js/main.js?v=41"></script>
 <script type="module">
   // The arcade shell and the signature badge are the site around the app, and
   // a clip must not carry them — a HUB button burned into a video is a button
   // nobody can press. Loaded conditionally rather than hidden, so `?vertical`
   // never depends on winning a CSS fight with somebody else's stylesheet.
   if (!new URLSearchParams(location.search).has('vertical')) {
-    await import('../hub/shell.js?v=18');
+    await import('../hub/shell.js?v=13');
     const { sign } = await import('../toko/js/signature.js?v=2');
     sign({ corner: 'bottom-left' });
   }
@@ -603,7 +677,7 @@
 <script>
   if ('serviceWorker' in navigator &&
       (location.protocol === 'https:' || new URLSearchParams(location.search).has('sw'))) {
-    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=40').catch(() => {}));
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=41').catch(() => {}));
   }
 </script>
 

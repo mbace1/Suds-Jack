@@ -27,10 +27,10 @@
 // footage — which is what an idle post should be showing anyway — costs an
 // <img> that was already there.
 
-import { Photo } from './photo.js?v=40';
-import { Anchor } from './anchor.js?v=40';
-import { Graphic } from './graphic.js?v=40';
-import { Plate, isDrawn } from './plate.js?v=40';
+import { Photo } from './photo.js?v=41';
+import { Anchor } from './anchor.js?v=41';
+import { Graphic } from './graphic.js?v=41';
+import { Plate, isDrawn } from './plate.js?v=41';
 
 // The beat. Footage leads because the story is about somewhere; the studio
 // gets the longest single hold because that is where the words are; the
@@ -73,7 +73,25 @@ export class Package {
     const flash = document.createElement('div');
     flash.className = 'pkg-cut';
 
-    root.append(a, b, g, flash);
+    // THE CAMERA HUD. One overlay for every shot rather than furniture drawn
+    // into each canvas: the photographs cannot draw any, and three
+    // implementations of the same corner would have drifted apart by the second
+    // week. It is diegetic — the post is a feed, and a feed has a camera on the
+    // other end of it — so it stays in clean and vertical mode.
+    const hud = document.createElement('div');
+    hud.className = 'pkg-hud';
+    hud.setAttribute('aria-hidden', 'true');
+    const rec = document.createElement('span');
+    rec.className = 'hud-rec';
+    const tc = document.createElement('span');
+    tc.className = 'hud-tc';
+    const camTag = document.createElement('span');
+    camTag.className = 'hud-cam';
+    hud.append(rec, camTag, tc);
+    this.hud = { root: hud, rec, tc, cam: camTag };
+    this.clock = 0;
+
+    root.append(a, b, g, flash, hud);
     host.appendChild(root);
 
     // the photograph is still the default: a post only gets a drawn plate
@@ -90,6 +108,11 @@ export class Package {
     this.beat = 0;
     this.clock = 0;
     this.flashT = 0;
+    // The timecode starts where the post sits in the feed, so two posts on
+    // screen are never on the same frame — a running clock that agrees
+    // everywhere reads as a graphic, not as a camera.
+    this.tc = 60 + seed * 137;
+    this.paintHud();
   }
 
   get decoded() { return this._decoded; }
@@ -101,6 +124,7 @@ export class Package {
       const sh = this.drawn[k];
       if (sh) { sh.decoded = this._decoded; sh.paint(); }
     }
+    this.paintHud();
     if (this._decoded && this.live) this.cutTo(HOME);
   }
 
@@ -143,16 +167,41 @@ export class Package {
     }
   }
 
+  // Which camera the edit is on. The numbers are the same every time a post
+  // shows a shot, because a cut back to the studio is a cut back to the same
+  // camera, and a HUD that renumbers itself is a HUD nobody believes.
+  camOf(shot) {
+    if (shot === 'anchor') return this.anchor && this.anchor.set === 'street' ? 'ENG 2' : 'CAM 1';
+    if (shot === 'graphic') return 'GFX';
+    return 'CAM 3';
+  }
+
+  paintHud() {
+    const h = this.hud;
+    if (!h) return;
+    const f = Math.floor(this.tc * 25) % 25;
+    const total = Math.floor(this.tc);
+    const mm = String(Math.floor(total / 60) % 60).padStart(2, '0');
+    const ss = String(total % 60).padStart(2, '0');
+    h.tc.textContent = `00:${mm}:${ss}:${String(f).padStart(2, '0')}`;
+    h.cam.textContent = this.camOf(this.shot);
+    h.rec.textContent = this._decoded ? 'DECODE' : (this.live ? 'REC' : 'STBY');
+    h.root.classList.toggle('hot', this._decoded);
+    h.root.classList.toggle('rolling', this.live && !this._decoded);
+  }
+
   cutTo(shot) {
     if (shot === this.shot) return;
     if (shot !== 'broll') this.ensure(shot);
     this.show(shot);
     this.flashT = CUT_FLASH;
+    this.paintHud();
   }
 
   goLive() {
     this.live = true;
     this.root.classList.add('live');
+    this.paintHud();
     this.photo.goLive();
     // Landing mid-package would make the edit look like it had been running
     // while you were somewhere else. Every post starts its own cut from shot 0.
@@ -166,6 +215,7 @@ export class Package {
   goIdle() {
     this.live = false;
     this.root.classList.remove('live');
+    this.paintHud();
     this.photo.goIdle();
     this.flashT = 0;
     this.flash.style.opacity = '0';
@@ -183,6 +233,10 @@ export class Package {
       this.flashT = Math.max(0, this.flashT - dt);
       this.flash.style.opacity = String((this.flashT / CUT_FLASH) * 0.55);
     }
+
+    // the timecode only runs while the post is live: a feed that is not being
+    // watched is not being recorded
+    if (this.live) { this.tc += dt; this.paintHud(); }
 
     // decode holds the graphic — the cut stops while the plain reading is up
     if (!this.live || this._decoded) return;
