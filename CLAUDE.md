@@ -380,6 +380,23 @@ valuation tower goes hollow but for the 6% actually sold, the packed auditorium 
 to the four people on the stage, 900 accounts collapse into a fan spoked to the one node
 that made them. The last bulletin on the defence band turns the frame on this station.
 
+**Toko is not always at the desk.** Two thirds of the bulletins are STAND-UPS:
+`anchor.js` picks a set off the post index (`STANDUP(seed)`, never
+`Math.random()`, so scrolling back finds the same night), and a stand-up draws
+the story's own footage plate as the backdrop — pushed in 1.16×, graded down
+hard, with the whole frame on a two-sine **handheld** drift while the booth
+stays locked off. He carries a stick mic (below-right of the mouth, never over
+it — same trap as the codec portrait) and a lower-third strap: `TOKO` +
+`REPORTING · <the copy's slug>`, at 0.455 H because the post's own copy covers
+the bottom 45%. The studio says a bulletin was *written*; a stand-up says
+somebody *went*. Every shot also carries one **camera HUD** (`.pkg-hud` in
+`package.js`): REC/STBY/DECODE, a camera number that follows the cut
+(CAM 1 booth / ENG 2 street / CAM 3 footage / GFX), and a timecode that runs
+only while the post is live and starts at an offset per post. It is DOM, not
+canvas, because the photographs cannot draw furniture and three copies of one
+corner had already started to disagree — the anchor's own REC/freq was deleted
+when this landed.
+
 **Amber has exactly one job** — "the spin is showing" — and never appears before DECODE;
 sector colours (cyan/green/red) carry the channel, green is the default phosphor.
 Adding amber anywhere else costs the app its one piece of taught colour vocabulary.

@@ -28,8 +28,8 @@
 // showing" — and a saturated orange lamp would spend that vocabulary on
 // scenery. Nothing here approaches PAL.AMBER_HOT.
 
-import { PAL } from './palette.js?v=40';
-import { mix, shade, bayer } from './screen.js?v=40';
+import { PAL } from './palette.js?v=41';
+import { mix, shade, bayer } from './screen.js?v=41';
 
 export const PLATE_W = 144, PLATE_H = 276;
 const W = PLATE_W, H = PLATE_H;
@@ -104,6 +104,46 @@ function base(key, paint) {
   paint(ctx);
   CACHE.set(key, cv);
   return cv;
+}
+
+
+// ── LIGHT ──────────────────────────────────────────────────────────
+//
+// The one thing that separates a shot from a diagram, and the thing every
+// plate here was missing. Three moves, cheap, in this order:
+//
+//   sky()        a graded ground with a HOT band at the horizon, so the frame
+//                has a bright end. Everything used to live between 10% and 30%
+//                brightness in the same green, which is why nothing had focus:
+//                the eye goes to the brightest thing, and there wasn't one.
+//   rim()        a 1–2px near-white edge on the lit side of a subject. It costs
+//                two fillRects and it is the difference between an object in a
+//                scene and a rectangle on a background.
+//   fg()         a PURE BLACK foreground shape, out of focus by virtue of
+//                having no detail at all. Black in front, lit in the middle,
+//                graded behind: that is depth, and no amount of correct
+//                perspective substitutes for it.
+const PAPER = '#f2f8f4', BONE = '#c3d4cc', COAL = '#000000';
+
+// a lit horizon: dark at the top, hot at the band, dark again below
+function sky(c, y0, y1, band, top, hot, bot) {
+  ramp(c, y0, band, top, hot);
+  ramp(c, band, y1, hot, bot);
+}
+
+// the rim: `side` is -1 for light from the left, +1 from the right
+function rim(c, x, y, w, h, side, col = PAPER) {
+  P(c, side < 0 ? x : x + w - 1, y, 1, h, col);
+  P(c, x, y, w, 1, shade(col, 0.75));
+}
+
+// a black cut-out along one edge — a roofline, a railing, a shoulder of rock
+function fg(c, edge, depth, seedN, bite = 0.55) {
+  for (let x = 0; x < W; x += 3) {
+    const h2 = depth * (0.45 + rnd(x * 0.37 + seedN) * bite);
+    if (edge === 'bottom') P(c, x, H - h2, 3, h2, COAL);
+    else P(c, x, 0, 3, h2, COAL);
+  }
 }
 
 // ── palettes, straight off the reference frames ────────────────────
@@ -955,78 +995,100 @@ function approach(scr, t, d) {
 // and reads as an empty sky with a caption. Horizon high, ship in the upper
 // third, and only the cable is allowed to run down behind the words.
 function cableshipBase(c) {
-  ramp(c, 0, 54, NIGHT.sky0, NIGHT.sky1);
-  for (let i = 0; i < 40; i++) {                            // stars, hashed
-    P(c, rnd(i * 2.7) * W, rnd(i * 5.3) * 50, 1, 1, i % 5 ? '#3e6b5f' : '#8fbfae');
+  // THE REFERENCE BUILD for the light rules above. Same subject as before, but
+  // the frame now runs black → paper: a moonlit band on the horizon, the ship
+  // rim-lit against it, and a pure-black foreground swell in front of her.
+  sky(c, 0, 62, 44, '#000509', '#5f7f86', '#0a1418');
+  // the moon, low and small, and the only white in the sky
+  halo(c, 104, 30, 26, '#dfeef2', 0.45);
+  P(c, 101, 27, 7, 7, PAPER);
+  for (let i = 0; i < 30; i++) {                            // stars, hashed
+    const sx = rnd(i * 2.7) * W, sy = rnd(i * 5.3) * 40;
+    if (Math.hypot(sx - 104, sy - 30) < 34) continue;       // not through the halo
+    P(c, sx, sy, 1, 1, i % 4 ? '#3d5a60' : '#9fc0c6');
   }
-  P(c, 0, 50, W, 4, '#0d1c19');                             // the far shore
-  for (let i = 0; i < 14; i++) P(c, rnd(i * 7.7) * W, 48, 2, 2, '#c8b98a');
-  ramp(c, 54, H, '#071417', '#03090c');                     // the water
+  P(c, 0, 58, W, 4, '#01080b');                             // the far shore
+  for (let i = 0; i < 16; i++) P(c, rnd(i * 7.7) * W, 56, 2, 2, '#e8d8a8');
+  ramp(c, 62, H, '#061014', '#000305');                     // the water
+  // the moon path on the water: broken, bright, and the only route the eye has
+  for (let y = 64; y < H; y += 2) {
+    const spread = 3 + (y - 64) * 0.26;
+    for (let x = 104 - spread; x < 104 + spread; x += 2) {
+      if (rnd(x * 3.1 + y * 1.7) < 0.30) {
+        P(c, x, y, 2, 1, mix('#7d9aa2', '#0a1418', (y - 64) / (H - 64)));
+      }
+    }
+  }
 }
 
 function cableship(scr, t, d) {
   const c = scr.ctx;
   c.drawImage(base('cableship', cableshipBase), 0, 0);
 
-  // the swell: 2px cells, sampled at the CELL index — at even pixels only four
-  // of bayer's sixteen values are ever reached and the sea turns to blobs
-  for (let y = 56; y < H; y += 2) {
-    const k = (y - 56) / (H - 56);
+  // the swell, live, in 2px CELLS — sampling at even pixels only reaches four
+  // of bayer's sixteen values and the sea collapses into blobs
+  for (let y = 64; y < H; y += 2) {
+    const k = (y - 64) / (H - 64);
     for (let x = 0; x < W; x += 2) {
       const wave = Math.sin(x * 0.09 + t * 1.1 + y * 0.16) * 0.06;
-      if (bayer(x >> 1, y >> 1) < 0.10 + k * 0.10 + wave) P(c, x, y, 2, 1, '#12303a');
+      if (bayer(x >> 1, y >> 1) < 0.08 + k * 0.10 + wave) P(c, x, y, 2, 1, '#16333c');
     }
   }
 
   const hull = 74 + Math.sin(t * 0.7) * 2;                  // she rides the swell
-  // The ship, stern-on. Narrow enough to have water either side of her: the
-  // first cut ran 100px of a 144px frame and read as a wall with lights on it,
-  // which is what a hull does when nothing around it is visibly liquid.
-  P(c, 32, hull, 80, 22, '#1b262c');                        // hull
-  P(c, 34, hull - 3, 76, 3, '#243139');                     // sheer strake
-  P(c, 32, hull + 20, 80, 3, '#0c1418');                    // boot topping
-  // the waterline, and a broken reflection under it so she floats
+  // The ship, stern-on, LIT FROM THE MOON SIDE. Dark body, one bright edge:
+  // that edge is what makes her an object rather than a hole in the water.
+  P(c, 32, hull, 80, 22, '#0b1114');                        // hull, near black
+  P(c, 32, hull + 20, 80, 3, COAL);
+  rim(c, 32, hull, 80, 22, 1, '#8fa9b0');
+  P(c, 38, hull - 20, 40, 20, '#111a1d');                   // house
+  rim(c, 38, hull - 20, 40, 20, 1, '#7f979d');
+  for (let i = 0; i < 5; i++) P(c, 42 + i * 7, hull - 15, 4, 5, '#ffe6ac');   // windows
+  // the waterline and a broken reflection, so she floats
   for (let x = 32; x < 112; x += 2) {
-    if (bayer(x >> 1, (hull + 24) >> 1) < 0.42) P(c, x, hull + 23, 2, 1, '#37525c');
+    if (bayer(x >> 1, (hull + 24) >> 1) < 0.42) P(c, x, hull + 23, 2, 1, '#3f5d66');
   }
   for (let i = 0; i < 22; i++) {
-    const rx = 34 + rnd(i * 2.3) * 74;
-    const ry = hull + 26 + rnd(i * 4.1) * 14;
-    if (Math.sin(t * 2 + i) > -0.2) P(c, rx, ry, 3, 1, '#2a4b52');
+    const rx = 34 + rnd(i * 2.3) * 74, ry = hull + 26 + rnd(i * 4.1) * 14;
+    if (Math.sin(t * 2 + i) > -0.2) P(c, rx, ry, 3, 1, '#2f545c');
   }
-  P(c, 38, hull - 20, 40, 20, '#232f36');                   // house
-  for (let i = 0; i < 5; i++) P(c, 42 + i * 7, hull - 15, 4, 5, '#e8d8a8');   // windows
-  P(c, 82, hull - 32, 4, 34, '#2b3941');                    // mast
-  P(c, 80, hull - 36, 8, 4, '#38474f');
-  // the A-frame and the sheave over the stern, where the cable goes over
-  P(c, 92, hull - 24, 4, 26, '#39474e');
-  P(c, 110, hull - 24, 4, 26, '#39474e');
-  P(c, 92, hull - 26, 22, 4, '#455560');
-  const sheave = 103;
-  halo(c, sheave, hull - 6, 26, '#e8dcb0', 0.34);           // the deck light
-  P(c, sheave - 5, hull - 24, 10, 10, '#5a6a72');
 
-  // the cable: over the sheave, down the transom, into the water, and a live
-  // catenary sag so the sea is visibly pulling on it
+  P(c, 82, hull - 32, 4, 34, '#0d1417');                    // mast
+  P(c, 80, hull - 36, 8, 4, '#1b2529');
+  P(c, 92, hull - 24, 4, 26, '#131c20');                    // the A-frame
+  P(c, 110, hull - 24, 4, 26, '#131c20');
+  P(c, 92, hull - 26, 22, 4, '#222e33');
+  const sheave = 103;
+  halo(c, sheave, hull - 6, 24, '#ffeec0', 0.42);           // the working light
+  P(c, sheave - 4, hull - 22, 8, 8, '#4c5a5f');
+  P(c, sheave - 4, hull - 22, 8, 1, PAPER);
+
+  // the cable, catenary-sagging into the dark
   for (let y = hull - 14; y < H; y += 2) {
     const sag = Math.sin(y * 0.05 + t * 0.9) * 2;
-    P(c, sheave + sag + (y - hull) * 0.06, y, 2, 2, '#7f8a90');
+    P(c, sheave + sag + (y - hull) * 0.06, y, 2, 2, y < hull + 40 ? '#9fb0b6' : '#4a575c');
   }
-  // the mark buoy, blinking, well off the quarter
-  const blink = (t * 0.8) % 1 < 0.16;
-  P(c, 26, 130, 4, 6, '#3c4a52');
-  P(c, 26, 126, 4, 4, blink ? '#ffd27a' : '#4a4231');
-  if (blink) halo(c, 28, 128, 12, '#ffd27a', 0.30);
+
+  const blink = (t * 0.8) % 1 < 0.16;                       // the mark buoy
+  P(c, 26, 130, 4, 6, '#0a1114');
+  P(c, 26, 126, 4, 4, blink ? '#ffd27a' : '#3b3527');
+  if (blink) halo(c, 28, 128, 12, '#ffd27a', 0.34);
+
+  // BLACK IN FRONT. A near swell across the bottom of the frame with no
+  // detail in it at all — the cheapest depth cue there is, and the one every
+  // plate in this file was missing.
+  fg(c, 'bottom', 44, 3.7, 0.7);
+  for (let x = 0; x < W; x += 2) {                          // one lit crest on it
+    const h2 = 44 * (0.45 + rnd(x * 0.37 + 3.7) * 0.7);
+    if (rnd(x * 5.5) < 0.25) P(c, x, H - h2 - 1, 2, 1, '#2b4a52');
+  }
 
   if (d > 0.2) {
-    // the seabed, and the one place the cable stopped being a cable
     P(c, 0, 150, W, 2, PAL.AMBER_DIM);                      // the seabed
     P(c, 6, 146, 60, 2, PAL.AMBER);
     P(c, 78, 146, 60, 2, PAL.AMBER);
     const pulse = 0.5 + 0.5 * Math.sin(t * 4);
     P(c, 66, 142 + pulse * 2, 12, 10, PAL.AMBER_HOT);       // where it stopped
-    P(c, 4, 158, 2, 8, PAL.AMBER_DIM);
-    P(c, 138, 158, 2, 8, PAL.AMBER_DIM);
   }
   amberWash(c, d);
 }
@@ -1040,22 +1102,30 @@ function cableship(scr, t, d) {
 // Same rule as cableship: the roofline sits at 120 and the street at 138, so
 // the whole scene — sky, city, van — lands above the lower third.
 function swarmBase(c) {
-  ramp(c, 0, 120, NIGHT.sky0, '#122824');
-  for (let i = 0; i < 50; i++) {
-    P(c, rnd(i * 3.1) * W, rnd(i * 6.9) * 112, 1, 1, i % 4 ? '#33604f' : '#86b7a4');
+  // Same light rules as cableship: a graded sky with a hot band low down, the
+  // city as a PURE BLACK silhouette against it, and the machines lit from
+  // above so they read as objects rather than as icons.
+  sky(c, 0, 122, 96, '#01040a', '#3d5f74', '#0a1218');
+  for (let i = 0; i < 44; i++) {
+    const sx = rnd(i * 3.1) * W, sy = rnd(i * 6.9) * 84;
+    P(c, sx, sy, 1, 1, i % 5 ? '#26414e' : '#a8c4d0');
   }
-  // the boulevard, low and dense, so the sky is the subject
+  // the city: black, no detail, only windows punched out of it
   for (let i = 0; i < 16; i++) {
-    const x = i * 10 - 4, h2 = 14 + rnd(i * 4.3) * 26;
-    P(c, x, 120 - h2, 11, h2 + 18, i % 2 ? '#0e1a1c' : '#111f21');
-    for (let wy = 120 - h2 + 4; wy < 136; wy += 6) {
+    const x = i * 10 - 4, h2 = 16 + rnd(i * 4.3) * 30;
+    P(c, x, 122 - h2, 11, h2 + 16, COAL);
+    for (let wy = 122 - h2 + 4; wy < 136; wy += 6) {
       for (let wx = x + 2; wx < x + 9; wx += 4) {
-        if (rnd(wx * wy) < 0.42) P(c, wx, wy, 2, 3, '#d8c290');
+        if (rnd(wx * wy) < 0.38) P(c, wx, wy, 2, 3, rnd(wx + wy) < 0.25 ? '#ffe6ac' : '#8fa7a0');
       }
     }
   }
-  P(c, 0, 138, W, H - 138, '#080f11');                      // the street
-  for (let x = 8; x < W; x += 26) { P(c, x, 144, 2, 12, '#243036'); halo(c, x + 1, 142, 11, '#e8d8a8', 0.22); }
+  P(c, 0, 138, W, H - 138, '#02060a');                      // the street
+  for (let x = 8; x < W; x += 26) {
+    P(c, x, 142, 2, 12, '#0a1216');
+    halo(c, x + 1, 141, 13, '#ffe6ac', 0.30);               // sodium, warm, dim
+    P(c, x - 6, 154, 14, 2, '#2b2a1e');                     // the pool it throws
+  }
 }
 
 function swarm(scr, t, d) {
@@ -1070,13 +1140,14 @@ function swarm(scr, t, d) {
     const x = drift + col * 17 + row * 6;
     const y = 26 + row * 20 + Math.sin(t * 1.3 + i) * 2;
     if (x < -8 || x > W + 8) continue;
-    P(c, x - 5, y, 11, 2, '#8f9ea6');                       // the arms
-    P(c, x - 1, y - 2, 3, 5, '#c3cdd2');                    // the body
+    P(c, x - 5, y, 11, 2, '#0d1418');                       // the arms, in shadow
+    P(c, x - 5, y, 11, 1, BONE);                            // lit along the top
+    P(c, x - 1, y - 2, 3, 5, '#1b2429');
+    P(c, x - 1, y - 2, 3, 1, PAPER);
     const on = ((t * 2.2 + i * 0.31) % 1) < 0.5;
-    P(c, x - 6, y - 1, 2, 2, on ? '#ff5a4a' : '#3a1f1c');   // nav lights
-    P(c, x + 5, y - 1, 2, 2, on ? '#3aff7a' : '#1c3a26');
+    P(c, x - 6, y - 1, 2, 2, on ? '#ff5a4a' : '#2a1512');
+    P(c, x + 5, y - 1, 2, 2, on ? '#3aff7a' : '#132a1a');
     if (d > 0.25) {
-      // every machine, back to one van
       c.globalAlpha = 0.45;
       c.strokeStyle = PAL.AMBER_DIM;
       c.beginPath(); c.moveTo(x, y + 2); c.lineTo(VAN.x, VAN.y); c.stroke();
@@ -1085,12 +1156,16 @@ function swarm(scr, t, d) {
   }
 
   if (d > 0.25) {
-    P(c, VAN.x - 12, VAN.y - 8, 24, 12, '#2a3238');         // the van
-    P(c, VAN.x - 12, VAN.y + 3, 24, 3, '#171d21');
+    P(c, VAN.x - 12, VAN.y - 8, 24, 12, '#141a1e');         // the van
+    rim(c, VAN.x - 12, VAN.y - 8, 24, 12, -1, PAL.AMBER_HOT);
+    P(c, VAN.x - 12, VAN.y + 3, 24, 3, COAL);
     halo(c, VAN.x, VAN.y - 2, 20, PAL.AMBER, 0.42 * d);
-    P(c, VAN.x - 2, VAN.y - 20, 3, 12, PAL.AMBER_DIM);      // the mast
+    P(c, VAN.x - 2, VAN.y - 20, 3, 12, PAL.AMBER_DIM);
     P(c, VAN.x - 6, VAN.y - 22, 11, 3, PAL.AMBER_HOT);
   }
+
+  // black in front: a roofline across the bottom of the frame, no detail
+  fg(c, 'bottom', 34, 8.1, 0.5);
   amberWash(c, d);
 }
 
@@ -1100,26 +1175,35 @@ function swarm(scr, t, d) {
 // little brighter every few seconds. Decoded, the load meter grows a second
 // bar beside it: what was drawn, and what was billed.
 function switchyardBase(c) {
-  ramp(c, 0, 104, NIGHT.sky0, '#16302b');
-  for (let i = 0; i < 34; i++) P(c, rnd(i * 4.9) * W, rnd(i * 8.1) * 96, 1, 1, '#2f5a4d');
-  P(c, 0, 104, W, H - 104, '#0b1512');                      // the yard
-  for (let x = 0; x < W; x += 4) P(c, x, 104, 4, 1, '#1d3029');
+  // a sodium haze low on the horizon: the yard lights the sky, not the sky the
+  // yard, which is what a substation at night actually looks like
+  sky(c, 0, 104, 100, '#01050a', '#3f3c30', '#0a0f0e');
+  for (let i = 0; i < 34; i++) P(c, rnd(i * 4.9) * W, rnd(i * 8.1) * 80, 1, 1, '#334f5c');
+  P(c, 0, 104, W, H - 104, '#05090a');                      // the yard
+  for (let x = 0; x < W; x += 4) P(c, x, 104, 4, 1, '#141c1b');
   // the lattice tower, stage left, cropped by the frame
+  // the tower is BLACK against the haze, with one lit edge
   for (let y = 10; y < 132; y += 8) {
-    P(c, 12 + (y - 10) * 0.055, y, 3, 8, '#33443c');
-    P(c, 40 - (y - 10) * 0.055, y, 3, 8, '#33443c');
-    P(c, 14, y + 4, 26, 1, '#2a3a33');
+    P(c, 12 + (y - 10) * 0.055, y, 3, 8, COAL);
+    P(c, 40 - (y - 10) * 0.055, y, 3, 8, COAL);
+    P(c, 12 + (y - 10) * 0.055, y, 1, 8, '#5d6b62');
+    P(c, 14, y + 4, 26, 1, '#0c1210');
   }
-  P(c, 6, 10, 44, 4, '#3d4f46');
+  P(c, 6, 10, 44, 4, COAL);
+  P(c, 6, 10, 44, 1, '#6b7a71');
   // three insulator stacks — discs, because that is what makes them read
   for (const bx of [70, 96, 122]) {
-    P(c, bx - 2, 62, 5, 64, '#3a4c44');
-    for (let y = 62; y < 122; y += 7) P(c, bx - 7, y, 15, 3, '#5c6f66');
+    P(c, bx - 2, 62, 5, 64, '#0e1513');
+    for (let y = 62; y < 122; y += 7) {
+      P(c, bx - 7, y, 15, 3, '#2b3833');                    // the disc, in shadow
+      P(c, bx - 7, y, 15, 1, '#93a49b');                    // and its lit lip
+    }
   }
-  // the transformer block and its radiator fins
-  P(c, 58, 126, 52, 26, '#28352f');
-  for (let i = 0; i < 9; i++) P(c, 60 + i * 6, 130, 3, 18, '#1b2620');
-  P(c, 56, 152, 56, 4, '#141d19');
+  // the transformer block, black, rim-lit from the yard light
+  P(c, 58, 126, 52, 26, COAL);
+  rim(c, 58, 126, 52, 26, -1, '#7e8e85');
+  for (let i = 0; i < 9; i++) P(c, 60 + i * 6, 130, 3, 18, '#0a100e');
+  P(c, 56, 152, 56, 4, COAL);
 }
 
 function switchyard(scr, t, d) {
@@ -1132,7 +1216,7 @@ function switchyard(scr, t, d) {
     for (let x = x0; x < x1; x++) {
       const k = (x - x0) / Math.max(1, x1 - x0);
       const sag = Math.sin(k * Math.PI) * 7;
-      P(c, x, 58 + sag, 1, 2, '#6d7f76');
+      P(c, x, 58 + sag, 1, 2, '#aab9b0');   // the busbar catches the light
     }
   }
   // corona: a few cells of light on the stack tops, never the same two frames
@@ -1141,7 +1225,8 @@ function switchyard(scr, t, d) {
     if (((t * 7 + i * 2.3) % 5) > 1.1) continue;
     P(c, bx - 4 + (i % 2) * 6, 56 - (i % 3), 2, 2, '#bfe8ff');
   }
-  halo(c, 84, 132, 28, '#e8d8a8', 0.16 + load * 0.10);      // the yard light
+  halo(c, 84, 128, 34, '#ffe6ac', 0.26 + load * 0.12);      // the yard light
+  fg(c, 'bottom', 26, 5.3, 0.4);                            // black in front
 
   // the load meter, top right, filling — the number the bill is made from
   const gx = 100, gy = 14, gw = 36, gh = 12;

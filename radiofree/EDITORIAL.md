@@ -100,6 +100,10 @@ Rules for the plain reading:
   may share one — the sign-off hands each back once.
 - The **tell** is a question the listener can ask of a real article tomorrow.
   It must work outside this app or it has taught nothing.
+- The **slug is a DATELINE**. It is printed under Toko's name when he reads the
+  bulletin from the street, so `VUOSAARI` or `RING ROAD III` works and
+  `WIRE DESK` reads as a man standing in a harbour claiming to be at a desk.
+  Name the place the story happened wherever there is one.
 
 ---
 

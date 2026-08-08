@@ -1,14 +1,14 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=40';
-import { Post, Reader } from './codec.js?v=40';
-import { Package } from './package.js?v=40';
+import { PAL, SECTOR_COLOR } from './palette.js?v=41';
+import { Post, Reader } from './codec.js?v=41';
+import { Package } from './package.js?v=41';
 import { SECTORS, STORIES, COPY, ARCHIVED, EPISODES, EPISODE, storyCopy, storyBroadcast,
-         parseLine, loadWire, WIRE_INFO } from './stories.js?v=40';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=40';
-import * as audio from './audio.js?v=40';
-import { PixelScreen } from './screen.js?v=40';
-import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=40';
+         parseLine, loadWire, WIRE_INFO } from './stories.js?v=41';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=41';
+import * as audio from './audio.js?v=41';
+import { PixelScreen } from './screen.js?v=41';
+import { drawVisual, BROLL_KEYS, PANEL_W, PANEL_H } from './visuals.js?v=41';
 
 // CLEAN — the transmission with no second layer on it. `?clean` is what a clip
 // export loads, and it does not hide DECODE, it never builds it: no rail
@@ -261,8 +261,13 @@ function buildFeed() {
     if (i === 0) media.appendChild(el('div', 'swipe-hint', t('hint.swipe')));
 
     const cap = el('div', 'post-caption');
-    const tag = el('p', 'tag');
-    tag.innerHTML = `<span class="rec">${t('tag.onair')}</span> ${pad(i + 1)}/${STORIES.length} · ${copy.slug} · ${date}`;
+    // The kicker is the DATELINE and nothing else, so it stays one short block
+    // of solid colour. Everything that is a readout — the position in the
+    // rotation, the date — is a dim mono line above it. One line of forty
+    // characters in a solid block is a paragraph with a highlighter on it.
+    const meta = el('p', 'meta');
+    meta.innerHTML = `<span class="rec">${t('tag.onair')}</span> ${pad(i + 1)}/${STORIES.length} · ${date}`;
+    const tag = el('p', 'tag', copy.slug);
     const head = el('h2', 'head', copy.head);
     const bulletin = el('div', 'bulletin');
     bulletin.setAttribute('aria-live', 'polite');
@@ -278,13 +283,17 @@ function buildFeed() {
         el('p', 'tell', t('tell.prefix') + copy.tell),
       );
     }
-    cap.append(tag, head, bulletin);
+    cap.append(meta, tag, head, bulletin);
     if (box) cap.appendChild(box);
     cap.appendChild(el('p', 'fiction', t('fiction')));
 
     art.append(media, cap);
     feed.appendChild(art);
 
+    // The dateline the stand-up strap prints. It is the COPY's slug, so it
+    // follows the language, and it is handed to the shot rather than looked up
+    // there — the shot classes never read the wire.
+    story.dateline = (copy && copy.slug) || '';
     const post = new Package(slot, story, sector, i);
     post.renderStatic();
     posts.push({ story, sector, copy, post, decoded: false, read: false,
@@ -645,6 +654,19 @@ window.__rfh = {
       if (!s) return null;
       return typeof s === 'string' ? { type: s, key: null }
         : { type: s.type, key: s.key || null };
+    },
+    // force the edit onto one shot — a gate (and a clip harness) has to be
+    // able to look at the studio without waiting out the cut
+    cut: (shot) => {
+      const p = posts[active];
+      if (p && !p.signoff && p.post.cutTo) p.post.cutTo(shot);
+      return p && !p.signoff && p.post.shot;
+    },
+    // 'booth' or 'street' — which set the anchor is standing on
+    anchorSet: () => {
+      const p = posts[active];
+      const a = p && p.post && p.post.anchor;
+      return a ? a.set : null;
     },
     beat: () => {
       const p = posts[active];
