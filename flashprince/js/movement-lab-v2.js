@@ -1,13 +1,13 @@
 import { Screen, W, H } from './screen.js';
 import { paletteAt, C } from './palette.js';
-import { Hero } from './hero.js';
+import { MovementHero } from './movement-hero.js';
 import { Input } from './input.js';
 import { drawFigure } from './figure.js';
 
 const T = 16, RW = 20, RH = 12;
 const LABS = [
   {
-    name: '01 FLOW', note: 'STEP > RUN > SKID > PIVOT · PRESS JUMP LATE IN A STEP',
+    name: '01 FLOW', note: 'STEP > RUN-START > RUN > BRAKE > PIVOT · BUFFER JUMP LATE',
     spawn: [40, 176],
     map: [
       '                    ','                    ','                    ','                    ',
@@ -84,7 +84,7 @@ class Lab {
     this.last=performance.now(); this.acc=0; requestAnimationFrame(t=>this.frame(t));
   }
   load(i) { this.world.load(i); this.reset(); }
-  reset() { const [x,y]=this.world.lab.spawn; this.hero=new Hero(x,y); this.hero.health=3; this.hero.hasGun=false; this.hero.go('stand'); }
+  reset() { const [x,y]=this.world.lab.spawn; this.hero=new MovementHero(x,y); this.hero.health=3; this.hero.hasGun=false; this.hero.go('stand'); }
   kill() { if (this.hero.dead) return; this.hero.dead=true; this.hero.health=0; this.hero.go('dead'); this.flash=8; }
   hurt(n) { this.hero.health-=n; this.flash=5; if (this.hero.health<=0) this.kill(); }
   zones() {
@@ -104,11 +104,12 @@ class Lab {
     drawFigure(s,this.hero.x,this.hero.y,this.hero.face,this.hero.pose(),{
       far:C.SUIT,body:C.SUIT_HI,legs:C.SUIT,arms:C.SUIT_HI,skin:C.SKIN,hair:C.HAIR,eye:null,gun:C.HAIR,
     });
-    const l=this.world.lab;
+    const l=this.world.lab, m=this.hero.move;
     s.text(l.name,8,6,C.LUX2,8); s.text(l.note,8,17,C.EDGE,6);
     s.text(`STATE ${this.hero.state.toUpperCase()}  F ${this.hero.f}`,8,29,C.SUIT_HI,6);
-    s.text(`X ${this.hero.x.toFixed(1)} Y ${this.hero.y.toFixed(1)} HP ${this.hero.health}  J-BUF ${this.input.buffer.jump}`,8,38,C.LUX,6);
-    s.text('1/2/3 LAB · R RESET · ARROWS/WASD · SPACE/UP JUMP',8,48,C.NEAR,6);
+    s.text(`PHASE A${m.anticipate??0} C${m.commit??0} T${m.transition??0} / ${m.dur}`,8,38,C.LUX,6);
+    s.text(`X ${this.hero.x.toFixed(1)} Y ${this.hero.y.toFixed(1)} HP ${this.hero.health}  J-BUF ${this.input.buffer.jump}`,8,47,C.LUX,6);
+    s.text('1/2/3 LAB · R RESET · ARROWS/WASD · SPACE/UP JUMP',8,57,C.NEAR,6);
     s.line(310,80,310,128,C.ALERT,1); s.line(306,80,314,80,C.ALERT,1); s.line(306,128,314,128,C.ALERT,1); s.text('48',296,100,C.ALERT,6);
     for (const z of this.zones()) { s.rect(z.x,z.y,z.w,z.h,C.DARK); s.rect(z.x+1,z.y+1,z.w-2,1,C.EDGE); }
     if (this.flash) s.veil([0,0,W,0,W,H,0,H],C.ALERT,0.18);
