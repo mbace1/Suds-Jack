@@ -236,6 +236,28 @@ s.listen(0, '127.0.0.1', async () => {
   });
   ok('the neon is dialled back (glow 1.5, edge 0.15)', fx31.glow === 1.5 && fx31.edgeAmt === 0.15, JSON.stringify(fx31));
 
+  // ---- v22 near-parity asset pass ---------------------------------------
+  const assets22 = await p.evaluate(async (tok) => {
+    const { MODELS, parseModel } = await import(`./js/voxel.js?v=${tok}`);
+    const names = ['watcher', 'spider', 'leviathan', 'revenant', 'husk', 'totem', 'egg', 'blinker'];
+    const models = {};
+    for (const name of names) {
+      const vox = parseModel(MODELS[name], 1);
+      const zs = new Set(vox.map(v => Math.round(v.z / MODELS[name].voxelSize)));
+      models[name] = { count: vox.length, depth: zs.size };
+    }
+    return { models, environment: window.__hd.debug.getEnvironment(), fx: window.__hd.debug.getFx() };
+  }, token);
+  const rosterCount = Object.values(assets22.models).reduce((n, m) => n + m.count, 0);
+  ok('v22 roster sculpts exceed 1,000 source voxels', rosterCount > 1000, JSON.stringify(assets22.models));
+  ok('every upgraded enemy is volumetric', Object.values(assets22.models).every(m => m.depth >= 5), JSON.stringify(assets22.models));
+  ok('the arena kit has its complete asset set',
+    assets22.environment.rifts === 5 && assets22.environment.pylons === 12 &&
+    assets22.environment.horns === 24 && assets22.environment.shards === 96 &&
+    assets22.environment.arches === 4 && assets22.environment.lattice === true,
+    JSON.stringify(assets22.environment));
+  ok('spherical threat awareness is active', assets22.fx.threat === true, JSON.stringify(assets22.fx));
+
   const swoop = await p.evaluate(async () => {
     const hd = window.__hd;
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
