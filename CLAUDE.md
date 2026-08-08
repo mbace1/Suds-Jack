@@ -174,7 +174,13 @@ root's orphaned `game.js`/`style.css`/`levels.json` were removed. `paperboy/` an
 `goo-*.html` sketches had to be carried onto `gh-pages` with the hub — the site had never
 held them, and four of the hub's links pointed at them.
 
-### Suds Jack (`sudsjack/`) — the rebuild
+### Suds Jack (`sudsjack/`) — the rebuild, SET DOWN
+**Owner's call, 2026-08: the Hyper-Dagger-based rebuild was a mistake — stop building
+it.** The code stays in the repo like `paperboy/` does, the deployed copy stays
+unlisted, and the arcade's `sudsjack` cabinet points at the original vector build at
+`sudz/` with no rebuild promised on the card. Do not resume this without the owner
+asking in their own words. The section below is kept as a record of what was learned
+building it (the traps generalise); it is not a to-do list.
 Concept: "Bomb Jack x Suds 51 x Tempest 2000", taken **literally and in that order** —
 Bomb Jack is the *game* (collect, in the right order, **no weapon**), Tempest is the
 *shape* (a tube you ride the rim of), the suds are what it is made of.
@@ -730,6 +736,17 @@ the list entry in the same change**, or those two games serve the old badge out
 of cache forever while every other cabinet gets the new one.
 
 ### Toko Drop (`toko-drop/`)
+
+**THE MAIN PROJECT (owner's call, 2026-08).** Attention goes here first; Hyper Dagger
+is second; everything else is maintenance unless the owner says otherwise. The owner's
+diagnosis, recorded so sessions stop repeating the pattern: most games in this repo are
+stuck at their initial prototype look and feel — every game got one intense burst that
+produced a working prototype and never a second one. The way out is the method that
+worked on the cover art: a reference from the owner, then render → LOOK → name what is
+wrong → redo, discarding drafts freely — applied to one system at a time against
+captured MOTION (`scripts/enemy-loop.mjs` records GIF loops from the real game code),
+not against stills or state assertions, because the smoke gates certify *works* and
+prototype-feel lives entirely in the part they cannot see.
 
 Browser twin-stick swarm-survival game built with Three.js and ES modules, with
 no build step. The current live implementation is the canonical gameplay
