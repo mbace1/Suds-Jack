@@ -7,6 +7,31 @@
   - The pre-commit hook (scripts/pre-commit) enforces these rules.
 -->
 
+## v223 — 2026-08-08
+**Arena pass — the floor reads swarm flow** *(roadmap-v2 Phase 3, art priority 2)*
+- The classic arena was a uniform neon grid: every cell identical everywhere,
+  so a wave crossed a flat backdrop with nothing to read its approach against.
+  Three cheap fragment terms give the ground depth and a centre of gravity
+- **Rim vignette**: the arena darkens toward its edge (corner-normalized, so
+  it reads the same in portrait and landscape)
+- **Grid distance falloff**: the grid dims toward the rim, so the far edge
+  stops shimmering and near ground reads *near*
+- **The pool you stand in**: a soft lift that **follows the player** across
+  the floor — an approaching swarm now visibly crosses lit ground on its way
+  in. World→uv each frame next to the existing `uTime` write
+- **Both renderers run the same math** — GLSL and TSL node graph in parity,
+  never painted twice. Cabinets are untouched: they own their own ground
+  (`CAB_GROUND_TEX`), and this only touches the classic arena floor
+- All five constants are data in **`TUNING.arena`**
+- Verified headless 8/8 on both builds: the floor carries
+  `uPlayer`/`uArena`/`uGridFall`, the pool uv genuinely tracks the player
+  across the arena (0.29,0.73 → 0.71,0.27 corner to corner), live-run
+  screenshots match between renderers, zero page errors. `smoke.sh` +
+  `cabinets.sh` green
+- Cache-bust `?v=176` → `?v=177`; HUD label → v223
+
+---
+
 ## v222 — 2026-08-07
 **Goo pass 2 — corpse matter reads as gel** *(roadmap-v2 Phase 3, WEBGPU build)*
 - The corpse was the last flat thing on the floor: both `ChunkPool`s (angular

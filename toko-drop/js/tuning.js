@@ -252,6 +252,22 @@ export const TUNING = {
     },
   },
 
+  // v223 ARENA & ENVIRONMENT (roadmap-v2 Phase 3, art priority 2). The classic
+  // floor was a uniform neon grid: every cell identical everywhere, so the
+  // swarm crossed a flat backdrop with nothing to read its approach against.
+  // Three cheap fragment terms give the arena depth and a centre of gravity —
+  // and one of them tracks YOU, so a wave closing in is visibly closing in.
+  //
+  // Both renderers run the same math (GLSL + TSL), so this is not "painted
+  // twice"; the cabinets keep their own ground and are untouched.
+  arena: {
+    vignetteInner: 0.55,   // uv-radius where the darkening starts
+    vignetteDepth: 0.55,   // how dark the corners get (0 = off)
+    poolRadius: 0.30,      // player pool size in uv units
+    poolLift: 0.30,        // how much the pool lifts the base color
+    gridFalloff: 0.45,     // grid dims toward the rim (0 = uniform, old look)
+  },
+
   fx: {
     hitDroplets: 8, killDroplets: 22, killChunks: 5,
     splatLife: 20,
