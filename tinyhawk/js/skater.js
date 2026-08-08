@@ -190,19 +190,18 @@ export class Skater {
       if (locked) continue;
       if (this.grind) {
         // Ollie out of a grind: keep the speed you carried down the rail.
-        if (a.dir === 'up') {
+        if (a.pop || a.dir === 'up') {
           this.vel.y += GRIND_POP * a.power;
           ev.push(this.endGrind('popped'));
           this.grounded = false;
+          if (a.pop && a.dir !== 'up') {
+            this.trick = { t: 0, dir: a.dir };
+            this.airTricks.push(a.dir);
+            ev.push({ type: 'trick', dir: a.dir });
+          }
         }
       } else if (this.grounded) {
-        if (a.dir === 'down' && this.speed > MANUAL_MIN_SPD) {
-          if (this.manual) { ev.push(this.endManual()); }
-          else {
-            this.manual = { balance: (Math.random() - 0.5) * 0.2, balVel: 0, time: 0 };
-            ev.push({ type: 'manualStart' });
-          }
-        } else if (a.dir === 'up') {
+        if (a.pop || a.dir === 'up') {
           park.normal(this.pos.x, this.pos.z, _n);
           this.vel.addScaledVector(_n, POP * a.power);
           this.grounded = false;
@@ -211,6 +210,17 @@ export class Skater {
           this.airTricks = [];
           if (this.manual) ev.push(this.endManual());
           ev.push({ type: 'ollie', power: a.power });
+          if (a.pop && a.dir !== 'up') {
+            this.trick = { t: 0, dir: a.dir };
+            this.airTricks.push(a.dir);
+            ev.push({ type: 'trick', dir: a.dir });
+          }
+        } else if (a.dir === 'down' && this.speed > MANUAL_MIN_SPD) {
+          if (this.manual) { ev.push(this.endManual()); }
+          else {
+            this.manual = { balance: (Math.random() - 0.5) * 0.2, balVel: 0, time: 0 };
+            ev.push({ type: 'manualStart' });
+          }
         }
       } else if (!this.trick) {
         this.trick = { t: 0, dir: a.dir };
