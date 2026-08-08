@@ -2,6 +2,25 @@
 
 The public release number. The `?v=N` token in `index.html` is a separate thing: it tracks every module-graph change so a browser cannot serve half of one build and half of another. Bump both when shipping.
 
+## v11 — 2026-08-08
+
+Direct Flashback-reference locomotion silhouette pass.
+
+- **Walk rebuilt as eight individually authored screen-space body drawings** rather than presenting one consistent articulated body through the whole cycle.
+- **Run rebuilt as twelve authored silhouettes** with larger frame-to-frame changes in chest position, shoulder line, head placement, stride length and limb mass.
+- **Uneven exposure retained:** planted contacts remain longer while passing/flight silhouettes move through quickly.
+- **v10 transition timing retained:** braking, reversal, takeoff preparation and landing recovery keep the more committed human-weight timing.
+- **Production Hub entrypoint now loads v11.**
+
+## v10 — 2026-08-08
+
+Character silhouette and transition-timing correction pass after direct comparison with Flashback footage/screens.
+
+- **Pose-family silhouette changes:** run, low traversal, air and hanging states alter apparent torso/hip shape instead of decorating one invariant puppet.
+- **Long-leg / compact-torso read strengthened** with state-specific costume mass and contact accents.
+- **Braking, pivot, jump gather and landing timing rebuilt** around longer planted moments and shorter passing transitions.
+- **Character fidelity explicitly prioritized over further environment decoration.**
+
 ## v8 — 2026-08-08
 
 Reference-density animation pass toward the Flashback / classic Prince of Persia target.
