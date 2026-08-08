@@ -779,6 +779,12 @@ reference; the old UE5 notes no longer describe this repository.
   roughly 1.5 seconds per screenshot, so run longer loops in the background.
   Keep capture-only dependencies such as `gifenc` and `pngjs` in scratch and
   expose them with `NODE_PATH` rather than vendoring them into the game.
+- Every playable-project release must update its `hub/games.js` title/tagline,
+  controls and status/note where relevant, plus `hub/versions.json`; bump every
+  affected hub-module and worker cache token. Deploy the build
+  and catalogue copy together to `gh-pages`, verify both the hub entry and live game
+  actually load and play, then report the hub link and version. A merge alone is not
+  a playable release.
 - Every Toko Drop game change needs a new top entry in `VERSIONS.md` and matching
   cache tokens. `scripts/bump-version.sh <N>` performs the coordinated bump.
 - Install the version guard with

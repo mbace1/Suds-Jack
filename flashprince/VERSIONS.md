@@ -4,6 +4,27 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v3 — 2026-08-08
+
+The Hub build is now an art-and-animation presentation build rather than a bare
+diagnostic grid.
+
+- **Rotoscope 3.0** adds eight-key running silhouettes plus dedicated walking,
+  braking, jump, landing and ledge-impact keys. Root motion and collision stay
+  unchanged; only the authored body performance changes, so the pass can be
+  judged without destabilising movement.
+- **Four authored presentation scenes** replace the grid as the default view:
+  jungle arrival, broken transit, reactor shaft and palace ruin. They use hard
+  palette bands, large filled polygon masses, foreground silhouettes, sparse
+  moving light/particles and no gradients or texture maps.
+- The lab keeps its analysis tools, but they are hidden by default. `H` reveals
+  state/frame/phase data; `1–4` switches scenes, `R` resets.
+- The playable entry now loads `movement-lab-v3.js?v=6`.
+
+This is a strong step toward the Flashback art/animation target, but it is not
+yet a 90% claim: enemy animation, character-specific costume detail, scene
+composition density and full campaign integration still need another pass.
+
 ## v2 — 2026-07-28
 
 The first act stops being one long screen.

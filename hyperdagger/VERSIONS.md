@@ -8,6 +8,20 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v22 — 2026-08-08
+**Near-parity world and enemy art pass**
+- The remaining placeholder enemies are now full 3D source sculpts: Watcher,
+  Spider, Leviathan, Revenant, Husk, Totem, Egg and Blinker gain readable
+  anatomy, depth, damage surfaces and distinct silhouettes from every angle.
+- The arena gains an original procedural environment kit: five abyss rings,
+  twelve ritual pylons with split horns, ninety-six orbiting void shards, four
+  broken horizon gates and a reactive spherical threat lattice.
+- A peripheral threat shader makes enemies behind the camera visible as a
+  signed red burn, completing the 360-degree awareness language without HUD
+  arrows. Environment motion and emissive intensity react to combat, trauma,
+  music and the Leviathan while the performance governor sheds assets by tier.
+- The offline graph, smoke gate, hub copy and cache tokens ship together.
+
 ## v21 — 2026-08-07
 **Shotgun economy + the offline gate**
 - The tap-burst gets DD's actual economy: the burst wins the MOMENT, the

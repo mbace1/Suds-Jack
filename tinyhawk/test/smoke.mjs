@@ -20,14 +20,28 @@ const equal = (actual, expected, message) => { assert.equal(actual, expected, me
 
 const fullFlick = new FlickIt();
 equal(fullFlick.sample(0, 0.72, 0.05, false), null, 'right stick loads the ollie');
-equal(fullFlick.sample(0, -0.65, 0.05, false)?.dir, 'up', 'down-up right-stick flick pops');
+const straightPop = fullFlick.sample(0, -0.65, 0.05, false);
+equal(straightPop?.dir, 'up', 'down-up right-stick flick pops');
+ok(straightPop?.pop, 'ground ollie is marked as a pop');
 const springFlick = new FlickIt();
 springFlick.sample(0, 0.7, 0.05, false);
 equal(springFlick.sample(0, 0.05, 0.06, false)?.dir, 'up', 'spring return to centre pops');
 const liftedFlick = new FlickIt();
 liftedFlick.sample(0, 0.65, 0.05, false);
-equal(liftedFlick.release(false)?.dir, 'up', 'touch release preserves a loaded pop');
+const liftedPop = liftedFlick.release(false);
+equal(liftedPop?.dir, 'up', 'touch release preserves a loaded pop');
+ok(liftedPop?.pop, 'touch release carries grounded pop metadata');
 equal(liftedFlick.release(false), null, 'one release cannot emit two pops');
+const kickflipFlick = new FlickIt();
+kickflipFlick.sample(0, 0.72, 0.05, false);
+const kickflipPop = kickflipFlick.sample(-0.75, -0.65, 0.05, false);
+equal(kickflipPop?.dir, 'left', 'loaded up-left flick selects kickflip');
+ok(kickflipPop?.pop, 'diagonal ground trick also carries the ollie impulse');
+const shuvFlick = new FlickIt();
+shuvFlick.sample(0, 0.72, 0.05, false);
+const shuvPop = shuvFlick.sample(0.75, 0.45, 0.05, false);
+equal(shuvPop?.dir, 'down', 'loaded side swipe selects pop shuvit');
+ok(shuvPop?.pop, 'side swipe launches from the ground');
 
 const tour = generateTour('smoke');
 equal(tour.rows.length, 13, 'tour has thirteen rows');
@@ -118,8 +132,12 @@ ok(run.film <= run.maxFilm && filmBefore <= 5, 'story state keeps film inside it
 
 const index = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const main = await readFile(new URL('../js/main.js', import.meta.url), 'utf8');
+const skaterSource = await readFile(new URL('../js/skater.js', import.meta.url), 'utf8');
 for (const id of ['btnFree', 'btnDaily', 'btnPart', 'mapHost']) ok(index.includes(id), `${id} exists in the shell`);
 for (const moduleName of ['tricks.js', 'goals.js', 'map.js', 'meta.js', 'story.js']) ok(main.includes(moduleName), `${moduleName} is wired into the game`);
 ok(!index.includes('CONTROL PROTOTYPE'), 'the shipped menu no longer calls itself P0');
+for (const part of ['fat-bird-skater', 'fat-bird-belly', 'beak', 'left-wing', 'skateboard-deck']) {
+  ok(skaterSource.includes(part), `${part} is present in the permanent character rig`);
+}
 
 console.log(`Tiny Hawk smoke: ${checks} checks passed`);
