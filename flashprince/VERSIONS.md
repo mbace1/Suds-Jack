@@ -2,6 +2,17 @@
 
 The public release number. The `?v=N` token in `index.html` is a separate thing: it tracks every module-graph change so a browser cannot serve half of one build and half of another. Bump both when shipping.
 
+## v7 — 2026-08-08
+
+Character and environment fidelity pass.
+
+- **New body construction:** the locomotion renderer now uses a broader shoulder/chest mass, narrower waist, separate hip/trouser shape, angular boots, polygon hands, neck/jaw structure and a directional hair silhouette instead of the previous narrow mannequin body.
+- **Depth on the character:** rear limbs are darker/slimmer while the front leg and arm carry the brighter silhouette, improving readability during the dense run and walk cycles.
+- **Much denser jungle:** each opening screen now combines distant canopy, varied trunks, buttress roots, hanging vine curtains, frond clusters, mist, spores, wet ledge highlights, small growths and foreground occlusion.
+- **Distinct landmarks:** the five screens now build around a crashed pod, damaged beacon, embedded panel, exposed cable/conduit structure and a large half-buried geometric doorway.
+- **Sci-fi remains subordinate:** technology sits inside roots, foliage and rock rather than replacing the jungle composition.
+- **Traversal unchanged:** the v6 five-screen route and v5 advanced movement vocabulary remain intact while visual fidelity increases.
+
 ## v6 — 2026-08-08
 
 The remake stops behaving like a set of selectable movement rooms and becomes the beginning of an actual cinematic-platformer route.
