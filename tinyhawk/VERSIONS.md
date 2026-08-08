@@ -1,5 +1,11 @@
 # Tiny Hawk versions
 
+## v4 — Skate-style ground flicks
+
+- Connected loaded diagonal pops to kickflips and heelflips instead of discarding them on the ground.
+- Connected a loaded sideways swipe to a pop shuvit with the same ollie impulse.
+- Preserved straight release/up ollies and airborne follow-up flicks for longer combos.
+
 ## v3 — Reliable right-stick pop
 
 - Sample touch and mouse flicks at event time so fast gestures cannot disappear between rendered frames.
