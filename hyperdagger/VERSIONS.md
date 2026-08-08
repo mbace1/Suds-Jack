@@ -8,6 +8,20 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v21 — 2026-08-07
+**Shotgun economy + the offline gate**
+- The tap-burst gets DD's actual economy: the burst wins the MOMENT, the
+  stream wins the MINUTE. Burst count now scales with weapon level
+  (10/12/12/14) and the lockout is 0.8 s, so burst DPS sits below stream
+  DPS at every level — tap-spam is no longer the optimal close-range play.
+  The gate asserts the invariant arithmetically, so no future tuning pass
+  can silently re-break it.
+- New `test/offline.cjs` (6 checks): worker takes control, precache
+  populated, the game boots and STARTS A RUN with the server dead and the
+  browser offline. The arcade HOME shell is the one tolerated miss — it is
+  deliberately not precached, because offline the hub it leads to is
+  unreachable and a dead button is worse than none.
+
 ## v20 — 2026-08-07
 **Enemy release hygiene — caught by the new long-run health gate**
 - The smoke gate gained a spawn/kill plateau check (geometry, textures,

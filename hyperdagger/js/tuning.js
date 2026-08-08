@@ -86,9 +86,12 @@ export const TUNING = {
     homingSteer: 7,    // 1/s — exponential steer rate toward the target
     autoFireMove: 0.15, // move-input length that turns the touch stream on
     streamDelay: 0.22, // s a press must be held before the stream begins
-    shotgunCount: 10,  // daggers in one tap-burst
+    // The burst wins the MOMENT, the stream wins the MINUTE (DD's economy):
+    // count[lv]/cd must stay below tiers[lv].stream at every level, or
+    // tap-spam becomes the optimal close-range play. The gate asserts it.
+    shotgunCount: [0, 10, 12, 12, 14], // daggers per tap-burst, by weapon level
     shotgunSpread: 0.14, // rad — much wider cone than the stream
-    shotgunCd: 0.6,    // s before the hand fires again after a burst
+    shotgunCd: 0.8,    // s before the hand fires again after a burst
   },
 
   gems: {
