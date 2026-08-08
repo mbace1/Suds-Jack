@@ -5,6 +5,7 @@ import { createMetrics, makeGoalSet } from '../js/goals.js';
 import { availableNodes, generateTour } from '../js/map.js';
 import { PARTS, PartRun } from '../js/meta.js';
 import { chooseEvent, pickEvent } from '../js/story.js';
+import { FlickIt } from '../js/input.js';
 
 const storage = new Map();
 globalThis.localStorage = {
@@ -16,6 +17,17 @@ globalThis.localStorage = {
 let checks = 0;
 const ok = (condition, message) => { assert.ok(condition, message); checks++; };
 const equal = (actual, expected, message) => { assert.equal(actual, expected, message); checks++; };
+
+const fullFlick = new FlickIt();
+equal(fullFlick.sample(0, 0.72, 0.05, false), null, 'right stick loads the ollie');
+equal(fullFlick.sample(0, -0.65, 0.05, false)?.dir, 'up', 'down-up right-stick flick pops');
+const springFlick = new FlickIt();
+springFlick.sample(0, 0.7, 0.05, false);
+equal(springFlick.sample(0, 0.05, 0.06, false)?.dir, 'up', 'spring return to centre pops');
+const liftedFlick = new FlickIt();
+liftedFlick.sample(0, 0.65, 0.05, false);
+equal(liftedFlick.release(false)?.dir, 'up', 'touch release preserves a loaded pop');
+equal(liftedFlick.release(false), null, 'one release cannot emit two pops');
 
 const tour = generateTour('smoke');
 equal(tour.rows.length, 13, 'tour has thirteen rows');
