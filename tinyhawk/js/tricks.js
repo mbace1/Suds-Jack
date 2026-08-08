@@ -9,6 +9,13 @@ export const TRICK_FAMILIES = {
   down:  [{ name: 'Pop Shuvit', base: 340 }, { name: '360 Shuvit', base: 500 }, { name: 'Impossible', base: 680 }],
 };
 
+export const SPECIAL_TRICKS = {
+  up:    { name: 'Wingspan Grab', base: 1400 },
+  left:  { name: 'Featherflip', base: 1250 },
+  right: { name: 'Talonflip', base: 1250 },
+  down:  { name: 'Eggplant Impossible', base: 1600 },
+};
+
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 export class ComboSystem {
@@ -31,6 +38,8 @@ export class ComboSystem {
     this.bestMult = 1;
     this.bestBank = 0;
     this.insuranceUsed = false;
+    this.special = 0;
+    this.specialLive = false;
     this._resetChain();
   }
 
@@ -55,11 +64,19 @@ export class ComboSystem {
 
   addTrick(dir) {
     this.begin();
-    const family = TRICK_FAMILIES[dir] || TRICK_FAMILIES.up;
-    const step = this.familySteps[dir] || 0;
-    const unlocked = this.build.vocabulary + 1;
-    const trick = family[step % unlocked];
-    this.familySteps[dir] = step + 1;
+    let trick, special = false;
+    if (this.specialLive && this.special >= 25) {
+      trick = SPECIAL_TRICKS[dir] || SPECIAL_TRICKS.up;
+      special = true;
+      this.special = Math.max(0, this.special - 25);
+      if (this.special <= 0) this.specialLive = false;
+    } else {
+      const family = TRICK_FAMILIES[dir] || TRICK_FAMILIES.up;
+      const step = this.familySteps[dir] || 0;
+      const unlocked = this.build.vocabulary + 1;
+      trick = family[step % unlocked];
+      this.familySteps[dir] = step + 1;
+    }
 
     const repeats = this.counts.get(trick.name) || 0;
     const penalty = 1 / (1 + repeats * this.build.repeatPenalty);
@@ -68,7 +85,7 @@ export class ComboSystem {
     this.parts.push(trick.name);
     this.pending += points;
     this.grace = 0;
-    return { name: trick.name, points, penalty };
+    return { name: trick.name, points, penalty, special };
   }
 
   addLink(name, points = 0) {
@@ -104,11 +121,24 @@ export class ComboSystem {
     return this.grace >= 0.28 ? this.bank() : null;
   }
 
+  tickSpecial(dt, active) {
+    if (this.specialLive && !active) {
+      this.special = Math.max(0, this.special - dt * 4);
+      if (this.special <= 0) this.specialLive = false;
+    }
+  }
+
   bank() {
     if (!this.open) return null;
     const mult = Math.max(1, this.parts.length);
     const total = Math.max(0, Math.round(this.pending * mult));
-    const result = { type: 'bank', total, base: Math.round(this.pending), mult, parts: this.parts.slice() };
+    const wasLive = this.specialLive;
+    this.special = clamp(this.special + Math.min(34, 12 + mult * 5 + total / 600), 0, 100);
+    if (this.special >= 100) this.specialLive = true;
+    const result = {
+      type: 'bank', total, base: Math.round(this.pending), mult, parts: this.parts.slice(),
+      specialReady: !wasLive && this.specialLive,
+    };
     this.score += total;
     this.bestMult = Math.max(this.bestMult, mult);
     this.bestBank = Math.max(this.bestBank, total);
@@ -126,6 +156,8 @@ export class ComboSystem {
       this.score += saved;
     }
     const result = { type: 'bail', saved, lost: Math.max(0, lost - saved), insured: saved > 0 };
+    this.special *= 0.45;
+    this.specialLive = false;
     this._resetChain();
     return result;
   }
@@ -146,6 +178,8 @@ export class ComboSystem {
       bestMult: this.bestMult,
       bestBank: this.bestBank,
       insuranceUsed: this.insuranceUsed,
+      special: this.special,
+      specialLive: this.specialLive,
     };
   }
 }

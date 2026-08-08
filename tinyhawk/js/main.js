@@ -11,8 +11,8 @@ import { Park } from './park.js?v=2';
 import { Skater } from './skater.js?v=5';
 import { InputManager, SCHEMES } from './input.js?v=4';
 import { Audio } from './audio.js?v=2';
-import { ComboSystem } from './tricks.js?v=2';
-import { createMetrics, makeGoalSet, utcDay } from './goals.js?v=2';
+import { ComboSystem } from './tricks.js?v=6';
+import { createMetrics, makeGoalSet, utcDay } from './goals.js?v=6';
 import { NODE_INFO, renderMap } from './map.js?v=2';
 import { PARTS, PartRun } from './meta.js?v=2';
 import { chooseEvent, pickEvent } from './story.js?v=2';
@@ -114,6 +114,7 @@ const el = {
   objName: $('objName'), objFill: $('objFill'), goals: $('goals'),
   balance: $('balance'), balMark: $('balMark'), toast: $('toast'),
   district: $('district'), film: $('film'), footage: $('footage'),
+  special: $('special'), specialFill: $('specialFill'),
   panelEyebrow: $('panelEyebrow'), panelTitle: $('panelTitle'), panelCopy: $('panelCopy'),
   panelBody: $('panelBody'), panelActions: $('panelActions'),
   sound: $('btnSound'), resume: $('btnResume'), scheme: $('btnScheme'),
@@ -282,6 +283,7 @@ function acceptCombo(result) {
   if (result.total > bestLine.total) bestLine = { total: result.total, text };
   el.breakdown.textContent = `${result.base.toLocaleString()} × ${result.mult} = ${result.total.toLocaleString()}`;
   toast(text, '#8fe6d8');
+  if (result.specialReady) toast('SPECIAL READY', '#e8c98a');
   audio.land(true);
 }
 
@@ -305,7 +307,9 @@ function handleEvents(events) {
     } else if (event.type === 'trick') {
       const trick = combo.addTrick(event.dir);
       metrics.tricks++;
-      toast(`${trick.name} +${trick.points}`, trick.penalty < 0.7 ? '#e8c98a' : '#f1ecde');
+      if (trick.special) metrics.specials++;
+      toast(`${trick.special ? 'SPECIAL · ' : ''}${trick.name} +${trick.points}`,
+        trick.special ? '#ffcf66' : trick.penalty < 0.7 ? '#e8c98a' : '#f1ecde');
       audio.trick();
     } else if (event.type === 'grindStart') {
       combo.addLink(event.name);
@@ -342,6 +346,8 @@ function updateHud() {
   el.mphNum.textContent = kmh;
   el.mphArrows.textContent = '>'.repeat(clamp(Math.round(kmh / 9), 0, 7));
   el.mphFill.style.width = `${clamp(kmh / 80, 0, 1) * 100}%`;
+  el.specialFill.style.width = `${snap.special}%`;
+  el.special.classList.toggle('live', snap.specialLive);
   el.score.textContent = snap.score.toLocaleString();
   el.mult.textContent = `×${snap.mult}`;
   el.trick.textContent = snap.parts.join(' + ');
@@ -705,6 +711,7 @@ function animate(now) {
     }
     handleEvents(events);
     acceptCombo(combo.tick(dt, skater.chaining, !!skater.grind, !!skater.manual));
+    combo.tickSpecial(dt, skater.chaining);
     sessionTime += dt;
     if (sessionLimit && sessionTime >= sessionLimit) finishSession();
     updateHud();
