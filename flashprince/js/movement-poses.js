@@ -1,64 +1,61 @@
-// Flash Prince — Rotoscope 2.0 laboratory keys.
-//
-// These poses deliberately live beside figure.js until the movement laboratory
-// passes. They use the exact same 13-angle skeleton, but are authored as
-// transition frames rather than asking stand/run/skid poses to do double duty.
-// The silhouette should explain the force: load, plant, push, catch, absorb.
-
 import { P } from './figure.js';
 
+// The remake pose sheet is authored around classic cinematic-platformer
+// silhouette rules: long planted contacts, strong counter-swing, low pelvis,
+// visible weight transfer, and brief passing poses. These are intentionally
+// more extreme than the old procedural keys so the motion reads at 320x192.
 export const R = {
-  // run start: weight travels ahead of the rear foot before the first stride.
-  startLoad: P( 20, 32, -12, 22, -28, 38,  24, 32, 18, -5,  4,  1, 0),
-  startPush: P( 34, 16, -24, 38, -42, 46,  38, 38, 22, -6,  1,  1, 0),
-  startFly:  P( 10, 48, -12, 16, -18, 58,  22, 50, 18, -5, -2,  0, 0),
+  // careful walk — heel/plant/pass/toe rather than three generic step poses
+  walkHeel: P( 30,  2, -18, 20, -24,26,  22,20,  5,-2, 1,0,0),
+  walkPlant:P( 16, 12,  -8, 28, -16,24,  14,22,  3,-1, 2,0,0),
+  walkPass: P( -2, 34,   8,  6,   4,18,  -4,18,  1, 0, 0,0,0),
+  walkToe:  P(-18, 22,  28,  4,  22,20, -22,26,  4,-2, 1,0,0),
 
-  // braking: hips stay forward while the planting leg moves ahead to catch mass.
-  brakeReach: P( 38, 18, -18, 30, -38, 30, -26, 30, -8,  3,  2,  1, 0),
-  brakePlant: P( 48, 10,  -8, 26, -30, 28, -32, 26,-14,  6,  5,  0, 0),
-  brakeSettle:P( 24, 16,  -6, 16, -12, 24, -16, 22, -4,  3,  3,  0, 0),
+  // eight-key run — contact/compression/push/flight, mirrored. The pelvis
+  // visibly drops on impact and rises through flight; arms counter hard.
+  runC1: P( 44,  0, -30, 48, -46,42,  52,34, 18,-5,  2,0,0),
+  runD1: P( 26, 22, -18, 58, -34,54,  42,44, 16,-4,  4,0,0),
+  runP1: P(  4, 54,   8, 20, -10,70,  18,58, 15,-4, -1,0,0),
+  runF1: P(-18, 34,  34,  6,  38,38, -42,48, 17,-6, -4,0,0),
+  runC2: P(-30, 48,  44,  0,  52,34, -46,42, 18,-5,  2,0,0),
+  runD2: P(-18, 58,  26, 22,  42,44, -34,54, 16,-4,  4,0,0),
+  runP2: P(  8, 20,   4, 54,  18,58, -10,70, 15,-4, -1,0,0),
+  runF2: P( 34,  6, -18, 34, -42,48,  38,38, 17,-6, -4,0,0),
 
-  // pivot: centre of mass settles over one planted foot, then shoulders lead out.
-  pivotLoad: P( 18, 26, -12, 28,  24, 40, -22, 38, -2,  8,  5,  0, 0),
-  pivotPlant:P(  4, 30,  -4, 30,  38, 46, -34, 44, -5, 12,  6,  0, 0),
-  pivotPush: P(-18, 20,  24, 18,  42, 34, -40, 36, 14, -5,  2,  0, 0),
+  startLoad: P( 30,46,  12,40, -38,36,  30,30, 26,-6, 8,1,0),
+  startPush: P( 42,14, -28,46, -54,46,  48,38, 24,-7, 2,1,0),
+  startFly:  P( -6,54,  20,12,  18,62, -22,58, 18,-6,-4,0,0),
 
-  // standing jump: deeper preparation than a running takeoff. The body first
-  // compresses vertically, then reaches; it does not borrow a running contact.
-  jumpLoad:  P( 44, 68,  38, 72, -38, 36, -42, 34, 28, -5,  9,  0, 0),
-  jumpReach: P( 16, 24,  30, 42,  72, 28,  48, 38, 22, -8, -4,  0, 0),
-  runTake:   P( 28, 18, -22, 40,  62, 34,  18, 48, 24, -8, -3,  0, 0),
+  brakeReach:P( 52, 4, -24,34, -38,30, -30,28,-10, 4, 3,1,0),
+  brakePlant:P( 58, 0, -12,30, -24,26, -34,24,-16, 7, 5,0,0),
+  brakeSettle:P(26,14,  -4,18, -10,22, -14,20, -5, 3, 3,0,0),
 
-  // landing: hands and chest counterbalance before the body regains height.
-  landCatch: P( 50, 72,  42, 76,  34, 66,  28, 62, 28, -6, 10,  1, 0),
-  landRun:   P( 44, 58,  18, 38, -18, 50,  28, 44, 24, -7,  7,  2, 0),
-  landRise:  P( 26, 44,  20, 46,  22, 46,  16, 44, 15, -4,  5,  1, 0),
+  pivotLoad:P( 20,34,-12,30,  28,44,-26,42,-2, 8, 6,0,0),
+  pivotPlant:P(  2,38, -2,38,  44,48,-42,48,-6,12, 7,0,0),
+  pivotPush:P(-22,20, 28,18,  50,36,-46,38,16,-5, 2,0,0),
 
-  // ledge catch: impact first, then the hanging body swings underneath the hands.
-  catchHit:  P( 22, 34,   8, 24, 170, 10, 166, 12, 10, -3, -2,  0, 0),
-  catchDrop: P( 38, 48,  20, 34, 166, 12, 162, 14, -9,  5,  2,  0, 0),
+  jumpLoad: P( 52,78, 46,80, -46,42,-50,40,32,-6,11,0,0),
+  jumpReach:P( 12,28, 34,44,  78,24, 54,34,24,-9,-5,0,0),
+  runTake:  P( 38,10,-28,44,  70,28, 18,52,28,-9,-4,0,0),
 
-  // shimmy: the hands remain high while hips and feet travel sideways beneath.
-  shimmyReach:P( 28, 38,  10, 24, 168, 12, 154, 22, -8,  5,  1,  2, 0),
-  shimmyPass: P( 12, 26,  26, 38, 154, 22, 168, 12, -4,  3,  2, -2, 0),
+  landCatch:P(58,78, 48,80,  42,68, 34,64,34,-7,11,1,0),
+  landRun: P( 48,62, 16,40, -26,54, 34,46,28,-8, 7,2,0),
+  landRise:P( 28,46, 20,48,  24,48, 18,46,16,-4, 5,1,0),
 
-  // climbing down from the top: turn the chest toward the wall, sit the hips
-  // behind the lip, then transfer the body's weight from feet to hands.
-  downTurn:  P( 30, 52,  18, 44,  46, 58,  34, 52, 22,  4,  6,  0, 0),
-  downSit:   P( 62, 88,  54, 86, 112, 58, 106, 62, 38, -2, 12,  2, 0),
-  downHands: P( 44, 64,  28, 52, 158, 28, 154, 30, 12,  2,  7,  1, 0),
+  catchHit: P(22,36,  8,26,172, 8,168,10,12,-3,-2,0,0),
+  catchDrop:P(42,54, 20,38,168,12,164,14,-12,6, 3,0,0),
+  shimmyReach:P(30,40,12,26,170,10,154,24,-9,5,1,2,0),
+  shimmyPass:P(12,28,30,42,154,24,170,10,-5,3,2,-2,0),
 
-  // crouch locomotion: knees stay loaded; each small step shifts the pelvis
-  // rather than unfolding into a roll.
-  crouchStepA:P( 62, 94,  42, 88,  34, 66,  22, 60, 28, -7, 12,  1, 0),
-  crouchStepB:P( 42, 86,  64, 96,  20, 60,  34, 66, 26, -7, 12,  1, 0),
+  downTurn:P(34,56,20,46, 52,62,40,56,24,4,6,0,0),
+  downSit:P(66,92,56,90,118,56,110,62,40,-2,13,2,0),
+  downHands:P(48,68,30,56,160,26,156,28,14,2,8,1,0),
 
-  // low mantle/step-up: one foot owns the low block before the hips rise over it.
-  lowPlant:  P( 54, 78,  18, 38,  28, 52,  18, 46, 24, -4,  7,  1, 0),
-  lowDrive:  P( 30, 52,  42, 64, -18, 44,  30, 42, 26, -5,  4,  3, 0),
-  lowStand:  P( 10, 24,  18, 30,   8, 28,  -4, 24, 10, -3,  1,  2, 0),
-
-  // climb finish: one knee owns the ledge before the torso comes upright.
-  mantleKnee:P( 82, 96,  34, 64,  92, 82,  86, 78, 38, -3,  7,  3, 0),
-  mantleRise:P( 42, 60,  20, 42,  42, 48,  34, 44, 20, -4,  5,  2, 0),
+  crouchStepA:P(64,96,44,90,36,68,24,62,30,-7,12,1,0),
+  crouchStepB:P(44,88,66,98,22,62,36,68,28,-7,12,1,0),
+  lowPlant:P(56,80,18,40,30,54,20,48,26,-4,7,1,0),
+  lowDrive:P(32,54,44,66,-20,46,32,44,28,-5,4,3,0),
+  lowStand:P(10,24,18,30,8,28,-4,24,10,-3,1,2,0),
+  mantleKnee:P(84,98,36,66,96,84,90,80,40,-3,7,3,0),
+  mantleRise:P(44,62,22,44,44,50,36,46,22,-4,5,2,0),
 };
