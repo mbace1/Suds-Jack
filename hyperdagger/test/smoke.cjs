@@ -61,34 +61,41 @@ s.listen(0, '127.0.0.1', async () => {
   const gun = await p.evaluate(async () => {
     const hd = window.__hd;
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    // Count fire() calls, not net active-pool occupancy. Older daggers can
+    // expire while a later trigger phase is being measured, which made this
+    // gate report negative/undercounted shots on a slow software renderer.
+    const realFire = hd.daggers.fire.bind(hd.daggers);
+    let shots = 0;
+    hd.daggers.fire = (...args) => { shots++; return realFire(...args); };
     hd.player.input.touchMode = false;
     hd.enemies.length = 0;
     // moving alone must fire NOTHING now (the old auto-fire is gone)
-    const d0 = hd.daggers.active.length;
+    const d0 = shots;
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
     await frames(12);
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW' }));
-    const moveFired = hd.daggers.active.length - d0;
+    const moveFired = shots - d0;
     // TAP: trigger down for 2 frames (≤0.1s of clamped dt — under streamDelay)
-    const d1 = hd.daggers.active.length;
+    const d1 = shots;
     hd.player.input.mouseDown = true;
     await frames(2);
     hd.player.input.mouseDown = false;
     await frames(2);
-    const tapFired = hd.daggers.active.length - d1;
+    const tapFired = shots - d1;
     const cdAfterTap = hd.debug.getGun().shotCd;
     // wait out the shotgun lockout, then HOLD: stream after streamDelay
     while (hd.debug.getGun().shotCd > 0) await frames(2);
-    const d2 = hd.daggers.active.length;
+    const d2 = shots;
     hd.player.input.mouseDown = true;
     await frames(3); // ≤0.15s held — still inside the delay
-    const early = hd.daggers.active.length - d2;
+    const early = shots - d2;
     await frames(12); // well past streamDelay now
-    const streamed = hd.daggers.active.length - d2;
-    const d3 = hd.daggers.active.length;
+    const streamed = shots - d2;
+    const d3 = shots;
     hd.player.input.mouseDown = false; // long hold released → must NOT shotgun
     await frames(3);
-    const releaseFired = Math.max(0, hd.daggers.active.length - d3);
+    const releaseFired = shots - d3;
+    hd.daggers.fire = realFire;
     return { moveFired, tapFired, cdAfterTap, early, streamed, releaseFired };
   });
   ok('moving alone no longer fires', gun.moveFired === 0, JSON.stringify(gun));
