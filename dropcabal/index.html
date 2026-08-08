@@ -44,6 +44,16 @@
       font-size: 26px; font-weight: bold; letter-spacing: 2px; line-height: 1.5;
     }
     #msg small { font-size: 14px; letter-spacing: 1px; opacity: 0.85; }
+    /* the pause menu needs to be read against a sunset, so it gets a ground */
+    #msg.panel {
+      padding: 20px 30px;
+      background: rgba(12, 8, 28, 0.88);
+      border: 2px solid #fff2d8;
+      border-radius: 3px;
+    }
+    #msg .rows { display: inline-block; text-align: left; margin: 14px 0 16px; }
+    #msg .rows div { padding: 3px 0; white-space: nowrap; font-size: 18px; }
+    #msg .hint { font-size: 14px; letter-spacing: 1px; opacity: 0.8; }
     #toast {
       position: fixed; bottom: 15%; left: 50%; transform: translateX(-50%);
       z-index: 10; font-size: 16px; font-weight: bold; letter-spacing: 2px;
@@ -83,15 +93,16 @@
     }
   }
   </script>
+  <script type="module" src="js/main.js?v=3"></script>
   <!-- the arcade shell: a home button and a controller way back -->
-  <script type="module" src="../hub/shell.js?v=8"></script>
-  <script type="module" src="js/main.js?v=2"></script>
+  <script type="module" src="../hub/shell.js?v=15"></script>
 
-  <!-- signed by Toko Midori Games — the badge in the corner, under the HUD,
-       taking no input. See ../toko/BRAND.md -->
+  <!-- signed by Toko Midori Games — the badge in the corner, under the HUD.
+       `counter: true` makes it the way to the counter on the hub; on a
+       touchscreen it stays inert, because that corner is the left stick. See ../toko/BRAND.md -->
   <script type="module">
-    import { sign } from '../toko/js/signature.js?v=1';
-    sign({ corner: 'bottom-left' });
+    import { sign } from '../toko/js/signature.js?v=3';
+    sign({ corner: 'bottom-left', counter: true });
   </script>
 </body>
 </html>

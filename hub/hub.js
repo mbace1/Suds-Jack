@@ -6,13 +6,13 @@
 // art.js and a cabinet appears. Feedback is the same panel everywhere, tagged
 // with which game it came from, and goes out through hub/feedback.js.
 
-import { GAMES, SKETCHES } from './games.js?v=10';
-import { drawMarquee } from './art.js?v=10';
+import { GAMES, SKETCHES } from './games.js?v=14';
+import { drawMarquee } from './art.js?v=13';
 import * as feedback from './feedback.js?v=13';
 import * as topics from './topics.js?v=2';
-import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=6';
+import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=11';
 import { watchPad, padPresent } from './pad.js?v=9';
-import * as room from './arcade.js?v=1';
+import * as room from './arcade.js?v=5';
 
 const el = (tag, cls = '', text = '') => {
   const e = document.createElement(tag);
@@ -452,16 +452,6 @@ async function showVersions() {
   markFresh(versions);
 }
 
-// ── finding one ────────────────────────────────────────────────────
-// Thirteen cabinets is past the point where scanning works, and the tags are
-// already in the catalogue doing nothing. So: a box and a row of tags above the
-// floor. Typing matches the title, the tagline, the lineage and the tags — in
-// whatever language the page is in, because a Finnish reader searching for
-// "räiskintä" should not have to guess the English.
-//
-// Tags are OR against each other and AND against the text: picking `gamepad`
-// and `pixel` means either, which is what a person means by picking two, and
-// then the words narrow it. Nothing is persisted — a filter you did not set
 // ── what you have already tried ────────────────────────────────────
 // Thirteen cabinets and no memory means every visit starts from nothing: you
 // scan the same covers deciding which ones you have already opened. Pressing

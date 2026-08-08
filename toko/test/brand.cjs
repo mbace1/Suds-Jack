@@ -1021,6 +1021,116 @@ function serve() {
     await ph.close();
   }
 
+  // ── the version ────────────────────────────────────────────────────────
+  // The counter shows a number it carries in code, so it is right offline.
+  // The log is what scripts/versions.mjs reads for hub/versions.json. If the
+  // two drift, one of them is lying to somebody.
+  console.log('\nthe version');
+  {
+    const src = fs.readFileSync(path.join(ROOT, 'toko/js/dialogue.js'), 'utf8');
+    const code = src.match(/export const VERSION = (\d+)/);
+    const log = fs.readFileSync(path.join(ROOT, 'toko/VERSIONS.md'), 'utf8')
+      .match(/^##\s*v(\d+)/m);
+    ok('dialogue.js states a version', !!code);
+    ok('VERSIONS.md has a top entry', !!log);
+    ok('the code and the log agree', code && log && code[1] === log[1],
+      `code v${code && code[1]} · log v${log && log[1]}`);
+    const shown = await page.textContent('.toko-chat .tc-ver').catch(() => null);
+    ok('the counter shows it', shown === 'V' + (code && code[1]), String(shown));
+  }
+
+  // ── the badge is the way to the counter ────────────────────────────────
+  // Signing a game is only half of it. The other half is that the signature
+  // is the shortest path from "that boss is unfair" to saying so.
+  console.log('\nthe badge, from inside a game');
+  {
+    const p = await newPage();
+    await p.goto(`${base}/hyperdagger/index.html`, { waitUntil: 'domcontentloaded' });
+    await p.waitForTimeout(1200);
+    await Promise.all([
+      p.waitForNavigation({ waitUntil: 'domcontentloaded' }).catch(() => {}),
+      p.click('.toko-signature'),
+    ]);
+    ok('clicking it leaves the game for the counter', /\/#toko$/.test(p.url()), p.url());
+    await p.close();
+
+    // and under a thumb it is a picture again, because bottom-left is where
+    // that game puts the left stick
+    const t = await browser.newPage({
+      viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true,
+    });
+    await t.goto(`${base}/hyperdagger/index.html`, { waitUntil: 'domcontentloaded' });
+    await t.waitForTimeout(1200);
+    const inert = await t.evaluate(() => {
+      const el = document.querySelector('.toko-signature');
+      return el && { tag: el.tagName, pe: getComputedStyle(el).pointerEvents,
+        coarse: !matchMedia('(pointer: fine)').matches };
+    });
+    ok('the phone really is a coarse pointer', inert && inert.coarse, JSON.stringify(inert));
+    ok('under a thumb the badge takes no input',
+      inert && inert.tag === 'DIV' && inert.pe === 'none', JSON.stringify(inert));
+    await t.close();
+  }
+
+  // ── he knows which cabinet you just left ───────────────────────────────
+  // Walked in from a game, not typed in: the referrer names it, and the note
+  // that follows files under that game rather than under "the counter".
+  console.log('\narriving from a cabinet');
+  {
+    const p = await newPage();
+    await p.goto(`${base}/hyperdagger/index.html`, { waitUntil: 'domcontentloaded' });
+    await p.waitForTimeout(900);
+    await p.evaluate(() => {
+      const a = document.createElement('a');
+      a.id = 'to-counter';
+      a.href = '/toko/_fromtest.html';
+      a.textContent = 'counter';
+      a.style.cssText = 'position:fixed;top:0;right:0;z-index:99999;color:#fff';
+      document.body.append(a);
+    });
+    await Promise.all([
+      p.waitForNavigation({ waitUntil: 'networkidle' }),
+      p.click('#to-counter'),
+    ]);
+    await p.waitForSelector('.toko-chat .tc-bar');
+    ok('the counter names the cabinet you just left',
+      /HYPER DAGGER/.test(await p.textContent('.toko-chat .tc-say')),
+      await p.textContent('.toko-chat .tc-say'));
+    ok('and says so when asked',
+      await p.evaluate(() => globalThis.__hub.chat.from()) === 'hyperdagger');
+
+    await p.click('.toko-chat .tc-bar');
+    await p.waitForTimeout(150);
+    await p.evaluate(() => document.querySelector('.toko-chat .tc-log').click());
+    await p.waitForTimeout(150);
+    const said = await p.textContent('.toko-chat .tc-log');
+    ok('he opens on that game instead of a generic hello',
+      /HYPER DAGGER/.test(said), said.trim().split('\n')[0]);
+    ok('and offers to take a note about it', !!(await p.$('.toko-chat .tc-tell')));
+
+    await p.click('.toko-chat .tc-tell');
+    await p.fill('.toko-chat .tc-note textarea', 'the leviathan pull is unfair');
+    await p.click('.toko-chat .tc-note button');
+    await p.waitForTimeout(200);
+    const sent = await p.evaluate(() => globalThis.__sent);
+    ok('the note files under that cabinet', sent && sent.game === 'hyperdagger',
+      JSON.stringify(sent));
+    // the page started life inside hyperdagger, whose three.js comes off a
+    // CDN this sandbox cannot reach — only errors naming our own files count
+    const mine = p.__errs.filter(e => /toko\//.test(e));
+    ok('nothing of ours errored on the way in', mine.length === 0, mine.join(' | '));
+    await p.close();
+
+    // Typed the address in, or came off a bookmark: no referrer, ordinary
+    // greeting. It is a nicety, never a mechanism.
+    const d = await newPage();
+    await d.goto(`${base}/toko/_fromtest.html`, { waitUntil: 'networkidle' });
+    ok('a cold arrival gets the ordinary cue',
+      !/HYPER DAGGER/.test(await d.textContent('.toko-chat .tc-say')));
+    ok('and names no cabinet', await d.evaluate(() => globalThis.__hub.chat.from()) === null);
+    await d.close();
+  }
+
   // ── the sting ──────────────────────────────────────────────────────────
   console.log('\nthe sting');
   await page.click('#b-sting');
@@ -1058,7 +1168,8 @@ function serve() {
       for (let i = 3; i < d.length; i += 4) if (d[i] > 0) inked++;
       return {
         w: r.width, h: r.height, z: cs.zIndex, pe: cs.pointerEvents,
-        art: cv.width + 'x' + cv.height, inked,
+        art: cv.width + 'x' + cv.height, inked, tag: el.tagName,
+        href: el.getAttribute('href'),
         offscreen: r.left < 0 || r.top < 0 || r.right > innerWidth || r.bottom > innerHeight,
       };
     });
@@ -1067,8 +1178,12 @@ function serve() {
       ok('the badge has ink', sig.inked > 100, String(sig.inked));
       ok('it is at least 44px', Math.min(sig.w, sig.h) >= 44, `${sig.w}×${sig.h}`);
       ok('it sits under the HUD', sig.z === '4', sig.z);
-      ok('it takes no input', sig.pe === 'none', sig.pe);
       ok('it is on screen', !sig.offscreen);
+      // With a cursor it is the way to the counter — the whole point of
+      // signing a game is that you can say something about it from inside it.
+      ok('with a cursor it is a link to the counter',
+        sig.tag === 'A' && /\/#toko$/.test(sig.href || ''), sig.tag + ' ' + sig.href);
+      ok('and it takes input', sig.pe === 'auto', sig.pe);
     }
     const mine = p.__errs.filter(e => /toko\//.test(e));
     ok('no errors from toko/', mine.length === 0, mine.join(' | '));

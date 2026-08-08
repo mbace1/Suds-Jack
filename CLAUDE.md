@@ -160,7 +160,7 @@ the Formspree endpoint `toko-drop` already uses. Every note lands in `localStora
 undeliverable ones queue in an outbox drained one at a time on the next visit; Send with
 nothing said records nothing. `window.__hub` exposes `{games, sketches, feedback, debug}`
 (`feedback.setEndpoint(url, blind)` points it at a stub for tests).
-`node test/hub-smoke.cjs` = 141 checks: a cabinet per catalogue entry, every in-repo link
+`node test/hub-smoke.cjs` = 166 checks: a cabinet per catalogue entry, every in-repo link
 resolving 200, every marquee actually painted, the full feedback path (empty / sent /
 queued / drained), modal behaviour (Esc, backdrop, focus returned), WCAG AA, 44px targets,
 no horizontal overflow on a phone.
@@ -174,19 +174,86 @@ root's orphaned `game.js`/`style.css`/`levels.json` were removed. `paperboy/` an
 `goo-*.html` sketches had to be carried onto `gh-pages` with the hub — the site had never
 held them, and four of the hub's links pointed at them.
 
-### Suds Jack
-Concept: "Bomb Jack x Suds 51 x Tempest 2000" — floating bomb-collection gameplay, soap/bubble
-aesthetic, Tempest 2000 psychedelic tube-shooter energy.
-**Two things share the name.** The playable one is the **original canvas vector build**, live
-at `sudz/` on `gh-pages` (a tube shooter: ← → move, Space fire, Z superzapper; it has the
-mobile touch controls the old site-root copy never got). The one being **started next** is a
-rebuild that takes **`hyperdagger/` as its baseline** rather than starting from an empty
-scene — so it inherits that project's whole spine: Three.js r167 with no build step (jsDelivr
-importmap), the string-art **voxel pipeline** in `voxel.js` (`VoxelSprite` instanced meshes,
-`DebrisPool` physical gibs), the ACES + `EffectComposer` render stack, the telegraphed spawn
-director, the three-way input path (pointer-lock / gamepad / dual touch sticks), and the
-all-synth `audio.js`. Read `hyperdagger/`'s architecture notes below before starting: what
-changes is the game, not the engine underneath it.
+### Suds Jack (`sudsjack/`) — the rebuild
+Concept: "Bomb Jack x Suds 51 x Tempest 2000", taken **literally and in that order** —
+Bomb Jack is the *game* (collect, in the right order, **no weapon**), Tempest is the
+*shape* (a tube you ride the rim of), the suds are what it is made of.
+**Two things share the name.** The playable one is still the **original canvas vector
+build**, live at `sudz/` on `gh-pages` (a tube *shooter*: ← → move, Space fire, Z
+superzapper). The arcade's `sudsjack` cabinet points there and **stays pointed there**
+until the rebuild is better than it. The rebuild is `sudsjack/`, deployed unlisted.
+It is a **half tunnel** — a channel open along the top, walls sweeping up both sides, Jack
+lying on the floor of it (owner's direction, and it is a design change, not a view: **a
+closed ring has no ends**, so you can always keep running, while a channel has two lips and
+the lane at each one is somewhere you can be **cornered**. Lanes clamp instead of wrapping
+and grime has no short way round).
+**Every position in the game is `(lane, depth)`** — `tube.js` owns the only conversion to
+world space, which is what lets the channel change shape per level (pipe / trough / gutters /
+wave / drain / vee) with no game logic knowing: a bubble rises the same way up a vee as up a
+pipe. **`gutters`** (level 3) is five identical half-pipes in a row with a **ridge** between
+each, and it is the one shape that brings a verb with it: a ridge is the only thing that
+stops you *riding* somewhere, so you **jump** it (`↑`/`W`, pad X, flick up). A jump commits
+your lane the way a dive commits your depth, and **grime passes under you while you are off
+the floor** — which is what stops the verb being dead weight on the five levels with no
+ridges. Grime cannot cross a ridge or jump either, so each bay keeps its own problem and the
+level is a route rather than a hiding place. That shape gets its own **camera seat** (`SEATS`
+in `main.js`), further back, because a level about choosing a bay fails if you cannot see the
+bays. **The dive is the game**: standing at the mouth and taking what arrives is safe and
+slow, meeting a bubble halfway down pays up to 3× and **locks your lane until you are
+back** (Flash Prince's commitment rule, on a 0.62s clock). **One bubble is lit at a time** —
+taking it raises the chain, letting it past resets it, and the *deepest* remaining bubble
+lights next so the chain stays reachable rather than becoming a coin flip. **Grime steps
+toward you** as it rises (Tempest's flipper minus the gun) — a hazard that came straight up
+its own lane could be dodged by standing still in the right place, which is a waiting room,
+not a game. Bubbles are cold, round and bloom; grime is warm, angular and never does.
+Inherited from `hyperdagger/`: no build step, ACES + `EffectComposer`, a director that
+spawns **away** from where you stand, and `window.__sj` for the smoke test to drive. **Not**
+inherited: the first-person controller and the flat arena — a tube is not an arena. three.js
+comes from a **local `vendor/` copy**, not the CDN (hyperdagger on `gh-pages` already went
+that way for its offline worker).
+Traps, all the same lesson — *depth is easy to throw away*: the **cross-section was shrunk
+with depth as well as by the camera**, which is right for Tempest (2D vector, no camera) and
+wrong here — the floor climbed away and the channel read as a flat paper fan, and risers had
+the same double-shrink; the camera was outside looking in, when only from **inside** the
+channel (above the floor, below the lips) is it somewhere you are lying; and the afterimage
+at **0.82** ghosted the rails into a starburst (0.5). One more that was a control bug, not a
+look: **three of the five channel shapes ran right-to-left**, so on those levels pressing
+right moved you left and the claw drew upside down — the gate now asserts every shape's
+direction and floor angle. The ridges added three more of the same family: a **wall you
+could walk through** (the bay was read *after* the step, so the clamp asked the bay you had
+already reached whether you were allowed there), a jump lifted **along the floor's normal**
+(which swings 90° crossing a ridge and threw Jack out of the channel), and **outer bays that
+were not bays** (end ramps to lip height ate half of the first and last).
+One more of the same family, on the way in rather than the look: **the pad was polled
+inside the play branch**, below the `mode !== 'play'` early return, so a controller could
+ride the rim but could not reach it — the menu and the recap take a pointer or Enter and
+nothing else. Polled in every mode now, A or Start is a way in, and because A is *also*
+dive the same press had to be drained at both edges of a run (`clearPending()`) or it
+started you mid-dive and restarted you off the recap.
+**The float** (owner's direction): jump pressed again in its falling half chains one more
+bay on a hop that GLIDES (`1 − k²` from wherever the arc was — it never rises, because a
+float that climbs reads as a double jump), each press starting lower until grime stops
+fitting underneath; three floats is lip to lip from a lip bay, deliberately. Found under
+it: **the declared peaks were not the drawn ridges** — main.js still passed the 13 lanes
+that predate the ridged channel while the peaks are declared for the tube's own default
+of 20, so the walls sat beside the ridges, one peak was past the lip, and the fifth bay
+was a sliver. The gate now asks the geometry, not the declaration, and every
+lane-denominated tuning carries a ×20/13 rescale to keep world-space feel.
+**The Scum Line** (v6): grime past the mouth **settles** instead of dying — a film on its
+lane, three layers deep, because dodging used to be free and nothing accumulated, so a
+patient run idled forever. Scum is **sticky** (rim ×0.4 underfoot; airborne exempt, which
+makes the float the way across a fouled stretch on every shape), **barren** (the director
+skips fouled lanes, so neglect starves the chain rather than blocking you) and past **80%
+coverage the channel floods** — a life, the chain, a clean rim. The **dive is the only
+scrub** (one layer per completed dive, 50 × level; a dive cancelled by a hit scrubs
+nothing) — which is what finally makes the stated core verb load-bearing: it advertised
+3× but capped at 2.1× against a ×16 chain that never needed it. Level clear washes the
+channel and pays 40 × level × clean lanes — the chain's missing cash-out beat. The scum
+line itself is a 20-cell strip under the channel: route map and flood meter, one fact.
+`node sudsjack/test/smoke.cjs` = 60 checks: boot, the director, the
+lane-lock during a dive, collection, the chain, damage, mercy frames, the level shapes,
+game over, the way home and the signature — all driven off **game state, not the wall
+clock**, because a sandbox with no GPU renders this at a handful of frames a second.
 Build tooling: none — same no-build rule as every other demo here.
 
 ### Paper Route — Dawn Run (`paperboy/`)
@@ -548,10 +615,18 @@ mark reads clean). But the *resting* animation of a Toko mark is a **blink** —
 eyes squashing shut for a beat every few seconds (`pulse()` in `util.js`);
 `sign()` takes `glitch: true` and does not assume it.
 `signature.js` is the one-line drop-in (`sign()`): badge in a corner, `z-index
-4` so it sits **under** the HUD, `pointer-events: none` unless given an `href`,
-safe-area insets, one still frame under `prefers-reduced-motion`. Signed on
-`main`: `toko-drop/`, `paperboy/` (black-on-white there — magenta fights the
-sunny-day palette), `dropcabal/`, `hyperdagger/`. **`gameoflife/` is
+4` so it sits **under** the HUD, safe-area insets, one still frame under
+`prefers-reduced-motion`. **`counter: true`** — what every signed game passes —
+points it at `../#toko`, so the signature is the way to say something about the
+game you are standing in, from inside it. Two rules there that look like
+fussiness and are not: it is **a link only where there is a cursor**
+(`(pointer: fine)`), because bottom-left is where half these games put the left
+stick and a 44px anchor would eat the touch that starts a run — touch already
+has `hub/shell.js`'s HOME button in the opposite corner; and it navigates on
+**`pointerup` and `touchend`, never `click`**, the same trap shell.js paid for.
+Signed on `main` AND on `gh-pages`: `toko-drop/`, `paperboy/` (black-on-white
+there — magenta fights the sunny-day palette), `dropcabal/`, `hyperdagger/`,
+`flashprince/`. **`gameoflife/` is
 deliberately unsigned** — the room where Toko takes the mask off (a magenta
 badge would undo a zen app built to send you outdoors), and its service worker
 precaches a list scoped to `/gameoflife/` with `test/offline.cjs` asserting
@@ -609,18 +684,35 @@ overflows the clipped cap and hides the bottom of the menu on a phone; **no
 back-ticks in the CSS template literal**; and `glitch.js` works through
 `getImageData`, so a DPR `Surface` must pass **device** pixels plus a
 `scale` (its displacements are tuned for a 44px mark).
+**He knows which cabinet you just left.** The badge links here, so the referrer
+usually names the game: the closed bar asks *how was hyper dagger?* before you
+open him, he opens on that cabinet instead of a generic hello, and the note that
+follows files under it. It reads **`document.baseURI`**, not `location`, because
+`/AnotherHUB/` is the same page one level down behind a `<base href="../">`. No
+referrer (bookmark, typed address, `file://`) is just the ordinary greeting — a
+nicety, never a mechanism. The counter also **states its version** (`V5` in the
+footer) from `VERSION` in `dialogue.js` rather than a fetch, so it is right
+offline; `toko/VERSIONS.md` is the log, `scripts/versions.mjs` reads it into
+`hub/versions.json` via a short `EXTRA` list (the brand is not a cabinet), and
+the gate fails if code and log disagree.
 `sting.js` is a ~3s sting where the face **draws itself** (arcs revealed by
 dash-offset so they grow along their own path: mouth sweeps open → eyes drop in
-→ blink → logotype lands), skippable on any input from frame one. `masthead.js`
+→ blink → logotype lands), skippable on any input from frame one. The arcade
+plays it **once per browser on the first Play** (`playStingOnce`, key
+`tokoSting`), not merely on arrival: the mark belongs in front of a game, not
+its menu. It is imported dynamically and swallowed on failure, so a nicety can
+never be the reason a game does not open. `masthead.js`
 is the animated lockup for the arcade hub — `stop()` it wherever the page
 re-renders or the loop leaks against a detached canvas. `surface.js` is the
 DPR-aware smooth canvas (the mark is curves, so antialiasing stays ON).
 `toko/index.html` is the **brand board**, built out of the shipping modules.
-`toko/test/brand.cjs` is the gate (Playwright, 150 checks): geometry invariants
+`toko/test/brand.cjs` is the gate (Playwright, 184 checks): geometry invariants
 (slot width, stem/crown merge, mouth-clears-eyes, symmetry), **every rendered
 pixel checked against the two-colour system**, SVG well-formedness + that it
 emits exactly the canvas's arcs at the shipping stroke weight, the sting
-mounting/skipping, and each signed game's badge.
+mounting/skipping, each signed game's badge (a link with a cursor, inert under a
+thumb), and a real walk **out of a cabinet and into the counter** — two fixtures,
+`toko/_tokentest.html` and `toko/_fromtest.html`, exist for that.
 Two honest caveats recorded in `BRAND.md`: the face geometry is **measured off
 the master artwork**, not lifted from the original vector file (replace `GEO` if
 that file surfaces), and the logotype face is substituted.
@@ -630,35 +722,86 @@ module import that must sit **after `hub/hub.js`** — hub.js assigns
 `window.__hub` wholesale, so a handle hung on before it is thrown away
 (`window.__hub.chat`); the chat picks up hub.css's `--panel`/`--line`
 so it sits inside the terminal's own chrome while keeping magenta for Toko. The
-gh-pages copy omits `test/` (that branch ships docs but no test dirs). The game
-**signatures are NOT on gh-pages yet** — `toko-drop/` and `hyperdagger/` there
-carry offline service workers with exact precache lists, so signing them means
-adding `../toko/js/*` to those lists in the same change, or their offline boot
-silently starts hitting the network.
+gh-pages copy omits `test/` (that branch ships docs but no test dirs). The games
+**are signed on gh-pages** now, and `toko-drop/` and `hyperdagger/` there carry
+offline service workers whose precache lists name `../toko/js/signature.js?v=N`
+plus its five deps — so **changing `signature.js` means bumping that token and
+the list entry in the same change**, or those two games serve the old badge out
+of cache forever while every other cabinet gets the new one.
 
-### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
-Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
+### Toko Drop (`toko-drop/`)
 
-**Pillars:** twin-stick controls, bullet-hell enemy patterns with deliberately slow enemy movement, roguelite run-based progression, gun upgrade trees, gelatin/clay visuals (translucent wobbling materials, destructible chunks, colorful puddle decals).
+Browser twin-stick swarm-survival game built with Three.js and ES modules, with
+no build step. The current live implementation is the canonical gameplay
+reference; the old UE5 notes no longer describe this repository.
 
-**Current UE5.4 state:**
-- Player pawn: `BP_GelPlayer` (Character-based, static mesh + `M_Gelatin` material, set as Default Pawn in `BP_TopDownGameMode`)
-- Weapon: `BP_Weapon` (Actor-based, basic firing logic, spawned at a character weapon point)
-- Enemy: Blueprint class with basic "move toward player" AI
-- Mostly Blueprint-driven; open to C++ for performance-sensitive paths (bullet counts in bullet-hell can get heavy)
+- **`js/tuning.js` is the single source of truth for enemy look and feel.**
+  Constants covered by `TUNING` must be read from it rather than duplicated in
+  `enemy.js` or `main.js`.
+- `enemy-lab.html` is the standalone visual reference. When a written brief and
+  the lab disagree, the lab wins.
+- `js/enemy.js` owns enemy types, behaviours, goo shaders and gel geometry.
+- `js/main.js` owns orchestration: the game loop, waves, collisions, HUD and
+  title/pause/death screens.
+- `js/bullet.js`, `js/player.js`, `js/input.js`, `js/audio.js`, `js/lang.js`,
+  `js/designer.js` and `js/retro.js` hold the major supporting systems.
+- `TOKO_DROP_ROADMAP.md` is forward planning, `GDD.md` contains design truths,
+  and `VERSIONS.md` records shipped changes.
 
-**Systems still to build:**
-1. Weapon system + upgrade trees
-2. Enemy bullet-hell patterns (spiral, spread, ring, etc.)
-3. Arena + procedural/roguelite run generation
-4. Roguelite meta-progression (unlocks, between-run upgrades)
-5. Gelatin VFX: vertex displacement wobble, destructible chunks, puddle decals (Niagara + material functions)
-6. HUD: health, score, run state
+**Release and visual-validation discipline:**
+
+- Run `scripts/smoke.sh` for the main game gate. If a change affects modes or
+  `inCabinet()`, also run `scripts/cabinets.sh`; it boots and plays all six
+  cabinets and checks for mode leaks, retro-pass failures and page errors.
+- `scripts/enemy-loop.mjs` records short looping GIFs from the real game code.
+  Use it for movement and readability questions instead of hand-building a
+  separate capture harness. Scenarios live in the script's `SCENARIOS` map.
+  Stage captures in a throwaway copy of `toko-drop/`; test-only harness code
+  must never reach the shipped tree. Do not use Playwright's `networkidle`
+  wait because the service worker keeps the network active. SwiftShader takes
+  roughly 1.5 seconds per screenshot, so run longer loops in the background.
+  Keep capture-only dependencies such as `gifenc` and `pngjs` in scratch and
+  expose them with `NODE_PATH` rather than vendoring them into the game.
+- Every Toko Drop game change needs a new top entry in `VERSIONS.md` and matching
+  cache tokens. `scripts/bump-version.sh <N>` performs the coordinated bump.
+- Install the version guard with
+  `cp scripts/pre-commit .git/hooks/pre-commit`. Never skip hooks with
+  `--no-verify`, and never force-push a default or production branch.
+- The live site remains on `gh-pages` until the source-of-truth migration is
+  completed. Reconciliation branches must not deploy or force-push production.
+- New resource paths need versioned URLs from their first release because the
+  Pages CDN may temporarily cache a pre-deployment 404.
+
+**Current production workflow (until the migration is complete):**
+
+- Toko Drop changes go through a pull request and squash merge into
+  `gh-pages`. After the merge, `scripts/release.sh` force-resyncs the working
+  branch to `origin/gh-pages`; it discards unmerged commits on that working
+  branch, so preserve or merge them before running it.
+- Other games may be pushed directly to `gh-pages` only when the commit is
+  limited to that game's directory. Concurrent agents must resync after those
+  pushes and account for superseded deployment runs.
+- After every production push, verify that the **pages build and deployment**
+  Actions run—not merely the commit status—concludes `success`. A failed or
+  superseded deployment can otherwise look exactly like a broken site.
 
 ## Repository Structure
 
 ```
-suds-jack/      # (not yet scaffolded — the game itself lives at sudz/ on gh-pages)
+sudsjack/       # Suds Jack — the rebuild: Bomb Jack's collection on Tempest's tube
+  index.html    #   (the playable original is still sudz/ on gh-pages)
+  VERSIONS.md
+  vendor/       # three.js r167, local — not the CDN
+  js/
+    tube.js     # the channel: (lane, depth) → world, and the five shapes
+    player.js   # the claw on the floor; the dive, and the lane-lock that pays for it
+    things.js   # risers: bubbles (one lit) and grime (steps toward you); pops
+    main.js     # scene, render stack, director, scoring, levels, HUD, states
+    input.js    # keys / pad / drag-the-rim touch, all feeding three getters
+    audio.js    # synth kit: pop, lit, miss, dive, hit, level, and a two-note bed
+    palette.js  # soap: everything you want is cold and blooms, everything else is warm
+  test/
+    smoke.cjs   # 25 checks, driven off game state rather than the clock
 index.html      # the arcade: every game on one page, Play + Feedback each
 hub/
   games.js      # the catalogue — one entry per playable thing (path, accent, art, inRepo)
@@ -682,7 +825,7 @@ toko/           # Toko Midori Games — the brand (face, lockups, sting, signatu
     sting.js    # the ~3s sting, the face drawing itself (skippable frame one)
     chat.js     # the counter — Sierra-style conversation panel for the hub
     dialogue.js # what Toko says: the hand-written topic tree
-    signature.js# sign() — the drop-in corner badge a game imports
+    signature.js# sign() — the corner badge; counter:true links it to #toko
     masthead.js # the animated lockup for the arcade hub
     board.js    # wires toko/index.html out of the shipping modules
   test/

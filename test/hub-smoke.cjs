@@ -78,7 +78,16 @@ function check(name, cond) {
   await new Promise(r => server.listen(0, r));
   const base = `http://localhost:${server.address().port}`;
   const browser = await chromium.launch();
+
+  // The sting plays ONCE PER BROWSER when the first game is launched, and it
+  // is a full-screen takeover for three seconds. Mark it as already seen in
+  // general-purpose contexts and test the real first-Play path at the end.
+  const seenSting = ctx => ctx.addInitScript(() => {
+    try { localStorage.setItem('tokoSting', '1'); } catch { /* private mode */ }
+  });
+
   const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
+  await seenSting(page.context());
 
   // Two kinds of noise are not defects. The 500 from /collect-broken is this
   // test's own stub failing on purpose. And once this suite started opening
@@ -104,6 +113,7 @@ function check(name, cond) {
   // the page renders the live floor first, then the archive — so that, not the
   // catalogue order, is the order the cabinets appear in
   const games = [...active, ...archived];
+  const visible = catalogue.filter(g => !g.secret);
   check('the catalogue is not empty', games.length >= 8);
   check('every entry declares a status',
     catalogue.every(g => ['active', 'archived'].includes(g.status)));
@@ -183,8 +193,7 @@ function check(name, cond) {
   }
 
   // and the ones this branch carries actually resolve — a hub whose buttons
-  // 404 is worse than no hub. (Entries with inRepo:false live only on the
-  // deployed site root; see README.)
+  // 404 is worse than no hub.
   const local = [...games, ...sketches].filter(g => g.inRepo && g.live !== false);
   const dead = [];
   for (const g of local) {
@@ -192,8 +201,11 @@ function check(name, cond) {
     if (!r.ok()) dead.push(`${g.id} ${r.status()}`);
   }
   check(`every link this branch can see resolves${dead.length ? ` — ${dead}` : ''}`, dead.length === 0);
-  check('the games only on the deployed site are marked as such',
-    games.filter(g => !g.inRepo).every(g => !fs.existsSync(path.join(ROOT, g.path))));
+  // A complete source checkout now contains the deployed catalogue. Keep the
+  // assertion explicit so a future import cannot accidentally reintroduce
+  // production-only links into main.
+  const away = games.filter(g => !g.inRepo);
+  check('the complete source tree carries every visible cabinet', away.length === 0);
 
   // a marquee that draws nothing is a black rectangle nobody notices
   const blank = await page.evaluate(() => {
@@ -299,6 +311,11 @@ function check(name, cond) {
   check(`the offline shell names every module the page asks for (${needed.size})${absent.length ? ` — missing ${absent}` : ''}`,
     absent.length === 0);
 
+  // The live floor deliberately removed search/tag chrome and the randomizer;
+  // their stale tests previously timed out after the production baseline was
+  // brought back into source.
+  check('the retired find-a-game controls stay off the floor',
+    await page.locator('#find-box, .tag-btn, #surprise').count() === 0);
   setHashless: { await page.goto(`${base}/index.html`, { waitUntil: 'networkidle' }); }
 
   // ── one cabinet, by name ──
@@ -566,7 +583,12 @@ function check(name, cond) {
     const dim = [], small = [];
     for (const el of document.querySelectorAll('body *')) {
       const cs = getComputedStyle(el);
-      if (cs.display === 'none' || el.classList.contains('sr-only')) continue;
+      // visibility is inherited, so this skips whole hidden subtrees — a thing
+      // nobody can see is neither unreadable nor a small tap target. It also
+      // stops a collapsed panel reporting its controls at their SCALED size:
+      // the counter shuts with a scaleY(.86), and 44px measured 38.
+      if (cs.display === 'none' || cs.visibility === 'hidden'
+        || el.classList.contains('sr-only')) continue;
       if ([...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) {
         const size = parseFloat(cs.fontSize);
         const large = size >= 24 || (size >= 18.66 && parseInt(cs.fontWeight, 10) >= 700);
@@ -652,8 +674,17 @@ function check(name, cond) {
 
   // ── the version each project is on ──
   const versions = JSON.parse(fs.readFileSync(path.join(ROOT, 'hub', 'versions.json'), 'utf8'));
-  check('versions.json covers the projects this branch carries',
-    games.filter(g => g.inRepo).every(g => versions[g.id]));
+  const unversioned = games.filter(g => g.inRepo && !versions[g.id]);
+  const honestlyUnversioned = unversioned.every(g => {
+    const dir = path.join(ROOT, g.path);
+    const log = path.join(dir, 'VERSIONS.md');
+    const html = path.join(dir, 'index.html');
+    if (fs.existsSync(log)) return false;
+    const src = fs.existsSync(html) ? fs.readFileSync(html, 'utf8') : '';
+    return !/src="(?!\.\.\/)[^"]*?\?v=\d+"/.test(src);
+  });
+  check(`unversioned cabinets are missing both a log and their own token (${unversioned.map(g => g.id)})`,
+    honestlyUnversioned);
   check('every version came from a log or a real cache token',
     Object.values(versions).every(v => Number.isInteger(v.v) && v.v > 0
       && ['VERSIONS.md', 'cache token'].includes(v.from)));
@@ -664,8 +695,13 @@ function check(name, cond) {
     () => [...document.querySelectorAll('.ver')].some(n => n.textContent), null, { timeout: 5000 });
   const shown = await page.locator('.cab .ver').evaluateAll(ns =>
     ns.map(n => [n.dataset.game, n.textContent]).filter(([, t]) => t));
+  // versions.json is not a list of cabinets: scripts/versions.mjs also numbers
+  // projects that ship like one and are not on the floor (toko/ — the mark,
+  // the sting, the badge and the counter). Count the entries that ARE
+  // cabinets, or adding one silently fails a check about the rack.
+  const numbered = Object.keys(versions).filter(id => games.some(g => g.id === id));
   check(`the cabinets show a version (${shown.length} of ${games.length})`,
-    shown.length === Object.keys(versions).length);
+    shown.length === numbered.length);
   check('and it is the number the generator found',
     shown.every(([id, text]) => text === `v${versions[id].v}`));
   check('a project with a VERSIONS.md reports its release number, not its token',
@@ -683,6 +719,7 @@ function check(name, cond) {
   // evaluate-then-reload would be clobbered by the code under test.
   const older = { tokodrop: 1, hyperdagger: 1, gameoflife: 1 };
   const back = await browser.newContext({ viewport: { width: 1100, height: 900 } });
+  await seenSting(back);
   await back.addInitScript(seed => {
     try { localStorage.setItem('sudsJackHubSeen', seed); } catch { /* private mode */ }
   }, JSON.stringify(older));
@@ -876,9 +913,14 @@ function check(name, cond) {
     navigator.getGamepads = () => [window.__pad];
     window.__pad.buttons[9].pressed = true;
   });
-  await page.waitForTimeout(220);
-  const filled = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.arcade-home .fill')).width));
-  check('holding Start starts filling the home button', filled > 0);
+  // Wait for the fill, do not sleep past it. A fixed 220ms raced the first
+  // gamepad poll on a heavy page (three.js still settling) and reported 0 —
+  // the assertion is that holding Start fills the button, not that it fills
+  // inside a quarter of a second.
+  const filled = await page.waitForFunction(
+    () => parseFloat(getComputedStyle(document.querySelector('.arcade-home .fill')).width) > 0,
+    null, { timeout: 3000 }).then(() => true).catch(() => false);
+  check('holding Start starts filling the home button', filled);
   await page.waitForFunction(() => location.pathname === '/' || location.pathname.endsWith('/index.html'), null, { timeout: 4000 });
   check('and holding it long enough goes back to the arcade', true);
 
@@ -899,15 +941,24 @@ function check(name, cond) {
       await page.evaluate(() => window.__arcadeShell.bridged) === null);
   }
 
-  // the key bridge actually produces the key the game listens for
-  const cabal = catalogue.find(g => g.id === 'dropcabal');
-  await page.goto(`${base}/${cabal.path}`, { waitUntil: 'domcontentloaded' });
-  await page.evaluate(() => {
+  // The key bridge actually produces the key a game listens for.
+  //
+  // Every keys-bridged cabinet now lives on the deployed site rather than in
+  // this repo (Drop Cabal used to be the one here, until it grew its own pad
+  // reader — a crosshair needs an axis, so a keystroke could never carry it).
+  // So drive `attachPad` directly with a stub binding, hosted on a page that
+  // bridges nothing itself: whatever keys turn up are the bridge's own work,
+  // with no second one to confuse them for.
+  const host = catalogue.find(g => g.pad === 'native' && g.inRepo);
+  await page.goto(`${base}/${host.path}`, { waitUntil: 'domcontentloaded' });
+  await page.evaluate(async () => {
     window.__seen = [];
     addEventListener('keydown', e => window.__seen.push('down:' + e.code), true);
     addEventListener('keyup', e => window.__seen.push('up:' + e.code), true);
     window.__pad = { buttons: Array.from({ length: 16 }, () => ({ pressed: false, value: 0 })), axes: [0, 0, 0, 0], connected: true };
     navigator.getGamepads = () => [window.__pad];
+    const { attachPad } = await import(new URL('../hub/padkeys.js?v=7', location.href).href);
+    attachPad({ keys: { left: 'KeyA', right: 'KeyD', b0: 'Space' } });
   });
   await page.evaluate(async () => {
     window.__pad.axes = [1, 0, 0, 0];                      // stick right
