@@ -42,6 +42,13 @@ for band in idx:
         # raises the sword — the blade stretches the frame, the head drops to a
         # third of the way down, and hair gets read as belt. So the red is split
         # into runs of rows instead, and the SECOND run is the waist.
+        # Measure against the BODY, not the frame. The frame stretches with the
+        # blade — raise the sword and it grows fifteen pixels of empty air at
+        # the top — so any fraction taken off the frame puts the waist in his
+        # chest and paints his jacket brown.
+        ys_b, _ = wm.nonzero()
+        b_top, b_bot = int(ys_b.min()), int(ys_b.max())
+        b_h = max(1, b_bot - b_top)
         ry, rx = rm.nonzero()
         waist = None
         if len(ry):
@@ -51,11 +58,15 @@ for band in idx:
                 if v - cur[-1] <= 2: cur.append(v)
                 else: runs.append(cur); cur = [v]
             runs.append(cur)
-            if len(runs) > 1: waist = runs[1][0]
+            # a belt is a run of red in the MIDDLE of him: below the head and
+            # above the knees. A second run of hair does not qualify.
+            for run in runs[1:]:
+                f = (run[0] - b_top) / b_h
+                if 0.35 < f < 0.70:
+                    waist = run[0]
+                    break
         if waist is None:
-            # no belt showing: put it under the head, five eighths down the body
-            ys_b, _ = wm.nonzero()
-            waist = int(ys_b.min() + (ys_b.max() - ys_b.min()) * 0.55)
+            waist = int(b_top + b_h * 0.55)
         out[y0:y0 + h, x0:x0 + w][rm & (np.arange(h)[:, None] < waist)] = J_HAIR
         out[y0:y0 + h, x0:x0 + w][rm & (np.arange(h)[:, None] >= waist)] = JACKET
 

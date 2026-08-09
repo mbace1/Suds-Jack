@@ -4,6 +4,25 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v31 — 2026-08-09
+
+**A real turn**, at last. Conrad's sheet has none — that was checked row by
+row — but the Prince's does: six frames whose chest goes eight pixels wide to
+eighteen and back, which is a man rotating through front-on and the only shape
+that is. It plays reversed with the facing flipped on frame one, so the mirror
+the engine already applies runs it the right way round.
+
+He changes build for those fourteen frames. The two sheets are two different
+men — 40px against 38, slimmer, a different jacket — and bracketed by Conrad's
+standing frames the swap is visible. The alternative is no turn at all, which
+is what v28 had.
+
+**The navy trousers are fixed.** The belt-finder was measuring against the
+FRAME, and a raised sword stretches the frame fifteen pixels of empty air at
+the top, which put the waist in his chest. It measures against the body now,
+and only accepts a red run between 35% and 70% down him — a second run of hair
+is not a belt.
+
 ## v30 — 2026-08-09
 
 **The sword.** Flashback has none in it, so these are the Prince of Persia

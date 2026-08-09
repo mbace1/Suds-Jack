@@ -31,6 +31,7 @@ const REEL = [
   ['stepB', 'WALK · second step'],
   ['run', 'RUN — twenty frames'],
   ['skid', 'PULLING UP'],
+  ['turn', 'TURNING ROUND'],
   ['drawGun', 'DRAWING THE PISTOL'],
   ['crouch', 'CROUCHING'],
   ['crouchLow', 'CROUCHED'],
