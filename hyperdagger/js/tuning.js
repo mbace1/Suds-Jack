@@ -30,8 +30,10 @@ export const TUNING = {
     daggerJumpV: 13,
     daggerJumpPush: 4.2,
     daggerJumpWindow: 0.48,
+    daggerSecondWindow: 1.4,
+    daggerSecondMaxVy: 3.4,
     daggerAimY: -0.38,
-    daggerJumps: 1,
+    daggerJumps: 2,
   },
 
   // look, all devices. Touch rates are the shipped feel and stay put by
@@ -85,13 +87,15 @@ export const TUNING = {
   // DD gunfeel (2026-07-31): TAP = shotgun burst, HOLD = stream, manually
   // aimed on desktop and pad; touch alone keeps auto-fire while moving.
   weapon: {
-    levelGems: [0, 0, 10, 30, 70],
+    // DD progression: LV2 at 10 collected, LV3 at 70, then bank 150
+    // homing daggers (220 total if none are spent) for the final hand.
+    levelGems: [0, 0, 10, 70, 220],
     tiers: [
       null,
       { stream: 20, homing: false },
-      { stream: 24, homing: false },
-      { stream: 36, homing: true },
-      { stream: 48, homing: true },
+      { stream: 40, homing: false },
+      { stream: 80, homing: false },
+      { stream: 106, homing: false },
     ],
     streamSpeed: 48,   // the sustained whip is slower and visibly trackable
     shotgunSpeed: 78,  // tap-burst daggers cross the arena much faster
@@ -105,16 +109,21 @@ export const TUNING = {
     // The burst wins the MOMENT, the stream wins the MINUTE (DD's economy):
     // count[lv]/cd must stay below tiers[lv].stream at every level, or
     // tap-spam becomes the optimal close-range play. The gate asserts it.
-    shotgunCount: [0, 10, 12, 18, 24], // daggers per tap-burst, by weapon level
+    shotgunCount: [0, 10, 20, 40, 60], // daggers per tap-burst, by weapon level
     shotgunSpread: 0.18, // rad — much wider cone than the stream
-    shotgunCd: 0.55,   // brisk recovery; burst DPS still stays below the stream
+    shotgunCd: 0.6,    // brisk recovery; burst DPS still stays below the stream
+    homingStream: 40,
+    homingShot: [0, 0, 0, 20, 30],
+    homingDamage: 10,
   },
 
   gems: {
     gravity: -22,
-    magnetR: 5.5,      // u — gems inside this fly to the player
+    magnetR: 55,       // u — the whole arena, but only while the hand is idle
     collectR: 0.95,
-    lifetime: 25,      // s before a gem expires (blinks its last 3)
+    lifetime: 10,      // DD's short collection window
+    blastR: 18,        // a shotgun pushes loose gems away from the hand
+    blastPush: 14,
   },
 
   // REAP — spend the bone-yard (R/E, ✕/LB)

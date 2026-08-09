@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TUNING as T } from './tuning.js?v=60';
+import { TUNING as T } from './tuning.js?v=61';
 
 // all feel numbers live in tuning.js; these aliases keep the code readable
 const EYE = T.player.eye;
@@ -36,6 +36,7 @@ export class Player {
     this.speed = T.player.speed;
     this.sens = 1; // look sensitivity multiplier (pause-menu option)
     this.aimAssist = 1; // <1 slows stick look near a target; main sets it per frame
+    this.dashEnabled = true;
     this.reset();
   }
 
@@ -179,13 +180,19 @@ export class Player {
     // buffered briefly so a dash pressed just before cooldown ends still fires.
     this.dashCd -= dt;
     const flick = this.input.consumeDashFlick();
-    if (this.input.consumeDash() || flick) {
+    const dashPressed = this.input.consumeDash();
+    if (this.dashEnabled && (dashPressed || flick)) {
       this.dashBuf = T.dash.buffer;
       this.dashBufFlick = flick || null;
     } else if (this.dashBuf > 0) {
       this.dashBuf -= dt;
     }
-    if (this.dashBuf > 0 && this.dashCd <= 0) {
+    if (!this.dashEnabled) {
+      this.dashBuf = 0;
+      this.dashBufFlick = null;
+      this.dashT = 0;
+    }
+    if (this.dashEnabled && this.dashBuf > 0 && this.dashCd <= 0) {
       const bufFlick = this.dashBufFlick;
       this.dashBuf = 0;
       this.dashBufFlick = null;
@@ -256,11 +263,16 @@ export class Player {
     this.camera.rotation.set(this.pitch, this.yaw, 0);
   }
 
-  /** A downward tap-burst just after takeoff converts the shotgun recoil into
-   *  a dagger jump. One charge per airtime keeps the move authored, not free. */
+  /** A downward tap-burst converts recoil into a dagger jump. The first must
+   *  happen just after takeoff; a second is accepted near the apex, matching
+   *  the target's authored double-dagger-jump instead of a free air jump. */
   daggerJump(dir) {
-    if (this.feet.y <= 0.01 || this.airTime > T.player.daggerJumpWindow ||
-        this.daggerJumpsLeft <= 0 || dir.y > T.player.daggerAimY) return false;
+    const used = T.player.daggerJumps - this.daggerJumpsLeft;
+    const inWindow = used === 0
+      ? this.airTime <= T.player.daggerJumpWindow
+      : this.airTime <= T.player.daggerSecondWindow && this.vy <= T.player.daggerSecondMaxVy;
+    if (this.feet.y <= 0.01 || !inWindow || this.daggerJumpsLeft <= 0 ||
+        dir.y > T.player.daggerAimY) return false;
     const aimRange = 1 - Math.abs(T.player.daggerAimY);
     const down = Math.max(0, Math.min(1,
       (-dir.y - Math.abs(T.player.daggerAimY)) / aimRange));
