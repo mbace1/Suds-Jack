@@ -182,20 +182,44 @@ export class Hero {
     this.state = state; this.f = f;
   }
 
-  // Which of Conrad's frames this state is showing, for the blitter. Null means
-  // there is no sheet animation mapped to it yet and the polygon figure draws.
+  // Which of Conrad's frames this state is showing.
+  //
+  // Every state reachable on the stage is on the sheet, so this never comes
+  // back empty and the drawn figure never gets a chance to appear. The rate is
+  // the move's own length divided by the animation's frame count, so a
+  // twenty-two frame step plays six frames of walk and lands on the last one
+  // exactly as the move ends — the sheet does not set the timing, the move
+  // does, because the move is what carries him the twelve pixels.
   sprite() {
     const s = this.state;
-    if (s === 'run') return { anim: 'run', f: this.f / 1.1 };
-    if (s === 'step') return { anim: this.stepPhase ? 'stepB' : 'step', f: this.f / (M.step.dur / 6) };
-    if (s === 'stand') return { anim: 'stand', f: this.f / 30 };
-    if (s === 'crouch') return { anim: 'crouch', f: this.f / (M.crouch.dur / 4) };
-    if (s === 'crouchIdle') return { anim: 'crouchLow', f: this.f / 40 };
-    if (s === 'standUp') return { anim: 'rise', f: this.f / (M.standUp.dur / 4) };
-    if (s === 'roll') return { anim: 'roll', f: this.f / (M.roll.dur / 22) };
-    if (s === 'wake') return { anim: 'wake', f: this.f / (M.wake.dur / 15) };
-    if (s === 'dead') return { anim: 'dead', f: this.f / 4 };
-    return null;
+    const m = M[s];
+    const over = (anim, n, f = this.f) => ({ anim, f: f / (m.dur / n) });
+    switch (s) {
+      case 'run': return { anim: 'run', f: this.f / 1.1 };
+      case 'step': return over(this.stepPhase ? 'stepB' : 'step', 6);
+      // the careful step is the same six frames given half again as long
+      case 'inch': return over(this.stepPhase ? 'stepB' : 'step', 6);
+      case 'stand': case 'peer': return { anim: 'stand', f: this.f / 30 };
+      case 'turn': return over('turn', 10);
+      case 'runTurn': return over('turn', 10);
+      case 'skid': case 'bump': return over('skid', 12);
+      case 'crouch': return over('crouch', 4);
+      case 'crouchIdle': return { anim: 'crouchLow', f: this.f / 40 };
+      case 'standUp': return over('rise', 4);
+      case 'roll': return over('roll', 22);
+      case 'wake': return over('wake', 15);
+      case 'dead': return { anim: 'dead', f: this.f / 4 };
+      case 'gather': return over('gather', 5);
+      case 'gatherRun': return over('gatherRun', 2);
+      // Airborne: the clip is open-ended, so the flight frames are paced off
+      // the frame counter and then held on the last one until he lands.
+      case 'air': return { anim: this.jumpDir ? 'airRun' : 'airUp', f: this.f / 3 };
+      case 'fall': return { anim: 'fall', f: this.f / 6 };
+      case 'land': return over('land', 4);
+      case 'landHard': return over('land', 4);
+      case 'hurt': return { anim: 'skid', f: 0 };
+      default: return { anim: 'stand', f: 0 };
+    }
   }
 
   // ── collision, in whole pixels because the world is a grid ─────────

@@ -4,6 +4,26 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v26 — 2026-08-09
+
+**Stripped to the character.** The levels are gone — no rooms, no scenery, no
+traps, no sentries, no duel. One flat floor, one man, and every frame he has,
+because the animation is the work and everything else was in front of it.
+
+- `level.js`, `rooms.js`, `scenery.js`, `enemy.js`, `fx.js` and `audio.js` are
+  removed from the build. They are in git history and on `main` if the world
+  comes back.
+- Two modes. FREE drives him about on the floor — the only way to judge whether
+  a move reads at the speed it actually plays. GALLERY walks through the
+  eighteen animations one at a time, looping, with the name and the frame count
+  on screen.
+- **The drawn figure can no longer appear.** Every state reachable here maps to
+  a row of the sheet: the turn, pulling up out of a run, the gather, the drive,
+  the landing, the running jump's whole flight, and falling all went in with it.
+- Airborne frames anchor on the HIP, frame by frame, rather than on the floor.
+  A jump's cell carries its own rise, and pinning it to the floor would add that
+  rise to the engine's ballistic one and send him up twice.
+
 ## v25 — 2026-08-09
 
 **Conrad's own pixels.** The hero is no longer drawn — he is blitted, cut
