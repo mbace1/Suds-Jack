@@ -16,6 +16,39 @@ Found by driving the on-screen pad with real touches on a phone viewport, in
 both orientations. Everything else there was already right: a tap is one step,
 a hold becomes a run, jump jumps once, MODE toggles once.
 
+## v33 — 2026-08-09
+
+**The sword is holstered.** It is the one thing here that changes what Jimbo
+looks like mid-move — the Prince is a different build, 40px to Conrad's 38 and
+a different shape — and swapping the character model to get a weapon is the
+wrong trade. The frames and the eight states stay in the code. When it comes
+back it will be by fitting the Conrad LOOK onto the Prince's animation, not by
+letting the Prince's body walk on.
+
+**The pistol instead, and all of it is Conrad's own.** Row 18 is the draw, row
+33 the aim and the shot standing, rows 20 and 30 the same crouched. Same build
+throughout, so nothing changes shape. E draws it, X fires, down crouches with
+it in his hand rather than doubling him over, and two frames of light at the
+muzzle make a shot read on a bench with nothing to hit. FIRE and the mode
+toggle are separate buttons now — one button cannot both shoot and change what
+the whole screen is doing.
+
+**The clipping on the ledge moves.** The lip is the fixed thing in a mantle and
+what RESTS on it moves: his hands at the start, his feet at the end. Anchoring
+the cell's top to the ledge pins his head there for the whole second half and
+he never gets up; anchoring the hip puts it where his feet would be if he were
+standing, which mid-mantle he is not. The support point is walked from the
+cell's top to its bottom across the move now.
+
+And the bench's ledge is 64px up rather than 48. His hands reach 46 above his
+feet, so off a one-storey lip his boots were two pixels off the floor and it
+read as a man stretching, not hanging. The catch window went from ten pixels
+to fourteen to match, or a 64px lip is a single frame at the apex of a jump.
+
+**The weapon button gets a buffer** — twenty-two frames, same as jump. It was
+only answered from a standing frame, so a press made while landing, stepping or
+turning went in the bin, which on a pad is most of them.
+
 ## v32 — 2026-08-09
 
 **The controls.** Three bugs, and the first one is the whole complaint.

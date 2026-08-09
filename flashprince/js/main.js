@@ -32,7 +32,6 @@ const REEL = [
   ['run', 'RUN — twenty frames'],
   ['skid', 'PULLING UP'],
   ['turn', 'TURNING ROUND'],
-  ['drawGun', 'DRAWING THE PISTOL'],
   ['crouch', 'CROUCHING'],
   ['crouchLow', 'CROUCHED'],
   ['rise', 'STANDING UP'],
@@ -48,13 +47,12 @@ const REEL = [
   ['lower', 'CLIMBING DOWN'],
   ['wake', 'GETTING UP'],
   ['dead', 'DEAD'],
-  // the sword, off the Prince of Persia sheet
-  ['swordDraw', 'SWORD · drawing'],
-  ['swordGuard', 'SWORD · en garde'],
-  ['swordAdvance', 'SWORD · advance'],
-  ['swordLunge', 'SWORD · the lunge'],
-  ['swordStrike', 'SWORD · overhead'],
-  ['swordParry', 'SWORD · parry'],
+  ['drawGun', 'PISTOL · drawing'],
+  ['aim', 'PISTOL · aimed'],
+  ['fire', 'PISTOL · the shot'],
+  ['crouchDraw', 'PISTOL · going down'],
+  ['crouchAim', 'PISTOL · aimed, crouched'],
+  ['crouchFire', 'PISTOL · the shot, crouched'],
 ];
 
 class Stage {
@@ -68,13 +66,18 @@ class Stage {
     this.input = new Input(this.scr);
     this.world = new Bench();
     this.hero = new Hero(48, FLOOR);
-    this.hero.hasSword = true;          // the bench carries one, so it can be seen
+    // The pistol is his — Conrad's own frames, same build as everything else.
+    // The sword is HOLSTERED: it is off the other sheet and it is the one thing
+    // here that changes what he looks like mid-move.
+    this.hero.hasGun = true;
+    this.hero.hasSword = false;
     this.hero.go('wake');
     this.mode = 'free';
     this.reel = 0;
     this.t = 0;
     this.clock = 0;
     this.hint = 420;              // the control line fades out of the way
+    this.flash = 0;
   }
 
   // ── the frame ──────────────────────────────────────────────────────
@@ -94,8 +97,9 @@ class Stage {
   // times a second.
   tick(inp) {
 
-    // one button swaps the two modes, and it is the same button on the pad
-    if (inp.firePress) {
+    // Its own button now: FIRE belongs to the pistol, and a button that both
+    // shoots and changes what the whole screen is doing is not a button.
+    if (inp.modePress) {
       this.mode = this.mode === 'free' ? 'gallery' : 'free';
       this.t = 0;
       if (this.mode === 'free') { this.hero.reset(48, FLOOR); this.hero.go('stand'); }
@@ -120,6 +124,8 @@ class Stage {
     if (h.x < -14) h.x = W + 12;
     if (h.x > W + 14) h.x = -12;
     if (h.y > H + 10) { h.reset(48, FLOOR); h.go('land'); }
+    if (this.flash > 0) this.flash--;
+    if (h.shotQueued) { h.shotQueued = false; this.flash = 3; }
   }
 
   // the hero asks the game for these; on a floor with nothing on it they are
@@ -157,6 +163,13 @@ class Stage {
     }
     const sp = h.sprite();
     if (sp) drawSprite(scr, sp.anim, Math.floor(sp.f), h.x, sp.lipY ?? h.y, h.face);
+    // A shot with nothing to hit still has to READ as a shot, and two frames
+    // of light at the muzzle is the whole of it.
+    if (this.flash > 0) {
+      const m = h.muzzle();
+      scr.rect(m.x - 1, m.y - 1, 3, 2, C.LUX2);
+      scr.rect(m.x + h.face * 2, m.y, 3, 1, C.LUX);
+    }
     if (!ready()) this.centre(scr, 'LOADING THE SHEET', 96, C.LUX);
   }
 
@@ -188,7 +201,7 @@ class Stage {
   chrome(scr) {
     const s = 6;
     if (this.mode === 'gallery') {
-      this.centre(scr, '◀ ▶  ANIMATION      JUMP  HOLD      FIRE  FREE', H - 10, C.DARK, s);
+      this.centre(scr, '◀ ▶  ANIMATION      JUMP  HOLD      REEL  BACK', H - 10, C.DARK, s);
       return;
     }
     const h = this.hero;
@@ -198,8 +211,8 @@ class Stage {
     if (sp) scr.text(`${sp.anim}`, 6, 40, C.DARK, s);
     if (this.hint > 0) {
       this.centre(scr, '◀ ▶  WALK, HOLD TO RUN   ▲  JUMP / PULL UP   ▼  CROUCH / CLIMB DOWN', H - 18, C.DARK, s);
-      this.centre(scr, 'E  SWORD OUT  ·  ◀ ▶ ADVANCE / RETREAT  ·  ▲ STRIKE  ·  SHIFT PARRY', H - 10, C.DARK, s);
-      this.centre(scr, 'FIRE  —  ANIMATION GALLERY', H - 2, C.DARK, s);
+      this.centre(scr, 'E  PISTOL OUT      X  FIRE      SHIFT  CAREFUL STEP', H - 10, C.DARK, s);
+      this.centre(scr, 'G  —  ANIMATION GALLERY', H - 2, C.DARK, s);
     }
   }
 
@@ -228,6 +241,7 @@ class Stage {
       add('jump', rx - u * 0.1, cy - u * 0.8, u * 1.6, u * 1.6);
       add('fire', rx - u * 1.9, cy - u * 1.5, u * 1.3, u * 1.3);
       add('gunbtn', rx - u * 1.9, cy + u * 0.15, u * 1.3, u * 1.3);
+      add('mode', band.w - u * 1.35, band.y + u * 0.15, u * 1.2, u * 0.8);
       add('careful', cx - u * 1.6, cy + u * 1.75, u * 3.2, u * 0.95);
     } else {
       const pw = W * scr.scale, ph = H * scr.scale;
@@ -241,6 +255,7 @@ class Stage {
       add('jump', rx - u * 0.75, cy - u * 0.75, u * 1.5, u * 1.5);
       add('fire', rx - u * 2.5, cy - u * 1.45, u * 1.15, u * 1.15);
       add('gunbtn', rx - u * 2.5, cy + u * 0.2, u * 1.15, u * 1.15);
+      add('mode', scr.ox + pw - u * 1.4, scr.oy + u * 0.2, u * 1.2, u * 0.8);
       add('careful', cx - u * 1.55, cy + u * 1.7, u * 3.1, u * 0.85);
     }
     this.input.setZones(zones);
@@ -254,7 +269,7 @@ class Stage {
       d.fillRect(band.x, band.y, band.w, Math.max(1, band.h * 0.006));
     }
     const GLYPH = { up: '▲', down: '▼', left: '◀', right: '▶' };
-    const WORD = { jump: 'JUMP', fire: 'MODE', gunbtn: 'SWORD', careful: 'CAREFUL' };
+    const WORD = { jump: 'JUMP', fire: 'FIRE', gunbtn: 'GUN', mode: 'REEL', careful: 'CAREFUL' };
     for (const z of zones) {
       const on = this.input.zoneHeld(z.name);
       const r = Math.min(z.w, z.h) * 0.22;

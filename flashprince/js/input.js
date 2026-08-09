@@ -23,6 +23,8 @@ const KEYS = {
   // with the sword out it is the parry.
   careful: ['ShiftLeft', 'ShiftRight'],
   pause: ['Escape', 'KeyP'],
+  // the bench's own: swapping between driving him and looking at one animation
+  mode: ['Tab', 'KeyG'],
 };
 
 export class Input {
@@ -35,6 +37,7 @@ export class Input {
     this.jumpPress = false; this.firePress = false; this.gunPress = false;
     this.carefulPress = false;
     this.pausePress = false; this.anyPress = false;
+    this.modeHeld = false; this.modePress = false;
     this.touch = false;
     // A touchscreen says so before it is touched. Waiting for the first tap
     // meant a phone showed an empty control panel until you guessed where to
@@ -112,6 +115,7 @@ export class Input {
     if (k === 'gun') this.gunPress = true;
     if (k === 'careful') this.carefulPress = true;
     if (k === 'pause') this.pausePress = true;
+    if (k === 'mode') this.modePress = true;
     this.anyPress = true;
   }
 
@@ -135,6 +139,7 @@ export class Input {
     let U = on('up'), D = on('down');
     let J = on('jump'), F = on('fire'), G = on('gun');
     let K = on('careful');
+    let MO = on('mode');
 
     if (this.touch) {
       // same latch as the keys: a thumb can go down and up inside one frame
@@ -144,6 +149,7 @@ export class Input {
       // the up pad is the jump button too, same as the arrow key is
       J = J || z('jump') || U; F = F || z('fire'); G = G || z('gunbtn');
       K = K || z('careful');
+      MO = MO || z('mode');
     }
 
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -174,6 +180,8 @@ export class Input {
     if (G && !wasGun) this.gunPress = true;
     if (K && !wasCareful) this.carefulPress = true;
     if ((J && !wasJump) || (F && !wasFire) || (G && !wasGun) || (K && !wasCareful)) this.anyPress = true;
+    if (MO && !this.modeHeld) this.modePress = true;
+    this.modeHeld = MO;
     this.jump = J; this.fire = F; this.gun = G; this.careful = K;
     // one tick off every latch, once, at the end — decrementing inside the
     // tests above would take several off a key read more than once
@@ -184,5 +192,6 @@ export class Input {
   flush() {
     this.jumpPress = this.firePress = this.gunPress = this.carefulPress = false;
     this.pausePress = false; this.anyPress = false;
+    this.modePress = false;
   }
 }

@@ -224,7 +224,8 @@ export class Hero {
       case 'turn': return over('turn', 6);
       case 'runTurn': return over('skid', 12);
       case 'skid': case 'bump': return over('skid', 12);
-      case 'crouch': return over('crouch', 4);
+      // with the pistol out he goes down holding it, not bent double
+      case 'crouch': return this.weapon === 'gun' ? over('crouchDraw', 6) : over('crouch', 4);
       case 'crouchIdle': return { anim: 'crouchLow', f: this.f / 40 };
       case 'standUp': return over('rise', 4);
       case 'roll': return over('roll', 22);
@@ -238,13 +239,23 @@ export class Hero {
       case 'fall': return { anim: 'fall', f: this.f / 6 };
       case 'land': return over('land', 4);
       case 'landHard': return over('land', 4);
-      // The ledge. These three are drawn relative to the LIP rather than to
-      // his feet — the sheet draws them hanging off a line, and that line is
-      // the ledge, so the whole vertical of the move comes out of the frames.
+      // The ledge. Drawn against the LIP, because that is the thing that does
+      // not move; what rests on it walks from his hands to his feet.
       case 'hang': return { anim: 'hang', f: this.f / 24, lipY: this.ledgeY };
       case 'pullUp': return over('mantle', 7, this.f, this.ledgeY);
       case 'climbDown': return over('lower', 7, this.f, this.ledgeY);
+      // ── the pistol, all off Conrad's own sheet ────────────────────
+      case 'drawGun': return over('drawGun', 16);
+      case 'holster': return over('holsterGun', 16);
+      case 'standArmed': return { anim: 'aim', f: this.f / 44 };
+      case 'fire': return over('fire', 5);
+      case 'crouchArmed': return { anim: 'crouchAim', f: this.f / 44 };
+      case 'fireLow': return over('crouchFire', 5);
+
       // ── the sword, off the Prince of Persia sheet ──────────────────
+      // HOLSTERED for now: it is the only thing here that changes his build,
+      // and it will stay off until the Prince's frames can be made to look
+      // like him rather than the other way round.
       case 'swordOut': return over('swordDraw', 5);
       case 'sheathe': return over('swordSheathe', 5);
       case 'guard': return { anim: 'swordGuard', f: this.f / 26 };
@@ -634,6 +645,8 @@ export class Hero {
     return sample(m.clip, this.f, !!m.loop);
   }
 
-  // where a bolt leaves the barrel
-  muzzle() { return { x: this.x + this.face * 13, y: this.y - (this.low ? 11 : 20) }; }
+  // Where a bolt leaves the barrel. Measured off the aimed frames of the
+  // sheet, not off the old drawn figure: his arm goes further out and the gun
+  // sits higher than the polygon man's did.
+  muzzle() { return { x: this.x + this.face * 20, y: this.y - (this.low ? 16 : 27) }; }
 }
