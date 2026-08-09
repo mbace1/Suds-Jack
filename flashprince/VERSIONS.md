@@ -4,6 +4,37 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v34 — 2026-08-09
+
+**Jimbo, fitted onto the Prince's animation.** The instruction was not to
+repalette the Prince and it was not to change Jimbo — it was to make the frames
+off the other sheet be the same man as the walk. Three things do that, and all
+three come from the Prince being *naked*: he is bare-armed and barefoot, so the
+skin on him is already a region of its own. Sort it into blobs — the top one
+cut five rows down is the face, the ones sitting on the bottom of the body are
+the boots, the rest are arms — and Jimbo gets **white shoes** and, at last,
+**grey sleeves**, which Conrad's sheet can never give because its four browns
+are shading laid across the whole garment rather than body versus arm. A
+**white tee** goes on the front two columns of the upper chest, because the
+open jacket over a white shirt is the loudest thing on him at this size, and
+without it a sword frame is a man in a plain dark top.
+
+Every colour it paints is one of his own eighteen. That matters: the
+framebuffer quantiser only leaves alone what it has been told to keep, so the
+sword frames were snapping to the room palette while the walk did not.
+
+**The turn had a silver stripe down it.** The blade is found by being one or
+two pixels through, and a man seen face-on mid-turn is one or two pixels
+through as well — so the one animation off that sheet that plays in ordinary
+play was being handed a sword. Blade detection is now limited to the four bands
+that have a sword in them.
+
+Also: the gallery counted frames by reading `n`, which the hand-laid sword
+frames do not have, so it showed `1 / NaN` and never advanced; and it hung the
+ledge moves off `lip`, a field renamed to `ledge` when the mantle stopped
+clipping. Both fixed, and the eight sword animations are back in the reel —
+to be LOOKED at. The sword stays holstered in play.
+
 ## v33 — 2026-08-09
 
 **The weapon button gets a buffer.** It was only answered from a standing
