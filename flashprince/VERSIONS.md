@@ -2,6 +2,20 @@
 
 The public release number. The `?v=N` token in `index.html` is a separate thing: it tracks every module-graph change so a browser cannot serve half of one build and half of another. Bump both when shipping.
 
+## v21 — 2026-08-09
+
+Direction changes now use their own Conrad-sheet phrases instead of recycling
+the release-to-stop animation.
+
+- **Ten-frame standing turn:** changing direction from rest rotates through a
+  planted silhouette before acceleration begins.
+- **Fourteen-frame running turn:** an opposite input commits to deceleration,
+  a central planted pivot and renewed drive in the new direction.
+- Releasing the stick still plays the separate fifteen-frame stop, keeping
+  stopping and reversal visually and mechanically distinct.
+- Jacket, shirt, trouser, skin and outline ramps receive a cleaner contrast
+  pass across the entire v20 motion set and both render modes.
+
 ## v20 — 2026-08-09
 
 The whole visible character set now shares one higher-definition pixel-art
