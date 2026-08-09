@@ -2,6 +2,18 @@
 
 The public release number. The `?v=N` token in `index.html` is a separate thing: it tracks every module-graph change so a browser cannot serve half of one build and half of another. Bump both when shipping.
 
+## v22 — 2026-08-09
+
+The previously approved run is restored and locked.
+
+- Restores the exact v19 run-frame source, twenty-frame hold cadence,
+  six-frame run start, sprite orientation and 1.22-pixel movement speed.
+- Removes the v20 replacement run from the playable state.
+- v20 jumps and v21 turns remain separate additions and no longer alter the
+  approved running artwork or timing.
+- Approved animation families are now treated as immutable unless a later
+  change explicitly names that family for replacement.
+
 ## v21 — 2026-08-09
 
 Direction changes now use their own Conrad-sheet phrases instead of recycling
