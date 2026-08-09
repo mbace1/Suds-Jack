@@ -5,17 +5,17 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=56';
-import { Player } from './player.js?v=56';
-import { DaggerPool } from './daggers.js?v=56';
-import { GemPool } from './gems.js?v=56';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=56';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=56';
-import { OrbPool } from './bullets.js?v=56';
-import { AudioKit } from './audio.js?v=56';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=56';
-import { TUNING as T } from './tuning.js?v=56';
-import { HyperEnvironment } from './environment.js?v=56';
+import { InputManager } from './input.js?v=57';
+import { Player } from './player.js?v=57';
+import { DaggerPool } from './daggers.js?v=57';
+import { GemPool } from './gems.js?v=57';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=57';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=57';
+import { OrbPool } from './bullets.js?v=57';
+import { AudioKit } from './audio.js?v=57';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=57';
+import { TUNING as T } from './tuning.js?v=57';
+import { HyperEnvironment } from './environment.js?v=57';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -631,10 +631,9 @@ function updateSparks(dt) {
 const hand = new VoxelSprite(MODELS.hand);
 const handGroup = new THREE.Group();
 handGroup.add(hand.mesh);
-handGroup.rotation.y = Math.PI + 0.3; // blade forward, angled 3/4 so its length reads
-handGroup.rotation.z = 0.2;
-handGroup.rotation.x = 0.15;
-handGroup.position.set(0.32, -0.4, -1.05); // far enough that it reads as a hand, not a wall
+const HAND_BASE = { x: 0.4, y: -0.48, z: -1.18, rx: 0.08, ry: Math.PI + 0.32, rz: 0.08 };
+handGroup.rotation.set(HAND_BASE.rx, HAND_BASE.ry, HAND_BASE.rz);
+handGroup.position.set(HAND_BASE.x, HAND_BASE.y, HAND_BASE.z);
 handGroup.traverse(o => o.layers.set(1));
 camera.add(handGroup);
 let recoil = 0;
@@ -1993,7 +1992,7 @@ function fireDagger(spread, speed, homing) {
   _hitDir.normalize();
   // launch from the gauntlet corner, not the crosshair — with auto-fire on
   // nearly all the time, streaks through screen centre are too distracting
-  _p0.copy(camera.position).addScaledVector(_hitDir, 0.7);
+  _p0.copy(camera.position).addScaledVector(_hitDir, 0.85);
   _seg.setFromMatrixColumn(camera.matrixWorld, 0); // camera right
   _p0.addScaledVector(_seg, 0.24);
   _p0.y -= 0.26;
@@ -2041,7 +2040,8 @@ function fireShotgun(w) {
     fireDagger(T.weapon.shotgunSpread, T.weapon.daggerSpeed * (0.92 + Math.random() * 0.16), w.homing);
   }
   shotCd = T.weapon.shotgunCd;
-  recoil = 0.06;
+  recoil = 0.12;
+  hand.flash(1.25);
   fovKick = Math.max(fovKick, 3.5);
   trauma = Math.max(trauma, 0.22);
   audio.shotgun();
@@ -2077,6 +2077,7 @@ function updateCombat(dt) {
       fireTimer += 1 / w.stream;
       fireDagger(FIRE_SPREAD, T.weapon.daggerSpeed, w.homing);
       recoil = Math.min(0.035, recoil + 0.007);
+      hand.flash(0.3);
       audio.fire();
     }
   } else {
@@ -2486,10 +2487,21 @@ function updateFeel(dt) {
     camera.fov = fov;
     camera.updateProjectionMatrix();
   }
-  // hand recoil + idle sway
-  recoil = Math.max(0, recoil - dt * 1.2) * Math.exp(-10 * dt);
-  handGroup.position.z = -1.05 + recoil;
-  handGroup.position.y = -0.4 + Math.sin(performance.now() * 0.0017) * 0.006;
+  // The claw snaps back and rolls open on a burst. Stream fire stays a much
+  // smaller vibration so the two firing modes read before their audio does.
+  recoil = Math.max(0, recoil - dt * 0.28) * Math.exp(-7 * dt);
+  const handBob = Math.sin(performance.now() * 0.0017) * 0.005;
+  handGroup.position.set(
+    HAND_BASE.x + recoil * 0.45,
+    HAND_BASE.y + handBob - recoil * 0.28,
+    HAND_BASE.z + recoil * 1.65,
+  );
+  handGroup.rotation.set(
+    HAND_BASE.rx - recoil * 2.7,
+    HAND_BASE.ry,
+    HAND_BASE.rz + recoil * 1.25,
+  );
+  hand.update(dt);
 }
 
 // Gamepad menu navigation: d-pad / left stick moves focus across the overlay
@@ -2612,6 +2624,13 @@ window.__hd = {
     getReap() { return { cool: +reapCool.toFixed(2), bones: litter.count }; },
     getTuning() { return T; },
     getGun() { return { shotCd: +shotCd.toFixed(2), heldT: +fireHeldT.toFixed(2) }; },
+    getWeaponView() {
+      return {
+        recoil: +recoil.toFixed(3),
+        x: +handGroup.position.x.toFixed(3), y: +handGroup.position.y.toFixed(3), z: +handGroup.position.z.toFixed(3),
+        rx: +handGroup.rotation.x.toFixed(3), rz: +handGroup.rotation.z.toFixed(3),
+      };
+    },
     getLook() {
       const e = enemies.find(x => x.alive && x.sprite);
       return {

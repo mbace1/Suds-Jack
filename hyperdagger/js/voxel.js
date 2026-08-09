@@ -82,6 +82,14 @@ const SKULL_LAYERS = [
     '....WWW....',
     '...........'],
 ];
+// The basic chaser needs a threat silhouette before its facial detail is
+// readable. Three swept bone shelves grow out from the cranium, creating the
+// wide horned profile that owns a dark arena without adding screen clutter.
+const SKULL_HORNS = [
+  ['.....WWW.WWW.....', '.....WWW.WWW.....', '......WW.WW......', '.................', '.................'],
+  ['...WWW.....WWW...', '...WWW.....WWW...', '....WW.....WW....', '.................', '.................'],
+  ['.WWW.........WWW.', '.WWW.........WWW.', '..WW.........WW..', '.................', '.................'],
+];
 // crown / horn layers for the variants, at the new 11-wide grid
 const CROWN_5 = ['...........', '.C.C.C.C.C.', '...........'];
 const CROWN_6 = ['...........', 'C.C.C.C.C.C', '...........'];
@@ -107,8 +115,8 @@ function sculptLayers(width, depth, height, sample) {
 export const MODELS = {
   skull: {
     voxelSize: 0.14,
-    palette: { W: 0xd8d8d8, S: 0xa8a8a8, R: [2.8, 0.2, 0.2], K: 0x1a1a1a },
-    layers: SKULL_LAYERS,
+    palette: { W: 0xd8d2c4, S: 0x8f8a80, R: [4.0, 0.16, 0.06], K: 0x050505 },
+    layers: [...SKULL_LAYERS, ...SKULL_HORNS],
   },
   // crowned skull — faster, 2 HP, red crown
   skull2: {
@@ -352,18 +360,20 @@ export const MODELS = {
       return ((x + y + z) & 1) ? 'A' : 'B';
     }),
   },
-  // first-person gauntlet: checkerboarded glove (unlit voxels need baked
-  // shading to read as cubes), long HDR white blade forward (row 0)
+  // First-person firing hand: four long, separated fingers make a claw rather
+  // than the old tube-with-one-blade. Bone knuckles stay readable against the
+  // void; orange-red tips connect the hand to the projectile language.
   hand: {
     voxelSize: 0.05,
-    wobble: 0.3,
-    noHull: true, // the checkerboard IS the glove — smoothing erases it
-
-    palette: { G: 0xbeb4a6, D: 0x5c554d, H: 0xe2d8c8, B: [2.2, 0.22, 0.08] },
+    wobble: 0.18,
+    noHull: true,
+    palette: { G: 0xbeb4a6, D: 0x4b4540, H: 0xe2d8c8, B: [3.2, 0.30, 0.06] },
     layers: [
-      ['...', '...', '...', '...', '...', '...', '...', 'DGD', 'GDG', 'DGD'],
-      ['.B.', '.B.', '.B.', '.B.', '.B.', '.B.', '.B.', 'GHG', 'DGD', 'GDG'],
-      ['...', '...', '...', '...', '...', '...', '...', 'DGD', 'GDG', 'DGD'],
+      ['.........', '.........', '.........', '.........', '.........', '.....G...', '....GG...', '...GGG...', '.GDGDGG..', 'GGDGDGGG.', '.GGGGGG..', '..DGGD...'],
+      ['.B.B.B.B.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.GGGGGGG.', 'GGDGDGDGG', 'GGHGHGHGG', '.GGGGGGG.', '..DGGGD..'],
+      ['.B.B.B.B.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.GGGGGGG.', 'GGHGHGHGG', 'GGDGDGDGG', '.GGGGGGG.', '..DGGGD..'],
+      ['.........', '.H.H.H.H.', '.H.H.H.H.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.GGGGGGG.', '.GDGDGDG.', 'GGGGGGGGG', '..GGGGG..', '...DGD...'],
+      ['.........', '.........', '.........', '.........', '.........', '...G.....', '..GG.....', '.GGG.....', '.GDGG....', '..GGG....', '...G.....', '.........'],
     ],
   },
   totem: {
