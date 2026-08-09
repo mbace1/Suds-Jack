@@ -360,19 +360,18 @@ export const MODELS = {
       return ((x + y + z) & 1) ? 'A' : 'B';
     }),
   },
-  // First-person firing hand: four long, separated fingers make a claw rather
-  // than the old tube-with-one-blade. Bone knuckles stay readable against the
-  // void; orange-red tips connect the hand to the projectile language.
+  // First-person firing hand: four long, separated fire-daggers rise from a
+  // near-black crimson palm. The hot fingers are the sight against the void.
   hand: {
     voxelSize: 0.05,
     wobble: 0.18,
     noHull: true,
-    palette: { G: 0xbeb4a6, D: 0x4b4540, H: 0xe2d8c8, B: [3.2, 0.30, 0.06] },
+    palette: { G: 0x260d0a, D: 0x080403, H: [1.60, 0.22, 0.04], B: [3.50, 0.58, 0.08] },
     layers: [
       ['.........', '.........', '.........', '.........', '.........', '.....G...', '....GG...', '...GGG...', '.GDGDGG..', 'GGDGDGGG.', '.GGGGGG..', '..DGGD...'],
-      ['.B.B.B.B.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.GGGGGGG.', 'GGDGDGDGG', 'GGHGHGHGG', '.GGGGGGG.', '..DGGGD..'],
-      ['.B.B.B.B.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.GGGGGGG.', 'GGHGHGHGG', 'GGDGDGDGG', '.GGGGGGG.', '..DGGGD..'],
-      ['.........', '.H.H.H.H.', '.H.H.H.H.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.GGGGGGG.', '.GDGDGDG.', 'GGGGGGGGG', '..GGGGG..', '...DGD...'],
+      ['.B.B.B.B.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.GGGGGGG.', 'GGDGDGDGG', 'GGHGHGHGG', '.GGGGGGG.', '..DGGGD..'],
+      ['.B.B.B.B.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.GGGGGGG.', 'GGHGHGHGG', 'GGDGDGDGG', '.GGGGGGG.', '..DGGGD..'],
+      ['.........', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.GGGGGGG.', '.GDGDGDG.', 'GGGGGGGGG', '..GGGGG..', '...DGD...'],
       ['.........', '.........', '.........', '.........', '.........', '...G.....', '..GG.....', '.GGG.....', '.GDGG....', '..GGG....', '...G.....', '.........'],
     ],
   },

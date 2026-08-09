@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#000000">
   <title>Hyper Dagger</title>
-  <link rel="manifest" href="manifest.webmanifest?v=59">
+  <link rel="manifest" href="manifest.webmanifest?v=60">
   <link rel="icon" href="favicon.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <style>
@@ -84,6 +84,29 @@
       display: none;
     }
     #pauseBtn:hover { background: rgba(255, 255, 255, 0.14); }
+    /* During a run, leave only the clock and the weapon in the frame. The
+       shell controls remain reachable, but retreat until the player asks. */
+    body.in-run #timer { font-size: 27px; letter-spacing: 2px; }
+    body.in-run #kills,
+    body.in-run #gems,
+    body.in-run #style { display: none !important; }
+    body.in-run #pauseBtn {
+      opacity: 0.16;
+      background: transparent;
+      border-color: rgba(255, 255, 255, 0.18);
+      transition: opacity 0.18s, background 0.18s;
+    }
+    body.in-run #pauseBtn:hover,
+    body.in-run #pauseBtn:focus-visible { opacity: 0.9; }
+    body.in-run .arcade-home,
+    body.in-run .toko-signature {
+      opacity: 0.08 !important;
+      transition: opacity 0.18s;
+    }
+    body.in-run .arcade-home:hover,
+    body.in-run .arcade-home:focus-visible,
+    body.in-run .toko-signature:hover,
+    body.in-run .toko-signature:focus-visible { opacity: 0.9 !important; }
     #toast {
       position: fixed;
       top: 22%; left: 50%;
@@ -214,16 +237,16 @@
     }
   }
   </script>
-  <script type="module" src="js/main.js?v=59"></script>
+  <script type="module" src="js/main.js?v=60"></script>
   <script>
     // Offline install: same ?v= discipline as the modules — the token flows
     // into the worker and names its cache, so each release rotates cleanly.
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      navigator.serviceWorker.register('sw.js?v=59').catch(() => {});
+      navigator.serviceWorker.register('sw.js?v=60').catch(() => {});
     }
   </script>
   <!-- the arcade shell: a home button and a controller way back -->
-  <script type="module" src="../hub/shell.js?v=27"></script>
+  <script type="module" src="../hub/shell.js?v=28"></script>
 
   <!-- signed by Toko Midori Games — the badge in the corner, under the HUD.
        `counter: true` makes it the way to the counter on the hub; on a
