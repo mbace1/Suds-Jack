@@ -1,18 +1,66 @@
 {
-  "sudsjack": {"v":1,"from":"VERSIONS.md"},
-  "tokodrop": {"v":223,"from":"VERSIONS.md"},
-  "hyperdagger": {"v":27,"from":"VERSIONS.md"},
-  "dropcabal": {"v":2,"from":"VERSIONS.md"},
-  "powder": {"v":2,"from":"cache token"},
-  "paperboy": {"v":4,"from":"cache token"},
-  "skltr": {"v":12,"from":"cache token"},
-  "neonronin": {"v":1,"from":"VERSIONS.md"},
-  "flashprince": {"v":17,"from":"Conrad weight and cadence pass"},
-  "gameoflife": {"v":40,"from":"VERSIONS.md"},
-  "radiofree": {"v":41,"from":"cache token"},
-  "tinyhawk": {"v":6,"from":"VERSIONS.md"},
-  "tiny2d": {"v":3,"from":"VERSIONS.md"},
-  "eyetest": {"v":1,"from":"VERSIONS.md"},
-  "brand": {"v":5,"from":"VERSIONS.md"},
-  "toko": {"v":5,"from":"VERSIONS.md"}
+  "sudsjack": {
+    "v": 1,
+    "from": "VERSIONS.md"
+  },
+  "tokodrop": {
+    "v": 223,
+    "from": "VERSIONS.md"
+  },
+  "hyperdagger": {
+    "v": 27,
+    "from": "VERSIONS.md"
+  },
+  "dropcabal": {
+    "v": 2,
+    "from": "VERSIONS.md"
+  },
+  "powder": {
+    "v": 2,
+    "from": "cache token"
+  },
+  "paperboy": {
+    "v": 4,
+    "from": "cache token"
+  },
+  "skltr": {
+    "v": 12,
+    "from": "cache token"
+  },
+  "neonronin": {
+    "v": 1,
+    "from": "VERSIONS.md"
+  },
+  "flashprince": {
+    "v": 18,
+    "from": "VERSIONS.md"
+  },
+  "gameoflife": {
+    "v": 40,
+    "from": "VERSIONS.md"
+  },
+  "radiofree": {
+    "v": 42,
+    "from": "cache token"
+  },
+  "tinyhawk": {
+    "v": 6,
+    "from": "VERSIONS.md"
+  },
+  "tiny2d": {
+    "v": 3,
+    "from": "VERSIONS.md"
+  },
+  "eyetest": {
+    "v": 1,
+    "from": "VERSIONS.md"
+  },
+  "brand": {
+    "v": 5,
+    "from": "VERSIONS.md"
+  },
+  "toko": {
+    "v": 5,
+    "from": "VERSIONS.md"
+  }
 }

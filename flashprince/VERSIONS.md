@@ -2,6 +2,35 @@
 
 The public release number. The `?v=N` token in `index.html` is a separate thing: it tracks every module-graph change so a browser cannot serve half of one build and half of another. Bump both when shipping.
 
+## v18 — 2026-08-09
+
+The raster-motion proof now carries a complete long-jump and landing phrase.
+
+- **Nineteen authored jump drawings** move from gather through open stride,
+  tucked apex, feet-first descent and impact preparation. They are complete
+  32×44 raster frames at runtime—no visible joint rig or pose interpolation.
+- **Nine dedicated landing drawings** compress, absorb the impact and flow
+  back toward the running silhouette instead of snapping from air to idle.
+- **Committed root motion:** the jump owns its facing and trajectory until the
+  feet return. Holding the original direction carries momentum through the
+  landing; releasing it completes the recovery into idle.
+- **Distinct Flash Prince construction:** teal short-sleeve torso, swept hair,
+  separated near/far limbs and pale boot accents retain the reference's
+  rotoscoped timing language without shipping Flashback sprite artwork.
+- The Hub description now says plainly that this is a focused motion rebuild,
+  rather than advertising the temporarily parked fourteen-screen route.
+
+This remains an incremental animation proof, not a 90% whole-game claim.
+
+## v17 — 2026-08-09
+
+Run cadence and planted-contact tuning on top of the v16 start/stop correction.
+
+- Contact frames hold longer than passing frames, restoring weight to the
+  twenty-frame run cycle.
+- Acceleration, cruise and stopping speeds were reduced together so the body
+  no longer skates across the floor faster than its photographed cadence.
+
 ## v16 — 2026-08-09
 
 Conrad-focused run/start/stop correction.
