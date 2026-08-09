@@ -4,6 +4,27 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v28 — 2026-08-09
+
+**There is no turn on the sheet.** Row 18 was mapped as one and it is him
+DRAWING THE PISTOL — profile, then something happening across the chest, which
+is a gun coming up and not a man rotating. Every wide-chested frame on the
+sheet was checked: all of them are arms flung out, being shot or throwing.
+Flashback turns Conrad instantly, so this does too — the turn is eight frames
+of holding still and flipping rather than eighteen, because eighteen frames of
+a still man reads as the game hanging. The gun draw is kept in the gallery
+under its own name.
+
+**Two strides corrected**, both measured rather than chosen:
+
+- The walk carries fourteen pixels, not twelve. The single frame of his walk
+  with BOTH feet on the ground has them 13.9px apart, and that is the stride.
+- The run's cycle is twenty-four frames rather than twenty-two, so a step
+  carries 19.4px against the 19.7px his feet are apart at full split.
+
+Carry less than the stride and the planted foot slides backwards under him.
+Two pixels a step is a skate.
+
 ## v27 — 2026-08-09
 
 **A gap and a ledge**, so the moves that need geometry have geometry. You

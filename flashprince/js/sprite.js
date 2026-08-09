@@ -61,9 +61,16 @@ export const ANIM = {
   wake: { row: 38, c0: 1, n: 15, ground: 37, ax: 12.7 },
   dead: { row: 31, c0: 1, n: 11, ground: 45, ax: 17.8 },
 
-  // Coming to a halt out of a run, and turning on the spot.
+  // Coming to a halt out of a run.
   skid: { row: 5, c0: 1, n: 12, ground: 38, ax: 9.5 },
-  turn: { row: 18, c0: 1, n: 10, ground: 47, ax: 21.2 },
+
+  // There is no about-face on this sheet. Row 18 looked like one — profile,
+  // then something happening across the chest — and it is him DRAWING THE
+  // PISTOL. Checked the rest: every wide-chested frame on the sheet is arms
+  // flung out, being shot or throwing, never a man rotating. Flashback turns
+  // Conrad instantly, so this game does too, and the gun draw is kept here for
+  // the gallery rather than pretending to be a turn in the middle of a walk.
+  drawGun: { row: 18, c0: 1, n: 16, ground: 47, ax: 21.2 },
 
   // The standing jump: he gathers, drives up, and lands. Row 13 keeps his feet
   // down through the drive — the sheet has no free-flight frames for it — so
