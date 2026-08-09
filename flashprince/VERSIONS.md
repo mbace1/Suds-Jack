@@ -4,6 +4,34 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v37 — 2026-08-09
+
+**The turn was Conrad's all along, and it was hiding under the standing
+frames.** Row 0 was mapped as a three-frame breathing idle. It is not an idle —
+it is the ABOUT-FACE: ten frames of him rotating side-on, through front-on with
+both arms showing, round to side-on the other way. Only its first three were
+being used, and looped, so his idle was a man rocking his shoulders round and
+back every ninety frames while the actual turn came off the Prince of Persia
+sheet. Now `stand` is one still frame, the way Conrad stands, and the turn is
+twenty frames of his own rotation. The Prince's turn is gone.
+
+The facing flips on the way OUT of the move rather than part-way through. The
+ten drawn frames already carry the whole rotation, so flipping mid-move hands
+the engine's mirror to a clip that is already mirroring itself and he turns
+back the way he came; flipping on the last frame draws that frame backwards for
+one frame.
+
+**Going up a storey was a winch.** The mantle was playing row 39 — a hanging
+man SWINGING HIS LEGS — so he rose twenty-four pixels without his body ever
+doing anything about it. The move is on two rows: 27 is the hang with his hands
+above the cell, 26 is the fold, his head held still while his knees come up to
+his chest and then unfold into standing. Played hang → fold → stand with the
+anchor walking from his hands at the lip to his feet on it, that is a man
+getting onto a roof. Climbing down is the same run backwards.
+
+A move that spans two rows needed a fourth way of laying one out — `cells`,
+`[row, col]` per frame — alongside `n`, `cols` and `rects`.
+
 ## v36 — 2026-08-09
 
 **Everything he can do, measured against the floor.** After the run turned out

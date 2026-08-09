@@ -49,11 +49,11 @@ const M = {
   stand: { dur: 999, loop: true, open: 0, clip: [[Q.breathe, 46], [Q.stand, 54]] },
   standArmed: { dur: 999, loop: true, open: 0, clip: [[Q.aim, 60], [Q.aim, 60]] },
 
-  // Fourteen frames of a real about-face. Conrad's sheet has none — that was
-  // checked row by row — so these six frames are the Prince's, and the facing
-  // flips on frame ONE so the engine's own mirror runs the reversed clip the
-  // right way round.
-  turn: { dur: 14, open: 14, flipAt: 1, clip: [[Q.turnA, 7], [Q.stand, 7]] },
+  // Twenty frames of a real about-face, off Conrad's own row 0. The facing
+  // flips on the LAST frame, not the first: the sheet's ten frames already
+  // carry the whole rotation, so flipping his facing part-way through hands
+  // the mirror to the engine mid-turn and he rotates back the way he came.
+  turn: { dur: 20, open: 20, flipEnd: true, clip: [[Q.turnA, 10], [Q.stand, 10]] },
 
   // Fourteen pixels, not twelve. Measured off the sheet: the one frame of his
   // walk with BOTH feet on the ground has them 13.9px apart, and that is the
@@ -210,6 +210,13 @@ export class Hero {
   // same six. So a step remembers which of the two it is and the next one takes
   // the other, or he hops along on the same leg.
   go(state, f = 0) {
+    // A move that turns him round flips his facing on the way OUT of itself,
+    // not part-way through. The about-face is ten drawn frames that already
+    // carry the whole rotation, so flipping mid-move hands the engine's mirror
+    // to a clip that is mirroring itself and he turns back the way he came;
+    // flipping on the last frame draws that frame the wrong way round for one
+    // frame. Doing it here catches every way out of the move.
+    if (M[this.state]?.flipEnd && state !== this.state) this.face *= -1;
     if (state === 'step' && this.state !== 'step') this.stepPhase ^= 1;
     this.state = state; this.f = f;
   }
@@ -232,7 +239,7 @@ export class Hero {
       // the careful step is the same six frames given half again as long
       case 'inch': return over(this.stepPhase ? 'stepB' : 'step', 6);
       case 'stand': case 'peer': return { anim: 'stand', f: this.f / 30 };
-      case 'turn': return over('turn', 6);
+      case 'turn': return over('turn', 10);
       case 'windUp': return over('runStart', 12);
       case 'runTurn': return over('skid', 12);
       case 'skid': case 'bump': return over('skid', 12);
