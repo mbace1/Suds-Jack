@@ -86,13 +86,18 @@ export const ANIM = {
   // Coming to a halt out of a run.
   skid: { row: 5, c0: 1, n: 12, ground: 38, ax: 9.5 },
 
-  // There is no about-face on this sheet. Row 18 looked like one — profile,
-  // then something happening across the chest — and it is him DRAWING THE
-  // PISTOL. Checked the rest: every wide-chested frame on the sheet is arms
-  // flung out, being shot or throwing, never a man rotating. Flashback turns
-  // Conrad instantly, so this game does too, and the gun draw is kept here for
-  // the gallery rather than pretending to be a turn in the middle of a walk.
-  drawGun: { row: 18, c0: 1, n: 16, ground: 47, ax: 21.2 },
+  // ── the pistol ─────────────────────────────────────────────────────
+  // All Conrad's own, so no change of build the way the sword has: row 18 is
+  // the draw, row 33 the aim and the shot standing, rows 20/21/30 the same
+  // crouched. The recoil picks columns out of order — level, up, level — which
+  // is what `cols` is for.
+  drawGun: { row: 18, c0: 1, n: 16, ground: 47, ax: 21.0 },
+  holsterGun: { row: 18, c0: 1, n: 16, ground: 47, ax: 21.0, rev: true },
+  aim: { row: 33, cols: [1, 1], hold: 44, loop: true, ground: 41, ax: 8.5 },
+  fire: { row: 33, cols: [3, 2, 1, 1, 1], ground: 41, ax: 8.5 },
+  crouchDraw: { row: 20, c0: 1, n: 6, ground: 47, ax: 20.2 },
+  crouchAim: { row: 30, cols: [2, 2], hold: 44, loop: true, ground: 34, ax: 16.0 },
+  crouchFire: { row: 30, cols: [3, 2, 1, 1, 1], ground: 34, ax: 16.0 },
 
   // The standing jump: he gathers, drives up, and lands. Row 13 keeps his feet
   // down through the drive — the sheet has no free-flight frames for it — so
@@ -113,18 +118,23 @@ export const ANIM = {
   fall: { row: 9, c0: 11, n: 3, air: true, loop: true, hold: 6,
           anchors: [[6.5, 21], [7.8, 20], [7.8, 20]] },
 
-  // The ledge. These anchor on the LIP — cell top on the ledge line — because
-  // that is what the sheet draws them against: the whole vertical of a mantle
-  // is in the frames themselves. Only the horizontal is cancelled out of them,
-  // so the move's own carry does the sideways travel and he does not go twice.
-  hang: { row: 25, c0: 6, n: 4, hold: 24, loop: true, lip: true,
-          anchors: [[4.8, 25], [6.1, 24], [6.3, 24], [6.3, 24]] },
-  mantle: { row: 39, c0: 4, n: 7, lip: true,
-            anchors: [[4.9, 26], [11.7, 26], [14.7, 24], [17.1, 24], [19.9, 23], [16.9, 22], [15.6, 20]] },
+  // ── the ledge ──────────────────────────────────────────────────────
+  // The LIP is the fixed thing in these, and what rests on it MOVES. At the
+  // start of a mantle his hands are on it and his body hangs the full length
+  // below; at the end his feet are on it and all of him is above. Neither a
+  // cell-top anchor nor a hip anchor can say that: the first pins his head to
+  // the ledge for the whole second half and he never gets up, the second puts
+  // his hip where his feet would be if he were standing, which mid-mantle he
+  // is not. So `ledge` anchors take the support point straight — walked from
+  // the cell's top to its bottom across the move — and are drawn at the lip.
+  hang: { row: 25, c0: 6, n: 4, hold: 24, loop: true, ledge: true,
+          anchors: [[4.8, 0], [6.1, 0], [6.3, 0], [6.3, 0]] },
+  mantle: { row: 39, c0: 4, n: 7, ledge: true,
+            anchors: [[4.9, 0], [11.7, 8], [14.7, 14], [17.1, 19], [19.9, 21], [16.9, 23], [15.6, 24]] },
   // lowering himself over an edge is the mantle run backwards, which is what
   // Flashback does too
-  lower: { row: 39, c0: 4, n: 7, lip: true, rev: true,
-           anchors: [[4.9, 26], [11.7, 26], [14.7, 24], [17.1, 24], [19.9, 23], [16.9, 22], [15.6, 20]] },
+  lower: { row: 39, c0: 4, n: 7, ledge: true, rev: true,
+           anchors: [[4.9, 0], [11.7, 8], [14.7, 14], [17.1, 19], [19.9, 21], [16.9, 23], [15.6, 24]] },
 
   // ── the sword ──────────────────────────────────────────────────────
   // Off the OTHER sheet. Flashback has no sword in it at all, so these are the
@@ -238,7 +248,7 @@ export function drawSprite(scr, anim, i, x, y, face) {
   if (!a) return false;
   const img = sheets[a.sheet ?? 'body'];
   if (!img) return false;
-  const n = a.n ?? a.rects.length;
+  const n = a.n ?? a.cols?.length ?? a.rects.length;
   const k = a.loop ? ((i % n) + n) % n : Math.max(0, Math.min(n - 1, i));
   const j = a.rev ? n - 1 - k : k;
   // the sheet's own facing: Conrad's frames face left, the sword sheet's right
@@ -251,11 +261,11 @@ export function drawSprite(scr, anim, i, x, y, face) {
     ax = r[4] - r[0];                       // the anchor, inside its own rect
     ay = r[5] - r[1];
   } else {
-    sx = (a.c0 + j) * CELL_W; sy = a.row * CELL_H;
+    sx = (a.cols ? a.cols[j] : a.c0 + j) * CELL_W; sy = a.row * CELL_H;
     sw = CELL_W; sh = CELL_H;
-    const hip = a.anchors ? a.anchors[j] : null;
-    ax = hip ? hip[0] : a.ax;
-    ay = a.lip ? 0 : hip ? hip[1] + HIP : a.ground;
+    const anc = a.anchors ? a.anchors[j] : null;
+    ax = anc ? anc[0] : a.ax;
+    ay = a.ledge ? anc[1] : anc ? anc[1] + HIP : a.ground;
   }
   if (flip) ax = sw - ax;
   scr.blit(img, sx, sy, sw, sh, Math.round(x - ax), Math.round(y - ay), flip);

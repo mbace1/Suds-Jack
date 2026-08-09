@@ -253,7 +253,7 @@ export const GAMES = [
     tagline: 'One floor, one man, and every frame he has. Conrad, traced to the pixel.',
     lineage: 'Flashback — Conrad B. Hart',
     tags: ['cinematic', 'animation', 'canvas'],
-    controls: '← → walk (hold to run) · ↑ jump · ↓ crouch · E sword · X gallery',
+    controls: '← → walk (hold to run) · ↑ jump · ↓ crouch · E pistol · X fire · G gallery',
     path: 'flashprince/',
     inRepo: true,
     accent: '#c8ee5a',

@@ -172,6 +172,11 @@ export class Hero {
     // a step is silently thrown away and the game reads as unresponsive when
     // it is only committed.
     this.jumpBuf = 0;
+    // The weapon button needs a buffer for the same reason jump does: it is
+    // only answered from a standing frame, and a press made while he is
+    // landing, stepping or turning was being thrown away. On a pad that is
+    // most of the presses — you reach for it as you arrive somewhere.
+    this.weaponBuf = 0;
     this.dropLock = 0;
     this.stepPhase = 0;
   }
@@ -219,7 +224,8 @@ export class Hero {
       case 'turn': return over('turn', 6);
       case 'runTurn': return over('skid', 12);
       case 'skid': case 'bump': return over('skid', 12);
-      case 'crouch': return over('crouch', 4);
+      // with the pistol out he goes down holding it, not bent double
+      case 'crouch': return this.weapon === 'gun' ? over('crouchDraw', 6) : over('crouch', 4);
       case 'crouchIdle': return { anim: 'crouchLow', f: this.f / 40 };
       case 'standUp': return over('rise', 4);
       case 'roll': return over('roll', 22);
@@ -233,13 +239,23 @@ export class Hero {
       case 'fall': return { anim: 'fall', f: this.f / 6 };
       case 'land': return over('land', 4);
       case 'landHard': return over('land', 4);
-      // The ledge. These three are drawn relative to the LIP rather than to
-      // his feet — the sheet draws them hanging off a line, and that line is
-      // the ledge, so the whole vertical of the move comes out of the frames.
+      // The ledge. Drawn against the LIP, because that is the thing that does
+      // not move; what rests on it walks from his hands to his feet.
       case 'hang': return { anim: 'hang', f: this.f / 24, lipY: this.ledgeY };
       case 'pullUp': return over('mantle', 7, this.f, this.ledgeY);
       case 'climbDown': return over('lower', 7, this.f, this.ledgeY);
+      // ── the pistol, all off Conrad's own sheet ────────────────────
+      case 'drawGun': return over('drawGun', 16);
+      case 'holster': return over('holsterGun', 16);
+      case 'standArmed': return { anim: 'aim', f: this.f / 44 };
+      case 'fire': return over('fire', 5);
+      case 'crouchArmed': return { anim: 'crouchAim', f: this.f / 44 };
+      case 'fireLow': return over('crouchFire', 5);
+
       // ── the sword, off the Prince of Persia sheet ──────────────────
+      // HOLSTERED for now: it is the only thing here that changes his build,
+      // and it will stay off until the Prince's frames can be made to look
+      // like him rather than the other way round.
       case 'swordOut': return over('swordDraw', 5);
       case 'sheathe': return over('swordSheathe', 5);
       case 'guard': return { anim: 'swordGuard', f: this.f / 26 };
@@ -298,6 +314,8 @@ export class Hero {
   update(world, input, game) {
     if (this.hurtT > 0) this.hurtT--;
     if (this.jumpBuf > 0) this.jumpBuf--;
+    if (this.weaponBuf > 0) this.weaponBuf--;
+    if (input.gunPress) this.weaponBuf = 22;
     // 26 frames — just longer than a step, which is the longest you can ever
     // be locked out. Shorter and a jump asked for one frame after a step
     // begins is still thrown away, which is the exact complaint.
@@ -481,7 +499,8 @@ export class Hero {
     // nothing, skipping whatever he has not found. One button because the
     // touch panel has one, and a control you cannot reach on a phone is a
     // control half the players do not have.
-    if (input.gunPress && !this.low && (s === 'stand' || s === 'standArmed')) {
+    if (this.weaponBuf > 0 && !this.low && (s === 'stand' || s === 'standArmed')) {
+      this.weaponBuf = 0;
       const next = this.nextWeapon();
       if (next !== this.weapon) {
         if (next === 'gun') { this.weapon = 'gun'; this.go('drawGun'); return; }
@@ -626,6 +645,8 @@ export class Hero {
     return sample(m.clip, this.f, !!m.loop);
   }
 
-  // where a bolt leaves the barrel
-  muzzle() { return { x: this.x + this.face * 13, y: this.y - (this.low ? 11 : 20) }; }
+  // Where a bolt leaves the barrel. Measured off the aimed frames of the
+  // sheet, not off the old drawn figure: his arm goes further out and the gun
+  // sits higher than the polygon man's did.
+  muzzle() { return { x: this.x + this.face * 20, y: this.y - (this.low ? 16 : 27) }; }
 }

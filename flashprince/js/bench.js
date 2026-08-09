@@ -16,17 +16,19 @@ export const TILE = 16;
 //   #  solid
 //   .  air
 // Left to right: a hundred and forty pixels of floor to get up to speed on, a
-// two-tile gap to run at, more floor, and a ledge one storey up on the right —
-// 48 pixels, which is a lip he can catch standing and clear out of a run. The
-// run-up matters: with the gap close to where he starts, the first thing anyone
-// does is walk off into it.
+// two-tile gap to run at, more floor, and a ledge on the right SIXTY-FOUR
+// pixels up. Not forty-eight: his hands reach forty-six above his feet, so
+// hanging off a one-storey lip his boots are two pixels off the floor and it
+// reads as a man standing up and stretching rather than as a man hanging. At
+// sixty-four he dangles. The run-up matters too — with the gap close to where
+// he starts, the first thing anyone does is walk off into it.
 const BENCH = [
   '....................',
   '....................',
   '....................',
   '....................',
   '....................',
-  '....................',
+  '..............######',
   '..............######',
   '..............######',
   '..............######',
@@ -64,7 +66,10 @@ export class Bench {
       if (!this.solidTile(tx, ty) || this.solidTile(tx, ty - 1)) continue;
       if (this.solidTile(tx - face, ty)) continue;      // a wall face, not a corner
       const lipY = ty * TILE;
-      if (Math.abs(lipY - target) > 10) continue;
+      // Fourteen, not ten. A jump rises 27px and his hands reach 46, so at a
+      // 64px lip the window a ten-pixel tolerance leaves open is a single
+      // frame at the very apex — which in practice means he never catches it.
+      if (Math.abs(lipY - target) > 14) continue;
       const hx = tx * TILE + (face > 0 ? -5 : TILE + 5);
       if (this.boxSolid(hx - 4, lipY + 3, 8, 22)) continue;
       return { x: hx, y: lipY, face };
