@@ -8,6 +8,18 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v30 — 2026-08-09
+**The weapon and clock own the frame**
+- The firing hand moves from the lower-right corner to the bottom centre, with
+  four separated fire-dagger fingers rising from a near-black crimson palm.
+- Every dagger tier now begins dark and grows hotter, preserving the four-tip
+  silhouette while making the weapon read against the empty arena.
+- Kills, gems and style leave the active run HUD. The survival clock remains;
+  Hub, pause and Toko controls dim until hovered and return fully on menus,
+  pause and death.
+- The gameplay gate now locks the centred hand pose, hot-finger/dark-palm
+  palette and timer-only active frame alongside the v29 movement checks.
+
 ## v29 — 2026-08-09
 **Movement and fire finally reward the same skills as the reference**
 - Direct sliding becomes velocity-based 90s-FPS movement: forward-strafe runs
