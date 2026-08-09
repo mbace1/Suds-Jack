@@ -40,11 +40,33 @@ export const POSE = {
   step2:    P(    6,  -20,   -4,  -10,   -6, 20,    8, 18,   6,  -2,  2,  0,  0),
   step3:    P(  -16,  -10,   20,  -10,   14, 20,  -14, 18,   5,  -2,  1,  0,  0),
 
-  // running — four traced keys, contact / pass / contact / pass
-  run1:     P(   34,   -8,  -30,  -44,  -36, 46,   38, 36,  15,  -4,  0,  0,  0),
-  run2:     P(    6,  -50,   -8,  -14,  -14, 62,   16, 52,  14,  -4, -2,  0,  0),
-  run3:     P(  -30,  -44,   34,   -8,   38, 36,  -36, 46,  15,  -4,  0,  0,  0),
-  run4:     P(   -8,  -14,    6,  -50,   16, 52,  -14, 62,  14,  -4, -2,  0,  0),
+  // ── the run ────────────────────────────────────────────────────────
+  // Ten frames, and they are Conrad's. Measured off the SNES sheet in
+  // ref/conrad.png: the hip and the ankle are both visible in every frame, so
+  // each leg was solved by two-link IK against one fixed bone length and the
+  // legs tracked through the frames by continuity — the sprite shades whichever
+  // leg is nearer the camera brighter, so bright and dark swap legs every time
+  // they cross and colour alone gets you a leg that teleports.
+  //
+  // What comes out is a real run and not a walk played fast: the recovery leg
+  // folds to a HUNDRED AND TEN degrees at the knee — heel under the seat, thigh
+  // driving through — while the other extends to straight, and for six of the
+  // ten frames neither foot is down. Four frames of stance in ten is what a
+  // runner actually does.
+  //
+  // One step. The other step is these ten with near and far exchanged, which is
+  // what SWAP is for.
+  run1:     P( 52, 105,    2,  29,  -35, 81,   32, 109,   4, -2,  0, 0, 0),
+  run2:     P( 44, 111,   22,  38,  -30, 83,   27, 107,   5, -2,  0, 0, 0),
+  run3:     P( 54, 112,   14,   0,  -36, 81,   32, 109,   8, -3, -1, 0, 0),
+  run4:     P( 36,  78,   19,   0,  -24, 85,   22, 105,   8, -3, -2, 0, 0),
+  run5:     P( 20,  63,   28,   0,  -13, 90,   12, 100,   7, -2, -3, 0, 0),
+  run6:     P(  0,  27,   34,   0,    0, 95,    0,  95,   5, -2, -3, 0, 0),
+  run7:     P(-20,   0,   40,   0,   13,100,  -12,  90,   6, -2, -3, 0, 0),
+  run8:     P(-25,   0,   71,  72,   17,102,  -15,  88,   5, -2, -3, 0, 0),
+  run9:     P(-25,   0,   80, 101,   17,102,  -15,  88,   4, -2, -2, 0, 0),
+  run10:    P(-16,   0,   75, 106,   11, 99,  -10,  91,   5, -2, -2, 0, 0),
+
   skid:     P(   30,  -14,  -16,  -28,  -30, 30,  -34, 26,  -8,   4,  4,  0,  0),
 
   // the turn. He plants, pivots on the ball of the foot, and settles.
@@ -126,6 +148,11 @@ export const POSE = {
   deadA:    P(   40,  -70,   30,  -60,  -60, 40,  -66, 36, -30,  20,  6, -2, 26),
   deadB:    P(   84, -104,   78, -100,  -84, 30,  -88, 26, -70,  30, 14, -4, 78),
 };
+
+// The same pose with near and far exchanged — the second half of any
+// symmetrical cycle. A run is one step and its mirror, so the table only ever
+// carries one of them.
+export const SWAP = p => [p[2], p[3], p[0], p[1], p[6], p[7], p[4], p[5], ...p.slice(8)];
 
 // shortest-arc-free lerp: these are traced angles, not orientations, so a plain
 // numeric blend is what is wanted — a knee going 8 → 44 must pass through 26.

@@ -12,7 +12,14 @@
 // ballistic from a scripted launch, and input is read only in the window a move
 // declares open.
 
-import { POSE as Q, sample } from './figure.js';
+import { POSE as Q, SWAP, sample } from './figure.js';
+
+// Conrad's run: ten frames for a step, then the same ten mirrored for the other
+// one. 1.1 frames a key puts the cycle at 22 frames, which at 1.62px a frame is
+// a 17.8px stride — the stride the sheet actually shows, measured between his
+// feet at full split. Get that wrong and the feet skate.
+const RUN = [Q.run1, Q.run2, Q.run3, Q.run4, Q.run5, Q.run6, Q.run7, Q.run8, Q.run9, Q.run10];
+const RUN_CLIP = [...RUN, ...RUN.map(SWAP)].map(p => [p, 1.1]);
 
 export const HERO_W = 10, HERO_H = 30, CROUCH_H = 16;
 const G = 0.19, TERMINAL = 6.4;
@@ -61,7 +68,7 @@ const M = {
 
   drink: { dur: 46, open: 46, low: true, drinkAt: 22, clip: [[Q.drinkA, 8], [Q.drinkB, 26], [Q.drinkA, 12]] },
 
-  run: { dur: 999, loop: true, open: 0, speed: 1.62, clip: [[Q.run1, 5], [Q.run2, 5], [Q.run3, 5], [Q.run4, 5]] },
+  run: { dur: 999, loop: true, open: 0, speed: 1.62, clip: RUN_CLIP },
   skid: { dur: 17, open: 13, dx: [1.4, 1.1, 0.8, 0.5, 0.25, 0.1], clip: [[Q.skid, 12], [Q.stand, 5]] },
   // Turning WHILE running: he plants, pivots and goes back the other way in
   // one move instead of skidding to a halt and then turning on the spot.
