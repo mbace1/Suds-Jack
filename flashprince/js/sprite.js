@@ -19,16 +19,37 @@
 // LEFT on the sheet, so the flip is on face 1, not face -1.
 
 export const CELL_W = 32, CELL_H = 48;
-const SRC = 'ref/conrad.png';
+const SRC = 'ref/jimbo.png';
 
-// His fourteen. The quantiser is handed these so his pixels survive it.
-export const CONRAD_COLOURS = [
-  '#8484f7', '#7373e7', '#6363c6', '#5252b5', '#4242a5',   // jeans, lit to shade
-  '#634210', '#633100', '#946331', '#735221',              // the jacket
-  '#c67363',                                                // skin
-  '#848484', '#c6c6c6',                                     // the shoes
-  '#b52152', '#941042',                                     // the shirt
+// Jimbo's eighteen. The quantiser is handed these so his pixels survive it.
+//
+// He is Conrad's frames repainted (ref/recolour.py): brown trousers, a white
+// tee, a dark letterman jacket, and the hair left brown by picking it out of
+// the head region — hair and jacket share a colour on the original sheet, so
+// that one had to be split by WHERE it is rather than by what it is.
+export const JIMBO_COLOURS = [
+  '#1f2333',
+  '#2a2e40',
+  '#31364a',
+  '#3c4258',
+  '#4f3a22',
+  '#61482b',
+  '#633100',
+  '#634210',
+  '#735221',
+  '#745735',
+  '#848484',
+  '#88673f',
+  '#946331',
+  '#9a764a',
+  '#bcc2ce',
+  '#c67363',
+  '#c6c6c6',
+  '#e2e6ec',
 ];
+
+// the old name, still exported so nothing that reads it breaks
+export const CONRAD_COLOURS = JIMBO_COLOURS;
 
 // Where an animation lives on the sheet, and where the man stands inside a cell.
 //
