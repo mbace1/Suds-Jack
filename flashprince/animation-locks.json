@@ -8,30 +8,26 @@
   "approvedFamilies": {
     "run": {
       "status": "locked",
-      "approvedIn": "v23",
-      "dataPath": "js/motion-v20-data.js",
-      "exportName": "RUN",
-      "startExportName": "START",
-      "digestMode": "selected-exports-json",
-      "sha256": "3c6dfbe8d247becf3bb5eeaf96f8014298432d936db5bbbaeb22417ab69c7550",
+      "approvedIn": "v18",
+      "restoredIn": "v24",
+      "baselineRuntimePath": "js/sprite-proof-v18.js",
+      "baselineRuntimeSha256": "e02d3a0326ed560ffcbdf5d97687a1236eaaa93e01e5dec1754cffd3456a2624",
+      "dataPath": "js/run-v15-data.js",
+      "sha256": "e819454be942feaa6cfb8b8901784b5ec4cd5b8380d91e64a309654fd20998c2",
       "frameCount": 20,
       "holds": [5, 4, 3, 3, 4, 3, 3, 4, 5, 4, 3, 3, 4, 3, 3, 4, 5, 4, 3, 3],
       "startFrames": 6,
       "speed": 1.22,
-      "sourceFacesRight": true,
-      "runtimeSignature": "7df439ed",
-      "permission": {
-        "granted": "2026-08-09",
-        "record": "User reported mismatched jump character and distorted run trousers, then explicitly said Go.",
-        "scope": "Run artwork and character continuity only; cadence, start length, speed and root motion remain unchanged."
-      },
-      "previousApproval": {
-        "approvedIn": "v19",
-        "dataPath": "js/run-v15-data.js",
-        "sha256": "e819454be942feaa6cfb8b8901784b5ec4cd5b8380d91e64a309654fd20998c2",
-        "sourceFacesRight": false,
-        "runtimeSignature": "ff0dd32f"
-      },
+      "sourceFacesRight": false,
+      "runtimeSignature": "ff0dd32f",
+      "rollbackRecord": "The user restated that v18 is the locked animation direction after rejecting v23. The exact v18 run bundle is restored.",
+      "rejectedReplacements": [{
+        "version": "v23",
+        "dataPath": "js/motion-v20-data.js",
+        "exports": ["START", "RUN"],
+        "runtimeSignature": "7df439ed",
+        "reason": "Rejected by the user as the horrible character and animations; never reuse for playable run."
+      }],
       "changePolicy": "Explicit user permission naming the run animation is required."
     }
   }

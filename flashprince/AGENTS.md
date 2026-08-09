@@ -21,3 +21,10 @@ These rules apply to every file under `flashprince/`.
 7. A playable release means: default mobile twin-stick, right-stick jump,
    Classic Pixels and 4× Upscale are browser-tested; Hub text/version is
    updated; and the deployed `gh-pages` build is smoke-checked.
+8. The v23 `motion-v20-data.js` START/RUN replacement was rejected. Never
+   reuse it for the playable run or "unify" the character by replacing the
+   locked run. New action art must be made to match the approved run instead.
+9. "Approved run" means the exact v18 bundle: `run-v15-data.js`, its twenty
+   holds, first six run frames as start, left-facing source orientation,
+   1.22-pixel speed and v18 run advancement. Later versions are not a license
+   to reinterpret that direction.

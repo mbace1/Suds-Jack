@@ -2,6 +2,18 @@
 
 The public release number. The `?v=N` token in `index.html` is a separate thing: it tracks every module-graph change so a browser cannot serve half of one build and half of another. Bump both when shipping.
 
+## v24 — 2026-08-09
+
+The rejected v23 character replacement is removed.
+
+- Restores the exact v18 run artwork, twenty-frame cadence, six-frame
+  start, orientation, speed and root movement.
+- Permanently records the v20 START/RUN replacement as rejected so it cannot
+  be reused to "unify" the character again.
+- This is a controlled baseline recovery. Jump and landing are intentionally
+  not presented as fixed yet; they will be rebuilt to match this run only
+  after the baseline is confirmed in the Hub build.
+
 ## v23 — 2026-08-09
 
 The run and jump now keep the same character construction.
