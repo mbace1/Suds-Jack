@@ -115,6 +115,11 @@ const M = {
   dead: { dur: 999, open: 999, clip: [[Q.deadA, 10], [Q.deadB, 30]] },
 };
 
+// The move table is exported so the animation can be looked at outside the
+// game. A pose is thirteen numbers and the only way to know whether they are
+// the right thirteen is to lay the frames out in a row and look at them.
+export const MOVES = M;
+
 // which moves have the blade out, for drawing and for the guard test
 const ARMED_SWORD = new Set(['guard', 'advance', 'retreat', 'strike', 'parry', 'clang', 'swordOut', 'sheathe']);
 

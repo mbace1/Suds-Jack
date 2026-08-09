@@ -17,8 +17,11 @@
 //
 // N is the near limb (drawn in front of the torso), F the far one (drawn
 // behind, and a shade darker — the one cheat that gives a flat figure depth).
-// Every angle is degrees from straight down, positive swinging FORWARD, so the
-// same numbers work facing either way and there is no left/right sheet.
+// hip, shoulder, lean, head and rot are degrees from straight down, positive
+// swinging FORWARD, so the same numbers work facing either way and there is no
+// left/right sheet. `knee` and `el` are the JOINT, measured off the bone above
+// it and positive in the direction that joint actually closes: an elbow folds
+// the forearm forward, a knee folds the shin back.
 
 const D = Math.PI / 180;
 
@@ -28,100 +31,100 @@ export const P = (...v) => v;
 // Read these as traced frames, because that is what they are standing in for.
 export const POSE = {
   //           hipN kneeN hipF kneeF  shN  elN  shF  elF lean head  py  px rot
-  stand:    P(  -4,   4,    6,   5,    8,  16,   -5,  12,   4,  -2,   0,  0,  0),
-  breathe:  P(  -4,   3,    6,   4,    7,  14,   -4,  11,   3,  -1,  -1,  0,  0),
-  alert:    P( -10,   6,   12,   8,   14,  30,  -12,  26,   9,  -4,   1,  0,  0),
+  stand:    P(   -4,   -4,    6,   -5,    8, 16,   -5, 12,   4,  -2,  0,  0,  0),
+  breathe:  P(   -4,   -3,    6,   -4,    7, 14,   -4, 11,   3,  -1, -1,  0,  0),
+  alert:    P(  -10,   -6,   12,   -8,   14, 30,  -12, 26,   9,  -4,  1,  0,  0),
 
   // walking — a careful single step, PoP's shift-step. Long contact, low lift.
-  step1:    P(  22,   6,  -18,  24,  -16,  22,   18,  20,   6,  -2,   1,  0,  0),
-  step2:    P(   6,  20,   -4,  10,   -6,  20,    8,  18,   6,  -2,   2,  0,  0),
-  step3:    P( -16,  10,   20,  10,   14,  20,  -14,  18,   5,  -2,   1,  0,  0),
+  step1:    P(   22,   -6,  -18,  -24,  -16, 22,   18, 20,   6,  -2,  1,  0,  0),
+  step2:    P(    6,  -20,   -4,  -10,   -6, 20,    8, 18,   6,  -2,  2,  0,  0),
+  step3:    P(  -16,  -10,   20,  -10,   14, 20,  -14, 18,   5,  -2,  1,  0,  0),
 
   // running — four traced keys, contact / pass / contact / pass
-  run1:     P(  34,   8,  -30,  44,  -36,  46,   38,  36,  15,  -4,   0,  0,  0),
-  run2:     P(   6,  50,   -8,  14,  -14,  62,   16,  52,  14,  -4,  -2,  0,  0),
-  run3:     P( -30,  44,   34,   8,   38,  36,  -36,  46,  15,  -4,   0,  0,  0),
-  run4:     P(  -8,  14,    6,  50,   16,  52,  -14,  62,  14,  -4,  -2,  0,  0),
-  skid:     P(  30,  14,  -16,  28,  -30,  30,  -34,  26,  -8,   4,   4,  0,  0),
+  run1:     P(   34,   -8,  -30,  -44,  -36, 46,   38, 36,  15,  -4,  0,  0,  0),
+  run2:     P(    6,  -50,   -8,  -14,  -14, 62,   16, 52,  14,  -4, -2,  0,  0),
+  run3:     P(  -30,  -44,   34,   -8,   38, 36,  -36, 46,  15,  -4,  0,  0,  0),
+  run4:     P(   -8,  -14,    6,  -50,   16, 52,  -14, 62,  14,  -4, -2,  0,  0),
+  skid:     P(   30,  -14,  -16,  -28,  -30, 30,  -34, 26,  -8,   4,  4,  0,  0),
 
   // the turn. He plants, pivots on the ball of the foot, and settles.
-  turnA:    P(   8,  16,   -8,  16,   16,  30,  -14,  26,   2,   6,   3,  0,  0),
-  turnB:    P(   2,  26,   -2,  26,   24,  40,  -20,  36,  -2,  10,   6,  0,  0),
+  turnA:    P(    8,  -16,   -8,  -16,   16, 30,  -14, 26,   2,   6,  3,  0,  0),
+  turnB:    P(    2,  -26,   -2,  -26,   24, 40,  -20, 36,  -2,  10,  6,  0,  0),
 
   // crouching, and the roll out of it
-  crouch:   P(  56,  86,   48,  92,   26,  62,   18,  58,  26,  -6,  11,  1,  0),
-  crouchLo: P(  62,  96,   54, 100,   32,  70,   24,  64,  30,  -8,  13,  1,  0),
-  tuck:     P(  96, 108,   92, 112,   72,  96,   68,  92,  52,   0,  10,  0,  0),
+  crouch:   P(   56,  -86,   48,  -92,   26, 62,   18, 58,  26,  -6, 11,  1,  0),
+  crouchLo: P(   62,  -96,   54, -100,   32, 70,   24, 64,  30,  -8, 13,  1,  0),
+  tuck:     P(   96, -108,   92, -112,   72, 96,   68, 92,  52,   0, 10,  0,  0),
 
   // jumping. gather, extend, tuck, reach, absorb.
-  gather:   P(  46,  70,   40,  74,  -30,  34,  -34,  30,  24,  -4,   8,  0,  0),
-  launch:   P(  10,  14,   34,  46,   64,  30,   40,  40,  20,  -8,  -3,  0,  0),
-  rise:     P(  26,  46,  -14,  30,   58,  46,   14,  50,  16,  -6,  -1,  0,  0),
-  apex:     P(  34,  62,   -8,  40,   38,  60,   -6,  54,  10,  -4,   0,  0,  0),
-  descend:  P(  20,  30,  -20,  22,  -14,  40,  -28,  34,   6,   0,   0,  0,  0),
-  land:     P(  38,  62,   30,  66,   16,  56,   10,  52,  20,  -4,   8,  0,  0),
-  sprawl:   P(  70, 100,   58,  94,  -40,  70,  -48,  64,  38,  10,  12,  0,  0),
+  gather:   P(   46,  -70,   40,  -74,  -30, 34,  -34, 30,  24,  -4,  8,  0,  0),
+  launch:   P(   10,  -14,   34,  -46,   64, 30,   40, 40,  20,  -8, -3,  0,  0),
+  rise:     P(   26,  -46,  -14,  -30,   58, 46,   14, 50,  16,  -6, -1,  0,  0),
+  apex:     P(   34,  -62,   -8,  -40,   38, 60,   -6, 54,  10,  -4,  0,  0,  0),
+  descend:  P(   20,  -30,  -20,  -22,  -14, 40,  -28, 34,   6,   0,  0,  0,  0),
+  land:     P(   38,  -62,   30,  -66,   16, 56,   10, 52,  20,  -4,  8,  0,  0),
+  sprawl:   P(   70, -100,   58,  -94,  -40, 70,  -48, 64,  38,  10, 12,  0,  0),
 
   // hanging from a ledge. The arms are the anchor, so the body reads as weight.
-  hang:     P(  10,  26,   -6,  16,  164,  14,  158,  18,  -4,   4,   0,  0,  0),
-  hangSwing:P(  30,  38,   14,  22,  164,  10,  160,  14,  -8,   6,   1,  0,  0),
-  pullUp:   P(  46,  66,   30,  50,  150,  62,  146,  58,  12,   2,   4,  1,  0),
-  mantle:   P(  76,  92,   40,  70,  100,  84,   96,  80,  34,  -2,   6,  3,  0),
-  standUp:  P(  36,  58,   22,  44,   40,  50,   34,  46,  18,  -4,   5,  2,  0),
+  hang:     P(   10,  -26,   -6,  -16,  164, 14,  158, 18,  -4,   4,  0,  0,  0),
+  hangSwing:P(   30,  -38,   14,  -22,  164, 10,  160, 14,  -8,   6,  1,  0,  0),
+  pullUp:   P(   46,  -66,   30,  -50,  150, 62,  146, 58,  12,   2,  4,  1,  0),
+  mantle:   P(   76,  -92,   40,  -70,  100, 84,   96, 80,  34,  -2,  6,  3,  0),
+  standUp:  P(   36,  -58,   22,  -44,   40, 50,   34, 46,  18,  -4,  5,  2,  0),
 
   // the pistol. Drawing it is slow on purpose — it is the whole duel.
-  draw1:    P(  -6,   6,    8,   6,   30,  76,   -6,  12,   4,  -2,   0,  0,  0),
-  draw2:    P(  -8,   8,   10,   8,   62,  52,  -10,  16,   2,  -4,   0,  0,  0),
-  aim:      P( -10,   8,   14,   8,   86,   4,  -14,  18,   0,  -6,   0,  0,  0),
-  aimLow:   P(  58,  88,   50,  94,   84,   6,   20,  40,  24,  -8,  11,  1,  0),
-  recoil:   P( -12,  10,   16,  10,   72,  16,  -16,  20,  -4,  -8,  -1, -1,  0),
+  draw1:    P(   -6,   -6,    8,   -6,   30, 76,   -6, 12,   4,  -2,  0,  0,  0),
+  draw2:    P(   -8,   -8,   10,   -8,   62, 52,  -10, 16,   2,  -4,  0,  0,  0),
+  aim:      P(  -10,   -8,   14,   -8,   86,  4,  -14, 18,   0,  -6,  0,  0,  0),
+  aimLow:   P(   58,  -88,   50,  -94,   84,  6,   20, 40,  24,  -8, 11,  1,  0),
+  recoil:   P(  -12,  -10,   16,  -10,   72, 16,  -16, 20,  -4,  -8, -1, -1,  0),
 
   // ── the careful step ───────────────────────────────────────────────
   // Shift, in Prince of Persia, and the most useful move in it. He shortens
   // his stride, leans back off the toe, and puts one foot down where he can
   // see it. It exists because the game kills you for a pixel.
-  inch1:    P(  13,   5,   -9,  15,  -10,  20,   11,  18,  -4,  -2,   1,  0,  0),
-  inch2:    P(   4,  12,   -3,   9,   -4,  18,    5,  17,  -5,  -2,   2,  0,  0),
-  inch3:    P(  -8,   7,   11,   8,    9,  19,   -8,  17,  -4,  -2,   1,  0,  0),
-  peer:     P(  -6,   5,    9,   7,   10,  22,   -8,  18, -10,  14,   2, -1,  0),
+  inch1:    P(   13,   -5,   -9,  -15,  -10, 20,   11, 18,  -4,  -2,  1,  0,  0),
+  inch2:    P(    4,  -12,   -3,   -9,   -4, 18,    5, 17,  -5,  -2,  2,  0,  0),
+  inch3:    P(   -8,   -7,   11,   -8,    9, 19,   -8, 17,  -4,  -2,  1,  0,  0),
+  peer:     P(   -6,   -5,    9,   -7,   10, 22,   -8, 18, -10,  14,  2, -1,  0),
 
   // stepping up onto something a foot high, without hanging off it first
-  stepUpA:  P(  74,  62,   -6,  10,  -26,  36,   16,  30,  22,  -4,   2,  1,  0),
-  stepUpB:  P(  52,  20,   26,  74,    6,  46,  -18,  40,  30,  -6,  -6,  3,  0),
-  stepUpC:  P(  14,   8,   36,  56,   22,  38,   -8,  34,  16,  -4,  -2,  4,  0),
+  stepUpA:  P(   74,  -62,   -6,  -10,  -26, 36,   16, 30,  22,  -4,  2,  1,  0),
+  stepUpB:  P(   52,  -20,   26,  -74,    6, 46,  -18, 40,  30,  -6, -6,  3,  0),
+  stepUpC:  P(   14,   -8,   36,  -56,   22, 38,   -8, 34,  16,  -4, -2,  4,  0),
 
   // lowering himself over an edge on purpose, which is not the same thing as
   // falling off one
-  kneel:    P(  84,  96,   62,  88,   36,  58,   30,  54,  40,  -6,  12,  0,  0),
-  reachDn:  P( 100, 104,   78,  96,  110,  40,  104,  44,  46,   2,  14, -2,  0),
-  lower:    P(  46,  52,   30,  40,  150,  22,  146,  26,  10,   6,   6, -1,  0),
+  kneel:    P(   84,  -96,   62,  -88,   36, 58,   30, 54,  40,  -6, 12,  0,  0),
+  reachDn:  P(  100, -104,   78,  -96,  110, 40,  104, 44,  46,   2, 14, -2,  0),
+  lower:    P(   46,  -52,   30,  -40,  150, 22,  146, 26,  10,   6,  6, -1,  0),
 
   // running into a wall at speed, which Prince of Persia also charges you for
-  bumpA:    P(  26,  18,  -14,  26,  -46,  58,  -52,  52, -22,  16,   4, -2,  0),
-  bumpB:    P(  10,  22,   -6,  18,  -20,  46,  -26,  42, -10,   8,   3, -1,  0),
+  bumpA:    P(   26,  -18,  -14,  -26,  -46, 58,  -52, 52, -22,  16,  4, -2,  0),
+  bumpB:    P(   10,  -22,   -6,  -18,  -20, 46,  -26, 42, -10,   8,  3, -1,  0),
 
   // the flask
-  drinkA:   P(  58,  88,   50,  94,   26,  62,   18,  58,  28,  -4,  11,  1,  0),
-  drinkB:   P(  56,  86,   48,  92,  132,  96,   22,  60,  20, -14,  10,  1,  0),
+  drinkA:   P(   58,  -88,   50,  -94,   26, 62,   18, 58,  28,  -4, 11,  1,  0),
+  drinkB:   P(   56,  -86,   48,  -92,  132, 96,   22, 60,  20, -14, 10,  1,  0),
 
   // ── the sword ──────────────────────────────────────────────────────
   // En garde is a WHOLE BODY, not an arm: side-on, weight back, knees soft.
   // At thirty pixels the stance has to be readable as a silhouette or the
   // duel is unreadable, and the duel is the other half of the game.
-  guard:    P(  30,  26,  -22,  30,   62,  52,  -30,  44,  -8,  -4,   6,  0,  0),
-  guardHi:  P(  28,  24,  -20,  28,   78,  40,  -28,  42,  -4,  -6,   5,  0,  0),
-  advance:  P(  44,  18,  -14,  40,   66,  48,  -34,  46,   2,  -4,   5,  2,  0),
-  retreat:  P(  10,  38,  -34,  22,   56,  58,  -24,  40, -14,  -2,   7, -2,  0),
-  strikeA:  P(  38,  22,  -18,  34,   14,  86,  -26,  46,  -2,  -6,   5,  0,  0),
-  strikeB:  P(  62,  14,  -20,  46,   96,   4,  -18,  40,  16,  -8,   2,  4,  0),
-  parry:    P(  26,  28,  -20,  30,  104,  36,  -26,  44, -10,  -8,   6, -1,  0),
-  clang:    P(  22,  30,  -18,  32,  118,  52,  -30,  46, -16,  -4,   7, -3,  0),
-  swordUp:  P(  -4,   6,    8,   6,   36,  70,   -8,  14,   2,  -2,   0,  0,  0),
+  guard:    P(   30,  -26,  -22,  -30,   62, 52,  -30, 44,  -8,  -4,  6,  0,  0),
+  guardHi:  P(   28,  -24,  -20,  -28,   78, 40,  -28, 42,  -4,  -6,  5,  0,  0),
+  advance:  P(   44,  -18,  -14,  -40,   66, 48,  -34, 46,   2,  -4,  5,  2,  0),
+  retreat:  P(   10,  -38,  -34,  -22,   56, 58,  -24, 40, -14,  -2,  7, -2,  0),
+  strikeA:  P(   38,  -22,  -18,  -34,   14, 86,  -26, 46,  -2,  -6,  5,  0,  0),
+  strikeB:  P(   62,  -14,  -20,  -46,   96,  4,  -18, 40,  16,  -8,  2,  4,  0),
+  parry:    P(   26,  -28,  -20,  -30,  104, 36,  -26, 44, -10,  -8,  6, -1,  0),
+  clang:    P(   22,  -30,  -18,  -32,  118, 52,  -30, 46, -16,  -4,  7, -3,  0),
+  swordUp:  P(   -4,   -6,    8,   -6,   36, 70,   -8, 14,   2,  -2,  0,  0,  0),
 
   // and being hit, and stopping
-  hurt:     P( -16,  16,   22,  20,  -34,  40,  -42,  34, -12,  12,   2, -2,  0),
-  deadA:    P(  40,  70,   30,  60,  -60,  40,  -66,  36, -30,  20,   6, -2, 26),
-  deadB:    P(  84, 104,   78, 100,  -84,  30,  -88,  26, -70,  30,  14, -4, 78),
+  hurt:     P(  -16,  -16,   22,  -20,  -34, 40,  -42, 34, -12,  12,  2, -2,  0),
+  deadA:    P(   40,  -70,   30,  -60,  -60, 40,  -66, 36, -30,  20,  6, -2, 26),
+  deadB:    P(   84, -104,   78, -100,  -84, 30,  -88, 26, -70,  30, 14, -4, 78),
 };
 
 // shortest-arc-free lerp: these are traced angles, not orientations, so a plain
@@ -178,9 +181,14 @@ export function drawFigure(scr, x, y, face, pose, col, opt = {}) {
     y: from.y - Math.cos(a * D) * len * s,
   });
 
+  // A knee only bends one way. `knee` is FLEXION — it swings the shin BACKWARD
+  // off the thigh line, which is what folds a leg: heel toward the seat on the
+  // recovery, shin under the hip at the pass. Written the other way round (the
+  // shin swinging forward off the thigh) a leg can only ever open out, which is
+  // why the run used to read as a man dragging his trousers behind him.
   const leg = (hip, knee) => {
     const k = down(pel, hip + lean * 0.15, THIGH);
-    const a = down(k, hip + knee, SHIN);
+    const a = down(k, hip - knee, SHIN);
     return [R(k), R(a)];
   };
   const [kneeNp, ankNp] = leg(hipN, kneeN);
