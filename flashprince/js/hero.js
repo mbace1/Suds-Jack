@@ -239,6 +239,16 @@ export class Hero {
       case 'hang': return { anim: 'hang', f: this.f / 24, lipY: this.ledgeY };
       case 'pullUp': return over('mantle', 7, this.f, this.ledgeY);
       case 'climbDown': return over('lower', 7, this.f, this.ledgeY);
+      // ── the sword, off the Prince of Persia sheet ──────────────────
+      case 'swordOut': return over('swordDraw', 5);
+      case 'sheathe': return over('swordSheathe', 5);
+      case 'guard': return { anim: 'swordGuard', f: this.f / 26 };
+      case 'advance': return over('swordAdvance', 4);
+      case 'retreat': return over('swordRetreat', 4);
+      // the strike is the overhead; the lunge is what a held forward becomes
+      case 'strike': return over('swordStrike', 9);
+      case 'parry': return over('swordParry', 3);
+      case 'clang': return over('swordGuard', 2);
       case 'hurt': return { anim: 'skid', f: 0 };
       default: return { anim: 'stand', f: 0 };
     }

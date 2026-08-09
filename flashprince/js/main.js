@@ -47,6 +47,13 @@ const REEL = [
   ['lower', 'CLIMBING DOWN'],
   ['wake', 'GETTING UP'],
   ['dead', 'DEAD'],
+  // the sword, off the Prince of Persia sheet
+  ['swordDraw', 'SWORD · drawing'],
+  ['swordGuard', 'SWORD · en garde'],
+  ['swordAdvance', 'SWORD · advance'],
+  ['swordLunge', 'SWORD · the lunge'],
+  ['swordStrike', 'SWORD · overhead'],
+  ['swordParry', 'SWORD · parry'],
 ];
 
 class Stage {
@@ -60,6 +67,7 @@ class Stage {
     this.input = new Input(this.scr);
     this.world = new Bench();
     this.hero = new Hero(48, FLOOR);
+    this.hero.hasSword = true;          // the bench carries one, so it can be seen
     this.hero.go('wake');
     this.mode = 'free';
     this.reel = 0;
@@ -178,7 +186,8 @@ class Stage {
     if (sp) scr.text(`${sp.anim}`, 6, 40, C.DARK, s);
     if (this.hint > 0) {
       this.centre(scr, '◀ ▶  WALK, HOLD TO RUN   ▲  JUMP / PULL UP   ▼  CROUCH / CLIMB DOWN', H - 18, C.DARK, s);
-      this.centre(scr, 'FIRE  —  ANIMATION GALLERY', H - 10, C.DARK, s);
+      this.centre(scr, 'E  SWORD OUT  ·  ◀ ▶ ADVANCE / RETREAT  ·  ▲ STRIKE  ·  SHIFT PARRY', H - 10, C.DARK, s);
+      this.centre(scr, 'FIRE  —  ANIMATION GALLERY', H - 2, C.DARK, s);
     }
   }
 
@@ -205,7 +214,8 @@ class Stage {
       add('right', cx + u * 0.6, cy - u / 2, u, u);
       const rx = band.w * 0.78;
       add('jump', rx - u * 0.1, cy - u * 0.8, u * 1.6, u * 1.6);
-      add('fire', rx - u * 1.9, cy - u * 0.55, u * 1.3, u * 1.3);
+      add('fire', rx - u * 1.9, cy - u * 1.5, u * 1.3, u * 1.3);
+      add('gunbtn', rx - u * 1.9, cy + u * 0.15, u * 1.3, u * 1.3);
       add('careful', cx - u * 1.6, cy + u * 1.75, u * 3.2, u * 0.95);
     } else {
       const pw = W * scr.scale, ph = H * scr.scale;
@@ -217,7 +227,8 @@ class Stage {
       add('right', cx + u * 0.55, cy - u / 2, u, u);
       const rx = scr.ox + pw - u * 1.7;
       add('jump', rx - u * 0.75, cy - u * 0.75, u * 1.5, u * 1.5);
-      add('fire', rx - u * 2.5, cy - u * 0.5, u * 1.15, u * 1.15);
+      add('fire', rx - u * 2.5, cy - u * 1.45, u * 1.15, u * 1.15);
+      add('gunbtn', rx - u * 2.5, cy + u * 0.2, u * 1.15, u * 1.15);
       add('careful', cx - u * 1.55, cy + u * 1.7, u * 3.1, u * 0.85);
     }
     this.input.setZones(zones);
@@ -231,7 +242,7 @@ class Stage {
       d.fillRect(band.x, band.y, band.w, Math.max(1, band.h * 0.006));
     }
     const GLYPH = { up: '▲', down: '▼', left: '◀', right: '▶' };
-    const WORD = { jump: 'JUMP', fire: 'MODE', careful: 'CAREFUL' };
+    const WORD = { jump: 'JUMP', fire: 'MODE', gunbtn: 'SWORD', careful: 'CAREFUL' };
     for (const z of zones) {
       const on = this.input.zoneHeld(z.name);
       const r = Math.min(z.w, z.h) * 0.22;

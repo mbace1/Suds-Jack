@@ -20,6 +20,7 @@
 
 export const CELL_W = 32, CELL_H = 48;
 const SRC = 'ref/jimbo.png';
+const SWORD_SRC = 'ref/pop-jimbo.png';
 
 // Jimbo's eighteen. The quantiser is handed these so his pixels survive it.
 //
@@ -124,14 +125,68 @@ export const ANIM = {
   // Flashback does too
   lower: { row: 39, c0: 4, n: 7, lip: true, rev: true,
            anchors: [[4.9, 26], [11.7, 26], [14.7, 24], [17.1, 24], [19.9, 23], [16.9, 22], [15.6, 20]] },
+
+  // ── the sword ──────────────────────────────────────────────────────
+  // Off the OTHER sheet. Flashback has no sword in it at all, so these are the
+  // Prince of Persia frames, repainted the same way (ref/recolour_pop.py). His
+  // figure is 40px against Conrad's 38, near enough to stand next to him.
+  //
+  // That rip is hand-laid rather than a grid, so every frame carries its own
+  // source rect: [x, y, w, h, anchorX, anchorY] in sheet pixels. The anchor is
+  // the REAR foot — he faces right on this sheet, and in a lunge the rear foot
+  // is the planted one, so anchoring on the body's centre would drag him
+  // backwards as he reached. `faces: 1` because that sheet faces the other way
+  // from Conrad's: the flip is on face -1 here, not face 1.
+  swordDraw: {
+    sheet: 'sword', faces: 1,
+    rects: [[0,216,15,39,3,254], [17,217,16,38,20,254], [35,217,24,38,43,254],
+            [61,212,25,43,66,254], [88,218,33,37,91,254]],
+  },
+  swordSheathe: {
+    sheet: 'sword', faces: 1, rev: true,
+    rects: [[0,216,15,39,3,254], [17,217,16,38,20,254], [35,217,24,38,43,254],
+            [61,212,25,43,66,254], [88,218,33,37,91,254]],
+  },
+  swordGuard: {
+    sheet: 'sword', faces: 1, hold: 26, loop: true,
+    rects: [[0,322,29,37,3,358], [31,325,24,34,34,358], [69,322,36,37,72,358],
+            [107,316,41,43,110,358]],
+  },
+  swordAdvance: {
+    sheet: 'sword', faces: 1,
+    rects: [[0,270,29,37,3,306], [31,270,36,37,34,306], [69,273,24,34,72,306],
+            [107,269,35,38,110,306]],
+  },
+  swordRetreat: {
+    sheet: 'sword', faces: 1, rev: true,
+    rects: [[0,270,29,37,3,306], [31,270,36,37,34,306], [69,273,24,34,72,306],
+            [107,269,35,38,110,306]],
+  },
+  // the lunge: guard, extend, and the deep one where the blade is furthest out
+  swordLunge: {
+    sheet: 'sword', faces: 1,
+    rects: [[107,269,35,38,110,306], [144,272,41,35,147,306], [187,276,66,30,190,306],
+            [255,274,41,32,258,306], [298,269,32,37,301,306]],
+  },
+  // overhead, then the thrust, then back to the stance
+  swordStrike: {
+    sheet: 'sword', faces: 1,
+    rects: [[0,155,26,48,3,202], [28,155,25,48,31,202], [55,159,29,44,59,202],
+            [86,165,36,38,89,202], [124,164,40,39,127,202], [166,164,34,39,169,202],
+            [202,164,26,39,205,202], [230,165,24,38,234,202], [256,165,21,38,260,202]],
+  },
+  swordParry: {
+    sheet: 'sword', faces: 1,
+    rects: [[69,322,36,37,72,358], [107,316,41,43,110,358], [69,322,36,37,72,358]],
+  },
 };
 
 // where his hip sits above his feet when he is standing — the airborne anchor
 const HIP = 20;
 
-let sheet = null;
+const sheets = {};
 
-export function loadSheet(onReady) {
+function prepare(src, key, onReady) {
   const img = new Image();
   img.onload = () => {
     const c = document.createElement('canvas');
@@ -147,31 +202,48 @@ export function loadSheet(onReady) {
       if ((px[i] & 0x00ffffff) === 0) px[i] = 0;
     }
     x.putImageData(d, 0, 0);
-    sheet = c;
+    sheets[key] = c;
     onReady?.();
   };
-  img.src = SRC;
+  img.src = src;
   return img;
 }
 
-export const ready = () => !!sheet;
+export function loadSheet(onReady) {
+  prepare(SRC, 'body', onReady);
+  prepare(SWORD_SRC, 'sword');
+}
+
+export const ready = () => !!sheets.body;
 
 // Draw frame `i` of `anim` with his feet at (x, y) in picture pixels. Whole
 // pixels only: a half-pixel offset would resample him and he would stop being
 // his own artwork.
 export function drawSprite(scr, anim, i, x, y, face) {
-  if (!sheet) return false;
   const a = ANIM[anim];
   if (!a) return false;
-  const k = a.loop ? ((i % a.n) + a.n) % a.n : Math.max(0, Math.min(a.n - 1, i));
-  const col = a.c0 + (a.rev ? a.n - 1 - k : k);
-  const sx = col * CELL_W, sy = a.row * CELL_H;
-  const hip = a.anchors ? a.anchors[a.rev ? a.n - 1 - k : k] : null;
-  // he faces left on the sheet, so the anchor mirrors with him
-  const ax = hip ? (face > 0 ? CELL_W - hip[0] : hip[0])
-                 : (face > 0 ? CELL_W - a.ax : a.ax);
-  const ay = a.lip ? 0 : hip ? hip[1] + HIP : a.ground;
-  const dx = Math.round(x - ax), dy = Math.round(y - ay);
-  scr.blit(sheet, sx, sy, CELL_W, CELL_H, dx, dy, face > 0);
+  const img = sheets[a.sheet ?? 'body'];
+  if (!img) return false;
+  const n = a.n ?? a.rects.length;
+  const k = a.loop ? ((i % n) + n) % n : Math.max(0, Math.min(n - 1, i));
+  const j = a.rev ? n - 1 - k : k;
+  // the sheet's own facing: Conrad's frames face left, the sword sheet's right
+  const flip = (a.faces ?? -1) < 0 ? face > 0 : face < 0;
+
+  let sx, sy, sw, sh, ax, ay;
+  if (a.rects) {
+    const r = a.rects[j];
+    [sx, sy, sw, sh] = r;
+    ax = r[4] - r[0];                       // the anchor, inside its own rect
+    ay = r[5] - r[1];
+  } else {
+    sx = (a.c0 + j) * CELL_W; sy = a.row * CELL_H;
+    sw = CELL_W; sh = CELL_H;
+    const hip = a.anchors ? a.anchors[j] : null;
+    ax = hip ? hip[0] : a.ax;
+    ay = a.lip ? 0 : hip ? hip[1] + HIP : a.ground;
+  }
+  if (flip) ax = sw - ax;
+  scr.blit(img, sx, sy, sw, sh, Math.round(x - ax), Math.round(y - ay), flip);
   return true;
 }
