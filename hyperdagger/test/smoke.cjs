@@ -101,6 +101,7 @@ s.listen(0, '127.0.0.1', async () => {
     await frames(2);
     const tapFired = shots - d1;
     const cdAfterTap = hd.debug.getGun().shotCd;
+    const viewAfterTap = hd.debug.getWeaponView();
     // wait out the shotgun lockout, then HOLD: stream after streamDelay
     while (hd.debug.getGun().shotCd > 0) await frames(2);
     const d2 = shots;
@@ -114,10 +115,11 @@ s.listen(0, '127.0.0.1', async () => {
     await frames(3);
     const releaseFired = shots - d3;
     hd.daggers.fire = realFire;
-    return { moveFired, tapFired, cdAfterTap, early, streamed, releaseFired };
+    return { moveFired, tapFired, cdAfterTap, viewAfterTap, early, streamed, releaseFired };
   });
   ok('moving alone no longer fires', gun.moveFired === 0, JSON.stringify(gun));
   ok('a TAP fires the shotgun burst', gun.tapFired >= 10 && gun.cdAfterTap > 0, JSON.stringify(gun));
+  ok('the shotgun visibly kicks the claw', gun.viewAfterTap.recoil > 0.015 && gun.viewAfterTap.z > -1.16, JSON.stringify(gun.viewAfterTap));
   ok('the stream waits out streamDelay', gun.early <= 2, JSON.stringify(gun));
   ok('a HOLD streams', gun.streamed >= 3, JSON.stringify(gun));
   ok('releasing a long hold is not a tap', gun.releaseFired <= 2, JSON.stringify(gun));
@@ -238,16 +240,25 @@ s.listen(0, '127.0.0.1', async () => {
   const detail31 = await p.evaluate(async (tok) => {
     const { MODELS, parseModel } = await import(`./js/voxel.js?v=${tok}`);
     const base = parseModel(MODELS.skull, 1);
-    // world width must be unchanged by the resolution bump (hitboxes!)
     const xs = base.map(v => v.x);
     const width = Math.max(...xs) - Math.min(...xs) + MODELS.skull.voxelSize;
+    const hand = parseModel(MODELS.hand, 1);
+    const hxs = hand.map(v => v.x);
+    const handWidth = Math.max(...hxs) - Math.min(...hxs) + MODELS.hand.voxelSize;
+    const dc = window.__hd.daggers.mesh.material.color;
     // baked AO: bone voxels must NOT all share one flat color any more
     const boneCols = new Set(base.filter(v => v.key === 'W').map(v => v.color.getHexString()));
-    return { count: base.length, width: +width.toFixed(2), boneShades: boneCols.size };
+    return {
+      count: base.length, width: +width.toFixed(2), boneShades: boneCols.size,
+      handCount: hand.length, handWidth: +handWidth.toFixed(2), handTips: hand.filter(v => v.key === 'B').length,
+      dagger: { r: +dc.r.toFixed(2), g: +dc.g.toFixed(2), b: +dc.b.toFixed(2) },
+    };
   }, token);
-  ok('the skull is a sculpt now (≥250 source voxels)', detail31.count >= 250, JSON.stringify(detail31));
-  ok('its world width is unchanged (~1.54)', Math.abs(detail31.width - 1.54) < 0.02, JSON.stringify(detail31));
+  ok('the skull is a sculpt now (≥300 source voxels)', detail31.count >= 300, JSON.stringify(detail31));
+  ok('the basic skull owns a wide horned silhouette (~2.1)', Math.abs(detail31.width - 2.1) < 0.02, JSON.stringify(detail31));
   ok('AO bake gives bone real shading', detail31.boneShades > 10, JSON.stringify(detail31));
+  ok('the firing hand is a broad four-tip claw', detail31.handCount > 140 && detail31.handWidth === 0.45 && detail31.handTips === 8, JSON.stringify(detail31));
+  ok('daggers carry the ember-orange weapon colour', detail31.dagger.r > 2.5 && detail31.dagger.g < 0.5 && detail31.dagger.b < 0.1, JSON.stringify(detail31.dagger));
 
   const fx31 = await p.evaluate(() => {
     const hd = window.__hd;

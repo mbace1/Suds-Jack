@@ -8,6 +8,20 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v27 — 2026-08-09
+**Enemies and weapon finally own distinct silhouettes**
+- The basic chaser gains a broad swept-horn profile, deeper black sockets,
+  hotter red eyes and warmer bone. Its face reads against the void before the
+  player is close enough to parse voxel detail.
+- The old tube-like gauntlet is replaced by an original four-finger claw with
+  separated bone digits, dark palm breaks and ember-orange fingertips.
+- Tap fire now produces a longer, visible claw kick and roll while held fire
+  stays a tighter vibration. Warm tapered dagger projectiles replace the white
+  box streaks and launch farther from the near plane.
+- The controlled reference frame and software-WebGL gameplay gate cover the
+  new silhouette dimensions, four firing tips, recoil response, projectile
+  colour, minimal arena and zero browser errors.
+
 ## v26 — 2026-08-08
 **Devil Daggers becomes the visual target**
 - The procedural background kit is gone: five rifts, twelve pylons, twenty-four
