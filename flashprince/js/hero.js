@@ -189,6 +189,12 @@ export class Hero {
     if (s === 'run') return { anim: 'run', f: this.f / 1.1 };
     if (s === 'step') return { anim: this.stepPhase ? 'stepB' : 'step', f: this.f / (M.step.dur / 6) };
     if (s === 'stand') return { anim: 'stand', f: this.f / 30 };
+    if (s === 'crouch') return { anim: 'crouch', f: this.f / (M.crouch.dur / 4) };
+    if (s === 'crouchIdle') return { anim: 'crouchLow', f: this.f / 40 };
+    if (s === 'standUp') return { anim: 'rise', f: this.f / (M.standUp.dur / 4) };
+    if (s === 'roll') return { anim: 'roll', f: this.f / (M.roll.dur / 22) };
+    if (s === 'wake') return { anim: 'wake', f: this.f / (M.wake.dur / 15) };
+    if (s === 'dead') return { anim: 'dead', f: this.f / 4 };
     return null;
   }
 

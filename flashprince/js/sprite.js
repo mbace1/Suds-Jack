@@ -40,6 +40,18 @@ export const ANIM = {
   step: { row: 1, c0: 1, n: 6, ground: 42, ax: 13.0 },
   stepB: { row: 1, c0: 7, n: 6, ground: 42, ax: 13.0 },
   run: { row: 4, c0: 1, n: 20, ground: 44, ax: 16.1, hold: 1.1, loop: true },
+
+  // Grounded moves, where one anchor for the whole row is enough because his
+  // feet are on the floor in every frame of it. The airborne ones — the two
+  // jumps on rows 9 and 13, the hang on 25, the mantle on 39 — need a per-frame
+  // anchor taken off the hip instead, or the sprite's own rise fights the
+  // engine's, so they are not mapped yet.
+  crouch: { row: 17, c0: 1, n: 4, ground: 46, ax: 16.6 },
+  crouchLow: { row: 17, c0: 4, n: 2, ground: 46, ax: 16.6, hold: 40, loop: true },
+  rise: { row: 17, c0: 11, n: 4, ground: 46, ax: 16.6 },
+  roll: { row: 15, c0: 1, n: 22, ground: 47, ax: 20.6 },
+  wake: { row: 38, c0: 1, n: 15, ground: 37, ax: 12.7 },
+  dead: { row: 31, c0: 1, n: 11, ground: 45, ax: 17.8 },
 };
 
 let sheet = null;
