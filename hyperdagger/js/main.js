@@ -5,17 +5,17 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=57';
-import { Player } from './player.js?v=57';
-import { DaggerPool } from './daggers.js?v=57';
-import { GemPool } from './gems.js?v=57';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=57';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=57';
-import { OrbPool } from './bullets.js?v=57';
-import { AudioKit } from './audio.js?v=57';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=57';
-import { TUNING as T } from './tuning.js?v=57';
-import { HyperEnvironment } from './environment.js?v=57';
+import { InputManager } from './input.js?v=58';
+import { Player } from './player.js?v=58';
+import { DaggerPool } from './daggers.js?v=58';
+import { GemPool } from './gems.js?v=58';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=58';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=58';
+import { OrbPool } from './bullets.js?v=58';
+import { AudioKit } from './audio.js?v=58';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=58';
+import { TUNING as T } from './tuning.js?v=58';
+import { HyperEnvironment } from './environment.js?v=58';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -53,6 +53,10 @@ const STYLE_HUES = { crimson: null, cyan: 0.5, gold: 0.11, violet: 0.77 };
 // menu keeps showing user intent and a step-up can't resurrect a toggle the
 // user turned off.
 const BASE_PR = Math.min(window.devicePixelRatio, 2);
+// Devil Daggers' image is authored as a coarse software raster, not a clean
+// high-DPI WebGL frame. Keep every performance tier inside the same visual
+// language and let CSS enlarge the buffer with hard nearest-neighbour pixels.
+const SOFTWARE_PR = Math.min(BASE_PR, 0.72);
 // Phones open at ×27, not the ×64 desktop default: the governor needs a few
 // seconds of frame samples to react, and a mid-range phone spending those
 // seconds at the ceiling stutters through the opening spawn. An explicit
@@ -64,11 +68,11 @@ const AUTO_DETAIL_CEIL = window.matchMedia?.('(pointer: coarse)').matches ? 2 : 
 const PERF_TIERS = [
   // gibs = how many pieces ONE death throws (scales with the voxel density
   // ladder below, so a ×64 enemy actually shatters instead of chunking)
-  { chroma: true,  smear: true,  edge: true,  hull: true,  sphereEvery: 2, pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 520, litter: 2500 }, // T0 full
-  { chroma: false, smear: true,  edge: true,  hull: true,  sphereEvery: 3, pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 420, litter: 2000 }, // T1
-  { chroma: false, smear: false, edge: false, hull: true,  sphereEvery: 4, pr: BASE_PR,                bloom: true,  debrisCap: 3000, gibs: 300, litter: 1200 }, // T2
-  { chroma: false, smear: false, edge: false, hull: false, sphereEvery: 0, pr: Math.min(BASE_PR, 1.5), bloom: true,  debrisCap: 2000, gibs: 220, litter: 600 }, // T3
-  { chroma: false, smear: false, edge: false, hull: false, sphereEvery: 0, pr: 1,                      bloom: false, debrisCap: 800,  gibs: 110, litter: 0 }, // T4 floor
+  { chroma: true,  smear: true,  edge: true,  hull: true,  sphereEvery: 2, pr: SOFTWARE_PR,                 bloom: true,  debrisCap: 4000, gibs: 520, litter: 2500 }, // T0 full
+  { chroma: false, smear: true,  edge: true,  hull: true,  sphereEvery: 3, pr: SOFTWARE_PR,                 bloom: true,  debrisCap: 4000, gibs: 420, litter: 2000 }, // T1
+  { chroma: false, smear: false, edge: false, hull: true,  sphereEvery: 4, pr: SOFTWARE_PR,                 bloom: true,  debrisCap: 3000, gibs: 300, litter: 1200 }, // T2
+  { chroma: false, smear: false, edge: false, hull: false, sphereEvery: 0, pr: Math.min(SOFTWARE_PR, 0.62), bloom: true,  debrisCap: 2000, gibs: 220, litter: 600 }, // T3
+  { chroma: false, smear: false, edge: false, hull: false, sphereEvery: 0, pr: Math.min(SOFTWARE_PR, 0.50), bloom: false, debrisCap: 800,  gibs: 110, litter: 0 }, // T4 floor
 ];
 // mutable so headless tests can shrink the timescales
 const perfTuning = { downMs: 40, upMs: 22, settleMs: 2000, stableMs: 15000, downHoldMs: 1500, emaAlpha: 0.08 };
@@ -386,31 +390,39 @@ function buzz(strong, weak, ms) {
 // ---------------------------------------------------------------- arena
 function makeFloorTexture() {
   const c = document.createElement('canvas');
-  c.width = c.height = 256;
+  c.width = c.height = 128;
   const g = c.getContext('2d');
-  g.fillStyle = '#020202';
-  g.fillRect(0, 0, 256, 256);
-  for (let ty = 0; ty < 4; ty++) for (let tx = 0; tx < 4; tx++) {
-    if (Math.random() < 0.3) {
-      g.fillStyle = 'rgba(255,255,255,0.012)';
-      g.fillRect(tx * 64, ty * 64, 64, 64);
-    }
+  const hash = (x, y) => {
+    let n = Math.imul(x + 17, 374761393) ^ Math.imul(y + 31, 668265263);
+    n = Math.imul(n ^ (n >>> 13), 1274126177);
+    return ((n ^ (n >>> 16)) >>> 0) / 4294967295;
+  };
+  // Uneven soot and old blood replace the clean Tron grid. Work in chunky
+  // 2x2 texels so the ground reads as a hand-made software texture in motion.
+  for (let y = 0; y < 128; y += 2) for (let x = 0; x < 128; x += 2) {
+    const n = hash(x >> 1, y >> 1);
+    const grit = 8 + Math.floor(n * 15);
+    g.fillStyle = `rgb(${grit + (n > 0.88 ? 7 : 0)},${Math.max(4, grit - 3)},${Math.max(3, grit - 5)})`;
+    g.fillRect(x, y, 2, 2);
   }
-  g.strokeStyle = 'rgba(255,255,255,0.035)';
+  // Broken slab seams give motion scale without drawing a luminous grid.
   g.lineWidth = 1;
-  for (let i = 0; i <= 256; i += 32) {
-    g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 256); g.stroke();
-    g.beginPath(); g.moveTo(0, i); g.lineTo(256, i); g.stroke();
+  for (let i = 0; i <= 128; i += 16) {
+    g.strokeStyle = `rgba(96,32,22,${0.10 + hash(i, 1) * 0.08})`;
+    g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 128); g.stroke();
+    g.beginPath(); g.moveTo(0, i); g.lineTo(128, i); g.stroke();
   }
-  g.strokeStyle = 'rgba(255,255,255,0.16)';
-  g.lineWidth = 2;
-  for (let i = 0; i <= 256; i += 64) {
-    g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 256); g.stroke();
-    g.beginPath(); g.moveTo(0, i); g.lineTo(256, i); g.stroke();
+  g.fillStyle = 'rgba(126,38,24,0.10)';
+  for (let i = 0; i < 36; i++) {
+    const x = Math.floor(hash(i, 7) * 128);
+    const y = Math.floor(hash(i, 19) * 128);
+    g.fillRect(x, y, 1 + (i & 1), 1);
   }
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(14, 14);
+  tex.magFilter = tex.minFilter = THREE.NearestFilter;
+  tex.generateMipmaps = false;
+  tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
@@ -436,7 +448,7 @@ const floorMat = new THREE.ShaderMaterial({
     uniform vec3 uAccent;
     varying vec2 vUv;
     void main() {
-      vec3 col = texture2D(map, vUv * 14.0).rgb;
+      vec3 col = texture2D(map, vUv * 10.0).rgb;
       col *= uGlow + uPulse * 0.28;
       col = mix(col, col * uAccent, clamp(uRed, 0.0, 1.0));       // hurt flush
       gl_FragColor = vec4(col, 1.0);
@@ -684,7 +696,7 @@ function applyRenderScale() {
   composer.setPixelRatio(pr);
   renderer.setSize(window.innerWidth, window.innerHeight);
   composer.setSize(window.innerWidth, window.innerHeight);
-  edgePass.uniforms.uPx.value.set(1 / window.innerWidth, 1 / window.innerHeight);
+  edgePass.uniforms.uPx.value.set(1 / (window.innerWidth * pr), 1 / (window.innerHeight * pr));
 }
 
 function resize() {
@@ -1182,7 +1194,9 @@ function startGame() {
   state = 'playing';
   paused = false;
   elMsg.style.display = 'none';
-  elCross.style.display = input.touchMode ? 'none' : 'block';
+  // The claw and its projectile stream are the sight. A pasted HUD crosshair
+  // made the frame feel like a generic browser FPS and is absent in the target.
+  elCross.style.display = 'none';
   elPause.style.display = 'block';
   audio.droneStart();
   if (opts.music) audio.musicStart();
@@ -2624,6 +2638,22 @@ window.__hd = {
     getReap() { return { cool: +reapCool.toFixed(2), bones: litter.count }; },
     getTuning() { return T; },
     getGun() { return { shotCd: +shotCd.toFixed(2), heldT: +fireHeldT.toFixed(2) }; },
+    getRaster() {
+      const map = floorMat.uniforms.map.value;
+      const gl = renderer.getContext();
+      return {
+        pixelRatio: renderer.getPixelRatio(),
+        buffer: { w: gl.drawingBufferWidth, h: gl.drawingBufferHeight },
+        viewport: { w: window.innerWidth, h: window.innerHeight },
+        scaling: getComputedStyle(canvas).imageRendering,
+        crosshair: getComputedStyle(elCross).display,
+        floor: {
+          w: map.image.width, h: map.image.height,
+          nearest: map.magFilter === THREE.NearestFilter && map.minFilter === THREE.NearestFilter,
+          mipmaps: map.generateMipmaps,
+        },
+      };
+    },
     getWeaponView() {
       return {
         recoil: +recoil.toFixed(3),
