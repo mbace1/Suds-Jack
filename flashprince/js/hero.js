@@ -172,6 +172,11 @@ export class Hero {
     // a step is silently thrown away and the game reads as unresponsive when
     // it is only committed.
     this.jumpBuf = 0;
+    // The weapon button needs a buffer for the same reason jump does: it is
+    // only answered from a standing frame, and a press made while he is
+    // landing, stepping or turning was being thrown away. On a pad that is
+    // most of the presses — you reach for it as you arrive somewhere.
+    this.weaponBuf = 0;
     this.dropLock = 0;
     this.stepPhase = 0;
   }
@@ -298,6 +303,8 @@ export class Hero {
   update(world, input, game) {
     if (this.hurtT > 0) this.hurtT--;
     if (this.jumpBuf > 0) this.jumpBuf--;
+    if (this.weaponBuf > 0) this.weaponBuf--;
+    if (input.gunPress) this.weaponBuf = 22;
     // 26 frames — just longer than a step, which is the longest you can ever
     // be locked out. Shorter and a jump asked for one frame after a step
     // begins is still thrown away, which is the exact complaint.
@@ -481,7 +488,8 @@ export class Hero {
     // nothing, skipping whatever he has not found. One button because the
     // touch panel has one, and a control you cannot reach on a phone is a
     // control half the players do not have.
-    if (input.gunPress && !this.low && (s === 'stand' || s === 'standArmed')) {
+    if (this.weaponBuf > 0 && !this.low && (s === 'stand' || s === 'standArmed')) {
+      this.weaponBuf = 0;
       const next = this.nextWeapon();
       if (next !== this.weapon) {
         if (next === 'gun') { this.weapon = 'gun'; this.go('drawGun'); return; }

@@ -4,6 +4,18 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v33 — 2026-08-09
+
+**The weapon button gets a buffer.** It was only answered from a standing
+frame, so a press made while he was landing, stepping or turning went in the
+bin. On a pad that is most of the presses — you reach for the button as you
+arrive somewhere, not after. Twenty-two frames, the same reasoning as the jump
+buffer, which has been there since the beginning for exactly this.
+
+Found by driving the on-screen pad with real touches on a phone viewport, in
+both orientations. Everything else there was already right: a tap is one step,
+a hold becomes a run, jump jumps once, MODE toggles once.
+
 ## v32 — 2026-08-09
 
 **The controls.** Three bugs, and the first one is the whole complaint.
