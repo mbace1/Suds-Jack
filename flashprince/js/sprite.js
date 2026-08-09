@@ -175,6 +175,20 @@ export const ANIM = {
             [86,165,36,38,89,202], [124,164,40,39,127,202], [166,164,34,39,169,202],
             [202,164,26,39,205,202], [230,165,24,38,234,202], [256,165,21,38,260,202]],
   },
+  // THE TURN, and it comes off this sheet because Conrad's has none — checked
+  // every row of it. Six frames, and the chest goes 8px wide to 18 and back,
+  // which is a man rotating through front-on and the only shape that is.
+  //
+  // Played REVERSED with the facing flipped on frame one, so the mirror the
+  // engine already applies runs it the right way round: mirrored last frame is
+  // the profile he starts in, mirrored first frame is the one he ends in.
+  // Anchored on his CENTRE rather than the rear foot — he pivots on the spot.
+  turn: {
+    sheet: 'sword', faces: 1, rev: true,
+    rects: [[0,606,10,39,5,644], [12,605,14,40,19,644], [28,605,18,40,37,644],
+            [48,606,18,39,57,644], [68,606,12,39,74,644], [82,605,10,40,87,644]],
+  },
+
   swordParry: {
     sheet: 'sword', faces: 1,
     rects: [[69,322,36,37,72,358], [107,316,41,43,110,358], [69,322,36,37,72,358]],

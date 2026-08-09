@@ -49,10 +49,11 @@ const M = {
   stand: { dur: 999, loop: true, open: 0, clip: [[Q.breathe, 46], [Q.stand, 54]] },
   standArmed: { dur: 999, loop: true, open: 0, clip: [[Q.aim, 60], [Q.aim, 60]] },
 
-  // Eight frames, not eighteen. There is no turn animation on the sheet —
-  // Flashback flips him — so a long one is a man standing still while the
-  // stick does nothing, which reads as the game hanging rather than as weight.
-  turn: { dur: 8, open: 8, flipAt: 4, clip: [[Q.turnA, 4], [Q.stand, 4]] },
+  // Fourteen frames of a real about-face. Conrad's sheet has none — that was
+  // checked row by row — so these six frames are the Prince's, and the facing
+  // flips on frame ONE so the engine's own mirror runs the reversed clip the
+  // right way round.
+  turn: { dur: 14, open: 14, flipAt: 1, clip: [[Q.turnA, 7], [Q.stand, 7]] },
 
   // Fourteen pixels, not twelve. Measured off the sheet: the one frame of his
   // walk with BOTH feet on the ground has them 13.9px apart, and that is the
@@ -215,8 +216,7 @@ export class Hero {
       // the careful step is the same six frames given half again as long
       case 'inch': return over(this.stepPhase ? 'stepB' : 'step', 6);
       case 'stand': case 'peer': return { anim: 'stand', f: this.f / 30 };
-      // no turn on the sheet: he holds still and flips, the way Flashback does
-      case 'turn': return { anim: 'stand', f: 0 };
+      case 'turn': return over('turn', 6);
       case 'runTurn': return over('skid', 12);
       case 'skid': case 'bump': return over('skid', 12);
       case 'crouch': return over('crouch', 4);
