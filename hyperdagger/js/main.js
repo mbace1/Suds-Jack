@@ -5,17 +5,17 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=59';
-import { Player } from './player.js?v=59';
-import { DaggerPool } from './daggers.js?v=59';
-import { GemPool } from './gems.js?v=59';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=59';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=59';
-import { OrbPool } from './bullets.js?v=59';
-import { AudioKit } from './audio.js?v=59';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=59';
-import { TUNING as T } from './tuning.js?v=59';
-import { HyperEnvironment } from './environment.js?v=59';
+import { InputManager } from './input.js?v=60';
+import { Player } from './player.js?v=60';
+import { DaggerPool } from './daggers.js?v=60';
+import { GemPool } from './gems.js?v=60';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=60';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=60';
+import { OrbPool } from './bullets.js?v=60';
+import { AudioKit } from './audio.js?v=60';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=60';
+import { TUNING as T } from './tuning.js?v=60';
+import { HyperEnvironment } from './environment.js?v=60';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -93,10 +93,10 @@ const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10, watcher: 1, b
 // hand model's palette letters; retint() rewrites just those voxels.
 const GAUNTLET_TIERS = [
   null,
-  { G: 0xbeb4a6, D: 0x5c554d, H: 0xe2d8c8, B: [2.2, 0.22, 0.08] },
-  { G: 0xc8bdaa, D: 0x625a50, H: [1.25, 0.72, 0.40], B: [2.35, 0.24, 0.08] },
-  { G: 0x8c8174, D: [1.35, 0.10, 0.06], H: [1.5, 0.45, 0.22], B: [2.5, 0.26, 0.08] },
-  { G: 0x4a1010, D: [2.2, 0.16, 0.10], H: [2.0, 0.32, 0.12], B: [2.7, 0.34, 0.10] },
+  { G: 0x260d0a, D: 0x080403, H: [1.60, 0.22, 0.04], B: [3.50, 0.58, 0.08] },
+  { G: 0x32100c, D: 0x0b0503, H: [1.90, 0.26, 0.04], B: [3.70, 0.68, 0.10] },
+  { G: 0x46100d, D: [0.80, 0.04, 0.02], H: [2.15, 0.30, 0.05], B: [4.00, 0.80, 0.12] },
+  { G: 0x5a0b08, D: [1.50, 0.06, 0.02], H: [2.60, 0.38, 0.06], B: [4.40, 1.00, 0.16] },
 ];
 
 // Style/combo meter (Returnal/DMC-flavoured): fast kills and dash-throughs
@@ -663,7 +663,7 @@ function updateSparks(dt) {
 const hand = new VoxelSprite(MODELS.hand);
 const handGroup = new THREE.Group();
 handGroup.add(hand.mesh);
-const HAND_BASE = { x: 0.4, y: -0.48, z: -1.18, rx: 0.08, ry: Math.PI + 0.32, rz: 0.08 };
+const HAND_BASE = { x: 0, y: -0.62, z: -1.08, rx: 0.08, ry: Math.PI, rz: 0 };
 handGroup.rotation.set(HAND_BASE.rx, HAND_BASE.ry, HAND_BASE.rz);
 handGroup.position.set(HAND_BASE.x, HAND_BASE.y, HAND_BASE.z);
 handGroup.traverse(o => o.layers.set(1));
@@ -688,6 +688,9 @@ const elStyleFill = document.getElementById('styleFill');
 const elMsg = document.getElementById('msg');
 const elToast = document.getElementById('toast');
 const elCross = document.getElementById('crosshair');
+function setRunFrame(active) {
+  document.body.classList.toggle('in-run', active);
+}
 const elVignette = document.getElementById('vignette');
 let toastTimeout = 0;
 
@@ -927,6 +930,7 @@ async function menuBoardLine() {
 }
 
 function showMenu() {
+  setRunFrame(false);
   elMsg.style.display = 'block';
   const modeLine = mode === 'hyper'
     ? `HYPER &mdash; your clock is your life: kills add seconds, a hit costs ${HYPER_HIT_COST}`
@@ -972,6 +976,7 @@ const TIPS_KEY = 'hyperDaggerSeenTips';
 
 function showTips() {
   state = 'tips';
+  setRunFrame(false);
   elMsg.style.display = 'block';
   elMsg.innerHTML =
     `<h1>HOW TO SURVIVE</h1>
@@ -1213,6 +1218,7 @@ function startGame() {
   input.consumeDashFlick();
   state = 'playing';
   paused = false;
+  setRunFrame(true);
   elMsg.style.display = 'none';
   // The claw and its projectile stream are the sight. A pasted HUD crosshair
   // made the frame feel like a generic browser FPS and is absent in the target.
@@ -1224,6 +1230,7 @@ function startGame() {
 
 function die(timedOut = false) {
   state = 'dead';
+  setRunFrame(false);
   deathAt = performance.now();
   slowmo = 1;
   trauma = 1;
@@ -1273,6 +1280,7 @@ window.addEventListener('pointerdown', e => {
     startGame();
   } else if (state === 'playing' && paused) {
     paused = false;
+    setRunFrame(true);
     perfSettleUntil = performance.now() + perfTuning.settleMs; // stale EMA after pause
     elMsg.style.display = 'none';
     elPause.style.display = 'block';
@@ -1372,6 +1380,7 @@ function optRow(label, key, values, fmt) {
 
 function showPause() {
   paused = true;
+  setRunFrame(false);
   elPause.style.display = 'none';
   elMsg.style.display = 'block';
   let voxCount = hand.aliveCount;
@@ -2709,7 +2718,7 @@ window.__hd = {
       return {
         recoil: +recoil.toFixed(3),
         x: +handGroup.position.x.toFixed(3), y: +handGroup.position.y.toFixed(3), z: +handGroup.position.z.toFixed(3),
-        rx: +handGroup.rotation.x.toFixed(3), rz: +handGroup.rotation.z.toFixed(3),
+        rx: +handGroup.rotation.x.toFixed(3), ry: +handGroup.rotation.y.toFixed(3), rz: +handGroup.rotation.z.toFixed(3),
       };
     },
     getLook() {

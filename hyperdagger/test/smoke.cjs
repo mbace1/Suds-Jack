@@ -50,6 +50,37 @@ s.listen(0, '127.0.0.1', async () => {
   await p.waitForFunction(() => window.__hd.debug.getState().state === 'playing', null, { timeout: 10000 });
   ok('a click starts the run', true);
 
+  // ---- v30 weapon-and-clock frame ---------------------------------------
+  await p.waitForFunction(() =>
+    document.querySelector('.arcade-home') && document.querySelector('.toko-signature'),
+  null, { timeout: 5000 });
+  await p.waitForTimeout(300); // let the intentional 180ms shell fade settle
+  const frame30 = await p.evaluate(() => {
+    const css = id => getComputedStyle(document.getElementById(id));
+    const weapon = window.__hd.debug.getWeaponView();
+    return {
+      active: document.body.classList.contains('in-run'),
+      kills: css('kills').display,
+      gems: css('gems').display,
+      style: css('style').display,
+      timer: css('timer').fontSize,
+      pause: +css('pauseBtn').opacity,
+      home: +getComputedStyle(document.querySelector('.arcade-home')).opacity,
+      signature: +getComputedStyle(document.querySelector('.toko-signature')).opacity,
+      weapon,
+    };
+  });
+  ok('the active frame is clock-only',
+    frame30.active && frame30.kills === 'none' && frame30.gems === 'none' &&
+    frame30.style === 'none' && frame30.timer === '27px', JSON.stringify(frame30));
+  ok('shell controls retreat during the fight',
+    frame30.pause <= 0.16 && frame30.home <= 0.08 && frame30.signature <= 0.08,
+    JSON.stringify(frame30));
+  ok('the four-dagger hand sits bottom-centre',
+    Math.abs(frame30.weapon.x) < 0.02 && Math.abs(frame30.weapon.y + 0.62) < 0.02 &&
+    Math.abs(frame30.weapon.z + 1.08) < 0.02 && Math.abs(frame30.weapon.ry - Math.PI) < 0.01 &&
+    Math.abs(frame30.weapon.rz) < 0.01, JSON.stringify(frame30.weapon));
+
   // ---- v25 clean presentation baseline ---------------------------------
   const clean25 = await p.evaluate(() => ({
     fx: window.__hd.debug.getFx(),
@@ -376,12 +407,20 @@ s.listen(0, '127.0.0.1', async () => {
     const hand = parseModel(MODELS.hand, 1);
     const hxs = hand.map(v => v.x);
     const handWidth = Math.max(...hxs) - Math.min(...hxs) + MODELS.hand.voxelSize;
+    const palm = hand.find(v => v.key === 'G').color;
+    const finger = hand.find(v => v.key === 'H').color;
+    const tip = hand.find(v => v.key === 'B').color;
     const dc = window.__hd.daggers.mesh.material.color;
     // baked AO: bone voxels must NOT all share one flat color any more
     const boneCols = new Set(base.filter(v => v.key === 'W').map(v => v.color.getHexString()));
     return {
       count: base.length, width: +width.toFixed(2), boneShades: boneCols.size,
       handCount: hand.length, handWidth: +handWidth.toFixed(2), handTips: hand.filter(v => v.key === 'B').length,
+      handColor: {
+        palm: [+palm.r.toFixed(3), +palm.g.toFixed(3), +palm.b.toFixed(3)],
+        finger: [+finger.r.toFixed(2), +finger.g.toFixed(2), +finger.b.toFixed(2)],
+        tip: [+tip.r.toFixed(2), +tip.g.toFixed(2), +tip.b.toFixed(2)],
+      },
       dagger: { r: +dc.r.toFixed(2), g: +dc.g.toFixed(2), b: +dc.b.toFixed(2) },
     };
   }, token);
@@ -389,6 +428,10 @@ s.listen(0, '127.0.0.1', async () => {
   ok('the basic skull owns a wide horned silhouette (~2.1)', Math.abs(detail31.width - 2.1) < 0.02, JSON.stringify(detail31));
   ok('AO bake gives bone real shading', detail31.boneShades > 10, JSON.stringify(detail31));
   ok('the firing hand is a broad four-tip claw', detail31.handCount > 140 && detail31.handWidth === 0.45 && detail31.handTips === 8, JSON.stringify(detail31));
+  ok('the hand is a dark palm with four hot dagger fingers',
+    detail31.handColor.palm[0] < 0.04 && detail31.handColor.finger[0] >= 1.5 &&
+    detail31.handColor.tip[0] >= 3.4 && detail31.handColor.tip[1] >= 0.55,
+    JSON.stringify(detail31.handColor));
   ok('daggers carry the ember-orange weapon colour', detail31.dagger.r > 2.5 && detail31.dagger.g < 0.5 && detail31.dagger.b < 0.1, JSON.stringify(detail31.dagger));
 
   const fx31 = await p.evaluate(() => {
@@ -472,6 +515,7 @@ s.listen(0, '127.0.0.1', async () => {
   const hull = await p.evaluate(async () => {
     const hd = window.__hd;
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    hd.debug.setTime(0); // keep the live director out of this isolated mesh check
     hd.debug.setOpt('perf', 'high');
     hd.debug.setOpt('look', 'smooth');
     for (const e of hd.enemies) e.alive = false;
@@ -479,7 +523,7 @@ s.listen(0, '127.0.0.1', async () => {
     hd.debug.spawnDread();
     await frames(3);
     const on = hd.debug.getLook();
-    const e = hd.enemies[hd.enemies.length - 1];
+    const e = hd.enemies.filter(x => x.type === 'dread').pop();
     const before = e.sprite.hull.geometry.getAttribute('position').count;
     e.sprite.chip(e.sprite.worldVoxels()[0].pos, 40);
     await frames(6); // past the re-skin throttle at clamped dt
@@ -504,6 +548,9 @@ s.listen(0, '127.0.0.1', async () => {
   const health = await p.evaluate(async () => {
     const hd = window.__hd;
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    hd.debug.setTime(0); // generated pressure would measure the director, not leaks
+    for (const e of hd.enemies) e.alive = false;
+    await frames(4);
     hd.debug.setOpt('perf', 'low'); // cheap frames — we count objects, not pixels
     const cycle = async () => {
       for (let i = 0; i < 4; i++) { hd.debug.spawnDread(); hd.debug.spawnWatcher(); }
@@ -528,15 +575,20 @@ s.listen(0, '127.0.0.1', async () => {
   const death = await p.evaluate(async () => {
     const hd = window.__hd;
     hd.debug.die();
-    return hd.debug.getState().state;
+    return {
+      state: hd.debug.getState().state,
+      activeFrame: document.body.classList.contains('in-run'),
+    };
   });
-  ok('debug.die() reaches the death screen', death === 'dead');
+  ok('debug.die() reaches the death screen', death.state === 'dead');
   await p.waitForTimeout(1200); // death screen ignores input for 700ms
   // click clear of the death screen's own buttons (they stopPropagation)
   await p.mouse.click(880, 620);
   const restarted = await p.waitForFunction(
     () => window.__hd.debug.getState().state === 'playing', null, { timeout: 4000 }).then(() => true, () => false);
   ok('one click restarts within 2s', restarted);
+  ok('the full shell returns off-run and retreats again on restart',
+    !death.activeFrame && await p.evaluate(() => document.body.classList.contains('in-run')));
 
   // ---- zero errors across the whole run ----------------------------------
   ok('still zero page errors at the end', errs.length === 0, errs.slice(0, 4).join(' | '));
