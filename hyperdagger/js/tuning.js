@@ -14,10 +14,24 @@ export const TUNING = {
   // first-person body
   player: {
     eye: 1.6,        // camera height above the feet
-    speed: 12,       // ground strafe speed, u/s
+    speed: 10.4,     // straight-line speed; diagonal strafing is deliberately faster
+    diagonalBoost: 0.56, // DD/90s-FPS speed reward for combining forward + strafe
+    groundAccel: 12, // Quake-style acceleration, 1/s
+    groundFriction: 7,
+    airAccel: 2.6,   // air steering without erasing carried momentum
+    airSpeedCap: 19,
     gravity: -24,
     jumpV: 8.6,      // takeoff velocity — with gravity gives the jump arc
-    maxJumps: 2,     // ground jump + one air jump
+    maxJumps: 1,     // extra height comes from a downward shotgun, not a free air jump
+    jumpBuffer: 0.11,
+    coyote: 0.08,
+    hopWindow: 0.12,
+    hopBoost: 1.08,
+    daggerJumpV: 13,
+    daggerJumpPush: 4.2,
+    daggerJumpWindow: 0.48,
+    daggerAimY: -0.38,
+    daggerJumps: 1,
   },
 
   // look, all devices. Touch rates are the shipped feel and stay put by
@@ -74,24 +88,26 @@ export const TUNING = {
     levelGems: [0, 0, 10, 30, 70],
     tiers: [
       null,
-      { stream: 13, homing: false },
-      { stream: 18, homing: false },
-      { stream: 18, homing: true },
-      { stream: 26, homing: true },
+      { stream: 20, homing: false },
+      { stream: 24, homing: false },
+      { stream: 36, homing: true },
+      { stream: 48, homing: true },
     ],
-    daggerSpeed: 58,   // u/s
-    spread: 0.035,     // rad of random cone on the stream
+    streamSpeed: 48,   // the sustained whip is slower and visibly trackable
+    shotgunSpeed: 78,  // tap-burst daggers cross the arena much faster
+    spread: 0.045,     // rad of random cone on the stream
+    originJitter: 0.1, // uneven fingertip release, not a laser from one pixel
     homingDot: 0.8,    // cos of the steer cone (~37°)
     homingRange: 30,   // u — targets beyond this are ignored
     homingSteer: 7,    // 1/s — exponential steer rate toward the target
     autoFireMove: 0.15, // move-input length that turns the touch stream on
-    streamDelay: 0.22, // s a press must be held before the stream begins
+    streamDelay: 0.12, // short enough to feel immediate while preserving tap detection
     // The burst wins the MOMENT, the stream wins the MINUTE (DD's economy):
     // count[lv]/cd must stay below tiers[lv].stream at every level, or
     // tap-spam becomes the optimal close-range play. The gate asserts it.
-    shotgunCount: [0, 10, 12, 12, 14], // daggers per tap-burst, by weapon level
-    shotgunSpread: 0.14, // rad — much wider cone than the stream
-    shotgunCd: 0.8,    // s before the hand fires again after a burst
+    shotgunCount: [0, 10, 12, 18, 24], // daggers per tap-burst, by weapon level
+    shotgunSpread: 0.18, // rad — much wider cone than the stream
+    shotgunCd: 0.55,   // brisk recovery; burst DPS still stays below the stream
   },
 
   gems: {
