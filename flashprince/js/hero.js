@@ -22,6 +22,13 @@ import { POSE as Q, sample } from './figure.js';
 const RUN_CLIP = Array.from({ length: 20 }, (_, i) => [Q['run' + (i + 1)], 1.1]);
 
 export const HERO_W = 10, HERO_H = 30, CROUCH_H = 16;
+
+// How far his feet hang below his hands. Measured off the sheet: hanging, his
+// hands are on the lip and his boots are FORTY-SIX pixels under it. The drawn
+// figure's reach was twenty-six, and every ledge in the old level was cut for
+// that number — which is why the hang could not take his frames until the
+// level went away and the ledges became mine to place.
+export const HANG = 46;
 const G = 0.19, TERMINAL = 6.4;
 
 // What a fall costs, measured from where the feet left the floor. A storey here
@@ -193,7 +200,7 @@ export class Hero {
   sprite() {
     const s = this.state;
     const m = M[s];
-    const over = (anim, n, f = this.f) => ({ anim, f: f / (m.dur / n) });
+    const over = (anim, n, f = this.f, lipY) => ({ anim, f: f / (m.dur / n), lipY });
     switch (s) {
       case 'run': return { anim: 'run', f: this.f / 1.1 };
       case 'step': return over(this.stepPhase ? 'stepB' : 'step', 6);
@@ -217,6 +224,12 @@ export class Hero {
       case 'fall': return { anim: 'fall', f: this.f / 6 };
       case 'land': return over('land', 4);
       case 'landHard': return over('land', 4);
+      // The ledge. These three are drawn relative to the LIP rather than to
+      // his feet — the sheet draws them hanging off a line, and that line is
+      // the ledge, so the whole vertical of the move comes out of the frames.
+      case 'hang': return { anim: 'hang', f: this.f / 24, lipY: this.ledgeY };
+      case 'pullUp': return over('mantle', 7, this.f, this.ledgeY);
+      case 'climbDown': return over('lower', 7, this.f, this.ledgeY);
       case 'hurt': return { anim: 'skid', f: 0 };
       default: return { anim: 'stand', f: 0 };
     }
@@ -355,7 +368,7 @@ export class Hero {
 
   grab(ledge) {
     this.x = ledge.x;
-    this.y = ledge.y + 26;         // hands on the lip, feet 26px under it
+    this.y = ledge.y + HANG;       // hands on the lip, feet HANG under it
     this.face = ledge.face;
     this.vx = this.vy = 0;
     this.ledgeY = ledge.y;
@@ -380,12 +393,12 @@ export class Hero {
       const L = this.climbTo;
       if (this.f === 1) { this.downFrom = this.y; this.face = L ? L.face : -this.face; }
       const t = Math.min(1, Math.max(0, (this.f - 14) / 20));
-      const target = (L ? L.y : this.downFrom) + 26;
+      const target = (L ? L.y : this.downFrom) + HANG;
       this.y = this.downFrom + (target - this.downFrom) * (t * t);
       if (L && this.f === 14) this.x = L.x;
       if (done) {
         this.y = target;
-        this.ledgeY = L ? L.y : this.y - 26;
+        this.ledgeY = L ? L.y : this.y - HANG;
         // He climbed down on purpose; the button that did it is still held.
         // Without this he lets go on the very next frame and drops into the
         // thing he was carefully avoiding — down has to be pressed AGAIN.
@@ -399,9 +412,9 @@ export class Hero {
 
   hangFrame(world, input, done) {
     if (this.state === 'pullUp') {
-      // the mantle: he rises the 26 pixels his own arms are long, then steps on
+      // the mantle: he rises the length of his own arms, then steps on
       const t = Math.min(1, Math.max(0, (this.f - 6) / 26));
-      this.y = this.ledgeY + 26 - 26 * t;
+      this.y = this.ledgeY + HANG * (1 - t);
       this.x += (this.f > 22 ? 0.42 : 0.12) * this.face;
       if (done) { this.y = this.ledgeY; this.go('stand'); }
       return;
