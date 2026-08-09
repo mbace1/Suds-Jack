@@ -54,7 +54,7 @@ s.listen(0, '127.0.0.1', async () => {
   await p.waitForFunction(() =>
     document.querySelector('.arcade-home') && document.querySelector('.toko-signature'),
   null, { timeout: 5000 });
-  await p.waitForTimeout(300); // let the intentional 180ms shell fade settle
+  await p.waitForTimeout(700); // let shell/signature fades settle under SwiftShader
   const frame30 = await p.evaluate(() => {
     const css = id => getComputedStyle(document.getElementById(id));
     const weapon = window.__hd.debug.getWeaponView();
@@ -77,9 +77,10 @@ s.listen(0, '127.0.0.1', async () => {
     frame30.pause <= 0.16 && frame30.home <= 0.08 && frame30.signature <= 0.08,
     JSON.stringify(frame30));
   ok('the four-dagger hand sits bottom-centre',
-    Math.abs(frame30.weapon.x) < 0.02 && Math.abs(frame30.weapon.y + 0.62) < 0.02 &&
-    Math.abs(frame30.weapon.z + 1.08) < 0.02 && Math.abs(frame30.weapon.ry - Math.PI) < 0.01 &&
-    Math.abs(frame30.weapon.rz) < 0.01, JSON.stringify(frame30.weapon));
+    Math.abs(frame30.weapon.x) < 0.02 && Math.abs(frame30.weapon.y + 0.92) < 0.02 &&
+    Math.abs(frame30.weapon.z + 1.5) < 0.02 && Math.abs(frame30.weapon.rx + 0.75) < 0.01 &&
+    Math.abs(frame30.weapon.ry - (Math.PI + 0.12)) < 0.01 && Math.abs(frame30.weapon.rz) < 0.01,
+    JSON.stringify(frame30.weapon));
 
   // ---- v25 clean presentation baseline ---------------------------------
   const clean25 = await p.evaluate(() => ({
@@ -121,9 +122,74 @@ s.listen(0, '127.0.0.1', async () => {
         !tier || t.weapon.shotgunCount[lv] / t.weapon.shotgunCd < tier.stream),
     };
   });
-  ok('TUNING drives the game', tun.dash === 30 && tun.lv4 === 48 && tun.player && tun.bleed === 5, JSON.stringify(tun));
+  ok('TUNING drives the game', tun.dash === 30 && tun.lv4 === 106 && tun.player && tun.bleed === 5, JSON.stringify(tun));
   ok('the burst never out-DPSes the stream', tun.economy === true && tun.sg === 10, JSON.stringify(tun));
   ok('shotgun daggers outrun the stream', tun.shotgunSpeed >= tun.streamSpeed * 1.5, JSON.stringify(tun));
+
+  // ---- v31 PURE becomes an authored DD ruleset -------------------------
+  const rules31 = await p.evaluate(async () => {
+    const hd = window.__hd;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    hd.debug.setTime(3.05);
+    await frames(3);
+    const squid = hd.enemies.find(e => e.ddTier === 1);
+    if (squid) squid.emit = true;
+    await frames(3);
+    const skulls = hd.enemies.filter(e => e.alive && e.type === 'skull');
+    const leader = skulls.find(e => !e.jawPivot);
+    const mouthA = hd.debug.getSkullMouth();
+    await frames(6);
+    const mouthB = hd.debug.getSkullMouth();
+    const result = {
+      mode: hd.debug.getState().mode,
+      dash: hd.player.dashEnabled,
+      cursor: hd.debug.getSchedule().pureScriptCursor,
+      squid: squid ? { hp: squid.hp, gems: squid.gemDrop, interval: squid.interval } : null,
+      skulls: skulls.length,
+      leader: leader ? { hp: leader.hp, gems: leader.gemDrop } : null,
+      mouthA, mouthB,
+    };
+    for (const e of hd.enemies) e.alive = false;
+    await frames(4);
+    hd.debug.setTime(0);
+    return result;
+  });
+  ok('PURE uses the fixed 3-second opening and removes dash',
+    rules31.mode === 'pure' && !rules31.dash && rules31.cursor >= 1 &&
+    rules31.squid?.hp === 10 && rules31.squid?.gems === 1 && rules31.squid?.interval === 20,
+    JSON.stringify(rules31));
+  ok('a squid emits the DD-shaped 9+1 skull wave',
+    rules31.skulls === 10 && rules31.leader?.hp === 5 && rules31.leader?.gems === 1,
+    JSON.stringify(rules31));
+  ok('basic skulls carry a separately animated jaw',
+    rules31.mouthA.animated && rules31.mouthA.parts === 2 &&
+    rules31.mouthA.phase !== rules31.mouthB.phase && rules31.mouthB.open >= 0.05 &&
+    rules31.mouthB.jaw?.cubes > 0 && !rules31.mouthB.jaw?.hull,
+    JSON.stringify(rules31));
+
+  const gemRules31 = await p.evaluate(() => {
+    const hd = window.__hd;
+    hd.gems.reset();
+    const player = hd.player.feet.clone(); player.y += 1.1;
+    hd.gems.spawn(player);
+    const g = hd.gems.active[0];
+    g.m.position.set(player.x + 10, player.y, player.z); g.vel.set(0, 0, 0);
+    const x0 = g.m.position.x;
+    hd.gems.update(0.1, player, false);
+    const xFiring = g.m.position.x;
+    g.vel.set(0, 0, 0);
+    hd.gems.update(0.1, player, true);
+    const xIdle = g.m.position.x;
+    g.m.position.set(player.x + 5, player.y, player.z); g.vel.set(0, 0, 0);
+    hd.gems.blast(player);
+    const blastVx = g.vel.x;
+    hd.gems.reset();
+    return { x0, xFiring, xIdle, blastVx, life: hd.debug.getTuning().gems.lifetime };
+  });
+  ok('gems attract only while idle and shotgun pressure repels them',
+    Math.abs(gemRules31.xFiring - gemRules31.x0) < 0.001 &&
+    gemRules31.xIdle < gemRules31.xFiring && gemRules31.blastVx > 0 && gemRules31.life === 10,
+    JSON.stringify(gemRules31));
 
   // ---- v29 90s-FPS movement: diagonal, momentum, hop, dagger jump -------
   const move29 = await p.evaluate(async () => {
@@ -168,6 +234,9 @@ s.listen(0, '127.0.0.1', async () => {
     hd.player.vy = 4;
     hd.player.airTime = 0.1;
     const daggerFirst = hd.player.daggerJump({ x: 0.2, y: -0.9, z: -0.4 });
+    const daggerTooSoon = hd.player.daggerJump({ x: 0.2, y: -0.9, z: -0.4 });
+    hd.player.vy = 2;
+    hd.player.airTime = 0.75;
     const daggerSecond = hd.player.daggerJump({ x: 0.2, y: -0.9, z: -0.4 });
     const dagger = hd.debug.getMovement();
 
@@ -177,7 +246,7 @@ s.listen(0, '127.0.0.1', async () => {
     skull.alive = false;
     hd.player.reset();
     return { straight, diagonal, coast, stopped, hop, beforeSecond, second,
-      daggerFirst, daggerSecond, dagger, pressure };
+      daggerFirst, daggerTooSoon, daggerSecond, dagger, pressure };
   });
   ok('forward + strafe is materially faster than a straight run',
     move29.diagonal > move29.straight * 1.25, JSON.stringify(move29));
@@ -188,9 +257,10 @@ s.listen(0, '127.0.0.1', async () => {
     JSON.stringify(move29.hop));
   ok('the old free second jump is gone', move29.second.vy < move29.beforeSecond,
     JSON.stringify({ before: move29.beforeSecond, after: move29.second.vy }));
-  ok('one downward shotgun recoil is available per airtime',
-    move29.daggerFirst && !move29.daggerSecond && move29.dagger.vy > 10 &&
-    move29.dagger.daggerJumps === 1, JSON.stringify(move29.dagger));
+  ok('downward bursts produce an authored double dagger jump',
+    move29.daggerFirst && !move29.daggerTooSoon && move29.daggerSecond &&
+    move29.dagger.vy > 10 && move29.dagger.daggerJumps === 2,
+    JSON.stringify(move29));
   ok('skulls beat straight speed but leave a turning window',
     move29.pressure.speed > tun.straight && move29.pressure.accel < 10,
     JSON.stringify(move29.pressure));
@@ -250,7 +320,7 @@ s.listen(0, '127.0.0.1', async () => {
   });
   ok('moving alone no longer fires', gun.moveFired === 0, JSON.stringify(gun));
   ok('a TAP fires the shotgun burst', gun.tapFired >= 10 && gun.cdAfterTap > 0, JSON.stringify(gun));
-  ok('the shotgun visibly kicks the claw', gun.viewAfterTap.recoil > 0.015 && gun.viewAfterTap.z > -1.16, JSON.stringify(gun.viewAfterTap));
+  ok('the shotgun visibly kicks the claw', gun.viewAfterTap.recoil > 0.015 && gun.viewAfterTap.z > -1.46, JSON.stringify(gun.viewAfterTap));
   ok('the stream keeps a short tap-detection window', gun.early === 0, JSON.stringify(gun));
   ok('a HOLD starts quickly and forms a dense stream', gun.responsive >= 2 && gun.streamed >= 6, JSON.stringify(gun));
   ok('tap projectiles are faster than held projectiles',
@@ -285,6 +355,36 @@ s.listen(0, '127.0.0.1', async () => {
   ok('touch right-tap fires the burst and can dagger-jump',
     touchBurst.shots >= 10 && touchBurst.jumps === 1 && touchBurst.vy > 9,
     JSON.stringify(touchBurst));
+
+  const homing31 = await p.evaluate(async () => {
+    const hd = window.__hd;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    while (hd.debug.getGun().shotCd > 0) await frames(2);
+    hd.daggers.reset();
+    hd.debug.addGems(70);
+    const lv3 = hd.debug.getGun();
+    hd.debug.addGems(20);
+    const banked = hd.debug.getGun();
+    hd.player.input.mouseAltDown = true;
+    await frames(1);
+    hd.player.input.mouseAltDown = false;
+    await frames(2);
+    const spent = hd.debug.getGun();
+    const homing = hd.daggers.active.filter(d => d.homing && d.damage === 10).length;
+    hd.debug.addGems(150);
+    const lv4 = hd.debug.getGun();
+    hd.daggers.reset();
+    return { lv3, banked, spent, homing, lv4 };
+  });
+  ok('70 gems unlock LV3 and later gems become homing ammo',
+    homing31.lv3.lv === 3 && homing31.lv3.homing === 0 && homing31.banked.homing === 20,
+    JSON.stringify(homing31));
+  ok('RMB spends the bank as ten-damage homing daggers',
+    homing31.homing === 20 && homing31.spent.homing === 0,
+    JSON.stringify(homing31));
+  ok('banking 150 homing daggers unlocks the final hand',
+    homing31.lv4.lv === 4 && homing31.lv4.homing === 0,
+    JSON.stringify(homing31));
 
   // ---- v4.27 aim assist: sticky near a target, inert without a pad -------
   const aim = await p.evaluate(() => {
@@ -385,11 +485,13 @@ s.listen(0, '127.0.0.1', async () => {
     hd.debug.setOpt('perf', 'high');
     // smear deepens mid-dash and settles back
     const dampIdle = hd.debug.getFx().damp;
+    hd.player.dashEnabled = true; // exercise the optional HYPER-mode effect
     hd.player.dashT = hd.debug.getTuning().dash.time;
     await frames(1);
     const dampDash = hd.debug.getFx().damp;
     await frames(30);
     const dampBack = hd.debug.getFx().damp;
+    hd.player.dashEnabled = false;
     hd.debug.setOpt('perf', 'auto');
     return { edgeOn: on.edge, glow: on.gridGlow, off, tierGated, dampIdle, dampDash, dampBack };
   });
@@ -425,12 +527,13 @@ s.listen(0, '127.0.0.1', async () => {
     };
   }, token);
   ok('the skull is a sculpt now (≥300 source voxels)', detail31.count >= 300, JSON.stringify(detail31));
-  ok('the basic skull owns a wide horned silhouette (~2.1)', Math.abs(detail31.width - 2.1) < 0.02, JSON.stringify(detail31));
+  ok('the basic skull owns a wider threatening horn silhouette (~2.38)', Math.abs(detail31.width - 2.38) < 0.02, JSON.stringify(detail31));
   ok('AO bake gives bone real shading', detail31.boneShades > 10, JSON.stringify(detail31));
   ok('the firing hand is a broad four-tip claw', detail31.handCount > 140 && detail31.handWidth === 0.45 && detail31.handTips === 8, JSON.stringify(detail31));
-  ok('the hand is a dark palm with four hot dagger fingers',
-    detail31.handColor.palm[0] < 0.04 && detail31.handColor.finger[0] >= 1.5 &&
-    detail31.handColor.tip[0] >= 3.4 && detail31.handColor.tip[1] >= 0.55,
+  ok('the original ash-and-bone claw is restored',
+    detail31.handColor.palm[0] > 0.3 && detail31.handColor.palm[0] < 1 &&
+    detail31.handColor.finger[0] > 0.5 && detail31.handColor.finger[2] > 0.35 &&
+    detail31.handColor.tip[0] >= 3.1 && detail31.handColor.tip[1] >= 0.29,
     JSON.stringify(detail31.handColor));
   ok('daggers carry the ember-orange weapon colour', detail31.dagger.r > 2.5 && detail31.dagger.g < 0.5 && detail31.dagger.b < 0.1, JSON.stringify(detail31.dagger));
 

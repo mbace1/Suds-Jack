@@ -5,21 +5,21 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=60';
-import { Player } from './player.js?v=60';
-import { DaggerPool } from './daggers.js?v=60';
-import { GemPool } from './gems.js?v=60';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=60';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=60';
-import { OrbPool } from './bullets.js?v=60';
-import { AudioKit } from './audio.js?v=60';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=60';
-import { TUNING as T } from './tuning.js?v=60';
-import { HyperEnvironment } from './environment.js?v=60';
+import { InputManager } from './input.js?v=61';
+import { Player } from './player.js?v=61';
+import { DaggerPool } from './daggers.js?v=61';
+import { GemPool } from './gems.js?v=61';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=61';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=61';
+import { OrbPool } from './bullets.js?v=61';
+import { AudioKit } from './audio.js?v=61';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=61';
+import { TUNING as T } from './tuning.js?v=61';
+import { HyperEnvironment } from './environment.js?v=61';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
-const SKULL_CAP = 46;
+const SKULL_CAP = 64;
 const TOTEM_CAP = 6;
 const SERPENT_CAP = 2;
 
@@ -93,10 +93,10 @@ const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10, watcher: 1, b
 // hand model's palette letters; retint() rewrites just those voxels.
 const GAUNTLET_TIERS = [
   null,
-  { G: 0x260d0a, D: 0x080403, H: [1.60, 0.22, 0.04], B: [3.50, 0.58, 0.08] },
-  { G: 0x32100c, D: 0x0b0503, H: [1.90, 0.26, 0.04], B: [3.70, 0.68, 0.10] },
-  { G: 0x46100d, D: [0.80, 0.04, 0.02], H: [2.15, 0.30, 0.05], B: [4.00, 0.80, 0.12] },
-  { G: 0x5a0b08, D: [1.50, 0.06, 0.02], H: [2.60, 0.38, 0.06], B: [4.40, 1.00, 0.16] },
+  { G: 0xbeb4a6, D: 0x5c554d, H: 0xe2d8c8, B: [2.2, 0.22, 0.08] },
+  { G: 0xc8bdaa, D: 0x625a50, H: [1.25, 0.72, 0.40], B: [2.35, 0.24, 0.08] },
+  { G: 0x8c8174, D: [1.35, 0.10, 0.06], H: [1.5, 0.45, 0.22], B: [2.5, 0.26, 0.08] },
+  { G: 0x4a1010, D: [2.2, 0.16, 0.10], H: [2.0, 0.32, 0.12], B: [2.7, 0.34, 0.10] },
 ];
 
 // Style/combo meter (Returnal/DMC-flavoured): fast kills and dash-throughs
@@ -663,7 +663,13 @@ function updateSparks(dt) {
 const hand = new VoxelSprite(MODELS.hand);
 const handGroup = new THREE.Group();
 handGroup.add(hand.mesh);
-const HAND_BASE = { x: 0, y: -0.62, z: -1.08, rx: 0.08, ry: Math.PI, rz: 0 };
+// A true first-person overlay: the old four-finger claw is pitched into the
+// screen so its silhouette reads, and world geometry can never hide it.
+hand.material.depthTest = false;
+hand.material.depthWrite = false;
+hand.material.transparent = true;
+hand.mesh.renderOrder = 20;
+const HAND_BASE = { x: 0, y: -0.92, z: -1.5, rx: -0.75, ry: Math.PI + 0.12, rz: 0 };
 handGroup.rotation.set(HAND_BASE.rx, HAND_BASE.ry, HAND_BASE.rz);
 handGroup.position.set(HAND_BASE.x, HAND_BASE.y, HAND_BASE.z);
 handGroup.traverse(o => o.layers.set(1));
@@ -797,6 +803,11 @@ let fireTimer = 0;
 let fireHeldT = 0;
 let fireWasHeld = false;
 let shotCd = 0;
+let homingAmmo = 0;
+let homingFireTimer = 0;
+let homingHeldT = 0;
+let homingWasHeld = false;
+let weaponActive = false;
 let styleVal = 0;      // current meter fill (0..STYLE_CAP), bleeds when idle
 let stylePeakIdx = 0;  // best tier reached this run (for the death recap)
 let nextTotemAt = 0;
@@ -805,6 +816,7 @@ let nextThornAt = 0;
 let nextRevenantAt = 110; // the dead only rise once there are dead
 let nextPulseAt = 0; // budgeted pressure pulses (toko-drop's wave system, adapted)
 let pulseN = 0;
+let pureScriptCursor = 0;
 let serpentsSpawned = 0;
 let musicI = 0; // smoothed music intensity, reused by the reactive floor + sky
 let levAlive = false; // Leviathan on the field — the sky's ember burns hotter
@@ -816,7 +828,10 @@ let fovKick = 0;
 let slowmo = 0;
 // PURE = Devil Daggers rules (one touch kills). HYPER = HYPERDEMON rules:
 // a draining life-timer is your health — kills add seconds, hits cost 10.
-let mode = localStorage.getItem('hyperDaggerMode') === 'hyper' ? 'hyper' : 'pure';
+// New key intentionally returns existing players to the DD-authored default;
+// HYPER remains an optional remix they can select again from the menu.
+const MODE_KEY = 'hyperDaggerModeV31';
+let mode = localStorage.getItem(MODE_KEY) === 'hyper' ? 'hyper' : 'pure';
 let hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
 const HYPER_START = T.hyper.start;
 const HYPER_CAP = T.hyper.cap;
@@ -934,13 +949,16 @@ function showMenu() {
   elMsg.style.display = 'block';
   const modeLine = mode === 'hyper'
     ? `HYPER &mdash; your clock is your life: kills add seconds, a hit costs ${HYPER_HIT_COST}`
-    : 'PURE &mdash; Devil Daggers rules: one touch kills';
+    : 'PURE &mdash; scripted spawns, one touch kills, no escape button';
+  const controls = mode === 'hyper'
+    ? 'mouse look + <b>WASD</b> &middot; <b>SPACE</b> hop &middot; <b>SHIFT</b> dash &middot; <b>R</b> reap'
+    : 'mouse look + <b>WASD</b> &middot; <b>SPACE</b> hop &middot; <b>LMB</b> daggers &middot; <b>RMB</b> homing';
   elMsg.innerHTML =
     `<h1>HYPER DAGGER</h1>
      <p class="sub">a stripped-down Devil Daggers homage</p>
      <p>survive the swarm &mdash; time is your only score</p>
-     <p class="keys">mouse look + <b>WASD</b> &middot; <b>SPACE</b> hop &middot; <b>SHIFT</b> dash &middot; <b>R</b> reap &middot; <b>ESC</b> options<br>
-     gamepad &mdash; sticks &middot; <b>A/&#10005;</b> jump &middot; <b>B/&#9675;</b> dash &nbsp;|&nbsp; touch &mdash; <b>left tap = jump</b> &middot; <b>right tap = burst</b> &middot; <b>flick = dash</b></p>
+     <p class="keys">${controls} &middot; <b>ESC</b> options<br>
+     gamepad &mdash; sticks &middot; <b>A/&#10005;</b> jump &middot; triggers fire &nbsp;|&nbsp; touch &mdash; <b>left tap = jump</b> &middot; <b>right tap = burst</b></p>
      <button id="modeBtn">MODE: ${modeLine}</button>
      <button id="runKindBtn" class="opt">RUN: ${runKind === 'daily'
     ? `DAILY &mdash; everyone faces the ${todayStr()} seed`
@@ -950,7 +968,7 @@ function showMenu() {
   document.getElementById('modeBtn').addEventListener('pointerdown', e => {
     e.stopPropagation();
     mode = mode === 'hyper' ? 'pure' : 'hyper';
-    localStorage.setItem('hyperDaggerMode', mode);
+    localStorage.setItem(MODE_KEY, mode);
     hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
     showMenu();
   });
@@ -983,9 +1001,9 @@ function showTips() {
      <p class="big">&#9876; <b>tap</b> = shotgun burst &middot; <b>hold</b> = stream</p>
      <p class="sub">every dagger is aimed &mdash; on touch the stream runs itself while you move</p>
      <p class="big">&#10227; <b>jump as you land</b> to carry speed</p>
-     <p class="sub">burst into the floor after takeoff for a dagger jump</p>
+     <p class="sub">burst down after takeoff, then again near the apex</p>
      <p class="big">&#9670; <b>gems level your daggers</b></p>
-     <p class="sub">heavy kills drop them &mdash; 10 / 30 / 70 &rarr; faster &middot; homing &middot; the crimson hand</p>
+     <p class="sub">10 / 70 &rarr; faster &middot; then bank 150 for the final hand; RMB spends homing</p>
      <p class="go">click / tap / press &#10005; to descend</p>`;
 }
 
@@ -1174,6 +1192,11 @@ function resetRun() {
   fireHeldT = 999;
   fireWasHeld = true;
   shotCd = 0;
+  homingAmmo = 0;
+  homingFireTimer = 0;
+  homingHeldT = 999;
+  homingWasHeld = true;
+  weaponActive = false;
   styleVal = 0;
   stylePeakIdx = 0;
   // onboarding pacing lives in PULSE_POOL's unlock gates (watcher 25s …
@@ -1186,6 +1209,7 @@ function resetRun() {
   reapCool = 0;
   nextPulseAt = 20;
   pulseN = 0;
+  pureScriptCursor = 0;
   serpentsSpawned = 0;
   musicI = 0;
   applyGauntlet(1);
@@ -1197,6 +1221,7 @@ function resetRun() {
   lifeT = HYPER_START;
   mercyT = 0;
   player.reset();
+  player.dashEnabled = mode === 'hyper';
 }
 
 function goFullscreen() {
@@ -1350,7 +1375,12 @@ function applyOpts() {
   const hullOn = opts.look === 'smooth' && tier.hull;
   setHullMode(hullOn);
   hand.setHull(hullOn); // noHull in the model def keeps it cubes regardless
-  for (const e of enemies) { e.sprite.applyStyle?.(); e.sprite.setHull?.(hullOn); }
+  for (const e of enemies) {
+    for (const part of e.parts || [e.sprite]) {
+      part.applyStyle?.();
+      part.setHull?.(hullOn);
+    }
+  }
   if (flyby) for (const p of flyby.parts) { p.sprite.applyStyle(); p.sprite.setHull(hullOn); }
   // high contrast: hotter orbs so projectiles read against the bloom
   // (intensity picked first, then the style hue re-aims it)
@@ -1384,7 +1414,9 @@ function showPause() {
   elPause.style.display = 'none';
   elMsg.style.display = 'block';
   let voxCount = hand.aliveCount;
-  for (const e of enemies) voxCount += e.sprite.aliveCount;
+  for (const e of enemies) {
+    for (const part of e.parts || [e.sprite]) voxCount += part.aliveCount;
+  }
   elMsg.innerHTML =
     `<h1>PAUSED</h1>
      <p class="sub">~${Math.min(999, Math.round(1000 / Math.max(1, frameEMA)))} fps &middot; ${voxCount.toLocaleString()} voxels on field &middot; new spawns use the VOXEL setting</p>
@@ -1571,13 +1603,20 @@ function totemCount() {
   return n;
 }
 
-function spawnSerpent(ghost = serpentsSpawned % 2 === 1) {
-  announce(ghost ? 'ghostSerpent' : 'serpent', ghost ? 'THE PALE SERPENT' : 'THE SERPENT');
-  const p = ringSpot(14).clone();
+function spawnSerpent(ghost = serpentsSpawned % 2 === 1, at = null, ddRules = false) {
+  if (!ddRules) announce(ghost ? 'ghostSerpent' : 'serpent', ghost ? 'THE PALE SERPENT' : 'THE SERPENT');
+  const p = at ? at.clone() : ringSpot(14).clone();
   p.y = 8;
   audio.roar();
   serpentsSpawned++;
   const s = new Serpent(scene, p, ARENA_R + 5, ghost);
+  if (ddRules) {
+    // 75 HP and 25 gems across twelve exposed body nodes.
+    s.segments.forEach((seg, i) => {
+      seg.hp = i === 0 ? 9 : 6;
+      seg.gemDrop = i === 0 ? 3 : 2;
+    });
+  }
   serpents.push(s);
   enemies.push(...s.segments);
 }
@@ -1652,6 +1691,64 @@ function updateFlyby(dt) {
     f.parts[i].sprite.update(dt);
   }
   if (f.t > 14) endFlyby();
+}
+
+// ------------------------------------------------ DD-authored spawnset
+// PURE is deliberately learnable: the same threats arrive at the same second
+// every run. The first 229 seconds mirror DD's early-game structure using the
+// closest Hyper Dagger analogs (squid spawner, gem thief, centipede).
+const DD_SPAWNSET = [
+  [3, 'squid1'], [14, 'squid1'], [19, 'squid1'], [24, 'squid1'],
+  [39, 'squid2'], [39, 'spider'],
+  [49, 'squid2'], [49, 'squid1'],
+  [64, 'squid2'], [64, 'squid1'],
+  [79, 'squid2'], [79, 'squid1'],
+  [94, 'squid2'], [94, 'squid1'],
+  [109, 'squid2'], [114, 'centipede'], [119, 'spider'],
+  [134, 'squid2'], [134, 'squid1'],
+  [144, 'squid2'], [144, 'squid1'],
+  [154, 'squid2'], [154, 'squid1'],
+  [164, 'squid2'], [164, 'squid1'],
+  [174, 'centipede'], [174, 'spider'], [174, 'spider'], [174, 'spider'],
+  [184, 'squid2'], [184, 'squid1'],
+  [189, 'squid2'], [189, 'squid1'],
+  [199, 'spider'], [199, 'spider'], [199, 'spider'],
+  [229, 'squid1'], [229, 'squid1'], [229, 'squid1'],
+  [229, 'squid1'], [229, 'squid1'], [229, 'squid1'],
+];
+
+function ddEdgeSpot(i) {
+  // A fixed golden-angle walk makes simultaneous spawns legible without
+  // turning the script into a repeating four-corner pattern.
+  const a = i * 2.399963229728653;
+  const r = ARENA_R * 0.84;
+  return new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r);
+}
+
+function spawnDDEntry(kind, index) {
+  const at = ddEdgeSpot(index);
+  audio.spawn();
+  if (kind === 'squid1' || kind === 'squid2') {
+    enemies.push(new Totem(scene, at, 20, kind === 'squid1' ? 1 : 2));
+  } else if (kind === 'spider') {
+    enemies.push(new Spider(scene, at, true));
+  } else if (kind === 'centipede') {
+    spawnSerpent(false, at, true);
+  }
+}
+
+function ddDirector() {
+  while (pureScriptCursor < DD_SPAWNSET.length &&
+      gameTime >= DD_SPAWNSET[pureScriptCursor][0]) {
+    const [, kind] = DD_SPAWNSET[pureScriptCursor];
+    spawnDDEntry(kind, pureScriptCursor);
+    pureScriptCursor++;
+    pulseN = pureScriptCursor;
+  }
+  emitSpawnerWaves(true);
+  for (let i = serpents.length - 1; i >= 0; i--) {
+    if (!serpents[i].alive) serpents.splice(i, 1);
+  }
 }
 
 // ---------------------------------------------------- pulse director
@@ -1825,7 +1922,50 @@ function runPulse(n) {
   if (lastPulsePicks.length > 20) lastPulsePicks.shift();
 }
 
+function emitSpawnerWaves(ddRules = false) {
+  for (const e of enemies) {
+    if ((e.type !== 'totem' && e.type !== 'leviathan') || !e.emit) continue;
+    e.emit = false;
+    const m = e.mouthPos(_sv).clone();
+    if (ddRules && e.ddTier) {
+      const count = e.ddTier === 1 ? 9 : 10;
+      for (let i = 0; i < count && skullCount() < SKULL_CAP; i++) {
+        const at = m.clone().add(_c.set(
+          (Math.random() - 0.5) * 1.6,
+          (Math.random() - 0.5) * 0.8,
+          (Math.random() - 0.5) * 1.6));
+        enemies.push(new Skull(scene, at));
+      }
+      if (skullCount() < SKULL_CAP) {
+        const leader = new Wraith(scene, m, e.ddTier === 2 ? 1.5 : 0);
+        leader.hp = e.ddTier === 1 ? 5 : 10;
+        leader.gemDrop = 1;
+        enemies.push(leader);
+      }
+      audio.spawn();
+      continue;
+    }
+    if (skullCount() >= SKULL_CAP) continue;
+    const boost = Math.min(6, gameTime * 0.06);
+    const roll = rng.next(); // seeded in daily runs — exhale mix is part of the schedule
+    const skull =
+      gameTime > 45 && roll < 0.15 ? new Splitter(scene, m, boost) :
+      gameTime > 60 && roll < 0.45 ? new Wraith(scene, m, boost) :
+      new Skull(scene, m, boost);
+    if (skull instanceof Splitter) announce('splitter', 'THE SPLITTERS');
+    else if (skull instanceof Wraith) announce('wraith', 'CROWNED SKULLS');
+    enemies.push(skull);
+    for (let i = 0; i < 4; i++) {
+      debris.spawn(m, skull.sprite.randomColor(),
+        _sv.clone().set((Math.random() - 0.5) * 4, 2 + Math.random() * 3, (Math.random() - 0.5) * 4),
+        0.14, 0.8);
+    }
+    audio.spawn();
+  }
+}
+
 function director(dt) {
+  if (mode === 'pure') { ddDirector(); return; }
   updatePending(dt);
   if (gameTime >= nextTotemAt && totemCount() < TOTEM_CAP) {
     const interval = Math.max(1.7, 3.4 - gameTime * 0.02);
@@ -1881,29 +2021,7 @@ function director(dt) {
     }
     nextLevAt = gameTime + 120;
   }
-  for (const e of enemies) {
-    if ((e.type === 'totem' || e.type === 'leviathan') && e.emit) {
-      e.emit = false;
-      if (skullCount() < SKULL_CAP) {
-        const m = e.mouthPos(_sv);
-        const boost = Math.min(6, gameTime * 0.06);
-        const roll = rng.next(); // seeded in daily runs — exhale mix is part of the schedule
-        const skull =
-          gameTime > 45 && roll < 0.15 ? new Splitter(scene, m, boost) :
-          gameTime > 60 && roll < 0.45 ? new Wraith(scene, m, boost) :
-          new Skull(scene, m, boost);
-        if (skull instanceof Splitter) announce('splitter', 'THE SPLITTERS');
-        else if (skull instanceof Wraith) announce('wraith', 'CROWNED SKULLS');
-        enemies.push(skull);
-        for (let i = 0; i < 4; i++) {
-          debris.spawn(m, skull.sprite.randomColor(),
-            _sv.clone().set((Math.random() - 0.5) * 4, 2 + Math.random() * 3, (Math.random() - 0.5) * 4),
-            0.14, 0.8);
-        }
-        audio.spawn();
-      }
-    }
-  }
+  emitSpawnerWaves(false);
   for (let i = serpents.length - 1; i >= 0; i--) {
     if (!serpents[i].alive) serpents.splice(i, 1);
   }
@@ -1911,23 +2029,35 @@ function director(dt) {
 
 // ---------------------------------------------------------------- weapon
 function levelForGems(n) {
-  let lv = 1;
-  for (let i = 2; i < LEVEL_GEMS.length; i++) if (n >= LEVEL_GEMS[i]) lv = i;
-  return lv;
+  return n >= LEVEL_GEMS[3] ? 3 : n >= LEVEL_GEMS[2] ? 2 : 1;
+}
+
+function setWeaponLevel(lv) {
+  if (lv <= weaponLv) return;
+  weaponLv = lv;
+  applyGauntlet(lv);
+  audio.levelup();
+  toast(lv === 4 ? 'LEVEL 4 — THE CRIMSON HAND'
+    : lv === 3 ? 'LEVEL 3 — RMB HOMING' : `DAGGERS LEVEL ${lv}`);
+  trauma = Math.max(trauma, lv === 4 ? 0.5 : 0.3);
 }
 
 function onGemsCollected(n) {
+  const before = gemCount;
   gemCount += n;
   audio.gem();
   addStyle(n); // hoarding gems mid-fight keeps the meter warm
   const lv = levelForGems(gemCount);
-  if (lv > weaponLv) {
-    weaponLv = lv;
-    applyGauntlet(lv);
-    audio.levelup();
-    toast(lv === 4 ? 'LEVEL 4 — THE CRIMSON HAND'
-      : lv === 3 ? 'DAGGERS LEVEL 3 — HOMING' : `DAGGERS LEVEL ${lv}`);
-    trauma = Math.max(trauma, lv === 4 ? 0.5 : 0.3);
+  if (weaponLv < 3) {
+    setWeaponLevel(lv);
+    // Only gems beyond the 70-gem upgrade become spendable homing ammo.
+    homingAmmo += Math.max(0, gemCount - Math.max(before, LEVEL_GEMS[3]));
+  } else {
+    homingAmmo += n;
+  }
+  if (weaponLv === 3 && homingAmmo >= 150) {
+    homingAmmo -= 150;
+    setWeaponLevel(4);
   }
 }
 
@@ -2027,7 +2157,7 @@ function segHitsSphere(p0, p1, c, r) {
   return _p0.distanceToSquared(c) <= r * r;
 }
 
-function fireDagger(spread, speed, homing) {
+function fireDagger(spread, speed, homing, damage = 1) {
   camera.getWorldDirection(_hitDir);
   _hitDir.x += (Math.random() - 0.5) * spread * 2;
   _hitDir.y += (Math.random() - 0.5) * spread * 2;
@@ -2040,7 +2170,7 @@ function fireDagger(spread, speed, homing) {
   _p0.addScaledVector(_seg, 0.24 + (Math.random() - 0.5) * T.weapon.originJitter);
   _c.setFromMatrixColumn(camera.matrixWorld, 1); // camera up
   _p0.addScaledVector(_c, -0.26 + (Math.random() - 0.5) * T.weapon.originJitter);
-  daggers.fire(_p0, _hitDir, speed, homing);
+  daggers.fire(_p0, _hitDir, speed, homing, damage);
 }
 
 function killEnemy(e, dir) {
@@ -2050,7 +2180,7 @@ function killEnemy(e, dir) {
   addStyle(STYLE_GAIN[e.type] ?? 3);
   if (mode === 'hyper') lifeT = Math.min(HYPER_CAP, lifeT + e.score); // kills buy time
   e.center(_c);
-  debris.burst(e.sprite.worldVoxels(), e.sprite.size,
+  debris.burst(e.deathVoxels?.() ?? e.sprite.worldVoxels(), e.sprite.size,
     _hitDir.copy(dir).multiplyScalar(5), e.type === 'skull' ? 1 : 1.4);
   audio.gib(e.type !== 'skull');
   // heavy kills stamp a shockwave ring into the floor, warp the frame, and
@@ -2062,8 +2192,8 @@ function killEnemy(e, dir) {
     buzz(0.7, 0.35, 90);
   }
   trauma = Math.max(trauma, e.type === 'skull' ? 0.18 : 0.35);
-  let drops = GEM_DROPS[e.type] || 0;
-  if (e.isHead) drops = 2;
+  let drops = e.gemDrop ?? GEM_DROPS[e.type] ?? 0;
+  if (e.isHead && e.gemDrop === undefined) drops = 2;
   if (e.type === 'spider') drops = 1 + e.stolen; // thieves give it all back
   for (let i = 0; i < drops; i++) gems.spawn(_c);
   if (e.splits) {
@@ -2080,11 +2210,13 @@ function killEnemy(e, dir) {
  *  wide cone at once, then locks the hand out briefly. Burst damage for a
  *  brute in your face, at the cost of your stream. */
 function fireShotgun(w) {
+  weaponActive = true;
   camera.getWorldDirection(_fwd2);
   for (let i = 0; i < T.weapon.shotgunCount[weaponLv]; i++) {
     fireDagger(T.weapon.shotgunSpread,
       T.weapon.shotgunSpeed * (0.93 + Math.random() * 0.14), w.homing);
   }
+  gems.blast(camera.position);
   shotCd = T.weapon.shotgunCd;
   recoil = 0.15;
   hand.flash(1.25);
@@ -2099,8 +2231,28 @@ function fireShotgun(w) {
   buzz(0.5, 0.3, 90);
 }
 
+function fireHomingShot() {
+  const count = Math.min(homingAmmo, T.weapon.homingShot[weaponLv] || 0);
+  if (count <= 0) return false;
+  for (let i = 0; i < count; i++) {
+    fireDagger(T.weapon.shotgunSpread * 0.8,
+      T.weapon.shotgunSpeed * (0.93 + Math.random() * 0.14), true, T.weapon.homingDamage);
+  }
+  homingAmmo -= count;
+  shotCd = T.weapon.shotgunCd;
+  weaponActive = true;
+  recoil = 0.13;
+  hand.flash(1.4);
+  fovKick = Math.max(fovKick, 3.5);
+  trauma = Math.max(trauma, 0.2);
+  gems.blast(camera.position);
+  audio.shotgun();
+  return true;
+}
+
 function updateCombat(dt) {
   const w = WEAPON[weaponLv];
+  weaponActive = false;
 
   // DD gunfeel: TAP = shotgun burst, HOLD = stream — every dagger manually
   // aimed on desktop and pad. Touch alone keeps the old auto-fire (a thumb
@@ -2124,6 +2276,7 @@ function updateCombat(dt) {
     streaming = held && fireHeldT >= T.weapon.streamDelay;
   }
   if (streaming && shotCd <= 0) {
+    weaponActive = true;
     fireTimer -= dt;
     while (fireTimer <= 0) {
       fireTimer += 1 / w.stream;
@@ -2137,7 +2290,34 @@ function updateCombat(dt) {
     fireTimer = 0;
   }
 
-  daggers.update(dt, w.homing ? enemies : undefined);
+  // LV3+ stores gems as a separate RMB/LT homing weapon. It uses the same
+  // tap/hold grammar but consumes one banked dagger per projectile.
+  const altHeld = input.altFiring;
+  if (altHeld) homingHeldT += dt;
+  else {
+    if (homingWasHeld && homingHeldT < T.weapon.streamDelay &&
+        weaponLv >= 3 && homingAmmo > 0 && shotCd <= 0) fireHomingShot();
+    homingHeldT = 0;
+  }
+  homingWasHeld = altHeld;
+  const homingStreaming = altHeld && homingHeldT >= T.weapon.streamDelay &&
+    weaponLv >= 3 && homingAmmo > 0;
+  if (homingStreaming && shotCd <= 0) {
+    weaponActive = true;
+    homingFireTimer -= dt;
+    while (homingFireTimer <= 0 && homingAmmo > 0) {
+      homingFireTimer += 1 / T.weapon.homingStream;
+      fireDagger(FIRE_SPREAD, T.weapon.streamSpeed, true, T.weapon.homingDamage);
+      homingAmmo--;
+      recoil = Math.min(0.04, recoil + 0.008);
+      hand.flash(0.45);
+      audio.fire();
+    }
+  } else {
+    homingFireTimer = 0;
+  }
+
+  daggers.update(dt, enemies);
 
   // dagger → enemy (segment vs sphere so fast daggers can't tunnel)
   for (let i = daggers.active.length - 1; i >= 0; i--) {
@@ -2160,8 +2340,8 @@ function updateCombat(dt) {
           break;
         }
       }
-      e.maxHp ??= e.hp + 1; // captured on first hit (hp already decremented)
-      e.hit(1, _hitDir);
+      e.maxHp ??= e.hp;
+      e.hit(d.damage ?? 1, _hitDir);
       // enemies may name their own hit voice (husk plating swallows daggers)
       audio[e.hitSound && audio[e.hitSound] ? e.hitSound : 'hit']();
       spawnSpark(d.m.position, e.hp <= 0);
@@ -2224,7 +2404,7 @@ function updateCombat(dt) {
   // gems: magnet + collect
   _p0.copy(player.feet);
   _p0.y += 1.1;
-  const got = gems.update(dt, _p0);
+  const got = gems.update(dt, _p0, !weaponActive);
   if (got) onGemsCollected(got);
 
   // enemy → player
@@ -2377,7 +2557,8 @@ function step(dt) {
   }
   player.justDaggerJumped = false;
   if (reapCool > 0) reapCool = Math.max(0, reapCool - dt);
-  if (input.consumeReap()) tryReap();
+  const reapPressed = input.consumeReap();
+  if (mode === 'hyper' && reapPressed) tryReap();
   director(dt);
   for (const e of enemies) {
     e.update(dt, camera.position, gems);
@@ -2481,7 +2662,7 @@ function step(dt) {
     elTimer.style.color = '';
     elKills.textContent = `${kills} kills`;
   }
-  elGems.textContent = `◆ ${gemCount} · LV ${weaponLv}${weaponLv >= 4 ? ' CRIMSON' : weaponLv >= 3 ? ' HOMING' : ''}`;
+  elGems.textContent = `◆ ${gemCount} · LV ${weaponLv}${weaponLv >= 3 ? ` · HOMING ${homingAmmo}` : ''}`;
 }
 
 const _threatForward = new THREE.Vector3();
@@ -2681,7 +2862,12 @@ window.__hd = {
     reap() { return tryReap(); },
     getReap() { return { cool: +reapCool.toFixed(2), bones: litter.count }; },
     getTuning() { return T; },
-    getGun() { return { shotCd: +shotCd.toFixed(2), heldT: +fireHeldT.toFixed(2) }; },
+    getGun() {
+      return {
+        shotCd: +shotCd.toFixed(2), heldT: +fireHeldT.toFixed(2),
+        homing: homingAmmo, homingHeldT: +homingHeldT.toFixed(2), lv: weaponLv,
+      };
+    },
     getMovement() {
       return {
         speed: +player.horizontalSpeed.toFixed(3),
@@ -2715,10 +2901,15 @@ window.__hd = {
       };
     },
     getWeaponView() {
+      hand.mesh.updateWorldMatrix(true, false);
+      _sv.setFromMatrixPosition(hand.mesh.matrixWorld).project(camera);
       return {
         recoil: +recoil.toFixed(3),
         x: +handGroup.position.x.toFixed(3), y: +handGroup.position.y.toFixed(3), z: +handGroup.position.z.toFixed(3),
         rx: +handGroup.rotation.x.toFixed(3), ry: +handGroup.rotation.y.toFixed(3), rz: +handGroup.rotation.z.toFixed(3),
+        count: hand.mesh.count, visible: hand.mesh.visible,
+        layers: { camera: camera.layers.mask, mesh: hand.mesh.layers.mask },
+        screen: { x: +_sv.x.toFixed(3), y: +_sv.y.toFixed(3), z: +_sv.z.toFixed(3) },
       };
     },
     getLook() {
@@ -2746,6 +2937,24 @@ window.__hd = {
     },
     spawnHusk() { const p = ringSpot(9).clone(); p.y = 1.35; const h = new Husk(scene, p); enemies.push(h); return h; },
     spawnSkull() { const p = ringSpot(8).clone(); p.y = 1.2; const s = new Skull(scene, p); enemies.push(s); return s; },
+    getSkullMouth() {
+      const s = enemies.find(e => e.alive && e.type === 'skull' && e.jawPivot);
+      if (s) {
+        s.jaw.mesh.updateWorldMatrix(true, false);
+        _sv.setFromMatrixPosition(s.jaw.mesh.matrixWorld).project(camera);
+        return {
+          animated: true, parts: s.parts.length,
+          open: +s.jawOpen.toFixed(3), angle: +s.jawPivot.rotation.x.toFixed(3),
+          phase: +s.jawT.toFixed(3),
+          jaw: {
+            alive: s.jaw.aliveCount, cubes: s.jaw.mesh.count, hull: !!s.jaw.hull,
+            tris: s.jaw.hull ? s.jaw.hull.geometry.getAttribute('position')?.count / 3 : 0,
+            screen: { x: +_sv.x.toFixed(3), y: +_sv.y.toFixed(3), z: +_sv.z.toFixed(3) },
+          },
+        };
+      }
+      return { animated: false, parts: 0, open: 0, angle: 0, phase: 0 };
+    },
     spawnDread() { const p = ringSpot(8).clone(); p.y = 1.5; enemies.push(new DreadSkull(scene, p)); },
     spawnGhostSerpent() { spawnSerpent(true); },
     spawnLeviathan() { enemies.push(new Leviathan(scene, 5)); },
@@ -2830,9 +3039,13 @@ window.__hd = {
     setPerfTier(t) { setPerfTier(t); },
     perfTuning,
     pulseInfo(n) { const k = pulseKind(n ?? pulseN); return { kind: k, budget: pulseBudget(n ?? pulseN, k) }; },
-    getState() { return { mode, lifeT, gameTime, mercyT, state }; },
+    getState() { return { mode, lifeT, gameTime, mercyT, state, weaponLv, gemCount, homingAmmo }; },
     getSchedule() {
-      return { nextTotemAt, nextThornAt, nextLevAt, nextPulseAt, pulseN };
+      return {
+        nextTotemAt, nextThornAt, nextLevAt, nextPulseAt, pulseN,
+        pureScriptCursor,
+        nextPureAt: DD_SPAWNSET[pureScriptCursor]?.[0] ?? null,
+      };
     },
   },
 };
