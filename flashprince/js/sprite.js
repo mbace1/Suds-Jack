@@ -31,9 +31,17 @@ export const CONRAD_COLOURS = [
 ];
 
 // Where an animation lives on the sheet, and where the man stands inside a cell.
-// `ground` is the row's own floor — the rip is not aligned between rows — and
-// `ax` is the column his hip rides on, averaged over the animation, so he does
-// not slide sideways when the frames change.
+//
+// Grounded animations anchor on the FLOOR: `ground` is the row's own floor, the
+// rip not being aligned between rows, and `ax` is the column his hip rides on
+// averaged over the animation, so he does not slide sideways between frames.
+//
+// Airborne ones cannot anchor there. A jump's cell carries its own rise, and
+// pinning it to the floor would add that rise to the engine's ballistic one and
+// send him up twice. So they anchor on the HIP instead, frame by frame —
+// `anchors` is [hipX, hipY] per frame, measured off the sheet, and the sprite
+// is placed so that hip sits twenty pixels above the engine's feet position,
+// which is where his hip is when he stands.
 export const ANIM = {
   stand: { row: 0, c0: 1, n: 3, ground: 44, ax: 13.9, hold: 30, loop: true },
   // his walk is twelve frames: two steps of six, and they are not the same six
@@ -52,7 +60,33 @@ export const ANIM = {
   roll: { row: 15, c0: 1, n: 22, ground: 47, ax: 20.6 },
   wake: { row: 38, c0: 1, n: 15, ground: 37, ax: 12.7 },
   dead: { row: 31, c0: 1, n: 11, ground: 45, ax: 17.8 },
+
+  // Coming to a halt out of a run, and turning on the spot.
+  skid: { row: 5, c0: 1, n: 12, ground: 38, ax: 9.5 },
+  turn: { row: 18, c0: 1, n: 10, ground: 47, ax: 21.2 },
+
+  // The standing jump: he gathers, drives up, and lands. Row 13 keeps his feet
+  // down through the drive — the sheet has no free-flight frames for it — so
+  // the extended frames carry the whole airborne phase while the engine's
+  // ballistic y does the actual rising.
+  gather: { row: 13, c0: 1, n: 5, ground: 47, ax: 16.1 },
+  airUp: { row: 13, c0: 6, n: 4, air: true, anchors: [[7.7, 26], [7, 26], [13.4, 26], [18.3, 24]] },
+  land: { row: 13, c0: 14, n: 4, ground: 47, ax: 12.8 },
+
+  // The running jump, which the sheet DOES have in full: a gather, the launch,
+  // and a long tuck through the air.
+  gatherRun: { row: 9, c0: 1, n: 2, ground: 36, ax: 9.7 },
+  airRun: {
+    row: 9, c0: 3, n: 12, air: true,
+    anchors: [[9.4, 15], [10.8, 15], [10.8, 16], [7.9, 17], [5, 18], [4.9, 18],
+              [5, 19], [5, 19], [6.5, 21], [7.8, 20], [7.8, 20], [7.5, 18]],
+  },
+  fall: { row: 9, c0: 11, n: 3, air: true, loop: true, hold: 6,
+          anchors: [[6.5, 21], [7.8, 20], [7.8, 20]] },
 };
+
+// where his hip sits above his feet when he is standing — the airborne anchor
+const HIP = 20;
 
 let sheet = null;
 
@@ -88,11 +122,15 @@ export function drawSprite(scr, anim, i, x, y, face) {
   if (!sheet) return false;
   const a = ANIM[anim];
   if (!a) return false;
-  const col = a.c0 + (a.loop ? ((i % a.n) + a.n) % a.n : Math.max(0, Math.min(a.n - 1, i)));
+  const k = a.loop ? ((i % a.n) + a.n) % a.n : Math.max(0, Math.min(a.n - 1, i));
+  const col = a.c0 + k;
   const sx = col * CELL_W, sy = a.row * CELL_H;
+  const hip = a.air ? a.anchors[k] : null;
   // he faces left on the sheet, so the anchor mirrors with him
-  const ax = face > 0 ? CELL_W - a.ax : a.ax;
-  const dx = Math.round(x - ax), dy = Math.round(y - a.ground);
+  const ax = hip ? (face > 0 ? CELL_W - hip[0] : hip[0])
+                 : (face > 0 ? CELL_W - a.ax : a.ax);
+  const ay = hip ? hip[1] + HIP : a.ground;
+  const dx = Math.round(x - ax), dy = Math.round(y - ay);
   scr.blit(sheet, sx, sy, CELL_W, CELL_H, dx, dy, face > 0);
   return true;
 }
