@@ -8,7 +8,7 @@
     "from": "VERSIONS.md"
   },
   "hyperdagger": {
-    "v": 27,
+    "v": 28,
     "from": "VERSIONS.md"
   },
   "dropcabal": {
@@ -28,7 +28,7 @@
     "from": "cache token"
   },
   "flashprince": {
-    "v": 2,
+    "v": 3,
     "from": "VERSIONS.md"
   },
   "gameoflife": {

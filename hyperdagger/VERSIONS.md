@@ -8,6 +8,17 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v28 — 2026-08-09
+**The frame finally reads like software rendering**
+- High-DPI cleanliness is replaced by a deliberately coarse internal raster,
+  enlarged with nearest-neighbour pixels across every performance tier.
+- The luminous grid becomes a deterministic 128px soot-and-blood floor with
+  broken slab seams, chunky texels and no filtering or mip blur.
+- The desktop crosshair is gone. The four-finger claw and its ember stream now
+  carry the aim, matching the reference instead of a generic browser FPS HUD.
+- The gameplay gate covers raster scale, hard pixel enlargement, the unfiltered
+  floor and crosshair removal alongside the existing combat checks.
+
 ## v27 — 2026-08-09
 **Enemies and weapon finally own distinct silhouettes**
 - The basic chaser gains a broad swept-horn profile, deeper black sockets,
