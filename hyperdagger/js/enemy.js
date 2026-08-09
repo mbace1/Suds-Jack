@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=58';
+import { VoxelSprite, MODELS } from './voxel.js?v=59';
 
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();
@@ -60,8 +60,10 @@ export class Skull extends VoxelEnemy {
     this.radius = 0.75;
     this.score = 1;
     this.vel = new THREE.Vector3();
-    this.maxSpeed = 6.2 + speedBoost;
-    this.accel = 15;
+    // Faster than a straight-running player, but deliberately slow to turn:
+    // the answer is circle-strafing, not simply holding W away from the swarm.
+    this.maxSpeed = 10.8 + speedBoost;
+    this.accel = 7.2;
     this.knock = 8;
     this.bobT = Math.random() * Math.PI * 2;
   }

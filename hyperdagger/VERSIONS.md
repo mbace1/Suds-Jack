@@ -8,6 +8,21 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v29 — 2026-08-09
+**Movement and fire finally reward the same skills as the reference**
+- Direct sliding becomes velocity-based 90s-FPS movement: forward-strafe runs
+  faster than a straight line, air steering preserves momentum, and a timed
+  landing hop carries speed into the next arc.
+- The free double jump is removed. A downward tap-burst just after takeoff now
+  produces the real extra-height move: a one-charge dagger jump.
+- Straight-running is no longer safe. Basic skulls outrun it but turn slowly,
+  making circle-strafing the readable answer instead of simply backing away.
+- The stream starts sooner and forms a slower, denser whip; tap-burst daggers
+  travel much faster with a shorter recovery and uneven fingertip origins.
+- Dagger hits use an authored 8px nearest-filtered impact star, and the gate
+  now covers acceleration, diagonal speed, hopping, dagger jumps and projectile
+  cadence alongside the v28 software-rendering checks.
+
 ## v28 — 2026-08-09
 **The frame finally reads like software rendering**
 - High-DPI cleanliness is replaced by a deliberately coarse internal raster,

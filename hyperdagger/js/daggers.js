@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TUNING as T } from './tuning.js?v=58';
+import { TUNING as T } from './tuning.js?v=59';
 
 const _v = new THREE.Vector3();
 const _t = new THREE.Vector3();
@@ -43,7 +43,7 @@ export class DaggerPool {
     this.mesh.instanceMatrix.needsUpdate = true;
   }
 
-  fire(origin, dir, speed = T.weapon.daggerSpeed, homing = false) {
+  fire(origin, dir, speed = T.weapon.streamSpeed, homing = false) {
     const m = this.pool.pop();
     if (!m) return;
     m.position.copy(origin);

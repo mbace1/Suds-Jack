@@ -70,14 +70,6 @@ export class AudioKit {
     this._noise(0.05, 'bandpass', 1600 + Math.random() * 600, 2, 0.08);
   }
 
-  /** DD tap-burst: a fistful of daggers at once — wide noise splash over a
-   *  low thump, unmistakably heavier than one stream tick. */
-  shotgun() {
-    if (!this.ctx) return;
-    this._noise(0.16, 'bandpass', 900 + Math.random() * 200, 1.2, 0.22);
-    this._tone('square', 110, 45, 0.14, 0.2);
-  }
-
   hit() {
     if (!this.ctx) return;
     this._tone('square', 240, 90, 0.08, 0.18);
@@ -93,8 +85,10 @@ export class AudioKit {
 
   shotgun() {
     if (!this.ctx) return;
-    this._noise(0.28, 'lowpass', 900, 0.8, 0.55);
-    this._tone('square', 130, 40, 0.22, 0.4);
+    const v = 0.9 + Math.random() * 0.2;
+    this._noise(0.22, 'bandpass', 820 * v, 0.9, 0.48);
+    this._noise(0.11, 'highpass', 2500 * v, 0.7, 0.16);
+    this._tone('square', 125 * v, 38, 0.2, 0.36);
   }
 
   gem() {

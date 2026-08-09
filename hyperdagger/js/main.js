@@ -5,17 +5,17 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=58';
-import { Player } from './player.js?v=58';
-import { DaggerPool } from './daggers.js?v=58';
-import { GemPool } from './gems.js?v=58';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=58';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=58';
-import { OrbPool } from './bullets.js?v=58';
-import { AudioKit } from './audio.js?v=58';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=58';
-import { TUNING as T } from './tuning.js?v=58';
-import { HyperEnvironment } from './environment.js?v=58';
+import { InputManager } from './input.js?v=59';
+import { Player } from './player.js?v=59';
+import { DaggerPool } from './daggers.js?v=59';
+import { GemPool } from './gems.js?v=59';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=59';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=59';
+import { OrbPool } from './bullets.js?v=59';
+import { AudioKit } from './audio.js?v=59';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=59';
+import { TUNING as T } from './tuning.js?v=59';
+import { HyperEnvironment } from './environment.js?v=59';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -575,13 +575,32 @@ function updateShadows() {
   shadows.instanceMatrix.needsUpdate = true;
 }
 
-// Impact sparks (dagger hits) + shockwave rings (heavy kills): tiny pooled
-// additive quads/rings, scale-and-fade — combat juice, no physics.
+// Impact sparks (dagger hits) + shockwave rings (heavy kills). The spark is an
+// authored 8px software sprite rather than a clean translucent WebGL square.
 const sparks = [];
 const sparkPool = [];
-const sparkGeo = new THREE.PlaneGeometry(0.5, 0.5);
+const sparkData = new Uint8Array(8 * 8 * 4);
+for (let y = 0; y < 8; y++) {
+  for (let x = 0; x < 8; x++) {
+    const dx = Math.abs(x - 3.5), dy = Math.abs(y - 3.5);
+    const core = dx <= 1 && dy <= 1;
+    const arm = (dx <= 0.5 && dy <= 3.5) || (dy <= 0.5 && dx <= 3.5);
+    const diag = Math.abs(dx - dy) < 0.35 && dx <= 2.5;
+    const a = core ? 255 : arm ? 220 : diag ? 150 : 0;
+    const i = (y * 8 + x) * 4;
+    sparkData[i] = 255; sparkData[i + 1] = core ? 210 : 88;
+    sparkData[i + 2] = core ? 120 : 18; sparkData[i + 3] = a;
+  }
+}
+const sparkTex = new THREE.DataTexture(sparkData, 8, 8, THREE.RGBAFormat);
+sparkTex.magFilter = THREE.NearestFilter;
+sparkTex.minFilter = THREE.NearestFilter;
+sparkTex.generateMipmaps = false;
+sparkTex.needsUpdate = true;
+const sparkGeo = new THREE.PlaneGeometry(0.68, 0.68);
 const sparkMat = new THREE.MeshBasicMaterial({
-  color: new THREE.Color().setRGB(2.2, 0.7, 0.5), transparent: true, opacity: 1,
+  color: new THREE.Color().setRGB(2.6, 0.85, 0.28), map: sparkTex,
+  transparent: true, opacity: 1, alphaTest: 0.04,
   blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
 });
 const ringGeo = new THREE.RingGeometry(0.82, 1, 40).rotateX(-Math.PI / 2);
@@ -599,8 +618,8 @@ function spawnSpark(pos, big = false) {
   }
   m.visible = true;
   m.position.copy(pos);
-  m.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
-  sparks.push({ m, t: 0.14, max: 0.14, big, ring: false });
+  const roll = Math.random() * Math.PI * 2;
+  sparks.push({ m, t: 0.14, max: 0.14, big, ring: false, roll });
 }
 
 function spawnShockwave(pos) {
@@ -625,6 +644,7 @@ function updateSparks(dt) {
       s.m.scale.setScalar((s.big ? 1.6 : 0.8) * (0.4 + (1 - k) * 1.4));
       s.m.material.opacity = k;
       s.m.lookAt(camera.position);
+      s.m.rotateZ(s.roll);
     }
     if (s.t <= 0) {
       if (s.ring) {
@@ -913,10 +933,10 @@ function showMenu() {
     : 'PURE &mdash; Devil Daggers rules: one touch kills';
   elMsg.innerHTML =
     `<h1>HYPER DAGGER</h1>
-     <p class="sub">a Devil Daggers &times; HYPERDEMON homage</p>
+     <p class="sub">a stripped-down Devil Daggers homage</p>
      <p>survive the swarm &mdash; time is your only score</p>
-     <p class="keys">mouse look + <b>WASD</b> &middot; <b>SPACE</b> jump &times;2 &middot; <b>SHIFT</b> dash &middot; <b>R</b> reap &middot; <b>ESC</b> options<br>
-     gamepad &mdash; sticks &middot; <b>A/&#10005;</b> jump &middot; <b>B/&#9675;</b> dash &nbsp;|&nbsp; touch &mdash; dual sticks &middot; <b>tap = jump</b> &middot; <b>flick = dash</b></p>
+     <p class="keys">mouse look + <b>WASD</b> &middot; <b>SPACE</b> hop &middot; <b>SHIFT</b> dash &middot; <b>R</b> reap &middot; <b>ESC</b> options<br>
+     gamepad &mdash; sticks &middot; <b>A/&#10005;</b> jump &middot; <b>B/&#9675;</b> dash &nbsp;|&nbsp; touch &mdash; <b>left tap = jump</b> &middot; <b>right tap = burst</b> &middot; <b>flick = dash</b></p>
      <button id="modeBtn">MODE: ${modeLine}</button>
      <button id="runKindBtn" class="opt">RUN: ${runKind === 'daily'
     ? `DAILY &mdash; everyone faces the ${todayStr()} seed`
@@ -957,8 +977,8 @@ function showTips() {
     `<h1>HOW TO SURVIVE</h1>
      <p class="big">&#9876; <b>tap</b> = shotgun burst &middot; <b>hold</b> = stream</p>
      <p class="sub">every dagger is aimed &mdash; on touch the stream runs itself while you move</p>
-     <p class="big">&#10227; the <b>dash phases through orbs</b></p>
-     <p class="sub">never through bodies &mdash; charge the red projectiles, dodge the bone</p>
+     <p class="big">&#10227; <b>jump as you land</b> to carry speed</p>
+     <p class="sub">burst into the floor after takeoff for a dagger jump</p>
      <p class="big">&#9670; <b>gems level your daggers</b></p>
      <p class="sub">heavy kills drop them &mdash; 10 / 30 / 70 &rarr; faster &middot; homing &middot; the crimson hand</p>
      <p class="go">click / tap / press &#10005; to descend</p>`;
@@ -2008,8 +2028,9 @@ function fireDagger(spread, speed, homing) {
   // nearly all the time, streaks through screen centre are too distracting
   _p0.copy(camera.position).addScaledVector(_hitDir, 0.85);
   _seg.setFromMatrixColumn(camera.matrixWorld, 0); // camera right
-  _p0.addScaledVector(_seg, 0.24);
-  _p0.y -= 0.26;
+  _p0.addScaledVector(_seg, 0.24 + (Math.random() - 0.5) * T.weapon.originJitter);
+  _c.setFromMatrixColumn(camera.matrixWorld, 1); // camera up
+  _p0.addScaledVector(_c, -0.26 + (Math.random() - 0.5) * T.weapon.originJitter);
   daggers.fire(_p0, _hitDir, speed, homing);
 }
 
@@ -2050,14 +2071,21 @@ function killEnemy(e, dir) {
  *  wide cone at once, then locks the hand out briefly. Burst damage for a
  *  brute in your face, at the cost of your stream. */
 function fireShotgun(w) {
+  camera.getWorldDirection(_fwd2);
   for (let i = 0; i < T.weapon.shotgunCount[weaponLv]; i++) {
-    fireDagger(T.weapon.shotgunSpread, T.weapon.daggerSpeed * (0.92 + Math.random() * 0.16), w.homing);
+    fireDagger(T.weapon.shotgunSpread,
+      T.weapon.shotgunSpeed * (0.93 + Math.random() * 0.14), w.homing);
   }
   shotCd = T.weapon.shotgunCd;
-  recoil = 0.12;
+  recoil = 0.15;
   hand.flash(1.25);
   fovKick = Math.max(fovKick, 3.5);
   trauma = Math.max(trauma, 0.22);
+  if (player.daggerJump(_fwd2)) {
+    fovKick = Math.max(fovKick, 7);
+    trauma = Math.max(trauma, 0.32);
+    buzz(0.65, 0.45, 110);
+  }
   audio.shotgun();
   buzz(0.5, 0.3, 90);
 }
@@ -2071,6 +2099,7 @@ function updateCombat(dt) {
   shotCd = Math.max(0, shotCd - dt);
   let streaming;
   if (input.touchMode && !input.gamepad) {
+    if (input.consumeFireTap() && shotCd <= 0) fireShotgun(w);
     const mv = input.getMove();
     streaming = input.firing || Math.hypot(mv.x, mv.y) > T.weapon.autoFireMove;
   } else {
@@ -2089,7 +2118,8 @@ function updateCombat(dt) {
     fireTimer -= dt;
     while (fireTimer <= 0) {
       fireTimer += 1 / w.stream;
-      fireDagger(FIRE_SPREAD, T.weapon.daggerSpeed, w.homing);
+      fireDagger(FIRE_SPREAD,
+        T.weapon.streamSpeed * (0.86 + Math.random() * 0.28), w.homing);
       recoil = Math.min(0.035, recoil + 0.007);
       hand.flash(0.3);
       audio.fire();
@@ -2332,6 +2362,11 @@ function step(dt) {
     player.justJumped = false;
     audio.jump();
   }
+  if (player.justBunnyHopped) {
+    player.justBunnyHopped = false;
+    fovKick = Math.max(fovKick, 2.4);
+  }
+  player.justDaggerJumped = false;
   if (reapCool > 0) reapCool = Math.max(0, reapCool - dt);
   if (input.consumeReap()) tryReap();
   director(dt);
@@ -2496,7 +2531,7 @@ function updateFeel(dt) {
   if (afterimage.enabled) {
     afterimage.uniforms['damp'].value = SMEAR_BASE + player.dashK * SMEAR_DASH;
   }
-  const fov = opts.fov + (opts.motion ? player.dashK * 9 + fovKick : 0);
+  const fov = opts.fov + (opts.motion ? player.dashK * 9 + player.speedK * 4 + fovKick : 0);
   if (Math.abs(camera.fov - fov) > 0.01) {
     camera.fov = fov;
     camera.updateProjectionMatrix();
@@ -2638,6 +2673,22 @@ window.__hd = {
     getReap() { return { cool: +reapCool.toFixed(2), bones: litter.count }; },
     getTuning() { return T; },
     getGun() { return { shotCd: +shotCd.toFixed(2), heldT: +fireHeldT.toFixed(2) }; },
+    getMovement() {
+      return {
+        speed: +player.horizontalSpeed.toFixed(3),
+        vx: +player.velocity.x.toFixed(3), vz: +player.velocity.z.toFixed(3),
+        vy: +player.vy.toFixed(3), grounded: player.feet.y <= 0.001,
+        hops: player.hopCount, daggerJumps: player.daggerJumpCount,
+        daggerCharges: player.daggerJumpsLeft,
+      };
+    },
+    getImpact() {
+      return {
+        w: sparkTex.image.width, h: sparkTex.image.height,
+        nearest: sparkTex.magFilter === THREE.NearestFilter && sparkTex.minFilter === THREE.NearestFilter,
+        mipmaps: sparkTex.generateMipmaps,
+      };
+    },
     getRaster() {
       const map = floorMat.uniforms.map.value;
       const gl = renderer.getContext();

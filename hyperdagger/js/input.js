@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=58';
+import { TUNING as T } from './tuning.js?v=59';
 
 // all feel numbers live in tuning.js; these aliases keep the code readable
 const STICK_R = T.touch.stickR;
@@ -34,13 +34,13 @@ function shapeStick(x, y, dz, sat = 1, exp = 1) {
 /**
  * Unified input. Desktop: pointer-lock mouse look, WASD, LMB tap = shotgun
  * burst / hold = stream (main.js reads the raw held state and does the
- * tap-vs-hold timing), Space = jump / double jump,
+ * tap-vs-hold timing), Space = jump,
  * Shift = dash. Gamepad: left stick moves, right stick looks, RT/RB fire
- * with the same tap/hold split, A jumps (×2), B/LT dashes. Touch: left stick moves, right stick looks; a
- * quick tap on EITHER stick jumps (a second finger tapping while a stick is
- * held works too), and a fast flick on either stick dashes in the flick
- * direction. Flicks are judged by the LAST 150 ms of movement before
- * release, so flicking out of a long look-drag works. No buttons.
+ * with the same tap/hold split, A jumps, B/LT dashes. Touch: left stick moves,
+ * right stick looks/fires; a left tap jumps, a right tap fires the burst, and
+ * a second finger can tap either occupied half without releasing its stick.
+ * A fast flick on either stick dashes in the flick direction. Flicks are
+ * judged by the LAST 150 ms of movement before release. No buttons.
  */
 export class InputManager {
   constructor() {
@@ -55,6 +55,7 @@ export class InputManager {
     this._lookX = 0;
     this._lookY = 0;
     this._jump = false;
+    this._fireTap = false;
     this._dash = false;
     this._dashFlick = null; // {x, y} normalized screen-space flick direction
     this._pad = { move: { x: 0, y: 0 }, look: { x: 0, y: 0 }, firing: false };
@@ -114,8 +115,10 @@ export class InputManager {
         stick.t0 = now;
         stick.hist = [{ x: t.clientX, y: t.clientY, t: now }];
       } else {
-        // second finger tapping an occupied half = jump, even mid-steer/aim
-        this._jump = true;
+        // A second finger can trigger the action without releasing the stick:
+        // left = jump while moving, right = burst while holding an aim angle.
+        if (side === 'right') this._fireTap = true;
+        else this._jump = true;
         this._touchMap.set(t.identifier, 'tap');
       }
     }
@@ -146,7 +149,8 @@ export class InputManager {
       const dur = now - stick.t0;
       const dist = Math.hypot(stick.dx, stick.dy);
       if (dur < TAP_MS && dist < TAP_PX) {
-        this._jump = true; // tap either stick = jump / double jump
+        if (side === 'right') this._fireTap = true;
+        else this._jump = true;
       } else {
         // flick = fast travel within the last FLICK_WINDOW ms before release,
         // so a flick at the end of a long look-drag still dashes
@@ -197,7 +201,7 @@ export class InputManager {
     this._pad.look = shapeStick(raw(2), raw(3), PAD_DZ, PAD_SAT, LOOK_EXP);
     const btn = i => !!(gp.buttons[i] && gp.buttons[i].pressed);
     this._pad.firing = btn(7) || btn(5); // RT / RB hold to fire
-    const jumpNow = btn(0);              // A = jump / double jump
+    const jumpNow = btn(0);              // A = jump
     const dashNow = btn(1) || btn(6);    // B / LT = dash
     const reapNow = btn(2) || btn(4);    // X / LB = reap
     if (jumpNow && !this._padPrev.jump) this._jump = true;
@@ -292,6 +296,12 @@ export class InputManager {
     const j = this._jump;
     this._jump = false;
     return j;
+  }
+
+  consumeFireTap() {
+    const f = this._fireTap;
+    this._fireTap = false;
+    return f;
   }
 
   consumeDash() {
