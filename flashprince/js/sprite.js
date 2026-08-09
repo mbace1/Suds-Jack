@@ -96,8 +96,20 @@ export const ANIM = {
   crouchLow: { row: 17, c0: 4, n: 2, ground: 46, ax: 16.6, hold: 40, loop: true },
   rise: { row: 17, c0: 11, n: 4, ground: 46, ax: 16.6 },
   roll: { row: 15, c0: 1, n: 22, ground: 47, ax: 20.6 },
-  wake: { row: 38, c0: 1, n: 15, ground: 37, ax: 12.7 },
-  dead: { row: 31, c0: 1, n: 11, ground: 45, ax: 17.8 },
+  // Getting up off the floor, and being put on it. Both rows are cropped to
+  // the TOP of their cells — a prone man is seven pixels tall and he is drawn
+  // in the first seven rows — so one floor line for the row had him lying in
+  // mid-air thirty-one pixels up. Each frame carries its own floor.
+  wake: { row: 38, c0: 1, n: 15,
+          axs: [14.0, 12.5, 13.0, 13.0, 13.0, 13.0, 13.0, 11.5, 12.0, 12.0, 12.5, 11.5, 9.5, 9.0, 6.0],
+          grounds: [6, 6, 6, 7, 10, 13, 13, 16, 17, 17, 17, 23, 28, 34, 37] },
+  // The death is the same, plus an arc: he is knocked off his feet and has to
+  // come back down, and the rip cannot say so — every frame of it is cropped
+  // to the corner. So the floor per frame is his own lowest pixel, lifted by a
+  // hand-made throw that peaks a third of the way in.
+  dead: { row: 31, c0: 1, n: 11,
+          axs: [6.0, 12.0, 16.0, 17.5, 18.5, 19.0, 21.0, 21.0, 23.5, 18.5, 12.0],
+          grounds: [45, 32, 29, 30, 30, 25, 23, 21, 13, 8, 9] },
 
   // Getting UP to a run and coming DOWN off one, and they are two different
   // rows. Row 5 starts him stood still with his feet together and winds him
@@ -118,11 +130,19 @@ export const ANIM = {
   // is what `cols` is for.
   drawGun: { row: 18, c0: 1, n: 16, ground: 47, ax: 21.0 },
   holsterGun: { row: 18, c0: 1, n: 16, ground: 47, ax: 21.0, rev: true },
-  aim: { row: 33, cols: [1, 1], hold: 44, loop: true, ground: 41, ax: 8.5 },
-  fire: { row: 33, cols: [3, 2, 1, 1, 1], ground: 41, ax: 8.5 },
+  aim: { row: 33, cols: [1, 1], hold: 44, loop: true, ground: 37, ax: 15.0 },
+  // the recoil throws the arm up and the whole figure sits differently in
+  // each cell, so the shot needs both anchors per frame — it was sliding
+  // eight pixels sideways and floating four every time he pulled it
+  fire: { row: 33, cols: [3, 2, 1, 1, 1],
+          axs: [7.0, 13.0, 15.0, 15.0, 15.0], grounds: [39, 39, 37, 37, 37] },
   crouchDraw: { row: 20, c0: 1, n: 6, ground: 47, ax: 20.2 },
-  crouchAim: { row: 30, cols: [2, 2], hold: 44, loop: true, ground: 34, ax: 16.0 },
-  crouchFire: { row: 30, cols: [3, 2, 1, 1, 1], ground: 34, ax: 16.0 },
+  // Crouched, and it is row 21 — not row 30. Row 30 is a man STANDING with the
+  // arm out and the knees flexed, which is what he was doing when you took him
+  // to the floor and told him to shoot. Row 21 is the one where he is actually
+  // down: pistol up by the ear, then extended level along the ground.
+  crouchAim: { row: 21, cols: [6, 6], hold: 44, loop: true, ground: 47, ax: 18.0 },
+  crouchFire: { row: 21, cols: [4, 5, 6, 6, 6], ground: 47, ax: 18.0 },
 
   // The standing jump: he gathers, drives up, and lands. Row 13 keeps his feet
   // down through the drive — the sheet has no free-flight frames for it — so
@@ -311,7 +331,12 @@ export function drawSprite(scr, anim, i, x, y, face) {
     // vertical anchor is still the row's one floor line, but the column he
     // stands in moves and has to be given per frame.
     ax = a.axs ? a.axs[j] : anc ? anc[0] : a.ax;
-    ay = a.ledge ? anc[1] : anc ? anc[1] + HIP : a.ground;
+    // ...and `grounds` is the vertical twin of it. Most rows on this rip are
+    // drawn against a common floor line, so one `ground` for the row is right.
+    // Some are not — the death and the getting-up are cropped to the top of
+    // their cells, so a single number left him hanging thirty pixels in the
+    // air — and those carry the floor per frame instead.
+    ay = a.ledge ? anc[1] : a.grounds ? a.grounds[j] : anc ? anc[1] + HIP : a.ground;
   }
   if (flip) ax = sw - ax;
   scr.blit(img, sx, sy, sw, sh, Math.round(x - ax), Math.round(y - ay), flip);

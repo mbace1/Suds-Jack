@@ -4,6 +4,36 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v36 — 2026-08-09
+
+**Everything he can do, measured against the floor.** After the run turned out
+to be anchored wrong, the same question got asked of all thirty-one
+animations: draw each frame on a bare canvas and see where its lowest pixel
+lands relative to the floor line it claims. Six were wrong, and two of them
+badly.
+
+The cause is that this rip is not registered the same way row to row. Most
+rows are drawn against a common floor line, so one `ground` for the row is
+right. Some are cropped to the TOP of their cells instead — and a prone man is
+seven pixels tall, so `wake`, the very first thing the game plays, had him
+**lying in mid-air thirty-one pixels up**, and `dead` floated thirty-eight. Both
+carry a floor per frame now (`grounds`, the vertical twin of v35's `axs`), and
+the death gets a hand-made arc on top so he is thrown off his feet and comes
+back down, which the rip cannot say by itself.
+
+The pistol had three of its own:
+- **Aiming floated four pixels** and stood eight pixels forward of where he
+  stands, and firing slid the whole eight back and forth. Both anchors per
+  frame.
+- **Crouched fire was the wrong row entirely.** Row 30 is a man *standing* with
+  the arm out and his knees flexed; take him to the floor and tell him to
+  shoot and that is what you got. Row 21 is the one where he is actually down —
+  pistol up by the ear, then extended level along the ground. Crouched aim and
+  crouched fire are both off row 21 now.
+
+What is left is deliberate: the run, the wind-up and the running gather leave
+the ground because a running stride does.
+
 ## v35 — 2026-08-09
 
 **The run was shuddering, and the stop was the wrong animation.**
