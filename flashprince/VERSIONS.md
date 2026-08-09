@@ -4,6 +4,38 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v25 — 2026-08-09
+
+**Conrad's own pixels.** The hero is no longer drawn — he is blitted, cut
+straight out of the SNES sprite sheet (`ref/conrad.png`, LuigiBlood's rip).
+Polygons from thirteen joint angles get his pose, his proportions and his
+timing; they will never get his pixels, so for the hero they step aside.
+
+The number jumps from 5 because this cabinet's public sequence ran to v24 under
+a different build of Flash Prince, which this replaces. The log below v5 is
+this build's own history.
+
+- Frames are cut on the sheet's 32×48 grid and drawn at whole pixels with no
+  scaling. Black is never one of his fourteen colours, so black is the cell
+  background and keys out with nothing to lose.
+- He survives the sixteen-colour framebuffer because the quantise pass is
+  handed his fourteen colours as fixed points: it still snaps the world to the
+  room's palette and leaves him alone, so he stays in the draw order — behind
+  the foreground, in front of the wall.
+- **A cache that had never once hit.** The nearest-colour table was an
+  `Int32Array` tested with `< 0`, and a packed ABGR value has its top bit set,
+  so every cached answer read back negative and every pixel recomputed sixteen
+  distance tests every frame. It is a `Uint32Array` now, zero meaning "not
+  worked out yet".
+- Mapped so far: stand, walk, the twenty-frame run, crouch, standing up, the
+  forward roll, getting up off the floor, and dying. The jumps, the fall, the
+  ledge, the turn and the pistol still draw the polygon figure — a jump's cell
+  carries its own rise and needs a per-frame anchor off the hip, or he goes up
+  twice; the ledge moves hang from the HANDS, where Conrad's hand-to-foot is
+  about forty pixels against the twenty-six this game's ledges are cut for.
+  The sword has no frames at all: Flashback has no sword in it.
+- He no longer fades with the biome. He carries his own colours now.
+
 ## v5 — 2026-07-28
 
 The second pass at the references — the two things v4 was still short of, plus
