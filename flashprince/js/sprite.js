@@ -65,11 +65,27 @@ export const CONRAD_COLOURS = JIMBO_COLOURS;
 // is placed so that hip sits twenty pixels above the engine's feet position,
 // which is where his hip is when he stands.
 export const ANIM = {
-  stand: { row: 0, c0: 1, n: 3, ground: 44, ax: 13.9, hold: 30, loop: true },
+  // The whole locomotion chain is pinned by the belt, frame by frame, so that
+  // stand → step → wind-up → run → halt → stand hands over without a sideways
+  // pop anywhere in it. One averaged column per row is what put the pops there.
+  stand: { row: 0, c0: 1, n: 3, ground: 44, hold: 30, loop: true,
+           axs: [13.0, 12.0, 11.5] },
   // his walk is twelve frames: two steps of six, and they are not the same six
-  step: { row: 1, c0: 1, n: 6, ground: 42, ax: 13.0 },
-  stepB: { row: 1, c0: 7, n: 6, ground: 42, ax: 13.0 },
-  run: { row: 4, c0: 1, n: 20, ground: 44, ax: 16.1, hold: 1.1, loop: true },
+  step: { row: 1, c0: 1, n: 6, ground: 42, axs: [11.5, 17.5, 14.0, 13.0, 9.5, 7.0] },
+  stepB: { row: 1, c0: 7, n: 6, ground: 42, axs: [9.5, 16.0, 13.0, 9.5, 8.0, 14.5] },
+  // THE RUN, and the twenty frames need twenty anchors. One averaged column
+  // for the row was what made it shudder: measured off the sheet his belt sits
+  // anywhere from x=10.5 to x=19.5 and it zigzags four to six pixels between
+  // ADJACENT frames, so on top of the 1.94px he really travels each frame he
+  // was lurching forward and then backwards half a body-width. Seven frames in
+  // twenty had him moving BACKWARDS. Pinning each frame by its own belt makes
+  // the pelvis dead steady and lets the engine's constant speed do the moving,
+  // which is what a run is.
+  run: {
+    row: 4, c0: 1, n: 20, ground: 44, hold: 1.1, loop: true,
+    axs: [13.5, 18.0, 16.0, 19.5, 17.5, 13.5, 10.5, 15.5, 12.0, 17.0,
+          13.5, 18.5, 15.0, 12.5, 17.0, 13.0, 10.5, 17.0, 13.5, 16.0],
+  },
 
   // Grounded moves, where one anchor for the whole row is enough because his
   // feet are on the floor in every frame of it. The airborne ones — the two
@@ -83,8 +99,17 @@ export const ANIM = {
   wake: { row: 38, c0: 1, n: 15, ground: 37, ax: 12.7 },
   dead: { row: 31, c0: 1, n: 11, ground: 45, ax: 17.8 },
 
-  // Coming to a halt out of a run.
-  skid: { row: 5, c0: 1, n: 12, ground: 38, ax: 9.5 },
+  // Getting UP to a run and coming DOWN off one, and they are two different
+  // rows. Row 5 starts him stood still with his feet together and winds him
+  // forward frame by frame until he is in full running posture — that is the
+  // wind-UP. Row 6 starts him leaning back hard with his arms flung out and
+  // straightens him up until he is standing — that is the halt. The stop used
+  // to play row 5, so letting go of the stick wound him up instead of down,
+  // which is why it never settled.
+  runStart: { row: 5, c0: 1, n: 12, ground: 38,
+              axs: [3.5, 7.0, 5.5, 8.5, 10.5, 11.5, 9.5, 9.0, 9.5, 9.5, 9.5, 8.0] },
+  skid: { row: 6, c0: 1, n: 12, ground: 47,
+          axs: [15.5, 11.5, 15.0, 19.0, 14.5, 11.5, 20.0, 15.5, 15.0, 12.5, 11.0, 10.0] },
 
   // ── the pistol ─────────────────────────────────────────────────────
   // All Conrad's own, so no change of build the way the sword has: row 18 is
@@ -282,7 +307,10 @@ export function drawSprite(scr, anim, i, x, y, face) {
     sx = (a.cols ? a.cols[j] : a.c0 + j) * CELL_W; sy = a.row * CELL_H;
     sw = CELL_W; sh = CELL_H;
     const anc = a.anchors ? a.anchors[j] : null;
-    ax = anc ? anc[0] : a.ax;
+    // `axs` is the third way: his feet are on the floor every frame, so the
+    // vertical anchor is still the row's one floor line, but the column he
+    // stands in moves and has to be given per frame.
+    ax = a.axs ? a.axs[j] : anc ? anc[0] : a.ax;
     ay = a.ledge ? anc[1] : anc ? anc[1] + HIP : a.ground;
   }
   if (flip) ax = sw - ax;

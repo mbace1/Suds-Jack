@@ -239,6 +239,16 @@ spike cycles, ceiling slabs, tiles that will not hold, a plate-and-gate on a tim
 pulsing force fields. `scr.cached(key, fn)` paints the static half of a room once and
 blits it after that (same discipline as `gameoflife/`); the palette changing throws the
 cache, which is correct because it happens once a screen.
+**Locomotion is pinned by the belt, frame by frame.** One anchor column per
+sheet row is what made the run shudder: his belt moves ten pixels across the
+twenty run frames and zigzags five between adjacent ones, so a single averaged
+`ax` had his pelvis travelling backwards on a third of them. `axs` in
+`sprite.js` gives stand / walk / wind-up / run / halt an anchor per frame, which
+also means none of them pops sideways handing over to another. And the sheet
+has TWO rows either side of the run: row 5 winds him **up** from feet-together
+into running posture, row 6 winds him **down** from a lean-back into standing.
+They are not interchangeable — the stop played row 5 for a while and read as a
+man accelerating out of a sprint.
 Two traps for anyone editing it: **`tryX`/`tryY` must move floor(|d|) whole pixels then
 the remainder** — an off-by-one loop there silently scaled the run from 1.62px/frame to
 2.62 and turned a three-tile gap into a five-tile one; and **the wall tiles are painted
