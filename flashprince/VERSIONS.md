@@ -2,6 +2,23 @@
 
 The public release number. The `?v=N` token in `index.html` is a separate thing: it tracks every module-graph change so a browser cannot serve half of one build and half of another. Bump both when shipping.
 
+## v20 — 2026-08-09
+
+The whole visible character set now shares one higher-definition pixel-art
+construction instead of mixing old run frames with newer jump drawings.
+
+- **104 complete raster frames:** idle, twelve-frame start, twenty-frame run,
+  fifteen-frame stop, dedicated twenty-frame standing jump and eight-frame
+  recovery, plus nineteen-frame running jump and nine-frame running landing.
+- **Consistent definition and colour:** dark outline clusters, jacket and shirt
+  separation, near/far trouser ramps, sleeves, hands, face pixels and compact
+  shoes are applied across every state—including the base run.
+- Standing and running jumps now use different Conrad-sheet timing phrases and
+  different root travel instead of scaling one sequence for both.
+- Classic Pixels and 4× Upscale still read the exact same authored frames.
+- Stop, reversal, both jumps and simultaneous mobile twin-stick input are
+  browser-tested before release.
+
 ## v19 — 2026-08-09
 
 Mobile-control and presentation correction pass.
