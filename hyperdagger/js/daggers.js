@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TUNING as T } from './tuning.js?v=56';
+import { TUNING as T } from './tuning.js?v=57';
 
 const _v = new THREE.Vector3();
 const _t = new THREE.Vector3();
@@ -19,8 +19,12 @@ export class DaggerPool {
     this.scene = scene;
     this.pool = [];
     this.active = [];
-    const geo = new THREE.BoxGeometry(0.045, 0.045, 0.4);
-    const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(1.2, 1.2, 1.2) });
+    const geo = new THREE.ConeGeometry(0.045, 0.22, 4);
+    geo.rotateX(Math.PI / 2); // point down local +Z; Object3D.lookAt owns aim
+    // One hot colour family from fingertip to impact. White streaks made the
+    // weapon disappear into bone enemies; ember-orange stays legible on both
+    // the skulls and the void and blooms only at the projectile itself.
+    const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color().setRGB(3.2, 0.38, 0.07) });
     this.mesh = new THREE.InstancedMesh(geo, mat, cap);
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.mesh.frustumCulled = false;
