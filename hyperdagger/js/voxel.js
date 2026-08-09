@@ -22,37 +22,37 @@ const _s = new THREE.Vector3();
 // hitboxes and gameplay are unchanged.
 const SKULL_LAYERS = [
   [ // chin
-    '....WWW....',
+    '....W.W....',
     '...WWWWW...',
     '...WWWWW...',
     '....WWW....',
     '...........'],
   [ // lower teeth
-    '...WKWKW...',
-    '..WWWWWWW..',
+    '..WKWKWKW..',
+    '..WWSSSWW..',
     '..WWWWWWW..',
     '...WWWWW...',
     '...........'],
   [ // bite line — upper teeth
-    '..WKWKWKW..',
+    '..KWKWKWK..',
     '.WWWWWWWWW.',
     '.WWWWWWWWW.',
     '..WWWWWWW..',
     '...WWWWW...'],
   [ // maxilla, nasal base
-    '.WWWWKWWWW.',
+    '.SWWWKWWWS.',
     '.WWWWWWWWW.',
     '.WWWWWWWWW.',
     '..WWWWWWW..',
     '...WWWWW...'],
   [ // cheekbones flare, nasal cavity
-    'WWWWWKWWWWW',
+    'SWWWWKWWWWS',
     'WWWWWWWWWWW',
     '.WWWWWWWWW.',
     '..WWWWWWW..',
     '...WWWWW...'],
   [ // socket floors
-    'WWKKWWWKKWW',
+    'WKKKWWWKKKW',
     'WWWWWWWWWWW',
     'WWWWWWWWWWW',
     '.WWWWWWWWW.',
@@ -64,13 +64,13 @@ const SKULL_LAYERS = [
     '.WWWWWWWWW.',
     '..WWWWWWW..'],
   [ // brow ridge
-    '.WWWWWWWWW.',
+    'SWWWWKWWWWS',
     'WWWWWWWWWWW',
     'WWWWWWWWWWW',
     '.WWWWWWWWW.',
     '..WWWWWWW..'],
   [ // cranium
-    '..WWWWWWW..',
+    '.SWWWWWWWS.',
     '.WWWWWWWWW.',
     '.WWWWWWWWW.',
     '..WWWWWWW..',
@@ -87,9 +87,13 @@ const SKULL_LAYERS = [
 // wide horned profile that owns a dark arena without adding screen clutter.
 const SKULL_HORNS = [
   ['.....WWW.WWW.....', '.....WWW.WWW.....', '......WW.WW......', '.................', '.................'],
-  ['...WWW.....WWW...', '...WWW.....WWW...', '....WW.....WW....', '.................', '.................'],
-  ['.WWW.........WWW.', '.WWW.........WWW.', '..WW.........WW..', '.................', '.................'],
+  ['..WWW.......WWW..', '..WWW.......WWW..', '...WW.......WW...', '.................', '.................'],
+  ['WWW...........WWW', 'WWW...........WWW', '.WW...........WW.', '.................', '.................'],
 ];
+const SKULL_BLANK = ['...........', '...........', '...........', '...........', '...........'];
+const BASIC_SKULL_PALETTE = {
+  W: 0xd8d2c4, S: 0x766f66, R: [4.4, 0.12, 0.025], K: 0x020101,
+};
 // crown / horn layers for the variants, at the new 11-wide grid
 const CROWN_5 = ['...........', '.C.C.C.C.C.', '...........'];
 const CROWN_6 = ['...........', 'C.C.C.C.C.C', '...........'];
@@ -115,8 +119,22 @@ function sculptLayers(width, depth, height, sample) {
 export const MODELS = {
   skull: {
     voxelSize: 0.14,
-    palette: { W: 0xd8d2c4, S: 0x8f8a80, R: [4.0, 0.16, 0.06], K: 0x050505 },
+    palette: BASIC_SKULL_PALETTE,
     layers: [...SKULL_LAYERS, ...SKULL_HORNS],
+  },
+  // Split copies preserve the full 13-layer coordinate frame. Skull animates
+  // the jaw around a real hinge while the head and horns keep tracking aim.
+  skullHead: {
+    voxelSize: 0.14,
+    palette: BASIC_SKULL_PALETTE,
+    layers: [SKULL_BLANK, SKULL_BLANK, ...SKULL_LAYERS.slice(2), ...SKULL_HORNS],
+  },
+  skullJaw: {
+    voxelSize: 0.14,
+    palette: BASIC_SKULL_PALETTE,
+    noHull: true, // keep the moving teeth jagged and readable against the skin
+    layers: [SKULL_LAYERS[0], SKULL_LAYERS[1],
+      ...Array.from({ length: 11 }, () => SKULL_BLANK)],
   },
   // crowned skull — faster, 2 HP, red crown
   skull2: {
@@ -360,18 +378,18 @@ export const MODELS = {
       return ((x + y + z) & 1) ? 'A' : 'B';
     }),
   },
-  // First-person firing hand: four long, separated fire-daggers rise from a
-  // near-black crimson palm. The hot fingers are the sight against the void.
+  // Original four-finger bone claw. It stays centred in the current frame,
+  // but returns to its own ash/bone identity instead of tracing DD's hand.
   hand: {
     voxelSize: 0.05,
     wobble: 0.18,
     noHull: true,
-    palette: { G: 0x260d0a, D: 0x080403, H: [1.60, 0.22, 0.04], B: [3.50, 0.58, 0.08] },
+    palette: { G: 0xbeb4a6, D: 0x4b4540, H: 0xe2d8c8, B: [3.2, 0.30, 0.06] },
     layers: [
       ['.........', '.........', '.........', '.........', '.........', '.....G...', '....GG...', '...GGG...', '.GDGDGG..', 'GGDGDGGG.', '.GGGGGG..', '..DGGD...'],
-      ['.B.B.B.B.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.GGGGGGG.', 'GGDGDGDGG', 'GGHGHGHGG', '.GGGGGGG.', '..DGGGD..'],
-      ['.B.B.B.B.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.GGGGGGG.', 'GGHGHGHGG', 'GGDGDGDGG', '.GGGGGGG.', '..DGGGD..'],
-      ['.........', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.GGGGGGG.', '.GDGDGDG.', 'GGGGGGGGG', '..GGGGG..', '...DGD...'],
+      ['.B.B.B.B.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.GGGGGGG.', 'GGDGDGDGG', 'GGHGHGHGG', '.GGGGGGG.', '..DGGGD..'],
+      ['.B.B.B.B.', '.H.H.H.H.', '.H.H.H.H.', '.H.H.H.H.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.GGGGGGG.', 'GGHGHGHGG', 'GGDGDGDGG', '.GGGGGGG.', '..DGGGD..'],
+      ['.........', '.H.H.H.H.', '.H.H.H.H.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.G.G.G.G.', '.GGGGGGG.', '.GDGDGDG.', 'GGGGGGGGG', '..GGGGG..', '...DGD...'],
       ['.........', '.........', '.........', '.........', '.........', '...G.....', '..GG.....', '.GGG.....', '.GDGG....', '..GGG....', '...G.....', '.........'],
     ],
   },

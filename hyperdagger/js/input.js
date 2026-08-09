@@ -1,4 +1,4 @@
-import { TUNING as T } from './tuning.js?v=60';
+import { TUNING as T } from './tuning.js?v=61';
 
 // all feel numbers live in tuning.js; these aliases keep the code readable
 const STICK_R = T.touch.stickR;
@@ -35,8 +35,9 @@ function shapeStick(x, y, dz, sat = 1, exp = 1) {
  * Unified input. Desktop: pointer-lock mouse look, WASD, LMB tap = shotgun
  * burst / hold = stream (main.js reads the raw held state and does the
  * tap-vs-hold timing), Space = jump,
- * Shift = dash. Gamepad: left stick moves, right stick looks, RT/RB fire
- * with the same tap/hold split, A jumps, B/LT dashes. Touch: left stick moves,
+ * RMB spends homing ammo at LV3+, Shift = dash in the HYPER remix. Gamepad:
+ * left stick moves, right stick looks, RT/RB fire, LT homing, A jumps, B dashes
+ * in HYPER. Touch: left stick moves,
  * right stick looks/fires; a left tap jumps, a right tap fires the burst, and
  * a second finger can tap either occupied half without releasing its stick.
  * A fast flick on either stick dashes in the flick direction. Flicks are
@@ -47,6 +48,7 @@ export class InputManager {
     this.keys = {};
     this._reap = false;
     this.mouseDown = false;
+    this.mouseAltDown = false;
     this.touchMode = false;
     this.gamepad = false; // a controller is connected + active
     this.left = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, t0: 0, hist: [] };
@@ -58,7 +60,7 @@ export class InputManager {
     this._fireTap = false;
     this._dash = false;
     this._dashFlick = null; // {x, y} normalized screen-space flick direction
-    this._pad = { move: { x: 0, y: 0 }, look: { x: 0, y: 0 }, firing: false };
+    this._pad = { move: { x: 0, y: 0 }, look: { x: 0, y: 0 }, firing: false, altFiring: false };
     this._padPrev = { jump: false, dash: false, up: false, down: false, a: false, b: false, start: false };
     this._ui = { up: false, down: false, a: false, b: false, start: false }; // menu edges
     this._init();
@@ -73,8 +75,15 @@ export class InputManager {
     });
     window.addEventListener('keyup', e => { this.keys[e.code] = false; });
 
-    document.addEventListener('mousedown', e => { if (e.button === 0) this.mouseDown = true; });
-    document.addEventListener('mouseup', e => { if (e.button === 0) this.mouseDown = false; });
+    document.addEventListener('mousedown', e => {
+      if (e.button === 0) this.mouseDown = true;
+      if (e.button === 2) this.mouseAltDown = true;
+    });
+    document.addEventListener('mouseup', e => {
+      if (e.button === 0) this.mouseDown = false;
+      if (e.button === 2) this.mouseAltDown = false;
+    });
+    document.addEventListener('contextmenu', e => e.preventDefault());
     document.addEventListener('mousemove', e => {
       if (document.pointerLockElement) {
         // Some browsers report one giant bogus delta right after locking.
@@ -182,6 +191,7 @@ export class InputManager {
       this._pad.move = { x: 0, y: 0 };
       this._pad.look = { x: 0, y: 0 };
       this._pad.firing = false;
+      this._pad.altFiring = false;
       this._padPrev = { jump: false, dash: false, up: false, down: false, a: false, b: false, start: false };
       return;
     }
@@ -201,8 +211,9 @@ export class InputManager {
     this._pad.look = shapeStick(raw(2), raw(3), PAD_DZ, PAD_SAT, LOOK_EXP);
     const btn = i => !!(gp.buttons[i] && gp.buttons[i].pressed);
     this._pad.firing = btn(7) || btn(5); // RT / RB hold to fire
+    this._pad.altFiring = btn(6);        // LT spends banked homing daggers
     const jumpNow = btn(0);              // A = jump
-    const dashNow = btn(1) || btn(6);    // B / LT = dash
+    const dashNow = btn(1);              // B = dash (HYPER mode only)
     const reapNow = btn(2) || btn(4);    // X / LB = reap
     if (jumpNow && !this._padPrev.jump) this._jump = true;
     if (dashNow && !this._padPrev.dash) this._dash = true;
@@ -290,6 +301,11 @@ export class InputManager {
   get firing() {
     if (this.touchMode) return this.right.active;
     return this.mouseDown || this._pad.firing;
+  }
+
+  get altFiring() {
+    if (this.touchMode) return false;
+    return this.mouseAltDown || this._pad.altFiring;
   }
 
   consumeJump() {
