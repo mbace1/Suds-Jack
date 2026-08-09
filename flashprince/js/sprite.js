@@ -68,8 +68,11 @@ export const ANIM = {
   // The whole locomotion chain is pinned by the belt, frame by frame, so that
   // stand → step → wind-up → run → halt → stand hands over without a sideways
   // pop anywhere in it. One averaged column per row is what put the pops there.
-  stand: { row: 0, c0: 1, n: 3, ground: 44, hold: 30, loop: true,
-           axs: [13.0, 12.0, 11.5] },
+  // ONE frame. Row 0 is not three frames of breathing — it is the ABOUT-FACE,
+  // ten frames of him rotating through front-on to the other side, and looping
+  // its first three as an idle had him rocking his shoulders round and back
+  // every ninety frames for no reason. Conrad stands still.
+  stand: { row: 0, c0: 1, n: 1, ground: 44, hold: 60, loop: true, ax: 13.0 },
   // his walk is twelve frames: two steps of six, and they are not the same six
   step: { row: 1, c0: 1, n: 6, ground: 42, axs: [11.5, 17.5, 14.0, 13.0, 9.5, 7.0] },
   stepB: { row: 1, c0: 7, n: 6, ground: 42, axs: [9.5, 16.0, 13.0, 9.5, 8.0, 14.5] },
@@ -174,12 +177,21 @@ export const ANIM = {
   // the cell's top to its bottom across the move — and are drawn at the lip.
   hang: { row: 25, c0: 6, n: 4, hold: 24, loop: true, ledge: true,
           anchors: [[4.8, 0], [6.1, 0], [6.3, 0], [6.3, 0]] },
-  mantle: { row: 39, c0: 4, n: 7, ledge: true,
-            anchors: [[4.9, 0], [11.7, 8], [14.7, 14], [17.1, 19], [19.9, 21], [16.9, 23], [15.6, 24]] },
+  // THE MANTLE, and it takes two rows. Row 39 — what this used to play — is a
+  // hanging man SWINGING HIS LEGS, so going up a storey was a winch: he rose
+  // twenty-four pixels without ever changing what his body was doing. The move
+  // is on row 27 (hanging, hands above the cell) and row 26 (the fold: head
+  // held still while the knees come up to the chest and then unfold into
+  // standing). Played hang → fold → stand, with the anchor walking from his
+  // hands at the lip to his feet on it, that is a man getting up onto a roof.
+  mantle: { ledge: true,
+            cells: [[27, 1], [27, 4], [26, 7], [26, 5], [26, 3], [26, 2], [26, 1]],
+            anchors: [[5.5, 0], [9.5, 2], [5.5, 8], [5.5, 16], [5.5, 26], [4.5, 33], [2.5, 38]] },
   // lowering himself over an edge is the mantle run backwards, which is what
   // Flashback does too
-  lower: { row: 39, c0: 4, n: 7, ledge: true, rev: true,
-           anchors: [[4.9, 0], [11.7, 8], [14.7, 14], [17.1, 19], [19.9, 21], [16.9, 23], [15.6, 24]] },
+  lower: { ledge: true, rev: true,
+           cells: [[27, 1], [27, 4], [26, 7], [26, 5], [26, 3], [26, 2], [26, 1]],
+           anchors: [[5.5, 0], [9.5, 2], [5.5, 8], [5.5, 16], [5.5, 26], [4.5, 33], [2.5, 38]] },
 
   // ── the sword ──────────────────────────────────────────────────────
   // Off the OTHER sheet. Flashback has no sword in it at all, so these are the
@@ -238,19 +250,20 @@ export const ANIM = {
             [86,165,36,38,89,202], [124,164,40,39,127,202], [166,164,34,39,169,202],
             [202,164,26,39,205,202], [230,165,24,38,234,202], [256,165,21,38,260,202]],
   },
-  // THE TURN, and it comes off this sheet because Conrad's has none — checked
-  // every row of it. Six frames, and the chest goes 8px wide to 18 and back,
-  // which is a man rotating through front-on and the only shape that is.
+  // THE TURN — Conrad's own, and it was hiding under the standing frames the
+  // whole time. Row 0 is ten frames of a full about-face: side-on, rotating
+  // through FRONT-ON with both arms showing, then round to side-on the other
+  // way. It used to come off the Prince of Persia sheet because the first
+  // three frames of this row had been mapped as an idle and nobody looked at
+  // the other seven.
   //
-  // Played REVERSED with the facing flipped on frame one, so the mirror the
-  // engine already applies runs it the right way round: mirrored last frame is
-  // the profile he starts in, mirrored first frame is the one he ends in.
-  // Anchored on his CENTRE rather than the rear foot — he pivots on the spot.
-  turn: {
-    sheet: 'sword', faces: 1, rev: true,
-    rects: [[0,606,10,39,5,644], [12,605,14,40,19,644], [28,605,18,40,37,644],
-            [48,606,18,39,57,644], [68,606,12,39,74,644], [82,605,10,40,87,644]],
-  },
+  // It plays UNFLIPPED for the whole move and the engine flips his facing at
+  // the very end. Turning left-to-right you see the sheet as drawn; turning
+  // right-to-left the mirror runs the same ten frames the other way round.
+  // Flipping in the middle instead — which is what a `flipAt` there would do —
+  // reverses the rotation halfway and he turns back into himself.
+  turn: { row: 0, c0: 1, n: 10, ground: 44,
+          axs: [13.0, 12.0, 11.5, 12.5, 11.5, 13.5, 14.5, 14.0, 12.5, 13.5] },
 
   swordParry: {
     sheet: 'sword', faces: 1,
@@ -265,7 +278,7 @@ export const ANIM = {
 export function frameCount(anim) {
   const a = ANIM[anim];
   if (!a) return 0;
-  return a.n ?? a.cols?.length ?? a.rects?.length ?? 0;
+  return a.n ?? a.cols?.length ?? a.cells?.length ?? a.rects?.length ?? 0;
 }
 
 // where his hip sits above his feet when he is standing — the airborne anchor
@@ -311,7 +324,7 @@ export function drawSprite(scr, anim, i, x, y, face) {
   if (!a) return false;
   const img = sheets[a.sheet ?? 'body'];
   if (!img) return false;
-  const n = a.n ?? a.cols?.length ?? a.rects.length;
+  const n = frameCount(anim);
   const k = a.loop ? ((i % n) + n) % n : Math.max(0, Math.min(n - 1, i));
   const j = a.rev ? n - 1 - k : k;
   // the sheet's own facing: Conrad's frames face left, the sword sheet's right
@@ -324,7 +337,12 @@ export function drawSprite(scr, anim, i, x, y, face) {
     ax = r[4] - r[0];                       // the anchor, inside its own rect
     ay = r[5] - r[1];
   } else {
-    sx = (a.cols ? a.cols[j] : a.c0 + j) * CELL_W; sy = a.row * CELL_H;
+    // `cells` is the fourth way in: [row, col] per frame, for a move that
+    // does not live on one row of the sheet. The mantle is the reason —
+    // the hang and the fold-up onto the ledge are two different rows.
+    const cell = a.cells ? a.cells[j] : null;
+    sx = (cell ? cell[1] : a.cols ? a.cols[j] : a.c0 + j) * CELL_W;
+    sy = (cell ? cell[0] : a.row) * CELL_H;
     sw = CELL_W; sh = CELL_H;
     const anc = a.anchors ? a.anchors[j] : null;
     // `axs` is the third way: his feet are on the floor every frame, so the
