@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#04070a">
-<link rel="manifest" href="manifest.webmanifest?v=41">
+<link rel="manifest" href="manifest.webmanifest?v=42">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<meta name="description" content="Radio Free Helsinki — a fictional pirate news broadcast. Toko reads the day's wire from a codec screen; DECODE shows you what the wording was doing.">
+<meta name="description" content="Radio Free Helsinki — a pirate news broadcast. Real events, invented names: Toko reads the morning's wire from a night city.">
 <title>Radio Free Helsinki</title>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -220,48 +220,8 @@
   .standby { font-size: 13px; color: var(--text-dim); letter-spacing: .1em; }
   .standby::after { content: '▮'; animation: blink 1s steps(1) infinite; }
 
-  .spun { transition: color .25s, opacity .25s; }
-  .spun.struck { color: var(--text-dim); text-decoration: line-through; opacity: .7; }
-  .plain { color: var(--amber); }
-  .plain::before { content: ' → '; color: var(--amber-hot); }
 
-  .decode-box {
-    border: 1px solid var(--amber); border-left-width: 3px;
-    background: rgba(255,180,58,.05);
-    padding: 10px 12px; margin-top: 12px;
-  }
-  .decode-box[hidden] { display: none; }
-  .technique {
-    display: inline-block;
-    font-family: var(--sans);
-    font-size: 10px; font-weight: 700; letter-spacing: .16em;
-    color: #1a1204; background: var(--amber);
-    padding: 3px 8px 2px; margin-bottom: 8px;
-    text-transform: uppercase;
-  }
-  .note { font-size: 13px; color: #e8cfa2; }
-  .tell {
-    font-size: 13px; color: var(--amber); margin-top: 8px;
-    border-top: 1px dashed rgba(255,180,58,.3); padding-top: 8px;
-  }
 
-  .tally { margin-top: 14px; border-top: 1px solid var(--green-lo); padding-top: 10px; }
-  .tally-head {
-    font-size: 10px; letter-spacing: .2em; color: var(--green-dim);
-    text-transform: uppercase; margin-bottom: 8px;
-  }
-  .tally-row {
-    display: grid; grid-template-columns: 14px 1fr; gap: 2px 6px;
-    font-size: 11px; letter-spacing: .1em; color: var(--text-dim);
-    text-transform: uppercase; margin-bottom: 5px;
-  }
-  .tally-row.got { color: var(--amber); }
-  .tally-mark { text-align: center; }
-  .tally-tell {
-    grid-column: 2; font-size: 12px; letter-spacing: 0; text-transform: none;
-    color: #e8cfa2; margin-bottom: 4px;
-  }
-  .tally-note { font-size: 12px; color: #b7e8cd; margin-top: 10px; }
   .sign-off .tag .rec { color: var(--green-dim); }
   .sign-off .tag .rec::before { content: '■ '; }
 
@@ -405,13 +365,6 @@
   }
   @keyframes sweep { from { top: -25%; } to { top: 105%; } }
   /* DECODE has to mutate every shot type, photographs included */
-  .photo-wrap.decoded .photo {
-    filter: sepia(.55) saturate(1.5) hue-rotate(-18deg) brightness(.92);
-  }
-  .photo-wrap.decoded .photo-sweep {
-    background: linear-gradient(to bottom, rgba(255,180,58,0), rgba(255,180,58,.12), rgba(255,180,58,0));
-    animation-duration: 2.4s;
-  }
   @media (prefers-reduced-motion: reduce) {
     .photo, .photo-sweep, .photo-grade, .photo-wrap, .photo-wrap::after { animation: none; }
   }
@@ -424,23 +377,27 @@
   /* drawn footage moves because it is redrawn, not because CSS pushes it */
   .plate-cv { animation: none; object-position: 50% 45%; }
   .graphic-cv { animation: none; object-position: 50% 40%; }
-  .photo-wrap.decoded .anchor-cv,
-  .photo-wrap.decoded .graphic-cv,
-  .photo-wrap.decoded .plate-cv { filter: none; }
-
-  /* ── the cut package: footage → studio → footage ────────────────── */
+  /* the package: layers stacked in one box, one of them on at a time */
   .pkg { position: absolute; inset: 0; }
   .pkg-shot { position: absolute; inset: 0; opacity: 0; transition: opacity .2s linear; }
   .pkg-shot.on { opacity: 1; }
-  /* a cut snaps: a bright band and a wash, gone in a sixth of a second */
+  /* the cut: a bright band and a flash, 160ms, so an edit reads as an edit */
   .pkg-cut {
-    position: absolute; inset: 0; pointer-events: none; opacity: 0;
+    position: absolute; inset: 0; z-index: 2; pointer-events: none; opacity: 0;
     background:
       linear-gradient(to bottom, rgba(125,255,178,0) 42%,
         rgba(125,255,178,.55) 50%, rgba(125,255,178,0) 58%),
       rgba(255,255,255,.07);
-    mix-blend-mode: screen; z-index: 1;
+    mix-blend-mode: screen;
   }
+
+  /* Three night grades, one per post, so a feed is not one long shot with the
+     captions changing over it. They are filters on the PICTURE layer only —
+     the type and the HUD keep their own colour. */
+  .pkg.grade-cold   .pkg-shot { filter: saturate(1.05) contrast(1.06); }
+  .pkg.grade-sodium .pkg-shot { filter: sepia(.22) saturate(1.25) hue-rotate(-12deg) contrast(1.04) brightness(1.04); }
+  .pkg.grade-bleach .pkg-shot { filter: saturate(.55) contrast(1.28) brightness(.94); }
+
   /* ── the camera HUD ────────────────────────────────────────────────
      One overlay for every shot, because the photographs cannot draw one and
      three copies of the same corner drift apart. It is diegetic — a post is a
@@ -458,8 +415,6 @@
   }
   .pkg-hud.rolling .hud-rec { color: var(--defence); }
   .pkg-hud.rolling .hud-rec::before { content: '●'; color: var(--defence); }
-  .pkg-hud.hot .hud-rec, .pkg-hud.hot .hud-tc, .pkg-hud.hot .hud-cam { color: var(--amber); }
-  .pkg-hud.hot .hud-rec::before { content: '●'; color: var(--amber); }
   @keyframes hudblink { 0%, 62% { opacity: 1; } 63%, 100% { opacity: .2; } }
   .pkg-hud.rolling .hud-rec::before { animation: hudblink 1.6s steps(1) infinite; }
   .hud-cam { margin-left: auto; opacity: .8; }
@@ -468,12 +423,6 @@
     .pkg-hud.rolling .hud-rec::before { animation: none; }
   }
 
-  .post.is-decoded .pkg-cut {
-    background:
-      linear-gradient(to bottom, rgba(255,180,58,0) 42%,
-        rgba(255,180,58,.55) 50%, rgba(255,180,58,0) 58%),
-      rgba(255,255,255,.07);
-  }
 
   /* ── the lower third ───────────────────────────────────────────── */
   .post-caption {
@@ -490,25 +439,16 @@
     overflow: hidden;
   }
   /* max two lines of smaller text — until DECODE, which needs the room */
-  .post:not(.is-decoded) .bulletin {
+  .post .bulletin {
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
     overflow: hidden; font-size: 13px;
   }
-  .post:not(.is-decoded) .bulletin-line + .bulletin-line { margin-top: 0; }
-  .post:not(.is-decoded) .fiction { display: none; }
+  .post .bulletin-line + .bulletin-line { margin-top: 0; }
+  .post .fiction { display: none; }
   /* DECODE needs the room, and once the caption is 78% tall the scrim's
      transparent top lands in the middle of the picture — over a lit window,
      or over Toko's magenta, the amber plain readings fall miles under AA.
      Decoded, the lower third stops being a gradient and becomes a card. */
-  .post.is-decoded .post-caption {
-    /* 78% buried the graphic completely, and DECODE cuts home to the graphic —
-       so decoding hid the very thing it was cutting to. The caption scrolls,
-       the picture does not, so the picture gets the band it needs. */
-    max-height: 62%; overflow-y: auto;
-    background: linear-gradient(to top,
-      rgba(3,10,8,.97) 0%, rgba(3,10,8,.96) 78%, rgba(3,10,8,.80) 100%);
-    padding-top: 22px;
-  }
 
   /* the rail has to sit above the lower third, and clear of it */
   .rail { z-index: 3; bottom: auto; top: 58%; }
@@ -573,15 +513,14 @@
      is the post and the words are a caption you can open. A clip cannot be
      opened — a bulletin that ends in "…" on a video has simply not been read,
      so vertical shows the whole thing and gives the scrim the room for it. */
-  .vertical .post:not(.is-decoded) .bulletin {
+  .vertical .post .bulletin {
     display: block; -webkit-line-clamp: none; overflow: visible; font-size: 14px;
   }
-  .vertical .post:not(.is-decoded) .bulletin-line + .bulletin-line { margin-top: 9px; }
-  .vertical .post.is-decoded .post-caption { max-height: 72%; }
+  .vertical .post .bulletin-line + .bulletin-line { margin-top: 9px; }
   .vertical .tag { font-size: 11px; padding: 4px 9px 3px; }
   /* the honesty line stays — real events, invented names — because a clip
      travels further from this page than the page does */
-  .vertical .post:not(.is-decoded) .fiction { display: block; }
+  .vertical .post .fiction { display: block; }
   .vertical .fiction { font-size: 9px; margin: 10px 0 2px; }
 
   /* ── the stingers ─────────────────────────────────────────────────
@@ -662,7 +601,7 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=41"></script>
+<script type="module" src="js/main.js?v=42"></script>
 <script type="module">
   // The arcade shell and the signature badge are the site around the app, and
   // a clip must not carry them — a HUB button burned into a video is a button
@@ -677,7 +616,7 @@
 <script>
   if ('serviceWorker' in navigator &&
       (location.protocol === 'https:' || new URLSearchParams(location.search).has('sw'))) {
-    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=41').catch(() => {}));
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=42').catch(() => {}));
   }
 </script>
 

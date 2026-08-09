@@ -369,7 +369,8 @@ actually gets written, and **DECODE** names the move. That is the app's whole pa
 and the reason the propaganda subject is safe to build — it teaches recognition, it
 does not manufacture claims. The masthead and the tune-in gate both say so on screen.
 
-**DECODE is the mechanic.** Copy is marked up `{{as broadcast|what that means}}`
+**DECODE WAS the mechanic, and it is gone** (owner's call, 2026-08-08).
+What it was: Copy is marked up `{{as broadcast|what that means}}`
 (`parseLine`/`flatten` in `stories.js`); pressing DECODE strikes the broadcast wording
 in place and grows the plain reading beside it in amber, then opens a drawer with the
 technique (`AGENTLESS PASSIVE`, `MISSING DENOMINATOR`, `SOURCE LAUNDERING`,
@@ -378,7 +379,19 @@ that catches it in the wild. **The panels decode too**, because the framing is n
 only in the words: the truncated bar chart re-bases to zero (mountain → bump), the
 valuation tower goes hollow but for the 6% actually sold, the packed auditorium empties
 to the four people on the stage, 900 accounts collapse into a fan spoked to the one node
-that made them. The last bulletin on the defence band turns the frame on this station.
+that made them. The last bulletin on the defence band turns the frame on this station. Removing it took the rail button, the decode box, the technique/tell
+drawer, the sign-off tally, the amber "the spin is showing" vocabulary, `?clean`
+(the only render now), `js/graphic.js` and every story panel in `visuals.js` —
+they existed to mutate under it. Wires may still carry `{{spun|plain}}` markup
+and technique/tell fields; they are stripped and ignored. The station is a news
+feed now: footage, a stand-up or the booth, and the copy.
+
+**Every post is cut differently.** `package.js` holds three `PATTERNS` —
+establish (a long hold on the place), intercut (four fast cuts), and
+piece-to-camera (the reporter carries it) — picked off the post index, and one
+of three night **grades** (cold / sodium / bleach, CSS filters on the picture
+layer only). A feed where every post is cut and graded the same reads as one
+long shot with the captions changing over it.
 
 **Toko is not always at the desk.** Two thirds of the bulletins are STAND-UPS:
 `anchor.js` picks a set off the post index (`STANDUP(seed)`, never

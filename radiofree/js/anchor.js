@@ -12,15 +12,15 @@
 // fifth. Both that file and `util.js` are already in the service worker's
 // precache (the signature badge pulls them), so this costs nothing offline.
 //
-// Mirrors Photo's interface — goLive/goIdle/update/draw/renderStatic/decoded/
+// Mirrors Photo's interface — goLive/goIdle/update/draw/renderStatic/
 // destroy — so main.js drives it without knowing which kind of shot it holds.
 
 import { drawHead, HEAD } from '../../toko/js/face.js';
 import { TOKO } from '../../toko/js/palette.js';
 import { glance, drift, blink } from '../../toko/js/util.js';
-import { PAL, SECTOR_COLOR } from './palette.js?v=41';
-import { PixelScreen, shade, mix } from './screen.js?v=41';
-import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=41';
+import { PAL, SECTOR_COLOR } from './palette.js?v=42';
+import { PixelScreen, shade, mix } from './screen.js?v=42';
+import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=42';
 
 // The canvas is sized to the POST, not to a fixed 9:16. A phone post is
 // taller than 9:16 and `object-fit: cover` crops the sides off a fixed frame —
@@ -87,7 +87,6 @@ export class Anchor {
     this.story = story;
     this.sector = sector || {};
     this.seed = seed;
-    this.decoded = false;
     this.live = false;
     this.t = seed * 1.37;        // every anchor shot breathes out of phase
     this.mouth = 0;
@@ -190,11 +189,9 @@ export class Anchor {
   paint() {
     this.fit();
     const c = this.ctx, t = this.t, W = this.W, H = this.H;
-    const hot = this.decoded;
-    // Amber has exactly one job on this dial, and DECODE is it — so the whole
-    // studio's furniture swaps to it rather than a badge lighting up.
-    const key = hot ? PAL.AMBER : this.accent;
-    const dim = hot ? PAL.AMBER_DIM : shade(this.accent, 0.55);
+    const hot = false;                 // DECODE is gone; the set has one state
+    const key = this.accent;
+    const dim = shade(this.accent, 0.55);
     const s = W / 360;                 // stroke/type scale, off the design width
 
     if (this.set === 'street') {
@@ -217,7 +214,6 @@ export class Anchor {
     }
     this.furniture(c, t, W, H, key, hot, s);
     this.grain(c, W, H);
-    if (hot) this.tear(c, t, W, H);
   }
 
   // ── the set ────────────────────────────────────────────────────────────
@@ -551,17 +547,6 @@ export class Anchor {
     c.globalAlpha = 1;
   }
 
-  // the decode tear — bands of the picture displaced sideways, the same move
-  // the codec portrait makes when the spin shows
-  tear(c, t, W, H) {
-    for (let i = 0; i < 5; i++) {
-      const by = ((t * 60 + i * 137) % (H + 40)) - 20;
-      const bh = 6 + ((i * 5) % 9);
-      const dx = (rnd(Math.floor(t * 6) + i) - 0.5) * 18;
-      if (by < 0 || by + bh > H) continue;
-      c.drawImage(this.cv, 0, by, W, bh, dx, by, W, bh);
-    }
-  }
 
   destroy() {
     if (this.bg) this.bg.destroy();

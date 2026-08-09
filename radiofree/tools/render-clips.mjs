@@ -2,7 +2,7 @@
 // Radio Free Helsinki — one bulletin, one clip.
 //
 //   node radiofree/tools/render-clips.mjs [--date YYYY-MM-DD] [--ids a,b]
-//        [--out clips] [--seconds 16] [--cut 8] [--no-decode] [--url URL]
+//        [--out clips] [--seconds 16] [--url URL]
 //
 // Drives the real app in a real browser and records it. There is no second
 // renderer here and there must never be one: a clip that was drawn by a
@@ -10,13 +10,11 @@
 // be a clip OF had changed. `?vertical` is the framing (`index.html`), the
 // package is the edit (`js/package.js`), and this file only presses play.
 //
-// THE SHAPE OF A CLIP is the app's own argument, timed:
-//   0s          the cut runs — footage, the studio, the graphic
-//   --cut       DECODE fires; the edit stops and holds the graphic while the
-//               plain readings grow in beside the broadcast wording
-//   --seconds   out
-// The hold is the whole point. A clip that only shows the bulletin is a news
-// post; the second half is what makes it this station's.
+// THE SHAPE OF A CLIP: a station ident, the post's own edit (each one is cut
+// on a different pattern — establish, intercut, or piece-to-camera), and an
+// end card carrying the dateline and the headline.
+//
+// It used to fire DECODE halfway and hold; DECODE is gone.
 //
 // 1080×1920 comes out of a 405×720 viewport at deviceScaleFactor 2.667 — the
 // recorder does the scaling, so the type stays vector-crisp. Playwright writes
@@ -63,12 +61,11 @@ function serve() {
 }
 
 export function args(argv) {
-  const o = { date: null, ids: null, out: path.join(RF, 'clips'), seconds: 16, cut: 8,
-              decode: true, url: null, ident: 1.1, card: 2.6, lang: null };
+  const o = { date: null, ids: null, out: path.join(RF, 'clips'), seconds: 16,
+              url: null, ident: 1.1, card: 2.6, lang: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === '--no-decode') o.decode = false;
-    else if (a === '--no-stingers') { o.ident = 0; o.card = 0; }
+    if (a === '--no-stingers') { o.ident = 0; o.card = 0; }
     else if (a === '--ident') o.ident = Number(argv[++i]);
     else if (a === '--card') o.card = Number(argv[++i]);
     else if (a === '--lang') o.lang = argv[++i];
@@ -76,7 +73,6 @@ export function args(argv) {
     else if (a === '--ids') o.ids = argv[++i].split(',').map(s => s.trim()).filter(Boolean);
     else if (a === '--out') o.out = path.resolve(argv[++i]);
     else if (a === '--seconds') o.seconds = Number(argv[++i]);
-    else if (a === '--cut') o.cut = Number(argv[++i]);
     else if (a === '--url') o.url = argv[++i];
   }
   return o;
@@ -130,8 +126,7 @@ const clock = (s) => {
  * searchable by the words in it rather than by whatever the uploader typed.
  *
  * The timeline is the renderer's own, so the cues cannot drift from the clip:
- * ident, then the bulletin, then — at the same instant DECODE fires — the
- * technique, and the tell over the end card.
+ * the ident, the bulletin, and the end card.
  */
 export function captions(meta, t) {
   const cues = [];
@@ -146,7 +141,7 @@ export function captions(meta, t) {
   cue(headLen, meta.head);
   const each = (bodyLen - headLen) / Math.max(1, spoken.length - 1);
   for (const line of spoken.slice(1)) cue(each, line);
-  if (t.card > 0) cue(t.card, `${meta.technique} — ${meta.tell}`);
+  if (t.card > 0) cue(t.card, `${meta.slug} — Radio Free Helsinki`);
 
   return cues.map(([a, b, text], i) =>
     `${i + 1}\n${clock(a)} --> ${clock(b)}\n${String(text).trim()}\n`).join('\n');
@@ -162,13 +157,13 @@ export function captions(meta, t) {
  * is a paste rather than a rewrite.
  */
 export function postText(meta, { date, lang }) {
-  const tags = ['#RadioFreeHelsinki', '#DECODE', '#medialukutaito', '#propaganda'];
+  const tags = ['#RadioFreeHelsinki', '#Helsinki', '#pixelart', '#news'];
   return [
     meta.head,
     '',
-    `${meta.technique} — ${meta.tell}`,
+    meta.slug,
     '',
-    'Real events · invented names · real techniques.',
+    'Real events · invented names.',
     `Radio Free Helsinki, ${date}${lang && lang !== 'en' ? ` (${lang})` : ''}`,
     '',
     tags.join(' '),
@@ -224,7 +219,7 @@ async function main() {
   const outDir = path.join(opt.out, opt.date);
   await mkdir(outDir, { recursive: true });
   console.log(`Radio Free Helsinki — ${ids.length} clip${ids.length === 1 ? '' : 's'} for ${opt.date}`);
-  console.log(`  ${SIZE.width}×${SIZE.height}, ${opt.seconds}s, decode at ${opt.decode ? opt.cut + 's' : 'never'}\n`);
+  console.log(`  ${SIZE.width}×${SIZE.height}, ${opt.seconds}s\n`);
 
   const mp4able = await have('ffmpeg');
   if (!mp4able) console.warn('  ! ffmpeg not on PATH — writing WebM only\n');
@@ -270,21 +265,15 @@ async function main() {
     }
     const t1 = Date.now();
 
-    if (opt.decode) {
-      await sleep(opt.cut * 1000);
-      await page.evaluate(() => window.__rfh.debug.toggleDecode());
-      await sleep(Math.max(0, opt.seconds - opt.cut) * 1000);
-    } else {
-      await sleep(opt.seconds * 1000);
-    }
+    await sleep(opt.seconds * 1000);
     marks.body = (Date.now() - t1) / 1000;
-    if (opt.card) await page.evaluate((ms) => window.__rfh.ident({ ms, tell: true }), opt.card * 1000);
+    if (opt.card) await page.evaluate((ms) => window.__rfh.ident({ ms, card: true }), opt.card * 1000);
 
     // what the clip is OF, straight out of the app's own copy — the caption
     // file and the post text are written from this, never from the wire file
     const meta = await page.evaluate((want) => {
       const c = window.__rfh.debug.copy(want);
-      return c && { head: c.head, slug: c.slug, technique: c.technique, tell: c.tell,
+      return c && { head: c.head, slug: c.slug,
                     lines: window.__rfh.debug.broadcast(want), lang: window.__rfh.state.lang };
     }, id);
 
@@ -327,7 +316,7 @@ async function main() {
       post: `${m.id}.txt`,
       seconds: Math.round(m.seconds * 10) / 10,
       head: m.meta && m.meta.head,
-      technique: m.meta && m.meta.technique,
+      slug: m.meta && m.meta.slug,
       lang: m.meta && m.meta.lang,
     })),
   }, null, 2) + '\n');

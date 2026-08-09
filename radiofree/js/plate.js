@@ -18,8 +18,8 @@
 // are drawn at that size rather than at the panel's 128×152, which would have
 // had to be cropped by a third or letterboxed.
 
-import { PixelScreen } from './screen.js?v=41';
-import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=41';
+import { PixelScreen } from './screen.js?v=42';
+import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=42';
 
 // OPT-IN, and named one at a time on purpose. `plates.js` can draw seven of
 // the ten footage keys, so testing against PLATE_KEYS would have quietly moved
@@ -36,8 +36,6 @@ export class Plate {
     this.story = story || {};
     this.seed = seed;
     this.live = false;
-    this._decoded = false;
-    this.decodeK = 0;
     this.t = seed * 1.9;
 
     host.innerHTML = '';
@@ -61,26 +59,17 @@ export class Plate {
     this.wrap = wrap;
   }
 
-  get decoded() { return this._decoded; }
-  set decoded(v) { this._decoded = !!v; }
 
   goLive() { this.live = true; this.wrap.classList.add('live'); }
   goIdle() { this.live = false; this.wrap.classList.remove('live'); }
 
-  update(dt) {
-    this.t += dt;
-    // the plates read decode as a 0..1 mix, the same as the story panels — a
-    // step would flip the whole frame amber in one go
-    const want = this._decoded ? 1 : 0;
-    this.decodeK += (want - this.decodeK) * Math.min(1, dt * 6);
-    if (Math.abs(want - this.decodeK) < 0.002) this.decodeK = want;
-  }
+  update(dt) { this.t += dt; }
 
   draw() { this.paint(); }
   renderStatic() { this.paint(); }
   sync() { this.paint(); }
 
-  paint() { drawPlate(this.story.broll, this.scr, this.t, this.decodeK); }
+  paint() { drawPlate(this.story.broll, this.scr, this.t, 0); }
 
   destroy() { this.scr.destroy(); this.wrap.remove(); }
 }
