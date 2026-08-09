@@ -85,7 +85,18 @@ const M = {
   drink: { dur: 46, open: 46, low: true, drinkAt: 22, clip: [[Q.drinkA, 8], [Q.drinkB, 26], [Q.drinkA, 12]] },
 
   run: { dur: 999, loop: true, open: 0, speed: 1.62, clip: RUN_CLIP },
-  skid: { dur: 17, open: 13, dx: [1.4, 1.1, 0.8, 0.5, 0.25, 0.1], clip: [[Q.skid, 12], [Q.stand, 5]] },
+  // Winding UP into the run. Twelve drawn frames of him going from feet
+  // together to full running posture, and the speed is ramped across them so
+  // the picture and the travel agree — a step used to hand straight over to a
+  // 1.62px/frame cycle, which is a man at a standstill teleporting into a
+  // sprint. Held to the end it hands over to `run` already up to speed.
+  windUp: { dur: 22, open: 22,
+            dx: [0.35, 0.7, 1.0, 1.25, 1.45, 1.6], clip: [[Q.step1, 11], [Q.run3, 11]] },
+  // And winding down. Twelve drawn frames again, but given thirty to play in
+  // and twenty-three pixels to cover, because a stop that is over in a quarter
+  // of a second reads as a cut rather than as a man stopping. He carries most
+  // of it in the first third and then settles.
+  skid: { dur: 30, open: 24, dx: [1.55, 1.3, 0.95, 0.55, 0.2, 0.02], clip: [[Q.skid, 22], [Q.stand, 8]] },
   // Turning WHILE running: he plants, pivots and goes back the other way in
   // one move instead of skidding to a halt and then turning on the spot.
   // Twenty-two frames against thirty-four, and it keeps you alive in a duel.
@@ -222,6 +233,7 @@ export class Hero {
       case 'inch': return over(this.stepPhase ? 'stepB' : 'step', 6);
       case 'stand': case 'peer': return { anim: 'stand', f: this.f / 30 };
       case 'turn': return over('turn', 6);
+      case 'windUp': return over('runStart', 12);
       case 'runTurn': return over('skid', 12);
       case 'skid': case 'bump': return over('skid', 12);
       // with the pistol out he goes down holding it, not bent double
@@ -548,9 +560,14 @@ export class Hero {
     // ── standing, stepping, running ──────────────────────────────────
     const idle = s === 'stand' || s === 'standArmed';
     const settled = idle || ((s === 'step' || s === 'inch' || s === 'skid'
-      || s === 'turn' || s === 'runTurn') && done);
+      || s === 'turn' || s === 'runTurn' || s === 'windUp') && done);
     if (settled) {
       if (s === 'runTurn' && done && input.dir === this.face) { this.go('run'); return; }
+      // the wind-up ends at running speed, so it hands over to the cycle
+      // rather than back to a step — let go and it drops through to `rest()`
+      if (s === 'windUp' && done && input.dir === this.face) { this.go('run'); return; }
+      // let go halfway up and he still has to put the speed down
+      if (s === 'windUp' && done) { this.go('skid'); return; }
       if (input.down) { if (!this.tryClimbDown(world)) this.go('crouch'); return; }
       if (this.jumpBuf > 0) {
         this.jumpBuf = 0;
@@ -568,7 +585,7 @@ export class Hero {
         // hold to run — unless the way ahead is a wall, in which case running
         // at it only produces the bump you just had. He shuffles instead.
         const wall = world.boxSolid(this.x + this.face * 11 - 3, this.y - 26, 6, 24);
-        if (!wall && (s === 'step' || s === 'inch') && done && input.dirHeld > 16) { this.go('run'); return; }
+        if (!wall && (s === 'step' || s === 'inch') && done && input.dirHeld > 16) { this.go('windUp'); return; }
         this.go('step'); return;
       }
       if (input.careful && idle) { this.go('peer'); return; }

@@ -4,6 +4,37 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v35 — 2026-08-09
+
+**The run was shuddering, and the stop was the wrong animation.**
+
+The run's twenty frames all shared one anchor column. Measured off the sheet
+his belt sits anywhere from x=10.5 to x=19.5 and it zigzags four to six pixels
+between *adjacent* frames, so on top of the 1.94px he really travels he was
+lurching forward and then back half a body-width — seven frames in twenty had
+his pelvis moving BACKWARDS. Every frame is now pinned by its own belt, and the
+engine's constant speed does the moving, which is what a run is. The whole
+locomotion chain got the same treatment — stand, both halves of the walk, the
+wind-up, the run, the halt — so nothing pops sideways handing over to anything
+else.
+
+And the stop was playing the wrong row. Row 5 starts him stood still with his
+feet together and winds him *forward* into full running posture; row 6 starts
+him leaning back with his arms flung out and straightens him up. Letting go of
+the stick was playing row 5 — winding him up rather than down, which is why it
+never settled. So:
+
+- **`skid` is row 6 now**, the real halt, given **thirty frames and twenty-four
+  pixels** of slide instead of seventeen and twelve. A stop that is over in a
+  quarter of a second reads as a cut, not as a man stopping.
+- **Row 5 becomes `windUp`**, a new state between the walk and the run. A step
+  used to hand straight over to a 1.62px/frame cycle, which is a man at a
+  standstill teleporting into a sprint. Twenty-two frames now, speed ramped
+  across them, and at the end it hands over to the cycle already up to speed —
+  or to the halt, if you let go halfway up.
+
+Both are in the gallery as RUN · winding up and RUN · coming to a halt.
+
 ## v34 — 2026-08-09
 
 **Jimbo, fitted onto the Prince's animation.** The instruction was not to
