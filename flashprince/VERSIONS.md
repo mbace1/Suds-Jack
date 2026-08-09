@@ -2,6 +2,20 @@
 
 The public release number. The `?v=N` token in `index.html` is a separate thing: it tracks every module-graph change so a browser cannot serve half of one build and half of another. Bump both when shipping.
 
+## v19 — 2026-08-09
+
+Mobile-control and presentation correction pass.
+
+- Dual-stick is reset as the default mobile scheme.
+- Pressing the top of the right stick, flicking it up, tapping its centre or
+  pressing a physical right stick now triggers jump.
+- The sprite palette is unified around warm jacket, skin, violet trouser and
+  soft boot ramps with stronger separation from the background.
+- Classic Pixels and edge-preserving 4× Upscale modes use the exact same
+  authored animation frames and can be switched from Controls.
+- Android twin-stick, simultaneous run/jump, keyboard and both render modes
+  are browser-tested before release.
+
 ## v18 — 2026-08-09
 
 The raster-motion proof now carries a complete long-jump and landing phrase.
