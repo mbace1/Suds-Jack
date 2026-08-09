@@ -141,6 +141,14 @@ export const ANIM = {
   // Prince of Persia frames, repainted the same way (ref/recolour_pop.py). His
   // figure is 40px against Conrad's 38, near enough to stand next to him.
   //
+  // The repaint is not a palette swap. The instruction was to fit JIMBO onto
+  // the Prince's animation rather than let a second character walk on when the
+  // blade comes out, so the Prince is given Jimbo's white shoes, his white tee
+  // under an open jacket, and grey sleeves — the Prince is bare-armed and
+  // barefoot, so the skin on him IS the sleeve and IS the boot, which is the
+  // split Conrad's own sheet can never offer. Every colour it paints is one of
+  // the eighteen above, or the quantiser would not keep it.
+  //
   // That rip is hand-laid rather than a grid, so every frame carries its own
   // source rect: [x, y, w, h, anchorX, anchorY] in sheet pixels. The anchor is
   // the REAR foot — he faces right on this sheet, and in a lunge the rear foot
@@ -204,6 +212,16 @@ export const ANIM = {
     rects: [[69,322,36,37,72,358], [107,316,41,43,110,358], [69,322,36,37,72,358]],
   },
 };
+
+// How many frames an animation has. Three of the four ways of laying one out
+// count differently — a grid run says `n`, a hand-picked column order says
+// `cols`, and the sword's own source rects say `rects` — so anything that
+// needs the length asks here rather than reading `n` and getting undefined.
+export function frameCount(anim) {
+  const a = ANIM[anim];
+  if (!a) return 0;
+  return a.n ?? a.cols?.length ?? a.rects?.length ?? 0;
+}
 
 // where his hip sits above his feet when he is standing — the airborne anchor
 const HIP = 20;

@@ -19,7 +19,7 @@ import { paletteAt, C } from './palette.js';
 import { Hero } from './hero.js';
 import { Bench } from './bench.js';
 import { Input } from './input.js';
-import { loadSheet, drawSprite, ready, ANIM, CONRAD_COLOURS } from './sprite.js';
+import { loadSheet, drawSprite, ready, ANIM, frameCount, CONRAD_COLOURS } from './sprite.js';
 
 const FLOOR = 144;                 // the ground line, in picture pixels
 const PAL = paletteAt(1.15);       // one palette, cool and quiet, so he reads
@@ -53,6 +53,17 @@ const REEL = [
   ['crouchDraw', 'PISTOL · going down'],
   ['crouchAim', 'PISTOL · aimed, crouched'],
   ['crouchFire', 'PISTOL · the shot, crouched'],
+  // The sword is still holstered in play — these are here to be LOOKED at,
+  // which is the only way to judge whether the repaint has made the Prince's
+  // frames into the same man as the walk.
+  ['swordDraw', 'SWORD · drawing'],
+  ['swordGuard', 'SWORD · on guard'],
+  ['swordAdvance', 'SWORD · advancing'],
+  ['swordRetreat', 'SWORD · retreating'],
+  ['swordLunge', 'SWORD · the lunge'],
+  ['swordStrike', 'SWORD · overhead'],
+  ['swordParry', 'SWORD · the parry'],
+  ['swordSheathe', 'SWORD · away'],
 ];
 
 class Stage {
@@ -176,13 +187,16 @@ class Stage {
   gallery(scr) {
     const [name, label] = REEL[this.reel];
     const a = ANIM[name];
+    const n = frameCount(name);
     const hold = a.hold ?? 4;
     const i = Math.floor(this.t / hold);
-    const frame = a.loop ? i % a.n : Math.min(i, a.n - 1);
-    if (!a.loop && i >= a.n + 8) this.t = 0;      // a beat, then round again
+    const frame = a.loop ? i % n : Math.min(i, n - 1);
+    if (!a.loop && i >= n + 8) this.t = 0;      // a beat, then round again
 
-    const y = a.lip ? FLOOR - 46 : FLOOR;
-    if (!a.lip) {
+    // the ledge moves anchor on the LIP, not the floor, so the gallery has to
+    // give them a lip to anchor to or they hang in the air
+    const y = a.ledge ? FLOOR - 46 : FLOOR;
+    if (!a.ledge) {
       scr.rect(0, FLOOR, W, H - FLOOR, C.SOLID);
       scr.rect(0, FLOOR, W, 1, C.EDGE);
       scr.poly([W / 2 - 9, FLOOR - 1, W / 2 + 9, FLOOR - 1, W / 2 + 6, FLOOR + 2, W / 2 - 6, FLOOR + 2], C.DARK);
@@ -194,7 +208,7 @@ class Stage {
     drawSprite(scr, name, frame, W / 2, y, 1);
 
     this.centre(scr, label, 22, C.LUX);
-    this.centre(scr, `${frame + 1} / ${a.n}${this.paused ? '  ·  HELD' : ''}`, 34, C.EDGE);
+    this.centre(scr, `${frame + 1} / ${n}${this.paused ? '  ·  HELD' : ''}`, 34, C.EDGE);
     this.centre(scr, `${this.reel + 1} of ${REEL.length}`, FLOOR + 14, C.DARK);
   }
 

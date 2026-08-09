@@ -33,12 +33,26 @@ outfit is ONE white, so nothing can be looked up — but the sheet hands over th
 line to cut on: the red is his hair at the top and his BELT at the waist, in
 two separate blobs, so the lower one says where the trousers start. That is
 what gives Jimbo his baggy brown trousers. The blade is found by thickness —
-it is the only thing on him one or two pixels through.
+it is the only thing on him one or two pixels through, and only in the four
+bands that have a sword in them: a man seen face-on mid-turn is two pixels
+through as well, which put a silver stripe down the middle of the turn.
 
-Sleeves were attempted there twice, by the torso's column and by flooding out
-from the hands, and both failed the same way: with an arm tucked against a
-chest twelve pixels across there is no rule that separates them, so half the
-frames came out with a grey torso. Consistent beats half-right.
+**Sleeves and shoes are there, and they come from the Prince being naked.**
+Two earlier attempts split the white tunic into torso and arm and both failed
+the same way — an arm tucked against a twelve-pixel chest has no rule that
+separates it. The arms were never in the tunic. He is **bare-armed and
+barefoot**, so his arms and his feet are already a colour of their own, and
+sorting that skin into blobs gives head, arms and feet for nothing: the top
+blob cut five rows down is the face, blobs at the bottom of the body are the
+boots, the rest are arms. Sleeve them and keep the far end skin for the hand.
+A white tee goes on the front two columns of the upper chest, which is the
+loudest thing on Conrad's Jimbo at this size.
+
+The one honest mismatch left: Jimbo's sleeves are **grey here and dark on
+Conrad's sheet**, because Conrad's cannot be split. It costs less than it
+sounds — the arm is inside the silhouette in most of his frames — and with the
+sword out the arm is the pose, so a dark arm on a dark torso reads as a blob.
+It ends when Conrad's sleeves are hand-painted; then it is one constant here.
 
 **Silhouette** is not colour. Baggier trousers are a different outline and no
 repaint reaches them; that is a redraw of the sheet, or the Prince of Persia
