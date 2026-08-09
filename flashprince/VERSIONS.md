@@ -4,6 +4,30 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v30 — 2026-08-09
+
+**The sword.** Flashback has none in it, so these are the Prince of Persia
+frames, repainted the same way and standing next to Conrad's without scaling —
+his figure is 40px to Conrad's 38.
+
+Eight states, all his own pixels: drawing, en garde, advance, retreat, the
+overhead strike, the parry, the clang, sheathing. Press **E** on the bench (or
+SWORD on the pad) and the stance takes over: forward advances, back retreats,
+up strikes, Shift parries, down puts it away.
+
+That rip is hand-laid rather than a grid, so every frame carries its own source
+rect and its own anchor — the REAR foot, because in a lunge that is the planted
+one and anchoring on the body's centre drags him backwards as he reaches. The
+sheet also faces the opposite way from Conrad's, so the flip is inverted for it.
+
+**Repainting it needed a different trick.** His outfit there is one flat white
+with nothing to look up — but the red is his hair AND his belt, in two separate
+blobs, and the lower one says where the trousers start. That is what finally
+gives Jimbo baggy brown trousers, which no repaint of Conrad's sheet could. The
+blade is found by thickness: the only thing on him one or two pixels through.
+
+Sleeves were attempted twice there and dropped both times; see `ref/README.md`.
+
 ## v29 — 2026-08-09
 
 **He is Jimbo now.** The sheet is repainted: brown trousers, a white t-shirt, a
