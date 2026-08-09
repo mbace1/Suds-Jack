@@ -15,9 +15,11 @@ export const TILE = 16;
 // 20 x 12 tiles = the whole 320x192 picture.
 //   #  solid
 //   .  air
-// Left to right: floor, a two-tile gap to run at, more floor, and a ledge one
-// storey up on the right — 48 pixels, which is a lip he can catch standing and
-// clear comfortably out of a run.
+// Left to right: a hundred and forty pixels of floor to get up to speed on, a
+// two-tile gap to run at, more floor, and a ledge one storey up on the right —
+// 48 pixels, which is a lip he can catch standing and clear out of a run. The
+// run-up matters: with the gap close to where he starts, the first thing anyone
+// does is walk off into it.
 const BENCH = [
   '....................',
   '....................',
@@ -28,9 +30,9 @@ const BENCH = [
   '..............######',
   '..............######',
   '..............######',
-  '#####..#############',
-  '#####..#############',
-  '#####..#############',
+  '#########..#########',
+  '#########..#########',
+  '#########..#########',
 ];
 
 export class Bench {

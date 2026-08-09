@@ -439,7 +439,11 @@ export class Hero {
       return;
     }
     if (this.dropLock > 0) { this.dropLock--; return; }
-    if (input.up) { this.go('pullUp'); return; }
+    // A TAPPED up has to work here. `input.up` is a held state, and a tap is
+    // one frame — miss it and he just goes on hanging while you press the
+    // button. The jump buffer already exists for exactly this reason, and up
+    // is the jump key, so hanging honours it too.
+    if (input.up || this.jumpBuf > 0) { this.jumpBuf = 0; this.go('pullUp'); return; }
     if (input.down || input.dir === -this.face) {
       this.vx = 0; this.vy = 0.4; this.fallFrom = this.y;
       this.go('fall');

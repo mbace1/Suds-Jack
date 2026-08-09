@@ -4,6 +4,31 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v32 — 2026-08-09
+
+**The controls.** Three bugs, and the first one is the whole complaint.
+
+- **The one-shot presses were never cleared.** `input.flush()` exists and the
+  rewritten `main.js` never called it, so `jumpPress`, `firePress`, `gunPress`
+  and `carefulPress` latched ON permanently after the first press. He jumped at
+  every opening he got, the sword drew and sheathed itself, and one press of
+  the mode button flipped the mode sixty times a second. It is called from a
+  `finally` now, so it happens whatever else does.
+- **Taps were being dropped.** A key pressed and released between two polls
+  never happened at all — at sixty frames a second a frame is 16ms and a brisk
+  tap is shorter. Jump and fire had edges; the HOLDS (left, right, up, down,
+  Shift) had nothing. Every key and every on-screen button now keeps counting
+  for four frames after it comes up, which is what makes a tap mean one step,
+  one turn, one climb. Four is well under the sixteen a hold needs to become a
+  run, so a tap is still exactly one step.
+- **A tapped up would not pull him up off a ledge.** `input.up` is a held
+  state; hanging read it on the frame and missed the tap. It honours the jump
+  buffer now, the way standing already did.
+
+And the gap is further right, so there is a hundred and forty pixels of floor
+to get up to speed on. With it near the start the first thing anyone did was
+walk into the hole.
+
 ## v31 — 2026-08-09
 
 **A real turn**, at last. Conrad's sheet has none — that was checked row by
