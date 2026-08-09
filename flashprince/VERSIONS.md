@@ -2,6 +2,21 @@
 
 The public release number. The `?v=N` token in `index.html` is a separate thing: it tracks every module-graph change so a browser cannot serve half of one build and half of another. Bump both when shipping.
 
+## v23 — 2026-08-09
+
+The run and jump now keep the same character construction.
+
+- Replaces only the run artwork, with explicit permission, using the matching
+  v20 start/run drawings so the oversized trouser blocks and mid-jump character
+  swap are gone.
+- Keeps the approved twenty-frame hold cadence, six-frame start, 1.22-pixel
+  movement speed and root motion unchanged.
+- Reference check: all twenty run frames were compared with the forward-run row
+  on LuigiBlood's SNES Conrad B. Hart sheet and the run passage in Polygon
+  Treehouse's Flashback GIF. Character continuity into the standing jump was
+  checked against GameAnim's eighteen-frame standing-forward-jump GIF.
+- Classic Pixels and 4× Upscale still render the same authored frames.
+
 ## v22 — 2026-08-09
 
 The previously approved run is restored and locked.

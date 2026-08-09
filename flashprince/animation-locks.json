@@ -8,15 +8,30 @@
   "approvedFamilies": {
     "run": {
       "status": "locked",
-      "approvedIn": "v19",
-      "dataPath": "js/run-v15-data.js",
-      "sha256": "e819454be942feaa6cfb8b8901784b5ec4cd5b8380d91e64a309654fd20998c2",
+      "approvedIn": "v23",
+      "dataPath": "js/motion-v20-data.js",
+      "exportName": "RUN",
+      "startExportName": "START",
+      "digestMode": "selected-exports-json",
+      "sha256": "3c6dfbe8d247becf3bb5eeaf96f8014298432d936db5bbbaeb22417ab69c7550",
       "frameCount": 20,
       "holds": [5, 4, 3, 3, 4, 3, 3, 4, 5, 4, 3, 3, 4, 3, 3, 4, 5, 4, 3, 3],
       "startFrames": 6,
       "speed": 1.22,
-      "sourceFacesRight": false,
-      "runtimeSignature": "ff0dd32f",
+      "sourceFacesRight": true,
+      "runtimeSignature": "7df439ed",
+      "permission": {
+        "granted": "2026-08-09",
+        "record": "User reported mismatched jump character and distorted run trousers, then explicitly said Go.",
+        "scope": "Run artwork and character continuity only; cadence, start length, speed and root motion remain unchanged."
+      },
+      "previousApproval": {
+        "approvedIn": "v19",
+        "dataPath": "js/run-v15-data.js",
+        "sha256": "e819454be942feaa6cfb8b8901784b5ec4cd5b8380d91e64a309654fd20998c2",
+        "sourceFacesRight": false,
+        "runtimeSignature": "ff0dd32f"
+      },
       "changePolicy": "Explicit user permission naming the run animation is required."
     }
   }
