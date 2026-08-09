@@ -4,6 +4,28 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v29 — 2026-08-09
+
+**He is Jimbo now.** The sheet is repainted: brown trousers, a white t-shirt, a
+dark letterman jacket. `ref/recolour.py` builds `ref/jimbo.png` out of
+`ref/conrad.png`, and that is what the game loads.
+
+Most of it is one lookup, the sheet being indexed art. Two things are not:
+
+- **Hair shares a colour with the jacket** (`#633100` is both), so it is split
+  by REGION — inside the top eight rows of a frame that colour is hair and
+  stays brown, below it is jacket and goes dark.
+- **Sleeves cannot be split.** The four browns are shading — lit side, shade
+  side, fold, edge — laid across the whole garment rather than body versus
+  sleeve. There is no set of pixels that means "sleeve", so grey sleeves need
+  hand-painting frame by frame. Not done.
+
+And baggier trousers are a silhouette, which no repaint reaches.
+
+Also in: `ref/pop.png`, the Prince of Persia sheet. His figure is 40px against
+Conrad's 38, so the two mix without scaling — that is where the sword comes
+from next.
+
 ## v28 — 2026-08-09
 
 **There is no turn on the sheet.** Row 18 was mapped as one and it is him
