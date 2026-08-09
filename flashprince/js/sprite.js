@@ -83,6 +83,19 @@ export const ANIM = {
   },
   fall: { row: 9, c0: 11, n: 3, air: true, loop: true, hold: 6,
           anchors: [[6.5, 21], [7.8, 20], [7.8, 20]] },
+
+  // The ledge. These anchor on the LIP — cell top on the ledge line — because
+  // that is what the sheet draws them against: the whole vertical of a mantle
+  // is in the frames themselves. Only the horizontal is cancelled out of them,
+  // so the move's own carry does the sideways travel and he does not go twice.
+  hang: { row: 25, c0: 6, n: 4, hold: 24, loop: true, lip: true,
+          anchors: [[4.8, 25], [6.1, 24], [6.3, 24], [6.3, 24]] },
+  mantle: { row: 39, c0: 4, n: 7, lip: true,
+            anchors: [[4.9, 26], [11.7, 26], [14.7, 24], [17.1, 24], [19.9, 23], [16.9, 22], [15.6, 20]] },
+  // lowering himself over an edge is the mantle run backwards, which is what
+  // Flashback does too
+  lower: { row: 39, c0: 4, n: 7, lip: true, rev: true,
+           anchors: [[4.9, 26], [11.7, 26], [14.7, 24], [17.1, 24], [19.9, 23], [16.9, 22], [15.6, 20]] },
 };
 
 // where his hip sits above his feet when he is standing — the airborne anchor
@@ -123,13 +136,13 @@ export function drawSprite(scr, anim, i, x, y, face) {
   const a = ANIM[anim];
   if (!a) return false;
   const k = a.loop ? ((i % a.n) + a.n) % a.n : Math.max(0, Math.min(a.n - 1, i));
-  const col = a.c0 + k;
+  const col = a.c0 + (a.rev ? a.n - 1 - k : k);
   const sx = col * CELL_W, sy = a.row * CELL_H;
-  const hip = a.air ? a.anchors[k] : null;
+  const hip = a.anchors ? a.anchors[a.rev ? a.n - 1 - k : k] : null;
   // he faces left on the sheet, so the anchor mirrors with him
   const ax = hip ? (face > 0 ? CELL_W - hip[0] : hip[0])
                  : (face > 0 ? CELL_W - a.ax : a.ax);
-  const ay = hip ? hip[1] + HIP : a.ground;
+  const ay = a.lip ? 0 : hip ? hip[1] + HIP : a.ground;
   const dx = Math.round(x - ax), dy = Math.round(y - ay);
   scr.blit(sheet, sx, sy, CELL_W, CELL_H, dx, dy, face > 0);
   return true;

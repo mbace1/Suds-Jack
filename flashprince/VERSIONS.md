@@ -4,6 +4,28 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v27 — 2026-08-09
+
+**A gap and a ledge**, so the moves that need geometry have geometry. You
+cannot judge a running jump on flat ground and you cannot judge a hang at all
+without a lip to catch — but it is still a bench, not a level: nothing to
+reach, nothing to kill you.
+
+- `bench.js` is a twenty-by-twelve grid with a two-tile gap in the floor and
+  one storey-high ledge. The tile queries are the old level's own, minus rooms,
+  traps and doors.
+- **His reach is forty-six pixels, not twenty-six.** Hanging, Conrad's hands
+  are on the lip and his boots are forty-six under it — measured off the sheet.
+  The drawn figure's was twenty-six and every ledge in the old level was cut
+  for that number, which is exactly why the hang could not take his frames
+  until the level went away and the ledges became mine to place.
+- So the hang, the mantle and the climb-down are his now. They anchor on the
+  LIP — cell top on the ledge line — because that is what the sheet draws them
+  against: the whole vertical of a mantle is in the frames themselves, and only
+  the horizontal is cancelled out so the move's own carry is not doubled. The
+  climb-down is the mantle run backwards, which is what Flashback does too.
+- Twenty-one animations in the gallery now.
+
 ## v26 — 2026-08-09
 
 **Stripped to the character.** The levels are gone — no rooms, no scenery, no

@@ -17,23 +17,12 @@
 import { Screen, W, H } from './screen.js';
 import { paletteAt, C } from './palette.js';
 import { Hero } from './hero.js';
+import { Bench } from './bench.js';
 import { Input } from './input.js';
 import { loadSheet, drawSprite, ready, ANIM, CONRAD_COLOURS } from './sprite.js';
 
-const FLOOR = 156;                 // the ground line, in picture pixels
+const FLOOR = 144;                 // the ground line, in picture pixels
 const PAL = paletteAt(1.15);       // one palette, cool and quiet, so he reads
-
-// The world, such as it is: a floor and nothing else. Everything the hero asks
-// the world about that needs level geometry — a ledge to catch, a lip to climb
-// down, a block to step onto — answers no, which is what keeps him inside the
-// handful of moves this stage is for.
-const FLAT = {
-  boxSolid: (x, y, w, h) => y + h > FLOOR,
-  ledgeAhead: () => null,
-  ledgeBehind: () => null,
-  lipAhead: () => null,
-  stepUpAhead: () => null,
-};
 
 // The gallery's running order — roughly the order a man does them in.
 const REEL = [
@@ -53,6 +42,9 @@ const REEL = [
   ['gatherRun', 'RUNNING JUMP · gather'],
   ['airRun', 'RUNNING JUMP · flight'],
   ['fall', 'FALLING'],
+  ['hang', 'HANGING'],
+  ['mantle', 'PULLING UP'],
+  ['lower', 'CLIMBING DOWN'],
   ['wake', 'GETTING UP'],
   ['dead', 'DEAD'],
 ];
@@ -66,7 +58,8 @@ class Stage {
     this.scr.setPalette(PAL);
     loadSheet();
     this.input = new Input(this.scr);
-    this.hero = new Hero(W / 2, FLOOR);
+    this.world = new Bench();
+    this.hero = new Hero(48, FLOOR);
     this.hero.go('wake');
     this.mode = 'free';
     this.reel = 0;
@@ -85,7 +78,7 @@ class Stage {
     if (inp.firePress) {
       this.mode = this.mode === 'free' ? 'gallery' : 'free';
       this.t = 0;
-      if (this.mode === 'free') { this.hero.reset(W / 2, FLOOR); this.hero.go('stand'); }
+      if (this.mode === 'free') { this.hero.reset(48, FLOOR); this.hero.go('stand'); }
     }
 
     if (this.mode === 'gallery') {
@@ -100,17 +93,18 @@ class Stage {
 
     const h = this.hero;
     if (this.hint > 0) this.hint--;
-    h.update(FLAT, inp, this);
-    // the stage is a strip, not a room: walk off one end and you come back on
-    // the other rather than falling into nothing
+    h.update(this.world, inp, this);
+    // the bench is a strip, not a room: walk off one end and you come back on
+    // the other, and the gap drops you back onto the floor rather than into
+    // nothing — falling forever is not an animation
     if (h.x < -14) h.x = W + 12;
     if (h.x > W + 14) h.x = -12;
-    if (h.y > FLOOR) { h.y = FLOOR; h.vy = 0; }
+    if (h.y > H + 10) { h.reset(48, FLOOR); h.go('land'); }
   }
 
   // the hero asks the game for these; on a floor with nothing on it they are
   // all no-ops
-  kill() { this.hero.reset(W / 2, FLOOR); this.hero.go('wake'); }
+  kill() { this.hero.reset(48, FLOOR); this.hero.go('wake'); }
   hurt() {}
 
   // ── drawing ────────────────────────────────────────────────────────
@@ -131,20 +125,18 @@ class Stage {
   backdrop(scr) {
     scr.clear(C.SKY_HI);
     scr.rect(0, 44, W, 40, C.SKY_LO);
-    scr.rect(0, 84, W, 30, C.FAR);
-    scr.rect(0, 114, W, FLOOR - 114, C.MID);
-    scr.rect(0, FLOOR, W, H - FLOOR, C.SOLID);
-    scr.rect(0, FLOOR, W, 1, C.EDGE);
-    // a few marks on the floor, so movement has something to be measured
-    // against — without them a run on a blank band reads as a treadmill
-    for (let x = -((this.clock * 0) % 32); x < W; x += 32) scr.rect(x, FLOOR + 4, 12, 1, C.DARK);
+    scr.rect(0, 84, W, 34, C.FAR);
+    scr.rect(0, 118, W, H - 118, C.MID);
   }
 
   free(scr) {
+    this.world.draw(scr, C);
     const h = this.hero;
-    scr.poly([h.x - 9, h.y - 1, h.x + 9, h.y - 1, h.x + 6, h.y + 2, h.x - 6, h.y + 2], C.DARK);
+    if (this.world.boxSolid(h.x - 2, h.y + 1, 4, 3)) {
+      scr.poly([h.x - 9, h.y - 1, h.x + 9, h.y - 1, h.x + 6, h.y + 2, h.x - 6, h.y + 2], C.DARK);
+    }
     const sp = h.sprite();
-    if (sp) drawSprite(scr, sp.anim, Math.floor(sp.f), h.x, h.y, h.face);
+    if (sp) drawSprite(scr, sp.anim, Math.floor(sp.f), h.x, sp.lipY ?? h.y, h.face);
     if (!ready()) this.centre(scr, 'LOADING THE SHEET', 96, C.LUX);
   }
 
@@ -156,8 +148,17 @@ class Stage {
     const frame = a.loop ? i % a.n : Math.min(i, a.n - 1);
     if (!a.loop && i >= a.n + 8) this.t = 0;      // a beat, then round again
 
-    scr.poly([W / 2 - 9, FLOOR - 1, W / 2 + 9, FLOOR - 1, W / 2 + 6, FLOOR + 2, W / 2 - 6, FLOOR + 2], C.DARK);
-    drawSprite(scr, name, frame, W / 2, FLOOR, 1);
+    const y = a.lip ? FLOOR - 46 : FLOOR;
+    if (!a.lip) {
+      scr.rect(0, FLOOR, W, H - FLOOR, C.SOLID);
+      scr.rect(0, FLOOR, W, 1, C.EDGE);
+      scr.poly([W / 2 - 9, FLOOR - 1, W / 2 + 9, FLOOR - 1, W / 2 + 6, FLOOR + 2, W / 2 - 6, FLOOR + 2], C.DARK);
+    } else {
+      // the lip these three hang from, so there is something to hang from
+      scr.rect(0, y, W / 2 - 6, H - y, C.SOLID);
+      scr.rect(0, y, W / 2 - 6, 1, C.EDGE);
+    }
+    drawSprite(scr, name, frame, W / 2, y, 1);
 
     this.centre(scr, label, 22, C.LUX);
     this.centre(scr, `${frame + 1} / ${a.n}${this.paused ? '  ·  HELD' : ''}`, 34, C.EDGE);
@@ -176,7 +177,7 @@ class Stage {
     const sp = h.sprite();
     if (sp) scr.text(`${sp.anim}`, 6, 40, C.DARK, s);
     if (this.hint > 0) {
-      this.centre(scr, '◀ ▶  WALK, HOLD TO RUN      ▲  JUMP      ▼  CROUCH', H - 18, C.DARK, s);
+      this.centre(scr, '◀ ▶  WALK, HOLD TO RUN   ▲  JUMP / PULL UP   ▼  CROUCH / CLIMB DOWN', H - 18, C.DARK, s);
       this.centre(scr, 'FIRE  —  ANIMATION GALLERY', H - 10, C.DARK, s);
     }
   }
