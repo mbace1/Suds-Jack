@@ -16,10 +16,12 @@ import { POSE as Q, sample } from './figure.js';
 
 // Conrad's run, all twenty frames of it — his arms are not symmetrical between
 // the two halves, so there is no mirroring the second ten out of the first.
-// 1.1 frames a key puts the cycle at 22 frames, which at 1.62px a frame is a
-// 17.8px stride, the stride the sheet measures between his feet at full split.
-// Get that number wrong and the feet skate.
-const RUN_CLIP = Array.from({ length: 20 }, (_, i) => [Q['run' + (i + 1)], 1.1]);
+//
+// 1.2 frames a key: twenty-four frames a cycle, which at 1.62px a frame is a
+// 19.4px stride against the 19.7px his feet are apart at full split. Get that
+// number wrong and the planted foot slides — 1.1 was short by two pixels a
+// step, and two pixels a step is a skate.
+const RUN_CLIP = Array.from({ length: 20 }, (_, i) => [Q['run' + (i + 1)], 1.2]);
 
 export const HERO_W = 10, HERO_H = 30, CROUCH_H = 16;
 
@@ -47,9 +49,15 @@ const M = {
   stand: { dur: 999, loop: true, open: 0, clip: [[Q.breathe, 46], [Q.stand, 54]] },
   standArmed: { dur: 999, loop: true, open: 0, clip: [[Q.aim, 60], [Q.aim, 60]] },
 
-  turn: { dur: 18, open: 18, flipAt: 10, clip: [[Q.turnA, 6], [Q.turnB, 7], [Q.stand, 5]] },
+  // Eight frames, not eighteen. There is no turn animation on the sheet —
+  // Flashback flips him — so a long one is a man standing still while the
+  // stick does nothing, which reads as the game hanging rather than as weight.
+  turn: { dur: 8, open: 8, flipAt: 4, clip: [[Q.turnA, 4], [Q.stand, 4]] },
 
-  step: { dur: 22, open: 22, dx: [0, 0.2, 0.7, 1.0, 1.0, 0.8, 0.4, 0.1], clip: [[Q.step1, 7], [Q.step2, 8], [Q.step3, 7]] },
+  // Fourteen pixels, not twelve. Measured off the sheet: the one frame of his
+  // walk with BOTH feet on the ground has them 13.9px apart, and that is the
+  // stride. Carry less than the stride and the planted foot slides.
+  step: { dur: 22, open: 22, dx: [0, 0.24, 0.85, 1.21, 1.21, 0.97, 0.48, 0.12], clip: [[Q.step1, 7], [Q.step2, 8], [Q.step3, 7]] },
 
   // THE CAREFUL STEP. Shift, and the most useful button in Prince of Persia.
   // Five pixels instead of twelve, and it costs more frames to travel less
@@ -202,13 +210,14 @@ export class Hero {
     const m = M[s];
     const over = (anim, n, f = this.f, lipY) => ({ anim, f: f / (m.dur / n), lipY });
     switch (s) {
-      case 'run': return { anim: 'run', f: this.f / 1.1 };
+      case 'run': return { anim: 'run', f: this.f / 1.2 };
       case 'step': return over(this.stepPhase ? 'stepB' : 'step', 6);
       // the careful step is the same six frames given half again as long
       case 'inch': return over(this.stepPhase ? 'stepB' : 'step', 6);
       case 'stand': case 'peer': return { anim: 'stand', f: this.f / 30 };
-      case 'turn': return over('turn', 10);
-      case 'runTurn': return over('turn', 10);
+      // no turn on the sheet: he holds still and flips, the way Flashback does
+      case 'turn': return { anim: 'stand', f: 0 };
+      case 'runTurn': return over('skid', 12);
       case 'skid': case 'bump': return over('skid', 12);
       case 'crouch': return over('crouch', 4);
       case 'crouchIdle': return { anim: 'crouchLow', f: this.f / 40 };
