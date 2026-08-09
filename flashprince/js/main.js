@@ -14,10 +14,11 @@
 import { Screen, W, H } from './screen.js';
 import { paletteAt, C } from './palette.js';
 import { World, ROOM_W, ROOM_H, ROOMS } from './level.js';
-import { paintBack, drawAir, drawFore } from './scenery.js';
+import { paintBack, drawAir, drawFore, halo } from './scenery.js';
 import { Hero } from './hero.js';
 import { makeEnemy } from './enemy.js';
 import { drawFigure, POSE } from './figure.js';
+import { loadSheet, drawSprite, CONRAD_COLOURS } from './sprite.js';
 import { Fx } from './fx.js';
 import { Input } from './input.js';
 import * as A from './audio.js';
@@ -27,11 +28,17 @@ const HERO_TITLE_POSE = POSE.alert;
 const HERO_COL = {
   far: C.SUIT, body: C.SUIT_HI, legs: C.SUIT, arms: C.SUIT_HI,
   skin: C.SKIN, hair: C.HAIR, eye: null, gun: C.HAIR,
+  blade: C.EDGE, edge: C.LUX, hilt: C.HAIR,
 };
 
 class Game {
   constructor() {
     this.scr = new Screen(document.getElementById('screen'));
+    // The hero is blitted out of the SNES sheet, not drawn from the sixteen.
+    // Telling the quantise pass to leave his fourteen colours alone is what
+    // keeps him exact while the world around him still snaps to the room.
+    this.scr.keepColours(CONRAD_COLOURS);
+    loadSheet();
     this.input = new Input(this.scr);
     this.fx = new Fx();
     this.world = new World();
@@ -54,6 +61,7 @@ class Game {
     this.hero = new Hero(this.world.spawn?.x ?? 60, this.world.spawn?.y ?? 176);
     this.hero.health = 3;
     this.hero.hasGun = false;
+    this.hero.hasSword = false;
     this.enterRoom(0, null, true);
     this.hero.go('wake');
   }
@@ -61,10 +69,14 @@ class Game {
   // ── rooms ──────────────────────────────────────────────────────────
   enterRoom(i, from, keepHero = false) {
     const carry = keepHero ? null : {
-      health: this.hero.health, hasGun: this.hero.hasGun,
+      health: this.hero.health, hasGun: this.hero.hasGun, hasSword: this.hero.hasSword,
     };
     this.world.load(i);
-    if (carry) { this.hero.health = carry.health; this.hero.hasGun = carry.hasGun; }
+    if (carry) {
+      this.hero.health = carry.health;
+      this.hero.hasGun = carry.hasGun;
+      this.hero.hasSword = carry.hasSword;
+    }
     this.enemies = this.world.spawns.map(s => makeEnemy(s.kind, s.x, s.y));
     this.fx.clear();
     this.scr.setPalette(paletteAt(this.world.room.t));
@@ -78,7 +90,7 @@ class Game {
     // the checkpoint is the doorway you came in by, always
     this.checkpoint = {
       i, x: this.hero.x, y: this.hero.y, face: this.hero.face,
-      health: this.hero.health, hasGun: this.hero.hasGun,
+      health: this.hero.health, hasGun: this.hero.hasGun, hasSword: this.hero.hasSword,
     };
 
     const b = this.world.room.beat;
@@ -99,6 +111,7 @@ class Game {
     this.hero.face = c.face;
     this.hero.health = 3;
     this.hero.hasGun = c.hasGun;
+    this.hero.hasSword = c.hasSword;
     this.state = 'play';
     this.cut = 5;
   }
@@ -125,6 +138,28 @@ class Game {
     this.fx.burst(this.hero.x, this.hero.y - 14, C.ALERT, cause === 'fall' ? 16 : 10);
     A.sfx.die();
     this.state = 'dying';
+  }
+
+  // two blades meeting: both parties give ground and nobody is hurt
+  clash(a, b) {
+    A.sfx.clang();
+    this.fx.shake = Math.min(5, this.fx.shake + 2.2);
+    const mx = (a.x + b.x) / 2;
+    this.fx.burst(mx, Math.min(a.y, b.y) - 18, C.EDGE, 5, 1.6);
+  }
+
+  bumped() { A.sfx.bump(); this.fx.shake = Math.min(3, this.fx.shake + 1.4); }
+
+  // Prince of Persia makes you CROUCH over a flask to drink it. It is a beat
+  // of vulnerability in exchange for the heal, and it stops health being
+  // something you collect by walking in a straight line.
+  flaskUnder(hero, silent) {
+    if (hero.health >= 3) return null;
+    for (const p of this.world.pickups) {
+      if (p.taken || p.kind !== 'cell') continue;
+      if (Math.abs(p.x - hero.x) < 13 && Math.abs(p.y - hero.y) < 22) return p;
+    }
+    return null;
   }
 
   shoot(x, y, vx, vy, from, slow) {
@@ -182,6 +217,30 @@ class Game {
     world.update(hero);
     this.fx.update();
 
+    // ── the blade ────────────────────────────────────────────────────
+    // One frame in the middle of the swing is the blow. Everything before it
+    // is a wind-up you can be punished for and everything after is a recovery
+    // — which is the only reason the parry means anything.
+    if (hero.swingQueued) {
+      hero.swingQueued = false;
+      A.sfx.swing();
+      const tip = hero.swordTip();
+      for (const e of this.enemies) {
+        if (e.dead || !e.cut) continue;
+        if (Math.abs(e.x - tip.x) > e.w + 8 || Math.abs(e.y - hero.y) > 26) continue;
+        const r = e.cut(this);
+        if (r === 'parried') { this.clash(hero, e); hero.go('clang'); }
+        else if (r === 'killed') A.sfx.kill();
+        else if (r === 'hit') A.sfx.cut();
+        break;
+      }
+    }
+    if (hero.drinkQueued) {
+      hero.drinkQueued = false;
+      const f = this.flaskUnder(hero, true);
+      if (f) { f.taken = true; hero.health = Math.min(3, hero.health + 1); A.sfx.pickup(); }
+    }
+
     // the pistol going off
     if (hero.shotQueued) {
       hero.shotQueued = false;
@@ -199,6 +258,11 @@ class Game {
       else if (hero.state === 'pullUp') A.sfx.climb();
       else if (hero.state === 'gather' || hero.state === 'gatherRun') A.sfx.jump();
       else if (hero.state === 'step') A.sfx.step();
+      else if (hero.state === 'inch') A.sfx.inch();
+      else if (hero.state === 'bump') A.sfx.bump();
+      else if (hero.state === 'stepUp') A.sfx.climb();
+      else if (hero.state === 'climbDown') A.sfx.climb();
+      else if (hero.state === 'swordOut') A.sfx.steel();
     }
 
     this.enemies.forEach(e => e.update(world, hero, this));
@@ -266,12 +330,18 @@ class Game {
   pickups() {
     const h = this.hero;
     for (const p of this.world.pickups) {
-      if (p.taken) continue;
+      if (p.taken || p.kind === 'cell') continue;      // the flask needs a crouch
       if (Math.abs(p.x - h.x) > 12 || Math.abs(p.y - (h.y - 12)) > 20) continue;
       p.taken = true;
       A.sfx.pickup();
-      if (p.kind === 'gun') { h.hasGun = true; this.checkpoint.hasGun = true; this.beat = { text: 'PISTOL  —  E DRAWS IT, X FIRES', t: 0 }; }
-      else h.health = Math.min(3, h.health + 1);
+      if (p.kind === 'gun') {
+        h.hasGun = true; this.checkpoint.hasGun = true;
+        this.beat = { text: 'PISTOL  —  E ARMS IT, X FIRES', t: 0 };
+      } else if (p.kind === 'sword') {
+        h.hasSword = true; this.checkpoint.hasSword = true;
+        A.sfx.steel();
+        this.beat = { text: 'A BLADE  —  ↑ STRIKE  SHIFT PARRY  ← → SPACING', t: 0 };
+      }
     }
     const d = this.world.door;
     if (d && Math.abs(d.x - h.x) < 12 && Math.abs(d.y - h.y) < 20) {
@@ -309,13 +379,32 @@ class Game {
     drawAir(scr, this.world.room, this.clock);
     this.world.drawTiles(scr);
     this.world.drawTraps(scr);
+    if (this.world.door) {
+      const d = this.world.door;
+      halo(scr, d.x, d.y - 16, 22 + Math.sin(this.clock * 0.06) * 3);
+    }
 
     for (const e of this.enemies) e.draw(scr);
 
     const h = this.hero;
     const blink = h.hurtT > 0 && (h.hurtT >> 1) % 2 === 0;
+    // A contact shadow. Without one he is a cut-out laid on the picture rather
+    // than a man standing in it — and it is one flat ellipse, which is all a
+    // sixteen-colour screen can afford and all the references use.
+    if (!h.dead && this.world.boxSolid(h.x - 2, h.y + 1, 4, 3)) {
+      const wdt = h.low ? 13 : 9;
+      scr.poly([h.x - wdt, h.y - 1, h.x + wdt, h.y - 1, h.x + wdt - 3, h.y + 2, h.x - wdt + 3, h.y + 2], C.DARK);
+    }
     if (!blink) {
-      drawFigure(scr, h.x, h.y, h.face, h.pose(), HERO_COL, { gun: h.armed && !h.dead });
+      // Conrad's own frames where the sheet has them; the polygon figure for
+      // the moves not mapped onto it yet.
+      const sp = h.sprite();
+      if (!sp || !drawSprite(scr, sp.anim, Math.floor(sp.f), h.x, h.y, h.face)) {
+        drawFigure(scr, h.x, h.y, h.face, h.pose(), HERO_COL, {
+          gun: h.weapon === 'gun' && !h.dead,
+          sword: h.sworded && !h.dead,
+        });
+      }
     }
 
     this.fx.draw(scr);
@@ -327,6 +416,9 @@ class Game {
 
     this.hud();
     scr.present();
+    // after present(), because the controls are drawn on the display canvas
+    // rather than into the sixteen-colour picture
+    if (this.state !== 'title') this.padZones();
   }
 
   hud() {
@@ -338,10 +430,17 @@ class Game {
       const x = W - 25 + i * 7, y = 6;
       scr.poly([x, y, x + 4, y, x + 4, y + 7, x, y + 7], i < h.health ? C.EDGE : C.DARK);
     }
+    // what is in his hands, if anything
     if (h.hasGun) {
-      const c = h.armed ? C.LUX2 : C.DARK;
+      const c = h.weapon === 'gun' ? C.LUX2 : C.DARK;
       scr.poly([W - 44, 8, W - 35, 8, W - 35, 10, W - 44, 11], c);
       scr.poly([W - 43, 11, W - 40, 11, W - 41, 15, W - 44, 15], c);
+    }
+    if (h.hasSword) {
+      const c = h.weapon === 'sword' ? C.LUX2 : C.DARK;
+      scr.poly([W - 60, 14, W - 49, 6, W - 48, 7, W - 59, 15], c);
+      scr.rect(W - 63, 14, 5, 2, c);
+      scr.rect(W - 62, 16, 3, 2, c);
     }
 
     if (this.beat) {
@@ -378,7 +477,6 @@ class Game {
       this.centre('PRESS ANYTHING', H / 2 + 34, C.SOLID, 7);
     }
 
-    if (this.state === 'play' || this.state === 'dying') this.padZones();
   }
 
   fmt(s) {
@@ -391,30 +489,91 @@ class Game {
     this.scr.text(str, (W - this.scr.textW(str, size)) / 2, y, ci, size);
   }
 
-  // The zones are declared every frame whether or not they are drawn: they are
-  // only painted once a finger has been seen, but they have to be LIVE before
-  // that or the very first tap lands on nothing and the pad feels broken.
+  // ── the controls ───────────────────────────────────────────────────
+  // Laid out and drawn in DISPLAY pixels, not picture pixels. Two reasons: at
+  // a 4x upscale a button drawn into the 320x192 buffer has letters four
+  // pixels tall and a border that quantises to whatever colour is nearest in
+  // the room's sixteen; and in portrait the pad is not over the picture at all,
+  // so there is no picture space to put it in.
+  //
+  // The zones are computed every frame whether or not anything is drawn — a
+  // tap has to land on a live zone the first time, before the game knows a
+  // finger exists.
   padZones() {
-    const zones = [
-      { name: 'up', x: 24, y: 118, w: 26, h: 26 },
-      { name: 'left', x: 0, y: 146, w: 26, h: 30 },
-      { name: 'right', x: 48, y: 146, w: 26, h: 30 },
-      { name: 'down', x: 24, y: 162, w: 26, h: 28 },
-      { name: 'jump', x: 268, y: 142, w: 48, h: 44 },
-      { name: 'fire', x: 268, y: 100, w: 48, h: 38 },
-      { name: 'gunbtn', x: 224, y: 150, w: 40, h: 34 },
-    ];
+    const scr = this.scr, band = scr.band;
+    const zones = [];
+    const add = (name, x, y, w, h) => zones.push({ name, x, y, w, h });
+
+    if (band) {
+      // PORTRAIT: a real panel under the picture. Sized off the band so it
+      // fills whatever the phone gives it rather than assuming a screen.
+      // u is bounded by the WIDTH as much as the height: sized off the height
+      // alone, the right-hand cluster grew until it sat on top of the d-pad
+      const u = Math.min(band.h / 3.1, band.w / 7.4);
+      const cy = band.y + band.h * 0.5, cx = band.w * 0.24;
+      add('up', cx - u / 2, cy - u * 1.55, u, u);
+      add('down', cx - u / 2, cy + u * 0.55, u, u);
+      add('left', cx - u * 1.6, cy - u / 2, u, u);
+      add('right', cx + u * 0.6, cy - u / 2, u, u);
+      const rx = band.w * 0.78;
+      add('jump', rx - u * 0.1, cy - u * 0.8, u * 1.6, u * 1.6);
+      add('fire', rx - u * 1.85, cy - u * 1.5, u * 1.3, u * 1.3);
+      add('gunbtn', rx - u * 1.85, cy + u * 0.15, u * 1.3, u * 1.3);
+      // CAREFUL lives with the d-pad, not with the buttons: it is a modifier
+      // on a direction, and on a phone it is the only way to parry
+      add('careful', cx - u * 1.6, cy + u * 1.75, u * 3.2, u * 0.95);
+    } else {
+      // LANDSCAPE: back over the picture, where a thumb already is — but
+      // pushed hard into the corners and kept small. Anything bigger sits in
+      // the middle of the composition, and the composition is the game.
+      const pw = W * scr.scale, ph = H * scr.scale;
+      const u = Math.min(ph / 6.2, pw / 14);
+      const cy = scr.oy + ph - u * 1.6, cx = scr.ox + u * 1.75;
+      add('up', cx - u / 2, cy - u * 1.5, u, u);
+      add('down', cx - u / 2, cy + u * 0.5, u, u);
+      add('left', cx - u * 1.55, cy - u / 2, u, u);
+      add('right', cx + u * 0.55, cy - u / 2, u, u);
+      const rx = scr.ox + pw - u * 1.7;
+      add('jump', rx - u * 0.75, cy - u * 0.75, u * 1.5, u * 1.5);
+      add('fire', rx - u * 2.45, cy - u * 1.45, u * 1.15, u * 1.15);
+      add('gunbtn', rx - u * 2.45, cy + u * 0.2, u * 1.15, u * 1.15);
+      add('careful', cx - u * 1.55, cy + u * 1.7, u * 3.1, u * 0.85);
+    }
     this.input.setZones(zones);
-    if (!this.input.touch) return;
-    const scr = this.scr;
+    if (!(this.input.touch || this.input.coarse)) return;
+
+    const d = scr.dctx;
+    if (band) {                                   // the panel's own ground
+      d.fillStyle = '#07080b';
+      d.fillRect(band.x, band.y, band.w, band.h);
+      d.fillStyle = 'rgba(180,200,210,.16)';
+      d.fillRect(band.x, band.y, band.w, Math.max(1, band.h * 0.006));
+    }
+    const GLYPH = { up: '▲', down: '▼', left: '◀', right: '▶' };
+    const WORD = { jump: 'JUMP', fire: 'FIRE', gunbtn: 'GUN', careful: 'CAREFUL' };
     for (const z of zones) {
       const on = this.input.zoneHeld(z.name);
-      scr.veil([z.x + 2, z.y + 2, z.x + z.w - 2, z.y + 2, z.x + z.w - 2, z.y + z.h - 2, z.x + 2, z.y + z.h - 2],
-        on ? C.EDGE : C.VOID, on ? 0.45 : 0.3);
-      const label = { up: '▲', down: '▼', left: '◀', right: '▶', jump: 'JUMP', fire: 'FIRE', gunbtn: 'GUN' }[z.name];
-      const size = z.name.length > 5 || z.w > 30 ? 7 : 9;
-      scr.text(label, z.x + z.w / 2 - scr.textW(label, size) / 2, z.y + z.h / 2 - size / 2, C.EDGE, size);
+      const r = Math.min(z.w, z.h) * 0.22;
+      d.beginPath();
+      if (d.roundRect) d.roundRect(z.x, z.y, z.w, z.h, r);
+      else d.rect(z.x, z.y, z.w, z.h);
+      // over the picture they have to stay quiet; on their own panel they can
+      // be furniture
+      d.fillStyle = on ? 'rgba(140,190,170,.34)' : band ? 'rgba(150,175,185,.10)' : 'rgba(150,175,185,.055)';
+      d.fill();
+      d.strokeStyle = on ? 'rgba(190,235,215,.85)' : band ? 'rgba(160,185,195,.34)' : 'rgba(160,185,195,.22)';
+      d.lineWidth = Math.max(1, z.h * 0.035);
+      d.stroke();
+      const word = WORD[z.name];
+      const size = Math.round(word ? Math.min(z.h * 0.44, z.w * 0.22) : z.h * 0.44);
+      d.fillStyle = on ? '#dff6ea' : 'rgba(206,226,232,.78)';
+      d.font = `${word ? 'bold ' : ''}${size}px "Courier New", ui-monospace, monospace`;
+      d.textAlign = 'center';
+      d.textBaseline = 'middle';
+      d.fillText(word ?? GLYPH[z.name], z.x + z.w / 2, z.y + z.h / 2 + (word ? 0 : size * 0.06));
     }
+    d.textAlign = 'left';
+    d.textBaseline = 'alphabetic';
   }
 
   // The title is a screen of the game, not a menu over one: the sky he is
