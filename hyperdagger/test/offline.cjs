@@ -29,7 +29,13 @@ const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, co
   await new Promise(r => server.listen(0, r));
   const port = server.address().port;
   const URL = `http://localhost:${port}/hyperdagger/index.html`;
-  const b = await chromium.launch({ args: ['--use-gl=swiftshader'] });
+  const b = await chromium.launch({
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined,
+    env: { ...process.env, LD_LIBRARY_PATH: process.env.PLAYWRIGHT_CHROMIUM_LIB || process.env.LD_LIBRARY_PATH },
+    args: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+      ? ['--no-sandbox', '--single-process', '--no-zygote', '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--in-process-gpu']
+      : ['--use-gl=swiftshader'],
+  });
   const ctx = await b.newContext({ viewport: { width: 1100, height: 720 } });
   const pg = await ctx.newPage();
   const errs = [];

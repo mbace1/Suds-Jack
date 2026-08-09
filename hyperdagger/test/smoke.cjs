@@ -62,6 +62,22 @@ s.listen(0, '127.0.0.1', async () => {
     JSON.stringify(clean25));
   ok('v25 bloom is restrained', clean25.fx.bloomStrength === 0.32, JSON.stringify(clean25.fx));
 
+  // ---- v28 software-rendered frame --------------------------------------
+  const raster28 = await p.evaluate(() => window.__hd.debug.getRaster());
+  ok('v28 renders a deliberately coarse software raster',
+    raster28.pixelRatio <= 0.72 &&
+    raster28.buffer.w <= Math.ceil(raster28.viewport.w * 0.73) &&
+    raster28.buffer.h <= Math.ceil(raster28.viewport.h * 0.73),
+    JSON.stringify(raster28));
+  ok('the coarse buffer is enlarged with hard pixels',
+    raster28.scaling === 'pixelated', JSON.stringify(raster28));
+  ok('the soot floor is a tiny unfiltered texture',
+    raster28.floor.w === 128 && raster28.floor.h === 128 &&
+    raster28.floor.nearest === true && raster28.floor.mipmaps === false,
+    JSON.stringify(raster28.floor));
+  ok('the weapon carries aim without a HUD crosshair',
+    raster28.crosshair === 'none', JSON.stringify(raster28));
+
   // ---- tuning.js is what the game actually reads -------------------------
   const tun = await p.evaluate(() => {
     const hd = window.__hd; const t = hd.debug.getTuning();
