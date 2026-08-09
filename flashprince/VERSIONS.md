@@ -2,6 +2,16 @@
 
 The public release number. The `?v=N` token in `index.html` is a separate thing: it tracks every module-graph change so a browser cannot serve half of one build and half of another. Bump both when shipping.
 
+## v16 — 2026-08-09
+
+Conrad-focused run/start/stop correction.
+
+- **Run start no longer plays the stopping animation backward.** Acceleration now uses the opening frames of the authoritative run sequence.
+- **One source run sequence only:** right is a mirror of the left-facing source; left uses it as authored. No separate invented direction cycle.
+- **Stop/reversal remains a dedicated sequence** and carries a small amount of forward deceleration before the planted turn.
+- **Reversal completes the stop first, flips facing, then accelerates through run frames** instead of rewinding the stop pose set.
+- Scope remains intentionally limited to run, stop and direction change.
+
 ## v14 — 2026-08-08
 
 Literal raster-sprite proof using the Conrad SNES sheet as motion/silhouette reference.
