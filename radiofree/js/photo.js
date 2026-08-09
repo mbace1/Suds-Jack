@@ -1,5 +1,5 @@
-import { PixelScreen } from './screen.js?v=41';
-import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=41';
+import { PixelScreen } from './screen.js?v=42';
+import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=42';
 // Radio Free Helsinki — the footage, as pictures.
 //
 // The plates used to be drawn in code at 144×276. These are Grok's finished
@@ -16,7 +16,7 @@ import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=41';
 //      treatment goes over the top in CSS.
 //
 // This class deliberately mirrors Post's interface — goLive/goIdle/update/
-// draw/renderStatic/decoded/destroy — so main.js's loop and rebuild call it
+// draw/renderStatic/destroy — so main.js's loop and rebuild call it
 // without knowing which kind of post it is holding.
 
 // Three frames for ten footage keys. Each key goes to the nearest of them
@@ -49,7 +49,6 @@ export const sourceFor = (broll) => FOR_KEY[broll] || FOR_KEY.cathedral;
 export class Photo {
   constructor(host, story, sector, seed = 0) {
     this.story = story;
-    this.decoded = false;
     this.live = false;
 
     host.innerHTML = '';
@@ -99,16 +98,16 @@ export class Photo {
     this.sync();
     if (!this.plate) return;            // a photograph has nothing to repaint
     this.t += dt;
-    this.d += ((this.decoded ? 1 : 0) - this.d) * Math.min(1, dt * 4.5);
+    this.d = 0;
     drawPlate(this.plate, this.scr, this.t, this.d);
   }
   draw() {}
   renderStatic() {
     this.sync();
-    if (this.plate) drawPlate(this.plate, this.scr, this.t, this.decoded ? 1 : 0);
+    if (this.plate) drawPlate(this.plate, this.scr, this.t, 0);
   }
 
-  sync() { this.wrap.classList.toggle('decoded', !!this.decoded); }
+  sync() { /* nothing to sync since DECODE went */ }
 
   destroy() { this.wrap.remove(); }
 }

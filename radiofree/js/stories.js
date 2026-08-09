@@ -25,12 +25,12 @@
 //      languages, and the feed shows that rather than nothing. An app that can
 //      be updated from outside is an app that can be broken from outside.
 
-import { PANEL_KEYS, BROLL_KEYS } from './visuals.js?v=41';
+import { BROLL_KEYS } from './visuals.js?v=42';
 
-import { SECTOR_COLOR } from './palette.js?v=41';
-import { validateWire, rotate, pickCopy, cleanLines } from './wire.js?v=41';
+import { SECTOR_COLOR } from './palette.js?v=42';
+import { validateWire, rotate, pickCopy, cleanLines } from './wire.js?v=42';
 
-export { parseLine, flatten, splitLine, cleanLines } from './wire.js?v=41';
+export { parseLine, flatten, splitLine, cleanLines } from './wire.js?v=42';
 
 // EPISODES. `wire/index.json` lists the dates newest first and each
 // `wire/<date>.json` is one day's broadcast — which is what the daily job will
@@ -145,7 +145,6 @@ async function fetchJson(url) {
 
 function check(wire) {
   return validateWire(wire, {
-    panelKeys: PANEL_KEYS,
     brollKeys: BROLL_KEYS,
     sectorIds: Object.keys(SECTOR_COLOR),
   });

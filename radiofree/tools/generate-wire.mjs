@@ -24,6 +24,10 @@
 //      loudly and yesterday's stays up, which is the correct thing for a
 //      station to do when the copy does not arrive.
 //
+// DECODE was removed from the app on 2026-08-08, so the generator no longer
+// asks for `{{spun|plain}}` markup, techniques or tells. A bulletin is a
+// dateline, a headline and two paragraphs, in three languages.
+//
 // The naming rule (`EDITORIAL.md`) is the one editorial rule checked here in
 // code rather than left to the prompt: proper nouns lifted out of the source
 // headlines are looked for in the finished copy, and finding one is an error.
@@ -46,7 +50,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
 
 const { validateWire, parseLine } = await import(path.join(ROOT, 'js/wire.js'));
-const { PANEL_KEYS, BROLL_KEYS } = await import(path.join(ROOT, 'js/visuals.js'));
+const { BROLL_KEYS } = await import(path.join(ROOT, 'js/visuals.js'));
 const { SECTOR_COLOR } = await import(path.join(ROOT, 'js/palette.js'));
 
 // ── the desk ──────────────────────────────────────────────────────────────
@@ -64,40 +68,10 @@ const FEEDS = (process.env.RFH_FEEDS || [
   'https://www.theregister.com/headlines.atom',
 ].join(',')).split(',').map(s => s.trim()).filter(Boolean);
 
-// What the pictures actually draw. The model picks two art keys per bulletin
-// and the validator rejects a key this build cannot draw — but a key that is
-// merely WRONG passes validation and ships the wrong picture beside the right
-// words, which is the failure `PANEL_KEYS` was exported to prevent in the first
-// place. So the prompt gets told what each one is, in one line, and the lists
-// below are checked against the build at startup so a new panel cannot be added
-// without this file noticing it is undescribed.
-const PANEL_NOTES = {
-  chart: 'a field of 260 lit cells; decoded, 92 of them go dark — a headline count that shrinks once the double-counting comes out',
-  chart2: 'a bar chart on a truncated axis; decoded the baseline drops from 68 to 0 and the mountain becomes a bump (+40% → +4%)',
-  mesh: 'a small node on a stalk above a big one; decoded the top shrinks and the base is re-measured 50% → 100% — a share whose denominator was the trick',
-  crowd: 'a packed 900-seat auditorium; decoded it empties to the four people on the stage',
-  heat: 'a lit building venting heat into housing blocks; decoded a 96% / 4% split appears — how much of the heat actually went anywhere',
-  crane: 'a construction crane over low blocks, load swinging; decoded a scoreboard lights under it',
-  tower: 'a valuation spire with a beacon; decoded it goes hollow and three funding steps read 3 / 1 / 1',
-  coin: 'a stack of 400 bars; decoded all but the top go hollow — 6% of the money actually moved',
-  sea: 'a dithered sea, a vessel and a shoreline; decoded its track and the shallow it is sitting on light up',
-  sat: 'satellites tracking overhead and a plume rising off the ground; decoded the plume\'s source moves somewhere else entirely',
-  engine: 'a wireframe terrain running to a horizon; decoded a targeting box locks onto one object and counts it as one',
-  crowd2: 'nine hundred accounts orbiting a hub; decoded three-quarters of them snap onto a second node that made them all',
-  beach: 'the city beach from the drone counting it; decoded the coverage cone shows it surveyed a wedge of the sand',
-  moon: 'a low moon beside a heating-plant chimney; decoded a second moon at the same radius appears high in the empty sky — the chimney was the whole comparison',
-  border: 'a checkpoint with five marks on the map; decoded only two of them are real',
-  esplanadi: 'the boulevard, drones overhead',
-  kamppi: 'the Kamppi blocks at night',
-  harbour: 'the container harbour, gantries working',
-  gulf: 'open water off the Gulf',
-  cathedral: 'the cathedral steps in phosphor',
-  katu: 'a narrow street, lit windows',
-  mannerheim: 'the main avenue, trams',
-  station: 'the central station clock',
-  suomenlinna: 'the fortress islands over water',
-  katajanokka: 'the Katajanokka waterfront',
-};
+// What the pictures actually draw. The model picks one footage key per
+// bulletin and the validator rejects a key this build cannot draw — but a key
+// that is merely WRONG passes validation and ships the wrong picture beside the
+// right words. So the prompt is told what each one is, in one line.
 const BROLL_NOTES = {
   esplanadi: 'drones over the boulevard',
   kamppi: 'Kamppi at night',
@@ -116,8 +90,8 @@ const BROLL_NOTES = {
   chase: 'ACTION — a car pursuit on the ring road, night',
   approach: 'ACTION — a heavy aircraft landing, seen from underneath',
   cableship: 'ACTION — a cable ship working a repair at night, the cable running off the stern into black water',
-  swarm: 'ACTION — a drone formation crossing the city after midnight; decoded, every machine is joined to one van',
-  switchyard: 'a high-voltage substation at night, busbars sagging, a load meter filling; decoded, billed against drawn',
+  swarm: 'ACTION — a drone formation crossing the city after midnight, holding station',
+  switchyard: 'a high-voltage substation at night, busbars sagging, a load meter filling',
 };
 
 // Places are not accusations (`EDITORIAL.md`), so the naming check has to know
@@ -233,12 +207,8 @@ export async function headlines(feeds, limit) {
 
 // ── the prompt ────────────────────────────────────────────────────────────
 function artTable() {
-  const panels = PANEL_KEYS.filter(k => k !== 'signoff');
   const lines = [];
-  lines.push('VISUAL — the story panel. Pick the one whose picture argues the same thing the words do:');
-  for (const k of panels) lines.push(`  ${k.padEnd(12)} ${PANEL_NOTES[k] || '(no description — avoid)'}`);
-  lines.push('');
-  lines.push('BROLL — the footage the post cuts to:');
+  lines.push('BROLL — the footage the post is cut from. Pick the place the story happened:');
   for (const k of BROLL_KEYS) lines.push(`  ${k.padEnd(12)} ${BROLL_NOTES[k] || '(no description — avoid)'}`);
   return lines.join('\n');
 }
@@ -249,18 +219,14 @@ const SCHEMA = `Return ONE JSON object and nothing else. No prose, no code fence
   "stories": [
     {
       "id": "kebab-case-slug",              // unique, never "sign-off"
-      "visual": "<one VISUAL key>",
       "broll": "<one BROLL key>",
       "en": {
         "slug": "SHORT DATELINE IN CAPS",   // e.g. "RING ROAD III", "VUOSAARI"
         "head": "one headline, sentence case, no full stop",
         "lines": [
-          "1-3 sentences of broadcast copy with {{as broadcast|what that means}} markup",
-          "a second paragraph, same"
-        ],
-        "technique": "THE NAMED MOVE IN CAPS",
-        "decodeNote": "3-5 sentences on what the move did here",
-        "tell": "one question the listener can ask of a real article tomorrow"
+          "1-3 sentences of broadcast copy",
+          "a second paragraph"
+        ]
       },
       "fi": { ...same fields, written in Finnish... },
       "ja": { ...same fields, written in Japanese... }
@@ -369,7 +335,7 @@ export function assemble(draft, date) {
   const copy = { en: {}, fi: {}, ja: {} };
   for (const s of (draft.stories || [])) {
     if (!s || !s.id) continue;
-    stories.push({ id: s.id, sector: SECTOR.id, visual: s.visual, broll: s.broll, filed: date });
+    stories.push({ id: s.id, sector: SECTOR.id, broll: s.broll, filed: date });
     for (const lang of LANGS) if (s[lang]) copy[lang][s.id] = s[lang];
   }
   return {
@@ -426,17 +392,12 @@ export function sourceNames(items) {
 // undecodable or is wearing a real company's name.
 export function editorialProblems(wire, names) {
   const errors = [];
-  const seenTech = new Map();
 
   for (const st of wire.stories) {
     for (const lang of LANGS) {
       const c = wire.copy[lang] && wire.copy[lang][st.id];
       if (!c || !Array.isArray(c.lines)) continue;
-      const spans = c.lines.reduce((n, l) => n + parseLine(l).filter(r => r.plain !== null).length, 0);
-      if (spans < 2) errors.push(`copy.${lang}.${st.id}: ${spans} decode span(s) — the bar is 2 to 4`);
-      if (spans > 4) errors.push(`copy.${lang}.${st.id}: ${spans} decode spans — the bar is 2 to 4, it reads as a puzzle`);
-
-      const flat = [c.slug, c.head, ...c.lines, c.decodeNote].join(' ');
+      const flat = [c.slug, c.head, ...c.lines].join(' ');
       for (const n of names) {
         if (flat.includes(n)) {
           errors.push(`copy.${lang}.${st.id}: "${n}" is lifted straight from the source headline `
@@ -444,19 +405,12 @@ export function editorialProblems(wire, names) {
         }
       }
     }
-    const tech = wire.copy.en[st.id] && wire.copy.en[st.id].technique;
-    if (!tech) continue;
-    if (seenTech.has(tech)) {
-      errors.push(`copy.en.${st.id}: technique "${tech}" is already used by ${seenTech.get(tech)} `
-        + '— the sign-off hands each one back once, so two bulletins may not share one');
-    } else seenTech.set(tech, st.id);
   }
   return errors;
 }
 
 export function check(wire, names) {
   const v = validateWire(wire, {
-    panelKeys: PANEL_KEYS,
     brollKeys: BROLL_KEYS,
     sectorIds: Object.keys(SECTOR_COLOR),
   });
@@ -499,9 +453,6 @@ async function main() {
   // Every panel this build can draw should be describable to the writer. A new
   // one that nobody wrote a line for is simply never chosen, which looks like the
   // model ignoring it rather than like a missing line here.
-  for (const k of PANEL_KEYS) {
-    if (k !== 'signoff' && !PANEL_NOTES[k]) console.warn(`  ! panel "${k}" has no description in this file`);
-  }
   for (const k of BROLL_KEYS) if (!BROLL_NOTES[k]) console.warn(`  ! broll "${k}" has no description in this file`);
 
   console.log(`Radio Free Helsinki — wire for ${date} (${MODEL})`);

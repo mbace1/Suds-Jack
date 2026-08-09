@@ -171,9 +171,9 @@ async function generatorChecks() {
 
   const story = (id, tech, line, lineFi, lineJa) => ({
     id, visual: 'chart2', broll: 'harbour',
-    en: { slug: 'S', head: 'h', lines: [line], technique: tech, decodeNote: 'n', tell: 't' },
-    fi: { slug: 'S', head: 'h', lines: [lineFi], technique: tech + ' FI', decodeNote: 'n', tell: 't' },
-    ja: { slug: 'S', head: 'h', lines: [lineJa], technique: tech + ' JA', decodeNote: 'n', tell: 't' },
+    en: { slug: 'S', head: 'h', lines: [line] },
+    fi: { slug: 'S', head: 'h', lines: [lineFi] },
+    ja: { slug: 'S', head: 'h', lines: [lineJa] },
   });
   const two = '{{a|the first plain reading}} and {{b|the second}}';
   const bad = g.assemble({ stories: [
@@ -183,10 +183,10 @@ async function generatorChecks() {
   const v = g.check(bad, names);
   ok('a lifted company name is an error, not a warning',
      v.errors.some(e => /"Nokia" is lifted/.test(e)), v.errors.join(' | ').slice(0, 120));
-  ok('a bulletin with one decode span is rejected',
-     v.errors.some(e => /copy\.en\.b: 1 decode span/.test(e)));
-  ok('two bulletins may not share a technique',
-     v.errors.some(e => /already used by a/.test(e)));
+  ok('a bulletin that lost a language is rejected',
+     g.check(g.assemble({ stories: [{ id: 'x', broll: 'gulf',
+       en: { slug: 'S', head: 'h', lines: ['one.'] } }] }, '2026-08-07'), []).errors
+       .some(e => /copy\.fi\.x/.test(e)));
 
   const good = g.assemble({ stories: [
     story('a', 'AGENTLESS PASSIVE', `Rack & Ruin Oy ${two}.`, `Rack & Ruin Oy ${two}.`, `Rack & Ruin Oy ${two}。`),
@@ -265,17 +265,16 @@ async function clipChecks() {
      `${view.width}×${view.height} × ${scale.toFixed(3)}`);
 
   const d = r.args([]);
-  ok('a clip decodes by default — the hold is the point',
-     d.decode === true && d.cut > 0 && d.cut < d.seconds, JSON.stringify(d));
-  const c = r.args(['--no-decode', '--seconds', '20', '--cut', '5', '--ids', 'a, b']);
+  ok('a clip tops and tails itself with the station',
+     d.ident > 0 && d.card > 0 && d.seconds > 0, JSON.stringify(d));
+  const c = r.args(['--no-stingers', '--seconds', '20', '--ids', 'a, b']);
   ok('the timeline and the roster are settable',
-     c.decode === false && c.seconds === 20 && c.cut === 5 && c.ids.join(',') === 'a,b',
+     c.ident === 0 && c.card === 0 && c.seconds === 20 && c.ids.join(',') === 'a,b',
      JSON.stringify(c));
 
   // the sidecars. A caption file whose cues drift is worse than none — the
   // platform shows the wrong line over the right picture with total confidence
-  const meta = { head: 'A headline', slug: 'S', technique: 'PRECISION AS PROOF',
-                 tell: 'Ask how it was measured.', lines: ['One.', 'Two.'] };
+  const meta = { head: 'A headline', slug: 'VUOSAARI', lines: ['One.', 'Two.'] };
   const srt = r.captions(meta, { ident: 1.1, body: 12, card: 2.6 });
   const times = [...srt.matchAll(/(\d\d):(\d\d):(\d\d),(\d\d\d) --> (\d\d):(\d\d):(\d\d),(\d\d\d)/g)]
     .map(m => [Number(m[3]) + Number(m[4]) / 1000, Number(m[7]) + Number(m[8]) / 1000]);
@@ -284,14 +283,14 @@ async function clipChecks() {
   ok('the cues run forwards and do not overlap',
      times.every(([a, b], i) => b > a && (i === 0 || Math.abs(a - times[i - 1][1]) < 0.002)),
      JSON.stringify(times));
-  ok('the last cue is the tell — the only thing worth taking away',
-     srt.trim().endsWith(meta.tell), srt.trim().slice(-60));
+  ok('the last cue is the station end card',
+     /Radio Free Helsinki/.test(srt.trim().slice(-60)), srt.trim().slice(-60));
 
   const post = r.postText(meta, { date: '2026-07-31', lang: 'en' });
-  ok('the post text carries the head, the technique and the tell',
-     post.includes(meta.head) && post.includes(meta.technique) && post.includes(meta.tell));
+  ok('the post text carries the head and the dateline',
+     post.includes(meta.head) && post.includes(meta.slug));
   ok('...and says what the station is',
-     /real events · invented names · real techniques/i.test(post));
+     /real events · invented names/i.test(post));
 
   ok('it records the app, in clip framing', /\?vertical/.test(src));
   ok('it asks the app which bulletins aired, not the wire file',
@@ -383,19 +382,20 @@ async function main() {
     seen.add((await go(() => __rfh.debug.shot())).type);
     await wait(500);
   }
-  ok('the frame cuts through all three registers — footage, studio, graphic',
-     seen.has('broll') && seen.has('anchor') && seen.has('graphic'),
-     [...seen].join(','));
+  ok('the frame cuts between footage and the studio',
+     seen.has('broll') && seen.has('anchor'), [...seen].join(','));
 
-  // Both drawn shots are lazy, and the graphic doubles the exposure: two
-  // canvases per post across seventeen posts is the same wall from further off.
-  const canvases = () => go(() =>
-    document.querySelectorAll('canvas.anchor-cv, canvas.graphic-cv').length);
+  // The studio canvas is lazy: one per live post, not one per post in the feed.
+  const canvases = () => go(() => document.querySelectorAll('canvas.anchor-cv').length);
   ok('at most one post owns drawn canvases', (await canvases()) <= 2,
      String(await canvases()));
 
   // A fixed 9:16 buffer under object-fit: cover took the station chrome off
   // both edges on any phone taller than 16:9 — which is most of them.
+  // force the studio up first: with three edit patterns a post may open on
+  // footage or on the anchor, so the shot has to be asked for, not waited for
+  await go(() => __rfh.debug.cut('anchor'));
+  await wait(400);
   const fit = await go(() => {
     const c = document.querySelector('canvas.anchor-cv');
     const r = c.getBoundingClientRect();
@@ -438,9 +438,9 @@ async function main() {
   const h1 = await hud();
   await wait(900);
   const h2 = await hud();
-  ok('the live post carries a camera HUD', !!h1 && /REC|DECODE/.test(h1.rec), JSON.stringify(h1));
+  ok('the live post carries a camera HUD', !!h1 && /REC|STBY/.test(h1.rec), JSON.stringify(h1));
   ok('the timecode is running', h1 && h2 && h1.tc !== h2.tc, `${h1 && h1.tc} → ${h2 && h2.tc}`);
-  await go(() => __rfh.debug.cut('graphic'));
+  await go(() => __rfh.debug.cut('broll'));
   await wait(200);
   const h3 = await hud();
   ok('the camera number follows the cut', h3 && h3.cam !== h2.cam,
@@ -460,27 +460,6 @@ async function main() {
   ok('...and shuts between phrases, so it is speech and not chewing',
      shut >= 3, `${shut}/${mouth.length} closed frames`);
 
-  console.log('\ndecode');
-  await go(() => __rfh.debug.cutTo('broll'));
-  await go(() => __rfh.debug.toggleDecode());
-  await wait(400);
-  ok('DECODE cuts home to the graphic — the shot that decodes',
-     (await go(() => __rfh.debug.shot())).type === 'graphic');
-  await wait(9000);
-  ok('DECODE holds it — the cut stops while the plain reading is up',
-     (await go(() => __rfh.debug.shot())).type === 'graphic');
-  // The panels mix green -> amber on a 0..1 `decode`, which is what re-bases
-  // the chart and hollows the tower. If that stays 0 the picture is still
-  // arguing the spin while the words next to it have been struck out.
-  const dk = await go(() => {
-    const p = __rfh.debug.pkg && __rfh.debug.pkg();
-    return p && p.graphic ? p.graphic.decodeK : null;
-  });
-  ok('the graphic itself decodes, not just the words', dk !== null && dk > 0.9,
-     String(dk));
-  const plain = await go(() => document.querySelectorAll('.post.live .plain').length);
-  ok('the plain readings are showing', plain > 0, String(plain));
-
   console.log('\nstate');
   await go(() => __rfh.debug.go(1));
   await wait(900);
@@ -491,9 +470,6 @@ async function main() {
 
   await go(() => __rfh.debug.go(-1));
   await wait(900);
-  const back = await go(() => ({ shot: __rfh.debug.shot().type, dec: __rfh.state.decoded }));
-  ok('coming back to a decoded post re-opens on the graphic',
-     back.shot === 'graphic' && back.dec, JSON.stringify(back));
 
   await go(() => __rfh.debug.setLang('fi'));
   await wait(1200);
@@ -502,23 +478,13 @@ async function main() {
   await go(() => __rfh.debug.setLang('en'));
   await wait(600);
 
-  // The decoded set persists across visits, so once bulletins start being
-  // archived a returning listener's set outgrows the feed — the sign-off has to
-  // count against what AIRED or it reads "14/12".
   console.log('\nsign-off');
   await go((n) => __rfh.debug.go(n), 99);
   await wait(1200);
-  const off = await go(() => {
-    const head = document.querySelector('.post.sign-off .tally-head');
-    return { state: __rfh.state, head: head ? head.textContent : null };
-  });
+  const off = await go(() => ({ state: __rfh.state }));
   ok('the sign-off closes the feed', !!(off.state && off.state.signoff),
      JSON.stringify(off.state));
-  const m = (off.head || '').match(/(\d+)\s*\/\s*(\d+)/);
-  ok('the tally counts against what aired', m && Number(m[1]) <= Number(m[2]),
-     off.head);
 
-  // ── clean mode ───────────────────────────────────────────────────
   // The clip export loads `?clean`, and the contract is not that DECODE is
   // hidden — it is that DECODE was never built. Checked against the DOM and
   // against the page's own text, because a struck span that is display:none
@@ -555,6 +521,8 @@ async function main() {
   await wait(700);
   await vp.evaluate(() => window.__rfh.debug.tuneIn());
   await wait(1800);
+  await vp.evaluate(() => __rfh.debug.cut('broll'));   // the picture, not the studio
+  await wait(400);
   const vt = await vp.evaluate(() => {
     const shown = (sel) => {
       const e = document.querySelector(sel);
@@ -585,7 +553,7 @@ async function main() {
   const st = await vp.evaluate(async () => {
     const box = document.getElementById('ident');
     // the fade in is a .28s CSS transition, so sample after it, not during
-    const p = window.__rfh.ident({ ms: 900, tell: true, fade: 60 });
+    const p = window.__rfh.ident({ ms: 900, card: true, fade: 60 });
     await new Promise(r => setTimeout(r, 600));
     const up = !box.hidden && Number(getComputedStyle(box).opacity) > 0.9;
     const text = box.innerText;
@@ -593,44 +561,13 @@ async function main() {
     return { up, text, gone: box.hidden };
   });
   ok('the end card comes up and goes away again', st.up && st.gone, JSON.stringify(st.gone));
-  ok('...carrying the technique and the tell',
-     /[A-Z]{4,}/.test(st.text) && st.text.length > 40, JSON.stringify(st.text).slice(0, 90));
+  ok('...carrying the dateline and the headline',
+     st.text.split('\n').length >= 3 && st.text.length > 40,
+     JSON.stringify(st.text).slice(0, 90));
 
   ok('the clip framing throws nothing', verrs.length === 0, verrs.join(' | '));
   await vp.close();
 
-  console.log('\nclean mode');
-  const cp = await browser.newPage();
-  const cerrs = [];
-  cp.on('pageerror', e => cerrs.push(e.message));
-  await cp.goto(base + '?clean', { waitUntil: 'load' });
-  await cp.waitForTimeout(700);
-  await cp.evaluate(() => window.__rfh.debug.tuneIn());
-  await cp.waitForTimeout(1600);
-  const cl = await cp.evaluate(() => ({
-    on: !!__rfh.clean,
-    nodes: document.querySelectorAll('.spun, .plain, .decode-box, .decode-btn').length,
-    posts: document.querySelectorAll('.post').length,
-    text: document.body.innerText,
-    said: __rfh.debug.broadcast(),
-  }));
-  ok('?clean reports itself', cl.on);
-  ok('clean builds the feed', cl.posts > 1, String(cl.posts));
-  ok('not one decode node exists in a clean render', cl.nodes === 0, String(cl.nodes));
-  // the plain readings of the live post must be absent from the page text
-  const plains = await cp.evaluate(() => {
-    const w = __rfh.debug.wireData();
-    const id = __rfh.state.id;
-    return (w.copy.en[id].lines.join(' ').match(/\{\{[^|{}]*\|([^{}]*)\}\}/g) || [])
-      .map(m => m.split('|')[1].slice(0, -2));
-  });
-  ok('no plain reading appears anywhere in the clean text',
-     plains.length > 0 && !plains.some(x => cl.text.includes(x)),
-     plains.filter(x => cl.text.includes(x)).join(' | '));
-  ok('the broadcast field still carries the words', cl.said.length > 0,
-     JSON.stringify(cl.said).slice(0, 60));
-  ok('clean mode throws nothing', cerrs.length === 0, cerrs.join(' | '));
-  await cp.close();
 
   console.log('\nconsole');
   ok('zero console errors', errs.length === 0, errs.join(' | '));

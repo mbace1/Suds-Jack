@@ -14,7 +14,10 @@
 
 export const WIRE_VERSION = 1;
 export const LANGS = ['en', 'fi', 'ja'];
-export const FIELDS = ['slug', 'head', 'lines', 'technique', 'decodeNote', 'tell'];
+// slug, head and lines are the bulletin. `technique`, `decodeNote` and `tell`
+// belonged to DECODE and are no longer read by anything — a wire that still
+// carries them is fine, they are simply ignored.
+export const FIELDS = ['slug', 'head', 'lines'];
 
 // `sign-off` is the station's own closing post; a bulletin claiming that id
 // would collide with it in every lookup that steps over `p.signoff`.
@@ -105,14 +108,10 @@ export function validateWire(wire, { panelKeys = null, brollKeys = null, sectorI
       ids.push(s.id);
       if (!isStr(s.sector)) E(where, 'missing sector');
       else if (known.size && !known.has(s.sector)) E(where, `unknown channel "${s.sector}"`);
-      // These two fall back silently in the renderer — to the bar chart and to
-      // the first footage plate — which ships the wrong picture beside the
-      // right words in total silence. It is the failure this file was written
-      // for: the copy is external, the art is not.
-      if (!isStr(s.visual)) E(where, 'missing visual');
-      else if (panelKeys && !panelKeys.includes(s.visual)) {
-        E(where, `visual "${s.visual}" is not a panel in this build (have: ${panelKeys.join(', ')})`);
-      }
+      // `broll` falls back silently in the renderer — to the first plate —
+      // which ships the wrong picture beside the right words in total silence.
+      // It is the failure this file was written for: the copy is external, the
+      // art is not. (`visual` named a DECODE panel and is now ignored.)
       if (!isStr(s.broll)) E(where, 'missing broll');
       else if (brollKeys && !brollKeys.includes(s.broll)) {
         E(where, `broll "${s.broll}" is not footage in this build (have: ${brollKeys.join(', ')})`);
@@ -173,26 +172,15 @@ export function validateWire(wire, { panelKeys = null, brollKeys = null, sectorI
           if (MARKUP.test(line)) marked++;
           MARKUP.lastIndex = 0;
         });
-        // A bulletin with nothing marked has nothing to decode, which makes it
-        // a news item rather than a lesson — the one thing this app is for.
-        if (marked === 0) E(at, 'no {{…|…}} markup — nothing to decode');
+        // Markup is legacy: it used to be required, because DECODE was the
+        // point. Now it is stripped before a word reaches the screen and a
+        // bulletin without any is the normal case.
+        void marked;
       }
       // copy for a bulletin that is not on the roster is dead weight, not a bug
       for (const id of Object.keys(block)) {
         if (!ids.includes(id)) warnings.push(`copy.${lang}.${id}: not on the roster`);
       }
-    }
-  }
-
-  // The sign-off hands every technique back and marks the ones the listener
-  // caught; two bulletins sharing one costs a slot and teaches nothing twice.
-  if (copy && copy.en) {
-    const byTech = new Map();
-    for (const id of ids) {
-      const tech = copy.en[id] && copy.en[id].technique;
-      if (!isStr(tech)) continue;
-      if (byTech.has(tech)) warnings.push(`copy.en.${id}: technique "${tech}" also used by ${byTech.get(tech)}`);
-      else byTech.set(tech, id);
     }
   }
 
