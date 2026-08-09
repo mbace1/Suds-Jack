@@ -11,6 +11,8 @@
 // same key that leaps also pulls you over a lip and stands you out of a crouch,
 // because in all three of these games "up" means "commit upward" rather than
 // "point upward". A code can therefore belong to two of these at once.
+const LATCH = 4;              // frames a released key goes on counting for
+
 const KEYS = {
   left: ['ArrowLeft', 'KeyA'], right: ['ArrowRight', 'KeyD'],
   up: ['ArrowUp', 'KeyW'], down: ['ArrowDown', 'KeyS'],
@@ -38,6 +40,13 @@ export class Input {
     // meant a phone showed an empty control panel until you guessed where to
     // press — the same media query the arcade shell uses for its own button.
     this.coarse = matchMedia('(hover: none) and (pointer: coarse)').matches;
+    // A key pressed and released between two polls never happened at all.
+    // At sixty frames a second a frame is 16ms and a brisk tap is shorter than
+    // that, so every held key is kept alive for a few frames after it comes up
+    // — which is what makes a TAP mean one step, one turn, one climb, instead
+    // of meaning nothing. The presses (jump, fire) already had edges; the holds
+    // (left, right, up, down, careful) had nothing and were being dropped.
+    this.latch = {};
     this.zones = [];                // filled in by the HUD each frame
     this.pointers = new Map();
     this.padPrev = [];
@@ -47,7 +56,7 @@ export class Input {
       const ks = this.names(e.code);
       if (!ks.length) return;
       e.preventDefault();
-      for (const k of ks) { this.held.add(k); this.edge(k); }
+      for (const k of ks) { this.held.add(k); this.latch[k] = LATCH; this.edge(k); }
     });
     addEventListener('keyup', e => {
       const ks = this.names(e.code);
@@ -55,7 +64,7 @@ export class Input {
       e.preventDefault();
       for (const k of ks) this.held.delete(k);
     });
-    addEventListener('blur', () => this.held.clear());
+    addEventListener('blur', () => { this.held.clear(); this.latch = {}; });
 
     const surf = document.getElementById('screen');
     // A finger going down is an EDGE in its own right. A tap can begin and end
@@ -66,6 +75,12 @@ export class Input {
       this.touch = true;
       if (!on) { this.pointers.delete(id); return; }
       this.anyPress = true;
+      // latch whichever button it landed on, so a quick tap survives to the
+      // next poll the way a key press does
+      const p = this.scr.toDisplay(x, y);
+      for (const q of this.zones) {
+        if (p.x >= q.x && p.x <= q.x + q.w && p.y >= q.y && p.y <= q.y + q.h) this.latch[q.name] = LATCH;
+      }
       // display space, not picture space: the pad is drawn on the display
       // canvas, and in portrait it is not over the picture at all
       this.pointers.set(id, this.scr.toDisplay(x, y));
@@ -115,17 +130,20 @@ export class Input {
 
   poll() {
     const wasJump = this.jump, wasFire = this.fire, wasGun = this.gun, wasCareful = this.careful;
-    let L = this.held.has('left'), R = this.held.has('right');
-    let U = this.held.has('up'), D = this.held.has('down');
-    let J = this.held.has('jump'), F = this.held.has('fire'), G = this.held.has('gun');
-    let K = this.held.has('careful');
+    const on = k => this.held.has(k) || this.latch[k] > 0;
+    let L = on('left'), R = on('right');
+    let U = on('up'), D = on('down');
+    let J = on('jump'), F = on('fire'), G = on('gun');
+    let K = on('careful');
 
     if (this.touch) {
-      L = L || this.zoneHeld('left'); R = R || this.zoneHeld('right');
-      U = U || this.zoneHeld('up'); D = D || this.zoneHeld('down');
+      // same latch as the keys: a thumb can go down and up inside one frame
+      const z = n => this.zoneHeld(n) || this.latch[n] > 0;
+      L = L || z('left'); R = R || z('right');
+      U = U || z('up'); D = D || z('down');
       // the up pad is the jump button too, same as the arrow key is
-      J = J || this.zoneHeld('jump') || U; F = F || this.zoneHeld('fire'); G = G || this.zoneHeld('gunbtn');
-      K = K || this.zoneHeld('careful');
+      J = J || z('jump') || U; F = F || z('fire'); G = G || z('gunbtn');
+      K = K || z('careful');
     }
 
     const pads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -157,6 +175,9 @@ export class Input {
     if (K && !wasCareful) this.carefulPress = true;
     if ((J && !wasJump) || (F && !wasFire) || (G && !wasGun) || (K && !wasCareful)) this.anyPress = true;
     this.jump = J; this.fire = F; this.gun = G; this.careful = K;
+    // one tick off every latch, once, at the end — decrementing inside the
+    // tests above would take several off a key read more than once
+    for (const k in this.latch) if (this.latch[k] > 0) this.latch[k]--;
   }
 
   // called at the end of a frame: edges last exactly one frame

@@ -82,6 +82,17 @@ class Stage {
     this.clock++;
     const inp = this.input;
     inp.poll();
+    try { this.tick(inp); } finally { inp.flush(); }
+  }
+
+  // Everything that reads input goes in here, and `step` clears the one-shot
+  // presses afterwards WHATEVER happens. Leaving that out is what made the
+  // controls feel broken: jumpPress, firePress, gunPress and carefulPress are
+  // edges that are supposed to last exactly one frame, and unflushed they latch
+  // on for good — so he jumps at every opening he gets, the sword draws and
+  // sheathes itself, and one press of the mode button flips the mode sixty
+  // times a second.
+  tick(inp) {
 
     // one button swaps the two modes, and it is the same button on the pad
     if (inp.firePress) {
