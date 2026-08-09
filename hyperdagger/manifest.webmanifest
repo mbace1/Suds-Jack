@@ -1,7 +1,7 @@
 {
   "name": "Hyper Dagger",
   "short_name": "HyperDagger",
-  "description": "A Devil Daggers × HYPERDEMON homage — survive the voxel swarm.",
+  "description": "A stripped-down Devil Daggers homage — survive the voxel swarm.",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",

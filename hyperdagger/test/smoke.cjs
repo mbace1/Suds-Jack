@@ -83,13 +83,91 @@ s.listen(0, '127.0.0.1', async () => {
     const hd = window.__hd; const t = hd.debug.getTuning();
     return { dash: t.dash.speed, lv4: t.weapon.tiers[4].stream, sg: t.weapon.shotgunCount[1],
       player: hd.player.speed === t.player.speed, bleed: t.style.bleedBase,
+      jumps: t.player.maxJumps, straight: t.player.speed,
+      streamSpeed: t.weapon.streamSpeed, shotgunSpeed: t.weapon.shotgunSpeed,
       // DD economy invariant: burst DPS < stream DPS at every weapon level
       economy: t.weapon.tiers.every((tier, lv) =>
         !tier || t.weapon.shotgunCount[lv] / t.weapon.shotgunCd < tier.stream),
     };
   });
-  ok('TUNING drives the game', tun.dash === 30 && tun.lv4 === 26 && tun.player && tun.bleed === 5, JSON.stringify(tun));
+  ok('TUNING drives the game', tun.dash === 30 && tun.lv4 === 48 && tun.player && tun.bleed === 5, JSON.stringify(tun));
   ok('the burst never out-DPSes the stream', tun.economy === true && tun.sg === 10, JSON.stringify(tun));
+  ok('shotgun daggers outrun the stream', tun.shotgunSpeed >= tun.streamSpeed * 1.5, JSON.stringify(tun));
+
+  // ---- v29 90s-FPS movement: diagonal, momentum, hop, dagger jump -------
+  const move29 = await p.evaluate(async () => {
+    const hd = window.__hd;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    for (const e of hd.enemies) e.alive = false;
+    hd.enemies.length = 0;
+    const key = (type, code) => window.dispatchEvent(new KeyboardEvent(type, { code }));
+
+    hd.player.reset();
+    key('keydown', 'KeyW');
+    await frames(20);
+    const straight = hd.debug.getMovement().speed;
+    key('keyup', 'KeyW');
+
+    hd.player.reset();
+    key('keydown', 'KeyW'); key('keydown', 'KeyD');
+    await frames(20);
+    const diagonal = hd.debug.getMovement().speed;
+    key('keyup', 'KeyW'); key('keyup', 'KeyD');
+    await frames(1);
+    const coast = hd.debug.getMovement().speed;
+    await frames(18);
+    const stopped = hd.debug.getMovement().speed;
+
+    hd.player.reset();
+    hd.player.velocity.set(10, 0, 0);
+    hd.player.feet.y = 0.08;
+    hd.player.vy = -4;
+    hd.player.coyoteT = 0;
+    hd.player.airTime = 0.3;
+    hd.player.input._jump = true;
+    await frames(3);
+    const hop = hd.debug.getMovement();
+    const beforeSecond = hop.vy;
+    hd.player.input._jump = true;
+    await frames(1);
+    const second = hd.debug.getMovement();
+
+    hd.player.reset();
+    hd.player.feet.y = 0.25;
+    hd.player.vy = 4;
+    hd.player.airTime = 0.1;
+    const daggerFirst = hd.player.daggerJump({ x: 0.2, y: -0.9, z: -0.4 });
+    const daggerSecond = hd.player.daggerJump({ x: 0.2, y: -0.9, z: -0.4 });
+    const dagger = hd.debug.getMovement();
+
+    hd.debug.spawnSkull();
+    const skull = hd.enemies[hd.enemies.length - 1];
+    const pressure = { speed: skull.maxSpeed, accel: skull.accel };
+    skull.alive = false;
+    hd.player.reset();
+    return { straight, diagonal, coast, stopped, hop, beforeSecond, second,
+      daggerFirst, daggerSecond, dagger, pressure };
+  });
+  ok('forward + strafe is materially faster than a straight run',
+    move29.diagonal > move29.straight * 1.25, JSON.stringify(move29));
+  ok('movement carries velocity, then ground friction settles it',
+    move29.coast > 1 && move29.stopped < 0.5, JSON.stringify(move29));
+  ok('a buffered landing hop preserves and boosts speed',
+    move29.hop.hops === 1 && move29.hop.speed > 10.4 && move29.hop.vy > 0,
+    JSON.stringify(move29.hop));
+  ok('the old free second jump is gone', move29.second.vy < move29.beforeSecond,
+    JSON.stringify({ before: move29.beforeSecond, after: move29.second.vy }));
+  ok('one downward shotgun recoil is available per airtime',
+    move29.daggerFirst && !move29.daggerSecond && move29.dagger.vy > 10 &&
+    move29.dagger.daggerJumps === 1, JSON.stringify(move29.dagger));
+  ok('skulls beat straight speed but leave a turning window',
+    move29.pressure.speed > tun.straight && move29.pressure.accel < 10,
+    JSON.stringify(move29.pressure));
+
+  const impact29 = await p.evaluate(() => window.__hd.debug.getImpact());
+  ok('hits use an 8px unfiltered software sprite',
+    impact29.w === 8 && impact29.h === 8 && impact29.nearest && !impact29.mipmaps,
+    JSON.stringify(impact29));
 
   // ---- v4.29 DD gunfeel: TAP = shotgun, HOLD = stream, no auto-fire ------
   const gun = await p.evaluate(async () => {
@@ -118,27 +196,64 @@ s.listen(0, '127.0.0.1', async () => {
     const tapFired = shots - d1;
     const cdAfterTap = hd.debug.getGun().shotCd;
     const viewAfterTap = hd.debug.getWeaponView();
+    const tapSpeeds = hd.daggers.active.map(d => d.vel.length());
     // wait out the shotgun lockout, then HOLD: stream after streamDelay
     while (hd.debug.getGun().shotCd > 0) await frames(2);
+    hd.daggers.reset();
     const d2 = shots;
     hd.player.input.mouseDown = true;
-    await frames(3); // ≤0.15s held — still inside the delay
+    await frames(1); // one frame is still inside the short detection window
     const early = shots - d2;
-    await frames(12); // well past streamDelay now
+    await frames(4); // stream is live by ~0.15s rather than waiting 0.22s
+    const responsive = shots - d2;
+    await frames(8);
     const streamed = shots - d2;
+    const streamSpeeds = hd.daggers.active.map(d => d.vel.length());
     const d3 = shots;
     hd.player.input.mouseDown = false; // long hold released → must NOT shotgun
     await frames(3);
     const releaseFired = shots - d3;
     hd.daggers.fire = realFire;
-    return { moveFired, tapFired, cdAfterTap, viewAfterTap, early, streamed, releaseFired };
+    return { moveFired, tapFired, cdAfterTap, viewAfterTap, tapSpeeds,
+      early, responsive, streamed, streamSpeeds, releaseFired };
   });
   ok('moving alone no longer fires', gun.moveFired === 0, JSON.stringify(gun));
   ok('a TAP fires the shotgun burst', gun.tapFired >= 10 && gun.cdAfterTap > 0, JSON.stringify(gun));
   ok('the shotgun visibly kicks the claw', gun.viewAfterTap.recoil > 0.015 && gun.viewAfterTap.z > -1.16, JSON.stringify(gun.viewAfterTap));
-  ok('the stream waits out streamDelay', gun.early <= 2, JSON.stringify(gun));
-  ok('a HOLD streams', gun.streamed >= 3, JSON.stringify(gun));
+  ok('the stream keeps a short tap-detection window', gun.early === 0, JSON.stringify(gun));
+  ok('a HOLD starts quickly and forms a dense stream', gun.responsive >= 2 && gun.streamed >= 6, JSON.stringify(gun));
+  ok('tap projectiles are faster than held projectiles',
+    Math.min(...gun.tapSpeeds) > Math.max(...gun.streamSpeeds), JSON.stringify({ tap: gun.tapSpeeds, stream: gun.streamSpeeds }));
   ok('releasing a long hold is not a tap', gun.releaseFired <= 2, JSON.stringify(gun));
+
+  const touchBurst = await p.evaluate(async () => {
+    const hd = window.__hd;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    while (hd.debug.getGun().shotCd > 0) await frames(2);
+    hd.daggers.reset();
+    hd.player.reset();
+    hd.player.feet.y = 0.25;
+    hd.player.vy = 4;
+    hd.player.airTime = 0.1;
+    hd.player.pitch = -1.1;
+    hd.player._sync();
+    hd.player.input.touchMode = true;
+    hd.player.input._fireTap = true;
+    const realFire = hd.daggers.fire.bind(hd.daggers);
+    let shots = 0;
+    hd.daggers.fire = (...args) => { shots++; return realFire(...args); };
+    const before = hd.player.daggerJumpCount;
+    await frames(2);
+    hd.daggers.fire = realFire;
+    const result = { shots,
+      jumps: hd.player.daggerJumpCount - before, vy: hd.player.vy };
+    hd.player.input.touchMode = false;
+    hd.player.reset();
+    return result;
+  });
+  ok('touch right-tap fires the burst and can dagger-jump',
+    touchBurst.shots >= 10 && touchBurst.jumps === 1 && touchBurst.vy > 9,
+    JSON.stringify(touchBurst));
 
   // ---- v4.27 aim assist: sticky near a target, inert without a pad -------
   const aim = await p.evaluate(() => {
