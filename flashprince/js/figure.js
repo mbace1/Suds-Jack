@@ -48,24 +48,37 @@ export const POSE = {
   // leg is nearer the camera brighter, so bright and dark swap legs every time
   // they cross and colour alone gets you a leg that teleports.
   //
-  // What comes out is a real run and not a walk played fast: the recovery leg
-  // folds to a HUNDRED AND TEN degrees at the knee — heel under the seat, thigh
-  // driving through — while the other extends to straight, and for six of the
-  // ten frames neither foot is down. Four frames of stance in ten is what a
-  // runner actually does.
+  // The near leg reads cleanly right round the twenty frames, so BOTH legs come
+  // off that one trajectory with the far leg ten frames behind — which is what a
+  // run is, and it beats measuring the far leg through the occlusion that makes
+  // its numbers jump. What it shows is a run and not a walk played fast: the
+  // recovery knee folds past a hundred and twenty-five degrees, heel under the
+  // seat, while the other drives out to straight.
   //
-  // One step. The other step is these ten with near and far exchanged, which is
-  // what SWAP is for.
-  run1:     P( 52, 105,    2,  29,  -35, 81,   32, 109,   4, -2,  0, 0, 0),
-  run2:     P( 44, 111,   22,  38,  -30, 83,   27, 107,   5, -2,  0, 0, 0),
-  run3:     P( 54, 112,   14,   0,  -36, 81,   32, 109,   8, -3, -1, 0, 0),
-  run4:     P( 36,  78,   19,   0,  -24, 85,   22, 105,   8, -3, -2, 0, 0),
-  run5:     P( 20,  63,   28,   0,  -13, 90,   12, 100,   7, -2, -3, 0, 0),
-  run6:     P(  0,  27,   34,   0,    0, 95,    0,  95,   5, -2, -3, 0, 0),
-  run7:     P(-20,   0,   40,   0,   13,100,  -12,  90,   6, -2, -3, 0, 0),
-  run8:     P(-25,   0,   71,  72,   17,102,  -15,  88,   5, -2, -3, 0, 0),
-  run9:     P(-25,   0,   80, 101,   17,102,  -15,  88,   4, -2, -2, 0, 0),
-  run10:    P(-16,   0,   75, 106,   11, 99,  -10,  91,   5, -2, -2, 0, 0),
+  // The arms are the sprite's own, frame for frame. Conrad does not pump them
+  // symmetrically — the front hand rides high and tight with the elbow well past
+  // a right angle — so the two halves are NOT mirrors of each other, and that is
+  // why this table is twenty rows rather than ten.
+  run1 :   P( 16,  11,   18, 127,  -32, 108,   14, 109,  21, -27,  1, 0, 0),
+  run2 :   P( 16,  29,   30, 127,  -33, 104,   15, 109,  21, -31,  1, 0, 0),
+  run3 :   P(  3,  24,   40, 113,  -21, 126,    9, 108,  19, -24,  1, 0, 0),
+  run4 :   P(-16,   6,   45,  91,    4, 142,   -2, 105,  14, -14,  1, 0, 0),
+  run5 :   P(-28,   0,   41,  63,   25, 144,  -11, 108,  11, -10,  1, 0, 0),
+  run6 :   P(-35,   3,   31,  32,   36, 150,  -16, 109,  11, -10,  0, 0, 0),
+  run7 :   P(-34,  19,   27,  10,   30, 155,  -14, 109,  14, -14,  0, 0, 0),
+  run8 :   P(-23,  51,   27,   2,    8, 151,   -4, 106,  15, -17, -1, 0, 0),
+  run9 :   P( -9,  87,   24,   0,   -8, 139,    4, 106,  13, -14, -1, 0, 0),
+  run10:   P(  4, 114,   18,   0,  -20, 128,    9, 107,  13, -11,  0, 0, 0),
+  run11:   P( 18, 127,   16,  11,  -33, 112,   15, 109,  14, -12,  1, 0, 0),
+  run12:   P( 30, 127,   16,  29,  -33, 110,   15, 109,  14, -12,  1, 0, 0),
+  run13:   P( 40, 113,    3,  24,  -18, 132,    8, 107,  12, -13,  1, 0, 0),
+  run14:   P( 45,  91,  -16,   6,    5, 151,   -2, 106,  13, -18,  1, 0, 0),
+  run15:   P( 41,  63,  -28,   0,   23, 152,  -10, 108,  14, -20,  1, 0, 0),
+  run16:   P( 31,  32,  -35,   3,   18, 146,   -8, 107,  13, -18, -1, 0, 0),
+  run17:   P( 27,  10,  -34,  19,    5, 145,   -2, 106,  14, -20, -2, 0, 0),
+  run18:   P( 27,   2,  -23,  51,   -2, 149,    1, 105,  18, -23, -2, 0, 0),
+  run19:   P( 24,   0,   -9,  87,  -15, 144,    7, 107,  20, -24, -1, 0, 0),
+  run20:   P( 18,   0,    4, 114,  -26, 129,   12, 108,  20, -23,  0, 0, 0),
 
   skid:     P(   30,  -14,  -16,  -28,  -30, 30,  -34, 26,  -8,   4,  4,  0,  0),
 
@@ -181,10 +194,19 @@ export function sample(clip, f, loop = false) {
 }
 
 // ── skeleton → polygons ────────────────────────────────────────────
-// Bone lengths for a 32px man. Everything else in the game is measured off
-// these, so the world is built to the body rather than the body squeezed into
-// the world.
-const THIGH = 8, SHIN = 8, SPINE = 10, UPPER = 7.5, FORE = 7, HIP_Y = -16;
+// Conrad's build, measured off ref/conrad.png rather than chosen. Standing, he
+// is 38px from the floor to the top of his hair, and it divides like this:
+//
+//   hip joint   20 above the floor   (his legs are 53% of him)
+//   shoulder    31                   (torso 11)
+//   head        35 to 38, and FOUR pixels wide
+//
+// The head is the number that matters. This figure's was 7 wide and 9 tall —
+// 27% of his height against Conrad's 18% — and a head that size pulls the eye
+// off the silhouette, which in a game with no faces is all there is to read.
+// A leg is four pixels across at the thigh and three at the shin, not six.
+const THIGH = 9, SHIN = 9, SPINE = 11, UPPER = 7, FORE = 6, HIP_Y = -20;
+const SKULL = 4.5;                       // head centre, above the shoulder
 
 export function drawFigure(scr, x, y, face, pose, col, opt = {}) {
   const [hipN, kneeN, hipF, kneeF, shN, elN, shF, elF, lean, head, py, px, rot] = pose;
@@ -232,7 +254,7 @@ export function drawFigure(scr, x, y, face, pose, col, opt = {}) {
   const [elbFp, handFp] = arm(shF, elF);
 
   const neck = R(up(shoRaw, lean, 2));
-  const hd = R(up(shoRaw, lean + head, 5.6));
+  const hd = R(up(shoRaw, lean + head, SKULL));
   const pelR = R(pel);
 
   const W = w => w * s;
@@ -243,53 +265,56 @@ export function drawFigure(scr, x, y, face, pose, col, opt = {}) {
     const fx = face * 0.82 + (dx / L) * 0.3, fy = Math.max(-0.35, (dy / L) * 0.25);
     const n = Math.hypot(fx, fy) || 1;
     return [
-      ank.x - fx / n * W(1.6), ank.y - fy / n * W(1.6) - W(1.4),
-      ank.x + fx / n * W(5.4), ank.y + fy / n * W(5.4) - W(0.6),
-      ank.x + fx / n * W(5.0), ank.y + fy / n * W(5.0) + W(1.5),
-      ank.x - fx / n * W(2.0), ank.y - fy / n * W(2.0) + W(1.5),
+      ank.x - fx / n * W(1.1), ank.y - fy / n * W(1.1) - W(1.0),
+      ank.x + fx / n * W(3.7), ank.y + fy / n * W(3.7) - W(0.2),
+      ank.x + fx / n * W(3.3), ank.y + fy / n * W(3.3) + W(2.0),
+      ank.x - fx / n * W(1.4), ank.y - fy / n * W(1.4) + W(2.0),
     ];
   };
 
   // FAR side first — a shade down, which is the only depth cue a flat figure
   // gets and the reason the run reads as a run and not as scissors.
-  scr.limb(shoRaw.x, shoRaw.y, elbFp.x, elbFp.y, W(2.2), W(1.9), col.far);
-  scr.limb(elbFp.x, elbFp.y, handFp.x, handFp.y, W(1.9), W(1.5), col.far);
-  scr.disc(handFp.x, handFp.y, W(1.6), col.far);
-  scr.limb(pelR.x, pelR.y, kneeFp.x, kneeFp.y, W(3.0), W(2.4), col.far);
-  scr.limb(kneeFp.x, kneeFp.y, ankFp.x, ankFp.y, W(2.3), W(1.7), col.far);
+  scr.limb(shoRaw.x, shoRaw.y, elbFp.x, elbFp.y, W(1.7), W(1.5), col.far);
+  scr.limb(elbFp.x, elbFp.y, handFp.x, handFp.y, W(1.5), W(1.2), col.far);
+  scr.disc(handFp.x, handFp.y, W(1.3), col.far);
+  scr.limb(pelR.x, pelR.y, kneeFp.x, kneeFp.y, W(2.2), W(1.8), col.far);
+  scr.limb(kneeFp.x, kneeFp.y, ankFp.x, ankFp.y, W(1.7), W(1.3), col.far);
   scr.poly(foot(ankFp, kneeFp), col.far);
 
   // the torso, one quad from hips to shoulders
   const perp = (a, w) => ({ x: Math.cos(a * D) * face * w * s, y: -Math.sin(a * D) * w * s });
-  const ph = perp(lean, 3.2), ps = perp(lean, 3.8);
+  const ph = perp(lean, 2.8), ps = perp(lean, 3.3);
   scr.poly([
     pelR.x - ph.x, pelR.y - ph.y, pelR.x + ph.x, pelR.y + ph.y,
     sho.x + ps.x, sho.y + ps.y, sho.x - ps.x, sho.y - ps.y,
   ], col.body);
-  scr.limb(pelR.x, pelR.y, sho.x, sho.y, W(3.4), W(4.0), col.body);
-  scr.limb(sho.x, sho.y, neck.x, neck.y, W(1.8), W(1.6), col.skin);
+  scr.limb(pelR.x, pelR.y, sho.x, sho.y, W(3.0), W(3.6), col.body);
+  scr.limb(sho.x, sho.y, neck.x, neck.y, W(1.2), W(1.1), col.skin);
 
   // the head: a squat hexagon with the face cut forward, hair over the back
   const hx = face, ang = (lean + head) * D * face;
   const hc = Math.cos(ang), hs = Math.sin(ang);
   const hp = (fx, fy) => [hd.x + (fx * hx * hc - fy * hs) * s, hd.y + (fx * hx * hs + fy * hc) * s];
   scr.poly([
-    ...hp(-3.2, -3.6), ...hp(2.0, -3.8), ...hp(3.6, -1.0), ...hp(3.5, 1.6),
-    ...hp(1.8, 3.7), ...hp(-2.4, 3.6), ...hp(-3.6, 1.0),
+    ...hp(-1.9, -2.9), ...hp(1.1, -3.0), ...hp(2.0, -0.8), ...hp(1.9, 1.3),
+    ...hp(1.0, 3.0), ...hp(-1.4, 2.9), ...hp(-2.1, 0.8),
   ], col.skin);
   scr.poly([
-    ...hp(-3.6, -3.4), ...hp(2.2, -4.0), ...hp(3.2, -2.0), ...hp(1.0, -2.4),
-    ...hp(-2.0, -0.8), ...hp(-3.9, 2.2),
+    ...hp(-2.0, -2.7), ...hp(1.2, -3.2), ...hp(1.8, -1.6), ...hp(0.6, -1.9),
+    ...hp(-1.1, -0.6), ...hp(-2.1, 1.7),
   ], col.hair);
-  if (col.eye != null && s >= 1) scr.rect(hp(1.4, -0.6)[0] - 0.5, hp(1.4, -0.6)[1] - 0.5, 1.6, 1.4, col.eye);
+  if (col.eye != null && s >= 1) scr.rect(hp(0.8, -0.4)[0] - 0.5, hp(0.8, -0.4)[1] - 0.5, 1.1, 1.1, col.eye);
 
   // NEAR side last, over everything
-  scr.limb(pelR.x, pelR.y, kneeNp.x, kneeNp.y, W(3.1), W(2.5), col.legs);
-  scr.limb(kneeNp.x, kneeNp.y, ankNp.x, ankNp.y, W(2.4), W(1.8), col.legs);
+  scr.limb(pelR.x, pelR.y, kneeNp.x, kneeNp.y, W(2.3), W(1.9), col.legs);
+  scr.limb(kneeNp.x, kneeNp.y, ankNp.x, ankNp.y, W(1.8), W(1.4), col.legs);
   scr.poly(foot(ankNp, kneeNp), col.legs);
-  scr.limb(shoRaw.x, shoRaw.y, elbNp.x, elbNp.y, W(2.3), W(2.0), col.arms);
-  scr.limb(elbNp.x, elbNp.y, handNp.x, handNp.y, W(2.0), W(1.6), col.skin);
-  scr.disc(handNp.x, handNp.y, W(1.7), col.skin);
+  scr.limb(shoRaw.x, shoRaw.y, elbNp.x, elbNp.y, W(1.8), W(1.6), col.arms);
+  // The forearm is a SLEEVE, not a bare arm. Drawn in skin it put a pale mass
+  // the size of his head on the front of him; Conrad's jacket goes to the wrist
+  // and only the fist is skin.
+  scr.limb(elbNp.x, elbNp.y, handNp.x, handNp.y, W(1.6), W(1.3), col.arms);
+  scr.disc(handNp.x, handNp.y, W(1.4), col.skin);
 
   if (opt.gun) {
     // the pistol, aimed down the forearm

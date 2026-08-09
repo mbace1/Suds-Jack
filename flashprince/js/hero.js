@@ -12,14 +12,14 @@
 // ballistic from a scripted launch, and input is read only in the window a move
 // declares open.
 
-import { POSE as Q, SWAP, sample } from './figure.js';
+import { POSE as Q, sample } from './figure.js';
 
-// Conrad's run: ten frames for a step, then the same ten mirrored for the other
-// one. 1.1 frames a key puts the cycle at 22 frames, which at 1.62px a frame is
-// a 17.8px stride — the stride the sheet actually shows, measured between his
-// feet at full split. Get that wrong and the feet skate.
-const RUN = [Q.run1, Q.run2, Q.run3, Q.run4, Q.run5, Q.run6, Q.run7, Q.run8, Q.run9, Q.run10];
-const RUN_CLIP = [...RUN, ...RUN.map(SWAP)].map(p => [p, 1.1]);
+// Conrad's run, all twenty frames of it — his arms are not symmetrical between
+// the two halves, so there is no mirroring the second ten out of the first.
+// 1.1 frames a key puts the cycle at 22 frames, which at 1.62px a frame is a
+// 17.8px stride, the stride the sheet measures between his feet at full split.
+// Get that number wrong and the feet skate.
+const RUN_CLIP = Array.from({ length: 20 }, (_, i) => [Q['run' + (i + 1)], 1.1]);
 
 export const HERO_W = 10, HERO_H = 30, CROUCH_H = 16;
 const G = 0.19, TERMINAL = 6.4;
@@ -157,6 +157,7 @@ export class Hero {
     // it is only committed.
     this.jumpBuf = 0;
     this.dropLock = 0;
+    this.stepPhase = 0;
   }
 
   get move() { return M[this.state]; }
@@ -173,7 +174,23 @@ export class Hero {
   get cx() { return this.x; }
   get cy() { return this.y - this.h / 2; }
 
-  go(state, f = 0) { this.state = state; this.f = f; }
+  // Conrad's walk is twelve frames — TWO steps of six, and they are not the
+  // same six. So a step remembers which of the two it is and the next one takes
+  // the other, or he hops along on the same leg.
+  go(state, f = 0) {
+    if (state === 'step' && this.state !== 'step') this.stepPhase ^= 1;
+    this.state = state; this.f = f;
+  }
+
+  // Which of Conrad's frames this state is showing, for the blitter. Null means
+  // there is no sheet animation mapped to it yet and the polygon figure draws.
+  sprite() {
+    const s = this.state;
+    if (s === 'run') return { anim: 'run', f: this.f / 1.1 };
+    if (s === 'step') return { anim: this.stepPhase ? 'stepB' : 'step', f: this.f / (M.step.dur / 6) };
+    if (s === 'stand') return { anim: 'stand', f: this.f / 30 };
+    return null;
+  }
 
   // ── collision, in whole pixels because the world is a grid ─────────
   clear(world, x, y, h) {

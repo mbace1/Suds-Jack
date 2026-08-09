@@ -30,7 +30,16 @@ export class Screen {
     this.ctx.imageSmoothingEnabled = false;
     this.hex = [];
     this.rgb = new Uint32Array(16);
-    this.lut = new Int32Array(32768).fill(-1);
+    // Zero means "not worked out yet". It cannot collide with a real answer:
+    // every colour in here is packed with alpha 255, so no answer is ever zero.
+    //
+    // This was an Int32Array tested with `< 0`, which never once hit — a packed
+    // ABGR value has the top bit set, so every cached answer read back negative
+    // and every pixel recomputed its sixteen distance tests from scratch, every
+    // frame. It also meant the fixed points below were thrown away the moment
+    // they were looked up.
+    this.lut = new Uint32Array(32768);
+    this.keep = [];                   // colours the quantise pass must not touch
     this.cacheMap = new Map();
     this.pure = true;                 // the quantise pass; off = plain canvas AA
     this.scale = 1; this.ox = 0; this.oy = 0;
@@ -51,7 +60,29 @@ export class Screen {
       const r = parseInt(h.slice(1, 3), 16), g = parseInt(h.slice(3, 5), 16), b = parseInt(h.slice(5, 7), 16);
       this.rgb[i] = (255 << 24) | (b << 16) | (g << 8) | r;   // little-endian ABGR
     }
-    this.lut.fill(-1);
+    this.lut.fill(0);
+    this.seedKeep();
+  }
+
+  // Colours that must come out of the quantise pass unchanged.
+  //
+  // The hero is not drawn from the room's sixteen — he is blitted out of a
+  // sprite sheet with fourteen of his own (see sprite.js). Seeding the
+  // nearest-colour table with those fourteen as FIXED POINTS is all it takes:
+  // the pass still snaps every other pixel to the room's palette, and his land
+  // on themselves. Cheaper and more exact than lifting him out of the pass,
+  // and it leaves him in the draw order where he belongs — under the
+  // foreground, over the wall.
+  keepColours(hex) {
+    this.keep = hex.slice();
+    this.seedKeep();
+  }
+
+  seedKeep() {
+    for (const h of this.keep) {
+      const r = parseInt(h.slice(1, 3), 16), g = parseInt(h.slice(3, 5), 16), b = parseInt(h.slice(5, 7), 16);
+      this.lut[((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3)] = (255 << 24) | (b << 16) | (g << 8) | r;
+    }
   }
 
   // Held upright, the controls go UNDER the picture rather than on top of it.
@@ -178,6 +209,22 @@ export class Screen {
     ], ci);
   }
 
+  // A sprite, straight into the framebuffer at whole pixels and no scaling, so
+  // what lands is exactly what was in the sheet.
+  blit(img, sx, sy, sw, sh, dx, dy, flip) {
+    const c = this.ctx;
+    c.imageSmoothingEnabled = false;
+    if (flip) {
+      c.save();
+      c.translate(dx + sw, dy);
+      c.scale(-1, 1);
+      c.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+      c.restore();
+    } else {
+      c.drawImage(img, sx, sy, sw, sh, dx, dy, sw, sh);
+    }
+  }
+
   text(str, x, y, ci, size = 8) {
     const c = this.ctx;
     c.fillStyle = this.hex[ci];
@@ -232,7 +279,7 @@ export class Screen {
       const r = v & 255, g = (v >> 8) & 255, b = (v >> 16) & 255;
       const key = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
       let out = lut[key];
-      if (out < 0) {
+      if (!out) {
         let best = 0, bd = 1e9;
         for (let c = 0; c < 16; c++) {
           const cr = rgb[c] & 255, cg = (rgb[c] >> 8) & 255, cb = (rgb[c] >> 16) & 255;

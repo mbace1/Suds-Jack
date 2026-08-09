@@ -18,6 +18,7 @@ import { paintBack, drawAir, drawFore, halo } from './scenery.js';
 import { Hero } from './hero.js';
 import { makeEnemy } from './enemy.js';
 import { drawFigure, POSE } from './figure.js';
+import { loadSheet, drawSprite, CONRAD_COLOURS } from './sprite.js';
 import { Fx } from './fx.js';
 import { Input } from './input.js';
 import * as A from './audio.js';
@@ -33,6 +34,11 @@ const HERO_COL = {
 class Game {
   constructor() {
     this.scr = new Screen(document.getElementById('screen'));
+    // The hero is blitted out of the SNES sheet, not drawn from the sixteen.
+    // Telling the quantise pass to leave his fourteen colours alone is what
+    // keeps him exact while the world around him still snaps to the room.
+    this.scr.keepColours(CONRAD_COLOURS);
+    loadSheet();
     this.input = new Input(this.scr);
     this.fx = new Fx();
     this.world = new World();
@@ -390,10 +396,15 @@ class Game {
       scr.poly([h.x - wdt, h.y - 1, h.x + wdt, h.y - 1, h.x + wdt - 3, h.y + 2, h.x - wdt + 3, h.y + 2], C.DARK);
     }
     if (!blink) {
-      drawFigure(scr, h.x, h.y, h.face, h.pose(), HERO_COL, {
-        gun: h.weapon === 'gun' && !h.dead,
-        sword: h.sworded && !h.dead,
-      });
+      // Conrad's own frames where the sheet has them; the polygon figure for
+      // the moves not mapped onto it yet.
+      const sp = h.sprite();
+      if (!sp || !drawSprite(scr, sp.anim, Math.floor(sp.f), h.x, h.y, h.face)) {
+        drawFigure(scr, h.x, h.y, h.face, h.pose(), HERO_COL, {
+          gun: h.weapon === 'gun' && !h.dead,
+          sword: h.sworded && !h.dead,
+        });
+      }
     }
 
     this.fx.draw(scr);
