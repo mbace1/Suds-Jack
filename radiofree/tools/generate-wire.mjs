@@ -220,6 +220,7 @@ const SCHEMA = `Return ONE JSON object and nothing else. No prose, no code fence
     {
       "id": "kebab-case-slug",              // unique, never "sign-off"
       "broll": "<one BROLL key>",
+      "sourced": false,                     // true ONLY for a straight report
       "en": {
         "slug": "SHORT DATELINE IN CAPS",   // e.g. "RING ROAD III", "VUOSAARI"
         "head": "one headline, sentence case, no full stop",
@@ -245,6 +246,23 @@ You are writing one morning's broadcast for Radio Free Helsinki. Everything
 above is the bar. What follows is the mechanical part.
 
 ${artTable()}
+
+## The two registers
+
+Every bulletin is PARODY unless you mark it. Parody is the default and the
+rules below are its rules: real event, invented actors, written as the reframe.
+
+A bulletin may instead be SOURCED — reported straight — by setting
+"sourced": true on the story. Then, and only then, it may name real
+companies and real people. In exchange it may invent NOTHING: no euphemism put
+in anybody's mouth, no quote that was not said, no number that was not in the
+source. If a straight item needs a joke to work, it is not a straight item —
+write it as parody instead.
+
+At most ONE sourced bulletin per morning, and only when the event is
+substantial enough that a straight account beats a reframe of it. The app
+marks the difference with Toko's face, so a reader always knows which they are
+reading.
 
 ## Hard requirements — the file is rejected automatically if any of these fail
 
@@ -335,7 +353,8 @@ export function assemble(draft, date) {
   const copy = { en: {}, fi: {}, ja: {} };
   for (const s of (draft.stories || [])) {
     if (!s || !s.id) continue;
-    stories.push({ id: s.id, sector: SECTOR.id, broll: s.broll, filed: date });
+    stories.push({ id: s.id, sector: SECTOR.id, broll: s.broll, filed: date,
+                   ...(s.sourced ? { sourced: true } : {}) });
     for (const lang of LANGS) if (s[lang]) copy[lang][s.id] = s[lang];
   }
   return {
@@ -394,6 +413,11 @@ export function editorialProblems(wire, names) {
   const errors = [];
 
   for (const st of wire.stories) {
+    // A SOURCED bulletin names real companies and real people ON PURPOSE — it
+    // is reported straight, and the naming rule is the parody rule. Running
+    // this check over one would reject the only kind of item that is supposed
+    // to carry those names, which is the opposite of what it is for.
+    if (st.sourced) continue;
     for (const lang of LANGS) {
       const c = wire.copy[lang] && wire.copy[lang][st.id];
       if (!c || !Array.isArray(c.lines)) continue;
