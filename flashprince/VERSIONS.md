@@ -4,6 +4,27 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v43 — 2026-08-09
+
+**The duel has stakes.** Three things it was missing.
+
+The **pistol reaches him**, and it is a straight line at chest height that
+stops at the FIRST thing it meets — which is the only reason standing behind
+the post is a decision rather than scenery. No bullet in flight: at this range
+it arrives on the frame it is fired and the muzzle flash is the whole of the
+telling. Shooting a swordsman is the Flashback moment and it should be
+available.
+
+His **blade costs a mark**. The H key's demo hit still costs nothing, or you
+could not sit and watch the stagger.
+
+And **two rows of marks** top right, his and the other man's, because a duel
+you cannot keep score of is a sparring session.
+
+One real bug found doing it: a blade sweeps a SPAN, from the man to the point,
+and both hit tests were checking the TIP alone. Standing chest to chest, a
+strike passed straight through you.
+
 ## v42 — 2026-08-09
 
 **Someone to fence with.** A post tells you the sword's reach. It cannot tell
