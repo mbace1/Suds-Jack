@@ -12,10 +12,11 @@
   ],
   "stories": [
     {
-      "id": "half-the-same",
+      "id": "id-software",
       "sector": "RFH",
       "broll": "winterhall",
-      "filed": "2026-08-09"
+      "filed": "2026-08-09",
+      "sourced": true
     },
     {
       "id": "after-launch",
@@ -32,14 +33,6 @@
   ],
   "copy": {
     "en": {
-      "half-the-same": {
-        "slug": "THE STUDIO FLOOR",
-        "head": "Studio confirms it will make the same game with half the studio",
-        "lines": [
-          "Frictionless Play Group says the thirty-year-old studio it owns is now right-sized for a portfolio approach, after a hundred and thirty-six people left in July.",
-          "An engine programmer of sixteen years went this week and did not call it an opportunity. Whole disciplines are gone from the building. Output will be maintained, and management has been supplied with the words for saying so."
-        ]
-      },
       "after-launch": {
         "slug": "KAMPPI",
         "head": "Contractors who finished the game are released on the day it ships",
@@ -55,17 +48,17 @@
           "Pastel Empire Oy has declined to enter the collective agreement its employees voted to adopt, saying it prefers to keep the conversation direct and unmediated.",
           "The vote passed. The company says it values the feedback, and that the door to its offices remains open, which is where the conversation will now take place, one person at a time."
         ]
+      },
+      "id-software": {
+        "slug": "TEXAS",
+        "head": "Sixteen-year id Software veteran leaves, says the studio can no longer build what it built",
+        "lines": [
+          "Chris Hays, an engine programmer at id Software for nearly sixteen years, has left, weeks after Microsoft cut 136 roles there in July. Hays said publicly that building a game at the scale of Doom: The Dark Ages with half the people is not hard but impossible, and that entire disciplines are gone.",
+          "He said id's management had been handed talking points on what could and could not be said, and that Xbox leadership \"fundamentally don't understand art\". Microsoft has not commented."
+        ]
       }
     },
     "fi": {
-      "half-the-same": {
-        "slug": "STUDION LATTIA",
-        "head": "Studio vahvistaa tekevänsä saman pelin puolella studiolla",
-        "lines": [
-          "Frictionless Play Group kertoo, että sen omistama kolmekymmentävuotias studio on nyt oikeankokoinen portfolionäkökulmasta, kun heinäkuussa lähti 136 ihmistä.",
-          "Kuusitoista vuotta talossa ollut moottoriohjelmoija lähti tällä viikolla eikä kutsunut sitä mahdollisuudeksi. Kokonaisia osaamisalueita ei enää ole rakennuksessa; tuotanto jatkuu, konserni sanoo. Johdolle on toimitettu sanat, joilla se sanotaan."
-        ]
-      },
       "after-launch": {
         "slug": "KAMPPI",
         "head": "Pelin viimeistelleet vuokratyöläiset vapautetaan julkaisupäivänä",
@@ -81,17 +74,17 @@
           "Pastel Empire Oy on kieltäytynyt liittymästä työehtosopimukseen, jonka sen työntekijät äänestivät käyttöön, ja kertoo haluavansa pitää keskustelun suorana ja välittömänä.",
           "Äänestys meni läpi. Yhtiö kertoo arvostavansa palautetta ja pitävänsä ovensa auki — siellä keskustelu nyt käydään, yksi ihminen kerrallaan."
         ]
+      },
+      "id-software": {
+        "slug": "TEXAS",
+        "head": "Kuusitoista vuotta id Softwaressa ollut veteraani lähti: studio ei enää pysty siihen, mihin se pystyi",
+        "lines": [
+          "Chris Hays, lähes kuusitoista vuotta id Softwaren moottoriohjelmoijana, on lähtenyt studiosta viikkoja sen jälkeen kun Microsoft vähensi sieltä 136 tehtävää heinäkuussa. Hays sanoi julkisuudessa, ettei Doom: The Dark Agesin kokoluokan pelin tekeminen puolella väellä ole vaikeaa vaan mahdotonta.",
+          "Hänen mukaansa id:n johdolle oli annettu puhepisteet siitä, mitä saa sanoa, eikä Xboxin johto pohjimmiltaan ymmärrä taidetta. Microsoft ei ole kommentoinut."
+        ]
       }
     },
     "ja": {
-      "half-the-same": {
-        "slug": "スタジオの床",
-        "head": "スタジオ、半分の人数で同じ規模の一本を作ると確認",
-        "lines": [
-          "Frictionless Play Groupは、傘下の創業三十年のスタジオがポートフォリオの観点で適正規模になったとしている。7月に136人が去った。",
-          "在籍十六年のエンジンプログラマーが今週退社し、これを好機とは呼ばなかった。職能が丸ごと消えた一方、産出量は維持されるという。そう言うための言葉は経営陣に配られている。"
-        ]
-      },
       "after-launch": {
         "slug": "カンピ",
         "head": "ゲームを仕上げた契約スタッフ、発売当日に契約終了",
@@ -106,6 +99,14 @@
         "lines": [
           "Pastel Empire Oyは、従業員が採用を可決した労働協約への加入を拒み、対話は直接かつ仲介なしで行いたいとしている。",
           "採決は可決された。同社は意見を尊重するとし、オフィスの扉はいつでも開いているとした。話し合いはこれからそこで行われる。一人ずつ。"
+        ]
+      },
+      "id-software": {
+        "slug": "テキサス",
+        "head": "id Software在籍十六年のベテランが退社。「かつて作れたものは、もう作れない」",
+        "lines": [
+          "id Softwareでおよそ十六年エンジンプログラマーを務めたChris Hays氏が退社した。7月にMicrosoftが同スタジオの136職を削減した数週間後のことだ。同氏は『Doom: The Dark Ages』規模の作品を半分の人数で作ることは難しいのではなく不可能だと公に述べた。",
+          "経営陣には何を言ってよいかの「トーキングポイント」が渡されていたとし、Xboxの経営陣は根本的にアートを理解していないと語った。Microsoftはコメントしていない。"
         ]
       }
     }

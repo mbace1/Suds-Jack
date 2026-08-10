@@ -35,9 +35,30 @@ numbers station than to sketch comedy.
 
 ---
 
+## Two registers, one feed
+
+A bulletin is one of two things, and the reader can tell which before reading a
+word.
+
+**PARODY** — the default, and everything below applies to it. Real event,
+invented actors, written as the reframe. It carries **Toko's face** in the
+corner of the picture and the footer says *invented names*.
+
+**SOURCED** (`"sourced": true` on the story) — reported straight. Real
+companies, real people, real public statements, and **nothing invented at
+all**: no euphemism put in anybody's mouth, no quote that was not said, no
+number that was not reported. No face on the picture, and the footer says
+*reported straight*. If a straight item needs a joke to work, it is not a
+straight item.
+
+The mark matters more than the rule does. A feed that mixes the two without
+saying which is which is not satire, it is a rumour with good typography.
+
+---
+
 ## The naming rule
 
-**Real events. Invented actors. Always both.**
+Applies to PARODY bulletins. **Real events. Invented actors. Always both.**
 
 Owner's call, 2026-07-31, and it is the rule that makes the whole premise safe
 to broadcast:

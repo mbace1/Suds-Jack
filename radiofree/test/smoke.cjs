@@ -565,6 +565,35 @@ async function main() {
      st.text.split('\n').length >= 3 && st.text.length > 40,
      JSON.stringify(st.text).slice(0, 90));
 
+  // Two registers share the feed and the mark is what separates them. A
+  // sourced bulletin names real companies and real people; if it ever carried
+  // the parody face, or a parody one lost it, the app would be lying about
+  // which kind of thing the reader is looking at.
+  const marks = await vp.evaluate(() => {
+    const w = window.__rfh.debug.wireData();
+    return w.stories.map(s => ({
+      id: s.id, sourced: !!s.sourced,
+      face: !!document.querySelector(`.post[data-id="${s.id}"] .parody`),
+    }));
+  }).catch(() => null);
+  const anyPost = await vp.evaluate(() => {
+    const posts = [...document.querySelectorAll('.post')].filter(p => !p.classList.contains('sign-off'));
+    const w = window.__rfh.debug.wireData();
+    return posts.map((p, i) => ({
+      id: w.stories[i] && w.stories[i].id,
+      sourced: !!(w.stories[i] && w.stories[i].sourced),
+      face: !!p.querySelector('.parody'),
+      foot: (p.querySelector('.fiction') || {}).textContent || '',
+    }));
+  });
+  void marks;
+  ok('every parody bulletin wears the face',
+     anyPost.filter(p => !p.sourced).every(p => p.face),
+     JSON.stringify(anyPost.filter(p => !p.sourced && !p.face)));
+  ok('a sourced bulletin does not, and says it is reported straight',
+     anyPost.filter(p => p.sourced).every(p => !p.face && /straight|suoraa|ストレート/i.test(p.foot)),
+     JSON.stringify(anyPost.filter(p => p.sourced)));
+
   ok('the clip framing throws nothing', verrs.length === 0, verrs.join(' | '));
   await vp.close();
 
