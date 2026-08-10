@@ -386,6 +386,19 @@ they existed to mutate under it. Wires may still carry `{{spun|plain}}` markup
 and technique/tell fields; they are stripped and ignored. The station is a news
 feed now: footage, a stand-up or the booth, and the copy.
 
+**Two registers share the feed, and Toko's face says which.** A **parody**
+bulletin is the default — real event, invented actors, the reframe — and it
+wears the brand face in the corner of the picture (`parodyMark()` in `main.js`,
+geometry imported from `toko/js/face.js`, never copied) over a footer reading
+*invented names*. A **sourced** one (`"sourced": true` on the story) is
+reported straight: real companies, real people, real public statements, and
+nothing invented at all — no face, and the footer reads *reported straight*.
+The naming check in `tools/generate-wire.mjs` **skips sourced stories**, because
+running the parody rule over the one kind of item that is supposed to carry
+real names would reject exactly the right thing; the gate holds both directions.
+A feed that mixes the two without saying which is which is not satire, it is a
+rumour with good typography.
+
 **Every post is cut differently.** `package.js` holds three `PATTERNS` —
 establish (a long hold on the place), intercut (four fast cuts), and
 piece-to-camera (the reporter carries it) — picked off the post index, and one

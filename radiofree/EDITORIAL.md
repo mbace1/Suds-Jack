@@ -165,7 +165,8 @@ story; the BROADCAST is what goes on air.
 ## Hard nos
 
 - No invented events. The reframe is the joke; fabricating the event is not.
-- No real named person or company, anywhere in the copy.
+- No real named person or company in a PARODY bulletin. (A sourced one is
+  the opposite: every name in it must be real. That is the whole difference.)
 - No slur, no protected characteristic as the punchline. The target is always
   the *institution's language*, never a group of people.
 - No atrocity as a euphemism gag. Death and displacement can be on the wire —
@@ -178,10 +179,20 @@ story; the BROADCAST is what goes on air.
 
 ## Per bulletin, the shipping checklist
 
+**Parody**
 - [ ] Real event, invented actors, no real quote
 - [ ] Reads as news; nothing winks
 - [ ] Made somebody laugh, not just nod
 - [ ] All three languages, each written in its own idiom — not translated
+
+**Sourced**
+- [ ] Every name real, every quote said in public, every number in the source
+- [ ] Nothing invented — if it needs a joke to work, write it as parody
+- [ ] `"sourced": true` on the story, so the face comes off and the footer
+      changes. An unmarked straight item is the one thing this feed cannot ship.
+- [ ] All three languages
+
+**Both**
 - [ ] `node radiofree/tools/validate-wire.mjs` exits 0
 
 ---

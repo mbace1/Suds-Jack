@@ -188,6 +188,19 @@ async function generatorChecks() {
        en: { slug: 'S', head: 'h', lines: ['one.'] } }] }, '2026-08-07'), []).errors
        .some(e => /copy\.fi\.x/.test(e)));
 
+  // The naming rule is the PARODY rule. A sourced bulletin names real
+  // companies deliberately, and running the check over one would reject the
+  // only kind of item that is supposed to carry those names.
+  const real = ['Nokia', 'Deloitte'];
+  const asParody = g.assemble({ stories: [
+    story('s', 'X', 'Nokia said a thing.', 'Nokia sanoi jotain.', 'Nokiaが述べた。'),
+  ] }, '2026-08-07');
+  ok('a parody bulletin may not wear a real name', !g.check(asParody, real).ok);
+  const asSourced = JSON.parse(JSON.stringify(asParody));
+  asSourced.stories[0].sourced = true;
+  ok('a sourced one may — that is what sourced means', g.check(asSourced, real).ok,
+     g.check(asSourced, real).errors.join(' | '));
+
   const good = g.assemble({ stories: [
     story('a', 'AGENTLESS PASSIVE', `Rack & Ruin Oy ${two}.`, `Rack & Ruin Oy ${two}.`, `Rack & Ruin Oy ${two}。`),
     story('b', 'MISSING DENOMINATOR', `Piggies and Birds Inc ${two}.`, `Piggies and Birds Inc ${two}.`, `Piggies and Birds Inc ${two}。`),
