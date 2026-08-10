@@ -27,7 +27,7 @@
 </head>
 <body>
   <div id="hints">
-    point + trigger&nbsp; teleport · totem&nbsp; mood · book&nbsp; read · chair&nbsp; sit<br>
+    point + trigger&nbsp; teleport · totem&nbsp; mood · book&nbsp; read · radio&nbsp; play · sign&nbsp; home<br>
     desktop&nbsp; drag look · WASD walk · M mood<br>
     <a href="chair-lab.html">chair-lab</a>&nbsp; pins your real chair
   </div>
@@ -351,6 +351,8 @@
     occlude(totemSpot.x, totemSpot.z, 0.55, 0.5);
     const caveSpot = { x: -8.2, z: -6.4 };
     occlude(caveSpot.x, caveSpot.z, 3.4, 0.5);
+    const signSpot = { x: -3.3, z: 1.5 };
+    occlude(signSpot.x, signSpot.z, 0.7, 0.42);
     // the deck itself (it runs out in front of the chair, toward the water)
     occlude(chairP[0], chairP[2], 2.1, 0.32);
     occlude(chairP[0] + Math.sin(chairYaw) * 1.1, chairP[2] + Math.cos(chairYaw) * 1.1, 1.6, 0.25);
@@ -786,6 +788,64 @@
       totem.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
       totem.position.set(totemSpot.x, gy(totemSpot.x, totemSpot.z), totemSpot.z);
       scene.add(totem);
+    }
+
+    // ═══ THE WAY HOME ═══ A driftwood post with a little CRT nailed to it —
+    // the arcade, seen from the beach. It is a sign rather than a portal
+    // because leaving is a real navigation: the XR session ends first, then
+    // the browser goes to the hub. A portal that dissolved into a menu would
+    // be pretending. The screen is drawn in code, like every marquee on the
+    // site, and glows enough to be findable at dusk.
+    const signScreenMat = new THREE.MeshStandardMaterial({
+      roughness: 0.45, emissive: 0xffffff, emissiveIntensity: 0.85,
+    });
+    const sign = new THREE.Group();
+    {
+      const cv = document.createElement('canvas');
+      cv.width = 256; cv.height = 144;
+      const g = cv.getContext('2d');
+      g.fillStyle = '#06070a'; g.fillRect(0, 0, 256, 144);
+      g.fillStyle = '#0d1420'; g.fillRect(6, 6, 244, 132);
+      g.textAlign = 'center';
+      g.fillStyle = '#3aa8a0';
+      g.font = 'bold 30px ui-monospace, Menlo, Consolas, monospace';
+      g.fillText('THE ARCADE', 128, 46);
+      g.fillStyle = '#f2e9d8';
+      g.font = '17px ui-monospace, Menlo, Consolas, monospace';
+      g.fillText('every game, one page', 128, 76);
+      g.fillStyle = '#ff4fd8';
+      g.font = 'bold 19px ui-monospace, Menlo, Consolas, monospace';
+      g.fillText('[ THIS WAY ]', 128, 112);
+      // one scanline per two rows, the same trick the hub's marquees use
+      g.fillStyle = 'rgba(0,0,0,0.22)';
+      for (let y = 0; y < 144; y += 2) g.fillRect(0, y, 256, 1);
+      const tx = new THREE.CanvasTexture(cv);
+      tx.colorSpace = THREE.SRGBColorSpace;
+      signScreenMat.map = tx;
+      signScreenMat.emissiveMap = tx;
+
+      const gh = groundHeight(signSpot.x, signSpot.z);
+      const post = new THREE.Mesh(paint(box(0.08, 1.5, 0.08),
+        (x, y) => _c.copy(cWood).multiplyScalar(0.6 + 0.4 * smooth(-0.75, 0.1, y))), satin);
+      post.position.y = 0.75;
+      const frame = new THREE.Mesh(paint(box(0.56, 0.36, 0.05), col('#4a4038')), satin);
+      frame.position.y = 1.42;
+      const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.48, 0.28), signScreenMat);
+      screen.position.set(0, 1.42, 0.027);
+      sign.add(post, frame, screen);
+      sign.traverse(o => { if (o.isMesh) o.castShadow = true; });
+      sign.position.set(signSpot.x, gy(signSpot.x, signSpot.z), signSpot.z);
+      // face the chair, so it is readable from the seat
+      sign.rotation.y = Math.atan2(chairP[0] - signSpot.x, chairP[2] - signSpot.z);
+      scene.add(sign);
+    }
+    function goHome() {
+      // end the session before navigating: a browser that changes page while
+      // still presenting leaves the headset staring at a dead compositor
+      const s = renderer.xr.getSession?.();
+      const leave = () => { location.href = '../'; };
+      chime(587.33, 392);
+      if (s) s.end().then(leave, leave); else leave();
     }
 
     // ═══ THE CAVE — distant landmark, exterior only, neon arch flickering ═══
@@ -1236,7 +1296,7 @@
       marker.visible = false;
       scene.add(marker);
     }
-    const rayTargets = [terrain, totem, radio, chairHit, book];
+    const rayTargets = [terrain, totem, radio, chairHit, book, sign];
     const controllers = [];
     for (let i = 0; i < 2; i++) {
       const c = renderer.xr.getController(i);
@@ -1262,6 +1322,7 @@
         if (o === totem) return 'totem';
         if (o === radio) return 'radio';
         if (o === book) return 'book';
+        if (o === sign) return 'sign';
         if (o === chairHit) return 'chair';
         if (o === terrain) return 'ground';
       }
@@ -1273,6 +1334,7 @@
       if (kind === 'totem') return setMood(moodIdx + 1);
       if (kind === 'radio') return radioToggle();
       if (kind === 'book') return bookAct();
+      if (kind === 'sign') return goHome();
       if (kind === 'chair') {
         // A LONG pinch on the chair recalibrates the seat from where your
         // head is right now — the whole calibration path on Vision Pro,
@@ -1372,7 +1434,7 @@
         // a tap, not a drag: poke whatever is under the pointer
         raycaster.setFromCamera(new THREE.Vector2(
           (e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1), camera);
-        const hit = raycaster.intersectObjects([totem, radio, book], true)[0];
+        const hit = raycaster.intersectObjects([totem, radio, book, sign], true)[0];
         if (hit) actOn(hit);
       }
       dragging = false;
@@ -1503,6 +1565,7 @@
       debug: {
         radioToggle, actOn, rayTargets, sitCheck, bookAct, PLAYLIST,
         radio: () => ({ on: radioOn, track: trackIdx, plaque: plaque.visible }),
+        sign, goHome,
         // stand somewhere and face something — the flat camera, for the gate
         stand: (x, z, ry, p = -0.15) => {
           eye.set(x, gy(x, z) + 1.5, z); yaw = ry; pitch = p;
