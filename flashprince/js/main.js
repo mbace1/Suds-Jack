@@ -24,6 +24,7 @@ import { Post } from './bench.js';
 import { Swordsman } from './foe.js';
 import { Input } from './input.js';
 import { Sound } from './sound.js';
+import { Editor, BRUSHES } from './editor.js';
 import { setOn, isOn, droneTune } from './audio.js';
 import { loadSheet, drawSprite, ready, ANIM, frameCount, CONRAD_COLOURS } from './sprite.js';
 
@@ -101,6 +102,7 @@ class Stage {
     this.post = null;
     this.foes = [];
     this.snd = new Sound();
+    this.ed = new Editor(this.scr);
     this.enterRoom(0);
     this.hero.go('wake');
     this.mode = 'free';
@@ -111,12 +113,43 @@ class Stage {
     this.flash = 0;
   }
 
+  // ── the editor ─────────────────────────────────────────────────────
+  // Its own tick, because none of the game's rules apply while you are laying
+  // tiles: nothing falls, nothing thinks, and the clock is only there to blink
+  // the cursor.
+  editing(inp) {
+    const ed = this.ed;
+    if (inp.point) {
+      const p = this.scr.toPicture(inp.point.x, inp.point.y);
+      const tx = Math.floor(p.x / 16), ty = Math.floor(p.y / 16);
+      if (tx >= 0 && tx < 20 && ty >= 0 && ty < 12) ed.cursor = { tx, ty };
+      // The strip along the bottom is the palette: a click down there picks a
+      // brush rather than painting one.
+      if (inp.pointPress && p.y > H - 12) {
+        const i = Math.floor(p.x / (W / BRUSHES.length));
+        if (i >= 0 && i < BRUSHES.length) { ed.brush = i; return; }
+      }
+    }
+    if (inp.pointPress) ed.painting = inp.pointButton === 2 ? -1 : 1;
+    if (inp.pointRelease) ed.painting = 0;
+    // the keyboard does the same job, for laying a floor without a mouse
+    if (inp.dir && inp.dirHeld === 1) ed.cursor.tx = Math.max(0, Math.min(19, ed.cursor.tx + inp.dir));
+    if (inp.up) ed.cursor.ty = Math.max(0, ed.cursor.ty - 1);
+    if (inp.down) ed.cursor.ty = Math.min(11, ed.cursor.ty + 1);
+    if (inp.jumpPress) ed.set(ed.cursor.tx, ed.cursor.ty, BRUSHES[ed.brush].ch);
+    if (inp.firePress) ed.brush = (ed.brush + 1) % BRUSHES.length;
+    if (inp.gunPress) ed.dump();
+    if (inp.hitPress) ed.revert(this.world);
+    if (inp.carefulPress) { ed.commit(this.world); this.mode = 'free'; this.enterRoom(this.world.index); return; }
+    ed.paintAt(ed.cursor.tx, ed.cursor.ty);
+  }
+
   // Walking into a room is the only load there is. The palette comes with it,
   // the drone retunes to it, and whoever lives here is stood up where the map
   // said. Enemies other than the swordsman are not built yet, so their markers
   // are read and skipped rather than silently dropped.
   enterRoom(i, from = null) {
-    this.world.load(i, from === 'right' ? -1 : 1);
+    this.world.load(i, from === 'right' ? -1 : 1, this.ed.mapFor(i));
     const w = this.world;
     this.scr.setPalette(paletteAt(w.room.t));
     droneTune(w.room.t);
@@ -164,11 +197,15 @@ class Stage {
 
     // Its own button now: FIRE belongs to the pistol, and a button that both
     // shoots and changes what the whole screen is doing is not a button.
+    // Three modes on one button: play it, look at one animation, build a room.
     if (inp.modePress) {
-      this.mode = this.mode === 'free' ? 'gallery' : 'free';
+      this.mode = this.mode === 'free' ? 'gallery' : this.mode === 'gallery' ? 'edit' : 'free';
       this.t = 0;
+      if (this.mode === 'edit') this.ed.begin(this.world);
       if (this.mode === 'free') this.enterRoom(this.world.index);
     }
+
+    if (this.mode === 'edit') { this.editing(inp); return; }
 
     if (this.mode === 'gallery') {
       if (inp.dir && inp.dirHeld === 1) {
@@ -266,6 +303,7 @@ class Stage {
   paint() {
     const scr = this.scr;
     if (this.mode === 'gallery') { this.scr.setPalette(PAL); this.backdrop(scr); this.gallery(scr); }
+    else if (this.mode === 'edit') { this.editor(scr); scr.present(); this.padZones(); return; }
     else this.free(scr);
 
     this.chrome(scr);
@@ -324,6 +362,45 @@ class Stage {
     }
     drawFore(scr, w.room, w.index);
     if (!ready()) this.centre(scr, 'LOADING THE SHEET', 96, C.LUX);
+  }
+
+  // The room as a grid of characters, which is what it is. No biome art here
+  // on purpose — you are laying out a SHAPE, and dressing it while you build
+  // it is how a level ends up designed around its own decoration.
+  editor(scr) {
+    const ed = this.ed;
+    scr.clear(C.VOID);
+    for (let ty = 0; ty < 12; ty++) {
+      for (let tx = 0; tx < 20; tx++) {
+        const ch = ed.at(tx, ty);
+        const x = tx * 16, y = ty * 16;
+        if (ch !== ' ') {
+          const solid = '#~^'.includes(ch);
+          scr.rect(x, y, 16, 16, solid ? C.SOLID : C.FAR);
+          scr.rect(x, y, 16, 1, C.EDGE);
+          if (!solid) scr.text(ch, x + 6, y + 5, C.LUX, 6);
+        }
+        // a dot at every corner, so an empty room still reads as a grid
+        scr.rect(x, y, 1, 1, C.DARK);
+      }
+    }
+    const { tx, ty } = ed.cursor;
+    const on = (this.clock >> 3) & 1;
+    scr.rect(tx * 16, ty * 16, 16, 1, on ? C.LUX : C.LUX2);
+    scr.rect(tx * 16, ty * 16 + 15, 16, 1, on ? C.LUX : C.LUX2);
+    scr.rect(tx * 16, ty * 16, 1, 16, on ? C.LUX : C.LUX2);
+    scr.rect(tx * 16 + 15, ty * 16, 1, 16, on ? C.LUX : C.LUX2);
+
+    // the brush strip
+    const bw = W / BRUSHES.length;
+    for (let i = 0; i < BRUSHES.length; i++) {
+      const x = Math.round(i * bw);
+      scr.rect(x, H - 12, Math.ceil(bw) - 1, 11, i === ed.brush ? C.LUX2 : C.MID);
+      const ch = BRUSHES[i].ch;
+      scr.text(ch === ' ' ? '.' : ch, x + 5, H - 9, i === ed.brush ? C.VOID : C.EDGE, 6);
+    }
+    scr.text(`ROOM ${ed.index}  ${BRUSHES[ed.brush].name}`, 4, 4, C.LUX, 6);
+    scr.text('SHIFT TEST   E DUMP   H REVERT   X BRUSH   RMB ERASE', 4, H - 20, C.DARK, 6);
   }
 
   gallery(scr) {

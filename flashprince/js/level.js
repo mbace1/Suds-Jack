@@ -25,10 +25,14 @@ const GATE_OPEN = 230;
 export class World {
   constructor() { this.load(0); }
 
-  load(i, entryFace = 1) {
+  // `override` is the editor's copy of this room if it has one. The room in
+  // rooms.js is left alone either way — an edit is a layer over the top of it,
+  // never a rewrite of it, which is what makes reverting a room free.
+  load(i, entryFace = 1, override = null) {
     this.index = Math.max(0, Math.min(ROOMS.length - 1, i));
     this.room = ROOMS[this.index];
-    this.grid = this.room.map.map(r => r.split(''));
+    const map = override ?? this.room.map;
+    this.grid = map.map(r => r.split(''));
     this.spawn = null; this.door = null;
     this.pickups = []; this.spawns = [];
     this.spikes = []; this.chompers = []; this.loose = new Map();
@@ -294,14 +298,89 @@ export class World {
       scr.rect(L.x - 5, L.y + 10, 10, 2, C.DARK);
     }
 
-    // the mass
+    // ── the mass, and its edges are NOT the grid ─────────────────────
+    // Nothing in the references meets air along a straight line. Rock plates
+    // bulge, concrete crumbles, bark scallops — and a tile-shaped edge is the
+    // single loudest thing that says "this was made out of tiles".
+    //
+    // So an exposed face is not the tile's edge, it is a line that wanders two
+    // or three pixels either side of it, and the mass is filled as a POLYGON
+    // rather than a rect. Filling it as a polygon is what lets the wander cut
+    // INWARD as well as outward — a bump that only ever bulges out reads as a
+    // blob stuck on, and it is the bites that read as weathering.
+    //
+    // The wander is a hash of the WORLD coordinate, not of the tile, so two
+    // tiles sharing an edge agree about it and the line runs on through the
+    // corner instead of stepping at every boundary. One value per four pixels:
+    // per-pixel noise is fizz, four is a plate.
+    const chew = (a, b) => {
+      let h = (a * 374761393 + b * 668265263) >>> 0;
+      h = (h ^ (h >>> 13)) * 1274126177 >>> 0;
+      return ((h >>> 8) % 5) - 2;                 // -2..+2
+    };
+    const STEP = 4;
+    // one face of a tile as a run of points, chewed if it is open to the air
+    const face = (x0, y0, x1, y1, open, key) => {
+      const pts = [];
+      if (!open) { pts.push(x0, y0, x1, y1); return pts; }
+      const horiz = y0 === y1;
+      const len = horiz ? x1 - x0 : y1 - y0;
+      const n = Math.max(1, Math.round(Math.abs(len) / STEP));
+      const sgn = len < 0 ? -1 : 1;
+      for (let i = 0; i <= n; i++) {
+        const t = i / n;
+        const px = x0 + (x1 - x0) * t, py = y0 + (y1 - y0) * t;
+        // the displacement is sampled ALONG the edge and pushed across it
+        const along = horiz ? Math.round(px / STEP) : Math.round(py / STEP);
+        const d = chew(along, key);
+        pts.push(horiz ? px : px + d * sgn * (key === 3 ? -1 : 1),
+                 horiz ? py + d * sgn * (key === 0 ? -1 : 1) : py);
+      }
+      return pts;
+    };
+
     const mass = [];
     for (let ty = 0; ty < RH; ty++) {
       for (let tx = 0; tx < RW; tx++) {
         const ch = this.tile(tx, ty);
         if (!SOLIDS.includes(ch) && ch !== 'p') continue;
-        scr.rect(tx * TILE, ty * TILE, TILE, TILE, C.SOLID);
+        const x = tx * TILE, y = ty * TILE;
+        const up = empty(tx, ty - 1), dn = empty(tx, ty + 1);
+        const lf = empty(tx - 1, ty), rt = empty(tx + 1, ty);
+        if (!up && !dn && !lf && !rt) {
+          scr.rect(x, y, TILE, TILE, C.SOLID);     // buried: no edge to chew
+        } else {
+          scr.poly([
+            ...face(x, y, x + TILE, y, up, 0),
+            ...face(x + TILE, y, x + TILE, y + TILE, rt, 1),
+            ...face(x + TILE, y + TILE, x, y + TILE, dn, 2),
+            ...face(x, y + TILE, x, y, lf, 3),
+          ], C.SOLID);
+        }
         mass.push([tx, ty]);
+      }
+    }
+
+    // ── the mottle ───────────────────────────────────────────────────
+    // Bark, damp concrete, weathered stone: in every reference the body of a
+    // mass carries a scatter of two adjacent tones, clustered into blotches a
+    // few pixels across rather than sprinkled per pixel. It is most of what
+    // separates a painted surface from a filled shape, and it costs a handful
+    // of rects a tile. Kept OFF the top four pixels, where the lit plane and
+    // its turn-under do their own job.
+    for (const [tx, ty] of mass) {
+      if (this.tile(tx, ty) === '~') continue;    // loose tiles stay legible
+      const x = tx * TILE, y = ty * TILE;
+      const blots = 2 + ((r() * 3) | 0);
+      for (let i = 0; i < blots; i++) {
+        const dark = r() < 0.55;
+        const bx = x + 1 + r() * (TILE - 5), by = y + 4 + r() * (TILE - 7);
+        const col = dark ? C.DARK : C.NEAR;
+        // a blotch is two or three overlapping rects, not one — a single rect
+        // reads as a brick, three read as a stain
+        scr.rect(bx, by, 2 + r() * 3, 1 + r() * 2, col);
+        if (r() < 0.7) scr.rect(bx + 1 + r() * 2, by + 1, 1 + r() * 2, 1, col);
+        if (r() < 0.35) scr.rect(bx - 1, by + 1 + r() * 2, 1 + r() * 2, 1, col);
       }
     }
 

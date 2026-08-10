@@ -4,6 +4,69 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v47 — 2026-08-09
+
+**Ragged edges and mottle** — the first two points of `ART.md`, and the biggest
+return available for no new data.
+
+**The edges are not the grid any more.** Nothing in the reference meets air
+along a straight line, and a tile-shaped edge is the loudest thing a picture can
+say about how it was made. An exposed face is now a line that wanders two or
+three pixels either side of the tile boundary, and a mass is filled as a
+POLYGON rather than a rect — which is what lets the wander cut *inward* as well
+as out. A bump that only bulges outward reads as a blob stuck on; the bites are
+what read as weathering.
+
+The wander is a hash of the **world** coordinate, not the tile, so two tiles
+sharing an edge agree about it and the line runs on through the corner instead
+of stepping at every boundary. One value every four pixels: per-pixel is fizz,
+four is a plate. Buried tiles skip it — they have no edge to chew.
+
+**The mottle** is a scatter of two adjacent tones through the body of every
+mass, clustered into blotches a few pixels across. A single rect reads as a
+brick; two or three overlapping read as a stain. Kept off the top four pixels
+where the lit plane and its turn-under already do their own job, and off the
+loose tiles, which have to stay legible as a warning.
+
+Also: the moving reference the owner picked is recorded at the top of `ART.md`
+along with how to actually study it from in here, since the build environment
+cannot reach video.
+
+**Known:** two swordsmen in one room can spawn on top of each other. Placement,
+not art — next pass.
+
+## v46 — 2026-08-09
+
+**A room editor, and a study of what a room should look like.**
+
+The editor is a third mode on the same button — play it, look at one animation,
+build a room. A room has always been twenty by twelve characters of ASCII,
+which makes it the rare data format that is *already* an editor's document:
+nothing to serialise, nothing to parse back, and a room you build here can be
+pasted into `rooms.js` by hand.
+
+Paint with the mouse, held down, because laying a floor one click at a time is
+how an editor stops being used. Right button erases. Nineteen brushes in a
+strip along the bottom. SHIFT commits and drops you straight into the room to
+walk it; E prints it as the exact array literal `rooms.js` wants; H throws the
+edit away and puts the original back. Everything lives in one localStorage key
+as a LAYER over `rooms.js` — an edit never rewrites the original, which is what
+makes reverting free.
+
+It is a **plain** editor on purpose. No layers, no undo tree, no biome preview.
+You lay out the shape of a screen; the thematics are applied afterwards by
+whichever biome it sits in. Dressing a room while you build it is how a level
+ends up designed around its own decoration.
+
+**`ART.md`** is the other half: nine points on how a screen of this kind is
+built, taken off real Flashback screens — three layers and only three, near
+masses outlined and mottled rather than flat, ragged edges instead of tile
+edges, the screen framed left and right, slabs on visible supports, bolted-on
+man-made furniture, light that is rare and saturated, storeys crossed by
+ladders rather than by jumping, and enemies in a hue the palette reserves for
+them. It ends with what each one asks of the code and the order to do it in.
+That is the next four jobs.
+
 ## v45 — 2026-08-09
 
 **The world is back.** `rooms.js`, `level.js`, `scenery.js` and `fx.js` came
