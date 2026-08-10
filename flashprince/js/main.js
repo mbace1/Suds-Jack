@@ -20,6 +20,8 @@ import { Hero } from './hero.js';
 import { Bench, Post } from './bench.js';
 import { Swordsman } from './foe.js';
 import { Input } from './input.js';
+import { Sound } from './sound.js';
+import { setOn, isOn } from './audio.js';
 import { loadSheet, drawSprite, ready, ANIM, frameCount, CONRAD_COLOURS } from './sprite.js';
 
 const FLOOR = 144;                 // the ground line, in picture pixels
@@ -98,6 +100,7 @@ class Stage {
     this.reel = 0;
     this.t = 0;
     this.clock = 0;
+    this.snd = new Sound();
     this.hint = 420;              // the control line fades out of the way
     this.flash = 0;
   }
@@ -118,6 +121,9 @@ class Stage {
   // sheathes itself, and one press of the mode button flips the mode sixty
   // times a second.
   tick(inp) {
+    // WebAudio needs a gesture, so the first press of anything is the cue.
+    if (inp.anyPress || inp.dir) this.snd.wake();
+    if (inp.mutePress) setOn(!isOn());
 
     // Its own button now: FIRE belongs to the pistol, and a button that both
     // shoots and changes what the whole screen is doing is not a button.
@@ -151,7 +157,7 @@ class Stage {
     if (h.x > W + 14) h.x = -12;
     if (h.y > H + 10) { h.reset(48, FLOOR); h.go('land'); }
     if (this.flash > 0) this.flash--;
-    if (h.shotQueued) { h.shotQueued = false; this.flash = 3; this.shoot(h); }
+    if (h.shotQueued) { h.shotQueued = false; this.flash = 3; this.snd.shot(); this.shoot(h); }
     this.post.update();
     this.foe.update(h);
     // his blade, on the one frame it is anywhere
@@ -167,7 +173,7 @@ class Stage {
     if (h.swingQueued) {
       h.swingQueued = false;
       const e = h.swordTip();
-      if (this.reached(h.x, e.x, this.post.x)) this.post.hit(this.post.x, h.face);
+      if (this.reached(h.x, e.x, this.post.x)) { this.post.hit(this.post.x, h.face); this.snd.woodHit(); }
       // and the man. A blow into a raised blade rings off it rather than
       // landing, which is the other half of the parry being worth learning.
       if (this.reached(h.x, e.x, this.foe.x)) {
@@ -175,7 +181,8 @@ class Stage {
       }
     }
     // he gets back up, because a bench you have to reload is a worse bench
-    if (this.foe.dead && this.foe.f > 150) this.foe = new Swordsman(210, FLOOR, -1);
+    if (this.foe.dead && this.foe.f > 150) { this.foe = new Swordsman(210, FLOOR, -1); this.snd.wasFoe = null; }
+    this.snd.frame(h, this.foe);
 
   }
 
@@ -305,7 +312,7 @@ class Stage {
     if (this.hint > 0) {
       this.centre(scr, '◀ ▶  WALK, HOLD TO RUN   ▲  JUMP / PULL UP   ▼  CROUCH / CLIMB DOWN', H - 18, C.DARK, s);
       this.centre(scr, 'E  PISTOL OUT      X  FIRE      SHIFT  CAREFUL STEP', H - 10, C.DARK, s);
-      this.centre(scr, 'G  —  ANIMATION GALLERY', H - 2, C.DARK, s);
+      this.centre(scr, 'H  TAKE A HIT      M  SOUND      G  ANIMATION GALLERY', H - 2, C.DARK, s);
     }
   }
 
