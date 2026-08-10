@@ -9,13 +9,20 @@
     html, body { height: 100%; }
     body { background: #0a0c10; overflow: hidden; touch-action: none; font-family: ui-monospace, Menlo, Consolas, monospace; }
     canvas { display: block; }
+    #ui { position: fixed; inset: 0; z-index: 2; pointer-events: none; }
+    /* The hints live at the TOP: the bottom of the screen is where the two
+       sticks are, and instructions written across a control are worse than
+       no instructions. They fade once you have had time to read them. */
     #hints {
-      position: fixed; left: 12px; bottom: 12px; z-index: 3;
+      position: fixed; left: 12px; top: 64px; right: 12px; z-index: 3;
       color: #f2e9d8; opacity: 0.75; font-size: 12px; line-height: 1.7;
       text-shadow: 0 1px 2px rgba(0,0,0,0.6); pointer-events: none;
-      padding-bottom: env(safe-area-inset-bottom);
+      transition: opacity 1.2s ease 6s;
     }
+    #hints.gone { opacity: 0.16; }
+    @media (max-width: 520px) { #hints { font-size: 11px; line-height: 1.55; } }
     #hints a { color: #3aa8a0; pointer-events: auto; }
+    #XRButton { bottom: auto !important; top: 16px !important; }
     #mood-name {
       position: fixed; top: 14px; right: 16px; z-index: 3;
       color: #f2e9d8; font-size: 12px; letter-spacing: 0.14em; opacity: 0;
@@ -27,10 +34,11 @@
 </head>
 <body>
   <div id="hints">
-    point + trigger&nbsp; teleport · totem&nbsp; mood · book&nbsp; read · radio&nbsp; play · sign&nbsp; home<br>
-    desktop&nbsp; drag look · WASD walk · M mood<br>
+    left stick&nbsp; walk · right stick&nbsp; look · tap a thing&nbsp; use it<br>
+    the totem changes the mood · the sign goes home · in VR, point + trigger<br>
     <a href="chair-lab.html">chair-lab</a>&nbsp; pins your real chair
   </div>
+  <canvas id="ui"></canvas>
   <div id="mood-name"></div>
 
   <!-- three r180 from a local vendor/ copy, not the CDN — same rule sudsjack
@@ -123,7 +131,7 @@
     // well out past the shoreline. Move these two points and the width term
     // in groundHeight and the whole bay reshapes — foam, pebbles, reeds and
     // the teleport clamp all re-place themselves off the same function.
-    const INLET_A = { x: 0.4, z: 3.8 }, INLET_B = { x: 7.0, z: 21.0 };
+    const INLET_A = { x: 0.4, z: 3.8 }, INLET_B = { x: 5.5, z: 16.0 };
 
     const hash = (ix, iz) => {
       let h = (ix * 374761393 + iz * 668265263) | 0;
@@ -164,19 +172,48 @@
         - 0.8 * smooth(12.8, 17.5, r)        // into the shallows
         - 1.7 * smooth(17.5, 25.0, r);       // and away to the seabed
     }
+    // How much a point belongs to the cove's SAND — 1 in the bay and across
+    // its beach, falling to 0 well inland. One function, asked by the height
+    // field, the terrain's colour and every planting pass, so the sand and
+    // the things that refuse to grow on it can never disagree about where
+    // the beach is.
+    function beachness(x, z) {
+      const { d, u } = inletDist(x, z);
+      const w = 2.7 + u * 5.8;
+      return 1 - smooth(w * 1.15, w * 2.6, d);
+    }
     function groundHeight(x, z) {
       const r = Math.hypot(x, z);
       let h = profile(r);
-      // the noise fades out over the beach, so the sand stays walkable and
-      // only the crown gets dunes
-      h += (fbm(x * 0.3 + 7.3, z * 0.3 - 4.1) - 0.5) * 1.15 * smooth(13.0, 4.0, r);
-      h = Math.max(h, -2.4);
-      // The cove: a broad bay, not a channel. It opens from a tip a few steps
-      // in front of the chair and widens the whole way out, so the far bank is
-      // a headland you look ACROSS rather than a wall beside you.
       const { d, u } = inletDist(x, z);
-      const w = 1.7 + u * 6.2;
-      h = lerp(h, -0.22 - u * 1.35, 1 - smooth(w * 0.4, w, d));
+      const w = 2.7 + u * 5.8;
+      const beach = 1 - smooth(w * 1.15, w * 2.6, d);
+      // Dunes belong to the crown. The noise is switched off across the sand,
+      // because a beach with lumps in it is a dune field, not a beach.
+      h += (fbm(x * 0.3 + 7.3, z * 0.3 - 4.1) - 0.5) * 1.15
+        * smooth(13.0, 4.0, r) * (1 - beach * 0.92);
+      h = Math.max(h, -2.4);
+      // The cove: a broad bay with a broad beach, not a channel between banks.
+      // The apron runs out to nearly three times the water's width, so the
+      // walk from the chair to the sea is a long flat one over sand rather
+      // than a step down a bank.
+      // A CANTALOUPE SLICE, not a V. The bed is a shallow parabola across
+      // the bay's width — deepest on the spine, rising to nothing at the
+      // water's edge — so the cross-section is one open curve you can see
+      // the bottom of, rather than two banks meeting at a trough. Carving a
+      // channel with a smoothstep gave the V; this gives the melon rind.
+      const k = Math.min(1, d / w);
+      const bowl = -(0.26 + u * 0.5) * (1 - k * k);
+      h = lerp(h, bowl, 1 - smooth(w * 0.85, w * 1.45, d));
+      // And then the shore itself. Carving a bay out of a dome leaves the
+      // spoil either side of it as two humps, which reads as a channel
+      // between dunes rather than a beach. So inside the sand zone the
+      // ground is pulled down to a RAMP measured from the water's edge —
+      // 7 cm per metre, ankle-deep at the waterline and still only knee-high
+      // ten metres up the sand. It only ever lowers ground, never raises it,
+      // so the crown behind is untouched.
+      const ramp = Math.max(0, d - w * 1.15) * 0.10;
+      h = lerp(h, Math.min(h, ramp), beach);
       // the pad: honest level ground under the real chair
       h = lerp(h, PAD_H, smooth(PAD_OUTER, PAD_INNER, r));
       return h;
@@ -373,8 +410,10 @@
         else {
           c.copy(cWet).lerp(cSand, smooth(-0.05, 0.34, y));
           c.lerp(cDune, smooth(0.35, 0.85, fbm(x * 0.5 + 3, z * 0.5)) * smooth(0.1, 0.5, y));
-          const g = smooth(0.78, 1.05, y + (fbm(x * 0.8 - 9, z * 0.8 + 5) - 0.5) * 0.55)
-            * (1 - smooth(0.45, 0.8, s));
+          // green stops at the edge of the sand: the cove reads as one beach
+          const g = smooth(1.0, 1.38, y + (fbm(x * 0.8 - 9, z * 0.8 + 5) - 0.5) * 0.5)
+            * (1 - smooth(0.45, 0.8, s))
+            * (1 - beachness(x, z));
           c.lerp(_c2.copy(cGrass).lerp(cLeaf, fbm(x * 1.7, z * 1.7)), g);
         }
         // grain, slope shade, baked contact AO
@@ -922,7 +961,8 @@
       while (placed < GRASS_N && guard-- > 0) {
         const x = (rng() - 0.5) * ISLAND_R * 2, z = (rng() - 0.5) * ISLAND_R * 2;
         const h = groundHeight(x, z);
-        if (h < 0.7 || Math.hypot(x, z) < 2.3) continue;
+        // nothing grows on the beach — the sand is the point of the cove
+        if (h < 1.05 || Math.hypot(x, z) < 2.3 || beachness(x, z) > 0.1) continue;
         const k = 0.7 + rng() * 0.8;
         q.setFromAxisAngle(up, rng() * Math.PI * 2);
         m.compose(p.set(x, h - 0.01, z), q, s.set(k, k * (0.8 + rng() * 0.5), k));
@@ -956,18 +996,21 @@
     }
     island.add(pebbles);
 
-    // reeds along both inlet banks, in swaying clumps
+    // Reeds. The brief put these along the inlet banks; the owner's call is a
+    // clean sandy cove, so they moved inland to the crown's edge, where they
+    // read as dune growth rather than as something standing in the beach.
+    // Keeping them at all is worth it for the sway — the palms and the foam
+    // were otherwise the only things moving on land.
     const reedClumps = [];
     {
       const cStem = col('#7c9b5a'), cHead = col('#6b4a34');
-      for (let c = 0; c < 10; c++) {
-        const u = 0.05 + (c >> 1) * 0.17 + rng() * 0.06, side = c % 2 ? 1 : -1;
-        const dx = INLET_B.x - INLET_A.x, dz = INLET_B.z - INLET_A.z, L = Math.hypot(dx, dz);
-        const w = 1.7 + u * 6.2;
-        const cx = INLET_A.x + dx * u + (-dz / L * side) * (w * 0.72),
-          cz = INLET_A.z + dz * u + (dx / L * side) * (w * 0.72);
+      let placed = 0, guard = 4000;
+      while (placed < 7 && guard-- > 0) {
+        const a = rng() * Math.PI * 2, rr = 5.5 + rng() * 3.5;
+        const cx = Math.cos(a) * rr, cz = Math.sin(a) * rr;
         const ch = groundHeight(cx, cz);
-        if (ch < 0.0 || ch > 0.7) continue;
+        if (ch < 1.15 || beachness(cx, cz) > 0.08) continue;
+        placed++;
         const gs = [];
         for (let i = 0; i < 7; i++) {
           const ox = (rng() - 0.5) * 0.5, oz = (rng() - 0.5) * 0.5, hh = 0.7 + rng() * 0.45;
@@ -1310,6 +1353,57 @@
       scene.add(c);
       controllers.push(c);
     }
+    // ── the same two sticks, on the controllers ──
+    // Twin-stick in the headset too: the left thumbstick glides you along the
+    // sand, the right one turns in SNAPS rather than smoothly, because smooth
+    // yaw is the single most reliable way to make somebody queasy in a chair.
+    // The teleport ray stays — one is for crossing the island, the other for
+    // shifting a step, and a zen island should not force a choice.
+    let snapCool = 0;
+    const _xrFwd = new THREE.Vector3();
+    function xrSticks(dt) {
+      snapCool = Math.max(0, snapCool - dt);
+      const session = renderer.xr.getSession?.();
+      if (!session || !baseRef) return;
+      let mx = 0, my = 0, turn = 0;
+      for (const src of session.inputSources) {
+        const ax = src.gamepad?.axes;
+        if (!ax || ax.length < 4) continue;
+        // xr-standard puts the thumbstick on axes 2/3; some runtimes use 0/1
+        const sx = Math.abs(ax[2]) > 0.15 ? ax[2] : (Math.abs(ax[0]) > 0.15 ? ax[0] : 0);
+        const sy = Math.abs(ax[3]) > 0.15 ? ax[3] : (Math.abs(ax[1]) > 0.15 ? ax[1] : 0);
+        if (src.handedness === 'right') turn += sx;
+        else { mx += sx; my += sy; }
+      }
+      if (turn && snapCool <= 0) { xrYaw -= Math.sign(turn) * Math.PI / 6; snapCool = 0.32; }
+      if (mx || my) {
+        // move relative to where the head is actually looking
+        renderer.xr.getCamera().getWorldDirection(_xrFwd);
+        _xrFwd.y = 0;
+        if (_xrFwd.lengthSq() < 1e-4) return;
+        _xrFwd.normalize();
+        const rx = _xrFwd.z, rz = -_xrFwd.x;              // right = forward × up
+        const v = 1.9 * dt;
+        const nx = xrPos.x + (_xrFwd.x * -my + rx * mx) * v;
+        const nz = xrPos.z + (_xrFwd.z * -my + rz * mx) * v;
+        if (groundHeight(nx, nz) > -0.05 && Math.hypot(nx, nz) < ISLAND_R * 1.05) {
+          xrPos.x = nx; xrPos.z = nz;
+        }
+      }
+      applyXrOffset();
+    }
+    // the offset reference space every locomotion path writes through
+    let xrYaw = 0;
+    const xrPos = new THREE.Vector3();
+    function applyXrOffset() {
+      if (!baseRef) return;
+      const h = Math.sin(-xrYaw / 2), w = Math.cos(-xrYaw / 2);
+      renderer.xr.setReferenceSpace(baseRef.getOffsetReferenceSpace(
+        new XRRigidTransform(
+          { x: -xrPos.x, y: -xrPos.y, z: -xrPos.z },
+          { x: 0, y: h, z: 0, w })));
+    }
+
     const _m4 = new THREE.Matrix4();
     function castFrom(c) {
       _m4.identity().extractRotation(c.matrixWorld);
@@ -1339,10 +1433,11 @@
         // A LONG pinch on the chair recalibrates the seat from where your
         // head is right now — the whole calibration path on Vision Pro,
         // where Safari has no immersive-ar for chair-lab and no squeeze to
-        // hang anything on. A short one sits you back down: the reference
-        // space returns to base and the calibration is true again.
+        // hang anything on. A short one sits you back down: the offset goes
+        // to zero and the calibration is true again.
         if (heldMs > 1200) return calibrateFromHead();
-        if (baseRef) renderer.xr.setReferenceSpace(baseRef);
+        xrPos.set(0, 0, 0); xrYaw = 0;
+        applyXrOffset();
         return;
       }
       if (kind === 'ground' && baseRef) {
@@ -1350,8 +1445,10 @@
         // the teleport clamp asks the same function everything else asks
         if (groundHeight(p.x, p.z) < -0.05) return;
         if (Math.hypot(p.x, p.z) > ISLAND_R * 1.05) return;
-        renderer.xr.setReferenceSpace(baseRef.getOffsetReferenceSpace(
-          new XRRigidTransform({ x: -p.x, y: -p.y, z: -p.z, w: 1 })));
+        // written through the same offset the sticks use, so the two ways of
+        // moving cannot disagree about where you are standing
+        xrPos.set(p.x, p.y, p.z);
+        applyXrOffset();
       }
     }
 
@@ -1379,8 +1476,11 @@
     function calibrateFromHead() {
       if (!renderer.xr.isPresenting) return;
       // back to base space first, so the head is read in the same
-      // local-floor coordinates the calibration keys are defined in
-      if (baseRef) renderer.xr.setReferenceSpace(baseRef);
+      // local-floor coordinates the calibration keys are defined in —
+      // a saved seat measured through a walked offset would be wrong by
+      // however far you had wandered
+      xrPos.set(0, 0, 0); xrYaw = 0;
+      applyXrOffset();
       calibrateQueued = true;   // read it NEXT frame, after the space settles
     }
     function saveSeatFromHead(xcam) {
@@ -1402,13 +1502,115 @@
       setTimeout(() => { tag.style.opacity = 0; }, 3000);
     }
 
-    // ═══ DESKTOP / FLAT FALLBACK ═══ drag look, WASD, M, tap to poke.
+    // ═══ TWIN STICKS ═══ The flat controls, on every flat screen — phone,
+    // tablet and desktop alike. Left half walks, right half looks. They are
+    // DRAWN ALWAYS rather than summoned by a first touch, because a control
+    // you cannot see is a control a visitor has to be told about, and this is
+    // a thing people open once out of curiosity.
+    //
+    // A stick is born wherever the finger lands inside its half, so nothing
+    // depends on hitting a fixed circle, and a short press that barely moves
+    // is a TAP — which is how you use the totem, the book, the radio and the
+    // sign without a second set of buttons.
     // Camera forward for yaw θ is (−sin θ, −cos θ); the start is behind the
     // chair, looking over it down the cove.
     let yaw = chairYaw + Math.PI, pitch = -0.06;
     const eye = new THREE.Vector3(
       chairP[0] - Math.sin(chairYaw) * 2.4, 0, chairP[2] - Math.cos(chairYaw) * 2.4);
     eye.y = gy(eye.x, eye.z) + 1.5;
+
+    const uiCv = document.getElementById('ui');
+    const uiCtx = uiCv.getContext('2d');
+    const R_STICK = 62, R_KNOB = 26, TAP_MS = 260, TAP_PX = 14;
+    // one entry per live finger; `side` decides what it drives
+    const sticks = new Map();
+    const stickVec = side => {
+      for (const s of sticks.values()) if (s.side === side) return s;
+      return null;
+    };
+    const homeFor = side => ({
+      x: side === 'move' ? Math.min(140, innerWidth * 0.18) : innerWidth - Math.min(140, innerWidth * 0.18),
+      y: innerHeight - Math.min(150, innerHeight * 0.24),
+    });
+
+    renderer.domElement.addEventListener('pointerdown', e => {
+      audioStart();
+      if (renderer.xr.isPresenting) return;
+      const side = e.clientX < innerWidth / 2 ? 'move' : 'look';
+      if (stickVec(side)) return;                    // one finger per half
+      sticks.set(e.pointerId, {
+        side, ox: e.clientX, oy: e.clientY, x: e.clientX, y: e.clientY,
+        t0: performance.now(), moved: 0,
+      });
+      renderer.domElement.setPointerCapture?.(e.pointerId);
+    });
+    addEventListener('pointermove', e => {
+      const s = sticks.get(e.pointerId);
+      if (!s) return;
+      s.moved = Math.max(s.moved, Math.hypot(e.clientX - s.ox, e.clientY - s.oy));
+      s.x = e.clientX; s.y = e.clientY;
+    });
+    const liftPointer = e => {
+      const s = sticks.get(e.pointerId);
+      if (!s) return;
+      sticks.delete(e.pointerId);
+      // a short press that barely moved is a tap on the world, not a stick
+      if (performance.now() - s.t0 < TAP_MS && s.moved < TAP_PX && !renderer.xr.isPresenting) {
+        raycaster.setFromCamera(new THREE.Vector2(
+          (s.ox / innerWidth) * 2 - 1, -(s.oy / innerHeight) * 2 + 1), camera);
+        const hit = raycaster.intersectObjects([totem, radio, book, sign], true)[0];
+        if (hit) actOn(hit);
+      }
+    };
+    addEventListener('pointerup', liftPointer);
+    addEventListener('pointercancel', liftPointer);
+
+    // the deflection of a stick, as a unit-ish vector with a dead zone
+    function stickAxes(side) {
+      const s = stickVec(side);
+      if (!s) return [0, 0];
+      let dx = s.x - s.ox, dy = s.y - s.oy;
+      const len = Math.hypot(dx, dy);
+      if (len < 8) return [0, 0];
+      const k = Math.min(1, len / R_STICK) / len;
+      return [dx * k, dy * k];
+    }
+
+    function drawSticks() {
+      const dpr = Math.min(2, devicePixelRatio);
+      if (uiCv.width !== innerWidth * dpr || uiCv.height !== innerHeight * dpr) {
+        uiCv.width = innerWidth * dpr; uiCv.height = innerHeight * dpr;
+        uiCv.style.width = `${innerWidth}px`; uiCv.style.height = `${innerHeight}px`;
+      }
+      uiCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      uiCtx.clearRect(0, 0, innerWidth, innerHeight);
+      if (renderer.xr.isPresenting) return;           // the headset has real sticks
+      for (const side of ['move', 'look']) {
+        const s = stickVec(side);
+        const base = s ? { x: s.ox, y: s.oy } : homeFor(side);
+        let kx = 0, ky = 0;
+        if (s) {
+          const dx = s.x - s.ox, dy = s.y - s.oy, len = Math.hypot(dx, dy) || 1;
+          const c = Math.min(R_STICK, len) / len;
+          kx = dx * c; ky = dy * c;
+        }
+        uiCtx.lineWidth = 2;
+        uiCtx.strokeStyle = 'rgba(242,233,216,0.30)';
+        uiCtx.beginPath(); uiCtx.arc(base.x, base.y, R_STICK, 0, Math.PI * 2); uiCtx.stroke();
+        uiCtx.fillStyle = s ? 'rgba(58,168,160,0.55)' : 'rgba(242,233,216,0.18)';
+        uiCtx.beginPath(); uiCtx.arc(base.x + kx, base.y + ky, R_KNOB, 0, Math.PI * 2); uiCtx.fill();
+        uiCtx.strokeStyle = 'rgba(242,233,216,0.45)';
+        uiCtx.beginPath(); uiCtx.arc(base.x + kx, base.y + ky, R_KNOB, 0, Math.PI * 2); uiCtx.stroke();
+        if (!s) {                                     // name it while it is idle
+          uiCtx.fillStyle = 'rgba(242,233,216,0.5)';
+          uiCtx.font = '11px ui-monospace, Menlo, Consolas, monospace';
+          uiCtx.textAlign = 'center';
+          uiCtx.fillText(side === 'move' ? 'WALK' : 'LOOK', base.x, base.y + R_STICK + 18);
+        }
+      }
+    }
+
+    // keys stay as a courtesy for anyone at a desk who reaches for them
     const keys = {};
     addEventListener('keydown', e => {
       keys[e.code] = true;
@@ -1416,29 +1618,6 @@
       audioStart();
     });
     addEventListener('keyup', e => { keys[e.code] = false; });
-    let dragging = false, dragMoved = 0, lx = 0, ly = 0;
-    renderer.domElement.addEventListener('pointerdown', e => {
-      dragging = true; dragMoved = 0; lx = e.clientX; ly = e.clientY;
-      audioStart();
-    });
-    addEventListener('pointermove', e => {
-      if (!dragging || renderer.xr.isPresenting) return;
-      const dx = e.clientX - lx, dy = e.clientY - ly;
-      dragMoved += Math.abs(dx) + Math.abs(dy);
-      lx = e.clientX; ly = e.clientY;
-      yaw -= dx * 0.0042;
-      pitch = Math.min(1.2, Math.max(-1.2, pitch - dy * 0.0042));
-    });
-    addEventListener('pointerup', e => {
-      if (dragging && dragMoved < 6 && !renderer.xr.isPresenting) {
-        // a tap, not a drag: poke whatever is under the pointer
-        raycaster.setFromCamera(new THREE.Vector2(
-          (e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1), camera);
-        const hit = raycaster.intersectObjects([totem, radio, book, sign], true)[0];
-        if (hit) actOn(hit);
-      }
-      dragging = false;
-    });
 
     addEventListener('resize', () => {
       camera.aspect = innerWidth / innerHeight;
@@ -1456,13 +1635,19 @@
       if (blend < 1) { blend = Math.min(1, blend + dt / 2.5); applyMood(); shadowDirty(); }
 
       if (!renderer.xr.isPresenting) {
-        // desktop walk — clamped by the same groundHeight the teleport uses
-        const f = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0),
-          s2 = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
+        // ── twin sticks, plus the keys for anyone who reaches for them ──
+        const [mx, my] = stickAxes('move');
+        const [lx2, ly2] = stickAxes('look');
+        yaw -= lx2 * 2.2 * dt;
+        pitch = Math.min(1.2, Math.max(-1.2, pitch - ly2 * 1.6 * dt));
+        const f = -my + (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
+        const s2 = mx + (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
         if (f || s2) {
           const v = 2.6 * dt;
           const nx = eye.x + (-Math.sin(yaw) * f + Math.cos(yaw) * s2) * v;
           const nz = eye.z + (-Math.cos(yaw) * f - Math.sin(yaw) * s2) * v;
+          // walking asks the same function the teleport does, so the sea
+          // refuses a stick exactly the way it refuses a ray
           if (groundHeight(nx, nz) > -0.02 && Math.hypot(nx, nz) < ISLAND_R * 1.05) {
             eye.x = nx; eye.z = nz;
           }
@@ -1473,6 +1658,7 @@
         camera.rotateY(yaw);
         camera.rotateX(pitch);
       } else {
+        xrSticks(dt);
         sitUpdate(dt);
         // controller rays + the teleport marker
         marker.visible = false;
@@ -1549,6 +1735,7 @@
         pp.needsUpdate = true;
       }
 
+      drawSticks();
       renderer.render(scene, camera);
     }
 
