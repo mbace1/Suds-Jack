@@ -4,6 +4,33 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v42 — 2026-08-09
+
+**Someone to fence with.** A post tells you the sword's reach. It cannot tell
+you anything about the parry, and the parry is the reason the sword is built
+the way it is.
+
+So there is a swordsman on the right of the bench, and he runs the **hero's own
+move table** — the same twenty frames to advance, the same thirty to strike,
+the edge landing on the same frame eleven, the same four-frame guard window
+either side of it. A duel with two different clocks in it is not a duel. His
+only advantage is that he does not have to think; his only disadvantage is that
+he decides once per MOVE rather than once per frame, which is what makes him
+readable and what makes stepping out of his reach a real answer.
+
+Strike into his raised blade and it rings off — he goes to `clang` and so do
+you. Strike him clean and he staggers; twice and he goes down, and gets back
+up after two and a half seconds, because a bench you have to reload is a worse
+bench.
+
+**He is the same eighteen colours, permuted** (`ref/pop-foe.png`): brown
+leather over a grey shirt, dark trousers, black boots, black hair — the exact
+inverse of Jimbo's navy over white with tan trousers, which is why you can tell
+them apart across a 320px screen while both are doing the same eight moves.
+That is not thrift, it is the framebuffer's rule: the quantiser keeps a fixed
+list of colours, and a list of thirty-two fixed points is not a sixteen-colour
+framebuffer any more.
+
 ## v41 — 2026-08-09
 
 **One jacket.** The sword frames had grey sleeves and the walk had dark ones,

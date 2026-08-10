@@ -21,6 +21,8 @@
 export const CELL_W = 32, CELL_H = 48;
 const SRC = 'ref/jimbo.png';
 const SWORD_SRC = 'ref/pop-jimbo.png';
+// The other man, the same eighteen colours permuted — see recolour_pop.py
+const FOE_SRC = 'ref/pop-foe.png';
 
 // Jimbo's eighteen. The quantiser is handed these so his pixels survive it.
 //
@@ -350,6 +352,7 @@ function prepare(src, key, onReady) {
 export function loadSheet(onReady) {
   prepare(SRC, 'body', onReady);
   prepare(SWORD_SRC, 'sword');
+  prepare(FOE_SRC, 'foe');
 }
 
 export const ready = () => !!sheets.body;
@@ -357,10 +360,12 @@ export const ready = () => !!sheets.body;
 // Draw frame `i` of `anim` with his feet at (x, y) in picture pixels. Whole
 // pixels only: a half-pixel offset would resample him and he would stop being
 // his own artwork.
-export function drawSprite(scr, anim, i, x, y, face) {
+// `variant` swaps the SHEET without touching the animation: the swordsman
+// fences out of the same rects Jimbo does, off a differently-painted copy.
+export function drawSprite(scr, anim, i, x, y, face, variant) {
   const a = ANIM[anim];
   if (!a) return false;
-  const img = sheets[a.sheet ?? 'body'];
+  const img = sheets[variant ?? a.sheet ?? 'body'];
   if (!img) return false;
   const n = frameCount(anim);
   const k = a.loop ? ((i % n) + n) % n : Math.max(0, Math.min(n - 1, i));
