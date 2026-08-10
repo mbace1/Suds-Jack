@@ -27,7 +27,7 @@
 </head>
 <body>
   <div id="hints">
-    point + trigger&nbsp; teleport · totem&nbsp; mood · chair&nbsp; return<br>
+    point + trigger&nbsp; teleport · totem&nbsp; mood · book&nbsp; read · chair&nbsp; sit<br>
     desktop&nbsp; drag look · WASD walk · M mood<br>
     <a href="chair-lab.html">chair-lab</a>&nbsp; pins your real chair
   </div>
@@ -62,8 +62,35 @@
     //
     // Flip this if the Quest browser's WebGPU build misbehaves in XR.
     const FORCE_WEBGL = false;
-    // Royalty-free or self-made only. Empty = the radio plays its own quiet
-    // synth pad instead of a file.
+    // ── what the radio plays ──────────────────────────────────────────────
+    // Out-of-copyright recordings only, each one credited in world. Drop the
+    // file into toko-trip/audio/ and add a row: the plaque above the radio
+    // reads from this table, so nothing plays unattributed. A row whose file
+    // is missing is skipped and the radio falls back to its own synth bed —
+    // an absent file must never be a broken button.
+    //
+    // Provenance is recorded per row rather than assumed. `source` is where
+    // the copy came from; `note` is the basis for it being free to use.
+    const TRACKS = [
+      {
+        file: 'audio/deep-blue-sea-blues.mp3',
+        title: 'Deep Blue Sea Blues',
+        artist: 'Clara Smith',
+        year: '1924',
+        source: 'openmusicarchive.org',
+        note: 'public domain',
+      },
+      {
+        file: 'audio/titanic-blues.mp3',
+        title: 'Titanic Blues',
+        artist: 'Virginia Liston',
+        year: '1920s',
+        source: 'openmusicarchive.org',
+        note: 'public domain',
+      },
+    ];
+    // Kept for compatibility with the brief: a single URL still works and is
+    // treated as one more row.
     const RADIO_TRACK_URL = '';
 
     import * as THREE from 'three';
@@ -91,8 +118,12 @@
       : { name: 'high', fb: 1.2, shadow: 2048, density: 2.2, foam: 3200, seg: 208 };
 
     // ── terrain: one source of truth ──
-    const ISLAND_R = 15, PAD_H = 0.92, PAD_INNER = 1.6, PAD_OUTER = 3.4;
-    const INLET_A = { x: 0.4, z: 3.6 }, INLET_B = { x: 4.5, z: 14.5 };
+    const ISLAND_R = 18, PAD_H = 0.92, PAD_INNER = 1.6, PAD_OUTER = 3.4;
+    // The cove spine: the tip a few steps in front of the chair, the mouth
+    // well out past the shoreline. Move these two points and the width term
+    // in groundHeight and the whole bay reshapes — foam, pebbles, reeds and
+    // the teleport clamp all re-place themselves off the same function.
+    const INLET_A = { x: 0.4, z: 3.8 }, INLET_B = { x: 7.0, z: 21.0 };
 
     const hash = (ix, iz) => {
       let h = (ix * 374761393 + iz * 668265263) | 0;
@@ -121,16 +152,31 @@
       return { d: Math.hypot(x - px, z - pz), u };
     }
 
+    // The profile is written in WORLD METRES, not in a normalised t, because
+    // "how many steps of sand before the water" is the thing being tuned and
+    // a normalised dome hides it. Four terms: a grass crown, a long shoulder,
+    // the walk into the water, then the drop-off to the seabed. The stretch
+    // from r 9 to r 13 falls about 35 cm — a beach you stroll down, not a
+    // dune you slide off.
+    function profile(r) {
+      return 1.35 * smooth(9.5, 3.0, r)      // the grass crown
+        + 0.4 * smooth(14.0, 8.0, r)         // the mellow beach shoulder
+        - 0.8 * smooth(12.8, 17.5, r)        // into the shallows
+        - 1.7 * smooth(17.5, 25.0, r);       // and away to the seabed
+    }
     function groundHeight(x, z) {
-      const r = Math.hypot(x, z), t = r / ISLAND_R;
-      let h = t < 1 ? Math.pow(1 - t * t, 1.5) * 2.4 - 0.5 : -0.5 - (t - 1) * 2.6;
-      h += (fbm(x * 0.33 + 7.3, z * 0.33 - 4.1) - 0.5) * 1.35 * Math.max(0, 1 - t * 0.85);
-      h = Math.max(h, -2.3);
-      // the inlet: blend toward a channel bed that stays below water all the
-      // way to the tip, widening and deepening seaward
+      const r = Math.hypot(x, z);
+      let h = profile(r);
+      // the noise fades out over the beach, so the sand stays walkable and
+      // only the crown gets dunes
+      h += (fbm(x * 0.3 + 7.3, z * 0.3 - 4.1) - 0.5) * 1.15 * smooth(13.0, 4.0, r);
+      h = Math.max(h, -2.4);
+      // The cove: a broad bay, not a channel. It opens from a tip a few steps
+      // in front of the chair and widens the whole way out, so the far bank is
+      // a headland you look ACROSS rather than a wall beside you.
       const { d, u } = inletDist(x, z);
-      const w = 1.1 + u * 2.6;
-      h = lerp(h, -0.25 - u * 1.15, 1 - smooth(w * 0.45, w, d));
+      const w = 1.7 + u * 6.2;
+      h = lerp(h, -0.22 - u * 1.35, 1 - smooth(w * 0.4, w, d));
       // the pad: honest level ground under the real chair
       h = lerp(h, PAD_H, smooth(PAD_OUTER, PAD_INNER, r));
       return h;
@@ -282,14 +328,14 @@
 
     // palms: ring the nook and the banks, on dry ground, clear of pad and inlet
     const palmSpots = [];
-    for (const [x, z] of [[-2.9, 5.1], [3.6, 1.2], [-4.4, 0.6], [1.1, -4.3],
-      [-2.2, -5.6], [5.4, 5.8], [-6.3, 3.9], [3.2, -6.7]]) {
-      if (groundHeight(x, z) > 0.75) { palmSpots.push({ x, z, lean: rng() * Math.PI * 2 }); occlude(x, z, 1.25, 0.5); }
+    for (const [x, z] of [[-3.4, 4.4], [4.0, 1.2], [-4.8, 0.6], [1.1, -4.3],
+      [-2.2, -5.9], [6.4, 4.6], [-7.1, 3.2], [3.6, -7.2], [-5.6, -5.4], [7.4, -2.2]]) {
+      if (groundHeight(x, z) > 0.5) { palmSpots.push({ x, z, lean: rng() * Math.PI * 2 }); occlude(x, z, 1.25, 0.5); }
     }
     // rocks: some on the grass, some in the shallows
     const rockSpots = [];
-    for (let i = 0; i < 16; i++) {
-      const a = rng() * Math.PI * 2, r = 4.5 + rng() * 9;
+    for (let i = 0; i < 20; i++) {
+      const a = rng() * Math.PI * 2, r = 4.5 + rng() * 11;
       const x = Math.cos(a) * r, z = Math.sin(a) * r;
       if (groundHeight(x, z) < -0.5 || Math.hypot(x, z) < PAD_OUTER) { i--; continue; }
       const s = 0.22 + rng() * 0.5;
@@ -305,12 +351,12 @@
     occlude(totemSpot.x, totemSpot.z, 0.55, 0.5);
     const caveSpot = { x: -8.2, z: -6.4 };
     occlude(caveSpot.x, caveSpot.z, 3.4, 0.5);
-    // the deck itself
+    // the deck itself (it runs out in front of the chair, toward the water)
     occlude(chairP[0], chairP[2], 2.1, 0.32);
-    occlude(chairP[0] + Math.sin(chairYaw), chairP[2] + Math.cos(chairYaw), 1.6, 0.25);
+    occlude(chairP[0] + Math.sin(chairYaw) * 1.1, chairP[2] + Math.cos(chairYaw) * 1.1, 1.6, 0.25);
 
     // ═══ TERRAIN ═══
-    const terrainGeo = new THREE.PlaneGeometry(46, 46, TIER.seg, TIER.seg);
+    const terrainGeo = new THREE.PlaneGeometry(56, 56, TIER.seg, TIER.seg);
     terrainGeo.rotateX(-Math.PI / 2);
     {
       const pos = terrainGeo.attributes.position;
@@ -390,9 +436,21 @@
     // ═══ THE NOOK — deck, chair, table, radio, book ═══
     const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
     const cWood = col(P.driftwood);
+    // CHAIR CONVENTION, one place: `chairYaw` is the direction the SITTER
+    // FACES as a direction-vector angle — facing = (sin, cos). That is what
+    // chair-lab writes (seat → where you stood) and what the head-pose
+    // calibration writes. The chair model is built with its backrest at local
+    // +z, so the seat looks down local −z, and the nook therefore rotates by
+    // chairYaw + π. Getting this backwards sat you with your back to the
+    // water, which is the whole reason the cove is there.
+    const NOOK_YAW = chairYaw + Math.PI;
+    const nook = (lx, lz) => [
+      chairP[0] + lx * Math.cos(NOOK_YAW) + lz * Math.sin(NOOK_YAW),
+      chairP[2] - lx * Math.sin(NOOK_YAW) + lz * Math.cos(NOOK_YAW),
+    ];
     {
       // put(): nook-local coords (y up from the pad surface) → terrain space
-      const yawM = new THREE.Matrix4().makeRotationY(chairYaw);
+      const yawM = new THREE.Matrix4().makeRotationY(NOOK_YAW);
       const put = (geo, x, y, z) => {
         geo.translate(x, y, z).applyMatrix4(yawM).translate(chairP[0], PAD_H, chairP[2]);
         pile.push(geo);
@@ -427,17 +485,154 @@
       const backCush = paint(box(0.48, 0.5, 0.05), cCush);
       backCush.rotateX(0.22);
       put(backCush, 0, seatY + 0.28, 0.28);
-      // side table + the book (Treasure Island — the text is still to come)
+      // the side table (the book is its own object — it opens)
       put(paint(box(0.07, 0.5, 0.07),
         (x, y) => _c.copy(cWood).multiplyScalar(0.75 + 0.28 * smooth(-0.25, 0.25, y))), 0.62, 0.31, -0.05);
       put(paint(new THREE.CylinderGeometry(0.26, 0.29, 0.05, 10), cWood), 0.62, 0.585, -0.05);
-      put(paint(box(0.17, 0.035, 0.24), col(P.sunset)), -0.55, 0.075, -0.6);
-      put(paint(box(0.15, 0.037, 0.22), col(P.cream)), -0.55, 0.076, -0.6);
     }
     // chair proxy for the "return to the nook" ray — invisible, generous
     const chairHit = new THREE.Mesh(box(0.9, 1.2, 0.9), new THREE.MeshBasicMaterial({ visible: false }));
     chairHit.position.set(chairP[0], chairP[1] + 0.2, chairP[2]);
     scene.add(chairHit);
+
+    // ═══ THE BOOK ═══ Treasure Island, opening pages (Project Gutenberg —
+    // public domain). Text is drawn into a canvas texture rather than pulled
+    // in through troika-three-text: one page of large serif type is sharper
+    // per byte this way, and it keeps the tree dependency-free. Closed on the
+    // deck it is a shut book; point + trigger opens it in front of you, and
+    // each press after that turns a page.
+    const PAGES = [
+      ['TREASURE ISLAND', '', 'Robert Louis Stevenson', '', '', 'PART ONE',
+        'The Old Buccaneer', '', '', '(point and press to turn the page)'],
+      ['THE OLD SEA-DOG', 'at the "Admiral Benbow"', '',
+        'Squire Trelawney, Dr. Livesey, and the rest',
+        'of these gentlemen having asked me to write',
+        'down the whole particulars about Treasure',
+        'Island, from the beginning to the end,',
+        'keeping nothing back but the bearings of the',
+        'island, and that only because there is still',
+        'treasure not yet lifted, I take up my pen in',
+        'the year of grace 17__.'],
+      ['', 'I remember him as if it were yesterday,',
+        'as he came plodding to the inn door, his',
+        'sea-chest following behind him in a hand-',
+        'barrow — a tall, strong, heavy, nut-brown',
+        'man, his tarry pigtail falling over the',
+        'shoulder of his soiled blue coat, his hands',
+        'ragged and scarred, with black, broken nails,',
+        'and the sabre cut across one cheek, a dirty,',
+        'livid white.'],
+      ['', 'I remember him looking round the cove and',
+        'whistling to himself as he did so, and then',
+        'breaking out in that old sea-song that he',
+        'sang so often afterwards:', '',
+        '   "Fifteen men on the dead man’s chest —',
+        '    Yo-ho-ho, and a bottle of rum!"', '',
+        'in the high, old tottering voice that seemed',
+        'to have been tuned and broken at the capstan',
+        'bars.'],
+      ['', 'The rest of it is out there somewhere,',
+        'in a paper copy, on a shelf, in a library.', '',
+        'This is a beach. The sea is doing its part.', '',
+        '', '', '        — close the book, watch the water'],
+    ];
+    function pageTexture(lines, right) {
+      const cv = document.createElement('canvas');
+      cv.width = 512; cv.height = 640;
+      const g = cv.getContext('2d');
+      g.fillStyle = '#efe6d0'; g.fillRect(0, 0, 512, 640);
+      // aged paper: a wash toward the spine, and freckles
+      const grad = g.createLinearGradient(right ? 0 : 512, 0, right ? 512 : 0, 0);
+      grad.addColorStop(0, 'rgba(120,96,60,0.22)');
+      grad.addColorStop(0.35, 'rgba(120,96,60,0.02)');
+      grad.addColorStop(1, 'rgba(120,96,60,0.10)');
+      g.fillStyle = grad; g.fillRect(0, 0, 512, 640);
+      for (let i = 0; i < 260; i++) {
+        const x = hash(i, 3) * 512, y = hash(i, 9) * 640;
+        g.fillStyle = `rgba(140,110,70,${0.03 + hash(i, 17) * 0.06})`;
+        g.fillRect(x, y, 1 + hash(i, 5) * 2, 1 + hash(i, 7) * 2);
+      }
+      g.fillStyle = '#2a2118';
+      g.textBaseline = 'top';
+      let y = 74;
+      for (const [i, line] of lines.entries()) {
+        const head = i === 0 && line === line.toUpperCase() && line.trim();
+        g.font = head ? 'bold 34px Georgia, "Times New Roman", serif'
+          : '25px Georgia, "Times New Roman", serif';
+        g.textAlign = head ? 'center' : 'left';
+        g.fillText(line, head ? 256 : 56, y);
+        y += head ? 52 : 40;
+      }
+      const tx = new THREE.CanvasTexture(cv);
+      tx.colorSpace = THREE.SRGBColorSpace;
+      tx.anisotropy = TIER.name === 'high' ? 8 : 4;
+      return tx;
+    }
+    const book = new THREE.Group();
+    const bookPages = { L: null, R: null };
+    let bookOpen = false, bookSpread = 0;   // 0 = closed on the deck
+    // shut: on the planks to the left of the chair. open: held in front of it.
+    const [bookRestX, bookRestZ] = nook(-0.55, -0.6);
+    const [bookReadX, bookReadZ] = nook(0, -0.46);
+    const bookRest = { x: bookRestX, z: bookRestZ };
+    const bookRead = { x: bookReadX, z: bookReadZ };
+    {
+      const cover = new THREE.Mesh(paint(box(0.19, 0.032, 0.26), col('#8a3a2e')), satin);
+      const leaves = new THREE.Mesh(paint(box(0.175, 0.028, 0.245), col('#e4d9bd')), satin);
+      leaves.position.y = 0.004;
+      const band = new THREE.Mesh(paint(box(0.02, 0.033, 0.26), col(P.sunset)), satin);
+      band.position.set(-0.07, 0.001, 0);
+      book.add(cover, leaves, band);
+      // the open spread, hidden until the book is opened
+      const pageGeo = new THREE.PlaneGeometry(0.22, 0.28);
+      for (const side of ['L', 'R']) {
+        // a page carries its own faint light: a book you cannot read at dusk
+        // is a prop, and the alternative is a lamp that would relight the nook
+        const m = new THREE.Mesh(pageGeo, new THREE.MeshStandardMaterial({
+          roughness: 0.95, side: THREE.DoubleSide,
+          emissive: 0xffffff, emissiveIntensity: 0.34,
+        }));
+        m.position.x = side === 'L' ? -0.113 : 0.113;
+        m.rotation.set(-Math.PI / 2 + 0.22, 0, side === 'L' ? 0.06 : -0.06);
+        m.visible = false;
+        bookPages[side] = m;
+        book.add(m);
+      }
+      book.traverse(o => { if (o.isMesh) o.castShadow = true; });
+      book.position.set(bookRest.x, 0.075, bookRest.z);
+      book.rotation.y = NOOK_YAW + 0.4;
+      scene.add(book);
+    }
+    let bookPage = 0;
+    function paintSpread() {
+      for (const side of ['L', 'R']) {
+        const idx = side === 'L' ? bookPage : bookPage + 1;
+        if (!bookPages[side]) continue;
+        const mat = bookPages[side].material;
+        mat.map?.dispose();
+        mat.map = pageTexture(PAGES[idx] ?? [], side === 'R');
+        mat.needsUpdate = true;
+      }
+    }
+    function bookAct() {
+      audioStart();
+      if (!bookOpen) {                       // open it, in front of the chair
+        bookOpen = true; bookPage = 0;
+        paintSpread();
+        bookPages.L.visible = bookPages.R.visible = true;
+        chime(349.23, 440);
+        return;
+      }
+      bookPage += 2;
+      if (bookPage >= PAGES.length) {        // read out — shut it and set it down
+        bookOpen = false; bookPage = 0;
+        bookPages.L.visible = bookPages.R.visible = false;
+        chime(440, 349.23);
+        return;
+      }
+      paintSpread();
+      chime(392, 466.16);
+    }
 
     // the radio — its own mesh: it is a ray target and the audio anchor
     const radio = new THREE.Group();
@@ -452,11 +647,9 @@
       radio.add(body, grille, dial, ant);
       // on the side table, in world space
       radio.traverse(o => { if (o.isMesh) o.castShadow = true; });
-      radio.position.set(
-        chairP[0] + Math.cos(chairYaw) * 0.62 - Math.sin(chairYaw) * 0.05,
-        0.7,
-        chairP[2] - Math.sin(chairYaw) * 0.62 - Math.cos(chairYaw) * 0.05);
-      radio.rotation.y = chairYaw + 0.5;
+      const [rx, rz] = nook(0.62, -0.05);
+      radio.position.set(rx, 0.7, rz);
+      radio.rotation.y = NOOK_YAW + 0.5;
       scene.add(radio);
     }
 
@@ -669,7 +862,7 @@
       while (placed < GRASS_N && guard-- > 0) {
         const x = (rng() - 0.5) * ISLAND_R * 2, z = (rng() - 0.5) * ISLAND_R * 2;
         const h = groundHeight(x, z);
-        if (h < 0.85 || Math.hypot(x, z) < 2.3) continue;
+        if (h < 0.7 || Math.hypot(x, z) < 2.3) continue;
         const k = 0.7 + rng() * 0.8;
         q.setFromAxisAngle(up, rng() * Math.PI * 2);
         m.compose(p.set(x, h - 0.01, z), q, s.set(k, k * (0.8 + rng() * 0.5), k));
@@ -707,10 +900,10 @@
     const reedClumps = [];
     {
       const cStem = col('#7c9b5a'), cHead = col('#6b4a34');
-      for (let c = 0; c < 6; c++) {
-        const u = 0.08 + (c >> 1) * 0.22 + rng() * 0.08, side = c % 2 ? 1 : -1;
+      for (let c = 0; c < 10; c++) {
+        const u = 0.05 + (c >> 1) * 0.17 + rng() * 0.06, side = c % 2 ? 1 : -1;
         const dx = INLET_B.x - INLET_A.x, dz = INLET_B.z - INLET_A.z, L = Math.hypot(dx, dz);
-        const w = 1.1 + u * 2.6;
+        const w = 1.7 + u * 6.2;
         const cx = INLET_A.x + dx * u + (-dz / L * side) * (w * 0.72),
           cz = INLET_A.z + dz * u + (dx / L * side) * (w * 0.72);
         const ch = groundHeight(cx, cz);
@@ -740,8 +933,8 @@
       const n = 70, base = new Float32Array(n * 3), ph = new Float32Array(n);
       let placed = 0, guard = 9000;
       while (placed < n && guard-- > 0) {
-        const x = (rng() - 0.5) * ISLAND_R * 1.8, z = (rng() - 0.5) * ISLAND_R * 1.8;
-        if (groundHeight(x, z) < 0.7) continue;
+        const x = (rng() - 0.5) * ISLAND_R * 1.4, z = (rng() - 0.5) * ISLAND_R * 1.4;
+        if (groundHeight(x, z) < 0.6) continue;
         base[placed * 3] = x; base[placed * 3 + 1] = gy(x, z) + 0.4 + rng() * 1.2; base[placed * 3 + 2] = z;
         ph[placed] = rng() * Math.PI * 2;
         placed++;
@@ -878,50 +1071,142 @@
       }
     }
 
-    let radioOn = false, radioNodes = null, radioAudio = null;
-    function radioToggle() {
-      audioStart();
-      if (!AC) return;
-      radioOn = !radioOn;
-      if (RADIO_TRACK_URL) {
-        if (!radioAudio) {
-          radioAudio = new THREE.PositionalAudio(listener);
-          radioAudio.setRefDistance(1.1);
-          radio.add(radioAudio);
-          new THREE.AudioLoader().load(RADIO_TRACK_URL, b2 => {
-            radioAudio.setBuffer(b2); radioAudio.setLoop(true);
-            if (radioOn) radioAudio.play();
-          });
-        } else radioOn ? radioAudio.play() : radioAudio.pause();
-        return;
-      }
-      // no track yet: a self-made pad — a soft add9 chord, tremolo, warm filter
-      if (radioOn) {
-        const pa = new THREE.PositionalAudio(listener);
-        pa.setRefDistance(1.1);
-        radio.add(pa);
-        const mix = AC.createGain(); mix.gain.value = 0.16;
-        const stops = [];
-        for (const [f2, g2] of [[110, 0.5], [138.6, 0.32], [164.8, 0.4], [246.9, 0.14]]) {
-          const o = AC.createOscillator(); o.type = 'triangle'; o.frequency.value = f2;
-          o.detune.value = (Math.random() - 0.5) * 8;
-          const og = AC.createGain(); og.gain.value = g2;
-          o.connect(og); og.connect(mix); o.start();
-          stops.push(o);
-        }
-        const trem = AC.createOscillator(); trem.frequency.value = 0.9;
-        const tg = AC.createGain(); tg.gain.value = 0.05;
-        trem.connect(tg); tg.connect(mix.gain); trem.start();
-        stops.push(trem);
-        const lp = AC.createBiquadFilter(); lp.frequency.value = 900;
-        mix.connect(lp);
-        pa.setNodeSource(lp);
-        radioNodes = { pa, stops };
-      } else if (radioNodes) {
+    // ── the radio ────────────────────────────────────────────────────────
+    // Press it and it works, whatever is or is not in audio/: a real record
+    // if one is there, its own synth bed if not. Everything is PositionalAudio
+    // on the radio mesh, so it fades as you walk down to the water.
+    const PLAYLIST = [
+      ...TRACKS,
+      ...(RADIO_TRACK_URL ? [{ file: RADIO_TRACK_URL, title: '', artist: '', year: '', source: '', note: '' }] : []),
+    ];
+    let radioOn = false, radioNodes = null, radioAudio = null, trackIdx = -1;
+    const buffers = new Map();       // file → AudioBuffer, or null once it has failed
+
+    function radioStopAll() {
+      if (radioAudio) { try { radioAudio.stop(); } catch (e) {} radio.remove(radioAudio); radioAudio = null; }
+      if (radioNodes) {
         radioNodes.stops.forEach(o => { try { o.stop(); } catch (e) {} });
         radio.remove(radioNodes.pa);
         radioNodes = null;
       }
+      showPlaque(null);
+    }
+
+    // the synth bed: a soft add9 chord under a slow tremolo, warm-filtered
+    function playBed() {
+      const pa = new THREE.PositionalAudio(listener);
+      pa.setRefDistance(1.1);
+      radio.add(pa);
+      const mix = AC.createGain(); mix.gain.value = 0.16;
+      const stops = [];
+      for (const [f2, g2] of [[110, 0.5], [138.6, 0.32], [164.8, 0.4], [246.9, 0.14]]) {
+        const o = AC.createOscillator(); o.type = 'triangle'; o.frequency.value = f2;
+        o.detune.value = (Math.random() - 0.5) * 8;
+        const og = AC.createGain(); og.gain.value = g2;
+        o.connect(og); og.connect(mix); o.start();
+        stops.push(o);
+      }
+      const trem = AC.createOscillator(); trem.frequency.value = 0.9;
+      const tg = AC.createGain(); tg.gain.value = 0.05;
+      trem.connect(tg); tg.connect(mix.gain); trem.start();
+      stops.push(trem);
+      const lp = AC.createBiquadFilter(); lp.frequency.value = 900;
+      mix.connect(lp);
+      pa.setNodeSource(lp);
+      radioNodes = { pa, stops };
+      showPlaque({ title: 'the radio, playing itself', artist: '', year: '', source: '', note: '' });
+    }
+
+    function playTrack(track) {
+      const a = new THREE.PositionalAudio(listener);
+      a.setRefDistance(1.1);
+      // a little top taken off, so a 78 sits in the air rather than on top of it
+      radio.add(a);
+      radioAudio = a;
+      const start = buf => {
+        if (!radioOn || radioAudio !== a) return;
+        a.setBuffer(buf);
+        a.setLoop(true);
+        a.setVolume(0.85);
+        a.play();
+        showPlaque(track);
+      };
+      if (buffers.has(track.file)) {
+        const b = buffers.get(track.file);
+        if (b) start(b); else { radio.remove(a); radioAudio = null; playBed(); }
+        return;
+      }
+      // A 78 is three minutes of audio and takes a beat to fetch and decode.
+      // Say so: a button that appears to do nothing for three seconds is a
+      // button people press again.
+      showPlaque({ title: 'tuning…', artist: track.artist, year: '', source: '', note: '' });
+      new THREE.AudioLoader().load(track.file,
+        b => { buffers.set(track.file, b); start(b); },
+        undefined,
+        () => {                       // no such file — say nothing, play the bed
+          buffers.set(track.file, null);
+          if (radioAudio === a) { radio.remove(a); radioAudio = null; }
+          if (radioOn) playBed();
+        });
+    }
+
+    function radioToggle() {
+      audioStart();
+      if (!AC) return;
+      // off → each track in turn → the bed → off
+      if (!radioOn) { radioOn = true; trackIdx = 0; }
+      else trackIdx += 1;
+      radioStopAll();
+      if (trackIdx < PLAYLIST.length) playTrack(PLAYLIST[trackIdx]);
+      else if (trackIdx === PLAYLIST.length) playBed();
+      else { radioOn = false; trackIdx = -1; }
+    }
+
+    // ── the credit plaque ──
+    // A record that plays unattributed is a record somebody has to go looking
+    // for. It hangs over the radio while something is playing and goes when
+    // the radio does.
+    const plaque = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.44, 0.15),
+      new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }));
+    plaque.visible = false;
+    scene.add(plaque);
+    function showPlaque(track) {
+      if (!track) { plaque.visible = false; plaque.material.opacity = 0; return; }
+      plaque.material.opacity = 0;   // each card fades up on its own
+      const cv = document.createElement('canvas');
+      cv.width = 512; cv.height = 174;
+      const g = cv.getContext('2d');
+      g.clearRect(0, 0, 512, 174);
+      g.fillStyle = 'rgba(12,16,20,0.72)';
+      g.beginPath(); g.roundRect(0, 0, 512, 174, 14); g.fill();
+      g.textAlign = 'center';
+      g.fillStyle = '#f2e9d8';
+      g.font = 'bold 40px ui-monospace, Menlo, Consolas, monospace';
+      g.fillText(track.title.toUpperCase().slice(0, 26), 256, 62);
+      if (track.artist) {
+        g.fillStyle = '#3aa8a0';
+        g.font = '30px ui-monospace, Menlo, Consolas, monospace';
+        g.fillText(track.artist.toUpperCase(), 256, 104);
+      }
+      const foot = [track.year, track.note, track.source].filter(Boolean).join(' · ');
+      if (foot) {
+        g.fillStyle = 'rgba(242,233,216,0.62)';
+        // the credit is the point of the card — shrink it to fit rather than
+        // letting the source clip, which is exactly the half that matters
+        let px = 22;
+        do {
+          g.font = `${px}px ui-monospace, Menlo, Consolas, monospace`;
+          px -= 1;
+        } while (px > 11 && g.measureText(foot).width > 480);
+        g.fillText(foot, 256, 142);
+      }
+      const tx = new THREE.CanvasTexture(cv);
+      tx.colorSpace = THREE.SRGBColorSpace;
+      plaque.material.map?.dispose();
+      plaque.material.map = tx;
+      plaque.material.needsUpdate = true;
+      plaque.visible = true;
     }
 
     // ═══ XR — teleport, totem, radio, the way back to the chair ═══
@@ -951,7 +1236,7 @@
       marker.visible = false;
       scene.add(marker);
     }
-    const rayTargets = [terrain, totem, radio, chairHit];
+    const rayTargets = [terrain, totem, radio, chairHit, book];
     const controllers = [];
     for (let i = 0; i < 2; i++) {
       const c = renderer.xr.getController(i);
@@ -976,6 +1261,7 @@
       for (let o = obj; o; o = o.parent) {
         if (o === totem) return 'totem';
         if (o === radio) return 'radio';
+        if (o === book) return 'book';
         if (o === chairHit) return 'chair';
         if (o === terrain) return 'ground';
       }
@@ -986,6 +1272,7 @@
       const kind = ownerOf(hit.object);
       if (kind === 'totem') return setMood(moodIdx + 1);
       if (kind === 'radio') return radioToggle();
+      if (kind === 'book') return bookAct();
       if (kind === 'chair') {
         // A LONG pinch on the chair recalibrates the seat from where your
         // head is right now — the whole calibration path on Vision Pro,
@@ -1085,7 +1372,7 @@
         // a tap, not a drag: poke whatever is under the pointer
         raycaster.setFromCamera(new THREE.Vector2(
           (e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1), camera);
-        const hit = raycaster.intersectObjects([totem, radio], true)[0];
+        const hit = raycaster.intersectObjects([totem, radio, book], true)[0];
         if (hit) actOn(hit);
       }
       dragging = false;
@@ -1100,6 +1387,7 @@
     // ═══ THE LOOP ═══
     const clock = new THREE.Clock();
     const neonFlick = { until: 0, dim: 1 };
+    const _plaqueV = new THREE.Vector3();
     function animate() {
       const dt = Math.min(0.05, clock.getDelta()), t = clock.elapsedTime;
 
@@ -1152,6 +1440,28 @@
         c.rotation.x = Math.cos(t * 0.47 + c.userData.phase) * 0.028;
       }
       for (const r of reedClumps) r.rotation.z = Math.sin(t * 0.9 + r.userData.phase) * 0.05;
+      // the credit hangs over the radio and turns to face whoever is reading it
+      if (plaque.visible) {
+        plaque.position.set(radio.position.x, radio.position.y + 0.34, radio.position.z);
+        plaque.position.y += Math.sin(t * 0.9) * 0.004;
+        plaque.lookAt(camera.getWorldPosition(_plaqueV));
+        plaque.material.opacity = Math.min(0.92, plaque.material.opacity + dt * 1.6);
+      }
+      // the book rises to reading height when open and settles when shut —
+      // the same spot either way, so it is never somewhere you did not leave it
+      bookSpread += ((bookOpen ? 1 : 0) - bookSpread) * Math.min(1, dt * 4.5);
+      if (bookSpread > 0.001) {
+        // reading height is BELOW a seated eye (~seat + 0.28) — a book held
+        // in the lap, not one hovering in front of your face
+        book.position.y = 0.075 + bookSpread * (chairP[1] + 0.2 - 0.075);
+        book.position.x = bookRest.x + (bookRead.x - bookRest.x) * bookSpread;
+        book.position.z = bookRest.z + (bookRead.z - bookRest.z) * bookSpread;
+        book.rotation.set(-bookSpread * 0.5, NOOK_YAW + 0.4 * (1 - bookSpread), 0);
+        book.position.y += Math.sin(t * 0.8) * 0.006 * bookSpread;
+      } else {
+        book.position.set(bookRest.x, 0.075, bookRest.z);
+        book.rotation.set(0, NOOK_YAW + 0.4, 0);
+      }
       totemCap.rotation.y = t * 0.6;
       totemCapMat.emissiveIntensity = 0.55 + 0.3 * Math.sin(t * 2.1);
       // neon: mostly on, with honest dropouts
@@ -1191,7 +1501,13 @@
       get chair() { return { p: chairP, yaw: chairYaw }; },
       occluders, MOODS, TIER,
       debug: {
-        radioToggle, actOn, rayTargets, sitCheck,
+        radioToggle, actOn, rayTargets, sitCheck, bookAct, PLAYLIST,
+        radio: () => ({ on: radioOn, track: trackIdx, plaque: plaque.visible }),
+        // stand somewhere and face something — the flat camera, for the gate
+        stand: (x, z, ry, p = -0.15) => {
+          eye.set(x, gy(x, z) + 1.5, z); yaw = ry; pitch = p;
+        },
+        book: () => ({ open: bookOpen, page: bookPage, pages: PAGES.length }),
         seated: () => seated,
         canTeleport: (x, z) => groundHeight(x, z) >= -0.05 && Math.hypot(x, z) <= ISLAND_R * 1.05,
       },
