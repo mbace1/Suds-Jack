@@ -4,6 +4,23 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v39 — 2026-08-09
+
+**He can be hit now, and it shows.** Being hurt was drawn as one frozen frame
+of the skid. Row 7 is the stagger — knocked backwards, arms flailing for
+balance, then a lean forward as he gets his feet under him — and ten of its
+fourteen frames are the move (the last four run him off into a stride, which is
+someone else's job). Twenty-eight frames instead of twenty-two, because losing
+and regaining your balance wants the room.
+
+Row 45 is the other kind, and it is not a stagger: the whole body seizes, arms
+flung wide and then straight above his head. That is what this sheet does for
+an energy hit, so `strike(…, 'shock')` plays it and carries **no knockback at
+all** — the difference between the two is whether it moves you.
+
+Nothing on the bench can hurt him, so **H** does, from behind so the knockback
+carries the right way; **SHIFT+H** is the energy hit. Both are in the gallery.
+
 ## v38 — 2026-08-09
 
 **The jump, and then the whole sheet written down.**

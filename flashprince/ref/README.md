@@ -81,7 +81,7 @@ each, first eight frames). Frame counts are cells with ink.
 | 4 | 20 | **run** | `run` |
 | 5 | 12 | run **wind-up**, feet together → full stride | `runStart` |
 | 6 | 12 | run **halt**, lean-back → standing | `skid` |
-| 7 | 8 | arms out, wide stance — a stagger | — |
+| 7 | 14 | the **stagger**: knocked back, arms flailing, recover | `hurt` |
 | 8 | 8 | walk variant, arm forward | — |
 | 9 | 19 | **running jump**: gather, launch, long tuck | `gatherRun`, `airRun` |
 | 10 | 9 | bent, rising | — |
@@ -119,7 +119,7 @@ each, first eight frames). Frame counts are cells with ink.
 | 42 | 8 | lying → sitting up | — |
 | 43 | 3 | standing | — |
 | 44 | 8 | crouched with pistol | — |
-| 45 | 8 | arms flung wide — hit, or electrocuted | — |
+| 45 | 8 | **energy hit**: body seizes, arms wide then overhead | `shocked` |
 | 46 | 8 | crouched | — |
 | 47 | 4 | standing, pistol forward | — |
 | 48 | 8 | arms spread wide | — |

@@ -37,6 +37,8 @@ const REEL = [
   ['crouchLow', 'CROUCHED'],
   ['rise', 'STANDING UP'],
   ['roll', 'THE ROLL'],
+  ['hurt', 'TAKING A HIT'],
+  ['shocked', 'SHOCKED'],
   ['gather', 'JUMP · gather'],
   ['airUp', 'JUMP · drive'],
   ['land', 'JUMP · landing'],
@@ -130,6 +132,10 @@ class Stage {
 
     const h = this.hero;
     if (this.hint > 0) this.hint--;
+    // Nothing on the bench can hurt him, so H does — from behind, so the
+    // knockback carries him the way a hit would. SHIFT+H is the energy hit,
+    // which locks him up where he stands instead.
+    if (inp.hitPress) h.strike(0, h.x - h.face * 10, this, inp.careful ? 'shock' : 'hit');
     h.update(this.world, inp, this);
     // the bench is a strip, not a room: walk off one end and you come back on
     // the other, and the gap drops you back onto the floor rather than into
@@ -326,6 +332,7 @@ window.__fp = {
   hero: () => stage.hero,
   debug: {
     state: s => stage.hero.go(s),
+    hit: (kind = 'hit') => stage.hero.strike(0, stage.hero.x - stage.hero.face * 10, stage, kind),
     gallery: i => { stage.mode = 'gallery'; stage.reel = i ?? 0; stage.t = 0; },
     free: () => { stage.mode = 'free'; },
     reel: REEL,
