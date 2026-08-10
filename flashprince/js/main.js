@@ -1,8 +1,9 @@
-// Flash Prince — the animation stage.
+// Flash Prince.
 //
-// The levels are gone. No rooms, no scenery, no traps, no sentries, no duel:
-// one flat floor, one man, and every frame he has. What is left on screen is
-// exactly the thing being worked on, which is the point of stripping it.
+// The world came back. For eighteen versions this was one flat floor and one
+// man, which is what it took to get every frame of him measured, mapped and
+// anchored — and that work is why the rooms can have him back: he is the same
+// blitted figure on a tile grid now instead of on a bench.
 //
 // He is never drawn. Every state he can reach here maps onto a row of the SNES
 // sheet (see sprite.js), so what you are looking at is always Conrad's own
@@ -17,15 +18,20 @@
 import { Screen, W, H } from './screen.js';
 import { paletteAt, C } from './palette.js';
 import { Hero } from './hero.js';
-import { Bench, Post } from './bench.js';
+import { World, ROOMS, ROOM_H } from './level.js';
+import { paintBack, drawAir, drawFore, halo } from './scenery.js';
+import { Post } from './bench.js';
 import { Swordsman } from './foe.js';
 import { Input } from './input.js';
 import { Sound } from './sound.js';
-import { setOn, isOn } from './audio.js';
+import { setOn, isOn, droneTune } from './audio.js';
 import { loadSheet, drawSprite, ready, ANIM, frameCount, CONRAD_COLOURS } from './sprite.js';
 
 const FLOOR = 144;                 // the ground line, in picture pixels
-const PAL = paletteAt(1.15);       // one palette, cool and quiet, so he reads
+// The gallery keeps one flat palette, cool and quiet, so a cycle reads. The
+// GAME does not — every room sits at its own place on the palette line and
+// the jungle turns into Egypt without ever announcing it.
+const PAL = paletteAt(1.15);
 
 // The gallery's running order — roughly the order a man does them in.
 const REEL = [
@@ -79,7 +85,7 @@ class Stage {
     this.scr.setPalette(PAL);
     loadSheet();
     this.input = new Input(this.scr);
-    this.world = new Bench();
+    this.world = new World();
     this.hero = new Hero(48, FLOOR);
     // The pistol is his — Conrad's own frames, same build as everything else.
     // The sword is HOLSTERED: it is off the other sheet and it is the one thing
@@ -90,19 +96,50 @@ class Stage {
     // at — a post, so the reach and the one frame the edge lands on are things
     // you can feel rather than take on trust.
     this.hero.hasSword = true;
-    this.post = new Post(104, FLOOR);
-    // Someone to fence with. He runs the hero's own move table, so a parry
-    // is a read rather than a reflex — take that away and the whole design
-    // of the sword goes with it.
-    this.foe = new Swordsman(210, FLOOR, -1);
+    // The bench's post survives as a room fixture: any room that wants one puts
+    // it where it likes. Rooms that do not, do not get one.
+    this.post = null;
+    this.foes = [];
+    this.snd = new Sound();
+    this.enterRoom(0);
     this.hero.go('wake');
     this.mode = 'free';
     this.reel = 0;
     this.t = 0;
     this.clock = 0;
-    this.snd = new Sound();
     this.hint = 420;              // the control line fades out of the way
     this.flash = 0;
+  }
+
+  // Walking into a room is the only load there is. The palette comes with it,
+  // the drone retunes to it, and whoever lives here is stood up where the map
+  // said. Enemies other than the swordsman are not built yet, so their markers
+  // are read and skipped rather than silently dropped.
+  enterRoom(i, from = null) {
+    this.world.load(i, from === 'right' ? -1 : 1);
+    const w = this.world;
+    this.scr.setPalette(paletteAt(w.room.t));
+    droneTune(w.room.t);
+    this.foes = w.spawns.filter(s => s.kind === 's')
+      .map(s => new Swordsman(s.x, s.y, -1, [10, W - 10]));
+    this.unbuilt = w.spawns.filter(s => s.kind !== 's').length;
+    this.post = null;
+    const h = this.hero;
+    if (from === 'left') { h.x = 6; h.face = 1; }
+    else if (from === 'right') { h.x = W - 6; h.face = -1; }
+    else if (w.spawn) { h.x = w.spawn.x; h.y = w.spawn.y; h.face = 1; }
+    if (from) h.y = this.groundUnder(h.x, h.y);
+    h.vx = 0; h.vy = 0;
+    if (from) h.go(h.rest());
+    this.snd.wasFoe = null;
+  }
+
+  // Coming in from the side, he arrives at whatever height the floor is at.
+  groundUnder(x, y) {
+    for (let ty = Math.floor(y / 16); ty < 12; ty++) {
+      if (this.world.solidTile(Math.floor(x / 16), ty)) return ty * 16;
+    }
+    return y;
   }
 
   // ── the frame ──────────────────────────────────────────────────────
@@ -130,7 +167,7 @@ class Stage {
     if (inp.modePress) {
       this.mode = this.mode === 'free' ? 'gallery' : 'free';
       this.t = 0;
-      if (this.mode === 'free') { this.hero.reset(48, FLOOR); this.hero.go('stand'); }
+      if (this.mode === 'free') this.enterRoom(this.world.index);
     }
 
     if (this.mode === 'gallery') {
@@ -145,51 +182,62 @@ class Stage {
 
     const h = this.hero;
     if (this.hint > 0) this.hint--;
-    // Nothing on the bench can hurt him, so H does — from behind, so the
-    // knockback carries him the way a hit would. SHIFT+H is the energy hit,
-    // which locks him up where he stands instead.
     if (inp.hitPress) h.strike(0, h.x - h.face * 10, this, inp.careful ? 'shock' : 'hit');
+    this.world.update(h);
     h.update(this.world, inp, this);
-    // the bench is a strip, not a room: walk off one end and you come back on
-    // the other, and the gap drops you back onto the floor rather than into
-    // nothing — falling forever is not an animation
-    if (h.x < -14) h.x = W + 12;
-    if (h.x > W + 14) h.x = -12;
-    if (h.y > H + 10) { h.reset(48, FLOOR); h.go('land'); }
+
+    // A screen is a composition with a hard cut either side of it: walk off the
+    // edge and the next one is simply THERE. No scrolling, no camera.
+    if (h.x < 2 && this.world.index > 0) { this.enterRoom(this.world.index - 1, 'right'); return; }
+    if (h.x > W - 2 && this.world.index < ROOMS.length - 1) { this.enterRoom(this.world.index + 1, 'left'); return; }
+    h.x = Math.max(2, Math.min(W - 2, h.x));
+    if (h.y > ROOM_H + 10) this.kill();
+
+    // What the room can do to you. `lethal` is spikes up, a slab coming down,
+    // a lit field — it does not care which, and neither does he.
+    if (!h.dead && h.hurtT <= 0 && this.world.lethal(h.x - 4, h.y - (h.low ? 16 : 30), 8, h.low ? 16 : 30)) {
+      h.strike(1, h.x, this);
+    }
+    this.picking(h);
+
     if (this.flash > 0) this.flash--;
     if (h.shotQueued) { h.shotQueued = false; this.flash = 3; this.snd.shot(); this.shoot(h); }
-    this.post.update();
-    this.foe.update(h);
-    // his blade, on the one frame it is anywhere
-    if (this.foe.hitQueued) {
-      this.foe.hitQueued = false;
-      const t = this.foe.tip();
-      // his blade costs a mark; the H key's demo hit does not, or you could
-      // not sit and watch the stagger
-      if (this.reached(this.foe.x, t.x, h.x) && !h.guarding) h.strike(1, this.foe.x, this);
+    if (this.post) this.post.update();
+
+    for (const foe of this.foes) {
+      foe.update(h);
+      if (foe.hitQueued) {
+        foe.hitQueued = false;
+        const t = foe.tip();
+        if (this.reached(foe.x, t.x, h.x) && !h.guarding) h.strike(1, foe.x, this);
+      }
     }
-    // The edge lands on ONE frame in the middle of the swing. That is the
-    // whole design of the sword, and the post is how you see it.
+    // The edge lands on ONE frame in the middle of the swing. That is the whole
+    // design of the sword.
     if (h.swingQueued) {
       h.swingQueued = false;
       const e = h.swordTip();
-      if (this.reached(h.x, e.x, this.post.x)) { this.post.hit(this.post.x, h.face); this.snd.woodHit(); }
-      // and the man. A blow into a raised blade rings off it rather than
-      // landing, which is the other half of the parry being worth learning.
-      if (this.reached(h.x, e.x, this.foe.x)) {
-        if (this.foe.struck(h.x) === 'parried') h.go('clang');
+      if (this.post && this.reached(h.x, e.x, this.post.x)) { this.post.hit(this.post.x, h.face); this.snd.woodHit(); }
+      for (const foe of this.foes) {
+        if (!foe.dead && this.reached(h.x, e.x, foe.x) && foe.struck(h.x) === 'parried') h.go('clang');
       }
     }
-    // he gets back up, because a bench you have to reload is a worse bench
-    if (this.foe.dead && this.foe.f > 150) { this.foe = new Swordsman(210, FLOOR, -1); this.snd.wasFoe = null; }
-    this.snd.frame(h, this.foe);
-
+    this.snd.frame(h, this.foes.find(f => !f.dead) ?? this.foes[0]);
   }
 
-  // A shot is a straight line at chest height and it stops at the FIRST thing
-  // it meets, which is the only reason standing behind the post is a decision.
-  // No bullet in flight: at this range it arrives on the frame it is fired,
-  // and the muzzle flash is the whole of the telling.
+  // What is lying on the floor of this room. A weapon is picked up by walking
+  // over it; a flask has to be crouched over, which is PoP's rule and the only
+  // reason a health pickup is ever a decision.
+  picking(h) {
+    for (const p of this.world.pickups) {
+      if (p.taken) continue;
+      if (Math.abs(p.x - h.x) > 9 || Math.abs(p.y - h.y) > 20) continue;
+      if (p.kind === 'gun') { p.taken = true; h.hasGun = true; }
+      else if (p.kind === 'sword') { p.taken = true; h.hasSword = true; }
+      else if (p.kind === 'cell' && h.low) { p.taken = true; h.health = Math.min(3, h.health + 1); }
+    }
+  }
+
   // A blade sweeps a SPAN, from the man to the point — being at the tip is not
   // the test, being anywhere along it is. Checking the tip alone let a strike
   // pass straight through someone standing chest to chest.
@@ -199,13 +247,13 @@ class Stage {
 
   shoot(h) {
     const targets = [];
-    if (!this.foe.dead) targets.push({ x: this.foe.x, w: 7, foe: true });
-    targets.push({ x: this.post.x, w: 6, foe: false });
+    for (const foe of this.foes) if (!foe.dead) targets.push({ x: foe.x, foe });
+    if (this.post) targets.push({ x: this.post.x, foe: null });
     const ahead = targets
       .filter(t => (t.x - h.x) * h.face > 0 && Math.abs(t.x - h.x) < 200)
       .sort((a, b) => Math.abs(a.x - h.x) - Math.abs(b.x - h.x))[0];
     if (!ahead) return;
-    if (ahead.foe) this.foe.struck(h.x);
+    if (ahead.foe) ahead.foe.struck(h.x);
     else this.post.hit(ahead.x, h.face);
   }
 
@@ -217,9 +265,7 @@ class Stage {
   // ── drawing ────────────────────────────────────────────────────────
   paint() {
     const scr = this.scr;
-    this.backdrop(scr);
-
-    if (this.mode === 'gallery') this.gallery(scr);
+    if (this.mode === 'gallery') { this.scr.setPalette(PAL); this.backdrop(scr); this.gallery(scr); }
     else this.free(scr);
 
     this.chrome(scr);
@@ -229,6 +275,8 @@ class Stage {
 
   // Flat bands and a hard horizon — the least backdrop that still gives him a
   // floor to stand on and a value to read against.
+  // The gallery's backdrop: flat bands and a hard horizon, the least there is
+  // that still gives him a floor and a value to read against.
   backdrop(scr) {
     scr.clear(C.SKY_HI);
     scr.rect(0, 44, W, 40, C.SKY_LO);
@@ -237,22 +285,44 @@ class Stage {
   }
 
   free(scr) {
-    this.world.draw(scr, C);
-    this.post.draw(scr, C);
-    this.foe.draw(scr);
-    const h = this.hero;
-    if (this.world.boxSolid(h.x - 2, h.y + 1, 4, 3)) {
-      scr.poly([h.x - 9, h.y - 1, h.x + 9, h.y - 1, h.x + 6, h.y + 2, h.x - 6, h.y + 2], C.DARK);
+    const w = this.world;
+    scr.clear(C.VOID);
+    // The static half of a room is painted once and blitted after that. The
+    // KEY has to carry the palette as well as the index, or walking back into
+    // a room you have already seen serves you the last biome's colours.
+    scr.cached(`back:${w.index}`, () => paintBack(scr, w.room, w.index));
+    drawAir(scr, w.room, this.clock);
+    w.drawTiles(scr);
+    w.drawTraps(scr);
+    if (w.door) halo(scr, w.door.x, w.door.y - 16, 22 + Math.sin(this.clock * 0.06) * 3);
+
+    for (const p of w.pickups) {
+      if (p.taken) continue;
+      const lift = Math.sin(this.clock * 0.08 + p.x) * 1.5;
+      scr.rect(p.x - 3, p.y - 6 + lift, 6, 5, C.LUX);
+      scr.rect(p.x - 1, p.y - 5 + lift, 2, 3, C.LUX2);
     }
+
+    if (this.post) this.post.draw(scr, C);
+    for (const foe of this.foes) foe.draw(scr);
+
+    const h = this.hero;
+    // A contact shadow. Without one he is a cut-out laid on the picture rather
+    // than a man standing in it — one flat ellipse, all a sixteen-colour screen
+    // can afford and all the references use.
+    if (!h.dead && w.boxSolid(h.x - 2, h.y + 1, 4, 3)) {
+      const wd = h.low ? 13 : 9;
+      scr.poly([h.x - wd, h.y - 1, h.x + wd, h.y - 1, h.x + wd - 3, h.y + 2, h.x - wd + 3, h.y + 2], C.DARK);
+    }
+    const blink = h.hurtT > 0 && (h.hurtT >> 1) % 2 === 0;
     const sp = h.sprite();
-    if (sp) drawSprite(scr, sp.anim, Math.floor(sp.f), h.x, sp.lipY ?? h.y, h.face);
-    // A shot with nothing to hit still has to READ as a shot, and two frames
-    // of light at the muzzle is the whole of it.
+    if (sp && !blink) drawSprite(scr, sp.anim, Math.floor(sp.f), h.x, sp.lipY ?? h.y, h.face);
     if (this.flash > 0) {
       const m = h.muzzle();
       scr.rect(m.x - 1, m.y - 1, 3, 2, C.LUX2);
       scr.rect(m.x + h.face * 2, m.y, 3, 1, C.LUX);
     }
+    drawFore(scr, w.room, w.index);
     if (!ready()) this.centre(scr, 'LOADING THE SHEET', 96, C.LUX);
   }
 
@@ -294,7 +364,9 @@ class Stage {
       }
     };
     row(this.hero.health, 3, 4, C.LUX);
-    if (!this.foe.dead) row(this.foe.health, 2, 12, C.EDGE);
+    // whoever is still on his feet in this room, if anyone
+    const live = this.foes.find(f => !f.dead);
+    if (live) row(live.health, 2, 12, C.EDGE);
   }
 
   chrome(scr) {
