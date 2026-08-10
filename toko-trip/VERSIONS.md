@@ -1,5 +1,37 @@
 # Toko Trip — release log
 
+## v3 — 2026-08-10
+
+The lighting stopped guessing, and the water got a bottom.
+
+- **A real lightmap, replacing the fake one.** v2 shaded the sand with flat
+  discs under each object — a decent cheat that could not know a palm has a
+  *crown*, so trunks had shadows and the thing casting the actual shade did
+  not. Now every standing thing is a sphere or a box, and each point on the
+  ground fires a cosine-weighted hemisphere of rays and counts how much sky
+  it can see. It runs at load because the proxies are binned into 4 m cells,
+  so a ray only tests its own neighbourhood. The bake ships twice: into the
+  terrain's vertex colours, and as a 256² `aoMap`, which shades between
+  vertices where a 27 cm mesh spacing has nothing to say.
+  A palm's trunk shape is now decided in the scatter plan rather than in the
+  builder, because the bake has to know where the crown ends up.
+- **Water with a floor.** The usual way to fade water at a beach is to read
+  the depth buffer and compare; this island already has the seabed as a
+  function, so every vertex simply asks how deep the water is above it. No
+  depth texture, no backend difference, and it cannot disagree with the
+  ground it lies on. Colour and alpha both ride that depth, so the shallows
+  are pale and see-through and the bay reads as a bowl you can see the
+  bottom of. The horizon sheet behind it is a **ring**, not a sheet — a full
+  sheet under the island is opaque, so light through the shallow water lands
+  on that instead of on the sand and the whole fade is invisible.
+  Tuned twice: the first pass was so transparent the bay read as wet sand
+  and the waterline disappeared with it.
+
+Chosen and worth recording: this did **not** use TSL. The vendored r180
+bundle ships the node materials but not the TSL functions, and the exact
+per-vertex depth above is better than a screen-space one anyway — it asks
+the same `groundHeight` everything else asks.
+
 ## v2 — 2026-08-10
 
 The cove got much bigger, the island got a book, a radio and a way home,
