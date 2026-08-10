@@ -4,6 +4,22 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v40 — 2026-08-09
+
+**The sword is in.** It has been holstered since v33 for two good reasons and
+neither holds any more: it reads as the same man since the repaint, and there
+is now something to swing it at.
+
+The grammar was already in `hero.js` and has never been reachable — forward
+advances, back retreats, jump strikes, Shift parries, down sheathes, every one
+of them committed. The weapon button cycles nothing → pistol → sword now.
+
+**A post**, waist-high, at the middle of the bench. Wooden, and it rocks when
+you hit it. The sword's whole design is that the edge lands on ONE frame in the
+middle of the swing (`hitAt`) — six frames of wind-up before it is anywhere,
+which is the window a parry has to live in — and none of that is a thing you
+can feel swinging at air. The pistol reaches it too.
+
 ## v39 — 2026-08-09
 
 **He can be hit now, and it shows.** Being hurt was drawn as one frozen frame
