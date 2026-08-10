@@ -4,6 +4,55 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v41 — 2026-08-09
+
+**One jacket.** The sword frames had grey sleeves and the walk had dark ones,
+because the Prince is bare-armed and hands his arms over for free while
+Conrad's four browns are shading laid across the whole garment. Two versions of
+carrying that mismatch is enough: drawing the blade should not change his coat.
+The sleeve is the jacket's own lit tone now — a shade lighter than the torso,
+which is all the grey was ever for, since with the sword out the arm IS the
+pose and dark-on-dark reads as a blob.
+
+Real grey sleeves would need Conrad's thirty-three most-seen frames masked by
+hand. Written up in `ref/README.md`, including the way in if it is ever worth
+doing: `figure.js` holds a thirteen-angle pose for each of those frames, traced
+off these very cells, so its near arm rasterised as a polygon is a per-frame
+mask fitted to the art rather than guessed at.
+
+## v40 — 2026-08-09
+
+**The sword is in.** It has been holstered since v33 for two good reasons and
+neither holds any more: it reads as the same man since the repaint, and there
+is now something to swing it at.
+
+The grammar was already in `hero.js` and has never been reachable — forward
+advances, back retreats, jump strikes, Shift parries, down sheathes, every one
+of them committed. The weapon button cycles nothing → pistol → sword now.
+
+**A post**, waist-high, at the middle of the bench. Wooden, and it rocks when
+you hit it. The sword's whole design is that the edge lands on ONE frame in the
+middle of the swing (`hitAt`) — six frames of wind-up before it is anywhere,
+which is the window a parry has to live in — and none of that is a thing you
+can feel swinging at air. The pistol reaches it too.
+
+## v39 — 2026-08-09
+
+**He can be hit now, and it shows.** Being hurt was drawn as one frozen frame
+of the skid. Row 7 is the stagger — knocked backwards, arms flailing for
+balance, then a lean forward as he gets his feet under him — and ten of its
+fourteen frames are the move (the last four run him off into a stride, which is
+someone else's job). Twenty-eight frames instead of twenty-two, because losing
+and regaining your balance wants the room.
+
+Row 45 is the other kind, and it is not a stagger: the whole body seizes, arms
+flung wide and then straight above his head. That is what this sheet does for
+an energy hit, so `strike(…, 'shock')` plays it and carries **no knockback at
+all** — the difference between the two is whether it moves you.
+
+Nothing on the bench can hurt him, so **H** does, from behind so the knockback
+carries the right way; **SHIFT+H** is the energy hit. Both are in the gallery.
+
 ## v38 — 2026-08-09
 
 **The jump, and then the whole sheet written down.**

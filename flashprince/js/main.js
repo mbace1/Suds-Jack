@@ -17,7 +17,7 @@
 import { Screen, W, H } from './screen.js';
 import { paletteAt, C } from './palette.js';
 import { Hero } from './hero.js';
-import { Bench } from './bench.js';
+import { Bench, Post } from './bench.js';
 import { Input } from './input.js';
 import { loadSheet, drawSprite, ready, ANIM, frameCount, CONRAD_COLOURS } from './sprite.js';
 
@@ -37,6 +37,8 @@ const REEL = [
   ['crouchLow', 'CROUCHED'],
   ['rise', 'STANDING UP'],
   ['roll', 'THE ROLL'],
+  ['hurt', 'TAKING A HIT'],
+  ['shocked', 'SHOCKED'],
   ['gather', 'JUMP · gather'],
   ['airUp', 'JUMP · drive'],
   ['land', 'JUMP · landing'],
@@ -55,9 +57,6 @@ const REEL = [
   ['crouchDraw', 'PISTOL · going down'],
   ['crouchAim', 'PISTOL · aimed, crouched'],
   ['crouchFire', 'PISTOL · the shot, crouched'],
-  // The sword is still holstered in play — these are here to be LOOKED at,
-  // which is the only way to judge whether the repaint has made the Prince's
-  // frames into the same man as the walk.
   ['swordDraw', 'SWORD · drawing'],
   ['swordGuard', 'SWORD · on guard'],
   ['swordAdvance', 'SWORD · advancing'],
@@ -83,7 +82,12 @@ class Stage {
     // The sword is HOLSTERED: it is off the other sheet and it is the one thing
     // here that changes what he looks like mid-move.
     this.hero.hasGun = true;
-    this.hero.hasSword = false;
+    // The sword is IN. It reads as the same man now, the grammar has been in
+    // hero.js since the beginning, and there is finally something to swing it
+    // at — a post, so the reach and the one frame the edge lands on are things
+    // you can feel rather than take on trust.
+    this.hero.hasSword = true;
+    this.post = new Post(120, FLOOR);
     this.hero.go('wake');
     this.mode = 'free';
     this.reel = 0;
@@ -130,6 +134,10 @@ class Stage {
 
     const h = this.hero;
     if (this.hint > 0) this.hint--;
+    // Nothing on the bench can hurt him, so H does — from behind, so the
+    // knockback carries him the way a hit would. SHIFT+H is the energy hit,
+    // which locks him up where he stands instead.
+    if (inp.hitPress) h.strike(0, h.x - h.face * 10, this, inp.careful ? 'shock' : 'hit');
     h.update(this.world, inp, this);
     // the bench is a strip, not a room: walk off one end and you come back on
     // the other, and the gap drops you back onto the floor rather than into
@@ -139,6 +147,12 @@ class Stage {
     if (h.y > H + 10) { h.reset(48, FLOOR); h.go('land'); }
     if (this.flash > 0) this.flash--;
     if (h.shotQueued) { h.shotQueued = false; this.flash = 3; }
+    this.post.update();
+    // The edge lands on ONE frame in the middle of the swing. That is the
+    // whole design of the sword, and the post is how you see it.
+    if (h.swingQueued) { h.swingQueued = false; const e = h.swordTip(); this.post.hit(e.x, h.face); }
+    // and the pistol reaches it too
+    if (this.flash === 3 && h.muzzle) this.post.hit(h.x + h.face * 40, h.face);
   }
 
   // the hero asks the game for these; on a floor with nothing on it they are
@@ -170,6 +184,7 @@ class Stage {
 
   free(scr) {
     this.world.draw(scr, C);
+    this.post.draw(scr, C);
     const h = this.hero;
     if (this.world.boxSolid(h.x - 2, h.y + 1, 4, 3)) {
       scr.poly([h.x - 9, h.y - 1, h.x + 9, h.y - 1, h.x + 6, h.y + 2, h.x - 6, h.y + 2], C.DARK);
@@ -326,6 +341,7 @@ window.__fp = {
   hero: () => stage.hero,
   debug: {
     state: s => stage.hero.go(s),
+    hit: (kind = 'hit') => stage.hero.strike(0, stage.hero.x - stage.hero.face * 10, stage, kind),
     gallery: i => { stage.mode = 'gallery'; stage.reel = i ?? 0; stage.t = 0; },
     free: () => { stage.mode = 'free'; },
     reel: REEL,

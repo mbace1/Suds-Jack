@@ -145,7 +145,12 @@ const M = {
   parry: { dur: 24, open: 20, guarding: [3, 16], clip: [[Q.parry, 16], [Q.guard, 8]] },
   clang: { dur: 18, open: 18, dx: [-0.4, -0.25, -0.1, 0], clip: [[Q.clang, 10], [Q.guard, 8]] },
 
-  hurt: { dur: 22, open: 22, dx: [-0.9, -0.7, -0.4, -0.2, 0, 0, 0], clip: [[Q.hurt, 10], [Q.stand, 12]] },
+  // Twenty-eight, not twenty-two: the stagger is ten drawn frames of losing
+  // and regaining your balance and it wants the room to read as that.
+  hurt: { dur: 28, open: 28, dx: [-1.1, -0.85, -0.55, -0.3, -0.12, 0, 0], clip: [[Q.hurt, 14], [Q.stand, 14]] },
+  // An energy hit locks him up rather than knocking him back — no dx at all,
+  // which is the difference you feel between the two.
+  shocked: { dur: 30, open: 30, clip: [[Q.hurt, 16], [Q.stand, 14]] },
   dead: { dur: 999, open: 999, clip: [[Q.deadA, 10], [Q.deadB, 30]] },
 };
 
@@ -289,7 +294,8 @@ export class Hero {
       case 'strike': return over('swordStrike', 9);
       case 'parry': return over('swordParry', 3);
       case 'clang': return over('swordGuard', 2);
-      case 'hurt': return { anim: 'skid', f: 0 };
+      case 'hurt': return over('hurt', 10);
+      case 'shocked': return over('shocked', 8);
       default: return { anim: 'stand', f: 0 };
     }
   }
@@ -497,7 +503,7 @@ export class Hero {
     const s = this.state;
 
     if (s === 'wake') { if (done) this.go('stand'); return; }
-    if (s === 'hurt' && done) { this.go(this.rest()); return; }
+    if ((s === 'hurt' || s === 'shocked') && done) { this.go(this.rest()); return; }
     if (s === 'bump' && done) { this.go(this.rest()); return; }
 
     // ── the sword stance ─────────────────────────────────────────────
@@ -659,13 +665,15 @@ export class Hero {
     this.go('air');
   }
 
-  strike(dmg, fromX, game) {
+  strike(dmg, fromX, game, kind = 'hit') {
     if (this.hurtT > 0 || this.dead) return false;
     this.health -= dmg;
     this.hurtT = 70;
     if (this.health <= 0) { game.kill('shot'); return true; }
+    // He turns to face what hit him, and a knockback carries him away from it;
+    // an energy hit does not move him at all, it just takes the frames.
     this.face = fromX < this.x ? -1 : 1;
-    this.go('hurt');
+    this.go(kind === 'shock' ? 'shocked' : 'hurt');
     return true;
   }
 

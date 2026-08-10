@@ -25,6 +25,9 @@ const KEYS = {
   pause: ['Escape', 'KeyP'],
   // the bench's own: swapping between driving him and looking at one animation
   mode: ['Tab', 'KeyG'],
+  // and the bench's other one: nothing here can hurt him, so H hits him.
+  // Held with SHIFT it is the energy hit instead of the knockback.
+  hit: ['KeyH'],
 };
 
 export class Input {
@@ -116,6 +119,7 @@ export class Input {
     if (k === 'careful') this.carefulPress = true;
     if (k === 'pause') this.pausePress = true;
     if (k === 'mode') this.modePress = true;
+    if (k === 'hit') this.hitPress = true;
     this.anyPress = true;
   }
 
@@ -192,6 +196,6 @@ export class Input {
   flush() {
     this.jumpPress = this.firePress = this.gunPress = this.carefulPress = false;
     this.pausePress = false; this.anyPress = false;
-    this.modePress = false;
+    this.modePress = false; this.hitPress = false;
   }
 }

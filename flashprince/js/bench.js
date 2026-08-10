@@ -37,6 +37,40 @@ const BENCH = [
   '#########..#########',
 ];
 
+// A post to hit. There is nothing on the bench that can be struck, so the
+// sword has no reach and no timing you can feel — the swing lands on a frame
+// in the middle of the animation (`hitAt`) and that is the whole point of it,
+// but not if the air is all there is. Wood, waist-high, and it rocks.
+export class Post {
+  constructor(x, y) { this.x = x; this.y = y; this.lean = 0; this.flash = 0; }
+
+  // struck at `sx`: true if the edge reached, and the post takes it
+  hit(sx, face) {
+    if (Math.abs(sx - this.x) > 9) return false;
+    this.lean = 6 * face; this.flash = 5;
+    return true;
+  }
+
+  update() {
+    this.lean *= 0.86;                       // it rocks back upright
+    if (Math.abs(this.lean) < 0.05) this.lean = 0;
+    if (this.flash > 0) this.flash--;
+  }
+
+  draw(scr, C) {
+    const k = this.lean;
+    const top = this.y - 34, mid = this.y - 17;
+    const c = this.flash > 0 ? C.LUX : C.NEAR;
+    // one leaning quad for the shaft, a crossbar, and a shadow at the foot
+    scr.poly([this.x - 3, this.y, this.x + 3, this.y,
+              this.x + 3 + k, top, this.x - 3 + k, top], c);
+    scr.poly([this.x - 8 + k * 0.5, mid - 1, this.x + 8 + k * 0.5, mid - 1,
+              this.x + 8 + k * 0.5, mid + 2, this.x - 8 + k * 0.5, mid + 2],
+             this.flash > 0 ? C.LUX2 : C.EDGE);
+    scr.rect(this.x - 5, this.y - 1, 10, 1, C.DARK);
+  }
+}
+
 export class Bench {
   constructor() { this.rows = BENCH; }
 

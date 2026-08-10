@@ -3,10 +3,9 @@
 # The brief was never "put Jimbo's colours on the Prince" — it was to fit
 # JIMBO onto the Prince's animation without touching the model Conrad's own
 # sheet gives him. So this does more than a palette swap: it hands the Prince
-# Jimbo's shoes, Jimbo's grey jacket sleeves and Jimbo's white tee, because
-# those three are what your eye actually uses to tell one small man from
-# another, and without them a sword frame reads as a different character
-# walking on.
+# Jimbo's shoes, Jimbo's sleeves and Jimbo's white tee, because those three are
+# what your eye actually uses to tell one small man from another, and without
+# them a sword frame reads as a different character walking on.
 #
 # His outfit on that rip is ONE white — tunic and trousers the same value — so
 # there is nothing to look up. It has to be split by region instead, and the
@@ -19,9 +18,15 @@
 # cannot be separated because the four browns are shading laid across the whole
 # garment. Here the Prince is BARE-ARMED — his arms are skin, a colour of their
 # own — so the pixels that mean "arm" are simply handed over. Put the sleeve on
-# them and keep the far end skin for the hand, and Jimbo gets the grey sleeves
-# the Flashback rip can never give him. Same trick for the feet: the Prince is
-# barefoot, so the skin at the bottom of him is exactly the shoe.
+# them and keep the far end skin for the hand. Same trick for the feet: the
+# Prince is barefoot, so the skin at the bottom of him is exactly the shoe.
+#
+# The sleeve is the JACKET's lit tone, not grey. Grey was tried and it was the
+# right colour on the wrong sheet: Conrad's arm cannot be separated from his
+# torso by any rule, so grey sleeves here and dark ones on the walk made the
+# blade change his coat. A shade lighter than the torso keeps the arm legible —
+# which is what the grey was for, since with the sword out the arm IS the pose —
+# without claiming a garment the other sheet cannot wear.
 #
 # Every colour it paints is one of Jimbo's own eighteen (see JIMBO_COLOURS in
 # js/sprite.js) — nothing new is invented, or the framebuffer's quantiser would
@@ -39,7 +44,7 @@ WHITE, SKIN, RED = (248, 248, 248), (255, 163, 71), (248, 56, 0)
 J_SKIN = (198, 115, 99)
 J_HAIR = (99, 49, 0)
 JACKET, JACKET_HI = (42, 46, 64), (60, 66, 88)
-SLEEVE, SLEEVE_HI = (132, 132, 132), (198, 198, 198)
+SLEEVE, SLEEVE_HI = (60, 66, 88), (49, 54, 74)
 TROUSER, TROUSER_HI = (136, 103, 63), (154, 118, 74)
 SHOE, SHOE_HI = (188, 194, 206), (226, 230, 236)
 TEE, TEE_HI = (198, 198, 198), (226, 230, 236)

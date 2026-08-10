@@ -99,6 +99,20 @@ export const ANIM = {
   crouchLow: { row: 17, c0: 4, n: 2, ground: 46, ax: 16.6, hold: 40, loop: true },
   rise: { row: 17, c0: 11, n: 4, ground: 46, ax: 16.6 },
   roll: { row: 15, c0: 1, n: 22, ground: 47, ax: 20.6 },
+  // Taking a hit. Row 7 is the stagger: knocked backwards with the arms
+  // flailing for balance, then a lean forward as he gets his feet under him
+  // again. Ten of its fourteen — the last four run him back off into a stride,
+  // which is a different move's job. Being hurt used to be drawn as one frozen
+  // frame of the skid.
+  hurt: { row: 7, c0: 1, n: 10, ground: 47,
+          axs: [14.5, 12.5, 14.0, 18.0, 15.0, 11.5, 11.5, 13.0, 12.5, 13.0] },
+  // And the other kind. Row 45 is not a stagger — it is the whole body seizing
+  // up, arms flung wide and then straight above his head, which is what this
+  // sheet does for an energy hit. It drifts nine pixels up its cells, so it
+  // carries a floor per frame.
+  shocked: { row: 45, c0: 1, n: 8,
+             axs: [8.0, 12.5, 16.5, 14.5, 12.5, 9.5, 8.0, 5.5],
+             grounds: [35, 36, 36, 37, 38, 42, 42, 44] },
   // Getting up off the floor, and being put on it. Both rows are cropped to
   // the TOP of their cells — a prone man is seven pixels tall and he is drawn
   // in the first seven rows — so one floor line for the row had him lying in
