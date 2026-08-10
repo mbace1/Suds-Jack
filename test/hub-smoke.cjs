@@ -928,7 +928,13 @@ function check(name, cond) {
   const bridged = catalogue.filter(g => g.pad && g.pad !== 'native' && g.inRepo);
   for (const g of bridged) {
     await page.goto(`${base}/${g.path}`, { waitUntil: 'domcontentloaded' });
-    const wired = await page.evaluate(() => !!window.__arcadeShell?.bridged);
+    // Wait for the handle rather than sampling once. Not every game loads the
+    // shell from a top-level <script>: radiofree imports it dynamically once
+    // its own boot is done, so at domcontentloaded there is nothing to read
+    // and this reported an unbridged pad on a game whose pad works fine.
+    const wired = await page.waitForFunction(
+      () => !!window.__arcadeShell?.bridged, null, { timeout: 6000 })
+      .then(() => true).catch(() => false);
     check(`${g.id} gets a pad bridged onto it`, wired);
     check(`${g.id} is matched to its own catalogue entry`,
       await page.evaluate(() => window.__arcadeShell.game) === g.id);
