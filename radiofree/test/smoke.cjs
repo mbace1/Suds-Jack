@@ -552,11 +552,16 @@ async function main() {
   // the stingers, driven the way the renderer drives them
   const st = await vp.evaluate(async () => {
     const box = document.getElementById('ident');
-    // the fade in is a .28s CSS transition, so sample after it, not during
-    const p = window.__rfh.ident({ ms: 900, card: true, fade: 60 });
-    await new Promise(r => setTimeout(r, 600));
-    const up = !box.hidden && Number(getComputedStyle(box).opacity) > 0.9;
-    const text = box.innerText;
+    // POLL, do not sample. The fade in is a .28s CSS transition inside a 1.4s
+    // hold, so a single read at a fixed offset has about twenty milliseconds of
+    // margin — which is fine on an idle machine and flaked on a loaded one.
+    const p = window.__rfh.ident({ ms: 1400, card: true, fade: 60 });
+    let up = false, text = '';
+    for (let i = 0; i < 40 && !up; i++) {
+      await new Promise(r => setTimeout(r, 50));
+      up = !box.hidden && Number(getComputedStyle(box).opacity) > 0.9;
+      if (up) text = box.innerText;
+    }
     await p;
     return { up, text, gone: box.hidden };
   });
