@@ -48,11 +48,21 @@ boots, the rest are arms. Sleeve them and keep the far end skin for the hand.
 A white tee goes on the front two columns of the upper chest, which is the
 loudest thing on Conrad's Jimbo at this size.
 
-The one honest mismatch left: Jimbo's sleeves are **grey here and dark on
-Conrad's sheet**, because Conrad's cannot be split. It costs less than it
-sounds — the arm is inside the silhouette in most of his frames — and with the
-sword out the arm is the pose, so a dark arm on a dark torso reads as a blob.
-It ends when Conrad's sleeves are hand-painted; then it is one constant here.
+**The sleeve is the jacket's lit tone, not grey.** Grey was tried for two
+versions and it was the right colour on the wrong sheet — Conrad's arm cannot
+be separated from his torso by any rule, so grey here and dark on the walk made
+the blade change his coat. A shade lighter than the torso keeps the arm legible
+(with the sword out the arm *is* the pose, and dark-on-dark reads as a blob)
+without claiming a garment the other sheet cannot wear.
+
+Real grey sleeves need Conrad's thirty-three most-seen frames — the stand, the
+twelve of the walk, the twenty of the run — masked by hand. The jacket there is
+one solid mass in every one of them; the stand is the only frame where the tee
+shows a gap between arm and body, and one frame out of thirty-three is the
+half-right trap this file already warns about. The way in, if it is ever worth
+it: `figure.js` holds a thirteen-angle pose for each of those frames, traced
+off these very cells, so its NEAR arm rasterised as a polygon is a per-frame
+mask that was fitted to the art rather than guessed at.
 
 **Silhouette** is not colour. Baggier trousers are a different outline and no
 repaint reaches them; that is a redraw of the sheet, or the Prince of Persia

@@ -4,6 +4,22 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v41 — 2026-08-09
+
+**One jacket.** The sword frames had grey sleeves and the walk had dark ones,
+because the Prince is bare-armed and hands his arms over for free while
+Conrad's four browns are shading laid across the whole garment. Two versions of
+carrying that mismatch is enough: drawing the blade should not change his coat.
+The sleeve is the jacket's own lit tone now — a shade lighter than the torso,
+which is all the grey was ever for, since with the sword out the arm IS the
+pose and dark-on-dark reads as a blob.
+
+Real grey sleeves would need Conrad's thirty-three most-seen frames masked by
+hand. Written up in `ref/README.md`, including the way in if it is ever worth
+doing: `figure.js` holds a thirteen-angle pose for each of those frames, traced
+off these very cells, so its near arm rasterised as a polygon is a per-frame
+mask fitted to the art rather than guessed at.
+
 ## v40 — 2026-08-09
 
 **The sword is in.** It has been holstered since v33 for two good reasons and
