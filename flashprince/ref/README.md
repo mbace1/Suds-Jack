@@ -60,3 +60,88 @@ frames, whose trousers already are baggy.
 
 Delphine Software own Conrad; Broderbund own the Prince. The animation is
 reference; the pixels here are theirs.
+
+## The row census
+
+Sixty-one rows of thirty-four cells. Twenty-five were mapped and **five of
+those twenty-five were the wrong move** — the turn was under the standing
+frames, the stop was the wind-up, the crouched fire was a standing pose, the
+mantle was a leg-swing and the fall was the middle of a running jump. That is
+what this list is for: identify a row once, write it down, and stop guessing.
+
+Read off the contact sheets (`ref/` has the script; four images of sixteen rows
+each, first eight frames). Frame counts are cells with ink.
+
+| row | n | what it is | used as |
+|----|----|----|----|
+| 0 | 10 | **about-face**, side → front-on → side | `stand` (f1), `turn` |
+| 1 | 12 | walk, two steps of six | `step`, `stepB` |
+| 2 | 8 | reach up, then fold forward | — |
+| 3 | 8 | stand → bend forward | — |
+| 4 | 20 | **run** | `run` |
+| 5 | 12 | run **wind-up**, feet together → full stride | `runStart` |
+| 6 | 12 | run **halt**, lean-back → standing | `skid` |
+| 7 | 8 | arms out, wide stance — a stagger | — |
+| 8 | 8 | walk variant, arm forward | — |
+| 9 | 19 | **running jump**: gather, launch, long tuck | `gatherRun`, `airRun` |
+| 10 | 9 | bent, rising | — |
+| 11 | 25 | long: bend, reach down | — |
+| 12 | 20 | long: bend, crouch, reach | — |
+| 13 | 17 | standing jump **on the ground**: crouch, swing, rise on toes, land. Floor-registered end to end — his feet never leave cell row 47 | `gather`, `land` |
+| 14 | 7 | standing jump **in the air**: tuck, extend, arms up into the reach | `airUp` |
+| 15 | 22 | the roll | `roll` |
+| 16 | 4 | **falling** — arms up, legs together | `fall` |
+| 17 | 14 | crouch / crouched / rise | `crouch`, `crouchLow`, `rise` |
+| 18 | 16 | pistol draw | `drawGun`, `holsterGun` |
+| 19 | 8 | standing, pistol up, legs spreading | — |
+| 20 | 6 | going down with the pistol | `crouchDraw` |
+| 21 | 6 | **crouched** pistol, ear → level | `crouchAim`, `crouchFire` |
+| 22 | 5 | standing, pistol held vertical | — |
+| 23 | 6 | crouched, pistol up | — |
+| 24 | 7 | standing with pistol — a whip? | — |
+| 25 | 14 | leap, grab, **hang** | `hang` |
+| 26 | 7 | the **fold**: head still, knees to chest | `mantle` (2nd half) |
+| 27 | 16 | hanging, hands above the cell, legs swinging | `mantle` (1st half) |
+| 28 | 10 | stand → crouch forward | — |
+| 29 | 6 | prone, crawling | — |
+| 30 | 5 | **standing** wide stance, pistol out (not crouched) | — |
+| 31 | 11 | **death**: thrown off his feet, tumbles, lands | `dead` |
+| 32 | 15 | fall, impact, eight frames sliding out flat | `landHard` (tail) |
+| 33 | 10 | standing aim, then the recoil kicking the arm up | `aim`, `fire` |
+| 34 | 20 | long backwards death-fall into prone | — |
+| 35 | 3 | prone | — |
+| 36 | 5 | fall forward into prone | — |
+| 37 | 4 | lying | — |
+| 38 | 15 | **getting up** off the floor | `wake` |
+| 39 | 10 | hanging, swinging the legs | — |
+| 40 | 6 | hanging | — |
+| 41 | 7 | tumble into prone | — |
+| 42 | 8 | lying → sitting up | — |
+| 43 | 3 | standing | — |
+| 44 | 8 | crouched with pistol | — |
+| 45 | 8 | arms flung wide — hit, or electrocuted | — |
+| 46 | 8 | crouched | — |
+| 47 | 4 | standing, pistol forward | — |
+| 48 | 8 | arms spread wide | — |
+| 49 | 8 | crouched with pistol | — |
+| 50 | 8 | crouched, pistol raised | — |
+| 51 | 5 | crouched → pistol forward | — |
+| 52 | 8 | a **second turn**, showing his back | — |
+| 53 | 4 | crouched, pistol forward | — |
+| 54 | 7 | prone crawl with the pistol | — |
+| 55 | 2 | crouched with pistol | — |
+| 56 | 8 | stand → crouch | — |
+| 57 | 1 | one frame | — |
+| 58 | 8 | **electrocution / teleport**, dissolving to a line | — |
+| 59 | 8 | pistol fire with sparks | — |
+| 60 | 4 | crouched | — |
+
+Two rules the census makes obvious, and both have been broken:
+
+1. **Registration is per row, not per sheet.** Most rows share a floor line;
+   rows 31, 32, 34–38 and 41 are cropped to the TOP of the cell, and rows 21,
+   30 and 33 drift within it. Measure the ink bottom of every frame before
+   trusting one `ground`.
+2. **A row is not a move.** Row 13 looks like a jump and is entirely grounded;
+   row 0 looks like an idle and is a turn. Render the whole row before mapping
+   any of it.

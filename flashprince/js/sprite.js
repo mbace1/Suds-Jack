@@ -152,19 +152,43 @@ export const ANIM = {
   // the extended frames carry the whole airborne phase while the engine's
   // ballistic y does the actual rising.
   gather: { row: 13, c0: 1, n: 5, ground: 47, ax: 16.1 },
-  airUp: { row: 13, c0: 6, n: 4, air: true, anchors: [[7.7, 26], [7, 26], [13.4, 26], [18.3, 24]] },
+  // THE FLIGHT of a standing jump, and it is row 14 — not row 13. Row 13 is
+  // floor-registered from end to end: his feet are on cell row 47 in all
+  // seventeen frames of it, because it is the crouch, the arm swing and the
+  // rise onto his toes, and then the landing. It is what he does ON the
+  // ground either side of a jump. Four of its frames were being used as the
+  // flight and hung off the hip, so the jump was a man standing still and
+  // reaching, floated up the screen by the engine.
+  //
+  // Row 14 is him actually off it: tucked at the launch, then extending, arms
+  // up, into the reach that becomes a hang if there is a lip there.
+  airUp: { row: 14, c0: 1, n: 7, air: true,
+           anchors: [[22.5, 15], [15.0, 17], [10.0, 20], [9.5, 20], [9.0, 20], [10.0, 21], [10.0, 22]] },
   land: { row: 13, c0: 14, n: 4, ground: 47, ax: 12.8 },
+  // A landing you do not walk away from. Row 32 is the whole fall — arms up,
+  // impact, and then eight frames of sliding out flat — and its tail is the
+  // part that happens once he is down. Top-cropped like the other prone rows,
+  // so it carries a floor per frame.
+  landHard: { row: 32, c0: 9, n: 7, ground: 47,
+              axs: [17.5, 16.5, 24.5, 19.0, 20.5, 16.0, 15.5],
+              grounds: [19, 15, 9, 7, 6, 6, 6] },
 
   // The running jump, which the sheet DOES have in full: a gather, the launch,
   // and a long tuck through the air.
-  gatherRun: { row: 9, c0: 1, n: 2, ground: 36, ax: 9.7 },
+  // Two frames, two floors: his ink ends at cell row 33 in the first and 36 in
+  // the second, so one number for the row hovered him three pixels off the
+  // ground on one of them — the last place you want a hover
+  gatherRun: { row: 9, c0: 1, n: 2, axs: [8.0, 9.0], grounds: [33, 36] },
   airRun: {
     row: 9, c0: 3, n: 12, air: true,
     anchors: [[9.4, 15], [10.8, 15], [10.8, 16], [7.9, 17], [5, 18], [4.9, 18],
               [5, 19], [5, 19], [6.5, 21], [7.8, 20], [7.8, 20], [7.5, 18]],
   },
-  fall: { row: 9, c0: 11, n: 3, air: true, loop: true, hold: 6,
-          anchors: [[6.5, 21], [7.8, 20], [7.8, 20]] },
+  // FALLING, which is its own row and not three frames borrowed out of the
+  // middle of a running jump. Row 16: arms up, legs together, coming down.
+  // Walking off a ledge used to play a man mid-leap with his knees tucked.
+  fall: { row: 16, c0: 1, n: 4, air: true, loop: true, hold: 6,
+          anchors: [[11.5, 20], [10.5, 23], [7.0, 21], [6.5, 21]] },
 
   // ── the ledge ──────────────────────────────────────────────────────
   // The LIP is the fixed thing in these, and what rests on it MOVES. At the

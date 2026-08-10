@@ -4,6 +4,37 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v38 — 2026-08-09
+
+**The jump, and then the whole sheet written down.**
+
+Row 13 is not the jump. It is floor-registered from end to end — his feet are
+on cell row 47 in all seventeen frames — because it is the crouch, the arm
+swing, the rise onto his toes and the landing: what he does ON the ground
+either side of a jump. Four of its frames were being hung off the hip as the
+flight, so a jump was a man standing still and reaching, floated up the screen
+by the engine. The flight is row 14, seven frames of him actually off the
+ground. And it was paced at f/3, which ran out of drawing after twelve of the
+jump's thirty-six frames and then held one frame for the whole descent — two
+thirds of a jump on a freeze-frame. Now f/5, so the arc gets all of it.
+
+**Falling had no animation of its own.** It was three frames borrowed out of
+the middle of a running jump, so walking off a ledge played a man mid-leap with
+his knees tucked. Row 16 is the fall: arms up, legs together, coming down. And
+`landHard` — the one that hurts — was playing the ordinary landing; it is the
+tail of row 32 now, the eight frames of sliding out flat.
+
+Also: the running gather hovered three pixels for one of its two frames,
+because its two frames have two different floors.
+
+**And the census.** All sixty-one rows identified and written into
+`ref/README.md` with what each one is and what uses it. Twenty-five were
+mapped; five of those twenty-five were the wrong move, which is the whole
+argument for the table. It names the twenty-nine rows nothing uses yet — a
+second turn, a pistol-whip, an electrocution, four different ways to end up on
+the floor — and the two rules that were being broken: registration is per row,
+not per sheet, and a row is not a move.
+
 ## v37 — 2026-08-09
 
 **The turn was Conrad's all along, and it was hiding under the standing
