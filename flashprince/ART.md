@@ -6,6 +6,14 @@ are built**, not a copy of any of them — the layouts here are ours, the
 construction is what is being learned. Nothing from those screens is in this
 repository.
 
+**Moving reference:** https://youtu.be/wNTnRM77XuE — the owner's pick. It
+cannot be reached from the build environment (the proxy refuses every video and
+image host), so it is recorded here rather than fetched. To study it, either
+paste stills into the session or commit a short clip to the branch: there is an
+ffmpeg available now (`pip install imageio-ffmpeg`) and frames can be pulled
+from any video file that reaches disk. What it is wanted for is the things a
+still cannot show — how a lift travels, how a door opens, how an enemy paces.
+
 The point of writing it down: the fourteen rooms this project shipped in v45
 were invented without anyone looking at what a screen of this kind is actually
 made of, and that is why they read as a different game. Getting the vocabulary

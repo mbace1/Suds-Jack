@@ -4,6 +4,37 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v47 — 2026-08-09
+
+**Ragged edges and mottle** — the first two points of `ART.md`, and the biggest
+return available for no new data.
+
+**The edges are not the grid any more.** Nothing in the reference meets air
+along a straight line, and a tile-shaped edge is the loudest thing a picture can
+say about how it was made. An exposed face is now a line that wanders two or
+three pixels either side of the tile boundary, and a mass is filled as a
+POLYGON rather than a rect — which is what lets the wander cut *inward* as well
+as out. A bump that only bulges outward reads as a blob stuck on; the bites are
+what read as weathering.
+
+The wander is a hash of the **world** coordinate, not the tile, so two tiles
+sharing an edge agree about it and the line runs on through the corner instead
+of stepping at every boundary. One value every four pixels: per-pixel is fizz,
+four is a plate. Buried tiles skip it — they have no edge to chew.
+
+**The mottle** is a scatter of two adjacent tones through the body of every
+mass, clustered into blotches a few pixels across. A single rect reads as a
+brick; two or three overlapping read as a stain. Kept off the top four pixels
+where the lit plane and its turn-under already do their own job, and off the
+loose tiles, which have to stay legible as a warning.
+
+Also: the moving reference the owner picked is recorded at the top of `ART.md`
+along with how to actually study it from in here, since the build environment
+cannot reach video.
+
+**Known:** two swordsmen in one room can spawn on top of each other. Placement,
+not art — next pass.
+
 ## v46 — 2026-08-09
 
 **A room editor, and a study of what a room should look like.**
