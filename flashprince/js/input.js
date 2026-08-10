@@ -106,6 +106,24 @@ export class Input {
     surf.addEventListener('touchend', up, { passive: false });
     surf.addEventListener('touchcancel', up, { passive: false });
     surf.addEventListener('contextmenu', e => e.preventDefault());
+
+    // The editor needs a POINTER, which nothing else here does — the game is
+    // played with a stick and four buttons. Kept as raw client coordinates and
+    // converted by whoever is looking, because only the editor knows it wants
+    // picture space rather than display space.
+    const track = (e, down) => {
+      this.point = { x: e.clientX, y: e.clientY };
+      if (down !== null) {
+        if (down && !this.pointDown) this.pointPress = true;
+        if (!down && this.pointDown) this.pointRelease = true;
+        this.pointDown = down;
+        this.pointButton = e.button ?? 0;
+      }
+    };
+    surf.addEventListener('pointerdown', e => track(e, true));
+    surf.addEventListener('pointermove', e => track(e, null));
+    surf.addEventListener('pointerup', e => track(e, false));
+    surf.addEventListener('pointercancel', e => track(e, false));
   }
 
   names(code) {
@@ -200,5 +218,6 @@ export class Input {
     this.jumpPress = this.firePress = this.gunPress = this.carefulPress = false;
     this.pausePress = false; this.anyPress = false;
     this.modePress = false; this.hitPress = false; this.mutePress = false;
+    this.pointPress = false; this.pointRelease = false;
   }
 }

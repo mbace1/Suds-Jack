@@ -25,10 +25,14 @@ const GATE_OPEN = 230;
 export class World {
   constructor() { this.load(0); }
 
-  load(i, entryFace = 1) {
+  // `override` is the editor's copy of this room if it has one. The room in
+  // rooms.js is left alone either way — an edit is a layer over the top of it,
+  // never a rewrite of it, which is what makes reverting a room free.
+  load(i, entryFace = 1, override = null) {
     this.index = Math.max(0, Math.min(ROOMS.length - 1, i));
     this.room = ROOMS[this.index];
-    this.grid = this.room.map.map(r => r.split(''));
+    const map = override ?? this.room.map;
+    this.grid = map.map(r => r.split(''));
     this.spawn = null; this.door = null;
     this.pickups = []; this.spawns = [];
     this.spikes = []; this.chompers = []; this.loose = new Map();
