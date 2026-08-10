@@ -43,6 +43,7 @@ const REEL = [
   ['gatherRun', 'RUNNING JUMP · gather'],
   ['airRun', 'RUNNING JUMP · flight'],
   ['fall', 'FALLING'],
+  ['landHard', 'LANDING HARD'],
   ['hang', 'HANGING'],
   ['mantle', 'PULLING UP'],
   ['lower', 'CLIMBING DOWN'],

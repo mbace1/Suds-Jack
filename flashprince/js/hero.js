@@ -254,10 +254,15 @@ export class Hero {
       case 'gatherRun': return over('gatherRun', 2);
       // Airborne: the clip is open-ended, so the flight frames are paced off
       // the frame counter and then held on the last one until he lands.
-      case 'air': return { anim: this.jumpDir ? 'airRun' : 'airUp', f: this.f / 3 };
+      // Paced so the arc gets ALL of its frames. At f/3 the standing jump ran
+      // out of drawing after twelve of its thirty-six frames and then held one
+      // frame for the whole descent — two thirds of a jump on a freeze-frame.
+      case 'air': return this.jumpDir
+        ? { anim: 'airRun', f: this.f / 3 }
+        : { anim: 'airUp', f: this.f / 5 };
       case 'fall': return { anim: 'fall', f: this.f / 6 };
       case 'land': return over('land', 4);
-      case 'landHard': return over('land', 4);
+      case 'landHard': return over('landHard', 7);
       // The ledge. Drawn against the LIP, because that is the thing that does
       // not move; what rests on it walks from his hands to his feet.
       case 'hang': return { anim: 'hang', f: this.f / 24, lipY: this.ledgeY };
