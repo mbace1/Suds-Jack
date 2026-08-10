@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tiny 2D — physics bench</title>
+</head>
+<body>
+<!--
+  A headless bench for the ride. It runs the REAL Skater against the REAL
+  Terrain at a fixed timestep with no renderer, no rAF and no scene, so a
+  thousand landings take a second instead of an afternoon.
+
+  It exists because the question "is this fun to time?" has a measurable
+  proxy: `align` at touchdown, the ratio the grader in skater.js uses. If the
+  best line a bot can ride never scores under the perfect band, no player will
+  either, and the reward loop is unreachable however the hills look.
+
+  Open with a static server; drive it from test/bench.cjs.
+-->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module">
+    import { Terrain } from '../js/terrain.js?v=4';
+    import { Skater } from '../js/skater.js?v=4';
+
+    const VOID = { add() {}, remove() {} };   // the meshes go nowhere
+    const STEP = 1 / 120;                     // main.js's PHYS_STEP
+
+    // The bot presses down the face and lets go as the crest arrives — the
+    // line the game asks for. `reach` is how early it lets go (in seconds of
+    // travel), `dive` how it uses the button in the air.
+    function ride({ seed = 7, from = 0, steps = 60000, reach = 0.1, dive = 'all' }) {
+      const terrain = new Terrain(seed, VOID);
+      const skater = new Skater(VOID, terrain);
+      if (from) {
+        terrain.ensure(from + 900);
+        skater.x = from;
+        skater.y = terrain.sample(from).y + 1;
+        skater.vx = 20; skater.vy = 0;
+      }
+      const nextCrest = (x) => {
+        let prev = terrain.sample(x).m;
+        for (let d = 0.5; d < 90; d += 0.5) {
+          const m = terrain.sample(x + d).m;
+          if (prev > 0 && m <= 0) return x + d;
+          prev = m;
+        }
+        return null;
+      };
+      const input = { pressing: false, enabled: true, consumeTrick: () => false };
+      const lands = [], slopes = [];
+      let airborneFor = 0;
+
+      for (let i = 0; i < steps; i++) {
+        terrain.ensure(skater.x + 300);
+        if (skater.air) {
+          airborneFor += STEP;
+          input.pressing = dive === 'all' ? true
+            : dive === 'none' ? false
+            : airborneFor > 0.12;                 // 'late'
+        } else {
+          airborneFor = 0;
+          const c = nextCrest(skater.x);
+          input.pressing = !(c !== null && c - skater.x < Math.max(2.5, skater.speed * reach));
+        }
+        slopes.push(Math.abs(terrain.sample(skater.x).m));
+        for (const e of skater.update(STEP, input)) {
+          if (e.type === 'land' && e.airTime > 0.15) {
+            lands.push({ align: e.align, air: e.airTime, speed: e.speed, q: e.quality });
+          }
+        }
+      }
+      return {
+        lands, slopes, dist: skater.x - from,
+        seconds: steps * STEP, speed: skater.speed,
+      };
+    }
+
+    window.__bench = { ride };
+    window.__ready = true;
+  </script>
+</body>
+</html>

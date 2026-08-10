@@ -16,18 +16,18 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { COL } from './palette.js?v=3';
-import { Terrain } from './terrain.js?v=3';
-import { Skater } from './skater.js?v=3';
-import { Input } from './input.js?v=3';
-import { Audio } from './audio.js?v=3';
-import { randomSeed, clamp, lerp } from './rng.js?v=3';
+import { COL } from './palette.js?v=4';
+import { Terrain } from './terrain.js?v=4';
+import { Skater } from './skater.js?v=4';
+import { Input } from './input.js?v=4';
+import { Audio } from './audio.js?v=4';
+import { randomSeed, clamp, lerp } from './rng.js?v=4';
 
 // ── Tuning ─────────────────────────────────────────────────────────────────
 // The view is anchored on its WIDTH, not its height. This is a side-on game
-// and the thing you have to see is the next hill: a terrain segment is 22-37
-// units long (terrain.js `len`), so a view has to hold at least one of those or
-// it is a slope with nothing readable on it. Anchoring on height — which is what this
+// and the thing you have to see is the next hill: a terrain segment is 31-53
+// units long (terrain.js LEN_START/LEN_END), so a view has to hold most of one
+// or it is a slope with nothing readable on it. Anchoring on height — which is what this
 // did — made the visible width a function of the aspect ratio, so a phone held
 // upright got 34 × 0.46 ≈ 16 units across and the screen filled with dark mass.
 //

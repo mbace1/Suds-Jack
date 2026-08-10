@@ -176,7 +176,9 @@ caveat as paperboy.
 
 ### Tiny 2D (`tiny2d/`)
 A **one-button momentum skater** on Three.js r167 — **Tiny Wings' verb on a skateboard**,
-side-on. Hold to press into the face of a hill (gravity ×2.7), release at the lip to pop
+side-on, ridden by a **fat bird** (one round mass, no neck; the beak and tail carry the
+silhouette because it is ~40px tall on a phone, and everything that says which way it is
+going sticks out of the body — the arcade marquee's `lip` cover matches). Hold to press into the face of a hill (gravity ×2.7), release at the lip to pop
 (charge caps at 0.4 s), hold again in the air to dive onto the next downslope. The whole
 simulation is **ballistic**: integrate under gravity, then ask the terrain whether you
 ended up underground and if so snap to the surface and project velocity onto the slope
@@ -205,6 +207,24 @@ viewport each way, so the player sees the top-left quarter at 2× and the skater
 below the bottom edge. `dropcabal` passes `false` legitimately because its CSS pins the
 canvas to 100vw/100vh for the pixel-art upscale; copying the flag without the CSS is
 the trap.
+**Difficulty is size, never sharpness** (v4). The ramp used to raise amplitude 4.5 → 9.5
+while shortening the segment 30 → 19; a raised cosine peaks at `|dy|·π/(2·len)`, so doing
+both multiplied steepness — by 3 km the ground ran at 41° with 65° faces and a bot riding
+the line properly landed **100% hard**, so the fever chain could never start. Hills now come
+from a **slope budget** (`SLOPE_START/END` 26° → 39°) with the rise derived by inverting the
+cosine, so a longer hill is a taller one and never a steeper one; the oversized crest is
+longer *and* taller. Two coupled numbers came with it: faces run 42 → 36 units and
+`POP_MAX` drops 14 → 10, because the ballistic range is v²/g ≈ 47 units and a 28-unit face
+meant every real air overshot the trough onto the next uphill. The landing bands are
+**0.26 / 0.60** (15° / 37°) — 0.17 was a 10° window no measurable line ever hit.
+**`tiny2d/test/bench.cjs` is how any of this is known**: it drives the real `Skater` against
+the real `Terrain` at a fixed timestep with no renderer (`test/sim.html`), five seeds × three
+dive policies × five distances, and prints the perfect/ok/hard split plus the raw `align`
+ratios — ~370 airs per data point instead of the three a real-time run gives you. `--sweep`
+does it across candidate constants. It reports 32% perfect at the start and 24% at 6 km,
+with hard climbing 33% → 42%. `test/rider.html` draws the bird large and at phone size.
+Tune nothing here by eye: the in-browser real-time loop in this container runs at ~4 fps,
+which is slow motion, and micro-hops (`airTime` 0s) will happily report as perfect landings.
 It is **its own game, not a Tiny Hawk mode** — spun out of that project's design work when
 Tiny Hawk went third-person 3D, and it shares nothing with it at runtime (its own
 `tiny2dHi` / `tiny2dSound` keys). What travelled the other way is physics: `tinyhawk`'s
