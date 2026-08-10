@@ -80,6 +80,16 @@
     };
     const col = h => new THREE.Color(h).convertSRGBToLinear();
 
+    // ── quality: fill-rate first ──────────────────────────────────────────
+    // A headset is fill-bound, not triangle-bound. One knob object, decided
+    // once: Quest gets the base budget; Vision Pro (Safari on M-silicon,
+    // gaze + pinch, ~3.7K per eye) and desktop get the high one — a larger
+    // framebuffer, a sharper shadow map, denser instancing, a denser mesh.
+    // Everything that scales reads TIER; nothing else knows which device.
+    const TIER = /OculusBrowser|Quest/i.test(navigator.userAgent)
+      ? { name: 'quest', fb: 1.0, shadow: 1024, density: 1, foam: 2000, seg: 168 }
+      : { name: 'high', fb: 1.2, shadow: 2048, density: 2.2, foam: 3200, seg: 208 };
+
     // ── terrain: one source of truth ──
     const ISLAND_R = 15, PAD_H = 0.92, PAD_INNER = 1.6, PAD_OUTER = 3.4;
     const INLET_A = { x: 0.4, z: 3.6 }, INLET_B = { x: 4.5, z: 14.5 };
@@ -170,6 +180,16 @@
     renderer.toneMappingExposure = 1.05;
     renderer.xr.enabled = true;
     if (renderer.xr.setFoveation) renderer.xr.setFoveation(1);
+    if (renderer.xr.setFramebufferScaleFactor) renderer.xr.setFramebufferScaleFactor(TIER.fb);
+    // Static sun shadows: the scene never moves and the sun only moves on a
+    // mood change, so the map is rendered while the mood blends and then NOT
+    // AT ALL — crisp palm shadows at zero steady-state cost. The one honest
+    // approximation: crown sway (±2°) is not in the shadow, and at that
+    // amplitude nobody has caught it.
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    if ('autoUpdate' in renderer.shadowMap) renderer.shadowMap.autoUpdate = false;
+    const shadowDirty = () => { renderer.shadowMap.needsUpdate = true; };
     document.body.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
@@ -184,7 +204,12 @@
 
     // ── lights ──
     const sun = new THREE.DirectionalLight(0xffffff, 2.5);
-    scene.add(sun);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(TIER.shadow, TIER.shadow);
+    Object.assign(sun.shadow.camera, { left: -18, right: 18, top: 18, bottom: -18, near: 20, far: 110 });
+    sun.shadow.bias = -0.0004;
+    sun.shadow.normalBias = 0.02;
+    scene.add(sun, sun.target);
     const hemi = new THREE.HemisphereLight(0xffffff, 0x888888, 0.5);
     scene.add(hemi);
 
@@ -285,7 +310,7 @@
     occlude(chairP[0] + Math.sin(chairYaw), chairP[2] + Math.cos(chairYaw), 1.6, 0.25);
 
     // ═══ TERRAIN ═══
-    const terrainGeo = new THREE.PlaneGeometry(46, 46, 168, 168);
+    const terrainGeo = new THREE.PlaneGeometry(46, 46, TIER.seg, TIER.seg);
     terrainGeo.rotateX(-Math.PI / 2);
     {
       const pos = terrainGeo.attributes.position;
@@ -327,6 +352,7 @@
     const terrain = new THREE.Mesh(terrainGeo, new THREE.MeshStandardMaterial({
       vertexColors: true, roughness: 1, metalness: 0, map: noiseTex(26),
     }));
+    terrain.receiveShadow = true;
     island.add(terrain);
 
     // ═══ WATER ═══ a flat plane at terrain y = 0; the surface detail is two
@@ -359,7 +385,7 @@
       island.add(cloud);
       return cloud;
     }
-    const foamA = foamCloud(1100), foamB = foamCloud(900);
+    const foamA = foamCloud(Math.round(TIER.foam * 0.55)), foamB = foamCloud(Math.round(TIER.foam * 0.45));
 
     // ═══ THE NOOK — deck, chair, table, radio, book ═══
     const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
@@ -425,6 +451,7 @@
       ant.position.set(0.12, 0.22, -0.02); ant.rotation.z = -0.35;
       radio.add(body, grille, dial, ant);
       // on the side table, in world space
+      radio.traverse(o => { if (o.isMesh) o.castShadow = true; });
       radio.position.set(
         chairP[0] + Math.cos(chairYaw) * 0.62 - Math.sin(chairYaw) * 0.05,
         0.7,
@@ -482,6 +509,7 @@
         crownGeos.push(coco);
       }
       const crown = new THREE.Mesh(BGU.mergeGeometries(crownGeos.map(g => g.toNonIndexed())), foliage);
+      crown.castShadow = true;
       crown.position.set(spot.x + px, py - PAD_H, spot.z + pz);
       crown.userData.phase = rng() * Math.PI * 2;
       scene.add(crown);
@@ -562,6 +590,7 @@
       });
       totemCap.position.y = 1.02;
       totem.add(totemCap);
+      totem.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
       totem.position.set(totemSpot.x, gy(totemSpot.x, totemSpot.z), totemSpot.z);
       scene.add(totem);
     }
@@ -606,6 +635,8 @@
         new THREE.BufferAttribute(new Float32Array(c.attributes.position.count * 2), 2));
       return c;
     })), satin);
+    statics.castShadow = true;
+    statics.receiveShadow = true;
     island.add(statics);
 
     // ═══ INSTANCED — grass on the high dry ground, pebbles in the wet band:
@@ -628,13 +659,14 @@
       }
       return BGU.mergeGeometries(gs);
     }
+    const GRASS_N = Math.round(420 * TIER.density), PEBBLE_N = Math.round(260 * TIER.density);
     const grass = new THREE.InstancedMesh(bladeGeo(),
-      foliage, 420);
+      foliage, GRASS_N);
     {
       const m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0),
         s = new THREE.Vector3(), p = new THREE.Vector3();
-      let placed = 0, guard = 40000;
-      while (placed < 420 && guard-- > 0) {
+      let placed = 0, guard = 120000;
+      while (placed < GRASS_N && guard-- > 0) {
         const x = (rng() - 0.5) * ISLAND_R * 2, z = (rng() - 0.5) * ISLAND_R * 2;
         const h = groundHeight(x, z);
         if (h < 0.85 || Math.hypot(x, z) < 2.3) continue;
@@ -650,12 +682,13 @@
     island.add(grass);
 
     const pebbles = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.05, 0),
-      new THREE.MeshStandardMaterial({ roughness: 0.95 }), 260);
+      new THREE.MeshStandardMaterial({ roughness: 0.95 }), PEBBLE_N);
+    pebbles.receiveShadow = true;
     {
       const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(),
         p = new THREE.Vector3(), e = new THREE.Euler(), cA = col('#8f867c'), cB = col('#b8a992');
-      let placed = 0, guard = 40000;
-      while (placed < 260 && guard-- > 0) {
+      let placed = 0, guard = 120000;
+      while (placed < PEBBLE_N && guard-- > 0) {
         const x = (rng() - 0.5) * ISLAND_R * 2.4, z = (rng() - 0.5) * ISLAND_R * 2.4;
         const h = groundHeight(x, z);
         if (h < -0.05 || h > 0.35) continue;
@@ -764,6 +797,7 @@
       clearTimeout(setMood._t);
       setMood._t = setTimeout(() => { tag.style.opacity = 0; }, 2200);
       applyMood(true);
+      shadowDirty();
       audioStart();
     }
     function applyMood(force = false) {
@@ -873,6 +907,7 @@
     renderer.xr.addEventListener('sessionstart', () => {
       baseRef = renderer.xr.getReferenceSpace();
       audioStart();
+      shadowDirty();
     });
 
     const raycaster = new THREE.Raycaster();
@@ -986,7 +1021,7 @@
     function animate() {
       const dt = Math.min(0.05, clock.getDelta()), t = clock.elapsedTime;
 
-      if (blend < 1) { blend = Math.min(1, blend + dt / 2.5); applyMood(); }
+      if (blend < 1) { blend = Math.min(1, blend + dt / 2.5); applyMood(); shadowDirty(); }
 
       if (!renderer.xr.isPresenting) {
         // desktop walk — clamped by the same groundHeight the teleport uses
@@ -1064,14 +1099,14 @@
 
     setMood(0, true);
     (renderer.init ? renderer.init() : Promise.resolve())
-      .then(() => renderer.setAnimationLoop(animate));
+      .then(() => { shadowDirty(); renderer.setAnimationLoop(animate); });
 
     // the smoke test drives game state, not the wall clock
     window.__tt = {
       scene, renderer, camera, groundHeight, setMood,
       get mood() { return moodIdx; },
       chair: { p: chairP, yaw: chairYaw },
-      occluders, MOODS,
+      occluders, MOODS, TIER,
       debug: { radioToggle, actOn, rayTargets },
     };
   </script>
