@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Toko Trip</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { background: #0a0c10; overflow: hidden; touch-action: none; font-family: ui-monospace, Menlo, Consolas, monospace; }
+    canvas { display: block; }
+    #hints {
+      position: fixed; left: 12px; bottom: 12px; z-index: 3;
+      color: #f2e9d8; opacity: 0.75; font-size: 12px; line-height: 1.7;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.6); pointer-events: none;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    #hints a { color: #3aa8a0; pointer-events: auto; }
+    #mood-name {
+      position: fixed; top: 14px; right: 16px; z-index: 3;
+      color: #f2e9d8; font-size: 12px; letter-spacing: 0.14em; opacity: 0;
+      transition: opacity 0.4s; text-shadow: 0 1px 2px rgba(0,0,0,0.6); pointer-events: none;
+    }
+    /* XRButton injects its own styles; keep it above the canvas */
+    #XRButton { z-index: 4 !important; }
+  </style>
+</head>
+<body>
+  <div id="hints">
+    point + trigger&nbsp; teleport · totem&nbsp; mood · chair&nbsp; return<br>
+    desktop&nbsp; drag look · WASD walk · M mood<br>
+    <a href="chair-lab.html">chair-lab</a>&nbsp; pins your real chair
+  </div>
+  <div id="mood-name"></div>
+
+  <!-- three r180 from a local vendor/ copy, not the CDN — same rule sudsjack
+       and hyperdagger landed on (offline workers and captive networks both
+       punish a CDN import; a beach should not need a signal) -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.webgpu.min.js",
+      "three/webgpu": "./vendor/three.webgpu.min.js",
+      "three/addons/": "./vendor/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    // ── Toko Trip — island v2 ─────────────────────────────────────────────
+    // A VR zen island. The world origin is the chair nook: chair-lab.html
+    // registers the player's REAL chair in local-floor space and this file
+    // builds the island around that spot. Terrain is one pure function,
+    // groundHeight(x, z) — the mesh, every scatter pass and the teleport
+    // clamp all ask it, so the cove reshapes from two constants.
+    //
+    // Coordinates: everything is built in TERRAIN space, where the sea is
+    // y = 0 and the pad under the chair is y = PAD_H. The island group then
+    // drops by PAD_H so the pad lands on the REAL floor (local-floor y = 0)
+    // and the sea ends up ~0.9 m below your feet — the nook is a dune top
+    // looking down its own cove. gy() converts terrain y → world y.
+    //
+    // Flip this if the Quest browser's WebGPU build misbehaves in XR.
+    const FORCE_WEBGL = false;
+    // Royalty-free or self-made only. Empty = the radio plays its own quiet
+    // synth pad instead of a file.
+    const RADIO_TRACK_URL = '';
+
+    import * as THREE from 'three';
+    import { XRButton } from 'three/addons/webxr/XRButton.js';
+    import * as BGU from 'three/addons/utils/BufferGeometryUtils.js';
+
+    // ── palette ──
+    const P = {
+      sand: '#e9dcb0', wetSand: '#b99c72', dune: '#d8c893',
+      grass: '#74a862', driftwood: '#c9b391', teal: '#3aa8a0',
+      cream: '#f2e9d8', sunset: '#e8a05c', neon: '#ff4fd8',
+      rock: '#938a7c', rockDark: '#6a6258', seabed: '#2e6a64',
+      leaf: '#5e9450', leafLight: '#9ec97a',
+    };
+    const col = h => new THREE.Color(h).convertSRGBToLinear();
+
+    // ── terrain: one source of truth ──
+    const ISLAND_R = 15, PAD_H = 0.92, PAD_INNER = 1.6, PAD_OUTER = 3.4;
+    const INLET_A = { x: 0.4, z: 3.6 }, INLET_B = { x: 4.5, z: 14.5 };
+
+    const hash = (ix, iz) => {
+      let h = (ix * 374761393 + iz * 668265263) | 0;
+      h = Math.imul(h ^ (h >>> 13), 1274126177);
+      return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+    };
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const smooth = (a, b, x) => {
+      const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+      return t * t * (3 - 2 * t);
+    };
+    function vnoise(x, z) {
+      const ix = Math.floor(x), iz = Math.floor(z), fx = x - ix, fz = z - iz;
+      const sx = fx * fx * (3 - 2 * fx), sz = fz * fz * (3 - 2 * fz);
+      const a = hash(ix, iz), b = hash(ix + 1, iz), c = hash(ix, iz + 1), d = hash(ix + 1, iz + 1);
+      return lerp(lerp(a, b, sx), lerp(c, d, sx), sz);
+    }
+    const fbm = (x, z) => vnoise(x, z) * 0.55 + vnoise(x * 2.1, z * 2.1) * 0.28 + vnoise(x * 4.3, z * 4.3) * 0.17;
+
+    // distance to the inlet spine, plus how far along it (0 = tip, 1 = sea)
+    function inletDist(x, z) {
+      const dx = INLET_B.x - INLET_A.x, dz = INLET_B.z - INLET_A.z;
+      const u = Math.min(1, Math.max(0,
+        ((x - INLET_A.x) * dx + (z - INLET_A.z) * dz) / (dx * dx + dz * dz)));
+      const px = INLET_A.x + dx * u, pz = INLET_A.z + dz * u;
+      return { d: Math.hypot(x - px, z - pz), u };
+    }
+
+    function groundHeight(x, z) {
+      const r = Math.hypot(x, z), t = r / ISLAND_R;
+      let h = t < 1 ? Math.pow(1 - t * t, 1.5) * 2.4 - 0.5 : -0.5 - (t - 1) * 2.6;
+      h += (fbm(x * 0.33 + 7.3, z * 0.33 - 4.1) - 0.5) * 1.35 * Math.max(0, 1 - t * 0.85);
+      h = Math.max(h, -2.3);
+      // the inlet: blend toward a channel bed that stays below water all the
+      // way to the tip, widening and deepening seaward
+      const { d, u } = inletDist(x, z);
+      const w = 1.1 + u * 2.6;
+      h = lerp(h, -0.25 - u * 1.15, 1 - smooth(w * 0.45, w, d));
+      // the pad: honest level ground under the real chair
+      h = lerp(h, PAD_H, smooth(PAD_OUTER, PAD_INNER, r));
+      return h;
+    }
+    const gy = (x, z) => groundHeight(x, z) - PAD_H;   // terrain → world y
+    const slopeAt = (x, z) => {
+      const e = 0.22;
+      return Math.hypot(groundHeight(x + e, z) - groundHeight(x - e, z),
+        groundHeight(x, z + e) - groundHeight(x, z - e)) / (2 * e);
+    };
+
+    // ── baked AO: everything standing on the sand darkens the sand under it.
+    // Registered by the scatter plan, multiplied into the terrain's vertex
+    // colours once at load. This is the contact-shadow pass — no shadow maps.
+    const occluders = [];
+    const occlude = (x, z, r, s) => occluders.push({ x, z, r, s });
+    function bakedAO(x, z) {
+      let ao = 1;
+      for (const o of occluders) {
+        const d = Math.hypot(x - o.x, z - o.z);
+        if (d < o.r) ao *= 1 - o.s * Math.pow(1 - d / o.r, 1.6);
+      }
+      return Math.max(0.45, ao);
+    }
+
+    // ── the chair nook: calibration from chair-lab.html, or the default ──
+    // chairP is WORLD space: [x, seat height above the real floor, z].
+    let chairP = [0, 0.5, 0], chairYaw = Math.atan2(INLET_A.x, INLET_A.z);
+    try {
+      const fb = JSON.parse(localStorage.getItem('tokoTrip.chairPoseFallback') || 'null');
+      const yaw = parseFloat(localStorage.getItem('tokoTrip.chairYaw'));
+      if (fb && Array.isArray(fb.p)) {
+        // clamp to the pad — a stale Guardian remap must not put the chair in the sea
+        if (Math.hypot(fb.p[0], fb.p[2]) < PAD_INNER) {
+          chairP = [fb.p[0], Math.min(0.8, Math.max(0.3, fb.p[1])), fb.p[2]];
+        }
+        if (Number.isFinite(fb.yaw)) chairYaw = fb.yaw;
+      }
+      if (Number.isFinite(yaw)) chairYaw = yaw;
+    } catch (e) { /* no storage — the default nook */ }
+
+    // ── renderer / scene ──
+    const renderer = new THREE.WebGPURenderer({ antialias: true, forceWebGL: FORCE_WEBGL });
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    renderer.xr.enabled = true;
+    if (renderer.xr.setFoveation) renderer.xr.setFoveation(1);
+    document.body.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.05, 400);
+    scene.add(camera);
+    const listener = new THREE.AudioListener();
+    camera.add(listener);
+
+    const island = new THREE.Group();
+    island.position.y = -PAD_H;
+    scene.add(island);
+
+    // ── lights ──
+    const sun = new THREE.DirectionalLight(0xffffff, 2.5);
+    scene.add(sun);
+    const hemi = new THREE.HemisphereLight(0xffffff, 0x888888, 0.5);
+    scene.add(hemi);
+
+    // ── sky dome + sun disc ──
+    const skyGeo = new THREE.SphereGeometry(170, 24, 16);
+    skyGeo.setAttribute('color',
+      new THREE.BufferAttribute(new Float32Array(skyGeo.attributes.position.count * 3), 3));
+    const sky = new THREE.Mesh(skyGeo,
+      new THREE.MeshBasicMaterial({ side: THREE.BackSide, vertexColors: true, fog: false }));
+    scene.add(sky);
+    const _skyC = new THREE.Color(), _skySea = new THREE.Color();
+    function paintSky(top, horiz, sea) {     // takes linear THREE.Colors
+      // below the horizon the dome dives toward the sea colour, so the water
+      // plane's far edge never draws a band against a lighter dome
+      _skySea.copy(sea ?? horiz).multiplyScalar(0.8);
+      const pos = skyGeo.attributes.position, out = skyGeo.attributes.color;
+      for (let i = 0; i < pos.count; i++) {
+        const y = pos.getY(i) / 170;
+        if (y >= 0) _skyC.copy(horiz).lerp(top, Math.pow(y, 0.55));
+        else _skyC.copy(horiz).lerp(_skySea, Math.min(1, -y * 18));
+        out.setXYZ(i, _skyC.r, _skyC.g, _skyC.b);
+      }
+      out.needsUpdate = true;
+    }
+    const sunDisc = new THREE.Mesh(new THREE.CircleGeometry(7, 24),
+      new THREE.MeshBasicMaterial({ fog: false, transparent: true, opacity: 0.95 }));
+    scene.add(sunDisc);
+    const sunHalo = new THREE.Mesh(new THREE.CircleGeometry(16, 24),
+      new THREE.MeshBasicMaterial({ fog: false, transparent: true, opacity: 0.22, depthWrite: false }));
+    scene.add(sunHalo);
+
+    scene.fog = new THREE.Fog(0xe8c49a, 18, 130);
+
+    // ── vertex-colour helpers ──
+    // paint(geo, colour | (x,y,z) => Color) — every material here reads
+    // vertex colours, which is what lets whole passes merge into one draw.
+    const _c = new THREE.Color(), _c2 = new THREE.Color();
+    function paint(geo, c) {
+      const pos = geo.attributes.position, arr = new Float32Array(pos.count * 3);
+      for (let i = 0; i < pos.count; i++) {
+        const v = typeof c === 'function' ? c(pos.getX(i), pos.getY(i), pos.getZ(i)) : c;
+        arr[i * 3] = v.r; arr[i * 3 + 1] = v.g; arr[i * 3 + 2] = v.b;
+      }
+      geo.setAttribute('color', new THREE.BufferAttribute(arr, 3));
+      return geo;
+    }
+
+    // one satin material family for everything solid. Foliage carries a
+    // whisper of emissive — an ambient floor, so a frond against a dusk sky
+    // is a lit shape, never a black silhouette (the cover-art lesson).
+    const satin = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.92, metalness: 0, flatShading: true });
+    // NOT flatShading: derivative normals on thin double-sided planes go
+    // dark from half the angles — the attribute normals light both faces.
+    const foliage = new THREE.MeshStandardMaterial({
+      vertexColors: true, roughness: 0.9, metalness: 0,
+      side: THREE.DoubleSide, emissive: col('#1a2a10'), emissiveIntensity: 1,
+    });
+
+    // transformed clone → the static merge pile (one draw call at the end).
+    // Pile geometry is TERRAIN space; the merged mesh joins `island`.
+    const pile = [];
+    function drop(geo, x, y, z, ry = 0, sx = 1, sy = 1, sz = 1) {
+      const g = geo.clone();
+      g.scale(sx, sy, sz); g.rotateY(ry); g.translate(x, y, z);
+      pile.push(g);
+    }
+
+    // ═══ SCATTER PLAN — positions first, so the terrain can bake their AO ═══
+    const rng = (() => { let s = 20260810; return () => (s = (Math.imul(s, 48271) >>> 0) % 2147483647) / 2147483647; })();
+
+    // palms: ring the nook and the banks, on dry ground, clear of pad and inlet
+    const palmSpots = [];
+    for (const [x, z] of [[-2.9, 5.1], [3.6, 1.2], [-4.4, 0.6], [1.1, -4.3],
+      [-2.2, -5.6], [5.4, 5.8], [-6.3, 3.9], [3.2, -6.7]]) {
+      if (groundHeight(x, z) > 0.75) { palmSpots.push({ x, z, lean: rng() * Math.PI * 2 }); occlude(x, z, 1.25, 0.5); }
+    }
+    // rocks: some on the grass, some in the shallows
+    const rockSpots = [];
+    for (let i = 0; i < 16; i++) {
+      const a = rng() * Math.PI * 2, r = 4.5 + rng() * 9;
+      const x = Math.cos(a) * r, z = Math.sin(a) * r;
+      if (groundHeight(x, z) < -0.5 || Math.hypot(x, z) < PAD_OUTER) { i--; continue; }
+      const s = 0.22 + rng() * 0.5;
+      rockSpots.push({ x, z, s });
+      occlude(x, z, s * 2.4, 0.55);
+    }
+    // lanterns: the deck edge, the path down to the water, across the bank
+    const lanternSpots = [{ x: -1.3, z: 1.9 }, { x: 1.9, z: 3.1 }, { x: -2.4, z: -2.1 }];
+    lanternSpots.forEach(l => occlude(l.x, l.z, 0.5, 0.4));
+    const logSpot = { x: -3.4, z: 6.8, ry: 0.9 };
+    occlude(logSpot.x, logSpot.z, 1.5, 0.45);
+    const totemSpot = { x: 1.75, z: -0.6 };
+    occlude(totemSpot.x, totemSpot.z, 0.55, 0.5);
+    const caveSpot = { x: -8.2, z: -6.4 };
+    occlude(caveSpot.x, caveSpot.z, 3.4, 0.5);
+    // the deck itself
+    occlude(chairP[0], chairP[2], 2.1, 0.32);
+    occlude(chairP[0] + Math.sin(chairYaw), chairP[2] + Math.cos(chairYaw), 1.6, 0.25);
+
+    // ═══ TERRAIN ═══
+    const terrainGeo = new THREE.PlaneGeometry(46, 46, 168, 168);
+    terrainGeo.rotateX(-Math.PI / 2);
+    {
+      const pos = terrainGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) pos.setY(i, groundHeight(pos.getX(i), pos.getZ(i)));
+      terrainGeo.computeVertexNormals();
+      const cSand = col(P.sand), cWet = col(P.wetSand), cDune = col(P.dune),
+        cGrass = col(P.grass), cLeaf = col(P.leaf), cBed = col(P.seabed);
+      paint(terrainGeo, (x, y, z) => {
+        const c = _c, s = slopeAt(x, z);
+        // height bands: seabed → wet sand → dry sand and dune patches → grass
+        if (y < -0.5) c.copy(cWet).lerp(cBed, smooth(-0.5, -1.7, y));
+        else {
+          c.copy(cWet).lerp(cSand, smooth(-0.05, 0.34, y));
+          c.lerp(cDune, smooth(0.35, 0.85, fbm(x * 0.5 + 3, z * 0.5)) * smooth(0.1, 0.5, y));
+          const g = smooth(0.78, 1.05, y + (fbm(x * 0.8 - 9, z * 0.8 + 5) - 0.5) * 0.55)
+            * (1 - smooth(0.45, 0.8, s));
+          c.lerp(_c2.copy(cGrass).lerp(cLeaf, fbm(x * 1.7, z * 1.7)), g);
+        }
+        // grain, slope shade, baked contact AO
+        c.multiplyScalar((0.93 + 0.12 * fbm(x * 5.1, z * 5.1))
+          * (1 - 0.16 * smooth(0.35, 0.9, s))
+          * bakedAO(x, z));
+        return c;
+      });
+    }
+    // a faint repeating grain so big flats never read as plastic
+    function noiseTex(repeat, lo = 235, hi = 255) {
+      const cv = document.createElement('canvas'); cv.width = cv.height = 128;
+      const g = cv.getContext('2d'), im = g.createImageData(128, 128);
+      for (let i = 0; i < 128 * 128; i++) {
+        const v = lo + hash(i & 127, i >> 7) * (hi - lo);
+        im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = v; im.data[i * 4 + 3] = 255;
+      }
+      g.putImageData(im, 0, 0);
+      const tx = new THREE.CanvasTexture(cv);
+      tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.repeat.set(repeat, repeat);
+      return tx;
+    }
+    const terrain = new THREE.Mesh(terrainGeo, new THREE.MeshStandardMaterial({
+      vertexColors: true, roughness: 1, metalness: 0, map: noiseTex(26),
+    }));
+    island.add(terrain);
+
+    // ═══ WATER ═══ a flat plane at terrain y = 0; the surface detail is two
+    // counter-scrolling noise maps, not a shader — stereo-safe on a Quest.
+    const waterMat = new THREE.MeshStandardMaterial({
+      color: col(P.teal), transparent: true, opacity: 0.82,
+      roughness: 0.18, metalness: 0, map: noiseTex(60, 225, 255),
+      bumpMap: noiseTex(80, 0, 255), bumpScale: 0.6,
+    });
+    const water = new THREE.Mesh(new THREE.PlaneGeometry(320, 320), waterMat);
+    water.rotation.x = -Math.PI / 2;
+    water.position.y = -PAD_H;
+    scene.add(water);
+
+    // foam: two point clouds hugging the shoreline, breathing with the surf
+    function foamCloud(n) {
+      const pts = [];
+      let guard = n * 60;
+      while (pts.length / 3 < n && guard-- > 0) {
+        const x = (rng() - 0.5) * ISLAND_R * 2.6, z = (rng() - 0.5) * ISLAND_R * 2.6;
+        const h = groundHeight(x, z);
+        if (Math.abs(h) < 0.09) pts.push(x, h + 0.025, z);
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pts), 3));
+      const cloud = new THREE.Points(g, new THREE.PointsMaterial({
+        color: col(P.cream), size: 0.055, transparent: true, opacity: 0.5,
+        depthWrite: false, sizeAttenuation: true,
+      }));
+      island.add(cloud);
+      return cloud;
+    }
+    const foamA = foamCloud(1100), foamB = foamCloud(900);
+
+    // ═══ THE NOOK — deck, chair, table, radio, book ═══
+    const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+    const cWood = col(P.driftwood);
+    {
+      // put(): nook-local coords (y up from the pad surface) → terrain space
+      const yawM = new THREE.Matrix4().makeRotationY(chairYaw);
+      const put = (geo, x, y, z) => {
+        geo.translate(x, y, z).applyMatrix4(yawM).translate(chairP[0], PAD_H, chairP[2]);
+        pile.push(geo);
+      };
+      // deck: 9 planks + edge beams, per-plank tone jitter, ends baked darker
+      for (let i = 0; i < 9; i++) {
+        const plank = box(0.28, 0.05, 2.9), tone = 0.9 + 0.18 * hash(i, 7);
+        paint(plank, (x, y, z) =>
+          _c.copy(cWood).multiplyScalar(tone * (1 - 0.28 * smooth(1.1, 1.45, Math.abs(z)))));
+        put(plank, (i - 4) * 0.31, 0.03, 0.5);
+      }
+      for (const sx of [-1.46, 1.46]) {
+        const beam = paint(box(0.1, 0.09, 3.0),
+          (x, y) => _c.copy(cWood).multiplyScalar(0.78 + 0.3 * smooth(-0.045, 0.045, y)));
+        put(beam, sx, 0.045, 0.5);
+      }
+      // beach chair — the seat top lands at chairP[1], the REAL seat height
+      const seatY = chairP[1], legH = Math.max(0.2, seatY - 0.06);
+      const cCush = col(P.teal);
+      for (const [lx, lz] of [[-0.24, -0.2], [0.24, -0.2], [-0.24, 0.22], [0.24, 0.22]]) {
+        const leg = paint(box(0.05, legH, 0.05),
+          (x, y) => _c.copy(cWood).multiplyScalar(0.72 + 0.3 * smooth(-legH / 2, legH / 2, y)));
+        put(leg, lx, 0.06 + legH / 2, lz);
+      }
+      put(paint(box(0.56, 0.06, 0.52), cWood), 0, seatY - 0.03, 0);
+      const back = paint(box(0.56, 0.62, 0.06),
+        (x, y) => _c.copy(cWood).multiplyScalar(0.86 + 0.18 * smooth(-0.31, 0.31, y)));
+      back.rotateX(0.22);
+      put(back, 0, seatY + 0.3, 0.33);
+      for (const ax of [-0.31, 0.31]) put(paint(box(0.06, 0.05, 0.5), cWood), ax, seatY + 0.18, 0.02);
+      put(paint(box(0.5, 0.05, 0.46), cCush), 0, seatY + 0.025, -0.01);
+      const backCush = paint(box(0.48, 0.5, 0.05), cCush);
+      backCush.rotateX(0.22);
+      put(backCush, 0, seatY + 0.28, 0.28);
+      // side table + the book (Treasure Island — the text is still to come)
+      put(paint(box(0.07, 0.5, 0.07),
+        (x, y) => _c.copy(cWood).multiplyScalar(0.75 + 0.28 * smooth(-0.25, 0.25, y))), 0.62, 0.31, -0.05);
+      put(paint(new THREE.CylinderGeometry(0.26, 0.29, 0.05, 10), cWood), 0.62, 0.585, -0.05);
+      put(paint(box(0.17, 0.035, 0.24), col(P.sunset)), -0.55, 0.075, -0.6);
+      put(paint(box(0.15, 0.037, 0.22), col(P.cream)), -0.55, 0.076, -0.6);
+    }
+    // chair proxy for the "return to the nook" ray — invisible, generous
+    const chairHit = new THREE.Mesh(box(0.9, 1.2, 0.9), new THREE.MeshBasicMaterial({ visible: false }));
+    chairHit.position.set(chairP[0], chairP[1] + 0.2, chairP[2]);
+    scene.add(chairHit);
+
+    // the radio — its own mesh: it is a ray target and the audio anchor
+    const radio = new THREE.Group();
+    {
+      const body = new THREE.Mesh(paint(box(0.3, 0.17, 0.1), col('#8a4a3a')), satin);
+      const grille = new THREE.Mesh(paint(box(0.16, 0.11, 0.012), col(P.cream)), satin);
+      grille.position.set(-0.045, 0, 0.055);
+      const dial = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.03, 0.03, 0.015, 8), col(P.sunset)), satin);
+      dial.rotation.x = Math.PI / 2; dial.position.set(0.09, 0.02, 0.055);
+      const ant = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.004, 0.004, 0.3, 5), col('#555550')), satin);
+      ant.position.set(0.12, 0.22, -0.02); ant.rotation.z = -0.35;
+      radio.add(body, grille, dial, ant);
+      // on the side table, in world space
+      radio.position.set(
+        chairP[0] + Math.cos(chairYaw) * 0.62 - Math.sin(chairYaw) * 0.05,
+        0.7,
+        chairP[2] - Math.sin(chairYaw) * 0.62 - Math.cos(chairYaw) * 0.05);
+      radio.rotation.y = chairYaw + 0.5;
+      scene.add(radio);
+    }
+
+    // ═══ PALMS — leaning segmented trunks, drooping fronds, coconuts ═══
+    const crowns = [];   // swayed per frame
+    const cLeafD = col(P.leaf), cLeafL = col(P.leafLight);
+    for (const spot of palmSpots) {
+      const lean = 0.14 + rng() * 0.12, leanDir = spot.lean;
+      const segs = 6, segH = 0.62;
+      let px = 0, pz = 0, py = groundHeight(spot.x, spot.z), ang = 0;
+      for (let i = 0; i < segs; i++) {
+        ang += lean / segs * (i + 1);
+        const seg = new THREE.CylinderGeometry(0.16 - (i + 1) * 0.013, 0.16 - i * 0.013, segH, 7);
+        const tone = i % 2 ? 0.82 : 0.98;
+        paint(seg, (x, y) => _c.copy(cWood).multiplyScalar(
+          tone * (0.82 + 0.22 * smooth(-segH / 2, segH / 2, y))
+          * (i === 0 ? 0.72 + 0.28 * smooth(-segH / 2, 0, y) : 1)));
+        seg.applyMatrix4(new THREE.Matrix4().makeRotationAxis(
+          new THREE.Vector3(Math.cos(leanDir), 0, -Math.sin(leanDir)), ang));
+        seg.translate(spot.x + px, py + Math.cos(ang) * segH / 2, spot.z + pz);
+        pile.push(seg);
+        px += Math.sin(ang) * segH * Math.sin(leanDir);
+        pz += Math.sin(ang) * segH * Math.cos(leanDir);
+        py += Math.cos(ang) * segH;
+      }
+      // crown: 7 bent fronds + 3 coconuts, merged, swaying as one
+      const crownGeos = [];
+      for (let f = 0; f < 7; f++) {
+        const frond = new THREE.PlaneGeometry(0.34, 1.95, 1, 6);
+        const fp = frond.attributes.position;
+        for (let i = 0; i < fp.count; i++) {
+          const t = (fp.getY(i) + 0.975) / 1.95;           // 0 base → 1 tip
+          fp.setX(i, fp.getX(i) * (1 - t * 0.75));          // taper
+          fp.setZ(i, -(t * t) * 0.85);                      // droop
+        }
+        const shade = 0.95 + 0.3 * hash(f, 3);
+        paint(frond, (x, y) => {
+          const t = (y + 0.975) / 1.95;
+          return _c.copy(cLeafD).lerp(cLeafL, t * 0.8).multiplyScalar(shade);
+        });
+        frond.rotateX(-Math.PI / 2 + 0.45);
+        frond.rotateY(f / 7 * Math.PI * 2 + rng() * 0.3);
+        frond.translate(0, 0.05, 0);
+        crownGeos.push(frond);
+      }
+      for (let c = 0; c < 3; c++) {
+        const coco = paint(new THREE.SphereGeometry(0.085, 6, 5), col('#7a5c40'));
+        const a = c * 2.1 + rng();
+        coco.translate(Math.cos(a) * 0.14, -0.08, Math.sin(a) * 0.14);
+        crownGeos.push(coco);
+      }
+      const crown = new THREE.Mesh(BGU.mergeGeometries(crownGeos.map(g => g.toNonIndexed())), foliage);
+      crown.position.set(spot.x + px, py - PAD_H, spot.z + pz);
+      crown.userData.phase = rng() * Math.PI * 2;
+      scene.add(crown);
+      crowns.push(crown);
+    }
+
+    // ═══ ROCKS · LOG · SHELLS ═══
+    for (const r of rockSpots) {
+      const g = new THREE.IcosahedronGeometry(r.s, 1);
+      const pos = g.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const k = 0.75 + hash(i, 11) * 0.5;
+        pos.setXYZ(i, pos.getX(i) * k, pos.getY(i) * k * (0.6 + hash(i, 5) * 0.5), pos.getZ(i) * k);
+      }
+      const base = col(P.rock).lerp(col(P.rockDark), rng() * 0.6);
+      paint(g, (x, y) => _c.copy(base).multiplyScalar(0.6 + 0.45 * smooth(-r.s, r.s * 0.8, y)));
+      drop(g, r.x, groundHeight(r.x, r.z) + r.s * 0.15, r.z, rng() * 6.3);
+    }
+    {
+      // driftwood log lying in the wet band, plus a broken branch stub
+      const log = new THREE.CylinderGeometry(0.14, 0.18, 2.6, 7, 6);
+      const lp = log.attributes.position;
+      for (let i = 0; i < lp.count; i++) lp.setX(i, lp.getX(i) + Math.pow((lp.getY(i) + 1.3) / 2.6, 2) * 0.45);
+      paint(log, (x, y) => _c.copy(cWood).multiplyScalar(
+        0.72 + 0.3 * smooth(-0.18, 0.18, x - Math.pow((y + 1.3) / 2.6, 2) * 0.45)));
+      log.rotateZ(Math.PI / 2 - 0.06);
+      drop(log, logSpot.x, groundHeight(logSpot.x, logSpot.z) + 0.14, logSpot.z, logSpot.ry);
+      const stub = paint(new THREE.CylinderGeometry(0.05, 0.07, 0.5, 6), cWood);
+      stub.rotateZ(0.9);
+      drop(stub, logSpot.x + 0.5, groundHeight(logSpot.x, logSpot.z) + 0.3, logSpot.z + 0.3, logSpot.ry);
+    }
+    for (let i = 0; i < 12; i++) {
+      const a = rng() * Math.PI * 2, r = 5 + rng() * 8;
+      const x = Math.cos(a) * r, z = Math.sin(a) * r, h = groundHeight(x, z);
+      if (h < 0.0 || h > 0.35) { i--; continue; }
+      drop(paint(new THREE.ConeGeometry(0.05, 0.05, 5), col(rng() > 0.5 ? P.cream : P.sunset)),
+        x, h + 0.02, z, rng() * 6.3, 1, 0.5, 1);
+    }
+
+    // ═══ LANTERNS — they brighten as the mood darkens ═══
+    const lanternLights = [], lanternGlassGeos = [];
+    const cPost = col('#6b5c48');
+    for (const l of lanternSpots) {
+      const gh = groundHeight(l.x, l.z);
+      drop(paint(box(0.06, 1.35, 0.06),
+        (x, y) => _c.copy(cPost).multiplyScalar(0.66 + 0.34 * smooth(-0.675, 0.2, y))), l.x, gh + 0.675, l.z);
+      drop(paint(box(0.3, 0.05, 0.05), cPost), l.x + 0.06, gh + 1.32, l.z);
+      const glass = paint(box(0.14, 0.18, 0.14), col('#ffd9a0'));
+      glass.translate(l.x + 0.18, gh + 1.2, l.z);
+      lanternGlassGeos.push(glass);
+      drop(paint(new THREE.ConeGeometry(0.13, 0.1, 4), col('#4a4038')), l.x + 0.18, gh + 1.34, l.z);
+      const pt = new THREE.PointLight(0xffbf7a, 0, 7, 1.8);
+      pt.position.set(l.x + 0.18, gy(l.x, l.z) + 1.2, l.z);
+      scene.add(pt);
+      lanternLights.push(pt);
+    }
+    const lanternGlassMat = new THREE.MeshStandardMaterial({
+      vertexColors: true, roughness: 0.6, emissive: col('#ffbf7a'), emissiveIntensity: 0,
+    });
+    const lanternGlass = new THREE.Mesh(
+      BGU.mergeGeometries(lanternGlassGeos.map(g => g.toNonIndexed())), lanternGlassMat);
+    island.add(lanternGlass);
+
+    // ═══ MOOD TOTEM ═══ point + trigger (or M) — the island's one control
+    const totem = new THREE.Group();
+    const totemCapMat = new THREE.MeshStandardMaterial({
+      color: col(P.sunset), emissive: col(P.sunset), emissiveIntensity: 0.7, roughness: 0.5 });
+    const totemCap = new THREE.Mesh(new THREE.OctahedronGeometry(0.09), totemCapMat);
+    {
+      const post = new THREE.Mesh(paint(box(0.16, 0.9, 0.16),
+        (x, y) => _c.copy(col('#7a6a52')).multiplyScalar(0.62 + 0.38 * smooth(-0.45, 0.1, y))), satin);
+      post.position.y = 0.45;
+      totem.add(post);
+      [P.sunset, P.teal, P.cream].forEach((c2, i) => {
+        const b = new THREE.Mesh(paint(box(0.2, 0.09, 0.2), col(c2)), satin);
+        b.position.y = 0.34 + i * 0.18;
+        totem.add(b);
+      });
+      totemCap.position.y = 1.02;
+      totem.add(totemCap);
+      totem.position.set(totemSpot.x, gy(totemSpot.x, totemSpot.z), totemSpot.z);
+      scene.add(totem);
+    }
+
+    // ═══ THE CAVE — distant landmark, exterior only, neon arch flickering ═══
+    const C_NEON = col(P.neon);
+    const neonMat = new THREE.MeshBasicMaterial({ color: C_NEON.clone(), fog: false });
+    const neonLight = new THREE.PointLight(C_NEON.getHex(), 0, 12, 1.6);
+    {
+      const gh = groundHeight(caveSpot.x, caveSpot.z);
+      const cDark = col(P.rockDark);
+      for (let i = 0; i < 5; i++) {
+        const s = 1.1 + rng() * 1.3;
+        const g = new THREE.IcosahedronGeometry(s, 1);
+        const pos = g.attributes.position;
+        for (let j = 0; j < pos.count; j++) {
+          const k = 0.8 + hash(j, i) * 0.45;
+          pos.setXYZ(j, pos.getX(j) * k, pos.getY(j) * k * 0.75, pos.getZ(j) * k);
+        }
+        paint(g, (x, y) => _c.copy(cDark).multiplyScalar(0.55 + 0.5 * smooth(-s, s, y)));
+        const a = i / 5 * Math.PI * 1.6 - 0.4;
+        drop(g, caveSpot.x + Math.cos(a) * 1.6, gh + s * 0.4, caveSpot.z + Math.sin(a) * 1.4, rng() * 6);
+      }
+      // the mouth: a dark disc you cannot enter (the interior is deferred)
+      const outward = Math.atan2(-caveSpot.x, -caveSpot.z);
+      const mouth = paint(new THREE.CircleGeometry(0.95, 12), col('#050508'));
+      mouth.rotateY(outward);
+      const mx = caveSpot.x * 0.8, mz = caveSpot.z * 0.8;
+      drop(mouth, mx, gh + 1.0, mz);
+      const arch = new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.055, 6, 20, Math.PI), neonMat);
+      arch.position.set(mx, gy(caveSpot.x, caveSpot.z) + 1.0, mz);
+      arch.rotation.y = outward;
+      scene.add(arch);
+      neonLight.position.set(mx, gy(caveSpot.x, caveSpot.z) + 1.4, mz);
+      scene.add(neonLight);
+    }
+
+    // the static merge — everything above that neither moves nor answers a ray
+    const statics = new THREE.Mesh(BGU.mergeGeometries(pile.map(g => {
+      const c = g.index ? g.toNonIndexed() : g;
+      if (!c.attributes.uv) c.setAttribute('uv',
+        new THREE.BufferAttribute(new Float32Array(c.attributes.position.count * 2), 2));
+      return c;
+    })), satin);
+    island.add(statics);
+
+    // ═══ INSTANCED — grass on the high dry ground, pebbles in the wet band:
+    // two draw calls, so density is ~free ═══
+    function bladeGeo() {
+      const gs = [];
+      const cBase = col('#4e7a44'), cTip = col('#8cbf6e');
+      for (let k = 0; k < 3; k++) {
+        const b = new THREE.PlaneGeometry(0.07, 0.32, 1, 2);
+        const bp = b.attributes.position;
+        for (let i = 0; i < bp.count; i++) {
+          const t = (bp.getY(i) + 0.16) / 0.32;
+          bp.setX(i, bp.getX(i) * (1 - t * 0.8));
+          bp.setZ(i, t * t * 0.06);
+        }
+        paint(b, (x, y) => _c.copy(cBase).lerp(cTip, (y + 0.16) / 0.32));
+        b.translate(0, 0.16, 0);
+        b.rotateY(k / 3 * Math.PI * 2);
+        gs.push(b.toNonIndexed());
+      }
+      return BGU.mergeGeometries(gs);
+    }
+    const grass = new THREE.InstancedMesh(bladeGeo(),
+      foliage, 420);
+    {
+      const m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0),
+        s = new THREE.Vector3(), p = new THREE.Vector3();
+      let placed = 0, guard = 40000;
+      while (placed < 420 && guard-- > 0) {
+        const x = (rng() - 0.5) * ISLAND_R * 2, z = (rng() - 0.5) * ISLAND_R * 2;
+        const h = groundHeight(x, z);
+        if (h < 0.85 || Math.hypot(x, z) < 2.3) continue;
+        const k = 0.7 + rng() * 0.8;
+        q.setFromAxisAngle(up, rng() * Math.PI * 2);
+        m.compose(p.set(x, h - 0.01, z), q, s.set(k, k * (0.8 + rng() * 0.5), k));
+        grass.setMatrixAt(placed, m);
+        grass.setColorAt(placed, _c.setScalar(0.8 + rng() * 0.35));
+        placed++;
+      }
+      grass.count = placed;
+    }
+    island.add(grass);
+
+    const pebbles = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.05, 0),
+      new THREE.MeshStandardMaterial({ roughness: 0.95 }), 260);
+    {
+      const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(),
+        p = new THREE.Vector3(), e = new THREE.Euler(), cA = col('#8f867c'), cB = col('#b8a992');
+      let placed = 0, guard = 40000;
+      while (placed < 260 && guard-- > 0) {
+        const x = (rng() - 0.5) * ISLAND_R * 2.4, z = (rng() - 0.5) * ISLAND_R * 2.4;
+        const h = groundHeight(x, z);
+        if (h < -0.05 || h > 0.35) continue;
+        q.setFromEuler(e.set(rng() * 3, rng() * 3, rng() * 3));
+        const k = 0.5 + rng() * 1.3;
+        m.compose(p.set(x, h + 0.015, z), q, s.set(k, k * 0.55, k));
+        pebbles.setMatrixAt(placed, m);
+        pebbles.setColorAt(placed, _c.copy(cA).lerp(cB, rng()));
+        placed++;
+      }
+      pebbles.count = placed;
+    }
+    island.add(pebbles);
+
+    // reeds along both inlet banks, in swaying clumps
+    const reedClumps = [];
+    {
+      const cStem = col('#7c9b5a'), cHead = col('#6b4a34');
+      for (let c = 0; c < 6; c++) {
+        const u = 0.08 + (c >> 1) * 0.22 + rng() * 0.08, side = c % 2 ? 1 : -1;
+        const dx = INLET_B.x - INLET_A.x, dz = INLET_B.z - INLET_A.z, L = Math.hypot(dx, dz);
+        const w = 1.1 + u * 2.6;
+        const cx = INLET_A.x + dx * u + (-dz / L * side) * (w * 0.72),
+          cz = INLET_A.z + dz * u + (dx / L * side) * (w * 0.72);
+        const ch = groundHeight(cx, cz);
+        if (ch < 0.0 || ch > 0.7) continue;
+        const gs = [];
+        for (let i = 0; i < 7; i++) {
+          const ox = (rng() - 0.5) * 0.5, oz = (rng() - 0.5) * 0.5, hh = 0.7 + rng() * 0.45;
+          const stem = paint(new THREE.CylinderGeometry(0.012, 0.02, hh, 5),
+            (x, y) => _c.copy(cStem).multiplyScalar(0.7 + 0.4 * smooth(-hh / 2, hh / 2, y)));
+          stem.translate(ox, hh / 2, oz);
+          gs.push(stem.toNonIndexed());
+          const head = paint(new THREE.CylinderGeometry(0.028, 0.032, 0.16, 5), cHead);
+          head.translate(ox, hh + 0.08, oz);
+          gs.push(head.toNonIndexed());
+        }
+        const clump = new THREE.Group();
+        clump.add(new THREE.Mesh(BGU.mergeGeometries(gs), foliage));
+        clump.position.set(cx, gy(cx, cz) - 0.02, cz);
+        clump.userData.phase = rng() * Math.PI * 2;
+        scene.add(clump);
+        reedClumps.push(clump);
+      }
+    }
+
+    // fireflies — dusk only
+    const fireflies = (() => {
+      const n = 70, base = new Float32Array(n * 3), ph = new Float32Array(n);
+      let placed = 0, guard = 9000;
+      while (placed < n && guard-- > 0) {
+        const x = (rng() - 0.5) * ISLAND_R * 1.8, z = (rng() - 0.5) * ISLAND_R * 1.8;
+        if (groundHeight(x, z) < 0.7) continue;
+        base[placed * 3] = x; base[placed * 3 + 1] = gy(x, z) + 0.4 + rng() * 1.2; base[placed * 3 + 2] = z;
+        ph[placed] = rng() * Math.PI * 2;
+        placed++;
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(base.slice(), 3));
+      const o = new THREE.Points(g, new THREE.PointsMaterial({
+        color: col('#ffe9a0'), size: 0.05, transparent: true, opacity: 0,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      }));
+      o.userData = { base, ph, n: placed };
+      scene.add(o);
+      return o;
+    })();
+
+    // ═══ MOODS ═══ one config each — adding a mood stays a five-line job.
+    const MOODS = [
+      { name: 'GOLDEN HOUR', skyTop: '#6f8fb8', skyHoriz: '#e8a05c', sunCol: '#ffd9a0', sunInt: 2.6,
+        sunDir: [0.34, 0.16, 0.93], hemiSky: '#ffd7b0', hemiGround: '#b99c72', hemiInt: 0.55,
+        fog: '#e8c49a', fogNear: 20, fogFar: 130, water: '#3aa8a0', waterOp: 0.82,
+        lantern: 0.35, fireflies: 0, neon: 0.55 },
+      { name: 'DUSK & FIREFLIES', skyTop: '#141f3a', skyHoriz: '#b06a8c', sunCol: '#ff9a6a', sunInt: 1.0,
+        sunDir: [0.3, 0.055, 0.95], hemiSky: '#5a6a9a', hemiGround: '#3a3a4a', hemiInt: 0.46,
+        fog: '#3a3a56', fogNear: 14, fogFar: 95, water: '#2b6a74', waterOp: 0.88,
+        lantern: 1.7, fireflies: 0.85, neon: 1.4 },
+      { name: 'BRIGHT MIDDAY', skyTop: '#57a0d8', skyHoriz: '#bfe0ea', sunCol: '#fff6e0', sunInt: 3.1,
+        sunDir: [0.25, 0.8, 0.4], hemiSky: '#cfe6ee', hemiGround: '#d8c893', hemiInt: 0.8,
+        fog: '#cfe6ee', fogNear: 30, fogFar: 140, water: '#46b8b0', waterOp: 0.78,
+        lantern: 0, fireflies: 0, neon: 0.3 },
+    ];
+    const MOOD_NUM = ['sunInt', 'hemiInt', 'fogNear', 'fogFar', 'waterOp', 'lantern', 'fireflies', 'neon'];
+    const MOOD_COL = ['skyTop', 'skyHoriz', 'sunCol', 'hemiSky', 'hemiGround', 'fog', 'water'];
+    const mkMoodState = () => {
+      const o = { sunDir: new THREE.Vector3() };
+      for (const k of MOOD_COL) o[k] = new THREE.Color();
+      return o;
+    };
+    const cur = mkMoodState(), from = mkMoodState(), target = mkMoodState();
+    const snapshot = (m, into) => {
+      for (const k of MOOD_NUM) into[k] = m[k];
+      for (const k of MOOD_COL) into[k].copy(typeof m[k] === 'string' ? col(m[k]) : m[k]);
+      Array.isArray(m.sunDir) ? into.sunDir.fromArray(m.sunDir).normalize() : into.sunDir.copy(m.sunDir);
+    };
+    let moodIdx = 0, blend = 1;
+    function setMood(i, instant = false) {
+      moodIdx = ((i % MOODS.length) + MOODS.length) % MOODS.length;
+      snapshot(MOODS[moodIdx], target);
+      if (instant) { snapshot(MOODS[moodIdx], cur); blend = 1; }
+      else { snapshot(cur, from); blend = 0; }
+      const tag = document.getElementById('mood-name');
+      tag.textContent = MOODS[moodIdx].name;
+      tag.style.opacity = 0.8;
+      clearTimeout(setMood._t);
+      setMood._t = setTimeout(() => { tag.style.opacity = 0; }, 2200);
+      applyMood(true);
+      audioStart();
+    }
+    function applyMood(force = false) {
+      if (blend >= 1 && !force) return;
+      if (blend < 1) {
+        const k = blend * blend * (3 - 2 * blend);
+        for (const key of MOOD_NUM) cur[key] = lerp(from[key], target[key], k);
+        for (const key of MOOD_COL) cur[key].copy(from[key]).lerp(target[key], k);
+        cur.sunDir.copy(from.sunDir).lerp(target.sunDir, k).normalize();
+      }
+      paintSky(cur.skyTop, cur.skyHoriz, cur.water);
+      sun.color.copy(cur.sunCol); sun.intensity = cur.sunInt;
+      sun.position.copy(cur.sunDir).multiplyScalar(60);
+      hemi.color.copy(cur.hemiSky); hemi.groundColor.copy(cur.hemiGround); hemi.intensity = cur.hemiInt;
+      scene.fog.color.copy(cur.fog); scene.fog.near = cur.fogNear; scene.fog.far = cur.fogFar;
+      waterMat.color.copy(cur.water); waterMat.opacity = cur.waterOp;
+      for (const l of lanternLights) { l.intensity = cur.lantern * 1.6; l.visible = cur.lantern > 0.02; }
+      lanternGlassMat.emissiveIntensity = cur.lantern * 1.4;
+      fireflies.material.opacity = cur.fireflies;
+      sunDisc.material.color.copy(cur.sunCol);
+      sunHalo.material.color.copy(cur.skyHoriz);
+      sunDisc.position.copy(cur.sunDir).multiplyScalar(150);
+      sunDisc.lookAt(0, 0, 0);
+      sunHalo.position.copy(cur.sunDir).multiplyScalar(152);
+      sunHalo.lookAt(0, 0, 0);
+    }
+
+    // ═══ AUDIO — procedural surf; the radio is its own little machine ═══
+    let AC = null;
+    const SURF_HZ = 0.065;
+    function audioStart() {
+      if (AC) return;
+      AC = listener.context;
+      if (AC.state === 'suspended') AC.resume().catch(() => {});
+      const master = AC.createGain(); master.gain.value = 0.5;
+      master.connect(AC.destination);
+      // one brown-noise loop feeds both layers
+      const len = AC.sampleRate * 6, buf = AC.createBuffer(1, len, AC.sampleRate);
+      const d = buf.getChannelData(0);
+      let b = 0;
+      for (let i = 0; i < len; i++) { b += (Math.random() * 2 - 1) * 0.02; b *= 0.995; d[i] = b * 3.5; }
+      const mk = (type, freq, base, depth, lfoHz) => {
+        const src = AC.createBufferSource(); src.buffer = buf; src.loop = true;
+        const f = AC.createBiquadFilter(); f.type = type; f.frequency.value = freq;
+        const g = AC.createGain(); g.gain.value = base;
+        const lfo = AC.createOscillator(); lfo.frequency.value = lfoHz;
+        const lg = AC.createGain(); lg.gain.value = depth;
+        lfo.connect(lg); lg.connect(g.gain);
+        src.connect(f); f.connect(g); g.connect(master);
+        src.start(); lfo.start();
+      };
+      mk('lowpass', 380, 0.5, 0.3, SURF_HZ);          // the deep wash
+      mk('highpass', 900, 0.1, 0.07, 0.052);          // the hiss riding it
+    }
+
+    let radioOn = false, radioNodes = null, radioAudio = null;
+    function radioToggle() {
+      audioStart();
+      if (!AC) return;
+      radioOn = !radioOn;
+      if (RADIO_TRACK_URL) {
+        if (!radioAudio) {
+          radioAudio = new THREE.PositionalAudio(listener);
+          radioAudio.setRefDistance(1.1);
+          radio.add(radioAudio);
+          new THREE.AudioLoader().load(RADIO_TRACK_URL, b2 => {
+            radioAudio.setBuffer(b2); radioAudio.setLoop(true);
+            if (radioOn) radioAudio.play();
+          });
+        } else radioOn ? radioAudio.play() : radioAudio.pause();
+        return;
+      }
+      // no track yet: a self-made pad — a soft add9 chord, tremolo, warm filter
+      if (radioOn) {
+        const pa = new THREE.PositionalAudio(listener);
+        pa.setRefDistance(1.1);
+        radio.add(pa);
+        const mix = AC.createGain(); mix.gain.value = 0.16;
+        const stops = [];
+        for (const [f2, g2] of [[110, 0.5], [138.6, 0.32], [164.8, 0.4], [246.9, 0.14]]) {
+          const o = AC.createOscillator(); o.type = 'triangle'; o.frequency.value = f2;
+          o.detune.value = (Math.random() - 0.5) * 8;
+          const og = AC.createGain(); og.gain.value = g2;
+          o.connect(og); og.connect(mix); o.start();
+          stops.push(o);
+        }
+        const trem = AC.createOscillator(); trem.frequency.value = 0.9;
+        const tg = AC.createGain(); tg.gain.value = 0.05;
+        trem.connect(tg); tg.connect(mix.gain); trem.start();
+        stops.push(trem);
+        const lp = AC.createBiquadFilter(); lp.frequency.value = 900;
+        mix.connect(lp);
+        pa.setNodeSource(lp);
+        radioNodes = { pa, stops };
+      } else if (radioNodes) {
+        radioNodes.stops.forEach(o => { try { o.stop(); } catch (e) {} });
+        radio.remove(radioNodes.pa);
+        radioNodes = null;
+      }
+    }
+
+    // ═══ XR — teleport, totem, radio, the way back to the chair ═══
+    document.body.appendChild(XRButton.createButton(renderer, {
+      optionalFeatures: ['local-floor'],
+    }));
+    let baseRef = null;
+    renderer.xr.addEventListener('sessionstart', () => {
+      baseRef = renderer.xr.getReferenceSpace();
+      audioStart();
+    });
+
+    const raycaster = new THREE.Raycaster();
+    const marker = new THREE.Group();
+    {
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.22, 0.3, 24),
+        new THREE.MeshBasicMaterial({ color: col(P.teal), transparent: true, opacity: 0.85, depthWrite: false }));
+      ring.rotation.x = -Math.PI / 2;
+      const dot = new THREE.Mesh(new THREE.CircleGeometry(0.07, 16),
+        new THREE.MeshBasicMaterial({ color: col(P.cream), transparent: true, opacity: 0.55, depthWrite: false }));
+      dot.rotation.x = -Math.PI / 2;
+      dot.position.y = 0.005;
+      marker.add(ring, dot);
+      marker.visible = false;
+      scene.add(marker);
+    }
+    const rayTargets = [terrain, totem, radio, chairHit];
+    const controllers = [];
+    for (let i = 0; i < 2; i++) {
+      const c = renderer.xr.getController(i);
+      c.add(new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, 0, -6)]),
+        new THREE.LineBasicMaterial({ color: col(P.teal), transparent: true, opacity: 0.4 })));
+      c.userData.hit = null;
+      c.addEventListener('selectend', () => actOn(c.userData.hit));
+      scene.add(c);
+      controllers.push(c);
+    }
+    const _m4 = new THREE.Matrix4();
+    function castFrom(c) {
+      _m4.identity().extractRotation(c.matrixWorld);
+      raycaster.ray.origin.setFromMatrixPosition(c.matrixWorld);
+      raycaster.ray.direction.set(0, 0, -1).applyMatrix4(_m4);
+      return raycaster.intersectObjects(rayTargets, true)[0] || null;
+    }
+    function ownerOf(obj) {
+      for (let o = obj; o; o = o.parent) {
+        if (o === totem) return 'totem';
+        if (o === radio) return 'radio';
+        if (o === chairHit) return 'chair';
+        if (o === terrain) return 'ground';
+      }
+      return null;
+    }
+    function actOn(hit) {
+      if (!hit) return;
+      const kind = ownerOf(hit.object);
+      if (kind === 'totem') return setMood(moodIdx + 1);
+      if (kind === 'radio') return radioToggle();
+      if (kind === 'chair') {   // sit back down: the calibration is true again
+        if (baseRef) renderer.xr.setReferenceSpace(baseRef);
+        return;
+      }
+      if (kind === 'ground' && baseRef) {
+        const p = hit.point;
+        // the teleport clamp asks the same function everything else asks
+        if (groundHeight(p.x, p.z) < -0.05) return;
+        if (Math.hypot(p.x, p.z) > ISLAND_R * 1.05) return;
+        renderer.xr.setReferenceSpace(baseRef.getOffsetReferenceSpace(
+          new XRRigidTransform({ x: -p.x, y: -p.y, z: -p.z, w: 1 })));
+      }
+    }
+
+    // ═══ DESKTOP / FLAT FALLBACK ═══ drag look, WASD, M, tap to poke.
+    // Camera forward for yaw θ is (−sin θ, −cos θ); the start is behind the
+    // chair, looking over it down the cove.
+    let yaw = chairYaw + Math.PI, pitch = -0.06;
+    const eye = new THREE.Vector3(
+      chairP[0] - Math.sin(chairYaw) * 2.4, 0, chairP[2] - Math.cos(chairYaw) * 2.4);
+    eye.y = gy(eye.x, eye.z) + 1.5;
+    const keys = {};
+    addEventListener('keydown', e => {
+      keys[e.code] = true;
+      if (e.code === 'KeyM') setMood(moodIdx + 1);
+      audioStart();
+    });
+    addEventListener('keyup', e => { keys[e.code] = false; });
+    let dragging = false, dragMoved = 0, lx = 0, ly = 0;
+    renderer.domElement.addEventListener('pointerdown', e => {
+      dragging = true; dragMoved = 0; lx = e.clientX; ly = e.clientY;
+      audioStart();
+    });
+    addEventListener('pointermove', e => {
+      if (!dragging || renderer.xr.isPresenting) return;
+      const dx = e.clientX - lx, dy = e.clientY - ly;
+      dragMoved += Math.abs(dx) + Math.abs(dy);
+      lx = e.clientX; ly = e.clientY;
+      yaw -= dx * 0.0042;
+      pitch = Math.min(1.2, Math.max(-1.2, pitch - dy * 0.0042));
+    });
+    addEventListener('pointerup', e => {
+      if (dragging && dragMoved < 6 && !renderer.xr.isPresenting) {
+        // a tap, not a drag: poke whatever is under the pointer
+        raycaster.setFromCamera(new THREE.Vector2(
+          (e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1), camera);
+        const hit = raycaster.intersectObjects([totem, radio], true)[0];
+        if (hit) actOn(hit);
+      }
+      dragging = false;
+    });
+
+    addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+    // ═══ THE LOOP ═══
+    const clock = new THREE.Clock();
+    const neonFlick = { until: 0, dim: 1 };
+    function animate() {
+      const dt = Math.min(0.05, clock.getDelta()), t = clock.elapsedTime;
+
+      if (blend < 1) { blend = Math.min(1, blend + dt / 2.5); applyMood(); }
+
+      if (!renderer.xr.isPresenting) {
+        // desktop walk — clamped by the same groundHeight the teleport uses
+        const f = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0),
+          s2 = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
+        if (f || s2) {
+          const v = 2.6 * dt;
+          const nx = eye.x + (-Math.sin(yaw) * f + Math.cos(yaw) * s2) * v;
+          const nz = eye.z + (-Math.cos(yaw) * f - Math.sin(yaw) * s2) * v;
+          if (groundHeight(nx, nz) > -0.02 && Math.hypot(nx, nz) < ISLAND_R * 1.05) {
+            eye.x = nx; eye.z = nz;
+          }
+        }
+        eye.y += ((gy(eye.x, eye.z) + 1.5) - eye.y) * Math.min(1, dt * 8);
+        camera.position.copy(eye);
+        camera.rotation.set(0, 0, 0);
+        camera.rotateY(yaw);
+        camera.rotateX(pitch);
+      } else {
+        // controller rays + the teleport marker
+        marker.visible = false;
+        for (const c of controllers) {
+          const hit = castFrom(c);
+          c.userData.hit = hit;
+          if (hit && ownerOf(hit.object) === 'ground'
+            && groundHeight(hit.point.x, hit.point.z) >= -0.05) {
+            marker.position.copy(hit.point);
+            marker.position.y += 0.02;
+            marker.visible = true;
+          }
+        }
+      }
+
+      // idle motion — the half of the art budget that actually earns presence
+      for (const [cloud, ph] of [[foamA, 0], [foamB, Math.PI * 0.7]]) {
+        const k = Math.sin(t * Math.PI * 2 * SURF_HZ + ph) * 0.5 + 0.5;
+        cloud.material.opacity = 0.34 + 0.28 * k;
+        cloud.material.size = 0.045 + 0.02 * k;
+      }
+      water.position.y = -PAD_H + Math.sin(t * 0.4) * 0.015;
+      waterMat.map.offset.set(t * 0.0035, t * 0.0022);
+      waterMat.bumpMap.offset.set(-t * 0.005, t * 0.0031);
+      for (const c of crowns) {
+        c.rotation.z = Math.sin(t * 0.6 + c.userData.phase) * 0.035;
+        c.rotation.x = Math.cos(t * 0.47 + c.userData.phase) * 0.028;
+      }
+      for (const r of reedClumps) r.rotation.z = Math.sin(t * 0.9 + r.userData.phase) * 0.05;
+      totemCap.rotation.y = t * 0.6;
+      totemCapMat.emissiveIntensity = 0.55 + 0.3 * Math.sin(t * 2.1);
+      // neon: mostly on, with honest dropouts
+      if (neonFlick.until < t) {
+        if (Math.random() < 0.008) {
+          neonFlick.until = t + 0.06 + Math.random() * 0.12;
+          neonFlick.dim = 0.15 + Math.random() * 0.3;
+        } else neonFlick.dim = 1;
+      }
+      const neonK = cur.neon * (neonFlick.until > t ? neonFlick.dim : 1);
+      neonMat.color.copy(C_NEON).multiplyScalar(0.4 + neonK);
+      neonLight.intensity = neonK * 3.2;
+      neonLight.visible = neonK > 0.05;
+      if (fireflies.material.opacity > 0.01) {
+        const { base, ph, n } = fireflies.userData;
+        const pp = fireflies.geometry.attributes.position;
+        for (let i = 0; i < n; i++) {
+          pp.setXYZ(i,
+            base[i * 3] + Math.sin(t * 0.5 + ph[i]) * 0.35,
+            base[i * 3 + 1] + Math.sin(t * 0.8 + ph[i] * 2) * 0.2,
+            base[i * 3 + 2] + Math.cos(t * 0.4 + ph[i]) * 0.35);
+        }
+        pp.needsUpdate = true;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    setMood(0, true);
+    (renderer.init ? renderer.init() : Promise.resolve())
+      .then(() => renderer.setAnimationLoop(animate));
+
+    // the smoke test drives game state, not the wall clock
+    window.__tt = {
+      scene, renderer, camera, groundHeight, setMood,
+      get mood() { return moodIdx; },
+      chair: { p: chairP, yaw: chairYaw },
+      occluders, MOODS,
+      debug: { radioToggle, actOn, rayTargets },
+    };
+  </script>
+  <script type="module" src="../hub/shell.js?v=17"></script>
+</body>
+</html>
