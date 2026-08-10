@@ -151,36 +151,60 @@ class Stage {
     if (h.x > W + 14) h.x = -12;
     if (h.y > H + 10) { h.reset(48, FLOOR); h.go('land'); }
     if (this.flash > 0) this.flash--;
-    if (h.shotQueued) { h.shotQueued = false; this.flash = 3; }
+    if (h.shotQueued) { h.shotQueued = false; this.flash = 3; this.shoot(h); }
     this.post.update();
     this.foe.update(h);
     // his blade, on the one frame it is anywhere
     if (this.foe.hitQueued) {
       this.foe.hitQueued = false;
       const t = this.foe.tip();
-      if (Math.abs(t.x - h.x) < 10 && !h.guarding) h.strike(0, this.foe.x, this);
+      // his blade costs a mark; the H key's demo hit does not, or you could
+      // not sit and watch the stagger
+      if (this.reached(this.foe.x, t.x, h.x) && !h.guarding) h.strike(1, this.foe.x, this);
     }
     // The edge lands on ONE frame in the middle of the swing. That is the
     // whole design of the sword, and the post is how you see it.
     if (h.swingQueued) {
       h.swingQueued = false;
       const e = h.swordTip();
-      this.post.hit(e.x, h.face);
+      if (this.reached(h.x, e.x, this.post.x)) this.post.hit(this.post.x, h.face);
       // and the man. A blow into a raised blade rings off it rather than
       // landing, which is the other half of the parry being worth learning.
-      if (Math.abs(e.x - this.foe.x) < 11) {
+      if (this.reached(h.x, e.x, this.foe.x)) {
         if (this.foe.struck(h.x) === 'parried') h.go('clang');
       }
     }
     // he gets back up, because a bench you have to reload is a worse bench
     if (this.foe.dead && this.foe.f > 150) this.foe = new Swordsman(210, FLOOR, -1);
-    // and the pistol reaches it too
-    if (this.flash === 3 && h.muzzle) this.post.hit(h.x + h.face * 40, h.face);
+
+  }
+
+  // A shot is a straight line at chest height and it stops at the FIRST thing
+  // it meets, which is the only reason standing behind the post is a decision.
+  // No bullet in flight: at this range it arrives on the frame it is fired,
+  // and the muzzle flash is the whole of the telling.
+  // A blade sweeps a SPAN, from the man to the point — being at the tip is not
+  // the test, being anywhere along it is. Checking the tip alone let a strike
+  // pass straight through someone standing chest to chest.
+  reached(from, tip, x, pad = 5) {
+    return x >= Math.min(from, tip) - pad && x <= Math.max(from, tip) + pad;
+  }
+
+  shoot(h) {
+    const targets = [];
+    if (!this.foe.dead) targets.push({ x: this.foe.x, w: 7, foe: true });
+    targets.push({ x: this.post.x, w: 6, foe: false });
+    const ahead = targets
+      .filter(t => (t.x - h.x) * h.face > 0 && Math.abs(t.x - h.x) < 200)
+      .sort((a, b) => Math.abs(a.x - h.x) - Math.abs(b.x - h.x))[0];
+    if (!ahead) return;
+    if (ahead.foe) this.foe.struck(h.x);
+    else this.post.hit(ahead.x, h.face);
   }
 
   // the hero asks the game for these; on a floor with nothing on it they are
   // all no-ops
-  kill() { this.hero.reset(48, FLOOR); this.hero.go('wake'); }
+  kill() { this.hero.reset(48, FLOOR); this.hero.health = 3; this.hero.go('wake'); }
   hurt() {}
 
   // ── drawing ────────────────────────────────────────────────────────
@@ -253,7 +277,21 @@ class Stage {
     this.centre(scr, `${this.reel + 1} of ${REEL.length}`, FLOOR + 14, C.DARK);
   }
 
+  // Two rows of marks, top right: his and the other man's. A duel with no
+  // count in it is a sparring session — you need to be able to see that the
+  // last exchange cost you something.
+  marks(scr) {
+    const row = (n, max, y, col) => {
+      for (let i = 0; i < max; i++) {
+        scr.rect(W - 8 - i * 5, y, 3, 5, i < n ? col : C.DARK);
+      }
+    };
+    row(this.hero.health, 3, 4, C.LUX);
+    if (!this.foe.dead) row(this.foe.health, 2, 12, C.EDGE);
+  }
+
   chrome(scr) {
+    this.marks(scr);
     const s = 6;
     if (this.mode === 'gallery') {
       this.centre(scr, '◀ ▶  ANIMATION      JUMP  HOLD      REEL  BACK', H - 10, C.DARK, s);
