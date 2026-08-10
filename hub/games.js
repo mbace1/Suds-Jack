@@ -12,9 +12,9 @@
 //          dead and dimmed instead of pointing at a 404, and `note` says why.
 //          Not every button has to work for a game to be worth listing.
 // `path`   what Play opens, relative to the hub page.
-// `inRepo` true when the folder lives on this branch too. The site (gh-pages)
-//          is a curated root that carries a few games `main` does not, so the
-//          local test loop only checks the links it can actually see.
+// `inRepo` true when the folder lives in a complete source checkout. Keep this
+//          explicit so partial or experimental branches can still mark links
+//          they do not carry without weakening the local link gate.
 // `accent` the card's neon; taken from the game's own palette so the row of
 //          cards reads as the row of cabinets it is meant to be.
 // `art`    the key of a draw function in art.js (each cabinet gets a marquee).
@@ -30,30 +30,31 @@ export const GAMES = [
   {
     id: 'sudsjack',
     fi: {
-      tagline: 'Vektorinen putkiräiskintä alas neonkaivoon — nimikkopeli, ja seuraavaksi rakennettava.',
+      tagline: 'Vektorinen putkiräiskintä alas neonkaivoon — nimikkopeli.',
       controls: '← → / A D liiku · Väli ampuu · Z superzapper',
-      note: 'pelattava versio on alkuperäinen vektoriversio — uusintaversio Hyper Daggerin pohjalta alkaa seuraavaksi',
+      note: 'pelattava versio on alkuperäinen vektoriversio, ja se jää — suunniteltu uusintaversio laskettiin sivuun',
     },
     ja: {
-      tagline: 'ネオンの井戸を落ちていくベクター筒シューター — 名前の由来であり、次に作るもの。',
+      tagline: 'ネオンの井戸を落ちていくベクター筒シューター — 名前の由来。',
       controls: '← → / A D 移動 · スペース 発射 · Z スーパーザッパー',
-      note: '遊べるのは元のベクター版 — Hyper Dagger を土台にした作り直しが次に始まる',
+      note: '遊べるのは元のベクター版のまま — 作り直しの計画は取り下げた',
     },
     pad: 'native',
     status: 'active',
-    note: 'the playable build is the original vector one — a rebuild on the Hyper Dagger baseline starts next',
+    note: 'the playable build is the original vector one, and it stays — the planned rebuild was set down',
     title: 'Suds Jack',
-    tagline: 'A vector tube shooter down a neon well — the namesake, and the next thing being built.',
+    tagline: 'A vector tube shooter down a neon well — the namesake.',
     lineage: 'Tempest 2000 × Bomb Jack',
     tags: ['shooter', 'vector', 'canvas'],
     controls: '← → / A D move · Space fire · Z superzapper',
     path: 'sudz/',
-    inRepo: false,
+    inRepo: true,
     accent: '#22e0e8',
     art: 'tube',
   },
   {
     id: 'tokodrop',
+    score: { key: 'tokoDropHi', fmt: 'points' },
     fi: {
       tagline: 'Kahden tatin laumaselviytyminen. Geelit väistävät linjojasi, parveilevat kuin kalat ja räjähtävät kostorenkaiksi.',
       lineage: 'luotihelvetti / areena',
@@ -78,23 +79,24 @@ export const GAMES = [
   },
   {
     id: 'hyperdagger',
+    score: { key: 'hyperDaggerHi', fmt: 'secs' },
     fi: {
-      tagline: 'Selviydy vokselikallojen laumasta kiekolla tyhjyydessä. Selviytymisaika on ainoa pistemäärä.',
-      lineage: 'Devil Daggers × HYPERDEMON',
-      controls: 'WASD + hiiri · Väli ×2 hyppy · Vaihto syöksy · Esc tauko',
+      tagline: 'Devil Daggersista inspiroitunut käsikirjoitettu areena-FPS: opi vihollisaikataulu, kerää hakeutuvat tikarit ja selviä leukojaan kalisuttavasta kalloparvesta.',
+      lineage: 'Devil Daggers',
+      controls: 'WASD + hiiri · LMB napauta/pidä sarja/suihku · RMB hakeutuvat tikarit · Väli hyppy · Esc tauko',
     },
     ja: {
-      tagline: '虚空に浮かぶ円盤で、ボクセルの髑髏の群れを生き延びる。生存時間だけがスコア。',
-      lineage: 'Devil Daggers × HYPERDEMON',
-      controls: 'WASD + マウス · スペース ×2 ジャンプ · Shift ダッシュ · Esc 一時停止',
+      tagline: 'Devil Daggersに着想を得たスクリプト型アリーナFPS。出現時刻を覚え、誘導ダガーを蓄え、顎を鳴らす骸骨の群れを生き延びろ。',
+      lineage: 'Devil Daggers',
+      controls: 'WASD + マウス · 左クリック タップ/長押し 一斉射撃/連射 · 右クリック 誘導 · スペース ジャンプ · Esc 一時停止',
     },
     pad: 'native',
     status: 'active',
     title: 'Hyper Dagger',
-    tagline: 'Survive a swarm of voxel skulls on a disc in the void. Survival time is the only score.',
-    lineage: 'Devil Daggers × HYPERDEMON',
+    tagline: 'A scripted survival FPS inspired by Devil Daggers: learn the spawn clock, bank homing daggers, and survive the jawing skull swarm.',
+    lineage: 'Devil Daggers',
     tags: ['fps', 'three.js', 'gamepad'],
-    controls: 'WASD + mouse · Space ×2 jump · Shift dash · Esc pause',
+    controls: 'WASD + mouse · tap/hold LMB shot/stream · RMB homing · Space hop · Esc pause · touch/pad supported',
     path: 'hyperdagger/',
     inRepo: true,
     accent: '#d8412f',
@@ -102,6 +104,7 @@ export const GAMES = [
   },
   {
     id: 'dropcabal',
+    score: { key: 'dropCabalHi', fmt: 'points' },
     fi: {
       tagline: 'Syvyyssuuntaan kerrostuva galleriaräiskintä — lähellä olevat geelit syövät laukaukset, jotka tähtäsit kauas.',
       lineage: 'Cabal (1988)',
@@ -112,13 +115,13 @@ export const GAMES = [
       lineage: 'Cabal (1988)',
       controls: 'A D 走る · マウスで照準 + 左クリック · スペース ローリング · G 手榴弾',
     },
-    pad: { keys: { left: 'KeyA', right: 'KeyD', b0: 'Space', b1: 'KeyG' } },   // aim stays on the mouse
+    pad: 'native',   // reads the sticks itself: a crosshair needs an axis, not a keystroke
     status: 'active',
     title: 'Drop Cabal',
     tagline: 'A gallery shooter with layered depth — near gels eat the shots you aimed at far ones.',
     lineage: 'Cabal (1988)',
     tags: ['shooter', 'pixel', 'three.js'],
-    controls: 'A D run · mouse aim + LMB · Space roll · G grenade',
+    controls: 'A D run · mouse aim + LMB · Space roll · G grenade · pad: twin sticks',
     path: 'dropcabal/',
     inRepo: true,
     accent: '#e8913a',
@@ -147,12 +150,13 @@ export const GAMES = [
     tags: ['racing', 'ps1', 'three.js'],
     controls: 'A D carve · W tuck · S scrub · Space burn · twin sticks on touch',
     path: 'powder/',
-    inRepo: false,
+    inRepo: true,
     accent: '#d7a35c',
     art: 'powder',
   },
   {
     id: 'paperboy',
+    score: { key: 'paperRouteHi', fmt: 'points' },
     fi: {
       tagline: 'Toimita tilaajille, riko kaikkien muiden ikkunat, selviä kolmesta kolarista.',
       lineage: 'Paperboy (1985)',
@@ -198,7 +202,7 @@ export const GAMES = [
     tags: ['roguelike', 'survival', 'canvas'],
     controls: 'WASD move · fires on its own',
     path: 'Skltr/',
-    inRepo: false,
+    inRepo: true,
     accent: '#3ce85a',
     art: 'bones',
   },
@@ -224,12 +228,13 @@ export const GAMES = [
     tags: ['action', 'three.js', 'combo'],
     controls: 'WASD + mouse · LMB chains · tap stick to jump ×2',
     path: 'neon-ronin/',
-    inRepo: false,
+    inRepo: true,
     accent: '#e83ca8',
     art: 'slash',
   },
   {
     id: 'flashprince',
+    score: { key: 'flashPrinceBest', fmt: 'best-time' },
     fi: {
       tagline: 'Jokainen liike viedään loppuun. Riipu, kiipeä ja vedä ase esiin ennen kuin hän ehtii.',
       lineage: 'Another World × Flashback × Prince of Persia',
@@ -280,29 +285,53 @@ export const GAMES = [
     art: 'treeline',
   },
   {
-    id: 'tinyhawk',
+    id: 'radiofree',
     fi: {
-      tagline: 'Skeittiosuus kuvattuna lähes mustassa puistossa. Lataa tatti, napsauta se ja pidä ketju kasassa.',
-      lineage: 'Skate Story × Tony Hawk',
-      controls: 'lataa ↓ ja napsauta ↑ · vasen tatti ohjaa · WASD + Väli + Q E F C',
-      note: 'P0 — puisto, ohjaus, grindit ja manuaalit ovat sisällä; tavoitteet ja solmukartta eivät',
+      tagline: 'Piraattiuutisvirta Tokon lukemana. Jokainen tiedote on keksitty; DECODE näyttää mitä sanamuoto oikeasti teki.',
+      lineage: 'Metal Gearin kodekki × puhelimen syöte',
+      controls: 'vieritä tai pyyhkäise · ⧉ purkaa tiedotteen · ← → vaihtaa taajuutta',
     },
     ja: {
-      tagline: 'ほぼ真っ暗な公園で撮るスケートパート。スティックを溜め、弾き、つなぎを切らさない。',
+      tagline: 'トコが読み上げる海賊放送のニュース。どの速報も作りもの。DECODE がその言い回しの仕掛けを見せる。',
+      lineage: 'メタルギアの無線 × スマホのフィード',
+      controls: 'スクロールかスワイプ · ⧉ で速報を解読 · ← → で周波数',
+    },
+    pad: { ui: true },
+    status: 'active',
+    title: 'Radio Free Helsinki',
+    tagline: 'A pirate news feed read by Toko. Every bulletin is invented; DECODE shows you what the wording was doing.',
+    lineage: 'Metal Gear codec × a phone feed',
+    tags: ['app', 'pixel', 'fi / en / ja'],
+    controls: 'scroll or swipe · ⧉ decodes the bulletin · ← → changes band',
+    path: 'radiofree/',
+    inRepo: true,
+    accent: '#7dffb2',
+    art: 'codec',
+  },
+  {
+    id: 'tinyhawk',
+    fi: {
+      tagline: 'Pullea lintu kuvaa skeittiosuutta lähes mustassa puistossa. Lataa tatti, napsauta se ja pidä ketju kasassa.',
       lineage: 'Skate Story × Tony Hawk',
-      controls: '↓ で溜めて ↑ で弾く · 左スティックで舵 · WASD + スペース + Q E F C',
-      note: 'P0 — 公園・操作・グラインド・マニュアルは入った、目標とノードマップはまだ',
+      controls: 'oikea tatti ↓ + ↖/↗ flipit · sivulle shuvit · laske linjat täyttääksesi SPECIAL-mittarin',
+      note: 'v6 — onnistuneet linjat täyttävät SPECIAL-mittarin ja avaavat neljä linnun nimikkotemppua',
+    },
+    ja: {
+      tagline: '丸々とした鳥が、ほぼ真っ暗な公園でスケートパートを撮る。スティックを溜め、弾き、つなぎを切らさない。',
+      lineage: 'Skate Story × Tony Hawk',
+      controls: '右スティック ↓＋↖/↗ フリップ · 横でショービット · ライン着地でSPECIALを溜める',
+      note: 'v6 — 着地したラインでSPECIALが溜まり、鳥専用の4つのシグネチャートリックが解禁',
     },
     pad: 'native',
     status: 'active',
-    note: 'P0 — the park, the controls, grinds and manuals are in; goals and the node map are not',
+    note: 'v6 — landed lines now fill a Special meter and unlock four fat-bird signature tricks',
     title: 'Tiny Hawk',
-    tagline: 'A skate part shot in a near-black park. Load the stick, flick it, and hold the chain together.',
+    tagline: 'A fat bird films a skate part in a near-black park. Load the stick, flick it, and hold the chain together.',
     lineage: 'Skate Story × Tony Hawk',
     tags: ['skate', 'three.js', 'gamepad'],
-    controls: 'load ↓ then flick ↑ · left stick steers · WASD + Space + Q E F C',
+    controls: 'right stick ↓ + ↖/↗ flips · side swipe shuvit · land lines to fill SPECIAL',
     path: 'tinyhawk/',
-    inRepo: false,
+    inRepo: true,
     accent: '#8fe6d8',
     art: 'prism',
   },
@@ -330,7 +359,7 @@ export const GAMES = [
     tags: ['one-button', 'three.js', 'endless'],
     controls: 'hold anywhere · release at the lip · flick up to trick',
     path: 'tiny2d/',
-    inRepo: false,
+    inRepo: true,
     accent: '#4fd0e0',
     art: 'lip',
   },
@@ -353,15 +382,47 @@ export const GAMES = [
     tags: ['puzzle', 'canvas', 'landscape'],
     controls: 'tap a picture · or ← →',
     path: 'eye-test/',
-    inRepo: false,
+    inRepo: true,
     accent: '#e8d24a',
     art: 'optotype',
+  },
+  // Not on the floor. `secret: true` keeps a cabinet out of every rack, every
+  // count and every filter until the code is entered — and what it hides is a
+  // real page that is already in this repo, because a secret that turns out to
+  // be a joke about there being no secret is worth exactly one telling.
+  {
+    // NOT `toko` — that fragment already belongs to the counter (see THEIRS in
+    // hub.js), and a cabinet answering to the same hash would fight the panel
+    // every badge in every signed game links to.
+    id: 'brand',
+    secret: true,
+    fi: {
+      tagline: 'Naamio, merkki ja kaikki mihin se painetaan — työpajan oma identiteetti, elävänä.',
+      lineage: 'kaksi väriä, ei kuvatiedostoja',
+      controls: 'katso · vie merkki mukanasi',
+    },
+    ja: {
+      tagline: '仮面とマーク、そしてそれが刷られるすべて — 工房そのものの正体、生きたまま。',
+      lineage: '二色だけ、画像素材なし',
+      controls: '眺める · マークを持ち帰る',
+    },
+    status: 'active',
+    title: 'Toko Midori Games',
+    tagline: 'The mask, the mark, and everything it gets printed on — the workshop\'s own identity, live.',
+    lineage: 'two colours, no image assets',
+    tags: ['brand', 'canvas'],
+    controls: 'look · take the mark with you',
+    path: 'toko/',
+    inRepo: true,
+    accent: '#F0027F',
+    art: 'mask',
   },
 ];
 
 // The shader studies the games were built out of — playable, but they are
 // experiments, so they get a quieter shelf of their own.
 export const SKETCHES = [
+  { id: 'toko-enemy-lab', fi: { tagline: 'Kaikki Toko Dropin 40 geeliä elävinä pelin omalla koodilla — osu, poksauta, säädä materiaalit.' }, ja: { tagline: 'トコドロップの全40ゼリーが実ゲームのコードで生きている — 叩いて、弾けさせて、質感をいじって。' }, title: 'Toko Enemy Lab', tagline: 'All 40 Toko Drop gels live on the real game code — hit them, pop them, restyle the goo.', path: 'toko-drop/enemy-lab.html', inRepo: true },
   { id: 'goo-surface', fi: { tagline: 'SPH-kevyt möykky, 64 hiukkasta, metapallopassi. Tökkää sitä.' }, ja: { tagline: '軽量 SPH のどろどろ、粒子 64、メタボール処理。つついてみて。' }, title: 'Goo Surface', tagline: 'SPH-lite goop, 64 particles, metaball pass. Poke it.', path: 'goo-surface.html', inRepo: true },
   { id: 'goo-flop', fi: { tagline: 'Yksi geelikuutio, joka kaatuu kyljelleen kun pyyhkäiset.' }, ja: { tagline: 'スワイプすると横に倒れるゼリーの立方体ひとつ。' }, title: 'Goo Flop', tagline: 'One gel cube that tips onto its side when you swipe.', path: 'goo-flop.html', inRepo: true },
   { id: 'goo-snowman', fi: { tagline: 'Säteenmarssitettu SDF-lumiukko — täältä geelin ilme alkoi.' }, ja: { tagline: 'レイマーチング SDF の雪だるま — この見た目の始まり。' }, title: 'Goo Snowman', tagline: 'Ray-marched SDF snowman — where the goo look started.', path: 'goo-snowman.html', inRepo: true },

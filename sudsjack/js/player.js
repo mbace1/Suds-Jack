@@ -24,14 +24,20 @@
 import * as THREE from 'three';
 import { PAL } from './palette.js';
 
-const RIM_SPEED = 7.6;          // lanes per second at full tilt
-const RIM_ACCEL = 34;           // how fast you reach it — snappy, not instant
+// Lanes are RELATIVE units — twenty of them span the same channel thirteen
+// used to — so these carry the ×20/13 rescale that kept lip-to-lip time and
+// time-to-full-tilt exactly what they were tuned to at thirteen.
+const RIM_SPEED = 11.7;         // lanes per second at full tilt
+const RIM_ACCEL = 52;           // how fast you reach it — snappy, not instant
 const DIVE_OUT = 0.26;          // seconds going down
 const DIVE_HOLD = 0.1;          // at the bottom
 const DIVE_BACK = 0.26;         // and back
 const DIVE_DEPTH = 0.55;        // how far down the tube a dive reaches
 const JUMP_MS = 0.44;           // a hop over a peak, start to landing
 const JUMP_HIGH = 3.1;          // how far off the floor, in world units
+const FLOAT_MS = 0.55;          // a chained hop: longer than the first
+const FLOATS_MAX = 3;           // presses past the first. "A bit", not flight.
+const FLOAT_AT = 0.45;          // how far through a hop the next press counts
 
 export class Player {
   constructor(scene, tube) {
@@ -42,6 +48,10 @@ export class Player {
     this.diveT = -1;            // < 0 = not diving
     this.jumpT = -1;            // < 0 = on the floor
     this.jumpFrom = 0; this.jumpTo = 0;
+    this.hopMs = JUMP_MS;       // this hop's length — floats are longer
+    this.hopH = JUMP_HIGH;      // and lower
+    this.airFrom = 0;           // air at the moment this hop began
+    this.floats = 0;            // chained presses spent this flight
     this.air = 0;               // world units off the floor
     this.alive = true;
     this.mercy = 0;             // i-frames after a hit, in seconds
@@ -81,21 +91,54 @@ export class Player {
    * Hop to the next bay. `dir` is which way you are leaning; with no lean he
    * jumps the way he was last moving, because a jump with no direction on a
    * level made of ridges would be a wasted press every time.
+   *
+   * Pressed AGAIN in the falling half of a hop, it chains: one more bay,
+   * committed the same way, on a hop that is longer and half as high — so a
+   * string of presses reads as a FLOAT carrying you across the ridges, tiny
+   * ski-jumper style, never as flight. Three chains and he has to land: the
+   * cost of floating is that each hop is lower, until grime stops fitting
+   * underneath you.
    */
   jump(dir = 0) {
-    if (this.jumping || this.diving || !this.alive) return false;
+    if (this.diving || !this.alive) return false;
+
+    if (this.jumping) {
+      if (this.floats >= FLOATS_MAX) return false;
+      const k = this.jumpT / this.hopMs;
+      if (k < FLOAT_AT) return false;       // too early: still going up
+      // onward by default — a float continues the flight, it does not turn it
+      const d = dir || Math.sign(this.jumpTo - this.jumpFrom) || this.lastDir || 1;
+      const to = this.tube.jumpTarget(this.jumpTo, d);
+      if (to === null) return false;        // the lip: nowhere to float to
+      this.jumpFrom = this.lane;            // from wherever the arc has him
+      this.jumpTo = to;
+      this.airFrom = this.air;              // the glide starts where the arc was
+      this.hopH = 0;                        // no rise: a float NEVER out-jumps the jump
+      this.hopMs = FLOAT_MS;
+      this.jumpT = 0;
+      this.floats++;
+      return true;
+    }
+
     const d = dir || (this.vel !== 0 ? Math.sign(this.vel) : (this.lastDir || 1));
     const to = this.tube.jumpTarget(this.lane, d);
     if (to === null) return false;          // no bay that way: the lip
     this.jumpFrom = this.lane;
     this.jumpTo = to;
+    this.hopMs = JUMP_MS;
+    this.hopH = JUMP_HIGH;
+    this.airFrom = 0;
+    this.floats = 0;
     this.jumpT = 0;
     this.vel = 0;
     return true;
   }
 
   // `dir` is -1..1 from whatever is driving him: keys, a stick, a thumb.
-  move(dir, dt) {
+  // `grip` is the floor's answer: 1 on clean rim, STICKY standing in scum.
+  // A jump never takes the factor — the whole point of being airborne is
+  // that the floor has no say in it.
+  move(dir, dt, grip = 1) {
     if (dir) this.lastDir = Math.sign(dir);
     // A jump owns the lane for its whole length — see jump().
     if (this.jumping) return;
@@ -106,7 +149,7 @@ export class Player {
     const [lo, hi] = this.tube.bayRange(this.lane);
     // Locked to the lane while committed. This is the cost of the dive and it
     // is not softened anywhere: half a dive is not a thing you can do.
-    const want = this.diving ? 0 : dir * RIM_SPEED;
+    const want = this.diving ? 0 : dir * RIM_SPEED * grip;
     const d = want - this.vel;
     const step = RIM_ACCEL * dt;
     this.vel += Math.abs(d) <= step ? d : Math.sign(d) * step;
@@ -125,16 +168,26 @@ export class Player {
 
     if (this.jumping) {
       this.jumpT += dt;
-      const k = Math.min(this.jumpT / JUMP_MS, 1);
+      const k = Math.min(this.jumpT / this.hopMs, 1);
       this.lane = this.jumpFrom + (this.jumpTo - this.jumpFrom) * ease(k);
-      this.air = Math.sin(k * Math.PI) * JUMP_HIGH;
+      // The first hop starts on the floor (airFrom 0, hopH full) and this is
+      // the same sine arc it always was. A float has hopH 0: it GLIDES from
+      // wherever the last arc had him — 1−k² hangs early and drops late, which
+      // is what makes it read as floating rather than as a second jump — and
+      // each successive press starts from lower down, so the ladder decays on
+      // its own until grime stops fitting underneath you.
+      this.air = this.airFrom * (1 - k * k) + Math.sin(k * Math.PI) * this.hopH;
       if (k >= 1) { this.jumpT = -1; this.air = 0; this.lane = this.jumpTo; }
     }
 
     if (this.diving) {
       this.diveT += dt;
       const total = DIVE_OUT + DIVE_HOLD + DIVE_BACK;
-      if (this.diveT >= total) { this.diveT = -1; this.depth = 0; }
+      // A COMPLETED dive is a fact the game cares about now — the return leg
+      // is what scrubs scum — so it is announced, once, and only for a dive
+      // that came all the way back. hit() cancels a dive without setting it:
+      // a scrub you were knocked out of did not happen.
+      if (this.diveT >= total) { this.diveT = -1; this.depth = 0; this.diveDone = true; }
       else if (this.diveT < DIVE_OUT) {
         this.depth = DIVE_DEPTH * ease(this.diveT / DIVE_OUT);
       } else if (this.diveT < DIVE_OUT + DIVE_HOLD) {
@@ -181,11 +234,14 @@ export class Player {
     return true;
   }
 
+  /** Consumed by the frame: true exactly once per dive that came home. */
+  scrubReady() { const d = !!this.diveDone; this.diveDone = false; return d; }
+
   reset() {
     // a run starts on the floor, in the middle of the channel
     this.lane = this.tube.floorLane; this.vel = 0; this.depth = 0;
     this.diveT = -1; this.jumpT = -1; this.air = 0;
-    this.mercy = 0; this.alive = true;
+    this.mercy = 0; this.alive = true; this.diveDone = false;
     this.mesh.visible = true;
   }
 }

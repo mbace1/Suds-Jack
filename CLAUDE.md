@@ -80,6 +80,43 @@ pad but not aim — that needs their own code. On the arcade itself a direction 
 selection, A plays, Y leaves a note, B backs out, and in the note panel left/right sets
 the rating and A sends; selection is real DOM focus with its own ring, since a pad user
 may never trigger `:focus-visible`.
+**The room.** `hub/arcade.js` is the atmosphere layer, kept out of `hub.js` because
+hub.js is the floor. Everything in it is allowed to do nothing: `prefers-reduced-motion`
+turns off the **marquee flicker** (one tube struggles for a moment, never two at once).
+**Two animations, and they belong in different places.** The **CRT power-on** is the
+hub's: the tube strikes across the *whole* screen, opens, and the floor is there — once
+per **tab** (sessionStorage), since every game is a real navigation and a boot animation
+on each return is a toll on the way home. The **Toko sting** is a studio logo, so it plays
+in front of a **game**, not in front of a menu: pressing Play holds the navigation, plays
+it once per **browser**, and goes when it is done *either way* — if the import fails or
+`toko/` is not in the tree, the catch still sends you to the game. Both are skippable from
+frame one, and skipping the sting still takes you through rather than stranding you. For a
+while both played on arrival *at once* — a black veil sweeping open under a magenta panel
+at z-index 99999 that hid it completely. Neither plays in front of a **deep link**.
+There are **two stings** (`STYLES` in `sting.js`), for the same reason the floor has three
+layouts: `draw` reveals the arcs along their own path; `goo` flops a Toko Drop gel cube in,
+which thins into the mark — the face is *drawn* at ~4× stroke weight, where the slots close
+and it is a blob, and thinning to `GEO.stroke` IS the transformation, so nothing crossfades
+and no third colour is needed. `playStingOnce` picks one at random and **records which**
+(`tokoStingStyle`), which rides on every note as `intro` — an intro you saw once and cannot
+name is one you cannot give feedback about. The brand board plays both on demand. Find the
+sting by **`.toko-sting`**, never `[role="img"]`: every signed game carries a badge with
+that role, and a test looking for one found the signature in the corner of the game it had
+just navigated to. **Room tone** is a detuned-saw bed plus a coin
+on Play, routed through one master gain and **off until asked**. Three counters hang off
+the single honest signal this page gets — pressing Play — and only appear once there is
+something to count: **credits**, a **streak** counted back from TODAY (counted from the
+most recent day instead, a streak that ended in March still shows in July), and
+**tickets**, which buy nothing. The **score wall** reads each game's own `localStorage`
+best off *your* disk via a `score: {key, fmt}` field in the catalogue; nothing is fetched
+and nothing is sent, which is why there is no leaderboard. The **Konami code** unlocks a
+`secret: true` cabinet — the brand board, which is real and already in the repo. A secret
+leaks through every list that reads `GAMES` directly rather than `onFloor()`: its tag
+showed up in the filter row, the "showing N of M" count, and a pasted `#brand`. Its id is
+**`brand`, not `toko`** — that fragment already belongs to the counter. The `wide` layout
+is now a **true full-width marquee** (cover at the width of the wrap, words underneath);
+it must not use `object-fit`, which crops the composition *and* resamples smoothly no
+matter what `image-rendering` says, turning a 9× pixel upscale into a blur.
 **Versions.** Toko Drop's system (a `VERSIONS.md` log with `## vN` entries plus a `?v=N`
 module token, moved together by `scripts/bump-version.sh`) now covers the whole floor.
 `node scripts/versions.mjs [siteRoot]` writes `hub/versions.json` by reading each
@@ -88,6 +125,34 @@ number before anyone starts logging for it and switches to the release number th
 they do. The cabinets fetch that file, so shipping one game does not mean redeploying the
 arcade. **Run it at deploy time** — against the deployed tree, which is the only place
 every project exists.
+**Deploying is `node scripts/deploy-hub.mjs <siteRoot> [--dry]`, never a hand-copy.**
+Three bugs in one session were the same bug: a number in one file disagreeing with a
+number in another (a precache list a token behind the page — an arcade that loads online
+and is blank on a plane; an `index.html` two features back, so the language switch had no
+ids to write into; tokens picked by hand, so a file could change without its number
+moving). The rule that removes the class is **one token per module, bumped when and only
+when its bytes change, and written into every reference by the script** — including each
+game's `../hub/shell.js` tag, which is how sixteen pages were found pinned to shells as
+old as `?v=1`. It copies only what this branch owns (`games.js`/`art.js` are the site's —
+overwriting them deletes a cabinet), derives `sw.js`'s SHELL via `scripts/sw-shell.mjs`
+(run that alone to keep the branch's own worker honest; the smoke gate asserts it) — which
+**walks the import graph from `index.html`** rather than matching `hub/*`, because a
+pattern is a hand-kept list with extra steps: the counter is twelve modules under `toko/`
+and the arcade came up offline with a dead bar across the top until the walk found them.
+It skips any folder shipping its own `sw.js` (a narrower scope wins its own pages), takes
+**built specifiers** (`import('./dialogue.js' + V)` inherits the importer's token, and is
+invisible to a literal `?v=` match), and checks each path is a real file — a line of
+documentation inside `chat.js` had put `toko/js/toko/js/chat.js` in the list. An
+**untokened** module goes in the list but is served network-first with the cache as
+fallback: the counter imports its own modules bare, and cache-first would pin them
+forever with no URL to bust, regenerates `AnotherHUB/`, and puts back any `<script>` block the
+site has and this branch does not — that is how the counter mount survives.
+**It will not overwrite a file the site has moved on its own**: gh-pages is edited from
+more than one direction, and a plain byte comparison says *that* two copies differ, never
+*which way*. So it asks whether this branch has ever HELD the site's bytes (tokens
+stripped, since a deployed file has been renumbered); if not, that is somebody else's
+work, it is left alone, and the run stops and tells you to bring it back first. It found
+three files that way on its first real run. **Deploys never merge.**
 `hub/feedback.js` reuses the transport the games already ship (`scripts/feedback-sheet.gs`
 on `gh-pages`): a `SHEET_ENDPOINT` Apps Script if pasted in — unlimited, but `no-cors`, so
 its answer cannot be read and that path reports **`sent-blind`**, never `sent` — otherwise
@@ -109,7 +174,13 @@ root's orphaned `game.js`/`style.css`/`levels.json` were removed. `paperboy/` an
 `goo-*.html` sketches had to be carried onto `gh-pages` with the hub — the site had never
 held them, and four of the hub's links pointed at them.
 
-### Suds Jack (`sudsjack/`) — the rebuild
+### Suds Jack (`sudsjack/`) — the rebuild, SET DOWN
+**Owner's call, 2026-08: the Hyper-Dagger-based rebuild was a mistake — stop building
+it.** The code stays in the repo like `paperboy/` does, the deployed copy stays
+unlisted, and the arcade's `sudsjack` cabinet points at the original vector build at
+`sudz/` with no rebuild promised on the card. Do not resume this without the owner
+asking in their own words. The section below is kept as a record of what was learned
+building it (the traps generalise); it is not a to-do list.
 Concept: "Bomb Jack x Suds 51 x Tempest 2000", taken **literally and in that order** —
 Bomb Jack is the *game* (collect, in the right order, **no weapon**), Tempest is the
 *shape* (a tube you ride the rim of), the suds are what it is made of.
@@ -159,7 +230,33 @@ could walk through** (the bay was read *after* the step, so the clamp asked the 
 already reached whether you were allowed there), a jump lifted **along the floor's normal**
 (which swings 90° crossing a ridge and threw Jack out of the channel), and **outer bays that
 were not bays** (end ramps to lip height ate half of the first and last).
-`node sudsjack/test/smoke.cjs` = 37 checks: boot, the director, the
+One more of the same family, on the way in rather than the look: **the pad was polled
+inside the play branch**, below the `mode !== 'play'` early return, so a controller could
+ride the rim but could not reach it — the menu and the recap take a pointer or Enter and
+nothing else. Polled in every mode now, A or Start is a way in, and because A is *also*
+dive the same press had to be drained at both edges of a run (`clearPending()`) or it
+started you mid-dive and restarted you off the recap.
+**The float** (owner's direction): jump pressed again in its falling half chains one more
+bay on a hop that GLIDES (`1 − k²` from wherever the arc was — it never rises, because a
+float that climbs reads as a double jump), each press starting lower until grime stops
+fitting underneath; three floats is lip to lip from a lip bay, deliberately. Found under
+it: **the declared peaks were not the drawn ridges** — main.js still passed the 13 lanes
+that predate the ridged channel while the peaks are declared for the tube's own default
+of 20, so the walls sat beside the ridges, one peak was past the lip, and the fifth bay
+was a sliver. The gate now asks the geometry, not the declaration, and every
+lane-denominated tuning carries a ×20/13 rescale to keep world-space feel.
+**The Scum Line** (v6): grime past the mouth **settles** instead of dying — a film on its
+lane, three layers deep, because dodging used to be free and nothing accumulated, so a
+patient run idled forever. Scum is **sticky** (rim ×0.4 underfoot; airborne exempt, which
+makes the float the way across a fouled stretch on every shape), **barren** (the director
+skips fouled lanes, so neglect starves the chain rather than blocking you) and past **80%
+coverage the channel floods** — a life, the chain, a clean rim. The **dive is the only
+scrub** (one layer per completed dive, 50 × level; a dive cancelled by a hit scrubs
+nothing) — which is what finally makes the stated core verb load-bearing: it advertised
+3× but capped at 2.1× against a ×16 chain that never needed it. Level clear washes the
+channel and pays 40 × level × clean lanes — the chain's missing cash-out beat. The scum
+line itself is a 20-cell strip under the channel: route map and flood meter, one fact.
+`node sudsjack/test/smoke.cjs` = 60 checks: boot, the director, the
 lane-lock during a dive, collection, the chain, damage, mercy frames, the level shapes,
 game over, the way home and the signature — all driven off **game state, not the wall
 clock**, because a sandbox with no GPU renders this at a handful of frames a second.
@@ -618,13 +715,11 @@ offline; `toko/VERSIONS.md` is the log, `scripts/versions.mjs` reads it into
 the gate fails if code and log disagree.
 `sting.js` is a ~3s sting where the face **draws itself** (arcs revealed by
 dash-offset so they grow along their own path: mouth sweeps open → eyes drop in
-→ blink → logotype lands), skippable on any input from frame one. It plays on
-the arcade **once per browser** (`playStingOnce`, key `tokoSting`) and **never
-in front of a deep link** — `/#hyperdagger` or `/#toko` means somebody came for
-one thing, and a title card between them and it is an advertisement. Imported
-dynamically and swallowed on failure: a nicety must never be the reason the
-floor does not open, and the smoke gate marks it seen in every context so a
-three-second takeover cannot eat the first click of every other test. `masthead.js`
+→ blink → logotype lands), skippable on any input from frame one. The arcade
+plays it **once per browser on the first Play** (`playStingOnce`, key
+`tokoSting`), not merely on arrival: the mark belongs in front of a game, not
+its menu. It is imported dynamically and swallowed on failure, so a nicety can
+never be the reason a game does not open. `masthead.js`
 is the animated lockup for the arcade hub — `stop()` it wherever the page
 re-renders or the loop leaks against a detached canvas. `surface.js` is the
 DPR-aware smooth canvas (the mark is curves, so antialiasing stays ON).
@@ -652,24 +747,78 @@ plus its five deps — so **changing `signature.js` means bumping that token and
 the list entry in the same change**, or those two games serve the old badge out
 of cache forever while every other cabinet gets the new one.
 
-### Toko Drop — Gelatin Bullet-Hell Twin-Stick Shooter
-Top-down arena twin-stick shooter. Primary development is in **Unreal Engine 5.4** (started from the Top Down template), with a potential HTML5 prototype / Godot port planned.
+### Toko Drop (`toko-drop/`)
 
-**Pillars:** twin-stick controls, bullet-hell enemy patterns with deliberately slow enemy movement, roguelite run-based progression, gun upgrade trees, gelatin/clay visuals (translucent wobbling materials, destructible chunks, colorful puddle decals).
+**THE MAIN PROJECT (owner's call, 2026-08).** Attention goes here first; Hyper Dagger
+is second; everything else is maintenance unless the owner says otherwise. The owner's
+diagnosis, recorded so sessions stop repeating the pattern: most games in this repo are
+stuck at their initial prototype look and feel — every game got one intense burst that
+produced a working prototype and never a second one. The way out is the method that
+worked on the cover art: a reference from the owner, then render → LOOK → name what is
+wrong → redo, discarding drafts freely — applied to one system at a time against
+captured MOTION (`scripts/enemy-loop.mjs` records GIF loops from the real game code),
+not against stills or state assertions, because the smoke gates certify *works* and
+prototype-feel lives entirely in the part they cannot see.
 
-**Current UE5.4 state:**
-- Player pawn: `BP_GelPlayer` (Character-based, static mesh + `M_Gelatin` material, set as Default Pawn in `BP_TopDownGameMode`)
-- Weapon: `BP_Weapon` (Actor-based, basic firing logic, spawned at a character weapon point)
-- Enemy: Blueprint class with basic "move toward player" AI
-- Mostly Blueprint-driven; open to C++ for performance-sensitive paths (bullet counts in bullet-hell can get heavy)
+Browser twin-stick swarm-survival game built with Three.js and ES modules, with
+no build step. The current live implementation is the canonical gameplay
+reference; the old UE5 notes no longer describe this repository.
 
-**Systems still to build:**
-1. Weapon system + upgrade trees
-2. Enemy bullet-hell patterns (spiral, spread, ring, etc.)
-3. Arena + procedural/roguelite run generation
-4. Roguelite meta-progression (unlocks, between-run upgrades)
-5. Gelatin VFX: vertex displacement wobble, destructible chunks, puddle decals (Niagara + material functions)
-6. HUD: health, score, run state
+- **`js/tuning.js` is the single source of truth for enemy look and feel.**
+  Constants covered by `TUNING` must be read from it rather than duplicated in
+  `enemy.js` or `main.js`.
+- `enemy-lab.html` is the standalone visual reference. When a written brief and
+  the lab disagree, the lab wins.
+- `js/enemy.js` owns enemy types, behaviours, goo shaders and gel geometry.
+- `js/main.js` owns orchestration: the game loop, waves, collisions, HUD and
+  title/pause/death screens.
+- `js/bullet.js`, `js/player.js`, `js/input.js`, `js/audio.js`, `js/lang.js`,
+  `js/designer.js` and `js/retro.js` hold the major supporting systems.
+- `TOKO_DROP_ROADMAP.md` is forward planning, `GDD.md` contains design truths,
+  and `VERSIONS.md` records shipped changes.
+
+**Release and visual-validation discipline:**
+
+- Run `scripts/smoke.sh` for the main game gate. If a change affects modes or
+  `inCabinet()`, also run `scripts/cabinets.sh`; it boots and plays all six
+  cabinets and checks for mode leaks, retro-pass failures and page errors.
+- `scripts/enemy-loop.mjs` records short looping GIFs from the real game code.
+  Use it for movement and readability questions instead of hand-building a
+  separate capture harness. Scenarios live in the script's `SCENARIOS` map.
+  Stage captures in a throwaway copy of `toko-drop/`; test-only harness code
+  must never reach the shipped tree. Do not use Playwright's `networkidle`
+  wait because the service worker keeps the network active. SwiftShader takes
+  roughly 1.5 seconds per screenshot, so run longer loops in the background.
+  Keep capture-only dependencies such as `gifenc` and `pngjs` in scratch and
+  expose them with `NODE_PATH` rather than vendoring them into the game.
+- Every playable-project release must update its `hub/games.js` title/tagline,
+  controls and status/note where relevant, plus `hub/versions.json`; bump every
+  affected hub-module and worker cache token. Deploy the build
+  and catalogue copy together to `gh-pages`, verify both the hub entry and live game
+  actually load and play, then report the hub link and version. A merge alone is not
+  a playable release.
+- Every Toko Drop game change needs a new top entry in `VERSIONS.md` and matching
+  cache tokens. `scripts/bump-version.sh <N>` performs the coordinated bump.
+- Install the version guard with
+  `cp scripts/pre-commit .git/hooks/pre-commit`. Never skip hooks with
+  `--no-verify`, and never force-push a default or production branch.
+- The live site remains on `gh-pages` until the source-of-truth migration is
+  completed. Reconciliation branches must not deploy or force-push production.
+- New resource paths need versioned URLs from their first release because the
+  Pages CDN may temporarily cache a pre-deployment 404.
+
+**Current production workflow (until the migration is complete):**
+
+- Toko Drop changes go through a pull request and squash merge into
+  `gh-pages`. After the merge, `scripts/release.sh` force-resyncs the working
+  branch to `origin/gh-pages`; it discards unmerged commits on that working
+  branch, so preserve or merge them before running it.
+- Other games may be pushed directly to `gh-pages` only when the commit is
+  limited to that game's directory. Concurrent agents must resync after those
+  pushes and account for superseded deployment runs.
+- After every production push, verify that the **pages build and deployment**
+  Actions run—not merely the commit status—concludes `success`. A failed or
+  superseded deployment can otherwise look exactly like a broken site.
 
 ## Repository Structure
 

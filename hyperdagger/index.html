@@ -3,11 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
   <title>Hyper Dagger</title>
+  <link rel="manifest" href="manifest.webmanifest?v=61">
+  <link rel="icon" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #000; overflow: hidden; touch-action: none; }
-    #canvas-game { display: block; }
+    #canvas-game {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      image-rendering: pixelated;
+    }
     #canvas-ui {
       position: fixed;
       top: 0; left: 0;
@@ -75,6 +84,29 @@
       display: none;
     }
     #pauseBtn:hover { background: rgba(255, 255, 255, 0.14); }
+    /* During a run, leave only the clock and the weapon in the frame. The
+       shell controls remain reachable, but retreat until the player asks. */
+    body.in-run #timer { font-size: 27px; letter-spacing: 2px; }
+    body.in-run #kills,
+    body.in-run #gems,
+    body.in-run #style { display: none !important; }
+    body.in-run #pauseBtn {
+      opacity: 0.16;
+      background: transparent;
+      border-color: rgba(255, 255, 255, 0.18);
+      transition: opacity 0.18s, background 0.18s;
+    }
+    body.in-run #pauseBtn:hover,
+    body.in-run #pauseBtn:focus-visible { opacity: 0.9; }
+    body.in-run .arcade-home,
+    body.in-run .toko-signature {
+      opacity: 0.08 !important;
+      transition: opacity 0.18s;
+    }
+    body.in-run .arcade-home:hover,
+    body.in-run .arcade-home:focus-visible,
+    body.in-run .toko-signature:hover,
+    body.in-run .toko-signature:focus-visible { opacity: 0.9 !important; }
     #toast {
       position: fixed;
       top: 22%; left: 50%;
@@ -146,10 +178,28 @@
       border-radius: 6px;
     }
     #modeBtn:hover, #msg button.opt:hover { background: rgba(255, 255, 255, 0.14); }
+    #msg input#initials {
+      pointer-events: auto;
+      width: 4ch;
+      padding: 2px 4px;
+      font-family: monospace;
+      font-size: 12px;
+      text-align: center;
+      text-transform: uppercase;
+      color: #f0f0f0;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+    }
     #msg button.opt.on {
       color: #fff;
       border-color: #c81e1e;
       background: rgba(200, 30, 30, 0.25);
+    }
+    #msg button.gfocus {
+      border-color: #c81e1e;
+      box-shadow: 0 0 12px rgba(200, 30, 30, 0.7);
+      background: rgba(200, 30, 30, 0.35);
     }
     #msg .optrow { margin-top: 8px; }
     #msg .optrow span {
@@ -182,21 +232,27 @@
   <script type="importmap">
   {
     "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+      "three": "./vendor/three.module.min.js",
+      "three/addons/": "./vendor/jsm/"
     }
   }
   </script>
+  <script type="module" src="js/main.js?v=61"></script>
+  <script>
+    // Offline install: same ?v= discipline as the modules — the token flows
+    // into the worker and names its cache, so each release rotates cleanly.
+    if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      navigator.serviceWorker.register('sw.js?v=61').catch(() => {});
+    }
+  </script>
   <!-- the arcade shell: a home button and a controller way back -->
-  <script type="module" src="../hub/shell.js?v=8"></script>
-  <script type="module" src="js/main.js?v=13"></script>
+  <script type="module" src="../hub/shell.js?v=17"></script>
 
   <!-- signed by Toko Midori Games — the badge in the corner, under the HUD.
        `counter: true` makes it the way to the counter on the hub; on a
-       touchscreen it stays inert, because that corner is the left stick.
-       See ../toko/BRAND.md -->
+       touchscreen it stays inert, because that corner is the left stick. See ../toko/BRAND.md -->
   <script type="module">
-    import { sign } from '../toko/js/signature.js?v=1';
+    import { sign } from '../toko/js/signature.js?v=3';
     sign({ corner: 'bottom-left', counter: true });
   </script>
 </body>

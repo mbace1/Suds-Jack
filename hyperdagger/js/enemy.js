@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=10';
+import { VoxelSprite, MODELS } from './voxel.js?v=61';
 
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();
@@ -7,8 +7,12 @@ const _c = new THREE.Vector3();
 class VoxelEnemy {
   constructor(scene, model, pos) {
     this.sprite = new VoxelSprite(model);
+    this.parts = [this.sprite];
     this.group = new THREE.Group();
     this.group.add(this.sprite.mesh);
+    // Rear-world projection renders this layer into a separate cube map so
+    // enemy silhouettes can glow without turning the whole arena red.
+    this.group.traverse(o => o.layers.enable(2));
     this.group.position.copy(pos);
     this.group.scale.setScalar(0.01);
     this.spawnK = 0;
@@ -26,31 +30,67 @@ class VoxelEnemy {
       this.spawnK = Math.min(1, this.spawnK + dt * 2.4);
       this.group.scale.setScalar(this.spawnK);
     }
-    this.sprite.update(dt);
+    for (const part of this.parts) {
+      part.update(dt);
+      // LOOK can recreate a smooth hull after construction; keep every new
+      // child in the enemy-only capture as well.
+      if (part.hull) part.hull.layers.enable(2);
+    }
   }
 
   hit(dmg, dir) {
     this.hp -= dmg;
-    this.sprite.flash();
+    for (const part of this.parts) part.flash();
   }
 
+  deathVoxels() { return this.parts.flatMap(part => part.worldVoxels()); }
+
   remove(scene) {
+    // idempotent: killEnemy removes on the kill, and the prune loop removes
+    // again on the splice — any path that only flags alive=false still gets
+    // its group and GPU resources released exactly once
+    if (this.removed) return;
+    this.removed = true;
     scene.remove(this.group);
-    this.sprite.dispose();
+    for (const part of this.parts) part.dispose();
   }
 }
 
 /** Fast chaser. One dagger kills it; takes knockback. */
 export class Skull extends VoxelEnemy {
   constructor(scene, pos, speedBoost = 0, model = MODELS.skull) {
-    super(scene, model, pos);
+    const animatedJaw = model === MODELS.skull;
+    super(scene, animatedJaw ? MODELS.skullHead : model, pos);
+    if (animatedJaw) {
+      this.jaw = new VoxelSprite(MODELS.skullJaw);
+      // The floor's coarse depth raster otherwise eats the low moving teeth.
+      // Render the tiny jaw as a sorted cutout: far jaws still paint first,
+      // while the bite remains legible over the skull it belongs to.
+      this.jaw.material.transparent = true;
+      this.jaw.material.depthTest = false;
+      this.jaw.material.depthWrite = false;
+      this.jaw.mesh.renderOrder = 3;
+      this.jawPivot = new THREE.Group();
+      // Pivot just behind the back teeth. A slight overlap in the closed pose
+      // prevents the low-res raster from opening a false seam at the hinge.
+      this.jawPivot.position.set(0, -0.44, -0.05);
+      this.jaw.mesh.position.set(0, 0.52, 0.12);
+      this.jawPivot.add(this.jaw.mesh);
+      this.group.add(this.jawPivot);
+      this.parts.push(this.jaw);
+      this.jawPivot.traverse(o => o.layers.enable(2));
+      this.jawT = Math.random() * Math.PI * 2;
+      this.jawOpen = 0;
+    }
     this.type = 'skull';
     this.hp = 1;
     this.radius = 0.75;
     this.score = 1;
     this.vel = new THREE.Vector3();
-    this.maxSpeed = 6.2 + speedBoost;
-    this.accel = 15;
+    // Faster than a straight-running player, but deliberately slow to turn:
+    // the answer is circle-strafing, not simply holding W away from the swarm.
+    this.maxSpeed = 10.8 + speedBoost;
+    this.accel = 7.2;
     this.knock = 8;
     this.bobT = Math.random() * Math.PI * 2;
   }
@@ -59,6 +99,17 @@ export class Skull extends VoxelEnemy {
     this.baseUpdate(dt);
     this.bobT += dt * 3;
     _dir.copy(playerEye).sub(this.pos);
+    if (this.jawPivot) {
+      const near = Math.max(0, Math.min(1, 1 - _dir.length() / 18));
+      this.jawT += dt * (7.5 + near * 4.5);
+      const bite = Math.pow(0.5 + 0.5 * Math.sin(this.jawT), 1.6);
+      this.jawOpen = 0.05 + bite * (0.28 + near * 0.16);
+      this.jawPivot.rotation.x = this.jawOpen;
+      // Rotation supplies the hinge; a small drop/advance keeps the black
+      // mouth gap readable in the coarse game raster, even head-on.
+      this.jawPivot.position.y = -0.44 - this.jawOpen * 0.12;
+      this.jawPivot.position.z = -0.05 + this.jawOpen * 0.08;
+    }
     _dir.y += Math.sin(this.bobT) * 0.5;
     _dir.normalize();
     this.vel.addScaledVector(_dir, this.accel * dt);
@@ -67,6 +118,125 @@ export class Skull extends VoxelEnemy {
     this.pos.addScaledVector(this.vel, dt);
     if (this.pos.y < 0.55) this.pos.y = 0.55;
     this.group.lookAt(playerEye);
+  }
+
+  hit(dmg, dir) {
+    super.hit(dmg, dir);
+    this.vel.addScaledVector(dir, this.knock);
+  }
+}
+
+/**
+ * THE HUSK — the enemy where the voxel physics ARE the mechanic. Its shell
+ * encloses a glowing core, and daggers barely dent plating: you have to chew
+ * a hole through it (chip damage erodes a crater, chunk detachment sheds the
+ * severed plates) until the core is bared, and only then does it take real
+ * damage. Slow, heavy, and it never flinches — a positioning fight, not a
+ * reflex one.
+ */
+export class Husk extends VoxelEnemy {
+  constructor(scene, pos, speedBoost = 0) {
+    super(scene, MODELS.husk, pos);
+    this.type = 'husk';
+    this.hp = 16;
+    this.maxHp = 16; // set up front so the chip-per-hit rate is right from hit 1
+    this.radius = 1.45;
+    this.score = 7;
+    this.vel = new THREE.Vector3();
+    this.maxSpeed = 3.2 + speedBoost;
+    this.accel = 8;
+    this.knock = 1.5; // an armored slab barely flinches
+    this.shellTotal = this.sprite.voxels.length;
+    this.cracked = false;
+    this.bobT = Math.random() * Math.PI * 2;
+  }
+
+  /** Which AudioKit voice a dagger hit should use — plating swallows the
+   *  strike, a bared core rings like anything else. */
+  get hitSound() { return this.coreExposed ? 'hit' : 'plate'; }
+
+  /** Fraction of the shell chipped away. */
+  get exposure() { return 1 - this.sprite.aliveCount / this.shellTotal; }
+  get coreExposed() { return this.exposure >= CORE_AT; }
+
+  /** True exactly once, on the hit that first bares the core — the caller
+   *  turns that into the stinger + shockwave. Checked AFTER chipping, so the
+   *  moment lines up with the hole actually opening. */
+  checkCrack() {
+    if (this.cracked || !this.coreExposed) return false;
+    this.cracked = true;
+    this.sprite.retint({ C: [4.2, 0.35, 0.35] }); // the bared core ignites
+    return true;
+  }
+
+  update(dt, playerEye) {
+    this.baseUpdate(dt);
+    this.bobT += dt * 1.6;
+    _dir.copy(playerEye).sub(this.pos);
+    _dir.y = 0; // it walks — no bobbing float, it should read as heavy
+    _dir.normalize();
+    this.vel.addScaledVector(_dir, this.accel * dt);
+    const sp = this.vel.length();
+    if (sp > this.maxSpeed) this.vel.multiplyScalar(this.maxSpeed / sp);
+    this.pos.addScaledVector(this.vel, dt);
+    this.pos.y = 1.35 + Math.sin(this.bobT) * 0.06; // a heavy plod
+    this.group.lookAt(playerEye.x, this.pos.y, playerEye.z);
+  }
+
+  hit(dmg, dir) {
+    // plating shrugs off daggers; a bared core takes double
+    this.hp -= this.coreExposed ? dmg * 2 : dmg * 0.2;
+    this.sprite.flash();
+    this.vel.addScaledVector(dir, this.knock);
+  }
+}
+
+/** How much of the shell must be gone before the core counts as exposed. */
+const CORE_AT = 0.32;
+
+/**
+ * THE REVENANT — the bone-yard turned against you. It can only rise where the
+ * player's own carnage has piled up, devours those bones to assemble itself,
+ * and claws up out of the floor. Fast enough to punish camping on a killing
+ * field, which is exactly the habit the litter system rewards.
+ */
+export class Revenant extends VoxelEnemy {
+  constructor(scene, pos, speedBoost = 0) {
+    super(scene, MODELS.revenant, pos);
+    this.type = 'revenant';
+    this.hp = 6;
+    this.maxHp = 6;
+    this.radius = 1.0;
+    this.score = 4;
+    this.vel = new THREE.Vector3();
+    this.maxSpeed = 5.2 + speedBoost;
+    this.accel = 13;
+    this.knock = 4;
+    this.bobT = Math.random() * Math.PI * 2;
+    this.riseT = 0.9; // hauls itself up through the floor before it can chase
+    this.pos.y = -0.6;
+  }
+
+  /** Harmless while still emerging — you get a beat to back off. */
+  get rising() { return this.riseT > 0; }
+
+  update(dt, playerEye) {
+    this.baseUpdate(dt);
+    this.group.lookAt(playerEye.x, this.pos.y, playerEye.z);
+    if (this.riseT > 0) {
+      this.riseT = Math.max(0, this.riseT - dt);
+      this.pos.y = 1.05 - (this.riseT / 0.9) * 1.65;
+      return;
+    }
+    this.bobT += dt * 2.6;
+    _dir.copy(playerEye).sub(this.pos);
+    _dir.y = 0;
+    _dir.normalize();
+    this.vel.addScaledVector(_dir, this.accel * dt);
+    const sp = this.vel.length();
+    if (sp > this.maxSpeed) this.vel.multiplyScalar(this.maxSpeed / sp);
+    this.pos.addScaledVector(this.vel, dt);
+    this.pos.y = 1.05 + Math.sin(this.bobT) * 0.08;
   }
 
   hit(dmg, dir) {
@@ -94,6 +264,20 @@ export class Splitter extends Skull {
     this.score = 2;
     this.knock = 4;
     this.splits = true;
+  }
+}
+
+/** Skull IV analog: big, FAST, dark-red bone with a burning crown. Late-run
+ *  pressure spike — it outruns a walking player, so it forces dashes. */
+export class DreadSkull extends Skull {
+  constructor(scene, pos, speedBoost = 0) {
+    super(scene, pos, speedBoost + 2.6, MODELS.skullDread);
+    this.type = 'dread';
+    this.hp = 8;
+    this.radius = 1.3;
+    this.score = 5;
+    this.accel = 22;
+    this.knock = 2; // barely flinches
   }
 }
 
@@ -271,15 +455,17 @@ export class Brute extends Skull {
 
 /** Drifting obsidian pillar that exhales skulls from its mouth. */
 export class Totem extends VoxelEnemy {
-  constructor(scene, pos, interval) {
+  constructor(scene, pos, interval, ddTier = 0) {
     super(scene, MODELS.totem, pos);
     this.type = 'totem';
-    this.hp = 25;
+    this.ddTier = ddTier;
+    this.hp = ddTier ? ddTier * 10 : 25;
     this.radius = 1.7;
     this.score = 10;
+    if (ddTier) this.gemDrop = ddTier;
     this.hitY = 1.7;
     this.interval = interval;
-    this.spawnTimer = interval * 0.5;
+    this.spawnTimer = ddTier ? 3 : interval * 0.5;
     this.emit = false;
     this.orbitR = Math.hypot(pos.x, pos.z);
     this.orbitA = Math.atan2(pos.z, pos.x);
@@ -304,6 +490,7 @@ export class Totem extends VoxelEnemy {
       this.spawnTimer = this.interval;
       this.emit = true;
     }
+    if (this.ddTier) return;
     // Returnal-style bullet wave: a flat, jumpable ring of orbs
     this.ringTimer -= dt;
     if (this.ringTimer <= 0) {
@@ -318,12 +505,14 @@ export class Totem extends VoxelEnemy {
  * gems and eats them; killing it releases everything it swallowed plus one.
  */
 export class Spider extends VoxelEnemy {
-  constructor(scene, pos) {
+  constructor(scene, pos, ddRules = false) {
     super(scene, MODELS.spider, pos);
     this.type = 'spider';
-    this.hp = 6;
+    this.ddRules = ddRules;
+    this.hp = ddRules ? 25 : 6;
     this.radius = 0.9;
     this.score = 3;
+    if (ddRules) this.gemDrop = 1;
     this.stolen = 0;
     this.vel = new THREE.Vector3();
     this.wanderT = 0;
@@ -495,16 +684,22 @@ export class Serpent {
       _tv.copy(playerEye);       // dive-bomb straight at the player
       speed = 12.5;
     } else {
-      const a = this.t * 0.55;   // weave a ring around the player
+      // weave a ring around the player while SWOOPING — the cruise is a deep
+      // sine in Y (owner's call, 2026-08-07: it should go up and down, not
+      // fly level), diving to just off the floor and arcing well overhead;
+      // the chain-follow turns that into a visible body wave
+      const a = this.t * 0.55;
       _tv.set(
-        playerEye.x + Math.cos(a) * 11,
-        3.2 + Math.sin(this.t * 0.8) * 2.4,
-        playerEye.z + Math.sin(a) * 11,
+        playerEye.x + Math.cos(a) * 9.5,
+        4.8 + Math.sin(this.t * 1.1) * 3.9,
+        playerEye.z + Math.sin(a) * 9.5,
       );
     }
 
     _sd.copy(_tv).sub(head.pos).normalize();
-    this.vel.addScaledVector(_sd, 9 * dt);
+    // steering must be stiff enough to actually ride the sine — at the old
+    // 9/s the lag averaged the swoop back into level flight
+    this.vel.addScaledVector(_sd, 13 * dt);
     if (this.vel.length() > speed) this.vel.setLength(speed);
     head.pos.addScaledVector(this.vel, dt);
     if (head.pos.y < 0.8) head.pos.y = 0.8;

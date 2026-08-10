@@ -1,24 +1,54 @@
-const STICK_R = 60;
-const LOOK_DEADZONE = 0.12;
-const TAP_MS = 250;        // max duration for a tap
-const TAP_PX = 12;         // max travel for a tap
-const FLICK_WINDOW = 150;  // ms of trailing movement examined at release
-const FLICK_PX = 40;       // min travel within that window to count as a flick
+import { TUNING as T } from './tuning.js?v=61';
+
+// all feel numbers live in tuning.js; these aliases keep the code readable
+const STICK_R = T.touch.stickR;
+const LOOK_DEADZONE = T.touch.lookDeadzone;
+const TAP_MS = T.touch.tapMs;
+const TAP_PX = T.touch.tapPx;
+const FLICK_WINDOW = T.touch.flickWindow;
+const FLICK_PX = T.touch.flickPx;
+
+// --- stick shaping (controller-first aim) --------------------------------
+const PAD_DZ = T.pad.deadzone;
+const PAD_SAT = T.pad.saturation;
+const LOOK_EXP = T.pad.lookExp;
 
 /**
- * Unified input. Desktop: pointer-lock mouse look, WASD, hold LMB to fire
- * (firing is also automatic while moving), Space = jump / double jump,
- * Shift = dash. Gamepad: left stick moves, right stick looks, RT/RB fire,
- * A jumps (×2), B/LT dashes. Touch: left stick moves, right stick looks; a
- * quick tap on EITHER stick jumps (a second finger tapping while a stick is
- * held works too), and a fast flick on either stick dashes in the flick
- * direction. Flicks are judged by the LAST 150 ms of movement before
- * release, so flicking out of a long look-drag works. No buttons.
+ * Radial deadzone + outer saturation, shaping MAGNITUDE only so the direction
+ * a stick is pushed is the direction it reads. Deadzoning each axis
+ * separately (the old path) notches diagonals: a stick pushed to a perfect
+ * 45° gets both components trimmed, so it aims shallower than it points.
+ *
+ * `exp` applies a power curve to the shaped magnitude. On look that buys the
+ * thing a linear rate can't: fine tracking near centre AND a fast top end
+ * from one stick, instead of a single compromise sensitivity.
+ */
+function shapeStick(x, y, dz, sat = 1, exp = 1) {
+  const len = Math.hypot(x, y);
+  if (len <= dz) return { x: 0, y: 0 };
+  let m = Math.min(1, (len - dz) / (sat - dz));
+  if (exp !== 1) m = Math.pow(m, exp);
+  return { x: (x / len) * m, y: (y / len) * m };
+}
+
+/**
+ * Unified input. Desktop: pointer-lock mouse look, WASD, LMB tap = shotgun
+ * burst / hold = stream (main.js reads the raw held state and does the
+ * tap-vs-hold timing), Space = jump,
+ * RMB spends homing ammo at LV3+, Shift = dash in the HYPER remix. Gamepad:
+ * left stick moves, right stick looks, RT/RB fire, LT homing, A jumps, B dashes
+ * in HYPER. Touch: left stick moves,
+ * right stick looks/fires; a left tap jumps, a right tap fires the burst, and
+ * a second finger can tap either occupied half without releasing its stick.
+ * A fast flick on either stick dashes in the flick direction. Flicks are
+ * judged by the LAST 150 ms of movement before release. No buttons.
  */
 export class InputManager {
   constructor() {
     this.keys = {};
+    this._reap = false;
     this.mouseDown = false;
+    this.mouseAltDown = false;
     this.touchMode = false;
     this.gamepad = false; // a controller is connected + active
     this.left = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, t0: 0, hist: [] };
@@ -27,10 +57,12 @@ export class InputManager {
     this._lookX = 0;
     this._lookY = 0;
     this._jump = false;
+    this._fireTap = false;
     this._dash = false;
     this._dashFlick = null; // {x, y} normalized screen-space flick direction
-    this._pad = { move: { x: 0, y: 0 }, look: { x: 0, y: 0 }, firing: false };
-    this._padPrev = { jump: false, dash: false }; // edge detection
+    this._pad = { move: { x: 0, y: 0 }, look: { x: 0, y: 0 }, firing: false, altFiring: false };
+    this._padPrev = { jump: false, dash: false, up: false, down: false, a: false, b: false, start: false };
+    this._ui = { up: false, down: false, a: false, b: false, start: false }; // menu edges
     this._init();
   }
 
@@ -39,11 +71,19 @@ export class InputManager {
       this.keys[e.code] = true;
       if (e.code === 'Space' && !e.repeat) this._jump = true;
       if ((e.code === 'ShiftLeft' || e.code === 'ShiftRight') && !e.repeat) this._dash = true;
+      if ((e.code === 'KeyR' || e.code === 'KeyE') && !e.repeat) this._reap = true;
     });
     window.addEventListener('keyup', e => { this.keys[e.code] = false; });
 
-    document.addEventListener('mousedown', e => { if (e.button === 0) this.mouseDown = true; });
-    document.addEventListener('mouseup', e => { if (e.button === 0) this.mouseDown = false; });
+    document.addEventListener('mousedown', e => {
+      if (e.button === 0) this.mouseDown = true;
+      if (e.button === 2) this.mouseAltDown = true;
+    });
+    document.addEventListener('mouseup', e => {
+      if (e.button === 0) this.mouseDown = false;
+      if (e.button === 2) this.mouseAltDown = false;
+    });
+    document.addEventListener('contextmenu', e => e.preventDefault());
     document.addEventListener('mousemove', e => {
       if (document.pointerLockElement) {
         // Some browsers report one giant bogus delta right after locking.
@@ -84,8 +124,10 @@ export class InputManager {
         stick.t0 = now;
         stick.hist = [{ x: t.clientX, y: t.clientY, t: now }];
       } else {
-        // second finger tapping an occupied half = jump, even mid-steer/aim
-        this._jump = true;
+        // A second finger can trigger the action without releasing the stick:
+        // left = jump while moving, right = burst while holding an aim angle.
+        if (side === 'right') this._fireTap = true;
+        else this._jump = true;
         this._touchMap.set(t.identifier, 'tap');
       }
     }
@@ -116,7 +158,8 @@ export class InputManager {
       const dur = now - stick.t0;
       const dist = Math.hypot(stick.dx, stick.dy);
       if (dur < TAP_MS && dist < TAP_PX) {
-        this._jump = true; // tap either stick = jump / double jump
+        if (side === 'right') this._fireTap = true;
+        else this._jump = true;
       } else {
         // flick = fast travel within the last FLICK_WINDOW ms before release,
         // so a flick at the end of a long look-drag still dashes
@@ -144,32 +187,74 @@ export class InputManager {
     if (pads) for (const p of pads) { if (p && p.connected) { gp = p; break; } }
     if (!gp) {
       this.gamepad = false;
+      this._gp = null;
       this._pad.move = { x: 0, y: 0 };
       this._pad.look = { x: 0, y: 0 };
       this._pad.firing = false;
-      this._padPrev.jump = this._padPrev.dash = false;
+      this._pad.altFiring = false;
+      this._padPrev = { jump: false, dash: false, up: false, down: false, a: false, b: false, start: false };
       return;
     }
     this.gamepad = true;
-    const DZ = 0.18;
-    const ax = i => {
-      const v = gp.axes[i] || 0;
-      return Math.abs(v) < DZ ? 0 : (v - Math.sign(v) * DZ) / (1 - DZ);
-    };
-    // left stick → move (screen-up is forward, so invert y); clamp to unit
-    let mx = ax(0), my = -ax(1);
-    const ml = Math.hypot(mx, my);
-    if (ml > 1) { mx /= ml; my /= ml; }
-    this._pad.move = { x: mx, y: my };
-    this._pad.look = { x: ax(2), y: ax(3) };
+    this._gp = gp;
+    // the whole layer assumes the standard mapping — warn once if this pad
+    // reports something else (rare: some Linux/Firefox + DualSense combos)
+    if (gp.mapping !== 'standard' && !this._warnedMapping) {
+      this._warnedMapping = true;
+      console.warn(`[hyperdagger] gamepad "${gp.id}" reports mapping "${gp.mapping}" — buttons may be scrambled (standard mapping expected)`);
+    }
+    const raw = i => gp.axes[i] || 0;
+    // left stick → move (screen-up is forward, so invert y). Move stays
+    // LINEAR: you want full walk speed without shoving the stick to the rim.
+    this._pad.move = shapeStick(raw(0), -raw(1), PAD_DZ, PAD_SAT);
+    // right stick → look, through the response curve
+    this._pad.look = shapeStick(raw(2), raw(3), PAD_DZ, PAD_SAT, LOOK_EXP);
     const btn = i => !!(gp.buttons[i] && gp.buttons[i].pressed);
     this._pad.firing = btn(7) || btn(5); // RT / RB hold to fire
-    const jumpNow = btn(0);              // A = jump / double jump
-    const dashNow = btn(1) || btn(6);    // B / LT = dash
+    this._pad.altFiring = btn(6);        // LT spends banked homing daggers
+    const jumpNow = btn(0);              // A = jump
+    const dashNow = btn(1);              // B = dash (HYPER mode only)
+    const reapNow = btn(2) || btn(4);    // X / LB = reap
     if (jumpNow && !this._padPrev.jump) this._jump = true;
     if (dashNow && !this._padPrev.dash) this._dash = true;
+    if (reapNow && !this._padPrev.reap) this._reap = true;
+    this._padPrev.reap = reapNow;
     this._padPrev.jump = jumpNow;
     this._padPrev.dash = dashNow;
+    // menu-facing edges: d-pad (12/13) or left-stick Y past ±0.55 moves focus,
+    // A activates, B backs out of pause, Start (9) toggles pause
+    const upNow = btn(12) || (gp.axes[1] || 0) < -0.55;
+    const downNow = btn(13) || (gp.axes[1] || 0) > 0.55;
+    const startNow = btn(9);
+    if (upNow && !this._padPrev.up) this._ui.up = true;
+    if (downNow && !this._padPrev.down) this._ui.down = true;
+    if (jumpNow && !this._padPrev.a) this._ui.a = true;
+    if (dashNow && !this._padPrev.b) this._ui.b = true;
+    if (startNow && !this._padPrev.start) this._ui.start = true;
+    this._padPrev.up = upNow;
+    this._padPrev.down = downNow;
+    this._padPrev.a = jumpNow;
+    this._padPrev.b = dashNow;
+    this._padPrev.start = startNow;
+  }
+
+  /** Fire a dual-rumble pulse on the connected pad, if it supports one
+   *  (DualSense + Xbox pads do in Chromium). Silently no-ops elsewhere. */
+  rumble(strong, weak, ms) {
+    const act = this._gp?.vibrationActuator;
+    if (!act?.playEffect) return;
+    act.playEffect('dual-rumble', {
+      duration: ms,
+      strongMagnitude: Math.min(1, strong),
+      weakMagnitude: Math.min(1, weak),
+    }).catch(() => {});
+  }
+
+  /** Edge-detected gamepad UI actions since last call (menus + pause). */
+  consumeUi() {
+    const u = this._ui;
+    this._ui = { up: false, down: false, a: false, b: false, start: false };
+    return u;
   }
 
   /** Accumulated pointer-lock mouse pixels since last call. */
@@ -179,7 +264,9 @@ export class InputManager {
     return r;
   }
 
-  /** Right-stick deflection (touch or gamepad), each axis in [-1, 1]. */
+  /** Right-stick deflection (touch or gamepad), each axis in [-1, 1].
+   *  Touch keeps its original linear response (it already feels right);
+   *  only the GAMEPAD path goes through the response curve. */
   getLookRate() {
     if (this.right.active) {
       let x = Math.max(-1, Math.min(1, this.right.dx / STICK_R));
@@ -216,16 +303,34 @@ export class InputManager {
     return this.mouseDown || this._pad.firing;
   }
 
+  get altFiring() {
+    if (this.touchMode) return false;
+    return this.mouseAltDown || this._pad.altFiring;
+  }
+
   consumeJump() {
     const j = this._jump;
     this._jump = false;
     return j;
   }
 
+  consumeFireTap() {
+    const f = this._fireTap;
+    this._fireTap = false;
+    return f;
+  }
+
   consumeDash() {
     const d = this._dash;
     this._dash = false;
     return d;
+  }
+
+  /** REAP — spend the bone-yard. Edge-triggered like jump/dash. */
+  consumeReap() {
+    const r = this._reap;
+    this._reap = false;
+    return r;
   }
 
   consumeDashFlick() {

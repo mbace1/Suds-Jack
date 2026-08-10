@@ -25,7 +25,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { PAL, webTint } from './palette.js';
 import { Tube, SHAPE_NAMES } from './tube.js';
 import { Player } from './player.js';
-import { Risers, Pops } from './things.js';
+import { Risers, Pops, Scum, STICKY } from './things.js';
 import { Input } from './input.js';
 import { AudioKit } from './audio.js';
 
@@ -74,10 +74,18 @@ composer.addPass(smear);
 composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.7, 0.42, 0.72));
 composer.addPass(new OutputPass());
 
-const tube = new Tube(scene, { lanes: 13, radius: 11.4, depth: 78 });
+// Lane count comes from the tube's own default: BAYS × LANES_PER_BAY. The 13
+// this used to pass in predated the ridged channel, and 13 does not divide
+// into five bays — the declared peaks sat at lanes 4/8/12/16 of a channel
+// whose DRAWN ridges were at 2.6/5.2/7.8/10.4, so the walls you hit were not
+// the ridges you saw, one peak was past the lip, and the fifth bay was a
+// one-lane sliver. Every lane-denominated tuning below was rescaled ×20/13 to
+// keep world-space feel identical.
+const tube = new Tube(scene, { radius: 11.4, depth: 78 });
 const player = new Player(scene, tube);
 const risers = new Risers(scene, tube);
 const pops = new Pops(scene, tube);
+const scum = new Scum(scene, tube);
 const input = new Input(canvas);
 const audio = new AudioKit();
 
@@ -106,8 +114,16 @@ const state = {
 const el = id => document.getElementById(id);
 const hud = {
   score: el('score'), chain: el('chain'), lives: el('lives'),
-  level: el('level'), banner: el('banner'),
+  level: el('level'), banner: el('banner'), scum: el('scum'),
 };
+
+// the scum line's cells, one per lane, built once
+const scumCells = [];
+for (let i = 0; i < tube.lanes; i++) {
+  const c = document.createElement('i');
+  hud.scum.appendChild(c);
+  scumCells.push(c);
+}
 
 function hi() { try { return +localStorage.getItem(HI_KEY) || 0; } catch { return 0; } }
 function setHi(v) { try { localStorage.setItem(HI_KEY, String(v)); } catch { /* private mode */ } }
@@ -117,7 +133,7 @@ function bubbleRate(n) { return Math.max(0.55, 1.5 - n * 0.09); }     // seconds
 function grimeRate(n) { return Math.max(0.9, 3.2 - n * 0.22); }
 function riserSpeed(n) { return 0.16 + n * 0.018; }                    // depth per second
 
-function startLevel(n) {
+function startLevel(n, cleanBonus = 0) {
   state.level = n;
   state.quota = levelQuota(n);
   state.nextBubble = 0.4;
@@ -130,7 +146,8 @@ function startLevel(n) {
   tube.setShape(shape, n % 3 === 0 && shape !== 'gutters' ? [0.22, -0.14] : [0, 0]);
   tube.tint(webTint(n));
   seat(shape);
-  toast(`LEVEL ${n} · ${shape.toUpperCase()}`);
+  // the clean bonus rides the level banner: it is the one moment you look up
+  toast(`LEVEL ${n} · ${shape.toUpperCase()}` + (cleanBonus ? `  ·  CLEAN +${cleanBonus.toLocaleString()}` : ''));
   paintHud();
 }
 
@@ -138,6 +155,8 @@ function startRun() {
   state.mode = 'play';
   state.score = 0; state.chain = 1; state.lives = 3; state.t = 0;
   risers.clear(); pops.clear(); player.reset();
+  scum.clear();
+  input.clearPending();
   startLevel(1);
   el('menu').hidden = true;
   el('over').hidden = true;
@@ -146,6 +165,7 @@ function startRun() {
 
 function gameOver() {
   state.mode = 'over';
+  input.clearPending();
   audio.bedStop(); audio.over();
   const best = Math.max(hi(), state.score);
   setHi(best);
@@ -166,6 +186,11 @@ function paintHud() {
   hud.chain.textContent = state.chain > 1 ? `×${state.chain}` : '';
   hud.level.textContent = `L${state.level}`;
   hud.lives.textContent = '●'.repeat(Math.max(0, state.lives));
+  // the scum line: one cell per lane, the map and the flood meter in one
+  for (let i = 0; i < scumCells.length; i++) {
+    const k = scum.layers[i];
+    scumCells[i].className = k ? 's' + k : '';
+  }
 }
 
 // ── the director ─────────────────────────────────────────────────────────
@@ -178,9 +203,23 @@ function director(dt) {
   const n = tube.lanes;
 
   if (state.nextBubble <= 0 && state.quota > 0) {
-    const lane = awayFrom(player.lane, 2, n);
-    risers.spawn('bubble', lane, riserSpeed(state.level) * (0.85 + Math.random() * 0.4));
-    state.nextBubble = bubbleRate(state.level) * (0.7 + Math.random() * 0.6);
+    // BARREN: bubbles do not rise through a fouled lane. This is scum's
+    // quietest tooth — neglect never blocks you, it starves you: the chain
+    // migrates into whatever you have kept clean, and a channel you let
+    // foul over pays nothing. If no clean lane is far enough away, no
+    // bubble this tick — the retry is short, so a scrub reopens the tap
+    // almost immediately.
+    let lane = -1;
+    for (let i = 0; i < 12; i++) {
+      const c = awayFrom(player.lane, 3, n);
+      if (scum.at(c) === 0) { lane = c; break; }
+    }
+    if (lane >= 0) {
+      risers.spawn('bubble', lane, riserSpeed(state.level) * (0.85 + Math.random() * 0.4));
+      state.nextBubble = bubbleRate(state.level) * (0.7 + Math.random() * 0.6);
+    } else {
+      state.nextBubble = 0.3;
+    }
   }
   if (state.nextGrime <= 0) {
     // On the ridged channel grime cannot cross a peak, so "away from you" is
@@ -189,7 +228,7 @@ function director(dt) {
     // the level a route rather than a hiding place.
     const lane = tube.peaks.length
       ? bayLane(Math.random() < 0.45 ? player.lane : Math.random() * n)
-      : awayFrom(player.lane, 4, n);
+      : awayFrom(player.lane, 6, n);
     risers.spawn('grime', lane, riserSpeed(state.level) * (0.7 + Math.random() * 0.3));
     state.nextGrime = grimeRate(state.level) * (0.7 + Math.random() * 0.7);
   }
@@ -220,23 +259,60 @@ function step(dt) {
   tube.update(dt, state.mode === 'play' ? 0.35 : 1);
   pops.update(dt);
 
+  // Polled in EVERY mode. A pad that can only be read once you are already
+  // playing cannot get you there: the menu and the recap listen for a pointer
+  // or Enter, so a controller alone was stranded on both screens.
+  input.pollGamepad();
+
   if (state.banner > 0) {
     state.banner -= dt;
     if (state.banner <= 0) hud.banner.style.opacity = '0';
   }
 
-  if (state.mode !== 'play') { player.update(dt); return; }
+  if (state.mode !== 'play') {
+    if (input.start()) startRun();
+    player.update(dt);
+    return;
+  }
 
   state.t += dt;
-  input.pollGamepad();
   const spin = input.spin();
-  player.move(spin, dt);
+  // STICKY: scum underfoot costs grip. Only underfoot — airborne is exempt,
+  // which is what turns the jump and the float into the way ACROSS a fouled
+  // stretch on every shape, not just the one with ridges in it.
+  const grip = !player.airborne && scum.at(player.lane) > 0 ? STICKY : 1;
+  player.move(spin, dt, grip);
   if (input.jump() && player.jump(spin)) audio.jump();
   if (input.dive() && player.dive()) audio.dive();
   player.update(dt);
 
+  // THE SCRUB: a dive that came all the way back wipes a layer from its
+  // lane. A dry dive is never wasted — but it is 0.62s lane-locked in the
+  // stickiest place on the rim, which is the price of having let it foul.
+  if (player.scrubReady() && scum.scrub(player.lane)) {
+    state.score += 50 * state.level;
+    audio.scrub();
+    pops.at(player.lane, 0.02, PAL.BUBBLE);
+  }
+
   director(dt);
-  const { collected, missed, struck } = risers.update(dt, player);
+  const { collected, missed, struck, settled } = risers.update(dt, player);
+
+  // grime that got past the mouth is not gone — it settled
+  for (const it of settled) scum.add(it.lane);
+
+  // THE FLOOD: the one failure you walked into slowly. Past FLOOD_AT
+  // coverage the channel washes itself — a life, the chain, and a clean rim,
+  // in that order. It is the same reset a level clear gives you, paid for.
+  if (scum.flooded()) {
+    state.lives--;
+    state.chain = 1;
+    scum.clear();
+    player.mercy = Math.max(player.mercy, 1.6);
+    audio.washout();
+    if (state.lives <= 0) gameOver();
+    else toast('WASHED OUT');
+  }
 
   for (const it of collected) {
     // Depth pays. A bubble taken at the mouth is worth its face value; one
@@ -251,7 +327,13 @@ function step(dt) {
     state.quota--;
     if (state.quota <= 0 && !risers.items.some(i => i.type === 'bubble')) {
       audio.level();
-      startLevel(state.level + 1);
+      // the cash-out: every lane you kept clean pays, then the wash is free.
+      // Spending the level's last seconds scrubbing versus chasing one more
+      // deep bubble is the decision the chain never gave you.
+      const bonus = 40 * state.level * scum.clean();
+      state.score += bonus;
+      scum.clear();
+      startLevel(state.level + 1, bonus);
     }
   }
 
@@ -305,8 +387,10 @@ paintHud();
 // Same contract as every other cabinet here: enough to drive the game from a
 // console or a headless test without touching the DOM.
 window.__sj = {
-  state, tube, player, risers, audio, camera,
+  state, tube, player, risers, scum, audio, camera,
   debug: {
+    // lay n layers on a lane without waiting for grime to do it
+    foul: (lane, n = 1) => { for (let i = 0; i < n; i++) scum.add(lane); },
     start: startRun,
     over: gameOver,
     setLevel: n => startLevel(n),

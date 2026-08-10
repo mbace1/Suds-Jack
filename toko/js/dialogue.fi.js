@@ -92,6 +92,35 @@ export const FI = {
       what: ['UUSINTA ON NYT PUOLIKAS TUNNELI JOSSA',
         'MAKAAT, VIISI ALLASTA JA HYPPY.'],
     },
+    {
+      when: '2026-08', game: 'hyperdagger',
+      what: ['KANSI OLI VÄÄRÄSTÄ PELISTÄ.',
+        'TAIVAS ON POISSA. AINOA VALO PARVEN',
+        'PÄÄLLÄ ON OMA TIKARIVIRTASI.'],
+    },
+    {
+      when: '2026-08', game: 'hub',
+      what: ['KUUSITOISTA SIVUA TARJOILI KUUKAUSIEN',
+        'VANHAA KOTI-NAPPIA VÄLIMUISTISTA.',
+        'JOKAINEN PYYTÄÄ NYT NYKYISEN.'],
+    },
+    {
+      when: '2026-08', game: 'hub',
+      what: ['KUVAPUTKI SYTTYY KOKO LASIN LEVEYDELTÄ,',
+        'JA MERKKINI PYÖRII ENNEN ENSIMMÄISTÄ',
+        'PELIÄSI EIKÄ ENNEN VALIKKOA.',
+        'NIITÄ ON KAKSI. SAIT TOISEN.'],
+    },
+    {
+      when: '2026-08', game: 'hub',
+      what: ['TOIMIN NYT ILMAN VERKKOA.',
+        'KOKO KERROS ON AINA TOIMINUT.'],
+    },
+    {
+      when: '2026-08', game: 'hub',
+      what: ['PARHAAT TULOKSESI OVAT KAAPEISSA.',
+        'LUETTU OMALTA KONEELTASI, EI LÄHETETTY.'],
+    },
   ],
 
   GAME_NOTES: {

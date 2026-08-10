@@ -126,53 +126,6 @@ h1 .amp { color: var(--accent); }
   text-transform: uppercase;
 }
 
-/* ── finding one ── */
-#find-block { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 12px; }
-.find-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; flex: 1; }
-
-.find-box {
-  font: inherit;
-  font-size: 13px;
-  min-height: 44px;
-  min-width: 180px;
-  padding: 0 12px;
-  background: var(--panel);
-  color: var(--ink);
-  border: 1px solid var(--line);
-}
-.find-box:focus { border-color: var(--accent); outline: none; }
-.find-box::placeholder { color: var(--ink-dim); }
-
-.tag-row { display: flex; flex-wrap: wrap; gap: 4px; }
-.tag-btn {
-  font: inherit;
-  font-size: 11.5px;
-  min-height: 44px;
-  /* a three-letter tag like `fps` is 41px wide with the padding it wants; the
-     floor is on both dimensions, so it gets a minimum too */
-  min-width: 44px;
-  padding: 0 9px;
-  background: none;
-  border: 1px solid transparent;
-  color: var(--ink-dim);
-  cursor: pointer;
-}
-.tag-btn:hover { color: var(--ink); }
-.tag-btn.on { color: var(--accent); border-color: var(--accent); }
-
-.find-count { font-size: 11.5px; letter-spacing: .18em; color: var(--ink-dim); }
-.find-none { color: var(--ink-dim); font-size: 13px; margin-top: 14px; }
-
-#surprise { margin-left: auto; padding-right: 0; text-align: right; }
-
-/* the tag row is the first thing to go on a phone: thirteen tags at 44px is
-   four rows of chrome above two cabinets. The box stays — typing is the part
-   that scales. */
-@media (max-width: 659px) {
-  .tag-row { display: none; }
-  .find-box { flex: 1; min-width: 0; }
-}
-
 /* ── the cabinets ── */
 /* The row grows with the screen. The ladder is set on the marquee's rendered
    width rather than on device names:
@@ -220,16 +173,30 @@ html[data-layout="wide"] .cab-body {
      above it does not — 90 characters is a wall */
   max-width: 72ch;
 }
+/* The cover takes the WHOLE row — that is the point of this shape, and the
+   first cut missed it: the marquee sat at about 55% with the text beside it and
+   a column of empty floor to the right, which is neither a marquee nor a rack.
+   A real one is the width of the wrap with the words underneath, the way the
+   thing over an actual cabinet is.
+
+   It is capped at 34vh. Uncapped, a 128x72 picture across a 1520px wrap is 855
+   tall and one game fills a laptop screen top to bottom — a shape you cannot
+   compare anything in, which is the same mistake the phone layout made. */
+html[data-layout="wide"] .marquee { display: block; width: 100%; }
+html[data-layout="wide"] .art {
+  width: 100%;
+  height: auto;                       /* the aspect ratio holds it, nothing else */
+}
+/* No `object-fit` here, and that is deliberate twice over. It CROPS — and these
+   are compositions, so cutting the top off Drop Cabal's sky takes the sun out
+   of the picture. And it resamples smoothly whatever `image-rendering` says, so
+   a 128x72 canvas blown up nine times came out blurred instead of blocky, which
+   is the one thing every marquee on this floor is drawn not to be. */
 @media (min-width: 900px) {
-  /* past this width the marquee is tall enough that its own text scrolls off
-     under it, so the two sit side by side instead */
-  html[data-layout="wide"] .cab {
-    display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-    gap: 28px;
-    align-items: start;
-  }
-  html[data-layout="wide"] .cab-body { padding-top: 0; }
+  /* the words go under the picture in one readable measure, not stretched to
+     the full width of a cover that is now very wide indeed */
+  html[data-layout="wide"] .cab-body { padding-top: 14px; }
+  html[data-layout="wide"] .actions { margin-top: 12px; }
 }
 
 /* LIST — no picture at all. One line per game: caret, title, version, tagline,
@@ -693,6 +660,76 @@ footer {
 @keyframes term-in { from { opacity: 0 } to { opacity: 1 } }
 .sheet { animation: term-in .16s ease-out both; }
 
+
+/* ── the room ───────────────────────────────────────────────────────
+   Atmosphere only. Every rule here is inside a motion query or hangs off a
+   class that JS refuses to add under `prefers-reduced-motion`, so the whole
+   section can evaporate and the floor is unchanged. */
+
+/* your best on this machine, off this machine's own localStorage */
+.best {
+  margin: 6px 0 0;
+  font-size: 12px;
+  letter-spacing: .06em;
+  color: var(--cab, var(--accent));
+}
+
+/* the counters on the wall */
+.wall-row { gap: 14px; }
+.wall { color: var(--ink-dim); font-size: 12px; letter-spacing: .06em; }
+
+/* 5. power-on: one line across the middle, then it opens, then it is gone */
+.power-on {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #06070a;
+  display: grid;
+  place-items: center;
+  pointer-events: none;                 /* never between you and the floor */
+}
+/* The element is the WHOLE SCREEN and gets squashed down to a line, rather
+   than a small line being scaled up to a screen. The first cut did it the
+   other way — a 620px-wide, 2px-tall bar scaled by 120 — so the line was a
+   band across the middle of a wide monitor and the opening never reached the
+   top or bottom of a tall one. Scaling down from the real size means the sweep
+   is the full width of the glass and the opening is the full height of it,
+   whatever shape the window is. */
+.power-on i {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;                       /* the real one, under a phone's bars */
+  background: var(--accent);
+  transform-origin: center;
+  animation: po-line .68s ease-out both;
+}
+@keyframes po-line {
+  /* scaleY is a fraction of the viewport rather than a pixel count, so the
+     line stays about the same weight on a phone and on a monitor */
+  0%   { transform: scaleX(0) scaleY(.004); opacity: 0; }
+  12%  { transform: scaleX(.35) scaleY(.004); opacity: 1; }
+  34%  { transform: scaleX(1) scaleY(.004); opacity: 1; }
+  100% { transform: scaleX(1) scaleY(1); opacity: .1; }
+}
+
+/* 7. marquee flicker: one tube on the floor struggling for a moment */
+.art.flick { animation: flick .9s steps(1, end) both; }
+@keyframes flick {
+  0%, 100% { opacity: 1 }
+  8%   { opacity: .28 }
+  14%  { opacity: 1 }
+  26%  { opacity: .5 }
+  31%  { opacity: 1 }
+  57%  { opacity: .18 }
+  62%  { opacity: 1 }
+  69%  { opacity: .72 }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
+  /* belt and braces: JS already refuses to mount this, but if it ever slipped
+     through it must not sit on top of the page forever with no animation to
+     end it and take it away */
+  .power-on { display: none !important; }
 }

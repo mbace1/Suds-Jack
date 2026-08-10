@@ -46,11 +46,10 @@ at a time. Pressing Send having said nothing records nothing.
 node test/hub-smoke.cjs      # 141 checks (needs playwright + its Chromium)
 ```
 
-> **Catalogue entries carry `inRepo`.** The live site root (`gh-pages`) is a
-> curated tree that holds a few games `main` does not — Suds Jack itself
-> (`sudz/`), `Skltr/`, `neon-ronin/`, `eye-test/`. Those are marked
-> `inRepo: false`, and the test loop only checks the links it can actually
-> see, so a local run does not fail on games that only exist once deployed.
+> **Catalogue entries carry `inRepo`.** During branch reconciliation, the
+> production-only games were copied into the source tree at their existing
+> paths. The field remains useful for partial checkouts and future experiments,
+> but a complete checkout now contains every currently deployed cabinet.
 
 > **Deployed.** Live at https://mbace1.github.io/Suds-Jack/ — the arcade is
 > the site root as of 2026-07-26. The root used to be the Suds Jack game
@@ -58,8 +57,9 @@ node test/hub-smoke.cjs      # 141 checks (needs playwright + its Chromium)
 > two builds (the root copy predated the mobile touch controls), so it was
 > left alone and the stale root assets were removed. `paperboy/` and the
 > `goo-*.html` sketches had never been on `gh-pages` and were carried over
-> with the hub, or four of its links would have 404'd. Remember `main` is
-> not what is served: deploying means copying onto `gh-pages`.
+> with the hub, or four of its links would have 404'd. `gh-pages` remains the
+> live branch until generated deployment is introduced; do not edit it as part
+> of source reconciliation.
 
 ---
 
@@ -237,38 +237,32 @@ exceed 1.0) give selective glow without washing out the bone.
 - **Gamepad:** plug in a controller — left stick moves, right stick looks, RT/RB fire, A jumps (×2), B/LT dashes — feeding the same input paths as mouse/keyboard/touch
 
 ### `toko-drop/`
-Twin-stick bullet-hell arena shooter built on Three.js r167.
+**Toko Drop v221.** A Three.js twin-stick swarm-survival arena game. The default
+MOVEMENT mode removes enemy shooting: enemies dodge bullet lanes, school like
+fish, split into minnows and turn deaths into revenge rings. The classic
+bullet-hell arsenal remains available from OPTIONS.
 
-**Controls:** WASD + hold LMB to aim/fire · SPACE to dash · ESC pause · E toggle eyes  
-**Mobile:** left/right virtual sticks
+**Controls:** WASD + hold LMB to aim/fire · SPACE dash · ESC pause · E eye style
 
-#### Enemies (13 types)
-| Type | Behaviour |
-|------|-----------|
-| GLOBBO | Direct chaser |
-| SPITTOR | Keeps range, telegraphed ring burst |
-| FANNER | Strafes, fan spread |
-| WEEVA | Spiral fire, slow drift |
-| SPLITTA | Splits into GLOBBOs on death |
-| YELA_CUBE | Cardinal mover, leaves slime trail |
-| ORANGE_CUBE | Move–aim–shoot burst pattern |
-| SLUDGE_CUBE | Slow, drops poison zones, ribbon trail |
-| REDD_CUBE | Splits into REDD_MINIs |
-| PURP_CUBE | Splits into PURP_MINIs (homing) |
-| TORO | Rev → telegraph → dash charge |
-| BAMBU | Stationary, grows segments, lobs fat bullets |
-| PYRA | Spinning ring, destroyable hole nodes |
+**Touch:** left stick move · right stick aim/fire · release right stick dash
 
-#### Features
-- 7-wave progression with speed/interval scaling
-- Screen-shake trauma system
-- Kirby-style eyes on player that track aim direction
-- Player dash with ghost trail + mercy i-frames
-- Gates (laser posts): dash through to deactivate → drops a powerup
-- Powerup types: invincibility (3 s), fire-rate boost (5 s, ×2.5 rate)
-- Death FX: chunk physics, puddle decals, sludge ribbons, poison zones
-- Score + streak multiplier, hi-score in localStorage
-- **Gel material pass:** all enemies + player use `MeshPhysicalMaterial` with transmission, clearcoat, and IOR — blobs read as translucent goo, cubes as candy-glass; vertex shader surface ripple on blob types via `onBeforeCompile`; IBL via `RoomEnvironment` + `PMREMGenerator`
+**Gamepad:** left stick move · right stick aim/fire · A/bumper/trigger dash · Start pause
+
+The title screen supports portrait and landscape arenas plus two run formats:
+Arcade waves back-to-back, or Roguelike upgrade choices after each wave. Local
+personal bests track score, wave and survival time.
+
+#### Current systems
+
+- Thirteen enemy families with elite, twin, group and boss variants
+- Swarm, spike, boss and breather wave pacing, peaking around wave 10
+- Cargo-moth convoys, destructible gates and drifting powerup drops
+- Ten roguelike upgrades spanning health, movement, weapons and defence
+- Gel materials, wobble, hit response, debris, puddles and revenge-ring deaths
+- Run hit telemetry and opt-in death-screen feedback stored locally
+- `js/tuning.js` as the enemy feel source of truth; `enemy-lab.html` as the
+  visual reference; `GDD.md`, `TOKO_DROP_ROADMAP.md` and `VERSIONS.md` for
+  design, planning and release history
 
 ---
 

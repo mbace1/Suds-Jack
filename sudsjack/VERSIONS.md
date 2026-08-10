@@ -8,6 +8,111 @@ floor sending people at the unfinished one.
 The `?v=N` token in `index.html` tracks module-graph changes; this number is
 the public release. Bump both when shipping.
 
+## v6 — 2026-08-07
+
+**The Scum Line.** One rule, aimed at the four places the tension was
+leaking: the dive was optional (it advertised 3× but capped at 2.1×, against
+a ×16 chain that never needed it), nothing accumulated (grime past the mouth
+just died, so dodging was free and a patient run idled forever), the chain
+had no decision in it, and levels got longer rather than deeper.
+
+**Grime that reaches the mouth now settles as SCUM** — a film on its lane,
+stacking to three layers. Every dodge is a loan. It is Tempest's spikes with
+the gun taken out, the way grime was already its flipper.
+
+Scum does three things, none of them a bullet:
+
+- **Sticky.** Standing in it, rim speed ×0.4. Airborne is exempt — the jump
+  and the float are the way ACROSS a fouled stretch on every shape now, not
+  just the ridged one.
+- **Barren.** The director will not raise a bubble through a fouled lane, so
+  neglect starves the chain instead of blocking you: the income migrates
+  into whatever you kept clean, and the channel narrows around you.
+- **The flood.** Past 80% coverage the channel washes itself: a life, the
+  chain, and a clean rim, in that order. The one failure you walked into
+  slowly, on a meter you were looking at the whole time.
+
+**The dive is the only thing that takes it off.** A dive that comes all the
+way back wipes one layer from its lane — Suds Jack washes, which is the verb
+the game is named after — and pays 50 × level. A dry dive is never wasted,
+but it is 0.62s lane-locked in the stickiest place on the rim. A dive
+knocked out of the water scrubs nothing.
+
+**The cash-out the chain never had:** a level clear washes the channel and
+pays 40 × level × clean lanes, so the last seconds of every level are a
+decision — one more deep bubble, or scrub toward the bonus.
+
+The HUD grew one element: the scum line, a strip of twenty cells under the
+channel — the mouth seen edge-on. It is the route map and the flood meter in
+one fact, because a second gauge for the same danger is a gauge nobody
+reads.
+
+Collection scoring, the lit order, relight, dive timings, grime stepping,
+ridges and the float are untouched. Tuning knobs, most sensitive first:
+`FLOOD_AT` (0.8), `STICKY` (0.4), layers per scrub (1), the barren rule
+(hard skip vs. reduced odds).
+
+Smoke gate 48 → 60 checks, and the new ones are proven: against the
+pre-scum build the scum section does not pass — it cannot even run.
+
+## v5 — 2026-08-07
+
+**Press again mid-air and he floats.** (Owner's direction: "many jumps allows
+the character to float a bit", and crossing the pipes "should feel a bit like
+tiny bird ski jumping".)
+
+A jump pressed again in its falling half chains: one more bay, committed the
+same way a jump always is, on a hop that is longer and — this is the part
+that makes it a float — **never rises**. The first cut gave a chained hop its
+own little sine arc and it climbed above the hop that launched it, which
+reads as a double jump, not a float. Now a float GLIDES from wherever the
+arc had him (`1 − k²`: hangs early, drops late), so each press starts from
+lower down and the ladder decays on its own until grime stops fitting
+underneath you — the dodge window is the price of distance. Three floats and
+he lands; from a lip bay, hop plus three floats is exactly the far lip, so
+the cap and the channel are the same size on purpose.
+
+Underneath it, one real bug the gate had passed over: **the declared peaks
+were not the drawn ridges.** The tube's default lane count is `BAYS ×
+LANES_PER_BAY` = 20 and the peaks are declared for it, but `main.js` still
+passed the 13 that predates the ridged channel — 13 does not divide into
+five bays, so the walls you hit sat beside the ridges you saw, one peak was
+past the lip, and the fifth bay was a one-lane sliver. The gate passed
+because it only asked the declaration about itself; it asks the geometry
+now, and the two new checks fail against the 13-lane build. Every
+lane-denominated tuning (rim speed and accel, grime's step cadence and hit
+window, the director's spawn gaps) carries a ×20/13 rescale so world-space
+feel is exactly what it was tuned to.
+
+Smoke gate 41 → 48 checks.
+
+## v4 — 2026-07-30
+
+**A controller could ride the rim but never reach it.**
+
+`pollGamepad()` was called inside the play branch of the frame, below the
+`mode !== 'play'` early return — so on the two screens where you are not
+playing, the pad was never read at all. The menu and the recap listen for a
+pointer or Enter, which means a pad on its own got you as far as looking at
+the title and no further. It is polled in every mode now, and A or Start is a
+way in.
+
+Two things that only show up once the same button does two jobs:
+
+- **The press that starts a run was still queued as a dive.** A is dive during
+  play, so the press that got you in was sitting in `_dive` when the first
+  frame read it and Jack left the mouth before you had seen the level.
+- **A press spent diving would restart the run at the recap.** Every A edge
+  set the start flag, nothing consumed it during play, and it was still there
+  when you died — the recap flashed past under your thumb. `clearPending()` on
+  both edges of a run drains it (the jump queue too, now that there is one).
+
+Neither is visible without a pad in your hands, which is why they lasted:
+nothing in the gate had ever pressed one. It drives a synthetic pad through
+the menu and the recap now.
+
+Smoke gate 37 → 41 checks.
+
 ## v3 — 2026-07-30
 
 **Five half-pipes in a row, and a jump to get between them.** (Owner's

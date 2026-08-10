@@ -4,57 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#000000">
-  <title>Flash Prince</title>
+  <title>Flash Prince — Remake Lab</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body {
-      background: #000;
-      height: 100%;
-      overflow: hidden;
-      touch-action: none;
-      overscroll-behavior: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    /* The picture is 320x192 and it is upscaled with hard pixels. Everything
-       inside it is already quantised to sixteen colours by the time it gets
-       here, so there is nothing left for the browser to soften. */
-    #screen {
-      display: block;
-      width: 100vw; height: 100vh;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-      user-select: none;
-    }
-    #boot {
-      position: fixed; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      color: #c2cede; background: #000;
-      font: 13px/1.7 'Courier New', ui-monospace, monospace;
-      letter-spacing: .18em; text-transform: uppercase;
-      pointer-events: none;
-    }
+    html, body { background:#000; height:100%; overflow:hidden; touch-action:none; overscroll-behavior:none; -webkit-tap-highlight-color:transparent; }
+    #screen { display:block; width:100vw; height:100vh; image-rendering:pixelated; image-rendering:crisp-edges; user-select:none; }
   </style>
 </head>
 <body>
   <canvas id="screen"></canvas>
-  <div id="boot">loading</div>
-
-  <!-- the arcade shell: a way back to the hub, and a controller binding for it -->
-  <script type="module" src="../hub/shell.js?v=8"></script>
-  <script type="module" src="js/main.js?v=2"></script>
-
-  <!-- signed by Toko Midori Games — the badge in the corner, under the HUD.
-       `counter: true` makes it the way to the counter on the hub; on a
-       touchscreen it stays inert, because that corner is the left stick.
-       See ../toko/BRAND.md. It sits bottom-left because the health marks are
-       top-right and the way home is top-left. -->
+  <script type="module" src="../hub/shell.js?v=17"></script>
+  <script type="module" src="js/movement-lab-v3.js?v=6"></script>
   <script type="module">
-    import { sign } from '../toko/js/signature.js?v=1';
+    import { sign } from '../toko/js/signature.js?v=3';
     sign({ corner: 'bottom-left', counter: true });
-  </script>
-
-  <script type="module">
-    document.getElementById('boot').remove();
   </script>
 </body>
 </html>

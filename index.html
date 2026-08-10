@@ -7,7 +7,7 @@
   <meta name="description" content="Every game in the Suds Jack workshop on one page — vector tube shooters, gelatin bullet hell, voxel first-person survival, a paper route, and quiet stories that send you back outside." />
   <meta name="theme-color" content="#06070a" />
   <meta name="color-scheme" content="dark" />
-  <link rel="stylesheet" href="hub/hub.css?v=13" />
+  <link rel="stylesheet" href="hub/hub.css?v=23" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%2306070a'/><circle cx='8' cy='8' r='4' fill='%2335e8d8'/></svg>" />
 </head>
 <body>
@@ -19,13 +19,6 @@
 
     <div class="rule"></div>
     <p class="count" id="floor-head">The floor — in development</p>
-
-    <!-- the box and the tags are built by hub.js so they can be relabelled with
-         the language; this is where they go -->
-    <div id="find-block">
-      <button class="link-btn" id="surprise">Show me one</button>
-    </div>
-    <p class="find-none" id="find-none" hidden>Nothing on the floor matches that.</p>
 
     <main>
       <h2 class="sr-only" id="floor-sr">Games in development</h2>
@@ -59,7 +52,7 @@
     }
   </style>
 
-  <script type="module" src="hub/hub.js?v=15"></script>
+  <script type="module" src="hub/hub.js?v=34"></script>
   <!-- Toko is at the counter. A Sierra-style conversation with the artist
        behind the cabinets; the tree lives in toko/js/dialogue.js. It mounts
        itself after <header> wherever this tag sits, and it sits AFTER hub.js
@@ -68,20 +61,8 @@
   <script type="module">
     import { mountChat } from './toko/js/chat.js?v=20';
     window.__hub.chat = mountChat(document.querySelector('header'));
-
-    // The sting, once per browser: the face draws itself, then the arcade.
-    // Two rules keep it from being an ad. It is skippable from the first
-    // frame (any key, any tap), and it does not play in front of a DEEP LINK
-    // — /#hyperdagger or /#toko means somebody came for one thing, and a
-    // title card between them and it is exactly the thing this workshop is
-    // against. Dynamically imported and swallowed on failure: a nicety must
-    // never be the reason the floor does not open.
-    if (!location.hash) {
-      import('./toko/js/sting.js?v=1')
-        .then(m => m.playStingOnce('tokoSting'))
-        .catch(() => {});
-    }
   </script>
+
   <script>
     // The arcade is the front door, and a front door that needs a signal is a
     // poor one. Registered on https only (or ?sw=1) so local dev and the smoke

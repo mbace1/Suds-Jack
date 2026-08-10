@@ -102,6 +102,26 @@ s.listen(0, '127.0.0.1', async () => {
   ok('level 3 is the five-bay channel', bays.shape === 'gutters', bays.shape);
   ok('with a ridge between each (' + bays.peaks + ')', bays.peaks.length === 4);
 
+  // The declared peaks must BE the drawn ridges. They disagreed once: the
+  // peaks were declared for a twenty-lane channel while main.js still built
+  // thirteen, so the walls you hit sat beside the ridges you saw, one peak
+  // was past the lip, and the fifth bay was a one-lane sliver. The gate
+  // passed because it only ever asked the declaration about itself — this
+  // asks the geometry.
+  const ridges = await p.evaluate(() => {
+    const t = window.__sj.tube;
+    const y = (u) => t._point(u, 0).y;
+    return t.peaks.map(pk => {
+      const u = pk / t.lanes;
+      return { pk, inRange: pk > 0 && pk < t.lanes,
+               higher: y(u) > y(u - 0.1) + 0.05 && y(u) > y(u + 0.1) + 0.05 };
+    });
+  });
+  ok('every peak is inside the channel', ridges.every(r => r.inRange),
+    JSON.stringify(ridges));
+  ok('and every peak sits on a drawn ridge', ridges.every(r => r.higher),
+    JSON.stringify(ridges));
+
   // a ridge is a wall to RIDING
   const penned = await p.evaluate(async () => {
     const j = window.__sj;
@@ -145,6 +165,228 @@ s.listen(0, '127.0.0.1', async () => {
   ok('mid-jump you are off the floor', dodged.airborne);
   ok('and grime passes under you', dodged.after === dodged.lives,
     `${dodged.lives} → ${dodged.after}`);
+
+  // ── the float: pressing again mid-air chains one more bay ──
+  const floated = await p.evaluate(async () => {
+    const j = window.__sj;
+    const land = () => { while (j.player.jumping) j.player.update(0.02); };
+    land();
+
+    // early press must NOT chain: still going up is not a float
+    j.player.lane = j.tube.floorLane;
+    j.player.jump(1);
+    j.player.update(0.02);                        // barely off the floor
+    const early = j.player.jump(1);
+    land();
+
+    // one flight: hop, then press twice in the falling halves. Air at each
+    // press is the height the float STARTS from — that is what must be off
+    // the floor; the tail of the last glide is an ordinary landing. It leaves
+    // from the far-left bay so there are enough bays to float across.
+    j.player.lane = j.tube.bayRange(0)[0] + 2;
+    const startBay = j.tube.bayRange(j.player.lane)[0];
+    j.player.jump(1);
+    let hopPeak = 0, floatPeak = 0, airAt = [];
+    for (let i = 0; i < 400 && j.player.jumping; i++) {
+      j.player.update(0.02);
+      if (!airAt.length) hopPeak = Math.max(hopPeak, j.player.air);
+      else floatPeak = Math.max(floatPeak, j.player.air);
+      const k = j.player.jumpT / j.player.hopMs;
+      if (j.player.jumping && k > 0.5 && airAt.length < 2 && j.player.jump(1)) {
+        airAt.push(j.player.air);
+      }
+    }
+    const endBay = j.tube.bayRange(j.player.lane)[0];
+    return { early, airAt, hopPeak, floatPeak, startBay, endBay };
+  });
+  ok('a press straight off the floor does not float', !floated.early);
+  ok('pressing again mid-air chains (' + floated.airAt.length + ' floats)', floated.airAt.length === 2);
+  ok('each float starts well off the floor (' + floated.airAt.map(a => a.toFixed(1)).join(', ') + ')',
+    floated.airAt.every(a => a > 1));
+  ok('and a float never out-jumps the jump (' + floated.floatPeak.toFixed(1) + ' ≤ ' + floated.hopPeak.toFixed(1) + ')',
+    floated.floatPeak <= floated.hopPeak + 0.01 && floated.endBay > floated.startBay);
+
+  // and it is bounded: mashing jump is a float, not a flight
+  const capped = await p.evaluate(async () => {
+    const j = window.__sj;
+    while (j.player.jumping) j.player.update(0.02);
+    j.player.lane = j.tube.bayRange(0)[0] + 1;    // far left bay
+    j.player.jump(1);
+    let granted = 0;
+    for (let i = 0; i < 600 && j.player.jumping; i++) {
+      j.player.update(0.02);
+      if (j.player.jump(1)) granted++;            // mash every frame
+    }
+    return granted;
+  });
+  // three exactly: from the far-left bay, hop + three floats is lip to lip —
+  // the cap and the channel are the same size, which is not a coincidence
+  ok('the float is bounded, and spans the channel (' + capped + ' chains granted)', capped === 3);
+
+  // ── THE SCUM LINE: what you dodged is still there ──
+  // grime past the mouth settles instead of vanishing
+  const settled = await p.evaluate(async () => {
+    const j = window.__sj;
+    while (j.player.jumping) j.player.update(0.02);
+    j.risers.clear();
+    j.state.lives = 3;
+    j.player.mercy = 0;
+    j.player.lane = 18;                            // far from the landing lane
+    j.debug.spawn('grime', 2, 0.01);               // one step from the mouth
+    for (let i = 0; i < 60 && j.risers.items.length; i++) j.debug.step(0.02);
+    return { layer: j.scum.at(2), fouled: j.scum.fouled() };
+  });
+  ok('grime past the mouth settles as scum', settled.layer === 1, JSON.stringify(settled));
+
+  // it stacks, and it caps
+  const stacked = await p.evaluate(() => {
+    const j = window.__sj;
+    j.debug.foul(5, 5);                            // five arrivals on one lane
+    const cap = j.scum.at(5);
+    j.scum.clear();
+    return cap;
+  });
+  ok('scum stacks and caps at three (' + stacked + ')', stacked === 3);
+
+  // BARREN: the director does not raise bubbles through a fouled lane
+  const barren = await p.evaluate(() => {
+    const j = window.__sj;
+    j.debug.setLevel(1);                           // a smooth shape, whole rim
+    j.risers.clear(); j.scum.clear();
+    for (let l = 0; l < 10; l++) j.debug.foul(l);  // foul half the channel
+    const bad = [];
+    for (let i = 0; i < 30; i++) {
+      j.state.nextBubble = -1;
+      j.debug.step(0.001);
+    }
+    for (const it of j.risers.items) {
+      if (it.type === 'bubble' && j.scum.at(it.lane) > 0) bad.push(it.lane);
+    }
+    const spawned = j.risers.items.filter(i => i.type === 'bubble').length;
+    j.risers.clear();
+    return { spawned, bad };
+  });
+  ok('bubbles do not rise through fouled lanes (' + barren.spawned + ' spawned)',
+    barren.spawned > 0 && barren.bad.length === 0, JSON.stringify(barren));
+
+  // STICKY: riding through scum is slow; the same ride on a clean rim is not.
+  // The key is real (it feeds input.spin() the way a hand would) but the
+  // frames are stepped by hand — this sandbox renders too slowly for a
+  // wall-clock ride to mean anything, and the gate's own rule applies:
+  // measure the game, not the rasteriser.
+  await p.keyboard.down('ArrowRight');
+  const rides = await p.evaluate(() => {
+    const j = window.__sj;
+    const ride = () => {
+      j.player.lane = 2; j.player.vel = 0;
+      for (let i = 0; i < 10; i++) j.debug.step(0.05);
+      return j.player.lane - 2;
+    };
+    j.scum.clear();
+    const clean = ride();
+    for (let l = 0; l < 15; l++) j.debug.foul(l);   // foul the road, short of the flood
+    const sticky = ride();
+    j.scum.clear();
+    return { clean, sticky };
+  });
+  await p.keyboard.up('ArrowRight');
+  ok('scum underfoot is sticky (' + rides.sticky.toFixed(1) + ' vs ' + rides.clean.toFixed(1) + ' lanes)',
+    rides.sticky < rides.clean * 0.65, JSON.stringify(rides));
+
+  // ...and a jump does not feel it: airborne, the floor has no say
+  const overScum = await p.evaluate(() => {
+    const j = window.__sj;
+    const frames = (foul) => {
+      j.scum.clear();
+      if (foul) for (let l = 0; l < 15; l++) j.debug.foul(l);
+      j.player.lane = 6; j.player.vel = 0;
+      j.player.jump(1);
+      let n = 0;
+      while (j.player.jumping && n < 200) { j.player.update(0.02); n++; }
+      return n;
+    };
+    const clean = frames(false), fouled = frames(true);
+    j.scum.clear();
+    return { clean, fouled };
+  });
+  ok('a jump crosses scum in the same frames as clean rim',
+    overScum.fouled === overScum.clean, JSON.stringify(overScum));
+
+  // THE SCRUB: a dive that comes home wipes a layer, and it pays
+  const scrubbed = await p.evaluate(async () => {
+    const j = window.__sj;
+    j.risers.clear();
+    j.player.mercy = 0;
+    const lane = Math.round(j.player.lane);
+    j.debug.foul(lane, 2);
+    const score0 = j.state.score;
+    j.player.dive();
+    for (let i = 0; i < 200 && (j.player.diving || j.player.depth > 0.01); i++) j.debug.step(0.02);
+    j.debug.step(0.02);                            // the frame that consumes scrubReady
+    return { layers: j.scum.at(lane), gain: j.state.score - score0, level: j.state.level };
+  });
+  ok('a completed dive scrubs one layer (2 → ' + scrubbed.layers + ')', scrubbed.layers === 1);
+  ok('and the scrub pays 50 × level', scrubbed.gain >= 50 * scrubbed.level, JSON.stringify(scrubbed));
+
+  // a dive knocked out of the water scrubs nothing
+  const knocked = await p.evaluate(async () => {
+    const j = window.__sj;
+    j.risers.clear();
+    j.player.mercy = 0;
+    const lane = Math.round(j.player.lane);
+    j.scum.clear();
+    j.debug.foul(lane, 2);
+    j.player.dive();
+    for (let i = 0; i < 6; i++) j.debug.step(0.02);     // committed, on the way down
+    j.debug.give('grime');                               // and struck mid-dive
+    for (let i = 0; i < 80; i++) j.debug.step(0.02);
+    const layers = j.scum.at(lane);
+    j.scum.clear();
+    return { layers, diving: j.player.diving };
+  });
+  ok('a dive cancelled by a hit scrubs nothing', knocked.layers === 2, JSON.stringify(knocked));
+
+  // THE FLOOD: neglect has a horizon
+  const flooded = await p.evaluate(() => {
+    const j = window.__sj;
+    j.state.lives = 3;
+    for (let l = 0; l < 16; l++) j.debug.foul(l);       // 16 of 20 = the line
+    const before = j.state.lives;
+    j.debug.step(0.001);
+    return { before, after: j.state.lives, fouled: j.scum.fouled(),
+             mercy: j.player.mercy, chain: j.state.chain, mode: j.state.mode };
+  });
+  ok('fouling 80% of the channel floods: a life', flooded.after === flooded.before - 1,
+    JSON.stringify(flooded));
+  ok('and the flood washes the rim clean, with mercy',
+    flooded.fouled === 0 && flooded.mercy > 0 && flooded.chain === 1 && flooded.mode === 'play');
+
+  // the level clear washes too, and clean lanes pay
+  const washed = await p.evaluate(async () => {
+    const j = window.__sj;
+    j.debug.setLevel(3);                                 // back on the ridged one
+    j.risers.clear();
+    j.player.mercy = 0;
+    for (let l = 0; l < 4; l++) j.debug.foul(l);         // four fouled, sixteen clean
+    const level0 = j.state.level, score0 = j.state.score;
+    j.state.quota = 1;
+    j.debug.give('bubble');
+    for (let i = 0; i < 40 && j.state.level === level0; i++) j.debug.step(0.02);
+    return { level0, level: j.state.level, fouled: j.scum.fouled(),
+             gain: j.state.score - score0, bonus: 40 * level0 * 16 };
+  });
+  ok('the level clear washes the channel', washed.level === washed.level0 + 1 && washed.fouled === 0,
+    JSON.stringify(washed));
+  ok('and every clean lane pays (gain ' + washed.gain + ' ≥ bonus ' + washed.bonus + ')',
+    washed.gain >= washed.bonus);
+
+  // leave the gate the way we found it: the ridged channel, an empty rim
+  await p.evaluate(() => {
+    const j = window.__sj;
+    j.debug.setLevel(3);
+    j.risers.clear(); j.scum.clear();
+    j.state.lives = 2;
+  });
 
   // grime is penned in too, or the bays would only ever constrain the player
   const pennedGrime = await p.evaluate(async () => {
@@ -207,6 +449,48 @@ s.listen(0, '127.0.0.1', async () => {
   await p.click('#again');
   await p.waitForFunction(() => window.__sj.state.mode === 'play', null, { timeout: 5000 }).catch(() => {});
   ok('again restarts', await p.evaluate(() => window.__sj.state.mode) === 'play');
+
+  // A PAD ON ITS OWN has to be able to reach a run. The menu and the recap
+  // listen for a pointer or Enter; the pad was only polled inside the play
+  // branch, so a controller could ride the rim but never start. Reload for a
+  // clean menu and drive a synthetic pad through both screens.
+  await p.goto(base + '/sudsjack/', { waitUntil: 'networkidle' });
+  await p.evaluate(() => {
+    window.__pad = { id: 'test', index: 0, connected: true, mapping: 'standard',
+      axes: [0, 0, 0, 0],
+      buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })) };
+    Object.defineProperty(navigator, 'getGamepads', {
+      configurable: true, value: () => [window.__pad],
+    });
+  });
+  await p.waitForFunction(() => window.__sj.state.mode === 'menu', null, { timeout: 5000 });
+  const tap = async (i) => {
+    await p.evaluate(i => { window.__pad.buttons[i].pressed = true; }, i);
+    await p.waitForTimeout(120);
+    await p.evaluate(i => { window.__pad.buttons[i].pressed = false; }, i);
+    await p.waitForTimeout(120);
+  };
+  await tap(0);
+  const padStarted = await p.waitForFunction(() => window.__sj.state.mode === 'play',
+    null, { timeout: 5000 }).then(() => true).catch(() => false);
+  ok('a pad alone starts a run from the menu', padStarted);
+
+  // ...and that same press must not still be sitting in the dive queue, or
+  // Jack leaves the mouth before you have seen the level.
+  ok('and the starting press is not also a dive',
+    await p.evaluate(() => !window.__sj.player.diving && window.__sj.player.depth < 0.02));
+
+  // The recap: a press spent diving during play must not restart the run
+  // under you the instant you die.
+  await p.evaluate(() => { window.__sj.state.lives = 1; window.__sj.player.mercy = 0; window.__sj.debug.give('grime'); });
+  await p.waitForFunction(() => window.__sj.state.mode === 'over', null, { timeout: 5000 }).catch(() => {});
+  await p.waitForTimeout(300);
+  ok('the recap stays up until the pad is pressed again',
+    await p.evaluate(() => window.__sj.state.mode) === 'over');
+  await tap(9);
+  const padAgain = await p.waitForFunction(() => window.__sj.state.mode === 'play',
+    null, { timeout: 5000 }).then(() => true).catch(() => false);
+  ok('and Start restarts from the recap', padAgain);
 
   // the shell and the signature
   ok('it has a way home', await p.locator('.arcade-home').count() === 1);

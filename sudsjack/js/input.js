@@ -24,6 +24,8 @@ export class Input {
     this._touch = null;
     this._padDive = false;
     this._padPrev = false;
+    this._padStartPrev = false;
+    this._start = false;      // edge-triggered "get me into a run"
     this.sawTouch = false;
 
     addEventListener('keydown', (e) => {
@@ -92,8 +94,11 @@ export class Input {
     if (p.buttons[15] && p.buttons[15].pressed) x = 1;
     this._padAxis = x;
     const a = !!(p.buttons[0] && p.buttons[0].pressed);
-    if (a && !this._padPrev) this._dive = true;
+    const st = !!(p.buttons[9] && p.buttons[9].pressed);
+    if (a && !this._padPrev) { this._dive = true; this._start = true; }
+    if (st && !this._padStartPrev) this._start = true;
     this._padPrev = a;
+    this._padStartPrev = st;
     // X or Y — whichever the pad calls them, the two face buttons that are
     // not the dive
     const jumpBtn = !!(p.buttons[2] && p.buttons[2].pressed)
@@ -120,4 +125,15 @@ export class Input {
   dive() { const d = this._dive; this._dive = false; return d; }
 
   jump() { const j = this._jump; this._jump = false; return j; }
+
+  // A / Start off the pad, read only when there is no run to be in. Keyboard
+  // and pointer have their own ways in on the buttons themselves.
+  start() { const s = this._start; this._start = false; return s; }
+
+  // Called whenever a run begins or ends. Without this the SAME press that
+  // starts a run is still sitting in `_dive` when the first frame reads it,
+  // so Jack leaves the mouth before you have seen the level — and a press
+  // spent diving during play would still be in `_start` at the recap and
+  // restart it under you.
+  clearPending() { this._dive = false; this._jump = false; this._start = false; this._drag = 0; }
 }

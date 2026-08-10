@@ -946,6 +946,40 @@ function serve() {
   ok(`nothing is left in English in the Japanese pack${leaks.ja.length ? ' — ' + leaks.ja.slice(0, 4) : ''}`,
     leaks.ja.length === 0);
 
+  // A pack that is SHORTER than English is the other half of the same bug, and
+  // the quieter half: L() hands back the pack's whole array, so five entries
+  // added to CHANGED in English simply never appear in Finnish or Japanese —
+  // nothing is untranslated, there is just less of it. That is exactly what
+  // happened the day the owner's August entries landed.
+  const parity = await page.evaluate(async () => {
+    const d = await import('/toko/js/dialogue.js');
+    d.setLang('en');
+    const en = {
+      CHANGED: d.L('CHANGED').length,
+      FAVOURITES: d.L('FAVOURITES').length,
+      GAME_NOTES: Object.keys(d.L('GAME_NOTES')).sort().join(),
+    };
+    const out = {};
+    for (const lang of ['fi', 'ja']) {
+      d.setLang(lang);
+      out[lang] = {
+        CHANGED: d.L('CHANGED').length,
+        FAVOURITES: d.L('FAVOURITES').length,
+        GAME_NOTES: Object.keys(d.L('GAME_NOTES')).sort().join(),
+      };
+    }
+    d.setLang('en');
+    return { en, ...out };
+  });
+  for (const lang of ['fi', 'ja']) {
+    ok(`${lang}: every entry English has, the pack has too `
+      + `(changed ${parity[lang].CHANGED}/${parity.en.CHANGED}, `
+      + `faves ${parity[lang].FAVOURITES}/${parity.en.FAVOURITES})`,
+      parity[lang].CHANGED === parity.en.CHANGED
+      && parity[lang].FAVOURITES === parity.en.FAVOURITES
+      && parity[lang].GAME_NOTES === parity.en.GAME_NOTES);
+  }
+
   ok('ja: and still says no to what it does not know',
     ja.weather === null && ja.one === null && ja.empty === null,
     `${ja.weather} / ${ja.one} / ${ja.empty}`);

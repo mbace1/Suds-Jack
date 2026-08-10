@@ -6,12 +6,13 @@
 // art.js and a cabinet appears. Feedback is the same panel everywhere, tagged
 // with which game it came from, and goes out through hub/feedback.js.
 
-import { GAMES, SKETCHES } from './games.js?v=5';
-import { drawMarquee } from './art.js?v=7';
-import * as feedback from './feedback.js?v=9';
+import { GAMES, SKETCHES } from './games.js?v=21';
+import { drawMarquee } from './art.js?v=13';
+import * as feedback from './feedback.js?v=13';
 import * as topics from './topics.js?v=2';
-import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=4';
-import { watchPad, padPresent } from './pad.js?v=5';
+import { LANGS, t, gameText, setLang, getLang, preferred, remember } from './i18n.js?v=11';
+import { watchPad, padPresent } from './pad.js?v=9';
+import * as room from './arcade.js?v=5';
 
 const el = (tag, cls = '', text = '') => {
   const e = document.createElement(tag);
@@ -19,6 +20,14 @@ const el = (tag, cls = '', text = '') => {
   if (text) e.textContent = text;
   return e;
 };
+
+// Has this browser been introduced yet? Read here rather than asked of the
+// sting module, because the answer decides whether Play is a plain link — and
+// a link that has to load a module before it knows whether it is a link would
+// be a link that hesitates.
+function introSeen() {
+  try { return !!localStorage.getItem('tokoSting'); } catch { return true; }
+}
 
 // ── cabinets ───────────────────────────────────────────────────────
 function cabinet(game) {
@@ -65,6 +74,17 @@ function cabinet(game) {
   for (const tg of game.tags) tags.appendChild(el('li', '', tg));
   body.appendChild(tags);
 
+  // Your best, off your own disk. The games already write these; the hub only
+  // reads them back. Nothing is fetched and nothing is sent — which is also
+  // the reason there is no leaderboard here and never will be, and why a
+  // cabinet you have not played simply has no line rather than a zero.
+  const best = room.bestOf(game);
+  if (best != null) {
+    const fmt = game.score.fmt === 'points' ? best.toLocaleString()
+      : t('best.secs', { x: Math.round(best) });
+    body.appendChild(el('p', 'best', `${t('best')} ${fmt}`));
+  }
+
   // where a cabinet stands right now: its own line while it is playable, and
   // in place of the controls once there is nothing to press
   const note = gameText(game, 'note');
@@ -79,7 +99,23 @@ function cabinet(game) {
     go.href = game.path;
     // pressing Play is the only honest signal the hub has that you tried it —
     // it cannot know whether you liked it, and does not ask
-    go.addEventListener('click', () => markPlayed(game.id));
+    go.addEventListener('click', e => {
+      markPlayed(game.id);
+      room.sound.coin();
+      // The workshop's mark, in front of the game — which is where a studio
+      // logo belongs and is the one place it is not in the way of anything.
+      // Once per browser (playStingOnce's own key), skippable from the first
+      // frame, and the navigation happens when it is done EITHER WAY: if the
+      // import fails, or toko/ is not in this tree at all, the catch still
+      // sends you to the game. A nicety must never be the reason a Play button
+      // does nothing.
+      if (introSeen() || e.metaKey || e.ctrlKey || e.shiftKey) return;
+      e.preventDefault();
+      const gone = () => { location.href = game.path; };
+      import('../toko/js/sting.js')
+        .then(m => m.playStingOnce('tokoSting')?.done ?? null)
+        .then(gone, gone);
+    });
   } else {
     // a dead button that says so beats a live one that 404s
     go = el('button', 'btn dead', `[ ${t('notup')} ]`);
@@ -416,123 +452,6 @@ async function showVersions() {
   markFresh(versions);
 }
 
-// ── finding one ────────────────────────────────────────────────────
-// Thirteen cabinets is past the point where scanning works, and the tags are
-// already in the catalogue doing nothing. So: a box and a row of tags above the
-// floor. Typing matches the title, the tagline, the lineage and the tags — in
-// whatever language the page is in, because a Finnish reader searching for
-// "räiskintä" should not have to guess the English.
-//
-// Tags are OR against each other and AND against the text: picking `gamepad`
-// and `pixel` means either, which is what a person means by picking two, and
-// then the words narrow it. Nothing is persisted — a filter you did not set
-// yourself is a page that lies about how much is on it.
-let query = '', picked = new Set();
-
-function allTags() {
-  const n = new Map();
-  for (const g of GAMES) for (const tg of g.tags) n.set(tg, (n.get(tg) ?? 0) + 1);
-  return [...n.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(e => e[0]);
-}
-
-function matches(g) {
-  if (picked.size && !g.tags.some(tg => picked.has(tg))) return false;
-  if (!query) return true;
-  const hay = [g.title, gameText(g, 'tagline'), gameText(g, 'lineage'), ...g.tags]
-    .join(' ').toLowerCase();
-  return query.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w));
-}
-
-function applyFilter() {
-  let shown = 0;
-  for (const card of document.querySelectorAll('.cab')) {
-    const g = GAMES.find(x => `cab-${x.id}` === card.id);
-    const ok = !g || matches(g);
-    card.hidden = !ok;
-    if (ok) shown++;
-  }
-  // an empty archive block under a filter is a heading over nothing
-  const arch = document.getElementById('archive-block');
-  if (arch) arch.hidden = !archived.length
-    || ![...document.querySelectorAll('#archived .cab')].some(c => !c.hidden);
-
-  const on = query || picked.size;
-  const found = document.getElementById('find-count');
-  if (found) {
-    found.textContent = on ? t('find.count', { n: shown, m: GAMES.length }) : '';
-    found.hidden = !on;
-  }
-  const none = document.getElementById('find-none');
-  if (none) none.hidden = !(on && shown === 0);
-  document.querySelectorAll('.tag-btn').forEach(b => {
-    const lit = picked.has(b.dataset.tag);
-    b.classList.toggle('on', lit);
-    b.setAttribute('aria-pressed', String(lit));
-  });
-  sel = -1;
-}
-
-function findRow() {
-  const row = el('div', 'find-row');
-  const box = el('input', 'find-box');
-  box.id = 'find-box';
-  box.type = 'search';
-  box.placeholder = t('find');
-  box.setAttribute('aria-label', t('find'));
-  box.value = query;
-  box.oninput = () => { query = box.value.trim(); applyFilter(); };
-  row.appendChild(box);
-
-  const tags = el('div', 'tag-row');
-  for (const tg of allTags()) {
-    const b = el('button', 'tag-btn', tg);
-    b.type = 'button';
-    b.dataset.tag = tg;
-    b.onclick = () => {
-      picked.has(tg) ? picked.delete(tg) : picked.add(tg);
-      applyFilter();
-    };
-    tags.appendChild(b);
-  }
-  row.appendChild(tags);
-
-  const count = el('span', 'find-count');
-  count.id = 'find-count';
-  count.hidden = true;
-  row.appendChild(count);
-  return row;
-}
-
-// `/` puts the caret in the box the way every list on the internet does, and
-// Escape empties it — but only when the box is where you already are, or Escape
-// would be taken away from the panels that need it
-addEventListener('keydown', e => {
-  if (e.key === '/' && !/^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName)) {
-    e.preventDefault();
-    document.getElementById('find-box')?.focus();
-    return;
-  }
-  if (e.key === 'Escape' && document.activeElement?.id === 'find-box') {
-    query = ''; picked.clear();
-    document.getElementById('find-box').value = '';
-    applyFilter();
-  }
-});
-
-// ── one at random ──────────────────────────────────────────────────
-// Thirteen cabinets and no idea where to start is the other half of the same
-// problem the filter solves. This picks something playable you have not opened
-// yet, and only falls back to the whole floor once you have tried everything.
-function surprise() {
-  const played = readPlayed();
-  const live = GAMES.filter(g => g.live !== false);
-  const fresh = live.filter(g => !played[g.id]);
-  const pool = fresh.length ? fresh : live;
-  const pick = pool[Math.floor(Math.random() * pool.length)];
-  if (pick) goTo(pick.id);
-  return pick?.id ?? null;
-}
-
 // ── what you have already tried ────────────────────────────────────
 // Thirteen cabinets and no memory means every visit starts from nothing: you
 // scan the same covers deciding which ones you have already opened. Pressing
@@ -553,7 +472,12 @@ function markPlayed(id) {
   const p = readPlayed();
   p[id] = Date.now();
   try { localStorage.setItem(PLAYED_KEY, JSON.stringify(p)); } catch { /* private mode */ }
+  // pressing Play is the only honest signal this page gets, so all three
+  // counters hang off this one moment and nothing else
+  room.credits.add();
+  room.streak.mark();
   showPlayed();
+  wallRow();
 }
 
 function showPlayed() {
@@ -604,15 +528,17 @@ function openFromHash({ jump = false } = {}) {
   const raw = decodeURIComponent(location.hash.slice(1));
   if (!raw) return;
   const [id, what] = raw.split('/');
-  const game = GAMES.find(g => g.id === id);
+  // onFloor(), so a pasted `#brand` cannot hand somebody the secret cabinet
+  // without the code — it falls through to "not a cabinet here" instead
+  const game = onFloor().find(g => g.id === id);
   // THE HASH IS NOT OURS ALONE. `#toko` opens the counter at the top of the
   // page — every badge in every signed game links to `/#toko` — and this
   // handler used to wipe any fragment it did not recognise as a cabinet.
-  // hub.js runs before the counter mounts, so the counter's own reader found
-  // an empty hash and never opened: the link was dead the whole time it was
-  // documented as working, because the gate for it runs on the brand board,
-  // where hub.js is not. A hash somebody else answers to is named here;
-  // anything else is still a dead cabinet link and still gets tidied away.
+  // hub.js runs first, so the counter's own reader found an empty hash and
+  // never opened: the link had been dead the whole time it was documented as
+  // working, because the gate for it runs on the brand board, where hub.js is
+  // not. A hash somebody else answers to is named here; anything else is still
+  // a dead cabinet link and still gets tidied away.
   if (!game) { if (!THEIRS.has(id)) setHash(''); return; }
   goTo(id, { jump });
   if (what === 'feedback') openFeedback(game.title, game.id, game.accent);
@@ -831,6 +757,41 @@ function layoutRow() {
   return row;
 }
 
+// ── the room: sound, and the counters on the wall ──────────────────
+// Sound is OFF and says so. The counters only appear once there is something
+// to count — an arcade wall with "0 credits · 0 tickets" on it is a page
+// telling you what you have not done yet, which is nagging with extra steps.
+function soundRow() {
+  const row = el('div', 'status-row sound-row');
+  row.appendChild(el('span', 'status-label', t('sound')));
+  const b = el('button', 'opt-btn');
+  const paint = () => {
+    const on = room.sound.on();
+    b.textContent = t(on ? 'sound.on' : 'sound.off');
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', String(on));
+  };
+  b.onclick = () => { room.sound.set(!room.sound.on()); paint(); };
+  paint();
+  row.appendChild(b);
+  return row;
+}
+
+function wallRow() {
+  document.querySelector('.wall-row')?.remove();
+  const c = room.credits.get(), tk = room.tickets.get(), st = room.streak.get();
+  if (!c && !tk && st < 2) return;
+  const row = el('div', 'status-row wall-row');
+  if (c) row.appendChild(el('span', 'wall', c === 1 ? t('credit.one') : t('credit.many', { x: c })));
+  if (st > 1) row.appendChild(el('span', 'wall', t('streak', { x: st })));
+  if (tk) {
+    const n = el('span', 'wall', t('tickets', { x: tk }));
+    n.title = t('tickets.buy');          // the joke, where it cannot get in the way
+    row.appendChild(n);
+  }
+  document.getElementById('status').appendChild(row);
+}
+
 function readAccent() {
   try { return ACCENTS[localStorage.getItem(ACCENT_KEY)] ? localStorage.getItem(ACCENT_KEY) : 'cyan'; }
   catch { return 'cyan'; }
@@ -895,8 +856,13 @@ function useLang(code) {
 // the top of the page to itself; everything finished or set down is still
 // here, still playable, one section further down. A game moves between them
 // by one word in games.js.
-const active = GAMES.filter(g => g.status !== 'archived');
-const archived = GAMES.filter(g => g.status === 'archived');
+// A secret cabinet is off every rack, every count and every filter until the
+// code is entered. `shown()` is read at render time rather than captured once,
+// so unlocking is a re-render and nothing else has to know about it.
+let unlocked = false;
+const onFloor = () => GAMES.filter(g => !g.secret || unlocked);
+const active = () => onFloor().filter(g => g.status !== 'archived');
+const archived = () => onFloor().filter(g => g.status === 'archived');
 
 const setText = (sel, key) => {
   const n = document.querySelector(sel);
@@ -911,27 +877,22 @@ function render() {
   setText('#archive-head', 'archive');
   setText('#sketch-head', 'sketches');
   setText('#source-link', 'source');
-  setText('#find-none', 'find.none');
-  setText('#surprise', 'surprise');
   setText('#hub-feedback', 'tell.hub');
-
-  document.querySelector('.find-row')?.remove();
-  document.getElementById('find-block').appendChild(findRow());
 
   const rack = document.getElementById('cabinets');
   rack.textContent = '';
-  for (const g of active) rack.appendChild(cabinet(g));
+  for (const g of active()) rack.appendChild(cabinet(g));
 
   const oldRack = document.getElementById('archived');
   oldRack.textContent = '';
-  for (const g of archived) oldRack.appendChild(cabinet(g));
+  for (const g of archived()) oldRack.appendChild(cabinet(g));
 
   const shelfList = document.getElementById('sketches');
   shelfList.textContent = '';
   for (const s of SKETCHES) shelfList.appendChild(shelf(s));
 
   // the archive is only worth a heading if there is something in it
-  document.getElementById('archive-block').hidden = !archived.length;
+  document.getElementById('archive-block').hidden = !archived().length;
 
   document.querySelectorAll('.lang-row .lang-btn').forEach(b => {
     const on = b.dataset.lang === getLang();
@@ -942,15 +903,17 @@ function render() {
   // the accent row carries words too, so it is rebuilt with everything else
   document.querySelector('.accent-row')?.remove();
   document.querySelector('.layout-row')?.remove();
+  document.querySelector('.sound-row')?.remove();
+  document.getElementById('status').prepend(soundRow());
   document.getElementById('status').prepend(accentRow());
   document.getElementById('status').prepend(layoutRow());
   useAccent(readAccent());
   useLayout(readLayout());
 
-  applyFilter();
   padHint(false);
   notesLink();
   showPlayed();
+  wallRow();
   showVersions();
   // a rebuild threw away the elements the selection pointed at
   sel = -1;
@@ -962,24 +925,58 @@ document.documentElement.lang = getLang();
 render();
 
 document.getElementById('hub-feedback').onclick = () => openFeedback(t('hub.self'), 'hub');
-document.getElementById('surprise').onclick = surprise;
 
 // a pasted link lands where it says it does, without the smooth scroll that
 // would read as the page moving on its own
-openFromHash({ jump: true });
-
-// a pasted link lands where it says it does, without the smooth scroll that
-// would look like the page moving on its own
 openFromHash({ jump: true });
 
 // What was on screen when the note was written. Feedback about a layout that
 // nobody can tell you was in force is feedback about nothing, so this rides
 // along on every note from either surface — the panel under a cover art and the
 // counter both post through this module.
-feedback.setContext(() => ({ layout: readLayout(), lang: getLang() }));
+// `intro` is which of the two stings this browser was shown. There are two of
+// them and you only see one, so "the opening drags" is unattributable without
+// it — the same reason every note already records which floor layout was in
+// force. Read lazily off localStorage so it costs nothing until a note is sent.
+feedback.setContext(() => {
+  const c = { layout: readLayout(), lang: getLang() };
+  try {
+    const intro = localStorage.getItem('tokoStingStyle');
+    if (intro) c.intro = intro;
+  } catch { /* private mode */ }
+  return c;
+});
 
 // anything written while an endpoint was unreachable goes out now, quietly
 feedback.flush();
+
+// ── the room ───────────────────────────────────────────────────────
+// Everything below is atmosphere and every piece of it is allowed to do
+// nothing: reduced motion turns the first three off, sound is off until asked,
+// and the floor above works with all of it missing.
+// THE TUBE IS THE HUB'S. The arcade is a terminal, so it comes on like one —
+// and that is all it does here. The workshop's mark used to play on arrival
+// too, which put a studio logo in front of a page that is a menu; it now goes
+// where a studio logo actually goes, in front of a GAME (see the Play handler
+// in cabinet()).
+//
+// NOT IN FRONT OF A DEEP LINK. `/#hyperdagger` means somebody came for one
+// thing, and a title card between them and it is exactly what this workshop is
+// against.
+if (!location.hash) room.powerOn();
+room.sound.start();                    // a no-op unless it was left switched on
+room.flicker();
+
+// The code. What it reveals is a cabinet that was in the catalogue the whole
+// time — re-rendering is the entire unlock, because `active()` reads `unlocked`
+// rather than having been handed a list.
+room.konami(() => {
+  if (unlocked) return;
+  unlocked = true;
+  render();
+  goTo('brand');
+  room.sound.coin();
+});
 
 // Console handle, same convention as the games — and the seam the counter
 // reaches through. `topics` and `feedback` are published here so anything else
@@ -987,7 +984,13 @@ feedback.flush();
 // its own ?v= token: a second instance of feedback.js has its own endpoint
 // configuration, which is a bug that only shows up after the next token bump.
 window.__hub = {
-  games: GAMES, active, archived, sketches: SKETCHES, feedback, topics,
+  games: GAMES, sketches: SKETCHES, feedback, topics, room,
+  // GETTERS, not the arrays. The counter reads `__hub.active` and expects a
+  // list, and these two now depend on whether the secret cabinet is unlocked —
+  // handing over a snapshot would freeze it at whatever was true when hub.js
+  // finished loading, which is always "locked".
+  get active() { return active(); },
+  get archived() { return archived(); },
   t, lang: getLang,
   debug: {
     open: openFeedback, accent: readAccent, setAccent: useAccent,
@@ -995,10 +998,8 @@ window.__hub = {
     lang: getLang, setLang: useLang, langs: LANGS, render,
     layout: readLayout, setLayout: useLayout, layouts: LAYOUTS,
     notes: openNotes, notesLink,
-    goTo, openFromHash, played: readPlayed, markPlayed, surprise,
-    filter: (q, tags) => { query = q ?? ''; picked = new Set(tags ?? []); applyFilter(); },
-    goTo, openFromHash, played: readPlayed, markPlayed, surprise,
-    filter: (q, tags) => { query = q ?? ''; picked = new Set(tags ?? []); applyFilter(); },
+    room, unlock: () => { unlocked = true; render(); },
+    goTo, openFromHash, played: readPlayed, markPlayed,
     seen: readSeen, markSeen: () => {
       try { localStorage.setItem(SEEN_KEY, JSON.stringify(pendingSeen ?? {})); } catch { /* */ }
     },

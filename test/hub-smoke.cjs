@@ -79,11 +79,9 @@ function check(name, cond) {
   const base = `http://localhost:${server.address().port}`;
   const browser = await chromium.launch();
 
-  // The sting plays ONCE PER BROWSER on a first-ever arrival, and it is a
-  // full-screen takeover for three seconds — which would swallow the first
-  // click of every context this suite opens. Mark it as already seen, the way
-  // a returning visitor's browser has, and test the real thing on purpose in
-  // its own fresh context at the end.
+  // The sting plays ONCE PER BROWSER when the first game is launched, and it
+  // is a full-screen takeover for three seconds. Mark it as already seen in
+  // general-purpose contexts and test the real first-Play path at the end.
   const seenSting = ctx => ctx.addInitScript(() => {
     try { localStorage.setItem('tokoSting', '1'); } catch { /* private mode */ }
   });
@@ -115,10 +113,38 @@ function check(name, cond) {
   // the page renders the live floor first, then the archive — so that, not the
   // catalogue order, is the order the cabinets appear in
   const games = [...active, ...archived];
+  const visible = catalogue.filter(g => !g.secret);
   check('the catalogue is not empty', games.length >= 8);
   check('every entry declares a status',
     catalogue.every(g => ['active', 'archived'].includes(g.status)));
-  check('active and archived account for the whole catalogue', games.length === catalogue.length);
+  // ...minus the ones that are not on the floor until the code is entered
+  const secret = catalogue.filter(g => g.secret);
+  check('active and archived account for the whole catalogue',
+    games.length === catalogue.length - secret.length);
+  check('a secret cabinet is not on the floor',
+    secret.length > 0 && !games.some(g => g.secret));
+  check('and it is not rendered either',
+    (await page.$$('#cab-brand')).length === 0);
+  // the code, typed the way a person types it
+  for (const k of ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
+    'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a']) {
+    await page.keyboard.press(k);
+  }
+  await page.waitForTimeout(120);
+  check('the code puts it on the floor', (await page.$$('#cab-brand')).length === 1);
+  check('and its marquee is painted', await page.evaluate(() => {
+    const c = document.querySelector('#cab-brand canvas');
+    if (!c) return false;
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    const seen = new Set();
+    for (let i = 0; i < d.length; i += 4) seen.add(`${d[i]},${d[i + 1]},${d[i + 2]}`);
+    return seen.size > 2;
+  }));
+  // Back to a locked floor. The unlock is a real state change on a shared
+  // page, and left standing it added a cabinet to every count below — which is
+  // how seven later checks failed at once the first time this ran.
+  await page.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+  await page.waitForFunction(() => window.__hub);
   check('one cabinet per game', await page.locator('.cab').count() === games.length);
   check('the live floor holds only what is being worked on',
     await page.locator('#cabinets .cab').count() === active.length && active.length > 0);
@@ -167,8 +193,7 @@ function check(name, cond) {
   }
 
   // and the ones this branch carries actually resolve — a hub whose buttons
-  // 404 is worse than no hub. (Entries with inRepo:false live only on the
-  // deployed site root; see README.)
+  // 404 is worse than no hub.
   const local = [...games, ...sketches].filter(g => g.inRepo && g.live !== false);
   const dead = [];
   for (const g of local) {
@@ -176,17 +201,11 @@ function check(name, cond) {
     if (!r.ok()) dead.push(`${g.id} ${r.status()}`);
   }
   check(`every link this branch can see resolves${dead.length ? ` — ${dead}` : ''}`, dead.length === 0);
-  // This gate runs in two places and `inRepo` means different things in each:
-  // on a source branch it is "this checkout has it", on the deployed site root
-  // EVERYTHING is there. Asserting the source-branch shape against the deploy
-  // failed a check about the catalogue every time the gate was run where the
-  // site actually lives — which is the run that matters most.
+  // A complete source checkout now contains the deployed catalogue. Keep the
+  // assertion explicit so a future import cannot accidentally reintroduce
+  // production-only links into main.
   const away = games.filter(g => !g.inRepo);
-  const DEPLOYED = away.length > 0 && away.every(g => fs.existsSync(path.join(ROOT, g.path)));
-  check(DEPLOYED
-    ? 'the deployed tree carries the games this branch does not'
-    : 'the games only on the deployed site are marked as such',
-    DEPLOYED || away.every(g => !fs.existsSync(path.join(ROOT, g.path))));
+  check('the complete source tree carries every visible cabinet', away.length === 0);
 
   // a marquee that draws nothing is a black rectangle nobody notices
   const blank = await page.evaluate(() => {
@@ -292,44 +311,11 @@ function check(name, cond) {
   check(`the offline shell names every module the page asks for (${needed.size})${absent.length ? ` — missing ${absent}` : ''}`,
     absent.length === 0);
 
-  // ── finding one ──
-  const tagCount = await page.locator('.tag-btn').count();
-  check(`the floor can be filtered by tag (${tagCount})`, tagCount > 3);
-  await page.fill('#find-box', 'voxel');
-  await page.waitForTimeout(120);
-  const hits = await page.$$eval('.cab', cs => cs.filter(c => !c.hidden).map(c => c.id));
-  check(`typing narrows it (${hits.length}: ${hits.map(h => h.slice(4))})`,
-    hits.length > 0 && hits.length < games.length);
-  check('and the count says how far it narrowed',
-    /\d+/.test(await page.locator('#find-count').textContent()));
-  // it searches what the page is showing, not the English underneath
-  await page.locator('.lang-btn[data-lang="fi"]').click();
-  await page.fill('#find-box', 'vektori');
-  await page.waitForTimeout(120);
-  check('and it searches the language you are reading in',
-    (await page.$$eval('.cab', cs => cs.filter(c => !c.hidden).length)) > 0);
-  await page.locator('.lang-btn[data-lang="en"]').click();
-
-  await page.fill('#find-box', 'zzzzz');
-  await page.waitForTimeout(120);
-  check('nothing matching says so rather than showing an empty floor',
-    await page.locator('#find-none').isVisible());
-  // and the pad must not be able to walk into something that is filtered out
-  check('a filtered-out cabinet is not reachable with a pad',
-    await page.evaluate(() => __hub.debug.select(0) === undefined
-      && !document.querySelector('.cab.sel:not([hidden])')) !== false);
-  await page.fill('#find-box', '');
-  await page.waitForTimeout(120);
-  check('clearing it puts the whole floor back',
-    await page.$$eval('.cab', cs => cs.filter(c => !c.hidden).length) === games.length);
-
-  // ── one at random ──
-  const rolled = new Set();
-  for (let i = 0; i < 12; i++) rolled.add(await page.evaluate(() => __hub.debug.surprise()));
-  check(`show-me-one picks from the floor (${rolled.size} different in 12 rolls)`,
-    rolled.size > 1 && [...rolled].every(id => games.some(g => g.id === id)));
-  check('and never lands on a cabinet with nothing behind it',
-    [...rolled].every(id => games.find(g => g.id === id)?.live !== false));
+  // The live floor deliberately removed search/tag chrome and the randomizer;
+  // their stale tests previously timed out after the production baseline was
+  // brought back into source.
+  check('the retired find-a-game controls stay off the floor',
+    await page.locator('#find-box, .tag-btn, #surprise').count() === 0);
   setHashless: { await page.goto(`${base}/index.html`, { waitUntil: 'networkidle' }); }
 
   // ── one cabinet, by name ──
@@ -688,8 +674,17 @@ function check(name, cond) {
 
   // ── the version each project is on ──
   const versions = JSON.parse(fs.readFileSync(path.join(ROOT, 'hub', 'versions.json'), 'utf8'));
-  check('versions.json covers the projects this branch carries',
-    games.filter(g => g.inRepo).every(g => versions[g.id]));
+  const unversioned = games.filter(g => g.inRepo && !versions[g.id]);
+  const honestlyUnversioned = unversioned.every(g => {
+    const dir = path.join(ROOT, g.path);
+    const log = path.join(dir, 'VERSIONS.md');
+    const html = path.join(dir, 'index.html');
+    if (fs.existsSync(log)) return false;
+    const src = fs.existsSync(html) ? fs.readFileSync(html, 'utf8') : '';
+    return !/src="(?!\.\.\/)[^"]*?\?v=\d+"/.test(src);
+  });
+  check(`unversioned cabinets are missing both a log and their own token (${unversioned.map(g => g.id)})`,
+    honestlyUnversioned);
   check('every version came from a log or a real cache token',
     Object.values(versions).every(v => Number.isInteger(v.v) && v.v > 0
       && ['VERSIONS.md', 'cache token'].includes(v.from)));
@@ -946,15 +941,24 @@ function check(name, cond) {
       await page.evaluate(() => window.__arcadeShell.bridged) === null);
   }
 
-  // the key bridge actually produces the key the game listens for
-  const cabal = catalogue.find(g => g.id === 'dropcabal');
-  await page.goto(`${base}/${cabal.path}`, { waitUntil: 'domcontentloaded' });
-  await page.evaluate(() => {
+  // The key bridge actually produces the key a game listens for.
+  //
+  // Every keys-bridged cabinet now lives on the deployed site rather than in
+  // this repo (Drop Cabal used to be the one here, until it grew its own pad
+  // reader — a crosshair needs an axis, so a keystroke could never carry it).
+  // So drive `attachPad` directly with a stub binding, hosted on a page that
+  // bridges nothing itself: whatever keys turn up are the bridge's own work,
+  // with no second one to confuse them for.
+  const host = catalogue.find(g => g.pad === 'native' && g.inRepo);
+  await page.goto(`${base}/${host.path}`, { waitUntil: 'domcontentloaded' });
+  await page.evaluate(async () => {
     window.__seen = [];
     addEventListener('keydown', e => window.__seen.push('down:' + e.code), true);
     addEventListener('keyup', e => window.__seen.push('up:' + e.code), true);
     window.__pad = { buttons: Array.from({ length: 16 }, () => ({ pressed: false, value: 0 })), axes: [0, 0, 0, 0], connected: true };
     navigator.getGamepads = () => [window.__pad];
+    const { attachPad } = await import(new URL('../hub/padkeys.js?v=7', location.href).href);
+    attachPad({ keys: { left: 'KeyA', right: 'KeyD', b0: 'Space' } });
   });
   await page.evaluate(async () => {
     window.__pad.axes = [1, 0, 0, 0];                      // stick right
@@ -979,44 +983,144 @@ function check(name, cond) {
   check(`in that order, and once each (${order.join(' ')})`,
     order.join() === 'down:Space,up:Space');
 
-  // ── the sting, on a first-ever arrival ──
-  // Once per browser, skippable from the first frame, and never in front of a
-  // deep link: /#hyperdagger means somebody came for one cabinet, and a title
-  // card between them and it is an advertisement.
+
+  // ── the room ──
+  // Atmosphere, and the whole promise is that none of it gets in the way. So
+  // what is checked is mostly that it LEAVES: the boot veil clears itself, the
+  // counters stay off the wall until there is something to count.
+  await page.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+  await page.waitForFunction(() => window.__hub);
+  await page.waitForTimeout(1000);
+  check('the power-on veil takes itself off the page',
+    (await page.$$('.power-on')).length === 0);
+
+  // ── the intro ──
+  // Once per TAB, so it has to be driven in a context that has not used its
+  // one go yet — on the shared page above it played before the first check and
+  // every assertion here would pass without ever running.
   {
-    const fresh = await browser.newContext({ viewport: { width: 1100, height: 900 } });
-    const fp = await fresh.newPage();
-    await fp.goto(base, { waitUntil: 'domcontentloaded' });
-    const card = fp.locator('div[role="img"][aria-label*="TOKO" i], div[role="img"]').first();
-    check('a first-ever arrival gets the sting',
-      await card.waitFor({ state: 'visible', timeout: 4000 }).then(() => true).catch(() => false));
-    check('and it covers the floor while it plays',
-      await fp.evaluate(() => {
-        const el = document.querySelector('div[role="img"]');
-        const cs = el && getComputedStyle(el);
-        return !!cs && cs.position === 'fixed' && parseInt(cs.zIndex, 10) > 1000;
-      }));
-    await fp.keyboard.press('Space');
-    await fp.waitForTimeout(400);
-    check('any key skips it',
-      await fp.evaluate(() => !document.querySelector('div[role="img"][style*="fixed"]')));
-    check('and the arcade is underneath it, already rendered',
-      await fp.locator('.cab').count() > 0);
+    const boot = await browser.newContext({ viewport: { width: 1000, height: 700 } });
+    const seen = sel => bp => bp.$$(sel).then(a => a.length > 0);
+    const veil = seen('.power-on');
 
-    await fp.goto(base, { waitUntil: 'domcontentloaded' });
-    await fp.waitForTimeout(500);
-    check('a second visit never sees it again',
-      await fp.evaluate(() => !document.querySelector('div[role="img"][style*="fixed"]')));
-    await fresh.close();
+    let bp = await boot.newPage();
+    await bp.goto(`${base}/index.html`, { waitUntil: 'commit' });
+    // POLLED, not sampled. A bounding rect is the TRANSFORMED box, and the
+    // veil mounts whenever the module finishes loading rather than at a fixed
+    // offset from navigation — so any single moment catches the sweep somewhere
+    // different, and a fixed 420ms read it at 956 of 1000px on one run and
+    // failed. Waiting for it to land asserts the same thing without racing.
+    await bp.waitForFunction(() => {
+      const i = document.querySelector('.power-on i');
+      return i && Math.abs(i.getBoundingClientRect().width - innerWidth) < 2;
+    }, null, { timeout: 3000 });
+    check('the intro opens across the whole screen', await bp.evaluate(() => {
+      const i = document.querySelector('.power-on i');
+      // the ELEMENT is the viewport — the sweep above proves the animation
+      // reaches across it, this proves there is nothing narrower underneath
+      return i.offsetWidth === innerWidth && i.offsetHeight === innerHeight;
+    }));
+    // one input, and the WHOLE thing goes — not one half of it
+    await bp.keyboard.press('Escape');
+    await bp.waitForTimeout(500);
+    check('any key skips it from the first frame',
+      !await veil(bp) && (await bp.$$('.toko-sting')).length === 0);
+    check('and a skipped mark is still unseen next time',
+      await bp.evaluate(() => !localStorage.getItem('tokoSting')));
+    await bp.close();
 
-    const linked = await browser.newContext({ viewport: { width: 1100, height: 900 } });
-    const lp = await linked.newPage();
-    await lp.goto(`${base}/#hyperdagger`, { waitUntil: 'domcontentloaded' });
-    await lp.waitForTimeout(600);
-    check('a deep link is never made to sit through it',
-      await lp.evaluate(() => !document.querySelector('div[role="img"][style*="fixed"]')));
-    await linked.close();
+    // a pasted link means somebody came for one thing
+    bp = await boot.newPage();
+    await bp.goto(`${base}/index.html#hyperdagger`, { waitUntil: 'commit' });
+    await bp.waitForTimeout(260);
+    check('a deep link gets no intro at all', !await veil(bp));
+    await bp.close();
+    await boot.close();
+
+    // reduced motion gets no tube at all
+    const still = await browser.newContext({
+      viewport: { width: 1000, height: 700 }, reducedMotion: 'reduce',
+    });
+    bp = await still.newPage();
+    await bp.goto(`${base}/index.html`, { waitUntil: 'commit' });
+    await bp.waitForTimeout(500);
+    check('reduced motion gets no tube', !await veil(bp));
+    await bp.close();
+    await still.close();
   }
+
+  // ── the mark, in front of a game ──
+  // A studio logo goes before the GAME, not before the menu. So Play holds the
+  // navigation, plays it once per browser, and goes when it is done — and the
+  // second Play is a plain link again.
+  {
+    const run = await browser.newContext({ viewport: { width: 1000, height: 700 } });
+    const bp = await run.newPage();
+    await bp.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+    await bp.waitForFunction(() => window.__hub);
+    check('an unintroduced browser has not seen the mark',
+      await bp.evaluate(() => !localStorage.getItem('tokoSting')));
+
+    await bp.click('#cab-dropcabal a.play');
+    await bp.waitForSelector('.toko-sting', { timeout: 3000 });
+    check('starting a game plays the mark first', true);
+    check('and it records WHICH of the two was shown',
+      ['draw', 'goo'].includes(await bp.evaluate(() => localStorage.getItem('tokoStingStyle'))));
+
+    // One input puts it away AND lets you through — skipping the logo must not
+    // strand you on the page you were leaving. Waited on by URL rather than by
+    // a timeout, and matched on `.toko-sting` rather than [role="img"]: every
+    // signed game carries a badge with that role, so looking for one found the
+    // signature in the corner of the game just navigated to and called it the
+    // sting still being on screen.
+    await bp.keyboard.press('Escape');
+    await bp.waitForURL('**/dropcabal/', { timeout: 4000 });
+    check('the mark is skippable and still takes you to the game',
+      bp.url().endsWith('/dropcabal/'));
+
+    // second time it is a plain link
+    await bp.goto(`${base}/index.html`, { waitUntil: 'networkidle' });
+    await bp.waitForFunction(() => window.__hub);
+    await bp.click('#cab-tokodrop a.play');
+    await bp.waitForURL('**/toko-drop/', { timeout: 4000 });
+    check('the next game start is a plain link, no mark',
+      (await bp.$$('.toko-sting')).length === 0);
+    await bp.close();
+    await run.close();
+  }
+
+  // sound is off until asked, and says which it is
+  check('sound is off on arrival',
+    await page.$eval('.sound-row .opt-btn', b => b.getAttribute('aria-pressed') === 'false'));
+  await page.click('.sound-row .opt-btn');
+  check('and the toggle says so when it is on',
+    await page.$eval('.sound-row .opt-btn', b => b.getAttribute('aria-pressed') === 'true'));
+  await page.click('.sound-row .opt-btn');
+
+  // The counters only exist once there is something to count. Cleared first:
+  // the checks further up press Play for their own reasons, and this ran
+  // against a machine that had already "played" nine things.
+  await page.evaluate(() => {
+    for (const k of ['sudsJackHubCredits', 'sudsJackHubTickets', 'sudsJackHubDays',
+      'sudsJackHubPlayed', 'tokoDropHi']) localStorage.removeItem(k);
+  });
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForFunction(() => window.__hub);
+  check('an untouched machine has no counters on the wall',
+    (await page.$$('.wall-row')).length === 0);
+  await page.evaluate(() => {
+    __hub.debug.markPlayed('tokodrop');
+    localStorage.setItem('tokoDropHi', '4242');
+  });
+  await page.waitForTimeout(60);
+  check('pressing Play puts a credit on the wall',
+    (await page.$eval('.wall-row', n => n.textContent)).includes('1 credit'));
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForFunction(() => window.__hub);
+  check('and a game you have played shows your best, off your own disk',
+    (await page.$eval('#cab-tokodrop .best', n => n.textContent)).includes('4,242'));
+  check('a game you have not played shows no score line at all',
+    (await page.$$('#cab-skltr .best')).length === 0);
 
   check(`zero console/page errors overall${errors.length ? ` — ${errors[0]}` : ''}`, errors.length === 0);
 
