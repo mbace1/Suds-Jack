@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "station": "Radio Free Helsinki",
+  "date": "2026-08-09",
+  "updated": "2026-08-09",
+  "sectors": [
+    {
+      "id": "RFH",
+      "freq": "104.40",
+      "call": "HELSINKI"
+    }
+  ],
+  "stories": [
+    {
+      "id": "half-the-same",
+      "sector": "RFH",
+      "broll": "winterhall",
+      "filed": "2026-08-09"
+    },
+    {
+      "id": "after-launch",
+      "sector": "RFH",
+      "broll": "kamppi",
+      "filed": "2026-08-09"
+    },
+    {
+      "id": "declined-in-full",
+      "sector": "RFH",
+      "broll": "esplanadi",
+      "filed": "2026-08-09"
+    }
+  ],
+  "copy": {
+    "en": {
+      "half-the-same": {
+        "slug": "THE STUDIO FLOOR",
+        "head": "Studio confirms it will make the same game with half the studio",
+        "lines": [
+          "Frictionless Play Group says the thirty-year-old studio it owns is now right-sized for a portfolio approach, after a hundred and thirty-six people left in July.",
+          "An engine programmer of sixteen years went this week and did not call it an opportunity. Whole disciplines are gone from the building. Output will be maintained, and management has been supplied with the words for saying so."
+        ]
+      },
+      "after-launch": {
+        "slug": "KAMPPI",
+        "head": "Contractors who finished the game are released on the day it ships",
+        "lines": [
+          "Ninth Life Interactive has thanked the contract staff who delivered its launch build, some of them on their fourth consecutive year of being temporary. Their engagements ended on Thursday, which was also the launch.",
+          "Bodyshop Nordics Oy, which supplied them, notes that a contract concluding on schedule is a contract that worked. The credits list everyone."
+        ]
+      },
+      "declined-in-full": {
+        "slug": "ESPLANADI",
+        "head": "Mobile group declines the agreement its staff voted for, cites dialogue",
+        "lines": [
+          "Pastel Empire Oy has declined to enter the collective agreement its employees voted to adopt, saying it prefers to keep the conversation direct and unmediated.",
+          "The vote passed. The company says it values the feedback, and that the door to its offices remains open, which is where the conversation will now take place, one person at a time."
+        ]
+      }
+    },
+    "fi": {
+      "half-the-same": {
+        "slug": "STUDION LATTIA",
+        "head": "Studio vahvistaa tekevänsä saman pelin puolella studiolla",
+        "lines": [
+          "Frictionless Play Group kertoo, että sen omistama kolmekymmentävuotias studio on nyt oikeankokoinen portfolionäkökulmasta, kun heinäkuussa lähti 136 ihmistä.",
+          "Kuusitoista vuotta talossa ollut moottoriohjelmoija lähti tällä viikolla eikä kutsunut sitä mahdollisuudeksi. Kokonaisia osaamisalueita ei enää ole rakennuksessa; tuotanto jatkuu, konserni sanoo. Johdolle on toimitettu sanat, joilla se sanotaan."
+        ]
+      },
+      "after-launch": {
+        "slug": "KAMPPI",
+        "head": "Pelin viimeistelleet vuokratyöläiset vapautetaan julkaisupäivänä",
+        "lines": [
+          "Ninth Life Interactive on kiittänyt sopimustyöntekijöitä, jotka saivat julkaisuversion valmiiksi; osa heistä oli neljättä perättäistä vuotta tilapäisiä. Toimeksiannot päättyivät torstaina, joka oli myös julkaisupäivä.",
+          "Heidät välittänyt Bodyshop Nordics Oy huomauttaa, että aikataulussa päättynyt sopimus on onnistunut sopimus. Lopputeksteissä on kaikkien nimi."
+        ]
+      },
+      "declined-in-full": {
+        "slug": "ESPLANADI",
+        "head": "Mobiilikonserni kieltäytyy sopimuksesta, jonka henkilöstö hyväksyi, ja vetoaa vuoropuheluun",
+        "lines": [
+          "Pastel Empire Oy on kieltäytynyt liittymästä työehtosopimukseen, jonka sen työntekijät äänestivät käyttöön, ja kertoo haluavansa pitää keskustelun suorana ja välittömänä.",
+          "Äänestys meni läpi. Yhtiö kertoo arvostavansa palautetta ja pitävänsä ovensa auki — siellä keskustelu nyt käydään, yksi ihminen kerrallaan."
+        ]
+      }
+    },
+    "ja": {
+      "half-the-same": {
+        "slug": "スタジオの床",
+        "head": "スタジオ、半分の人数で同じ規模の一本を作ると確認",
+        "lines": [
+          "Frictionless Play Groupは、傘下の創業三十年のスタジオがポートフォリオの観点で適正規模になったとしている。7月に136人が去った。",
+          "在籍十六年のエンジンプログラマーが今週退社し、これを好機とは呼ばなかった。職能が丸ごと消えた一方、産出量は維持されるという。そう言うための言葉は経営陣に配られている。"
+        ]
+      },
+      "after-launch": {
+        "slug": "カンピ",
+        "head": "ゲームを仕上げた契約スタッフ、発売当日に契約終了",
+        "lines": [
+          "Ninth Life Interactiveは、発売版を仕上げた契約スタッフに謝意を示した。うち何人かは四年連続で「一時的」だった。契約は木曜に終了し、それは発売日でもあった。",
+          "彼らを送り出したBodyshop Nordics Oyは、予定どおり終わった契約はうまくいった契約だとしている。クレジットには全員の名前がある。"
+        ]
+      },
+      "declined-in-full": {
+        "slug": "エスプラナーディ",
+        "head": "モバイル大手、従業員が可決した協約を拒否。「対話」を理由に",
+        "lines": [
+          "Pastel Empire Oyは、従業員が採用を可決した労働協約への加入を拒み、対話は直接かつ仲介なしで行いたいとしている。",
+          "採決は可決された。同社は意見を尊重するとし、オフィスの扉はいつでも開いているとした。話し合いはこれからそこで行われる。一人ずつ。"
+        ]
+      }
+    }
+  }
+}

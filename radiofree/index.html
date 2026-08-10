@@ -486,8 +486,11 @@
   /* the picture keeps the frame; the copy sits over it, a little larger,
      because a clip is watched at arm's length and not held */
   .vertical .post-caption {
-    padding-bottom: calc(9% + env(safe-area-inset-bottom));
-    max-height: 56%;
+    padding-bottom: calc(7% + env(safe-area-inset-bottom));
+    /* A clip cannot scroll, so the caption gets the room a long bulletin
+       needs — and the body drops a notch rather than the last line dropping
+       off the bottom of the video. */
+    max-height: 64%;
     /* a heavier scrim than the page's. On the page the copy is two lines over
        a picture the reader can see around it; a clip shows the whole bulletin,
        and over a bright plate (the beach at noon) the thin gradient put the
@@ -514,7 +517,8 @@
      opened — a bulletin that ends in "…" on a video has simply not been read,
      so vertical shows the whole thing and gives the scrim the room for it. */
   .vertical .post .bulletin {
-    display: block; -webkit-line-clamp: none; overflow: visible; font-size: 14px;
+    display: block; -webkit-line-clamp: none; overflow: visible;
+    font-size: 13px; line-height: 1.5;
   }
   .vertical .post .bulletin-line + .bulletin-line { margin-top: 9px; }
   .vertical .tag { font-size: 11px; padding: 4px 9px 3px; }
@@ -608,7 +612,7 @@
   // nobody can press. Loaded conditionally rather than hidden, so `?vertical`
   // never depends on winning a CSS fight with somebody else's stylesheet.
   if (!new URLSearchParams(location.search).has('vertical')) {
-    await import('../hub/shell.js?v=29');
+    await import('../hub/shell.js?v=13');
     const { sign } = await import('../toko/js/signature.js?v=2');
     sign({ corner: 'bottom-left' });
   }
