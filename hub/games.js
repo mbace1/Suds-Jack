@@ -103,6 +103,32 @@ export const GAMES = [
     art: 'skull',
   },
   {
+    id: 'tokotrip',
+    fi: {
+      tagline: 'VR-zensaari: oikea tuolisi rekisteröitynä poukaman rantaan. Lue kirjaa, laita levy soimaan, katso auringonlaskua. Ei mitään voitettavaa.',
+      controls: 'Quest: osoita + liipaisin teleport · toteemi vaihtaa tunnelman · kirja · radio · kyltti vie kotiin · työpöytä: raahaa katse · WASD · M',
+      note: 'saari, kirja ja radio ovat pystyssä — luolan sisätila on lykätty',
+    },
+    ja: {
+      tagline: 'VRの禅の島 — 本物の椅子を入り江のほとりに登録する。本を読み、レコードをかけ、日の入りを眺める。勝ち負けはなし。',
+      controls: 'Quest: ポイント＋トリガーでテレポート · トーテムでムード · 本 · ラジオ · 看板で帰る · PC: ドラッグ視点 · WASD · M',
+      note: '島と本とラジオは動いている — 洞窟の中は保留',
+    },
+    pad: 'native',
+    vr: true,
+    status: 'active',
+    note: 'the island, the book and the radio are up — the cave interior is deferred',
+    title: 'Toko Trip',
+    tagline: 'A VR zen island: your real chair, registered beside a cove. Read a book, put a record on, watch the sun go down. Nothing to win.',
+    lineage: 'A Short Hike × Monument Valley',
+    tags: ['vr', 'zen', 'three.js'],
+    controls: 'Quest: point + trigger teleport · totem cycles the mood · book · radio · the sign goes home · desktop: drag look · WASD · M',
+    path: 'toko-trip/',
+    inRepo: true,
+    accent: '#3aa8a0',
+    art: 'cove',
+  },
+  {
     id: 'dropcabal',
     score: { key: 'dropCabalHi', fmt: 'points' },
     fi: {

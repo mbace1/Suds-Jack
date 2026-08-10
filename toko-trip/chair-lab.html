@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Toko Trip — chair lab</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { background: #0a0c10; color: #f2e9d8; overflow: hidden; touch-action: none;
+      font-family: ui-monospace, Menlo, Consolas, monospace; }
+    canvas { display: block; }
+    #panel {
+      position: fixed; left: 12px; top: 12px; right: 12px; z-index: 3;
+      font-size: 13px; line-height: 1.8; pointer-events: none;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+    }
+    #panel a { color: #3aa8a0; pointer-events: auto; }
+    #status { color: #e8a05c; }
+    .ok { color: #74a862; }
+  </style>
+</head>
+<body>
+  <div id="panel">
+    <b>chair lab</b> — register your REAL chair as the island's chair<br>
+    sit-height and spot are saved on this browser; run once, then rarely<br>
+    <span id="status">checking for AR…</span><br>
+    trigger&nbsp; place at the reticle (point at your chair's SEAT) ·
+    grip&nbsp; clear and redo<br>
+    <a href="index.html">← back to the island</a>
+  </div>
+
+  <!-- Deliberately WebGLRenderer, not WebGPU: maximum AR hit-test/anchor
+       compatibility. The calibration it saves is renderer-agnostic. -->
+  <script type="module">
+    // ── the contract with index.html (all local-floor coordinates) ──
+    //   tokoTrip.chairAnchorHandle   persistent anchor uuid (when supported)
+    //   tokoTrip.chairPoseFallback   { p: [x,y,z], yaw }
+    //   tokoTrip.chairYaw            number, radians
+    // The island builds its nook wherever this lands, so calibrate roughly
+    // where you will start the island session (world origin = the chair).
+    import * as THREE from './vendor/three.module.min.js';
+
+    const statusEl = document.getElementById('status');
+    const say = (t, ok = false) => { statusEl.textContent = t; statusEl.className = ok ? 'ok' : ''; };
+
+    const stored = localStorage.getItem('tokoTrip.chairPoseFallback');
+    if (stored) say('a chair is already saved — place again to move it, grip to clear', true);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.xr.enabled = true;
+    document.body.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.02, 40);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x666666, 1));
+
+    // the reticle rides the hit-test; the ghost chair marks the saved pose
+    const reticle = new THREE.Mesh(
+      new THREE.RingGeometry(0.09, 0.12, 24).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: 0x3aa8a0 }));
+    reticle.matrixAutoUpdate = false;
+    reticle.visible = false;
+    scene.add(reticle);
+
+    const ghost = new THREE.Group();
+    {
+      const mat = new THREE.MeshStandardMaterial({ color: 0x3aa8a0, transparent: true, opacity: 0.55 });
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.04, 0.44), mat);
+      const back = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.5, 0.04), mat);
+      back.position.set(0, 0.27, 0.22);
+      ghost.add(seat, back);
+    }
+    ghost.visible = false;
+    scene.add(ghost);
+
+    function showSaved() {
+      try {
+        const fb = JSON.parse(localStorage.getItem('tokoTrip.chairPoseFallback') || 'null');
+        if (!fb) { ghost.visible = false; return; }
+        ghost.position.fromArray(fb.p);
+        ghost.rotation.y = fb.yaw || 0;
+        ghost.visible = true;
+      } catch (e) { /* ignore */ }
+    }
+
+    async function clearSaved(session) {
+      const handle = localStorage.getItem('tokoTrip.chairAnchorHandle');
+      if (handle && session?.deletePersistentAnchor) {
+        try { await session.deletePersistentAnchor(handle); } catch (e) { /* already gone */ }
+      }
+      localStorage.removeItem('tokoTrip.chairAnchorHandle');
+      localStorage.removeItem('tokoTrip.chairPoseFallback');
+      localStorage.removeItem('tokoTrip.chairYaw');
+      ghost.visible = false;
+      say('cleared — point at the seat and pull the trigger');
+    }
+
+    let session = null, hitSource = null, refSpace = null, viewerSpace = null;
+    let latestHit = null;
+
+    async function place(frame) {
+      if (!latestHit) { say('no surface under the ray — aim at the seat'); return; }
+      const pose = latestHit.getPose(refSpace);
+      if (!pose) return;
+      const p = pose.transform.position;
+      // the chair faces the player: yaw from seat toward where you stand
+      const head = frame.getViewerPose(refSpace)?.transform.position;
+      const yaw = head ? Math.atan2(head.x - p.x, head.z - p.z) : 0;
+      // fallback pose always — anchors are the bonus, not the baseline
+      localStorage.setItem('tokoTrip.chairPoseFallback',
+        JSON.stringify({ p: [p.x, p.y, p.z], yaw }));
+      localStorage.setItem('tokoTrip.chairYaw', String(yaw));
+      let anchored = '';
+      try {
+        if (latestHit.createAnchor) {
+          const anchor = await latestHit.createAnchor();
+          if (anchor.requestPersistentHandle) {
+            const handle = await anchor.requestPersistentHandle();
+            localStorage.setItem('tokoTrip.chairAnchorHandle', handle);
+            anchored = ' + persistent anchor';
+          }
+        }
+      } catch (e) { /* Quest may decline spatial data — the fallback stands */ }
+      showSaved();
+      say(`chair saved${anchored} — seat height ${p.y.toFixed(2)} m. Back to the island.`, true);
+    }
+
+    async function startAR() {
+      if (!navigator.xr) { say('WebXR is not available in this browser — open this on the headset'); return; }
+      const arOk = await navigator.xr.isSessionSupported('immersive-ar').catch(() => false);
+      if (!arOk) { say('immersive-ar is not supported here — open this on the headset'); return; }
+      say('tap ENTER AR, then point at your chair seat');
+      const btn = document.createElement('button');
+      btn.textContent = 'ENTER AR';
+      btn.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);' +
+        'padding:14px 28px;font:inherit;font-size:15px;background:#101418;color:#f2e9d8;' +
+        'border:1px solid #3aa8a0;border-radius:6px;z-index:4;min-height:44px;';
+      btn.onclick = async () => {
+        try {
+          session = await navigator.xr.requestSession('immersive-ar', {
+            requiredFeatures: ['hit-test', 'local-floor'],
+            optionalFeatures: ['anchors', 'dom-overlay'],
+            domOverlay: { root: document.body },
+          });
+        } catch (e) { say('AR session refused: ' + e.message); return; }
+        btn.remove();
+        await renderer.xr.setSession(session);
+        renderer.xr.setReferenceSpaceType('local-floor');
+        refSpace = renderer.xr.getReferenceSpace();
+        viewerSpace = await session.requestReferenceSpace('viewer');
+        hitSource = await session.requestHitTestSource({ space: viewerSpace });
+        say('point at the SEAT · trigger places · grip clears');
+        session.addEventListener('select', () => { placeQueued = true; });
+        session.addEventListener('squeeze', () => { clearSaved(session); });
+        session.addEventListener('end', () => { say('session over — the island will use what you saved', true); });
+        showSaved();
+      };
+      document.body.appendChild(btn);
+    }
+
+    let placeQueued = false;
+    renderer.setAnimationLoop((t, frame) => {
+      if (frame && hitSource && refSpace) {
+        const hits = frame.getHitTestResults(hitSource);
+        latestHit = hits[0] || null;
+        if (latestHit) {
+          const pose = latestHit.getPose(refSpace);
+          if (pose) {
+            reticle.visible = true;
+            reticle.matrix.fromArray(pose.transform.matrix);
+          }
+        } else reticle.visible = false;
+        if (placeQueued) { placeQueued = false; place(frame); }
+      }
+      renderer.render(scene, camera);
+    });
+
+    addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+    startAR();
+    window.__ttlab = { clearSaved, showSaved };
+  </script>
+  <script type="module" src="../hub/shell.js?v=30"></script>
+</body>
+</html>

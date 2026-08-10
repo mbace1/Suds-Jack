@@ -1,6 +1,6 @@
 // The arcade shell — one line in a game's index.html and it gets a way home.
 //
-//   <script type="module" src="../hub/shell.js?v=29"></script>
+//   <script type="module" src="../hub/shell.js?v=30"></script>
 //
 // It adds a HOME button in the top-left corner and a controller binding for
 // the same thing, and does nothing else: it installs no key handlers and no
@@ -14,7 +14,7 @@
 // short enough that you do not have to wonder whether it is working.
 
 import { watchPad } from './pad.js?v=9';
-import { GAMES } from './games.js?v=36';
+import { GAMES } from './games.js?v=37';
 import { attachPad, holdKey } from './padkeys.js?v=9';
 
 const HOLD_MS = 750;
