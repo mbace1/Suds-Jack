@@ -560,9 +560,21 @@ cabinets below the fold (two columns where there is room).
 `dialogue.fi.js`/`dialogue.ja.js` are pure string packs overriding by topic id
 with per-key English fallback, and the counter follows `__hub.lang()` → `<html
 lang>` → en (watched with a `MutationObserver`, since hub.js re-renders rather
-than firing an event). It never re-types the transcript. Both packs are drafts;
-the **parser is en/fi only** — its tokeniser splits on spaces, so the Japanese
-KEYS table is deliberately empty and the menu is the path there.
+than firing an event). It never re-types the transcript. Both packs are drafts. **The Japanese parser is real**: Japanese does not space
+its words, so a whitespace tokeniser sees one long run and matches nothing —
+`findBySubstring` asks the other question instead ("which of my keys APPEAR in
+what you typed"), the JA keys are **stems** rather than words (「作」 catches
+作る・作った・作りたい), and a hit scores its own LENGTH so a long agreement beats a
+short one and a stray character cannot carry a match. A Japanese browser lands
+on the arcade in Japanese and the counter follows `<html lang>` with it.
+What the packs still need is a **native read** — they were written to match
+Toko's register rather than translated, by someone who does not speak either
+language natively. `node scripts/ja-review.mjs` builds a review page: every
+Japanese line beside its English source, grouped the way the counter is built,
+with the register question (plain form + 「お前」 throughout) asked at the top.
+The gate now also fails if **anything is left in English** in a pack — three
+`CHANGED` entries shipped English-only in both packs and nothing caught it,
+because per-key fallback is the right behaviour and completely silent.
 **It runs both ways.** A `>` **parser** line takes a typed sentence and matches it
 by word overlap against a keyword table (`find()` — still no model, and a miss
 *says so* rather than answering the wrong question; typing reaches `locked` topics,

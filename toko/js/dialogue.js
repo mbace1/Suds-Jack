@@ -632,6 +632,21 @@ export const CHANGED = [
     what: ['GAMES THAT ARE NOT UP SAY SO ON THE',
       'BUTTON INSTEAD OF 404ING AT YOU.'],
   },
+  {
+    when: '2026-07', game: 'hub',
+    what: ['MY BADGE IN THE CORNER OF A GAME IS',
+      'A DOOR NOW. IT LEADS HERE.'],
+  },
+  {
+    when: '2026-07', game: 'hub',
+    what: ['THE LINK TO THIS COUNTER HAD NEVER',
+      'WORKED FROM THE FLOOR. IT WORKS.'],
+  },
+  {
+    when: '2026-07', game: 'sudsjack',
+    what: ['THE REBUILD IS A HALF TUNNEL YOU LIE IN',
+      'NOW, WITH FIVE BAYS AND A JUMP.'],
+  },
 ];
 
 export const CHANGED_NONE = ['NOTHING WORTH READING OUT YET.'];
@@ -643,9 +658,10 @@ export const CHANGED_YOURS = 'YOU LEFT A NOTE ABOUT THIS ONE.';
 // tomorrow can still be asked about tonight — it just gets the blurb instead
 // of an opinion until somebody writes him one.
 export const GAME_NOTES = {
-  sudsjack: ['THE NAMESAKE. A TUBE AND A LOT OF SOAP.',
+  sudsjack: ['THE NAMESAKE. A CHANNEL FULL OF SOAP.',
     'THE ONE YOU CAN PLAY IS THE OLD VECTOR BUILD.',
-    'THE REBUILD STARTS FROM HYPER DAGGER.'],
+    'THE REBUILD IS A HALF TUNNEL YOU LIE IN.',
+    'NO GUN. YOU CATCH THINGS, AND YOU JUMP.'],
   tokodrop: ['GEL. IT WOBBLES BECAUSE I WANTED IT TO.',
     'THE ENEMIES SCHOOL LIKE FISH AND THEN',
     'THEY BURST. THAT IS THE WHOLE PITCH.'],

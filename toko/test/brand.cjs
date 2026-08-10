@@ -914,6 +914,38 @@ function serve() {
   ok('ja: the parser reaches the right topic',
     ja.mask === 'mask' && ja.mantra === 'mantra' && ja.note === 'note' && ja.steal === 'steal',
     `${ja.mask} ${ja.mantra} ${ja.note} ${ja.steal}`);
+  // NOTHING may be left in English once a pack is picked. The three CHANGED
+  // entries added the day the badge became a door shipped English-only in
+  // both packs, and nothing caught it: the counter falls back per key, which
+  // is the right behaviour and also completely silent. scripts/ja-review.mjs
+  // is what found them, and this is what stops it happening again.
+  const leaks = await page.evaluate(async () => {
+    const d = await import('/toko/js/dialogue.js');
+    const CJK = /[\u3040-\u30ff\u3400-\u9fff]/;
+    const out = { fi: [], ja: [] };
+    for (const [lang, script] of [['fi', /[A-Za-z]/], ['ja', CJK]]) {
+      d.setLang(lang);
+      const has = v => script.test(JSON.stringify(v ?? ''));
+      for (const t of d.TOPICS) {
+        const said = d.say(t);
+        if (!has(said.q)) out[lang].push(t.id + '.q');
+        if (!has(said.a)) out[lang].push(t.id + '.a');
+      }
+      for (const k of ['GREETING', 'LATE', 'BACK_FROM', 'ASIDES', 'MISSES', 'NOTED',
+        'CHANGED', 'GAME_NOTES', 'FAVOURITES']) {
+        const v = d.L(k);
+        if (Array.isArray(v)) v.forEach((row, i) => { if (!has(row)) out[lang].push(`${k}[${i}]`); });
+        else if (v && typeof v === 'object') {
+          for (const [id, val] of Object.entries(v)) if (!has(val)) out[lang].push(`${k}.${id}`);
+        } else if (!has(v)) out[lang].push(k);
+      }
+    }
+    d.setLang('en');
+    return out;
+  });
+  ok(`nothing is left in English in the Japanese pack${leaks.ja.length ? ' — ' + leaks.ja.slice(0, 4) : ''}`,
+    leaks.ja.length === 0);
+
   ok('ja: and still says no to what it does not know',
     ja.weather === null && ja.one === null && ja.empty === null,
     `${ja.weather} / ${ja.one} / ${ja.empty}`);

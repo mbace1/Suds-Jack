@@ -77,12 +77,28 @@ export const FI = {
       what: ['PELIT JOTKA EIVÄT OLE PYSTYSSÄ SANOVAT',
         'SEN NAPISSA EIVÄTKÄ HEITÄ 404:ÄÄ.'],
     },
+    {
+      when: '2026-07', game: 'hub',
+      what: ['MERKKINI PELIN NURKASSA ON NYT OVI.',
+        'SE JOHTAA TÄNNE.'],
+    },
+    {
+      when: '2026-07', game: 'hub',
+      what: ['LINKKI TÄLLE TISKILLE EI OLLUT KOSKAAN',
+        'TOIMINUT LATTIALTA. NYT TOIMII.'],
+    },
+    {
+      when: '2026-07', game: 'sudsjack',
+      what: ['UUSINTA ON NYT PUOLIKAS TUNNELI JOSSA',
+        'MAKAAT, VIISI ALLASTA JA HYPPY.'],
+    },
   ],
 
   GAME_NOTES: {
-    sudsjack: ['KAIMA. PUTKI JA PALJON SAIPPUAA.',
-      'PELATTAVA ON VANHA VEKTORIVERSIO.',
-      'UUSI ALKAA HYPER DAGGERISTA.'],
+    sudsjack: ['KAIMA. UOMA TÄYNNÄ SAIPPUAA.',
+      'PELATTAVA ON YHÄ VANHA VEKTORIVERSIO.',
+      'UUSINTA ON PUOLIKAS TUNNELI JOSSA MAKAAT.',
+      'EI ASETTA. NAPPAAT JA HYPPÄÄT.'],
     tokodrop: ['HYYTELÖÄ. SE HEILUU KOSKA HALUSIN NIIN.',
       'VIHOLLISET PARVEILEVAT KUIN KALAT JA',
       'SITTEN NE PUHKEAVAT. SIINÄ KAIKKI.'],
