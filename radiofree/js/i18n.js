@@ -31,6 +31,8 @@ const STR = {
     'standby': 'awaiting transmission',
     'hint.swipe': 'swipe up for the next video',
     'fiction': 'Real events · invented names',
+    'sourced': 'Reported straight · real names · public statements',
+    'parody': 'Parody',
 
     'sector.GAMING': 'GAMES / STUDIOS',
     'sector.INDUSTRY': 'TECH / INDUSTRY',
@@ -62,6 +64,8 @@ const STR = {
     'standby': 'odottaa lähetystä',
     'hint.swipe': 'pyyhkäise ylös seuraavaan videoon',
     'fiction': 'Todellisia tapahtumia · keksityt nimet',
+    'sourced': 'Suoraa uutista · oikeat nimet · julkiset lausunnot',
+    'parody': 'Parodia',
 
     'sector.GAMING': 'PELIT / STUDIOT',
     'sector.INDUSTRY': 'TEKNIIKKA / TEOLLISUUS',
@@ -93,6 +97,8 @@ const STR = {
     'standby': '送信待ち',
     'hint.swipe': '上にスワイプで次の動画へ',
     'fiction': '実際の出来事 · 架空の名前',
+    'sourced': 'ストレートニュース · 実名 · 公開された発言',
+    'parody': 'パロディ',
 
     'sector.GAMING': 'ゲーム / スタジオ',
     'sector.INDUSTRY': 'テクノロジー / 産業',

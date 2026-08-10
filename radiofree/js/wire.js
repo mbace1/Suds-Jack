@@ -120,6 +120,16 @@ export function validateWire(wire, { panelKeys = null, brollKeys = null, sectorI
       if (s.filed !== undefined && !isDate(s.filed)) {
         E(where, `filed must be YYYY-MM-DD, got ${JSON.stringify(s.filed)}`);
       }
+      // SOURCED. Two registers share this feed. Most bulletins are the reframe
+      // — real event, invented actors (`EDITORIAL.md`). A sourced one is
+      // REPORTED STRAIGHT: real names, only what was actually said and
+      // reported, no invented quotes. The flag is what tells the reader which
+      // they are looking at, and the footer changes with it. Without that, a
+      // feed that says "invented names" under a bulletin naming a real company
+      // is lying in one direction or the other.
+      if (s.sourced !== undefined && typeof s.sourced !== 'boolean') {
+        E(where, `sourced must be true or false, got ${JSON.stringify(s.sourced)}`);
+      }
       if (s.retired !== undefined && typeof s.retired !== 'boolean') {
         E(where, `retired must be true or false, got ${JSON.stringify(s.retired)}`);
       }
