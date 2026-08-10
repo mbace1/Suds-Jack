@@ -11,6 +11,10 @@
     "v": 31,
     "from": "VERSIONS.md"
   },
+  "tokotrip": {
+    "v": 1,
+    "from": "VERSIONS.md"
+  },
   "dropcabal": {
     "v": 3,
     "from": "VERSIONS.md"

@@ -23,6 +23,9 @@
 //          hub/padkeys.js bridges one: {keys:{...}} feeds its keyboard,
 //          {pointer:true} feeds its one-button surface, {ui:true} walks its
 //          on-screen buttons. Omit for anything not worth playing on a pad.
+// `vr`     true when the game is built for a headset. A browser that reports
+//          immersive-vr support sorts these to the front of the floor —
+//          nothing else changes, and on a flat screen the field is inert.
 //
 // Adding a game is one entry here plus one draw function in art.js.
 
@@ -101,6 +104,32 @@ export const GAMES = [
     inRepo: true,
     accent: '#d8412f',
     art: 'skull',
+  },
+  {
+    id: 'tokotrip',
+    fi: {
+      tagline: 'VR-zensaari: oikea tuolisi rekisteröitynä poukaman nookkiin. Kolme tunnelmaa, ei mitään voitettavaa.',
+      controls: 'Quest: osoita + liipaisin teleport · toteemi vaihtaa tunnelman · chair-lab kiinnittää tuolin · työpöytä: raahaa katse · WASD · M',
+      note: 'saari on pystyssä — luolan sisätila, kirja ja radion kappale ovat vielä tulossa',
+    },
+    ja: {
+      tagline: 'VRの禅の島 — 本物の椅子を入り江のほとりに登録する。ムードは三つ、勝ち負けはなし。',
+      controls: 'Quest: ポイント＋トリガーでテレポート · トーテムでムード切替 · chair-labで椅子を登録 · PC: ドラッグ視点 · WASD · M',
+      note: '島は動いている — 洞窟の中、本、ラジオの曲はこれから',
+    },
+    pad: 'native',
+    vr: true,
+    status: 'active',
+    note: 'the island is up — the cave interior, the book and the radio track are still to come',
+    title: 'Toko Trip',
+    tagline: 'A VR zen island: your real chair, registered into a cove-side nook. Three moods, nothing to win.',
+    lineage: 'A Short Hike × Monument Valley',
+    tags: ['vr', 'zen', 'three.js'],
+    controls: 'Quest: point + trigger teleport · totem cycles the mood · chair-lab pins your chair · desktop: drag look · WASD · M',
+    path: 'toko-trip/',
+    inRepo: true,
+    accent: '#3aa8a0',
+    art: 'cove',
   },
   {
     id: 'dropcabal',
