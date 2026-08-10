@@ -4,6 +4,34 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v45 — 2026-08-09
+
+**The world is back.** `rooms.js`, `level.js`, `scenery.js` and `fx.js` came
+back off the shelf v26 put them on, unchanged. Fourteen screens, twenty by
+twelve tiles each, laid side by side with a hard cut — walk off the edge and
+the next one is simply THERE, no scrolling and no camera, because a screen you
+learn and die on is a composition you remember.
+
+What changed is who is standing in them. The bench spent eighteen versions
+getting every frame of him measured, mapped, anchored and sounded, and that is
+the whole reason the rooms could have him back: he is the same blitted figure
+on a tile grid now instead of on a flat floor. **Nothing is drawn from the
+polygon figure.**
+
+The palette walks with the rooms — `paletteAt(room.t)` from 0 to 5 — so the
+jungle turns into the tomb turns into the reactor turns into the palace and no
+screen announces the change. The drone retunes to the same number.
+
+Everything the rooms carry works: spikes, ceiling slabs, tiles that will not
+hold, plate-and-gate, force fields, the pickups, the door. **Traps hurt him
+now** — one call, `world.lethal`, and it does not say which of them it was.
+
+**Honest gap:** only the swordsman exists. The maps mark beasts, sentries and
+drones as well, and those markers are read and skipped rather than silently
+dropped — rooms 9 and 11 have their swordsmen; the rest of the roster is the
+next job. The gallery is still on G, still every animation, still its own flat
+palette.
+
 ## v44 — 2026-08-09
 
 **Sound is back.** `audio.js` came off the shelf where v26 left it, unchanged —
