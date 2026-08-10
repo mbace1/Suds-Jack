@@ -4,6 +4,28 @@ The public release number. The `?v=N` token in `index.html` is a separate
 thing: it tracks every module-graph change so a browser cannot serve half of
 one build and half of another. Bump both when shipping.
 
+## v44 — 2026-08-09
+
+**Sound is back.** `audio.js` came off the shelf where v26 left it, unchanged —
+one held drone and one envelope per event, the Another World mix, nothing
+looping a tune under the action.
+
+The wiring is new and it lives in its own file on purpose. **Nothing announces
+itself**: `sound.js` looks at what the man is doing now against what he was
+doing last frame and fires on the CHANGE. A state machine already knows when
+something happened; it does not need to be told twice, and the moment you hang
+cues off the move table you have two reasons to edit it. The run is the one
+exception — it is a cycle, not a change — so it gets a footfall every twelve
+frames, which is the stride.
+
+Most states are silent, which is the point: a game that makes a noise for
+everything is a game you turn the sound off on. The other man gets only the two
+that matter — the wind-up you are meant to hear coming, and the moment it lands
+on him.
+
+WebAudio needs a gesture, so the first press of anything brings the drone up
+over three seconds. **M** mutes.
+
 ## v43 — 2026-08-09
 
 **The duel has stakes.** Three things it was missing.
