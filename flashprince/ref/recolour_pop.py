@@ -220,6 +220,36 @@ for band in idx:
             cell[top] = hi
 
 Image.fromarray(out.astype('uint8')).save('pop-jimbo.png')
+
+# ── the other man ──────────────────────────────────────────────────────
+# Someone to fence with, and he has to be told apart from Jimbo at a glance
+# across a 320px screen while both of them are doing the same eight moves.
+#
+# He is the SAME EIGHTEEN COLOURS, permuted. That is not thrift, it is the rule
+# the framebuffer imposes: the quantise pass keeps a fixed list of colours and
+# snaps everything else to the room palette, so a nineteenth colour would have
+# to be added to that list, and a list of thirty-two fixed points is not a
+# sixteen-colour framebuffer any more. Permuting inside the eighteen costs
+# nothing and reads as a different man: brown leather over a grey shirt, dark
+# trousers, black boots, black hair — the exact inverse of Jimbo's navy over
+# white with tan trousers, which is why it works.
+FOE = {
+    JACKET:     (79, 58, 34),      # navy jacket   -> brown leather
+    JACKET_HI:  (97, 72, 43),
+    SLEEVE:     (97, 72, 43),
+    SLEEVE_HI:  (79, 58, 34),
+    TROUSER:    (49, 54, 74),      # tan trousers  -> dark navy
+    TROUSER_HI: (60, 66, 88),
+    TEE:        (132, 132, 132),   # white shirt   -> grey
+    TEE_HI:     (198, 198, 198),
+    SHOE:       (31, 35, 51),      # white shoes   -> black boots
+    SHOE_HI:    (42, 46, 64),
+    J_HAIR:     (31, 35, 51),      # brown hair    -> black
+}
+foe = out.copy()
+for src, dst in FOE.items():
+    foe[(out[:, :, 0] == src[0]) & (out[:, :, 1] == src[1]) & (out[:, :, 2] == src[2])] = dst
+Image.fromarray(foe.astype('uint8')).save('pop-foe.png')
 seen = sorted({tuple(p) for p in out.reshape(-1, 3)} - {(0, 0, 0)})
 print('pop-jimbo.png colours:', len(seen))
 for c in seen: print('  #%02x%02x%02x' % c)

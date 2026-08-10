@@ -18,6 +18,7 @@ import { Screen, W, H } from './screen.js';
 import { paletteAt, C } from './palette.js';
 import { Hero } from './hero.js';
 import { Bench, Post } from './bench.js';
+import { Swordsman } from './foe.js';
 import { Input } from './input.js';
 import { loadSheet, drawSprite, ready, ANIM, frameCount, CONRAD_COLOURS } from './sprite.js';
 
@@ -87,7 +88,11 @@ class Stage {
     // at — a post, so the reach and the one frame the edge lands on are things
     // you can feel rather than take on trust.
     this.hero.hasSword = true;
-    this.post = new Post(120, FLOOR);
+    this.post = new Post(104, FLOOR);
+    // Someone to fence with. He runs the hero's own move table, so a parry
+    // is a read rather than a reflex — take that away and the whole design
+    // of the sword goes with it.
+    this.foe = new Swordsman(210, FLOOR, -1);
     this.hero.go('wake');
     this.mode = 'free';
     this.reel = 0;
@@ -148,9 +153,27 @@ class Stage {
     if (this.flash > 0) this.flash--;
     if (h.shotQueued) { h.shotQueued = false; this.flash = 3; }
     this.post.update();
+    this.foe.update(h);
+    // his blade, on the one frame it is anywhere
+    if (this.foe.hitQueued) {
+      this.foe.hitQueued = false;
+      const t = this.foe.tip();
+      if (Math.abs(t.x - h.x) < 10 && !h.guarding) h.strike(0, this.foe.x, this);
+    }
     // The edge lands on ONE frame in the middle of the swing. That is the
     // whole design of the sword, and the post is how you see it.
-    if (h.swingQueued) { h.swingQueued = false; const e = h.swordTip(); this.post.hit(e.x, h.face); }
+    if (h.swingQueued) {
+      h.swingQueued = false;
+      const e = h.swordTip();
+      this.post.hit(e.x, h.face);
+      // and the man. A blow into a raised blade rings off it rather than
+      // landing, which is the other half of the parry being worth learning.
+      if (Math.abs(e.x - this.foe.x) < 11) {
+        if (this.foe.struck(h.x) === 'parried') h.go('clang');
+      }
+    }
+    // he gets back up, because a bench you have to reload is a worse bench
+    if (this.foe.dead && this.foe.f > 150) this.foe = new Swordsman(210, FLOOR, -1);
     // and the pistol reaches it too
     if (this.flash === 3 && h.muzzle) this.post.hit(h.x + h.face * 40, h.face);
   }
@@ -185,6 +208,7 @@ class Stage {
   free(scr) {
     this.world.draw(scr, C);
     this.post.draw(scr, C);
+    this.foe.draw(scr);
     const h = this.hero;
     if (this.world.boxSolid(h.x - 2, h.y + 1, 4, 3)) {
       scr.poly([h.x - 9, h.y - 1, h.x + 9, h.y - 1, h.x + 6, h.y + 2, h.x - 6, h.y + 2], C.DARK);
