@@ -10,6 +10,8 @@ import * as audio from './audio.js?v=42';
 import { PixelScreen } from './screen.js?v=42';
 import { BROLL_KEYS } from './visuals.js?v=42';
 import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=42';
+import { drawHead } from '../../toko/js/face.js';
+import { TOKO } from '../../toko/js/palette.js';
 
 // DECODE IS GONE. It was the app's second layer — a button that struck the
 // broadcast wording through and grew a plain reading beside it, plus a drawer
@@ -190,6 +192,24 @@ function buildArchive() {
   host.appendChild(sel);
 }
 
+// A small Toko, drawn rather than written: `drawHead` is the one measured
+// geometry (`toko/js/face.js`) and a second copy of it here would drift.
+function parodyMark() {
+  const wrap = el('div', 'parody');
+  wrap.title = t('parody');
+  wrap.setAttribute('aria-label', t('parody'));
+  const cv = document.createElement('canvas');
+  const S = 40, dpr = Math.min(3, window.devicePixelRatio || 1);
+  cv.width = S * dpr; cv.height = S * dpr;
+  cv.style.width = S + 'px'; cv.style.height = S + 'px';
+  const c = cv.getContext('2d');
+  c.scale(dpr, dpr);
+  drawHead(c, 2, 3, S - 4, { ground: TOKO.MAGENTA, ink: TOKO.PAPER });
+  wrap.appendChild(cv);
+  wrap.appendChild(el('span', 'parody-lbl', t('parody')));
+  return wrap;
+}
+
 function boot() {
   booted = true;
   paintSound();
@@ -242,6 +262,12 @@ function buildFeed() {
     rail.append(nextBtn);
     media.appendChild(rail);
     if (i === 0) media.appendChild(el('div', 'swipe-hint', t('hint.swipe')));
+    // THE PARODY MARK. Two registers share this feed and the reader has to be
+    // able to tell them apart at a glance, not by reading a footer: a bulletin
+    // written as satire carries Toko's face, and one reported straight — real
+    // names, public statements — does not. The face IS the brand mark, so it
+    // says "this is the station being funny" without a word of explanation.
+    if (!story.sourced) media.appendChild(parodyMark());
 
     const cap = el('div', 'post-caption');
     // The kicker is the DATELINE and nothing else, so it stays one short block
@@ -257,7 +283,10 @@ function buildFeed() {
     bulletin.appendChild(el('p', 'standby', t('standby')));
 
     cap.append(meta, tag, head, bulletin);
-    cap.appendChild(el('p', 'fiction', t('fiction')));
+    // the honesty line, and it has to be honest: a sourced bulletin names real
+    // companies and real people, so it must not sit under "invented names"
+    cap.appendChild(el('p', 'fiction' + (story.sourced ? ' sourced' : ''),
+      t(story.sourced ? 'sourced' : 'fiction')));
 
     art.append(media, cap);
     feed.appendChild(art);

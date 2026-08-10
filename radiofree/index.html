@@ -225,6 +225,22 @@
   .sign-off .tag .rec { color: var(--green-dim); }
   .sign-off .tag .rec::before { content: '■ '; }
 
+  /* the parody mark: Toko's face on the picture, so the register is legible
+     before a word is read. Sourced bulletins carry no face. */
+  .parody {
+    position: absolute; z-index: 3; right: 10px; bottom: 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.8));
+  }
+  .parody canvas { display: block; image-rendering: pixelated; }
+  .parody-lbl {
+    font-family: var(--sans); font-size: 8px; font-weight: 700;
+    letter-spacing: .14em; text-transform: uppercase; color: #ff5fb0;
+  }
+  .vertical .parody { bottom: 46%; }
+
+  .fiction.sourced { color: var(--green-dim); }
   .fiction {
     font-size: 9px; letter-spacing: .1em; color: var(--text-dim);
     text-transform: uppercase; margin: 14px 0 4px; line-height: 1.6;
