@@ -6,7 +6,7 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { InputManager } from './input.js';
 import { Player, FORMS, PLAYER_RADIUS, ULT_MAX } from './player.js';
-import { Enemy, EnemyType, BoltPool } from './enemy.js';
+import { Enemy, EnemyType, BoltPool, orcReady } from './enemy.js';
 import { Ally, ALLY_ACCENT, ALLY_RADIUS } from './ally.js';
 import { Arena } from './arena.js';
 import { Effects } from './effects.js';
@@ -398,15 +398,16 @@ const combat = {
   },
 
   onKill(e) {
-    effects.shards(e.pos, e.conf.accent, e.type === EnemyType.DRONE ? 4 : e.type === EnemyType.BRUTE ? 20 : 12);
+    const heavy = e.type === EnemyType.BRUTE || e.type === EnemyType.ORC;
+    effects.shards(e.pos, e.conf.accent, e.type === EnemyType.DRONE ? 4 : heavy ? 20 : 12);
     score += Math.round(e.score * streakMult());
     streak++;
     kills++;
-    player.addUlt(e.type === EnemyType.DRONE ? 4 : e.type === EnemyType.BRUTE ? 25 : 10);
+    player.addUlt(e.type === EnemyType.DRONE ? 4 : heavy ? 25 : 10);
     if (player.stats.lifesteal) player.heal(player.stats.lifesteal);
     audio.kill();
-    this.shake(e.type === EnemyType.BRUTE ? 0.3 : 0.12);
-    this.glitch(e.type === EnemyType.BRUTE ? 0.75 : e.type === EnemyType.DRONE ? 0.12 : 0.3);
+    this.shake(heavy ? 0.3 : 0.12);
+    this.glitch(heavy ? 0.75 : e.type === EnemyType.DRONE ? 0.12 : 0.3);
     // CHAIN ARC: the kill detonates and can cascade
     if (player.stats.mods.chain) {
       effects.ring(e.pos, 2.6, 0.25, e.conf.accent, true);
@@ -486,10 +487,15 @@ function rollSpawns(n) {
     }
     budget -= Math.ceil(size * 0.5);
   }
+  let orcs = 0;
   while (budget > 0) {
     const roll = Math.random();
     let type = EnemyType.SLASHER, cost = 1;
-    if (n >= 3 && roll > 0.85 && !bruteRoom) { type = EnemyType.BRUTE; cost = 4; }
+    // the orc wants a run-up, so he stays out of brute rooms (two kinds of
+    // heavy in one cave is mud) and is capped at two; orcReady() gates on the
+    // model having actually arrived — an unloaded orc rolls a brute instead
+    if (n >= 5 && roll > 0.92 && !bruteRoom && orcs < 2 && orcReady()) { type = EnemyType.ORC; cost = 5; orcs++; }
+    else if (n >= 3 && roll > 0.85 && !bruteRoom) { type = EnemyType.BRUTE; cost = 4; }
     else if (n >= 2 && roll > 0.6) { type = EnemyType.GUNNER; cost = 2; }
     list.push({ type, delay: 0.4 + Math.floor(i / 4) * 2 + Math.random() * 0.8 });
     budget -= cost;
@@ -761,6 +767,12 @@ window.__nr = {
     const a = (i / n) * Math.PI * 2;
     enemies.push(new Enemy(scene, EnemyType.DRONE,
       player.pos.x + Math.sin(a) * 2.2, player.pos.z + Math.cos(a) * 2.2, 1));
+  },
+  orcReady,
+  spawnTestOrc: (dist = 8) => {
+    const e = new Enemy(scene, EnemyType.ORC, player.pos.x, player.pos.z + dist, 1);
+    enemies.push(e);
+    return e;
   },
   // clears the field but parks one inert enemy far away so the room does not
   // read as "cleared" and freeze the sim behind the upgrade overlay

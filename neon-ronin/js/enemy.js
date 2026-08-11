@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { buildSamurai, buildMob, poseStance, poseWalk, poseIdle, poseSwing, poseAim, poseScurry, setGlow, setFlash, setMobFlash } from './robots.js';
+import { buildOrc, setOrcFlash, setOrcGlow, orcWalk, orcIdle, orcCrouch, orcLunge, orcStagger, ORC_ACCENT } from './orc.js';
+
+export { orcReady } from './orc.js';
 
 export const ENEMY_RADIUS = 0.55;
 
@@ -8,6 +11,7 @@ export const EnemyType = {
   GUNNER:  'gunner',    // violet rifle bot — keeps range, strafes, 3-bolt bursts
   BRUTE:   'brute',     // ember cleaver hulk — slow, ground-slam AoE
   DRONE:   'drone',     // mob-tier swarmer — no telegraph, lunge-bite, dies fast
+  ORC:     'orc',       // asset-built warlord — locks on, bull-charges, staggers on a miss
 };
 
 const CONF = {
@@ -15,6 +19,7 @@ const CONF = {
   gunner:  { hp: 40,  speed: 2.6, score: 150, accent: 0xb04dff, body: 0x241f30, weapon: 'rifle',   scale: 0.95 },
   brute:   { hp: 230, speed: 1.5, score: 400, accent: 0xff7300, body: 0x30241c, weapon: 'cleaver', scale: 1.55 },
   drone:   { hp: 15,  speed: 4.3, score: 25,  accent: 0xff5560, scale: 1, mob: true },
+  orc:     { hp: 280, speed: 2.0, score: 500, accent: ORC_ACCENT, scale: 1.7, orc: true },
 };
 
 const _v = new THREE.Vector3();
@@ -84,7 +89,7 @@ export class Enemy {
     this.speed = c.speed * (0.9 + 0.1 * diff);
     this.score = c.score;
     this.radius = c.mob ? 0.35 : ENEMY_RADIUS * c.scale;
-    this.rig = c.mob ? buildMob(c) : buildSamurai(c);
+    this.rig = c.orc ? buildOrc() : c.mob ? buildMob(c) : buildSamurai(c);
     this.mesh = this.rig.group;
     this.mesh.position.set(x, 0, z);
     scene.add(this.mesh);
@@ -109,9 +114,9 @@ export class Enemy {
     if (this.dead) return false;
     this.hp -= dmg;
     this.flashT = 0.1;
-    this.rig.mob ? setMobFlash(this.rig, true) : setFlash(this.rig, true);
+    this.rig.orc ? setOrcFlash(this.rig, true) : this.rig.mob ? setMobFlash(this.rig, true) : setFlash(this.rig, true);
     _v.subVectors(this.pos, fromPos).setY(0).normalize();
-    this.knock.addScaledVector(_v, this.type === 'brute' ? 1.5 : 4);
+    this.knock.addScaledVector(_v, this.type === 'brute' ? 1.5 : this.type === 'orc' ? 1.2 : 4);
     if (this.hp <= 0) { this.dead = true; return true; }
     return false;
   }
@@ -140,7 +145,7 @@ export class Enemy {
 
     if (this.flashT > 0) {
       this.flashT -= dt;
-      if (this.flashT <= 0) this.rig.mob ? setMobFlash(this.rig, false) : setFlash(this.rig, false);
+      if (this.flashT <= 0) this.rig.orc ? setOrcFlash(this.rig, false) : this.rig.mob ? setMobFlash(this.rig, false) : setFlash(this.rig, false);
     }
 
     // knockback decay
@@ -149,11 +154,12 @@ export class Enemy {
 
     const target = this._pickTarget(ctx);
     const dist = this.targetDist;
-    if (!this.rig.mob) poseStance(this.rig);
+    if (!this.rig.mob && !this.rig.orc) poseStance(this.rig);
 
     if (this.type === EnemyType.SLASHER) this._slasher(ctx, dist, target);
     else if (this.type === EnemyType.GUNNER) this._gunner(ctx, dist, target);
     else if (this.type === EnemyType.BRUTE) this._brute(ctx, dist, target);
+    else if (this.type === EnemyType.ORC) this._orc(ctx, dist, target);
     else this._drone(ctx, dist, target);
 
     // separation from other enemies
@@ -180,7 +186,7 @@ export class Enemy {
     this.pos.x += dirX * sp * ctx.dt;
     this.pos.z += dirZ * sp * ctx.dt;
     this.walkPhase += ctx.dt * sp * 2.4;
-    poseWalk(this.rig, this.walkPhase, 0.5);
+    this.rig.orc ? orcWalk(this.rig, this.walkPhase) : poseWalk(this.rig, this.walkPhase, 0.5);
   }
 
   _slasher(ctx, dist, target) {
@@ -323,5 +329,86 @@ export class Enemy {
       if (this.stateT >= 1.2) { this.state = 'seek'; this.stateT = 0; }
     }
     if (this.state === 'seek' && dist <= 2.9) poseIdle(this.rig, ctx.t);
+  }
+
+  // orc: closes to mid range, coils, then bull-charges in a locked straight
+  // line — dodge it and he piles into the wall and reels. Standing on top of
+  // him is not a hiding place: the trample keeps ticking while he seeks.
+  _orc(ctx, dist, target) {
+    const { dt } = ctx;
+    const tp = target.pos;
+    this.chargeCd = Math.max(0, (this.chargeCd ?? 0) - dt);
+    this.trampleT = Math.max(0, (this.trampleT ?? 0) - dt);
+
+    if (this.state === 'seek') {
+      this._faceTowards(tp, dt, 6);
+      if (dist > 2.2) {
+        _v.subVectors(tp, this.pos).setY(0).normalize();
+        this._move(ctx, _v.x, _v.z);
+      } else {
+        orcIdle(this.rig, ctx.t);
+        if (this.trampleT <= 0 && dist < this.radius + target.radius + 0.5) {
+          this.trampleT = 1.1;
+          ctx.combat.hurtTarget(target, 8, this.pos, 6);
+        }
+      }
+      // want a run-up: close enough to threaten, far enough to telegraph
+      let facing = Math.atan2(tp.x - this.pos.x, tp.z - this.pos.z) - this.mesh.rotation.y;
+      while (facing > Math.PI) facing -= Math.PI * 2;
+      while (facing < -Math.PI) facing += Math.PI * 2;
+      if (this.chargeCd <= 0 && dist > 4 && dist < 13 && Math.abs(facing) < 0.4) {
+        this.state = 'windup'; this.stateT = 0;
+        ctx.effects.ring(this.pos, 2.2, 0.75, this.conf.accent);
+      }
+    } else if (this.state === 'windup') {
+      this._faceTowards(tp, dt, 2.5);           // tracks, slowly — you can still get off the line
+      const k = Math.min(this.stateT / 0.75, 1);
+      orcCrouch(this.rig, k);
+      setOrcGlow(this.rig, 1 + k * 4);
+      if (this.stateT >= 0.75) {
+        this.state = 'charge'; this.stateT = 0;
+        const yaw = this.mesh.rotation.y;
+        this.chargeDir = { x: Math.sin(yaw), z: Math.cos(yaw) };   // locked — the dodge is real
+        setOrcGlow(this.rig, 1);
+        ctx.audio.slam();
+        ctx.effects.sparks({ x: this.pos.x, y: 0.3, z: this.pos.z }, this.conf.accent, 8, 5);
+      }
+    } else if (this.state === 'charge') {
+      orcLunge(this.rig, Math.min(this.stateT / 0.2, 1));
+      const sp = this.speed * 4.6;
+      this.pos.x += this.chargeDir.x * sp * dt;
+      this.pos.z += this.chargeDir.z * sp * dt;
+      // anything on the line gets hit — player or ally alike
+      for (const t of ctx.targets) {
+        const d = Math.hypot(t.pos.x - this.pos.x, t.pos.z - this.pos.z);
+        if (d < this.radius + t.radius + 0.25) {
+          ctx.combat.hurtTarget(t, 24, this.pos, 11);
+          ctx.combat.shake(0.3);
+          this._orcStagger();
+          return;
+        }
+      }
+      if (Math.hypot(this.pos.x, this.pos.z) > ctx.arenaR - 1.6) {   // into the wall
+        ctx.combat.shake(0.35);
+        ctx.effects.ring(this.pos, 3, 0.35, 0xffffff, true);
+        ctx.effects.sparks({ x: this.pos.x, y: 0.6, z: this.pos.z }, this.conf.accent, 14, 6);
+        ctx.audio.slam();
+        this._orcStagger();
+        return;
+      }
+      if (this.stateT >= 1.0) this._orcStagger();                 // ran out of steam
+    } else if (this.state === 'stagger') {
+      orcStagger(this.rig, Math.min(this.stateT / 1.1, 1));
+      if (this.stateT >= 1.1) { this.state = 'seek'; this.stateT = 0; }
+    } else {
+      // parry shoved him into 'recover' — he has no recover pose, shake it off
+      orcStagger(this.rig, Math.min(this.stateT / 0.7, 1));
+      if (this.stateT >= 0.7) { this.state = 'seek'; this.stateT = 0; }
+    }
+  }
+
+  _orcStagger() {
+    this.state = 'stagger'; this.stateT = 0;
+    this.chargeCd = 2.4;
   }
 }
