@@ -2849,6 +2849,7 @@ animate();
 // tiny debug handle (console tinkering + automated smoke tests)
 window.__hd = {
   enemies, player, debris, litter, daggers, gems, serpents, orbs, thorns, audio,
+  environment, THREE, camera, scene,
   debug: {
     addGems(n) { onGemsCollected(n); },
     addStyle(n) { addStyle(n); },

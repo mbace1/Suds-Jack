@@ -39,6 +39,14 @@ const PRECACHE = [
   './vendor/jsm/shaders/AfterimageShader.js',
   './vendor/jsm/shaders/LuminosityHighPassShader.js',
   './vendor/jsm/shaders/OutputShader.js',
+  // v62: the loader for the beyond-the-rim monuments, plus its one dep.
+  './vendor/jsm/loaders/GLTFLoader.js',
+  './vendor/jsm/utils/BufferGeometryUtils.js',
+  // The monuments themselves — the first mesh assets this game ships. They are
+  // untokened (their bytes change only when the art changes, and then the file
+  // is replaced wholesale), so they are precached here and served cache-first
+  // like the vendor files. ~1 MB for all four.
+  ...['gate', 'colossus', 'hand', 'mountain'].map(m => `./assets/env/${m}.glb`),
   `./manifest.webmanifest?v=${TOKEN}`,
   './favicon.png', './apple-touch-icon.png', './icon-192.png', './icon-512.png',
 ];

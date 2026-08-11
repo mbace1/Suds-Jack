@@ -8,6 +8,31 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v32 — 2026-08-11
+
+**Monuments in the void.** The first mesh assets this game has ever shipped:
+four carved silhouettes standing beyond the rim — a broken hand reaching up out
+of the dark, a ruined basalt gate, a toppled colossus head, and an inverted
+mountain hanging into nothing.
+
+This does not take back the v26 reset. That rule was about the *play field*:
+nothing the player could mistake for cover, nothing competing with the fight.
+These sit at r 38–52 against an arena of 26, are dimmed to roughly the horizon
+ring's value, and are deliberately only four. The scene fog does the rest — a
+monument is a silhouette dissolving into the void, not a backdrop. Nothing is
+collided against, spawned near, or reachable.
+
+Built through a concept-to-mesh pipeline (generated concept art → image-to-3D →
+remesh), then simplified to 3.3–4.7k triangles with 512px textures: **1.03 MB
+for all four**, precached with the rest of the shell so the offline promise
+holds. Two rules fall out of this renderer having no lights at all — every
+imported material is converted to `MeshBasicMaterial` (a standard material with
+no light renders pure black), and the baked albedo is the only shading there
+is, which is why the concepts were lit flat to begin with.
+
+Also vendors `GLTFLoader` + `BufferGeometryUtils` (r167, matching the vendored
+three) and adds `environment`, `camera`, `scene` to `window.__hd` for the gate.
+
 ## v31 — 2026-08-09
 **PURE now follows the Devil Daggers gameplay spine**
 - PURE abandons the random pressure director for a fixed, learnable spawnset:
