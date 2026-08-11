@@ -197,6 +197,36 @@ Salt-worn and slightly uneven, a few boards crooked. Pale warm bone-cream wood,
 around #c9b391.`,
   },
   {
+    id: 'tokotrip/palm',
+    game: 'toko-trip',
+    use: 'prop',
+    style: 'trip',
+    tags: ['prop', 'tree'],
+    // A palm is the hardest thing on this list to mesh, and the prompt is
+    // written around that rather than around what looks best flat. Photo-
+    // grammetry reconstructs a surface, so anything thin and separated — a
+    // frond, a blade, a sword — comes back either webbed to its neighbour or
+    // not at all. So: a COMPACT crown with the fronds held close and slightly
+    // overlapping, which gives the reconstruction one solid mass to find
+    // instead of nine floating strips. It is the same reason the samurai's
+    // turnaround should have had its sword sheathed.
+    prompt: `A single stylized coconut palm, whole, standing straight and
+upright. A slightly leaning segmented trunk of pale warm wood, and a COMPACT
+rounded crown of broad fronds held close together and overlapping into one
+solid dome of foliage — not thin separated blades, not a spindly star. A few
+coconuts nestled where the crown meets the trunk. Deep matte green foliage.
+Whole tree in frame from root to crown with clear space around it.`,
+  },
+  {
+    id: 'tokotrip/palm-mesh',
+    game: 'toko-trip',
+    kind: '3d',
+    use: 'prop',
+    from: 'tokotrip/palm',
+    targetPolycount: 8000,
+    tags: ['prop', 'tree'],
+  },
+  {
     id: 'tokotrip/jetty-mesh',
     game: 'toko-trip',
     kind: '3d',
