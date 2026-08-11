@@ -1,5 +1,46 @@
 # Toko Trip — release log
 
+## v5 — 2026-08-11
+
+A jetty — somewhere for the eye to walk.
+
+- **The jetty.** Planks across, two beams under, five pairs of posts into the
+  bed, running 8.4 m from the sand out over the water. It is built the way the
+  nook's deck is built — a box per board, tone jitter per board, ends baked
+  darker — because that is what makes timber read as timber rather than as one
+  striped slab. Two things ride the walk out, and both are the tide's: the
+  boards get damper and darker the further they are from dry sand, and each
+  post carries the waterline on it, soaked below and a pale rime of dried salt
+  just above, the same tell v4 gave the sand.
+- **Where it is, is the whole design.** On the cove's spine it would run dead
+  down the middle of the bay and halve the open water from the chair, which is
+  the one view this island is built around. So it goes to one side — and which
+  side is not a taste question. The lantern sits 1.65 m off the spine and the
+  sign home sits 2.5 m off it the other way; between them a deck fouls one or
+  the other at every offset from −2.8 to +2.8, and outside them the palms close
+  in. −3.0 m is the only lane with clearance on both sides that still ends in
+  water deep enough to need posts.
+  Found by measuring, after the first cut put the deck **through** that lantern
+  — 9 cm from its post — because the clearance check asked the palms and
+  nothing else.
+- **It is in the bake.** Five `proxyBox`es rather than one, because `proxyBox`
+  is axis-aligned and this deck lies at 23° to the axes, so a single box either
+  misses the ends or shades water the planks are nowhere near. Most of the
+  shade it throws lands on the **seabed** — v3 gave the bay a bottom, and a
+  jetty floating over its own clean sand would give that away.
+- **Nothing in it is a measured coordinate.** Where the planks meet the sand is
+  *found*, by bisecting the terrain for deck height, because this file's rule
+  is that moving `INLET_A`/`INLET_B` reshapes the bay and everything re-places
+  itself off the same function. A hardcoded start would have been the one thing
+  in the cove that did not move with it. The bisection window is deliberately
+  wide: the shore's distance along the spine changes with the offset, and a
+  narrow one clamps to its own bound and starts the deck in mid-air.
+
+Not done, and worth knowing: the teleport clamp reads `groundHeight`, so you
+cannot stand ON the jetty — you stand under it, in the water, exactly as you do
+beside the driftwood log. Walking the planks needs the teleport to know about
+the deck, which is a bigger change than adding a prop.
+
 ## v4 — 2026-08-10
 
 A graphics and details pass, aimed at what a seated person actually looks at.

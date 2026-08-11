@@ -567,6 +567,49 @@
     occlude(caveSpot.x, caveSpot.z, 3.4, 0.5);
     const signSpot = { x: -3.3, z: 1.5 };
     occlude(signSpot.x, signSpot.z, 0.7, 0.42);
+    // ── the jetty ──────────────────────────────────────────────────────────
+    // A walk out over the water, laid along the cove's own spine and offset to
+    // one side of it. On the spine it runs dead down the middle of the bay and
+    // halves the open water from the chair, which is the one view this island
+    // is built around — so it has to go to one side. Which side is not a taste
+    // question, it is the only lane that fits:
+    //
+    //   the lantern at (1.9, 3.1) sits 1.65 m off the spine, and the sign home
+    //   sits 2.5 m off it the other way. Between them the deck fouls one or
+    //   the other for every offset from −2.8 to +2.8. Outside them the palms
+    //   close in. −3.0 is the one lane with clearance on both sides (1.33 m to
+    //   the nearest palm) that still ends in water deep enough to need posts.
+    //
+    // Measured, not guessed, and it cost a build to learn: the first cut was
+    // −1.6 and put the deck THROUGH that lantern — 9 cm from its post — because
+    // the clearance check asked the palms and nothing else.
+    //
+    // Nothing here is a measured coordinate. `s0` — where the planks meet the
+    // sand — is FOUND, by asking the terrain where it is deck-high, because
+    // the file's own rule is that moving INLET_A/INLET_B reshapes the bay and
+    // everything re-places itself off the same function. A hardcoded start
+    // would be the one thing in the cove that did not move with it.
+    const JETTY = (() => {
+      const dx = INLET_B.x - INLET_A.x, dz = INLET_B.z - INLET_A.z;
+      const L = Math.hypot(dx, dz), ux = dx / L, uz = dz / L;
+      const OFF = -3.0, deck = 0.42, w = 1.35;
+      const at = s => [INLET_A.x + ux * s - uz * OFF, INLET_A.z + uz * s + ux * OFF];
+      // Bisect for the sand at deck height. The window is wide because the
+      // shore's distance along s changes with the offset — a narrow one
+      // silently clamps to its own bound and starts the deck in mid-air.
+      let lo = -9, hi = 3;
+      for (let i = 0; i < 50; i++) {
+        const m = (lo + hi) / 2, p = at(m);
+        if (groundHeight(p[0], p[1]) > deck) lo = m; else hi = m;
+      }
+      // `across` is the sideways unit — every plank end, beam and post is
+      // placed with it, so none of them can drift from the deck's own heading.
+      return { at, deck, w, s0: lo, s1: 6.5, ry: Math.atan2(ux, uz), across: [-uz, ux] };
+    })();
+    for (let i = 0; i < 5; i++) {
+      const p = JETTY.at(JETTY.s0 + (i + 0.5) / 5 * (JETTY.s1 - JETTY.s0));
+      occlude(p[0], p[1], 0.9, 0.3);
+    }
     // the deck itself (it runs out in front of the chair, toward the water)
     occlude(chairP[0], chairP[2], 2.1, 0.32);
     occlude(chairP[0] + Math.sin(chairYaw) * 1.1, chairP[2] + Math.cos(chairYaw) * 1.1, 1.6, 0.25);
@@ -598,6 +641,16 @@
     // the deck, which is what puts the chair in its own pool of shade
     proxyBox(chairP[0] + Math.sin(chairYaw) * 0.5, PAD_H + 0.06, chairP[2] + Math.cos(chairYaw) * 0.5,
       1.6, 0.1, 1.6);
+    // The jetty, as five boxes rather than one: proxyBox is axis-aligned and
+    // this deck lies at 23° to the axes, so a single box either misses the ends
+    // or shades water the planks are nowhere near. Most of the shade it casts
+    // lands on the SEABED, which on this island is a thing you can see — v3
+    // gave the bay a bottom, and a jetty that floated over its own clean sand
+    // would give the whole trick away.
+    for (let i = 0; i < 5; i++) {
+      const p = JETTY.at(JETTY.s0 + (i + 0.5) / 5 * (JETTY.s1 - JETTY.s0));
+      proxyBox(p[0], JETTY.deck - 0.05, p[1], 0.85, 0.08, 0.85);
+    }
     bakeLightmap();
 
     // ═══ TERRAIN ═══
@@ -1049,6 +1102,72 @@
       const stub = paint(new THREE.CylinderGeometry(0.05, 0.07, 0.5, 6), cWood);
       stub.rotateZ(0.9);
       drop(stub, logSpot.x + 0.5, groundHeight(logSpot.x, logSpot.z) + 0.3, logSpot.z + 0.3, logSpot.ry);
+    }
+    {
+      // ═══ THE JETTY ═══ planks across, two beams under, posts into the bed.
+      // Built the way the nook's deck is built — a box per board, tone jitter
+      // per board, ends baked darker — because that is what makes nine planks
+      // read as timber rather than as one striped slab.
+      const [ax, az] = JETTY.across, LEN = JETTY.s1 - JETTY.s0;
+      const PITCH = 0.305, TH = 0.05, HALF = JETTY.w / 2;
+      const side = (p, d) => [p[0] + ax * d, p[1] + az * d];
+      const cWet = col(P.wetSand), cRime = col(P.cream);
+      const nPlank = Math.floor(LEN / PITCH);
+
+      for (let i = 0; i < nPlank; i++) {
+        // Two things ride the walk out, and both are the tide's doing: the
+        // boards get damper and darker the further they are from dry sand,
+        // and one board near the sea end is missing. The gap is not damage
+        // for its own sake — it is the cheapest way to say this thing has
+        // been here through weather, and it is placed out where nobody walks.
+        const t = (i + 0.5) / nPlank;
+        if (i === nPlank - 4) continue;
+        const p = JETTY.at(JETTY.s0 + 0.16 + i * PITCH);
+        const tone = (0.9 + 0.18 * hash(i, 23)) * (1 - 0.15 * t);
+        const plank = box(JETTY.w, TH, 0.26);
+        paint(plank, x => _c.copy(cWood).multiplyScalar(
+          tone * (1 - 0.26 * smooth(HALF * 0.62, HALF, Math.abs(x)))));
+        // a few degrees of yaw per board, so the edge is a hand's line
+        drop(plank, p[0], JETTY.deck - TH / 2, p[1], JETTY.ry + (hash(i, 11) - 0.5) * 0.06);
+      }
+
+      // the two beams the boards sit on, running the length under the deck
+      const mid = JETTY.at((JETTY.s0 + JETTY.s1) / 2);
+      for (const s of [-1, 1]) {
+        const beam = box(0.1, 0.1, LEN);
+        paint(beam, (x, y) => _c.copy(cWood).multiplyScalar(0.72 + 0.3 * smooth(-0.05, 0.05, y)));
+        const p = side(mid, s * (HALF - 0.09));
+        drop(beam, p[0], JETTY.deck - TH - 0.05, p[1], JETTY.ry);
+      }
+
+      // Posts. Each one is measured to its OWN patch of seabed rather than to
+      // a common length — the bed falls half a metre across this walk, so one
+      // height leaves the far pair hanging in the water and the near pair
+      // buried. Each sinks 0.3 m in, which is what stops a low tide in the
+      // shallows showing daylight under a post.
+      let k = 0;
+      for (let s = JETTY.s0 + 0.5; s <= JETTY.s1 - 0.15; s += 1.85) {
+        for (const sg of [-1, 1]) {
+          const p = side(JETTY.at(s), sg * (HALF - 0.13));
+          const bed = groundHeight(p[0], p[1]) - 0.3;
+          const h = JETTY.deck - TH - bed;
+          const cy = bed + h / 2;
+          const post = box(0.12, h, 0.12);
+          paint(post, (x, y) => {
+            // the waterline written on the post: soaked below it, and a pale
+            // rime of dried salt just above — the same tell v4 gave the sand
+            const wy = cy + y;
+            const wet = smooth(0.14, -0.02, wy);
+            const rime = smooth(0.30, 0.16, wy) * (1 - wet);
+            return _c.copy(cWood).lerp(cWet, wet * 0.5).lerp(cRime, rime * 0.3)
+              .multiplyScalar(0.8 + 0.2 * smooth(-h / 2, h / 2, y));
+          });
+          post.rotateX((hash(k, 5) - 0.5) * 0.05);       // nothing stands true
+          post.rotateZ((hash(k, 9) - 0.5) * 0.05);
+          drop(post, p[0], cy, p[1], JETTY.ry);
+          k++;
+        }
+      }
     }
     for (let i = 0; i < 12; i++) {
       const a = rng() * Math.PI * 2, r = 5 + rng() * 8;
