@@ -21,9 +21,9 @@
 // footage — which is what an idle post should be showing anyway — costs an
 // <img> that was already there.
 
-import { Photo } from './photo.js?v=42';
-import { Anchor } from './anchor.js?v=42';
-import { Plate, isDrawn } from './plate.js?v=42';
+import { Photo } from './photo.js?v=43';
+import { Anchor } from './anchor.js?v=43';
+import { Plate, isDrawn } from './plate.js?v=43';
 
 // THE EDIT, and there is more than one of them now. Every post used to cut on
 // the same four beats, so a feed of five bulletins was the same film five
@@ -117,6 +117,14 @@ export class Package {
   // `anchor` stays readable as a property because the console reaches for it
   get anchor() { return this.drawn && this.drawn.anchor; }
 
+  // Which of the story's shots the footage layer is on. A post naming one key
+  // always answers the same thing; a post naming three is the reason this
+  // exists, and the reason a gate can prove the edit really moves between them.
+  footage() {
+    const f = this.photo;
+    return (f && f.keys) ? f.keys[f.idx] : null;
+  }
+
   ensure(kind) {
     if (this.drawn[kind]) return this.drawn[kind];
     const sh = new Anchor(this.layers[kind], this.story, this.sector, this.seed);
@@ -175,6 +183,11 @@ export class Package {
   cutTo(shot) {
     if (shot === this.shot) return;
     if (shot !== 'broll') this.ensure(shot);
+    // A story can name several shots of itself. Coming back off the anchor to
+    // the same frame every time is what made a package read as two pictures
+    // alternating; each return goes to the NEXT shot instead. Posts naming one
+    // key are unchanged — `advance()` is a no-op there.
+    else if (this.photo.advance) this.photo.advance();
     this.show(shot);
     this.flashT = CUT_FLASH;
     this.paintHud();
@@ -189,6 +202,7 @@ export class Package {
     // while you were somewhere else. Every post starts its own cut from shot 0.
     this.beat = 0;
     this.clock = 0;
+    if (this.photo.reset) this.photo.reset();
     this.show(this.beats[0].shot, true);
     if (this.beats[0].shot !== 'broll') this.ensure(this.beats[0].shot);
     if (this.drawn.anchor) this.drawn.anchor.goLive();

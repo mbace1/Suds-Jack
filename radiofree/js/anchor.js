@@ -18,9 +18,10 @@
 import { drawHead, HEAD } from '../../toko/js/face.js';
 import { TOKO } from '../../toko/js/palette.js';
 import { glance, drift, blink } from '../../toko/js/util.js';
-import { PAL, SECTOR_COLOR } from './palette.js?v=42';
-import { PixelScreen, shade, mix } from './screen.js?v=42';
-import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=42';
+import { PAL, SECTOR_COLOR } from './palette.js?v=43';
+import { PixelScreen, shade, mix } from './screen.js?v=43';
+import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=43';
+import { brollList } from './wire.js?v=43';
 
 // The canvas is sized to the POST, not to a fixed 9:16. A phone post is
 // taller than 9:16 and `object-fit: cover` crops the sides off a fixed frame —
@@ -37,14 +38,20 @@ const MIN_ASPECT = 0.40, MAX_ASPECT = 0.75;
 // collar, not at a body. Drawn alone over a desk it reads as a lollipop on a
 // stick, so the torso below is drawn here, in the same magenta, before the
 // head goes on top of it. The brand owns the head; the shot owns the body.
+//
+// EVERYTHING IS PITCHED HIGH. The post's copy grew when the two-line clamp came
+// off it, and the caption now starts around 0.34 H — so a face composed on the
+// middle of the frame is a face with its chin behind a paragraph. The whole
+// booth sits in the top third: head 0.10–0.32, desk at 0.56, and the furniture
+// below it is drawn for the two hundred pixels of it anybody ever sees.
 const L = {
-  desk: 0.668,          // the desk edge, as a fraction of H
-  plate: 0.760,         // the nameplate strip on the desk front
-  headW: 0.430,         // of W
-  headWCap: 0.250,      // ...but never taller than this fraction of H allows
-  headY: 0.205,         // of H
-  wall: { x: 0.045, y: 0.052, w: 0.910, h: 0.455 },
-  torsoTop: 0.485,      // of H — behind the collar
+  desk: 0.560,          // the desk edge, as a fraction of H
+  plate: 0.652,         // the nameplate strip on the desk front
+  headW: 0.395,         // of W
+  headWCap: 0.230,      // ...but never taller than this fraction of H allows
+  headY: 0.098,         // of H
+  wall: { x: 0.045, y: 0.030, w: 0.910, h: 0.400 },
+  torsoTop: 0.385,      // of H — behind the collar
   collar: 0.136, trap: 0.295, delt: 0.406, shoulder: 0.428,   // of W
   trapY: 0.026, deltY: 0.108, shY: 0.150,                     // of H
 };
@@ -308,7 +315,11 @@ export class Anchor {
   // footage beat just showed; and it is darkened hard, because a magenta head
   // in front of a lit skyline is two subjects and neither wins.
   location(c, t, W, H, hot) {
-    drawPlate(this.story && this.story.broll, this.bg, t, hot ? 1 : 0);
+    // A story naming several shots gives the stand-up a DIFFERENT one from the
+    // shot the footage beat leads on — the reporter is somewhere else in the
+    // same story, which is the whole reason to send him.
+    const shots = brollList(this.story && this.story.broll);
+    drawPlate(shots[shots.length > 1 ? 1 : 0], this.bg, t, hot ? 1 : 0);
     const over = 1.16;                       // a push-in, so it is not the same shot
     const bw = W * over, bh = H * over;
     c.imageSmoothingEnabled = false;
@@ -329,11 +340,11 @@ export class Anchor {
   // copy covers the bottom 45% of the frame, so anything lower is furniture
   // nobody will ever see.
   strap(c, W, H, key, hot, s) {
-    // 0.395, not 0.455: the post's own kicker block starts at 0.45 and the two
-    // collided. And the strap does NOT repeat the dateline — the kicker under
+    // 0.300, not 0.455: the post's own kicker block starts at 0.34 now that the
+    // copy is unclamped, and the two collided. And the strap does NOT repeat the dateline — the kicker under
     // it already carries that, and a name printed twice in one frame reads as
     // a template rather than a broadcast.
-    const y = H * 0.395, h = 40 * s, x = W * 0.06;
+    const y = H * 0.300, h = 40 * s, x = W * 0.06;
     c.fillStyle = 'rgba(2,10,8,.80)';
     c.fillRect(x, y, W * 0.50, h);
     c.fillStyle = key;
@@ -374,7 +385,7 @@ export class Anchor {
     const hw = Math.min(W * L.headW, H * L.headWCap * (HEAD.w / HEAD.h) * 1.32) * K;
     const side = opt.standup ? (this.seed % 2 ? 0.46 : -0.44) : 0;
     const hx = (W - hw) / 2 + W * side * 0.5;
-    const hy = H * (opt.standup ? L.headY + 0.115 : L.headY);
+    const hy = H * (opt.standup ? L.headY + 0.052 : L.headY);
 
     // Eyes shut and smiling at rest — that closed arch IS the logo. They open
     // while he is reading, because that is the one moment he is looking at

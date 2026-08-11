@@ -259,6 +259,27 @@ async function rotationChecks() {
      mini({ filed: '2026-02-31' }).errors.some(e => /filed must be/.test(e)));
   ok('retiring every bulletin is an error, not an empty feed',
      mini({ retired: true }).errors.some(e => /empty broadcast/.test(e)));
+
+  // A story may name several shots, so a post can cut between pictures of its
+  // own story rather than returning to one frame. The list is checked KEY BY
+  // KEY: a wrong one buried at position two would otherwise reach air and only
+  // show itself on the beat the edit happens to land on it.
+  const { BROLL_KEYS } = await import('file://' + path.join(RF, 'js', 'visuals.js'));
+  const listed = (broll) => validateWire({
+    version: 1,
+    sectors: [{ id: 'GAMING', freq: '1', call: 'K' }],
+    stories: [{ id: 'x', sector: 'GAMING', broll }],
+    copy: { en: {}, fi: {}, ja: {} },
+  }, { brollKeys: BROLL_KEYS });
+  ok('a story may name a LIST of footage keys',
+     !listed(['studiofloor', 'enginewire', 'boardroom']).errors.some(e => /broll/.test(e)),
+     listed(['studiofloor', 'enginewire', 'boardroom']).errors.join(' | '));
+  ok('a bad key anywhere in that list is caught, not just the first',
+     listed(['studiofloor', 'nosuchplate']).errors.some(e => /nosuchplate/.test(e)));
+  ok('an empty footage list is still a missing picture',
+     listed([]).errors.some(e => /missing broll/.test(e)));
+  ok('a story cannot name more shots than a post can cut between',
+     listed(['kamppi', 'katu', 'gulf', 'harbour', 'station']).errors.some(e => /max/.test(e)));
 }
 
 // The clip renderer drives the real app, so recording one in here would cost
@@ -397,6 +418,31 @@ async function main() {
   }
   ok('the frame cuts between footage and the studio',
      seen.has('broll') && seen.has('anchor'), [...seen].join(','));
+
+  // A post whose story names several shots must actually MOVE between them.
+  // Returning to the same frame every time the edit comes off the anchor is
+  // what made a three-shot package read as two pictures alternating, and it
+  // fails silently — the post still looks like a post.
+  const multi = await go(() => {
+    const d = __rfh.debug.wireData();
+    const s = (d.stories || []).find(x => Array.isArray(x.broll) && x.broll.length > 1);
+    return s ? s.id : null;
+  });
+  if (multi) {
+    await go((id) => __rfh.debug.open(id), multi);
+    await wait(600);
+    const keys = new Set();
+    for (let i = 0; i < 40; i++) {
+      const s = await go(() => __rfh.debug.shot());
+      if (s && s.type === 'broll' && s.key) keys.add(s.key);
+      await wait(500);
+    }
+    ok('a bulletin naming several shots is cut between all of them',
+       keys.size >= 2, [...keys].join(','));
+  } else {
+    ok('a bulletin naming several shots is cut between all of them',
+       true, 'no multi-shot bulletin on this wire');
+  }
 
   // The studio canvas is lazy: one per live post, not one per post in the feed.
   const canvases = () => go(() => document.querySelectorAll('canvas.anchor-cv').length);
@@ -568,9 +614,12 @@ async function main() {
     // POLL, do not sample. The fade in is a .28s CSS transition inside a 1.4s
     // hold, so a single read at a fixed offset has about twenty milliseconds of
     // margin — which is fine on an idle machine and flaked on a loaded one.
-    const p = window.__rfh.ident({ ms: 1400, card: true, fade: 60 });
+    // Hold it for three seconds, not 1.4: on a loaded machine the poll below
+    // has started late enough that the card had already closed again, and the
+    // check failed for a reason that was nothing to do with the card.
+    const p = window.__rfh.ident({ ms: 3000, card: true, fade: 60 });
     let up = false, text = '';
-    for (let i = 0; i < 40 && !up; i++) {
+    for (let i = 0; i < 120 && !up; i++) {
       await new Promise(r => setTimeout(r, 50));
       up = !box.hidden && Number(getComputedStyle(box).opacity) > 0.9;
       if (up) text = box.innerText;

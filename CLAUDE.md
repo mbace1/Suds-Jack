@@ -275,14 +275,23 @@ plates, and the ACTION plates the owner asked for — `chase` (a pursuit on the
 ring road), `approach` (a heavy landing, seen from underneath), `cableship` (a
 repair on the Gulf at night), `swarm` (a drone formation crossing the city;
 decoded, every machine joins one van) and `switchyard` (busbars and a load
-meter; decoded, billed against drawn). **Compose a plate for the TOP HALF** —
-the copy sits over the bottom 45% of every post, so a subject centred in the
-144×276 frame lands under the lower third and the plate reads as an empty sky
-with a caption; that was drawn twice before it was noticed. The
+meter; decoded, billed against drawn), plus the studio set — `studiofloor` (an
+office floor after the people have gone, one monitor still lit), `enginewire` (a
+game engine viewport, a corridor in wireframe, the frame-time bar creeping) and
+`boardroom` (a long empty table under one lamp, the chart at the end of it going
+up). **Compose a plate for the TOP THIRD.** The copy is no longer clamped to two
+lines, so a caption carrying a four-line headline and two paragraphs starts
+around **0.34 H** — the subject has to sit above that, and the booth was pitched
+up with it (head 0.10–0.32, desk 0.56, the stand-up strap at 0.30). A plate
+composed on the middle of the 144×276 frame renders as an empty dark rectangle
+with words under it; that was drawn twice before it was noticed. The
 poly ramps were pulled from midday down to dusk when the sets met; lit windows
-are phosphor, never warm. A post's own plate leads and the second footage beat
-comes from the rest of the pool (seeded off the post index, not `Math.random()`,
-so scrolling back shows the same cut). **The gate draws every `BROLL_KEYS` entry
+are phosphor, never warm. **A story names ONE footage key or a LIST of them** (`brollList` in `wire.js`,
+max 4): with a list the post cuts to the NEXT shot every time the edit comes off
+the anchor, and the stand-up backdrop takes the second key rather than the lead
+one — so a bulletin about a studio can be the empty floor, the engine and the
+boardroom instead of one frame alternating with a face. `Photo`/`Plate` both
+carry `advance()`/`reset()`; only one element is ever in the DOM. **The gate draws every `BROLL_KEYS` entry
 on purpose** — a plate is only drawn when a post reaches that beat, so a broken
 one ships in silence, and did: four approved plates called `PixelScreen.bands()`
 which did not exist on their branch and threw the instant the edit cut to them.
@@ -519,7 +528,7 @@ the target and run to the guard limit, which drew two long rays across the
 account graph. `field(scr, decode, false)` turns the graticule off for scenes with their own full-frame
 texture (`sea`, `engine`); a grid under a wireframe terrain is noise on noise.
 
-**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 62
+**Gate:** `NODE_PATH=/opt/node22/lib/node_modules node radiofree/test/smoke.cjs` — 84
 checks (roster counts are read off `__rfh.debug.stories()`, never hardcoded — that
 number went stale twice), including a **generator block that runs with no network
 and no API key**: the feed parser over a fixture, a lifted company name rejected,
@@ -528,7 +537,8 @@ portrait in the buffer *and* on screen), the live codec animates while neighbour
 their painted frame and unread posts sit on standby, the reader types and can be
 skipped, DECODE grows plain readings / re-folds / stays per-post, scroll+rail+keyboard
 +dial all move the feed, every bulletin carrying a full read *and* a decode,
-every visual and footage key real, the program frame really cutting
+every visual and footage key real (key by key through a multi-shot list), a
+bulletin naming several shots really being cut between all of them, the program frame really cutting
 between graphic/B-roll/wide with DECODE holding the graphic, fi/en/ja complete with a language switch that keeps your
 place, a sign-off that closes the feed and marks what you decoded, a `#id` deep link
 that opens its bulletin without pushing history, a

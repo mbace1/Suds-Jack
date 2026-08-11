@@ -28,8 +28,8 @@
 // showing" — and a saturated orange lamp would spend that vocabulary on
 // scenery. Nothing here approaches PAL.AMBER_HOT.
 
-import { PAL } from './palette.js?v=42';
-import { mix, shade, bayer } from './screen.js?v=42';
+import { PAL } from './palette.js?v=43';
+import { mix, shade, bayer } from './screen.js?v=43';
 
 export const PLATE_W = 144, PLATE_H = 276;
 const W = PLATE_W, H = PLATE_H;
@@ -1263,7 +1263,232 @@ function switchyard(scr, t, d) {
   amberWash(c, d);
 }
 
-const PLATES = { esplanadi, kamppi, station, harbour, gulf, suomenlinna, katajanokka,
+
+// ── STUDIOFLOOR — the room after the people ────────────────────────
+//
+// For the layoff stories, which used to borrow a winter hall. Rows of desks
+// at night with the monitors dark, ONE still lit, and the ceiling strips off
+// except over the far wall. The light rules apply: the lit desk is the only
+// bright thing, the near desk is a black cut-out, and the depth is drawn by
+// rows getting smaller and dimmer rather than by perspective lines.
+//
+// COMPOSED FOR THE TOP THIRD. The copy covers the bottom of a post from about
+// 34% down once a four-line headline and two paragraphs are in it, so the whole
+// subject — the one lit monitor and the empty chair at it — sits between y 40
+// and y 90 of 276. The first version put it at y 96 and the caption ate it: the
+// plate rendered as an empty dark rectangle with words underneath.
+function studiofloorBase(c) {
+  P(c, 0, 0, W, H, '#03070a');
+  // the far wall, and a strip light left on over it — dim, so it establishes
+  // the room without competing with the monitor
+  ramp(c, 0, 34, '#050a0e', '#0c151a');
+  P(c, 0, 30, W, 2, '#26343b');
+  for (let x = 10; x < W; x += 34) P(c, x, 30, 16, 1, '#5e737c');
+
+  // the floor, and a carpet grid converging so the room has a length
+  P(c, 0, 92, W, H - 92, '#04080b');
+  for (let y = 96, g = 7; y < H; y += g, g += 2) {
+    P(c, 0, y, W, 1, mix('#0a1216', '#050809', (y - 96) / (H - 96)));
+  }
+
+  // THREE ROWS of desks stepping toward the camera: smaller and dimmer behind,
+  // larger and blacker in front. Every monitor on them is off.
+  const rows = [[62, 12, '#131f25', 26], [80, 18, '#0e181d', 32], [110, 30, '#080f13', 44]];
+  for (const [y, h2, col, pitch] of rows) {
+    for (let x = -8; x < W; x += pitch) {
+      P(c, x, y, pitch - 5, 3, col);                       // the desk top
+      P(c, x + 2, y + 3, 3, h2, '#04080a');                // legs
+      P(c, x + pitch - 10, y + 3, 3, h2, '#04080a');
+      const mw = Math.round(pitch * 0.42);
+      P(c, x + 6, y - mw * 0.6, mw, mw * 0.6, '#0a1216');  // a dark monitor
+      P(c, x + 6, y - mw * 0.6, mw, 1, '#2c3a41');         // its edge, barely
+      P(c, x + pitch * 0.45, y + 3, 6, 4, '#070d11');      // an empty chair back
+    }
+  }
+}
+
+function studiofloor(scr, t, d) {
+  const c = scr.ctx;
+  c.drawImage(base('studiofloor', studiofloorBase), 0, 0);
+
+  // THE ONE DESK STILL ON. It is the only light source in the frame, so it is
+  // also what lights everything near it — the halo, the desk lip under it and
+  // the rim on the empty chair all come off this rectangle.
+  const mx = 52, my = 46, mw = 30, mh = 19;
+  const flick = 0.88 + 0.12 * Math.sin(t * 9) * Math.sin(t * 2.3);
+  // two tight halos rather than one wide one: `halo` quantises into five bands
+  // and at r 62 those bands are 12px apart and read as concentric rings
+  halo(c, mx + mw / 2, my + mh / 2, 40, '#9fd4f2', 0.20 * flick);
+  halo(c, mx + mw / 2, my + mh / 2, 22, '#cfeaff', 0.26 * flick);
+  P(c, mx - 1, my - 1, mw + 2, mh + 2, '#0a1418');         // the bezel
+  P(c, mx, my, mw, mh, mix('#5f9fbc', '#a9dcf4', flick));
+  for (let i = 0; i < 7; i++) {                            // lines of code on it
+    const n = rnd(i * 3.1 + Math.floor(t * 1.2) * 0.7);
+    if (n < 0.22) continue;
+    P(c, mx + 2 + (i % 2) * 3, my + 3 + i * 2.2, 4 + n * 18, 1, '#0b2a3a');
+  }
+  if ((t * 1.4) % 1 < 0.5) P(c, mx + 3, my + 2 + 7 * 2.4, 2, 2, '#eafaff');
+  P(c, mx + mw / 2 - 2, my + mh, 5, 4, '#33454e');         // the stand
+  P(c, mx - 6, my + mh + 4, mw + 12, 3, '#7ba9bd');        // the desk lip, lit
+  P(c, mx - 6, my + mh + 7, mw + 12, 2, '#0d181d');
+
+  // the chair at it, pushed back and empty, rim-lit down its left edge only
+  P(c, mx + 4, my + mh + 12, 20, 14, '#060c0f');
+  P(c, mx + 4, my + mh + 12, 1, 14, '#5c8496');
+  P(c, mx + 11, my + mh + 26, 3, 10, '#050a0d');
+
+  // black in front: the near desk, out of focus by having no detail at all
+  P(c, 0, H - 78, W, 78, COAL);
+  for (let x = 0; x < W; x += 2) {
+    if (rnd(x * 1.7) < 0.4) P(c, x, H - 79, 2, 1, '#1a262b');
+  }
+  amberWash(c, d);
+}
+
+
+// ── ENGINEWIRE — the engine, on the machine it is built on ─────────
+//
+// A viewport open on a corridor in wireframe, which is what a game looks like
+// to the person who makes it work. The screen fills the top of the frame and is
+// the light in the room; the desk it stands on is black. It rotates, the stats
+// tick, and the frame-time bar creeps — the whole plate is the thing that
+// cannot be built with half the people.
+function enginewireBase(c) {
+  P(c, 0, 0, W, H, '#03070a');
+  ramp(c, 0, 120, '#060c10', '#03070a');                   // the room glow
+  // the monitor: a black bezel with a dark viewport in it
+  P(c, 8, 14, W - 16, 92, '#080f13');
+  P(c, 10, 16, W - 20, 88, '#020608');
+  P(c, 8, 106, W - 16, 3, '#0d161b');
+  P(c, 64, 109, 16, 8, '#0a1216');                         // the stand
+  P(c, 52, 117, 40, 3, '#111c21');
+  // the desk it stands on, and the black room around it
+  P(c, 0, 120, W, H - 120, COAL);
+  P(c, 0, 120, W, 1, '#243138');
+}
+
+function enginewire(scr, t, d) {
+  const c = scr.ctx;
+  c.drawImage(base('enginewire', enginewireBase), 0, 0);
+
+  // the viewport: a corridor drawn as a run of rectangles receding to a
+  // vanishing point that drifts, so the camera reads as being flown by hand
+  const vx = 72 + Math.sin(t * 0.4) * 9, vy = 60 + Math.sin(t * 0.27) * 4;
+  c.save();
+  c.beginPath(); c.rect(10, 16, W - 20, 88); c.clip();
+  halo(c, vx, vy, 40, '#3ba7c8', 0.22);
+  for (let i = 0; i < 8; i++) {
+    const k = ((i + (t * 0.35) % 1) / 8);                  // 0 far → 1 near
+    const s = 0.06 + k * k * 2.4;
+    const w2 = 120 * s, h2 = 78 * s;
+    const col = mix('#12475c', '#7fe0ff', Math.min(1, k * 1.3));
+    const x0 = vx - w2 / 2, y0 = vy - h2 / 2;
+    P(c, x0, y0, w2, 1, col); P(c, x0, y0 + h2, w2, 1, col);
+    P(c, x0, y0, 1, h2, col); P(c, x0 + w2, y0, 1, h2, col);
+  }
+  // the four diagonals of the corridor, corner to corner of the near ring
+  for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    for (let s = 0.06; s < 2.4; s += 0.03) {
+      P(c, vx + sx * 60 * s, vy + sy * 39 * s, 1, 1, '#1d5c74');
+    }
+  }
+  // a thing in the corridor: a lit doorway that grows and resets
+  const dk = (t * 0.35) % 1, ds = 0.2 + dk * 1.6;
+  P(c, vx - 9 * ds, vy - 2 * ds, 18 * ds, 22 * ds, '#0b2c3a');
+  P(c, vx - 9 * ds, vy - 2 * ds, 18 * ds, 1, '#bff0ff');
+  c.restore();
+
+  // the readout across the bottom of the viewport: the numbers on the screen of
+  // somebody whose job is the numbers
+  const ms = 11.2 + Math.sin(t * 1.7) * 3.4;
+  P(c, 12, 92, 84, 1, '#0d2a35');
+  P(c, 12, 94, Math.round(84 * Math.min(1, ms / 16)), 4, ms > 13 ? '#e0b46a' : '#4fd18f');
+  for (let i = 0; i < 5; i++) {                            // a memory histogram
+    const hh = 2 + Math.round(rnd(i + Math.floor(t * 3)) * 7);
+    P(c, 100 + i * 6, 98 - hh, 4, hh, '#2f7f97');
+  }
+  for (let i = 0; i < 9; i++) {                            // a call-stack column
+    if (rnd(i * 2.7 + Math.floor(t * 2)) < 0.3) continue;
+    P(c, 14, 22 + i * 4, 6 + rnd(i * 5.3) * 22, 1, '#17495c');
+  }
+  amberWash(c, d);
+}
+
+
+// ── BOARDROOM — the other room, where the line goes up ─────────────
+//
+// The counterpart shot: a long table under one hanging lamp, every chair empty,
+// and a screen at the end of it with a line that only goes one way. It is the
+// same building as `studiofloor` and it is lit, which is the whole joke — the
+// bright thing in this frame is a chart.
+function boardroomBase(c) {
+  P(c, 0, 0, W, H, '#04080b');
+  ramp(c, 0, 96, '#070d11', '#03070a');
+  // the presentation screen at the far end
+  P(c, 30, 22, 84, 50, '#0a1216');
+  P(c, 32, 24, 80, 46, '#0d2018');
+  // the table, receding toward it — two edges converging, black in front
+  for (let y = 96; y < H; y++) {
+    const k = (y - 96) / (H - 96);
+    const half = 22 + k * 96;
+    P(c, 72 - half, y, half * 2, 1, mix('#0e171b', '#04080a', k));
+  }
+  P(c, 0, H - 46, W, 46, COAL);                            // the near end, black
+  // the chairs down both sides: backs only, all of them empty
+  for (let i = 0; i < 5; i++) {
+    const k = i / 5, y = 100 + k * 120, hh = 10 + k * 22, off = 30 + k * 78;
+    P(c, 72 - off - 8, y, 9, hh, '#070d10');
+    P(c, 72 + off - 1, y, 9, hh, '#070d10');
+    P(c, 72 - off - 8, y, 9, 1, '#1b262b');
+    P(c, 72 + off - 1, y, 9, 1, '#1b262b');
+  }
+}
+
+function boardroom(scr, t, d) {
+  const c = scr.ctx;
+  c.drawImage(base('boardroom', boardroomBase), 0, 0);
+
+  // the lamp over the table, breathing, and the pool it puts on the wood
+  const b = 0.9 + 0.1 * Math.sin(t * 0.8);
+  P(c, 68, 0, 8, 10, '#0a1013');
+  P(c, 60, 10, 24, 5, '#20343a');
+  P(c, 62, 15, 20, 2, mix('#cfe6ef', '#ffffff', b - 0.9));
+  halo(c, 72, 18, 26, '#cfe6ef', 0.24 * b);
+  halo(c, 72, 104, 34, '#9fc4d0', 0.13 * b);
+
+  // THE CHART, and it is the brightest thing in the room. A line that only
+  // goes up, redrawn a segment at a time so the plate has a pulse.
+  const gx = 36, gy = 30, gw = 72, gh = 34;
+  for (let i = 1; i < 4; i++) P(c, gx, gy + i * 8, gw, 1, '#123028');
+  let px = gx, py = gy + gh;
+  for (let i = 1; i <= 12; i++) {
+    const k = i / 12;
+    const x2 = gx + gw * k;
+    const y2 = gy + gh - gh * (k * 0.86 + rnd(i * 4.7) * 0.1) ;
+    const on = k <= ((t * 0.3) % 1) + 0.08;
+    for (let s = 0; s <= 1; s += 0.08) {
+      P(c, px + (x2 - px) * s, py + (y2 - py) * s, 1, 1, on ? '#8dffc8' : '#1d4a3a');
+    }
+    if (on) P(c, x2 - 1, y2 - 1, 2, 2, '#e6fff2');
+    px = x2; py = y2;
+  }
+  halo(c, gx + gw - 8, gy + 6, 20, '#8dffc8', 0.22);
+  // TWO people at a table built for fourteen, seated down one side, black
+  // against the screen with the chart's own light on the near edge of each.
+  // They were one figure first and it read as a monolith: shoulders have to be
+  // wider than the head is tall or a silhouette is a slab.
+  for (const [x, y, s2] of [[26, 96, 1], [12, 112, 1.24]]) {
+    const bw = 22 * s2, hh = 9 * s2;
+    P(c, x, y + hh, bw, 30 * s2, COAL);                    // shoulders
+    P(c, x + bw * 0.34, y, hh, hh, COAL);                  // head
+    P(c, x + bw - 1, y + hh, 1, 30 * s2, '#3f6a5c');       // the rim
+    P(c, x + bw * 0.34 + hh - 1, y, 1, hh, '#3f6a5c');
+  }
+  amberWash(c, d);
+}
+
+const PLATES = { studiofloor, enginewire, boardroom,
+                 esplanadi, kamppi, station, harbour, gulf, suomenlinna, katajanokka,
                  cableship, swarm, switchyard,
                  beach, moon, winterhall, packice, chase, approach };
 export const PLATE_KEYS = Object.keys(PLATES);

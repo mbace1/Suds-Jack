@@ -25,6 +25,15 @@ const RESERVED_IDS = ['sign-off'];
 
 const isStr = (v) => typeof v === 'string' && v.trim().length > 0;
 
+// A story's footage is one key or a list of them. Everything downstream reads
+// it through here, so a wire written either way behaves identically and the
+// renderer never has to ask which shape it was given.
+export const MAX_SHOTS = 4;
+export function brollList(broll) {
+  if (Array.isArray(broll)) return broll;
+  return isStr(broll) ? [broll] : [];
+}
+
 // A filing date is YYYY-MM-DD and has to be a date that exists — '2026-02-31'
 // parses happily in most hands and then sorts somewhere nobody expects.
 const isDate = (v) => {
@@ -112,9 +121,22 @@ export function validateWire(wire, { panelKeys = null, brollKeys = null, sectorI
       // which ships the wrong picture beside the right words in total silence.
       // It is the failure this file was written for: the copy is external, the
       // art is not. (`visual` named a DECODE panel and is now ignored.)
-      if (!isStr(s.broll)) E(where, 'missing broll');
-      else if (brollKeys && !brollKeys.includes(s.broll)) {
-        E(where, `broll "${s.broll}" is not footage in this build (have: ${brollKeys.join(', ')})`);
+      //
+      // It may name ONE key or a LIST of them. A list is a post that cuts
+      // between several shots of its own story instead of returning to the same
+      // frame every time the edit comes off the anchor — which is what a
+      // package actually looks like, and what one bulletin about a studio
+      // needed: the empty floor, the engine, the room where the line goes up.
+      const shots = brollList(s.broll);
+      if (!shots.length) E(where, 'missing broll');
+      else if (shots.some((k) => !isStr(k))) E(where, 'broll list must be strings');
+      else if (shots.length > MAX_SHOTS) E(where, `broll names ${shots.length} shots, max ${MAX_SHOTS}`);
+      else if (brollKeys) {
+        for (const k of shots) {
+          if (!brollKeys.includes(k)) {
+            E(where, `broll "${k}" is not footage in this build (have: ${brollKeys.join(', ')})`);
+          }
+        }
       }
       // ── the rotation, all optional ────────────────────────────────
       if (s.filed !== undefined && !isDate(s.filed)) {

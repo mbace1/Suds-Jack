@@ -14,7 +14,7 @@
     {
       "id": "id-software",
       "sector": "RFH",
-      "broll": "winterhall",
+      "broll": ["studiofloor", "enginewire", "boardroom"],
       "filed": "2026-08-09",
       "sourced": true
     },
