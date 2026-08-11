@@ -1,0 +1,18 @@
+{
+  "generated": {
+    "neonronin/samurai-cover": {
+      "file": "2d/neonronin-samurai-cover.216c70d9.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "neon-ronin",
+      "hash": "216c70d9"
+    },
+    "neonronin/samurai-turnaround": {
+      "file": "2d/neonronin-samurai-turnaround.ac92a74e.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "neon-ronin",
+      "hash": "ac92a74e"
+    }
+  }
+}

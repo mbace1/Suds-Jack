@@ -142,7 +142,15 @@ async function cmdGen() {
   const gKey = banana.keyFrom();
   const mKey = meshy.keyFrom();
   if (n2 && !gKey) throw new Error('2D assets to generate but no GEMINI_API_KEY set');
-  if (n3 && !mKey) throw new Error('3D assets to generate but no MESHY_API_KEY set');
+  // A missing 3D key must NOT abort the 2D half. The two services are bought
+  // separately and one of them is often unreachable (meshy is blocked outright
+  // on some networks), so a batch does what it can and names what it skipped —
+  // aborting eleven images because a mesh has no key is the tail wagging the dog.
+  let skip3d = 0;
+  if (n3 && !mKey) {
+    skip3d = n3;
+    console.log(C.warn(`  no MESHY_API_KEY — skipping ${n3} mesh${n3 === 1 ? '' : 'es'}, doing the images`));
+  }
 
   fs.mkdirSync(path.join(OUT, '2d'), { recursive: true });
   fs.mkdirSync(path.join(OUT, '3d'), { recursive: true });
@@ -162,7 +170,7 @@ async function cmdGen() {
     } catch (e) { console.log(C.bad('failed')); console.log(`      ${e.message.replace(/\n/g, '\n      ')}`); failed++; }
   }
 
-  for (const s of todo.filter(x => x.kind === '3d')) {
+  for (const s of skip3d ? [] : todo.filter(x => x.kind === '3d')) {
     const parent = specs.find(p => p.id === s.resolved.from);
     if (!have(parent)) { console.log(`  ${s.id} ${C.bad('skipped')} — its plate ${parent.id} is not on disk`); failed++; continue; }
     process.stdout.write(`  ${s.id} … `);
@@ -181,7 +189,7 @@ async function cmdGen() {
   }
 
   const n = writeIndex();
-  console.log(`\n${made} generated, ${failed} failed — assets/index.json now lists ${n}`);
+  console.log(`\n${made} generated, ${failed} failed${skip3d ? `, ${skip3d} skipped (no meshy key)` : ''} — assets/index.json now lists ${n}`);
   if (failed) process.exitCode = 1;
 }
 
