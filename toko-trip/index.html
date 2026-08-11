@@ -409,6 +409,84 @@
 
     scene.fog = new THREE.Fog(0xe8c49a, 18, 130);
 
+    // ═══ SKY DETAIL ═══ Half of what a seated person looks at is sky, and a
+    // bare gradient is the cheapest thing in the scene to improve. Clouds are
+    // soft sprites on a slowly turning ring — no volumetrics, no cost, and
+    // they take the mood's own colour so a sunset lights their undersides.
+    // its own seeded source: the scatter plan's rng is not born yet, and
+    // sharing one would make the sky reshuffle every time a rock moves
+    const rngSky = (() => { let s = 90210; return () => (s = (Math.imul(s, 48271) >>> 0) % 2147483647) / 2147483647; })();
+    const cloudTex = (() => {
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 128;
+      const g = cv.getContext('2d');
+      // a few overlapping soft discs read as a cloud; one disc reads as a dot
+      for (const [cx, cy, r, a] of [[64, 74, 34, 0.85], [42, 78, 24, 0.7],
+        [88, 80, 26, 0.7], [58, 60, 26, 0.75], [80, 62, 20, 0.6]]) {
+        const grd = g.createRadialGradient(cx, cy, 0, cx, cy, r);
+        grd.addColorStop(0, `rgba(255,255,255,${a})`);
+        grd.addColorStop(0.55, `rgba(255,255,255,${a * 0.5})`);
+        grd.addColorStop(1, 'rgba(255,255,255,0)');
+        g.fillStyle = grd;
+        g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
+      }
+      const t = new THREE.CanvasTexture(cv);
+      t.colorSpace = THREE.SRGBColorSpace;
+      return t;
+    })();
+    const clouds = new THREE.Group();
+    const cloudMats = [];
+    for (let i = 0; i < 16; i++) {
+      const m = new THREE.MeshBasicMaterial({
+        map: cloudTex, transparent: true, depthWrite: false, fog: false,
+        opacity: 0.5 + rngSky() * 0.35,
+      });
+      const w = 26 + rngSky() * 40;
+      const s = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 0.42), m);
+      const a = (i / 16) * Math.PI * 2 + rngSky() * 0.3;
+      const rad = 105 + rngSky() * 45;
+      s.position.set(Math.cos(a) * rad, 16 + rngSky() * 42, Math.sin(a) * rad);
+      s.lookAt(0, s.position.y * 0.4, 0);
+      cloudMats.push(m);
+      clouds.add(s);
+    }
+    scene.add(clouds);
+
+    // ═══ THE HORIZON ═══ Two far islands. An empty horizon has no scale in
+    // it — with something on it, the sea reads as distance rather than as a
+    // flat band. They sit in fog colour so they never look like near geometry.
+    const farIsles = [];
+    for (const [a, dist, w, h] of [[1.15, 165, 62, 6.5], [2.05, 205, 40, 4.2], [-0.55, 185, 30, 3.4]]) {
+      const g = new THREE.SphereGeometry(1, 18, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+      g.scale(w, h, w * 0.5);
+      const m = new THREE.MeshBasicMaterial({ fog: false, transparent: true, opacity: 0.85 });
+      const isle = new THREE.Mesh(g, m);
+      isle.position.set(Math.cos(a) * dist, -PAD_H - 0.4, Math.sin(a) * dist);
+      scene.add(isle);
+      farIsles.push(m);
+    }
+
+    // ═══ BIRDS ═══ Three of them, circling, never landing. The cheapest
+    // possible life: two triangles each, and a wingbeat that is one sine.
+    const birds = [];
+    {
+      const bm = new THREE.MeshBasicMaterial({ color: 0x2b2b30, side: THREE.DoubleSide, fog: false });
+      for (let i = 0; i < 3; i++) {
+        const b = new THREE.Group();
+        for (const s of [-1, 1]) {
+          const wing = new THREE.BufferGeometry();
+          wing.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+            0, 0, 0, s * 0.62, 0.1, -0.16, s * 0.55, 0, 0.2,
+          ]), 3));
+          const w = new THREE.Mesh(wing, bm);
+          b.add(w);
+        }
+        b.userData = { r: 15 + i * 7, y: 7 + i * 3.5, sp: 0.05 + i * 0.012, ph: i * 2.1 };
+        scene.add(b);
+        birds.push(b);
+      }
+    }
+
     // ── vertex-colour helpers ──
     // paint(geo, colour | (x,y,z) => Color) — every material here reads
     // vertex colours, which is what lets whole passes merge into one draw.
@@ -544,6 +622,15 @@
             * (1 - beachness(x, z));
           c.lerp(_c2.copy(cGrass).lerp(cLeaf, fbm(x * 1.7, z * 1.7)), g);
         }
+        // THE TIDE LINE. The waterline is the edge of this scene people look
+        // at most, and until now the sand simply stopped there. Wet sand is
+        // darker and more saturated than dry, and above the water's reach a
+        // pale rime of dried salt and shell marks how far it came in.
+        const damp = smooth(0.5, 0.0, y);
+        c.multiplyScalar(1 - 0.26 * damp);
+        c.lerp(_c2.copy(cWet).multiplyScalar(0.82), 0.45 * damp);
+        c.lerp(_c2.setRGB(1.0, 0.98, 0.93),
+          0.42 * Math.exp(-Math.pow((y - 0.12) / 0.055, 2)));
         // grain, slope shade, baked contact AO
         c.multiplyScalar((0.93 + 0.12 * fbm(x * 5.1, z * 5.1))
           * (1 - 0.16 * smooth(0.35, 0.9, s))
@@ -1246,18 +1333,18 @@
       { name: 'GOLDEN HOUR', skyTop: '#6f8fb8', skyHoriz: '#e8a05c', sunCol: '#ffd9a0', sunInt: 2.6,
         sunDir: [0.34, 0.16, 0.93], hemiSky: '#ffd7b0', hemiGround: '#b99c72', hemiInt: 0.55,
         fog: '#e8c49a', fogNear: 20, fogFar: 130, water: '#3aa8a0', waterOp: 0.82,
-        lantern: 0.35, fireflies: 0, neon: 0.55 },
+        cloud: '#ffd2a4', lantern: 0.35, fireflies: 0, neon: 0.55 },
       { name: 'DUSK & FIREFLIES', skyTop: '#141f3a', skyHoriz: '#b06a8c', sunCol: '#ff9a6a', sunInt: 1.0,
         sunDir: [0.3, 0.055, 0.95], hemiSky: '#5a6a9a', hemiGround: '#3a3a4a', hemiInt: 0.46,
         fog: '#3a3a56', fogNear: 14, fogFar: 95, water: '#2b6a74', waterOp: 0.88,
-        lantern: 1.7, fireflies: 0.85, neon: 1.4 },
+        cloud: '#6b5878', lantern: 1.7, fireflies: 0.85, neon: 1.4 },
       { name: 'BRIGHT MIDDAY', skyTop: '#57a0d8', skyHoriz: '#bfe0ea', sunCol: '#fff6e0', sunInt: 3.1,
         sunDir: [0.25, 0.8, 0.4], hemiSky: '#cfe6ee', hemiGround: '#d8c893', hemiInt: 0.8,
         fog: '#cfe6ee', fogNear: 30, fogFar: 140, water: '#46b8b0', waterOp: 0.78,
-        lantern: 0, fireflies: 0, neon: 0.3 },
+        cloud: '#ffffff', lantern: 0, fireflies: 0, neon: 0.3 },
     ];
     const MOOD_NUM = ['sunInt', 'hemiInt', 'fogNear', 'fogFar', 'waterOp', 'lantern', 'fireflies', 'neon'];
-    const MOOD_COL = ['skyTop', 'skyHoriz', 'sunCol', 'hemiSky', 'hemiGround', 'fog', 'water'];
+    const MOOD_COL = ['skyTop', 'skyHoriz', 'sunCol', 'hemiSky', 'hemiGround', 'fog', 'water', 'cloud'];
     const mkMoodState = () => {
       const o = { sunDir: new THREE.Vector3() };
       for (const k of MOOD_COL) o[k] = new THREE.Color();
@@ -1304,6 +1391,9 @@
       for (const l of lanternLights) { l.intensity = cur.lantern * 1.6; l.visible = cur.lantern > 0.02; }
       lanternGlassMat.emissiveIntensity = cur.lantern * 1.4;
       fireflies.material.opacity = cur.fireflies;
+      for (const m of cloudMats) m.color.copy(cur.cloud);
+      // the far islands sit IN the haze rather than in front of it
+      for (const m of farIsles) m.color.copy(cur.fog).multiplyScalar(0.72);
       sunDisc.material.color.copy(cur.sunCol);
       sunHalo.material.color.copy(cur.skyHoriz);
       sunDisc.position.copy(cur.sunDir).multiplyScalar(150);
@@ -1880,6 +1970,16 @@
         c.rotation.x = Math.cos(t * 0.47 + c.userData.phase) * 0.028;
       }
       for (const r of reedClumps) r.rotation.z = Math.sin(t * 0.9 + r.userData.phase) * 0.05;
+      clouds.rotation.y = t * 0.0045;
+      for (const b of birds) {
+        const d = b.userData, a = t * d.sp + d.ph;
+        b.position.set(Math.cos(a) * d.r, d.y + Math.sin(t * 0.3 + d.ph) * 0.6, Math.sin(a) * d.r);
+        b.rotation.y = -a + Math.PI / 2;
+        // one sine is a whole wingbeat, and it is the only thing that makes
+        // three triangles read as a bird rather than as a speck
+        b.children[0].rotation.z = Math.sin(t * 5 + d.ph) * 0.5;
+        b.children[1].rotation.z = -Math.sin(t * 5 + d.ph) * 0.5;
+      }
       // the credit hangs over the radio and turns to face whoever is reading it
       if (plaque.visible) {
         plaque.position.set(radio.position.x, radio.position.y + 0.34, radio.position.z);

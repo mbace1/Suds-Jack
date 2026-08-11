@@ -1,5 +1,26 @@
 # Toko Trip — release log
 
+## v4 — 2026-08-10
+
+A graphics and details pass, aimed at what a seated person actually looks at.
+
+- **Clouds.** Half the view from the chair is sky, and a bare gradient was
+  the cheapest thing in the scene to improve. Sixteen soft sprites on a
+  slowly turning ring — no volumetrics, no per-frame cost — each taking the
+  mood's own colour, so a sunset lights their undersides and dusk turns them
+  bruise-purple. They have their own seeded rng, so the sky does not
+  reshuffle every time a rock moves.
+- **A horizon with something on it.** Three far islands in fog colour. An
+  empty horizon has no scale in it; with something on it the sea reads as
+  distance rather than as a flat band.
+- **Birds.** Three, circling, never landing. Two triangles each and a
+  wingbeat that is one sine — which is the only thing that makes three
+  triangles read as a bird rather than a speck.
+- **The tide line.** The waterline is the edge of this scene people look at
+  most and the sand simply stopped there. Wet sand is now darker and more
+  saturated than dry, and a pale rime of dried salt sits just above the
+  water's reach, marking how far it came in.
+
 ## v3 — 2026-08-10
 
 The lighting stopped guessing, and the water got a bottom.
