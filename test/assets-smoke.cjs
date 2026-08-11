@@ -213,6 +213,40 @@ async function section(name, fn) {
     check('gen --dry counts the two services separately', /nano banana/.test(dry) && /meshy/.test(dry));
   });
 
+  // This has been wrong twice, and both times it told someone their key was
+  // rejected when it had never been sent. A blocked host and a bad key need
+  // different people to fix.
+  await section('a blocked host is not reported as a bad key', async () => {
+    const egress = await import(`file://${path.join(ROOT, 'scripts/lib/egress.mjs')}`);
+
+    check('a proxy\'s short plain-text 403 body reads as a proxy',
+      egress.looksLikeProxyBody('Forbidden: blocked by policy') === true);
+    check('a service\'s JSON 403 body does NOT read as a proxy',
+      egress.looksLikeProxyBody('{"error":{"code":403,"message":"bad key"}}') === false);
+    check('an empty body is not claimed as proof of a proxy', egress.looksLikeProxyBody('') === false);
+    check('a long HTML error page is not claimed as a proxy', egress.looksLikeProxyBody('<html>' + 'x'.repeat(600)) === false);
+
+    // The race: the proxy writes its failure log asynchronously, so a single
+    // sample straight after the failure sees nothing and the caller concludes
+    // "the service rejected it". Polling is the fix, and this holds it.
+    let n = 0;
+    const late = async () => ({
+      ok: true,
+      json: async () => ({ recentRelayFailures: ++n < 3 ? [] : [{ host: 'api.meshy.ai:443', kind: 'connect_rejected', detail: 'gateway answered 403 to CONNECT' }] }),
+    });
+    const found = await egress.blockedByProxy('api.meshy.ai', {
+      env: { HTTPS_PROXY: 'http://127.0.0.1:1' }, fetchImpl: late, sleep: async () => {}, tries: 4,
+    });
+    check('a failure logged late is still found (the log is polled, not sampled)', found === true);
+
+    n = 0;
+    const never = async () => ({ ok: true, json: async () => ({ recentRelayFailures: [] }) });
+    check('a host the proxy never refused is not blamed on the proxy',
+      (await egress.blockedByProxy('api.meshy.ai', { env: { HTTPS_PROXY: 'http://127.0.0.1:1' }, fetchImpl: never, sleep: async () => {} })) === false);
+    check('no proxy configured -> not a proxy problem',
+      (await egress.blockedByProxy('api.meshy.ai', { env: {}, fetchImpl: never, sleep: async () => {} })) === false);
+  });
+
   await section('staleness is detected from the filename alone', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'assets-'));
     const dir = path.join(tmp, '2d');

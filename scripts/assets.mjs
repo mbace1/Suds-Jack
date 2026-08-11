@@ -24,6 +24,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolveAll } from './lib/assets-core.mjs';
 import * as banana from './lib/nano-banana.mjs';
 import * as meshy from './lib/meshy.mjs';
+import { looksLikeProxyBody, blockedByProxy } from './lib/egress.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
@@ -129,31 +130,18 @@ function cmdPrune() {
 // on and nothing to pay for. Both halves of this pipeline need TWO things —
 // a key AND a route — and the two failures look nothing alike but both surface
 // as "it didn't work" halfway through a batch. So they are checked separately
-// and named separately.
-// "The host is blocked" and "the key is wrong" both arrive as a 403, and they
-// need completely different people to fix them — so guessing is worse than
-// useless here. An egress proxy rejects the CONNECT, which node's fetch
-// surfaces as an ordinary 403 response indistinguishable from the service's
-// own. The proxy keeps a log of what it refused, so ASK IT rather than infer.
-async function blockedByProxy(host) {
-  const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;
-  if (!proxy) return false;
-  try {
-    const res = await fetch(new URL('/__agentproxy/status', proxy), { signal: AbortSignal.timeout(5000) });
-    if (!res.ok) return false;
-    const { recentRelayFailures = [] } = await res.json();
-    return recentRelayFailures.some(f => String(f.host ?? '').startsWith(host) && /reject|denied|403/i.test(`${f.kind} ${f.detail}`));
-  } catch { return false; }
-}
-
+// and named separately — the telling-apart is in lib/egress.mjs, which is where
+// the two ways this has been got wrong are written down.
 async function cmdDoctor() {
   const probe = async (label, url, headers, wantKey) => {
     if (!wantKey) { console.log(`  ${C.bad('✗')} ${label}: no API key in the environment`); return false; }
     try {
       const res = await fetch(url, { headers, signal: AbortSignal.timeout(20000) });
       if (res.status === 401 || res.status === 403) {
-        if (await blockedByProxy(label)) {
+        const body = await res.text().catch(() => '');
+        if (looksLikeProxyBody(body) || await blockedByProxy(label)) {
           console.log(`  ${C.bad('✗')} ${label}: blocked by egress policy — the request never left this machine`);
+          console.log(`      ${C.dim('the key was never sent, so this says nothing about whether it is valid')}`);
           return false;
         }
         console.log(`  ${C.bad('✗')} ${label}: reachable, but the key was rejected (HTTP ${res.status})`);
