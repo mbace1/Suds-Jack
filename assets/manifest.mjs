@@ -76,6 +76,23 @@ silhouette — pale violet cloak catching the light, with a magenta rim down one
 edge and a cyan rim down the other. Sharp graphic shapes, high contrast,
 16-bit box-art energy. No text, no logos, no UI, no watermark.`,
 
+  // Toko Trip: the owner's words, lifted out of the first jetty brief and kept
+  // here rather than in that one prompt — this is the register the whole game
+  // is in, and the next Toko Trip asset should not have to restate it.
+  //
+  // Note what this block is doing that the others are not: it is describing a
+  // MODEL SHEET, not a picture. Plain background, three-quarter view, no
+  // texture detail, orthographic feel — every one of those is a photogrammetry
+  // instruction. This style is built to be meshed, so the plate and the mesh
+  // can share a spec instead of needing the cover/turnaround split the Neon
+  // Ronin samurai needed.
+  trip: `Toko Trip house style. Stylized LOW-POLY game asset in the manner of
+A Short Hike and Monument Valley — simple faceted geometry, flat matte colours,
+no texture detail, no grain, no noise. Soft ambient light with gentle flat
+shading, no harsh shadows and no specular highlights. Three-quarter view with
+an orthographic feel. Plain pure-white background, the object alone and whole
+in frame with clear space around it. No text, no logos, no UI, no ground plane.`,
+
   // Suds Jack: cold blooms, warm does not. The whole read of the game is that
   // what you want glows and what hurts you never does.
   suds: `Suds Jack house style. Everything desirable is COLD — pale cyan and
@@ -137,6 +154,56 @@ about to spit. No limbs, no face. Three quarter view, centred, full body.`,
 torus standing upright on its rim like a rolling tyre. Firmer and glassier than
 the soft gels — a hard rolling wheel, not a jelly. Motion implied, poised to
 charge. Side-on three quarter view, centred, full body.`,
+  },
+
+  // ── TOKO TRIP ───────────────────────────────────────────────────────────
+  // READ THIS BEFORE MESHING ANYTHING FOR THIS GAME.
+  //
+  // Toko Trip is not a game you can hand a GLB to. Three things in its build,
+  // each checked in its source rather than assumed:
+  //
+  //   · every static in the island is merged into ONE geometry and drawn in
+  //     ONE call (`BGU.mergeGeometries(pile…)`), because a headset is
+  //     fill-bound and the whole quality-tier system is built on that,
+  //   · colour lives in VERTEX COLOURS painted by `paint(geo, fn)` through one
+  //     shared `satin` material — flat-shaded, roughness 0.92, no maps. An
+  //     imported mesh arrives with its own textured material and reads as a
+  //     visitor from another game,
+  //   · shade is BAKED at load: every standing thing registers a `proxySphere`
+  //     or `proxyBox` so the ground can fire a hemisphere of rays at it. A mesh
+  //     that is not in the scatter plan casts no shadow on the sand and
+  //     receives none, which on this island is most of the lighting.
+  //
+  // The island already builds a deck this way — nine planks with per-plank
+  // tone jitter and darkened ends, in `P.driftwood` #c9b391. A jetty belongs
+  // in that same idiom.
+  //
+  // So the plate below is a REFERENCE: it exists to be looked at while writing
+  // that code, which is the loop CLAUDE.md prescribes anyway. The mesh spec is
+  // kept because the owner asked for the 2D→3D chain and it is theirs to
+  // spend, but it is not a drop-in for this renderer and should not be treated
+  // as one.
+  {
+    id: 'tokotrip/jetty',
+    game: 'toko-trip',
+    use: 'reference',
+    style: 'trip',
+    tags: ['prop', 'environment'],
+    // Colour named from the game's own palette rather than described, so the
+    // plate and the code cannot disagree about what driftwood is.
+    prompt: `A weathered driftwood jetty on a tropical beach — a short wooden
+pier of pale sun-bleached planks on simple posts, running away from the viewer.
+Salt-worn and slightly uneven, a few boards crooked. Pale warm bone-cream wood,
+around #c9b391.`,
+  },
+  {
+    id: 'tokotrip/jetty-mesh',
+    game: 'toko-trip',
+    kind: '3d',
+    use: 'prop',
+    from: 'tokotrip/jetty',
+    targetPolycount: 4000,      // it is meant to be low-poly; a dense mesh fights the art
+    tags: ['prop'],
   },
 
   // ── NEON RONIN — the neon samurai, in the two cuts the pipeline wants ────

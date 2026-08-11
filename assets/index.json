@@ -1,5 +1,12 @@
 {
   "generated": {
+    "tokotrip/jetty": {
+      "file": "2d/tokotrip-jetty.caa95d4c.png",
+      "kind": "2d",
+      "use": "reference",
+      "game": "toko-trip",
+      "hash": "caa95d4c"
+    },
     "neonronin/samurai-cover": {
       "file": "2d/neonronin-samurai-cover.216c70d9.png",
       "kind": "2d",
