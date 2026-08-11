@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tiny 2D — rider preview</title>
+  <style>
+    body { margin: 0; background: #0a1b2c; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+<!--
+  The rider, big. It is two world units tall in the game and about forty pixels
+  on a phone, so the only way to know whether the silhouette reads is to look
+  at it on its own — and the only way to know whether it reads at forty pixels
+  is to look at it at forty pixels. This draws both.
+-->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { Skater } from '../js/skater.js?v=4';
+    import { COL } from '../js/palette.js?v=4';
+
+    const VOID = { add() {}, remove() {} };
+    const FLAT = { heightAt: () => 0, sample: () => ({ y: 0, m: 0 }) };
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(1);
+    renderer.setSize(560, 320);
+    document.body.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(COL.skyMid);
+    const H = 6;
+    const camera = new THREE.OrthographicCamera(-H * 560 / 320 / 2, H * 560 / 320 / 2, H / 2, -H / 2, 0.1, 100);
+    camera.position.set(0, 1.6, 20);
+    camera.lookAt(0, 1.6, 0);
+
+    const skater = new Skater(VOID, FLAT);
+    scene.add(skater.group);
+    renderer.render(scene, camera);
+
+    // ...and again at the size a phone actually gives it
+    const small = new THREE.WebGLRenderer({ antialias: true });
+    small.setPixelRatio(1);
+    small.setSize(120, 120);
+    document.body.appendChild(small.domElement);
+    const cam2 = new THREE.OrthographicCamera(-2.2, 2.2, 2.2, -2.2, 0.1, 100);
+    cam2.position.set(0, 1.5, 20);
+    cam2.lookAt(0, 1.5, 0);
+    small.render(scene, cam2);
+
+    window.__ready = true;
+  </script>
+</body>
+</html>

@@ -16,8 +16,8 @@
 // sidesteps a whole class of spawn/cull bugs.
 
 import * as THREE from 'three';
-import { COL, GLOW } from './palette.js?v=3';
-import { mulberry32, lerp, clamp } from './rng.js?v=3';
+import { COL, GLOW } from './palette.js?v=4';
+import { mulberry32, lerp, clamp } from './rng.js?v=4';
 
 const DX      = 0.45;   // ribbon sample spacing (world units)
 const SPAN    = 130;    // world units of ribbon kept alive around the camera
@@ -33,8 +33,29 @@ const BODY_D  = 170;    // how far the dark mass hangs below the surface
 // back. This is the term that keeps gravity feeding the run.
 const DESCENT = 0.115;
 
-// Difficulty ramp: hills get taller and tighter the further you get.
-const RAMP_DIST = 3200;
+// ── The difficulty ramp ────────────────────────────────────────────────────
+// Hills get BIGGER, not SHARPER. This used to raise the amplitude (4.5 → 9.5)
+// while shortening the segment (30 → 19), and a raised cosine peaks at
+// |dy|·π/(2·len) — so doing both at once multiplied steepness: by 3 km the
+// ground under the skater ran at 41° with 65° faces, a bot playing the line
+// properly landed 100% hard, and the fever multiplier could never start. That
+// is a sharpness ramp wearing a difficulty ramp's clothes, and it is the
+// opposite of what this genre does: a Tiny Wings island and an Alto slope grow
+// in size while staying rideable, and the pressure comes from speed, longer
+// airs and a tighter window — not from walls.
+//
+// So generate from a slope budget. `steep` IS the steepest point of the
+// segment; the rise needed for it falls out by inverting the cosine, which
+// means a longer hill is automatically a taller one. Both ends of the ramp are
+// angles you can still land along: 26° → 39°, plus the descent term below.
+const RAMP_DIST   = 3200;
+const LEN_START   = 42;    // world units per crest-to-trough at the top
+const LEN_END     = 36;    // ...and deep into a run: a little tighter, not half
+const SLOPE_START = 0.49;  // 26°
+const SLOPE_END   = 0.81;  // 39°
+const BIG_CHANCE  = 0.14;  // the oversized crest you set up for
+const BIG_LEN     = 1.6;   // it is LONGER as well as taller — a bigger air,
+const BIG_SLOPE   = 1.06;  //   not a steeper wall
 
 function makeStrip(color, hdr) {
   const geo = new THREE.BufferGeometry();
@@ -58,8 +79,9 @@ export class Terrain {
     // drop — you are moving before you have made a single decision.
     this.pts = [{ x: -40, y: 11 }, { x: -8, y: 11 }];
     this.nextIsTrough = true;
-    this.base = 0;      // random walk, the local character of the hills
-    this.trend = 0;     // the descending line they wander around
+    // Heights come out of the slope budget in ensure() now — each control
+    // point is placed relative to the last one, so there is no absolute line to
+    // wander around and nothing to keep here.
     this.ensure(200);
 
     this.top  = makeStrip(COL.groundTop);
@@ -84,17 +106,23 @@ export class Terrain {
       const r = this.rnd;
       const d = clamp(last.x / RAMP_DIST, 0, 1);
 
-      let amp = lerp(4.5, 9.5, d) * (0.65 + 0.7 * r());
-      const len = lerp(30, 19, d) * (0.75 + 0.5 * r());
-      // The occasional oversized crest — the one you set up for.
-      if (!this.nextIsTrough && r() < 0.12) amp *= 1.65;
+      let len = lerp(LEN_START, LEN_END, d) * (0.85 + 0.3 * r());
+      let steep = lerp(SLOPE_START, SLOPE_END, d) * (0.8 + 0.4 * r());
+      if (!this.nextIsTrough && r() < BIG_CHANCE) { len *= BIG_LEN; steep *= BIG_SLOPE; }
 
-      this.trend -= DESCENT * len;
-      this.base = clamp(this.base + (r() - 0.5) * 3.2, -7, 7);
-      const mid = this.trend + this.base;
-      const y = this.nextIsTrough ? mid - amp : mid + amp;
+      // Invert the raised cosine: a segment rising by `rise` over `len` peaks
+      // at exactly `steep`. Size follows steepness instead of fighting it.
+      const rise = steep * 2 * len / Math.PI;
+      // The descending line the whole chain wanders down. It rides on top of
+      // the budget, so a downhill is `steep + DESCENT·π/2` at its worst and an
+      // uphill that much gentler — which is the asymmetry you want in a game
+      // about spending height for speed.
+      const drop = DESCENT * len;
 
-      this.pts.push({ x: last.x + len, y });
+      this.pts.push({
+        x: last.x + len,
+        y: last.y + (this.nextIsTrough ? -rise : rise) - drop,
+      });
       this.nextIsTrough = !this.nextIsTrough;
       last = this.pts[this.pts.length - 1];
     }

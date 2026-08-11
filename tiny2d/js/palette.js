@@ -25,11 +25,14 @@ export const COL = {
   groundLip: 0x123344,
   groundBody:0x050e18,   // the mass below, silhouette
 
-  // Skater
-  skin:      0xffcf9e,
-  shirt:     0xe0483f,
-  pants:     0x39415c,
-  helmet:    0xf5d13f,
+  // The rider: a fat bird on a skateboard. It is the one warm thing in a cold
+  // world, so it carries the same three hues the human rider did — the red mass,
+  // the cream, the yellow — just rearranged into a bird.
+  bird:      0xe0483f,   // the body: one big round-ish mass
+  belly:     0xffcf9e,   // cream, front-heavy, so the silhouette has a front
+  wing:      0xa8322c,   // a darker tone of the body, or the wing vanishes
+  beak:      0xf5d13f,   // beak and feet, the only yellow
+  eye:       0xf7f3ea,
   board:     0xf2f0e6,
   wheels:    0x2a2833,
   ink:       0x03060c,

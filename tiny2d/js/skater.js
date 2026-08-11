@@ -17,8 +17,8 @@
 //   hold in the air     → dive, to get down onto the next downslope sooner
 
 import * as THREE from 'three';
-import { COL } from './palette.js?v=3';
-import { clamp, lerp } from './rng.js?v=3';
+import { COL } from './palette.js?v=4';
+import { clamp, lerp } from './rng.js?v=4';
 
 const G          = 34;    // base gravity
 const PRESS_G    = 2.7;   // gravity multiplier while pressing
@@ -26,7 +26,7 @@ const MAX_SPEED  = 64;
 const MIN_SPEED  = 7;     // you never fully stall
 const GROUND_DRAG= 0.16;  // per second, proportional
 const AIR_DRAG   = 0.03;
-const POP_MAX    = 14;    // full-charge ollie, world units/s
+const POP_MAX    = 10;    // full-charge ollie, world units/s
 const CHARGE_FULL= 0.4;   // seconds of hold for a full pop
 // A trick has to fit inside a real air. Measured average air off a crest is
 // ~0.36 s, so anything near half a second makes tricks a coin flip rather than
@@ -34,9 +34,15 @@ const CHARGE_FULL= 0.4;   // seconds of hold for a full pop
 const TRICK_DUR  = 0.28;
 const BAIL_TIME  = 0.85;
 
-// Landing bands, measured as |perpendicular speed| / |speed| at contact.
-const PERFECT_ALIGN = 0.17;
-const OK_ALIGN      = 0.44;
+// Landing bands, measured as |perpendicular speed| / |speed| at contact —
+// so they are the sine of the angle between your arc and the face. 0.17 was a
+// 10° window, and the bench (tiny2d/test/bench.cjs) says the best line a bot
+// can ride lands at 0.15 on its very best air and 0.5 typically: the perfect
+// band was unreachable in play, which is why deep runs felt like nothing but
+// slams. 0.26 is 15° and 0.60 is 37° — still a real window you can miss, and
+// the genre this comes from rewards "roughly with the slope", not frame-exact.
+const PERFECT_ALIGN = 0.26;
+const OK_ALIGN      = 0.60;
 
 function part(group, w, h, d, color, x, y, z) {
   const geo = new THREE.BoxGeometry(w, h, d);
@@ -54,18 +60,42 @@ function part(group, w, h, d, color, x, y, z) {
   return mesh;
 }
 
+// A fat bird on a skateboard. It is forty pixels tall on a phone, so it has to
+// read as a bird in silhouette alone: one big round mass, no neck, a beak out
+// front and a tail out back. Those two are what make it a bird rather than a
+// blob — the mass is symmetrical, and everything that says which way it is
+// going lives in the things sticking out of it. The cream belly sits proud of
+// the body at the front for the same reason.
 function buildSkater() {
   const g = new THREE.Group();
+
+  // the board, unchanged: it is what the bird is standing on
   part(g, 2.5, 0.18, 0.78, COL.board,  0,     0.22, 0);
   part(g, 0.34, 0.34, 0.9,  COL.wheels, 0.78, 0.06, 0);
   part(g, 0.34, 0.34, 0.9,  COL.wheels,-0.78, 0.06, 0);
-  part(g, 0.5, 0.85, 0.42, COL.pants,  0.42, 0.72, 0);
-  part(g, 0.5, 0.85, 0.42, COL.pants, -0.42, 0.72, 0);
-  part(g, 1.05, 0.95, 0.62, COL.shirt,  0,    1.6,  0);
-  part(g, 0.3, 0.72, 0.3,  COL.skin,   0.72, 1.72, 0);   // trailing arm
-  part(g, 0.3, 0.72, 0.3,  COL.skin,  -0.66, 1.9,  0);   // leading arm
-  part(g, 0.62, 0.6, 0.58, COL.skin,   0.05, 2.42, 0);
-  part(g, 0.74, 0.34, 0.68, COL.helmet, 0.02, 2.78, 0);
+
+  // stubby feet — a fat bird has no legs worth speaking of
+  part(g, 0.42, 0.3, 0.34, COL.beak,   0.34, 0.5, 0.22);
+  part(g, 0.42, 0.3, 0.34, COL.beak,  -0.3,  0.5, -0.2);
+
+  // the mass, and the cream front that gives it a facing
+  part(g, 1.75, 1.55, 1.1, COL.bird,   0,    1.45, 0);
+  part(g, 0.95, 1.0,  1.16, COL.belly, 0.42, 1.28, 0);
+  // one wing, tucked, on the near side only — a second would just be a dark
+  // bar in the middle of the shape at this size. It hangs below the body line
+  // rather than sitting inside it, or it reads as a shadow instead of a wing.
+  part(g, 0.85, 0.8, 0.3, COL.wing,   -0.3,  1.15, 0.6);
+  // tail, out past the back of the body and tilted up
+  part(g, 0.9, 0.42, 0.62, COL.wing,  -1.25, 1.78, 0);
+
+  // the head sits straight on the body, and the beak carries the silhouette
+  part(g, 1.0, 0.9, 0.92, COL.bird,    0.4,  2.5, 0);
+  part(g, 0.6, 0.34, 0.36, COL.beak,   1.18, 2.4, 0);
+  part(g, 0.22, 0.22, 0.3, COL.eye,    0.72, 2.66, 0.32);
+  // a two-block tuft: at this size it is the difference between a bird and a
+  // red box with a beak
+  part(g, 0.26, 0.3, 0.3, COL.wing,    0.2,  3.05, 0);
+  part(g, 0.26, 0.22, 0.3, COL.wing,  -0.05, 3.22, 0);
   return g;
 }
 

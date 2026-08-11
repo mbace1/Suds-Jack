@@ -8,6 +8,33 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v4 — 2026-08-10
+**A fat bird rides it, and the hills stop turning into walls**
+- The rider is a **fat bird on a skateboard** — one round mass, no neck, beak
+  and tail carrying the silhouette, cream belly, two-block tuft, stubby yellow
+  feet. It has to read at forty pixels on a phone, so everything that says
+  which way it is going sticks out of the body. The arcade marquee follows.
+- **The difficulty ramp was a sharpness ramp.** Amplitude climbed 4.5 → 9.5
+  while the segment shortened 30 → 19, and a raised cosine peaks at
+  `|dy|·π/(2·len)` — doing both multiplied steepness. Measured: by 3 km the
+  ground ran at 41° with 65° faces and a bot riding the line properly landed
+  **100% hard**. Hills are now generated from a **slope budget** (26° → 39°,
+  `SLOPE_START`/`SLOPE_END`), with the rise derived from it, so a longer hill
+  is a *taller* hill and never a steeper one. The big-crest roll is longer as
+  well as taller: a bigger air, not a wall.
+- Faces run 42 → 36 units and the pop drops 14 → 10, because the ballistic
+  range goes as v²/g ≈ 47 units: with a 28-unit face every real air sailed
+  past the trough and landed on the next uphill, which is why *no* line could
+  land clean.
+- Landing bands widen to **0.26 / 0.60** (15° / 37°). The old 0.17 was a 10°
+  window that the best measurable line never hit — an unreachable reward.
+- Net effect, measured over ~370 airs per point: perfect **32% → 24%** from
+  the start of a run to 6 km, hard **33% → 42%**, slopes capped at 49°. The
+  curve now escalates by demanding precision instead of by building walls.
+- New `tiny2d/test/` — `bench.cjs` drives the real Skater against the real
+  Terrain at a fixed timestep with no renderer (`sim.html`) and reports the
+  landing-grade curve; `rider.html` draws the bird large and at phone size.
+
 ## v3 — 2026-07-28
 **The canvas was twice the size of the phone**
 - `resize()` called `renderer.setSize(w, h, false)` — `updateStyle` off — and

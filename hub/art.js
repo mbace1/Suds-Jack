@@ -693,7 +693,7 @@ export const ART = {
     g.p(cx - 1, cy + 3, 4, 5, '#e06c8a');
   },
 
-  // Tiny 2D: the lit lip of the hill, and the one skater on it
+  // Tiny 2D: the lit lip of the hill, and the fat bird riding it
   lip(g, a) {
     g.bands(['#03060c', '#071522', '#0a2030', '#0a2030']);
     g.disc(102, 16, 7, '#9fd8e8');                      // moon
@@ -704,10 +704,19 @@ export const ART = {
       g.p(x, y, 1, 2, a);                               // the glowing lip
       g.p(x, y + 2, 1, 1, '#2b6d7a');
     }
-    const sx = 44, sy = hill(44) - 6;
-    g.p(sx - 4, sy + 5, 9, 2, '#dff6ff');               // board
-    g.p(sx - 1, sy, 4, 6, '#e0483f');                   // rider
-    g.p(sx, sy - 4, 3, 4, '#f5d13f');
+    // The rider is a fat bird, and at nine pixels tall the only things that say
+    // so are the beak and the tail — so those get a pixel each and the body
+    // gets everything else.
+    const sx = 44, sy = hill(44) - 8;
+    g.p(sx - 5, sy + 8, 11, 2, '#dff6ff');              // board
+    g.p(sx - 2, sy + 6, 3, 2, '#f5d13f');               // feet
+    g.p(sx - 3, sy + 2, 7, 5, '#e0483f');               // the mass
+    g.p(sx + 1, sy + 3, 3, 4, '#ffcf9e');               // cream belly, in front
+    g.p(sx - 6, sy + 2, 3, 2, '#a8322c');               // tail, out the back
+    g.p(sx - 1, sy - 2, 5, 4, '#e0483f');               // head
+    g.p(sx + 4, sy - 1, 2, 2, '#f5d13f');               // beak
+    g.p(sx + 1, sy - 1, 1, 1, '#f7f3ea');               // eye
+    g.p(sx, sy - 4, 2, 2, '#a8322c');                   // tuft
   },
 
   // 20/20: the chart, getting away from you
