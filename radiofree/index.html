@@ -628,7 +628,7 @@
   // nobody can press. Loaded conditionally rather than hidden, so `?vertical`
   // never depends on winning a CSS fight with somebody else's stylesheet.
   if (!new URLSearchParams(location.search).has('vertical')) {
-    await import('../hub/shell.js?v=13');
+    await import('../hub/shell.js?v=30');
     const { sign } = await import('../toko/js/signature.js?v=2');
     sign({ corner: 'bottom-left' });
   }

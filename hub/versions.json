@@ -12,7 +12,7 @@
     "from": "VERSIONS.md"
   },
   "tokotrip": {
-    "v": 2,
+    "v": 4,
     "from": "VERSIONS.md"
   },
   "dropcabal": {
@@ -44,7 +44,7 @@
     "from": "VERSIONS.md"
   },
   "radiofree": {
-    "v": 42,
+    "v": 43,
     "from": "cache token"
   },
   "tinyhawk": {
