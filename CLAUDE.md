@@ -581,6 +581,55 @@ Pipeline: develop on `claude/*` beta branches → greenlight to `main` → copy 
 bump `?v=N` cache-busters together when shipping. See `gameoflife/README.md` for the
 roadmap of future experiences.
 
+### Kindling (`kindling/`)
+**A betterment game in Finch's shape, made small enough to be honest.** Finch's loop
+taken at its word: you tick off the small real things you actually did, they become
+**kindling**, the kindling keeps a fire, and the fire is the light you see the room by.
+Canvas 2D at 192×128, no build step, no image assets, English only for now.
+**The light is the whole reward, and it is a MEASURE** — `lightAt()` in `js/room.js`
+is one falloff out of the hearth whose reach is the day's tally, so a bad day is coals
+and forty pixels of floor while a full one reaches the shelf, the woodpile and the far
+wall. That is why *everything* the game gives you is a thing that becomes visible
+rather than a number: the shelf fills permanently with what the creature carries home,
+the woodpile is your unspent kindling drawn as sticks, and the **door on the far wall
+only exists on a full fire** — the thing a good day reveals is the way out of the room.
+The whole room is dithered inside `cached()`, keyed on the light quantised to twelve
+steps, with flame, smoke, sparks, the creature and the lantern in the window drawn live
+on top (a scene whose first screen is frozen reads as a broken page).
+The creature (`js/pet.js`) is five stages off one table of numbers and grows on the
+**lifetime count of small things kept** — screen time earns nothing. It dozes by the
+coals when nothing has been done, sits up once the fire has anything to it, hops when
+you keep something, and is simply gone while it is out.
+**The design rules are load-bearing and the gate checks one of them.** The day turns at
+**04:00**, not midnight (a list that resets while you are still awake tells you that
+you failed at 00:01 on a night you were doing fine). Nothing is ever taken away: a
+missed day resets the streak count and costs nothing else, and `liveStreak()` is
+counted back from TODAY (a streak that ended in March must not still show in July —
+the arcade's own counters learned that one). Ticking a line off again is free and pays
+nothing, via `sheet.paid` — the first cut paid out on every re-tick, which was
+farmable, and refusing to untick would have been worse: a list you cannot correct is
+one you stop being honest with. And the copy **never scolds**; `test/smoke.cjs` greps
+every string the app can say for a telling-off, because that is a design rule and not
+a preference.
+The **errand** (`js/errand.js`) is the outward half: three kindling sends it out for 90
+seconds of real time, the outcome is **seeded at departure and computed on return** so
+it survives a reload and a closed tab, and it comes home with two journal lines and
+often something for the shelf. There is no bad outing. **Breathing** (`js/breathe.js`)
+is four rounds of 4/4/6 paced on the fire itself rather than a second meter, banked per
+round so stopping early keeps what you did.
+**Nothing leaves the browser** — one localStorage key, no account, no network call, no
+leaderboard, said once on the first visit in the app's own voice. That is also why it
+has no `score` entry in the catalogue: a care app with a high score is a different app.
+All controls are real DOM buttons over the canvas, which is what makes it keyboard-
+navigable, what lets the arcade's `{ui:true}` pad bridge walk it, and what keeps the
+44px and AA floors measurable. `window.__kd` exposes `{state, audio, view, debug}` —
+`finishErrand()` and `ageDay(n)` hand the clock forward, because `node
+kindling/test/smoke.cjs` (51 checks) is driven off state and never off the wall clock.
+Deliberately **unsigned**, for the same reason `gameoflife/` is: a magenta badge
+shouting GO MAKE YOUR OWN is the wrong voice in a room built to be quiet. Same
+`gh-pages` deploy caveat as paperboy; the Finnish and Japanese in `hub/games.js` want
+the native read the counter's packs do.
+
 ### Toko Midori Games — the brand (`toko/`)
 The identity of the workshop, created by **美鳥十湖** (*Toko Midori*, "The Game
 Creator") — the masked artist behind the look of every cabinet here: anarchist,
@@ -846,6 +895,21 @@ hub/
   hub.css       # the dark room; AA contrast + 44px controls are load-bearing here
 test/
   hub-smoke.cjs # headless checks over the hub
+kindling/       # Kindling — a betterment game: care in, firelight out
+  index.html
+  VERSIONS.md
+  js/
+    room.js     # the room, and the one falloff whose reach IS the day's tally
+    pet.js      # the creature: five stages from one table, lit from the hearth
+    state.js    # the sheet, the streak, the journal — one localStorage key, no network
+    errand.js   # the outing: seeded at departure, computed on return; what it finds
+    breathe.js  # 4 / 4 / 6, paced on the fire rather than on a second meter
+    pixel.js    # the 192x128 surface, cached() and the dither helpers
+    palette.js  # warm is what you made, cold is what is waiting outside it
+    audio.js    # a near-inaudible fire bed and six events, all through one gain
+    main.js     # the views, the day's turn, the errand clock, window.__kd
+  test/
+    smoke.cjs   # 51 checks, driven off state — including that the copy never scolds
 toko/           # Toko Midori Games — the brand (face, lockups, sting, signature)
   BRAND.md      # the rules: the creed, construction notes, the two colours, do/don't
   index.html    # the brand board — every mark live, glitch lab, SVG downloads

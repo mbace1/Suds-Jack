@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kindling</title>
+  <meta name="description" content="A care companion, not a scoreboard. Tick off the small things you actually did, keep a fire on them, and the light shows you the room.">
+  <meta name="color-scheme" content="dark">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Kindling">
+  <meta property="og:description" content="Tick off the small things you actually did. The fire takes them, the light grows, and the small thing beside it goes out looking.">
+  <meta property="og:url" content="https://mbace1.github.io/Suds-Jack/kindling/">
+  <meta name="twitter:card" content="summary">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%230f0b08'/%3E%3Cpath d='M8 2c3 3 4 5 4 7a4 4 0 0 1-8 0c0-2 1-4 4-7z' fill='%23f0a24a'/%3E%3Cpath d='M8 7c1.4 1.5 2 2.6 2 3.6a2 2 0 0 1-4 0C6 9.6 6.6 8.5 8 7z' fill='%23fff2cf'/%3E%3C/svg%3E">
+  <style>
+    /* Kindling — a warm room in a dark page.
+       The whole scheme is one decision: the page is the dark around the fire, so
+       nothing on it is bright except what the fire is meant to be lighting. Text
+       is paper, the chrome is ember, and there is no other colour. */
+    :root {
+      --bg: #0f0b08;
+      --panel: #17110c;
+      --line: #2c2118;
+      --paper: #efe3c9;
+      --dim: #b9ab8c;
+      --ember: #f0a24a;
+      --moss: #9cbf72;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: var(--bg); min-height: 100%; }
+    body {
+      font-family: 'Courier New', ui-monospace, Menlo, monospace;
+      color: var(--paper);
+      display: flex;
+      justify-content: center;
+      padding: 58px 16px 40px;   /* clears the arcade's HOME button, top-left */
+      font-size: 14px;
+      line-height: 1.55;
+      -webkit-text-size-adjust: 100%;
+    }
+    #app { width: 100%; max-width: 560px; }
+    :focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; }
+
+    header h1 {
+      font-size: 18px; font-weight: 400; letter-spacing: 5px;
+      text-transform: uppercase; color: var(--paper);
+    }
+    header p { color: var(--dim); font-size: 12.5px; margin-top: 6px; }
+    .rule { height: 1px; background: var(--line); margin: 14px 0; }
+
+    /* ── the room ── */
+    .screen-wrap {
+      position: relative;
+      background: #000;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 5px;
+      box-shadow: 0 0 44px rgba(240, 162, 74, .07) inset;
+    }
+    .pixel-screen {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 192 / 128;
+      /* nine-ish× upscale of a 192px picture: never smooth it, and never crop
+         it with object-fit — the composition is the whole point */
+      image-rendering: pixelated;
+      max-height: 46vh;
+      margin: 0 auto;
+    }
+    /* the line the app speaks on. It holds three lines open on purpose: sizing
+       to the shortest message walks every button underneath it up and down the
+       page between taps. */
+    .say {
+      margin: 12px 2px 0;
+      min-height: 4.6em;
+      color: var(--paper);
+      font-size: 13px;
+    }
+
+    /* ── the sheet ── */
+    .ask { color: var(--dim); font-size: 12.5px; margin-bottom: 8px; }
+    .moods { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    ul { list-style: none; }
+    .sheet li { display: flex; align-items: stretch; gap: 6px; }
+    .task {
+      flex: 1;
+      display: flex; align-items: center; gap: 10px;
+      min-height: 44px; padding: 8px 10px;
+      font: inherit; text-align: left;
+      color: var(--paper);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .task:hover { background: var(--panel); border-color: var(--line); }
+    .task .box { color: var(--dim); }
+    .task[aria-pressed="true"] { color: var(--moss); }
+    .task[aria-pressed="true"] .box { color: var(--moss); }
+    .task[aria-pressed="true"] .what { text-decoration: line-through; text-decoration-color: var(--line); }
+    .drop {
+      min-width: 44px; min-height: 44px;
+      font: inherit; font-size: 16px;
+      color: var(--dim); background: transparent;
+      border: 1px solid transparent; border-radius: 5px;
+      cursor: pointer;
+    }
+    .drop:hover { color: var(--ember); border-color: var(--line); }
+
+    .add { display: flex; gap: 8px; margin: 14px 0 18px; }
+    .add input {
+      flex: 1; min-height: 44px; padding: 8px 10px;
+      font: inherit; font-size: 13px;
+      color: var(--paper); background: var(--panel);
+      border: 1px solid var(--line); border-radius: 5px;
+    }
+    .add input::placeholder { color: #8d8169; }
+
+    .acts { display: flex; flex-wrap: wrap; gap: 8px; }
+    .btn, .mood {
+      min-height: 44px; padding: 10px 14px;
+      font: inherit; font-size: 13px; letter-spacing: .04em;
+      color: var(--paper); background: var(--panel);
+      border: 1px solid var(--line); border-radius: 5px;
+      cursor: pointer;
+    }
+    .btn:hover, .mood:hover { border-color: var(--ember); color: #fff; }
+    .btn:disabled { color: var(--dim); cursor: default; border-color: var(--line); opacity: .8; }
+    .btn:disabled:hover { color: var(--dim); border-color: var(--line); }
+    .link {
+      min-height: 0; padding: 0;
+      font: inherit; font-size: 12.5px;
+      color: var(--ember); background: none; border: 0;
+      text-decoration: underline; text-underline-offset: 3px;
+      cursor: pointer;
+    }
+
+    /* ── breathing ── */
+    .breathing .breath-label {
+      font-size: 17px; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--ember);
+    }
+    .breathing .breath-round { color: var(--dim); font-size: 12.5px; margin: 4px 0 10px; }
+    .hint { color: var(--dim); font-size: 12.5px; margin: 10px 0 14px; }
+
+    /* ── the journal ── */
+    .journal .days { margin-top: 16px; }
+    .journal li { margin-bottom: 18px; }
+    .date {
+      font-size: 12px; font-weight: 400; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--ember);
+    }
+    .tally { color: var(--dim); font-size: 12px; margin: 2px 0 6px; }
+    .line { font-size: 13px; }
+
+    /* ── the status line ── */
+    .status {
+      display: flex; flex-wrap: wrap; gap: 6px 16px;
+      color: var(--dim); font-size: 12px;
+    }
+    .status .bit { white-space: nowrap; }
+    .status button.bit {
+      min-height: 44px; display: inline-flex; align-items: center;
+    }
+
+    @media (max-width: 420px) {
+      body { padding: 54px 12px 32px; }
+      .pixel-screen { max-height: 38vh; }
+    }
+  </style>
+</head>
+<body>
+  <main id="app">
+    <header>
+      <h1>Kindling</h1>
+      <p>A small fire, kept on the small things you actually did.</p>
+    </header>
+    <div class="rule"></div>
+    <div id="screen" class="screen-wrap"></div>
+    <p id="say" class="say" aria-live="polite"></p>
+    <div id="panel"></div>
+    <div class="rule"></div>
+    <div id="status" class="status"></div>
+  </main>
+  <script type="module" src="js/main.js?v=1"></script>
+  <script type="module" src="../hub/shell.js?v=17"></script>
+</body>
+</html>

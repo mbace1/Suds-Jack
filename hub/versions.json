@@ -35,6 +35,10 @@
     "v": 40,
     "from": "VERSIONS.md"
   },
+  "kindling": {
+    "v": 1,
+    "from": "VERSIONS.md"
+  },
   "radiofree": {
     "v": 37,
     "from": "cache token"
