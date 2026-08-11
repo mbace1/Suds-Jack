@@ -125,6 +125,72 @@ function cmdPrune() {
   writeIndex();
 }
 
+// Is this machine set up to generate? Answers in seconds, with no job to wait
+// on and nothing to pay for. Both halves of this pipeline need TWO things —
+// a key AND a route — and the two failures look nothing alike but both surface
+// as "it didn't work" halfway through a batch. So they are checked separately
+// and named separately.
+// "The host is blocked" and "the key is wrong" both arrive as a 403, and they
+// need completely different people to fix them — so guessing is worse than
+// useless here. An egress proxy rejects the CONNECT, which node's fetch
+// surfaces as an ordinary 403 response indistinguishable from the service's
+// own. The proxy keeps a log of what it refused, so ASK IT rather than infer.
+async function blockedByProxy(host) {
+  const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;
+  if (!proxy) return false;
+  try {
+    const res = await fetch(new URL('/__agentproxy/status', proxy), { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return false;
+    const { recentRelayFailures = [] } = await res.json();
+    return recentRelayFailures.some(f => String(f.host ?? '').startsWith(host) && /reject|denied|403/i.test(`${f.kind} ${f.detail}`));
+  } catch { return false; }
+}
+
+async function cmdDoctor() {
+  const probe = async (label, url, headers, wantKey) => {
+    if (!wantKey) { console.log(`  ${C.bad('✗')} ${label}: no API key in the environment`); return false; }
+    try {
+      const res = await fetch(url, { headers, signal: AbortSignal.timeout(20000) });
+      if (res.status === 401 || res.status === 403) {
+        if (await blockedByProxy(label)) {
+          console.log(`  ${C.bad('✗')} ${label}: blocked by egress policy — the request never left this machine`);
+          return false;
+        }
+        console.log(`  ${C.bad('✗')} ${label}: reachable, but the key was rejected (HTTP ${res.status})`);
+        return false;
+      }
+      console.log(`  ${C.ok('✓')} ${label}: reachable, key accepted (HTTP ${res.status})`);
+      return true;
+    } catch (e) {
+      if (await blockedByProxy(label)) {
+        console.log(`  ${C.bad('✗')} ${label}: blocked by egress policy — the request never left this machine`);
+      } else {
+        console.log(`  ${C.bad('✗')} ${label}: unreachable — ${e.message}`);
+      }
+      return false;
+    }
+  };
+
+  console.log('nano banana (2D)');
+  const gKey = banana.keyFrom();
+  const g = await probe('generativelanguage.googleapis.com',
+    'https://generativelanguage.googleapis.com/v1beta/models', { 'x-goog-api-key': gKey ?? '' }, gKey);
+
+  console.log('\nmeshy (3D)');
+  const mKey = meshy.keyFrom();
+  const m = await probe('api.meshy.ai',
+    'https://api.meshy.ai/openapi/v1/image-to-3d?page_size=1', { authorization: `Bearer ${mKey ?? ''}` }, mKey);
+
+  const n2 = specs.filter(s => s.kind === '2d' && !have(s)).length;
+  const n3 = specs.filter(s => s.kind === '3d' && !have(s)).length;
+  console.log(`\n${g ? C.ok('2D ready') : C.warn('2D not ready')} — ${n2} image${n2 === 1 ? '' : 's'} outstanding`);
+  console.log(`${m ? C.ok('3D ready') : C.warn('3D not ready')} — ${n3} mesh${n3 === 1 ? '' : 'es'} outstanding`);
+  if (!gKey) console.log(C.dim('\n  GEMINI_API_KEY: aistudio.google.com/apikey'));
+  if (!mKey) console.log(C.dim('  MESHY_API_KEY:  meshy.ai → Settings → API Keys'));
+  if (!m && mKey) console.log(C.dim('  meshy needs api.meshy.ai AND assets.meshy.ai allowed — the glb downloads from the CDN host'));
+  if (!g || !m) process.exitCode = 1;
+}
+
 async function cmdGen() {
   const only = opt('--only');
   const dry = flag('--dry');
@@ -195,11 +261,12 @@ async function cmdGen() {
 
 try {
   if (cmd === 'status') cmdStatus();
+  else if (cmd === 'doctor') await cmdDoctor();
   else if (cmd === 'gen') await cmdGen();
   else if (cmd === 'index') console.log(`assets/index.json lists ${writeIndex()}`);
   else if (cmd === 'list') cmdList();
   else if (cmd === 'prune') cmdPrune();
-  else { console.error(`unknown command "${cmd}" — try status | gen | index | list | prune`); process.exitCode = 2; }
+  else { console.error(`unknown command "${cmd}" — try doctor | status | gen | index | list | prune`); process.exitCode = 2; }
 } catch (e) {
   console.error(C.bad(`assets: ${e.message}`));
   process.exitCode = 1;

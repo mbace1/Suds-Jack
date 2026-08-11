@@ -5,6 +5,7 @@ model) draws in 2D; **Meshy** lifts a chosen 2D plate into a 3D mesh. The
 prompts are the source, the bytes under `out/` are the build output.
 
 ```
+node scripts/assets.mjs doctor          is this machine set up to generate?
 node scripts/assets.mjs status          what exists, what is missing, what drifted
 node scripts/assets.mjs gen --dry       what a run would generate — calls nothing
 node scripts/assets.mjs gen             generate what is missing (costs money)
@@ -25,6 +26,42 @@ Everything else runs offline with no key, which is deliberate: the manifest is
 a design document, and you should be able to read the state of the whole batch
 — including which prompts have drifted from their bytes — without spending
 anything.
+
+## Setting up Meshy
+
+Each half of this pipeline needs **two** things: a key *and* a route. They fail
+in ways that look identical from the outside and need different people to fix,
+so `doctor` checks them separately and names them separately:
+
+```
+$ node scripts/assets.mjs doctor
+nano banana (2D)
+  ✓ generativelanguage.googleapis.com: reachable, key accepted (HTTP 200)
+
+meshy (3D)
+  ✗ api.meshy.ai: blocked by egress policy — the request never left this machine
+```
+
+1. **Key** — meshy.ai → Settings → API Keys → `export MESHY_API_KEY=msy_…`
+2. **Route** — allow **both** `api.meshy.ai` *and* `assets.meshy.ai` in the
+   environment's network policy. Two hosts, because the task is created on the
+   API host and the finished GLB downloads from the CDN host — allowing only
+   the first gets you a job that succeeds and then fails on the last line.
+
+On Claude Code web sessions the network policy is chosen when the environment
+is created; see [the docs](https://code.claude.com/docs/en/claude-code-on-the-web).
+An egress denial is not something to retry or route around.
+
+`doctor` distinguishes the two 403s by asking the local proxy what it refused,
+rather than guessing from the status code — an egress proxy rejecting CONNECT
+and a service rejecting a key both surface as a plain `403`.
+
+### Pinning the model
+
+`ai_model` accepts `meshy-5`, `meshy-6` or `latest`. The manifest pins
+**`meshy-6`**, never `latest`: a floating id would change the mesh without
+changing the spec, and therefore without changing the hash the filename is
+built from. The convenient value is the one that breaks the guarantee.
 
 ## The one idea
 

@@ -90,7 +90,12 @@ export const DEFAULTS = {
   // the owner named, and a model id is part of the hash — moving it restages
   // every 2D asset in the batch, which should be a decision and not a drift.
   imageModel: 'gemini-2.5-flash-image',
-  meshModel: 'meshy-5',
+  // meshy-5 | meshy-6 | latest. Pinned to a REAL version on purpose: `latest`
+  // resolves to whatever Meshy ships next, which would change the mesh without
+  // changing the spec — and therefore without changing the hash the filename
+  // is built from. A floating model id is precisely the drift this pipeline
+  // exists to prevent, so the convenient value is the one we must not use.
+  meshModel: 'meshy-6',
   aspect: '1:1',
   topology: 'triangle',
   targetPolycount: 12000,
