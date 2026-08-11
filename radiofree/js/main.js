@@ -1,15 +1,15 @@
 // Radio Free Helsinki — the receiver.
 
-import { PAL, SECTOR_COLOR } from './palette.js?v=42';
-import { Post, Reader } from './codec.js?v=42';
-import { Package } from './package.js?v=42';
+import { PAL, SECTOR_COLOR } from './palette.js?v=43';
+import { Post, Reader } from './codec.js?v=43';
+import { Package } from './package.js?v=43';
 import { SECTORS, STORIES, COPY, ARCHIVED, EPISODES, EPISODE, storyCopy, storyBroadcast,
-         parseLine, loadWire, WIRE_INFO } from './stories.js?v=42';
-import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=42';
-import * as audio from './audio.js?v=42';
-import { PixelScreen } from './screen.js?v=42';
-import { BROLL_KEYS } from './visuals.js?v=42';
-import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=42';
+         parseLine, loadWire, WIRE_INFO } from './stories.js?v=43';
+import { t, getLang, setLang, initLang, nextLang, formatDate, LANGS } from './i18n.js?v=43';
+import * as audio from './audio.js?v=43';
+import { PixelScreen } from './screen.js?v=43';
+import { BROLL_KEYS } from './visuals.js?v=43';
+import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=43';
 import { drawHead } from '../../toko/js/face.js';
 import { TOKO } from '../../toko/js/palette.js';
 
@@ -585,7 +585,8 @@ window.__rfh = {
       if (!p || p.signoff) return null;
       const s = p.post.shot;
       if (!s) return null;
-      return typeof s === 'string' ? { type: s, key: null }
+      const shown = p.post.footage ? p.post.footage() : null;
+      return typeof s === 'string' ? { type: s, key: shown }
         : { type: s.type, key: s.key || null };
     },
     // force the edit onto one shot — a gate (and a clip harness) has to be

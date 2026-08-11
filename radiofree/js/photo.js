@@ -1,5 +1,6 @@
-import { PixelScreen } from './screen.js?v=42';
-import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=42';
+import { PixelScreen } from './screen.js?v=43';
+import { drawPlate, PLATE_W, PLATE_H } from './plates.js?v=43';
+import { brollList } from './wire.js?v=43';
 // Radio Free Helsinki — the footage, as pictures.
 //
 // The plates used to be drawn in code at 144×276. These are Grok's finished
@@ -55,39 +56,72 @@ export class Photo {
     const wrap = document.createElement('div');
     wrap.className = 'photo-wrap';
 
-    const src = sourceFor(story.broll);
-    this.plate = src.draw || null;
+    // A story names one shot or several. Only ONE element is ever in the DOM —
+    // an <img> or a canvas, swapped on `advance()` — because seventeen posts
+    // each holding a photograph per shot is how a feed runs a phone out of
+    // memory. The cost of the swap is a decode the browser has already cached.
+    this.keys = brollList(story && story.broll);
+    if (!this.keys.length) this.keys = ['cathedral'];
+    this.idx = 0;
+    this.seed = seed;
     this.t = seed * 1.9;
     this.d = 0;
+    this.plate = null;
+    this.el = null;
 
-    let img;
-    if (this.plate) {
-      // drawn: a PixelScreen the loop repaints, scaled up by CSS
-      this.scr = new PixelScreen(null, PLATE_W, PLATE_H);
-      img = this.scr.canvas;
-      img.className = 'photo drawn';
-      drawPlate(this.plate, this.scr, this.t, 0);
-    } else {
-      img = document.createElement('img');
-      img.className = 'photo';
-      img.alt = '';                     // decorative: the bulletin is the channel
-      img.decoding = 'async';
-      img.src = `img/${src.img}.jpg`;
-    }
-    // The pan is per post and always slightly different, so scrolling the feed
-    // does not look like the same shot pushed in three times.
-    img.style.animationDelay = `${-(seed * 3.7) % 24}s`;
-    img.style.animationDirection = seed % 2 ? 'alternate-reverse' : 'alternate';
-
-    const grade = document.createElement('div');   // phosphor + scanlines + decode
+    const grade = document.createElement('div');   // phosphor + scanlines
     grade.className = 'photo-grade';
     const sweep = document.createElement('div');   // the slow bright band
     sweep.className = 'photo-sweep';
 
-    wrap.append(img, grade, sweep);
+    wrap.append(grade, sweep);
     host.appendChild(wrap);
     this.wrap = wrap;
+    this.grade = grade;
+    this.mount(this.keys[0]);
   }
+
+  // Put one footage key on screen. Drawn keys get the PixelScreen, photographed
+  // ones the <img>; whichever was there before comes out.
+  mount(key) {
+    const src = sourceFor(key);
+    this.plate = src.draw || null;
+    let el;
+    if (this.plate) {
+      if (!this.scr) this.scr = new PixelScreen(null, PLATE_W, PLATE_H);
+      el = this.scr.canvas;
+      // `.drawn` is what stops `.media-slot canvas { width: auto }` from
+      // letterboxing a full-frame plate — every drawn shot has to carry it.
+      el.className = 'photo drawn';
+      drawPlate(this.plate, this.scr, this.t, 0);
+    } else {
+      if (!this.imgEl) {
+        this.imgEl = document.createElement('img');
+        this.imgEl.className = 'photo';
+        this.imgEl.alt = '';            // decorative: the bulletin is the channel
+        this.imgEl.decoding = 'async';
+      }
+      el = this.imgEl;
+      el.src = `img/${src.img}.jpg`;
+    }
+    // The pan is per post and always slightly different, so scrolling the feed
+    // does not look like the same shot pushed in three times.
+    el.style.animationDelay = `${-(this.seed * 3.7) % 24}s`;
+    el.style.animationDirection = this.seed % 2 ? 'alternate-reverse' : 'alternate';
+    if (this.el && this.el !== el) this.el.remove();
+    if (el.parentNode !== this.wrap) this.wrap.insertBefore(el, this.grade);
+    this.el = el;
+  }
+
+  // The edit cutting back to footage asks for the NEXT shot of this story. With
+  // one key it is a no-op, which is why nothing else has to know the difference.
+  advance() {
+    if (this.keys.length < 2) return;
+    this.idx = (this.idx + 1) % this.keys.length;
+    this.mount(this.keys[this.idx]);
+  }
+
+  reset() { if (this.idx !== 0) { this.idx = 0; this.mount(this.keys[0]); } }
 
   goLive() { this.live = true; this.wrap.classList.add('live'); }
   goIdle() { this.live = false; this.wrap.classList.remove('live'); }
@@ -109,5 +143,5 @@ export class Photo {
 
   sync() { /* nothing to sync since DECODE went */ }
 
-  destroy() { this.wrap.remove(); }
+  destroy() { if (this.scr) this.scr.destroy(); this.wrap.remove(); }
 }

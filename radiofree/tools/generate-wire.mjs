@@ -49,7 +49,7 @@ import path from 'node:path';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..');
 
-const { validateWire, parseLine } = await import(path.join(ROOT, 'js/wire.js'));
+const { validateWire, parseLine, brollList } = await import(path.join(ROOT, 'js/wire.js'));
 const { BROLL_KEYS } = await import(path.join(ROOT, 'js/visuals.js'));
 const { SECTOR_COLOR } = await import(path.join(ROOT, 'js/palette.js'));
 
@@ -92,6 +92,9 @@ const BROLL_NOTES = {
   cableship: 'ACTION — a cable ship working a repair at night, the cable running off the stern into black water',
   swarm: 'ACTION — a drone formation crossing the city after midnight, holding station',
   switchyard: 'a high-voltage substation at night, busbars sagging, a load meter filling',
+  studiofloor: 'an office floor at night after the people have gone — rows of empty desks, one monitor still lit',
+  enginewire: 'a game engine viewport on a monitor in a dark room — a corridor in wireframe, frame-time bar creeping',
+  boardroom: 'a long empty boardroom table under one lamp, a chart on the screen at the end of it going up',
 };
 
 // Places are not accusations (`EDITORIAL.md`), so the naming check has to know
@@ -208,7 +211,10 @@ export async function headlines(feeds, limit) {
 // ── the prompt ────────────────────────────────────────────────────────────
 function artTable() {
   const lines = [];
-  lines.push('BROLL — the footage the post is cut from. Pick the place the story happened:');
+  lines.push('BROLL — the footage the post is cut from. Pick the place the story happened.');
+  lines.push('You may give ONE key, or a LIST of 2-3 keys: a list makes the post cut');
+  lines.push('between several shots of its own story instead of returning to the same');
+  lines.push('frame. Only list shots that are all genuinely about this bulletin.');
   for (const k of BROLL_KEYS) lines.push(`  ${k.padEnd(12)} ${BROLL_NOTES[k] || '(no description — avoid)'}`);
   return lines.join('\n');
 }
@@ -219,7 +225,7 @@ const SCHEMA = `Return ONE JSON object and nothing else. No prose, no code fence
   "stories": [
     {
       "id": "kebab-case-slug",              // unique, never "sign-off"
-      "broll": "<one BROLL key>",
+      "broll": "<one BROLL key>",       // or ["key","key"] for a post that cuts between shots
       "sourced": false,                     // true ONLY for a straight report
       "en": {
         "slug": "SHORT DATELINE IN CAPS",   // e.g. "RING ROAD III", "VUOSAARI"
@@ -528,7 +534,7 @@ async function main() {
   console.log('\nthe broadcast');
   for (const st of wire.stories) {
     const c = wire.copy.en[st.id];
-    console.log(`  ${st.id.padEnd(24)} ${st.visual.padEnd(10)} ${st.broll.padEnd(10)} ${c.technique}`);
+    console.log(`  ${st.id.padEnd(24)} ${brollList(st.broll).join('+').padEnd(24)}${st.sourced ? ' [sourced]' : ''}`);
     console.log(`    ${c.head}`);
   }
 

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#04070a">
-<link rel="manifest" href="manifest.webmanifest?v=42">
+<link rel="manifest" href="manifest.webmanifest?v=43">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="description" content="Radio Free Helsinki — a pirate news broadcast. Real events, invented names: Toko reads the morning's wire from a night city.">
@@ -441,33 +441,33 @@
 
 
   /* ── the lower third ───────────────────────────────────────────── */
+  /* THE TEXT AREA STARTS HIGHER, AND NOTHING IS CLAMPED.
+     The copy used to be cut at two lines with the caption pinned to the bottom
+     45% — which was fine when a bulletin was a teaser for a DECODE drawer, and
+     is wrong now that the bulletin IS the thing. A reader who cannot reach the
+     end of the second paragraph has not been given the story. */
   .post-caption {
     position: absolute; left: 0; right: 0; bottom: 0;
-    padding: 0 14px calc(13% + env(safe-area-inset-bottom));
+    padding: 0 14px calc(7% + env(safe-area-inset-bottom));
     background: linear-gradient(to top,
-      rgba(3,10,8,.94) 0%, rgba(3,10,8,.86) 45%, rgba(3,10,8,0) 100%);
-    padding-top: 46px;
-    max-height: 62%;
+      rgba(3,10,8,.97) 0%, rgba(3,10,8,.94) 62%, rgba(3,10,8,.6) 88%, rgba(3,10,8,0) 100%);
+    padding-top: 34px;
+    max-height: 72%;
   }
   .post-caption .head {
-    font-size: 19px; line-height: 1.2; margin-bottom: 6px;
-    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-    overflow: hidden;
+    font-size: 20px; line-height: 1.14; margin-bottom: 8px;
   }
-  /* max two lines of smaller text — until DECODE, which needs the room */
-  .post .bulletin {
-    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
-    overflow: hidden; font-size: 13px;
-  }
-  .post .bulletin-line + .bulletin-line { margin-top: 0; }
-  .post .fiction { display: none; }
+  .post .bulletin { font-size: 13px; line-height: 1.5; }
+  .post .bulletin-line + .bulletin-line { margin-top: 8px; }
+  .post .fiction { display: block; padding-left: 46px; }   /* clear of the signature badge */
+  .vertical .post .fiction { padding-left: 0; }
   /* DECODE needs the room, and once the caption is 78% tall the scrim's
      transparent top lands in the middle of the picture — over a lit window,
      or over Toko's magenta, the amber plain readings fall miles under AA.
      Decoded, the lower third stops being a gradient and becomes a card. */
 
   /* the rail has to sit above the lower third, and clear of it */
-  .rail { z-index: 3; bottom: auto; top: 58%; }
+  .rail { z-index: 3; bottom: auto; top: 21%; }
   .post-caption { z-index: 2; }
   /* the signature badge lives bottom-left, so keep the copy out of its corner */
   /* the copy used to be indented past the signature badge in the corner;
@@ -506,7 +506,7 @@
     /* A clip cannot scroll, so the caption gets the room a long bulletin
        needs — and the body drops a notch rather than the last line dropping
        off the bottom of the video. */
-    max-height: 64%;
+    max-height: 72%;
     /* a heavier scrim than the page's. On the page the copy is two lines over
        a picture the reader can see around it; a clip shows the whole bulletin,
        and over a bright plate (the beach at noon) the thin gradient put the
@@ -621,7 +621,7 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=42"></script>
+<script type="module" src="js/main.js?v=43"></script>
 <script type="module">
   // The arcade shell and the signature badge are the site around the app, and
   // a clip must not carry them — a HUB button burned into a video is a button
@@ -636,7 +636,7 @@
 <script>
   if ('serviceWorker' in navigator &&
       (location.protocol === 'https:' || new URLSearchParams(location.search).has('sw'))) {
-    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=42').catch(() => {}));
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=43').catch(() => {}));
   }
 </script>
 
