@@ -81,8 +81,23 @@ export async function imageTo3D({
 
     const glbUrl = task.model_urls?.glb;
     if (!glbUrl) throw new Error(`meshy: task ${taskId} succeeded with no glb url`);
-    const glb = await fetchImpl(glbUrl);
-    if (!glb.ok) throw new Error(`meshy: downloading glb — HTTP ${glb.status}`);
+
+    // The mesh is finished and paid for at this point, and it arrives from a
+    // DIFFERENT host than the API — so on a network with an allowlist this is
+    // the step that fails, after several minutes, having spent the credit. The
+    // host is not knowable in advance, so name it in the error: an allowlist
+    // gap should tell you the line to add rather than leaving you to guess it.
+    let glb;
+    try {
+      glb = await fetchImpl(glbUrl);
+    } catch (e) {
+      throw new Error(`meshy: task ${taskId} succeeded but its glb could not be fetched from `
+        + `${new URL(glbUrl).host} — if this network has an allowlist, that host needs to be on it.\n  ${e.message}`);
+    }
+    if (!glb.ok) {
+      throw new Error(`meshy: downloading glb from ${new URL(glbUrl).host} — HTTP ${glb.status}`
+        + (glb.status === 403 ? ' (a 403 here is often an egress policy, not the file)' : ''));
+    }
     return {
       taskId,
       glb: Buffer.from(await glb.arrayBuffer()),

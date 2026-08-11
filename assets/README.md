@@ -42,15 +42,41 @@ meshy (3D)
   ✗ api.meshy.ai: blocked by egress policy — the request never left this machine
 ```
 
-1. **Key** — meshy.ai → Settings → API Keys → `export MESHY_API_KEY=msy_…`
-2. **Route** — allow **both** `api.meshy.ai` *and* `assets.meshy.ai` in the
-   environment's network policy. Two hosts, because the task is created on the
-   API host and the finished GLB downloads from the CDN host — allowing only
-   the first gets you a job that succeeds and then fails on the last line.
+**1. The key** — meshy.ai → Settings → API Keys → `export MESHY_API_KEY=msy_…`
 
-On Claude Code web sessions the network policy is chosen when the environment
-is created; see [the docs](https://code.claude.com/docs/en/claude-code-on-the-web).
-An egress denial is not something to retry or route around.
+**2. The route.** On Claude Code cloud sessions, outbound traffic is governed
+by the environment's **Network access** level, which defaults to **Trusted** —
+package registries, GitHub, cloud SDKs, and nothing else. Meshy is not on that
+list, so every request is refused at CONNECT and never leaves the VM.
+
+To allow it, at [claude.ai/code](https://claude.ai/code) select the cloud icon
+above the message box (there is no settings URL for it), edit the environment,
+set **Network access** to **Custom**, and put this in **Allowed domains**:
+
+```text
+api.meshy.ai
+*.meshy.ai
+```
+
+Tick **Also include default list of common package managers** or the session
+loses npm, GitHub and everything else it currently has.
+
+Two entries because the task is created on the API host and the finished GLB
+downloads from a *different* one — allow only the first and you get a job that
+runs for minutes, succeeds, spends the credit and dies on the last line. If
+that host turns out not to be under `meshy.ai` at all, the error names it:
+`meshy.mjs` reports the host it could not reach, so the gap tells you the line
+to add instead of leaving you to guess.
+
+**Changes apply to sessions started afterwards.** A running session keeps the
+network policy it booted with, so this takes a new session, not a reload.
+
+Don't put the key in the environment's **Environment variables** box: the docs
+are explicit that anyone using the environment can read those and that cloud
+environments have no secrets store. Export it in the session instead.
+
+An egress denial is never something to retry or route around — the host is
+reported, and that is the whole of the response to it.
 
 `doctor` distinguishes the two 403s by asking the local proxy what it refused,
 rather than guessing from the status code — an egress proxy rejecting CONNECT
