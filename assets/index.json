@@ -1,5 +1,12 @@
 {
   "generated": {
+    "lab/orc": {
+      "file": "2d/lab-orc.c019895c.png",
+      "kind": "2d",
+      "use": "prop",
+      "game": "lab",
+      "hash": "c019895c"
+    },
     "tokotrip/jetty": {
       "file": "2d/tokotrip-jetty.caa95d4c.png",
       "kind": "2d",

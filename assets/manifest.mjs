@@ -93,6 +93,17 @@ shading, no harsh shadows and no specular highlights. Three-quarter view with
 an orthographic feel. Plain pure-white background, the object alone and whole
 in frame with clear space around it. No text, no logos, no UI, no ground plane.`,
 
+  // The lab: no game yet. A neutral character model sheet, for trying the
+  // pipeline on something before it belongs to a cabinet. Deliberately has no
+  // house colour in it — the moment one of these becomes a real character it
+  // moves to that game's block and re-renders under its palette.
+  lab: `Neutral character model sheet for 3D reconstruction. Full body, whole
+figure in frame with clear space around it, nothing cropped. EVENLY lit from
+the front with soft flat light — no dramatic shadows, no rim light, no cast
+shadows, no atmosphere, no ground plane. Plain flat mid-grey background.
+Stylized game-ready proportions, clean readable silhouette, matte surfaces with
+no gloss and no fine texture detail. No text, no logos, no UI, no watermark.`,
+
   // Suds Jack: cold blooms, warm does not. The whole read of the game is that
   // what you want glows and what hurts you never does.
   suds: `Suds Jack house style. Everything desirable is COLD — pale cyan and
@@ -154,6 +165,36 @@ about to spit. No limbs, no face. Three quarter view, centred, full body.`,
 torus standing upright on its rim like a rolling tyre. Firmer and glassier than
 the soft gels — a hard rolling wheel, not a jelly. Motion implied, poised to
 charge. Side-on three quarter view, centred, full body.`,
+  },
+
+  // ── THE LAB — no cabinet yet ─────────────────────────────────────────────
+  {
+    id: 'lab/orc',
+    game: 'lab',
+    use: 'prop',
+    style: 'lab',
+    tags: ['character'],
+    // T-pose as asked. Worth knowing for when this is meshed: a T-pose buries
+    // the armpit in itself, and photogrammetry cannot reconstruct a surface it
+    // cannot see — an A-pose (arms 45° down) opens that up and meshes cleaner.
+    // T is the rigging convention, A is the scanning one. Kept as T because it
+    // was asked for; the fix, if the mesh webs at the shoulders, is the pose.
+    prompt: `A stylized fantasy orc in a strict T-POSE — standing upright, legs
+straight and slightly apart, both arms held straight out horizontally to the
+sides at shoulder height, palms down, fingers together. Facing the camera
+dead-on. Heavy muscular build, broad hunched shoulders, green skin, tusks
+jutting from a heavy jaw, pointed ears, a topknot. Simple leather harness,
+belt and boots — no cape, no loose cloth, no weapon in hand. Symmetrical.`,
+  },
+  {
+    id: 'lab/orc-mesh',
+    game: 'lab',
+    kind: '3d',
+    use: 'prop',
+    from: 'lab/orc',
+    targetPolycount: 15000,
+    symmetry: 'on',
+    tags: ['character'],
   },
 
   // ── TOKO TRIP ───────────────────────────────────────────────────────────
