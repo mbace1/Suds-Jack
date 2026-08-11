@@ -17,16 +17,16 @@
 // lets the arcade's `{ui:true}` pad bridge walk it, and what keeps the 44px and
 // WCAG-AA floors measurable.
 
-import { PixelScreen, loop } from './pixel.js?v=1';
-import { drawRoom, FLOOR_Y } from './room.js?v=1';
-import * as audio from './audio.js?v=1';
-import { makeBreath, ROUNDS } from './breathe.js?v=1';
-import { THINGS, startErrand, errandLeft, report, ERRAND_MS } from './errand.js?v=1';
+import { PixelScreen, loop } from './pixel.js?v=2';
+import { drawRoom, FLOOR_Y } from './room.js?v=2';
+import * as audio from './audio.js?v=2';
+import { makeBreath, ROUNDS } from './breathe.js?v=2';
+import { THINGS, startErrand, errandLeft, report, ERRAND_MS } from './errand.js?v=2';
 import {
   S, save, write, rollover, warmth, caredToday, liveStreak, stage, nextStage,
   toggleTask, setMood, countBreath, addTask, removeTask, spend, found, note, setSound,
   dayKey, FULL_DAY, ERRAND_COST, PAY,
-} from './state.js?v=1';
+} from './state.js?v=2';
 
 const MOODS = [
   { id: 'rough',  label: 'rough' },
@@ -64,6 +64,22 @@ const view = {
 };
 
 function say(text) { sayLine.textContent = text; }
+
+// ── who is driving ──────────────────────────────────────────────────
+// Swapping a view rebuilds the panel, which throws the focus back to the body —
+// a keyboard player has to tab in again from the top every time. So the focus
+// follows a view swap, but ONLY when the last thing that happened arrived from a
+// key: move it after a tap and a phone raises a ring nobody asked for.
+let keyDriven = false;
+addEventListener('keydown', e => {
+  if (['Tab', 'Enter', ' ', 'ArrowDown', 'ArrowUp'].includes(e.key)) keyDriven = true;
+}, true);
+addEventListener('pointerdown', () => { keyDriven = false; }, true);
+
+function focusPrimary() {
+  if (!keyDriven) return;
+  panel.querySelector('button, input')?.focus();
+}
 
 // ── the loop ─────────────────────────────────────────────────────────
 let lastDay = dayKey();
@@ -240,10 +256,10 @@ function startBreathing() {
       view.breath = null;
       view.page = 'today';
       say('Four rounds. The fire is a little higher than it was.');
-      render();
+      render(true);
     },
   });
-  render();
+  render(true);
   audio.breathIn();
 }
 
@@ -254,7 +270,7 @@ function stopBreathing() {
   say(rounds > 0
     ? `${rounds} round${rounds === 1 ? '' : 's'} kept. Stopping when you have had enough is the exercise too.`
     : 'Any time.');
-  render();
+  render(true);
 }
 
 let lastPhase = null;
@@ -318,7 +334,7 @@ function todayPanel() {
       x.addEventListener('click', () => {
         removeTask(task.id);
         say('Off the list.');
-        render();
+        render(true);        // the button it was on has just gone
       });
       li.appendChild(x);
     }
@@ -360,7 +376,7 @@ function todayPanel() {
 
   const journal = el('button', 'btn', 'journal');
   journal.type = 'button';
-  journal.addEventListener('click', () => { view.page = 'journal'; audio.page(); render(); });
+  journal.addEventListener('click', () => { view.page = 'journal'; audio.page(); render(true); });
 
   acts.append(breathe, send, journal);
   wrap.appendChild(acts);
@@ -400,7 +416,7 @@ function journalPanel() {
   const wrap = el('div', 'journal');
   const back = el('button', 'btn', 'back to today');
   back.type = 'button';
-  back.addEventListener('click', () => { view.page = 'today'; audio.page(); render(); });
+  back.addEventListener('click', () => { view.page = 'today'; audio.page(); render(true); });
   wrap.appendChild(back);
 
   if (!S.journal.length) {
@@ -461,7 +477,9 @@ function statusRender() {
   statusLine.appendChild(sound);
 }
 
-function render() {
+// `focus` is passed only where the VIEW changed — a repaint after ticking a line
+// must leave the focus where the player put it.
+function render(focus = false) {
   panel.replaceChildren(
     view.page === 'journal' ? journalPanel()
       : view.page === 'breathe' ? breathePanel()
@@ -469,6 +487,7 @@ function render() {
   if (view.page === 'today') refreshErrandButton();
   statusRender();
   audio.setWarmth(warmth());
+  if (focus) focusPrimary();
 }
 
 // ── boot ─────────────────────────────────────────────────────────────

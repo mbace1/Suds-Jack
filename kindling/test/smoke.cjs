@@ -23,6 +23,7 @@
 //  - the light IS the reward: more care means a measurably brighter room, and
 //    the far side of it only exists on a full fire
 //  - the copy never scolds (a real check, because that is the design rule)
+//  - the offline shell names files that exist, at the tokens the page asks for
 //  - a 44px floor on every control, AA contrast, no sideways scroll on a phone
 
 const { chromium } = require('playwright');
@@ -161,7 +162,7 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
 
   // ── the breathing machine, stepped rather than waited out ──
   const breath = await page.evaluate(async () => {
-    const { makeBreath, ROUNDS } = await import('./js/breathe.js?v=1');
+    const { makeBreath, ROUNDS } = await import('./js/breathe.js?v=2');
     const rounds = [];
     let done = false;
     const m = makeBreath({ onRound: n => rounds.push(n), onDone: () => { done = true; } });
@@ -218,7 +219,7 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
   // the report is rolled at DEPARTURE: the same errand always tells the same
   // story, however many times the page is reloaded before it gets home
   const stable = await page.evaluate(async () => {
-    const { report } = await import('./js/errand.js?v=1');
+    const { report } = await import('./js/errand.js?v=2');
     const e = __kd.state.errand;
     const a = report(e, []), b = report(e, []);
     return a.lines.join('|') === b.lines.join('|') && a.thing === b.thing;
@@ -355,6 +356,44 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
   });
   check(`nothing it can say to you is a telling-off${scolding.length ? ` — ${scolding[0]}` : ''}`,
     scolding.length === 0);
+
+  // ── the offline shell, and the numbers in it ──
+  //
+  // The one bug a hand-kept precache list can have is a number that disagrees
+  // with another file — a list a token behind the page is an app that loads
+  // online and comes up blank on a train. So every entry is fetched, and the
+  // tokens are compared with what index.html and hub/shell.js actually request.
+  const sw = fs.readFileSync(path.join(ROOT, 'kindling', 'sw.js'), 'utf8');
+  const html = fs.readFileSync(path.join(ROOT, 'kindling', 'index.html'), 'utf8');
+  const hubShell = fs.readFileSync(path.join(ROOT, 'hub', 'shell.js'), 'utf8');
+
+  const V = sw.match(/const V = '(\?v=\d+)'/)?.[1] ?? '';
+  const from = sw.indexOf('const SHELL = [');
+  const block = sw.slice(from, sw.indexOf('];', from));
+  const entries = [...block.matchAll(/[`'](\.[^`']+)[`']/g)]
+    .map(m => m[1].replace('${V}', V));
+  check(`the worker's shell list has every module on it (${entries.length} entries)`,
+    entries.length >= 18);
+
+  const dead = [];
+  for (const e of entries) {
+    const url = new URL(e, `${base}/kindling/`).href;
+    const r = await page.request.get(url);
+    if (!r.ok()) dead.push(e);
+  }
+  check(`and every one of them resolves${dead.length ? ` — ${dead}` : ''}`, dead.length === 0);
+
+  check(`the page's own token matches the worker's (${V})`,
+    html.includes(`js/main.js${V}`) && V.length > 0);
+
+  // the four files that come from one level up belong to the arcade, and their
+  // numbers move when it deploys — so they are checked against the real thing
+  const drifted = entries.filter(e => e.startsWith('../hub/')).filter(e => {
+    const file = e.slice('../hub/'.length);
+    return !hubShell.includes(`./${file}`) && !html.includes(`../hub/${file}`);
+  });
+  check(`the way home is precached at the tokens the hub actually uses${drifted.length ? ` — ${drifted}` : ''}`,
+    drifted.length === 0);
 
   // ── the floors ──
   const small = await page.evaluate(() => {

@@ -18,10 +18,10 @@
 // out. Everything that moves — flame, sparks, smoke, the creature, the lantern
 // in the window — is drawn live, on top, every frame.
 
-import { PAL, mix, shade } from './palette.js?v=1';
-import { bayer, rampDither } from './pixel.js?v=1';
-import { THINGS } from './errand.js?v=1';
-import { drawPet } from './pet.js?v=1';
+import { PAL, mix, shade } from './palette.js?v=2';
+import { bayer, rampDither } from './pixel.js?v=2';
+import { THINGS } from './errand.js?v=2';
+import { drawPet } from './pet.js?v=2';
 
 export const FLOOR_Y = 100;
 const FIRE_X = 38, FIRE_Y = 96;          // the light comes from here, always

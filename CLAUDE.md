@@ -622,9 +622,25 @@ leaderboard, said once on the first visit in the app's own voice. That is also w
 has no `score` entry in the catalogue: a care app with a high score is a different app.
 All controls are real DOM buttons over the canvas, which is what makes it keyboard-
 navigable, what lets the arcade's `{ui:true}` pad bridge walk it, and what keeps the
-44px and AA floors measurable. `window.__kd` exposes `{state, audio, view, debug}` —
-`finishErrand()` and `ageDay(n)` hand the clock forward, because `node
-kindling/test/smoke.cjs` (51 checks) is driven off state and never off the wall clock.
+44px and AA floors measurable; the focus follows a view swap **only when the last input
+was a key**, so a tap never raises a ring nobody asked for. `window.__kd` exposes
+`{state, audio, view, debug}` — `finishErrand()` and `ageDay(n)` hand the clock forward,
+because `node kindling/test/smoke.cjs` (55 checks) is driven off state and never off the
+wall clock.
+It is **offline-first and installable**, for the same reason `gameoflife/` is: something
+you open once a day, often on a phone and often before you are properly awake, cannot
+need a signal. `sw.js` is cache-first and scoped to this folder (a narrower scope wins
+its own pages — which is also why `scripts/deploy-hub.mjs` skips a folder shipping its
+own worker), and `node kindling/test/offline.cjs` (15 checks) kills the server, goes
+offline and plays a whole day through, asserting the network served **nothing** after it
+was cut. The precache list is hand-kept, so the gate makes it impossible to drift:
+every entry is fetched, the page's `?v=` token is compared with the worker's, and the
+four `../hub/*` files that carry the HOME button are checked against the tokens
+`hub/shell.js` actually imports — a list a token behind the page is an app that loads
+online and is blank on a train, which this repo has shipped before. The manifest's PNGs
+are **generated** by `tools/make-icons.mjs` from the app's own palette: a manifest needs
+real bitmaps, which is the one place the no-image-assets rule bends, and it bends the way
+the brand's SVGs do so a handed-over icon cannot drift from the app.
 Deliberately **unsigned**, for the same reason `gameoflife/` is: a magenta badge
 shouting GO MAKE YOUR OWN is the wrong voice in a room built to be quiet. Same
 `gh-pages` deploy caveat as paperboy; the Finnish and Japanese in `hub/games.js` want
@@ -898,6 +914,12 @@ test/
 kindling/       # Kindling — a betterment game: care in, firelight out
   index.html
   VERSIONS.md
+  sw.js         # offline: cache-first, scoped to this folder, its own version
+  manifest.webmanifest
+  icon-192.png  # generated — never hand-edited
+  icon-512.png
+  tools/
+    make-icons.mjs  # writes both icons from the app's palette (no dependencies)
   js/
     room.js     # the room, and the one falloff whose reach IS the day's tally
     pet.js      # the creature: five stages from one table, lit from the hearth
@@ -909,7 +931,8 @@ kindling/       # Kindling — a betterment game: care in, firelight out
     audio.js    # a near-inaudible fire bed and six events, all through one gain
     main.js     # the views, the day's turn, the errand clock, window.__kd
   test/
-    smoke.cjs   # 51 checks, driven off state — including that the copy never scolds
+    smoke.cjs   # 55 checks, driven off state — including that the copy never scolds
+    offline.cjs # kills the server and plays a day with the network gone
 toko/           # Toko Midori Games — the brand (face, lockups, sting, signature)
   BRAND.md      # the rules: the creed, construction notes, the two colours, do/don't
   index.html    # the brand board — every mark live, glitch lab, SVG downloads

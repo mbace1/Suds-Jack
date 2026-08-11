@@ -11,6 +11,8 @@
   <meta property="og:description" content="Tick off the small things you actually did. The fire takes them, the light grows, and the small thing beside it goes out looking.">
   <meta property="og:url" content="https://mbace1.github.io/Suds-Jack/kindling/">
   <meta name="twitter:card" content="summary">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%230f0b08'/%3E%3Cpath d='M8 2c3 3 4 5 4 7a4 4 0 0 1-8 0c0-2 1-4 4-7z' fill='%23f0a24a'/%3E%3Cpath d='M8 7c1.4 1.5 2 2.6 2 3.6a2 2 0 0 1-4 0C6 9.6 6.6 8.5 8 7z' fill='%23fff2cf'/%3E%3C/svg%3E">
   <style>
     /* Kindling — a warm room in a dark page.
@@ -183,7 +185,15 @@
     <div class="rule"></div>
     <div id="status" class="status"></div>
   </main>
-  <script type="module" src="js/main.js?v=1"></script>
+  <script type="module" src="js/main.js?v=2"></script>
   <script type="module" src="../hub/shell.js?v=17"></script>
+  <script>
+    // Offline, over https only — or with ?sw=1, which is how the offline gate
+    // opts in. Local dev and the smoke test must never be served a stale shell.
+    if ('serviceWorker' in navigator
+        && (location.protocol === 'https:' || location.search.includes('sw=1'))) {
+      addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
 </body>
 </html>
