@@ -1,34 +1,65 @@
 # EERI — Art Brief
 
-> **Status: draft v1 — for the owner to mark up.** Everything in here is a
-> starting position, not a locked plan. Sections tagged **[ASSUME]** are
-> guesses that need the owner's own words before production starts; the
-> locked visual plans elsewhere in this repo (gameoflife, the hub) all began
-> as briefs like this one and only became rules after a render → LOOK →
-> redo pass against real references.
+> **Status: draft v2 — for the owner to mark up.** Owner-given direction
+> (2026-08-12): **references are Super Mario Bros. 3 and Mario 4 (Super
+> Mario World), plus construction machines; environments are 2D, characters
+> are 3D.** Everything else in here is a starting position built around
+> those three facts. Sections tagged **[ASSUME]** still need the owner's
+> own words. Locked visual plans elsewhere in this repo (gameoflife, the
+> hub) all began as briefs like this and only became rules after a
+> render → LOOK → redo pass against real references.
 
 ---
 
-## 1. What the game is **[ASSUME]**
+## 1. What the game is
 
-**Eeri** — an atmospheric platformer. Working read of the name: *eeri* as in
-**eerie**, and as a Finnish given name — the small figure you play is called
-Eeri. Both readings should survive in the art: a quiet, unsettling world
-seen by someone small enough to be swallowed by it.
+**Eeri** — a bright, side-view platformer in the **Mario 3 / Mario World
+register**, whose cast is **construction machines**: excavators, cranes,
+dump trucks, mixers, rollers, a wrecking ball. Tile-built 2D worlds; chunky
+articulated 3D characters living in them.
 
-- **Genre:** side-view platformer, room-by-room or slow-scroll.
-- **Tone:** hushed, wrong-in-the-corner-of-your-eye. Not horror-loud —
-  eerie. Dread comes from scale, silence and light, never from gore.
-- **Reference space** (to be replaced by the owner's own references —
-  per-cover references are the owner's to give, same rule as the arcade):
-  *Limbo* / *Inside* (silhouette + fog + one light source), *Little
-  Nightmares* (small hero, oversized world), and the house's own
-  `flashprince/` (commitment-based movement, hard-cut rooms that you learn
-  and remember).
+**Owner-given (locked until the owner says otherwise):**
+- Reference games: *Super Mario Bros. 3* and *Super Mario World* ("Mario 4").
+- Theme ingredient: construction machines.
+- Asset split: **2D environments, 3D characters.**
 
-The brief covers **art only**. Mechanics get their own document; the one
-mechanical fact art must respect is that a platformer hero's read —
-silhouette, contact frames, ledge reach — *is* the game feel.
+**Working assumptions [ASSUME]:**
+- *Eeri* is the hero's name (a Finnish given name) — a small figure on a
+  big worksite, or possibly a small machine among big ones. Which one
+  changes the hero sheet and nothing else in this brief.
+- Tone: toy-box, sunny, mischievous — construction as a playground, the
+  Bob-the-Builder end of the theme, not industrial grime. Hazards are
+  cartoon hazards (swinging balls, tipping loads, wet cement), never gore.
+- This is an **homage in register**, same as everything in this repo
+  (Paperboy, Cabal, Devil Daggers, Another World): we take the *grammar*
+  of Mario 3/World — the constraints and composition rules — and none of
+  its actual characters, sprites or logos.
+
+### What "Mario 3 + Mario World" means as instructions, not nostalgia
+
+The house rule for references is that they are technical instructions.
+Read this way:
+
+- **The level is a built stage.** SMB3 opens on a curtain and its worlds
+  are sets — platforms bolted to the sky, shadows painted on. That conceit
+  is a *gift* to a construction game: the stage visibly IS under
+  construction. Scaffolds, girders and unfinished edges are the framing
+  device, and the "set" reading excuses every floating platform.
+- **Flat colour, hard black-line accents, blue sky.** NES/SNES palettes:
+  large flat fills, 3–4 tones per material, outlines only where a shape
+  must pop from the sky. No gradients wider than a 2–3 band ramp.
+- **The tile grid is visible and honest.** Mario levels are readable as
+  tiles and proud of it — repetition is rhythm, not a defect. Level art is
+  a tileset used well, not a painting.
+- **Silhouette-first characters with one exaggerated feature** (Mario's
+  cap/moustache → an excavator's arm, a crane's hook). Every character
+  reads at 32 px against the sky.
+- **Themed worlds re-skin one grammar** (grass/desert/water/giant/sky →
+  e.g. groundworks / scaffold heights / demolition / night-shift / the
+  crane top). Same tiles-and-machines grammar, re-dressed per world.
+- **Secrets look like the wall** — a suspiciously regular patch of tiles
+  is the SMB3 invitation to hit it. Art must support "this tile is 2%
+  different on purpose."
 
 ---
 
@@ -37,23 +68,23 @@ silhouette, contact frames, ledge reach — *is* the game feel.
 Every other project in this repo draws its art **in code** — no image
 files, no model files. Eeri is the first project that will ship **real 2D
 and 3D asset files**. That is a deliberate departure, and it needs rules
-before the first asset lands, because the repo's discipline (no build step,
-offline-capable, versioned URLs, one source of truth per look) has to
-survive the change:
+before the first asset lands, because the repo's discipline (no build
+step, offline-capable, versioned URLs, one source of truth per look) has
+to survive the change:
 
-1. **No build step still holds.** Assets are loaded at runtime — PNG via
+1. **No build step still holds.** Assets load at runtime — PNG via
    `<img>`/`fetch`, GLB via three.js `GLTFLoader` from a **local
    `vendor/` three.js copy** (same rule as `sudsjack/`, never the CDN).
 2. **Every asset file is a versioned URL** from its first release
-   (`?v=N` token, same convention as every module here) — the Pages CDN
-   caches 404s, and an asset list is a precache list waiting to happen.
+   (`?v=N`, same convention as every module here) — the Pages CDN caches
+   404s, and an asset list is a precache list waiting to happen.
 3. **One source of truth per look.** The palette lives in
-   `eeri/js/palette.js` even though assets exist — textures and sprites are
-   *built from* those hex values, and a swatch strip is committed next to
-   the sources so a repaint is a diff, not archaeology.
+   `eeri/js/palette.js` even though assets exist — tilesets and model
+   colours are *built from* those hex values, and a committed swatch strip
+   sits next to the sources so a repaint is a diff, not archaeology.
 4. **Sources stay out of the shipped tree.** `.blend`, `.aseprite`, `.kra`
    working files live in `eeri/art-src/` (gitignored or LFS — owner's
-   call); the game folder ships only the exported, optimised files.
+   call); the game folder ships only exported, optimised files.
 
 ---
 
@@ -61,107 +92,136 @@ survive the change:
 
 ### 3.1 The one-line direction
 
-**A 16-bit night seen through a modern lens:** hand-pixelled 2D reads
-(sprites, foreground) over low-poly flat-shaded 3D depth (rooms, props,
-parallax), unified by a single palette and a single light.
+**A Mario-grammar stage set, visibly under construction, with chunky
+articulated 3D machines as the cast — everything unified by one low
+internal resolution.**
 
-This is the 2.5D split that earns having *both* asset types instead of
-picking one:
+The split the owner asked for, and why it pays:
 
-- **2D owns everything the player reads at speed** — Eeri, creatures,
-  pickups, hazards, UI. Pixel art, hard edges, `image-rendering:
-  pixelated`. A platformer's read lives in silhouette and animation timing,
-  and pixels are the house's native tongue.
-- **3D owns everything the player reads as *place*** — room geometry,
-  large props, background layers with true parallax, the occasional slow
-  rotating set-piece. Low-poly, flat-shaded, unlit or single-light — the
-  `paperboy/` / `dropcabal/` register, never PBR.
-- The camera is **orthographic or near-ortho**, locked to the side view, so
-  the 3D never fights the 2D grid. 3D exists to give the rooms depth and
-  cheap re-dressing, not to become a free camera.
+- **2D owns the world** — tilesets, parallax skies, scaffolding frames,
+  UI. Mario levels *are* tiles; pixel art is the medium the reference
+  demands and the house's native tongue.
+- **3D owns the cast** — hero and machines. This is where 3D earns its
+  place: a machine is a hierarchy of rigid parts (cab, boom, stick,
+  bucket, wheels), and one GLB with named nodes gives every pose and
+  every facing **by rotating joints in code** — no sprite sheet explosion
+  per angle, and mechanical motion (a boom easing to a stop, wheels that
+  actually roll) comes free and reads as *machine* in a way redrawn
+  frames never quite do.
 
-### 3.2 Palette
+### 3.2 The unifier: one internal resolution (the make-or-break rule)
 
-Follow the house pattern that already works in three projects: **a dark,
-muted world with one cold luminescent accent for everything that matters,
-and warm for everything that hurts.**
+Smooth antialiased 3D floating over crisp pixel tiles is the failure mode
+of this whole direction — two arts sharing a screen instead of one game.
+The fix is already proven in this repo: **`dropcabal/` renders three.js at
+a 220 px internal height and upscales with `image-rendering: pixelated`.**
+Eeri does the same — the 3D characters render into the *same low-res
+buffer* the tiles occupy (**internal height ~240 px [ASSUME]** — lock in
+gate 1), with `NearestFilter` on everything, no antialiasing, flat unlit
+materials and `NoToneMapping`. At that point a 3D machine *becomes* pixel
+art in motion, and the seam disappears. A CSS scanline overlay stays
+optional and off by default.
+
+**Gate 1 of production (§8) exists to prove this shot before anything
+else is made.**
+
+### 3.3 Palette
+
+Mario register + worksite: **saturated flats against a blue sky, with
+safety yellow-orange as the cast's family colour and hazard stripes as
+the danger language.**
 
 | Role | Working value | Rule |
 |---|---|---|
-| VOID | `#050608` | pure-black-adjacent; the world sits in it |
-| WORLD ramp | 4–5 desaturated blue-greys, dark → mid | rooms, props, parallax — nothing in this ramp may glow |
-| EERI | pale bone `#d8d4c8` + one dark tone | the hero must never be a black silhouette against a dark scene — light him or rim him (lesson recorded from the cover work) |
-| LUX (accent) | violet `#b48ae8` **[ASSUME]** | interactives, save points, eyes in the dark, UI focus — the *only* saturated cold colour on screen |
-| EMBER (hazard) | warm `#e86a3a` family | everything that damages is warm and angular; nothing safe is |
+| SKY | `#4aa8e8` → pale horizon band | large, flat, cheerful; clouds are 2–3 flat shapes |
+| EARTH ramp | warm browns/tans, 3 tones | dug ground, dirt piles, brick |
+| STEEL ramp | cool blue-greys, 3 tones | girders, scaffolds, plates |
+| ACCENT GREEN | `#3cc85a` family | the "grass lip" role — safe standable edges |
+| MACHINE | **safety yellow-orange `#ffb01f` [ASSUME]** + near-black | the cast's uniform; every friendly machine carries it |
+| HAZARD | `#e8402a` red + **black/yellow chevron stripes** | the one language for "this hurts": wet cement, swing zones, live edges — stripes make danger readable in greyscale |
+| INK | `#1a1410` | outlines, only where a shape must pop from sky |
 
-- The accent doubles as the game's **hub cabinet accent** (`hub/games.js`)
-  — violet is unclaimed on the floor (current cabinets run cyan/green/
-  red/orange/gold/pink), so the cabinet will read as its own.
-- Contrast is load-bearing, not decorative: hazard vs safe must survive
-  greyscale. Check every room mock in greyscale before approving it.
-- UI text colours pass **WCAG AA** and controls hit **44 px** — both are
-  smoke-gate assertions everywhere else in this repo and will be here too.
+- The machine yellow doubles as the **hub cabinet accent**
+  (`hub/games.js`) — the floor's existing accents (cyan/green/red/orange/
+  gold/pink) leave a true safety-yellow unclaimed. Veto freely.
+- Ramps are 3 tones per material, hard steps, no smooth gradients — the
+  SNES read.
+- Hazard-vs-safe must survive greyscale (the chevron carries it). Check
+  every room mock in greyscale before approving.
+- UI text passes **WCAG AA**, controls hit **44 px** — smoke-gate
+  assertions here like everywhere else in the repo.
 
-### 3.3 Light
+### 3.4 Light
 
-One light per room, and the room is *about* it. A doorway, a shaft, a
-lantern Eeri carries — the light defines where you look and where you are
-allowed to feel safe. Fog/haze cheap-tricked with 2–3 translucent parallax
-planes, not volumetrics. Post stack (if three.js is in play): ACES + mild
-bloom on LUX/EMBER emissives only — the `hyperdagger/` selective-bloom
-trick (HDR colour values > 1.0 trip the threshold; matte stays matte).
-No chromatic aberration, no afterimage — this game is still, not fast.
+None, effectively: **everything unlit** (`MeshBasicMaterial` on the 3D,
+flat fills on the 2D) for the poster read — the `paperboy/` rule. Depth
+cues are painted: a darker tone on a machine's side faces baked into
+vertex colours, painted drop-shadow blobs under characters (Mario's
+ellipse shadow), painted shadows in the tiles. No dynamic lights, no
+shadow maps, no bloom, no post stack. If night-shift worlds happen, night
+is a palette swap, not a lighting rig.
 
-### 3.4 Motion rules
+### 3.5 Motion rules
 
-- **Rotoscope timing, not constant-rate loops** — hold the contact pose,
-  blur through the pass (the `flashprince/` lesson). A 6-frame walk with
-  good holds beats a 12-frame even one.
-- Idle is where eerie lives: Eeri breathes, the world *almost* doesn't.
-  One thing in each room moves very slowly. Nothing loops in under ~4 s in
-  the background or the eye finds the loop.
-- `prefers-reduced-motion` gets a still first frame everywhere decorative.
-
----
-
-## 4. 2D asset specification
-
-| Item | Spec |
-|---|---|
-| Working grid | **24 px tile**; hero ~2 tiles tall (**[ASSUME]** — lock after first in-engine mock; 16 px reads too crunchy over 3D, 32 px balloons room sizes) |
-| Hero sprite | ≤ 32×56 px box; silhouette-first — approve the black-fill version before any interior detail is drawn |
-| Formats | PNG, indexed to the palette where the tool allows; sprite **sheets** (one sheet per entity) with a same-name `.json` frame map |
-| Scaling | integer scale only, `image-rendering: pixelated` / `NearestFilter`; never non-integer, never `object-fit` (it resamples smoothly regardless — the hub already paid for that lesson) |
-| Animation set (hero, minimum) | idle · walk · run · jump-rise · jump-fall · land (hard + soft) · ledge-grab · climb · push · startle · death |
-| Animation set (per creature) | idle · move · notice/telegraph · attack/act · death — **the telegraph is mandatory**; every hazard is readable before it is lethal (house rule from hyperdagger's telegraphed spawns and flashprince's duel clock) |
-| Tiles | 24 px tileset per biome: solids, one-way platforms, ladders/vines, spikes/hazard, décor overhangs; autotile edges optional, hand-placed acceptable at this scope |
-| UI | drawn to the same grid; UI accent = LUX; numerals and glyphs before words (trilingual fi/en/ja is the house norm — text that is art must be locale-free) |
-| File naming | `eeri/assets/2d/<entity>_<action>_<w>x<h>.png` + `.json`; lower-kebab; no spaces ever |
-
-**Sheet hygiene:** frames on a fixed cell grid, origin/pivot recorded in
-the JSON (feet-centre for characters), no per-frame trimming — trimmed
-frames make hit-boxes lie.
+- **Machines move like machines:** ease-in/ease-out on every joint,
+  overshoot-and-settle on stops, slow booms + fast buckets. Weight is the
+  whole act.
+- **Squash-and-stretch goes on the suspension, not the metal** — a truck
+  landing compresses on its wheels/tyres (scale the wheel nodes), the body
+  stays rigid. That one rule keeps "cartoon" from becoming "rubber."
+- **Every hazard telegraphs** before it is lethal (house rule from
+  hyperdagger's telegraphed spawns and flashprince's duel clock): the
+  wrecking ball winds back, the load tips before it spills, hazard
+  stripes flash. Readable first, dangerous second.
+- Idle is mandatory per character: engines tick over — a 1–2 px chassis
+  vibration, exhaust puffs, a bucket that settles. Machines never freeze.
+- `prefers-reduced-motion` stills everything decorative to one frame.
 
 ---
 
-## 5. 3D asset specification
+## 4. 2D environment specification
 
 | Item | Spec |
 |---|---|
-| Format | **GLB** (single-file glTF 2.0), loaded with the vendored three.js `GLTFLoader` |
-| Scale | 1 unit = 1 m; hero height ≈ 1.1 u — export with real-world scale applied, no node scaling |
-| Poly budget | props ≤ 500 tris · room shells ≤ 2 000 · set-pieces ≤ 4 000 · **whole visible scene ≤ 25 k** — budgets exist to keep the flat-shaded read, not just perf |
-| Shading | flat/faceted normals; `MeshBasicMaterial`-equivalent (unlit) or one hemisphere+directional pair per room — decide once in the first room mock and lock it |
-| Textures | preferably **none** — vertex colours or a single shared 64×64 palette-strip texture (one UV point per colour cell). No baked lighting, no normal maps, no PBR channels |
-| Pivots | floor-contact origin, +Y up, −Z forward (three.js convention); door/lever pivots at the hinge |
-| Naming | `eeri/assets/3d/<biome>_<thing>_v<N>.glb`; meshes inside named, not `Cube.004` |
-| Animation | none in GLB for v1 — 3D things that move, move in code (rotation, slides); skinned/keyframed GLTF animation is a later decision, not a default |
-| Compression | keep GLBs < 500 KB each; Draco only if a file forces the question (it adds a decoder dependency — against the grain here) |
+| Working grid | **16 px tile** at the internal resolution (the Mario 3/World grid — **[ASSUME]**, lock in gate 1; internal height ~240 px ≈ 15 tiles of visible ground-to-sky, close to SMB3's screen) |
+| Formats | PNG tilesets, indexed to the palette; one sheet per world theme + one shared "grammar" sheet (girders, scaffolds, hazard stripes, pipes/ducts) used by every world |
+| Scaling | integer scale only, `image-rendering: pixelated` / `NearestFilter`; never non-integer, never `object-fit` (resamples smoothly regardless — the hub already paid for that lesson) |
+| Tile inventory (grammar sheet) | solids (dirt / brick / steel plate) · one-way scaffold planks · ladders · girder beams (ends + repeats) · hazard-stripe edging · ? -style hit-tiles (crates?) · pipes/ducts · décor bolts, signage, cones |
+| Per-world sheets | groundworks · scaffold heights · demolition · night-shift **[ASSUME — world list is design's call]**; each re-dresses the same grammar, SMB3-style |
+| Parallax | 2–3 layers: sky + clouds (slow), skyline/cranes silhouette (mid), playfield; all pixel-art PNGs at the internal resolution, moved in whole pixels |
+| The stage conceit | visible set-dressing: platform edges show bolts/brackets, some ledges end in unfinished rebar, backdrop seams are allowed to show like SMB3's painted flats |
+| Secrets | each tileset includes deliberate near-duplicate tiles (2% off) for hittable/hidden blocks — the "suspicious tile" language needs art support from day one |
+| UI / HUD | pixel UI on the same grid; numerals and glyphs before words (trilingual fi/en/ja is the house norm — art-text must be locale-free); UI accent = machine yellow |
+| File naming | `eeri/assets/2d/<sheet>_<theme>.png` + same-name `.json` (tile ids, one-way flags, hazard flags); lower-kebab, no spaces |
+
+**Sheet hygiene:** fixed cell grid, no per-tile trimming; collision comes
+from the level data reading tile ids, never from image inspection.
+
+---
+
+## 5. 3D character specification
+
+| Item | Spec |
+|---|---|
+| Format | **GLB** (single-file glTF 2.0), vendored three.js `GLTFLoader` |
+| Scale | 1 unit = 1 tile (16 internal px); hero ≈ 1×1.5 tiles; machines 2–6 tiles — Mario-World "giant world" reads come free from big models |
+| Rig style | **rigid node hierarchies, no skinning**: cab → boom → stick → bucket, body → wheels; every articulated part its own named node (`boom`, `bucket`, `wheel_fl`…). Animation = code rotating/scaling named nodes (or simple GLTF clips per action — decide in gate 2 and lock; code-driven is the recommendation, it composes with physics and needs no mixer) |
+| Poly budget | hero ≤ 800 tris · small machine ≤ 1 200 · big set-piece machine ≤ 3 000 · whole cast on screen ≤ 15 k |
+| Shading | flat/faceted normals, **unlit `MeshBasicMaterial`**, colours as **vertex colours or one shared 64×64 palette-strip texture** (one UV point per cell, `NearestFilter`); side faces one ramp-step darker, baked, for the painted-depth read. No PBR channels, no normal maps, ever |
+| Silhouette rule | every character approved as a black-fill render at 32 px first — one exaggerated feature each (the Mario-cap rule): the excavator is *arm*, the crane is *hook and height*, the mixer is *drum* |
+| Facing | side-view game: characters face ±x; turning is a quick y-rotation flip (a 3D cast's free win — the turn can be animated, not mirrored) |
+| Pivots | floor-contact origin, +Y up, −Z forward (three.js convention); articulation pivots at the physical hinge |
+| Naming | `eeri/assets/3d/<character>_v<N>.glb`; meshes and nodes named, never `Cube.004` |
+| Compression | GLBs < 300 KB each; no Draco (adds a decoder dependency — against the grain here) |
 
 **Export checklist (every GLB):** scale applied · transforms zeroed ·
-normals flat · unused materials/UV sets stripped · file opens in the
-three.js editor with no console warnings · total tri count written into the
-commit message.
+normals flat · node names verified against the rig contract in the
+character's spec · unused materials/UVs stripped · opens in the three.js
+editor with no console warnings · tri count in the commit message.
+
+**Cast list v1 [ASSUME — design's call, art plans for]:** Eeri (hero) ·
+excavator · dump truck · cement mixer · roller · tower crane (set-piece) ·
+wrecking-ball crane (hazard boss).
 
 ---
 
@@ -169,13 +229,14 @@ commit message.
 
 | Layer | Medium | Why |
 |---|---|---|
-| Sky / far fog | 2D gradient or shader plane | cheapest, never inspected |
-| Far + mid parallax | **3D**, flat-shaded | true parallax for free from the camera |
-| Playfield geometry | **3D** shell, collision from level data (not from the mesh) | rooms re-dress cheaply; collision stays honest and hand-authored |
-| Platforms, hazards, interactives | **2D** sprites (or sprite-mapped quads in the 3D scene) | the player reads these at speed; pixel edges + telegraphs live here |
-| Eeri + creatures | **2D** sprites on billboards/quads | silhouette and timing are the game |
-| Foreground occluders | 2D, semi-transparent | frames the shot; the "cropped foreground = depth" cover lesson |
-| UI / HUD | 2D DOM or canvas | AA contrast + 44 px targets are testable there |
+| Sky, clouds, skyline parallax | **2D** PNG layers | flat, cheap, the Mario read |
+| Playfield tiles + collision | **2D** tileset; collision from tile ids | the grid is the game |
+| Scaffold/girder framing, décor | **2D** tiles on the grammar sheet | part of the stage set |
+| Eeri + all machines | **3D** GLB, node-animated, rendered into the low-res buffer | articulation for free, no per-angle sprite sheets |
+| Pickups / small collectables | **3D** simple spinners (nut, bolt, gem) **[ASSUME]** — a slow y-spin is the genre's collectable language and is free in 3D | |
+| Particles (dust, cement splash, sparks) | **2D** pixel sprites | reads crisper at low res than 3D confetti |
+| Drop shadows | **2D** painted ellipse under each character | Mario's shadow; also the player's landing aid |
+| UI / HUD | 2D DOM or canvas | AA contrast + 44 px are testable there |
 
 Anything not listed defaults to 2D. Moving something across this boundary
 is an owner decision, recorded by editing this table.
@@ -186,22 +247,23 @@ is an owner decision, recorded by editing this table.
 
 - **Hub cabinet:** a 128×72 marquee **cover, not an icon** — drawn in code
   in `hub/art.js` like every other cabinet (the marquee stays code even
-  though the game ships assets). Composition rules already learned: a
-  framing device lighter than the sky behind it; the hero lit or
-  two-colour-rimmed, never black-on-dark; crop a foreground element at the
-  frame to create depth. Register: Master System — flat fills inside a hard
-  black line, shape lives in the silhouette. Plus a `hub/games.js` entry
-  (title, tagline, lineage, tags, controls, `path`, `accent: '#b48ae8'`,
-  `art`, `inRepo`, `status`, `pad`).
-- **Toko Midori signature:** `sign()` badge with `counter: true`, corner
-  chosen to clear the game's own controls; magenta unless the palette
-  fights it (paperboy went black-on-white for exactly that reason —
-  decide against the real palette, in-engine).
+  though the game ships assets). Composition rules already learned apply:
+  a framing device lighter than the sky behind it (a scaffold frame over
+  that blue sky qualifies); the hero lit or two-colour-rimmed, never
+  black-on-dark; crop a foreground element (a bucket, a hook) at the frame
+  for depth. Register: Master System — flat fills inside a hard black
+  line. Plus a `hub/games.js` entry (title, tagline, lineage, tags,
+  controls, `path`, `accent: '#ffb01f'`, `art`, `inRepo`, `status`,
+  `pad`).
+- **Toko Midori signature:** `sign()` badge with `counter: true`; magenta
+  unless the palette fights it — against safety yellow it likely holds,
+  but decide in-engine, the paperboy way.
 - **`eeri/VERSIONS.md`** from the first shipped change; `?v=N` tokens move
   with it; `scripts/versions.mjs` picks it up automatically.
 - **Smoke gate** (`eeri/test/smoke.cjs`) grows an art section: every asset
-  URL in the manifest resolves 200; sprites decode; GLBs parse; palette
-  values on screen match `palette.js`; AA + 44 px on UI.
+  URL in the manifest resolves 200; sheets decode; GLBs parse and expose
+  their contracted node names; on-screen palette matches `palette.js`;
+  AA + 44 px on UI.
 - **Deploys** ride the existing discipline: `gh-pages` is the live site,
   `scripts/deploy-hub.mjs`, never a hand-copy.
 
@@ -212,21 +274,30 @@ is an owner decision, recorded by editing this table.
 The method is the one the owner already named for toko-drop, applied from
 asset one: **reference from the owner → render → LOOK → name what is wrong
 → redo**, judged against **captured motion, not stills** — a
-`scripts/enemy-loop.mjs`-style GIF-loop capture gets set up for Eeri before
-the hero animation set is approved, because prototype-feel lives entirely
-in the part a state assertion cannot see.
+`scripts/enemy-loop.mjs`-style GIF-loop capture gets set up before any
+character is approved, because prototype-feel lives entirely in the part a
+state assertion cannot see.
 
 **Order of work** (each gate is a LOOK pass, drafts discarded freely):
 
-1. **Palette strip + three room mocks** (flat images, no engine) — lock
-   palette and the 2D/3D boundary against pictures, not prose.
-2. **Hero silhouette sheet** — black-fill only, all key poses. Lock the
-   read before a single interior pixel.
-3. **Hero animation set** as GIF loops on a plain ramp — lock timing.
-4. **One room, in engine** — one GLB shell + tileset + hero. This is the
-   *vertical slice of the look*; every later asset is judged against it.
-5. **Creature one** (idle → telegraph → act) — locks the hazard language.
-6. Everything else, against the slice.
+1. **The unification shot.** One screen: real tiles at the internal
+   resolution + ONE placeholder 3D machine (grey-box excavator) rendered
+   into the same buffer, idling. This proves §3.2 — that a 3D character
+   over pixel tiles reads as one game — and locks internal resolution +
+   tile size. **Nothing else is made until this shot passes.**
+2. **Excavator, for real.** Model + palette + rig contract + idle/move/
+   dig loops as GIFs. Locks the machine language (§3.5) and the
+   code-vs-clips animation decision.
+3. **Palette strip + three room mocks** (flat images) — locks §3.3 and
+   the stage-set dressing against pictures, not prose.
+4. **Eeri** — silhouette first (black-fill at 32 px), then model, then
+   idle/run/jump/land loops over a plain tile ramp. Locks hero feel.
+5. **One room in engine** — grammar tileset + one world sheet + parallax +
+   Eeri + the excavator. The *vertical slice of the look*; every later
+   asset is judged against it.
+6. **First hazard** (wrecking ball or wet cement): telegraph → strike,
+   chevron language on. Locks the danger read.
+7. Everything else, against the slice.
 
 **Definition of done, per asset:** named per convention · versioned URL ·
 in the manifest the smoke gate reads · seen moving in-engine · one line in
@@ -236,19 +307,20 @@ in the manifest the smoke gate reads · seen moving in-engine · one line in
 
 ## 9. Open questions for the owner
 
-1. **The name.** Is Eeri the character, the place, or just the mood?
-   (Everything in §1 bends to this answer.)
-2. **References.** Which pictures is this actually built to? Per-cover
-   references have always been yours to give — same here, for the whole
-   game. Two or three images beat any paragraph in this brief.
-3. **Accent.** Violet `#b48ae8` is proposed because the floor doesn't have
-   one — veto freely.
-4. **2.5D split** (§3.1) vs pure-2D with faked parallax vs pure-3D
-   flat-shaded: the split is the recommendation because it's the only
-   option that *needs* both asset types you asked for — but say the word
-   and §4–§6 get rewritten.
-5. **Sources.** Gitignore the `.blend`/`.aseprite` working files, or track
+1. **Who is Eeri?** A small builder-kid among the machines, or the
+   smallest machine on the site? Changes the hero sheet only, but changes
+   it completely.
+2. **Reference images.** "Mario 3 + Mario World + construction machines"
+   is the direction; two or three actual pictures (which SMB3 world?
+   which machines — toy-like Tonka reads or real Volvo/Cat proportions?)
+   beat any paragraph here. Per-cover references have always been yours
+   to give — same for the whole game.
+3. **Accent / machine yellow `#ffb01f`** — veto freely.
+4. **Internal resolution + tile size** (§3.2, §4) — proposed ~240 px /
+   16 px tiles; gate 1 exists to test it, but if you already know you want
+   chunkier (208 px) or finer (270 px), say so before gate 1.
+5. **World themes** — groundworks / scaffold heights / demolition /
+   night-shift is a placeholder list; the world list is a design decision
+   art plans around.
+6. **Sources.** Gitignore the `.blend`/`.aseprite` working files, or track
    them (LFS)? Repo has no precedent to lean on.
-6. **Scope of the animation set** — the §4 list is the honest minimum for
-   the genre; cutting ledge-grab/climb changes level design, so it's a
-   design decision wearing an art hat.
