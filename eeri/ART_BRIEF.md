@@ -1,12 +1,13 @@
 # EERI — Art Brief
 
-> **Status: draft v4 — for the owner to mark up.** Owner-given direction
+> **Status: v5 — presentation locked.** Owner-given direction
 > (2026-08-12, accumulated): **grammar from Super Mario Bros. 3 and Mario 4
-> (Super Mario World); presentation more 3D and layered than Mario World —
-> modern references wanted; construction machines; 2D environments, 3D
-> characters; Eeri is a kid who can ride the machines; machine look is
-> Tonka combined with real Cat machines.** Everything else is a starting
-> position built around those facts. Sections tagged **[ASSUME]** still
+> (Super Mario World); presentation is modern layered 2.5D — confirmed
+> references Yoshi's Crafted World × DKC Tropical Freeze, pixel art
+> dropped; construction machines; 2D environments, 3D characters; Eeri is
+> a kid who can ride the machines; machine look is Tonka combined with
+> real Cat machines.** Everything else is a starting position built around
+> those facts. Sections tagged **[ASSUME]** still
 > need the owner's own words. Locked visual plans elsewhere in this repo
 > (gameoflife, the hub) all began as briefs like this and only became rules
 > after a render → LOOK → redo pass against real references.
@@ -43,8 +44,9 @@ about a *mount*.
 - Silhouette-first cast, one exaggerated feature each.
 - The ride verb (World).
 
-**Tier 2 — presentation (proposed, for the owner to pick from): modern
-layered 2.5D.** Candidates, and what each one contributes:
+**Tier 2 — presentation (owner-confirmed 2026-08-12): modern layered
+2.5D — Yoshi's Crafted World × DKC Tropical Freeze.** What each one
+contributes:
 
 | Reference | What we take from it |
 |---|---|
@@ -53,15 +55,14 @@ layered 2.5D.** Candidates, and what each one contributes:
 | *Super Mario Bros. Wonder* | modern Mario readability + expressive character animation; how flat-graphic UI/effects sit on a dimensional world |
 | *LittleBigPlanet* | the depth *stack*: a shallow set of discrete lanes in one diorama box, materials that read as real toy stuff |
 
-★ = the recommended pair: **Crafted World's toy-diorama material world ×
+★ = the confirmed pair: **Crafted World's toy-diorama material world ×
 Tropical Freeze's layered dynamism**, on Mario 3/World's level grammar.
-**[ASSUME — owner picks or supplies others.]**
+Wonder and LBP stay as secondary consultation, not targets.
 
-**Consequence, stated plainly:** the presentation tier replaces draft v2's
-pixel-art direction. This is now a **clean-edged, modern-rendered** game —
-no low internal resolution, no `image-rendering: pixelated`. (The pixel
-route remains viable and cheaper; dropping it is flagged as an open
-question in §9 so it is a decision, not a drift.)
+**Consequence, decided (owner, 2026-08-12): pixel art is dropped.** This
+is a **clean-edged, modern-rendered** game — no low internal resolution,
+no `image-rendering: pixelated`, anywhere. Draft v2's pixel route is
+closed, not parked.
 
 **Homage rule, house-wide:** we take the grammar of the references and
 none of their characters, sprites or logos — and the machines take Cat's
@@ -400,24 +401,18 @@ in the manifest the smoke gate reads · seen moving in-engine · one line in
 
 ## 9. Open questions for the owner
 
-1. **The modern reference pick (§1.1).** Crafted World × Tropical Freeze
-   is the recommendation — confirm, reorder, or bring your own pictures.
-   Two or three actual images (a DKC layer shot, a Crafted World diorama,
-   a Tonka excavator next to a real Cat 320) beat any paragraph here;
-   per-cover references have always been yours to give.
-2. **Pixel art is out — confirm.** v2 unified everything at a low pixel
-   resolution (the dropcabal trick); v4 trades that for clean edges and
-   real layered depth. Cheaper and more "Mario 3" is still available if
-   the modern look tests wrong — but it is one or the other, decided at
-   gate 1, not blended.
-3. **Machine yellow `#ffb01f`** as palette anchor and cabinet accent —
+1. **Reference images.** The pair is confirmed; two or three actual
+   pictures (a DKC layer shot, a Crafted World diorama, a Tonka excavator
+   next to a real Cat 320) would still sharpen gates 1–3 — per-cover
+   references have always been yours to give.
+2. **Machine yellow `#ffb01f`** as palette anchor and cabinet accent —
    veto freely.
-4. **Camera** — how much perspective? §3.1 proposes a long lens (20–30°);
+3. **Camera** — how much perspective? §3.1 proposes a long lens (20–30°);
    gate 1 tests it, but say so now if you already feel strongly.
-5. **World themes** — groundworks / scaffold heights / demolition /
+4. **World themes** — groundworks / scaffold heights / demolition /
    night-shift is a placeholder; the world list is a design decision art
    plans around.
-6. **Eeri's look** — hard hat + high-vis is the proposal (§3.7); if you
+5. **Eeri's look** — hard hat + high-vis is the proposal (§3.7); if you
    have a different picture of him, that's gate-4 input.
-7. **Sources.** Gitignore the `.blend`/`.svg`/working files, or track them
+6. **Sources.** Gitignore the `.blend`/`.svg`/working files, or track them
    (LFS)? Repo has no precedent to lean on.
