@@ -1,0 +1,28 @@
+{
+  "v": 1,
+
+  "_readme": "The asset seam. Every entry is either 'placeholder' (the game builds it in code) or 'live' (the game loads the file). Dropping an asset in = put the file at its path, flip status to live, bump the file's v token. The smoke gate reads this file: live entries must resolve and models must expose their contracted nodes. See assets/README.md for the full contract.",
+
+  "models": {
+    "eeri": {
+      "file": "3d/eeri_v1.glb",
+      "status": "placeholder",
+      "nodes": ["hipL", "hipR", "armL", "armR", "body", "head"]
+    },
+    "excavator": {
+      "file": "3d/excavator_v1.glb",
+      "status": "placeholder",
+      "nodes": ["house", "boom", "stick", "bucket", "seat", "step", "wheels"]
+    }
+  },
+
+  "layers": {
+    "groundworks": {
+      "skyline": { "file": "2d/groundworks_skyline_v1.png", "status": "placeholder" },
+      "far":     { "file": "2d/groundworks_far_v1.png",     "status": "placeholder" },
+      "mid":     { "file": "2d/groundworks_mid_v1.png",     "status": "placeholder" },
+      "near":    { "file": "2d/groundworks_near_v1.png",    "status": "placeholder" },
+      "fore":    { "file": "2d/groundworks_fore_v1.png",    "status": "placeholder" }
+    }
+  }
+}
