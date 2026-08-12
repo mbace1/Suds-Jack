@@ -80,7 +80,7 @@ window.addEventListener('resize', resize);
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════
 const TILE = 16;
-const COLS = 200;
+let COLS = 0;              // set by the chunk builder
 const ROWS = 17;           // 17 * 16 = 272 = IH
 const PW = 10, PH = 15;   // player hitbox
 
@@ -109,75 +109,243 @@ function isSolid(t) { return t > 0; }
 const EW = 14, EH = 14; // enemy hitbox
 
 // ═══════════════════════════════════════════════════════════
-// LEVEL BUILDER
+// LEVEL BUILDER — ASCII chunks (Flash Prince room format)
 // ═══════════════════════════════════════════════════════════
+// A level is a sequence of hand-authored chunks stitched left to
+// right; the middle chunks are shuffled by a seeded RNG, so every
+// seed is a level and the same seed is always the same level.
+//
+// Each chunk is up to 12 rows of text mapped to map rows 5–16
+// (rows above are always sky). Short rows are padded, missing
+// leading rows count as sky. Every chunk begins and ends with
+// ground so any order stitches cleanly.
+//
+//   #  ground   %  deep rock   B  brick   ?  ?-block
+//   T  pipe mouth   U  pipe body   o  coin   e  enemy
+//   S  player spawn   F  goal flag
 let map = [];
 const qUsed = {};
+let spawnX = 40;
+let levelSeed = 1;
+let coinPts = [], enemyPts = [];
 
-function buildLevel() {
+const CHUNK_TOP = 5;               // chunk row 0 = map row 5
+const CHUNK_ROWS = ROWS - CHUNK_TOP;
+
+const START_CHUNK = [
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '   S',
+  '##########',
+  '##########',
+];
+
+const END_CHUNK = [
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '          F',
+  '################',
+  '################',
+];
+
+const MID_CHUNKS = [
+  [ // coin arc over brick shelves
+    '',
+    '',
+    '',
+    '        o o o',
+    '      o       o',
+    '     o         o',
+    '   BB?B      B?BB',
+    '',
+    '',
+    '        e',
+    '####################',
+    '####################',
+  ],
+  [ // two short hops
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '        ??',
+    '',
+    '',
+    '              e',
+    '#####  ####  #######',
+    '#####  ####  #######',
+  ],
+  [ // pipe alley
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '      o  o  o',
+    '',
+    '    TT        TT',
+    '    UU   e    UU',
+    '####################',
+    '####################',
+  ],
+  [ // rising steps
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '                o o',
+    '            ##',
+    '        ##  ##',
+    '    ##  ##  ##',
+    '####################',
+    '####################',
+  ],
+  [ // sky bridge over a wide gap
+    '       o  o  o',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '     ###   ###',
+    '',
+    '',
+    '####            ####',
+    '####            ####',
+  ],
+  [ // ?-block field
+    '',
+    '',
+    '',
+    '',
+    '      ? ? ?',
+    '',
+    '    ?       ?',
+    '',
+    '',
+    '         e',
+    '####################',
+    '####################',
+  ],
+  [ // enemy gauntlet with brick cover
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '   BBBB      BBBB',
+    '',
+    '',
+    '     e    e     e',
+    '####################',
+    '####################',
+  ],
+  [ // run-up gap with coin trail
+    '',
+    '',
+    '',
+    '',
+    '',
+    '        ooooo',
+    '',
+    '',
+    '',
+    '',
+    '#######     ########',
+    '#######     ########',
+  ],
+  [ // brick tower between pipes
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '         BB',
+    '   TT    BB    TT',
+    '   UU    BB    UU',
+    '   UU    BB    UU',
+    '####################',
+    '####################',
+  ],
+  [ // breather hill with prize
+    '',
+    '',
+    '',
+    '',
+    '        oooo',
+    '',
+    '      B?B',
+    '',
+    '',
+    '  e',
+    '####################',
+    '####################',
+  ],
+];
+
+const MID_PER_LEVEL = 8;
+
+function buildLevel(seed) {
   Object.keys(qUsed).forEach(k => delete qUsed[k]);
+  coinPts = []; enemyPts = [];
+
+  const rng = mulberry32(seed);
+  const order = [...MID_CHUNKS];
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  const seq = [START_CHUNK, ...order.slice(0, MID_PER_LEVEL), END_CHUNK];
+
+  const widths = seq.map(ch => Math.max(...ch.map(row => row.length)));
+  COLS = widths.reduce((a, b) => a + b, 0);
   map = Array.from({length: ROWS}, () => new Array(COLS).fill(T_EMPTY));
 
-  // Ground layers
-  for (let c = 0; c < COLS; c++) {
-    map[15][c] = T_GROUND;
-    map[16][c] = T_SOLID;
-  }
-
-  // Gaps in ground (col ranges, inclusive)
-  [[20,21],[38,39],[56,57],[70,72],[88,89],[105,107],
-   [120,121],[136,138],[151,153],[165,167],[180,181],[192,193]]
-  .forEach(([a,b]) => { for (let c=a;c<=b;c++) map[15][c]=T_EMPTY; });
-
-  // Platforms [row, c_start, c_end]
-  [[13,5,8],[12,13,17],[11,21,25],[13,29,33],[12,40,44],
-   [10,49,53],[13,57,61],[11,64,68],[9,73,77],[12,81,85],
-   [10,89,93],[8,98,102],[13,107,111],[11,115,120],[9,125,129],
-   [12,133,138],[10,143,148],[8,152,156],[13,160,164],[11,168,173],
-   [9,177,181],[12,184,189],[10,192,196]]
-  .forEach(([r,c1,c2]) => { for (let c=c1;c<=c2;c++) map[r][c]=T_GROUND; });
-
-  // Brick clusters [row, [cols]]
-  [[11,[8,9,10,11]],[11,[22,23,24]],[11,[42,43]],[11,[65,66,67]],
-   [11,[82,83,84,85]],[11,[90,91]],[11,[108,109,110]],[11,[116,117]],
-   [11,[134,135,136]],[11,[144,145]],[11,[161,162,163]],[11,[169,170]],
-   [11,[178,179]],[11,[185,186,187]],
-   [9,[16,17,18]],[9,[44,45,46]],[9,[74,75,76]],[9,[94,95]],
-   [9,[118,119]],[9,[126,127,128]],[9,[145,146]],[9,[153,154,155]],
-   [9,[178,179]],[9,[193,194]],
-   [13,[37,38]],[13,[54,55]],[13,[87,88]],[13,[130,131]]]
-  .forEach(([r,cols]) => cols.forEach(c => { if(c<COLS) map[r][c]=T_BRICK; }));
-
-  // ? blocks [row, col]
-  [[11,12],[11,26],[11,44],[11,68],[11,86],[11,92],[11,111],[11,118],
-   [11,137],[11,146],[11,164],[11,171],[11,180],[11,188],
-   [9,19],[9,47],[9,52],[9,77],[9,96],[9,103],[9,120],[9,129],
-   [9,147],[9,156],[9,180],[9,195],
-   [7,35],[7,61],[7,90],[7,116],[7,142],[7,168],[7,190]]
-  .forEach(([r,c]) => { if(c<COLS) map[r][c]=T_QBLOCK; });
-
-  // Pipes [col, height_in_tiles]
-  [[13,2],[33,2],[59,3],[74,3],[90,4],[108,4],
-   [122,3],[139,3],[157,2],[173,2],[186,3]]
-  .forEach(([col,h]) => {
-    if (col+1 >= COLS) return;
-    for (let r=15-h; r<15; r++) {
-      const t = (r === 15-h) ? T_PIPE_T : T_PIPE_B;
-      map[r][col] = t;
-      map[r][col+1] = t;
+  let base = 0;
+  seq.forEach((ch, ci) => {
+    for (let cr = 0; cr < ch.length; cr++) {
+      const mr = CHUNK_TOP + cr;
+      const row = ch[cr];
+      for (let i = 0; i < row.length; i++) {
+        const c = base + i;
+        switch (row[i]) {
+          case '#': map[mr][c] = T_GROUND; break;
+          case '%': map[mr][c] = T_SOLID; break;
+          case 'B': map[mr][c] = T_BRICK; break;
+          case '?': map[mr][c] = T_QBLOCK; break;
+          case 'T': map[mr][c] = T_PIPE_T; break;
+          case 'U': map[mr][c] = T_PIPE_B; break;
+          case 'o': coinPts.push([c, mr]); break;
+          case 'e': enemyPts.push([c, mr]); break;
+          case 'S': spawnX = c * TILE + 3; break;
+          case 'F': FLAG_COL = c; break;
+        }
+      }
     }
+    base += widths[ci];
   });
-
-  // Floating coins — stored as 99, extracted to coins array in initGame
-  [[10,[5,6,7]],[10,[14,15,16]],[10,[30,31,32]],[10,[43,44]],[10,[58,59]],
-   [10,[72,73]],[10,[83,84,85]],[10,[97,98]],[10,[109,110,111]],
-   [10,[117,118]],[10,[135,136,137]],[10,[144,145]],[10,[162,163]],
-   [10,[170,171]],[10,[178,179]],[10,[186,187,188]],
-   [8,[33,34,35,36]],[8,[60,61,62]],[8,[89,90,91]],[8,[115,116,117]],
-   [8,[141,142,143]],[8,[167,168,169]],[8,[189,190,191]]]
-  .forEach(([r,cols]) => cols.forEach(c => {
-    if (c<COLS && map[r][c]===T_EMPTY) map[r][c]=99;
-  }));
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -189,22 +357,17 @@ let camX = 0, camXv = 0;
 let gameState = 'menu';
 let prevJumpDown = false;
 
-const FLAG_COL = COLS - 6;
+let FLAG_COL = 0;
 
 function initGame() {
-  buildLevel();
+  buildLevel(levelSeed);
 
-  // Extract coin markers from map
-  coins = [];
-  for (let r=0; r<ROWS; r++)
-    for (let c=0; c<COLS; c++)
-      if (map[r][c] === 99) {
-        coins.push({ x: c*TILE+TILE/2, y: r*TILE+TILE/2, collected: false, bobT: Math.random()*6.28 });
-        map[r][c] = T_EMPTY;
-      }
+  coins = coinPts.map(([c, r]) => ({
+    x: c*TILE+TILE/2, y: r*TILE+TILE/2, collected: false, bobT: Math.random()*6.28,
+  }));
 
   player = {
-    x: 2.5*TILE - PW/2, y: 15*TILE - PH,
+    x: spawnX, y: 15*TILE - PH,
     vx: 0, vy: 0,
     onGround: false,
     wasJumping: false,  // in a jump → use hold gravity
@@ -218,31 +381,17 @@ function initGame() {
     running: false,
   };
 
-  // Place enemies (not in first 8 cols, not after flag)
-  enemies = [];
-  const epts = [
-    [10,15],[16,15],[24,15],[31,15],[41,15],[50,15],[58,15],[65,15],
-    [72,15],[81,15],[89,15],[96,15],[104,15],[109,15],[116,15],[123,15],
-    [130,15],[137,15],[144,15],[152,15],[158,15],[165,15],[172,15],
-    [178,15],[184,15],[191,15],
-    [6,13],[14,12],[22,11],[30,13],[41,12],[50,10],
-    [58,13],[65,11],[74,9],[82,12],[90,10],[99,8],
-    [108,13],[116,11],[126,9],[134,12],[144,10],[153,8],
-    [161,13],[169,11],[178,9],[185,12],[193,10],
-  ];
-  epts.forEach(([c,r]) => {
-    if (c > 7 && c < FLAG_COL - 2) {
-      enemies.push({
-        x: c*TILE + TILE/2 - EW/2,
-        y: r*TILE - EH,
-        vx: Math.random()<0.5 ? -28 : 28,
-        vy: 0, onGround: false,
-        dead: false, deadT: 0,
-        squished: false, squishT: 0,
-        walkT: 0, walkFrame: 0,
-      });
-    }
-  });
+  // Enemies come from 'e' markers: the marker tile is the air the
+  // enemy stands in, feet on the tile below.
+  enemies = enemyPts.map(([c, r]) => ({
+    x: c*TILE + TILE/2 - EW/2,
+    y: (r+1)*TILE - EH,
+    vx: Math.random()<0.5 ? -28 : 28,
+    vy: 0, onGround: false,
+    dead: false, deadT: 0,
+    squished: false, squishT: 0,
+    walkT: 0, walkFrame: 0,
+  }));
 
   particles = [];
   popCoins = [];
@@ -551,7 +700,7 @@ function killPlayer() {
 }
 
 function respawnPlayer() {
-  player.x = 2.5*TILE - PW/2; player.y = 15*TILE - PH;
+  player.x = spawnX; player.y = 15*TILE - PH;
   player.vx = 0; player.vy = 0;
   player.dead = false; player.invincible = 2;
   player.onGround = false; player.wasJumping = false;
@@ -1018,7 +1167,9 @@ function drawHUD() {
   ctx.fillText(`⬤${hudCoins}`, 40, 12);
   ctx.fillText(`${hudScore}`, IW/2 - 20, 12);
   ctx.fillStyle = '#a0a0a0';
-  ctx.fillText('EERI', IW - 40, 12);
+  ctx.textAlign = 'right';
+  ctx.fillText('EERI #' + levelSeed, IW - 6, 12);
+  ctx.textAlign = 'left';
 }
 
 // ─── Touch controls overlay ───
@@ -1103,7 +1254,8 @@ function loop(ts) {
 // ═══════════════════════════════════════════════════════════
 // STATE TRANSITIONS
 // ═══════════════════════════════════════════════════════════
-function startGame() {
+function startGame(newLevel = true) {
+  if (newLevel) levelSeed = 10000 + Math.floor(Math.random() * 90000);
   initGame();
   updateHUD();
   document.getElementById('overlay').style.display = 'none';
@@ -1143,9 +1295,9 @@ function mulberry32(seed) {
 // ═══════════════════════════════════════════════════════════
 // BUTTON LISTENERS
 // ═══════════════════════════════════════════════════════════
-document.getElementById('btn-start').addEventListener('click',  startGame);
-document.getElementById('btn-retry').addEventListener('click',  startGame);
-document.getElementById('btn-again').addEventListener('click',  startGame);
+document.getElementById('btn-start').addEventListener('click', () => startGame(true));
+document.getElementById('btn-retry').addEventListener('click', () => startGame(false)); // same seed, same level
+document.getElementById('btn-again').addEventListener('click', () => startGame(true));
 
 // Start the render loop (menu screen can still show bg)
 requestAnimationFrame(loop);
