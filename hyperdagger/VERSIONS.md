@@ -8,6 +8,28 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v23 — 2026-08-12
+
+**The void gets its monuments back.** The v22 mesh-asset rebase orphaned
+`environment.js` — seven meshed pieces (broken hand, basalt gate, toppled
+colossus head, inverted mountain, a six-stand obelisk ring, the sunken dais)
+were live in `assets/env/` with nothing importing the module that loads them.
+Re-wired: one import, one constructor after the light rig, `environment` on
+`window.__hd`, and the module named in the worker precache.
+
+They stay MeshBasic on purpose, so the v22 asset light rig (which lights only
+Lambert imports) never touches them — a monument is a silhouette dissolving
+into the fog, not scenery. Everything remains fail-soft: a missing GLB just
+leaves the void emptier.
+
+The floor keeps v22's clean grid and gains stone paneling beneath it: a
+pre-graded 128² bake (assets/env/floor.png, 19 KB, oxblood seams) drawn into
+the same canvas with a lighter pass of the grid lines back on top, so the
+speed-read survives. If the fetch fails the plain grid is the floor.
+
+Also restores the site's `../hub/shell.js?v=30` (this line's index carried a
+stale v=15) and bumps the release token 52 → 53.
+
 ## v22 — 2026-08-07
 **Mesh asset integration — the Meshy pipeline's landing pad**
 - New `js/meshassets.js`: register a Meshy GLB per MODELS slot and it takes

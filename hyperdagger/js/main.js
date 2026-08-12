@@ -5,17 +5,18 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=52';
-import { Player } from './player.js?v=52';
-import { DaggerPool } from './daggers.js?v=52';
-import { GemPool } from './gems.js?v=52';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=52';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=52';
-import { OrbPool } from './bullets.js?v=52';
-import { preloadSkins, skinsReady, MESH_ASSETS } from './meshassets.js?v=52';
-import { AudioKit } from './audio.js?v=52';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=52';
-import { TUNING as T } from './tuning.js?v=52';
+import { InputManager } from './input.js?v=53';
+import { Player } from './player.js?v=53';
+import { DaggerPool } from './daggers.js?v=53';
+import { GemPool } from './gems.js?v=53';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=53';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=53';
+import { OrbPool } from './bullets.js?v=53';
+import { preloadSkins, skinsReady, MESH_ASSETS } from './meshassets.js?v=53';
+import { HyperEnvironment } from './environment.js?v=53';
+import { AudioKit } from './audio.js?v=53';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=53';
+import { TUNING as T } from './tuning.js?v=53';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -139,6 +140,13 @@ scene.add(lightRig);
 // mesh assets load in the background; enemies spawned after it resolves wear
 // them, everything before (and every failure) uses the built-in models
 preloadSkins();
+
+// the void beyond the rim: horizon ring + the meshed monuments (hand, gate,
+// colossus head, inverted mountain, obelisk ring, the dais). All MeshBasic,
+// so the v4.35 asset light rig never touches them; all fail-soft, so a
+// missing GLB just leaves the void emptier. (Wired here after the v4.35
+// rebase orphaned the module — the assets were live but nothing loaded them.)
+const environment = new HyperEnvironment(scene, ARENA_R);
 
 const camera = new THREE.PerspectiveCamera(opts.fov, window.innerWidth / window.innerHeight, 0.1, 300);
 scene.add(camera); // so the first-person hand (a camera child) renders
@@ -313,6 +321,24 @@ function makeFloorTexture() {
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(14, 14);
+
+  // stone paneling under the grid: a pre-graded near-black bake (oxblood in
+  // the seams, bone chips) swaps in beneath a lighter pass of the same grid
+  // lines, so the speed-read survives on top of the slabs. Fail-soft: if the
+  // fetch never lands, the plain grid above IS the floor — offline included.
+  const panels = new Image();
+  panels.onload = () => {
+    g.imageSmoothingEnabled = false;
+    g.drawImage(panels, 0, 0, 256, 256);
+    g.strokeStyle = 'rgba(255,255,255,0.18)';
+    g.lineWidth = 2;
+    for (let i = 0; i <= 256; i += 64) {
+      g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 256); g.stroke();
+      g.beginPath(); g.moveTo(0, i); g.lineTo(256, i); g.stroke();
+    }
+    tex.needsUpdate = true;
+  };
+  panels.src = 'assets/env/floor.png';
   return tex;
 }
 
@@ -2453,6 +2479,7 @@ animate();
 // tiny debug handle (console tinkering + automated smoke tests)
 window.__hd = {
   enemies, player, debris, litter, daggers, gems, serpents, orbs, thorns, audio,
+  environment, THREE, camera, scene,
   debug: {
     addGems(n) { onGemsCollected(n); },
     addStyle(n) { addStyle(n); },

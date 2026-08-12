@@ -24,7 +24,7 @@ const PRECACHE = [
   './', './index.html',
   // Module tokens are all normalized to the release token, so these precache
   // entries are byte-identical to the URLs the page actually imports.
-  ...['main', 'input', 'player', 'daggers', 'gems', 'voxel', 'enemy', 'bullets', 'audio', 'rng', 'tuning', 'meshassets']
+  ...['main', 'input', 'player', 'daggers', 'gems', 'voxel', 'enemy', 'bullets', 'audio', 'rng', 'tuning', 'meshassets', 'environment']
     .map(m => `./js/${m}.js?v=${TOKEN}`),
   './vendor/three.module.min.js',
   // the GLB loader pair (dynamic import when assets are registered); the

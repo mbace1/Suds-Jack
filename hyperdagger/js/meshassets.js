@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VoxelSprite, bakeShading, MODELS } from './voxel.js?v=52';
+import { VoxelSprite, bakeShading, MODELS } from './voxel.js?v=53';
 
 // registry keys are MODELS keys; enemies hand us the model OBJECT, so keep
 // the reverse map here where both sides are visible
