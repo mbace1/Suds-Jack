@@ -25,10 +25,10 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // a ring of props; radius keeps every one of them inside the fog's 72u reach
 // but well outside the 26u arena.
 const MONUMENTS = [
-  { file: 'hand.glb',     angle: 2.30, r: 41, y: -1.4, h: 15, dim: 0.60, tilt: 0.00 },
-  { file: 'gate.glb',     angle: 5.05, r: 52, y: -0.8, h: 20, dim: 0.52, tilt: 0.00 },
-  { file: 'colossus.glb', angle: 0.62, r: 38, y:  0.4, h:  7, dim: 0.62, tilt: 0.10 },
-  { file: 'mountain.glb', angle: 3.75, r: 47, y: -9.5, h: 17, dim: 0.50, tilt: 0.00 },
+  { file: 'hand.glb',     angle: 2.30, r: 46, y: -1.4, h: 11, dim: 0.55, tilt: 0.00 },
+  { file: 'gate.glb',     angle: 5.05, r: 56, y: -0.8, h: 15, dim: 0.48, tilt: 0.00 },
+  { file: 'colossus.glb', angle: 0.62, r: 42, y:  0.3, h:  5.5, dim: 0.58, tilt: 0.10 },
+  { file: 'mountain.glb', angle: 3.75, r: 52, y: -8.5, h: 13, dim: 0.46, tilt: 0.00 },
 ];
 
 // v33: the obelisk ring — ONE asset, six stands. Clones share geometry and
@@ -36,12 +36,12 @@ const MONUMENTS = [
 // Angles thread the gaps between the monuments; heights and leans vary so it
 // reads as ruins, not landscaping.
 const OBELISKS = [
-  { angle: 1.32, r: 44, h: 11.0, lean: 0.06 },
-  { angle: 1.88, r: 49, h:  9.0, lean: -0.09 },
-  { angle: 2.95, r: 46, h: 12.5, lean: 0.03 },
-  { angle: 4.38, r: 43, h:  8.5, lean: -0.05 },
-  { angle: 5.68, r: 47, h: 10.5, lean: 0.11 },
-  { angle: 0.06, r: 50, h:  9.5, lean: -0.03 },
+  { angle: 1.32, r: 48, h:  8.0, lean: 0.06 },
+  { angle: 1.88, r: 53, h:  6.5, lean: -0.09 },
+  { angle: 2.95, r: 50, h:  9.0, lean: 0.03 },
+  { angle: 4.38, r: 47, h:  6.0, lean: -0.05 },
+  { angle: 5.68, r: 51, h:  7.5, lean: 0.11 },
+  { angle: 0.06, r: 54, h:  7.0, lean: -0.03 },
 ];
 
 // The dais is the one piece allowed inside the rim, because it is FLOOR, not
@@ -91,7 +91,21 @@ export class HyperEnvironment {
     };
 
     this.monumentMats = [];
+    // v24 (owner's eye test): the monuments are SET DRESSING, not arena
+    // furniture — in a minimalist arena shooter the enemies are the focus,
+    // and stone scenery in the fight's sightlines read as clutter. So they
+    // stand only while you are NOT fighting: menu and death screen, where
+    // atmosphere is free. The dais stays always — it is floor, not scenery.
+    this.combat = false;
     this._loadAll();
+  }
+
+  /** true while a run is live: monuments and obelisks step off the stage. */
+  setCombat(active) {
+    this.combat = active;
+    this.group.traverse((o) => {
+      if (o.name?.startsWith('monument-')) o.visible = !active;
+    });
   }
 
   /**
@@ -113,6 +127,7 @@ export class HyperEnvironment {
         pivot.rotation.y = -m.angle + Math.PI / 2;
         pivot.rotation.z = m.tilt;
         pivot.name = `monument-${m.file.replace('.glb', '')}`;
+        pivot.visible = !this.combat;   // a run may already be live when this lands
         this.group.add(pivot);
         this.assets.monuments++;
       });
@@ -129,6 +144,7 @@ export class HyperEnvironment {
         pivot.rotation.y = -o.angle + Math.PI / 2;
         pivot.rotation.z = o.lean;
         pivot.name = 'monument-obelisk';
+        pivot.visible = !this.combat;
         this.group.add(pivot);
         this.assets.obelisks++;
       }

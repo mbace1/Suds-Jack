@@ -5,18 +5,18 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=53';
-import { Player } from './player.js?v=53';
-import { DaggerPool } from './daggers.js?v=53';
-import { GemPool } from './gems.js?v=53';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=53';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=53';
-import { OrbPool } from './bullets.js?v=53';
-import { preloadSkins, skinsReady, MESH_ASSETS } from './meshassets.js?v=53';
-import { HyperEnvironment } from './environment.js?v=53';
-import { AudioKit } from './audio.js?v=53';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=53';
-import { TUNING as T } from './tuning.js?v=53';
+import { InputManager } from './input.js?v=54';
+import { Player } from './player.js?v=54';
+import { DaggerPool } from './daggers.js?v=54';
+import { GemPool } from './gems.js?v=54';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=54';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=54';
+import { OrbPool } from './bullets.js?v=54';
+import { preloadSkins, skinsReady, MESH_ASSETS } from './meshassets.js?v=54';
+import { HyperEnvironment } from './environment.js?v=54';
+import { AudioKit } from './audio.js?v=54';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=54';
+import { TUNING as T } from './tuning.js?v=54';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -1119,6 +1119,7 @@ function startGame() {
   input.consumeDashFlick();
   state = 'playing';
   paused = false;
+  environment.setCombat(true);   // monuments are set dressing: menu/death only
   elMsg.style.display = 'none';
   elCross.style.display = input.touchMode ? 'none' : 'block';
   elPause.style.display = 'block';
@@ -1128,6 +1129,7 @@ function startGame() {
 
 function die(timedOut = false) {
   state = 'dead';
+  environment.setCombat(false);  // the stones come back to watch you fall
   deathAt = performance.now();
   slowmo = 1;
   trauma = 1;

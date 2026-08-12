@@ -8,6 +8,22 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v24 — 2026-08-12
+
+**The stones learn their place.** The owner's eye test on v23 said it plainly:
+this is a minimalist arena shooter, the enemies are the focus, and monuments
+in the fight's sightlines read as clutter at odd sizes. So the monuments and
+the obelisk ring become SET DRESSING — they stand on the menu and the death
+screen, where atmosphere is free, and step off the stage the moment a run
+starts (`environment.setCombat(true)` in startGame, false again in die).
+Pieces that finish loading mid-run arrive already hidden.
+
+What stays during play is exactly what the owner asked for: the floor — the
+stone paneling bake and the dais, a carved shadow at ankle height. The
+monuments were also pulled farther out and down (gate 20u→15u at r 56, hand
+15u→11u at r 46, obelisks 6–9u) so even on the menu they sit like distant
+ruins instead of nearby props.
+
 ## v23 — 2026-08-12
 
 **The void gets its monuments back.** The v22 mesh-asset rebase orphaned
