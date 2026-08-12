@@ -1,18 +1,17 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=61';
+import { VoxelSprite, MODELS } from './voxel.js?v=52';
+import { skinFor } from './meshassets.js?v=52';
 
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();
 
 class VoxelEnemy {
   constructor(scene, model, pos) {
-    this.sprite = new VoxelSprite(model);
-    this.parts = [this.sprite];
+    // a registered mesh asset takes the slot; the string-art model is the
+    // always-there fallback (missing file, load error, or nothing registered)
+    this.sprite = skinFor(model) ?? new VoxelSprite(model);
     this.group = new THREE.Group();
     this.group.add(this.sprite.mesh);
-    // Rear-world projection renders this layer into a separate cube map so
-    // enemy silhouettes can glow without turning the whole arena red.
-    this.group.traverse(o => o.layers.enable(2));
     this.group.position.copy(pos);
     this.group.scale.setScalar(0.01);
     this.spawnK = 0;
@@ -30,20 +29,13 @@ class VoxelEnemy {
       this.spawnK = Math.min(1, this.spawnK + dt * 2.4);
       this.group.scale.setScalar(this.spawnK);
     }
-    for (const part of this.parts) {
-      part.update(dt);
-      // LOOK can recreate a smooth hull after construction; keep every new
-      // child in the enemy-only capture as well.
-      if (part.hull) part.hull.layers.enable(2);
-    }
+    this.sprite.update(dt);
   }
 
   hit(dmg, dir) {
     this.hp -= dmg;
-    for (const part of this.parts) part.flash();
+    this.sprite.flash();
   }
-
-  deathVoxels() { return this.parts.flatMap(part => part.worldVoxels()); }
 
   remove(scene) {
     // idempotent: killEnemy removes on the kill, and the prune loop removes
@@ -52,45 +44,21 @@ class VoxelEnemy {
     if (this.removed) return;
     this.removed = true;
     scene.remove(this.group);
-    for (const part of this.parts) part.dispose();
+    this.sprite.dispose();
   }
 }
 
 /** Fast chaser. One dagger kills it; takes knockback. */
 export class Skull extends VoxelEnemy {
   constructor(scene, pos, speedBoost = 0, model = MODELS.skull) {
-    const animatedJaw = model === MODELS.skull;
-    super(scene, animatedJaw ? MODELS.skullHead : model, pos);
-    if (animatedJaw) {
-      this.jaw = new VoxelSprite(MODELS.skullJaw);
-      // The floor's coarse depth raster otherwise eats the low moving teeth.
-      // Render the tiny jaw as a sorted cutout: far jaws still paint first,
-      // while the bite remains legible over the skull it belongs to.
-      this.jaw.material.transparent = true;
-      this.jaw.material.depthTest = false;
-      this.jaw.material.depthWrite = false;
-      this.jaw.mesh.renderOrder = 3;
-      this.jawPivot = new THREE.Group();
-      // Pivot just behind the back teeth. A slight overlap in the closed pose
-      // prevents the low-res raster from opening a false seam at the hinge.
-      this.jawPivot.position.set(0, -0.44, -0.05);
-      this.jaw.mesh.position.set(0, 0.52, 0.12);
-      this.jawPivot.add(this.jaw.mesh);
-      this.group.add(this.jawPivot);
-      this.parts.push(this.jaw);
-      this.jawPivot.traverse(o => o.layers.enable(2));
-      this.jawT = Math.random() * Math.PI * 2;
-      this.jawOpen = 0;
-    }
+    super(scene, model, pos);
     this.type = 'skull';
     this.hp = 1;
     this.radius = 0.75;
     this.score = 1;
     this.vel = new THREE.Vector3();
-    // Faster than a straight-running player, but deliberately slow to turn:
-    // the answer is circle-strafing, not simply holding W away from the swarm.
-    this.maxSpeed = 10.8 + speedBoost;
-    this.accel = 7.2;
+    this.maxSpeed = 6.2 + speedBoost;
+    this.accel = 15;
     this.knock = 8;
     this.bobT = Math.random() * Math.PI * 2;
   }
@@ -99,17 +67,6 @@ export class Skull extends VoxelEnemy {
     this.baseUpdate(dt);
     this.bobT += dt * 3;
     _dir.copy(playerEye).sub(this.pos);
-    if (this.jawPivot) {
-      const near = Math.max(0, Math.min(1, 1 - _dir.length() / 18));
-      this.jawT += dt * (7.5 + near * 4.5);
-      const bite = Math.pow(0.5 + 0.5 * Math.sin(this.jawT), 1.6);
-      this.jawOpen = 0.05 + bite * (0.28 + near * 0.16);
-      this.jawPivot.rotation.x = this.jawOpen;
-      // Rotation supplies the hinge; a small drop/advance keeps the black
-      // mouth gap readable in the coarse game raster, even head-on.
-      this.jawPivot.position.y = -0.44 - this.jawOpen * 0.12;
-      this.jawPivot.position.z = -0.05 + this.jawOpen * 0.08;
-    }
     _dir.y += Math.sin(this.bobT) * 0.5;
     _dir.normalize();
     this.vel.addScaledVector(_dir, this.accel * dt);
@@ -455,17 +412,15 @@ export class Brute extends Skull {
 
 /** Drifting obsidian pillar that exhales skulls from its mouth. */
 export class Totem extends VoxelEnemy {
-  constructor(scene, pos, interval, ddTier = 0) {
+  constructor(scene, pos, interval) {
     super(scene, MODELS.totem, pos);
     this.type = 'totem';
-    this.ddTier = ddTier;
-    this.hp = ddTier ? ddTier * 10 : 25;
+    this.hp = 25;
     this.radius = 1.7;
     this.score = 10;
-    if (ddTier) this.gemDrop = ddTier;
     this.hitY = 1.7;
     this.interval = interval;
-    this.spawnTimer = ddTier ? 3 : interval * 0.5;
+    this.spawnTimer = interval * 0.5;
     this.emit = false;
     this.orbitR = Math.hypot(pos.x, pos.z);
     this.orbitA = Math.atan2(pos.z, pos.x);
@@ -490,7 +445,6 @@ export class Totem extends VoxelEnemy {
       this.spawnTimer = this.interval;
       this.emit = true;
     }
-    if (this.ddTier) return;
     // Returnal-style bullet wave: a flat, jumpable ring of orbs
     this.ringTimer -= dt;
     if (this.ringTimer <= 0) {
@@ -505,14 +459,12 @@ export class Totem extends VoxelEnemy {
  * gems and eats them; killing it releases everything it swallowed plus one.
  */
 export class Spider extends VoxelEnemy {
-  constructor(scene, pos, ddRules = false) {
+  constructor(scene, pos) {
     super(scene, MODELS.spider, pos);
     this.type = 'spider';
-    this.ddRules = ddRules;
-    this.hp = ddRules ? 25 : 6;
+    this.hp = 6;
     this.radius = 0.9;
     this.score = 3;
-    if (ddRules) this.gemDrop = 1;
     this.stolen = 0;
     this.vel = new THREE.Vector3();
     this.wanderT = 0;

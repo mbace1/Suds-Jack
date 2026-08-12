@@ -24,9 +24,13 @@ const PRECACHE = [
   './', './index.html',
   // Module tokens are all normalized to the release token, so these precache
   // entries are byte-identical to the URLs the page actually imports.
-  ...['main', 'input', 'player', 'daggers', 'gems', 'voxel', 'enemy', 'bullets', 'audio', 'rng', 'tuning', 'environment']
+  ...['main', 'input', 'player', 'daggers', 'gems', 'voxel', 'enemy', 'bullets', 'audio', 'rng', 'tuning', 'meshassets']
     .map(m => `./js/${m}.js?v=${TOKEN}`),
   './vendor/three.module.min.js',
+  // the GLB loader pair (dynamic import when assets are registered); the
+  // GLBs themselves are runtime-cached on first play, not precached
+  './vendor/jsm/loaders/GLTFLoader.js',
+  './vendor/jsm/utils/BufferGeometryUtils.js',
   './vendor/jsm/postprocessing/EffectComposer.js',
   './vendor/jsm/postprocessing/RenderPass.js',
   './vendor/jsm/postprocessing/AfterimagePass.js',
@@ -39,16 +43,6 @@ const PRECACHE = [
   './vendor/jsm/shaders/AfterimageShader.js',
   './vendor/jsm/shaders/LuminosityHighPassShader.js',
   './vendor/jsm/shaders/OutputShader.js',
-  // v62: the loader for the beyond-the-rim monuments, plus its one dep.
-  './vendor/jsm/loaders/GLTFLoader.js',
-  './vendor/jsm/utils/BufferGeometryUtils.js',
-  // The monuments themselves — the first mesh assets this game ships. They are
-  // untokened (their bytes change only when the art changes, and then the file
-  // is replaced wholesale), so they are precached here and served cache-first
-  // like the vendor files. v33 adds the obelisk (one asset, six stands), the
-  // dais, and the floor paneling bake — ~1.5 MB for the lot.
-  ...['gate', 'colossus', 'hand', 'mountain', 'obelisk', 'dais'].map(m => `./assets/env/${m}.glb`),
-  './assets/env/floor.png',
   `./manifest.webmanifest?v=${TOKEN}`,
   './favicon.png', './apple-touch-icon.png', './icon-192.png', './icon-512.png',
 ];

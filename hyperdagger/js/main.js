@@ -5,21 +5,21 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=61';
-import { Player } from './player.js?v=61';
-import { DaggerPool } from './daggers.js?v=61';
-import { GemPool } from './gems.js?v=61';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=61';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=61';
-import { OrbPool } from './bullets.js?v=61';
-import { AudioKit } from './audio.js?v=61';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=61';
-import { TUNING as T } from './tuning.js?v=61';
-import { HyperEnvironment } from './environment.js?v=61';
+import { InputManager } from './input.js?v=52';
+import { Player } from './player.js?v=52';
+import { DaggerPool } from './daggers.js?v=52';
+import { GemPool } from './gems.js?v=52';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=52';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=52';
+import { OrbPool } from './bullets.js?v=52';
+import { preloadSkins, skinsReady, MESH_ASSETS } from './meshassets.js?v=52';
+import { AudioKit } from './audio.js?v=52';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=52';
+import { TUNING as T } from './tuning.js?v=52';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
-const SKULL_CAP = 64;
+const SKULL_CAP = 46;
 const TOTEM_CAP = 6;
 const SERPENT_CAP = 2;
 
@@ -32,14 +32,12 @@ const ENEMY_NAMES = {
 };
 
 // player-tunable options (pause menu), persisted across sessions
-// v25 deliberately starts from a clean image. A new key prevents old,
-// spectacle-heavy defaults from silently carrying into the reset.
-const OPTS_KEY = 'hyperDaggerOptsV26';
+const OPTS_KEY = 'hyperDaggerOpts';
 const opts = Object.assign(
   // motion=false is the reduced-motion master switch (forces smear/shake/chroma/FOV
   // kicks off without touching the individual toggles); contrast=true brightens
   // orbs + telegraphs and kills the floor's red flush for readability
-  { speed: 1, fov: 90, sens: 1, aim: true, projection: false, smear: false, shake: true, chroma: false, edge: false, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson', look: 'smooth' },
+  { speed: 1, fov: 80, sens: 1, aim: true, smear: true, shake: true, chroma: true, edge: true, music: true, motion: true, contrast: false, perf: 'auto', haptics: true, detail: 'auto', style: 'crimson', look: 'smooth' },
   JSON.parse(localStorage.getItem(OPTS_KEY) || '{}'));
 
 // STYLE presets: hue targets for the accent recolor (null = native crimson).
@@ -53,10 +51,6 @@ const STYLE_HUES = { crimson: null, cyan: 0.5, gold: 0.11, violet: 0.77 };
 // menu keeps showing user intent and a step-up can't resurrect a toggle the
 // user turned off.
 const BASE_PR = Math.min(window.devicePixelRatio, 2);
-// Devil Daggers' image is authored as a coarse software raster, not a clean
-// high-DPI WebGL frame. Keep every performance tier inside the same visual
-// language and let CSS enlarge the buffer with hard nearest-neighbour pixels.
-const SOFTWARE_PR = Math.min(BASE_PR, 0.72);
 // Phones open at ×27, not the ×64 desktop default: the governor needs a few
 // seconds of frame samples to react, and a mid-range phone spending those
 // seconds at the ceiling stutters through the opening spawn. An explicit
@@ -68,11 +62,11 @@ const AUTO_DETAIL_CEIL = window.matchMedia?.('(pointer: coarse)').matches ? 2 : 
 const PERF_TIERS = [
   // gibs = how many pieces ONE death throws (scales with the voxel density
   // ladder below, so a ×64 enemy actually shatters instead of chunking)
-  { chroma: true,  smear: true,  edge: true,  hull: true,  sphereEvery: 2, pr: SOFTWARE_PR,                 bloom: true,  debrisCap: 4000, gibs: 520, litter: 2500 }, // T0 full
-  { chroma: false, smear: true,  edge: true,  hull: true,  sphereEvery: 3, pr: SOFTWARE_PR,                 bloom: true,  debrisCap: 4000, gibs: 420, litter: 2000 }, // T1
-  { chroma: false, smear: false, edge: false, hull: true,  sphereEvery: 4, pr: SOFTWARE_PR,                 bloom: true,  debrisCap: 3000, gibs: 300, litter: 1200 }, // T2
-  { chroma: false, smear: false, edge: false, hull: false, sphereEvery: 0, pr: Math.min(SOFTWARE_PR, 0.62), bloom: true,  debrisCap: 2000, gibs: 220, litter: 600 }, // T3
-  { chroma: false, smear: false, edge: false, hull: false, sphereEvery: 0, pr: Math.min(SOFTWARE_PR, 0.50), bloom: false, debrisCap: 800,  gibs: 110, litter: 0 }, // T4 floor
+  { chroma: true,  smear: true,  edge: true,  hull: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 520, litter: 2500 }, // T0 full
+  { chroma: false, smear: true,  edge: true,  hull: true,  pr: BASE_PR,                bloom: true,  debrisCap: 4000, gibs: 420, litter: 2000 }, // T1
+  { chroma: false, smear: false, edge: false, hull: true,  pr: BASE_PR,                bloom: true,  debrisCap: 3000, gibs: 300, litter: 1200 }, // T2
+  { chroma: false, smear: false, edge: false, hull: false, pr: Math.min(BASE_PR, 1.5), bloom: true,  debrisCap: 2000, gibs: 220, litter: 600 }, // T3
+  { chroma: false, smear: false, edge: false, hull: false, pr: 1,                      bloom: false, debrisCap: 800,  gibs: 110, litter: 0 }, // T4 floor
 ];
 // mutable so headless tests can shrink the timescales
 const perfTuning = { downMs: 40, upMs: 22, settleMs: 2000, stableMs: 15000, downHoldMs: 1500, emaAlpha: 0.08 };
@@ -93,10 +87,10 @@ const GEM_DROPS = { totem: 3, brute: 2, serpent: 1, leviathan: 10, watcher: 1, b
 // hand model's palette letters; retint() rewrites just those voxels.
 const GAUNTLET_TIERS = [
   null,
-  { G: 0xbeb4a6, D: 0x5c554d, H: 0xe2d8c8, B: [2.2, 0.22, 0.08] },
-  { G: 0xc8bdaa, D: 0x625a50, H: [1.25, 0.72, 0.40], B: [2.35, 0.24, 0.08] },
-  { G: 0x8c8174, D: [1.35, 0.10, 0.06], H: [1.5, 0.45, 0.22], B: [2.5, 0.26, 0.08] },
-  { G: 0x4a1010, D: [2.2, 0.16, 0.10], H: [2.0, 0.32, 0.12], B: [2.7, 0.34, 0.10] },
+  { G: 0x3a3a3a, D: 0x222222, H: 0x555555, B: [1.25, 1.25, 1.25] },      // base
+  { G: 0x3a3a3a, D: 0x222222, H: [1.35, 1.35, 1.35], B: [1.5, 1.5, 1.5] }, // knuckle glow
+  { G: 0x3a3a3a, D: [1.7, 0.14, 0.14], H: [1.35, 1.35, 1.35], B: [1.5, 1.5, 1.5] }, // red veins
+  { G: 0x4a1010, D: [2.2, 0.16, 0.16], H: [2.0, 0.2, 0.2], B: [1.8, 0.6, 0.6] },    // crimson hand
 ];
 
 // Style/combo meter (Returnal/DMC-flavoured): fast kills and dash-throughs
@@ -122,92 +116,32 @@ const STYLE_GAIN = {
 
 // ---------------------------------------------------------------- renderer
 const canvas = document.getElementById('canvas-game');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(BASE_PR);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.86;
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0x020202, 24, 72);
+scene.fog = new THREE.Fog(0x050505, 30, 95);
+
+// v4.35 asset light rig: everything native is unlit MeshBasic, so these
+// lights touch ONLY imported mesh assets (Lambert after conversion). Tuned
+// for the monochrome identity — white sky/key so bone reads bone, a dim
+// crimson fill from the horizon so shadowed sides sit in the game's red.
+const lightRig = new THREE.Group();
+lightRig.add(new THREE.HemisphereLight(0xffffff, 0x141414, 2.2));
+const _key = new THREE.DirectionalLight(0xffffff, 1.4);
+_key.position.set(4, 10, 6);
+const _emberFill = new THREE.DirectionalLight(0xff2a2a, 0.7);
+_emberFill.position.set(-6, 1.5, -4);
+lightRig.add(_key, _emberFill);
+scene.add(lightRig);
+// mesh assets load in the background; enemies spawned after it resolves wear
+// them, everything before (and every failure) uses the built-in models
+preloadSkins();
 
 const camera = new THREE.PerspectiveCamera(opts.fov, window.innerWidth / window.innerHeight, 0.1, 300);
 scene.add(camera); // so the first-person hand (a camera child) renders
-camera.layers.enable(1); // first-person layer; spherical world cameras omit it
-
-// v23: a real 360-degree scene source. The world cube gives the projection
-// shader geometry behind the player; the threat cube isolates enemy shapes so
-// rear silhouettes can burn red without tinting the entire arena. Low-res and
-// cadence-gated by the performance governor: awareness, not a second beauty render.
-const sphereWorldTarget = new THREE.WebGLCubeRenderTarget(192, {
-  minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
-  generateMipmaps: false,
-});
-const sphereThreatTarget = new THREE.WebGLCubeRenderTarget(128, {
-  minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter,
-  generateMipmaps: false,
-});
-const sphereWorldCamera = new THREE.CubeCamera(0.2, 220, sphereWorldTarget);
-sphereWorldCamera.layers.set(0);
-const sphereThreatCamera = new THREE.CubeCamera(0.2, 80, sphereThreatTarget);
-sphereThreatCamera.layers.set(2);
-const _sphereCamRot = new THREE.Matrix3();
-
-const SphereShader = {
-  uniforms: {
-    tDiffuse: { value: null },
-    uWorld: { value: sphereWorldTarget.texture },
-    uThreat: { value: sphereThreatTarget.texture },
-    uCamRot: { value: _sphereCamRot },
-    uAspect: { value: window.innerWidth / window.innerHeight },
-    uAmount: { value: 1 },
-    uTint: { value: new THREE.Color(2.7, 0.12, 0.12) },
-  },
-  vertexShader: /* glsl */`
-    varying vec2 vUv;
-    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-  fragmentShader: /* glsl */`
-    uniform sampler2D tDiffuse;
-    uniform samplerCube uWorld;
-    uniform samplerCube uThreat;
-    uniform mat3 uCamRot;
-    uniform float uAspect;
-    uniform float uAmount;
-    uniform vec3 uTint;
-    varying vec2 vUv;
-    void main() {
-      vec4 forward = texture2D(tDiffuse, vUv);
-      vec2 p = vUv * 2.0 - 1.0;
-      p.x *= uAspect;
-      float edgeR = sqrt(uAspect * uAspect + 1.0);
-      float nr = clamp(length(p) / edgeR, 0.0, 1.0);
-      vec2 radial = length(p) > 0.0001 ? normalize(p) : vec2(0.0);
-      // Centre stays conventional for aiming; the frame edge bends through
-      // the side view and reaches almost directly behind at the corners.
-      float theta = nr * 3.05;
-      vec3 localDir = vec3(radial * sin(theta), -cos(theta));
-      vec3 worldDir = normalize(uCamRot * localDir);
-      vec3 sphere = textureCube(uWorld, worldDir).rgb;
-      // A small cross-shaped dilation keeps distant threats legible after the
-      // deliberately tiny cube capture. It is still the enemy's real shape,
-      // not a HUD marker or a generic edge alarm.
-      vec3 tangent = normalize(cross(abs(worldDir.y) < 0.92 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0), worldDir));
-      vec3 bitangent = normalize(cross(worldDir, tangent));
-      float threatLum = max(textureCube(uThreat, worldDir).r, max(textureCube(uThreat, worldDir).g, textureCube(uThreat, worldDir).b));
-      vec3 tx = textureCube(uThreat, normalize(worldDir + tangent * 0.035)).rgb;
-      vec3 nx = textureCube(uThreat, normalize(worldDir - tangent * 0.035)).rgb;
-      vec3 ty = textureCube(uThreat, normalize(worldDir + bitangent * 0.035)).rgb;
-      vec3 ny = textureCube(uThreat, normalize(worldDir - bitangent * 0.035)).rgb;
-      threatLum = max(threatLum, max(max(max(tx.r, max(tx.g, tx.b)), max(nx.r, max(nx.g, nx.b))), max(max(ty.r, max(ty.g, ty.b)), max(ny.r, max(ny.g, ny.b)))));
-      float rear = smoothstep(1.05, 2.45, theta);
-      float silhouette = smoothstep(0.018, 0.32, threatLum);
-      sphere = mix(sphere, sphere + uTint * (0.72 + threatLum * 0.48), silhouette * rear * 0.78);
-      // Fine scan breakup keeps the rear signal graphic rather than a red fog.
-      sphere += uTint * silhouette * rear * (0.035 + 0.025 * sin(vUv.y * 96.0));
-      float lens = smoothstep(0.12, 0.82, nr) * uAmount;
-      gl_FragColor = vec4(mix(forward.rgb, sphere, lens), forward.a);
-    }`,
-};
 
 // HYPERDEMON-ish chromatic aberration, driven by the trauma system
 const ChromaShader = {
@@ -266,8 +200,6 @@ const EdgeShader = {
 
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
-const spherePass = new ShaderPass(SphereShader);
-composer.addPass(spherePass);
 const edgePass = new ShaderPass(EdgeShader);
 composer.addPass(edgePass);
 // motion smear on everything bright; damp is DYNAMIC since v4.30 — it deepens
@@ -278,44 +210,10 @@ const SMEAR_DASH = 0.12;
 const afterimage = new AfterimagePass(SMEAR_BASE);
 composer.addPass(afterimage);
 const bloom = new UnrealBloomPass(
-  new THREE.Vector2(window.innerWidth, window.innerHeight), 0.32, 0.25, 0.78);
+  new THREE.Vector2(window.innerWidth, window.innerHeight), 0.5, 0.4, 0.6); // eased so voxel cells read through the glow
 composer.addPass(bloom);
 const chromaPass = new ShaderPass(ChromaShader);
 composer.addPass(chromaPass);
-
-// v22 spherical-awareness language: threats outside the forward view burn
-// into the screen periphery. This is direction information rather than a
-// conventional HUD arrow, keeping the view diegetic and readable at speed.
-const ThreatShader = {
-  uniforms: {
-    tDiffuse: { value: null },
-    uRear: { value: 0 },
-    uSide: { value: 0 },
-    uTint: { value: new THREE.Color(2.5, 0.18, 0.18) },
-  },
-  vertexShader: /* glsl */`
-    varying vec2 vUv;
-    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-  fragmentShader: /* glsl */`
-    uniform sampler2D tDiffuse;
-    uniform float uRear;
-    uniform float uSide;
-    uniform vec3 uTint;
-    varying vec2 vUv;
-    void main() {
-      vec4 base = texture2D(tDiffuse, vUv);
-      vec2 p = vUv * 2.0 - 1.0;
-      float edge = smoothstep(0.38, 1.0, abs(p.x));
-      float band = smoothstep(0.08, 0.46, 1.0 - abs(p.y));
-      float scan = 0.68 + 0.32 * sin(p.y * 64.0);
-      float sideBias = 0.72 + 0.28 * sign(p.x) * uSide;
-      float signal = edge * band * scan * sideBias * uRear;
-      base.rgb += uTint * signal * 0.22;
-      gl_FragColor = base;
-    }`,
-};
-const threatPass = new ShaderPass(ThreatShader);
-composer.addPass(threatPass);
 
 // dash speedlines: additive radial streaks from screen centre while dashK is
 // hot (HYPERDEMON's punched-through-space read). Enabled only mid-dash, and
@@ -390,47 +288,31 @@ function buzz(strong, weak, ms) {
 // ---------------------------------------------------------------- arena
 function makeFloorTexture() {
   const c = document.createElement('canvas');
-  c.width = c.height = 128;
+  c.width = c.height = 256;
   const g = c.getContext('2d');
-  const hash = (x, y) => {
-    let n = Math.imul(x + 17, 374761393) ^ Math.imul(y + 31, 668265263);
-    n = Math.imul(n ^ (n >>> 13), 1274126177);
-    return ((n ^ (n >>> 16)) >>> 0) / 4294967295;
-  };
-  // Uneven soot and old blood replace the clean Tron grid. Work in chunky
-  // 2x2 texels so the ground reads as a hand-made software texture in motion.
-  for (let y = 0; y < 128; y += 2) for (let x = 0; x < 128; x += 2) {
-    const n = hash(x >> 1, y >> 1);
-    const grit = 8 + Math.floor(n * 15);
-    g.fillStyle = `rgb(${grit + (n > 0.88 ? 7 : 0)},${Math.max(4, grit - 3)},${Math.max(3, grit - 5)})`;
-    g.fillRect(x, y, 2, 2);
+  g.fillStyle = '#060606';
+  g.fillRect(0, 0, 256, 256);
+  for (let ty = 0; ty < 4; ty++) for (let tx = 0; tx < 4; tx++) {
+    if (Math.random() < 0.3) {
+      g.fillStyle = 'rgba(255,255,255,0.02)';
+      g.fillRect(tx * 64, ty * 64, 64, 64);
+    }
   }
-  // Broken slab seams give motion scale without drawing a luminous grid.
+  g.strokeStyle = 'rgba(255,255,255,0.09)';
   g.lineWidth = 1;
-  for (let i = 0; i <= 128; i += 16) {
-    g.strokeStyle = `rgba(96,32,22,${0.10 + hash(i, 1) * 0.08})`;
-    g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 128); g.stroke();
-    g.beginPath(); g.moveTo(0, i); g.lineTo(128, i); g.stroke();
+  for (let i = 0; i <= 256; i += 32) {
+    g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 256); g.stroke();
+    g.beginPath(); g.moveTo(0, i); g.lineTo(256, i); g.stroke();
   }
-  g.fillStyle = 'rgba(126,38,24,0.10)';
-  for (let i = 0; i < 36; i++) {
-    const x = Math.floor(hash(i, 7) * 128);
-    const y = Math.floor(hash(i, 19) * 128);
-    g.fillRect(x, y, 1 + (i & 1), 1);
+  g.strokeStyle = 'rgba(255,255,255,0.34)';
+  g.lineWidth = 2;
+  for (let i = 0; i <= 256; i += 64) {
+    g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 256); g.stroke();
+    g.beginPath(); g.moveTo(0, i); g.lineTo(256, i); g.stroke();
   }
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.magFilter = tex.minFilter = THREE.NearestFilter;
-  tex.generateMipmaps = false;
-  tex.colorSpace = THREE.SRGBColorSpace;
-
-  // v33: stone paneling over the soot. A pre-graded 128² bake (same texel
-  // grid, same near-black envelope, oxblood in the seams) swaps in when it
-  // arrives; until then — or forever, if the fetch fails — the procedural
-  // floor above is the floor. The reactive shader never knows the difference.
-  const panels = new Image();
-  panels.onload = () => { g.drawImage(panels, 0, 0, 128, 128); tex.needsUpdate = true; };
-  panels.src = 'assets/env/floor.png';
+  tex.repeat.set(14, 14);
   return tex;
 }
 
@@ -441,7 +323,7 @@ const floorMat = new THREE.ShaderMaterial({
   uniforms: {
     map: { value: makeFloorTexture() },
     uPulse: { value: 0 },
-    uGlow: { value: 0.9 },
+    uGlow: { value: 1.5 }, // v4.31: pulled back from 1.8 — the grid glows, it doesn't shout
     uRed: { value: 0 },
     uAccent: { value: new THREE.Color(2.2, 0.25, 0.25) }, // hurt-flush tint (STYLE re-aims it)
   },
@@ -456,8 +338,10 @@ const floorMat = new THREE.ShaderMaterial({
     uniform vec3 uAccent;
     varying vec2 vUv;
     void main() {
-      vec3 col = texture2D(map, vUv * 10.0).rgb;
-      col *= uGlow + uPulse * 0.28;
+      vec3 col = texture2D(map, vUv * 14.0).rgb;
+      // v4.30: uGlow lifts the major lines just past the bloom threshold, so
+      // the grid itself glows — and the beat pulse pushes it visibly hotter
+      col *= uGlow + uPulse * 0.9;
       col = mix(col, col * uAccent, clamp(uRed, 0.0, 1.0));       // hurt flush
       gl_FragColor = vec4(col, 1.0);
     }`,
@@ -468,8 +352,10 @@ const floor = new THREE.Mesh(
 );
 scene.add(floor);
 
-// Devil Daggers reference: almost-black void, with one low ember horizon.
-// No hue walk, bands or decorative motion compete with enemy silhouettes.
+// v4.30 sky: HYPERDEMON's pastel iridescence over black — a slow hue-walk
+// around the horizon replaces the old greyscale band shimmer. Held DIM
+// (peak ≈0.09) so it stays a wash behind the fight and never trips bloom;
+// the dark-red ember glow keeps the horizon as the danger line.
 const skyMat = new THREE.ShaderMaterial({
   side: THREE.BackSide,
   depthWrite: false,
@@ -493,9 +379,19 @@ const skyMat = new THREE.ShaderMaterial({
     void main() {
       vec3 d = normalize(vPos);
       float h = d.y;
-      vec3 col = vec3(0.0015);
-      float horiz = pow(max(0.0, 1.0 - abs(h) * 4.8), 4.0);
-      col += uEmberCol * horiz * (0.52 + uEmber * 0.32);
+      float ang = atan(d.z, d.x);
+      vec3 col = mix(vec3(0.055), vec3(0.0), clamp(abs(h) * 2.2, 0.0, 1.0));
+      float b1 = 0.5 + 0.5 * sin(ang * 7.0 - uTime * 0.6 + h * 9.0);
+      float b2 = 0.5 + 0.5 * sin(ang * 13.0 + uTime * 0.9 - h * 14.0);
+      float horiz = 1.0 - clamp(abs(h) * 2.6, 0.0, 1.0);
+      // pastel iridescence: three hue cycles around the ring, drifting with
+      // time, desaturated toward white — the bands now modulate COLOR, not grey
+      float hue = ang * 0.477 + uTime * 0.03;
+      vec3 pastel = 0.5 + 0.5 * cos(6.28318 * (hue + vec3(0.0, 0.33, 0.67)));
+      pastel = mix(vec3(1.0), pastel, 0.45);
+      col += pastel * 0.09 * (b1 * 0.6 + b2 * 0.4) * horiz;
+      // ember horizon swells with trauma and while the Leviathan lives
+      col += uEmberCol * pow(max(0.0, 1.0 - abs(h) * 4.0), 3.0) * (1.0 + uEmber);
       gl_FragColor = vec4(col, 1.0);
     }`,
 });
@@ -503,7 +399,7 @@ scene.add(new THREE.Mesh(new THREE.SphereGeometry(220, 32, 16), skyMat));
 
 // drifting dust motes for depth + speed perception
 const dust = (() => {
-  const n = 80;
+  const n = 400;
   const pos = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) {
     const a = Math.random() * Math.PI * 2;
@@ -515,16 +411,13 @@ const dust = (() => {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   const mat = new THREE.PointsMaterial({
-    color: 0xb8aca4, size: 0.045, transparent: true, opacity: 0.12,
+    color: 0xffffff, size: 0.07, transparent: true, opacity: 0.3,
     blending: THREE.AdditiveBlending, depthWrite: false,
   });
   const p = new THREE.Points(geo, mat);
   scene.add(p);
   return p;
 })();
-
-// One horizon line only. The fight owns the rest of the frame.
-const environment = new HyperEnvironment(scene, ARENA_R);
 
 // ---------------------------------------------------------------- actors
 const input = new InputManager();
@@ -583,32 +476,13 @@ function updateShadows() {
   shadows.instanceMatrix.needsUpdate = true;
 }
 
-// Impact sparks (dagger hits) + shockwave rings (heavy kills). The spark is an
-// authored 8px software sprite rather than a clean translucent WebGL square.
+// Impact sparks (dagger hits) + shockwave rings (heavy kills): tiny pooled
+// additive quads/rings, scale-and-fade — combat juice, no physics.
 const sparks = [];
 const sparkPool = [];
-const sparkData = new Uint8Array(8 * 8 * 4);
-for (let y = 0; y < 8; y++) {
-  for (let x = 0; x < 8; x++) {
-    const dx = Math.abs(x - 3.5), dy = Math.abs(y - 3.5);
-    const core = dx <= 1 && dy <= 1;
-    const arm = (dx <= 0.5 && dy <= 3.5) || (dy <= 0.5 && dx <= 3.5);
-    const diag = Math.abs(dx - dy) < 0.35 && dx <= 2.5;
-    const a = core ? 255 : arm ? 220 : diag ? 150 : 0;
-    const i = (y * 8 + x) * 4;
-    sparkData[i] = 255; sparkData[i + 1] = core ? 210 : 88;
-    sparkData[i + 2] = core ? 120 : 18; sparkData[i + 3] = a;
-  }
-}
-const sparkTex = new THREE.DataTexture(sparkData, 8, 8, THREE.RGBAFormat);
-sparkTex.magFilter = THREE.NearestFilter;
-sparkTex.minFilter = THREE.NearestFilter;
-sparkTex.generateMipmaps = false;
-sparkTex.needsUpdate = true;
-const sparkGeo = new THREE.PlaneGeometry(0.68, 0.68);
+const sparkGeo = new THREE.PlaneGeometry(0.5, 0.5);
 const sparkMat = new THREE.MeshBasicMaterial({
-  color: new THREE.Color().setRGB(2.6, 0.85, 0.28), map: sparkTex,
-  transparent: true, opacity: 1, alphaTest: 0.04,
+  color: new THREE.Color().setRGB(2.2, 0.7, 0.5), transparent: true, opacity: 1,
   blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
 });
 const ringGeo = new THREE.RingGeometry(0.82, 1, 40).rotateX(-Math.PI / 2);
@@ -626,8 +500,8 @@ function spawnSpark(pos, big = false) {
   }
   m.visible = true;
   m.position.copy(pos);
-  const roll = Math.random() * Math.PI * 2;
-  sparks.push({ m, t: 0.14, max: 0.14, big, ring: false, roll });
+  m.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+  sparks.push({ m, t: 0.14, max: 0.14, big, ring: false });
 }
 
 function spawnShockwave(pos) {
@@ -652,7 +526,6 @@ function updateSparks(dt) {
       s.m.scale.setScalar((s.big ? 1.6 : 0.8) * (0.4 + (1 - k) * 1.4));
       s.m.material.opacity = k;
       s.m.lookAt(camera.position);
-      s.m.rotateZ(s.roll);
     }
     if (s.t <= 0) {
       if (s.ring) {
@@ -671,16 +544,10 @@ function updateSparks(dt) {
 const hand = new VoxelSprite(MODELS.hand);
 const handGroup = new THREE.Group();
 handGroup.add(hand.mesh);
-// A true first-person overlay: the old four-finger claw is pitched into the
-// screen so its silhouette reads, and world geometry can never hide it.
-hand.material.depthTest = false;
-hand.material.depthWrite = false;
-hand.material.transparent = true;
-hand.mesh.renderOrder = 20;
-const HAND_BASE = { x: 0, y: -0.92, z: -1.5, rx: -0.75, ry: Math.PI + 0.12, rz: 0 };
-handGroup.rotation.set(HAND_BASE.rx, HAND_BASE.ry, HAND_BASE.rz);
-handGroup.position.set(HAND_BASE.x, HAND_BASE.y, HAND_BASE.z);
-handGroup.traverse(o => o.layers.set(1));
+handGroup.rotation.y = Math.PI + 0.3; // blade forward, angled 3/4 so its length reads
+handGroup.rotation.z = 0.2;
+handGroup.rotation.x = 0.15;
+handGroup.position.set(0.32, -0.4, -1.05); // far enough that it reads as a hand, not a wall
 camera.add(handGroup);
 let recoil = 0;
 
@@ -702,9 +569,6 @@ const elStyleFill = document.getElementById('styleFill');
 const elMsg = document.getElementById('msg');
 const elToast = document.getElementById('toast');
 const elCross = document.getElementById('crosshair');
-function setRunFrame(active) {
-  document.body.classList.toggle('in-run', active);
-}
 const elVignette = document.getElementById('vignette');
 let toastTimeout = 0;
 
@@ -733,14 +597,13 @@ function applyRenderScale() {
   composer.setPixelRatio(pr);
   renderer.setSize(window.innerWidth, window.innerHeight);
   composer.setSize(window.innerWidth, window.innerHeight);
-  edgePass.uniforms.uPx.value.set(1 / (window.innerWidth * pr), 1 / (window.innerHeight * pr));
+  edgePass.uniforms.uPx.value.set(1 / window.innerWidth, 1 / window.innerHeight);
 }
 
 function resize() {
   applyRenderScale();
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  spherePass.uniforms.uAspect.value = camera.aspect;
   ui.width = window.innerWidth;
   ui.height = window.innerHeight;
 }
@@ -811,11 +674,6 @@ let fireTimer = 0;
 let fireHeldT = 0;
 let fireWasHeld = false;
 let shotCd = 0;
-let homingAmmo = 0;
-let homingFireTimer = 0;
-let homingHeldT = 0;
-let homingWasHeld = false;
-let weaponActive = false;
 let styleVal = 0;      // current meter fill (0..STYLE_CAP), bleeds when idle
 let stylePeakIdx = 0;  // best tier reached this run (for the death recap)
 let nextTotemAt = 0;
@@ -824,7 +682,6 @@ let nextThornAt = 0;
 let nextRevenantAt = 110; // the dead only rise once there are dead
 let nextPulseAt = 0; // budgeted pressure pulses (toko-drop's wave system, adapted)
 let pulseN = 0;
-let pureScriptCursor = 0;
 let serpentsSpawned = 0;
 let musicI = 0; // smoothed music intensity, reused by the reactive floor + sky
 let levAlive = false; // Leviathan on the field — the sky's ember burns hotter
@@ -836,10 +693,7 @@ let fovKick = 0;
 let slowmo = 0;
 // PURE = Devil Daggers rules (one touch kills). HYPER = HYPERDEMON rules:
 // a draining life-timer is your health — kills add seconds, hits cost 10.
-// New key intentionally returns existing players to the DD-authored default;
-// HYPER remains an optional remix they can select again from the menu.
-const MODE_KEY = 'hyperDaggerModeV31';
-let mode = localStorage.getItem(MODE_KEY) === 'hyper' ? 'hyper' : 'pure';
+let mode = localStorage.getItem('hyperDaggerMode') === 'hyper' ? 'hyper' : 'pure';
 let hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
 const HYPER_START = T.hyper.start;
 const HYPER_CAP = T.hyper.cap;
@@ -953,20 +807,16 @@ async function menuBoardLine() {
 }
 
 function showMenu() {
-  setRunFrame(false);
   elMsg.style.display = 'block';
   const modeLine = mode === 'hyper'
     ? `HYPER &mdash; your clock is your life: kills add seconds, a hit costs ${HYPER_HIT_COST}`
-    : 'PURE &mdash; scripted spawns, one touch kills, no escape button';
-  const controls = mode === 'hyper'
-    ? 'mouse look + <b>WASD</b> &middot; <b>SPACE</b> hop &middot; <b>SHIFT</b> dash &middot; <b>R</b> reap'
-    : 'mouse look + <b>WASD</b> &middot; <b>SPACE</b> hop &middot; <b>LMB</b> daggers &middot; <b>RMB</b> homing';
+    : 'PURE &mdash; Devil Daggers rules: one touch kills';
   elMsg.innerHTML =
     `<h1>HYPER DAGGER</h1>
-     <p class="sub">a stripped-down Devil Daggers homage</p>
+     <p class="sub">a Devil Daggers &times; HYPERDEMON homage</p>
      <p>survive the swarm &mdash; time is your only score</p>
-     <p class="keys">${controls} &middot; <b>ESC</b> options<br>
-     gamepad &mdash; sticks &middot; <b>A/&#10005;</b> jump &middot; triggers fire &nbsp;|&nbsp; touch &mdash; <b>left tap = jump</b> &middot; <b>right tap = burst</b></p>
+     <p class="keys">mouse look + <b>WASD</b> &middot; <b>SPACE</b> jump &times;2 &middot; <b>SHIFT</b> dash &middot; <b>R</b> reap &middot; <b>ESC</b> options<br>
+     gamepad &mdash; sticks &middot; <b>A/&#10005;</b> jump &middot; <b>B/&#9675;</b> dash &nbsp;|&nbsp; touch &mdash; dual sticks &middot; <b>tap = jump</b> &middot; <b>flick = dash</b></p>
      <button id="modeBtn">MODE: ${modeLine}</button>
      <button id="runKindBtn" class="opt">RUN: ${runKind === 'daily'
     ? `DAILY &mdash; everyone faces the ${todayStr()} seed`
@@ -976,7 +826,7 @@ function showMenu() {
   document.getElementById('modeBtn').addEventListener('pointerdown', e => {
     e.stopPropagation();
     mode = mode === 'hyper' ? 'pure' : 'hyper';
-    localStorage.setItem(MODE_KEY, mode);
+    localStorage.setItem('hyperDaggerMode', mode);
     hiScore = parseFloat(localStorage.getItem(hiKey()) || '0');
     showMenu();
   });
@@ -1002,16 +852,15 @@ const TIPS_KEY = 'hyperDaggerSeenTips';
 
 function showTips() {
   state = 'tips';
-  setRunFrame(false);
   elMsg.style.display = 'block';
   elMsg.innerHTML =
     `<h1>HOW TO SURVIVE</h1>
      <p class="big">&#9876; <b>tap</b> = shotgun burst &middot; <b>hold</b> = stream</p>
      <p class="sub">every dagger is aimed &mdash; on touch the stream runs itself while you move</p>
-     <p class="big">&#10227; <b>jump as you land</b> to carry speed</p>
-     <p class="sub">burst down after takeoff, then again near the apex</p>
+     <p class="big">&#10227; the <b>dash phases through orbs</b></p>
+     <p class="sub">never through bodies &mdash; charge the red projectiles, dodge the bone</p>
      <p class="big">&#9670; <b>gems level your daggers</b></p>
-     <p class="sub">10 / 70 &rarr; faster &middot; then bank 150 for the final hand; RMB spends homing</p>
+     <p class="sub">heavy kills drop them &mdash; 10 / 30 / 70 &rarr; faster &middot; homing &middot; the crimson hand</p>
      <p class="go">click / tap / press &#10005; to descend</p>`;
 }
 
@@ -1200,11 +1049,6 @@ function resetRun() {
   fireHeldT = 999;
   fireWasHeld = true;
   shotCd = 0;
-  homingAmmo = 0;
-  homingFireTimer = 0;
-  homingHeldT = 999;
-  homingWasHeld = true;
-  weaponActive = false;
   styleVal = 0;
   stylePeakIdx = 0;
   // onboarding pacing lives in PULSE_POOL's unlock gates (watcher 25s …
@@ -1217,7 +1061,6 @@ function resetRun() {
   reapCool = 0;
   nextPulseAt = 20;
   pulseN = 0;
-  pureScriptCursor = 0;
   serpentsSpawned = 0;
   musicI = 0;
   applyGauntlet(1);
@@ -1229,7 +1072,6 @@ function resetRun() {
   lifeT = HYPER_START;
   mercyT = 0;
   player.reset();
-  player.dashEnabled = mode === 'hyper';
 }
 
 function goFullscreen() {
@@ -1251,11 +1093,8 @@ function startGame() {
   input.consumeDashFlick();
   state = 'playing';
   paused = false;
-  setRunFrame(true);
   elMsg.style.display = 'none';
-  // The claw and its projectile stream are the sight. A pasted HUD crosshair
-  // made the frame feel like a generic browser FPS and is absent in the target.
-  elCross.style.display = 'none';
+  elCross.style.display = input.touchMode ? 'none' : 'block';
   elPause.style.display = 'block';
   audio.droneStart();
   if (opts.music) audio.musicStart();
@@ -1263,7 +1102,6 @@ function startGame() {
 
 function die(timedOut = false) {
   state = 'dead';
-  setRunFrame(false);
   deathAt = performance.now();
   slowmo = 1;
   trauma = 1;
@@ -1313,7 +1151,6 @@ window.addEventListener('pointerdown', e => {
     startGame();
   } else if (state === 'playing' && paused) {
     paused = false;
-    setRunFrame(true);
     perfSettleUntil = performance.now() + perfTuning.settleMs; // stale EMA after pause
     elMsg.style.display = 'none';
     elPause.style.display = 'block';
@@ -1363,10 +1200,6 @@ function applyOpts() {
   chromaPass.enabled = opts.chroma && opts.motion && tier.chroma;
   // the neon rim is a static effect, so the motion toggle leaves it alone
   edgePass.enabled = opts.edge && tier.edge;
-  spherePass.enabled = opts.projection && tier.sphereEvery > 0;
-  // The peripheral warning was visually loud without improving the core aim.
-  // Keep rear awareness inside the optional spherical view only.
-  threatPass.enabled = false;
   bloom.enabled = tier.bloom;
   debris.softCap = tier.debrisCap;
   debris.gibTarget = tier.gibs;
@@ -1383,12 +1216,7 @@ function applyOpts() {
   const hullOn = opts.look === 'smooth' && tier.hull;
   setHullMode(hullOn);
   hand.setHull(hullOn); // noHull in the model def keeps it cubes regardless
-  for (const e of enemies) {
-    for (const part of e.parts || [e.sprite]) {
-      part.applyStyle?.();
-      part.setHull?.(hullOn);
-    }
-  }
+  for (const e of enemies) { e.sprite.applyStyle?.(); e.sprite.setHull?.(hullOn); }
   if (flyby) for (const p of flyby.parts) { p.sprite.applyStyle(); p.sprite.setHull(hullOn); }
   // high contrast: hotter orbs so projectiles read against the bloom
   // (intensity picked first, then the style hue re-aims it)
@@ -1397,11 +1225,6 @@ function applyOpts() {
   styleTint(floorMat.uniforms.uAccent.value.setRGB(2.2, 0.25, 0.25));
   styleTint(skyMat.uniforms.uEmberCol.value.setRGB(0.30, 0.02, 0.02));
   styleTint(edgePass.uniforms.uTint.value.setRGB(1.6, 0.35, 0.35));
-  styleTint(threatPass.uniforms.uTint.value.setRGB(2.5, 0.18, 0.18));
-  styleTint(spherePass.uniforms.uTint.value.setRGB(2.7, 0.12, 0.12));
-  const envAccent = styleTint(new THREE.Color().setRGB(2.2, 0.22, 0.22));
-  environment.setAccent(envAccent);
-  environment.setQuality(perfTier);
   player.sens = opts.sens;
   // reconcile music with the toggle live (only while a run is active)
   if (state === 'playing') {
@@ -1418,19 +1241,15 @@ function optRow(label, key, values, fmt) {
 
 function showPause() {
   paused = true;
-  setRunFrame(false);
   elPause.style.display = 'none';
   elMsg.style.display = 'block';
   let voxCount = hand.aliveCount;
-  for (const e of enemies) {
-    for (const part of e.parts || [e.sprite]) voxCount += part.aliveCount;
-  }
+  for (const e of enemies) voxCount += e.sprite.aliveCount;
   elMsg.innerHTML =
     `<h1>PAUSED</h1>
      <p class="sub">~${Math.min(999, Math.round(1000 / Math.max(1, frameEMA)))} fps &middot; ${voxCount.toLocaleString()} voxels on field &middot; new spawns use the VOXEL setting</p>
      ${optRow('SPEED', 'speed', [1, 1.25, 1.5], v => v + '\u00d7')}
      ${optRow('FOV', 'fov', [70, 80, 90], v => v)}
-     ${optRow('VIEW', 'projection', [true, false], v => v ? 'SPHERE' : 'NORMAL')}
      ${optRow('SENS', 'sens', [0.7, 1, 1.3, 1.6], v => ({ 0.7: 'LOW', 1: 'MED', 1.3: 'HIGH', 1.6: 'MAX' })[v])}
      ${optRow('AIM', 'aim', [true, false], v => v ? 'ASSIST ON' : 'ASSIST OFF')}
      ${optRow('FX', 'smear', [true, false], v => v ? 'SMEAR ON' : 'SMEAR OFF')}
@@ -1611,20 +1430,13 @@ function totemCount() {
   return n;
 }
 
-function spawnSerpent(ghost = serpentsSpawned % 2 === 1, at = null, ddRules = false) {
-  if (!ddRules) announce(ghost ? 'ghostSerpent' : 'serpent', ghost ? 'THE PALE SERPENT' : 'THE SERPENT');
-  const p = at ? at.clone() : ringSpot(14).clone();
+function spawnSerpent(ghost = serpentsSpawned % 2 === 1) {
+  announce(ghost ? 'ghostSerpent' : 'serpent', ghost ? 'THE PALE SERPENT' : 'THE SERPENT');
+  const p = ringSpot(14).clone();
   p.y = 8;
   audio.roar();
   serpentsSpawned++;
   const s = new Serpent(scene, p, ARENA_R + 5, ghost);
-  if (ddRules) {
-    // 75 HP and 25 gems across twelve exposed body nodes.
-    s.segments.forEach((seg, i) => {
-      seg.hp = i === 0 ? 9 : 6;
-      seg.gemDrop = i === 0 ? 3 : 2;
-    });
-  }
   serpents.push(s);
   enemies.push(...s.segments);
 }
@@ -1699,64 +1511,6 @@ function updateFlyby(dt) {
     f.parts[i].sprite.update(dt);
   }
   if (f.t > 14) endFlyby();
-}
-
-// ------------------------------------------------ DD-authored spawnset
-// PURE is deliberately learnable: the same threats arrive at the same second
-// every run. The first 229 seconds mirror DD's early-game structure using the
-// closest Hyper Dagger analogs (squid spawner, gem thief, centipede).
-const DD_SPAWNSET = [
-  [3, 'squid1'], [14, 'squid1'], [19, 'squid1'], [24, 'squid1'],
-  [39, 'squid2'], [39, 'spider'],
-  [49, 'squid2'], [49, 'squid1'],
-  [64, 'squid2'], [64, 'squid1'],
-  [79, 'squid2'], [79, 'squid1'],
-  [94, 'squid2'], [94, 'squid1'],
-  [109, 'squid2'], [114, 'centipede'], [119, 'spider'],
-  [134, 'squid2'], [134, 'squid1'],
-  [144, 'squid2'], [144, 'squid1'],
-  [154, 'squid2'], [154, 'squid1'],
-  [164, 'squid2'], [164, 'squid1'],
-  [174, 'centipede'], [174, 'spider'], [174, 'spider'], [174, 'spider'],
-  [184, 'squid2'], [184, 'squid1'],
-  [189, 'squid2'], [189, 'squid1'],
-  [199, 'spider'], [199, 'spider'], [199, 'spider'],
-  [229, 'squid1'], [229, 'squid1'], [229, 'squid1'],
-  [229, 'squid1'], [229, 'squid1'], [229, 'squid1'],
-];
-
-function ddEdgeSpot(i) {
-  // A fixed golden-angle walk makes simultaneous spawns legible without
-  // turning the script into a repeating four-corner pattern.
-  const a = i * 2.399963229728653;
-  const r = ARENA_R * 0.84;
-  return new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r);
-}
-
-function spawnDDEntry(kind, index) {
-  const at = ddEdgeSpot(index);
-  audio.spawn();
-  if (kind === 'squid1' || kind === 'squid2') {
-    enemies.push(new Totem(scene, at, 20, kind === 'squid1' ? 1 : 2));
-  } else if (kind === 'spider') {
-    enemies.push(new Spider(scene, at, true));
-  } else if (kind === 'centipede') {
-    spawnSerpent(false, at, true);
-  }
-}
-
-function ddDirector() {
-  while (pureScriptCursor < DD_SPAWNSET.length &&
-      gameTime >= DD_SPAWNSET[pureScriptCursor][0]) {
-    const [, kind] = DD_SPAWNSET[pureScriptCursor];
-    spawnDDEntry(kind, pureScriptCursor);
-    pureScriptCursor++;
-    pulseN = pureScriptCursor;
-  }
-  emitSpawnerWaves(true);
-  for (let i = serpents.length - 1; i >= 0; i--) {
-    if (!serpents[i].alive) serpents.splice(i, 1);
-  }
 }
 
 // ---------------------------------------------------- pulse director
@@ -1930,50 +1684,7 @@ function runPulse(n) {
   if (lastPulsePicks.length > 20) lastPulsePicks.shift();
 }
 
-function emitSpawnerWaves(ddRules = false) {
-  for (const e of enemies) {
-    if ((e.type !== 'totem' && e.type !== 'leviathan') || !e.emit) continue;
-    e.emit = false;
-    const m = e.mouthPos(_sv).clone();
-    if (ddRules && e.ddTier) {
-      const count = e.ddTier === 1 ? 9 : 10;
-      for (let i = 0; i < count && skullCount() < SKULL_CAP; i++) {
-        const at = m.clone().add(_c.set(
-          (Math.random() - 0.5) * 1.6,
-          (Math.random() - 0.5) * 0.8,
-          (Math.random() - 0.5) * 1.6));
-        enemies.push(new Skull(scene, at));
-      }
-      if (skullCount() < SKULL_CAP) {
-        const leader = new Wraith(scene, m, e.ddTier === 2 ? 1.5 : 0);
-        leader.hp = e.ddTier === 1 ? 5 : 10;
-        leader.gemDrop = 1;
-        enemies.push(leader);
-      }
-      audio.spawn();
-      continue;
-    }
-    if (skullCount() >= SKULL_CAP) continue;
-    const boost = Math.min(6, gameTime * 0.06);
-    const roll = rng.next(); // seeded in daily runs — exhale mix is part of the schedule
-    const skull =
-      gameTime > 45 && roll < 0.15 ? new Splitter(scene, m, boost) :
-      gameTime > 60 && roll < 0.45 ? new Wraith(scene, m, boost) :
-      new Skull(scene, m, boost);
-    if (skull instanceof Splitter) announce('splitter', 'THE SPLITTERS');
-    else if (skull instanceof Wraith) announce('wraith', 'CROWNED SKULLS');
-    enemies.push(skull);
-    for (let i = 0; i < 4; i++) {
-      debris.spawn(m, skull.sprite.randomColor(),
-        _sv.clone().set((Math.random() - 0.5) * 4, 2 + Math.random() * 3, (Math.random() - 0.5) * 4),
-        0.14, 0.8);
-    }
-    audio.spawn();
-  }
-}
-
 function director(dt) {
-  if (mode === 'pure') { ddDirector(); return; }
   updatePending(dt);
   if (gameTime >= nextTotemAt && totemCount() < TOTEM_CAP) {
     const interval = Math.max(1.7, 3.4 - gameTime * 0.02);
@@ -2029,7 +1740,29 @@ function director(dt) {
     }
     nextLevAt = gameTime + 120;
   }
-  emitSpawnerWaves(false);
+  for (const e of enemies) {
+    if ((e.type === 'totem' || e.type === 'leviathan') && e.emit) {
+      e.emit = false;
+      if (skullCount() < SKULL_CAP) {
+        const m = e.mouthPos(_sv);
+        const boost = Math.min(6, gameTime * 0.06);
+        const roll = rng.next(); // seeded in daily runs — exhale mix is part of the schedule
+        const skull =
+          gameTime > 45 && roll < 0.15 ? new Splitter(scene, m, boost) :
+          gameTime > 60 && roll < 0.45 ? new Wraith(scene, m, boost) :
+          new Skull(scene, m, boost);
+        if (skull instanceof Splitter) announce('splitter', 'THE SPLITTERS');
+        else if (skull instanceof Wraith) announce('wraith', 'CROWNED SKULLS');
+        enemies.push(skull);
+        for (let i = 0; i < 4; i++) {
+          debris.spawn(m, skull.sprite.randomColor(),
+            _sv.clone().set((Math.random() - 0.5) * 4, 2 + Math.random() * 3, (Math.random() - 0.5) * 4),
+            0.14, 0.8);
+        }
+        audio.spawn();
+      }
+    }
+  }
   for (let i = serpents.length - 1; i >= 0; i--) {
     if (!serpents[i].alive) serpents.splice(i, 1);
   }
@@ -2037,35 +1770,23 @@ function director(dt) {
 
 // ---------------------------------------------------------------- weapon
 function levelForGems(n) {
-  return n >= LEVEL_GEMS[3] ? 3 : n >= LEVEL_GEMS[2] ? 2 : 1;
-}
-
-function setWeaponLevel(lv) {
-  if (lv <= weaponLv) return;
-  weaponLv = lv;
-  applyGauntlet(lv);
-  audio.levelup();
-  toast(lv === 4 ? 'LEVEL 4 — THE CRIMSON HAND'
-    : lv === 3 ? 'LEVEL 3 — RMB HOMING' : `DAGGERS LEVEL ${lv}`);
-  trauma = Math.max(trauma, lv === 4 ? 0.5 : 0.3);
+  let lv = 1;
+  for (let i = 2; i < LEVEL_GEMS.length; i++) if (n >= LEVEL_GEMS[i]) lv = i;
+  return lv;
 }
 
 function onGemsCollected(n) {
-  const before = gemCount;
   gemCount += n;
   audio.gem();
   addStyle(n); // hoarding gems mid-fight keeps the meter warm
   const lv = levelForGems(gemCount);
-  if (weaponLv < 3) {
-    setWeaponLevel(lv);
-    // Only gems beyond the 70-gem upgrade become spendable homing ammo.
-    homingAmmo += Math.max(0, gemCount - Math.max(before, LEVEL_GEMS[3]));
-  } else {
-    homingAmmo += n;
-  }
-  if (weaponLv === 3 && homingAmmo >= 150) {
-    homingAmmo -= 150;
-    setWeaponLevel(4);
+  if (lv > weaponLv) {
+    weaponLv = lv;
+    applyGauntlet(lv);
+    audio.levelup();
+    toast(lv === 4 ? 'LEVEL 4 — THE CRIMSON HAND'
+      : lv === 3 ? 'DAGGERS LEVEL 3 — HOMING' : `DAGGERS LEVEL ${lv}`);
+    trauma = Math.max(trauma, lv === 4 ? 0.5 : 0.3);
   }
 }
 
@@ -2165,7 +1886,7 @@ function segHitsSphere(p0, p1, c, r) {
   return _p0.distanceToSquared(c) <= r * r;
 }
 
-function fireDagger(spread, speed, homing, damage = 1) {
+function fireDagger(spread, speed, homing) {
   camera.getWorldDirection(_hitDir);
   _hitDir.x += (Math.random() - 0.5) * spread * 2;
   _hitDir.y += (Math.random() - 0.5) * spread * 2;
@@ -2173,12 +1894,11 @@ function fireDagger(spread, speed, homing, damage = 1) {
   _hitDir.normalize();
   // launch from the gauntlet corner, not the crosshair — with auto-fire on
   // nearly all the time, streaks through screen centre are too distracting
-  _p0.copy(camera.position).addScaledVector(_hitDir, 0.85);
+  _p0.copy(camera.position).addScaledVector(_hitDir, 0.7);
   _seg.setFromMatrixColumn(camera.matrixWorld, 0); // camera right
-  _p0.addScaledVector(_seg, 0.24 + (Math.random() - 0.5) * T.weapon.originJitter);
-  _c.setFromMatrixColumn(camera.matrixWorld, 1); // camera up
-  _p0.addScaledVector(_c, -0.26 + (Math.random() - 0.5) * T.weapon.originJitter);
-  daggers.fire(_p0, _hitDir, speed, homing, damage);
+  _p0.addScaledVector(_seg, 0.24);
+  _p0.y -= 0.26;
+  daggers.fire(_p0, _hitDir, speed, homing);
 }
 
 function killEnemy(e, dir) {
@@ -2188,7 +1908,7 @@ function killEnemy(e, dir) {
   addStyle(STYLE_GAIN[e.type] ?? 3);
   if (mode === 'hyper') lifeT = Math.min(HYPER_CAP, lifeT + e.score); // kills buy time
   e.center(_c);
-  debris.burst(e.deathVoxels?.() ?? e.sprite.worldVoxels(), e.sprite.size,
+  debris.burst(e.sprite.worldVoxels(), e.sprite.size,
     _hitDir.copy(dir).multiplyScalar(5), e.type === 'skull' ? 1 : 1.4);
   audio.gib(e.type !== 'skull');
   // heavy kills stamp a shockwave ring into the floor, warp the frame, and
@@ -2200,8 +1920,8 @@ function killEnemy(e, dir) {
     buzz(0.7, 0.35, 90);
   }
   trauma = Math.max(trauma, e.type === 'skull' ? 0.18 : 0.35);
-  let drops = e.gemDrop ?? GEM_DROPS[e.type] ?? 0;
-  if (e.isHead && e.gemDrop === undefined) drops = 2;
+  let drops = GEM_DROPS[e.type] || 0;
+  if (e.isHead) drops = 2;
   if (e.type === 'spider') drops = 1 + e.stolen; // thieves give it all back
   for (let i = 0; i < drops; i++) gems.spawn(_c);
   if (e.splits) {
@@ -2218,49 +1938,19 @@ function killEnemy(e, dir) {
  *  wide cone at once, then locks the hand out briefly. Burst damage for a
  *  brute in your face, at the cost of your stream. */
 function fireShotgun(w) {
-  weaponActive = true;
-  camera.getWorldDirection(_fwd2);
   for (let i = 0; i < T.weapon.shotgunCount[weaponLv]; i++) {
-    fireDagger(T.weapon.shotgunSpread,
-      T.weapon.shotgunSpeed * (0.93 + Math.random() * 0.14), w.homing);
+    fireDagger(T.weapon.shotgunSpread, T.weapon.daggerSpeed * (0.92 + Math.random() * 0.16), w.homing);
   }
-  gems.blast(camera.position);
   shotCd = T.weapon.shotgunCd;
-  recoil = 0.15;
-  hand.flash(1.25);
+  recoil = 0.06;
   fovKick = Math.max(fovKick, 3.5);
   trauma = Math.max(trauma, 0.22);
-  if (player.daggerJump(_fwd2)) {
-    fovKick = Math.max(fovKick, 7);
-    trauma = Math.max(trauma, 0.32);
-    buzz(0.65, 0.45, 110);
-  }
   audio.shotgun();
   buzz(0.5, 0.3, 90);
 }
 
-function fireHomingShot() {
-  const count = Math.min(homingAmmo, T.weapon.homingShot[weaponLv] || 0);
-  if (count <= 0) return false;
-  for (let i = 0; i < count; i++) {
-    fireDagger(T.weapon.shotgunSpread * 0.8,
-      T.weapon.shotgunSpeed * (0.93 + Math.random() * 0.14), true, T.weapon.homingDamage);
-  }
-  homingAmmo -= count;
-  shotCd = T.weapon.shotgunCd;
-  weaponActive = true;
-  recoil = 0.13;
-  hand.flash(1.4);
-  fovKick = Math.max(fovKick, 3.5);
-  trauma = Math.max(trauma, 0.2);
-  gems.blast(camera.position);
-  audio.shotgun();
-  return true;
-}
-
 function updateCombat(dt) {
   const w = WEAPON[weaponLv];
-  weaponActive = false;
 
   // DD gunfeel: TAP = shotgun burst, HOLD = stream — every dagger manually
   // aimed on desktop and pad. Touch alone keeps the old auto-fire (a thumb
@@ -2268,7 +1958,6 @@ function updateCombat(dt) {
   shotCd = Math.max(0, shotCd - dt);
   let streaming;
   if (input.touchMode && !input.gamepad) {
-    if (input.consumeFireTap() && shotCd <= 0) fireShotgun(w);
     const mv = input.getMove();
     streaming = input.firing || Math.hypot(mv.x, mv.y) > T.weapon.autoFireMove;
   } else {
@@ -2284,48 +1973,18 @@ function updateCombat(dt) {
     streaming = held && fireHeldT >= T.weapon.streamDelay;
   }
   if (streaming && shotCd <= 0) {
-    weaponActive = true;
     fireTimer -= dt;
     while (fireTimer <= 0) {
       fireTimer += 1 / w.stream;
-      fireDagger(FIRE_SPREAD,
-        T.weapon.streamSpeed * (0.86 + Math.random() * 0.28), w.homing);
+      fireDagger(FIRE_SPREAD, T.weapon.daggerSpeed, w.homing);
       recoil = Math.min(0.035, recoil + 0.007);
-      hand.flash(0.3);
       audio.fire();
     }
   } else {
     fireTimer = 0;
   }
 
-  // LV3+ stores gems as a separate RMB/LT homing weapon. It uses the same
-  // tap/hold grammar but consumes one banked dagger per projectile.
-  const altHeld = input.altFiring;
-  if (altHeld) homingHeldT += dt;
-  else {
-    if (homingWasHeld && homingHeldT < T.weapon.streamDelay &&
-        weaponLv >= 3 && homingAmmo > 0 && shotCd <= 0) fireHomingShot();
-    homingHeldT = 0;
-  }
-  homingWasHeld = altHeld;
-  const homingStreaming = altHeld && homingHeldT >= T.weapon.streamDelay &&
-    weaponLv >= 3 && homingAmmo > 0;
-  if (homingStreaming && shotCd <= 0) {
-    weaponActive = true;
-    homingFireTimer -= dt;
-    while (homingFireTimer <= 0 && homingAmmo > 0) {
-      homingFireTimer += 1 / T.weapon.homingStream;
-      fireDagger(FIRE_SPREAD, T.weapon.streamSpeed, true, T.weapon.homingDamage);
-      homingAmmo--;
-      recoil = Math.min(0.04, recoil + 0.008);
-      hand.flash(0.45);
-      audio.fire();
-    }
-  } else {
-    homingFireTimer = 0;
-  }
-
-  daggers.update(dt, enemies);
+  daggers.update(dt, w.homing ? enemies : undefined);
 
   // dagger → enemy (segment vs sphere so fast daggers can't tunnel)
   for (let i = daggers.active.length - 1; i >= 0; i--) {
@@ -2348,8 +2007,8 @@ function updateCombat(dt) {
           break;
         }
       }
-      e.maxHp ??= e.hp;
-      e.hit(d.damage ?? 1, _hitDir);
+      e.maxHp ??= e.hp + 1; // captured on first hit (hp already decremented)
+      e.hit(1, _hitDir);
       // enemies may name their own hit voice (husk plating swallows daggers)
       audio[e.hitSound && audio[e.hitSound] ? e.hitSound : 'hit']();
       spawnSpark(d.m.position, e.hp <= 0);
@@ -2412,7 +2071,7 @@ function updateCombat(dt) {
   // gems: magnet + collect
   _p0.copy(player.feet);
   _p0.y += 1.1;
-  const got = gems.update(dt, _p0, !weaponActive);
+  const got = gems.update(dt, _p0);
   if (got) onGemsCollected(got);
 
   // enemy → player
@@ -2559,14 +2218,8 @@ function step(dt) {
     player.justJumped = false;
     audio.jump();
   }
-  if (player.justBunnyHopped) {
-    player.justBunnyHopped = false;
-    fovKick = Math.max(fovKick, 2.4);
-  }
-  player.justDaggerJumped = false;
   if (reapCool > 0) reapCool = Math.max(0, reapCool - dt);
-  const reapPressed = input.consumeReap();
-  if (mode === 'hyper' && reapPressed) tryReap();
+  if (input.consumeReap()) tryReap();
   director(dt);
   for (const e of enemies) {
     e.update(dt, camera.position, gems);
@@ -2670,12 +2323,9 @@ function step(dt) {
     elTimer.style.color = '';
     elKills.textContent = `${kills} kills`;
   }
-  elGems.textContent = `◆ ${gemCount} · LV ${weaponLv}${weaponLv >= 3 ? ` · HOMING ${homingAmmo}` : ''}`;
+  elGems.textContent = `◆ ${gemCount} · LV ${weaponLv}${weaponLv >= 4 ? ' CRIMSON' : weaponLv >= 3 ? ' HOMING' : ''}`;
 }
 
-const _threatForward = new THREE.Vector3();
-const _threatTo = new THREE.Vector3();
-const _threatInvQ = new THREE.Quaternion();
 function updateFeel(dt) {
   // trauma-driven shake + chromatic aberration + FOV kicks (dash, shotgun)
   trauma = Math.max(0, trauma - dt * 1.5);
@@ -2692,63 +2342,33 @@ function updateFeel(dt) {
   const beat = 1 - ((performance.now() / 1000) * (138 / 60)) % 1;
   floorMat.uniforms.uPulse.value = musicI * (0.25 + 0.75 * beat * beat);
   floorMat.uniforms.uRed.value = opts.contrast ? 0 : t2 * 0.85;
-  // Removed from the presentation: speedlines and screen-space ripples made
-  // the image busier without communicating anything the weapon/camera did not.
-  speedPass.enabled = false;
+  // dash speedlines ride the same gates as the smear (motion + perf tier)
+  speedPass.uniforms.uTime.value += dt;
+  speedPass.uniforms.uAmount.value = player.dashK;
+  speedPass.enabled = player.dashK > 0.02 && opts.motion && PERF_TIERS[perfTier].smear;
+  // impact ripple: same gates; amp clears once the wave has fully decayed
   rippleT += dt;
   if (rippleT > 0.8) rippleAmp = 0;
-  ripplePass.enabled = false;
+  ripplePass.uniforms.uT.value = rippleT;
+  ripplePass.uniforms.uAmp.value = rippleAmp;
+  ripplePass.enabled = rippleAmp > 0 && opts.motion && PERF_TIERS[perfTier].smear;
   // sky ember swells with trauma and while the Leviathan is on the field
   skyMat.uniforms.uEmber.value = t2 * 0.9 + (levAlive ? 0.7 : 0);
-  environment.update(dt, { intensity: musicI, trauma: t2, leviathan: levAlive });
-
-  // Nearest off-camera threat drives the peripheral burn. Signed camera-space
-  // X biases the glow toward the side the player should turn toward.
-  camera.getWorldDirection(_threatForward);
-  let rear = 0, rearSide = 0;
-  for (const e of enemies) {
-    if (!e.alive || e.type === 'egg' || e.type === 'totem') continue;
-    _threatTo.set(e.pos.x - camera.position.x, e.pos.y - camera.position.y, e.pos.z - camera.position.z);
-    const dist = Math.max(0.01, _threatTo.length());
-    _threatTo.multiplyScalar(1 / dist);
-    const facing = _threatForward.dot(_threatTo);
-    if (facing > 0.15) continue;
-    const strength = (0.15 - facing) / 1.15 * Math.max(0, 1 - dist / 28);
-    if (strength > rear) {
-      rear = strength;
-      _threatInvQ.copy(camera.quaternion).invert();
-      _threatTo.applyQuaternion(_threatInvQ);
-      rearSide = Math.sign(_threatTo.x);
-    }
-  }
-  threatPass.uniforms.uRear.value += (rear - threatPass.uniforms.uRear.value) * Math.min(1, dt * 8);
-  threatPass.uniforms.uSide.value += (rearSide - threatPass.uniforms.uSide.value) * Math.min(1, dt * 6);
   fovKick = Math.max(0, fovKick - dt * 18);
   // smear deepens mid-dash — HYPERDEMON smears hardest at speed. dashK decays
   // with the dash itself, so the heavy end is always transient.
   if (afterimage.enabled) {
     afterimage.uniforms['damp'].value = SMEAR_BASE + player.dashK * SMEAR_DASH;
   }
-  const fov = opts.fov + (opts.motion ? player.dashK * 9 + player.speedK * 4 + fovKick : 0);
+  const fov = opts.fov + (opts.motion ? player.dashK * 9 + fovKick : 0);
   if (Math.abs(camera.fov - fov) > 0.01) {
     camera.fov = fov;
     camera.updateProjectionMatrix();
   }
-  // The claw snaps back and rolls open on a burst. Stream fire stays a much
-  // smaller vibration so the two firing modes read before their audio does.
-  recoil = Math.max(0, recoil - dt * 0.28) * Math.exp(-7 * dt);
-  const handBob = Math.sin(performance.now() * 0.0017) * 0.005;
-  handGroup.position.set(
-    HAND_BASE.x + recoil * 0.45,
-    HAND_BASE.y + handBob - recoil * 0.28,
-    HAND_BASE.z + recoil * 1.65,
-  );
-  handGroup.rotation.set(
-    HAND_BASE.rx - recoil * 2.7,
-    HAND_BASE.ry,
-    HAND_BASE.rz + recoil * 1.25,
-  );
-  hand.update(dt);
+  // hand recoil + idle sway
+  recoil = Math.max(0, recoil - dt * 1.2) * Math.exp(-10 * dt);
+  handGroup.position.z = -1.05 + recoil;
+  handGroup.position.y = -0.4 + Math.sin(performance.now() * 0.0017) * 0.006;
 }
 
 // Gamepad menu navigation: d-pad / left stick moves focus across the overlay
@@ -2779,29 +2399,6 @@ function gamepadMenu() {
     // stays silent until the first real click/touch — unavoidable.)
     gfocus = -1;
     document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-  }
-}
-
-let sphereFrame = 0;
-let sphereWorldCaptures = 0;
-let sphereThreatCaptures = 0;
-function updateSphereProjection() {
-  camera.updateMatrixWorld();
-  _sphereCamRot.setFromMatrix4(camera.matrixWorld);
-  if (!spherePass.enabled) return;
-  const every = PERF_TIERS[perfTier].sphereEvery;
-  sphereFrame++;
-  sphereThreatCamera.position.copy(camera.position);
-  sphereWorldCamera.position.copy(camera.position);
-  // Enemy-only capture tracks more often; the arena is mostly static and can
-  // update at a slower cadence while camera rotation remains shader-side.
-  if (sphereFrame === 1 || sphereFrame % every === 0) {
-    sphereThreatCamera.update(renderer, scene);
-    sphereThreatCaptures++;
-  }
-  if (sphereFrame === 1 || sphereFrame % (every * 3) === 0) {
-    sphereWorldCamera.update(renderer, scene);
-    sphereWorldCaptures++;
   }
 }
 
@@ -2844,7 +2441,6 @@ function animate() {
     }
   }
   updateFeel(dt);
-  updateSphereProjection();
   composer.render();
   uiCtx.clearRect(0, 0, ui.width, ui.height);
   if (state === 'playing' && !paused) input.drawTouchUI(uiCtx);
@@ -2857,7 +2453,6 @@ animate();
 // tiny debug handle (console tinkering + automated smoke tests)
 window.__hd = {
   enemies, player, debris, litter, daggers, gems, serpents, orbs, thorns, audio,
-  environment, THREE, camera, scene,
   debug: {
     addGems(n) { onGemsCollected(n); },
     addStyle(n) { addStyle(n); },
@@ -2871,61 +2466,13 @@ window.__hd = {
     reap() { return tryReap(); },
     getReap() { return { cool: +reapCool.toFixed(2), bones: litter.count }; },
     getTuning() { return T; },
-    getGun() {
-      return {
-        shotCd: +shotCd.toFixed(2), heldT: +fireHeldT.toFixed(2),
-        homing: homingAmmo, homingHeldT: +homingHeldT.toFixed(2), lv: weaponLv,
-      };
-    },
-    getMovement() {
-      return {
-        speed: +player.horizontalSpeed.toFixed(3),
-        vx: +player.velocity.x.toFixed(3), vz: +player.velocity.z.toFixed(3),
-        vy: +player.vy.toFixed(3), grounded: player.feet.y <= 0.001,
-        hops: player.hopCount, daggerJumps: player.daggerJumpCount,
-        daggerCharges: player.daggerJumpsLeft,
-      };
-    },
-    getImpact() {
-      return {
-        w: sparkTex.image.width, h: sparkTex.image.height,
-        nearest: sparkTex.magFilter === THREE.NearestFilter && sparkTex.minFilter === THREE.NearestFilter,
-        mipmaps: sparkTex.generateMipmaps,
-      };
-    },
-    getRaster() {
-      const map = floorMat.uniforms.map.value;
-      const gl = renderer.getContext();
-      return {
-        pixelRatio: renderer.getPixelRatio(),
-        buffer: { w: gl.drawingBufferWidth, h: gl.drawingBufferHeight },
-        viewport: { w: window.innerWidth, h: window.innerHeight },
-        scaling: getComputedStyle(canvas).imageRendering,
-        crosshair: getComputedStyle(elCross).display,
-        floor: {
-          w: map.image.width, h: map.image.height,
-          nearest: map.magFilter === THREE.NearestFilter && map.minFilter === THREE.NearestFilter,
-          mipmaps: map.generateMipmaps,
-        },
-      };
-    },
-    getWeaponView() {
-      hand.mesh.updateWorldMatrix(true, false);
-      _sv.setFromMatrixPosition(hand.mesh.matrixWorld).project(camera);
-      return {
-        recoil: +recoil.toFixed(3),
-        x: +handGroup.position.x.toFixed(3), y: +handGroup.position.y.toFixed(3), z: +handGroup.position.z.toFixed(3),
-        rx: +handGroup.rotation.x.toFixed(3), ry: +handGroup.rotation.y.toFixed(3), rz: +handGroup.rotation.z.toFixed(3),
-        count: hand.mesh.count, visible: hand.mesh.visible,
-        layers: { camera: camera.layers.mask, mesh: hand.mesh.layers.mask },
-        screen: { x: +_sv.x.toFixed(3), y: +_sv.y.toFixed(3), z: +_sv.z.toFixed(3) },
-      };
-    },
+    getGun() { return { shotCd: +shotCd.toFixed(2), heldT: +fireHeldT.toFixed(2) }; },
+    getAssets() { return { registered: Object.keys(MESH_ASSETS), ready: skinsReady, lights: lightRig.children.length }; },
     getLook() {
       const e = enemies.find(x => x.alive && x.sprite);
       return {
         mode: opts.look, hullMode: getHullMode(),
-        sample: e ? { hull: !!e.sprite.hull, cubes: e.sprite.mesh.count, tris: e.sprite.hull ? e.sprite.hull.geometry.getAttribute('position').count / 3 : 0 } : null,
+        sample: e ? { hull: !!e.sprite.hull, skin: !!e.sprite.skinFixed, cubes: e.sprite.mesh.count, tris: e.sprite.hull?.geometry ? e.sprite.hull.geometry.getAttribute('position').count / 3 : 0 } : null,
         hand: !!hand.hull,
       };
     },
@@ -2945,25 +2492,6 @@ window.__hd = {
       const r = new Revenant(scene, p); enemies.push(r); return r;
     },
     spawnHusk() { const p = ringSpot(9).clone(); p.y = 1.35; const h = new Husk(scene, p); enemies.push(h); return h; },
-    spawnSkull() { const p = ringSpot(8).clone(); p.y = 1.2; const s = new Skull(scene, p); enemies.push(s); return s; },
-    getSkullMouth() {
-      const s = enemies.find(e => e.alive && e.type === 'skull' && e.jawPivot);
-      if (s) {
-        s.jaw.mesh.updateWorldMatrix(true, false);
-        _sv.setFromMatrixPosition(s.jaw.mesh.matrixWorld).project(camera);
-        return {
-          animated: true, parts: s.parts.length,
-          open: +s.jawOpen.toFixed(3), angle: +s.jawPivot.rotation.x.toFixed(3),
-          phase: +s.jawT.toFixed(3),
-          jaw: {
-            alive: s.jaw.aliveCount, cubes: s.jaw.mesh.count, hull: !!s.jaw.hull,
-            tris: s.jaw.hull ? s.jaw.hull.geometry.getAttribute('position')?.count / 3 : 0,
-            screen: { x: +_sv.x.toFixed(3), y: +_sv.y.toFixed(3), z: +_sv.z.toFixed(3) },
-          },
-        };
-      }
-      return { animated: false, parts: 0, open: 0, angle: 0, phase: 0 };
-    },
     spawnDread() { const p = ringSpot(8).clone(); p.y = 1.5; enemies.push(new DreadSkull(scene, p)); },
     spawnGhostSerpent() { spawnSerpent(true); },
     spawnLeviathan() { enemies.push(new Leviathan(scene, 5)); },
@@ -2980,9 +2508,7 @@ window.__hd = {
     getDailyTable() { return readDailyTable(); },
     pulse(n) { runPulse(n ?? ++pulseN); },
     setOpt(k, v) { opts[k] = v; saveOpts(); applyOpts(); },
-    getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, edge: edgePass.enabled, sphere: spherePass.enabled, threat: threatPass.enabled, rearSignal: threatPass.uniforms.uRear.value, edgeAmt: edgePass.uniforms.uAmt.value, damp: afterimage.uniforms['damp'].value, gridGlow: floorMat.uniforms.uGlow.value, fov: camera.fov, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
-    getProjection() { return { enabled: spherePass.enabled, worldCaptures: sphereWorldCaptures, threatCaptures: sphereThreatCaptures, worldSize: sphereWorldTarget.width, threatSize: sphereThreatTarget.width }; },
-    getEnvironment() { return environment.getState(); },
+    getFx() { return { smear: afterimage.enabled, chroma: chromaPass.enabled, edge: edgePass.enabled, edgeAmt: edgePass.uniforms.uAmt.value, damp: afterimage.uniforms['damp'].value, gridGlow: floorMat.uniforms.uGlow.value, fov: camera.fov, uRed: floorMat.uniforms.uRed.value, bloomStrength: bloom.strength }; },
     getVfx() { return { shadows: shadows.count, sparks: sparks.length, speedOn: speedPass.enabled, rippleT, rippleOn: ripplePass.enabled, ember: skyMat.uniforms.uEmber.value }; },
     /** Everything that could leak over a long run: pool occupancy, scene graph
      *  size, and GPU resource counts. A survival game lives or dies on the
@@ -3048,13 +2574,9 @@ window.__hd = {
     setPerfTier(t) { setPerfTier(t); },
     perfTuning,
     pulseInfo(n) { const k = pulseKind(n ?? pulseN); return { kind: k, budget: pulseBudget(n ?? pulseN, k) }; },
-    getState() { return { mode, lifeT, gameTime, mercyT, state, weaponLv, gemCount, homingAmmo }; },
+    getState() { return { mode, lifeT, gameTime, mercyT, state }; },
     getSchedule() {
-      return {
-        nextTotemAt, nextThornAt, nextLevAt, nextPulseAt, pulseN,
-        pureScriptCursor,
-        nextPureAt: DD_SPAWNSET[pureScriptCursor]?.[0] ?? null,
-      };
+      return { nextTotemAt, nextThornAt, nextLevAt, nextPulseAt, pulseN };
     },
   },
 };
