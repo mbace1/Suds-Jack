@@ -423,6 +423,14 @@ function makeFloorTexture() {
   tex.magFilter = tex.minFilter = THREE.NearestFilter;
   tex.generateMipmaps = false;
   tex.colorSpace = THREE.SRGBColorSpace;
+
+  // v33: stone paneling over the soot. A pre-graded 128² bake (same texel
+  // grid, same near-black envelope, oxblood in the seams) swaps in when it
+  // arrives; until then — or forever, if the fetch fails — the procedural
+  // floor above is the floor. The reactive shader never knows the difference.
+  const panels = new Image();
+  panels.onload = () => { g.drawImage(panels, 0, 0, 128, 128); tex.needsUpdate = true; };
+  panels.src = 'assets/env/floor.png';
   return tex;
 }
 

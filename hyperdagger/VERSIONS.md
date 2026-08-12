@@ -8,6 +8,30 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v33 — 2026-08-12
+
+**The ring, the seat, and the floor.** Three more pieces from the same
+concept-to-mesh pipeline as v32, chosen for cost: one obelisk asset stands
+six times around the void (clones share geometry and one material — a whole
+ring for one texture), the dais that was already meshed in the v32 batch takes
+the arena centre, and the floor gets stone paneling that is not a mesh at all.
+
+The dais is the one piece allowed inside the rim, because it is floor, not
+scenery: sunk to ankle height (top 0.14u) under the spot the Leviathan rises
+through, and dimmed to 0.22 — at monument brightness it was a bone-white splat
+that fought the fight for attention and camouflaged bone-white skulls flying
+over it. At 0.22 it is a carved shadow. Nothing collides with it.
+
+The paneling is a pre-graded 128² bake (assets/env/floor.png, 19 KB) drawn
+into the same canvas the procedural soot uses, so the reactive floor shader —
+music pulse, hurt flush — never knows the difference. Graded to the old
+floor's near-black envelope with oxblood in the seams; if the fetch fails the
+procedural floor simply stays, offline included (it is precached).
+
+New payload: obelisk 210 KB + dais 201 KB + floor 19 KB ≈ 430 KB.
+Meshy spend for everything in this entry: 30 credits (the obelisk — the dais
+was already paid for, the floor texture cost nothing).
+
 ## v32 — 2026-08-11
 
 **Monuments in the void.** The first mesh assets this game has ever shipped:

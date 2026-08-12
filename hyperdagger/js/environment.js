@@ -31,6 +31,28 @@ const MONUMENTS = [
   { file: 'mountain.glb', angle: 3.75, r: 47, y: -9.5, h: 17, dim: 0.50, tilt: 0.00 },
 ];
 
+// v33: the obelisk ring — ONE asset, six stands. Clones share geometry and
+// one material, so the whole ring costs a single texture and six draw calls.
+// Angles thread the gaps between the monuments; heights and leans vary so it
+// reads as ruins, not landscaping.
+const OBELISKS = [
+  { angle: 1.32, r: 44, h: 11.0, lean: 0.06 },
+  { angle: 1.88, r: 49, h:  9.0, lean: -0.09 },
+  { angle: 2.95, r: 46, h: 12.5, lean: 0.03 },
+  { angle: 4.38, r: 43, h:  8.5, lean: -0.05 },
+  { angle: 5.68, r: 47, h: 10.5, lean: 0.11 },
+  { angle: 0.06, r: 50, h:  9.5, lean: -0.03 },
+];
+
+// The dais is the one piece allowed inside the rim, because it is FLOOR, not
+// scenery: sunk to ankle height at the arena centre, where the Leviathan
+// spawns — the seat it rises through. Nothing collides with it and it is too
+// low to hide anything behind. Dimmed far below the monuments: bone-white at
+// monument brightness turned the centre into a bright splat that both fought
+// the fight for attention and camouflaged bone-white skulls flying over it —
+// at 0.22 it reads as a carved shadow in the floor, which is what floor is.
+const DAIS = { file: 'dais.glb', d: 9.5, top: 0.14, dim: 0.22 };
+
 export class HyperEnvironment {
   constructor(scene, arenaR) {
     this.scene = scene;
@@ -64,56 +86,25 @@ export class HyperEnvironment {
       arches: 0,
       lattice: 0,
       monuments: 0,
+      obelisks: 0,
+      dais: 0,
     };
 
     this.monumentMats = [];
-    this._loadMonuments();
+    this._loadAll();
   }
 
   /**
-   * Monuments load lazily and are allowed to never arrive: a failed fetch, a
+   * Everything loads lazily and is allowed to never arrive: a failed fetch, a
    * missing file or a browser without webp leaves the void exactly as v26 had
-   * it. Nothing downstream asks whether they loaded.
+   * it. Nothing downstream asks whether any of it loaded.
    */
-  _loadMonuments() {
+  _loadAll() {
     const loader = new GLTFLoader();
+
     for (const m of MONUMENTS) {
-      loader.load(`assets/env/${m.file}`, (gltf) => {
-        const model = gltf.scene;
-
-        // No lights in this renderer: a standard material would render black.
-        // Keep the baked albedo, drop everything that wants a light.
-        model.traverse((o) => {
-          if (!o.isMesh) return;
-          const src = o.material;
-          const mat = new THREE.MeshBasicMaterial({
-            map: src.map || null,
-            color: src.map ? 0xffffff : (src.color ? src.color.clone() : new THREE.Color(0x8a8a8a)),
-            fog: true,
-            toneMapped: true,
-          });
-          // Pull the whole monument down toward the horizon ring's value so it
-          // reads as void, not scenery. Bone-white albedo sits near the 0.78
-          // bloom threshold; dimming also keeps it from blooming out there.
-          mat.color.multiplyScalar(m.dim);
-          o.material = mat;
-          o.frustumCulled = true;
-          this.monumentMats.push({ mat, dim: m.dim });
-          src.dispose?.();
-        });
-
-        // Normalise: the exporter's scale and origin are arbitrary, so fit to
-        // a declared world height and stand the piece on its own base.
-        const bb = new THREE.Box3().setFromObject(model);
-        const size = bb.getSize(new THREE.Vector3());
-        const s = m.h / (size.y || 1);
-        model.scale.setScalar(s);
-        model.position.set(
-          -(bb.min.x + size.x / 2) * s,
-          -bb.min.y * s,
-          -(bb.min.z + size.z / 2) * s,
-        );
-
+      this._loadGLB(loader, m.file, m.dim, (model, size) => {
+        this._fit(model, size, m.h / size.y);
         const pivot = new THREE.Group();
         pivot.add(model);
         pivot.position.set(Math.cos(m.angle) * m.r, m.y, Math.sin(m.angle) * m.r);
@@ -124,8 +115,75 @@ export class HyperEnvironment {
         pivot.name = `monument-${m.file.replace('.glb', '')}`;
         this.group.add(pivot);
         this.assets.monuments++;
-      }, undefined, () => { /* the void keeps its emptiness */ });
+      });
     }
+
+    // one obelisk asset → six stands; clones share geometry and material
+    this._loadGLB(loader, 'obelisk.glb', 0.55, (model, size) => {
+      for (const o of OBELISKS) {
+        const inst = model.clone();
+        this._fit(inst, size, o.h / size.y);
+        const pivot = new THREE.Group();
+        pivot.add(inst);
+        pivot.position.set(Math.cos(o.angle) * o.r, -0.4, Math.sin(o.angle) * o.r);
+        pivot.rotation.y = -o.angle + Math.PI / 2;
+        pivot.rotation.z = o.lean;
+        pivot.name = 'monument-obelisk';
+        this.group.add(pivot);
+        this.assets.obelisks++;
+      }
+    });
+
+    // the dais: floor, not scenery — sunk to ankle height under the spawn seat
+    this._loadGLB(loader, DAIS.file, DAIS.dim, (model, size) => {
+      this._fit(model, size, DAIS.d / Math.max(size.x, size.z)); // fit by footprint
+      const bb = new THREE.Box3().setFromObject(model);
+      model.position.y -= bb.max.y - DAIS.top;   // sink until only the top shows
+      model.name = 'dais';
+      this.group.add(model);
+      this.assets.dais++;
+    });
+  }
+
+  _loadGLB(loader, file, dim, place) {
+    loader.load(`assets/env/${file}`, (gltf) => {
+      const model = gltf.scene;
+      // No lights in this renderer: a standard material would render black.
+      // Keep the baked albedo, drop everything that wants a light. One
+      // material per FILE (not per clone) — nothing here ever flashes.
+      model.traverse((o) => {
+        if (!o.isMesh) return;
+        const src = o.material;
+        const mat = new THREE.MeshBasicMaterial({
+          map: src.map || null,
+          color: src.map ? 0xffffff : (src.color ? src.color.clone() : new THREE.Color(0x8a8a8a)),
+          fog: true,
+          toneMapped: true,
+        });
+        // Pull the piece down toward the horizon ring's value so it reads as
+        // void, not scenery — and stays under the 0.78 bloom threshold.
+        mat.color.multiplyScalar(dim);
+        o.material = mat;
+        o.frustumCulled = true;
+        this.monumentMats.push({ mat, dim });
+        src.dispose?.();
+      });
+      const bb = new THREE.Box3().setFromObject(model);
+      const size = bb.getSize(new THREE.Vector3());
+      model.userData.bb = bb;
+      place(model, size);
+    }, undefined, () => { /* the void keeps its emptiness */ });
+  }
+
+  // scale to fit and stand the piece on its own base, centred on x/z
+  _fit(model, size, s) {
+    const bb = model.userData.bb;
+    model.scale.setScalar(s);
+    model.position.set(
+      -(bb.min.x + size.x / 2) * s,
+      -bb.min.y * s,
+      -(bb.min.z + size.z / 2) * s,
+    );
   }
 
   setQuality() {}

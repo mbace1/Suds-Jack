@@ -45,8 +45,10 @@ const PRECACHE = [
   // The monuments themselves — the first mesh assets this game ships. They are
   // untokened (their bytes change only when the art changes, and then the file
   // is replaced wholesale), so they are precached here and served cache-first
-  // like the vendor files. ~1 MB for all four.
-  ...['gate', 'colossus', 'hand', 'mountain'].map(m => `./assets/env/${m}.glb`),
+  // like the vendor files. v33 adds the obelisk (one asset, six stands), the
+  // dais, and the floor paneling bake — ~1.5 MB for the lot.
+  ...['gate', 'colossus', 'hand', 'mountain', 'obelisk', 'dais'].map(m => `./assets/env/${m}.glb`),
+  './assets/env/floor.png',
   `./manifest.webmanifest?v=${TOKEN}`,
   './favicon.png', './apple-touch-icon.png', './icon-192.png', './icon-512.png',
 ];
