@@ -8,6 +8,24 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v22 — 2026-08-07
+**Mesh asset integration — the Meshy pipeline's landing pad**
+- New `js/meshassets.js`: register a Meshy GLB per MODELS slot and it takes
+  over that enemy — the mesh rides in the v4.32 hull slot as the alive-skin,
+  and the lattice is VOXELIZED from the mesh at load (surface rasterization
+  with texture-color sampling + enclosed-interior fill + the AO bake), so
+  chips, chunk detachment, death bursts and the bone-yard work unchanged.
+- Damage tells the truth: when enough lattice is gone (`shed`, default 22%)
+  the skin cracks off and the wounded voxel body fights on under the
+  re-formed hull.
+- A three-light asset rig (white hemisphere + key, dim crimson fill) lights
+  ONLY imported assets — everything native stays unlit MeshBasic. Imports
+  are re-materialed to Lambert with the albedo map kept.
+- GLTFLoader r167 + BufferGeometryUtils vendored (dynamic import — the
+  110 KB loader is only fetched when assets are registered); everything is
+  fail-soft, so a missing or broken GLB falls back to the built-in model.
+- `assets/README.md` documents the drop-in; smoke gate at 40 checks.
+
 ## v21 — 2026-08-07
 **Shotgun economy + the offline gate**
 - The tap-burst gets DD's actual economy: the burst wins the MOMENT, the

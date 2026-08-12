@@ -211,7 +211,16 @@ normals (unlit). The hull is a CHILD of the InstancedMesh with `count=0` hiding 
 cubes, so every transform/chip/burst path is untouched; chips mark it dirty and it
 re-forms around the hole on a 0.1 s throttle. `noHull` opts a model out (the
 gauntlet's checkerboard, the blinker's glitch shards); LOOK SMOOTH/CUBES in the pause
-menu, shed below perf tier T2. Debug: `getLook()`. Combat: **hold to stream daggers**, gems drop from heavy kills and level
+menu, shed below perf tier T2. Debug: `getLook()`. Since v4.35 a **Meshy GLB can take
+any enemy slot** (`js/meshassets.js`, registry keyed by MODELS name): the mesh rides
+in the hull slot as the alive-skin (re-materialed to Lambert; a 3-light rig — white
+hemi + key, crimson fill — lights ONLY imported assets, everything native stays unlit
+MeshBasic) and the lattice is **voxelized from the mesh at load** (surface raster +
+texture sampling + enclosed-interior fill + AO bake) so every damage system works
+unchanged; ~22% lattice loss sheds the skin and the wounded voxel body fights on.
+GLTFLoader r167 vendored, dynamic-imported only when assets are registered;
+everything fail-soft to the string-art models. Drop-in guide: `assets/README.md`;
+prompt sheet: `ART_PIPELINE.md`. Debug: `getAssets()`. Combat: **hold to stream daggers**, gems drop from heavy kills and level
 the daggers up (LV 3 = **homing**); enemy roster is skulls, crowned skulls, splitter
 skulls (burst into minis), brutes, drifting totem spawners (which also pulse **jumpable
 orb rings**), **watcher** drones firing aimed orb volleys, thorn spikes erupting under

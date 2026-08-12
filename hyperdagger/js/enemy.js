@@ -1,12 +1,15 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=51';
+import { VoxelSprite, MODELS } from './voxel.js?v=52';
+import { skinFor } from './meshassets.js?v=52';
 
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();
 
 class VoxelEnemy {
   constructor(scene, model, pos) {
-    this.sprite = new VoxelSprite(model);
+    // a registered mesh asset takes the slot; the string-art model is the
+    // always-there fallback (missing file, load error, or nothing registered)
+    this.sprite = skinFor(model) ?? new VoxelSprite(model);
     this.group = new THREE.Group();
     this.group.add(this.sprite.mesh);
     this.group.position.copy(pos);

@@ -364,7 +364,7 @@ export function styleTint(c) {
  *  flat runs. HDR voxels (any channel > 1) are gameplay bloom carriers and
  *  pass through untouched. Baked into the parse colors, so applyStyle and
  *  the hit-flash multiplier both inherit it for free. */
-function bakeShading(voxels, ms) {
+export function bakeShading(voxels, ms) {
   const key = (x, y, z) => `${Math.round(x / ms)},${Math.round(y / ms)},${Math.round(z / ms)}`;
   const occ = new Set();
   for (const v of voxels) occ.add(key(v.x, v.y, v.z));
@@ -445,11 +445,27 @@ export function getHullMode() { return hullMode; }
  *  Voxels can be chipped off before death (bullet holes) — dead voxels are
  *  scaled to zero and excluded from worldVoxels()/death bursts. */
 export class VoxelSprite {
+  /** A sprite from a prebuilt lattice (the mesh-asset pipeline): `skin` is
+   *  a ready THREE.Object3D that rides in the hull slot as the alive-look.
+   *  Skin resources are SHARED with the loader's template — never disposed
+   *  per instance. */
+  static fromVoxels(voxels, size, skin = null, opts = {}) {
+    return new VoxelSprite({
+      prebuilt: true, voxels, size, skin,
+      wobble: opts.wobble ?? 0.5, shed: opts.shed,
+    }, 1);
+  }
+
   constructor(def, subdivide = globalDetail + (def.detailBoost || 0)) {
     this.def = def;
-    subdivide = Math.max(1, Math.min(4, subdivide));
-    this.voxels = parseModel(def, subdivide);
-    this.size = def.voxelSize / subdivide;
+    if (def.prebuilt) {
+      this.voxels = def.voxels;
+      this.size = def.size;
+    } else {
+      subdivide = Math.max(1, Math.min(4, subdivide));
+      this.voxels = parseModel(def, subdivide);
+      this.size = def.voxelSize / subdivide;
+    }
     this.aliveCount = this.voxels.length;
     this.material = new THREE.MeshBasicMaterial({ color: 0xffffff });
     // Per-voxel LIFE, all in the vertex shader so density is free: the voxel
@@ -536,20 +552,47 @@ export class VoxelSprite {
     const want = !!on && !this.def.noHull;
     if (want === !!this.hull) return;
     if (want) {
-      this.hullMat = new THREE.MeshBasicMaterial({ vertexColors: true });
-      this.hull = new THREE.Mesh(new THREE.BufferGeometry(), this.hullMat);
-      this.hull.frustumCulled = false;
+      if (this.def.skin) {
+        // mesh-asset skin: the loaded model IS the alive-look. Its geometry
+        // and materials are shared with the loader template — no rebuilds,
+        // no per-instance disposal.
+        this.hull = this.def.skin;
+        this.hullMat = null;
+        this.skinFixed = true;
+      } else {
+        this.hullMat = new THREE.MeshBasicMaterial({ vertexColors: true });
+        this.hull = new THREE.Mesh(new THREE.BufferGeometry(), this.hullMat);
+        this.hull.frustumCulled = false;
+        this.skinFixed = false;
+      }
+      this.hullBaseScale = this.hull.scale.x || 1; // skins carry a normalize scale
       this.mesh.add(this.hull);
       this.mesh.count = 0;
-      this._rebuildHull();
+      if (!this.skinFixed) this._rebuildHull();
     } else {
       this.mesh.remove(this.hull);
-      this.hull.geometry.dispose();
-      this.hullMat.dispose();
+      if (!this.skinFixed) {
+        this.hull.geometry.dispose();
+        this.hullMat.dispose();
+      }
+      this.skinFixed = false;
       this.hull = null;
       this.hullMat = null;
       this.mesh.count = this.voxels.length;
     }
+  }
+
+  /** The skin cracks off: too much of the lattice is gone (def.shed). The
+   *  wounded voxel body takes over — the generated hull re-forms over what
+   *  survives, so the matter under the skin is what keeps fighting. */
+  _shedSkin() {
+    this.mesh.remove(this.def.skin);
+    this.def.skin = null; // per-spawn def (fromVoxels builds one per call)
+    this.skinFixed = false;
+    this.hull = null;
+    this.hullMat = null;
+    this.mesh.count = this.voxels.length;
+    this.setHull(true);
   }
 
   /** Rebuild the skin from the ALIVE voxels: culled outer faces on welded
@@ -748,13 +791,20 @@ export class VoxelSprite {
     if (this.hull) {
       // the skin breathes (the instanced lattice does this in its vertex
       // shader; the hull gets the whole-body term)
-      this.hull.scale.setScalar(1 + 0.022 * this.baseWobble * Math.sin(this.animT * 2.1));
+      this.hull.scale.setScalar(this.hullBaseScale * (1 + 0.022 * this.baseWobble * Math.sin(this.animT * 2.1)));
       if (this.hullDirty) {
-        this.hullCd -= dt;
-        if (this.hullCd <= 0) {
-          this._rebuildHull();
+        if (this.skinFixed) {
+          // a fixed mesh skin can't re-form around wounds — it holds until
+          // too much of the lattice is gone, then shatters off
           this.hullDirty = false;
-          this.hullCd = 0.1; // chips arrive in bursts — batch the re-skin
+          if (this.aliveCount < this.voxels.length * (this.def.shed ?? 0.78)) this._shedSkin();
+        } else {
+          this.hullCd -= dt;
+          if (this.hullCd <= 0) {
+            this._rebuildHull();
+            this.hullDirty = false;
+            this.hullCd = 0.1; // chips arrive in bursts — batch the re-skin
+          }
         }
       }
     }
@@ -808,7 +858,7 @@ export class VoxelSprite {
   dispose() {
     this.mesh.geometry.dispose();
     this.material.dispose();
-    if (this.hull) {
+    if (this.hull && !this.skinFixed) {
       this.hull.geometry.dispose();
       this.hullMat.dispose();
     }

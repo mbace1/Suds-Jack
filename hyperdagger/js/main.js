@@ -5,16 +5,17 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=51';
-import { Player } from './player.js?v=51';
-import { DaggerPool } from './daggers.js?v=51';
-import { GemPool } from './gems.js?v=51';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=51';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=51';
-import { OrbPool } from './bullets.js?v=51';
-import { AudioKit } from './audio.js?v=51';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=51';
-import { TUNING as T } from './tuning.js?v=51';
+import { InputManager } from './input.js?v=52';
+import { Player } from './player.js?v=52';
+import { DaggerPool } from './daggers.js?v=52';
+import { GemPool } from './gems.js?v=52';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=52';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=52';
+import { OrbPool } from './bullets.js?v=52';
+import { preloadSkins, skinsReady, MESH_ASSETS } from './meshassets.js?v=52';
+import { AudioKit } from './audio.js?v=52';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=52';
+import { TUNING as T } from './tuning.js?v=52';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -122,6 +123,22 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0x050505, 30, 95);
+
+// v4.35 asset light rig: everything native is unlit MeshBasic, so these
+// lights touch ONLY imported mesh assets (Lambert after conversion). Tuned
+// for the monochrome identity — white sky/key so bone reads bone, a dim
+// crimson fill from the horizon so shadowed sides sit in the game's red.
+const lightRig = new THREE.Group();
+lightRig.add(new THREE.HemisphereLight(0xffffff, 0x141414, 2.2));
+const _key = new THREE.DirectionalLight(0xffffff, 1.4);
+_key.position.set(4, 10, 6);
+const _emberFill = new THREE.DirectionalLight(0xff2a2a, 0.7);
+_emberFill.position.set(-6, 1.5, -4);
+lightRig.add(_key, _emberFill);
+scene.add(lightRig);
+// mesh assets load in the background; enemies spawned after it resolves wear
+// them, everything before (and every failure) uses the built-in models
+preloadSkins();
 
 const camera = new THREE.PerspectiveCamera(opts.fov, window.innerWidth / window.innerHeight, 0.1, 300);
 scene.add(camera); // so the first-person hand (a camera child) renders
@@ -2450,11 +2467,12 @@ window.__hd = {
     getReap() { return { cool: +reapCool.toFixed(2), bones: litter.count }; },
     getTuning() { return T; },
     getGun() { return { shotCd: +shotCd.toFixed(2), heldT: +fireHeldT.toFixed(2) }; },
+    getAssets() { return { registered: Object.keys(MESH_ASSETS), ready: skinsReady, lights: lightRig.children.length }; },
     getLook() {
       const e = enemies.find(x => x.alive && x.sprite);
       return {
         mode: opts.look, hullMode: getHullMode(),
-        sample: e ? { hull: !!e.sprite.hull, cubes: e.sprite.mesh.count, tris: e.sprite.hull ? e.sprite.hull.geometry.getAttribute('position').count / 3 : 0 } : null,
+        sample: e ? { hull: !!e.sprite.hull, skin: !!e.sprite.skinFixed, cubes: e.sprite.mesh.count, tris: e.sprite.hull?.geometry ? e.sprite.hull.geometry.getAttribute('position').count / 3 : 0 } : null,
         hand: !!hand.hull,
       };
     },

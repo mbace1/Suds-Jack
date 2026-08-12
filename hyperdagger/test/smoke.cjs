@@ -77,19 +77,32 @@ s.listen(0, '127.0.0.1', async () => {
     await frames(2);
     const tapFired = hd.daggers.active.length - d1;
     const cdAfterTap = hd.debug.getGun().shotCd;
-    // wait out the shotgun lockout, then HOLD: stream after streamDelay
-    while (hd.debug.getGun().shotCd > 0) await frames(2);
+    // wait out the shotgun lockout, then HOLD: stream after streamDelay.
+    // The longer lockout gives the director time to spawn something that
+    // can kill the player mid-test — keep the arena empty while we measure.
+    while (hd.debug.getGun().shotCd > 0) {
+      for (const e of hd.enemies) e.alive = false;
+      await frames(2);
+    }
+    for (const e of hd.enemies) e.alive = false;
     const d2 = hd.daggers.active.length;
     hd.player.input.mouseDown = true;
     await frames(3); // ≤0.15s held — still inside the delay
     const early = hd.daggers.active.length - d2;
-    await frames(12); // well past streamDelay now
-    const streamed = hd.daggers.active.length - d2;
+    // daggers recycle off the arena edge mid-window, so a net delta
+    // undercounts — sum the positive per-frame deltas (i.e. actual spawns)
+    let streamed = 0, prev = hd.daggers.active.length;
+    for (let i = 0; i < 14; i++) {
+      await frames(1);
+      const n = hd.daggers.active.length;
+      if (n > prev) streamed += n - prev;
+      prev = n;
+    }
     const d3 = hd.daggers.active.length;
     hd.player.input.mouseDown = false; // long hold released → must NOT shotgun
     await frames(3);
     const releaseFired = Math.max(0, hd.daggers.active.length - d3);
-    return { moveFired, tapFired, cdAfterTap, early, streamed, releaseFired };
+    return { moveFired, tapFired, cdAfterTap, early, streamed, releaseFired, state: hd.debug.getState().state };
   });
   ok('moving alone no longer fires', gun.moveFired === 0, JSON.stringify(gun));
   ok('a TAP fires the shotgun burst', gun.tapFired >= 10 && gun.cdAfterTap > 0, JSON.stringify(gun));
@@ -278,6 +291,58 @@ s.listen(0, '127.0.0.1', async () => {
   ok('the smooth skin is the default alive-look', hull.hullOn === true && hull.cubesHidden === 0 && hull.handCubes === false, JSON.stringify(hull));
   ok('a chip tears and re-forms the skin', hull.after > 0 && hull.after !== hull.before, JSON.stringify(hull));
   ok('LOOK CUBES and the low tier both fall back', hull.cubesBack === false && hull.lowShed === false, JSON.stringify(hull));
+
+  // ---- v4.35 mesh assets: voxelizer, skin slot, the shed moment ----------
+  const mesh35 = await p.evaluate(async (tok) => {
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    const THREE = await import('./vendor/three.module.min.js');
+    const { voxelizeMesh, prepareAsset } = await import(`./js/meshassets.js?v=${tok}`);
+    const { VoxelSprite } = await import(`./js/voxel.js?v=${tok}`);
+    // a synthetic "Meshy export": a red standard-material sphere
+    const raw = new THREE.Group();
+    raw.add(new THREE.Mesh(
+      new THREE.SphereGeometry(1, 24, 16),
+      new THREE.MeshStandardMaterial({ color: 0xaa2020 }),
+    ));
+    const asset = prepareAsset(raw, { height: 1.4, voxelSize: 0.14 });
+    const vox = asset.voxels;
+    const interior = vox.filter(v => v.key === 'I').length;
+    const surface = vox.filter(v => v.key === 'M').length;
+    const reddish = vox.filter(v => v.key === 'M' && v.color.r > v.color.g * 1.5).length;
+    // material conversion: lit Lambert, not Standard, not Basic
+    let lambert = false;
+    asset.template.traverse(o => { if (o.isMesh) lambert = o.material.isMeshLambertMaterial; });
+    // world height normalized to the slot
+    const box = new THREE.Box3().setFromObject(asset.template);
+    const height = +(box.max.y - box.min.y).toFixed(2);
+
+    // the skin rides in the hull slot; heavy damage sheds it. Pin the tier
+    // FIRST — hullMode is consulted at construction, and the auto governor
+    // sits in a hull-less tier under swiftshader.
+    const hd = window.__hd;
+    hd.debug.setOpt('perf', 'high');
+    hd.debug.setOpt('look', 'smooth');
+    const sp = VoxelSprite.fromVoxels(
+      vox.map(v => ({ ...v, color: v.color.clone() })), asset.size, asset.template.clone(true));
+    const skinOn = sp.skinFixed === true && sp.hull === sp.def.skin && sp.mesh.count === 0;
+    // chip past the shed threshold, then let update() notice
+    const total = sp.voxels.length;
+    while (sp.aliveCount > total * 0.7) {
+      const alive = sp.voxels.find(v => v.alive);
+      sp.chip({ x: alive.x, y: alive.y, z: alive.z }, 60);
+    }
+    sp.update(0.05);
+    const shed = sp.skinFixed === false && !!sp.hull && sp.hull.geometry?.getAttribute('position');
+    sp.dispose();
+    hd.debug.setOpt('perf', 'auto');
+    return { surface, interior, reddish, lambert, height, skinOn, shed: !!shed, lights: hd.debug.getAssets().lights };
+  }, token);
+  ok('the voxelizer builds shell + enclosed interior', mesh35.surface > 200 && mesh35.interior > 30, JSON.stringify(mesh35));
+  ok('it samples the material color', mesh35.reddish > mesh35.surface * 0.8, JSON.stringify(mesh35));
+  ok('assets normalize to slot height, lit Lambert', mesh35.lambert === true && Math.abs(mesh35.height - 1.4) < 0.02, JSON.stringify(mesh35));
+  ok('the mesh skin rides in the hull slot', mesh35.skinOn === true, JSON.stringify(mesh35));
+  ok('heavy damage sheds the skin to the wounded lattice', mesh35.shed === true, JSON.stringify(mesh35));
+  ok('the asset light rig is up (3 lights)', mesh35.lights === 3, JSON.stringify(mesh35));
 
   // ---- long-run health: spawn/kill cycles must plateau, not climb --------
   // (the hull re-skin allocates a fresh BufferGeometry per rebuild, so this
