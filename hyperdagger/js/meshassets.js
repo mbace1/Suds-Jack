@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VoxelSprite, bakeShading, MODELS } from './voxel.js?v=54';
+import { VoxelSprite, bakeShading, MODELS } from './voxel.js?v=55';
 
 // registry keys are MODELS keys; enemies hand us the model OBJECT, so keep
 // the reverse map here where both sides are visible
@@ -30,10 +30,28 @@ const SLOT_OF = new Map(Object.entries(MODELS).map(([k, v]) => [v, k]));
 // in ART_PIPELINE.md). voxelSize ≈ the slot's current lattice pitch.
 // emissive (optional) re-lights near-black-red texels? No — keep Meshy
 // textures flat; `emissive: 0xrrggbb` adds a uniform glow if an asset needs it.
+// v25: the full first roster — every slot with a judged concept, meshed
+// through the Nano Banana → Meshy pipeline (ART_PIPELINE.md, both rounds).
+// Heights are each slot's measured string-art height (layers × voxelSize),
+// so hitboxes and silhouettes hold; voxelSize matches the slot's existing
+// lattice pitch so chips and bursts keep their grain. The skull variants
+// (skull2/Big/Tiny) and the ghost serpent stay string-art on purpose — the
+// crowned/gilded/pale reads ARE their identity.
 export const MESH_ASSETS = {
-  // skull:     { url: 'assets/skull.glb?v=1',     height: 1.40, voxelSize: 0.14, yaw: 0 },
-  // watcher:   { url: 'assets/watcher.glb?v=1',   height: 0.76, voxelSize: 0.19, yaw: 0 },
-  // leviathan: { url: 'assets/leviathan.glb?v=1', height: 6.30, voxelSize: 0.35, yaw: 0 },
+  skull:       { url: 'assets/skull.glb?v=1',       height: 1.40, voxelSize: 0.14, yaw: 0 },
+  skullDread:  { url: 'assets/skulldread.glb?v=1',  height: 2.75, voxelSize: 0.25, yaw: 0 },
+  watcher:     { url: 'assets/watcher.glb?v=1',     height: 0.76, voxelSize: 0.19, yaw: 0 },
+  brute:       { url: 'assets/brute.glb?v=1',       height: 3.48, voxelSize: 0.29, yaw: 0 },
+  serpentHead: { url: 'assets/serpenthead.glb?v=1', height: 1.44, voxelSize: 0.18, yaw: 0 },
+  serpent:     { url: 'assets/serpent.glb?v=1',     height: 1.08, voxelSize: 0.18, yaw: 0 },
+  spider:      { url: 'assets/spider.glb?v=1',      height: 0.72, voxelSize: 0.24, yaw: 0 },
+  totem:       { url: 'assets/totem.glb?v=1',       height: 3.40, voxelSize: 0.34, yaw: 0 },
+  revenant:    { url: 'assets/revenant.glb?v=1',    height: 2.10, voxelSize: 0.30, yaw: 0 },
+  husk:        { url: 'assets/husk.glb?v=1',        height: 2.52, voxelSize: 0.42, yaw: 0 },
+  blinker:     { url: 'assets/blinker.glb?v=1',     height: 1.30, voxelSize: 0.26, yaw: 0 },
+  egg:         { url: 'assets/egg.glb?v=1',         height: 0.60, voxelSize: 0.20, yaw: 0 },
+  thorn:       { url: 'assets/thorn.glb?v=1',       height: 1.80, voxelSize: 0.30, yaw: 0 },
+  leviathan:   { url: 'assets/leviathan.glb?v=1',   height: 6.30, voxelSize: 0.35, yaw: 0 },
 };
 
 /** Fraction of the lattice that must survive for the skin to stay on. */

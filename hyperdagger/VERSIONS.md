@@ -8,6 +8,26 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v25 — 2026-08-12
+
+**The roster wears its skins.** Every enemy slot with a judged concept is now
+registered in MESH_ASSETS — fourteen meshes from the two-round concept sheet:
+skull, dread skull, watcher, brute, serpent head + segment, spider, totem,
+revenant, husk, blinker, egg sac, thorn and the Leviathan. Heights are each
+slot's measured string-art height (layers × voxelSize) so hitboxes and
+silhouettes hold; lattice pitch matches each slot's existing grain so chips
+and death bursts read the same. 3.55 MB total at 512px webp (1024 for the
+boss), runtime-cached on first play per the v22 design — nothing precached,
+nothing blocking boot, and every entry fail-soft to string-art.
+
+Deliberately NOT skinned: the crowned/splitter/tiny skull variants and the
+ghost serpent — the crowned, gilded and pale reads ARE those variants'
+identity, and the base-skull skin next to them keeps the tell readable.
+
+The two risky sheets survived meshing: the spider's crab legs came through
+thick and connected, and the revenant's skeletal fingers fused into readable
+claws. The husk's open neck closed into a rimmed collar.
+
 ## v24 — 2026-08-12
 
 **The stones learn their place.** The owner's eye test on v23 said it plainly:
