@@ -1,0 +1,58 @@
+{
+  "sudsjack": {
+    "v": 1,
+    "from": "VERSIONS.md"
+  },
+  "tokodrop": {
+    "v": 221,
+    "from": "VERSIONS.md"
+  },
+  "hyperdagger": {
+    "v": 31,
+    "from": "VERSIONS.md"
+  },
+  "dropcabal": {
+    "v": 3,
+    "from": "VERSIONS.md"
+  },
+  "powder": {
+    "v": 2,
+    "from": "cache token"
+  },
+  "paperboy": {
+    "v": 4,
+    "from": "cache token"
+  },
+  "skltr": {
+    "v": 12,
+    "from": "cache token"
+  },
+  "flashprince": {
+    "v": 3,
+    "from": "VERSIONS.md"
+  },
+  "gameoflife": {
+    "v": 40,
+    "from": "VERSIONS.md"
+  },
+  "radiofree": {
+    "v": 37,
+    "from": "cache token"
+  },
+  "tinyhawk": {
+    "v": 6,
+    "from": "VERSIONS.md"
+  },
+  "tiny2d": {
+    "v": 3,
+    "from": "VERSIONS.md"
+  },
+  "brand": {
+    "v": 5,
+    "from": "VERSIONS.md"
+  },
+  "toko": {
+    "v": 5,
+    "from": "VERSIONS.md"
+  }
+}

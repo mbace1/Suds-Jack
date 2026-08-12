@@ -1,0 +1,126 @@
+=======================================================
+  THE GAME OF LIFE — IDEA FORM
+  https://mbace1.github.io/Suds-Jack/gameoflife/
+=======================================================
+
+HOW THIS WORKS
+  1. Fill in ONE section below (or several). Skip lines you
+     don't have an answer for — gaps are fine, they get
+     filled in during implementation.
+  2. Delete the sections you didn't use.
+  3. Save as a .txt and send the file back to Claude in the
+     session chat (or drop it into gameoflife/ideas/).
+  Any language is fine: English, suomi, 日本語 — the other
+  two get translated for you.
+
+  The only rule: every idea needs its NATURE STEP — the
+  real-world thing it sends the player out to do. That is
+  the whole point of this app.
+
+-------------------------------------------------------
+SECTION 1: A STORY  (visual short story, ~2 min, 1-2 choices)
+-------------------------------------------------------
+
+Working title:
+  >
+
+Where and when does it happen (place, era if historical):
+  >
+
+The one true thing the player should walk away knowing:
+  >
+
+What the player sees, scene by scene (3-6 lines):
+  > 1.
+  > 2.
+  > 3.
+  > 4.
+
+Choice moment(s) — where the player decides, and the options:
+  >
+
+NATURE STEP — what it sends the player outside to do:
+  >
+
+Mood or references (a painting, a memory, a place, a song):
+  >
+
+-------------------------------------------------------
+SECTION 2: A GAME OR PUZZLE  (fun first, learning attached)
+-------------------------------------------------------
+
+Working title:
+  >
+
+The core interaction, in ONE verb
+(rotate / trace / pour / catch / balance / time / sort / grow ...):
+  >
+
+What it quietly teaches while being fun:
+  >
+
+The win moment — what the player SEES when it clicks:
+  >
+
+How it gets deeper (levels? one puzzle that grows?):
+  >
+
+NATURE STEP:
+  >
+
+-------------------------------------------------------
+SECTION 3: A KERNEL OF WISDOM  (one short teaching, interactive)
+-------------------------------------------------------
+
+The source story (zen koan, folk tale, proverb — must be
+public domain or traditional; say where it's from):
+  >
+
+The SINGLE thing the player does that makes the point land
+(in "A Cup of Tea" the player does the overpouring themselves):
+  >
+
+NATURE STEP:
+  >
+
+-------------------------------------------------------
+SECTION 4: GRAPHICS / A SCENE
+-------------------------------------------------------
+
+Describe the picture in words — this works better than you'd
+think ("a bog at dawn, mist in two layers, one crooked pine
+on the left, orange cloudberries glowing low in the frame"):
+  >
+
+Optional: link or attach a mood reference (photo, painting,
+sketch — it gets redrawn in the game's palette, never copied):
+  >
+
+Which experience it belongs to (or "new"):
+  >
+
+-------------------------------------------------------
+SECTION 5: A POEM  (for the evening rest pool)
+-------------------------------------------------------
+
+The poem (original language):
+  >
+
+Author + year (must be public domain: author gone 70+ years,
+or traditional):
+  >
+
+Why this one:
+  >
+
+-------------------------------------------------------
+ANYTHING ELSE
+-------------------------------------------------------
+
+Loose thoughts, half-ideas, complaints, wishes:
+  >
+
+=======================================================
+  Thank you. Fill little, fill much — one strong image
+  is a better seed than a finished design.
+=======================================================

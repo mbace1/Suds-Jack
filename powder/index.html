@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Powder</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { background: #1a1815; overflow: hidden; touch-action: none; height: 100%; }
+    body { cursor: crosshair; }
+    /* low-res canvas stretched over the viewport with hard pixel edges */
+    #game {
+      display: block; width: 100vw; height: 100vh;
+      image-rendering: pixelated; image-rendering: crisp-edges;
+    }
+    /* twin sticks are drawn here at full resolution, over the chunky render */
+    #ui { position: fixed; inset: 0; pointer-events: none; z-index: 4; }
+    /* the faintest scanline, as if this were coming off a composite lead */
+    #scan {
+      position: fixed; inset: 0; pointer-events: none; z-index: 5;
+      background: repeating-linear-gradient(to bottom, rgba(0,0,0,0.13) 0 1px, transparent 1px 3px);
+      mix-blend-mode: multiply;
+    }
+    .ui {
+      font-family: 'Courier New', monospace; color: #e8dfc6;
+      text-shadow: 2px 2px 0 #241f1c; user-select: none; letter-spacing: 1px;
+    }
+    #hud {
+      position: fixed; top: 10px; left: 0; right: 0; z-index: 10;
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 0 18px; pointer-events: none; font-size: 14px; font-weight: bold;
+    }
+    #hud .cell { min-width: 96px; }
+    #hud .r { text-align: right; }
+    #hud .big { font-size: 30px; line-height: 1; }
+    #hud .lbl { font-size: 10px; opacity: 0.75; letter-spacing: 2px; }
+    #charge {
+      width: 168px; height: 11px; margin-top: 5px;
+      border: 2px solid #e8dfc6; background: rgba(36,31,28,0.55);
+    }
+    #chargeFill { height: 100%; width: 0%; background: #6b3550; }
+    #mid { text-align: center; }
+    #msg {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      z-index: 10; text-align: center; pointer-events: none;
+      font-size: 22px; line-height: 1.8; font-weight: bold;
+      background: rgba(36,31,28,0.55); padding: 22px 34px; border: 2px solid #e8dfc6;
+    }
+    #msg b { font-size: 34px; letter-spacing: 4px; }
+    #msg small { font-size: 12px; letter-spacing: 1px; line-height: 2.2; }
+    #toast {
+      position: fixed; bottom: 16%; left: 50%; transform: translateX(-50%);
+      z-index: 10; font-size: 19px; font-weight: bold; letter-spacing: 3px;
+      pointer-events: none; display: none; color: #f3eee2;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <canvas id="ui"></canvas>
+  <div id="scan"></div>
+
+  <div id="hud" class="ui">
+    <div class="cell">
+      <div class="big"><span id="speed">0</span></div>
+      <div class="lbl">KM/H</div>
+      <div id="charge"><div id="chargeFill"></div></div>
+      <div class="lbl">BURN</div>
+    </div>
+    <div id="mid" class="cell">
+      <div class="big"><span id="time">45.0</span></div>
+      <div class="lbl">SECONDS</div>
+    </div>
+    <div class="cell r">
+      <div class="big"><span id="pos">1/6</span></div>
+      <div class="lbl">POSITION</div>
+      <div style="margin-top:6px"><span id="dist">0</span> M</div>
+      <div class="lbl" id="surf">PACKED</div>
+    </div>
+  </div>
+
+  <div id="msg" class="ui"></div>
+  <div id="toast" class="ui"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="js/main.js?v=2"></script>
+  <!-- the arcade shell: a home button and a controller way back -->
+  <script type="module" src="../hub/shell.js?v=17"></script>
+</body>
+</html>

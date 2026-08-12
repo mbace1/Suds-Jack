@@ -2,10 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Toko Drop</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest?v=175">
+  <meta property="og:title" content="TOKO DROP">
+  <meta property="og:description" content="Twin-stick swarm survival — the swarm reads your gun and corpses bite back. Big bubbles! Big prizes!">
+  <meta property="og:image" content="https://mbace1.github.io/Suds-Jack/toko-drop/logo.png">
+  <meta property="og:url" content="https://mbace1.github.io/Suds-Jack/toko-drop/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
     body { background: #000; overflow: hidden; touch-action: none; }
     #canvas-game { display: block; }
     #canvas-ui {
@@ -17,8 +30,22 @@
       position: fixed;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
+      /* Short/landscape screens: cap to the viewport and scroll inside instead
+         of cropping top+bottom (body overflow is hidden, so this is the only
+         way tall screens like game-over/feedback stay reachable). */
+      max-width: 100vw;
+      max-height: 100vh;
+      max-height: 100svh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      touch-action: pan-y;
+      /* Scrollable but chromeless: a visible scrollbar drew a stray vertical
+         line on the title screen and its gutter squeezed the centered layout. */
+      scrollbar-width: none;
+      overscroll-behavior: contain;
+      padding: 10px 14px;
       color: #fff;
-      font-family: monospace;
+      font-family: monospace, sans-serif;
       text-align: center;
       pointer-events: none;
       text-shadow: 0 0 24px #ff4422, 0 0 60px #aa00ff;
@@ -26,21 +53,72 @@
       line-height: 1.3;
       user-select: none;
     }
+    #overlay::-webkit-scrollbar { display: none; }
+    /* Short viewports (landscape phones ~400px high): tighten the title column
+       so the whole thing fits without scrolling. !important because the title
+       markup carries these as inline styles. Scrolling remains the fallback. */
+    @media (max-height: 560px) {
+      #overlay { line-height: 1.2; padding: 8px 12px; }
+      #overlay .t-sub  { margin: 4px 0 10px !important; }
+      #overlay .t-help { margin: 8px auto 0 !important; line-height: 1.4 !important; }
+      #rogue-toggle-slot, #settings-slot { margin-top: 8px !important; }
+      #lang-toggle-slot { margin-top: 12px !important; }
+      /* Death screen (v113): compact so score + chips + textarea + buttons all
+         fit a ~400px-high landscape phone instead of hiding below the fold. */
+      #overlay .d-title { font-size: 28px !important; }
+      #overlay .d-sub   { margin-top: 3px !important; font-size: 12px !important; }
+      #overlay #feedback-slot { margin-top: 8px !important; }
+      #overlay .fb-head { font-size: 10.5px !important; margin-bottom: 5px !important; }
+      #overlay .fb-row  { gap: 6px !important; margin: 0 auto 8px !important; max-width: 620px !important; }
+      #overlay .fb-chip { font-size: 10.5px !important; padding: 4px 10px !important; }
+      #overlay .fb-btn  { padding: 6px 14px !important; }
+      #overlay textarea { margin-bottom: 8px !important; width: min(560px, 70vw) !important; }
+    }
   </style>
 </head>
 <body>
   <canvas id="canvas-game"></canvas>
   <canvas id="canvas-ui"></canvas>
   <div id="overlay"></div>
-
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
-    }
-  }
+  <!-- three.js vendored locally (v118): the CDN was the game's single point of
+       failure and is blocked on some networks. Files under vendor/ track
+       three@0.167.0 — update them together if the version ever bumps.
+       The ?v= token (v119) exists to bust Pages-edge/browser caches — right
+       after the v118 deploy the brand-new vendor path could 404 for up to
+       10 minutes on the CDN edge, and that 404 got cached as a black screen.
+       v191: the importmap is written by a classic script because importmaps are
+       immutable per page — the WEBGPU (BETA) toggle picks the build here, before
+       any module resolves, and needs a reload to change.
+       v192: the flag build is three@0.180.0 (r167's WGSL codegen fails today's
+       strict validation, so the true WebGPU backend needed the upgrade); classic
+       stays three@0.167.0. The r180 build is split — three.webgpu.min.js pulls
+       ./three.core.min.js via a patched-in ?v= token that bump-version.sh
+       rotates with the rest of the graph. -->
+  <script>
+    (function () {
+      var gpu = false;
+      try { gpu = localStorage.getItem('tokoDropGpu') === '1'; } catch (e) {}
+      var three = gpu ? './vendor/three.webgpu.min.js?v=175'
+                      : './vendor/three.module.min.js?v=175';
+      document.write('<script type="importmap">' + JSON.stringify({
+        imports: {
+          'three': three,
+          'three/addons/geometries/RoundedBoxGeometry.js': './vendor/jsm/geometries/RoundedBoxGeometry.js?v=175',
+          'three/addons/': './vendor/jsm/'
+        }
+      }) + '<\/script>');
+    })();
   </script>
-  <script type="module" src="js/main.js?v=2"></script>
+  <script type="module" src="js/main.js?v=175"></script>
+  <!-- the arcade shell: a home button and a controller way back -->
+  <script type="module" src="../hub/shell.js?v=17"></script>
+
+  <!-- signed by Toko Midori Games — the badge in the corner, under the HUD.
+       `counter: true` makes it the way to the counter on the hub; on a
+       touchscreen it stays inert, because that corner is the left stick. See ../toko/BRAND.md -->
+  <script type="module">
+    import { sign } from '../toko/js/signature.js?v=3';
+    sign({ corner: 'bottom-left', counter: true });
+  </script>
 </body>
 </html>

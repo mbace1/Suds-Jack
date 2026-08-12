@@ -1,0 +1,11 @@
+<!doctype html><meta charset="utf-8">
+<title>toko — cache token fixture</title>
+<!-- A FIXTURE, not a page. toko/test/brand.cjs loads this to prove the ?v=
+     token on chat.js reaches dialogue.js and both language packs; a static
+     import cannot carry it, and when it did not, a returning visitor
+     mid-deploy got a counter that failed to link and never rendered. -->
+<header>fixture</header>
+<script type="module">
+  import { mountChat } from './js/chat.js?v=99';
+  globalThis.__hub = { chat: mountChat(document.querySelector('header')) };
+</script>
