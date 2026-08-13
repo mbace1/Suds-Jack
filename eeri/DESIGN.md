@@ -123,9 +123,31 @@ patch of hoarding that is 2% different, a ladder that goes one rung
 further than it needs to.
 
 **Collectibles, two tiers.** Bolts scattered as the breadcrumb trail that
-teaches the route, plus a small fixed set per level (Yoshi's flowers,
-Mario's big coins) that gives a reason to come back. §7 asks the owner
-what that second tier should be.
+teaches the route, plus **three hidden tokens per level** — Yoshi's
+flowers, Mario's big coins — that give a reason to come back. The token
+**changes by world**: toolboxes in world 1, blueprints in world 2, golden
+bolts in world 3 (owner: all three, so each world gets its own).
+
+## 4.1 Counts, locked (owner, 2026-08-13)
+
+- **Three levels now**, and the game grows **three at a time**: 3 → 6 →
+  9, aiming at **12**.
+- **A world is three levels**, and a world is one backdrop set. That
+  retires the "all three rooms look like one place" complaint — sharing a
+  backdrop across a world is Mario 3's own rule, and it was only wrong
+  before because there was no world above the levels to justify it.
+  **Backdrop bill: one set per three levels. Twelve levels is four sets,
+  and set one already exists.**
+- **No world map** for now — one level runs into the next.
+- **Infinite retries.** No lives, no game over. The checkpoint is the
+  only cost of failing, and the only currency is time.
+- **Knockback is the whole damage model.** Eeri is never hurt, never
+  dies, has no health bar. A hit shoves him and grants mercy frames; a
+  pit costs a respawn at the checkpoint. Nothing else ever happens to him.
+- **Six years old.** Telegraphs and jumps do **not** have to be
+  realistic, and should not be: telegraph ≥ **1.0 s** before anything can
+  touch you, every jump proved with **a full tile of slack** over the
+  budget, floaty over crisp wherever the two disagree. Stomp is in.
 
 ## 5. Controls — house convention, not a per-game choice
 
@@ -167,7 +189,7 @@ second. Small enemies and gizmos are now the top of the list.
 | 2 | **Eeri's new clips** on `eeri_v3.glb` | add `climb`, `stomp` (the bounce), `hurt` to the existing five | the two new verbs have no animation at all |
 | 3 | **gizmo kit** — `ladder_v1.glb`, `scaffold_v1.glb`, `plank_v1.glb` (tipping), `conveyor_v1.glb`, `hook_v1.glb` | 1-tile modules that repeat; ladder and scaffold must tile vertically without a seam | verticality and variety, and the cheapest fun per asset in the whole list |
 | 4 | **hazard kit** — `vent_v1.glb` (`collar` lights before it blows), `pallet_v1.glb` (falls, then a rubble state), `cement_v1.png` (a flat patch, 2D) | telegraph is the whole point of each one | carries the tension between rides |
-| 5 | **Site 2 and Site 3 layer sets** — `girderworks_*`, `demolition_*`, five PNGs each, same rects and sizes as `groundworks` | | three rooms currently share one backdrop, so the whole game looks like one place |
+| 5 | ~~Site 2 and Site 3 layer sets~~ **— dropped for now** | | §4.1: a world is three levels and shares one backdrop. Levels 1–3 are world 1 and `groundworks_*` already covers them. The next set is due at **level 4**, not now |
 | 6 | `crane_v1.glb` | excavator's node set — `house boom stick bucket seat step wheels beacon` — ball on the stick's end | the one ride machine with no art; demoted from #1 because rides are now occasional |
 | 7 | `bank_v1.glb`, `wall_v1.glb`, `girder_v1.glb` | `state0/1/2` (+ `grip` on the girder) | ride payoffs. Real, but the last thing the player looks at |
 
@@ -176,9 +198,13 @@ second. Small enemies and gizmos are now the top of the list.
 | asset | contract | note |
 |---|---|---|
 | `checkpoint_v1.glb` | `post` + `flag` (the game raises/turns it), an `off`→`on` colour swap | a midway gate per level; it must read as passed from a screen away |
-| the second-tier collectible | one model, ≤ 1 tile, **unmistakably not a bolt** at 32 px — different silhouette, not just bigger | §7 asks what it is. Three to five per level, hand-placed |
+| `token_toolbox_v1.glb` · `token_blueprint_v1.glb` · `token_bolt_v1.glb` | ≤ 1 tile, **unmistakably not a bolt** at 32 px — different silhouette, not just bigger. One per world | three hidden per level, hand-placed. The golden bolt is the risky one: it must not read as a big ordinary bolt |
 | **backdrops must not visibly repeat** over 96 tiles | already the spec'd rect width, but the *painting* has to carry seven screens without a recognisable tile | the one thing that makes a level feel long or short regardless of its actual size |
 | gizmo kit variety (§6.2 #3) | | "one idea per level" means the kit IS the level count — every new gizmo is a new level, so breadth here beats polish |
+
+**Backdrop count, settled (§4.1):** one set per **world of three levels**,
+not one per level. Set one (`groundworks_*`) exists and covers levels 1–3.
+Set two is not needed until level 4. Twelve levels is four sets total.
 
 ### 6.4 UI art, now that controls are settled (§5)
 Button glyphs for the on-screen pad and every in-game prompt: ◀ ▶ ▲ plus
@@ -193,21 +219,25 @@ either until §7 is answered.
 
 ## 7. Open, for the owner
 
-Answered in any order; the first three block art, not just code.
+Answered so far: 3 levels growing by 3 to 12 · stomp is in · three tokens,
+one kind per world · no map · infinite retries · age 6, generous · knockback
+only. Next batch — the first four block art.
 
-1. **How many levels?** Sets how many backdrop sets and gizmos to plan.
-   Three is a demo; a dozen is a game.
-2. **Does Eeri stomp, or only dodge?** §2 assumes stomp. Without it the
-   small machines are moving walls and §3's list wants rethinking.
-3. **What is the second-tier collectible?** Yoshi has flowers, Mario has
-   big coins. Something site-shaped — a toolbox, a blueprint, a golden
-   bolt? It needs its own silhouette (§6.3).
-4. **Is there a world map** between levels, Mario 3 style, or does one
-   level run straight into the next? A map is a whole extra art surface.
-5. **Lives, or infinite retries?** For a kid I would say infinite, with
-   the checkpoint as the only cost. Say if you want a life count.
-6. **How old is the player?** It sets jump margins and how long a
-   telegraph has to be. I have been writing for about seven.
-7. **Does Eeri ever get hurt, or only knocked back?** Right now nothing
-   kills him. Falling in a pit costs a respawn — is that the worst that
-   ever happens?
+1. **What are the four worlds?** World 1 is the groundworks. Then —
+   scaffold heights, demolition, night shift, a flooded dig, the crane
+   top? Each is one backdrop set, so naming them names the art queue.
+2. **Which machine rides in which world?** The excavator (dig) and the
+   crane (swing) exist. A dump truck you ride *in the bed* of, a roller, a
+   cement mixer? One ride machine per world is the natural rate.
+3. **Does each world end with something bigger** — a Mario castle beat? A
+   big machine encounter at level 3 of each world would be the obvious
+   shape, and it is a large art item, so it needs deciding early.
+4. **What does the level's end look like?** A gate exists. Should there be
+   a moment — a flagpole, a knock-off-time whistle, Eeri clocking out?
+5. **Do the tokens do anything**, or are they just a count to complete?
+6. **Do levels ever go up** rather than right? Ladders make it possible;
+   a vertical level is a different camera and a taller backdrop.
+7. **Does the game have music**, or only the effects and the diesel bed it
+   has now?
+8. **Is there a level-select screen** at all, since there is no map — or
+   does the game just start at level 1 and run through?
