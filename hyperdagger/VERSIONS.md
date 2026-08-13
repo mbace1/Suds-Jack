@@ -8,6 +8,30 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v25 — 2026-08-13
+**The pressure ceiling — measured, not guessed**
+- Instrumented the real director over a 150 s run and read what is actually
+  ALIVE rather than what the budget says. v4.36's curve had a cliff in it:
+  minute one averaged 6 live threats, minute two averaged 41 and the late
+  game climbed to 88 with no ceiling. Budget controls the spawn RATE; what
+  kills you is the standing POPULATION, and population runs away whenever
+  spawns outpace kills — which is also a death spiral, since falling behind
+  makes you fall further behind.
+- New `T.director.ceiling`: the director refuses to add pressure while the
+  floor is already at capacity (10 + 0.15·t, capped at 38 live threats;
+  totems and eggs don't count — they are furniture, and shouldn't crowd out
+  real pressure). Debuts are exempt: a new threat always gets its moment.
+- The first cut of this gated only the pulse filler and moved the measured
+  population by ONE body. The real faucet is the totem exhale — six totems
+  on a ~2 s cycle out-produce the entire pulse system — so the ceiling
+  governs that path too. Late-game population is now flat at the ceiling
+  (46 avg / 47 peak) instead of climbing past 88.
+- Budget rateB softened 1.9 → 1.45 with the ceiling doing the bounding, and
+  the unlock list compressed: an unlock only opens ELIGIBILITY, the debut
+  lands on the NEXT pulse, so measured arrival ran 8-14 s behind the
+  numbers and blinker was slipping out of minute one.
+- Debug: `getPressure()` reports live count vs the current ceiling.
+
 ## v24 — 2026-08-13
 **The arena — an uplit rig and a floor made of plates**
 - The asset light rig was a generic studio setup (white key from above); it

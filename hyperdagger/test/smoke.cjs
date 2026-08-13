@@ -339,6 +339,27 @@ s.listen(0, '127.0.0.1', async () => {
   ok('minute two is the squeeze (2.5x+ minute one)', curve.m2b > curve.m1b * 2.5, JSON.stringify(curve));
   ok('heavy centrepieces are pool-driven', curve.centres === true, JSON.stringify(curve));
 
+  // the pressure ceiling: pressure must PLATEAU, never spiral. Measured by
+  // running the real director hot and watching the live count settle.
+  const ceil = await p.evaluate(async () => {
+    const hd = window.__hd;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    const T = hd.debug.getTuning().director.ceiling;
+    hd.debug.setOpt('perf', 'low');
+    hd.debug.setTime(200);            // deep into the run, ceiling at its cap
+    for (let i = 0; i < 40; i++) await frames(3); // let the director fill the floor
+    const p1 = hd.debug.getPressure();
+    for (let i = 0; i < 25; i++) await frames(3); // …and keep running
+    const p2 = hd.debug.getPressure();
+    hd.debug.setTime(1); hd.debug.setOpt('perf', 'auto');
+    for (const e of hd.enemies) e.alive = false;
+    return { cfg: T, live1: p1.live, live2: p2.live, ceiling: p1.ceiling };
+  });
+  // the count may overshoot (a serpent lands 12 bodies at once, debuts are
+  // exempt) but it must STOP climbing — that is the anti-death-spiral
+  ok('pressure plateaus instead of spiralling', ceil.live2 <= ceil.live1 + 6, JSON.stringify(ceil));
+  ok('…and the ceiling is capped', ceil.ceiling <= ceil.cfg.cap + 0.01, JSON.stringify(ceil));
+
   // ---- v4.35 mesh assets: voxelizer, skin slot, the shed moment ----------
   const mesh35 = await p.evaluate(async (tok) => {
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
