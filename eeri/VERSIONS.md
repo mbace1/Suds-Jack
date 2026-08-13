@@ -1,5 +1,48 @@
 # EERI — versions
 
+## v7 — 2026-08-13 — controller-first controls, the stomp, and the flag
+
+**Three lineages became one.** The gameplay branch (parts kit, room prover,
+crane, robots, brick wall) and the art branch (Meshy-rigged animated Eeri,
+the pipeline) are reconciled into `main`, split by kind. Two regressions the
+graft nearly shipped were caught: `kid.js` had reverted to a hardcoded fall
+respawn, and the gate only understood the node contract so the skinned
+character failed it.
+
+**The painted layer art was unplugged, again.** `layers.js` imported
+`assets.js?v=1` while `main.js` imported `?v=2` — two tokens, so the module
+instantiated twice, `loadManifest()` ran on one instance and
+`getLayerTexture()` asked the other. Every layer fell back to code-paint
+while 2.7 MB of PNG sat unrequested. `palette.js` was split the same way.
+Third time for this class, so it is gated now: a static sweep failing on any
+module imported under two tokens, and a runtime check that every asset the
+manifest calls **live** was actually FETCHED.
+
+**Controls are controller-first** (DESIGN.md §5). `input.js` reads a pad
+natively — polled once a frame, edge-detected against its own previous
+state so an idle pad never clobbers a held key, and polled in every mode
+rather than inside the play branch. Every prompt is glyphs and names no
+key; the on-screen buttons wear the same glyphs. The touch layout is a
+bottom row plus a boom pair: the d-pad cross tried first stood 200 px tall
+on a landscape phone and shoved the hint into the middle of the picture.
+
+**The stomp.** Landing on a small machine kills it and bounces 80% of a
+jump — enough to chain, never enough to reach what a jump cannot, so no
+room's proved reach budget is quietly broken by an enemy standing in it.
+Tested before the lunge, so jumping at one is the right answer rather than
+a gamble, and it does not also count as being hit.
+
+**The flag** (DESIGN.md §4.2) replaces the plain exit gate. It builds in
+three phases as Eeri closes — base plate, pole, cloth — a puff of smoke
+each, and finishes by being **run past**: no button, no stopping on a mark.
+Level 3 of a world flies a bigger one in a different colour. Behind the
+asset seam like everything else (`phase0/1/2` + `pole`).
+
+Gate: 144 checks, plus 29 in the room prover. Five of the new ones run in a
+real landscape-phone context rather than a forced-visible desktop — the
+badge check earned itself immediately by catching Ⓑ underneath the Toko
+signature, the same collision v6 fixed once for jump.
+
 ## v6 — 2026-08-13
 **The parts kit, and rooms that can be finished.** Rooms were a hand-drawn
 grid plus half a dozen side-arrays that could disagree with it — the pit

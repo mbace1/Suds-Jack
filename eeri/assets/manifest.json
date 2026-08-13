@@ -1,5 +1,5 @@
 {
-  "v": 6,
+  "v": 7,
   "_readme": "The asset seam. Every entry is either 'placeholder' (the game builds it in code) or 'live' (the game loads the file). Dropping an asset in = put the file at its path, flip status to live, bump the file's v token. The smoke gate reads this file: live entries must resolve and models must expose their contracted nodes. See assets/README.md for the full contract.",
   "models": {
     "eeri": {
@@ -61,6 +61,26 @@
         "ball": "STEEL1",
         "step": "MACHINE_DK"
       }
+    },
+    "flag": {
+      "file": "3d/flag_v1.glb",
+      "status": "placeholder",
+      "nodes": [
+        "phase0",
+        "phase1",
+        "phase2",
+        "pole"
+      ]
+    },
+    "flagbig": {
+      "file": "3d/flagbig_v1.glb",
+      "status": "placeholder",
+      "nodes": [
+        "phase0",
+        "phase1",
+        "phase2",
+        "pole"
+      ]
     }
   },
   "pieces": {

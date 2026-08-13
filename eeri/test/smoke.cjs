@@ -506,6 +506,46 @@ s.listen(0, '127.0.0.1', async () => {
   ok('the camera pulls back where the room asks you to read something',
     zWide > zOpen + 3, `open z=${zOpen.toFixed(1)} → wall z=${zWide.toFixed(1)}`);
 
+  // ---- the flag: it BUILDS, and it finishes by being run past -----------
+  await p.reload({ waitUntil: 'load' });
+  await p.waitForFunction(() => !!window.__eeri && window.__eeri.player.grounded, null, { timeout: 12000 });
+  const fx = await p.evaluate(() => window.__eeri.debug.flag().x);
+  ok('the flag starts unbuilt', await p.evaluate(() => window.__eeri.debug.flag().phase) === -1);
+
+  const phases = [];
+  for (const d of [12, 7, 2]) {
+    await p.evaluate((x) => window.__eeri.debug.setPos(x, 4.2), fx - d);
+    await p.waitForTimeout(700);
+    phases.push(await p.evaluate(() => window.__eeri.debug.flag().phase));
+  }
+  ok(`it builds a phase at a time as he closes — ${phases}`,
+    phases[0] === 0 && phases[1] === 1 && phases[2] === 2);
+  ok('and it is not finished just by standing at it',
+    await p.evaluate(() => window.__eeri.debug.flag().done) === false);
+
+  // the bank still blocks the way, which is the level working: dig it first
+  await p.evaluate(() => { for (let i = 0; i < 5; i++) window.__eeri.debug.dig(); });
+  await p.evaluate((x) => window.__eeri.debug.setPos(x, 4.2), fx - 4);
+  await p.waitForTimeout(300);
+  const before = await p.evaluate(() => window.__eeri.site());
+  await p.evaluate(() => window.__eeri.debug.press('right'));
+  const advanced = await p.waitForFunction((b) => window.__eeri.site() !== b, before, { timeout: 9000 })
+    .then(() => true).catch(() => false);
+  await p.evaluate(() => window.__eeri.debug.release('right'));
+  ok('RUNNING PAST it finishes the level — no button, no stopping', advanced);
+  ok('and the next level brings its own unbuilt flag',
+    await p.evaluate(() => window.__eeri.debug.flag().phase) === -1);
+
+  // level 3 of a world gets the big one, so you can tell them apart
+  await p.evaluate(() => window.__eeri.debug.goSite(2));
+  await p.waitForTimeout(1200);
+  ok('level 3 of a world flies the big flag',
+    await p.evaluate(() => window.__eeri.debug.flag().big) === true);
+  await p.evaluate(() => window.__eeri.debug.goSite(0));
+  await p.waitForTimeout(1200);
+  ok('and levels 1 and 2 fly the small one',
+    await p.evaluate(() => window.__eeri.debug.flag().big) === false);
+
   // ---- the house obligations --------------------------------------------
   ok('the way home is mounted', await p.locator('.hub-home, #hubHome, [data-hub-home]').count() > 0
     || await p.evaluate(() => !!document.querySelector('a[href*="../"], a[href$="/"]')));

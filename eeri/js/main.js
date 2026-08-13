@@ -22,6 +22,7 @@ import { buildExcavatorModel, Excavator } from './excavator.js?v=2';
 import { buildCraneModel, Crane } from './crane.js?v=1';
 import { Robot, SteamVent } from './robots.js?v=2';
 import { WreckingBall } from './hazards.js?v=1';
+import { buildFlagModel, Flag } from './flag.js?v=2';
 import { AudioKit } from './audio.js?v=3';
 import { loadManifest, getModel, getPiece } from './assets.js?v=3';
 
@@ -138,15 +139,13 @@ async function boot() {
       group.add(machine.group, machine.shadow, ...machine.puffs);
     }
 
-    // the way out
-    for (const dx of [-0.6, 0.6]) {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.22, 2.6, 0.22),
-        new THREE.MeshLambertMaterial({ color: PAL.MACHINE }));
-      post.position.set(def.exit.x + dx, def.exit.y + 1.3, 0); group.add(post);
-    }
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.26, 0.26),
-      new THREE.MeshLambertMaterial({ color: PAL.MACHINE_DK }));
-    bar.position.set(def.exit.x, def.exit.y + 2.6, 0); group.add(bar);
+    // THE FLAG (DESIGN.md §4.2). Not a gate you walk through — a thing that
+    // builds itself in three phases as you come down the last stretch, and
+    // finishes by being RUN PAST. Level 3 of a world gets the big one, so
+    // you can tell from a screen away what kind of level you are ending.
+    const big = (i % 3) === 2;
+    const flag = new Flag(group, level, def.exit.x,
+      await getModel(big ? 'flagbig' : 'flag', () => buildFlagModel(big)), big);
 
     // bolts: the collectable (3D slow spinners, §6)
     const bolts = level.boltCells.map((cell, bi) => {
@@ -163,7 +162,7 @@ async function boot() {
     });
 
     scene.add(group);
-    return { def, level, group, bank, girder, wall, ball, bolts, robots, vents, machine };
+    return { def, level, group, bank, girder, wall, ball, bolts, robots, vents, machine, flag };
   }
 
   let siteIndex = 0;
@@ -321,6 +320,7 @@ async function boot() {
       machine: () => exc ? { kind: exc.kind, x: exc.x, track: exc.track, tamed: exc.tamed } : null,
       robots: () => site.robots.map((r) => ({ x: +r.x.toFixed(2), state: r.state, dead: r.dead })),
       stomps: () => stomps,
+      flag: () => ({ x: site.flag.x, phase: site.flag.phase, done: site.flag.done, big: site.flag.big }),
       padSeen: () => input.padSeen,
       vents: () => site.vents.map((v) => ({ x: v.x, blowing: v.blowing })),
       rooms: () => ROOMS.length,
@@ -487,19 +487,23 @@ async function boot() {
       }
     }
 
-    // the room is finished when the kid walks out through the gate the
-    // machine opened — on foot, because the machine cannot leave. The last
-    // gate ends the job; every other gate leads to the next site.
-    if (mode === 'foot' && player.x > site.def.exit.x - 0.8) {
-      if (siteIndex < ROOMS.length - 1) {
-        goSite(siteIndex + 1);
-      } else if (!cleared) {
-        cleared = true;
-        audio.mount();
-        const done = document.createElement('div');
-        done.id = 'clear';
-        done.innerHTML = `SITE CLEAR<span>⬡ ${collected} / ${totalBolts}</span>`;
-        document.body.appendChild(done);
+    // the flag builds as he closes on it and finishes by being run past —
+    // on foot, because the machine cannot leave. The last flag ends the job;
+    // every other one leads to the next site.
+    if (!transitioning) {
+      const ev = site.flag.update(dt, mode === 'riding' ? exc.x : player.x, REDUCED);
+      if (ev === 'phase') audio.bolt(2);
+      if (ev === 'done' && mode === 'foot') {
+        if (siteIndex < ROOMS.length - 1) {
+          goSite(siteIndex + 1);
+        } else if (!cleared) {
+          cleared = true;
+          audio.mount();
+          const done = document.createElement('div');
+          done.id = 'clear';
+          done.innerHTML = `SITE CLEAR<span>⬡ ${collected} / ${totalBolts}</span>`;
+          document.body.appendChild(done);
+        }
       }
     }
 
