@@ -149,6 +149,47 @@ bolts in world 3 (owner: all three, so each world gets its own).
   touch you, every jump proved with **a full tile of slack** over the
   budget, floaty over crisp wherever the two disagree. Stomp is in.
 
+## 4.2 The twelve, and the shape of a world (owner, 2026-08-13)
+
+**Committed to 12 levels now** — four worlds of three.
+
+| world | place | ride machines |
+|---|---|---|
+| 1 | **Groundworks** | excavator + one more |
+| 2 | **Pipes and water hazards** | two |
+| 3 | **Forest clearing and digs** | two |
+| 4 | **Evening site, under lights** | two |
+
+**Two ride machines per world, maybe more** — so eight-plus machines is
+the standing art commitment, not one per world.
+
+**Level 1 and 2 of a world end in a flag.** It **builds itself in three
+phases** as you reach it and **activates by running past it** — no button,
+no stopping. A **puff of smoke** on each phase.
+
+**Level 3 of a world is the big one** — a boss-type setup, puzzle or
+enemies — and its flag is **bigger and a different colour**.
+
+**Clocking out happens only at the end of a world**, and it is Eeri
+walking out through a gate. That is the world's curtain, not the level's.
+
+**Collectibles, settled:**
+- **Bolts — `x/100`.** A hundred in a level, and the count is the level's
+  completion figure.
+- **Golden bolts — `3/3`,** hidden, one set per level.
+- **Blueprints — one per world,** and they **unlock secret art**. That
+  makes the art pipeline's own concepts the reward, which is the cheapest
+  and most honest unlockable this project could have.
+
+**Levels may go up** — ladders and scaffolds — **but always come back
+down.** A level ends on the same ground it started on, so the camera never
+has to leave its band for long.
+
+**SFX only.** No music yet.
+
+**No map.** Levels run 1 → 12 in order, and any unlocked level can be
+jumped to from a menu.
+
 ## 5. Controls — house convention, not a per-game choice
 
 **Controller first, touch always, and prompts that name neither a key nor
@@ -197,14 +238,28 @@ second. Small enemies and gizmos are now the top of the list.
 
 | asset | contract | note |
 |---|---|---|
-| `checkpoint_v1.glb` | `post` + `flag` (the game raises/turns it), an `off`→`on` colour swap | a midway gate per level; it must read as passed from a screen away |
-| `token_toolbox_v1.glb` · `token_blueprint_v1.glb` · `token_bolt_v1.glb` | ≤ 1 tile, **unmistakably not a bolt** at 32 px — different silhouette, not just bigger. One per world | three hidden per level, hand-placed. The golden bolt is the risky one: it must not read as a big ordinary bolt |
+| `flag_v1.glb` | `phase0` `phase1` `phase2` as sibling nodes (it BUILDS in three steps), plus `pole` | one per level 1 and 2 of each world. It assembles as Eeri arrives and activates by being run past — so each phase must read at a glance, mid-run |
+| `flag_big_v1.glb` | same three phases, **larger and a different colour** | the level-3 flag. It must be tellable from the small one at a distance, before you reach it |
+| smoke puff | 2D sprite sheet or a scaled quad — the game already pools particles | fires once per flag phase. Three puffs per flag |
+| `gate_v1.glb` | `frame` + `door` (the game opens it) | **end of a WORLD only**, not a level — Eeri clocks out and walks through |
+| `token_toolbox_v1.glb` · `token_blueprint_v1.glb` · `token_bolt_v1.glb` | ≤ 1 tile, **unmistakably not a bolt** at 32 px — different silhouette, not just bigger | golden bolts are 3 per level and hidden; blueprints are **1 per world** and unlock secret art, so the blueprint wants to look like a thing worth framing |
 | **backdrops must not visibly repeat** over 96 tiles | already the spec'd rect width, but the *painting* has to carry seven screens without a recognisable tile | the one thing that makes a level feel long or short regardless of its actual size |
-| gizmo kit variety (§6.2 #3) | | "one idea per level" means the kit IS the level count — every new gizmo is a new level, so breadth here beats polish |
+| gizmo kit variety (§6.2 #3) | | "one idea per level" means the kit IS the level count — twelve levels needs roughly twelve ideas, so breadth here beats polish |
 
-**Backdrop count, settled (§4.1):** one set per **world of three levels**,
-not one per level. Set one (`groundworks_*`) exists and covers levels 1–3.
-Set two is not needed until level 4. Twelve levels is four sets total.
+**Backdrop count, settled (§4.1–4.2):** one set per **world of three
+levels**. Four worlds = **four sets**. Set one (`groundworks_*`) exists.
+The next three are **pipes/water**, **forest clearing**, and **evening
+site under lights** — and the evening set is the one to think hardest
+about, because lit windows and lamp pools are the only place in this game
+where light is drawn rather than painted flat.
+
+**Ride machines: eight or more** (§4.2), two per world, and each one is a
+full `assets/README.md` node contract with `seat`, `step` and `beacon`.
+The excavator and the crane are one and two; worlds 2–4 need six more.
+Candidates that fit the theme and bring a *different verb*: a dump truck
+you ride in the bed of, a pipe-layer, a roller, a cherry-picker that
+lifts, an amphibious dredger for the water world, a floodlight rig for the
+evening one.
 
 ### 6.4 UI art, now that controls are settled (§5)
 Button glyphs for the on-screen pad and every in-game prompt: ◀ ▶ ▲ plus
