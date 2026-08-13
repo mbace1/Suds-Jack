@@ -1,5 +1,37 @@
 # EERI — versions
 
+## v11 — 2026-08-13 — the machines are painted wood, and the map tool is fixed
+
+**The excavator was still smooth plastic in a crafted world**, and chasing it
+found two independent causes plus a bug in the tool that makes every map.
+
+1. **An imported GLB carries its own UV atlas.** `craftBox`'s world-space UV
+   trick is only available to geometry we build, so on a live model a
+   repeating map stretched ONE copy of the brushwork across the whole
+   machine. The paint path now tiles across the atlas explicitly (repeat 9),
+   on a cloned texture — repeat lives on the Texture, and the cached one is
+   shared with every other surface asking for balsa.
+2. **The placeholder machines built boxes directly.** `excavator.js`,
+   `crane.js`, `pieces.js` and `robots.js` each had a local
+   `new THREE.Mesh(new THREE.BoxGeometry(...), M(c))`, which gets the shared
+   material but none of the UV density. All four route through `craftBox`
+   now.
+3. **`detailmap.mjs` scaled contrast about the MEAN**, which preserves the
+   source photo's own contrast. That is fine for corrugated card (luminance
+   40…230) and useless for a white-painted board (230…250): the balsa map
+   came out ±4% however high the strength went. It does a **histogram
+   stretch** now — 5th to 95th percentile onto a fixed band — so a map's
+   contrast is a property of the REQUEST, not of how well lit the source
+   happened to be. Every material was rebuilt through it; felt and balsa
+   only became visible at all after this.
+
+The lesson generalises past this project: **normalising by mean preserves
+the source's contrast; normalising by range sets it.** A tool that takes a
+"strength" argument and ignores it for low-contrast inputs is worse than one
+with no argument, because it looks like it is working.
+
+Gate: 134 checks + 29 room prover.
+
 ## v10 — 2026-08-13 — a material KIT, not cardboard everywhere
 
 **Crafted World is a kit of materials and the first pass used card for all of

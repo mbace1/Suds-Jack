@@ -12,7 +12,7 @@
 
 import * as THREE from 'three';
 import { PAL, mix } from './palette.js?v=2';
-import { craftMat, craftBox } from './craft.js?v=2';
+import { craftMat, craftBox } from './craft.js?v=3';
 
 const NOTICE = 0.35, WIND = 0.45, LUNGE = 0.5, RECOVER = 0.7;
 const SEE = 5.2, WALK = 1.5, LUNGE_SPEED = 6.4;
@@ -21,7 +21,7 @@ function buildRobot() {
   const g = new THREE.Group();
   const M = (c) => craftMat(c, 'balsa');
   const box = (w, h, d, c, x, y, z) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c));
+    const m = craftBox(w, h, d, M(c));
     m.position.set(x, y, z); g.add(m); return m;
   };
   // squat, wide, one exaggerated feature: the eye. Machine yellow says it

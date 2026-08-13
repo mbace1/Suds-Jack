@@ -23,8 +23,8 @@ import { buildCraneModel, Crane } from './crane.js?v=1';
 import { Robot, SteamVent } from './robots.js?v=1';
 import { WreckingBall } from './hazards.js?v=1';
 import { AudioKit } from './audio.js?v=2';
-import { loadManifest, getModel, getPiece } from './assets.js?v=3';
-import { craftMat } from './craft.js?v=2';
+import { loadManifest, getModel, getPiece } from './assets.js?v=4';
+import { craftMat } from './craft.js?v=3';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;

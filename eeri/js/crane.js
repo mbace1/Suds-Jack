@@ -14,7 +14,7 @@
 
 import * as THREE from 'three';
 import { PAL, mix } from './palette.js?v=2';
-import { craftMat, craftBox } from './craft.js?v=2';
+import { craftMat, craftBox } from './craft.js?v=3';
 
 export function buildCraneModel(tint = 0) {
   const T = (c) => (tint > 0 ? mix(c, PAL.SKY_PALE, tint) : c);
@@ -22,7 +22,7 @@ export function buildCraneModel(tint = 0) {
   const nodes = {};
   const M = (c) => craftMat(T(c), 'balsa');   // painted wood (§3.3)
   const box = (parent, w, h, d, c, x, y, z) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c));
+    const m = craftBox(w, h, d, M(c));
     m.position.set(x, y, z); parent.add(m); return m;
   };
   const cyl = (parent, r, h, c, x, y, z, seg = 10) => {

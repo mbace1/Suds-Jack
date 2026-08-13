@@ -11,7 +11,7 @@
 
 import * as THREE from 'three';
 import { PAL, mix } from './palette.js?v=2';
-import { craftMat, craftBox, craft } from './craft.js?v=2';
+import { craftMat, craftBox, craft } from './craft.js?v=3';
 
 import { ROOMS } from './rooms.js?v=1';
 import { compile, W, H, SOLID_CHARS, GROUND } from './parts.js?v=1';

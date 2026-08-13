@@ -47,7 +47,16 @@ const ROLE = {
 function grainPaint(mats) {
   getTexture('balsa').then((tex) => {
     if (!tex) return;
-    for (const m of mats) { m.map = tex; m.needsUpdate = true; }
+    // An imported GLB carries its OWN UV atlas — 0…1 across the whole model —
+    // so `craftBox`'s world-space trick is not available and a plain repeating
+    // map simply stretches one copy of the brushwork over the entire machine,
+    // which is why the excavator still read as smooth plastic. Tile it across
+    // the atlas instead. Cloned per call: repeat lives on the Texture, and
+    // the cached one is shared with every other surface asking for balsa.
+    const t = tex.clone();
+    t.needsUpdate = true;
+    t.repeat.set(9, 9);
+    for (const m of mats) { m.map = t; m.needsUpdate = true; }
   });
 }
 
