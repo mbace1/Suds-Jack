@@ -5,18 +5,17 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=55';
-import { Player } from './player.js?v=55';
-import { DaggerPool } from './daggers.js?v=55';
-import { GemPool } from './gems.js?v=55';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=55';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=55';
-import { OrbPool } from './bullets.js?v=55';
-import { preloadSkins, skinsReady, MESH_ASSETS } from './meshassets.js?v=55';
-import { HyperEnvironment } from './environment.js?v=55';
-import { AudioKit } from './audio.js?v=55';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=55';
-import { TUNING as T } from './tuning.js?v=55';
+import { InputManager } from './input.js?v=53';
+import { Player } from './player.js?v=53';
+import { DaggerPool } from './daggers.js?v=53';
+import { GemPool } from './gems.js?v=53';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=53';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=53';
+import { OrbPool } from './bullets.js?v=53';
+import { preloadSkins, skinsReady, MESH_ASSETS, ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=53';
+import { AudioKit } from './audio.js?v=53';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=53';
+import { TUNING as T } from './tuning.js?v=53';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -125,28 +124,45 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0x050505, 30, 95);
 
-// v4.35 asset light rig: everything native is unlit MeshBasic, so these
-// lights touch ONLY imported mesh assets (Lambert after conversion). Tuned
-// for the monochrome identity — white sky/key so bone reads bone, a dim
-// crimson fill from the horizon so shadowed sides sit in the game's red.
+// Asset light rig (v4.35, rebuilt v4.37). Everything native is unlit
+// MeshBasic, so these lights touch ONLY imported mesh assets — but WHICH
+// lights is not a free choice: an imported model has to look like it is
+// standing in THIS arena, and this arena has exactly two light sources.
+//
+//   1. the grid floor, which genuinely glows (uGlow pushes it past bloom)
+//   2. the ember horizon, a dark red ring at eye level
+//
+// …and a black void overhead. So the rig is UPLIT: the hemisphere's ground
+// term is the white grid and its sky term is the near-black void, which is
+// the inverse of a studio key and the reason a Meshy skull reads as bone
+// lit from the floor rather than a product shot pasted into the scene.
+// EMBER_LIGHTS pulse with the same uRed/uPulse signals the floor uses, so
+// assets flush on damage and beat with the music exactly like the world.
 const lightRig = new THREE.Group();
-lightRig.add(new THREE.HemisphereLight(0xffffff, 0x141414, 2.2));
-const _key = new THREE.DirectionalLight(0xffffff, 1.4);
-_key.position.set(4, 10, 6);
-const _emberFill = new THREE.DirectionalLight(0xff2a2a, 0.7);
-_emberFill.position.set(-6, 1.5, -4);
-lightRig.add(_key, _emberFill);
+const hemi = new THREE.HemisphereLight(0xffffff, 0xffffff, 1.0);
+hemi.color.setHex(0x0e0e12);      // sky = the void
+hemi.groundColor.setHex(0xf4f4ff); // ground = the glowing grid
+hemi.intensity = 2.0;
+// a dim white top light so crowns/horns don't vanish into the void
+const _rim = new THREE.DirectionalLight(0xdfe4ff, 0.35);
+_rim.position.set(-3, 9, -2);
+// the ember horizon: a ring of crimson at eye level, so no matter which way
+// an enemy faces, its silhouette catches the red the sky is putting out
+const EMBER_BASE = 0.55;
+const emberLights = [0, 2.09, 4.19].map(a => {
+  const l = new THREE.DirectionalLight(0xff1e1e, EMBER_BASE);
+  l.position.set(Math.cos(a) * 10, 1.2, Math.sin(a) * 10);
+  return l;
+});
+lightRig.add(hemi, _rim, ...emberLights);
 scene.add(lightRig);
 // mesh assets load in the background; enemies spawned after it resolves wear
 // them, everything before (and every failure) uses the built-in models
 preloadSkins();
-
-// the void beyond the rim: horizon ring + the meshed monuments (hand, gate,
-// colossus head, inverted mountain, obelisk ring, the dais). All MeshBasic,
-// so the v4.35 asset light rig never touches them; all fail-soft, so a
-// missing GLB just leaves the void emptier. (Wired here after the v4.35
-// rebase orphaned the module — the assets were live but nothing loaded them.)
-const environment = new HyperEnvironment(scene, ARENA_R);
+// a registered Meshy floor tile is instanced across the disc, above the
+// procedural plates (whose glowing seams still show between them)
+let floorPanels = null;
+buildFloorPanels(ARENA_R).then(m => { if (m) { floorPanels = m; scene.add(m); } });
 
 const camera = new THREE.PerspectiveCamera(opts.fov, window.innerWidth / window.innerHeight, 0.1, 300);
 scene.add(camera); // so the first-person hand (a camera child) renders
@@ -294,51 +310,86 @@ function buzz(strong, weak, ms) {
 }
 
 // ---------------------------------------------------------------- arena
+/**
+ * The floor is PANELS, not a wireframe (v4.37). The old texture was two
+ * grids of hairlines over black, which read as placeholder scaffolding the
+ * moment anything lit stood on it — and with mesh assets arriving, "the
+ * enemies look built and the ground looks like a blueprint" is exactly the
+ * inconsistency to kill.
+ *
+ * A panel here is a physical plate: a lifted face, a bevel that catches the
+ * light on two sides and falls into shadow on the other two, a dark recessed
+ * seam between plates, corner bolts, and per-plate value variation so the
+ * tiling doesn't read as one stamped sheet. The bright seam is still what
+ * `uGlow` lifts past the bloom threshold, so the grid still glows — it is
+ * now the gap between plates that glows, which is why it looks like light
+ * coming up through the floor instead of lines drawn on it.
+ */
+let floorCanvas = null;
 function makeFloorTexture() {
+  const S = 512, P = 4, CELL = S / P; // 4×4 plates per texture tile
   const c = document.createElement('canvas');
-  c.width = c.height = 256;
+  c.width = c.height = S;
   const g = c.getContext('2d');
-  g.fillStyle = '#060606';
-  g.fillRect(0, 0, 256, 256);
-  for (let ty = 0; ty < 4; ty++) for (let tx = 0; tx < 4; tx++) {
-    if (Math.random() < 0.3) {
-      g.fillStyle = 'rgba(255,255,255,0.02)';
-      g.fillRect(tx * 64, ty * 64, 64, 64);
-    }
-  }
-  g.strokeStyle = 'rgba(255,255,255,0.09)';
-  g.lineWidth = 1;
-  for (let i = 0; i <= 256; i += 32) {
-    g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 256); g.stroke();
-    g.beginPath(); g.moveTo(0, i); g.lineTo(256, i); g.stroke();
-  }
-  g.strokeStyle = 'rgba(255,255,255,0.34)';
-  g.lineWidth = 2;
-  for (let i = 0; i <= 256; i += 64) {
-    g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 256); g.stroke();
-    g.beginPath(); g.moveTo(0, i); g.lineTo(256, i); g.stroke();
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(14, 14);
+  g.fillStyle = '#050506';
+  g.fillRect(0, 0, S, S);
 
-  // stone paneling under the grid: a pre-graded near-black bake (oxblood in
-  // the seams, bone chips) swaps in beneath a lighter pass of the same grid
-  // lines, so the speed-read survives on top of the slabs. Fail-soft: if the
-  // fetch never lands, the plain grid above IS the floor — offline included.
-  const panels = new Image();
-  panels.onload = () => {
-    g.imageSmoothingEnabled = false;
-    g.drawImage(panels, 0, 0, 256, 256);
-    g.strokeStyle = 'rgba(255,255,255,0.18)';
-    g.lineWidth = 2;
-    for (let i = 0; i <= 256; i += 64) {
-      g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 256); g.stroke();
-      g.beginPath(); g.moveTo(0, i); g.lineTo(256, i); g.stroke();
+  for (let ty = 0; ty < P; ty++) {
+    for (let tx = 0; tx < P; tx++) {
+      const x = tx * CELL, y = ty * CELL;
+      const inset = 3;                       // the recessed seam
+      const w = CELL - inset * 2;
+      // per-plate value variation — a floor of identical plates reads fake
+      const v = 0.019 + Math.random() * 0.026; // near-black: the SEAMS carry the light, not the plates
+      g.fillStyle = `rgb(${(v * 255) | 0},${(v * 255) | 0},${((v + 0.004) * 255) | 0})`;
+      g.fillRect(x + inset, y + inset, w, w);
+
+      // bevel: light catches the top/left lip, the bottom/right falls away
+      g.strokeStyle = 'rgba(255,255,255,0.085)';
+      g.lineWidth = 2;
+      g.beginPath();
+      g.moveTo(x + inset, y + inset + w); g.lineTo(x + inset, y + inset); g.lineTo(x + inset + w, y + inset);
+      g.stroke();
+      g.strokeStyle = 'rgba(0,0,0,0.55)';
+      g.beginPath();
+      g.moveTo(x + inset + w, y + inset); g.lineTo(x + inset + w, y + inset + w); g.lineTo(x + inset, y + inset + w);
+      g.stroke();
+
+      // corner bolts — the detail that says "made", cheap at this scale
+      g.fillStyle = 'rgba(255,255,255,0.11)';
+      for (const [bx, by] of [[10, 10], [CELL - 12, 10], [10, CELL - 12], [CELL - 12, CELL - 12]]) {
+        g.fillRect(x + bx, y + by, 2, 2);
+      }
+      // a vent slot on some plates, so the eye finds variety while running
+      if (Math.random() < 0.22) {
+        g.fillStyle = 'rgba(255,255,255,0.045)';
+        const sw = w * 0.45;
+        for (let i = 0; i < 3; i++) g.fillRect(x + inset + w * 0.28, y + inset + w * 0.3 + i * 7, sw, 2);
+      }
     }
-    tex.needsUpdate = true;
-  };
-  panels.src = 'assets/env/floor.png';
+  }
+
+  // the seam grid: THIS is the part uGlow lifts into bloom — light coming up
+  // between the plates rather than lines painted on top of them
+  g.strokeStyle = 'rgba(255,255,255,0.40)';
+  g.lineWidth = 3;
+  for (let i = 0; i <= S; i += CELL) {
+    g.beginPath(); g.moveTo(i, 0); g.lineTo(i, S); g.stroke();
+    g.beginPath(); g.moveTo(0, i); g.lineTo(S, i); g.stroke();
+  }
+  // a hotter core inside the seam so the glow has a falloff, not a flat band
+  g.strokeStyle = 'rgba(255,255,255,0.75)';
+  g.lineWidth = 1;
+  for (let i = 0; i <= S; i += CELL) {
+    g.beginPath(); g.moveTo(i, 0); g.lineTo(i, S); g.stroke();
+    g.beginPath(); g.moveTo(0, i); g.lineTo(S, i); g.stroke();
+  }
+
+  const tex = new THREE.CanvasTexture(c);
+  floorCanvas = c; // the gate samples this to assert 'plates, not wireframe'
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 4;   // the floor is seen at a grazing angle almost always
+  tex.repeat.set(14, 14);
   return tex;
 }
 
@@ -707,6 +758,10 @@ let nextLevAt = 0;
 let nextThornAt = 0;
 let nextRevenantAt = 110; // the dead only rise once there are dead
 let nextPulseAt = 0; // budgeted pressure pulses (toko-drop's wave system, adapted)
+// debug/test only: stop new spawns while leaving everything else running, so
+// a measurement (or a hand-tuning session) isn't fighting the schedule
+let directorFrozen = false;
+let invulnerable = false;
 let pulseN = 0;
 let serpentsSpawned = 0;
 let musicI = 0; // smoothed music intensity, reused by the reactive floor + sky
@@ -1080,12 +1135,12 @@ function resetRun() {
   // onboarding pacing lives in PULSE_POOL's unlock gates (watcher 25s …
   // dread 120s) — pulses can only draw a type once its gate opens, so debuts
   // still land one at a time. Totems/thorns/Leviathan stay on their own clocks.
-  nextTotemAt = 0;
-  nextThornAt = 60;
-  nextLevAt = 150;
-  nextRevenantAt = 110;
+  nextTotemAt = T.director.totem.first;
+  nextThornAt = T.director.thorn.first;
+  nextLevAt = T.director.leviathan.first;
+  nextRevenantAt = T.director.revenant.first;
   reapCool = 0;
-  nextPulseAt = 20;
+  nextPulseAt = T.director.pulse.first;
   pulseN = 0;
   serpentsSpawned = 0;
   musicI = 0;
@@ -1119,7 +1174,6 @@ function startGame() {
   input.consumeDashFlick();
   state = 'playing';
   paused = false;
-  environment.setCombat(true);   // monuments are set dressing: menu/death only
   elMsg.style.display = 'none';
   elCross.style.display = input.touchMode ? 'none' : 'block';
   elPause.style.display = 'block';
@@ -1129,7 +1183,6 @@ function startGame() {
 
 function die(timedOut = false) {
   state = 'dead';
-  environment.setCombat(false);  // the stones come back to watch you fall
   deathAt = performance.now();
   slowmo = 1;
   trauma = 1;
@@ -1549,18 +1602,9 @@ function updateFlyby(dt) {
 // 4th a SPIKE (1.5× budget, favours heavies), every 3rd a SWARM (bodies only,
 // tight burst), and a normal pulse right after any intense one runs at half
 // budget (the breather). Unlock gates preserve the onboarding debut order.
-const PULSE_POOL = [
-  // [key, unlockTime, cost]
-  ['skulls', 20, 2], // pack of 3 direct chasers — the swarm fodder
-  ['watcher', 25, 3],
-  ['husk', 35, 5],  // armored grind — teaches 'chew the shell' while it's calm
-  ['brute', 45, 3],
-  ['spider', 75, 4],
-  ['blinker', 90, 3],
-  ['serpent', 100, 8],
-  ['dread', 120, 6],
-];
-const PULSE_CAPS = { watcher: 3, blinker: 3, spider: 2, dread: 2, husk: 2 };
+// the whole curve lives in tuning.js — see the essay on T.director there
+const PULSE_POOL = T.director.pool;
+const PULSE_CAPS = T.director.caps;
 const SWARM_KEYS = new Set(['skulls', 'blinker']);
 const SPIKE_KEYS = new Set(['brute', 'dread', 'spider', 'husk']);
 
@@ -1576,9 +1620,14 @@ function pulseBudget(n, kind) {
   // budget grows with PULSE INDEX, not wall time — the pulse count is the
   // director's own clock, and it keeps daily pick sequences comparable
   // across players (a time-based budget made the same pulse redraw
-  // differently depending on when it fired). Knee at pulse 11 ≈ the old
-  // 2.5-minute knee at average cadence.
-  const base = 3 + Math.min(n, 11) * 0.75 + Math.max(0, n - 11) * 0.3;
+  // differently depending on when it fired). Two knees since v4.36: the
+  // first ends minute one's debut parade, the second ends minute two's
+  // squeeze — see T.director in tuning.js.
+  const B = T.director.budget;
+  const base = B.base
+    + Math.min(n, B.kneeA) * B.rateA
+    + Math.max(0, Math.min(n, B.kneeB) - B.kneeA) * B.rateB
+    + Math.max(0, n - B.kneeB) * B.rateC;
   const breather = kind === 'normal' && pulseKind(n - 1) !== 'normal';
   const mod = kind === 'heavy' ? 1.6 : kind === 'spike' ? 1.5
     : kind === 'swarm' ? 1.3 : breather ? 0.5 : 1;
@@ -1688,8 +1737,12 @@ function runPulse(n) {
   }
   // heavy pulses open with a guaranteed centrepiece
   if (kind === 'heavy') {
-    if (gameTime >= 100 && serpents.length < SERPENT_CAP) { spawnPick('serpent', 0, draw); budget -= 8; picks.push('serpent'); }
-    else if (gameTime >= 120 && enemyCount('dread') < PULSE_CAPS.dread) { spawnPick('dread', 0, draw); budget -= 6; picks.push('dread'); }
+    // gates read from the pool, never copies of it — the old hardcoded 100/120
+    // silently became wrong the moment the unlock times were retuned
+    const centre = ['serpent', 'dread']
+      .map(k => PULSE_POOL.find(e => e[0] === k))
+      .find(e => e && gameTime >= e[1] && pulseEligible(e));
+    if (centre) { spawnPick(centre[0], 0, draw); budget -= centre[2]; picks.push(centre[0]); }
   }
   for (let guard = 0; guard < 20 && budget > 0.5; guard++) {
     let pool = PULSE_POOL.filter(pulseEligible);
@@ -1713,14 +1766,15 @@ function runPulse(n) {
 }
 
 function director(dt) {
-  updatePending(dt);
+  updatePending(dt);   // telegraphs always resolve — freezing must not strand one
+  if (directorFrozen) return;
   if (gameTime >= nextTotemAt && totemCount() < TOTEM_CAP) {
     const interval = Math.max(1.7, 3.4 - gameTime * 0.02);
     const at = ringSpot(12).clone();
     audio.spawn();
     telegraph(at, [2.0, 0.15, 0.15], 0.7, () => enemies.push(new Totem(scene, at, interval)));
-    // cadence tightens from every 24s down to every 16s as the run goes on
-    nextTotemAt = gameTime + Math.max(16, 24 - gameTime * 0.03);
+    const TT = T.director.totem;
+    nextTotemAt = gameTime + Math.max(TT.floor, TT.base - gameTime * TT.slope);
   }
   // THE REVENANT rises out of the player's own bone-yard — it needs a dense
   // patch of corpses, devours it, and claws up on the spot. No carnage, no
@@ -1745,8 +1799,12 @@ function director(dt) {
   if (gameTime >= nextPulseAt) {
     pulseN++;
     runPulse(pulseN);
-    // pulse cadence tightens from ~14s toward a 9s floor over the run
-    nextPulseAt = gameTime + Math.max(9, 14 - gameTime * 0.01);
+    // pulse cadence tightens over the run (T.director.pulse). It is FAST
+    // from the first pulse on purpose: minute one needs enough pulses to
+    // walk the whole debut list, and the low early budget is what keeps
+    // that a parade rather than a pile-up.
+    const P = T.director.pulse;
+    nextPulseAt = gameTime + Math.max(P.floor, P.base - gameTime * P.slope);
   }
   if (!flybyDone && gameTime >= 10) {
     flybyDone = true;
@@ -1755,7 +1813,8 @@ function director(dt) {
   if (gameTime >= nextThornAt) {
     announce('thorn', 'THORNS BENEATH');
     spawnThorn(player.feet.x, player.feet.z);
-    nextThornAt = gameTime + Math.max(6, 12 - gameTime * 0.025);
+    const TH = T.director.thorn;
+    nextThornAt = gameTime + Math.max(TH.floor, TH.base - gameTime * TH.slope);
   }
   if (gameTime >= nextLevAt) {
     if (!enemies.some(e => e.type === 'leviathan')) {
@@ -1766,7 +1825,7 @@ function director(dt) {
       telegraph(new THREE.Vector3(0, 0, 0), [2.6, 0.2, 0.2], 1.2,
         () => enemies.push(new Leviathan(scene, 5)));
     }
-    nextLevAt = gameTime + 120;
+    nextLevAt = gameTime + T.director.leviathan.every;
   }
   for (const e of enemies) {
     if ((e.type === 'totem' || e.type === 'leviathan') && e.emit) {
@@ -2134,6 +2193,10 @@ function updateCombat(dt) {
 
 /** One enemy/projectile contact. Returns true when the run ended. */
 function playerStruck(sx, sz, killerType, killer = null) {
+  // debug/test only: hold a run open for measurement. Never reachable from
+  // the UI — the smoke gate needs a live game to sample systems in, and
+  // since v4.36 a player who never moves does not survive long enough.
+  if (invulnerable) return false;
   lastKillerPos.set(sx, 1.2, sz);
   lastKillerRef = killer;
   if (mode !== 'hyper') { lastKiller = killerType; die(); return true; }
@@ -2370,6 +2433,11 @@ function updateFeel(dt) {
   const beat = 1 - ((performance.now() / 1000) * (138 / 60)) % 1;
   floorMat.uniforms.uPulse.value = musicI * (0.25 + 0.75 * beat * beat);
   floorMat.uniforms.uRed.value = opts.contrast ? 0 : t2 * 0.85;
+  // imported assets live under the same signals as the world: the grid's
+  // beat glow lifts the uplight, trauma flushes the ember ring
+  hemi.intensity = 2.0 + floorMat.uniforms.uPulse.value * 0.7;
+  const emberK = EMBER_BASE * (1 + t2 * 2.2 + (levAlive ? 0.5 : 0));
+  for (const l of emberLights) l.intensity = emberK;
   // dash speedlines ride the same gates as the smear (motion + perf tier)
   speedPass.uniforms.uTime.value += dt;
   speedPass.uniforms.uAmount.value = player.dashK;
@@ -2481,7 +2549,6 @@ animate();
 // tiny debug handle (console tinkering + automated smoke tests)
 window.__hd = {
   enemies, player, debris, litter, daggers, gems, serpents, orbs, thorns, audio,
-  environment, THREE, camera, scene,
   debug: {
     addGems(n) { onGemsCollected(n); },
     addStyle(n) { addStyle(n); },
@@ -2496,7 +2563,19 @@ window.__hd = {
     getReap() { return { cool: +reapCool.toFixed(2), bones: litter.count }; },
     getTuning() { return T; },
     getGun() { return { shotCd: +shotCd.toFixed(2), heldT: +fireHeldT.toFixed(2) }; },
-    getAssets() { return { registered: Object.keys(MESH_ASSETS), ready: skinsReady, lights: lightRig.children.length }; },
+    getFloorCanvas() { return floorCanvas; },
+    freezeDirector(on = true) { directorFrozen = !!on; return directorFrozen; },
+    setInvulnerable(on = true) { invulnerable = !!on; return invulnerable; },
+    getAssets() {
+      return {
+        registered: Object.keys(MESH_ASSETS), ready: skinsReady,
+        lights: lightRig.children.length,
+        arena: Object.keys(ARENA_ASSETS),
+        panels: floorPanels ? floorPanels.userData.tiles : 0,
+        uplit: hemi.groundColor.getHex() > hemi.color.getHex(), // lit from the floor
+        ember: +emberLights[0].intensity.toFixed(2),
+      };
+    },
     getLook() {
       const e = enemies.find(x => x.alive && x.sprite);
       return {
@@ -2521,7 +2600,7 @@ window.__hd = {
       const r = new Revenant(scene, p); enemies.push(r); return r;
     },
     spawnHusk() { const p = ringSpot(9).clone(); p.y = 1.35; const h = new Husk(scene, p); enemies.push(h); return h; },
-    spawnDread() { const p = ringSpot(8).clone(); p.y = 1.5; enemies.push(new DreadSkull(scene, p)); },
+    spawnDread() { const p = ringSpot(8).clone(); p.y = 1.5; const d = new DreadSkull(scene, p); enemies.push(d); return d; },
     spawnGhostSerpent() { spawnSerpent(true); },
     spawnLeviathan() { enemies.push(new Leviathan(scene, 5)); },
     setLife(n) { lifeT = n; },

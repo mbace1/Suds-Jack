@@ -123,4 +123,52 @@ export const TUNING = {
     cap: 60,
     hitCost: 10,       // s lost per enemy touch
   },
+
+  /**
+   * THE DIFFICULTY CURVE (v4.36 balance pass, owner's brief: "more varied
+   * enemies in the first minute, harder for the 2nd").
+   *
+   * The shape is deliberate and the two halves do different jobs:
+   *
+   *  MINUTE ONE is a PARADE — pulses come fast (~9.5 s) so a new threat
+   *  debuts almost every pulse (the debut guarantee forces the earliest
+   *  un-met type), but the budget stays LOW so each one arrives nearly
+   *  alone. You meet seven distinct things and get to read each of them.
+   *
+   *  MINUTE TWO is the SQUEEZE — the debut parade is over, so the same
+   *  cadence now spends a budget that climbs more than twice as fast
+   *  (1.25/pulse vs 0.5), and the recurring clocks tighten. Same enemies,
+   *  suddenly in numbers: the difficulty comes from volume, not novelty.
+   *
+   * Every number the director reads lives here, so re-balancing is one file.
+   */
+  director: {
+    // [key, unlockTime, cost] — ORDER MATTERS: the debut guarantee walks
+    // this list, so it doubles as the order the player meets the roster in.
+    pool: [
+      ['skulls', 8, 2],    // the swarm fodder — first contact
+      ['watcher', 16, 3],  // …teaches "something shoots at you"
+      ['husk', 26, 5],     // …teaches "chew the armor" while it is calm
+      ['brute', 34, 3],    // …teaches "some things don't flinch"
+      ['spider', 44, 4],   // …teaches "your gems can be stolen"
+      ['blinker', 52, 3],  // …teaches "you cannot simply kite"
+      ['serpent', 72, 8],  // minute two opens with the big one
+      ['dread', 92, 6],
+    ],
+    caps: { watcher: 3, blinker: 3, spider: 2, dread: 2, husk: 2 },
+    // pulse cadence: interval = max(floor, base − t·slope)
+    pulse: { first: 10, base: 10, slope: 0.012, floor: 7.5 },
+    // budget = base + min(n,kneeA)·rateA + (min(n,kneeB)−kneeA)·rateB
+    //          + (n−kneeB)·rateC   — kneeA ends the parade, kneeB the squeeze
+    // rateA is deliberately tiny: during the parade the budget barely covers
+    // the forced debut, so each new threat arrives with almost no support.
+    // Per-pulse pressure in minute one actually DROPS vs the old curve
+    // (2.8–5.1 vs 3.8–9.0) even though six things debut instead of four.
+    budget: { base: 2.6, kneeA: 6, rateA: 0.2, kneeB: 15, rateB: 1.9, rateC: 0.4 },
+    // recurring clocks (own timers, outside the pulse system)
+    totem: { first: 0, base: 24, slope: 0.03, floor: 15 },
+    thorn: { first: 40, base: 11, slope: 0.03, floor: 5 }, // debuts in minute one now
+    leviathan: { first: 150, every: 120 },
+    revenant: { first: 110 },
+  },
 };

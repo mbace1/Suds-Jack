@@ -8,63 +8,56 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
-## v25 — 2026-08-12
+## v24 — 2026-08-13
+**The arena — an uplit rig and a floor made of plates**
+- The asset light rig was a generic studio setup (white key from above); it
+  is now motivated by the world, which has exactly two light sources: the
+  glowing grid floor and the ember horizon. The hemisphere is INVERTED —
+  ground term = the white grid, sky term = the void — so imported meshes are
+  lit from the floor up, which is why a Meshy skull now reads as standing in
+  the arena instead of pasted into it. Three crimson horizon lights ring the
+  player, and both the uplight and the ember answer the same uPulse/trauma
+  signals the floor does, so assets flush on damage and beat with the music.
+- The floor is PANELS, not a wireframe. The old texture was two grids of
+  hairlines over black — placeholder scaffolding the moment anything lit
+  stood on it. Now each plate is a physical object: recessed seams, a bevel
+  that catches light on two sides and falls away on the other two, corner
+  bolts, vent slots on some plates, per-plate value variation, at 512px with
+  anisotropy (the floor is almost always seen at a grazing angle). The
+  plates stay near-black; it is the SEAM that uGlow lifts into bloom, so the
+  light now reads as coming up through the floor rather than drawn on it.
+- New `ARENA_ASSETS.floorPanel`: register a Meshy floor tile and it is
+  merged to one geometry, instanced across the disc, clipped to the arena
+  radius (the rim must still end cleanly — no barrier visual) and randomly
+  quarter-turned so a directional tile doesn't stripe the floor. It inherits
+  the same light rig as the enemies, which is the whole point.
+- Debug: `getAssets()` gains arena/panels/uplit/ember; `getFloorCanvas()`.
 
-**The roster wears its skins.** Every enemy slot with a judged concept is now
-registered in MESH_ASSETS — fourteen meshes from the two-round concept sheet:
-skull, dread skull, watcher, brute, serpent head + segment, spider, totem,
-revenant, husk, blinker, egg sac, thorn and the Leviathan. Heights are each
-slot's measured string-art height (layers × voxelSize) so hitboxes and
-silhouettes hold; lattice pitch matches each slot's existing grain so chips
-and death bursts read the same. 3.55 MB total at 512px webp (1024 for the
-boss), runtime-cached on first play per the v22 design — nothing precached,
-nothing blocking boot, and every entry fail-soft to string-art.
-
-Deliberately NOT skinned: the crowned/splitter/tiny skull variants and the
-ghost serpent — the crowned, gilded and pale reads ARE those variants'
-identity, and the base-skull skin next to them keeps the tell readable.
-
-The two risky sheets survived meshing: the spider's crab legs came through
-thick and connected, and the revenant's skeletal fingers fused into readable
-claws. The husk's open neck closed into a rimmed collar.
-
-## v24 — 2026-08-12
-
-**The stones learn their place.** The owner's eye test on v23 said it plainly:
-this is a minimalist arena shooter, the enemies are the focus, and monuments
-in the fight's sightlines read as clutter at odd sizes. So the monuments and
-the obelisk ring become SET DRESSING — they stand on the menu and the death
-screen, where atmosphere is free, and step off the stage the moment a run
-starts (`environment.setCombat(true)` in startGame, false again in die).
-Pieces that finish loading mid-run arrive already hidden.
-
-What stays during play is exactly what the owner asked for: the floor — the
-stone paneling bake and the dais, a carved shadow at ankle height. The
-monuments were also pulled farther out and down (gate 20u→15u at r 56, hand
-15u→11u at r 46, obelisks 6–9u) so even on the menu they sit like distant
-ruins instead of nearby props.
-
-## v23 — 2026-08-12
-
-**The void gets its monuments back.** The v22 mesh-asset rebase orphaned
-`environment.js` — seven meshed pieces (broken hand, basalt gate, toppled
-colossus head, inverted mountain, a six-stand obelisk ring, the sunken dais)
-were live in `assets/env/` with nothing importing the module that loads them.
-Re-wired: one import, one constructor after the light rig, `environment` on
-`window.__hd`, and the module named in the worker precache.
-
-They stay MeshBasic on purpose, so the v22 asset light rig (which lights only
-Lambert imports) never touches them — a monument is a silhouette dissolving
-into the fog, not scenery. Everything remains fail-soft: a missing GLB just
-leaves the void emptier.
-
-The floor keeps v22's clean grid and gains stone paneling beneath it: a
-pre-graded 128² bake (assets/env/floor.png, 19 KB, oxblood seams) drawn into
-the same canvas with a lighter pass of the grid lines back on top, so the
-speed-read survives. If the fetch fails the plain grid is the floor.
-
-Also restores the site's `../hub/shell.js?v=30` (this line's index carried a
-stale v=15) and bumps the release token 52 → 53.
+## v23 — 2026-08-13
+**The balance pass — minute one is a parade, minute two is the squeeze**
+- Owner's brief: more varied enemies in the first minute, harder in the
+  second. The whole director schedule moves into `tuning.js` (`T.director`)
+  so the curve is one file: unlock list, pulse cadence, budget knees, and
+  the totem/thorn/leviathan clocks.
+- MINUTE ONE is now a parade: the first pulse lands at t=10 (was 20) and
+  cadence is ~9.5 s, so six types debut before the minute is out (skulls,
+  watcher, husk, brute, spider, blinker) plus totems and thorns — eight
+  distinct threats where the old curve showed four. Crucially the early
+  budget rate is tiny (0.2/pulse), so each debut arrives nearly alone:
+  per-pulse pressure in minute one actually DROPS (2.8–5.1 vs 3.8–9.0).
+  Variety up, per-encounter difficulty down.
+- MINUTE TWO is the squeeze: the parade is over, so the same cadence spends
+  a budget climbing 1.9/pulse — total minute-two pressure is up ~61%. Same
+  enemies, suddenly in numbers.
+- Fixed while in there: the heavy-pulse centrepiece gates hardcoded t=100
+  and t=120, the OLD serpent/dread unlock times, so they silently disagreed
+  with the pool the moment it was retuned. They read from the pool now.
+- New debug hooks the gate needed and hand-tuning wants: `freezeDirector()`
+  (stop spawns, keep everything else live) and `setInvulnerable()` — since
+  a player who never moves no longer survives the length of the suite.
+- Gate at 49 checks; the curve's SHAPE is asserted (minute-one variety and
+  low per-pulse pressure, minute-two ≥2.5x), so a future rebalance can move
+  numbers but not silently flatten it.
 
 ## v22 — 2026-08-07
 **Mesh asset integration — the Meshy pipeline's landing pad**

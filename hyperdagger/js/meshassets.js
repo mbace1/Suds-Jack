@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { VoxelSprite, bakeShading, MODELS } from './voxel.js?v=55';
+import { VoxelSprite, bakeShading, MODELS } from './voxel.js?v=53';
 
 // registry keys are MODELS keys; enemies hand us the model OBJECT, so keep
 // the reverse map here where both sides are visible
@@ -30,28 +30,29 @@ const SLOT_OF = new Map(Object.entries(MODELS).map(([k, v]) => [v, k]));
 // in ART_PIPELINE.md). voxelSize ≈ the slot's current lattice pitch.
 // emissive (optional) re-lights near-black-red texels? No — keep Meshy
 // textures flat; `emissive: 0xrrggbb` adds a uniform glow if an asset needs it.
-// v25: the full first roster — every slot with a judged concept, meshed
-// through the Nano Banana → Meshy pipeline (ART_PIPELINE.md, both rounds).
-// Heights are each slot's measured string-art height (layers × voxelSize),
-// so hitboxes and silhouettes hold; voxelSize matches the slot's existing
-// lattice pitch so chips and bursts keep their grain. The skull variants
-// (skull2/Big/Tiny) and the ghost serpent stay string-art on purpose — the
-// crowned/gilded/pale reads ARE their identity.
 export const MESH_ASSETS = {
-  skull:       { url: 'assets/skull.glb?v=1',       height: 1.40, voxelSize: 0.14, yaw: 0 },
-  skullDread:  { url: 'assets/skulldread.glb?v=1',  height: 2.75, voxelSize: 0.25, yaw: 0 },
-  watcher:     { url: 'assets/watcher.glb?v=1',     height: 0.76, voxelSize: 0.19, yaw: 0 },
-  brute:       { url: 'assets/brute.glb?v=1',       height: 3.48, voxelSize: 0.29, yaw: 0 },
-  serpentHead: { url: 'assets/serpenthead.glb?v=1', height: 1.44, voxelSize: 0.18, yaw: 0 },
-  serpent:     { url: 'assets/serpent.glb?v=1',     height: 1.08, voxelSize: 0.18, yaw: 0 },
-  spider:      { url: 'assets/spider.glb?v=1',      height: 0.72, voxelSize: 0.24, yaw: 0 },
-  totem:       { url: 'assets/totem.glb?v=1',       height: 3.40, voxelSize: 0.34, yaw: 0 },
-  revenant:    { url: 'assets/revenant.glb?v=1',    height: 2.10, voxelSize: 0.30, yaw: 0 },
-  husk:        { url: 'assets/husk.glb?v=1',        height: 2.52, voxelSize: 0.42, yaw: 0 },
-  blinker:     { url: 'assets/blinker.glb?v=1',     height: 1.30, voxelSize: 0.26, yaw: 0 },
-  egg:         { url: 'assets/egg.glb?v=1',         height: 0.60, voxelSize: 0.20, yaw: 0 },
-  thorn:       { url: 'assets/thorn.glb?v=1',       height: 1.80, voxelSize: 0.30, yaw: 0 },
-  leviathan:   { url: 'assets/leviathan.glb?v=1',   height: 6.30, voxelSize: 0.35, yaw: 0 },
+  // skull:     { url: 'assets/skull.glb?v=1',     height: 1.40, voxelSize: 0.14, yaw: 0 },
+  // watcher:   { url: 'assets/watcher.glb?v=1',   height: 0.76, voxelSize: 0.19, yaw: 0 },
+  // leviathan: { url: 'assets/leviathan.glb?v=1', height: 6.30, voxelSize: 0.35, yaw: 0 },
+};
+
+/**
+ * ARENA assets — environment, not enemies, so they never get voxelized and
+ * never take damage. `floorPanel` is the one the owner asked for: a Meshy
+ * floor tile, instanced across the disc on a square grid and clipped to the
+ * arena radius. It sits just above the procedural floor so the glowing seams
+ * still read between the plates, and it inherits the same asset light rig,
+ * which is the whole point — a Meshy panel underfoot and a Meshy skull above
+ * it are lit by the same two sources.
+ *
+ *   floorPanel: { url: 'assets/panel.glb?v=1', size: 4, yaw: 0, lift: 0.02 }
+ *
+ * `size` is the tile's world footprint in units (the disc is ARENA_R×2
+ * across, so size 4 on a 44-unit disc is ~95 tiles — keep the GLB cheap,
+ * ≤2k tris, it is instanced).
+ */
+export const ARENA_ASSETS = {
+  // floorPanel: { url: 'assets/panel.glb?v=1', size: 4, yaw: 0, lift: 0.02 },
 };
 
 /** Fraction of the lattice that must survive for the skin to stay on. */
@@ -81,6 +82,87 @@ export async function preloadSkins() {
     }
   }));
   skinsReady = true;
+}
+
+/**
+ * Build the instanced floor-panel field, or null when no panel is
+ * registered (the procedural floor is always there underneath either way).
+ * Returns an Object3D the caller adds to the scene.
+ */
+export async function buildFloorPanels(arenaR) {
+  const cfg = ARENA_ASSETS.floorPanel;
+  if (!cfg) return null;
+  let root;
+  try {
+    const { GLTFLoader } = await import('../vendor/jsm/loaders/GLTFLoader.js');
+    root = (await new GLTFLoader().loadAsync(cfg.url)).scene;
+  } catch (e) {
+    console.warn(`floor panel failed (${e.message ?? e}) — procedural floor only`);
+    return null;
+  }
+  // normalize the tile to `size` across, sitting ON the floor plane
+  root.rotation.y = cfg.yaw ?? 0;
+  root.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(root);
+  const span = Math.max(box.max.x - box.min.x, box.max.z - box.min.z, 1e-6);
+  root.scale.multiplyScalar((cfg.size ?? 4) / span);
+  root.updateMatrixWorld(true);
+
+  // merge every mesh in the tile into ONE instanced draw — a 95-tile floor
+  // must not be 95 draw calls (or 285, if the export has three parts)
+  const geos = [];
+  let mat = null;
+  root.traverse(o => {
+    if (!o.isMesh) return;
+    const g = o.geometry.clone();
+    g.applyMatrix4(o.matrixWorld);
+    // keep only position/uv/normal so the merge can't fail on mismatched attrs
+    for (const name of Object.keys(g.attributes)) {
+      if (!['position', 'uv', 'normal'].includes(name)) g.deleteAttribute(name);
+    }
+    geos.push(g);
+    mat ??= o.material;
+  });
+  if (!geos.length) return null;
+  const { mergeGeometries } = await import('../vendor/jsm/utils/BufferGeometryUtils.js');
+  const merged = geos.length === 1 ? geos[0] : mergeGeometries(geos, false);
+  if (!merged) { console.warn('floor panel: geometry merge failed — procedural floor only'); return null; }
+  merged.computeBoundingBox();
+  // drop the tile so its top face sits at y=0 + lift
+  const mb = merged.boundingBox;
+  merged.translate(0, -mb.max.y + (cfg.lift ?? 0.02), 0);
+
+  const lit = new THREE.MeshLambertMaterial({
+    map: mat?.map ?? null,
+    color: mat?.color ? mat.color.clone() : new THREE.Color(0xffffff),
+  });
+  const size = cfg.size ?? 4;
+  const n = Math.ceil((arenaR * 2) / size) + 1;
+  const spots = [];
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      const x = (i - (n - 1) / 2) * size;
+      const z = (j - (n - 1) / 2) * size;
+      // clip to the disc — a square field would spill past the rim, and the
+      // rim ending cleanly is load-bearing (no barrier visual)
+      if (Math.hypot(x, z) > arenaR - size * 0.35) continue;
+      spots.push([x, z]);
+    }
+  }
+  const mesh = new THREE.InstancedMesh(merged, lit, spots.length);
+  const m = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+  const one = new THREE.Vector3(1, 1, 1);
+  spots.forEach(([x, z], i) => {
+    // quarter-turn variety so a directional tile doesn't stripe the floor
+    q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), (Math.floor(Math.random() * 4) * Math.PI) / 2);
+    m.compose(new THREE.Vector3(x, 0, z), q, one);
+    mesh.setMatrixAt(i, m);
+  });
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.frustumCulled = false;
+  mesh.userData.tiles = spots.length;
+  return mesh;
 }
 
 /** Normalize + re-material + voxelize one loaded scene. */
