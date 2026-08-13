@@ -232,7 +232,7 @@ s.listen(0, '127.0.0.1', async () => {
   ok('the level has a midway checkpoint, and it starts unlit', cp && !cp.lit, JSON.stringify(cp));
   await p.evaluate((c) => window.__eeri.debug.setPos(c.x - 1, 4.2), cp);
   await p.evaluate(() => window.__eeri.debug.press('right'));
-  const litUp = await p.waitForFunction(() => window.__eeri.debug.checkpoint().lit,
+  const litUp = await p.waitForFunction(() => window.__eeri.debug.checkpoint()?.lit,
     null, { timeout: 8000 }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('running past it lights it', litUp);
@@ -285,10 +285,10 @@ s.listen(0, '127.0.0.1', async () => {
   // runs the clock several times slower than the wall clock.
   await p.evaluate(() => window.__eeri.debug.setPos(4, 4.2));
   const rested = await p.waitForFunction(
-    () => window.__eeri.debug.hazard().state === 'rest', null, { timeout: 20000 })
+    () => window.__eeri.debug.hazard()?.state === 'rest', null, { timeout: 20000 })
     .then(() => true).catch(() => false);
   ok('the wrecking ball hangs still when nobody is near', rested,
-    'state=' + await p.evaluate(() => window.__eeri.debug.hazard().state));
+    'state=' + await p.evaluate(() => window.__eeri.debug.hazard()?.state));
 
 
 
@@ -299,7 +299,7 @@ s.listen(0, '127.0.0.1', async () => {
   await p.evaluate(() => {
     window.__ballLog = [];
     const tick = () => {
-      const st = window.__eeri.debug.hazard().state;
+      const st = window.__eeri.debug.hazard()?.state;
       if (window.__ballLog[window.__ballLog.length - 1] !== st) window.__ballLog.push(st);
       requestAnimationFrame(tick);
     };
@@ -356,7 +356,7 @@ s.listen(0, '127.0.0.1', async () => {
   await p.reload({ waitUntil: 'load' });
   await p.waitForFunction(() => !!window.__eeri && window.__eeri.player.grounded, null, { timeout: 8000 });
   ok('the machine starts UNMANNED', await p.evaluate(() => !window.__eeri.debug.tamed()));
-  ok('and the bank blocks the way out', await p.evaluate(() => window.__eeri.debug.bank().remaining) === 3);
+  ok('and the bank blocks the way out', await p.evaluate(() => window.__eeri.debug.bank()?.remaining) === 3);
   ok('the exit is not open at the start', await p.evaluate(() => !window.__eeri.debug.cleared()));
   // ---- the flag: it builds itself, and it goes off by being run past ----
   // Checked here, on a fresh level, because a flag never un-builds: asking
@@ -375,7 +375,7 @@ s.listen(0, '127.0.0.1', async () => {
   ok('and arriving finishes it — all three phases', built,
     'phase=' + await p.evaluate(() => window.__eeri.debug.flag()?.phase));
   ok('…but it is not raised until it is passed',
-    await p.evaluate(() => !window.__eeri.debug.flag().raised));
+    await p.evaluate(() => !window.__eeri.debug.flag()?.raised));
 
 
   // the kid cannot pass the bank on foot — three tiles is above his jump
@@ -413,10 +413,10 @@ s.listen(0, '127.0.0.1', async () => {
 
   // the bucket digs the bank down — the machine changes the level
   await p.evaluate(() => { window.__eeri.exc.x = 83; window.__eeri.debug.press('down'); });
-  const dug = await p.waitForFunction(() => window.__eeri.debug.bank().cleared, null, { timeout: 45000 }).then(() => true).catch(() => false);
+  const dug = await p.waitForFunction(() => window.__eeri.debug.bank()?.cleared, null, { timeout: 45000 }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('down'));
   ok('the bucket digs the bank away', dug,
-    'remaining=' + await p.evaluate(() => window.__eeri.debug.bank().remaining));
+    'remaining=' + await p.evaluate(() => window.__eeri.debug.bank()?.remaining));
   ok('and the map really changed, not just the picture',
     await p.evaluate(() => !window.__eeri.level.solidCell(86, 4)));
 
@@ -519,7 +519,7 @@ s.listen(0, '127.0.0.1', async () => {
   ok('the room parks a CRANE, not another excavator',
     await p.evaluate(() => window.__eeri.debug.machine()?.kind) === 'crane');
   ok('and it is unmanned like every machine on arrival',
-    await p.evaluate(() => !window.__eeri.debug.machine().tamed));
+    await p.evaluate(() => !window.__eeri.debug.machine()?.tamed));
   ok('the brick wall is standing', await p.evaluate(() => window.__eeri.debug.wall()?.hits) === 0);
   ok('the wall blocks the way out on the map',
     await p.evaluate(() => window.__eeri.level.solidCell(82, 4)));
@@ -554,11 +554,11 @@ s.listen(0, '127.0.0.1', async () => {
   await p.evaluate(() => { window.__eeri.exc.x = 77; window.__eeri.exc.vx = 0; });
   await p.waitForTimeout(300);
   await p.evaluate(() => window.__eeri.debug.press('down'));
-  const cracked = await p.waitForFunction(() => window.__eeri.debug.wall().hits >= 1, null, { timeout: 30000 }).then(() => true).catch(() => false);
+  const cracked = await p.waitForFunction(() => window.__eeri.debug.wall()?.hits >= 1, null, { timeout: 30000 }).then(() => true).catch(() => false);
   ok('the first swing cracks the wall', cracked);
   ok('…and a cracked wall is still a wall',
-    await p.evaluate(() => window.__eeri.debug.wall().cracked && !window.__eeri.debug.wall().cleared));
-  const smashed = await p.waitForFunction(() => window.__eeri.debug.wall().cleared, null, { timeout: 30000 }).then(() => true).catch(() => false);
+    await p.evaluate(() => window.__eeri.debug.wall()?.cracked && !window.__eeri.debug.wall()?.cleared));
+  const smashed = await p.waitForFunction(() => window.__eeri.debug.wall()?.cleared, null, { timeout: 30000 }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('down'));
   ok('the second brings it down', smashed);
   ok('and the map really changed — the brick is gone',
