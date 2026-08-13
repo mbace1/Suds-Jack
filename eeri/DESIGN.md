@@ -27,13 +27,20 @@ reference: the mine cart and Rambi are *sequences* you board for a
 thrilling stretch and step off again. They are not the game. Running,
 jumping and reading hazards is the game.
 
-## 0.1 Blocking: the tree is forked
+## 0.1 The fork is closed (2026-08-13)
 
-Two branches both call themselves v6 and neither contains the other —
-`claude/eeri-platformer-instance-2un2bg` (parts kit, room prover, crane,
-robots) and `claude/meshy-api-key-export-w652zb` (animated Eeri, asset
-pipeline). Whichever lands second deletes the other. **Reconcile before
-building.** Art production can proceed in parallel.
+The two lineages that both called themselves v6 are **reconciled into
+`main`**, split by kind: code from the gameplay lineage (parts kit, room
+prover, crane, robots, brick wall, camera director, the layer art and the
+excavator GLB), the character and pipeline from the art lineage (the
+Meshy-rigged animated Eeri, the skinned-rig seam, height-in-tiles
+normalisation, ART_PIPELINE/ART_TARGET).
+
+Build on `main`. Two regressions the graft nearly shipped are recorded in
+VERSIONS.md, and the one worth repeating here: **the painted layer art was
+being loaded but never requested**, because `assets.js` was imported under
+two different `?v=` tokens and the instance holding the manifest was not
+the instance the layers asked. There are now two gate checks for it.
 
 ---
 
