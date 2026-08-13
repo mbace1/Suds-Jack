@@ -522,6 +522,78 @@ s.listen(0, '127.0.0.1', async () => {
   });
   ok('the HUD clears the way home', !clash);
 
+  // ---- controls: glyphs, never key names (DESIGN.md §5) -----------------
+  {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'js', 'main.js'), 'utf8');
+    const hints = src.slice(src.indexOf('const HINT = {'), src.indexOf('};', src.indexOf('const HINT = {')));
+    const named = (hints.match(/\b(SPACE|ENTER|SHIFT|CTRL|CLICK|MOUSE|W\s*S|A\s*D)\b/g) || []);
+    ok(`no prompt names a key or a mouse${named.length ? ' — ' + [...new Set(named)] : ''}`,
+      named.length === 0);
+    ok('the on-screen buttons carry the same glyphs the prompts do', await p.evaluate(() => {
+      const t = [...document.querySelectorAll('#touch button')].map((b) => b.textContent.trim());
+      return ['◀', '▶', '▲', '▼', 'Ⓐ', 'Ⓑ'].every((g) => t.includes(g));
+    }));
+    // The on-screen controls only EXIST on a coarse pointer, and the Toko
+    // badge takes a different inset there, so measuring them on the desktop
+    // page tests a layout nobody ever sees. This opens a real landscape
+    // phone — the shape that actually matters — and measures that.
+    const phone = await b.newContext({
+      viewport: { width: 750, height: 340 }, hasTouch: true, isMobile: true, deviceScaleFactor: 3,
+    });
+    const pp = await phone.newPage();
+    await pp.goto(base + '/eeri/', { waitUntil: 'load' });
+    await pp.waitForFunction(() => !!window.__eeri, null, { timeout: 12000 }).catch(() => {});
+    await pp.waitForTimeout(600);
+    const geo = await pp.evaluate(() => {
+      const btns = [...document.querySelectorAll('#touch button')]
+        .map((e) => ({ id: e.id, r: e.getBoundingClientRect() }));
+      const badge = document.querySelector('[class*="toko"]');
+      const hint = document.getElementById('hint');
+      const over = (a, c) => !(a.right <= c.left || a.left >= c.right || a.bottom <= c.top || a.top >= c.bottom);
+      return {
+        n: btns.length,
+        small: btns.filter((x) => x.r.width < 44 || x.r.height < 44).map((x) => x.id),
+        pairs: btns.flatMap((x, i) => btns.slice(i + 1)
+          .filter((y) => over(x.r, y.r)).map((y) => x.id + '/' + y.id)),
+        onBadge: badge ? btns.filter((x) => over(x.r, badge.getBoundingClientRect())).map((x) => x.id) : [],
+        hintTop: hint ? hint.getBoundingClientRect().top : 0,
+        topBtn: Math.min(...btns.map((x) => x.r.top)),
+        vh: innerHeight,
+      };
+    });
+    await phone.close();
+    ok('the on-screen controls are all there on a phone', geo.n >= 6);
+    ok(`every on-screen button clears the 44 px floor${geo.small.length ? ' — ' + geo.small : ''}`,
+      geo.small.length === 0);
+    ok(`no two on-screen buttons overlap${geo.pairs.length ? ' — ' + geo.pairs : ''}`,
+      geo.pairs.length === 0);
+    // the badge is inert under a thumb, but it must not COVER a control —
+    // v6 fixed this once for jump, and my first layout put Ⓑ under it
+    ok(`the signature covers no control${geo.onBadge.length ? ' — ' + geo.onBadge : ''}`,
+      geo.onBadge.length === 0);
+    // and the controls must not eat the screen: on a landscape phone the
+    // first cross layout stood 200 px tall and shoved the hint into the
+    // middle of the picture
+    ok(`the controls leave the picture alone (top ${Math.round(geo.topBtn)} of ${geo.vh})`,
+      geo.topBtn > geo.vh * 0.45);
+    ok('the hint sits above the controls', geo.hintTop < geo.topBtn);
+    ok('the pad is polled in every mode, not just play',
+      /pollGamepad\(\)/.test(src.slice(src.indexOf('setAnimationLoop'), src.indexOf('setAnimationLoop') + 400)));
+  }
+
+  // ---- the stomp --------------------------------------------------------
+  await p.evaluate(() => {
+    const r = window.__eeri.debug.robots().find((x) => !x.dead);
+    window.__eeri.debug.setPos(r.x, 7.5);      // drop him straight onto one
+  });
+  const stomped = await p.waitForFunction(() => window.__eeri.debug.stomps() > 0, null, { timeout: 5000 })
+    .then(() => true).catch(() => false);
+  ok('landing on a small machine stomps it', stomped);
+  ok('and the stomp bounces him back up', await p.evaluate(() => window.__eeri.player.vy) > 3);
+  ok('it does not also count as being hit', await p.evaluate(() => window.__eeri.debug.mercy()) === 0);
+  ok('the stomped one is dead', await p.evaluate(() =>
+    window.__eeri.debug.robots().some((r) => r.dead)));
+
   // every asset the manifest calls live must actually have been requested
   {
     const live = [];

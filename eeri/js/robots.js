@@ -67,7 +67,7 @@ export class Robot {
   go(s) { this.state = s; this.t = 0; }
 
   update(dt, target, reduced) {
-    if (this.dead) return;
+    if (this.dead) { this.fade(dt); return; }
     this.t += dt;
     const dx = target.x - this.x;
     const near = Math.abs(dx) < SEE && Math.abs(target.y - this.y) < 2.2;
@@ -118,13 +118,42 @@ export class Robot {
       && y < this.y + this.h && y + h > this.y;
   }
 
-  // a machine drives straight over one; the kid cannot squash it
+  // a machine drives straight over one
   crush(mx, mhw) {
     if (this.dead || Math.abs(mx - this.x) > mhw + this.hw) return false;
-    this.dead = true;
-    this.group.visible = false;
-    this.shadow.visible = false;
+    this.kill(false);
     return true;
+  }
+
+  // THE STOMP (DESIGN.md §2). Landing on one kills it and bounces you —
+  // the verb that makes a platformer feel like a platformer, and the reason
+  // these things are worth putting in a level rather than just avoiding.
+  // Generous on purpose (age six): the test is only that he is FALLING and
+  // roughly over it, never a precise hitbox.
+  stompedBy(x, y, hw, vy) {
+    if (this.dead || vy >= 0) return false;
+    if (Math.abs(x - this.x) > hw + this.hw + 0.18) return false;
+    if (y < this.y + this.h * 0.35 || y > this.y + this.h + 0.85) return false;
+    this.kill(true);
+    return true;
+  }
+
+  // squashed things do not vanish — they flatten, then go. A kill you do
+  // not see is a kill you do not believe.
+  kill(squash) {
+    this.dead = true;
+    this.squashT = squash ? 0.34 : 0;
+    if (!squash) { this.group.visible = false; this.shadow.visible = false; }
+  }
+
+  // called from update() while dead, to play the flatten out
+  fade(dt) {
+    if (this.squashT === undefined || this.squashT <= 0) return;
+    this.squashT -= dt;
+    const k = Math.max(0, this.squashT / 0.34);
+    this.group.scale.set(1 + (1 - k) * 0.5, Math.max(0.06, k), 1 + (1 - k) * 0.5);
+    this.group.position.y = this.y;
+    if (this.squashT <= 0) { this.group.visible = false; this.shadow.visible = false; }
   }
 }
 

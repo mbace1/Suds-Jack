@@ -47,19 +47,28 @@
   #touch { display: none; }
   @media (pointer: coarse) {
     #touch { display: block; }
-    #hint { bottom: max(84px, calc(env(safe-area-inset-bottom) + 72px)); }
+    #hint { bottom: max(152px, calc(env(safe-area-inset-bottom) + 148px)); }
   }
+    /* Landscape phone is the shape that matters, and it is SHORT — a full
+     d-pad cross ate half the screen and pushed the hint into the middle of
+     the picture. So: run buttons and both face buttons on one bottom row,
+     with the boom pair (only used inside a ride) as a small column beside
+     them. Nothing is stacked more than two high.
+     The face buttons also sit INSIDE the Toko badge's inset, because the
+     badge is bottom-right at 92 on a coarse pointer and Ⓑ was landing
+     underneath it — the same collision v6 already fixed once for jump. */
+  #tL { left: 8px;   bottom: max(12px, env(safe-area-inset-bottom)); }
+  #tR { left: 76px;  bottom: max(12px, env(safe-area-inset-bottom)); }
+  #tD { left: 144px; bottom: max(12px, env(safe-area-inset-bottom)); }
+  #tU { left: 144px; bottom: max(80px, calc(env(safe-area-inset-bottom) + 68px)); }
+  #tA { right: 92px; bottom: max(12px, env(safe-area-inset-bottom)); }
+  #tJ { right: 20px; bottom: max(12px, env(safe-area-inset-bottom)); }
   #touch button {
     position: fixed; z-index: 6; width: 62px; height: 62px; border-radius: 50%;
     border: 3px solid rgba(255,255,255,0.75); background: rgba(26,20,16,0.4);
     color: #fff; font: 800 16px system-ui, sans-serif; letter-spacing: 0.05em;
     touch-action: none; -webkit-user-select: none; user-select: none;
   }
-  #tL { left: 16px;  bottom: max(16px, env(safe-area-inset-bottom)); }
-  #tR { left: 92px;  bottom: max(16px, env(safe-area-inset-bottom)); }
-  #tD { right: 168px; bottom: max(16px, env(safe-area-inset-bottom)); }
-  #tA { right: 92px; bottom: max(16px, env(safe-area-inset-bottom)); }
-  #tJ { right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); }
 </style>
 <script type="importmap">
   { "imports": { "three": "./vendor/three.module.min.js?v=1" } }
@@ -72,9 +81,10 @@
 <div id="touch">
   <button id="tL" aria-label="left">◀</button>
   <button id="tR" aria-label="right">▶</button>
-  <button id="tD" aria-label="boom down / dig">▼</button>
-  <button id="tA" aria-label="ride">E</button>
-  <button id="tJ" aria-label="jump">▲</button>
+  <button id="tU" aria-label="up">▲</button>
+  <button id="tD" aria-label="down">▼</button>
+  <button id="tA" aria-label="action">Ⓑ</button>
+  <button id="tJ" aria-label="jump">Ⓐ</button>
 </div>
 <div id="boot">EERI</div>
 <script type="module" src="../hub/shell.js?v=17"></script>

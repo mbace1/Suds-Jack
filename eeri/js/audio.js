@@ -68,6 +68,8 @@ export class AudioKit {
   land()    { this._noise(0.1, 0.16, 420, 1.2); }
   bolt(n)   { this._blip(660 * Math.pow(1.06, Math.min(n, 12)), 0.1, 'triangle', 0.2, 1.5); }
   mount()   { this._blip(180, 0.2, 'sawtooth', 0.2, 2.2); this._noise(0.18, 0.12, 700); }
+  // the stomp: a flat metal thock, then the bounce going up after it
+  stomp()   { this._noise(0.08, 0.24, 320, 2); this._blip(240, 0.14, 'square', 0.18, 2.4); }
   dismount(){ this._blip(300, 0.16, 'square', 0.15, 0.6); }
   boom()    { this._noise(0.14, 0.09, 260, 3); }          // hydraulics working
   clank()   { this._noise(0.12, 0.2, 1500, 4); this._blip(210, 0.12, 'square', 0.12, 0.8); }  // chains take the load

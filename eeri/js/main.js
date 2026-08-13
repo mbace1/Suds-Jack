@@ -10,19 +10,19 @@
 
 import * as THREE from 'three';
 import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=3';
-import { Input } from './input.js?v=1';
+import { Input } from './input.js?v=2';
 import { Level, ROOMS } from './level.js?v=4';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
 } from './pieces.js?v=4';
 import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=2';
 import { Camera } from './camera.js?v=1';
-import { buildKidModel, Kid, Player } from './kid.js?v=2';
+import { buildKidModel, Kid, Player } from './kid.js?v=3';
 import { buildExcavatorModel, Excavator } from './excavator.js?v=2';
 import { buildCraneModel, Crane } from './crane.js?v=1';
-import { Robot, SteamVent } from './robots.js?v=1';
+import { Robot, SteamVent } from './robots.js?v=2';
 import { WreckingBall } from './hazards.js?v=1';
-import { AudioKit } from './audio.js?v=2';
+import { AudioKit } from './audio.js?v=3';
 import { loadManifest, getModel, getPiece } from './assets.js?v=3';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
@@ -52,7 +52,7 @@ async function boot() {
   });
 
   const input = new Input();
-  input.bindButtons({ tL: 'left', tR: 'right', tJ: 'jump', tA: 'action', tD: 'down' });
+  input.bindButtons({ tL: 'left', tR: 'right', tU: 'up', tD: 'down', tJ: 'jump', tA: 'action' });
 
   // the noise waits for a gesture — browsers will not start it otherwise
   const audio = new AudioKit();
@@ -182,41 +182,27 @@ async function boot() {
   boltsEl.textContent = `⬡ 0/${totalBolts}`;
   siteEl.textContent = site.def.name;
   const setHint = (s) => { if (hintEl.textContent !== s) hintEl.textContent = s; };
-  // A hint that names keys is no help to a thumb: on a phone the only
-  // controls are the five buttons, so the prompts name THOSE. Same strings
-  // otherwise — one map per input, picked once.
-  const COARSE = matchMedia('(pointer: coarse)').matches;
-  const HINTS = {
-    keys: {
-      foot: 'A D — RUN · SPACE — JUMP',
-      wary: 'NOBODY IS DRIVING IT — WAIT FOR THE BUCKET TO LIFT',
-      near: 'E — CLIMB IN',
-      ride: 'A D — DRIVE · W S — BOOM · E — HOP OUT',
-      dig: 'HOLD S — DIG THE BANK DOWN',
-      sling: 'HOLD S — SLING THE GIRDER ON',
-      carry: 'CARRY IT TO THE GAP',
-      seat: 'HOLD S — LOWER THE SPAN IN',
-      smash: 'HOLD ▼ — SWING THE BALL AT THE WALL',
-      out: 'THE WAY OUT IS OPEN',
-    },
-    touch: {
-      foot: '◀ ▶ — RUN · ▲ — JUMP',
-      wary: 'NOBODY IS DRIVING IT — WAIT FOR THE BUCKET TO LIFT',
-      near: 'E — CLIMB IN',
-      ride: '◀ ▶ — DRIVE · ▲ ▼ — BOOM · E — HOP OUT',
-      dig: 'HOLD ▼ — DIG THE BANK DOWN',
-      sling: 'HOLD ▼ — SLING THE GIRDER ON',
-      carry: 'CARRY IT TO THE GAP',
-      seat: 'HOLD ▼ — LOWER THE SPAN IN',
-      smash: 'HOLD ▼ — SWING THE BALL AT THE WALL',
-      out: 'THE WAY OUT IS OPEN',
-    },
+  // ONE glyph set, for every input (DESIGN.md §5). A prompt never names a
+  // key: a key name is no help to a thumb or a pad, and the on-screen
+  // buttons are labelled with these same glyphs, so what you read is what
+  // you press whichever of the three you are holding.
+  const HINT = {
+    foot: '◀ ▶  RUN     Ⓐ  JUMP',
+    wary: 'NOBODY IS DRIVING IT — WAIT FOR THE BUCKET TO LIFT',
+    near: 'Ⓑ  CLIMB IN',
+    ride: '◀ ▶  DRIVE     ▲ ▼  BOOM     Ⓑ  HOP OUT',
+    dig: 'HOLD ▼  DIG THE BANK DOWN',
+    sling: 'HOLD ▼  SLING THE GIRDER ON',
+    carry: 'CARRY IT TO THE GAP',
+    seat: 'HOLD ▼  LOWER THE SPAN IN',
+    smash: 'HOLD ▼  SWING THE BALL AT THE WALL',
+    out: 'THE WAY OUT IS OPEN',
   };
-  const HINT = COARSE ? HINTS.touch : HINTS.keys;
 
   // ---- the mode machine ---------------------------------------------------
   let mode = 'foot';          // foot | mounting | riding | dismounting
   let moveT = 0, digT = 0, slingT = 0, cleared = false, transitioning = false;
+  let stomps = 0;
   const from = new THREE.Vector3(), mid = new THREE.Vector3(), to = new THREE.Vector3();
   const v3 = new THREE.Vector3();
 
@@ -334,6 +320,8 @@ async function boot() {
       wall: () => site.wall ? { hits: site.wall.hits, cracked: site.wall.cracked, cleared: site.wall.cleared } : null,
       machine: () => exc ? { kind: exc.kind, x: exc.x, track: exc.track, tamed: exc.tamed } : null,
       robots: () => site.robots.map((r) => ({ x: +r.x.toFixed(2), state: r.state, dead: r.dead })),
+      stomps: () => stomps,
+      padSeen: () => input.padSeen,
       vents: () => site.vents.map((v) => ({ x: v.x, blowing: v.blowing })),
       rooms: () => ROOMS.length,
       heave: () => exc?.heave?.(),
@@ -365,6 +353,9 @@ async function boot() {
 
   renderer.setAnimationLoop(() => {
     const dt = Math.min(clock.getDelta(), 0.033);
+    // controller first: polled in EVERY mode, not inside the play branch —
+    // a pad that cannot reach the menu is a pad that cannot start the game
+    input.pollGamepad();
     t += dt;
 
     if (!transitioning) {
@@ -536,8 +527,15 @@ async function boot() {
       r.update(dt, { x: focusX, y: focusY }, REDUCED);
       if (mode === 'riding') {
         if (r.crush(exc.x, exc.hw)) { audio.splat(); cam.punch(0.5); }
-      } else if (mode === 'foot' && r.hits(player.x, player.y, player.hw, player.h)) {
-        if (player.struck(r.x)) { audio.splat(); cam.punch(0.9); }
+      } else if (mode === 'foot') {
+        // the stomp beats the lunge: if he is coming down on it, it does not
+        // matter what the robot was about to do. That ordering is what makes
+        // jumping AT one feel like the right answer rather than a gamble.
+        if (r.stompedBy(player.x, player.y, player.hw, player.vy)) {
+          player.bounce(); audio.stomp(); cam.punch(0.4); stomps++;
+        } else if (r.hits(player.x, player.y, player.hw, player.h)) {
+          if (player.struck(r.x)) { audio.splat(); cam.punch(0.9); }
+        }
       }
     }
     for (const v of site.vents) {

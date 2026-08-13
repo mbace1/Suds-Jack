@@ -274,6 +274,10 @@ export class Kid {
 
 const RUN = 6.2, ACC = 42, ACC_AIR = 20, FRIC = 34;
 const GRAV = 30, FALL_X = 1.35, JUMP_V = 12.6;
+// A stomp bounces you 80% of a jump: enough to feel like a reward and to
+// chain along a row of them, never enough to reach somewhere a jump cannot,
+// so no level's reach budget is quietly broken by an enemy standing there.
+const BOUNCE_V = JUMP_V * 0.8;
 const COYOTE = 0.09, BUFFER = 0.12;
 
 export class Player {
@@ -292,6 +296,16 @@ export class Player {
     this.justJumped = false; this.justLanded = false;
   }
 
+  // Bounced off something he landed on. Higher than a step, lower than a
+  // full jump, and it does NOT need the ground — that is the whole appeal:
+  // a chain of small machines is a staircase.
+  bounce() {
+    this.vy = BOUNCE_V;
+    this.squash = 0.1;
+    this.jumpBufT = 0;
+    this.justStomped = true;
+  }
+
   // knocked back by a hazard: the cost is never death (ART_BRIEF hazards)
   struck(fromX) {
     if (this.mercyT > 0) return false;
@@ -305,7 +319,7 @@ export class Player {
 
   update(dt, input) {
     this.t += dt;
-    this.justJumped = false; this.justLanded = false;
+    this.justJumped = false; this.justLanded = false; this.justStomped = false;
     this.mercyT = Math.max(0, this.mercyT - dt);
     const wasGrounded = this.grounded;
     const ax = input.axis();
