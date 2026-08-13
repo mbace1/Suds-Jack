@@ -22,6 +22,7 @@
     text-shadow: 0 2px 0 rgba(26,20,16,0.45); user-select: none; pointer-events: none;
   }
   #bolts { font-size: 15px; font-weight: 700; letter-spacing: 0.08em; color: #ffe9bd; }
+  #site { font-size: 12px; font-weight: 700; letter-spacing: 0.16em; color: #d9efff; }
 
   #hint {
     position: fixed; bottom: max(12px, env(safe-area-inset-bottom)); left: 50%;
@@ -31,7 +32,7 @@
     white-space: nowrap;
   }
 
-  #clear {
+  #clear, #banner {
     position: fixed; inset: 0; display: grid; place-content: center; gap: 10px;
     z-index: 8; pointer-events: none; text-align: center;
     color: #fff; font: 800 34px/1 system-ui, sans-serif; letter-spacing: 0.2em;
@@ -40,7 +41,7 @@
   }
   #clear span { display: block; font-size: 16px; letter-spacing: 0.12em; color: #ffe9bd; }
   @keyframes pop { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: none; } }
-  @media (prefers-reduced-motion: reduce) { #clear { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { #clear, #banner { animation: none; } }
 
   /* touch controls: fixed buttons, 44px floor, pointerdown/up never click */
   #touch { display: none; }
@@ -66,7 +67,7 @@
 </head>
 <body>
 <div id="game"></div>
-<div id="hud">EERI<br><span id="bolts">⬡ 0/19</span></div>
+<div id="hud">EERI<br><span id="site"></span><br><span id="bolts">⬡ 0</span></div>
 <div id="hint"></div>
 <div id="touch">
   <button id="tL" aria-label="left">◀</button>
@@ -77,7 +78,7 @@
 </div>
 <div id="boot">EERI</div>
 <script type="module" src="../hub/shell.js?v=17"></script>
-<script type="module" src="./js/main.js?v=1"></script>
+<script type="module" src="./js/main.js?v=2"></script>
 <script type="module">
   // bottom-right: the HOME button owns top-left and the HUD owns top-left too
   import { sign } from '../toko/js/signature.js?v=3';

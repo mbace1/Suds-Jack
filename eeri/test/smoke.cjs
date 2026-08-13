@@ -157,38 +157,123 @@ s.listen(0, '127.0.0.1', async () => {
   ok('the kid alone cannot get past the bank', blocked,
     'x=' + await p.evaluate(() => window.__eeri.player.x));
 
-  // taming it turns the beacon off and the threat into a tool
-  await p.evaluate(() => {
-    window.__eeri.exc.x = 40; window.__eeri.player.mercyT = 0;
-    window.__eeri.debug.setPos(38.5, 4.1);
-  });
-  await p.waitForTimeout(400);
+  // taming it turns the beacon off and the threat into a tool. The cab is
+  // approached on the machine's own rhythm: a sweep can knock the kid away
+  // mid-try, so each attempt walks back up and the mount move itself gets
+  // real time to play out (a sandbox with no GPU runs the clock ~5× slow).
+  await p.evaluate(() => { window.__eeri.exc.x = 40; });
   let ride = false;
-  for (let i = 0; i < 14 && !ride; i++) {          // wait out the work cycle
+  for (let i = 0; i < 10 && !ride; i++) {
+    await p.evaluate(() => {
+      window.__eeri.player.mercyT = 0;
+      window.__eeri.debug.setPos(window.__eeri.exc.x - 1.5, window.__eeri.exc.y + 0.1);
+    });
+    await p.waitForTimeout(250);
     await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
-    await p.waitForTimeout(350);
-    ride = await p.evaluate(() => window.__eeri.mode() === 'riding');
+    ride = await p.waitForFunction(() => window.__eeri.mode() === 'riding', null, { timeout: 4000 }).then(() => true).catch(() => false);
   }
   ok('reading the cycle gets you into the cab', ride);
   ok('and taming it kills the beacon', await p.evaluate(() => window.__eeri.debug.tamed()));
 
   // the bucket digs the bank down — the machine changes the level
   await p.evaluate(() => { window.__eeri.exc.x = 83; window.__eeri.debug.press('down'); });
-  const dug = await p.waitForFunction(() => window.__eeri.debug.bank().cleared, null, { timeout: 15000 }).then(() => true).catch(() => false);
+  const dug = await p.waitForFunction(() => window.__eeri.debug.bank().cleared, null, { timeout: 25000 }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('down'));
   ok('the bucket digs the bank away', dug,
     'remaining=' + await p.evaluate(() => window.__eeri.debug.bank().remaining));
   ok('and the map really changed, not just the picture',
     await p.evaluate(() => !window.__eeri.level.solidCell(86, 4)));
 
-  // out on foot, through the gate the machine opened
+  // out on foot, through the gate the machine opened — and the gate does
+  // not end the job any more: the level goes beyond one room
   await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
   await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: 5000 }).catch(() => {});
   await p.evaluate(() => window.__eeri.debug.setPos(88, 4.2));
   await p.evaluate(() => window.__eeri.debug.press('right'));
+  const site2 = await p.waitForFunction(() => window.__eeri.site() === 1, null, { timeout: 8000 }).then(() => true).catch(() => false);
+  await p.evaluate(() => window.__eeri.debug.release('right'));
+  ok('walking out of site 1 leads to SITE 2, not the credits', site2);
+  ok('the room announces itself on the way in', await p.locator('#banner').count() === 1);
+  ok('arriving clears nothing', await p.evaluate(() => !window.__eeri.debug.cleared()));
+  ok('the bolt count carries over between sites', await p.evaluate(() => window.__eeri.collected()) > 0);
+
+  // ---- SITE 2: the girder — stacked, slung, seated as a span --------------
+  ok('the new room\'s machine is unmanned again', await p.evaluate(() => !window.__eeri.debug.tamed()));
+  ok('site 2 carries the girder, not the bank',
+    await p.evaluate(() => window.__eeri.debug.girder() !== null && window.__eeri.debug.bank() === null));
+  ok('the girder waits on its stack', await p.evaluate(() => window.__eeri.debug.girder()?.state) === 0);
+
+  // the gap is past BOTH of them: the kid's jump falls short…
+  await p.evaluate(() => window.__eeri.debug.setPos(54, 4.2));
+  await p.evaluate(() => window.__eeri.debug.press('right'));
+  await p.waitForTimeout(600);
+  await p.evaluate(() => window.__eeri.debug.press('jump'));
+  await p.waitForTimeout(300);
+  await p.evaluate(() => { window.__eeri.debug.release('jump'); window.__eeri.debug.release('right'); });
+  await p.waitForTimeout(1500);   // he falls, and the pit hands him back
+  ok('the gap is too wide for the kid', await p.evaluate(() => window.__eeri.player.x) < 58,
+    'x=' + await p.evaluate(() => window.__eeri.player.x));
+
+  // …so read the cycle and take the machine, again
+  await p.evaluate(() => { window.__eeri.exc.x = 40; });
+  let ride2 = false;
+  for (let i = 0; i < 10 && !ride2; i++) {
+    await p.evaluate(() => {
+      window.__eeri.player.mercyT = 0;
+      window.__eeri.debug.setPos(window.__eeri.exc.x - 1.5, window.__eeri.exc.y + 0.1);
+    });
+    await p.waitForTimeout(250);
+    await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
+    ride2 = await p.waitForFunction(() => window.__eeri.mode() === 'riding', null, { timeout: 4000 }).then(() => true).catch(() => false);
+  }
+  ok('the mount is a skill test in every room', ride2);
+
+  // …and the machine refuses the cliff: start it at the approach and let it
+  // drive — it must actually reach the lip and stop there, not merely dawdle
+  await p.evaluate(() => { window.__eeri.exc.x = 54; window.__eeri.exc.vx = 0; });
+  await p.evaluate(() => window.__eeri.debug.press('right'));
+  await p.waitForTimeout(6000);
+  await p.evaluate(() => window.__eeri.debug.release('right'));
+  const stoppedAt = await p.evaluate(() => window.__eeri.exc.x);
+  ok('the machine refuses the gap', stoppedAt > 55 && stoppedAt < 57.1, 'x=' + stoppedAt);
+
+  // the bucket takes the girder off the stack
+  await p.evaluate(() => { window.__eeri.exc.x = 46; window.__eeri.exc.vx = 0; });
+  await p.evaluate(() => window.__eeri.debug.press('down'));
+  const slung = await p.waitForFunction(() => window.__eeri.debug.girder()?.state === 1, null, { timeout: 8000 }).then(() => true).catch(() => false);
+  await p.evaluate(() => window.__eeri.debug.release('down'));
+  ok('holding the bucket in the stack slings the girder on', slung);
+  ok('and the machine feels the load', await p.evaluate(() => window.__eeri.debug.girder()?.carrying));
+
+  // carried to the lip and lowered in, it seats as a span
+  await p.evaluate(() => { window.__eeri.exc.x = 55.5; window.__eeri.exc.vx = 0; });
+  await p.waitForTimeout(300);
+  await p.evaluate(() => window.__eeri.debug.press('down'));
+  const seated = await p.waitForFunction(() => window.__eeri.debug.girder()?.state === 2, null, { timeout: 8000 }).then(() => true).catch(() => false);
+  await p.evaluate(() => window.__eeri.debug.release('down'));
+  ok('lowered at the lip, the girder seats as a span', seated);
+  ok('and the map really changed — the gap is bridged',
+    await p.evaluate(() => window.__eeri.level.solidCell(61, 3)));
+  ok('the load is off the machine', await p.evaluate(() => !window.__eeri.exc.carrying));
+
+  // the kid crosses his machine's bridge and walks the job out
+  await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
+  await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: 5000 }).catch(() => {});
+  await p.evaluate(() => window.__eeri.debug.setPos(56, 4.2));
+  await p.evaluate(() => window.__eeri.debug.press('right'));
+  // mid-span at ground height, grounded, over what used to be air = crossing
+  const crossed = await p.waitForFunction(
+    () => window.__eeri.player.x > 62 && window.__eeri.player.grounded && window.__eeri.player.y < 4.2,
+    null, { timeout: 15000 }).then(() => true).catch(() => false);
+  await p.evaluate(() => window.__eeri.debug.release('right'));
+  ok('the kid crosses the span on foot', crossed,
+    'x=' + await p.evaluate(() => window.__eeri.player.x));
+
+  await p.evaluate(() => window.__eeri.debug.setPos(88, 4.2));
+  await p.evaluate(() => window.__eeri.debug.press('right'));
   const walkedOut = await p.waitForFunction(() => window.__eeri.debug.cleared(), null, { timeout: 8000 }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
-  ok('walking out through the gate clears the site', walkedOut);
+  ok('walking out of the last site clears the whole job', walkedOut);
   ok('and it says so on screen', await p.locator('#clear').count() === 1);
 
   // ---- the house obligations --------------------------------------------

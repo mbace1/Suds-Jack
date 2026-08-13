@@ -49,6 +49,157 @@ export function buildBankModel(rows = 3, width = 5) {
   return { root, nodes };
 }
 
+// ---- the girder: stacked → slung → seated as a span ----------------------
+// State origins are the contract (assets/README.md): state0 sits on the
+// ground under the stack centre, state1 hangs from `grip` at its origin,
+// state2 is the span — centre of the walked row, top face at +1 (one tile
+// deep, because it is stood on).
+
+export function buildGirderModel(len = 9.8) {
+  const root = new THREE.Group();
+  const nodes = {};
+  const M = (c) => new THREE.MeshLambertMaterial({ color: c });
+  const box = (parent, w, h, d, c, x, y, z) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c));
+    m.position.set(x, y, z); parent.add(m); return m;
+  };
+
+  // one girder shape for every state — chords, web posts, and the end
+  // bolt-plates, in the level's own girder language
+  const girder = (parent, y) => {
+    box(parent, len, 0.24, 1.0, PAL.STEEL[1], 0, y + 0.88, 0);   // top chord
+    box(parent, len, 0.24, 1.0, PAL.STEEL[1], 0, y + 0.12, 0);   // bottom chord
+    for (let x = -len / 2 + 0.6; x < len / 2 - 0.2; x += 1.8) {
+      box(parent, 0.16, 0.62, 0.8, PAL.STEEL[2], x, y + 0.5, 0); // web posts
+    }
+    for (const ex of [-len / 2 + 0.14, len / 2 - 0.14]) {         // end plates
+      box(parent, 0.16, 1.0, 1.02, PAL.STEEL[0], ex, y + 0.5, 0);
+    }
+  };
+
+  // state0 — STACKED: waiting on two timber trestles
+  const s0 = new THREE.Group(); s0.name = 'state0';
+  for (const dx of [-len * 0.3, len * 0.3]) {
+    box(s0, 0.9, 0.5, 1.2, PAL.EARTH[0], dx, 0.25, 0);
+  }
+  girder(s0, 0.5);
+  root.add(s0); nodes.state0 = s0;
+
+  // state1 — SLUNG: hanging under the grip by two chains
+  const s1 = new THREE.Group(); s1.name = 'state1';
+  const grip = new THREE.Group(); grip.name = 'grip'; s1.add(grip); nodes.grip = grip;
+  const drop = 1.6;                       // girder top rides this far under the bucket
+  box(s1, 0.34, 0.16, 0.3, PAL.DARK, 0, -0.06, 0);               // the shackle
+  for (const dx of [-len * 0.27, len * 0.27]) {
+    // chain leg: grip (0,0) down to the top chord at (dx, -drop + 0.94)
+    const ty = -drop + 0.94;
+    const L = Math.hypot(dx, ty);
+    const ch = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, L, 6), M(PAL.DARK));
+    ch.position.set(dx / 2, ty / 2, 0);
+    ch.rotation.z = Math.atan2(-dx, ty);
+    s1.add(ch);
+  }
+  girder(s1, -drop);
+  root.add(s1); nodes.state1 = s1;
+
+  // state2 — SEATED: the span, flat top exactly one tile up
+  const s2 = new THREE.Group(); s2.name = 'state2';
+  girder(s2, 0);
+  root.add(s2); nodes.state2 = s2;
+
+  return { root, nodes };
+}
+
+export class Girder {
+  // def = the site's girder block: { stackX, gap: {c0, c1, cy}, seat, spanLen }
+  constructor(scene, level, def, asset) {
+    this.level = level; this.def = def;
+    this.state = 0;                       // 0 stacked · 1 slung · 2 seated
+    this.n = asset.nodes;
+    this.group = new THREE.Group();
+    this.group.add(asset.root);
+    this.group.position.set(def.stackX, level.groundTop(def.stackX, 8), 0);
+    this.sway = 0;
+    this._v = new THREE.Vector3();
+    scene.add(this.group);
+
+    // how far the slung load hangs below the grip — measured off the asset,
+    // so a live GLB with its own chain length keeps the ground-rest honest
+    this.group.updateWorldMatrix(true, true);
+    const bb = new THREE.Box3().setFromObject(this.n.state1);
+    this.n.grip.getWorldPosition(this._v);
+    this.dropDepth = this._v.y - bb.min.y;
+
+    // dust thrown when the span lands — pooled, so the seat has weight
+    this.spray = [];
+    const geo = new THREE.DodecahedronGeometry(0.14, 0);
+    for (let i = 0; i < 12; i++) {
+      const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: PAL.EARTH[2] }));
+      m.visible = false; m.life = 1;
+      this.spray.push(m); scene.add(m);
+    }
+    this.show();
+  }
+
+  show() {
+    for (let s = 0; s < 3; s++) this.n[`state${s}`].visible = (s === this.state);
+  }
+
+  // off the stack and onto the hook — the machine now carries it
+  sling() {
+    if (this.state !== 0) return false;
+    this.state = 1; this.show();
+    return true;
+  }
+
+  // lowered in at the lip: the span fills the MAP row, so the bridged gap
+  // is a fact about the level — the same honesty as the dig
+  seat() {
+    if (this.state !== 1) return false;
+    const g = this.def.gap;
+    this.level.fillRow(g.c0, g.c1, g.cy);
+    this.state = 2; this.show();
+    this.group.rotation.z = 0;
+    this.group.position.set((g.c0 + g.c1 + 1) / 2, g.cy, 0);
+    // dust off both lips
+    let n = 0;
+    for (const p of this.spray) {
+      if (p.life < 1 || n >= 8) continue;
+      const lip = (n % 2 === 0) ? g.c0 : g.c1 + 1;
+      n++;
+      p.life = 0; p.visible = true;
+      p.position.set(lip + (Math.random() - 0.5) * 1.2, g.cy + 1, (Math.random() - 0.5) * 1.2);
+      p.vx = (lip < this.group.position.x ? -1 : 1) * (0.8 + Math.random() * 1.6);
+      p.vy = 2.6 + Math.random() * 2.2;
+    }
+    return true;
+  }
+
+  update(dt, exc) {
+    for (const p of this.spray) {
+      if (p.life >= 1) { p.visible = false; continue; }
+      p.life = Math.min(1, p.life + dt / 0.9);
+      p.vy -= 26 * dt;
+      p.position.x += p.vx * dt;
+      p.position.y += p.vy * dt;
+      p.rotation.x += dt * 7; p.rotation.z += dt * 5;
+      if (p.life >= 1) p.visible = false;
+    }
+    if (this.state !== 1 || !exc) return;
+    // slung: the grip rides the bucket, the load trails the drive. If the
+    // bucket comes down too far the chains go slack and the load RESTS on
+    // the ground — it never sinks into it. Over a gap there is no ground,
+    // so it hangs free, which is exactly what lowering-in looks like.
+    exc.bucketWorld(this._v);
+    let y = this._v.y - 0.1;
+    const gy = this.level.groundTop(this._v.x, Math.max(this._v.y, 5));
+    if (gy > -3) y = Math.max(y, gy + this.dropDepth - 0.02);
+    this.group.position.set(this._v.x, y, 0);
+    this.sway += ((-exc.vx * 0.055) - this.sway) * Math.min(1, 3 * dt);
+    this.group.rotation.z = this.sway;
+  }
+}
+
 export class Bank {
   // rect = { c0, c1, cy0, rows } in cells; the map is the collision
   constructor(scene, level, rect, asset) {

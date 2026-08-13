@@ -4,6 +4,10 @@
 //
 // World units = tiles. Cell (c, cy) spans x [c, c+1), y [cy, cy+1);
 // cy counts up from the bottom of the map.
+//
+// v3: the level goes beyond one room. SITES is the whole game as data —
+// each site is one room built on the same grammar: a kid-shaped obstacle,
+// a machine-shaped lock, and an exit only the pair of them opens.
 
 import * as THREE from 'three';
 import { PAL } from './palette.js?v=1';
@@ -14,48 +18,89 @@ const EPS = 0.001;
 function blankGrid() {
   return Array.from({ length: H }, () => new Array(W).fill(' '));
 }
-
-// The room is a LOCK and the machine is the KEY (ART_BRIEF §1.2). Two
-// obstacles, each shaped for exactly one of them: the PIT is kid-shaped —
-// the machine will not drive off a cliff and never crosses it — and the
-// BANK is machine-shaped, three tiles of dirt the kid cannot jump and the
-// bucket takes down a row at a time. Neither finishes the room alone.
-function buildMap() {
-  const g = blankGrid();
-  const fill = (r0, r1, c0, c1, ch) => {
+function filler(g) {
+  return (r0, r1, c0, c1, ch) => {
     for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) g[r][c] = ch;
   };
-  fill(14, 17, 0, W - 1, '#');       // ground band
-  fill(14, 17, 46, 48, ' ');         // THE PIT — the kid-shaped obstacle
-  fill(12, 13, 8, 14, '#');          // mound one (teaches the climb)
-  fill(10, 10, 11, 16, '=');         // steel platform over mound one
-  fill(12, 12, 52, 57, '=');         // platform past the pit
-  fill(10, 10, 66, 72, 'G');         // the girder the ball hangs from
-  fill(11, 13, 84, 88, 'B');         // THE BANK — the machine-shaped lock
-  return g;
 }
 
-const BOLTS = [
-  [9, 12], [9, 13], [9, 14], [9, 15],
-  [13, 34], [13, 35], [13, 36],
-  [11, 46], [11, 47], [11, 48],       // the arc over the pit
-  [11, 53], [11, 54], [11, 55], [11, 56],
-  [13, 76], [13, 77], [13, 78],       // the run to the bank
-  [12, 90], [12, 91],                 // past it — only reachable once it is dug
+export const SITES = [
+  // SITE 1 — the dig. The PIT is kid-shaped — he clears it in a run and the
+  // machine refuses a cliff — and the BANK is machine-shaped, three tiles of
+  // dirt above his jump, taken down a row at a time by the bucket.
+  {
+    name: 'SITE 1',
+    buildMap() {
+      const g = blankGrid(); const fill = filler(g);
+      fill(14, 17, 0, W - 1, '#');       // ground band
+      fill(14, 17, 46, 48, ' ');         // THE PIT — the kid-shaped obstacle
+      fill(12, 13, 8, 14, '#');          // mound one (teaches the climb)
+      fill(10, 10, 11, 16, '=');         // steel platform over mound one
+      fill(12, 12, 52, 57, '=');         // platform past the pit
+      fill(10, 10, 66, 72, 'G');         // the girder the ball hangs from
+      fill(11, 13, 84, 88, 'B');         // THE BANK — the machine-shaped lock
+      return g;
+    },
+    bolts: [
+      [9, 12], [9, 13], [9, 14], [9, 15],
+      [13, 34], [13, 35], [13, 36],
+      [11, 46], [11, 47], [11, 48],       // the arc over the pit
+      [11, 53], [11, 54], [11, 55], [11, 56],
+      [13, 76], [13, 77], [13, 78],       // the run to the bank
+      [12, 90], [12, 91],                 // past it — only reachable once it is dug
+    ],
+    bank: { c0: 84, c1: 88, cy0: 4, rows: 3 },
+    girder: null,
+    ball: { px: 70, py: 8, len: 2.6, zoneW: 7.5 },
+    exit: { x: 92.5, y: 4 },
+    spawn: { kid: { x: 4.5, y: 4 }, excavator: { x: 61, y: 4 } },
+    pits: [{ c0: 46, c1: 48, backX: 43 }],
+  },
+
+  // SITE 2 — the girder. THE GAP is past both of them: eight tiles, beyond
+  // the kid's jump, and the machine refuses the cliff. The girder comes off
+  // its stack slung under the bucket and seats as a span — the second
+  // manipulable piece, and the map changes the way the dig changed it.
+  // The kid pit by the start pens the machine in; the kid crosses to it.
+  {
+    name: 'SITE 2',
+    buildMap() {
+      const g = blankGrid(); const fill = filler(g);
+      fill(14, 17, 0, W - 1, '#');       // ground band
+      fill(14, 17, 20, 22, ' ');         // the kid pit — the machine's pen wall
+      fill(12, 13, 8, 11, '#');          // mound by the start
+      fill(10, 10, 9, 14, '=');          // platform over it, jumped from the mound
+      fill(14, 17, 58, 65, ' ');         // THE GAP — no jump reaches, no machine dares
+      return g;
+    },
+    bolts: [
+      [9, 10], [9, 11], [9, 12],          // over the start platform
+      [11, 20], [11, 21], [11, 22],       // the arc over the pit
+      [13, 34], [13, 35], [13, 36],       // the walk to the machine
+      [11, 61], [11, 62],                 // over the gap — only from the span
+      [12, 70], [12, 71],                 // jumped for, past the gap
+      [13, 84], [13, 85],                 // the run out
+    ],
+    bank: null,
+    girder: {
+      stackX: 48,                         // where the girder waits on its trestles
+      gap: { c0: 58, c1: 65, cy: 3 },     // the row the span fills
+      seat: { x0: 53.6, x1: 57.3 },       // machine at the lip = close enough to lower it in
+      spanLen: 9.8,
+    },
+    ball: null,
+    exit: { x: 92.5, y: 4 },
+    spawn: { kid: { x: 4.5, y: 4 }, excavator: { x: 30, y: 4 } },
+    pits: [{ c0: 20, c1: 22, backX: 17 }, { c0: 58, c1: 65, backX: 55 }],
+  },
 ];
 
-// where the bank stands, in cells. The piece owns the art; the map owns
-// the collision, and digging edits the map.
-export const BANK = { c0: 84, c1: 88, cy0: 4, rows: 3 };
-export const EXIT = { x: 92.5, y: 4 };
-
-export const SPAWN = { kid: { x: 4.5, y: 4 }, excavator: { x: 61, y: 4 } };
-
 export class Level {
-  constructor() {
+  constructor(def = SITES[0]) {
+    this.def = def;
     this.w = W; this.h = H;
-    this.map = buildMap();
-    this.boltCells = BOLTS.map(([r, c]) => ({ x: c + 0.5, y: (H - 1 - r) + 0.5 }));
+    this.map = def.buildMap();
+    this.boltCells = def.bolts.map(([r, c]) => ({ x: c + 0.5, y: (H - 1 - r) + 0.5 }));
   }
 
   solidCell(c, cy) {
@@ -70,6 +115,20 @@ export class Level {
   // a fact about the level, not as a fact about a picture
   clearRow(c0, c1, cy) {
     for (let c = c0; c <= c1; c++) this.map[H - 1 - cy][c] = ' ';
+  }
+
+  // …and seating a girder edits it the other way: the span is a fact too
+  fillRow(c0, c1, cy, ch = 'G') {
+    for (let c = c0; c <= c1; c++) this.map[H - 1 - cy][c] = ch;
+  }
+
+  // fell past the floor: back to the near side of whichever hole took you
+  fallRespawn(x) {
+    for (const p of this.def.pits) {
+      if (x > p.c0 - 1 && x < p.c1 + 2) return { x: p.backX, y: 5 };
+    }
+    const s = this.def.spawn.kid;
+    return { x: s.x, y: s.y + 1 };
   }
 
   // Axis-separated AABB sweep. box = {x (centre), y (feet), hw, h}.
@@ -125,7 +184,7 @@ export class Level {
     for (let cy = Math.floor(yFrom - EPS); cy >= 0; cy--) {
       if (this.solidCell(c, cy)) return cy + 1;
     }
-    return -4; // over the pit: below the world
+    return -4; // over a pit: below the world
   }
 
   // ---- dressing: shallow 3D slabs wearing the flat-colour read -----------
@@ -148,9 +207,9 @@ export class Level {
     };
 
     // the earth under everything — the world is not floating on sky, and
-    // the pit reads as a hole with a dark floor instead of a window
+    // a pit reads as a hole with a dark floor instead of a window
     box(136, 10, 1.6, mat.dirtDk, 48, -5, 0);
-    // …and a back wall behind the ground band, so the pit shows earth, not sky
+    // …and a back wall behind the ground band, so a pit shows earth, not sky
     box(136, 3.98, 0.1, mat.dirtDk, 48, 2, -0.9);
 
     // merge horizontal runs per row so the slab count stays sane

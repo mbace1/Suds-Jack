@@ -60,7 +60,7 @@ the point the bucket or hook takes hold of.
 | file | states | notes |
 |---|---|---|
 | `bank_v1.glb` | `state0` full · `state1` half · `state2` dug flat | half-dug wants a fresh cut face and spill at the foot |
-| `girder_v1.glb` | `state0` stacked · `state1` slung · `state2` seated as a span | needs `grip`; the span state is walked on, so its top is flat and 1 tile deep |
+| `girder_v1.glb` | `state0` stacked · `state1` slung · `state2` seated as a span | needs `grip`; the span state is walked on, so its top is flat and 1 tile deep. State origins: `state0` on the ground under the stack centre, `state1` hangs from `grip` at its origin (the game rests the load on the ground when the grip comes down — the rest depth is read off `state1`'s own bounding box), `state2` at the span centre with its top at +1 |
 | `wall_v1.glb` | `state0` intact · `state1` cracked · `state2` rubble | rubble is a different silhouette, not a shorter wall |
 | `load_v1.glb` | `state0` grounded · `state1` slung · `state2` placed | needs `grip` |
 

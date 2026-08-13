@@ -1,5 +1,37 @@
 # EERI — versions
 
+## v3 — 2026-08-13
+**The level beyond one room.** Walking through the gate now leads
+somewhere: sites are data (`SITES` in `js/level.js` — map, bolts, spawns,
+exit, and which lock the room carries), one `buildSite()` builds a room
+into a single group and tears the old one down whole, the kid and the
+machine persist, and the camera **cuts** to the new room — a slow pan
+across a rebuilt world is a lie about geography. Each room's machine
+starts unmanned again: taming does not carry between sites, so the mount
+is read every time, which is the point of it.
+
+Site 2 is **the girder** — the second manipulable piece, its contract
+already waiting in the manifest: stacked → slung → seated as a span. The
+gap is eight tiles, past *both* of them — the kid's jump falls short and
+the machine refuses the cliff. The same gesture as the dig works it the
+other way round: hold the bucket in the stack and the chains take the
+load (the machine drives at ×0.55 while carrying — a machine earns its
+slowness); lower it at the lip and the span seats, filling the MAP row
+the way the dig cleared one, so the bridged gap is a fact about the
+level. The kid crosses on foot, because the exit is his half of the job.
+
+Found by LOOKING, not by the gate: a slung load hung a fixed length
+under the bucket and **sank into the ground** when the boom came down —
+now the chains go slack and the load rests, never sinks (the rest depth
+is measured off the asset's own bounding box, so a live GLB keeps the
+behaviour). Found the flaky way: the GPU-less sandbox runs the clock
+~5× slow, so a mount that takes 0.55 s of game time takes ~3 s of wall
+clock — the test's retry loop now walks back up and gives each attempt
+real time, and the crossing is asserted mid-span instead of demanding a
+36-tile walk inside a wall-clock timeout.
+
+Gate: 65 checks.
+
 ## v2 — 2026-08-13
 **The loop.** v1 had systems and no game: riding was strictly worse than
 walking (45% slower, no jump, a five-times wider body), the boom was a

@@ -137,6 +137,7 @@ export class Excavator {
     // A machine is dangerous until it is yours (ART_BRIEF §1.2). Untamed, it
     // works its own cycle — it is not hunting anybody, it is heavy and blind.
     this.tamed = tamed;
+    this.carrying = false;   // a slung load: the machine earns its slowness
     this.x = x; this.y = y; this.vx = 0; this.vy = 0;
     this.hw = 1.42; this.h = 2.1;
     this.face = 1; this.turn = -0.15;
@@ -196,8 +197,9 @@ export class Excavator {
     this.t += dt;
     const drive = controls ? controls.drive : 0;
 
-    // drive: heavy ease in and out — weight is the whole act
-    const target = drive * TOP;
+    // drive: heavy ease in and out — weight is the whole act. A slung
+    // girder halves the pace: carrying is a commitment, not a stroll.
+    const target = drive * TOP * (this.carrying ? 0.55 : 1);
     this.vx += (target - this.vx) * Math.min(1, ACCEL * dt);
     if (Math.abs(this.vx) < 0.02 && !drive) this.vx = 0;
     if (drive) this.face = Math.sign(drive);

@@ -70,6 +70,8 @@ export class AudioKit {
   mount()   { this._blip(180, 0.2, 'sawtooth', 0.2, 2.2); this._noise(0.18, 0.12, 700); }
   dismount(){ this._blip(300, 0.16, 'square', 0.15, 0.6); }
   boom()    { this._noise(0.14, 0.09, 260, 3); }          // hydraulics working
+  clank()   { this._noise(0.12, 0.2, 1500, 4); this._blip(210, 0.12, 'square', 0.12, 0.8); }  // chains take the load
+  thunk()   { this._noise(0.26, 0.3, 150, 1); this._blip(70, 0.34, 'sine', 0.24, 0.6); }      // the span seats
   // the hazard telegraph: a warning, distinct from everything friendly
   warn()    { this._blip(520, 0.09, 'square', 0.2); setTimeout(() => this._blip(520, 0.09, 'square', 0.2), 130); }
   splat()   { this._noise(0.3, 0.26, 220, 0.8); this._blip(120, 0.3, 'sawtooth', 0.16, 0.5); }
