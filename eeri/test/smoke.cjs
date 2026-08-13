@@ -95,6 +95,44 @@ s.listen(0, '127.0.0.1', async () => {
   ok('E hops back out', out);
   ok('the kid lands somewhere real after dismount', await p.evaluate(() => window.__eeri.player.y) > 3);
 
+  // ---- the hazard: telegraph before strike, and the Yoshi rule -----------
+  await p.evaluate(() => window.__eeri.debug.setPos(4, 4.2));
+  await p.waitForTimeout(500);
+  ok('the wrecking ball hangs still when nobody is near',
+    await p.evaluate(() => window.__eeri.debug.hazard().state) === 'rest');
+
+  await p.evaluate(() => window.__eeri.debug.setPos(68, 4.2));
+  const wound = await p.waitForFunction(() => window.__eeri.debug.hazard().state === 'wind', null, { timeout: 4000 }).then(() => true).catch(() => false);
+  ok('coming near winds it back first — it telegraphs', wound);
+  const swung = await p.waitForFunction(() => window.__eeri.debug.hazard().state === 'swing', null, { timeout: 4000 }).then(() => true).catch(() => false);
+  ok('and only then does it swing', swung);
+
+  const struck = await p.waitForFunction(() => window.__eeri.debug.mercy() > 0, null, { timeout: 6000 }).then(() => true).catch(() => false);
+  ok('the swing knocks the kid back (mercy frames, never death)', struck);
+  ok('and he is still in the world afterwards',
+    await p.evaluate(() => window.__eeri.player.y) > 0.9);
+
+  // riding into it costs the RIDE, not the run (the Yoshi rule).
+  // Mount well clear of the ball first, then drive the cab under it.
+  await p.evaluate(() => {
+    window.__eeri.player.mercyT = 0;
+    window.__eeri.exc.x = 30; window.__eeri.exc.y = 4;
+    window.__eeri.debug.setPos(28.5, 4.1);
+  });
+  await p.waitForTimeout(400);
+  await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
+  const rode = await p.waitForFunction(() => window.__eeri.mode() === 'riding', null, { timeout: 5000 }).then(() => true).catch(() => false);
+  ok('back in the cab, clear of the ball', rode);
+
+  await p.evaluate(() => { window.__eeri.exc.x = 69.4; window.__eeri.player.mercyT = 0; });
+  const thrown = await p.waitForFunction(() => window.__eeri.mode() !== 'riding', null, { timeout: 10000 }).then(() => true).catch(() => false);
+  ok('a hit takes the ride, not the run (thrown clear of the cab)', thrown);
+
+  // ---- the house obligations --------------------------------------------
+  ok('the way home is mounted', await p.locator('.hub-home, #hubHome, [data-hub-home]').count() > 0
+    || await p.evaluate(() => !!document.querySelector('a[href*="../"], a[href$="/"]')));
+  ok('it is signed', await p.locator('.toko-sign, .toko-badge, [class*="toko"]').count() > 0);
+
   ok('no errors after the whole ride', errs.length === 0, errs.slice(0, 3).join(' | '));
 
   await b.close(); s.close();

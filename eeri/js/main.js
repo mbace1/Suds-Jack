@@ -9,9 +9,12 @@ import { Level, SPAWN } from './level.js?v=1';
 import { buildLayers } from './layers.js?v=1';
 import { buildKidModel, Kid, Player } from './kid.js?v=1';
 import { buildExcavatorModel, Excavator } from './excavator.js?v=1';
+import { WreckingBall } from './hazards.js?v=1';
+import { AudioKit } from './audio.js?v=1';
 import { loadManifest, getModel } from './assets.js?v=1';
 
 const FOV = 24, CAM_Z = 34;
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 async function boot() {
   // renderer: clean edges, no post stack (ART_BRIEF §3.4)
@@ -39,6 +42,12 @@ async function boot() {
   const input = new Input();
   input.bindButtons({ tL: 'left', tR: 'right', tJ: 'jump', tA: 'action' });
 
+  // the noise waits for a gesture — browsers will not start it otherwise
+  const audio = new AudioKit();
+  const wake = () => { audio.ensure(); audio.idleStart(); };
+  addEventListener('keydown', wake, { once: true });
+  addEventListener('pointerdown', wake, { once: true });
+
   // ---- the world, through the asset seam ---------------------------------
   await loadManifest();
   const level = new Level();
@@ -61,6 +70,10 @@ async function boot() {
   bg.shadow.visible = false;
   bg.face = -1;
   scene.add(bg.group, ...bg.puffs);
+
+  // the first hazard: it hangs off the girder past mound two, dead still
+  // until you come near (ART_BRIEF gate 6 — telegraph, then strike)
+  const ball = new WreckingBall(scene, 70, 8, 2.6, 7.5);
 
   // ---- bolts: the collectable (3D slow spinners, §6) ----------------------
   const boltGeo = new THREE.CylinderGeometry(0.26, 0.26, 0.12, 6);
@@ -105,12 +118,15 @@ async function boot() {
     input.take('action'); input.take('jump');
   }
 
-  function startDismount() {
+  // thrown = struck out of the cab. The Yoshi rule: a hazard takes the
+  // RIDE, not the run — so it is the same move, thrown further and higher.
+  function startDismount(thrown = false) {
     mode = 'dismounting'; moveT = 0;
     exc.seatWorld(from); from.z = 0;
-    const gx = exc.x - exc.face * 2.6;
+    const gx = exc.x - exc.face * (thrown ? 4.2 : 2.6);
     to.set(gx, Math.max(level.groundTop(gx, exc.y + 2), exc.y), 0);
-    mid.copy(from).lerp(to, 0.5); mid.y = Math.max(from.y, to.y) + 1.4;
+    mid.copy(from).lerp(to, 0.5); mid.y = Math.max(from.y, to.y) + (thrown ? 2.8 : 1.4);
+    if (thrown) player.mercyT = 1.3;
     kid.setFace(-exc.face);
     scene.add(kid.group); // back to world space
     exc.seatWorld(v3); kid.group.position.set(v3.x, v3.y, 0);
@@ -128,14 +144,17 @@ async function boot() {
 
   // ---- debug handle (the smoke gate drives game state, not the clock) ----
   window.__eeri = {
-    level, player, exc, input,
+    level, player, exc, ball, audio, input,
     mode: () => mode,
     collected: () => collected,
+    reduced: REDUCED,
     debug: {
       press: (n) => input.press(n),
       release: (n) => input.release(n),
       setPos: (x, y) => { player.x = x; player.y = y; player.vx = 0; player.vy = 0; },
       excPos: () => ({ x: exc.x, y: exc.y }),
+      hazard: () => ({ state: ball.state, ...ball.ballPos() }),
+      mercy: () => player.mercyT,
       tris: () => renderer.info.render.triangles,
     },
   };
@@ -153,9 +172,11 @@ async function boot() {
     if (mode === 'foot') {
       player.update(dt, input);
       exc.update(dt, null);
+      if (player.justJumped) audio.jump();
+      if (player.justLanded) audio.land();
       const near = nearExc();
       setHint(near ? HINT.near : HINT.foot);
-      if (near && input.take('action')) startMount();
+      if (near && input.take('action')) { startMount(); audio.mount(); }
     } else if (mode === 'mounting') {
       moveT += dt / 0.55;
       exc.update(dt, null);
@@ -170,16 +191,21 @@ async function boot() {
         mode = 'riding';
       }
     } else if (mode === 'riding') {
+      const boomWas = exc.n.boom.rotation.z;
       exc.update(dt, {
         drive: input.axis(),
         boomUp: input.down.up,
         boomDown: input.down.down,
       });
       player.x = exc.x; player.y = exc.y + 1; player.vx = 0; player.vy = 0;
+      player.mercyT = Math.max(0, player.mercyT - dt);
       kid.pose('ride', t);
       kid.shadow.visible = false;
+      kid.group.visible = true;
+      audio.idleLoad(Math.min(1, Math.abs(exc.vx) / 3.4));
+      if (Math.abs(exc.n.boom.rotation.z - boomWas) > 0.012) audio.boom();
       setHint(HINT.ride);
-      if (input.take('action') || input.take('jump')) startDismount();
+      if (input.take('action') || input.take('jump')) { startDismount(); audio.dismount(); }
     } else if (mode === 'dismounting') {
       moveT += dt / 0.5;
       exc.update(dt, null);
@@ -192,7 +218,21 @@ async function boot() {
       }
     }
 
-    bg.auto(dt);
+    // the background machine is decoration — reduced motion stills it
+    if (!REDUCED) bg.auto(dt);
+    if (mode !== 'riding') audio.idleLoad(0);
+
+    // the hazard: wakes on whoever is near, and takes the ride, not the run
+    ball.update(dt, mode === 'riding' ? exc.x : player.x, audio, REDUCED);
+    if (mode === 'riding') {
+      if (player.mercyT <= 0 && ball.hits(exc.x, exc.y, exc.hw, exc.h)) {
+        startDismount(true); audio.splat();
+      }
+    } else if (mode === 'foot') {
+      if (ball.hits(player.x, player.y, player.hw, player.h) && player.struck(ball.ballPos().x)) {
+        audio.splat();
+      }
+    }
 
     // bolts: spin, bob, collect, pop
     const cx = mode === 'riding' ? exc.x : player.x;
@@ -206,6 +246,7 @@ async function boot() {
         if (Math.abs(b.position.x - cx) < cr && Math.abs(b.position.y - cy) < cr) {
           b.state = 'pop'; b.popT = 0;
           collected++;
+          audio.bolt(collected);
           boltsEl.textContent = `⬡ ${collected}/${bolts.length}`;
         }
       } else { // pop

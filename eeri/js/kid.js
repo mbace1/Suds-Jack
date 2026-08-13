@@ -149,12 +149,27 @@ export class Player {
     this.grounded = false;
     this.squash = 0;
     this.t = 0;
+    this.mercyT = 0;
+    // one-frame events for the noise to hang off
+    this.justJumped = false; this.justLanded = false;
+  }
+
+  // knocked back by a hazard: the cost is never death (ART_BRIEF hazards)
+  struck(fromX) {
+    if (this.mercyT > 0) return false;
+    this.mercyT = 1.3;
+    this.vx = (this.x < fromX ? -1 : 1) * 7.5;
+    this.vy = 7;
+    return true;
   }
 
   box() { return { x: this.x, y: this.y, hw: this.hw, h: this.h }; }
 
   update(dt, input) {
     this.t += dt;
+    this.justJumped = false; this.justLanded = false;
+    this.mercyT = Math.max(0, this.mercyT - dt);
+    const wasGrounded = this.grounded;
     const ax = input.axis();
 
     // horizontal: accelerate hard, stop hard — tap = a step, hold = a run
@@ -174,6 +189,7 @@ export class Player {
     else this.jumpBufT -= dt;
     if (this.jumpBufT > 0 && this.groundedT > 0) {
       this.vy = JUMP_V; this.jumpBufT = 0; this.groundedT = 0;
+      this.justJumped = true;
     }
     if (!input.down.jump && !input.down.up && this.vy > 4) this.vy = 4;
 
@@ -190,6 +206,7 @@ export class Player {
     }
     this.grounded = my.grounded || this.level.grounded(this.box());
     this.groundedT = this.grounded ? COYOTE : this.groundedT - dt;
+    if (this.grounded && !wasGrounded) this.justLanded = true;
 
     // fell in the pit (its floor is dressing, not ground): back to the near side
     if (this.y < 0.9) { this.x = 43; this.y = 5; this.vx = 0; this.vy = 0; }
@@ -202,6 +219,8 @@ export class Player {
     k.group.position.set(this.x, this.y, 0);
     this.squash = Math.max(0, this.squash - 0.016);
     k.group.scale.y = this.squash > 0 ? 0.86 : 1;
+    // mercy flicker — the one place the kid is allowed to disappear
+    k.group.visible = this.mercyT <= 0 || Math.floor(this.mercyT * 18) % 2 === 0;
     const state = !this.grounded ? 'air' : Math.abs(this.vx) > 0.4 ? 'run' : 'idle';
     k.pose(state, this.t, Math.abs(this.vx));
     const gy = this.level.groundTop(this.x, this.y + 0.1);

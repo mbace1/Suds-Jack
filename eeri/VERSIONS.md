@@ -12,5 +12,16 @@ excavator working a dig loop on the far layer; blob shadows, exhaust
 puffs, touch buttons. **The asset seam is live:** `assets/manifest.json` +
 `js/assets.js` — every model and 2D layer swaps from code placeholder to
 PNG/GLB file with a one-word manifest edit against the node contracts in
-`assets/README.md`. Not yet: audio, hazards, reduced-motion stills, hub
-cabinet entry, signature.
+`assets/README.md`.
+
+The first hazard is in and it sets the pattern: a wrecking ball hangs dead
+still until you come near, then **winds back** — chevrons pulsing, one
+warning tone — and only then swings. Nothing here kills; the cost is the
+**Yoshi rule**, a hit takes the RIDE (thrown clear of the cab) and never
+the run, with mercy frames on foot. A synth kit carries it, including a
+diesel bed whose pitch rises with the machine's load, and the arcade
+cabinet (`worksite` cover), the way home and the Toko signature are
+mounted. `prefers-reduced-motion` stills the decorative background
+machine and holds the chevrons steady instead of flashing.
+
+Not yet: more machines, more world themes, the level beyond one room.

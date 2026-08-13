@@ -31,6 +31,10 @@
     "v": 3,
     "from": "VERSIONS.md"
   },
+  "eeri": {
+    "v": 1,
+    "from": "VERSIONS.md"
+  },
   "gameoflife": {
     "v": 40,
     "from": "VERSIONS.md"
