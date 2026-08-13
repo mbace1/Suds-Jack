@@ -4,72 +4,58 @@
 //
 // World units = tiles. Cell (c, cy) spans x [c, c+1), y [cy, cy+1);
 // cy counts up from the bottom of the map.
+//
+// v6: rooms are assembled from js/parts.js and compiled here — see rooms.js.
+// each site is one room built on the same grammar: a kid-shaped obstacle,
+// a machine-shaped lock, and an exit only the pair of them opens.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=1';
+import { PAL, mix } from './palette.js?v=1';
 
-const W = 96, H = 18;
+import { ROOMS } from './rooms.js?v=1';
+import { compile, W, H, SOLID_CHARS, GROUND } from './parts.js?v=1';
+
+export { ROOMS };
 const EPS = 0.001;
 
-function blankGrid() {
-  return Array.from({ length: H }, () => new Array(W).fill(' '));
-}
-
-// The room is a LOCK and the machine is the KEY (ART_BRIEF §1.2). Two
-// obstacles, each shaped for exactly one of them: the PIT is kid-shaped —
-// the machine will not drive off a cliff and never crosses it — and the
-// BANK is machine-shaped, three tiles of dirt the kid cannot jump and the
-// bucket takes down a row at a time. Neither finishes the room alone.
-function buildMap() {
-  const g = blankGrid();
-  const fill = (r0, r1, c0, c1, ch) => {
-    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) g[r][c] = ch;
-  };
-  fill(14, 17, 0, W - 1, '#');       // ground band
-  fill(14, 17, 46, 48, ' ');         // THE PIT — the kid-shaped obstacle
-  fill(12, 13, 8, 14, '#');          // mound one (teaches the climb)
-  fill(10, 10, 11, 16, '=');         // steel platform over mound one
-  fill(12, 12, 52, 57, '=');         // platform past the pit
-  fill(10, 10, 66, 72, 'G');         // the girder the ball hangs from
-  fill(11, 13, 84, 88, 'B');         // THE BANK — the machine-shaped lock
-  return g;
-}
-
-const BOLTS = [
-  [9, 12], [9, 13], [9, 14], [9, 15],
-  [13, 34], [13, 35], [13, 36],
-  [11, 46], [11, 47], [11, 48],       // the arc over the pit
-  [11, 53], [11, 54], [11, 55], [11, 56],
-  [13, 76], [13, 77], [13, 78],       // the run to the bank
-  [12, 90], [12, 91],                 // past it — only reachable once it is dug
-];
-
-// where the bank stands, in cells. The piece owns the art; the map owns
-// the collision, and digging edits the map.
-export const BANK = { c0: 84, c1: 88, cy0: 4, rows: 3 };
-export const EXIT = { x: 92.5, y: 4 };
-
-export const SPAWN = { kid: { x: 4.5, y: 4 }, excavator: { x: 61, y: 4 } };
+// A Level is one compiled room. It compiles on construction rather than
+// sharing a grid, because DIGGING AND SPANNING EDIT THE MAP — two Levels
+// over one grid would have the second remember the first one's excavation.
 
 export class Level {
-  constructor() {
+  constructor(room = ROOMS[0]) {
+    this.room = room;
+    this.def = compile(room);        // fresh grid every time — see above
     this.w = W; this.h = H;
-    this.map = buildMap();
-    this.boltCells = BOLTS.map(([r, c]) => ({ x: c + 0.5, y: (H - 1 - r) + 0.5 }));
+    this.map = this.def.grid;
+    this.boltCells = this.def.bolts.map(([r, c]) => ({ x: c + 0.5, y: (H - 1 - r) + 0.5 }));
   }
 
   solidCell(c, cy) {
     if (c < 0 || c >= W) return true;          // the world has ends
     if (cy < 0) return true;
     if (cy >= H) return false;
-    const ch = this.map[H - 1 - cy][c];
-    return ch === '#' || ch === '=' || ch === 'G' || ch === 'B';
+    return SOLID_CHARS.includes(this.map[H - 1 - cy][c]);
   }
 
   // digging edits the map, so collision stays honest — the bank shrinks as
   // a fact about the level, not as a fact about a picture
   clearRow(c0, c1, cy) {
     for (let c = c0; c <= c1; c++) this.map[H - 1 - cy][c] = ' ';
+  }
+
+  // …and seating a girder edits it the other way: the span is a fact too
+  fillRow(c0, c1, cy, ch = 'G') {
+    for (let c = c0; c <= c1; c++) this.map[H - 1 - cy][c] = ch;
+  }
+
+  // fell past the floor: back to the near side of whichever hole took you
+  fallRespawn(x) {
+    for (const p of this.def.pits) {
+      if (x > p.c0 - 1 && x < p.c1 + 2) return { x: p.backX, y: 5 };
+    }
+    const s = this.def.spawn.kid;
+    return { x: s.x, y: s.y + 1 };
   }
 
   // Axis-separated AABB sweep. box = {x (centre), y (feet), hw, h}.
@@ -125,20 +111,41 @@ export class Level {
     for (let cy = Math.floor(yFrom - EPS); cy >= 0; cy--) {
       if (this.solidCell(c, cy)) return cy + 1;
     }
-    return -4; // over the pit: below the world
+    return -4; // over a pit: below the world
   }
 
   // ---- dressing: shallow 3D slabs wearing the flat-colour read -----------
+  //
+  // v4: the earth is a CUT SECTION, not a fill. It was one flat brown slab
+  // taking the bottom third of every frame with nothing in it — the largest
+  // area on screen carrying no information, which is the one thing the
+  // Tropical Freeze reference never does. It bands into strata now, wears
+  // cobbles, and the standable lip casts a hard shadow onto the face below
+  // it so the gameplay lane stops reading as a hairline.
 
   buildMeshes(scene) {
     const group = new THREE.Group();
+    // strata: the section gets darker and cooler with depth, in bands
+    const STRATA = [
+      PAL.EARTH[0],                          // cy 0 — deepest of the band
+      mix(PAL.EARTH[1], PAL.EARTH[0], 0.5),  // cy 1
+      PAL.EARTH[1],                          // cy 2
+      PAL.EARTH[2],                          // cy 3 — topsoil
+    ];
+    const strata = (cy) => STRATA[Math.min(cy, STRATA.length - 1)];
     const mat = {
-      dirt:  new THREE.MeshLambertMaterial({ color: PAL.EARTH[1] }),
-      dirtDk:new THREE.MeshLambertMaterial({ color: PAL.EARTH[0] }),
       lip:   new THREE.MeshLambertMaterial({ color: PAL.GREEN }),
+      shade: new THREE.MeshLambertMaterial({ color: mix(PAL.EARTH[0], PAL.INK, 0.45) }),
+      back:  new THREE.MeshLambertMaterial({ color: mix(PAL.EARTH[0], PAL.INK, 0.5) }),
+      cut:   new THREE.MeshLambertMaterial({ color: PAL.EARTH[3] }),
       steel: new THREE.MeshLambertMaterial({ color: PAL.STEEL[2] }),
       girder:new THREE.MeshLambertMaterial({ color: PAL.STEEL[1] }),
       bolt:  new THREE.MeshLambertMaterial({ color: PAL.DARK }),
+    };
+    const dirtMats = new Map();
+    const dirtMat = (c) => {
+      if (!dirtMats.has(c)) dirtMats.set(c, new THREE.MeshLambertMaterial({ color: c }));
+      return dirtMats.get(c);
     };
     const box = (w, h, d, m, x, y, z) => {
       const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
@@ -147,28 +154,64 @@ export class Level {
       return mesh;
     };
 
-    // the earth under everything — the world is not floating on sky, and
-    // the pit reads as a hole with a dark floor instead of a window
-    box(136, 10, 1.6, mat.dirtDk, 48, -5, 0);
-    // …and a back wall behind the ground band, so the pit shows earth, not sky
-    box(136, 3.98, 0.1, mat.dirtDk, 48, 2, -0.9);
+    // the deep earth below the playable band — banded, so the eye has
+    // somewhere to go, and darkening downward the way a real cut does
+    const DEEP = [
+      { y0: -1.6, y1: 0, c: mix(PAL.EARTH[0], PAL.INK, 0.12) },
+      { y0: -4.2, y1: -1.6, c: mix(PAL.EARTH[0], PAL.INK, 0.26) },
+      { y0: -10, y1: -4.2, c: mix(PAL.EARTH[0], PAL.INK, 0.4) },
+    ];
+    for (const b of DEEP) {
+      box(136, b.y1 - b.y0, 1.6, dirtMat(b.c), 48, (b.y0 + b.y1) / 2, 0);
+    }
+    // …and a back wall behind the ground band, darker than any face, so a
+    // pit reads as a hole receding rather than a notch cut in a wall
+    box(136, 3.98, 0.1, mat.back, 48, 2, -0.9);
+
+    // cobbles embedded in the face — deterministic, so a screenshot of the
+    // same frame is the same picture twice
+    const cobGeo = new THREE.DodecahedronGeometry(1, 0);
+    let seed = 1337;
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    for (let i = 0; i < 90; i++) {
+      const x = rnd() * 136 - 20;
+      const y = -0.4 - rnd() * rnd() * 8;
+      const s = 0.12 + rnd() * 0.26;
+      const c = rnd() < 0.35 ? PAL.STEEL[0] : mix(PAL.EARTH[0], PAL.INK, 0.5 + rnd() * 0.2);
+      const m = new THREE.Mesh(cobGeo, dirtMat(c));
+      m.position.set(x, y, 0.82);
+      m.scale.set(s, s * 0.8, s * 0.5);
+      m.rotation.set(rnd() * 6, rnd() * 6, rnd() * 6);
+      group.add(m);
+    }
 
     // merge horizontal runs per row so the slab count stays sane
     for (let r = 0; r < H; r++) {
       let c = 0;
       while (c < W) {
         const ch = this.map[r][c];
-        if (ch === ' ' || ch === 'B') { c++; continue; }   // the bank is a piece
+        // a bank and a wall are PIECES — they carry their own states and are
+        // built by pieces.js, so the tile painter leaves their cells alone
+        if (ch === ' ' || ch === 'B' || ch === 'K') { c++; continue; }
         let e = c;
         while (e + 1 < W && this.map[r][e + 1] === ch) e++;
         const cy = H - 1 - r;
         const cx = (c + e + 1) / 2, w = e - c + 1;
         if (ch === '#') {
-          const deep = r + 1 < H && this.map[r + 1][c] === '#';
-          box(w, 1, 1.6, deep ? mat.dirt : mat.dirt, cx, cy + 0.5, 0);
-          // grass lip on tops with air above — the ACCENT GREEN "safe edge" role
+          box(w, 1, 1.6, dirtMat(strata(cy)), cx, cy + 0.5, 0);
+          // grass lip on tops with air above — the ACCENT GREEN "safe edge"
+          // role — and a hard shadow under it. The lip is where the game is
+          // played; without the shadow it was a 0.14 hairline on a flat wall.
           if (r === 0 || this.map[r - 1][c] === ' ') {
             box(w, 0.14, 1.66, mat.lip, cx, cy + 0.94, 0);
+            box(w, 0.22, 1.68, mat.shade, cx, cy + 0.76, 0);
+          }
+          // a fresh cut edge either side of a hole, so the rim is drawn
+          if (c > 0 && this.map[r][c - 1] === ' ' && cy >= 1) {
+            box(0.16, 1, 1.7, mat.cut, c + 0.05, cy + 0.5, 0);
+          }
+          if (e < W - 1 && this.map[r][e + 1] === ' ' && cy >= 1) {
+            box(0.16, 1, 1.7, mat.cut, e + 0.95, cy + 0.5, 0);
           }
         } else if (ch === '=') {
           box(w, 0.5, 1.4, mat.steel, cx, cy + 0.72, 0);

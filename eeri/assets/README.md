@@ -60,7 +60,7 @@ the point the bucket or hook takes hold of.
 | file | states | notes |
 |---|---|---|
 | `bank_v1.glb` | `state0` full · `state1` half · `state2` dug flat | half-dug wants a fresh cut face and spill at the foot |
-| `girder_v1.glb` | `state0` stacked · `state1` slung · `state2` seated as a span | needs `grip`; the span state is walked on, so its top is flat and 1 tile deep |
+| `girder_v1.glb` | `state0` stacked · `state1` slung · `state2` seated as a span | needs `grip`; the span state is walked on, so its top is flat and 1 tile deep. State origins: `state0` on the ground under the stack centre, `state1` hangs from `grip` at its origin (the game rests the load on the ground when the grip comes down — the rest depth is read off `state1`'s own bounding box), `state2` at the span centre with its top at +1 |
 | `wall_v1.glb` | `state0` intact · `state1` cracked · `state2` rubble | rubble is a different silhouette, not a shorter wall |
 | `load_v1.glb` | `state0` grounded · `state1` slung · `state2` placed | needs `grip` |
 
@@ -81,14 +81,41 @@ at **30 px per unit** (`PPU` in `js/layers.js`):
 | `far` | −14 | −20…120 × 0…20 | 4096 × 600 * |
 | `mid` | −6 | −12…110 × 0…14 | 3660 × 420 |
 | `near` | −2 | −8…104 × 0…8 | 3360 × 240 |
-| `fore` | +2.2 | −8…104 × −1…5 | 3360 × 180 |
+| `fore` | +2.2 | −8…104 × −2…14 | 3360 × 480 |
 
 \* canvas width is capped at 4096 px; the plane stretches it to the rect,
 so paint to 4096 wide and treat the horizontal scale as slightly coarse —
 these layers are far away.
 
+**These numbers are checked.** `eeri/test/smoke.cjs` reads this table and
+compares it against `LAYER_RECTS` × `PPU` in `js/layers.js`, and a live PNG
+whose pixel size does not match its row fails the gate rather than being
+silently stretched onto the plane. Paint to the row.
+
 The sky itself (gradient + clouds + sun) stays code-drawn; it is the
 backdrop, not a kit piece.
+
+### What each layer is FOR (v4 — the depth pass)
+
+The stack is not five pictures at five distances; each one has a job, and
+a layer that does another layer's job flattens the diorama:
+
+- **`skyline`** — quiet. Low internal contrast, heavily hazed. It sets the
+  city and then gets out of the way. Crisp two-tone blocks here read as
+  *near* and fight the playfield; that is a bug, not a style.
+- **`far`** — the half-built frames. Structure you read as distance.
+- **`mid`** — the built stage: scaffold bays, hoarding, the SMB3
+  flats conceit showing its bolts.
+- **`near`** — dressing just behind the action; it may overlap the
+  playfield's silhouette, that is what sells the lane.
+- **`fore`** — **the occluder lane, and it must be CROPPED.** Every piece
+  here runs off the top or the bottom of the rect. Narrow verticals you
+  pass behind (scaffold standards), low sweeps along the bottom (spoil,
+  drums), and high crossings (a pipe run). Dark, near-silhouette, no sky
+  tint. Two rules learned the hard way: a big shape parked at eye level is
+  a blob with the game hidden behind it, and a heap whose crest sits below
+  the playfield's ground line (y = 4) reads as a hole cut in the earth
+  rather than a mound in front of it.
 
 ## Sources
 

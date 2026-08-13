@@ -208,8 +208,12 @@ export class Player {
     this.groundedT = this.grounded ? COYOTE : this.groundedT - dt;
     if (this.grounded && !wasGrounded) this.justLanded = true;
 
-    // fell in the pit (its floor is dressing, not ground): back to the near side
-    if (this.y < 0.9) { this.x = 43; this.y = 5; this.vx = 0; this.vy = 0; }
+    // fell in a pit (its floor is dressing, not ground): the level knows
+    // which hole took him and hands back the near side of it
+    if (this.y < 0.9) {
+      const r = this.level.fallRespawn(this.x);
+      this.x = r.x; this.y = r.y; this.vx = 0; this.vy = 0;
+    }
 
     this.updateVisual();
   }
