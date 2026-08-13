@@ -9,7 +9,7 @@
 // the model came from.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=1';
+import { PAL } from './palette.js?v=2';
 
 const FACE_TURN = 0.42 * Math.PI; // 3/4 view: forward ±x, tipped toward camera
 
@@ -27,41 +27,146 @@ export function buildKidModel() {
     const hip = new THREE.Group(); hip.name = name;
     hip.position.set(0, 0.56, dz);
     box(hip, 0.17, 0.42, 0.19, PAL.PANTS, 0, -0.24, 0);
-    box(hip, 0.2, 0.14, 0.24, PAL.BOOT, 0.03, -0.5, 0); // boot, toe forward
+    // machine-yellow wellies: the one bright note on him, and what keeps a
+    // navy-and-olive kid readable against brown dirt at gameplay distance
+    box(hip, 0.2, 0.16, 0.24, PAL.BOOT, 0.03, -0.49, 0);
+    box(hip, 0.21, 0.05, 0.25, PAL.BOOT_DK, 0.03, -0.55, 0);   // sole
     root.add(hip); nodes[name] = hip;
   }
 
-  // body: high-vis vest over shirt
+  // body: the navy dino tee from the photograph
   const body = new THREE.Group(); body.name = 'body'; body.position.y = 0.56;
-  box(body, 0.4, 0.5, 0.3, PAL.VEST, 0, 0.25, 0);
-  box(body, 0.42, 0.1, 0.32, PAL.SHIRT, 0, 0.06, 0);   // shirt hem
-  box(body, 0.41, 0.07, 0.31, PAL.CLOUD, 0, 0.3, 0);   // hi-vis band
+  box(body, 0.4, 0.5, 0.3, PAL.TEE, 0, 0.25, 0);
+  box(body, 0.42, 0.08, 0.32, PAL.TEE, 0, 0.05, 0);     // hem, a touch wider
+  // the dino print: a body, a tail and a row of back plates. Tiny, but it is
+  // HIS shirt — and at 32 px it still reads as a green shape on navy, which
+  // is the only job a print has at that size.
+  // he faces +x, so the print goes on the +x FACE — put it on +z and it
+  // sits on his ribs where the camera never looks
+  box(body, 0.02, 0.14, 0.13, PAL.DINO, 0.205, 0.26, 0);      // body
+  box(body, 0.02, 0.05, 0.09, PAL.DINO, 0.205, 0.20, -0.11);  // tail
+  box(body, 0.02, 0.08, 0.07, PAL.DINO, 0.205, 0.34, 0.10);   // head
+  box(body, 0.02, 0.05, 0.03, PAL.DINO, 0.205, 0.16, 0.06);   // leg
+  for (const pz of [-0.03, 0.02]) {                            // back plates
+    box(body, 0.02, 0.04, 0.03, PAL.DINO, 0.205, 0.35, pz);
+  }
   root.add(body); nodes.body = body;
 
-  // arms: pivot at the shoulder, children of the body so the lean carries them
-  for (const [name, dz] of [['armL', 0.24], ['armR', -0.24]]) {
+  // Arms: pivot at the shoulder, children of the body so the lean carries
+  // them — and each one has an ELBOW. A child runs with its arms bent; a
+  // straight arm swinging from the shoulder is a soldier's march, and it was
+  // the single thing most obviously wrong with the run. The sleeve stays on
+  // the shoulder and the forearm and hand hang off `elbowL`/`elbowR`, so the
+  // bend is one angle rather than a redrawn limb.
+  for (const [name, elbow, dz] of [['armL', 'elbowL', 0.24], ['armR', 'elbowR', -0.24]]) {
     const sh = new THREE.Group(); sh.name = name;
     sh.position.set(0, 0.44, dz);
-    box(sh, 0.13, 0.4, 0.13, PAL.SHIRT, 0, -0.18, 0);
-    box(sh, 0.12, 0.1, 0.12, PAL.SKIN, 0, -0.4, 0); // hand
+    // A SHORT sleeve — a cap at the shoulder, then bare skin down to the
+    // elbow. Running the navy the full length of the upper arm put a navy
+    // limb against a navy torso, so the arm vanished and the forearm read as
+    // a plank floating at the waist.
+    box(sh, 0.13, 0.10, 0.13, PAL.TEE, 0, -0.05, 0);    // sleeve cap
+    box(sh, 0.115, 0.13, 0.115, PAL.SKIN, 0, -0.15, 0); // bare upper arm
+    const el = new THREE.Group(); el.name = elbow;
+    el.position.set(0, -0.21, 0);                      // the joint, at the cuff
+    box(el, 0.115, 0.2, 0.115, PAL.SKIN, 0, -0.09, 0); // bare forearm
+    box(el, 0.12, 0.1, 0.12, PAL.SKIN, 0, -0.23, 0);   // hand
+    sh.add(el); nodes[elbow] = el;
     body.add(sh); nodes[name] = sh;
   }
 
-  // head + the hat: the silhouette key
+  // head + THE CAP: the silhouette key (ART_BRIEF §3.7). The hard hat is
+  // gone — this is the owner's kid, so it is his olive dinosaur cap: a
+  // rounded crown, a forward brim, and three soft spikes down the middle.
+  // The spikes ARE the silhouette; nothing else here survives 32 px.
   const head = new THREE.Group(); head.name = 'head'; head.position.y = 1.12;
   const skull = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 10), M(PAL.SKIN));
   skull.position.y = 0.22; head.add(skull);
+  // hair showing under the cap at the back and sides
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.295, 12, 8, 0, Math.PI * 2, 0, 1.1), M(PAL.HAIR));
+  hair.position.y = 0.2; hair.rotation.z = 0.12; head.add(hair);
   for (const dz of [0.11, -0.11]) { // dot eyes on the +x face
     const eye = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), M(PAL.INK));
-    eye.position.set(0.26, 0.26, dz); head.add(eye);
+    eye.position.set(0.26, 0.24, dz); head.add(eye);
   }
-  const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.32, 0.18, 12), M(PAL.MACHINE));
-  hat.position.y = 0.5; head.add(hat);
-  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.05, 12), M(PAL.MACHINE_DK));
-  brim.position.set(0.06, 0.42, 0); head.add(brim);
+  box(head, 0.05, 0.015, 0.09, PAL.INK, 0.28, 0.12, 0);   // the line mouth
+
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.315, 12, 8, 0, Math.PI * 2, 0, 1.3), M(PAL.CAP));
+  cap.position.y = 0.27; head.add(cap);
+  // The peak rides on the cap's lower edge, NOT at eye height — at 0.30 it
+  // cut straight across the eyes and read as one heavy eyebrow.
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.035, 12, 1, false, -0.85, 1.7), M(PAL.CAP_DK));
+  brim.position.set(0.19, 0.375, 0);
+  brim.rotation.z = -0.12;          // tipped down at the front, as a peak sits
+  head.add(brim);
+  // three spikes along the crown, front to back, tallest in the middle
+  // Four soft spikes running front-to-back along the crown. They are the
+  // silhouette key, so they are DELIBERATELY oversized — at 32 px the cap is
+  // six pixels tall and a subtle spike is no spike at all.
+  // Four SOFT spikes front-to-back along the crown — fabric, not a mohawk.
+  // Rounded (a squashed sphere, never a cone) and oversized on purpose: they
+  // are the silhouette key, and at 32 px the whole cap is six pixels tall.
+  const spikes = [[0.20, 0.085], [0.07, 0.115], [-0.07, 0.105], [-0.20, 0.075]];
+  for (const [sx, h] of spikes) {
+    const t = sx / 0.315;
+    const domeY = 0.30 + Math.sqrt(Math.max(0, 1 - t * t)) * 0.315;
+    const sp = new THREE.Mesh(new THREE.SphereGeometry(1, 8, 6), M(PAL.SPIKE));
+    sp.scale.set(0.085, h * 1.5, 0.075);      // taller than wide: a soft nub
+    sp.position.set(sx, domeY + h * 0.55, 0);
+    sp.rotation.z = -Math.asin(Math.min(1, Math.max(-1, t))) * 0.6;
+    head.add(sp);
+  }
   root.add(head); nodes.head = head;
 
   return { root, nodes };
+}
+
+// A Meshy auto-rigged Eeri is a SKINNED mesh driven by named clips, not a
+// tree of nodes the game rotates. This is the whole of the difference, and it
+// stays here so `main.js` never learns which kind it got — it keeps calling
+// `pose(state, t, speed)` either way. That is the asset seam's entire point.
+//
+// Two things the mixer path has to get right:
+//  - CROSSFADE, never a hard switch. The clips are separate takes and cutting
+//    between them pops; 0.15 s covers it and still feels responsive.
+//  - The rig is modelled facing +Z (Meshy's requirement) and the game's world
+//    faces +x, so the whole thing carries a −90° yaw offset that the
+//    code-built kid does not.
+const CLIP_FOR = { idle: 'idle', run: 'run', air: 'jump', ride: 'ride', climb: 'walk' };
+const SKIN_YAW = -Math.PI / 2;
+
+class ClipDriver {
+  constructor(group, asset) {
+    this.mixer = new THREE.AnimationMixer(asset.root);
+    this.actions = {};
+    for (const [name, clip] of Object.entries(asset.clips)) {
+      const a = this.mixer.clipAction(clip);
+      a.enabled = true; a.setEffectiveWeight(0);
+      this.actions[name] = a;
+    }
+    this.current = null;
+    this.last = 0;
+  }
+  play(state, t, speed) {
+    const want = this.actions[CLIP_FOR[state]] ? CLIP_FOR[state] : 'idle';
+    if (want !== this.current) {
+      const next = this.actions[want];
+      if (next) {
+        next.reset().setEffectiveWeight(1).play();
+        if (this.current && this.actions[this.current]) {
+          this.actions[this.current].crossFadeTo(next, 0.15, false);
+        }
+        this.current = want;
+      }
+    }
+    // the run reads faster when he moves faster — the one place the game's
+    // own numbers still drive the animation
+    const a = this.actions[this.current];
+    if (a) a.setEffectiveTimeScale(this.current === 'run' ? 0.6 + Math.min(1.4, speed / 5) : 1);
+    const dt = Math.min(0.1, Math.max(0, t - this.last));
+    this.last = t;
+    this.mixer.update(dt);
+  }
 }
 
 export class Kid {
@@ -69,8 +174,13 @@ export class Kid {
     this.group = new THREE.Group();
     this.group.add(asset.root);
     this.n = asset.nodes;
+
+    if (asset.skinned) {
+      this.clips = new ClipDriver(this.group, asset);
+      asset.root.rotation.y = SKIN_YAW;
+    }
     // remember rest offsets so a GLB with its own base positions poses right
-    this.baseBodyY = this.n.body.position.y;
+    this.baseBodyY = this.n.body ? this.n.body.position.y : 0;
 
     // blob shadow — the landing aid (no shadow maps anywhere)
     this.shadow = new THREE.Mesh(
@@ -86,6 +196,13 @@ export class Kid {
   setFace(f) { if (f) this.face = f; }
 
   // state: 'idle' | 'run' | 'air' | 'ride' | 'climb'
+  //
+  // SIGN: a limb hangs along −y, so rotation.z = θ swings its tip to
+  // x = +sin(θ) — POSITIVE IS FORWARD, for arms and legs alike. The ride,
+  // air and climb poses were authored with the arms negative, which drove
+  // the machine with his hands behind his back and climbed the step
+  // reaching backwards over his own shoulder. Check a new pose by where the
+  // tip lands, not by whether the number looks right.
   pose(state, t, speed = 0) {
     // the turn is animated, not mirrored — a 3D cast's free win.
     // riding, the pose is local to the seat and the machine owns the facing.
@@ -94,6 +211,9 @@ export class Kid {
     this.turn += (target - this.turn) * 0.18;
     this.group.rotation.y = this.turn;
 
+    // a skinned rig is driven by clips; the facing above still applies
+    if (this.clips) return this.clips.play(state, t, speed);
+
     const n = this.n;
     const lerp = (o, k, v) => { o.rotation.z += (v - o.rotation.z) * k; };
     if (state === 'run') {
@@ -101,29 +221,47 @@ export class Kid {
       const sw = 0.55 + 0.45 * Math.min(1, speed / 6);
       n.hipL.rotation.z = Math.sin(ph) * sw;
       n.hipR.rotation.z = Math.sin(ph + Math.PI) * sw;
+      // ARMS COUNTER THE LEGS: each arm is half a cycle out of phase with the
+      // hip on its own side, so the leg that is forward has the arm on that
+      // side driving back. That is what a run is; swing them together and you
+      // get a toy soldier.
       n.armL.rotation.z = Math.sin(ph + Math.PI) * sw * 0.8;
       n.armR.rotation.z = Math.sin(ph) * sw * 0.8;
+      // The elbows stay BENT the whole way round and pump a little — a child
+      // runs with their forearms up, and the bend is what stops the swing
+      // reading as a march. It never straightens: the pump rides on top of a
+      // deep held bend rather than opening and closing.
+      n.elbowL.rotation.z = 1.15 + Math.sin(ph + Math.PI) * 0.34;
+      n.elbowR.rotation.z = 1.15 + Math.sin(ph) * 0.34;
       lerp(n.body, 0.2, -0.22);                 // the run leans forward
       n.body.position.y = this.baseBodyY + Math.abs(Math.sin(ph)) * 0.04;
       lerp(n.head, 0.2, 0.1);
     } else if (state === 'air') {
       lerp(n.hipL, 0.15, 0.8); lerp(n.hipR, 0.15, -0.5);
-      lerp(n.armL, 0.15, -1.4); lerp(n.armR, 0.15, -1.2);
+      lerp(n.armL, 0.15, 1.0); lerp(n.armR, 0.15, 0.75);
+      lerp(n.elbowL, 0.15, 1.3); lerp(n.elbowR, 0.15, 1.5);
       lerp(n.body, 0.15, -0.1); lerp(n.head, 0.15, 0);
     } else if (state === 'ride') {
-      // seated: legs forward, hands to the levers, all business
+      // seated: legs forward, hands to the levers, all business. The shoulder
+      // barely moves and the ELBOW does the reaching, which is how anyone
+      // actually holds a set of controls.
       lerp(n.hipL, 0.25, 1.35); lerp(n.hipR, 0.25, 1.2);
-      lerp(n.armL, 0.25, -0.85); lerp(n.armR, 0.25, -0.7);
+      lerp(n.armL, 0.25, 0.15); lerp(n.armR, 0.25, 0.1);
+      lerp(n.elbowL, 0.25, 1.15); lerp(n.elbowR, 0.25, 1.05);
       lerp(n.body, 0.25, 0.06); lerp(n.head, 0.25, -0.06);
       n.body.position.y = this.baseBodyY;
     } else if (state === 'climb') {
       lerp(n.hipL, 0.3, 1.0); lerp(n.hipR, 0.3, 0.2);
-      lerp(n.armL, 0.3, -2.2); lerp(n.armR, 0.3, -1.8);
+      lerp(n.armL, 0.3, 2.2); lerp(n.armR, 0.3, 1.8);
+      lerp(n.elbowL, 0.3, 0.5); lerp(n.elbowR, 0.3, 0.75);
       lerp(n.body, 0.3, -0.15);
     } else { // idle: a kid's idle — breath, small sway, never frozen
       lerp(n.hipL, 0.1, 0); lerp(n.hipR, 0.1, 0);
       lerp(n.armL, 0.1, Math.sin(t * 1.7) * 0.06);
       lerp(n.armR, 0.1, -Math.sin(t * 1.7) * 0.06);
+      // even at rest the arms are not planks — a small bend, breathing
+      lerp(n.elbowL, 0.1, 0.22 + Math.sin(t * 1.7) * 0.05);
+      lerp(n.elbowR, 0.1, 0.22 - Math.sin(t * 1.7) * 0.05);
       lerp(n.body, 0.1, 0);
       n.body.scale.y = 1 + Math.sin(t * 2.1) * 0.015;
       n.body.position.y = this.baseBodyY;
@@ -208,8 +346,10 @@ export class Player {
     this.groundedT = this.grounded ? COYOTE : this.groundedT - dt;
     if (this.grounded && !wasGrounded) this.justLanded = true;
 
+    // fell in the pit (its floor is dressing, not ground): back to the near side
     // fell in a pit (its floor is dressing, not ground): the level knows
-    // which hole took him and hands back the near side of it
+    // which hole took him and hands back the near side of it. Kept from the
+    // gameplay lineage — the character lineage still had the hardcoded x=43.
     if (this.y < 0.9) {
       const r = this.level.fallRespawn(this.x);
       this.x = r.x; this.y = r.y; this.vx = 0; this.vy = 0;

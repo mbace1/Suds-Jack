@@ -21,7 +21,15 @@ for (const [name, m] of Object.entries(manifest.models)) {
   const f = path.join(__dirname, '..', 'assets', m.file);
   ok(`model "${name}": ${m.status === 'live' ? 'live file exists' : 'placeholder declared'}`,
     m.status !== 'live' || fs.existsSync(f), m.file);
-  ok(`model "${name}" declares its node contract`, Array.isArray(m.nodes) && m.nodes.length > 0);
+  // two kinds of rig, two contracts: a hand-cut model declares the NODES the
+  // game rotates, a skinned character declares the CLIPS it can play
+  const skinned = m.rig === 'skinned';
+  ok(`model "${name}" declares its ${skinned ? 'clip' : 'node'} contract`,
+    Array.isArray(skinned ? m.clips : m.nodes) && (skinned ? m.clips : m.nodes).length > 0);
+  if (skinned) {
+    ok(`skinned "${name}" declares its height in TILES`,
+      typeof m.height === 'number' && m.height > 0.5 && m.height < 6);
+  }
 }
 for (const [name, m] of Object.entries(manifest.pieces || {})) {
   const f = path.join(__dirname, '..', 'assets', m.file);

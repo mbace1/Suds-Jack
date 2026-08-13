@@ -1,17 +1,19 @@
 {
-  "v": 5,
+  "v": 6,
   "_readme": "The asset seam. Every entry is either 'placeholder' (the game builds it in code) or 'live' (the game loads the file). Dropping an asset in = put the file at its path, flip status to live, bump the file's v token. The smoke gate reads this file: live entries must resolve and models must expose their contracted nodes. See assets/README.md for the full contract.",
   "models": {
     "eeri": {
-      "file": "3d/eeri_v1.glb",
-      "status": "placeholder",
-      "nodes": [
-        "hipL",
-        "hipR",
-        "armL",
-        "armR",
-        "body",
-        "head"
+      "file": "3d/eeri_v3.glb",
+      "status": "live",
+      "rig": "skinned",
+      "height": 1.62,
+      "_note": "Meshy auto-rig: a 24-bone skinned mesh driven by named CLIPS, not by the game's node names, so it is checked against `clips`. `height` is in TILES — Meshy rigs to metres and the seam rescales. See /ART_PIPELINE.md.",
+      "clips": [
+        "idle",
+        "walk",
+        "run",
+        "jump",
+        "ride"
       ]
     },
     "excavator": {
