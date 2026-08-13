@@ -15,20 +15,23 @@ function blankGrid() {
   return Array.from({ length: H }, () => new Array(W).fill(' '));
 }
 
-// The gate-1 room: a ground run, two dirt mounds, steel platforms, one pit,
-// a girder — enough to prove run/jump/ride against real edges.
+// The room is a LOCK and the machine is the KEY (ART_BRIEF §1.2). Two
+// obstacles, each shaped for exactly one of them: the PIT is kid-shaped —
+// the machine will not drive off a cliff and never crosses it — and the
+// BANK is machine-shaped, three tiles of dirt the kid cannot jump and the
+// bucket takes down a row at a time. Neither finishes the room alone.
 function buildMap() {
   const g = blankGrid();
   const fill = (r0, r1, c0, c1, ch) => {
     for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) g[r][c] = ch;
   };
   fill(14, 17, 0, W - 1, '#');       // ground band
-  fill(14, 17, 46, 48, ' ');         // the pit
+  fill(14, 17, 46, 48, ' ');         // THE PIT — the kid-shaped obstacle
   fill(12, 13, 8, 14, '#');          // mound one (teaches the climb)
-  fill(12, 13, 62, 68, '#');         // mound two
   fill(10, 10, 11, 16, '=');         // steel platform over mound one
-  fill(11, 11, 52, 57, '=');         // platform past the pit
-  fill(10, 10, 66, 72, 'G');         // girder off mound two
+  fill(12, 12, 52, 57, '=');         // platform past the pit
+  fill(10, 10, 66, 72, 'G');         // the girder the ball hangs from
+  fill(11, 13, 84, 88, 'B');         // THE BANK — the machine-shaped lock
   return g;
 }
 
@@ -36,11 +39,17 @@ const BOLTS = [
   [9, 12], [9, 13], [9, 14], [9, 15],
   [13, 34], [13, 35], [13, 36],
   [11, 46], [11, 47], [11, 48],       // the arc over the pit
-  [10, 53], [10, 54], [10, 55], [10, 56],
-  [9, 67], [9, 68], [9, 69], [9, 70], [9, 71],
+  [11, 53], [11, 54], [11, 55], [11, 56],
+  [13, 76], [13, 77], [13, 78],       // the run to the bank
+  [12, 90], [12, 91],                 // past it — only reachable once it is dug
 ];
 
-export const SPAWN = { kid: { x: 4.5, y: 4 }, excavator: { x: 22.5, y: 4 } };
+// where the bank stands, in cells. The piece owns the art; the map owns
+// the collision, and digging edits the map.
+export const BANK = { c0: 84, c1: 88, cy0: 4, rows: 3 };
+export const EXIT = { x: 92.5, y: 4 };
+
+export const SPAWN = { kid: { x: 4.5, y: 4 }, excavator: { x: 61, y: 4 } };
 
 export class Level {
   constructor() {
@@ -54,7 +63,13 @@ export class Level {
     if (cy < 0) return true;
     if (cy >= H) return false;
     const ch = this.map[H - 1 - cy][c];
-    return ch === '#' || ch === '=' || ch === 'G';
+    return ch === '#' || ch === '=' || ch === 'G' || ch === 'B';
+  }
+
+  // digging edits the map, so collision stays honest — the bank shrinks as
+  // a fact about the level, not as a fact about a picture
+  clearRow(c0, c1, cy) {
+    for (let c = c0; c <= c1; c++) this.map[H - 1 - cy][c] = ' ';
   }
 
   // Axis-separated AABB sweep. box = {x (centre), y (feet), hw, h}.
@@ -143,7 +158,7 @@ export class Level {
       let c = 0;
       while (c < W) {
         const ch = this.map[r][c];
-        if (ch === ' ') { c++; continue; }
+        if (ch === ' ' || ch === 'B') { c++; continue; }   // the bank is a piece
         let e = c;
         while (e + 1 < W && this.map[r][e + 1] === ch) e++;
         const cy = H - 1 - r;

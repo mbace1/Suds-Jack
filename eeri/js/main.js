@@ -5,13 +5,14 @@
 import * as THREE from 'three';
 import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=1';
 import { Input } from './input.js?v=1';
-import { Level, SPAWN } from './level.js?v=1';
+import { Level, SPAWN, BANK, EXIT } from './level.js?v=1';
+import { buildBankModel, Bank } from './pieces.js?v=1';
 import { buildLayers } from './layers.js?v=1';
 import { buildKidModel, Kid, Player } from './kid.js?v=1';
 import { buildExcavatorModel, Excavator } from './excavator.js?v=1';
 import { WreckingBall } from './hazards.js?v=1';
 import { AudioKit } from './audio.js?v=1';
-import { loadManifest, getModel } from './assets.js?v=1';
+import { loadManifest, getModel, getPiece } from './assets.js?v=1';
 
 const FOV = 24, CAM_Z = 34;
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -40,7 +41,7 @@ async function boot() {
   });
 
   const input = new Input();
-  input.bindButtons({ tL: 'left', tR: 'right', tJ: 'jump', tA: 'action' });
+  input.bindButtons({ tL: 'left', tR: 'right', tJ: 'jump', tA: 'action', tD: 'down' });
 
   // the noise waits for a gesture — browsers will not start it otherwise
   const audio = new AudioKit();
@@ -58,9 +59,26 @@ async function boot() {
   scene.add(kid.group, kid.shadow);
   const player = new Player(level, SPAWN.kid, kid);
 
+  // it starts UNMANNED: beacon turning, working its own cycle, dangerous
   const exc = new Excavator(level, SPAWN.excavator.x, SPAWN.excavator.y,
-    await getModel('excavator', buildExcavatorModel));
+    await getModel('excavator', buildExcavatorModel), false);
   scene.add(exc.group, exc.shadow, ...exc.puffs);
+
+  // the bank: the machine-shaped lock on the way out
+  const bank = new Bank(scene, level, BANK,
+    await getPiece('bank', () => buildBankModel(BANK.rows, BANK.c1 - BANK.c0 + 1)));
+
+  // the way out, once the bank is down
+  const gate = new THREE.Group();
+  for (const dx of [-0.6, 0.6]) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.22, 2.6, 0.22),
+      new THREE.MeshLambertMaterial({ color: PAL.MACHINE }));
+    post.position.set(EXIT.x + dx, EXIT.y + 1.3, 0); gate.add(post);
+  }
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.26, 0.26),
+    new THREE.MeshLambertMaterial({ color: PAL.MACHINE_DK }));
+  bar.position.set(EXIT.x, EXIT.y + 2.6, 0); gate.add(bar);
+  scene.add(gate);
 
   // the background works (§3.5): the same machine, repainted by depth,
   // digging on the FAR layer's ground line
@@ -98,23 +116,36 @@ async function boot() {
   const setHint = (s) => { if (hintEl.textContent !== s) hintEl.textContent = s; };
   const HINT = {
     foot: 'A D — RUN · SPACE — JUMP',
+    wary: 'NOBODY IS DRIVING IT — WAIT FOR THE BUCKET TO LIFT',
     near: 'E — CLIMB IN',
     ride: 'A D — DRIVE · W S — BOOM · E — HOP OUT',
+    dig: 'HOLD S — DIG THE BANK DOWN',
+    out: 'THE WAY OUT IS OPEN',
   };
 
   // ---- the mode machine ---------------------------------------------------
   let mode = 'foot';          // foot | mounting | riding | dismounting
-  let moveT = 0;
+  let moveT = 0, digT = 0, cleared = false;
   const from = new THREE.Vector3(), mid = new THREE.Vector3(), to = new THREE.Vector3();
   const v3 = new THREE.Vector3();
 
   const nearExc = () =>
     Math.abs(player.x - exc.x) < 2.4 && player.y > exc.y - 1 && player.y < exc.y + 2.4 && player.grounded;
 
+  // the danger of an unmanned machine is its bucket, and only while it is
+  // down in the sweep — that is the cycle you have to read to get aboard
+  const buck = new THREE.Vector3();
+  function unmannedStrike() {
+    if (exc.tamed || !exc.swinging) return false;
+    exc.bucketWorld(buck);
+    return Math.abs(buck.x - player.x) < 1.2 && buck.y < player.y + player.h + 0.3;
+  }
+
   function startMount() {
     mode = 'mounting'; moveT = 0;
     from.set(player.x, player.y, 0);
     exc.stepWorld(mid); mid.y += 0.9; mid.z = 0;
+    exc.tame();                       // the threat becomes the tool
     input.take('action'); input.take('jump');
   }
 
@@ -155,6 +186,10 @@ async function boot() {
       excPos: () => ({ x: exc.x, y: exc.y }),
       hazard: () => ({ state: ball.state, ...ball.ballPos() }),
       mercy: () => player.mercyT,
+      tamed: () => exc.tamed,
+      bank: () => ({ remaining: bank.remaining, cleared: bank.cleared }),
+      cleared: () => cleared,
+      dig: () => bank.dig(),
       tris: () => renderer.info.render.triangles,
     },
   };
@@ -171,11 +206,18 @@ async function boot() {
 
     if (mode === 'foot') {
       player.update(dt, input);
-      exc.update(dt, null);
+      if (exc.tamed) exc.update(dt, null); else exc.work(dt);
       if (player.justJumped) audio.jump();
       if (player.justLanded) audio.land();
+
+      // heavy and blind: stand under the working bucket and it puts you down
+      if (unmannedStrike() && player.struck(exc.x)) audio.splat();
+
       const near = nearExc();
-      setHint(near ? HINT.near : HINT.foot);
+      setHint(cleared ? HINT.out
+        : near ? HINT.near
+        : (!exc.tamed && Math.abs(player.x - exc.x) < 6) ? HINT.wary
+        : HINT.foot);
       if (near && input.take('action')) { startMount(); audio.mount(); }
     } else if (mode === 'mounting') {
       moveT += dt / 0.55;
@@ -188,6 +230,9 @@ async function boot() {
         exc.n.seat.add(kid.group);
         kid.group.position.set(0, 0, 0);
         kid.group.rotation.y = 0; kid.turn = 0;
+        // drain the way IN or the same press is read again as the way OUT —
+        // a player who mashes E would climb in and fall straight back out
+        input.take('action'); input.take('jump');
         mode = 'riding';
       }
     } else if (mode === 'riding') {
@@ -204,7 +249,19 @@ async function boot() {
       kid.group.visible = true;
       audio.idleLoad(Math.min(1, Math.abs(exc.vx) / 3.4));
       if (Math.abs(exc.n.boom.rotation.z - boomWas) > 0.012) audio.boom();
-      setHint(HINT.ride);
+
+      // THE DIG: bucket down, in the dirt, and the bank comes down a row at
+      // a time. The bucket digs because it is a bucket (ART_BRIEF §1.2).
+      const canDig = !bank.cleared && input.down.down
+        && exc.n.boom.rotation.z < 0.3
+        && exc.bucketWorld(buck).x > BANK.c0 - 1.4 && buck.x < BANK.c1 + 1.4;
+      if (canDig) {
+        digT += dt;
+        if (digT >= 0.7) { digT = 0; bank.dig(); audio.splat(); }
+      } else {
+        digT = 0;
+      }
+      setHint(canDig || (!bank.cleared && Math.abs(exc.x - BANK.c0) < 6) ? HINT.dig : HINT.ride);
       if (input.take('action') || input.take('jump')) { startDismount(); audio.dismount(); }
     } else if (mode === 'dismounting') {
       moveT += dt / 0.5;
@@ -214,6 +271,7 @@ async function boot() {
       kid.pose('air', t);
       if (moveT >= 1) {
         player.x = to.x; player.y = to.y; player.vx = 0; player.vy = 0;
+        input.take('action'); input.take('jump');   // and the same at this edge
         mode = 'foot';
       }
     }
@@ -221,6 +279,18 @@ async function boot() {
     // the background machine is decoration — reduced motion stills it
     if (!REDUCED) bg.auto(dt);
     if (mode !== 'riding') audio.idleLoad(0);
+    bank.update(dt);
+
+    // the room is finished when the kid walks out through the gate the
+    // machine opened — on foot, because the machine cannot leave
+    if (!cleared && mode === 'foot' && player.x > EXIT.x - 0.8) {
+      cleared = true;
+      audio.mount();
+      const done = document.createElement('div');
+      done.id = 'clear';
+      done.innerHTML = `SITE CLEAR<span>⬡ ${collected} / ${bolts.length}</span>`;
+      document.body.appendChild(done);
+    }
 
     // the hazard: wakes on whoever is near, and takes the ride, not the run
     ball.update(dt, mode === 'riding' ? exc.x : player.x, audio, REDUCED);

@@ -135,10 +135,77 @@ s.listen(0, '127.0.0.1', async () => {
   const thrown = await p.waitForFunction(() => window.__eeri.mode() !== 'riding', null, { timeout: 10000 }).then(() => true).catch(() => false);
   ok('a hit takes the ride, not the run (thrown clear of the cab)', thrown);
 
+  // ---- the loop: dangerous until tamed, and a machine-shaped exit -------
+  await p.reload({ waitUntil: 'load' });
+  await p.waitForFunction(() => !!window.__eeri && window.__eeri.player.grounded, null, { timeout: 8000 });
+  ok('the machine starts UNMANNED', await p.evaluate(() => !window.__eeri.debug.tamed()));
+  ok('and the bank blocks the way out', await p.evaluate(() => window.__eeri.debug.bank().remaining) === 3);
+  ok('the exit is not open at the start', await p.evaluate(() => !window.__eeri.debug.cleared()));
+
+  // the kid cannot pass the bank on foot — three tiles is above his jump
+  await p.evaluate(() => window.__eeri.debug.setPos(82, 4.2));
+  await p.evaluate(() => window.__eeri.debug.press('right'));
+  await p.waitForTimeout(1200);
+  for (let i = 0; i < 6; i++) {
+    await p.evaluate(() => { window.__eeri.debug.press('jump'); });
+    await p.waitForTimeout(220);
+    await p.evaluate(() => window.__eeri.debug.release('jump'));
+    await p.waitForTimeout(220);
+  }
+  await p.evaluate(() => window.__eeri.debug.release('right'));
+  const blocked = await p.evaluate(() => window.__eeri.player.x) < 84;
+  ok('the kid alone cannot get past the bank', blocked,
+    'x=' + await p.evaluate(() => window.__eeri.player.x));
+
+  // taming it turns the beacon off and the threat into a tool
+  await p.evaluate(() => {
+    window.__eeri.exc.x = 40; window.__eeri.player.mercyT = 0;
+    window.__eeri.debug.setPos(38.5, 4.1);
+  });
+  await p.waitForTimeout(400);
+  let ride = false;
+  for (let i = 0; i < 14 && !ride; i++) {          // wait out the work cycle
+    await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
+    await p.waitForTimeout(350);
+    ride = await p.evaluate(() => window.__eeri.mode() === 'riding');
+  }
+  ok('reading the cycle gets you into the cab', ride);
+  ok('and taming it kills the beacon', await p.evaluate(() => window.__eeri.debug.tamed()));
+
+  // the bucket digs the bank down — the machine changes the level
+  await p.evaluate(() => { window.__eeri.exc.x = 83; window.__eeri.debug.press('down'); });
+  const dug = await p.waitForFunction(() => window.__eeri.debug.bank().cleared, null, { timeout: 15000 }).then(() => true).catch(() => false);
+  await p.evaluate(() => window.__eeri.debug.release('down'));
+  ok('the bucket digs the bank away', dug,
+    'remaining=' + await p.evaluate(() => window.__eeri.debug.bank().remaining));
+  ok('and the map really changed, not just the picture',
+    await p.evaluate(() => !window.__eeri.level.solidCell(86, 4)));
+
+  // out on foot, through the gate the machine opened
+  await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
+  await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: 5000 }).catch(() => {});
+  await p.evaluate(() => window.__eeri.debug.setPos(88, 4.2));
+  await p.evaluate(() => window.__eeri.debug.press('right'));
+  const walkedOut = await p.waitForFunction(() => window.__eeri.debug.cleared(), null, { timeout: 8000 }).then(() => true).catch(() => false);
+  await p.evaluate(() => window.__eeri.debug.release('right'));
+  ok('walking out through the gate clears the site', walkedOut);
+  ok('and it says so on screen', await p.locator('#clear').count() === 1);
+
   // ---- the house obligations --------------------------------------------
   ok('the way home is mounted', await p.locator('.hub-home, #hubHome, [data-hub-home]').count() > 0
     || await p.evaluate(() => !!document.querySelector('a[href*="../"], a[href$="/"]')));
   ok('it is signed', await p.locator('.toko-sign, .toko-badge, [class*="toko"]').count() > 0);
+
+  // the HUD must not sit under the HOME button — it did, and it was unreadable
+  const clash = await p.evaluate(() => {
+    const hud = document.getElementById('hud');
+    const home = [...document.querySelectorAll('a, button')]
+      .find((e) => /home/i.test(e.textContent + e.className + e.id));
+    if (!hud || !home) return false;
+    const a = hud.getBoundingClientRect(), b = home.getBoundingClientRect();
+    return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+  });
+  ok('the HUD clears the way home', !clash);
 
   ok('no errors after the whole ride', errs.length === 0, errs.slice(0, 3).join(' | '));
 

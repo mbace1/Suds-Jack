@@ -24,8 +24,8 @@ export async function loadManifest() {
 
 // ---- 3D: models against a rig contract -----------------------------------
 
-export async function getModel(name, buildPlaceholder) {
-  const entry = manifest?.models?.[name];
+export async function getModel(name, buildPlaceholder, kind = 'models') {
+  const entry = manifest?.[kind]?.[name];
   if (!entry || entry.status !== 'live') return buildPlaceholder();
   try {
     const gltf = await new GLTFLoader().loadAsync(new URL(entry.file + '?v=' + manifest.v, BASE).href);
@@ -45,6 +45,11 @@ export async function getModel(name, buildPlaceholder) {
     console.warn(`[eeri] model "${name}" failed to load (${e.message}) — using placeholder`);
     return buildPlaceholder();
   }
+}
+
+// manipulable world pieces are the same contract in a different block
+export function getPiece(name, buildPlaceholder) {
+  return getModel(name, buildPlaceholder, 'pieces');
 }
 
 // ---- 2D: layer paintings --------------------------------------------------

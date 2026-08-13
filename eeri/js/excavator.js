@@ -79,6 +79,25 @@ export function buildExcavatorModel(tint = 0) {
   const seat = new THREE.Group(); seat.name = 'seat';
   seat.position.set(-0.1, 0.12, 0); cab.add(seat); nodes.seat = seat;
 
+  // THE BEACON (ART_BRIEF §1.2): amber, lit and turning while nobody is
+  // driving, dark the moment Eeri is aboard. It is the unmanned tell, and
+  // it is the hazard telegraph — one lamp doing both jobs, as on real plant.
+  const beacon = new THREE.Group(); beacon.name = 'beacon';
+  beacon.position.set(-0.5, 1.1, 0.34); house.add(beacon);
+  const lamp = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.11, 0.13, 0.17, 8),
+    new THREE.MeshBasicMaterial({ color: '#ff9c1a' }),   // unlit material: it IS the light
+  );
+  lamp.position.y = 0.1; beacon.add(lamp);
+  // the turning flash — one bright face sweeping round
+  const flash = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.34, 0.16),
+    new THREE.MeshBasicMaterial({ color: '#ffdc8a', transparent: true, opacity: 0.85, side: THREE.DoubleSide }),
+  );
+  flash.position.set(0.13, 0.1, 0); flash.rotation.y = Math.PI / 2; beacon.add(flash);
+  box(beacon, 0.1, 0.1, 0.1, PAL.DARK, 0, 0, 0);        // its base
+  nodes.beacon = beacon;
+
   // boom → stick → bucket, pivots at the physical hinges (the Cat anatomy)
   const boom = new THREE.Group(); boom.name = 'boom';
   boom.position.set(0.35, 0.28, 0); house.add(boom); nodes.boom = boom;
@@ -110,11 +129,14 @@ export function buildExcavatorModel(tint = 0) {
 const TOP = 3.4, ACCEL = 4.2, GRAV = 30;
 
 export class Excavator {
-  constructor(level, x, y, asset) {
+  constructor(level, x, y, asset, tamed = true) {
     this.level = level;
     this.group = new THREE.Group();
     this.group.add(asset.root);
     this.n = asset.nodes;
+    // A machine is dangerous until it is yours (ART_BRIEF §1.2). Untamed, it
+    // works its own cycle — it is not hunting anybody, it is heavy and blind.
+    this.tamed = tamed;
     this.x = x; this.y = y; this.vx = 0; this.vy = 0;
     this.hw = 1.42; this.h = 2.1;
     this.face = 1; this.turn = -0.15;
@@ -146,6 +168,28 @@ export class Excavator {
   box() { return { x: this.x, y: this.y, hw: this.hw, h: this.h }; }
   seatWorld(v) { return this.n.seat.getWorldPosition(v); }
   stepWorld(v) { return this.n.step.getWorldPosition(v); }
+  bucketWorld(v) { return this.n.bucket.getWorldPosition(v); }
+
+  // taming it: the threat becomes the tool, and the beacon goes out
+  tame() { this.tamed = true; }
+
+  // the unmanned work cycle — a slow dig it repeats forever. The bucket
+  // sweeping low IS the danger, and the lift is the window you mount in.
+  work(dt) {
+    this.t += dt;
+    const ph = this.t * 0.62;
+    this.boomTarget = 0.5 + Math.sin(ph) * 0.42;      // low = bucket in the dirt
+    this.stickTarget = -1.2 + Math.sin(ph + 0.9) * 0.34;
+    this.vx = 0;
+    this.vy -= GRAV * dt;
+    const my = this.level.moveY(this.box(), this.vy * dt);
+    this.y = my.y; if (my.hit) this.vy = 0;
+    this.animate(dt, 0);
+  }
+
+  // true while the bucket is down in its sweep — the half of the cycle
+  // that will knock you flat
+  get swinging() { return this.n.boom.rotation.z < 0.34; }
 
   // controls: {drive: -1|0|1, boomUp, boomDown} — null when nobody is in the cab
   update(dt, controls) {
@@ -219,6 +263,12 @@ export class Excavator {
     this.squash += this.squashV * dt;
     const sq = 1 + Math.max(-0.18, Math.min(0.1, this.squash));
     if (n.wheels.parent) n.wheels.parent.scale.y = sq;
+
+    // the beacon: turning while nobody is driving, dark once it is yours
+    if (n.beacon) {
+      n.beacon.visible = !this.tamed;
+      if (!this.tamed) n.beacon.rotation.y += dt * 5.2;
+    }
 
     // idle: the engine ticks over — the machine never freezes
     n.house.position.y = 0.86 + Math.sin(this.t * 34) * (drive ? 0.009 : 0.005);
