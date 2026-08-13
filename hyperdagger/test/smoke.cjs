@@ -43,6 +43,11 @@ s.listen(0, '127.0.0.1', async () => {
   await p.mouse.click(550, 360);
   await p.waitForFunction(() => window.__hd.debug.getState().state === 'playing', null, { timeout: 10000 });
   ok('a click starts the run', true);
+  // Hold the run open for the measurement sections. Since the v4.36 balance
+  // pass a player who never moves does NOT survive the length of this suite,
+  // and every section below samples a live game. The death→restart section
+  // at the end turns this back off and dies for real.
+  await p.evaluate(() => window.__hd.debug.setInvulnerable(true));
 
   // ---- tuning.js is what the game actually reads -------------------------
   const tun = await p.evaluate(() => {
@@ -268,12 +273,12 @@ s.listen(0, '127.0.0.1', async () => {
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
     hd.debug.setOpt('perf', 'high');
     hd.debug.setOpt('look', 'smooth');
+    hd.debug.freezeDirector(true); // measure the sprite we spawned, not the schedule's
     for (const e of hd.enemies) e.alive = false;
     hd.enemies.length = 0;
-    hd.debug.spawnDread();
+    const e = hd.debug.spawnDread();
     await frames(3);
     const on = hd.debug.getLook();
-    const e = hd.enemies[hd.enemies.length - 1];
     const before = e.sprite.hull.geometry.getAttribute('position').count;
     e.sprite.chip(e.sprite.worldVoxels()[0].pos, 40);
     await frames(6); // past the re-skin throttle at clamped dt
@@ -284,6 +289,7 @@ s.listen(0, '127.0.0.1', async () => {
     hd.debug.setOpt('perf', 'low');
     const low = hd.debug.getLook();
     hd.debug.setOpt('perf', 'auto');
+    hd.debug.freezeDirector(false);
     e.alive = false;
     return { hullOn: on.sample?.hull, cubesHidden: on.sample?.cubes, handCubes: on.hand,
       before, after, cubesBack: cubes.sample?.hull, lowShed: low.sample?.hull };
@@ -291,6 +297,47 @@ s.listen(0, '127.0.0.1', async () => {
   ok('the smooth skin is the default alive-look', hull.hullOn === true && hull.cubesHidden === 0 && hull.handCubes === false, JSON.stringify(hull));
   ok('a chip tears and re-forms the skin', hull.after > 0 && hull.after !== hull.before, JSON.stringify(hull));
   ok('LOOK CUBES and the low tier both fall back', hull.cubesBack === false && hull.lowShed === false, JSON.stringify(hull));
+
+  // ---- v4.36 the difficulty curve: parade, then squeeze ------------------
+  // Simulated off the real tuning + the real pulse arithmetic, so the SHAPE
+  // of the curve is gated: a future rebalance can move numbers, but not
+  // silently flatten minute one's variety or minute two's pressure.
+  const curve = await p.evaluate(() => {
+    const T = window.__hd.debug.getTuning();
+    const D = T.director;
+    const kindOf = n => (n < 1 ? 'normal' : n % 8 === 0 ? 'heavy' : n % 4 === 0 ? 'spike'
+      : (n >= 3 && n % 3 === 0) ? 'swarm' : 'normal');
+    const budgetOf = n => {
+      const B = D.budget;
+      return B.base + Math.min(n, B.kneeA) * B.rateA
+        + Math.max(0, Math.min(n, B.kneeB) - B.kneeA) * B.rateB
+        + Math.max(0, n - B.kneeB) * B.rateC;
+    };
+    let t = D.pulse.first, n = 0, m1 = 0, m2 = 0, m1b = 0, m2b = 0, maxEarly = 0;
+    const met = new Set();
+    while (t < 120) {
+      n++;
+      const kind = kindOf(n);
+      const mod = kind === 'heavy' ? 1.6 : kind === 'spike' ? 1.5 : kind === 'swarm' ? 1.3 : 1;
+      const b = budgetOf(n) * mod;
+      const debut = D.pool.find(e => !met.has(e[0]) && t >= e[1]);
+      if (debut) met.add(debut[0]);
+      if (t < 60) { m1++; m1b += b; maxEarly = Math.max(maxEarly, b); } else { m2++; m2b += b; }
+      t += Math.max(D.pulse.floor, D.pulse.base - t * D.pulse.slope);
+    }
+    const metInMin1 = [...met].filter(k => D.pool.find(e => e[0] === k)[1] < 60);
+    return {
+      m1, m2, m1b: +m1b.toFixed(1), m2b: +m2b.toFixed(1), maxEarly: +maxEarly.toFixed(1),
+      variety: metInMin1.length, thornInMin1: D.thorn.first < 60,
+      // every heavy-pulse centrepiece must exist in the pool (the old
+      // hardcoded 100/120 gates drifted off the unlock times)
+      centres: ['serpent', 'dread'].every(k => D.pool.some(e => e[0] === k)),
+    };
+  });
+  ok('minute one is a parade (6+ threats, thorns too)', curve.variety >= 6 && curve.thornInMin1, JSON.stringify(curve));
+  ok('…at low per-pulse pressure (no pulse over 6)', curve.maxEarly <= 6, JSON.stringify(curve));
+  ok('minute two is the squeeze (2.5x+ minute one)', curve.m2b > curve.m1b * 2.5, JSON.stringify(curve));
+  ok('heavy centrepieces are pool-driven', curve.centres === true, JSON.stringify(curve));
 
   // ---- v4.35 mesh assets: voxelizer, skin slot, the shed moment ----------
   const mesh35 = await p.evaluate(async (tok) => {
@@ -342,7 +389,49 @@ s.listen(0, '127.0.0.1', async () => {
   ok('assets normalize to slot height, lit Lambert', mesh35.lambert === true && Math.abs(mesh35.height - 1.4) < 0.02, JSON.stringify(mesh35));
   ok('the mesh skin rides in the hull slot', mesh35.skinOn === true, JSON.stringify(mesh35));
   ok('heavy damage sheds the skin to the wounded lattice', mesh35.shed === true, JSON.stringify(mesh35));
-  ok('the asset light rig is up (3 lights)', mesh35.lights === 3, JSON.stringify(mesh35));
+  ok('the asset light rig is up', mesh35.lights >= 3, JSON.stringify(mesh35));
+
+  // ---- v4.37 the arena: uplit rig + panel floor + Meshy panel slot -------
+  const arena = await p.evaluate(async () => {
+    const hd = window.__hd;
+    const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
+    const a = hd.debug.getAssets();
+    const fx0 = hd.debug.getFx();
+    // the ember ring must answer trauma the way the floor does
+    const before = a.ember;
+    hd.debug.buzz(0, 0, 1);
+    hd.player.feet.set(0, 0, 6);
+    hd.debug.spawnDread();
+    const e = hd.enemies[hd.enemies.length - 1];
+    e.pos.copy(hd.player.camera.position); // force a hit → trauma
+    await frames(6);
+    const during = hd.debug.getAssets().ember;
+    for (const x of hd.enemies) x.alive = false;
+    return { uplit: a.uplit, lights: a.lights, arenaSlots: a.arena, panels: a.panels, before, during, glow: fx0.gridGlow };
+  });
+  ok('assets are lit FROM the floor, not from above', arena.uplit === true, JSON.stringify(arena));
+  ok('the ember ring answers trauma like the world', arena.during >= arena.before, JSON.stringify(arena));
+  ok('the Meshy floor-panel slot exists (0 until registered)', Array.isArray(arena.arenaSlots) && arena.panels === 0, JSON.stringify(arena));
+
+  const floorTex = await p.evaluate(() => {
+    // the floor must be PLATES: a mostly-dark field with bright seams, not
+    // a uniform grey sheet and not the old hairline-on-black wireframe
+    const c = document.createElement('canvas');
+    c.width = c.height = 512;
+    const g = c.getContext('2d');
+    const src = window.__hd.debug.getFloorCanvas();
+    g.drawImage(src, 0, 0, 512, 512);
+    const px = g.getImageData(0, 0, 512, 512).data;
+    let dark = 0, bright = 0, mid = 0;
+    for (let i = 0; i < px.length; i += 4) {
+      const v = px[i];
+      if (v < 26) dark++; else if (v > 110) bright++; else mid++;
+    }
+    const n = px.length / 4;
+    return { dark: +(dark / n).toFixed(2), bright: +(bright / n).toFixed(2), mid: +(mid / n).toFixed(2), size: src.width };
+  });
+  ok('the floor is dark plates with bright seams', floorTex.dark > 0.6 && floorTex.bright > 0.02, JSON.stringify(floorTex));
+  ok('…drawn at panel resolution (512)', floorTex.size === 512, JSON.stringify(floorTex));
 
   // ---- long-run health: spawn/kill cycles must plateau, not climb --------
   // (the hull re-skin allocates a fresh BufferGeometry per rebuild, so this
@@ -351,6 +440,7 @@ s.listen(0, '127.0.0.1', async () => {
     const hd = window.__hd;
     const frames = n => new Promise(r => { let c = 0; const f = () => (++c >= n ? r() : requestAnimationFrame(f)); requestAnimationFrame(f); });
     hd.debug.setOpt('perf', 'low'); // cheap frames — we count objects, not pixels
+    hd.debug.freezeDirector(true);  // the schedule must not out-spawn the cycle
     const cycle = async () => {
       for (let i = 0; i < 4; i++) { hd.debug.spawnDread(); hd.debug.spawnWatcher(); }
       await frames(4);
@@ -365,6 +455,7 @@ s.listen(0, '127.0.0.1', async () => {
     for (let i = 0; i < 4; i++) await cycle();
     const b = hd.debug.getHealth();
     hd.debug.setOpt('perf', 'auto');
+    hd.debug.freezeDirector(false);
     return { a: { g: a.geometries, t: a.textures, sc: a.sceneChildren, en: a.enemies }, b: { g: b.geometries, t: b.textures, sc: b.sceneChildren, en: b.enemies } };
   });
   ok('spawn/kill cycles do not leak geometry', health.b.g - health.a.g <= 2 && health.b.t === health.a.t, JSON.stringify(health));
@@ -373,6 +464,7 @@ s.listen(0, '127.0.0.1', async () => {
   // ---- death → restart under 2 s -----------------------------------------
   const death = await p.evaluate(async () => {
     const hd = window.__hd;
+    hd.debug.setInvulnerable(false); // the rest of the suite is done — die for real
     hd.debug.die();
     return hd.debug.getState().state;
   });

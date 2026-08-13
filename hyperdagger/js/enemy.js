@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { VoxelSprite, MODELS } from './voxel.js?v=52';
-import { skinFor } from './meshassets.js?v=52';
+import { VoxelSprite, MODELS } from './voxel.js?v=53';
+import { skinFor } from './meshassets.js?v=53';
 
 const _dir = new THREE.Vector3();
 const _c = new THREE.Vector3();

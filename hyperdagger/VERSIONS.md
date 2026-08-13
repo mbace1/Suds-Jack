@@ -8,6 +8,57 @@
   - scripts/versions.mjs reads the top entry to show the version on the arcade.
 -->
 
+## v24 — 2026-08-13
+**The arena — an uplit rig and a floor made of plates**
+- The asset light rig was a generic studio setup (white key from above); it
+  is now motivated by the world, which has exactly two light sources: the
+  glowing grid floor and the ember horizon. The hemisphere is INVERTED —
+  ground term = the white grid, sky term = the void — so imported meshes are
+  lit from the floor up, which is why a Meshy skull now reads as standing in
+  the arena instead of pasted into it. Three crimson horizon lights ring the
+  player, and both the uplight and the ember answer the same uPulse/trauma
+  signals the floor does, so assets flush on damage and beat with the music.
+- The floor is PANELS, not a wireframe. The old texture was two grids of
+  hairlines over black — placeholder scaffolding the moment anything lit
+  stood on it. Now each plate is a physical object: recessed seams, a bevel
+  that catches light on two sides and falls away on the other two, corner
+  bolts, vent slots on some plates, per-plate value variation, at 512px with
+  anisotropy (the floor is almost always seen at a grazing angle). The
+  plates stay near-black; it is the SEAM that uGlow lifts into bloom, so the
+  light now reads as coming up through the floor rather than drawn on it.
+- New `ARENA_ASSETS.floorPanel`: register a Meshy floor tile and it is
+  merged to one geometry, instanced across the disc, clipped to the arena
+  radius (the rim must still end cleanly — no barrier visual) and randomly
+  quarter-turned so a directional tile doesn't stripe the floor. It inherits
+  the same light rig as the enemies, which is the whole point.
+- Debug: `getAssets()` gains arena/panels/uplit/ember; `getFloorCanvas()`.
+
+## v23 — 2026-08-13
+**The balance pass — minute one is a parade, minute two is the squeeze**
+- Owner's brief: more varied enemies in the first minute, harder in the
+  second. The whole director schedule moves into `tuning.js` (`T.director`)
+  so the curve is one file: unlock list, pulse cadence, budget knees, and
+  the totem/thorn/leviathan clocks.
+- MINUTE ONE is now a parade: the first pulse lands at t=10 (was 20) and
+  cadence is ~9.5 s, so six types debut before the minute is out (skulls,
+  watcher, husk, brute, spider, blinker) plus totems and thorns — eight
+  distinct threats where the old curve showed four. Crucially the early
+  budget rate is tiny (0.2/pulse), so each debut arrives nearly alone:
+  per-pulse pressure in minute one actually DROPS (2.8–5.1 vs 3.8–9.0).
+  Variety up, per-encounter difficulty down.
+- MINUTE TWO is the squeeze: the parade is over, so the same cadence spends
+  a budget climbing 1.9/pulse — total minute-two pressure is up ~61%. Same
+  enemies, suddenly in numbers.
+- Fixed while in there: the heavy-pulse centrepiece gates hardcoded t=100
+  and t=120, the OLD serpent/dread unlock times, so they silently disagreed
+  with the pool the moment it was retuned. They read from the pool now.
+- New debug hooks the gate needed and hand-tuning wants: `freezeDirector()`
+  (stop spawns, keep everything else live) and `setInvulnerable()` — since
+  a player who never moves no longer survives the length of the suite.
+- Gate at 49 checks; the curve's SHAPE is asserted (minute-one variety and
+  low per-pulse pressure, minute-two ≥2.5x), so a future rebalance can move
+  numbers but not silently flatten it.
+
 ## v22 — 2026-08-07
 **Mesh asset integration — the Meshy pipeline's landing pad**
 - New `js/meshassets.js`: register a Meshy GLB per MODELS slot and it takes
