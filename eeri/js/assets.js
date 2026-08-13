@@ -10,9 +10,64 @@
 // the placeholder ships instead — a silent half-rig is worse than a grey box.
 
 import * as THREE from 'three';
+import { PAL } from './palette.js?v=1';
 import { GLTFLoader } from '../vendor/jsm/loaders/GLTFLoader.js?v=1';
 
 const BASE = new URL('../assets/', import.meta.url);
+
+// ---- the house material language, enforced at the seam -------------------
+// ART_BRIEF §3.2 makes this a make-or-break rule, not a preference: ONE
+// palette ("no asset invents a colour") and ONE material language ("flat
+// fills… no photo textures, no grunge maps, no PBR gloss anywhere"), because
+// the whole risk of a 2D/3D game is the cast and the world reading as two
+// different games sharing a screen. §5 says it again for GLBs.
+//
+// A generated model arrives with baked photo textures and metal/rough set,
+// which is exactly that failure: the first excavator rendered rust-brown
+// against a brown hoarding and stopped being safety yellow. The node
+// contract is already enforced here, so the surface is too — a model whose
+// manifest entry carries a `paint` map has its materials replaced by flat
+// palette colours, keeping every bit of the geometry and the rig.
+//
+// Opt out per model by leaving `paint` off the entry.
+
+const ROLE = {
+  MACHINE: PAL.MACHINE, MACHINE_DK: PAL.MACHINE_DK,
+  DARK: PAL.DARK, INK: PAL.INK,
+  STEEL0: PAL.STEEL[0], STEEL1: PAL.STEEL[1], STEEL2: PAL.STEEL[2], STEEL3: PAL.STEEL[3],
+  EARTH0: PAL.EARTH[0], EARTH1: PAL.EARTH[1], EARTH2: PAL.EARTH[2], EARTH3: PAL.EARTH[3],
+};
+
+function housePaint(root, paint, name) {
+  // a mesh belongs to the NEAREST named owner above it, so painting `house`
+  // does not reach down into the beacon hanging off it — the beacon is an
+  // unlit lamp and repainting it would put the machine's one light out
+  const owners = new Set([...Object.keys(paint), 'beacon']);
+  const mats = new Map();
+  const flat = (role) => {
+    if (!mats.has(role)) {
+      const c = ROLE[role];
+      if (!c) console.warn(`[eeri] model "${name}": unknown palette role "${role}"`);
+      mats.set(role, new THREE.MeshLambertMaterial({ color: c || 0xff00ff }));
+    }
+    return mats.get(role);
+  };
+  for (const [nodeName, role] of Object.entries(paint)) {
+    // resolved off the model, not the rig contract: a paint map may name
+    // parts the game never animates (the track frames, say)
+    const node = root.getObjectByName(nodeName);
+    if (!node) { console.warn(`[eeri] model "${name}": paint names "${nodeName}", which is not in the model`); continue; }
+    node.traverse((o) => {
+      if (!o.isMesh) return;
+      let owner = o;
+      while (owner && !owners.has(owner.name)) owner = owner.parent;
+      if (owner?.name !== nodeName) return;          // somebody else's part
+      const old = Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of old) { m.map?.dispose(); m.dispose(); }
+      o.material = flat(role);
+    });
+  }
+}
 
 let manifest = null;
 
@@ -40,6 +95,7 @@ export async function getModel(name, buildPlaceholder, kind = 'models') {
       console.warn(`[eeri] model "${name}" is missing contracted nodes: ${missing.join(', ')} — using placeholder`);
       return buildPlaceholder();
     }
+    if (entry.paint) housePaint(root, entry.paint, name);
     return { root, nodes, live: true };
   } catch (e) {
     console.warn(`[eeri] model "${name}" failed to load (${e.message}) — using placeholder`);

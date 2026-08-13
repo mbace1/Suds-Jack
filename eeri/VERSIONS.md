@@ -1,5 +1,68 @@
 # EERI — versions
 
+## v5 — 2026-08-13
+**The art lands, and the game goes up on the floor.** The seam built in
+v1 did its job: five layer paintings and the excavator swapped from code
+placeholder to file with a status flip, and no game code changed to
+accept them. The excavator GLB honours the rig contract exactly — every
+contracted node present, and its rest pose, pivots and node translations
+match the placeholder to three decimals, so `house.y = 0.86`, the 0.52
+boom and the −1.35 stick all land where the code already reached for
+them. Its `wheels` node ships without the child spinners the placeholder
+had, so the wheels do not roll; everything else animates.
+
+**Two house rules had to be enforced at the seam rather than assumed.**
+The model arrived with five baked photo-texture materials at metallic
+0.5 — and §3.2 makes "one palette, one material language" a make-or-break
+rule, not a preference, precisely because the risk in a 2D/3D game is the
+cast and the world reading as two different games. It rendered rust-brown
+against a brown hoarding and stopped being safety yellow. So a model
+entry may now carry a `paint` map (node → palette role) and `assets.js`
+replaces its materials with flat palette colours, keeping every bit of
+geometry and rig. The node contract was already enforced there; the
+surface is now too. Omit `paint` to ship an asset's own materials.
+
+The fore painting was composed against the **old** occluder rect
+(y −1…5), which v4 corrected to −2…14 so a foreground can actually be
+cropped by the top of the frame. `art-src/tools/recanvas-fore.mjs` moves
+it onto the taller canvas **at the exact world position it was painted
+for** — the same pixels, the same world units, simply with room above
+them. Its sibling tool pinned an absolute path into a scratch directory
+and stopped working when that session ended; this one resolves playwright
+through CJS instead, since ESM does not honour `NODE_PATH`.
+
+**Deployed.** The cabinet was lit on the hub and pointed at `eeri/`,
+which did not exist on `gh-pages` — Play was a 404. The game, the
+catalogue entry and the `worksite` marquee are on the site now, merged
+into the site's own `games.js`/`art.js` rather than overwriting them
+(the site carries `tokotrip`, which this branch does not, and an
+overwrite deletes a cabinet). `deploy-hub.mjs` renumbered every token
+from one map, and its guard caught that the site's `hub.js` had grown a
+WebXR floor sort this branch never had — brought back before deploying,
+or the deploy would have deleted it.
+
+**The textures the model never showed are gone.** Every one of its five
+textured materials is covered by the paint map, so those images were
+bytes the browser downloaded, decoded into blob URLs and threw away —
+and each was an async load still in flight when the hub gate opened the
+game and moved on, which is how they were found: a `Couldn't load
+texture blob:` error that only Eeri produced.
+`art-src/tools/strip-textures.mjs` removes them and compacts the buffer;
+it refuses to run if any textured material is NOT repainted, since then
+stripping would change what is on screen. Geometry, tri count, node
+names, rest pose and pivots are untouched, and the frame is
+pixel-identical. 924 → 851 KB.
+
+Known, and the asset producer's call: at 851 KB and 8 740 triangles the
+excavator is over the brief's ceilings (400 KB, and 3 000 tris for a
+small machine / 6 000 for a big set-piece) — the weight is geometry, not
+textures, so it wants decimating rather than re-exporting. Its `wheels`
+node has no child spinners, so the wheels do not roll. And the fore
+painting still sits below the playfield ground line, so it reads as a
+band along the bottom rather than something you pass behind.
+
+Gate: 98 checks, plus 13 against the deployed tree.
+
 ## v4 — 2026-08-13
 **The depth pass — the Tropical Freeze half, which needs no cast.** The
 3D characters are blocked on the Meshy pipeline, so this version moves
