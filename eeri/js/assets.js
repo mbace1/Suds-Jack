@@ -1,0 +1,127 @@
+// EERI — the asset seam (ART_BRIEF §2). The game never asks "file or
+// placeholder?" — it asks this module for a model or a layer texture and
+// gets the same shape either way:
+//
+//   model  → { root: Object3D, nodes: { name: Object3D, … } }
+//   layer  → THREE.Texture or null (null = paint the built-in placeholder)
+//
+// assets/manifest.json decides which side of the seam each entry is on.
+// A model that arrives without its contracted nodes is refused loudly and
+// the placeholder ships instead — a silent half-rig is worse than a grey box.
+
+import * as THREE from 'three';
+import { PAL } from './palette.js?v=1';
+import { GLTFLoader } from '../vendor/jsm/loaders/GLTFLoader.js?v=1';
+
+const BASE = new URL('../assets/', import.meta.url);
+
+// ---- the house material language, enforced at the seam -------------------
+// ART_BRIEF §3.2 makes this a make-or-break rule, not a preference: ONE
+// palette ("no asset invents a colour") and ONE material language ("flat
+// fills… no photo textures, no grunge maps, no PBR gloss anywhere"), because
+// the whole risk of a 2D/3D game is the cast and the world reading as two
+// different games sharing a screen. §5 says it again for GLBs.
+//
+// A generated model arrives with baked photo textures and metal/rough set,
+// which is exactly that failure: the first excavator rendered rust-brown
+// against a brown hoarding and stopped being safety yellow. The node
+// contract is already enforced here, so the surface is too — a model whose
+// manifest entry carries a `paint` map has its materials replaced by flat
+// palette colours, keeping every bit of the geometry and the rig.
+//
+// Opt out per model by leaving `paint` off the entry.
+
+const ROLE = {
+  MACHINE: PAL.MACHINE, MACHINE_DK: PAL.MACHINE_DK,
+  DARK: PAL.DARK, INK: PAL.INK,
+  STEEL0: PAL.STEEL[0], STEEL1: PAL.STEEL[1], STEEL2: PAL.STEEL[2], STEEL3: PAL.STEEL[3],
+  EARTH0: PAL.EARTH[0], EARTH1: PAL.EARTH[1], EARTH2: PAL.EARTH[2], EARTH3: PAL.EARTH[3],
+};
+
+function housePaint(root, paint, name) {
+  // a mesh belongs to the NEAREST named owner above it, so painting `house`
+  // does not reach down into the beacon hanging off it — the beacon is an
+  // unlit lamp and repainting it would put the machine's one light out
+  const owners = new Set([...Object.keys(paint), 'beacon']);
+  const mats = new Map();
+  const flat = (role) => {
+    if (!mats.has(role)) {
+      const c = ROLE[role];
+      if (!c) console.warn(`[eeri] model "${name}": unknown palette role "${role}"`);
+      mats.set(role, new THREE.MeshLambertMaterial({ color: c || 0xff00ff }));
+    }
+    return mats.get(role);
+  };
+  for (const [nodeName, role] of Object.entries(paint)) {
+    // resolved off the model, not the rig contract: a paint map may name
+    // parts the game never animates (the track frames, say)
+    const node = root.getObjectByName(nodeName);
+    if (!node) { console.warn(`[eeri] model "${name}": paint names "${nodeName}", which is not in the model`); continue; }
+    node.traverse((o) => {
+      if (!o.isMesh) return;
+      let owner = o;
+      while (owner && !owners.has(owner.name)) owner = owner.parent;
+      if (owner?.name !== nodeName) return;          // somebody else's part
+      const old = Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of old) { m.map?.dispose(); m.dispose(); }
+      o.material = flat(role);
+    });
+  }
+}
+
+let manifest = null;
+
+export async function loadManifest() {
+  const res = await fetch(new URL('manifest.json?v=1', BASE));
+  manifest = await res.json();
+  return manifest;
+}
+
+// ---- 3D: models against a rig contract -----------------------------------
+
+export async function getModel(name, buildPlaceholder, kind = 'models') {
+  const entry = manifest?.[kind]?.[name];
+  if (!entry || entry.status !== 'live') return buildPlaceholder();
+  try {
+    const gltf = await new GLTFLoader().loadAsync(new URL(entry.file + '?v=' + manifest.v, BASE).href);
+    const root = gltf.scene;
+    const nodes = {};
+    const missing = [];
+    for (const n of entry.nodes) {
+      const obj = root.getObjectByName(n);
+      if (obj) nodes[n] = obj; else missing.push(n);
+    }
+    if (missing.length) {
+      console.warn(`[eeri] model "${name}" is missing contracted nodes: ${missing.join(', ')} — using placeholder`);
+      return buildPlaceholder();
+    }
+    if (entry.paint) housePaint(root, entry.paint, name);
+    return { root, nodes, live: true };
+  } catch (e) {
+    console.warn(`[eeri] model "${name}" failed to load (${e.message}) — using placeholder`);
+    return buildPlaceholder();
+  }
+}
+
+// manipulable world pieces are the same contract in a different block
+export function getPiece(name, buildPlaceholder) {
+  return getModel(name, buildPlaceholder, 'pieces');
+}
+
+// ---- 2D: layer paintings --------------------------------------------------
+
+export async function getLayerTexture(world, layer) {
+  const entry = manifest?.layers?.[world]?.[layer];
+  if (!entry || entry.status !== 'live') return null;
+  try {
+    const tex = await new THREE.TextureLoader().loadAsync(new URL(entry.file + '?v=' + manifest.v, BASE).href);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.minFilter = THREE.LinearFilter;
+    return tex;
+  } catch (e) {
+    console.warn(`[eeri] layer "${world}/${layer}" failed to load (${e.message}) — painting placeholder`);
+    return null;
+  }
+}
+
+export function manifestData() { return manifest; }

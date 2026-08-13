@@ -287,6 +287,33 @@ export const GAMES = [
   },
 
   {
+    id: 'eeri',
+    fi: {
+      tagline: 'Poika työmaalla, joka saa kiivetä koneisiin. Aja kaivinkonetta, nosta puomia, väistä pallo.',
+      lineage: 'Mario 3 × Yoshi’s Crafted World × Tonka',
+      controls: 'A D juokse · Väli hyppää · E kiipeä koneeseen · W S puomi · S kaivaa tai nostaa',
+      note: 'v5 — taide on paikallaan: maalatut kerrokset ja oikea kaivinkone, syvyysleikkaus jalkojen alla',
+    },
+    ja: {
+      tagline: '工事現場の子ども。重機によじ登って運転できる。ショベルを走らせ、ブームを上げ、鉄球をかわす。',
+      lineage: 'マリオ3 × ヨッシークラフトワールド × トンカ',
+      controls: 'A D 走る · スペース ジャンプ · E 乗り込む · W S ブーム · S 掘る／吊る',
+      note: 'v5 — 絵が入った：描かれた背景層と本物のショベル、足元は地層の断面',
+    },
+    pad: { keys: { left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS', a: 'Space', b: 'KeyE' } },
+    status: 'active',
+    note: 'v5 — the art is in: painted layers and a real excavator, on a worksite with a cut section under your feet',
+    title: 'Eeri',
+    tagline: 'A kid on a worksite where nobody is driving. Read the machine, get in the cab, and dig your way out.',
+    lineage: 'Mario 3 × Yoshi’s Crafted World × Tonka',
+    tags: ['platformer', 'three.js', 'diorama'],
+    controls: 'A D run · Space jump · E climb in · W S boom · hold S to dig or sling',
+    path: 'eeri/',
+    inRepo: true,
+    accent: '#ffb01f',
+    art: 'worksite',
+  },
+  {
     id: 'gameoflife',
     fi: {
       tagline: 'Pieniä tarinoita ja pelejä, jotka palauttavat sinut aina ulos. Suomeksi, englanniksi ja japaniksi.',

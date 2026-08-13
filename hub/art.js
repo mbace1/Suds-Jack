@@ -737,6 +737,86 @@ export const ART = {
     g.p(8, 58, 112, 2, '#c8c2b4');
     g.p(8, 62, 40, 4, a);
   },
+
+  // Eeri: the worksite as a stage set. The scaffold is the frame and it is a
+  // solid mass, not an outline; the machine is cropped at the right edge so
+  // it reads as foreground; its bucket hangs over the kid, who is lit —
+  // hard hat and vest — against the dug ground. Master System register:
+  // flat fills inside a hard black line.
+  worksite(g, a) {
+    const INK = '#1a1410', DK = mix(a, INK, 0.34), STEEL = '#7a8a9a', STEEL2 = '#5f7080';
+    const HOR = 50;
+
+    // sky: flat bands, brightest at the horizon
+    for (let i = 0; i < 6; i++) g.p(0, i * 9, W, 9, mix('#3f9ee4', '#a9dcf3', i / 5));
+    g.disc(102, 13, 6, '#f4faff');
+    g.p(16, 11, 15, 3, '#f4faff'); g.p(20, 8, 8, 3, '#f4faff');   // flat clouds
+    g.p(60, 21, 12, 3, '#e8f5ff');
+
+    // skyline, pushed toward the sky — the diorama's air
+    const far = '#9dc0d6', far2 = '#b0cfe2';
+    [[24, 30], [34, 22], [44, 34], [58, 26], [70, 38], [82, 30], [96, 24], [108, 33]]
+      .forEach(([x, h], i) => {
+        g.p(x, HOR - h, 11, h, i % 2 ? far : far2);
+        g.p(x, HOR - h, 4, h, mix(far2, '#ffffff', 0.25));         // lit left face
+      });
+    g.p(88, 6, 2, 44, far);                                        // tower crane mast
+    g.p(64, 6, 44, 2, far);                                        // its jib
+    g.p(76, 8, 1, 7, far); g.p(75, 15, 3, 3, far);                 // hoist + hook
+
+    // the ground: dug earth with the green lip that means "you can stand here"
+    g.p(0, HOR, W, H - HOR, '#8a6242');
+    g.p(0, HOR, W, 2, '#3cc85a');
+    g.p(0, 60, W, 12, '#6e4c32');
+
+    // THE FRAME: a scaffold bay, solid, cropped by the left edge
+    g.p(0, 0, 7, 62, STEEL2); g.p(13, 0, 6, 62, STEEL2);
+    g.p(0, 17, 19, 4, '#a87c52'); g.p(0, 37, 19, 4, '#a87c52');    // planks
+    g.p(0, 21, 19, 1, INK); g.p(0, 41, 19, 1, INK);
+    for (let y = 6; y < 58; y += 12) { g.p(4, y, 2, 2, INK); g.p(16, y, 2, 2, INK); }
+    g.p(19, 24, 10, 3, mix(a, INK, 0.1));                          // a hoarding panel
+
+    // THE MACHINE: cropped at the right edge, bucket swung over the kid
+    g.p(74, 56, 54, 12, INK);                                      // tracks
+    g.p(76, 58, 50, 8, '#26221c');
+    for (let x = 80; x < 124; x += 10) g.disc(x, 62, 3, STEEL);
+    g.p(78, 52, 48, 5, STEEL2);                                    // deck
+    g.p(82, 36, 46, 17, INK);                                      // house, outlined
+    g.p(84, 38, 42, 14, a);
+    g.p(84, 38, 42, 4, mix(a, '#ffffff', 0.22));                   // lit top face
+    g.p(112, 30, 14, 8, DK);                                       // counterweight
+    g.p(90, 28, 3, 8, '#26221c');                                  // exhaust
+    for (let x = 88; x < 118; x += 9) g.p(x, 46, 2, 2, INK);       // the bolt motif
+
+    // boom → stick → bucket, sweeping left and down over the kid
+    const arm = (x0, y0, x1, y1, w, c) => {
+      for (let k = -w; k <= w; k++) g.line(x0, y0 + k, x1, y1 + k, c);
+    };
+    arm(86, 40, 62, 20, 3, INK); arm(86, 40, 62, 20, 2, a);
+    arm(62, 20, 56, 30, 3, INK); arm(62, 20, 56, 30, 2, a);
+    // the bucket: open at the top, tapered, teeth down — a bucket has to be
+    // a bucket at this size or it reads as a box hanging off a stick
+    g.p(50, 30, 13, 2, INK);
+    g.p(51, 31, 11, 1, '#26221c');                                 // the open mouth
+    g.p(50, 32, 13, 5, INK); g.p(51, 33, 11, 3, STEEL);
+    g.p(52, 37, 9, 2, INK); g.p(53, 38, 7, 1, STEEL2);             // taper
+    g.p(53, 39, 2, 2, STEEL2); g.p(56, 39, 2, 2, STEEL2); g.p(59, 39, 2, 2, STEEL2);
+    g.p(52, 53, 10, 2, mix('#8a6242', INK, 0.3));                  // its shadow, on the dirt
+
+    // THE KID: small, lit, with somewhere to be — hat and vest carry him
+    const kx = 32;
+    g.p(kx, 44, 4, 6, '#3a4a5c'); g.p(kx + 5, 44, 4, 6, '#3a4a5c'); // legs
+    g.p(kx - 1, 48, 5, 2, INK); g.p(kx + 5, 48, 5, 2, INK);         // boots
+    g.p(kx - 1, 36, 11, 9, INK);                                    // body outline
+    g.p(kx, 37, 9, 7, '#ff7a1a');                                   // hi-vis vest
+    g.p(kx, 40, 9, 2, '#f4faff');                                   // its band
+    g.p(kx + 1, 30, 7, 7, '#f2c9a0');                               // head
+    g.p(kx + 1, 30, 7, 1, INK);
+    g.p(kx + 5, 33, 2, 2, INK);                                     // one eye
+    g.p(kx + 1, 26, 7, 4, a);                                       // the hard hat
+    g.p(kx - 1, 29, 11, 2, DK);                                     // its brim
+    g.p(kx + 3, 52, 5, 2, mix('#8a6242', INK, 0.3));                // his shadow
+  },
 };
 
 // ── the glass ──────────────────────────────────────────────────────
