@@ -15,6 +15,30 @@ const s = http.createServer((req, res) => {
 let pass = 0, fail = 0;
 const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, console.log('  FAIL ' + n + (d ? ' → ' + d : ''))); };
 
+// ---- one token per module ------------------------------------------------
+// Two tokens for one module means the browser instantiates it TWICE, and a
+// module with state (assets.js holds the manifest) then has two of them:
+// loadManifest() runs on one instance and getLayerTexture() asks the other,
+// whose manifest is still null. Every layer silently falls back to its code
+// placeholder while the painted PNGs sit unrequested. This has happened
+// twice — once on the art lineage, once again in the reconciliation.
+{
+  const tok = {};
+  const files = fs.readdirSync(path.join(__dirname, '..', 'js')).filter((f) => f.endsWith('.js'))
+    .map((f) => path.join(__dirname, '..', 'js', f))
+    .concat([path.join(__dirname, '..', 'index.html')]);
+  for (const f of files) {
+    const src = fs.readFileSync(f, 'utf8');
+    for (const m of src.matchAll(/['"](?:\.\/)?([a-zA-Z0-9_-]+\.js)\?v=(\d+)['"]/g)) {
+      (tok[m[1]] ||= new Set()).add(m[2]);
+    }
+  }
+  const split = Object.entries(tok).filter(([, s]) => s.size > 1)
+    .map(([m, s]) => `${m}:${[...s].sort()}`);
+  ok(`every module is imported under ONE token${split.length ? ' — ' + split.join(' ') : ''}`,
+    split.length === 0);
+}
+
 // ---- the asset seam holds without a browser ------------------------------
 const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'assets', 'manifest.json'), 'utf8'));
 for (const [name, m] of Object.entries(manifest.models)) {
@@ -113,6 +137,13 @@ s.listen(0, '127.0.0.1', async () => {
   const p = await b.newPage({ viewport: { width: 1280, height: 720 } });
   const errs = [];
   p.on('pageerror', (e) => errs.push('pageerror: ' + e.message));
+  // the static check above proves the tokens agree; this proves the art is
+  // actually FETCHED, which is the thing that silently stopped happening
+  const fetched = new Set();
+  p.on('request', (r) => {
+    const m = r.url().match(/\/assets\/(2d|3d)\/([^?]+)/);
+    if (m) fetched.add(m[2]);
+  });
   p.on('console', (m) => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
 
   await p.goto(base + '/eeri/', { waitUntil: 'load' });
@@ -490,6 +521,24 @@ s.listen(0, '127.0.0.1', async () => {
     return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
   });
   ok('the HUD clears the way home', !clash);
+
+  // every asset the manifest calls live must actually have been requested
+  {
+    const live = [];
+    for (const kind of ['models', 'pieces']) {
+      for (const m of Object.values(manifest[kind] || {})) {
+        if (m.status === 'live') live.push(path.basename(m.file));
+      }
+    }
+    for (const layers of Object.values(manifest.layers || {})) {
+      for (const l of Object.values(layers)) {
+        if (l.status === 'live') live.push(path.basename(l.file));
+      }
+    }
+    const missed = live.filter((f) => !fetched.has(f));
+    ok(`every live asset is actually fetched${missed.length ? ' — never asked for: ' + missed.join(', ') : ''}`,
+      missed.length === 0);
+  }
 
   ok('no errors after the whole ride', errs.length === 0, errs.slice(0, 3).join(' | '));
 

@@ -8,7 +8,7 @@
 // mercy frames. Nothing here kills.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=1';
+import { PAL } from './palette.js?v=3';
 
 // black/yellow chevrons — the one danger language, readable in greyscale
 function chevronTexture() {

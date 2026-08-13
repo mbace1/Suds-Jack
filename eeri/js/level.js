@@ -10,7 +10,7 @@
 // a machine-shaped lock, and an exit only the pair of them opens.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=1';
+import { PAL, mix } from './palette.js?v=3';
 
 import { ROOMS } from './rooms.js?v=1';
 import { compile, W, H, SOLID_CHARS, GROUND } from './parts.js?v=1';

@@ -9,7 +9,7 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=1';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=3';
 import { Input } from './input.js?v=1';
 import { Level, ROOMS } from './level.js?v=4';
 import {
@@ -23,7 +23,7 @@ import { buildCraneModel, Crane } from './crane.js?v=1';
 import { Robot, SteamVent } from './robots.js?v=1';
 import { WreckingBall } from './hazards.js?v=1';
 import { AudioKit } from './audio.js?v=2';
-import { loadManifest, getModel, getPiece } from './assets.js?v=2';
+import { loadManifest, getModel, getPiece } from './assets.js?v=3';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
