@@ -365,7 +365,7 @@ async function boot() {
       wall: () => site.wall ? { hits: site.wall.hits, cracked: site.wall.cracked, cleared: site.wall.cleared } : null,
       machine: () => exc ? { kind: exc.kind, x: exc.x, track: exc.track, tamed: exc.tamed } : null,
       robots: () => site.robots.map((r) => ({
-        x: +r.x.toFixed(2), y: +r.y.toFixed(2), kind: r.kind,
+        x: +r.x.toFixed(2), y: +r.y.toFixed(2), h: r.h, kind: r.kind,
         state: r.state, dead: r.dead, stompable: r.stompable,
       })),
       stomps: () => stomps,

@@ -729,10 +729,21 @@ s.listen(0, '127.0.0.1', async () => {
   }
 
   // ---- the stomp --------------------------------------------------------
-  await p.evaluate(() => {
-    const r = window.__eeri.debug.robots().find((x) => !x.dead);
-    window.__eeri.debug.setPos(r.x, 7.5);      // drop him straight onto one
+  // Dropped from a height measured off the TARGET, not from a fixed 7.5: the
+  // levels now stand small machines on decks and the kinds are different
+  // heights, so a constant that meant "well above a 0.7-tile robot on the
+  // floor" can mean "already inside a 1.0-tile hopper on a deck at cy 7" —
+  // which is a hit, correctly, and reads as a broken stomp. And it must pick
+  // a STOMPABLE one: the roller is the kind you jump, so landing on it is
+  // meant to bounce you off without killing it.
+  const target = await p.evaluate(() => {
+    const r = window.__eeri.debug.robots().find((x) => !x.dead && x.stompable);
+    if (!r) return null;
+    window.__eeri.player.mercyT = 0;
+    window.__eeri.debug.setPos(r.x, r.y + r.h + 2.5);
+    return r;
   });
+  ok('there is something stompable to land on', !!target, JSON.stringify(target));
   const stomped = await p.waitForFunction(() => window.__eeri.debug.stomps() > 0, null, { timeout: 5000 })
     .then(() => true).catch(() => false);
   ok('landing on a small machine stomps it', stomped);
