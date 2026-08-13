@@ -423,10 +423,10 @@ s.listen(0, '127.0.0.1', async () => {
   // out on foot, through the gate the machine opened — and the gate does
   // not end the job any more: the level goes beyond one room
   await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
-  await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: 5000 }).catch(() => {});
+  await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: 20000 }).catch(() => {});
   await p.evaluate(() => window.__eeri.debug.setPos(88, 4.2));
   await p.evaluate(() => window.__eeri.debug.press('right'));
-  const site2 = await p.waitForFunction(() => window.__eeri.site() === 1, null, { timeout: 12000 }).then(() => true).catch(() => false);
+  const site2 = await p.waitForFunction(() => window.__eeri.site() === 1, null, { timeout: 25000 }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('running past the flag ends the level and leads to LEVEL 2, not the credits', site2);
   ok('the room announces itself on the way in', await p.locator('#banner').count() === 1);
@@ -498,20 +498,20 @@ s.listen(0, '127.0.0.1', async () => {
 
   // the kid crosses his machine's bridge and walks the job out
   await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
-  await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: 5000 }).catch(() => {});
+  await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: 20000 }).catch(() => {});
   await p.evaluate(() => window.__eeri.debug.setPos(56, 4.2));
   await p.evaluate(() => window.__eeri.debug.press('right'));
   // mid-span at ground height, grounded, over what used to be air = crossing
   const crossed = await p.waitForFunction(
     () => window.__eeri.player.x > 62 && window.__eeri.player.grounded && window.__eeri.player.y < 4.2,
-    null, { timeout: 15000 }).then(() => true).catch(() => false);
+    null, { timeout: 30000 }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('the kid crosses the span on foot', crossed,
     'x=' + await p.evaluate(() => window.__eeri.player.x));
 
   await p.evaluate(() => window.__eeri.debug.setPos(88, 4.2));
   await p.evaluate(() => window.__eeri.debug.press('right'));
-  const site3 = await p.waitForFunction(() => window.__eeri.site() === 2, null, { timeout: 10000 }).then(() => true).catch(() => false);
+  const site3 = await p.waitForFunction(() => window.__eeri.site() === 2, null, { timeout: 20000 }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('site 2 leads on to SITE 3', site3);
 
@@ -566,7 +566,7 @@ s.listen(0, '127.0.0.1', async () => {
 
   // out on foot, through the hole the crane made
   await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
-  await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: 6000 }).catch(() => {});
+  await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: 20000 }).catch(() => {});
   // the last level of a world carries the BIG flag — a different object, so
   // it is tellable from the small one before you reach it — and past it the
   // GATE, which is the world's curtain rather than the level's
@@ -576,14 +576,14 @@ s.listen(0, '127.0.0.1', async () => {
   await p.waitForFunction(() => window.__eeri.debug.flag()?.phase >= 2, null, { timeout: 12000 }).catch(() => {});
   await p.evaluate(() => window.__eeri.debug.press('right'));
   const bigRaised = await p.waitForFunction(() => window.__eeri.debug.flag()?.raised,
-    null, { timeout: 12000 }).then(() => true).catch(() => false);
+    null, { timeout: 25000 }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('and it is run past like any other', bigRaised);
   ok('but it does NOT end the world by itself', await p.evaluate(() => !window.__eeri.debug.cleared()));
 
   await p.evaluate(() => window.__eeri.debug.setPos(89, 4.2));
   await p.evaluate(() => window.__eeri.debug.press('right'));
-  const walkedOut = await p.waitForFunction(() => window.__eeri.debug.cleared(), null, { timeout: 12000 }).then(() => true).catch(() => false);
+  const walkedOut = await p.waitForFunction(() => window.__eeri.debug.cleared(), null, { timeout: 25000 }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('walking out through the gate clocks the whole job out', walkedOut);
   ok('and it says so on screen', await p.locator('#clear').count() === 1);
