@@ -1,5 +1,71 @@
 # EERI — versions
 
+## v6 — 2026-08-13 — the reconciliation, and Eeri is animated
+
+**Two lineages had diverged with no common ancestor and both held real work.**
+This branch forked at v2 and went down the art-pipeline path (a Meshy driver,
+a mesh slicer, docs); the deployed site went to v5 with multi-room sites, a
+camera director, background events, the `paint` map and a 98-check gate.
+Deploying either over the other would have deleted the other's work.
+
+**The site's tree is the base.** Every one of its gameplay advances is kept
+untouched — `camera.js`, `layers.js` with `backgroundEvents`, `level.js` with
+`SITES`, `pieces.js`, `main.js`, the paint map, the size-checked seam. What
+came across from the branch is only what is additive:
+
+- **Eeri is a Meshy-rigged, animated character, and he is live.** The owner's
+  kid from their own photograph — olive dinosaur cap, navy dino tee,
+  machine-yellow wellies — T-posed, meshed, auto-rigged and carrying five
+  animator-authored clips: idle, walk, run, jump and sit. He replaces the
+  hard-hat-and-vest placeholder, which was the character before the owner gave
+  the reference.
+- **The seam learned a second kind of rig.** A hand-cut model declares the
+  `nodes` the game rotates; a skinned character declares the named `clips` it
+  can play. `rig: "skinned"` picks which contract is checked. It composes with
+  the site's own `paint` map rather than replacing it, and an unpainted
+  skinned model still gets the house material language applied, because §3.2
+  is the rule either way.
+- **The seam normalises HEIGHT.** A generated model has no idea what a tile
+  is: Meshy rigs to real-world metres, so Eeri arrived 0.95 units tall in a
+  world where he is 1.62 and stood in the level looking like a background
+  figure. `height` in the manifest is in TILES and the seam rescales on load.
+- `ClipDriver` in `kid.js` maps the game's five states onto clips and
+  **crossfades** between them (0.15 s — the clips are separate takes and a
+  hard cut pops), and scales the run's playback by actual speed. The rig is
+  modelled facing +Z, which is Meshy's requirement, so it carries a −90° yaw.
+
+The palette keeps `VEST` and `SHIRT`: the hard-hat kid is gone but
+`layers.js` still paints its traffic cones with `VEST`, and dropping the key
+would have taken the cones out of the near lane.
+
+**A live bug was found on the way in: the 2D layer art was shipped and
+never requested.** `layers.js` imported `assets.js?v=1` while `main.js`
+imported `?v=2` — two tokens for one module, so the browser instantiated it
+twice. `manifest` is module-level state in there, so `loadManifest()` ran on
+one instance and `getLayerTexture()` asked the other, whose manifest was
+still `null`. Every layer silently fell back to its code-painted placeholder
+while 2.7 MB of painted PNG sat in `assets/2d/` unrequested. All three
+changed modules are renumbered and every importer updated, which is the whole
+reason the repo's one-token-per-module rule exists.
+
+**The gate was stale and is fixed rather than excused.** Its last two checks
+asserted that walking out of the room sets `cleared` — the single-room ending
+that v3 replaced with site progression. They now assert the site index moves
+and the next room is built, which is what the game does. 49 checks passing.
+
+**Honest caveat for whoever picks this up:** the site's own 98-check gate
+lives on its working branch, which `gh-pages` does not carry (it ships no
+`test/`). **That gate is the authoritative one** — run it before the next
+deploy. The 49 here are this branch's and are narrower.
+
+The art pipeline that produced Eeri is documented at repo root in
+**`ART_PIPELINE.md`** (concept → mesh → rig → animate → integrate, costs, and
+a trap index) and the quality target in **`ART_TARGET.md`** — which nails the
+mix at **~80% stylised 2D environment, ~20% 3D**, and audits against BOTH
+halves of the confirmed reference pair rather than just Tropical Freeze.
+`art-src/craft/` holds four crafted-cardboard layer concepts in the Crafted
+World register, with the style block that produced them.
+
 ## v5 — 2026-08-13
 **The art lands, and the game goes up on the floor.** The seam built in
 v1 did its job: five layer paintings and the excavator swapped from code

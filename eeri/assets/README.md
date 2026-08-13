@@ -16,6 +16,24 @@ Nothing else changes. If a live asset fails to load or breaks contract,
 the game logs a warning and ships the placeholder — a grey box beats a
 broken page, but the smoke gate still fails so it cannot ship silently.
 
+**How the assets are MADE is [`/ART_PIPELINE.md`](../../ART_PIPELINE.md)** —
+canonical for concept → mesh → rig → animate → integrate, with the credit
+costs and a trap index. Two rules from it that bite here:
+- **A Meshy feature is always the primary choice.** It auto-rigs a humanoid
+  with a 24-bone skeleton and skin weights for 5 credits and applies any of
+  600+ animation clips for 3 each.
+- **Anything to be rigged is concepted in a T-POSE.** A limb resting against
+  the torso cannot be separated from it, and Meshy's rigger requires clearly
+  defined limbs. The pose is a technical requirement of the concept.
+
+**TWO KINDS OF RIG live behind this seam.** A hand-cut model declares the
+`nodes` the game rotates. A Meshy auto-rigged character is a **skinned** mesh
+declaring the named `clips` it can play — it has a bone skeleton, not the
+game's node names. `"rig": "skinned"` picks which contract is checked, and
+such an entry also carries `"height"` **in tiles**, because Meshy rigs to
+real-world metres and the seam rescales on load. Both come back through the
+same `getModel` call, so game code cannot tell them apart.
+
 ## 3D models (`assets/3d/*.glb`)
 
 Spec: ART_BRIEF §5. glTF 2.0 single-file GLB · 1 unit = 1 tile · origin at

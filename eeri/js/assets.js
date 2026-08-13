@@ -10,7 +10,7 @@
 // the placeholder ships instead — a silent half-rig is worse than a grey box.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=1';
+import { PAL } from './palette.js?v=2';
 import { GLTFLoader } from '../vendor/jsm/loaders/GLTFLoader.js?v=1';
 
 const BASE = new URL('../assets/', import.meta.url);
@@ -85,6 +85,47 @@ export async function getModel(name, buildPlaceholder, kind = 'models') {
   try {
     const gltf = await new GLTFLoader().loadAsync(new URL(entry.file + '?v=' + manifest.v, BASE).href);
     const root = gltf.scene;
+
+    // A SECOND KIND OF RIG. A hand-cut model is a tree of named nodes the
+    // game rotates itself. A Meshy auto-rigged character is a SKINNED mesh
+    // driven by named animation CLIPS — it has a bone skeleton, not the
+    // game's node names, so it is checked against `clips` instead of
+    // `nodes`. `rig: "skinned"` in the manifest entry says which, and both
+    // come back through this one call so game code cannot tell them apart.
+    if (entry.rig === 'skinned') {
+      const clips = {};
+      for (const c of gltf.animations) clips[c.name] = c;
+      const lacking = (entry.clips || []).filter((c) => !clips[c]);
+      if (lacking.length) {
+        console.warn(`[eeri] model "${name}" is missing clips: ${lacking.join(', ')} — using placeholder`);
+        return buildPlaceholder();
+      }
+      if (entry.paint) housePaint(root, entry.paint, name);
+      else {
+        // the house material language still applies (§3.2) — a generated
+        // character arrives with baked photo texture and PBR gloss
+        root.traverse((o) => {
+          if (!o.isMesh && !o.isSkinnedMesh) return;
+          const m = o.material;
+          o.material = new THREE.MeshLambertMaterial({
+            map: m.map ?? null, color: m.color?.clone() ?? new THREE.Color(0xffffff),
+          });
+        });
+      }
+      // NORMALISE THE HEIGHT. A generated model has no idea what a tile is —
+      // Meshy rigs to real-world metres, so Eeri arrived 0.95 units tall in a
+      // world where he is 1.62 and stood in the level like a background
+      // figure. The manifest declares the height in TILES and the seam scales
+      // to it: the unit mismatch is data, not a number buried in game code.
+      if (entry.height) {
+        root.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(root);
+        const h = box.max.y - box.min.y;
+        if (h > 0.001) root.scale.multiplyScalar(entry.height / h);
+      }
+      return { root, nodes: {}, clips, skinned: true, live: true };
+    }
+
     const nodes = {};
     const missing = [];
     for (const n of entry.nodes) {
