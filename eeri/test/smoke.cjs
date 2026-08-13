@@ -329,15 +329,23 @@ s.listen(0, '127.0.0.1', async () => {
     await p.evaluate(() => window.__eeri.player.y) > 0.9);
 
   // riding into it costs the RIDE, not the run (the Yoshi rule).
-  // Mount well clear of the ball first, then drive the cab under it.
-  await p.evaluate(() => {
-    window.__eeri.player.mercyT = 0;
-    window.__eeri.exc.x = 30; window.__eeri.exc.y = 4;
-    window.__eeri.debug.setPos(28.5, 4.1);
-  });
-  await p.waitForTimeout(400);
-  await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
-  const rode = await p.waitForFunction(() => window.__eeri.mode() === 'riding', null, { timeout: 5000 }).then(() => true).catch(() => false);
+  // Mount well clear of the ball first, then drive the cab under it. This is
+  // the same retry-and-give-it-real-time loop every other mount here uses:
+  // it was the one one-shot left, and a single 5s attempt in a sandbox with
+  // no GPU reports a slow frame as a machine that will not be boarded. The
+  // machine is parked ON ITS OWN TRACK, clear of the ledge the level now
+  // carries at x 31–35, rather than wherever there happened to be floor.
+  let rode = false;
+  for (let i = 0; i < 6 && !rode; i++) {
+    await p.evaluate(() => {
+      window.__eeri.player.mercyT = 0;
+      window.__eeri.exc.x = 56; window.__eeri.exc.y = 4; window.__eeri.exc.vx = 0;
+      window.__eeri.debug.setPos(54.5, 4.1);
+    });
+    await p.waitForTimeout(400);
+    await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
+    rode = await p.waitForFunction(() => window.__eeri.mode() === 'riding', null, { timeout: 8000 }).then(() => true).catch(() => false);
+  }
   ok('back in the cab, clear of the ball', rode);
 
   await p.evaluate(() => { window.__eeri.exc.x = 69.4; window.__eeri.player.mercyT = 0; });
