@@ -38,6 +38,67 @@ for (const [world, layers] of Object.entries(manifest.layers)) {
   }
 }
 
+// ---- the seam only ever reaches into assets/ -----------------------------
+// Asset work contributes files here and a status flip, nothing else. A
+// manifest path that climbs out of this folder would make the art drop a
+// way to reach the code, so it is refused rather than trusted.
+const ASSETS = path.resolve(__dirname, '..', 'assets');
+const allFiles = [
+  ...Object.entries(manifest.models).map(([n, m]) => [`model ${n}`, m.file]),
+  ...Object.entries(manifest.pieces || {}).map(([n, m]) => [`piece ${n}`, m.file]),
+  ...Object.entries(manifest.layers).flatMap(([w, ls]) =>
+    Object.entries(ls).map(([n, e]) => [`layer ${w}/${n}`, e.file])),
+];
+for (const [what, file] of allFiles) {
+  const abs = path.resolve(ASSETS, file);
+  ok(`${what} stays inside assets/`,
+    !path.isAbsolute(file) && !file.includes('..') && abs.startsWith(ASSETS + path.sep), file);
+}
+
+// ---- the 2D contract an artist paints to is the one the game uses -------
+// assets/README.md carries the layer size table. It is the brief for every
+// incoming PNG, so it is checked against the code rather than trusted to
+// have been kept up by hand.
+const readme = fs.readFileSync(path.join(ASSETS, 'README.md'), 'utf8');
+const NUM = (s) => Number(String(s).replace(/[−–—]/g, '-').trim());
+const readmeRects = {};
+for (const line of readme.split('\n')) {
+  const m = line.match(/^\|\s*`(skyline|far|mid|near|fore)`\s*\|([^|]+)\|([^|]+)\|([^|]+)\|/);
+  if (!m) continue;
+  const rect = m[3].match(/(-?[−\d.]+)\s*…\s*(-?[−\d.]+)\s*×\s*(-?[−\d.]+)\s*…\s*(-?[−\d.]+)/);
+  const px = m[4].match(/(\d+)\s*×\s*(\d+)/);
+  if (rect && px) {
+    readmeRects[m[1]] = {
+      z: NUM(m[2]),
+      x0: NUM(rect[1]), x1: NUM(rect[2]), y0: NUM(rect[3]), y1: NUM(rect[4]),
+      pxW: Number(px[1]), pxH: Number(px[2]),
+    };
+  }
+}
+ok('the README documents every 2D layer', Object.keys(readmeRects).length === 5,
+  Object.keys(readmeRects).join(','));
+
+// A live PNG at the wrong size does not fail — it STRETCHES onto the plane,
+// silently, and the art looks subtly wrong with nothing to blame. So the
+// pixels are measured. (PNG header: 8-byte signature, then IHDR length and
+// type, then width and height as big-endian u32s.)
+function pngSize(file) {
+  const b = fs.readFileSync(file);
+  if (b.length < 24 || b.toString('ascii', 12, 16) !== 'IHDR') return null;
+  return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
+}
+for (const [world, layers] of Object.entries(manifest.layers)) {
+  for (const [layer, e] of Object.entries(layers)) {
+    if (e.status !== 'live') continue;
+    const f = path.join(ASSETS, e.file);
+    if (!fs.existsSync(f)) continue;              // already reported above
+    const got = pngSize(f), want = readmeRects[layer];
+    ok(`layer "${world}/${layer}" is painted to its documented size`,
+      got && want && got.w === want.pxW && got.h === want.pxH,
+      got ? `${got.w}×${got.h}, wanted ${want?.pxW}×${want?.pxH}` : 'not a readable PNG');
+  }
+}
+
 s.listen(0, '127.0.0.1', async () => {
   const base = 'http://127.0.0.1:' + s.address().port;
   const b = await chromium.launch();
@@ -275,6 +336,63 @@ s.listen(0, '127.0.0.1', async () => {
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('walking out of the last site clears the whole job', walkedOut);
   ok('and it says so on screen', await p.locator('#clear').count() === 1);
+
+  // ---- the diorama: the Tropical Freeze half ----------------------------
+  // 2D gameplay in a layered world. The gate cannot see "does it look
+  // deep", but it can hold the three rules whose breach made it look flat.
+  const contract = await p.evaluate(() => window.__eeri.debug.layerContract());
+
+  for (const [name, r] of Object.entries(readmeRects)) {
+    const c = contract[name];
+    ok(`layer "${name}": the README rect is the code's rect`,
+      c && c.x0 === r.x0 && c.x1 === r.x1 && c.y0 === r.y0 && c.y1 === r.y1,
+      c ? `code ${c.x0}…${c.x1} × ${c.y0}…${c.y1} vs readme ${r.x0}…${r.x1} × ${r.y0}…${r.y1}` : 'missing');
+    ok(`layer "${name}": the README PNG size is what the plane wants`,
+      c && c.pxW === r.pxW && c.pxH === r.pxH,
+      c ? `code ${c.pxW}×${c.pxH} vs readme ${r.pxW}×${r.pxH}` : 'missing');
+  }
+
+  // the occluder lane has to REACH the frame, top and bottom. It used to
+  // stop at y=5 — a tile above the ground line — so its pieces could only
+  // ever sit buried in the dirt, and the "cropped foreground = depth"
+  // lesson was written in the brief and absent from the screen.
+  ok('the foreground lane can crop the top of the frame', contract.fore.y1 >= 12,
+    'fore y1=' + contract.fore.y1);
+  ok('…and the bottom', contract.fore.y0 <= -1, 'fore y0=' + contract.fore.y0);
+  ok('the foreground sits in front of the gameplay plane', contract.fore.z > 0);
+  ok('the layer stack is genuinely stacked, not co-planar',
+    new Set(Object.values(contract).map((c) => c.z)).size === Object.keys(contract).length,
+    Object.values(contract).map((c) => c.z).join(','));
+
+  // the background WORKS: depth you watch, not just parallax you scroll
+  const bg0 = await p.evaluate(() => window.__eeri.debug.bg());
+  ok('the background carries authored life at all', bg0.length > 0);
+  const bgMoved = await p.waitForFunction(
+    (a) => window.__eeri.debug.bg().some((v, i) => Math.abs(v - a[i]) > 0.05),
+    bg0, { timeout: 6000 }).then(() => true).catch(() => false);
+  ok('the background works — something back there is moving', bgMoved);
+
+  // the camera reframes per room (js/camera.js): a room pulls back where it
+  // is asking you to read a lock, and that is authored, not a spring. We are
+  // standing in site 2, whose wide shot covers the stack and the gap.
+  // Settle by watching the dolly stop moving — the sandbox runs the clock
+  // several times slower than the wall clock, so a fixed sleep is a coin flip.
+  const settleZ = async () => {
+    let last = null;
+    for (let i = 0; i < 40; i++) {
+      const z = (await p.evaluate(() => window.__eeri.debug.camera())).z;
+      if (last !== null && Math.abs(z - last) < 0.12) return z;
+      last = z;
+      await p.waitForTimeout(250);
+    }
+    return last;
+  };
+  await p.evaluate(() => window.__eeri.debug.setPos(30, 4.2));
+  const zOpen = await settleZ();
+  await p.evaluate(() => window.__eeri.debug.setPos(55, 4.2));
+  const zWide = await settleZ();
+  ok('the camera pulls back where the room asks you to read something',
+    zWide > zOpen + 3, `open z=${zOpen.toFixed(1)} → gap z=${zWide.toFixed(1)}`);
 
   // ---- the house obligations --------------------------------------------
   ok('the way home is mounted', await p.locator('.hub-home, #hubHome, [data-hub-home]').count() > 0

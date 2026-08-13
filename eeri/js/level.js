@@ -10,7 +10,7 @@
 // a machine-shaped lock, and an exit only the pair of them opens.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=1';
+import { PAL, mix } from './palette.js?v=1';
 
 const W = 96, H = 18;
 const EPS = 0.001;
@@ -55,6 +55,13 @@ export const SITES = [
     exit: { x: 92.5, y: 4 },
     spawn: { kid: { x: 4.5, y: 4 }, excavator: { x: 61, y: 4 } },
     pits: [{ c0: 46, c1: 48, backX: 43 }],
+    // authored framings (js/camera.js): the room pulls back where it is
+    // asking you to READ something and closes in where it is not
+    shots: [
+      { x0: 40, x1: 52, z: 37.5, y: 3.0 },              // the pit: see both lips
+      { x0: 52, x1: 74, z: 41, y: 3.4, lead: 2.2 },     // the machine's cycle, and the ball
+      { x0: 76, x1: 96, z: 42, y: 3.6, lead: 2.0 },     // the bank: a lock you cannot see is not a lock
+    ],
   },
 
   // SITE 2 — the girder. THE GAP is past both of them: eight tiles, beyond
@@ -92,6 +99,12 @@ export const SITES = [
     exit: { x: 92.5, y: 4 },
     spawn: { kid: { x: 4.5, y: 4 }, excavator: { x: 30, y: 4 } },
     pits: [{ c0: 20, c1: 22, backX: 17 }, { c0: 58, c1: 65, backX: 55 }],
+    shots: [
+      { x0: 16, x1: 26, z: 37.5, y: 3.0 },              // the kid pit
+      // the stack and the gap in one frame: the girder has to be visibly
+      // the answer to the thing eight tiles wide
+      { x0: 42, x1: 72, z: 44, y: 3.8, lead: 2.2 },
+    ],
   },
 ];
 
@@ -188,16 +201,37 @@ export class Level {
   }
 
   // ---- dressing: shallow 3D slabs wearing the flat-colour read -----------
+  //
+  // v4: the earth is a CUT SECTION, not a fill. It was one flat brown slab
+  // taking the bottom third of every frame with nothing in it — the largest
+  // area on screen carrying no information, which is the one thing the
+  // Tropical Freeze reference never does. It bands into strata now, wears
+  // cobbles, and the standable lip casts a hard shadow onto the face below
+  // it so the gameplay lane stops reading as a hairline.
 
   buildMeshes(scene) {
     const group = new THREE.Group();
+    // strata: the section gets darker and cooler with depth, in bands
+    const STRATA = [
+      PAL.EARTH[0],                          // cy 0 — deepest of the band
+      mix(PAL.EARTH[1], PAL.EARTH[0], 0.5),  // cy 1
+      PAL.EARTH[1],                          // cy 2
+      PAL.EARTH[2],                          // cy 3 — topsoil
+    ];
+    const strata = (cy) => STRATA[Math.min(cy, STRATA.length - 1)];
     const mat = {
-      dirt:  new THREE.MeshLambertMaterial({ color: PAL.EARTH[1] }),
-      dirtDk:new THREE.MeshLambertMaterial({ color: PAL.EARTH[0] }),
       lip:   new THREE.MeshLambertMaterial({ color: PAL.GREEN }),
+      shade: new THREE.MeshLambertMaterial({ color: mix(PAL.EARTH[0], PAL.INK, 0.45) }),
+      back:  new THREE.MeshLambertMaterial({ color: mix(PAL.EARTH[0], PAL.INK, 0.5) }),
+      cut:   new THREE.MeshLambertMaterial({ color: PAL.EARTH[3] }),
       steel: new THREE.MeshLambertMaterial({ color: PAL.STEEL[2] }),
       girder:new THREE.MeshLambertMaterial({ color: PAL.STEEL[1] }),
       bolt:  new THREE.MeshLambertMaterial({ color: PAL.DARK }),
+    };
+    const dirtMats = new Map();
+    const dirtMat = (c) => {
+      if (!dirtMats.has(c)) dirtMats.set(c, new THREE.MeshLambertMaterial({ color: c }));
+      return dirtMats.get(c);
     };
     const box = (w, h, d, m, x, y, z) => {
       const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
@@ -206,11 +240,36 @@ export class Level {
       return mesh;
     };
 
-    // the earth under everything — the world is not floating on sky, and
-    // a pit reads as a hole with a dark floor instead of a window
-    box(136, 10, 1.6, mat.dirtDk, 48, -5, 0);
-    // …and a back wall behind the ground band, so a pit shows earth, not sky
-    box(136, 3.98, 0.1, mat.dirtDk, 48, 2, -0.9);
+    // the deep earth below the playable band — banded, so the eye has
+    // somewhere to go, and darkening downward the way a real cut does
+    const DEEP = [
+      { y0: -1.6, y1: 0, c: mix(PAL.EARTH[0], PAL.INK, 0.12) },
+      { y0: -4.2, y1: -1.6, c: mix(PAL.EARTH[0], PAL.INK, 0.26) },
+      { y0: -10, y1: -4.2, c: mix(PAL.EARTH[0], PAL.INK, 0.4) },
+    ];
+    for (const b of DEEP) {
+      box(136, b.y1 - b.y0, 1.6, dirtMat(b.c), 48, (b.y0 + b.y1) / 2, 0);
+    }
+    // …and a back wall behind the ground band, darker than any face, so a
+    // pit reads as a hole receding rather than a notch cut in a wall
+    box(136, 3.98, 0.1, mat.back, 48, 2, -0.9);
+
+    // cobbles embedded in the face — deterministic, so a screenshot of the
+    // same frame is the same picture twice
+    const cobGeo = new THREE.DodecahedronGeometry(1, 0);
+    let seed = 1337;
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    for (let i = 0; i < 90; i++) {
+      const x = rnd() * 136 - 20;
+      const y = -0.4 - rnd() * rnd() * 8;
+      const s = 0.12 + rnd() * 0.26;
+      const c = rnd() < 0.35 ? PAL.STEEL[0] : mix(PAL.EARTH[0], PAL.INK, 0.5 + rnd() * 0.2);
+      const m = new THREE.Mesh(cobGeo, dirtMat(c));
+      m.position.set(x, y, 0.82);
+      m.scale.set(s, s * 0.8, s * 0.5);
+      m.rotation.set(rnd() * 6, rnd() * 6, rnd() * 6);
+      group.add(m);
+    }
 
     // merge horizontal runs per row so the slab count stays sane
     for (let r = 0; r < H; r++) {
@@ -223,11 +282,20 @@ export class Level {
         const cy = H - 1 - r;
         const cx = (c + e + 1) / 2, w = e - c + 1;
         if (ch === '#') {
-          const deep = r + 1 < H && this.map[r + 1][c] === '#';
-          box(w, 1, 1.6, deep ? mat.dirt : mat.dirt, cx, cy + 0.5, 0);
-          // grass lip on tops with air above — the ACCENT GREEN "safe edge" role
+          box(w, 1, 1.6, dirtMat(strata(cy)), cx, cy + 0.5, 0);
+          // grass lip on tops with air above — the ACCENT GREEN "safe edge"
+          // role — and a hard shadow under it. The lip is where the game is
+          // played; without the shadow it was a 0.14 hairline on a flat wall.
           if (r === 0 || this.map[r - 1][c] === ' ') {
             box(w, 0.14, 1.66, mat.lip, cx, cy + 0.94, 0);
+            box(w, 0.22, 1.68, mat.shade, cx, cy + 0.76, 0);
+          }
+          // a fresh cut edge either side of a hole, so the rim is drawn
+          if (c > 0 && this.map[r][c - 1] === ' ' && cy >= 1) {
+            box(0.16, 1, 1.7, mat.cut, c + 0.05, cy + 0.5, 0);
+          }
+          if (e < W - 1 && this.map[r][e + 1] === ' ' && cy >= 1) {
+            box(0.16, 1, 1.7, mat.cut, e + 0.95, cy + 0.5, 0);
           }
         } else if (ch === '=') {
           box(w, 0.5, 1.4, mat.steel, cx, cy + 0.72, 0);

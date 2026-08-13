@@ -24,11 +24,17 @@ export function buildBankModel(rows = 3, width = 5) {
   };
 
   // one state per remaining height: state0 = untouched, and each later
-  // state is a shorter bank with a cut face the bucket has left behind
+  // state is a shorter bank with a cut face the bucket has left behind.
+  // The face BANDS, same as the level's own section (js/level.js) — a flat
+  // brown rectangle is a box, and this is supposed to be earth.
   for (let s = 0; s < rows; s++) {
     const h = rows - s;                       // tiles still standing
     const g = new THREE.Group(); g.name = `state${s}`;
-    box(g, width, h, 1.6, PAL.EARTH[1], width / 2, h / 2, 0);
+    for (let r = 0; r < h; r++) {             // strata, darkening downward
+      const t = h === 1 ? 1 : r / (h - 1);
+      box(g, width, 1, 1.6, mix(PAL.EARTH[0], PAL.EARTH[2], 0.25 + t * 0.6),
+        width / 2, r + 0.5, 0);
+    }
     box(g, width, 0.16, 1.66, PAL.EARTH[2], width / 2, h - 0.08, 0);   // sunlit crown
     if (s === 0) {
       box(g, width, 0.14, 1.7, PAL.GREEN, width / 2, h - 0.02, 0);     // untouched: still turfed

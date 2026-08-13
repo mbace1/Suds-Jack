@@ -7,6 +7,20 @@
 //
 // Every layer is painted with its depth tint baked in (colours pushed
 // toward the sky), shading agreeing with the upper-left key.
+//
+// v4 — the Tropical Freeze pass. Three rules the stack now obeys, because
+// the LOOK said it did not:
+//   1. THE FOREGROUND CROPS THE FRAME. The fore rect used to stop at y=5,
+//      a tile above the ground line, so its pieces could never reach the
+//      top of the screen and sat buried in the dirt instead of passing in
+//      front of the action. It runs −2…14 now, which is the whole visible
+//      band at that depth, and it carries a real kit.
+//   2. DISTANCE IS VALUE, NOT JUST HUE. A haze band sits the far stack in
+//      air and the skyline lost its internal contrast — it was as crisp as
+//      the playfield and fought it.
+//   3. THE BACKGROUND WORKS. One digging machine was one event in 96
+//      tiles; a crane traverses a load across the skyline and a truck
+//      crosses the far road, slow enough never to pull the eye.
 
 import * as THREE from 'three';
 import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=1';
@@ -24,8 +38,15 @@ export const LAYER_RECTS = {
   far:     { z: LAYER_Z.FAR,     x0: -20, x1: 120, y0: 0, y1: 20 },
   mid:     { z: LAYER_Z.MID,     x0: -12, x1: 110, y0: 0, y1: 14 },
   near:    { z: LAYER_Z.NEAR,    x0: -8,  x1: 104, y0: 0, y1: 8 },
-  fore:    { z: LAYER_Z.FORE,    x0: -8,  x1: 104, y0: -1, y1: 5 },
+  // the occluder lane: tall enough to be CROPPED by the frame, top and
+  // bottom, which is the whole point of a foreground
+  fore:    { z: LAYER_Z.FORE,    x0: -8,  x1: 104, y0: -2, y1: 14 },
 };
+
+// Where the ground line falls on each plane. Nearer ground sits lower in
+// frame, so the fore lane stands below the playfield's y=4 — that offset
+// is what stops a foreground piece reading as a thing standing on the path.
+const FORE_GROUND = 3.4;
 
 function paintCanvas({ x0, x1, y0, y1, draw, tint }) {
   const w = x1 - x0, h = y1 - y0;
@@ -61,15 +82,22 @@ const rect = (g, c, x, y, w, h) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
 
 function drawSky(g) {
   // bands, not gradients — but the sky itself may breathe a little
-  const grad = g.createLinearGradient(0, 34, 0, 0);
+  const grad = g.createLinearGradient(0, 34, 0, 2);
   grad.addColorStop(0, PAL.SKY);
-  grad.addColorStop(1, mix(PAL.SKY, PAL.SKY_PALE, 0.75));
+  grad.addColorStop(1, mix(PAL.SKY, PAL.SKY_PALE, 0.8));
   g.fillStyle = grad; g.fillRect(-40, 0, 240, 40);
+
+  // THE HAZE: a pale band sitting on the horizon, so the far stack stands
+  // in air instead of being pasted on. Distance is value before it is hue.
+  const haze = g.createLinearGradient(0, 12, 0, -2);
+  haze.addColorStop(0, mix(PAL.SKY_PALE, PAL.SKY, 0.85));
+  haze.addColorStop(1, PAL.SKY_PALE);
+  g.fillStyle = haze; g.fillRect(-40, -2, 240, 14);
+
   // sun, pale and flat
   g.fillStyle = mix(PAL.CLOUD, PAL.SKY, 0.15);
   g.beginPath(); g.arc(120, 30, 3.4, 0, 7); g.fill();
   // flat cloud shapes: stacked rounded bars
-  g.fillStyle = PAL.CLOUD;
   const cloud = (x, y, s) => {
     rect(g, PAL.CLOUD, x, y, 9 * s, 1.1 * s);
     rect(g, PAL.CLOUD, x + 1.6 * s, y + 1.1 * s, 5.4 * s, 1.0 * s);
@@ -79,17 +107,20 @@ function drawSky(g) {
 }
 
 function drawSkyline(g, T) {
-  // distant city blocks + two tower cranes — nameable from silhouette
+  // distant city blocks + two tower cranes — nameable from silhouette.
+  // The lit/shade split is deliberately SHALLOW here: at this distance a
+  // crisp two-tone block reads as near, and it was competing with the
+  // playfield for the eye.
   const base = 3.4;
   const block = (x, w, h) => {
-    rect(g, T(PAL.STEEL[1]), x, base, w, h);
-    rect(g, T(PAL.STEEL[2]), x, base, w * 0.42, h); // lit left face
+    rect(g, T(PAL.STEEL[2]), x, base, w, h);
+    rect(g, T(PAL.STEEL[3]), x, base, w * 0.42, h); // lit left face, barely
   };
   block(-6, 8, 9); block(6, 6, 13); block(16, 10, 7); block(30, 7, 11);
   block(42, 9, 8); block(56, 6, 15); block(66, 10, 9); block(82, 8, 12);
   block(94, 7, 8); block(104, 9, 10);
   const crane = (x, h, arm) => {
-    const c = T(PAL.MACHINE_DK);
+    const c = T(mix(PAL.MACHINE_DK, PAL.STEEL[3], 0.35));
     rect(g, c, x, base, 0.7, h);
     rect(g, c, x - arm * 0.28, base + h, arm, 0.6);
     rect(g, c, x + arm * 0.55, base + h - 3.2, 0.16, 3.2); // hoist line
@@ -184,14 +215,109 @@ function drawNear(g, T) {
   bank(74, 7, 2.1); pipes(88, 3); cone(60);
 }
 
+// THE OCCLUDER LANE. Dark, near-silhouette, and CROPPED — every piece here
+// runs off the top or the bottom of its rect, because a foreground element
+// that fits inside the frame is just scenery placed early. Pieces are
+// narrow and sit in the level's quiet stretches: you pass behind one for a
+// beat, which is the depth cue, and you are never hidden mid-jump.
 function drawFore(g) {
-  // the occluder lane: sparse, dark, cropped by the frame —
-  // "cropped foreground = depth", in-game
-  const c = mix(PAL.STEEL[0], PAL.INK, 0.4);
-  rect(g, c, 40, 0, 14, 1.5);                       // girder crossing low
-  rect(g, mix(PAL.MACHINE_DK, PAL.INK, 0.35), 42, 1.5, 1.0, 0.5); // clamp
-  for (let i = 41; i < 53.4; i += 2.4) rect(g, PAL.INK, i, 0.55, 0.3, 0.3);
-  rect(g, c, 78, 0, 1.1, 2.6);                      // a post
+  const STEEL = mix(PAL.STEEL[0], PAL.INK, 0.55);
+  const STEEL_LT = mix(PAL.STEEL[1], PAL.INK, 0.4);
+  const TIMBER = mix(PAL.EARTH[0], PAL.INK, 0.45);
+  const IRON = mix(PAL.DARK, PAL.INK, 0.3);
+  const base = FORE_GROUND;
+
+  // a scaffold bay standing in front: standards run clean off the top
+  const scaffoldLeg = (x, w = 1.5) => {
+    for (const dx of [0, w]) rect(g, STEEL, x + dx, -2, 0.3, 16);
+    for (const ly of [1.0, 3.4, 5.8]) rect(g, STEEL_LT, x, base + ly, w + 0.3, 0.22);
+    g.strokeStyle = STEEL_LT; g.lineWidth = 0.2;
+    g.beginPath();
+    g.moveTo(x + 0.15, base + 1.0); g.lineTo(x + w + 0.15, base + 3.4);
+    g.moveTo(x + w + 0.15, base + 3.4); g.lineTo(x + 0.15, base + 5.8);
+    g.stroke();
+    rect(g, IRON, x - 0.2, base - 0.6, 0.7, 0.5);          // sandbag foot
+    rect(g, IRON, x + w - 0.2, base - 0.6, 0.7, 0.5);
+  };
+
+  // a chain and hook hanging in from above — cropped by the top edge, and
+  // it stops HIGH: a hook dangling at head height is a thing in the way,
+  // not a thing in front
+  const chainHook = (x, toY) => {
+    rect(g, IRON, x - 0.05, toY, 0.1, 14 - toY);
+    rect(g, IRON, x - 0.24, toY - 0.38, 0.48, 0.42);       // the hook block
+    rect(g, IRON, x - 0.09, toY - 0.86, 0.18, 0.5);        // the hook itself
+  };
+
+  // cable drums — SMALL and sunk to the bottom edge. They were 1.25-unit
+  // discs at eye level, which is the worst thing a foreground can be: a
+  // dark blob parked over the middle of the frame with the action behind
+  // it. A foreground occludes in passing or it lines the bottom; it does
+  // not sit in the shot.
+  const drums = (x) => {
+    const drum = (dx, dy, r) => {
+      g.fillStyle = TIMBER;
+      g.beginPath(); g.arc(x + dx, dy, r, 0, 7); g.fill();
+      g.fillStyle = IRON;
+      g.beginPath(); g.arc(x + dx, dy, r * 0.34, 0, 7); g.fill();
+    };
+    drum(0, base - 1.5, 0.72); drum(1.5, base - 1.6, 0.62);
+    drum(0.75, base - 0.45, 0.6);
+  };
+
+  // spoil heaped along the bottom — the near ground sweeping under the
+  // action, cropped by the frame's lower edge. Its crest has to break the
+  // PLAYFIELD's ground line (y=4) or the whole heap sits inside the earth
+  // band and reads as a hole cut in the dirt rather than a mound in front
+  // of it — which is exactly how it read on the first pass.
+  const spoilHeap = (x, w, h = 1.4) => {
+    const crest = base + h;
+    g.fillStyle = mix(PAL.EARTH[0], PAL.INK, 0.52);
+    g.beginPath();
+    g.moveTo(x, -2);
+    g.lineTo(x + w * 0.22, crest * 0.94);
+    g.lineTo(x + w * 0.5, crest);
+    g.lineTo(x + w * 0.79, crest * 0.88);
+    g.lineTo(x + w, -2);
+    g.closePath(); g.fill();
+    // stones catching the light along the crest
+    g.fillStyle = mix(PAL.EARTH[1], PAL.INK, 0.42);
+    for (let i = 0.26; i < 0.8; i += 0.2) {
+      g.beginPath();
+      g.arc(x + w * i, crest * 0.9 - 0.12, 0.17, 0, 7);
+      g.fill();
+    }
+  };
+
+  // a pipe run crossing high, over the whole action
+  const pipeRun = (x0, w, y) => {
+    rect(g, STEEL, x0, y, w, 0.42);
+    rect(g, STEEL_LT, x0, y + 0.42, w, 0.12);
+    for (let i = 1.4; i < w; i += 3.2) {                    // hangers to the top
+      rect(g, IRON, x0 + i, y + 0.5, 0.12, 14 - y);
+    }
+  };
+
+  // a hoarding corner, bolted, cropped by the bottom
+  const hoarding = (x, w) => {
+    rect(g, TIMBER, x, -2, w, base + 2.4);
+    rect(g, mix(PAL.EARTH[1], PAL.INK, 0.5), x, base + 2.0, w, 0.4);
+    for (let i = 0.7; i < w; i += 1.9) rect(g, IRON, x + i, base + 0.6, 0.26, 0.26);
+  };
+
+  // Placed in the gaps between the room's beats — the mound is 8–16, the
+  // pit 46–48, the machine 61, the ball 66–72, the bank 84–88 — and never
+  // over the thing a room is asking you to read. Verticals pass by,
+  // heaps line the bottom, the pipe run crosses above everything.
+  scaffoldLeg(1);
+  spoilHeap(13, 8);
+  chainHook(27, base + 5.4);
+  scaffoldLeg(37);
+  pipeRun(41, 15, 10.6);
+  spoilHeap(50, 6.5, 1.2);
+  hoarding(57, 2.0);
+  drums(74);
+  scaffoldLeg(95);
 }
 
 const PLACEHOLDER_DRAW = {
@@ -202,13 +328,77 @@ const PLACEHOLDER_DRAW = {
   fore:    { draw: drawFore,    tint: 0 },
 };
 
+// ---- the background WORKS (ART_BRIEF §3.5) -------------------------------
+// "Depth you watch, not just parallax you scroll." One event per screen,
+// slow, never competing with the playfield. These are meshes rather than
+// paint because they move; they are tinted to their layer's depth so they
+// belong to it, and reduced motion parks them.
+
+function backgroundEvents(scene) {
+  const events = [];
+  const T = (c, t) => mix(c, PAL.SKY_PALE, t);
+  const M = (c) => new THREE.MeshBasicMaterial({ color: c });
+
+  // a tower crane traversing a load across the skyline
+  {
+    const g = new THREE.Group();
+    const c = T(mix(PAL.MACHINE_DK, PAL.STEEL[3], 0.35), LAYER_TINT.SKYLINE);
+    const line = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 9), M(c));
+    line.position.y = -4.5; g.add(line);
+    const load = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.8), M(c));
+    load.position.y = -9.4; g.add(load);
+    g.position.set(74, 23.4, LAYER_Z.SKYLINE + 0.2);
+    scene.add(g);
+    events.push({ obj: g, x0: 66, x1: 86, speed: 0.55, dir: 1 });
+  }
+
+  // a dump truck crossing the far road
+  {
+    const g = new THREE.Group();
+    const body = T(PAL.MACHINE, LAYER_TINT.FAR);
+    const dark = T(PAL.DARK, LAYER_TINT.FAR);
+    const bed = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 1.1), M(body));
+    bed.position.set(-0.5, 0.85, 0); g.add(bed);
+    const cab = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.2), M(body));
+    cab.position.set(1.6, 0.9, 0); g.add(cab);
+    for (const wx of [-1.5, 0.2, 1.7]) {
+      const w = new THREE.Mesh(new THREE.CircleGeometry(0.42, 10), M(dark));
+      w.position.set(wx, 0.35, 0.01); g.add(w);
+    }
+    g.position.set(-16, 3.3, LAYER_Z.FAR + 0.3);
+    scene.add(g);
+    events.push({ obj: g, x0: -18, x1: 118, speed: 3.4, dir: 1 });
+  }
+
+  return {
+    update(dt) {
+      for (const e of events) {
+        e.obj.position.x += e.speed * e.dir * dt;
+        if (e.obj.position.x > e.x1) {
+          if (e.speed > 2) e.obj.position.x = e.x0;   // the truck loops round
+          else e.dir = -1;                             // the crane traverses back
+        } else if (e.obj.position.x < e.x0) {
+          e.dir = 1;
+        }
+      }
+    },
+    // for the gate: "the background works" is a claim, so it is measurable
+    positions: () => events.map((e) => e.obj.position.x),
+  };
+}
+
 // world = the level's theme; each named layer asks the asset seam for a
 // live PNG first and paints its placeholder if there is none.
-export async function buildLayers(scene, world = 'groundworks') {
+export async function buildLayers(scene, world = 'groundworks', reduced = false) {
   mountLayer(scene, LAYER_RECTS.sky, paintCanvas({ ...LAYER_RECTS.sky, tint: 0, draw: drawSky }));
   for (const name of ['skyline', 'far', 'mid', 'near', 'fore']) {
     const rect = LAYER_RECTS[name];
     const live = await getLayerTexture(world, name);
     mountLayer(scene, rect, live || paintCanvas({ ...rect, ...PLACEHOLDER_DRAW[name] }));
   }
+  const events = backgroundEvents(scene);
+  return {
+    update: (dt) => { if (!reduced) events.update(dt); },
+    positions: () => events.positions(),
+  };
 }

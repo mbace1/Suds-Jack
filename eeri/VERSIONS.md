@@ -1,5 +1,62 @@
 # EERI — versions
 
+## v4 — 2026-08-13
+**The depth pass — the Tropical Freeze half, which needs no cast.** The
+3D characters are blocked on the Meshy pipeline, so this version moves
+the other half of the confirmed reference pair: "2D gameplay, fully 3D
+layered world — dramatic depth, the camera drifting on rails, background
+layers where things happen, heavy-object weight." None of that needs a
+model. It was judged the way the method says — render, LOOK, name what is
+wrong, redo — and the LOOK named three things:
+
+**A third of every frame was dead flat brown.** The earth below the lip
+was one unbroken slab: the largest area on screen carrying no
+information, which is the one thing the reference never does. It is a
+cut section now — strata darkening downward, cobbles embedded in the
+face, a fresh cut edge drawn either side of every hole, and a hard
+shadow under the grass lip, because the lane the game is played on was a
+0.14-tile hairline against a flat wall. The bank bands the same way; it
+is the room's most important object and it read as a box.
+
+**The occluder lane was buried.** Its rect stopped at y=5 — one tile
+above the ground line — so a foreground piece physically could not reach
+the top of the frame, and the one girder in it floated inside the dirt.
+The "cropped foreground = depth" lesson was written in the brief and
+absent from the screen. The rect runs −2…14 now, the whole visible band
+at that depth, and carries a real kit: scaffold standards you pass
+behind, spoil sweeping the bottom edge, a pipe run crossing above
+everything. Two things it got wrong first and the README now states: a
+big shape parked at eye level is a blob with the game hidden behind it
+(the cable drums were 1.25-unit discs at head height), and a heap whose
+crest sits below the playfield's ground line reads as a hole cut in the
+earth rather than a mound in front of it.
+
+**The background competed instead of receding.** A haze band sits the far
+stack in air, and the skyline lost its internal contrast — crisp two-tone
+blocks at that distance read as near and fought the playfield.
+
+Plus the two things the reference has that a spring does not.
+**`js/camera.js` is a director**: a site declares SHOTS — zones with
+their own dolly, height and lead — and the camera blends across them, so
+a room pulls back where it is asking you to read a lock and closes in
+where it is not. Over that sit a slow **drift**, so the frame is never
+dead still, and a **punch** — a short dolly kick on the dig, the sling,
+the span seating and every hit, which is what weight looks like from
+behind a camera. And **the background works**: a crane traverses a load
+across the skyline and a truck crosses the far road, where before one
+digging machine was one event in ninety-six tiles.
+
+**The seam, hardened, because asset input has started.** Art contributes
+files to `assets/` and a status flip, nothing else — so the gate now
+refuses a manifest path that climbs out of that folder, and measures a
+live PNG's pixels against its documented size rather than letting it
+stretch silently onto the plane. The size table in `assets/README.md` is
+the brief an artist paints to, so it is checked against `LAYER_RECTS` ×
+`PPU` in code rather than trusted to have been kept up by hand. Both
+guards were verified by feeding the gate bad input and watching it fail.
+
+Gate: 93 checks.
+
 ## v3 — 2026-08-13
 **The level beyond one room.** Walking through the gate now leads
 somewhere: sites are data (`SITES` in `js/level.js` — map, bolts, spawns,

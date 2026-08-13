@@ -194,6 +194,37 @@ per-world constants, not per-asset improvisation.
 **Gate 1 of production (§8) exists to prove this shot before anything
 else is made.**
 
+### 3.2.1 The depth pass, LOCKED (v4, 2026-08-13)
+
+These stopped being proposals the day the slice was rendered and looked
+at. All three were breaches of §3.2 that nothing in the written plan
+caught, because a state assertion cannot see a flat picture:
+
+1. **No dead zones.** The earth below the ground line was one flat slab
+   holding a third of the frame. Depth is carried as much by the ground
+   you are standing on as by the stack behind it: strata, embedded
+   stone, a drawn cut edge at every hole, and a hard shadow under the
+   standable lip — without that shadow the gameplay lane is a hairline
+   and the eye has nothing to hold.
+2. **The foreground must be able to reach the frame edge.** An occluder
+   lane whose rect ends near the ground line cannot crop anything, and a
+   foreground that fits inside the frame is just scenery placed early.
+   The lane spans the whole visible band at its depth. Its kit is narrow
+   verticals you pass behind, low sweeps along the bottom, and high
+   crossings — **never a large shape at eye level**, which is a blob with
+   the game behind it, and **never a heap whose crest sits below the
+   playfield's ground line**, which reads as a hole cut in the earth.
+3. **Distance is value before it is hue.** A haze band at the horizon and
+   a deliberate loss of internal contrast in the far layers. A crisp
+   two-tone block at skyline depth reads as *near* and fights the
+   playfield — that is a bug, not a style.
+
+And the camera is a **director, not a spring** (`js/camera.js`): a room
+declares shots — zones with their own dolly, height and lead — so it
+pulls back where it is asking you to read a lock. Over that, a slow drift
+so the frame is never dead still, and a short dolly punch on heavy events,
+which is what weight looks like from behind a camera.
+
 ### 3.3 Palette
 
 Mario brightness + worksite: **saturated flats against a big blue sky,

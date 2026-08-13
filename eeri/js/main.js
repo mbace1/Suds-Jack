@@ -11,16 +11,17 @@
 import * as THREE from 'three';
 import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=1';
 import { Input } from './input.js?v=1';
-import { Level, SITES } from './level.js?v=2';
-import { buildBankModel, Bank, buildGirderModel, Girder } from './pieces.js?v=2';
-import { buildLayers } from './layers.js?v=1';
+import { Level, SITES } from './level.js?v=3';
+import { buildBankModel, Bank, buildGirderModel, Girder } from './pieces.js?v=3';
+import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=2';
+import { Camera } from './camera.js?v=1';
 import { buildKidModel, Kid, Player } from './kid.js?v=2';
 import { buildExcavatorModel, Excavator } from './excavator.js?v=2';
 import { WreckingBall } from './hazards.js?v=1';
 import { AudioKit } from './audio.js?v=2';
 import { loadManifest, getModel, getPiece } from './assets.js?v=1';
 
-const FOV = 24, CAM_Z = 34;
+const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 async function boot() {
@@ -57,7 +58,7 @@ async function boot() {
 
   // ---- the persistent world: diorama + cast -------------------------------
   await loadManifest();
-  await buildLayers(scene, 'groundworks');
+  const diorama = await buildLayers(scene, 'groundworks', REDUCED);
 
   const kid = new Kid(await getModel('eeri', buildKidModel));
   scene.add(kid.group, kid.shadow);
@@ -244,7 +245,8 @@ async function boot() {
     siteEl.textContent = site.def.name;
 
     // the camera CUTS — a slow pan across a rebuilt world is a lie about geography
-    camX = player.x; camY = player.y + 3;
+    cam.setSite(site.def);
+    cam.cut(player.x, player.y + 3);
     setTimeout(() => document.getElementById('banner')?.remove(), 1400);
     transitioning = false;
   }
@@ -272,13 +274,26 @@ async function boot() {
       dig: () => site.bank?.dig(),
       goSite: (i) => goSite(i),
       tris: () => renderer.info.render.triangles,
+      // the 2D contract, computed rather than written down twice — the gate
+      // checks assets/README.md (what an artist paints to) against this
+      layerContract: () => Object.fromEntries(Object.entries(LAYER_RECTS).map(([k, r]) => [k, {
+        ...r,
+        pxW: Math.min(4096, Math.round((r.x1 - r.x0) * PPU)),
+        pxH: Math.round((r.y1 - r.y0) * PPU),
+      }])),
+      // where the camera actually is, so "it reframes" is testable
+      camera: () => ({ x: camera.position.x, y: camera.position.y, z: camera.position.z }),
+      // …and what the background is doing, so "it works" is too
+      bg: () => diorama.positions(),
     },
   };
 
   document.getElementById('boot').remove();
 
   // ---- the loop ------------------------------------------------------------
-  let t = 0, camX = player.x, camY = player.y + 3;
+  let t = 0;
+  const cam = new Camera(camera, site.def);
+  cam.cut(player.x, player.y + 3);
   const clock = new THREE.Clock();
 
   renderer.setAnimationLoop(() => {
@@ -293,7 +308,7 @@ async function boot() {
       if (player.justLanded) audio.land();
 
       // heavy and blind: stand under the working bucket and it puts you down
-      if (unmannedStrike() && player.struck(exc.x)) audio.splat();
+      if (unmannedStrike() && player.struck(exc.x)) { audio.splat(); cam.punch(1.1); }
 
       const near = nearExc();
       setHint(cleared ? HINT.out
@@ -343,7 +358,7 @@ async function boot() {
           && exc.bucketWorld(buck).x > bk.c0 - 1.4 && buck.x < bk.c1 + 1.4;
         if (canDig) {
           digT += dt;
-          if (digT >= 0.7) { digT = 0; site.bank.dig(); audio.splat(); }
+          if (digT >= 0.7) { digT = 0; site.bank.dig(); audio.splat(); cam.punch(0.8); }
         } else {
           digT = 0;
         }
@@ -360,7 +375,7 @@ async function boot() {
             && Math.abs(exc.bucketWorld(buck).x - gd.stackX) < 2.6;
           if (canSling) {
             slingT += dt;
-            if (slingT >= 0.55) { slingT = 0; g.sling(); exc.carrying = true; audio.clank(); }
+            if (slingT >= 0.55) { slingT = 0; g.sling(); exc.carrying = true; audio.clank(); cam.punch(0.5); }
           } else {
             slingT = 0;
           }
@@ -369,7 +384,8 @@ async function boot() {
           const inWin = exc.x > gd.seat.x0 && exc.x < gd.seat.x1;
           if (inWin && input.down.down) {
             slingT += dt;
-            if (slingT >= 0.5) { slingT = 0; g.seat(); exc.carrying = false; audio.thunk(); }
+            // the heaviest thing that happens in the game
+            if (slingT >= 0.5) { slingT = 0; g.seat(); exc.carrying = false; audio.thunk(); cam.punch(1.5); }
           } else {
             slingT = 0;
           }
@@ -413,11 +429,11 @@ async function boot() {
       site.ball.update(dt, mode === 'riding' ? exc.x : player.x, audio, REDUCED);
       if (mode === 'riding') {
         if (player.mercyT <= 0 && site.ball.hits(exc.x, exc.y, exc.hw, exc.h)) {
-          startDismount(true); audio.splat();
+          startDismount(true); audio.splat(); cam.punch(1.4);
         }
       } else if (mode === 'foot') {
         if (site.ball.hits(player.x, player.y, player.hw, player.h) && player.struck(site.ball.ballPos().x)) {
-          audio.splat();
+          audio.splat(); cam.punch(1.2);
         }
       }
     }
@@ -449,19 +465,16 @@ async function boot() {
 
     // the background machine is decoration — reduced motion stills it
     if (!REDUCED) bg.auto(dt);
+    diorama.update(dt);          // the crane traverses, the truck crosses
     if (mode !== 'riding') audio.idleLoad(0);
     site.bank?.update(dt);
     site.girder?.update(dt, exc);
 
-    // camera: follows the active seat, a small lead in the facing direction
+    // camera: the director picks the room's framing, the mode leans it, and
+    // heavy events kick the dolly (js/camera.js)
     const focus = mode === 'riding' || mode === 'mounting' ? exc : player;
     const face = mode === 'riding' ? exc.face : kid.face;
-    camX += (focus.x + face * 1.6 - camX) * Math.min(1, 3.2 * dt);
-    camY += (Math.max(focus.y + 2.6, 5.8) - camY) * Math.min(1, 2.6 * dt);
-    const halfW = CAM_Z * Math.tan((FOV * Math.PI) / 360) * camera.aspect;
-    camX = Math.max(halfW * 0.85, Math.min(site.level.w - halfW * 0.85, camX));
-    camera.position.set(camX, camY, CAM_Z);
-    camera.lookAt(camX, camY - 0.4, 0);
+    cam.update(dt, focus, face, mode, site.level.w, camera.aspect, FOV);
 
     renderer.render(scene, camera);
   });
