@@ -133,12 +133,17 @@ export const TUNING = {
    *  MINUTE ONE is a PARADE — pulses come fast (~9.5 s) so a new threat
    *  debuts almost every pulse (the debut guarantee forces the earliest
    *  un-met type), but the budget stays LOW so each one arrives nearly
-   *  alone. You meet seven distinct things and get to read each of them.
+   *  alone. You meet six distinct things and get to read each of them.
    *
    *  MINUTE TWO is the SQUEEZE — the debut parade is over, so the same
-   *  cadence now spends a budget that climbs more than twice as fast
-   *  (1.25/pulse vs 0.5), and the recurring clocks tighten. Same enemies,
+   *  cadence now spends a budget that climbs seven times faster
+   *  (1.45/pulse vs 0.2), and the recurring clocks tighten. Same enemies,
    *  suddenly in numbers: the difficulty comes from volume, not novelty.
+   *
+   * MEASURED, with a player who fires (js sim over a real 130 s run):
+   * live threats average 4.5 in minute one, 30 in minute two, and then
+   * PLATEAU at ~35 rather than climbing — the plateau is the ceiling
+   * below doing its job, and it is what keeps a bad minute survivable.
    *
    * Every number the director reads lives here, so re-balancing is one file.
    */
@@ -146,14 +151,17 @@ export const TUNING = {
     // [key, unlockTime, cost] — ORDER MATTERS: the debut guarantee walks
     // this list, so it doubles as the order the player meets the roster in.
     pool: [
-      ['skulls', 8, 2],    // the swarm fodder — first contact
-      ['watcher', 16, 3],  // …teaches "something shoots at you"
-      ['husk', 26, 5],     // …teaches "chew the armor" while it is calm
-      ['brute', 34, 3],    // …teaches "some things don't flinch"
-      ['spider', 44, 4],   // …teaches "your gems can be stolen"
-      ['blinker', 52, 3],  // …teaches "you cannot simply kite"
-      ['serpent', 72, 8],  // minute two opens with the big one
-      ['dread', 92, 6],
+      // NB: an unlock only opens ELIGIBILITY — the debut lands on the next
+      // pulse, so measured arrival runs ~8-14 s behind these numbers. They
+      // are set early enough that all six still land inside minute one.
+      ['skulls', 6, 2],    // the swarm fodder — first contact
+      ['watcher', 14, 3],  // …teaches "something shoots at you"
+      ['husk', 22, 5],     // …teaches "chew the armor" while it is calm
+      ['brute', 30, 3],    // …teaches "some things don't flinch"
+      ['spider', 38, 4],   // …teaches "your gems can be stolen"
+      ['blinker', 46, 3],  // …teaches "you cannot simply kite"
+      ['serpent', 68, 8],  // minute two opens with the big one
+      ['dread', 88, 6],
     ],
     caps: { watcher: 3, blinker: 3, spider: 2, dread: 2, husk: 2 },
     // pulse cadence: interval = max(floor, base − t·slope)
@@ -164,7 +172,19 @@ export const TUNING = {
     // the forced debut, so each new threat arrives with almost no support.
     // Per-pulse pressure in minute one actually DROPS vs the old curve
     // (2.8–5.1 vs 3.8–9.0) even though six things debut instead of four.
-    budget: { base: 2.6, kneeA: 6, rateA: 0.2, kneeB: 15, rateB: 1.9, rateC: 0.4 },
+    budget: { base: 2.6, kneeA: 6, rateA: 0.2, kneeB: 15, rateB: 1.45, rateC: 0.4 },
+    /**
+     * THE PRESSURE CEILING. Budget controls the spawn RATE; what actually
+     * kills you is the standing POPULATION, and population accumulates
+     * whenever spawns outrun your kill rate. Without a ceiling the two
+     * compound: measured over a no-kill run, minute two averaged 41 live
+     * threats against minute one's 6 — a wall, not a ramp, and a death
+     * spiral for anyone already struggling (falling behind makes you fall
+     * further behind). The director now refuses to add pressure while the
+     * floor is already at capacity, so a bad minute stays survivable and
+     * the difficulty lives in the MIX, not in an unbounded pile.
+     */
+    ceiling: { base: 10, rate: 0.15, cap: 38 },
     // recurring clocks (own timers, outside the pulse system)
     totem: { first: 0, base: 24, slope: 0.03, floor: 15 },
     thorn: { first: 40, base: 11, slope: 0.03, floor: 5 }, // debuts in minute one now

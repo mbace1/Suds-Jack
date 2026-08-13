@@ -5,17 +5,17 @@ import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { InputManager } from './input.js?v=53';
-import { Player } from './player.js?v=53';
-import { DaggerPool } from './daggers.js?v=53';
-import { GemPool } from './gems.js?v=53';
-import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=53';
-import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=53';
-import { OrbPool } from './bullets.js?v=53';
-import { preloadSkins, skinsReady, MESH_ASSETS, ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=53';
-import { AudioKit } from './audio.js?v=53';
-import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=53';
-import { TUNING as T } from './tuning.js?v=53';
+import { InputManager } from './input.js?v=54';
+import { Player } from './player.js?v=54';
+import { DaggerPool } from './daggers.js?v=54';
+import { GemPool } from './gems.js?v=54';
+import { DebrisPool, LitterField, VoxelSprite, MODELS, setVoxelDetail, getVoxelDetail, setStyleHue, styleTint, setHullMode, getHullMode } from './voxel.js?v=54';
+import { Skull, Wraith, Splitter, MiniSkull, DreadSkull, Husk, Revenant, Brute, Totem, Serpent, Spider, Leviathan, Watcher, Blinker, Egg } from './enemy.js?v=54';
+import { OrbPool } from './bullets.js?v=54';
+import { preloadSkins, skinsReady, MESH_ASSETS, ARENA_ASSETS, buildFloorPanels } from './meshassets.js?v=54';
+import { AudioKit } from './audio.js?v=54';
+import { mulberry32, fnv1a, utcDateStr, mixSeed } from './rng.js?v=54';
+import { TUNING as T } from './tuning.js?v=54';
 
 const ARENA_R = 26;
 const FIRE_SPREAD = T.weapon.spread;
@@ -1715,6 +1715,20 @@ let debuted = {};
 
 const lastPulsePicks = []; // debug: {n, kind, picks[]} per pulse, capped
 
+/** Live threats the ceiling counts — totems are furniture (they don't chase
+ *  and can't touch you), so they must not crowd out real pressure. */
+function livePressure() {
+  let n = 0;
+  for (const e of enemies) if (e.alive && e.type !== 'totem' && e.type !== 'egg') n++;
+  return n;
+}
+
+/** How many live threats the floor is allowed to hold right now. */
+function pressureCeiling() {
+  const C = T.director.ceiling;
+  return Math.min(C.cap, C.base + gameTime * C.rate);
+}
+
 function runPulse(n) {
   const kind = pulseKind(n);
   // daily runs seed a FRESH stream per pulse index, so pulse N's pick
@@ -1744,7 +1758,14 @@ function runPulse(n) {
       .find(e => e && gameTime >= e[1] && pulseEligible(e));
     if (centre) { spawnPick(centre[0], 0, draw); budget -= centre[2]; picks.push(centre[0]); }
   }
+  // The debut above is guaranteed — a new threat always gets its moment.
+  // Everything after it is FILLER, and filler is what the ceiling governs:
+  // once the floor is at capacity, a pulse stops adding bodies rather than
+  // burying a player who is already behind.
+  const headroom = pressureCeiling() - livePressure();
+  if (headroom < 1) budget = 0;
   for (let guard = 0; guard < 20 && budget > 0.5; guard++) {
+    if (livePressure() >= pressureCeiling()) break;
     let pool = PULSE_POOL.filter(pulseEligible);
     if (!pool.length) break;
     if (kind === 'swarm') {
@@ -1830,7 +1851,11 @@ function director(dt) {
   for (const e of enemies) {
     if ((e.type === 'totem' || e.type === 'leviathan') && e.emit) {
       e.emit = false;
-      if (skullCount() < SKULL_CAP) {
+      // The exhale is the biggest spawn faucet in the game — six totems on a
+      // ~2 s cycle out-produce the entire pulse system — so the pressure
+      // ceiling has to govern it too. Gating only the pulses (v4.36's first
+      // cut) moved the measured minute-two population by barely 1 body.
+      if (skullCount() < SKULL_CAP && livePressure() < pressureCeiling()) {
         const m = e.mouthPos(_sv);
         const boost = Math.min(6, gameTime * 0.06);
         const roll = rng.next(); // seeded in daily runs — exhale mix is part of the schedule
@@ -2564,6 +2589,7 @@ window.__hd = {
     getTuning() { return T; },
     getGun() { return { shotCd: +shotCd.toFixed(2), heldT: +fireHeldT.toFixed(2) }; },
     getFloorCanvas() { return floorCanvas; },
+    getPressure() { return { live: livePressure(), ceiling: +pressureCeiling().toFixed(1) }; },
     freezeDirector(on = true) { directorFrozen = !!on; return directorFrozen; },
     setInvulnerable(on = true) { invulnerable = !!on; return invulnerable; },
     getAssets() {
