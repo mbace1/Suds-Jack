@@ -12,8 +12,14 @@
     "excavator": {
       "file": "3d/excavator_v1.glb",
       "status": "placeholder",
-      "nodes": ["house", "boom", "stick", "bucket", "seat", "step", "wheels"]
+      "nodes": ["house", "boom", "stick", "bucket", "seat", "step", "wheels", "beacon"]
     }
+  },
+
+  "pieces": {
+    "bank":   { "file": "3d/bank_v1.glb",   "status": "placeholder", "nodes": ["state0", "state1", "state2"] },
+    "girder": { "file": "3d/girder_v1.glb", "status": "placeholder", "nodes": ["state0", "state1", "state2", "grip"] },
+    "wall":   { "file": "3d/wall_v1.glb",   "status": "placeholder", "nodes": ["state0", "state1", "state2"] }
   },
 
   "layers": {

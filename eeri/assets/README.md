@@ -31,7 +31,7 @@ The game animates **named nodes** (rigid hierarchies, no skinning):
 | `armL`, `armR` | shoulder (children of `body`) | swing (rotation.z) |
 | `head` | neck | nod/sway (rotation.z) |
 
-### `excavator_v1.glb` — first mount (≈ 3 u long, 2.1 u tall)
+### `excavator_v1.glb` — first machine (≈ 3 u long, 2.1 u tall)
 | node | pivot | driven by |
 |---|---|---|
 | `house` | slew centre on deck | idle vibration (position.y) |
@@ -41,9 +41,31 @@ The game animates **named nodes** (rigid hierarchies, no skinning):
 | `seat` | cab seat base (empty) | Eeri parents here while riding |
 | `step` | the climb-up point (empty) | the mount move passes through it |
 | `wheels` | group; each child spins about its **local z** | rolling |
+| `beacon` | amber lamp, cab roof or rear corner | lit + turning while UNMANNED, dark once Eeri is aboard |
 
 The cab must be open and the seat readable — Eeri stays visible while
-riding (the Yoshi rule, ART_BRIEF §3.6).
+riding (the Yoshi rule, ART_BRIEF §3.6), **and the empty seat is how a
+player tells an unmanned machine from a tamed one** (§1.2). Draw the seat
+to be read from the side at 32 px, empty.
+
+### Manipulable world pieces — `assets/3d/<piece>_v1.glb`
+
+Spec: ART_BRIEF §5.1. Things a machine digs, lifts or breaks. Same GLB
+rules as the cast. Each ships **all of its states in one file** as sibling
+nodes named `state0`, `state1`, `state2`… (state0 = untouched); the game
+shows exactly one at a time, so they must share an origin and register
+against each other. A piece that is carried also needs a `grip` node —
+the point the bucket or hook takes hold of.
+
+| file | states | notes |
+|---|---|---|
+| `bank_v1.glb` | `state0` full · `state1` half · `state2` dug flat | half-dug wants a fresh cut face and spill at the foot |
+| `girder_v1.glb` | `state0` stacked · `state1` slung · `state2` seated as a span | needs `grip`; the span state is walked on, so its top is flat and 1 tile deep |
+| `wall_v1.glb` | `state0` intact · `state1` cracked · `state2` rubble | rubble is a different silhouette, not a shorter wall |
+| `load_v1.glb` | `state0` grounded · `state1` slung · `state2` placed | needs `grip` |
+
+Add the file to `manifest.json` under a `"pieces"` block with the same
+`status` / `nodes` shape the models use.
 
 ## 2D layers (`assets/2d/*.png`)
 

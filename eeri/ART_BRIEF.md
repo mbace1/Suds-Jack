@@ -11,6 +11,12 @@
 > need the owner's own words. Locked visual plans elsewhere in this repo
 > (gameoflife, the hub) all began as briefs like this and only became rules
 > after a render → LOOK → redo pass against real references.
+>
+> **v6 adds §1.2 — the verb, locked.** The machines are no longer simply
+> friendly rides: a machine is **dangerous until it is yours**, and rooms
+> are built around an exit only a machine can open. This changes what has
+> to be drawn (an unmanned state, and a new class of manipulable world
+> pieces), so read §1.2 before §5.
 
 ---
 
@@ -30,6 +36,45 @@ Yoshi-Mario axis. On foot he is nimble and fragile; in a cab he is heavy,
 powerful, and the machine takes the hit (the Yoshi rule — you lose the
 ride, not the run). Every art decision about a machine is also a decision
 about a *mount*.
+
+### 1.2 The verb, locked (owner, 2026-08-13)
+
+The loop, in one line: **read the machine's cycle → time the mount →
+reshape the room → get out and climb.**
+
+- **A machine is dangerous until it is yours.** An unmanned machine runs
+  its own work cycle — it is not hunting Eeri, it is simply heavy and
+  blind, which is both more unsettling and more fair than a chaser. Being
+  near one is the risk.
+- **Mounting is the skill test, not a convenience.** You approach on the
+  machine's own rhythm; getting into the cab converts the threat into a
+  tool. That moment is the game's best beat and the art has to sell it.
+- **A machine earns its slowness by changing the level.** The bucket digs
+  the bank that is too high to jump, the boom lifts the girder into a
+  bridge, the ball breaks the wall. This is what makes Cat anatomy
+  load-bearing rather than decorative: **the bucket digs because it is a
+  bucket.**
+- **Each room is a lock and the machine is the key** — its exit is blocked
+  in a machine-shaped way. The kid reaches what the machine cannot; the
+  machine moves what the kid cannot. Neither finishes a room alone.
+
+**What this adds to the art, and it is not small:**
+
+1. **Every machine needs to read as UNMANNED at a glance** — that is a
+   silhouette-level requirement, not a detail. The **empty seat** is the
+   primary tell (another reason the cab stays open, §3.6), and the
+   secondary is an **amber beacon**, lit and turning while the machine
+   works itself, dark once Eeri is aboard. It is a real thing on real
+   plant, it is legible at 32 px, and it doubles as the hazard telegraph
+   the house rules demand.
+2. **Hazard chevrons belong on the machine's own working envelope**, not
+   just on set-dressing — the swing zone, the slew radius, the bucket's
+   reach.
+3. **A new asset class: manipulable world pieces** (§5.1) — the dirt bank
+   that gets dug, the girder that gets carried, the wall that breaks.
+   These are **3D**, not cutouts, because they are moved, lifted and
+   rotated in play, and they need their before/after states drawn as
+   deliberately as any character pose.
 
 ### 1.1 References, two tiers
 
@@ -313,6 +358,31 @@ message.
 (first mount) · dump truck · cement mixer · roller · tower crane
 (set-piece) · wrecking-ball crane (hazard boss).
 
+**Every machine also ships its unmanned tell** (§1.2): a `beacon` node —
+an amber lamp on the cab roof or rear corner, its own mesh so the game can
+light it, turn it and kill it — and a seat readable as *empty* from the
+side at 32 px.
+
+### 5.1 Manipulable world pieces
+
+The things a machine changes. **3D, not cutouts** — they are lifted,
+carried, rotated and broken in play. Same GLB rules as §5 (flat normals,
+unlit, palette colours, named nodes), same silhouette-first approval, and
+one extra requirement: **the before and after states are both designed**,
+because the whole point of the piece is that the room reads differently
+once you have used it.
+
+| piece | what it does | states to draw |
+|---|---|---|
+| dirt bank | dug down by the bucket | full → half → dug flat (3 steps) |
+| girder | carried and set as a bridge | stacked → slung → seated as a span |
+| brick wall | broken by the ball | intact → cracked → rubble pile |
+| load (pallet, pipe stack) | lifted and placed | on the ground → slung → placed |
+
+The dug/broken states are not a lesser version of the whole piece — a
+half-dug bank has a fresh cut face and spill at its foot, rubble is a
+different silhouette from a wall. Draw the change, do not just erase.
+
 ---
 
 ## 6. Where 2D ends and 3D begins (the boundary, stated once)
@@ -323,6 +393,7 @@ message.
 | Mid/near set layers, foreground occluders | **2D** cutouts at real z | the diorama; overlap + camera do the depth work |
 | Playfield collision | tile grid in level data | never from artwork |
 | Playfield dressing/platform faces | **2D** cutouts (shallow 3D slabs behind them only where perspective demands thickness) | the grid stays visible and honest |
+| Anything a machine digs, lifts or breaks | **3D** (§5.1) | it is moved and rotated in play; a cutout cannot be carried |
 | Eeri + all machines (incl. background workers) | **3D** GLB, node-animated | articulation and riding for free; background machines are the same models, repainted by layer depth |
 | Collectables (nuts, bolts, gems) | **3D** slow y-spinners | the genre's collectable language, free in 3D |
 | Particles (dust, cement splash, sparks) | **2D** sprite quads | crisper and cheaper than 3D confetti |

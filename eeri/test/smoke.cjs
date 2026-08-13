@@ -23,6 +23,13 @@ for (const [name, m] of Object.entries(manifest.models)) {
     m.status !== 'live' || fs.existsSync(f), m.file);
   ok(`model "${name}" declares its node contract`, Array.isArray(m.nodes) && m.nodes.length > 0);
 }
+for (const [name, m] of Object.entries(manifest.pieces || {})) {
+  const f = path.join(__dirname, '..', 'assets', m.file);
+  ok(`piece "${name}": ${m.status === 'live' ? 'live file exists' : 'placeholder declared'}`,
+    m.status !== 'live' || fs.existsSync(f), m.file);
+  ok(`piece "${name}" declares every state`,
+    Array.isArray(m.nodes) && m.nodes.filter((n) => n.startsWith('state')).length >= 2);
+}
 for (const [world, layers] of Object.entries(manifest.layers)) {
   for (const [layer, e] of Object.entries(layers)) {
     const f = path.join(__dirname, '..', 'assets', e.file);
