@@ -2,7 +2,7 @@
 
 Companion to `ART_BRIEF.md` (look) and `assets/README.md` (technical
 contract). This file is **what the game does and what that costs in
-assets** — the art pipeline should be able to read §5 alone and know what
+assets** — the art pipeline should be able to read §6 alone and know what
 to make next.
 
 Status: plan, 2026-08-13. Rewritten on owner direction (below).
@@ -85,7 +85,49 @@ kills), sparking cables.
 Yoshi rule stands — a hit ends the ride early and drops you back on foot,
 so a ride is a thing you can *lose* rather than fail.
 
-## 4. Controls — house convention, not a per-game choice
+## 4. Levels — the Mario/Yoshi shape (owner direction)
+
+> *"Levels like Yoshi or Mario — not too long, but still nice and
+> challenging for kids."*
+
+**Length: 60–90 seconds** first time through, ~40 once learned. The
+current 96-tile room is right — about seven screens — so the size stays
+and the *contents* change.
+
+**One idea per level, in four beats** (the Nintendo pattern):
+1. **Introduce** it alone and safe — the new gizmo with nothing else on
+   screen.
+2. **Vary** it — same idea, different spacing.
+3. **Combine** it with something already known.
+4. **Test** it once, at the level's peak.
+
+A level that introduces two ideas is two levels.
+
+**The ride sits at beat 3–4**, around the 60–70% mark: it is the peak, so
+it must not open the level. One ride per level, maximum.
+
+**Challenging for kids means generous, not easy:**
+- Everything telegraphs. No hazard is lethal on the frame you first see it.
+- **No pixel-precision jumps ever** — every gap and step is proved against
+  the reach budget with margin, not to the millimetre.
+- A **midway checkpoint**, Mario World's gate. Dying sends you there, not
+  to the start.
+- Hits knock back and cost mercy frames. Falling costs a respawn. Neither
+  ends a run.
+- No timer. Nothing in this game should ever hurry a seven-year-old.
+- Difficulty comes from **reading**, never from reflex or memorisation.
+
+**Secrets, one per level.** A pocket off the main line holding something
+worth the detour — the Mario 3 invitation, in this game's vocabulary: a
+patch of hoarding that is 2% different, a ladder that goes one rung
+further than it needs to.
+
+**Collectibles, two tiers.** Bolts scattered as the breadcrumb trail that
+teaches the route, plus a small fixed set per level (Yoshi's flowers,
+Mario's big coins) that gives a reason to come back. §7 asks the owner
+what that second tier should be.
+
+## 5. Controls — house convention, not a per-game choice
 
 **Controller first, touch always, and prompts that name neither a key nor
 a mouse.**
@@ -104,7 +146,7 @@ a mouse.**
 
 ---
 
-## 5. Assets this needs — for the art pipeline
+## 6. Assets this needs — for the art pipeline
 
 Contracts, scale and orientation live in `assets/README.md`; the look is
 `ART_BRIEF.md` §3.6 (Tonka × Cat) and §5.1 (manipulable pieces).
@@ -113,11 +155,11 @@ Contracts, scale and orientation live in `assets/README.md`; the look is
 the manipulable pieces drop below the things the player touches every
 second. Small enemies and gizmos are now the top of the list.
 
-### 5.1 Already live — do not remake
+### 6.1 Already live — do not remake
 `eeri_v3.glb` (skinned; clips idle/walk/run/jump/sit) · `excavator_v1.glb`
 · the five `groundworks_*` layer PNGs.
 
-### 5.2 Needed next, in priority order
+### 6.2 Needed next, in priority order
 
 | # | asset | contract | why |
 |---|---|---|---|
@@ -129,22 +171,43 @@ second. Small enemies and gizmos are now the top of the list.
 | 6 | `crane_v1.glb` | excavator's node set — `house boom stick bucket seat step wheels beacon` — ball on the stick's end | the one ride machine with no art; demoted from #1 because rides are now occasional |
 | 7 | `bank_v1.glb`, `wall_v1.glb`, `girder_v1.glb` | `state0/1/2` (+ `grip` on the girder) | ride payoffs. Real, but the last thing the player looks at |
 
-### 5.3 UI art, now that controls are settled (§4)
+### 6.3 What §4's level shape adds
+
+| asset | contract | note |
+|---|---|---|
+| `checkpoint_v1.glb` | `post` + `flag` (the game raises/turns it), an `off`→`on` colour swap | a midway gate per level; it must read as passed from a screen away |
+| the second-tier collectible | one model, ≤ 1 tile, **unmistakably not a bolt** at 32 px — different silhouette, not just bigger | §7 asks what it is. Three to five per level, hand-placed |
+| **backdrops must not visibly repeat** over 96 tiles | already the spec'd rect width, but the *painting* has to carry seven screens without a recognisable tile | the one thing that makes a level feel long or short regardless of its actual size |
+| gizmo kit variety (§6.2 #3) | | "one idea per level" means the kit IS the level count — every new gizmo is a new level, so breadth here beats polish |
+
+### 6.4 UI art, now that controls are settled (§5)
 Button glyphs for the on-screen pad and every in-game prompt: ◀ ▶ ▲ plus
 Ⓐ and Ⓑ in the machine-yellow/ink pair. **No key caps, no mouse icons,
 ever.** One set, used by the touch buttons and the hint line alike.
 
-### 5.4 Not yet
+### 6.5 Not yet
 A fourth machine. More sites than the layer sets above cover. Do not start
-either until §6 is answered.
+either until §7 is answered.
 
 ---
 
-## 6. Open, for the owner
+## 7. Open, for the owner
 
-- **How many sites?** Three is a demo. The answer sets how many layer sets
-  (§5.2 #5) the pipeline should plan for, so it blocks art, not just code.
-- **Does Eeri stomp, or dodge?** §2 assumes stomp, because it is the verb
-  that makes a platformer feel like one and it gives the small machines a
-  point. If he only ever avoids them, they become moving walls and the
-  enemy list wants rethinking.
+Answered in any order; the first three block art, not just code.
+
+1. **How many levels?** Sets how many backdrop sets and gizmos to plan.
+   Three is a demo; a dozen is a game.
+2. **Does Eeri stomp, or only dodge?** §2 assumes stomp. Without it the
+   small machines are moving walls and §3's list wants rethinking.
+3. **What is the second-tier collectible?** Yoshi has flowers, Mario has
+   big coins. Something site-shaped — a toolbox, a blueprint, a golden
+   bolt? It needs its own silhouette (§6.3).
+4. **Is there a world map** between levels, Mario 3 style, or does one
+   level run straight into the next? A map is a whole extra art surface.
+5. **Lives, or infinite retries?** For a kid I would say infinite, with
+   the checkpoint as the only cost. Say if you want a life count.
+6. **How old is the player?** It sets jump margins and how long a
+   telegraph has to be. I have been writing for about seven.
+7. **Does Eeri ever get hurt, or only knocked back?** Right now nothing
+   kills him. Falling in a pit costs a respawn — is that the worst that
+   ever happens?
