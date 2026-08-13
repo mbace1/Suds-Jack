@@ -72,7 +72,7 @@ function housePaint(root, paint, name) {
 let manifest = null;
 
 export async function loadManifest() {
-  const res = await fetch(new URL('manifest.json?v=2', BASE));
+  const res = await fetch(new URL('manifest.json?v=1', BASE));
   manifest = await res.json();
   return manifest;
 }
@@ -87,11 +87,10 @@ export async function getModel(name, buildPlaceholder, kind = 'models') {
     const root = gltf.scene;
 
     // A SECOND KIND OF RIG. A hand-cut model is a tree of named nodes the
-    // game rotates itself. A Meshy auto-rigged character is a SKINNED mesh
-    // driven by named animation CLIPS — it has a bone skeleton, not the
-    // game's node names, so it is checked against `clips` instead of
-    // `nodes`. `rig: "skinned"` in the manifest entry says which, and both
-    // come back through this one call so game code cannot tell them apart.
+    // game rotates. A Meshy auto-rigged character is a SKINNED mesh driven by
+    // named CLIPS — a bone skeleton, not the game's node names — so it is
+    // checked against `clips`. `rig: "skinned"` picks which, and both come
+    // back through this one call so game code cannot tell them apart.
     if (entry.rig === 'skinned') {
       const clips = {};
       for (const c of gltf.animations) clips[c.name] = c;
@@ -101,22 +100,16 @@ export async function getModel(name, buildPlaceholder, kind = 'models') {
         return buildPlaceholder();
       }
       if (entry.paint) housePaint(root, entry.paint, name);
-      else {
-        // the house material language still applies (§3.2) — a generated
-        // character arrives with baked photo texture and PBR gloss
-        root.traverse((o) => {
-          if (!o.isMesh && !o.isSkinnedMesh) return;
-          const m = o.material;
-          o.material = new THREE.MeshLambertMaterial({
-            map: m.map ?? null, color: m.color?.clone() ?? new THREE.Color(0xffffff),
-          });
+      else root.traverse((o) => {          // §3.2 applies either way
+        if (!o.isMesh && !o.isSkinnedMesh) return;
+        const m = o.material;
+        o.material = new THREE.MeshLambertMaterial({
+          map: m.map ?? null, color: m.color?.clone() ?? new THREE.Color(0xffffff),
         });
-      }
-      // NORMALISE THE HEIGHT. A generated model has no idea what a tile is —
-      // Meshy rigs to real-world metres, so Eeri arrived 0.95 units tall in a
-      // world where he is 1.62 and stood in the level like a background
-      // figure. The manifest declares the height in TILES and the seam scales
-      // to it: the unit mismatch is data, not a number buried in game code.
+      });
+      // HEIGHT IN TILES. Meshy rigs to real-world metres, so Eeri arrived
+      // 0.95 units tall in a world where he is 1.62 and stood in the level
+      // like a background figure. Data, not a number buried in game code.
       if (entry.height) {
         root.updateMatrixWorld(true);
         const box = new THREE.Box3().setFromObject(root);
@@ -163,6 +156,32 @@ export async function getLayerTexture(world, layer) {
     console.warn(`[eeri] layer "${world}/${layer}" failed to load (${e.message}) — painting placeholder`);
     return null;
   }
+}
+
+// ---- surfaces: a crafted DETAIL MAP over the palette ---------------------
+// The playfield is flat-coloured boxes and the layers behind it are crafted
+// card, so the gameplay plane was the one thing still reading as paint. Fixed
+// with a material: a greyscale card map MULTIPLIED onto each surface's own
+// palette colour, so §3.2's "no asset invents a colour" holds exactly.
+const texCache = new Map();
+
+export async function getTexture(name) {
+  const entry = manifest?.textures?.[name];
+  if (!entry || entry.status !== 'live') return null;
+  if (texCache.has(name)) return texCache.get(name);
+  const p = new THREE.TextureLoader().loadAsync(new URL(entry.file + '?v=' + manifest.v, BASE).href)
+    .then((tex) => {
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 4;
+      return tex;
+    })
+    .catch((e) => {
+      console.warn(`[eeri] texture "${name}" failed to load (${e.message}) — flat colour`);
+      return null;
+    });
+  texCache.set(name, p);
+  return p;
 }
 
 export function manifestData() { return manifest; }

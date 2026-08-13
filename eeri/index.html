@@ -78,11 +78,16 @@
 </div>
 <div id="boot">EERI</div>
 <script type="module" src="../hub/shell.js?v=31"></script>
-<script type="module" src="./js/main.js?v=4"></script>
+<script type="module" src="./js/main.js?v=3"></script>
 <script type="module">
-  // bottom-right: the HOME button owns top-left and the HUD owns top-left too
+  // bottom-right: the HOME button owns top-left and the HUD owns top-right.
+  // Under a thumb that corner also holds the jump button (#tJ, 62px at
+  // inset 16), and the badge at inset 12 sat on top of it — inert, per the
+  // house rule, but covering the one control the game is played with. So on
+  // a coarse pointer it climbs clear of the whole button row.
   import { sign } from '../toko/js/signature.js?v=3';
-  sign({ corner: 'bottom-right', counter: true });
+  const coarse = matchMedia('(pointer: coarse)').matches;
+  sign({ corner: 'bottom-right', counter: true, inset: coarse ? 92 : 12 });
 </script>
 </body>
 </html>

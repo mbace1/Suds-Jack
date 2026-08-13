@@ -24,7 +24,7 @@
 
 import * as THREE from 'three';
 import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=2';
-import { getLayerTexture } from './assets.js?v=4';
+import { getLayerTexture } from './assets.js?v=2';
 
 export const PPU = 30; // canvas pixels per world unit
 
@@ -390,7 +390,11 @@ function backgroundEvents(scene) {
 // world = the level's theme; each named layer asks the asset seam for a
 // live PNG first and paints its placeholder if there is none.
 export async function buildLayers(scene, world = 'groundworks', reduced = false) {
-  mountLayer(scene, LAYER_RECTS.sky, paintCanvas({ ...LAYER_RECTS.sky, tint: 0, draw: drawSky }));
+  // the sky is a layer like any other now — the crafted paper sky ships as a
+  // PNG through the same seam, and drawSky stays as its code placeholder
+  const liveSky = await getLayerTexture(world, 'sky');
+  mountLayer(scene, LAYER_RECTS.sky,
+    liveSky || paintCanvas({ ...LAYER_RECTS.sky, tint: 0, draw: drawSky }));
   for (const name of ['skyline', 'far', 'mid', 'near', 'fore']) {
     const rect = LAYER_RECTS[name];
     const live = await getLayerTexture(world, name);

@@ -1,102 +1,102 @@
 # EERI — versions
 
-## v7 — 2026-08-13 — the layers move to the crafted register
+## v9 — 2026-08-13 — one build: design v6 × the crafted art, and a paper sky
 
-**The 80% goes on canon.** The five groundworks layers swap from the `_v1`
-vector-cartoon set — gradients, gloss, outline strokes, the register that
-fails `ART_TARGET.md`'s own patch test — to the `_v2` CRAFT set: corrugated
-card with exposed fluting on every cut edge, balsa lashed with paper bands
-and split pins, overlapping panels with real laps, masking tape, frayed
-hand-cut lines. Concepts in `art-src/craft/` with the style block that made
-them; composited by `build-layers.mjs` to the exact contract sizes with the
-depth tint baked.
+**The two lineages are one tree again, and the numbering jumps to v9 to
+clear both sides' collided v6–v8.** Base: the design branch's v6 (parts kit,
+provable rooms via `test/rooms.mjs`, the crane, the wall, robots and vents,
+touch fixes). Carried onto it, from the art branch's v6–v8: the Meshy-rigged
+animated Eeri behind a `rig: "skinned"` seam with `height` in tiles, the
+crafted `_v2` layer set, the playfield card grain (`getTexture`, world-space
+UVs), and the kid's palette. The design gate — 116 checks + 29 in the room
+prover — passes over the merged tree with all art live.
 
-This is the enforcement of the new rule (CLAUDE.md, trap 18): the v6
-reconciliation kept the deployed vector layers by default, and **deployed is
-not approved** — the target doc is canon, whoever got to gh-pages first.
+**And the sky joins the crafted register** (owner's direction: the cardboard
+look belongs on the backgrounds, and the sky was the last smooth code paint
+on screen). `groundworks_sky_v1.png`: the palette's own gradient × a paper
+grain used as LUMINANCE only (§3.2 — no asset invents a colour), COTTON WOOL
+cloud cutouts tiled sparsely with a per-tile drift, and ONE construction-
+paper sun with a split pin. Built by `art-src` tooling from two free nano
+generations; `drawSky` stays as the code placeholder behind the same seam as
+every other layer, and the gate now measures the sky PNG like the rest.
 
-The fore lane is new art built to the v4 fore contract: two standards
-cropped by the top of the frame, one spoil sweep hugging the bottom, one
-pipe run crossing high, one tile every ~96 world units so most of the level
-is un-occluded and the crop is an event.
+Three lessons from the sky, kept in the tool:
+- **A prop sheet must forbid its own backing.** The first sheet put the
+  props on a kraft board the keyer cannot remove; "directly on the magenta,
+  NO board" fixed it.
+- **A naively tiled sheet grows a second sun.** The sun is cropped out and
+  stamped exactly once; two suns is a broken toy, not a whimsical one.
+- **Cotton needs a tighter despill than card.** Bright pixels put the
+  generic clamp above 255 where it does nothing, and the wisps kept pink
+  rims; a sheet with no legitimate pinks can clamp r/b hard to green+10,
+  plus an alpha rolloff on strong spill.
 
-Two compositor lessons, kept in the tool: **despill instead of semi-alpha**
-(fringe at alpha 120 haloes; clamping r/b toward green kills the pink cast
-and leaves kraft/ochre/grey/blue-grey card untouched at m≈0), and **the
-generator bakes magenta bounce into dark surfaces**, which no edge treatment
-reaches — the fore is graded hard toward one dark umber, which is the lane's
-own contract (near-silhouette, no sky tint), not a workaround.
+## v6 (design lineage) — 2026-08-13
+**The parts kit, and rooms that can be finished.** Rooms were a hand-drawn
+grid plus half a dozen side-arrays that could disagree with it — the pit
+was declared twice, the bank twice, and nothing anywhere checked that a
+machine could actually reach the thing it was supposed to clear. That is
+where "you get stuck pretty fast" came from.
 
-Manifest to v6, `_v2` file names (a new resource path from first release —
-the Pages CDN may cache a pre-deployment 404), and the manifest URL token in
-`assets.js` bumped so returning visitors fetch the new manifest at all; the
-`_v1` PNGs stay on the site so a stale cached manifest still resolves.
+`js/parts.js` is the palette, and it is the method flashprince already
+proved, ported rather than copied. There a room is twenty by twelve
+characters and `editor.js` paints it from a named brush strip, because
+"the character IS the data". Eeri's rooms scroll and carry MACHINES, so a
+room here is a LIST OF PARTS and each part declares its rules once: what
+it stamps into the map, what it demands of whoever arrives, and which
+verb removes it. `js/rooms.js` is the whole game as three such lists.
 
-## v6 — 2026-08-13 — the reconciliation, and Eeri is animated
+**And the piece flashprince never had.** Its level distances are measured
+off a written budget — a running jump carries 3.7 tiles, so a 3-tile gap
+goes and a 4-tile gap does not — but nothing checks a room against it;
+you find out by playing. Eeri gets the budget as numbers computed off
+`kid.js` rather than guessed (jump apex 12.6²/60 = **2.65 tiles**, so a
+2-tile step goes and 3 does not; a run carries **4.85**, so a 4-tile gap
+goes and 5 does not) AND the check. `test/rooms.mjs` walks every room
+from spawn to exit in plain Node — no browser, the shape of gameoflife's
+`check_levels.mjs` — and a room that cannot be finished fails the build.
+It carries eight rooms broken on purpose, one way each, so a prover that
+cannot fail cannot pass unnoticed: a step too tall, a gap too wide, a
+lock with no machine, **a machine penned from its own job by a hole**,
+an obstacle outside its machine's reach, a machine spawned off its own
+track, a robot patrolling across a hole.
 
-**Two lineages had diverged with no common ancestor and both held real work.**
-This branch forked at v2 and went down the art-pipeline path (a Meshy driver,
-a mesh slicer, docs); the deployed site went to v5 with multi-room sites, a
-camera director, background events, the `paint` map and a 98-check gate.
-Deploying either over the other would have deleted the other's work.
+**Machines have an A-to-B track now**, declared per room, and the check
+holds the room to it: the track may not be cut by a hole, and every
+obstacle the machine is meant to clear must lie within arm's reach of
+somewhere on it. That single rule is what stops the class of soft-lock.
 
-**The site's tree is the base.** Every one of its gameplay advances is kept
-untouched — `camera.js`, `layers.js` with `backgroundEvents`, `level.js` with
-`SITES`, `pieces.js`, `main.js`, the paint map, the size-checked seam. What
-came across from the branch is only what is additive:
+**SITE 3 — the wall, and the third verb.** A wrecking crane
+(`js/crane.js`), on the excavator's exact node contract so a live GLB
+drops in behind the same check and the same paint map. The brief had this
+machine down as a *hazard boss*; the owner's direction moves it, and it
+is the game's thesis in one object — the ball that swings at you unmanned
+is the ball you swing at the wall once the cab is yours. The brick wall
+(`Wall` in `js/pieces.js`) is the third manipulable piece: intact →
+cracked → rubble, honouring §5.1's rule that rubble is a different
+silhouette and not a shorter wall, and its rows leave the MAP when it
+comes down, the same honesty as the dig and the span.
 
-- **Eeri is a Meshy-rigged, animated character, and he is live.** The owner's
-  kid from their own photograph — olive dinosaur cap, navy dino tee,
-  machine-yellow wellies — T-posed, meshed, auto-rigged and carrying five
-  animator-authored clips: idle, walk, run, jump and sit. He replaces the
-  hard-hat-and-vest placeholder, which was the character before the owner gave
-  the reference.
-- **The seam learned a second kind of rig.** A hand-cut model declares the
-  `nodes` the game rotates; a skinned character declares the named `clips` it
-  can play. `rig: "skinned"` picks which contract is checked. It composes with
-  the site's own `paint` map rather than replacing it, and an unpainted
-  skinned model still gets the house material language applied, because §3.2
-  is the rule either way.
-- **The seam normalises HEIGHT.** A generated model has no idea what a tile
-  is: Meshy rigs to real-world metres, so Eeri arrived 0.95 units tall in a
-  world where he is 1.62 and stood in the level looking like a background
-  figure. `height` in the manifest is in TILES and the seam rescales on load.
-- `ClipDriver` in `kid.js` maps the game's five states onto clips and
-  **crossfades** between them (0.15 s — the clips are separate takes and a
-  hard cut pops), and scales the run's playback by actual speed. The rig is
-  modelled facing +Z, which is Meshy's requirement, so it carries a −90° yaw.
+**Small things to avoid** (`js/robots.js`). A robot patrols a span the
+kit guarantees is floor, notices, winds up, then lunges — flashprince's
+sentry clock compressed, so it is a reading test rather than a reflex
+test. A steam vent breathes on a fixed clock with a lit collar before it
+blows. The cost is the Yoshi rule, unchanged: a hit takes the RIDE, not
+the run, and a machine drives straight over a robot.
 
-The palette keeps `VEST` and `SHIRT`: the hard-hat kid is gone but
-`layers.js` still paints its traffic cones with `VEST`, and dropping the key
-would have taken the cones out of the near lane.
+**Touch, fixed.** The Toko badge sat on top of the jump button — inert
+per the house rule, but covering the one control the game is played with;
+on a coarse pointer it now clears the whole button row. And every hint
+named keyboard keys to a thumb that has none, so there is a touch string
+set: `◀ ▶ — RUN · ▲ — JUMP`.
 
-**A live bug was found on the way in: the 2D layer art was shipped and
-never requested.** `layers.js` imported `assets.js?v=1` while `main.js`
-imported `?v=2` — two tokens for one module, so the browser instantiated it
-twice. `manifest` is module-level state in there, so `loadManifest()` ran on
-one instance and `getLayerTexture()` asked the other, whose manifest was
-still `null`. Every layer silently fell back to its code-painted placeholder
-while 2.7 MB of painted PNG sat in `assets/2d/` unrequested. All three
-changed modules are renumbered and every importer updated, which is the whole
-reason the repo's one-token-per-module rule exists.
+Found on the way: `window.__eeri.exc` was captured once at boot, so after
+a room change the handle still pointed at the machine you had left — the
+test that placed the kid beside "the machine" was standing him next to
+one in another room. It is a getter now.
 
-**The gate was stale and is fixed rather than excused.** Its last two checks
-asserted that walking out of the room sets `cleared` — the single-room ending
-that v3 replaced with site progression. They now assert the site index moves
-and the next room is built, which is what the game does. 49 checks passing.
-
-**Honest caveat for whoever picks this up:** the site's own 98-check gate
-lives on its working branch, which `gh-pages` does not carry (it ships no
-`test/`). **That gate is the authoritative one** — run it before the next
-deploy. The 49 here are this branch's and are narrower.
-
-The art pipeline that produced Eeri is documented at repo root in
-**`ART_PIPELINE.md`** (concept → mesh → rig → animate → integrate, costs, and
-a trap index) and the quality target in **`ART_TARGET.md`** — which nails the
-mix at **~80% stylised 2D environment, ~20% 3D**, and audits against BOTH
-halves of the confirmed reference pair rather than just Tropical Freeze.
-`art-src/craft/` holds four crafted-cardboard layer concepts in the Crafted
-World register, with the style block that produced them.
+Gate: 115 checks, plus 29 in `test/rooms.mjs` (21 over the real rooms,
+8 proving the prover bites).
 
 ## v5 — 2026-08-13
 **The art lands, and the game goes up on the floor.** The seam built in

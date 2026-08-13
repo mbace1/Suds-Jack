@@ -25,20 +25,17 @@ export const PAL = {
   VEST:  '#ff7a1a',
   SHIRT: '#4a7ac8',
   PANTS: '#3a4a5c',
-  BOOT:  '#ffb01f',   // machine yellow: the kid's wellies, and his tie to the cast
+  BOOT:  '#ffb01f',   // machine yellow: the kid's wellies, his tie to the cast
 
-  // Eeri the kid — drawn from the owner's own photograph of him (2026-08-13):
-  // an olive dinosaur cap with soft spikes, a navy tee with a green dino on
-  // the chest. The safety-yellow boots are the one liberty, because §3.7
-  // wanted a machine-colour tie between the small figure and the big cast and
-  // the cap can no longer carry it. VEST and SHIRT stay above: the hard-hat
-  // kid is gone but `layers.js` still paints its traffic cones with VEST.
-  CAP:      '#8a8a52',   // olive khaki
-  CAP_DK:   '#6e6e3e',   // the brim, one step down
-  SPIKE:    '#5f9e4a',   // the soft dino spikes
+  // Eeri the kid, from the owner's own photograph (2026-08-13): olive
+  // dinosaur cap with soft spikes, navy dino tee. VEST/SHIRT stay above —
+  // the hard-hat kid is gone but layers.js still paints its cones with VEST.
+  CAP:      '#8a8a52',
+  CAP_DK:   '#6e6e3e',
+  SPIKE:    '#5f9e4a',
   SPIKE_DK: '#4a7d3a',
-  TEE:      '#2e3a5c',   // navy
-  DINO:     '#5fbf5a',   // the print on the chest
+  TEE:      '#2e3a5c',
+  DINO:     '#5fbf5a',
   PANTS:    '#3a4a5c',
   BOOT_DK:  '#d88c12',
 };

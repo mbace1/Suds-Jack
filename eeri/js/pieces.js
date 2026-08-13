@@ -206,6 +206,153 @@ export class Girder {
   }
 }
 
+// ---- the brick wall: intact → cracked → rubble ---------------------------
+// The third manipulable piece, and the ball's job. The brief's rule holds
+// here more than anywhere: "rubble is a different silhouette from a wall.
+// Draw the change, do not just erase." So the cracked state keeps its full
+// height and loses its face, and the rubble state is a low heap that is
+// nothing like a shorter wall.
+
+export function buildWallModel(rows = 4, width = 5) {
+  const root = new THREE.Group();
+  const nodes = {};
+  const M = (c) => new THREE.MeshLambertMaterial({ color: c });
+  const box = (parent, w, h, d, c, x, y, z) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c));
+    m.position.set(x, y, z); parent.add(m); return m;
+  };
+  const BRICK = mix(PAL.EARTH[1], PAL.HAZARD, 0.32);
+  const BRICK_DK = mix(BRICK, PAL.INK, 0.3);
+  const MORTAR = mix(PAL.STEEL[3], PAL.EARTH[3], 0.4);
+
+  // courses of brick, offset every other row — the one detail that says
+  // "wall" instead of "block" at any distance
+  const courses = (parent, h, skip = () => false) => {
+    for (let r = 0; r < h; r++) {
+      box(parent, width, 0.06, 1.62, MORTAR, width / 2, r + 0.97, 0);   // bed joint
+      for (let b = 0; b < width * 2; b++) {
+        if (skip(r, b)) continue;
+        const off = (r % 2) * 0.25;
+        const x = b * 0.5 + off;
+        if (x > width - 0.1) continue;
+        box(parent, 0.44, 0.86, 1.6, b % 3 === 1 ? BRICK_DK : BRICK, x + 0.25, r + 0.5, 0);
+      }
+    }
+  };
+
+  // state0 — INTACT
+  const s0 = new THREE.Group(); s0.name = 'state0';
+  courses(s0, rows);
+  box(s0, width + 0.24, 0.22, 1.7, MORTAR, width / 2, rows - 0.05, 0);   // coping
+  root.add(s0); nodes.state0 = s0;
+
+  // state1 — CRACKED: full height, but the face is broken open and the top
+  // course has started to go. It still blocks; it just tells you it will not
+  // block for long.
+  const s1 = new THREE.Group(); s1.name = 'state1';
+  const gone = (r, b) => (r === rows - 1 && b > width) || (r === rows - 2 && b > width * 1.5)
+    || (r === 1 && b === 3) || (r === 2 && b === 4);
+  courses(s1, rows, gone);
+  for (let i = 0; i < 7; i++) {                                          // fallen brick at the foot
+    const a = (i * 2.39) % 1, b = (i * 0.77) % 1;
+    const br = box(s1, 0.4, 0.24, 0.5, i % 2 ? BRICK_DK : BRICK, a * width, 0.12, (b - 0.5) * 1.2);
+    br.rotation.z = (a - 0.5) * 0.9;
+  }
+  root.add(s1); nodes.state1 = s1;
+
+  // state2 — RUBBLE: a low heap. A different silhouette, not a short wall.
+  const s2 = new THREE.Group(); s2.name = 'state2';
+  for (let i = 0; i < 26; i++) {
+    const a = (i * 2.39) % 1, b = (i * 0.77) % 1, c = (i * 1.31) % 1;
+    const h = 0.5 - Math.abs(a - 0.5) * 0.7;                             // heaped in the middle
+    const br = box(s2, 0.38 + c * 0.16, 0.22, 0.46, i % 3 ? BRICK : BRICK_DK,
+      a * width, 0.12 + b * h, (c - 0.5) * 1.3);
+    br.rotation.set(0, c * 3, (a - 0.5) * 1.3);
+  }
+  box(s2, width, 0.16, 1.5, mix(BRICK_DK, PAL.INK, 0.35), width / 2, 0.06, 0);  // dust bed
+  root.add(s2); nodes.state2 = s2;
+
+  return { root, nodes };
+}
+
+export class Wall {
+  // rect = { c0, c1, cy0, rows } in cells; the map is the collision
+  constructor(scene, level, rect, asset) {
+    this.level = level; this.rect = rect;
+    this.hits = 0;
+    this.n = asset.nodes;
+    this.group = new THREE.Group();
+    this.group.add(asset.root);
+    this.group.position.set(rect.c0, rect.cy0, 0);
+    scene.add(this.group);
+
+    this.shake = 0;
+    this.spray = [];
+    const geo = new THREE.BoxGeometry(0.3, 0.18, 0.34);
+    for (let i = 0; i < 22; i++) {
+      const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({
+        color: mix(PAL.EARTH[1], PAL.HAZARD, 0.32),
+      }));
+      m.visible = false; m.life = 1;
+      this.spray.push(m); scene.add(m);
+    }
+    this.show();
+  }
+
+  get cracked() { return this.hits === 1; }
+  get cleared() { return this.hits >= 2; }
+
+  show() {
+    for (let s = 0; s < 3; s++) {
+      if (this.n[`state${s}`]) this.n[`state${s}`].visible = (s === Math.min(this.hits, 2));
+    }
+  }
+
+  // one swing. The first lands and cracks it; the second brings it down and
+  // takes the rows OUT OF THE MAP, so the way through is a fact about the
+  // level and not about the picture — the same honesty as the dig.
+  strike() {
+    if (this.cleared) return false;
+    this.hits++;
+    if (this.cleared) {
+      for (let r = 0; r < this.rect.rows; r++) {
+        this.level.clearRow(this.rect.c0, this.rect.c1, this.rect.cy0 + r);
+      }
+    }
+    this.shake = 1;
+    let n = 0;
+    for (const p of this.spray) {
+      if (p.life < 1 || n >= (this.cleared ? 14 : 6)) continue;
+      n++;
+      p.life = 0; p.visible = true;
+      p.position.set(
+        this.rect.c0 + Math.random() * (this.rect.c1 - this.rect.c0 + 1),
+        this.rect.cy0 + Math.random() * this.rect.rows,
+        (Math.random() - 0.5) * 1.2,
+      );
+      p.vx = (Math.random() - 0.35) * 5;
+      p.vy = 2.6 + Math.random() * 4;
+    }
+    return true;
+  }
+
+  update(dt) {
+    if (this.shake > 0) {
+      this.shake = Math.max(0, this.shake - dt / 0.35);
+      this.group.position.x = this.rect.c0 + Math.sin(this.shake * 46) * 0.09 * this.shake;
+    }
+    for (const p of this.spray) {
+      if (p.life >= 1) { p.visible = false; continue; }
+      p.life = Math.min(1, p.life + dt / 1.1);
+      p.vy -= 26 * dt;
+      p.position.x += p.vx * dt;
+      p.position.y += p.vy * dt;
+      p.rotation.x += dt * 9; p.rotation.z += dt * 6;
+      if (p.life >= 1) p.visible = false;
+    }
+  }
+}
+
 export class Bank {
   // rect = { c0, c1, cy0, rows } in cells; the map is the collision
   constructor(scene, level, rect, asset) {
