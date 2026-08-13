@@ -1,5 +1,5 @@
 {
-  "v": 9,
+  "v": 11,
   "_readme": "The asset seam. Every entry is either 'placeholder' (the game builds it in code) or 'live' (the game loads the file). Dropping an asset in = put the file at its path, flip status to live, bump the file's v token. The smoke gate reads this file: live entries must resolve and models must expose their contracted nodes. See assets/README.md for the full contract.",
   "models": {
     "eeri": {
@@ -125,7 +125,23 @@
     "card": {
       "file": "2d/card_detail_v1.png",
       "status": "live",
-      "_note": "greyscale crafted-card detail map, MULTIPLIED onto palette colours (assets.js getTexture). Never a colour source."
+      "_note": "corrugated kraft \u2014 the earth, the cut faces, the deep bands"
+    },
+    "felt": {
+      "file": "2d/felt_detail_v1.png",
+      "status": "live",
+      "_note": "wool felt nap \u2014 the grass lip"
+    },
+    "balsa": {
+      "file": "2d/balsa_detail_v1.png",
+      "status": "live",
+      "_note": "painted balsa, brush strokes and a paint chip \u2014 machines, steel, props (\u00a73.3 'painted wood and pressed steel')"
+    },
+    "flute": {
+      "file": "2d/flute_detail_v1.png",
+      "status": "live",
+      "_note": "the CUT EDGE of corrugated card \u2014 stacked fluting seen edge-on. The earth section is a cut, so this is what a cut through card looks like."
     }
-  }
+  },
+  "_textures_readme": "THE MATERIAL PALETTE. Greyscale detail maps, each MULTIPLIED onto a palette colour (assets.js getTexture) \u2014 never a colour source. Crafted World is a KIT of materials, not one material: card is the ground, felt is the grass, painted balsa is everything the cast is built from. A surface picks the map that matches what it would really be made of."
 }

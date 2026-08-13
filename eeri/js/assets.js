@@ -38,6 +38,19 @@ const ROLE = {
   EARTH0: PAL.EARTH[0], EARTH1: PAL.EARTH[1], EARTH2: PAL.EARTH[2], EARTH3: PAL.EARTH[3],
 };
 
+// The cast is "painted wood and pressed steel" (§3.3), so its flat palette
+// colours take the BALSA grain — brush strokes and a paint chip — the way the
+// ground takes card and the grass takes felt. Same rule as everywhere: the
+// map is greyscale and multiplies the palette colour, it never supplies one.
+// Async and additive: the machine is already on screen in flat colour and
+// gains its brushwork when the texture lands.
+function grainPaint(mats) {
+  getTexture('balsa').then((tex) => {
+    if (!tex) return;
+    for (const m of mats) { m.map = tex; m.needsUpdate = true; }
+  });
+}
+
 function housePaint(root, paint, name) {
   // a mesh belongs to the NEAREST named owner above it, so painting `house`
   // does not reach down into the beacon hanging off it — the beacon is an
@@ -67,6 +80,9 @@ function housePaint(root, paint, name) {
       o.material = flat(role);
     });
   }
+  // the beacon is a LIGHT and must stay unlit and untextured — brushing it
+  // would put the machine's one lamp out, which is its unmanned tell (§1.2)
+  grainPaint([...mats.values()]);
 }
 
 let manifest = null;

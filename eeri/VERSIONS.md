@@ -1,5 +1,45 @@
 # EERI — versions
 
+## v10 — 2026-08-13 — a material KIT, not cardboard everywhere
+
+**Crafted World is a kit of materials and the first pass used card for all of
+it.** `js/craft.js` is now the one factory every surface is made through, and
+the manifest's `textures` block is the palette: `flute` (the cut edge of
+corrugated card, stacked fluting) for the earth section and every dug face,
+`card` (kraft liner) for flat card, `felt` for the grass lip, `balsa`
+(painted wood, brush strokes and a paint chip) for machines, girders and
+props — §3.3's "painted wood and pressed steel". Each is a greyscale map
+multiplied onto a palette colour, so §3.2 holds exactly.
+
+**The ground is the headline.** It was flat brown, then card with a faint
+grain, and it is now visibly a CUT THROUGH STACKED CORRUGATED CARD — which is
+what a cut earth section is in this reference. The strata banding the depth
+pass established still reads through it; the flute strength was pulled from
+0.62 to 0.5 precisely so it would.
+
+**Two failures worth recording.** A probe of the live scene found **3
+materials mapped and about 70 not**: every module had grown its own
+`const M = (c) => new MeshLambertMaterial(...)`, so the grass lip, both
+machines and every prop were still flat paint while the ground behind them
+was card. Patching call sites would have left the next one to be written
+flat, so `craft.js` replaced all of them — 128 materials now carry their
+material, and the ones that do not are the beacon lamp, shadows and glass,
+which must stay bare. And the first maps were far too weak: ±20% variation,
+which Lambert then flattens further. A material you have to be told is there
+is not doing its job.
+
+Also fixed: the sky's remaining magenta. **Magenta is the only thing where r
+AND b both exceed g** — yellow, orange, kraft and cream all have b < g, and
+cotton is neutral — so the despill needs no threshold and cannot eat a real
+colour. 2.04% of pixels carried a pink cast; now 0.004%.
+
+And the gate learned to refuse a manifest block containing a stray note: a
+bare `_note` string beside the texture entries made the seam-scope check
+resolve a path on `undefined` and killed the whole run with
+`ERR_INVALID_ARG_TYPE` instead of naming the problem.
+
+Gate: 134 checks + 29 in the room prover.
+
 ## v9 — 2026-08-13 — one build: design v6 × the crafted art, and a paper sky
 
 **The two lineages are one tree again, and the numbering jumps to v9 to

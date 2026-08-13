@@ -11,7 +11,7 @@
 
 import * as THREE from 'three';
 import { PAL, mix } from './palette.js?v=2';
-import { getTexture } from './assets.js?v=2';
+import { craftMat, craftBox, craft } from './craft.js?v=2';
 
 import { ROOMS } from './rooms.js?v=1';
 import { compile, W, H, SOLID_CHARS, GROUND } from './parts.js?v=1';
@@ -145,30 +145,20 @@ export class Level {
     };
     // Every EARTH surface takes the crafted card grain; steel and bolts stay
     // clean, because one material language does not mean one material.
-    const grained = [];
-    const grain = (m, scale = 1) => { m.__grain = scale; grained.push(m); return m; };
     const dirtMats = new Map();
     const dirtMat = (c) => {
-      if (!dirtMats.has(c)) dirtMats.set(c, grain(new THREE.MeshLambertMaterial({ color: c })));
+      // The earth is a CUT, and a cut through card shows its fluting. The
+      // deep bands and every dug face get the flute edge; flat top surfaces
+      // keep the plain liner.
+      if (!dirtMats.has(c)) dirtMats.set(c, craftMat(c, 'flute'));
       return dirtMats.get(c);
     };
-    grain(mat.cut, 2.2); grain(mat.shade, 2.2); grain(mat.back, 0.7); grain(mat.lip, 3);
-    // UVs in WORLD SPACE, not per face. BoxGeometry maps 0…1 across every
-    // face whatever its size, so one shared material with one repeat stretched
-    // the card over a 136-unit earth band and squashed it onto a 1-unit cell —
-    // it read as horizontal streaking, not as card. Scaling each box's own UVs
-    // by its own size gives every surface the same texel density.
-    const TILE = 5;
+    // each surface takes the material it would really be made of
+    craft(mat.cut, 'flute'); craft(mat.shade, 'flute'); craft(mat.back, 'card');
+    craft(mat.lip, 'felt');                              // grass is felt
+    craft(mat.steel, 'balsa'); craft(mat.girder, 'balsa'); // painted wood
     const box = (w, h, d, m, x, y, z) => {
-      const geo = new THREE.BoxGeometry(w, h, d);
-      if (m.__grain) {
-        const uv = geo.attributes.uv;
-        for (let i = 0; i < uv.count; i++) {
-          uv.setXY(i, uv.getX(i) * (w / TILE) * m.__grain, uv.getY(i) * (h / TILE) * m.__grain);
-        }
-        uv.needsUpdate = true;
-      }
-      const mesh = new THREE.Mesh(geo, m);
+      const mesh = craftBox(w, h, d, m);
       mesh.position.set(x, y, z);
       group.add(mesh);
       return mesh;
@@ -253,13 +243,6 @@ export class Level {
         c = e + 1;
       }
     }
-    // the grain lands whenever it lands; the room is already playable. A
-    // texture must never be able to delay or block a level build.
-    getTexture('card').then((tex) => {
-      if (!tex) return;
-      for (const m of grained) { m.map = tex; m.needsUpdate = true; }
-    });
-
     scene.add(group);
     return group;
   }

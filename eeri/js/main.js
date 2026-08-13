@@ -11,7 +11,7 @@
 import * as THREE from 'three';
 import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=2';
 import { Input } from './input.js?v=1';
-import { Level, ROOMS } from './level.js?v=2';
+import { Level, ROOMS } from './level.js?v=3';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
 } from './pieces.js?v=4';
@@ -23,7 +23,8 @@ import { buildCraneModel, Crane } from './crane.js?v=1';
 import { Robot, SteamVent } from './robots.js?v=1';
 import { WreckingBall } from './hazards.js?v=1';
 import { AudioKit } from './audio.js?v=2';
-import { loadManifest, getModel, getPiece } from './assets.js?v=2';
+import { loadManifest, getModel, getPiece } from './assets.js?v=3';
+import { craftMat } from './craft.js?v=2';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -141,18 +142,18 @@ async function boot() {
     // the way out
     for (const dx of [-0.6, 0.6]) {
       const post = new THREE.Mesh(new THREE.BoxGeometry(0.22, 2.6, 0.22),
-        new THREE.MeshLambertMaterial({ color: PAL.MACHINE }));
+        craftMat(PAL.MACHINE, 'balsa'));
       post.position.set(def.exit.x + dx, def.exit.y + 1.3, 0); group.add(post);
     }
     const bar = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.26, 0.26),
-      new THREE.MeshLambertMaterial({ color: PAL.MACHINE_DK }));
+      craftMat(PAL.MACHINE_DK, 'balsa'));
     bar.position.set(def.exit.x, def.exit.y + 2.6, 0); group.add(bar);
 
     // bolts: the collectable (3D slow spinners, §6)
     const bolts = level.boltCells.map((cell, bi) => {
       const g = new THREE.Group();
-      const m1 = new THREE.MeshLambertMaterial({ color: PAL.MACHINE, transparent: true });
-      const m2 = new THREE.MeshLambertMaterial({ color: PAL.MACHINE_DK, transparent: true });
+      const m1 = craftMat(PAL.MACHINE, 'balsa', { transparent: true });
+      const m2 = craftMat(PAL.MACHINE_DK, 'balsa', { transparent: true });
       const nut = new THREE.Mesh(boltGeo, m1); nut.rotation.x = Math.PI / 2;
       const hub = new THREE.Mesh(hubGeo, m2); hub.rotation.x = Math.PI / 2;
       g.add(nut, hub);

@@ -10,12 +10,13 @@
 
 import * as THREE from 'three';
 import { PAL, mix } from './palette.js?v=2';
+import { craftMat, craftBox } from './craft.js?v=2';
 
 export function buildExcavatorModel(tint = 0) {
   const T = (c) => (tint > 0 ? mix(c, PAL.SKY_PALE, tint) : c);
   const root = new THREE.Group(); // origin at ground contact, facing +x
   const nodes = {};
-  const M = (c) => new THREE.MeshLambertMaterial({ color: T(c) });
+  const M = (c) => craftMat(T(c), 'balsa');   // painted wood (§3.3)
   const box = (parent, w, h, d, c, x, y, z) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c));
     m.position.set(x, y, z); parent.add(m); return m;
