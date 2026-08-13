@@ -11,12 +11,16 @@
 import * as THREE from 'three';
 import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=1';
 import { Input } from './input.js?v=1';
-import { Level, SITES } from './level.js?v=3';
-import { buildBankModel, Bank, buildGirderModel, Girder } from './pieces.js?v=3';
+import { Level, ROOMS } from './level.js?v=4';
+import {
+  buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
+} from './pieces.js?v=4';
 import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=2';
 import { Camera } from './camera.js?v=1';
 import { buildKidModel, Kid, Player } from './kid.js?v=2';
 import { buildExcavatorModel, Excavator } from './excavator.js?v=2';
+import { buildCraneModel, Crane } from './crane.js?v=1';
+import { Robot, SteamVent } from './robots.js?v=1';
 import { WreckingBall } from './hazards.js?v=1';
 import { AudioKit } from './audio.js?v=2';
 import { loadManifest, getModel, getPiece } from './assets.js?v=2';
@@ -65,7 +69,7 @@ async function boot() {
 
   // the background works (§3.5): the same machine, repainted by depth,
   // digging on the FAR layer's ground line — scenery, shared by every site
-  const bg = new Excavator(new Level(SITES[0]), 58, 3.7,
+  const bg = new Excavator(new Level(ROOMS[0]), 58, 3.7,
     await getModel('excavator', () => buildExcavatorModel(LAYER_TINT.FAR)));
   bg.group.position.z = LAYER_Z.FAR + 0.4;
   bg.shadow.visible = false;
@@ -73,7 +77,7 @@ async function boot() {
   scene.add(bg.group, ...bg.puffs);
 
   // ---- sites: one room at a time, built and torn down whole ---------------
-  const totalBolts = SITES.reduce((n, s) => n + s.bolts.length, 0);
+  const totalBolts = ROOMS.reduce((n, r) => n + new Level(r).def.bolts.length, 0);
   let collected = 0;
 
   function dispose(root) {
@@ -88,8 +92,8 @@ async function boot() {
   const hubGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.14, 6);
 
   async function buildSite(i) {
-    const def = SITES[i];
-    const level = new Level(def);
+    const level = new Level(ROOMS[i]);
+    const def = level.def;
     const group = new THREE.Group();
     level.buildMeshes(group);
 
@@ -102,9 +106,37 @@ async function boot() {
       ? new Girder(group, level, def.girder,
           await getPiece('girder', () => buildGirderModel(def.girder.spanLen)))
       : null;
+    const wall = def.wall
+      ? new Wall(group, level, def.wall,
+          await getPiece('wall', () => buildWallModel(def.wall.rows, def.wall.c1 - def.wall.c0 + 1)))
+      : null;
     const ball = def.ball
       ? new WreckingBall(group, def.ball.px, def.ball.py, def.ball.len, def.ball.zoneW)
       : null;
+
+    // the small stuff: robots patrol a span the kit guaranteed is floor,
+    // vents breathe on their own clock
+    const robots = def.robots.map((r) => new Robot(group, level, r));
+    const vents = def.hazards.filter((h) => h.type === 'steam')
+      .map((h) => new SteamVent(group, level, h.x));
+
+    // THE MACHINE. One per room, and it is the room's own — a crane where a
+    // crane is the answer. It starts UNMANNED either way: beacon turning,
+    // working its own cycle, dangerous until it is yours.
+    const md = def.machines[0];
+    let machine = null;
+    if (md?.type === 'crane') {
+      machine = new Crane(level, md.x, def.spawn.crane.y,
+        await getModel('crane', buildCraneModel), false);
+    } else if (md) {
+      machine = new Excavator(level, md.x, def.spawn.excavator.y,
+        await getModel('excavator', buildExcavatorModel), false);
+    }
+    if (machine) {
+      machine.track = md.track;
+      machine.kind = md.type;
+      group.add(machine.group, machine.shadow, ...machine.puffs);
+    }
 
     // the way out
     for (const dx of [-0.6, 0.6]) {
@@ -131,18 +163,17 @@ async function boot() {
     });
 
     scene.add(group);
-    return { def, level, group, bank, girder, ball, bolts };
+    return { def, level, group, bank, girder, wall, ball, bolts, robots, vents, machine };
   }
 
   let siteIndex = 0;
   let site = await buildSite(0);
 
   const player = new Player(site.level, site.def.spawn.kid, kid);
-
-  // it starts UNMANNED: beacon turning, working its own cycle, dangerous
-  const exc = new Excavator(site.level, site.def.spawn.excavator.x, site.def.spawn.excavator.y,
-    await getModel('excavator', buildExcavatorModel), false);
-  scene.add(exc.group, exc.shadow, ...exc.puffs);
+  // `exc` is whatever machine this room parked here — an excavator, or a
+  // crane. Both answer the same handful of calls, so the mode machine below
+  // never asks which it got.
+  let exc = site.machine;
 
   // ---- HUD ----------------------------------------------------------------
   const hintEl = document.getElementById('hint');
@@ -151,17 +182,37 @@ async function boot() {
   boltsEl.textContent = `⬡ 0/${totalBolts}`;
   siteEl.textContent = site.def.name;
   const setHint = (s) => { if (hintEl.textContent !== s) hintEl.textContent = s; };
-  const HINT = {
-    foot: 'A D — RUN · SPACE — JUMP',
-    wary: 'NOBODY IS DRIVING IT — WAIT FOR THE BUCKET TO LIFT',
-    near: 'E — CLIMB IN',
-    ride: 'A D — DRIVE · W S — BOOM · E — HOP OUT',
-    dig: 'HOLD S — DIG THE BANK DOWN',
-    sling: 'HOLD S — SLING THE GIRDER ON',
-    carry: 'CARRY IT TO THE GAP',
-    seat: 'HOLD S — LOWER THE SPAN IN',
-    out: 'THE WAY OUT IS OPEN',
+  // A hint that names keys is no help to a thumb: on a phone the only
+  // controls are the five buttons, so the prompts name THOSE. Same strings
+  // otherwise — one map per input, picked once.
+  const COARSE = matchMedia('(pointer: coarse)').matches;
+  const HINTS = {
+    keys: {
+      foot: 'A D — RUN · SPACE — JUMP',
+      wary: 'NOBODY IS DRIVING IT — WAIT FOR THE BUCKET TO LIFT',
+      near: 'E — CLIMB IN',
+      ride: 'A D — DRIVE · W S — BOOM · E — HOP OUT',
+      dig: 'HOLD S — DIG THE BANK DOWN',
+      sling: 'HOLD S — SLING THE GIRDER ON',
+      carry: 'CARRY IT TO THE GAP',
+      seat: 'HOLD S — LOWER THE SPAN IN',
+      smash: 'HOLD ▼ — SWING THE BALL AT THE WALL',
+      out: 'THE WAY OUT IS OPEN',
+    },
+    touch: {
+      foot: '◀ ▶ — RUN · ▲ — JUMP',
+      wary: 'NOBODY IS DRIVING IT — WAIT FOR THE BUCKET TO LIFT',
+      near: 'E — CLIMB IN',
+      ride: '◀ ▶ — DRIVE · ▲ ▼ — BOOM · E — HOP OUT',
+      dig: 'HOLD ▼ — DIG THE BANK DOWN',
+      sling: 'HOLD ▼ — SLING THE GIRDER ON',
+      carry: 'CARRY IT TO THE GAP',
+      seat: 'HOLD ▼ — LOWER THE SPAN IN',
+      smash: 'HOLD ▼ — SWING THE BALL AT THE WALL',
+      out: 'THE WAY OUT IS OPEN',
+    },
   };
+  const HINT = COARSE ? HINTS.touch : HINTS.keys;
 
   // ---- the mode machine ---------------------------------------------------
   let mode = 'foot';          // foot | mounting | riding | dismounting
@@ -169,14 +220,20 @@ async function boot() {
   const from = new THREE.Vector3(), mid = new THREE.Vector3(), to = new THREE.Vector3();
   const v3 = new THREE.Vector3();
 
-  const nearExc = () =>
-    Math.abs(player.x - exc.x) < 2.4 && player.y > exc.y - 1 && player.y < exc.y + 2.4 && player.grounded;
+  const nearExc = () => !!exc
+    && Math.abs(player.x - exc.x) < 2.6 && player.y > exc.y - 1 && player.y < exc.y + 2.4 && player.grounded;
 
   // the danger of an unmanned machine is its bucket, and only while it is
   // down in the sweep — that is the cycle you have to read to get aboard
   const buck = new THREE.Vector3();
   function unmannedStrike() {
-    if (exc.tamed || !exc.swinging) return false;
+    if (!exc || exc.tamed) return false;
+    if (exc.kind === 'crane') {
+      if (!exc.striking) return false;
+      exc.ballWorld(buck);
+      return Math.abs(buck.x - player.x) < 1.4 && buck.y < player.y + player.h + 0.5;
+    }
+    if (!exc.swinging) return false;
     exc.bucketWorld(buck);
     return Math.abs(buck.x - player.x) < 1.2 && buck.y < player.y + player.h + 0.3;
   }
@@ -232,14 +289,14 @@ async function boot() {
     scene.remove(old.group);
     dispose(old.group);
 
-    // the cast walks on: same kid, but each room's machine is its own —
-    // unmanned again, beacon turning. Taming does not carry between rooms.
+    // the cast walks on: same kid, but each room's machine is the room's
+    // own — a crane where a crane is the answer — and it is unmanned again,
+    // beacon turning. Taming never carries between rooms.
     const s = site.def.spawn;
     player.level = site.level;
     player.x = s.kid.x; player.y = s.kid.y; player.vx = 0; player.vy = 0; player.mercyT = 0;
-    exc.level = site.level;
-    exc.x = s.excavator.x; exc.y = s.excavator.y; exc.vx = 0; exc.vy = 0;
-    exc.tamed = false; exc.carrying = false; exc.face = 1;
+    exc = site.machine;
+    scene.add(kid.group);                    // out of the old seat, if he was in one
     mode = 'foot'; digT = 0; slingT = 0;
     input.take('action'); input.take('jump');
     siteEl.textContent = site.def.name;
@@ -253,7 +310,11 @@ async function boot() {
 
   // ---- debug handle (the smoke gate drives game state, not the clock) ----
   window.__eeri = {
-    player, exc, audio, input,
+    player, audio, input,
+    // `exc` is reassigned every time a room is built, so it has to be read
+    // through a getter — captured once, the handle kept pointing at the
+    // machine from the room you had already left.
+    get exc() { return exc; },
     get level() { return site.level; },
     get ball() { return site.ball; },
     mode: () => mode,
@@ -270,6 +331,12 @@ async function boot() {
       tamed: () => exc.tamed,
       bank: () => site.bank ? { remaining: site.bank.remaining, cleared: site.bank.cleared } : null,
       girder: () => site.girder ? { state: site.girder.state, carrying: exc.carrying } : null,
+      wall: () => site.wall ? { hits: site.wall.hits, cracked: site.wall.cracked, cleared: site.wall.cleared } : null,
+      machine: () => exc ? { kind: exc.kind, x: exc.x, track: exc.track, tamed: exc.tamed } : null,
+      robots: () => site.robots.map((r) => ({ x: +r.x.toFixed(2), state: r.state, dead: r.dead })),
+      vents: () => site.vents.map((v) => ({ x: v.x, blowing: v.blowing })),
+      rooms: () => ROOMS.length,
+      heave: () => exc?.heave?.(),
       cleared: () => cleared,
       dig: () => site.bank?.dig(),
       goSite: (i) => goSite(i),
@@ -338,6 +405,7 @@ async function boot() {
         drive: input.axis(),
         boomUp: input.down.up,
         boomDown: input.down.down,
+        swing: input.down.down,       // the crane reads DOWN as "heave"
       });
       player.x = exc.x; player.y = exc.y + 1; player.vx = 0; player.vy = 0;
       player.mercyT = Math.max(0, player.mercyT - dt);
@@ -348,6 +416,26 @@ async function boot() {
       if (Math.abs(exc.n.boom.rotation.z - boomWas) > 0.012) audio.boom();
 
       let rideHint = HINT.ride;
+
+      // THE SMASH: the ball that swung at you unmanned is the ball you swing
+      // at the wall. It lands when the arc comes through the bottom and the
+      // ball is actually over the brickwork — one strike per swing, so the
+      // wall comes down in two read-able beats rather than a blur.
+      if (site.wall && exc.kind === 'crane') {
+        const wd = site.def.wall;
+        if (!site.wall.cleared) {
+          if (exc.striking && !exc.struckThisSwing) {
+            exc.ballWorld(buck);
+            if (buck.x > wd.c0 - 1.2 && buck.x < wd.c1 + 2.2) {
+              exc.struckThisSwing = true;
+              site.wall.strike();
+              audio.splat();
+              cam.punch(site.wall.cleared ? 1.6 : 1.0);
+            }
+          }
+          rideHint = Math.abs(exc.x - wd.c0) < 10 ? HINT.smash : HINT.ride;
+        }
+      }
 
       // THE DIG: bucket down, in the dirt, and the bank comes down a row at
       // a time. The bucket digs because it is a bucket (ART_BRIEF §1.2).
@@ -412,7 +500,7 @@ async function boot() {
     // machine opened — on foot, because the machine cannot leave. The last
     // gate ends the job; every other gate leads to the next site.
     if (mode === 'foot' && player.x > site.def.exit.x - 0.8) {
-      if (siteIndex < SITES.length - 1) {
+      if (siteIndex < ROOMS.length - 1) {
         goSite(siteIndex + 1);
       } else if (!cleared) {
         cleared = true;
@@ -435,6 +523,31 @@ async function boot() {
         if (site.ball.hits(player.x, player.y, player.hw, player.h) && player.struck(site.ball.ballPos().x)) {
           audio.splat(); cam.punch(1.2);
         }
+      }
+    }
+
+    // the small stuff. Robots notice, wind up, then lunge — and the cost is
+    // the Yoshi rule, exactly as the wrecking ball's is: riding, it takes the
+    // RIDE and throws you clear; on foot it is knockback and mercy frames.
+    // Nothing here kills. A machine drives straight over one.
+    const focusX = mode === 'riding' ? exc.x : player.x;
+    const focusY = mode === 'riding' ? exc.y + 1 : player.y;
+    for (const r of site.robots) {
+      r.update(dt, { x: focusX, y: focusY }, REDUCED);
+      if (mode === 'riding') {
+        if (r.crush(exc.x, exc.hw)) { audio.splat(); cam.punch(0.5); }
+      } else if (mode === 'foot' && r.hits(player.x, player.y, player.hw, player.h)) {
+        if (player.struck(r.x)) { audio.splat(); cam.punch(0.9); }
+      }
+    }
+    for (const v of site.vents) {
+      v.update(dt, REDUCED);
+      if (mode === 'riding') {
+        if (player.mercyT <= 0 && v.hits(exc.x, exc.y, exc.hw, exc.h)) {
+          startDismount(true); audio.splat(); cam.punch(1.2);
+        }
+      } else if (mode === 'foot' && v.hits(player.x, player.y, player.hw, player.h)) {
+        if (player.struck(v.x)) { audio.splat(); cam.punch(0.9); }
       }
     }
 
@@ -468,6 +581,7 @@ async function boot() {
     diorama.update(dt);          // the crane traverses, the truck crosses
     if (mode !== 'riding') audio.idleLoad(0);
     site.bank?.update(dt);
+    site.wall?.update(dt);
     site.girder?.update(dt, exc);
 
     // camera: the director picks the room's framing, the mode leans it, and

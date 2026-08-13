@@ -5,123 +5,37 @@
 // World units = tiles. Cell (c, cy) spans x [c, c+1), y [cy, cy+1);
 // cy counts up from the bottom of the map.
 //
-// v3: the level goes beyond one room. SITES is the whole game as data —
+// v6: rooms are assembled from js/parts.js and compiled here — see rooms.js.
 // each site is one room built on the same grammar: a kid-shaped obstacle,
 // a machine-shaped lock, and an exit only the pair of them opens.
 
 import * as THREE from 'three';
 import { PAL, mix } from './palette.js?v=1';
 
-const W = 96, H = 18;
+import { ROOMS } from './rooms.js?v=1';
+import { compile, W, H, SOLID_CHARS, GROUND } from './parts.js?v=1';
+
+export { ROOMS };
 const EPS = 0.001;
 
-function blankGrid() {
-  return Array.from({ length: H }, () => new Array(W).fill(' '));
-}
-function filler(g) {
-  return (r0, r1, c0, c1, ch) => {
-    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) g[r][c] = ch;
-  };
-}
-
-export const SITES = [
-  // SITE 1 — the dig. The PIT is kid-shaped — he clears it in a run and the
-  // machine refuses a cliff — and the BANK is machine-shaped, three tiles of
-  // dirt above his jump, taken down a row at a time by the bucket.
-  {
-    name: 'SITE 1',
-    buildMap() {
-      const g = blankGrid(); const fill = filler(g);
-      fill(14, 17, 0, W - 1, '#');       // ground band
-      fill(14, 17, 46, 48, ' ');         // THE PIT — the kid-shaped obstacle
-      fill(12, 13, 8, 14, '#');          // mound one (teaches the climb)
-      fill(10, 10, 11, 16, '=');         // steel platform over mound one
-      fill(12, 12, 52, 57, '=');         // platform past the pit
-      fill(10, 10, 66, 72, 'G');         // the girder the ball hangs from
-      fill(11, 13, 84, 88, 'B');         // THE BANK — the machine-shaped lock
-      return g;
-    },
-    bolts: [
-      [9, 12], [9, 13], [9, 14], [9, 15],
-      [13, 34], [13, 35], [13, 36],
-      [11, 46], [11, 47], [11, 48],       // the arc over the pit
-      [11, 53], [11, 54], [11, 55], [11, 56],
-      [13, 76], [13, 77], [13, 78],       // the run to the bank
-      [12, 90], [12, 91],                 // past it — only reachable once it is dug
-    ],
-    bank: { c0: 84, c1: 88, cy0: 4, rows: 3 },
-    girder: null,
-    ball: { px: 70, py: 8, len: 2.6, zoneW: 7.5 },
-    exit: { x: 92.5, y: 4 },
-    spawn: { kid: { x: 4.5, y: 4 }, excavator: { x: 61, y: 4 } },
-    pits: [{ c0: 46, c1: 48, backX: 43 }],
-    // authored framings (js/camera.js): the room pulls back where it is
-    // asking you to READ something and closes in where it is not
-    shots: [
-      { x0: 40, x1: 52, z: 37.5, y: 3.0 },              // the pit: see both lips
-      { x0: 52, x1: 74, z: 41, y: 3.4, lead: 2.2 },     // the machine's cycle, and the ball
-      { x0: 76, x1: 96, z: 42, y: 3.6, lead: 2.0 },     // the bank: a lock you cannot see is not a lock
-    ],
-  },
-
-  // SITE 2 — the girder. THE GAP is past both of them: eight tiles, beyond
-  // the kid's jump, and the machine refuses the cliff. The girder comes off
-  // its stack slung under the bucket and seats as a span — the second
-  // manipulable piece, and the map changes the way the dig changed it.
-  // The kid pit by the start pens the machine in; the kid crosses to it.
-  {
-    name: 'SITE 2',
-    buildMap() {
-      const g = blankGrid(); const fill = filler(g);
-      fill(14, 17, 0, W - 1, '#');       // ground band
-      fill(14, 17, 20, 22, ' ');         // the kid pit — the machine's pen wall
-      fill(12, 13, 8, 11, '#');          // mound by the start
-      fill(10, 10, 9, 14, '=');          // platform over it, jumped from the mound
-      fill(14, 17, 58, 65, ' ');         // THE GAP — no jump reaches, no machine dares
-      return g;
-    },
-    bolts: [
-      [9, 10], [9, 11], [9, 12],          // over the start platform
-      [11, 20], [11, 21], [11, 22],       // the arc over the pit
-      [13, 34], [13, 35], [13, 36],       // the walk to the machine
-      [11, 61], [11, 62],                 // over the gap — only from the span
-      [12, 70], [12, 71],                 // jumped for, past the gap
-      [13, 84], [13, 85],                 // the run out
-    ],
-    bank: null,
-    girder: {
-      stackX: 48,                         // where the girder waits on its trestles
-      gap: { c0: 58, c1: 65, cy: 3 },     // the row the span fills
-      seat: { x0: 53.6, x1: 57.3 },       // machine at the lip = close enough to lower it in
-      spanLen: 9.8,
-    },
-    ball: null,
-    exit: { x: 92.5, y: 4 },
-    spawn: { kid: { x: 4.5, y: 4 }, excavator: { x: 30, y: 4 } },
-    pits: [{ c0: 20, c1: 22, backX: 17 }, { c0: 58, c1: 65, backX: 55 }],
-    shots: [
-      { x0: 16, x1: 26, z: 37.5, y: 3.0 },              // the kid pit
-      // the stack and the gap in one frame: the girder has to be visibly
-      // the answer to the thing eight tiles wide
-      { x0: 42, x1: 72, z: 44, y: 3.8, lead: 2.2 },
-    ],
-  },
-];
+// A Level is one compiled room. It compiles on construction rather than
+// sharing a grid, because DIGGING AND SPANNING EDIT THE MAP — two Levels
+// over one grid would have the second remember the first one's excavation.
 
 export class Level {
-  constructor(def = SITES[0]) {
-    this.def = def;
+  constructor(room = ROOMS[0]) {
+    this.room = room;
+    this.def = compile(room);        // fresh grid every time — see above
     this.w = W; this.h = H;
-    this.map = def.buildMap();
-    this.boltCells = def.bolts.map(([r, c]) => ({ x: c + 0.5, y: (H - 1 - r) + 0.5 }));
+    this.map = this.def.grid;
+    this.boltCells = this.def.bolts.map(([r, c]) => ({ x: c + 0.5, y: (H - 1 - r) + 0.5 }));
   }
 
   solidCell(c, cy) {
     if (c < 0 || c >= W) return true;          // the world has ends
     if (cy < 0) return true;
     if (cy >= H) return false;
-    const ch = this.map[H - 1 - cy][c];
-    return ch === '#' || ch === '=' || ch === 'G' || ch === 'B';
+    return SOLID_CHARS.includes(this.map[H - 1 - cy][c]);
   }
 
   // digging edits the map, so collision stays honest — the bank shrinks as
@@ -276,7 +190,9 @@ export class Level {
       let c = 0;
       while (c < W) {
         const ch = this.map[r][c];
-        if (ch === ' ' || ch === 'B') { c++; continue; }   // the bank is a piece
+        // a bank and a wall are PIECES — they carry their own states and are
+        // built by pieces.js, so the tile painter leaves their cells alone
+        if (ch === ' ' || ch === 'B' || ch === 'K') { c++; continue; }
         let e = c;
         while (e + 1 < W && this.map[r][e + 1] === ch) e++;
         const cy = H - 1 - r;

@@ -1,5 +1,72 @@
 # EERI — versions
 
+## v6 — 2026-08-13
+**The parts kit, and rooms that can be finished.** Rooms were a hand-drawn
+grid plus half a dozen side-arrays that could disagree with it — the pit
+was declared twice, the bank twice, and nothing anywhere checked that a
+machine could actually reach the thing it was supposed to clear. That is
+where "you get stuck pretty fast" came from.
+
+`js/parts.js` is the palette, and it is the method flashprince already
+proved, ported rather than copied. There a room is twenty by twelve
+characters and `editor.js` paints it from a named brush strip, because
+"the character IS the data". Eeri's rooms scroll and carry MACHINES, so a
+room here is a LIST OF PARTS and each part declares its rules once: what
+it stamps into the map, what it demands of whoever arrives, and which
+verb removes it. `js/rooms.js` is the whole game as three such lists.
+
+**And the piece flashprince never had.** Its level distances are measured
+off a written budget — a running jump carries 3.7 tiles, so a 3-tile gap
+goes and a 4-tile gap does not — but nothing checks a room against it;
+you find out by playing. Eeri gets the budget as numbers computed off
+`kid.js` rather than guessed (jump apex 12.6²/60 = **2.65 tiles**, so a
+2-tile step goes and 3 does not; a run carries **4.85**, so a 4-tile gap
+goes and 5 does not) AND the check. `test/rooms.mjs` walks every room
+from spawn to exit in plain Node — no browser, the shape of gameoflife's
+`check_levels.mjs` — and a room that cannot be finished fails the build.
+It carries eight rooms broken on purpose, one way each, so a prover that
+cannot fail cannot pass unnoticed: a step too tall, a gap too wide, a
+lock with no machine, **a machine penned from its own job by a hole**,
+an obstacle outside its machine's reach, a machine spawned off its own
+track, a robot patrolling across a hole.
+
+**Machines have an A-to-B track now**, declared per room, and the check
+holds the room to it: the track may not be cut by a hole, and every
+obstacle the machine is meant to clear must lie within arm's reach of
+somewhere on it. That single rule is what stops the class of soft-lock.
+
+**SITE 3 — the wall, and the third verb.** A wrecking crane
+(`js/crane.js`), on the excavator's exact node contract so a live GLB
+drops in behind the same check and the same paint map. The brief had this
+machine down as a *hazard boss*; the owner's direction moves it, and it
+is the game's thesis in one object — the ball that swings at you unmanned
+is the ball you swing at the wall once the cab is yours. The brick wall
+(`Wall` in `js/pieces.js`) is the third manipulable piece: intact →
+cracked → rubble, honouring §5.1's rule that rubble is a different
+silhouette and not a shorter wall, and its rows leave the MAP when it
+comes down, the same honesty as the dig and the span.
+
+**Small things to avoid** (`js/robots.js`). A robot patrols a span the
+kit guarantees is floor, notices, winds up, then lunges — flashprince's
+sentry clock compressed, so it is a reading test rather than a reflex
+test. A steam vent breathes on a fixed clock with a lit collar before it
+blows. The cost is the Yoshi rule, unchanged: a hit takes the RIDE, not
+the run, and a machine drives straight over a robot.
+
+**Touch, fixed.** The Toko badge sat on top of the jump button — inert
+per the house rule, but covering the one control the game is played with;
+on a coarse pointer it now clears the whole button row. And every hint
+named keyboard keys to a thumb that has none, so there is a touch string
+set: `◀ ▶ — RUN · ▲ — JUMP`.
+
+Found on the way: `window.__eeri.exc` was captured once at boot, so after
+a room change the handle still pointed at the machine you had left — the
+test that placed the kid beside "the machine" was standing him next to
+one in another room. It is a getter now.
+
+Gate: 115 checks, plus 29 in `test/rooms.mjs` (21 over the real rooms,
+8 proving the prover bites).
+
 ## v5 — 2026-08-13
 **The art lands, and the game goes up on the floor.** The seam built in
 v1 did its job: five layer paintings and the excavator swapped from code
