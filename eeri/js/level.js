@@ -13,8 +13,8 @@ import * as THREE from 'three';
 import { PAL, mix } from './palette.js?v=2';
 import { craftMat, craftBox, craft } from './craft.js?v=2';
 
-import { ROOMS } from './rooms.js?v=1';
-import { compile, W, H, SOLID_CHARS, GROUND } from './parts.js?v=1';
+import { ROOMS } from './rooms.js?v=2';
+import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, GROUND } from './parts.js?v=2';
 
 export { ROOMS };
 const EPS = 0.001;
@@ -50,11 +50,40 @@ export class Level {
     for (let c = c0; c <= c1; c++) this.map[H - 1 - cy][c] = ch;
   }
 
-  // fell past the floor: back to the near side of whichever hole took you
+  // A rung is NOT solid in any direction — you walk through it, fall through
+  // it, and only the climb verb holds you on it. A solid ladder is a wall
+  // with a picture of a ladder on it. The two samples are the feet and the
+  // chest, so standing at the foot of one is enough to start.
+  climbable(x, y) {
+    const c = Math.floor(x);
+    if (c < 0 || c >= W) return false;
+    for (const sy of [y + 0.1, y + 0.8]) {
+      const cy = Math.floor(sy);
+      if (cy >= 0 && cy < H && this.map[H - 1 - cy][c] === CLIMB_CHAR) return true;
+    }
+    return false;
+  }
+
+  // the top of the ladder under (x, y) — the climb stops with his feet on
+  // the deck rather than one rung above it, in the air
+  climbTop(x, y) {
+    const c = Math.floor(x);
+    let top = null;
+    for (let cy = Math.max(0, Math.floor(y) - 1); cy < H; cy++) {
+      if (this.map[H - 1 - cy][c] === CLIMB_CHAR) top = cy; else if (top !== null) break;
+    }
+    return top === null ? null : top + 1;
+  }
+
+  // fell past the floor: back to the near side of whichever hole took you,
+  // and failing that to the last checkpoint passed — never to the start,
+  // because a level is 60–90 seconds and losing all of it to one hole is the
+  // cost this game promised it would never charge (DESIGN §4)
   fallRespawn(x) {
     for (const p of this.def.pits) {
       if (x > p.c0 - 1 && x < p.c1 + 2) return { x: p.backX, y: 5 };
     }
+    if (this.respawn) return { x: this.respawn.x, y: this.respawn.y + 1 };
     const s = this.def.spawn.kid;
     return { x: s.x, y: s.y + 1 };
   }
@@ -232,6 +261,17 @@ export class Level {
             b.rotation.x = Math.PI / 2;
             b.position.set(bx, cy + 0.72, 0.74);
             group.add(b);
+          }
+        } else if (ch === 'H') {
+          // a ladder: two stiles and a rung per tile, set forward of the
+          // play plane so the rungs read against the earth behind them. It
+          // goes through box() like everything else, so it is painted balsa
+          // rather than the flat paint craft.js exists to stop.
+          for (const sx of [cx - 0.3, cx + 0.3]) {
+            box(0.12, 1, 0.12, mat.steel, sx, cy + 0.5, 0.45);
+          }
+          for (const ry of [0.2, 0.7]) {
+            box(0.66, 0.1, 0.1, mat.girder, cx, cy + ry, 0.45);
           }
         } else if (ch === 'G') {
           box(w, 0.3, 1.2, mat.girder, cx, cy + 0.85, 0);      // top chord

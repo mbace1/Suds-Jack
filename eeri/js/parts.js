@@ -64,8 +64,13 @@ export const TILES = {
   girder: solid('G'),
   bank: solid('B'),
   brick: solid('K'),
+  // a rung is NOT solid — you pass through it in every direction and only
+  // the climb verb holds you on it. A solid ladder is a wall with a picture
+  // of a ladder on it.
+  ladder: { ch: 'H', solid: false },
 };
 export const SOLID_CHARS = '#=GBK';
+export const CLIMB_CHAR = 'H';
 
 // ---- parts ---------------------------------------------------------------
 // Each returns a descriptor. `stamp(grid)` writes tiles. `obstacle` is what
@@ -153,10 +158,22 @@ export const girderStack = (x) => ({ kind: 'stack', x, girderStack: { x } });
 
 // Small things to avoid. A robot patrols a span of floor; the Yoshi rule
 // applies — it takes the ride, never the run.
-export const robot = (c0, c1, kind = 'skitter') => ({
+//
+// THREE KINDS, and the split is the whole point of having more than one
+// (DESIGN §3): a `hopper` is a TIMING test — it rises and falls on a fixed
+// rhythm you wait out or stomp; a `roller` is a SPACING test — it trundles
+// its span and is too flat to stomp, so it is a thing you jump; a `skitter`
+// is a PROVOCATION test — it patrols, notices, winds up and lunges. One
+// behaviour each, and none of them chases you across the room.
+// `cy` puts one on a DECK rather than on the ground — the height it stands
+// at, which is also the height the checker holds it to: a robot up there is
+// no longer walking over the hole in the floor below it.
+export const robot = (c0, c1, kind = 'skitter', cy = null) => ({
   kind: 'robot', c0, c1, robotKind: kind,
-  robot: { c0, c1, kind },
+  robot: { c0, c1, kind, cy },
 });
+export const hopper = (c0, c1) => robot(c0, c1, 'hopper');
+export const roller = (c0, c1) => robot(c0, c1, 'roller');
 
 // A small telegraphed hazard sitting on the floor at x.
 export const hazard = (x, type = 'steam') => ({
@@ -169,7 +186,82 @@ export const swingBall = (px, py, len = 2.6, zoneW = 7.5) => ({
   ball: { px, py, len, zoneW },
 });
 
+// ---- the verticality kit -------------------------------------------------
+// A LADDER is the second verb the platformer half was missing (DESIGN §2),
+// and it is what turns a room from a corridor into a place. It stamps rungs
+// that nothing collides with — only the climb holds you on them — so the
+// column it occupies stays passable in every other way.
+//
+// The two ends are the whole contract, and `check()` holds a ladder to both:
+// a FOOT you can start from (solid under it, or a landing beside its bottom
+// rung) and a LANDING you can step off onto (a solid tile beside its TOP
+// rung, whose surface is exactly the height the climb tops out at). A ladder
+// that ends in mid-air is the vertical version of a gap too wide to jump,
+// and it is the mistake this kit exists to make impossible.
+export const ladder = (c, cy0, cy1) => ({
+  kind: 'ladder', c, cy0, cy1,
+  stamp: (g) => rows(g, rowOf(cy1), rowOf(cy0), c, c, 'H'),
+  ladder: { c, cy0, cy1 },
+});
+
+// A scaffold is a ladder with the deck it serves: the standard shape, so a
+// room does not have to remember to pair them. `deck` is the row the ledge
+// occupies; the ladder tops out at the same row, which is what puts his feet
+// on the deck's surface when the climb ends.
+export const scaffold = (c, deckC1, cy) => [
+  ladder(c, GROUND, cy),
+  ledge(c + 1, deckC1, cy),
+];
+
+// The midway gate (DESIGN §4). No lives and no game over, so a checkpoint
+// buys nothing but time — which is the only currency this game has. Passing
+// it lights it; falling out of the world puts you back here rather than at
+// the start.
+export const checkpoint = (x) => ({ kind: 'checkpoint', x, checkpoint: { x, y: GROUND } });
+
+// The end of a level (DESIGN §4.2): it BUILDS itself in three phases as you
+// come up on it and activates by being run past — no button, no stopping.
+// Level 3 of a world carries the big one, which must be tellable from the
+// small one before you reach it.
+export const flagAt = (x, big = false) => ({ kind: 'flag', x, big, flag: { x, y: GROUND, big } });
+
 export const bolts = (list) => ({ kind: 'bolts', list, bolts: list });
+
+// ---- bolts, in the coordinates a level is actually authored in -----------
+// `bolts()` takes GRID ROWS, which count down from the top of the map and
+// are a nuisance to think in. Everything below takes `cy` — tiles above the
+// bottom of the world, the same number the parts above use — so a trail laid
+// along the ground is `boltRun(GROUND, 8, 14)` rather than four subtractions
+// done by hand.
+const cell = (cy, c) => [H - 1 - cy, c];
+
+export const boltsAt = (cy, cols) => bolts(cols.map((c) => cell(cy, c)));
+export const boltRun = (cy, c0, c1) => bolts(
+  Array.from({ length: c1 - c0 + 1 }, (_, i) => cell(cy, c0 + i)));
+
+// An arc over a gap — the breadcrumb that TEACHES the jump instead of
+// telling you about it. Rises to `rise` at the middle and comes back down,
+// so following the bolts IS the jump's timing.
+export const boltArc = (cy, c0, c1, rise = 2) => {
+  const n = c1 - c0;
+  return bolts(Array.from({ length: n + 1 }, (_, i) => {
+    const t = n === 0 ? 0 : i / n;
+    return cell(cy + Math.round(Math.sin(t * Math.PI) * rise), c0 + i);
+  }));
+};
+
+// A column beside a ladder: the same trick, standing up.
+export const boltCol = (c, cy0, cy1) => bolts(
+  Array.from({ length: cy1 - cy0 + 1 }, (_, i) => cell(cy0 + i, c)));
+
+// The hidden three (DESIGN §4.2). A different silhouette, off the main line,
+// and `check()` refuses one that no jump or ladder can reach — a secret you
+// cannot collect is a bug wearing a secret's clothes.
+export const golden = (cy, cols) => ({
+  kind: 'golden', list: cols.map((c) => cell(cy, c)),
+  golden: cols.map((c) => cell(cy, c)),
+});
+
 export const startAt = (x) => ({ kind: 'start', x, spawnKid: { x, y: GROUND } });
 export const exitAt = (x) => ({ kind: 'exit', x, exit: { x, y: GROUND } });
 export const shot = (x0, x1, framing) => ({ kind: 'shot', shot: { x0, x1, ...framing } });
@@ -183,13 +275,16 @@ export function compile(room) {
   const grid = Array.from({ length: H }, () => new Array(W).fill(' '));
   const out = {
     name: room.name,
-    parts: room.parts,
-    bolts: [], pits: [], shots: [], machines: [], robots: [], hazards: [],
-    pieces: [], obstacles: [], ball: null,
+    idea: room.idea || null,
+    // a part helper may hand back SEVERAL parts (a scaffold is a ladder and
+    // the deck it serves), so the list is flattened once, here
+    parts: room.parts.flat(),
+    bolts: [], golden: [], pits: [], shots: [], machines: [], robots: [], hazards: [],
+    pieces: [], obstacles: [], ladders: [], ball: null, checkpoint: null, flag: null,
     spawn: { kid: { x: 4.5, y: GROUND }, machines: {} },
     exit: { x: W - 4, y: GROUND },
   };
-  for (const p of room.parts) {
+  for (const p of out.parts) {
     p.stamp?.(grid);
     if (p.pit) out.pits.push(p.pit);
     if (p.piece) out.pieces.push(p.piece);
@@ -198,6 +293,10 @@ export function compile(room) {
     if (p.hazard) out.hazards.push(p.hazard);
     if (p.ball) out.ball = p.ball;
     if (p.bolts) out.bolts.push(...p.bolts);
+    if (p.golden) out.golden.push(...p.golden);
+    if (p.ladder) out.ladders.push(p.ladder);
+    if (p.checkpoint) out.checkpoint = p.checkpoint;
+    if (p.flag) out.flag = p.flag;
     if (p.shot) out.shots.push(p.shot);
     if (p.spawnKid) out.spawn.kid = { x: p.spawnKid.x, y: p.spawnKid.y };
     if (p.exit) out.exit = p.exit;
@@ -205,6 +304,14 @@ export function compile(room) {
     if (p.girderStack) out.stack = p.girderStack;
   }
   out.grid = grid;
+
+  // Where the level ENDS, and which curtain it drops. A flag closes levels 1
+  // and 2 of a world; a gate is the world's own ending — Eeri clocking out —
+  // and a room may carry both, the flag first (DESIGN §4.2).
+  out.finish = out.flag
+    ? { x: out.flag.x, kind: out.flag.big ? 'flag-big' : 'flag' }
+    : { x: out.exit.x, kind: 'gate' };
+  out.gate = room.parts.flat().some((p) => p.exit) ? out.exit : null;
 
   // ---- the shapes the game already reads --------------------------------
   // Derived here, once, from the parts — so nothing downstream has to know
@@ -233,10 +340,67 @@ export function compile(room) {
 // and reports the first thing that stops you — with the numbers, so the fix
 // is obvious rather than a guess.
 
+// The level's own counts (DESIGN §4.2). `x/100` is the level's completion
+// figure, so a level with 97 bolts in it is a level whose HUD lies.
+export const LEVEL = { bolts: 100, golden: 3 };
+
+// How far above a standable surface a bolt can hang and still be taken: the
+// jump apex (2.65) plus the collect radius, minus a margin, in tiles.
+const BOLT_REACH = 3.4;
+// …and how far to either side a takeoff can be, since a bolt over a hole is
+// collected in the air on the way across rather than from underneath.
+const BOLT_SPREAD = 3;
+
+// The map AFTER the room's rides have done their work — the bank dug out,
+// the wall down, the span seated. Reachability has to be judged against this
+// one, or every bolt the ride opens up reads as unreachable.
+function finishedGrid(r) {
+  const g = r.grid.map((row) => row.slice());
+  for (const p of r.pieces) {
+    for (let cy = p.cy0; cy < p.cy0 + p.rows; cy++) {
+      for (let c = p.c0; c <= p.c1; c++) g[H - 1 - cy][c] = ' ';
+    }
+  }
+  if (r.girder) {
+    for (let c = r.girder.gap.c0; c <= r.girder.gap.c1; c++) {
+      g[H - 1 - r.girder.gap.cy][c] = 'G';
+    }
+  }
+  return g;
+}
+
+// the surface height of the first solid at or below cy in column c, or null
+function surfaceBelow(g, c, cy) {
+  if (c < 0 || c >= W) return null;
+  for (let k = Math.min(cy, H - 1); k >= 0; k--) {
+    if (SOLID_CHARS.includes(g[H - 1 - k][c])) return k + 1;
+  }
+  return null;
+}
+
 export function check(room) {
   const r = compile(room);
   const problems = [];
   const note = (s) => problems.push(s);
+
+  // ---- the ladders: both ends, every time -------------------------------
+  // A ladder that ends in mid-air is the vertical version of a gap too wide
+  // to jump, and it is invisible on a screenshot.
+  const solidAt = (c, cy) => c >= 0 && c < W && cy >= 0 && cy < H
+    && SOLID_CHARS.includes(r.grid[H - 1 - cy][c]);
+  for (const l of r.ladders) {
+    const footed = solidAt(l.c, l.cy0 - 1) || solidAt(l.c - 1, l.cy0 - 1) || solidAt(l.c + 1, l.cy0 - 1);
+    if (!footed) note(`${r.name}: the ladder at x=${l.c} starts at cy=${l.cy0} with nothing to stand on under it`);
+    // you top out with your feet at cy1+1, so the landing beside the top
+    // rung is the tile at cy1 — its surface is exactly that height
+    const landed = solidAt(l.c - 1, l.cy1) || solidAt(l.c + 1, l.cy1);
+    if (!landed) note(`${r.name}: the ladder at x=${l.c} tops out at cy=${l.cy1} with nothing to step off onto — `
+      + `put a deck tile at (${l.c - 1} or ${l.c + 1}, ${l.cy1})`);
+  }
+  // a ladder answers a step the kid's jump cannot: it has to stand at the
+  // face of it and reach the top
+  const ladderFor = (at, size) => r.ladders.some((l) =>
+    l.c >= at - 2 && l.c <= at + size + 1 && l.cy1 >= GROUND + size - 1);
 
   // every machine must be able to do its job from its own track
   for (const m of r.machines) {
@@ -265,10 +429,20 @@ export function check(room) {
     }
   }
 
-  // robots must patrol on floor that exists
+  // robots must patrol on floor that exists — on the ground, that means no
+  // hole under them; on a deck, that means a deck under every step of it
   for (const b of r.robots) {
-    for (const p of r.pits) {
-      if (b.c0 <= p.c1 && b.c1 >= p.c0) note(`${r.name}: a robot patrols ${b.c0}…${b.c1}, which crosses the hole at ${p.c0}…${p.c1}`);
+    if (b.cy == null) {
+      for (const p of r.pits) {
+        if (b.c0 <= p.c1 && b.c1 >= p.c0) note(`${r.name}: a robot patrols ${b.c0}…${b.c1}, which crosses the hole at ${p.c0}…${p.c1}`);
+      }
+    } else {
+      for (let c = b.c0; c <= b.c1; c++) {
+        if (!SOLID_CHARS.includes(r.grid[H - 1 - (b.cy - 1)][c])) {
+          note(`${r.name}: a robot patrols ${b.c0}…${b.c1} at cy=${b.cy}, and there is no deck under x=${c}`);
+          break;
+        }
+      }
     }
   }
 
@@ -276,23 +450,103 @@ export function check(room) {
   const have = new Set();
   const ordered = [...r.obstacles].sort((a, b) => a.at - b.at);
   let x = r.spawn.kid.x;
+  let last = x;
   for (const o of ordered) {
     // any machine standing between here and the obstacle is yours to mount
     for (const m of r.machines) if (m.x >= x - 0.5 && m.x <= o.at) m.verbs.forEach((v) => have.add(v));
     const passable = o.kind === 'step'
-      ? o.size <= REACH.step
+      ? (o.size <= REACH.step || ladderFor(o.at, o.size))
       : o.size <= REACH.gap;
     if (!passable && !(o.clears && have.has(o.clears))) {
       note(`${r.name}: STUCK at x=${o.at} — a ${o.kind} of ${o.size} `
-        + `(the kid clears ${o.kind === 'step' ? REACH.step : REACH.gap})`
+        + `(the kid clears ${o.kind === 'step' ? REACH.step : REACH.gap}${o.kind === 'step' ? ', or any height with a ladder on it' : ''})`
         + (o.clears ? `, and the machine that ${o.clears}s it has not been reached yet` : ' and no machine clears it'));
     }
     x = o.at + (o.size ?? 1);
+    last = Math.max(last, x);
   }
   for (const m of r.machines) if (m.x >= x - 0.5) m.verbs.forEach((v) => have.add(v));
 
   // and the way out has to be past the last thing, on foot
   if (r.exit.x > W - 1) note(`${r.name}: the exit at x=${r.exit.x} is outside the room`);
+
+  // ---- the shape of a level (DESIGN §4) ---------------------------------
+  // Everything below is a rule the owner set, held as a build step rather
+  // than as a paragraph somebody remembers. They are cheap to satisfy and
+  // they are the difference between three rooms and three LEVELS.
+
+  // the ride is the peak, so it cannot open the level: its payoff sits in
+  // the back half, and you board before you arrive at it
+  for (const o of r.obstacles) {
+    if (!o.clears) continue;
+    if (o.at < W * 0.45) {
+      note(`${r.name}: the ride's payoff (the ${o.kind} at x=${o.at}) is in the first `
+        + `${Math.round((o.at / W) * 100)}% of the room — a ride is beat 3–4, not the way in`);
+    }
+    const m = r.machines.find((mm) => mm.verbs.includes(o.clears));
+    if (m && m.x > o.at) note(`${r.name}: the ${m.type} is parked at x=${m.x}, PAST the ${o.kind} it clears at x=${o.at}`);
+  }
+
+  // the midway gate
+  if (!r.checkpoint) {
+    note(`${r.name}: no checkpoint — dying has to cost the middle of a level, not the whole of it`);
+  } else {
+    const f = r.checkpoint.x / W;
+    if (f < 0.3 || f > 0.7) note(`${r.name}: the checkpoint at x=${r.checkpoint.x} is ${Math.round(f * 100)}% `
+      + 'through the room — a midway gate belongs between 30% and 70%');
+    if (!solidAt(Math.floor(r.checkpoint.x), GROUND - 1)) {
+      note(`${r.name}: the checkpoint at x=${r.checkpoint.x} has no ground under it`);
+    }
+  }
+
+  // the way it ends
+  if (r.finish.x <= last) {
+    note(`${r.name}: the ${r.finish.kind} at x=${r.finish.x} sits before the last obstacle at x=${last} — `
+      + 'the end of a level goes past everything in it');
+  }
+  if (r.flag && r.gate && r.flag.x >= r.gate.x) {
+    note(`${r.name}: the flag at x=${r.flag.x} is not before the gate at x=${r.gate.x} — `
+      + 'the flag closes the level, the gate closes the WORLD');
+  }
+
+  // ---- the collectibles, and whether they can actually be had -----------
+  const seen = new Set();
+  for (const [row, col] of r.bolts) {
+    const k = `${row},${col}`;
+    if (seen.has(k)) note(`${r.name}: two bolts share the cell (row ${row}, col ${col}) — one of them can never be counted`);
+    seen.add(k);
+  }
+  if (r.bolts.length !== LEVEL.bolts) {
+    note(`${r.name}: ${r.bolts.length} bolts, and the HUD says x/${LEVEL.bolts}`);
+  }
+  if (r.golden.length !== LEVEL.golden) {
+    note(`${r.name}: ${r.golden.length} golden bolts — a level hides exactly ${LEVEL.golden}`);
+  }
+
+  const fin = finishedGrid(r);
+  const reach = (cy, col) => {
+    for (let c = col - BOLT_SPREAD; c <= col + BOLT_SPREAD; c++) {
+      const t = surfaceBelow(fin, c, cy);
+      if (t !== null && cy - t <= BOLT_REACH && cy - t >= -0.5) return true;
+    }
+    return r.ladders.some((l) => Math.abs(l.c - col) <= 1 && cy >= l.cy0 - 1 && cy <= l.cy1 + 1);
+  };
+  for (const [row, col] of [...r.bolts, ...r.golden]) {
+    const cy = H - 1 - row;
+    if (SOLID_CHARS.includes(r.grid[row][col]) && !SOLID_CHARS.includes(fin[row][col])) continue; // the ride frees it
+    if (!reach(cy, col)) note(`${r.name}: the bolt at (cy ${cy}, x ${col}) is out of reach — `
+      + `nothing within ${BOLT_SPREAD} tiles of it gets a jump close enough`);
+  }
+  // …and a golden bolt that sits on the route is not hidden, it is scenery
+  for (const [row, col] of r.golden) {
+    const cy = H - 1 - row;
+    const t = surfaceBelow(fin, col, cy);
+    const overAHole = t === null;
+    if (!overAHole && cy - t < 2) {
+      note(`${r.name}: the golden bolt at (cy ${cy}, x ${col}) is ${(cy - t).toFixed(0)} tile(s) off the floor — `
+        + 'you would take it by walking, and a secret you cannot miss is not a secret');
+    }
+  }
 
   return { ok: problems.length === 0, problems, compiled: r };
 }

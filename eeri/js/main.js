@@ -10,21 +10,22 @@
 
 import * as THREE from 'three';
 import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=2';
-import { Input } from './input.js?v=1';
-import { Level, ROOMS } from './level.js?v=3';
+import { Input } from './input.js?v=2';
+import { Level, ROOMS } from './level.js?v=4';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
 } from './pieces.js?v=4';
 import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=3';
 import { Camera } from './camera.js?v=1';
-import { buildKidModel, Kid, Player } from './kid.js?v=2';
+import { buildKidModel, Kid, Player } from './kid.js?v=3';
 import { buildExcavatorModel, Excavator } from './excavator.js?v=2';
 import { buildCraneModel, Crane } from './crane.js?v=1';
-import { Robot, SteamVent } from './robots.js?v=1';
+import { Robot, SteamVent } from './robots.js?v=2';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=1';
 import { WreckingBall } from './hazards.js?v=1';
-import { AudioKit } from './audio.js?v=2';
+import { AudioKit } from './audio.js?v=3';
 import { loadManifest, getModel, getPiece } from './assets.js?v=3';
-import { craftMat } from './craft.js?v=2';
+import { craftMat, craftBox } from './craft.js?v=2';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -53,7 +54,7 @@ async function boot() {
   });
 
   const input = new Input();
-  input.bindButtons({ tL: 'left', tR: 'right', tJ: 'jump', tA: 'action', tD: 'down' });
+  input.bindButtons({ tL: 'left', tR: 'right', tU: 'up', tD: 'down', tJ: 'jump', tA: 'action' });
 
   // the noise waits for a gesture — browsers will not start it otherwise
   const audio = new AudioKit();
@@ -78,8 +79,12 @@ async function boot() {
   scene.add(bg.group, ...bg.puffs);
 
   // ---- sites: one room at a time, built and torn down whole ---------------
-  const totalBolts = ROOMS.reduce((n, r) => n + new Level(r).def.bolts.length, 0);
-  let collected = 0;
+  // The count is PER LEVEL and it is the level's completion figure (DESIGN
+  // §4.2): a hundred bolts in a level, three golden ones hidden in it. A
+  // running total across the whole game is a number nobody can finish.
+  let collected = 0;          // this level's bolts
+  let goldenGot = 0;          // this level's golden bolts
+  let runBolts = 0, runGolden = 0;   // …and the job, for the last screen
 
   function dispose(root) {
     root.traverse((o) => {
@@ -139,15 +144,26 @@ async function boot() {
       group.add(machine.group, machine.shadow, ...machine.puffs);
     }
 
-    // the way out
-    for (const dx of [-0.6, 0.6]) {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.22, 2.6, 0.22),
-        craftMat(PAL.MACHINE, 'balsa'));
-      post.position.set(def.exit.x + dx, def.exit.y + 1.3, 0); group.add(post);
+    // the midway gate, and the level's own ending
+    const checkpoint = def.checkpoint
+      ? new Checkpoint(group, def.checkpoint, await getPiece('checkpoint', buildCheckpointModel))
+      : null;
+    const flag = def.flag
+      ? new Flag(group, def.flag, await getPiece(def.flag.big ? 'flagBig' : 'flag',
+          () => buildFlagModel(def.flag.big)))
+      : null;
+
+    // THE GATE is the WORLD's ending, not a level's (DESIGN §4.2) — Eeri
+    // clocking out and walking through — so it is built only where a room
+    // declares one, which is the last level of a world.
+    if (def.gate) {
+      for (const dx of [-0.6, 0.6]) {
+        const post = craftBox(0.22, 2.6, 0.22, craftMat(PAL.MACHINE, 'balsa'));
+        post.position.set(def.gate.x + dx, def.gate.y + 1.3, 0); group.add(post);
+      }
+      const bar = craftBox(1.6, 0.26, 0.26, craftMat(PAL.MACHINE_DK, 'balsa'));
+      bar.position.set(def.gate.x, def.gate.y + 2.6, 0); group.add(bar);
     }
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.26, 0.26),
-      craftMat(PAL.MACHINE_DK, 'balsa'));
-    bar.position.set(def.exit.x, def.exit.y + 2.6, 0); group.add(bar);
 
     // bolts: the collectable (3D slow spinners, §6)
     const bolts = level.boltCells.map((cell, bi) => {
@@ -163,8 +179,27 @@ async function boot() {
       return g;
     });
 
+    // …and the three that are hidden. A golden bolt has to be UNMISTAKABLY
+    // not a bolt at 32 px (DESIGN §6.3), so it is a different SILHOUETTE
+    // rather than a bigger one: a ring around a star, not a fatter nut.
+    const golden = def.golden.map(([row, col], gi) => {
+      const g = new THREE.Group();
+      const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.3, 0),
+        craftMat(PAL.MACHINE, 'balsa', { transparent: true }));
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.07, 6, 16),
+        craftMat(PAL.MACHINE_DK, 'balsa', { transparent: true }));
+      g.add(core, ring);
+      g.position.set(col + 0.5, (level.h - 1 - row) + 0.5, 0);
+      g.baseY = g.position.y; g.phase = gi * 1.4; g.state = 'up'; g.popT = 0;
+      group.add(g);
+      return g;
+    });
+
     scene.add(group);
-    return { def, level, group, bank, girder, wall, ball, bolts, robots, vents, machine };
+    return {
+      def, level, group, bank, girder, wall, ball, bolts, golden,
+      robots, vents, machine, checkpoint, flag,
+    };
   }
 
   let siteIndex = 0;
@@ -179,45 +214,37 @@ async function boot() {
   // ---- HUD ----------------------------------------------------------------
   const hintEl = document.getElementById('hint');
   const boltsEl = document.getElementById('bolts');
+  const goldEl = document.getElementById('gold');
   const siteEl = document.getElementById('site');
-  boltsEl.textContent = `⬡ 0/${totalBolts}`;
+  const setCounts = () => {
+    boltsEl.textContent = `⬡ ${collected}/${site.def.bolts.length}`;
+    goldEl.textContent = `✦ ${goldenGot}/${site.def.golden.length}`;
+  };
   siteEl.textContent = site.def.name;
   const setHint = (s) => { if (hintEl.textContent !== s) hintEl.textContent = s; };
-  // A hint that names keys is no help to a thumb: on a phone the only
-  // controls are the five buttons, so the prompts name THOSE. Same strings
-  // otherwise — one map per input, picked once.
-  const COARSE = matchMedia('(pointer: coarse)').matches;
-  const HINTS = {
-    keys: {
-      foot: 'A D — RUN · SPACE — JUMP',
-      wary: 'NOBODY IS DRIVING IT — WAIT FOR THE BUCKET TO LIFT',
-      near: 'E — CLIMB IN',
-      ride: 'A D — DRIVE · W S — BOOM · E — HOP OUT',
-      dig: 'HOLD S — DIG THE BANK DOWN',
-      sling: 'HOLD S — SLING THE GIRDER ON',
-      carry: 'CARRY IT TO THE GAP',
-      seat: 'HOLD S — LOWER THE SPAN IN',
-      smash: 'HOLD ▼ — SWING THE BALL AT THE WALL',
-      out: 'THE WAY OUT IS OPEN',
-    },
-    touch: {
-      foot: '◀ ▶ — RUN · ▲ — JUMP',
-      wary: 'NOBODY IS DRIVING IT — WAIT FOR THE BUCKET TO LIFT',
-      near: 'E — CLIMB IN',
-      ride: '◀ ▶ — DRIVE · ▲ ▼ — BOOM · E — HOP OUT',
-      dig: 'HOLD ▼ — DIG THE BANK DOWN',
-      sling: 'HOLD ▼ — SLING THE GIRDER ON',
-      carry: 'CARRY IT TO THE GAP',
-      seat: 'HOLD ▼ — LOWER THE SPAN IN',
-      smash: 'HOLD ▼ — SWING THE BALL AT THE WALL',
-      out: 'THE WAY OUT IS OPEN',
-    },
+  // ONE glyph set, for every input (DESIGN.md §5). A prompt never names a
+  // key: a key name is no help to a thumb or a pad, and the on-screen
+  // buttons are labelled with these same glyphs, so what you read is what
+  // you press whichever of the three you are holding.
+  const HINT = {
+    foot: '◀ ▶  RUN     Ⓐ  JUMP',
+    ladder: '▲ ▼  CLIMB     Ⓐ  JUMP OFF',
+    flag: 'RUN PAST THE FLAG',
+    wary: 'NOBODY IS DRIVING IT — WAIT FOR THE BUCKET TO LIFT',
+    near: 'Ⓑ  CLIMB IN',
+    ride: '◀ ▶  DRIVE     ▲ ▼  BOOM     Ⓑ  HOP OUT',
+    dig: 'HOLD ▼  DIG THE BANK DOWN',
+    sling: 'HOLD ▼  SLING THE GIRDER ON',
+    carry: 'CARRY IT TO THE GAP',
+    seat: 'HOLD ▼  LOWER THE SPAN IN',
+    smash: 'HOLD ▼  SWING THE BALL AT THE WALL',
+    out: 'THE WAY OUT IS OPEN',
   };
-  const HINT = COARSE ? HINTS.touch : HINTS.keys;
 
   // ---- the mode machine ---------------------------------------------------
   let mode = 'foot';          // foot | mounting | riding | dismounting
   let moveT = 0, digT = 0, slingT = 0, cleared = false, transitioning = false;
+  let stomps = 0;
   const from = new THREE.Vector3(), mid = new THREE.Vector3(), to = new THREE.Vector3();
   const v3 = new THREE.Vector3();
 
@@ -282,7 +309,7 @@ async function boot() {
 
   async function goSite(i) {
     transitioning = true;
-    banner(`${site.def.name} CLEAR`);
+    banner(`${site.def.name}  ⬡ ${collected}/${site.def.bolts.length}  ✦ ${goldenGot}/${site.def.golden.length}`);
     audio.mount();
     const old = site;
     site = await buildSite(i);
@@ -299,8 +326,11 @@ async function boot() {
     exc = site.machine;
     scene.add(kid.group);                    // out of the old seat, if he was in one
     mode = 'foot'; digT = 0; slingT = 0;
+    player.climbing = false;
     input.take('action'); input.take('jump');
     siteEl.textContent = site.def.name;
+    collected = 0; goldenGot = 0;      // the counts belong to the LEVEL
+    setCounts();
 
     // the camera CUTS — a slow pan across a rebuilt world is a lie about geography
     cam.setSite(site.def);
@@ -334,9 +364,28 @@ async function boot() {
       girder: () => site.girder ? { state: site.girder.state, carrying: exc.carrying } : null,
       wall: () => site.wall ? { hits: site.wall.hits, cracked: site.wall.cracked, cleared: site.wall.cleared } : null,
       machine: () => exc ? { kind: exc.kind, x: exc.x, track: exc.track, tamed: exc.tamed } : null,
-      robots: () => site.robots.map((r) => ({ x: +r.x.toFixed(2), state: r.state, dead: r.dead })),
+      robots: () => site.robots.map((r) => ({
+        x: +r.x.toFixed(2), y: +r.y.toFixed(2), kind: r.kind,
+        state: r.state, dead: r.dead, stompable: r.stompable,
+      })),
+      stomps: () => stomps,
+      padSeen: () => input.padSeen,
       vents: () => site.vents.map((v) => ({ x: v.x, blowing: v.blowing })),
       rooms: () => ROOMS.length,
+      // the level's own furniture, so "it is a level and not a room" is
+      // something the gate can actually ask
+      climbing: () => player.climbing,
+      counts: () => ({
+        bolts: collected, ofBolts: site.def.bolts.length,
+        golden: goldenGot, ofGolden: site.def.golden.length,
+      }),
+      checkpoint: () => site.checkpoint
+        ? { x: site.checkpoint.x, lit: site.checkpoint.lit, respawn: site.level.respawn }
+        : null,
+      flag: () => site.flag
+        ? { x: site.flag.x, big: site.flag.big, phase: site.flag.phase, raised: site.flag.raised }
+        : null,
+      ladders: () => site.def.ladders,
       heave: () => exc?.heave?.(),
       cleared: () => cleared,
       dig: () => site.bank?.dig(),
@@ -356,6 +405,7 @@ async function boot() {
     },
   };
 
+  setCounts();
   document.getElementById('boot').remove();
 
   // ---- the loop ------------------------------------------------------------
@@ -366,6 +416,9 @@ async function boot() {
 
   renderer.setAnimationLoop(() => {
     const dt = Math.min(clock.getDelta(), 0.033);
+    // controller first: polled in EVERY mode, not inside the play branch —
+    // a pad that cannot reach the menu is a pad that cannot start the game
+    input.pollGamepad();
     t += dt;
 
     if (!transitioning) {
@@ -381,6 +434,9 @@ async function boot() {
       const near = nearExc();
       setHint(cleared ? HINT.out
         : near ? HINT.near
+        : player.climbing ? HINT.ladder
+        : (site.flag && site.flag.phase >= 2 && !site.flag.raised
+            && Math.abs(player.x - site.flag.x) < 12) ? HINT.flag
         : (!exc.tamed && Math.abs(player.x - exc.x) < 6) ? HINT.wary
         : HINT.foot);
       if (near && input.take('action')) { startMount(); audio.mount(); }
@@ -497,20 +553,37 @@ async function boot() {
       }
     }
 
-    // the room is finished when the kid walks out through the gate the
-    // machine opened — on foot, because the machine cannot leave. The last
-    // gate ends the job; every other gate leads to the next site.
-    if (mode === 'foot' && player.x > site.def.exit.x - 0.8) {
-      if (siteIndex < ROOMS.length - 1) {
-        goSite(siteIndex + 1);
-      } else if (!cleared) {
-        cleared = true;
+    // ---- the midway gate, and the end of the level ----------------------
+    // The checkpoint costs nothing to reach and buys the middle of the level
+    // back; the flag builds itself as you come up on it and goes off by
+    // being run past. Neither ever stops the player moving.
+    if (site.checkpoint && site.checkpoint.update(dt, player.x, player.y)) {
+      site.level.respawn = { x: site.checkpoint.x, y: site.checkpoint.y };
+      audio.bolt(8); banner('CHECKPOINT');
+      setTimeout(() => document.getElementById('banner')?.remove(), 1000);
+    }
+    if (site.flag) {
+      const ev = site.flag.update(dt, mode === 'riding' ? exc.x : player.x);
+      if (ev === 'phase') audio.clank();
+      if (ev === 'raised' && !transitioning && siteIndex < ROOMS.length - 1) {
         audio.mount();
-        const done = document.createElement('div');
-        done.id = 'clear';
-        done.innerHTML = `SITE CLEAR<span>⬡ ${collected} / ${totalBolts}</span>`;
-        document.body.appendChild(done);
+        runBolts += collected; runGolden += goldenGot;
+        goSite(siteIndex + 1);
       }
+    }
+
+    // …and the WORLD ends at the gate: Eeri clocks out and walks through it,
+    // on foot, because the machine stays on the site. Only the last level of
+    // a world carries one, and its big flag has to be up first.
+    if (mode === 'foot' && site.def.gate && player.x > site.def.gate.x - 0.8
+        && (!site.flag || site.flag.raised) && !cleared) {
+      cleared = true;
+      audio.mount();
+      const done = document.createElement('div');
+      done.id = 'clear';
+      done.innerHTML = 'CLOCKING OUT'
+        + `<span>⬡ ${runBolts + collected} · ✦ ${runGolden + goldenGot}</span>`;
+      document.body.appendChild(done);
     }
 
     // the hazard: wakes on whoever is near, and takes the ride, not the run
@@ -537,8 +610,19 @@ async function boot() {
       r.update(dt, { x: focusX, y: focusY }, REDUCED);
       if (mode === 'riding') {
         if (r.crush(exc.x, exc.hw)) { audio.splat(); cam.punch(0.5); }
-      } else if (mode === 'foot' && r.hits(player.x, player.y, player.hw, player.h)) {
-        if (player.struck(r.x)) { audio.splat(); cam.punch(0.9); }
+      } else if (mode === 'foot') {
+        // the stomp beats the lunge: if he is coming down on it, it does not
+        // matter what the robot was about to do. That ordering is what makes
+        // jumping AT one feel like the right answer rather than a gamble.
+        if (r.stompedBy(player.x, player.y, player.hw, player.vy)) {
+          player.bounce(); audio.stomp(); cam.punch(0.4); stomps++;
+        } else if (!r.stompable && r.landedOn(player.x, player.y, player.hw, player.vy)) {
+          // the roller is too flat to stand on: it shoves you off instead of
+          // dying, and it does not also get to hit you for it
+          player.bounce(); r.shrug(); audio.land();
+        } else if (r.hits(player.x, player.y, player.hw, player.h)) {
+          if (player.struck(r.x)) { audio.splat(); cam.punch(0.9); }
+        }
       }
     }
     for (const v of site.vents) {
@@ -565,7 +649,7 @@ async function boot() {
           b.state = 'pop'; b.popT = 0;
           collected++;
           audio.bolt(collected);
-          boltsEl.textContent = `⬡ ${collected}/${totalBolts}`;
+          setCounts();
         }
       } else { // pop
         b.popT += dt / 0.25;
@@ -573,6 +657,31 @@ async function boot() {
         b.scale.setScalar(1 + b.popT * 0.8);
         for (const ch of b.children) ch.material.opacity = 1 - b.popT;
         if (b.popT >= 1) { b.state = 'gone'; b.visible = false; }
+      }
+    }
+
+    // …and the three hidden ones. The same loop with its own count and its
+    // own noise, because finding one is the only thing in this game that is
+    // meant to feel like a discovery rather than a pickup.
+    for (const g of site.golden) {
+      if (g.state === 'gone') continue;
+      if (g.state === 'up') {
+        g.rotation.y += dt * 1.4;
+        g.position.y = g.baseY + Math.sin(t * 1.6 + g.phase) * 0.14;
+        if (Math.abs(g.position.x - cx) < cr + 0.2 && Math.abs(g.position.y - cy) < cr + 0.2) {
+          g.state = 'pop'; g.popT = 0;
+          goldenGot++;
+          audio.thunk(); cam.punch(0.7);
+          setCounts();
+          banner(`GOLDEN BOLT  ✦ ${goldenGot}/${site.def.golden.length}`);
+          setTimeout(() => document.getElementById('banner')?.remove(), 1200);
+        }
+      } else {
+        g.popT += dt / 0.4;
+        g.rotation.y += dt * 9;
+        g.scale.setScalar(1 + g.popT * 0.9);
+        for (const ch of g.children) ch.material.opacity = 1 - g.popT;
+        if (g.popT >= 1) { g.state = 'gone'; g.visible = false; }
       }
     }
     }

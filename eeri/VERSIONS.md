@@ -1,5 +1,92 @@
 # EERI — versions
 
+## v11 — 2026-08-13 — three rooms become three LEVELS
+
+**Built on the deployed head, not on a fork of it.** Two reconciliations had
+already been paid for, and both had the same cause: `main` and `gh-pages`
+have **unrelated histories** (Pages is an orphan branch), so a lineage that
+starts from an old copy of the tree cannot be merged back, only re-typed.
+This version starts from `gh-pages` — the art lineage through v10, crafted
+materials and all — and brings the design lineage's controls commit forward
+onto it, rather than the other way round. Where the two numbered the same
+module differently, **this tree's numbering wins**: a token carried over from
+the other lineage names a file that never existed here.
+
+**Every new surface goes through `craft.js`** (ART_TARGET §0.05). The props
+this version adds — the flag, the checkpoint, two new kinds of small machine,
+the rungs of every ladder — are painted balsa like the rest of the site's
+timber, with one exception that is deliberate: **the flag's cloth is FELT**,
+because that is what a flag is made of in this kit. The lamps and the smoke
+puffs stay bare, which is the case `craft.js` names. A prop built with a bare
+`new MeshLambertMaterial` is flat paint standing in a crafted world, and that
+is the failure v10 spent a whole pass undoing.
+
+**THE CLIMB** (`parts.js`, `level.js`, `kid.js`). A rung is **not solid** in
+any direction — you walk through it, fall through it, and only the verb holds
+you on it; a solid ladder is a wall with a picture of a ladder on it. Two
+things it would have got wrong and now cannot: the climb **tops out with his
+feet on the deck** rather than one rung above it in the air, and **holding a
+direction steps him off**, because without that the top of a ladder is a
+place you can only leave by jumping — a trap with rungs. A jump lets go and
+is a real jump. The up EDGE is drained while it is held as a climb, or the
+stale press is read as a jump the moment he steps off — the same
+double-consume trap the mount already pays for.
+
+**Two more kinds of small machine** (`robots.js`), and the split is the point
+of having more than one: a **hopper** is a timing test on a fixed 1.35 s
+rhythm with a crouch as the tell, a **roller** is a spacing test that is too
+flat to stand on — landing on one bounces you off *without* killing it, which
+is the game saying *this one you jump* — and the original **skitter** is the
+provocation test. A roller that shoved you off used to hit you for it in the
+same frame; it now shrugs for 0.4 s. Any of them can stand on a **deck**
+rather than the ground, declared rather than sampled, because `groundTop`
+from a fixed height puts every deck robot back on the floor.
+
+**The furniture that makes a room a level** (`flag.js`). A **checkpoint**
+that lights by being passed and buys the middle of the level back — there are
+no lives, so time is the only thing it can cost. A **flag** that builds
+itself in **three phases** on the approach, a puff of smoke each, and
+**activates by being run past**: no button, no stopping, because a
+six-year-old at a sprint should not have to stop and press something to
+finish a level. Level 3 of a world flies the **big** one, and the **gate is
+the WORLD's curtain** — it is built only where a room declares one.
+
+**The levels themselves.** Three rooms authored to the four-beat Nintendo
+shape, one idea each, marked in the source because the marks are the only
+thing that stops beat 2 quietly becoming another beat 1: **1 — the stomp**,
+**2 — the climb**, **3 — both, and the crane**. A hundred bolts a level and
+three hidden golden ones, the count being the level's completion figure, so
+it starts again with the level rather than running on across the job.
+
+**And §4 stopped being a document.** `check()` now refuses: a ladder with no
+landing or no foot · a level with no midway checkpoint · a **ride whose
+payoff sits in the first 45% of the room** (a ride is beat 3–4, not the way
+in) · a flag planted before the last obstacle · 99 bolts under a HUD that
+says 100 · not exactly three golden bolts · a golden bolt sitting where you
+would collect it by walking · a bolt hung where no jump or ladder reaches it
+· a robot patrolling a deck that is not there. Reachability is judged against
+the map **after** the room's rides have done their work — the bank dug, the
+span seated — or every bolt a ride opens up reads as unreachable. Nine new
+rooms broken on purpose prove each rule bites.
+
+Found by the levels themselves: a steam vent sat at x=56 in level 2, which is
+**inside the girder's seating window** — the one place the ride asks you to
+stop was a place that threw you out of the cab. And a hopper parked on the
+machine's own staging ground meant the one place you have to stand still to
+board was a place something was hitting you. Both are the same lesson: a
+hazard placed by feel lands on the beat that needs stillness.
+
+Found in the gate: it sampled the wrecking ball's state **once** after
+walking away from it, and the ride test ends inside the ball's six-tile wake
+radius — so it was asserting `rest` on a hazard mid-swing. It waits for the
+state now, and the telegraph is proved as an ORDER (wind before swing)
+recorded off a frame loop, because a poll on a machine rendering at a handful
+of frames a second can miss a phase entirely and say nothing about whether
+the game warned you.
+
+Gate: 113 checks, plus 59 in `test/rooms.mjs` (42 over the real levels, 17
+proving the prover bites).
+
 ## v10 — 2026-08-13 — a material KIT, not cardboard everywhere
 
 **Crafted World is a kit of materials and the first pass used card for all of

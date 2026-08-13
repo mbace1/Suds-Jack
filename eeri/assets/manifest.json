@@ -7,7 +7,7 @@
       "status": "live",
       "rig": "skinned",
       "height": 1.62,
-      "_note": "Meshy auto-rig: a 24-bone skinned mesh driven by named CLIPS, not the game's node names, so it is checked against `clips`. `height` is in TILES \u2014 Meshy rigs to metres and the seam rescales. See /ART_PIPELINE.md.",
+      "_note": "Meshy auto-rig: a 24-bone skinned mesh driven by named CLIPS, not the game's node names, so it is checked against `clips`. `height` is in TILES — Meshy rigs to metres and the seam rescales. See /ART_PIPELINE.md.",
       "clips": [
         "idle",
         "walk",
@@ -91,6 +91,37 @@
         "state1",
         "state2"
       ]
+    },
+    "flag": {
+      "file": "3d/flag_v1.glb",
+      "status": "placeholder",
+      "_note": "The level's ending. It BUILDS in three steps as Eeri arrives and activates by being run past, so each phase has to read at a glance, mid-run. `pole` stands from the first frame; phase0/1/2 are exclusive — each is the whole flag at that stage, not the delta. Materials: painted balsa for the timber, felt for the cloth.",
+      "nodes": [
+        "pole",
+        "phase0",
+        "phase1",
+        "phase2"
+      ]
+    },
+    "flagBig": {
+      "file": "3d/flag_big_v1.glb",
+      "status": "placeholder",
+      "_note": "Level 3 of a world. Same three phases, larger AND a different colour — it must be tellable from the small one at a distance, before you reach it.",
+      "nodes": [
+        "pole",
+        "phase0",
+        "phase1",
+        "phase2"
+      ]
+    },
+    "checkpoint": {
+      "file": "3d/checkpoint_v1.glb",
+      "status": "placeholder",
+      "_note": "The midway gate. `lamp` is the state (the game recolours it red before, green after) and `cloth` is hidden until it is lit, so those two nodes carry the whole read. The lamp is lit, so it stays BARE of any material map.",
+      "nodes": [
+        "lamp",
+        "cloth"
+      ]
     }
   },
   "layers": {
@@ -125,23 +156,23 @@
     "card": {
       "file": "2d/card_detail_v1.png",
       "status": "live",
-      "_note": "corrugated kraft \u2014 the earth, the cut faces, the deep bands"
+      "_note": "corrugated kraft — the earth, the cut faces, the deep bands"
     },
     "felt": {
       "file": "2d/felt_detail_v1.png",
       "status": "live",
-      "_note": "wool felt nap \u2014 the grass lip"
+      "_note": "wool felt nap — the grass lip"
     },
     "balsa": {
       "file": "2d/balsa_detail_v1.png",
       "status": "live",
-      "_note": "painted balsa, brush strokes and a paint chip \u2014 machines, steel, props (\u00a73.3 'painted wood and pressed steel')"
+      "_note": "painted balsa, brush strokes and a paint chip — machines, steel, props (§3.3 'painted wood and pressed steel')"
     },
     "flute": {
       "file": "2d/flute_detail_v1.png",
       "status": "live",
-      "_note": "the CUT EDGE of corrugated card \u2014 stacked fluting seen edge-on. The earth section is a cut, so this is what a cut through card looks like."
+      "_note": "the CUT EDGE of corrugated card — stacked fluting seen edge-on. The earth section is a cut, so this is what a cut through card looks like."
     }
   },
-  "_textures_readme": "THE MATERIAL PALETTE. Greyscale detail maps, each MULTIPLIED onto a palette colour (assets.js getTexture) \u2014 never a colour source. Crafted World is a KIT of materials, not one material: card is the ground, felt is the grass, painted balsa is everything the cast is built from. A surface picks the map that matches what it would really be made of."
+  "_textures_readme": "THE MATERIAL PALETTE. Greyscale detail maps, each MULTIPLIED onto a palette colour (assets.js getTexture) — never a colour source. Crafted World is a KIT of materials, not one material: card is the ground, felt is the grass, painted balsa is everything the cast is built from. A surface picks the map that matches what it would really be made of."
 }

@@ -274,7 +274,14 @@ export class Kid {
 
 const RUN = 6.2, ACC = 42, ACC_AIR = 20, FRIC = 34;
 const GRAV = 30, FALL_X = 1.35, JUMP_V = 12.6;
+// A stomp bounces you 80% of a jump: enough to feel like a reward and to
+// chain along a row of them, never enough to reach somewhere a jump cannot,
+// so no level's reach budget is quietly broken by an enemy standing there.
+const BOUNCE_V = JUMP_V * 0.8;
 const COYOTE = 0.09, BUFFER = 0.12;
+// THE CLIMB (DESIGN §2). Slower than the run, both ways, so a ladder reads
+// as a decision rather than a lift.
+const CLIMB_V = 3.6;
 
 export class Player {
   constructor(level, spawn, kid) {
@@ -288,8 +295,19 @@ export class Player {
     this.squash = 0;
     this.t = 0;
     this.mercyT = 0;
+    this.climbing = false;
     // one-frame events for the noise to hang off
     this.justJumped = false; this.justLanded = false;
+  }
+
+  // Bounced off something he landed on. Higher than a step, lower than a
+  // full jump, and it does NOT need the ground — that is the whole appeal:
+  // a chain of small machines is a staircase.
+  bounce() {
+    this.vy = BOUNCE_V;
+    this.squash = 0.1;
+    this.jumpBufT = 0;
+    this.justStomped = true;
   }
 
   // knocked back by a hazard: the cost is never death (ART_BRIEF hazards)
@@ -305,10 +323,53 @@ export class Player {
 
   update(dt, input) {
     this.t += dt;
-    this.justJumped = false; this.justLanded = false;
+    this.justJumped = false; this.justLanded = false; this.justStomped = false;
     this.mercyT = Math.max(0, this.mercyT - dt);
     const wasGrounded = this.grounded;
     const ax = input.axis();
+
+    // ---- THE CLIMB ------------------------------------------------------
+    // A ladder is a place where gravity is off and up/down is a speed. You
+    // get ON by pressing up or down while standing at one, and OFF three
+    // ways — jumping, walking off, or topping out.
+    const onRungs = this.level.climbable(this.x, this.y);
+    if (!onRungs) this.climbing = false;
+    else if (input.down.up || input.down.down) this.climbing = true;
+    if (this.climbing && this.mercyT <= 0) {
+      // a jump lets go, and it is a real jump: a ladder is never a trap
+      if (input.take('jump')) {
+        this.climbing = false;
+        this.vy = JUMP_V * 0.85;
+        this.jumpBufT = 0; this.groundedT = 0;
+        this.justJumped = true;
+      } else {
+        const up = (input.down.up ? 1 : 0) - (input.down.down ? 1 : 0);
+        // STEPPING OFF is not a special move: hold a direction with no
+        // up/down and the ladder lets go, which is what puts him on the deck
+        // he has just climbed to. Without it, the top of a ladder is a place
+        // you can only leave by jumping — a trap with rungs.
+        if (up === 0 && ax !== 0) {
+          this.climbing = false;
+        } else {
+          // drain the up EDGE while it is being held as a climb, or the
+          // stale press is read as a jump the moment he steps off the top —
+          // the same double-consume trap the mount already pays for
+          input.take('up');
+          this.vy = up * CLIMB_V;
+          this.vx = 0;
+          const mid = Math.floor(this.x) + 0.5;   // climb straight
+          this.x += (mid - this.x) * Math.min(1, 12 * dt);
+          const top = this.level.climbTop(this.x, this.y);
+          this.y = this.level.moveY(this.box(), this.vy * dt).y;
+          // top out with the feet ON the deck, never a rung above it
+          if (top !== null && this.y > top) { this.y = top; this.vy = 0; }
+          this.grounded = this.level.grounded(this.box());
+          this.groundedT = this.grounded ? COYOTE : 0;
+          this.updateVisual();
+          return;
+        }
+      }
+    }
 
     // horizontal: accelerate hard, stop hard — tap = a step, hold = a run
     const acc = this.grounded ? ACC : ACC_AIR;
@@ -359,7 +420,9 @@ export class Player {
     k.group.scale.y = this.squash > 0 ? 0.86 : 1;
     // mercy flicker — the one place the kid is allowed to disappear
     k.group.visible = this.mercyT <= 0 || Math.floor(this.mercyT * 18) % 2 === 0;
-    const state = !this.grounded ? 'air' : Math.abs(this.vx) > 0.4 ? 'run' : 'idle';
+    const state = this.climbing ? 'climb'
+      : !this.grounded ? 'air'
+      : Math.abs(this.vx) > 0.4 ? 'run' : 'idle';
     k.pose(state, this.t, Math.abs(this.vx));
     const gy = this.level.groundTop(this.x, this.y + 0.1);
     k.shadow.position.set(this.x, gy + 0.02, 0);
