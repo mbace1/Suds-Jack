@@ -13,13 +13,13 @@ import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=2';
 import { Input } from './input.js?v=1';
 import { Level, SITES } from './level.js?v=3';
 import { buildBankModel, Bank, buildGirderModel, Girder } from './pieces.js?v=3';
-import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=2';
+import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=3';
 import { Camera } from './camera.js?v=1';
 import { buildKidModel, Kid, Player } from './kid.js?v=3';
 import { buildExcavatorModel, Excavator } from './excavator.js?v=2';
 import { WreckingBall } from './hazards.js?v=1';
 import { AudioKit } from './audio.js?v=2';
-import { loadManifest, getModel, getPiece } from './assets.js?v=3';
+import { loadManifest, getModel, getPiece } from './assets.js?v=4';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;

@@ -352,3 +352,12 @@ Every one of these shipped or nearly shipped.
 **Process**
 16. Verifying the contract and the gate, and never looking at the asset.
 17. Building a tool for something Meshy already does. **Check first.**
+18. **Treating shipped art as approved art.** Live on `gh-pages` means
+    somebody deployed it, not that it meets `ART_TARGET.md`. The v6
+    reconciliation kept the deployed vector-cartoon layers by default while
+    on-target crafted concepts sat unbuilt — every asset is judged against
+    the target doc, whoever shipped it and however long it has been live.
+19. **Two instances, unrelated histories.** Fetch and diff `origin/gh-pages`
+    and `origin/main` before building on anything; reconcile before new work,
+    splitting by kind — code from whichever lineage is ahead, art re-judged
+    against the target (see trap 18 and CLAUDE.md "Two instances, one canon").

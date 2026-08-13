@@ -262,6 +262,17 @@ and the player is instantly findable against every one of them. Then the same
 shot with the layers hidden — if the level is no harder to read, the layers
 are doing their job and not competing.
 
+**State (2026-08-13): DONE for groundworks.** The `_v1` vector-cartoon layers
+(gradients, gloss, outline strokes — they failed the rung 1b patch test and
+were kept live only because they were deployed; see trap 18) are replaced by
+the `_v2` crafted set built from `eeri/art-src/craft/`. Two compositor
+lessons from the swap: **despill, don't semi-alpha** — partially-keyed fringe
+at alpha 120 haloes, while clamping r/b toward green kills the pink cast and
+leaves every paper tone alone; and **the generator bakes magenta bounce light
+into dark surfaces**, which edge despill cannot reach — the fore lane is
+graded hard toward one dark umber, which is not a workaround but the lane's
+own contract (near-silhouette, no sky tint).
+
 ### Rung 1b — the art is visibly BUILT (the Crafted World half)
 
 Runs with rung 1, and under the 80/20 split this is **drawn, not modelled.**

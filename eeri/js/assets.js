@@ -72,7 +72,7 @@ function housePaint(root, paint, name) {
 let manifest = null;
 
 export async function loadManifest() {
-  const res = await fetch(new URL('manifest.json?v=1', BASE));
+  const res = await fetch(new URL('manifest.json?v=2', BASE));
   manifest = await res.json();
   return manifest;
 }

@@ -1,5 +1,37 @@
 # EERI — versions
 
+## v7 — 2026-08-13 — the layers move to the crafted register
+
+**The 80% goes on canon.** The five groundworks layers swap from the `_v1`
+vector-cartoon set — gradients, gloss, outline strokes, the register that
+fails `ART_TARGET.md`'s own patch test — to the `_v2` CRAFT set: corrugated
+card with exposed fluting on every cut edge, balsa lashed with paper bands
+and split pins, overlapping panels with real laps, masking tape, frayed
+hand-cut lines. Concepts in `art-src/craft/` with the style block that made
+them; composited by `build-layers.mjs` to the exact contract sizes with the
+depth tint baked.
+
+This is the enforcement of the new rule (CLAUDE.md, trap 18): the v6
+reconciliation kept the deployed vector layers by default, and **deployed is
+not approved** — the target doc is canon, whoever got to gh-pages first.
+
+The fore lane is new art built to the v4 fore contract: two standards
+cropped by the top of the frame, one spoil sweep hugging the bottom, one
+pipe run crossing high, one tile every ~96 world units so most of the level
+is un-occluded and the crop is an event.
+
+Two compositor lessons, kept in the tool: **despill instead of semi-alpha**
+(fringe at alpha 120 haloes; clamping r/b toward green kills the pink cast
+and leaves kraft/ochre/grey/blue-grey card untouched at m≈0), and **the
+generator bakes magenta bounce into dark surfaces**, which no edge treatment
+reaches — the fore is graded hard toward one dark umber, which is the lane's
+own contract (near-silhouette, no sky tint), not a workaround.
+
+Manifest to v6, `_v2` file names (a new resource path from first release —
+the Pages CDN may cache a pre-deployment 404), and the manifest URL token in
+`assets.js` bumped so returning visitors fetch the new manifest at all; the
+`_v1` PNGs stay on the site so a stale cached manifest still resolves.
+
 ## v6 — 2026-08-13 — the reconciliation, and Eeri is animated
 
 **Two lineages had diverged with no common ancestor and both held real work.**
