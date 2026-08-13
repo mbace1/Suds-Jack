@@ -114,7 +114,7 @@ it must not open the level. One ride per level, maximum.
   to the start.
 - Hits knock back and cost mercy frames. Falling costs a respawn. Neither
   ends a run.
-- No timer. Nothing in this game should ever hurry a seven-year-old.
+- No timer. Nothing in this game should ever hurry a six-year-old.
 - Difficulty comes from **reading**, never from reflex or memorisation.
 
 **Secrets, one per level.** A pocket off the main line holding something
