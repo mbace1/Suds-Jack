@@ -311,3 +311,72 @@ only. Next batch — the first four block art.
    has now?
 8. **Is there a level-select screen** at all, since there is no map — or
    does the game just start at level 1 and run through?
+
+---
+
+## 8. Next steps (planned 2026-08-13, after the first real playtest)
+
+### 8.0 The gap to close first: the ride is still a puzzle, not a set-piece
+
+§0 pivoted machines to **short authored ride sequences** — board at a
+marked point, cross something unjumpable, step off, thirty to forty
+seconds. What is actually built is still the older lock-and-key shape:
+you walk past the machine, hit a wall you cannot jump, walk **back**,
+mount, and drive twenty-three tiles at 3.4 tiles/sec to do a job.
+
+That is a slow puzzle with a long dead drive in the middle, and it is the
+single biggest thing standing between this and "a fun platformer". The
+playtest found it as *"a blocker that is not possible to jump over"* —
+which is what a lock feels like when the key is behind you.
+
+**The fix, and it is a level-authoring change more than a code one:** the
+machine goes **on the route, facing the obstacle**, so you board it where
+you meet it and ride it *forwards* into the job. No going back. The drive
+shortens to a few tiles, or the ride becomes the interesting part (the
+machine carries you over the thing). Keep the fetch shape for at most one
+level, late, as a deliberate puzzle — never in a teaching level.
+
+### 8.1 Order of work
+
+**Tier 1 — make it safe to add nine more levels**
+
+1. **A playthrough gate.** The room prover proves a level is *reachable*;
+   it did not catch a level that was unfinishable in practice, because a
+   hazard stood on the machine's route and the prover only knew about
+   holes. A bot that actually plays each level spawn→flag — run, jump,
+   mount, use the verb, reach the flag — is what caught it, and it should
+   be a gate. Nine more levels without this is nine more of these.
+2. **Re-lay the three existing levels** against §8.0.
+3. **Climb and ladders.** A declared verb with nothing behind it. Cheapest
+   variety in the game and the only route to vertical sections.
+4. **The midway checkpoint** (§4). Locked in the design, absent from the
+   build.
+
+**Tier 2 — the on-foot game, which is 80% of playtime**
+
+5. **The other two small enemies** — hopper and roller (§3). One enemy
+   type across twelve levels is not a game.
+6. **The gizmo kit** — tipping plank, conveyor, hoist. "One idea per
+   level" means the kit *is* the level count.
+7. **World 2, levels 4–6.** Needs backdrop set two.
+
+**Tier 3 — the meta the design already fixed**
+
+8. Bolts `x/100`, golden bolts `3/3` hidden, blueprints one per world.
+9. Level-select menu; clock-out gate at the end of a world.
+
+### 8.2 What Tier 1–2 needs from the art pipeline
+
+Nothing in Tier 1 is blocked on art — it is code and level layout. Tier 2
+is blocked on these, in order:
+
+| # | asset | for |
+|---|---|---|
+| 1 | `hopper_v1.glb`, `roller_v1.glb` | §3's enemies — each needs a squash node and a lit notice tell |
+| 2 | `ladder_v1.glb`, `scaffold_v1.glb` | must tile vertically without a seam |
+| 3 | `plank_v1.glb` (tipping), `conveyor_v1.glb`, `hoist_v1.glb` | the gizmo kit |
+| 4 | **world 2 backdrop set** — `pipeworks_{skyline,far,mid,near,fore}_v1.png` | levels 4–6; same rects and sizes as `groundworks` |
+| 5 | `checkpoint_v1.glb` | §6.3 |
+| 6 | world 1's **second ride machine** | §4.2 says two per world; world 1 has one |
+
+Everything else in §6 stands.
