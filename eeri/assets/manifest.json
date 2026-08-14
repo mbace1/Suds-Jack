@@ -1,5 +1,5 @@
 {
-  "v": 15,
+  "v": 16,
   "_readme": "The asset seam. Every entry is either 'placeholder' (the game builds it in code) or 'live' (the game loads the file). Dropping an asset in = put the file at its path, flip status to live, bump the file's v token. The smoke gate reads this file: live entries must resolve and models must expose their contracted nodes. See assets/README.md for the full contract.",
   "models": {
     "eeri": {
@@ -61,6 +61,18 @@
         "ball": "STEEL1",
         "step": "MACHINE_DK"
       }
+    },
+    "boltbot": {
+      "file": "3d/boltbot_v1.glb",
+      "status": "placeholder",
+      "rig": "skinned",
+      "height": 0.9,
+      "_note": "The bolt-bot: ONE Meshy-rigged biped base that the whole non-violent enemy family is re-headed and retextured from (PHASING \u00a72). 24 bones, feet at the origin, clips measured moving. Height is in TILES \u2014 DESIGN wants a small enemy at \u2264 1 tile. Stays `placeholder` until js/robots.js asks for it: the smoke gate rightly fails a live asset nothing fetches. STOMP IS CODE, not a clip (PHASING \u00a71) \u2014 scale the rig root.",
+      "clips": [
+        "idle",
+        "walk",
+        "run"
+      ]
     }
   },
   "pieces": {

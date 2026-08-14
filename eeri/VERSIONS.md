@@ -1,5 +1,46 @@
 # EERI — versions
 
+## v17 — 2026-08-14 — the bolt-bot rigs, and why the first two did not
+
+PHASING §2's highest asset-value-per-credit item: ONE Meshy-rigged biped that
+the whole non-violent enemy family is re-headed and retextured from, so the
+game stops being one enemy type across twelve levels. `boltbot_v1.glb` — 24
+bones, feet at the origin, `idle`/`walk`/`run`, 1.1 MB. It sits in the
+manifest as **placeholder** until `js/robots.js` asks for it, because the
+smoke gate fails a live asset nothing fetches.
+
+**Two rigs were rejected before this one, and the reason was not the pose.**
+Both were in a strict T-pose with daylight through both armpits and between
+the legs — exactly what ART_PIPELINE's T-pose rule asks for — and Meshy
+answered *"Pose estimation failed, please provide a valid model"* both times.
+The second attempt even had textbook human proportions: visible neck,
+shoulders wider than hips, arms as long as the legs, elbows and knees halfway.
+Rejected again.
+
+The answer was in `art-src/E1-eeri-tpose.jpg`, the concept that rigged first
+time months ago: **his legs merge at the hip with no daylight at all, and his
+arms are barely 40° from his sides.** He breaks the stated rule and rigs
+anyway. So the rule was mis-stated. What the estimator wants is **volume** — a
+body it can fit a skeleton *inside*. Eeri is a solid toy with mass; both
+failed bots were tubes stuck onto a box, and there is nothing inside a tube.
+
+The fix, and the general lesson now in ART_PIPELINE: for anything non-human,
+`--ref` a character that has already rigged, take its BODY PLAN, and disown
+its costume in words. The third bolt-bot did that and rigged first time. Be a
+robot in the faceplate and the surface, never in the construction.
+
+Cost of learning it: 90 credits of meshes (the two failures charged 30 each;
+**a failed rig charges nothing**), then 5 for the rig and 3 for the idle clip.
+
+Verified by measurement, not by eye (`art-src/tools/botmeasure.mjs`, new):
+every driven joint travels in `walk` and `run` — forearms 0.15–0.23, legs
+0.12–0.16 — against an idle that is correctly near-static at 0.004–0.011. A
+dead joint renders completely plausibly, so this is the only honest check.
+
+Not done here, and deliberately: **the stomp squash is CODE, not a clip**
+(PHASING §1) and `js/robots.js` is Design/Level's file. The rig ships with a
+root the game can scale; the flatten-and-pop belongs to that lane.
+
 > **A note on the numbering.** Two lineages both shipped a "v10" and a "v11":
 > main's are gameplay (the machine on the route; ladders and vertical levels),
 > the art lane's were the material kit and the painted machines. The art

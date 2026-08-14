@@ -89,6 +89,33 @@ requirement of the concept**, not something fixed later.
 - Background visible through **each armpit** and **between the legs**.
 - Nothing overlapping anything.
 
+### …but the pose is the SECOND thing the rigger looks at
+
+**A perfect T-pose does not make a riggable model. A HUMAN BODY does.** This
+cost two rejected rigs before it was understood, and the evidence is in this
+repo:
+
+- A bolt-bot in a strict T-pose, daylight through both armpits and between the
+  legs, was rejected: *"Pose estimation failed, please provide a valid model."*
+- Redrawn with textbook human proportions — visible neck, shoulders wider than
+  hips, arms as long as the legs, elbows and knees halfway — **rejected again**.
+- `eeri/art-src/E1-eeri-tpose.jpg`, which rigged first time, has his **legs
+  merged at the hip with no daylight at all** and his arms barely 40° from his
+  sides.
+
+The difference is not the pose and not the proportions: it is **volume**. Eeri
+is a solid toy with mass — a rounded torso, limbs that taper *out of* it, real
+mitten hands. Both failed bots were stick figures: tubes stuck onto a box. The
+estimator is looking for a body it can fit a skeleton *inside*, and there is
+nothing inside a tube.
+
+So for anything non-human — a robot, a creature, a mascot — **build it on a
+body that has already rigged**. `--ref` the approved character for BODY PLAN
+and disown its costume in words (*"copy only the body plan and the chunky
+solid proportions; do not copy the clothes, face, hair or colours"*). The
+third bolt-bot did exactly that and rigged first time. Be a robot in the
+**faceplate and the surface**, never in the construction.
+
 **"T-pose" is a far stronger instruction than "A-pose."** Four attempts at
 "arms abducted 45 degrees" came back with the arms hanging at the sides; "both
 arms stretched out straight and horizontal, pointing left and right to the
