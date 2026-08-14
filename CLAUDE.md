@@ -38,22 +38,39 @@ commit message.
 | **Design/Level** | `js/rooms.js`, `js/parts.js`, `js/level.js`, `js/kid.js`, `js/input.js`, `js/robots.js`, `js/flag.js`, `test/**`, `DESIGN.md` |
 | **Shared — coordinate first** | `js/main.js`, `js/assets.js`, `js/palette.js`, `js/layers.js`, `assets/manifest.json`, `index.html` |
 
-**THE BRANCH RULE, and it has already cost this project twice.** Authoring
-Eeri directly on `gh-pages` starts a lineage with **no common ancestor** to
-`main` — `git merge-base` returns *nothing* — and then neither tree can be
-merged into the other without hand work. That is exactly what happened
-here: `main` carried the gameplay (facing fix, glyph controls, stomp,
-ladders, the flag, the test suite) and `gh-pages` carried the art (`craft.js`,
-the v2 crafted layers, the material kit), and **both called themselves v11**,
-so nothing looked wrong.
+**THE BRANCH RULE, and it has already cost this project THREE times.**
+Authoring Eeri anywhere but `main` starts a lineage with **no common
+ancestor** — `git merge-base` returns *nothing* — and then neither tree
+can be merged into the other without hand work. It has happened between
+two `claude/*` branches, between `main` and `gh-pages`, and again with
+`claude/eeri-platformer-levels-dtfh0x`. Each time the lineages
+independently reached the same version numbers, so nothing looked wrong:
+there were two different v11s and then two different v13s.
+
+**All three are now joined into `main` (v12 and v14). `main` is the one
+tree and it is ahead of every other branch. Start from it.**
 
 - **Author on `main`.** Deploy to `gh-pages` as a copy limited to `eeri/`
-  plus `hub/games.js` and `hub/versions.json`, omitting `test/` and
-  `art-src/`. **Deploys never merge.**
-- **Before any Eeri work: `git fetch origin main gh-pages` and diff both.**
-  If they have diverged, reconcile *first*.
-- **A version number cannot detect a fork.** Never reuse one: fetch and read
-  the other lineage's `VERSIONS.md` before writing a new heading.
+  plus `hub/games.js` and `hub/versions.json`. **Deploys never merge.**
+  And edit `hub/games.js` **in place, only the eeri entry** — this
+  branch's catalogue carries cabinets `main` does not, and copying it
+  wholesale deletes one.
+- **Before any Eeri work: `git fetch origin` and check `git merge-base`
+  against `origin/main`.** Nothing back means you are on a fourth lineage
+  — stop and reconcile before writing anything.
+- **A version number cannot detect a fork.** Never reuse one: read the
+  other lineage's `VERSIONS.md` before writing a new heading. v13 is
+  skipped on purpose because two different trees had already used it.
+- **`--allow-unrelated-histories` is not the tool.** It was tried: the
+  Eeri branches descend from `gh-pages`, so merging one drags the whole
+  deployed site — toko-drop, toko, voxel — into `main`. Scope the join to
+  `eeri/js`, `eeri/test`, `index.html` and the manifest.
+- **Merge by KIND, against the content ancestor.** There is no git
+  ancestor, but each lineage's `VERSIONS.md` names where it forked, and
+  that commit's tree usually *is* a real ancestor in content — verify with
+  a byte comparison on a file neither side touched, then let a genuine
+  three-way `git merge-file` do the work. Both joins were done that way
+  and most conflicts were a single import line.
 
 **Four gates, all green before a deploy** (they live on `main`):
 
