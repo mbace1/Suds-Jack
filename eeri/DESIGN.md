@@ -293,32 +293,182 @@ ever.** One set, used by the touch buttons and the hint line alike.
 A fourth machine. More sites than the layer sets above cover. Do not start
 either until §7 is answered.
 
+### 6.6 The four worlds, briefed for art (2026-08-14)
+
+**§4.2 named the worlds; this briefs them.** A name is not a brief — an
+artist handed "pipes and water hazards" and the five-layer contract still
+does not know what goes in `far` versus `fore`, what the palette shift is,
+or what water means when collision is a tile grid. That gap is why the
+world-2 set had not started. `ART_BRIEF.md` §4's per-world row is still
+marked `[ASSUME — world list is design's call]`; **this is that call**,
+and the art lane can resolve that row from here.
+
+**What does NOT change, ever.** Each world is the same kit re-dressed, per
+ART_BRIEF §4 "Modularity" — the same layer rects, the same `PPU`, the same
+`LAYER_TINT` ramp, the same tile grid underneath, the same safety-yellow
+cast, the same hazard language (red + black/yellow chevron, readable in
+greyscale). **A world is a re-dress and a palette shift, not a new
+renderer.** The evening world in particular is a *repaint*, not a lighting
+rig — §4's row says so and it stays true.
+
+**The one rule that decides world 2, and it is a design rule not an art
+one: water is PAINTED and never entered.** Eeri does not wade and does not
+swim. Water is backdrop, and where it meets the playfield it is a **pit
+that costs a life** — collision-identical to the holes already in `SITES`,
+so `fallRespawn` and the room prover need no new concept. Swimming would
+break §4.2's "a level comes back down to the ground it started on" and
+would be a different game for a stretch. The world's identity is carried
+by the **pipes**, which are geometry, not by the water, which is scenery.
+
+#### The briefs
+
+**World 1 — Groundworks** *(shipped: `groundworks_*`, the reference)*
+The dug trench, the half-built frames, the card-and-felt earth section
+under your feet. Every other world is judged against this one for
+material density and how much air the skyline keeps.
+
+**World 2 — Pipes and water hazards**
+
+| layer | what is in it |
+|---|---|
+| `sky` | as world 1, a shade cooler and greyer — a working day after rain, not a storm |
+| `skyline` | quiet, heavily hazed: a low treatment plant, tanks and a chimney. Same rule as always — crisp two-tone blocks here read as near and fight the playfield |
+| `far` | the pipe yard: **stacked pipe ends seen face-on**, a wall of circles, which is the world's single strongest read and belongs at distance where repetition is an asset |
+| `mid` | trench boxes and shoring, a laid main running the length of the level with its joints showing, hoarding with the world's own signage silhouette |
+| `near` | the trench lip: sandbags, spoil, a pump with a hose over the edge |
+| `fore` | **cropped**, per assets/README: a pipe run **crossing high**, standing verticals you pass behind, low sweeps of hose and spoil along the bottom. Nothing parked at eye level |
+
+- **Palette shift:** EARTH ramp goes cooler and wetter (a wet-clay grey-brown);
+  STEEL ramp gains one duller, greener tone for old pipework; the water
+  itself is a **flat band in two tones with a hard seam**, never a gradient
+  and never animated below the playfield.
+- **Where water meets the playfield it is a pit.** Paint the lip so the
+  hazard is obvious *without* the chevron — the chevron is for things that
+  hurt you where you stand, not for holes.
+- **Gizmo the world owns:** the tipping `plank` over a trench.
+- **What must not happen:** a wet look. This is Crafted World, and paper
+  does not get wet — water is a flat cut shape, the way felt is grass.
+
+**World 3 — Forest clearing and digs**
+
+| layer | what is in it |
+|---|---|
+| `sky` | warmer, higher-key; the one world where sky shows through foliage rather than over a skyline |
+| `skyline` | a treeline, not a city — a soft hazed band of canopy. The quietest skyline of the four |
+| `far` | standing timber and the cut edge of the clearing: felled trunks stacked, the forest going back |
+| `mid` | the dig itself — an exposed cut with roots in it, a site hut, a stack of sleepers |
+| `near` | stumps, brash piles, a chainsawed log with the cut face showing |
+| `fore` | **cropped**: trunks you pass behind (the best occluder in the game — a tree is naturally a narrow vertical), a low fern sweep at the bottom, a branch crossing high |
+
+- **Palette shift:** the ACCENT GREEN family widens from one grass-lip
+  green into **three** — canopy, mid foliage, ground cover — which is the
+  biggest palette change of the four and the reason this world is not
+  simply world 1 with trees. EARTH gains a raw root-and-peat tone.
+- **The material opportunity:** foliage is the one surface in the game
+  that wants **felt** at full strength rather than card. Crafted World's
+  best trick is a leaf that is obviously fabric.
+- **Gizmo the world owns:** the `conveyor` (a log deck), and vertical —
+  this is the world to spend ladders and scaffold on, because a treeline
+  gives the camera somewhere to go up into.
+- **What must not happen:** a forest so busy the playfield silhouette is
+  lost. Foliage lives in `far` and `fore`; `mid` and `near` stay legible.
+
+**World 4 — Evening site, under lights**
+
+| layer | what is in it |
+|---|---|
+| `sky` | the deep one: a dusk gradient as **three or four flat bands with hard seams**, darkest at the top. This is the world's whole mood and it is one image |
+| `skyline` | the city with **lit windows** — small, warm, irregular, and the only place in this game where light is drawn rather than painted flat |
+| `far` | tower cranes with their warning lamps, the half-built frame reading as silhouette against the sky |
+| `mid` | the site under floodlight: **lamp pools painted onto the ground as flat shapes with hard edges**, not soft falloff. A pool is a shape, like everything else |
+| `near` | light stands, generator, cable runs, a brazier |
+| `fore` | **cropped and near-black**: this world's foreground is the strongest silhouette lane of the four, because everything behind it is bright |
+
+- **Palette shift, and it is the big one:** every ramp drops in value and
+  the whole set shifts cool, *except* the lamp pools and lit windows,
+  which stay warm and become the only high-value notes on screen. Safety
+  yellow now reads as the brightest thing in the world, which is exactly
+  right — the cast is lit.
+- **§3.4's key light does not move.** It is still upper-left; it is just
+  dimmer, and the lamps are local additions painted in. **Do not** build a
+  runtime lighting rig for this. §4: "night is a repaint, not a lighting
+  rig."
+- **Gizmo the world owns:** the `hoist`, and the hazard kit's `vent` —
+  a lit collar telegraphs beautifully in the dark.
+- **What must not happen:** unreadable. Age six, in a lit room, on a
+  phone. Test every layer in greyscale like every other world, and the
+  playfield must still read at 32 px.
+
+#### Ride machines, one per world — proposed, for veto
+
+§4.2 commits to two per world; this names **one each**, which is what
+unblocks the queue, and defers the second until a world plays end to end.
+Each is chosen for the **verb it brings**, because a second machine that
+digs is not a second machine.
+
+| world | machine | the verb it brings | why this one |
+|---|---|---|---|
+| 1 | **excavator** *(live)* + **crane** *(coded, art owed)* | DIG · SWING | already the game |
+| 2 | **pipe-layer** (side-boom) | **LAY** — it lowers a pipe across a gap and the pipe becomes the bridge you then run over | the only machine so far that *makes geometry you keep*. Everything else removes or moves; this one builds, and a six-year-old watching a gap become a floor is the best thing a ride can do |
+| 3 | **cherry-picker** (lift) | **RISE** — it carries you up and puts you on the high route | §4.2 permits a level to go up; a machine that goes up is how a world spends that permission without a new camera |
+| 4 | **floodlight rig** | **AIM** — it points a lamp and what it lights becomes safe to cross | a verb no other machine has, and it is the world's identity rather than a re-skin. It also makes darkness a *puzzle* instead of a readability problem |
+
+Node contracts are the standard `assets/README.md` set — `seat`, `step`,
+`beacon`, plus the articulating nodes each one needs. **The `beacon` rule
+holds in world 4 too**: lit and turning while unmanned, dark once Eeri is
+aboard. In a dark world that tell is stronger, not weaker.
+
+**Cost, stated honestly:** this is three new ride machines plus the crane
+already owed, three backdrop sets of five layers each, and one palette
+shift per world. It is the largest remaining art commitment in the
+project, which is exactly why §4.2 capped the ride at "short sequences"
+and why the gizmo kit — cheap, reusable, twelve-levels-worth of variety —
+sits above it in §6.2's priority order. **Do worlds in order. Do not
+start world 3's set before world 2's levels exist.**
+
 ---
 
 ## 7. Open, for the owner
 
-Answered so far: 3 levels growing by 3 to 12 · stomp is in · three tokens,
-one kind per world · no map · infinite retries · age 6, generous · knockback
-only. Next batch — the first four block art.
+**This list had gone stale, and a stale open-questions list is worse than
+no list: seven of its eight items had been answered in §4.2 for a day
+while this section still said "open", so an art agent reading in the
+documented order — §7 last — finished the doc believing the world list
+was undecided and the queue blocked.** Answered items now say so and
+point at where the answer lives. Only genuinely open things stay open.
 
-1. **What are the four worlds?** World 1 is the groundworks. Then —
-   scaffold heights, demolition, night shift, a flooded dig, the crane
-   top? Each is one backdrop set, so naming them names the art queue.
-2. **Which machine rides in which world?** The excavator (dig) and the
-   crane (swing) exist. A dump truck you ride *in the bed* of, a roller, a
-   cement mixer? One ride machine per world is the natural rate.
-3. **Does each world end with something bigger** — a Mario castle beat? A
-   big machine encounter at level 3 of each world would be the obvious
-   shape, and it is a large art item, so it needs deciding early.
-4. **What does the level's end look like?** A gate exists. Should there be
-   a moment — a flagpole, a knock-off-time whistle, Eeri clocking out?
-5. **Do the tokens do anything**, or are they just a count to complete?
-6. **Do levels ever go up** rather than right? Ladders make it possible;
-   a vertical level is a different camera and a taller backdrop.
-7. **Does the game have music**, or only the effects and the diesel bed it
-   has now?
-8. **Is there a level-select screen** at all, since there is no map — or
-   does the game just start at level 1 and run through?
+**Answered, do not re-ask:**
+
+| was | answer | where |
+|---|---|---|
+| What are the four worlds? | Groundworks · Pipes and water hazards · Forest clearing and digs · Evening site under lights | §4.2, briefed for art in **§6.6** |
+| Does each world end with something bigger? | Yes — **level 3 of a world is the big one**, boss-type setup, puzzle or enemies, and its flag is bigger and a different colour | §4.2 |
+| What does the level's end look like? | A flag that **builds in three phases** and activates by being **run past**, a puff of smoke per phase. Clocking out through a gate is the **world's** curtain, not the level's | §4.2, shipped in `js/flag.js` |
+| Do the tokens do anything? | Bolts `x/100` are the level's completion figure; **blueprints unlock secret art**, one per world. Golden bolts `3/3` are still just a count | §4.2 |
+| Do levels ever go up? | Yes — ladders and scaffolds — **but a level always comes back down** and ends on the ground it started on | §4.2, shipped v11 |
+| Music? | **SFX only.** No music yet | §4.2 |
+| Level select? | No map. Levels run **1 → 12 in order**, and any unlocked level can be jumped to from a menu | §4.2 |
+
+**Still open, and this is the short list:**
+
+1. **The second ride machine per world.** One each is proposed in §6.6 and
+   is the art queue's next item; the *second* of the "two per world, maybe
+   more" is deliberately deferred until a world plays end to end.
+2. **Golden bolts — do 3/3 buy anything?** Blueprints unlock art;
+   the golden bolts currently unlock nothing, which makes them a count
+   rather than a reward. Worth an answer before there are twelve levels
+   of them.
+3. **Does a world's level 3 reuse its world's backdrop**, or does the big
+   one get its own dress? Reusing is the cheap answer and probably right;
+   it is named here so nobody assumes the expensive one.
+
+### 7.1 Answering rate — a note for whoever holds this file
+
+Every item above moved from "open" to "answered" without this section
+being touched, because the answers arrived as owner direction and were
+written into §4.2 where they belonged. **An answer landing in §4.2 must
+strike its question here in the same edit.** That is the whole maintenance
+rule for this section, and skipping it is what cost the art queue a day.
 
 ---
 
