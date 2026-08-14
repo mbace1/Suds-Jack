@@ -249,6 +249,30 @@ export function check(room) {
     }
   }
 
+  // A RIDE-ENDING HAZARD MAY NOT STAND BETWEEN A MACHINE AND ITS JOB.
+  // The wrecking ball is the only hazard that takes the ride rather than
+  // just knocking you back, and in SITE 1 it hung at x=70 — squarely on the
+  // excavator's only run from where it is parked to the bank at 84. Every
+  // attempt to bring the machine to its job ended with the ball throwing
+  // you out of the cab, so the bank could never be dug and the room played
+  // as an impossible wall. Nothing checked it, because the track rules only
+  // ever asked about holes.
+  if (r.ball) {
+    const swing = r.ball.len * 0.95 + 0.6;         // arc, plus the ball itself
+    const lo = r.ball.px - swing, hi = r.ball.px + swing;
+    for (const m of r.machines) {
+      for (const o of r.obstacles) {
+        if (!o.clears || !m.verbs.includes(o.clears)) continue;
+        const from = Math.min(m.x, o.at), to = Math.max(m.x, o.at + (o.size ?? 1));
+        if (hi > from && lo < to) {
+          note(`${r.name}: the swinging ball at x=${r.ball.px} stands across the `
+            + `${m.type}'s route (${from.toFixed(1)}…${to.toFixed(1)}) to the ${o.kind} `
+            + `it has to clear — a hit takes the RIDE, so the job can never be done`);
+        }
+      }
+    }
+  }
+
   // …and every obstacle that needs a verb must be inside the track of a
   // machine that HAS that verb
   for (const o of r.obstacles) {

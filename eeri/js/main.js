@@ -17,7 +17,7 @@ import {
 } from './pieces.js?v=4';
 import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=2';
 import { Camera } from './camera.js?v=1';
-import { buildKidModel, Kid, Player } from './kid.js?v=3';
+import { buildKidModel, Kid, Player } from './kid.js?v=4';
 import { buildExcavatorModel, Excavator } from './excavator.js?v=2';
 import { buildCraneModel, Crane } from './crane.js?v=1';
 import { Robot, SteamVent } from './robots.js?v=2';
@@ -196,6 +196,10 @@ async function boot() {
     seat: 'HOLD ▼  LOWER THE SPAN IN',
     smash: 'HOLD ▼  SWING THE BALL AT THE WALL',
     out: 'THE WAY OUT IS OPEN',
+    // pointed, not vague: a six-year-old needs the DIRECTION as well as the
+    // fact. ◀ or ▶ depending on which side the machine is parked.
+    fetchBack: '◀  TOO HIGH TO JUMP — GO BACK FOR THE MACHINE',
+    fetchOn: 'TOO HIGH TO JUMP — BRING THE MACHINE  ▶',
   };
 
   // ---- the mode machine ---------------------------------------------------
@@ -204,6 +208,20 @@ async function boot() {
   let stomps = 0;
   const from = new THREE.Vector3(), mid = new THREE.Vector3(), to = new THREE.Vector3();
   const v3 = new THREE.Vector3();
+
+  // On foot, up against something only the machine can move: which hint to
+  // show, and which way to point him. Returns null when nothing is in the way.
+  function machineJob() {
+    const d = site.def;
+    const back = () => (exc.x < player.x ? HINT.fetchBack : HINT.fetchOn);
+    if (site.bank && !site.bank.cleared
+      && player.x > d.bank.c0 - 2.6 && player.x < d.bank.c1 + 2) return back();
+    if (site.wall && !site.wall.cleared
+      && player.x > d.wall.c0 - 2.6 && player.x < d.wall.c1 + 2) return back();
+    if (site.girder && site.girder.state < 2 && d.girder
+      && player.x > d.girder.gap.c0 - 3 && player.x < d.girder.gap.c1 + 2) return back();
+    return null;
+  }
 
   const nearExc = () => !!exc
     && Math.abs(player.x - exc.x) < 2.6 && player.y > exc.y - 1 && player.y < exc.y + 2.4 && player.grounded;
@@ -368,9 +386,16 @@ async function boot() {
       // heavy and blind: stand under the working bucket and it puts you down
       if (unmannedStrike() && player.struck(exc.x)) { audio.splat(); cam.punch(1.1); }
 
+      // Standing at the lock on foot. It is three tiles and a jump reaches
+      // two and a half, so it is not a thing you have missed a trick on —
+      // it is the machine's job, and the machine is back the way you came.
+      // Without this the room reads as an impossible wall, which is exactly
+      // how it played.
+      const blocker = !cleared && machineJob();
       const near = nearExc();
       setHint(cleared ? HINT.out
         : near ? HINT.near
+        : blocker ? blocker
         : (!exc.tamed && Math.abs(player.x - exc.x) < 6) ? HINT.wary
         : HINT.foot);
       if (near && input.take('action')) { startMount(); audio.mount(); }

@@ -210,12 +210,15 @@ s.listen(0, '127.0.0.1', async () => {
   ok('the kid lands somewhere real after dismount', await p.evaluate(() => window.__eeri.player.y) > 3);
 
   // ---- the hazard: telegraph before strike, and the Yoshi rule -----------
-  await p.evaluate(() => window.__eeri.debug.setPos(4, 4.2));
+  // read the ball's position rather than hardcoding it — it MOVED, because
+  // where it hung was across the excavator's route to its job
+  const ballX = await p.evaluate(() => window.__eeri.ball.px);
+  await p.evaluate((bx) => window.__eeri.debug.setPos(bx - 22, 4.2), ballX);
   await p.waitForTimeout(500);
   ok('the wrecking ball hangs still when nobody is near',
     await p.evaluate(() => window.__eeri.debug.hazard().state) === 'rest');
 
-  await p.evaluate(() => window.__eeri.debug.setPos(68, 4.2));
+  await p.evaluate((bx) => window.__eeri.debug.setPos(bx - 2, 4.2), ballX);
   const wound = await p.waitForFunction(() => window.__eeri.debug.hazard().state === 'wind', null, { timeout: 4000 }).then(() => true).catch(() => false);
   ok('coming near winds it back first — it telegraphs', wound);
   const swung = await p.waitForFunction(() => window.__eeri.debug.hazard().state === 'swing', null, { timeout: 12000 }).then(() => true).catch(() => false);
@@ -230,15 +233,15 @@ s.listen(0, '127.0.0.1', async () => {
   // Mount well clear of the ball first, then drive the cab under it.
   await p.evaluate(() => {
     window.__eeri.player.mercyT = 0;
-    window.__eeri.exc.x = 30; window.__eeri.exc.y = 4;
-    window.__eeri.debug.setPos(28.5, 4.1);
+    window.__eeri.exc.x = 61; window.__eeri.exc.y = 4;
+    window.__eeri.debug.setPos(59.5, 4.1);
   });
   await p.waitForTimeout(400);
   await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
   const rode = await p.waitForFunction(() => window.__eeri.mode() === 'riding', null, { timeout: 5000 }).then(() => true).catch(() => false);
   ok('back in the cab, clear of the ball', rode);
 
-  await p.evaluate(() => { window.__eeri.exc.x = 69.4; window.__eeri.player.mercyT = 0; });
+  await p.evaluate((bx) => { window.__eeri.exc.x = bx - 0.6; window.__eeri.player.mercyT = 0; }, ballX);
   const thrown = await p.waitForFunction(() => window.__eeri.mode() !== 'riding', null, { timeout: 10000 }).then(() => true).catch(() => false);
   ok('a hit takes the ride, not the run (thrown clear of the cab)', thrown);
 
@@ -505,6 +508,29 @@ s.listen(0, '127.0.0.1', async () => {
   const zWide = await settleZ();
   ok('the camera pulls back where the room asks you to read something',
     zWide > zOpen + 3, `open z=${zOpen.toFixed(1)} → wall z=${zWide.toFixed(1)}`);
+
+  // ---- which way he is pointing -----------------------------------------
+  // He ran toward the camera and sat backwards in the cab: the skinned rig
+  // is modelled facing +z and carried an extra −90° on top of a turn that
+  // already did the +z→+x job. Facing is a thing you SEE, so it is measured
+  // here as a world direction rather than as an angle nobody can picture.
+  {
+    const fwd = async () => p.evaluate(() => {
+      const g = window.__eeri.player.kid.group;
+      g.updateWorldMatrix(true, false);
+      // the rig's own forward is +z; where does it point in the world?
+      const v = new (Object.getPrototypeOf(g.position).constructor)(0, 0, 1);
+      v.applyQuaternion(g.getWorldQuaternion(g.quaternion.clone()));
+      return { x: +v.x.toFixed(2), z: +v.z.toFixed(2) };
+    });
+    await p.evaluate(() => window.__eeri.debug.setPos(30, 4.2));
+    await p.evaluate(() => window.__eeri.debug.press('right'));
+    await p.waitForTimeout(900);
+    const run = await fwd();
+    await p.evaluate(() => window.__eeri.debug.release('right'));
+    ok(`running right, he faces right and not the camera (x ${run.x}, z ${run.z})`,
+      run.x > 0.6 && Math.abs(run.z) < 0.75);
+  }
 
   // ---- the flag: it BUILDS, and it finishes by being run past -----------
   await p.reload({ waitUntil: 'load' });

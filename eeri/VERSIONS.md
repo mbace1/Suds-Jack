@@ -1,5 +1,40 @@
 # EERI — versions
 
+## v8 — 2026-08-13 — three bugs from actual play
+
+All three came from one playtest, and two of them were one cause.
+
+**He ran toward the camera, and sat backwards in the cab.** The skinned
+rig is modelled facing +z, and `FACE_TURN` (0.42π ≈ 75.6°) already sends
++z to (0.97, 0, 0.25) — screen-right, tipped slightly toward the camera,
+which is exactly the 3/4 view the game wants. The extra −90° it carried
+was added on top and swung him round to face the lens. The same −90° left
+him backwards while riding, because riding zeroes the turn and he was then
+facing +z on the nose. `SKIN_YAW` is 0 now, and riding puts the +z→+x
+quarter turn back by hand. The gate measures his forward as a WORLD
+DIRECTION rather than an angle, because facing is a thing you see.
+
+**"After the machine there is a blocker that is not possible to jump
+over."** The bank is three tiles and a jump reaches 2.65, so it is not
+meant to be jumped — it is the machine's job. But the machine could never
+get to it: **the wrecking ball hung at x=70, squarely across the
+excavator's only run from where it parks to the bank at 84**, and a hit
+takes the RIDE. Every attempt ended with the ball throwing you out of the
+cab. The room was unfinishable and read as an impossible wall.
+
+The ball has moved to x=35, in the stretch only the kid ever walks, and
+the rule is now enforced rather than remembered: `test/rooms.mjs` refuses
+any room where a ride-ending hazard stands between a machine and an
+obstacle it is meant to clear, with a deliberately broken room proving the
+check bites. The old track rules only ever asked about holes.
+
+**And nothing told you to go back for it.** Standing at the lock on foot
+now says so, with the direction: `◀ TOO HIGH TO JUMP — GO BACK FOR THE
+MACHINE`. A six-year-old should not have to infer that the answer is
+twenty tiles behind them.
+
+Gate: 145 checks, plus 30 in the room prover.
+
 ## v7 — 2026-08-13 — controller-first controls, the stomp, and the flag
 
 **Three lineages became one.** The gameplay branch (parts kit, room prover,

@@ -12,11 +12,11 @@
 //
 // Run: node eeri/test/rooms.mjs
 
-import { ROOMS } from '../js/rooms.js?v=1';
+import { ROOMS } from '../js/rooms.js?v=2';
 import {
   check, REACH, SOLID_CHARS, W, H, GROUND,
-  ground, mound, pit, bank, chasm, machine, robot, startAt, exitAt,
-} from '../js/parts.js?v=1';
+  ground, mound, pit, bank, chasm, machine, robot, startAt, exitAt, swingBall,
+} from '../js/parts.js?v=2';
 
 let pass = 0, fail = 0;
 const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, console.log('  FAIL ' + n + (d ? '\n         → ' + d : ''))); };
@@ -91,6 +91,15 @@ bites('a machine penned away from its own job by a hole', {
   parts: [ground(), startAt(4), machine('excavator', 20, [10, 60]),
     pit(30, 33), bank(50, 54, 3), exitAt(90)],
 }, 'cut by a hole');
+
+bites('a ride-ending hazard parked between a machine and its job', {
+  name: 'BAD/ball-on-the-route',
+  parts: [
+    ground(), startAt(4), machine('excavator', 20, [10, 60]),
+    swingBall(34, 8),                    // dead across the run to the bank
+    bank(48, 52, 3), exitAt(56),
+  ],
+}, 'takes the ride');
 
 bites('a bank outside the machine\'s track', {
   name: 'BAD/out-of-reach',

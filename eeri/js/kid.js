@@ -133,7 +133,21 @@ export function buildKidModel() {
 //    faces +x, so the whole thing carries a −90° yaw offset that the
 //    code-built kid does not.
 const CLIP_FOR = { idle: 'idle', run: 'run', air: 'jump', ride: 'ride', climb: 'walk' };
-const SKIN_YAW = -Math.PI / 2;
+
+// FACING, and the trap in it. A rotation of θ about Y sends +z to
+// (sin θ, 0, cos θ). The Meshy rig is modelled facing +Z, and the game's
+// own `FACE_TURN` is 0.42π ≈ 75.6° — which already sends +z to
+// (0.97, 0, 0.25): screen-right, tipped a little toward the camera, which
+// is exactly the 3/4 view the placeholder is posed for. So a skinned rig
+// needs NO extra yaw at rest; the −90° it used to carry was added on top
+// and swung him round to face the camera, which is what he did while
+// running. The same −90° left him backwards in the cab, because riding
+// zeroes the turn and he was then facing +z on the nose.
+const SKIN_YAW = 0;
+
+// riding, the machine owns the facing and the turn goes to zero — so a
+// +z-forward rig needs the +z→+x quarter turn put back by hand
+const SKIN_RIDE_YAW = Math.PI / 2;
 
 class ClipDriver {
   constructor(group, asset) {
@@ -206,7 +220,7 @@ export class Kid {
   pose(state, t, speed = 0) {
     // the turn is animated, not mirrored — a 3D cast's free win.
     // riding, the pose is local to the seat and the machine owns the facing.
-    const target = state === 'ride' ? 0
+    const target = state === 'ride' ? (this.clips ? SKIN_RIDE_YAW : 0)
       : this.face > 0 ? FACE_TURN : Math.PI - FACE_TURN;
     this.turn += (target - this.turn) * 0.18;
     this.group.rotation.y = this.turn;

@@ -15,7 +15,7 @@
 import {
   ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm,
   machine, robot, hazard, swingBall, bolts, startAt, exitAt, shot, girderStack,
-} from './parts.js?v=1';
+} from './parts.js?v=2';
 
 export const ROOMS = [
   // ── SITE 1 — THE DIG ────────────────────────────────────────────────
@@ -34,6 +34,13 @@ export const ROOMS = [
       robot(24, 34),                      // a skitter to time, on open floor
       bolts([[13, 30], [13, 31], [13, 32]]),
 
+      // The ball lives HERE now, in the stretch only the kid ever walks —
+      // well clear of the excavator's run from x=61 to the bank at 84. A
+      // hit takes the ride, so on a machine's route it is not a hazard, it
+      // is a wall; the prover refuses that arrangement outright.
+      girderBeam(32, 38, 7),
+      swingBall(35, 8),
+
       hazard(40, 'steam'),                // telegraphed, on the way to the pit
       pit(46, 48),                        // 3 wide — a run clears 4
       bolts([[11, 46], [11, 47], [11, 48]]),
@@ -46,8 +53,15 @@ export const ROOMS = [
       // the bank, and it can never pen itself against a hole
       machine('excavator', 61, [50, 92]),
 
+      // The girder stays as scenery you pass under. The BALL that used to
+      // hang off it is gone, and it had to be: it sat at x=70, squarely on
+      // the excavator's only route from its parking spot to the bank, and a
+      // hit takes the RIDE — so it threw you out of the cab every single
+      // run and the bank could never be dug. The room read as an impossible
+      // wall, and that is exactly how it played. A ride-ending hazard may
+      // not stand between a machine and its job; test/rooms.mjs enforces it
+      // now. (It was also a fourth idea in a level that teaches three.)
       girderBeam(66, 72, 7),
-      swingBall(70, 8),                   // hangs off that girder
       robot(74, 80),
       bolts([[13, 76], [13, 77], [13, 78]]),
 

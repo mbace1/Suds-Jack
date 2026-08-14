@@ -88,6 +88,14 @@ All stompable, all readable, each with one behaviour:
 steam vents, swinging loads, falling pallets, wet cement (slows, never
 kills), sparking cables.
 
+**A ride-ending hazard may never stand between a machine and its job.**
+Learned the hard way: the swinging ball hung across the excavator's only
+run from where it parks to the bank it has to dig, and since a hit takes
+the RIDE it threw you out of the cab every attempt. The bank could then
+never be cleared and the level played as an impossible wall. Hazards that
+merely knock back are fine anywhere; the ride-enders belong in stretches
+only the kid walks. `test/rooms.mjs` refuses the arrangement now.
+
 **Cost of a hit:** knockback and mercy frames on foot; inside a ride, the
 Yoshi rule stands — a hit ends the ride early and drops you back on foot,
 so a ride is a thing you can *lose* rather than fail.
