@@ -1,5 +1,50 @@
 # EERI — versions
 
+## v20 — 2026-08-14 — the pickups are 3D, and the gate learns a third rig
+
+DESIGN §6.3's collectables. The bolt now comes through the asset seam
+(`bolt_v1.glb`) instead of being two cylinders built inline, and world 1–3's
+tokens exist as `token_toolbox` / `token_blueprint` / `token_bolt`.
+
+**§6.3's real requirement is a SILHOUETTE test, not a look test** —
+"unmistakably NOT a bolt at 32 px, different silhouette, not just bigger" —
+so `art-src/tools/silhouette.mjs` (new) renders each one keyed, at 32 px, as
+a flat black shape, which is all the player's eye actually gets. The four
+read as: a blob with a hole (bolt), a winged V (golden bolt — allowed to be
+a bolt because it IS the golden one, so the wings carry it), an arch with
+daylight under it (toolbox), and a long diagonal (blueprint). Distinct as
+pure shapes, which is the contract.
+
+**A pickup's origin is its CENTRE.** It floats and bobs; the foot-contact
+rule in assets/README governs things that stand. Shipping these base-anchored
+would have hung every bolt half a tile high. `packprop.mjs` (new) takes
+`--anchor center|base` and says why.
+
+Weight: Meshy returned 3.3 MB each — a 1024² texture for something drawn
+32 px wide. `packprop.mjs` re-exports at 128², which is 240–307 KB, inside
+assets/README's 400 KB budget for the first time in this project. The
+textures are downsized rather than stripped-and-painted because a Meshy prop
+is a single `mesh_node`: a `paint` map could only give it ONE colour, and the
+bolt's grey collar against the yellow is the read.
+
+**The smoke gate learned a third kind of rig.** It knew skinned characters
+(declare CLIPS) and hand-cut models (declare NODES) and failed all four
+pickups, which have neither. `rig: "prop"` now declares *no moving parts* and
+is asserted as such — saying it beats exempting it, because a prop that
+quietly grew an animated part is still caught.
+
+Two live bugs fixed on the way in, both from a code placeholder becoming a
+real GLB: the collect fade walked `b.children`, which reaches a Group's
+direct children but never the Mesh inside a loaded GLB (Group → Object3D →
+Mesh), so bolts would have popped without fading; and cloned GLB materials
+are shared and opaque, so one collected bolt would have faded every bolt in
+the level at once.
+
+Cross-lane, declared: `js/main.js` (shared) routes bolts through `getModel`,
+and `test/smoke.cjs` gains the prop contract.
+
+Gates: 186 smoke + 30 rooms + 7 playthrough.
+
 ## v19 — 2026-08-14 — the enemy family is three deep
 
 DESIGN §6.2 #1 — "nothing is more used and nothing is missing more" — was

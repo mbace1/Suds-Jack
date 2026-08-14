@@ -147,14 +147,27 @@ async function boot() {
     const flag = new Flag(group, level, def.exit.x,
       await getModel(big ? 'flagbig' : 'flag', () => buildFlagModel(big)), big);
 
-    // bolts: the collectable (3D slow spinners, §6)
-    const bolts = level.boltCells.map((cell, bi) => {
+    // bolts: the collectable (3D slow spinners, §6). The model comes through
+    // the seam like everything else, so the code pair below is the
+    // placeholder rather than the thing — and a bolt is a PICKUP, so its
+    // origin is its centre and it is cloned per cell rather than shared.
+    const boltModel = await getModel('bolt', () => {
       const g = new THREE.Group();
       const m1 = new THREE.MeshLambertMaterial({ color: PAL.MACHINE, transparent: true });
       const m2 = new THREE.MeshLambertMaterial({ color: PAL.MACHINE_DK, transparent: true });
       const nut = new THREE.Mesh(boltGeo, m1); nut.rotation.x = Math.PI / 2;
       const hub = new THREE.Mesh(hubGeo, m2); hub.rotation.x = Math.PI / 2;
       g.add(nut, hub);
+      return g;
+    });
+    const bolts = level.boltCells.map((cell, bi) => {
+      const g = boltModel.clone(true);
+      // the collect pop fades it, and a material cloned off a GLB is opaque
+      g.traverse((o) => {
+        if (!o.isMesh) return;
+        o.material = o.material.clone();      // per-bolt, or one pop fades all
+        o.material.transparent = true;
+      });
       g.position.set(cell.x, cell.y, 0);
       g.baseY = cell.y; g.phase = bi * 0.7; g.state = 'up'; g.popT = 0;
       group.add(g);
@@ -597,7 +610,10 @@ async function boot() {
         b.popT += dt / 0.25;
         b.rotation.y += dt * 14;
         b.scale.setScalar(1 + b.popT * 0.8);
-        for (const ch of b.children) ch.material.opacity = 1 - b.popT;
+        // fade every material in the tree, not just direct children: a live
+        // GLB is Group → Object3D → Mesh, so `b.children` alone never
+        // reaches the mesh and the bolt would pop without fading
+        b.traverse((o) => { if (o.isMesh) o.material.opacity = 1 - b.popT; });
         if (b.popT >= 1) { b.state = 'gone'; b.visible = false; }
       }
     }

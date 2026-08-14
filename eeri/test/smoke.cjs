@@ -45,11 +45,19 @@ for (const [name, m] of Object.entries(manifest.models)) {
   const f = path.join(__dirname, '..', 'assets', m.file);
   ok(`model "${name}": ${m.status === 'live' ? 'live file exists' : 'placeholder declared'}`,
     m.status !== 'live' || fs.existsSync(f), m.file);
-  // two kinds of rig, two contracts: a hand-cut model declares the NODES the
-  // game rotates, a skinned character declares the CLIPS it can play
-  const skinned = m.rig === 'skinned';
-  ok(`model "${name}" declares its ${skinned ? 'clip' : 'node'} contract`,
-    Array.isArray(skinned ? m.clips : m.nodes) && (skinned ? m.clips : m.nodes).length > 0);
+  // THREE kinds of rig, three contracts: a hand-cut model declares the NODES
+  // the game rotates, a skinned character declares the CLIPS it can play, and
+  // a PROP declares neither because nothing inside it moves — a pickup is one
+  // solid thing the game spins and bobs whole. Saying so beats exempting it:
+  // a prop that quietly grew an animated part would still be caught.
+  const skinned = m.rig === 'skinned', prop = m.rig === 'prop';
+  if (prop) {
+    ok(`prop "${name}" declares no moving parts`,
+      !m.nodes?.length && !m.clips?.length);
+  } else {
+    ok(`model "${name}" declares its ${skinned ? 'clip' : 'node'} contract`,
+      Array.isArray(skinned ? m.clips : m.nodes) && (skinned ? m.clips : m.nodes).length > 0);
+  }
   if (skinned) {
     ok(`skinned "${name}" declares its height in TILES`,
       typeof m.height === 'number' && m.height > 0.5 && m.height < 6);

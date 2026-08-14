@@ -1,5 +1,5 @@
 {
-  "v": 18,
+  "v": 19,
   "_readme": "The asset seam. Every entry is either 'placeholder' (the game builds it in code) or 'live' (the game loads the file). Dropping an asset in = put the file at its path, flip status to live, bump the file's v token. The smoke gate reads this file: live entries must resolve and models must expose their contracted nodes. See assets/README.md for the full contract.",
   "models": {
     "eeri": {
@@ -102,6 +102,30 @@
         "run",
         "wake"
       ]
+    },
+    "bolt": {
+      "file": "3d/bolt_v1.glb",
+      "status": "live",
+      "rig": "prop",
+      "_note": "The breadcrumb collectable, hundreds per level. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). Texture kept (not stripped to a `paint` role) because a Meshy prop is one mesh_node and the grey collar against the yellow IS the read at 32 px."
+    },
+    "token_toolbox": {
+      "file": "3d/token_toolbox_v1.glb",
+      "status": "placeholder",
+      "rig": "prop",
+      "_note": "World 1's token. The CARRY-HANDLE ARCH is the silhouette \u2014 \u00a76.3 demands \"unmistakably not a bolt at 32 px\", and the arch with daylight under it is what buys that. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). `placeholder` until the game places tokens."
+    },
+    "token_blueprint": {
+      "file": "3d/token_blueprint_v1.glb",
+      "status": "placeholder",
+      "rig": "prop",
+      "_note": "World 2's token, one per world, unlocks secret art \u2014 so \u00a76.3 wants it to \"look like a thing worth framing\": a rolled scroll tied with string, the only long diagonal in the set. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). `placeholder` until the game places tokens."
+    },
+    "token_bolt": {
+      "file": "3d/token_bolt_v1.glb",
+      "status": "placeholder",
+      "rig": "prop",
+      "_note": "World 3's token. Allowed to be a bolt because it IS the golden one \u2014 so it is a WING NUT: the wings make a V that no plain bolt can be mistaken for. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). `placeholder` until the game places tokens."
     }
   },
   "pieces": {
