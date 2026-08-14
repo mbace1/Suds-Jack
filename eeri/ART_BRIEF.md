@@ -1,5 +1,11 @@
 # EERI — Art Brief
 
+> **READ `PHASING.md` FIRST.** It is newer owner direction (2026-08-14) and
+> **supersedes this file where they disagree** — the 80/20 reference ratio
+> (Crafted World is the default answer, Tropical Freeze is the seasoning),
+> the tool-reality table, and the phase gates. This file remains canon for
+> everything it does not contradict.
+
 > **Status: v5 — presentation locked.** Owner-given direction
 > (2026-08-12, accumulated): **grammar from Super Mario Bros. 3 and Mario 4
 > (Super Mario World); presentation is modern layered 2.5D — confirmed

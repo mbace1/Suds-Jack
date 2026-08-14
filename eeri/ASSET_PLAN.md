@@ -1,5 +1,11 @@
 # EERI — the asset plan
 
+> **READ `PHASING.md` FIRST.** It is newer owner direction (2026-08-14) and
+> **supersedes this file where they disagree** — the 80/20 reference ratio
+> (Crafted World is the default answer, Tropical Freeze is the seasoning),
+> the tool-reality table, and the phase gates. This file remains canon for
+> everything it does not contradict.
+
 **What is still needed, what route each thing takes, and what it costs.**
 Derived from what the design docs already commit to — `ART_BRIEF.md` §5 (cast
 list v1), §5.1 (manipulable pieces), §3.5 (per-world re-dress) and `SITES` in

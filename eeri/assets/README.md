@@ -1,5 +1,11 @@
 # EERI — asset drop-in contract
 
+> **READ `PHASING.md` FIRST.** It is newer owner direction (2026-08-14) and
+> **supersedes this file where they disagree** — the 80/20 reference ratio
+> (Crafted World is the default answer, Tropical Freeze is the seasoning),
+> the tool-reality table, and the phase gates. This file remains canon for
+> everything it does not contradict.
+
 This folder is the seam between the game and the art (ART_BRIEF §2, §4, §5).
 The game runs **today** with zero files here — every entry in
 `manifest.json` marked `"placeholder"` is built in code. To ship a real

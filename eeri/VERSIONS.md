@@ -1,5 +1,17 @@
 # EERI — versions
 
+
+> **FORK NOTICE — 2026-08-14.** This log and `origin/main:eeri/VERSIONS.md`
+> are **two lineages with no common ancestor**, and they both reached "v11"
+> independently. This branch's v1–v11 are the art lineage (craft materials,
+> the v2 crafted layers, painted machines); `main`'s v1–v11 are the gameplay
+> lineage (the facing fix, glyph controls, stomp, ladders, the flag, the
+> tests). Neither is wrong; they simply never met.
+>
+> **Author on `main` from here.** `gh-pages` is a deploy target. Before
+> writing a new heading anywhere, read the *other* branch's VERSIONS.md — a
+> version number cannot detect a fork. See `CLAUDE.md` § Eeri.
+
 ## v11 — 2026-08-13 — the machines are painted wood, and the map tool is fixed
 
 **The excavator was still smooth plastic in a crafted world**, and chasing it

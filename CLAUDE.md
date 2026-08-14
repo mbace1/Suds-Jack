@@ -1,5 +1,79 @@
 # Suds-Jack — repo guide
 
+> **You are on `gh-pages`. This branch is a DEPLOY TARGET, not a workspace.**
+> `main` is the authoring branch and its `CLAUDE.md` is the full one (~1,200
+> lines, one section per project). This file is a short, older copy. If you
+> are about to author anything here, check `origin/main` first.
+
+## Eeri (`eeri/`) — MULTI-AGENT. Read the docs before you touch a file.
+
+A Mario 3 / Yoshi-shaped platformer for a six-year-old, on a worksite of
+Tonka × Cat machines. More than one agent works it at once, so **the docs
+are the coordination** and skipping them is how work gets deleted.
+
+**Reading order:**
+
+1. **`eeri/PHASING.md`** — newest owner direction (2026-08-14) and it
+   **supersedes the other docs where they disagree**. Holds the three things
+   canon does not: the **80/20 reference ratio** (Yoshi's Crafted World 80,
+   Tropical Freeze 20 — the *default* answer to any look question is Crafted
+   World; if a level reads as "dramatic layered 2.5D with some toys in it",
+   the ratio is inverted), the **tool-reality table** (routing rule: *legs →
+   Meshy rig · wheels/tracks → sliced nodes · deformation → code*), and the
+   **phase gates** — no agent starts Phase N+1 while a Phase N item in its
+   own lane is open.
+2. `eeri/DESIGN.md` (on `main`) — what the game does; §6 is the art queue.
+3. `eeri/ART_BRIEF.md` — the look. `eeri/ASSET_PLAN.md` — the queue + costs.
+4. `eeri/assets/README.md` + `assets/manifest.json` — the seam.
+5. `eeri/VERSIONS.md` — what shipped, and the traps.
+6. `/ART_PIPELINE.md` — the method. Every stage ends in a picture.
+
+**LANES — who owns which files.** Two agents editing one module is how two
+lineages start. Stay in your lane; if you must cross it, say so in the
+commit message.
+
+| lane | owns |
+|---|---|
+| **Art** | `assets/**`, `art-src/**`, `js/craft.js`, layer paintings, `PAL` colour values, `ASSET_PLAN.md` |
+| **Design/Level** | `js/rooms.js`, `js/parts.js`, `js/level.js`, `js/kid.js`, `js/input.js`, `js/robots.js`, `js/flag.js`, `test/**`, `DESIGN.md` |
+| **Shared — coordinate first** | `js/main.js`, `js/assets.js`, `js/palette.js`, `js/layers.js`, `assets/manifest.json`, `index.html` |
+
+**THE BRANCH RULE, and it has already cost this project twice.** Authoring
+Eeri directly on `gh-pages` starts a lineage with **no common ancestor** to
+`main` — `git merge-base` returns *nothing* — and then neither tree can be
+merged into the other without hand work. That is exactly what happened
+here: `main` carried the gameplay (facing fix, glyph controls, stomp,
+ladders, the flag, the test suite) and `gh-pages` carried the art (`craft.js`,
+the v2 crafted layers, the material kit), and **both called themselves v11**,
+so nothing looked wrong.
+
+- **Author on `main`.** Deploy to `gh-pages` as a copy limited to `eeri/`
+  plus `hub/games.js` and `hub/versions.json`, omitting `test/` and
+  `art-src/`. **Deploys never merge.**
+- **Before any Eeri work: `git fetch origin main gh-pages` and diff both.**
+  If they have diverged, reconcile *first*.
+- **A version number cannot detect a fork.** Never reuse one: fetch and read
+  the other lineage's `VERSIONS.md` before writing a new heading.
+
+**Four gates, all green before a deploy** (they live on `main`):
+
+```
+node eeri/test/rooms.mjs                                 # the room prover
+NODE_PATH=$(npm root -g) node eeri/test/smoke.cjs        # the game
+NODE_PATH=$(npm root -g) node eeri/test/playthrough.cjs  # a bot finishes every level
+NODE_PATH=$(npm root -g) node test/hub-smoke.cjs         # the cabinet
+```
+
+`rooms.mjs` proves a room's *geometry*; `playthrough.cjs` proves it is
+*playable* — it exists because the prover passed a level nobody could finish.
+
+**Traps worth knowing before you spend a day on one:** one `?v=` token per
+module, or the browser instantiates it twice, the module's state splits, and
+the art silently never loads (2.7 MB of layer PNGs, twice); a ride-ending
+hazard may never stand between a machine and its job; the skinned rig is
+modelled facing +z and `FACE_TURN` already does the +z→+x turn, so any extra
+yaw points Eeri at the camera.
+
 ## Toko Drop (`toko-drop/`)
 
 Browser bullet-hell survival game (three.js, ES modules, no build step).
