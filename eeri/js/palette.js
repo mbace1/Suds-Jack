@@ -25,7 +25,19 @@ export const PAL = {
   VEST:  '#ff7a1a',
   SHIRT: '#4a7ac8',
   PANTS: '#3a4a5c',
-  BOOT:  '#26221c',
+  BOOT:  '#ffb01f',   // machine yellow: the kid's wellies, his tie to the cast
+
+  // Eeri the kid, from the owner's own photograph (2026-08-13): olive
+  // dinosaur cap with soft spikes, navy dino tee. VEST/SHIRT stay above —
+  // the hard-hat kid is gone but layers.js still paints its cones with VEST.
+  CAP:      '#8a8a52',
+  CAP_DK:   '#6e6e3e',
+  SPIKE:    '#5f9e4a',
+  SPIKE_DK: '#4a7d3a',
+  TEE:      '#2e3a5c',
+  DINO:     '#5fbf5a',
+  PANTS:    '#3a4a5c',
+  BOOT_DK:  '#d88c12',
 };
 
 // One depth model (ART_BRIEF §3.2): gameplay at z = 0, layers at fixed

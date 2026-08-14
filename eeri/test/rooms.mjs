@@ -12,17 +12,46 @@
 //
 // Run: node eeri/test/rooms.mjs
 
-import { ROOMS } from '../js/rooms.js?v=3';
+import { ROOMS, LAB } from '../js/rooms.js?v=3';
 import {
-  check, REACH, SOLID_CHARS, W, H, GROUND,
-  ground, mound, pit, bank, chasm, machine, robot, startAt, exitAt, swingBall,
-} from '../js/parts.js?v=3';
+  check, estimate, REACH, LEVEL, TELL, CLOCK, SOLID_CHARS, W, H, GROUND,
+  ground, mound, pit, bank, chasm, machine, robot, startAt, exitAt,
+  ladder, ledge, checkpoint, flagAt, golden, boltRun, belt, tarp, TARP_RISE,
+  swingBall, hazard,
+} from '../js/parts.js?v=4';
+
+// a hundred bolts is the level's completion figure, so most of the BAD rooms
+// below would fail on the count alone and say nothing about what they are
+// FOR. This is the filler that lets each one break exactly one rule.
+const hundred = [boltRun(GROUND + 1, 0, 49), boltRun(GROUND + 2, 0, 49)];
+const furniture = (flagX = 90) => [checkpoint(48), flagAt(flagX), golden(GROUND + 3, [10, 20, 30]), ...hundred];
 
 let pass = 0, fail = 0;
 const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, console.log('  FAIL ' + n + (d ? '\n         → ' + d : ''))); };
 
 console.log(`the kid's budget: step ${REACH.step} tiles (jump reaches ${REACH.jumpUp.toFixed(2)}), `
   + `gap ${REACH.gap} tiles (a run carries ${REACH.jumpAcross.toFixed(2)})\n`);
+
+// ---- the telegraph floor -------------------------------------------------
+// DESIGN §4.1, and it is about a six-year-old: "telegraph ≥ 1.0 s before
+// anything can touch you." All three of these clocks were under it — 0.80,
+// 0.55 and 0.85 — because the rule lived in a document and the numbers lived
+// in three different modules.
+console.log(`the telegraph floor: ${TELL.toFixed(1)}s before anything can touch you\n`);
+{
+  const warn = CLOCK.skitter.notice + CLOCK.skitter.wind;
+  ok(`the skitter warns for ${warn.toFixed(2)}s before it lunges`, warn >= TELL);
+  ok(`the vent lights its collar for ${CLOCK.vent.warn.toFixed(2)}s before it blows`,
+    CLOCK.vent.warn >= TELL);
+  ok(`the ball winds back for ${CLOCK.ball.wind.toFixed(2)}s before it swings`,
+    CLOCK.ball.wind >= TELL);
+  // A hopper never BECOMES dangerous — it is dangerous continuously and
+  // identically — so what it owes is a rhythm slow enough to read rather
+  // than a warning.
+  ok(`the hopper's rhythm is readable (${CLOCK.hopper.cycle.toFixed(2)}s a cycle)`,
+    CLOCK.hopper.cycle >= 1.2);
+}
+console.log('');
 
 for (const room of ROOMS) {
   const r = check(room);
@@ -54,13 +83,76 @@ for (const room of ROOMS) {
   ok(`${room.name}: you can stand at the exit`,
     solidAt(Math.floor(c.exit.x), GROUND - 1), 'x=' + c.exit.x);
 
-  // and every obstacle is either kid-sized or has a machine that clears it
+  // and every obstacle is either kid-sized, has a ladder on its face, or has
+  // a machine that clears it
+  const ladderFor = (at, size) => c.ladders.some((l) =>
+    l.c >= at - 2 && l.c <= at + size + 1 && l.cy1 >= GROUND + size - 1);
   const orphan = c.obstacles.filter((o) => {
-    const passable = o.kind === 'step' ? o.size <= REACH.step : o.size <= REACH.gap;
+    const passable = o.kind === 'step'
+      ? (o.size <= REACH.step || ladderFor(o.at, o.size))
+      : o.size <= REACH.gap;
     return !passable && !o.clears;
   });
   ok(`${room.name}: nothing blocks the way with no answer`, orphan.length === 0,
     orphan.map((o) => `${o.kind} ${o.size} at x=${o.at}`).join(', '));
+
+  // ---- the shape of a level (DESIGN §4) ---------------------------------
+  ok(`${room.name}: is about ONE thing, and says which`, typeof c.idea === 'string' && c.idea.length > 0);
+
+  ok(`${room.name}: carries the level's ${LEVEL.bolts} bolts and ${LEVEL.golden} golden ones`,
+    c.bolts.length === LEVEL.bolts && c.golden.length === LEVEL.golden,
+    `${c.bolts.length} bolts, ${c.golden.length} golden`);
+
+  ok(`${room.name}: has a midway checkpoint`, !!c.checkpoint
+    && c.checkpoint.x > W * 0.3 && c.checkpoint.x < W * 0.7,
+    c.checkpoint ? `x=${c.checkpoint.x} (${Math.round((c.checkpoint.x / W) * 100)}%)` : 'none');
+
+  ok(`${room.name}: ends in a ${c.finish.kind} past everything in it`,
+    c.finish.x > c.checkpoint?.x && c.finish.x < W,
+    `${c.finish.kind} at x=${c.finish.x}`);
+
+  // the ride is the peak, not the way in
+  for (const o of c.obstacles.filter((q) => q.clears)) {
+    ok(`${room.name}: the ride's payoff sits in the back half (${o.kind} at x=${o.at})`,
+      o.at >= W * 0.45, `${Math.round((o.at / W) * 100)}% through the room`);
+  }
+
+  // ---- how long it takes, and how much of it is on foot ----------------
+  // DESIGN §4: "60–90 seconds first time through, ~40 once learned", and §1:
+  // the platforming "is 80% of playtime". This is the LEARNED run, so it is
+  // the floor the 60–90 sits above.
+  const e = estimate(room);
+  console.log(`       ${e.total.toFixed(0)}s learned · ${Math.round(e.onFoot * 100)}% on foot · `
+    + `ride ${e.parts.ride.toFixed(0)}s · run ${e.parts.run.toFixed(0)}s`);
+  ok(`${room.name}: is a level, not a landscape (${e.total.toFixed(0)}s learned)`,
+    e.total > 20 && e.total < 120);
+  ok(`${room.name}: the platformer is the spine (${Math.round(e.onFoot * 100)}% on foot)`,
+    e.onFoot >= 0.6);
+
+  // both ends of every ladder
+  for (const l of c.ladders) {
+    const landed = solidAt(l.c - 1, l.cy1) || solidAt(l.c + 1, l.cy1);
+    ok(`${room.name}: the ladder at x=${l.c} has a deck to step off onto`, landed,
+      `tops out at cy=${l.cy1}`);
+  }
+}
+
+// ---- the gizmo lab -------------------------------------------------------
+// NOT a level — it is the standalone reference for the kit, the way
+// toko-drop keeps enemy-lab.html — so it is held to every STRUCTURAL rule a
+// level is, and to none of the shape rules (its length is whatever proving
+// the kit takes). A gizmo that cannot be placed legally fails here, before
+// anybody spends it on level 4.
+{
+  const r = check(LAB);
+  ok('the gizmo lab is a legal room', r.ok, r.problems.join('\n         → '));
+  const c = r.compiled;
+  ok(`the lab exercises both gizmos (${c.belts.length} belts, ${c.tarps.length} tarps)`,
+    c.belts.length >= 2 && c.tarps.length >= 2);
+  ok('the lab runs a belt each way, since a belt IS its direction',
+    new Set(c.belts.map((b) => b.dir)).size === 2);
+  console.log(`       a tarp throws you ${TARP_RISE.toFixed(1)} tiles — `
+    + `about twice the jump's ${REACH.jumpUp.toFixed(2)}\n`);
 }
 
 // ---- and the check has to BITE ------------------------------------------
@@ -92,15 +184,6 @@ bites('a machine penned away from its own job by a hole', {
     pit(30, 33), bank(50, 54, 3), exitAt(90)],
 }, 'cut by a hole');
 
-bites('a ride-ending hazard parked between a machine and its job', {
-  name: 'BAD/ball-on-the-route',
-  parts: [
-    ground(), startAt(4), machine('excavator', 20, [10, 60]),
-    swingBall(34, 8),                    // dead across the run to the bank
-    bank(48, 52, 3), exitAt(56),
-  ],
-}, 'takes the ride');
-
 bites('a bank outside the machine\'s track', {
   name: 'BAD/out-of-reach',
   parts: [ground(), startAt(4), machine('excavator', 20, [10, 30]),
@@ -123,6 +206,118 @@ bites('a chasm whose machine cannot reach the lip', {
   parts: [ground(), startAt(4), machine('excavator', 12, [8, 20]),
     chasm(60, 67), exitAt(90)],
 }, 'out of the excavator\'s reach');
+
+// ---- and the same for the level SHAPE ------------------------------------
+// The rules above keep a room walkable. These keep it a LEVEL: the four
+// beats, the midway gate, the hundred bolts, the three secrets. Every one of
+// them is a rule the owner set that used to live only in a document.
+
+bites('a ladder that tops out in mid-air', {
+  name: 'BAD/ladder-top',
+  parts: [ground(), startAt(4), ladder(30, GROUND, 9), ...furniture()],
+}, 'nothing to step off onto');
+
+bites('a ladder standing on nothing', {
+  name: 'BAD/ladder-foot',
+  parts: [ground(), startAt(4), pit(28, 32), ladder(30, GROUND, 8),
+    ledge(31, 36, 8), ...furniture()],
+}, 'nothing to stand on under it');
+
+bites('a level with no checkpoint', {
+  name: 'BAD/no-checkpoint',
+  parts: [ground(), startAt(4), flagAt(90), golden(GROUND + 3, [10, 20, 30]), ...hundred],
+}, 'no checkpoint');
+
+bites('a level whose ride opens it instead of crowning it', {
+  name: 'BAD/early-ride',
+  parts: [ground(), startAt(4), machine('excavator', 8, [4, 30]),
+    bank(14, 18, 3), ...furniture()],
+}, 'a ride is beat 3–4');
+
+bites('a flag planted before the last thing in the level', {
+  name: 'BAD/early-flag',
+  parts: [ground(), startAt(4), flagAt(40), pit(60, 63), checkpoint(48),
+    golden(GROUND + 3, [10, 20, 30]), ...hundred],
+}, 'goes past everything in it');
+
+bites('ninety-nine bolts under a HUD that says a hundred', {
+  name: 'BAD/count',
+  parts: [ground(), startAt(4), checkpoint(48), flagAt(90),
+    golden(GROUND + 3, [10, 20, 30]), boltRun(GROUND + 1, 0, 49), boltRun(GROUND + 2, 0, 48)],
+}, 'and the hud says');
+
+bites('a golden bolt you would collect by walking', {
+  name: 'BAD/not-hidden',
+  parts: [ground(), startAt(4), checkpoint(48), flagAt(90),
+    golden(GROUND, [10, 20, 30]), ...hundred],
+}, 'not a secret');
+
+bites('a bolt hung where nothing can reach it', {
+  name: 'BAD/unreachable',
+  parts: [ground(), startAt(4), checkpoint(48), flagAt(90),
+    golden(GROUND + 3, [10, 20, 30]),
+    boltRun(GROUND + 1, 0, 49), boltRun(GROUND + 2, 0, 48), boltRun(H - 2, 60, 60)],
+}, 'out of reach');
+
+// The slack rule cannot fire on a room that is otherwise legal — sizes are
+// whole tiles, so the widest legal gap already leaves 0.85 and the tallest
+// legal step 0.65. Its real job is the other direction: to catch the KID
+// changing under levels that were proved against the old numbers. So that is
+// what the bite does — weakens the jump and checks the levels notice.
+{
+  const jump = REACH.jumpUp;
+  REACH.jumpUp = 2.2;
+  bites('a step the budget no longer covers, after the kid\'s jump changed', {
+    name: 'BAD/slack',
+    parts: [ground(), startAt(4), mound(40, 44, 2), ...furniture()],
+  }, 'slack');
+  REACH.jumpUp = jump;
+}
+
+// From the other design instance's playtest — somebody played it and got
+// stuck, which is the best provenance a rule can have. The ball hung across
+// the excavator's only run to the bank it was meant to dig, and a hit takes
+// the RIDE, so the ride kept ending on its way to its own job.
+// §8.0 as a rule: the lock-and-key shape — walk past the machine, hit the
+// wall, walk back, long dead drive — is refused, not remembered.
+bites('a machine parked twenty tiles behind its job', {
+  name: 'BAD/walk-back',
+  parts: [ground(), startAt(4), machine('excavator', 60, [56, 92]),
+    bank(84, 88, 3), ...furniture()],
+}, 'lock-and-key shape');
+
+bites('a machine parked past the job it clears', {
+  name: 'BAD/key-after-lock',
+  parts: [ground(), startAt(4), bank(50, 54, 3),
+    machine('excavator', 60, [46, 92]), ...furniture()],
+}, 'before the key');
+
+bites('a swinging ball parked in the machine\'s only run to its job', {
+  name: 'BAD/ride-blocked',
+  parts: [ground(), startAt(4), machine('excavator', 50, [44, 92]),
+    swingBall(70, 8), bank(84, 88, 3), ...furniture()],
+}, 'stands in the excavator\'s only run');
+
+bites('a steam vent parked in the same place', {
+  name: 'BAD/ride-vented',
+  parts: [ground(), startAt(4), machine('excavator', 50, [44, 92]),
+    hazard(70, 'steam'), bank(84, 88, 3), ...furniture()],
+}, 'stands in the excavator\'s only run');
+
+bites('a belt that walks you off an edge you did not choose', {
+  name: 'BAD/belt',
+  parts: [ground(), startAt(4), pit(41, 43), belt(36, 40, GROUND - 1, 1), ...furniture()],
+}, 'may not walk you off an edge');
+
+bites('a tarp that throws you into a ceiling', {
+  name: 'BAD/tarp',
+  parts: [ground(), startAt(4), tarp(40, 43, GROUND - 1), ledge(40, 43, GROUND + 2), ...furniture()],
+}, 'into a ceiling');
+
+bites('a robot patrolling a deck that is not there', {
+  name: 'BAD/deck-robot',
+  parts: [ground(), startAt(4), ledge(30, 34, 8), robot(30, 40, 'hopper', 9), ...furniture()],
+}, 'no deck under');
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

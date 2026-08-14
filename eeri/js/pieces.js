@@ -12,14 +12,15 @@
 // at its foot.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=3';
+import { PAL, mix } from './palette.js?v=2';
+import { craftMat, craftBox } from './craft.js?v=3';
 
 export function buildBankModel(rows = 3, width = 5) {
   const root = new THREE.Group();
   const nodes = {};
-  const M = (c) => new THREE.MeshLambertMaterial({ color: c });
+  const M = (c) => craftMat(c, 'balsa');
   const box = (parent, w, h, d, c, x, y, z) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c));
+    const m = craftBox(w, h, d, M(c));
     m.position.set(x, y, z); parent.add(m); return m;
   };
 
@@ -64,9 +65,9 @@ export function buildBankModel(rows = 3, width = 5) {
 export function buildGirderModel(len = 9.8) {
   const root = new THREE.Group();
   const nodes = {};
-  const M = (c) => new THREE.MeshLambertMaterial({ color: c });
+  const M = (c) => craftMat(c, 'balsa');
   const box = (parent, w, h, d, c, x, y, z) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c));
+    const m = craftBox(w, h, d, M(c));
     m.position.set(x, y, z); parent.add(m); return m;
   };
 
@@ -140,7 +141,7 @@ export class Girder {
     this.spray = [];
     const geo = new THREE.DodecahedronGeometry(0.14, 0);
     for (let i = 0; i < 12; i++) {
-      const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: PAL.EARTH[2] }));
+      const m = new THREE.Mesh(geo, craftMat(PAL.EARTH[2], 'card'));
       m.visible = false; m.life = 1;
       this.spray.push(m); scene.add(m);
     }
@@ -216,9 +217,9 @@ export class Girder {
 export function buildWallModel(rows = 4, width = 5) {
   const root = new THREE.Group();
   const nodes = {};
-  const M = (c) => new THREE.MeshLambertMaterial({ color: c });
+  const M = (c) => craftMat(c, 'balsa');
   const box = (parent, w, h, d, c, x, y, z) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c));
+    const m = craftBox(w, h, d, M(c));
     m.position.set(x, y, z); parent.add(m); return m;
   };
   const BRICK = mix(PAL.EARTH[1], PAL.HAZARD, 0.32);
@@ -369,7 +370,7 @@ export class Bank {
     this.spray = [];
     const geo = new THREE.DodecahedronGeometry(0.16, 0);
     for (let i = 0; i < 18; i++) {
-      const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: PAL.EARTH[2] }));
+      const m = new THREE.Mesh(geo, craftMat(PAL.EARTH[2], 'card'));
       m.visible = false; m.life = 1;
       this.spray.push(m); scene.add(m);
     }

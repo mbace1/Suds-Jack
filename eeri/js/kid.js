@@ -9,7 +9,7 @@
 // the model came from.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=3';
+import { PAL } from './palette.js?v=2';
 
 const FACE_TURN = 0.42 * Math.PI; // 3/4 view: forward ±x, tipped toward camera
 
@@ -129,24 +129,16 @@ export function buildKidModel() {
 // Two things the mixer path has to get right:
 //  - CROSSFADE, never a hard switch. The clips are separate takes and cutting
 //    between them pops; 0.15 s covers it and still feels responsive.
-//  - The rig is modelled facing +Z (Meshy's requirement) and the game's world
-//    faces +x, so the whole thing carries a −90° yaw offset that the
-//    code-built kid does not.
+//  - FACING, and the trap in it (found in a real playtest): a rotation of θ
+//    about Y sends +z to (sin θ, 0, cos θ), and FACE_TURN (0.42π ≈ 75.6°)
+//    ALREADY sends the +z-modelled Meshy rig to (0.97, 0, 0.25) —
+//    screen-right, tipped toward the camera, exactly the 3/4 view the game
+//    wants. The −90° this file used to carry was stacked on top and swung
+//    him round to face the lens; and because riding zeroes the turn, the
+//    same −90° sat him BACKWARDS in the cab. So the rig takes no extra yaw,
+//    and riding puts the +z→+x quarter turn back by hand.
 const CLIP_FOR = { idle: 'idle', run: 'run', air: 'jump', ride: 'ride', climb: 'walk' };
-
-// FACING, and the trap in it. A rotation of θ about Y sends +z to
-// (sin θ, 0, cos θ). The Meshy rig is modelled facing +Z, and the game's
-// own `FACE_TURN` is 0.42π ≈ 75.6° — which already sends +z to
-// (0.97, 0, 0.25): screen-right, tipped a little toward the camera, which
-// is exactly the 3/4 view the placeholder is posed for. So a skinned rig
-// needs NO extra yaw at rest; the −90° it used to carry was added on top
-// and swung him round to face the camera, which is what he did while
-// running. The same −90° left him backwards in the cab, because riding
-// zeroes the turn and he was then facing +z on the nose.
 const SKIN_YAW = 0;
-
-// riding, the machine owns the facing and the turn goes to zero — so a
-// +z-forward rig needs the +z→+x quarter turn put back by hand
 const SKIN_RIDE_YAW = Math.PI / 2;
 
 class ClipDriver {
@@ -293,9 +285,13 @@ const GRAV = 30, FALL_X = 1.35, JUMP_V = 12.6;
 // so no level's reach budget is quietly broken by an enemy standing there.
 const BOUNCE_V = JUMP_V * 0.8;
 const COYOTE = 0.09, BUFFER = 0.12;
-// Climbing is deliberately unhurried — it is a change of pace, not a race,
-// and a six-year-old should never fall off a ladder by overshooting.
-const CLIMB = 3.4;
+// THE CLIMB (DESIGN §2). Slower than the run, both ways, so a ladder reads
+// as a decision rather than a lift.
+const CLIMB_V = 3.6;
+// THE GIZMOS (DESIGN §2). A belt carries you while you stand on it — a drift,
+// not a change of speed, so you keep full control and only your ground
+// disagrees with you. A tarp throws you about twice as high as a jump.
+const BELT = 2.6, TARP_V = 17.5;
 
 export class Player {
   constructor(level, spawn, kid) {
@@ -310,6 +306,7 @@ export class Player {
     this.t = 0;
     this.mercyT = 0;
     this.climbing = false;
+    this.cutJump = false;
     // one-frame events for the noise to hang off
     this.justJumped = false; this.justLanded = false;
   }
@@ -319,6 +316,7 @@ export class Player {
   // a chain of small machines is a staircase.
   bounce() {
     this.vy = BOUNCE_V;
+    this.cutJump = false;             // the game gave him this one
     this.squash = 0.1;
     this.jumpBufT = 0;
     this.justStomped = true;
@@ -338,9 +336,54 @@ export class Player {
   update(dt, input) {
     this.t += dt;
     this.justJumped = false; this.justLanded = false; this.justStomped = false;
+    this.justBounced = false;
     this.mercyT = Math.max(0, this.mercyT - dt);
     const wasGrounded = this.grounded;
     const ax = input.axis();
+
+    // ---- THE CLIMB ------------------------------------------------------
+    // A ladder is a place where gravity is off and up/down is a speed. You
+    // get ON by pressing up or down while standing at one, and OFF three
+    // ways — jumping, walking off, or topping out.
+    const onRungs = this.level.climbable(this.x, this.y);
+    if (!onRungs) this.climbing = false;
+    else if (input.down.up || input.down.down) this.climbing = true;
+    if (this.climbing && this.mercyT <= 0) {
+      // a jump lets go, and it is a real jump: a ladder is never a trap
+      if (input.take('jump')) {
+        this.climbing = false;
+        this.vy = JUMP_V * 0.85;
+        this.jumpBufT = 0; this.groundedT = 0;
+        this.justJumped = true;
+        this.cutJump = true;
+      } else {
+        const up = (input.down.up ? 1 : 0) - (input.down.down ? 1 : 0);
+        // STEPPING OFF is not a special move: hold a direction with no
+        // up/down and the ladder lets go, which is what puts him on the deck
+        // he has just climbed to. Without it, the top of a ladder is a place
+        // you can only leave by jumping — a trap with rungs.
+        if (up === 0 && ax !== 0) {
+          this.climbing = false;
+        } else {
+          // drain the up EDGE while it is being held as a climb, or the
+          // stale press is read as a jump the moment he steps off the top —
+          // the same double-consume trap the mount already pays for
+          input.take('up');
+          this.vy = up * CLIMB_V;
+          this.vx = 0;
+          const mid = Math.floor(this.x) + 0.5;   // climb straight
+          this.x += (mid - this.x) * Math.min(1, 12 * dt);
+          const top = this.level.climbTop(this.x, this.y);
+          this.y = this.level.moveY(this.box(), this.vy * dt).y;
+          // top out with the feet ON the deck, never a rung above it
+          if (top !== null && this.y > top) { this.y = top; this.vy = 0; }
+          this.grounded = this.level.grounded(this.box());
+          this.groundedT = this.grounded ? COYOTE : 0;
+          this.updateVisual();
+          return;
+        }
+      }
+    }
 
     // horizontal: accelerate hard, stop hard — tap = a step, hold = a run
     const acc = this.grounded ? ACC : ACC_AIR;
@@ -354,42 +397,15 @@ export class Player {
       if (Math.sign(this.vx) !== s) this.vx = 0;
     }
 
-    // ---- THE LADDER (DESIGN.md §2) --------------------------------------
-    // The one tile you stand IN. Gravity is off while you are on it, up and
-    // down climb, left and right still slide you along, and jump lets go —
-    // which is how you get off without hunting for the exact top rung.
-    const onLadder = this.level.onLadder(this.box());
-    if (onLadder && (input.down.up || input.down.down)) this.climbing = true;
-    if (!onLadder || this.grounded && input.down.down) this.climbing = false;
-    if (this.climbing) {
-      if (input.take('jump')) {          // let go and jump clear
-        this.climbing = false;
-        this.vy = JUMP_V * 0.8;
-        this.justJumped = true;
-      } else {
-        this.vy = (input.down.up ? CLIMB : 0) - (input.down.down ? CLIMB : 0);
-        const my = this.level.moveY(this.box(), this.vy * dt);
-        this.y = my.y; if (my.hit) this.vy = 0;
-        const mx = this.level.moveX(this.box(), this.vx * dt);
-        this.x = mx.x; if (mx.hit) this.vx = 0;
-        this.grounded = this.level.grounded(this.box());
-        if (this.y < 0.9) {
-          const r = this.level.fallRespawn(this.x);
-          this.x = r.x; this.y = r.y; this.vx = 0; this.vy = 0; this.climbing = false;
-        }
-        this.updateVisual();
-        return;
-      }
-    }
-
     // jump: buffered + coyote, variable height on release
     if (input.take('jump') || input.take('up')) this.jumpBufT = BUFFER;
     else this.jumpBufT -= dt;
     if (this.jumpBufT > 0 && this.groundedT > 0) {
       this.vy = JUMP_V; this.jumpBufT = 0; this.groundedT = 0;
       this.justJumped = true;
+      this.cutJump = true;            // his jump, so his to cut short
     }
-    if (!input.down.jump && !input.down.up && this.vy > 4) this.vy = 4;
+    if (this.cutJump && !input.down.jump && !input.down.up && this.vy > 4) this.vy = 4;
 
     this.vy -= GRAV * (this.vy < 0 ? FALL_X : 1) * dt;
     this.vy = Math.max(this.vy, -22);
@@ -399,21 +415,32 @@ export class Player {
     const my = this.level.moveY(this.box(), this.vy * dt);
     this.y = my.y;
     if (my.hit) {
-      if (my.grounded && this.vy < -9) this.squash = 0.12; // hard landing
-      this.vy = 0;
+      // a tarp answers a landing with a bigger one, and it is checked BEFORE
+      // the landing is zeroed, because the bounce IS the landing
+      if (my.grounded && this.level.tarpAt(this.x, my.y) && this.vy < -1) {
+        this.vy = TARP_V;
+        this.cutJump = false;         // …and this one
+        this.squash = 0.14;
+        this.justBounced = true;
+      } else {
+        if (my.grounded && this.vy < -9) this.squash = 0.12; // hard landing
+        this.vy = 0;
+      }
     }
     this.grounded = my.grounded || this.level.grounded(this.box());
+
+    // the belt: it moves the FLOOR, so it is applied after the move and does
+    // not touch vx — you still run at your own speed, on ground that
+    // disagrees with you
+    if (this.grounded) {
+      const belt = this.level.beltAt(this.x, this.y);
+      if (belt) this.x = this.level.moveX(this.box(), belt * BELT * dt).x;
+    }
     this.groundedT = this.grounded ? COYOTE : this.groundedT - dt;
     if (this.grounded && !wasGrounded) this.justLanded = true;
 
     // fell in the pit (its floor is dressing, not ground): back to the near side
-    // fell in a pit (its floor is dressing, not ground): the level knows
-    // which hole took him and hands back the near side of it. Kept from the
-    // gameplay lineage — the character lineage still had the hardcoded x=43.
-    if (this.y < 0.9) {
-      const r = this.level.fallRespawn(this.x);
-      this.x = r.x; this.y = r.y; this.vx = 0; this.vy = 0;
-    }
+    if (this.y < 0.9) { this.x = 43; this.y = 5; this.vx = 0; this.vy = 0; }
 
     this.updateVisual();
   }

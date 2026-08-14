@@ -73,6 +73,7 @@ const BOT = `async (budgetMs) => {
     if (mode === 'riding') {
       const job = need();
       const m = E.debug.excPos();
+      if (!m) continue;
       // job done — GET OUT. The flag only finishes on foot, and a bot that
       // stays in the cab drives happily past the end of the level forever.
       if (!job) {
@@ -99,6 +100,19 @@ const BOT = `async (budgetMs) => {
     E.debug.press('right');
     if (q.x > best + 0.01) { best = q.x; stuck = 0; } else stuck++;
 
+    // THE CLIMB ASSIST. This tree's levels carry ladders, and the bot's
+    // whole vocabulary was right/left/jump/down/action — it never pressed
+    // 'up', so anything gated behind a ladder would stall it for the full
+    // budget. Still deliberately dumb, no waypoints: rungs where you stand
+    // and no progress means climb. The ladder tops out on its deck and a
+    // held direction steps him off, so the 'right' the bot already holds
+    // walks it off the top on its own.
+    if (stuck > 30 && E.level.climbable && E.level.climbable(q.x, q.y)) {
+      E.debug.press('up');
+    } else {
+      E.debug.release('up');
+    }
+
     // jump when the run is blocked, or a hole is coming
     const ahead = E.level.groundTop(q.x + 1.0, q.y + 0.1);
     if (q.grounded && (Math.abs(q.vx) < 1.0 || ahead < q.y - 0.5) && !jumping) {
@@ -110,7 +124,7 @@ const BOT = `async (budgetMs) => {
     if (stuck > 90) {
       const job = need();
       const m = E.debug.excPos();
-      if (job) {
+      if (job && m) {
         const dx = m.x - q.x;
         if (Math.abs(dx) > 1.6) {
           E.debug.press(dx > 0 ? 'right' : 'left');
@@ -122,7 +136,7 @@ const BOT = `async (budgetMs) => {
       if (stuck > 90 && stuck % 40 === 0) log.push(Math.round(q.x));
     }
   }
-  for (const k of ['right', 'left', 'jump', 'down', 'action']) E.debug.release(k);
+  for (const k of ['right', 'left', 'jump', 'down', 'action', 'up']) E.debug.release(k);
   return {
     finished: E.site() !== startSite || E.debug.cleared(),
     x: +E.player.x.toFixed(1), best: +best.toFixed(1),

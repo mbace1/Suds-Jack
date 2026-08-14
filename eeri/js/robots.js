@@ -11,48 +11,98 @@
 // and the danger read off the same number and cannot disagree.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=3';
+import { PAL, mix } from './palette.js?v=2';
+import { craftMat, craftBox } from './craft.js?v=3';
+import { CLOCK } from './parts.js?v=4';
 
-const NOTICE = 0.35, WIND = 0.45, LUNGE = 0.5, RECOVER = 0.7;
+// The telegraph clock is DESIGN §4.1's, and it lives in parts.js so the room
+// prover can hold it to the 1.0s floor — these three were all under it.
+const { notice: NOTICE, wind: WIND, lunge: LUNGE, recover: RECOVER } = CLOCK.skitter;
 const SEE = 5.2, WALK = 1.5, LUNGE_SPEED = 6.4;
 
-function buildRobot() {
+// THREE KINDS (DESIGN §3), and the split is the point of having more than
+// one — each asks the player to read a different thing:
+//
+//   hopper   a TIMING test — a fixed 1.35 s rhythm, and the crouch is the tell
+//   roller   a SPACING test — it trundles its span and never reacts. Too flat
+//            to stomp: landing on one bounces you off without killing it,
+//            which is the game saying "this one you jump"
+//   skitter  a PROVOCATION test — the original: patrol, notice, wind, lunge
+const HOP_CYCLE = CLOCK.hopper.cycle, HOP_RISE = CLOCK.hopper.rise, HOP_CROUCH = CLOCK.hopper.crouch;
+const ROLL_SPEED = CLOCK.roller.speed;
+
+// Every surface here goes through craftMat + craftBox — painted balsa, the
+// same material the machines wear (§3.3, ART_TARGET §0.05). A prop built
+// with a bare material is flat paint in a crafted world, and that is the
+// exact failure craft.js exists to make impossible.
+function buildRobot(kind) {
   const g = new THREE.Group();
-  const M = (c) => new THREE.MeshLambertMaterial({ color: c });
+  const M = (c) => craftMat(c, 'balsa');
   const box = (w, h, d, c, x, y, z) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c));
+    const m = craftBox(w, h, d, M(c));
     m.position.set(x, y, z); g.add(m); return m;
   };
-  // squat, wide, one exaggerated feature: the eye. Machine yellow says it
-  // belongs to the worksite; hazard red says this one is not yours.
-  box(0.62, 0.42, 0.5, PAL.MACHINE_DK, 0, 0.34, 0);          // body
-  box(0.66, 0.1, 0.54, PAL.DARK, 0, 0.12, 0);                // skirt
-  const eye = box(0.16, 0.16, 0.1, PAL.HAZARD, 0.26, 0.4, 0); // the eye
-  box(0.5, 0.12, 0.42, mix(PAL.MACHINE, PAL.INK, 0.2), 0, 0.6, 0);
   const legs = [];
-  for (const dx of [-0.2, 0.2]) {
-    for (const dz of [0.18, -0.18]) {
-      legs.push(box(0.1, 0.24, 0.1, PAL.DARK, dx, 0.12, dz));
+  let eye;
+
+  if (kind === 'roller') {
+    // a mini road roller: WIDE and LOW, and the silhouette is the drum. It
+    // has to read as "you cannot land on this" from across the screen.
+    box(0.9, 0.26, 0.56, PAL.MACHINE_DK, 0, 0.4, 0);                // deck
+    const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.62, 12), M(PAL.STEEL[2]));
+    drum.rotation.x = Math.PI / 2; drum.position.set(0, 0.28, 0);
+    g.add(drum); legs.push(drum);
+    box(0.24, 0.2, 0.4, PAL.DARK, -0.34, 0.5, 0);                   // the cab
+    eye = box(0.14, 0.12, 0.1, PAL.HAZARD, 0.4, 0.44, 0);
+  } else if (kind === 'hopper') {
+    // a jackhammer on legs: TALL and narrow, the mass up top, so the crouch
+    // before a hop is legible at any size
+    box(0.34, 0.5, 0.34, PAL.MACHINE_DK, 0, 0.62, 0);               // body
+    box(0.44, 0.12, 0.44, mix(PAL.MACHINE, PAL.INK, 0.2), 0, 0.92, 0);  // collar
+    box(0.16, 0.42, 0.16, PAL.STEEL[2], 0, 0.2, 0);                 // the pick
+    eye = box(0.13, 0.13, 0.1, PAL.HAZARD, 0.19, 0.74, 0);
+    for (const dz of [0.16, -0.16]) legs.push(box(0.09, 0.3, 0.09, PAL.DARK, 0, 0.2, dz));
+  } else {
+    // squat, wide, one exaggerated feature: the eye. Machine yellow says it
+    // belongs to the worksite; hazard red says this one is not yours.
+    box(0.62, 0.42, 0.5, PAL.MACHINE_DK, 0, 0.34, 0);          // body
+    box(0.66, 0.1, 0.54, PAL.DARK, 0, 0.12, 0);                // skirt
+    eye = box(0.16, 0.16, 0.1, PAL.HAZARD, 0.26, 0.4, 0);      // the eye
+    box(0.5, 0.12, 0.42, mix(PAL.MACHINE, PAL.INK, 0.2), 0, 0.6, 0);
+    for (const dx of [-0.2, 0.2]) {
+      for (const dz of [0.18, -0.18]) {
+        legs.push(box(0.1, 0.24, 0.1, PAL.DARK, dx, 0.12, dz));
+      }
     }
   }
   return { group: g, eye, legs };
 }
 
 export class Robot {
-  // span = { c0, c1 } in cells; it never leaves it
+  // span = { c0, c1, kind, cy } in cells; it never leaves it, and `cy` puts
+  // it on a DECK rather than on the ground
   constructor(scene, level, span) {
     this.level = level;
     this.c0 = span.c0; this.c1 = span.c1;
+    this.kind = span.kind || 'skitter';
     this.x = (span.c0 + span.c1) / 2;
-    this.y = level.groundTop(this.x, 8);
+    // the deck it was DECLARED on, not "whatever is under it right now" —
+    // groundTop from a fixed height puts every deck robot back on the floor
+    this.deck = span.cy ?? null;
+    this.y = level.groundTop(this.x, this.deck ?? 8);
+    this.baseY = this.y;
     this.face = 1;
     this.state = 'patrol'; this.t = 0;
     this.dead = false;
-    const built = buildRobot();
+    this.hop = 0; this.shrugT = 0;
+    const built = buildRobot(this.kind);
     this.group = built.group;
     this.eye = built.eye;
     this.legs = built.legs;
-    this.hw = 0.34; this.h = 0.7;
+    this.hw = this.kind === 'roller' ? 0.46 : this.kind === 'hopper' ? 0.24 : 0.34;
+    this.h = this.kind === 'roller' ? 0.5 : this.kind === 'hopper' ? 1.0 : 0.7;
+    // the roller is the one you jump rather than land on
+    this.stompable = this.kind !== 'roller';
     this.group.position.set(this.x, this.y, 0);
     scene.add(this.group);
 
@@ -66,11 +116,51 @@ export class Robot {
 
   go(s) { this.state = s; this.t = 0; }
 
+  // landed on and NOT stompable: it shoves you off, and for a moment it
+  // cannot also hit you for it. Without this beat, bouncing off a roller
+  // reads as bouncing off a roller AND walking into one, in the same frame.
+  shrug() { this.shrugT = 0.4; }
+
   update(dt, target, reduced) {
     if (this.dead) { this.fade(dt); return; }
     this.t += dt;
+    this.shrugT = Math.max(0, this.shrugT - dt);
     const dx = target.x - this.x;
     const near = Math.abs(dx) < SEE && Math.abs(target.y - this.y) < 2.2;
+
+    // ---- the two kinds that never react ---------------------------------
+    // Neither one hunts. A hopper is a metronome and a roller is a moving
+    // wall; both are read from across the screen and neither can surprise
+    // you, which is what makes them fair for a six-year-old.
+    if (this.kind === 'hopper' || this.kind === 'roller') {
+      if (this.kind === 'roller') {
+        this.x += this.face * ROLL_SPEED * dt;
+        if (this.x < this.c0) { this.x = this.c0; this.face = 1; }
+        if (this.x > this.c1 + 1) { this.x = this.c1 + 1; this.face = -1; }
+        this.state = 'roll';
+      } else {
+        // a fixed rhythm, and the CROUCH is the tell: it gathers visibly on
+        // the ground for a third of a second before it leaves
+        const k = this.t % HOP_CYCLE;
+        const p = k < HOP_CROUCH ? 0 : (k - HOP_CROUCH) / Math.max(0.001, HOP_CYCLE - HOP_CROUCH);
+        this.hop = Math.sin(p * Math.PI) * HOP_RISE;
+        this.state = k < HOP_CROUCH ? 'crouch' : 'hop';
+        this.face = Math.sign(dx) || this.face;
+      }
+      const floor = this.deck !== null ? this.deck : this.level.groundTop(this.x, this.baseY + 1.2);
+      this.y = floor + this.hop;
+      this.group.position.set(this.x, this.y, 0);
+      this.group.rotation.y = this.face > 0 ? 0 : Math.PI;
+      this.group.scale.y = this.state === 'crouch' ? 0.78 : 1;
+      if (this.kind === 'roller' && !reduced) {
+        for (const l of this.legs) l.rotation.y += this.face * dt * 6;
+      }
+      this.eye.material.color.set(this.state === 'crouch'
+        ? mix(PAL.HAZARD, '#ffffff', reduced ? 0.7 : (Math.sin(this.t * 26) * 0.5 + 0.5))
+        : PAL.HAZARD);
+      this.shadow.position.set(this.x, floor + 0.02, 0);
+      return;
+    }
 
     if (this.state === 'patrol') {
       this.x += this.face * WALK * dt;
@@ -91,7 +181,7 @@ export class Robot {
       if (this.t >= RECOVER) this.go(near ? 'wind' : 'patrol');
     }
 
-    this.y = this.level.groundTop(this.x, this.y + 1.2);
+    this.y = this.deck !== null ? this.deck : this.level.groundTop(this.x, this.y + 1.2);
     this.group.position.set(this.x, this.y, 0);
     this.group.rotation.y = this.face > 0 ? 0 : Math.PI;
 
@@ -111,8 +201,20 @@ export class Robot {
     this.shadow.position.set(this.x, this.y + 0.02, 0);
   }
 
-  // only the lunge hurts — a robot walking about is scenery you step over
+  // For the skitter only the LUNGE hurts — one patrolling about is scenery
+  // you step over, and that is what makes it a provocation test. A hopper or
+  // a roller has no lunge, so touching one is the cost: they are read by
+  // timing and spacing instead, and the way past both is over the top.
   hits(x, y, hw, h) {
+    if (this.shrugT > 0) return false;
+    if (this.kind === 'hopper' || this.kind === 'roller') {
+      return !this.dead && Math.abs(x - this.x) < hw + this.hw
+        && y < this.y + this.h && y + h > this.y;
+    }
+    return this.hitsLunging(x, y, hw, h);
+  }
+
+  hitsLunging(x, y, hw, h) {
     if (this.dead || this.state !== 'lunge') return false;
     return Math.abs(x - this.x) < hw + this.hw
       && y < this.y + this.h && y + h > this.y;
@@ -131,11 +233,17 @@ export class Robot {
   // Generous on purpose (age six): the test is only that he is FALLING and
   // roughly over it, never a precise hitbox.
   stompedBy(x, y, hw, vy) {
-    if (this.dead || vy >= 0) return false;
-    if (Math.abs(x - this.x) > hw + this.hw + 0.18) return false;
-    if (y < this.y + this.h * 0.35 || y > this.y + this.h + 0.85) return false;
+    if (!this.stompable || !this.landedOn(x, y, hw, vy)) return false;
     this.kill(true);
     return true;
+  }
+
+  // the same geometry WITHOUT the kill: a roller is landed on, not stomped,
+  // and the game still owes you the bounce for having read it right
+  landedOn(x, y, hw, vy) {
+    if (this.dead || vy >= 0) return false;
+    if (Math.abs(x - this.x) > hw + this.hw + 0.18) return false;
+    return y >= this.y + this.h * 0.35 && y <= this.y + this.h + 0.85;
   }
 
   // squashed things do not vanish — they flatten, then go. A kill you do
@@ -161,7 +269,7 @@ export class Robot {
 // It breathes on a fixed clock with a visible tell before it blows, so it is
 // a rhythm to walk through rather than a surprise.
 
-const VENT_CYCLE = 2.6, VENT_WARN = 0.55, VENT_BLOW = 0.6;
+const VENT_CYCLE = CLOCK.vent.cycle, VENT_WARN = CLOCK.vent.warn, VENT_BLOW = CLOCK.vent.blow;
 
 export class SteamVent {
   constructor(scene, level, x) {
@@ -171,7 +279,7 @@ export class SteamVent {
 
     this.group = new THREE.Group();
     this.group.position.set(x, this.y, 0);
-    const M = (c) => new THREE.MeshLambertMaterial({ color: c });
+    const M = (c) => craftMat(c, 'balsa');
     const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 0.16, 10), M(PAL.STEEL[1]));
     cap.position.y = 0.08; this.group.add(cap);
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.05, 6, 14), M(PAL.MACHINE));

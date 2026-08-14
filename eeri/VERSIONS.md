@@ -1,5 +1,391 @@
 # EERI — versions
 
+## v15 — 2026-08-14 — one tree: the three lineages assembled
+
+**Three lineages had independently reached v11** — design on `main`
+("ladders"), art on `gh-pages` ("painted wood"), and the levels branch
+("three rooms become three levels") — which is exactly the collision
+CLAUDE.md now warns about: version numbers do not detect a fork. This entry
+is the assembly of all three onto `main`'s history, per canon: **`main` is
+the only place to author; `gh-pages` is a deploy target.**
+`git merge-base origin/main HEAD` returns a commit again.
+
+**What came from where.** The art lineage carried whole, as shipped
+(`craft.js`, the four detail maps, the v2 layers and paper sky, the
+UV-atlas fix in `assets.js`, the craftBox machines). Design `main`'s v7–v11
+already in the base, plus its two fixes the levels branch lacked: the
+**facing fix** (`SKIN_YAW` 0 + `SKIN_RIDE_YAW` — he ran toward the camera
+and sat backwards in the cab) and the **fetch prompts**
+(`◀ TOO HIGH TO JUMP — GO BACK FOR THE MACHINE`, with `machineJob()`
+pointing at the answer). The levels branch's three entries are carried
+below, renumbered v12–v14.
+
+**Five duplicates existed and were resolved once each:**
+
+- **the levels** — the four-beat set (100 bolts, 3 golden, checkpoint,
+  flag) survives, with design `main`'s §8.0 re-lay applied to it: the
+  excavator moved 63 → 80 (lead 4) and the crane 66 → 77 (lead 3), and the
+  **walk-back is now a rule** — `check()` refuses a machine parked more
+  than a short drive behind its job, or past it, with two bites.
+- **climb** — the levels branch's wholesale (`H` rungs, tops out on the
+  deck, a held direction steps off); design `main`'s `L`-tile version
+  yields. The playthrough bot learned to press `up`, which its five-input
+  vocabulary never included.
+- **the flag** — the levels branch's, **on canon grounds**: DESIGN §6.3
+  specifies sibling phase nodes *plus* `pole`, which is what it implements;
+  the other implementation nested `pole` inside `phase1`, contradicting the
+  design's own contract. Its checkpoint class comes with it. The seam
+  contract is now written out in `assets/README.md`.
+- **the ride-ender rule** — the union: design `main`'s swept-arc ball test
+  (`len × 0.95 + 0.6` — the danger is the arc, not the pivot) plus the
+  levels branch's steam-vent coverage.
+- **`buildRobot` through `craftBox`** and the ball moved off the machine's
+  run — identical fixes made independently, taken once.
+
+Also taken from design `main`: `REACH.gap` **4 → 3** (its bot stalled all
+afternoon on a 4-wide pit at the very edge of the run; §4.1 wanted a full
+tile of slack all along) and `pad: 'native'` in the catalogue — the levels
+branch's entry still carried a `keys` map, so a real pad drove the game
+twice, once natively and once through the hub's key bridge.
+
+The token sweep found `craft.js` and `assets.js` each imported under two
+`?v=` tokens across the joined lineages — the exact class of bug this
+project has now hit four times — unified before anything else.
+
+DESIGN.md carries the assembled truth: §0.2 (what is built, corrected — the
+stomp is 0.8 × jump, not the discarded 3.75-tile bounce; the enemy roster
+is two of §3's three, with `bucket` open and `skitter` an extra), §6.0 (the
+open drop points), §8.1 statuses.
+
+## carried from the levels branch (its v11–v13, renumbered)
+
+These three shipped on a branch based on gh-pages v10. Real work,
+wrong base — carried across whole.
+
+### v14 — 2026-08-14 — the gizmo kit starts, and it stops at the tile line
+
+**"Gizmos are the third source of variety and cost the least" (DESIGN §2) —
+and they are also what makes twelve levels possible, because one idea per
+level means the kit IS the level count.** Two of them, and both are
+TILE-NATIVE, which is why they cost almost nothing: a **belt** is a floor
+that moves you (2.6 tiles/s, and it moves the FLOOR — your own speed is
+untouched, so you keep full control on ground that disagrees with you), and a
+**tarp** is a floor that throws you (5.1 tiles, about twice the 2.65 a jump
+reaches). Each stamps like any other part and the whole behaviour is one hook
+in the player's step. A belt carries its direction in its own character —
+`C` runs right, `c` runs left — so a belt cannot disagree with itself, and
+the chevrons on top say which way while it is standing still.
+
+**Where the kit stops, and why it is a line rather than a pause.** The
+gizmos that must MOVE — a hoist platform, a tipping plank, a swinging hook —
+are a much larger job, because every solid in this game is a TILE and a
+moving platform cannot be one. That wants an entity with its own collision
+pass and carry logic. It is named here so the next session knows the kit
+stopped deliberately rather than ran out of steam.
+
+**The lab, and why it is not a level.** One idea per level means a new gizmo
+cannot be dropped into levels 1–3 without making each of them two levels — so
+the kit is proved in `LAB` (`js/rooms.js`), the standalone reference the way
+toko-drop keeps `enemy-lab.html`, and spent on levels 4–6, which are due a
+world-2 backdrop anyway. It is buildable but **never in the sequence**:
+`SITES` is what a room index means, `ROOMS` is what the game runs through,
+and one derived constant separates them rather than two lists that can
+disagree. `__eeri.debug.goLab()` opens it. It is held to every structural
+rule a level is — a hundred bolts, three golden, a checkpoint, a flag — and
+to none of the shape rules, because its length is whatever proving the kit
+takes.
+
+**Found immediately, and it is the general lesson:** the lab reported its own
+bolts unreachable. The reach model was written when a jump was the only way
+to gain height, so a trail four tiles above a tarp — which throws you five —
+read as hung in the sky. **Anything a gizmo adds to the player's reach has to
+be added to the model too, or the check starts refusing correct rooms, which
+is worse than not checking at all.** The tarp is in the model now; the next
+gizmo that moves the player will have to be.
+
+Both gizmos are held to the one way each goes wrong: a belt may not **hand
+you to a cell with no floor** — a jump you got wrong is yours, a belt you
+were standing on is not — and a tarp must have the **headroom** to throw you
+into, because a bounce into a ceiling reads as the game taking the move back.
+Both rules bite in `test/rooms.mjs`.
+
+**Three bugs the lab found in code that was already shipping**, which is what
+a lab is for:
+
+- **A room with no machine crashed the game.** Levels 1–3 each park one, so
+  `exc` was read unguarded all through the foot branch; the lab is a
+  platforming room with nothing to ride, and it threw on its first frame.
+  A crash inside `setAnimationLoop` is total and silent — every later frame
+  throws, the game freezes, and the screen says nothing.
+- **Variable jump height was cutting rises the player never asked for.**
+  Releasing jump clamps the climb at 4, and that clamp ran on *every* upward
+  velocity: a tarp's 17.5 and a stomp's 10.08 were both cut on the next frame
+  unless a button they have nothing to do with happened to be held. The tarp
+  measured **2.47 tiles instead of 5.1**, and the stomp's bounce silently
+  depended on the jump button. A rise the player did not ask for is not
+  theirs to cut, so the clamp now applies to jumps only.
+- **The gate positioned the kid before a room change had settled.** `site()`
+  flips as soon as the index is assigned, while `goSite()` still has to put
+  him on the new spawn — so a `setPos` fired the instant it flipped was
+  overwritten a frame later, and the mount failed with the machine standing
+  right beside him. `debug.transitioning()` is exposed and every room wait
+  settles on it.
+
+Measured in the lab afterwards: the belt carries 1.1 tiles a second of
+standing still with `vx` untouched, and the tarp lifts **4.8 tiles** against
+the 5.1 the model predicts — the difference is frame discretisation, and the
+model keeps the honest number rather than the flattering one.
+
+Gate: 75 checks in the room prover, and the browser gate proves both gizmos
+by standing still on them — anything that happens is the gizmo's doing.
+
+### v13 — 2026-08-14 — the generosity rules become numbers
+
+**Three telegraphs were under the floor the design sets, and nothing could
+see it.** DESIGN §4.1 is explicit and it is about a six-year-old — *telegraph
+≥ 1.0 s before anything can touch you* — while the skitter warned for
+**0.80 s** (notice 0.35 + wind 0.45), the steam vent for **0.55 s** and the
+wrecking ball for **0.85 s**. The rule lived in a document and the numbers
+lived in three different modules, which is the whole reason it drifted.
+
+So the clocks moved into `parts.js`, beside the reach budget, and `robots.js`
+and `hazards.js` import them rather than keeping their own: skitter
+0.45 + 0.62 = **1.07 s**, vent **1.05 s**, ball **1.05 s**. The room prover
+holds all three to the floor. **A hopper is exempt and the reason is stated
+rather than assumed**: the floor is about things that BECOME dangerous, and a
+hopper is dangerous continuously and identically from the moment you see it —
+a metronome, never a surprise — so what it owes is a rhythm slow enough to
+read (≥ 1.2 s a cycle), which is checked instead.
+
+**How long a level takes is now a number.** `estimate()` walks a room and
+prices it: the run at the kid's own speed, a beat per obstacle, a beat per
+small machine, every ladder at climbing speed, and **the ride from the job it
+actually does** — mount, drive to the work at that machine's own top speed,
+the work itself, dismount. The prover prints it per level and refuses a room
+that is not a level at all.
+
+Two things fell out of it that are the owner's to settle, and neither is a
+bug:
+
+- **The rides are 5.5–10.8 s. DESIGN §1 says thirty to forty.** What is built
+  is *board, do a job, hop off*; what the design describes is *ride a short
+  authored stretch that no amount of jumping could cross*. The estimate
+  originally carried a flat 30 s for a ride, which hid this completely — the
+  number is measured from the parts now, and the parts disagree with the
+  brief.
+- **A learned run is ~32 s against the "~40 once learned" target.** On the
+  same model the first time through lands inside 60–90, so this is the levels
+  being slightly thin rather than wrong.
+
+The **on-foot share** is checked because §1 makes it a claim: *"that is 80% of
+playtime and it has to be good on its own."* The three levels run 71% / 82% /
+68% — level 3 being the most ride-heavy, which is right for the big one — and
+a room that falls under 60% now fails.
+
+**And the slack rule, which cannot fire on a legal room.** §4.1 asks for a
+full tile of slack on every jump; the budget's own ceilings give 0.65 on a
+2-tile step and 0.85 on a 4-tile gap, so the ceiling *cannot* meet the rule
+and only what a level actually uses can be checked. Sizes are whole tiles, so
+every legal room already passes — which makes the rule's real job the other
+direction: catching the KID changing under levels proved against the old
+numbers. The bite does exactly that, weakening the jump and checking the
+levels notice.
+
+Gate: 70 checks in `test/rooms.mjs` (up from 59), the browser gate unchanged
+in count.
+
+### v12 — 2026-08-13 — three rooms become three LEVELS
+
+**Built on the deployed head, not on a fork of it.** Two reconciliations had
+already been paid for, and both had the same cause: `main` and `gh-pages`
+have **unrelated histories** (Pages is an orphan branch), so a lineage that
+starts from an old copy of the tree cannot be merged back, only re-typed.
+This version starts from `gh-pages` — the art lineage through v10, crafted
+materials and all — and brings the design lineage's controls commit forward
+onto it, rather than the other way round. Where the two numbered the same
+module differently, **this tree's numbering wins**: a token carried over from
+the other lineage names a file that never existed here.
+
+**Every new surface goes through `craft.js`** (ART_TARGET §0.05). The props
+this version adds — the flag, the checkpoint, two new kinds of small machine,
+the rungs of every ladder — are painted balsa like the rest of the site's
+timber, with one exception that is deliberate: **the flag's cloth is FELT**,
+because that is what a flag is made of in this kit. The lamps and the smoke
+puffs stay bare, which is the case `craft.js` names. A prop built with a bare
+`new MeshLambertMaterial` is flat paint standing in a crafted world, and that
+is the failure v10 spent a whole pass undoing.
+
+**THE CLIMB** (`parts.js`, `level.js`, `kid.js`). A rung is **not solid** in
+any direction — you walk through it, fall through it, and only the verb holds
+you on it; a solid ladder is a wall with a picture of a ladder on it. Two
+things it would have got wrong and now cannot: the climb **tops out with his
+feet on the deck** rather than one rung above it in the air, and **holding a
+direction steps him off**, because without that the top of a ladder is a
+place you can only leave by jumping — a trap with rungs. A jump lets go and
+is a real jump. The up EDGE is drained while it is held as a climb, or the
+stale press is read as a jump the moment he steps off — the same
+double-consume trap the mount already pays for.
+
+**Two more kinds of small machine** (`robots.js`), and the split is the point
+of having more than one: a **hopper** is a timing test on a fixed 1.35 s
+rhythm with a crouch as the tell, a **roller** is a spacing test that is too
+flat to stand on — landing on one bounces you off *without* killing it, which
+is the game saying *this one you jump* — and the original **skitter** is the
+provocation test. A roller that shoved you off used to hit you for it in the
+same frame; it now shrugs for 0.4 s. Any of them can stand on a **deck**
+rather than the ground, declared rather than sampled, because `groundTop`
+from a fixed height puts every deck robot back on the floor.
+
+**The furniture that makes a room a level** (`flag.js`). A **checkpoint**
+that lights by being passed and buys the middle of the level back — there are
+no lives, so time is the only thing it can cost. A **flag** that builds
+itself in **three phases** on the approach, a puff of smoke each, and
+**activates by being run past**: no button, no stopping, because a
+six-year-old at a sprint should not have to stop and press something to
+finish a level. Level 3 of a world flies the **big** one, and the **gate is
+the WORLD's curtain** — it is built only where a room declares one.
+
+**The levels themselves.** Three rooms authored to the four-beat Nintendo
+shape, one idea each, marked in the source because the marks are the only
+thing that stops beat 2 quietly becoming another beat 1: **1 — the stomp**,
+**2 — the climb**, **3 — both, and the crane**. A hundred bolts a level and
+three hidden golden ones, the count being the level's completion figure, so
+it starts again with the level rather than running on across the job.
+
+**And §4 stopped being a document.** `check()` now refuses: a ladder with no
+landing or no foot · a level with no midway checkpoint · a **ride whose
+payoff sits in the first 45% of the room** (a ride is beat 3–4, not the way
+in) · a flag planted before the last obstacle · 99 bolts under a HUD that
+says 100 · not exactly three golden bolts · a golden bolt sitting where you
+would collect it by walking · a bolt hung where no jump or ladder reaches it
+· a robot patrolling a deck that is not there. Reachability is judged against
+the map **after** the room's rides have done their work — the bank dug, the
+span seated — or every bolt a ride opens up reads as unreachable. Nine new
+rooms broken on purpose prove each rule bites.
+
+Found by the levels themselves: a steam vent sat at x=56 in level 2, which is
+**inside the girder's seating window** — the one place the ride asks you to
+stop was a place that threw you out of the cab. And a hopper parked on the
+machine's own staging ground meant the one place you have to stand still to
+board was a place something was hitting you. Both are the same lesson: a
+hazard placed by feel lands on the beat that needs stillness.
+
+Found in the gate: it sampled the wrecking ball's state **once** after
+walking away from it, and the ride test ends inside the ball's six-tile wake
+radius — so it was asserting `rest` on a hazard mid-swing. It waits for the
+state now, and the telegraph is proved as an ORDER (wind before swing)
+recorded off a frame loop, because a poll on a machine rendering at a handful
+of frames a second can miss a phase entirely and say nothing about whether
+the game warned you.
+
+Gate: 113 checks, plus 59 in `test/rooms.mjs` (42 over the real levels, 17
+proving the prover bites).
+
+## the art lineage (shipped on gh-pages under its own numbering)
+
+### art v11 — 2026-08-13 — the machines are painted wood, and the map tool is fixed
+
+**The excavator was still smooth plastic in a crafted world**, and chasing it
+found two independent causes plus a bug in the tool that makes every map.
+
+1. **An imported GLB carries its own UV atlas.** `craftBox`'s world-space UV
+   trick is only available to geometry we build, so on a live model a
+   repeating map stretched ONE copy of the brushwork across the whole
+   machine. The paint path now tiles across the atlas explicitly (repeat 9),
+   on a cloned texture — repeat lives on the Texture, and the cached one is
+   shared with every other surface asking for balsa.
+2. **The placeholder machines built boxes directly.** `excavator.js`,
+   `crane.js`, `pieces.js` and `robots.js` each had a local
+   `new THREE.Mesh(new THREE.BoxGeometry(...), M(c))`, which gets the shared
+   material but none of the UV density. All four route through `craftBox`
+   now.
+3. **`detailmap.mjs` scaled contrast about the MEAN**, which preserves the
+   source photo's own contrast. That is fine for corrugated card (luminance
+   40…230) and useless for a white-painted board (230…250): the balsa map
+   came out ±4% however high the strength went. It does a **histogram
+   stretch** now — 5th to 95th percentile onto a fixed band — so a map's
+   contrast is a property of the REQUEST, not of how well lit the source
+   happened to be. Every material was rebuilt through it; felt and balsa
+   only became visible at all after this.
+
+The lesson generalises past this project: **normalising by mean preserves
+the source's contrast; normalising by range sets it.** A tool that takes a
+"strength" argument and ignores it for low-contrast inputs is worse than one
+with no argument, because it looks like it is working.
+
+Gate: 134 checks + 29 room prover.
+
+### art v10 — 2026-08-13 — a material KIT, not cardboard everywhere
+
+**Crafted World is a kit of materials and the first pass used card for all of
+it.** `js/craft.js` is now the one factory every surface is made through, and
+the manifest's `textures` block is the palette: `flute` (the cut edge of
+corrugated card, stacked fluting) for the earth section and every dug face,
+`card` (kraft liner) for flat card, `felt` for the grass lip, `balsa`
+(painted wood, brush strokes and a paint chip) for machines, girders and
+props — §3.3's "painted wood and pressed steel". Each is a greyscale map
+multiplied onto a palette colour, so §3.2 holds exactly.
+
+**The ground is the headline.** It was flat brown, then card with a faint
+grain, and it is now visibly a CUT THROUGH STACKED CORRUGATED CARD — which is
+what a cut earth section is in this reference. The strata banding the depth
+pass established still reads through it; the flute strength was pulled from
+0.62 to 0.5 precisely so it would.
+
+**Two failures worth recording.** A probe of the live scene found **3
+materials mapped and about 70 not**: every module had grown its own
+`const M = (c) => new MeshLambertMaterial(...)`, so the grass lip, both
+machines and every prop were still flat paint while the ground behind them
+was card. Patching call sites would have left the next one to be written
+flat, so `craft.js` replaced all of them — 128 materials now carry their
+material, and the ones that do not are the beacon lamp, shadows and glass,
+which must stay bare. And the first maps were far too weak: ±20% variation,
+which Lambert then flattens further. A material you have to be told is there
+is not doing its job.
+
+Also fixed: the sky's remaining magenta. **Magenta is the only thing where r
+AND b both exceed g** — yellow, orange, kraft and cream all have b < g, and
+cotton is neutral — so the despill needs no threshold and cannot eat a real
+colour. 2.04% of pixels carried a pink cast; now 0.004%.
+
+And the gate learned to refuse a manifest block containing a stray note: a
+bare `_note` string beside the texture entries made the seam-scope check
+resolve a path on `undefined` and killed the whole run with
+`ERR_INVALID_ARG_TYPE` instead of naming the problem.
+
+Gate: 134 checks + 29 in the room prover.
+
+### art v9 — 2026-08-13 — one build: design v6 × the crafted art, and a paper sky
+
+**The two lineages are one tree again, and the numbering jumps to v9 to
+clear both sides' collided v6–v8.** Base: the design branch's v6 (parts kit,
+provable rooms via `test/rooms.mjs`, the crane, the wall, robots and vents,
+touch fixes). Carried onto it, from the art branch's v6–v8: the Meshy-rigged
+animated Eeri behind a `rig: "skinned"` seam with `height` in tiles, the
+crafted `_v2` layer set, the playfield card grain (`getTexture`, world-space
+UVs), and the kid's palette. The design gate — 116 checks + 29 in the room
+prover — passes over the merged tree with all art live.
+
+**And the sky joins the crafted register** (owner's direction: the cardboard
+look belongs on the backgrounds, and the sky was the last smooth code paint
+on screen). `groundworks_sky_v1.png`: the palette's own gradient × a paper
+grain used as LUMINANCE only (§3.2 — no asset invents a colour), COTTON WOOL
+cloud cutouts tiled sparsely with a per-tile drift, and ONE construction-
+paper sun with a split pin. Built by `art-src` tooling from two free nano
+generations; `drawSky` stays as the code placeholder behind the same seam as
+every other layer, and the gate now measures the sky PNG like the rest.
+
+Three lessons from the sky, kept in the tool:
+- **A prop sheet must forbid its own backing.** The first sheet put the
+  props on a kraft board the keyer cannot remove; "directly on the magenta,
+  NO board" fixed it.
+- **A naively tiled sheet grows a second sun.** The sun is cropped out and
+  stamped exactly once; two suns is a broken toy, not a whimsical one.
+- **Cotton needs a tighter despill than card.** Bright pixels put the
+  generic clamp above 255 where it does nothing, and the wisps kept pink
+  rims; a sheet with no legitimate pinks can clamp r/b hard to green+10,
+  plus an alpha rolloff on strong spill.
+
 ## v11 — 2026-08-13 — ladders, and levels that go up
 
 `climb` was a verb DESIGN.md declared and nothing implemented. It is real

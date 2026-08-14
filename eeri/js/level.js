@@ -10,12 +10,13 @@
 // a machine-shaped lock, and an exit only the pair of them opens.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=3';
+import { PAL, mix } from './palette.js?v=2';
+import { craftMat, craftBox, craft } from './craft.js?v=3';
 
-import { ROOMS } from './rooms.js?v=3';
-import { compile, W, H, SOLID_CHARS, GROUND, LADDER_CH } from './parts.js?v=3';
+import { ROOMS, LAB } from './rooms.js?v=3';
+import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, GROUND } from './parts.js?v=4';
 
-export { ROOMS };
+export { ROOMS, LAB };
 const EPS = 0.001;
 
 // A Level is one compiled room. It compiles on construction rather than
@@ -38,21 +39,6 @@ export class Level {
     return SOLID_CHARS.includes(this.map[H - 1 - cy][c]);
   }
 
-  // A ladder is the one tile you can be INSIDE and still be held up. It is
-  // not solid, so nothing above changes; the kid asks whether he is on one.
-  ladderAt(x, y) {
-    const c = Math.floor(x), cy = Math.floor(y);
-    if (c < 0 || c >= W || cy < 0 || cy >= H) return false;
-    return this.map[H - 1 - cy][c] === LADDER_CH;
-  }
-
-  // is there ladder anywhere in the body's span? (feet, middle, head)
-  onLadder(box) {
-    return this.ladderAt(box.x, box.y + 0.1)
-      || this.ladderAt(box.x, box.y + box.h * 0.5)
-      || this.ladderAt(box.x, box.y + box.h - 0.1);
-  }
-
   // digging edits the map, so collision stays honest — the bank shrinks as
   // a fact about the level, not as a fact about a picture
   clearRow(c0, c1, cy) {
@@ -64,11 +50,57 @@ export class Level {
     for (let c = c0; c <= c1; c++) this.map[H - 1 - cy][c] = ch;
   }
 
-  // fell past the floor: back to the near side of whichever hole took you
+  // A rung is NOT solid in any direction — you walk through it, fall through
+  // it, and only the climb verb holds you on it. A solid ladder is a wall
+  // with a picture of a ladder on it. The two samples are the feet and the
+  // chest, so standing at the foot of one is enough to start.
+  climbable(x, y) {
+    const c = Math.floor(x);
+    if (c < 0 || c >= W) return false;
+    for (const sy of [y + 0.1, y + 0.8]) {
+      const cy = Math.floor(sy);
+      if (cy >= 0 && cy < H && this.map[H - 1 - cy][c] === CLIMB_CHAR) return true;
+    }
+    return false;
+  }
+
+  // the top of the ladder under (x, y) — the climb stops with his feet on
+  // the deck rather than one rung above it, in the air
+  // The tile under his feet, which is how both gizmos are read: a belt is a
+  // floor that moves you and a tarp is a floor that throws you, so neither
+  // needs an entity — only the character under the boot.
+  underfoot(x, y) {
+    const c = Math.floor(x), cy = Math.floor(y - 0.05);
+    if (c < 0 || c >= W || cy < 0 || cy >= H) return ' ';
+    return this.map[H - 1 - cy][c];
+  }
+
+  // +1 right, -1 left, 0 for anything that is not a belt
+  beltAt(x, y) {
+    const ch = this.underfoot(x, y);
+    return BELT_CHARS.includes(ch) ? (ch === 'C' ? 1 : -1) : 0;
+  }
+
+  tarpAt(x, y) { return this.underfoot(x, y) === TARP_CHAR; }
+
+  climbTop(x, y) {
+    const c = Math.floor(x);
+    let top = null;
+    for (let cy = Math.max(0, Math.floor(y) - 1); cy < H; cy++) {
+      if (this.map[H - 1 - cy][c] === CLIMB_CHAR) top = cy; else if (top !== null) break;
+    }
+    return top === null ? null : top + 1;
+  }
+
+  // fell past the floor: back to the near side of whichever hole took you,
+  // and failing that to the last checkpoint passed — never to the start,
+  // because a level is 60–90 seconds and losing all of it to one hole is the
+  // cost this game promised it would never charge (DESIGN §4)
   fallRespawn(x) {
     for (const p of this.def.pits) {
       if (x > p.c0 - 1 && x < p.c1 + 2) return { x: p.backX, y: 5 };
     }
+    if (this.respawn) return { x: this.respawn.x, y: this.respawn.y + 1 };
     const s = this.def.spawn.kid;
     return { x: s.x, y: s.y + 1 };
   }
@@ -157,13 +189,22 @@ export class Level {
       girder:new THREE.MeshLambertMaterial({ color: PAL.STEEL[1] }),
       bolt:  new THREE.MeshLambertMaterial({ color: PAL.DARK }),
     };
+    // Every EARTH surface takes the crafted card grain; steel and bolts stay
+    // clean, because one material language does not mean one material.
     const dirtMats = new Map();
     const dirtMat = (c) => {
-      if (!dirtMats.has(c)) dirtMats.set(c, new THREE.MeshLambertMaterial({ color: c }));
+      // The earth is a CUT, and a cut through card shows its fluting. The
+      // deep bands and every dug face get the flute edge; flat top surfaces
+      // keep the plain liner.
+      if (!dirtMats.has(c)) dirtMats.set(c, craftMat(c, 'flute'));
       return dirtMats.get(c);
     };
+    // each surface takes the material it would really be made of
+    craft(mat.cut, 'flute'); craft(mat.shade, 'flute'); craft(mat.back, 'card');
+    craft(mat.lip, 'felt');                              // grass is felt
+    craft(mat.steel, 'balsa'); craft(mat.girder, 'balsa'); // painted wood
     const box = (w, h, d, m, x, y, z) => {
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+      const mesh = craftBox(w, h, d, m);
       mesh.position.set(x, y, z);
       group.add(mesh);
       return mesh;
@@ -182,18 +223,6 @@ export class Level {
     // …and a back wall behind the ground band, darker than any face, so a
     // pit reads as a hole receding rather than a notch cut in a wall
     box(136, 3.98, 0.1, mat.back, 48, 2, -0.9);
-
-    // LADDERS. Two stiles and a rung every tile — drawn from the map, so a
-    // ladder is where the collision says it is and nowhere else.
-    for (const L of this.def.ladders || []) {
-      const x = L.c + 0.5;
-      for (const dx of [-0.26, 0.26]) {
-        box(0.1, L.cy1 - L.cy0 + 1, 0.1, mat.steel, x + dx, (L.cy0 + L.cy1 + 1) / 2, 0.35);
-      }
-      for (let cy = L.cy0; cy <= L.cy1; cy++) {
-        box(0.62, 0.08, 0.1, mat.girder, x, cy + 0.5, 0.35);
-      }
-    }
 
     // cobbles embedded in the face — deterministic, so a screenshot of the
     // same frame is the same picture twice
@@ -249,6 +278,42 @@ export class Level {
             b.rotation.x = Math.PI / 2;
             b.position.set(bx, cy + 0.72, 0.74);
             group.add(b);
+          }
+        } else if (ch === 'C' || ch === 'c') {
+          // a belt: a plate with rollers under it, and CHEVRONS on top
+          // pointing the way it runs — the direction has to be readable
+          // standing still, not inferred once it has already moved you
+          box(w, 0.3, 1.4, mat.steel, cx, cy + 0.82, 0);
+          box(w, 0.16, 1.2, mat.girder, cx, cy + 0.6, 0);
+          for (let i = c; i <= e; i++) {
+            const chev = craftBox(0.34, 0.1, 0.34, craftMat(PAL.MACHINE, 'balsa'));
+            chev.position.set(i + 0.5, cy + 0.99, 0);
+            chev.rotation.y = ch === 'C' ? 0.78 : -0.78;
+            group.add(chev);
+          }
+        } else if (ch === 'T') {
+          // a tarp: sheet stretched over a frame, and it SAGS in the middle,
+          // because a flat one is a plank and reads as somewhere to stand
+          for (let i = c; i <= e; i++) {
+            const t = w === 1 ? 0 : (i - c) / (e - c) * 2 - 1;
+            const sag = (1 - t * t) * 0.22;
+            const sheet = craftBox(1, 0.14, 1.4, craftMat(PAL.CLOUD, 'felt'));
+            sheet.position.set(i + 0.5, cy + 0.86 - sag, 0);
+            group.add(sheet);
+          }
+          for (const bx of [c + 0.08, e + 0.92]) {
+            box(0.16, 0.9, 0.5, mat.girder, bx, cy + 0.45, 0);
+          }
+        } else if (ch === 'H') {
+          // a ladder: two stiles and a rung per tile, set forward of the
+          // play plane so the rungs read against the earth behind them. It
+          // goes through box() like everything else, so it is painted balsa
+          // rather than the flat paint craft.js exists to stop.
+          for (const sx of [cx - 0.3, cx + 0.3]) {
+            box(0.12, 1, 0.12, mat.steel, sx, cy + 0.5, 0.45);
+          }
+          for (const ry of [0.2, 0.7]) {
+            box(0.66, 0.1, 0.1, mat.girder, cx, cy + ry, 0.45);
           }
         } else if (ch === 'G') {
           box(w, 0.3, 1.2, mat.girder, cx, cy + 0.85, 0);      // top chord

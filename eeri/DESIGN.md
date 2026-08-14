@@ -48,6 +48,48 @@ being loaded but never requested**, because `assets.js` was imported under
 two different `?v=` tokens and the instance holding the manifest was not
 the instance the layers asked. There are now two gate checks for it.
 
+## 0.2 What is BUILT, as of v15 — read this before planning work
+
+The pivot in §0 is in the code, not just in this file. Anything marked
+**built** should be extended rather than designed again.
+
+| §  | thing | state |
+|---|---|---|
+| 2 | **stomp** | **built** — bounce is 0.8 × jump, deliberately UNDER jump height so an enemy standing beneath a ledge cannot open a route the room prover does not model. Tested before the lunge; does not also count as a hit |
+| 2 | **climb** | **built** — `H` rungs the kid passes through in every direction (only the verb holds him on them); tops out with his feet ON the deck; a held direction steps him off, so a ladder top is never a trap; jump lets go |
+| 3 | small enemies | **two of three** — `hopper` (timing, fixed 1.35 s rhythm, crouch as the tell) and `roller` (spacing — too flat to stomp: landing on one bounces you off WITHOUT killing it) are built. **`bucket` (provocation — sleeps, wakes, chases briefly) is NOT built.** The `skitter` in `robots.js` is v6's patrol robot, an extra — it is not §3's third enemy |
+| 4 | four-beat levels | **built** — three levels, one idea each, beats marked in `js/rooms.js` |
+| 4 | checkpoint | **built** — lights by being passed; a fall costs the middle of a level, never the whole of it |
+| 4.2 | flag, three phases, run past | **built** — small and big, `js/flag.js`, and the contract in §6.3 is the one the code honours |
+| 4.2 | the gate = the WORLD's ending | **built** — only level 3 carries one |
+| 4.2 | bolts `x/100`, golden `3/3` | **built** — per level, and the prover holds the counts |
+| 5 | controller-first, glyph prompts | **built** — native pad in `input.js`, one glyph HINT set, touch buttons wearing the same glyphs, `pad: 'native'` in the catalogue |
+| 8.0 | machine on the route, facing its job | **built, and a rule** — machines park a short forward drive from their work (leads 4 / 6 / 3), and `check()` refuses the lock-and-key shape outright |
+| 2 | gizmos | **belt and tarp built** (tile-native, proved in the `LAB` room, spent nowhere yet — one idea per level means they are levels 4+'s ideas). The MOVING gizmos — tipping plank, conveyor, hoist, hook — are **not built**: every solid in this game is a tile and a moving platform cannot be one, so they want an entity with its own collision pass. The kit stopped at the tile line deliberately |
+| 4.2 | blueprints, one per world, unlocking art | **not built** |
+| 4.2 | level select | **not built** |
+
+**Anything that draws is made through `js/craft.js`, without exception**
+(ART_TARGET §0.05). `craftMat(colour, material)` + `craftBox(w, h, d, mat)`
+are the only way to make a surface — a prop built with a bare
+`new THREE.MeshLambertMaterial` is flat paint standing in a crafted world.
+Site timber and steel are `balsa`, cloth is `felt`, the earth and its cut
+faces are `flute`. The only surfaces that stay bare are the ones craft.js
+names — a lit lamp, a pane of glass, a shadow, a puff of smoke. **If you add
+a prop, this is the rule you are most likely to break.**
+
+**The rules of §4 and §8.0 are a build step.** `check()` in `js/parts.js`
+refuses, and `node eeri/test/rooms.mjs` is where it fails: a ladder with no
+landing or no foot · no midway checkpoint · a ride whose payoff sits in the
+first 45% of the room · **a machine parked more than a short drive behind its
+job, or past it** (§8.0 as a rule) · a ride-ending hazard in a machine's run
+(the ball by its swept arc, vents too) · a flag before the last obstacle · a
+bolt count that is not 100 · not exactly three golden bolts · a golden bolt
+you would collect by walking · a bolt nothing can reach · a robot patrolling
+a deck that is not there · a telegraph under the 1.0 s floor · a belt that
+walks you off an edge · a tarp that throws you into a ceiling. If a rule is
+wrong, change the rule in `parts.js` — do not work around it in a room.
+
 ---
 
 ## 1. The game
@@ -241,6 +283,29 @@ Contracts, scale and orientation live in `assets/README.md`; the look is
 the manipulable pieces drop below the things the player touches every
 second. Small enemies and gizmos are now the top of the list.
 
+### 6.0 Drop points that are open and waiting
+
+These exist in `assets/manifest.json` as **placeholders with their contract
+already written down**; the game plays a code-built stand-in for each.
+Dropping the real thing in is a file plus a one-word status flip — no game
+code changes — and the smoke gate checks the nodes on the way in.
+
+| manifest key | file | contracted nodes | what the game does with them |
+|---|---|---|---|
+| `pieces.flag` | `3d/flag_v1.glb` | `pole` `phase0` `phase1` `phase2` | §6.3's contract exactly: the pole stands from the first frame (the level's end is visible from far off); the game shows ONE phase node at a time, each phase being the whole flag at that stage |
+| `pieces.flagBig` | `3d/flag_big_v1.glb` | same four | level 3's — larger AND a different colour, tellable from the small one at a distance |
+| `pieces.checkpoint` | `3d/checkpoint_v1.glb` | `lamp` `cloth` | recolours `lamp` red → green and shows `cloth` when lit; the lamp is lit, so it stays bare of any material map |
+
+Still needed and **not yet given a drop point**, because their shape is the
+asset producer's call: `hopper_v1.glb`, `roller_v1.glb`, `bucket_v1.glb` —
+per §6.2 #1 and PHASING §2's routing (hopper and bucket are biped rigs,
+roller is sliced nodes). Each needs a **squash node** the game scales when
+stomped and a **lit tell** that fires before it acts.
+
+Ladders and decks are **tiles**, not models — `js/level.js` draws the
+rungs — so the ladder/scaffold entries in §6.2 #3 and §8.2 #2 are a look
+question rather than a blocker.
+
 ### 6.1 Already live — do not remake
 `eeri_v3.glb` (skinned; clips idle/walk/run/jump/sit) · `excavator_v1.glb`
 · the five `groundworks_*` layer PNGs.
@@ -361,23 +426,27 @@ level, late, as a deliberate puzzle — never in a teaching level.
    playthrough still finishes. So the gate also measures COST — how many
    times the level took the ride away — because "possible" and "reasonable"
    are different questions and only the rules catch the second.
-2. **Re-lay the three existing levels** against §8.0.
-3. **Climb and ladders.** A declared verb with nothing behind it. Cheapest
-   variety in the game and the only route to vertical sections.
-4. **The midway checkpoint** (§4). Locked in the design, absent from the
-   build.
+2. **Re-lay the three existing levels** against §8.0. **Done, and now a
+   rule** — machines park a short forward drive from their work (leads
+   4 / 6 / 3) and `check()` refuses the lock-and-key shape, with bites.
+3. **Climb and ladders.** **Done** — see §0.2; ladders are tiles, the climb
+   tops out on the deck, and the playthrough bot knows how to climb.
+4. **The midway checkpoint** (§4). **Done** — lights by being passed.
 
 **Tier 2 — the on-foot game, which is 80% of playtime**
 
-5. **The other two small enemies** — hopper and roller (§3). One enemy
-   type across twelve levels is not a game.
-6. **The gizmo kit** — tipping plank, conveyor, hoist. "One idea per
-   level" means the kit *is* the level count.
+5. **The other two small enemies** — hopper and roller (§3). **Done as
+   code** (placeholders behind the seam); `bucket` remains open, and it is
+   the PHASING §2 biped path's cheapest first customer.
+6. **The gizmo kit** — tipping plank, conveyor, hoist. **Belt and tarp are
+   built and proved in the `LAB` room** (tile-native); the three MOVING
+   gizmos are open and are entity work — see §0.2.
 7. **World 2, levels 4–6.** Needs backdrop set two.
 
 **Tier 3 — the meta the design already fixed**
 
-8. Bolts `x/100`, golden bolts `3/3` hidden, blueprints one per world.
+8. Bolts `x/100` and golden bolts `3/3` — **done**; blueprints one per
+   world remain open.
 9. Level-select menu; clock-out gate at the end of a world.
 
 ### 8.2 What Tier 1–2 needs from the art pipeline
