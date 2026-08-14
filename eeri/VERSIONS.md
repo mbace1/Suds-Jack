@@ -59,7 +59,16 @@ where it is standing, and that branch's `VERSIONS.md` got a FORK NOTICE.
 A version number cannot detect a fork. The next agent to write a heading
 has to read the other branch's log first, and now the docs say so.
 
-Gates: 156 smoke, 30 prover, 7 playthrough.
+**One more found by looking at the deployed build rather than at the
+tests.** `assets.js` fetched `manifest.json?v=1` while the manifest inside
+said `v: 12`. The manifest declares the cache token for every asset, so it
+is the one file that cannot bust itself — a returning visitor holding the
+cached copy at the old token never learns a new one exists and keeps the
+old art forever, silently, with every asset URL in it still correct. The
+fetch carries the manifest's own version now and the gate asserts the two
+agree.
+
+Gates: 157 smoke, 30 prover, 7 playthrough, hub green.
 
 ## v11 — 2026-08-13 — ladders, and levels that go up
 

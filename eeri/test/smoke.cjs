@@ -110,6 +110,16 @@ for (const line of readme.split('\n')) {
 ok('the README documents every 2D layer', Object.keys(readmeRects).length === 6,
   Object.keys(readmeRects).join(','));
 
+// The manifest cannot bust its own cache: it declares the token for every
+// asset, so if it is fetched at a stale token a returning visitor holds the
+// old copy and never sees the new art at all. It shipped at `?v=1` against a
+// manifest saying v: 12. The two must agree.
+const manifestFetch = fs.readFileSync(path.join(__dirname, '..', 'js', 'assets.js'), 'utf8')
+  .match(/manifest\.json\?v=(\d+)/);
+ok('assets.js fetches the manifest at the manifest\'s own version',
+  manifestFetch && Number(manifestFetch[1]) === manifest.v,
+  `fetched at ?v=${manifestFetch && manifestFetch[1]}, manifest says v: ${manifest.v}`);
+
 // A live PNG at the wrong size does not fail — it STRETCHES onto the plane,
 // silently, and the art looks subtly wrong with nothing to blame. So the
 // pixels are measured. (PNG header: 8-byte signature, then IHDR length and

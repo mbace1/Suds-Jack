@@ -97,7 +97,13 @@ function housePaint(root, paint, name) {
 let manifest = null;
 
 export async function loadManifest() {
-  const res = await fetch(new URL('manifest.json?v=1', BASE));
+  // THE MANIFEST'S OWN TOKEN MUST MATCH THE `v` INSIDE IT. The manifest
+  // declares the cache token for every asset, so it is the one file that
+  // cannot bust itself: a returning visitor holding a cached copy at the old
+  // token never learns the new one exists and keeps the old art forever.
+  // This shipped at `?v=1` while the manifest inside said v: 12. The smoke
+  // gate now asserts the two agree, so bumping one bumps the other.
+  const res = await fetch(new URL('manifest.json?v=12', BASE));
   manifest = await res.json();
   return manifest;
 }
