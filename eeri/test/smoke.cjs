@@ -155,6 +155,25 @@ s.listen(0, '127.0.0.1', async () => {
   });
   p.on('console', (m) => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
 
+
+  // Board the machine standing in this room. Short, repeated attempts beat
+  // one long wait: the cab is only reachable between bucket sweeps, and a
+  // press that lands during one is lost. Returns true once mode is 'riding'.
+  async function mountUp(tries = 40, place = null) {
+    for (let i = 0; i < tries; i++) {
+      if (await p.evaluate(() => window.__eeri.mode() === 'riding')) return true;
+      await p.evaluate((where) => {
+        const e = window.__eeri.exc;
+        if (!e) return;
+        window.__eeri.player.mercyT = 0;
+        window.__eeri.debug.setPos(where ?? (e.x - 1.5), e.y + 0.1);
+      }, place);
+      await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
+      await p.waitForTimeout(350);
+    }
+    return await p.evaluate(() => window.__eeri.mode() === 'riding');
+  }
+
   await p.goto(base + '/eeri/', { waitUntil: 'load' });
   await p.waitForFunction(() => !!window.__eeri, null, { timeout: 8000 }).catch(() => {});
   ok('it boots and exposes the handle', await p.evaluate(() => !!window.__eeri));
@@ -254,16 +273,7 @@ s.listen(0, '127.0.0.1', async () => {
     window.__eeri.debug.setPos(e.x - 1.5, e.y + 0.1);
   });
   await p.waitForTimeout(200);
-  let mounted = false;
-  for (let i = 0; i < 8 && !mounted; i++) {
-    await p.evaluate(() => {
-      window.__eeri.player.mercyT = 0;
-      window.__eeri.debug.setPos(window.__eeri.exc.x - 1.5, window.__eeri.exc.y + 0.1);
-    });
-    await p.waitForTimeout(250);
-    await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
-    mounted = await p.waitForFunction(() => window.__eeri.mode() === 'riding', null, { timeout: 4000 }).then(() => true).catch(() => false);
-  }
+  let mounted = await mountUp();
   // A mount that fails says almost nothing on its own — it is four
   // conditions ANDed together in nearExc() — so it reports which one was
   // false. Guessing at ten minutes a run is not debugging.
@@ -342,23 +352,14 @@ s.listen(0, '127.0.0.1', async () => {
     await p.evaluate(() => window.__eeri.player.y) > 0.9);
 
   // riding into it costs the RIDE, not the run (the Yoshi rule).
-  // Mount well clear of the ball first, then drive the cab under it. This is
-  // the same retry-and-give-it-real-time loop every other mount here uses:
-  // it was the one one-shot left, and a single 5s attempt in a sandbox with
-  // no GPU reports a slow frame as a machine that will not be boarded. The
-  // machine is parked ON ITS OWN TRACK, clear of the ledge the level now
-  // carries at x 31–35, rather than wherever there happened to be floor.
-  let rode = false;
-  for (let i = 0; i < 6 && !rode; i++) {
-    await p.evaluate(() => {
-      window.__eeri.player.mercyT = 0;
-      window.__eeri.exc.x = 56; window.__eeri.exc.y = 4; window.__eeri.exc.vx = 0;
-      window.__eeri.debug.setPos(54.5, 4.1);
-    });
-    await p.waitForTimeout(400);
-    await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
-    rode = await p.waitForFunction(() => window.__eeri.mode() === 'riding', null, { timeout: 8000 }).then(() => true).catch(() => false);
-  }
+  // Mount well CLEAR of the ball first — it wakes within six tiles and would
+  // throw him out of the cab before the test has asked it to — then drive
+  // under it deliberately. The cab parks on its own track, not wherever
+  // there happened to be floor.
+  await p.evaluate(() => {
+    window.__eeri.exc.x = 56; window.__eeri.exc.vx = 0; window.__eeri.player.mercyT = 0;
+  });
+  let rode = await mountUp();
   ok('back in the cab, clear of the ball', rode);
 
   await p.evaluate(() => { window.__eeri.exc.x = 69.4; window.__eeri.player.mercyT = 0; });
@@ -411,16 +412,7 @@ s.listen(0, '127.0.0.1', async () => {
   // mid-try, so each attempt walks back up and the mount move itself gets
   // real time to play out (a sandbox with no GPU runs the clock ~5× slow).
   await p.evaluate(() => { window.__eeri.exc.x = 56; });
-  let ride = false;
-  for (let i = 0; i < 10 && !ride; i++) {
-    await p.evaluate(() => {
-      window.__eeri.player.mercyT = 0;
-      window.__eeri.debug.setPos(window.__eeri.exc.x - 1.5, window.__eeri.exc.y + 0.1);
-    });
-    await p.waitForTimeout(250);
-    await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
-    ride = await p.waitForFunction(() => window.__eeri.mode() === 'riding', null, { timeout: 8000 }).then(() => true).catch(() => false);
-  }
+  let ride = await mountUp();
   ok('reading the cycle gets you into the cab', ride);
   ok('and taming it kills the beacon', await p.evaluate(() => window.__eeri.debug.tamed()));
 
@@ -469,16 +461,7 @@ s.listen(0, '127.0.0.1', async () => {
 
   // …so read the cycle and take the machine, again
   await p.evaluate(() => { window.__eeri.exc.x = 50; });
-  let ride2 = false;
-  for (let i = 0; i < 10 && !ride2; i++) {
-    await p.evaluate(() => {
-      window.__eeri.player.mercyT = 0;
-      window.__eeri.debug.setPos(window.__eeri.exc.x - 1.5, window.__eeri.exc.y + 0.1);
-    });
-    await p.waitForTimeout(250);
-    await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
-    ride2 = await p.waitForFunction(() => window.__eeri.mode() === 'riding', null, { timeout: 8000 }).then(() => true).catch(() => false);
-  }
+  let ride2 = await mountUp();
   ok('the mount is a skill test in every room', ride2);
 
   // …and the machine refuses the cliff: start it at the approach and let it
@@ -551,16 +534,7 @@ s.listen(0, '127.0.0.1', async () => {
     await p.evaluate(() => window.__eeri.player.x) < 80,
     'x=' + await p.evaluate(() => window.__eeri.player.x));
 
-  let onCrane = false;
-  for (let i = 0; i < 10 && !onCrane; i++) {
-    await p.evaluate(() => {
-      window.__eeri.player.mercyT = 0;
-      window.__eeri.debug.setPos(window.__eeri.exc.x - 1.6, window.__eeri.exc.y + 0.1);
-    });
-    await p.waitForTimeout(250);
-    await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
-    onCrane = await p.waitForFunction(() => window.__eeri.mode() === 'riding', null, { timeout: 8000 }).then(() => true).catch(() => false);
-  }
+  let onCrane = await mountUp();
   ok('reading the swing gets you into the crane', onCrane);
 
   // the ball that swung at you is the ball you swing at the wall
