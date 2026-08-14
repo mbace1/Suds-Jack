@@ -9,7 +9,7 @@
 // the model came from.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=2';
+import { PAL } from './palette.js?v=12';
 
 const FACE_TURN = 0.42 * Math.PI; // 3/4 view: forward ±x, tipped toward camera
 
@@ -133,7 +133,21 @@ export function buildKidModel() {
 //    faces +x, so the whole thing carries a −90° yaw offset that the
 //    code-built kid does not.
 const CLIP_FOR = { idle: 'idle', run: 'run', air: 'jump', ride: 'ride', climb: 'walk' };
-const SKIN_YAW = -Math.PI / 2;
+
+// FACING, and the trap in it. A rotation of θ about Y sends +z to
+// (sin θ, 0, cos θ). The Meshy rig is modelled facing +Z, and the game's
+// own `FACE_TURN` is 0.42π ≈ 75.6° — which already sends +z to
+// (0.97, 0, 0.25): screen-right, tipped a little toward the camera, which
+// is exactly the 3/4 view the placeholder is posed for. So a skinned rig
+// needs NO extra yaw at rest; the −90° it used to carry was added on top
+// and swung him round to face the camera, which is what he did while
+// running. The same −90° left him backwards in the cab, because riding
+// zeroes the turn and he was then facing +z on the nose.
+const SKIN_YAW = 0;
+
+// riding, the machine owns the facing and the turn goes to zero — so a
+// +z-forward rig needs the +z→+x quarter turn put back by hand
+const SKIN_RIDE_YAW = Math.PI / 2;
 
 class ClipDriver {
   constructor(group, asset) {
@@ -206,7 +220,7 @@ export class Kid {
   pose(state, t, speed = 0) {
     // the turn is animated, not mirrored — a 3D cast's free win.
     // riding, the pose is local to the seat and the machine owns the facing.
-    const target = state === 'ride' ? 0
+    const target = state === 'ride' ? (this.clips ? SKIN_RIDE_YAW : 0)
       : this.face > 0 ? FACE_TURN : Math.PI - FACE_TURN;
     this.turn += (target - this.turn) * 0.18;
     this.group.rotation.y = this.turn;
@@ -274,7 +288,14 @@ export class Kid {
 
 const RUN = 6.2, ACC = 42, ACC_AIR = 20, FRIC = 34;
 const GRAV = 30, FALL_X = 1.35, JUMP_V = 12.6;
+// A stomp bounces you 80% of a jump: enough to feel like a reward and to
+// chain along a row of them, never enough to reach somewhere a jump cannot,
+// so no level's reach budget is quietly broken by an enemy standing there.
+const BOUNCE_V = JUMP_V * 0.8;
 const COYOTE = 0.09, BUFFER = 0.12;
+// Climbing is deliberately unhurried — it is a change of pace, not a race,
+// and a six-year-old should never fall off a ladder by overshooting.
+const CLIMB = 3.4;
 
 export class Player {
   constructor(level, spawn, kid) {
@@ -288,8 +309,19 @@ export class Player {
     this.squash = 0;
     this.t = 0;
     this.mercyT = 0;
+    this.climbing = false;
     // one-frame events for the noise to hang off
     this.justJumped = false; this.justLanded = false;
+  }
+
+  // Bounced off something he landed on. Higher than a step, lower than a
+  // full jump, and it does NOT need the ground — that is the whole appeal:
+  // a chain of small machines is a staircase.
+  bounce() {
+    this.vy = BOUNCE_V;
+    this.squash = 0.1;
+    this.jumpBufT = 0;
+    this.justStomped = true;
   }
 
   // knocked back by a hazard: the cost is never death (ART_BRIEF hazards)
@@ -305,7 +337,7 @@ export class Player {
 
   update(dt, input) {
     this.t += dt;
-    this.justJumped = false; this.justLanded = false;
+    this.justJumped = false; this.justLanded = false; this.justStomped = false;
     this.mercyT = Math.max(0, this.mercyT - dt);
     const wasGrounded = this.grounded;
     const ax = input.axis();
@@ -320,6 +352,34 @@ export class Player {
       const s = Math.sign(this.vx);
       this.vx -= s * FRIC * dt;
       if (Math.sign(this.vx) !== s) this.vx = 0;
+    }
+
+    // ---- THE LADDER (DESIGN.md §2) --------------------------------------
+    // The one tile you stand IN. Gravity is off while you are on it, up and
+    // down climb, left and right still slide you along, and jump lets go —
+    // which is how you get off without hunting for the exact top rung.
+    const onLadder = this.level.onLadder(this.box());
+    if (onLadder && (input.down.up || input.down.down)) this.climbing = true;
+    if (!onLadder || this.grounded && input.down.down) this.climbing = false;
+    if (this.climbing) {
+      if (input.take('jump')) {          // let go and jump clear
+        this.climbing = false;
+        this.vy = JUMP_V * 0.8;
+        this.justJumped = true;
+      } else {
+        this.vy = (input.down.up ? CLIMB : 0) - (input.down.down ? CLIMB : 0);
+        const my = this.level.moveY(this.box(), this.vy * dt);
+        this.y = my.y; if (my.hit) this.vy = 0;
+        const mx = this.level.moveX(this.box(), this.vx * dt);
+        this.x = mx.x; if (mx.hit) this.vx = 0;
+        this.grounded = this.level.grounded(this.box());
+        if (this.y < 0.9) {
+          const r = this.level.fallRespawn(this.x);
+          this.x = r.x; this.y = r.y; this.vx = 0; this.vy = 0; this.climbing = false;
+        }
+        this.updateVisual();
+        return;
+      }
     }
 
     // jump: buffered + coyote, variable height on release
@@ -347,7 +407,13 @@ export class Player {
     if (this.grounded && !wasGrounded) this.justLanded = true;
 
     // fell in the pit (its floor is dressing, not ground): back to the near side
-    if (this.y < 0.9) { this.x = 43; this.y = 5; this.vx = 0; this.vy = 0; }
+    // fell in a pit (its floor is dressing, not ground): the level knows
+    // which hole took him and hands back the near side of it. Kept from the
+    // gameplay lineage — the character lineage still had the hardcoded x=43.
+    if (this.y < 0.9) {
+      const r = this.level.fallRespawn(this.x);
+      this.x = r.x; this.y = r.y; this.vx = 0; this.vy = 0;
+    }
 
     this.updateVisual();
   }
@@ -359,7 +425,9 @@ export class Player {
     k.group.scale.y = this.squash > 0 ? 0.86 : 1;
     // mercy flicker — the one place the kid is allowed to disappear
     k.group.visible = this.mercyT <= 0 || Math.floor(this.mercyT * 18) % 2 === 0;
-    const state = !this.grounded ? 'air' : Math.abs(this.vx) > 0.4 ? 'run' : 'idle';
+    const state = this.climbing ? 'climb'
+      : !this.grounded ? 'air'
+      : Math.abs(this.vx) > 0.4 ? 'run' : 'idle';
     k.pose(state, this.t, Math.abs(this.vx));
     const gy = this.level.groundTop(this.x, this.y + 0.1);
     k.shadow.position.set(this.x, gy + 0.02, 0);

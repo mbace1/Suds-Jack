@@ -9,22 +9,23 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=2';
-import { Input } from './input.js?v=1';
-import { Level, ROOMS } from './level.js?v=3';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=12';
+import { Input } from './input.js?v=12';
+import { Level, ROOMS } from './level.js?v=12';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=4';
-import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=3';
-import { Camera } from './camera.js?v=1';
-import { buildKidModel, Kid, Player } from './kid.js?v=2';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=2';
-import { buildCraneModel, Crane } from './crane.js?v=1';
-import { Robot, SteamVent } from './robots.js?v=1';
-import { WreckingBall } from './hazards.js?v=1';
-import { AudioKit } from './audio.js?v=2';
-import { loadManifest, getModel, getPiece } from './assets.js?v=4';
-import { craftMat } from './craft.js?v=3';
+} from './pieces.js?v=12';
+import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=12';
+import { Camera } from './camera.js?v=12';
+import { buildKidModel, Kid, Player } from './kid.js?v=12';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=12';
+import { buildCraneModel, Crane } from './crane.js?v=12';
+import { Robot, SteamVent } from './robots.js?v=12';
+import { WreckingBall } from './hazards.js?v=12';
+import { buildFlagModel, Flag } from './flag.js?v=12';
+import { AudioKit } from './audio.js?v=12';
+import { loadManifest, getModel, getPiece } from './assets.js?v=12';
+import { craftMat } from './craft.js?v=12';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -53,7 +54,7 @@ async function boot() {
   });
 
   const input = new Input();
-  input.bindButtons({ tL: 'left', tR: 'right', tJ: 'jump', tA: 'action', tD: 'down' });
+  input.bindButtons({ tL: 'left', tR: 'right', tU: 'up', tD: 'down', tJ: 'jump', tA: 'action' });
 
   // the noise waits for a gesture — browsers will not start it otherwise
   const audio = new AudioKit();
@@ -139,15 +140,13 @@ async function boot() {
       group.add(machine.group, machine.shadow, ...machine.puffs);
     }
 
-    // the way out
-    for (const dx of [-0.6, 0.6]) {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.22, 2.6, 0.22),
-        craftMat(PAL.MACHINE, 'balsa'));
-      post.position.set(def.exit.x + dx, def.exit.y + 1.3, 0); group.add(post);
-    }
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.26, 0.26),
-      craftMat(PAL.MACHINE_DK, 'balsa'));
-    bar.position.set(def.exit.x, def.exit.y + 2.6, 0); group.add(bar);
+    // THE FLAG (DESIGN.md §4.2). Not a gate you walk through — a thing that
+    // builds itself in three phases as you come down the last stretch, and
+    // finishes by being RUN PAST. Level 3 of a world gets the big one, so
+    // you can tell from a screen away what kind of level you are ending.
+    const big = (i % 3) === 2;
+    const flag = new Flag(group, level, def.exit.x,
+      await getModel(big ? 'flagbig' : 'flag', () => buildFlagModel(big)), big);
 
     // bolts: the collectable (3D slow spinners, §6)
     const bolts = level.boltCells.map((cell, bi) => {
@@ -164,7 +163,7 @@ async function boot() {
     });
 
     scene.add(group);
-    return { def, level, group, bank, girder, wall, ball, bolts, robots, vents, machine };
+    return { def, level, group, bank, girder, wall, ball, bolts, robots, vents, machine, flag };
   }
 
   let siteIndex = 0;
@@ -183,43 +182,47 @@ async function boot() {
   boltsEl.textContent = `⬡ 0/${totalBolts}`;
   siteEl.textContent = site.def.name;
   const setHint = (s) => { if (hintEl.textContent !== s) hintEl.textContent = s; };
-  // A hint that names keys is no help to a thumb: on a phone the only
-  // controls are the five buttons, so the prompts name THOSE. Same strings
-  // otherwise — one map per input, picked once.
-  const COARSE = matchMedia('(pointer: coarse)').matches;
-  const HINTS = {
-    keys: {
-      foot: 'A D — RUN · SPACE — JUMP',
-      wary: 'NOBODY IS DRIVING IT — WAIT FOR THE BUCKET TO LIFT',
-      near: 'E — CLIMB IN',
-      ride: 'A D — DRIVE · W S — BOOM · E — HOP OUT',
-      dig: 'HOLD S — DIG THE BANK DOWN',
-      sling: 'HOLD S — SLING THE GIRDER ON',
-      carry: 'CARRY IT TO THE GAP',
-      seat: 'HOLD S — LOWER THE SPAN IN',
-      smash: 'HOLD ▼ — SWING THE BALL AT THE WALL',
-      out: 'THE WAY OUT IS OPEN',
-    },
-    touch: {
-      foot: '◀ ▶ — RUN · ▲ — JUMP',
-      wary: 'NOBODY IS DRIVING IT — WAIT FOR THE BUCKET TO LIFT',
-      near: 'E — CLIMB IN',
-      ride: '◀ ▶ — DRIVE · ▲ ▼ — BOOM · E — HOP OUT',
-      dig: 'HOLD ▼ — DIG THE BANK DOWN',
-      sling: 'HOLD ▼ — SLING THE GIRDER ON',
-      carry: 'CARRY IT TO THE GAP',
-      seat: 'HOLD ▼ — LOWER THE SPAN IN',
-      smash: 'HOLD ▼ — SWING THE BALL AT THE WALL',
-      out: 'THE WAY OUT IS OPEN',
-    },
+  // ONE glyph set, for every input (DESIGN.md §5). A prompt never names a
+  // key: a key name is no help to a thumb or a pad, and the on-screen
+  // buttons are labelled with these same glyphs, so what you read is what
+  // you press whichever of the three you are holding.
+  const HINT = {
+    foot: '◀ ▶  RUN     Ⓐ  JUMP',
+    wary: 'NOBODY IS DRIVING IT — WAIT FOR THE BUCKET TO LIFT',
+    near: 'Ⓑ  CLIMB IN',
+    ride: '◀ ▶  DRIVE     ▲ ▼  BOOM     Ⓑ  HOP OUT',
+    dig: 'HOLD ▼  DIG THE BANK DOWN',
+    sling: 'HOLD ▼  SLING THE GIRDER ON',
+    carry: 'CARRY IT TO THE GAP',
+    seat: 'HOLD ▼  LOWER THE SPAN IN',
+    smash: 'HOLD ▼  SWING THE BALL AT THE WALL',
+    out: 'THE WAY OUT IS OPEN',
+    // pointed, not vague: a six-year-old needs the DIRECTION as well as the
+    // fact. ◀ or ▶ depending on which side the machine is parked.
+    fetchBack: '◀  TOO HIGH TO JUMP — GO BACK FOR THE MACHINE',
+    fetchOn: 'TOO HIGH TO JUMP — BRING THE MACHINE  ▶',
   };
-  const HINT = COARSE ? HINTS.touch : HINTS.keys;
 
   // ---- the mode machine ---------------------------------------------------
   let mode = 'foot';          // foot | mounting | riding | dismounting
   let moveT = 0, digT = 0, slingT = 0, cleared = false, transitioning = false;
+  let stomps = 0;
   const from = new THREE.Vector3(), mid = new THREE.Vector3(), to = new THREE.Vector3();
   const v3 = new THREE.Vector3();
+
+  // On foot, up against something only the machine can move: which hint to
+  // show, and which way to point him. Returns null when nothing is in the way.
+  function machineJob() {
+    const d = site.def;
+    const back = () => (exc.x < player.x ? HINT.fetchBack : HINT.fetchOn);
+    if (site.bank && !site.bank.cleared
+      && player.x > d.bank.c0 - 2.6 && player.x < d.bank.c1 + 2) return back();
+    if (site.wall && !site.wall.cleared
+      && player.x > d.wall.c0 - 2.6 && player.x < d.wall.c1 + 2) return back();
+    if (site.girder && site.girder.state < 2 && d.girder
+      && player.x > d.girder.gap.c0 - 3 && player.x < d.girder.gap.c1 + 2) return back();
+    return null;
+  }
 
   const nearExc = () => !!exc
     && Math.abs(player.x - exc.x) < 2.6 && player.y > exc.y - 1 && player.y < exc.y + 2.4 && player.grounded;
@@ -335,6 +338,9 @@ async function boot() {
       wall: () => site.wall ? { hits: site.wall.hits, cracked: site.wall.cracked, cleared: site.wall.cleared } : null,
       machine: () => exc ? { kind: exc.kind, x: exc.x, track: exc.track, tamed: exc.tamed } : null,
       robots: () => site.robots.map((r) => ({ x: +r.x.toFixed(2), state: r.state, dead: r.dead })),
+      stomps: () => stomps,
+      flag: () => ({ x: site.flag.x, phase: site.flag.phase, done: site.flag.done, big: site.flag.big }),
+      padSeen: () => input.padSeen,
       vents: () => site.vents.map((v) => ({ x: v.x, blowing: v.blowing })),
       rooms: () => ROOMS.length,
       heave: () => exc?.heave?.(),
@@ -366,6 +372,9 @@ async function boot() {
 
   renderer.setAnimationLoop(() => {
     const dt = Math.min(clock.getDelta(), 0.033);
+    // controller first: polled in EVERY mode, not inside the play branch —
+    // a pad that cannot reach the menu is a pad that cannot start the game
+    input.pollGamepad();
     t += dt;
 
     if (!transitioning) {
@@ -378,9 +387,16 @@ async function boot() {
       // heavy and blind: stand under the working bucket and it puts you down
       if (unmannedStrike() && player.struck(exc.x)) { audio.splat(); cam.punch(1.1); }
 
+      // Standing at the lock on foot. It is three tiles and a jump reaches
+      // two and a half, so it is not a thing you have missed a trick on —
+      // it is the machine's job, and the machine is back the way you came.
+      // Without this the room reads as an impossible wall, which is exactly
+      // how it played.
+      const blocker = !cleared && machineJob();
       const near = nearExc();
       setHint(cleared ? HINT.out
         : near ? HINT.near
+        : blocker ? blocker
         : (!exc.tamed && Math.abs(player.x - exc.x) < 6) ? HINT.wary
         : HINT.foot);
       if (near && input.take('action')) { startMount(); audio.mount(); }
@@ -497,19 +513,23 @@ async function boot() {
       }
     }
 
-    // the room is finished when the kid walks out through the gate the
-    // machine opened — on foot, because the machine cannot leave. The last
-    // gate ends the job; every other gate leads to the next site.
-    if (mode === 'foot' && player.x > site.def.exit.x - 0.8) {
-      if (siteIndex < ROOMS.length - 1) {
-        goSite(siteIndex + 1);
-      } else if (!cleared) {
-        cleared = true;
-        audio.mount();
-        const done = document.createElement('div');
-        done.id = 'clear';
-        done.innerHTML = `SITE CLEAR<span>⬡ ${collected} / ${totalBolts}</span>`;
-        document.body.appendChild(done);
+    // the flag builds as he closes on it and finishes by being run past —
+    // on foot, because the machine cannot leave. The last flag ends the job;
+    // every other one leads to the next site.
+    if (!transitioning) {
+      const ev = site.flag.update(dt, mode === 'riding' ? exc.x : player.x, REDUCED);
+      if (ev === 'phase') audio.bolt(2);
+      if (ev === 'done' && mode === 'foot') {
+        if (siteIndex < ROOMS.length - 1) {
+          goSite(siteIndex + 1);
+        } else if (!cleared) {
+          cleared = true;
+          audio.mount();
+          const done = document.createElement('div');
+          done.id = 'clear';
+          done.innerHTML = `SITE CLEAR<span>⬡ ${collected} / ${totalBolts}</span>`;
+          document.body.appendChild(done);
+        }
       }
     }
 
@@ -537,8 +557,15 @@ async function boot() {
       r.update(dt, { x: focusX, y: focusY }, REDUCED);
       if (mode === 'riding') {
         if (r.crush(exc.x, exc.hw)) { audio.splat(); cam.punch(0.5); }
-      } else if (mode === 'foot' && r.hits(player.x, player.y, player.hw, player.h)) {
-        if (player.struck(r.x)) { audio.splat(); cam.punch(0.9); }
+      } else if (mode === 'foot') {
+        // the stomp beats the lunge: if he is coming down on it, it does not
+        // matter what the robot was about to do. That ordering is what makes
+        // jumping AT one feel like the right answer rather than a gamble.
+        if (r.stompedBy(player.x, player.y, player.hw, player.vy)) {
+          player.bounce(); audio.stomp(); cam.punch(0.4); stomps++;
+        } else if (r.hits(player.x, player.y, player.hw, player.h)) {
+          if (player.struck(r.x)) { audio.splat(); cam.punch(0.9); }
+        }
       }
     }
     for (const v of site.vents) {

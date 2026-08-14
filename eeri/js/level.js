@@ -10,11 +10,11 @@
 // a machine-shaped lock, and an exit only the pair of them opens.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=2';
-import { craftMat, craftBox, craft } from './craft.js?v=3';
+import { PAL, mix } from './palette.js?v=12';
+import { craftMat, craftBox, craft } from './craft.js?v=12';
 
-import { ROOMS } from './rooms.js?v=1';
-import { compile, W, H, SOLID_CHARS, GROUND } from './parts.js?v=1';
+import { ROOMS } from './rooms.js?v=12';
+import { compile, W, H, SOLID_CHARS, GROUND, LADDER_CH } from './parts.js?v=12';
 
 export { ROOMS };
 const EPS = 0.001;
@@ -37,6 +37,21 @@ export class Level {
     if (cy < 0) return true;
     if (cy >= H) return false;
     return SOLID_CHARS.includes(this.map[H - 1 - cy][c]);
+  }
+
+  // A ladder is the one tile you can be INSIDE and still be held up. It is
+  // not solid, so nothing above changes; the kid asks whether he is on one.
+  ladderAt(x, y) {
+    const c = Math.floor(x), cy = Math.floor(y);
+    if (c < 0 || c >= W || cy < 0 || cy >= H) return false;
+    return this.map[H - 1 - cy][c] === LADDER_CH;
+  }
+
+  // is there ladder anywhere in the body's span? (feet, middle, head)
+  onLadder(box) {
+    return this.ladderAt(box.x, box.y + 0.1)
+      || this.ladderAt(box.x, box.y + box.h * 0.5)
+      || this.ladderAt(box.x, box.y + box.h - 0.1);
   }
 
   // digging edits the map, so collision stays honest — the bank shrinks as
@@ -177,6 +192,18 @@ export class Level {
     // …and a back wall behind the ground band, darker than any face, so a
     // pit reads as a hole receding rather than a notch cut in a wall
     box(136, 3.98, 0.1, mat.back, 48, 2, -0.9);
+
+    // LADDERS. Two stiles and a rung every tile — drawn from the map, so a
+    // ladder is where the collision says it is and nowhere else.
+    for (const L of this.def.ladders || []) {
+      const x = L.c + 0.5;
+      for (const dx of [-0.26, 0.26]) {
+        box(0.1, L.cy1 - L.cy0 + 1, 0.1, mat.steel, x + dx, (L.cy0 + L.cy1 + 1) / 2, 0.35);
+      }
+      for (let cy = L.cy0; cy <= L.cy1; cy++) {
+        box(0.62, 0.08, 0.1, mat.girder, x, cy + 0.5, 0.35);
+      }
+    }
 
     // cobbles embedded in the face — deterministic, so a screenshot of the
     // same frame is the same picture twice

@@ -37,7 +37,12 @@ export const REACH = {
   // airtime = rise (v/g = 0.42s) + fall through the same height at FALL_X
   // (sqrt(2h/(g*1.35)) = 0.362s) = 0.782s; carried at RUN = 4.85 tiles
   jumpAcross: 4.85,
-  gap: 4,                          // whole tiles of hole he clears from a run
+  // Whole tiles of hole he clears from a run. This was 4, because the run
+  // measures 4.85 — but that is 0.85 of a tile of margin, and DESIGN.md
+  // §4.1 locks "a full tile of slack" for a six-year-old. A 4-wide pit
+  // needed full speed at the very lip; the playthrough bot, which never
+  // gives up, stalled on one all afternoon. Three.
+  gap: 3,
 };
 
 // A machine is heavy, refuses a cliff, and cannot jump. It clears what it is
@@ -64,8 +69,14 @@ export const TILES = {
   girder: solid('G'),
   bank: solid('B'),
   brick: solid('K'),
+  // A ladder is NOT solid — you stand in it, not on it. It is the one tile
+  // the kid can occupy and still be held up, which is what makes a level
+  // able to go up (DESIGN.md §2, §4.2: levels may climb, but always come
+  // back down).
+  ladder: { ch: 'L', solid: false },
 };
 export const SOLID_CHARS = '#=GBK';
+export const LADDER_CH = 'L';
 
 // ---- parts ---------------------------------------------------------------
 // Each returns a descriptor. `stamp(grid)` writes tiles. `obstacle` is what
@@ -95,6 +106,16 @@ export const mound = (c0, c1, h) => ({
 export const ledge = (c0, c1, cy) => ({
   kind: 'ledge', c0, c1, cy,
   stamp: (g) => rows(g, rowOf(cy), rowOf(cy), c0, c1, '='),
+});
+
+// A ladder run: one column, from the floor up to `cy`. The kid climbs it
+// with up/down, and it is reachable because its foot stands on floor —
+// the checker holds it to that, since a ladder starting in mid-air is a
+// ladder nobody can get on.
+export const ladder = (c, cy0, cy1) => ({
+  kind: 'ladder', c, cy0, cy1,
+  stamp: (g) => rows(g, rowOf(cy1), rowOf(cy0), c, c, 'L'),
+  ladderRun: { c, cy0, cy1 },
 });
 
 export const girderBeam = (c0, c1, cy) => ({
@@ -185,7 +206,7 @@ export function compile(room) {
     name: room.name,
     parts: room.parts,
     bolts: [], pits: [], shots: [], machines: [], robots: [], hazards: [],
-    pieces: [], obstacles: [], ball: null,
+    pieces: [], obstacles: [], ball: null, ladders: [],
     spawn: { kid: { x: 4.5, y: GROUND }, machines: {} },
     exit: { x: W - 4, y: GROUND },
   };
@@ -196,6 +217,7 @@ export function compile(room) {
     if (p.machine) { out.machines.push(p.machine); out.spawn.machines[p.machine.type] = p.machine.x; }
     if (p.robot) out.robots.push(p.robot);
     if (p.hazard) out.hazards.push(p.hazard);
+    if (p.ladderRun) out.ladders.push(p.ladderRun);
     if (p.ball) out.ball = p.ball;
     if (p.bolts) out.bolts.push(...p.bolts);
     if (p.shot) out.shots.push(p.shot);
@@ -249,6 +271,41 @@ export function check(room) {
     }
   }
 
+  // A RIDE-ENDING HAZARD MAY NOT STAND BETWEEN A MACHINE AND ITS JOB.
+  // The wrecking ball is the only hazard that takes the ride rather than
+  // just knocking you back, and in SITE 1 it hung at x=70 — squarely on the
+  // excavator's only run from where it is parked to the bank at 84. Every
+  // attempt to bring the machine to its job ended with the ball throwing
+  // you out of the cab, so the bank could never be dug and the room played
+  // as an impossible wall. Nothing checked it, because the track rules only
+  // ever asked about holes.
+  // EVERY ride-ender counts, not just the ball. A steam vent throws you out
+  // of the cab exactly the same way, and the first version of this rule only
+  // knew about the ball — which left a vent sitting on SITE 2's route to the
+  // girder stack, unflagged, doing the identical thing.
+  const rideEnders = [];
+  if (r.ball) {
+    rideEnders.push({ what: `the swinging ball`, x: r.ball.px, half: r.ball.len * 0.95 + 0.6 });
+  }
+  for (const h of r.hazards) {
+    // the plume is ~0.42 wide either side and a machine is 1.42 from centre
+    rideEnders.push({ what: `the ${h.type} vent`, x: h.x, half: 1.9 });
+  }
+  for (const e of rideEnders) {
+    const lo = e.x - e.half, hi = e.x + e.half;
+    for (const m of r.machines) {
+      for (const o of r.obstacles) {
+        if (!o.clears || !m.verbs.includes(o.clears)) continue;
+        const from = Math.min(m.x, o.at), to = Math.max(m.x, o.at + (o.size ?? 1));
+        if (hi > from && lo < to) {
+          note(`${r.name}: ${e.what} at x=${e.x} stands across the `
+            + `${m.type}'s route (${from.toFixed(1)}…${to.toFixed(1)}) to the ${o.kind} `
+            + `it has to clear — a hit takes the RIDE, so the job can never be done`);
+        }
+      }
+    }
+  }
+
   // …and every obstacle that needs a verb must be inside the track of a
   // machine that HAS that verb
   for (const o of r.obstacles) {
@@ -263,6 +320,18 @@ export function check(room) {
       note(`${r.name}: the ${o.kind} at x=${o.at} is out of the ${m.type}'s reach — `
         + `it works ${reachFrom.toFixed(1)}…${reachTo.toFixed(1)} but its track is ${t0}…${t1}`);
     }
+  }
+
+  // a ladder has to START on something you can stand on, or nobody can get
+  // on it — and it must not run through a hole
+  for (const L of r.ladders) {
+    if (L.cy0 > GROUND) {
+      const below = r.grid[rowOf(L.cy0 - 1)][L.c];
+      if (!SOLID_CHARS.includes(below)) {
+        note(`${r.name}: the ladder at x=${L.c} starts at cy=${L.cy0} with nothing under it — nobody can get on`);
+      }
+    }
+    if (L.cy1 - L.cy0 < 1) note(`${r.name}: the ladder at x=${L.c} is not tall enough to be worth climbing`);
   }
 
   // robots must patrol on floor that exists
