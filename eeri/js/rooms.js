@@ -69,6 +69,12 @@ export const ROOMS = [
       hopper(42, 46),
       boltRun(5, 39, 41),
       boltRun(5, 42, 46),
+      // The ball hangs where only the KID ever walks. It used to hang at 70,
+      // squarely across the excavator's run from its park at 63 to the bank
+      // at 84 — a hit takes the ride, so the ride kept ending on the way to
+      // its own job. Found by somebody actually playing it.
+      girderBeam(36, 42, 7),
+      swingBall(39, 8),
 
       // ── 3 · COMBINE ── the hole and the hopper in one breath, and the
       // golden bolt is IN the hole: a pit costs you nothing but the walk
@@ -86,7 +92,6 @@ export const ROOMS = [
       hazard(60, 'steam'),
       machine('excavator', 63, [50, 92]),
       girderBeam(66, 72, 7),
-      swingBall(70, 8),                   // hangs off that girder
       boltRun(5, 64, 69),
       boltRun(6, 64, 69),
       boltRun(5, 70, 73),

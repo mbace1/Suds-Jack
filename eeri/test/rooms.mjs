@@ -17,6 +17,7 @@ import {
   check, estimate, REACH, LEVEL, TELL, CLOCK, SOLID_CHARS, W, H, GROUND,
   ground, mound, pit, bank, chasm, machine, robot, startAt, exitAt,
   ladder, ledge, checkpoint, flagAt, golden, boltRun, belt, tarp, TARP_RISE,
+  swingBall, hazard,
 } from '../js/parts.js?v=4';
 
 // a hundred bolts is the level's completion figure, so most of the BAD rooms
@@ -272,6 +273,22 @@ bites('a bolt hung where nothing can reach it', {
   }, 'slack');
   REACH.jumpUp = jump;
 }
+
+// From the other design instance's playtest — somebody played it and got
+// stuck, which is the best provenance a rule can have. The ball hung across
+// the excavator's only run to the bank it was meant to dig, and a hit takes
+// the RIDE, so the ride kept ending on its way to its own job.
+bites('a swinging ball parked in the machine\'s only run to its job', {
+  name: 'BAD/ride-blocked',
+  parts: [ground(), startAt(4), machine('excavator', 50, [44, 92]),
+    swingBall(70, 8), bank(84, 88, 3), ...furniture()],
+}, 'stands in the excavator\'s only run');
+
+bites('a steam vent parked in the same place', {
+  name: 'BAD/ride-vented',
+  parts: [ground(), startAt(4), machine('excavator', 50, [44, 92]),
+    hazard(70, 'steam'), bank(84, 88, 3), ...furniture()],
+}, 'stands in the excavator\'s only run');
 
 bites('a belt that walks you off an edge you did not choose', {
   name: 'BAD/belt',

@@ -328,7 +328,7 @@ s.listen(0, '127.0.0.1', async () => {
     };
     tick();
   });
-  await p.evaluate(() => window.__eeri.debug.setPos(68, 4.2));
+  await p.evaluate(() => window.__eeri.debug.setPos(37, 4.2));
   // the wind-up is 0.9s of GAME time and this sandbox runs several times
   // slower than the wall clock, so the budget is the frame rate's, not the
   // hazard's — the ORDER below is the actual assertion
@@ -362,7 +362,9 @@ s.listen(0, '127.0.0.1', async () => {
   let rode = await mountUp();
   ok('back in the cab, clear of the ball', rode);
 
-  await p.evaluate(() => { window.__eeri.exc.x = 69.4; window.__eeri.player.mercyT = 0; });
+  // drive the cab under the ball deliberately — it hangs at 39 now, off the
+  // machine's own run, which is the entire point of having moved it
+  await p.evaluate(() => { window.__eeri.exc.x = 38.4; window.__eeri.player.mercyT = 0; });
   const thrown = await p.waitForFunction(() => window.__eeri.mode() !== 'riding', null, { timeout: 10000 }).then(() => true).catch(() => false);
   ok('a hit takes the ride, not the run (thrown clear of the cab)', thrown);
 

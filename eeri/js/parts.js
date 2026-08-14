@@ -635,6 +635,35 @@ export function check(room) {
       + 'the flag closes the level, the gate closes the WORLD');
   }
 
+  // ---- nothing ride-ending may stand in a machine's own run -------------
+  // From the other design instance's playtest, and it is the best kind of
+  // rule: somebody actually played it and got stuck. The wrecking ball hung
+  // across the excavator's only run from where it parks to the bank it is
+  // meant to dig, and a hit takes the RIDE — so every attempt ended with the
+  // ball throwing you out of the cab and a long walk back.
+  //
+  // The sharpened version of that finding is what makes it a rule rather
+  // than a placement note: a bot that drives steadily CAN thread the swing.
+  // It is not a wall, it is timing-dependent — and for a six-year-old that
+  // is worse, because the same approach works sometimes and not others with
+  // no way to tell which. The old track rules only ever asked about holes.
+  for (const o of r.obstacles) {
+    if (!o.clears) continue;
+    const m = r.machines.find((mm) => mm.verbs.includes(o.clears));
+    if (!m) continue;
+    const lo = Math.min(m.x, o.at), hi = Math.max(m.x, o.at) + (o.size ?? 1);
+    const inTheWay = [];
+    if (r.ball && r.ball.px > lo && r.ball.px < hi) inTheWay.push(`the swinging ball at x=${r.ball.px}`);
+    for (const h of r.hazards) {
+      if (h.x > lo && h.x < hi) inTheWay.push(`the ${h.type} vent at x=${h.x}`);
+    }
+    for (const what of inTheWay) {
+      note(`${r.name}: ${what} stands in the ${m.type}'s only run from x=${m.x} to the `
+        + `${o.kind} at x=${o.at} — a hit takes the RIDE, so this is the ride ending `
+        + 'on the way to its own job, over and over');
+    }
+  }
+
   // ---- the gizmos, held to the two ways they go wrong -------------------
   // A belt that delivers you into a hole is the game moving you somewhere
   // you did not choose, which is the one thing a generous platformer must
