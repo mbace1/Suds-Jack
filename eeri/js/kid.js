@@ -282,6 +282,10 @@ const COYOTE = 0.09, BUFFER = 0.12;
 // THE CLIMB (DESIGN §2). Slower than the run, both ways, so a ladder reads
 // as a decision rather than a lift.
 const CLIMB_V = 3.6;
+// THE GIZMOS (DESIGN §2). A belt carries you while you stand on it — a drift,
+// not a change of speed, so you keep full control and only your ground
+// disagrees with you. A tarp throws you about twice as high as a jump.
+const BELT = 2.6, TARP_V = 17.5;
 
 export class Player {
   constructor(level, spawn, kid) {
@@ -324,6 +328,7 @@ export class Player {
   update(dt, input) {
     this.t += dt;
     this.justJumped = false; this.justLanded = false; this.justStomped = false;
+    this.justBounced = false;
     this.mercyT = Math.max(0, this.mercyT - dt);
     const wasGrounded = this.grounded;
     const ax = input.axis();
@@ -400,10 +405,26 @@ export class Player {
     const my = this.level.moveY(this.box(), this.vy * dt);
     this.y = my.y;
     if (my.hit) {
-      if (my.grounded && this.vy < -9) this.squash = 0.12; // hard landing
-      this.vy = 0;
+      // a tarp answers a landing with a bigger one, and it is checked BEFORE
+      // the landing is zeroed, because the bounce IS the landing
+      if (my.grounded && this.level.tarpAt(this.x, my.y) && this.vy < -1) {
+        this.vy = TARP_V;
+        this.squash = 0.14;
+        this.justBounced = true;
+      } else {
+        if (my.grounded && this.vy < -9) this.squash = 0.12; // hard landing
+        this.vy = 0;
+      }
     }
     this.grounded = my.grounded || this.level.grounded(this.box());
+
+    // the belt: it moves the FLOOR, so it is applied after the move and does
+    // not touch vx — you still run at your own speed, on ground that
+    // disagrees with you
+    if (this.grounded) {
+      const belt = this.level.beltAt(this.x, this.y);
+      if (belt) this.x = this.level.moveX(this.box(), belt * BELT * dt).x;
+    }
     this.groundedT = this.grounded ? COYOTE : this.groundedT - dt;
     if (this.grounded && !wasGrounded) this.justLanded = true;
 

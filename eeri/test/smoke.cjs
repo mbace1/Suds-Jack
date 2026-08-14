@@ -728,6 +728,56 @@ s.listen(0, '127.0.0.1', async () => {
       /pollGamepad\(\)/.test(src.slice(src.indexOf('setAnimationLoop'), src.indexOf('setAnimationLoop') + 400)));
   }
 
+  // ---- the gizmo kit, in the lab ----------------------------------------
+  // A belt is a floor that moves you and a tarp is a floor that throws you,
+  // so both are proved by standing still on one: anything that happens is
+  // the gizmo's doing, not the player's.
+  await p.evaluate(() => window.__eeri.debug.goLab());
+  const inLab = await p.waitForFunction(() => (window.__eeri.debug.gizmos().belts || []).length > 0,
+    null, { timeout: 15000 }).then(() => true).catch(() => false);
+  ok('the gizmo lab builds', inLab);
+
+  if (inLab) {
+    const giz = await p.evaluate(() => window.__eeri.debug.gizmos());
+    // THE BELT: stand still on it and the floor takes you somewhere
+    const b = giz.belts.find((x) => x.dir > 0);
+    await p.evaluate((v) => window.__eeri.debug.setPos(v.c0 + 0.5, v.cy + 1.2), b);
+    const carried = await p.waitForFunction(
+      (v) => window.__eeri.player.x > v.c0 + 1.4 && Math.abs(window.__eeri.player.vx) < 0.1,
+      b, { timeout: 15000 }).then(() => true).catch(() => false);
+    ok('a belt carries him along it while he stands still', carried,
+      'x=' + await p.evaluate(() => window.__eeri.player.x));
+
+    // …and it moves the FLOOR, not him: his own speed is untouched
+    ok('…and it does it without touching his own speed',
+      Math.abs(await p.evaluate(() => window.__eeri.player.vx)) < 0.1);
+
+    // THE TARP: dropped on, it throws him higher than his own jump can go
+    const t = giz.tarps[0];
+    await p.evaluate((v) => {
+      window.__eeri.player.mercyT = 0;
+      window.__eeri.debug.setPos((v.c0 + v.c1) / 2 + 0.5, v.cy + 3.5);
+    }, t);
+    const thrown = await p.waitForFunction(() => window.__eeri.player.vy > 13,
+      null, { timeout: 15000 }).then(() => true).catch(() => false);
+    ok('landing on a tarp throws him back up', thrown,
+      'vy=' + await p.evaluate(() => window.__eeri.player.vy));
+    const apex = await p.evaluate(async () => {
+      let top = window.__eeri.player.y;
+      for (let i = 0; i < 200; i++) {
+        await new Promise((r) => requestAnimationFrame(r));
+        top = Math.max(top, window.__eeri.player.y);
+        if (window.__eeri.player.grounded && i > 20) break;
+      }
+      return top;
+    });
+    ok(`…higher than any jump reaches (apex ${apex.toFixed(1)}, a jump is 2.65 tiles)`,
+      apex > t.cy + 1 + 3.6, 'apex=' + apex.toFixed(2));
+  }
+
+  await p.evaluate(() => window.__eeri.debug.goSite(2));
+  await p.waitForFunction(() => window.__eeri.site() === 2, null, { timeout: 15000 }).catch(() => {});
+
   // ---- the stomp --------------------------------------------------------
   // Dropped from a height measured off the TARGET, not from a fixed 7.5: the
   // levels now stand small machines on decks and the kinds are different

@@ -44,6 +44,10 @@ export const REACH = {
 // Measured off js/kid.js the same way REACH is, and used by the walk-time
 // estimate below.
 export const SPEED = { run: 6.2, climb: 3.6 };
+// what the gizmos do, in the same place as everything else the prover reads
+export const GIZMO = { belt: 2.6, tarp: 17.5 };
+// a tarp throws you tarp^2/2g tiles up: 17.5 gives 5.1, about twice a jump
+export const TARP_RISE = (17.5 * 17.5) / 60;
 
 // …and the machines', off js/excavator.js and js/crane.js, for the ride term
 // of the estimate below. A machine is deliberately slower than the kid.
@@ -98,12 +102,20 @@ export const TILES = {
   girder: solid('G'),
   bank: solid('B'),
   brick: solid('K'),
+  // A BELT carries you along it — the character carries the direction, so a
+  // belt cannot disagree with itself about which way it runs.
+  beltR: solid('C'),
+  beltL: solid('c'),
+  // …and a TARP throws you up off it, harder than a jump
+  tarp: solid('T'),
   // a rung is NOT solid — you pass through it in every direction and only
   // the climb verb holds you on it. A solid ladder is a wall with a picture
   // of a ladder on it.
   ladder: { ch: 'H', solid: false },
 };
-export const SOLID_CHARS = '#=GBK';
+export const SOLID_CHARS = '#=GBKCcT';
+export const BELT_CHARS = 'Cc';
+export const TARP_CHAR = 'T';
 export const CLIMB_CHAR = 'H';
 
 // ---- parts ---------------------------------------------------------------
@@ -220,6 +232,37 @@ export const swingBall = (px, py, len = 2.6, zoneW = 7.5) => ({
   ball: { px, py, len, zoneW },
 });
 
+// ---- the gizmo kit (DESIGN §2) -------------------------------------------
+// "Gizmos are the third source of variety and cost the least." They are also
+// what makes twelve levels possible: one idea per level means the kit IS the
+// level count, so breadth here beats polish.
+//
+// These two are TILE-NATIVE — a belt is a floor that moves you, a tarp is a
+// floor that throws you — which is why they cost almost nothing: they stamp
+// like any other part and the whole behaviour is one hook in the player's
+// step. The gizmos that must MOVE (a hoist platform, a tipping plank, a
+// swinging hook) are a different and much larger job, because every solid in
+// this game is a tile and a moving platform cannot be one. That is named
+// here so the next session knows the kit stops at the tile line on purpose.
+
+// A belt. `dir` is +1 (right) or -1 (left); it carries you at BELT while you
+// stand on it, so a belt against you is a spacing problem and a belt with
+// you is a gift.
+export const belt = (c0, c1, cy, dir = 1) => ({
+  kind: 'belt', c0, c1, cy, dir,
+  stamp: (g) => rows(g, rowOf(cy), rowOf(cy), c0, c1, dir > 0 ? 'C' : 'c'),
+  belt: { c0, c1, cy, dir },
+});
+
+// A tarp: land on it and it throws you higher than any jump. The check holds
+// it to its HEADROOM, because a bounce into a ceiling is a bounce that reads
+// as the game taking the move away from you.
+export const tarp = (c0, c1, cy) => ({
+  kind: 'tarp', c0, c1, cy,
+  stamp: (g) => rows(g, rowOf(cy), rowOf(cy), c0, c1, 'T'),
+  tarp: { c0, c1, cy },
+});
+
 // ---- the verticality kit -------------------------------------------------
 // A LADDER is the second verb the platformer half was missing (DESIGN §2),
 // and it is what turns a room from a corridor into a place. It stamps rungs
@@ -314,7 +357,8 @@ export function compile(room) {
     // the deck it serves), so the list is flattened once, here
     parts: room.parts.flat(),
     bolts: [], golden: [], pits: [], shots: [], machines: [], robots: [], hazards: [],
-    pieces: [], obstacles: [], ladders: [], ball: null, checkpoint: null, flag: null,
+    pieces: [], obstacles: [], ladders: [], belts: [], tarps: [],
+    ball: null, checkpoint: null, flag: null,
     spawn: { kid: { x: 4.5, y: GROUND }, machines: {} },
     exit: { x: W - 4, y: GROUND },
   };
@@ -329,6 +373,8 @@ export function compile(room) {
     if (p.bolts) out.bolts.push(...p.bolts);
     if (p.golden) out.golden.push(...p.golden);
     if (p.ladder) out.ladders.push(p.ladder);
+    if (p.belt) out.belts.push(p.belt);
+    if (p.tarp) out.tarps.push(p.tarp);
     if (p.checkpoint) out.checkpoint = p.checkpoint;
     if (p.flag) out.flag = p.flag;
     if (p.shot) out.shots.push(p.shot);
@@ -589,6 +635,32 @@ export function check(room) {
       + 'the flag closes the level, the gate closes the WORLD');
   }
 
+  // ---- the gizmos, held to the two ways they go wrong -------------------
+  // A belt that delivers you into a hole is the game moving you somewhere
+  // you did not choose, which is the one thing a generous platformer must
+  // never do — a jump you got wrong is yours, a belt you were standing on is
+  // not. So the cell it hands you to must be somewhere you can stand.
+  for (const b of r.belts) {
+    const outCol = b.dir > 0 ? b.c1 + 1 : b.c0 - 1;
+    const landing = solidAt(outCol, b.cy) || solidAt(outCol, b.cy - 1);
+    if (!landing) {
+      note(`${r.name}: the belt at ${b.c0}…${b.c1} runs ${b.dir > 0 ? 'right' : 'left'} and hands you `
+        + `to x=${outCol}, where there is no floor — a belt may not walk you off an edge`);
+    }
+  }
+  // …and a tarp needs the air to throw you into
+  for (const t of r.tarps) {
+    for (let cy = t.cy + 1; cy <= t.cy + Math.ceil(TARP_RISE); cy++) {
+      const blocked = solidAt(t.c0, cy) || solidAt(t.c1, cy);
+      if (blocked) {
+        note(`${r.name}: the tarp at ${t.c0}…${t.c1} throws you ${TARP_RISE.toFixed(1)} tiles `
+          + `into something solid at cy=${cy} — a bounce into a ceiling reads as the game `
+          + 'taking the move back');
+        break;
+      }
+    }
+  }
+
   // ---- generosity, as numbers (DESIGN §4.1) -----------------------------
   // "Every jump proved with a full tile of slack over the budget." The
   // budget's own ceilings are step 2 (of 2.65) and gap 4 (of 4.85), which is
@@ -627,7 +699,14 @@ export function check(room) {
       const t = surfaceBelow(fin, c, cy);
       if (t !== null && cy - t <= BOLT_REACH && cy - t >= -0.5) return true;
     }
-    return r.ladders.some((l) => Math.abs(l.c - col) <= 1 && cy >= l.cy0 - 1 && cy <= l.cy1 + 1);
+    if (r.ladders.some((l) => Math.abs(l.c - col) <= 1 && cy >= l.cy0 - 1 && cy <= l.cy1 + 1)) return true;
+    // A TARP IS A WAY UP, so the reach model has to know it — it was written
+    // when a jump was the only way to gain height, and the first thing the
+    // gizmo lab did was report its own bolts unreachable. Anything a gizmo
+    // adds to the player's reach has to be added here too, or the check
+    // starts refusing correct rooms, which is worse than not checking.
+    return r.tarps.some((t) => col >= t.c0 - 1 && col <= t.c1 + 1
+      && cy >= t.cy && cy <= t.cy + 1 + TARP_RISE + 0.9);
   };
   for (const [row, col] of [...r.bolts, ...r.golden]) {
     const cy = H - 1 - row;

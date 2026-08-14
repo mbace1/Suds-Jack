@@ -13,10 +13,10 @@ import * as THREE from 'three';
 import { PAL, mix } from './palette.js?v=2';
 import { craftMat, craftBox, craft } from './craft.js?v=2';
 
-import { ROOMS } from './rooms.js?v=2';
-import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, GROUND } from './parts.js?v=3';
+import { ROOMS, LAB } from './rooms.js?v=3';
+import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, GROUND } from './parts.js?v=4';
 
-export { ROOMS };
+export { ROOMS, LAB };
 const EPS = 0.001;
 
 // A Level is one compiled room. It compiles on construction rather than
@@ -66,6 +66,23 @@ export class Level {
 
   // the top of the ladder under (x, y) — the climb stops with his feet on
   // the deck rather than one rung above it, in the air
+  // The tile under his feet, which is how both gizmos are read: a belt is a
+  // floor that moves you and a tarp is a floor that throws you, so neither
+  // needs an entity — only the character under the boot.
+  underfoot(x, y) {
+    const c = Math.floor(x), cy = Math.floor(y - 0.05);
+    if (c < 0 || c >= W || cy < 0 || cy >= H) return ' ';
+    return this.map[H - 1 - cy][c];
+  }
+
+  // +1 right, -1 left, 0 for anything that is not a belt
+  beltAt(x, y) {
+    const ch = this.underfoot(x, y);
+    return BELT_CHARS.includes(ch) ? (ch === 'C' ? 1 : -1) : 0;
+  }
+
+  tarpAt(x, y) { return this.underfoot(x, y) === TARP_CHAR; }
+
   climbTop(x, y) {
     const c = Math.floor(x);
     let top = null;
@@ -261,6 +278,31 @@ export class Level {
             b.rotation.x = Math.PI / 2;
             b.position.set(bx, cy + 0.72, 0.74);
             group.add(b);
+          }
+        } else if (ch === 'C' || ch === 'c') {
+          // a belt: a plate with rollers under it, and CHEVRONS on top
+          // pointing the way it runs — the direction has to be readable
+          // standing still, not inferred once it has already moved you
+          box(w, 0.3, 1.4, mat.steel, cx, cy + 0.82, 0);
+          box(w, 0.16, 1.2, mat.girder, cx, cy + 0.6, 0);
+          for (let i = c; i <= e; i++) {
+            const chev = craftBox(0.34, 0.1, 0.34, craftMat(PAL.MACHINE, 'balsa'));
+            chev.position.set(i + 0.5, cy + 0.99, 0);
+            chev.rotation.y = ch === 'C' ? 0.78 : -0.78;
+            group.add(chev);
+          }
+        } else if (ch === 'T') {
+          // a tarp: sheet stretched over a frame, and it SAGS in the middle,
+          // because a flat one is a plank and reads as somewhere to stand
+          for (let i = c; i <= e; i++) {
+            const t = w === 1 ? 0 : (i - c) / (e - c) * 2 - 1;
+            const sag = (1 - t * t) * 0.22;
+            const sheet = craftBox(1, 0.14, 1.4, craftMat(PAL.CLOUD, 'felt'));
+            sheet.position.set(i + 0.5, cy + 0.86 - sag, 0);
+            group.add(sheet);
+          }
+          for (const bx of [c + 0.08, e + 0.92]) {
+            box(0.16, 0.9, 0.5, mat.girder, bx, cy + 0.45, 0);
           }
         } else if (ch === 'H') {
           // a ladder: two stiles and a rung per tile, set forward of the

@@ -11,13 +11,13 @@
 import * as THREE from 'three';
 import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=2';
 import { Input } from './input.js?v=2';
-import { Level, ROOMS } from './level.js?v=5';
+import { Level, ROOMS, LAB } from './level.js?v=6';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
 } from './pieces.js?v=4';
 import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=3';
 import { Camera } from './camera.js?v=1';
-import { buildKidModel, Kid, Player } from './kid.js?v=3';
+import { buildKidModel, Kid, Player } from './kid.js?v=4';
 import { buildExcavatorModel, Excavator } from './excavator.js?v=2';
 import { buildCraneModel, Crane } from './crane.js?v=1';
 import { Robot, SteamVent } from './robots.js?v=3';
@@ -97,8 +97,11 @@ async function boot() {
   const boltGeo = new THREE.CylinderGeometry(0.26, 0.26, 0.12, 6);
   const hubGeo = new THREE.CylinderGeometry(0.11, 0.11, 0.14, 6);
 
+  const SITES = [...ROOMS, LAB];
+  const LAST_LEVEL = ROOMS.length - 1;
+
   async function buildSite(i) {
-    const level = new Level(ROOMS[i]);
+    const level = new Level(SITES[i]);
     const def = level.def;
     const group = new THREE.Group();
     level.buildMeshes(group);
@@ -202,6 +205,9 @@ async function boot() {
     };
   }
 
+  // The lab is buildable but NOT in the sequence: SITES is what a room index
+  // means, ROOMS is what the game runs through. One derived constant rather
+  // than two lists that can disagree — the whole reason the parts kit exists.
   let siteIndex = 0;
   let site = await buildSite(0);
 
@@ -372,6 +378,9 @@ async function boot() {
       padSeen: () => input.padSeen,
       vents: () => site.vents.map((v) => ({ x: v.x, blowing: v.blowing })),
       rooms: () => ROOMS.length,
+      // the gizmo lab: buildable, never in the sequence (js/rooms.js)
+      goLab: () => goSite(ROOMS.length),
+      gizmos: () => ({ belts: site.def.belts, tarps: site.def.tarps }),
       // the level's own furniture, so "it is a level and not a room" is
       // something the gate can actually ask
       climbing: () => player.climbing,
@@ -565,7 +574,7 @@ async function boot() {
     if (site.flag) {
       const ev = site.flag.update(dt, mode === 'riding' ? exc.x : player.x);
       if (ev === 'phase') audio.clank();
-      if (ev === 'raised' && !transitioning && siteIndex < ROOMS.length - 1) {
+      if (ev === 'raised' && !transitioning && siteIndex < LAST_LEVEL) {
         audio.mount();
         runBolts += collected; runGolden += goldenGot;
         goSite(siteIndex + 1);

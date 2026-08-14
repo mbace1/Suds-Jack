@@ -10,7 +10,7 @@
 import * as THREE from 'three';
 import { PAL } from './palette.js?v=2';
 import { craftMat, craftBox } from './craft.js?v=2';
-import { CLOCK } from './parts.js?v=3';
+import { CLOCK } from './parts.js?v=4';
 
 // black/yellow chevrons — the one danger language, readable in greyscale
 function chevronTexture() {

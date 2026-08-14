@@ -12,12 +12,12 @@
 //
 // Run: node eeri/test/rooms.mjs
 
-import { ROOMS } from '../js/rooms.js?v=2';
+import { ROOMS, LAB } from '../js/rooms.js?v=3';
 import {
   check, estimate, REACH, LEVEL, TELL, CLOCK, SOLID_CHARS, W, H, GROUND,
   ground, mound, pit, bank, chasm, machine, robot, startAt, exitAt,
-  ladder, ledge, checkpoint, flagAt, golden, boltRun,
-} from '../js/parts.js?v=3';
+  ladder, ledge, checkpoint, flagAt, golden, boltRun, belt, tarp, TARP_RISE,
+} from '../js/parts.js?v=4';
 
 // a hundred bolts is the level's completion figure, so most of the BAD rooms
 // below would fail on the count alone and say nothing about what they are
@@ -134,6 +134,24 @@ for (const room of ROOMS) {
     ok(`${room.name}: the ladder at x=${l.c} has a deck to step off onto`, landed,
       `tops out at cy=${l.cy1}`);
   }
+}
+
+// ---- the gizmo lab -------------------------------------------------------
+// NOT a level — it is the standalone reference for the kit, the way
+// toko-drop keeps enemy-lab.html — so it is held to every STRUCTURAL rule a
+// level is, and to none of the shape rules (its length is whatever proving
+// the kit takes). A gizmo that cannot be placed legally fails here, before
+// anybody spends it on level 4.
+{
+  const r = check(LAB);
+  ok('the gizmo lab is a legal room', r.ok, r.problems.join('\n         → '));
+  const c = r.compiled;
+  ok(`the lab exercises both gizmos (${c.belts.length} belts, ${c.tarps.length} tarps)`,
+    c.belts.length >= 2 && c.tarps.length >= 2);
+  ok('the lab runs a belt each way, since a belt IS its direction',
+    new Set(c.belts.map((b) => b.dir)).size === 2);
+  console.log(`       a tarp throws you ${TARP_RISE.toFixed(1)} tiles — `
+    + `about twice the jump's ${REACH.jumpUp.toFixed(2)}\n`);
 }
 
 // ---- and the check has to BITE ------------------------------------------
@@ -254,6 +272,16 @@ bites('a bolt hung where nothing can reach it', {
   }, 'slack');
   REACH.jumpUp = jump;
 }
+
+bites('a belt that walks you off an edge you did not choose', {
+  name: 'BAD/belt',
+  parts: [ground(), startAt(4), pit(41, 43), belt(36, 40, GROUND - 1, 1), ...furniture()],
+}, 'may not walk you off an edge');
+
+bites('a tarp that throws you into a ceiling', {
+  name: 'BAD/tarp',
+  parts: [ground(), startAt(4), tarp(40, 43, GROUND - 1), ledge(40, 43, GROUND + 2), ...furniture()],
+}, 'into a ceiling');
 
 bites('a robot patrolling a deck that is not there', {
   name: 'BAD/deck-robot',

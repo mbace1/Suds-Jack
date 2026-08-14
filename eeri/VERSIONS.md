@@ -1,5 +1,55 @@
 # EERI — versions
 
+## v13 — 2026-08-14 — the gizmo kit starts, and it stops at the tile line
+
+**"Gizmos are the third source of variety and cost the least" (DESIGN §2) —
+and they are also what makes twelve levels possible, because one idea per
+level means the kit IS the level count.** Two of them, and both are
+TILE-NATIVE, which is why they cost almost nothing: a **belt** is a floor
+that moves you (2.6 tiles/s, and it moves the FLOOR — your own speed is
+untouched, so you keep full control on ground that disagrees with you), and a
+**tarp** is a floor that throws you (5.1 tiles, about twice the 2.65 a jump
+reaches). Each stamps like any other part and the whole behaviour is one hook
+in the player's step. A belt carries its direction in its own character —
+`C` runs right, `c` runs left — so a belt cannot disagree with itself, and
+the chevrons on top say which way while it is standing still.
+
+**Where the kit stops, and why it is a line rather than a pause.** The
+gizmos that must MOVE — a hoist platform, a tipping plank, a swinging hook —
+are a much larger job, because every solid in this game is a TILE and a
+moving platform cannot be one. That wants an entity with its own collision
+pass and carry logic. It is named here so the next session knows the kit
+stopped deliberately rather than ran out of steam.
+
+**The lab, and why it is not a level.** One idea per level means a new gizmo
+cannot be dropped into levels 1–3 without making each of them two levels — so
+the kit is proved in `LAB` (`js/rooms.js`), the standalone reference the way
+toko-drop keeps `enemy-lab.html`, and spent on levels 4–6, which are due a
+world-2 backdrop anyway. It is buildable but **never in the sequence**:
+`SITES` is what a room index means, `ROOMS` is what the game runs through,
+and one derived constant separates them rather than two lists that can
+disagree. `__eeri.debug.goLab()` opens it. It is held to every structural
+rule a level is — a hundred bolts, three golden, a checkpoint, a flag — and
+to none of the shape rules, because its length is whatever proving the kit
+takes.
+
+**Found immediately, and it is the general lesson:** the lab reported its own
+bolts unreachable. The reach model was written when a jump was the only way
+to gain height, so a trail four tiles above a tarp — which throws you five —
+read as hung in the sky. **Anything a gizmo adds to the player's reach has to
+be added to the model too, or the check starts refusing correct rooms, which
+is worse than not checking at all.** The tarp is in the model now; the next
+gizmo that moves the player will have to be.
+
+Both gizmos are held to the one way each goes wrong: a belt may not **hand
+you to a cell with no floor** — a jump you got wrong is yours, a belt you
+were standing on is not — and a tarp must have the **headroom** to throw you
+into, because a bounce into a ceiling reads as the game taking the move back.
+Both rules bite in `test/rooms.mjs`.
+
+Gate: 75 checks in the room prover, and the browser gate proves both gizmos
+by standing still on them — anything that happens is the gizmo's doing.
+
 ## v12 — 2026-08-14 — the generosity rules become numbers
 
 **Three telegraphs were under the floor the design sets, and nothing could

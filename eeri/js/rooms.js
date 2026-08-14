@@ -27,9 +27,9 @@
 import {
   ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm,
   machine, robot, hopper, roller, hazard, swingBall, startAt, exitAt, shot,
-  girderStack, scaffold, checkpoint, flagAt, golden,
+  girderStack, scaffold, checkpoint, flagAt, golden, belt, tarp,
   boltRun, boltArc, boltCol,
-} from './parts.js?v=3';
+} from './parts.js?v=4';
 
 export const ROOMS = [
   // ── LEVEL 1 — GROUNDWORKS ───────────────────────────────────────────
@@ -243,3 +243,64 @@ export const ROOMS = [
     ],
   },
 ];
+
+// ── THE GIZMO LAB ───────────────────────────────────────────────────────
+// NOT a level and deliberately not in ROOMS: it is the standalone reference
+// for the gizmo kit, the way toko-drop keeps `enemy-lab.html` — "when a
+// written brief and the lab disagree, the lab wins".
+//
+// It exists because of the rule that makes the kit necessary in the first
+// place: ONE IDEA PER LEVEL means a new gizmo cannot be dropped into levels
+// 1–3 without making each of them two levels. So the kit is proved here and
+// spent on levels 4–6, which are due a world-2 backdrop anyway.
+//
+// It is held to every rule a level is, so a gizmo that cannot be placed
+// legally fails the build before it is ever authored into a level.
+export const LAB = {
+  name: 'GIZMO LAB',
+  idea: 'the kit, proved before it is spent',
+  parts: [
+    ground(),
+    startAt(4.5),
+    boltRun(5, 6, 11),
+
+    // a belt WITH you, then a belt AGAINST you: the same object, and the
+    // whole of its design is which way the chevrons point
+    belt(14, 20, 3, 1),
+    boltRun(5, 14, 20),
+    belt(26, 32, 3, -1),
+    boltRun(5, 26, 32),
+
+    // a tarp under a deck it can actually reach, which is the point of the
+    // headroom rule — 5.1 tiles of throw wants somewhere to go
+    tarp(38, 41, 3),
+    boltRun(9, 38, 41),
+    ledge(44, 50, 9),
+    boltRun(11, 44, 50),
+    golden(12, [47]),
+
+    checkpoint(52),
+    boltRun(5, 54, 62),
+
+    // …and the two together: a belt that feeds a tarp
+    belt(64, 69, 3, 1),
+    tarp(70, 72, 3),
+    boltRun(8, 70, 73),
+    boltRun(5, 64, 69),
+    golden(10, [71]),
+    ...scaffold(78, 84, 6),
+    boltCol(78, 5, 7),
+    boltRun(8, 79, 84),
+    golden(9, [82]),
+    boltRun(5, 86, 91),
+    boltRun(6, 86, 91),
+    boltRun(6, 54, 62),
+    boltRun(4, 6, 11),
+    boltRun(6, 14, 20),
+    boltRun(7, 26, 32),
+    flagAt(93),
+
+    shot(0, 40, { z: 38, y: 3.0 }),
+    shot(40, 96, { z: 41, y: 3.4 }),
+  ],
+};
