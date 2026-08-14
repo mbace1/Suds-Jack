@@ -13,9 +13,9 @@
 // got wrong.
 
 import {
-  ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm,
+  ground, mound, ledge, ladder, girderBeam, pit, bank, brickWall, chasm,
   machine, robot, hazard, swingBall, bolts, startAt, exitAt, shot, girderStack,
-} from './parts.js?v=2';
+} from './parts.js?v=3';
 
 export const ROOMS = [
   // ── SITE 1 — THE DIG ────────────────────────────────────────────────
@@ -90,8 +90,19 @@ export const ROOMS = [
       bolts([[11, 20], [11, 21], [11, 22]]),
 
       hazard(16, 'steam'),                // on the KID's stretch, before the pit
-      robot(26, 36),
-      bolts([[13, 34], [13, 35], [13, 36]]),
+
+      // UP, then back down (DESIGN.md §4.2). A ladder off the floor to a
+      // high walk, bolts along it that the ground route never reaches, and
+      // a two-tile step down at the far end so you rejoin the level without
+      // needing the ladder again.
+      // the ladder must reach PAST the walk it serves, or he climbs to the
+      // last rung and bumps his head on the thing he was climbing to
+      ladder(26, 4, 11),
+      ledge(27, 34, 10),
+      bolts([[6, 28], [6, 30], [6, 32]]),   // only reachable off the ladder
+
+      robot(38, 41),
+      bolts([[13, 39], [13, 40]]),
 
       // §8.0 again: parked beside the stack it has to lift, not eighteen
       // tiles short of it. The steam vent used to stand at x=44, between the

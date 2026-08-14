@@ -532,6 +532,42 @@ s.listen(0, '127.0.0.1', async () => {
       run.x > 0.6 && Math.abs(run.z) < 0.75);
   }
 
+  // ---- the ladder (DESIGN.md §2: levels may go up, and come back down) --
+  {
+    await p.evaluate(() => window.__eeri.debug.goSite(1));
+    await p.waitForTimeout(1200);
+    const L = await p.evaluate(() => (window.__eeri.level.def.ladders || [])[0]);
+    ok('a level carries a ladder', !!L, JSON.stringify(L));
+    if (L) {
+      await p.evaluate((c) => window.__eeri.debug.setPos(c + 0.5, 4.2), L.c);
+      await p.waitForTimeout(400);
+      ok('standing at its foot is not climbing yet',
+        await p.evaluate(() => window.__eeri.player.climbing) === false);
+
+      const y0 = await p.evaluate(() => window.__eeri.player.y);
+      await p.evaluate(() => window.__eeri.debug.press('up'));
+      const rose = await p.waitForFunction((y) => window.__eeri.player.y > y + 3, y0, { timeout: 40000 })
+        .then(() => true).catch(() => false);
+      ok('holding up climbs it', rose,
+        `y ${y0} → ` + await p.evaluate(() => window.__eeri.player.y));
+      ok('and he is in the climb state', await p.evaluate(() => window.__eeri.player.climbing));
+      // gravity must be OFF on a ladder, or he slides while you hold nothing
+      await p.evaluate(() => window.__eeri.debug.release('up'));
+      const held = await p.evaluate(() => window.__eeri.player.y);
+      await p.waitForTimeout(900);
+      ok('letting go of up HOLDS him on the ladder rather than dropping him',
+        Math.abs(await p.evaluate(() => window.__eeri.player.y) - held) < 0.2);
+
+      // and jump lets go, so nobody has to find the exact top rung
+      await p.evaluate(() => { window.__eeri.debug.press('jump'); });
+      await p.waitForTimeout(300);
+      await p.evaluate(() => window.__eeri.debug.release('jump'));
+      ok('jump lets go of the ladder', await p.evaluate(() => window.__eeri.player.climbing) === false);
+    }
+    await p.evaluate(() => window.__eeri.debug.goSite(0));
+    await p.waitForTimeout(1200);
+  }
+
   // ---- the flag: it BUILDS, and it finishes by being run past -----------
   await p.reload({ waitUntil: 'load' });
   await p.waitForFunction(() => !!window.__eeri && window.__eeri.player.grounded, null, { timeout: 12000 });

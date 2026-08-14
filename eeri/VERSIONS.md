@@ -1,5 +1,30 @@
 # EERI — versions
 
+## v11 — 2026-08-13 — ladders, and levels that go up
+
+`climb` was a verb DESIGN.md declared and nothing implemented. It is real
+now, and it is the cheapest variety in the game: `L` is the one tile the
+kid can stand INSIDE and still be held up.
+
+The rules, chosen for a six-year-old rather than for realism: gravity is
+off entirely while you are on a ladder, up and down climb at a deliberate
+3.4 tiles/sec, left and right still slide you along, **letting go of up
+holds you where you are** rather than sliding you down, and **jump lets
+go** — so nobody has to hunt for the exact top rung to get off.
+
+SITE 2 gets the first climb: a ladder off the floor to a high walk with
+three bolts along it the ground route never reaches, then a step back down
+at the far end. §4.2's rule holds — a level may go up, but it comes back
+down, so the camera never has to leave its band for long.
+
+**Two traps, both caught by the prover the moment the part existed.** A
+ladder whose foot hangs in mid-air is a ladder nobody can get on, so the
+check demands something solid under it. And a ladder must reach PAST the
+walk it serves: the first cut stopped one rung short of the ledge, so he
+climbed to the top and bumped his head on the thing he was climbing to.
+
+Gates: 151 smoke (six new over the ladder), 30 prover, 7 playthrough.
+
 ## v10 — 2026-08-13 — the machine sits on the route, facing its job
 
 DESIGN.md §8.0. The excavator parked at x=61 with its bank at 84, so you

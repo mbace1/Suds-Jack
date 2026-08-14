@@ -382,7 +382,7 @@ is blocked on these, in order:
 | # | asset | for |
 |---|---|---|
 | 1 | `hopper_v1.glb`, `roller_v1.glb` | §3's enemies — each needs a squash node and a lit notice tell |
-| 2 | `ladder_v1.glb`, `scaffold_v1.glb` | must tile vertically without a seam |
+| 2 | `ladder_v1.glb`, `scaffold_v1.glb` | must tile vertically without a seam. **Built and playable on a code placeholder** — one tile tall, origin at its foot, the game repeats it up the run. It is drawn at z +0.35, in front of the wall it is bolted to, and a rung every tile is what makes the climb readable |
 | 3 | `plank_v1.glb` (tipping), `conveyor_v1.glb`, `hoist_v1.glb` | the gizmo kit |
 | 4 | **world 2 backdrop set** — `pipeworks_{skyline,far,mid,near,fore}_v1.png` | levels 4–6; same rects and sizes as `groundworks` |
 | 5 | `checkpoint_v1.glb` | §6.3 |

@@ -12,11 +12,11 @@
 //
 // Run: node eeri/test/rooms.mjs
 
-import { ROOMS } from '../js/rooms.js?v=2';
+import { ROOMS } from '../js/rooms.js?v=3';
 import {
   check, REACH, SOLID_CHARS, W, H, GROUND,
   ground, mound, pit, bank, chasm, machine, robot, startAt, exitAt, swingBall,
-} from '../js/parts.js?v=2';
+} from '../js/parts.js?v=3';
 
 let pass = 0, fail = 0;
 const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, console.log('  FAIL ' + n + (d ? '\n         → ' + d : ''))); };

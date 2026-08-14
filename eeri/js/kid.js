@@ -293,6 +293,9 @@ const GRAV = 30, FALL_X = 1.35, JUMP_V = 12.6;
 // so no level's reach budget is quietly broken by an enemy standing there.
 const BOUNCE_V = JUMP_V * 0.8;
 const COYOTE = 0.09, BUFFER = 0.12;
+// Climbing is deliberately unhurried — it is a change of pace, not a race,
+// and a six-year-old should never fall off a ladder by overshooting.
+const CLIMB = 3.4;
 
 export class Player {
   constructor(level, spawn, kid) {
@@ -306,6 +309,7 @@ export class Player {
     this.squash = 0;
     this.t = 0;
     this.mercyT = 0;
+    this.climbing = false;
     // one-frame events for the noise to hang off
     this.justJumped = false; this.justLanded = false;
   }
@@ -348,6 +352,34 @@ export class Player {
       const s = Math.sign(this.vx);
       this.vx -= s * FRIC * dt;
       if (Math.sign(this.vx) !== s) this.vx = 0;
+    }
+
+    // ---- THE LADDER (DESIGN.md §2) --------------------------------------
+    // The one tile you stand IN. Gravity is off while you are on it, up and
+    // down climb, left and right still slide you along, and jump lets go —
+    // which is how you get off without hunting for the exact top rung.
+    const onLadder = this.level.onLadder(this.box());
+    if (onLadder && (input.down.up || input.down.down)) this.climbing = true;
+    if (!onLadder || this.grounded && input.down.down) this.climbing = false;
+    if (this.climbing) {
+      if (input.take('jump')) {          // let go and jump clear
+        this.climbing = false;
+        this.vy = JUMP_V * 0.8;
+        this.justJumped = true;
+      } else {
+        this.vy = (input.down.up ? CLIMB : 0) - (input.down.down ? CLIMB : 0);
+        const my = this.level.moveY(this.box(), this.vy * dt);
+        this.y = my.y; if (my.hit) this.vy = 0;
+        const mx = this.level.moveX(this.box(), this.vx * dt);
+        this.x = mx.x; if (mx.hit) this.vx = 0;
+        this.grounded = this.level.grounded(this.box());
+        if (this.y < 0.9) {
+          const r = this.level.fallRespawn(this.x);
+          this.x = r.x; this.y = r.y; this.vx = 0; this.vy = 0; this.climbing = false;
+        }
+        this.updateVisual();
+        return;
+      }
     }
 
     // jump: buffered + coyote, variable height on release
@@ -393,7 +425,9 @@ export class Player {
     k.group.scale.y = this.squash > 0 ? 0.86 : 1;
     // mercy flicker — the one place the kid is allowed to disappear
     k.group.visible = this.mercyT <= 0 || Math.floor(this.mercyT * 18) % 2 === 0;
-    const state = !this.grounded ? 'air' : Math.abs(this.vx) > 0.4 ? 'run' : 'idle';
+    const state = this.climbing ? 'climb'
+      : !this.grounded ? 'air'
+      : Math.abs(this.vx) > 0.4 ? 'run' : 'idle';
     k.pose(state, this.t, Math.abs(this.vx));
     const gy = this.level.groundTop(this.x, this.y + 0.1);
     k.shadow.position.set(this.x, gy + 0.02, 0);

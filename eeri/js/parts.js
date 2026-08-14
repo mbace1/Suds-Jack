@@ -69,8 +69,14 @@ export const TILES = {
   girder: solid('G'),
   bank: solid('B'),
   brick: solid('K'),
+  // A ladder is NOT solid — you stand in it, not on it. It is the one tile
+  // the kid can occupy and still be held up, which is what makes a level
+  // able to go up (DESIGN.md §2, §4.2: levels may climb, but always come
+  // back down).
+  ladder: { ch: 'L', solid: false },
 };
 export const SOLID_CHARS = '#=GBK';
+export const LADDER_CH = 'L';
 
 // ---- parts ---------------------------------------------------------------
 // Each returns a descriptor. `stamp(grid)` writes tiles. `obstacle` is what
@@ -100,6 +106,16 @@ export const mound = (c0, c1, h) => ({
 export const ledge = (c0, c1, cy) => ({
   kind: 'ledge', c0, c1, cy,
   stamp: (g) => rows(g, rowOf(cy), rowOf(cy), c0, c1, '='),
+});
+
+// A ladder run: one column, from the floor up to `cy`. The kid climbs it
+// with up/down, and it is reachable because its foot stands on floor —
+// the checker holds it to that, since a ladder starting in mid-air is a
+// ladder nobody can get on.
+export const ladder = (c, cy0, cy1) => ({
+  kind: 'ladder', c, cy0, cy1,
+  stamp: (g) => rows(g, rowOf(cy1), rowOf(cy0), c, c, 'L'),
+  ladderRun: { c, cy0, cy1 },
 });
 
 export const girderBeam = (c0, c1, cy) => ({
@@ -190,7 +206,7 @@ export function compile(room) {
     name: room.name,
     parts: room.parts,
     bolts: [], pits: [], shots: [], machines: [], robots: [], hazards: [],
-    pieces: [], obstacles: [], ball: null,
+    pieces: [], obstacles: [], ball: null, ladders: [],
     spawn: { kid: { x: 4.5, y: GROUND }, machines: {} },
     exit: { x: W - 4, y: GROUND },
   };
@@ -201,6 +217,7 @@ export function compile(room) {
     if (p.machine) { out.machines.push(p.machine); out.spawn.machines[p.machine.type] = p.machine.x; }
     if (p.robot) out.robots.push(p.robot);
     if (p.hazard) out.hazards.push(p.hazard);
+    if (p.ladderRun) out.ladders.push(p.ladderRun);
     if (p.ball) out.ball = p.ball;
     if (p.bolts) out.bolts.push(...p.bolts);
     if (p.shot) out.shots.push(p.shot);
@@ -303,6 +320,18 @@ export function check(room) {
       note(`${r.name}: the ${o.kind} at x=${o.at} is out of the ${m.type}'s reach — `
         + `it works ${reachFrom.toFixed(1)}…${reachTo.toFixed(1)} but its track is ${t0}…${t1}`);
     }
+  }
+
+  // a ladder has to START on something you can stand on, or nobody can get
+  // on it — and it must not run through a hole
+  for (const L of r.ladders) {
+    if (L.cy0 > GROUND) {
+      const below = r.grid[rowOf(L.cy0 - 1)][L.c];
+      if (!SOLID_CHARS.includes(below)) {
+        note(`${r.name}: the ladder at x=${L.c} starts at cy=${L.cy0} with nothing under it — nobody can get on`);
+      }
+    }
+    if (L.cy1 - L.cy0 < 1) note(`${r.name}: the ladder at x=${L.c} is not tall enough to be worth climbing`);
   }
 
   // robots must patrol on floor that exists
