@@ -1,5 +1,5 @@
 {
-  "v": 17,
+  "v": 18,
   "_readme": "The asset seam. Every entry is either 'placeholder' (the game builds it in code) or 'live' (the game loads the file). Dropping an asset in = put the file at its path, flip status to live, bump the file's v token. The smoke gate reads this file: live entries must resolve and models must expose their contracted nodes. See assets/README.md for the full contract.",
   "models": {
     "eeri": {
@@ -75,6 +75,32 @@
         "idle",
         "walk",
         "run"
+      ]
+    },
+    "hopper": {
+      "file": "3d/hopper_v1.glb",
+      "status": "placeholder",
+      "rig": "skinned",
+      "height": 0.9,
+      "_note": "The jackhammer timing enemy. DESIGN \u00a73, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it \u2014 the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING \u00a71): scale the root. The notice tell that lights before it acts is also code \u2014 the lamp/eyes are texture. `hop` (417) is the fixed-rhythm hop itself.",
+      "clips": [
+        "idle",
+        "walk",
+        "run",
+        "hop"
+      ]
+    },
+    "bucket": {
+      "file": "3d/bucket_v1.glb",
+      "status": "placeholder",
+      "rig": "skinned",
+      "height": 0.85,
+      "_note": "The sleepy provocation enemy. DESIGN \u00a73, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it \u2014 the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING \u00a71): scale the root. The notice tell that lights before it acts is also code \u2014 the lamp/eyes are texture. `wake` (271) is head-led \u2014 the look-up IS the telegraph; then `run` chases.",
+      "clips": [
+        "idle",
+        "walk",
+        "run",
+        "wake"
       ]
     }
   },

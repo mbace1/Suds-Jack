@@ -1,5 +1,28 @@
 # EERI — versions
 
+## v19 — 2026-08-14 — the enemy family is three deep
+
+DESIGN §6.2 #1 — "nothing is more used and nothing is missing more" — was
+one enemy across twelve levels. Now: `hopper_v1.glb` (24 bones; idle/walk/
+run/**hop** — 417 Hop_with_Arms_Raised IS the fixed-rhythm hop §3 asks for)
+and `bucket_v1.glb` (22 bones; idle/walk/run/**wake** — 271, measured
+head-led at 0.12 against near-still limbs, so the look-up is the telegraph
+itself; then `run` chases). Both on the bolt-bot body plan, both rigged
+FIRST TRY — the volume rule from v17 held twice more. Both `placeholder`
+until js/robots.js consumes them.
+
+The **roller stays a vehicle** (PHASING routing: wheels → sliced nodes,
+never a rig). Its concept is in `art-src/bots/B-roller.jpg`: domed top that
+reads as un-landable from across a room — §3's rule for it — with its
+notice-tell lamp on a stalk. Mesh + slice is a follow-up; it needs
+`slice.mjs`, not the rigger.
+
+Costs this batch: 60 cr meshes, 12 cr clips — and **rigging billed 0** on
+both (the rig charge appears to have moved into bundle pricing). Balance
+1732 → all of Phase A's remaining art fits several times over.
+
+Gates: 174 smoke + 30 rooms.
+
 ## v18 — 2026-08-14 — the two new verbs animate
 
 DESIGN §6.2 #2, verbatim: "the two new verbs have no animation at all."
