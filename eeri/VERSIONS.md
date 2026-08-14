@@ -1,5 +1,31 @@
 # EERI — versions
 
+## v10 — 2026-08-13 — the machine sits on the route, facing its job
+
+DESIGN.md §8.0. The excavator parked at x=61 with its bank at 84, so you
+walked past it, met a wall you could not jump, and had to walk
+twenty-three tiles BACK to fetch it. That is the lock-and-key shape the
+pivot retired, and it is what the playtest felt as an impossible blocker —
+a lock feels impossible when the key is behind you.
+
+All three levels re-laid. The machine now stands a short drive short of
+its work and you ride forwards into it:
+
+| level | before | after |
+|---|---|---|
+| SITE 1 | 23 tiles of driving | **7** (2.1 s) |
+| SITE 2 | 18 to the stack | **5** |
+| SITE 3 | 14 tiles | **6** (1.8 s) |
+
+**And the ride-ender rule was too narrow.** It knew only about the
+swinging ball — but a steam vent throws you out of the cab in exactly the
+same way, and one stood at x=44 in SITE 2, squarely between the machine
+and the girder stack it had to lift. Same bug, different art, completely
+unflagged. The check covers every ride-ender now and caught that vent the
+moment it was broadened; the vent has moved to the kid's own stretch.
+
+Gates: 145 smoke, 30 prover, 7 playthrough, all green after the re-lay.
+
 ## v9 — 2026-08-13 — a gate that actually plays the game
 
 `test/rooms.mjs` proves a room's *geometry*. It cannot see whether a level

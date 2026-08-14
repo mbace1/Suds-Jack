@@ -262,15 +262,26 @@ export function check(room) {
   // you out of the cab, so the bank could never be dug and the room played
   // as an impossible wall. Nothing checked it, because the track rules only
   // ever asked about holes.
+  // EVERY ride-ender counts, not just the ball. A steam vent throws you out
+  // of the cab exactly the same way, and the first version of this rule only
+  // knew about the ball — which left a vent sitting on SITE 2's route to the
+  // girder stack, unflagged, doing the identical thing.
+  const rideEnders = [];
   if (r.ball) {
-    const swing = r.ball.len * 0.95 + 0.6;         // arc, plus the ball itself
-    const lo = r.ball.px - swing, hi = r.ball.px + swing;
+    rideEnders.push({ what: `the swinging ball`, x: r.ball.px, half: r.ball.len * 0.95 + 0.6 });
+  }
+  for (const h of r.hazards) {
+    // the plume is ~0.42 wide either side and a machine is 1.42 from centre
+    rideEnders.push({ what: `the ${h.type} vent`, x: h.x, half: 1.9 });
+  }
+  for (const e of rideEnders) {
+    const lo = e.x - e.half, hi = e.x + e.half;
     for (const m of r.machines) {
       for (const o of r.obstacles) {
         if (!o.clears || !m.verbs.includes(o.clears)) continue;
         const from = Math.min(m.x, o.at), to = Math.max(m.x, o.at + (o.size ?? 1));
         if (hi > from && lo < to) {
-          note(`${r.name}: the swinging ball at x=${r.ball.px} stands across the `
+          note(`${r.name}: ${e.what} at x=${e.x} stands across the `
             + `${m.type}'s route (${from.toFixed(1)}…${to.toFixed(1)}) to the ${o.kind} `
             + `it has to clear — a hit takes the RIDE, so the job can never be done`);
         }
