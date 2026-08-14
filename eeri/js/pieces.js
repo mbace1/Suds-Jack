@@ -12,15 +12,15 @@
 // at its foot.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=12';
-import { craftMat, craftBox } from './craft.js?v=12';
+import { PAL, mix } from './palette.js?v=14';
+import { craftMat, craftBox } from './craft.js?v=14';
 
 export function buildBankModel(rows = 3, width = 5) {
   const root = new THREE.Group();
   const nodes = {};
   const M = (c) => craftMat(c, 'balsa');
   const box = (parent, w, h, d, c, x, y, z) => {
-    const m = craftBox(w, h, d, M(c));
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c));
     m.position.set(x, y, z); parent.add(m); return m;
   };
 
@@ -67,7 +67,7 @@ export function buildGirderModel(len = 9.8) {
   const nodes = {};
   const M = (c) => craftMat(c, 'balsa');
   const box = (parent, w, h, d, c, x, y, z) => {
-    const m = craftBox(w, h, d, M(c));
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c));
     m.position.set(x, y, z); parent.add(m); return m;
   };
 
@@ -219,7 +219,7 @@ export function buildWallModel(rows = 4, width = 5) {
   const nodes = {};
   const M = (c) => craftMat(c, 'balsa');
   const box = (parent, w, h, d, c, x, y, z) => {
-    const m = craftBox(w, h, d, M(c));
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c));
     m.position.set(x, y, z); parent.add(m); return m;
   };
   const BRICK = mix(PAL.EARTH[1], PAL.HAZARD, 0.32);

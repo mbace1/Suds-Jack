@@ -1,70 +1,109 @@
-// EERI — the rooms, as parts.
+// EERI — the levels.
 //
 // Every room is a list of known-good pieces from js/parts.js, and nothing
 // here restates a rule: a pit knows it is a hole and that a machine will not
-// drive into one, a bank knows it needs a bucket, a machine knows the run of
-// floor it can work. `check()` walks each of these against the kid's real
-// reach budget, so a room that cannot be finished fails `test/rooms.mjs`
-// rather than stranding somebody halfway.
+// drive into one, a ladder knows it needs a foot and a landing, a bank knows
+// it needs a bucket. `check()` walks each of these against the kid's real
+// reach budget, so a room that cannot be finished — or a bolt that cannot be
+// had — fails `test/rooms.mjs` rather than stranding somebody halfway.
 //
-// The shape of a room, every time: the kid meets something HE can pass, then
-// something only the machine can, and the machine's track is laid so it can
-// actually reach its own job. That last line is the one the first two rooms
-// got wrong.
+// THE SHAPE OF A LEVEL (DESIGN §4, the owner's Mario/Yoshi direction), and
+// it is why these three rooms are laid out the way they are:
+//
+//   ONE IDEA PER LEVEL, IN FOUR BEATS. Introduce it alone and safe · vary
+//   it · combine it with something already known · test it once, at the
+//   peak. A level that introduces two ideas is two levels.
+//
+// The beats are marked below because the marks are the only thing that
+// stops beat 2 quietly becoming another beat 1. The RIDE sits at beat 3–4,
+// in the back half — `check()` enforces that much, since a ride that opens
+// a level is a level whose peak is its first minute.
+//
+// What each level teaches:
+//   1 — THE STOMP. Small things you land on. Nothing else is new.
+//   2 — THE CLIMB. Ladders and decks; the room stops being a corridor.
+//   3 — BOTH, and the crane. The big one, and the world's own ending.
 
 import {
-  ground, mound, ledge, ladder, girderBeam, pit, bank, brickWall, chasm,
-  machine, robot, hazard, swingBall, bolts, startAt, exitAt, shot, girderStack,
-} from './parts.js?v=12';
+  ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm,
+  machine, robot, hopper, roller, hazard, swingBall, startAt, exitAt, shot,
+  girderStack, scaffold, checkpoint, flagAt, golden, belt, tarp,
+  boltRun, boltArc, boltCol,
+} from './parts.js?v=14';
 
 export const ROOMS = [
-  // ── SITE 1 — THE DIG ────────────────────────────────────────────────
-  // Teaches the whole game in one room: a step you take, a hole you jump,
-  // an unmanned machine you have to read, and a bank only its bucket moves.
+  // ── LEVEL 1 — GROUNDWORKS ───────────────────────────────────────────
+  // THE STOMP. A hopper is a rhythm you either wait out or land on, and
+  // landing on it throws you higher than a jump ever does — which is the
+  // whole reason the verb exists and the reason the first secret is up
+  // where only a bounce feels natural.
   {
-    name: 'SITE 1',
+    name: 'LEVEL 1 — GROUNDWORKS',
+    idea: 'the stomp',
     parts: [
       ground(),
       startAt(4.5),
+      // a trail out of the gate: bolts at head height are collected by
+      // walking, which is how the level says "this way" without a word
+      boltRun(5, 8, 13),
 
-      mound(8, 14, 2),                    // 2 tiles — inside the kid's step
-      ledge(11, 16, 7),                   // one hop up off the mound's top
-      bolts([[9, 12], [9, 13], [9, 14], [9, 15]]),
+      // ── 1 · INTRODUCE ── one hopper, open floor, nothing else on screen.
+      // The arc over it is the timing, drawn: follow the bolts and the jump
+      // is already right.
+      hopper(15, 21),
+      boltArc(5, 15, 20, 2),
+      boltRun(5, 16, 19),
+      boltRun(5, 22, 24),
 
-      robot(24, 34),                      // a skitter to time, on open floor
-      bolts([[13, 30], [13, 31], [13, 32]]),
+      // ── 2 · VARY ── the same thing from a step, then two of them at
+      // different spacings, and a deck to read them from.
+      mound(25, 30, 2),
+      boltRun(6, 25, 30),
+      boltRun(7, 26, 29),
+      ledge(31, 35, 6),
+      boltRun(8, 31, 35),
+      boltRun(9, 32, 34),
+      golden(9, [33]),                    // one jump off that deck
+      hopper(33, 38),
+      boltRun(5, 36, 38),
+      hopper(42, 46),
+      boltRun(5, 39, 41),
+      boltRun(5, 42, 46),
+      // The ball hangs where only the KID ever walks. It used to hang at 70,
+      // squarely across the excavator's run from its park at 63 to the bank
+      // at 84 — a hit takes the ride, so the ride kept ending on the way to
+      // its own job. Found by somebody actually playing it.
+      girderBeam(36, 42, 7),
+      swingBall(39, 8),
 
-      // The ball lives in the stretch only the kid ever walks, well clear of
-      // the excavator's run. A hit takes the ride, so on a machine's route a
-      // ride-ender is not a hazard, it is a wall — the prover refuses it.
-      girderBeam(32, 38, 7),
-      swingBall(35, 8),
+      // ── 3 · COMBINE ── the hole and the hopper in one breath, and the
+      // golden bolt is IN the hole: a pit costs you nothing but the walk
+      // back, so going in on purpose is a fair thing to ask.
+      pit(48, 50),
+      boltArc(5, 47, 51, 2),
+      golden(4, [49]),
+      checkpoint(53),
+      boltRun(5, 54, 58),
+      boltRun(6, 54, 57),
+      boltRun(5, 59, 63),
 
-      hazard(40, 'steam'),                // telegraphed, on the way to the pit
-      pit(46, 48),                        // 3 wide — a full tile inside the run
-      bolts([[11, 46], [11, 47], [11, 48]]),
-
-      ledge(52, 57, 5),
-      bolts([[11, 53], [11, 54], [11, 55], [11, 56]]),
-
-      // THE MACHINE SITS ON THE ROUTE, FACING ITS JOB (DESIGN.md §8.0).
-      // It used to park at x=61 with the bank at 84 — so you walked past it,
-      // met a wall you could not jump, and had to walk twenty-three tiles
-      // BACK to fetch it. That is the lock-and-key shape the pivot retired,
-      // and it is what the playtest felt as an impossible blocker. Now you
-      // meet it a short drive short of the work and ride forwards into it.
-      machine('excavator', 77, [70, 92]),
-
-      // Scenery you pass under. A ball used to hang off this beam, on the
-      // machine's route, and it threw you out of the cab often enough that
-      // the level read as an impossible wall.
+      // ── 4 · TEST, then THE RIDE ── the excavator is the peak. It is not
+      // a puzzle: board it, dig the bank out of the way, step off.
+      hazard(60, 'steam'),
+      machine('excavator', 63, [50, 92]),
       girderBeam(66, 72, 7),
-      robot(66, 72),                      // moved off the machine's parking spot
-      bolts([[13, 67], [13, 68], [13, 69]]),
+      boltRun(5, 64, 69),
+      boltRun(6, 64, 69),
+      boltRun(5, 70, 73),
+      robot(74, 80),
+      boltRun(5, 74, 79),
+      boltRun(6, 81, 83),
 
       bank(84, 88, 3),                    // 3 tiles — above his jump
-      bolts([[12, 90], [12, 91]]),        // only reachable once it is dug
-      exitAt(92.5),
+      boltRun(5, 89, 92),                 // only once it is dug
+      boltRun(6, 89, 92),
+      golden(6, [90]),
+      flagAt(93),
 
       shot(40, 52, { z: 37.5, y: 3.0 }),
       shot(52, 74, { z: 41, y: 3.4, lead: 2.2 }),
@@ -72,90 +111,201 @@ export const ROOMS = [
     ],
   },
 
-  // ── SITE 2 — THE GIRDER ─────────────────────────────────────────────
-  // The same machine, the other verb. The chasm is past both of them: no
-  // jump reaches it and the machine refuses the cliff, so the only way over
-  // is a span the machine carries there and lowers in.
+  // ── LEVEL 2 — THE SCAFFOLD ──────────────────────────────────────────
+  // THE CLIMB. Every ladder here goes up and comes back down, because a
+  // level that ends higher than it started is a level whose camera never
+  // gets home (DESIGN §4.2). The stomp is not re-taught — it is simply
+  // there, underneath, as the thing you already know.
   {
-    name: 'SITE 2',
+    name: 'LEVEL 2 — THE SCAFFOLD',
+    idea: 'the climb',
     parts: [
       ground(),
       startAt(4.5),
+      boltRun(5, 7, 10),
 
-      mound(8, 11, 2),
-      ledge(9, 14, 7),
-      bolts([[9, 10], [9, 11], [9, 12]]),
+      // ── 1 · INTRODUCE ── one ladder, one deck, nothing under it. The
+      // bolts run UP the rungs, so the first climb is a thing you do for a
+      // reward rather than a thing you are told about.
+      ...scaffold(12, 18, 7),
+      boltCol(12, 5, 8),
+      boltRun(5, 13, 18),
+      boltRun(9, 13, 18),
 
-      pit(20, 22),                        // 3 wide — the kid's hole
-      bolts([[11, 20], [11, 21], [11, 22]]),
+      // ── 2 · VARY ── a hole under the next one, and a taller climb. The
+      // deck is the way over the hole; the hole is three tiles, so the jump
+      // is also the way over the hole. Both are right.
+      pit(20, 22),
+      boltArc(5, 19, 23, 2),
+      boltArc(6, 19, 23, 2),
+      ...scaffold(26, 32, 9),
+      boltCol(26, 5, 10),
+      boltRun(5, 27, 32),
+      boltRun(11, 27, 32),
+      golden(12, [30]),
 
-      hazard(16, 'steam'),                // on the KID's stretch, before the pit
+      // ── 3 · COMBINE ── what is already known, underneath what is new: a
+      // roller trundles the floor you would have walked, and the deck you
+      // just learned to climb passes over the top of it.
+      hazard(24, 'steam'),
+      hopper(30, 33),
+      roller(35, 41),
+      boltRun(5, 34, 38),
+      boltRun(6, 34, 37),
+      ...scaffold(43, 48, 6),
+      boltRun(5, 43, 48),
+      boltRun(8, 44, 48),
+      boltRun(5, 50, 55),
+      checkpoint(46),
 
-      // UP, then back down (DESIGN.md §4.2). A ladder off the floor to a
-      // high walk, bolts along it that the ground route never reaches, and
-      // a two-tile step down at the far end so you rejoin the level without
-      // needing the ladder again.
-      // the ladder must reach PAST the walk it serves, or he climbs to the
-      // last rung and bumps his head on the thing he was climbing to
-      ladder(26, 4, 11),
-      ledge(27, 34, 10),
-      bolts([[6, 28], [6, 30], [6, 32]]),   // only reachable off the ladder
-
-      robot(38, 41),
-      bolts([[13, 39], [13, 40]]),
-
-      // §8.0 again: parked beside the stack it has to lift, not eighteen
-      // tiles short of it. The steam vent used to stand at x=44, between the
-      // machine and that stack — and a vent throws you out of the cab exactly
-      // as the ball does, so it was the same bug wearing different art. The
-      // prover knows about every ride-ender now, not just the ball.
-      machine('excavator', 43, [38, 57]),
-      girderStack(48),                    // the span waits on its trestles
+      // ── 4 · THE RIDE ── the span. The gap past the stack is past both of
+      // them: no jump reaches it and the machine refuses a cliff, so the
+      // only way over is a girder the machine carries there and lowers in.
+      machine('excavator', 52, [44, 57]),
+      girderStack(48),
       chasm(58, 65),                      // 8 wide — machine-shaped
-      bolts([[11, 61], [11, 62]]),        // only over the span
+      boltRun(5, 59, 64),                 // only over the span
+      golden(7, [62]),
 
-      robot(70, 78),
-      bolts([[12, 70], [12, 71]]),
-      bolts([[13, 84], [13, 85]]),
-      exitAt(92.5),
+      // …and down again, on the far side
+      ...scaffold(70, 75, 6),
+      boltCol(70, 5, 7),
+      boltRun(8, 71, 75),
+      golden(9, [73]),
+      hopper(78, 84),
+      boltArc(5, 78, 83, 2),
+      boltRun(5, 86, 91),
+      flagAt(93),
 
       shot(16, 26, { z: 37.5, y: 3.0 }),
       shot(42, 72, { z: 44, y: 3.8, lead: 2.2 }),
     ],
   },
 
-  // ── SITE 3 — THE WALL ───────────────────────────────────────────────
-  // The third verb. A wrecking crane is parked behind a brick wall four
-  // tiles high; nothing else in the room touches it. Read its swing, take
-  // the cab, and knock the way out down.
+  // ── LEVEL 3 — THE HIGH WALL ─────────────────────────────────────────
+  // THE BIG ONE (DESIGN §4.2): no new verb, both of the old ones, and the
+  // crane. Its flag is the big one, and past it is the gate — the world's
+  // curtain, not the level's, so this is the only room that ends with Eeri
+  // clocking out and walking through.
   {
-    name: 'SITE 3',
+    name: 'LEVEL 3 — THE HIGH WALL',
+    idea: 'both verbs, and the crane',
     parts: [
       ground(),
       startAt(4.5),
+      boltRun(5, 7, 12),
 
-      robot(14, 22),
-      bolts([[13, 16], [13, 17], [13, 18]]),
+      // ── 1 · INTRODUCE (the pairing, not a verb) ── a hopper on a deck:
+      // the climb takes you to it and the stomp takes it off.
+      ...scaffold(15, 21, 6),
+      boltCol(15, 5, 7),
+      robot(17, 20, 'hopper', 7),
+      boltRun(5, 16, 21),
+      boltRun(8, 16, 21),
+      golden(9, [19]),
 
-      pit(28, 30),                        // 3 wide — a full tile of slack
-      bolts([[11, 28], [11, 29], [11, 30]]),
+      // ── 2 · VARY ── the hole, with the roller on the far side of it.
+      boltRun(5, 23, 26),
+      pit(28, 30),
+      boltArc(5, 27, 31, 2),
+      roller(33, 40),
+      boltRun(5, 33, 39),
+      boltRun(6, 33, 39),
 
-      ledge(36, 42, 6),
-      bolts([[10, 37], [10, 38], [10, 39]]),
-
-      hazard(48, 'steam'),
+      // ── 3 · COMBINE ── a deck over a hopper, a hopper on the deck, and
+      // the ladder is the only way between them.
+      ...scaffold(42, 48, 6),
+      boltRun(5, 43, 48),
+      boltRun(8, 43, 48),
+      boltRun(9, 44, 47),
+      golden(10, [45]),
+      hopper(43, 47),
+      checkpoint(50),
+      boltRun(5, 50, 51),
+      boltRun(6, 50, 51),
       mound(52, 58, 2),
-      robot(62, 70),
+      boltRun(7, 52, 57),
+      boltRun(5, 62, 63),
+      hazard(60, 'steam'),
 
-      // §8.0: within sight of the wall, facing it
-      machine('crane', 74, [68, 92]),
+      // ── 4 · THE RIDE ── the crane, and the wall. The ball that swings at
+      // you unmanned is the ball you swing at the wall once the cab is
+      // yours: the room's one new object is a whole verb.
+      machine('crane', 66, [34, 92]),
+      roller(70, 76),
+      boltRun(5, 68, 75),
+      boltRun(6, 68, 75),
+      golden(6, [78]),
 
       brickWall(80, 84, 4),               // four tiles of brick
-      bolts([[12, 88], [12, 89]]),
-      exitAt(92.5),
+      boltRun(5, 86, 91),
+      boltRun(6, 86, 91),
+      flagAt(88, true),                   // the big flag — the world's peak
+      exitAt(92.5),                       // …and the gate past it: clocking out
 
       shot(24, 36, { z: 38, y: 3.0 }),
       shot(60, 96, { z: 43, y: 3.6, lead: 2.0 }),
     ],
   },
 ];
+
+// ── THE GIZMO LAB ───────────────────────────────────────────────────────
+// NOT a level and deliberately not in ROOMS: it is the standalone reference
+// for the gizmo kit, the way toko-drop keeps `enemy-lab.html` — "when a
+// written brief and the lab disagree, the lab wins".
+//
+// It exists because of the rule that makes the kit necessary in the first
+// place: ONE IDEA PER LEVEL means a new gizmo cannot be dropped into levels
+// 1–3 without making each of them two levels. So the kit is proved here and
+// spent on levels 4–6, which are due a world-2 backdrop anyway.
+//
+// It is held to every rule a level is, so a gizmo that cannot be placed
+// legally fails the build before it is ever authored into a level.
+export const LAB = {
+  name: 'GIZMO LAB',
+  idea: 'the kit, proved before it is spent',
+  parts: [
+    ground(),
+    startAt(4.5),
+    boltRun(5, 6, 11),
+
+    // a belt WITH you, then a belt AGAINST you: the same object, and the
+    // whole of its design is which way the chevrons point
+    belt(14, 20, 3, 1),
+    boltRun(5, 14, 20),
+    belt(26, 32, 3, -1),
+    boltRun(5, 26, 32),
+
+    // a tarp under a deck it can actually reach, which is the point of the
+    // headroom rule — 5.1 tiles of throw wants somewhere to go
+    tarp(38, 41, 3),
+    boltRun(9, 38, 41),
+    ledge(44, 50, 9),
+    boltRun(11, 44, 50),
+    golden(12, [47]),
+
+    checkpoint(52),
+    boltRun(5, 54, 62),
+
+    // …and the two together: a belt that feeds a tarp
+    belt(64, 69, 3, 1),
+    tarp(70, 72, 3),
+    boltRun(8, 70, 73),
+    boltRun(5, 64, 69),
+    golden(10, [71]),
+    ...scaffold(78, 84, 6),
+    boltCol(78, 5, 7),
+    boltRun(8, 79, 84),
+    golden(9, [82]),
+    boltRun(5, 86, 91),
+    boltRun(6, 86, 91),
+    boltRun(6, 54, 62),
+    boltRun(4, 6, 11),
+    boltRun(6, 14, 20),
+    boltRun(7, 26, 32),
+    flagAt(93),
+
+    shot(0, 40, { z: 38, y: 3.0 }),
+    shot(40, 96, { z: 41, y: 3.4 }),
+  ],
+};

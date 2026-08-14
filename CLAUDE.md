@@ -789,11 +789,28 @@ commit message.
   not a workspace**. Editing Eeri directly on `gh-pages` starts a lineage
   with no common ancestor to `main` — `git merge-base` returns *nothing* —
   and then neither tree can be merged into the other without hand work.
-  This has happened twice: once between two `claude/*` branches, once
-  between `main` and `gh-pages`.
-- **Before any Eeri work: `git fetch origin main gh-pages` and diff both.**
-  If they have diverged, reconcile *first* — code from whichever lineage is
-  ahead, art re-judged against `PHASING.md` §0.1 no matter who shipped it.
+  This has happened **three** times: between two `claude/*` branches, then
+  between `main` and `gh-pages`, then again with
+  `claude/eeri-platformer-levels-dtfh0x`. All three are now joined into
+  `main` (v12 and v14) — **`main` is the one tree, and it is ahead of every
+  other branch.** Start from it.
+- **Before any Eeri work: `git fetch origin` and check `git merge-base`
+  against `origin/main`.** If it returns nothing, you are on a fourth
+  lineage — stop and reconcile before writing anything. Code from whichever
+  lineage is ahead *per file*, art re-judged against `PHASING.md` §0.1 no
+  matter who shipped it.
+- **`--allow-unrelated-histories` is not the tool.** It was tried: the
+  Eeri branches descend from `gh-pages`, so merging one drags the whole
+  deployed site — toko-drop, toko, voxel — into `main`. Scope the join to
+  `eeri/js`, `eeri/test`, `index.html` and the manifest, and keep `main`'s
+  docs whole.
+- **Merge by KIND, and against the content ancestor.** There is no git
+  ancestor, but each lineage's `VERSIONS.md` names where it forked, and
+  that commit's tree usually *is* a real ancestor in content — check with
+  a byte comparison on a file neither side touched. Then a genuine
+  three-way `git merge-file` does the work instead of you picking files by
+  hand; both v12 and v14 were done that way and the conflicts were mostly
+  single import lines.
 - **Version numbers do not detect this.** Both lineages independently
   reached "v11" and `hub/versions.json` said `v: 11` on each, so nothing
   looked wrong. **Never reuse a version number: fetch and read the other

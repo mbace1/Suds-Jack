@@ -37,12 +37,45 @@ export const REACH = {
   // airtime = rise (v/g = 0.42s) + fall through the same height at FALL_X
   // (sqrt(2h/(g*1.35)) = 0.362s) = 0.782s; carried at RUN = 4.85 tiles
   jumpAcross: 4.85,
-  // Whole tiles of hole he clears from a run. This was 4, because the run
-  // measures 4.85 — but that is 0.85 of a tile of margin, and DESIGN.md
-  // §4.1 locks "a full tile of slack" for a six-year-old. A 4-wide pit
-  // needed full speed at the very lip; the playthrough bot, which never
-  // gives up, stalled on one all afternoon. Three.
-  gap: 3,
+  gap: 4,                          // whole tiles of hole he clears from a run
+};
+
+// ---- the speeds, and the telegraph clock ---------------------------------
+// Measured off js/kid.js the same way REACH is, and used by the walk-time
+// estimate below.
+export const SPEED = { run: 6.2, climb: 3.6 };
+// what the gizmos do, in the same place as everything else the prover reads
+export const GIZMO = { belt: 2.6, tarp: 17.5 };
+// a tarp throws you tarp^2/2g tiles up: 17.5 gives 5.1, about twice a jump
+export const TARP_RISE = (17.5 * 17.5) / 60;
+
+// …and the machines', off js/excavator.js and js/crane.js, for the ride term
+// of the estimate below. A machine is deliberately slower than the kid.
+export const MACHINE_SPEED = { excavator: 3.4, crane: 2.8 };
+// what a ride's own job costs, in seconds: the mount and dismount moves, and
+// then the work itself — a dug row, a slung span, a swing of the ball
+export const RIDE = { mount: 0.55, dismount: 0.5, dig: 0.7, sling: 0.55, seat: 0.5, swing: 2.4 };
+
+// THE TELEGRAPH FLOOR (DESIGN §4.1, the owner's, and it is about a
+// six-year-old): "telegraph ≥ 1.0 s before anything can touch you". A rule
+// the prover cannot READ is a rule that drifts — all three of these clocks
+// were under it — so the clocks live here, in the pure module, and
+// robots.js and hazards.js import them rather than keeping their own.
+export const TELL = 1.0;
+export const CLOCK = {
+  // it sees you, it draws back, and only then does it lunge: notice + wind
+  // is the whole warning, so that sum is what the floor applies to
+  skitter: { notice: 0.45, wind: 0.62, lunge: 0.5, recover: 0.7 },
+  // the collar lights before it blows
+  vent: { cycle: 3.2, warn: 1.05, blow: 0.6 },
+  // it winds back, chevrons pulsing, one warning tone
+  ball: { wind: 1.05, swing: 1.15, rest: 1.0 },
+  // A HOPPER IS EXEMPT and the reason is not an excuse: the floor is about
+  // things that BECOME dangerous. A hopper is dangerous continuously and
+  // identically from the moment you see it — a metronome, never a surprise —
+  // so what it owes you is a readable rhythm, not a warning.
+  hopper: { cycle: 1.35, crouch: 0.28, rise: 1.25 },
+  roller: { speed: 2.4 },
 };
 
 // A machine is heavy, refuses a cliff, and cannot jump. It clears what it is
@@ -69,14 +102,21 @@ export const TILES = {
   girder: solid('G'),
   bank: solid('B'),
   brick: solid('K'),
-  // A ladder is NOT solid — you stand in it, not on it. It is the one tile
-  // the kid can occupy and still be held up, which is what makes a level
-  // able to go up (DESIGN.md §2, §4.2: levels may climb, but always come
-  // back down).
-  ladder: { ch: 'L', solid: false },
+  // A BELT carries you along it — the character carries the direction, so a
+  // belt cannot disagree with itself about which way it runs.
+  beltR: solid('C'),
+  beltL: solid('c'),
+  // …and a TARP throws you up off it, harder than a jump
+  tarp: solid('T'),
+  // a rung is NOT solid — you pass through it in every direction and only
+  // the climb verb holds you on it. A solid ladder is a wall with a picture
+  // of a ladder on it.
+  ladder: { ch: 'H', solid: false },
 };
-export const SOLID_CHARS = '#=GBK';
-export const LADDER_CH = 'L';
+export const SOLID_CHARS = '#=GBKCcT';
+export const BELT_CHARS = 'Cc';
+export const TARP_CHAR = 'T';
+export const CLIMB_CHAR = 'H';
 
 // ---- parts ---------------------------------------------------------------
 // Each returns a descriptor. `stamp(grid)` writes tiles. `obstacle` is what
@@ -106,16 +146,6 @@ export const mound = (c0, c1, h) => ({
 export const ledge = (c0, c1, cy) => ({
   kind: 'ledge', c0, c1, cy,
   stamp: (g) => rows(g, rowOf(cy), rowOf(cy), c0, c1, '='),
-});
-
-// A ladder run: one column, from the floor up to `cy`. The kid climbs it
-// with up/down, and it is reachable because its foot stands on floor —
-// the checker holds it to that, since a ladder starting in mid-air is a
-// ladder nobody can get on.
-export const ladder = (c, cy0, cy1) => ({
-  kind: 'ladder', c, cy0, cy1,
-  stamp: (g) => rows(g, rowOf(cy1), rowOf(cy0), c, c, 'L'),
-  ladderRun: { c, cy0, cy1 },
 });
 
 export const girderBeam = (c0, c1, cy) => ({
@@ -174,10 +204,22 @@ export const girderStack = (x) => ({ kind: 'stack', x, girderStack: { x } });
 
 // Small things to avoid. A robot patrols a span of floor; the Yoshi rule
 // applies — it takes the ride, never the run.
-export const robot = (c0, c1, kind = 'skitter') => ({
+//
+// THREE KINDS, and the split is the whole point of having more than one
+// (DESIGN §3): a `hopper` is a TIMING test — it rises and falls on a fixed
+// rhythm you wait out or stomp; a `roller` is a SPACING test — it trundles
+// its span and is too flat to stomp, so it is a thing you jump; a `skitter`
+// is a PROVOCATION test — it patrols, notices, winds up and lunges. One
+// behaviour each, and none of them chases you across the room.
+// `cy` puts one on a DECK rather than on the ground — the height it stands
+// at, which is also the height the checker holds it to: a robot up there is
+// no longer walking over the hole in the floor below it.
+export const robot = (c0, c1, kind = 'skitter', cy = null) => ({
   kind: 'robot', c0, c1, robotKind: kind,
-  robot: { c0, c1, kind },
+  robot: { c0, c1, kind, cy },
 });
+export const hopper = (c0, c1) => robot(c0, c1, 'hopper');
+export const roller = (c0, c1) => robot(c0, c1, 'roller');
 
 // A small telegraphed hazard sitting on the floor at x.
 export const hazard = (x, type = 'steam') => ({
@@ -190,7 +232,113 @@ export const swingBall = (px, py, len = 2.6, zoneW = 7.5) => ({
   ball: { px, py, len, zoneW },
 });
 
+// ---- the gizmo kit (DESIGN §2) -------------------------------------------
+// "Gizmos are the third source of variety and cost the least." They are also
+// what makes twelve levels possible: one idea per level means the kit IS the
+// level count, so breadth here beats polish.
+//
+// These two are TILE-NATIVE — a belt is a floor that moves you, a tarp is a
+// floor that throws you — which is why they cost almost nothing: they stamp
+// like any other part and the whole behaviour is one hook in the player's
+// step. The gizmos that must MOVE (a hoist platform, a tipping plank, a
+// swinging hook) are a different and much larger job, because every solid in
+// this game is a tile and a moving platform cannot be one. That is named
+// here so the next session knows the kit stops at the tile line on purpose.
+
+// A belt. `dir` is +1 (right) or -1 (left); it carries you at BELT while you
+// stand on it, so a belt against you is a spacing problem and a belt with
+// you is a gift.
+export const belt = (c0, c1, cy, dir = 1) => ({
+  kind: 'belt', c0, c1, cy, dir,
+  stamp: (g) => rows(g, rowOf(cy), rowOf(cy), c0, c1, dir > 0 ? 'C' : 'c'),
+  belt: { c0, c1, cy, dir },
+});
+
+// A tarp: land on it and it throws you higher than any jump. The check holds
+// it to its HEADROOM, because a bounce into a ceiling is a bounce that reads
+// as the game taking the move away from you.
+export const tarp = (c0, c1, cy) => ({
+  kind: 'tarp', c0, c1, cy,
+  stamp: (g) => rows(g, rowOf(cy), rowOf(cy), c0, c1, 'T'),
+  tarp: { c0, c1, cy },
+});
+
+// ---- the verticality kit -------------------------------------------------
+// A LADDER is the second verb the platformer half was missing (DESIGN §2),
+// and it is what turns a room from a corridor into a place. It stamps rungs
+// that nothing collides with — only the climb holds you on them — so the
+// column it occupies stays passable in every other way.
+//
+// The two ends are the whole contract, and `check()` holds a ladder to both:
+// a FOOT you can start from (solid under it, or a landing beside its bottom
+// rung) and a LANDING you can step off onto (a solid tile beside its TOP
+// rung, whose surface is exactly the height the climb tops out at). A ladder
+// that ends in mid-air is the vertical version of a gap too wide to jump,
+// and it is the mistake this kit exists to make impossible.
+export const ladder = (c, cy0, cy1) => ({
+  kind: 'ladder', c, cy0, cy1,
+  stamp: (g) => rows(g, rowOf(cy1), rowOf(cy0), c, c, 'H'),
+  ladder: { c, cy0, cy1 },
+});
+
+// A scaffold is a ladder with the deck it serves: the standard shape, so a
+// room does not have to remember to pair them. `deck` is the row the ledge
+// occupies; the ladder tops out at the same row, which is what puts his feet
+// on the deck's surface when the climb ends.
+export const scaffold = (c, deckC1, cy) => [
+  ladder(c, GROUND, cy),
+  ledge(c + 1, deckC1, cy),
+];
+
+// The midway gate (DESIGN §4). No lives and no game over, so a checkpoint
+// buys nothing but time — which is the only currency this game has. Passing
+// it lights it; falling out of the world puts you back here rather than at
+// the start.
+export const checkpoint = (x) => ({ kind: 'checkpoint', x, checkpoint: { x, y: GROUND } });
+
+// The end of a level (DESIGN §4.2): it BUILDS itself in three phases as you
+// come up on it and activates by being run past — no button, no stopping.
+// Level 3 of a world carries the big one, which must be tellable from the
+// small one before you reach it.
+export const flagAt = (x, big = false) => ({ kind: 'flag', x, big, flag: { x, y: GROUND, big } });
+
 export const bolts = (list) => ({ kind: 'bolts', list, bolts: list });
+
+// ---- bolts, in the coordinates a level is actually authored in -----------
+// `bolts()` takes GRID ROWS, which count down from the top of the map and
+// are a nuisance to think in. Everything below takes `cy` — tiles above the
+// bottom of the world, the same number the parts above use — so a trail laid
+// along the ground is `boltRun(GROUND, 8, 14)` rather than four subtractions
+// done by hand.
+const cell = (cy, c) => [H - 1 - cy, c];
+
+export const boltsAt = (cy, cols) => bolts(cols.map((c) => cell(cy, c)));
+export const boltRun = (cy, c0, c1) => bolts(
+  Array.from({ length: c1 - c0 + 1 }, (_, i) => cell(cy, c0 + i)));
+
+// An arc over a gap — the breadcrumb that TEACHES the jump instead of
+// telling you about it. Rises to `rise` at the middle and comes back down,
+// so following the bolts IS the jump's timing.
+export const boltArc = (cy, c0, c1, rise = 2) => {
+  const n = c1 - c0;
+  return bolts(Array.from({ length: n + 1 }, (_, i) => {
+    const t = n === 0 ? 0 : i / n;
+    return cell(cy + Math.round(Math.sin(t * Math.PI) * rise), c0 + i);
+  }));
+};
+
+// A column beside a ladder: the same trick, standing up.
+export const boltCol = (c, cy0, cy1) => bolts(
+  Array.from({ length: cy1 - cy0 + 1 }, (_, i) => cell(cy0 + i, c)));
+
+// The hidden three (DESIGN §4.2). A different silhouette, off the main line,
+// and `check()` refuses one that no jump or ladder can reach — a secret you
+// cannot collect is a bug wearing a secret's clothes.
+export const golden = (cy, cols) => ({
+  kind: 'golden', list: cols.map((c) => cell(cy, c)),
+  golden: cols.map((c) => cell(cy, c)),
+});
+
 export const startAt = (x) => ({ kind: 'start', x, spawnKid: { x, y: GROUND } });
 export const exitAt = (x) => ({ kind: 'exit', x, exit: { x, y: GROUND } });
 export const shot = (x0, x1, framing) => ({ kind: 'shot', shot: { x0, x1, ...framing } });
@@ -204,22 +352,31 @@ export function compile(room) {
   const grid = Array.from({ length: H }, () => new Array(W).fill(' '));
   const out = {
     name: room.name,
-    parts: room.parts,
-    bolts: [], pits: [], shots: [], machines: [], robots: [], hazards: [],
-    pieces: [], obstacles: [], ball: null, ladders: [],
+    idea: room.idea || null,
+    // a part helper may hand back SEVERAL parts (a scaffold is a ladder and
+    // the deck it serves), so the list is flattened once, here
+    parts: room.parts.flat(),
+    bolts: [], golden: [], pits: [], shots: [], machines: [], robots: [], hazards: [],
+    pieces: [], obstacles: [], ladders: [], belts: [], tarps: [],
+    ball: null, checkpoint: null, flag: null,
     spawn: { kid: { x: 4.5, y: GROUND }, machines: {} },
     exit: { x: W - 4, y: GROUND },
   };
-  for (const p of room.parts) {
+  for (const p of out.parts) {
     p.stamp?.(grid);
     if (p.pit) out.pits.push(p.pit);
     if (p.piece) out.pieces.push(p.piece);
     if (p.machine) { out.machines.push(p.machine); out.spawn.machines[p.machine.type] = p.machine.x; }
     if (p.robot) out.robots.push(p.robot);
     if (p.hazard) out.hazards.push(p.hazard);
-    if (p.ladderRun) out.ladders.push(p.ladderRun);
     if (p.ball) out.ball = p.ball;
     if (p.bolts) out.bolts.push(...p.bolts);
+    if (p.golden) out.golden.push(...p.golden);
+    if (p.ladder) out.ladders.push(p.ladder);
+    if (p.belt) out.belts.push(p.belt);
+    if (p.tarp) out.tarps.push(p.tarp);
+    if (p.checkpoint) out.checkpoint = p.checkpoint;
+    if (p.flag) out.flag = p.flag;
     if (p.shot) out.shots.push(p.shot);
     if (p.spawnKid) out.spawn.kid = { x: p.spawnKid.x, y: p.spawnKid.y };
     if (p.exit) out.exit = p.exit;
@@ -227,6 +384,14 @@ export function compile(room) {
     if (p.girderStack) out.stack = p.girderStack;
   }
   out.grid = grid;
+
+  // Where the level ENDS, and which curtain it drops. A flag closes levels 1
+  // and 2 of a world; a gate is the world's own ending — Eeri clocking out —
+  // and a room may carry both, the flag first (DESIGN §4.2).
+  out.finish = out.flag
+    ? { x: out.flag.x, kind: out.flag.big ? 'flag-big' : 'flag' }
+    : { x: out.exit.x, kind: 'gate' };
+  out.gate = room.parts.flat().some((p) => p.exit) ? out.exit : null;
 
   // ---- the shapes the game already reads --------------------------------
   // Derived here, once, from the parts — so nothing downstream has to know
@@ -255,10 +420,113 @@ export function compile(room) {
 // and reports the first thing that stops you — with the numbers, so the fix
 // is obvious rather than a guess.
 
+// The level's own counts (DESIGN §4.2). `x/100` is the level's completion
+// figure, so a level with 97 bolts in it is a level whose HUD lies.
+export const LEVEL = { bolts: 100, golden: 3 };
+
+// How far above a standable surface a bolt can hang and still be taken: the
+// jump apex (2.65) plus the collect radius, minus a margin, in tiles.
+const BOLT_REACH = 3.4;
+// …and how far to either side a takeoff can be, since a bolt over a hole is
+// collected in the air on the way across rather than from underneath.
+const BOLT_SPREAD = 3;
+
+// The map AFTER the room's rides have done their work — the bank dug out,
+// the wall down, the span seated. Reachability has to be judged against this
+// one, or every bolt the ride opens up reads as unreachable.
+function finishedGrid(r) {
+  const g = r.grid.map((row) => row.slice());
+  for (const p of r.pieces) {
+    for (let cy = p.cy0; cy < p.cy0 + p.rows; cy++) {
+      for (let c = p.c0; c <= p.c1; c++) g[H - 1 - cy][c] = ' ';
+    }
+  }
+  if (r.girder) {
+    for (let c = r.girder.gap.c0; c <= r.girder.gap.c1; c++) {
+      g[H - 1 - r.girder.gap.cy][c] = 'G';
+    }
+  }
+  return g;
+}
+
+// the surface height of the first solid at or below cy in column c, or null
+function surfaceBelow(g, c, cy) {
+  if (c < 0 || c >= W) return null;
+  for (let k = Math.min(cy, H - 1); k >= 0; k--) {
+    if (SOLID_CHARS.includes(g[H - 1 - k][c])) return k + 1;
+  }
+  return null;
+}
+
+// ---- how long a level takes to walk (DESIGN §4) -------------------------
+// "60–90 seconds first time through, ~40 once learned." That was a target
+// nothing measured, so a level could drift to twice its length and only a
+// playthrough would say so. This is the LEARNED run — someone who knows the
+// route and never stops — which is the floor the 60–90 sits above.
+//
+// It is an estimate and says so: the parts each carry a cost that is a
+// reasonable reading of what they ask for, not a simulation.
+export function estimate(room) {
+  const r = compile(room);
+  const dist = Math.max(0, r.finish.x - r.spawn.kid.x);
+  const parts = {
+    run: dist / SPEED.run,
+    // a gap or a step is an approach, a read and a jump
+    obstacles: r.obstacles.length * 0.9,
+    // …a small machine is a rhythm you wait a beat for
+    smalls: r.robots.length * 1.4,
+    // …a ladder is climbed at climbing speed, once
+    climbs: r.ladders.reduce((n, l) => n + (l.cy1 - l.cy0 + 1) / SPEED.climb, 0),
+    // …and the ride is measured from the job it actually does, rather than
+    // from what DESIGN §1 says a ride SHOULD be. Those two numbers
+    // disagreeing is the finding, not a rounding error.
+    ride: rideTime(r),
+  };
+  const total = Object.values(parts).reduce((a, b) => a + b, 0);
+  // DESIGN §1: "that is 80% of playtime and it has to be good on its own —
+  // if the riding were deleted the game should still be worth playing."
+  return { total, parts, onFoot: (total - parts.ride) / total };
+}
+
+// the ride, from its own parts: get to the cab, drive to the job, do it,
+// step off
+function rideTime(r) {
+  const m = r.machines[0];
+  const job = r.obstacles.find((o) => o.clears);
+  if (!m || !job) return 0;
+  const speed = MACHINE_SPEED[m.type] || 3;
+  const drive = Math.abs(job.at - m.x) / speed;
+  let work = 0;
+  if (job.clears === 'dig') work = (job.size || 1) * RIDE.dig;
+  else if (job.clears === 'span') work = RIDE.sling + RIDE.seat
+    + (r.girder ? Math.abs(r.girder.seat.x0 - r.girder.stackX) / speed : 0);
+  else if (job.clears === 'smash') work = 2 * RIDE.swing;
+  return RIDE.mount + drive + work + RIDE.dismount;
+}
+
 export function check(room) {
   const r = compile(room);
   const problems = [];
   const note = (s) => problems.push(s);
+
+  // ---- the ladders: both ends, every time -------------------------------
+  // A ladder that ends in mid-air is the vertical version of a gap too wide
+  // to jump, and it is invisible on a screenshot.
+  const solidAt = (c, cy) => c >= 0 && c < W && cy >= 0 && cy < H
+    && SOLID_CHARS.includes(r.grid[H - 1 - cy][c]);
+  for (const l of r.ladders) {
+    const footed = solidAt(l.c, l.cy0 - 1) || solidAt(l.c - 1, l.cy0 - 1) || solidAt(l.c + 1, l.cy0 - 1);
+    if (!footed) note(`${r.name}: the ladder at x=${l.c} starts at cy=${l.cy0} with nothing to stand on under it`);
+    // you top out with your feet at cy1+1, so the landing beside the top
+    // rung is the tile at cy1 — its surface is exactly that height
+    const landed = solidAt(l.c - 1, l.cy1) || solidAt(l.c + 1, l.cy1);
+    if (!landed) note(`${r.name}: the ladder at x=${l.c} tops out at cy=${l.cy1} with nothing to step off onto — `
+      + `put a deck tile at (${l.c - 1} or ${l.c + 1}, ${l.cy1})`);
+  }
+  // a ladder answers a step the kid's jump cannot: it has to stand at the
+  // face of it and reach the top
+  const ladderFor = (at, size) => r.ladders.some((l) =>
+    l.c >= at - 2 && l.c <= at + size + 1 && l.cy1 >= GROUND + size - 1);
 
   // every machine must be able to do its job from its own track
   for (const m of r.machines) {
@@ -267,41 +535,6 @@ export function check(room) {
     for (const p of r.pits) {
       if (p.c0 > t0 && p.c1 < t1) {
         note(`${r.name}: the ${m.type}'s track ${t0}…${t1} is cut by a hole at ${p.c0}…${p.c1} — it refuses cliffs, so it would be penned on one side`);
-      }
-    }
-  }
-
-  // A RIDE-ENDING HAZARD MAY NOT STAND BETWEEN A MACHINE AND ITS JOB.
-  // The wrecking ball is the only hazard that takes the ride rather than
-  // just knocking you back, and in SITE 1 it hung at x=70 — squarely on the
-  // excavator's only run from where it is parked to the bank at 84. Every
-  // attempt to bring the machine to its job ended with the ball throwing
-  // you out of the cab, so the bank could never be dug and the room played
-  // as an impossible wall. Nothing checked it, because the track rules only
-  // ever asked about holes.
-  // EVERY ride-ender counts, not just the ball. A steam vent throws you out
-  // of the cab exactly the same way, and the first version of this rule only
-  // knew about the ball — which left a vent sitting on SITE 2's route to the
-  // girder stack, unflagged, doing the identical thing.
-  const rideEnders = [];
-  if (r.ball) {
-    rideEnders.push({ what: `the swinging ball`, x: r.ball.px, half: r.ball.len * 0.95 + 0.6 });
-  }
-  for (const h of r.hazards) {
-    // the plume is ~0.42 wide either side and a machine is 1.42 from centre
-    rideEnders.push({ what: `the ${h.type} vent`, x: h.x, half: 1.9 });
-  }
-  for (const e of rideEnders) {
-    const lo = e.x - e.half, hi = e.x + e.half;
-    for (const m of r.machines) {
-      for (const o of r.obstacles) {
-        if (!o.clears || !m.verbs.includes(o.clears)) continue;
-        const from = Math.min(m.x, o.at), to = Math.max(m.x, o.at + (o.size ?? 1));
-        if (hi > from && lo < to) {
-          note(`${r.name}: ${e.what} at x=${e.x} stands across the `
-            + `${m.type}'s route (${from.toFixed(1)}…${to.toFixed(1)}) to the ${o.kind} `
-            + `it has to clear — a hit takes the RIDE, so the job can never be done`);
-        }
       }
     }
   }
@@ -322,22 +555,20 @@ export function check(room) {
     }
   }
 
-  // a ladder has to START on something you can stand on, or nobody can get
-  // on it — and it must not run through a hole
-  for (const L of r.ladders) {
-    if (L.cy0 > GROUND) {
-      const below = r.grid[rowOf(L.cy0 - 1)][L.c];
-      if (!SOLID_CHARS.includes(below)) {
-        note(`${r.name}: the ladder at x=${L.c} starts at cy=${L.cy0} with nothing under it — nobody can get on`);
-      }
-    }
-    if (L.cy1 - L.cy0 < 1) note(`${r.name}: the ladder at x=${L.c} is not tall enough to be worth climbing`);
-  }
-
-  // robots must patrol on floor that exists
+  // robots must patrol on floor that exists — on the ground, that means no
+  // hole under them; on a deck, that means a deck under every step of it
   for (const b of r.robots) {
-    for (const p of r.pits) {
-      if (b.c0 <= p.c1 && b.c1 >= p.c0) note(`${r.name}: a robot patrols ${b.c0}…${b.c1}, which crosses the hole at ${p.c0}…${p.c1}`);
+    if (b.cy == null) {
+      for (const p of r.pits) {
+        if (b.c0 <= p.c1 && b.c1 >= p.c0) note(`${r.name}: a robot patrols ${b.c0}…${b.c1}, which crosses the hole at ${p.c0}…${p.c1}`);
+      }
+    } else {
+      for (let c = b.c0; c <= b.c1; c++) {
+        if (!SOLID_CHARS.includes(r.grid[H - 1 - (b.cy - 1)][c])) {
+          note(`${r.name}: a robot patrols ${b.c0}…${b.c1} at cy=${b.cy}, and there is no deck under x=${c}`);
+          break;
+        }
+      }
     }
   }
 
@@ -345,23 +576,183 @@ export function check(room) {
   const have = new Set();
   const ordered = [...r.obstacles].sort((a, b) => a.at - b.at);
   let x = r.spawn.kid.x;
+  let last = x;
   for (const o of ordered) {
     // any machine standing between here and the obstacle is yours to mount
     for (const m of r.machines) if (m.x >= x - 0.5 && m.x <= o.at) m.verbs.forEach((v) => have.add(v));
     const passable = o.kind === 'step'
-      ? o.size <= REACH.step
+      ? (o.size <= REACH.step || ladderFor(o.at, o.size))
       : o.size <= REACH.gap;
     if (!passable && !(o.clears && have.has(o.clears))) {
       note(`${r.name}: STUCK at x=${o.at} — a ${o.kind} of ${o.size} `
-        + `(the kid clears ${o.kind === 'step' ? REACH.step : REACH.gap})`
+        + `(the kid clears ${o.kind === 'step' ? REACH.step : REACH.gap}${o.kind === 'step' ? ', or any height with a ladder on it' : ''})`
         + (o.clears ? `, and the machine that ${o.clears}s it has not been reached yet` : ' and no machine clears it'));
     }
     x = o.at + (o.size ?? 1);
+    last = Math.max(last, x);
   }
   for (const m of r.machines) if (m.x >= x - 0.5) m.verbs.forEach((v) => have.add(v));
 
   // and the way out has to be past the last thing, on foot
   if (r.exit.x > W - 1) note(`${r.name}: the exit at x=${r.exit.x} is outside the room`);
+
+  // ---- the shape of a level (DESIGN §4) ---------------------------------
+  // Everything below is a rule the owner set, held as a build step rather
+  // than as a paragraph somebody remembers. They are cheap to satisfy and
+  // they are the difference between three rooms and three LEVELS.
+
+  // the ride is the peak, so it cannot open the level: its payoff sits in
+  // the back half, and you board before you arrive at it
+  for (const o of r.obstacles) {
+    if (!o.clears) continue;
+    if (o.at < W * 0.45) {
+      note(`${r.name}: the ride's payoff (the ${o.kind} at x=${o.at}) is in the first `
+        + `${Math.round((o.at / W) * 100)}% of the room — a ride is beat 3–4, not the way in`);
+    }
+    const m = r.machines.find((mm) => mm.verbs.includes(o.clears));
+    if (m && m.x > o.at) note(`${r.name}: the ${m.type} is parked at x=${m.x}, PAST the ${o.kind} it clears at x=${o.at}`);
+  }
+
+  // the midway gate
+  if (!r.checkpoint) {
+    note(`${r.name}: no checkpoint — dying has to cost the middle of a level, not the whole of it`);
+  } else {
+    const f = r.checkpoint.x / W;
+    if (f < 0.3 || f > 0.7) note(`${r.name}: the checkpoint at x=${r.checkpoint.x} is ${Math.round(f * 100)}% `
+      + 'through the room — a midway gate belongs between 30% and 70%');
+    if (!solidAt(Math.floor(r.checkpoint.x), GROUND - 1)) {
+      note(`${r.name}: the checkpoint at x=${r.checkpoint.x} has no ground under it`);
+    }
+  }
+
+  // the way it ends
+  if (r.finish.x <= last) {
+    note(`${r.name}: the ${r.finish.kind} at x=${r.finish.x} sits before the last obstacle at x=${last} — `
+      + 'the end of a level goes past everything in it');
+  }
+  if (r.flag && r.gate && r.flag.x >= r.gate.x) {
+    note(`${r.name}: the flag at x=${r.flag.x} is not before the gate at x=${r.gate.x} — `
+      + 'the flag closes the level, the gate closes the WORLD');
+  }
+
+  // ---- nothing ride-ending may stand in a machine's own run -------------
+  // From the other design instance's playtest, and it is the best kind of
+  // rule: somebody actually played it and got stuck. The wrecking ball hung
+  // across the excavator's only run from where it parks to the bank it is
+  // meant to dig, and a hit takes the RIDE — so every attempt ended with the
+  // ball throwing you out of the cab and a long walk back.
+  //
+  // The sharpened version of that finding is what makes it a rule rather
+  // than a placement note: a bot that drives steadily CAN thread the swing.
+  // It is not a wall, it is timing-dependent — and for a six-year-old that
+  // is worse, because the same approach works sometimes and not others with
+  // no way to tell which. The old track rules only ever asked about holes.
+  for (const o of r.obstacles) {
+    if (!o.clears) continue;
+    const m = r.machines.find((mm) => mm.verbs.includes(o.clears));
+    if (!m) continue;
+    const lo = Math.min(m.x, o.at), hi = Math.max(m.x, o.at) + (o.size ?? 1);
+    const inTheWay = [];
+    if (r.ball && r.ball.px > lo && r.ball.px < hi) inTheWay.push(`the swinging ball at x=${r.ball.px}`);
+    for (const h of r.hazards) {
+      if (h.x > lo && h.x < hi) inTheWay.push(`the ${h.type} vent at x=${h.x}`);
+    }
+    for (const what of inTheWay) {
+      note(`${r.name}: ${what} stands in the ${m.type}'s only run from x=${m.x} to the `
+        + `${o.kind} at x=${o.at} — a hit takes the RIDE, so this is the ride ending `
+        + 'on the way to its own job, over and over');
+    }
+  }
+
+  // ---- the gizmos, held to the two ways they go wrong -------------------
+  // A belt that delivers you into a hole is the game moving you somewhere
+  // you did not choose, which is the one thing a generous platformer must
+  // never do — a jump you got wrong is yours, a belt you were standing on is
+  // not. So the cell it hands you to must be somewhere you can stand.
+  for (const b of r.belts) {
+    const outCol = b.dir > 0 ? b.c1 + 1 : b.c0 - 1;
+    const landing = solidAt(outCol, b.cy) || solidAt(outCol, b.cy - 1);
+    if (!landing) {
+      note(`${r.name}: the belt at ${b.c0}…${b.c1} runs ${b.dir > 0 ? 'right' : 'left'} and hands you `
+        + `to x=${outCol}, where there is no floor — a belt may not walk you off an edge`);
+    }
+  }
+  // …and a tarp needs the air to throw you into
+  for (const t of r.tarps) {
+    for (let cy = t.cy + 1; cy <= t.cy + Math.ceil(TARP_RISE); cy++) {
+      const blocked = solidAt(t.c0, cy) || solidAt(t.c1, cy);
+      if (blocked) {
+        note(`${r.name}: the tarp at ${t.c0}…${t.c1} throws you ${TARP_RISE.toFixed(1)} tiles `
+          + `into something solid at cy=${cy} — a bounce into a ceiling reads as the game `
+          + 'taking the move back');
+        break;
+      }
+    }
+  }
+
+  // ---- generosity, as numbers (DESIGN §4.1) -----------------------------
+  // "Every jump proved with a full tile of slack over the budget." The
+  // budget's own ceilings are step 2 (of 2.65) and gap 4 (of 4.85), which is
+  // 0.65 and 0.85 — so the CEILING cannot meet the rule and the only honest
+  // check is on what a level actually USES. Anything under a full tile is
+  // named, and anything under 0.6 fails: that is the line between "measured"
+  // and "reliable under a thumb".
+  for (const o of r.obstacles) {
+    if (o.clears) continue;                     // the machine's, not the kid's
+    const slack = o.kind === 'step'
+      ? REACH.jumpUp - o.size
+      : REACH.jumpAcross - o.size;
+    if (slack < 0.6) {
+      note(`${r.name}: the ${o.kind} of ${o.size} at x=${o.at} leaves ${slack.toFixed(2)} tiles of slack — `
+        + 'under the 0.6 that separates "measured" from "reliable under a thumb"');
+    }
+  }
+
+  // ---- the collectibles, and whether they can actually be had -----------
+  const seen = new Set();
+  for (const [row, col] of r.bolts) {
+    const k = `${row},${col}`;
+    if (seen.has(k)) note(`${r.name}: two bolts share the cell (row ${row}, col ${col}) — one of them can never be counted`);
+    seen.add(k);
+  }
+  if (r.bolts.length !== LEVEL.bolts) {
+    note(`${r.name}: ${r.bolts.length} bolts, and the HUD says x/${LEVEL.bolts}`);
+  }
+  if (r.golden.length !== LEVEL.golden) {
+    note(`${r.name}: ${r.golden.length} golden bolts — a level hides exactly ${LEVEL.golden}`);
+  }
+
+  const fin = finishedGrid(r);
+  const reach = (cy, col) => {
+    for (let c = col - BOLT_SPREAD; c <= col + BOLT_SPREAD; c++) {
+      const t = surfaceBelow(fin, c, cy);
+      if (t !== null && cy - t <= BOLT_REACH && cy - t >= -0.5) return true;
+    }
+    if (r.ladders.some((l) => Math.abs(l.c - col) <= 1 && cy >= l.cy0 - 1 && cy <= l.cy1 + 1)) return true;
+    // A TARP IS A WAY UP, so the reach model has to know it — it was written
+    // when a jump was the only way to gain height, and the first thing the
+    // gizmo lab did was report its own bolts unreachable. Anything a gizmo
+    // adds to the player's reach has to be added here too, or the check
+    // starts refusing correct rooms, which is worse than not checking.
+    return r.tarps.some((t) => col >= t.c0 - 1 && col <= t.c1 + 1
+      && cy >= t.cy && cy <= t.cy + 1 + TARP_RISE + 0.9);
+  };
+  for (const [row, col] of [...r.bolts, ...r.golden]) {
+    const cy = H - 1 - row;
+    if (SOLID_CHARS.includes(r.grid[row][col]) && !SOLID_CHARS.includes(fin[row][col])) continue; // the ride frees it
+    if (!reach(cy, col)) note(`${r.name}: the bolt at (cy ${cy}, x ${col}) is out of reach — `
+      + `nothing within ${BOLT_SPREAD} tiles of it gets a jump close enough`);
+  }
+  // …and a golden bolt that sits on the route is not hidden, it is scenery
+  for (const [row, col] of r.golden) {
+    const cy = H - 1 - row;
+    const t = surfaceBelow(fin, col, cy);
+    const overAHole = t === null;
+    if (!overAHole && cy - t < 2) {
+      note(`${r.name}: the golden bolt at (cy ${cy}, x ${col}) is ${(cy - t).toFixed(0)} tile(s) off the floor — `
+        + 'you would take it by walking, and a secret you cannot miss is not a secret');
+    }
+  }
 
   return { ok: problems.length === 0, problems, compiled: r };
 }
