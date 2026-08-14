@@ -17,7 +17,7 @@ import {
 } from './pieces.js?v=4';
 import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=3';
 import { Camera } from './camera.js?v=1';
-import { buildKidModel, Kid, Player } from './kid.js?v=4';
+import { buildKidModel, Kid, Player } from './kid.js?v=5';
 import { buildExcavatorModel, Excavator } from './excavator.js?v=2';
 import { buildCraneModel, Crane } from './crane.js?v=1';
 import { Robot, SteamVent } from './robots.js?v=3';
@@ -362,12 +362,12 @@ async function boot() {
       press: (n) => input.press(n),
       release: (n) => input.release(n),
       setPos: (x, y) => { player.x = x; player.y = y; player.vx = 0; player.vy = 0; },
-      excPos: () => ({ x: exc.x, y: exc.y }),
+      excPos: () => (exc ? { x: exc.x, y: exc.y } : null),
       hazard: () => site.ball ? { state: site.ball.state, ...site.ball.ballPos() } : { state: 'none' },
       mercy: () => player.mercyT,
-      tamed: () => exc.tamed,
+      tamed: () => !!exc?.tamed,
       bank: () => site.bank ? { remaining: site.bank.remaining, cleared: site.bank.cleared } : null,
-      girder: () => site.girder ? { state: site.girder.state, carrying: exc.carrying } : null,
+      girder: () => site.girder ? { state: site.girder.state, carrying: !!exc?.carrying } : null,
       wall: () => site.wall ? { hits: site.wall.hits, cracked: site.wall.cracked, cleared: site.wall.cleared } : null,
       machine: () => exc ? { kind: exc.kind, x: exc.x, track: exc.track, tamed: exc.tamed } : null,
       robots: () => site.robots.map((r) => ({
@@ -378,6 +378,10 @@ async function boot() {
       padSeen: () => input.padSeen,
       vents: () => site.vents.map((v) => ({ x: v.x, blowing: v.blowing })),
       rooms: () => ROOMS.length,
+      // a room change is not finished when the index flips — goSite() still
+      // has to put the kid on the new spawn, so anything positioning him
+      // must wait for this
+      transitioning: () => transitioning,
       // the gizmo lab: buildable, never in the sequence (js/rooms.js)
       goLab: () => goSite(ROOMS.length),
       gizmos: () => ({ belts: site.def.belts, tarps: site.def.tarps }),
@@ -433,12 +437,12 @@ async function boot() {
     if (!transitioning) {
     if (mode === 'foot') {
       player.update(dt, input);
-      if (exc.tamed) exc.update(dt, null); else exc.work(dt);
+      if (exc) { if (exc.tamed) exc.update(dt, null); else exc.work(dt); }
       if (player.justJumped) audio.jump();
       if (player.justLanded) audio.land();
 
       // heavy and blind: stand under the working bucket and it puts you down
-      if (unmannedStrike() && player.struck(exc.x)) { audio.splat(); cam.punch(1.1); }
+      if (exc && unmannedStrike() && player.struck(exc.x)) { audio.splat(); cam.punch(1.1); }
 
       const near = nearExc();
       setHint(cleared ? HINT.out
@@ -446,7 +450,7 @@ async function boot() {
         : player.climbing ? HINT.ladder
         : (site.flag && site.flag.phase >= 2 && !site.flag.raised
             && Math.abs(player.x - site.flag.x) < 12) ? HINT.flag
-        : (!exc.tamed && Math.abs(player.x - exc.x) < 6) ? HINT.wary
+        : (exc && !exc.tamed && Math.abs(player.x - exc.x) < 6) ? HINT.wary
         : HINT.foot);
       if (near && input.take('action')) { startMount(); audio.mount(); }
     } else if (mode === 'mounting') {
@@ -572,7 +576,7 @@ async function boot() {
       setTimeout(() => document.getElementById('banner')?.remove(), 1000);
     }
     if (site.flag) {
-      const ev = site.flag.update(dt, mode === 'riding' ? exc.x : player.x);
+      const ev = site.flag.update(dt, mode === 'riding' && exc ? exc.x : player.x);
       if (ev === 'phase') audio.clank();
       if (ev === 'raised' && !transitioning && siteIndex < LAST_LEVEL) {
         audio.mount();
@@ -597,7 +601,7 @@ async function boot() {
 
     // the hazard: wakes on whoever is near, and takes the ride, not the run
     if (site.ball) {
-      site.ball.update(dt, mode === 'riding' ? exc.x : player.x, audio, REDUCED);
+      site.ball.update(dt, mode === 'riding' && exc ? exc.x : player.x, audio, REDUCED);
       if (mode === 'riding') {
         if (player.mercyT <= 0 && site.ball.hits(exc.x, exc.y, exc.hw, exc.h)) {
           startDismount(true); audio.splat(); cam.punch(1.4);
@@ -613,8 +617,8 @@ async function boot() {
     // the Yoshi rule, exactly as the wrecking ball's is: riding, it takes the
     // RIDE and throws you clear; on foot it is knockback and mercy frames.
     // Nothing here kills. A machine drives straight over one.
-    const focusX = mode === 'riding' ? exc.x : player.x;
-    const focusY = mode === 'riding' ? exc.y + 1 : player.y;
+    const focusX = mode === 'riding' && exc ? exc.x : player.x;
+    const focusY = mode === 'riding' && exc ? exc.y + 1 : player.y;
     for (const r of site.robots) {
       r.update(dt, { x: focusX, y: focusY }, REDUCED);
       if (mode === 'riding') {
@@ -646,8 +650,8 @@ async function boot() {
     }
 
     // bolts: spin, bob, collect, pop
-    const cx = mode === 'riding' ? exc.x : player.x;
-    const cy = mode === 'riding' ? exc.y + 1 : player.y + 0.7;
+    const cx = mode === 'riding' && exc ? exc.x : player.x;
+    const cy = mode === 'riding' && exc ? exc.y + 1 : player.y + 0.7;
     const cr = mode === 'riding' ? 2.0 : 0.95;
     for (const b of site.bolts) {
       if (b.state === 'gone') continue;
@@ -701,12 +705,12 @@ async function boot() {
     if (mode !== 'riding') audio.idleLoad(0);
     site.bank?.update(dt);
     site.wall?.update(dt);
-    site.girder?.update(dt, exc);
+    if (exc) site.girder?.update(dt, exc);
 
     // camera: the director picks the room's framing, the mode leans it, and
     // heavy events kick the dolly (js/camera.js)
-    const focus = mode === 'riding' || mode === 'mounting' ? exc : player;
-    const face = mode === 'riding' ? exc.face : kid.face;
+    const focus = (mode === 'riding' || mode === 'mounting') && exc ? exc : player;
+    const face = mode === 'riding' && exc ? exc.face : kid.face;
     cam.update(dt, focus, face, mode, site.level.w, camera.aspect, FOV);
 
     renderer.render(scene, camera);

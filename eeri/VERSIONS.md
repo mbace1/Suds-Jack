@@ -47,6 +47,33 @@ were standing on is not — and a tarp must have the **headroom** to throw you
 into, because a bounce into a ceiling reads as the game taking the move back.
 Both rules bite in `test/rooms.mjs`.
 
+**Three bugs the lab found in code that was already shipping**, which is what
+a lab is for:
+
+- **A room with no machine crashed the game.** Levels 1–3 each park one, so
+  `exc` was read unguarded all through the foot branch; the lab is a
+  platforming room with nothing to ride, and it threw on its first frame.
+  A crash inside `setAnimationLoop` is total and silent — every later frame
+  throws, the game freezes, and the screen says nothing.
+- **Variable jump height was cutting rises the player never asked for.**
+  Releasing jump clamps the climb at 4, and that clamp ran on *every* upward
+  velocity: a tarp's 17.5 and a stomp's 10.08 were both cut on the next frame
+  unless a button they have nothing to do with happened to be held. The tarp
+  measured **2.47 tiles instead of 5.1**, and the stomp's bounce silently
+  depended on the jump button. A rise the player did not ask for is not
+  theirs to cut, so the clamp now applies to jumps only.
+- **The gate positioned the kid before a room change had settled.** `site()`
+  flips as soon as the index is assigned, while `goSite()` still has to put
+  him on the new spawn — so a `setPos` fired the instant it flipped was
+  overwritten a frame later, and the mount failed with the machine standing
+  right beside him. `debug.transitioning()` is exposed and every room wait
+  settles on it.
+
+Measured in the lab afterwards: the belt carries 1.1 tiles a second of
+standing still with `vx` untouched, and the tarp lifts **4.8 tiles** against
+the 5.1 the model predicts — the difference is frame discretisation, and the
+model keeps the honest number rather than the flattering one.
+
 Gate: 75 checks in the room prover, and the browser gate proves both gizmos
 by standing still on them — anything that happens is the gizmo's doing.
 

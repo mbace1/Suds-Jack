@@ -300,6 +300,7 @@ export class Player {
     this.t = 0;
     this.mercyT = 0;
     this.climbing = false;
+    this.cutJump = false;
     // one-frame events for the noise to hang off
     this.justJumped = false; this.justLanded = false;
   }
@@ -309,6 +310,7 @@ export class Player {
   // a chain of small machines is a staircase.
   bounce() {
     this.vy = BOUNCE_V;
+    this.cutJump = false;             // the game gave him this one
     this.squash = 0.1;
     this.jumpBufT = 0;
     this.justStomped = true;
@@ -347,6 +349,7 @@ export class Player {
         this.vy = JUMP_V * 0.85;
         this.jumpBufT = 0; this.groundedT = 0;
         this.justJumped = true;
+        this.cutJump = true;
       } else {
         const up = (input.down.up ? 1 : 0) - (input.down.down ? 1 : 0);
         // STEPPING OFF is not a special move: hold a direction with no
@@ -394,8 +397,9 @@ export class Player {
     if (this.jumpBufT > 0 && this.groundedT > 0) {
       this.vy = JUMP_V; this.jumpBufT = 0; this.groundedT = 0;
       this.justJumped = true;
+      this.cutJump = true;            // his jump, so his to cut short
     }
-    if (!input.down.jump && !input.down.up && this.vy > 4) this.vy = 4;
+    if (this.cutJump && !input.down.jump && !input.down.up && this.vy > 4) this.vy = 4;
 
     this.vy -= GRAV * (this.vy < 0 ? FALL_X : 1) * dt;
     this.vy = Math.max(this.vy, -22);
@@ -409,6 +413,7 @@ export class Player {
       // the landing is zeroed, because the bounce IS the landing
       if (my.grounded && this.level.tarpAt(this.x, my.y) && this.vy < -1) {
         this.vy = TARP_V;
+        this.cutJump = false;         // …and this one
         this.squash = 0.14;
         this.justBounced = true;
       } else {

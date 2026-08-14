@@ -192,7 +192,7 @@ s.listen(0, '127.0.0.1', async () => {
   // Level 1 is the stomp's level and carries no ladders on purpose (one idea
   // per level), so the climb is proved where it is taught.
   await p.evaluate(() => window.__eeri.debug.goSite(1));
-  await p.waitForFunction(() => window.__eeri.site() === 1, null, { timeout: 8000 }).catch(() => {});
+  await p.waitForFunction(() => window.__eeri.site() === 1 && !window.__eeri.debug.transitioning(), null, { timeout: 8000 }).catch(() => {});
   const ladders = await p.evaluate(() => window.__eeri.debug.ladders());
   ok('level 2 is built on ladders', ladders.length > 0, JSON.stringify(ladders));
   const L = ladders[0];
@@ -246,7 +246,7 @@ s.listen(0, '127.0.0.1', async () => {
   ok('…and the roller is the one you jump, not the one you land on',
     roll && roll.stompable === false);
   await p.evaluate(() => window.__eeri.debug.goSite(0));
-  await p.waitForFunction(() => window.__eeri.site() === 0, null, { timeout: 8000 }).catch(() => {});
+  await p.waitForFunction(() => window.__eeri.site() === 0 && !window.__eeri.debug.transitioning(), null, { timeout: 8000 }).catch(() => {});
 
   // the ride: walk to the cab, climb in, drive, hop out
   await p.evaluate(() => {
@@ -426,7 +426,7 @@ s.listen(0, '127.0.0.1', async () => {
   await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: 20000 }).catch(() => {});
   await p.evaluate(() => window.__eeri.debug.setPos(88, 4.2));
   await p.evaluate(() => window.__eeri.debug.press('right'));
-  const site2 = await p.waitForFunction(() => window.__eeri.site() === 1, null, { timeout: 25000 }).then(() => true).catch(() => false);
+  const site2 = await p.waitForFunction(() => window.__eeri.site() === 1 && !window.__eeri.debug.transitioning(), null, { timeout: 25000 }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('running past the flag ends the level and leads to LEVEL 2, not the credits', site2);
   ok('the room announces itself on the way in', await p.locator('#banner').count() === 1);
@@ -511,7 +511,7 @@ s.listen(0, '127.0.0.1', async () => {
 
   await p.evaluate(() => window.__eeri.debug.setPos(88, 4.2));
   await p.evaluate(() => window.__eeri.debug.press('right'));
-  const site3 = await p.waitForFunction(() => window.__eeri.site() === 2, null, { timeout: 20000 }).then(() => true).catch(() => false);
+  const site3 = await p.waitForFunction(() => window.__eeri.site() === 2 && !window.__eeri.debug.transitioning(), null, { timeout: 20000 }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('site 2 leads on to SITE 3', site3);
 
@@ -733,7 +733,8 @@ s.listen(0, '127.0.0.1', async () => {
   // so both are proved by standing still on one: anything that happens is
   // the gizmo's doing, not the player's.
   await p.evaluate(() => window.__eeri.debug.goLab());
-  const inLab = await p.waitForFunction(() => (window.__eeri.debug.gizmos().belts || []).length > 0,
+  const inLab = await p.waitForFunction(
+    () => !window.__eeri.debug.transitioning() && (window.__eeri.debug.gizmos().belts || []).length > 0,
     null, { timeout: 15000 }).then(() => true).catch(() => false);
   ok('the gizmo lab builds', inLab);
 
@@ -776,7 +777,7 @@ s.listen(0, '127.0.0.1', async () => {
   }
 
   await p.evaluate(() => window.__eeri.debug.goSite(2));
-  await p.waitForFunction(() => window.__eeri.site() === 2, null, { timeout: 15000 }).catch(() => {});
+  await p.waitForFunction(() => window.__eeri.site() === 2 && !window.__eeri.debug.transitioning(), null, { timeout: 15000 }).catch(() => {});
 
   // ---- the stomp --------------------------------------------------------
   // Dropped from a height measured off the TARGET, not from a fixed 7.5: the
