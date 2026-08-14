@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import { PAL } from './palette.js?v=2';
 import { craftMat, craftBox } from './craft.js?v=2';
+import { CLOCK } from './parts.js?v=3';
 
 // black/yellow chevrons — the one danger language, readable in greyscale
 function chevronTexture() {
@@ -29,9 +30,11 @@ function chevronTexture() {
   return tex;
 }
 
-const WIND = 0.85;     // the telegraph, in seconds
-const SWING = 1.15;    // the strike
-const REST = 1.0;      // settling back
+// the telegraph clock is DESIGN §4.1's and lives in parts.js, where the room
+// prover can hold it to the 1.0s floor — this was 0.85
+const WIND = CLOCK.ball.wind;     // the telegraph, in seconds
+const SWING = CLOCK.ball.swing;   // the strike
+const REST = CLOCK.ball.rest;     // settling back
 
 export class WreckingBall {
   // pivot (px, py) under a girder; the ball swings in the x/y plane

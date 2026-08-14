@@ -14,10 +14,10 @@
 
 import { ROOMS } from '../js/rooms.js?v=2';
 import {
-  check, REACH, LEVEL, SOLID_CHARS, W, H, GROUND,
+  check, estimate, REACH, LEVEL, TELL, CLOCK, SOLID_CHARS, W, H, GROUND,
   ground, mound, pit, bank, chasm, machine, robot, startAt, exitAt,
   ladder, ledge, checkpoint, flagAt, golden, boltRun,
-} from '../js/parts.js?v=2';
+} from '../js/parts.js?v=3';
 
 // a hundred bolts is the level's completion figure, so most of the BAD rooms
 // below would fail on the count alone and say nothing about what they are
@@ -30,6 +30,27 @@ const ok = (n, c, d) => { c ? (pass++, console.log('  ok   ' + n)) : (fail++, co
 
 console.log(`the kid's budget: step ${REACH.step} tiles (jump reaches ${REACH.jumpUp.toFixed(2)}), `
   + `gap ${REACH.gap} tiles (a run carries ${REACH.jumpAcross.toFixed(2)})\n`);
+
+// ---- the telegraph floor -------------------------------------------------
+// DESIGN §4.1, and it is about a six-year-old: "telegraph ≥ 1.0 s before
+// anything can touch you." All three of these clocks were under it — 0.80,
+// 0.55 and 0.85 — because the rule lived in a document and the numbers lived
+// in three different modules.
+console.log(`the telegraph floor: ${TELL.toFixed(1)}s before anything can touch you\n`);
+{
+  const warn = CLOCK.skitter.notice + CLOCK.skitter.wind;
+  ok(`the skitter warns for ${warn.toFixed(2)}s before it lunges`, warn >= TELL);
+  ok(`the vent lights its collar for ${CLOCK.vent.warn.toFixed(2)}s before it blows`,
+    CLOCK.vent.warn >= TELL);
+  ok(`the ball winds back for ${CLOCK.ball.wind.toFixed(2)}s before it swings`,
+    CLOCK.ball.wind >= TELL);
+  // A hopper never BECOMES dangerous — it is dangerous continuously and
+  // identically — so what it owes is a rhythm slow enough to read rather
+  // than a warning.
+  ok(`the hopper's rhythm is readable (${CLOCK.hopper.cycle.toFixed(2)}s a cycle)`,
+    CLOCK.hopper.cycle >= 1.2);
+}
+console.log('');
 
 for (const room of ROOMS) {
   const r = check(room);
@@ -94,6 +115,18 @@ for (const room of ROOMS) {
     ok(`${room.name}: the ride's payoff sits in the back half (${o.kind} at x=${o.at})`,
       o.at >= W * 0.45, `${Math.round((o.at / W) * 100)}% through the room`);
   }
+
+  // ---- how long it takes, and how much of it is on foot ----------------
+  // DESIGN §4: "60–90 seconds first time through, ~40 once learned", and §1:
+  // the platforming "is 80% of playtime". This is the LEARNED run, so it is
+  // the floor the 60–90 sits above.
+  const e = estimate(room);
+  console.log(`       ${e.total.toFixed(0)}s learned · ${Math.round(e.onFoot * 100)}% on foot · `
+    + `ride ${e.parts.ride.toFixed(0)}s · run ${e.parts.run.toFixed(0)}s`);
+  ok(`${room.name}: is a level, not a landscape (${e.total.toFixed(0)}s learned)`,
+    e.total > 20 && e.total < 120);
+  ok(`${room.name}: the platformer is the spine (${Math.round(e.onFoot * 100)}% on foot)`,
+    e.onFoot >= 0.6);
 
   // both ends of every ladder
   for (const l of c.ladders) {
@@ -206,6 +239,21 @@ bites('a bolt hung where nothing can reach it', {
     golden(GROUND + 3, [10, 20, 30]),
     boltRun(GROUND + 1, 0, 49), boltRun(GROUND + 2, 0, 48), boltRun(H - 2, 60, 60)],
 }, 'out of reach');
+
+// The slack rule cannot fire on a room that is otherwise legal — sizes are
+// whole tiles, so the widest legal gap already leaves 0.85 and the tallest
+// legal step 0.65. Its real job is the other direction: to catch the KID
+// changing under levels that were proved against the old numbers. So that is
+// what the bite does — weakens the jump and checks the levels notice.
+{
+  const jump = REACH.jumpUp;
+  REACH.jumpUp = 2.2;
+  bites('a step the budget no longer covers, after the kid\'s jump changed', {
+    name: 'BAD/slack',
+    parts: [ground(), startAt(4), mound(40, 44, 2), ...furniture()],
+  }, 'slack');
+  REACH.jumpUp = jump;
+}
 
 bites('a robot patrolling a deck that is not there', {
   name: 'BAD/deck-robot',

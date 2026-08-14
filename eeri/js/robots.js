@@ -13,8 +13,11 @@
 import * as THREE from 'three';
 import { PAL, mix } from './palette.js?v=2';
 import { craftMat, craftBox } from './craft.js?v=2';
+import { CLOCK } from './parts.js?v=3';
 
-const NOTICE = 0.35, WIND = 0.45, LUNGE = 0.5, RECOVER = 0.7;
+// The telegraph clock is DESIGN §4.1's, and it lives in parts.js so the room
+// prover can hold it to the 1.0s floor — these three were all under it.
+const { notice: NOTICE, wind: WIND, lunge: LUNGE, recover: RECOVER } = CLOCK.skitter;
 const SEE = 5.2, WALK = 1.5, LUNGE_SPEED = 6.4;
 
 // THREE KINDS (DESIGN §3), and the split is the point of having more than
@@ -25,8 +28,8 @@ const SEE = 5.2, WALK = 1.5, LUNGE_SPEED = 6.4;
 //            to stomp: landing on one bounces you off without killing it,
 //            which is the game saying "this one you jump"
 //   skitter  a PROVOCATION test — the original: patrol, notice, wind, lunge
-const HOP_CYCLE = 1.35, HOP_RISE = 1.25, HOP_CROUCH = 0.28;
-const ROLL_SPEED = 2.4;
+const HOP_CYCLE = CLOCK.hopper.cycle, HOP_RISE = CLOCK.hopper.rise, HOP_CROUCH = CLOCK.hopper.crouch;
+const ROLL_SPEED = CLOCK.roller.speed;
 
 // Every surface here goes through craftMat + craftBox — painted balsa, the
 // same material the machines wear (§3.3, ART_TARGET §0.05). A prop built
@@ -266,7 +269,7 @@ export class Robot {
 // It breathes on a fixed clock with a visible tell before it blows, so it is
 // a rhythm to walk through rather than a surprise.
 
-const VENT_CYCLE = 2.6, VENT_WARN = 0.55, VENT_BLOW = 0.6;
+const VENT_CYCLE = CLOCK.vent.cycle, VENT_WARN = CLOCK.vent.warn, VENT_BLOW = CLOCK.vent.blow;
 
 export class SteamVent {
   constructor(scene, level, x) {

@@ -14,7 +14,7 @@ import { PAL, mix } from './palette.js?v=2';
 import { craftMat, craftBox, craft } from './craft.js?v=2';
 
 import { ROOMS } from './rooms.js?v=2';
-import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, GROUND } from './parts.js?v=2';
+import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, GROUND } from './parts.js?v=3';
 
 export { ROOMS };
 const EPS = 0.001;

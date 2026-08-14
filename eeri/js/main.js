@@ -11,7 +11,7 @@
 import * as THREE from 'three';
 import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=2';
 import { Input } from './input.js?v=2';
-import { Level, ROOMS } from './level.js?v=4';
+import { Level, ROOMS } from './level.js?v=5';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
 } from './pieces.js?v=4';
@@ -20,9 +20,9 @@ import { Camera } from './camera.js?v=1';
 import { buildKidModel, Kid, Player } from './kid.js?v=3';
 import { buildExcavatorModel, Excavator } from './excavator.js?v=2';
 import { buildCraneModel, Crane } from './crane.js?v=1';
-import { Robot, SteamVent } from './robots.js?v=2';
+import { Robot, SteamVent } from './robots.js?v=3';
 import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=1';
-import { WreckingBall } from './hazards.js?v=1';
+import { WreckingBall } from './hazards.js?v=2';
 import { AudioKit } from './audio.js?v=3';
 import { loadManifest, getModel, getPiece } from './assets.js?v=3';
 import { craftMat, craftBox } from './craft.js?v=2';

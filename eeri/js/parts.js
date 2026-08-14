@@ -40,6 +40,40 @@ export const REACH = {
   gap: 4,                          // whole tiles of hole he clears from a run
 };
 
+// ---- the speeds, and the telegraph clock ---------------------------------
+// Measured off js/kid.js the same way REACH is, and used by the walk-time
+// estimate below.
+export const SPEED = { run: 6.2, climb: 3.6 };
+
+// …and the machines', off js/excavator.js and js/crane.js, for the ride term
+// of the estimate below. A machine is deliberately slower than the kid.
+export const MACHINE_SPEED = { excavator: 3.4, crane: 2.8 };
+// what a ride's own job costs, in seconds: the mount and dismount moves, and
+// then the work itself — a dug row, a slung span, a swing of the ball
+export const RIDE = { mount: 0.55, dismount: 0.5, dig: 0.7, sling: 0.55, seat: 0.5, swing: 2.4 };
+
+// THE TELEGRAPH FLOOR (DESIGN §4.1, the owner's, and it is about a
+// six-year-old): "telegraph ≥ 1.0 s before anything can touch you". A rule
+// the prover cannot READ is a rule that drifts — all three of these clocks
+// were under it — so the clocks live here, in the pure module, and
+// robots.js and hazards.js import them rather than keeping their own.
+export const TELL = 1.0;
+export const CLOCK = {
+  // it sees you, it draws back, and only then does it lunge: notice + wind
+  // is the whole warning, so that sum is what the floor applies to
+  skitter: { notice: 0.45, wind: 0.62, lunge: 0.5, recover: 0.7 },
+  // the collar lights before it blows
+  vent: { cycle: 3.2, warn: 1.05, blow: 0.6 },
+  // it winds back, chevrons pulsing, one warning tone
+  ball: { wind: 1.05, swing: 1.15, rest: 1.0 },
+  // A HOPPER IS EXEMPT and the reason is not an excuse: the floor is about
+  // things that BECOME dangerous. A hopper is dangerous continuously and
+  // identically from the moment you see it — a metronome, never a surprise —
+  // so what it owes you is a readable rhythm, not a warning.
+  hopper: { cycle: 1.35, crouch: 0.28, rise: 1.25 },
+  roller: { speed: 2.4 },
+};
+
 // A machine is heavy, refuses a cliff, and cannot jump. It clears what it is
 // built to clear and nothing else. `arm` is how far from its own centre it
 // can work — the bucket's reach, the ball's swing radius — which is what
@@ -378,6 +412,52 @@ function surfaceBelow(g, c, cy) {
   return null;
 }
 
+// ---- how long a level takes to walk (DESIGN §4) -------------------------
+// "60–90 seconds first time through, ~40 once learned." That was a target
+// nothing measured, so a level could drift to twice its length and only a
+// playthrough would say so. This is the LEARNED run — someone who knows the
+// route and never stops — which is the floor the 60–90 sits above.
+//
+// It is an estimate and says so: the parts each carry a cost that is a
+// reasonable reading of what they ask for, not a simulation.
+export function estimate(room) {
+  const r = compile(room);
+  const dist = Math.max(0, r.finish.x - r.spawn.kid.x);
+  const parts = {
+    run: dist / SPEED.run,
+    // a gap or a step is an approach, a read and a jump
+    obstacles: r.obstacles.length * 0.9,
+    // …a small machine is a rhythm you wait a beat for
+    smalls: r.robots.length * 1.4,
+    // …a ladder is climbed at climbing speed, once
+    climbs: r.ladders.reduce((n, l) => n + (l.cy1 - l.cy0 + 1) / SPEED.climb, 0),
+    // …and the ride is measured from the job it actually does, rather than
+    // from what DESIGN §1 says a ride SHOULD be. Those two numbers
+    // disagreeing is the finding, not a rounding error.
+    ride: rideTime(r),
+  };
+  const total = Object.values(parts).reduce((a, b) => a + b, 0);
+  // DESIGN §1: "that is 80% of playtime and it has to be good on its own —
+  // if the riding were deleted the game should still be worth playing."
+  return { total, parts, onFoot: (total - parts.ride) / total };
+}
+
+// the ride, from its own parts: get to the cab, drive to the job, do it,
+// step off
+function rideTime(r) {
+  const m = r.machines[0];
+  const job = r.obstacles.find((o) => o.clears);
+  if (!m || !job) return 0;
+  const speed = MACHINE_SPEED[m.type] || 3;
+  const drive = Math.abs(job.at - m.x) / speed;
+  let work = 0;
+  if (job.clears === 'dig') work = (job.size || 1) * RIDE.dig;
+  else if (job.clears === 'span') work = RIDE.sling + RIDE.seat
+    + (r.girder ? Math.abs(r.girder.seat.x0 - r.girder.stackX) / speed : 0);
+  else if (job.clears === 'smash') work = 2 * RIDE.swing;
+  return RIDE.mount + drive + work + RIDE.dismount;
+}
+
 export function check(room) {
   const r = compile(room);
   const problems = [];
@@ -507,6 +587,24 @@ export function check(room) {
   if (r.flag && r.gate && r.flag.x >= r.gate.x) {
     note(`${r.name}: the flag at x=${r.flag.x} is not before the gate at x=${r.gate.x} — `
       + 'the flag closes the level, the gate closes the WORLD');
+  }
+
+  // ---- generosity, as numbers (DESIGN §4.1) -----------------------------
+  // "Every jump proved with a full tile of slack over the budget." The
+  // budget's own ceilings are step 2 (of 2.65) and gap 4 (of 4.85), which is
+  // 0.65 and 0.85 — so the CEILING cannot meet the rule and the only honest
+  // check is on what a level actually USES. Anything under a full tile is
+  // named, and anything under 0.6 fails: that is the line between "measured"
+  // and "reliable under a thumb".
+  for (const o of r.obstacles) {
+    if (o.clears) continue;                     // the machine's, not the kid's
+    const slack = o.kind === 'step'
+      ? REACH.jumpUp - o.size
+      : REACH.jumpAcross - o.size;
+    if (slack < 0.6) {
+      note(`${r.name}: the ${o.kind} of ${o.size} at x=${o.at} leaves ${slack.toFixed(2)} tiles of slack — `
+        + 'under the 0.6 that separates "measured" from "reliable under a thumb"');
+    }
   }
 
   // ---- the collectibles, and whether they can actually be had -----------

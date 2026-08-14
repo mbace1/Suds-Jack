@@ -1,5 +1,60 @@
 # EERI — versions
 
+## v12 — 2026-08-14 — the generosity rules become numbers
+
+**Three telegraphs were under the floor the design sets, and nothing could
+see it.** DESIGN §4.1 is explicit and it is about a six-year-old — *telegraph
+≥ 1.0 s before anything can touch you* — while the skitter warned for
+**0.80 s** (notice 0.35 + wind 0.45), the steam vent for **0.55 s** and the
+wrecking ball for **0.85 s**. The rule lived in a document and the numbers
+lived in three different modules, which is the whole reason it drifted.
+
+So the clocks moved into `parts.js`, beside the reach budget, and `robots.js`
+and `hazards.js` import them rather than keeping their own: skitter
+0.45 + 0.62 = **1.07 s**, vent **1.05 s**, ball **1.05 s**. The room prover
+holds all three to the floor. **A hopper is exempt and the reason is stated
+rather than assumed**: the floor is about things that BECOME dangerous, and a
+hopper is dangerous continuously and identically from the moment you see it —
+a metronome, never a surprise — so what it owes is a rhythm slow enough to
+read (≥ 1.2 s a cycle), which is checked instead.
+
+**How long a level takes is now a number.** `estimate()` walks a room and
+prices it: the run at the kid's own speed, a beat per obstacle, a beat per
+small machine, every ladder at climbing speed, and **the ride from the job it
+actually does** — mount, drive to the work at that machine's own top speed,
+the work itself, dismount. The prover prints it per level and refuses a room
+that is not a level at all.
+
+Two things fell out of it that are the owner's to settle, and neither is a
+bug:
+
+- **The rides are 5.5–10.8 s. DESIGN §1 says thirty to forty.** What is built
+  is *board, do a job, hop off*; what the design describes is *ride a short
+  authored stretch that no amount of jumping could cross*. The estimate
+  originally carried a flat 30 s for a ride, which hid this completely — the
+  number is measured from the parts now, and the parts disagree with the
+  brief.
+- **A learned run is ~32 s against the "~40 once learned" target.** On the
+  same model the first time through lands inside 60–90, so this is the levels
+  being slightly thin rather than wrong.
+
+The **on-foot share** is checked because §1 makes it a claim: *"that is 80% of
+playtime and it has to be good on its own."* The three levels run 71% / 82% /
+68% — level 3 being the most ride-heavy, which is right for the big one — and
+a room that falls under 60% now fails.
+
+**And the slack rule, which cannot fire on a legal room.** §4.1 asks for a
+full tile of slack on every jump; the budget's own ceilings give 0.65 on a
+2-tile step and 0.85 on a 4-tile gap, so the ceiling *cannot* meet the rule
+and only what a level actually uses can be checked. Sizes are whole tiles, so
+every legal room already passes — which makes the rule's real job the other
+direction: catching the KID changing under levels proved against the old
+numbers. The bite does exactly that, weakening the jump and checking the
+levels notice.
+
+Gate: 70 checks in `test/rooms.mjs` (up from 59), the browser gate unchanged
+in count.
+
 ## v11 — 2026-08-13 — three rooms become three LEVELS
 
 **Built on the deployed head, not on a fork of it.** Two reconciliations had
