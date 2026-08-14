@@ -9,23 +9,23 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=2';
-import { Input } from './input.js?v=2';
-import { Level, ROOMS, LAB } from './level.js?v=6';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=13';
+import { Input } from './input.js?v=13';
+import { Level, ROOMS, LAB } from './level.js?v=13';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=4';
-import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=3';
-import { Camera } from './camera.js?v=1';
-import { buildKidModel, Kid, Player } from './kid.js?v=5';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=2';
-import { buildCraneModel, Crane } from './crane.js?v=1';
-import { Robot, SteamVent } from './robots.js?v=3';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=1';
-import { WreckingBall } from './hazards.js?v=2';
-import { AudioKit } from './audio.js?v=3';
-import { loadManifest, getModel, getPiece } from './assets.js?v=3';
-import { craftMat, craftBox } from './craft.js?v=2';
+} from './pieces.js?v=13';
+import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=13';
+import { Camera } from './camera.js?v=13';
+import { buildKidModel, Kid, Player } from './kid.js?v=13';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=13';
+import { buildCraneModel, Crane } from './crane.js?v=13';
+import { Robot, SteamVent } from './robots.js?v=13';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=13';
+import { WreckingBall } from './hazards.js?v=13';
+import { AudioKit } from './audio.js?v=13';
+import { loadManifest, getModel, getPiece } from './assets.js?v=13';
+import { craftMat, craftBox } from './craft.js?v=13';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;

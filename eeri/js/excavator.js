@@ -9,8 +9,8 @@
 // through the named nodes, so game code never knows which it got.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=2';
-import { craftMat, craftBox } from './craft.js?v=2';
+import { PAL, mix } from './palette.js?v=13';
+import { craftMat, craftBox } from './craft.js?v=13';
 
 export function buildExcavatorModel(tint = 0) {
   const T = (c) => (tint > 0 ? mix(c, PAL.SKY_PALE, tint) : c);

@@ -11,9 +11,9 @@
 // and the danger read off the same number and cannot disagree.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=2';
-import { craftMat, craftBox } from './craft.js?v=2';
-import { CLOCK } from './parts.js?v=4';
+import { PAL, mix } from './palette.js?v=13';
+import { craftMat, craftBox } from './craft.js?v=13';
+import { CLOCK } from './parts.js?v=13';
 
 // The telegraph clock is DESIGN §4.1's, and it lives in parts.js so the room
 // prover can hold it to the 1.0s floor — these three were all under it.
