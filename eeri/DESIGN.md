@@ -1,5 +1,11 @@
 # EERI — design plan
 
+> **READ `PHASING.md` FIRST.** It is newer owner direction (2026-08-14) and
+> **supersedes this file where they disagree** — the 80/20 reference ratio
+> (Crafted World is the default answer, Tropical Freeze is the seasoning),
+> the tool-reality table, and the phase gates. This file remains canon for
+> everything it does not contradict.
+
 Companion to `ART_BRIEF.md` (look) and `assets/README.md` (technical
 contract). This file is **what the game does and what that costs in
 assets** — the art pipeline should be able to read §6 alone and know what
