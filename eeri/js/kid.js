@@ -132,7 +132,7 @@ export function buildKidModel() {
 //  - The rig is modelled facing +Z (Meshy's requirement) and the game's world
 //    faces +x, so the whole thing carries a −90° yaw offset that the
 //    code-built kid does not.
-const CLIP_FOR = { idle: 'idle', run: 'run', air: 'jump', ride: 'ride', climb: 'walk' };
+const CLIP_FOR = { idle: 'idle', run: 'run', air: 'jump', ride: 'ride', climb: 'climb' };
 
 // FACING, and the trap in it. A rotation of θ about Y sends +z to
 // (sin θ, 0, cos θ). The Meshy rig is modelled facing +Z, and the game's

@@ -1,5 +1,33 @@
 # EERI — versions
 
+## v18 — 2026-08-14 — the two new verbs animate
+
+DESIGN §6.2 #2, verbatim: "the two new verbs have no animation at all."
+`eeri_v4.glb` fixes that with three library clips on the existing rig —
+`climb` (438 Ladder_Climb_Loop, chosen over the fast/slow variants because
+the game HOLDS a climb, so it has to loop), `stomp` (470 Jumping_Down, the
+crouch-and-rebound), and `hurt` (178 Hit_Reaction — a plain flinch; the
+library's other reactions are punches and gunshots, which have no business
+in this game). 9 credits, `art-src/tools/meshyrig.mjs anim`.
+
+The full action library with names is at docs.meshy.ai/en/api/animation-library
+— found while hunting a hurt clip, and better than the rough id ranges this
+repo had been navigating by.
+
+New FILE name (eeri_v4, not a rewrite of v3) per the versioned-URL rule.
+Clips measured moving in the packed file before install: climb forearm 0.22 /
+leg 0.20, stomp 0.68 / 0.55, hurt 0.36 across the board — none dead.
+
+One declared cross-lane line in js/kid.js: `CLIP_FOR.climb` pointed at
+`'walk'` as a stand-in and now points at the real clip. Wiring `stomp` and
+`hurt` into the state machine is real behaviour work and stays with
+Design/Level — the clips are on the model waiting.
+
+Also concepted on the rigged body plan: `B-hopper2` and `B-bucket2`
+(art-src/bots/), the next two family members. Not yet meshed.
+
+Gates: 166 smoke + 30 rooms + 7 playthrough.
+
 ## v17 — 2026-08-14 — the bolt-bot rigs, and why the first two did not
 
 PHASING §2's highest asset-value-per-credit item: ONE Meshy-rigged biped that
