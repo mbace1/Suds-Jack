@@ -37,7 +37,12 @@ export const REACH = {
   // airtime = rise (v/g = 0.42s) + fall through the same height at FALL_X
   // (sqrt(2h/(g*1.35)) = 0.362s) = 0.782s; carried at RUN = 4.85 tiles
   jumpAcross: 4.85,
-  gap: 4,                          // whole tiles of hole he clears from a run
+  // Whole tiles of hole he clears from a run. This was 4, because the run
+  // measures 4.85 — but that is 0.85 of a tile of margin, and DESIGN.md
+  // §4.1 locks "a full tile of slack" for a six-year-old. A 4-wide pit
+  // needed full speed at the very lip; the playthrough bot, which never
+  // gives up, stalled on one all afternoon. Three.
+  gap: 3,
 };
 
 // A machine is heavy, refuses a cliff, and cannot jump. It clears what it is

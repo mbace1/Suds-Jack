@@ -91,8 +91,10 @@ kills), sparking cables.
 **A ride-ending hazard may never stand between a machine and its job.**
 Learned the hard way: the swinging ball hung across the excavator's only
 run from where it parks to the bank it has to dig, and since a hit takes
-the RIDE it threw you out of the cab every attempt. The bank could then
-never be cleared and the level played as an impossible wall. Hazards that
+the RIDE it threw you out of the cab. It is not an absolute wall — a
+steady drive can thread the swing — but it is timing-dependent, which is
+worse for a six-year-old than a flat no: the same approach works
+sometimes, and each failure costs the whole walk back. Hazards that
 merely knock back are fine anywhere; the ride-enders belong in stretches
 only the kid walks. `test/rooms.mjs` refuses the arrangement now.
 
@@ -341,11 +343,18 @@ level, late, as a deliberate puzzle — never in a teaching level.
 **Tier 1 — make it safe to add nine more levels**
 
 1. **A playthrough gate.** The room prover proves a level is *reachable*;
-   it did not catch a level that was unfinishable in practice, because a
-   hazard stood on the machine's route and the prover only knew about
-   holes. A bot that actually plays each level spawn→flag — run, jump,
-   mount, use the verb, reach the flag — is what caught it, and it should
-   be a gate. Nine more levels without this is nine more of these.
+   it cannot see whether a level is *playable*. **Built, and it earned its
+   keep immediately** — it found SITE 3's four-wide pit, which sat at the
+   very edge of the run budget and which the tireless bot stalled on
+   repeatedly. `REACH.gap` is 3 now, a full tile of slack, as §4.1 already
+   demanded.
+
+   **Its honest limit, worth knowing before trusting it:** a bot that never
+   gives up will eventually beat a level a child would put down. Restoring
+   the ball-on-the-route bug, the *rule* check refuses it while the
+   playthrough still finishes. So the gate also measures COST — how many
+   times the level took the ride away — because "possible" and "reasonable"
+   are different questions and only the rules catch the second.
 2. **Re-lay the three existing levels** against §8.0.
 3. **Climb and ladders.** A declared verb with nothing behind it. Cheapest
    variety in the game and the only route to vertical sections.

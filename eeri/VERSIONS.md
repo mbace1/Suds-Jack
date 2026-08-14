@@ -1,5 +1,38 @@
 # EERI — versions
 
+## v9 — 2026-08-13 — a gate that actually plays the game
+
+`test/rooms.mjs` proves a room's *geometry*. It cannot see whether a level
+is playable, and it passed one that was not. So `test/playthrough.cjs` is
+a bot that FINISHES every level: it runs right, jumps when the run is
+blocked or a hole is ahead, boards the machine when something in the way
+needs it, uses the verb, and must reach the flag. It is deliberately dumb
+— no waypoints, no level knowledge — because a bot that needs to be told
+the route cannot tell you the route is broken.
+
+**It earned its keep on the first honest run.** SITE 3's pit was four
+tiles, sat at the very edge of the 4.85-tile run, and the bot — which
+never gives up — stalled on it over and over. DESIGN.md §4.1 already
+locked "a full tile of slack" for a six-year-old and the budget did not
+enforce it: `REACH.gap` was 4. It is 3 now, and the pit is 3.
+
+**Its honest limit, recorded so nobody over-trusts it.** A tireless bot
+will eventually beat a level a child would put down. Restoring the
+ball-on-the-route bug, the *rule* check refuses the arrangement while the
+playthrough sails through it — the ball turns out to be timing-dependent
+rather than an absolute wall, which is why v8's account of it is corrected
+above. So the gate also measures **cost**: how many times a level took the
+ride away. Possible and reasonable are different questions, and the static
+rules are what catch the second.
+
+Two bot bugs found on the way, both worth naming because they are the
+shape of mistake this kind of harness makes: it never hopped out of the
+cab (the flag only finishes on foot, so it drove past the end forever),
+and it treated the girder as one action when it is two — pick it off the
+stack, then carry it to the lip.
+
+Gate: 7 checks over 3 levels, run alongside 145 smoke and 30 prover.
+
 ## v8 — 2026-08-13 — three bugs from actual play
 
 All three came from one playtest, and two of them were one cause.
@@ -20,7 +53,11 @@ meant to be jumped — it is the machine's job. But the machine could never
 get to it: **the wrecking ball hung at x=70, squarely across the
 excavator's only run from where it parks to the bank at 84**, and a hit
 takes the RIDE. Every attempt ended with the ball throwing you out of the
-cab. The room was unfinishable and read as an impossible wall.
+cab. **Correction, from the playthrough gate:** it is not an absolute
+wall — a bot that drives steadily can thread the swing, and did. It is
+*timing-dependent*, which for a six-year-old is arguably worse: the same
+approach works sometimes and throws you out other times, with a long walk
+back either way. Either way the arrangement is refused by rule now.
 
 The ball has moved to x=35, in the stretch only the kid ever walks, and
 the rule is now enforced rather than remembered: `test/rooms.mjs` refuses

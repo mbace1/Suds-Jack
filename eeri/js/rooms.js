@@ -42,7 +42,7 @@ export const ROOMS = [
       swingBall(35, 8),
 
       hazard(40, 'steam'),                // telegraphed, on the way to the pit
-      pit(46, 48),                        // 3 wide — a run clears 4
+      pit(46, 48),                        // 3 wide — a full tile inside the run
       bolts([[11, 46], [11, 47], [11, 48]]),
 
       ledge(52, 57, 5),
@@ -127,8 +127,8 @@ export const ROOMS = [
       robot(14, 22),
       bolts([[13, 16], [13, 17], [13, 18]]),
 
-      pit(28, 31),                        // 4 wide — the limit of a run
-      bolts([[11, 28], [11, 29], [11, 30], [11, 31]]),
+      pit(28, 30),                        // 3 wide — a full tile of slack
+      bolts([[11, 28], [11, 29], [11, 30]]),
 
       ledge(36, 42, 6),
       bolts([[10, 37], [10, 38], [10, 39]]),
