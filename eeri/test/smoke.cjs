@@ -264,7 +264,20 @@ s.listen(0, '127.0.0.1', async () => {
     await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
     mounted = await p.waitForFunction(() => window.__eeri.mode() === 'riding', null, { timeout: 4000 }).then(() => true).catch(() => false);
   }
-  ok('E climbs into the excavator', mounted, 'mode=' + await p.evaluate(() => window.__eeri.mode()));
+  // A mount that fails says almost nothing on its own — it is four
+  // conditions ANDed together in nearExc() — so it reports which one was
+  // false. Guessing at ten minutes a run is not debugging.
+  const why = await p.evaluate(() => {
+    const e = window.__eeri.exc, pl = window.__eeri.player;
+    if (!e) return { near: false, reason: 'no machine in this room' };
+    return {
+      mode: window.__eeri.mode(),
+      dx: +(pl.x - e.x).toFixed(2), pl: +pl.y.toFixed(2), ex: +e.y.toFixed(2),
+      grounded: pl.grounded, mercy: +pl.mercyT.toFixed(2), climbing: pl.climbing,
+      near: Math.abs(pl.x - e.x) < 2.6 && pl.y > e.y - 1 && pl.y < e.y + 2.4 && pl.grounded,
+    };
+  });
+  ok('E climbs into the excavator', mounted, JSON.stringify(why));
 
   const ex0 = (await p.evaluate(() => window.__eeri.debug.excPos())).x;
   await p.evaluate(() => window.__eeri.debug.press('right'));
