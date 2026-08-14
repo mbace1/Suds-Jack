@@ -1,11 +1,5 @@
 # EERI — asset drop-in contract
 
-> **READ `PHASING.md` FIRST.** It is newer owner direction (2026-08-14) and
-> **supersedes this file where they disagree** — the 80/20 reference ratio
-> (Crafted World is the default answer, Tropical Freeze is the seasoning),
-> the tool-reality table, and the phase gates. This file remains canon for
-> everything it does not contradict.
-
 This folder is the seam between the game and the art (ART_BRIEF §2, §4, §5).
 The game runs **today** with zero files here — every entry in
 `manifest.json` marked `"placeholder"` is built in code. To ship a real
@@ -21,6 +15,24 @@ asset:
 Nothing else changes. If a live asset fails to load or breaks contract,
 the game logs a warning and ships the placeholder — a grey box beats a
 broken page, but the smoke gate still fails so it cannot ship silently.
+
+**How the assets are MADE is [`/ART_PIPELINE.md`](../../ART_PIPELINE.md)** —
+canonical for concept → mesh → rig → animate → integrate, with the credit
+costs and a trap index. Two rules from it that bite here:
+- **A Meshy feature is always the primary choice.** It auto-rigs a humanoid
+  with a 24-bone skeleton and skin weights for 5 credits and applies any of
+  600+ animation clips for 3 each.
+- **Anything to be rigged is concepted in a T-POSE.** A limb resting against
+  the torso cannot be separated from it, and Meshy's rigger requires clearly
+  defined limbs. The pose is a technical requirement of the concept.
+
+**TWO KINDS OF RIG live behind this seam.** A hand-cut model declares the
+`nodes` the game rotates. A Meshy auto-rigged character is a **skinned** mesh
+declaring the named `clips` it can play — it has a bone skeleton, not the
+game's node names. `"rig": "skinned"` picks which contract is checked, and
+such an entry also carries `"height"` **in tiles**, because Meshy rigs to
+real-world metres and the seam rescales on load. Both come back through the
+same `getModel` call, so game code cannot tell them apart.
 
 ## 3D models (`assets/3d/*.glb`)
 
@@ -54,27 +66,6 @@ riding (the Yoshi rule, ART_BRIEF §3.6), **and the empty seat is how a
 player tells an unmanned machine from a tamed one** (§1.2). Draw the seat
 to be read from the side at 32 px, empty.
 
-### `flag_v1.glb` / `flagbig_v1.glb` — the end of a level
-
-Spec: DESIGN.md §4.2. The flag is not a gate you walk through — it BUILDS
-itself in three phases as Eeri comes down the last stretch, one puff of
-smoke each, and finishes by being **run past**. Ships all three phases as
-sibling nodes; the game shows them cumulatively (phase0, then 0+1, then
-0+1+2) and eases each one up from flat as it appears, so each phase must
-look right *alone* and *stacked*.
-
-| node | is | note |
-|---|---|---|
-| `phase0` | base plate, bolts waiting in it | the first thing that appears, ~15 tiles out |
-| `phase1` | the pole and its braces | contains `pole` |
-| `pole` | the mast itself (child of `phase1`) | the game may raise the cloth along it |
-| `phase2` | the cloth/sign board | the game runs it up the pole and waves it |
-
-`flagbig_v1.glb` is the same contract for **level 3 of a world** — taller
-and a **different colour**, and it has to be tellable from the small one
-at a distance, before you reach it. Small flag stands ~4.8 tiles, big
-~6.4; both read against a busy hoarding, so the silhouette carries it.
-
 ### Manipulable world pieces — `assets/3d/<piece>_v1.glb`
 
 Spec: ART_BRIEF §5.1. Things a machine digs, lifts or breaks. Same GLB
@@ -104,6 +95,7 @@ at **30 px per unit** (`PPU` in `js/layers.js`):
 
 | layer | z | world rect (x0…x1 × y0…y1) | PNG size |
 |---|---|---|---|
+| `sky` | −48 | −60…170 × −6…40 | 4096 × 1380 * |
 | `skyline` | −30 | −30…130 × 0…30 | 4096 × 900 * |
 | `far` | −14 | −20…120 × 0…20 | 4096 × 600 * |
 | `mid` | −6 | −12…110 × 0…14 | 3660 × 420 |
@@ -119,8 +111,11 @@ compares it against `LAYER_RECTS` × `PPU` in `js/layers.js`, and a live PNG
 whose pixel size does not match its row fails the gate rather than being
 silently stretched onto the plane. Paint to the row.
 
-The sky itself (gradient + clouds + sun) stays code-drawn; it is the
-backdrop, not a kit piece.
+The sky ships as a layer like the rest since v9 — the crafted paper sky
+(palette gradient × paper-grain luminance, cotton-wool cloud cutouts, ONE
+paper sun) built by `art-src` tooling; `drawSky` stays as its code
+placeholder. A naively tiled prop sheet grows a second sun — the sun is
+cropped out and stamped once.
 
 ### What each layer is FOR (v4 — the depth pass)
 

@@ -12,7 +12,7 @@
 // at its foot.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=3';
+import { PAL, mix } from './palette.js?v=6';
 
 export function buildBankModel(rows = 3, width = 5) {
   const root = new THREE.Group();

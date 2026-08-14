@@ -1,5 +1,257 @@
 # EERI — versions
 
+> **A note on the numbering.** Two lineages both shipped a "v10" and a "v11":
+> main's are gameplay (the machine on the route; ladders and vertical levels),
+> the art lane's were the material kit and the painted machines. The art
+> entries below are renumbered **v12–v16** to continue from main's v11 rather
+> than collide with it. Their own text still refers to itself by the old
+> numbers in places, and that is left alone — rewriting the record to look
+> tidier than it was is how the traps stop being findable.
+
+## v16 — 2026-08-14 — world 2's backdrop, built ahead of need and parked
+
+The pipeworks layer set (DESIGN §4.1 "pipes/water") — built now because the
+whole run cost ~nothing on the v14 model policy, parked because §6.2 #5 says
+it is due at level 4, which does not exist yet. It ships in the manifest
+under `layers.pipeworks` with status **placeholder — deliberately**: the
+smoke gate fails any live asset the game never fetches (the v6 bug class,
+2.7 MB shipped and never requested), and no level plays world 2 yet. Level 4
+flips six words to "live" and nothing else; the seam (`buildLayers(scene, world)`) has taken a
+world name since v6, so when level 4 lands it is one string in the room def.
+
+- **28-piece pool** (`art-src/craft/pipeworks/`): waterworks skyline (water
+  tower, gasometer, pump station, elevated pipeline, crane), the far water
+  structures (tank tower, pipe rack, pump house, standpipe, a lattice pipe
+  bridge), a mid kit of pipes at hand height (runs, a red-wheeled valve, an
+  elbow, pump skid, sluice, pipe stack), wet near clutter, dark fore
+  occluders, and three grade strips with standing water let into them.
+- **Water is CUT PAPER** — layered blue card with scalloped torn edges and
+  paper foam curls, never a rendered liquid. The near lane carries it as a
+  wide strip sunk half into the grade.
+- **23 of 26 concepts on base nano banana** (flash); Pro only for the three
+  structural heroes. Owner's call, and the strata A/B backs it: flash results
+  are equivalent outside fine lattice work.
+- `build-layers.mjs` gained a **`WORLD` switch** — per-world pool + layer
+  config over the same world-agnostic rects — and a per-piece **`sink`**:
+  some pieces keep a sliver of white base (legit ink the key is right to
+  keep), and burying the feet in the grade is cheaper and more honest than
+  re-rolling for a perfect crop. P-mid-tower is borrowed from the groundworks
+  pool deliberately: one shared silhouette ties the worlds to one site.
+- The sky entry points at the groundworks sky — world-agnostic until a world
+  needs its own (the evening set will).
+
+Composition acceptance (full-width strips): far and mid pass cleanly; the
+skyline needed the hero rate halved after three identical cranes landed in
+one screen — one hero piece per pool makes the hero rate the repeat rate.
+
+## v15 — 2026-08-14 — the ground stops being wallpaper
+
+The owner, on v12: *"I thought it was already done."* It had been — twice. v10
+gave the earth the material kit and v11 fixed the detail map's contrast, and
+both were real fixes on the MATERIAL axis. Neither touched composition, which
+is why ~30% of every frame was still an evenly-spaced motif marching across
+136 world units between four dead-straight horizontals. Machine-perfect is the
+one thing the reference is not.
+
+- **Each stratum takes its own section at its own scale.** They shared one
+  `flute` map, so four bands were four tints of one stamp.
+- **The boundaries INTERLOCK instead of running straight.** Each band sends
+  tongues of itself into the band below at varying widths and depths, drawn
+  per solid run so a dug hole is never bridged. This replaced a first attempt
+  that laid a torn-card strip along each boundary — which was worse, and
+  usefully so: it turned four straight lines into four regular rows of
+  identical bumps, i.e. the same failure with more ink. **A boundary wants to
+  be irregular in POSITION, not dressed.** The geometry version costs no asset
+  at all.
+- **The face carries things you can name** — a paper-tube pipe with a tape
+  band, a crushed drum, a root, broken brickwork, stone clusters, a bottle —
+  keyed cutouts placed deterministically, knocked back in value so they sit in
+  the earth rather than on it, and skipped where they would float over a dug
+  pit. The v4 "cobbles" they replace are ninety grey dodecahedrons mixed toward
+  INK on a brown face: invisible, which is why the section read as empty
+  however much material was thrown at it.
+- **The grass lip gets its felt fringe**, tiled at the strip's own aspect.
+
+**A DETAIL MAP MUST TILE, WHICH MEANS IT MUST BE FEATURELESS**, and this cost
+two rounds. The strata sources inherited the house craft block, which names
+split pins and masking tape, so every section came back with fixings in
+specific places — correct for a piece, fatal for a map, because a map repeats:
+at a 3-unit repeat you could count the same brass pin forty-five times.
+`detailmap.mjs` gained a **`highpass`** argument (subtract everything coarser
+than a radius; the features are large and the fluting is fine, so one number
+separates them). That fixed two of the four. It could not fix `packed` and
+`gritty`, which are photographs of a specific card *assemblage* — the
+arrangement is the subject, and no filter turns an object into a material.
+Both were pulled; those bands fall back to `flute`, which is genuinely
+uniform, at two densities. **The test is TILE IT 3×3 AND LOOK** — a single
+patch of all four reads as convincing card, and only the 3×3 shows which two
+are objects.
+
+Also fixed: the first cut placed all 46 face cutouts between y −0.5 and −8,
+which is almost entirely below the bottom of the frame — loaded, lit and
+rendered where nobody would ever see one.
+
+**Postscript — it was the prompt, not the model.** The credits came back and
+the three failed sources were re-rolled against both models on the fixed
+brief. All three came out right on both, which settles it: the earlier
+failures were the house craft block leaking fixings into a texture, not the
+generator. And **base nano banana (`gemini-2.5-flash-image`) produced the
+best-tiling swatch of the four**, beating Pro — Pro put repeating white blobs
+in `gritty`. Pro won `gritty` and the torn edge. So the standing rule is
+**generate on flash, escalate to Pro only when a look fails**; Pro's clear
+advantage is a piece with internal structure, where the subject is an object.
+All four strata are live again.
+
+Gates: 156 smoke + 29 room-prover.
+
+## v14 — 2026-08-14 — the layers are COMPOSED, not tiled
+
+The owner's note on v11 was that the assets were not good enough yet, and
+then, looking at them: *"a lot of the backgrounds looked like it stopped
+abruptly or that it's not connected to ground. generally they are flat and
+need more definition or edge contrast."* Rendering a full layer strip instead
+of a screenshot showed why, and it was not a material failure.
+
+**Every layer was ONE generated segment stamped across the rect with a gap
+between copies.** In one 1280px frame at x=78 you could count three identical
+half-built frames at identical heights with three identical cranes above them;
+across the whole strip roughly half of each layer was empty air. The segments
+themselves were on target — balsa standards, split-pin bolts, corrugated cut
+edges, all of it — so every previous pass had been improving the thing that
+was already right.
+
+So the unit of generation stops being a segment and becomes a **piece**, and
+`build-layers.mjs` becomes a compositor:
+
+1. **A pool, not a tile.** 36 pieces (`art-src/craft/pieces/`), each ONE object
+   on magenta with no ground under it. The tool finds its ink bounds, gives it
+   a world height and places it.
+2. **A height profile.** Each piece carries its own world height and jitters
+   around it; `hero` pieces — cranes, a lift core, a chimney stack, a tall
+   scaffold — appear rarely and stand well above the run. A run of 13s with an
+   occasional 21 is a skyline; thirteen 13s is a fence.
+3. **A continuous grade, and feet that are buried in it.** Each ground lane
+   gets a torn-card ground line tiled the full width, and then the SAME strip
+   again in front at half height, so every piece is planted rather than
+   standing on air. Drawn only behind, a grade is a backdrop and the cutouts
+   still float — which is the "not connected to ground" read exactly.
+4. **Edge contrast.** Every piece drops a hard-edged cutout shadow onto
+   whatever is behind it (which is what Crafted World's flat sets actually do)
+   and each lane's contrast is pushed back up before the depth tint washes it
+   out.
+5. **A value staircase.** The depth tint alone mixes every lane toward the
+   same pale sky, which is why the old build read as one field of cream with
+   the player lost in it. Each lane now steps down from the one behind it
+   (1.00 / 0.92 / 0.84 / 0.78) and the hoarding — the only wide block of local
+   colour in the kit — was promoted into the NEAR lane, so there is something
+   behind the play lane that is neither pale nor grey.
+
+Placement is seeded, so the same commit builds the same layers, and the tools
+plus the pool ship in `art-src/` — `build-layers.mjs` rebuilds
+`assets/2d/groundworks_*_v3.png` byte-for-byte from `art-src/craft/pieces/`.
+
+**Three bugs in the chroma key, all of which had shipped.** `keylib.js` is now
+the one copy, shared by the compositor and the review tools:
+
+- **A ratio test over-keys.** Keying on `g < min(r,b) × 0.8` alone lets JPEG
+  chroma noise in a dark passage punch black speckle through the middle of the
+  art — it was visible all over the lift core and the dark scaffold. The
+  backing is a lit sheet, so demand an absolute floor and a real separation
+  too.
+- **A level test under-keys.** The previous cut tested `r > 140 && b > 140 &&
+  g < 110`, which is a test for BRIGHT magenta — and the model casts a SHADOW
+  on the backing, around (90, 15, 90), which passes none of those thresholds.
+  That shipped as a solid purple block beside a tower.
+- **A keyed pixel still carries its original colour.** Canvas scaling averages
+  rgb across the alpha edge, so a piece composited at half size grows a
+  magenta fringe out of pixels that are supposedly invisible. Dilating the
+  opaque colour a few pixels into the transparent region is the fix, and it is
+  the real cause of the whole "pink on the clouds" family — no amount of
+  threshold tuning reaches it. Worst residual lean across the five shipped
+  layers is now 12 levels, against ~100 before.
+
+And one that is not a bug: **the de-magenta correction is per piece, on
+purpose.** The backing bounces onto everything it lights, so a balsa scaffold
+comes back salmon — but `castprobe.mjs` scores the orange skip and the orange
+cones just as high, because orange genuinely sits on the magenta side of the
+green-magenta axis. A blanket correction would grey out the only saturated
+colours in the kit. The neutrals declare a correction; the painted pieces
+declare none.
+
+The superseded `_v1` and `_v2` layer sets are removed (7 MB).
+
+## v13 — 2026-08-13 — the machines are painted wood, and the map tool is fixed
+
+**The excavator was still smooth plastic in a crafted world**, and chasing it
+found two independent causes plus a bug in the tool that makes every map.
+
+1. **An imported GLB carries its own UV atlas.** `craftBox`'s world-space UV
+   trick is only available to geometry we build, so on a live model a
+   repeating map stretched ONE copy of the brushwork across the whole
+   machine. The paint path now tiles across the atlas explicitly (repeat 9),
+   on a cloned texture — repeat lives on the Texture, and the cached one is
+   shared with every other surface asking for balsa.
+2. **The placeholder machines built boxes directly.** `excavator.js`,
+   `crane.js`, `pieces.js` and `robots.js` each had a local
+   `new THREE.Mesh(new THREE.BoxGeometry(...), M(c))`, which gets the shared
+   material but none of the UV density. All four route through `craftBox`
+   now.
+3. **`detailmap.mjs` scaled contrast about the MEAN**, which preserves the
+   source photo's own contrast. That is fine for corrugated card (luminance
+   40…230) and useless for a white-painted board (230…250): the balsa map
+   came out ±4% however high the strength went. It does a **histogram
+   stretch** now — 5th to 95th percentile onto a fixed band — so a map's
+   contrast is a property of the REQUEST, not of how well lit the source
+   happened to be. Every material was rebuilt through it; felt and balsa
+   only became visible at all after this.
+
+The lesson generalises past this project: **normalising by mean preserves
+the source's contrast; normalising by range sets it.** A tool that takes a
+"strength" argument and ignores it for low-contrast inputs is worse than one
+with no argument, because it looks like it is working.
+
+Gate: 134 checks + 29 room prover.
+
+## v12 — 2026-08-13 — a material KIT, not cardboard everywhere
+
+**Crafted World is a kit of materials and the first pass used card for all of
+it.** `js/craft.js` is now the one factory every surface is made through, and
+the manifest's `textures` block is the palette: `flute` (the cut edge of
+corrugated card, stacked fluting) for the earth section and every dug face,
+`card` (kraft liner) for flat card, `felt` for the grass lip, `balsa`
+(painted wood, brush strokes and a paint chip) for machines, girders and
+props — §3.3's "painted wood and pressed steel". Each is a greyscale map
+multiplied onto a palette colour, so §3.2 holds exactly.
+
+**The ground is the headline.** It was flat brown, then card with a faint
+grain, and it is now visibly a CUT THROUGH STACKED CORRUGATED CARD — which is
+what a cut earth section is in this reference. The strata banding the depth
+pass established still reads through it; the flute strength was pulled from
+0.62 to 0.5 precisely so it would.
+
+**Two failures worth recording.** A probe of the live scene found **3
+materials mapped and about 70 not**: every module had grown its own
+`const M = (c) => new MeshLambertMaterial(...)`, so the grass lip, both
+machines and every prop were still flat paint while the ground behind them
+was card. Patching call sites would have left the next one to be written
+flat, so `craft.js` replaced all of them — 128 materials now carry their
+material, and the ones that do not are the beacon lamp, shadows and glass,
+which must stay bare. And the first maps were far too weak: ±20% variation,
+which Lambert then flattens further. A material you have to be told is there
+is not doing its job.
+
+Also fixed: the sky's remaining magenta. **Magenta is the only thing where r
+AND b both exceed g** — yellow, orange, kraft and cream all have b < g, and
+cotton is neutral — so the despill needs no threshold and cannot eat a real
+colour. 2.04% of pixels carried a pink cast; now 0.004%.
+
+And the gate learned to refuse a manifest block containing a stray note: a
+bare `_note` string beside the texture entries made the seam-scope check
+resolve a path on `undefined` and killed the whole run with
+`ERR_INVALID_ARG_TYPE` instead of naming the problem.
+
+Gate: 134 checks + 29 in the room prover.
+
 ## v11 — 2026-08-13 — ladders, and levels that go up
 
 `climb` was a verb DESIGN.md declared and nothing implemented. It is real

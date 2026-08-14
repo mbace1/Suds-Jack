@@ -768,7 +768,13 @@ how work gets deleted:
    Phase N+1 while a Phase N item in its own lane is open.
 2. `eeri/DESIGN.md` — what the game does, and §6 is the art pipeline's
    asset queue. §8 is the ordered plan.
-3. `eeri/ART_BRIEF.md` — the look.
+3. `eeri/ART_BRIEF.md` — the look, and **`/ART_PIPELINE.md`** for how an
+   asset is actually MADE: concept → mesh → rig → animate → integrate, the
+   credit costs, and a trap index of everything that has shipped broken.
+   Its two standing rules — **a Meshy feature is always the primary
+   choice**, and **anything to be rigged is concepted in a T-POSE** —
+   decide most art questions before they are asked. `/ART_TARGET.md` is
+   the quality bar, with an acceptance test per rung.
 4. `eeri/assets/README.md` + `assets/manifest.json` — the seam: node and
    clip contracts, layer rects and PNG sizes.
 5. `eeri/VERSIONS.md` — what shipped and, more usefully, the traps.

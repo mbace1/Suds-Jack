@@ -11,7 +11,7 @@
 // and the danger read off the same number and cannot disagree.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=3';
+import { PAL, mix } from './palette.js?v=6';
 
 const NOTICE = 0.35, WIND = 0.45, LUNGE = 0.5, RECOVER = 0.7;
 const SEE = 5.2, WALK = 1.5, LUNGE_SPEED = 6.4;

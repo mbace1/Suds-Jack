@@ -95,7 +95,10 @@ const readme = fs.readFileSync(path.join(ASSETS, 'README.md'), 'utf8');
 const NUM = (s) => Number(String(s).replace(/[−–—]/g, '-').trim());
 const readmeRects = {};
 for (const line of readme.split('\n')) {
-  const m = line.match(/^\|\s*`(skyline|far|mid|near|fore)`\s*\|([^|]+)\|([^|]+)\|([^|]+)\|/);
+  // `sky` belongs in this list: it ships as a layer like the rest (the
+  // crafted paper sky), and leaving it out made the size check compare a
+  // real PNG against `undefined×undefined` and fail.
+  const m = line.match(/^\|\s*`(sky|skyline|far|mid|near|fore)`\s*\|([^|]+)\|([^|]+)\|([^|]+)\|/);
   if (!m) continue;
   const rect = m[3].match(/(-?[−\d.]+)\s*…\s*(-?[−\d.]+)\s*×\s*(-?[−\d.]+)\s*…\s*(-?[−\d.]+)/);
   const px = m[4].match(/(\d+)\s*×\s*(\d+)/);
@@ -107,7 +110,7 @@ for (const line of readme.split('\n')) {
     };
   }
 }
-ok('the README documents every 2D layer', Object.keys(readmeRects).length === 5,
+ok('the README documents every 2D layer', Object.keys(readmeRects).length === 6,
   Object.keys(readmeRects).join(','));
 
 // A live PNG at the wrong size does not fail — it STRETCHES onto the plane,

@@ -15,7 +15,7 @@
 // status flip and no game code changes.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=3';
+import { PAL, mix } from './palette.js?v=6';
 
 // how far out each phase assembles, in tiles before the flag
 const PHASE_AT = [15, 10, 5.5];

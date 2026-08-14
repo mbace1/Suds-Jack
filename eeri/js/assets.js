@@ -10,7 +10,7 @@
 // the placeholder ships instead — a silent half-rig is worse than a grey box.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=3';
+import { PAL } from './palette.js?v=6';
 import { GLTFLoader } from '../vendor/jsm/loaders/GLTFLoader.js?v=1';
 
 const BASE = new URL('../assets/', import.meta.url);
@@ -37,6 +37,28 @@ const ROLE = {
   STEEL0: PAL.STEEL[0], STEEL1: PAL.STEEL[1], STEEL2: PAL.STEEL[2], STEEL3: PAL.STEEL[3],
   EARTH0: PAL.EARTH[0], EARTH1: PAL.EARTH[1], EARTH2: PAL.EARTH[2], EARTH3: PAL.EARTH[3],
 };
+
+// The cast is "painted wood and pressed steel" (§3.3), so its flat palette
+// colours take the BALSA grain — brush strokes and a paint chip — the way the
+// ground takes card and the grass takes felt. Same rule as everywhere: the
+// map is greyscale and multiplies the palette colour, it never supplies one.
+// Async and additive: the machine is already on screen in flat colour and
+// gains its brushwork when the texture lands.
+function grainPaint(mats) {
+  getTexture('balsa').then((tex) => {
+    if (!tex) return;
+    // An imported GLB carries its OWN UV atlas — 0…1 across the whole model —
+    // so `craftBox`'s world-space trick is not available and a plain repeating
+    // map simply stretches one copy of the brushwork over the entire machine,
+    // which is why the excavator still read as smooth plastic. Tile it across
+    // the atlas instead. Cloned per call: repeat lives on the Texture, and
+    // the cached one is shared with every other surface asking for balsa.
+    const t = tex.clone();
+    t.needsUpdate = true;
+    t.repeat.set(9, 9);
+    for (const m of mats) { m.map = t; m.needsUpdate = true; }
+  });
+}
 
 function housePaint(root, paint, name) {
   // a mesh belongs to the NEAREST named owner above it, so painting `house`
@@ -67,6 +89,9 @@ function housePaint(root, paint, name) {
       o.material = flat(role);
     });
   }
+  // the beacon is a LIGHT and must stay unlit and untextured — brushing it
+  // would put the machine's one lamp out, which is its unmanned tell (§1.2)
+  grainPaint([...mats.values()]);
 }
 
 let manifest = null;
@@ -87,11 +112,10 @@ export async function getModel(name, buildPlaceholder, kind = 'models') {
     const root = gltf.scene;
 
     // A SECOND KIND OF RIG. A hand-cut model is a tree of named nodes the
-    // game rotates itself. A Meshy auto-rigged character is a SKINNED mesh
-    // driven by named animation CLIPS — it has a bone skeleton, not the
-    // game's node names, so it is checked against `clips` instead of
-    // `nodes`. `rig: "skinned"` in the manifest entry says which, and both
-    // come back through this one call so game code cannot tell them apart.
+    // game rotates. A Meshy auto-rigged character is a SKINNED mesh driven by
+    // named CLIPS — a bone skeleton, not the game's node names — so it is
+    // checked against `clips`. `rig: "skinned"` picks which, and both come
+    // back through this one call so game code cannot tell them apart.
     if (entry.rig === 'skinned') {
       const clips = {};
       for (const c of gltf.animations) clips[c.name] = c;
@@ -101,22 +125,16 @@ export async function getModel(name, buildPlaceholder, kind = 'models') {
         return buildPlaceholder();
       }
       if (entry.paint) housePaint(root, entry.paint, name);
-      else {
-        // the house material language still applies (§3.2) — a generated
-        // character arrives with baked photo texture and PBR gloss
-        root.traverse((o) => {
-          if (!o.isMesh && !o.isSkinnedMesh) return;
-          const m = o.material;
-          o.material = new THREE.MeshLambertMaterial({
-            map: m.map ?? null, color: m.color?.clone() ?? new THREE.Color(0xffffff),
-          });
+      else root.traverse((o) => {          // §3.2 applies either way
+        if (!o.isMesh && !o.isSkinnedMesh) return;
+        const m = o.material;
+        o.material = new THREE.MeshLambertMaterial({
+          map: m.map ?? null, color: m.color?.clone() ?? new THREE.Color(0xffffff),
         });
-      }
-      // NORMALISE THE HEIGHT. A generated model has no idea what a tile is —
-      // Meshy rigs to real-world metres, so Eeri arrived 0.95 units tall in a
-      // world where he is 1.62 and stood in the level like a background
-      // figure. The manifest declares the height in TILES and the seam scales
-      // to it: the unit mismatch is data, not a number buried in game code.
+      });
+      // HEIGHT IN TILES. Meshy rigs to real-world metres, so Eeri arrived
+      // 0.95 units tall in a world where he is 1.62 and stood in the level
+      // like a background figure. Data, not a number buried in game code.
       if (entry.height) {
         root.updateMatrixWorld(true);
         const box = new THREE.Box3().setFromObject(root);
@@ -163,6 +181,32 @@ export async function getLayerTexture(world, layer) {
     console.warn(`[eeri] layer "${world}/${layer}" failed to load (${e.message}) — painting placeholder`);
     return null;
   }
+}
+
+// ---- surfaces: a crafted DETAIL MAP over the palette ---------------------
+// The playfield is flat-coloured boxes and the layers behind it are crafted
+// card, so the gameplay plane was the one thing still reading as paint. Fixed
+// with a material: a greyscale card map MULTIPLIED onto each surface's own
+// palette colour, so §3.2's "no asset invents a colour" holds exactly.
+const texCache = new Map();
+
+export async function getTexture(name) {
+  const entry = manifest?.textures?.[name];
+  if (!entry || entry.status !== 'live') return null;
+  if (texCache.has(name)) return texCache.get(name);
+  const p = new THREE.TextureLoader().loadAsync(new URL(entry.file + '?v=' + manifest.v, BASE).href)
+    .then((tex) => {
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 4;
+      return tex;
+    })
+    .catch((e) => {
+      console.warn(`[eeri] texture "${name}" failed to load (${e.message}) — flat colour`);
+      return null;
+    });
+  texCache.set(name, p);
+  return p;
 }
 
 export function manifestData() { return manifest; }
