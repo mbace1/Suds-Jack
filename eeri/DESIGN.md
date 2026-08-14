@@ -213,6 +213,49 @@ has to leave its band for long.
 **No map.** Levels run 1 → 12 in order, and any unlocked level can be
 jumped to from a menu.
 
+## 4.3 What the golden bolts are for (owner approved, 2026-08-14)
+
+§7 asked whether `3/3` bought anything and the honest answer was no — they
+were a count, and a count that buys nothing is a chore with a sparkle on
+it. **They build the world's building.**
+
+The premise of this game is that Eeri is on a worksite. Twelve levels go
+past and **nothing on that site ever gets finished**, which is the quiet
+hole in the whole thing. So:
+
+- A world is three levels; each level hides **three golden bolts**; a world
+  therefore holds **nine**.
+- **Clocking out** (§4.2 — the end of a WORLD, Eeri walking out through the
+  gate) shows **the building this world was working on**, and it is
+  assembled from the golden bolts you found. Nine of nine and it is
+  finished and the lights go on. Four of nine and it stands there
+  four-ninths built, with the gaps visible.
+- **It never gates anything.** You clock out either way and the next world
+  opens either way. Age six, generous (§3): the reward for finding them is
+  *seeing more of the thing*, never being let past a door.
+- It **comes back**. The world-1 building is still standing behind world 2
+  — a finished one is a landmark on the skyline layer, an unfinished one
+  is a frame. That costs the art pipeline nothing extra, because it is the
+  same `skyline` layer being dressed with something the player earned.
+
+**Why this one and not a gallery.** Blueprints already unlock secret art
+(§4.2), so a second art-unlock would be the same reward twice. This one
+reuses grammar the game already has — **the flag builds itself in three
+phases**, and a building assembling from nine parts is that idea at world
+scale — and it pays off the premise instead of decorating it.
+
+**What it costs art** (one item per world, and the cheapest kind):
+
+| asset | contract | note |
+|---|---|---|
+| `building_w1_v1.glb` … `_w4_` | **nine sibling nodes** `part0`…`part8`, shown cumulatively exactly like the flag's `phase0/1/2`; plus `lit`, a node the game shows only at 9/9 | must read at every count from 0 to 9, so the parts assemble bottom-up and no single part is load-bearing for the silhouette |
+| the same building, **flat**, in that world's `skyline` layer | painted, two states: frame and finished | this is the "it comes back" half, and it is a re-dress of a layer already being painted |
+
+**What it costs design:** the count has to persist per world rather than
+per level — `goldenGot` is currently reset with the level (`main.js`), and
+this needs a per-world tally that survives a retry. Infinite retries are
+already the rule (§4.1), so a golden bolt found once stays found.
+
 ## 5. Controls — house convention, not a per-game choice
 
 **Controller first, touch always, and prompts that name neither a key nor
@@ -399,10 +442,11 @@ material density and how much air the skyline keeps.
   phone. Test every layer in greyscale like every other world, and the
   playfield must still read at 32 px.
 
-#### Ride machines, one per world — proposed, for veto
+#### Ride machines, one per world — APPROVED (owner, 2026-08-14)
 
-§4.2 commits to two per world; this names **one each**, which is what
-unblocks the queue, and defers the second until a world plays end to end.
+§4.2 commits to two per world; this names **one each** — approved by the
+owner on 2026-08-14, so the art queue is unblocked and PHASING's Gate B
+item is closed — and defers the second until a world plays end to end.
 Each is chosen for the **verb it brings**, because a second machine that
 digs is not a second machine.
 
@@ -444,21 +488,17 @@ point at where the answer lives. Only genuinely open things stay open.
 | What are the four worlds? | Groundworks · Pipes and water hazards · Forest clearing and digs · Evening site under lights | §4.2, briefed for art in **§6.6** |
 | Does each world end with something bigger? | Yes — **level 3 of a world is the big one**, boss-type setup, puzzle or enemies, and its flag is bigger and a different colour | §4.2 |
 | What does the level's end look like? | A flag that **builds in three phases** and activates by being **run past**, a puff of smoke per phase. Clocking out through a gate is the **world's** curtain, not the level's | §4.2, shipped in `js/flag.js` |
-| Do the tokens do anything? | Bolts `x/100` are the level's completion figure; **blueprints unlock secret art**, one per world. Golden bolts `3/3` are still just a count | §4.2 |
+| Do the tokens do anything? | Bolts `x/100` are the level's completion figure; **blueprints unlock secret art**, one per world; **golden bolts build the world's building** and it is shown at clock-out | §4.2, **§4.3** |
 | Do levels ever go up? | Yes — ladders and scaffolds — **but a level always comes back down** and ends on the ground it started on | §4.2, shipped v11 |
 | Music? | **SFX only.** No music yet | §4.2 |
 | Level select? | No map. Levels run **1 → 12 in order**, and any unlocked level can be jumped to from a menu | §4.2 |
 
 **Still open, and this is the short list:**
 
-1. **The second ride machine per world.** One each is proposed in §6.6 and
+1. **The second ride machine per world.** (The first is settled — §6.6.) One each is proposed in §6.6 and
    is the art queue's next item; the *second* of the "two per world, maybe
    more" is deliberately deferred until a world plays end to end.
-2. **Golden bolts — do 3/3 buy anything?** Blueprints unlock art;
-   the golden bolts currently unlock nothing, which makes them a count
-   rather than a reward. Worth an answer before there are twelve levels
-   of them.
-3. **Does a world's level 3 reuse its world's backdrop**, or does the big
+2. **Does a world's level 3 reuse its world's backdrop**, or does the big
    one get its own dress? Reusing is the cheap answer and probably right;
    it is named here so nobody assumes the expensive one.
 
