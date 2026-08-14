@@ -10,10 +10,11 @@
 // a machine-shaped lock, and an exit only the pair of them opens.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=3';
+import { PAL, mix } from './palette.js?v=12';
+import { craftMat, craftBox, craft } from './craft.js?v=12';
 
-import { ROOMS } from './rooms.js?v=3';
-import { compile, W, H, SOLID_CHARS, GROUND, LADDER_CH } from './parts.js?v=3';
+import { ROOMS } from './rooms.js?v=12';
+import { compile, W, H, SOLID_CHARS, GROUND, LADDER_CH } from './parts.js?v=12';
 
 export { ROOMS };
 const EPS = 0.001;
@@ -157,13 +158,22 @@ export class Level {
       girder:new THREE.MeshLambertMaterial({ color: PAL.STEEL[1] }),
       bolt:  new THREE.MeshLambertMaterial({ color: PAL.DARK }),
     };
+    // Every EARTH surface takes the crafted card grain; steel and bolts stay
+    // clean, because one material language does not mean one material.
     const dirtMats = new Map();
     const dirtMat = (c) => {
-      if (!dirtMats.has(c)) dirtMats.set(c, new THREE.MeshLambertMaterial({ color: c }));
+      // The earth is a CUT, and a cut through card shows its fluting. The
+      // deep bands and every dug face get the flute edge; flat top surfaces
+      // keep the plain liner.
+      if (!dirtMats.has(c)) dirtMats.set(c, craftMat(c, 'flute'));
       return dirtMats.get(c);
     };
+    // each surface takes the material it would really be made of
+    craft(mat.cut, 'flute'); craft(mat.shade, 'flute'); craft(mat.back, 'card');
+    craft(mat.lip, 'felt');                              // grass is felt
+    craft(mat.steel, 'balsa'); craft(mat.girder, 'balsa'); // painted wood
     const box = (w, h, d, m, x, y, z) => {
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+      const mesh = craftBox(w, h, d, m);
       mesh.position.set(x, y, z);
       group.add(mesh);
       return mesh;

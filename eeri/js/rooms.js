@@ -15,7 +15,7 @@
 import {
   ground, mound, ledge, ladder, girderBeam, pit, bank, brickWall, chasm,
   machine, robot, hazard, swingBall, bolts, startAt, exitAt, shot, girderStack,
-} from './parts.js?v=3';
+} from './parts.js?v=12';
 
 export const ROOMS = [
   // ── SITE 1 — THE DIG ────────────────────────────────────────────────

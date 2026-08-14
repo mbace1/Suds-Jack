@@ -15,7 +15,8 @@
 // status flip and no game code changes.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=3';
+import { PAL, mix } from './palette.js?v=12';
+import { craftMat, craftBox } from './craft.js?v=12';
 
 // how far out each phase assembles, in tiles before the flag
 const PHASE_AT = [15, 10, 5.5];
@@ -23,9 +24,12 @@ const PHASE_AT = [15, 10, 5.5];
 export function buildFlagModel(big = false) {
   const root = new THREE.Group();
   const nodes = {};
-  const M = (c) => new THREE.MeshLambertMaterial({ color: c });
+  // painted balsa, like every other built thing on the site (§3.3) — the
+  // gate posts this flag replaced were balsa and it must not read as
+  // smooth plastic beside them
+  const M = (c) => craftMat(c, 'balsa');
   const box = (parent, w, h, d, c, x, y, z) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c));
+    const m = craftBox(w, h, d, M(c));
     m.position.set(x, y, z); parent.add(m); return m;
   };
 

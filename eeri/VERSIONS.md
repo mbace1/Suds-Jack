@@ -1,5 +1,66 @@
 # EERI — versions
 
+## v12 — 2026-08-14 — the two trees become one, and the docs say why
+
+**There were two Eeris, and neither knew it.** `git merge-base
+origin/main origin/gh-pages` returned *nothing*: no common ancestor. One
+lineage carried the gameplay (the facing fix, glyph controls, stomp, the
+building flag, ladders, the whole test suite), the other carried the art
+(the craft material kit, the v2 crafted layers, a paper sky, painted
+machines). **Both called themselves v11**, so nothing looked wrong from
+either side, and the owner's report — "Eeri still faces the camera, the
+instructions still say WASD" — was one fact wearing two hats: the live
+site was the other lineage.
+
+This is that merge, and it is a merge by KIND rather than by branch.
+
+**How, because the how is reusable.** The art lineage's own log named its
+starting point ("design v6 × crafted art"), and `main`'s v6 commit turns
+out to be byte-identical to `gh-pages` in `parts.js`, `rooms.js` and
+`input.js`. So there *is* a content ancestor even though there is no git
+one, and every shared file could go through a real three-way merge
+against it instead of being picked wholesale. Fifteen files, eleven
+conflicts, and every conflict but three was an import line.
+
+What each side kept:
+
+- **Art wins the art**: `craft.js` and the material kit (card / felt /
+  balsa / flute, greyscale maps multiplied onto palette colours), the
+  crafted v2 layer set and the paper sky layer, the repainted excavator,
+  `ASSET_PLAN.md`, and the `craftBox` routing through `level`, `pieces`,
+  `excavator`, `crane`, `hazards`, `robots`.
+- **Gameplay wins the logic**: `SKIN_YAW = 0` (he runs sideways again),
+  the glyph controls, the stomp, `fallRespawn`, the ladder block, the
+  three-phase flag, the re-laid levels, `test/`.
+- **One graft each way.** The flag replaced the art lineage's balsa gate
+  posts, so `flag.js` now builds through `craftMat`/`craftBox` — a flag
+  in smooth plastic beside painted-wood machines would have been a
+  regression nobody would have attributed to this merge. And the sky is a
+  sixth layer, so `assets/README.md`'s size table and the gate that reads
+  it both learned about it.
+
+**The token pass is the other half.** The merge produced `assets.js?v=3`
+in one module and `?v=4` in another — the exact split that has silently
+unplugged the layer art twice before. Every module now carries `?v=12`,
+one token, bumped together.
+
+**And the fix that matters most is not code.** `CLAUDE.md` — the file
+every agent reads first — mentioned Eeri **zero times** across 1,153
+lines. That is why three lineages exist: no agent was ever told the
+project was there, who owned which module, or that `gh-pages` is a deploy
+target rather than a workspace. It now carries an Eeri section with the
+reading order (`PHASING.md` first — it is newer owner direction and
+supersedes the rest), a LANES table naming who owns what and which three
+modules are shared, the branch rule, the four gates and the traps. The
+`gh-pages` copy of `CLAUDE.md` — a different, older file, which is what
+the art agent actually reads — got the same section plus a header saying
+where it is standing, and that branch's `VERSIONS.md` got a FORK NOTICE.
+
+A version number cannot detect a fork. The next agent to write a heading
+has to read the other branch's log first, and now the docs say so.
+
+Gates: 156 smoke, 30 prover, 7 playthrough.
+
 ## v11 — 2026-08-13 — ladders, and levels that go up
 
 `climb` was a verb DESIGN.md declared and nothing implemented. It is real

@@ -11,16 +11,17 @@
 // and the danger read off the same number and cannot disagree.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=3';
+import { PAL, mix } from './palette.js?v=12';
+import { craftMat, craftBox } from './craft.js?v=12';
 
 const NOTICE = 0.35, WIND = 0.45, LUNGE = 0.5, RECOVER = 0.7;
 const SEE = 5.2, WALK = 1.5, LUNGE_SPEED = 6.4;
 
 function buildRobot() {
   const g = new THREE.Group();
-  const M = (c) => new THREE.MeshLambertMaterial({ color: c });
+  const M = (c) => craftMat(c, 'balsa');
   const box = (w, h, d, c, x, y, z) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c));
+    const m = craftBox(w, h, d, M(c));
     m.position.set(x, y, z); g.add(m); return m;
   };
   // squat, wide, one exaggerated feature: the eye. Machine yellow says it
@@ -171,7 +172,7 @@ export class SteamVent {
 
     this.group = new THREE.Group();
     this.group.position.set(x, this.y, 0);
-    const M = (c) => new THREE.MeshLambertMaterial({ color: c });
+    const M = (c) => craftMat(c, 'balsa');
     const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.36, 0.16, 10), M(PAL.STEEL[1]));
     cap.position.y = 0.08; this.group.add(cap);
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.05, 6, 14), M(PAL.MACHINE));

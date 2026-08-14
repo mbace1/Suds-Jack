@@ -8,7 +8,8 @@
 // mercy frames. Nothing here kills.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=3';
+import { PAL } from './palette.js?v=12';
+import { craftMat, craftBox } from './craft.js?v=12';
 
 // black/yellow chevrons — the one danger language, readable in greyscale
 function chevronTexture() {
@@ -40,7 +41,7 @@ export class WreckingBall {
     this.angle = 0; this.r = 0.52;
     this.warned = false;
 
-    const M = (c) => new THREE.MeshLambertMaterial({ color: c });
+    const M = (c) => craftMat(c, 'balsa');
     this.group = new THREE.Group();
     this.group.position.set(px, py, 0);
 

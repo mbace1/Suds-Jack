@@ -9,22 +9,23 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=3';
-import { Input } from './input.js?v=2';
-import { Level, ROOMS } from './level.js?v=5';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=12';
+import { Input } from './input.js?v=12';
+import { Level, ROOMS } from './level.js?v=12';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=4';
-import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=2';
-import { Camera } from './camera.js?v=1';
-import { buildKidModel, Kid, Player } from './kid.js?v=5';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=2';
-import { buildCraneModel, Crane } from './crane.js?v=1';
-import { Robot, SteamVent } from './robots.js?v=2';
-import { WreckingBall } from './hazards.js?v=1';
-import { buildFlagModel, Flag } from './flag.js?v=2';
-import { AudioKit } from './audio.js?v=3';
-import { loadManifest, getModel, getPiece } from './assets.js?v=3';
+} from './pieces.js?v=12';
+import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=12';
+import { Camera } from './camera.js?v=12';
+import { buildKidModel, Kid, Player } from './kid.js?v=12';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=12';
+import { buildCraneModel, Crane } from './crane.js?v=12';
+import { Robot, SteamVent } from './robots.js?v=12';
+import { WreckingBall } from './hazards.js?v=12';
+import { buildFlagModel, Flag } from './flag.js?v=12';
+import { AudioKit } from './audio.js?v=12';
+import { loadManifest, getModel, getPiece } from './assets.js?v=12';
+import { craftMat } from './craft.js?v=12';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -150,8 +151,8 @@ async function boot() {
     // bolts: the collectable (3D slow spinners, §6)
     const bolts = level.boltCells.map((cell, bi) => {
       const g = new THREE.Group();
-      const m1 = new THREE.MeshLambertMaterial({ color: PAL.MACHINE, transparent: true });
-      const m2 = new THREE.MeshLambertMaterial({ color: PAL.MACHINE_DK, transparent: true });
+      const m1 = craftMat(PAL.MACHINE, 'balsa', { transparent: true });
+      const m2 = craftMat(PAL.MACHINE_DK, 'balsa', { transparent: true });
       const nut = new THREE.Mesh(boltGeo, m1); nut.rotation.x = Math.PI / 2;
       const hub = new THREE.Mesh(hubGeo, m2); hub.rotation.x = Math.PI / 2;
       g.add(nut, hub);
