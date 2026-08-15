@@ -17,7 +17,7 @@ import {
   check, estimate, REACH, LEVEL, TELL, CLOCK, SOLID_CHARS, W, H, GROUND,
   ground, mound, pit, bank, chasm, machine, robot, startAt, exitAt,
   ladder, ledge, checkpoint, flagAt, golden, boltRun, belt, tarp, TARP_RISE,
-  swingBall, hazard, shallow, deep, pipe, flooded, machine as mach,
+  swingBall, hazard, shallow, deep, pipe, flooded, machine as mach, hoist,
 } from '../js/parts.js?v=4';
 import { slugOf, parseSlug, PER_WORLD } from '../js/levelid.js?v=15';
 
@@ -347,6 +347,30 @@ bites('a steam vent parked in the same place', {
   parts: [ground(), startAt(4), machine('excavator', 50, [44, 92]),
     hazard(70, 'steam'), bank(84, 88, 3), ...furniture()],
 }, 'stands in the excavator\'s only run');
+
+bites('a hoist that tops out with nowhere to step off', {
+  // it boards fine from the ground; it is the FAR end that is wrong, which
+  // is the half of the cycle nobody looks at
+  name: 'BAD/lift-to-nowhere',
+  parts: [ground(), startAt(4), hoist(40, 41, GROUND, 10), ...furniture()],
+}, 'nothing to step off onto');
+
+bites('a hoist whose shaft runs through solid tile', {
+  name: 'BAD/lift-through-the-floor',
+  parts: [ground(), startAt(4), hoist(40, 41, GROUND, 10),
+          ledge(38, 43, 7), ...furniture()],
+}, 'runs through solid tile');
+
+bites('a hoist that carries you into a ceiling', {
+  name: 'BAD/lift-into-the-lid',
+  parts: [ground(), startAt(4), hoist(40, 41, GROUND, 8),
+          ledge(42, 45, 8), ledge(38, 43, 9), ...furniture()],
+}, 'into a ceiling');
+
+bites('a hoist that goes nowhere', {
+  name: 'BAD/lift-that-sits-still',
+  parts: [ground(), startAt(4), hoist(40, 41, GROUND, GROUND), ...furniture()],
+}, 'goes nowhere');
 
 bites('a pipe whose far mouth opens into mid-air', {
   name: 'BAD/pipe-to-nowhere',

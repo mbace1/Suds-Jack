@@ -1,5 +1,69 @@
 # EERI — versions
 
+## v15.9 — 2026-08-15 — the hoist: the first solid thing that is not a tile (World 2, PR 3 of 4)
+
+> Submitted as v15.4 — a number already spent, and four releases behind
+> by the time it merged. Renumbered at the merge per LEVELCRAFT.md §7.
+
+**The expensive item of world 2, and it is expensive for one reason.** Every
+other floor in this game is a character in the grid: collision is a lookup,
+meshes are built once per room, and nothing in `Player` has any concept of
+standing ON something — entity contact has only ever been a one-frame
+impulse (`bounce`, `struck`) after which you are airborne. A floor that
+MOVES can be none of those, which is why the gizmo kit stopped at the tile
+line on purpose (v14) and why this is its own release.
+
+**`js/hoist.js`** is an entity shaped exactly like `robots.js`'s — it takes
+the room's group, adds its meshes to it, answers `update(dt, reduced)`.
+Everything it makes lives inside that group or it leaks on a level change.
+It moves **vertically only**: a lift is what level 6 asks for, and one that
+also slid sideways would have its carry arguing with the player's own run.
+
+**The motion is a TRIANGLE, not a sine**, and that is a design decision
+rather than a shortcut. You have to *wait* for a hoist, and waiting is only
+fair if the arrival is predictable — a sine spends most of its time near the
+ends and reads as a lift that hesitates.
+
+**The carry is one pass in `Player.update`, after the tile pass** — so a
+tile always wins, and standing on real ground is never overridden by a hoist
+passing underneath. It distinguishes two cases that look the same and are
+not:
+
+- **LANDING** — falling, and the feet *crossed* the deck between frames.
+  Tested as a crossing rather than an overlap, or a fast fall tunnels
+  straight through a platform one tile thick.
+- **RIDING** — already carried, still over it, not jumping. **This is the
+  one that matters**: a rising hoist comes UP into the feet, so the crossing
+  test can never fire, and without this branch the player sinks through a
+  lift travelling towards them. `player.carrier` is kept across frames
+  because that is the only way to tell the two apart.
+
+**Four rules, four rooms broken on purpose** — the ladder's contract
+generalised, plus one a ladder never needed: a hoist that tops out with
+nowhere to step off · one whose shaft runs through solid tile · one that
+carries you into a **ceiling** (a ladder is static, so if it clears once it
+clears forever; a hoist is only wrong for the half of the cycle you are not
+watching) · one that goes nowhere.
+
+**And the reach model learns it**, paid on the way in rather than after the
+lab complains: anything within a jump of any height the hoist passes through
+is reachable. That debt is now paid three times — tarp, pipe, hoist.
+
+`prefers-reduced-motion` **parks it at the bottom** rather than freezing it
+mid-shaft, where it would be a floor nobody could reach and a level nobody
+could finish. The game stays completable with the animation off.
+
+Gates, each run singly: rooms **103/0**, smoke **265/0**, playthrough
+**7/0**. The browser gate proves physics rather than a state flag: he lands
+on it, it carries him up, a jump lets go, and he is never left inside a tile.
+
+**Still open, and deliberately PR 4's:** the playthrough bot does not know
+how to wait for a lift — it holds `right` every tick on foot, which walks it
+off a platform. No level has a hoist yet, so nothing stalls today; it must
+land with levels 4–6, which is where it can actually be exercised.
+
+**SHARED files touched:** `js/main.js` (build, update, debug hooks).
+
 ## v15.8 — 2026-08-15 — the bucket wakes, and the dev pack gets its five rows
 
 **A fourth enemy: the bucket.** `WORLD2.md` §3 level 5 asks for it and the
@@ -98,66 +162,18 @@ Gates: 99 / 31 / 30 / **269** / 7 / hub.
 > the levels PR before it, and 15.4/15.5 shipped while this was open — so
 > it lands as **15.6**. The lesson is in `LEVELCRAFT.md`: a number is
 > claimed at MERGE, not at authoring.
-
-**World 2's cheap two thirds** (`WORLD2_PLAN.md` PR 2). None of it is spent
-in a level yet — it is proved in the `LAB`, which exists for exactly that,
-because one idea per level means a new gizmo cannot be dropped into levels
-1–3 without making each of them two levels.
-
-**WATER, and it does not drown him.** DESIGN §4.1 is absolute — Eeri is
-never hurt, never dies, has no health bar — so the two kinds add no new way
-to lose. **Shallow** is a tile (`~`), solid, and the whole behaviour is one
-read in the player's step: it caps the run at 55%, measured in the gate as a
-race rather than by reading the constant back out (3.41 against 6.20 tiles a
-second). **Deep** is a `pit` wearing different paint, so `fallRespawn`
-already hands you to the near lip with nothing new written.
-
-**THE TRAP THIS NEARLY WALKED INTO, and it is the tarp's scar again.** A
-running jump carries `run speed × airtime`, so a takeoff **out of water**
-carries **2.67 tiles, not 4.85** — and a gap after a puddle looks exactly
-like a gap in a room listing. `REACH` now carries `jumpAcrossWading` and
-`gapWading`, and `check()` measures a gap against the waded budget when its
-takeoff lip is wet. Without it the prover would have cheerfully passed rooms
-nobody could finish, which is the failure mode the kit already has a scar
-from: *anything that changes where the player can get to must be added to
-the reach model.*
-
-**THE PIPE** — a tube you go inside, and level 5's idea. It is not a tile: a
-tile is a place, and a pipe is a pair of places plus the trip between them,
-so it is a `mode` like the mount rather than a character like the belt. He
-is out of the world while it runs, which is why it is a mode and not a
-teleport — nothing can touch him in transit. Its `check()` contract is **the
-ladder's, generalised**: both mouths must be standable and neither may be
-buried, because *a pipe that delivers you into mid-air is a ladder that tops
-out in mid-air, lying down*. The far mouth gets a cooldown, or it swallows
-him back on the next frame and the trip becomes a loop he cannot leave.
-
-**THE `pump` VERB, and the three tables that must move together.** Two of
-the three fail *silently*, which is why this is worth a paragraph:
-`MACHINE_REACH` throws on an unknown machine (loud, fine); `MACHINE_SPEED`
-falls back to `|| 3`; and `rideTime()`'s if/else had no `else`, so a new verb
-left `work` at 0 and `estimate()` under-counted the ride with nothing to
-show for it. **It throws now.** The pipe-layer needs no new verb at all —
-seating a pipe section IS the excavator's `span`, re-dressed, which is what
-makes it the cheap second machine of the pair.
-
-**And the tile contract is checked rather than trusted.** `TILES` is
-documentation — nothing imports it — while `SOLID_CHARS` is what the game
-reads, so the two could drift apart in silence. `parts.js` now proves they
-agree at import time.
-
-Six new rules, each with a room broken on purpose: shallow water over a
-hole · deep water with no dry lip to be handed back to · a gap taken out of
-water · a pipe into mid-air · a pipe buried in tile · a pipe that goes
-nowhere.
-
-Gates, each run singly: rooms **99/0**, smoke **260/0**, playthrough **7/0**.
-
-**SHARED files touched, and named because the lanes rule says to:**
-`js/main.js` (the piping mode, the debug hooks), `js/palette.js`
-(`WATER`/`WATER_DK` — two roles, because telling shallow from deep is the
-level's real difficulty and they must read apart at 32 px), and `js/lang.js`
-(`hPipe`, in all three languages).
+> **VERSIONS ARE DECIMAL from v15 (2026-08-14).** `vMAJOR.MINOR` — the
+> integer is a milestone, the decimal an increment on it. Three lineages of
+> this project each burned whole integers on ordinary work and then collided
+> on them (there were two v11s and two v13s); a minor part gives increments
+> somewhere to go that is not the next milestone's number.
+>
+> **The `?v=` module tokens stay integers.** They are cache-busters, not
+> releases — they track every module-graph change, and the release number
+> tracks what shipped. `scripts/versions.mjs` reads both and emits a label
+> (`"15.1"`) plus a sort key (`15001`), because one number cannot do both
+> jobs: a label cannot be compared (`'15.10' < '15.9'` lexically) and a
+> float cannot be displayed (`15.0` prints as `15`).
 
 
 ## v15.5 — 2026-08-15 — the plate is cropped, the bank says dig, the mark is a sticker

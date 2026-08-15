@@ -27,9 +27,10 @@
 import {
   ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm,
   machine, robot, hopper, roller, hazard, swingBall, startAt, exitAt, shot,
-  girderStack, scaffold, checkpoint, flagAt, golden, belt, tarp, shallow, deep, pipe, bucketBot,
+  girderStack, scaffold, checkpoint, flagAt, golden, belt, tarp, shallow, deep, pipe,
+  bucketBot, hoist,
   boltRun, boltArc, boltCol, GROUND,
-} from './parts.js?v=21';
+} from './parts.js?v=22';
 
 export const ROOMS = [
   // ── LEVEL 1 — GROUNDWORKS ───────────────────────────────────────────
@@ -308,6 +309,14 @@ export const LAB = {
     // way across, and the way across has a price at the other end.
     bucketBot(77),
 
+    // …and the HOIST, the one gizmo that is not a tile. Two tiles wide, from
+    // the floor up to the deck at cy=10, with a clear shaft and somewhere to
+    // step off at the top — both ends, which is the contract it inherits
+    // from the ladder.
+    hoist(86, 87, GROUND, 10, 4),
+    ledge(88, 91, 10),
+    boltCol(85, 5, 10),
+
     // …and the two together: a belt that feeds a tarp
     belt(64, 69, 3, 1),
     tarp(70, 72, 3),
@@ -318,7 +327,6 @@ export const LAB = {
     boltCol(78, 5, 7),
     boltRun(8, 79, 84),
     golden(9, [82]),
-    boltRun(5, 86, 91),
     boltRun(6, 86, 91),
     boltRun(6, 54, 62),
     boltRun(4, 6, 11),

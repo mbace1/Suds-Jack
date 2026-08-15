@@ -10,11 +10,11 @@
 // a machine-shaped lock, and an exit only the pair of them opens.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=21';
-import { craftMat, craftBox, craft, cutQuad } from './craft.js?v=21';
+import { PAL, mix } from './palette.js?v=22';
+import { craftMat, craftBox, craft, cutQuad } from './craft.js?v=22';
 
-import { ROOMS, LAB } from './rooms.js?v=21';
-import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, WATER_CHAR, GROUND } from './parts.js?v=21';
+import { ROOMS, LAB } from './rooms.js?v=22';
+import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, WATER_CHAR, GROUND } from './parts.js?v=22';
 
 export { ROOMS, LAB };
 const EPS = 0.001;
@@ -30,6 +30,11 @@ export class Level {
     this.w = W; this.h = H;
     this.map = this.def.grid;
     this.boltCells = this.def.bolts.map(([r, c]) => ({ x: c + 0.5, y: (H - 1 - r) + 0.5 }));
+    // THE NON-TILE FLOORS. Empty in every room that has none, which is all
+    // of them until world 2 — but it must EXIST, because the player's
+    // platform pass walks it every frame and a room without the field would
+    // throw on its first step. main.js fills it once the hoists are built.
+    this.platforms = [];
   }
 
   solidCell(c, cy) {
