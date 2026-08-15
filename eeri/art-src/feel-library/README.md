@@ -17,7 +17,7 @@ Four rules:
 
 ## What is authored
 
-`feel-cues.js` contains **26 matched audio/VFX cues** across:
+`audio-cues.js` + `vfx-cues.js` contain **26 matched audio/VFX cues** across:
 
 - movement: jump, land, stomp, hurt
 - rewards: pickup, golden pickup, checkpoint, clear
