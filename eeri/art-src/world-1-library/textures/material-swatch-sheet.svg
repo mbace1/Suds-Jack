@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900">
+  <defs>
+    <filter id="kraft"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="4" seed="3" result="n"/><feColorMatrix in="n" values=".45 0 0 0 .55  0 .32 0 0 .34  0 0 .2 0 .18  0 0 0 .28 0" result="grain"/><feBlend in="SourceGraphic" in2="grain" mode="multiply"/></filter>
+    <filter id="foam"><feTurbulence type="fractalNoise" baseFrequency=".025" numOctaves="2" seed="8" result="n"/><feColorMatrix in="n" type="saturate" values="0" result="g"/><feBlend in="SourceGraphic" in2="g" mode="soft-light"/></filter>
+    <filter id="wood"><feTurbulence type="fractalNoise" baseFrequency=".008 .07" numOctaves="2" seed="12" result="n"/><feBlend in="SourceGraphic" in2="n" mode="soft-light"/></filter>
+    <filter id="felt"><feTurbulence type="fractalNoise" baseFrequency=".09" numOctaves="2" seed="6" result="n"/><feBlend in="SourceGraphic" in2="n" mode="soft-light"/></filter>
+    <filter id="metal"><feTurbulence type="fractalNoise" baseFrequency=".006 .18" numOctaves="1" seed="14" result="n"/><feColorMatrix in="n" type="saturate" values="0" result="g"/><feBlend in="SourceGraphic" in2="g" mode="soft-light"/></filter>
+    <pattern id="flute" width="22" height="15" patternUnits="userSpaceOnUse"><path d="M0 10Q5.5 2 11 10T22 10" fill="none" stroke="#8c6f4f" stroke-width="3"/><rect width="22" height="15" fill="#c59d70" opacity=".35"/></pattern>
+  </defs>
+  <!-- Reference/source swatches only. No background rectangle by design. -->
+  <g stroke="#544a40" stroke-width="5">
+    <rect x="90" y="90" width="360" height="250" rx="8" fill="#b9834e" filter="url(#kraft)"/>
+    <rect x="520" y="90" width="360" height="250" rx="8" fill="#ece9df" filter="url(#foam)"/>
+    <rect x="950" y="90" width="360" height="250" rx="8" fill="#d5b276" filter="url(#wood)"/>
+    <rect x="90" y="430" width="360" height="250" rx="8" fill="#e8d3a8" filter="url(#foam)"/>
+    <rect x="520" y="430" width="360" height="250" rx="8" fill="#4b9d64" filter="url(#felt)"/>
+    <rect x="950" y="430" width="360" height="250" rx="8" fill="#77878c" filter="url(#metal)"/>
+    <rect x="90" y="730" width="1220" height="70" fill="url(#flute)"/>
+  </g>
+  <g font-family="system-ui, sans-serif" font-size="34" fill="#332b25">
+    <text x="110" y="385">kraft card</text><text x="540" y="385">painted foam/card</text><text x="970" y="385">balsa / pale timber</text>
+    <text x="110" y="725">masking tape</text><text x="540" y="725">felt / safe lip</text><text x="970" y="725">painted steel</text>
+    <text x="110" y="850">corrugated cut edge / flute reference</text>
+  </g>
+</svg>
