@@ -55,13 +55,22 @@ twelve direction pieces came back carrying volume anyway, because a model can
 miss "no three-quarter angle" by ten degrees and still feel obedient. Ask for
 the *consequence* instead. It has no degrees in it and it settles in a second:
 
-> **A circle seen in true elevation is a straight LINE, not an ellipse.**
+> **A circle is either a true circle or a straight line — never an ellipse.**
 
-Every offender had an ellipse somewhere — a bucket rim, a drum barrel, a
-pallet board, a roof cap. **If you can find an ellipse, the camera is off-axis
-and the piece is carrying ground.** The companion tell is the same fact from
-the other side: **if you can see the top of it, or inside it, it is wrong** —
-no top face, no lid surface, no open mouth, no upper edge turning away.
+Both halves carry. A circle whose face is square to the camera — a cable drum
+flange, a cork valve wheel — is a **true circle** and is correct. A circle
+whose axis lies across the picture — a bucket rim, a pipe mouth — is edge-on
+and must be a **straight line**. The ellipse is the state between them, and it
+is the tell: **find an ellipse and the camera is off-axis and the piece is
+carrying ground.** Every offender had one — a bucket rim, a drum barrel, a
+pallet board, a roof cap.
+
+The companion tell is the same fact from the other side: **if you can see the
+top of it, or inside it, it is wrong** — no top face, no lid surface, no open
+mouth, no upper edge turning away.
+
+The clauses that enforce all of this live in `art-src/tools/plane-clauses.mjs`
+— import them rather than retyping them, for the reason `keylib.js` exists.
 
 Two things follow that are not obvious:
 

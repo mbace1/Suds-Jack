@@ -113,7 +113,7 @@ spread, and a name that ends in its material is a name you can shop by.
 | `props/` | `cabledrum-kraft.png` | corrugated card — one flange dead-on, a true circle, fluted rim |
 | `props/` | `mixerbucket-foam.png` | painted foam board — chalky buckets, thick soft-cut rims |
 | `props/` | `toolchest-steel.png` | painted steel — the set's one saturated red |
-| `props/` | `turfroll-felt.png` | wool felt — two turf rolls crossed, the nap doing the work |
+| `props/` | `turfroll-felt.png` | wool felt — a settled 2+1 stack, one flap unrolled down the front |
 
 **The set was flattened after the first cut.** Six of the twelve came back
 carrying volume — you could see the tops of the sacks, inside the buckets, the
@@ -122,6 +122,12 @@ of that to stand on. The full rule and the test that catches it now live in
 README § "The elevation test"; the short version is *a circle in true
 elevation is a straight line, not an ellipse*, so an ellipse anywhere means the
 camera is off-axis and the piece is carrying ground.
+
+**A prop also has to look PUT DOWN.** The turf rolls were first drawn crossed
+in an X — a thing you could build and could not leave, with the upper roll
+resting one end on the ground and one on the lower roll. Site dressing reads
+as dressing only if it looks settled rather than posed, and a six-year-old
+clocks a balancing act faster than an adult does. It is a stable 2+1 nest now.
 
 **Three more things cost a re-roll each, all the plane rule** (README §
 "Critical plane rule"), so they are worth naming:
