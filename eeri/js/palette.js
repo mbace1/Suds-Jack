@@ -13,6 +13,16 @@ export const PAL = {
   GREEN:    '#3cc85a',   // the "grass lip" role — safe standable edges
   GREEN_DK: '#2a9a44',
 
+  // WATER (world 2). Two roles, and the pair is load-bearing: DESIGN's
+  // world 2 makes telling SHALLOW from DEEP the level's real difficulty, so
+  // they must read apart at a glance and at 32 px. Shallow is lighter and
+  // greener (you can see the bed through it), deep is darker and bluer.
+  // It is a CUT SHEET of blue-green craft material, not a shader and not a
+  // transparency — flat matte, hard hand-cut edge, like every other surface
+  // here (ART_BRIEF §3.2).
+  WATER:    '#4fb8b0',   // shallow — a floor you wade through
+  WATER_DK: '#2a7f9e',   // deep — a floor that is not there
+
   MACHINE:    '#ffb01f', // the cast's family colour (safety yellow-orange)
   MACHINE_DK: '#d88c12',
 

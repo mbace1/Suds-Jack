@@ -66,11 +66,23 @@ level is authored around it.
 | **the pipe** | **moderate.** A pipe is two doorways and a hidden walk between them. It is not a tile — it is a pair of authored points and a scripted move, closest in shape to the machine mount | new, but bounded |
 | **the hoist** | **EXPENSIVE, and it is the one to be careful about.** DESIGN §0.2 and `parts.js` both say it: *every solid in this game is a tile, and a moving platform cannot be one.* A hoist needs an entity with its own collision pass, and the room prover cannot currently model a floor that moves | this is the real Phase B engineering item |
 
-**The recommendation, and the reason:** author levels 4 and 5 first on the
-cheap two. If the hoist slips, **level 6 falls back to the pipe + water at
-their hardest**, which is a legitimate level-3 (§4 says the big one is
-"both of the old ones", not a new one). The hoist should not be allowed to
-block a world.
+**The hoist is IN** (owner, 2026-08-15). It is committed, not a maybe — so
+it gets built rather than designed around, and it is the first thing in this
+game that is solid without being a tile.
+
+Two things follow from that, and they are not in tension:
+
+**Build it isolated.** It carries essentially all of World 2's risk, and
+none of the other three items depend on it. In its own pull request it can
+be reverted without taking levels 4–6 with it. `WORLD2_PLAN.md` §PR 3 has
+the build.
+
+**Author levels 4 and 5 first anyway**, on the cheap two. Not as a hedge
+against the hoist — as ordinary sequencing, since they do not need it and it
+is the long pole. If it does overrun, **level 6 still ships**: DESIGN §4.2
+makes level 3 of a world *"both of the old ones"* rather than a third new
+thing, so a pumphouse built from pipes and water at their hardest is a
+legitimate level 6. **A world must not be held by its one expensive item.**
 
 ---
 
@@ -106,7 +118,7 @@ trench that only exists once it is pumped, one up a standpipe off the line.
 | **1 · introduce** | 12–20 | **one pipe, on the flat, both mouths visible at once.** You can see where it comes out before you go in. A first pipe you cannot see the end of is a trap |
 | **2 · vary** | 24–36 | a pipe that goes **up** — in at ground, out on a deck. Same object, and now it is a ladder that is faster than a ladder. A second one whose far mouth is off-screen, taught by bolts leading into it |
 | — | ~44 | **checkpoint** |
-| **3 · combine** | 46–64 | pipes over water: the mouth is on the far side of a deep stretch, so the pipe is the way across and the water is what makes it worth using. A **bucket** enemy (§3.3, if built) asleep by a mouth |
+| **3 · combine** | 46–64 | pipes over water: the mouth is on the far side of a deep stretch, so the pipe is the way across and the water is what makes it worth using. A **bucket** enemy asleep by a mouth — the art lane has declared its drop point in the manifest, but the BEHAVIOUR (sleeps, wakes when you land near, chases briefly) is still not in `robots.js`, so this beat needs it built first or falls back to a hopper |
 | **4 · ride** | 68–88 | **the pipe-layer** (§3.2): a section of main is missing and the trench is open. The machine picks a pipe off the stack and **seats it as a span** — mechanically the excavator's girder job, re-dressed, which is why this ride is nearly free |
 | — | 90–93 | **small flag** at 93 |
 
@@ -303,19 +315,23 @@ Not art, and not blocked on art. In order:
 ```
 Gate A (owner's call)
    └── World 2 starts
-         ├── pipeworks_* backdrop set ──── blocks levels 4, 5, 6 equally
+         ├── pipeworks_* backdrop ──────── DONE (§3.1). Art lane: a status
+         │                                 flip, plus the missing `sky`
          ├── water tile (code) ─────────── blocks level 4
          │     └── pump_v1.glb ─────────── blocks level 4's ride
          ├── pipe pair (code) ──────────── blocks level 5
          │     └── pipelayer_v1.glb ────── blocks level 5's ride (cheap: span re-dressed)
          └── hoist (code, EXPENSIVE) ───── blocks level 6's beat 3 ONLY
-               └── fallback: pipe + water at their hardest
+               └── if it overruns: pipe + water at their hardest
 ```
 
-**The one thing to decide before anything is made:** whether the hoist is
-in. It is the only expensive item in the world and the only one whose slip
-has a fallback. Everything else is a re-dress of machinery this game
-already has, which is why World 2 is a cheaper world than World 1 was.
+**Nothing is left to decide before building starts.** The hoist is in, the
+backdrop is painted, and every other item is a re-dress of machinery this
+game already has — which is why World 2 is a cheaper world than World 1 was.
+
+The hoist remains the only expensive item and the only one whose slip has
+somewhere to go. That is an argument for building it **in its own pull
+request**, not for building it last.
 
 ---
 

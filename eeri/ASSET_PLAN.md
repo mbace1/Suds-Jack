@@ -202,3 +202,23 @@ paying for itself.
 about 11% of it, so cost is not the constraint on this game's art — iteration
 count is. Spend the headroom on re-rolls and LOOK passes, not on meshing
 things that should be painted.
+
+---
+
+## Note back from integration (2026-08-15): the portrait plate's controls
+
+`padplate_v1.png` is mounted and shipping, and the DMG face reads
+beautifully. One measured problem for a re-roll whenever the plate is next
+touched: **its controls are drawn too small relative to the face for a
+phone.** At 390 px wide the plate is about 225 px tall, which puts the
+drawn d-pad arms at roughly 20 px — so the hit zone has to be more than
+twice the picture of the switch to clear DESIGN §5's 44 px floor. A d-pad
+zone being larger than the drawn cross is normal; being **2× larger** means
+the player's thumb and their eye disagree about where the control is.
+
+The landscape plate does not have this problem — the arcade strip draws
+its stick and buttons large, and the hit areas sit almost exactly on them.
+
+What would fix it: the same DMG face with the d-pad, A/B and the pills
+scaled up within it (less blank shell, same silhouette). The blank panel
+between the d-pad and B should stay — the Toko sticker lives there now.

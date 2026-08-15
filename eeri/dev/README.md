@@ -105,3 +105,28 @@ and nothing else. That gate is the missing failure.
 - No replacing the movement model as part of FX work.
 - No permanent dependency on the frame for production.
 - No binary audio assets — see `../assets/audio/README.md`.
+
+## What #235 holds that this does not
+
+The dev/FX pack was built twice — once here, once on
+`agent/eeri-dev-fx-pack` (**PR #235**) — from the same handoff. The two
+architectures are the same idea: poll the game, infer events from state
+differences, synthesise every sound. The difference is the surface. This
+pack draws through **three.js, injected**, which is what lets `fx-smoke`
+and `dev-menu` run in bare node; #235 draws on a **2D canvas overlay** and
+carries one 18-line static contract test.
+
+This one stays. But #235's **menu** is ahead of it, and these are worth
+taking when there is budget for them — none touches the FX layer, all are
+`window.__eeri` debug hooks plus a row each:
+
+- **invincibility** and **hitbox preview** — the two that make a level
+  reproducible to look at rather than to survive
+- **machine access / taming** — reach a ride without playing to it
+- **one-step dig** — advance the excavator a single beat
+- **warps** within a level, not just level jumps
+- **copy state** — the readout to the clipboard, for pasting into a note
+
+Anything added here must be added to `dev-menu.mjs` in the same edit: the
+pack reads hooks nothing in the game depends on, so a rename breaks it
+silently and no other gate notices.
