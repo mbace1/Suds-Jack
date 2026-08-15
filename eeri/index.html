@@ -44,56 +44,138 @@
   @keyframes pop { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: none; } }
   @media (prefers-reduced-motion: reduce) { #clear, #banner { animation: none; } }
 
-  /* touch controls: fixed buttons, 44px floor, pointerdown/up never click */
+  /* ---- THE TOUCH PAD -------------------------------------------------
+     The controls are a DRAWN BACKBOARD with transparent hit areas over it
+     (art lane, PR #236). Two plates, because a handheld and an arcade
+     cabinet are different objects and stretching one into the other is not
+     the same as drawing the other:
+
+       PORTRAIT  — the Game Boy DMG face: d-pad, A/B on a slant, SELECT and
+                   START pills, the speaker grill cut clean through.
+       LANDSCAPE — an arcade control-panel strip: ball-top stick far left,
+                   B/A and SELECT/START far right, and the whole middle
+                   DELIBERATELY EMPTY, because in landscape the middle of
+                   the screen is the game.
+
+     Both PNGs carry a lot of transparent air above the plate, so a
+     full-width image anchored to the bottom shows a plate only about half
+     its own height — which is what makes the landscape one fit a short
+     phone at full width instead of eating two-thirds of it.
+
+     The buttons keep their ids, so js/input.js binds them unchanged. They
+     become invisible only once a plate has actually LOADED (`.plated` on
+     <html>, set from main.js) — if the art 404s the drawn circles are
+     still there and the game is still playable. */
   #touch { display: none; }
+  #pad { display: none; }
   @media (pointer: coarse) {
     #touch { display: block; }
+    #pad {
+      display: block; position: fixed; left: 0; right: 0; bottom: 0;
+      z-index: 5; pointer-events: none; user-select: none;
+    }
+    #pad img { display: none; width: 100%; height: auto; }
     #hint { bottom: max(152px, calc(env(safe-area-inset-bottom) + 148px)); }
   }
-    /* Landscape phone is the shape that matters, and it is SHORT — a full
-     d-pad cross ate half the screen and pushed the hint into the middle of
-     the picture. So: run buttons and both face buttons on one bottom row,
-     with the boom pair (only used inside a ride) as a small column beside
-     them. Nothing is stacked more than two high.
-     The face buttons also sit INSIDE the Toko badge's inset, because the
-     badge is bottom-right at 92 on a coarse pointer and Ⓑ was landing
-     underneath it — the same collision v6 already fixed once for jump. */
-  /* THE PAD (owner direction, 2026-08-14): left and right with UP ABOVE,
-     and down in between left and right.
+  /* `#pad img` is (1 id + 1 type) and outranks a bare `#padP`, so these
+     have to be at least as specific or neither plate ever shows. */
+  @media (pointer: coarse) and (orientation: portrait) { #pad img#padP { display: block; } }
+  @media (pointer: coarse) and (orientation: landscape) { #pad img#padL { display: block; } }
 
-           ▲
-       ◀   ▼   ▶            Ⓑ   Ⓐ
-
-     Still two rows, which is the constraint that has always governed this
-     corner: landscape phone is the shape that matters and it is SHORT — a
-     full four-way cross ate half the screen and pushed the hint into the
-     middle of the picture. Down sits in the middle rather than under ▲
-     because it is the least-used direction (the ladder's way back, and the
-     bucket) and the middle is the hardest place for a thumb to hit by
-     accident, while ◀ ▶ — the two pressed constantly — keep the outside
-     where the thumb already rests. */
-  #tL { left: 8px;   bottom: max(12px, env(safe-area-inset-bottom)); }
-  #tD { left: 76px;  bottom: max(12px, env(safe-area-inset-bottom)); }
-  #tR { left: 144px; bottom: max(12px, env(safe-area-inset-bottom)); }
-  #tU { left: 76px;  bottom: max(80px, calc(env(safe-area-inset-bottom) + 68px)); }
-  #tA { right: 92px; bottom: max(12px, env(safe-area-inset-bottom)); }
-  #tJ { right: 20px; bottom: max(12px, env(safe-area-inset-bottom)); }
+  /* the six hit areas. Percentages are of the PLATE IMAGE's own box, so
+     they track the drawn controls at any width without a second set of
+     numbers to keep in step. */
   #touch button {
-    position: fixed; z-index: 6; width: 62px; height: 62px; border-radius: 50%;
+    position: fixed; z-index: 6;
+    width: 62px; height: 62px; border-radius: 50%;
     border: 3px solid rgba(255,255,255,0.75); background: rgba(26,20,16,0.4);
     color: #fff; font: 800 16px system-ui, sans-serif; letter-spacing: 0.05em;
     touch-action: none; -webkit-user-select: none; user-select: none;
     display: grid; place-items: center; padding: 0;
+    transform: translate(-50%, 50%);   /* positioned from its CENTRE */
   }
-  /* the illustrated face (js/glyphs.js) — owner: "like old arcades with
-     illustrated backboards". `currentColor` means the machine-yellow/ink
-     pair of DESIGN §6.4 is one CSS edit and never a re-export. */
   #touch button svg, #touch button img {
     width: 38px; height: 38px; display: block; pointer-events: none;
   }
   #tJ, #tA { border-color: #ffb01f; }
   #tJ svg, #tA svg { color: #ffb01f; }
   #touch button:active { background: rgba(255,176,31,0.5); }
+
+  /* PLATED: the drawn control IS the button, so the DOM one gets out of the
+     way and only the hit area remains. A press tints the art rather than
+     drawing a second control on top of it. */
+  html.plated #touch button {
+    border-color: transparent; background: transparent;
+    /* THE FLOOR STILL APPLIES (DESIGN §5). At 390px wide the DMG plate is
+       only 225px tall, which puts its drawn d-pad arms at about 20px — so
+       the hit zone is necessarily LARGER than the picture of the switch.
+       That is how a virtual d-pad works, but it is also a note back to the
+       art lane: for portrait phone use the plate wants its controls drawn
+       bigger relative to the face. */
+    min-width: 44px; min-height: 44px;
+  }
+  html.plated #touch button svg { display: none; }
+  html.plated #touch button:active { background: rgba(255,255,255,0.22); }
+
+  /* --- fallback placement, used when no plate has loaded --- */
+  #tL { left: 39px;  bottom: max(43px, calc(env(safe-area-inset-bottom) + 31px)); }
+  #tD { left: 107px; bottom: max(43px, calc(env(safe-area-inset-bottom) + 31px)); }
+  #tR { left: 175px; bottom: max(43px, calc(env(safe-area-inset-bottom) + 31px)); }
+  #tU { left: 107px; bottom: max(111px, calc(env(safe-area-inset-bottom) + 99px)); }
+  #tA { left: auto; right: 61px; bottom: max(43px, calc(env(safe-area-inset-bottom) + 31px)); }
+  #tJ { left: auto; right: -11px; bottom: max(43px, calc(env(safe-area-inset-bottom) + 31px)); }
+
+  /* --- PORTRAIT: over the DMG face (padplate_v1.png, 1024x590) --- */
+  @media (pointer: coarse) and (orientation: portrait) {
+    html.plated #touch button { position: absolute; }
+    html.plated #pad { pointer-events: none; }
+    html.plated #touch {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      aspect-ratio: 1024 / 590; pointer-events: none;
+    }
+    html.plated #touch button {
+      pointer-events: auto; bottom: auto; right: auto;
+      /* sized off the plate, not in px: the drawn control is the target, so
+         the hit area has to grow and shrink with the art */
+      width: 11%; height: 19%;
+    }
+    /* the d-pad's four zones tile the drawn RECESS — the dished circle the
+       cross sits in — rather than the cross arms alone, which are only a
+       fifth of it. That is how a virtual d-pad has to work: the zone is
+       bigger than the picture of the switch. */
+    html.plated #tU, html.plated #tD { width: 10%; height: 16%; }
+    html.plated #tL, html.plated #tR { width: 9%; height: 18%; }
+    /* the d-pad cross */
+    html.plated #tU { left: 31.8%; top: 46.1%; }
+    html.plated #tD { left: 31.8%; top: 64.1%; }
+    html.plated #tL { left: 26.6%; top: 55.1%; }
+    html.plated #tR { left: 37.1%; top: 55.1%; }
+    /* B is the low-left red button, A the high-right one — the DMG slant */
+    html.plated #tA { left: 72.5%; top: 54.6%; }
+    html.plated #tJ { left: 85.2%; top: 41.9%; }
+    html.plated #touch button { transform: translate(-50%, -50%); }
+  }
+
+  /* --- LANDSCAPE: over the arcade strip (padplate_landscape_v1.png, 1400x466) --- */
+  @media (pointer: coarse) and (orientation: landscape) {
+    html.plated #touch {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      aspect-ratio: 1400 / 466; pointer-events: none;
+    }
+    html.plated #touch button {
+      position: absolute; pointer-events: auto; bottom: auto; right: auto;
+      transform: translate(-50%, -50%);
+      width: 7%; height: 22%;         /* a share of the plate, like portrait */
+    }
+    /* the four arrows around the ball-top stick */
+    html.plated #tU { left: 18.8%; top: 52.6%; }
+    html.plated #tD { left: 18.8%; top: 90.1%; }
+    html.plated #tL { left: 12.7%; top: 71.9%; }
+    html.plated #tR { left: 24.9%; top: 70.8%; }
+    /* B then A, left to right, as the panel draws them */
+    html.plated #tA { left: 75.4%; top: 70.8%; }
+    html.plated #tJ { left: 83.2%; top: 65.5%; }
+  }
 </style>
 <script type="importmap">
   { "imports": { "three": "./vendor/three.module.min.js?v=1" } }
@@ -107,6 +189,7 @@
      at boot: a picture of the action per button, and the name in the
      player's own language. The glyphs stay out of the markup so ONE set
      serves the buttons and the hint line alike (DESIGN §6.4). -->
+<div id="pad"><img id="padP" alt=""><img id="padL" alt=""></div>
 <div id="touch">
   <button id="tL"></button>
   <button id="tD"></button>
@@ -117,7 +200,7 @@
 </div>
 <div id="boot">EERI</div>
 <script type="module" src="../hub/shell.js?v=31"></script>
-<script type="module" src="./js/main.js?v=15"></script>
+<script type="module" src="./js/main.js?v=17"></script>
 <script type="module">
   // bottom-right: the HOME button owns top-left and the HUD owns top-right.
   // Under a thumb that corner also holds the jump button (#tJ, 62px at
@@ -126,7 +209,14 @@
   // a coarse pointer it climbs clear of the whole button row.
   import { sign } from '../toko/js/signature.js?v=3';
   const coarse = matchMedia('(pointer: coarse)').matches;
-  sign({ corner: 'bottom-right', counter: true, inset: coarse ? 92 : 12 });
+  // The plate owns the entire bottom strip now, so the old inset of 92 —
+  // which was measured to clear a row of 62px circles — lands squarely on
+  // the drawn A button. Above the plate is the only clear ground on a
+  // coarse pointer: the painted face reaches about 40% up a landscape
+  // screen and about 23% up a portrait one, so 210 clears both. The badge
+  // is inert under a thumb anyway (toko's own rule), but a mark sitting on
+  // the one control the game is played with is still wrong.
+  sign({ corner: 'bottom-right', counter: true, inset: coarse ? 210 : 12 });
 </script>
 </body>
 </html>

@@ -9,25 +9,26 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=15';
-import { Input } from './input.js?v=15';
-import { Level, ROOMS, LAB } from './level.js?v=15';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=17';
+import { Input } from './input.js?v=17';
+import { Level, ROOMS, LAB } from './level.js?v=17';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=15';
-import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=15';
-import { Camera } from './camera.js?v=15';
-import { buildKidModel, Kid, Player } from './kid.js?v=15';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=15';
-import { buildCraneModel, Crane } from './crane.js?v=15';
-import { Robot, SteamVent } from './robots.js?v=15';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=15';
-import { WreckingBall } from './hazards.js?v=15';
-import { AudioKit } from './audio.js?v=15';
-import { loadManifest, getModel, getPiece } from './assets.js?v=15';
-import { craftMat, craftBox } from './craft.js?v=15';
-import { t as tr } from './lang.js?v=15';
-import { showIntro } from './intro.js?v=15';
+} from './pieces.js?v=17';
+import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=17';
+import { Camera } from './camera.js?v=17';
+import { buildKidModel, Kid, Player } from './kid.js?v=17';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=17';
+import { buildCraneModel, Crane } from './crane.js?v=17';
+import { Robot, SteamVent } from './robots.js?v=17';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=17';
+import { WreckingBall } from './hazards.js?v=17';
+import { AudioKit } from './audio.js?v=17';
+import { loadManifest, getModel, getPiece, uiAsset } from './assets.js?v=17';
+import { craftMat, craftBox } from './craft.js?v=17';
+import { t as tr } from './lang.js?v=17';
+import { showIntro } from './intro.js?v=17';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=17';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -78,6 +79,29 @@ async function boot() {
 
   // ---- the persistent world: diorama + cast -------------------------------
   await loadManifest();
+
+  // THE TOUCH PLATES (art lane, PR #236). The controls are a drawn
+  // backboard and the DOM buttons are transparent hit areas over it — a
+  // Game Boy DMG face in portrait, an arcade control-panel strip in
+  // landscape, because a handheld and a cabinet are different objects.
+  //
+  // `.plated` goes on <html> only once an image has actually DECODED. If
+  // the art 404s or the manifest still calls it a placeholder, the drawn
+  // circle buttons stay and the game is still playable — the same rule the
+  // rest of the asset seam runs on.
+  {
+    const plates = [['padP', 'padplate_portrait'], ['padL', 'padplate_landscape']];
+    let loaded = 0;
+    await Promise.all(plates.map(([id, key]) => new Promise((done) => {
+      const src = uiAsset(key);
+      const img = document.getElementById(id);
+      if (!src || !img) return done();
+      img.onload = () => { loaded++; done(); };
+      img.onerror = () => { console.warn(`[eeri] pad plate "${key}" did not load — keeping the drawn buttons`); done(); };
+      img.src = src;
+    })));
+    if (loaded === plates.length) document.documentElement.classList.add('plated');
+  }
   const diorama = await buildLayers(scene, 'groundworks', REDUCED);
 
   const kid = new Kid(await getModel('eeri', buildKidModel));
@@ -182,14 +206,30 @@ async function boot() {
       bar.position.set(def.gate.x, def.gate.y + 2.6, 0); group.add(bar);
     }
 
-    // bolts: the collectable (3D slow spinners, §6)
-    const bolts = level.boltCells.map((cell, bi) => {
+    // bolts: the collectable (3D slow spinners, §6). The model comes through
+    // the seam like everything else — and the seam's contract is that the
+    // PLACEHOLDER BUILDER RETURNS THE SAME SHAPE AS THE LIVE PATH ({root}),
+    // "so game code cannot tell them apart". The first cut returned a bare
+    // Group from the builder and unwrapped .root outside the call, which
+    // worked on whichever path was exercised that day and crashed on the
+    // other. A bolt is a PICKUP: origin at its centre, cloned per cell.
+    const boltModel = (await getModel('bolt', () => {
       const g = new THREE.Group();
       const m1 = craftMat(PAL.MACHINE, 'balsa', { transparent: true });
       const m2 = craftMat(PAL.MACHINE_DK, 'balsa', { transparent: true });
       const nut = new THREE.Mesh(boltGeo, m1); nut.rotation.x = Math.PI / 2;
       const hub = new THREE.Mesh(hubGeo, m2); hub.rotation.x = Math.PI / 2;
       g.add(nut, hub);
+      return { root: g };
+    })).root;
+    const bolts = level.boltCells.map((cell, bi) => {
+      const g = boltModel.clone(true);
+      // the collect pop fades it, and a material cloned off a GLB is opaque
+      g.traverse((o) => {
+        if (!o.isMesh) return;
+        o.material = o.material.clone();      // per-bolt, or one pop fades all
+        o.material.transparent = true;
+      });
       g.position.set(cell.x, cell.y, 0);
       g.baseY = cell.y; g.phase = bi * 0.7; g.state = 'up'; g.popT = 0;
       group.add(g);
@@ -222,8 +262,29 @@ async function boot() {
   // The lab is buildable but NOT in the sequence: SITES is what a room index
   // means, ROOMS is what the game runs through. One derived constant rather
   // than two lists that can disagree — the whole reason the parts kit exists.
-  let siteIndex = 0;
-  let site = await buildSite(0);
+  // THE ADDRESS (js/levelid.js). `/eeri/#eeri-1-2` opens the second level of
+  // the first world — Mario's scheme, because it is the one a parent already
+  // reads. A fragment that names nothing lands on 1-1 rather than a black
+  // screen, and so does one naming a level that is not built YET: the game
+  // grows three levels at a time, so the address space is the whole twelve
+  // from the start and the rooms arrive later.
+  const fromHash = () => {
+    const p = parseSlug(location.hash);
+    if (!p) return 0;
+    if (p.lab) return ROOMS.length;              // SITES[ROOMS.length] is LAB
+    return p.index < ROOMS.length ? p.index : 0;
+  };
+  // `replaceState`, never `location.hash =` — assigning fires `hashchange`
+  // back at the handler that just moved the level, and the game reloads the
+  // room it is already standing in. Same trap gameoflife documents.
+  const setHash = (i) => {
+    const want = '#' + slugOf(i, ROOMS.length);
+    if (location.hash !== want) history.replaceState(null, '', want);
+  };
+
+  let siteIndex = fromHash();
+  let site = await buildSite(siteIndex);
+  setHash(siteIndex);
 
   const player = new Player(site.level, site.def.spawn.kid, kid);
   // `exc` is whatever machine this room parked here — an excavator, or a
@@ -240,7 +301,14 @@ async function boot() {
     boltsEl.textContent = `⬡ ${collected}/${site.def.bolts.length}`;
     goldEl.textContent = `✦ ${goldenGot}/${site.def.golden.length}`;
   };
-  siteEl.textContent = site.def.name;
+  // the address beside the name, so what is on screen is what you can paste
+  // to somebody: "1-2 · LEVEL 2 — THE SCAFFOLD"
+  const setSiteName = () => {
+    const tag = labelOf(siteIndex, ROOMS.length);
+    siteEl.textContent = `${tag} · ${site.def.name}`;
+    document.title = `EERI ${tag} — ${site.def.name}`;
+  };
+  setSiteName();
   const setHint = (s) => { if (hintEl.textContent !== s) hintEl.textContent = s; };
   // ONE glyph set, for every input (DESIGN.md §5). A prompt never names a
   // key: a key name is no help to a thumb or a pad, and the on-screen
@@ -352,6 +420,7 @@ async function boot() {
     // the cast walks on: same kid, but each room's machine is the room's
     // own — a crane where a crane is the answer — and it is unmanned again,
     // beacon turning. Taming never carries between rooms.
+    setHash(i);                        // the address follows the level
     const s = site.def.spawn;
     player.level = site.level;
     player.x = s.kid.x; player.y = s.kid.y; player.vx = 0; player.vy = 0; player.mercyT = 0;
@@ -360,7 +429,7 @@ async function boot() {
     mode = 'foot'; digT = 0; slingT = 0;
     player.climbing = false;
     input.take('action'); input.take('jump');
-    siteEl.textContent = site.def.name;
+    setSiteName();
     collected = 0; goldenGot = 0;      // the counts belong to the LEVEL
     setCounts();
 
@@ -706,7 +775,10 @@ async function boot() {
         b.popT += dt / 0.25;
         b.rotation.y += dt * 14;
         b.scale.setScalar(1 + b.popT * 0.8);
-        for (const ch of b.children) ch.material.opacity = 1 - b.popT;
+        // fade every material in the tree, not just direct children: a live
+        // GLB is Group → Object3D → Mesh, so `b.children` alone never
+        // reaches the mesh and the bolt would pop without fading
+        b.traverse((o) => { if (o.isMesh) o.material.opacity = 1 - b.popT; });
         if (b.popT >= 1) { b.state = 'gone'; b.visible = false; }
       }
     }
