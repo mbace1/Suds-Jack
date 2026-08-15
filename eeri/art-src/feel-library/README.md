@@ -29,6 +29,24 @@ Four rules:
 
 The audio side is built only from `tone`, `noise` and `arp` primitives already used by Eeri's WebAudio prototype. The VFX side is plain timing/recipe data using **existing palette roles only** — no new colours are invented by effects.
 
+## Feel Lab
+
+Open `feel-lab.html` through any local/static web server. It imports the source recipes directly and provides:
+
+- one-tap audition buttons for all 26 cues
+- live WebAudio playback of the procedural recipe
+- a lightweight Canvas preview of the matching VFX timing
+- a shared 0–300 ms audio/VFX contact timeline
+- separate Audio and VFX toggles
+- reduced-motion auditioning
+- a repeating preview only for `machine_idle`
+
+The lab is deliberately standalone: it does not boot Eeri, import Three.js, or touch shipping modules. Run its source gate with:
+
+```bash
+node eeri/art-src/feel-library/feel-lab-smoke.mjs
+```
+
 ## Timing examples
 
 | event | audio rhythm | visual rhythm | design read |
