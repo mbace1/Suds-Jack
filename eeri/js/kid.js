@@ -439,8 +439,14 @@ export class Player {
     this.groundedT = this.grounded ? COYOTE : this.groundedT - dt;
     if (this.grounded && !wasGrounded) this.justLanded = true;
 
-    // fell in the pit (its floor is dressing, not ground): back to the near side
-    if (this.y < 0.9) { this.x = 43; this.y = 5; this.vx = 0; this.vy = 0; }
+    // fell in the pit (its floor is dressing, not ground): back to the near
+    // side of whichever hole took him, or the last checkpoint (level.js
+    // fallRespawn) — never a fixed column, which is a Level 2 debug value
+    // that leaked here and dragged every level's falls back to x=43.
+    if (this.y < 0.9) {
+      const r = this.level.fallRespawn(this.x);
+      this.x = r.x; this.y = r.y; this.vx = 0; this.vy = 0;
+    }
 
     this.updateVisual();
   }
