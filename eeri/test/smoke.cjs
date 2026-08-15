@@ -603,8 +603,30 @@ s.listen(0, '127.0.0.1', async () => {
   await p.evaluate(() => window.__eeri.debug.press('right'));
   const walkedOut = await p.waitForFunction(() => window.__eeri.debug.cleared(), null, { timeout: 25000 }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
-  ok('walking out through the gate clocks the whole job out', walkedOut);
+  ok('walking out through the gate ends the world', walkedOut);
   ok('and it says so on screen', await p.locator('#clear').count() === 1);
+  // WITH A WORLD BEHIND IT, the curtain is a beat and not an ending — and
+  // the flag on a gated level must NOT have advanced past the gate on its
+  // own, or the curtain is unreachable. Both were live bugs the moment
+  // World 2's levels landed.
+  {
+    const wentOn = await p.waitForFunction(() => window.__eeri.site() === 3,
+      null, { timeout: 20000 }).then(() => true).catch(() => false);
+    ok('…and then World 2 begins', wentOn, 'site=' + await p.evaluate(() => window.__eeri.site()));
+    // the swap is ASYNC — goSite sets the index, then awaits the new layer
+    // set — so this waits on the thing itself rather than on the index
+    const swapped = await p.waitForFunction(() => window.__eeri.debug.world?.() === 'pipeworks',
+      null, { timeout: 30000 }).then(() => true).catch(() => false);
+    ok('the backdrop changes with the world', swapped,
+      await p.evaluate(() => window.__eeri.debug.world?.()));
+    // back to World 1's last room for the checks below, which are its
+    // `?a=` is not decoration: without it this is a HASH-ONLY navigation
+    // from the page already open, so the document never reloads and the
+    // run carries on in World 2 while the address says 1-3
+    await p.goto(base + '/eeri/?skip&a=5#eeri-1-3', { waitUntil: 'load' });
+    await p.waitForFunction(() => window.__eeri?.site() === 2, null, { timeout: 30000 }).catch(() => {});
+    await p.waitForTimeout(800);
+  }
 
   // ---- the small stuff ---------------------------------------------------
   const bots = await p.evaluate(() => window.__eeri.debug.robots());
@@ -834,7 +856,7 @@ s.listen(0, '127.0.0.1', async () => {
       && await p.evaluate(() => location.hash) === '#eeri-1-3',
       await p.evaluate(() => location.hash));
 
-    await p.goto(base + '/eeri/?skip&a=3#eeri-2-1', { waitUntil: 'load' });
+    await p.goto(base + '/eeri/?skip&a=3#eeri-3-1', { waitUntil: 'load' });
     await p.waitForFunction(() => !!window.__eeri, null, { timeout: 20000 }).catch(() => {});
     ok('an address for a level that is not built yet falls back to 1-1',
       await p.evaluate(() => window.__eeri.site()) === 0);

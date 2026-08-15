@@ -9,27 +9,27 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=22';
-import { Input } from './input.js?v=22';
-import { Level, ROOMS, LAB } from './level.js?v=22';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=23';
+import { Input } from './input.js?v=23';
+import { Level, ROOMS, LAB } from './level.js?v=23';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=22';
-import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=22';
-import { Camera } from './camera.js?v=22';
-import { buildKidModel, Kid, Player } from './kid.js?v=22';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=22';
-import { buildCraneModel, Crane } from './crane.js?v=22';
-import { Robot, SteamVent } from './robots.js?v=22';
-import { Hoist } from './hoist.js?v=22';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=22';
-import { WreckingBall } from './hazards.js?v=22';
-import { AudioKit } from './audio.js?v=22';
-import { loadManifest, getModel, getPiece, uiAsset } from './assets.js?v=22';
-import { craftMat, craftBox } from './craft.js?v=22';
-import { t as tr } from './lang.js?v=22';
-import { showIntro } from './intro.js?v=22';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=22';
+} from './pieces.js?v=23';
+import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=23';
+import { Camera } from './camera.js?v=23';
+import { buildKidModel, Kid, Player } from './kid.js?v=23';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=23';
+import { buildCraneModel, Crane } from './crane.js?v=23';
+import { Robot, SteamVent } from './robots.js?v=23';
+import { Hoist } from './hoist.js?v=23';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=23';
+import { WreckingBall } from './hazards.js?v=23';
+import { AudioKit } from './audio.js?v=23';
+import { loadManifest, getModel, getPiece, uiAsset } from './assets.js?v=23';
+import { craftMat, craftBox } from './craft.js?v=23';
+import { t as tr } from './lang.js?v=23';
+import { showIntro } from './intro.js?v=23';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=23';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -116,7 +116,13 @@ async function boot() {
     })));
     if (loaded === plates.length) document.documentElement.classList.add('plated');
   }
-  const diorama = await buildLayers(scene, 'groundworks', REDUCED);
+  // WHICH WORLD A LEVEL IS IN. Three levels to a world (DESIGN §4.2), so
+  // this is arithmetic rather than a table — until a world wants a name
+  // that is not its backdrop's, at which point it becomes one.
+  const WORLDS = ['groundworks', 'pipeworks', 'groundworks', 'groundworks'];
+  const worldOf = (i) => WORLDS[Math.floor(i / 3)] || 'groundworks';
+
+  let diorama = await buildLayers(scene, worldOf(0), REDUCED);
 
   const kid = new Kid(await getModel('eeri', buildKidModel));
   scene.add(kid.group, kid.shadow);
@@ -458,6 +464,17 @@ async function boot() {
     scene.remove(old.group);
     dispose(old.group);
 
+    // …and the BACKDROP, if this room is in a different world. It was built
+    // once at boot while there was only one world to be in; levels 4-6
+    // played in front of World 1's site until this. Taken down before the
+    // new one goes up — six full-width planes left in the scene are not
+    // hidden by six more, the near ones are opaque.
+    const want = worldOf(i);
+    if (want !== diorama.world) {
+      diorama.dispose();
+      diorama = await buildLayers(scene, want, REDUCED);
+    }
+
     // the cast walks on: same kid, but each room's machine is the room's
     // own — a crane where a crane is the answer — and it is unmanned again,
     // beacon turning. Taming never carries between rooms.
@@ -544,6 +561,7 @@ async function boot() {
       padSeen: () => input.padSeen,
       vents: () => site.vents.map((v) => ({ x: v.x, blowing: v.blowing })),
       rooms: () => ROOMS.length,
+      world: () => diorama.world,
       // a room change is not finished when the index flips — goSite() still
       // has to put the kid on the new spawn, so anything positioning him
       // must wait for this
@@ -791,7 +809,13 @@ async function boot() {
     if (site.flag) {
       const ev = site.flag.update(dt, mode === 'riding' && exc ? exc.x : player.x);
       if (ev === 'phase') audio.clank();
-      if (ev === 'raised' && !transitioning && siteIndex < LAST_LEVEL) {
+      // A LEVEL WITH A GATE DOES NOT AUTO-ADVANCE. The flag ends a level and
+      // the gate ends a WORLD (DESIGN §4.2), and while three levels existed
+      // those were the same moment so nothing distinguished them. With World
+      // 2 built, raising World 1's big flag advanced straight to level 4 and
+      // the gate — the world's whole curtain — became unreachable. On a gated
+      // level the flag raises and you walk out yourself.
+      if (ev === 'raised' && !transitioning && siteIndex < LAST_LEVEL && !site.def.gate) {
         audio.mount();
         runBolts += collected; runGolden += goldenGot;
         goSite(siteIndex + 1);
@@ -810,6 +834,16 @@ async function boot() {
       done.innerHTML = 'CLOCKING OUT'
         + `<span>⬡ ${runBolts + collected} · ✦ ${runGolden + goldenGot}</span>`;
       document.body.appendChild(done);
+      // …and if there is another world behind this one, the curtain is a
+      // BEAT rather than an ending: it holds, then the next site loads.
+      if (siteIndex < LAST_LEVEL) {
+        runBolts += collected; runGolden += goldenGot;
+        setTimeout(() => {
+          done.remove();
+          cleared = false;
+          goSite(siteIndex + 1);
+        }, 2600);
+      }
     }
 
     // the hazard: wakes on whoever is near, and takes the ride, not the run

@@ -1,5 +1,43 @@
 # EERI — versions
 
+## v15.11 — 2026-08-15 — World 2 looks like World 2, and the world's curtain works again
+
+Wiring `#250`'s levels revealed two things that were only ever true while
+three levels existed.
+
+**THE GATE WAS UNREACHABLE.** A flag ends a level, a gate ends a WORLD
+(DESIGN §4.2) — and while World 1 was the whole game those were the same
+moment, so nothing had to tell them apart. The instant level 4 existed,
+raising World 1's big flag auto-advanced straight into it and the gate,
+the world's entire curtain, could never fire. **A gated level does not
+auto-advance**: the flag goes up and you walk out yourself. And the
+curtain is now a *beat* rather than an ending when there is a world behind
+it — CLOCKING OUT holds, then World 2 loads.
+
+**THE BACKDROP FOLLOWED NOTHING.** `main.js` built the diorama once at
+boot with `buildLayers(scene, 'groundworks')`, so levels 4–6 played World
+2 in front of World 1's site. The layer set had no teardown, because
+nothing had ever needed one — six full-width planes left in the scene are
+not hidden by six more, the near ones are opaque. `layers.js` gains
+`dispose()` (every plane, its geometry, material and texture, plus the
+background events' own meshes), and `goSite` swaps sets when a room
+crosses into another world. Which world a level is in is arithmetic —
+three to a world — until a world wants a name that is not its backdrop's.
+
+**And so `pipeworks_*` goes LIVE.** Painted and parked since art lineage
+v16, blocked ever since by the gate that fails a live asset nothing
+fetches. Now something fetches it. Manifest `v: 25`.
+
+**A test trap worth keeping.** The gate walked out of World 1, then
+navigated back to `/eeri/?skip#eeri-1-3` to finish its World 1 checks — and
+three of them failed. That URL differs from the open one only in its HASH,
+so it is a same-document navigation: the page never reloaded, the run
+carried on in World 2, and the checks read the wrong room while the
+address bar said 1-3. Every other address check in that file carries an
+`?a=N` for exactly this reason. It is not decoration.
+
+Gates: rooms 147 / fx 31 / dev-menu 30 / **smoke 282** / playthrough 13 / hub.
+
 ## v15.10 — 2026-08-15 — World 2 has levels (PR 4 of 4)
 
 **Levels 4, 5 and 6 — the Wet Trench, the Pipe Run, the Pumphouse.** The

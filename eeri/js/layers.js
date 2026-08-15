@@ -23,8 +23,8 @@
 //      crosses the far road, slow enough never to pull the eye.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=22';
-import { getLayerTexture } from './assets.js?v=22';
+import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=23';
+import { getLayerTexture } from './assets.js?v=23';
 
 export const PPU = 30; // canvas pixels per world unit
 
@@ -371,6 +371,19 @@ function backgroundEvents(scene) {
   }
 
   return {
+    // the crane and the truck are meshes too, and they belong to whichever
+    // world mounted them — see buildLayers().dispose
+    dispose() {
+      for (const e of events) {
+        scene.remove(e.obj);
+        e.obj.traverse?.((o) => {
+          o.geometry?.dispose?.();
+          if (Array.isArray(o.material)) o.material.forEach((m) => m.dispose());
+          else o.material?.dispose?.();
+        });
+      }
+      events.length = 0;
+    },
     update(dt) {
       for (const e of events) {
         e.obj.position.x += e.speed * e.dir * dt;
@@ -390,19 +403,39 @@ function backgroundEvents(scene) {
 // world = the level's theme; each named layer asks the asset seam for a
 // live PNG first and paints its placeholder if there is none.
 export async function buildLayers(scene, world = 'groundworks', reduced = false) {
+  const mounted = [];
   // the sky is a layer like any other now — the crafted paper sky ships as a
   // PNG through the same seam, and drawSky stays as its code placeholder
   const liveSky = await getLayerTexture(world, 'sky');
-  mountLayer(scene, LAYER_RECTS.sky,
-    liveSky || paintCanvas({ ...LAYER_RECTS.sky, tint: 0, draw: drawSky }));
+  mounted.push(mountLayer(scene, LAYER_RECTS.sky,
+    liveSky || paintCanvas({ ...LAYER_RECTS.sky, tint: 0, draw: drawSky })));
   for (const name of ['skyline', 'far', 'mid', 'near', 'fore']) {
     const rect = LAYER_RECTS[name];
     const live = await getLayerTexture(world, name);
-    mountLayer(scene, rect, live || paintCanvas({ ...rect, ...PLACEHOLDER_DRAW[name] }));
+    mounted.push(mountLayer(scene, rect, live || paintCanvas({ ...rect, ...PLACEHOLDER_DRAW[name] })));
   }
   const events = backgroundEvents(scene);
   return {
+    world,
     update: (dt) => { if (!reduced) events.update(dt); },
     positions: () => events.positions(),
+    // A WORLD IS A SET OF LAYERS, and until World 2 had levels there was
+    // only ever one set, built once at boot. Swapping worlds means taking
+    // this one down first — every plane, its geometry, its material and
+    // its texture — because a diorama left in the scene is six full-width
+    // planes still drawing behind the new ones, and the near ones are
+    // opaque. `mounted` is collected rather than re-found by traversing:
+    // the background events add their own meshes and those come down with
+    // `events.dispose()`, which knows which are its.
+    dispose: () => {
+      for (const m of mounted) {
+        scene.remove(m);
+        m.geometry.dispose();
+        m.material.map?.dispose();
+        m.material.dispose();
+      }
+      mounted.length = 0;
+      events.dispose?.();
+    },
   };
 }
