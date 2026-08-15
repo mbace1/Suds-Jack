@@ -8,7 +8,7 @@
 // had — fails `test/rooms.mjs` rather than stranding somebody halfway.
 //
 // THE SHAPE OF A LEVEL (DESIGN §4, the owner's Mario/Yoshi direction), and
-// it is why these three rooms are laid out the way they are:
+// it is why these rooms are laid out the way they are:
 //
 //   ONE IDEA PER LEVEL, IN FOUR BEATS. Introduce it alone and safe · vary
 //   it · combine it with something already known · test it once, at the
@@ -23,6 +23,9 @@
 //   1 — THE STOMP. Small things you land on. Nothing else is new.
 //   2 — THE CLIMB. Ladders and decks; the room stops being a corridor.
 //   3 — BOTH, and the crane. The big one, and the world's own ending.
+//   4 / WORLD 2-1 — THE WADE. Water can be floor, slowdown, or a soft reset.
+//   5 / WORLD 2-2 — THE PIPE. A route can go through the scenery, not over it.
+//   6 / WORLD 2-3 — THE PAIRING. Water + pipes + hoist, then the world ending.
 
 import {
   ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm,
@@ -246,6 +249,212 @@ export const ROOMS = [
 
       shot(24, 36, { z: 38, y: 3.0 }),
       shot(60, 96, { z: 43, y: 3.6, lead: 2.0 }),
+    ],
+  },
+
+  // ── LEVEL 4 / WORLD 2-1 — THE WET TRENCH ────────────────────────────
+  // WATER is the one new idea. Shallow water first slows the run with no
+  // threat; deep water then asks for the same jump the player already owns
+  // and returns Eeri to the near lip rather than hurting him.
+  //
+  // The excavator/bank at the peak is intentionally a GREYBOX PROXY for the
+  // planned pump/flooded-trench ride. It uses a verb already proved in World
+  // 1, so this level can be played and tuned now while art/engineering swap
+  // the proxy for the pump later without changing the water lesson.
+  {
+    name: 'LEVEL 4 — THE WET TRENCH',
+    idea: 'water as a floor',
+    parts: [
+      ground(),
+      startAt(4.5),
+      boltRun(5, 6, 13),
+      boltRun(6, 6, 13),
+
+      // ── 1 · INTRODUCE ── a single broad shallow puddle on flat ground.
+      // Nothing attacks, jumps or moves here: walking slower IS the lesson.
+      shallow(15, 22),
+      boltRun(5, 15, 22),
+      boltRun(6, 15, 22),
+      golden(7, [20]),
+
+      // ── 2 · VARY ── first bring a known hopper into the slow floor, then
+      // put a short DEEP cut beyond a dry takeoff and draw the jump in bolts.
+      shallow(25, 31),
+      hopper(27, 31),
+      boltRun(5, 25, 31),
+      boltRun(6, 25, 31),
+      deep(35, 36),
+      boltArc(5, 34, 37, 2),
+      golden(7, [35]),
+      boltRun(5, 38, 45),
+      boltRun(6, 38, 45),
+      checkpoint(46),
+
+      // ── 3 · COMBINE ── wade, regain dry footing, jump the deep channel,
+      // then meet a roller on the far bank. The dry strip before the jump is
+      // deliberate: this is a reading/timing test, not a speed-budget trap.
+      shallow(48, 50),
+      boltRun(5, 48, 50),
+      boltRun(6, 48, 50),
+      boltRun(5, 51, 52),
+      boltRun(6, 51, 52),
+      deep(54, 55),
+      boltArc(5, 53, 56, 2),
+      roller(59, 64),
+      boltRun(5, 59, 64),
+      boltRun(6, 59, 64),
+
+      // ── 4 · TEST / RIDE ── familiar tool use, new context. For this
+      // greybox the tall silt bank stands in for the flooded trench lock.
+      machine('excavator', 68, [60, 92]),
+      boltRun(5, 67, 70),
+      bank(82, 86, 3),
+      boltRun(5, 88, 91),
+      golden(7, [90]),
+      flagAt(93),
+
+      shot(12, 32, { z: 38, y: 3.0 }),
+      shot(32, 60, { z: 40.5, y: 3.3, lead: 1.8 }),
+      shot(58, 96, { z: 42, y: 3.5, lead: 2.0 }),
+    ],
+  },
+
+  // ── LEVEL 5 / WORLD 2-2 — THE PIPE RUN ──────────────────────────────
+  // THE PIPE is the only new idea. First both mouths fit in one view, then
+  // the tube changes height, then it crosses water. The back-half span uses
+  // the existing excavator as a greybox stand-in for the pipe-layer: same
+  // physical job, no second lesson smuggled into the level.
+  {
+    name: 'LEVEL 5 — THE PIPE RUN',
+    idea: 'the pipe',
+    parts: [
+      ground(),
+      startAt(4.5),
+      boltRun(5, 6, 11),
+      boltRun(6, 6, 11),
+
+      // ── 1 · INTRODUCE ── both mouths visible, flat floor, no hazard.
+      // The player sees the destination before choosing to disappear into it.
+      pipe({ c: 12, cy: GROUND }, { c: 20, cy: GROUND }),
+      boltRun(5, 12, 20),
+      boltRun(6, 12, 20),
+
+      // ── 2 · VARY ── the same object now changes elevation. The upper
+      // mouth lands on a deck with a ladder down, so the pipe never traps.
+      boltRun(5, 23, 30),
+      boltRun(6, 23, 30),
+      pipe({ c: 27, cy: GROUND }, { c: 34, cy: 8 }),
+      ledge(32, 38, 7),
+      ...scaffold(38, 42, 7),
+      boltRun(9, 32, 42),
+      boltRun(10, 34, 38),
+      golden(10, [35]),
+      checkpoint(44),
+
+      // ── 3 · COMBINE ── use the tube as an obvious alternate crossing of
+      // deep water, then arrive beside the sleeping bucket. The ordinary
+      // jump remains legal: the pipe is an invitation, never a forced trick.
+      boltRun(5, 43, 47),
+      boltRun(6, 43, 47),
+      pipe({ c: 47, cy: GROUND }, { c: 54, cy: GROUND }),
+      deep(49, 52),
+      boltArc(5, 48, 53, 2),
+      golden(7, [50]),
+      bucketBot(55),
+      boltRun(5, 54, 60),
+      boltRun(6, 54, 60),
+
+      // ── 4 · TEST / RIDE ── the pipe-layer's intended job is mechanically
+      // the known span verb, so the excavator is an honest greybox proxy.
+      machine('excavator', 64, [58, 70]),
+      girderStack(66),
+      boltRun(5, 62, 65),
+      chasm(71, 78),
+      boltRun(5, 81, 84),
+      golden(7, [84]),
+      flagAt(93),
+
+      shot(10, 30, { z: 38, y: 3.0 }),
+      shot(28, 58, { z: 42, y: 3.8, lead: 1.8 }),
+      shot(56, 96, { z: 43, y: 3.5, lead: 2.1 }),
+    ],
+  },
+
+  // ── LEVEL 6 / WORLD 2-3 — THE PUMPHOUSE ─────────────────────────────
+  // No new verb. This is the world's exam: water, pipes and the hoist share
+  // the same spaces. The hoist is optional for the main line but owns a
+  // golden-bolt route, so a child can finish without waiting for a cycle and
+  // a confident player has a reason to master it.
+  //
+  // The crane/wall at the end is another greybox ride proxy: a familiar,
+  // readable heavy-machine climax against the pumphouse shell while the
+  // final World-2 ride art remains a separate lane.
+  {
+    name: 'LEVEL 6 — THE PUMPHOUSE',
+    idea: 'water, pipes, and the hoist together',
+    parts: [
+      ground(),
+      startAt(4.5),
+      boltRun(5, 6, 12),
+      boltRun(6, 6, 12),
+
+      // ── 1 · PAIR ── a pipe carries you to a deck over deep water. You can
+      // still make the jump underneath; the pipe shows the safer authored way.
+      pipe({ c: 14, cy: GROUND }, { c: 22, cy: 8 }),
+      deep(17, 20),
+      boltRun(5, 14, 21),
+      boltRun(6, 14, 21),
+      golden(7, [18]),
+      ledge(22, 28, 7),
+      ...scaffold(29, 33, 7),
+      boltRun(9, 22, 28),
+      boltRun(9, 30, 33),
+      boltRun(10, 23, 27),
+
+      // ── 2 · READ ── the settling pond: similar-looking shallow and deep
+      // bands alternate. The last two-tile channel deliberately starts from
+      // shallow water but stays inside the reduced wading jump budget.
+      shallow(34, 36),
+      boltRun(5, 34, 38),
+      boltRun(6, 34, 38),
+      deep(40, 41),
+      boltArc(5, 39, 42, 2),
+      shallow(43, 44),
+      boltRun(5, 43, 43),
+      boltRun(6, 43, 44),
+      deep(45, 46),
+      boltArc(5, 44, 47, 2),
+      checkpoint(48),
+
+      // ── 3 · COMBINE ── shallow approach into the hoist, an upper deck,
+      // then a pipe back down beyond another deep channel. The floor route
+      // still works; the high route is faster and carries the hidden reward.
+      shallow(49, 51),
+      boltRun(5, 49, 54),
+      boltRun(6, 49, 54),
+      hoist(52, 53, GROUND, 10, 4),
+      ledge(54, 60, 10),
+      pipe({ c: 58, cy: 11 }, { c: 65, cy: GROUND }),
+      boltRun(12, 54, 58),
+      golden(13, [58]),
+      deep(61, 63),
+      boltArc(5, 60, 64, 2),
+      boltRun(5, 65, 67),
+
+      // ── 4 · WORLD PEAK ── a known crane smash closes the pumphouse, then
+      // the big flag and clock-out gate close World 2 rather than just a room.
+      machine('crane', 68, [66, 79]),
+      boltRun(5, 68, 71),
+      brickWall(80, 84, 4),
+      boltRun(5, 86, 89),
+      golden(7, [88]),
+      flagAt(88, true),
+      exitAt(92.5),
+
+      shot(10, 32, { z: 39, y: 3.2 }),
+      shot(30, 54, { z: 40.5, y: 3.3, lead: 1.7 }),
+      shot(50, 72, { z: 45, y: 4.1, lead: 1.8 }),
+      shot(66, 96, { z: 43, y: 3.6, lead: 2.0 }),
     ],
   },
 ];
