@@ -1,0 +1,46 @@
+:root {
+  --dev-bg: rgba(18, 20, 23, 0.94);
+  --dev-border: rgba(255,255,255,0.18);
+  --dev-text: #f6f7f8;
+  --dev-muted: #aeb6bf;
+  --dev-accent: #ffc63f;
+  --dev-good: #80e39b;
+}
+
+#eeri-dev-root { position: fixed; inset: 0; z-index: 10002; pointer-events: none; font-family: system-ui, sans-serif; color: var(--dev-text); }
+#eeri-dev-tab, #eeri-dev-panel { pointer-events: auto; }
+#eeri-dev-tab {
+  position: fixed; top: max(8px, env(safe-area-inset-top)); left: 74px;
+  min-width: 54px; height: 36px; padding: 0 12px; border: 1px solid var(--dev-border);
+  border-radius: 10px; background: var(--dev-bg); color: var(--dev-accent);
+  font: 800 12px/1 system-ui, sans-serif; letter-spacing: .12em;
+}
+#eeri-dev-panel {
+  position: fixed; top: max(52px, calc(env(safe-area-inset-top) + 48px)); left: 10px;
+  width: min(390px, calc(100vw - 20px)); max-height: calc(100vh - 66px); overflow: auto;
+  box-sizing: border-box; padding: 12px; border: 1px solid var(--dev-border); border-radius: 14px;
+  background: var(--dev-bg); backdrop-filter: blur(14px); box-shadow: 0 12px 40px rgba(0,0,0,.35);
+}
+#eeri-dev-panel[hidden] { display: none; }
+.eeri-dev-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-bottom: 8px; }
+.eeri-dev-title { font-size: 13px; font-weight: 900; letter-spacing: .12em; color: var(--dev-accent); }
+.eeri-dev-status { font-size: 11px; color: var(--dev-good); }
+.eeri-dev-section { padding: 9px 0; border-top: 1px solid var(--dev-border); }
+.eeri-dev-section:first-of-type { border-top: 0; }
+.eeri-dev-label { margin-bottom: 6px; font-size: 10px; font-weight: 800; letter-spacing: .12em; color: var(--dev-muted); text-transform: uppercase; }
+.eeri-dev-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.eeri-dev-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.eeri-dev-btn {
+  min-height: 36px; padding: 7px 8px; border: 1px solid var(--dev-border); border-radius: 9px;
+  background: rgba(255,255,255,.07); color: var(--dev-text); font: 700 11px/1.15 system-ui, sans-serif;
+}
+.eeri-dev-btn[data-on="true"] { outline: 2px solid var(--dev-accent); color: var(--dev-accent); }
+.eeri-dev-btn:active { transform: translateY(1px); }
+#eeri-dev-readout {
+  margin: 0; white-space: pre-wrap; word-break: break-word; color: #dbe2e8; font: 600 10px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (max-width: 700px) and (orientation: landscape) {
+  #eeri-dev-panel { width: min(360px, 48vw); max-height: calc(100vh - 58px); top: 48px; }
+  .eeri-dev-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .eeri-dev-btn { min-height: 32px; padding: 5px 6px; }
+}
