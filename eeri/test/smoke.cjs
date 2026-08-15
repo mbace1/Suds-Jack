@@ -1147,6 +1147,24 @@ s.listen(0, '127.0.0.1', async () => {
     // actually sits on it, rather than a row count.
     ok('the touch plate is mounted',
       await tp.evaluate(() => document.documentElement.classList.contains('plated')));
+    // THE STICK OWNS THE D-PAD AREA when a plate is up. Two halves, and
+    // the second is the one that would break silently: if the four d-pad
+    // buttons keep `pointer-events: auto` they sit ON TOP of the stick (a
+    // later sibling, z 6) and swallow every press, so the stick would look
+    // mounted and do nothing.
+    ok('the stick is mounted over the plate and clears 44px', await tp.evaluate(() => {
+      const st = document.getElementById('stick'); if (!st) return false;
+      const s = st.getBoundingClientRect();
+      if (s.width < 44 || s.height < 44) return false;
+      const img = [...document.querySelectorAll('#pad img')].find((i) => getComputedStyle(i).display !== 'none');
+      const r = img.getBoundingClientRect();
+      const cx = s.left + s.width / 2, cy = s.top + s.height / 2;
+      return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom;
+    }));
+    ok('…and the four d-pad zones are pointer-inert under it',
+      await tp.evaluate(() => ['tU', 'tD', 'tL', 'tR']
+        .every((id) => getComputedStyle(document.getElementById(id)).pointerEvents === 'none')));
+
     // THE STICKER IS ON THE PLATE, WHICH IS A LAYER QUESTION, NOT A
     // z-index ONE. `#touch` was left at `z-index: auto`, so the whole hit
     // layer — buttons, press tint and the Toko sticker with it — painted

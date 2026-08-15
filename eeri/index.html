@@ -75,17 +75,23 @@
       z-index: 5; pointer-events: none; user-select: none;
     }
     #pad img { display: none; width: 100%; height: auto; }
-    /* PORTRAIT (owner, 2026-08-15): "cropped a bit from the top, very
-       slightly smaller, centred along the bottom." So the plate is inset a
-       little from both edges and the box is SHORTER than the image, with
-       the image anchored to its bottom and the overflow clipped — which
-       takes the transparent air off the top and a sliver of the yellow
-       strip with it. 590 × 0.84 ≈ 496 is that crop expressed as the box's
-       own ratio. */
+    /* THE NUMBERS BELOW ARE MEASURED OFF THE PNG, not judged by eye.
+       `padplate_v1.png` is 1024 × 590 and the drawn plate inside it runs
+       x 122…1022, y 75…588, with its yellow top strip ending at y 121.
+       Two facts fall out of that and both were visible complaints:
+
+         · the plate's centre is x 572 against the image's 512, so a plate
+           drawn full-width sits 60 px — about 6% — RIGHT of centre;
+         · cropping 94 rows off the top left 27 rows of yellow behind.
+
+       So the image box is deliberately WIDER than the screen and pushed
+       left: the plate ends up 96% of the viewport and centred on it. The
+       box keeps the image's own ratio, which is what lets every hit area
+       stay a percentage of the picture and need no second set of numbers. */
     @media (orientation: portrait) {
       #pad {
-        left: 4%; right: 4%;
-        aspect-ratio: 1024 / 496; overflow: hidden;
+        left: -11%; right: 1.8%;
+        aspect-ratio: 1024 / 466; overflow: hidden;   /* 590 − 124 = the yellow gone */
       }
       #pad img#padP { position: absolute; left: 0; bottom: 0; }
     }
@@ -98,6 +104,12 @@
        sticker, and both were assumed missing rather than buried. */
     #touch { z-index: 6; }
     #hint { bottom: max(152px, calc(env(safe-area-inset-bottom) + 148px)); }
+    /* the portrait plate is bigger since 2026-08-15 and the hint has to
+       clear it: 466/1024 of a 109%-wide box is ~50% of the viewport width
+       in height, which is 194 px on a 390 px phone */
+    @media (orientation: portrait) {
+      #hint { bottom: max(206px, calc(env(safe-area-inset-bottom) + 202px)); }
+    }
   }
   /* `#pad img` is (1 id + 1 type) and outranks a bare `#padP`, so these
      have to be at least as specific or neither plate ever shows. */
@@ -196,7 +208,7 @@
     /* the same inset as the plate, and the image's FULL ratio — the crop
        hides the top of the picture, it does not move the controls */
     html.plated #touch {
-      position: fixed; left: 4%; right: 4%; bottom: 0;
+      position: fixed; left: -11%; right: 1.8%; bottom: 0;
       aspect-ratio: 1024 / 590; pointer-events: none;
     }
     html.plated #touch button {
@@ -208,7 +220,9 @@
     /* the d-pad's four zones tile the drawn RECESS — the dished circle the
        cross sits in — rather than the cross arms alone, which are only a
        fifth of it. That is how a virtual d-pad has to work: the zone is
-       bigger than the picture of the switch. */
+       bigger than the picture of the switch. They are POINTER-INERT when
+       plated: `#stick` below owns this area, and these stay for the
+       keyboard, the accessible names and the unplated fallback. */
     html.plated #tU, html.plated #tD { width: 10%; height: 16%; }
     html.plated #tL, html.plated #tR { width: 9%; height: 18%; }
     /* the d-pad cross */
@@ -216,10 +230,13 @@
     html.plated #tD { left: 31.8%; top: 64.1%; }
     html.plated #tL { left: 26.6%; top: 55.1%; }
     html.plated #tR { left: 37.1%; top: 55.1%; }
-    /* B is the low-left red button, A the high-right one — the DMG slant */
-    html.plated #tA { left: 72.5%; top: 54.6%; }
-    html.plated #tJ { left: 85.2%; top: 41.9%; }
+    /* B is the low-left red button, A the high-right one — the DMG slant.
+       Bigger than the drawn circles (owner, 2026-08-15): these are the two
+       controls a six-year-old hits under pressure. */
+    html.plated #tA { left: 72.5%; top: 54.6%; width: 14%; height: 24%; }
+    html.plated #tJ { left: 85.2%; top: 41.9%; width: 14%; height: 24%; }
     html.plated #touch button { transform: translate(-50%, -50%); }
+    html.plated #stick { left: 31.9%; top: 55.1%; width: 27%; height: 42%; }
   }
 
   /* --- LANDSCAPE: over the arcade strip (padplate_landscape_v1.png, 1400x466) --- */
@@ -239,9 +256,52 @@
     html.plated #tL { left: 12.7%; top: 71.9%; }
     html.plated #tR { left: 24.9%; top: 70.8%; }
     /* B then A, left to right, as the panel draws them */
-    html.plated #tA { left: 75.4%; top: 70.8%; }
-    html.plated #tJ { left: 83.2%; top: 65.5%; }
+    html.plated #tA { left: 75.4%; top: 70.8%; width: 9%; height: 28%; }
+    html.plated #tJ { left: 83.2%; top: 65.5%; width: 9%; height: 28%; }
+    html.plated #stick { left: 18.8%; top: 71.5%; width: 17%; height: 52%; }
   }
+
+  /* ---- THE STICK -----------------------------------------------------
+     Owner, 2026-08-15: *"the d-pad part should be a larger on-screen stick
+     like in other games in this repo."* Every other cabinet here that takes
+     a thumb draws a stick — hyperdagger, dropcabal, toko-drop — and they
+     are all the same shape: one large zone, push from its centre, and a
+     knob that follows so your thumb can see what it is doing.
+
+     Four rectangles cannot do that. A d-pad zone is a switch you are either
+     on or off, so the moment a thumb drifts between two of them the input
+     stops, and a six-year-old's thumb drifts constantly. This is ONE zone
+     with a generous deadzone: direction comes from the offset, diagonals
+     come free, and there is no seam to fall into.
+
+     The drawn cross underneath stays — the art says d-pad and the control
+     behaves like a stick, which is exactly what a DMG's cross does under a
+     real thumb anyway. It is inert until a plate loads, because unplated
+     the four drawn circles ARE the control. */
+  #stick { display: none; }
+  html.plated #stick {
+    display: block; position: absolute;
+    transform: translate(-50%, -50%);
+    pointer-events: auto; touch-action: none;
+    -webkit-user-select: none; user-select: none;
+    border-radius: 46%;
+  }
+  html.plated #stick i {
+    position: absolute; left: 50%; top: 50%;
+    width: 34%; padding-bottom: 34%;
+    margin: -17% 0 0 -17%;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.16);
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.22);
+    opacity: 0; transition: opacity 0.12s;
+    pointer-events: none;
+  }
+  html.plated #stick.on i { opacity: 1; }
+  /* two ids, so this outranks `html.plated #touch button { pointer-events:
+     auto }` in the orientation blocks — the stick owns this area now */
+  html.plated #touch #tU, html.plated #touch #tD,
+  html.plated #touch #tL, html.plated #touch #tR { pointer-events: none; }
+  @media (prefers-reduced-motion: reduce) { html.plated #stick i { transition: none; } }
 </style>
 <script type="importmap">
   { "imports": { "three": "./vendor/three.module.min.js?v=1" } }
@@ -257,6 +317,7 @@
      serves the buttons and the hint line alike (DESIGN §6.4). -->
 <div id="pad"><img id="padP" alt=""><img id="padL" alt=""></div>
 <div id="touch">
+  <div id="stick" aria-hidden="true"><i></i></div>
   <button id="tL"></button>
   <button id="tD"></button>
   <button id="tR"></button>
@@ -266,7 +327,7 @@
 </div>
 <div id="boot">EERI</div>
 <script type="module" src="../hub/shell.js?v=31"></script>
-<script type="module" src="./js/main.js?v=19"></script>
+<script type="module" src="./js/main.js?v=20"></script>
 <script type="module">
   // bottom-right: the HOME button owns top-left and the HUD owns top-right.
   // Under a thumb that corner also holds the jump button (#tJ, 62px at

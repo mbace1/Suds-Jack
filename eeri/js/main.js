@@ -9,26 +9,26 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=19';
-import { Input } from './input.js?v=19';
-import { Level, ROOMS, LAB } from './level.js?v=19';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=20';
+import { Input } from './input.js?v=20';
+import { Level, ROOMS, LAB } from './level.js?v=20';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=19';
-import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=19';
-import { Camera } from './camera.js?v=19';
-import { buildKidModel, Kid, Player } from './kid.js?v=19';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=19';
-import { buildCraneModel, Crane } from './crane.js?v=19';
-import { Robot, SteamVent } from './robots.js?v=19';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=19';
-import { WreckingBall } from './hazards.js?v=19';
-import { AudioKit } from './audio.js?v=19';
-import { loadManifest, getModel, getPiece, uiAsset } from './assets.js?v=19';
-import { craftMat, craftBox } from './craft.js?v=19';
-import { t as tr } from './lang.js?v=19';
-import { showIntro } from './intro.js?v=19';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=19';
+} from './pieces.js?v=20';
+import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=20';
+import { Camera } from './camera.js?v=20';
+import { buildKidModel, Kid, Player } from './kid.js?v=20';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=20';
+import { buildCraneModel, Crane } from './crane.js?v=20';
+import { Robot, SteamVent } from './robots.js?v=20';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=20';
+import { WreckingBall } from './hazards.js?v=20';
+import { AudioKit } from './audio.js?v=20';
+import { loadManifest, getModel, getPiece, uiAsset } from './assets.js?v=20';
+import { craftMat, craftBox } from './craft.js?v=20';
+import { t as tr } from './lang.js?v=20';
+import { showIntro } from './intro.js?v=20';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=20';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -80,6 +80,7 @@ async function boot() {
 
   const input = new Input();
   input.bindButtons({ tL: 'left', tR: 'right', tU: 'up', tD: 'down', tJ: 'jump', tA: 'action' });
+  input.bindStick('stick');   // plated: one zone over the drawn d-pad
 
   // the noise waits for a gesture — browsers will not start it otherwise
   const audio = new AudioKit();

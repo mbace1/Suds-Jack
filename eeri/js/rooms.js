@@ -29,7 +29,7 @@ import {
   machine, robot, hopper, roller, hazard, swingBall, startAt, exitAt, shot,
   girderStack, scaffold, checkpoint, flagAt, golden, belt, tarp, shallow, deep, pipe,
   boltRun, boltArc, boltCol, GROUND,
-} from './parts.js?v=19';
+} from './parts.js?v=20';
 
 export const ROOMS = [
   // ── LEVEL 1 — GROUNDWORKS ───────────────────────────────────────────

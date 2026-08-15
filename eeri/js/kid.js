@@ -9,7 +9,7 @@
 // the model came from.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=19';
+import { PAL } from './palette.js?v=20';
 
 const FACE_TURN = 0.42 * Math.PI; // 3/4 view: forward ±x, tipped toward camera
 
@@ -258,8 +258,18 @@ export class Kid {
   pose(state, t, speed = 0) {
     // the turn is animated, not mirrored — a 3D cast's free win.
     // riding, the pose is local to the seat and the machine owns the facing.
+    // THE TWO RIGS MIRROR DIFFERENTLY, and this is the third symptom of the
+    // same +z/+x confusion. `π − θ` is the mirror for the code-built kid,
+    // who is modelled facing +x: it sends +x to −x and keeps the tip toward
+    // the camera. It is NOT the mirror for the skinned rig, which is
+    // modelled facing +z — and sin(π − θ) = sin θ, so his x component never
+    // changes sign and he stays pointed screen-RIGHT while walking left.
+    // That is the moon-walk: the run clip playing forwards on a body facing
+    // the wrong way. For a +z-forward rig the mirror is simply −θ, which
+    // sends +z to (−sin θ, 0, cos θ) — screen-left, same tip toward camera.
     const target = state === 'ride' ? (this.clips ? SKIN_RIDE_YAW : 0)
-      : this.face > 0 ? FACE_TURN : Math.PI - FACE_TURN;
+      : this.face > 0 ? FACE_TURN
+      : this.clips ? -FACE_TURN : Math.PI - FACE_TURN;
     this.turn += (target - this.turn) * 0.18;
     this.group.rotation.y = this.turn;
 
