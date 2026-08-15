@@ -95,6 +95,15 @@ is exported, and one asserted every prompt contains a glyph when several are
 plain sentences ("CARRY IT TO THE GAP"). Both were tests of the clock rather
 than of the rule.
 
+**Documented, not just built** — the standing rule is that the art pipeline
+reads `DESIGN.md` §6 alone and knows what to make next, so §6 caught up in
+the same pass: the glyph set moved to §6.1 "already live, do not remake"
+with the reasons it is drawn rather than a sheet, §6.4 records the owner's
+illustrated-backboard direction and the pad layout the gate asserts, §6.4.1
+is the title logo as art's next UI item, and **§4.4 states the three
+languages and what they cost art — no text in any asset, ever**, since a
+painted word can only be made three times or be wrong twice.
+
 Gates: 77 prover, 190 smoke (up 33), 7 playthrough, 31 fx, 30 dev-pack, hub green.
 
 ## v14 — 2026-08-14 — the third lineage joins, and the number skips
