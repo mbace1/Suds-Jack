@@ -9,7 +9,7 @@
 // the model came from.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=21';
+import { PAL } from './palette.js?v=24';
 
 const FACE_TURN = 0.42 * Math.PI; // 3/4 view: forward ±x, tipped toward camera
 
@@ -372,6 +372,9 @@ export class Player {
     this.mercyT = 0;
     this.climbing = false;
     this.cutJump = false;
+    // the hoist under his feet, if any — kept across frames so RIDING can be
+    // told from LANDING (see the platform pass in update)
+    this.carrier = null;
     // one-frame events for the noise to hang off
     this.justJumped = false; this.justLanded = false;
     this.justStomped = false; this.justStruck = false;
@@ -489,6 +492,7 @@ export class Player {
 
     const mx = this.level.moveX(this.box(), this.vx * dt);
     this.x = mx.x; if (mx.hit) this.vx = 0;
+    const wasAt = this.y;                       // …for the platform pass
     const my = this.level.moveY(this.box(), this.vy * dt);
     this.y = my.y;
     if (my.hit) {
@@ -505,6 +509,39 @@ export class Player {
       }
     }
     this.grounded = my.grounded || this.level.grounded(this.box());
+
+    // ---- THE PLATFORM PASS -------------------------------------------
+    // The one place in this game where the floor is not a tile. It runs
+    // AFTER the tile pass, so a tile always wins: standing on solid ground
+    // is never overridden by a hoist passing underneath.
+    //
+    // Two ways to be on one, and they are genuinely different questions:
+    //
+    //   LANDING — falling, and the feet crossed the deck between last frame
+    //   and this one. Tested as a crossing rather than as an overlap, or a
+    //   fast fall tunnels straight through a platform one tile thick.
+    //
+    //   RIDING — already carried, still over it, not jumping. This is what
+    //   a rising hoist needs: it comes UP into the feet, so the crossing
+    //   test above can never fire, and without this branch the player sinks
+    //   through a lift that is travelling towards them.
+    //
+    // `carrier` is kept across frames because that is the only way to tell
+    // the two apart.
+    let onDeck = null;
+    for (const h of this.level.platforms) {
+      if (!h.overlaps(this.x, this.hw)) continue;
+      const top = h.top;
+      const landing = this.vy <= 0 && wasAt >= top - 0.02 && this.y <= top + 0.02;
+      const riding = this.carrier === h && this.vy <= 0.01 && Math.abs(this.y - top) < 0.7;
+      if (landing || riding) { onDeck = h; break; }
+    }
+    if (onDeck) {
+      this.y = onDeck.top;
+      this.vy = 0;
+      this.grounded = true;
+    }
+    this.carrier = onDeck;
 
     // the belt: it moves the FLOOR, so it is applied after the move and does
     // not touch vx — you still run at your own speed, on ground that

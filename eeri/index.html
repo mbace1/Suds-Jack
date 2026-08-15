@@ -5,8 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>EERI</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #4aa8e8; }
-  #game, #game canvas { position: fixed; inset: 0; display: block; }
+  /* THE ROOM AROUND THE PICTURE. The stage is 16:9 and centred (js/main.js
+     sizes the canvas); everything outside it is bare, so it is painted the
+     ink colour rather than the sky — a lighter surround reads as the game
+     being the wrong size, a dark one reads as a screen. */
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #14100c; }
+  #game { position: fixed; inset: 0; }
+  #game canvas { position: absolute; display: block; }
 
   #boot {
     position: fixed; inset: 0; display: grid; place-items: center;
@@ -16,7 +21,7 @@
 
   /* top-RIGHT: hub/shell.js owns the top-left corner with the HOME button */
   #hud {
-    position: fixed; top: max(10px, env(safe-area-inset-top)); right: 14px; z-index: 5;
+    position: fixed; top: max(10px, env(safe-area-inset-top), var(--stage-top, 0px)); right: 14px; z-index: 5;
     text-align: right;
     color: #fff; font: 800 18px/1.3 system-ui, sans-serif; letter-spacing: 0.14em;
     text-shadow: 0 2px 0 rgba(26,20,16,0.45); user-select: none; pointer-events: none;
@@ -95,6 +100,25 @@
       }
       #pad img#padP { position: absolute; left: 0; bottom: 0; }
     }
+    /* LANDSCAPE, same treatment and the same reason (owner: "the horizontal
+       on screen arcade stick is covering too much"). `padplate_landscape_v1
+       .png` is 1400 × 466 with the drawn panel at x 119…1398, y 204…463 and
+       its yellow strip ending at y 229 — so more than HALF the image is
+       transparent air above the panel, and a full-width plate anchored to
+       the bottom stood 281 px tall on an 844 × 390 phone. That is 72% of
+       the screen for a control strip.
+
+       Cropping to the panel itself (466 − 232 = 234) leaves it 141 px, or
+       36%, with every drawn control exactly where it was — the hit areas
+       are percentages of the image box, which is unchanged. The 4.2% shift
+       is the panel's own centre (758) against the image's (700). */
+    @media (orientation: landscape) {
+      #pad {
+        left: -4.2%; right: 4.2%;
+        aspect-ratio: 1400 / 234; overflow: hidden;
+      }
+      #pad img#padL { position: absolute; left: 0; bottom: 0; }
+    }
     /* THE HIT LAYER SITS ON THE PLATE, AND IT HAS TO SAY SO. `#touch` was
        left at `z-index: auto`, which paints the whole layer — buttons,
        press tint, sticker — *underneath* `#pad` (z 5), and no z-index on a
@@ -149,6 +173,11 @@
     min-width: 44px; min-height: 44px;
   }
   html.plated #touch button svg { display: none; }
+  /* the pills are drawn on the plate, so the DOM ones lose their own shape
+     and their word — same rule as every other plated control */
+  html.plated #touch #tSel, html.plated #touch #tSt {
+    font-size: 0; border-radius: 8px; transform: translate(-50%, -50%);
+  }
   html.plated #touch button:active { background: rgba(255,255,255,0.22); }
 
   /* THE TOKO MARK AS A STICKER (owner, 2026-08-15): "can be on the game pad
@@ -200,6 +229,17 @@
   #tU { left: 107px; bottom: max(111px, calc(env(safe-area-inset-bottom) + 99px)); }
   #tA { left: auto; right: 61px; bottom: max(43px, calc(env(safe-area-inset-bottom) + 31px)); }
   #tJ { left: auto; right: -11px; bottom: max(43px, calc(env(safe-area-inset-bottom) + 31px)); }
+  /* UNPLATED fallback only (the drawn plate carries its own pills). Top
+     centre, because every other edge is taken: HOME top-left, the HUD
+     top-right, the d-pad and face buttons along the bottom — and the first
+     cut put these under Ⓐ, where the gate caught them overlapping. */
+  #touch #tSel, #touch #tSt {
+    width: 62px; height: 44px; border-radius: 22px; font-size: 10px;
+    bottom: auto; top: max(12px, env(safe-area-inset-top));
+    transform: translate(-50%, 0);
+  }
+  #touch #tSel { left: calc(50% - 36px); right: auto; }
+  #touch #tSt  { left: calc(50% + 36px); right: auto; }
 
   /* --- PORTRAIT: over the DMG face (padplate_v1.png, 1024x590) --- */
   @media (pointer: coarse) and (orientation: portrait) {
@@ -237,12 +277,19 @@
     html.plated #tJ { left: 85.2%; top: 41.9%; width: 14%; height: 24%; }
     html.plated #touch button { transform: translate(-50%, -50%); }
     html.plated #stick { left: 31.9%; top: 55.1%; width: 27%; height: 42%; }
+    /* the pills sit low and centre-right on the DMG face, angled; these are
+       generous rectangles over them rather than the drawn shapes */
+    /* two ids, to clear the unplated fallback below — which is `#touch
+       #tSel` and would otherwise win on specificity and put the pills back
+       at the top of the screen */
+    html.plated #touch #tSel { left: 47.5%; top: 88%; width: 11%; height: 13%; bottom: auto; }
+    html.plated #touch #tSt  { left: 59.5%; top: 88%; width: 11%; height: 13%; bottom: auto; }
   }
 
   /* --- LANDSCAPE: over the arcade strip (padplate_landscape_v1.png, 1400x466) --- */
   @media (pointer: coarse) and (orientation: landscape) {
     html.plated #touch {
-      position: fixed; left: 0; right: 0; bottom: 0;
+      position: fixed; left: -4.2%; right: 4.2%; bottom: 0;
       aspect-ratio: 1400 / 466; pointer-events: none;
     }
     html.plated #touch button {
@@ -259,6 +306,15 @@
     html.plated #tA { left: 75.4%; top: 70.8%; width: 9%; height: 28%; }
     html.plated #tJ { left: 83.2%; top: 65.5%; width: 9%; height: 28%; }
     html.plated #stick { left: 18.8%; top: 71.5%; width: 17%; height: 52%; }
+    /* THE 44px FLOOR IS WHY THESE ARE SPACED THE WAY THEY ARE. A declared
+       width of 4.6% is 37px on a 750px phone, and `min-width: 44px` floors
+       it back up — so the drawn pill's share of the plate does NOT decide
+       the box, the floor does. Two pills 4.6% apart therefore overlap each
+       other AND Ⓐ, which is exactly what the gate reported. The centres are
+       set from the floor instead: ≥44px apart, and ≥44px clear of Ⓐ's own
+       edge at 619px. */
+    html.plated #touch #tSel { left: 90.2%; top: 62%; width: 4.6%; height: 22%; bottom: auto; }
+    html.plated #touch #tSt  { left: 96.4%; top: 62%; width: 4.6%; height: 22%; bottom: auto; }
   }
 
   /* ---- THE STICK -----------------------------------------------------
@@ -324,10 +380,13 @@
   <button id="tU"></button>
   <button id="tA"></button>
   <button id="tJ"></button>
+  <!-- the two drawn pills, which were pictured and dead until now -->
+  <button id="tSel"></button>
+  <button id="tSt"></button>
 </div>
 <div id="boot">EERI</div>
 <script type="module" src="../hub/shell.js?v=31"></script>
-<script type="module" src="./js/main.js?v=21"></script>
+<script type="module" src="./js/main.js?v=24"></script>
 <script type="module">
   // bottom-right: the HOME button owns top-left and the HUD owns top-right.
   // Under a thumb that corner also holds the jump button (#tJ, 62px at

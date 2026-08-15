@@ -1,5 +1,187 @@
 # EERI — versions
 
+## v15.12 — 2026-08-15 — a menu on START and SELECT, and the game is 16:9
+
+Three owner notes, and the third turned out to govern the other two.
+
+**THE GAME IS 16:9, ALWAYS.** A level is *composed* — the reach budget,
+where the camera pulls back, where a hazard sits relative to the lip you
+read it from — and all of it is composed at one shape. Letting the viewport
+decide the aspect means a tall phone shows less of the room ahead than a
+laptop does, so the same jump is a different question on different
+hardware. The stage is now a fixed 16:9 box; the rest of the window is the
+room it hangs in, painted near-black because a light surround reads as the
+game being the wrong size while a dark one reads as a screen.
+
+**AND THE PAD IS NOT ON THE PICTURE.** A 16:9 stage with a control strip
+laid over its lower third is not a 16:9 stage. When a plate is up it owns
+the bottom of the screen outright and the stage fits into what is left —
+the arcade arrangement, screen above panel. The trade is real and worth
+stating: on an 844 × 390 phone the picture is 443 × 249 with black either
+side, because 16:9 *plus* a visible panel cannot be wider on that screen.
+The alternative is the panel back over the picture.
+
+**THE LANDSCAPE PANEL WAS EATING 72% OF THE SCREEN** (owner: *"covering
+too much"*). Same treatment portrait got, same measurement:
+`padplate_landscape_v1.png` is 1400 × 466 with the drawn panel at y
+204…463 — more than half the image is transparent air. Cropped to the
+panel itself it is **141 px instead of 281**, every control exactly where
+it was, and centred (the panel's own centre is x 758 against the image's
+700).
+
+**THE MENU** (`js/menu.js`), on SELECT *and* START — both plates have drawn
+those pills since the art landed and neither did anything, which is worse
+than not drawing them: a control that is pictured and dead teaches a child
+that pictures are not controls. Both open the same menu, deliberately —
+nobody should have to remember which of two identical pills is the one
+that helps. Carry on · start this bit again · go to a level (all six) ·
+language · back to the arcade. Esc and the pad's Select/Start reach it too.
+**The pause is real**: it gates the update half of the loop and the clock,
+not just input, so nothing on a timer creeps while you read.
+
+**Three traps, all specificity or floors:**
+
+- The unplated fallback (`#touch #tSel`, two ids) **outranked** the plated
+  rule (`html.plated #tSel`, one id + one class), so on a real plate the
+  pills jumped back to the top of the screen. Plated rules now carry two
+  ids of their own.
+- `min-width: 44px` is why they overlapped Ⓐ. A pill declared at 4.6% of
+  the plate is 37 px on a 750 px phone and the floor lifts it to 44 — so
+  the drawn pill's share does not decide the box, the floor does. Centres
+  are now spaced from the floor, not from the art.
+- `menu` joined the input map, so the glyph contract had to grow with it —
+  and the bound list needed deduping, because TWO buttons bind one control.
+
+Gates: rooms 147 / fx 31 / dev-menu 30 / **smoke 282** / playthrough 13 / hub.
+
+## v15.11 — 2026-08-15 — World 2 looks like World 2, and the world's curtain works again
+
+Wiring `#250`'s levels revealed two things that were only ever true while
+three levels existed.
+
+**THE GATE WAS UNREACHABLE.** A flag ends a level, a gate ends a WORLD
+(DESIGN §4.2) — and while World 1 was the whole game those were the same
+moment, so nothing had to tell them apart. The instant level 4 existed,
+raising World 1's big flag auto-advanced straight into it and the gate,
+the world's entire curtain, could never fire. **A gated level does not
+auto-advance**: the flag goes up and you walk out yourself. And the
+curtain is now a *beat* rather than an ending when there is a world behind
+it — CLOCKING OUT holds, then World 2 loads.
+
+**THE BACKDROP FOLLOWED NOTHING.** `main.js` built the diorama once at
+boot with `buildLayers(scene, 'groundworks')`, so levels 4–6 played World
+2 in front of World 1's site. The layer set had no teardown, because
+nothing had ever needed one — six full-width planes left in the scene are
+not hidden by six more, the near ones are opaque. `layers.js` gains
+`dispose()` (every plane, its geometry, material and texture, plus the
+background events' own meshes), and `goSite` swaps sets when a room
+crosses into another world. Which world a level is in is arithmetic —
+three to a world — until a world wants a name that is not its backdrop's.
+
+**And so `pipeworks_*` goes LIVE.** Painted and parked since art lineage
+v16, blocked ever since by the gate that fails a live asset nothing
+fetches. Now something fetches it. Manifest `v: 25`.
+
+**A test trap worth keeping.** The gate walked out of World 1, then
+navigated back to `/eeri/?skip#eeri-1-3` to finish its World 1 checks — and
+three of them failed. That URL differs from the open one only in its HASH,
+so it is a same-document navigation: the page never reloaded, the run
+carried on in World 2, and the checks read the wrong room while the
+address bar said 1-3. Every other address check in that file carries an
+`?a=N` for exactly this reason. It is not decoration.
+
+Gates: rooms 147 / fx 31 / dev-menu 30 / **smoke 282** / playthrough 13 / hub.
+
+## v15.10 — 2026-08-15 — World 2 has levels (PR 4 of 4)
+
+**Levels 4, 5 and 6 — the Wet Trench, the Pipe Run, the Pumphouse.** The
+world's three beats in the order `WORLD2.md` set them: water alone, then
+pipes over water, then all of it plus the hoist as the world's exam. The
+gizmos were each proved in the `LAB` before a level spent one, which is
+what the LAB is for.
+
+**The playthrough gate is the reason to believe it:** a bot finishes all
+**six** levels now, and loses the ride zero times in each. `rooms.mjs` is
+at 147 — the prover grew with the rooms rather than after them.
+
+**What this unblocks, and it is the point:** World 2's backdrop has been
+painted and parked since art lineage v16, and the `pipeworks_*` manifest
+entries could not be flipped to `live` because the smoke gate fails any
+live asset nothing fetches — and nothing asked for world 2. Now something
+does.
+
+**Still to wire:** `main.js` builds the diorama ONCE at boot with
+`buildLayers(scene, 'groundworks')`, so levels 4–6 currently play in front
+of World 1's site. The layer set has no teardown, so swapping worlds is a
+real change to `layers.js` (Art lane) rather than a one-line argument.
+Named here so it is not mistaken for the levels being wrong.
+
+Gates: rooms 147 / fx 31 / dev-menu 30 / smoke 274 / **playthrough 13** / hub.
+
+## v15.9 — 2026-08-15 — the hoist: the first solid thing that is not a tile (World 2, PR 3 of 4)
+
+> Submitted as v15.4 — a number already spent, and four releases behind
+> by the time it merged. Renumbered at the merge per LEVELCRAFT.md §7.
+
+**The expensive item of world 2, and it is expensive for one reason.** Every
+other floor in this game is a character in the grid: collision is a lookup,
+meshes are built once per room, and nothing in `Player` has any concept of
+standing ON something — entity contact has only ever been a one-frame
+impulse (`bounce`, `struck`) after which you are airborne. A floor that
+MOVES can be none of those, which is why the gizmo kit stopped at the tile
+line on purpose (v14) and why this is its own release.
+
+**`js/hoist.js`** is an entity shaped exactly like `robots.js`'s — it takes
+the room's group, adds its meshes to it, answers `update(dt, reduced)`.
+Everything it makes lives inside that group or it leaks on a level change.
+It moves **vertically only**: a lift is what level 6 asks for, and one that
+also slid sideways would have its carry arguing with the player's own run.
+
+**The motion is a TRIANGLE, not a sine**, and that is a design decision
+rather than a shortcut. You have to *wait* for a hoist, and waiting is only
+fair if the arrival is predictable — a sine spends most of its time near the
+ends and reads as a lift that hesitates.
+
+**The carry is one pass in `Player.update`, after the tile pass** — so a
+tile always wins, and standing on real ground is never overridden by a hoist
+passing underneath. It distinguishes two cases that look the same and are
+not:
+
+- **LANDING** — falling, and the feet *crossed* the deck between frames.
+  Tested as a crossing rather than an overlap, or a fast fall tunnels
+  straight through a platform one tile thick.
+- **RIDING** — already carried, still over it, not jumping. **This is the
+  one that matters**: a rising hoist comes UP into the feet, so the crossing
+  test can never fire, and without this branch the player sinks through a
+  lift travelling towards them. `player.carrier` is kept across frames
+  because that is the only way to tell the two apart.
+
+**Four rules, four rooms broken on purpose** — the ladder's contract
+generalised, plus one a ladder never needed: a hoist that tops out with
+nowhere to step off · one whose shaft runs through solid tile · one that
+carries you into a **ceiling** (a ladder is static, so if it clears once it
+clears forever; a hoist is only wrong for the half of the cycle you are not
+watching) · one that goes nowhere.
+
+**And the reach model learns it**, paid on the way in rather than after the
+lab complains: anything within a jump of any height the hoist passes through
+is reachable. That debt is now paid three times — tarp, pipe, hoist.
+
+`prefers-reduced-motion` **parks it at the bottom** rather than freezing it
+mid-shaft, where it would be a floor nobody could reach and a level nobody
+could finish. The game stays completable with the animation off.
+
+Gates, each run singly: rooms **103/0**, smoke **265/0**, playthrough
+**7/0**. The browser gate proves physics rather than a state flag: he lands
+on it, it carries him up, a jump lets go, and he is never left inside a tile.
+
+**Still open, and deliberately PR 4's:** the playthrough bot does not know
+how to wait for a lift — it holds `right` every tick on foot, which walks it
+off a platform. No level has a hoist yet, so nothing stalls today; it must
+land with levels 4–6, which is where it can actually be exercised.
+
+**SHARED files touched:** `js/main.js` (build, update, debug hooks).
+
 ## v15.8 — 2026-08-15 — the bucket wakes, and the dev pack gets its five rows
 
 **A fourth enemy: the bucket.** `WORLD2.md` §3 level 5 asks for it and the
@@ -98,66 +280,18 @@ Gates: 99 / 31 / 30 / **269** / 7 / hub.
 > the levels PR before it, and 15.4/15.5 shipped while this was open — so
 > it lands as **15.6**. The lesson is in `LEVELCRAFT.md`: a number is
 > claimed at MERGE, not at authoring.
-
-**World 2's cheap two thirds** (`WORLD2_PLAN.md` PR 2). None of it is spent
-in a level yet — it is proved in the `LAB`, which exists for exactly that,
-because one idea per level means a new gizmo cannot be dropped into levels
-1–3 without making each of them two levels.
-
-**WATER, and it does not drown him.** DESIGN §4.1 is absolute — Eeri is
-never hurt, never dies, has no health bar — so the two kinds add no new way
-to lose. **Shallow** is a tile (`~`), solid, and the whole behaviour is one
-read in the player's step: it caps the run at 55%, measured in the gate as a
-race rather than by reading the constant back out (3.41 against 6.20 tiles a
-second). **Deep** is a `pit` wearing different paint, so `fallRespawn`
-already hands you to the near lip with nothing new written.
-
-**THE TRAP THIS NEARLY WALKED INTO, and it is the tarp's scar again.** A
-running jump carries `run speed × airtime`, so a takeoff **out of water**
-carries **2.67 tiles, not 4.85** — and a gap after a puddle looks exactly
-like a gap in a room listing. `REACH` now carries `jumpAcrossWading` and
-`gapWading`, and `check()` measures a gap against the waded budget when its
-takeoff lip is wet. Without it the prover would have cheerfully passed rooms
-nobody could finish, which is the failure mode the kit already has a scar
-from: *anything that changes where the player can get to must be added to
-the reach model.*
-
-**THE PIPE** — a tube you go inside, and level 5's idea. It is not a tile: a
-tile is a place, and a pipe is a pair of places plus the trip between them,
-so it is a `mode` like the mount rather than a character like the belt. He
-is out of the world while it runs, which is why it is a mode and not a
-teleport — nothing can touch him in transit. Its `check()` contract is **the
-ladder's, generalised**: both mouths must be standable and neither may be
-buried, because *a pipe that delivers you into mid-air is a ladder that tops
-out in mid-air, lying down*. The far mouth gets a cooldown, or it swallows
-him back on the next frame and the trip becomes a loop he cannot leave.
-
-**THE `pump` VERB, and the three tables that must move together.** Two of
-the three fail *silently*, which is why this is worth a paragraph:
-`MACHINE_REACH` throws on an unknown machine (loud, fine); `MACHINE_SPEED`
-falls back to `|| 3`; and `rideTime()`'s if/else had no `else`, so a new verb
-left `work` at 0 and `estimate()` under-counted the ride with nothing to
-show for it. **It throws now.** The pipe-layer needs no new verb at all —
-seating a pipe section IS the excavator's `span`, re-dressed, which is what
-makes it the cheap second machine of the pair.
-
-**And the tile contract is checked rather than trusted.** `TILES` is
-documentation — nothing imports it — while `SOLID_CHARS` is what the game
-reads, so the two could drift apart in silence. `parts.js` now proves they
-agree at import time.
-
-Six new rules, each with a room broken on purpose: shallow water over a
-hole · deep water with no dry lip to be handed back to · a gap taken out of
-water · a pipe into mid-air · a pipe buried in tile · a pipe that goes
-nowhere.
-
-Gates, each run singly: rooms **99/0**, smoke **260/0**, playthrough **7/0**.
-
-**SHARED files touched, and named because the lanes rule says to:**
-`js/main.js` (the piping mode, the debug hooks), `js/palette.js`
-(`WATER`/`WATER_DK` — two roles, because telling shallow from deep is the
-level's real difficulty and they must read apart at 32 px), and `js/lang.js`
-(`hPipe`, in all three languages).
+> **VERSIONS ARE DECIMAL from v15 (2026-08-14).** `vMAJOR.MINOR` — the
+> integer is a milestone, the decimal an increment on it. Three lineages of
+> this project each burned whole integers on ordinary work and then collided
+> on them (there were two v11s and two v13s); a minor part gives increments
+> somewhere to go that is not the next milestone's number.
+>
+> **The `?v=` module tokens stay integers.** They are cache-busters, not
+> releases — they track every module-graph change, and the release number
+> tracks what shipped. `scripts/versions.mjs` reads both and emits a label
+> (`"15.1"`) plus a sort key (`15001`), because one number cannot do both
+> jobs: a label cannot be compared (`'15.10' < '15.9'` lexically) and a
+> float cannot be displayed (`15.0` prints as `15`).
 
 
 ## v15.5 — 2026-08-15 — the plate is cropped, the bank says dig, the mark is a sticker

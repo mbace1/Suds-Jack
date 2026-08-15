@@ -152,22 +152,6 @@ trench, with a hard hand-cut edge, the same way felt is the grass lip.
 Tropical Freeze's seasoning is one moment in five — the pumphouse
 silhouette at level 6, and nothing else.
 
-<<<<<<< HEAD
-### 3.1 The backdrop set — `pipeworks_*` (blocks all three levels)
-
-The single biggest item, and the only one that blocks every level equally.
-**Same rects and PNG sizes as `groundworks`** — the table in
-`assets/README.md` is the contract and `smoke.cjs` measures against it:
-
-| layer | z | world rect | PNG size |
-|---|---|---|---|
-| `pipeworks_sky_v1.png` | −48 | −60…170 × −6…40 | 4096 × 1380 |
-| `pipeworks_skyline_v1.png` | −30 | −30…130 × 0…30 | 4096 × 900 |
-| `pipeworks_far_v1.png` | −14 | −20…120 × 0…20 | 4096 × 600 |
-| `pipeworks_mid_v1.png` | −6 | −12…110 × 0…14 | 3660 × 420 |
-| `pipeworks_near_v1.png` | −2 | −8…104 × 0…8 | 3360 × 240 |
-| `pipeworks_fore_v1.png` | +2.2 | −8…104 × −2…14 | 3360 × 480 |
-=======
 ### 3.1 The backdrop set — `pipeworks_*` — **ALREADY PAINTED**
 
 > **Corrected 2026-08-15.** This section used to call the backdrop "the
@@ -199,7 +183,6 @@ does not. Also on disk and unaccounted for by any manifest entry:
 The rest of this section is the brief the five were painted to, kept because
 it is still what the `sky` needs and still what a repaint would be judged
 against.
->>>>>>> origin/claude/eeri-platformer-levels-dtfh0x
 
 Each layer keeps the **job** `assets/README.md` gives it, re-dressed:
 
