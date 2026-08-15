@@ -256,6 +256,39 @@ per level — `goldenGot` is currently reset with the level (`main.js`), and
 this needs a per-world tally that survives a retry. Infinite retries are
 already the rule (§4.1), so a golden bolt found once stays found.
 
+## 4.4 The game speaks three languages (v15.1)
+
+House convention across this whole site, and Eeri had none until v15.1 —
+which means the **Finnish six-year-old it is built for had been reading it
+in English** for fourteen versions. `js/lang.js` is the pack.
+
+- **fi / en / ja**, with **English as the per-KEY fallback**, so a
+  half-finished language ships rather than not shipping.
+- The tongue is **detected once** from the browser and then obeyed; a
+  choice made on the title screen persists and beats detection forever.
+- `<html lang>` is written before anything paints.
+- **The glyphs do not translate.** ◀ ▶ ▲ ▼ Ⓐ Ⓑ are the same in all three,
+  which is half the reason §5's no-key-names rule exists.
+
+**What this means for art: no text in any asset, ever.** A painted sign, a
+hoarding, a UI element with a word in it is a thing that can only be made
+three times or be wrong twice. `ART_BRIEF.md` §4 already says art-text must
+be locale-free; this is why. Numerals and glyphs are fine.
+
+**The title screen** (`js/intro.js`) carries the game's one line of story,
+in the player's language — owner's words, the Finnish being the source:
+
+> **eeri** — *seikkailee työkoneiden ja robottien maailmassa*
+
+It goes up **before** the scene builds and is awaited after it, so the name
+and the story are what you read while the layer art loads. `?skip` walks
+past it, which is what every test gate uses.
+
+**Honest caveat, recorded rather than hidden:** the Japanese is written by
+someone who does not speak it natively — the same position as
+`toko/js/dialogue.ja.js`, which carries the same note. Treat it as a draft
+until somebody reads it.
+
 ## 5. Controls — house convention, not a per-game choice
 
 **Controller first, touch always, and prompts that name neither a key nor
@@ -286,7 +319,9 @@ second. Small enemies and gizmos are now the top of the list.
 
 ### 6.1 Already live — do not remake
 `eeri_v3.glb` (skinned; clips idle/walk/run/jump/sit) · `excavator_v1.glb`
-· the five `groundworks_*` layer PNGs.
+· the `groundworks_*` layer set (v2, crafted) + `groundworks_sky_v1` ·
+the four material detail maps (card / felt / balsa / flute) ·
+**the button glyph set** (§6.4 — drawn in code, v15.1).
 
 ### 6.2 Needed next, in priority order
 
@@ -327,10 +362,56 @@ you ride in the bed of, a pipe-layer, a roller, a cherry-picker that
 lifts, an amphibious dredger for the water world, a floodlight rig for the
 evening one.
 
-### 6.4 UI art, now that controls are settled (§5)
-Button glyphs for the on-screen pad and every in-game prompt: ◀ ▶ ▲ plus
-Ⓐ and Ⓑ in the machine-yellow/ink pair. **No key caps, no mouse icons,
-ever.** One set, used by the touch buttons and the hint line alike.
+### 6.4 UI art — **the glyph set is BUILT** (v15.1)
+
+`js/glyphs.js` ships it, drawn in code as inline SVG. **Do not remake it as
+a sheet unless you are replacing it deliberately** — there is a seam for
+that (`useGlyphSheet()`), but the drawn set is the default for three
+reasons that are not laziness: one set has to serve a **13px hint line and
+a 62px touch button**, and only a vector survives that range; it recolours
+through `currentColor`, so the machine-yellow/ink pair is a CSS edit rather
+than a re-export; and a glyph set that is a file drifts from the game that
+uses it, which is the failure this repo keeps paying for.
+
+The owner's direction it was built to (2026-08-14): *"those buttons can
+have small pic of the action or icon of the character in motion, like old
+arcades with illustrated backboards."* So a button is **not an arrow** — it
+carries a picture of the thing it does, and where that thing is something
+Eeri does, the picture is Eeri doing it:
+
+| control | the picture |
+|---|---|
+| ◀ ▶ | Eeri running, mirrored, with a small direction tick |
+| ▲ | Eeri climbing a ladder — the ladder is in the picture because "up" is climb on foot and boom-up in a cab, and the ladder says which |
+| ▼ | a bucket digging |
+| Ⓐ | Eeri jumping — the same pose reads as the stomp, which is the same button |
+| Ⓑ | Eeri stepping up onto a machine — the one action about the MACHINE rather than about him |
+
+**The pad layout is owner-specified** and the smoke gate asserts it: `▲`
+above, `◀ ▼ ▶` below, **down in the middle** because it is the least-used
+direction and the middle is hardest for a thumb to hit by accident, while
+◀ ▶ keep the outside where the thumb rests. Never more than two rows — a
+landscape phone is short, and a full four-way cross has been tried and
+pushed the hint line into the middle of the picture.
+
+**No key caps, no mouse icons, ever.** Still true, and now also true of the
+prompts in all three languages — the gate checks every pack.
+
+### 6.4.1 The title logo — **art's next UI item**
+
+Owner, 2026-08-14: *"I will ask art to make a logo around the character."*
+A logotype with Eeri **in** it, not beside it. The game ships a plain
+code-drawn wordmark until the file lands and falls back to it if the file
+404s, so this is never blocking.
+
+Full contract in `assets/README.md`: `assets/2d/eeri_logo_v1.png`, **1120 ×
+440** (2× the intro's 560px cap), mark inside the middle 90%, and it must
+read against the intro's **sky-blue gradient with no box behind it** — INK
+outline, MACHINE yellow fill. Flip `ui.logo.status` to `"live"`, bump the
+manifest `v`, done.
+
+The story line under it is **text, not art** (`js/lang.js`) — it is
+translated into three languages and a picture of a sentence cannot be.
 
 ### 6.5 Not yet
 A fourth machine. More sites than the layer sets above cover. Do not start
