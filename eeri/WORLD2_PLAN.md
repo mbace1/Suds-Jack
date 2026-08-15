@@ -49,16 +49,22 @@ for exactly this reason. **Do that before you start.**
 
 ## 1. Four pull requests, not one
 
-The whole of World 2 is **20–30 agent-hours**. As a single PR that is a diff
-nobody can review, and it welds a risky engine change to routine level
-authoring. Split it:
+The whole of World 2 is **18–27 agent-hours** — revised down, because the
+backdrop set turned out to be already painted (see §0.2). As a single PR
+that is a diff nobody can review, and it welds a risky engine change to
+routine level authoring. Split it:
 
 | # | scope | effort | risk | blocks |
 |---|---|---|---|---|
+| **0** | **Art lane: flip `pipeworks` to `live`**, add `sky` | ~0.5 h | low | nothing (levels grey-box without it) |
 | **1** | **Docs** — `LEVELCRAFT.md`, `WORLD2.md` revision | 1–1.5 h | low | nothing |
 | **2** | **Water + pipe + `pump`** | 4–5 h | low–medium | levels 4, 5 |
 | **3** | **The hoist, alone** | **4–8 h** | **high** | level 6 beat 3 |
 | **4** | **Levels 4–6 + the bot + docs alongside** | 8–10 h | medium | — |
+
+**PR 0 is the Art lane's and is nearly free** — the paintings exist and
+measure to the contract; it is a status flip plus the missing `sky`. It does
+not block anything, because levels grey-box on the code placeholder.
 
 PR 1 and 2 can merge while 3 is still being fought with. **PR 3 is isolated
 deliberately** so it can be reverted without taking the levels with it.
@@ -100,17 +106,24 @@ example, the `check()` checklist, and the trap list. `LEVELCRAFT.md` should
 
 ### `WORLD2.md` revision
 
-Two edits only:
-
 1. **Promote the hoist from fallback to committed** (owner's call). Keep the
    honest costing — it is still the only expensive item and the reason is
    still true.
-2. **Name the actual tooling.** The backdrop set is **0 credits and already
-   built**: `art-src/tools/build-layers.mjs` composites a generated segment
-   into the game's exact layer PNGs, and `art-src/craft/README.md` holds the
-   style block to reuse *verbatim*. A pipes concept already exists at
-   `art-src/g8-pipes.webp`. World 2's backdrop is the cheapest item in the
-   world, not the dearest — the draft had this backwards.
+2. **The backdrop is DONE — done in this PR.** §3.1 used to call it "the
+   single biggest item". The art lane had already built it and parked it
+   (art lineage **v16**, *"world 2's backdrop, built ahead of need"*). Five
+   `pipeworks_*` PNGs are on disk and **measure to the contract exactly**.
+   §3.1 now says so.
+
+   What remains is a **status flip in `assets/manifest.json`**, not a
+   painting job — and it is the **Art lane's**, not Design/Level's. Two
+   loose ends for them: `pipeworks_sky` does not exist (groundworks ships
+   one), and `f_pipe_v1.png` is on disk with no manifest entry.
+
+**This is the second time in two days that a plan was written against work
+that already existed.** Both times the cause was the same — not looking at
+the other lane before estimating. §0 records the first. Check `git log` and
+`ls assets/2d/` before costing anything in this file.
 
 ---
 

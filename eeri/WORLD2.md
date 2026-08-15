@@ -140,20 +140,37 @@ trench, with a hard hand-cut edge, the same way felt is the grass lip.
 Tropical Freeze's seasoning is one moment in five — the pumphouse
 silhouette at level 6, and nothing else.
 
-### 3.1 The backdrop set — `pipeworks_*` (blocks all three levels)
+### 3.1 The backdrop set — `pipeworks_*` — **ALREADY PAINTED**
 
-The single biggest item, and the only one that blocks every level equally.
-**Same rects and PNG sizes as `groundworks`** — the table in
-`assets/README.md` is the contract and `smoke.cjs` measures against it:
+> **Corrected 2026-08-15.** This section used to call the backdrop "the
+> single biggest item". It is not an item at all any more: the **art lane
+> built it ahead of need and parked it** (art lineage v16, *"world 2's
+> backdrop, built ahead of need and parked"*). Five PNGs are on disk now.
+>
+> Measured against the contract, all five are **painted to size exactly**:
 
-| layer | z | world rect | PNG size |
-|---|---|---|---|
-| `pipeworks_sky_v1.png` | −48 | −60…170 × −6…40 | 4096 × 1380 |
-| `pipeworks_skyline_v1.png` | −30 | −30…130 × 0…30 | 4096 × 900 |
-| `pipeworks_far_v1.png` | −14 | −20…120 × 0…20 | 4096 × 600 |
-| `pipeworks_mid_v1.png` | −6 | −12…110 × 0…14 | 3660 × 420 |
-| `pipeworks_near_v1.png` | −2 | −8…104 × 0…8 | 3360 × 240 |
-| `pipeworks_fore_v1.png` | +2.2 | −8…104 × −2…14 | 3360 × 480 |
+| layer | z | world rect | PNG size | on disk |
+|---|---|---|---|---|
+| `pipeworks_sky_v1.png` | −48 | −60…170 × −6…40 | 4096 × 1380 | **missing** |
+| `pipeworks_skyline_v1.png` | −30 | −30…130 × 0…30 | 4096 × 900 | ✅ 4096×900 |
+| `pipeworks_far_v1.png` | −14 | −20…120 × 0…20 | 4096 × 600 | ✅ 4096×600 |
+| `pipeworks_mid_v1.png` | −6 | −12…110 × 0…14 | 3660 × 420 | ✅ 3660×420 |
+| `pipeworks_near_v1.png` | −2 | −8…104 × 0…8 | 3360 × 240 | ✅ 3360×240 |
+| `pipeworks_fore_v1.png` | +2.2 | −8…104 × −2…14 | 3360 × 480 | ✅ 3360×480 |
+
+**What is left is a status flip, not a painting job.** All six entries are
+`"placeholder"` in `assets/manifest.json`; flipping the five that exist to
+`"live"` and bumping the manifest `v` is the whole of it, and `smoke.cjs`
+will measure them on the way in. **That flip is the Art lane's, not
+Design/Level's** — `assets/**` and the manifest are theirs.
+
+The one genuine gap is **`sky`**: `groundworks` ships one and `pipeworks`
+does not. Also on disk and unaccounted for by any manifest entry:
+`f_pipe_v1.png` (256×137), which looks like a foreground pipe prop.
+
+The rest of this section is the brief the five were painted to, kept because
+it is still what the `sky` needs and still what a repaint would be judged
+against.
 
 Each layer keeps the **job** `assets/README.md` gives it, re-dressed:
 
