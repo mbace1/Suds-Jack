@@ -8,7 +8,7 @@
 // had — fails `test/rooms.mjs` rather than stranding somebody halfway.
 //
 // THE SHAPE OF A LEVEL (DESIGN §4, the owner's Mario/Yoshi direction), and
-// it is why these three rooms are laid out the way they are:
+// it is why these rooms are laid out the way they are:
 //
 //   ONE IDEA PER LEVEL, IN FOUR BEATS. Introduce it alone and safe · vary
 //   it · combine it with something already known · test it once, at the
@@ -23,6 +23,7 @@
 //   1 — THE STOMP. Small things you land on. Nothing else is new.
 //   2 — THE CLIMB. Ladders and decks; the room stops being a corridor.
 //   3 — BOTH, and the crane. The big one, and the world's own ending.
+//   4 / WORLD 2-1 — THE WADE. Water can be floor, slowdown, or a soft reset.
 
 import {
   ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm,
@@ -246,6 +247,73 @@ export const ROOMS = [
 
       shot(24, 36, { z: 38, y: 3.0 }),
       shot(60, 96, { z: 43, y: 3.6, lead: 2.0 }),
+    ],
+  },
+
+  // ── LEVEL 4 / WORLD 2-1 — THE WET TRENCH ────────────────────────────
+  // WATER is the one new idea. Shallow water first slows the run with no
+  // threat; deep water then asks for the same jump the player already owns
+  // and returns Eeri to the near lip rather than hurting him.
+  //
+  // The excavator/bank at the peak is intentionally a GREYBOX PROXY for the
+  // planned pump/flooded-trench ride. It uses a verb already proved in World
+  // 1, so this level can be played and tuned now while art/engineering swap
+  // the proxy for the pump later without changing the water lesson.
+  {
+    name: 'LEVEL 4 — THE WET TRENCH',
+    idea: 'water as a floor',
+    parts: [
+      ground(),
+      startAt(4.5),
+      boltRun(5, 6, 13),
+      boltRun(6, 6, 13),
+
+      // ── 1 · INTRODUCE ── a single broad shallow puddle on flat ground.
+      // Nothing attacks, jumps or moves here: walking slower IS the lesson.
+      shallow(15, 22),
+      boltRun(5, 15, 22),
+      boltRun(6, 15, 22),
+      golden(7, [20]),
+
+      // ── 2 · VARY ── first bring a known hopper into the slow floor, then
+      // put a short DEEP cut beyond a dry takeoff and draw the jump in bolts.
+      shallow(25, 31),
+      hopper(27, 31),
+      boltRun(5, 25, 31),
+      boltRun(6, 25, 31),
+      deep(35, 36),
+      boltArc(5, 34, 37, 2),
+      golden(7, [35]),
+      boltRun(5, 38, 45),
+      boltRun(6, 38, 45),
+      checkpoint(46),
+
+      // ── 3 · COMBINE ── wade, regain dry footing, jump the deep channel,
+      // then meet a roller on the far bank. The dry strip before the jump is
+      // deliberate: this is a reading/timing test, not a speed-budget trap.
+      shallow(48, 50),
+      boltRun(5, 48, 50),
+      boltRun(6, 48, 50),
+      boltRun(5, 51, 52),
+      boltRun(6, 51, 52),
+      deep(54, 55),
+      boltArc(5, 53, 56, 2),
+      roller(59, 64),
+      boltRun(5, 59, 64),
+      boltRun(6, 59, 64),
+
+      // ── 4 · TEST / RIDE ── familiar tool use, new context. For this
+      // greybox the tall silt bank stands in for the flooded trench lock.
+      machine('excavator', 68, [60, 92]),
+      boltRun(5, 67, 70),
+      bank(82, 86, 3),
+      boltRun(5, 88, 91),
+      golden(7, [90]),
+      flagAt(93),
+
+      shot(12, 32, { z: 38, y: 3.0 }),
+      shot(32, 60, { z: 40.5, y: 3.3, lead: 1.8 }),
+      shot(58, 96, { z: 42, y: 3.5, lead: 2.0 }),
     ],
   },
 ];
