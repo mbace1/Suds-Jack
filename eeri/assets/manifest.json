@@ -1,5 +1,5 @@
 {
-  "v": 21,
+  "v": 22,
   "_readme": "The asset seam. Every entry is either 'placeholder' (the game builds it in code) or 'live' (the game loads the file). Dropping an asset in = put the file at its path, flip status to live, bump the file's v token. The smoke gate reads this file: live entries must resolve and models must expose their contracted nodes. See assets/README.md for the full contract.",
   "models": {
     "eeri": {
@@ -304,14 +304,19 @@
   "_textures_readme": "THE MATERIAL PALETTE. Greyscale detail maps, each MULTIPLIED onto a palette colour (assets.js getTexture) \u2014 never a colour source. Crafted World is a KIT of materials, not one material: card is the ground, felt is the grass, painted balsa is everything the cast is built from. A surface picks the map that matches what it would really be made of.",
   "ui": {
     "logo": {
-      "file": "2d/logo_v1.png",
+      "file": "2d/logo_v2.png",
       "status": "live",
-      "_note": "The game logo for the LANDING SCREEN. Site-hoarding plate for structure, cut-card letters standing proud for warmth, and the dino crest on the first E so it belongs to the kid rather than to the site. Three directions were tested (art-src/title/); this is the hybrid. There is no title state in the build yet \u2014 the game boots straight into SITE 1 \u2014 so mounting it is Design/Level work."
+      "_note": "The landing-screen logo, v2 per owner: \"needs to have Eeri the character involved, coming towards the camera pov from top of the text box, waist up.\" He leans over the sign's top edge like a kid over a fence \u2014 body behind the plate, head and hands breaking above it. Built with --ref E1-eeri-tpose so he is the SAME kid as the cast model, not a re-imagining. v1 (the plain sign) is superseded and removed; the three direction tests live in art-src/title/."
     },
     "padplate_portrait": {
       "file": "2d/padplate_v1.png",
       "status": "live",
       "_note": "The touch-control backboard for PORTRAIT phones (owner: \"the game pad look is great and should be implemented in the vertical phone use case\"). The original Game Boy DMG face in painted card \u2014 d-pad, A/B on a slant, SELECT/START pills, speaker grill cut clean through (its slots key to transparent). The live DOM buttons become transparent hit areas over the drawn controls, keeping DESIGN \u00a75's 44px targets. LANDSCAPE gets its own plate \u2014 wider and thinner, arcade control-panel rather than handheld \u2014 as `padplate_landscape`; stretching this one is not that."
+    },
+    "padplate_landscape": {
+      "file": "2d/padplate_landscape_v1.png",
+      "status": "live",
+      "_note": "The LANDSCAPE touch backboard (owner: \"wider and thinner look, maybe more arcade background board feel\"): an arcade cabinet control-panel strip \u2014 joystick ball far left, B/A far right with SELECT/START and the grill, and the whole middle deliberately EMPTY, because in landscape the middle of the screen is the game. Not a stretch of the portrait plate."
     }
   }
 }

@@ -1,5 +1,30 @@
 # EERI — versions
 
+## v22 — 2026-08-14 — Eeri leans over his own logo, and landscape gets its arcade plank
+
+Both from owner notes on v21, same day:
+
+- **`logo_v2.png`** — "needs to have Eeri the character involved, coming
+  towards the camera pov from top of the text box, waist up." He leans over
+  the sign's top edge like a kid over a fence: body behind the plate, head
+  and hands breaking above it. Built with `--ref E1-eeri-tpose` so he is the
+  SAME kid as the cast model rather than a re-imagining — the ref carries
+  the character, the sign is ours and is described. v1 removed.
+- **`padplate_landscape_v1.png`** — "wider and thinner look, maybe more
+  arcade background board feel." Not a stretch of the portrait DMG plate but
+  a different object: an arcade cabinet control-panel strip, joystick ball
+  far left, B/A + SELECT/START + grill far right, and the whole middle
+  deliberately EMPTY — in landscape the middle of the screen is the game.
+
+The portrait DMG plate is unchanged and now named `padplate_portrait`.
+Mounting all three (title state, per-orientation plates, transparent hit
+areas over the drawn controls) is Design/Level + shared-file work.
+
+Known open from v21 stands: the walk-out-of-site-1 check still fails (188 of
+189) and is still not isolated.
+
+Gates: 188 smoke + 30 rooms, 1 known failure.
+
 ## v20 — 2026-08-14 — the pickups are 3D, and the gate learns a third rig
 
 DESIGN §6.3's collectables. The bolt now comes through the asset seam
