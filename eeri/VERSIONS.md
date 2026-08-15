@@ -14,6 +14,89 @@
 > float cannot be displayed (`15.0` prints as `15`).
 
 
+## v15.2 — 2026-08-15 — every level has an address, and falls stop teleporting
+
+**`EERI 1-1`** (owner's direction, and it is Mario's scheme because that is
+the one every parent already reads). World and level, both 1-based, three
+levels to a world exactly as DESIGN §4.1 fixes it — so `1-3` closes world
+one and `2-1` opens world two. It is a URL: `/eeri/#eeri-1-2` boots straight
+into that room, which is what makes a level shareable for a playtest.
+
+**It is a naming layer, not a second list.** `js/levelid.js` is pure — no
+three.js, no DOM, so `test/rooms.mjs` proves the mapping in plain Node — and
+the game still runs on one flat index with `goSite(i + 1)` as the whole of
+"next level". No room knows which world it is in, because the mapping is
+arithmetic over the index.
+
+Four decisions:
+
+- **The address space is the whole planned twelve from the start.** A level
+  is addressable the moment it is authored, so `#eeri-2-1` is a link
+  somebody can hold before world 2 is built: it opens **1-1** rather than a
+  black screen, and so does nonsense.
+- **Forgiving in, canonical out.** `#eeri-1-2`, `#EERI-1-2` and `#1-2` all
+  mean the same level — the failure mode is a child or a parent typing it —
+  and the bar is rewritten to the full form afterwards.
+- **`replaceState`, never `location.hash =`.** Assigning fires `hashchange`
+  back at the handler that just changed the level, and the game reloads the
+  room it is already standing in. `gameoflife` documents the same trap.
+- **The HUD prints the address beside the name** (`1-2 · LEVEL 2 — THE
+  SCAFFOLD`) and so does the tab title.
+
+It composes with the title screen rather than fighting it: the intro is
+`?skip`-able for the gates and the address is a fragment, so `?skip#eeri-1-2`
+is a level and `#eeri-1-2` alone is the title screen then that level.
+
+### the bug, and it was live on the trunk
+
+**Falls used a hardcoded `x = 43`.** `Player.update`'s fall handler carried a
+LEVEL 2 coordinate — it sits at that room's third ladder — left behind by a
+debugging session, so *every* fall in *every* level teleported the kid there,
+bypassing `level.fallRespawn()`, which already existed and already did the
+right thing (the near lip of whichever hole took you, else the last
+checkpoint passed).
+
+Found by the **playthrough gate**, the only one of the four that could see
+it: `rooms.mjs` proves a room is reachable and cannot watch a fall, and a
+human reads it as "the game put me somewhere odd". The owner's experience
+analysis filed the same thing as **P0** independently. The general lesson is
+new to this log: **a debug constant in shipping code outlives the debugging
+session.**
+
+### and two documents
+
+**`LEVEL2.md`** — the worked example. Every level here is cut from one shape,
+so one level is documented completely: the four beats object by object with
+real coordinates, the skill ladder it sits on, the `check()` rules that bite
+on it, what building it taught, and where it still falls short against the
+owner's analysis. Every number is read out of the compiler, and the file
+carries the snippet to regenerate them.
+
+**`WORLD2.md`** — the grey box for Pipeworks (DESIGN §4.2). Theme, three
+levels on the four-beat pattern, the art queue with the `pipeworks_*` layer
+table matching the rects `smoke.cjs` measures, two machines on the
+excavator's node contract, and an honest costing: water and the pipe are
+cheap re-dresses, the hoist is not — every solid in this game is a tile and a
+moving platform cannot be one. **Not a to-do list:** the owner's analysis
+says explicitly not to prioritise more levels yet.
+
+### the reconciliation this entry is landing through
+
+This work was built on a branch that had assembled the three lineages
+**independently of `main` doing the same thing**, because the branch was
+started without the `git fetch origin main gh-pages` that CLAUDE.md's Eeri
+section requires. Both trees then wrote a v12, a v14 and a v15 with different
+content — a fourth lineage, and exactly the collision the decimal scheme
+above was introduced to stop.
+
+`main` won on every overlap, because `main` is the trunk: its assembly, its
+`v15.1` language/title/FX pack, its decimal versioning, its `REACH.gap` of 4.
+Only the work `main` did not have was carried across — the respawn fix, the
+address, and the two documents — re-applied against `main`'s newer
+`main.js`, `smoke.cjs` and `rooms.mjs` rather than merged, since a merge
+reported 23 conflicts and would have deleted eight modules. The abandoned
+branch's own `v15`/`v16` numbering is void; nothing referenced it.
+
 ## v15.1 — 2026-08-14 — three languages, a title screen, an illustrated pad, and the dev/FX pack
 
 Four owner asks in one pass, and one of them was overdue by fourteen
