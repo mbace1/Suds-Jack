@@ -77,6 +77,8 @@ console.log('\nthe hooks the pack reads still exist');
     'press', 'release', 'setPos', 'excPos', 'bank', 'girder', 'wall',
     'stomps', 'robots', 'vents', 'counts', 'cleared', 'rooms',
     'goSite', 'goLab', 'tris', 'camera',
+    // the five rows ported from PR #235 (dev/README.md)
+    'tame', 'dig', 'invincible', 'boxes',
   ];
   const missing = NEEDED.filter((h) => !new RegExp(`^\\s+${h}:`, 'm').test(main));
   ok(`main.js still exports every debug hook the pack reads${missing.length ? ' — missing: ' + missing.join(', ') : ''}`,
