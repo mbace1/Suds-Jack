@@ -16,7 +16,6 @@ All files here are **optional source pieces**, not production manifest entries.
 ## Foreground / crossings
 
 - `foreground/walkway-crossing-a.png` — raised cardboard service walkway with yellow handrail; suitable for a high crossing/occluder.
-- `foreground/pipe-wall-crossing-a.png` — wide pipe-and-wall assembly for layered foreground/midground use.
 
 ## Accents / smaller dressing
 
