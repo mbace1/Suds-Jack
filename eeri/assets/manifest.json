@@ -1,5 +1,5 @@
 {
-  "v": 22,
+  "v": 23,
   "_readme": "The asset seam. Every entry is either 'placeholder' (the game builds it in code) or 'live' (the game loads the file). Dropping an asset in = put the file at its path, flip status to live, bump the file's v token. The smoke gate reads this file: live entries must resolve and models must expose their contracted nodes. See assets/README.md for the full contract.",
   "models": {
     "eeri": {
@@ -107,7 +107,7 @@
       "file": "3d/bolt_v1.glb",
       "status": "live",
       "rig": "prop",
-      "_note": "The breadcrumb collectable, hundreds per level. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). Texture kept (not stripped to a `paint` role) because a Meshy prop is one mesh_node and the grey collar against the yellow IS the read at 32 px."
+      "_note": "The breadcrumb collectable, hundreds per level. A PICKUP: origin at its CENTRE. Remeshed to 500 tris / 64px texture / 43 KB \u2014 the first cut shipped Meshy raw at ~4k tris x 100 clones, which dropped headless rendering to 6 fps and starved the walk-out gate; a hundred of a thing is a budget of its own."
     },
     "token_toolbox": {
       "file": "3d/token_toolbox_v1.glb",

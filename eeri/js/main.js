@@ -148,10 +148,12 @@ async function boot() {
       await getModel(big ? 'flagbig' : 'flag', () => buildFlagModel(big)), big);
 
     // bolts: the collectable (3D slow spinners, §6). The model comes through
-    // the seam like everything else, so the code pair below is the
-    // placeholder rather than the thing — and a bolt is a PICKUP, so its
-    // origin is its centre and it is cloned per cell rather than shared.
-    // getModel hands back a {root, nodes, clips} WRAPPER, not the Object3D
+    // the seam like everything else — and the seam's contract is that the
+    // PLACEHOLDER BUILDER RETURNS THE SAME SHAPE AS THE LIVE PATH ({root}),
+    // "so game code cannot tell them apart". The first cut returned a bare
+    // Group from the builder and unwrapped .root outside the call, which
+    // worked on whichever path was exercised that day and crashed on the
+    // other. A bolt is a PICKUP: origin at its centre, cloned per cell.
     const boltModel = (await getModel('bolt', () => {
       const g = new THREE.Group();
       const m1 = new THREE.MeshLambertMaterial({ color: PAL.MACHINE, transparent: true });
@@ -159,7 +161,7 @@ async function boot() {
       const nut = new THREE.Mesh(boltGeo, m1); nut.rotation.x = Math.PI / 2;
       const hub = new THREE.Mesh(hubGeo, m2); hub.rotation.x = Math.PI / 2;
       g.add(nut, hub);
-      return g;
+      return { root: g };
     })).root;
     const bolts = level.boltCells.map((cell, bi) => {
       const g = boltModel.clone(true);

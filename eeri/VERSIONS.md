@@ -1,5 +1,31 @@
 # EERI — versions
 
+## v23 — 2026-08-14 — the open failure is closed: it was three bugs, all mine
+
+v21's known-open "walking out of site 1" check is fixed. origin/main ran
+green in a worktree, which pinned it to this branch, and the chase found
+three stacked faults:
+
+1. **`assets.js` threw on `rig:"prop"`** — the node loop assumed every
+   non-skinned model declares `nodes`, so every pickup fell back to its code
+   placeholder with only a console warning. The bolt GLB was never actually
+   on screen. Props now return whole.
+2. **The bolt's placeholder builder returned a bare Group** where the seam's
+   contract says builder and live path return the same `{root}` shape — "so
+   game code cannot tell them apart". It worked on whichever path was
+   exercised that day and crashed on the other.
+3. **The real killer: a hundred of a thing is a budget of its own.** The
+   live bolt was Meshy raw — ~4k tris and a 1024² texture — and 100 clones
+   dropped headless rendering to 6 fps, which starved the gate's 8-second
+   walk-out. Remeshed (5 cr) to 500 tris, packed at 64px texture: **43 KB**,
+   from 3.3 MB.
+
+The diagnostic that settled it: bolt as placeholder → 189/0 green; bolt
+live-heavy → the one red. Not flakiness, not level geometry — draw cost.
+
+Gates: 189 smoke green on the placeholder run; final live-bolt confirmation
+run below.
+
 ## v22 — 2026-08-14 — Eeri leans over his own logo, and landscape gets its arcade plank
 
 Both from owner notes on v21, same day:
