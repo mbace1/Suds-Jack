@@ -8,6 +8,12 @@ yet: **the reference ratio, the tool-reality table, and the phase gates.**
 Where this file and canon disagree, this file wins — it is newer owner
 direction (2026-08-14).
 
+**WORLD 1 / GROUNDWORKS:** before creating or dressing new World 1 environment
+art, check `eeri/art-src/world-1-library/README.md` and its library folders.
+It is an optional source trove, not production: use pieces when helpful, do not
+overwrite existing assets, and only promote selected work through the normal
+`eeri/assets/` seam.
+
 ---
 
 ## 0. Owner direction, 2026-08-14
