@@ -320,7 +320,12 @@ s.listen(0, '127.0.0.1', async () => {
   await p.waitForFunction(() => window.__eeri.mode() === 'foot', null, { timeout: 5000 }).catch(() => {});
   await p.evaluate(() => window.__eeri.debug.setPos(88, 4.2));
   await p.evaluate(() => window.__eeri.debug.press('right'));
-  const site2 = await p.waitForFunction(() => window.__eeri.site() === 1, null, { timeout: 8000 }).then(() => true).catch(() => false);
+  // 20s, not 8: this walk is ~4.5 tiles plus the flag's build and the site
+  // load, and a sandbox with no GPU renders at a handful of frames a second
+  // (the Suds Jack rule: judge game STATE, never the wall clock). At 8s the
+  // check flickered red purely with rendering load — instrumented, the
+  // player advances steadily the whole way and arrives at ~9-10s.
+  const site2 = await p.waitForFunction(() => window.__eeri.site() === 1, null, { timeout: 20000 }).then(() => true).catch(() => false);
   await p.evaluate(() => window.__eeri.debug.release('right'));
   ok('walking out of site 1 leads to SITE 2, not the credits', site2);
   ok('the room announces itself on the way in', await p.locator('#banner').count() === 1);
