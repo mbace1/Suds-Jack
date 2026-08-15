@@ -172,7 +172,12 @@ srv.listen(0, '127.0.0.1', async () => {
   if (!Number.isInteger(total) || total < 1) { console.log('  FAIL could not read the level count'); process.exit(1); }
   console.log(`playing ${total} level(s) — the bot never gives up, so a stall is a real wall\n`);
 
+  // ONE LEVEL AT A TIME when asked: `node playthrough.cjs 1` runs level 2
+  // alone. Six levels is several minutes a run, and iterating on the one
+  // that failed should not cost the five that passed.
+  const only = process.argv[2] === undefined ? null : Number(process.argv[2]);
   for (let i = 0; i < total; i++) {
+    if (only !== null && i !== only) continue;
     await page.evaluate((n) => window.__eeri.debug.goSite(n), i);
     await page.waitForTimeout(1200);
     const name = await page.evaluate(() => window.__eeri.level.def.name);
