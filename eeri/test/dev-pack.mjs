@@ -1,8 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
 
-const root = path.resolve(import.meta.dirname, '..');
+const here = path.dirname(fileURLToPath(import.meta.url));
+const root = path.resolve(here, '..');
 const read = p => fs.readFileSync(path.join(root,p),'utf8');
 for (const p of ['dev.html','dev/dev-menu.js','dev/dev-menu.css','dev/runtime-fx.js','dev/production-fx-shim.js']) {
   assert.ok(fs.existsSync(path.join(root,p)), `${p} missing`);
