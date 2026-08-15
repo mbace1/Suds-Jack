@@ -232,6 +232,18 @@ place to author; `gh-pages` is a deploy target.
 Then read the other lane's `VERSIONS.md` before writing a heading, and
 **never reuse a number**.
 
+**A version is claimed at MERGE, not at authoring.** Write your best guess
+in the heading; expect it to be renumbered if the shelf moved while your
+PR was open. World 2's water PR was written as v15.3 — a number already
+spent — and landed as **v15.6**, because 15.4 and 15.5 shipped in the days
+it was open. Nothing is wrong with that; what would be wrong is holding
+the PR back to keep a number, or worse, pushing a number that already
+means something else.
+
+**And do not wait to be told to start.** `PHASING.md` §0.1 is the whole
+process: branch off `main`, work in slices that pass the gates, open a PR
+and keep going. Nobody approves plans here.
+
 **After:**
 
 - all gates green, run **singly**
