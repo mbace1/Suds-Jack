@@ -764,8 +764,21 @@ s.listen(0, '127.0.0.1', async () => {
     ok('the on-screen controls are all there on a phone', geo.n >= 6);
     ok(`every on-screen button clears the 44 px floor${geo.small.length ? ' — ' + geo.small : ''}`,
       geo.small.length === 0);
-    ok(`no two on-screen buttons overlap${geo.pairs.length ? ' — ' + geo.pairs : ''}`,
-      geo.pairs.length === 0);
+    // A D-PAD'S ZONES MAY TOUCH. The pad is a painted backboard now (art
+    // lane), and at 390px wide the DMG plate is 225px tall with drawn d-pad
+    // arms of about 20px — so four zones that each clear the 44px floor
+    // cannot also be disjoint. Adjacent zones are how a virtual d-pad has
+    // always worked. What must never overlap is the FACE buttons, where an
+    // ambiguous press means jumping when you meant to climb into a machine.
+    {
+      const DPAD = new Set(['tL', 'tR', 'tU', 'tD']);
+      const bad = geo.pairs.filter((pair) => {
+        const [a, b] = pair.split('/');
+        return !(DPAD.has(a) && DPAD.has(b));
+      });
+      ok(`no two controls overlap, d-pad zones aside${bad.length ? ' — ' + bad.join(',') : ''}`,
+        bad.length === 0);
+    }
     // the badge is inert under a thumb, but it must not COVER a control —
     // v6 fixed this once for jump, and my first layout put Ⓑ under it
     ok(`the signature covers no control${geo.onBadge.length ? ' — ' + geo.onBadge : ''}`,
@@ -1012,8 +1025,23 @@ s.listen(0, '127.0.0.1', async () => {
     ok('up sits above, in the middle column', by.tU.y < by.tD.y && by.tU.x === by.tD.x,
       `U(${by.tU.x},${by.tU.y}) D(${by.tD.x},${by.tD.y})`);
     // …and nothing is stacked more than two high: this is a landscape phone
-    ok('the pad is never more than two rows tall',
-      new Set(pad.map((q) => q.y)).size <= 2, pad.map((q) => q.y).join(','));
+    // The "never more than two rows" rule belonged to the DRAWN buttons this
+    // lane laid out. The pad is a painted backboard now and the arrangement
+    // is the ART's — a DMG face in portrait, an arcade panel in landscape —
+    // so what must hold is that the plate is mounted and every hit area
+    // actually sits on it, rather than a row count.
+    ok('the touch plate is mounted',
+      await tp.evaluate(() => document.documentElement.classList.contains('plated')));
+    ok('…and every hit area sits over the plate', await tp.evaluate(() => {
+      const img = [...document.querySelectorAll('#pad img')].find((i) => getComputedStyle(i).display !== 'none');
+      if (!img) return false;
+      const r = img.getBoundingClientRect();
+      return ['tU', 'tD', 'tL', 'tR', 'tA', 'tJ'].every((id) => {
+        const b = document.getElementById(id).getBoundingClientRect();
+        const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+        return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom;
+      });
+    }));
     await tp.close();
   }
 

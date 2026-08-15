@@ -1,5 +1,56 @@
 # EERI — versions
 
+## v15.3 — 2026-08-15 — the pad plates are mounted, and the controls are drawn
+
+PR #236 shipped both touch plates and PR #234 landed on top of it, but
+nothing MOUNTED them — the art was live in the manifest and the game still
+drew its own circles. Owner: *"the vertical controls is not the Gameboy
+look."* Correct, and the miss was this lane's: the art lane's submission
+listed mounting as our work and we went to deploy without doing it.
+
+**Two plates, because they are two objects.** Portrait gets the Game Boy
+DMG face; landscape gets the arcade control-panel strip whose middle is
+deliberately empty, because in landscape the middle of the screen is the
+game. The DOM buttons keep their ids and become **transparent hit areas**
+over the drawn controls, so `js/input.js` binds them unchanged.
+
+Both PNGs carry a lot of transparent air above the plate, which is what
+makes a full-width image work on a short phone: the painted face is about
+half the rendered height, so the landscape strip covers ~40% of a 390px
+screen rather than the ~72% its 3:1 ratio suggests.
+
+**Four things this cost, each a real bug rather than a tidy-up:**
+
+1. **Neither plate ever displayed at first.** `#pad img` is one id plus one
+   type and outranks a bare `#padP`, so `display: none` won. Specificity,
+   not a typo, and invisible until measured.
+2. **The signature landed on the A button again.** Its coarse-pointer inset
+   of 92 was measured to clear a row of 62px circles; the plate owns the
+   whole bottom strip now, so 92 sits on the drawn A. Raised to 210, which
+   clears the painted face in both orientations. v6 fixed this once for
+   jump — the third time it has bitten.
+3. **The face buttons overlapped each other** in landscape, which means an
+   ambiguous press: jumping when you meant to climb into a machine.
+4. **The 44px floor and the drawn d-pad genuinely conflict.** At 390px wide
+   the DMG plate is 225px tall and its d-pad arms are about 20px, so four
+   zones that each clear the floor cannot also be disjoint. Adjacent zones
+   are how a virtual d-pad has always worked, so the gate now allows
+   overlap BETWEEN D-PAD MEMBERS ONLY and still refuses it anywhere else.
+   **A note back to the art lane:** for portrait phone use the plate wants
+   its controls drawn larger relative to the face — the hit zone is
+   currently more than twice the picture of the switch.
+
+The old "never more than two rows tall" check was this lane's rule for a
+layout this lane drew. The arrangement is the art's now, so it is replaced
+by what actually matters: the plate is mounted, and every hit area sits on
+it.
+
+If a plate 404s or is still `placeholder`, `.plated` is never set and the
+drawn circles stay — the game is playable either way, same as the rest of
+the seam.
+
+Gates: 251 smoke, 88 rooms, 7 playthrough, 31 fx, 30 dev-pack, hub green.
+
 > **VERSIONS ARE DECIMAL from v15 (2026-08-14).** `vMAJOR.MINOR` — the
 > integer is a milestone, the decimal an increment on it. Three lineages of
 > this project each burned whole integers on ordinary work and then collided

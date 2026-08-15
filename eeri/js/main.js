@@ -24,7 +24,7 @@ import { Robot, SteamVent } from './robots.js?v=17';
 import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=17';
 import { WreckingBall } from './hazards.js?v=17';
 import { AudioKit } from './audio.js?v=17';
-import { loadManifest, getModel, getPiece } from './assets.js?v=17';
+import { loadManifest, getModel, getPiece, uiAsset } from './assets.js?v=17';
 import { craftMat, craftBox } from './craft.js?v=17';
 import { t as tr } from './lang.js?v=17';
 import { showIntro } from './intro.js?v=17';
@@ -79,6 +79,29 @@ async function boot() {
 
   // ---- the persistent world: diorama + cast -------------------------------
   await loadManifest();
+
+  // THE TOUCH PLATES (art lane, PR #236). The controls are a drawn
+  // backboard and the DOM buttons are transparent hit areas over it — a
+  // Game Boy DMG face in portrait, an arcade control-panel strip in
+  // landscape, because a handheld and a cabinet are different objects.
+  //
+  // `.plated` goes on <html> only once an image has actually DECODED. If
+  // the art 404s or the manifest still calls it a placeholder, the drawn
+  // circle buttons stay and the game is still playable — the same rule the
+  // rest of the asset seam runs on.
+  {
+    const plates = [['padP', 'padplate_portrait'], ['padL', 'padplate_landscape']];
+    let loaded = 0;
+    await Promise.all(plates.map(([id, key]) => new Promise((done) => {
+      const src = uiAsset(key);
+      const img = document.getElementById(id);
+      if (!src || !img) return done();
+      img.onload = () => { loaded++; done(); };
+      img.onerror = () => { console.warn(`[eeri] pad plate "${key}" did not load — keeping the drawn buttons`); done(); };
+      img.src = src;
+    })));
+    if (loaded === plates.length) document.documentElement.classList.add('plated');
+  }
   const diorama = await buildLayers(scene, 'groundworks', REDUCED);
 
   const kid = new Kid(await getModel('eeri', buildKidModel));
