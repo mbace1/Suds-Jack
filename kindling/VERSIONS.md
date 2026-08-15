@@ -1,5 +1,35 @@
 # Kindling — versions
 
+## v3 — 2026-08-15
+
+**Room life** — Slice 1 of `BETTERMENT_DESIGN.md` (PR #267). The room should feel
+like a small place living rather than a diagram waiting for input, and none of it
+is allowed to pay.
+
+- **`js/idle.js`** — the creature's own business. Six behaviours chosen by the
+  room's state rather than a timer alone: it sits close to the coals on a dim
+  day, goes and looks up at the shelf once there is something on it, watches the
+  window, carries a stick toward the woodpile and immediately forgets why,
+  stretches, settles. It is handed a READER of the room and has no way to change
+  anything — screen time earns nothing, and the gate now proves it: ninety
+  seconds of watching moves no counter.
+- **Saying hello.** The one interaction in the app with no payout at all: it
+  turns to you, says something small, and that is the whole transaction.
+- **A facing.** The creature can turn — but the LIGHT does not turn with it. The
+  lit crescent, the ember rim and the catch light in its eye stay on the hearth
+  side however it is standing; only the eyes, nose and tail follow the facing.
+- **Five bands, five rooms.** A day holds five small things, so the static light
+  snaps to six states while the flame still eases continuously through them: a
+  lick, a second tongue, smoke, a third tongue, and embers lifting off a full
+  fire. The gate asserts each band lights strictly more of the room than the one
+  below it.
+- **The window knows the time.** Night, small hours, dawn, day and dusk are read
+  off the local clock; the stars are laid out from the date, so tonight is not
+  last night and it is still the same sky all evening. Nothing is fetched and
+  nothing claims to be the real weather where you are.
+- `prefers-reduced-motion` holds the creature still where it stands — the gate
+  caught that the first cut let it wander for someone who had asked it not to.
+
 ## v2 — 2026-08-11
 
 Offline, installable, and reachable by keyboard.

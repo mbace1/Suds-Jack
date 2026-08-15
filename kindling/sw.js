@@ -32,6 +32,7 @@ const SHELL = [
   './icon-512.png',
   `./js/main.js${V}`,
   `./js/room.js${V}`,
+  `./js/idle.js${V}`,
   `./js/pet.js${V}`,
   `./js/state.js${V}`,
   `./js/errand.js${V}`,

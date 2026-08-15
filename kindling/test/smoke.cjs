@@ -23,6 +23,8 @@
 //  - the light IS the reward: more care means a measurably brighter room, and
 //    the far side of it only exists on a full fire
 //  - the copy never scolds (a real check, because that is the design rule)
+//  - room life (Slice 1): the creature has its own business, saying hello pays
+//    nothing, the window follows the local clock, and the fire has five bands
 //  - the offline shell names files that exist, at the tokens the page asks for
 //  - a 44px floor on every control, AA contrast, no sideways scroll on a phone
 
@@ -338,7 +340,7 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
 
   // ── the rule the whole app is built on ──
   const scolding = await page.evaluate(async () => {
-    const files = ['main.js', 'state.js', 'errand.js', 'breathe.js'];
+    const files = ['main.js', 'state.js', 'errand.js', 'breathe.js', 'idle.js'];
     const bad = /\b(you failed|failure|don't break|do not break|you should have|lazy|shame|punish|guilt)\b/i;
     const hits = [];
     for (const f of files) {
@@ -357,6 +359,92 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
   check(`nothing it can say to you is a telling-off${scolding.length ? ` — ${scolding[0]}` : ''}`,
     scolding.length === 0);
 
+  // ── room life (BETTERMENT_DESIGN Slice 1) ──
+  //
+  // The creature wanders, looks at things and can be greeted. The assertion that
+  // matters is the LAST one: none of it may pay. "Screen time earns nothing" is
+  // the rule that separates this from a game that wants you holding the phone,
+  // so it is checked rather than trusted.
+  await page.evaluate(() => {                       // a warm room, so it potters
+    __kd.state.sheet.done = __kd.debug.tasks();
+    __kd.state.found = ['cone', 'stone'];
+    __kd.debug.render();
+  });
+  const life = await page.evaluate(() => {
+    const before = { fuel: __kd.state.fuel, kept: __kd.state.kept, cared: __kd.debug.cared() };
+    const seen = new Set(), poses = new Set(), xs = new Set();
+    for (let i = 0; i < 90; i++) {
+      const r = __kd.debug.idleStep(1);
+      if (r.behaviour) seen.add(r.behaviour);
+      poses.add(r.pose);
+      xs.add(Math.round(r.x));
+    }
+    return {
+      before, after: { fuel: __kd.state.fuel, kept: __kd.state.kept, cared: __kd.debug.cared() },
+      behaviours: [...seen], poses: [...poses], places: xs.size,
+    };
+  });
+  check(`the creature gets on with things by itself (${life.behaviours.join(', ') || 'nothing'})`,
+    life.behaviours.length >= 2);
+  check(`it walks about the room rather than sitting on one pixel (${life.places} positions)`,
+    life.places > 6 && life.poses.includes('walk'));
+  check('and ninety seconds of watching it earns exactly nothing',
+    life.after.fuel === life.before.fuel && life.after.kept === life.before.kept
+    && life.after.cared === life.before.cared);
+
+  const hello = await page.evaluate(async () => {
+    const before = { fuel: __kd.state.fuel, kept: __kd.state.kept };
+    const btn = [...document.querySelectorAll('.acts .btn')].find(b => /hello/i.test(b.textContent));
+    btn?.click();
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    return {
+      had: !!btn, pose: __kd.idle.pose, said: document.getElementById('say').textContent,
+      paid: __kd.state.fuel !== before.fuel || __kd.state.kept !== before.kept,
+    };
+  });
+  check(`saying hello is a thing you can do (${hello.pose})`, hello.had && hello.pose === 'perk');
+  check(`it answers ("${hello.said.slice(0, 34)}…")`, hello.said.length > 8);
+  check('and it pays nothing at all, which is the point of it', !hello.paid);
+
+  // the window is read off the local clock — and off nothing else
+  const sky = await page.evaluate(async () => {
+    const { skyOf } = await import('./js/room.js?v=2');
+    const at = (h, d = 15) => skyOf(new Date(2026, 7, d, h, 0, 0));
+    return {
+      night: at(23).key, noon: at(13).key, dawn: at(6).key, dusk: at(19).key,
+      sameEvening: at(21).key === at(22, 15).key ? 'same' : 'different',
+      otherNight: at(23, 16).key,
+      stars: { night: at(23).stars, noon: at(13).stars },
+    };
+  });
+  check(`the window knows what time it is (${sky.noon.split(':')[0]} at one, ${sky.night.split(':')[0]} at eleven)`,
+    sky.noon.startsWith('day') && sky.night.startsWith('night') && sky.dawn.startsWith('dawn'));
+  check(`and there are no stars out at lunchtime (${sky.stars.night} vs ${sky.stars.noon})`,
+    sky.stars.night > 0 && sky.stars.noon === 0);
+  check('tonight is not last night, and it is the same sky all evening',
+    sky.night !== sky.otherNight);
+
+  // five bands, five rooms: each step of the day must light more of it than the
+  // one below, or "the fire is the measure" is only a claim
+  const bands = await page.evaluate(async () => {
+    const c = document.querySelector('canvas');
+    const lit = () => {
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i] + d[i + 1] + d[i + 2] > 60) n++;
+      return n;
+    };
+    const out = [];
+    for (let b = 0; b <= 5; b++) {
+      __kd.view.shown = b / 5;
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      out.push(lit());
+    }
+    return out;
+  });
+  const rising = bands.every((n, i) => i === 0 || n > bands[i - 1]);
+  check(`the day has five bands and each one is a brighter room (${bands.join(' → ')})`, rising);
+
   // ── the offline shell, and the numbers in it ──
   //
   // The one bug a hand-kept precache list can have is a number that disagrees
@@ -373,7 +461,7 @@ const rgb = str => str.match(/\d+/g).slice(0, 3).map(Number);
   const entries = [...block.matchAll(/[`'](\.[^`']+)[`']/g)]
     .map(m => m[1].replace('${V}', V));
   check(`the worker's shell list has every module on it (${entries.length} entries)`,
-    entries.length >= 18);
+    entries.length >= 19);
 
   const dead = [];
   for (const e of entries) {

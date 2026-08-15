@@ -36,6 +36,29 @@ const PET_X = 74;
 // nothing in it at all.
 const REACH = w => 46 + w * 124;
 
+// ── what is outside ──────────────────────────────────────────────────
+// The window is the only cold thing in the picture and the only thing that
+// changes on its own. It is read off the LOCAL CLOCK and nothing else: no
+// forecast is fetched, nothing is claimed about the real weather where you are,
+// and none of it touches what anything is worth. It is a picture of an evening.
+export const SKY = {
+  night: { key: 'night', top: '#0c1322', low: '#16233a', trees: '#080506', stars: 14 },
+  small: { key: 'small', top: '#101a2e', low: '#2a3550', trees: '#080506', stars: 9 },
+  dawn:  { key: 'dawn',  top: '#1b2540', low: '#7a5a54', trees: '#0d0a0c', stars: 4 },
+  day:   { key: 'day',   top: '#3f5a72', low: '#8fa6ac', trees: '#1a2018', stars: 0 },
+  dusk:  { key: 'dusk',  top: '#161c33', low: '#5c3b46', trees: '#0a0709', stars: 6 },
+};
+
+// the hour decides the tone; the DATE decides the stars, so tonight's sky is
+// not last night's and is still the same sky all evening
+export function skyOf(date = new Date()) {
+  const h = date.getHours();
+  const tone = h < 5 ? SKY.night : h < 8 ? SKY.dawn : h < 17 ? SKY.day
+    : h < 20 ? SKY.dusk : h < 22 ? SKY.small : SKY.night;
+  const seed = Math.floor(date.getTime() / 86400000);
+  return { ...tone, seed, key: `${tone.key}:${seed}` };
+}
+
 // light at a point, 0..1 — the one function the whole scene agrees on
 function lightAt(x, y, w) {
   const d = Math.hypot(x - FIRE_X, (y - FIRE_Y) * 1.25);
@@ -48,29 +71,39 @@ export function drawRoom(scr, view) {
   // the flame's own flicker, which must NOT reach the cache key or the whole
   // room repaints sixty times a second
   const flick = still ? 0 : (Math.sin(t * 11.3) * 0.5 + Math.sin(t * 7.1) * 0.5);
-  // The static light is quantised to twelve steps: the room repaints a dozen
-  // times while the fire grows into a new day's worth of light, not per frame.
-  const q = Math.round(warmth * 12) / 12;
-  scr.cached(`${q}|${Math.min(9, fuel)}|${found.length}|${away ? 1 : 0}`, () => {
-    staticRoom(scr, q, fuel, found);
+
+  // THE FIVE BANDS. A day holds five small things, so the room has six states:
+  // coals, and one for each thing kept. The static light snaps to the band while
+  // the FIRE eases continuously through it, which is the whole trick — the flame
+  // visibly climbs as you tick something off, and then the room arrives at a new
+  // state rather than drifting through a hundred indistinguishable ones. It also
+  // halves the repaints: six keys instead of twelve.
+  const band = Math.max(0, Math.min(5, Math.round(warmth * 5)));
+  const q = band / 5;
+  scr.cached(`${band}|${Math.min(9, fuel)}|${found.length}|${away ? 1 : 0}|${view.sky?.key ?? ''}`, () => {
+    staticRoom(scr, q, fuel, found, view.sky);
   });
 
   // `flame` is the live height — the breathing exercise drives it continuously,
   // and it must not touch the cache key, so it is a separate field from the
   // day's own warmth
-  fire(scr, view.flame == null ? q : view.flame, flick, still, t);
+  fire(scr, view.flame == null ? warmth : view.flame, flick, still, t);
   if (away) lantern(scr, t, still);
-  else drawPet(scr, PET_X, FLOOR_Y, {
-    stage: view.stage, t, pose: view.pose, hop: view.hop, still,
-    lit: Math.min(1, lightAt(PET_X, FLOOR_Y - 8, q) * 1.6),
-  });
+  else {
+    const px = view.petX == null ? PET_X : view.petX;
+    drawPet(scr, px, FLOOR_Y, {
+      stage: view.stage, t, pose: view.pose, hop: view.hop, still,
+      face: view.face ?? -1, look: view.look ?? 0,
+      lit: Math.min(1, lightAt(px, FLOOR_Y - 8, q) * 1.6),
+    });
+  }
   if (view.sparks) for (const s of view.sparks) {
     scr.px(s.x, s.y, 1, 1, s.life > 0.5 ? PAL.SPARK : PAL.EMBER);
   }
 }
 
 // ── the part that holds still ────────────────────────────────────────
-function staticRoom(scr, w, fuel, found) {
+function staticRoom(scr, w, fuel, found, sky) {
   scr.clear(PAL.VOID);
 
   // wall and floor, lit by distance. Two ramps, one light: the seam between
@@ -109,7 +142,7 @@ function staticRoom(scr, w, fuel, found) {
   woodpile(scr, w, fuel);
   shelf(scr, w, found);
   door(scr, w);
-  window_(scr, w);
+  window_(scr, w, sky);
 }
 
 function hearth(scr, w) {
@@ -219,29 +252,33 @@ function door(scr, w) {
 // The window: the only cold thing in the picture, and the reason the room reads
 // as warm at all. Its frame is LIGHTER than the night behind it — a framing
 // device darker than what it frames is just an outline floating in the void.
-function window_(scr, w) {
+function window_(scr, w, sky = SKY.night) {
   const x = 118, y = 12, ww = 42, wh = 34;
   const u = Math.min(1, lightAt(x + ww / 2, y + wh / 2, w) * 1.2);
   const frame = mix(PAL.WOOD, PAL.WOOD_LIT, 0.35 + u * 0.65);
 
   // the frame first, as one lit mass, then the night cut into it
   scr.rect(x - 2, y - 2, ww + 4, wh + 4, frame, PAL.INK);
-  scr.rect(x, y, ww, wh, PAL.NIGHT);
+  scr.rect(x, y, ww, wh, sky.top);
   // sky: a cold ramp, darkest at the top
   for (let iy = 1; iy < wh - 1; iy++) {
     const k = iy / wh;
-    scr.px(x + 1, y + iy, ww - 2, 1, mix(PAL.NIGHT, PAL.NIGHT_LOW, k * k));
+    scr.px(x + 1, y + iy, ww - 2, 1, mix(sky.top, sky.low, k * k));
   }
-  // stars, on a fixed lattice so they do not swim between repaints
-  for (let i = 0; i < 14; i++) {
-    const sx = x + 3 + ((i * 37) % (ww - 6));
-    const sy = y + 3 + ((i * 53) % (wh - 12));
-    scr.px(sx, sy, 1, 1, i % 4 === 0 ? PAL.MOON : PAL.STAR);
+  // The stars, laid out from the day's own seed — so tonight's sky is not last
+  // night's sky, and it is still the SAME sky all evening rather than swimming
+  // between repaints. Nothing about it is fetched and nothing about it claims to
+  // be the real weather; it is a picture of a night, generated on your machine.
+  for (let i = 0; i < sky.stars; i++) {
+    const h = (i * 2654435761 + sky.seed * 40503) >>> 0;
+    const sx = x + 3 + (h % (ww - 6));
+    const sy = y + 3 + ((h >>> 8) % (wh - 12));
+    scr.px(sx, sy, 1, 1, (h >>> 16) % 4 === 0 ? PAL.MOON : PAL.STAR);
   }
   // the treeline, black against the sky
   for (let tx = x + 1; tx < x + ww - 1; tx++) {
     const h = 4 + Math.abs(Math.sin(tx * 0.7)) * 5;
-    scr.px(tx, y + wh - 1 - h, 1, h, PAL.INK);
+    scr.px(tx, y + wh - 1 - h, 1, h, sky.trees);
   }
   // the glazing bars, over the glass
   scr.px(x + ww / 2 - 1, y, 2, wh, frame);
@@ -285,16 +322,28 @@ function fire(scr, w, flick, still, t) {
     scr.px(cx, base, 3, 2, mix(PAL.COAL, PAL.COAL_HOT, still ? 0.5 : hot));
   }
 
-  if (w <= 0.001 && !flick) return;                         // banked: coals only
+  // ONE FEATURE PER BAND, so the five steps of a day are five different fires
+  // rather than one slider: a lick, a second tongue, smoke, a third tongue, and
+  // at a full fire the embers lifting off it. The heights in between still ease,
+  // so ticking something off is a climb that arrives somewhere.
+  if (w <= 0.02) return;                                    // banked: coals only
 
   tongue(scr, FIRE_X, base, h, 4 + w * 6, t, still, 0);
-  if (w > 0.2) tongue(scr, FIRE_X + 4, base, h * 0.62, 2 + w * 3, t, still, 2.1);
-  if (w > 0.55) tongue(scr, FIRE_X - 5, base, h * 0.48, 2 + w * 2, t, still, 4.3);
+  if (w > 0.3) tongue(scr, FIRE_X + 4, base, h * 0.62, 2 + w * 3, t, still, 2.1);
+  if (w > 0.7) tongue(scr, FIRE_X - 5, base, h * 0.48, 2 + w * 2, t, still, 4.3);
+
+  // at a full fire it throws embers, which is the one thing that only ever
+  // happens on a day that filled the hearth
+  if (!still && w > 0.9) for (let i = 0; i < 2; i++) {
+    const p = ((t * 0.6 + i * 0.5) % 1);
+    scr.px(FIRE_X - 3 + Math.sin(p * 7 + i * 2) * 6, base - h - p * 12, 1, 1,
+      p < 0.6 ? PAL.SPARK : PAL.EMBER);
+  }
 
   // Smoke, only once there is a real fire to make it — and it goes UP THE FLUE.
   // Drawn without the clip it rose past the mantel and drifted across the wall,
   // which is a chimney nobody would live with.
-  if (!still && w > 0.35) for (let i = 0; i < 3; i++) {
+  if (!still && w > 0.5) for (let i = 0; i < 3; i++) {
     const p = ((t * 0.35 + i * 0.33) % 1);
     const sy = base - h - 2 - p * 26;
     if (sy < 69) continue;

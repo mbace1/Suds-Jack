@@ -599,7 +599,18 @@ on top (a scene whose first screen is frozen reads as a broken page).
 The creature (`js/pet.js`) is five stages off one table of numbers and grows on the
 **lifetime count of small things kept** — screen time earns nothing. It dozes by the
 coals when nothing has been done, sits up once the fire has anything to it, hops when
-you keep something, and is simply gone while it is out.
+you keep something, and is simply gone while it is out. `js/idle.js` is its own
+business: six behaviours picked by the room's state (sit near the coals on a dim day,
+look up at the shelf, watch the window, carry a stick to the woodpile and forget why),
+plus **saying hello** — the one interaction with no payout at all. It is handed a
+READER of the room and cannot change anything, and the gate proves it by watching for
+ninety seconds and checking every counter is where it was. It can **turn**, but the
+light does not turn with it: the lit crescent, the ember rim and the catch light stay
+on the hearth side however it is standing. A day holds five small things, so the
+static light snaps to **six bands** while the flame eases continuously through them —
+each band lights strictly more of the room, and the window's own tone (night / small
+hours / dawn / day / dusk) is read off the local clock with the stars laid out from
+the date.
 **The design rules are load-bearing and the gate checks one of them.** The day turns at
 **04:00**, not midnight (a list that resets while you are still awake tells you that
 you failed at 00:01 on a night you were doing fine). Nothing is ever taken away: a
@@ -625,7 +636,7 @@ navigable, what lets the arcade's `{ui:true}` pad bridge walk it, and what keeps
 44px and AA floors measurable; the focus follows a view swap **only when the last input
 was a key**, so a tap never raises a ring nobody asked for. `window.__kd` exposes
 `{state, audio, view, debug}` — `finishErrand()` and `ageDay(n)` hand the clock forward,
-because `node kindling/test/smoke.cjs` (55 checks) is driven off state and never off the
+because `node kindling/test/smoke.cjs` (65 checks) is driven off state and never off the
 wall clock.
 It is **offline-first and installable**, for the same reason `gameoflife/` is: something
 you open once a day, often on a phone and often before you are properly awake, cannot
@@ -922,6 +933,7 @@ kindling/       # Kindling — a betterment game: care in, firelight out
     make-icons.mjs  # writes both icons from the app's palette (no dependencies)
   js/
     room.js     # the room, and the one falloff whose reach IS the day's tally
+    idle.js     # the creature's own business — and it cannot pay itself
     pet.js      # the creature: five stages from one table, lit from the hearth
     state.js    # the sheet, the streak, the journal — one localStorage key, no network
     errand.js   # the outing: seeded at departure, computed on return; what it finds
@@ -931,7 +943,7 @@ kindling/       # Kindling — a betterment game: care in, firelight out
     audio.js    # a near-inaudible fire bed and six events, all through one gain
     main.js     # the views, the day's turn, the errand clock, window.__kd
   test/
-    smoke.cjs   # 55 checks, driven off state — including that the copy never scolds
+    smoke.cjs   # 65 checks, driven off state — including that the copy never scolds
     offline.cjs # kills the server and plays a day with the network gone
 toko/           # Toko Midori Games — the brand (face, lockups, sting, signature)
   BRAND.md      # the rules: the creed, construction notes, the two colours, do/don't

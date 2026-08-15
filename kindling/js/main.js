@@ -18,7 +18,8 @@
 // WCAG-AA floors measurable.
 
 import { PixelScreen, loop } from './pixel.js?v=2';
-import { drawRoom, FLOOR_Y } from './room.js?v=2';
+import { drawRoom, FLOOR_Y, skyOf } from './room.js?v=2';
+import { makeIdle, HELLO } from './idle.js?v=2';
 import * as audio from './audio.js?v=2';
 import { makeBreath, ROUNDS } from './breathe.js?v=2';
 import { THINGS, startErrand, errandLeft, report, ERRAND_MS } from './errand.js?v=2';
@@ -55,7 +56,7 @@ const view = {
   page: 'today',          // today | journal | breathe
   shown: warmth(),        // the fire eases toward the real warmth, so ticking
                           // something off is visibly the fire taking it
-  pose: 'sit',
+  sky: skyOf(),
   hop: 0,
   hopT: 0,
   sparks: [],
@@ -64,6 +65,14 @@ const view = {
 };
 
 function say(text) { sayLine.textContent = text; }
+
+// The creature's own business (js/idle.js). It is handed a READER rather than
+// the state module: it can see how warm the room is, how much wood there is and
+// how full the shelf is, and it has no way to change any of them. Screen time
+// earns nothing, and this is the piece of code that has to be trusted about it.
+const idle = makeIdle(() => ({
+  warmth: warmth(), fuel: S.fuel, found: S.found.length,
+}));
 
 // ── who is driving ──────────────────────────────────────────────────
 // Swapping a view rebuilds the panel, which throws the focus back to the body —
@@ -94,8 +103,9 @@ const anim = loop((dt, t) => {
     view.hopT -= dt;
     const k = Math.max(0, view.hopT / 0.42);
     view.hop = Math.sin(k * Math.PI) * 6;
-    view.pose = 'hop';
-    if (view.hopT <= 0) { view.hop = 0; view.pose = restingPose(); }
+    if (view.hopT <= 0) view.hop = 0;
+  } else if (!S.errand?.out) {
+    idle.update(dt, { asleep: caredToday() === 0, still: anim.still });
   }
 
   for (let i = view.sparks.length - 1; i >= 0; i--) {
@@ -120,19 +130,20 @@ const anim = loop((dt, t) => {
     found: S.found,
     away: !!S.errand?.out,
     stage: stage().id,
-    pose: view.pose,
+    // the hop wins over whatever it was doing, because that one is YOUR event
+    pose: view.hopT > 0 ? 'hop' : idle.pose,
+    petX: idle.x,
+    face: idle.face,
+    look: idle.look,
     hop: view.hop,
     sparks: view.sparks,
+    sky: view.sky,
     still: anim.still,
     t,
   });
 
   tickClocks();
 });
-
-function restingPose() {
-  return caredToday() === 0 ? 'doze' : 'sit';
-}
 
 // The two things that happen without you: the day turning over, and the
 // creature coming home. Both are checked off the wall clock rather than counted
@@ -143,10 +154,16 @@ function tickClocks() {
   if (now - clockAt < 500) return;
   clockAt = now;
 
+  // what is outside, from the local clock alone — nothing is fetched and nothing
+  // claims to be the real weather. It only ever changes on the half-second tick,
+  // so the room's cache is not asked to think about it every frame.
+  const sky = skyOf();
+  if (sky.key !== view.sky?.key) view.sky = sky;
+
   if (dayKey() !== lastDay) {
     lastDay = dayKey();
     rollover();
-    view.pose = restingPose();
+    idle.interrupt();
     render();
     say(caredToday() === 0
       ? 'A new day. The sheet is clear and the coals kept.'
@@ -175,6 +192,7 @@ function sparkle(n = 8) {
 function keptOne(text) {
   sparkle();
   view.hopT = 0.42;
+  idle.interrupt();                    // it stops what it was doing and looks
   audio.kept();
   const st = stage();
   if (st.id !== view.grewTo) {
@@ -228,7 +246,7 @@ function sendOut() {
   S.errand = startErrand();
   save();
   audio.out();
-  view.pose = restingPose();
+  idle.leave();
   say('Out it goes. It will be back in a minute and a half, whether you watch or not.');
   render();
 }
@@ -241,7 +259,7 @@ function comeHome() {
   if (r.thing) found(r.thing);
   save();
   audio.home();
-  view.pose = 'sit';
+  idle.interrupt('stretch');           // it stretches, the way anything does
   view.hopT = 0.42;
   say(`Home. ${r.lines.join(' ')}`);
   render();
@@ -374,11 +392,23 @@ function todayPanel() {
   send.type = 'button';
   send.addEventListener('click', sendOut);
 
+  // Saying hello is the only interaction in the app with no payout at all — no
+  // kindling, no counter, no cooldown to game. It is here precisely because
+  // everything else in a care app tends to become a transaction.
+  const hello = el('button', 'btn', 'say hello');
+  hello.type = 'button';
+  hello.addEventListener('click', () => {
+    if (S.errand?.out) { say('It is out. There is a light in the window.'); return; }
+    idle.hello();
+    audio.page();
+    say(HELLO[Math.floor(Math.random() * HELLO.length)]);
+  });
+
   const journal = el('button', 'btn', 'journal');
   journal.type = 'button';
   journal.addEventListener('click', () => { view.page = 'journal'; audio.page(); render(true); });
 
-  acts.append(breathe, send, journal);
+  acts.append(breathe, send, hello, journal);
   wrap.appendChild(acts);
   return wrap;
 }
@@ -491,7 +521,6 @@ function render(focus = false) {
 }
 
 // ── boot ─────────────────────────────────────────────────────────────
-view.pose = restingPose();
 render();
 
 // The one-time note about where this all lives. It is first, it is once, and it
@@ -523,6 +552,7 @@ window.__kd = {
   state: S,
   audio,
   view,
+  idle,
   debug: {
     render,
     say,
@@ -557,6 +587,12 @@ window.__kd = {
       tickClocks();
       return dayKey();
     },
+    // drive the creature's own business without waiting out its long gaps
+    idleStep(secs = 1, step = 0.05) {
+      for (let i = 0; i < secs / step; i++) idle.update(step, { asleep: caredToday() === 0 });   // the gate drives it awake
+      return { x: idle.x, pose: idle.pose, behaviour: idle.behaviour };
+    },
+    sky: () => view.sky,
     breathe: startBreathing,
     stopBreathing,
     sendOut,

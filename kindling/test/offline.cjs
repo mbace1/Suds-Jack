@@ -69,10 +69,10 @@ function check(what, ok) {
     return { name: names.find(n => n.startsWith('kindling-')), keys: (await c.keys()).map(r => r.url) };
   });
   check(`the shell is precached under its own version (${precached.name}, ${precached.keys.length} entries)`,
-    precached.keys.length >= 17);
+    precached.keys.length >= 18);
   // every module the page actually loaded is in there — a list that names
   // thirteen files and misses the fourteenth is the exact bug this catches
-  const wanted = ['main.js', 'room.js', 'pet.js', 'state.js', 'errand.js', 'breathe.js',
+  const wanted = ['main.js', 'room.js', 'idle.js', 'pet.js', 'state.js', 'errand.js', 'breathe.js',
     'pixel.js', 'palette.js', 'audio.js', 'icon-192.png', 'manifest.webmanifest',
     'hub/shell.js', 'hub/pad.js', 'hub/games.js', 'hub/padkeys.js'];
   const missing = wanted.filter(w => !precached.keys.some(u => u.includes(w)));

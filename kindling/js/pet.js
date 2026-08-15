@@ -42,9 +42,19 @@ function crescent(scr, cx, cy, r, dir, inner, rim) {
   }
 }
 
-// pose: 'sit' | 'doze' | 'hop' | 'perk'
+// pose: 'sit' | 'doze' | 'hop' | 'walk' | 'peer' | 'stretch' | 'perk'
+//
+// `face` is which way it is turned, and it is deliberately NOT the same thing as
+// which side is lit: the light comes out of the hearth and stays there, so the
+// crescent and the ember rim are always on the fire side however the creature
+// has turned. Only the eyes, the nose and the tail follow the facing. Flipping
+// the lighting with the sprite is the classic way to make a room stop having a
+// light source in it.
 export function drawPet(scr, x, floorY, opts = {}) {
-  const { stage = 'spark', t = 0, pose = 'sit', hop = 0, lit = 1, still = false } = opts;
+  const {
+    stage = 'spark', t = 0, pose = 'sit', hop = 0, lit = 1, still = false,
+    face = -1, look = 0,
+  } = opts;
   const b = BUILD[stage] ?? BUILD.spark;
   const r = b.r;
 
@@ -55,22 +65,32 @@ export function drawPet(scr, x, floorY, opts = {}) {
   const rim = mix(PAL.COAL_HOT, PAL.EMBER, lit);
   const belly = mix(PAL.FUR_DARK, PAL.BELLY, 0.3 + lit * 0.7);
 
-  const breathe = still ? 0 : Math.sin(t * (pose === 'doze' ? 1.1 : 2.0)) * 0.5;
+  // A walk is a bob, not a slide: two pixels up and down on a fast clock is the
+  // whole animation, and without it the creature crossing the room reads as a
+  // sticker being dragged.
+  const walking = pose === 'walk';
+  const breathe = still ? 0
+    : walking ? Math.abs(Math.sin(t * 9)) * 1.6
+      : Math.sin(t * (pose === 'doze' ? 1.1 : 2.0)) * 0.5;
   const lift = pose === 'hop' ? hop : 0;
-  const squash = pose === 'hop' ? (1 - hop / 6) * 0.6 : 0;
+  const squash = pose === 'hop' ? (1 - hop / 6) * 0.6
+    : pose === 'stretch' ? -1.6 : 0;                    // a stretch is long, not tall
 
   const bodyR = Math.round(r * 1.15);
-  const bx = x;
+  const bx = Math.round(x);
   const by = Math.round(floorY - bodyR - lift + breathe * 0.6);
-  const hx = x - (pose === 'doze' ? 1 : 0);
+  // `look` lifts the head and cranes it: 1 is looking up at the shelf or the
+  // window, which is what makes standing under something read as looking at it.
+  const hx = Math.round(bx - (pose === 'doze' ? 1 : 0) + face * look * 1.5);
   const hy = Math.round(by - r - bodyR * 0.55 - lift * 0.4
-    + (pose === 'doze' ? r * 0.7 : 0) + breathe + squash);
+    + (pose === 'doze' ? r * 0.7 : 0) + breathe + squash - look * 2);
 
-  // the tail curls behind, away from the fire, so it never reads as a limb
+  // the tail curls BEHIND, which depends on which way it is turned — otherwise
+  // a creature walking right grows a tail out of its face
   if (b.tail) {
     for (let i = 0; i < 5; i++) {
       const a = 0.6 + i * 0.42;
-      scr.px(bx + bodyR - 1 + Math.cos(a) * (i + 2) * 0.9,
+      scr.px(bx - face * (bodyR - 1 + Math.cos(a) * (i + 2) * 0.9),
         by + 1 + Math.sin(-a) * (i + 1) * 0.7, 2, 2, i > 2 ? furLit : fur);
     }
   }
@@ -90,9 +110,16 @@ export function drawPet(scr, x, floorY, opts = {}) {
     // an elder has the room growing on it: three tufts along the back
     for (let i = 0; i < 3; i++) scr.px(bx + 1 + i * 2, by - bodyR + i, 2, 2, PAL.MOSS);
   }
-  // feet, tucked — two pixels are enough to seat the mass on the floor
-  scr.px(bx - 3, floorY - 1, 2, 1, PAL.INK);
-  scr.px(bx + 1, floorY - 1, 2, 1, PAL.INK);
+  // feet: tucked when it is sitting, and stepping when it is not — two pixels
+  // are enough to seat the mass on the floor either way
+  if (walking) {
+    const step = Math.sin(t * 9) * 2.5;
+    scr.px(bx - 3 + step, floorY - 1, 2, 1, PAL.INK);
+    scr.px(bx + 1 - step, floorY - 1, 2, 1, PAL.INK);
+  } else {
+    scr.px(bx - 3, floorY - 1, 2, 1, PAL.INK);
+    scr.px(bx + 1, floorY - 1, 2, 1, PAL.INK);
+  }
 
   // ── head ──
   if (b.ears) {
@@ -105,17 +132,21 @@ export function drawPet(scr, x, floorY, opts = {}) {
   scr.disc(hx, hy, r, fur, PAL.INK);
   crescent(scr, hx, hy, r, -1, furLit, rim);
 
-  // ── face ── it faces the fire, so both eyes sit left of centre
+  // ── face ── both eyes sit on the side it is turned toward
   const closed = pose === 'doze' || (!still && blinking(t));
-  const ey = hy - 1;
+  const ey = hy - 1 - (pose === 'stretch' ? 1 : 0);
   for (const dx of [-2, 1]) {
-    if (closed) scr.px(hx + dx - 1, ey, 3, 1, PAL.INK);
+    const ex = hx + face * dx - 1;
+    if (closed) scr.px(ex, ey, 3, 1, PAL.INK);
     else {
-      scr.px(hx + dx - 1, ey - 1, 2, 3, PAL.EYE);
-      scr.px(hx + dx - 1, ey - 1, 1, 1, PAL.EYE_LIGHT);   // the catch light
+      scr.px(ex, ey - 1, 2, 3, PAL.EYE);
+      // the catch light is a reflection of the fire, so it stays on the fire
+      // side of the eye no matter which way the head is turned
+      scr.px(ex, ey - 1, 1, 1, PAL.EYE_LIGHT);
     }
   }
-  scr.px(hx - 4, ey + 2, 2, 1, mix(PAL.NOSE, PAL.EMBER, lit * 0.4));
+  scr.px(hx + face * 4 - (face > 0 ? 0 : 4), ey + 2, 2, 1,
+    mix(PAL.NOSE, PAL.EMBER, lit * 0.4));
 
   // ── what it is carrying ──
   if (b.lamp) {
