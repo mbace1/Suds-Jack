@@ -17,7 +17,7 @@ export const MACHINE_PERSONALITY={
 };
 
 export const SAFETY={maxRotationDelta:0.05,maxScaleDelta:0.02,maxOneShotMs:550,minIdlePeriodMs:1800};
-export function validatePersonality(){const bad=[];for(const [machine,m] of Object.entries(MACHINE_PERSONALITY)){for(const [state,s] of Object.entries(m.states)){if(s.loop&&s.periodMs<SAFETY.minIdlePeriodMs)bad.push(`${machine}/${state}: loop too fast`);if(!s.loop&&s.durationMs>SAFETY.maxOneShotMs)bad.push(`${machine}/${state}: too long`);for(const [node,kind,v] of s.channels){if(!m.nodes.includes(node))bad.push(`${machine}/${state}: unknown ${node}`);const lim=kind==='scaleY'?SAFETY.maxScaleDelta:SAFETY.maxRotationDelta;if(Math.abs(v)>lim)bad.push(`${machine}/${state}: ${kind} ${v}`)}}}}return bad}
+export function validatePersonality(){const bad=[];for(const [machine,m] of Object.entries(MACHINE_PERSONALITY)){for(const [state,s] of Object.entries(m.states)){if(s.loop&&s.periodMs<SAFETY.minIdlePeriodMs)bad.push(`${machine}/${state}: loop too fast`);if(!s.loop&&s.durationMs>SAFETY.maxOneShotMs)bad.push(`${machine}/${state}: too long`);for(const [node,kind,v] of s.channels){if(!m.nodes.includes(node))bad.push(`${machine}/${state}: unknown ${node}`);const lim=kind==='scaleY'?SAFETY.maxScaleDelta:SAFETY.maxRotationDelta;if(Math.abs(v)>lim)bad.push(`${machine}/${state}: ${kind} ${v}`)}}}return bad}
 
 // Integrator rule: gameplay owns a node at priority >= 10. Personality yields immediately.
 export function mayApply(personalityState,nodeOwnership=0){return personalityState&&nodeOwnership<10}
