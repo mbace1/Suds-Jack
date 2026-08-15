@@ -752,9 +752,16 @@ s.listen(0, '127.0.0.1', async () => {
   // the assertions would read the previous room's game object and pass or
   // fail for the wrong reason. That cost a debugging pass.
   {
-    ok('a bare address is normalised into the bar',
-      await p.evaluate(() => location.hash) === '#eeri-1-1',
-      await p.evaluate(() => location.hash));
+    // The invariant, rather than a fixed string: by the time this block runs
+    // the gate has already walked several rooms, so asserting `#eeri-1-1`
+    // here tests where the previous check happened to leave the game. What
+    // must always hold is that the bar names the room you are standing in.
+    const agrees = await p.evaluate(() => {
+      const i = window.__eeri.site();
+      return location.hash === `#eeri-${Math.floor(i / 3) + 1}-${(i % 3) + 1}`;
+    });
+    ok('the address in the bar always names the room you are in', agrees,
+      await p.evaluate(() => `${location.hash} at site ${window.__eeri.site()}`));
     ok('the HUD shows the address beside the name',
       /^\d+-\d+ · /.test(await p.evaluate(() => document.getElementById('site').textContent)),
       await p.evaluate(() => document.getElementById('site').textContent));
