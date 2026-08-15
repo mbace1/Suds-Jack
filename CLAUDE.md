@@ -813,25 +813,64 @@ commit message.
   single import lines.
 - **Version numbers do not detect this.** Both lineages independently
   reached "v11" and `hub/versions.json` said `v: 11` on each, so nothing
-  looked wrong. **Never reuse a version number: fetch and read the other
-  lineage's `VERSIONS.md` before writing a new heading.**
+  looked wrong. It happened again at v13. **Never reuse a version number:
+  fetch and read the other lineage's `VERSIONS.md` before writing a new
+  heading.**
+- **Versions are DECIMAL from v15** (2026-08-14): `vMAJOR.MINOR`, the
+  integer a milestone and the decimal an increment on it. Burning a whole
+  integer on ordinary work is what made the collisions above so easy.
+  **`?v=` module tokens stay integers** — they are cache-busters tracking
+  module-graph churn, not releases, and the two numbers are deliberately
+  different. `scripts/versions.mjs` emits both a label (`"15.1"`) and a
+  sort key (`15001`) because one number cannot do both jobs: a label
+  cannot be compared (`'15.10' < '15.9'` lexically) and a float cannot be
+  displayed (`15.0` prints as `15`).
 - Deploying is a copy onto `gh-pages` limited to `eeri/` plus
   `hub/games.js` and `hub/versions.json`. It omits `test/` and `art-src/`
   (that branch ships docs, not test dirs). **Deploys never merge.**
 
-**FOUR GATES, all of which must be green before a deploy:**
+**SIX GATES, all of which must be green before a deploy:**
 
 ```
 node eeri/test/rooms.mjs                                 # the room prover
+node eeri/test/fx-smoke.mjs                              # the FX spec, pool, inference
+node eeri/test/dev-menu.mjs                              # the dev pack's contract
 NODE_PATH=$(npm root -g) node eeri/test/smoke.cjs        # the game
 NODE_PATH=$(npm root -g) node eeri/test/playthrough.cjs  # a bot finishes every level
 NODE_PATH=$(npm root -g) node test/hub-smoke.cjs         # the cabinet
 ```
 
+The two `.mjs` ones run in **bare node** — no browser, no GPU, no audio
+device — which is why they are fast enough to run on every edit.
+
 `rooms.mjs` proves a room's *geometry*; `playthrough.cjs` proves it is
 *playable* — it exists because the prover passed a level nobody could
 finish. The playthrough also measures **cost** (how often a level takes the
 ride away), because a tireless bot will beat a level a child would put down.
+`dev-menu.mjs` catches the one break nothing else can: the dev/FX pack reads
+debug hooks that **nothing in the game depends on**, so renaming one breaks
+the pack and no other test fails — the menu just quietly shows dashes while
+the effects quietly stop.
+
+**The game speaks fi / en / ja** (`js/lang.js`) — house convention, and it
+had none until v15.1, so the Finnish six-year-old it is built for read it in
+English. English is the **per-key** fallback. `js/intro.js` is the title
+screen (the owner's line: *seikkailee työkoneiden ja robottien maailmassa*),
+shown before the scene builds and awaited after it; **`?skip` walks past it**
+and every gate uses that. `js/glyphs.js` draws the button faces as inline
+SVG — one set for a 13px hint line and a 62px touch button, and **no key
+caps or mouse icons, ever** (§6.4).
+
+**The dev / FX pack is peripheral by design** (`CLAUDE_HANDOFF.md`,
+`EERI_DEV_PACK.md`, `eeri/dev/README.md`). `eeri/dev.html` **frames**
+`index.html` rather than copying it, so the thing being tuned is the thing
+that ships. Effects fire from **polling** `window.__eeri` and reading events
+out of state differences, so there are zero hooks in `main.js`.
+`js/fx.js` and `js/audio-fx.js` **inject** three.js and WebAudio instead of
+importing them — that is what makes `fx-smoke.mjs` runnable in bare node,
+and `dev-menu.mjs` fails if anyone adds a top-level `import * as THREE`.
+Sound is **synthesised, never sampled**; a binary audio file under
+`assets/audio/` fails the gate on purpose.
 
 **Traps worth knowing before you spend a day on one** (all in `VERSIONS.md`):
 one `?v=` token per module or the browser instantiates it twice and the
@@ -926,10 +965,19 @@ eeri/           # Eeri — the platformer. MULTI-AGENT: read PHASING.md before a
     README.md   # THE SEAM: node/clip contracts, layer rects, PNG sizes
     manifest.json # every model + layer: "placeholder" (code-built) or "live" (file)
     2d/ 3d/     # the shipped art
+  dev.html      # the dev/FX entry — a same-origin FRAME around index.html
+  dev/
+    dev-menu.js # the panel: level jumps, fire-an-effect, switches, live state
+    dev-menu.css README.md
   js/
     main.js     # scene, loop, HUD, states, the ride handoff        (SHARED)
     assets.js   # the manifest reader; placeholder ⇄ live           (SHARED)
     palette.js  # PAL + the craft materials                         (SHARED)
+    lang.js     # fi / en / ja, English as the per-KEY fallback     (SHARED)
+    intro.js    # the title screen; ?skip walks past it
+    glyphs.js   # the button faces, drawn as SVG — no key caps ever  (Art)
+    fx.js       # visual spec + particle pool + event inference (three INJECTED)
+    audio-fx.js # the voice table + synthesised kit (never sampled)
     layers.js   # the cutout diorama: LAYER_RECTS × PPU at real z    (Art)
     rooms.js    # the twelve levels, laid out in parts              (Design/Level)
     parts.js    # the room compiler + REACH, the reach budget       (Design/Level)
@@ -943,6 +991,8 @@ eeri/           # Eeri — the platformer. MULTI-AGENT: read PHASING.md before a
     rooms.mjs      # the room prover — geometry against REACH
     smoke.cjs      # the game: boot, assets fetched, one token per module
     playthrough.cjs# a bot must FINISH every level, and it measures COST
+    fx-smoke.mjs   # the FX spec, pool and inference — bare node
+    dev-menu.mjs   # the dev pack's contract with the game — bare node
 sudsjack/       # Suds Jack — the rebuild: Bomb Jack's collection on Tempest's tube
   index.html    #   (the playable original is still sudz/ on gh-pages)
   VERSIONS.md

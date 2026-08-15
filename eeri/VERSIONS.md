@@ -1,6 +1,20 @@
 # EERI — versions
 
-## v15 — 2026-08-14 — three languages, a title screen, an illustrated pad, and the dev/FX pack
+> **VERSIONS ARE DECIMAL from v15 (2026-08-14).** `vMAJOR.MINOR` — the
+> integer is a milestone, the decimal an increment on it. Three lineages of
+> this project each burned whole integers on ordinary work and then collided
+> on them (there were two v11s and two v13s); a minor part gives increments
+> somewhere to go that is not the next milestone's number.
+>
+> **The `?v=` module tokens stay integers.** They are cache-busters, not
+> releases — they track every module-graph change, and the release number
+> tracks what shipped. `scripts/versions.mjs` reads both and emits a label
+> (`"15.1"`) plus a sort key (`15001`), because one number cannot do both
+> jobs: a label cannot be compared (`'15.10' < '15.9'` lexically) and a
+> float cannot be displayed (`15.0` prints as `15`).
+
+
+## v15.1 — 2026-08-14 — three languages, a title screen, an illustrated pad, and the dev/FX pack
 
 Four owner asks in one pass, and one of them was overdue by fourteen
 versions.

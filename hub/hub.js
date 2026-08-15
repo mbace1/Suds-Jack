@@ -564,8 +564,16 @@ function readSeen() {
 
 let pendingSeen = null;
 function markFresh(versions) {
+  // DECIMAL VERSIONS. `v` is the label a reader sees ("15.2") and `n` is the
+  // sort key (15002). The diff has to compare on `n`: a label cannot be
+  // compared, because lexically '15.10' sorts BELOW '15.9' and a version
+  // that moved would show as one that had not. What is remembered is the
+  // pair, so the "was vX" tooltip can still say the label rather than the
+  // key. Older stored data is a bare number — coerced on read, not migrated.
   const now = {};
-  for (const [id, v] of Object.entries(versions)) now[id] = v.v;
+  for (const [id, v] of Object.entries(versions)) {
+    now[id] = { v: String(v.v), n: Number(v.n ?? v.v) };
+  }
   pendingSeen = now;
 
   const seen = readSeen();
@@ -577,12 +585,15 @@ function markFresh(versions) {
   for (const slot of document.querySelectorAll('.ver')) {
     const id = slot.dataset.game;
     if (!(id in now)) continue;
-    const was = seen[id];
-    const state = was === undefined ? 'new' : (now[id] > was ? 'up' : null);
+    const raw = seen[id];
+    // a value stored before decimals were a thing is a bare number
+    const was = raw == null ? undefined
+      : (typeof raw === 'object' ? raw : { v: String(raw), n: Number(raw) });
+    const state = was === undefined ? 'new' : (now[id].n > was.n ? 'up' : null);
     if (!state) continue;
     n++;
     const tag = el('span', 'fresh', t(`fresh.${state}`));
-    tag.title = state === 'up' ? t('fresh.from', { x: was }) : '';
+    tag.title = state === 'up' ? t('fresh.from', { x: was.v }) : '';
     slot.after(tag);
     slot.closest('.cab')?.classList.add('has-fresh');
   }
