@@ -25,6 +25,7 @@
 import * as THREE from 'three';
 import { PAL, LAYER_Z, LAYER_TINT, mix } from './palette.js?v=23';
 import { getLayerTexture } from './assets.js?v=23';
+import { buildPipeworksDressing } from './world2-dressing.js?v=24';
 
 export const PPU = 30; // canvas pixels per world unit
 
@@ -415,6 +416,7 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
     mounted.push(mountLayer(scene, rect, live || paintCanvas({ ...rect, ...PLACEHOLDER_DRAW[name] })));
   }
   const events = backgroundEvents(scene);
+  const dressing = world === 'pipeworks' ? buildPipeworksDressing(scene) : null;
   return {
     world,
     update: (dt) => { if (!reduced) events.update(dt); },
@@ -435,6 +437,7 @@ export async function buildLayers(scene, world = 'groundworks', reduced = false)
         m.material.dispose();
       }
       mounted.length = 0;
+      dressing?.dispose?.();
       events.dispose?.();
     },
   };
