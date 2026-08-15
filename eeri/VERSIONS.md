@@ -1,5 +1,31 @@
 # EERI — versions
 
+## v15.10 — 2026-08-15 — World 2 has levels (PR 4 of 4)
+
+**Levels 4, 5 and 6 — the Wet Trench, the Pipe Run, the Pumphouse.** The
+world's three beats in the order `WORLD2.md` set them: water alone, then
+pipes over water, then all of it plus the hoist as the world's exam. The
+gizmos were each proved in the `LAB` before a level spent one, which is
+what the LAB is for.
+
+**The playthrough gate is the reason to believe it:** a bot finishes all
+**six** levels now, and loses the ride zero times in each. `rooms.mjs` is
+at 147 — the prover grew with the rooms rather than after them.
+
+**What this unblocks, and it is the point:** World 2's backdrop has been
+painted and parked since art lineage v16, and the `pipeworks_*` manifest
+entries could not be flipped to `live` because the smoke gate fails any
+live asset nothing fetches — and nothing asked for world 2. Now something
+does.
+
+**Still to wire:** `main.js` builds the diorama ONCE at boot with
+`buildLayers(scene, 'groundworks')`, so levels 4–6 currently play in front
+of World 1's site. The layer set has no teardown, so swapping worlds is a
+real change to `layers.js` (Art lane) rather than a one-line argument.
+Named here so it is not mistaken for the levels being wrong.
+
+Gates: rooms 147 / fx 31 / dev-menu 30 / smoke 274 / **playthrough 13** / hub.
+
 ## v15.9 — 2026-08-15 — the hoist: the first solid thing that is not a tile (World 2, PR 3 of 4)
 
 > Submitted as v15.4 — a number already spent, and four releases behind
