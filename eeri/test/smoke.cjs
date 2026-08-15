@@ -739,6 +739,58 @@ s.listen(0, '127.0.0.1', async () => {
       /pollGamepad\(\)/.test(src.slice(src.indexOf('setAnimationLoop'), src.indexOf('setAnimationLoop') + 400)));
   }
 
+  // ---- THE ADDRESS: /eeri/#eeri-1-2 opens the second level --------------
+  // The mapping itself is proved in test/rooms.mjs, in plain Node. What can
+  // only be proved here is the wiring: that a fragment actually BOOTS that
+  // room, that a level change rewrites the bar, and that an address naming a
+  // level which is not built yet lands somewhere real instead of a black
+  // screen — the game grows three levels at a time, so #eeri-2-1 is a link
+  // somebody can hold before world 2 exists.
+  //
+  // Each of these needs its own QUERY, not just its own fragment: a
+  // navigation that differs only after the '#' does not reload the page, so
+  // the assertions would read the previous room's game object and pass or
+  // fail for the wrong reason. That cost a debugging pass.
+  {
+    ok('a bare address is normalised into the bar',
+      await p.evaluate(() => location.hash) === '#eeri-1-1',
+      await p.evaluate(() => location.hash));
+    ok('the HUD shows the address beside the name',
+      /^\d+-\d+ · /.test(await p.evaluate(() => document.getElementById('site').textContent)),
+      await p.evaluate(() => document.getElementById('site').textContent));
+
+    await p.goto(base + '/eeri/?a=1#eeri-1-2', { waitUntil: 'load' });
+    await p.waitForFunction(() => !!window.__eeri, null, { timeout: 20000 }).catch(() => {});
+    ok('#eeri-1-2 boots straight into the second level',
+      await p.evaluate(() => window.__eeri.site()) === 1,
+      'site=' + await p.evaluate(() => window.__eeri.site()));
+    ok('…and it really is the room it names',
+      (await p.evaluate(() => window.__eeri.level.def.name)).includes('SCAFFOLD'));
+
+    await p.goto(base + '/eeri/?a=2#1-3', { waitUntil: 'load' });
+    await p.waitForFunction(() => !!window.__eeri, null, { timeout: 20000 }).catch(() => {});
+    ok('the bare form works, and is rewritten to the full one',
+      await p.evaluate(() => window.__eeri.site()) === 2
+      && await p.evaluate(() => location.hash) === '#eeri-1-3',
+      await p.evaluate(() => location.hash));
+
+    await p.goto(base + '/eeri/?a=3#eeri-2-1', { waitUntil: 'load' });
+    await p.waitForFunction(() => !!window.__eeri, null, { timeout: 20000 }).catch(() => {});
+    ok('an address for a level that is not built yet falls back to 1-1',
+      await p.evaluate(() => window.__eeri.site()) === 0);
+
+    await p.goto(base + '/eeri/?a=4#totally-bogus', { waitUntil: 'load' });
+    await p.waitForFunction(() => !!window.__eeri, null, { timeout: 20000 }).catch(() => {});
+    ok('and so does nonsense', await p.evaluate(() => window.__eeri.site()) === 0);
+
+    await p.evaluate(() => window.__eeri.debug.goSite(1));
+    await p.waitForFunction(() => window.__eeri.site() === 1 && !window.__eeri.debug.transitioning(),
+      null, { timeout: 20000 }).catch(() => {});
+    ok('changing level rewrites the address',
+      await p.evaluate(() => location.hash) === '#eeri-1-2',
+      await p.evaluate(() => location.hash));
+  }
+
   // ---- the gizmo kit, in the lab ----------------------------------------
   // A belt is a floor that moves you and a tarp is a floor that throws you,
   // so both are proved by standing still on one: anything that happens is

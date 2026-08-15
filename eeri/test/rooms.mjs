@@ -19,6 +19,7 @@ import {
   ladder, ledge, checkpoint, flagAt, golden, boltRun, belt, tarp, TARP_RISE,
   swingBall, hazard,
 } from '../js/parts.js?v=4';
+import { slugOf, parseSlug, PER_WORLD } from '../js/levelid.js?v=1';
 
 // a hundred bolts is the level's completion figure, so most of the BAD rooms
 // below would fail on the count alone and say nothing about what they are
@@ -135,6 +136,47 @@ for (const room of ROOMS) {
     ok(`${room.name}: the ladder at x=${l.c} has a deck to step off onto`, landed,
       `tops out at cy=${l.cy1}`);
   }
+}
+
+// ---- the address (js/levelid.js) ----------------------------------------
+// A world is a NAMING layer over the flat site list, so the thing to prove
+// is that the two never disagree: every level has exactly one address, and
+// every address round-trips back to the level it names. The mapping is
+// arithmetic and covers the whole planned twelve, so it is proved past the
+// rooms that exist — the address space is complete before the rooms are.
+{
+  console.log('\nthe address:');
+  ok('EERI 1-1 is the first level', slugOf(0, ROOMS.length) === 'eeri-1-1');
+  ok('EERI 1-2 is the second level of world one', slugOf(1, ROOMS.length) === 'eeri-1-2');
+  ok('EERI 2-1 is the first level of world two', slugOf(3, 12) === 'eeri-2-1');
+  ok('EERI 4-3 is the last of the planned twelve', slugOf(11, 12) === 'eeri-4-3');
+
+  // round-trip every one of the twelve, not only the built ones
+  let round = true;
+  for (let i = 0; i < 12; i++) {
+    const p = parseSlug('#' + slugOf(i, 12));
+    if (!p || p.index !== i) { round = false; break; }
+  }
+  ok('every address round-trips back to its own level', round);
+
+  ok('a world is three levels, as DESIGN §4.1 fixes it', PER_WORLD === 3);
+  ok('the gizmo lab is addressed, and is not a level',
+    slugOf(ROOMS.length, ROOMS.length) === 'lab' && parseSlug('#lab')?.lab === true);
+
+  // forgiving on the way in, because a child or a parent types these
+  ok('the bare form works too', parseSlug('1-2')?.index === 1);
+  ok('case does not matter', parseSlug('#EERI-1-2')?.index === 1);
+  ok('a missing hash does not matter', parseSlug('eeri-1-2')?.index === 1);
+
+  // …and strict about nonsense, so the caller can fall back rather than
+  // build a room that is not there
+  for (const bad of ['', '#', '#eeri', '#1-0', '#0-1', '#1-4', '#eeri-1', 'x', '#1-2-3', null]) {
+    if (parseSlug(bad) !== null) { ok(`refuses the address ${JSON.stringify(bad)}`, false); break; }
+  }
+  ok('nonsense addresses are refused rather than guessed at',
+    ['', '#', '#eeri', '#1-0', '#0-1', '#1-4', '#eeri-1', 'x', '#1-2-3', null]
+      .every((b) => parseSlug(b) === null));
+  console.log('');
 }
 
 // ---- the gizmo lab -------------------------------------------------------

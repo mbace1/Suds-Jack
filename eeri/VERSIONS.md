@@ -1,5 +1,83 @@
 # EERI — versions
 
+## v16 — 2026-08-15 — every level has an address, and falls stop teleporting
+
+**`EERI 1-1`** (owner's direction, and it is Mario's scheme because that is
+the one every parent already reads). World and level, both 1-based, three
+levels to a world exactly as DESIGN §4.1 fixes it — so `1-2` is the second
+level of world one and `2-1` is the first of world two. It is a URL:
+`/eeri/#eeri-1-2` boots straight into that room, which is what makes a level
+shareable for a playtest.
+
+**It is a naming layer, not a second list.** `js/levelid.js` is pure —
+no three.js, no DOM, so `test/rooms.mjs` proves the mapping in plain Node —
+and the game still runs on one flat index with `goSite(i + 1)` as the whole
+of "next level". Two lists that can disagree is the bug this project has
+already paid for twice (`SITES` vs `ROOMS`, and three lineages that all
+called themselves v11).
+
+Four decisions worth keeping:
+
+- **The address space is the whole planned twelve from the start.** The
+  mapping is arithmetic, so a level is addressable the moment it is authored
+  and `#eeri-2-1` is a link somebody can hold before world 2 is built. An
+  address naming a level that does not exist yet opens **1-1** rather than a
+  black screen, and so does nonsense.
+- **Forgiving in, canonical out.** `#eeri-1-2`, `#EERI-1-2` and `#1-2` all
+  mean the same level — the failure mode here is a child or a parent typing
+  it — and the bar is rewritten to the full form afterwards.
+- **`replaceState`, never `location.hash =`.** Assigning fires `hashchange`
+  back at the handler that just changed the level, and the game reloads the
+  room it is already standing in. `gameoflife` documents the same trap.
+- **The HUD prints the address beside the name** (`1-2 · LEVEL 2 — THE
+  SCAFFOLD`) and so does the tab title, so what is on screen is what you can
+  paste to somebody.
+
+**Found writing the gate, and it is a test-harness trap rather than a game
+one:** a navigation that differs only after the `#` **does not reload the
+page**. The first four deep-link checks were reading the *previous* room's
+`window.__eeri` and reporting a working feature as broken. Each check now
+carries its own query string. A test that passes for the wrong reason is
+worse than one that fails.
+
+### the same version's bug fix
+
+**Falls used a hardcoded `x = 43`.** `Player.update`'s fall handler carried
+a LEVEL 2 coordinate — it sits at that room's third ladder — left behind by
+a debugging session, so *every* fall in *every* level teleported the kid
+there, bypassing `level.fallRespawn()`, which already existed and already
+did the right thing (the near lip of whichever hole took you, else the last
+checkpoint passed).
+
+Found by the **playthrough gate**, which is the only one of the four that
+could see it: `rooms.mjs` proves a room is reachable and cannot watch a
+fall, and a human reads it as "the game put me somewhere odd". The bot
+stalled at `x=44` on LEVEL 2 for its whole five-minute budget, six times.
+The owner's experience analysis filed the same thing as **P0**
+independently. The general lesson, and it is new to this log: **a debug
+constant in shipping code outlives the debugging session.**
+
+### and two documents
+
+**`LEVEL2.md`** — the worked example. Every level in this game is cut from
+one shape, so one level is documented completely: the four beats object by
+object with real coordinates, the skill ladder it sits on, the thirteen
+`check()` rules that bite on it, what building it taught, and where it still
+falls short against the owner's analysis. Every number is read out of the
+compiler rather than recalled, and the file carries the snippet to
+regenerate them.
+
+**`WORLD2.md`** — the grey box for Pipeworks (DESIGN §4.2). Theme, three
+levels on the four-beat pattern, the art queue with the `pipeworks_*` layer
+table matching the rects `smoke.cjs` measures, two machines on the
+excavator's node contract, and an honest costing: water and the pipe are
+cheap re-dresses, the hoist is not — every solid in this game is a tile and
+a moving platform cannot be one. **Not a to-do list:** the owner's analysis
+says explicitly not to prioritise more levels yet.
+
+Gates: rooms **90/0** (11 new, on the address), smoke, playthrough and
+hub-smoke green.
+
 ## v15 — 2026-08-14 — one tree: the three lineages assembled
 
 **Three lineages had independently reached v11** — design on `main`
