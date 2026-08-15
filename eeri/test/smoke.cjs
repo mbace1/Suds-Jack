@@ -174,7 +174,7 @@ s.listen(0, '127.0.0.1', async () => {
     return await p.evaluate(() => window.__eeri.mode() === 'riding');
   }
 
-  await p.goto(base + '/eeri/', { waitUntil: 'load' });
+  await p.goto(base + '/eeri/?skip', { waitUntil: 'load' });
   await p.waitForFunction(() => !!window.__eeri, null, { timeout: 8000 }).catch(() => {});
   ok('it boots and exposes the handle', await p.evaluate(() => !!window.__eeri));
   ok('no errors on boot', errs.length === 0, errs.slice(0, 3).join(' | '));
@@ -665,10 +665,44 @@ s.listen(0, '127.0.0.1', async () => {
     const named = (hints.match(/\b(SPACE|ENTER|SHIFT|CTRL|CLICK|MOUSE|W\s*S|A\s*D)\b/g) || []);
     ok(`no prompt names a key or a mouse${named.length ? ' — ' + [...new Set(named)] : ''}`,
       named.length === 0);
-    ok('the on-screen buttons carry the same glyphs the prompts do', await p.evaluate(() => {
-      const t = [...document.querySelectorAll('#touch button')].map((b) => b.textContent.trim());
-      return ['◀', '▶', '▲', '▼', 'Ⓐ', 'Ⓑ'].every((g) => t.includes(g));
-    }));
+    // The buttons used to BE the glyph characters. They now carry drawn
+    // faces (owner: "like old arcades with illustrated backboards"), so the
+    // old textContent test no longer describes anything real. What still
+    // has to hold is the correspondence: every control the prompts talk
+    // about has a face drawn for it, and the glyph set covers exactly the
+    // controls the input map binds — a set that drifts from the map is how
+    // ▲ ends up illustrated as the thing ▼ does.
+    {
+      const g = fs.readFileSync(path.join(__dirname, '..', 'js', 'glyphs.js'), 'utf8');
+      // scoped to the exported set, not the whole file: the pose table and
+      // the direction ticks use the same words and matched too
+      const block = g.slice(g.indexOf('export const GLYPHS = {'), g.indexOf('};', g.indexOf('export const GLYPHS = {')));
+      const drawn = [...block.matchAll(/^\s{2}(\w+):/gm)].map((m) => m[1]);
+      const CONTROLS = ['left', 'right', 'up', 'down', 'jump', 'action'];
+      ok('a face is drawn for every control, and only for those',
+        CONTROLS.every((c) => drawn.includes(c)) && drawn.length === CONTROLS.length,
+        drawn.join(','));
+      const mainSrc = fs.readFileSync(path.join(__dirname, '..', 'js', 'main.js'), 'utf8');
+      const bind = mainSrc.match(/bindButtons\(\{([^}]*)\}/);
+      const bound = bind ? [...bind[1].matchAll(/'(\w+)'/g)].map((m) => m[1]) : [];
+      ok('…and the glyph set matches the controls the game actually binds',
+        bound.length > 0 && bound.every((c) => CONTROLS.includes(c)), bound.join(','));
+    }
+    // The rule is about the WORDS and is unaffected by the buttons gaining
+    // pictures. It is checked against the language packs rather than against
+    // whatever prompt happens to be on screen: several prompts are pure
+    // sentences with no control in them at all ("CARRY IT TO THE GAP"), so
+    // sampling the live hint tests the clock, not the rule.
+    {
+      const packs = fs.readFileSync(path.join(__dirname, '..', 'js', 'lang.js'), 'utf8');
+      const prompts = [...packs.matchAll(/^\s{4}h[A-Z]\w*: '([^']*)'/gm)].map((m) => m[1]);
+      ok('every language pack ships the in-play prompts', prompts.length >= 14 * 3, String(prompts.length));
+      const keyed = prompts.filter((s2) => /\b(SPACE|ENTER|SHIFT|CTRL|CLICK|MOUSE|WASD)\b/i.test(s2));
+      ok('no prompt in any language names a key or a mouse', keyed.length === 0, keyed.join(' | '));
+      // and the ones that DO name a control name it as a glyph
+      const withCtl = prompts.filter((s2) => /[◀▶▲▼ⒶⒷ]/.test(s2));
+      ok('the prompts that name a control do it in glyphs', withCtl.length >= 8 * 3, String(withCtl.length));
+    }
     // The on-screen controls only EXIST on a coarse pointer, and the Toko
     // badge takes a different inset there, so measuring them on the desktop
     // page tests a layout nobody ever sees. This opens a real landscape
@@ -677,7 +711,7 @@ s.listen(0, '127.0.0.1', async () => {
       viewport: { width: 750, height: 340 }, hasTouch: true, isMobile: true, deviceScaleFactor: 3,
     });
     const pp = await phone.newPage();
-    await pp.goto(base + '/eeri/', { waitUntil: 'load' });
+    await pp.goto(base + '/eeri/?skip', { waitUntil: 'load' });
     await pp.waitForFunction(() => !!window.__eeri, null, { timeout: 12000 }).catch(() => {});
     await pp.waitForTimeout(600);
     const geo = await pp.evaluate(() => {
@@ -811,6 +845,90 @@ s.listen(0, '127.0.0.1', async () => {
   }
 
   ok('no errors after the whole ride', errs.length === 0, errs.slice(0, 3).join(' | '));
+
+  // ---- THE TITLE SCREEN, and the three languages -------------------------
+  // Every other check above loads `?skip`, which walks past the intro so the
+  // gate is testing the game rather than a button. That makes it exactly the
+  // kind of thing that rots unwatched, so it gets its own page — in Finnish,
+  // because the player is a Finnish six-year-old and that is the case which
+  // was broken for fourteen versions.
+  {
+    const ip = await b.newPage({ viewport: { width: 844, height: 390 }, locale: 'fi-FI' });
+    const ierr = [];
+    ip.on('pageerror', (e) => ierr.push(String(e)));
+    await ip.goto(base + '/eeri/', { waitUntil: 'load' });
+    const shown = await ip.waitForSelector('#intro', { timeout: 20000 }).then(() => true).catch(() => false);
+    ok('the game opens on a title screen, not straight into level 1', shown);
+
+    if (shown) {
+      await ip.waitForTimeout(400);
+      const txt = await ip.evaluate(() => document.getElementById('intro').innerText);
+      // the owner's own words, and the reason this screen exists
+      ok('the title screen carries the story brief, in Finnish',
+        txt.includes('seikkailee työkoneiden ja robottien maailmassa'), txt.replace(/\n/g, ' | '));
+      ok('…and the browser language decided that, not a default',
+        await ip.evaluate(() => document.documentElement.lang) === 'fi');
+      ok('all three languages are offered',
+        await ip.evaluate(() => document.querySelectorAll('#intro .lang button').length) === 3);
+
+      // switching is the whole point of putting the toggle here
+      await ip.click('#intro .lang button:nth-child(3)');
+      await ip.waitForTimeout(150);
+      ok('switching to Japanese rewrites the brief',
+        (await ip.evaluate(() => document.getElementById('introBrief').textContent)).includes('はたらくくるま'));
+      await ip.click('#intro .lang button:nth-child(1)');
+      await ip.waitForTimeout(150);
+
+      // 44px floor applies here like everywhere else on this site
+      const small = await ip.evaluate(() => [...document.querySelectorAll('#intro button')]
+        .map((e) => ({ t: e.textContent.trim(), h: Math.round(e.getBoundingClientRect().height) }))
+        .filter((e) => e.h < 44));
+      ok('every control on the title screen clears 44px', small.length === 0, JSON.stringify(small));
+
+      // and it must actually let you in
+      await ip.click('#introStart');
+      const started = await ip.waitForFunction(() => window.__eeri, null, { timeout: 90000 })
+        .then(() => true).catch(() => false);
+      ok('START starts the game', started);
+    }
+    ok('no errors on the title screen', ierr.length === 0, ierr.slice(0, 2).join(' | '));
+    await ip.close();
+  }
+
+  // ---- the pad, on a thumb -----------------------------------------------
+  // The layout is owner-specified (◀ ▼ ▶ with ▲ above) and every button
+  // carries a picture of its action rather than an arrow, so both are worth
+  // asserting: a glyph set that silently stops rendering leaves six blank
+  // circles, which looks like a broken game and passes every other check.
+  {
+    const tp = await b.newPage({
+      viewport: { width: 844, height: 390 }, locale: 'fi-FI', hasTouch: true, isMobile: true,
+    });
+    await tp.goto(base + '/eeri/?skip', { waitUntil: 'load' });
+    await tp.waitForFunction(() => window.__eeri, null, { timeout: 90000 });
+    await tp.waitForTimeout(800);
+    const pad = await tp.evaluate(() => ['tL', 'tD', 'tR', 'tU', 'tA', 'tJ'].map((id) => {
+      const e = document.getElementById(id); const r = e.getBoundingClientRect();
+      return { id, x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width),
+               h: Math.round(r.height), art: !!e.querySelector('svg,img'), label: e.getAttribute('aria-label') };
+    }));
+    const by = Object.fromEntries(pad.map((q) => [q.id, q]));
+    ok('every pad button carries a picture of its action, not a bare arrow',
+      pad.every((q) => q.art), pad.filter((q) => !q.art).map((q) => q.id).join(','));
+    ok('every pad button clears 44px', pad.every((q) => q.w >= 44 && q.h >= 44));
+    ok('every pad button is named in the player\'s language',
+      pad.every((q) => q.label && /[a-zåäö]/i.test(q.label)) && by.tL.label.includes('vasemmalle'),
+      by.tL.label);
+    // the owner's layout: down BETWEEN left and right, up ABOVE
+    ok('down sits between left and right', by.tL.x < by.tD.x && by.tD.x < by.tR.x,
+      `L${by.tL.x} D${by.tD.x} R${by.tR.x}`);
+    ok('up sits above, in the middle column', by.tU.y < by.tD.y && by.tU.x === by.tD.x,
+      `U(${by.tU.x},${by.tU.y}) D(${by.tD.x},${by.tD.y})`);
+    // …and nothing is stacked more than two high: this is a landscape phone
+    ok('the pad is never more than two rows tall',
+      new Set(pad.map((q) => q.y)).size <= 2, pad.map((q) => q.y).join(','));
+    await tp.close();
+  }
 
   await b.close(); s.close();
   console.log(`\n${pass} passed, ${fail} failed`);

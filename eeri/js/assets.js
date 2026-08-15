@@ -10,7 +10,7 @@
 // the placeholder ships instead — a silent half-rig is worse than a grey box.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=14';
+import { PAL } from './palette.js?v=15';
 import { GLTFLoader } from '../vendor/jsm/loaders/GLTFLoader.js?v=1';
 
 const BASE = new URL('../assets/', import.meta.url);
@@ -94,7 +94,7 @@ export async function loadManifest() {
   // token never learns the new one exists and keeps the old art forever,
   // with every asset URL inside it still perfectly correct. This shipped at
   // `?v=1` for eleven versions. The smoke gate now asserts the two agree.
-  const res = await fetch(new URL('manifest.json?v=14', BASE));
+  const res = await fetch(new URL('manifest.json?v=15', BASE));
   manifest = await res.json();
   return manifest;
 }
@@ -165,6 +165,23 @@ export function getPiece(name, buildPlaceholder) {
 }
 
 // ---- 2D: layer paintings --------------------------------------------------
+
+// ---- 2D for the DOM: the title logo and the button sheet ------------------
+//
+// The layer path below returns a `THREE.Texture`, which is the right thing
+// for something that goes on a plane in the scene and the wrong thing for
+// something that goes in an `<img>`. The intro's logo is DOM, not scene.
+//
+// So this is its own small seam: a `ui` block in the manifest, `status`
+// flipped the same way as everything else, and a plain URL back. It returns
+// **null** rather than throwing when there is no entry, because the caller's
+// job is to draw its own thing in that case — the intro ships a code-drawn
+// wordmark and swaps to the painted logo when one exists.
+export function uiAsset(name) {
+  const entry = manifest?.ui?.[name];
+  if (!entry || entry.status !== 'live') return null;
+  return new URL(entry.file + '?v=' + manifest.v, BASE).href;
+}
 
 export async function getLayerTexture(world, layer) {
   const entry = manifest?.layers?.[world]?.[layer];

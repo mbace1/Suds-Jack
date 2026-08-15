@@ -137,7 +137,7 @@ srv.listen(0, '127.0.0.1', async () => {
   const errs = [];
   page.on('pageerror', (e) => errs.push(e.message));
 
-  await page.goto(base + '/eeri/', { waitUntil: 'load' });
+  await page.goto(base + '/eeri/?skip', { waitUntil: 'load' });
   await page.waitForFunction(() => !!window.__eeri && window.__eeri.player.grounded, null, { timeout: 20000 });
   const total = await page.evaluate(() => window.__eeri.debug.rooms());
   if (!Number.isInteger(total) || total < 1) { console.log('  FAIL could not read the level count'); process.exit(1); }
