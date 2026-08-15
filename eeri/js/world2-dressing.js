@@ -21,13 +21,19 @@ export function buildPipeworksDressing(scene) {
   const BACK_Z = -0.72;
   const FACE_Z = 0.86;
 
-  const steel = craftMat(mix(PAL.STEEL[2], PAL.SKY_PALE, 0.12), 'balsa');
-  const steelDark = craftMat(mix(PAL.STEEL[0], PAL.INK, 0.16), 'balsa');
-  const yellow = craftMat(PAL.MACHINE, 'balsa');
-  const yellowDark = craftMat(PAL.MACHINE_DK, 'balsa');
-  const card = craftMat(mix(PAL.EARTH[2], PAL.SKY_PALE, 0.08), 'card');
-  const water = craftMat(PAL.WATER_DK, 'felt');
-  const ink = new THREE.MeshLambertMaterial({ color: PAL.DARK });
+  // These materials are owned by this dressing group. Their craft texture
+  // maps are shared by the central material cache, so dispose the materials
+  // but never dispose those shared maps when a world swap tears us down.
+  const ownedMats = new Set();
+  const own = (m) => { ownedMats.add(m); return m; };
+  const steel = own(craftMat(mix(PAL.STEEL[2], PAL.SKY_PALE, 0.12), 'balsa'));
+  const steelDark = own(craftMat(mix(PAL.STEEL[0], PAL.INK, 0.16), 'balsa'));
+  const yellow = own(craftMat(PAL.MACHINE, 'balsa'));
+  const yellowDark = own(craftMat(PAL.MACHINE_DK, 'balsa'));
+  const card = own(craftMat(mix(PAL.EARTH[2], PAL.SKY_PALE, 0.08), 'card'));
+  const water = own(craftMat(PAL.WATER_DK, 'felt'));
+  const pumpBlue = own(craftMat(mix(PAL.WATER_DK, PAL.STEEL[2], 0.35), 'balsa'));
+  const ink = own(new THREE.MeshLambertMaterial({ color: PAL.DARK }));
 
   const box = (w, h, d, mat, x, y, z = BACK_Z) => {
     const m = craftBox(w, h, d, mat);
@@ -59,7 +65,7 @@ export function buildPipeworksDressing(scene) {
   };
 
   const serviceWall = (x, w, h) => {
-    // Broad card/cement connector with visible blue/steel structural straps.
+    // Broad card/cement connector with visible steel structural straps.
     box(w, h, 0.24, card, x + w / 2, 3.55 + h / 2);
     for (let sx = x + 0.7; sx < x + w; sx += 2.1) {
       box(0.18, h + 0.25, 0.12, steelDark, sx, 3.55 + h / 2, BACK_Z + 0.08);
@@ -86,7 +92,7 @@ export function buildPipeworksDressing(scene) {
     // Small control/pump assembly: readable industrial punctuation, not an
     // interactable machine. The real ride remains visually dominant.
     box(4.6, 0.28, 1.0, steelDark, x + 2.3, 4.02);
-    box(1.45, 1.65, 0.8, craftMat(mix(PAL.WATER_DK, PAL.STEEL[2], 0.35), 'balsa'), x + 1.1, 4.95);
+    box(1.45, 1.65, 0.8, pumpBlue, x + 1.1, 4.95);
     box(0.9, 0.28, 0.82, yellow, x + 1.1, 5.64, BACK_Z + 0.05);
     // gauge
     ring(0.26, 0.07, steelDark, x + 1.1, 5.13, BACK_Z + 0.3);
@@ -111,8 +117,10 @@ export function buildPipeworksDressing(scene) {
   };
 
   const buriedPipe = (x, y, s = 1, rot = 0) => {
-    // This is the actual live production cut-face asset, not a redraw.
-    const q = cutQuad(1.9 * s, 0.8 * s, 'f_pipe', { color: 0x958c82 });
+    // This is the actual live production cut-face asset, not a redraw or
+    // palette-tinted substitute. The cutout material is cached by craft.js,
+    // so its material belongs to that cache rather than this group.
+    const q = cutQuad(1.9 * s, 0.8 * s, 'f_pipe');
     q.position.set(x, y, FACE_Z);
     q.rotation.z = rot;
     root.add(q);
@@ -149,15 +157,9 @@ export function buildPipeworksDressing(scene) {
     root,
     dispose() {
       scene.remove(root);
-      root.traverse((o) => {
-        o.geometry?.dispose?.();
-        const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
-        for (const m of mats) {
-          // craft materials may own detail maps; this group owns its copies.
-          m.map?.dispose?.();
-          m.dispose?.();
-        }
-      });
+      root.traverse((o) => o.geometry?.dispose?.());
+      for (const m of ownedMats) m.dispose?.();
+      ownedMats.clear();
     },
   };
 }
