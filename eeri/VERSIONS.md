@@ -1,5 +1,102 @@
 # EERI — versions
 
+> **VERSIONS ARE DECIMAL from v15 (2026-08-14).** `vMAJOR.MINOR` — the
+> integer is a milestone, the decimal an increment on it. Three lineages of
+> this project each burned whole integers on ordinary work and then collided
+> on them (there were two v11s and two v13s); a minor part gives increments
+> somewhere to go that is not the next milestone's number.
+>
+> **The `?v=` module tokens stay integers.** They are cache-busters, not
+> releases — they track every module-graph change, and the release number
+> tracks what shipped. `scripts/versions.mjs` reads both and emits a label
+> (`"15.1"`) plus a sort key (`15001`), because one number cannot do both
+> jobs: a label cannot be compared (`'15.10' < '15.9'` lexically) and a
+> float cannot be displayed (`15.0` prints as `15`).
+
+
+## v15.1 — 2026-08-14 — three languages, a title screen, an illustrated pad, and the dev/FX pack
+
+Four owner asks in one pass, and one of them was overdue by fourteen
+versions.
+
+**The game speaks fi / en / ja.** It had no i18n at all, which means the
+Finnish six-year-old it is built for had been reading it in English the
+whole time. `js/lang.js` is the pack — English is the **per-key** fallback
+so a half-finished language ships rather than not shipping, the tongue is
+detected once from the browser and then obeyed, a choice persists under
+`eeriLang`, and `<html lang>` is written before anything paints. Every
+in-play prompt moved into it; the glyphs do not translate because they are
+the same in all three.
+
+**A title screen** (`js/intro.js`), which the game did not have — it booted
+straight into level 1 from a `#boot` div that said EERI and vanished, which
+is a loading state, not a title. The owner's words, verbatim: **eeri /
+seikkailee työkoneiden ja robottien maailmassa**. It goes up *before* the
+scene build and is awaited *after* it, so the player reads the name and the
+story line while three megabytes of layer art come down behind them — an
+intro shown after the loading finishes costs time instead of hiding it.
+`?skip` walks past it for the gates.
+
+**The logo is behind the asset seam and art is drawing the real one.**
+`manifest.json` → `ui.logo`, with a new `uiAsset()` in `assets.js` because
+the layer path returns a `THREE.Texture` and a title logo is DOM, not scene.
+A code-drawn wordmark ships until the file lands and comes back if it 404s.
+The contract is written out in `assets/README.md`: 1120×440, middle 90% safe,
+must hold against the sky-blue gradient with no box behind it.
+
+**The pad is the owner's layout, and the buttons are pictures.**
+
+```
+      ▲
+  ◀   ▼   ▶            Ⓑ   Ⓐ
+```
+
+Down sits between left and right because it is the least-used direction and
+the middle is the hardest place for a thumb to hit by accident, while ◀ ▶
+keep the outside where the thumb rests. Still two rows — a landscape phone
+is short, and a full four-way cross has already been tried and pushed the
+hint into the middle of the picture.
+
+Each button now carries **a small picture of what it does** (owner: *"like
+old arcades with illustrated backboards"*): Eeri running for ◀ ▶, climbing
+a ladder for ▲, a bucket for ▼, and the two face buttons in machine yellow.
+`js/glyphs.js` draws them as inline SVG rather than shipping a sheet — they
+scale from a 13px hint line to a 62px button, they re-colour through
+`currentColor`, and a set that is a file drifts from the game that uses it.
+A painted sheet can replace them through `useGlyphSheet()`.
+
+**The dev / FX pack** (`CLAUDE_HANDOFF.md`, `EERI_DEV_PACK.md`). Tools for
+iterating on feel, built so they cannot destabilise the game:
+
+- `dev.html` **frames `index.html` rather than copying it**, so what is
+  inspected is byte-for-byte what ships. This repo has paid for the
+  copy-drifts bug more than once.
+- Effects fire from **polling** `window.__eeri`'s debug state and reading
+  events out of the differences — zero hooks in `main.js`. Honest limits,
+  both tested: a poll sees only a net change, and a level change must fire
+  **nothing** (every counter resets on a new room; without that guard the
+  first frame of level 2 fired a dig, a stomp and a clear at once).
+- `js/fx.js` and `js/audio-fx.js` **inject** three.js and WebAudio instead
+  of importing them, so `test/fx-smoke.mjs` runs the whole spec, pool and
+  inference in bare node — no browser, no GPU, no audio device.
+- Sound is synthesised, never sampled, and everything goes through one
+  master gain. `test/dev-menu.mjs` fails on a binary audio file.
+- One line was added to the game: `THREE, scene` on the `__eeri` handle. A
+  particle has to be added to something.
+
+`test/dev-menu.mjs` exists for the failure nothing else can catch: the pack
+reads hooks nothing in the game depends on, so renaming one breaks the pack
+and **nothing else fails** — the menu would quietly show dashes while the
+effects quietly stopped.
+
+Two of the new gate checks were wrong on their first cut and are worth
+recording: one matched the *comment* in `main.js` explaining why the scene
+is exported, and one asserted every prompt contains a glyph when several are
+plain sentences ("CARRY IT TO THE GAP"). Both were tests of the clock rather
+than of the rule.
+
+Gates: 77 prover, 190 smoke (up 33), 7 playthrough, 31 fx, 30 dev-pack, hub green.
+
 ## v14 — 2026-08-14 — the third lineage joins, and the number skips
 
 **v13 is deliberately not used.** There were *three* Eeri lineages, not

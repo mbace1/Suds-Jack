@@ -9,28 +9,42 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=14';
-import { Input } from './input.js?v=14';
-import { Level, ROOMS, LAB } from './level.js?v=14';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=15';
+import { Input } from './input.js?v=15';
+import { Level, ROOMS, LAB } from './level.js?v=15';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=14';
-import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=14';
-import { Camera } from './camera.js?v=14';
-import { buildKidModel, Kid, Player } from './kid.js?v=14';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=14';
-import { buildCraneModel, Crane } from './crane.js?v=14';
-import { Robot, SteamVent } from './robots.js?v=14';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=14';
-import { WreckingBall } from './hazards.js?v=14';
-import { AudioKit } from './audio.js?v=14';
-import { loadManifest, getModel, getPiece } from './assets.js?v=14';
-import { craftMat, craftBox } from './craft.js?v=14';
+} from './pieces.js?v=15';
+import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=15';
+import { Camera } from './camera.js?v=15';
+import { buildKidModel, Kid, Player } from './kid.js?v=15';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=15';
+import { buildCraneModel, Crane } from './crane.js?v=15';
+import { Robot, SteamVent } from './robots.js?v=15';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=15';
+import { WreckingBall } from './hazards.js?v=15';
+import { AudioKit } from './audio.js?v=15';
+import { loadManifest, getModel, getPiece } from './assets.js?v=15';
+import { craftMat, craftBox } from './craft.js?v=15';
+import { t as tr } from './lang.js?v=15';
+import { showIntro } from './intro.js?v=15';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 async function boot() {
+  // THE TITLE SCREEN, first (owner direction 2026-08-14). It goes up before
+  // any of the build below, so the player is looking at the game's name and
+  // its one line of story while three megabytes of layer art and two GLBs
+  // come down behind it. That is why it is started HERE and awaited at the
+  // END: an intro shown after the loading has finished costs the player
+  // time instead of hiding it.
+  //
+  // `?skip` walks past it, because the smoke gate and the playthrough bot
+  // are not testing the title screen and would both stall on a button.
+  const skipIntro = new URLSearchParams(location.search).has('skip');
+  const introDone = skipIntro ? Promise.resolve() : showIntro();
+
   // renderer: clean edges, no post stack (ART_BRIEF §3.4)
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -232,19 +246,31 @@ async function boot() {
   // key: a key name is no help to a thumb or a pad, and the on-screen
   // buttons are labelled with these same glyphs, so what you read is what
   // you press whichever of the three you are holding.
+  // ONE glyph set, for every input (DESIGN.md §5). A prompt never names a
+  // key: a key name is no help to a thumb or a pad, and the on-screen
+  // buttons carry these same glyphs, so what you read is what you press
+  // whichever of the three you are holding.
+  //
+  // The WORDS now come from `lang.js`. The player is a Finnish six-year-old
+  // and read them in English for fourteen versions. The glyphs do not
+  // translate — they are the same in all three.
   const HINT = {
-    foot: '◀ ▶  RUN     Ⓐ  JUMP',
-    ladder: '▲ ▼  CLIMB     Ⓐ  JUMP OFF',
-    flag: 'RUN PAST THE FLAG',
-    wary: 'NOBODY IS DRIVING IT — WAIT FOR THE BUCKET TO LIFT',
-    near: 'Ⓑ  CLIMB IN',
-    ride: '◀ ▶  DRIVE     ▲ ▼  BOOM     Ⓑ  HOP OUT',
-    dig: 'HOLD ▼  DIG THE BANK DOWN',
-    sling: 'HOLD ▼  SLING THE GIRDER ON',
-    carry: 'CARRY IT TO THE GAP',
-    seat: 'HOLD ▼  LOWER THE SPAN IN',
-    smash: 'HOLD ▼  SWING THE BALL AT THE WALL',
-    out: 'THE WAY OUT IS OPEN',
+    foot: tr('hFoot'),
+    ladder: tr('hLadder'),
+    flag: tr('hFlag'),
+    // pointed, not vague: a six-year-old needs the DIRECTION as well as the
+    // fact. ◀ or ▶ depending on which side the machine is parked.
+    fetchBack: tr('hFetchBack'),
+    fetchOn: tr('hFetchOn'),
+    wary: tr('hWary'),
+    near: tr('hNear'),
+    ride: tr('hRide'),
+    dig: tr('hDig'),
+    sling: tr('hSling'),
+    carry: tr('hCarry'),
+    seat: tr('hSeat'),
+    smash: tr('hSmash'),
+    out: tr('hOut'),
   };
 
   // ---- the mode machine ---------------------------------------------------
@@ -348,6 +374,14 @@ async function boot() {
   // ---- debug handle (the smoke gate drives game state, not the clock) ----
   window.__eeri = {
     player, audio, input,
+    // THREE and the scene, for the dev/FX pack (`dev/dev-menu.js`). These
+    // are handles, not gameplay: the pack is peripheral by design and only
+    // ever READS the game, but a particle has to be added to something, and
+    // exporting the scene is how it gets a place to live without any part
+    // of the game having to know effects exist. Same category as `tris` and
+    // `camera` below — a debug export, kept out of `debug` only because
+    // three.js wants the constructor as well as the container.
+    THREE, scene,
     // `exc` is reassigned every time a room is built, so it has to be read
     // through a getter — captured once, the handle kept pointing at the
     // machine from the room you had already left.
@@ -420,6 +454,10 @@ async function boot() {
 
   setCounts();
   document.getElementById('boot').remove();
+
+  // …and only now wait for START. By this point the scene is built, so the
+  // first frame after the title fades is the real game, not a blue screen.
+  await introDone;
 
   // ---- the loop ------------------------------------------------------------
   let t = 0;

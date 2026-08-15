@@ -10,6 +10,15 @@
 // The poll only ever acts on EDGES of its own previous state, so a pad
 // being idle never clobbers a key being held, and the three paths coexist.
 
+import { art } from './glyphs.js?v=15';
+import { t } from './lang.js?v=15';
+
+// which string names each control, for the accessible name on its button
+const CTL_KEY = {
+  left: 'ctlLeft', right: 'ctlRight', up: 'ctlUp',
+  down: 'ctlDown', jump: 'ctlJump', action: 'ctlAction',
+};
+
 const KEYS = {
   ArrowLeft: 'left', KeyA: 'left',
   ArrowRight: 'right', KeyD: 'right',
@@ -82,6 +91,15 @@ export class Input {
       el.addEventListener('pointerup', off);
       el.addEventListener('pointercancel', off);
       el.addEventListener('pointerleave', off);
+
+      // …and DRESSED here too: an illustrated face from `glyphs.js` and an
+      // accessible name from `lang.js`. Both belong at the binding, because
+      // this is the one place that already knows which button means which
+      // action — putting the picture in the markup would let the glyph set
+      // and the input map disagree about what ▲ does.
+      if (!el.innerHTML.trim()) el.innerHTML = art(name);
+      el.setAttribute('aria-label', t(CTL_KEY[name] || 'ctlJump'));
+      el.type = 'button';
     }
   }
 }

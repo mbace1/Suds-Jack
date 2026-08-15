@@ -112,6 +112,28 @@ the point the bucket or hook takes hold of.
 Add the file to `manifest.json` under a `"pieces"` block with the same
 `status` / `nodes` shape the models use.
 
+## The title logo (`assets/2d/eeri_logo_v1.png`) — **art's next item**
+
+Owner, 2026-08-14: *"I will ask art to make a logo around the character."*
+So this is a **logotype built around Eeri**, not a wordmark beside him —
+the character is part of the mark, the way a Yoshi logo has Yoshi in it.
+
+The game ships a plain code-drawn wordmark until this file lands, and swaps
+to it the moment `manifest.json` → `ui.logo.status` is flipped to `"live"`
+and `v` is bumped. If it 404s the wordmark comes back; nothing breaks.
+
+| thing | spec |
+|---|---|
+| file | `assets/2d/eeri_logo_v1.png`, PNG with alpha |
+| size | **1120 × 440** — the intro caps the logo at 560px wide, so this is 2× for a retina screen |
+| safe area | keep the mark inside the **middle 90%**; height is capped at `34vh` as well as in px, and a landscape phone is short |
+| ground | it sits on the intro's **sky-blue gradient** (`#4aa8e8` → `#2f86c4`) with **no box behind it**, so it must hold up against blue on its own — INK outline, MACHINE yellow as the fill (ART_BRIEF §3.3) |
+| the name | lowercase **`eeri`**, which is how the owner writes it |
+| what it must not be | a photo, a gradient, or anything with a drop shadow that assumes a white page. Same two-colour discipline as everything else here |
+
+The story line under it is **text, not art** (`js/lang.js`), because it is
+translated into three languages and a picture of a sentence cannot be.
+
 ## 2D layers (`assets/2d/*.png`)
 
 Spec: ART_BRIEF §4. PNG with alpha, flat-colour cutout shapes, shading
