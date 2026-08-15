@@ -1,19 +1,22 @@
 {
-  "v": 15,
+  "v": 23,
   "_readme": "The asset seam. Every entry is either 'placeholder' (the game builds it in code) or 'live' (the game loads the file). Dropping an asset in = put the file at its path, flip status to live, bump the file's v token. The smoke gate reads this file: live entries must resolve and models must expose their contracted nodes. See assets/README.md for the full contract.",
   "models": {
     "eeri": {
-      "file": "3d/eeri_v3.glb",
+      "file": "3d/eeri_v4.glb",
       "status": "live",
       "rig": "skinned",
       "height": 1.62,
-      "_note": "Meshy auto-rig: a 24-bone skinned mesh driven by named CLIPS, not the game's node names, so it is checked against `clips`. `height` is in TILES \u2014 Meshy rigs to metres and the seam rescales. See /ART_PIPELINE.md.",
+      "_note": "Meshy auto-rig: a 24-bone skinned mesh driven by named CLIPS, not the game's node names, so it is checked against `clips`. `height` is in TILES \u2014 Meshy rigs to metres and the seam rescales. See /ART_PIPELINE.md. v4 adds climb/stomp/hurt from the Meshy library (ids 438/470/178) \u2014 the two new verbs finally animate. New file name per the versioned-URL rule.",
       "clips": [
         "idle",
         "walk",
         "run",
         "jump",
-        "ride"
+        "sit",
+        "climb",
+        "stomp",
+        "hurt"
       ]
     },
     "excavator": {
@@ -61,6 +64,68 @@
         "ball": "STEEL1",
         "step": "MACHINE_DK"
       }
+    },
+    "boltbot": {
+      "file": "3d/boltbot_v1.glb",
+      "status": "placeholder",
+      "rig": "skinned",
+      "height": 0.9,
+      "_note": "The bolt-bot: ONE Meshy-rigged biped base that the whole non-violent enemy family is re-headed and retextured from (PHASING \u00a72). 24 bones, feet at the origin, clips measured moving. Height is in TILES \u2014 DESIGN wants a small enemy at \u2264 1 tile. Stays `placeholder` until js/robots.js asks for it: the smoke gate rightly fails a live asset nothing fetches. STOMP IS CODE, not a clip (PHASING \u00a71) \u2014 scale the rig root.",
+      "clips": [
+        "idle",
+        "walk",
+        "run"
+      ]
+    },
+    "hopper": {
+      "file": "3d/hopper_v1.glb",
+      "status": "placeholder",
+      "rig": "skinned",
+      "height": 0.9,
+      "_note": "The jackhammer timing enemy. DESIGN \u00a73, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it \u2014 the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING \u00a71): scale the root. The notice tell that lights before it acts is also code \u2014 the lamp/eyes are texture. `hop` (417) is the fixed-rhythm hop itself.",
+      "clips": [
+        "idle",
+        "walk",
+        "run",
+        "hop"
+      ]
+    },
+    "bucket": {
+      "file": "3d/bucket_v1.glb",
+      "status": "placeholder",
+      "rig": "skinned",
+      "height": 0.85,
+      "_note": "The sleepy provocation enemy. DESIGN \u00a73, on the bolt-bot BODY PLAN (ART_PIPELINE: volume rigs, sticks do not). Skinned, height in TILES. `placeholder` until js/robots.js consumes it \u2014 the gate fails a live asset nothing fetches. STOMP SQUASH IS CODE (PHASING \u00a71): scale the root. The notice tell that lights before it acts is also code \u2014 the lamp/eyes are texture. `wake` (271) is head-led \u2014 the look-up IS the telegraph; then `run` chases.",
+      "clips": [
+        "idle",
+        "walk",
+        "run",
+        "wake"
+      ]
+    },
+    "bolt": {
+      "file": "3d/bolt_v1.glb",
+      "status": "live",
+      "rig": "prop",
+      "_note": "The breadcrumb collectable, hundreds per level. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). Texture kept (not stripped to a `paint` role) because a Meshy prop is one mesh_node and the grey collar against the yellow IS the read at 32 px."
+    },
+    "token_toolbox": {
+      "file": "3d/token_toolbox_v1.glb",
+      "status": "placeholder",
+      "rig": "prop",
+      "_note": "World 1's token. The CARRY-HANDLE ARCH is the silhouette \u2014 \u00a76.3 demands \"unmistakably not a bolt at 32 px\", and the arch with daylight under it is what buys that. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). `placeholder` until the game places tokens."
+    },
+    "token_blueprint": {
+      "file": "3d/token_blueprint_v1.glb",
+      "status": "placeholder",
+      "rig": "prop",
+      "_note": "World 2's token, one per world, unlocks secret art \u2014 so \u00a76.3 wants it to \"look like a thing worth framing\": a rolled scroll tied with string, the only long diagonal in the set. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). `placeholder` until the game places tokens."
+    },
+    "token_bolt": {
+      "file": "3d/token_bolt_v1.glb",
+      "status": "placeholder",
+      "rig": "prop",
+      "_note": "World 3's token. Allowed to be a bolt because it IS the golden one \u2014 so it is a WING NUT: the wings make a V that no plain bolt can be mistaken for. A PICKUP: it floats and spins, so its origin is its CENTRE, not the foot-contact rule that governs things which stand. \u2264 1 tile (DESIGN \u00a76.3). `placeholder` until the game places tokens."
     }
   },
   "pieces": {
@@ -127,28 +192,56 @@
   "layers": {
     "groundworks": {
       "skyline": {
-        "file": "2d/groundworks_skyline_v2.png",
+        "file": "2d/groundworks_skyline_v3.png",
         "status": "live"
       },
       "far": {
-        "file": "2d/groundworks_far_v2.png",
+        "file": "2d/groundworks_far_v3.png",
         "status": "live"
       },
       "mid": {
-        "file": "2d/groundworks_mid_v2.png",
+        "file": "2d/groundworks_mid_v3.png",
         "status": "live"
       },
       "near": {
-        "file": "2d/groundworks_near_v2.png",
+        "file": "2d/groundworks_near_v3.png",
         "status": "live"
       },
       "fore": {
-        "file": "2d/groundworks_fore_v2.png",
+        "file": "2d/groundworks_fore_v3.png",
         "status": "live"
       },
       "sky": {
         "file": "2d/groundworks_sky_v1.png",
         "status": "live"
+      }
+    },
+    "pipeworks": {
+      "skyline": {
+        "file": "2d/pipeworks_skyline_v1.png",
+        "status": "placeholder",
+        "_note": "READY, parked: the whole set is built and in assets/2d \u2014 level 4 flips these six to \"live\" and nothing else. Kept placeholder until then because the smoke gate (rightly) fails a live asset nothing fetches."
+      },
+      "far": {
+        "file": "2d/pipeworks_far_v1.png",
+        "status": "placeholder"
+      },
+      "mid": {
+        "file": "2d/pipeworks_mid_v1.png",
+        "status": "placeholder"
+      },
+      "near": {
+        "file": "2d/pipeworks_near_v1.png",
+        "status": "placeholder"
+      },
+      "fore": {
+        "file": "2d/pipeworks_fore_v1.png",
+        "status": "placeholder"
+      },
+      "sky": {
+        "file": "2d/groundworks_sky_v1.png",
+        "status": "placeholder",
+        "_note": "shared with groundworks \u2014 the sky is world-agnostic until a world needs its own"
       }
     }
   },
@@ -177,9 +270,19 @@
   "_textures_readme": "THE MATERIAL PALETTE. Greyscale detail maps, each MULTIPLIED onto a palette colour (assets.js getTexture) \u2014 never a colour source. Crafted World is a KIT of materials, not one material: card is the ground, felt is the grass, painted balsa is everything the cast is built from. A surface picks the map that matches what it would really be made of.",
   "ui": {
     "logo": {
-      "file": "2d/eeri_logo_v1.png",
-      "status": "placeholder",
-      "_note": "THE TITLE LOGO \u2014 the game's name built AROUND the character (owner, 2026-08-14). PNG with alpha, painted 1120x440 so it is crisp at the intro's 560px cap on a 2x screen. Keep the wordmark inside the middle 90%: the intro caps height at 34vh and a landscape phone is short. It sits on the sky-blue intro gradient, so it must read against #4aa8e8 with no box behind it \u2014 INK outline, MACHINE yellow fill (ART_BRIEF 3.3). Flip status to live and bump v; the intro swaps to it, and falls back to the code-drawn wordmark if it 404s."
+      "file": "2d/logo_v2.png",
+      "status": "live",
+      "_note": "The landing-screen logo, v2 per owner: \"needs to have Eeri the character involved, coming towards the camera pov from top of the text box, waist up.\" He leans over the sign's top edge like a kid over a fence \u2014 body behind the plate, head and hands breaking above it. Built with --ref E1-eeri-tpose so he is the SAME kid as the cast model, not a re-imagining. v1 (the plain sign) is superseded and removed; the three direction tests live in art-src/title/."
+    },
+    "padplate_portrait": {
+      "file": "2d/padplate_v1.png",
+      "status": "live",
+      "_note": "The touch-control backboard for PORTRAIT phones (owner: \"the game pad look is great and should be implemented in the vertical phone use case\"). The original Game Boy DMG face in painted card \u2014 d-pad, A/B on a slant, SELECT/START pills, speaker grill cut clean through (its slots key to transparent). The live DOM buttons become transparent hit areas over the drawn controls, keeping DESIGN \u00a75's 44px targets. LANDSCAPE gets its own plate \u2014 wider and thinner, arcade control-panel rather than handheld \u2014 as `padplate_landscape`; stretching this one is not that."
+    },
+    "padplate_landscape": {
+      "file": "2d/padplate_landscape_v1.png",
+      "status": "live",
+      "_note": "The LANDSCAPE touch backboard (owner: \"wider and thinner look, maybe more arcade background board feel\"): an arcade cabinet control-panel strip \u2014 joystick ball far left, B/A far right with SELECT/START and the grill, and the whole middle deliberately EMPTY, because in landscape the middle of the screen is the game. Not a stretch of the portrait plate."
     }
   },
   "_ui_readme": "DOM art, not scene art (js/assets.js uiAsset): these go in an <img> in the intro or on a button, never on a plane, which is why they are not in `layers`."

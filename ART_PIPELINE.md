@@ -89,6 +89,33 @@ requirement of the concept**, not something fixed later.
 - Background visible through **each armpit** and **between the legs**.
 - Nothing overlapping anything.
 
+### …but the pose is the SECOND thing the rigger looks at
+
+**A perfect T-pose does not make a riggable model. A HUMAN BODY does.** This
+cost two rejected rigs before it was understood, and the evidence is in this
+repo:
+
+- A bolt-bot in a strict T-pose, daylight through both armpits and between the
+  legs, was rejected: *"Pose estimation failed, please provide a valid model."*
+- Redrawn with textbook human proportions — visible neck, shoulders wider than
+  hips, arms as long as the legs, elbows and knees halfway — **rejected again**.
+- `eeri/art-src/E1-eeri-tpose.jpg`, which rigged first time, has his **legs
+  merged at the hip with no daylight at all** and his arms barely 40° from his
+  sides.
+
+The difference is not the pose and not the proportions: it is **volume**. Eeri
+is a solid toy with mass — a rounded torso, limbs that taper *out of* it, real
+mitten hands. Both failed bots were stick figures: tubes stuck onto a box. The
+estimator is looking for a body it can fit a skeleton *inside*, and there is
+nothing inside a tube.
+
+So for anything non-human — a robot, a creature, a mascot — **build it on a
+body that has already rigged**. `--ref` the approved character for BODY PLAN
+and disown its costume in words (*"copy only the body plan and the chunky
+solid proportions; do not copy the clothes, face, hair or colours"*). The
+third bolt-bot did exactly that and rigged first time. Be a robot in the
+**faceplate and the surface**, never in the construction.
+
 **"T-pose" is a far stronger instruction than "A-pose."** Four attempts at
 "arms abducted 45 degrees" came back with the arms hanging at the sides; "both
 arms stretched out straight and horizontal, pointing left and right to the
@@ -344,20 +371,77 @@ Every one of these shipped or nearly shipped.
 12. Pre-rotating a mesh to the game's facing breaks Meshy's rigger, which
     wants +Z.
 
+**Chroma key and composition** (the 2D 80%, `eeri/art-src/tools/keylib.js`)
+13. **Keying on levels under-keys.** `r > 140 && b > 140 && g < 110` is a test
+    for BRIGHT magenta, and the model casts a SHADOW on the backing — dark
+    magenta near (90, 15, 90) passes none of it and ships as a purple block.
+14. **Keying on a ratio alone over-keys.** `g < min(r,b) × 0.8` is true of JPEG
+    chroma noise in any dark passage, which punches black speckle through the
+    middle of the art. Demand an absolute floor and a real separation as well.
+15. **A keyed pixel keeps its original colour behind alpha 0**, and canvas
+    scaling averages rgb across the alpha edge — so a piece composited at half
+    size grows a magenta fringe out of pixels that are supposedly invisible.
+    Bleed the opaque colour a few pixels outward BEFORE anything scales it.
+    This is the real cause of the "pink on the clouds" family; no threshold
+    tuning reaches it.
+16. **A blanket de-magenta greys out the palette.** The backing bounces onto
+    what it lights, so neutrals come back salmon — but orange sits on the
+    magenta side of the green-magenta axis too, and scores just as high.
+    Correct per piece, sized off that piece's own measured mean.
+17. **Tiling one segment is not composition.** One good segment stamped across
+    a rect gives three identical buildings per screen at one height with dead
+    air between them, and no amount of improving the segment fixes it.
+    Generate a POOL of single objects and compose: varied heights, rare heroes
+    that break the height line, advance as a FRACTION of the piece width so
+    pieces overlap, clearings placed deliberately rather than falling out of
+    the pitch.
+18. **A backdrop grade does not plant anything.** Drawn only behind the
+    pieces, a ground line leaves every cutout standing on air — "it stops
+    abruptly / isn't connected to ground". Run the same strip AGAIN in front
+    at half height so the feet are buried, and drop a contact shadow.
+19. **The depth tint flattens the value structure.** Mixing every lane toward
+    one pale sky lands them all at the same value, and the player disappears
+    into it. Step each lane down from the one behind it, push each lane's
+    contrast back up before the tint, and keep a block of local colour in the
+    lane directly behind the play lane.
+
+**Surfaces and detail maps**
+20. **A detail map must TILE, which means it must be FEATURELESS.** The house
+    craft block names split pins and masking tape, so a section generated with
+    it comes back with fixings in specific places — correct for a piece, fatal
+    for a map. At a 3-unit repeat you can count the same pin forty-five times.
+    `detailmap.mjs --highpass` removes a pin or a tape patch; nothing removes
+    a photograph of a specific *assemblage*, where the arrangement is the
+    subject. **The test is TILE IT 3×3 AND LOOK** — a single patch of an
+    untileable map reads as perfectly convincing material.
+21. **Decorating a straight boundary makes it worse.** A torn-card strip laid
+    along a band boundary turns one straight line into a regular row of
+    identical bumps. A boundary wants to be irregular in POSITION — interlock
+    the two sides in geometry, which costs no asset.
+22. **Mirroring a strip to make it tile makes every tile symmetric**, so a run
+    of them reads as a chain of identical scallops. Among grass tufts or torn
+    fibres a hard seam is far less visible than perfect bilateral symmetry.
+23. **Detail that is not in the visible band is not detail.** Forty-six keyed
+    cutouts were placed below the bottom of the frame — loaded, lit, rendered,
+    never seen. Check where the camera actually looks before placing anything.
+
 **Integrate**
-13. `MeshStandardMaterial` is black in an unlit scene.
-14. A plain `.clone()` of a skinned mesh shares the skeleton.
-15. A `?v=` token that did not move when the bytes did.
+24. `MeshStandardMaterial` is black in an unlit scene.
+25. A plain `.clone()` of a skinned mesh shares the skeleton.
+26. A `?v=` token that did not move when the bytes did.
 
 **Process**
-16. Verifying the contract and the gate, and never looking at the asset.
-17. Building a tool for something Meshy already does. **Check first.**
-18. **Treating shipped art as approved art.** Live on `gh-pages` means
+27. Verifying the contract and the gate, and never looking at the asset.
+28. **A screenshot is not the asset.** A layer looks fine in a 1280px frame and
+    is five copies of one picture across its full width. Render the WHOLE
+    thing at its real size and look at that too.
+29. Building a tool for something Meshy already does. **Check first.**
+30. **Treating shipped art as approved art.** Live on `gh-pages` means
     somebody deployed it, not that it meets `ART_TARGET.md`. The v6
     reconciliation kept the deployed vector-cartoon layers by default while
     on-target crafted concepts sat unbuilt — every asset is judged against
     the target doc, whoever shipped it and however long it has been live.
-19. **Two instances, unrelated histories.** Fetch and diff `origin/gh-pages`
+31. **Two instances, unrelated histories.** Fetch and diff `origin/gh-pages`
     and `origin/main` before building on anything; reconcile before new work,
     splitting by kind — code from whichever lineage is ahead, art re-judged
-    against the target (see trap 18 and CLAUDE.md "Two instances, one canon").
+    against the target (see trap 30 and CLAUDE.md "Two instances, one canon").

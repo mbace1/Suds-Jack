@@ -45,15 +45,32 @@ for (const [name, m] of Object.entries(manifest.models)) {
   const f = path.join(__dirname, '..', 'assets', m.file);
   ok(`model "${name}": ${m.status === 'live' ? 'live file exists' : 'placeholder declared'}`,
     m.status !== 'live' || fs.existsSync(f), m.file);
-  // two kinds of rig, two contracts: a hand-cut model declares the NODES the
-  // game rotates, a skinned character declares the CLIPS it can play
-  const skinned = m.rig === 'skinned';
-  ok(`model "${name}" declares its ${skinned ? 'clip' : 'node'} contract`,
-    Array.isArray(skinned ? m.clips : m.nodes) && (skinned ? m.clips : m.nodes).length > 0);
+  // THREE kinds of rig, three contracts: a hand-cut model declares the NODES
+  // the game rotates, a skinned character declares the CLIPS it can play, and
+  // a PROP declares neither because nothing inside it moves — a pickup is one
+  // solid thing the game spins and bobs whole. Saying so beats exempting it:
+  // a prop that quietly grew an animated part would still be caught.
+  const skinned = m.rig === 'skinned', prop = m.rig === 'prop';
+  if (prop) {
+    ok(`prop "${name}" declares no moving parts`,
+      !m.nodes?.length && !m.clips?.length);
+  } else {
+    ok(`model "${name}" declares its ${skinned ? 'clip' : 'node'} contract`,
+      Array.isArray(skinned ? m.clips : m.nodes) && (skinned ? m.clips : m.nodes).length > 0);
+  }
   if (skinned) {
     ok(`skinned "${name}" declares its height in TILES`,
       typeof m.height === 'number' && m.height > 0.5 && m.height < 6);
   }
+}
+// UI art is a third family beside models and pieces — flat PNGs the game
+// mounts on screens rather than in the world, so there is no rig and no node
+// contract to check. What still has to hold is that a live file exists: a
+// logo that 404s is a blank landing screen.
+for (const [name, u] of Object.entries(manifest.ui || {})) {
+  const f = path.join(__dirname, '..', 'assets', u.file);
+  ok(`ui "${name}": ${u.status === 'live' ? 'live file exists' : 'placeholder declared'}`,
+    u.status !== 'live' || fs.existsSync(f), u.file);
 }
 for (const [name, m] of Object.entries(manifest.pieces || {})) {
   const f = path.join(__dirname, '..', 'assets', m.file);
@@ -104,6 +121,9 @@ const readme = fs.readFileSync(path.join(ASSETS, 'README.md'), 'utf8');
 const NUM = (s) => Number(String(s).replace(/[−–—]/g, '-').trim());
 const readmeRects = {};
 for (const line of readme.split('\n')) {
+  // `sky` belongs in this list: it ships as a layer like the rest (the
+  // crafted paper sky), and leaving it out made the size check compare a
+  // real PNG against `undefined×undefined` and fail.
   const m = line.match(/^\|\s*`(sky|skyline|far|mid|near|fore)`\s*\|([^|]+)\|([^|]+)\|([^|]+)\|/);
   if (!m) continue;
   const rect = m[3].match(/(-?[−\d.]+)\s*…\s*(-?[−\d.]+)\s*×\s*(-?[−\d.]+)\s*…\s*(-?[−\d.]+)/);

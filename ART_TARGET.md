@@ -40,6 +40,40 @@ the easier one to reason about and it will try to.
 
 ---
 
+## 0.05 THE MATERIAL PALETTE — a KIT, not one material
+
+**Crafted World is a kit of materials, and using cardboard for everything is
+the single most likely way to get it wrong.** The reference's charm comes
+from *many* identifiable craft materials sharing one table: corrugated card,
+wool felt, painted balsa, paper tube, cotton wool, masking tape, split pins,
+string. Every surface should be made of what it would really be made of.
+
+`eeri/js/craft.js` is the factory and the manifest's `textures` block is the
+palette. Live:
+
+| material | what it is | what wears it |
+|---|---|---|
+| `flute` | the **cut edge** of corrugated card, stacked fluting | the earth section, every dug face — a cut through card shows its flutes |
+| `card` | kraft liner, creases and torn peels | flat card surfaces, the back wall |
+| `felt` | wool nap | the grass lip |
+| `balsa` | painted balsa, brush strokes and a paint chip | machines, girders, props — §3.3's "painted wood and pressed steel" |
+
+Each is a **greyscale detail map multiplied onto a palette colour** — §3.2's
+"no asset invents a colour" holds exactly. Add one with a manifest entry and a
+density in `craft.js`; nothing else.
+
+**Two failures worth not repeating.** The first cut wired the card map into
+`level.js` alone, and a probe of the live scene found **3 materials mapped and
+~70 not** — every module had grown its own
+`const M = (c) => new MeshLambertMaterial({ color: c })`, so the grass, both
+machines and every prop stayed flat paint while the ground behind them was
+card. One factory, used everywhere, is the fix; patching call sites would
+leave the next one to be written flat. And the first maps were far too weak
+(±20%, then Lambert flattens it further) — a material you have to be told is
+there is not doing its job.
+
+---
+
 ## 0.1 THE MIX: 80% stylised 2D, 20% 3D
 
 **Owner's direction, 2026-08, and it decides more than anything else in this
@@ -261,6 +295,40 @@ Pipeline, per layer, per world — the one proven in v3:
 and the player is instantly findable against every one of them. Then the same
 shot with the layers hidden — if the level is no harder to read, the layers
 are doing their job and not competing.
+
+**State (2026-08-14): DONE for groundworks, twice over.** The `_v1`
+vector-cartoon layers (gradients, gloss, outline strokes — they failed the rung
+1b patch test and were kept live only because they were deployed; see trap 26)
+were replaced by the `_v2` crafted set, and `_v2` was then replaced by `_v3`
+for a reason worth stating plainly, because it is the trap this rung is most
+likely to repeat:
+
+**`_v2`'s pieces passed rung 1b and the layers still failed.** The segments
+were on target — balsa standards, split-pin bolts, corrugated cut edges, the
+200×200 patch test passed anywhere you cropped. But each layer was ONE segment
+stamped across its rect with a gap between copies, so a single frame held three
+identical buildings at one height and half of every strip was empty air. The
+material axis was fixed and the composition axis had never been looked at.
+**Rung 1b's patch test cannot see this**, and neither can a gameplay
+screenshot — it takes rendering the whole layer at its real width.
+
+So rung 1 now carries a second acceptance test, and it is the one that was
+missing:
+
+**Acceptance (composition).** Render each finished layer at its FULL width and
+look at it. No shape may appear twice within one screen's width; the top edge
+must have a profile rather than a line; there must be no stretch of empty air
+you did not place on purpose; and every piece must be standing on a continuous
+ground rather than floating. Then the original test: the player is instantly
+findable against the whole stack at gameplay size.
+
+`_v3` is built from a POOL of 36 single-object pieces composed by
+`eeri/art-src/tools/build-layers.mjs` — height profile, rare heroes, overlap
+rather than pitch, a continuous grade run twice (once behind, once in front so
+feet are buried), a cutout shadow per piece, and a value staircase across the
+lanes so the play lane is the most contrasty band on screen. Placement is
+seeded and the build is reproducible from `art-src/`. The chroma-key lessons
+are traps 13–19 in `ART_PIPELINE.md`; every one of them had shipped.
 
 ### Rung 1b — the art is visibly BUILT (the Crafted World half)
 

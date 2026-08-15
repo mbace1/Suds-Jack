@@ -1,11 +1,5 @@
 # EERI — asset drop-in contract
 
-> **READ `PHASING.md` FIRST.** It is newer owner direction (2026-08-14) and
-> **supersedes this file where they disagree** — the 80/20 reference ratio
-> (Crafted World is the default answer, Tropical Freeze is the seasoning),
-> the tool-reality table, and the phase gates. This file remains canon for
-> everything it does not contradict.
-
 This folder is the seam between the game and the art (ART_BRIEF §2, §4, §5).
 The game runs **today** with zero files here — every entry in
 `manifest.json` marked `"placeholder"` is built in code. To ship a real
@@ -71,27 +65,6 @@ The cab must be open and the seat readable — Eeri stays visible while
 riding (the Yoshi rule, ART_BRIEF §3.6), **and the empty seat is how a
 player tells an unmanned machine from a tamed one** (§1.2). Draw the seat
 to be read from the side at 32 px, empty.
-
-### `flag_v1.glb` / `flagbig_v1.glb` — the end of a level
-
-Spec: DESIGN.md §4.2. The flag is not a gate you walk through — it BUILDS
-itself in three phases as Eeri comes down the last stretch, one puff of
-smoke each, and finishes by being **run past**. Ships all three phases as
-sibling nodes; the game shows them cumulatively (phase0, then 0+1, then
-0+1+2) and eases each one up from flat as it appears, so each phase must
-look right *alone* and *stacked*.
-
-| node | is | note |
-|---|---|---|
-| `phase0` | base plate, bolts waiting in it | the first thing that appears, ~15 tiles out |
-| `phase1` | the pole and its braces | contains `pole` |
-| `pole` | the mast itself (child of `phase1`) | the game may raise the cloth along it |
-| `phase2` | the cloth/sign board | the game runs it up the pole and waves it |
-
-`flagbig_v1.glb` is the same contract for **level 3 of a world** — taller
-and a **different colour**, and it has to be tellable from the small one
-at a distance, before you reach it. Small flag stands ~4.8 tiles, big
-~6.4; both read against a busy hoarding, so the silhouette carries it.
 
 ### Manipulable world pieces — `assets/3d/<piece>_v1.glb`
 

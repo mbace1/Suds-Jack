@@ -9,7 +9,7 @@
 // the model came from.
 
 import * as THREE from 'three';
-import { PAL } from './palette.js?v=15';
+import { PAL } from './palette.js?v=16';
 
 const FACE_TURN = 0.42 * Math.PI; // 3/4 view: forward ±x, tipped toward camera
 
@@ -132,11 +132,12 @@ export function buildKidModel() {
 //  - The rig is modelled facing +Z (Meshy's requirement) and the game's world
 //    faces +x, so the whole thing carries a −90° yaw offset that the
 //    code-built kid does not.
-const CLIP_FOR = { idle: 'idle', run: 'run', air: 'jump', ride: 'ride', climb: 'walk' };
-// FACING, and the trap in it. A rotation of theta about Y sends +z to
-// (sin theta, 0, cos theta). The Meshy rig is modelled facing +Z, and the
-// game's own `FACE_TURN` is 0.42pi ~ 75.6 degrees -- which already sends +z
-// to (0.97, 0, 0.25): screen-right, tipped a little toward the camera, which
+const CLIP_FOR = { idle: 'idle', run: 'run', air: 'jump', ride: 'ride', climb: 'climb' };
+
+// FACING, and the trap in it. A rotation of θ about Y sends +z to
+// (sin θ, 0, cos θ). The Meshy rig is modelled facing +Z, and the game's
+// own `FACE_TURN` is 0.42π ≈ 75.6° — which already sends +z to
+// (0.97, 0, 0.25): screen-right, tipped a little toward the camera, which
 // is exactly the 3/4 view the placeholder is posed for. So a skinned rig
 // needs NO extra yaw at rest; the -90 degrees it used to carry was added on
 // top and swung him round to face the camera, which is what he did while
