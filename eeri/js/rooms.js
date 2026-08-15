@@ -19,6 +19,10 @@
 // in the back half — `check()` enforces that much, since a ride that opens
 // a level is a level whose peak is its first minute.
 //
+// World 1 is deliberately richer without becoming wider. W=96 is a shared
+// level/runtime contract, so this pass expands ROUTE DENSITY: more authored
+// height changes, optional lines and readable secrets inside the same length.
+//
 // What each level teaches:
 //   1 — THE STOMP. Small things you land on. Nothing else is new.
 //   2 — THE CLIMB. Ladders and decks; the room stops being a corridor.
@@ -28,8 +32,8 @@
 //   6 / WORLD 2-3 — THE PAIRING. Water + pipes + hoist, then the world ending.
 
 import {
-  ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm,
-  machine, robot, hopper, roller, hazard, swingBall, startAt, exitAt, shot,
+  ground, mound, ledge, pit, bank, brickWall, chasm,
+  machine, robot, hopper, roller, startAt, exitAt, shot,
   girderStack, scaffold, checkpoint, flagAt, golden, belt, tarp, shallow, deep, pipe,
   bucketBot, hoist,
   boltRun, boltArc, boltCol, GROUND,
@@ -37,160 +41,140 @@ import {
 
 export const ROOMS = [
   // ── LEVEL 1 — GROUNDWORKS ───────────────────────────────────────────
-  // THE STOMP. A hopper is a rhythm you either wait out or land on, and
-  // landing on it throws you higher than a jump ever does — which is the
-  // whole reason the verb exists and the reason the first secret is up
-  // where only a bounce feels natural.
+  // THE STOMP. This pass removes the old swinging-ball / steam / robot
+  // sampler from the teaching half: the first level now spends its attention
+  // budget almost entirely on hopper rhythm, then pays it off with the dig.
+  //
+  // IMPORTANT: the current stomp rebound is NOT higher than a normal jump.
+  // No route or secret here requires extra stomp height, so the level remains
+  // honest until that separate physics decision is made.
   {
     name: 'LEVEL 1 — GROUNDWORKS',
     idea: 'the stomp',
     parts: [
       ground(),
       startAt(4.5),
-      // a trail out of the gate: bolts at head height are collected by
-      // walking, which is how the level says "this way" without a word
-      boltRun(5, 8, 13),
+      boltRun(5, 7, 13),
 
-      // ── 1 · INTRODUCE ── one hopper, open floor, nothing else on screen.
-      // The arc over it is the timing, drawn: follow the bolts and the jump
-      // is already right.
-      hopper(15, 21),
-      boltArc(5, 15, 20, 2),
-      boltRun(5, 16, 19),
-      boltRun(5, 22, 24),
+      // ── 1 · INTRODUCE ── one hopper in empty space. The bolt arc gives
+      // the timing without text; following it naturally lands on the bot.
+      hopper(15, 20),
+      boltArc(5, 14, 20, 2),
 
-      // ── 2 · VARY ── the same thing from a step, then two of them at
-      // different spacings, and a deck to read them from.
-      mound(25, 30, 2),
-      boltRun(6, 25, 30),
-      boltRun(7, 26, 29),
-      ledge(31, 35, 6),
-      boltRun(8, 31, 35),
-      boltRun(9, 32, 34),
-      golden(9, [33]),                    // one jump off that deck
-      hopper(33, 38),
-      boltRun(5, 36, 38),
-      hopper(42, 46),
-      boltRun(5, 39, 41),
-      boltRun(5, 42, 46),
-      // The ball hangs where only the KID ever walks. It used to hang at 70,
-      // squarely across the excavator's run from its park at 63 to the bank
-      // at 84 — a hit takes the ride, so the ride kept ending on the way to
-      // its own job. Found by somebody actually playing it.
-      girderBeam(36, 42, 7),
-      swingBall(39, 8),
+      // ── 2 · VARY ── a two-tile earth step grows into an optional upper
+      // work ledge. The lower route keeps the hopper rhythm; the upper line
+      // gives confident players a cleaner read and the first hidden reward.
+      mound(23, 28, 2),
+      boltRun(7, 23, 28),
+      ledge(30, 36, 6),
+      boltRun(8, 30, 36),
+      boltRun(5, 30, 36),
+      golden(9, [33]),
+      hopper(31, 35),
+      hopper(39, 43),
+      boltRun(5, 37, 43),
+      boltRun(6, 37, 43),
 
-      // ── 3 · COMBINE ── the hole and the hopper in one breath, and the
-      // golden bolt is IN the hole: a pit costs you nothing but the walk
-      // back, so going in on purpose is a fair thing to ask.
-      pit(48, 50),
-      boltArc(5, 47, 51, 2),
-      golden(4, [49]),
-      checkpoint(53),
-      boltRun(5, 54, 58),
-      boltRun(6, 54, 57),
-      boltRun(5, 59, 63),
+      // ── 3 · COMBINE ── known jump + known stomp around one small pit.
+      // The golden is TEASED above the hole rather than placed down inside
+      // it, so the game never asks a young player to choose apparent failure.
+      pit(46, 48),
+      boltArc(5, 45, 49, 2),
+      golden(7, [46]),
+      hopper(51, 55),
+      boltRun(5, 50, 56),
+      boltRun(6, 50, 56),
+      checkpoint(57),
 
-      // ── 4 · TEST, then THE RIDE ── the excavator is the peak. It is not
-      // a puzzle: board it, dig the bank out of the way, step off.
-      hazard(60, 'steam'),
-      machine('excavator', 63, [50, 92]),
-      girderBeam(66, 72, 7),
-      boltRun(5, 64, 69),
-      boltRun(6, 64, 69),
-      boltRun(5, 70, 73),
-      robot(74, 80),
-      boltRun(5, 74, 79),
-      boltRun(6, 81, 83),
-
-      bank(84, 88, 3),                    // 3 tiles — above his jump
-      boltRun(5, 89, 92),                 // only once it is dug
-      boltRun(6, 89, 92),
-      golden(6, [90]),
+      // ── 4 · TEST / RIDE ── a quiet runway into the excavator, then its
+      // job almost immediately. Nothing ride-ending sits between cab and bank.
+      boltRun(5, 58, 64),
+      boltRun(6, 58, 64),
+      machine('excavator', 70, [64, 79]),
+      boltRun(5, 66, 70),
+      boltRun(5, 72, 73),
+      bank(80, 84, 3),
+      boltRun(5, 86, 91),
+      boltRun(6, 86, 91),
+      golden(7, [89]),
       flagAt(93),
 
-      shot(40, 52, { z: 37.5, y: 3.0 }),
-      shot(52, 74, { z: 41, y: 3.4, lead: 2.2 }),
-      shot(76, 96, { z: 42, y: 3.6, lead: 2.0 }),
+      shot(10, 34, { z: 38, y: 3.0 }),
+      shot(30, 58, { z: 40.5, y: 3.4, lead: 1.8 }),
+      shot(56, 96, { z: 42, y: 3.6, lead: 2.0 }),
     ],
   },
 
   // ── LEVEL 2 — THE SCAFFOLD ──────────────────────────────────────────
-  // THE CLIMB. Every ladder here goes up and comes back down, because a
-  // level that ends higher than it started is a level whose camera never
-  // gets home (DESIGN §4.2). The stomp is not re-taught — it is simply
-  // there, underneath, as the thing you already know.
+  // THE CLIMB remains the World-1 benchmark. Expansion here means more
+  // deliberate up/over/down route choice, not more mechanics. Every ladder
+  // still has an obvious deck, and the machine stays close to its job.
   {
     name: 'LEVEL 2 — THE SCAFFOLD',
     idea: 'the climb',
     parts: [
       ground(),
       startAt(4.5),
-      boltRun(5, 7, 10),
+      boltRun(5, 7, 11),
 
-      // ── 1 · INTRODUCE ── one ladder, one deck, nothing under it. The
-      // bolts run UP the rungs, so the first climb is a thing you do for a
-      // reward rather than a thing you are told about.
-      ...scaffold(12, 18, 7),
+      // ── 1 · INTRODUCE ── one clean scaffold with reward above.
+      ...scaffold(12, 19, 7),
       boltCol(12, 5, 8),
-      boltRun(5, 13, 18),
-      boltRun(9, 13, 18),
+      boltRun(9, 13, 19),
 
-      // ── 2 · VARY ── a hole under the next one, and a taller climb. The
-      // deck is the way over the hole; the hole is three tiles, so the jump
-      // is also the way over the hole. Both are right.
+      // ── 2 · VARY ── the route rises twice. First a pit beside a taller
+      // tower, then a low work deck that lets the player practise coming down
+      // and choosing upper vs lower travel without adding another verb.
       pit(20, 22),
       boltArc(5, 19, 23, 2),
-      boltArc(6, 19, 23, 2),
-      ...scaffold(26, 32, 9),
+      ...scaffold(26, 33, 9),
       boltCol(26, 5, 10),
-      boltRun(5, 27, 32),
-      boltRun(11, 27, 32),
+      boltRun(11, 27, 33),
+      boltRun(5, 27, 33),
       golden(12, [30]),
 
-      // ── 3 · COMBINE ── what is already known, underneath what is new: a
-      // roller trundles the floor you would have walked, and the deck you
-      // just learned to climb passes over the top of it.
-      hazard(24, 'steam'),
-      hopper(30, 33),
-      roller(35, 41),
-      boltRun(5, 34, 38),
-      boltRun(6, 34, 37),
-      ...scaffold(43, 48, 6),
-      boltRun(5, 43, 48),
-      boltRun(8, 44, 48),
-      boltRun(5, 50, 55),
-      checkpoint(46),
+      ...scaffold(36, 42, 6),
+      boltCol(36, 5, 7),
+      boltRun(8, 37, 42),
+      boltRun(5, 37, 42),
 
-      // ── 4 · THE RIDE ── the span. The gap past the stack is past both of
-      // them: no jump reaches it and the machine refuses a cliff, so the
-      // only way over is a girder the machine carries there and lowers in.
-      machine('excavator', 52, [44, 57]),
-      girderStack(48),
-      chasm(58, 65),                      // 8 wide — machine-shaped
-      boltRun(5, 59, 64),                 // only over the span
-      golden(7, [62]),
+      // ── 3 · COMBINE ── known roller below, learned climb above. This is
+      // the level's densest read, immediately followed by the checkpoint.
+      roller(43, 48),
+      ...scaffold(44, 50, 7),
+      boltCol(44, 5, 8),
+      boltRun(9, 45, 50),
+      boltRun(5, 51, 55),
+      checkpoint(50),
 
-      // …and down again, on the far side
-      ...scaffold(70, 75, 6),
-      boltCol(70, 5, 7),
-      boltRun(8, 71, 75),
-      golden(9, [73]),
-      hopper(78, 84),
-      boltArc(5, 78, 83, 2),
-      boltRun(5, 86, 91),
+      // ── 4 · THE RIDE ── still the benchmark construction payoff:
+      // board, sling, seat, walk over the geometry you just changed.
+      machine('excavator', 52, [50, 59]),
+      girderStack(56),
+      boltRun(6, 54, 58),
+      chasm(60, 67),
+      boltRun(5, 61, 66),
+      golden(7, [64]),
+
+      // A celebratory far-side climb, not a difficulty spike.
+      ...scaffold(72, 79, 7),
+      boltCol(72, 5, 8),
+      boltRun(9, 73, 79),
+      golden(10, [77]),
+      boltRun(5, 82, 88),
       flagAt(93),
 
-      shot(16, 26, { z: 37.5, y: 3.0 }),
-      shot(42, 72, { z: 44, y: 3.8, lead: 2.2 }),
+      shot(10, 30, { z: 38, y: 3.0 }),
+      shot(26, 52, { z: 43, y: 3.8, lead: 1.8 }),
+      shot(48, 76, { z: 44, y: 3.8, lead: 2.0 }),
+      shot(70, 96, { z: 41, y: 3.3, lead: 1.5 }),
     ],
   },
 
   // ── LEVEL 3 — THE HIGH WALL ─────────────────────────────────────────
-  // THE BIG ONE (DESIGN §4.2): no new verb, both of the old ones, and the
-  // crane. Its flag is the big one, and past it is the gate — the world's
-  // curtain, not the level's, so this is the only room that ends with Eeri
-  // clocking out and walking through.
+  // THE WORLD EXAM: known stomp + climb patterns become a larger site, then
+  // the crane gets the whole final beat to itself. The old steam + roller
+  // cluster beside the crane is gone; nothing competes with wall demolition.
   {
     name: 'LEVEL 3 — THE HIGH WALL',
     idea: 'both verbs, and the crane',
@@ -199,56 +183,56 @@ export const ROOMS = [
       startAt(4.5),
       boltRun(5, 7, 12),
 
-      // ── 1 · INTRODUCE (the pairing, not a verb) ── a hopper on a deck:
-      // the climb takes you to it and the stomp takes it off.
-      ...scaffold(15, 21, 6),
-      boltCol(15, 5, 7),
-      robot(17, 20, 'hopper', 7),
-      boltRun(5, 16, 21),
-      boltRun(8, 16, 21),
-      golden(9, [19]),
+      // ── 1 · PAIR ── climb TO the hopper. The lower route remains open;
+      // the upper route is the confident line and carries the secret.
+      ...scaffold(14, 21, 7),
+      boltCol(14, 5, 8),
+      robot(17, 20, 'hopper', 8),
+      boltRun(9, 15, 21),
+      boltRun(5, 15, 21),
+      golden(10, [19]),
 
-      // ── 2 · VARY ── the hole, with the roller on the far side of it.
-      boltRun(5, 23, 26),
-      pit(28, 30),
-      boltArc(5, 27, 31, 2),
-      roller(33, 40),
-      boltRun(5, 33, 39),
-      boltRun(6, 33, 39),
+      // ── 2 · VARY ── pit + roller on the floor, then the tallest World-1
+      // scaffold. The level alternates horizontal and vertical reads instead
+      // of stacking every threat into one screen.
+      pit(24, 26),
+      boltArc(5, 23, 27, 2),
+      roller(29, 35),
+      boltRun(5, 29, 35),
+      boltRun(6, 29, 35),
+      ...scaffold(37, 44, 9),
+      boltCol(37, 5, 10),
+      boltRun(11, 38, 44),
+      golden(12, [42]),
 
-      // ── 3 · COMBINE ── a deck over a hopper, a hopper on the deck, and
-      // the ladder is the only way between them.
-      ...scaffold(42, 48, 6),
-      boltRun(5, 43, 48),
-      boltRun(8, 43, 48),
-      boltRun(9, 44, 47),
-      golden(10, [45]),
-      hopper(43, 47),
-      checkpoint(50),
-      boltRun(5, 50, 51),
-      boltRun(6, 50, 51),
-      mound(52, 58, 2),
-      boltRun(7, 52, 57),
-      boltRun(5, 62, 63),
-      hazard(60, 'steam'),
+      // ── 3 · COMBINE ── low deck over a hopper, then a short earth rise.
+      // This is the final platforming exam before the world spectacle.
+      ...scaffold(47, 54, 6),
+      boltCol(47, 5, 7),
+      boltRun(8, 48, 54),
+      boltRun(5, 48, 54),
+      hopper(49, 53),
+      mound(56, 61, 2),
+      boltRun(7, 56, 61),
+      checkpoint(62),
+      boltRun(5, 62, 66),
 
-      // ── 4 · THE RIDE ── the crane, and the wall. The ball that swings at
-      // you unmanned is the ball you swing at the wall once the cab is
-      // yours: the room's one new object is a whole verb.
-      machine('crane', 66, [34, 92]),
-      roller(70, 76),
-      boltRun(5, 68, 75),
-      boltRun(6, 68, 75),
-      golden(6, [78]),
+      // ── 4 · WORLD PEAK ── crane → wall in eight tiles. No steam vent,
+      // no roller and no wandering hazard in the drive. The machine, ball,
+      // wall damage and debris get to own the screen.
+      machine('crane', 70, [66, 77]),
+      boltRun(5, 68, 72),
+      boltRun(6, 68, 72),
+      brickWall(78, 82, 4),
+      boltRun(5, 84, 89),
+      golden(7, [86]),
+      flagAt(90, true),
+      exitAt(93.5),
 
-      brickWall(80, 84, 4),               // four tiles of brick
-      boltRun(5, 86, 91),
-      boltRun(6, 86, 91),
-      flagAt(88, true),                   // the big flag — the world's peak
-      exitAt(92.5),                       // …and the gate past it: clocking out
-
-      shot(24, 36, { z: 38, y: 3.0 }),
-      shot(60, 96, { z: 43, y: 3.6, lead: 2.0 }),
+      shot(10, 30, { z: 39, y: 3.2 }),
+      shot(28, 48, { z: 41, y: 3.4, lead: 1.6 }),
+      shot(44, 66, { z: 42, y: 3.5, lead: 1.8 }),
+      shot(64, 96, { z: 43, y: 3.6, lead: 2.0 }),
     ],
   },
 
