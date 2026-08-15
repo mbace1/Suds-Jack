@@ -1,5 +1,38 @@
 # EERI — versions
 
+## v15.4 — 2026-08-15 — stomp and hurt animate, and both lanes' docs land
+
+**The two verbs finally react.** `eeri_v4` has carried `stomp` and `hurt`
+since the art lane shipped it and only `climb` was wired, so the biggest
+moments in the game — bouncing off a robot, taking a hit — played the run
+cycle. They are **one-shots over the top of the state machine**, not
+states: the kid is airborne a frame after a bounce and running again a
+third of a second after a knock, so driving them through `CLIP_FOR` would
+either never fire or never end. `ClipDriver.once()` owns the rig for the
+clip's own length, capped (0.4s stomp, 0.55s hurt) because a clip that
+outlives the moment reads as a hitch rather than a reaction.
+
+**The first wiring of it never fired at all, and nothing would have said
+so.** `main.js` resolves stomps and hits AFTER `player.update()` has drawn
+the frame, so the one-frame flag was set too late for that frame's visual
+and cleared at the top of the next update before it was ever read. The
+game plays identically with a rig that simply never reacts — no gate, no
+error, nothing. Fixed by firing at the MOMENT, from `bounce()` and
+`struck()` themselves, and the smoke gate now drives both and asserts the
+clip takes over **and hands the rig back**.
+
+That release check is judged on **game time, not the wall clock**. My first
+reading said the one-shot never released; it had, and the sandbox was
+simply rendering at a few frames a second — this project's oldest trap,
+caught here only because the probe was rewritten to ask the game.
+
+Also in: both lanes' pending work, all documentation — the art lane's World
+1 source-pool index, and the levels lane's World 2 plan with its correction
+that world 2's backdrop already exists (`pipeworks_*` shipped in PR #236
+and is parked as placeholder).
+
+Gates: 256 smoke, 88 rooms, 7 playthrough, 31 fx, 30 dev-pack, hub green.
+
 ## v15.3 — 2026-08-15 — the pad plates are mounted, and the controls are drawn
 
 PR #236 shipped both touch plates and PR #234 landed on top of it, but
