@@ -447,7 +447,15 @@ export class Player {
     if (this.grounded && !wasGrounded) this.justLanded = true;
 
     // fell in the pit (its floor is dressing, not ground): back to the near side
-    if (this.y < 0.9) { this.x = 43; this.y = 5; this.vx = 0; this.vy = 0; }
+    // …and the level says where he comes back, not a number left here by a
+    // debugging session. `x = 43` is a LEVEL 2 coordinate — it sits at that
+    // room's third ladder — so every fall in every level landed there,
+    // skipping checkpoints and sometimes whole sections. `fallRespawn` was
+    // written for exactly this and was simply never called.
+    if (this.y < 0.9) {
+      const r = this.level.fallRespawn(this.x);
+      this.x = r.x; this.y = r.y; this.vx = 0; this.vy = 0;
+    }
 
     this.updateVisual();
   }

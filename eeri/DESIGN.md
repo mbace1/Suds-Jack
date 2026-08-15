@@ -213,6 +213,30 @@ has to leave its band for long.
 **No map.** Levels run 1 → 12 in order, and any unlocked level can be
 jumped to from a menu.
 
+**Every level has an address, and it is Mario's** (owner, 2026-08-15).
+`EERI 1-1` is the first level of the first world, `1-2` the second, `2-1`
+the first of world two — world and level, both 1-based, three levels to a
+world exactly as §4.1 fixes. It is a URL: `/eeri/#eeri-1-2` opens that level
+directly, which is what makes one shareable for a playtest.
+
+The rules that keep it honest, all of them in `js/levelid.js`:
+
+- **It is a NAMING layer over the flat site list, never a second list.** The
+  game still runs on one index and `goSite(i + 1)` is still the whole of
+  "next level"; no room knows which world it is in, because the mapping is
+  arithmetic. Two lists that can disagree is the bug this project has
+  already paid for more than once.
+- **The address space is the whole twelve from the start.** A level is
+  addressable the moment it is authored, so `#eeri-2-1` is a link somebody
+  can hold before world 2 exists — it opens **1-1** rather than a black
+  screen, and so does nonsense.
+- **Forgiving in, canonical out.** `#eeri-1-2`, `#EERI-1-2` and `#1-2` all
+  mean the same level, because the failure mode is a child or a parent
+  typing it; the bar is then rewritten to the full form.
+- **The HUD prints the address beside the name**, and so does the tab title,
+  so what is on screen is what you can paste to somebody.
+- The gizmo lab is `#lab` — addressed, and not a level.
+
 ## 4.3 What the golden bolts are for (owner approved, 2026-08-14)
 
 §7 asked whether `3/3` bought anything and the honest answer was no — they

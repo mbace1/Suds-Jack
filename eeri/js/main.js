@@ -28,6 +28,7 @@ import { loadManifest, getModel, getPiece } from './assets.js?v=15';
 import { craftMat, craftBox } from './craft.js?v=15';
 import { t as tr } from './lang.js?v=15';
 import { showIntro } from './intro.js?v=15';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=15';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -222,8 +223,29 @@ async function boot() {
   // The lab is buildable but NOT in the sequence: SITES is what a room index
   // means, ROOMS is what the game runs through. One derived constant rather
   // than two lists that can disagree — the whole reason the parts kit exists.
-  let siteIndex = 0;
-  let site = await buildSite(0);
+  // THE ADDRESS (js/levelid.js). `/eeri/#eeri-1-2` opens the second level of
+  // the first world — Mario's scheme, because it is the one a parent already
+  // reads. A fragment that names nothing lands on 1-1 rather than a black
+  // screen, and so does one naming a level that is not built YET: the game
+  // grows three levels at a time, so the address space is the whole twelve
+  // from the start and the rooms arrive later.
+  const fromHash = () => {
+    const p = parseSlug(location.hash);
+    if (!p) return 0;
+    if (p.lab) return ROOMS.length;              // SITES[ROOMS.length] is LAB
+    return p.index < ROOMS.length ? p.index : 0;
+  };
+  // `replaceState`, never `location.hash =` — assigning fires `hashchange`
+  // back at the handler that just moved the level, and the game reloads the
+  // room it is already standing in. Same trap gameoflife documents.
+  const setHash = (i) => {
+    const want = '#' + slugOf(i, ROOMS.length);
+    if (location.hash !== want) history.replaceState(null, '', want);
+  };
+
+  let siteIndex = fromHash();
+  let site = await buildSite(siteIndex);
+  setHash(siteIndex);
 
   const player = new Player(site.level, site.def.spawn.kid, kid);
   // `exc` is whatever machine this room parked here — an excavator, or a
@@ -240,7 +262,14 @@ async function boot() {
     boltsEl.textContent = `⬡ ${collected}/${site.def.bolts.length}`;
     goldEl.textContent = `✦ ${goldenGot}/${site.def.golden.length}`;
   };
-  siteEl.textContent = site.def.name;
+  // the address beside the name, so what is on screen is what you can paste
+  // to somebody: "1-2 · LEVEL 2 — THE SCAFFOLD"
+  const setSiteName = () => {
+    const tag = labelOf(siteIndex, ROOMS.length);
+    siteEl.textContent = `${tag} · ${site.def.name}`;
+    document.title = `EERI ${tag} — ${site.def.name}`;
+  };
+  setSiteName();
   const setHint = (s) => { if (hintEl.textContent !== s) hintEl.textContent = s; };
   // ONE glyph set, for every input (DESIGN.md §5). A prompt never names a
   // key: a key name is no help to a thumb or a pad, and the on-screen
@@ -352,6 +381,7 @@ async function boot() {
     // the cast walks on: same kid, but each room's machine is the room's
     // own — a crane where a crane is the answer — and it is unmanned again,
     // beacon turning. Taming never carries between rooms.
+    setHash(i);                        // the address follows the level
     const s = site.def.spawn;
     player.level = site.level;
     player.x = s.kid.x; player.y = s.kid.y; player.vx = 0; player.vy = 0; player.mercyT = 0;
@@ -360,7 +390,7 @@ async function boot() {
     mode = 'foot'; digT = 0; slingT = 0;
     player.climbing = false;
     input.take('action'); input.take('jump');
-    siteEl.textContent = site.def.name;
+    setSiteName();
     collected = 0; goldenGot = 0;      // the counts belong to the LEVEL
     setCounts();
 
