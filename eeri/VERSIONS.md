@@ -1,5 +1,46 @@
 # EERI — versions
 
+## v15.7 — 2026-08-15 — he turns around, and the d-pad becomes a stick
+
+**He was moon-walking, and it is the +z/+x confusion for the third time.**
+Running left played the run clip on a body still pointed screen-right.
+`pose()` mirrors the facing with `π − θ`, which is correct for the
+**code-built** kid — he is modelled facing +x, and `π − θ` sends +x to −x.
+It is wrong for the **skinned** rig, which is modelled facing +z: a
+rotation of θ about Y sends +z to `(sin θ, 0, cos θ)`, and
+`sin(π − θ) = sin θ`, so his x component never changes sign. For a
++z-forward rig the mirror is simply **−θ**, which lands him screen-left
+with the same tip toward the camera. One line, and the third symptom of
+the same root: the first two were facing the camera while running and
+sitting backwards in the cab.
+
+**The d-pad is a stick** (owner: *"the d-pad part should be a larger
+on-screen stick like in other games in this repo"*). Every other cabinet
+here that takes a thumb reads a stick, and the reason is mechanical:
+four rectangles have three seams, and a thumb that drifts onto a seam
+stops steering with nothing to feel. `input.bindStick()` is one zone with
+a generous deadzone, direction measured from the control's **centre**
+rather than from where the thumb landed — a self-centring stick would walk
+away from the drawn d-pad within a few presses — plus a knob that follows
+the thumb, since the painted cross cannot move. The four zones stay in the
+DOM for the keyboard, the accessible names and the unplated fallback, and
+go **pointer-inert**; the gate checks that second half, because a live
+button sitting on top of the stick would swallow every press and the stick
+would look mounted while doing nothing.
+
+**The plate is measured now, not judged.** `padplate_v1.png` is 1024 × 590
+and the drawn plate inside it runs x 122…1022, y 75…588 with its yellow
+strip ending at y 121. Two owner complaints fall straight out of those
+numbers: the plate's centre is x **572** against the image's 512, so drawn
+full-width it sits ~6% RIGHT of centre; and the old 496-row crop left 27
+rows of yellow behind. So the image box is deliberately **wider than the
+screen and pushed left** (`left: -11%; right: 1.8%`, crop `1024/466`) —
+the plate lands at 96% of the viewport, centred, with no yellow. A and B
+grow to 14% × 24%, being the two controls a six-year-old hits under
+pressure.
+
+Gates: 99 / 31 / 30 / **269** / 7 / hub.
+
 ## v15.6 — 2026-08-15 — water, the pipe, and the pump verb (World 2, PR 2 of 4)
 
 > Submitted by the level lane as v15.3. That number was already spent by
