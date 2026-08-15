@@ -87,6 +87,12 @@ export const CLOCK = {
   // so what it owes you is a readable rhythm, not a warning.
   hopper: { cycle: 1.35, crouch: 0.28, rise: 1.25 },
   roller: { speed: 2.4 },
+  // THE BUCKET SLEEPS. `wake` is the whole telegraph — it lifts its head
+  // before it moves, and 0.55 s is long enough for a six-year-old to read
+  // it and step back. It chases for `chase` and then gives up and settles
+  // again, which is what makes it a PROXIMITY test rather than a pursuer:
+  // the answer is always "go round it or wait", never "outrun it forever".
+  bucket: { wake: 0.55, chase: 2.2, speed: 2.9, settle: 1.1, hear: 3.4 },
 };
 
 // A machine is heavy, refuses a cliff, and cannot jump. It clears what it is
@@ -257,6 +263,11 @@ export const robot = (c0, c1, kind = 'skitter', cy = null) => ({
 });
 export const hopper = (c0, c1) => robot(c0, c1, 'hopper');
 export const roller = (c0, c1) => robot(c0, c1, 'roller');
+// a FOURTH kind, and it is a PROXIMITY test: an abandoned digger bucket
+// asleep on the floor that wakes when you LAND beside it, chases briefly,
+// and settles again. It takes no span because it does not patrol — the two
+// cells are how far it is willing to lurch, not a beat it walks.
+export const bucketBot = (c0, c1 = c0 + 2) => robot(c0, c1, 'bucket');
 
 // A small telegraphed hazard sitting on the floor at x.
 export const hazard = (x, type = 'steam') => ({

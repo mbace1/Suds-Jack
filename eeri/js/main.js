@@ -9,26 +9,26 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=20';
-import { Input } from './input.js?v=20';
-import { Level, ROOMS, LAB } from './level.js?v=20';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=21';
+import { Input } from './input.js?v=21';
+import { Level, ROOMS, LAB } from './level.js?v=21';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=20';
-import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=20';
-import { Camera } from './camera.js?v=20';
-import { buildKidModel, Kid, Player } from './kid.js?v=20';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=20';
-import { buildCraneModel, Crane } from './crane.js?v=20';
-import { Robot, SteamVent } from './robots.js?v=20';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=20';
-import { WreckingBall } from './hazards.js?v=20';
-import { AudioKit } from './audio.js?v=20';
-import { loadManifest, getModel, getPiece, uiAsset } from './assets.js?v=20';
-import { craftMat, craftBox } from './craft.js?v=20';
-import { t as tr } from './lang.js?v=20';
-import { showIntro } from './intro.js?v=20';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=20';
+} from './pieces.js?v=21';
+import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=21';
+import { Camera } from './camera.js?v=21';
+import { buildKidModel, Kid, Player } from './kid.js?v=21';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=21';
+import { buildCraneModel, Crane } from './crane.js?v=21';
+import { Robot, SteamVent } from './robots.js?v=21';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=21';
+import { WreckingBall } from './hazards.js?v=21';
+import { AudioKit } from './audio.js?v=21';
+import { loadManifest, getModel, getPiece, uiAsset } from './assets.js?v=21';
+import { craftMat, craftBox } from './craft.js?v=21';
+import { t as tr } from './lang.js?v=21';
+import { showIntro } from './intro.js?v=21';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=21';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -503,6 +503,28 @@ async function boot() {
       excPos: () => (exc ? { x: exc.x, y: exc.y } : null),
       hazard: () => site.ball ? { state: site.ball.state, ...site.ball.ballPos() } : { state: 'none' },
       mercy: () => player.mercyT,
+      // ---- the five the DEV PACK asked for (dev/README.md) --------------
+      // Each is one line against something the game already does, which is
+      // the whole rule for this seam: the pack reads the game, the game
+      // never learns the pack exists.
+      tame: () => { exc?.tame(); return !!exc?.tamed; },
+      dig: () => (site.bank ? site.bank.dig() : false),
+      // INVINCIBILITY is a mercy timer that never runs out rather than a
+      // second code path through damage — a real branch here would be a
+      // debugging aid that changes the thing being debugged.
+      invincible: (v) => {
+        god = v === undefined ? !god : !!v;
+        if (!god) player.mercyT = 0;
+        return god;
+      },
+      // the boxes the collisions actually use, so a hitbox preview draws
+      // the truth instead of a guess at it
+      boxes: () => [
+        { tag: 'kid', x: player.x, y: player.y, hw: player.hw, h: player.h },
+        ...(exc ? [{ tag: 'machine', x: exc.x, y: exc.y, hw: exc.hw, h: exc.h }] : []),
+        ...site.robots.filter((r) => !r.dead)
+          .map((r) => ({ tag: r.kind, x: r.x, y: r.y, hw: r.hw, h: r.h })),
+      ],
       tamed: () => !!exc?.tamed,
       bank: () => site.bank ? { remaining: site.bank.remaining, cleared: site.bank.cleared } : null,
       girder: () => site.girder ? { state: site.girder.state, carrying: !!exc?.carrying } : null,
@@ -568,6 +590,7 @@ async function boot() {
 
   // ---- the loop ------------------------------------------------------------
   let t = 0;
+  let god = false;          // dev: an unexpiring mercy timer, see debug.invincible
   const cam = new Camera(camera, site.def);
   cam.cut(player.x, player.y + 3);
   const clock = new THREE.Clock();
@@ -657,6 +680,7 @@ async function boot() {
       });
       player.x = exc.x; player.y = exc.y + 1; player.vx = 0; player.vy = 0;
       player.mercyT = Math.max(0, player.mercyT - dt);
+      if (god) player.mercyT = 9;   // dev: invincible, see debug.invincible
       kid.pose('ride', t);
       kid.shadow.visible = false;
       kid.group.visible = true;
@@ -798,7 +822,9 @@ async function boot() {
     const focusX = mode === 'riding' && exc ? exc.x : player.x;
     const focusY = mode === 'riding' && exc ? exc.y + 1 : player.y;
     for (const r of site.robots) {
-      r.update(dt, { x: focusX, y: focusY }, REDUCED);
+      // `grounded` is for the bucket, which wakes on a LANDING rather than
+      // on proximity — walking past a sleeping one has to stay safe
+      r.update(dt, { x: focusX, y: focusY, grounded: player.grounded }, REDUCED);
       if (mode === 'riding') {
         if (r.crush(exc.x, exc.hw)) { audio.splat(); cam.punch(0.5); }
       } else if (mode === 'foot') {

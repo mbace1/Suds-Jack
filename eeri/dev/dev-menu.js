@@ -68,6 +68,15 @@ export class DevMenu {
         </div>
       </section>
       <section>
+        <h2>reach it</h2>
+        <div class="row" id="dvWarp"></div>
+        <div class="row" style="margin-top:4px">
+          <button class="act" data-act="tame">take the machine</button>
+          <button class="act" data-act="dig">dig one</button>
+        </div>
+        <p class="note">warps are fractions of the room's width</p>
+      </section>
+      <section>
         <h2>fire an effect</h2>
         <div class="row" id="dvFire"></div>
         <p class="note">fires FX and SFX together, at the player</p>
@@ -77,11 +86,16 @@ export class DevMenu {
         <label class="sw"><input type="checkbox" id="dvFx" checked> visual fx</label>
         <label class="sw"><input type="checkbox" id="dvSfx" checked> sound fx</label>
         <label class="sw"><input type="checkbox" id="dvPoll" checked> infer from state</label>
+        <label class="sw"><input type="checkbox" id="dvGod"> invincible</label>
+        <label class="sw"><input type="checkbox" id="dvBox"> hitboxes</label>
         <div class="sl"><span>volume</span><input type="range" id="dvVol" min="0" max="100" value="80"><b id="dvVolV">80</b></div>
       </section>
       <section>
         <h2>state</h2>
         <table id="dvState"></table>
+        <div class="row" style="margin-top:4px">
+          <button class="act" data-act="copy">copy state</button>
+        </div>
       </section>
       <section>
         <h2>events seen</h2>
@@ -124,6 +138,31 @@ export class DevMenu {
       fire.appendChild(b);
     }
 
+    // WARPS. A level is 60-odd tiles and the thing you want to look at is
+    // usually two thirds along it; walking there is the tax that stops
+    // anyone looking twice. Fractions rather than tile numbers, because the
+    // rooms are not all the same length.
+    const warp = root.querySelector('#dvWarp');
+    for (const f of [0, 0.25, 0.5, 0.75, 1]) {
+      const b = el('button', 'act', f === 0 ? 'start' : f === 1 ? 'end' : `${f * 100}%`);
+      b.type = 'button';
+      b.addEventListener('click', () => this.call((d, E) => {
+        const w = E.level?.w ?? 60;
+        d.setPos(Math.max(1, Math.min(w - 2, f * w)), 6);
+      }));
+      warp.appendChild(b);
+    }
+    root.querySelector('[data-act="tame"]').addEventListener('click',
+      () => this.log(this.call((d) => d.tame()) ? 'machine tamed' : 'no machine here'));
+    root.querySelector('[data-act="dig"]').addEventListener('click',
+      () => this.log(this.call((d) => d.dig()) ? 'dug one' : 'nothing to dig'));
+    root.querySelector('[data-act="copy"]').addEventListener('click', (e) => {
+      const txt = this.stateText || '';
+      navigator.clipboard?.writeText(txt).then(() => {
+        e.target.textContent = 'copied'; setTimeout(() => { e.target.textContent = 'copy state'; }, 700);
+      }).catch(() => this.log('! clipboard refused'));
+    });
+
     root.querySelector('[data-act="lab"]').addEventListener('click', () => this.call((d) => d.goLab()));
     root.querySelector('[data-act="reload"]').addEventListener('click', () => {
       try { this.target.location.reload(); } catch { /* cross-origin */ }
@@ -133,6 +172,13 @@ export class DevMenu {
       this.on[key] = e.target.checked;
     });
     sw('#dvFx', 'fx'); sw('#dvSfx', 'sfx'); sw('#dvPoll', 'poll');
+    root.querySelector('#dvGod').addEventListener('change', (e) => {
+      this.call((d) => d.invincible(e.target.checked));
+    });
+    root.querySelector('#dvBox').addEventListener('change', (e) => {
+      this.on.box = e.target.checked;
+      if (!e.target.checked) this.clearBoxes();
+    });
     root.querySelector('#dvVol').addEventListener('input', (e) => {
       const v = Number(e.target.value);
       root.querySelector('#dvVolV').textContent = String(v);
@@ -229,8 +275,40 @@ export class DevMenu {
 
     this.pool.update(dt);
     this.bound?.sync();
+    if (this.on.box) this.drawBoxes(E); else if (this.boxes) this.clearBoxes();
     this.paint(E);
   };
+
+  // HITBOXES, drawn from `debug.boxes()` — the same numbers the collisions
+  // use, not a guess at them, because a preview that draws its own idea of
+  // the box is worse than no preview. One reusable line-box per entry, kept
+  // in a pool so switching it on mid-run costs nothing.
+  drawBoxes(E) {
+    const THREE = this.target.THREE || E?.THREE;
+    const scene = E?.scene;
+    if (!THREE || !scene || !E?.debug?.boxes) return;
+    if (!this.boxes) this.boxes = { pool: [], mat: null };
+    const B = this.boxes;
+    if (!B.mat) B.mat = new THREE.LineBasicMaterial({ color: 0x00ff9c, depthTest: false });
+    let list = [];
+    try { list = E.debug.boxes(); } catch { return; }
+    while (B.pool.length < list.length) {
+      const m = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)), B.mat);
+      m.renderOrder = 999;
+      scene.add(m); B.pool.push(m);
+    }
+    B.pool.forEach((m, i) => {
+      const b = list[i];
+      m.visible = !!b;
+      if (!b) return;
+      m.scale.set(b.hw * 2, b.h, b.hw * 2);
+      m.position.set(b.x, b.y + b.h / 2, 0);
+    });
+  }
+
+  clearBoxes() {
+    for (const m of this.boxes?.pool || []) m.visible = false;
+  }
 
   paint(E) {
     const t = this.root?.querySelector('#dvState');
@@ -254,6 +332,9 @@ export class DevMenu {
       ['sfx', this.audio.ctx ? this.audio.recent(3).join(' ') || 'ready' : 'not started'],
     ] : [['game', 'waiting for __eeri…']];
     t.innerHTML = rows.map(([k, v]) => `<tr><td>${k}</td><td class="v">${v}</td></tr>`).join('');
+    // the same readout as text, for `copy state` — a bug report is worth
+    // ten times as much with the numbers that were on screen attached
+    this.stateText = rows.map(([k, v]) => `${k}: ${v}`).join('\n');
   }
 
   destroy() {

@@ -27,9 +27,9 @@
 import {
   ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm,
   machine, robot, hopper, roller, hazard, swingBall, startAt, exitAt, shot,
-  girderStack, scaffold, checkpoint, flagAt, golden, belt, tarp, shallow, deep, pipe,
+  girderStack, scaffold, checkpoint, flagAt, golden, belt, tarp, shallow, deep, pipe, bucketBot,
   boltRun, boltArc, boltCol, GROUND,
-} from './parts.js?v=20';
+} from './parts.js?v=21';
 
 export const ROOMS = [
   // ── LEVEL 1 — GROUNDWORKS ───────────────────────────────────────────
@@ -300,6 +300,13 @@ export const LAB = {
     // visible at once, because a first pipe you cannot see the end of is a
     // trap rather than an invitation.
     pipe({ c: 66, cy: GROUND }, { c: 75, cy: GROUND }),
+
+    // THE BUCKET, asleep beside the pipe's far mouth — which is exactly
+    // the beat WORLD2.md §3 level 5 asks for, proved here first. Walk past
+    // it and nothing happens; come OUT of the pipe onto the floor beside
+    // it and it wakes. That is the lesson in one object: the pipe is the
+    // way across, and the way across has a price at the other end.
+    bucketBot(77),
 
     // …and the two together: a belt that feeds a tarp
     belt(64, 69, 3, 1),

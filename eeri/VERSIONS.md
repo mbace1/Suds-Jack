@@ -1,5 +1,56 @@
 # EERI — versions
 
+## v15.8 — 2026-08-15 — the bucket wakes, and the dev pack gets its five rows
+
+**A fourth enemy: the bucket.** `WORLD2.md` §3 level 5 asks for it and the
+behaviour was simply absent from `robots.js`, so the beat could not be
+written. It is a **proximity** test, which is the one axis the other three
+do not cover — hopper is timing, roller is spacing, skitter is provocation.
+An abandoned digger bucket asleep on the floor: it wakes when you **land**
+beside it, lifts its head for 0.55 s without moving, chases for 2.2 s, then
+settles.
+
+Three rules make it fair rather than merely present:
+
+- **It wakes on a LANDING, not on a radius.** Walking past a sleeping one
+  is safe. A radius would teach "never go near the pipe mouth", and then
+  the pipe stops being the way across, which is the whole of that beat.
+  The landing edge is computed in the robot from the kid's `grounded`
+  flag — main.js passes it, nothing new is invented.
+- **Asleep and waking, it cannot hurt you.** Otherwise the head-lift is
+  decoration: a tell you cannot act on teaches nothing.
+- **It gives up.** DESIGN §4.1 has no lives and no death; a pursuer that
+  never stops is a different game. The answer is always go round, or wait.
+
+Proved in the `LAB` beside the pipe's far mouth — come out of the pipe and
+it wakes, which is level 5's beat in one object. The GLB (`bucket_v1.glb`,
+skinned, four clips) stays `placeholder`: `robots.js` is still code-built
+for every kind, and the gate rightly fails a live asset nothing fetches.
+
+**The dev pack gets the five rows from PR #235** (`dev/README.md` named
+them): warps by fraction of the room, take-the-machine, dig-one,
+invincible, hitboxes, copy-state. Four new debug hooks carry them —
+`tame` `dig` `invincible` `boxes` — and `dev-menu.mjs` now names all four,
+because a hook the pack reads and nothing else does is exactly the silent
+break that gate exists for. Two notes on how they are built: invincibility
+is an **unexpiring mercy timer** rather than a second path through damage
+(a debugging aid must not change the thing being debugged), and the hitbox
+preview draws `debug.boxes()` — the numbers the collisions actually use,
+not a guess at them.
+
+**Not done, and correctly blocked:** flipping World 2's `pipeworks_*`
+layers to `live`. All five PNGs are on disk and the sixth reuses the
+groundworks sky, but the smoke gate fails any live asset nothing fetches
+and no room asks for world 2 yet. That flip belongs to the level lane's
+PR 3, in the same change as the first World 2 room.
+
+**A flake, recorded rather than buried:** *"holding the bucket in the stack
+slings the girder on"* failed on one run of `smoke.cjs` and passed on the
+next two against the same tree. It is wall-clock sensitive under sandbox
+load. It should be re-cut to judge game state, like the rest of that gate.
+
+Gates: 99 / 31 / 30 / **269** / 7 / hub.
+
 ## v15.7 — 2026-08-15 — he turns around, and the d-pad becomes a stick
 
 **He was moon-walking, and it is the +z/+x confusion for the third time.**
