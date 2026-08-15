@@ -10,11 +10,11 @@
 // a machine-shaped lock, and an exit only the pair of them opens.
 
 import * as THREE from 'three';
-import { PAL, mix } from './palette.js?v=18';
-import { craftMat, craftBox, craft, cutQuad } from './craft.js?v=18';
+import { PAL, mix } from './palette.js?v=19';
+import { craftMat, craftBox, craft, cutQuad } from './craft.js?v=19';
 
-import { ROOMS, LAB } from './rooms.js?v=18';
-import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, GROUND } from './parts.js?v=18';
+import { ROOMS, LAB } from './rooms.js?v=19';
+import { compile, W, H, SOLID_CHARS, CLIMB_CHAR, BELT_CHARS, TARP_CHAR, WATER_CHAR, GROUND } from './parts.js?v=19';
 
 export { ROOMS, LAB };
 const EPS = 0.001;
@@ -82,6 +82,11 @@ export class Level {
   }
 
   tarpAt(x, y) { return this.underfoot(x, y) === TARP_CHAR; }
+
+  // Standing in shallow water. Same one-character read as the belt and the
+  // tarp — the gizmos are all "what is under your boot", which is why they
+  // cost almost nothing.
+  waterAt(x, y) { return this.underfoot(x, y) === WATER_CHAR; }
 
   climbTop(x, y) {
     const c = Math.floor(x);
@@ -401,6 +406,22 @@ export class Level {
             chev.rotation.y = ch === 'C' ? 0.78 : -0.78;
             group.add(chev);
           }
+        } else if (ch === '~') {
+          // SHALLOW WATER. It replaces the ground's top row, so the bed has
+          // to be drawn back in underneath or the run reads as a hole with
+          // a lid on it. Then the water itself: a CUT SHEET of blue-green
+          // craft material sitting slightly proud, flat and matte — never a
+          // transparency and never a shader (ART_BRIEF §3.2, and WORLD2 §3).
+          box(w, 1, 1.6, dirtMat(strata(cy), section(cy)), cx, cy + 0.5, 0);
+          const sheet = craftBox(w, 0.2, 1.5, craftMat(PAL.WATER, 'felt'));
+          sheet.position.set(cx, cy + 0.94, 0);
+          group.add(sheet);
+          // the hand-cut edge at each end, so a puddle has a rim rather
+          // than fading out — the seam IS the material
+          for (const ex of [c - 0.02, e + 1.02]) {
+            const rim = craftBox(0.12, 0.26, 1.52, craftMat(PAL.WATER_DK, 'felt'));
+            rim.position.set(ex, cy + 0.94, 0); group.add(rim);
+          }
         } else if (ch === 'T') {
           // a tarp: sheet stretched over a frame, and it SAGS in the middle,
           // because a flat one is a plank and reads as somewhere to stand
@@ -435,6 +456,26 @@ export class Level {
         c = e + 1;
       }
     }
+
+    // ---- the pipes -------------------------------------------------------
+    // Drawn AFTER the tile walk because a mouth is not a tile — it is a
+    // place in front of the wall, the way a ladder's rungs are. The read it
+    // has to carry is "you can go in here", and at 32 px that is one thing:
+    // a DARK opening inside a bright rim. Nothing else about it matters.
+    for (const q of this.def.pipes || []) {
+      for (const m of [q.a, q.b]) {
+        const x = m.c + 0.5, y = m.cy + 0.5;
+        // the collar, painted balsa like every other made thing here
+        const collar = craftBox(1.15, 1.15, 0.5, craftMat(PAL.STEEL[2], 'balsa'));
+        collar.position.set(x, y, 0.5); group.add(collar);
+        const rim = craftBox(1.35, 1.35, 0.22, craftMat(PAL.MACHINE, 'balsa'));
+        rim.position.set(x, y, 0.42); group.add(rim);
+        // …and the hole, which is the whole message
+        const bore = craftBox(0.78, 0.78, 0.3, craftMat(PAL.INK, 'card'));
+        bore.position.set(x, y, 0.66); group.add(bore);
+      }
+    }
+
     scene.add(group);
     return group;
   }

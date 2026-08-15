@@ -17,7 +17,7 @@ import {
   check, estimate, REACH, LEVEL, TELL, CLOCK, SOLID_CHARS, W, H, GROUND,
   ground, mound, pit, bank, chasm, machine, robot, startAt, exitAt,
   ladder, ledge, checkpoint, flagAt, golden, boltRun, belt, tarp, TARP_RISE,
-  swingBall, hazard,
+  swingBall, hazard, shallow, deep, pipe, flooded, machine as mach,
 } from '../js/parts.js?v=4';
 import { slugOf, parseSlug, PER_WORLD } from '../js/levelid.js?v=15';
 
@@ -136,6 +136,25 @@ for (const room of ROOMS) {
     ok(`${room.name}: the ladder at x=${l.c} has a deck to step off onto`, landed,
       `tops out at cy=${l.cy1}`);
   }
+}
+
+// ---- water, and the budget it quietly changes ---------------------------
+// The rule that is easy to get wrong by omission rather than by error: a
+// jump taken out of shallow water carries roughly half what a dry one does,
+// and the two are indistinguishable in a room listing.
+{
+  console.log('\nwater:');
+  ok('shallow water is a floor — it is in SOLID_CHARS', SOLID_CHARS.includes('~'));
+  ok(`a dry running jump carries ${REACH.jumpAcross} tiles`, REACH.jumpAcross > 4.8);
+  ok(`…and one out of water carries ${REACH.jumpAcrossWading.toFixed(2)}`,
+    REACH.jumpAcrossWading < REACH.jumpAcross * 0.6);
+  ok(`so the gap budget drops from ${REACH.gap} to ${REACH.gapWading} in water`,
+    REACH.gapWading < REACH.gap);
+  // the budget must keep the same slack rule the dry one is held to
+  ok('and the waded budget still leaves a real margin',
+    REACH.jumpAcrossWading - REACH.gapWading >= 0.6,
+    `${(REACH.jumpAcrossWading - REACH.gapWading).toFixed(2)} tiles`);
+  console.log('');
 }
 
 // ---- the address (js/levelid.js) ----------------------------------------
@@ -328,6 +347,43 @@ bites('a steam vent parked in the same place', {
   parts: [ground(), startAt(4), machine('excavator', 50, [44, 92]),
     hazard(70, 'steam'), bank(84, 88, 3), ...furniture()],
 }, 'stands in the excavator\'s only run');
+
+bites('a pipe whose far mouth opens into mid-air', {
+  name: 'BAD/pipe-to-nowhere',
+  parts: [ground(), startAt(4), pit(40, 44),
+          pipe({ c: 20, cy: GROUND }, { c: 42, cy: GROUND }), ...furniture()],
+}, 'nothing to stand on under it');
+
+bites('a pipe whose mouth is buried in solid tile', {
+  name: 'BAD/pipe-in-a-wall',
+  parts: [ground(), startAt(4), mound(30, 34, 2),
+          pipe({ c: 20, cy: GROUND }, { c: 32, cy: GROUND }), ...furniture()],
+}, 'buried in');
+
+bites('a pipe that goes nowhere', {
+  name: 'BAD/pipe-loop',
+  parts: [ground(), startAt(4),
+          pipe({ c: 20, cy: GROUND }, { c: 20, cy: GROUND }), ...furniture()],
+}, 'goes nowhere');
+
+bites('shallow water hanging over a hole', {
+  name: 'BAD/puddle-in-the-air',
+  parts: [ground(), startAt(4), pit(30, 32), shallow(30, 32), ...furniture()],
+}, 'puddle in mid-air');
+
+bites('deep water with no dry lip to hand you back to', {
+  // two stretches with only water between them: fallRespawn walks back three
+  // tiles and lands in the second one, so the level eats you
+  name: 'BAD/nowhere-to-return',
+  parts: [ground(), startAt(4), deep(24, 26), deep(28, 30), ...furniture()],
+}, 'no dry lip');
+
+bites('a gap you have to jump straight out of the water', {
+  // 3 wide is well inside the DRY budget of 4 — this fails only because the
+  // takeoff lip is a puddle, which is the whole point of the rule
+  name: 'BAD/jump-from-water',
+  parts: [ground(), startAt(4), shallow(26, 29), pit(30, 32), ...furniture()],
+}, 'shallow water');
 
 bites('a belt that walks you off an edge you did not choose', {
   name: 'BAD/belt',

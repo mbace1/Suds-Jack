@@ -27,9 +27,9 @@
 import {
   ground, mound, ledge, girderBeam, pit, bank, brickWall, chasm,
   machine, robot, hopper, roller, hazard, swingBall, startAt, exitAt, shot,
-  girderStack, scaffold, checkpoint, flagAt, golden, belt, tarp,
-  boltRun, boltArc, boltCol,
-} from './parts.js?v=18';
+  girderStack, scaffold, checkpoint, flagAt, golden, belt, tarp, shallow, deep, pipe,
+  boltRun, boltArc, boltCol, GROUND,
+} from './parts.js?v=19';
 
 export const ROOMS = [
   // ── LEVEL 1 — GROUNDWORKS ───────────────────────────────────────────
@@ -285,7 +285,21 @@ export const LAB = {
     golden(12, [47]),
 
     checkpoint(52),
-    boltRun(5, 54, 62),
+
+    // WATER, both kinds, proved in the lab before a level spends them.
+    // Shallow first and alone — you walk in and you are slow, which is the
+    // whole of it. Then deep, which is a hole wearing different paint, with
+    // a DRY lip on the near side to be handed back to.
+    shallow(54, 58),
+    boltRun(5, 54, 58),
+    deep(61, 62),
+    boltArc(5, 60, 63, 2),
+
+    // …and a PIPE, which is the other way across a thing you would rather
+    // not cross: in at 66, out at 75, both mouths on the flat and both
+    // visible at once, because a first pipe you cannot see the end of is a
+    // trap rather than an invitation.
+    pipe({ c: 66, cy: GROUND }, { c: 75, cy: GROUND }),
 
     // …and the two together: a belt that feeds a tarp
     belt(64, 69, 3, 1),

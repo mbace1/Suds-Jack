@@ -55,10 +55,26 @@ const BOT = `async (budgetMs) => {
     // the girder is TWO actions, not one: pick it off its stack first, then
     // carry it to the seating window at the lip. A bot that only ever drove
     // at the gap sat there holding the verb with an empty hook.
+    // WORLD 2: a flooded trench is the pump's job. Same shape as the bank —
+    // drive at it and hold the verb — so it costs the bot one entry.
+    if (d.flooded && E.debug.flooded && E.debug.flooded() && !E.debug.flooded().cleared) {
+      return { at: d.flooded.c0, verb: 'down' };
+    }
     if (d.girder && E.debug.girder()) {
       const g = E.debug.girder();
       if (g.state === 0) return { at: d.girder.stackX, verb: 'down' };
       if (g.state === 1) return { at: (d.girder.seat.x0 + d.girder.seat.x1) / 2, verb: 'down' };
+    }
+    return null;
+  };
+
+  // is the kid standing at a pipe mouth?
+  const q0 = (E) => {
+    const pl = E.player;
+    for (const q of (E.debug.pipes() || [])) {
+      for (const m of [q.a, q.b]) {
+        if (Math.abs(pl.x - (m.c + 0.5)) < 0.7 && Math.abs(pl.y - m.cy) < 0.6) return q;
+      }
     }
     return null;
   };
@@ -98,6 +114,19 @@ const BOT = `async (budgetMs) => {
     // on foot: always rightward
     E.debug.press('right');
     if (q.x > best + 0.01) { best = q.x; stuck = 0; } else stuck++;
+
+    // THE PIPE. The bot's whole vocabulary is right/left/jump/down/action/up,
+    // and it has stalled on an unknown verb once already (the climb), so the
+    // rule is the same shape: standing at a mouth and getting nowhere means
+    // go in. It stays deliberately dumb — no routing, no idea where the far
+    // end is — because a pipe that only helps a bot that plans is a pipe a
+    // six-year-old will not find either.
+    if (stuck > 40 && E.debug.pipes) {
+      const q = q0(E);
+      if (q && Date.now() - act > 400) {
+        E.debug.press('action'); E.debug.release('action'); act = Date.now();
+      }
+    }
 
     // jump when the run is blocked, or a hole is coming
     const ahead = E.level.groundTop(q.x + 1.0, q.y + 0.1);
