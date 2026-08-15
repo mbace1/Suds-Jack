@@ -300,6 +300,15 @@ const CLIMB_V = 3.6;
 // not a change of speed, so you keep full control and only your ground
 // disagrees with you. A tarp throws you about twice as high as a jump.
 const BELT = 2.6, TARP_V = 17.5;
+// WADING (DESIGN world 2). Shallow water is a floor that slows you — the
+// belt's idea turned down instead of sideways. 0.55 is chosen so a wade
+// still feels like running rather than like being stuck: at RUN it is 3.4
+// tiles/s, which is above the excavator's 3.4 only by rounding, so the
+// slowest thing on foot is still about as quick as the machinery.
+// It does NOT touch the jump: DESIGN §4.1 says every jump is proved with a
+// full tile of slack, and a jump that got shorter in water would break that
+// silently for every room the prover has already passed.
+const WADE = 0.55;
 
 export class Player {
   constructor(level, spawn, kid) {
@@ -395,9 +404,13 @@ export class Player {
 
     // horizontal: accelerate hard, stop hard — tap = a step, hold = a run
     const acc = this.grounded ? ACC : ACC_AIR;
+    // …and wading caps the RUN, not the acceleration: you get up to speed as
+    // sharply as ever and simply cannot go as fast, which reads as heavy
+    // water rather than as sluggish controls.
+    const top = (this.grounded && this.level.waterAt(this.x, this.y)) ? RUN * WADE : RUN;
     if (ax !== 0) {
       this.vx += ax * acc * dt;
-      this.vx = Math.max(-RUN, Math.min(RUN, this.vx));
+      this.vx = Math.max(-top, Math.min(top, this.vx));
       this.kid.setFace(ax);
     } else if (this.grounded) {
       const s = Math.sign(this.vx);

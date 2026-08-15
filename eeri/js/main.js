@@ -316,6 +316,7 @@ async function boot() {
     seat: tr('hSeat'),
     smash: tr('hSmash'),
     out: tr('hOut'),
+    pipe: tr('hPipe'),
   };
 
   // ---- the mode machine ---------------------------------------------------
@@ -324,6 +325,27 @@ async function boot() {
   let stomps = 0;
   const from = new THREE.Vector3(), mid = new THREE.Vector3(), to = new THREE.Vector3();
   const v3 = new THREE.Vector3();
+
+  // THE PIPE (DESIGN world 2). A tube you go inside: stand at a mouth, press
+  // the action, and you come out the other end. It is a scripted move like
+  // the mount rather than a tile like the belt — a tile is a place, and a
+  // pipe is a pair of places plus the trip between them.
+  //
+  // `piping` is the trip; `pipeCool` is what stops the far mouth reading as
+  // a fresh entrance the instant you arrive and sending you straight back.
+  let piping = null, pipeT = 0, pipeCool = 0;
+  const PIPE_T = 0.55;
+  const atPipe = () => {
+    if (!player.grounded || piping || pipeCool > 0) return null;
+    for (const q of site.def.pipes || []) {
+      for (const [m, other] of [[q.a, q.b], [q.b, q.a]]) {
+        if (Math.abs(player.x - (m.c + 0.5)) < 0.7 && Math.abs(player.y - m.cy) < 0.6) {
+          return { from: m, to: other };
+        }
+      }
+    }
+    return null;
+  };
 
   const nearExc = () => !!exc
     && Math.abs(player.x - exc.x) < 2.6 && player.y > exc.y - 1 && player.y < exc.y + 2.4 && player.grounded;
@@ -464,7 +486,10 @@ async function boot() {
       transitioning: () => transitioning,
       // the gizmo lab: buildable, never in the sequence (js/rooms.js)
       goLab: () => goSite(ROOMS.length),
-      gizmos: () => ({ belts: site.def.belts, tarps: site.def.tarps }),
+      gizmos: () => ({ belts: site.def.belts, tarps: site.def.tarps, water: site.def.water }),
+      wading: () => site.level.waterAt(player.x, player.y),
+      pipes: () => site.def.pipes || [],
+      piping: () => mode === 'piping',
       // the level's own furniture, so "it is a level and not a room" is
       // something the gate can actually ask
       climbing: () => player.climbing,
@@ -520,6 +545,7 @@ async function boot() {
 
     if (!transitioning) {
     if (mode === 'foot') {
+      pipeCool = Math.max(0, pipeCool - dt);
       player.update(dt, input);
       if (exc) { if (exc.tamed) exc.update(dt, null); else exc.work(dt); }
       if (player.justJumped) audio.jump();
@@ -529,14 +555,46 @@ async function boot() {
       if (exc && unmannedStrike() && player.struck(exc.x)) { audio.splat(); cam.punch(1.1); }
 
       const near = nearExc();
+      const pipeHere = atPipe();
       setHint(cleared ? HINT.out
         : near ? HINT.near
+        : pipeHere ? HINT.pipe
         : player.climbing ? HINT.ladder
         : (site.flag && site.flag.phase >= 2 && !site.flag.raised
             && Math.abs(player.x - site.flag.x) < 12) ? HINT.flag
         : (exc && !exc.tamed && Math.abs(player.x - exc.x) < 6) ? HINT.wary
         : HINT.foot);
       if (near && input.take('action')) { startMount(); audio.mount(); }
+      else if (!near && pipeHere && input.take('action')) {
+        piping = pipeHere; pipeT = 0; mode = 'piping';
+        audio.mount();
+        input.take('jump');
+      }
+    } else if (mode === 'piping') {
+      // THE TRIP. He ducks out of sight and reappears at the far mouth —
+      // long enough to read as travel, short enough not to take the controls
+      // away for a beat that matters. He is out of the world while it runs,
+      // so nothing can touch him in transit, which is the whole reason this
+      // is a mode rather than a teleport.
+      pipeT += dt;
+      const k = Math.min(1, pipeT / PIPE_T);
+      kid.group.visible = k > 0.5;
+      if (k > 0.5) {                       // second half: out at the far end
+        player.x = piping.to.c + 0.5;
+        player.y = piping.to.cy;
+        player.vx = 0; player.vy = 0;
+      }
+      if (k >= 1) {
+        kid.group.visible = true;
+        // the far mouth is a mouth too, and would swallow him straight back
+        // on the next frame without this
+        pipeCool = 0.45;
+        piping = null;
+        mode = 'foot';
+        audio.dismount();
+        input.take('action'); input.take('jump');
+      }
+      setHint(HINT.pipe);
     } else if (mode === 'mounting') {
       moveT += dt / 0.55;
       exc.update(dt, null);

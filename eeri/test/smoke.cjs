@@ -850,6 +850,89 @@ s.listen(0, '127.0.0.1', async () => {
 
   if (inLab) {
     const giz = await p.evaluate(() => window.__eeri.debug.gizmos());
+    // WATER, both kinds, in the lab that exists to prove the kit.
+    const wat = giz.water || [];
+    ok('the lab carries both kinds of water', wat.length >= 2
+      && wat.some((q) => !q.deep) && wat.some((q) => q.deep), JSON.stringify(wat));
+
+    const sh = wat.find((q) => !q.deep);
+    if (sh) {
+      // SHALLOW is a floor that slows you. Measured as a RACE rather than by
+      // reading a constant: run the same 4 tiles on dry land and in water and
+      // compare, because a test that reads WADE back out of the game proves
+      // only that the number exists.
+      const runFor = async (x0) => {
+        await p.evaluate((x) => { window.__eeri.debug.setPos(x, 4.2); }, x0);
+        await p.waitForTimeout(120);
+        await p.evaluate(() => window.__eeri.debug.press('right'));
+        await p.waitForFunction((x) => window.__eeri.player.x > x + 3.5, x0, { timeout: 20000 })
+          .catch(() => {});
+        const v = await p.evaluate(() => Math.abs(window.__eeri.player.vx));
+        await p.evaluate(() => window.__eeri.debug.release('right'));
+        return v;
+      };
+      const dryV = await runFor(sh.c0 - 8);
+      const wetV = await runFor(sh.c0 + 0.5);
+      ok('standing in shallow water reads as water', await p.evaluate(() => window.__eeri.debug.wading()));
+      ok(`wading is slower than running (${wetV.toFixed(2)} vs ${dryV.toFixed(2)} tiles/s)`,
+        wetV < dryV * 0.75 && wetV > 0.5);
+    }
+
+    const dp = wat.find((q) => q.deep);
+    if (dp) {
+      // DEEP is a hole wearing different paint, and DESIGN §4.1 is the point:
+      // it must HAND HIM BACK, never hurt him. Dropped into the middle of it,
+      // he ends up on the dry side of the near lip with his health untouched
+      // (there is no health), which is the promise the whole world rests on.
+      await p.evaluate((d) => window.__eeri.debug.setPos((d.c0 + d.c1) / 2 + 0.5, 4.2), dp);
+      const handedBack = await p.waitForFunction(
+        (d) => window.__eeri.player.y > 3 && window.__eeri.player.x < d.c0,
+        dp, { timeout: 15000 }).then(() => true).catch(() => false);
+      ok('deep water hands him back to the near lip rather than drowning him', handedBack,
+        'x=' + await p.evaluate(() => window.__eeri.player.x.toFixed(1)));
+      // …on something STANDABLE, which the shallows are — the lip he is
+      // handed to here is a puddle, and that is a legitimate place to be put
+      // down. `fallRespawn` returns him a tile ABOVE the lip, so this waits
+      // for the landing rather than sampling mid-drop.
+      const landed = await p.waitForFunction(() => window.__eeri.player.grounded,
+        null, { timeout: 10000 }).then(() => true).catch(() => false);
+      ok('…and he lands on a floor, out of the deep', landed,
+        'y=' + await p.evaluate(() => window.__eeri.player.y.toFixed(2)));
+    }
+
+    // THE PIPE: a tube you go inside. Stand at a mouth, press the action,
+    // come out the other end — and the assertions are the two halves of the
+    // contract: you actually MOVE, and you are somewhere standable when you
+    // land, which is what `check()` proves geometrically and this proves in
+    // the running game.
+    const pipes = await p.evaluate(() => window.__eeri.debug.pipes());
+    ok('the lab carries a pipe', pipes.length >= 1, JSON.stringify(pipes));
+    if (pipes.length) {
+      const q = pipes[0];
+      await p.evaluate((m) => window.__eeri.debug.setPos(m.c + 0.5, m.cy + 0.05), q.a);
+      await p.waitForTimeout(250);
+      ok('standing at a mouth offers the pipe',
+        (await p.evaluate(() => document.getElementById('hint').textContent)).toUpperCase()
+          .includes('PIPE'),
+        await p.evaluate(() => document.getElementById('hint').textContent));
+
+      await p.evaluate(() => { window.__eeri.debug.press('action'); window.__eeri.debug.release('action'); });
+      const cameOut = await p.waitForFunction(
+        (m) => Math.abs(window.__eeri.player.x - (m.c + 0.5)) < 1.2 && window.__eeri.mode() === 'foot',
+        q.b, { timeout: 15000 }).then(() => true).catch(() => false);
+      ok('going in one mouth brings you out the other', cameOut,
+        'x=' + await p.evaluate(() => window.__eeri.player.x.toFixed(1))
+        + ' wanted ~' + (q.b.c + 0.5));
+      ok('…and he is standing on something when he arrives',
+        await p.evaluate(() => window.__eeri.player.grounded));
+      // the far mouth is a mouth too — without a cooldown it swallows him
+      // straight back, and the trip becomes a loop he cannot leave
+      await p.waitForTimeout(700);
+      ok('…and the far mouth does not send him straight back',
+        Math.abs(await p.evaluate(() => window.__eeri.player.x) - (q.b.c + 0.5)) < 1.5,
+        'x=' + await p.evaluate(() => window.__eeri.player.x.toFixed(1)));
+    }
+
     // THE BELT: stand still on it and the floor takes you somewhere
     const b = giz.belts.find((x) => x.dir > 0);
     await p.evaluate((v) => window.__eeri.debug.setPos(v.c0 + 0.5, v.cy + 1.2), b);

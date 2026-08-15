@@ -14,6 +14,68 @@
 > float cannot be displayed (`15.0` prints as `15`).
 
 
+## v15.3 — 2026-08-15 — water, the pipe, and the pump verb
+
+**World 2's cheap two thirds** (`WORLD2_PLAN.md` PR 2). None of it is spent
+in a level yet — it is proved in the `LAB`, which exists for exactly that,
+because one idea per level means a new gizmo cannot be dropped into levels
+1–3 without making each of them two levels.
+
+**WATER, and it does not drown him.** DESIGN §4.1 is absolute — Eeri is
+never hurt, never dies, has no health bar — so the two kinds add no new way
+to lose. **Shallow** is a tile (`~`), solid, and the whole behaviour is one
+read in the player's step: it caps the run at 55%, measured in the gate as a
+race rather than by reading the constant back out (3.41 against 6.20 tiles a
+second). **Deep** is a `pit` wearing different paint, so `fallRespawn`
+already hands you to the near lip with nothing new written.
+
+**THE TRAP THIS NEARLY WALKED INTO, and it is the tarp's scar again.** A
+running jump carries `run speed × airtime`, so a takeoff **out of water**
+carries **2.67 tiles, not 4.85** — and a gap after a puddle looks exactly
+like a gap in a room listing. `REACH` now carries `jumpAcrossWading` and
+`gapWading`, and `check()` measures a gap against the waded budget when its
+takeoff lip is wet. Without it the prover would have cheerfully passed rooms
+nobody could finish, which is the failure mode the kit already has a scar
+from: *anything that changes where the player can get to must be added to
+the reach model.*
+
+**THE PIPE** — a tube you go inside, and level 5's idea. It is not a tile: a
+tile is a place, and a pipe is a pair of places plus the trip between them,
+so it is a `mode` like the mount rather than a character like the belt. He
+is out of the world while it runs, which is why it is a mode and not a
+teleport — nothing can touch him in transit. Its `check()` contract is **the
+ladder's, generalised**: both mouths must be standable and neither may be
+buried, because *a pipe that delivers you into mid-air is a ladder that tops
+out in mid-air, lying down*. The far mouth gets a cooldown, or it swallows
+him back on the next frame and the trip becomes a loop he cannot leave.
+
+**THE `pump` VERB, and the three tables that must move together.** Two of
+the three fail *silently*, which is why this is worth a paragraph:
+`MACHINE_REACH` throws on an unknown machine (loud, fine); `MACHINE_SPEED`
+falls back to `|| 3`; and `rideTime()`'s if/else had no `else`, so a new verb
+left `work` at 0 and `estimate()` under-counted the ride with nothing to
+show for it. **It throws now.** The pipe-layer needs no new verb at all —
+seating a pipe section IS the excavator's `span`, re-dressed, which is what
+makes it the cheap second machine of the pair.
+
+**And the tile contract is checked rather than trusted.** `TILES` is
+documentation — nothing imports it — while `SOLID_CHARS` is what the game
+reads, so the two could drift apart in silence. `parts.js` now proves they
+agree at import time.
+
+Six new rules, each with a room broken on purpose: shallow water over a
+hole · deep water with no dry lip to be handed back to · a gap taken out of
+water · a pipe into mid-air · a pipe buried in tile · a pipe that goes
+nowhere.
+
+Gates, each run singly: rooms **99/0**, smoke **260/0**, playthrough **7/0**.
+
+**SHARED files touched, and named because the lanes rule says to:**
+`js/main.js` (the piping mode, the debug hooks), `js/palette.js`
+(`WATER`/`WATER_DK` — two roles, because telling shallow from deep is the
+level's real difficulty and they must read apart at 32 px), and `js/lang.js`
+(`hPipe`, in all three languages).
+
 ## v15.2 — 2026-08-15 — every level has an address, and falls stop teleporting
 
 **`EERI 1-1`** (owner's direction, and it is Mario's scheme because that is
