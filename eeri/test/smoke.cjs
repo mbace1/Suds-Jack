@@ -900,6 +900,55 @@ s.listen(0, '127.0.0.1', async () => {
         'y=' + await p.evaluate(() => window.__eeri.player.y.toFixed(2)));
     }
 
+    // THE HOIST — the first solid thing here that is not a tile, so this is
+    // the one gizmo whose test has to prove PHYSICS rather than a state
+    // flag. Four things, and each is a way moving floors classically break:
+    // you land on it, it CARRIES you (the hard one — it rises into your
+    // feet, so the landing test can never fire), you can leave it, and it
+    // does not drag you through the ceiling.
+    const hoists = await p.evaluate(() => window.__eeri.debug.hoists());
+    ok('the lab carries a hoist', hoists.length >= 1, JSON.stringify(hoists));
+    if (hoists.length) {
+      const h = hoists[0];
+
+      // wait for it to come down to its floor, then stand on it
+      await p.waitForFunction((q) => window.__eeri.debug.hoists()[0].y < q.cy0 + 0.4,
+        h, { timeout: 20000 }).catch(() => {});
+      await p.evaluate((q) => window.__eeri.debug.setPos(q.x, q.cy0 + 0.8), h);
+      const stood = await p.waitForFunction(() => window.__eeri.debug.carried(),
+        null, { timeout: 15000 }).then(() => true).catch(() => false);
+      ok('landing on a hoist puts him on it', stood,
+        'carried=' + await p.evaluate(() => window.__eeri.debug.carried()));
+
+      if (stood) {
+        // THE CARRY. It rises INTO him, so a crossing test alone can never
+        // catch it — this is what the `riding` branch of the platform pass
+        // exists for, and the assertion is simply that he went up with it.
+        const y0 = await p.evaluate(() => window.__eeri.player.y);
+        const rose = await p.waitForFunction(
+          (y) => window.__eeri.player.y > y + 2 && window.__eeri.debug.carried(),
+          y0, { timeout: 25000 }).then(() => true).catch(() => false);
+        ok('…and it carries him up as it goes', rose,
+          `${y0.toFixed(2)} → ` + await p.evaluate(() => window.__eeri.player.y.toFixed(2)));
+
+        // he must not be welded to it: a jump lets go
+        await p.evaluate(() => window.__eeri.debug.press('jump'));
+        await p.waitForTimeout(200);
+        await p.evaluate(() => window.__eeri.debug.release('jump'));
+        const letGo = await p.waitForFunction(() => !window.__eeri.debug.carried(),
+          null, { timeout: 8000 }).then(() => true).catch(() => false);
+        ok('…and a jump lets go of it', letGo);
+      }
+
+      // it must never push him through a solid: the rule the prover refuses
+      // a room for, checked here as a fact about the running game
+      const clear = await p.evaluate(() => {
+        const pl = window.__eeri.player;
+        return !window.__eeri.level.solidCell(Math.floor(pl.x), Math.floor(pl.y + 0.5));
+      });
+      ok('a hoist never leaves him inside a tile', clear);
+    }
+
     // THE PIPE: a tube you go inside. Stand at a mouth, press the action,
     // come out the other end — and the assertions are the two halves of the
     // contract: you actually MOVE, and you are somewhere standable when you

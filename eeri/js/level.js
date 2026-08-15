@@ -30,6 +30,11 @@ export class Level {
     this.w = W; this.h = H;
     this.map = this.def.grid;
     this.boltCells = this.def.bolts.map(([r, c]) => ({ x: c + 0.5, y: (H - 1 - r) + 0.5 }));
+    // THE NON-TILE FLOORS. Empty in every room that has none, which is all
+    // of them until world 2 — but it must EXIST, because the player's
+    // platform pass walks it every frame and a room without the field would
+    // throw on its first step. main.js fills it once the hoists are built.
+    this.platforms = [];
   }
 
   solidCell(c, cy) {

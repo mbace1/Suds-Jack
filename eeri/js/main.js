@@ -21,6 +21,7 @@ import { buildKidModel, Kid, Player } from './kid.js?v=16';
 import { buildExcavatorModel, Excavator } from './excavator.js?v=16';
 import { buildCraneModel, Crane } from './crane.js?v=16';
 import { Robot, SteamVent } from './robots.js?v=16';
+import { Hoist } from './hoist.js?v=16';
 import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=16';
 import { WreckingBall } from './hazards.js?v=16';
 import { AudioKit } from './audio.js?v=16';
@@ -141,6 +142,11 @@ async function boot() {
     // the small stuff: robots patrol a span the kit guaranteed is floor,
     // vents breathe on their own clock
     const robots = def.robots.map((r) => new Robot(group, level, r));
+    // THE HOISTS: entities, because a moving floor cannot be a tile. They
+    // register with the level so the player's platform pass can find them —
+    // one list, filled here, rather than the player reaching into `site`.
+    const hoists = (def.hoists || []).map((h) => new Hoist(group, level, h));
+    level.platforms = hoists;
     const vents = def.hazards.filter((h) => h.type === 'steam')
       .map((h) => new SteamVent(group, level, h.x));
 
@@ -232,7 +238,7 @@ async function boot() {
     scene.add(group);
     return {
       def, level, group, bank, girder, wall, ball, bolts, golden,
-      robots, vents, machine, checkpoint, flag,
+      robots, vents, machine, checkpoint, flag, hoists,
     };
   }
 
@@ -489,6 +495,11 @@ async function boot() {
       gizmos: () => ({ belts: site.def.belts, tarps: site.def.tarps, water: site.def.water }),
       wading: () => site.level.waterAt(player.x, player.y),
       pipes: () => site.def.pipes || [],
+      hoists: () => site.hoists.map((h) => ({
+        x: +h.x.toFixed(2), y: +h.y.toFixed(2), hw: h.hw,
+        cy0: h.cy0, cy1: h.cy1, period: h.period,
+      })),
+      carried: () => !!player.carrier,
       piping: () => mode === 'piping',
       // the level's own furniture, so "it is a level and not a room" is
       // something the gate can actually ask
@@ -848,6 +859,9 @@ async function boot() {
     if (!REDUCED) bg.auto(dt);
     diorama.update(dt);          // the crane traverses, the truck crosses
     if (mode !== 'riding') audio.idleLoad(0);
+    // the hoists run in EVERY mode — a lift that stopped while you were in a
+    // cab would be a lift whose cycle you could not read from the cab
+    for (const h of site.hoists) h.update(dt, REDUCED);
     site.bank?.update(dt);
     site.wall?.update(dt);
     if (exc) site.girder?.update(dt, exc);

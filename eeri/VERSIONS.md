@@ -14,6 +14,67 @@
 > float cannot be displayed (`15.0` prints as `15`).
 
 
+## v15.4 — 2026-08-15 — the hoist: the first solid thing that is not a tile
+
+**The expensive item of world 2, and it is expensive for one reason.** Every
+other floor in this game is a character in the grid: collision is a lookup,
+meshes are built once per room, and nothing in `Player` has any concept of
+standing ON something — entity contact has only ever been a one-frame
+impulse (`bounce`, `struck`) after which you are airborne. A floor that
+MOVES can be none of those, which is why the gizmo kit stopped at the tile
+line on purpose (v14) and why this is its own release.
+
+**`js/hoist.js`** is an entity shaped exactly like `robots.js`'s — it takes
+the room's group, adds its meshes to it, answers `update(dt, reduced)`.
+Everything it makes lives inside that group or it leaks on a level change.
+It moves **vertically only**: a lift is what level 6 asks for, and one that
+also slid sideways would have its carry arguing with the player's own run.
+
+**The motion is a TRIANGLE, not a sine**, and that is a design decision
+rather than a shortcut. You have to *wait* for a hoist, and waiting is only
+fair if the arrival is predictable — a sine spends most of its time near the
+ends and reads as a lift that hesitates.
+
+**The carry is one pass in `Player.update`, after the tile pass** — so a
+tile always wins, and standing on real ground is never overridden by a hoist
+passing underneath. It distinguishes two cases that look the same and are
+not:
+
+- **LANDING** — falling, and the feet *crossed* the deck between frames.
+  Tested as a crossing rather than an overlap, or a fast fall tunnels
+  straight through a platform one tile thick.
+- **RIDING** — already carried, still over it, not jumping. **This is the
+  one that matters**: a rising hoist comes UP into the feet, so the crossing
+  test can never fire, and without this branch the player sinks through a
+  lift travelling towards them. `player.carrier` is kept across frames
+  because that is the only way to tell the two apart.
+
+**Four rules, four rooms broken on purpose** — the ladder's contract
+generalised, plus one a ladder never needed: a hoist that tops out with
+nowhere to step off · one whose shaft runs through solid tile · one that
+carries you into a **ceiling** (a ladder is static, so if it clears once it
+clears forever; a hoist is only wrong for the half of the cycle you are not
+watching) · one that goes nowhere.
+
+**And the reach model learns it**, paid on the way in rather than after the
+lab complains: anything within a jump of any height the hoist passes through
+is reachable. That debt is now paid three times — tarp, pipe, hoist.
+
+`prefers-reduced-motion` **parks it at the bottom** rather than freezing it
+mid-shaft, where it would be a floor nobody could reach and a level nobody
+could finish. The game stays completable with the animation off.
+
+Gates, each run singly: rooms **103/0**, smoke **265/0**, playthrough
+**7/0**. The browser gate proves physics rather than a state flag: he lands
+on it, it carries him up, a jump lets go, and he is never left inside a tile.
+
+**Still open, and deliberately PR 4's:** the playthrough bot does not know
+how to wait for a lift — it holds `right` every tick on foot, which walks it
+off a platform. No level has a hoist yet, so nothing stalls today; it must
+land with levels 4–6, which is where it can actually be exercised.
+
+**SHARED files touched:** `js/main.js` (build, update, debug hooks).
+
 ## v15.3 — 2026-08-15 — water, the pipe, and the pump verb
 
 **World 2's cheap two thirds** (`WORLD2_PLAN.md` PR 2). None of it is spent

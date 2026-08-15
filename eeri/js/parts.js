@@ -351,6 +351,28 @@ export const flooded = (c0, c1) => ({
   blocksMachine: true,
 });
 
+// ---- the hoist (DESIGN world 2, level 6's idea) --------------------------
+// THE FIRST SOLID THING IN THIS GAME THAT IS NOT A TILE, and that sentence
+// is the whole of why it is expensive. Every other floor here is a character
+// in the grid: collision is a lookup, meshes are built once, and nothing has
+// to be told it is standing on anything. A floor that MOVES can be none of
+// those — so it is an entity with its own pass in the player's step, and the
+// kit deliberately stopped at this line until now (see VERSIONS v14).
+//
+// `c0…c1` is the platform's width, `cy0` its bottom and `cy1` its top. It
+// runs between them forever on `period` seconds a round trip. Vertical only:
+// a lift is what level 6 needs, and a hoist that also slid sideways would
+// need the carry to fight the player's own run.
+//
+// Its `check()` contract is THE LADDER'S, and deliberately so — both ends,
+// every time. A ladder is held to a foot and a landing because one ending in
+// mid-air is invisible on a screenshot; a hoist is worse, because it is only
+// wrong for the half of the cycle you are not looking at.
+export const hoist = (c0, c1, cy0, cy1, period = 4) => ({
+  kind: 'hoist', c0, c1, cy0, cy1, period,
+  hoist: { c0, c1, cy0, cy1, period },
+});
+
 // ---- the pipe (DESIGN world 2, level 5's idea) ---------------------------
 // A tube you go INSIDE: enter one mouth, come out the other. It is not a
 // tile — a tile is a place, and a pipe is a pair of places plus a move
@@ -464,7 +486,7 @@ export function compile(room) {
     // the deck it serves), so the list is flattened once, here
     parts: room.parts.flat(),
     bolts: [], golden: [], pits: [], shots: [], machines: [], robots: [], hazards: [],
-    pieces: [], obstacles: [], ladders: [], belts: [], tarps: [], water: [], pipes: [],
+    pieces: [], obstacles: [], ladders: [], belts: [], tarps: [], water: [], pipes: [], hoists: [],
     ball: null, checkpoint: null, flag: null,
     spawn: { kid: { x: 4.5, y: GROUND }, machines: {} },
     exit: { x: W - 4, y: GROUND },
@@ -484,6 +506,7 @@ export function compile(room) {
     if (p.tarp) out.tarps.push(p.tarp);
     if (p.water) out.water.push(p.water);
     if (p.pipe) out.pipes.push(p.pipe);
+    if (p.hoist) out.hoists.push(p.hoist);
     if (p.drained) (out.drained ||= []).push(p.drained);
     if (p.checkpoint) out.checkpoint = p.checkpoint;
     if (p.flag) out.flag = p.flag;
@@ -809,6 +832,54 @@ export function check(room) {
     }
   }
 
+  // ---- the hoist: both ends, and the ceiling ----------------------------
+  // The ladder's contract, and one rule a ladder never needed. A ladder is
+  // static, so if it clears the wall once it clears it forever; a hoist is
+  // only wrong for the half of its cycle you are not watching, which is why
+  // every one of these is a build step rather than a placement note.
+  for (const h of r.hoists) {
+    if (h.cy1 <= h.cy0) {
+      note(`${r.name}: the hoist at ${h.c0}…${h.c1} runs from cy=${h.cy0} to cy=${h.cy1} — `
+        + 'it goes nowhere, or downwards');
+      continue;
+    }
+    // 1. you have to be able to GET ON: something standable beside its floor
+    const boardable = solidAt(h.c0 - 1, h.cy0 - 1) || solidAt(h.c1 + 1, h.cy0 - 1);
+    if (!boardable) {
+      note(`${r.name}: the hoist at ${h.c0}…${h.c1} sits at cy=${h.cy0} with nothing to `
+        + `board it from — put a floor beside x=${h.c0 - 1} or x=${h.c1 + 1}`);
+    }
+    // 2. …and OFF at the top, which is the half nobody checks
+    const lands = solidAt(h.c0 - 1, h.cy1) || solidAt(h.c1 + 1, h.cy1);
+    if (!lands) {
+      note(`${r.name}: the hoist at ${h.c0}…${h.c1} tops out at cy=${h.cy1} with nothing to `
+        + `step off onto — a lift to nowhere is a ladder that tops out in mid-air, `
+        + `and it is only wrong for half the cycle`);
+    }
+    // 3. its shaft must be clear, or it carries you into the level
+    for (let cy = h.cy0; cy <= h.cy1; cy++) {
+      let blocked = false;
+      for (let c = h.c0; c <= h.c1 && !blocked; c++) if (solidAt(c, cy)) blocked = true;
+      if (blocked) {
+        note(`${r.name}: the hoist at ${h.c0}…${h.c1} runs through solid tile at cy=${cy} — `
+          + 'its shaft has to be clear the whole way');
+        break;
+      }
+    }
+    // 4. THE CRUSH. Riding to the top with a ceiling over it puts the player
+    // between a floor that keeps rising and a tile that will not move. The
+    // tarp has the same rule for the same reason, and a tarp only throws you
+    // once — a hoist does it every cycle.
+    let ceiling = false;
+    for (let c = h.c0; c <= h.c1 && !ceiling; c++) {
+      if (solidAt(c, h.cy1 + 1) || solidAt(c, h.cy1 + 2)) ceiling = true;
+    }
+    if (ceiling) {
+      note(`${r.name}: the hoist at ${h.c0}…${h.c1} tops out at cy=${h.cy1} with something `
+        + 'solid directly above it — it would carry the player into a ceiling, every cycle');
+    }
+  }
+
   // ---- the pipe: both mouths, every time --------------------------------
   // The ladder's rule, generalised. A ladder is held to a foot and a landing
   // because a ladder ending in mid-air is invisible on a screenshot; a pipe
@@ -936,8 +1007,14 @@ export function check(room) {
     // are standable by the rule above, so anything within a jump of either
     // one is reachable — this is the same debt the tarp taught, paid on the
     // way in this time rather than after the lab complained.
-    return r.pipes.some((q) => [q.a, q.b].some((m) =>
-      Math.abs(m.c - col) <= BOLT_SPREAD && cy - m.cy <= BOLT_REACH && cy - m.cy >= -0.5));
+    if (r.pipes.some((q) => [q.a, q.b].some((m) =>
+      Math.abs(m.c - col) <= BOLT_SPREAD && cy - m.cy <= BOLT_REACH && cy - m.cy >= -0.5))) return true;
+    // …and A HOIST IS A MOVING FLOOR, so everything within a jump of ANY
+    // height it passes through is reachable. Same debt as the tarp and the
+    // pipe, paid on the way in: a gizmo that changes where the player can
+    // get to must be in this model, or the check refuses correct rooms.
+    return r.hoists.some((h) => col >= h.c0 - BOLT_SPREAD && col <= h.c1 + BOLT_SPREAD
+      && cy >= h.cy0 - 0.5 && cy <= h.cy1 + BOLT_REACH);
   };
   for (const [row, col] of [...r.bolts, ...r.golden]) {
     const cy = H - 1 - row;
