@@ -103,19 +103,27 @@ spread, and a name that ends in its material is a name you can shop by.
 | folder | file | material lead |
 |---|---|---|
 | `background/` | `gantry-steel.png` | painted steel — a pale blue lattice gantry, thin and quiet |
-| `background/` | `slabtower-foam.png` | painted foam board — putty-grey slab, cut core showing down one edge |
+| `background/` | `slabtower-foam.png` | painted foam board — putty-grey slab, bubble grain across the face |
 | `midground/` | `bagstack-kraft.png` | kraft paper — cement sacks stacked on a corrugated pallet |
 | `midground/` | `formwork-balsa.png` | balsa — a braced formwork panel, open grain, A-frame legs |
 | `midground/` | `hoarding-tape.png` | masking tape — a taped-over hoarding, tape *as* the drawing |
 | `midground/` | `liftshaft-brass.png` | brass fasteners — split-pin heads marching up both edges |
 | `foreground/` | `mesh-steel.png` | painted steel — a dark mesh panel to crop against the edge |
 | `foreground/` | `plankcross-balsa.png` | balsa — two planks in an X, cropped by all four edges |
-| `props/` | `cabledrum-kraft.png` | corrugated card — drum flanges showing their flutes side-on |
+| `props/` | `cabledrum-kraft.png` | corrugated card — one flange dead-on, a true circle, fluted rim |
 | `props/` | `mixerbucket-foam.png` | painted foam board — chalky buckets, thick soft-cut rims |
 | `props/` | `toolchest-steel.png` | painted steel — the set's one saturated red |
 | `props/` | `turfroll-felt.png` | wool felt — two turf rolls crossed, the nap doing the work |
 
-**Two things cost a re-roll each, and both are the plane rule** (README §
+**The set was flattened after the first cut.** Six of the twelve came back
+carrying volume — you could see the tops of the sacks, inside the buckets, the
+lid of the chest — and there is **no expanded 3D ground in this game** for any
+of that to stand on. The full rule and the test that catches it now live in
+README § "The elevation test"; the short version is *a circle in true
+elevation is a straight line, not an ellipse*, so an ellipse anywhere means the
+camera is off-axis and the piece is carrying ground.
+
+**Three more things cost a re-roll each, all the plane rule** (README §
 "Critical plane rule"), so they are worth naming:
 
 1. **A cast shadow survives keying.** A shadow on magenta is *dark* magenta,

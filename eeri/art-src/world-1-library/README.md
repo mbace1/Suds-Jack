@@ -30,20 +30,50 @@ Reference: the current World 1 / Groundworks look.
 
 ### Critical plane rule
 
-The current environment system is made from **flat 2D planes**. Therefore
-library pieces must work when composited onto a flat layer:
+**There is no expanded 3D ground area in this game.** The environment is made
+from **flat 2D planes** and a prop meets the world at a single ground *line* —
+there is no floor extending back in z for anything to stand on. So a piece
+that was photographed from anywhere above its own middle brings a floor with
+it, and the level cannot honour it. This is geometry, not taste.
 
 - NO visible floor plane under an object
 - NO pedestal/base added merely to make a prop stand up
 - NO three-quarter tabletop/product-render angle
 - NO cast shadow that implies an unseen floor
 - NO perspective ground receding toward the horizon
-- prefer frontal or near-side-on cutout construction
+- frontal or dead side-on cutout construction
 - apparent material thickness is allowed at exposed cardboard edges, but the
   overall asset must still read as a flat stage-set/cutout piece
 
 If a prop logically needs ground contact, compose it so its bottom edge simply
 meets the level's existing flat ground line.
+
+#### The elevation test
+
+Naming the camera angle did **not** prevent the problem — six of the first
+twelve direction pieces came back carrying volume anyway, because a model can
+miss "no three-quarter angle" by ten degrees and still feel obedient. Ask for
+the *consequence* instead. It has no degrees in it and it settles in a second:
+
+> **A circle seen in true elevation is a straight LINE, not an ellipse.**
+
+Every offender had an ellipse somewhere — a bucket rim, a drum barrel, a
+pallet board, a roof cap. **If you can find an ellipse, the camera is off-axis
+and the piece is carrying ground.** The companion tell is the same fact from
+the other side: **if you can see the top of it, or inside it, it is wrong** —
+no top face, no lid surface, no open mouth, no upper edge turning away.
+
+Two things follow that are not obvious:
+
+- **Never ask an elevation piece for anything along its side.** Requesting
+  "the cut foam core showing down one edge" is requesting a second face, and
+  the model will turn the object to give you one. Material detail has to live
+  on the front face.
+- **Flatness and craft pull against each other.** Elevation removes the
+  shading that normally sells "handmade", and a model will reach for vector
+  art to fill the gap — flat, obedient, and suddenly clip art. So name the
+  material as *surface* (paper fibre, chalky matte paint, brush marks,
+  hand-cut edges) rather than leaving it to be implied by light.
 
 ### Clouds
 
