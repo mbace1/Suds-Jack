@@ -160,8 +160,43 @@ class ClipDriver {
     }
     this.current = null;
     this.last = 0;
+    this.shotUntil = 0;   // a one-shot owns the rig until this time
   }
+  /**
+   * Play a clip ONCE, over the top of whatever the state machine wants.
+   *
+   * `stomp` and `hurt` are not states — they are moments. The kid is
+   * airborne after a bounce and running again a third of a second after a
+   * knock, so driving them through CLIP_FOR would either never fire or
+   * never end. They ride above the state instead, for their own length.
+   *
+   * Capped as well as clamped: a clip longer than the moment it stands for
+   * leaves him flinching after the game has moved on, which reads as a
+   * hitch rather than a reaction.
+   */
+  once(name, t, cap = 0.5) {
+    const a = this.actions[name];
+    if (!a) return;
+    a.reset();
+    a.setLoop(THREE.LoopOnce, 1);
+    a.clampWhenFinished = true;
+    a.setEffectiveWeight(1).setEffectiveTimeScale(1).play();
+    if (this.current && this.current !== name && this.actions[this.current]) {
+      this.actions[this.current].crossFadeTo(a, 0.08, false);
+    }
+    this.current = name;
+    this.shotUntil = t + Math.min(cap, a.getClip().duration || cap);
+  }
+
   play(state, t, speed) {
+    // a one-shot owns the rig until it is done; the state resumes after
+    if (this.shotUntil && t < this.shotUntil) {
+      const dt0 = Math.min(0.1, Math.max(0, t - this.last));
+      this.last = t;
+      this.mixer.update(dt0);
+      return;
+    }
+    if (this.shotUntil) { this.shotUntil = 0; this.current = null; }
     const want = this.actions[CLIP_FOR[state]] ? CLIP_FOR[state] : 'idle';
     if (want !== this.current) {
       const next = this.actions[want];
@@ -217,6 +252,9 @@ export class Kid {
   // the machine with his hands behind his back and climbed the step
   // reaching backwards over his own shoulder. Check a new pose by where the
   // tip lands, not by whether the number looks right.
+  /** A moment rather than a state — see ClipDriver.once. No-op unrigged. */
+  oneShot(name, t, cap) { this.clips?.once(name, t, cap); }
+
   pose(state, t, speed = 0) {
     // the turn is animated, not mirrored — a 3D cast's free win.
     // riding, the pose is local to the seat and the machine owns the facing.
@@ -317,6 +355,7 @@ export class Player {
     this.cutJump = false;
     // one-frame events for the noise to hang off
     this.justJumped = false; this.justLanded = false;
+    this.justStomped = false; this.justStruck = false;
   }
 
   // Bounced off something he landed on. Higher than a step, lower than a
@@ -328,6 +367,11 @@ export class Player {
     this.squash = 0.1;
     this.jumpBufT = 0;
     this.justStomped = true;
+    // Fired HERE, not from updateVisual. main.js resolves stomps and hits
+    // AFTER player.update() has already drawn this frame, so a flag set now
+    // is cleared at the top of the next update before the visual ever reads
+    // it — the clip would simply never have played.
+    this.kid?.oneShot('stomp', this.t, 0.4);
   }
 
   // knocked back by a hazard: the cost is never death (ART_BRIEF hazards)
@@ -336,6 +380,8 @@ export class Player {
     this.mercyT = 1.3;
     this.vx = (this.x < fromX ? -1 : 1) * 7.5;
     this.vy = 7;
+    this.justStruck = true;
+    this.kid?.oneShot('hurt', this.t, 0.55);   // same reason as bounce()
     return true;
   }
 

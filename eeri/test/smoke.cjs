@@ -944,6 +944,38 @@ s.listen(0, '127.0.0.1', async () => {
       missed.length === 0);
   }
 
+  // ---- the two MOMENTS on the rig ---------------------------------------
+  // `stomp` and `hurt` are one-shot clips over the top of the state machine,
+  // and the first wiring of them never fired at all: main.js resolves stomps
+  // and hits AFTER player.update() has drawn the frame, so a flag set then
+  // was cleared at the top of the next update before the visual read it.
+  // Nothing else in the suite would notice — the game plays identically with
+  // a rig that simply never reacts.
+  {
+    const rigged = await p.evaluate(() => !!window.__eeri.player.kid.clips);
+    ok('the kid is on a skinned rig with clips', rigged);
+    if (rigged) {
+      const has = await p.evaluate(() => Object.keys(window.__eeri.player.kid.clips.actions));
+      ok('the rig carries stomp and hurt', has.includes('stomp') && has.includes('hurt'), has.join(','));
+
+      await p.evaluate(() => window.__eeri.player.bounce());
+      ok('a bounce plays the stomp clip',
+        await p.evaluate(() => window.__eeri.player.kid.clips.current) === 'stomp');
+
+      await p.evaluate(() => { window.__eeri.player.mercyT = 0; window.__eeri.player.struck(window.__eeri.player.x + 5); });
+      ok('a hit plays the hurt clip',
+        await p.evaluate(() => window.__eeri.player.kid.clips.current) === 'hurt');
+
+      // …and it must RELEASE. Judged on game time, never the wall clock:
+      // this sandbox renders at a handful of frames a second.
+      const t0 = await p.evaluate(() => window.__eeri.player.t);
+      const freed = await p.waitForFunction(
+        (t) => window.__eeri.player.t > t + 1.2 && !window.__eeri.player.kid.clips.shotUntil,
+        t0, { timeout: 60000 }).then(() => true).catch(() => false);
+      ok('…and a one-shot hands the rig back to the state machine', freed);
+    }
+  }
+
   ok('no errors after the whole ride', errs.length === 0, errs.slice(0, 3).join(' | '));
 
   // ---- THE TITLE SCREEN, and the three languages -------------------------
