@@ -151,7 +151,8 @@ async function boot() {
     // the seam like everything else, so the code pair below is the
     // placeholder rather than the thing — and a bolt is a PICKUP, so its
     // origin is its centre and it is cloned per cell rather than shared.
-    const boltModel = await getModel('bolt', () => {
+    // getModel hands back a {root, nodes, clips} WRAPPER, not the Object3D
+    const boltModel = (await getModel('bolt', () => {
       const g = new THREE.Group();
       const m1 = new THREE.MeshLambertMaterial({ color: PAL.MACHINE, transparent: true });
       const m2 = new THREE.MeshLambertMaterial({ color: PAL.MACHINE_DK, transparent: true });
@@ -159,7 +160,7 @@ async function boot() {
       const hub = new THREE.Mesh(hubGeo, m2); hub.rotation.x = Math.PI / 2;
       g.add(nut, hub);
       return g;
-    });
+    })).root;
     const bolts = level.boltCells.map((cell, bi) => {
       const g = boltModel.clone(true);
       // the collect pop fades it, and a material cloned off a GLB is opaque

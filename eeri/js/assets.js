@@ -144,9 +144,15 @@ export async function getModel(name, buildPlaceholder, kind = 'models') {
       return { root, nodes: {}, clips, skinned: true, live: true };
     }
 
+    // A PROP has neither nodes nor clips — nothing inside it moves, the game
+    // spins and bobs it whole (a bolt, a token). Without this it fell into
+    // the node loop, threw on an absent `nodes`, and silently served the code
+    // placeholder instead of the model that had just been fetched.
+    if (entry.rig === 'prop') return { root, nodes: {}, clips: {}, live: true };
+
     const nodes = {};
     const missing = [];
-    for (const n of entry.nodes) {
+    for (const n of entry.nodes || []) {
       const obj = root.getObjectByName(n);
       if (obj) nodes[n] = obj; else missing.push(n);
     }

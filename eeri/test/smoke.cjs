@@ -63,6 +63,15 @@ for (const [name, m] of Object.entries(manifest.models)) {
       typeof m.height === 'number' && m.height > 0.5 && m.height < 6);
   }
 }
+// UI art is a third family beside models and pieces — flat PNGs the game
+// mounts on screens rather than in the world, so there is no rig and no node
+// contract to check. What still has to hold is that a live file exists: a
+// logo that 404s is a blank landing screen.
+for (const [name, u] of Object.entries(manifest.ui || {})) {
+  const f = path.join(__dirname, '..', 'assets', u.file);
+  ok(`ui "${name}": ${u.status === 'live' ? 'live file exists' : 'placeholder declared'}`,
+    u.status !== 'live' || fs.existsSync(f), u.file);
+}
 for (const [name, m] of Object.entries(manifest.pieces || {})) {
   const f = path.join(__dirname, '..', 'assets', m.file);
   ok(`piece "${name}": ${m.status === 'live' ? 'live file exists' : 'placeholder declared'}`,
