@@ -75,6 +75,28 @@
       z-index: 5; pointer-events: none; user-select: none;
     }
     #pad img { display: none; width: 100%; height: auto; }
+    /* PORTRAIT (owner, 2026-08-15): "cropped a bit from the top, very
+       slightly smaller, centred along the bottom." So the plate is inset a
+       little from both edges and the box is SHORTER than the image, with
+       the image anchored to its bottom and the overflow clipped — which
+       takes the transparent air off the top and a sliver of the yellow
+       strip with it. 590 × 0.84 ≈ 496 is that crop expressed as the box's
+       own ratio. */
+    @media (orientation: portrait) {
+      #pad {
+        left: 4%; right: 4%;
+        aspect-ratio: 1024 / 496; overflow: hidden;
+      }
+      #pad img#padP { position: absolute; left: 0; bottom: 0; }
+    }
+    /* THE HIT LAYER SITS ON THE PLATE, AND IT HAS TO SAY SO. `#touch` was
+       left at `z-index: auto`, which paints the whole layer — buttons,
+       press tint, sticker — *underneath* `#pad` (z 5), and no z-index on a
+       child can climb out of its own parent's layer. It cost an afternoon
+       because the plated buttons are transparent, so the only two things
+       that were ever visible through it were the press tint and the Toko
+       sticker, and both were assumed missing rather than buried. */
+    #touch { z-index: 6; }
     #hint { bottom: max(152px, calc(env(safe-area-inset-bottom) + 148px)); }
   }
   /* `#pad img` is (1 id + 1 type) and outranks a bare `#padP`, so these
@@ -117,6 +139,48 @@
   html.plated #touch button svg { display: none; }
   html.plated #touch button:active { background: rgba(255,255,255,0.22); }
 
+  /* THE TOKO MARK AS A STICKER (owner, 2026-08-15): "can be on the game pad
+     but should look more like a sticker."
+
+     So it stops being a corner watermark floating over the playfield and
+     becomes a thing stuck to the plate — white die-cut border, a few
+     degrees off square, and a shadow so it sits ON the face rather than in
+     it. It goes in the plate's EMPTY ground on purpose: the DMG's blank
+     panel between the d-pad and B, and the arcade strip's deliberately
+     empty middle. `sign()` writes its position inline, so these have to
+     shout to be heard. It stays inert under a thumb either way — that is
+     toko's own rule, and a sticker is not a button. */
+  html.plated .toko-signature {
+    position: absolute !important;
+    top: auto !important; bottom: auto !important;
+    left: auto !important; right: auto !important;
+    background: #fff;
+    padding: 5px;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(26, 20, 16, 0.45);
+    /* `!important` and not a bigger number: sign() writes `z-index: 4`
+       INLINE (it is deliberately under the HUD, toko/js/signature.js), and
+       an inline declaration beats any stylesheet rule no matter how
+       specific — so the badge rendered under the plate image (#pad, z 5)
+       and was simply invisible. On the plate it is ON the art, so it has
+       to clear it. */
+    z-index: 7 !important;
+  }
+  @media (pointer: coarse) and (orientation: portrait) {
+    html.plated .toko-signature {
+      /* the blank panel between the d-pad's dished recess (out to ~42%) and
+         B (from ~67%), clear of both hit zones */
+      left: 55% !important; top: 55% !important;
+      transform: translate(-50%, -50%) rotate(-7deg);
+    }
+  }
+  @media (pointer: coarse) and (orientation: landscape) {
+    html.plated .toko-signature {
+      left: 47% !important; top: 74% !important;
+      transform: translate(-50%, -50%) rotate(-7deg);
+    }
+  }
+
   /* --- fallback placement, used when no plate has loaded --- */
   #tL { left: 39px;  bottom: max(43px, calc(env(safe-area-inset-bottom) + 31px)); }
   #tD { left: 107px; bottom: max(43px, calc(env(safe-area-inset-bottom) + 31px)); }
@@ -129,8 +193,10 @@
   @media (pointer: coarse) and (orientation: portrait) {
     html.plated #touch button { position: absolute; }
     html.plated #pad { pointer-events: none; }
+    /* the same inset as the plate, and the image's FULL ratio — the crop
+       hides the top of the picture, it does not move the controls */
     html.plated #touch {
-      position: fixed; left: 0; right: 0; bottom: 0;
+      position: fixed; left: 4%; right: 4%; bottom: 0;
       aspect-ratio: 1024 / 590; pointer-events: none;
     }
     html.plated #touch button {
@@ -200,7 +266,7 @@
 </div>
 <div id="boot">EERI</div>
 <script type="module" src="../hub/shell.js?v=31"></script>
-<script type="module" src="./js/main.js?v=17"></script>
+<script type="module" src="./js/main.js?v=18"></script>
 <script type="module">
   // bottom-right: the HOME button owns top-left and the HUD owns top-right.
   // Under a thumb that corner also holds the jump button (#tJ, 62px at
@@ -217,6 +283,25 @@
   // is inert under a thumb anyway (toko's own rule), but a mark sitting on
   // the one control the game is played with is still wrong.
   sign({ corner: 'bottom-right', counter: true, inset: coarse ? 210 : 12 });
+
+  // …and on a plated pad it moves ONTO the plate. `#touch` is already a box
+  // that matches the plate image exactly, so re-parenting into it means the
+  // sticker tracks the art at any size with no second set of numbers — the
+  // same trick the hit areas use. The inset above still governs the
+  // unplated fallback, where there is no plate to stick it to.
+  requestAnimationFrame(() => {
+    const badge = document.querySelector('.toko-signature');
+    const touch = document.getElementById('touch');
+    if (!badge || !touch) return;
+    const place = () => {
+      if (document.documentElement.classList.contains('plated')) touch.appendChild(badge);
+    };
+    place();
+    // `.plated` is set once the plate image decodes, which may be after this
+    new MutationObserver(place).observe(document.documentElement, {
+      attributes: true, attributeFilter: ['class'],
+    });
+  });
 </script>
 </body>
 </html>

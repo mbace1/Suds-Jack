@@ -1064,6 +1064,18 @@ s.listen(0, '127.0.0.1', async () => {
     // actually sits on it, rather than a row count.
     ok('the touch plate is mounted',
       await tp.evaluate(() => document.documentElement.classList.contains('plated')));
+    // THE STICKER IS ON THE PLATE, WHICH IS A LAYER QUESTION, NOT A
+    // z-index ONE. `#touch` was left at `z-index: auto`, so the whole hit
+    // layer — buttons, press tint and the Toko sticker with it — painted
+    // *under* `#pad`; a z-index of 9999 on the badge itself changed
+    // nothing, because a child cannot climb out of its parent's layer.
+    // Nothing was visible through the plated buttons except those two
+    // things, so it read as "the sticker never mounted".
+    ok('the sticker layer sits above the plate', await tp.evaluate(() => {
+      const z = (id) => { const v = getComputedStyle(document.getElementById(id)).zIndex; return v === 'auto' ? 0 : +v; };
+      const bd = document.querySelector('.toko-signature');
+      return !!bd && !!bd.closest('#touch') && z('touch') > z('pad');
+    }));
     ok('…and every hit area sits over the plate', await tp.evaluate(() => {
       const img = [...document.querySelectorAll('#pad img')].find((i) => getComputedStyle(i).display !== 'none');
       if (!img) return false;

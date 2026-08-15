@@ -9,26 +9,26 @@
 // only the last gate says SITE CLEAR.
 
 import * as THREE from 'three';
-import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=17';
-import { Input } from './input.js?v=17';
-import { Level, ROOMS, LAB } from './level.js?v=17';
+import { PAL, LAYER_Z, LAYER_TINT } from './palette.js?v=18';
+import { Input } from './input.js?v=18';
+import { Level, ROOMS, LAB } from './level.js?v=18';
 import {
   buildBankModel, Bank, buildGirderModel, Girder, buildWallModel, Wall,
-} from './pieces.js?v=17';
-import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=17';
-import { Camera } from './camera.js?v=17';
-import { buildKidModel, Kid, Player } from './kid.js?v=17';
-import { buildExcavatorModel, Excavator } from './excavator.js?v=17';
-import { buildCraneModel, Crane } from './crane.js?v=17';
-import { Robot, SteamVent } from './robots.js?v=17';
-import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=17';
-import { WreckingBall } from './hazards.js?v=17';
-import { AudioKit } from './audio.js?v=17';
-import { loadManifest, getModel, getPiece, uiAsset } from './assets.js?v=17';
-import { craftMat, craftBox } from './craft.js?v=17';
-import { t as tr } from './lang.js?v=17';
-import { showIntro } from './intro.js?v=17';
-import { slugOf, labelOf, parseSlug } from './levelid.js?v=17';
+} from './pieces.js?v=18';
+import { buildLayers, LAYER_RECTS, PPU } from './layers.js?v=18';
+import { Camera } from './camera.js?v=18';
+import { buildKidModel, Kid, Player } from './kid.js?v=18';
+import { buildExcavatorModel, Excavator } from './excavator.js?v=18';
+import { buildCraneModel, Crane } from './crane.js?v=18';
+import { Robot, SteamVent } from './robots.js?v=18';
+import { buildFlagModel, Flag, buildCheckpointModel, Checkpoint } from './flag.js?v=18';
+import { WreckingBall } from './hazards.js?v=18';
+import { AudioKit } from './audio.js?v=18';
+import { loadManifest, getModel, getPiece, uiAsset } from './assets.js?v=18';
+import { craftMat, craftBox } from './craft.js?v=18';
+import { t as tr } from './lang.js?v=18';
+import { showIntro } from './intro.js?v=18';
+import { slugOf, labelOf, parseSlug } from './levelid.js?v=18';
 
 const FOV = 24;   // the dolly distance is the camera director's (js/camera.js)
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -43,7 +43,17 @@ async function boot() {
   //
   // `?skip` walks past it, because the smoke gate and the playthrough bot
   // are not testing the title screen and would both stall on a button.
+  //
+  // THE MANIFEST IS READ FIRST, and that is not an optimisation — it is the
+  // fix for a bug that hid the logo completely. `showIntro()` asks
+  // `uiAsset('logo')` for the painted mark, and `uiAsset` reads a manifest
+  // that was still null this early, so it returned null EVERY time and the
+  // intro silently fell back to its code-drawn wordmark. The logo has been
+  // live since PR #236 and had never once been seen. The manifest is a
+  // small JSON and the heavy art still streams behind the title, so nothing
+  // is lost by knowing what the assets are before drawing the first screen.
   const skipIntro = new URLSearchParams(location.search).has('skip');
+  if (!skipIntro) await loadManifest();
   const introDone = skipIntro ? Promise.resolve() : showIntro();
 
   // renderer: clean edges, no post stack (ART_BRIEF §3.4)
@@ -78,6 +88,8 @@ async function boot() {
   addEventListener('pointerdown', wake, { once: true });
 
   // ---- the persistent world: diorama + cast -------------------------------
+  // (already read above when the title screen needed the logo; harmless and
+  // required on the `?skip` path, which never took that branch)
   await loadManifest();
 
   // THE TOUCH PLATES (art lane, PR #236). The controls are a drawn
